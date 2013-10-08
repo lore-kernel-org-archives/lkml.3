@@ -1,149 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755659Ab3JHP2c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 11:28:32 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:59960 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755414Ab3JHP2b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 11:28:31 -0400
-Date: Tue, 8 Oct 2013 10:27:44 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Mike Turquette <mturquette@linaro.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <balbi@ti.com>, James Hogan <james.hogan@imgtec.com>,
-        Luciano Coelho <luca@coelho.fi>
-Subject: Re: [RFC] clk: add flags to distinguish xtal clocks
-Message-ID: <20131008152743.GB13128@radagast>
-Reply-To: <balbi@ti.com>
-References: <1372971912-10877-1-git-send-email-coelho@ti.com>
- <20130704222538.10823.2559@quantum>
- <1372977465.21065.136.camel@cumari.coelho.fi>
- <20130704231953.10823.94331@quantum>
- <1373010853.21065.159.camel@cumari.coelho.fi>
- <1375105842.20048.18.camel@cumari.coelho.fi>
- <20131007074424.7445.52119@quantum>
+	id S1755599Ab3JHPb5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 11:31:57 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:56740 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751732Ab3JHPby (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 11:31:54 -0400
+Date: Tue, 8 Oct 2013 17:31:47 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Marc Kleine-Budde <mkl@pengutronix.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
+        Marc Pignat <marc.pignat@hevs.ch>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        John Stulz <john.stultz@linaro.org>, kernel@pengutronix.de,
+        Ronald Wahl <ronald.wahl@raritan.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: [GIT PULL] fixes for integer rounding in timer core (Was: [PATCH v2]
+ clockevents: Sanitize ticks to nsec conversion)
+Message-ID: <20131008153147.GR10079@pengutronix.de>
+References: <alpine.DEB.2.02.1309191629040.4089@ionos.tec.linutronix.de>
+ <1380052223-24139-1-git-send-email-u.kleine-koenig@pengutronix.de>
+ <5253D9A1.1080106@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="61jdw2sOBCFtR2d/"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20131007074424.7445.52119@quantum>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5253D9A1.1080106@pengutronix.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---61jdw2sOBCFtR2d/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hello,
 
-Hi,
+> What's the status of this patch?
+I pinged Thomas about it already via irc, but I didn't get a response up
+to now. It would be great to get that into 3.12. To make it easy for
+Thomas, here is a pull request that includes the fix and converts
+at91rm9200 back to clockevents_config_and_register dropping one of the
+workarounds for the fixed bug.
 
-Fixing Luca's address since he left TI
+The following changes since commit 4a10c2ac2f368583138b774ca41fac4207911983:
 
-On Mon, Oct 07, 2013 at 12:44:24AM -0700, Mike Turquette wrote:
-> Quoting Luciano Coelho (2013-07-29 06:50:42)
-> > Hi Mike,
-> >=20
-> > On Fri, 2013-07-05 at 10:54 +0300, Luciano Coelho wrote:
-> > > On Thu, 2013-07-04 at 16:19 -0700, Mike Turquette wrote:
-> > > > Quoting Luciano Coelho (2013-07-04 15:37:45)
-> > > > > On Thu, 2013-07-04 at 15:25 -0700, Mike Turquette wrote:
-> > > > > > Or is it the same clock input and basically the problem is that=
- you need
-> > > > > > to know what kind of waveform to expect (e.g. square versus sin=
-e)?
-> > > > >=20
-> > > > > It's the same clock input in the chip's perspective.  One clock i=
-nput
-> > > > > that can be any of the combinations I mentioned above.  Again, I'=
-m not
-> > > > > familiar with clocks, so I guess the square vs. sine explanation =
-is
-> > > > > plausible.  What I could see in the firmware is that it handles t=
-he
-> > > > > clocks differently if they're xtal or not.
-> > > >=20
-> > > > OMAP has a similar thing where sys_clkin (the fast reference clock =
-for
-> > > > the chip) can be 19.2, 26, 38.4, etc. This is easy to handle since =
-only
-> > > > the rates matter.
-> > >=20
-> > > Right, this part is easy and I already have the code for that.  What =
-I'm
-> > > missing is a way to pass this XTAL flag to the chip.
-> > >=20
-> > >=20
-> > > > In your case you need some extra metadata to know what to do. I'm r=
-eally
-> > > > not sure if CLK_IS_TYPE_XTAL is the most useful form this metadata =
-can
-> > > > take. It would be best to know if the waveform is what you really n=
-eed
-> > > > to know, or perhaps something else. For instance you might be affec=
-ted
-> > > > by some clock signal stabilization time. Can you talk to your hardw=
-are
-> > > > guys and figure it out? I'd rather model the actual needs instead of
-> > > > just tossing a flag in there.
-> > >=20
-> > > I get your point.  I have tried to investigate how this flag is used =
-by
-> > > the firmware and I could see that it is used to set different "buffer
-> > > gains" and "delays" when waking up (I guess this means when the clock=
- is
-> > > starting, so probably related to stabilization time).  They specify t=
-wo
-> > > "modes", "boost" and "normal" and use different delay values for each.
-> >=20
-> > I tried but I couldn't find any more information on how exactly this
-> > works.  But since this change is really simple and there seems to be
-> > other people who need the same information, couldn't we add it as is and
-> > try to figure out more specific information about the clocks later on?
-> >=20
-> > Even if XTAL is not that useful if we know the other details, at least
-> > it wouldn't hurt to have the flag there anyway.
->=20
-> Luca,
->=20
-> By any chance did you come to a different solution for this problem? I
-> can take the patch, but I do not feel like we're solving the right
-> problem the right way.
->=20
-> If not I will take it for 3.13.
->=20
-> Regards,
-> Mike
->=20
-> >=20
-> > --
-> > Cheers,
-> > Luca.
+  Linux 3.12-rc2 (2013-09-23 15:41:09 -0700)
 
---=20
-balbi
+are available in the git repository at:
 
---61jdw2sOBCFtR2d/
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+  git://git.pengutronix.de/git/ukl/linux.git tags/timer-for-tip
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+for you to fetch changes up to b58c4b70121070f45eefa739ecbb58d57da1c4d9:
 
-iQIcBAEBAgAGBQJSVCRvAAoJEIaOsuA1yqREKRcP/R/JrJFcKGQsDBJK2Rd3VIPg
-pTjbKyGCoHJ+eUs1znFOHQ429Ct4Ci1Cox+Y4PvjRlE8qWlZAzxewUiByPpp+mr6
-7KVVfdcH8dKlZmUvMAI0nminaKZCfjMyVnHYIwSV/Uui0AgBx9D7q+QF5R0q/PaG
-UJ8Q9mR8eq1Gp3RXy3t/txtsLWsfIK8WmnPGw0rXl4w/Fyq1gus60VsTH0phq8i4
-/cRPI0+VaRYHKxaOoJFsXB1GzZItfGyGcG9snVlR6HYABgzHMAk+4hIHFeTJLXtz
-IZhx5Szvl5DzZOJMjih+8ac9ymRGEIEr3HJdWZevjQrA92NvT9UBXzQW5TwIv0tj
-SBZznxssewmps5A7NCwi6NPPdYd7+wtvqlMMeHtRIEDLJGtJtRctzkLOiZwaUlIv
-dRVR4j3Atmp5fS9j5rF/CjsuI+WtPmLFxL1U+mAMkRWK71gu8ndczsX4+TPMg/Lq
-vYm6FQ529Fs9s2jeOWId0y8gNuUZ58TGIVTq+VcOQMPhAFmFD3N7wlo/6P0qhzfH
-NiTUnlgVFJugONuT8aot5CC7MrXavOtK7eYsvHCGgUG46ci+0OBBP53DcFo5mctK
-i4Qev1aqJV1VzVekwU0SuwugBhNX7KBkpeLc7aLC1o68Q56p88Pfyd+Kf8O46HfU
-sXHI5aeKsWXM/juGyMNk
-=kJqK
------END PGP SIGNATURE-----
+  ARM: at91: rm9200: switch back to clockevents_config_and_register (2013-10-08 16:58:22 +0200)
 
---61jdw2sOBCFtR2d/--
+----------------------------------------------------------------
+The first patch in this pull request fixes an old integer rounding bug in the
+timer core that was (and still is) worked around in a few arch's timer code.
+The second patch drops such a work around now that the core is fixed.
+
+----------------------------------------------------------------
+Thomas Gleixner (1):
+      clockevents: Sanitize ticks to nsec conversion
+
+Uwe Kleine-König (1):
+      ARM: at91: rm9200: switch back to clockevents_config_and_register
+
+ arch/arm/mach-at91/at91rm9200_time.c |  7 ++--
+ kernel/time/clockevents.c            | 65 +++++++++++++++++++++++++++---------
+ 2 files changed, 52 insertions(+), 20 deletions(-)
+
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
