@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755257Ab3JHL3H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 07:29:07 -0400
-Received: from b.ns.miles-group.at ([95.130.255.144]:1668 "EHLO radon.swed.at"
+	id S1755188Ab3JHL3F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 07:29:05 -0400
+Received: from b.ns.miles-group.at ([95.130.255.144]:1662 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754649Ab3JHL3C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 07:29:02 -0400
+	id S1754706Ab3JHL2y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 07:28:54 -0400
 From: Richard Weinberger <richard@nod.at>
 To: linux-kernel@vger.kernel.org
 Cc: linux-arch@vger.kernel.org, viro@zeniv.linux.org.uk, vgupta@synopsys.com,
@@ -22,9 +22,9 @@ Cc: linux-arch@vger.kernel.org, viro@zeniv.linux.org.uk, vgupta@synopsys.com,
         lethal@linux-sh.org, cmetcalf@tilera.com, gxt@mprc.pku.edu.cn,
         linux-xtensa@linux-xtensa.org, akpm@linux-foundation.org,
         oleg@redhat.com, tj@kernel.org, Richard Weinberger <richard@nod.at>
-Subject: [PATCH 04/29] blackfin: Use get_signal() signal_setup_done()
-Date: Tue,  8 Oct 2013 13:27:56 +0200
-Message-Id: <1381231701-4008-5-git-send-email-richard@nod.at>
+Subject: [PATCH 01/29] arc: Use get_signal() signal_setup_done()
+Date: Tue,  8 Oct 2013 13:27:53 +0200
+Message-Id: <1381231701-4008-2-git-send-email-richard@nod.at>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1381231701-4008-1-git-send-email-richard@nod.at>
 References: <1381231701-4008-1-git-send-email-richard@nod.at>
@@ -37,104 +37,104 @@ for signal delivery.
 
 Signed-off-by: Richard Weinberger <richard@nod.at>
 ---
- arch/blackfin/kernel/signal.c | 39 +++++++++++++++++----------------------
- 1 file changed, 17 insertions(+), 22 deletions(-)
+ arch/arc/kernel/signal.c | 39 +++++++++++++++------------------------
+ 1 file changed, 15 insertions(+), 24 deletions(-)
 
-diff --git a/arch/blackfin/kernel/signal.c b/arch/blackfin/kernel/signal.c
-index b022af6..1389cd3 100644
---- a/arch/blackfin/kernel/signal.c
-+++ b/arch/blackfin/kernel/signal.c
-@@ -152,23 +152,22 @@ static inline void *get_sigframe(struct k_sigaction *ka, struct pt_regs *regs,
+diff --git a/arch/arc/kernel/signal.c b/arch/arc/kernel/signal.c
+index 7e95e1a..c2031e2 100644
+--- a/arch/arc/kernel/signal.c
++++ b/arch/arc/kernel/signal.c
+@@ -179,14 +179,13 @@ static inline int map_sig(int sig)
  }
  
  static int
--setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t * info,
--	       sigset_t * set, struct pt_regs *regs)
+-setup_rt_frame(int signo, struct k_sigaction *ka, siginfo_t *info,
+-	       sigset_t *set, struct pt_regs *regs)
 +setup_rt_frame(struct ksignal *ksig, sigset_t *set, struct pt_regs *regs)
  {
- 	struct rt_sigframe *frame;
+ 	struct rt_sigframe __user *sf;
+ 	unsigned int magic = 0;
  	int err = 0;
  
--	frame = get_sigframe(ka, regs, sizeof(*frame));
-+	frame = get_sigframe(&ksig->ka, regs, sizeof(*frame));
+-	sf = get_sigframe(ka, regs, sizeof(struct rt_sigframe));
++	sf = get_sigframe(&ksig->ka, regs, sizeof(struct rt_sigframe));
+ 	if (!sf)
+ 		return 1;
  
- 	err |= __put_user((current_thread_info()->exec_domain
- 			   && current_thread_info()->exec_domain->signal_invmap
--			   && sig < 32
-+			   && ksig->sig < 32
- 			   ? current_thread_info()->exec_domain->
--			   signal_invmap[sig] : sig), &frame->sig);
-+			   signal_invmap[ksig->sig] : ksig->sig), &frame->sig);
+@@ -205,8 +204,8 @@ setup_rt_frame(int signo, struct k_sigaction *ka, siginfo_t *info,
+ 	 *  #2: struct siginfo
+ 	 *  #3: struct ucontext (completely populated)
+ 	 */
+-	if (unlikely(ka->sa.sa_flags & SA_SIGINFO)) {
+-		err |= copy_siginfo_to_user(&sf->info, info);
++	if (unlikely(ksig->ka.sa.sa_flags & SA_SIGINFO)) {
++		err |= copy_siginfo_to_user(&sf->info, &ksig->info);
+ 		err |= __put_user(0, &sf->uc.uc_flags);
+ 		err |= __put_user(NULL, &sf->uc.uc_link);
+ 		err |= __save_altstack(&sf->uc.uc_stack, regs->sp);
+@@ -227,16 +226,16 @@ setup_rt_frame(int signo, struct k_sigaction *ka, siginfo_t *info,
+ 		return err;
  
- 	err |= __put_user(&frame->info, &frame->pinfo);
- 	err |= __put_user(&frame->uc, &frame->puc);
--	err |= copy_siginfo_to_user(&frame->info, info);
-+	err |= copy_siginfo_to_user(&frame->info, &ksig->info);
+ 	/* #1 arg to the user Signal handler */
+-	regs->r0 = map_sig(signo);
++	regs->r0 = map_sig(ksig->sig);
  
- 	/* Create the ucontext.  */
- 	err |= __put_user(0, &frame->uc.uc_flags);
-@@ -183,7 +182,7 @@ setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t * info,
- 	/* Set up registers for signal handler */
- 	if (current->personality & FDPIC_FUNCPTRS) {
- 		struct fdpic_func_descriptor __user *funcptr =
--			(struct fdpic_func_descriptor *) ka->sa.sa_handler;
-+			(struct fdpic_func_descriptor *) ksig->ka.sa.sa_handler;
- 		u32 pc, p3;
- 		err |= __get_user(pc, &funcptr->text);
- 		err |= __get_user(p3, &funcptr->GOT);
-@@ -192,7 +191,7 @@ setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t * info,
- 		regs->pc = pc;
- 		regs->p3 = p3;
- 	} else
--		regs->pc = (unsigned long)ka->sa.sa_handler;
-+		regs->pc = (unsigned long)ksig->ka.sa.sa_handler;
- 	wrusp((unsigned long)frame);
- 	regs->rets = SIGRETURN_STUB;
+ 	/* setup PC of user space signal handler */
+-	regs->ret = (unsigned long)ka->sa.sa_handler;
++	regs->ret = (unsigned long)ksig->ka.sa.sa_handler;
  
-@@ -237,20 +236,19 @@ handle_restart(struct pt_regs *regs, struct k_sigaction *ka, int has_handler)
+ 	/*
+ 	 * handler returns using sigreturn stub provided already by userpsace
+ 	 */
+-	BUG_ON(!(ka->sa.sa_flags & SA_RESTORER));
+-	regs->blink = (unsigned long)ka->sa.sa_restorer;
++	BUG_ON(!(ksig->ka.sa.sa_flags & SA_RESTORER));
++	regs->blink = (unsigned long)ksig->ka.sa.sa_restorer;
+ 
+ 	/* User Stack for signal handler will be above the frame just carved */
+ 	regs->sp = (unsigned long)sf;
+@@ -298,38 +297,30 @@ static void arc_restart_syscall(struct k_sigaction *ka, struct pt_regs *regs)
   * OK, we're invoking a handler
   */
  static void
--handle_signal(int sig, siginfo_t *info, struct k_sigaction *ka,
+-handle_signal(unsigned long sig, struct k_sigaction *ka, siginfo_t *info,
 -	      struct pt_regs *regs)
 +handle_signal(struct ksignal *ksig, struct pt_regs *regs)
  {
-+	int ret;
-+
- 	/* are we from a system call? to see pt_regs->orig_p0 */
- 	if (regs->orig_p0 >= 0)
- 		/* If so, check system call restarting.. */
--		handle_restart(regs, ka, 1);
-+		handle_restart(regs, &ksig->ka, 1);
+ 	sigset_t *oldset = sigmask_to_save();
+ 	int ret;
  
- 	/* set up the stack frame */
--	if (setup_rt_frame(sig, ka, info, sigmask_to_save(), regs) < 0)
+ 	/* Set up the stack frame */
+-	ret = setup_rt_frame(sig, ka, info, oldset, regs);
++	ret = setup_rt_frame(ksig, oldset, regs);
+ 
+-	if (ret)
 -		force_sigsegv(sig, current);
--	else 
--		signal_delivered(sig, info, ka, regs,
--				test_thread_flag(TIF_SINGLESTEP));
-+	ret = setup_rt_frame(ksig, sigmask_to_save(), regs);
-+
-+	signal_setup_done(ret, ksig, test_thread_flag(TIF_SINGLESTEP));
+-	else
+-		signal_delivered(sig, info, ka, regs, 0);
++	signal_setup_done(ret, ksig, 0);
  }
  
- /*
-@@ -264,16 +262,13 @@ handle_signal(int sig, siginfo_t *info, struct k_sigaction *ka,
-  */
- asmlinkage void do_signal(struct pt_regs *regs)
+ void do_signal(struct pt_regs *regs)
  {
+-	struct k_sigaction ka;
 -	siginfo_t info;
 -	int signr;
--	struct k_sigaction ka;
 +	struct ksignal ksig;
- 
- 	current->thread.esp0 = (unsigned long)regs;
+ 	int restart_scall;
  
 -	signr = get_signal_to_deliver(&info, &ka, regs, NULL);
+-
+ 	restart_scall = in_syscall(regs) && syscall_restartable(regs);
+ 
 -	if (signr > 0) {
 +	if (get_signal(&ksig)) {
- 		/* Whee!  Actually deliver the signal.  */
--		handle_signal(signr, &info, &ka, regs);
+ 		if (restart_scall) {
+-			arc_restart_syscall(&ka, regs);
++			arc_restart_syscall(&ksig.ka, regs);
+ 			syscall_wont_restart(regs);	/* No more restarts */
+ 		}
+-		handle_signal(signr, &ka, &info, regs);
 +		handle_signal(&ksig, regs);
  		return;
  	}
