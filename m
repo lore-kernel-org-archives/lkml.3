@@ -1,120 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754781Ab3JHNoO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 09:44:14 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:38504 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753273Ab3JHNoH (ORCPT
+	id S1754900Ab3JHNoo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 09:44:44 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:58982 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751747Ab3JHNon (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 09:44:07 -0400
-Date: Tue, 8 Oct 2013 15:44:53 +0200
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>, Rob Landley <rob@landley.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC][PATCH 1/3] vfs: Keep a list of mounts on a mount point
-Message-ID: <20131008134453.GG14242@tucsk.piliscsaba.szeredi.hu>
-References: <CAJfpegsxgnSRUW-E5HM3uT5QfGyUtn_v=i4Ppkkkutp34287AA@mail.gmail.com>
- <87a9kkax0j.fsf@xmission.com>
- <CAJfpeguv+7giYNpAuXE9Ja_9BEwB0-fZBVgRSeVqpzSXgQYZ6Q@mail.gmail.com>
- <8761v7h2pt.fsf@tw-ebiederman.twitter.com>
- <CAJfpegtT7y-1HhbEVAMKkdQugTG_w7G_epGtQHGvQLpcZB5FVA@mail.gmail.com>
- <87li281wx6.fsf_-_@xmission.com>
- <87fvsg1wv6.fsf_-_@xmission.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87fvsg1wv6.fsf_-_@xmission.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 8 Oct 2013 09:44:43 -0400
+Message-ID: <1381239876.15686.56.camel@marge.simpson.net>
+Subject: Re: perf: perf sched lat segfault - bisected
+From: Mike Galbraith <bitbucket@online.de>
+To: David Ahern <dsahern@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Stephane Eranian <eranian@google.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 08 Oct 2013 15:44:36 +0200
+In-Reply-To: <52540685.2000306@gmail.com>
+References: <1381221715.15686.3.camel@marge.simpson.net>
+	 <20131008121709.GA3955@infradead.org>
+	 <1381235260.15686.38.camel@marge.simpson.net>
+	 <1381235727.15686.41.camel@marge.simpson.net> <52540685.2000306@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:C3QU7lJliDdvn4W/um3ennFhEC5POs9eXYuLAu740eg
+ nZZUvuJVoULi1pl0a0GVkZ0RRqpsaE+jXQ0faJu9CeUzXbNnrg
+ evF0BiOHRH3UHyuP7f37aHDMZbkDqlWEgoQghVIdcOc85ZamKO
+ OS28QA9UQ0S4IwhDZbPqjQst1Iuv0mVtGh8mwy9EASSJDB1fW4
+ uzKh8Topa834PFyT7ES+KnawPVmt8mHuf2bTiptdO7mMacCKox
+ f2Xr62F93moz28cc2kXxw8R+P62O/TC+Z8fub32BGNOAANS7vC
+ o0OlMrMLdlPDZqVlz6YPxfk0hFnifkic58jwHoHBcjkXs2GiSj
+ boUqGSXArcwsZCzNA4Q/U6iaCLE667ELAvUcjdaISAQSS4twkv
+ 6TKlfTaDcN4LA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 04, 2013 at 03:42:37PM -0700, Eric W. Biederman wrote:
+On Tue, 2013-10-08 at 07:20 -0600, David Ahern wrote: 
+> On 10/8/13 6:35 AM, Mike Galbraith wrote:
+> >
+> > (except replay segfaults, but lord knows when that last worked)
 > 
-> Signed-off-by: Eric W. Biederman <ebiederman@twitter.com>
-> ---
->  fs/mount.h     |    2 ++
->  fs/namespace.c |    5 +++++
->  2 files changed, 7 insertions(+), 0 deletions(-)
-> 
-> diff --git a/fs/mount.h b/fs/mount.h
-> index 64a858143ff9..e4342b8dfab1 100644
-> --- a/fs/mount.h
-> +++ b/fs/mount.h
-> @@ -21,6 +21,7 @@ struct mnt_pcp {
->  struct mountpoint {
->  	struct list_head m_hash;
->  	struct dentry *m_dentry;
-> +	struct list_head m_list;
->  	int m_count;
->  };
->  
-> @@ -47,6 +48,7 @@ struct mount {
->  	struct mount *mnt_master;	/* slave is on master->mnt_slave_list */
->  	struct mnt_namespace *mnt_ns;	/* containing namespace */
->  	struct mountpoint *mnt_mp;	/* where is it mounted */
-> +	struct list_head mnt_mp_list;	/* list mounts with the same mountpoint */
->  #ifdef CONFIG_FSNOTIFY
->  	struct hlist_head mnt_fsnotify_marks;
->  	__u32 mnt_fsnotify_mask;
-> diff --git a/fs/namespace.c b/fs/namespace.c
-> index da5c49483430..d092964fe7f9 100644
-> --- a/fs/namespace.c
-> +++ b/fs/namespace.c
-> @@ -197,6 +197,7 @@ static struct mount *alloc_vfsmnt(const char *name)
->  		INIT_LIST_HEAD(&mnt->mnt_share);
->  		INIT_LIST_HEAD(&mnt->mnt_slave_list);
->  		INIT_LIST_HEAD(&mnt->mnt_slave);
-> +		INIT_LIST_HEAD(&mnt->mnt_mp_list);
->  #ifdef CONFIG_FSNOTIFY
->  		INIT_HLIST_HEAD(&mnt->mnt_fsnotify_marks);
->  #endif
-> @@ -636,6 +637,7 @@ static struct mountpoint *new_mountpoint(struct dentry *dentry)
->  	mp->m_dentry = dentry;
->  	mp->m_count = 1;
->  	list_add(&mp->m_hash, chain);
-> +	INIT_LIST_HEAD(&mp->m_list);
->  	return mp;
->  }
->  
-> @@ -691,6 +693,7 @@ static void detach_mnt(struct mount *mnt, struct path *old_path)
->  	list_del_init(&mnt->mnt_hash);
->  	put_mountpoint(mnt->mnt_mp);
->  	mnt->mnt_mp = NULL;
-> +	list_del_init(&mnt->mnt_mp_list);
+> Fairly recently actually. I ran it early summer adding my timehist 
+> command to builtin-sched.c. I'll take a look later today.
 
-Should be done *before* put_mountpoint(), for obvious reasons.
+pr_err() blows up in self_open_counters() when you hit 1024 fds.  Too
+many threads to play back after recording make in perf directory.
+Playing a static load back works fine. 
 
-And a BUG_ON(!list_empty(&mp->m_list)) in put_mountpoint() for good measure (and
-no, WARN_ON() is not better here, since use-after-free is definitely worse than
-a BUG).
+Program received signal SIGSEGV, Segmentation fault.
+[Switching to Thread 0x7fffedbc8700 (LWP 5270)]
+buffered_vfprintf (s=0x7ffff301f700, format=0x65b9e0 "Error: sys_perf_event_open() syscall returned with %d (%s)\n", args=0x7fffedbc7a90) at vfprintf.c:2265
+2265      result = INTUSE(_IO_vfprintf) (hp, format, args);
+(gdb) where
+#0  buffered_vfprintf (s=0x7ffff301f700, format=0x65b9e0 "Error: sys_perf_event_open() syscall returned with %d (%s)\n", args=0x7fffedbc7a90) at vfprintf.c:2265
+#1  0x00007ffff2cd9dbe in _IO_vfprintf_internal (s=0x7ffff301f700, format=0x65b9e0 "Error: sys_perf_event_open() syscall returned with %d (%s)\n", ap=0x7fffedbc7a90) at vfprintf.c:1291
+#2  0x00007ffff2d84148 in ___vfprintf_chk (fp=0x7ffff301f700, flag=1, format=<optimized out>, ap=<optimized out>) at vfprintf_chk.c:35
+#3  0x000000000048d4f8 in vfprintf (__ap=0x7fffedbc7a90, __fmt=<optimized out>, __stream=<optimized out>) at /usr/include/bits/stdio2.h:128
+#4  eprintf (level=<optimized out>, fmt=<optimized out>) at util/debug.c:29
+#5  0x000000000043aa10 in self_open_counters () at builtin-sched.c:441
+#6  thread_func (ctx=<optimized out>) at builtin-sched.c:476
+#7  0x00007ffff79b1f05 in start_thread (arg=0x7fffedbc8700) at pthread_create.c:301
+#8  0x00007ffff2d7010d in clone () at ../sysdeps/unix/sysv/linux/x86_64/clone.S:115
+(gdb)
 
->  }
->  
->  /*
-> @@ -705,6 +708,7 @@ void mnt_set_mountpoint(struct mount *mnt,
->  	child_mnt->mnt_mountpoint = dget(mp->m_dentry);
->  	child_mnt->mnt_parent = mnt;
->  	child_mnt->mnt_mp = mp;
-> +	list_add_tail(&child_mnt->mnt_mp_list, &mp->m_list);
->  }
->  
->  /*
-> @@ -1193,6 +1197,7 @@ void umount_tree(struct mount *mnt, int propagate)
->  			p->mnt_parent->mnt_ghosts++;
->  			put_mountpoint(p->mnt_mp);
->  			p->mnt_mp = NULL;
-> +			list_del_init(&mnt->mnt_mp_list);
-
-Ditto.
-
->  		}
->  		change_mnt_propagation(p, MS_PRIVATE);
->  	}
-> -- 
-> 1.7.5.4
-> 
