@@ -1,183 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755485Ab3JHLaF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 07:30:05 -0400
-Received: from b.ns.miles-group.at ([95.130.255.144]:1666 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754910Ab3JHL3A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 07:29:00 -0400
-From: Richard Weinberger <richard@nod.at>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arch@vger.kernel.org, viro@zeniv.linux.org.uk, vgupta@synopsys.com,
-        catalin.marinas@arm.com, will.deacon@arm.com, hskinnemoen@gmail.com,
-        egtvedt@samfundet.no, vapier@gentoo.org, msalter@redhat.com,
-        a-jacquiot@ti.com, starvik@axis.com, jesper.nilsson@axis.com,
-        dhowells@redhat.com, rkuo@codeaurora.org, tony.luck@intel.com,
-        fenghua.yu@intel.com, takata@linux-m32r.org, geert@linux-m68k.org,
-        james.hogan@imgtec.com, monstr@monstr.eu,
-        yasutake.koichi@jp.panasonic.com, ralf@linux-mips.org,
-        jonas@southpole.se, jejb@parisc-linux.org, deller@gmx.de,
-        benh@kernel.crashing.org, paulus@samba.org, schwidefsky@de.ibm.com,
-        heiko.carstens@de.ibm.com, liqin.linux@gmail.com, lennox.wu@gmail.com,
-        lethal@linux-sh.org, cmetcalf@tilera.com, gxt@mprc.pku.edu.cn,
-        linux-xtensa@linux-xtensa.org, akpm@linux-foundation.org,
-        oleg@redhat.com, tj@kernel.org, Richard Weinberger <richard@nod.at>
-Subject: [PATCH 03/29] avr32: Use get_signal() signal_setup_done()
-Date: Tue,  8 Oct 2013 13:27:55 +0200
-Message-Id: <1381231701-4008-4-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1381231701-4008-1-git-send-email-richard@nod.at>
-References: <1381231701-4008-1-git-send-email-richard@nod.at>
+	id S1755580Ab3JHLaU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 07:30:20 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:58286 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755430Ab3JHLaQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 07:30:16 -0400
+X-AuditID: cbfee6a4-b7f956d00000525e-39-5253ecc621a1
+Date: Tue, 08 Oct 2013 11:30:14 +0000 (GMT)
+From: Yuan Zhong <yuan.mark.zhong@samsung.com>
+Subject: Re: [f2fs-dev] [PATCH v2] f2fs: avoid congestion_wait when
+ do_checkpoint for better performance
+To: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>,
+        "linux-f2fs-devel@lists.sourceforge.net" 
+	<linux-f2fs-devel@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        shu tan <shu.tan@samsung.com>
+Reply-to: yuan.mark.zhong@samsung.com
+MIME-version: 1.0
+X-MTR: 20131008111605667@yuan.mark.zhong
+Msgkey: 20131008111605667@yuan.mark.zhong
+X-EPLocale: en_US.windows-1252
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20131008111605667@yuan.mark.zhong
+X-ParentMTR: 
+X-ArchiveUser: 
+X-CPGSPASS: N
+Content-type: text/plain; charset=windows-1252
+MIME-version: 1.0
+Message-id: <30722427.272521381231813403.JavaMail.weblogic@epml26>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFIsWRmVeSWpSXmKPExsVy+t/t6brH3gQHGXRPUbK4vGsOmwOjx+dN
+	cgGMUVw2Kak5mWWpRfp2CVwZM9a9ZCzosKhYtOIjawPjGbMuRk4OIQEtifc/HjKD2BICJhL3
+	O2exQdhiEhfurQeyuYBq5jNKzL59l7GLkYODRUBFYvNiG5AaNgF9iTv79jGC2MICGRIvJy1m
+	BikREdCQeNHoCdLKLLCcSaJv7l8mkLiQgKrE8bWlIOW8AoISJ2c+YYFYpSFxtXMDG0RcU2JR
+	yz6oE+Qklky9zARh80rMaH/KAhOf9nUN1MnSEudnbWCEOXnx98dQcX6JY7d3gK0F6X1yPxhm
+	zO7NX6DGC0hMPXMQqlVXom3OFahVfBJrFr5lgRmz69RyZpje+1vmgtUwCyhKTOl+yA5hG0gc
+	WTSHFd1bvAJOEivmbmGdwCg3C0lqFpL2WUjakdUsYGRZxSiaWpBcUJyUXmGiV5yYW1yal66X
+	nJ+7iREc48+W7GBsuGB9iFGAg1GJhzfjaFCQEGtiWXFl7iFGCQ5mJRHewOfBQUK8KYmVValF
+	+fFFpTmpxYcYpTlYlMR5n7VaBwoJpCeWpGanphakFsFkmTg4pRoYSy4Imme+PmuULux37aID
+	72TjtIyl77592c5QqSu8gk9hFb+Yy5T3c8V7p1gJvgx1l3ywb/KDlSWFx09yJrmGNuzkXrgp
+	4J/GsuP5b2J8S5J79/HWHFkQx9s9Uct+n+8037/caxmOVpQ9O3o4d9oEfh92k5/KZje4ubLC
+	t08vmXW8uTBo5v8yJZbijERDLeai4kQA5Z5ZSe0CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r98BUR9j003295
 
-Use the more generic functions get_signal() signal_setup_done()
-for signal delivery.
+Hi Gu,
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
----
- arch/avr32/kernel/signal.c | 43 ++++++++++++++++++-------------------------
- 1 file changed, 18 insertions(+), 25 deletions(-)
+> Hi Yuan,
+> On 10/08/2013 04:30 PM, Yuan Zhong wrote:
 
-diff --git a/arch/avr32/kernel/signal.c b/arch/avr32/kernel/signal.c
-index b80c0b3..dda150f 100644
---- a/arch/avr32/kernel/signal.c
-+++ b/arch/avr32/kernel/signal.c
-@@ -138,13 +138,12 @@ get_sigframe(struct k_sigaction *ka, struct pt_regs *regs, int framesize)
- }
- 
- static int
--setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
--	       sigset_t *set, struct pt_regs *regs)
-+setup_rt_frame(struct ksignal *ksig, sigset_t *set, struct pt_regs *regs)
- {
- 	struct rt_sigframe __user *frame;
- 	int err = 0;
- 
--	frame = get_sigframe(ka, regs, sizeof(*frame));
-+	frame = get_sigframe(&ksig->ka, regs, sizeof(*frame));
- 	err = -EFAULT;
- 	if (!access_ok(VERIFY_WRITE, frame, sizeof (*frame)))
- 		goto out;
-@@ -164,7 +163,7 @@ setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
- 	err = __put_user(0x3008d733 | (__NR_rt_sigreturn << 20),
- 			 &frame->retcode);
- 
--	err |= copy_siginfo_to_user(&frame->info, info);
-+	err |= copy_siginfo_to_user(&frame->info, &ksig->info);
- 
- 	/* Set up the ucontext */
- 	err |= __put_user(0, &frame->uc.uc_flags);
-@@ -176,12 +175,12 @@ setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
- 	if (err)
- 		goto out;
- 
--	regs->r12 = sig;
-+	regs->r12 = ksig->sig;
- 	regs->r11 = (unsigned long) &frame->info;
- 	regs->r10 = (unsigned long) &frame->uc;
- 	regs->sp = (unsigned long) frame;
--	if (ka->sa.sa_flags & SA_RESTORER)
--		regs->lr = (unsigned long)ka->sa.sa_restorer;
-+	if (ksig->ka.sa.sa_flags & SA_RESTORER)
-+		regs->lr = (unsigned long)ksig->ka.sa.sa_restorer;
- 	else {
- 		printk(KERN_NOTICE "[%s:%d] did not set SA_RESTORER\n",
- 		       current->comm, current->pid);
-@@ -189,10 +188,10 @@ setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
- 	}
- 
- 	pr_debug("SIG deliver [%s:%d]: sig=%d sp=0x%lx pc=0x%lx->0x%p lr=0x%lx\n",
--		 current->comm, current->pid, sig, regs->sp,
--		 regs->pc, ka->sa.sa_handler, regs->lr);
-+		 current->comm, current->pid, ksig->sig, regs->sp,
-+		 regs->pc, ksig->ka.sa.sa_handler, regs->lr);
- 
--	regs->pc = (unsigned long) ka->sa.sa_handler;
-+	regs->pc = (unsigned long)ksig->ka.sa.sa_handler;
- 
- out:
- 	return err;
-@@ -208,15 +207,14 @@ static inline void setup_syscall_restart(struct pt_regs *regs)
- }
- 
- static inline void
--handle_signal(unsigned long sig, struct k_sigaction *ka, siginfo_t *info,
--	      struct pt_regs *regs, int syscall)
-+handle_signal(struct ksignal *ksig, struct pt_regs *regs, int syscall)
- {
- 	int ret;
- 
- 	/*
- 	 * Set up the stack frame
- 	 */
--	ret = setup_rt_frame(sig, ka, info, sigmask_to_save(), regs);
-+	ret = setup_rt_frame(ksig, sigmask_to_save(), regs);
- 
- 	/*
- 	 * Check that the resulting registers are sane
-@@ -226,10 +224,7 @@ handle_signal(unsigned long sig, struct k_sigaction *ka, siginfo_t *info,
- 	/*
- 	 * Block the signal if we were successful.
- 	 */
--	if (ret != 0)
--		force_sigsegv(sig, current);
--	else
--		signal_delivered(sig, info, ka, regs, 0);
-+	signal_setup_done(ret, ksig, 0);
- }
- 
- /*
-@@ -239,9 +234,7 @@ handle_signal(unsigned long sig, struct k_sigaction *ka, siginfo_t *info,
-  */
- static void do_signal(struct pt_regs *regs, int syscall)
- {
--	siginfo_t info;
--	int signr;
--	struct k_sigaction ka;
-+	struct ksignal ksig;
- 
- 	/*
- 	 * We want the common case to go fast, which is why we may in
-@@ -251,18 +244,18 @@ static void do_signal(struct pt_regs *regs, int syscall)
- 	if (!user_mode(regs))
- 		return;
- 
--	signr = get_signal_to_deliver(&info, &ka, regs, NULL);
-+	get_signal(&ksig);
- 	if (syscall) {
- 		switch (regs->r12) {
- 		case -ERESTART_RESTARTBLOCK:
- 		case -ERESTARTNOHAND:
--			if (signr > 0) {
-+			if (ksig.sig > 0) {
- 				regs->r12 = -EINTR;
- 				break;
- 			}
- 			/* fall through */
- 		case -ERESTARTSYS:
--			if (signr > 0 && !(ka.sa.sa_flags & SA_RESTART)) {
-+			if (ksig.sig > 0 && !(ksig.ka.sa.sa_flags & SA_RESTART)) {
- 				regs->r12 = -EINTR;
- 				break;
- 			}
-@@ -272,13 +265,13 @@ static void do_signal(struct pt_regs *regs, int syscall)
- 		}
- 	}
- 
--	if (signr == 0) {
-+	if (!ksig.sig) {
- 		/* No signal to deliver -- put the saved sigmask back */
- 		restore_saved_sigmask();
- 		return;
- 	}
- 
--	handle_signal(signr, &ka, &info, regs, syscall);
-+	handle_signal(&ksig, regs, syscall);
- }
- 
- asmlinkage void do_notify_resume(struct pt_regs *regs, struct thread_info *ti)
--- 
-1.8.1.4
+> > Previously, do_checkpoint() will call congestion_wait() for waiting the pages (previous submitted node/meta/data pages) to be written back.
+> > Because congestion_wait() will set a regular period (e.g. HZ / 50 ) for waiting.
+> > For this reason, there is a situation that after the pages have been written back, 
+> > but the checkpoint thread still wait for congestion_wait to exit.
 
+> How do you confirm this issue? 
+
+  I traced the execution path.
+  In f2fs_end_io_write, dec_page_count(p->sbi, F2FS_WRITEBACK) will be called.
+  And I found that, when pages of F2FS_WRITEBACK has been zero, but
+  checkpoint thread still congestion_wait for pages of F2FS_WRITEBACK to be zero.	
+  So, I think this point could be improved.
+  And I wrote a simple test case and tested on Micro-SD card, the steps as following:
+      (a) create a fixed-size file (4KB)
+      (b) go on to sync the file 
+      (c) go back to step #a (fixed numbers of cycling:1024)	
+   The results indicated that the execution time is reduced greatly by using this patch.  
+
+
+> I suspect that the block-core does not have a wake-up mechanism
+> when the back device is uncongested.
+
+
+  Yes, you are right.
+  So I wake up the checkpoint thread by myself, when pages of F2FS_WRITEBACK to be zero.
+  In f2fs_end_io_write, f2fs_writeback_wait is called.
+  you cloud find this code in my patch. 
+
+
+> > This is a problem here, especially, when sync a large number of small files or dirs.
+> > In order to avoid this, a wait_list is introduced, 
+> > the checkpoint thread will be dropped into the wait_list if the pages have not been written back, 
+> > and will be waked up by contrast.
+
+> Please pay some attention to the mail form, this mail is out of format in my mail client.
+
+> Regards,
+> Gu
+
+Regards,
+Yuan
+
+> > 
+> > Signed-off-by: Yuan Zhong <yuan.mark.zhong@samsung.com>
+> > ---  
+> >  fs/f2fs/checkpoint.c |    3 +--
+> >  fs/f2fs/f2fs.h       |   19 +++++++++++++++++++
+> >  fs/f2fs/segment.c    |    1 +
+> >  fs/f2fs/super.c      |    1 +
+> >  4 files changed, 22 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
+> > index ca39442..5d69ae0 100644
+> > --- a/fs/f2fs/checkpoint.c
+> > +++ b/fs/f2fs/checkpoint.c
+> > @@ -758,8 +758,7 @@ static void do_checkpoint(struct f2fs_sb_info *sbi, bool is_umount)
+> >  	f2fs_put_page(cp_page, 1);
+> >  
+> >  	/* wait for previous submitted node/meta pages writeback */
+> > -	while (get_pages(sbi, F2FS_WRITEBACK))
+> > -		congestion_wait(BLK_RW_ASYNC, HZ / 50);
+> > +	f2fs_writeback_wait(sbi);
+> >  
+> >  	filemap_fdatawait_range(sbi->node_inode->i_mapping, 0, LONG_MAX);
+> >  	filemap_fdatawait_range(sbi->meta_inode->i_mapping, 0, LONG_MAX);
+> > diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+> > index 7fd99d8..4b0d70e 100644
+> > --- a/fs/f2fs/f2fs.h
+> > +++ b/fs/f2fs/f2fs.h
+> > @@ -18,6 +18,8 @@
+> >  #include <linux/crc32.h>
+> >  #include <linux/magic.h>
+> >  #include <linux/kobject.h>
+> > +#include <linux/wait.h>
+> > +#include <linux/sched.h>
+> >  
+> >  /*
+> >   * For mount options
+> > @@ -368,6 +370,7 @@ struct f2fs_sb_info {
+> >  	struct mutex fs_lock[NR_GLOBAL_LOCKS];	/* blocking FS operations */
+> >  	struct mutex node_write;		/* locking node writes */
+> >  	struct mutex writepages;		/* mutex for writepages() */
+> > +	wait_queue_head_t writeback_wqh;	/* wait_queue for writeback */
+> >  	unsigned char next_lock_num;		/* round-robin global locks */
+> >  	int por_doing;				/* recovery is doing or not */
+> >  	int on_build_free_nids;			/* build_free_nids is doing */
+> > @@ -961,6 +964,22 @@ static inline int f2fs_readonly(struct super_block *sb)
+> >  	return sb->s_flags & MS_RDONLY;
+> >  }
+> >  
+> > +static inline void f2fs_writeback_wait(struct f2fs_sb_info *sbi)
+> > +{
+> > +	DEFINE_WAIT(wait);
+> > +
+> > +	prepare_to_wait(&sbi->writeback_wqh, &wait, TASK_UNINTERRUPTIBLE);
+> > +	if (get_pages(sbi, F2FS_WRITEBACK))
+> > +		io_schedule();
+> > +	finish_wait(&sbi->writeback_wqh, &wait);
+> > +}
+> > +
+> > +static inline void f2fs_writeback_wake(struct f2fs_sb_info *sbi)
+> > +{
+> > +	if (!get_pages(sbi, F2FS_WRITEBACK))
+> > +		wake_up_all(&sbi->writeback_wqh);
+> > +}
+> > +
+> >  /*
+> >   * file.c
+> >   */
+> > diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+> > index bd79bbe..0708aa9 100644
+> > --- a/fs/f2fs/segment.c
+> > +++ b/fs/f2fs/segment.c
+> > @@ -597,6 +597,7 @@ static void f2fs_end_io_write(struct bio *bio, int err)
+> >  
+> >  	if (p->is_sync)
+> >  		complete(p->wait);
+> > +	f2fs_writeback_wake(p->sbi);
+> >  	kfree(p);
+> >  	bio_put(bio);
+> >  }
+> > diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
+> > index 094ccc6..3ac6d85 100644
+> > --- a/fs/f2fs/super.c
+> > +++ b/fs/f2fs/super.c
+> > @@ -835,6 +835,7 @@ static int f2fs_fill_super(struct super_block *sb, void *data, int silent)
+> >  	mutex_init(&sbi->gc_mutex);
+> >  	mutex_init(&sbi->writepages);
+> >  	mutex_init(&sbi->cp_mutex);
+> > +	init_waitqueue_head(&sbi->writeback_wqh);
+> >  	for (i = 0; i < NR_GLOBAL_LOCKS; i++)
+> >  		mutex_init(&sbi->fs_lock[i]);
+> >  	mutex_init(&sbi->node_write);ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
