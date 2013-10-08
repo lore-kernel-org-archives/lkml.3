@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753845Ab3JHAYF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 20:24:05 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:40984 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751591Ab3JHAYC (ORCPT
+	id S1753610Ab3JHA1A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 20:27:00 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:46511 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751696Ab3JHA07 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 20:24:02 -0400
-Message-ID: <52535098.70405@gmail.com>
-Date: Tue, 08 Oct 2013 11:23:52 +1100
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Mon, 7 Oct 2013 20:26:59 -0400
+Message-ID: <52535151.2000508@codeaurora.org>
+Date: Mon, 07 Oct 2013 17:26:57 -0700
+From: Rohit Vaswani <rvaswani@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Janani Venkataraman <jananive@in.ibm.com>, linux-kernel@vger.kernel.org
-CC: amwang@redhat.com, rdunlap@xenotime.net, andi@firstfloor.org,
-        aravinda@linux.vnet.ibm.com, hch@lst.de, mhiramat@redhat.com,
-        jeremy.fitzhardinge@citrix.com, xemul@parallels.com,
-        suzuki@linux.vnet.ibm.com, kosaki.motohiro@jp.fujitsu.com,
-        adobriyan@gmail.com, tarundsk@linux.vnet.ibm.com, vapier@gentoo.org,
-        roland@hack.frob.com, tj@kernel.org, ananth@linux.vnet.ibm.com,
-        gorcunov@openvz.org, avagin@openvz.org, oleg@redhat.com,
-        eparis@redhat.com, d.hatayama@jp.fujitsu.com, james.hogan@imgtec.com,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org
-Subject: Re: [PATCH 02/19] Make vma_dump_size() generic
-References: <20131004102532.1612.24185.stgit@f19-x64> <20131004103043.1612.56980.stgit@f19-x64>
-In-Reply-To: <20131004103043.1612.56980.stgit@f19-x64>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Olof Johansson <olof@lixom.net>
+CC: linux-arm-msm@vger.kernel.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: Re: Use of drivers/platform and matching include?
+References: <BC1C47B3-5412-4829-A1D9-AAB04694D1CC@codeaurora.org> <CAOesGMjJ6Uj0uGFJqtnWQyDW+tr6eLVWoHZ+B7uFna+L8N6E8Q@mail.gmail.com> <20131004114128.GL12758@n2100.arm.linux.org.uk> <20131004132209.GB23923@kroah.com> <CAOesGMjxwmr0Vo0Puc-nZntgXLy6D1PTohz=C+fFukP_Eu1iQg@mail.gmail.com> <20131005171323.GB5780@kroah.com>
+In-Reply-To: <20131005171323.GB5780@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/10/13 20:30, Janani Venkataraman wrote:
-> From:Suzuki K. Poulose <suzuki@in.ibm.com>
-> 
-> vma_dump_size calculates the file size of a vma area in the core file. It
-> assumes the vma belongs to the "current". Make it generic to work for any task.
-> This will be reused by application core dump infrastructure.
-> 
-> Signed-off-by: Suzuki K. Poulose <suzuki@in.ibm.com>
-> ---
+On 10/5/2013 10:13 AM, Greg Kroah-Hartman wrote:
+> On Fri, Oct 04, 2013 at 09:48:41AM -0700, Olof Johansson wrote:
+>> On Fri, Oct 4, 2013 at 6:22 AM, Greg Kroah-Hartman
+>> <gregkh@linuxfoundation.org> wrote:
+>>> On Fri, Oct 04, 2013 at 12:41:28PM +0100, Russell King - ARM Linux wrote:
+>>>> So, no, there will be no new drivers under arch/arm.  They must be in the
+>>>> drivers subtree somewhere.
+>>> I have no objection with this, and encourage it.
+>> Ok, so these are some of the requirements as far as I see it:
+>>
+>> * No per-vendor driver dumping ground under drivers/* (i.e. no
+>> drivers/platform/<soc vendor>/)
+> Yes.
 
-> -static unsigned long vma_dump_size(struct vm_area_struct *vma,
-> +unsigned long vma_dump_size(struct task_struct *p, struct vm_area_struct *vma,
->  					unsigned long mm_flags)
->  {
->  #define FILTER(type)    (mm_flags & (1UL << MMF_DUMP_##type))
-> @@ -143,10 +143,18 @@ static unsigned long vma_dump_size(struct vm_area_struct *vma,
->  		 * Switch to the user "segment" for get_user(),
->  		 * then put back what elf_core_dump() had in place.
->  		 */
-> -		set_fs(USER_DS);
-> - 		if (unlikely(get_user(word, header)))
-> - 			word = 0;
-> -		set_fs(fs);
-> +		if (p->mm == current->mm) {
-> +			mm_segment_t fs = get_fs();
+We agree that there is no need for a dump *all* drivers under 
+arm/mach-foo in drivers/platform/foo/. The msm bus driver would be added 
+under drivers/bus/. But, we still have some drivers which are quite SoC 
+specific and not in the general category of the sub-directories present 
+under drivers.
+As Kumar mentioned earlier -
 
-It looks like you missed the removal of the old:
+An example driver would be the means we utilize to communicate memory regions between various HW blocks on the SoC.  So a video/media core driver might need access to a header/functions from the memory region driver.
 
-	mm_segment_t fs = get_fs();
+Would drivers/misc/qcom-* or drivers/misc/qcom/* be a reasonable place to add them ? and the headers could go into include/linux/qcom-*.h
 
-above? Just below if (FILTER(ELF_HEADERS)).
+<snip>
 
-~Ryan
+Thanks,
+Rohit Vaswani
+
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum, hosted by The Linux Foundation
+
