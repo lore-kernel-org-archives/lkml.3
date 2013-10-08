@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756904Ab3JHUhx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 16:37:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48955 "EHLO mx1.redhat.com"
+	id S1756934Ab3JHUiU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 16:38:20 -0400
+Received: from sauhun.de ([89.238.76.85]:52207 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751896Ab3JHUhs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 16:37:48 -0400
-From: Mark Salter <msalter@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Mark Salter <msalter@redhat.com>
-Subject: [PATCH] arm64: add PAGE_ALIGNED_DATA to linker script
-Date: Tue,  8 Oct 2013 16:37:39 -0400
-Message-Id: <1381264659-11132-1-git-send-email-msalter@redhat.com>
+	id S1756716Ab3JHUfy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 16:35:54 -0400
+From: Wolfram Sang <wsa@the-dreams.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Wolfram Sang <wsa@the-dreams.de>, Marek Vasut <marex@denx.de>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 3/9] i2c: i2c-mxs: replace platform_driver_probe to support deferred probing
+Date: Tue,  8 Oct 2013 22:35:35 +0200
+Message-Id: <1381264542-29396-4-git-send-email-wsa@the-dreams.de>
+X-Mailer: git-send-email 1.8.4.rc3
+In-Reply-To: <1381264542-29396-1-git-send-email-wsa@the-dreams.de>
+References: <1381264542-29396-1-git-send-email-wsa@the-dreams.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The arm64 linker script doesn't use the PAGE_ALIGNED_DATA macro which
-leads to a ".data..page_aligned" section being placed between the end
-of .data and start of .bss:
+Subsystems like pinctrl and gpio rightfully make use of deferred probing at
+core level. Now, deferred drivers won't be retried if they don't have a .probe
+function specified in the driver struct. Fix this driver to have that, so the
+devices it supports won't get lost in a deferred probe.
 
- % readelf -e vmlinux
-   ...
- Section to Segment mapping:
-  Segment Sections...
-   00     .head.text .text .text.init .rodata __ksymtab __ksymtab_gpl \
-          __ksymtab_strings __param __modver __ex_table .notes \
-          .init.text .init.data .data..percpu .data .data..page_aligned .bss
-
-This causes problems for the EFI stub which may have to relocate the
-kernel image based on stext and _edata symbols.
-
-This patch adds PAGE_ALIGNED_DATA() to the linker script inside the
-the .data section.
-
-Signed-off-by: Mark Salter <msalter@redhat.com>
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Cc: Marek Vasut <marex@denx.de>
 ---
- arch/arm64/kernel/vmlinux.lds.S | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/i2c/busses/i2c-mxs.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm64/kernel/vmlinux.lds.S b/arch/arm64/kernel/vmlinux.lds.S
-index f8ab9d8..e441556 100644
---- a/arch/arm64/kernel/vmlinux.lds.S
-+++ b/arch/arm64/kernel/vmlinux.lds.S
-@@ -110,6 +110,7 @@ SECTIONS
- 		 */
- 		INIT_TASK_DATA(THREAD_SIZE)
- 		NOSAVE_DATA
-+		PAGE_ALIGNED_DATA(PAGE_SIZE)
- 		CACHELINE_ALIGNED_DATA(64)
- 		READ_MOSTLY_DATA(64)
+diff --git a/drivers/i2c/busses/i2c-mxs.c b/drivers/i2c/busses/i2c-mxs.c
+index f4a0167..b7c8577 100644
+--- a/drivers/i2c/busses/i2c-mxs.c
++++ b/drivers/i2c/busses/i2c-mxs.c
+@@ -780,12 +780,13 @@ static struct platform_driver mxs_i2c_driver = {
+ 		   .owner = THIS_MODULE,
+ 		   .of_match_table = mxs_i2c_dt_ids,
+ 		   },
++	.probe = mxs_i2c_probe,
+ 	.remove = mxs_i2c_remove,
+ };
+ 
+ static int __init mxs_i2c_init(void)
+ {
+-	return platform_driver_probe(&mxs_i2c_driver, mxs_i2c_probe);
++	return platform_driver_register(&mxs_i2c_driver);
+ }
+ subsys_initcall(mxs_i2c_init);
  
 -- 
-1.8.3.1
+1.8.4.rc3
 
