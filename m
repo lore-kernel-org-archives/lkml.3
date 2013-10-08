@@ -1,44 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756660Ab3JHQqX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 12:46:23 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:54826 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756531Ab3JHQqS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 12:46:18 -0400
-Message-ID: <525436D5.8010707@wwwdotorg.org>
-Date: Tue, 08 Oct 2013 10:46:13 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1756707Ab3JHQrH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 12:47:07 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:43550 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756676Ab3JHQrE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 12:47:04 -0400
+Date: Tue, 8 Oct 2013 18:47:02 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: X86 ML <x86@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Matt Fleming <matt@console-pimps.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Dave Young <dyoung@redhat.com>,
+        linux-efi@vger.kernel.org, fwts-devel@lists.ubuntu.com
+Subject: [PATCH 11/12] efi: Add an efi= kernel command line parameter
+Message-ID: <20131008164701.GC16793@pd.tnic>
+References: <1379602494-26684-1-git-send-email-bp@alien8.de>
+ <20131008164551.GB16793@pd.tnic>
 MIME-Version: 1.0
-To: Arto Merilainen <amerilainen@nvidia.com>, tbergstrom@nvidia.com,
-        treding@nvidia.com
-CC: dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mkulkarni@nvidia.com
-Subject: Re: [PATCHv4 0/5] gpu: host1x: Add runtime pm support
-References: <1381213648-5931-1-git-send-email-amerilainen@nvidia.com>
-In-Reply-To: <1381213648-5931-1-git-send-email-amerilainen@nvidia.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20131008164551.GB16793@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/08/2013 12:27 AM, Arto Merilainen wrote:
-> This series adds runtime pm support for host1x, gr2d and dc. It retains the
-> current behaviour if CONFIG_PM_RUNTIME is not enabled.
-> 
-> The gr2d clock is enabled when a new job is submitted and disabled when
-> the work is done. Due to parent->child relations between host1x->gr2d, this
-> scheme enables and disables host1x clock.
-> 
-> For dc, the clocks are enabled in .probe and disabled in .remove via runtime
-> pm instead of direct clock APIs.
-> 
-> Mayuresh is unfortunately not available to continue with the series and hence
-> I will continue working on the patches.
+From: Borislav Petkov <bp@suse.de>
 
-The series, briefly,
-Reviewed-by: Stephen Warren <swarren@nvidia.com>
+... for passing miscellaneous options and chicken bits from the command
+line.
+
+Signed-off-by: Borislav Petkov <bp@suse.de>
+---
+ arch/x86/platform/efi/efi.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index 538c1e6b7b2c..16996aba5012 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -1113,3 +1113,12 @@ efi_status_t efi_query_variable_store(u32 attributes, unsigned long size)
+ 	return EFI_SUCCESS;
+ }
+ EXPORT_SYMBOL_GPL(efi_query_variable_store);
++
++static int __init parse_efi_cmdline(char *str)
++{
++	if (*str == '=')
++		str++;
++
++	return 0;
++}
++early_param("efi", parse_efi_cmdline);
+-- 
+1.8.4
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
