@@ -1,87 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755055Ab3JHH6V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 03:58:21 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:54903 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751914Ab3JHH6U (ORCPT
+	id S1755116Ab3JHH6p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 03:58:45 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:42596 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754794Ab3JHH6n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 03:58:20 -0400
-Date: Tue, 8 Oct 2013 09:58:16 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Fengguang Wu <fengguang.wu@intel.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        xen-devel@lists.xenproject.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [xen] double fault: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-Message-ID: <20131008075816.GA6346@gmail.com>
-References: <20131006082340.GA24568@localhost>
- <CA+55aFxk2FoG7+BpHJAysR2bz-WQXpje6buMd8Sp6-SBqHexZg@mail.gmail.com>
- <20131007021118.GA27927@localhost>
- <20131007051038.GA9764@localhost>
- <CA+55aFz85in-ntjF_VT4=kBoUrw1m8ON7xL-=431vQKL5oCMxQ@mail.gmail.com>
- <20131007083505.GA22585@localhost>
- <CA+55aFzknXawREZRBrr0Hs+crKt62fPf+S8SubJHXk84U8AFaw@mail.gmail.com>
+	Tue, 8 Oct 2013 03:58:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzknXawREZRBrr0Hs+crKt62fPf+S8SubJHXk84U8AFaw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5253B2BE.5090209@samsung.com>
+References: <1380894598-11242-1-git-send-email-ricardo.ribalda@gmail.com> <5253B2BE.5090209@samsung.com>
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Date: Tue, 8 Oct 2013 09:58:23 +0200
+Message-ID: <CAPybu_0-b2BfuTVd09B4dreFHCsYSg=SjjrDCHXKrqNGzFSX2w@mail.gmail.com>
+Subject: Re: [PATCH] vb2: Allow STREAMOFF for io emulator
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: Pawel Osciak <pawel@osciak.com>, Kyungmin Park <kyungmin.park@samsung.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        linux-media <linux-media@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Marek
 
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+Thanks for your comments. I was just trying to find a way to stop
+streaming while in read/write mode without having to close the
+descriptor. I thought reusing streamoff was more clever than creating
+a new ioctl.
 
-> On Mon, Oct 7, 2013 at 1:35 AM, Fengguang Wu <fengguang.wu@intel.com> wrote:
-> > On Mon, Oct 07, 2013 at 01:12:17AM -0700, Linus Torvalds wrote:
-> >
-> > My pleasure! Here are 100 randomly selected call traces. Also attached
-> > several full dmesgs and the kconfig.
-> 
-> Ok, they may be randomly selected, but they are all the same. Which is
-> good, I guess, we're only talking about one bug.
-> 
-> Anyway, they all have RIP:run_timer_softirq+0x12c/0x1b8, and the code is
-> 
->    0: 8b 65 c8             mov    -0x38(%rbp),%esp
->    3: 4d 39 ec             cmp    %r13,%r12
->    6: 0f 84 2f ff ff ff     je     0xffffffffffffff3b
->    c: 41 8b 4c 24 18       mov    0x18(%r12),%ecx
->   11: 4d 8b 74 24 20       mov    0x20(%r12),%r14
->   16: 4d 8b 7c 24 28       mov    0x28(%r12),%r15
->   1b: 4c 89 63 38           mov    %r12,0x38(%rbx)
->   1f: 49 8b 44 24 08       mov    0x8(%r12),%rax
->   24: 49 8b 14 24           mov    (%r12),%rdx
->   28: 83 e1 02             and    $0x2,%ecx
->   2b:* 48 89 42 08           mov    %rax,0x8(%rdx) <-- trapping instruction
->   2f: 48 89 10             mov    %rdx,(%rax)
->   32: 48 b8 00 02 20 00 00 movabs $0xdead000000200200,%rax
-> 
-> where that constant is LIST_POISON2 and the "and $2" seems to be 
-> TIMER_IRQSAFE. So the trapping instruction *looks* like it's doing 
-> __list_del() on the timer, and timer->next is NULL.
-> 
-> So somebody added a timer, and then deallocated/cleared the structure 
-> before it triggered. The problem is, I can't see a way to figure out 
-> _who_ did that.
+Thanks!
 
-I think CONFIG_DEBUG_OBJECTS_TIMERS=y should be able to detect that?
+On Tue, Oct 8, 2013 at 9:22 AM, Marek Szyprowski
+<m.szyprowski@samsung.com> wrote:
+> Hello,
+>
+>
+> On 2013-10-04 15:49, Ricardo Ribalda Delgado wrote:
+>>
+>> A video device opened and streaming in io emulator mode can only stop
+>> streamming if its file descriptor is closed.
+>>
+>> There are some parameters that can only be changed if the device is not
+>> streaming. Also, the power consumption of a device streaming could be
+>> different than one not streaming.
+>>
+>> With this patch a video device opened in io emulator can be stopped on
+>> demand.
+>>
+>> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+>
+>
+> Read/write-based io mode must not be mixed with ioctrl-based IO, so I really
+> cannot accept this patch. Check V4L2 documentation for more details.
+>
+>
+>> ---
+>>   drivers/media/v4l2-core/videobuf2-core.c | 11 ++++++-----
+>>   1 file changed, 6 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/drivers/media/v4l2-core/videobuf2-core.c
+>> b/drivers/media/v4l2-core/videobuf2-core.c
+>> index 9fc4bab..097fba8 100644
+>> --- a/drivers/media/v4l2-core/videobuf2-core.c
+>> +++ b/drivers/media/v4l2-core/videobuf2-core.c
+>> @@ -1686,6 +1686,7 @@ int vb2_streamon(struct vb2_queue *q, enum
+>> v4l2_buf_type type)
+>>   }
+>>   EXPORT_SYMBOL_GPL(vb2_streamon);
+>>   +static int __vb2_cleanup_fileio(struct vb2_queue *q);
+>>     /**
+>>    * vb2_streamoff - stop streaming
+>> @@ -1704,11 +1705,6 @@ EXPORT_SYMBOL_GPL(vb2_streamon);
+>>    */
+>>   int vb2_streamoff(struct vb2_queue *q, enum v4l2_buf_type type)
+>>   {
+>> -       if (q->fileio) {
+>> -               dprintk(1, "streamoff: file io in progress\n");
+>> -               return -EBUSY;
+>> -       }
+>> -
+>>         if (type != q->type) {
+>>                 dprintk(1, "streamoff: invalid stream type\n");
+>>                 return -EINVAL;
+>> @@ -1719,6 +1715,11 @@ int vb2_streamoff(struct vb2_queue *q, enum
+>> v4l2_buf_type type)
+>>                 return -EINVAL;
+>>         }
+>>   +     if (q->fileio) {
+>> +               __vb2_cleanup_fileio(q);
+>> +               return 0;
+>> +       }
+>> +
+>>         /*
+>>          * Cancel will pause streaming and remove all buffers from the
+>> driver
+>>          * and videobuf, effectively returning control over them to
+>> userspace.
+>
+>
+> Best regards
+> --
+> Marek Szyprowski
+> Samsung R&D Institute Poland
+>
 
-Debugobjects hooks into deallocation paths and complains immediately if a 
-live timer is zapped that way.
 
-If the corrupion does not involve deallocation then it might be more 
-difficult to detect but not impossible either: for example if an object is 
-not freed but reused incorrectly then a repeat use of any timer function 
-will cause the debugobjects (and/or the timer code) to complain.
 
-So I'd suggest trying debugobjects, it should catch a fair number of 
-non-exotic object corruption patterns.
-
-Thanks,
-
-	Ingo
+-- 
+Ricardo Ribalda
