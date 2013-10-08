@@ -1,124 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755848Ab3JHQdU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 12:33:20 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:37151 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752091Ab3JHQdR (ORCPT
+	id S1756263Ab3JHQdc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 12:33:32 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:34420 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754840Ab3JHQd1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 12:33:17 -0400
-Date: Tue, 8 Oct 2013 09:32:58 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/6] rcusync: Introduce rcu_sync_dtor()
-Message-ID: <20131008163258.GA5790@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20131008102505.404025673@infradead.org>
- <20131008103830.403651548@infradead.org>
+	Tue, 8 Oct 2013 12:33:27 -0400
+Message-ID: <525433D3.2090906@free-electrons.com>
+Date: Tue, 08 Oct 2013 18:33:23 +0200
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131008103830.403651548@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13100816-9332-0000-0000-000001B07D59
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+CC: Mark Rutland <mark.rutland@arm.com>, Jason Cooper <jason@lakedaemon.net>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/8] ARM: l2x0: add Marvell Tauros3 compatible
+References: <1381235073-17134-1-git-send-email-sebastian.hesselbarth@gmail.com> <1381235073-17134-4-git-send-email-sebastian.hesselbarth@gmail.com> <20131008134100.GD1412@e106331-lin.cambridge.arm.com> <52542D64.5010800@gmail.com>
+In-Reply-To: <52542D64.5010800@gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 08, 2013 at 12:25:11PM +0200, Peter Zijlstra wrote:
-> From: Oleg Nesterov <oleg@redhat.com>
+On 08/10/2013 18:05, Sebastian Hesselbarth wrote:
+> On 10/08/2013 03:41 PM, Mark Rutland wrote:
+>> On Tue, Oct 08, 2013 at 01:24:28PM +0100, Sebastian Hesselbarth wrote:
+>>> This add a compatible for the Marvell Tauros3 cache controller which
+>>> is compatible with l2x0 cache controllers. While updating the binding
+>>> documentation, clean up the list of possible compatibles.
+>>>
+>>> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+>>> ---
+> [...]
+>>> diff --git a/Documentation/devicetree/bindings/arm/l2cc.txt b/Documentation/devicetree/bindings/arm/l2cc.txt
+>>> index c0c7626..a1d0cbd 100644
+>>> --- a/Documentation/devicetree/bindings/arm/l2cc.txt
+>>> +++ b/Documentation/devicetree/bindings/arm/l2cc.txt
+>>> @@ -7,20 +7,20 @@ The ARM L2 cache representation in the device tree should be done as follows:
+>>>   Required properties:
+>>>
+>>>   - compatible : should be one of:
+>>> -	"arm,pl310-cache"
+>>> -	"arm,l220-cache"
+>>> -	"arm,l210-cache"
+>>> -	"marvell,aurora-system-cache": Marvell Controller designed to be
+>>> +  "arm,pl310-cache"
+>>> +  "arm,l220-cache"
+>>> +  "arm,l210-cache"
+>>> +  "bcm,bcm11351-a2-pl310-cache": DEPRECATED by "brcm,bcm11351-a2-pl310-cache"
+>>> +  "brcm,bcm11351-a2-pl310-cache": For Broadcom bcm11351 chipset where an
+>>> +     offset needs to be added to the address before passing down to the L2
+>>> +     cache controller
+>>> +  "marvell,aurora-system-cache": Marvell Controller designed to be
+>>>        compatible with the ARM one, with system cache mode (meaning
+>>>        maintenance operations on L1 are broadcasted to the L2 and L2
+>>>        performs the same operation).
+>>> -	"marvell,"aurora-outer-cache: Marvell Controller designed to be
+>>> -	 compatible with the ARM one with outer cache mode.
+>>> -	"brcm,bcm11351-a2-pl310-cache": For Broadcom bcm11351 chipset where an
+>>> -	offset needs to be added to the address before passing down to the L2
+>>> -	cache controller
+>>> -	"bcm,bcm11351-a2-pl310-cache": DEPRECATED by
+>>> -	                               "brcm,bcm11351-a2-pl310-cache"
+>>> +  "marvell,aurora-outer-cache": Marvell Controller designed to be
+>>> +     compatible with the ARM one with outer cache mode.
+>>> +  "marvell,tauros3-cache": Marvell Tauros3 cache controller.
+>>
+>> How does the tauros3 cache differ from the other caches supported by the
+>> l2x0 driver?
 > 
-> Add the new rcu_sync_ops->wait() method and the new helper,
-> rcu_sync_dtor().
+> [added Gregory to Cc]
 > 
-> It is needed if you are going to, say, kfree(rcu_sync_object).
-> It simply calls ops->wait() to "flush" the potentially pending
-> rcu callback.
+> Good question. I cannot say at this time. I would have guessed that l2cc
+> on Armada 1500 and Armada 370/XP are more or less the same, as both use
+> Marvell's PJ4B CPU. Maybe, Gregory or Thomas can shed some light into
+> this.
 > 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+>>>   - cache-unified : Specifies the cache is a unified cache.
+>>>   - cache-level : Should be set to 2 for a level 2 cache.
+>>>   - reg : Physical base address and size of cache controller's memory mapped
+>>> diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
+>>> index 447da6f..90c776e 100644
+>>> --- a/arch/arm/mm/cache-l2x0.c
+>>> +++ b/arch/arm/mm/cache-l2x0.c
+>>> @@ -929,6 +929,7 @@ static const struct of_device_id l2x0_ids[] __initconst = {
+>>>   	  .data = (void *)&aurora_no_outer_data},
+>>>   	{ .compatible = "marvell,aurora-outer-cache",
+>>>   	  .data = (void *)&aurora_with_outer_data},
+>>> +	{ .compatible = "marvell,tauros3-cache", .data = (void *)&l2x0_data },
+>>
+>> Are we intending to handle this differently later?
+>>
+>> Or is it 100% compatible with the pl210 or pl220? We could just require
+>> an entry later in the compatible string list instead...
+> 
+> No public documentation, no clear answer.
+> 
+> Tauros3 isn't 100% compatible with any of the ARM l2cc above, it has
+> additional "features" or "bugs" - call it whatever you want.
+> 
+> I am not an l2cc expert, but basically I see two options:
+> a) use (possibly) wrong existing compatible in current mv88de3100.dtsi
+>     now and fix later.
+> b) add tauros3 compatible now and add (possible) quirks/marvell-specific
+>     properties later.
+> 
+> IMHO b) is very likely to happen as l2x0_of_init in patch 8/8 already 
+> sets bits, I wasn't able to verify in public ARM l2cc docu.
 
-Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+I agree with Sebastian. I don't have more information that Sebastian, but
+as it is definitely a different controller of the ones from ARM, it should
+have its own compatible string. Then latter when we will discover new feature
+and/or bugs, we will be able to manage them without requiring people to update
+their dtb. If I understood well it is the philosophy behind the device tree.
 
-> Link: http://lkml.kernel.org/r/20131004184636.GA17560@redhat.com
-> ---
->  include/linux/rcusync.h |    1 +
->  kernel/rcusync.c        |   22 ++++++++++++++++++++++
->  2 files changed, 23 insertions(+)
+Regards,
+
 > 
-> --- a/include/linux/rcusync.h
-> +++ b/include/linux/rcusync.h
-> @@ -31,6 +31,7 @@ static inline bool rcu_sync_is_idle(stru
->  extern void rcu_sync_init(struct rcu_sync_struct *, enum rcu_sync_type);
->  extern void rcu_sync_enter(struct rcu_sync_struct *);
->  extern void rcu_sync_exit(struct rcu_sync_struct *);
-> +extern void rcu_sync_dtor(struct rcu_sync_struct *);
+> But again, I am very open for suggestions here.
 > 
->  #define __RCU_SYNC_INITIALIZER(name, type) {				\
->  		.gp_state = 0,						\
-> --- a/kernel/rcusync.c
-> +++ b/kernel/rcusync.c
-> @@ -10,6 +10,7 @@
->  static const struct {
->  	void (*sync)(void);
->  	void (*call)(struct rcu_head *, void (*)(struct rcu_head *));
-> +	void (*wait)(void);
->  #ifdef CONFIG_PROVE_RCU
->  	int  (*held)(void);
->  #endif
-> @@ -17,16 +18,19 @@ static const struct {
->  	[RCU_SYNC] = {
->  		.sync = synchronize_rcu,
->  		.call = call_rcu,
-> +		.wait = rcu_barrier,
->  		__INIT_HELD(rcu_read_lock_held)
->  	},
->  	[RCU_SCHED_SYNC] = {
->  		.sync = synchronize_sched,
->  		.call = call_rcu_sched,
-> +		.wait = rcu_barrier_sched,
->  		__INIT_HELD(rcu_read_lock_sched_held)
->  	},
->  	[RCU_BH_SYNC] = {
->  		.sync = synchronize_rcu_bh,
->  		.call = call_rcu_bh,
-> +		.wait = rcu_barrier_bh,
->  		__INIT_HELD(rcu_read_lock_bh_held)
->  	},
->  };
-> @@ -128,3 +132,21 @@ void rcu_sync_exit(struct rcu_sync_struc
->  	}
->  	spin_unlock_irq(&rss->rss_lock);
->  }
-> +
-> +void rcu_sync_dtor(struct rcu_sync_struct *rss)
-> +{
-> +	int cb_state;
-> +
-> +	BUG_ON(rss->gp_count);
-> +
-> +	spin_lock_irq(&rss->rss_lock);
-> +	if (rss->cb_state == CB_REPLAY)
-> +		rss->cb_state = CB_PENDING;
-> +	cb_state = rss->cb_state;
-> +	spin_unlock_irq(&rss->rss_lock);
-> +
-> +	if (cb_state != CB_IDLE) {
-> +		gp_ops[rss->gp_type].wait();
-> +		BUG_ON(rss->cb_state != CB_IDLE);
-> +	}
-> +}
-> 
+> Sebastian
 > 
 
+
+-- 
+Gregory Clement, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
