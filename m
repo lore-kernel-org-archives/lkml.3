@@ -1,77 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754853Ab3JHIXv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 04:23:51 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:36713 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751894Ab3JHIXr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 04:23:47 -0400
-Date: Tue, 8 Oct 2013 10:23:44 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 31/50] tools/perf/build: Speed up auto-detection of
- features by adding a 'test-all' target
-Message-ID: <20131008082344.GB7232@gmail.com>
-References: <1381147003-2574-1-git-send-email-mingo@kernel.org>
- <1381147003-2574-32-git-send-email-mingo@kernel.org>
- <20131007212731.GC2900@krava.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131007212731.GC2900@krava.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754936Ab3JHIYH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 04:24:07 -0400
+Received: from 7of9.schinagl.nl ([88.159.158.68]:56916 "EHLO 7of9.schinagl.nl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751804Ab3JHIYF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 04:24:05 -0400
+From: oliver+list@schinagl.nl
+To: rob.herring@calxeda.com, maxime.ripard@free-electrons.com,
+        oliver@schinagl.nl, pawel.moll@arm.com, swarren@wwwdotorg.org,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        linux@arm.linux.org.uk
+Cc: devicetree@vger.kernel.org, dev@linux-sunxi.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] ARM: sunxi: dts: Add support for the cubieboard3, the CubieTruck
+Date: Tue,  8 Oct 2013 10:22:32 +0200
+Message-Id: <1381220552-3123-1-git-send-email-oliver+list@schinagl.nl>
+X-Mailer: git-send-email 1.8.1.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Oliver Schinagl <oliver@schinagl.nl>
 
-* Jiri Olsa <jolsa@redhat.com> wrote:
+Cubietech introduced a new cubieboard, the CubieTruck. This board added
+more output connectors and features 2 GiB of RAM and a Gigabit PHY.
 
-> On Mon, Oct 07, 2013 at 01:56:24PM +0200, Ingo Molnar wrote:
-> 
-> SNIP
-> 
-> > +
-> > +#
-> > +# Print the result of the feature test:
-> > +#
-> > +define feature_print_code
-> > +  ifeq ($(feature-$(1)), 1)
-> > +    MSG := $(shell printf '...%30s: [ \033[32mon\033[m  ]' $(1))
-> > +  else
-> > +    MSG := $(shell printf '...%30s: [ \033[31mOFF\033[m ]' $(1))
-> > +  endif
-> > +  $(info $(MSG))
-> > +endef
-> > +
-> > +$(foreach feat,$(FEATURE_TESTS) DUMMY,$(call feature_print,$(feat)))
-> > +
-> > +# newline at the end of the feature printouts:
-> > +$(info )
-> >  
-> > -ifeq ($(stackprotector-all), 1)
-> > +ifeq ($(feature-stackprotector-all), 1)
-> >    CFLAGS += -fstack-protector-all
-> >  endif
-> 
-> nit, belongs to:
->   tools/perf/build: Split out feature check: 'stackprotector-all'
+Tested are are uart0 and LEDS which both work as expected.
 
-Indeed, fixed.
+Signed-off-by: Oliver Schinagl <oliver@schinagl.nl>
+---
+Changes since previous version:
 
-I also fixed the next hunk:
-
-> ifndef NO_BIONIC
->+  $(feature_check,bionic)
->   ifeq ($(feature-bionic), 1)
->     BIONIC := 1
-
-Which was misplaced as well.
+* It's a cubietruck, not a cubietech
+* add more whitespaces
+* add proper commit log
 
 Thanks,
+Oliver
 
-	Ingo
+ arch/arm/boot/dts/Makefile                 |  1 +
+ arch/arm/boot/dts/sun7i-a20-cubietruck.dts | 63 ++++++++++++++++++++++++++++++
+ 2 files changed, 64 insertions(+)
+ create mode 100644 arch/arm/boot/dts/sun7i-a20-cubietruck.dts
+
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index cc0f1fb..171e6c7 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -232,6 +232,7 @@ dtb-$(CONFIG_ARCH_SUNXI) += \
+ 	sun5i-a13-olinuxino.dtb \
+ 	sun6i-a31-colombus.dtb \
+ 	sun7i-a20-cubieboard2.dtb \
++	sun7i-a20-cubietruck.dtb \
+ 	sun7i-a20-olinuxino-micro.dtb
+ dtb-$(CONFIG_ARCH_TEGRA) += tegra20-harmony.dtb \
+ 	tegra20-iris-512.dtb \
+diff --git a/arch/arm/boot/dts/sun7i-a20-cubietruck.dts b/arch/arm/boot/dts/sun7i-a20-cubietruck.dts
+new file mode 100644
+index 0000000..8a1009d
+--- /dev/null
++++ b/arch/arm/boot/dts/sun7i-a20-cubietruck.dts
+@@ -0,0 +1,63 @@
++/*
++ * Copyright 2013 Oliver Schinagl
++ *
++ * Oliver Schinagl <oliver@schinagl.nl>
++ *
++ * The code contained herein is licensed under the GNU General Public
++ * License. You may obtain a copy of the GNU General Public License
++ * Version 2 or later at the following locations:
++ *
++ * http://www.opensource.org/licenses/gpl-license.html
++ * http://www.gnu.org/copyleft/gpl.html
++ */
++
++/dts-v1/;
++/include/ "sun7i-a20.dtsi"
++
++/ {
++	model = "Cubietech Cubietruck";
++	compatible = "cubietech,cubietruck", "allwinner,sun7i-a20";
++
++	soc@01c00000 {
++		pinctrl@01c20800 {
++			led_pins_cubietruck: led_pins@0 {
++				allwinner,pins = "PH7", "PH11", "PH20", "PH21";
++				allwinner,function = "gpio_out";
++				allwinner,drive = <0>;
++				allwinner,pull = <0>;
++			};
++		};
++
++		uart0: serial@01c28000 {
++			pinctrl-names = "default";
++			pinctrl-0 = <&uart0_pins_a>;
++			status = "okay";
++		};
++	};
++
++	leds {
++		compatible = "gpio-leds";
++		pinctrl-names = "default";
++		pinctrl-0 = <&led_pins_cubietruck>;
++
++		blue {
++			label = "cubietruck:blue:usr";
++			gpios = <&pio 7 21 0>;
++		};
++
++		orange {
++			label = "cubietruck:orange:usr";
++			gpios = <&pio 7 20 0>;
++		};
++
++		white {
++			label = "cubietruck:white:usr";
++			gpios = <&pio 7 11 0>;
++		};
++
++		green {
++			label = "cubietruck:green:usr";
++			gpios = <&pio 7 7 0>;
++		};
++	};
++};
+-- 
+1.8.1.5
+
