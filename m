@@ -1,66 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755154Ab3JHJq5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 05:46:57 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:7131 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752343Ab3JHJqw (ORCPT
+	id S1754074Ab3JHJxR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 05:53:17 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:49485 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752015Ab3JHJxQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 05:46:52 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 08 Oct 2013 02:42:45 -0700
-Message-ID: <5253D489.7010900@nvidia.com>
-Date: Tue, 8 Oct 2013 17:46:49 +0800
-From: Wei Ni <wni@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Tue, 8 Oct 2013 05:53:16 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
+Message-ID: <5253D5E4.7060004@jp.fujitsu.com>
+Date: Tue, 08 Oct 2013 18:52:36 +0900
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: About [PATCH 1/2] regulator: core: Provide a dummy regulator
- with full constraints
-References: <5253A17E.10503@nvidia.com> <20131008090910.GW21581@sirena.org.uk>
-In-Reply-To: <20131008090910.GW21581@sirena.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Dave Anderson <anderson@redhat.com>
+CC: Kees Cook <keescook@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
+        x86@kernel.org, kernel-hardening@lists.openwall.com,
+        Aaron Durbin <adurbin@google.com>,
+        Eric Northup <digitaleric@google.com>, Julien Tinnes <jln@google.com>,
+        Will Drewry <wad@google.com>, Mathias Krause <minipli@googlemail.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Discussion list for crash utility usage, maintenance and development" 
+	<crash-utility@redhat.com>
+Subject: Re: [PATCH 6/7] x86, kaslr: report kernel offset on panic
+References: <1380656245-29975-1-git-send-email-keescook@chromium.org> <1380656245-29975-7-git-send-email-keescook@chromium.org> <524B6AEE.90301@jp.fujitsu.com> <CAGXu5jLVt13p2X2e1C3ha1izg6U6wbmgSyYW1wa+X4cW8aCFug@mail.gmail.com> <524BE3C5.2070302@jp.fujitsu.com> <524CBB70.2060809@jp.fujitsu.com> <1408843968.872421.1380808038820.JavaMail.root@redhat.com> <52521566.20402@jp.fujitsu.com> <1678208981.2178058.1381152105871.JavaMail.root@redhat.com>
+In-Reply-To: <1678208981.2178058.1381152105871.JavaMail.root@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/08/2013 05:09 PM, Mark Brown wrote:
-> * PGP Signed by an unknown key
-> 
-> On Tue, Oct 08, 2013 at 02:09:02PM +0800, Wei Ni wrote:
-> 
->> In the latest regulator framework, it default to provide dummy
->> regulators with full constraints by your patch "regulator: core: Provide
->> a dummy regulator with full constraints".
-> 
->> I tried to use regulator_get() on lm90.c. If not set vcc-supply property
->> in the dts file to assume the regulator is physically present and
->> enabled, but it still can't get dummy regulator, just return -ENODEV.
->> I traced it, the regulator_dev_lookup() will return -ENODEV, and at that
->> time the has_full_constraints is still false, didn't be initialized in
->> regulator_init_complete() yet, so it will not return dummy regulator,
->> and will not return -EPROBE_DEFER either. This will cause the
->> lm90_probe() failed.
-> 
->> Could you take a look ?
-> 
-> Could you take a look at why we're getting -ENODEV please - this
-> indicates a problem with the device tree code since it should be what's
-> requesting probe deferral when it sees a link is present.
+(2013/10/07 22:21), Dave Anderson wrote:
 
-In the regulator_dev_lookup(), it will try to read the "xx-supply" to
-get the regnode, but I didn't set the vcc-supply in dts file for lm90,
-so the of_get_regulator() will return NULL, then the
-regulator_dev_lookup() will set the ret to -ENODEV, and return the rdev
-as NULL.
+> ----- Original Message -----
+>> (2013/10/03 22:47), Dave Anderson wrote:
 
+>>> ----- Original Message -----
+>>>> (2013/10/02 18:13), HATAYAMA Daisuke wrote:
+>>>>> (2013/10/02 16:48), Kees Cook wrote:
+
+>>
+>> Thanks for detailed explanation. So, there's already a feature in crash utility
+>> to address relocation!, though it's better for me to try them to check if it's
+>> really applicable to this feature. My concern is whether --reloc works well
+>> on x86_64 too, because relocation has never done on x86_64 ever, right?
+>
+> Correct.
+>
+>> Another concern is that in case of relocation, users need to additional information
+>> regarding runtime symbol information to crash utility. I want to avoid additional
+>> process, automation is preferable if possible.
+>
+> Right.  As I mentioned in the case of 32-bit x86 dumpfiles, there is no automation
+> available when CONFIG_PHYSICAL_START is larger than CONFIG_PHYSICAL_ALIGN.  The user
+> either has to be aware of their values in order to calculate the --reloc argument,
+> or has to capture a copy of the /proc/kallsyms file on the crashed system.  Typically
+> users/distros using kdump changed their x86 configurations to avoid having to deal
+> with that.
+>
+
+Sorry, I don't understand why relocation size cannot be calculated when
+CONFIG_PHYSICALSTART > CONFIG_PHYSICAL_ALIGN. Could you explain that?
+
+>> I guess it's enough if there's runtime symbol addresses because we can get relocated
+>> offset value by comparing it with the compile-time symbol address contained in
+>> a given debuginfo file. Candidates for such symbols are the ones contained in
+>> VMCOREINFO note containing some symbol values for makedumpfile to refer to mm-related
+>> objects in kernel, which is always contained in vmcore generated by current kdump and
+>> also vmcores converted by makedumpfile from it. How about this idea?
+>
+> But how would that differ from using an incorrect (non-matching) vmlinux file?
+>
+
+It seems to me almost similar to what crash currently does even if we do relocation check.
+The current check crash currently does is trial-and-error since there's no information
+indicating given vmcore and vmlinuxcertainly match well.
+
+For example, the process I imagine is:
+
+   1) try to match vmcore and vmlinux with no relocation. If fails, go to 2).
+   2) try to match vmcore and vmlinux with relocation.
+
+The two steps include symbol table initialization so it might actually be difficult to
+resume back from 2) to 1).
+
+Also, if gap due to phys_base and gap due to relocation can happen at the same time,
+calculating two values automatically might be futher complicated. So, it would be better
+to add relocation value in VMCOREINFO. Then, what crash utility sholud do becomes very simple.
+
+BTW, can it really happen that gaps due to phys_base and due to relocation happen at the
+same time? I feel relocation covers phys_base mechanism. If there's relocation, phys_base
+is not necessary.
+
+-- 
 Thanks.
-Wei.
-
-> 
-> * Unknown Key
-> * 0x7EA229BD
-> 
+HATAYAMA, Daisuke
 
