@@ -1,52 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753266Ab3JHFbx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 01:31:53 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:55171 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751562Ab3JHFbu convert rfc822-to-8bit (ORCPT
+	id S1753826Ab3JHFcY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 01:32:24 -0400
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:65219 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751932Ab3JHFcX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 01:31:50 -0400
+	Tue, 8 Oct 2013 01:32:23 -0400
+Date: Tue, 8 Oct 2013 07:32:18 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Sonny Rao <sonnyrao@chromium.org>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [GIT PULL 0/6] perf/urgent fixes
+Message-ID: <20131008053218.GC14353@gmail.com>
+References: <1381172549-3210-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
-In-Reply-To: <20131008044706.GA11725@localhost>
-References: <20131008044706.GA11725@localhost>
-Date: Mon, 7 Oct 2013 22:31:49 -0700
-X-Google-Sender-Auth: 8kj9a7VkPb6lUNWbw6sdI1W80wQ
-Message-ID: <CAGXu5jLtx9AfURmVitfeDRKHBkj5X3xSa+6hsyG9uwCqQuzqUQ@mail.gmail.com>
-Subject: Re: [x86, kaslr] BUG: kernel early hang without any printk output
-From: Kees Cook <keescook@chromium.org>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1381172549-3210-1-git-send-email-acme@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 7, 2013 at 9:47 PM, Fengguang Wu <fengguang.wu@intel.com> wrote:
-> Greetings,
->
-> I got the below dmesg and the first bad commit is
->
-> commit 10fe632a9c6b9ade004c8b0c2ea2c3c562d24f18
-> Author: Kees Cook <keescook@chromium.org>
-> Date:   Thu Apr 25 14:20:25 2013 -0700
->
->     x86, kaslr: find minimum safe relocation position
->
->     Examine all the known unsafe areas and avoid them by just raising the
->     minimum relocation position to be past them.
->
->     Signed-off-by: Kees Cook <keescook@chromium.org>
->
-> Command line: hung_task_panic=1 rcutree.rcu_cpu_stall_timeout=100 log_buf_len=8M ignore_loglevel debug sched_debug apic=debug dynamic_printk sysrq_always_enabled panic=10  prompt_ramdisk=0 console=ttyS0,115200 console=tty0 vga=normal  root=/dev/ram0 rw link=/kernel-tests/run-queue/kvm/i386-randconfig-i005-1008/kees:kaslr-c-v6/.vmlinuz-544c3c7c7c7a22deabefbdd4b42675924bcc7afa-20131008114452-8-inn branch=kees/kaslr-c-v6 BOOT_IMAGE=/kernel/i386-randconfig-i005-1008/544c3c7c7c7a22deabefbdd4b42675924bcc7afa/vmlinuz-3.12.0-rc4-00027-g544c3c7
 
-Thanks! Yeah, the -v6 of this series had some problems. I've removed
-the old versions from my tree now. -v8 should behave better, though
-it's still being worked on.
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
 
--Kees
+> From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> 
+> Hi Ingo,
+> 
+> 	Please consider pulling,
+> 
+> - Arnaldo
+> 
+> The following changes since commit d8b11a0cbd1c66ce283eb9dabe0498dfa6483f32:
+> 
+>   perf/x86: Clean up cap_user_time* setting (2013-10-04 09:58:55 +0200)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-urgent-for-mingo
+> 
+> for you to fetch changes up to b314e5cfd11fd78545ce6c2be42646254390c1aa:
+> 
+>   perf session: Fix infinite loop on invalid perf.data file (2013-10-04 15:17:46 -0300)
+> 
+> ----------------------------------------------------------------
+> perf/urgent fixes:
+> 
+> . The libaudit test was failing in some systems due to a unescaped newline, fix
+>   it so that the 'trace' tool can be built in such systems.
+> 
+> . Fix installation of libexec components.
+> 
+> . Add default handler for mmap2 events so that tools that don't explicitely
+>   define an MMAP2 handler don't crash, fix from David Ahern.
+> 
+> . Fix to find line information for probe list, from Masami Hiramatsu.
+> 
+> . Set child_pid after perf_evlist__prepare_workload(), fix from Namhyung Kim.
+> 
+> . Fix infinite loop on invalid perf.data file, from Namhyung Kim.
+> 
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> 
+> ----------------------------------------------------------------
+> Arnaldo Carvalho de Melo (2):
+>       perf tools: Fix libaudit test
+>       perf tools: Fix installation of libexec components
+> 
+> David Ahern (1):
+>       perf tools: Add default handler for mmap2 events
+> 
+> Masami Hiramatsu (1):
+>       perf probe: Fix to find line information for probe list
+> 
+> Namhyung Kim (2):
+>       perf stat: Set child_pid after perf_evlist__prepare_workload()
+>       perf session: Fix infinite loop on invalid perf.data file
+> 
+>  tools/perf/Makefile                 |  1 +
+>  tools/perf/builtin-stat.c           |  1 +
+>  tools/perf/config/feature-tests.mak |  2 +-
+>  tools/perf/util/dwarf-aux.c         | 25 ++++++++++++++++---
+>  tools/perf/util/dwarf-aux.h         |  6 ++++-
+>  tools/perf/util/header.c            | 12 +++++++++
+>  tools/perf/util/probe-finder.c      | 49 +++++++++++++++++++++++++------------
+>  tools/perf/util/session.c           |  4 ++-
+>  8 files changed, 77 insertions(+), 23 deletions(-)
 
--- 
-Kees Cook
-Chrome OS Security
+Pulled, thanks Arnaldo!
+
+	Ingo
