@@ -1,149 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754771Ab3JHIR3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 04:17:29 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:51755 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752143Ab3JHIRZ (ORCPT
+	id S1754835Ab3JHISg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 04:18:36 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:57336 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752143Ab3JHISc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 04:17:25 -0400
-Message-ID: <5253BF8E.4050802@monstr.eu>
-Date: Tue, 08 Oct 2013 10:17:18 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Tue, 8 Oct 2013 04:18:32 -0400
+Date: Tue, 8 Oct 2013 10:18:02 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] rcu: Create rcu_sync infrastructure
+Message-ID: <20131008081802.GM3081@twins.programming.kicks-ass.net>
+References: <20131002145655.361606532@infradead.org>
+ <20131002150518.675931976@infradead.org>
+ <20131002154901.GA13389@redhat.com>
 MIME-Version: 1.0
-To: Alexandre Courbot <acourbot@nvidia.com>
-CC: Russell King <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Tomasz Figa <t.figa@samsung.com>, Dave Martin <Dave.Martin@arm.com>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Kevin Hilman <khilman@linaro.org>, gnurou@gmail.com,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH v7 1/5] ARM: add basic support for Trusted Foundations
-References: <1380904635-18113-1-git-send-email-acourbot@nvidia.com> <1380904635-18113-2-git-send-email-acourbot@nvidia.com>
-In-Reply-To: <1380904635-18113-2-git-send-email-acourbot@nvidia.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="BDpjDvjmMN2UQURjhm38bdHVcwUhd0upd"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131002154901.GA13389@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---BDpjDvjmMN2UQURjhm38bdHVcwUhd0upd
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Wed, Oct 02, 2013 at 05:49:01PM +0200, Oleg Nesterov wrote:
+> On 10/02, Peter Zijlstra wrote:
+> >
+> > From: Oleg Nesterov <oleg@redhat.com>
+> 
+> Thanks! I was writing the patch, and I chose almost the same naming ;)
+> 
+> > Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> 
+> In fact I'd like to add my sob to 1/3 and 3/3 as well.
 
-Hi,
+I think the rules for SOB are that you either have to write or pass the
+patch along in an aggregate work; you did neither -- although I much
+value your contributions.
 
-On 10/04/2013 06:37 PM, Alexandre Courbot wrote:
-> Trusted Foundations is a TrustZone-based secure monitor for ARM that
-> can be invoked using the same SMC-based API on all supported
-> platforms. This patch adds initial basic support for Trusted
-> Foundations using the ARM firmware API. Current features are limited
-> to the ability to boot secondary processors.
->=20
-> Note: The API followed by Trusted Foundations does *not* follow the SMC=
-
-> calling conventions. It has nothing to do with PSCI neither and is only=
-
-> relevant to devices that use Trusted Foundations (like most Tegra-based=
-
-> retail devices).
->=20
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
-> Reviewed-by: Stephen Warren <swarren@nvidia.com>
-> ---
->  .../arm/firmware/tl,trusted-foundations.txt        | 17 +++++
->  .../devicetree/bindings/vendor-prefixes.txt        |  1 +
->  arch/arm/Kconfig                                   |  2 +
->  arch/arm/Makefile                                  |  1 +
->  arch/arm/firmware/Kconfig                          | 28 ++++++++
->  arch/arm/firmware/Makefile                         |  1 +
->  arch/arm/firmware/trusted_foundations.c            | 77 ++++++++++++++=
-++++++++
->  arch/arm/include/asm/trusted_foundations.h         | 64 ++++++++++++++=
-++++
->  8 files changed, 191 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/arm/firmware/tl,t=
-rusted-foundations.txt
->  create mode 100644 arch/arm/firmware/Kconfig
->  create mode 100644 arch/arm/firmware/Makefile
->  create mode 100644 arch/arm/firmware/trusted_foundations.c
->  create mode 100644 arch/arm/include/asm/trusted_foundations.h
->=20
-> diff --git a/Documentation/devicetree/bindings/arm/firmware/tl,trusted-=
-foundations.txt b/Documentation/devicetree/bindings/arm/firmware/tl,trust=
-ed-foundations.txt
-> new file mode 100644
-> index 0000000..3954bbd
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/arm/firmware/tl,trusted-foundat=
-ions.txt
-> @@ -0,0 +1,17 @@
-> +Trusted Foundations
-> +
-> +Boards that use the Trusted Foundations secure monitor can signal its
-> +presence by declaring a node compatible with "tl,trusted-foundations"
-> +under the root node.
-> +
-> +Required properties:
-> +- compatible : "tl,trusted-foundations"
-> +- version-major : major version number of Trusted Foundations firmware=
-
-> +- version-minor: minor version number of Trusted Foundations firmware
-> +
-> +Example:
-> +	firmware {
-> +		compatible =3D "tl,trusted-foundations";
-> +		version-major =3D <2>;
-> +		version-minor =3D <8>;
-> +	};
-
-This is just another example how to add sw description to dts.
-I have briefly looked at tegra20.dtsi and there are IPs like timer, intc,=
- etc
-which are in the DTS without any bus.
-
-Add this firmware node to the root is just +1 case to this mess
-but IMHO will be good to have specific DT part which will be used for
-this sw setting which are coming to DTS all the time.
-
-Grant, Rob: Where is the proper location for these type of description?
-
-Thanks,
-Michal
-
-
-
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---BDpjDvjmMN2UQURjhm38bdHVcwUhd0upd
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlJTv48ACgkQykllyylKDCEYkwCeLioWKoeGiaYBx648ugD2OS+U
-rcIAn1v7siGeDBSfU5yRm9YORfSs+hSO
-=ZRPE
------END PGP SIGNATURE-----
-
---BDpjDvjmMN2UQURjhm38bdHVcwUhd0upd--
+Can I make that a reviewed-by for both instead?
