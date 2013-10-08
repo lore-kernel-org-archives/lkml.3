@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753610Ab3JHA1A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 20:27:00 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:46511 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751696Ab3JHA07 (ORCPT
+	id S1752682Ab3JHA3J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 20:29:09 -0400
+Received: from smtprelay0117.hostedemail.com ([216.40.44.117]:59617 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751591Ab3JHA3G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 20:26:59 -0400
-Message-ID: <52535151.2000508@codeaurora.org>
-Date: Mon, 07 Oct 2013 17:26:57 -0700
-From: Rohit Vaswani <rvaswani@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Olof Johansson <olof@lixom.net>
-CC: linux-arm-msm@vger.kernel.org,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: Re: Use of drivers/platform and matching include?
-References: <BC1C47B3-5412-4829-A1D9-AAB04694D1CC@codeaurora.org> <CAOesGMjJ6Uj0uGFJqtnWQyDW+tr6eLVWoHZ+B7uFna+L8N6E8Q@mail.gmail.com> <20131004114128.GL12758@n2100.arm.linux.org.uk> <20131004132209.GB23923@kroah.com> <CAOesGMjxwmr0Vo0Puc-nZntgXLy6D1PTohz=C+fFukP_Eu1iQg@mail.gmail.com> <20131005171323.GB5780@kroah.com>
-In-Reply-To: <20131005171323.GB5780@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Mon, 7 Oct 2013 20:29:06 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 30,2,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3315:3352:3622:3653:3865:3866:3867:3868:3870:3871:3872:3873:3874:4250:4321:5007:6117:7652:7903:8603:10004:10400:10450:10455:10848:10967:11232:11658:11914:12050:12517:12519:12740:13069:13311:13357:13523:13524:19904:19999,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: crook33_14b8998d9e64c
+X-Filterd-Recvd-Size: 2127
+Message-ID: <1381192140.2081.235.camel@joe-AO722>
+Subject: Re: [PATCH] checkpatch: Add check for sscanf without return use
+From: Joe Perches <joe@perches.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andy Whitcroft <apw@canonical.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Mon, 07 Oct 2013 17:29:00 -0700
+In-Reply-To: <CAErSpo75uQL5woms175LR4KCAmqT_SWpQcXGdbKccgVPdh6xhg@mail.gmail.com>
+References: <1381189523.2081.225.camel@joe-AO722>
+	 <20131007165626.be437f74a4ba39e2be21af55@linux-foundation.org>
+	 <1381190594.2081.228.camel@joe-AO722>
+	 <CAErSpo75uQL5woms175LR4KCAmqT_SWpQcXGdbKccgVPdh6xhg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/5/2013 10:13 AM, Greg Kroah-Hartman wrote:
-> On Fri, Oct 04, 2013 at 09:48:41AM -0700, Olof Johansson wrote:
->> On Fri, Oct 4, 2013 at 6:22 AM, Greg Kroah-Hartman
->> <gregkh@linuxfoundation.org> wrote:
->>> On Fri, Oct 04, 2013 at 12:41:28PM +0100, Russell King - ARM Linux wrote:
->>>> So, no, there will be no new drivers under arch/arm.  They must be in the
->>>> drivers subtree somewhere.
->>> I have no objection with this, and encourage it.
->> Ok, so these are some of the requirements as far as I see it:
->>
->> * No per-vendor driver dumping ground under drivers/* (i.e. no
->> drivers/platform/<soc vendor>/)
-> Yes.
+On Mon, 2013-10-07 at 18:10 -0600, Bjorn Helgaas wrote:
+> On Mon, Oct 7, 2013 at 6:03 PM, Joe Perches <joe@perches.com> wrote:
+> > On Mon, 2013-10-07 at 16:56 -0700, Andrew Morton wrote:
+> >> On Mon, 07 Oct 2013 16:45:23 -0700 Joe Perches <joe@perches.com> wrote:
+> >>
+> >> > Naked use sscanf can be troublesome.
+> >>
+> >> It would be helpful to expand on "troublesome"?
+> >
+> > Dunno, you either know or the couple of paragraphs
+> > it takes to explain with examples won't really be
+> > too helpful in a commit log.
+> 
+> It would be helpful to me, since I don't write code with sscanf every
+> day.  A URL to an LKML description or something would be enough if the
+> commit log size is the concern.
 
-We agree that there is no need for a dump *all* drivers under 
-arm/mach-foo in drivers/platform/foo/. The msm bus driver would be added 
-under drivers/bus/. But, we still have some drivers which are quite SoC 
-specific and not in the general category of the sub-directories present 
-under drivers.
-As Kumar mentioned earlier -
+I sent a V2 patch to Andrew and mm using this commit log:
 
-An example driver would be the means we utilize to communicate memory regions between various HW blocks on the SoC.  So a video/media core driver might need access to a header/functions from the memory region driver.
+Naked use sscanf can be troublesome because the pointed
+to variables may not have been set.
 
-Would drivers/misc/qcom-* or drivers/misc/qcom/* be a reasonable place to add them ? and the headers could go into include/linux/qcom-*.h
+Add a warning when the sscanf return value is not used.
 
-<snip>
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+V2: Use the $Compare variable instead of just == or !=
+    There are some tests that use < and >
 
-Thanks,
-Rohit Vaswani
-
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum, hosted by The Linux Foundation
 
