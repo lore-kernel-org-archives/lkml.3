@@ -1,95 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754875Ab3JHNwS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 09:52:18 -0400
-Received: from [213.199.154.209] ([213.199.154.209]:33287 "EHLO
-	am1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1754348Ab3JHNwN (ORCPT
+	id S1754585Ab3JHN4H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 09:56:07 -0400
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:40661 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753266Ab3JHN4D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 09:52:13 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275bhz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h1155h)
-From: Fabio Estevam <fabio.estevam@freescale.com>
-To: <cjb@laptop.org>
-CC: <shawn.guo@linaro.org>, <festevam@gmail.com>, <linux-mmc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: [PATCH] mmc: sdhci-esdhc-imx: Check the return value from clk_prepare_enable()
-Date: Tue, 8 Oct 2013 10:47:28 -0300
-Message-ID: <1381240048-22685-1-git-send-email-fabio.estevam@freescale.com>
-X-Mailer: git-send-email 1.8.1.2
+	Tue, 8 Oct 2013 09:56:03 -0400
+Date: Tue, 8 Oct 2013 15:56:48 +0200
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>, Rob Landley <rob@landley.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [RFC][PATCH 2/3] vfs: Add a function to lazily unmount all
+ mounts from any dentry.
+Message-ID: <20131008135648.GH14242@tucsk.piliscsaba.szeredi.hu>
+References: <CAJfpegsxgnSRUW-E5HM3uT5QfGyUtn_v=i4Ppkkkutp34287AA@mail.gmail.com>
+ <87a9kkax0j.fsf@xmission.com>
+ <CAJfpeguv+7giYNpAuXE9Ja_9BEwB0-fZBVgRSeVqpzSXgQYZ6Q@mail.gmail.com>
+ <8761v7h2pt.fsf@tw-ebiederman.twitter.com>
+ <CAJfpegtT7y-1HhbEVAMKkdQugTG_w7G_epGtQHGvQLpcZB5FVA@mail.gmail.com>
+ <87li281wx6.fsf_-_@xmission.com>
+ <87a9io1wu1.fsf_-_@xmission.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87a9io1wu1.fsf_-_@xmission.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-clk_prepare_enable() may fail, so let's check its return value and propagate it
-in the case of error.
+On Fri, Oct 04, 2013 at 03:43:18PM -0700, Eric W. Biederman wrote:
+> 
+> Signed-off-by: Eric W. Biederman <ebiederman@twitter.com>
+> ---
+>  fs/mount.h     |    1 +
+>  fs/namespace.c |   24 ++++++++++++++++++++++++
+>  2 files changed, 25 insertions(+), 0 deletions(-)
+> 
+> diff --git a/fs/mount.h b/fs/mount.h
+> index e4342b8dfab1..7a6a2bb3f290 100644
+> --- a/fs/mount.h
+> +++ b/fs/mount.h
+> @@ -79,6 +79,7 @@ static inline int is_mounted(struct vfsmount *mnt)
+>  }
+>  
+>  extern struct mount *__lookup_mnt(struct vfsmount *, struct dentry *, int);
+> +extern void detach_mounts(struct dentry *dentry);
+>  
+>  static inline void get_mnt_ns(struct mnt_namespace *ns)
+>  {
+> diff --git a/fs/namespace.c b/fs/namespace.c
+> index d092964fe7f9..8eaee0c14fdb 100644
+> --- a/fs/namespace.c
+> +++ b/fs/namespace.c
+> @@ -1294,6 +1294,30 @@ static int do_umount(struct mount *mnt, int flags)
+>  	return retval;
+>  }
+>  
+> +void detach_mounts(struct dentry *dentry)
+> +{
+> +	struct mount *mnt, *next;
+> +	struct mountpoint *mp;
+> +
+> +	namespace_lock();
+> +	if (!d_mountpoint(dentry)) {
+> +		namespace_unlock();
+> +		return;
+> +	}
+> +	mp = new_mountpoint(dentry);
+> +	if (IS_ERR(mp)) {
+> +		return;
+> +	}
+> +	br_write_lock(&vfsmount_lock);
+> +	list_for_each_entry_safe(mnt, next, &mp->m_list, mnt_mp_list) {
 
-Also, fix the sequence for disabling the clock in the probe error path and 
-also in the remove function.
-
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
----
- drivers/mmc/host/sdhci-esdhc-imx.c | 24 +++++++++++++++++-------
- 1 file changed, 17 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/mmc/host/sdhci-esdhc-imx.c b/drivers/mmc/host/sdhci-esdhc-imx.c
-index b9899e9..abc9836 100644
---- a/drivers/mmc/host/sdhci-esdhc-imx.c
-+++ b/drivers/mmc/host/sdhci-esdhc-imx.c
-@@ -877,9 +877,17 @@ static int sdhci_esdhc_imx_probe(struct platform_device *pdev)
- 
- 	pltfm_host->clk = imx_data->clk_per;
- 
--	clk_prepare_enable(imx_data->clk_per);
--	clk_prepare_enable(imx_data->clk_ipg);
--	clk_prepare_enable(imx_data->clk_ahb);
-+	err = clk_prepare_enable(imx_data->clk_per);
-+	if (err)
-+		goto free_sdhci;
-+
-+	err = clk_prepare_enable(imx_data->clk_ipg);
-+	if (err)
-+		goto err_ipg;
-+
-+	err = clk_prepare_enable(imx_data->clk_ahb);
-+	if (err)
-+		goto err_ahb;
- 
- 	imx_data->pinctrl = devm_pinctrl_get(&pdev->dev);
- 	if (IS_ERR(imx_data->pinctrl)) {
-@@ -995,9 +1003,11 @@ static int sdhci_esdhc_imx_probe(struct platform_device *pdev)
- 	return 0;
- 
- disable_clk:
--	clk_disable_unprepare(imx_data->clk_per);
--	clk_disable_unprepare(imx_data->clk_ipg);
- 	clk_disable_unprepare(imx_data->clk_ahb);
-+err_ahb:
-+	clk_disable_unprepare(imx_data->clk_ipg);
-+err_ipg:
-+	clk_disable_unprepare(imx_data->clk_per);
- free_sdhci:
- 	sdhci_pltfm_free(pdev);
- 	return err;
-@@ -1012,9 +1022,9 @@ static int sdhci_esdhc_imx_remove(struct platform_device *pdev)
- 
- 	sdhci_remove_host(host, dead);
- 
--	clk_disable_unprepare(imx_data->clk_per);
--	clk_disable_unprepare(imx_data->clk_ipg);
- 	clk_disable_unprepare(imx_data->clk_ahb);
-+	clk_disable_unprepare(imx_data->clk_ipg);
-+	clk_disable_unprepare(imx_data->clk_per);
- 
- 	sdhci_pltfm_free(pdev);
- 
--- 
-1.8.1.2
+I don't think list_for_each_entry_safe is actually safe enough here.  Because
+propageted umounts will likely remove other mounts from the same mountpoint as
+well.  Doing it with "while (!list_empty(&mp->m_list))" should be better, and
+AFAICS it will always make progress.
 
 
+> +		if (!list_empty(&mnt->mnt_list))
+> +			umount_tree(mnt, 1);
+> +	}
+> +	br_write_unlock(&vfsmount_lock);
+> +	put_mountpoint(mp);
+> +	namespace_unlock();
+> +}
+> +
+>  /* 
+>   * Is the caller allowed to modify his namespace?
+>   */
+> -- 
+> 1.7.5.4
+> 
