@@ -1,122 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756407Ab3JHQUo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 12:20:44 -0400
-Received: from 4.mo2.mail-out.ovh.net ([87.98.172.75]:52289 "EHLO
-	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755473Ab3JHQUl (ORCPT
+	id S1756439Ab3JHQVg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 12:21:36 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:46555 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751686Ab3JHQVd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 12:20:41 -0400
-Message-ID: <5254308F.8030607@overkiz.com>
-Date: Tue, 08 Oct 2013 18:19:27 +0200
-From: boris brezillon <b.brezillon@overkiz.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Tue, 8 Oct 2013 12:21:33 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/oMZ5wmLncV4JVPRGjpubK
+Date: Tue, 8 Oct 2013 09:21:28 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Haojian Zhuang <haojian.zhuang@marvell.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Prakash Manjunathappa <prakash.pm@ti.com>,
+        Haojian Zhuang <haojian.zhuang@linaro.org>,
+        Linux-OMAP <linux-omap@vger.kernel.org>, Roger Quadros <rogerq@ti.com>
+Subject: Re: [PATCH 3/6] pinctrl: single: Prepare for supporting SoC
+ specific features
+Message-ID: <20131008162128.GB7773@atomide.com>
+References: <20131003054104.8941.88857.stgit@localhost>
+ <20131003054218.8941.19273.stgit@localhost>
+ <20131007173531.GX8949@atomide.com>
+ <CACRpkdbx+vJEqz3KQ0EHGt0axRB4JeJh3FF4e+7snbR0HoqKRg@mail.gmail.com>
 MIME-Version: 1.0
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Andrew Victor <linux@maxim.org.za>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Josh Wu <josh.wu@atmel.com>, Richard Genoud <richard.genoud@gmail.com>
-CC: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
-Subject: Re: [PATCH v3 12/19] clk: at91: add peripheral clk macros for peripheral
- clk dt bindings
-References: <1375937608-3773-1-git-send-email-b.brezillon@overkiz.com> <1375945839-9573-1-git-send-email-b.brezillon@overkiz.com> <52542878.5050503@atmel.com> <52542C4C.5080409@overkiz.com> <52542F95.5050603@atmel.com>
-In-Reply-To: <52542F95.5050603@atmel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 3510274435374676076
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrvdduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrvdduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdbx+vJEqz3KQ0EHGt0axRB4JeJh3FF4e+7snbR0HoqKRg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/10/2013 18:15, Nicolas Ferre wrote:
-> On 08/10/2013 18:01, boris brezillon :
->> On 08/10/2013 17:44, Nicolas Ferre wrote:
->>> On 08/08/2013 09:10, Boris BREZILLON :
->>>> This patch adds the peripheral divisors macros (for sam9x5 compatible
->>>> IPs)
->>>> which will be used by peripheral clk dt definitions.
->>>
->>> I am in favor for these definitions. So let's keep them (with raw
->>> numbers toguether with these macros in documentation).
->>
->> I guess we should move them elsewhere if these are the only macros we 
->> keep.
->>
->> What about "include/dt-bindings/clk/at91sam9x5-periph.h" ?
->
-> Well, what about a more generic clk binding file for all at91-related 
-> definitions (if more come). We can still differentiate among devices 
-> into the file itself...
->
-> What do you think about:
-> include/dt-bindings/clk/at91.h
-> is it too generic?
+* Linus Walleij <linus.walleij@linaro.org> [131008 05:03]:
+> On Mon, Oct 7, 2013 at 7:35 PM, Tony Lindgren <tony@atomide.com> wrote:
+> 
+> > Hi Linus W,
+> >
+> > Any comments on the pinctrl patches 3 - 5 in this series?
+> 
+> I have no problems with this patch #3, as it is just changing syntax,
+> not semantics.
+> 
+> The problems start with patch #4.
+> 
+> I am tormented with mixed feelings about this, because from one point of
+> view I feel it is breaking the promise of pinctrl-single being a
+> driver for platforms
+> where a pin is controlled by a *single* register.
 
-No, this is fine.
+It is still in that same *single* register. There are interrupt enable
+and interrupt status bits for *every* pin register on most omaps.
+ 
+> If this was pinctrl-foo.c I would not have been so much bothered,
+> but now it is something that was supposed to be self-contained and
+> simple, pertaining to a single register, starting to look like something
+> else.
+>
+> This is a bit like: "oh yeah just one register controls the pins, but under
+> some circumstances I also want to mess with this register over here,
+> and then this register over there ..." etc.
 
->
-> BTW, I see the clk and clock directories. What is the difference?
->
+Not true. If it was some other register I would have set it up as
+a separate driver under drivers/irqchip.
+ 
+> I'd like Haojian to ACK this to proceed since he's also using this driver
+> now. Then I feel better on continuing down this road ...
+> 
+> Then I have a lesser comment on patch #4 since it makes it possible
+> for this pin controller to support wake-up interrupt, as I don't see how
+> this plays out with front-end GPIO controllers, but let's discuss that
+> in the context of that patch.
 
-I don't know, but they both store clk (signals) specific bindings, and 
-as the framework is called "clk", I choose this directory.
+It's completely separate from the GPIO controller wake-up events.
 
-Could a dt maintainer (or Mike) help us choosing the appropriate directory ?
+Regards,
 
->
->>>> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
->>>> ---
->>>>    .../clk/at91/at91sam9x5/clk-peripheral.h           |   15
->>>> +++++++++++++++
->>>>    1 file changed, 15 insertions(+)
->>>>    create mode 100644
->>>> include/dt-bindings/clk/at91/at91sam9x5/clk-peripheral.h
->>>>
->>>> diff --git a/include/dt-bindings/clk/at91/at91sam9x5/clk-peripheral.h
->>>> b/include/dt-bindings/clk/at91/at91sam9x5/clk-peripheral.h
->>>> new file mode 100644
->>>> index 0000000..a6dd506
->>>> --- /dev/null
->>>> +++ b/include/dt-bindings/clk/at91/at91sam9x5/clk-peripheral.h
->>>> @@ -0,0 +1,15 @@
->>>> +/*
->>>> + * This header provides constants for AT91 peripheral clks.
->>>> + *
->>>> + * The constants defined in this header are being used in dts.
->>>> + */
->>>> +
->>>> +#ifndef _DT_BINDINGS_CLK_AT91SAM9X5_PERIPH_H
->>>> +#define _DT_BINDINGS_CLK_AT91SAM9X5_PERIPH_H
->>>> +
->>>> +#define AT91SAM9X5_PERIPH_CLK_DIV1    0
->>>> +#define AT91SAM9X5_PERIPH_CLK_DIV2    1
->>>> +#define AT91SAM9X5_PERIPH_CLK_DIV4    2
->>>> +#define AT91SAM9X5_PERIPH_CLK_DIV8    3
->>>> +
->>>> +#endif
->>>>
->>>
->>>
->>
->>
->>
->
->
+Tony
 
