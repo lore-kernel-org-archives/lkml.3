@@ -1,50 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752227Ab3JHM5C (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 08:57:02 -0400
-Received: from mail-la0-f42.google.com ([209.85.215.42]:57725 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754438Ab3JHM45 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 08:56:57 -0400
-From: Jonas Jensen <jonas.jensen@gmail.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, devicetree@vger.kernel.org,
-        mark.rutland@arm.com, Jonas Jensen <jonas.jensen@gmail.com>
-Subject: [PATCH] Documentation: add moxa vendor prefix
-Date: Tue,  8 Oct 2013 14:56:40 +0200
-Message-Id: <1381237000-8398-1-git-send-email-jonas.jensen@gmail.com>
-X-Mailer: git-send-email 1.8.2.1
+	id S1754580Ab3JHM5N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 08:57:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6449 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751747Ab3JHM5K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 08:57:10 -0400
+Message-ID: <1381237001.17503.72.camel@deneb.redhat.com>
+Subject: Re: [PATCH] arm64: add asm-generic parport.h
+From: Mark Salter <msalter@redhat.com>
+To: Rob Herring <robherring2@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>
+Date: Tue, 08 Oct 2013 08:56:41 -0400
+In-Reply-To: <1381182265-11271-1-git-send-email-robherring2@gmail.com>
+References: <1381182265-11271-1-git-send-email-robherring2@gmail.com>
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add moxa vendor prefix.
+On Mon, 2013-10-07 at 16:44 -0500, Rob Herring wrote:
+> From: Rob Herring <rob.herring@calxeda.com>
+> 
+> Add asm-generic/parport.h to help fix allyesconfig builds.
+> 
 
-Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
----
+See:
 
-Notes:
-    Submitting this per Mark Rutland's request.
-    
-    Applies to next-20130927
+http://www.spinics.net/lists/arm-kernel/msg267957.html
+http://www.spinics.net/lists/linux-arch/msg23167.html
 
- Documentation/devicetree/bindings/vendor-prefixes.txt | 1 +
- 1 file changed, 1 insertion(+)
+and finally,
 
-diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
-index 2956800..0a04e89 100644
---- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-+++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-@@ -40,6 +40,7 @@ marvell	Marvell Technology Group Ltd.
- maxim	Maxim Integrated Products
- microchip	Microchip Technology Inc.
- mosaixtech	Mosaix Technologies, Inc.
-+moxa	Moxa Technology Co., Ltd.
- national	National Semiconductor
- nintendo	Nintendo
- nvidia	NVIDIA
--- 
-1.8.2.1
+https://lkml.org/lkml/2013/10/8/12
+
 
