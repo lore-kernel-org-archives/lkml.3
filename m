@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755025Ab3JHL3B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 07:29:01 -0400
-Received: from b.ns.miles-group.at ([95.130.255.144]:1664 "EHLO radon.swed.at"
+	id S1755485Ab3JHLaF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 07:30:05 -0400
+Received: from b.ns.miles-group.at ([95.130.255.144]:1666 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754649Ab3JHL25 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 07:28:57 -0400
+	id S1754910Ab3JHL3A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 07:29:00 -0400
 From: Richard Weinberger <richard@nod.at>
 To: linux-kernel@vger.kernel.org
 Cc: linux-arch@vger.kernel.org, viro@zeniv.linux.org.uk, vgupta@synopsys.com,
@@ -22,9 +22,9 @@ Cc: linux-arch@vger.kernel.org, viro@zeniv.linux.org.uk, vgupta@synopsys.com,
         lethal@linux-sh.org, cmetcalf@tilera.com, gxt@mprc.pku.edu.cn,
         linux-xtensa@linux-xtensa.org, akpm@linux-foundation.org,
         oleg@redhat.com, tj@kernel.org, Richard Weinberger <richard@nod.at>
-Subject: [PATCH 02/29] arm64: Use get_signal() signal_setup_done()
-Date: Tue,  8 Oct 2013 13:27:54 +0200
-Message-Id: <1381231701-4008-3-git-send-email-richard@nod.at>
+Subject: [PATCH 03/29] avr32: Use get_signal() signal_setup_done()
+Date: Tue,  8 Oct 2013 13:27:55 +0200
+Message-Id: <1381231701-4008-4-git-send-email-richard@nod.at>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1381231701-4008-1-git-send-email-richard@nod.at>
 References: <1381231701-4008-1-git-send-email-richard@nod.at>
@@ -37,199 +37,147 @@ for signal delivery.
 
 Signed-off-by: Richard Weinberger <richard@nod.at>
 ---
- arch/arm64/include/asm/signal32.h |  7 +++---
- arch/arm64/kernel/signal.c        | 48 ++++++++++++++++-----------------------
- arch/arm64/kernel/signal32.c      |  8 +++----
- 3 files changed, 27 insertions(+), 36 deletions(-)
+ arch/avr32/kernel/signal.c | 43 ++++++++++++++++++-------------------------
+ 1 file changed, 18 insertions(+), 25 deletions(-)
 
-diff --git a/arch/arm64/include/asm/signal32.h b/arch/arm64/include/asm/signal32.h
-index 7c275e3..db544f1 100644
---- a/arch/arm64/include/asm/signal32.h
-+++ b/arch/arm64/include/asm/signal32.h
-@@ -26,8 +26,8 @@ extern const compat_ulong_t aarch32_sigret_code[6];
- 
- int compat_setup_frame(int usig, struct k_sigaction *ka, sigset_t *set,
- 		       struct pt_regs *regs);
--int compat_setup_rt_frame(int usig, struct k_sigaction *ka, siginfo_t *info,
--			  sigset_t *set, struct pt_regs *regs);
-+int compat_setup_rt_frame(int usig, struct ksignal *ksig, sigset_t *set,
-+			  struct pt_regs *regs);
- 
- void compat_setup_restart_syscall(struct pt_regs *regs);
- #else
-@@ -38,8 +38,7 @@ static inline int compat_setup_frame(int usid, struct k_sigaction *ka,
- 	return -ENOSYS;
+diff --git a/arch/avr32/kernel/signal.c b/arch/avr32/kernel/signal.c
+index b80c0b3..dda150f 100644
+--- a/arch/avr32/kernel/signal.c
++++ b/arch/avr32/kernel/signal.c
+@@ -138,13 +138,12 @@ get_sigframe(struct k_sigaction *ka, struct pt_regs *regs, int framesize)
  }
  
--static inline int compat_setup_rt_frame(int usig, struct k_sigaction *ka,
--					siginfo_t *info, sigset_t *set,
-+static inline int compat_setup_rt_frame(int usig, struct ksignal *ksig, sigset_t *set,
- 					struct pt_regs *regs)
- {
- 	return -ENOSYS;
-diff --git a/arch/arm64/kernel/signal.c b/arch/arm64/kernel/signal.c
-index 890a591..f6f23dd 100644
---- a/arch/arm64/kernel/signal.c
-+++ b/arch/arm64/kernel/signal.c
-@@ -239,13 +239,13 @@ static void setup_return(struct pt_regs *regs, struct k_sigaction *ka,
- 	regs->regs[30] = (unsigned long)sigtramp;
- }
- 
--static int setup_rt_frame(int usig, struct k_sigaction *ka, siginfo_t *info,
--			  sigset_t *set, struct pt_regs *regs)
-+static int setup_rt_frame(int usig, struct ksignal *ksig, sigset_t *set,
-+			  struct pt_regs *regs)
+ static int
+-setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+-	       sigset_t *set, struct pt_regs *regs)
++setup_rt_frame(struct ksignal *ksig, sigset_t *set, struct pt_regs *regs)
  {
  	struct rt_sigframe __user *frame;
  	int err = 0;
  
--	frame = get_sigframe(ka, regs);
-+	frame = get_sigframe(&ksig->ka, regs);
- 	if (!frame)
- 		return 1;
+-	frame = get_sigframe(ka, regs, sizeof(*frame));
++	frame = get_sigframe(&ksig->ka, regs, sizeof(*frame));
+ 	err = -EFAULT;
+ 	if (!access_ok(VERIFY_WRITE, frame, sizeof (*frame)))
+ 		goto out;
+@@ -164,7 +163,7 @@ setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+ 	err = __put_user(0x3008d733 | (__NR_rt_sigreturn << 20),
+ 			 &frame->retcode);
  
-@@ -255,9 +255,9 @@ static int setup_rt_frame(int usig, struct k_sigaction *ka, siginfo_t *info,
- 	err |= __save_altstack(&frame->uc.uc_stack, regs->sp);
- 	err |= setup_sigframe(frame, regs, set);
- 	if (err == 0) {
--		setup_return(regs, ka, frame, usig);
--		if (ka->sa.sa_flags & SA_SIGINFO) {
--			err |= copy_siginfo_to_user(&frame->info, info);
-+		setup_return(regs, &ksig->ka, frame, usig);
-+		if (ksig->ka.sa.sa_flags & SA_SIGINFO) {
-+			err |= copy_siginfo_to_user(&frame->info, &ksig->info);
- 			regs->regs[1] = (unsigned long)&frame->info;
- 			regs->regs[2] = (unsigned long)&frame->uc;
- 		}
-@@ -277,13 +277,12 @@ static void setup_restart_syscall(struct pt_regs *regs)
- /*
-  * OK, we're invoking a handler
-  */
--static void handle_signal(unsigned long sig, struct k_sigaction *ka,
--			  siginfo_t *info, struct pt_regs *regs)
-+static void handle_signal(struct ksignal *ksig, struct pt_regs *regs)
+-	err |= copy_siginfo_to_user(&frame->info, info);
++	err |= copy_siginfo_to_user(&frame->info, &ksig->info);
+ 
+ 	/* Set up the ucontext */
+ 	err |= __put_user(0, &frame->uc.uc_flags);
+@@ -176,12 +175,12 @@ setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+ 	if (err)
+ 		goto out;
+ 
+-	regs->r12 = sig;
++	regs->r12 = ksig->sig;
+ 	regs->r11 = (unsigned long) &frame->info;
+ 	regs->r10 = (unsigned long) &frame->uc;
+ 	regs->sp = (unsigned long) frame;
+-	if (ka->sa.sa_flags & SA_RESTORER)
+-		regs->lr = (unsigned long)ka->sa.sa_restorer;
++	if (ksig->ka.sa.sa_flags & SA_RESTORER)
++		regs->lr = (unsigned long)ksig->ka.sa.sa_restorer;
+ 	else {
+ 		printk(KERN_NOTICE "[%s:%d] did not set SA_RESTORER\n",
+ 		       current->comm, current->pid);
+@@ -189,10 +188,10 @@ setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+ 	}
+ 
+ 	pr_debug("SIG deliver [%s:%d]: sig=%d sp=0x%lx pc=0x%lx->0x%p lr=0x%lx\n",
+-		 current->comm, current->pid, sig, regs->sp,
+-		 regs->pc, ka->sa.sa_handler, regs->lr);
++		 current->comm, current->pid, ksig->sig, regs->sp,
++		 regs->pc, ksig->ka.sa.sa_handler, regs->lr);
+ 
+-	regs->pc = (unsigned long) ka->sa.sa_handler;
++	regs->pc = (unsigned long)ksig->ka.sa.sa_handler;
+ 
+ out:
+ 	return err;
+@@ -208,15 +207,14 @@ static inline void setup_syscall_restart(struct pt_regs *regs)
+ }
+ 
+ static inline void
+-handle_signal(unsigned long sig, struct k_sigaction *ka, siginfo_t *info,
+-	      struct pt_regs *regs, int syscall)
++handle_signal(struct ksignal *ksig, struct pt_regs *regs, int syscall)
  {
- 	struct thread_info *thread = current_thread_info();
- 	struct task_struct *tsk = current;
- 	sigset_t *oldset = sigmask_to_save();
--	int usig = sig;
-+	int usig = ksig->sig;
  	int ret;
  
  	/*
-@@ -296,13 +295,12 @@ static void handle_signal(unsigned long sig, struct k_sigaction *ka,
  	 * Set up the stack frame
  	 */
- 	if (is_compat_task()) {
--		if (ka->sa.sa_flags & SA_SIGINFO)
--			ret = compat_setup_rt_frame(usig, ka, info, oldset,
--						    regs);
-+		if (ksig->ka.sa.sa_flags & SA_SIGINFO)
-+			ret = compat_setup_rt_frame(usig, ksig, oldset, regs);
- 		else
--			ret = compat_setup_frame(usig, ka, oldset, regs);
-+			ret = compat_setup_frame(usig, &ksig->ka, oldset, regs);
- 	} else {
--		ret = setup_rt_frame(usig, ka, info, oldset, regs);
-+		ret = setup_rt_frame(usig, ksig, oldset, regs);
- 	}
+-	ret = setup_rt_frame(sig, ka, info, sigmask_to_save(), regs);
++	ret = setup_rt_frame(ksig, sigmask_to_save(), regs);
  
  	/*
-@@ -310,18 +308,14 @@ static void handle_signal(unsigned long sig, struct k_sigaction *ka,
- 	 */
- 	ret |= !valid_user_regs(&regs->user_regs);
- 
--	if (ret != 0) {
--		force_sigsegv(sig, tsk);
--		return;
--	}
--
+ 	 * Check that the resulting registers are sane
+@@ -226,10 +224,7 @@ handle_signal(unsigned long sig, struct k_sigaction *ka, siginfo_t *info,
  	/*
- 	 * Fast forward the stepping logic so we step into the signal
- 	 * handler.
+ 	 * Block the signal if we were successful.
  	 */
--	user_fastforward_single_step(tsk);
-+	if (!ret)
-+		user_fastforward_single_step(tsk);
- 
--	signal_delivered(sig, info, ka, regs, 0);
+-	if (ret != 0)
+-		force_sigsegv(sig, current);
+-	else
+-		signal_delivered(sig, info, ka, regs, 0);
 +	signal_setup_done(ret, ksig, 0);
  }
  
  /*
-@@ -336,10 +330,9 @@ static void handle_signal(unsigned long sig, struct k_sigaction *ka,
- static void do_signal(struct pt_regs *regs)
+@@ -239,9 +234,7 @@ handle_signal(unsigned long sig, struct k_sigaction *ka, siginfo_t *info,
+  */
+ static void do_signal(struct pt_regs *regs, int syscall)
  {
- 	unsigned long continue_addr = 0, restart_addr = 0;
--	struct k_sigaction ka;
 -	siginfo_t info;
--	int signr, retval = 0;
-+	int retval = 0;
- 	int syscall = (int)regs->syscallno;
+-	int signr;
+-	struct k_sigaction ka;
 +	struct ksignal ksig;
  
  	/*
- 	 * If we were from a system call, check for system call restarting...
-@@ -373,8 +366,7 @@ static void do_signal(struct pt_regs *regs)
- 	 * Get the signal to deliver. When running under ptrace, at this point
- 	 * the debugger may change all of our registers.
- 	 */
--	signr = get_signal_to_deliver(&info, &ka, regs, NULL);
--	if (signr > 0) {
-+	if (get_signal(&ksig)) {
- 		/*
- 		 * Depending on the signal settings, we may need to revert the
- 		 * decision to restart the system call, but skip this if a
-@@ -384,12 +376,12 @@ static void do_signal(struct pt_regs *regs)
- 		    (retval == -ERESTARTNOHAND ||
- 		     retval == -ERESTART_RESTARTBLOCK ||
- 		     (retval == -ERESTARTSYS &&
--		      !(ka.sa.sa_flags & SA_RESTART)))) {
-+		      !(ksig.ka.sa.sa_flags & SA_RESTART)))) {
- 			regs->regs[0] = -EINTR;
- 			regs->pc = continue_addr;
- 		}
+ 	 * We want the common case to go fast, which is why we may in
+@@ -251,18 +244,18 @@ static void do_signal(struct pt_regs *regs, int syscall)
+ 	if (!user_mode(regs))
+ 		return;
  
--		handle_signal(signr, &ka, &info, regs);
-+		handle_signal(&ksig, regs);
+-	signr = get_signal_to_deliver(&info, &ka, regs, NULL);
++	get_signal(&ksig);
+ 	if (syscall) {
+ 		switch (regs->r12) {
+ 		case -ERESTART_RESTARTBLOCK:
+ 		case -ERESTARTNOHAND:
+-			if (signr > 0) {
++			if (ksig.sig > 0) {
+ 				regs->r12 = -EINTR;
+ 				break;
+ 			}
+ 			/* fall through */
+ 		case -ERESTARTSYS:
+-			if (signr > 0 && !(ka.sa.sa_flags & SA_RESTART)) {
++			if (ksig.sig > 0 && !(ksig.ka.sa.sa_flags & SA_RESTART)) {
+ 				regs->r12 = -EINTR;
+ 				break;
+ 			}
+@@ -272,13 +265,13 @@ static void do_signal(struct pt_regs *regs, int syscall)
+ 		}
+ 	}
+ 
+-	if (signr == 0) {
++	if (!ksig.sig) {
+ 		/* No signal to deliver -- put the saved sigmask back */
+ 		restore_saved_sigmask();
  		return;
  	}
  
-diff --git a/arch/arm64/kernel/signal32.c b/arch/arm64/kernel/signal32.c
-index e393174..a577f88 100644
---- a/arch/arm64/kernel/signal32.c
-+++ b/arch/arm64/kernel/signal32.c
-@@ -545,18 +545,18 @@ static int compat_setup_sigframe(struct compat_sigframe __user *sf,
- /*
-  * 32-bit signal handling routines called from signal.c
-  */
--int compat_setup_rt_frame(int usig, struct k_sigaction *ka, siginfo_t *info,
-+int compat_setup_rt_frame(int usig, struct ksignal *ksig,
- 			  sigset_t *set, struct pt_regs *regs)
- {
- 	struct compat_rt_sigframe __user *frame;
- 	int err = 0;
+-	handle_signal(signr, &ka, &info, regs, syscall);
++	handle_signal(&ksig, regs, syscall);
+ }
  
--	frame = compat_get_sigframe(ka, regs, sizeof(*frame));
-+	frame = compat_get_sigframe(&ksig->ka, regs, sizeof(*frame));
- 
- 	if (!frame)
- 		return 1;
- 
--	err |= copy_siginfo_to_user32(&frame->info, info);
-+	err |= copy_siginfo_to_user32(&frame->info, &ksig->info);
- 
- 	__put_user_error(0, &frame->sig.uc.uc_flags, err);
- 	__put_user_error(0, &frame->sig.uc.uc_link, err);
-@@ -566,7 +566,7 @@ int compat_setup_rt_frame(int usig, struct k_sigaction *ka, siginfo_t *info,
- 	err |= compat_setup_sigframe(&frame->sig, regs, set);
- 
- 	if (err == 0) {
--		compat_setup_return(regs, ka, frame->sig.retcode, frame, usig);
-+		compat_setup_return(regs, &ksig->ka, frame->sig.retcode, frame, usig);
- 		regs->regs[1] = (compat_ulong_t)(unsigned long)&frame->info;
- 		regs->regs[2] = (compat_ulong_t)(unsigned long)&frame->sig.uc;
- 	}
+ asmlinkage void do_notify_resume(struct pt_regs *regs, struct thread_info *ti)
 -- 
 1.8.1.4
 
