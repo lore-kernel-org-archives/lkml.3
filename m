@@ -1,71 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754437Ab3JHH1v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 03:27:51 -0400
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:32987 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752956Ab3JHH1r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 03:27:47 -0400
-Date: Tue, 8 Oct 2013 09:27:43 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org,
-        Steven Rostedt <srostedt@redhat.com>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [raw v1 0/4] Replace __this_cpu ops with raw_cpu_ops where
- necessary
-Message-ID: <20131008072743.GB4455@gmail.com>
-References: <0000014194309038-3923fc42-2039-45da-b8fa-2df545112405-000000@email.amazonses.com>
+	id S1754580Ab3JHHbu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 03:31:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7145 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753882Ab3JHHbr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 03:31:47 -0400
+Date: Tue, 8 Oct 2013 09:33:02 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Michael Ellerman <michael@ellerman.id.au>
+Cc: linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
+        Jon Mason <jon.mason@intel.com>,
+        Matt Porter <mporter@kernel.crashing.org>, linux-pci@vger.kernel.org,
+        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
+        linux390@de.ibm.com, linux-s390@vger.kernel.org, x86@kernel.org,
+        linux-ide@vger.kernel.org, iss_storagedev@hp.com,
+        linux-nvme@lists.infradead.org, linux-rdma@vger.kernel.org,
+        netdev@vger.kernel.org, e1000-devel@lists.sourceforge.net,
+        linux-driver@qlogic.com,
+        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
+        "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH RFC 00/77] Re-design MSI/MSI-X interrupts enablement
+ pattern
+Message-ID: <20131008073301.GC10669@dhcp-26-207.brq.redhat.com>
+References: <cover.1380703262.git.agordeev@redhat.com>
+ <20131008043330.GF31666@concordia>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <0000014194309038-3923fc42-2039-45da-b8fa-2df545112405-000000@email.amazonses.com>
+In-Reply-To: <20131008043330.GF31666@concordia>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Christoph Lameter <cl@linux.com> wrote:
-
-> The kernel can detect __this_cpu ops in preemptible contexts after
-> the preemption check patchset that I posted last week.
+On Tue, Oct 08, 2013 at 03:33:30PM +1100, Michael Ellerman wrote:
+> On Wed, Oct 02, 2013 at 12:29:04PM +0200, Alexander Gordeev wrote:
+> > This technique proved to be confusing and error-prone. Vast share
+> > of device drivers simply fail to follow the described guidelines.
 > 
-> Here is a selection of patches to fix false positives caused by
-> the additional checks. So far I have found no bug. Amazing.
-> Looks like there was some prior work done to shake these things out?
+> To clarify "Vast share of device drivers":
 > 
-> I ran an upstream kernel using Ubuntu 13.04 + the preempt checking +
-> the patches below on my desktop and with the following patches no
-> __this_cpu ops triggered messages. The kernel had the default Ubuntu
-> desktop configuration (+ CONFIG_PREEMPT + CONFIG_DEBUG_THIS_CPU_OPERATIONS).
+>  - 58 drivers call pci_enable_msix()
+>  - 24 try a single allocation and then fallback to MSI/LSI
+>  - 19 use the loop style allocation as above
+>  - 14 try an allocation, and if it fails retry once
+>  - 1  incorrectly continues when pci_enable_msix() returns > 0
+> 
+> So 33 drivers (> 50%) successfully make use of the "confusing and
+> error-prone" return value.
 
-Here are the current list of technical problems that still plague your 
-submission:
+Ok, you caught me - 'vast share' is incorrect and is a subject to
+rewording. But out of 19/58 how many drivers tested fallbacks on the
+real hardware? IOW, which drivers are affected by the pSeries quota?
 
- - see the technical questions I raised about the snmp patch
+> And yes, one is buggy, so obviously the interface is too complex. Thanks
+> drivers/ntb/ntb_hw.c
 
- - broken threading resulting in patches arriving out of order. (You
-   ignored peterz's helpful suggestion to upgrade Quilt which would allow
-   you to fix this.)
+vmxnet3 would be the best example.
 
- - broken subject lines - no 'PATCH' for patches
+> cheers
 
- - inconsistent patch titles: broken, inconsistent subsystem tags, etc.
-
- - incomplete changelogs: you fail to quote the false positive that led 
-   you to a change. In cases this results in a totally context-free
-   changelog which loses information the moment it's committed upstream.
-
-In particular the last 4 items were mentioned to you for your last 
-submission - which you failed to fix. You should wait with your next 
-submission until you have enough time to fix *all* problems that were 
-reported to you, not just some.
-
-All in one, still a sloppy, incomplete submission.
-
-Thanks,
-
-	Ingo
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
