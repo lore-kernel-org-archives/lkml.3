@@ -1,182 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755187Ab3JHO03 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 10:26:29 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:36386 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754546Ab3JHO00 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 10:26:26 -0400
-Message-ID: <525415C2.7000302@ti.com>
-Date: Tue, 8 Oct 2013 10:25:06 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Hongbo Zhang <hongbo.zhang@freescale.com>
-CC: Eduardo Valentin <eduardo.valentin@ti.com>, <swarren@wwwdotorg.org>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ian.campbell@citrix.com>, <rob.herring@calxeda.com>,
-        <linux@roeck-us.net>, <rui.zhang@intel.com>, <wni@nvidia.com>,
-        <joe@perches.com>, <grant.likely@linaro.org>, <durgadoss.r@intel.com>,
-        <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>
-Subject: Re: [PATCHv6 02/16] drivers: thermal: introduce device tree parser
-References: <1379537849-28425-1-git-send-email-eduardo.valentin@ti.com> <1379540136-28378-1-git-send-email-eduardo.valentin@ti.com> <52428D13.7080007@freescale.com> <5242F011.4090607@ti.com> <5253C63D.5030904@freescale.com>
-In-Reply-To: <5253C63D.5030904@freescale.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature";
-	boundary="0FBoxoVbJ0hPlqnk9EUrDIOGevpplwMHj"
+	id S1755274Ab3JHO2U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 10:28:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57234 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751797Ab3JHO2S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 10:28:18 -0400
+Date: Tue, 08 Oct 2013 10:26:42 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Cyrill Gorcunov <gorcunov@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Andy Lutomirski <luto@amacapital.net>, Matt Mackall <mpm@selenic.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Message-ID: <1381242402-j6a9e6ew-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <20131008090237.062907670@gmail.com>
+References: <20131008090019.527108154@gmail.com>
+ <20131008090237.062907670@gmail.com>
+Subject: Re: [patch 2/3] [PATCH] mm: pagemap -- Inspect _PAGE_SOFT_DIRTY only
+ on present pages
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Mutt-References: <20131008090237.062907670@gmail.com>
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0FBoxoVbJ0hPlqnk9EUrDIOGevpplwMHj
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Tue, Oct 08, 2013 at 01:00:21PM +0400, Cyrill Gorcunov wrote:
+> In case if a page we are inspecting is laying in swap we may
+> occasionally report it as having soft dirty bit (even if it
+> is clean). pte_soft_dirty helper should be called on present
+> pte only.
+> 
+> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+> Cc: Pavel Emelyanov <xemul@parallels.com>
+> Cc: Andy Lutomirski <luto@amacapital.net>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Matt Mackall <mpm@selenic.com>
+> Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> Cc: Marcelo Tosatti <mtosatti@redhat.com>
+> Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+> Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-On 08-10-2013 04:45, Hongbo Zhang wrote:
-> On 09/25/2013 10:15 PM, Eduardo Valentin wrote:
->> On 25-09-2013 03:13, Hongbo Zhang wrote:
->>> On 09/19/2013 05:35 AM, Eduardo Valentin wrote:
->>>>    [...]
->>>> +
->>>> +/***   sensor API   ***/
->>>> +
->>> You are introducing new concept here, the original framework and driv=
-ers
->>> cannot use this, right? any further plan to update original framework=
+Looks nice to me.
 
->>> for this new feature?
->>>
->> Well, not new as such. Just a specific way to register sensors to
->> thermal framework. What is really new is the fact that we really need =
-to
->> have sensors decoupled from thermal zone devices, and today we have
->> these concepts pretty merged together.
->> To answer your question, for now I am more concerned with the bindings=
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
->> definition. Once that is at least agreed, then we can follow up with t=
-he
->> migration of existing drivers. For now, there are two examples in this=
-
->> series, first one is using one existing thermal driver, which is the T=
-I
->> SoC thermal driver, and the second one is the hwmon drivers, which are=
-
->> existing sensor drivers, but are not thermal drivers.
->>
->> The plan forward, once this series is accepted is to migrate existing
->> drivers, yes, so that they can use device tree uniformly. Of course,
->> this needs help from driver authors.
->>
->> My proposal will be to follow up this series with a two fold migration=
-=2E
->> First step to change the existing thermal drivers to have both, the
->> current support and the device tree support. And second step, for thos=
-e
->> who wish to, we could remove the old code containing thermal data and
->> have only dt support. Of course, this requires drivers authors input.
->>
->>
->>
->>>> +static struct thermal_zone_device *
->>>> +thermal_zone_of_add_sensor(struct device_node *zone,
->>>> +               struct device_node *sensor, void *data,
->>>> +               int (*get_temp)(void *, long *),
->>>> +               int (*get_trend)(void *, long *))
->>>> +{
->>>> +    struct thermal_zone_device *tzd;
->>>> +    struct __thermal_zone *tz;
->>>> +
->>>> +    tzd =3D thermal_zone_get_zone_by_name(zone->name);
->>>> +    if (IS_ERR(tzd))
->>>> +        return ERR_PTR(-EPROBE_DEFER);
->>>> +
->>>> [...]
->>>> +
->>>> +/*
->>>> + * Here are the thermal trip types. This must
->>>> + * match with enum thermal_trip_type at
->>>> + * include/linux/thermal.h
->>>> + */
->>>> +#define THERMAL_TRIP_ACTIVE        0
->>>> +#define THERMAL_TRIP_PASSIVE        1
->>>> +#define THERMAL_TRIP_HOT        2
->>>> +#define THERMAL_TRIP_CRITICAL        3
->>>> +
->>> These macros seem duplicated with enum thermal_trip_type in thermal.h=
-,
->>> do you have further plan to merge them?
->>> Or by using string "active",  "passive" etc in the dts, then you can
->>> reuse the original enum definition.
->> I am changing this so that in DT we have string constants, and we keep=
- a
->> map from string to enum, just like we have for phy-mode, as suggested =
-by
->> Mark.
->>
->> You can have a taste of it here:
->> https://git.kernel.org/cgit/linux/kernel/git/evalenti/linux.git/commit=
-/?h=3Dthermal_work/thermal_core/dt_parser_rfc_v4&id=3D73f16c27fc763495188=
-fba7d6e17b9c986efc6ac
->>
->>
->> I will be reposting this version once we are done with this thread
->> discussion and I am finished with my current test.
->>
->> If you have the time, I would appreciate if you could try the series o=
-n
->> your board, as I am don't have access to your hardware. It would be
->> really nice to see how this work is behaving in other environments the=
-n
->> the one I have.
->=20
-> We have thermal management plan in next year, currently I don't have
-> proper board to test this.
-> I would like to do it when I have time and board, but I will track thes=
-e
-> thermal treads.
-
-OK Zhang, no worries then.
-
->>
->> Thanks for your interest in this work.
->>
->>>> +/* On cooling devices upper and lower limits */
->>>> +#define THERMAL_NO_LIMIT        (-1UL)
->>>> +
->>>> +#endif
->>>> [...]
->>>
->>>
->>>
->>
->=20
->=20
->=20
->=20
->=20
-
-
---=20
-You have got to be excited about what you are doing. (L. Lamport)
-
-Eduardo Valentin
-
-
---0FBoxoVbJ0hPlqnk9EUrDIOGevpplwMHj
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iF4EAREIAAYFAlJUFcYACgkQCXcVR3XQvP0k8wD+MjEa/5LMbrPDrFTLIppk2Lfd
-ZgQxeYEmhkvE55VVlKwBAJt/vomBnCgYT3HFvxScyx2wg1hRN+yKtXd/EQ1EuD/2
-=K6Op
------END PGP SIGNATURE-----
-
---0FBoxoVbJ0hPlqnk9EUrDIOGevpplwMHj--
+> ---
+>  fs/proc/task_mmu.c |    4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> Index: linux-2.6.git/fs/proc/task_mmu.c
+> ===================================================================
+> --- linux-2.6.git.orig/fs/proc/task_mmu.c
+> +++ linux-2.6.git/fs/proc/task_mmu.c
+> @@ -941,6 +941,8 @@ static void pte_to_pagemap_entry(pagemap
+>  		frame = pte_pfn(pte);
+>  		flags = PM_PRESENT;
+>  		page = vm_normal_page(vma, addr, pte);
+> +		if (pte_soft_dirty(pte))
+> +			flags2 |= __PM_SOFT_DIRTY;
+>  	} else if (is_swap_pte(pte)) {
+>  		swp_entry_t entry;
+>  		if (pte_swp_soft_dirty(pte))
+> @@ -960,7 +962,7 @@ static void pte_to_pagemap_entry(pagemap
+>  
+>  	if (page && !PageAnon(page))
+>  		flags |= PM_FILE;
+> -	if ((vma->vm_flags & VM_SOFTDIRTY) || pte_soft_dirty(pte))
+> +	if ((vma->vm_flags & VM_SOFTDIRTY))
+>  		flags2 |= __PM_SOFT_DIRTY;
+>  
+>  	*pme = make_pme(PM_PFRAME(frame) | PM_STATUS2(pm->v2, flags2) | flags);
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
