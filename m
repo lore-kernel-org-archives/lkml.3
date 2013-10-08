@@ -1,47 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756283Ab3JHTG5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 15:06:57 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:54433 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755981Ab3JHTG4 (ORCPT
+	id S1754368Ab3JHTU3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 15:20:29 -0400
+Received: from mail-vb0-f52.google.com ([209.85.212.52]:50007 "EHLO
+	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752896Ab3JHTU1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 15:06:56 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19oDCvbHzhflJ401QAX3djY
-Date: Tue, 8 Oct 2013 12:06:47 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>
-Cc: Matt Mackall <mpm@selenic.com>, Herbert Xu <herbert@gondor.hengli.com.au>,
-        Russell King <linux@arm.linux.org.uk>, Joe Perches <joe@perches.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 3/3] RX-51: Add support for OMAP3 ROM Random Number
- Generator
-Message-ID: <20131008190647.GO8313@atomide.com>
-References: <1379534757-20870-1-git-send-email-pali.rohar@gmail.com>
- <1379683507-30793-1-git-send-email-pali.rohar@gmail.com>
- <1379683507-30793-4-git-send-email-pali.rohar@gmail.com>
+	Tue, 8 Oct 2013 15:20:27 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1379683507-30793-4-git-send-email-pali.rohar@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20131008190523.GW30970@tucnak.zalov.cz>
+References: <20131005234430.GA22485@localhost>
+	<CA+55aFxEeKixnH7mZZs5iwupA9_GsRN0N7QZxqcTcE4RKZvTTg@mail.gmail.com>
+	<20131008075151.GA15689@localhost>
+	<CA+55aFykGxmaE9hq9xd+6HHFtEube_2QnB+ipW4oF71c6vyXAw@mail.gmail.com>
+	<20131008185154.GA8258@redhat.com>
+	<20131008190523.GW30970@tucnak.zalov.cz>
+Date: Tue, 8 Oct 2013 12:20:26 -0700
+X-Google-Sender-Auth: 8AHTZk_Gpx_ykYWwr_MEkukWCBQ
+Message-ID: <CA+55aFx5i=vPeqx9S2WMZdqVC+g-MTczQxPa0mi84Vbs6_YF0g@mail.gmail.com>
+Subject: Re: [x86] BUG: unable to handle kernel paging request at 00740060
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Jakub Jelinek <jakub@redhat.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, Fengguang Wu <fengguang.wu@intel.com>,
+        Richard Henderson <rth@twiddle.net>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Pali Rohár <pali.rohar@gmail.com> [130920 06:33]:
-> Adding this driver as platform device and only for RX-51 until somebody test if
-> it working also on other OMAP3 HS devices and until there will be generic ARM
-> way to deal with SMC calls.
+On Tue, Oct 8, 2013 at 12:05 PM, Jakub Jelinek <jakub@redhat.com> wrote:
+>
+> If you suspect a compiler bug, can somebody please narrow it down to
+> a single object file (if I've skimmed the patch right, it is just an
+> optimization, where object files compiled without and with the patch
+> should actually coexist fine in the same kernel), ideally to a single
+> routine if possible and post a preprocessed source + gcc command line
+> + version of gcc?
 
-Thanks I'll apply this with the patch #1 clock alias folded in into
-omap-for-v3.13/n900 branch.
+It is indeed just an optimization, and we could in theory switch
+between the two versions on a case-by-case basis, but we don't have
+any sane way to really do that.
 
-Regards,
+I'll try to see if I can reproduce this on my hardware (just applying
+that patch on top of my own tip) and see if I can try to narrow things
+down. But I looked at the assembly for a couple of files, and it all
+looked good, and I know this patch works fine for others (ie all the
+normal -tip testing), so I suspect it's something specific to what
+Fengguang does.
 
-Tony
+                Linus
