@@ -1,61 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755346Ab3JHJGK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 05:06:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36725 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752028Ab3JHJGF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 05:06:05 -0400
-Date: Tue, 8 Oct 2013 11:07:16 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
-        Jon Mason <jon.mason@intel.com>,
-        Matt Porter <mporter@kernel.crashing.org>, linux-pci@vger.kernel.org,
-        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
-        linux390@de.ibm.com, linux-s390@vger.kernel.org, x86@kernel.org,
-        linux-ide@vger.kernel.org, iss_storagedev@hp.com,
-        linux-nvme@lists.infradead.org, linux-rdma@vger.kernel.org,
-        netdev@vger.kernel.org, e1000-devel@lists.sourceforge.net,
-        linux-driver@qlogic.com,
-        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
-        "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH RFC 00/77] Re-design MSI/MSI-X interrupts enablement
- pattern
-Message-ID: <20131008090716.GA10561@dhcp-26-207.brq.redhat.com>
-References: <cover.1380703262.git.agordeev@redhat.com>
- <20131007182117.GC27396@htj.dyndns.org>
+	id S1754145Ab3JHJJT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 05:09:19 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:54649 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751733Ab3JHJJS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 05:09:18 -0400
+Date: Tue, 8 Oct 2013 10:09:10 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Wei Ni <wni@nvidia.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-ID: <20131008090910.GW21581@sirena.org.uk>
+References: <5253A17E.10503@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="FmwJltL8yKUx7YXQ"
 Content-Disposition: inline
-In-Reply-To: <20131007182117.GC27396@htj.dyndns.org>
+In-Reply-To: <5253A17E.10503@nvidia.com>
+X-Cookie: Penalty for private use.
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: About [PATCH 1/2] regulator: core: Provide a dummy regulator
+ with full constraints
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 07, 2013 at 02:21:17PM -0400, Tejun Heo wrote:
-> Whee.... that's a lot more than I expected.  I was just scanning
-> multiple msi users.  Maybe we can stage the work in more manageable
-> steps so that you don't have to go through massive conversion only to
-> do it all over again afterwards and likewise people don't get
-> bombarded on each iteration?  Maybe we can first update pci / msi code
-> proper, msi and then msix?
 
-Multipe MSIs is just a handful of drivers, really. MSI-X impact still
-will be huge. But if we opt a different name for the new pci_enable_msix()
-then we could first update pci/msi, then drivers (in few stages possibly)
-and finally remove the old implementation.
+--FmwJltL8yKUx7YXQ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> tejun
+On Tue, Oct 08, 2013 at 02:09:02PM +0800, Wei Ni wrote:
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+> In the latest regulator framework, it default to provide dummy
+> regulators with full constraints by your patch "regulator: core: Provide
+> a dummy regulator with full constraints".
+
+> I tried to use regulator_get() on lm90.c. If not set vcc-supply property
+> in the dts file to assume the regulator is physically present and
+> enabled, but it still can't get dummy regulator, just return -ENODEV.
+> I traced it, the regulator_dev_lookup() will return -ENODEV, and at that
+> time the has_full_constraints is still false, didn't be initialized in
+> regulator_init_complete() yet, so it will not return dummy regulator,
+> and will not return -EPROBE_DEFER either. This will cause the
+> lm90_probe() failed.
+
+> Could you take a look ?
+
+Could you take a look at why we're getting -ENODEV please - this
+indicates a problem with the device tree code since it should be what's
+requesting probe deferral when it sees a link is present.
+
+--FmwJltL8yKUx7YXQ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSU8uzAAoJELSic+t+oim92eQQAIqj9E+47p0Qw8HRGgd6VWLU
+nHB3xlYzQLxCEgDUO15AgUiLuggqrVz+/DfkOggzvU7yBYcuazmCtT5XewDQIzKw
+b9VhHCLjiDSdbUg8Dz7Xhwhj7Nhnmt8f6CZ0xRhWq3bJ+vRoeKIE4SZXnckGIa3g
+eKihRz3mxdqXT4ozvcL1meXcQ4+Xk8CkH5dGqB4oD236S5bB2W7NJ7eMG3/kwgWS
+IdMAdD08uRBO/M9sx39y4+T4NcXhSHDZbv6vJ+n0Et2mulb2Z4l0i9HPZY6UiVhm
+0GQA02DO4NiuWRjbHYLLZ66qsGNFh+BiZiKC/X84GS0l3qgA9EYOb1zCIEW1ZUOD
+2jXomK7xSRUhYS5z/S5OrNKtSSdasBEGC5mNhyF8BMmliANE0HrWKsLRxG2A3kku
+iLSjy9AgPzCinGMg7KfbpHfRHV09XRrMMvbqDEtikzc0uLtu0b/orr3RTnzm9KKf
+4SdyiwLAspdwC5vhrZ0GsyRouFZKP8bgmEip6btwg76HKxy7WyPvfzcZrw+obUSB
+t9pSpSMn9AKmbG9QGvEwIfjQUeUvdisgyeUdjR2+haok6Eyblb44j0UtGgm9KK91
+dEDFd81Vq5ibB3loZQyLA1KeCBBnpBOAzY328ebl3a7JSHM9LP0WgE62CBSgQsk8
+8O3et3DLK8yVpAN9N0UK
+=lrzj
+-----END PGP SIGNATURE-----
+
+--FmwJltL8yKUx7YXQ--
