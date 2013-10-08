@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754990Ab3JHKWY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 06:22:24 -0400
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:43924 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755867Ab3JHKMZ (ORCPT
+	id S1755858Ab3JHKMX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 06:12:23 -0400
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:59191 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752343Ab3JHKMN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 06:12:25 -0400
+	Tue, 8 Oct 2013 06:12:13 -0400
 From: Ingo Molnar <mingo@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 21/52] tools/perf/build: Split out feature check: 'gtk2'
-Date: Tue,  8 Oct 2013 12:10:51 +0200
-Message-Id: <1381227082-22039-22-git-send-email-mingo@kernel.org>
+Subject: [PATCH 08/52] tools/perf/build: Split out feature check: 'fortify-source'
+Date: Tue,  8 Oct 2013 12:10:38 +0200
+Message-Id: <1381227082-22039-9-git-send-email-mingo@kernel.org>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1381227082-22039-1-git-send-email-mingo@kernel.org>
 References: <1381227082-22039-1-git-send-email-mingo@kernel.org>
@@ -28,72 +28,68 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/n/tip-gfwzurn7wywiviLp7Swyyqsy@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-wicrcLCy2wkalka7iwsuzgpb@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- tools/perf/config/Makefile                   |  3 ++-
- tools/perf/config/feature-checks/Makefile    |  4 ++++
- tools/perf/config/feature-checks/test-gtk2.c | 10 ++++++++++
- 3 files changed, 16 insertions(+), 1 deletion(-)
+ tools/perf/config/Makefile                             | 3 ++-
+ tools/perf/config/feature-checks/Makefile              | 4 ++++
+ tools/perf/config/feature-checks/test-fortify-source.c | 6 ++++++
+ 3 files changed, 12 insertions(+), 1 deletion(-)
 
 diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index a8f2d67..c72a6fa 100644
+index a3de2f8..7a614f9 100644
 --- a/tools/perf/config/Makefile
 +++ b/tools/perf/config/Makefile
-@@ -116,6 +116,7 @@ FEATURE_TESTS =				\
- 	libunwind			\
- 	libaudit			\
- 	libslang			\
-+	gtk2				\
+@@ -106,6 +106,7 @@ FEATURE_TESTS =				\
+ 	stackprotector-all		\
+ 	stackprotector			\
+ 	volatile-register-var		\
++	fortify-source			\
  	libnuma
  
  $(foreach test,$(FEATURE_TESTS),$(call feature_check,$(test),$(test)))
-@@ -284,7 +285,7 @@ endif
+@@ -123,7 +124,7 @@ ifeq ($(feature-volatile-register-var), 1)
+ endif
  
- ifndef NO_GTK2
-   FLAGS_GTK2=$(CFLAGS) $(LDFLAGS) $(EXTLIBS) $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null)
--  ifneq ($(call try-cc,$(SOURCE_GTK2),$(FLAGS_GTK2),gtk2),y)
-+  ifneq ($(feature-gtk2), 1)
-     msg := $(warning GTK2 not found, disables GTK2 support. Please install gtk2-devel or libgtk2.0-dev);
-     NO_GTK2 := 1
-   else
+ ifndef PERF_DEBUG
+-  ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -D_FORTIFY_SOURCE=2,-D_FORTIFY_SOURCE=2),y)
++  ifeq ($(feature-fortify-source), 1)
+     CFLAGS += -D_FORTIFY_SOURCE=2
+   endif
+ endif
 diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
-index c9b15b0..920958c 100644
+index 5693299..529317e 100644
 --- a/tools/perf/config/feature-checks/Makefile
 +++ b/tools/perf/config/feature-checks/Makefile
-@@ -14,6 +14,7 @@ FILES=					\
- 	test-libunwind			\
- 	test-libaudit			\
- 	test-libslang			\
-+	test-gtk2			\
+@@ -4,6 +4,7 @@ FILES=					\
+ 	test-stackprotector-all		\
+ 	test-stackprotector		\
+ 	test-volatile-register-var	\
++	test-fortify-source		\
  	test-libnuma
  
  CC := $(CC) -MD
-@@ -69,6 +70,9 @@ test-libaudit:
- test-libslang:
- 	$(BUILD) -I/usr/include/slang -lslang
+@@ -26,6 +27,9 @@ test-stackprotector:
+ test-volatile-register-var:
+ 	$(BUILD) -Werror -Wvolatile-register-var
  
-+test-gtk2:
-+	$(BUILD) $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null)
++test-fortify-source:
++	$(BUILD) -O2 -Werror -D_FORTIFY_SOURCE=2
 +
- -include *.d */*.d
+ test-libnuma:
+ 	$(BUILD) -lnuma
  
- ###############################
-diff --git a/tools/perf/config/feature-checks/test-gtk2.c b/tools/perf/config/feature-checks/test-gtk2.c
+diff --git a/tools/perf/config/feature-checks/test-fortify-source.c b/tools/perf/config/feature-checks/test-fortify-source.c
 new file mode 100644
-index 0000000..1ac6d8a
+index 0000000..c9f398d
 --- /dev/null
-+++ b/tools/perf/config/feature-checks/test-gtk2.c
-@@ -0,0 +1,10 @@
-+#pragma GCC diagnostic ignored "-Wstrict-prototypes"
-+#include <gtk/gtk.h>
-+#pragma GCC diagnostic error "-Wstrict-prototypes"
++++ b/tools/perf/config/feature-checks/test-fortify-source.c
+@@ -0,0 +1,6 @@
++#include <stdio.h>
 +
-+int main(int argc, char *argv[])
++int main(void)
 +{
-+        gtk_init(&argc, &argv);
-+
-+        return 0;
++	return puts("hi");
 +}
 -- 
 1.8.3.1
