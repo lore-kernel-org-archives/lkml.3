@@ -1,260 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756710Ab3JHKlA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 06:41:00 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:33579 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754315Ab3JHKku (ORCPT
+	id S1756847Ab3JHKl4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 06:41:56 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:37615 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756451Ab3JHKlt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 06:40:50 -0400
-Message-Id: <20131008103830.180541879@infradead.org>
-User-Agent: quilt/0.60-1
-Date: Tue, 08 Oct 2013 12:25:07 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 2/6] rcu: Create rcu_sync infrastructure
-References: <20131008102505.404025673@infradead.org>
-Content-Disposition: inline; filename=oleg-sync_sched.patch
+	Tue, 8 Oct 2013 06:41:49 -0400
+Date: Tue, 8 Oct 2013 03:41:00 -0700
+From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
+Message-ID: <tip-z7ryi3r1b9dn9smbfnab0fdc@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, jolsa@redhat.com, fweisbec@gmail.com,
+        adrian.hunter@intel.com, dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, jolsa@redhat.com, fweisbec@gmail.com,
+        dsahern@gmail.com, adrian.hunter@intel.com, tglx@linutronix.de
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf tools:
+  Fix installation of libexec components
+Git-Commit-ID: 027a7e86a17fb2d172f4eb17cd6b0e9f139224fd
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 08 Oct 2013 03:41:06 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Oleg Nesterov <oleg@redhat.com>
+Commit-ID:  027a7e86a17fb2d172f4eb17cd6b0e9f139224fd
+Gitweb:     http://git.kernel.org/tip/027a7e86a17fb2d172f4eb17cd6b0e9f139224fd
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Fri, 4 Oct 2013 10:24:17 -0300
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Fri, 4 Oct 2013 15:16:05 -0300
 
-It is functionally equivalent to
+perf tools: Fix installation of libexec components
 
-        struct rcu_sync_struct {
-                atomic_t counter;
-        };
+Doing a fresh install on a user home directory needs to first make sure
+that the ~/libexec/perf-core/ directory is present so that
+'perf-archive' like scripts, 'perf test' attr config files and 'perf
+script' scripts can be installed.
 
-        static inline bool rcu_sync_is_idle(struct rcu_sync_struct *xxx)
-        {
-                return atomic_read(&xxx->counter) == 0;
-        }
-
-        static inline void rcu_sync_enter(struct rcu_sync_struct *xxx)
-        {
-                atomic_inc(&xxx->counter);
-                synchronize_sched();
-        }
-
-        static inline void rcu_sync_enter(struct rcu_sync_struct *xxx)
-        {
-                synchronize_sched();
-                atomic_dec(&xxx->counter);
-        }
-
-except: it records the state and synchronize_sched() is only called by
-rcu_sync_enter() and only if necessary.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Reviewed-by: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20130929183634.GA15563@redhat.com
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-z7ryi3r1b9dn9smbfnab0fdc@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- include/linux/rcusync.h |   64 ++++++++++++++++++++++++++++
- kernel/Makefile         |    3 -
- kernel/rcusync.c        |  108 ++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 174 insertions(+), 1 deletion(-)
+ tools/perf/Makefile | 1 +
+ 1 file changed, 1 insertion(+)
 
---- /dev/null
-+++ b/include/linux/rcusync.h
-@@ -0,0 +1,64 @@
-+#ifndef _LINUX_RCUSYNC_H_
-+#define _LINUX_RCUSYNC_H_
-+
-+#include <linux/wait.h>
-+#include <linux/rcupdate.h>
-+
-+struct rcu_sync_struct {
-+	int			gp_state;
-+	int			gp_count;
-+	wait_queue_head_t	gp_wait;
-+
-+	int			cb_state;
-+	struct rcu_head		cb_head;
-+
-+	void (*sync)(void);
-+	void (*call)(struct rcu_head *, void (*)(struct rcu_head *));
-+};
-+
-+#define ___RCU_SYNC_INIT(name)						\
-+	.gp_state = 0,							\
-+	.gp_count = 0,							\
-+	.gp_wait = __WAIT_QUEUE_HEAD_INITIALIZER(name.gp_wait),		\
-+	.cb_state = 0
-+
-+#define __RCU_SCHED_SYNC_INIT(name) {					\
-+	___RCU_SYNC_INIT(name),						\
-+	.sync = synchronize_sched,					\
-+	.call = call_rcu_sched,						\
-+}
-+
-+#define __RCU_BH_SYNC_INIT(name) {					\
-+	___RCU_SYNC_INIT(name),						\
-+	.sync = synchronize_rcu_bh,					\
-+	.call = call_rcu_bh,						\
-+}
-+
-+#define __RCU_SYNC_INIT(name) {						\
-+	___RCU_SYNC_INIT(name),						\
-+	.sync = synchronize_rcu,					\
-+	.call = call_rcu,						\
-+}
-+
-+#define DEFINE_RCU_SCHED_SYNC(name)					\
-+	struct rcu_sync_struct name = __RCU_SCHED_SYNC_INIT(name)
-+
-+#define DEFINE_RCU_BH_SYNC(name)					\
-+	struct rcu_sync_struct name = __RCU_BH_SYNC_INIT(name)
-+
-+#define DEFINE_RCU_SYNC(name)						\
-+	struct rcu_sync_struct name = __RCU_SYNC_INIT(name)
-+
-+static inline bool rcu_sync_is_idle(struct rcu_sync_struct *rss)
-+{
-+	return !rss->gp_state; /* GP_IDLE */
-+}
-+
-+enum rcu_sync_type { RCU_SYNC, RCU_SCHED_SYNC, RCU_BH_SYNC };
-+
-+extern void rcu_sync_init(struct rcu_sync_struct *, enum rcu_sync_type);
-+extern void rcu_sync_enter(struct rcu_sync_struct *);
-+extern void rcu_sync_exit(struct rcu_sync_struct *);
-+
-+#endif /* _LINUX_RCUSYNC_H_ */
-+
---- a/kernel/Makefile
-+++ b/kernel/Makefile
-@@ -10,7 +10,8 @@ obj-y     = fork.o exec_domain.o panic.o
- 	    kthread.o wait.o sys_ni.o posix-cpu-timers.o mutex.o \
- 	    hrtimer.o rwsem.o nsproxy.o srcu.o semaphore.o \
- 	    notifier.o ksysfs.o cred.o reboot.o \
--	    async.o range.o groups.o lglock.o smpboot.o
-+	    async.o range.o groups.o lglock.o smpboot.o \
-+	    rcusync.o
- 
- ifdef CONFIG_FUNCTION_TRACER
- # Do not trace debug files and internal ftrace files
---- /dev/null
-+++ b/kernel/rcusync.c
-@@ -0,0 +1,108 @@
-+
-+#include <linux/rcusync.h>
-+#include <linux/sched.h>
-+
-+enum { GP_IDLE = 0, GP_PENDING, GP_PASSED };
-+enum { CB_IDLE = 0, CB_PENDING, CB_REPLAY };
-+
-+#define	rss_lock	gp_wait.lock
-+
-+void rcu_sync_init(struct rcu_sync_struct *rss, enum rcu_sync_type type)
-+{
-+	memset(rss, 0, sizeof(*rss));
-+	init_waitqueue_head(&rss->gp_wait);
-+
-+	switch (type) {
-+	case RCU_SYNC:
-+		rss->sync = synchronize_rcu;
-+		rss->call = call_rcu;
-+		break;
-+
-+	case RCU_SCHED_SYNC:
-+		rss->sync = synchronize_sched;
-+		rss->call = call_rcu_sched;
-+		break;
-+
-+	case RCU_BH_SYNC:
-+		rss->sync = synchronize_rcu_bh;
-+		rss->call = call_rcu_bh;
-+		break;
-+	}
-+}
-+
-+void rcu_sync_enter(struct rcu_sync_struct *rss)
-+{
-+	bool need_wait, need_sync;
-+
-+	spin_lock_irq(&rss->rss_lock);
-+	need_wait = rss->gp_count++;
-+	need_sync = rss->gp_state == GP_IDLE;
-+	if (need_sync)
-+		rss->gp_state = GP_PENDING;
-+	spin_unlock_irq(&rss->rss_lock);
-+
-+	BUG_ON(need_wait && need_sync);
-+
-+	if (need_sync) {
-+		rss->sync();
-+		rss->gp_state = GP_PASSED;
-+		wake_up_all(&rss->gp_wait);
-+	} else if (need_wait) {
-+		wait_event(rss->gp_wait, rss->gp_state == GP_PASSED);
-+	} else {
-+		/*
-+		 * Possible when there's a pending CB from a rcu_sync_exit().
-+		 * Nobody has yet been allowed the 'fast' path and thus we can
-+		 * avoid doing any sync(). The callback will get 'dropped'.
-+		 */
-+		BUG_ON(rss->gp_state != GP_PASSED);
-+	}
-+}
-+
-+static void rcu_sync_func(struct rcu_head *rcu)
-+{
-+	struct rcu_sync_struct *rss =
-+		container_of(rcu, struct rcu_sync_struct, cb_head);
-+	unsigned long flags;
-+
-+
-+	BUG_ON(rss->gp_state != GP_PASSED);
-+	BUG_ON(rss->cb_state == CB_IDLE);
-+
-+	spin_lock_irqsave(&rss->rss_lock, flags);
-+	if (rss->gp_count) {
-+		/*
-+		 * A new rcu_sync_begin() has happened; drop the callback.
-+		 */
-+		rss->cb_state = CB_IDLE;
-+	} else if (rss->cb_state == CB_REPLAY) {
-+		/*
-+		 * A new rcu_sync_exit() has happened; requeue the callback
-+		 * to catch a later GP.
-+		 */
-+		rss->cb_state = CB_PENDING;
-+		rss->call(&rss->cb_head, rcu_sync_func);
-+	} else {
-+		/*
-+		 * We're at least a GP after rcu_sync_exit(); eveybody will now
-+		 * have observed the write side critical section. Let 'em rip!.
-+		 */
-+		rss->cb_state = CB_IDLE;
-+		rss->gp_state = GP_IDLE;
-+	}
-+	spin_unlock_irqrestore(&rss->rss_lock, flags);
-+}
-+
-+void rcu_sync_exit(struct rcu_sync_struct *rss)
-+{
-+	spin_lock_irq(&rss->rss_lock);
-+	if (!--rss->gp_count) {
-+		if (rss->cb_state == CB_IDLE) {
-+			rss->cb_state = CB_PENDING;
-+			rss->call(&rss->cb_head, rcu_sync_func);
-+		} else if (rss->cb_state == CB_PENDING) {
-+			rss->cb_state = CB_REPLAY;
-+		}
-+	}
-+	spin_unlock_irq(&rss->rss_lock);
-+}
-
-
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 3a0ff7f..64c043b 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -770,6 +770,7 @@ check: $(OUTPUT)common-cmds.h
+ install-bin: all
+ 	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(bindir_SQ)'
+ 	$(INSTALL) $(OUTPUT)perf '$(DESTDIR_SQ)$(bindir_SQ)'
++	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)'
+ 	$(INSTALL) $(OUTPUT)perf-archive -t '$(DESTDIR_SQ)$(perfexec_instdir_SQ)'
+ ifndef NO_LIBPERL
+ 	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/perl/Perf-Trace-Util/lib/Perf/Trace'
