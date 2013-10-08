@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755250Ab3JHIrN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 04:47:13 -0400
+	id S1755287Ab3JHIrT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 04:47:19 -0400
 Received: from mga09.intel.com ([134.134.136.24]:59651 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754961Ab3JHIrJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 04:47:09 -0400
+	id S1754961Ab3JHIrP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 04:47:15 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,1056,1371106800"; 
-   d="scan'208";a="389469274"
+   d="scan'208";a="389469382"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
@@ -17,9 +17,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
         Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH V5 1/9] perf tools: make a separate function to parse /proc/modules
-Date: Tue,  8 Oct 2013 11:45:48 +0300
-Message-Id: <1381221956-16699-2-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH V5 3/9] perf tools: workaround objdump difficulties with kcore
+Date: Tue,  8 Oct 2013 11:45:50 +0300
+Message-Id: <1381221956-16699-4-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1381221956-16699-1-git-send-email-adrian.hunter@intel.com>
 References: <1381221956-16699-1-git-send-email-adrian.hunter@intel.com>
@@ -28,191 +28,342 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make a separate function to parse /proc/modules
-so that it can be reused.
+objdump fails to annotate module symbols when looking
+at kcore.  Workaround this by extracting object code
+from kcore and putting it in a temporary file for
+objdump to use instead.  The temporary file is created
+to look like kcore but contains only the function
+being disassembled.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/util/machine.c | 67 +++++++++++++----------------------------------
- tools/perf/util/symbol.c  | 58 ++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/symbol.h  |  3 +++
- 3 files changed, 79 insertions(+), 49 deletions(-)
+ tools/perf/util/annotate.c       |  21 ++++
+ tools/perf/util/symbol-elf.c     | 221 +++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/symbol-minimal.c |   9 ++
+ tools/perf/util/symbol.h         |  14 +++
+ 4 files changed, 265 insertions(+)
 
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index 40083df..a36419e 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -776,12 +776,22 @@ static int machine__set_modules_path(struct machine *machine)
- 	return map_groups__set_modules_path_dir(&machine->kmaps, modules_path);
+diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+index f7bdc01..46746b8 100644
+--- a/tools/perf/util/annotate.c
++++ b/tools/perf/util/annotate.c
+@@ -879,6 +879,8 @@ int symbol__annotate(struct symbol *sym, struct map *map, size_t privsize)
+ 	FILE *file;
+ 	int err = 0;
+ 	char symfs_filename[PATH_MAX];
++	struct kcore_extract kce;
++	bool delete_extract = false;
+ 
+ 	if (filename) {
+ 		snprintf(symfs_filename, sizeof(symfs_filename), "%s%s",
+@@ -940,6 +942,23 @@ fallback:
+ 	pr_debug("annotating [%p] %30s : [%p] %30s\n",
+ 		 dso, dso->long_name, sym, sym->name);
+ 
++	if (dso__is_kcore(dso)) {
++		kce.kcore_filename = symfs_filename;
++		kce.addr = map__rip_2objdump(map, sym->start);
++		kce.offs = sym->start;
++		kce.len = sym->end + 1 - sym->start;
++		if (!create_kcore_extract(&kce)) {
++			delete_extract = true;
++			strlcpy(symfs_filename, kce.extract_filename,
++				sizeof(symfs_filename));
++			if (free_filename) {
++				free(filename);
++				free_filename = false;
++			}
++			filename = symfs_filename;
++		}
++	}
++
+ 	snprintf(command, sizeof(command),
+ 		 "%s %s%s --start-address=0x%016" PRIx64
+ 		 " --stop-address=0x%016" PRIx64
+@@ -972,6 +991,8 @@ fallback:
+ 
+ 	pclose(file);
+ out_free_filename:
++	if (delete_extract)
++		delete_kcore_extract(&kce);
+ 	if (free_filename)
+ 		free(filename);
+ 	return err;
+diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
+index a7b9ab5..79b27fc7 100644
+--- a/tools/perf/util/symbol-elf.c
++++ b/tools/perf/util/symbol-elf.c
+@@ -1002,6 +1002,227 @@ int file__read_maps(int fd, bool exe, mapfn_t mapfn, void *data,
+ 	return err;
  }
  
--static int machine__create_modules(struct machine *machine)
-+static int machine__create_module(void *arg, const char *name, u64 start)
- {
--	char *line = NULL;
--	size_t n;
--	FILE *file;
-+	struct machine *machine = arg;
- 	struct map *map;
++static int copy_bytes(int from, off_t from_offs, int to, off_t to_offs, u64 len)
++{
++	char buf[page_size];
++	ssize_t r;
++	size_t n;
 +
-+	map = machine__new_module(machine, start, name);
-+	if (map == NULL)
++	if (lseek(to, to_offs, SEEK_SET) != to_offs)
 +		return -1;
 +
-+	dso__kernel_module_get_build_id(map->dso, machine->root_dir);
++	if (lseek(from, from_offs, SEEK_SET) != from_offs)
++		return -1;
++
++	while (len) {
++		n = sizeof(buf);
++		if (len < n)
++			n = len;
++		/* Use read because mmap won't work on proc files */
++		r = read(from, buf, n);
++		if (r < 0)
++			return -1;
++		if (!r)
++			break;
++		n = r;
++		r = write(to, buf, n);
++		if (r < 0)
++			return -1;
++		if ((size_t)r != n)
++			return -1;
++		len -= n;
++	}
++	return 0;
++}
++
++struct kcore {
++	int fd;
++	int elfclass;
++	Elf *elf;
++	GElf_Ehdr ehdr;
++};
++
++static int kcore_open(const char *filename, struct kcore *kcore)
++{
++	GElf_Ehdr *ehdr;
++
++	kcore->fd = open(filename, O_RDONLY);
++	if (kcore->fd == -1)
++		return -1;
++
++	kcore->elf = elf_begin(kcore->fd, ELF_C_READ, NULL);
++	if (!kcore->elf)
++		goto out_close;
++
++	kcore->elfclass = gelf_getclass(kcore->elf);
++	if (kcore->elfclass == ELFCLASSNONE)
++		goto out_end;
++
++	ehdr = gelf_getehdr(kcore->elf, &kcore->ehdr);
++	if (!ehdr)
++		goto out_end;
++
++	return 0;
++
++out_end:
++	elf_end(kcore->elf);
++out_close:
++	close(kcore->fd);
++	return -1;
++}
++
++static int kcore_new(char *filename, struct kcore *kcore, int elfclass,
++		     bool temp)
++{
++	GElf_Ehdr *ehdr;
++
++	kcore->elfclass = elfclass;
++
++	if (temp)
++		kcore->fd = mkstemp(filename);
++	else
++		kcore->fd = open(filename, O_WRONLY | O_CREAT | O_EXCL, 0400);
++	if (kcore->fd == -1)
++		return -1;
++
++	kcore->elf = elf_begin(kcore->fd, ELF_C_WRITE, NULL);
++	if (!kcore->elf)
++		goto out_close;
++
++	if (!gelf_newehdr(kcore->elf, elfclass))
++		goto out_end;
++
++	ehdr = gelf_getehdr(kcore->elf, &kcore->ehdr);
++	if (!ehdr)
++		goto out_end;
++
++	return 0;
++
++out_end:
++	elf_end(kcore->elf);
++out_close:
++	close(kcore->fd);
++	unlink(filename);
++	return -1;
++}
++
++static void kcore_close(struct kcore *kcore)
++{
++	elf_end(kcore->elf);
++	close(kcore->fd);
++}
++
++static int kcore_copy_hdr(struct kcore *from, struct kcore *to, size_t count)
++{
++	GElf_Ehdr *ehdr = &to->ehdr;
++	GElf_Ehdr *kehdr = &from->ehdr;
++
++	memcpy(ehdr->e_ident, kehdr->e_ident, EI_NIDENT);
++	ehdr->e_type      = kehdr->e_type;
++	ehdr->e_machine   = kehdr->e_machine;
++	ehdr->e_version   = kehdr->e_version;
++	ehdr->e_entry     = 0;
++	ehdr->e_shoff     = 0;
++	ehdr->e_flags     = kehdr->e_flags;
++	ehdr->e_phnum     = count;
++	ehdr->e_shentsize = 0;
++	ehdr->e_shnum     = 0;
++	ehdr->e_shstrndx  = 0;
++
++	if (from->elfclass == ELFCLASS32) {
++		ehdr->e_phoff     = sizeof(Elf32_Ehdr);
++		ehdr->e_ehsize    = sizeof(Elf32_Ehdr);
++		ehdr->e_phentsize = sizeof(Elf32_Phdr);
++	} else {
++		ehdr->e_phoff     = sizeof(Elf64_Ehdr);
++		ehdr->e_ehsize    = sizeof(Elf64_Ehdr);
++		ehdr->e_phentsize = sizeof(Elf64_Phdr);
++	}
++
++	if (!gelf_update_ehdr(to->elf, ehdr))
++		return -1;
++
++	if (!gelf_newphdr(to->elf, count))
++		return -1;
 +
 +	return 0;
 +}
 +
-+static int machine__create_modules(struct machine *machine)
++static int kcore_add_phdr(struct kcore *kcore, int index, off_t offset,
++			  u64 addr, u64 len)
 +{
- 	const char *modules;
- 	char path[PATH_MAX];
- 
-@@ -795,56 +805,15 @@ static int machine__create_modules(struct machine *machine)
- 	if (symbol__restricted_filename(path, "/proc/modules"))
- 		return -1;
- 
--	file = fopen(modules, "r");
--	if (file == NULL)
-+	if (modules__parse(modules, machine, machine__create_module))
- 		return -1;
- 
--	while (!feof(file)) {
--		char name[PATH_MAX];
--		u64 start;
--		char *sep;
--		int line_len;
--
--		line_len = getline(&line, &n, file);
--		if (line_len < 0)
--			break;
--
--		if (!line)
--			goto out_failure;
--
--		line[--line_len] = '\0'; /* \n */
--
--		sep = strrchr(line, 'x');
--		if (sep == NULL)
--			continue;
--
--		hex2u64(sep + 1, &start);
--
--		sep = strchr(line, ' ');
--		if (sep == NULL)
--			continue;
--
--		*sep = '\0';
--
--		snprintf(name, sizeof(name), "[%s]", line);
--		map = machine__new_module(machine, start, name);
--		if (map == NULL)
--			goto out_delete_line;
--		dso__kernel_module_get_build_id(map->dso, machine->root_dir);
--	}
-+	if (!machine__set_modules_path(machine))
-+		return 0;
- 
--	free(line);
--	fclose(file);
-+	pr_debug("Problems setting modules path maps, continuing anyway...\n");
- 
--	if (machine__set_modules_path(machine) < 0) {
--		pr_debug("Problems setting modules path maps, continuing anyway...\n");
--	}
- 	return 0;
--
--out_delete_line:
--	free(line);
--out_failure:
--	return -1;
- }
- 
- int machine__create_kernel_maps(struct machine *machine)
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 48c3879..5fd9513 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -500,6 +500,64 @@ out_failure:
- 	return -1;
- }
- 
-+int modules__parse(const char *filename, void *arg,
-+		   int (*process_module)(void *arg, const char *name,
-+					 u64 start))
-+{
-+	char *line = NULL;
-+	size_t n;
-+	FILE *file;
-+	int err = 0;
++	GElf_Phdr gphdr;
++	GElf_Phdr *phdr;
 +
-+	file = fopen(filename, "r");
-+	if (file == NULL)
++	phdr = gelf_getphdr(kcore->elf, index, &gphdr);
++	if (!phdr)
 +		return -1;
 +
-+	while (1) {
-+		char name[PATH_MAX];
-+		u64 start;
-+		char *sep;
-+		ssize_t line_len;
++	phdr->p_type	= PT_LOAD;
++	phdr->p_flags	= PF_R | PF_W | PF_X;
++	phdr->p_offset	= offset;
++	phdr->p_vaddr	= addr;
++	phdr->p_paddr	= 0;
++	phdr->p_filesz	= len;
++	phdr->p_memsz	= len;
++	phdr->p_align	= page_size;
 +
-+		line_len = getline(&line, &n, file);
-+		if (line_len < 0) {
-+			if (feof(file))
-+				break;
-+			err = -1;
-+			goto out;
-+		}
++	if (!gelf_update_phdr(kcore->elf, index, phdr))
++		return -1;
 +
-+		if (!line) {
-+			err = -1;
-+			goto out;
-+		}
++	return 0;
++}
 +
-+		line[--line_len] = '\0'; /* \n */
++static off_t kcore_write(struct kcore *kcore)
++{
++	return elf_update(kcore->elf, ELF_C_WRITE);
++}
 +
-+		sep = strrchr(line, 'x');
-+		if (sep == NULL)
-+			continue;
++int create_kcore_extract(struct kcore_extract *kce)
++{
++	struct kcore kcore;
++	struct kcore extract;
++	size_t count = 1;
++	int index = 0, err = -1;
++	off_t offset = page_size, sz;
 +
-+		hex2u64(sep + 1, &start);
++	if (kcore_open(kce->kcore_filename, &kcore))
++		return -1;
 +
-+		sep = strchr(line, ' ');
-+		if (sep == NULL)
-+			continue;
++	strcpy(kce->extract_filename, PERF_KCORE_EXTRACT);
++	if (kcore_new(kce->extract_filename, &extract, kcore.elfclass, true))
++		goto out_kcore_close;
 +
-+		*sep = '\0';
++	if (kcore_copy_hdr(&kcore, &extract, count))
++		goto out_extract_close;
 +
-+		scnprintf(name, sizeof(name), "[%s]", line);
++	if (kcore_add_phdr(&extract, index, offset, kce->addr, kce->len))
++		goto out_extract_close;
 +
-+		err = process_module(arg, name, start);
-+		if (err)
-+			break;
-+	}
-+out:
-+	free(line);
-+	fclose(file);
++	sz = kcore_write(&extract);
++	if (sz < 0 || sz > offset)
++		goto out_extract_close;
++
++	if (copy_bytes(kcore.fd, kce->offs, extract.fd, offset, kce->len))
++		goto out_extract_close;
++
++	err = 0;
++
++out_extract_close:
++	kcore_close(&extract);
++	if (err)
++		unlink(kce->extract_filename);
++out_kcore_close:
++	kcore_close(&kcore);
++
 +	return err;
 +}
 +
- struct process_kallsyms_args {
- 	struct map *map;
- 	struct dso *dso;
++void delete_kcore_extract(struct kcore_extract *kce)
++{
++	unlink(kce->extract_filename);
++}
++
+ void symbol__elf_init(void)
+ {
+ 	elf_version(EV_CURRENT);
+diff --git a/tools/perf/util/symbol-minimal.c b/tools/perf/util/symbol-minimal.c
+index 3a802c3..0330163 100644
+--- a/tools/perf/util/symbol-minimal.c
++++ b/tools/perf/util/symbol-minimal.c
+@@ -308,6 +308,15 @@ int file__read_maps(int fd __maybe_unused, bool exe __maybe_unused,
+ 	return -1;
+ }
+ 
++int create_kcore_extract(struct kcore_extract *kce __maybe_unused)
++{
++	return -1;
++}
++
++void delete_kcore_extract(struct kcore_extract *kce __maybe_unused)
++{
++}
++
+ void symbol__elf_init(void)
+ {
+ }
 diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index 2d4ee9a..a2543f0 100644
+index a2543f0..54f3ed0 100644
 --- a/tools/perf/util/symbol.h
 +++ b/tools/perf/util/symbol.h
-@@ -223,6 +223,9 @@ int sysfs__read_build_id(const char *filename, void *bf, size_t size);
- int kallsyms__parse(const char *filename, void *arg,
- 		    int (*process_symbol)(void *arg, const char *name,
- 					  char type, u64 start));
-+int modules__parse(const char *filename, void *arg,
-+		   int (*process_module)(void *arg, const char *name,
-+					 u64 start));
- int filename__read_debuglink(const char *filename, char *debuglink,
- 			     size_t size);
+@@ -256,4 +256,18 @@ typedef int (*mapfn_t)(u64 start, u64 len, u64 pgoff, void *data);
+ int file__read_maps(int fd, bool exe, mapfn_t mapfn, void *data,
+ 		    bool *is_64_bit);
  
++#define PERF_KCORE_EXTRACT "/tmp/perf-kcore-XXXXXX"
++
++struct kcore_extract {
++	char *kcore_filename;
++	u64 addr;
++	u64 offs;
++	u64 len;
++	char extract_filename[sizeof(PERF_KCORE_EXTRACT)];
++	int fd;
++};
++
++int create_kcore_extract(struct kcore_extract *kce);
++void delete_kcore_extract(struct kcore_extract *kce);
++
+ #endif /* __PERF_SYMBOL */
 -- 
 1.7.11.7
 
