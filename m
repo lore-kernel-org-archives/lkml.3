@@ -1,79 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756084Ab3JHQYL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 12:24:11 -0400
-Received: from www.sr71.net ([198.145.64.142]:49130 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755571Ab3JHQYH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 12:24:07 -0400
-Message-ID: <52543185.3060705@sr71.net>
-Date: Tue, 08 Oct 2013 09:23:33 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1756227Ab3JHQZP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 12:25:15 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:33201 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754787Ab3JHQZL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 12:25:11 -0400
 MIME-Version: 1.0
-To: Robert C Jennings <rcj@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
-CC: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        Matt Helsley <matt.helsley@gmail.com>,
-        Anthony Liguori <anthony@codemonkey.ws>,
-        Michael Roth <mdroth@linux.vnet.ibm.com>,
-        Lei Li <lilei@linux.vnet.ibm.com>,
-        Leonardo Garcia <lagarcia@linux.vnet.ibm.com>,
-        Vlastimil Babka <vbabka@suse.cz>
-Subject: Re: [PATCH 1/2] vmsplice: unmap gifted pages for recipient
-References: <1381177293-27125-1-git-send-email-rcj@linux.vnet.ibm.com> <1381177293-27125-2-git-send-email-rcj@linux.vnet.ibm.com>
-In-Reply-To: <1381177293-27125-2-git-send-email-rcj@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20131008084508.GI3521@intel.com>
+References: <1380639537-23406-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1380639537-23406-3-git-send-email-mika.westerberg@linux.intel.com>
+ <CAAVeFuJZ3TwozZzpuHcYPDLjEsb2D_qvQADf85s3-eywYYHs8A@mail.gmail.com> <20131008084508.GI3521@intel.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Tue, 8 Oct 2013 09:24:50 -0700
+Message-ID: <CAAVeFu+_EUCs+70+WzCq530JUesrHzULi34mCf7-pRVVP1WV7g@mail.gmail.com>
+Subject: Re: [PATCH 2/5] gpiolib / ACPI: convert to gpiod interfaces
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        rjw@rjwysocki.net, Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Alexandre Courbot <acourbot@nvidia.com>, Rob Landley <rob@landley.net>,
+        linux-acpi@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/07/2013 01:21 PM, Robert C Jennings wrote:
->  		spd.partial[page_nr].offset = loff;
->  		spd.partial[page_nr].len = this_len;
-> +		spd.partial[page_nr].useraddr = index << PAGE_CACHE_SHIFT;
->  		len -= this_len;
->  		loff = 0;
->  		spd.nr_pages++;
-> @@ -656,6 +702,7 @@ ssize_t default_file_splice_read(struct file *in, loff_t *ppos,
->  		this_len = min_t(size_t, vec[i].iov_len, res);
->  		spd.partial[i].offset = 0;
->  		spd.partial[i].len = this_len;
-> +		spd.partial[i].useraddr = (unsigned long)vec[i].iov_base;
->  		if (!this_len) {
->  			__free_page(spd.pages[i]);
->  			spd.pages[i] = NULL;
-> @@ -1475,6 +1522,8 @@ static int get_iovec_page_array(const struct iovec __user *iov,
->  
->  			partial[buffers].offset = off;
->  			partial[buffers].len = plen;
-> +			partial[buffers].useraddr = (unsigned long)base;
-> +			base = (void*)((unsigned long)base + PAGE_SIZE);
->  
->  			off = 0;
->  			len -= plen;
-> diff --git a/include/linux/splice.h b/include/linux/splice.h
-> index 74575cb..56661e3 100644
-> --- a/include/linux/splice.h
-> +++ b/include/linux/splice.h
-> @@ -44,6 +44,7 @@ struct partial_page {
->  	unsigned int offset;
->  	unsigned int len;
->  	unsigned long private;
-> +	unsigned long useraddr;
->  };
+On Tue, Oct 8, 2013 at 1:45 AM, Mika Westerberg
+<mika.westerberg@linux.intel.com> wrote:
+> On Mon, Oct 07, 2013 at 09:54:13PM -0700, Alexandre Courbot wrote:
+>> > +struct gpio_desc *acpi_get_gpiod(char *path, int pin)
+>> >  {
+>> >         struct gpio_chip *chip;
+>> >         acpi_handle handle;
+>> > @@ -48,18 +49,15 @@ int acpi_get_gpio(char *path, int pin)
+>> >
+>> >         status = acpi_get_handle(NULL, path, &handle);
+>> >         if (ACPI_FAILURE(status))
+>> > -               return -ENODEV;
+>> > +               return ERR_PTR(-ENODEV);
+>> >
+>> >         chip = gpiochip_find(handle, acpi_gpiochip_find);
+>> >         if (!chip)
+>> > -               return -ENODEV;
+>> > +               return ERR_PTR(-ENODEV);
+>> >
+>> > -       if (!gpio_is_valid(chip->base + pin))
+>> > -               return -EINVAL;
+>> > -
+>> > -       return chip->base + pin;
+>> > +       return gpio_to_desc(chip->base + pin);
+>>
+>> I think you want to avoid using gpio_to_desc(). It is just a
+>> convenience function provided to ease the transition for consumers
+>> that still need to rely on GPIO numbers for some reason. The same
+>> applies to desc_to_gpio(), although the usage you are making of it
+>> (implemented fallbacks for the integer space) is the one that is
+>> intended.
+>>
+>> The last line could be changed to "return &chip->desc[pin];" after
+>> checking that 0 <= pin <= chip->ngpio.
+>
+> I tried that but it doesn't compile anymore :-(
+>
+> drivers/gpio/gpiolib-acpi.c: In function ‘acpi_get_gpiod’:
+> drivers/gpio/gpiolib-acpi.c:61:2: error: invalid use of undefined type ‘struct gpio_desc’
+> drivers/gpio/gpiolib-acpi.c:61:20: error: dereferencing pointer to incomplete type
 
-"useraddr" confuses me.  You make it an 'unsigned long', yet two of the
-three assignments are from "void __user *".  The other assignment:
+Ah right, there is no way to know the size of a gpio_desc from here...
+Maybe I should make a gpiochip_get_desc(index) function accessible to
+drivers only that takes care of this. Another possibility would be to
+move this function into gpiolib.c but there are probably too many
+dependencies with ACPI for that.
 
-	spd.partial[page_nr].useraddr = index << PAGE_CACHE_SHIFT;
+In the long term I would like to see gpio_to_desc()/desc_to_gpio()
+disappear from the consumer interface as they allow unsafe use of GPIO
+descriptors.
 
-'index' looks to be the offset inside the file, not a user address, so
-I'm confused what that is doing.
+> The DT version also uses gpio_to_desc().
 
-Could you elaborate a little more on why 'useraddr' is suddenly needed
-in these patches?  How is "index << PAGE_CACHE_SHIFT" a virtual address?
- Also, are we losing any of the advantages of sparse checking since
-'useraddr' is without the __user annotation?
+That seems to speak in favor of that gpiochip_get_desc() function I
+talked about earlier.
+
+Thanks,
+Alex.
