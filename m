@@ -1,80 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756596Ab3JHVNA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 17:13:00 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:50050 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753965Ab3JHVM5 (ORCPT
+	id S1756710Ab3JHVN4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 17:13:56 -0400
+Received: from shells.gnugeneration.com ([66.240.222.126]:50903 "HELO
+	shells.gnugeneration.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756531Ab3JHVNy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 17:12:57 -0400
+	Tue, 8 Oct 2013 17:13:54 -0400
+X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Tue, 08 Oct 2013 17:13:54 EDT
+Date: Tue, 8 Oct 2013 16:07:12 -0500
+From: lkml@pengaru.com
+To: linux-kernel@vger.kernel.org
+Subject: snd_hda_intel headphone output disabling upon complete insertion of plug
+Message-ID: <20131008210712.GC16883@shells.gnugeneration.com>
 MIME-Version: 1.0
-In-Reply-To: <20131008132845.7e6c1c28f1c917f30ecb8dc5@linux-foundation.org>
-References: <1381201011-4230-1-git-send-email-keescook@chromium.org>
-	<1381201011-4230-3-git-send-email-keescook@chromium.org>
-	<20131008132845.7e6c1c28f1c917f30ecb8dc5@linux-foundation.org>
-Date: Tue, 8 Oct 2013 14:12:56 -0700
-X-Google-Sender-Auth: MMgc1ApWNLJKusw26h81psSLKeA
-Message-ID: <CAGXu5jKmmH=7fVEP+W0iWM+oafcNyCrvmOwgKNNSzhacPTWD9w@mail.gmail.com>
-Subject: Re: [PATCH 3/3] vsprintf: ignore %n again
-From: Kees Cook <keescook@chromium.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Joe Perches <joe@perches.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 8, 2013 at 1:28 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Mon,  7 Oct 2013 19:56:51 -0700 Kees Cook <keescook@chromium.org> wrote:
->
->> This ignores %n in printf again, as was originally documented. Implementing
->> %n poses a greater security risk than utility, so it should stay ignored.
->> To help anyone attempting to use %n, a warning will be emitted if it is
->> encountered.
->>
->> Based on earlier patch by Joe Perches.
->
-> Well this sucks.  Nowhere in this patchset are we told what is the
-> alleged security risk with %n.  There's even a runtime warning telling
-> people not to use it, but we've provided no way for them to find out
-> *why*.
->
-> Please send along suitable changelog text so I can fix this up.
+Hello list,
 
-Perhaps add these two paragraphs to the end of the "vsprintf: ignore
-%n again" commit:
+Somewhere between 3.11.0-rc7-gfa8218d and 3.12.0-rc4-g8b5ede6 this
+broke.
 
+The machine is an x61s thinkpad, with the headphone output unmuted and
+headphones partially inserted sound is audible.  If the output is muted,
+the output shuts off.  With the output unmuted, upon inserting the
+headphone plug fully the output shuts off following a blink of a delay.
+If I slowly remove the headphone plug returning it to a partially inserted
+state, the audio returns after another delay.
 
-Because %n was designed to write to pointers on the stack, it has been
-frequently used as an attack vector when bugs are found that leak
-user-controlled strings into functions that ultimately process format
-strings. While this class of bug can still be turned into an
-information leak, removing %n eliminates the common method of
-elevating such a bug into an arbitrary kernel memory writing
-primitive, significantly reducing the danger of this class of bug.
+It seems like a bug in the headphone amplifier power management, as if
+it's doing the inverse of what it needs to do.  I'll try find time to
+bisect, just wanted to get this out there though in case any of you
+recognize the problem and know what might have caused it.
 
-For seq_file users that need to know the length of a written string
-for padding, please see seq_setwidth() and seq_pad() instead.
-
-
-> A new checkpatch rule might be appropriate?
-
-I can look into that -- I worry it won't be very effective since
-checkpatch lacks the knowledge of which functions are taking format
-strings, and looking for just %n may lead to some false positives.
-Maybe I can look for the common case of %n" (at the end of a string
-literal).
-
-> Two of these patches were acked-by:you.  But you sent the patches, so I
-> changed these to Signed-off-by:, as per
-> Documentation/SubmittingPatches, section 12.
-
-Ah! Yes, thanks for fixing that.
-
--Kees
-
--- 
-Kees Cook
-Chrome OS Security
+Regards,
+Vito Caputo
