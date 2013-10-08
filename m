@@ -1,101 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755089Ab3JHMHY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 08:07:24 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:47066 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751958Ab3JHMHW (ORCPT
+	id S1755195Ab3JHMKa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 08:10:30 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:54779 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752569Ab3JHMK1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 08:07:22 -0400
-Date: Tue, 8 Oct 2013 14:05:17 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: linux-pwm@vger.kernel.org, voice.shen@atmel.com,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2] PWM: atmel-pwm: use request/free instead of
- enable/disable
-Message-ID: <20131008120516.GA16196@ulmo.nvidia.com>
-References: <1380554553-25676-1-git-send-email-alexandre.belloni@free-electrons.com>
+	Tue, 8 Oct 2013 08:10:27 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="9amGYk9869ThD9tj"
-Content-Disposition: inline
-In-Reply-To: <1380554553-25676-1-git-send-email-alexandre.belloni@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131003054221.8941.87801.stgit@localhost>
+References: <20131003054104.8941.88857.stgit@localhost>
+	<20131003054221.8941.87801.stgit@localhost>
+Date: Tue, 8 Oct 2013 14:10:27 +0200
+Message-ID: <CACRpkda5-dxD+-4mgY6v90awxQhHpNePb5uhWHusb7jf-j5s-g@mail.gmail.com>
+Subject: Re: [PATCH 4/6] pinctrl: single: Add support for wake-up interrupts
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Tony Lindgren <tony@atomide.com>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Jon Hunter <jgchunter@gmail.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Prakash Manjunathappa <prakash.pm@ti.com>,
+        Haojian Zhuang <haojian.zhuang@linaro.org>,
+        =?ISO-8859-1?Q?Beno=EEt_Cousson?= <bcousson@baylibre.com>,
+        Linux-OMAP <linux-omap@vger.kernel.org>, Roger Quadros <rogerq@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Oct 3, 2013 at 7:42 AM, Tony Lindgren <tony@atomide.com> wrote:
 
---9amGYk9869ThD9tj
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> This patch adds support for interrupts in a way that
+> should be pretty generic, and works for the omaps that
+> support wake-up interrupts. On omaps, there's an
+> interrupt enable and interrupt status bit for each pin.
 
-On Mon, Sep 30, 2013 at 05:22:33PM +0200, Alexandre Belloni wrote:
-> I found that disabling a pwm while it is at a low level will actually put it
-> back at a high level. The main symptom is that leds-pwm is calling pwm_disable()
-> after setting the duty cycle to 0. Hence, instead of getting a switched off LED,
-> you get an LED lit up at full brightness.
+So to be clear: is this enable and status bit in the *same*
+register as all other settings? Then it warrants having this
+under pinctrl-single still and I feel a bit better about this.
 
-I wonder why that's the case. What's causing the PWM to go back to full
-duty cycle when disabled? There was a similar issue with some other PWM
-driver a while back and the cause was tracked down to be that you had to
-wait for a full period to make sure the signal was constantly low before
-switching off the clock. Perhaps something similar is the issue here?
+Second: how does this relate to the case where say
+gpio-omap is using the same pins as a back-end (this
+is a real usecase right)?
 
-> Solve that by using the request and free callbacks to enable and disable the
-> pwm channels and the clock.
+So gpio-omap already supports gpio_to_irq() and
+it does not support enable_irq_wake() on the GPIO
+lines as well.
 
-"pwm" -> "PWM",  please.
+How does this play together? Is it like the pins have a set
+of wakeup IRQs and then the GPIO block has *another*
+set of wakeup IRQs?
 
-> diff --git a/drivers/pwm/pwm-atmel.c b/drivers/pwm/pwm-atmel.c
-[...]
-> +static int atmel_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
-> +{
-> +	/*
-> +	 * This is a dummy function, required to be able to register the pwm
-> +	 * chip, see pwmadd_chip() in pwm/core.c
-> +	 */
-> +	return 0;
-> +}
-> +
-> +static void atmel_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
-> +{
-> +	/*
-> +	 * This is a dummy function, required to be able to register the pwm
-> +	 * chip, see pwmadd_chip() in pwm/core.c
-> +	 */
-> +}
+And if you do enable_irq_wake() on the GPIO line,
+should this not fall through to the pinctrl driver, so we
+should add pinctrl_gpio_enable_wake() and
+pinctrl_gpio_disable_wake() just like we have
+pinctrl_gpio_direction_input() and friends today,
+so that this request falls through to the pinctrl driver
+when a wakeup on a certain GPIO line is requested?
 
-This just doesn't feel right. Can somebody please investigate what the
-real reason is for the behaviour described in the commit message and see
-if we can't solve this in some other way? .request() and .free() are
-typically called very early or very late, respectively, so this patch
-will keep the PWM clock on forever (pretty much).
+Now gpio-omap.c does not seem to use the pinctrl
+back-end commands, instead of using e.g.
+pinctrl_gpio_request() and GPIO to pin ranges it
+seems to use this hack:
 
-Thierry
+static void _enable_gpio_module(struct gpio_bank *bank, unsigned offset)
+{
+        if (bank->regs->pinctrl) {
+                void __iomem *reg = bank->base + bank->regs->pinctrl;
 
---9amGYk9869ThD9tj
-Content-Type: application/pgp-signature
+                /* Claim the pin for MPU */
+                __raw_writel(__raw_readl(reg) | (1 << offset), reg);
+        }
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Can't we please make the OMAP GPIO driver use the
+pinctrl back-end with gpio ranges properly *before* we proceed
+to doing this kind of stuff? I think it is already looking
+like a bit of layered hacks :-(
 
-iQIcBAEBAgAGBQJSU/T8AAoJEN0jrNd/PrOhRz0QAJOSQvXzANS1IQRpLNd/DJbD
-sRwYvMA1EDGlVQN390LCm86YlI9uecpdZQuwPP3UTqAE/R11PgxdZLp6U9VrtG01
-Q12Q1LXCIhYRDi7Dk7R6OY9XPQIFixv50WX9zCWxLZNtrNctsVpizPYJmEvbXuD5
-dKyPYFFu39feD9aedJ8rEG7mZyIH607+fX4xaYuFx4lZj6znheva+ydL1N7aAHex
-mEF0G8V1JRcu+Xha1aVYLGG1R0laQ/uHGCp0Hjeat/P4BKm7Qei3zCYFaGN3rQEA
-hmnJZlPq+5Wvvc28beL9GER9PQa+8O52hlm1CyWEUXoQxi9b1ssCGqUsxzeKCkml
-gruDGJxUuSHf53y9WF/KTEb5WzGjiVo2F8TWMEWDgs0HO0SKUbCapHkJzzVtltBf
-5njoMyH4T0k5aUHzC5CkOOQ4BquwME0ssEII9JAshM3gyF4fpLwGlf+0iu5Yf/rv
-rCeG+ataY+MSC7XDra+oDXrMT4ELGOKdUF4EsiegMqgvhrDXXqSbA5H9G/w8RBm2
-4OuMkn+xSorosJu5A6N53Qu5tFP5v4dWyhziamhz58//6Zl1HPXxwaZUCUKDDkzb
-nDaG1534QLvAkK67lLdE09Qj7Bq9LiH3I8ma4lqWMx+jeVEZMZnPCf8RtEKXXlsW
-2i1NzTqSF72xmqkZs2J6
-=SpYy
------END PGP SIGNATURE-----
+Haojian is already using the pinctrl-single as backend to
+another GPIO controller (I think it's pinctrl-pl061.c) so surely
+this should be possible to do right.
 
---9amGYk9869ThD9tj--
+IIRC there are also other OMAP GPIO blocks so we need
+to look at the large picture here, for all of them.
+
+Yours,
+Linus Walleij
