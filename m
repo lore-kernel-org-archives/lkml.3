@@ -1,70 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756654Ab3JHUpz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 16:45:55 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:42134 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755860Ab3JHUpy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 16:45:54 -0400
-From: Waiman Long <Waiman.Long@hp.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        David Ahern <dsahern@gmail.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>
-Cc: Waiman Long <Waiman.Long@hp.com>, linux-kernel@vger.kernel.org,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: [PATCH] perf: Fix potential compilation error with some compilers
-Date: Tue,  8 Oct 2013 16:45:20 -0400
-Message-Id: <1381265120-58532-1-git-send-email-Waiman.Long@hp.com>
-X-Mailer: git-send-email 1.7.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        David Ahern <dsahern@gmail.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>
+	id S1755793Ab3JHUu7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 16:50:59 -0400
+Received: from mail.ispras.ru ([83.149.199.45]:46885 "EHLO mail.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752747Ab3JHUu6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 16:50:58 -0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: Won Kang <wonkang@gctsemi.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
+Subject: [PATCH 1/2] staging: gdm7240: alloc_mux_rx() does not need GFP_ATOMIC
+Date: Wed,  9 Oct 2013 00:50:15 +0400
+Message-Id: <1381265416-26333-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The building of the perf tool failed in a SLES11 sp3 system with the
-following compilation error:
+As far as alloc_mux_rx() is called from probe() only
+there is no need in GFP_ATOMIC here.
 
-cc1: warnings being treated as errors
-util/scripting-engines/trace-event-perl.c: In function
-‘perl_process_tracepoint’:
-util/scripting-engines/trace-event-perl.c:285: error: format ‘%lu’
-expects type ‘long unsigned int’, but argument 2 has type ‘__u64’
+Found by Linux Driver Verification project (linuxtesting.org).
 
-This patch replaces PRIu64 which is "lu" by the explicit "llu" to
-fix this problem as __u64 is of type "long long unsigned".
-
-Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
 ---
- .../perf/util/scripting-engines/trace-event-perl.c |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
+ drivers/staging/gdm724x/gdm_mux.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/util/scripting-engines/trace-event-perl.c b/tools/perf/util/scripting-engines/trace-event-perl.c
-index a85e4ae..d6eb9c5 100644
---- a/tools/perf/util/scripting-engines/trace-event-perl.c
-+++ b/tools/perf/util/scripting-engines/trace-event-perl.c
-@@ -281,8 +281,12 @@ static void perl_process_tracepoint(union perf_event *perf_event __maybe_unused,
- 		return;
+diff --git a/drivers/staging/gdm724x/gdm_mux.c b/drivers/staging/gdm724x/gdm_mux.c
+index 5b1ef40..5221cf9 100644
+--- a/drivers/staging/gdm724x/gdm_mux.c
++++ b/drivers/staging/gdm724x/gdm_mux.c
+@@ -96,12 +96,12 @@ static struct mux_rx *alloc_mux_rx(void)
+ {
+ 	struct mux_rx *r = NULL;
  
- 	event = find_cache_event(evsel);
-+	/*
-+	 * attr.config is a __u64 which requires "%llu" to avoid compilation
-+	 * error/warning with some compilers.
-+	 */
- 	if (!event)
--		die("ug! no event found for type %" PRIu64, evsel->attr.config);
-+		die("ug! no event found for type %llu", evsel->attr.config);
+-	r = kzalloc(sizeof(struct mux_rx), GFP_ATOMIC);
++	r = kzalloc(sizeof(struct mux_rx), GFP_KERNEL);
+ 	if (!r)
+ 		return NULL;
  
- 	pid = raw_field_value(event, "common_pid", data);
- 
+-	r->urb = usb_alloc_urb(0, GFP_ATOMIC);
+-	r->buf = kmalloc(MUX_RX_MAX_SIZE, GFP_ATOMIC);
++	r->urb = usb_alloc_urb(0, GFP_KERNEL);
++	r->buf = kmalloc(MUX_RX_MAX_SIZE, GFP_KERNEL);
+ 	if (!r->urb || !r->buf) {
+ 		usb_free_urb(r->urb);
+ 		kfree(r->buf);
 -- 
-1.7.1
+1.8.1.2
 
