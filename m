@@ -1,78 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756588Ab3JHQ3w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 12:29:52 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:64124 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753820Ab3JHQ3t (ORCPT
+	id S1756604Ab3JHQaF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 12:30:05 -0400
+Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:53884 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753820Ab3JHQ37 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 12:29:49 -0400
-Message-ID: <525432F8.9060600@atmel.com>
-Date: Tue, 8 Oct 2013 18:29:44 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Tue, 8 Oct 2013 12:29:59 -0400
+Message-ID: <525432EF.3050005@vmware.com>
+Date: Tue, 08 Oct 2013 18:29:35 +0200
+From: Thomas Hellstrom <thellstrom@vmware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Boris BREZILLON <b.brezillon@overkiz.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Andrew Victor <linux@maxim.org.za>,
-        "Jean-Christophe Plagniol-Villard" <plagnioj@jcrosoft.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>, "Felipe Balbi" <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Josh Wu <josh.wu@atmel.com>, Richard Genoud <richard.genoud@gmail.com>
-CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 19/19] ARM: at91: add new compatible strings for pmc
- driver
-References: <1375937608-3773-1-git-send-email-b.brezillon@overkiz.com> <1375949965-10586-1-git-send-email-b.brezillon@overkiz.com>
-In-Reply-To: <1375949965-10586-1-git-send-email-b.brezillon@overkiz.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+To: Jerome Glisse <j.glisse@gmail.com>
+CC: =?ISO-8859-1?Q?Christian_K=F6nig?= <deathsimple@vodafone.de>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [RFC PATCH] drm/radeon: fixup locking inversion between mmap_sem
+ and reservations
+References: <20130912150645.GZ31370@twins.programming.kicks-ass.net> <CAKMK7uFF2GkYapa2_DLv4WYAd0t+POaT+Vy9HG=HQhzMmtH9nA@mail.gmail.com> <5231E18D.7070306@canonical.com> <5231EF5A.7010901@vmware.com> <52323734.4070908@canonical.com> <5232A39B.5040205@vmware.com> <52541350.5060807@canonical.com> <20131008143354.GA2355@gmail.com> <52541A7E.6050807@vodafone.de> <20131008145540.GB2355@gmail.com>
+In-Reply-To: <20131008145540.GB2355@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/08/2013 10:19, Boris BREZILLON :
-> This patch adds new compatible string for PMC node to prepare the
-> transition to common clk.
+On 10/08/2013 04:55 PM, Jerome Glisse wrote:
+> On Tue, Oct 08, 2013 at 04:45:18PM +0200, Christian König wrote:
+>> Am 08.10.2013 16:33, schrieb Jerome Glisse:
+>>> On Tue, Oct 08, 2013 at 04:14:40PM +0200, Maarten Lankhorst wrote:
+>>>> Allocate and copy all kernel memory before doing reservations. This prevents a locking
+>>>> inversion between mmap_sem and reservation_class, and allows us to drop the trylocking
+>>>> in ttm_bo_vm_fault without upsetting lockdep.
+>>>>
+>>>> Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+>>> I would say NAK. Current code only allocate temporary page in AGP case.
+>>> So AGP case is userspace -> temp page -> cs checker -> radeon ib.
+>>>
+>>> Non AGP is directly memcpy to radeon IB.
+>>>
+>>> Your patch allocate memory memcpy userspace to it and it will then be
+>>> memcpy to IB. Which means you introduce an extra memcpy in the process
+>>> not something we want.
+>> Totally agree. Additional to that there is no good reason to provide
+>> anything else than anonymous system memory to the CS ioctl, so the
+>> dependency between the mmap_sem and reservations are not really
+>> clear to me.
+>>
+>> Christian.
+> I think is that in other code path you take mmap_sem first then reserve
+> bo. But here we reserve bo and then we take mmap_sem because of copy
+> from user.
 >
-> These compatible string come from pmc driver in clk subsystem and are
-> needed to provide new device tree compatibility with old at91 clks
-> (device tree using common clks will use the new compatible strings).
+> Cheers,
+> Jerome
 >
-> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
-> ---
->   arch/arm/mach-at91/clock.c |    6 ++++++
->   1 file changed, 6 insertions(+)
->
-> diff --git a/arch/arm/mach-at91/clock.c b/arch/arm/mach-at91/clock.c
-> index 5f02aea..4d4463a 100644
-> --- a/arch/arm/mach-at91/clock.c
-> +++ b/arch/arm/mach-at91/clock.c
-> @@ -884,6 +884,12 @@ static int __init at91_pmc_init(unsigned long main_clock)
->   #if defined(CONFIG_OF)
->   static struct of_device_id pmc_ids[] = {
->   	{ .compatible = "atmel,at91rm9200-pmc" },
-> +	{ .compatible = "atmel,at91sam9260-pmc" },
-> +	{ .compatible = "atmel,at91sam9g45-pmc" },
-> +	{ .compatible = "atmel,at91sam9n12-pmc" },
-> +	{ .compatible = "atmel,at91sam9x5-pmc" },
-> +	{ .compatible = "atmel,at91sam9g35-pmc" },
+Actually the log message is a little confusing. I think the mmap_sem 
+locking inversion problem is orthogonal to what's being fixed here.
 
-With removal of this compatibility string:
+This patch fixes the possible recursive bo::reserve caused by malicious 
+user-space handing a pointer to ttm memory so that the ttm fault handler 
+is called when bos are already reserved. That may cause a (possibly 
+interruptible) livelock.
 
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Once that is fixed, we are free to choose the mmap_sem -> bo::reserve 
+locking order. Currently it's bo::reserve->mmap_sem(), but the hack 
+required in the ttm fault handler is admittedly a bit ugly.  The plan is 
+to change the locking order to mmap_sem->bo::reserve
 
-> +	{ .compatible = "atmel,sama5d3-pmc" },
->   	{ /*sentinel*/ }
->   };
->
->
+I'm not sure if it applies to this particular case, but it should be 
+possible to make sure that copy_from_user_inatomic() will always 
+succeed, by making sure the pages are present using get_user_pages(), 
+and release the pages after copy_from_user_inatomic() is done. That way 
+there's no need for a double memcpy slowpath, but if the copied data is 
+very fragmented I guess the resulting code may look ugly. The 
+get_user_pages() function will return an error if it hits TTM pages.
 
-
--- 
-Nicolas Ferre
+/Thomas
