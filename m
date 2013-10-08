@@ -1,87 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754317Ab3JHFn6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 01:43:58 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:58264 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753942Ab3JHFn4 convert rfc822-to-8bit (ORCPT
+	id S1754484Ab3JHFoi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 01:44:38 -0400
+Received: from alvesta.synopsys.com ([198.182.60.77]:36243 "EHLO
+	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751699Ab3JHFoe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 01:43:56 -0400
-Content-Type: text/plain; charset="utf-8"
+	Tue, 8 Oct 2013 01:44:34 -0400
+Message-ID: <52539BB7.5010207@synopsys.com>
+Date: Tue, 8 Oct 2013 11:14:23 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Felipe Pena <felipensp@gmail.com>, Michal Simek <michal.simek@xilinx.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        =?utf-8?q?S=C3=B6ren_Brinkmann?= <soren.brinkmann@xilinx.com>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1381199144-5827-1-git-send-email-felipensp@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Felipe Pena <felipensp@gmail.com>
-References: <1381199144-5827-1-git-send-email-felipensp@gmail.com>
-Message-ID: <20131008054353.7445.57617@quantum>
-User-Agent: alot/0.3.4
-Subject: Re: [PATCHv2 1/1] clk/zynq: Fix possible memory leak
-Date: Mon, 07 Oct 2013 22:43:53 -0700
+Newsgroups: gmane.linux.kernel
+To: Mark Salter <msalter@redhat.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 02/14] arc: select ARCH_MAY_HAVE_PC_PARPORT
+References: <1381209030-351-1-git-send-email-msalter@redhat.com> <1381209030-351-3-git-send-email-msalter@redhat.com>
+In-Reply-To: <1381209030-351-3-git-send-email-msalter@redhat.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.243]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Felipe Pena (2013-10-07 19:25:44)
-> The zynq_clk_register_fclk function can leak memory (fclk_lock) when unable
-> to alloc memory for fclk_gate_lock
+Hi Mark,
+
+On 10/08/2013 10:40 AM, Mark Salter wrote:
+> Architectures which support CONFIG_PARPORT_PC should select
+> ARCH_MAY_HAVE_PC_PARPORT.
 > 
-> Signed-off-by: Felipe Pena <felipensp@gmail.com>
-> Acked-by: Sören Brinkmann <soren.brinkmann@xilinx.com>
-
-Taken into clk-next.
-
-Thanks!
-Mike
-
+> Signed-off-by: Mark Salter <msalter@redhat.com>
+> CC: Vineet Gupta <vgupta@synopsys.com>
 > ---
->  drivers/clk/zynq/clkc.c |   16 +++++++++++++++-
->  1 file changed, 15 insertions(+), 1 deletion(-)
+>  arch/arc/Kconfig | 1 +
+>  1 file changed, 1 insertion(+)
 > 
-> diff --git a/drivers/clk/zynq/clkc.c b/drivers/clk/zynq/clkc.c
-> index cc40fe6..10772aa 100644
-> --- a/drivers/clk/zynq/clkc.c
-> +++ b/drivers/clk/zynq/clkc.c
-> @@ -117,13 +117,19 @@ static void __init zynq_clk_register_fclk(enum zynq_clk fclk,
->                 goto err;
->         fclk_gate_lock = kmalloc(sizeof(*fclk_gate_lock), GFP_KERNEL);
->         if (!fclk_gate_lock)
-> -               goto err;
-> +               goto err_fclk_gate_lock;
->         spin_lock_init(fclk_lock);
->         spin_lock_init(fclk_gate_lock);
+> diff --git a/arch/arc/Kconfig b/arch/arc/Kconfig
+> index 91dbb27..484b1a7 100644
+> --- a/arch/arc/Kconfig
+> +++ b/arch/arc/Kconfig
+> @@ -8,6 +8,7 @@
+>  
+>  config ARC
+>  	def_bool y
+> +	select ARCH_MAY_HAVE_PC_PARPORT
+>  	select CLONE_BACKWARDS
+>  	# ARC Busybox based initramfs absolutely relies on DEVTMPFS for /dev
+>  	select DEVTMPFS if !INITRAMFS_SOURCE=""
 > 
->         mux_name = kasprintf(GFP_KERNEL, "%s_mux", clk_name);
-> +       if (!mux_name)
-> +               goto err_mux_name;
->         div0_name = kasprintf(GFP_KERNEL, "%s_div0", clk_name);
-> +       if (!div0_name)
-> +               goto err_div0_name;
->         div1_name = kasprintf(GFP_KERNEL, "%s_div1", clk_name);
-> +       if (!div1_name)
-> +               goto err_div1_name;
-> 
->         clk = clk_register_mux(NULL, mux_name, parents, 4,
->                         CLK_SET_RATE_NO_REPARENT, fclk_ctrl_reg, 4, 2, 0,
-> @@ -147,6 +153,14 @@ static void __init zynq_clk_register_fclk(enum zynq_clk fclk,
-> 
->         return;
-> 
-> +err_div1_name:
-> +       kfree(div0_name);
-> +err_div0_name:
-> +       kfree(mux_name);
-> +err_mux_name:
-> +       kfree(fclk_gate_lock);
-> +err_fclk_gate_lock:
-> +       kfree(fclk_lock);
->  err:
->         clks[fclk] = ERR_PTR(-ENOMEM);
->  }
-> --
-> 1.7.10.4
+
+
+You can drop ARC from the series, we don't care for this deivce.
+
+Thx,
+-Vineet
