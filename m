@@ -1,49 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756031Ab3JHPwz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 11:52:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30761 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754509Ab3JHPwy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 11:52:54 -0400
-Date: Tue, 8 Oct 2013 11:51:31 -0400
-From: Dave Jones <davej@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, peterz@infradead.org,
-        Andi Kleen <ak@linux.intel.com>, fweisbec@gmail.com
-Subject: Re: [PATCH 6/6] x86: Allow disabling HW_BREAKPOINTS and PERF_EVENTS
-Message-ID: <20131008155131.GA31975@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Ingo Molnar <mingo@kernel.org>, Andi Kleen <andi@firstfloor.org>,
-	x86@kernel.org, linux-kernel@vger.kernel.org, peterz@infradead.org,
-	Andi Kleen <ak@linux.intel.com>, fweisbec@gmail.com
-References: <1380922788-23112-1-git-send-email-andi@firstfloor.org>
- <1380922788-23112-7-git-send-email-andi@firstfloor.org>
- <20131006164934.GA15167@gmail.com>
- <20131008065938.GA4333@gmail.com>
+	id S1756058Ab3JHPxS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 11:53:18 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:41580 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754509Ab3JHPxO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 11:53:14 -0400
+Date: Tue, 8 Oct 2013 08:52:52 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Richard Weinberger <richard@nod.at>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        viro@zeniv.linux.org.uk, vgupta@synopsys.com, catalin.marinas@arm.com,
+        will.deacon@arm.com, hskinnemoen@gmail.com, egtvedt@samfundet.no,
+        vapier@gentoo.org, msalter@redhat.com, a-jacquiot@ti.com,
+        starvik@axis.com, jesper.nilsson@axis.com, dhowells@redhat.com,
+        rkuo@codeaurora.org, tony.luck@intel.com, fenghua.yu@intel.com,
+        takata@linux-m32r.org, geert@linux-m68k.org, james.hogan@imgtec.com,
+        monstr@monstr.eu, yasutake.koichi@jp.panasonic.com,
+        ralf@linux-mips.org, jonas@southpole.se, jejb@parisc-linux.org,
+        deller@gmx.de, benh@kernel.crashing.org, paulus@samba.org,
+        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
+        liqin.linux@gmail.com, lennox.wu@gmail.com, lethal@linux-sh.org,
+        cmetcalf@tilera.com, gxt@mprc.pku.edu.cn,
+        linux-xtensa@linux-xtensa.org, akpm@linux-foundation.org,
+        oleg@redhat.com, tj@kernel.org
+Subject: Re: [PATCH 27/29] get_signal_to_deliver: remove regs and cookie args
+Message-ID: <20131008155252.GA14080@infradead.org>
+References: <1381232179-4385-1-git-send-email-richard@nod.at>
+ <1381232179-4385-3-git-send-email-richard@nod.at>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131008065938.GA4333@gmail.com>
+In-Reply-To: <1381232179-4385-3-git-send-email-richard@nod.at>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 08, 2013 at 08:59:38AM +0200, Ingo Molnar wrote:
- 
- > You might want to concentrate your efforts from fighting perf 
- > functionality towards decreasing per tracepoint overhead instead,
- > without hurting kernel functionality and maintainability.
- 
-Making it easier to disable perf entirely would be desirable for one use case.
-I can't do a trinity run for more than a few hours for the last few months
-without hitting perf/ftrace bugs that no-one seems to be able to get their
-heads around.
+On Tue, Oct 08, 2013 at 01:36:17PM +0200, Richard Weinberger wrote:
+> Both arguments are unused, remove them.
 
-It would be useful if I could in the meantime find bugs in other parts of the
-kernel by disabling all the affected code.
- 
-	Dave
-
+And with the get_signal macro left as the only caller, that one should
+become the implementation function.
