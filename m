@@ -1,82 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754284Ab3JHHgz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 03:36:55 -0400
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:49593 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751885Ab3JHHgv (ORCPT
+	id S1754471Ab3JHHlh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 03:41:37 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:50015 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751733Ab3JHHlg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 03:36:51 -0400
-Date: Tue, 8 Oct 2013 09:36:47 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, acme@redhat.com, jolsa@redhat.com,
-        zheng.z.yan@intel.com
-Subject: Re: [PATCH v1 1/2] perf,x86: add Intel RAPL PMU support
-Message-ID: <20131008073647.GC4455@gmail.com>
-References: <1381162158-24329-1-git-send-email-eranian@google.com>
- <1381162158-24329-2-git-send-email-eranian@google.com>
- <20131007175542.GB3363@tassilo.jf.intel.com>
- <20131007180810.GJ3081@twins.programming.kicks-ass.net>
- <20131007192258.GC3363@tassilo.jf.intel.com>
+	Tue, 8 Oct 2013 03:41:36 -0400
+X-AuditID: 9c930197-b7bd9ae000006889-ce-5253b72ee0b9
+From: Namhyung Kim <namhyung@kernel.org>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH V4 8/9] perf buildid-cache: add ability to add kcore to the cache
+References: <1381128618-22721-1-git-send-email-adrian.hunter@intel.com>
+	<1381128618-22721-9-git-send-email-adrian.hunter@intel.com>
+Date: Tue, 08 Oct 2013 16:41:34 +0900
+In-Reply-To: <1381128618-22721-9-git-send-email-adrian.hunter@intel.com>
+	(Adrian Hunter's message of "Mon, 7 Oct 2013 09:50:17 +0300")
+Message-ID: <87k3hoky4x.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131007192258.GC3363@tassilo.jf.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon,  7 Oct 2013 09:50:17 +0300, Adrian Hunter wrote:
+> kcore can be used to view the running kernel object code.
+> However, kcore changes as modules are loaded and unloaded,
+> and when the kernel decides to modify its own code.
+> Consequently it is useful to create a copy of kcore at a
+> particular time.  Unlike vmlinux, kcore is not unique
+> for a given build-id.  And in addition, the kallsyms
+> and modules files are also needed.  The tool therefore
+> creates a directory:
+>
+> 	~/.debug/[kernel.kcore]/<build-id>/<YYYYmmddHHMMSShh>
+>
+> which contains: kcore, kallsyms and modules.
 
-* Andi Kleen <ak@linux.intel.com> wrote:
+Hmm..  I think the problem is that the kallsyms and kcore also have
+module information and the build-id of kernel can identify the core
+kernel part only.  So why not splitting modules from kcore and kallsyms?
 
-> On Mon, Oct 07, 2013 at 08:08:10PM +0200, Peter Zijlstra wrote:
-> > On Mon, Oct 07, 2013 at 10:55:42AM -0700, Andi Kleen wrote:
-> > > This would in principle allow making it a module later (if perf ever
-> > > supports that)
-> > 
-> > IIRC its a few EXPORTs away from being able to do that.
-> 
-> Great. With ~700k text that would be a good thing.
+As the modules have their own build-id, we can extract module info from
+kcore and kallsyms and put them under ~/.debug/[module]/<build-id>.
+While at it, we can even synthesize symbol table and inject it into the
+module kcore and get rid of the module kallsyms file.
 
-Nonsense, the real overhead of core perf + PMU drivers on x86-64 is around 
-150k.
+This way, we can identify all binaries using build-id only, no?
 
-The 700k overhead you claimed is not reproducible, at all, and I tested it 
-with your own config:
+>
+> Note that the copied kcore contains only code sections.
+> See the kcore_copy() function for how that is determined.
+>
+> The tool will not make additional copies of kcore if there
+> is already one with the same modules at the same addresses.
+>
+> Currently, perf tools will not look for kcore in the cache.
+> That is addressed in another patch.
+>
+[SNIP]
 
-  https://lkml.org/lkml/2013/10/8/62
+> +static int build_id_cache__kcore_buildid(const char *proc_dir, char *sbuildid)
+> +{
+> +	char root_dir[PATH_MAX];
+> +	char notes[PATH_MAX];
+> +	u8 build_id[BUILD_ID_SIZE];
+> +	char *p;
+> +
+> +	strlcpy(root_dir, proc_dir, sizeof(root_dir));
+> +
+> +	p = strrchr(root_dir, '/');
+> +	if (!p)
+> +		return -1;
+> +	*p = '\0';
+> +
+> +	snprintf(notes, sizeof(notes), "%s/sys/kernel/notes", root_dir);
 
-700k in perf is nonsensical - it's an obvious lie really, the code sizes 
-of the relevant perf .o objects are nowhere even _close_ to that amount:
-
- hubble:~/tip> size $(find . -name '*perf*.o')
-   text    data     bss     dec     hex filename
-    887       0      32     919     397 ./arch/x86/kernel/cpu/perfctr-watchdog.o
-   2932     680      96    3708     e7c ./arch/x86/kernel/cpu/perf_event_amd_uncore.o
-  14117    6361       1   20479    4fff ./arch/x86/kernel/cpu/perf_event_intel.o
-  23787   19541     264   43592    aa48 ./arch/x86/kernel/cpu/perf_event_intel_uncore.o
-   4531    1572       0    6103    17d7 ./arch/x86/kernel/cpu/perf_event_p4.o
-   1728    1121       0    2849     b21 ./arch/x86/kernel/cpu/perf_event_knc.o
-   4591     811      32    5434    153a ./arch/x86/kernel/cpu/perf_event_amd_ibs.o
-  13394    6797     116   20307    4f53 ./arch/x86/kernel/cpu/perf_event.o
-   3156    1483      32    4671    123f ./arch/x86/kernel/cpu/perf_event_amd_iommu.o
-   5322    4396       0    9718    25f6 ./arch/x86/kernel/cpu/perf_event_intel_ds.o
-  11383       1       0   11384    2c78 ./arch/x86/kernel/cpu/perf_event_intel_lbr.o
-   3636    1125       0    4761    1299 ./arch/x86/kernel/cpu/perf_event_amd.o
-   1282     544       0    1826     722 ./arch/x86/kernel/cpu/perf_event_p6.o
-    278       1       0     279     117 ./arch/x86/kernel/perf_regs.o
-   4844      88      12    4944    1350 ./drivers/acpi/processor_perflib.o
-     77      96       0     173      ad ./drivers/cpufreq/cpufreq_performance.o
-    232      64       0     296     128 ./drivers/devfreq/governor_performance.o
-   1972       4      64    2040     7f8 ./kernel/trace/trace_event_perf.o
-
-So stop making that ridiculous claim without posting exact .config's 
-publicly.
+Please use scnprintf() rather than snprintf().  I can see them in other
+places (and on other patches) too.
 
 Thanks,
+Namhyung
 
-	Ingo
+> +
+> +	if (sysfs__read_build_id(notes, build_id, sizeof(build_id)))
+> +		return -1;
+> +
+> +	build_id__sprintf(build_id, sizeof(build_id), sbuildid);
+> +
+> +	return 0;
+> +}
