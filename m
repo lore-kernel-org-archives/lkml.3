@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756494Ab3JHKQe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 06:16:34 -0400
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:61620 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756022Ab3JHKMo (ORCPT
+	id S1756544Ab3JHKQk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 06:16:40 -0400
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:48059 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756006Ab3JHKMj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 06:12:44 -0400
+	Tue, 8 Oct 2013 06:12:39 -0400
 From: Ingo Molnar <mingo@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 44/52] tools/perf/build: Clean up various testcases
-Date: Tue,  8 Oct 2013 12:11:14 +0200
-Message-Id: <1381227082-22039-45-git-send-email-mingo@kernel.org>
+Subject: [PATCH 37/52] tools/perf/build: Speed up auto-detection
+Date: Tue,  8 Oct 2013 12:11:07 +0200
+Message-Id: <1381227082-22039-38-git-send-email-mingo@kernel.org>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1381227082-22039-1-git-send-email-mingo@kernel.org>
 References: <1381227082-22039-1-git-send-email-mingo@kernel.org>
@@ -23,177 +23,161 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prepare to include them into test-all.c directly, by making sure
-that they build cleanly and without warnings.
+The detection of certain rarely detected features can be delayed
+to when they are actually needed.
 
-Also make sure they make a certain amount of sense and don't crash
-when executed.
+So speed up the common case of auto-detection by pre-building only
+a core set of features and populating only their feature-flags.
+
+[ Features not listed in CORE_FEATURES need to built explicitly
+  via the feature_check() function. ]
+
+(Also order the feature names alphabetically, while at it.)
 
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/n/tip-Mn9gsdutzopoowk3xurqpsxE@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-xQkuveknd0gqla1dfxrqKpkl@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- tools/perf/config/feature-checks/test-backtrace.c      |  8 ++++++--
- tools/perf/config/feature-checks/test-cplus-demangle.c |  9 +++++++--
- tools/perf/config/feature-checks/test-gtk2-infobar.c   |  3 ++-
- tools/perf/config/feature-checks/test-gtk2.c           |  2 +-
- tools/perf/config/feature-checks/test-libaudit.c       |  2 ++
- tools/perf/config/feature-checks/test-libbfd.c         | 11 ++++++++++-
- tools/perf/config/feature-checks/test-libunwind.c      |  9 ++++++++-
- tools/perf/config/feature-checks/test-on-exit.c        | 11 ++++++++++-
- 8 files changed, 46 insertions(+), 9 deletions(-)
+ tools/perf/config/Makefile                | 49 +++++++++++++++++++++++++++++--------------------
+ tools/perf/config/feature-checks/Makefile | 31 ++++++++++++++++---------------
+ 2 files changed, 45 insertions(+), 35 deletions(-)
 
-diff --git a/tools/perf/config/feature-checks/test-backtrace.c b/tools/perf/config/feature-checks/test-backtrace.c
-index 5b79468..5b33bcf 100644
---- a/tools/perf/config/feature-checks/test-backtrace.c
-+++ b/tools/perf/config/feature-checks/test-backtrace.c
-@@ -3,8 +3,12 @@
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 9a27aa9..f6ac70c 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -105,30 +105,36 @@ endef
+ $(info )
+ $(info Auto-detecting system features:)
  
- int main(void)
- {
--	backtrace(NULL, 0);
--	backtrace_symbols(NULL, 0);
-+	void *backtrace_fns[10];
-+	size_t entries;
-+
-+	entries = backtrace(backtrace_fns, 10);
-+	backtrace_symbols_fd(backtrace_fns, entries, 1);
+-FEATURE_TESTS =				\
+-	hello				\
+-	stackprotector-all		\
+-	stackprotector			\
+-	volatile-register-var		\
++#
++# Note that this is not a complete list of all feature tests, just
++# those that are typically built on a fully configured system.
++#
++# [ Feature tests not mentioned here have to be built explicitly in
++#   the rule that uses them - an example for that is the 'bionic'
++#   feature check. ]
++#
++CORE_FEATURE_TESTS =			\
++	backtrace			\
++	dwarf				\
+ 	fortify-source			\
+-	bionic				\
+-	libelf				\
+ 	glibc				\
+-	dwarf				\
+-	libelf-mmap			\
+-	libelf-getphdrnum		\
+-	libunwind			\
+-	libaudit			\
+-	libslang			\
+ 	gtk2				\
+ 	gtk2-infobar			\
++	libaudit			\
++	libbfd				\
++	libelf				\
++	libelf-getphdrnum		\
++	libelf-mmap			\
++	libnuma				\
+ 	libperl				\
+ 	libpython			\
+ 	libpython-version		\
+-	libbfd				\
++	libslang			\
++	libunwind			\
+ 	on-exit				\
+-	backtrace			\
+-	libnuma
++	stackprotector			\
++	stackprotector-all		\
++	volatile-register-var
  
- 	return 0;
- }
-+
-diff --git a/tools/perf/config/feature-checks/test-cplus-demangle.c b/tools/perf/config/feature-checks/test-cplus-demangle.c
-index 5202f50..ab29f80 100644
---- a/tools/perf/config/feature-checks/test-cplus-demangle.c
-+++ b/tools/perf/config/feature-checks/test-cplus-demangle.c
-@@ -1,9 +1,14 @@
--
-+extern int printf(const char *format, ...);
- extern char *cplus_demangle(const char *, int);
+ #
+ # Special fast-path for the 'all features are available' case:
+@@ -136,10 +142,13 @@ FEATURE_TESTS =				\
+ $(call feature_check,all)
  
- int main(void)
- {
--	cplus_demangle(0, 0);
-+	char symbol[4096] = "FieldName__9ClassNameFd";
-+	char *tmp;
-+
-+	tmp = cplus_demangle(symbol, 0);
-+
-+	printf("demangled symbol: {%s}\n", tmp);
+ ifeq ($(feature-all), 1)
+-  $(foreach feat,$(FEATURE_TESTS),$(call feature_set,$(feat)))
++  #
++  # test-all.c passed - just set all the core feature flags to 1:
++  #
++  $(foreach feat,$(CORE_FEATURE_TESTS),$(call feature_set,$(feat)))
+ else
+-  $(shell $(MAKE) -i -j -C config/feature-checks >/dev/null 2>&1)
+-  $(foreach feat,$(FEATURE_TESTS),$(call feature_check,$(feat)))
++  $(shell $(MAKE) -i -j -C config/feature-checks $(CORE_FEATURE_TESTS) >/dev/null 2>&1)
++  $(foreach feat,$(CORE_FEATURE_TESTS),$(call feature_check,$(feat)))
+ endif
  
- 	return 0;
- }
-diff --git a/tools/perf/config/feature-checks/test-gtk2-infobar.c b/tools/perf/config/feature-checks/test-gtk2-infobar.c
-index eebcfbc..397b464 100644
---- a/tools/perf/config/feature-checks/test-gtk2-infobar.c
-+++ b/tools/perf/config/feature-checks/test-gtk2-infobar.c
-@@ -2,8 +2,9 @@
- #include <gtk/gtk.h>
- #pragma GCC diagnostic error "-Wstrict-prototypes"
+ feature_print = $(eval $(feature_print_code))
+@@ -156,7 +165,7 @@ define feature_print_code
+   $(info $(MSG))
+ endef
  
--int main(void)
-+int main(int argc, char *argv[])
- {
-+	gtk_init(&argc, &argv);
- 	gtk_info_bar_new();
+-$(foreach feat,$(FEATURE_TESTS) DUMMY,$(call feature_print,$(feat)))
++$(foreach feat,$(CORE_FEATURE_TESTS) DUMMY,$(call feature_print,$(feat)))
  
- 	return 0;
-diff --git a/tools/perf/config/feature-checks/test-gtk2.c b/tools/perf/config/feature-checks/test-gtk2.c
-index 1ac6d8a..6bd80e5 100644
---- a/tools/perf/config/feature-checks/test-gtk2.c
-+++ b/tools/perf/config/feature-checks/test-gtk2.c
-@@ -4,7 +4,7 @@
+ # newline at the end of the feature printouts:
+ $(info )
+diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
+index b031669..2967a07 100644
+--- a/tools/perf/config/feature-checks/Makefile
++++ b/tools/perf/config/feature-checks/Makefile
+@@ -1,28 +1,29 @@
  
- int main(int argc, char *argv[])
- {
--        gtk_init(&argc, &argv);
-+	gtk_init(&argc, &argv);
+ FILES=					\
+-	test-hello			\
+-	test-stackprotector-all		\
+-	test-stackprotector		\
+-	test-volatile-register-var	\
+-	test-fortify-source		\
++	test-all			\
++	test-backtrace			\
+ 	test-bionic			\
+-	test-libelf			\
+-	test-glibc			\
+ 	test-dwarf			\
+-	test-libelf-mmap		\
+-	test-libelf-getphdrnum		\
+-	test-libunwind			\
+-	test-libaudit			\
+-	test-libslang			\
++	test-fortify-source		\
++	test-glibc			\
+ 	test-gtk2			\
+ 	test-gtk2-infobar		\
++	test-hello			\
++	test-libaudit			\
++	test-libbfd			\
++	test-libelf			\
++	test-libelf-getphdrnum		\
++	test-libelf-mmap		\
++	test-libnuma			\
+ 	test-libperl			\
+ 	test-libpython			\
+ 	test-libpython-version		\
+-	test-libbfd			\
++	test-libslang			\
++	test-libunwind			\
+ 	test-on-exit			\
+-	test-backtrace			\
+-	test-libnuma
++	test-stackprotector-all		\
++	test-stackprotector		\
++	test-volatile-register-var
  
-         return 0;
- }
-diff --git a/tools/perf/config/feature-checks/test-libaudit.c b/tools/perf/config/feature-checks/test-libaudit.c
-index 854a65d..f7e791e 100644
---- a/tools/perf/config/feature-checks/test-libaudit.c
-+++ b/tools/perf/config/feature-checks/test-libaudit.c
-@@ -1,5 +1,7 @@
- #include <libaudit.h>
+ CC := $(CC) -MD
  
-+extern int printf(const char *format, ...);
-+
- int main(void)
- {
- 	printf("error message: %s\n", audit_errno_to_name(0));
-diff --git a/tools/perf/config/feature-checks/test-libbfd.c b/tools/perf/config/feature-checks/test-libbfd.c
-index d03339c..1886c78 100644
---- a/tools/perf/config/feature-checks/test-libbfd.c
-+++ b/tools/perf/config/feature-checks/test-libbfd.c
-@@ -1,7 +1,16 @@
- #include <bfd.h>
- 
-+extern int printf(const char *format, ...);
-+
- int main(void)
- {
--	bfd_demangle(0, 0, 0);
-+	char symbol[4096] = "FieldName__9ClassNameFd";
-+	char *tmp;
-+
-+	tmp = bfd_demangle(0, symbol, 0);
-+
-+	printf("demangled symbol: {%s}\n", tmp);
-+
- 	return 0;
- }
-+
-diff --git a/tools/perf/config/feature-checks/test-libunwind.c b/tools/perf/config/feature-checks/test-libunwind.c
-index 5622746..43b9369 100644
---- a/tools/perf/config/feature-checks/test-libunwind.c
-+++ b/tools/perf/config/feature-checks/test-libunwind.c
-@@ -10,11 +10,18 @@ extern int UNW_OBJ(dwarf_search_unwind_table) (unw_addr_space_t as,
- 
- #define dwarf_search_unwind_table UNW_OBJ(dwarf_search_unwind_table)
- 
-+static unw_accessors_t accessors;
-+
- int main(void)
- {
- 	unw_addr_space_t addr_space;
--	addr_space = unw_create_addr_space(NULL, 0);
-+
-+	addr_space = unw_create_addr_space(&accessors, 0);
-+	if (addr_space)
-+		return 0;
-+
- 	unw_init_remote(NULL, addr_space, NULL);
- 	dwarf_search_unwind_table(addr_space, 0, NULL, NULL, 0, NULL);
-+
- 	return 0;
- }
-diff --git a/tools/perf/config/feature-checks/test-on-exit.c b/tools/perf/config/feature-checks/test-on-exit.c
-index 473f1de..8f64ed3 100644
---- a/tools/perf/config/feature-checks/test-on-exit.c
-+++ b/tools/perf/config/feature-checks/test-on-exit.c
-@@ -1,6 +1,15 @@
- #include <stdio.h>
- 
-+static void exit_fn(int status, void *__data)
-+{
-+	printf("exit status: %d, data: %d\n", status, *(int *)__data);
-+}
-+
-+static int data = 123;
-+
- int main(void)
- {
--	return on_exit(NULL, NULL);
-+	on_exit(exit_fn, &data);
-+
-+	return 321;
- }
 -- 
 1.8.3.1
 
