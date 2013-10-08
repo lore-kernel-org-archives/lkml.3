@@ -1,78 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754705Ab3JHJ7k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 05:59:40 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:60293 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752015Ab3JHJ7j (ORCPT
+	id S1755466Ab3JHKAc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 06:00:32 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:48960 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752972Ab3JHKAa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 05:59:39 -0400
-Date: Tue, 8 Oct 2013 11:59:27 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo.kernel.org@gmail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/16] sched/wait: Collapse __wait_event macros -v5
-Message-ID: <20131008095927.GS3081@twins.programming.kicks-ass.net>
-References: <20131002092217.784439754@infradead.org>
- <20131004204405.GU3081@twins.programming.kicks-ass.net>
- <20131004204438.GR26785@twins.programming.kicks-ass.net>
- <20131005080416.GA25193@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131005080416.GA25193@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Tue, 8 Oct 2013 06:00:30 -0400
+X-AuditID: cbfec7f4-b7f0a6d000007b1b-1a-5253d7bcaeb5
+Message-id: <5253D7BB.3020701@samsung.com>
+Date: Tue, 08 Oct 2013 12:00:27 +0200
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130801
+ Thunderbird/17.0.8
+MIME-version: 1.0
+To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Cc: Pawel Osciak <pawel@osciak.com>, Kyungmin Park <kyungmin.park@samsung.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        linux-media <linux-media@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] vb2: Allow STREAMOFF for io emulator
+References: <1380894598-11242-1-git-send-email-ricardo.ribalda@gmail.com>
+ <5253B2BE.5090209@samsung.com>
+ <CAPybu_0-b2BfuTVd09B4dreFHCsYSg=SjjrDCHXKrqNGzFSX2w@mail.gmail.com>
+In-reply-to: <CAPybu_0-b2BfuTVd09B4dreFHCsYSg=SjjrDCHXKrqNGzFSX2w@mail.gmail.com>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrELMWRmVeSWpSXmKPExsVy+t/xy7p7rgcHGTw8zmtxtukNu8XlXXPY
+	LHo2bGW1uLhO3mLK25/sFl3d85gc2Dx2zrrL7vH410s2j74tqxg9Pm+SC2CJ4rJJSc3JLEst
+	0rdL4Mo48notS8FVlordkzqYGxhvMXcxcnJICJhInLrwhRXCFpO4cG89WxcjF4eQwFJGiRt/
+	r7KDJIQEPjFKrNhu0sXIwcEroCVxcYEzSJhFQFVi24fpYCVsAoYSXW+72EBsUYFQiZ5L28Fs
+	XgFBiR+T77GA2CIC5hKXP3SCxZkFLjBK7N+mDmILC1hKrPg4A2rvRkaJXzdWM4EkOAWCJXb9
+	WscK0WAm8ahlHTOELS+xec1b5gmMArOQ7JiFpGwWkrIFjMyrGEVTS5MLipPScw31ihNzi0vz
+	0vWS83M3MULC+csOxsXHrA4xCnAwKvHwChwOChJiTSwrrsw9xCjBwawkwrvmanCQEG9KYmVV
+	alF+fFFpTmrxIUYmDk6pBkbxrVsvL/fsk5MJUMtM++t+6vjFCnGZ3ru7Tk6VqQl2WnJt+bG2
+	rDKNNomWWQv+ZZ7WulV8ym9DrsTJ7TIyx/5vSvPW3O9edjSaT2pRhFa+hUnNywV5CjE+xeqC
+	n35YJCbUlsU9UJplItd0+L/H4/agi9lJpcHmvf9Te35M9Wba25C/ZcefOUosxRmJhlrMRcWJ
+	AOknHSVFAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 05, 2013 at 10:04:16AM +0200, Ingo Molnar wrote:
-> 
-> * Peter Zijlstra <peterz@infradead.org> wrote:
-> 
-> > On Fri, Oct 04, 2013 at 10:44:05PM +0200, Peter Zijlstra wrote:
-> > > 
-> > > slightly related; do we want to do something like the following two
-> > > patches?
-> > 
-> > and
-> 
-> Yeah, both look good to me - but I'd move them into 
-> kernel/sched/completion.c and kernel/sched/wait.c if no-one objects.
+Hi Racardo,
 
-Do you also want to suck in semaphore.c mutex.c rwsem.c spinlock.c etc?
-Or do you want to create something like kernel/locking/ for all that.
+On 2013-10-08 09:58, Ricardo Ribalda Delgado wrote:
+> Hi Marek
+>
+> Thanks for your comments. I was just trying to find a way to stop
+> streaming while in read/write mode without having to close the
+> descriptor. I thought reusing streamoff was more clever than creating
+> a new ioctl.
 
-I don't really mind too much either way except that I think that wait.c
-and completion.c on their own make for a somewhat random split or
-primitives.
+Read()/write() mode is mainly designed for old and legacy applications. 
+Those applications assume that the only reliable way to stop streaming 
+is to close the fd. New tools should use libv4l and ioctl-based api.
 
-> > --- /dev/null
-> > +++ b/kernel/completion.c
-> > @@ -0,0 +1,287 @@
-> > +
-> > +#include <linux/sched.h>
-> > +#include <linux/completion.h>
-> 
-> Also, mind adding a small blurb at the top explaining what it's all about? 
-> Just one sentence or two.
+Best regards
+-- 
+Marek Szyprowski
+Samsung R&D Institute Poland
 
-It got a bit longer:
-
-+/*
-+ * Generic wait-for-completion handler;
-+ *
-+ * It differs from semaphores in that their default case is the opposite,
-+ * wait_for_completion default blocks whereas semaphore default non-block. The
-+ * interface also makes it easy to 'complete' multiple waiting threads,
-+ * something which isn't entirely natural for semaphores.
-+ *
-+ * But more importantly, the primitive documents the usage. Semaphores would
-+ * typically be used for exclusion which gives rise to priority inversion.
-+ * Waiting for completion is a typically sync point, but not an exclusion point.
-+ */
