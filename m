@@ -1,212 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753705Ab3JHMuJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 08:50:09 -0400
-Received: from mail-bk0-f45.google.com ([209.85.214.45]:34284 "EHLO
-	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752080Ab3JHMuC (ORCPT
+	id S1753977Ab3JHMuW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 08:50:22 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:16571 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753758Ab3JHMuQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 08:50:02 -0400
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH RESEND TAKE2] clk: si5351: remove variant from platform_data
-Date: Tue,  8 Oct 2013 14:49:51 +0200
-Message-Id: <1381236591-19144-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	Tue, 8 Oct 2013 08:50:16 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 08 Oct 2013 05:46:08 -0700
+Message-ID: <52540559.6030406@nvidia.com>
+Date: Tue, 8 Oct 2013 18:45:05 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Mike Turquette <mturquette@linaro.org>
+CC: "broonie@linaro.org" <broonie@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "rob@landley.net" <rob@landley.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH V2] clk: palmas: add clock driver for palmas
+References: <1381154751-4565-1-git-send-email-ldewangan@nvidia.com> <20131008010237.7445.32387@quantum>
+In-Reply-To: <20131008010237.7445.32387@quantum>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 9807362bfe1748d9bb48eecb9261f1b1aaafea1c
-  "clk: si5351: declare all device IDs for module loading"
-removed the common i2c_device_id and introduced new ones for each variant
-of the clock generator. Instead of exploiting that information in the driver,
-it still depends on platform_data passing the chips .variant.
+On Tuesday 08 October 2013 06:32 AM, Mike Turquette wrote:
+> Quoting Laxman Dewangan (2013-10-07 07:05:51)
+>> +               if (!ret) {
+>> +                       switch (prop) {
+>> +                       case 1:
+>> +                               prop = PALMAS_EXT_CONTROL_ENABLE1;
+>> +                               break;
+>> +                       case 2:
+>> +                               prop = PALMAS_EXT_CONTROL_ENABLE2;
+>> +                               break;
+>> +                       case 3:
+>> +                               prop = PALMAS_EXT_CONTROL_NSLEEP;
+>> +                               break;
+> Can magic numbers be replaced with defines?
+Fine, will do in V3.
 
-This removes the now redundant .variant from the platform_data and puts it in
-i2c_device_id's .driver_data instead.
+>
+>
+> +
+> +       ret = palmas_update_bits(palmas_clks->palmas, PALMAS_RESOURCE_BASE,
+> +                       cinfo->clk_desc->control_reg,
+> +                       cinfo->clk_desc->sleep_mask, 0);
+> What does this call to palmas_update_bits do?
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
----
-Cc: Mike Turquette <mturquette@linaro.org>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
----
- drivers/clk/clk-si5351.c             |   28 ++++++++++++----------------
- drivers/clk/clk-si5351.h             |   14 ++++++++++++++
- include/linux/platform_data/si5351.h |   16 ----------------
- 3 files changed, 26 insertions(+), 32 deletions(-)
+This APIs update the selected bits based on mask. This is wrapper over 
+the regmap_update_bits() to provide the interface at the Palmas register 
+access.
+The palmas registers are paged on different i2c address and offset. The 
+i2c address and offset is decided based on base_address and offset.
+This APIs does all calculation to get the correct i2c slave address and 
+offset address based on argument.
 
-diff --git a/drivers/clk/clk-si5351.c b/drivers/clk/clk-si5351.c
-index c50e837..b95aa09 100644
---- a/drivers/clk/clk-si5351.c
-+++ b/drivers/clk/clk-si5351.c
-@@ -1111,11 +1111,11 @@ static const struct of_device_id si5351_dt_ids[] = {
- };
- MODULE_DEVICE_TABLE(of, si5351_dt_ids);
- 
--static int si5351_dt_parse(struct i2c_client *client)
-+static int si5351_dt_parse(struct i2c_client *client,
-+			   enum si5351_variant variant)
- {
- 	struct device_node *child, *np = client->dev.of_node;
- 	struct si5351_platform_data *pdata;
--	const struct of_device_id *match;
- 	struct property *prop;
- 	const __be32 *p;
- 	int num = 0;
-@@ -1124,15 +1124,10 @@ static int si5351_dt_parse(struct i2c_client *client)
- 	if (np == NULL)
- 		return 0;
- 
--	match = of_match_node(si5351_dt_ids, np);
--	if (match == NULL)
--		return -EINVAL;
--
- 	pdata = devm_kzalloc(&client->dev, sizeof(*pdata), GFP_KERNEL);
- 	if (!pdata)
- 		return -ENOMEM;
- 
--	pdata->variant = (enum si5351_variant)match->data;
- 	pdata->clk_xtal = of_clk_get(np, 0);
- 	if (!IS_ERR(pdata->clk_xtal))
- 		clk_put(pdata->clk_xtal);
-@@ -1163,7 +1158,7 @@ static int si5351_dt_parse(struct i2c_client *client)
- 			pdata->pll_src[num] = SI5351_PLL_SRC_XTAL;
- 			break;
- 		case 1:
--			if (pdata->variant != SI5351_VARIANT_C) {
-+			if (variant != SI5351_VARIANT_C) {
- 				dev_err(&client->dev,
- 					"invalid parent %d for pll %d\n",
- 					val, num);
-@@ -1187,7 +1182,7 @@ static int si5351_dt_parse(struct i2c_client *client)
- 		}
- 
- 		if (num >= 8 ||
--		    (pdata->variant == SI5351_VARIANT_A3 && num >= 3)) {
-+		    (variant == SI5351_VARIANT_A3 && num >= 3)) {
- 			dev_err(&client->dev, "invalid clkout %d\n", num);
- 			return -EINVAL;
- 		}
-@@ -1226,7 +1221,7 @@ static int si5351_dt_parse(struct i2c_client *client)
- 					SI5351_CLKOUT_SRC_XTAL;
- 				break;
- 			case 3:
--				if (pdata->variant != SI5351_VARIANT_C) {
-+				if (variant != SI5351_VARIANT_C) {
- 					dev_err(&client->dev,
- 						"invalid parent %d for clkout %d\n",
- 						val, num);
-@@ -1307,6 +1302,7 @@ static int si5351_dt_parse(struct i2c_client *client)
- static int si5351_i2c_probe(struct i2c_client *client,
- 			    const struct i2c_device_id *id)
- {
-+	enum si5351_variant variant = (enum si5351_variant)id->driver_data;
- 	struct si5351_platform_data *pdata;
- 	struct si5351_driver_data *drvdata;
- 	struct clk_init_data init;
-@@ -1315,7 +1311,7 @@ static int si5351_i2c_probe(struct i2c_client *client,
- 	u8 num_parents, num_clocks;
- 	int ret, n;
- 
--	ret = si5351_dt_parse(client);
-+	ret = si5351_dt_parse(client, variant);
- 	if (ret)
- 		return ret;
- 
-@@ -1331,7 +1327,7 @@ static int si5351_i2c_probe(struct i2c_client *client,
- 
- 	i2c_set_clientdata(client, drvdata);
- 	drvdata->client = client;
--	drvdata->variant = pdata->variant;
-+	drvdata->variant = variant;
- 	drvdata->pxtal = pdata->clk_xtal;
- 	drvdata->pclkin = pdata->clk_clkin;
- 
-@@ -1568,10 +1564,10 @@ static int si5351_i2c_probe(struct i2c_client *client,
- }
- 
- static const struct i2c_device_id si5351_i2c_ids[] = {
--	{ "si5351a", 0 },
--	{ "si5351a-msop", 0 },
--	{ "si5351b", 0 },
--	{ "si5351c", 0 },
-+	{ "si5351a", SI5351_VARIANT_A },
-+	{ "si5351a-msop", SI5351_VARIANT_A3 },
-+	{ "si5351b", SI5351_VARIANT_B },
-+	{ "si5351c", SI5351_VARIANT_C },
- 	{ }
- };
- MODULE_DEVICE_TABLE(i2c, si5351_i2c_ids);
-diff --git a/drivers/clk/clk-si5351.h b/drivers/clk/clk-si5351.h
-index c0dbf26..4d0746b 100644
---- a/drivers/clk/clk-si5351.h
-+++ b/drivers/clk/clk-si5351.h
-@@ -153,4 +153,18 @@
- #define  SI5351_XTAL_ENABLE			(1<<6)
- #define  SI5351_MULTISYNTH_ENABLE		(1<<4)
- 
-+/**
-+ * enum si5351_variant - SiLabs Si5351 chip variant
-+ * @SI5351_VARIANT_A: Si5351A (8 output clocks, XTAL input)
-+ * @SI5351_VARIANT_A3: Si5351A MSOP10 (3 output clocks, XTAL input)
-+ * @SI5351_VARIANT_B: Si5351B (8 output clocks, XTAL/VXCO input)
-+ * @SI5351_VARIANT_C: Si5351C (8 output clocks, XTAL/CLKIN input)
-+ */
-+enum si5351_variant {
-+	SI5351_VARIANT_A = 1,
-+	SI5351_VARIANT_A3 = 2,
-+	SI5351_VARIANT_B = 3,
-+	SI5351_VARIANT_C = 4,
-+};
-+
- #endif
-diff --git a/include/linux/platform_data/si5351.h b/include/linux/platform_data/si5351.h
-index 5433439..a947ab8 100644
---- a/include/linux/platform_data/si5351.h
-+++ b/include/linux/platform_data/si5351.h
-@@ -8,20 +8,6 @@
- struct clk;
- 
- /**
-- * enum si5351_variant - SiLabs Si5351 chip variant
-- * @SI5351_VARIANT_A: Si5351A (8 output clocks, XTAL input)
-- * @SI5351_VARIANT_A3: Si5351A MSOP10 (3 output clocks, XTAL input)
-- * @SI5351_VARIANT_B: Si5351B (8 output clocks, XTAL/VXCO input)
-- * @SI5351_VARIANT_C: Si5351C (8 output clocks, XTAL/CLKIN input)
-- */
--enum si5351_variant {
--	SI5351_VARIANT_A = 1,
--	SI5351_VARIANT_A3 = 2,
--	SI5351_VARIANT_B = 3,
--	SI5351_VARIANT_C = 4,
--};
--
--/**
-  * enum si5351_pll_src - Si5351 pll clock source
-  * @SI5351_PLL_SRC_DEFAULT: default, do not change eeprom config
-  * @SI5351_PLL_SRC_XTAL: pll source clock is XTAL input
-@@ -115,14 +101,12 @@ struct si5351_clkout_config {
- 
- /**
-  * struct si5351_platform_data - Platform data for the Si5351 clock driver
-- * @variant: Si5351 chip variant
-  * @clk_xtal: xtal input clock
-  * @clk_clkin: clkin input clock
-  * @pll_src: array of pll source clock setting
-  * @clkout: array of clkout configuration
-  */
- struct si5351_platform_data {
--	enum si5351_variant variant;
- 	struct clk *clk_xtal;
- 	struct clk *clk_clkin;
- 	enum si5351_pll_src pll_src[2];
--- 
-1.7.10.4
+>> +static int palmas_clks_remove(struct platform_device *pdev)
+>> +{
+>> +       of_clk_del_provider(pdev->dev.of_node);
+> I'll be taking Sylwester's clock deregistration series after he
+> publishes the next version, so if you want to call clk_unregister here
+> (based on the new call) you could.
+>
+> If you want to add that in a later patch it is OK.
+
+Thanks for pointing me this changes. I like to add this on my follow on 
+(later) patch, not on this. -- 1.7.1.1
 
