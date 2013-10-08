@@ -1,87 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752214Ab3JHEdh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 00:33:37 -0400
-Received: from ozlabs.org ([203.10.76.45]:34636 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751598Ab3JHEdd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 00:33:33 -0400
-Date: Tue, 8 Oct 2013 15:33:30 +1100
-From: Michael Ellerman <michael@ellerman.id.au>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
-        Jon Mason <jon.mason@intel.com>,
-        Matt Porter <mporter@kernel.crashing.org>, linux-pci@vger.kernel.org,
-        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
-        linux390@de.ibm.com, linux-s390@vger.kernel.org, x86@kernel.org,
-        linux-ide@vger.kernel.org, iss_storagedev@hp.com,
-        linux-nvme@lists.infradead.org, linux-rdma@vger.kernel.org,
-        netdev@vger.kernel.org, e1000-devel@lists.sourceforge.net,
-        linux-driver@qlogic.com,
-        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
-        VMware@dhcp-26-207.brq.redhat.com, "Inc." <pv-drivers@vmware.com>,
-        linux-scsi@vger.kernel.org
-Subject: Re: [PATCH RFC 00/77] Re-design MSI/MSI-X interrupts enablement
- pattern
-Message-ID: <20131008043330.GF31666@concordia>
-References: <cover.1380703262.git.agordeev@redhat.com>
+	id S1752732Ab3JHEfh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 00:35:37 -0400
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:46432 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751529Ab3JHEfd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 00:35:33 -0400
+Message-ID: <52538B95.6080208@gmail.com>
+Date: Tue, 08 Oct 2013 00:35:33 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1380703262.git.agordeev@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Minchan Kim <minchan@kernel.org>
+CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, John Stultz <john.stultz@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
+        Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
+        Andrea Righi <andrea@betterlinux.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>, Jan Kara <jack@suse.cz>,
+        Michel Lespinasse <walken@google.com>, Rob Clark <robdclark@gmail.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH 05/14] vrange: Add new vrange(2) system call
+References: <5253404D.2030503@linaro.org> <52534331.2060402@zytor.com> <52534692.7010400@linaro.org> <525347BE.7040606@zytor.com> <525349AE.1070904@linaro.org> <52534AEC.5040403@zytor.com> <20131008001306.GD25780@bbox> <52535EE1.3060700@zytor.com> <20131008020847.GH25780@bbox> <52537326.7000505@gmail.com> <20131008030736.GA29509@bbox>
+In-Reply-To: <20131008030736.GA29509@bbox>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 02, 2013 at 12:29:04PM +0200, Alexander Gordeev wrote:
-> This series is against "next" branch in Bjorn's repo:
-> git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git
-> 
-> Currently pci_enable_msi_block() and pci_enable_msix() interfaces
-> return a error code in case of failure, 0 in case of success and a
-> positive value which indicates the number of MSI-X/MSI interrupts
-> that could have been allocated. The latter value should be passed
-> to a repeated call to the interfaces until a failure or success:
-> 
-> 
-> 	for (i = 0; i < FOO_DRIVER_MAXIMUM_NVEC; i++)
-> 		adapter->msix_entries[i].entry = i;
-> 
-> 	while (nvec >= FOO_DRIVER_MINIMUM_NVEC) {
-> 		rc = pci_enable_msix(adapter->pdev,
-> 				     adapter->msix_entries, nvec);
-> 		if (rc > 0)
-> 			nvec = rc;
-> 		else
-> 			return rc;
-> 	}
-> 
-> 	return -ENOSPC;
-> 
-> 
-> This technique proved to be confusing and error-prone. Vast share
-> of device drivers simply fail to follow the described guidelines.
+(10/7/13 11:07 PM), Minchan Kim wrote:
+> Hi KOSAKI,
+>
+> On Mon, Oct 07, 2013 at 10:51:18PM -0400, KOSAKI Motohiro wrote:
+>>> Maybe, int madvise5(addr, length, MADV_DONTNEED|MADV_LAZY|MADV_SIGBUS,
+>>>          &purged, &ret);
+>>>
+>>> Another reason to make it hard is that madvise(2) is tight coupled with
+>>> with vmas split/merge. It needs mmap_sem's write-side lock and it hurt
+>>> anon-vrange test performance much heavily and userland might want to
+>>> make volatile range with small unit like "page size" so it's undesireable
+>>> to make it with vma. Then, we should filter out to avoid vma split/merge
+>>> in implementation if only MADV_LAZY case? Doable but it could make code
+>>> complicated and lost consistency with other variant of madvise.
+>>
+>> I haven't seen your performance test result. Could please point out URLs?
+>
+> https://lkml.org/lkml/2013/3/12/105
 
-To clarify "Vast share of device drivers":
+It's not comparison with and without vma merge. I'm interest how much benefit
+vmas operation avoiding have.
 
- - 58 drivers call pci_enable_msix()
- - 24 try a single allocation and then fallback to MSI/LSI
- - 19 use the loop style allocation as above
- - 14 try an allocation, and if it fails retry once
- - 1  incorrectly continues when pci_enable_msix() returns > 0
-
-So 33 drivers (> 50%) successfully make use of the "confusing and
-error-prone" return value.
-
-Another 24 happily ignore it, which is also entirely fine.
-
-And yes, one is buggy, so obviously the interface is too complex. Thanks
-drivers/ntb/ntb_hw.c
-
-cheers
