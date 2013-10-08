@@ -1,96 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754398Ab3JHJCk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 05:02:40 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:34540 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753958Ab3JHJCh (ORCPT
+	id S1755131Ab3JHJCv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 05:02:51 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:34018 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754145Ab3JHJCk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 05:02:37 -0400
-Date: Tue, 8 Oct 2013 11:02:34 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [RFC PATCH 00/50] tools/perf: Speed up the build system
-Message-ID: <20131008090234.GE3295@gmail.com>
-References: <1381147003-2574-1-git-send-email-mingo@kernel.org>
- <87y564zvk0.fsf@tassilo.jf.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87y564zvk0.fsf@tassilo.jf.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 8 Oct 2013 05:02:40 -0400
+Message-Id: <20131008090237.062907670@gmail.com>
+User-Agent: quilt/0.60-1
+Date: Tue, 08 Oct 2013 13:00:21 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: akpm@linux-foundation.org
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Andy Lutomirski <luto@amacapital.net>, Matt Mackall <mpm@selenic.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [patch 2/3] [PATCH] mm: pagemap -- Inspect _PAGE_SOFT_DIRTY only on present pages
+References: <20131008090019.527108154@gmail.com>
+Content-Disposition: inline; filename=pte-sft-dirty-pagemap-fix-2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+In case if a page we are inspecting is laying in swap we may
+occasionally report it as having soft dirty bit (even if it
+is clean). pte_soft_dirty helper should be called on present
+pte only.
 
-* Andi Kleen <andi@firstfloor.org> wrote:
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+Cc: Andy Lutomirski <luto@amacapital.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Matt Mackall <mpm@selenic.com>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+---
+ fs/proc/task_mmu.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-> Ingo Molnar <mingo@kernel.org> writes:
-> >
-> > The series also includes a number of fixes and convenience features:
-> >
-> >    - auto-detect the number of CPUs on the system and add the -j<cpus>
-> >      option automatically
-> 
-> FWIW I would prefer if you not do that automatically, because:
->
-> - Often the optimal factor is not 1, but something like 1.5*CPUs (but 
-> I'm not sure it's the same on all systems, probably depends on the IO 
-> capacity and memory)
+Index: linux-2.6.git/fs/proc/task_mmu.c
+===================================================================
+--- linux-2.6.git.orig/fs/proc/task_mmu.c
++++ linux-2.6.git/fs/proc/task_mmu.c
+@@ -941,6 +941,8 @@ static void pte_to_pagemap_entry(pagemap
+ 		frame = pte_pfn(pte);
+ 		flags = PM_PRESENT;
+ 		page = vm_normal_page(vma, addr, pte);
++		if (pte_soft_dirty(pte))
++			flags2 |= __PM_SOFT_DIRTY;
+ 	} else if (is_swap_pte(pte)) {
+ 		swp_entry_t entry;
+ 		if (pte_swp_soft_dirty(pte))
+@@ -960,7 +962,7 @@ static void pte_to_pagemap_entry(pagemap
+ 
+ 	if (page && !PageAnon(page))
+ 		flags |= PM_FILE;
+-	if ((vma->vm_flags & VM_SOFTDIRTY) || pte_soft_dirty(pte))
++	if ((vma->vm_flags & VM_SOFTDIRTY))
+ 		flags2 |= __PM_SOFT_DIRTY;
+ 
+ 	*pme = make_pme(PM_PFRAME(frame) | PM_STATUS2(pm->v2, flags2) | flags);
 
-In my experience on numerous systems perf builds are rarely IO bound. But 
-it could be upped to a factor of 1.5x without hurting the normal case if 
-someone does convincing measurements.
-
-> - It may use a lot of memory, so should be something controlled by the 
-> user.
-
-Lamest excuse evar: if your box cannot take NR_CPUs make jobs then you can 
-tune it down. (You'll run into many other problems first though, before 
-you start worrying about the perf build memory use.)
-
-In the unlikely case of building it on a limited but SMP capable system 
-with less than ~100 MB of free RAM you can override it:
-
-  $ make
-      BUILD: Doing 'make -j12' parallel build
-
-  $ make JOBS=1
-      BUILD: Doing 'make -j1' parallel build
-
-Problem solved.
-
-> - Often it's useful to use a few threads less to avoid interactivity 
-> problems on a workstation.
-
-Many people use 2*NR_CPUS for kernel builds and report interactivity 
-problems relentlessly.
-
-> - With LTO there can be rare cases where you need to lower it to avoid 
-> running out of memory.
-
-Oh, so out you come with the real reason, near the end of your list of 
-complaints. Not a very honest approach.
-
-If LTO is implemented correctly for a project then the biggest memory 
-usage peak is during the final linking stage - which is single threaded...
-
-> - Kernel build users should be already trained to set that parameter and 
-> it's not really a big burden.
-
-Second lamest excuse evar.
-
-Really, 'make' doing the right thing out of box is a basic usability 
-feature.
-
-All other concerns you listed are secondary: they occur for specialized 
-users or usecases, which need special care and hand-tuning anyway.
-
-Thanks,
-
-	Ingo
