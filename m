@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756236Ab3JHQ0B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 12:26:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49699 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754576Ab3JHQZ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 12:25:59 -0400
-Date: Tue, 8 Oct 2013 12:24:51 -0400
-From: Dave Jones <davej@redhat.com>
-To: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Andi Kleen <andi@firstfloor.org>,
-        x86@kernel.org, linux-kernel@vger.kernel.org, peterz@infradead.org,
-        Andi Kleen <ak@linux.intel.com>, fweisbec@gmail.com
-Subject: Re: [PATCH 6/6] x86: Allow disabling HW_BREAKPOINTS and PERF_EVENTS
-Message-ID: <20131008162451.GA1848@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-	Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
-	linux-kernel@vger.kernel.org, peterz@infradead.org,
-	Andi Kleen <ak@linux.intel.com>, fweisbec@gmail.com
-References: <1380922788-23112-1-git-send-email-andi@firstfloor.org>
- <1380922788-23112-7-git-send-email-andi@firstfloor.org>
- <20131006164934.GA15167@gmail.com>
- <20131008065938.GA4333@gmail.com>
- <20131008155131.GA31975@redhat.com>
- <5254313F.4030409@gmail.com>
+	id S1756295Ab3JHQ0h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 12:26:37 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:40862 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754576Ab3JHQ0f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 12:26:35 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5254313F.4030409@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131008103625.GK3521@intel.com>
+References: <1380639537-23406-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1380639537-23406-3-git-send-email-mika.westerberg@linux.intel.com>
+ <CAAVeFuJZ3TwozZzpuHcYPDLjEsb2D_qvQADf85s3-eywYYHs8A@mail.gmail.com>
+ <20131008084508.GI3521@intel.com> <20131008103625.GK3521@intel.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Tue, 8 Oct 2013 09:26:14 -0700
+Message-ID: <CAAVeFuJLyqHO+uNm-ehLm4QQU-ZyxsZ0KUG4uYSLvBtbvGQeeQ@mail.gmail.com>
+Subject: Re: [PATCH 2/5] gpiolib / ACPI: convert to gpiod interfaces
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        rjw@rjwysocki.net, Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Alexandre Courbot <acourbot@nvidia.com>, Rob Landley <rob@landley.net>,
+        linux-acpi@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 08, 2013 at 10:22:23AM -0600, David Ahern wrote:
- > On 10/8/13 9:51 AM, Dave Jones wrote:
- > > On Tue, Oct 08, 2013 at 08:59:38AM +0200, Ingo Molnar wrote:
- > >
- > >   > You might want to concentrate your efforts from fighting perf
- > >   > functionality towards decreasing per tracepoint overhead instead,
- > >   > without hurting kernel functionality and maintainability.
- > >
- > > Making it easier to disable perf entirely would be desirable for one use case.
- > > I can't do a trinity run for more than a few hours for the last few months
- > > without hitting perf/ftrace bugs that no-one seems to be able to get their
- > > heads around.
- > 
- > Looks like trinity has an exclude syscall option. Seems like that option 
- > can be used to avoid perf_event_open (haven't tried though).
+On Tue, Oct 8, 2013 at 3:36 AM, Mika Westerberg
+<mika.westerberg@linux.intel.com> wrote:
+> On Tue, Oct 08, 2013 at 11:45:08AM +0300, Mika Westerberg wrote:
+>> > I also wonder whether you could also avoid exporting acpi_get_gpiod*
+>> > (which allow GPIO consumers to shortcut gpiolib) by implementing
+>> > acpi_get_gpio* into the C file (maybe even using gpiod_get()). I see a
+>> > "char *path" parameter though, so maybe that would not be possible at
+>> > the moment.
+>>
+>> Good point, I'll check if we can do that.
+>
+> Looks like we can get rid of acpi_get_gpio() and acpi_get_gpiod() as there
+> are no users for those outside gpiolib-acpi. I'm going to do that in the
+> next revision.
 
-You'd think that, but for whatever reason, ftrace/perf oopses still happen.
+That's good news. If you can make it such that ACPI GPIO consumers
+don't need to include acpi_gpio.h anymore, then this would make my
+day. :)
 
-	Dave
-
+Alex.
