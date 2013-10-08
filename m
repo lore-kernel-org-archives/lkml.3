@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752748Ab3JHCvW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 22:51:22 -0400
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:49622 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751806Ab3JHCvU (ORCPT
+	id S1753937Ab3JHCvr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 22:51:47 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:63402 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753383Ab3JHCvi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 22:51:20 -0400
-Message-ID: <52537326.7000505@gmail.com>
-Date: Mon, 07 Oct 2013 22:51:18 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Mon, 7 Oct 2013 22:51:38 -0400
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: "H. Peter Anvin" <hpa@zytor.com>, John Stultz <john.stultz@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
-        Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
-        Andrea Righi <andrea@betterlinux.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>, Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>, Rob Clark <robdclark@gmail.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 05/14] vrange: Add new vrange(2) system call
-References: <1380761503-14509-6-git-send-email-john.stultz@linaro.org> <52533C12.9090007@zytor.com> <5253404D.2030503@linaro.org> <52534331.2060402@zytor.com> <52534692.7010400@linaro.org> <525347BE.7040606@zytor.com> <525349AE.1070904@linaro.org> <52534AEC.5040403@zytor.com> <20131008001306.GD25780@bbox> <52535EE1.3060700@zytor.com> <20131008020847.GH25780@bbox>
-In-Reply-To: <20131008020847.GH25780@bbox>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20131008021452.GA6456@localhost>
+References: <20131006082340.GA24568@localhost>
+	<CA+55aFxk2FoG7+BpHJAysR2bz-WQXpje6buMd8Sp6-SBqHexZg@mail.gmail.com>
+	<20131007021118.GA27927@localhost>
+	<20131007051038.GA9764@localhost>
+	<CA+55aFz85in-ntjF_VT4=kBoUrw1m8ON7xL-=431vQKL5oCMxQ@mail.gmail.com>
+	<20131007083505.GA22585@localhost>
+	<CA+55aFzknXawREZRBrr0Hs+crKt62fPf+S8SubJHXk84U8AFaw@mail.gmail.com>
+	<CA+55aFyrDme-oNKe9=9vppct5+qCo4=Ug35np1fZiC1da64i_Q@mail.gmail.com>
+	<20131008020918.GA1220@localhost>
+	<20131008021452.GA6456@localhost>
+Date: Mon, 7 Oct 2013 19:51:37 -0700
+X-Google-Sender-Auth: eto4HSbwSWygf_I9SGurPRDPY-A
+Message-ID: <CA+55aFwrovZf-LYa=_SyMNvqQkTfxREm0YuzDk8wJy+Krs0xzw@mail.gmail.com>
+Subject: Re: [xen] double fault: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        xen-devel@lists.xenproject.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Maybe, int madvise5(addr, length, MADV_DONTNEED|MADV_LAZY|MADV_SIGBUS,
->          &purged, &ret);
+On Mon, Oct 7, 2013 at 7:14 PM, Fengguang Wu <fengguang.wu@intel.com> wrote:
 >
-> Another reason to make it hard is that madvise(2) is tight coupled with
-> with vmas split/merge. It needs mmap_sem's write-side lock and it hurt
-> anon-vrange test performance much heavily and userland might want to
-> make volatile range with small unit like "page size" so it's undesireable
-> to make it with vma. Then, we should filter out to avoid vma split/merge
-> in implementation if only MADV_LAZY case? Doable but it could make code
-> complicated and lost consistency with other variant of madvise.
+> I got a call trace containing parport_pc_probe_port() (is it the
+> culprit?) after recompiling kernel with
+>
+> CONFIG_DEBUG_OBJECTS_TIMERS=y
+>
+> and booting with "ignore_loglevel". Here is the log for two kernel boots.
 
-I haven't seen your performance test result. Could please point out URLs?
+Ok, so it's definitely parport_pc. I don't see what it would do wrong, though.
 
-
+               Linus
