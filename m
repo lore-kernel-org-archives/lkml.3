@@ -1,50 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755661Ab3JHU0Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 16:26:25 -0400
-Received: from mail-gg0-f171.google.com ([209.85.161.171]:37130 "EHLO
-	mail-gg0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753378Ab3JHU0Y (ORCPT
+	id S1755642Ab3JHU2n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 16:28:43 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:40919 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752896Ab3JHU2l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 16:26:24 -0400
-Subject: [PATCH 2/2] kobject: fix kset sample error path
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Veaceslav Falico <vfalico@redhat.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Neil Horman <nhorman@tuxdriver.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Zdenek Kabelac <zkabelac@redhat.com>
-Date: Tue, 08 Oct 2013 14:20:24 -0600
-Message-ID: <20131008202024.19377.25396.stgit@bhelgaas-glaptop.roam.corp.google.com>
-In-Reply-To: <20131008201915.19377.34185.stgit@bhelgaas-glaptop.roam.corp.google.com>
-References: <20131008201915.19377.34185.stgit@bhelgaas-glaptop.roam.corp.google.com>
-User-Agent: StGit/0.16
+	Tue, 8 Oct 2013 16:28:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1381260511.2081.250.camel@joe-AO722>
+References: <20131008184815.3778.52129.stgit@localhost6.localdomain6>
+	<1381260511.2081.250.camel@joe-AO722>
+Date: Tue, 8 Oct 2013 14:28:40 -0600
+Message-ID: <CAErSpo66rdt7F6sem0G0dz7ieRbeJG2P98WNhQBKacF0TWuvFA@mail.gmail.com>
+Subject: Re: remove unneeded semicolons
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Joe Perches <joe@perches.com>
+Cc: Kalle Valo <kvalo@qca.qualcomm.com>, ath10k@lists.infradead.org,
+        Fengguang Wu <fengguang.wu@intel.com>, linux-wireless@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously, example_init() leaked a kset if any of the object creations
-failed.  This fixes the leak by calling kset_unregister() in the error
-path.
+Thanks, Joe.  I picked up the drivers/pci changes below and will merge
+them in the v3.13 merge window if nobody else does it first.
 
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
----
- samples/kobject/kset-example.c |    1 +
- 1 file changed, 1 insertion(+)
+Bjorn
 
-diff --git a/samples/kobject/kset-example.c b/samples/kobject/kset-example.c
-index d0c687f..5dce351 100644
---- a/samples/kobject/kset-example.c
-+++ b/samples/kobject/kset-example.c
-@@ -262,6 +262,7 @@ baz_error:
- bar_error:
- 	destroy_foo_obj(foo_obj);
- foo_error:
-+	kset_unregister(example_kset);
- 	return -EINVAL;
+
+diff --git a/drivers/pci/proc.c b/drivers/pci/proc.c
+index cdc7836..46d1378 100644
+--- a/drivers/pci/proc.c
++++ b/drivers/pci/proc.c
+@@ -222,7 +222,7 @@ static long proc_bus_pci_ioctl(struct file *file,
+unsigned int cmd,
+        default:
+                ret = -EINVAL;
+                break;
+-       };
++       }
+
+        return ret;
  }
- 
+diff --git a/drivers/pci/syscall.c b/drivers/pci/syscall.c
+index e1c1ec5..24750a1 100644
+--- a/drivers/pci/syscall.c
++++ b/drivers/pci/syscall.c
+@@ -44,7 +44,7 @@ SYSCALL_DEFINE5(pciconfig_read, unsigned long, bus,
+unsigned long, dfn,
+        default:
+                err = -EINVAL;
+                goto error;
+-       };
++       }
 
+        err = -EIO;
+        if (cfg_ret != PCIBIOS_SUCCESSFUL)
