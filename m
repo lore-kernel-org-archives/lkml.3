@@ -1,74 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754887Ab3JHITL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 04:19:11 -0400
-Received: from mail-ea0-f170.google.com ([209.85.215.170]:54184 "EHLO
-	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751733Ab3JHITI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 04:19:08 -0400
-Date: Tue, 8 Oct 2013 10:19:05 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 19/50] tools/perf/build: Split out feature check:
- 'libaudit'
-Message-ID: <20131008081905.GA7232@gmail.com>
-References: <1381147003-2574-1-git-send-email-mingo@kernel.org>
- <1381147003-2574-20-git-send-email-mingo@kernel.org>
- <20131007210048.GA2900@krava.redhat.com>
+	id S1754509Ab3JHIVH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 04:21:07 -0400
+Received: from mga01.intel.com ([192.55.52.88]:21438 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751733Ab3JHIVD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 04:21:03 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,1055,1371106800"; 
+   d="scan'208";a="407081939"
+Date: Tue, 8 Oct 2013 16:20:58 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        xen-devel@lists.xenproject.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [xen] double fault: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+Message-ID: <20131008082057.GA19657@localhost>
+References: <20131006082340.GA24568@localhost>
+ <CA+55aFxk2FoG7+BpHJAysR2bz-WQXpje6buMd8Sp6-SBqHexZg@mail.gmail.com>
+ <20131007021118.GA27927@localhost>
+ <20131007051038.GA9764@localhost>
+ <CA+55aFz85in-ntjF_VT4=kBoUrw1m8ON7xL-=431vQKL5oCMxQ@mail.gmail.com>
+ <20131007083505.GA22585@localhost>
+ <CA+55aFzknXawREZRBrr0Hs+crKt62fPf+S8SubJHXk84U8AFaw@mail.gmail.com>
+ <20131008075816.GA6346@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131007210048.GA2900@krava.redhat.com>
+In-Reply-To: <20131008075816.GA6346@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Jiri Olsa <jolsa@redhat.com> wrote:
-
-> On Mon, Oct 07, 2013 at 01:56:12PM +0200, Ingo Molnar wrote:
-> > Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > Cc: Namhyung Kim <namhyung@kernel.org>
-> > Cc: David Ahern <dsahern@gmail.com>
-> > Cc: Jiri Olsa <jolsa@redhat.com>
-> > Link: http://lkml.kernel.org/n/tip-orhejqtjao3vf4wxwBUdzhaz@git.kernel.org
-> > Signed-off-by: Ingo Molnar <mingo@kernel.org>
-> > ---
-> >  tools/perf/config/Makefile                       | 6 +++---
-> >  tools/perf/config/feature-checks/Makefile        | 4 ++++
-> >  tools/perf/config/feature-checks/test-libaudit.c | 7 +++++++
-> >  3 files changed, 14 insertions(+), 3 deletions(-)
-> > 
-> > diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-> > index 890f264..e82e0b8 100644
-> > --- a/tools/perf/config/Makefile
-> > +++ b/tools/perf/config/Makefile
-> > @@ -114,6 +114,7 @@ FEATURE_TESTS =				\
-> >  	libelf-mmap			\
-> >  	libelf-getphdrnum		\
-> >  	libunwind			\
-> > +	libaudit			\
-> >  	libnuma
-> >  
-> >  $(foreach test,$(FEATURE_TESTS),$(call feature_check,$(test),$(test)))
-> > @@ -240,7 +241,7 @@ ifneq ($(ARCH),x86)
-> >  endif
-> >  
-> >  ifndef NO_LIBUNWIND
-> > -  ifeq ($(feature-libunwind), 1)
-> > +  ifneq ($(feature-libunwind), 1)
-> >      msg := $(warning No libunwind found, disabling post unwind support. Please install libunwind-dev[el] >= 0.99);
-> >      NO_LIBUNWIND := 1
-> >    endif
+On Tue, Oct 08, 2013 at 09:58:16AM +0200, Ingo Molnar wrote:
 > 
-> nit, this change belongs to previous patch
+> * Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> 
+> > On Mon, Oct 7, 2013 at 1:35 AM, Fengguang Wu <fengguang.wu@intel.com> wrote:
+> > > On Mon, Oct 07, 2013 at 01:12:17AM -0700, Linus Torvalds wrote:
+> > >
+> > > My pleasure! Here are 100 randomly selected call traces. Also attached
+> > > several full dmesgs and the kconfig.
+> > 
+> > Ok, they may be randomly selected, but they are all the same. Which is
+> > good, I guess, we're only talking about one bug.
+> > 
+> > Anyway, they all have RIP:run_timer_softirq+0x12c/0x1b8, and the code is
+> > 
+> >    0: 8b 65 c8             mov    -0x38(%rbp),%esp
+> >    3: 4d 39 ec             cmp    %r13,%r12
+> >    6: 0f 84 2f ff ff ff     je     0xffffffffffffff3b
+> >    c: 41 8b 4c 24 18       mov    0x18(%r12),%ecx
+> >   11: 4d 8b 74 24 20       mov    0x20(%r12),%r14
+> >   16: 4d 8b 7c 24 28       mov    0x28(%r12),%r15
+> >   1b: 4c 89 63 38           mov    %r12,0x38(%rbx)
+> >   1f: 49 8b 44 24 08       mov    0x8(%r12),%rax
+> >   24: 49 8b 14 24           mov    (%r12),%rdx
+> >   28: 83 e1 02             and    $0x2,%ecx
+> >   2b:* 48 89 42 08           mov    %rax,0x8(%rdx) <-- trapping instruction
+> >   2f: 48 89 10             mov    %rdx,(%rax)
+> >   32: 48 b8 00 02 20 00 00 movabs $0xdead000000200200,%rax
+> > 
+> > where that constant is LIST_POISON2 and the "and $2" seems to be 
+> > TIMER_IRQSAFE. So the trapping instruction *looks* like it's doing 
+> > __list_del() on the timer, and timer->next is NULL.
+> > 
+> > So somebody added a timer, and then deallocated/cleared the structure 
+> > before it triggered. The problem is, I can't see a way to figure out 
+> > _who_ did that.
+> 
+> I think CONFIG_DEBUG_OBJECTS_TIMERS=y should be able to detect that?
 
-Thanks, fixed.
+It did help expose more information, and earlier. 
 
-	Ingo
+w/o debugobjects, we hit the "BUG: ..." directly:
+
+[    2.964097] BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
+[    2.966666] IP: [<ffffffff81098f60>] run_timer_softirq+0x126/0x1da
+[    2.968060] PGD 0
+[    2.968060] Oops: 0002 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[    2.968060] CPU: 0 PID: 95 Comm: kworker/0:2 Not tainted 3.11.0-rc2-00010-gc817a67-dirty #5
+[    2.968060] Workqueue: events flush_to_ldisc
+[    2.968060] task: ffff8800068544c0 ti: ffff880006856000 task.ti: ffff880006856000
+[    2.968060] RIP: 0010:[<ffffffff81098f60>]  [<ffffffff81098f60>] run_timer_softirq+0x126/0x1da
+
+After enabling CONFIG_DEBUG_OBJECTS_TIMERS=y, it will issue a WARNING followed by a "BUG: ..."
+
+[    2.802167] parport_pc 00:04: reported by Plug and Play ACPI
+[    2.803818] parport0: PC-style at 0x378, irq 7 [PCSPP(,...)]
+[    2.806035] kobject: 'parport_pc.956' (ffff880006dc3820): kobject_release, parent           (null) (delayed)
+[    2.808626] ------------[ cut here ]------------                                                            
+[    2.809776] WARNING: CPU: 1 PID: 1 at /c/wfg/linux/lib/debugobjects.c:260 debug_print_object+0x7c/0x8d()
+[    2.812433] ODEBUG: init active (active state 0) object type: timer_list hint:           (null)         
+......
+[    3.796079] BUG: unable to handle kernel NULL pointer dereference at           (null)
+
+> Debugobjects hooks into deallocation paths and complains immediately if a 
+> live timer is zapped that way.
+> 
+> If the corrupion does not involve deallocation then it might be more 
+> difficult to detect but not impossible either: for example if an object is 
+> not freed but reused incorrectly then a repeat use of any timer function 
+> will cause the debugobjects (and/or the timer code) to complain.
+> 
+> So I'd suggest trying debugobjects, it should catch a fair number of 
+> non-exotic object corruption patterns.
+
+Good to know that, thanks for the info!
+
+Regards,
+Fengguang
