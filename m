@@ -1,54 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755245Ab3JHNg5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 09:36:57 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:18562 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754089Ab3JHNgu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 09:36:50 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 08 Oct 2013 06:32:42 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <broonie@kernel.org>
-CC: <lgirdwood@gmail.com>, <swarren@nvidia.com>,
-        <linux-kernel@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH] regulator: tps65910: get regulators node from parent node only
-Date: Tue, 8 Oct 2013 19:31:04 +0530
-Message-ID: <1381240864-19639-3-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-In-Reply-To: <1381240864-19639-1-git-send-email-ldewangan@nvidia.com>
-References: <1381240864-19639-1-git-send-email-ldewangan@nvidia.com>
+	id S1755166Ab3JHNhL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 09:37:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24828 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753038Ab3JHNhG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 09:37:06 -0400
+Date: Tue, 8 Oct 2013 09:37:05 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: kvm@vger.kernel.org, pbonzini@redhat.com, gleb@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 2/3] pvclock: detect watchdog reset at pvclock read
+Message-ID: <20131008133705.GR227855@redhat.com>
+References: <20131008010515.516032211@amt.cnet>
+ <20131008010552.779616517@amt.cnet>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131008010552.779616517@amt.cnet>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As per the devicetree binding document of TPS65910, the "regulators"
-subnode should be under the parent node, not outside of parent node.
-Hence to get the regulator node, the correct call is
-of_get_child_by_name() rather than of_find_node_by_name() which searches
-the "regulators" node from the parent node to end of DTS file.
+On Mon, Oct 07, 2013 at 10:05:17PM -0300, Marcelo Tosatti wrote:
+> Implement reset of kernel watchdogs at pvclock read time. This avoids
+> adding special code to every watchdog.
+> 
+> This is possible for watchdogs which measure time based on sched_clock() or 
+> ktime_get() variants.
+> 
+> Suggested by Don Zickus.
+> 
+> Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
- drivers/regulator/tps65910-regulator.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Awesome.  Thanks for figuring this out Marcelo.  Does that mean we can
+revert commit 5d1c0f4a now? :-)
 
-diff --git a/drivers/regulator/tps65910-regulator.c b/drivers/regulator/tps65910-regulator.c
-index b8167df..ccde074 100644
---- a/drivers/regulator/tps65910-regulator.c
-+++ b/drivers/regulator/tps65910-regulator.c
-@@ -982,7 +982,7 @@ static struct tps65910_board *tps65910_parse_dt_reg_data(
- 	}
- 
- 	np = of_node_get(pdev->dev.parent->of_node);
--	regulators = of_find_node_by_name(np, "regulators");
-+	regulators = of_get_child_by_name(np, "regulators");
- 	if (!regulators) {
- 		dev_err(&pdev->dev, "regulator node not found\n");
- 		return NULL;
--- 
-1.7.1.1
+This meets my expectations.  I'll leave it to the virt folks to figure out
+if this covers all the corner cases or not.
 
+Cheers,
+Don
+
+> 
+> Index: kvm/arch/x86/kernel/kvmclock.c
+> ===================================================================
+> --- kvm.orig/arch/x86/kernel/kvmclock.c
+> +++ kvm/arch/x86/kernel/kvmclock.c
+> @@ -139,6 +139,7 @@ bool kvm_check_and_clear_guest_paused(vo
+>  	src = &hv_clock[cpu].pvti;
+>  	if ((src->flags & PVCLOCK_GUEST_STOPPED) != 0) {
+>  		src->flags &= ~PVCLOCK_GUEST_STOPPED;
+> +		pvclock_touch_watchdogs();
+>  		ret = true;
+>  	}
+>  
+> Index: kvm/arch/x86/kernel/pvclock.c
+> ===================================================================
+> --- kvm.orig/arch/x86/kernel/pvclock.c
+> +++ kvm/arch/x86/kernel/pvclock.c
+> @@ -21,6 +21,7 @@
+>  #include <linux/sched.h>
+>  #include <linux/gfp.h>
+>  #include <linux/bootmem.h>
+> +#include <linux/hung_task.h>
+>  #include <asm/fixmap.h>
+>  #include <asm/pvclock.h>
+>  
+> @@ -43,6 +44,14 @@ unsigned long pvclock_tsc_khz(struct pvc
+>  	return pv_tsc_khz;
+>  }
+>  
+> +void pvclock_touch_watchdogs(void)
+> +{
+> +	touch_softlockup_watchdog_sync();
+> +	clocksource_touch_watchdog();
+> +	rcu_cpu_stall_reset();
+> +	reset_hung_task_detector();
+> +}
+> +
+>  static atomic64_t last_value = ATOMIC64_INIT(0);
+>  
+>  void pvclock_resume(void)
+> @@ -74,6 +83,11 @@ cycle_t pvclock_clocksource_read(struct
+>  		version = __pvclock_read_cycles(src, &ret, &flags);
+>  	} while ((src->version & 1) || version != src->version);
+>  
+> +	if (unlikely((flags & PVCLOCK_GUEST_STOPPED) != 0)) {
+> +		src->flags &= ~PVCLOCK_GUEST_STOPPED;
+> +		pvclock_touch_watchdogs();
+> +	}
+> +
+>  	if ((valid_flags & PVCLOCK_TSC_STABLE_BIT) &&
+>  		(flags & PVCLOCK_TSC_STABLE_BIT))
+>  		return ret;
+> Index: kvm/arch/x86/include/asm/pvclock.h
+> ===================================================================
+> --- kvm.orig/arch/x86/include/asm/pvclock.h
+> +++ kvm/arch/x86/include/asm/pvclock.h
+> @@ -14,6 +14,8 @@ void pvclock_read_wallclock(struct pvclo
+>  			    struct timespec *ts);
+>  void pvclock_resume(void);
+>  
+> +void pvclock_touch_watchdogs(void);
+> +
+>  /*
+>   * Scale a 64-bit delta by scaling and multiplying by a 32-bit fraction,
+>   * yielding a 64-bit result.
+> 
+> 
