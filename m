@@ -1,88 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754221Ab3JHMxX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 08:53:23 -0400
-Received: from mail-la0-f43.google.com ([209.85.215.43]:34325 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752118Ab3JHMxU (ORCPT
+	id S1754263Ab3JHMyN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 08:54:13 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:34299 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751796Ab3JHMyM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 08:53:20 -0400
+	Tue, 8 Oct 2013 08:54:12 -0400
+Message-ID: <5254005F.4010103@linux.vnet.ibm.com>
+Date: Tue, 08 Oct 2013 18:23:51 +0530
+From: Hemant <hkshaw@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <20131008121326.GB21581@sirena.org.uk>
-References: <CACQ1gAhNFTdG_2OCTnsOCaBozHnGb9EwAGHT5+f=cARRpC_WBg@mail.gmail.com>
- <20131008121326.GB21581@sirena.org.uk>
-From: Richard Genoud <richard.genoud@gmail.com>
-Date: Tue, 8 Oct 2013 14:52:58 +0200
-Message-ID: <CACQ1gAjzanaYgP-pW0a+ahb+byH1FtAYp-Apfnc_LnUgpAiuCg@mail.gmail.com>
-Subject: Re: [BUG] spi/spi-atmel: DMA rx buffer corruption with SPI_IOC_MESSAGE
-To: Mark Brown <broonie@kernel.org>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Wenyou Yang <wenyou.yang@atmel.com>, linux-spi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=089e01227ca4ba00cc04e83a407c
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+CC: linux-kernel@vger.kernel.org, srikar@linux.vnet.ibm.com,
+        peterz@infradead.org, oleg@redhat.com, hegdevasant@linux.vnet.ibm.com,
+        mingo@redhat.com, anton@redhat.com, systemtap@sourceware.org,
+        namhyung@kernel.org, aravinda@linux.vnet.ibm.com
+Subject: Re: [PATCH v2 0/3] Perf support to SDT markers
+References: <20131007063911.11693.33624.stgit@hemant-fedora> <5253A04E.4020809@hitachi.com>
+In-Reply-To: <5253A04E.4020809@hitachi.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13100812-0260-0000-0000-000003BF15F9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---089e01227ca4ba00cc04e83a407c
-Content-Type: text/plain; charset=UTF-8
+On 10/08/2013 11:33 AM, Masami Hiramatsu wrote:
+> Hi,
 
-2013/10/8 Mark Brown <broonie@kernel.org>:
-> On Tue, Oct 08, 2013 at 12:44:16PM +0200, Richard Genoud wrote:
+Hi Masami and thanks a lot for testing these patches.
+
 >
->> I'm attaching the test software that I used ( ./spi_test /dev/spidevx.x )
+> (2013/10/07 15:46), Hemant Kumar wrote:
+>> This patchset helps in probing dtrace style markers(SDT) present in user space
+>> applications through perf. Notes/markes are placed at important places by the
+>> developers. They have a negligible overhead when not enabled. We can enable
+>> them and probe at these places and find some important information like the
+>> arguments' values, etc.
+> Thank you for updating!
+> By the way, could you rebase this series to the latest -tip kernel next time?
+> It is more convenient for us to test & merge it.
+
+Yes, I will rebase this series next time.
+
 >
-> Looks like the attachment got forgotten?
-arg !!!
+> [...]
+>> - Now use perf to list the markers in the app:
+>> # perf probe --markers -x ./user_app
+>>
+>> %user_app:foo_start
+>> %user_app:fun_start
+> Here, what I got.
+>
+> $ ./perf probe --markers -x /lib64/librt.so
+> %librt:lll_futex_wake
+>
+> OK, it lists up markers.
+>
+> $ ./perf probe --markers -x ./perf
+> SDT markers not present!
+>    Error : Failed to find SDT markers!(-1)
+>
+> OK, this shows an error, INHO, it'd better show which binary doesn't have markers.
 
-thanks !
-here it is. (I hope !! Since this morning, I have a *very*
-discontinued internet acces with small shooting windows)
+OK, will include the binary name too.
 
---089e01227ca4ba00cc04e83a407c
-Content-Type: text/x-csrc; charset=US-ASCII; name="spi_test.c"
-Content-Disposition: attachment; filename="spi_test.c"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hmj4phog1
+>
+> $ ./perf probe --markers
+> Failed to open (null)
+>    Error : Failed to find SDT markers!(-1)
+>
+> Hmm, it's a bit odd error. It should check if there is an elf binary is specified.
 
-I2luY2x1ZGUgPHN0ZGxpYi5oPgojaW5jbHVkZSA8dW5pc3RkLmg+CiNpbmNsdWRlIDxzdGRpby5o
-PgojaW5jbHVkZSA8c3lzL3R5cGVzLmg+CiNpbmNsdWRlIDxzeXMvc3RhdC5oPgojaW5jbHVkZSA8
-ZmNudGwuaD4KI2luY2x1ZGUgPHN0cmluZy5oPgojaW5jbHVkZSA8c3lzL2lvY3RsLmg+CiNpbmNs
-dWRlIDxsaW51eC9zcGkvc3BpZGV2Lmg+CgoKI2RlZmluZSBTTUFMTCAyCiNkZWZpbmUgQklHIDEy
-MAojZGVmaW5lIE5CIDMKCmNvbnN0IGludCBGSUxMX0JZVEUgPSAweGFhOwpjb25zdCBpbnQgUlhf
-QllURSA9IDB4RkY7CmNvbnN0IHVuc2lnbmVkIGludCBNQVhfTE9PUFMgPSA1MDsKCnN0cnVjdCBz
-cGlfaW9jX3RyYW5zZmVyIHhmZXJbTkJdOwpjaGFyIHJ4X2hlYWRlcltTTUFMTF07CmNoYXIgcnhf
-YnVmZmVyW0JJR107CmNoYXIgcnhfZm9vdGVyW1NNQUxMXTsKY2hhciB0eF9oZWFkZXJbU01BTExd
-OwpjaGFyIHR4X2J1ZmZlcltCSUddOwpjaGFyIHR4X2Zvb3RlcltTTUFMTF07Cgp2b2lkIGR1bXAo
-Y2hhciAqYnVmLCB1bnNpZ25lZCBpbnQgbGVuKQp7Cgl1bnNpZ25lZCBpbnQgaTsKCglmb3IgKGkg
-PSAwOyBpIDwgbGVuOyBpKyspIHsKCQlwcmludGYoIiUyLjJ4ICIsIGJ1ZltpXSk7CgkJaWYgKCgo
-aSArIDEpICUgMTYpID09IDApCgkJCXByaW50ZigiXG4iKTsKCX0KCXByaW50ZigiXG4iKTsKfQoK
-LyoKICogQ2hlY2tzIGlmIHRoZSBidWZmZXIgYnVmIGlzIGZpbGxlZCB3aXRoIHZhbCBieXRlcwog
-KiByZXR1cm4gMCBpZiBpdCBpcywgMSBpZiBhIGJ5dGUgaXMgIT0gdmFsCiAqLwppbnQgY2hlY2tf
-YnVmKGNoYXIgKmJ1ZiwgdW5zaWduZWQgaW50IGxlbiwgdW5zaWduZWQgaW50IHZhbCkKewoJd2hp
-bGUgKGxlbi0tKQoJCWlmIChidWZbbGVuXSAhPSBSWF9CWVRFKQoJCQlyZXR1cm4gMTsKCXJldHVy
-biAwOwp9Cgp2b2lkIHVzYWdlKGNvbnN0IGNoYXIgKnByb2duYW1lKQp7CglwcmludGYoIlVzYWdl
-OiAlcyBzcGlkZXZcbiIsIHByb2duYW1lKTsKfQoKaW50IG1haW4oaW50IGFyZ2MsIGNoYXIgKiph
-cmd2KQp7Cgljb25zdCBjaGFyICpzcGlfZGV2X25hbWU7CglpbnQgZXJyID0gMDsKCWludCBmZDsK
-CXVuc2lnbmVkIGludCBpOwoJdW5zaWduZWQgaW50IGxvb3BzID0gTUFYX0xPT1BTOwoKCWlmIChh
-cmdjIDwgMikgewoJCXVzYWdlKGFyZ3ZbMF0pOwoJCWVyciA9IC0xOwoJCWdvdG8gb3V0OwoJfQoK
-CXNwaV9kZXZfbmFtZSA9IGFyZ3ZbMV07CgoJZmQgPSBvcGVuKHNwaV9kZXZfbmFtZSwgT19SRFdS
-KTsKCWlmIChmZCA8IDApIHsKCQlwZXJyb3IoIm9wZW4iKTsKCQllcnIgPSAtMTsKCQlnb3RvIG91
-dDsKCX0KCgl4ZmVyWzBdLnR4X2J1ZiA9ICh1bnNpZ25lZCBsb25nKXR4X2hlYWRlcjsKCXhmZXJb
-MF0ucnhfYnVmID0gKHVuc2lnbmVkIGxvbmcpcnhfaGVhZGVyOwoJeGZlclswXS5sZW4gPSBTTUFM
-TDsKCXhmZXJbMV0udHhfYnVmID0gKHVuc2lnbmVkIGxvbmcpdHhfYnVmZmVyOwoJeGZlclsxXS5y
-eF9idWYgPSAodW5zaWduZWQgbG9uZylyeF9idWZmZXI7Cgl4ZmVyWzFdLmxlbiA9IEJJRzsKCXhm
-ZXJbMl0udHhfYnVmID0gKHVuc2lnbmVkIGxvbmcpdHhfZm9vdGVyOwoJeGZlclsyXS5yeF9idWYg
-PSAodW5zaWduZWQgbG9uZylyeF9mb290ZXI7Cgl4ZmVyWzJdLmxlbiA9IFNNQUxMOwoKCXdoaWxl
-IChsb29wcy0tKSB7CgkJZm9yIChpID0gMDsgaSA8IE5COyBpKyspIHsKCQkJbWVtc2V0KCh2b2lk
-ICopeGZlcltpXS50eF9idWYsIEZJTExfQllURSwgeGZlcltpXS5sZW4pOwoJCQltZW1zZXQoKHZv
-aWQgKil4ZmVyW2ldLnJ4X2J1ZiwgRklMTF9CWVRFLCB4ZmVyW2ldLmxlbik7CgkJfQoKCQllcnIg
-PSBpb2N0bChmZCwgU1BJX0lPQ19NRVNTQUdFKE5CKSwgeGZlcik7CgkJaWYgKGVyciA8IDApIHsK
-CQkJcGVycm9yKCJpb2N0bCIpOwoJCQlicmVhazsKCQl9CgkJaWYgKGVyciAhPSAoc2l6ZW9mKHJ4
-X2J1ZmZlcikgKyBzaXplb2YocnhfZm9vdGVyKQoJCQkgICAgKyBzaXplb2YocnhfaGVhZGVyKSkp
-IHsKCQkJcHJpbnRmKCJtZXNzYWdlIHRvbyBzaG9ydDogJWQgYnl0ZXNcbiIsIGVycik7CgkJCWJy
-ZWFrOwoJCX0KCQlmb3IgKGkgPSAwOyBpIDwgTkI7IGkrKykgewoJCQllcnIgPSBjaGVja19idWYo
-KGNoYXIgKikoeGZlcltpXS5yeF9idWYpLCB4ZmVyW2ldLmxlbiwgUlhfQllURSk7CgkJCWlmIChl
-cnIpCgkJCQlkdW1wKChjaGFyICopKHhmZXJbaV0ucnhfYnVmKSwgeGZlcltpXS5sZW4pOwoJCX0K
-CX0KCgkodm9pZCkgY2xvc2UoZmQpOwpvdXQ6CglyZXR1cm4gZXJyOwp9Cg==
---089e01227ca4ba00cc04e83a407c--
+Yeah, correct.
+
+>
+> $ ./perf probe --markers /lib64/librt.so
+> %librt:lll_futex_wake
+>
+> It seems to work without -x. However, that is only when the path is started with /.
+> And also the usage is not described by --help.
+>
+> $ ./perf probe --markers ./perf
+> Semantic error :File always requires line number or lazy pattern.
+>    Error: Parse Error.  (-22)
+>
+> So, to avoid confusion, --markers should abort without -x(--exec) option.
+
+Yes, we can restrict action of --markers for -x option only. I thought 
+of keeping the same behavior as in case of function listing but I guess 
+restricting it would be better since, --markers should only be available 
+in user space.
+
+>
+>> - And  then use perf probe to add a probe point :
+>>
+>> # perf probe -x ./user_app -a '%user_app:foo_start'
+> And also, without -x, -a also exits with an odd error message.
+>
+> $ ./perf probe -a %libm:slowexp_p6
+> Failed to open (null)
+>    Error: Failed to add events. (-1)
+
+Ok, will rectify this behavior.
+
+>
+> I'll review each patch soon.
+
+Thanks, looking forward to that.
+
+- Hemant
+
