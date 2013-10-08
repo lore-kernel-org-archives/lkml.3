@@ -1,55 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755926Ab3JHR2i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 13:28:38 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:39370 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755676Ab3JHR2e (ORCPT
+	id S1755971Ab3JHRb7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 13:31:59 -0400
+Received: from mail-vb0-f48.google.com ([209.85.212.48]:35722 "EHLO
+	mail-vb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753013Ab3JHRb5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 13:28:34 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/pLEPuKYxcRxhcTC97619F
-Date: Tue, 8 Oct 2013 10:28:15 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Sebastian Reichel <sre@debian.org>
-Cc: Sebastian Reichel <sre@ring0.de>, Linus Walleij <linus.walleij@linaro.org>,
-        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
-        Carlos Chinea <cch.devel@gmail.com>, Paul Walmsley <paul@pwsan.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>,
-        "=?utf-8?Q?'Beno=C3=AEt?= Cousson'" <bcousson@baylibre.com>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org,
-        "'Pali =?utf-8?Q?Roh=C3=A1r'?=" <pali.rohar@gmail.com>,
-        =?utf-8?B?J9CY0LLQsNC50LvQviDQlNC40LzQuNGC0YDQvtCyJw==?= 
-	<freemangordon@abv.bg>,
-        Joni Lapilainen <joni.lapilainen@gmail.com>
-Subject: Re: [RFCv3 0/7] OMAP SSI driver
-Message-ID: <20131008172815.GA8313@atomide.com>
-References: <1381091235-18293-1-git-send-email-sre@debian.org>
+	Tue, 8 Oct 2013 13:31:57 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1381091235-18293-1-git-send-email-sre@debian.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20131008171522.GA29277@localhost>
+References: <CA+55aFykGxmaE9hq9xd+6HHFtEube_2QnB+ipW4oF71c6vyXAw@mail.gmail.com>
+	<20131008171522.GA29277@localhost>
+Date: Tue, 8 Oct 2013 10:31:57 -0700
+X-Google-Sender-Auth: mjX4diNXkRtoo_cZMARPrtxMWFs
+Message-ID: <CA+55aFzQC=W010GTxjXjBnsKO0CycXe7VZB+LTiNNtuBug_rbw@mail.gmail.com>
+Subject: Re: [x86] BUG: unable to handle kernel NULL pointer dereference at (null)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Richard Henderson <rth@twiddle.net>, Jakub Jelinek <jakub@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Sebastian Reichel <sre@debian.org> [131006 13:36]:
-> Hi,
-> 
-> Here is the third round of the OMAP SSI driver patches.
+On Tue, Oct 8, 2013 at 10:15 AM, Fengguang Wu <fengguang.wu@intel.com> wrote:
+>
+> [   27.865982] Kernel BUG at c10563af [verbose debug info unavailable]
 
-Thanks for updating these, they look good to me now:
+Ugh, you've turned off DEBUG_BUGVERBOSE.
 
-Acked-by: Tony Lindgren <tony@atomide.com>
+We probably shouldn't even allow that. The space savings aren't worth the pain.
+
+I'm not seeing the pattern in your oopses, there's at least three
+different cases. At a guess, it's some lock - or a memory allocator -
+that is broken by the bitop breakage, and then the oopses are just
+fallout from that..
+
+            Linus
