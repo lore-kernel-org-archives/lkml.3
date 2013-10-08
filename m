@@ -1,67 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754917Ab3JHJxl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 05:53:41 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:34190 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752488Ab3JHJxh (ORCPT
+	id S1755180Ab3JHJys (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 05:54:48 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:60133 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753447Ab3JHJyr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 05:53:37 -0400
+	Tue, 8 Oct 2013 05:54:47 -0400
+Date: Tue, 8 Oct 2013 11:54:30 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Kees Cook <keescook@chromium.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Hugh Dickins <hughd@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC] perf: mmap2 not covering VM_CLONE regions
+Message-ID: <20131008095430.GQ3081@twins.programming.kicks-ass.net>
+References: <20131002190001.GX3081@twins.programming.kicks-ass.net>
+ <CAGXu5jKK+BJnbzJy0pZxVG2BdgxdJ5vNChMRUAJdKrGaHCOsNg@mail.gmail.com>
+ <20131002203107.GY3081@twins.programming.kicks-ass.net>
+ <CABPqkBRbqnwRpigACZwnV4rSK2wZekZqXi-vfB2+YbSWgfTUKA@mail.gmail.com>
+ <20131003090347.GB3081@twins.programming.kicks-ass.net>
+ <CABPqkBSmYBdBx1vXj3ZJycM311eQPeK6kFxvtm3jtovp-qgm+w@mail.gmail.com>
+ <20131008065449.GL3081@twins.programming.kicks-ass.net>
+ <CABPqkBROM9jZfkU7suD-7=N=M38BCcVgdbgKoe-GE1RhY0puEg@mail.gmail.com>
+ <20131008093638.GO3081@twins.programming.kicks-ass.net>
+ <CABPqkBQgnqhHwAo9hgg5b-UUV1Zwfs=9TC+-xb3BTP6GqJg8Ag@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20131007151212.GF15365@e106331-lin.cambridge.arm.com>
-References: <1381151633-8576-1-git-send-email-jonas.jensen@gmail.com>
-	<1381155034-11254-1-git-send-email-jonas.jensen@gmail.com>
-	<20131007151212.GF15365@e106331-lin.cambridge.arm.com>
-Date: Tue, 8 Oct 2013 11:53:36 +0200
-Message-ID: <CACmBeS1tYwJBGscOSC=F=oup_+WfYOZMW-Xu-UmD65KuKNxfQA@mail.gmail.com>
-Subject: Re: [PATCH v10] dmaengine: Add MOXA ART DMA engine driver
-From: Jonas Jensen <jonas.jensen@gmail.com>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arm@kernel.org" <arm@kernel.org>,
-        "vinod.koul@intel.com" <vinod.koul@intel.com>,
-        "djbw@fb.com" <djbw@fb.com>, "arnd@arndb.de" <arnd@arndb.de>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        devicetree@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABPqkBQgnqhHwAo9hgg5b-UUV1Zwfs=9TC+-xb3BTP6GqJg8Ag@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7 October 2013 17:12, Mark Rutland <mark.rutland@arm.com> wrote:
-> Sorry I didn't notice this previously, but "moxa" isn't in
-> Documentation/devicetree/bindings/vendor-prefixes.txt (despite several
-> bindings using it). Could you cook up a separate patch to add an entry
-> for Moxa, please?
+On Tue, Oct 08, 2013 at 11:42:06AM +0200, Stephane Eranian wrote:
+> On Tue, Oct 8, 2013 at 11:36 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > On Tue, Oct 08, 2013 at 09:15:30AM +0200, Stephane Eranian wrote:
+> >> Yes, it is but I am trying to see whether or not we could unify that and
+> >> use a single u64 number to uniquely identify each mapping.
+> >
+> > No you cannot; two unrelated executables which have distinct mm_ids can
+> > easily mmap() the same shared file.
+> 
+> That seems to indicate the mm_ids is not attached to the right level of VM
+> data structure. 
 
-Yes, I'll submit a separate patch.
+No that's not it.. shared mappings can create arbitrary couplings
+between mm's, there's really nothing you can do about that.
 
-> Also, given the SoC is called "ART" it's a shame that we're calling this
-> "moxa,moxart-dma" rather than "moxa,art-dma". We already have precedent
-> for "moxart" in bindings though, so changing that's likely to lead to
-> more problems.
+This is really only about anonymous memory shared with CLONE_VM.
 
-Sorry about that, I think the "moxart" contraction was suggested and
-has been sticky ever since.
+> But I am okay with keeping it that way and stashing the mm_id
+> as a pseudo inode number for the case of non file-backed mappings. If we
+> say maj=min=ino=gen=0 means no "info", then any other combinations can
+> be used to identify identical mappings. We use actual min,maj, ino, gen
+> for file backed, and maj=min=gen=0 + ino = mm_ids for the other cases.
+> That should work, shouldn't it?
 
-It's at least a little appropriate because the physical chip text
-reads "MOXA ART" (photo):
-
-https://lh4.googleusercontent.com/-A-2FXDrObU8/UMcMc_K2vEI/AAAAAAAABwg/ldaLZ7ps1P4/w1331-h998-no/UC-7112-LX-picture4.jpg
-
-Currently three drivers in linux-next use the name with accompanying
-device tree bindings.
-Considering the amount of patches required, can we keep the name, please?
-
-> Sorry for yet more pendantry, but could we instead have:
->
->  - interrupts: Should contain an interrupt-specifier for the sole
->                interrupt generated by the device.
-
-Fixed in v11.
-
-
-Regards,
-Jonas
+I'm not sure if min=maj=0 is a valid device, nor do I know if ino=0 is a
+valid ino. But I suppose the name "//anon" should be a big enough clue
+if both of those fail.
