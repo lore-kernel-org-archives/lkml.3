@@ -1,159 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752766Ab3JHACn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 20:02:43 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:54862 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751615Ab3JHACm (ORCPT
+	id S1753479Ab3JHADT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 20:03:19 -0400
+Received: from smtprelay0146.hostedemail.com ([216.40.44.146]:55094 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751431Ab3JHADS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 20:02:42 -0400
-X-AuditID: 9c93017d-b7c3aae000004019-81-52534b9f3099
-Date: Tue, 8 Oct 2013 09:03:57 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
-        Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
-        Andrea Righi <andrea@betterlinux.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>, Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>, Rob Clark <robdclark@gmail.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 05/14] vrange: Add new vrange(2) system call
-Message-ID: <20131008000357.GC25780@bbox>
-References: <1380761503-14509-1-git-send-email-john.stultz@linaro.org>
- <1380761503-14509-6-git-send-email-john.stultz@linaro.org>
- <52533C12.9090007@zytor.com>
- <5253404D.2030503@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5253404D.2030503@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 7 Oct 2013 20:03:18 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1593:1594:1711:1714:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3315:3351:3622:3865:3866:3867:3870:3871:3872:3873:3874:4321:5007:7652:10004:10400:10450:10455:10848:10967:11232:11658:11914:12517:12519:12740:13069:13311:13357:19904:19999,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: tree14_56d1804c47855
+X-Filterd-Recvd-Size: 1438
+Message-ID: <1381190594.2081.228.camel@joe-AO722>
+Subject: Re: [PATCH] checkpatch: Add check for sscanf without return use
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andy Whitcroft <apw@canonical.com>, LKML <linux-kernel@vger.kernel.org>
+Date: Mon, 07 Oct 2013 17:03:14 -0700
+In-Reply-To: <20131007165626.be437f74a4ba39e2be21af55@linux-foundation.org>
+References: <1381189523.2081.225.camel@joe-AO722>
+	 <20131007165626.be437f74a4ba39e2be21af55@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, John and Peter
+On Mon, 2013-10-07 at 16:56 -0700, Andrew Morton wrote:
+> On Mon, 07 Oct 2013 16:45:23 -0700 Joe Perches <joe@perches.com> wrote:
+> 
+> > Naked use sscanf can be troublesome.
+> 
+> It would be helpful to expand on "troublesome"?
 
-On Mon, Oct 07, 2013 at 04:14:21PM -0700, John Stultz wrote:
-> On 10/07/2013 03:56 PM, H. Peter Anvin wrote:
-> > On 10/02/2013 05:51 PM, John Stultz wrote:
-> >> From: Minchan Kim <minchan@kernel.org>
-> >>
-> >> This patch adds new system call sys_vrange.
-> >>
-> >> NAME
-> >> 	vrange - Mark or unmark range of memory as volatile
-> >>
-> > vrange() is about as nondescriptive as one can get -- there is exactly
-> > one letter that has any connection with that this does.
-> 
-> 
-> Hrm. Any suggestions? Would volatile_range() be better?
-> 
-> 
-> >
-> >> SYNOPSIS
-> >> 	int vrange(unsigned_long start, size_t length, int mode,
-> >> 			 int *purged);
-> >>
-> >> DESCRIPTION
-> >> 	Applications can use vrange(2) to advise the kernel how it should
-> >> 	handle paging I/O in this VM area.  The idea is to help the kernel
-> >> 	discard pages of vrange instead of reclaiming when memory pressure
-> >> 	happens. It means kernel doesn't discard any pages of vrange if
-> >> 	there is no memory pressure.
-> >>
-> >> 	mode:
-> >> 	VRANGE_VOLATILE
-> >> 		hint to kernel so VM can discard in vrange pages when
-> >> 		memory pressure happens.
-> >> 	VRANGE_NONVOLATILE
-> >> 		hint to kernel so VM doesn't discard vrange pages
-> >> 		any more.
-> >>
-> >> 	If user try to access purged memory without VRANGE_NOVOLATILE call,
-> >> 	he can encounter SIGBUS if the page was discarded by kernel.
-> >>
-> >> 	purged: Pointer to an integer which will return 1 if
-> >> 	mode == VRANGE_NONVOLATILE and any page in the affected range
-> >> 	was purged. If purged returns zero during a mode ==
-> >> 	VRANGE_NONVOLATILE call, it means all of the pages in the range
-> >> 	are intact.
-> > I'm a bit confused about the "purged"
-> >
-> > From an earlier version of the patch:
-> >
-> >> - What's different with madvise(DONTNEED)?
-> >>
-> >>   System call semantic
-> >>
-> >>   DONTNEED makes sure user always can see zero-fill pages after
-> >>   he calls madvise while vrange can see data or encounter SIGBUS.
-> > This difference doesn't seem to be a huge one.  The other one seems to
-> > be the blocking status of MADV_DONTNEED, which perhaps may be better
-> > handled by adding an option (MADV_LAZY) perhaps?
-> >
-> > That way we would have lazy vs. immediate, and zero versus SIGBUS.
-> 
-> And some sort of lazy-cancling call as well.
-> 
-> 
-> >
-> > I see from the change history of the patch that this was an madvise() at
-> > some point, but was changed into a separate system call at some point,
-> > does anyone remember why that was?  A quick look through my LKML
-> > archives doesn't really make it clear.
-> 
-> The reason we can't use madvise, is that to properly handle error cases
-> and report the pruge state, we need an extra argument.
-> 
-> In much earlier versions, we just returned an error when setting
-> NONVOLATILE if the data was purged. However, since we have to possibly
-> do allocations when marking a range as non-volatile, we needed a way to
-> properly handle that allocation failing. We can't just return ENOMEM, as
-> we may have already marked purged memory as non-volatile.
-> 
-> Thus, that's why with vrange, we return the number of bytes modified,
-> along with the purge state. That way, if an error does occur we can
-> return the purge state of the bytes successfully modified, and only
-> return an error if nothing was changed, much like when a write fails.
+Dunno, you either know or the couple of paragraphs
+it takes to explain with examples won't really be
+too helpful in a commit log.
 
-As well, we might need addtional argument VRANGE_FULL/VRANGE_PARTIAL
-for vrange system call. I discussed it long time ago but omitted it
-for early easy review phase. It is requested by Mozilla fork and of course
-I think it makes sense to me.
+> > Add a warning when the sscanf return value is not used.
+> Maybe it should be __must_check?
 
-https://lkml.org/lkml/2013/3/22/20
+Maybe.
 
-In short, if you mark a range with VRANGE_FULL, kernel can discard all
-of pages within the range if memory is tight while kernel can discard
-part of pages in the vrange if you mark the range with VRANGE_PARTIAL.
+That might be easier but there'll be a couple
+hundred new build warnings.
 
-
-
-> 
-> thanks
-> -john
-> 
-> 
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Kind regards,
-Minchan Kim
