@@ -1,94 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755933Ab3JHTrY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 15:47:24 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:63761 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752914Ab3JHTrW (ORCPT
+	id S1755981Ab3JHTsh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 15:48:37 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:39537 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754090Ab3JHTse (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 15:47:22 -0400
-Date: Tue, 8 Oct 2013 21:47:18 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo.kernel.org@gmail.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/16] sched/wait: Collapse __wait_event macros -v5
-Message-ID: <20131008194718.GD7315@gmail.com>
-References: <20131002092217.784439754@infradead.org>
- <20131004204405.GU3081@twins.programming.kicks-ass.net>
- <20131004204438.GR26785@twins.programming.kicks-ass.net>
- <20131005080416.GA25193@gmail.com>
- <20131008095927.GS3081@twins.programming.kicks-ass.net>
- <20131008102331.GB8852@gmail.com>
- <20131008141657.GW5790@linux.vnet.ibm.com>
+	Tue, 8 Oct 2013 15:48:34 -0400
+Date: Tue, 8 Oct 2013 14:48:19 -0500
+From: Robert Jennings <rcj@linux.vnet.ibm.com>
+To: Dave Hansen <dave@sr71.net>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        Matt Helsley <matt.helsley@gmail.com>,
+        Anthony Liguori <anthony@codemonkey.ws>,
+        Michael Roth <mdroth@linux.vnet.ibm.com>,
+        Lei Li <lilei@linux.vnet.ibm.com>,
+        Leonardo Garcia <lagarcia@linux.vnet.ibm.com>,
+        Vlastimil Babka <vbabka@suse.cz>
+Subject: Re: [PATCH 1/2] vmsplice: unmap gifted pages for recipient
+Message-ID: <20131008194819.GB6129@linux.vnet.ibm.com>
+Mail-Followup-To: Dave Hansen <dave@sr71.net>, linux-kernel@vger.kernel.org,
+	linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+	Alexander Viro <viro@zeniv.linux.org.uk>,
+	Rik van Riel <riel@redhat.com>,
+	Andrea Arcangeli <aarcange@redhat.com>,
+	Matt Helsley <matt.helsley@gmail.com>,
+	Anthony Liguori <anthony@codemonkey.ws>,
+	Michael Roth <mdroth@linux.vnet.ibm.com>,
+	Lei Li <lilei@linux.vnet.ibm.com>,
+	Leonardo Garcia <lagarcia@linux.vnet.ibm.com>,
+	Vlastimil Babka <vbabka@suse.cz>
+References: <1381177293-27125-1-git-send-email-rcj@linux.vnet.ibm.com>
+ <1381177293-27125-2-git-send-email-rcj@linux.vnet.ibm.com>
+ <52542F53.4020807@sr71.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131008141657.GW5790@linux.vnet.ibm.com>
+In-Reply-To: <52542F53.4020807@sr71.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13100819-1618-0000-0000-000004C16C9B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
-
-> On Tue, Oct 08, 2013 at 12:23:31PM +0200, Ingo Molnar wrote:
-> > 
-> > * Peter Zijlstra <peterz@infradead.org> wrote:
-> > 
-> > > On Sat, Oct 05, 2013 at 10:04:16AM +0200, Ingo Molnar wrote:
-> > > > 
-> > > > * Peter Zijlstra <peterz@infradead.org> wrote:
-> > > > 
-> > > > > On Fri, Oct 04, 2013 at 10:44:05PM +0200, Peter Zijlstra wrote:
-> > > > > > 
-> > > > > > slightly related; do we want to do something like the following two
-> > > > > > patches?
-> > > > > 
-> > > > > and
-> > > > 
-> > > > Yeah, both look good to me - but I'd move them into 
-> > > > kernel/sched/completion.c and kernel/sched/wait.c if no-one objects.
-> > > 
-> > > Do you also want to suck in semaphore.c mutex.c rwsem.c spinlock.c etc? 
-> > > Or do you want to create something like kernel/locking/ for all that.
-> > 
-> > Yeah, I think kernel/locking/ would be a suitable place for those, and I'd 
-> > move lockdep*.c there too. (Such things are best done near the end of a 
-> > merge window, when there's not much pending, to not disrupt development.)
-> > 
-> > kernel/*.c is a pretty crowded place with 100+ files currently, I've been 
-> > gradually working towards depopulating it slowly but surely for subsystems 
-> > that I co-maintain or where I'm frequently active. We already have:
-> > 
-> >   kernel/sched/
-> >   kernel/events/
-> >   kernel/irq/
-> >   kernel/time/
-> >   kernel/trace/
-> > 
-> > and the deeper kernel/*/* hierarchies already host another ~100 .c files. 
-> > So the transition is half done already I suspect.
+* Dave Hansen (dave@sr71.net) wrote:
+> On 10/07/2013 01:21 PM, Robert C Jennings wrote:
+> > +					} else {
+> > +						if (vma)
+> > +							zap_page_range(vma,
+> > +								user_start,
+> > +								(user_end -
+> > +								 user_start),
+> > +								NULL);
+> > +						vma = find_vma_intersection(
+> > +								current->mm,
+> > +								useraddr,
+> > +								(useraddr +
+> > +								 PAGE_SIZE));
+> > +						if (!IS_ERR_OR_NULL(vma)) {
+> > +							user_start = useraddr;
+> > +							user_end = (useraddr +
+> > +								    PAGE_SIZE);
+> > +						} else
+> > +							vma = NULL;
+> > +					}
 > 
-> Should I be thinking about making a kernel/rcu?
+> This is pretty unspeakably hideous.  Was there truly no better way to do
+> this?
 
-I wanted to raise it with you at the KS :-)
+I was hoping to find a better way to coalesce pipe buffers and zap
+entire VMAs (and it needs better documentation but your argument is with
+structure and I agree). I would love suggestions for improving this but
+that is not to say that I've abandoned it; I'm still looking for ways
+to make this cleaner.
 
-To me it would sure look nice to have kernel/rcu/tree.c, 
-kernel/rcu/tiny.c, kernel/rcu/core.c, etc.
+Doing find_vma() on a single page in the VMA rather than on each and
+then zapping once provides a 50% runtime reduction for the writer when
+tested with a 256MB vmsplice operation.  Based on the result I felt that
+coalescing was justfied but the implementation is ugly.
 
-[ ... and we would certainly also break new ground by introducing a
-  "torture.c" file, for the first time in Linux kernel history! ;-) ]
-
-But it's really your call, this is something you should only do if you are 
-comfortable with it.
-
-Thanks,
-
-	Ingo
