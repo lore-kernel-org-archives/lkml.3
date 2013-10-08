@@ -1,93 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755526Ab3JHItb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 04:49:31 -0400
-Received: from mga09.intel.com ([134.134.136.24]:59651 "EHLO mga09.intel.com"
+	id S1755563Ab3JHItm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 04:49:42 -0400
+Received: from mga14.intel.com ([143.182.124.37]:18047 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754986Ab3JHIrT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 04:47:19 -0400
+	id S1754698Ab3JHIth (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 04:49:37 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,1056,1371106800"; 
-   d="scan'208";a="389469435"
-From: Adrian Hunter <adrian.hunter@intel.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH V5 4/9] perf tools: add map__find_other_map_symbol()
-Date: Tue,  8 Oct 2013 11:45:51 +0300
-Message-Id: <1381221956-16699-5-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1381221956-16699-1-git-send-email-adrian.hunter@intel.com>
-References: <1381221956-16699-1-git-send-email-adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+   d="scan'208";a="371299664"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Alex Thorlton <athorlton@sgi.com>, Ingo Molnar <mingo@redhat.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        "Eric W . Biederman" <ebiederm@xmission.com>,
+        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>, Dave Jones <davej@redhat.com>,
+        David Howells <dhowells@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Robin Holt <robinmholt@gmail.com>, Sedat Dilek <sedat.dilek@gmail.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+In-Reply-To: <20131007160907.3a4aca3e7eae404767ed3a8e@linux-foundation.org>
+References: <1381154053-4848-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <20131007160907.3a4aca3e7eae404767ed3a8e@linux-foundation.org>
+Subject: Re: [PATCHv5 00/11] split page table lock for PMD tables
+Content-Transfer-Encoding: 7bit
+Message-Id: <20131008084927.BC193E0090@blue.fi.intel.com>
+Date: Tue,  8 Oct 2013 11:49:27 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a function to find a symbol using an ip that
-might be on a different map.
+Andrew Morton wrote:
+> On Mon,  7 Oct 2013 16:54:02 +0300 "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
+> 
+> > Alex Thorlton noticed that some massively threaded workloads work poorly,
+> > if THP enabled. This patchset fixes this by introducing split page table
+> > lock for PMD tables. hugetlbfs is not covered yet.
+> > 
+> > This patchset is based on work by Naoya Horiguchi.
+> 
+> I think I'll summarise the results thusly:
+> 
+> : THP off, v3.12-rc2: 18.059261877 seconds time elapsed
+> : THP off, patched:   16.768027318 seconds time elapsed
+> : 
+> : THP on, v3.12-rc2:  42.162306788 seconds time elapsed
+> : THP on, patched:    8.397885779 seconds time elapsed
+> : 
+> : HUGETLB, v3.12-rc2: 47.574936948 seconds time elapsed
+> : HUGETLB, patched:   19.447481153 seconds time elapsed
+> 
+> What sort of machines are we talking about here?  Can mortals expect to
+> see such results on their hardware, or is this mainly on SGI nuttyware?
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
----
- tools/perf/util/map.c | 27 +++++++++++++++++++++++++++
- tools/perf/util/map.h |  2 ++
- 2 files changed, 29 insertions(+)
+I've tested on 4 socket Westmere: 40 cores / 80 threads.
 
-diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-index 4f6680d..beedeef 100644
---- a/tools/perf/util/map.c
-+++ b/tools/perf/util/map.c
-@@ -213,6 +213,33 @@ struct symbol *map__find_symbol_by_name(struct map *map, const char *name,
- 	return dso__find_symbol_by_name(map->dso, map->type, name);
- }
- 
-+struct symbol *map__find_other_map_symbol(struct map **map_ptr, u64 *ip_ptr,
-+					  symbol_filter_t filter)
-+{
-+	struct map *map = *map_ptr;
-+	u64 ip = *ip_ptr;
-+	struct map *sym_map = NULL;
-+	struct symbol *sym;
-+
-+	if (ip >= map->start && ip <= map->end)
-+		sym_map = map;
-+	else if (map->groups)
-+		sym_map = map_groups__find(map->groups, map->type, ip);
-+
-+	if (!sym_map)
-+		return NULL;
-+
-+	ip = sym_map->map_ip(sym_map, ip);
-+
-+	sym = map__find_symbol(sym_map, ip, filter);
-+	if (sym) {
-+		*map_ptr = sym_map;
-+		*ip_ptr = ip;
-+	}
-+
-+	return sym;
-+}
-+
- struct map *map__clone(struct map *map)
- {
- 	return memdup(map, sizeof(*map));
-diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
-index 4886ca2..b7b494c 100644
---- a/tools/perf/util/map.h
-+++ b/tools/perf/util/map.h
-@@ -106,6 +106,8 @@ struct symbol *map__find_symbol(struct map *map,
- 				u64 addr, symbol_filter_t filter);
- struct symbol *map__find_symbol_by_name(struct map *map, const char *name,
- 					symbol_filter_t filter);
-+struct symbol *map__find_other_map_symbol(struct map **map_ptr, u64 *ip_ptr,
-+					  symbol_filter_t filter);
- void map__fixup_start(struct map *map);
- void map__fixup_end(struct map *map);
- 
+With 4 threads, I can see 8% improvement on THP.
+Nothing comparing to 36 times on Alex's 512 cores, but still...
+
+> I'm seeing very few reviewed-by's and acked-by's in here, which is a
+> bit surprising and disappointing for a large patchset at v5.  Are you
+> sure none were missed?
+
+Peter looked through, but I haven't got any tags from him.
+
+> The new code is enabled only for x86.  Why is this?
+
+x86 is the only hardware I have to test.
+
+> What must arch maintainers do to enable it?  Have you any particular
+> suggestions, warnings etc to make their lives easier?
+
+The last patch is a good illustration what need to be done. It's very
+straight forward, I don't see any pitfalls.
+
+> I assume the patchset won't damage bisectability?  If our bisecter has
+> only the first eight patches applied, the fact that
+> CONFIG_ARCH_ENABLE_SPLIT_PMD_PTLOCK cannot be enabled protects from
+> failures?
+
+Unless CONFIG_ARCH_ENABLE_SPLIT_PMD_PTLOCK defined, pmd_lockptr() will
+return mm->page_table_lock: we can convert code to new api stet-by-step
+without breaking anything.
+
 -- 
-1.7.11.7
-
+ Kirill A. Shutemov
