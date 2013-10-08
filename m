@@ -1,58 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753480Ab3JHDD7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 23:03:59 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:37250 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751534Ab3JHDD5 (ORCPT
+	id S1753969Ab3JHDFo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 23:05:44 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:62954 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751869Ab3JHDFm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 23:03:57 -0400
+	Mon, 7 Oct 2013 23:05:42 -0400
 MIME-Version: 1.0
-In-Reply-To: <1381040838-12748-1-git-send-email-michael.opdenacker@free-electrons.com>
-References: <1381040838-12748-1-git-send-email-michael.opdenacker@free-electrons.com>
-Date: Tue, 8 Oct 2013 11:03:56 +0800
-Message-ID: <CAJxxZ0MpB7Ry5uRsoU=YgJTjrLQQyCdc8QS_x71brJpVfrTwMA@mail.gmail.com>
-Subject: Re: [PATCH] serial: bfin_uart: remove deprecated IRQF_DISABLED
+In-Reply-To: <1380207292-16968-4-git-send-email-ulf.hansson@linaro.org>
+References: <1380207292-16968-1-git-send-email-ulf.hansson@linaro.org>
+	<1380207292-16968-4-git-send-email-ulf.hansson@linaro.org>
+Date: Tue, 8 Oct 2013 11:05:40 +0800
+Message-ID: <CAJxxZ0MjV+6TkfQbWTg+crpux=XRFYWGmdc73ouruNGWVZkeLQ@mail.gmail.com>
+Subject: Re: [PATCH 03/27] mmc: bfin_sdh: Move away from using deprecated APIs
 From: Sonic Zhang <sonic.adi@gmail.com>
-To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Cc: "Zhang, Sonic" <sonic.zhang@analog.com>,
-        Greg KH <gregkh@linuxfoundation.org>, Jiri Slaby <jslaby@suse.cz>,
-        uclinux-dist-devel <uclinux-dist-devel@blackfin.uclinux.org>,
-        Linux Serial <linux-serial@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-mmc@vger.kernel.org,
+        Chris Ball <cjb@laptop.org>, Sonic Zhang <sonic.zhang@analog.com>,
+        uclinux-dist-devel <uclinux-dist-devel@blackfin.uclinux.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Sonic Zhang <sonc.zhang@analog.com>
+Acked-by: Sonic Zhang <sonic.zhang@analog.com>
 
-On Sun, Oct 6, 2013 at 2:27 PM, Michael Opdenacker
-<michael.opdenacker@free-electrons.com> wrote:
-> This patch proposes to remove the use of the IRQF_DISABLED flag
+On Thu, Sep 26, 2013 at 10:54 PM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
+> Suspend and resume of cards are being handled from the protocol layer
+> and consequently the mmc_suspend|resume_host APIs are deprecated.
 >
-> It's a NOOP since 2.6.35 and it will be removed one day.
+> This means we can simplify the suspend|resume callbacks by removing the
+> use of the deprecated APIs.
 >
-> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+> Cc: Sonic Zhang <sonic.zhang@analog.com>
+> Cc: uclinux-dist-devel@blackfin.uclinux.org
+> Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
 > ---
->  drivers/tty/serial/bfin_uart.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+>  drivers/mmc/host/bfin_sdh.c |   12 +-----------
+>  1 file changed, 1 insertion(+), 11 deletions(-)
 >
-> diff --git a/drivers/tty/serial/bfin_uart.c b/drivers/tty/serial/bfin_uart.c
-> index 3c75e8e..5e85f35 100644
-> --- a/drivers/tty/serial/bfin_uart.c
-> +++ b/drivers/tty/serial/bfin_uart.c
-> @@ -726,7 +726,7 @@ static int bfin_serial_startup(struct uart_port *port)
->  #ifdef CONFIG_SERIAL_BFIN_HARD_CTSRTS
->         if (uart->cts_pin >= 0) {
->                 if (request_irq(uart->status_irq, bfin_serial_mctrl_cts_int,
-> -                       IRQF_DISABLED, "BFIN_UART_MODEM_STATUS", uart)) {
-> +                       0, "BFIN_UART_MODEM_STATUS", uart)) {
->                         uart->cts_pin = -1;
->                         dev_info(port->dev, "Unable to attach BlackFin UART Modem Status interrupt.\n");
->                 }
+> diff --git a/drivers/mmc/host/bfin_sdh.c b/drivers/mmc/host/bfin_sdh.c
+> index 94fae2f..bc9110f 100644
+> --- a/drivers/mmc/host/bfin_sdh.c
+> +++ b/drivers/mmc/host/bfin_sdh.c
+> @@ -640,21 +640,15 @@ static int sdh_remove(struct platform_device *pdev)
+>  #ifdef CONFIG_PM
+>  static int sdh_suspend(struct platform_device *dev, pm_message_t state)
+>  {
+> -       struct mmc_host *mmc = platform_get_drvdata(dev);
+>         struct bfin_sd_host *drv_data = get_sdh_data(dev);
+> -       int ret = 0;
+> -
+> -       if (mmc)
+> -               ret = mmc_suspend_host(mmc);
+>
+>         peripheral_free_list(drv_data->pin_req);
+>
+> -       return ret;
+> +       return 0;
+>  }
+>
+>  static int sdh_resume(struct platform_device *dev)
+>  {
+> -       struct mmc_host *mmc = platform_get_drvdata(dev);
+>         struct bfin_sd_host *drv_data = get_sdh_data(dev);
+>         int ret = 0;
+>
+> @@ -665,10 +659,6 @@ static int sdh_resume(struct platform_device *dev)
+>         }
+>
+>         sdh_reset();
+> -
+> -       if (mmc)
+> -               ret = mmc_resume_host(mmc);
+> -
+>         return ret;
+>  }
+>  #else
 > --
-> 1.8.1.2
+> 1.7.9.5
 >
 > --
 > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
