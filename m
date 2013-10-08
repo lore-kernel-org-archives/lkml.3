@@ -1,132 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755761Ab3JHVMY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 17:12:24 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:48145 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752747Ab3JHVMX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 17:12:23 -0400
-Date: Tue, 8 Oct 2013 14:12:18 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Thoughts on this RCU idle entry/exit patch?
-Message-ID: <20131008211218.GV5790@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20131007153955.GA30925@linux.vnet.ibm.com>
- <20131008203427.GE8392@localhost.localdomain>
+	id S1756596Ab3JHVNA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 17:13:00 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:50050 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753965Ab3JHVM5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 17:12:57 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131008203427.GE8392@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13100821-0320-0000-0000-0000014914F6
+In-Reply-To: <20131008132845.7e6c1c28f1c917f30ecb8dc5@linux-foundation.org>
+References: <1381201011-4230-1-git-send-email-keescook@chromium.org>
+	<1381201011-4230-3-git-send-email-keescook@chromium.org>
+	<20131008132845.7e6c1c28f1c917f30ecb8dc5@linux-foundation.org>
+Date: Tue, 8 Oct 2013 14:12:56 -0700
+X-Google-Sender-Auth: MMgc1ApWNLJKusw26h81psSLKeA
+Message-ID: <CAGXu5jKmmH=7fVEP+W0iWM+oafcNyCrvmOwgKNNSzhacPTWD9w@mail.gmail.com>
+Subject: Re: [PATCH 3/3] vsprintf: ignore %n again
+From: Kees Cook <keescook@chromium.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Joe Perches <joe@perches.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 08, 2013 at 10:34:28PM +0200, Frederic Weisbecker wrote:
-> On Mon, Oct 07, 2013 at 08:39:55AM -0700, Paul E. McKenney wrote:
-> > Hello, Frederic!
-> > 
-> > The following patch seems to me to be a good idea to better handle
-> > task nesting.  Any reason why it would be a bad thing?
-> > 
-> > 							Thanx, Paul
-> > 
-> > ------------------------------------------------------------------------
-> > 
-> > rcu: Allow task-level idle entry/exit nesting
-> > 
-> > The current task-level idle entry/exit code forces an entry/exit on
-> > each call, regardless of the nesting level.  This commit therefore
-> > properly accounts for nesting.
-> > 
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> 
-> Looks good. In fact, the current code is even buggy because two nesting rcu_user_eqs()
-> as in:
-> 
->         rcu_eqs_enter()
->             rcu_eqs_enter()
->             rcu_eqs_exit()
->         rcu_eqs_exit()
-> 
-> would result in rdtp->dynticks wrong increment, right?
+On Tue, Oct 8, 2013 at 1:28 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
+> On Mon,  7 Oct 2013 19:56:51 -0700 Kees Cook <keescook@chromium.org> wrote:
+>
+>> This ignores %n in printf again, as was originally documented. Implementing
+>> %n poses a greater security risk than utility, so it should stay ignored.
+>> To help anyone attempting to use %n, a warning will be emitted if it is
+>> encountered.
+>>
+>> Based on earlier patch by Joe Perches.
+>
+> Well this sucks.  Nowhere in this patchset are we told what is the
+> alleged security risk with %n.  There's even a runtime warning telling
+> people not to use it, but we've provided no way for them to find out
+> *why*.
+>
+> Please send along suitable changelog text so I can fix this up.
 
-That was my thought, but I figured I should run it past you in case
-there was some subtle tie-in to NO_HZ_FULL.
+Perhaps add these two paragraphs to the end of the "vsprintf: ignore
+%n again" commit:
 
-> So that's even a bug fix. I wonder if it's a regression. That said rcu_eqs_enter_common()
-> should warn on such miscount, so may be these functions actually don't nest in practice
-> or you would have received such warnings.
 
-And the lack of such warnings was another reason I felt the need to check
-with you.
+Because %n was designed to write to pointers on the stack, it has been
+frequently used as an attack vector when bugs are found that leak
+user-controlled strings into functions that ultimately process format
+strings. While this class of bug can still be turned into an
+information leak, removing %n eliminates the common method of
+elevating such a bug into an arbitrary kernel memory writing
+primitive, significantly reducing the danger of this class of bug.
 
-> So I wonder, do we want to continue to allow this nesting? I remember that DYNTICK_TASK_NEST_*
-> stuff is there to protects against non finishing interrupts on some archs (I also remember that
-> this, or at least a practical scenario for this, was hard to really define though :o)
-> But then wouldn't it involve other kind of scenario like this?
-> 
->        rcu_irq_enter()
->            rcu_eqs_enter()
->            rcu_eqs_exit()
->            ...
-> 
-> Anyway, that's just random thougths on further simplifications, in any case, this
-> patch looks good.
+For seq_file users that need to know the length of a written string
+for padding, please see seq_setwidth() and seq_pad() instead.
 
-Yep, if no task-level nesting is ever required, things could be a bit
-simpler.  I would be a bit slow about making such a change, though.
-After all, the need to deal with Hotel California interrupts means that
-handling nesting isn't that big of a deal comparatively.  ;-)
 
-May I add your Reviewed-by?
+> A new checkpatch rule might be appropriate?
 
-							Thanx, Paul
+I can look into that -- I worry it won't be very effective since
+checkpatch lacks the knowledge of which functions are taking format
+strings, and looking for just %n may lead to some false positives.
+Maybe I can look for the common case of %n" (at the end of a string
+literal).
 
-> Thanks.
-> 
-> > 
-> > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> > index 106f7f5cdd1d..f0be20886617 100644
-> > --- a/kernel/rcutree.c
-> > +++ b/kernel/rcutree.c
-> > @@ -411,11 +411,12 @@ static void rcu_eqs_enter(bool user)
-> >  	rdtp = this_cpu_ptr(&rcu_dynticks);
-> >  	oldval = rdtp->dynticks_nesting;
-> >  	WARN_ON_ONCE((oldval & DYNTICK_TASK_NEST_MASK) == 0);
-> > -	if ((oldval & DYNTICK_TASK_NEST_MASK) == DYNTICK_TASK_NEST_VALUE)
-> > +	if ((oldval & DYNTICK_TASK_NEST_MASK) == DYNTICK_TASK_NEST_VALUE) {
-> >  		rdtp->dynticks_nesting = 0;
-> > -	else
-> > +		rcu_eqs_enter_common(rdtp, oldval, user);
-> > +	} else {
-> >  		rdtp->dynticks_nesting -= DYNTICK_TASK_NEST_VALUE;
-> > -	rcu_eqs_enter_common(rdtp, oldval, user);
-> > +	}
-> >  }
-> >  
-> >  /**
-> > @@ -533,11 +534,12 @@ static void rcu_eqs_exit(bool user)
-> >  	rdtp = this_cpu_ptr(&rcu_dynticks);
-> >  	oldval = rdtp->dynticks_nesting;
-> >  	WARN_ON_ONCE(oldval < 0);
-> > -	if (oldval & DYNTICK_TASK_NEST_MASK)
-> > +	if (oldval & DYNTICK_TASK_NEST_MASK) {
-> >  		rdtp->dynticks_nesting += DYNTICK_TASK_NEST_VALUE;
-> > -	else
-> > +	} else {
-> >  		rdtp->dynticks_nesting = DYNTICK_TASK_EXIT_IDLE;
-> > -	rcu_eqs_exit_common(rdtp, oldval, user);
-> > +		rcu_eqs_exit_common(rdtp, oldval, user);
-> > +	}
-> >  }
-> >  
-> >  /**
-> > 
-> 
+> Two of these patches were acked-by:you.  But you sent the patches, so I
+> changed these to Signed-off-by:, as per
+> Documentation/SubmittingPatches, section 12.
 
+Ah! Yes, thanks for fixing that.
+
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
