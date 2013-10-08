@@ -1,100 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756794Ab3JHUxT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 16:53:19 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:40549 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753469Ab3JHUxQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 16:53:16 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rob Landley <rob@landley.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-References: <8761v7h2pt.fsf@tw-ebiederman.twitter.com>
-	<CAJfpegtT7y-1HhbEVAMKkdQugTG_w7G_epGtQHGvQLpcZB5FVA@mail.gmail.com>
-	<87li281wx6.fsf_-_@xmission.com> <87a9ioo37a.fsf_-_@xmission.com>
-	<20131007043919.GB10284@mail.hallyn.com> <87vc191sf2.fsf@xmission.com>
-	<CALCETrUaubASZyeoNZcYxn5-GJO68=Ng=GYmas7K_OBsjM7f0Q@mail.gmail.com>
-	<87d2ngyb02.fsf@xmission.com>
-	<20131008160601.GJ14242@tucsk.piliscsaba.szeredi.hu>
-	<CALCETrWw=htmgxqq=RQztdJQ-a8c3860vmJh9Ni=Hhs0TkO3YA@mail.gmail.com>
-	<20131008161135.GK14242@tucsk.piliscsaba.szeredi.hu>
-Date: Tue, 08 Oct 2013 13:50:14 -0700
-In-Reply-To: <20131008161135.GK14242@tucsk.piliscsaba.szeredi.hu> (Miklos
-	Szeredi's message of "Tue, 8 Oct 2013 18:11:35 +0200")
-Message-ID: <87li23trll.fsf@tw-ebiederman.twitter.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/miVoVhvl5b7/nEgzT0zp7xLa+J1oa3OQ=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  1.5 TR_Symld_Words too many words that have symbols inside
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Miklos Szeredi <miklos@szeredi.hu>
-X-Spam-Relay-Country: 
-Subject: Re: [RFC][PATCH 4/3] vfs: Allow rmdir to remove mounts in all but the current mount namespace
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	id S1756484Ab3JHU60 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 16:58:26 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:56667 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754227Ab3JHU6X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 16:58:23 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Michal Hocko <mhocko@suse.cz>, azurIt <azurit@pobox.sk>,
+        linux-mm@kvack.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [patch 2/2] fs: buffer: move allocation failure loop into the allocator
+Date: Tue,  8 Oct 2013 16:58:10 -0400
+Message-Id: <1381265890-11333-2-git-send-email-hannes@cmpxchg.org>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1381265890-11333-1-git-send-email-hannes@cmpxchg.org>
+References: <1381265890-11333-1-git-send-email-hannes@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Miklos Szeredi <miklos@szeredi.hu> writes:
+Buffer allocation has a very crude indefinite loop around waking the
+flusher threads and performing global NOFS direct reclaim because it
+can not handle allocation failures.
 
-> On Tue, Oct 08, 2013 at 09:06:29AM -0700, Andy Lutomirski wrote:
->
->> > I think the risks of changing behavior outweigh the benefits.  How many
->> > times did you have to remove or rename a mounted file or directory?  It's
->> > very rarely needed.
->> 
->> I do this every time I reinstall a system while running that system.
->> Admittedly, mount --move works, but that's a really unpleasant
->> interface.
->> 
->> When rename2 gets added, there could be a flag RENAME_MOVE_MOUNT to opt in.
->
-> Good point.  Opting in would be the safest for both unlinkat() and
-> renameat2().
+The most immediate problem with this is that the allocation may fail
+due to a memory cgroup limit, where flushers + direct reclaim might
+not make any progress towards resolving the situation at all.  Because
+unlike the global case, a memory cgroup may not have any cache at all,
+only anonymous pages but no swap.  This situation will lead to a
+reclaim livelock with insane IO from waking the flushers and thrashing
+unrelated filesystem cache in a tight loop.
 
-Opting in to allowing mounts to be unlinked and renamed?  Or opting in
-to not renaming/unlinking a mount point?
+Use __GFP_NOFAIL allocations for buffers for now.  This makes sure
+that any looping happens in the page allocator, which knows how to
+orchestrate kswapd, direct reclaim, and the flushers sensibly.  It
+also allows memory cgroups to detect allocations that can't handle
+failure and will allow them to ultimately bypass the limit if reclaim
+can not make progress.
 
-I can see opting in to denying the rename/unlink if that is someting
-someone wants for some reason.  With an opt in we can even use the
-previous d_mountpoint check and not stomp someone's else's weird set of
-mounts in some other mount namespace if they are on the local machine
-and that is desired.
+Reported-by: azurIt <azurit@pobox.sk>
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Cc: stable@kernel.org
+---
+ fs/buffer.c     | 14 ++++++++++++--
+ mm/memcontrol.c |  2 ++
+ 2 files changed, 14 insertions(+), 2 deletions(-)
 
-
-
-The rmdir non-empty dir semantics justify blocking rmdir.
-
-
-
-If we are going to fix the VFS deficiency we have to let these changes
-happen in other mount namespaces.  To make that safe it has to be
-sufficient to rely on the directory permissions and the conditions that
-ensure that the directory permissions are sufficient.
-
-So I find it far safer to allow as much as possible even in the local
-mount namespace so we can actually see if there are problems with
-relying on the directory permissions.
-
-Eric
+diff --git a/fs/buffer.c b/fs/buffer.c
+index 4d74335..6024877 100644
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -1005,9 +1005,19 @@ grow_dev_page(struct block_device *bdev, sector_t block,
+ 	struct buffer_head *bh;
+ 	sector_t end_block;
+ 	int ret = 0;		/* Will call free_more_memory() */
++	gfp_t gfp_mask;
+ 
+-	page = find_or_create_page(inode->i_mapping, index,
+-		(mapping_gfp_mask(inode->i_mapping) & ~__GFP_FS)|__GFP_MOVABLE);
++	gfp_mask = mapping_gfp_mask(inode->i_mapping) & ~__GFP_FS;
++	gfp_mask |= __GFP_MOVABLE;
++	/*
++	 * XXX: __getblk_slow() can not really deal with failure and
++	 * will endlessly loop on improvised global reclaim.  Prefer
++	 * looping in the allocator rather than here, at least that
++	 * code knows what it's doing.
++	 */
++	gfp_mask |= __GFP_NOFAIL;
++
++	page = find_or_create_page(inode->i_mapping, index, gfp_mask);
+ 	if (!page)
+ 		return ret;
+ 
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index b39dfac..e233aa1 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2764,6 +2764,8 @@ done:
+ 	return 0;
+ nomem:
+ 	*ptr = NULL;
++	if (gfp_mask & __GFP_NOFAIL)
++		return 0;
+ 	return -ENOMEM;
+ bypass:
+ 	*ptr = root_mem_cgroup;
+-- 
+1.8.4
 
