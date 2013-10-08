@@ -1,89 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755101Ab3JHNit (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 09:38:49 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:58643 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752510Ab3JHNir (ORCPT
+	id S1754554Ab3JHNle (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 09:41:34 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38668 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751682Ab3JHNlc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 09:38:47 -0400
-Message-ID: <52540AE2.4060909@monstr.eu>
-Date: Tue, 08 Oct 2013 15:38:42 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Tue, 8 Oct 2013 09:41:32 -0400
+Date: Tue, 8 Oct 2013 14:41:00 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Jason Cooper <jason@lakedaemon.net>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/8] ARM: l2x0: add Marvell Tauros3 compatible
+Message-ID: <20131008134100.GD1412@e106331-lin.cambridge.arm.com>
+References: <1381235073-17134-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1381235073-17134-4-git-send-email-sebastian.hesselbarth@gmail.com>
 MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>
-CC: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        viro@zeniv.linux.org.uk, vgupta@synopsys.com, catalin.marinas@arm.com,
-        will.deacon@arm.com, hskinnemoen@gmail.com, egtvedt@samfundet.no,
-        vapier@gentoo.org, msalter@redhat.com, a-jacquiot@ti.com,
-        starvik@axis.com, jesper.nilsson@axis.com, dhowells@redhat.com,
-        rkuo@codeaurora.org, tony.luck@intel.com, fenghua.yu@intel.com,
-        takata@linux-m32r.org, geert@linux-m68k.org, james.hogan@imgtec.com,
-        yasutake.koichi@jp.panasonic.com, ralf@linux-mips.org,
-        jonas@southpole.se, jejb@parisc-linux.org, deller@gmx.de,
-        benh@kernel.crashing.org, paulus@samba.org, schwidefsky@de.ibm.com,
-        heiko.carstens@de.ibm.com, liqin.linux@gmail.com, lennox.wu@gmail.com,
-        lethal@linux-sh.org, cmetcalf@tilera.com, gxt@mprc.pku.edu.cn,
-        linux-xtensa@linux-xtensa.org, akpm@linux-foundation.org,
-        oleg@redhat.com, tj@kernel.org
-Subject: Re: Global do_signal() cleanup
-References: <1381231701-4008-1-git-send-email-richard@nod.at>
-In-Reply-To: <1381231701-4008-1-git-send-email-richard@nod.at>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="SA5Ph8vhsBrP3AmTBk0tM9TO97CenAh6r"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1381235073-17134-4-git-send-email-sebastian.hesselbarth@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---SA5Ph8vhsBrP3AmTBk0tM9TO97CenAh6r
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Tue, Oct 08, 2013 at 01:24:28PM +0100, Sebastian Hesselbarth wrote:
+> This add a compatible for the Marvell Tauros3 cache controller which
+> is compatible with l2x0 cache controllers. While updating the binding
+> documentation, clean up the list of possible compatibles.
+> 
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> ---
+> Cc: Jason Cooper <jason@lakedaemon.net>
+> Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: devicetree@vger.kernel.org
+> Cc: linux-doc@vger.kernel.org
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  Documentation/devicetree/bindings/arm/l2cc.txt |   22 +++++++++++-----------
+>  arch/arm/mm/cache-l2x0.c                       |    1 +
+>  2 files changed, 12 insertions(+), 11 deletions(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/arm/l2cc.txt b/Documentation/devicetree/bindings/arm/l2cc.txt
+> index c0c7626..a1d0cbd 100644
+> --- a/Documentation/devicetree/bindings/arm/l2cc.txt
+> +++ b/Documentation/devicetree/bindings/arm/l2cc.txt
+> @@ -7,20 +7,20 @@ The ARM L2 cache representation in the device tree should be done as follows:
+>  Required properties:
+>  
+>  - compatible : should be one of:
+> -	"arm,pl310-cache"
+> -	"arm,l220-cache"
+> -	"arm,l210-cache"
+> -	"marvell,aurora-system-cache": Marvell Controller designed to be
+> +  "arm,pl310-cache"
+> +  "arm,l220-cache"
+> +  "arm,l210-cache"
+> +  "bcm,bcm11351-a2-pl310-cache": DEPRECATED by "brcm,bcm11351-a2-pl310-cache"
+> +  "brcm,bcm11351-a2-pl310-cache": For Broadcom bcm11351 chipset where an
+> +     offset needs to be added to the address before passing down to the L2
+> +     cache controller
+> +  "marvell,aurora-system-cache": Marvell Controller designed to be
+>       compatible with the ARM one, with system cache mode (meaning
+>       maintenance operations on L1 are broadcasted to the L2 and L2
+>       performs the same operation).
+> -	"marvell,"aurora-outer-cache: Marvell Controller designed to be
+> -	 compatible with the ARM one with outer cache mode.
+> -	"brcm,bcm11351-a2-pl310-cache": For Broadcom bcm11351 chipset where an
+> -	offset needs to be added to the address before passing down to the L2
+> -	cache controller
+> -	"bcm,bcm11351-a2-pl310-cache": DEPRECATED by
+> -	                               "brcm,bcm11351-a2-pl310-cache"
+> +  "marvell,aurora-outer-cache": Marvell Controller designed to be
+> +     compatible with the ARM one with outer cache mode.
+> +  "marvell,tauros3-cache": Marvell Tauros3 cache controller.
 
-On 10/08/2013 01:27 PM, Richard Weinberger wrote:
-> This patch series moves all remaining archs to the get_signal() and
-> signal_setup_done() functions. Currently these archs use open coded
-> variants of the said functions.  Further, unused parameters get removed=
+How does the tauros3 cache differ from the other caches supported by the
+l2x0 driver?
 
-> from get_signal_to_deliver(), tracehook_signal_handler() and signal_del=
-ivered().
-> After all we save around 350 lines of code. :-)
->=20
-> The following archs are _untested_: arc, c6x, hexagon, metag, score, un=
-icore, sh64.
-> If someone points me to cross compilers for these arch I'll happily bui=
-ld test them too.
+>  - cache-unified : Specifies the cache is a unified cache.
+>  - cache-level : Should be set to 2 for a level 2 cache.
+>  - reg : Physical base address and size of cache controller's memory mapped
+> diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
+> index 447da6f..90c776e 100644
+> --- a/arch/arm/mm/cache-l2x0.c
+> +++ b/arch/arm/mm/cache-l2x0.c
+> @@ -929,6 +929,7 @@ static const struct of_device_id l2x0_ids[] __initconst = {
+>  	  .data = (void *)&aurora_no_outer_data},
+>  	{ .compatible = "marvell,aurora-outer-cache",
+>  	  .data = (void *)&aurora_with_outer_data},
+> +	{ .compatible = "marvell,tauros3-cache", .data = (void *)&l2x0_data },
 
-Any link to the repo and branch with all these patches will be helpful.
+Are we intending to handle this differently later? 
 
-Thanks,
-Michal
+Or is it 100% compatible with the pl210 or pl220? We could just require
+an entry later in the compatible string list instead...
 
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---SA5Ph8vhsBrP3AmTBk0tM9TO97CenAh6r
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlJUCuIACgkQykllyylKDCFhZQCfesCBcVTG2rR0YU4ExRYPyNx4
-IiIAnjMtbaaFcCxhGCL9QcNgfUlE9bba
-=SREd
------END PGP SIGNATURE-----
-
---SA5Ph8vhsBrP3AmTBk0tM9TO97CenAh6r--
+Cheers,
+Mark.
