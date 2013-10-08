@@ -1,87 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756439Ab3JHQVg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 12:21:36 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:46555 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751686Ab3JHQVd (ORCPT
+	id S1756464Ab3JHQVz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 12:21:55 -0400
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:35449 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755389Ab3JHQVx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 12:21:33 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/oMZ5wmLncV4JVPRGjpubK
-Date: Tue, 8 Oct 2013 09:21:28 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Haojian Zhuang <haojian.zhuang@marvell.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Prakash Manjunathappa <prakash.pm@ti.com>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>,
-        Linux-OMAP <linux-omap@vger.kernel.org>, Roger Quadros <rogerq@ti.com>
-Subject: Re: [PATCH 3/6] pinctrl: single: Prepare for supporting SoC
- specific features
-Message-ID: <20131008162128.GB7773@atomide.com>
-References: <20131003054104.8941.88857.stgit@localhost>
- <20131003054218.8941.19273.stgit@localhost>
- <20131007173531.GX8949@atomide.com>
- <CACRpkdbx+vJEqz3KQ0EHGt0axRB4JeJh3FF4e+7snbR0HoqKRg@mail.gmail.com>
+	Tue, 8 Oct 2013 12:21:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdbx+vJEqz3KQ0EHGt0axRB4JeJh3FF4e+7snbR0HoqKRg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20131008075151.GA15689@localhost>
+References: <20131005234430.GA22485@localhost>
+	<CA+55aFxEeKixnH7mZZs5iwupA9_GsRN0N7QZxqcTcE4RKZvTTg@mail.gmail.com>
+	<20131008075151.GA15689@localhost>
+Date: Tue, 8 Oct 2013 09:21:51 -0700
+X-Google-Sender-Auth: YQbJGUBI5g7N8Pqy9bAVoQdWPS4
+Message-ID: <CA+55aFykGxmaE9hq9xd+6HHFtEube_2QnB+ipW4oF71c6vyXAw@mail.gmail.com>
+Subject: Re: [x86] BUG: unable to handle kernel paging request at 00740060
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Fengguang Wu <fengguang.wu@intel.com>, Richard Henderson <rth@twiddle.net>,
+        Jakub Jelinek <jakub@redhat.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Linus Walleij <linus.walleij@linaro.org> [131008 05:03]:
-> On Mon, Oct 7, 2013 at 7:35 PM, Tony Lindgren <tony@atomide.com> wrote:
-> 
-> > Hi Linus W,
-> >
-> > Any comments on the pinctrl patches 3 - 5 in this series?
-> 
-> I have no problems with this patch #3, as it is just changing syntax,
-> not semantics.
-> 
-> The problems start with patch #4.
-> 
-> I am tormented with mixed feelings about this, because from one point of
-> view I feel it is breaking the promise of pinctrl-single being a
-> driver for platforms
-> where a pin is controlled by a *single* register.
+[ Richard and Jakub added to cc, they can perhaps help or at least
+point us to the right gcc person.
 
-It is still in that same *single* register. There are interrupt enable
-and interrupt status bits for *every* pin register on most omaps.
- 
-> If this was pinctrl-foo.c I would not have been so much bothered,
-> but now it is something that was supposed to be self-contained and
-> simple, pertaining to a single register, starting to look like something
-> else.
+  Richard, Jakub, the bug is triggered by kernel commit 0c44c2d0f459
+(not yet merged), see:
+
+    http://git.kernel.org/cgit/linux/kernel/git/tip/tip.git/commit/?id=0c44c2d0f459cd7e275242b72f500137c4fa834d
+
+  for the patch. The actual inline asm is pretty dang small, and the
+non-asm-goto version works fine. Can you take a look? ]
+
+On Tue, Oct 8, 2013 at 12:51 AM, Fengguang Wu <fengguang.wu@intel.com> wrote:
+> [    9.844709] *pdpt = 00000000072c1001 *pde = 0000000000000000
 >
-> This is a bit like: "oh yeah just one register controls the pins, but under
-> some circumstances I also want to mess with this register over here,
-> and then this register over there ..." etc.
+>> That said, Fengguang, can you try two things just to check:
+>>
+>>  - add "cc" to the clobbers list for the asm goto (technically it
+>> should be on the non-asm-goto as well, but we never had that, and
+>> maybe the fact that gcc always ends up testing a register afterwards
+>> hides the need for the clobber).
+>>
+>> So it would look like this in arch/x86/include/asm/rmwcc.h
+>>
+>>   #define __GEN_RMWcc(fullop, var, cc, ...) \
+>>   do { \
+>>       asm volatile goto (fullop "; j" cc " %l[cc_label]" \
+>>           : : "m" (var), ## __VA_ARGS__ \
+>>           : "memory", "cc" : cc_label); \
+>>       return 0; \
+>>   cc_label: \
+>>       return 1; \
+>>
+>> (where that "cc" thing is new). I'm not sure if "cc" really matters on
+>> x86 at all (it didn't use to, long long ago), but maybe it does these
+>> days..
+>
+> Tests show that it makes no difference by adding the "cc" this way:
+>
+> -                       : "memory" : cc_label);                         \
+> +                       : "memory", "cc" : cc_label);                           \
 
-Not true. If it was some other register I would have set it up as
-a separate driver under drivers/irqchip.
- 
-> I'd like Haojian to ACK this to proceed since he's also using this driver
-> now. Then I feel better on continuing down this road ...
-> 
-> Then I have a lesser comment on patch #4 since it makes it possible
-> for this pin controller to support wake-up interrupt, as I don't see how
-> this plays out with front-end GPIO controllers, but let's discuss that
-> in the context of that patch.
+Ok, that was a long shot, I don't think gcc actually ever assumes cc
+is live over an asm on x86.
 
-It's completely separate from the GPIO controller wake-up events.
+>> If that makes no difference, please just verify that the non-asm-goto
+>> version works fine, by changing the
+>>
+>>   #ifdef CC_HAVE_ASM_GOTO
+>>
+>> into a simple "#if 0" to disable the asm-goto version.
+>
+> Yeah, this will quiet the oops messages:
+>
+> -#ifdef CC_HAVE_ASM_GOTO
+> +#if 0
 
-Regards,
+Ok. So it looks very much like "asm goto()" is simply buggered. Too
+bad, since it  generated nice clear code.
 
-Tony
+I suspect it's the memory clobber - maybe it only marks memory as
+clobbered for the fallthrough case, and the actual "goto" case might
+used old cached values? What do I know, it's just a theory.
 
+We do have "asm goto" with memory clobbers elsewhere (our x86 version
+of __mutex_fastpath_lock()), but that use is very limited and only
+gets expanded in a single place. The new bitop cases get expanded
+*everywhere*, so if there is something subtly wrong wrt code
+generation that requires some particular pattern, they'd trigger it
+much more easily.
+
+Anybody have any ideas?
+
+                    Linus
