@@ -1,85 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753668Ab3JHAF3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 20:05:29 -0400
-Received: from ring0.de ([91.143.88.219]:51036 "EHLO smtp.ring0.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751615Ab3JHAF0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 20:05:26 -0400
-X-Spam-Report: * -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-	*  3.3 RCVD_IN_PBL RBL: Received via a relay in Spamhaus PBL
-	*      [93.206.232.179 listed in zen.spamhaus.org]
-Date: Tue, 8 Oct 2013 02:05:16 +0200
-From: Sebastian Reichel <sre@debian.org>
-To: Nishanth Menon <nm@ti.com>
-Cc: =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>, Felipe <balbi@ti.com>,
-        Olof Johansson <olof@lixom.net>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH V3] ARM: OMAP3: Fix hardware detection for omap3630 when
- booted with device tree
-Message-ID: <20131008000515.GA2097@earth.universe>
-Mail-Followup-To: Nishanth Menon <nm@ti.com>,
-	=?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
-	Tony Lindgren <tony@atomide.com>, Felipe <balbi@ti.com>,
-	Olof Johansson <olof@lixom.net>, devicetree@vger.kernel.org,
-	linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-	linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-References: <20131007192009.GA8949@atomide.com>
- <1381178629-13488-1-git-send-email-nm@ti.com>
+	id S1753794Ab3JHAHf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 20:07:35 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:35242 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751511Ab3JHAHe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 20:07:34 -0400
+Message-ID: <52534CC1.1090009@linaro.org>
+Date: Mon, 07 Oct 2013 17:07:29 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="liOOAslEiF7prFVr"
-Content-Disposition: inline
-In-Reply-To: <1381178629-13488-1-git-send-email-nm@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Minchan Kim <minchan@kernel.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
+        Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
+        Andrea Righi <andrea@betterlinux.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>, Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>, Rob Clark <robdclark@gmail.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH 05/14] vrange: Add new vrange(2) system call
+References: <1380761503-14509-1-git-send-email-john.stultz@linaro.org> <1380761503-14509-6-git-send-email-john.stultz@linaro.org> <52533C12.9090007@zytor.com> <5253404D.2030503@linaro.org> <20131008000357.GC25780@bbox>
+In-Reply-To: <20131008000357.GC25780@bbox>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/07/2013 05:03 PM, Minchan Kim wrote:
+> Hello, John and Peter
+>
+> On Mon, Oct 07, 2013 at 04:14:21PM -0700, John Stultz wrote:
+>> On 10/07/2013 03:56 PM, H. Peter Anvin wrote:
+>>> I see from the change history of the patch that this was an madvise() at
+>>> some point, but was changed into a separate system call at some point,
+>>> does anyone remember why that was?  A quick look through my LKML
+>>> archives doesn't really make it clear.
+>> The reason we can't use madvise, is that to properly handle error cases
+>> and report the pruge state, we need an extra argument.
+>>
+>> In much earlier versions, we just returned an error when setting
+>> NONVOLATILE if the data was purged. However, since we have to possibly
+>> do allocations when marking a range as non-volatile, we needed a way to
+>> properly handle that allocation failing. We can't just return ENOMEM, as
+>> we may have already marked purged memory as non-volatile.
+>>
+>> Thus, that's why with vrange, we return the number of bytes modified,
+>> along with the purge state. That way, if an error does occur we can
+>> return the purge state of the bytes successfully modified, and only
+>> return an error if nothing was changed, much like when a write fails.
+> As well, we might need addtional argument VRANGE_FULL/VRANGE_PARTIAL
+> for vrange system call. I discussed it long time ago but omitted it
+> for early easy review phase. It is requested by Mozilla fork and of course
+> I think it makes sense to me.
+>
+> https://lkml.org/lkml/2013/3/22/20
+>
+> In short, if you mark a range with VRANGE_FULL, kernel can discard all
+> of pages within the range if memory is tight while kernel can discard
+> part of pages in the vrange if you mark the range with VRANGE_PARTIAL.
 
---liOOAslEiF7prFVr
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Yea, I'm still not particularly fond of userland being able to specify
+the purging semantics, but as we discussed earlier, this can be debated
+in finer detail as an extension to the merged interface. :)
 
-On Mon, Oct 07, 2013 at 03:43:49PM -0500, Nishanth Menon wrote:
-> diff --git a/arch/arm/mach-omap2/board-generic.c b/arch/arm/mach-omap2/board-generic.c
-> index 39c7838..4fe5b9c 100644
-> --- a/arch/arm/mach-omap2/board-generic.c
-> +++ b/arch/arm/mach-omap2/board-generic.c
-> @@ -113,6 +113,7 @@ MACHINE_END
->  #ifdef CONFIG_ARCH_OMAP3
->  static const char *omap3_boards_compat[] __initdata = {
->  	"ti,omap3",
-> +	"ti,omap343x",
-            ^^^^
-You used omap36xx everywhere, so I guess this should be
-"ti,omap34xx"?
+thanks
+-john
 
--- Sebastian
-
---liOOAslEiF7prFVr
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSU0w7AAoJENju1/PIO/qaieEP/jhUIVrxTJNRrBhvWUaYnaDj
-ZBQ48YhINc5kW0QhrbF91PHmdc/ndzFQ0jtHC+pNzFVrsCsTFu+07Ut4HY5tS41d
-hjSaUOlS0W821di2E744ypPZJHniM5T5yb/fLioQpa90nKc1OsDIhKiALo2myZk1
-AY+TFMmmmM+fg4RqjRpxbnM9e6isIenC4EqJU+tSc2CXJIjXAnkQ/wysF4fVgfS8
-chbjhpiQvTkHWxuIt14Xb1E58+r4hqb9iI4BOL6yqSsPA4v1eZxpDDpb2+K8NrYQ
-fwNMdn914rexIylHooSCzk9+9kGiWUqNR0EKs+MirnugK5yqeaoPTm3QGHljjkDB
-bvjvjSCGVS8H7kgxOj3sySCMqAEzO/Tl4XiMD+3tZMeoNnasYABpUZkD9fbFi4B8
-WM2Dn3MIfQ3wOGZAOMHXybya/GMRe/IlNvOV4eI31+h0BSSTjzqdUyrbp/dgZIuP
-2vjMVr9Lf0OilAqvC+9f/8ggsgkw64KhpFiZps0vKXfYeahVdyUBmadNbtfAE0Wz
-s0FtKa4fGSat/qpAGxih7FaGID+SPyV0QQAiRA8FA6lF11kjUxtCGldzn2jIfRCl
-2F3LGPwmI4rJaLNumRnnYt2k5XXU6zBx/T7uPbqGjjQlGJ5pO63Gyj7a9Vg8nUoh
-U0l04xz976EECfv3qZcD
-=a1qz
------END PGP SIGNATURE-----
-
---liOOAslEiF7prFVr--
