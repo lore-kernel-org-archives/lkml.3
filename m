@@ -1,58 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756885Ab3JHKmE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 06:42:04 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:64280 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755209Ab3JHKlP (ORCPT
+	id S1756861Ab3JHKmB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 06:42:01 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:37614 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755792Ab3JHKlt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 06:41:15 -0400
-Message-ID: <1381228870.15686.15.camel@marge.simpson.net>
-Subject: Re: perf: perf sched lat segfault - bisected
-From: Mike Galbraith <bitbucket@online.de>
-To: Stephane Eranian <eranian@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Date: Tue, 08 Oct 2013 12:41:10 +0200
-In-Reply-To: <CABPqkBQD9TE7RbP-auXO060aU1QNU=RUw2QZvoF39CCqpzdC4w@mail.gmail.com>
-References: <1381221715.15686.3.camel@marge.simpson.net>
-	 <CABPqkBRMa7rawfvQ2Sunc2tr87s_WqT_7GYac6+x=SNZoJSueg@mail.gmail.com>
-	 <1381227252.15686.9.camel@marge.simpson.net>
-	 <1381227659.15686.11.camel@marge.simpson.net>
-	 <CABPqkBQD9TE7RbP-auXO060aU1QNU=RUw2QZvoF39CCqpzdC4w@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:XCU169HhD4eIaZ21PwKFndxbHp3KcDBojkJMYp6WHk3
- azPad2nLxF5/LsNJywUFsE2dsxFiTfYBUiTQVCVGwvtF1OSD9H
- dE66nh9V7uTqDTPoklpn6Ezh4yX6fxnGHvBVWFkSwCZt0F+c8Z
- gRVVdu+Yi6O6fv2/ftV1Gsv58MVHHVO2HNYZpaZPSCTrAUi8sS
- xTbUpTJdLnPCSrgVt9AWLTmITZ5vdFSGnzPlwWY/G9lwUeB2jy
- M70XMuYVN32DUB398HRAAhE+gEfUl2GsZ0sy+rvY0IHY0QOVqn
- wKA4moiQRzYlyqPDQIbuOPO7y1hv0fWsKrlFsbjpZH3cEf3n+L
- F6m63cJ1DhNwH4mT6eNR3bx/muMyL7gG9BXO9ulOMUyzg0SfKX
- 2fFSqdyLmzJjw==
+	Tue, 8 Oct 2013 06:41:49 -0400
+Date: Tue, 8 Oct 2013 03:40:40 -0700
+From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
+Message-ID: <tip-0trw8qs9hafeopc0vj1sicay@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, jolsa@redhat.com, fweisbec@gmail.com,
+        adrian.hunter@intel.com, dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, jolsa@redhat.com, fweisbec@gmail.com,
+        dsahern@gmail.com, adrian.hunter@intel.com, tglx@linutronix.de
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf tools: Fix libaudit test
+Git-Commit-ID: 47a92b828639dcb1a6033cd0a441099df828b7a9
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 08 Oct 2013 03:40:47 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-10-08 at 12:25 +0200, Stephane Eranian wrote: 
-> Mike,
-> 
-> Ok, I missed the sched record, let me track this down.
-> Note that there was a second commit to fix this one
-> by Arnaldo. Do you also have it in your kernel?
-> 
-> 51131c4 perf: Fix up MMAP2 buffer space reservation
+Commit-ID:  47a92b828639dcb1a6033cd0a441099df828b7a9
+Gitweb:     http://git.kernel.org/tip/47a92b828639dcb1a6033cd0a441099df828b7a9
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Wed, 2 Oct 2013 18:25:26 -0300
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Fri, 4 Oct 2013 15:16:05 -0300
 
-Not with that commit id, but..
+perf tools: Fix libaudit test
 
-commit d008d5258e9c1a1b7ee6547b8d444323aef331b3
-Author: Arnaldo Carvalho de Melo <acme@redhat.com>
-Date:   Tue Sep 10 10:24:05 2013 -0300
+In ubuntu systems the libaudit test was always failing due to the
+newline in the printf call not being escaped, which somehow didn't
+prevented the test from working as expected on other systems, such
+as fedora18.
 
-    perf: Fix up MMAP2 buffer space reservation
+Fix it by removing the newline, as this is just a test, that program is
+just a compile test.
 
--Mike
+The error messages, obtained using 'make V=1':
 
+    CHK libaudit
+<stdin>: In function ‘main’:
+<stdin>:5:9: error: missing terminating " character [-Werror]
+<stdin>:5:2: error: missing terminating " character
+<stdin>:6:1: error: missing terminating " character [-Werror]
+<stdin>:6:1: error: missing terminating " character
+<stdin>:7:2: error: expected expression before ‘return’
+<stdin>:8:1: error: expected ‘;’ before ‘}’ token
+cc1: all warnings being treated as errors
+config/Makefile:241: No libaudit.h found, disables 'trace' tool, please install audit-libs-devel or libaudit-dev
+
+After this change the test works as expected in all systems tested and the
+'trace' tool is built when the needed devel packages are installed.
+
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-0trw8qs9hafeopc0vj1sicay@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/config/feature-tests.mak | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tools/perf/config/feature-tests.mak b/tools/perf/config/feature-tests.mak
+index d5a8dd4..f793057 100644
+--- a/tools/perf/config/feature-tests.mak
++++ b/tools/perf/config/feature-tests.mak
+@@ -219,7 +219,7 @@ define SOURCE_LIBAUDIT
+ 
+ int main(void)
+ {
+-	printf(\"error message: %s\n\", audit_errno_to_name(0));
++	printf(\"error message: %s\", audit_errno_to_name(0));
+ 	return audit_open();
+ }
+ endef
