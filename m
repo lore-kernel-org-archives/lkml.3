@@ -1,88 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755270Ab3JHMVU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 08:21:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41068 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752488Ab3JHMVN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 08:21:13 -0400
-Date: Tue, 8 Oct 2013 14:22:16 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
-        Jon Mason <jon.mason@intel.com>,
-        Matt Porter <mporter@kernel.crashing.org>, linux-pci@vger.kernel.org,
-        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
-        linux390@de.ibm.com, linux-s390@vger.kernel.org, x86@kernel.org,
-        linux-ide@vger.kernel.org, iss_storagedev@hp.com,
-        linux-nvme@lists.infradead.org, linux-rdma@vger.kernel.org,
-        netdev@vger.kernel.org, e1000-devel@lists.sourceforge.net,
-        linux-driver@qlogic.com,
-        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
-        "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH RFC 00/77] Re-design MSI/MSI-X interrupts enablement
- pattern
-Message-ID: <20131008122215.GA14389@dhcp-26-207.brq.redhat.com>
-References: <cover.1380703262.git.agordeev@redhat.com>
- <1380840585.3419.50.camel@bwh-desktop.uk.level5networks.com>
- <20131004082920.GA4536@dhcp-26-207.brq.redhat.com>
- <1380922156.3214.49.camel@bwh-desktop.uk.level5networks.com>
- <20131005142054.GA11270@dhcp-26-207.brq.redhat.com>
- <1381009586.645.141.camel@pasglop>
- <20131006060243.GB28142@dhcp-26-207.brq.redhat.com>
- <1381040386.645.143.camel@pasglop>
- <20131006071027.GA29143@dhcp-26-207.brq.redhat.com>
- <20131007180111.GC2481@htj.dyndns.org>
+	id S1755004Ab3JHMW0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 08:22:26 -0400
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:59974 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753882Ab3JHMWX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 08:22:23 -0400
+Date: Tue, 8 Oct 2013 14:22:19 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: =?iso-8859-1?Q?P=E1draig?= Brady <P@draigBrady.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>, jiri@gmail.com,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 39/52] tools/perf/build: Automatically build in parallel,
+ based on number of CPUs in the syst
+Message-ID: <20131008122219.GA2678@gmail.com>
+References: <5253F4D4.7070402@draigBrady.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20131007180111.GC2481@htj.dyndns.org>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5253F4D4.7070402@draigBrady.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 07, 2013 at 02:01:11PM -0400, Tejun Heo wrote:
-> > What about introducing pci_lock_msi() and pci_unlock_msi() and let device
-> > drivers care about their ranges and specifics in race-safe manner?
-> > I do not call to introduce it right now (since it appears pSeries has not
-> > been hitting the race for years) just as a possible alternative to Ben's
-> > proposal.
+
+* Pádraig Brady <P@draigBrady.com> wrote:
+
+> On 10/08/2013 10:02 AM, Ingo Molnar wrote:
+> > +ifeq ($(JOBS),)
+> > +  JOBS := $(shell grep -c ^processor /proc/cpuinfo 2>/dev/null)
 > 
-> I don't think the same race condition would happen with the loop.
+> nproc is probably ubiquitous enough to use now
+> (available since coreutils 8.1 (end of 2009))
+> 
+> As well as being more concise, it will take
+> account of offline CPUs etc.
 
-We need to distinguish the contexts we're discussing.
+/proc/cpuinfo takes account of offline CPUs as well:
 
-If we talk about pSeries quota, then the current pSeries pci_enable_msix()
-implementation is racy internally and could fail if the quota went down
-*while* pci_enable_msix() is executing. In this case the loop will have to
-exit rather than retry with a lower number (what number?).
+  # grep -c ^processor /proc/cpuinfo 2>/dev/null
+  16
 
-In this regard the new scheme does not bring anything new and relies on
-the fact this race does not hit and therefore does not worry.
+  # echo 0 > /sys/devices/system/cpu/cpu11/online
+  # grep -c ^processor /proc/cpuinfo 2>/dev/null
+  15
 
-If we talk about quota as it has to be, then yes - the loop scheme seems
-more preferable.
+  # echo 1 > /sys/devices/system/cpu/cpu11/online
+  # grep -c ^processor /proc/cpuinfo 2>/dev/null
+  16
 
-Overall, looks like we just need to fix the pSeries implementation,
-if the guys want it, he-he :)
+But nproc is indeed a better choice:
 
-> The problem case is where multiple msi(x) allocation fails completely
-> because the global limit went down before inquiry and allocation.  In
-> the loop based interface, it'd retry with the lower number.
+1)
 
-I am probably missing something here. If the global limit went down before
-inquiry then the inquiry will get what is available and try to allocate with
-than number.
+It is scheduler syscall based and will thus will work in limited 
+environments as well, for example when /proc is not mounted.
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+2)
+
+It will also properly detect affinity-limited environments:
+
+  # taskset 1 nproc
+  1
+
+3)
+
+It is also faster than grepping /proc/cpuinfo:
+
+  # perf stat --null --repeat 100 nproc >/dev/null
+   Performance counter stats for 'nproc' (100 runs):
+       0.000652928 seconds time elapsed                                          ( +-  0.53% )
+
+versus:
+
+  # perf stat --null --repeat 100 grep -c ^processor /proc/cpuinfo >/dev/null
+    Performance counter stats for 'grep -c ^processor /proc/cpuinfo' (100 runs):
+       0.001037034 seconds time elapsed                                          ( +-  0.32% )
+
+so with 0.652 msecs versus 1.037 msecs it's about 60% faster than grep.
+
+Thanks,
+
+	Ingo
