@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754624Ab3JHFNb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 01:13:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57700 "EHLO mx1.redhat.com"
+	id S1754501Ab3JHFNZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 01:13:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39277 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753042Ab3JHFMr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 01:12:47 -0400
+	id S1752935Ab3JHFMn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 01:12:43 -0400
 From: Mark Salter <msalter@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Mark Salter <msalter@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org
-Subject: [PATCH v2 13/14] x86: select ARCH_MAY_HAVE_PC_PARPORT
-Date: Tue,  8 Oct 2013 01:10:29 -0400
-Message-Id: <1381209030-351-14-git-send-email-msalter@redhat.com>
+Cc: Mark Salter <msalter@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org
+Subject: [PATCH v2 09/14] powerpc: select ARCH_MAY_HAVE_PC_PARPORT
+Date: Tue,  8 Oct 2013 01:10:25 -0400
+Message-Id: <1381209030-351-10-git-send-email-msalter@redhat.com>
 In-Reply-To: <1381209030-351-1-git-send-email-msalter@redhat.com>
 References: <1381209030-351-1-git-send-email-msalter@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -24,26 +24,25 @@ Architectures which support CONFIG_PARPORT_PC should select
 ARCH_MAY_HAVE_PC_PARPORT.
 
 Signed-off-by: Mark Salter <msalter@redhat.com>
-CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Ingo Molnar <mingo@redhat.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>
-CC: x86@kernel.org
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Paul Mackerras <paulus@samba.org>
+CC: linuxppc-dev@lists.ozlabs.org
 ---
- arch/x86/Kconfig | 1 +
+ arch/powerpc/Kconfig | 1 +
  1 file changed, 1 insertion(+)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index ee2fb9d..72fca40 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -22,6 +22,7 @@ config X86_64
- config X86
- 	def_bool y
- 	select ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS
+diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
+index 38f3b7e..9211207 100644
+--- a/arch/powerpc/Kconfig
++++ b/arch/powerpc/Kconfig
+@@ -85,6 +85,7 @@ config GENERIC_HWEIGHT
+ config PPC
+ 	bool
+ 	default y
 +	select ARCH_MAY_HAVE_PC_PARPORT
- 	select HAVE_AOUT if X86_32
- 	select HAVE_UNSTABLE_SCHED_CLOCK
- 	select ARCH_SUPPORTS_NUMA_BALANCING
+ 	select BINFMT_ELF
+ 	select OF
+ 	select OF_EARLY_FLATTREE
 -- 
 1.8.3.1
 
