@@ -1,81 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755103Ab3JHVVL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 17:21:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61827 "EHLO mx1.redhat.com"
+	id S1755677Ab3JHVXU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 17:23:20 -0400
+Received: from www.sr71.net ([198.145.64.142]:51372 "EHLO blackbird.sr71.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753313Ab3JHVVG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 17:21:06 -0400
-Date: Tue, 8 Oct 2013 17:20:56 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: xfs@oss.sgi.com, paulmck@linux.vnet.ibm.com
-Subject: xfs lockdep trace after unlink
-Message-ID: <20131008212056.GA7467@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
-	paulmck@linux.vnet.ibm.com
+	id S1753965Ab3JHVXR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 17:23:17 -0400
+Message-ID: <525477A4.5060504@sr71.net>
+Date: Tue, 08 Oct 2013 14:22:44 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        Matt Helsley <matt.helsley@gmail.com>,
+        Anthony Liguori <anthony@codemonkey.ws>,
+        Michael Roth <mdroth@linux.vnet.ibm.com>,
+        Lei Li <lilei@linux.vnet.ibm.com>,
+        Leonardo Garcia <lagarcia@linux.vnet.ibm.com>,
+        Vlastimil Babka <vbabka@suse.cz>
+Subject: Re: [PATCH 1/2] vmsplice: unmap gifted pages for recipient
+References: <1381177293-27125-1-git-send-email-rcj@linux.vnet.ibm.com> <1381177293-27125-2-git-send-email-rcj@linux.vnet.ibm.com> <52542F53.4020807@sr71.net> <20131008194819.GB6129@linux.vnet.ibm.com>
+In-Reply-To: <20131008194819.GB6129@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I was deleting a kernel tree, when this happened..
-RCU, or xfs ?
+On 10/08/2013 12:48 PM, Robert Jennings wrote:
+> * Dave Hansen (dave@sr71.net) wrote:
+>> On 10/07/2013 01:21 PM, Robert C Jennings wrote:
+>>> +					} else {
+>>> +						if (vma)
+>>> +							zap_page_range(vma,
+>>> +								user_start,
+>>> +								(user_end -
+>>> +								 user_start),
+>>> +								NULL);
+>>> +						vma = find_vma_intersection(
+>>> +								current->mm,
+>>> +								useraddr,
+>>> +								(useraddr +
+>>> +								 PAGE_SIZE));
+>>> +						if (!IS_ERR_OR_NULL(vma)) {
+>>> +							user_start = useraddr;
+>>> +							user_end = (useraddr +
+>>> +								    PAGE_SIZE);
+>>> +						} else
+>>> +							vma = NULL;
+>>> +					}
+>>
+>> This is pretty unspeakably hideous.  Was there truly no better way to do
+>> this?
+> 
+> I was hoping to find a better way to coalesce pipe buffers and zap
+> entire VMAs (and it needs better documentation but your argument is with
+> structure and I agree). I would love suggestions for improving this but
+> that is not to say that I've abandoned it; I'm still looking for ways
+> to make this cleaner.
 
-BUG: MAX_LOCKDEP_CHAINS too low!
-turning off the locking correctness validator.
-Please attach the output of /proc/lock_stat to the bug report
-CPU: 2 PID: 8109 Comm: rm Not tainted 3.12.0-rc4+ #96 
- ffffffff824bc2e0 ffff880026f416a8 ffffffff8172d798 41e619a2e5098827
- ffff880026f41768 ffffffff810cc91f 0000000000000002 000010a02977b643
- ffff880026f416d8 0000000000000212 ffff880026f416f8 ffffffff810c7329
-Call Trace:
- [<ffffffff8172d798>] dump_stack+0x4e/0x82
- [<ffffffff810cc91f>] __lock_acquire+0x1b7f/0x1be0
- [<ffffffff810c7329>] ? get_lock_stats+0x19/0x60
- [<ffffffff810c7f5d>] ? lock_release_holdtime.part.29+0x9d/0x160
- [<ffffffff810cd133>] lock_acquire+0x93/0x200
- [<ffffffff81097d0a>] ? try_to_wake_up+0x22a/0x350
- [<ffffffff817373c0>] _raw_spin_lock+0x40/0x80
- [<ffffffff81097d0a>] ? try_to_wake_up+0x22a/0x350
- [<ffffffff81097d0a>] try_to_wake_up+0x22a/0x350
- [<ffffffff81097ea2>] default_wake_function+0x12/0x20
- [<ffffffff81084c38>] autoremove_wake_function+0x18/0x40
- [<ffffffff81090083>] ? __wake_up+0x23/0x50
- [<ffffffff8108eb78>] __wake_up_common+0x58/0x90
- [<ffffffff81090099>] __wake_up+0x39/0x50
- [<ffffffff8110dc38>] rcu_report_qs_rsp+0x48/0x70
- [<ffffffff8110f7d4>] rcu_report_unblock_qs_rnp+0x84/0x90
- [<ffffffff81117fcf>] ? rcu_read_unlock_special+0x9f/0x4e0
- [<ffffffff81118264>] rcu_read_unlock_special+0x334/0x4e0
- [<ffffffff810c720f>] ? trace_hardirqs_off_caller+0x1f/0xc0
- [<ffffffff8107f16c>] __rcu_read_unlock+0x8c/0x90
- [<ffffffffa027084e>] xfs_perag_get+0xde/0x2a0 [xfs]
- [<ffffffffa0270775>] ? xfs_perag_get+0x5/0x2a0 [xfs]
- [<ffffffffa01f72f6>] _xfs_buf_find+0xd6/0x480 [xfs]
- [<ffffffffa01f780a>] xfs_buf_get_map+0x2a/0x260 [xfs]
- [<ffffffffa01f8fcc>] xfs_buf_read_map+0x2c/0x200 [xfs]
- [<ffffffffa0281019>] xfs_trans_read_buf_map+0x4b9/0xa70 [xfs]
- [<ffffffffa0245578>] xfs_da_read_buf+0xb8/0x340 [xfs]
- [<ffffffff810ca84b>] ? mark_held_locks+0xbb/0x140
- [<ffffffffa024a3b9>] xfs_dir3_block_read+0x39/0x80 [xfs]
- [<ffffffffa024a440>] xfs_dir2_block_lookup_int+0x40/0x260 [xfs]
- [<ffffffffa024b49d>] xfs_dir2_block_removename+0x3d/0x390 [xfs]
- [<ffffffffa022d0da>] ? xfs_bmap_last_offset+0x4a/0xa0 [xfs]
- [<ffffffffa024991c>] xfs_dir_removename+0x11c/0x180 [xfs]
- [<ffffffffa0262085>] xfs_remove+0x2e5/0x510 [xfs]
- [<ffffffffa020ab8b>] xfs_vn_unlink+0x4b/0x90 [xfs]
- [<ffffffff811d4fd0>] vfs_unlink+0x90/0x100
- [<ffffffff811d51bf>] do_unlinkat+0x17f/0x240
- [<ffffffff81010b45>] ? syscall_trace_enter+0x145/0x2a0
- [<ffffffff811d830b>] SyS_unlinkat+0x1b/0x40
- [<ffffffff817408e4>] tracesys+0xdd/0xe2
+Doing the VMA search each and every time seems a bit silly.  Do one
+find_vma(), the look at the _end_ virtual address of the VMA.  You can
+continue to collect your set of zap_page_range() addresses as long as
+you do not hit the end of that address range.
 
-lock_stats is at http://codemonkey.org.uk/junk/locks-2013-10-08.txt
+If and only if you hit the end of the vma, do the zap_page_range(), and
+then look up the VMA again.
 
-	Dave
-
+Storing the .useraddr still seems odd to me, and you haven't fully
+explained why you're doing it or how it is safe, or why you store both
+virtual addresses and file locations in it.
