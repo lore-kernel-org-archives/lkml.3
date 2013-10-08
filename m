@@ -1,120 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754986Ab3JHJPj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 05:15:39 -0400
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:64579 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751733Ab3JHJPg convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 05:15:36 -0400
+	id S1754219Ab3JHJTO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 05:19:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45729 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751894Ab3JHJTL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 05:19:11 -0400
+Date: Tue, 8 Oct 2013 17:18:35 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Matt Fleming <matt@console-pimps.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        James Bottomley <james.bottomley@hansenpartnership.com>,
+        Vivek Goyal <vgoyal@redhat.com>, linux-efi@vger.kernel.org
+Subject: Re: [PATCH -v2] EFI: Runtime services virtual mapping
+Message-ID: <20131008091834.GB23216@dhcp-16-126.nay.redhat.com>
+References: <e39e1065bddc2afee2cb6eed957e3ba8.squirrel@www.skyhub.de>
+ <52422A6A.8080305@zytor.com>
+ <20130926031242.GA4487@dhcp-16-126.nay.redhat.com>
+ <20130930201730.GD16383@pd.tnic>
 MIME-Version: 1.0
-In-Reply-To: <272096591.2542958.1381196060612.JavaMail.root@redhat.com>
-References: <1381184066-10684-1-git-send-email-geyslan@gmail.com>
-	<184520834.2485938.1381185329449.JavaMail.root@redhat.com>
-	<CA+5g0SKCdnCCzHBXFN5JYyG5Sno14Tud78rN_MvygXkEg0dr_A@mail.gmail.com>
-	<CAGG-pUQGKmCQ_N2z5puPZYufW31keP-7sRBJRN=VGCkjZ+US9Q@mail.gmail.com>
-	<272096591.2542958.1381196060612.JavaMail.root@redhat.com>
-Date: Tue, 8 Oct 2013 06:15:35 -0300
-Message-ID: <CAGG-pUQ0qETRkrWmY7THo6KFjoVs8Vkd=FQobLpeA_Piu=wCvA@mail.gmail.com>
-Subject: Re: [PATCH] drm: nouveau: fix nvbe leakage
-From: =?UTF-8?Q?Geyslan_Greg=C3=B3rio_Bem?= <geyslan@gmail.com>
-To: Ben Skeggs <bskeggs@redhat.com>
-Cc: Felipe Pena <felipensp@gmail.com>, airlied@linux.ie,
-        dri-devel@lists.freedesktop.org, LKML <linux-kernel@vger.kernel.org>,
-        kernel-br <kernel-br@googlegroups.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130930201730.GD16383@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rather, the first member of nvbe is ttm (same address). Got it.
+Sorry for reply late because I was in a long holiday...
 
-Please, disregard this patch. Thank you.
+On 09/30/13 at 10:17pm, Borislav Petkov wrote:
+> On Thu, Sep 26, 2013 at 11:12:42AM +0800, Dave Young wrote:
+> > If we choose this approach, can we save not only the efi_mapping, but
+> > also the fields which will be converted to virt addr, like fw_vendor,
+> > runtime, tables? During my test on a HP workstation, the config table
+> > item (SMBIOS) also is converted to virt addr though spec only mention
+> > fw_vendor/runtime/tables.
+> 
+> Btw, I was about to ask: how do you pass boot_params to the kexec
+> kernel?
 
-Geyslan Gregório Bem
-hackingbits.com
+As Vivek mentioned, just kexec-tools will get the saved info from sysfs
+or procfs, then it as a boot loader will prepare the linux boot setup
+struct with these 1st efi values.
 
+> 
+> Because I'm looking into hpa's idea to pass an efi_mapping array of
+> regions with setup_data but how does this get passed to the kexec'ed
+> kernel? I see in your patches you have boot_params.saved_*** for the
+> needed info but you're not writing to them anywhere. Is that why you've
+> added them to the systab_show function so that userspace can parse it
+> and build the boot_params thing?
 
-2013/10/7 Ben Skeggs <bskeggs@redhat.com>:
-> ----- Original Message -----
->> From: "Geyslan Gregório Bem" <geyslan@gmail.com>
->> To: "Felipe Pena" <felipensp@gmail.com>
->> Cc: "Ben Skeggs" <bskeggs@redhat.com>, airlied@linux.ie, dri-devel@lists.freedesktop.org,
->> linux-kernel@vger.kernel.org, "kernel-br" <kernel-br@googlegroups.com>
->> Sent: Tuesday, 8 October, 2013 9:39:02 AM
->> Subject: Re: [PATCH] drm: nouveau: fix nvbe leakage
->>
->> Felipe, thank you too.
->>
->> I realized this after a code review.
->>
->> Ben, what do you think?
->>
->> Geyslan Gregório Bem
->> hackingbits.com
->>
->>
->> 2013/10/7 Felipe Pena <felipensp@gmail.com>:
->> > Hi,
->> >
->> > On Mon, Oct 7, 2013 at 7:35 PM, Ben Skeggs <bskeggs@redhat.com> wrote:
->> >> ----- Original Message -----
->> >>> From: "Geyslan G. Bem" <geyslan@gmail.com>
->> >>> To: airlied@linux.ie, bskeggs@redhat.com, dri-devel@lists.freedesktop.org
->> >>> Cc: linux-kernel@vger.kernel.org, kernel-br@googlegroups.com, "Geyslan G.
->> >>> Bem" <geyslan@gmail.com>
->> >>> Sent: Tuesday, 8 October, 2013 8:14:26 AM
->> >>> Subject: [PATCH] drm: nouveau: fix nvbe leakage
->> >>>
->> >>> Free memory allocated to nvbe when returning NULL.
->> >>>
->> >>> Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
->> >> NACK.  ttm_dma_tt_init() calls the destructor if it fails, which frees the
->> >> memory.
->> >>
->> >> Ben.
->> >>
->> >
->> > But ttm_tt_destroy() just handles the ttm_tt part from nvbe, the nvbe
->> > pointer itself is not being free'd.
-> Actually look at ttm_tt_destroy() and you'll see that right at the end it goes ttm->func->destroy(ttm), which is nouveau_sgdma_destroy().
->
-> Ben.
->> >
->> >>> ---
->> >>>  drivers/gpu/drm/nouveau/nouveau_sgdma.c | 3 +++
->> >>>  1 file changed, 3 insertions(+)
->> >>>
->> >>> diff --git a/drivers/gpu/drm/nouveau/nouveau_sgdma.c
->> >>> b/drivers/gpu/drm/nouveau/nouveau_sgdma.c
->> >>> index 0843ebc..af8b66d 100644
->> >>> --- a/drivers/gpu/drm/nouveau/nouveau_sgdma.c
->> >>> +++ b/drivers/gpu/drm/nouveau/nouveau_sgdma.c
->> >>> @@ -105,6 +105,9 @@ nouveau_sgdma_create_ttm(struct ttm_bo_device *bdev,
->> >>>               nvbe->ttm.ttm.func = &nv50_sgdma_backend;
->> >>>
->> >>>       if (ttm_dma_tt_init(&nvbe->ttm, bdev, size, page_flags,
->> >>>       dummy_read_page))
->> >>> +     {
->> >>> +             kfree(nvbe);
->> >>>               return NULL;
->> >>> +     }
->> >>>       return &nvbe->ttm.ttm;
->> >>>  }
->> >>> --
->> >>> 1.8.4
->> >>>
->> >>>
->> >> --
->> >> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> >> the body of a message to majordomo@vger.kernel.org
->> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> >> Please read the FAQ at  http://www.tux.org/lkml/
->> >
->> >
->> >
->> > --
->> > Regards,
->> > Felipe Pena
->>
+Yes, I just printed them in systab_show, kexec-tools will parse it.
+
+> 
+> Thanks.
+> 
+> -- 
+> Regards/Gruss,
+>     Boris.
+> 
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
