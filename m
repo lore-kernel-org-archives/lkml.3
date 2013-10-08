@@ -1,110 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755674Ab3JHUee (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 16:34:34 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:42416 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751896Ab3JHUec (ORCPT
+	id S1756420Ab3JHUey (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 16:34:54 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:55518 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754418Ab3JHUeu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 16:34:32 -0400
-Date: Tue, 8 Oct 2013 22:34:28 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Thoughts on this RCU idle entry/exit patch?
-Message-ID: <20131008203427.GE8392@localhost.localdomain>
-References: <20131007153955.GA30925@linux.vnet.ibm.com>
+	Tue, 8 Oct 2013 16:34:50 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>, Rob Landley <rob@landley.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+References: <CAJfpegsxgnSRUW-E5HM3uT5QfGyUtn_v=i4Ppkkkutp34287AA@mail.gmail.com>
+	<87a9kkax0j.fsf@xmission.com>
+	<CAJfpeguv+7giYNpAuXE9Ja_9BEwB0-fZBVgRSeVqpzSXgQYZ6Q@mail.gmail.com>
+	<8761v7h2pt.fsf@tw-ebiederman.twitter.com>
+	<CAJfpegtT7y-1HhbEVAMKkdQugTG_w7G_epGtQHGvQLpcZB5FVA@mail.gmail.com>
+	<87li281wx6.fsf_-_@xmission.com> <87fvsg1wv6.fsf_-_@xmission.com>
+	<20131008134453.GG14242@tucsk.piliscsaba.szeredi.hu>
+Date: Tue, 08 Oct 2013 13:31:45 -0700
+In-Reply-To: <20131008134453.GG14242@tucsk.piliscsaba.szeredi.hu> (Miklos
+	Szeredi's message of "Tue, 8 Oct 2013 15:44:53 +0200")
+Message-ID: <87li23y05q.fsf@tw-ebiederman.twitter.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131007153955.GA30925@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1+wuGYIVd97zIDVXW7oN+gatWMDAPh4RCI=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  1.5 TR_Symld_Words too many words that have symbols inside
+	*  0.7 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
+	*      [score: 0.0287]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: **;Miklos Szeredi <miklos@szeredi.hu>
+X-Spam-Relay-Country: 
+Subject: Re: [RFC][PATCH 1/3] vfs: Keep a list of mounts on a mount point
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 07, 2013 at 08:39:55AM -0700, Paul E. McKenney wrote:
-> Hello, Frederic!
-> 
-> The following patch seems to me to be a good idea to better handle
-> task nesting.  Any reason why it would be a bad thing?
-> 
-> 							Thanx, Paul
-> 
-> ------------------------------------------------------------------------
-> 
-> rcu: Allow task-level idle entry/exit nesting
-> 
-> The current task-level idle entry/exit code forces an entry/exit on
-> each call, regardless of the nesting level.  This commit therefore
-> properly accounts for nesting.
-> 
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Miklos Szeredi <miklos@szeredi.hu> writes:
 
-Looks good. In fact, the current code is even buggy because two nesting rcu_user_eqs()
-as in:
+>> @@ -691,6 +693,7 @@ static void detach_mnt(struct mount *mnt, struct path *old_path)
+>>  	list_del_init(&mnt->mnt_hash);
+>>  	put_mountpoint(mnt->mnt_mp);
+>>  	mnt->mnt_mp = NULL;
+>> +	list_del_init(&mnt->mnt_mp_list);
+>
+> Should be done *before* put_mountpoint(), for obvious reasons.
+>
+> And a BUG_ON(!list_empty(&mp->m_list)) in put_mountpoint() for good measure (and
+> no, WARN_ON() is not better here, since use-after-free is definitely worse than
+> a BUG).
 
-        rcu_eqs_enter()
-            rcu_eqs_enter()
-            rcu_eqs_exit()
-        rcu_eqs_exit()
+Good point.  I will take a look at making this change shortly and repost
+the patches.
 
-would result in rdtp->dynticks wrong increment, right?
 
-So that's even a bug fix. I wonder if it's a regression. That said rcu_eqs_enter_common()
-should warn on such miscount, so may be these functions actually don't nest in practice
-or you would have received such warnings.
-
-So I wonder, do we want to continue to allow this nesting? I remember that DYNTICK_TASK_NEST_*
-stuff is there to protects against non finishing interrupts on some archs (I also remember that
-this, or at least a practical scenario for this, was hard to really define though :o)
-But then wouldn't it involve other kind of scenario like this?
-
-       rcu_irq_enter()
-           rcu_eqs_enter()
-           rcu_eqs_exit()
-           ...
-
-Anyway, that's just random thougths on further simplifications, in any case, this
-patch looks good.
-
-Thanks.
-
-> 
-> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> index 106f7f5cdd1d..f0be20886617 100644
-> --- a/kernel/rcutree.c
-> +++ b/kernel/rcutree.c
-> @@ -411,11 +411,12 @@ static void rcu_eqs_enter(bool user)
->  	rdtp = this_cpu_ptr(&rcu_dynticks);
->  	oldval = rdtp->dynticks_nesting;
->  	WARN_ON_ONCE((oldval & DYNTICK_TASK_NEST_MASK) == 0);
-> -	if ((oldval & DYNTICK_TASK_NEST_MASK) == DYNTICK_TASK_NEST_VALUE)
-> +	if ((oldval & DYNTICK_TASK_NEST_MASK) == DYNTICK_TASK_NEST_VALUE) {
->  		rdtp->dynticks_nesting = 0;
-> -	else
-> +		rcu_eqs_enter_common(rdtp, oldval, user);
-> +	} else {
->  		rdtp->dynticks_nesting -= DYNTICK_TASK_NEST_VALUE;
-> -	rcu_eqs_enter_common(rdtp, oldval, user);
-> +	}
->  }
->  
->  /**
-> @@ -533,11 +534,12 @@ static void rcu_eqs_exit(bool user)
->  	rdtp = this_cpu_ptr(&rcu_dynticks);
->  	oldval = rdtp->dynticks_nesting;
->  	WARN_ON_ONCE(oldval < 0);
-> -	if (oldval & DYNTICK_TASK_NEST_MASK)
-> +	if (oldval & DYNTICK_TASK_NEST_MASK) {
->  		rdtp->dynticks_nesting += DYNTICK_TASK_NEST_VALUE;
-> -	else
-> +	} else {
->  		rdtp->dynticks_nesting = DYNTICK_TASK_EXIT_IDLE;
-> -	rcu_eqs_exit_common(rdtp, oldval, user);
-> +		rcu_eqs_exit_common(rdtp, oldval, user);
-> +	}
->  }
->  
->  /**
-> 
+>>  }
+>>  
+>>  /*
+>> @@ -705,6 +708,7 @@ void mnt_set_mountpoint(struct mount *mnt,
+>>  	child_mnt->mnt_mountpoint = dget(mp->m_dentry);
+>>  	child_mnt->mnt_parent = mnt;
+>>  	child_mnt->mnt_mp = mp;
+>> +	list_add_tail(&child_mnt->mnt_mp_list, &mp->m_list);
+>>  }
+>>  
+>>  /*
+>> @@ -1193,6 +1197,7 @@ void umount_tree(struct mount *mnt, int propagate)
+>>  			p->mnt_parent->mnt_ghosts++;
+>>  			put_mountpoint(p->mnt_mp);
+>>  			p->mnt_mp = NULL;
+>> +			list_del_init(&mnt->mnt_mp_list);
+>
+> Ditto.
+>
+>>  		}
+>>  		change_mnt_propagation(p, MS_PRIVATE);
+>>  	}
+>> -- 
+>> 1.7.5.4
+>> 
