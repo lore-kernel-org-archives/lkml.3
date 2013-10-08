@@ -1,82 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755454Ab3JHOpx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 10:45:53 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:52192 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755106Ab3JHOps (ORCPT
+	id S1755318Ab3JHOrM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 10:47:12 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:39586 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752390Ab3JHOrJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 10:45:48 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Majunath Goudar <csmanjuvijay@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, nataraja.km@lge.com,
-        David Airlie <airlied@linux.ie>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] SHMOBILE: DRM: Fix backlight_device register and unregister undefined errors.
-Date: Tue, 08 Oct 2013 16:45:59 +0200
-Message-ID: <13157207.BOibbx65gp@avalon>
-User-Agent: KMail/4.10.5 (Linux/3.8.13-gentoo; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <1381228757-23144-1-git-send-email-csmanjuvijay@gmail.com>
-References: <1381228757-23144-1-git-send-email-csmanjuvijay@gmail.com>
+	Tue, 8 Oct 2013 10:47:09 -0400
+Date: Tue, 8 Oct 2013 16:47:04 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Radek Pilar <mrkva@mrkva.eu>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Suspend to RAM - freeze & sync
+Message-ID: <20131008144704.GA29729@xo-6d-61-c0.localdomain>
+References: <50F96746.1080304@mrkva.eu>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50F96746.1080304@mrkva.eu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Majunath,
+Hi!
+> I'm trying to implement feature that removes cryptsetup keys from RAM on
+> suspend to RAM: mounts ramfs, unpacks initramfs to ramfs, moves /proc
+> /dev and /sys to ramfs, chroots, calls luksSuspend, suspends system
+> using /sys/power/state, after resume calls luksResume and cleans up.
+> However, there is a small issue I wasn't able to solve: after calling
+> luksSuspend, all attempts to access suspended device blocks - so most
+> likely some processes won't be able to freeze. The same issue will be
+> with sync just before suspend - if there are some data to be written,
+> sync() blocks. If I comment out freeze and sync from the suspend code,
+> it suspends (and wakes up) just fine - however, that patch will never be
+> accepted.
+> Is there any *correct* way to do this? (Skip freeze/sync on demand)?
 
-Thank you for the patch.
+Maybe uswsusp interface is powerful enough to do this?
+									Pavel
 
-On Tuesday 08 October 2013 16:09:17 Majunath Goudar wrote:
-> This patch adds a BACKLIGHT_CLASS_DEVICE dependency to configure the
-> DRM_SHMOBILE. Without this patch, build system can lead to build failure.
-> This was observed during randconfig testing, in which DRM_SHMOBILE was
-> enabled w/o BACKLIGHT_CLASS_DEVICE being enabled. Following was the error:
-> 
->  Building modules, stage 2.
->   MODPOST 516 modules
-> ERROR: "backlight_device_register" [drivers/gpu/drm/shmobile/shmob-drm.ko]
-> undefined! ERROR: "backlight_device_unregister"
-> [drivers/gpu/drm/shmobile/shmob-drm.ko] undefined! make[1]: *** [__modpost]
-> Error 1
-> make: *** [modules] Error 2
-> 
-> Signed-off-by: Manjunath Goudar <csmanjuvijay@gmail.com>
-> Cc: David Airlie <airlied@linux.ie>
-> Cc: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-> Cc: Sascha Hauer <s.hauer@pengutronix.de>
-> Cc: dri-devel@lists.freedesktop.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  drivers/gpu/drm/shmobile/Kconfig |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/gpu/drm/shmobile/Kconfig
-> b/drivers/gpu/drm/shmobile/Kconfig index ca498d1..eaf822e 100644
-> --- a/drivers/gpu/drm/shmobile/Kconfig
-> +++ b/drivers/gpu/drm/shmobile/Kconfig
-> @@ -1,6 +1,6 @@
->  config DRM_SHMOBILE
->  	tristate "DRM Support for SH Mobile"
-> -	depends on DRM && (ARM || SUPERH)
-> +	depends on DRM && (ARM || SUPERH) && BACKLIGHT_CLASS_DEVICE
-
-What about
-
-select BACKLIGHT_CLASS_DEVICE
-
-instead ? That's what the i915, radeon, gma500, tilcdc and nouveau drivers do.
-
->  	select DRM_KMS_HELPER
->  	select DRM_KMS_CMA_HELPER
->  	select DRM_GEM_CMA_HELPER
 
 -- 
-Regards,
-
-Laurent Pinchart
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
