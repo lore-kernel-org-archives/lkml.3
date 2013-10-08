@@ -1,57 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755500Ab3JHItL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 04:49:11 -0400
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:43052 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754698Ab3JHItH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 04:49:07 -0400
-Date: Tue, 8 Oct 2013 10:49:03 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 49/50] tools/perf/build: Fix O=/some/dir perf.o type of
- targets
-Message-ID: <20131008084903.GD3295@gmail.com>
-References: <1381147003-2574-1-git-send-email-mingo@kernel.org>
- <1381147003-2574-50-git-send-email-mingo@kernel.org>
- <20131007223323.GH2900@krava.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131007223323.GH2900@krava.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755526Ab3JHItb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 04:49:31 -0400
+Received: from mga09.intel.com ([134.134.136.24]:59651 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754986Ab3JHIrT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 04:47:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,1056,1371106800"; 
+   d="scan'208";a="389469435"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH V5 4/9] perf tools: add map__find_other_map_symbol()
+Date: Tue,  8 Oct 2013 11:45:51 +0300
+Message-Id: <1381221956-16699-5-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1381221956-16699-1-git-send-email-adrian.hunter@intel.com>
+References: <1381221956-16699-1-git-send-email-adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add a function to find a symbol using an ip that
+might be on a different map.
 
-* Jiri Olsa <jolsa@redhat.com> wrote:
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+---
+ tools/perf/util/map.c | 27 +++++++++++++++++++++++++++
+ tools/perf/util/map.h |  2 ++
+ 2 files changed, 29 insertions(+)
 
-> On Mon, Oct 07, 2013 at 01:56:42PM +0200, Ingo Molnar wrote:
-> 
-> SNIP
-> 
-> > diff --git a/tools/perf/Documentation/Makefile b/tools/perf/Documentation/Makefile
-> > index eaa477f..86a4ba8 100644
-> > --- a/tools/perf/Documentation/Makefile
-> > +++ b/tools/perf/Documentation/Makefile
-> > @@ -1,3 +1,5 @@
-> > +$(info Documentation/Makefile)
-> > +
-> >  include ../../scripts/Makefile.include
-> >  include ../config/utilities.mak
-> 
-> debug leftover?
+diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+index 4f6680d..beedeef 100644
+--- a/tools/perf/util/map.c
++++ b/tools/perf/util/map.c
+@@ -213,6 +213,33 @@ struct symbol *map__find_symbol_by_name(struct map *map, const char *name,
+ 	return dso__find_symbol_by_name(map->dso, map->type, name);
+ }
+ 
++struct symbol *map__find_other_map_symbol(struct map **map_ptr, u64 *ip_ptr,
++					  symbol_filter_t filter)
++{
++	struct map *map = *map_ptr;
++	u64 ip = *ip_ptr;
++	struct map *sym_map = NULL;
++	struct symbol *sym;
++
++	if (ip >= map->start && ip <= map->end)
++		sym_map = map;
++	else if (map->groups)
++		sym_map = map_groups__find(map->groups, map->type, ip);
++
++	if (!sym_map)
++		return NULL;
++
++	ip = sym_map->map_ip(sym_map, ip);
++
++	sym = map__find_symbol(sym_map, ip, filter);
++	if (sym) {
++		*map_ptr = sym_map;
++		*ip_ptr = ip;
++	}
++
++	return sym;
++}
++
+ struct map *map__clone(struct map *map)
+ {
+ 	return memdup(map, sizeof(*map));
+diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
+index 4886ca2..b7b494c 100644
+--- a/tools/perf/util/map.h
++++ b/tools/perf/util/map.h
+@@ -106,6 +106,8 @@ struct symbol *map__find_symbol(struct map *map,
+ 				u64 addr, symbol_filter_t filter);
+ struct symbol *map__find_symbol_by_name(struct map *map, const char *name,
+ 					symbol_filter_t filter);
++struct symbol *map__find_other_map_symbol(struct map **map_ptr, u64 *ip_ptr,
++					  symbol_filter_t filter);
+ void map__fixup_start(struct map *map);
+ void map__fixup_end(struct map *map);
+ 
+-- 
+1.7.11.7
 
-Yes, fixed.
-
-I'll do a resend of the final result, there's been enough changes to the 
-whole series.
-
-Thanks a lot for the review!
-
-	Ingo
