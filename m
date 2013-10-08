@@ -1,97 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754357Ab3JHGjN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 02:39:13 -0400
-Received: from mail1.bemta5.messagelabs.com ([195.245.231.152]:8084 "EHLO
-	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752813Ab3JHGjM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 02:39:12 -0400
-X-Env-Sender: Johannes.Thumshirn@men.de
-X-Msg-Ref: server-13.tower-180.messagelabs.com!1381214349!30300808!1
-X-Originating-IP: [80.255.6.145]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.12; banners=-,-,-
-X-VirusChecked: Checked
-X-PGP-Universal: processed;
-	by keys.men.de on Tue, 08 Oct 2013 08:39:09 +0200
-Date: Tue, 8 Oct 2013 08:39:02 +0200
-From: Johannes Thumshirn <johannes.thumshirn@men.de>
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: Doug Thompson <dougthompson@xmission.com>, Borislav Petkov <bp@suse.de>,
-        Baruch Siach <baruch@tkos.co.il>, <linux-edac@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mpc85xx_edac: Remove unused function
-Message-ID: <20131008063901.GA32409@jtlinux>
-References: <1381158835-10804-1-git-send-email-treding@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1381158835-10804-1-git-send-email-treding@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [192.1.1.31]
-X-OriginalArrivalTime: 08 Oct 2013 06:39:08.0650 (UTC) FILETIME=[1757FCA0:01CEC3F1]
+	id S1754508Ab3JHGjd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 02:39:33 -0400
+Received: from mga02.intel.com ([134.134.136.20]:12850 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754382Ab3JHGja (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 02:39:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,1055,1371106800"; 
+   d="scan'208";a="415564762"
+From: Aaron Lu <aaron.lu@intel.com>
+To: linux-acpi@vger.kernel.org, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Cc: Daniel Vetter <daniel@ffwll.ch>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Lee Chun-Yi <joeyli.kernel@gmail.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Igor Gnatenko <i.gnatenko.brain@gmail.com>,
+        Yves-Alexis Perez <corsac@debian.org>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        Aaron Lu <aaron.lu@intel.com>, Ben Jencks <ben@bjencks.net>,
+        Steven Newbury <steve@snewbury.org.uk>,
+        James Hogan <james@albanarts.com>, Kamal Mostafa <kamal@canonical.com>,
+        Joerg Platte <jplatte@naasa.net>, Kalle Valo <kvalo@adurom.com>,
+        Martin Steigerwald <Martin@lichtvoll.de>,
+        =?UTF-8?q?J=C3=B6rg=20Otte?= <jrg.otte@gmail.com>,
+        Mike Galbraith <bitbucket@online.de>,
+        platform-driver-x86@vger.kernel.org,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Subject: [PATCH v4 0/4] Fix Win8 backlight issue
+Date: Tue,  8 Oct 2013 14:39:57 +0800
+Message-Id: <1381214401-24672-1-git-send-email-aaron.lu@intel.com>
+X-Mailer: git-send-email 1.8.4.12.g2ea3df6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 07, 2013 at 05:13:55PM +0200, Thierry Reding wrote:
-> Commit 905e75c (powerpc/fsl-pci: Unify pci/pcie initialization code)
-> removed the struct platform_driver that held the last reference to the
-> mpc85xx_pci_err_remove() function. Remove the function since it is
-> effectively dead code.
->
-> Signed-off-by: Thierry Reding <treding@nvidia.com>
-> ---
->  drivers/edac/mpc85xx_edac.c | 23 -----------------------
->  1 file changed, 23 deletions(-)
->
-> diff --git a/drivers/edac/mpc85xx_edac.c b/drivers/edac/mpc85xx_edac.c
-> index 3eb32f6..b1e7106 100644
-> --- a/drivers/edac/mpc85xx_edac.c
-> +++ b/drivers/edac/mpc85xx_edac.c
-> @@ -326,29 +326,6 @@ err:
->  	return res;
->  }
->  EXPORT_SYMBOL(mpc85xx_pci_err_probe);
-> -
-> -static int mpc85xx_pci_err_remove(struct platform_device *op)
-> -{
-> -	struct edac_pci_ctl_info *pci = dev_get_drvdata(&op->dev);
-> -	struct mpc85xx_pci_pdata *pdata = pci->pvt_info;
-> -
-> -	edac_dbg(0, "\n");
-> -
-> -	out_be32(pdata->pci_vbase + MPC85XX_PCI_ERR_CAP_DR,
-> -		 orig_pci_err_cap_dr);
-> -
-> -	out_be32(pdata->pci_vbase + MPC85XX_PCI_ERR_EN, orig_pci_err_en);
-> -
-> -	edac_pci_del_device(pci->dev);
-> -
-> -	if (edac_op_state == EDAC_OPSTATE_INT)
-> -		irq_dispose_mapping(pdata->irq);
-> -
-> -	edac_pci_free_ctl_info(pci);
-> -
-> -	return 0;
-> -}
-> -
->  #endif				/* CONFIG_PCI */
->
->  /**************************** L2 Err device ***************************/
-> --
-> 1.8.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-edac" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+v4:
+Remove decleration and stub for acpi_video_unregister_backlight in
+video.h of patch 2/4 since that function doesn't exist anymore in v3.
 
-Hi Thierry,
+v3:
+1 Add a new patch 4/4 to fix some problems in thinkpad-acpi module;
+2 Remove unnecessary function acpi_video_unregister_backlight introduced
+  in patch 2/4 as pointed out by Jani Nikula.
 
-Sorry, but I already have this patch in
-http://lkml.indiana.edu/hypermail/linux/kernel/1309.2/03410.html
+v2:
+v1 has the subject of "Rework ACPI video driver" and is posted here:
+http://lkml.org/lkml/2013/9/9/74
+Since the objective is really to fix Win8 backlight issues, I changed
+the subject in this version, sorry about that.
 
-But anyways, thanks
-Johannes
+This patchset has four patches, the first introduced a new API named
+backlight_device_registered in backlight layer that can be used for
+backlight interface provider module to check if a specific type backlight
+interface has been registered, see changelog for patch 1/4 for details.
+Then patch 2/4 does the cleanup to sepeate the backlight control and
+event delivery functionality in the ACPI video module and patch 3/4
+solves some Win8 backlight control problems by avoiding register ACPI
+video's backlight interface if:
+1 Kernel cmdline option acpi_backlight=video is not given;
+2 This is a Win8 system;
+3 Native backlight control interface exists.
+Patch 4/4 fixes some problems in thinkpad-acpi module.
+
+Technically, patch 2/4 is not required to fix the issue here. So if you
+think it is not necessary, I can remove it from the series.
+
+Aaron Lu (4):
+  backlight: introduce backlight_device_registered
+  ACPI / video: seperate backlight control and event interface
+  ACPI / video: Do not register backlight if win8 and native interface
+    exists
+  thinkpad-acpi: fix handle locate for video and query of _BCL
+
+ drivers/acpi/internal.h              |   5 +-
+ drivers/acpi/video.c                 | 442 ++++++++++++++++++++---------------
+ drivers/acpi/video_detect.c          |  14 +-
+ drivers/platform/x86/thinkpad_acpi.c |  31 ++-
+ drivers/video/backlight/backlight.c  |  31 +++
+ include/linux/backlight.h            |   4 +
+ 6 files changed, 322 insertions(+), 205 deletions(-)
+
+-- 
+1.8.4.12.g2ea3df6
+
