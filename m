@@ -1,56 +1,410 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756086Ab3JHPxd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 11:53:33 -0400
-Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754509Ab3JHPxa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 11:53:30 -0400
-Message-ID: <52542A67.9020900@nod.at>
-Date: Tue, 08 Oct 2013 17:53:11 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1755517Ab3JHP5K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 11:57:10 -0400
+Received: from mail-qe0-f49.google.com ([209.85.128.49]:39181 "EHLO
+	mail-qe0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751732Ab3JHP5H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 11:57:07 -0400
+Date: Tue, 8 Oct 2013 12:56:56 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH V5 3/9] perf tools: workaround objdump difficulties with
+ kcore
+Message-ID: <20131008155656.GK4018@ghostprotocols.net>
+References: <1381221956-16699-1-git-send-email-adrian.hunter@intel.com>
+ <1381221956-16699-4-git-send-email-adrian.hunter@intel.com>
 MIME-Version: 1.0
-To: monstr@monstr.eu
-CC: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        viro@zeniv.linux.org.uk, vgupta@synopsys.com, catalin.marinas@arm.com,
-        will.deacon@arm.com, hskinnemoen@gmail.com, egtvedt@samfundet.no,
-        vapier@gentoo.org, msalter@redhat.com, a-jacquiot@ti.com,
-        starvik@axis.com, jesper.nilsson@axis.com, dhowells@redhat.com,
-        rkuo@codeaurora.org, tony.luck@intel.com, fenghua.yu@intel.com,
-        takata@linux-m32r.org, geert@linux-m68k.org, james.hogan@imgtec.com,
-        yasutake.koichi@jp.panasonic.com, ralf@linux-mips.org,
-        jonas@southpole.se, jejb@parisc-linux.org, deller@gmx.de,
-        benh@kernel.crashing.org, paulus@samba.org, schwidefsky@de.ibm.com,
-        heiko.carstens@de.ibm.com, liqin.linux@gmail.com, lennox.wu@gmail.com,
-        lethal@linux-sh.org, cmetcalf@tilera.com, gxt@mprc.pku.edu.cn,
-        linux-xtensa@linux-xtensa.org, akpm@linux-foundation.org,
-        oleg@redhat.com, tj@kernel.org
-Subject: Re: Global do_signal() cleanup
-References: <1381231701-4008-1-git-send-email-richard@nod.at> <52540AE2.4060909@monstr.eu>
-In-Reply-To: <52540AE2.4060909@monstr.eu>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1381221956-16699-4-git-send-email-adrian.hunter@intel.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 08.10.2013 15:38, schrieb Michal Simek:
-> On 10/08/2013 01:27 PM, Richard Weinberger wrote:
->> This patch series moves all remaining archs to the get_signal() and
->> signal_setup_done() functions. Currently these archs use open coded
->> variants of the said functions.  Further, unused parameters get removed
->> from get_signal_to_deliver(), tracehook_signal_handler() and signal_delivered().
->> After all we save around 350 lines of code. :-)
->>
->> The following archs are _untested_: arc, c6x, hexagon, metag, score, unicore, sh64.
->> If someone points me to cross compilers for these arch I'll happily build test them too.
-> 
-> Any link to the repo and branch with all these patches will be helpful.
+Em Tue, Oct 08, 2013 at 11:45:50AM +0300, Adrian Hunter escreveu:
+> objdump fails to annotate module symbols when looking
+> at kcore.  Workaround this by extracting object code
+> from kcore and putting it in a temporary file for
+> objdump to use instead.  The temporary file is created
+> to look like kcore but contains only the function
+> being disassembled.
 
-Pushed it into:
-git://git.kernel.org/pub/scm/linux/kernel/git/rw/uml.git signal_v1
+While waiting for the discussion with Jiri to continue... See below,
+applies for other patches in this series.
+
+"perf symbols: Make a separate function to parse /proc/modules"
+
+was applied, pushed to acme/perf/core now.
 
 Thanks,
-//richard
+
+- Arnaldo
+ 
+> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+> ---
+>  tools/perf/util/annotate.c       |  21 ++++
+>  tools/perf/util/symbol-elf.c     | 221 +++++++++++++++++++++++++++++++++++++++
+>  tools/perf/util/symbol-minimal.c |   9 ++
+>  tools/perf/util/symbol.h         |  14 +++
+>  4 files changed, 265 insertions(+)
+> 
+> diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+> index f7bdc01..46746b8 100644
+> --- a/tools/perf/util/annotate.c
+> +++ b/tools/perf/util/annotate.c
+> @@ -879,6 +879,8 @@ int symbol__annotate(struct symbol *sym, struct map *map, size_t privsize)
+>  	FILE *file;
+>  	int err = 0;
+>  	char symfs_filename[PATH_MAX];
+> +	struct kcore_extract kce;
+> +	bool delete_extract = false;
+>  
+>  	if (filename) {
+>  		snprintf(symfs_filename, sizeof(symfs_filename), "%s%s",
+> @@ -940,6 +942,23 @@ fallback:
+>  	pr_debug("annotating [%p] %30s : [%p] %30s\n",
+>  		 dso, dso->long_name, sym, sym->name);
+>  
+> +	if (dso__is_kcore(dso)) {
+> +		kce.kcore_filename = symfs_filename;
+> +		kce.addr = map__rip_2objdump(map, sym->start);
+> +		kce.offs = sym->start;
+> +		kce.len = sym->end + 1 - sym->start;
+> +		if (!create_kcore_extract(&kce)) {
+> +			delete_extract = true;
+> +			strlcpy(symfs_filename, kce.extract_filename,
+> +				sizeof(symfs_filename));
+> +			if (free_filename) {
+> +				free(filename);
+> +				free_filename = false;
+> +			}
+> +			filename = symfs_filename;
+> +		}
+> +	}
+> +
+>  	snprintf(command, sizeof(command),
+>  		 "%s %s%s --start-address=0x%016" PRIx64
+>  		 " --stop-address=0x%016" PRIx64
+> @@ -972,6 +991,8 @@ fallback:
+>  
+>  	pclose(file);
+>  out_free_filename:
+> +	if (delete_extract)
+> +		delete_kcore_extract(&kce);
+>  	if (free_filename)
+>  		free(filename);
+>  	return err;
+> diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
+> index a7b9ab5..79b27fc7 100644
+> --- a/tools/perf/util/symbol-elf.c
+> +++ b/tools/perf/util/symbol-elf.c
+> @@ -1002,6 +1002,227 @@ int file__read_maps(int fd, bool exe, mapfn_t mapfn, void *data,
+>  	return err;
+>  }
+>  
+> +static int copy_bytes(int from, off_t from_offs, int to, off_t to_offs, u64 len)
+> +{
+> +	char buf[page_size];
+> +	ssize_t r;
+> +	size_t n;
+> +
+> +	if (lseek(to, to_offs, SEEK_SET) != to_offs)
+> +		return -1;
+> +
+> +	if (lseek(from, from_offs, SEEK_SET) != from_offs)
+> +		return -1;
+> +
+> +	while (len) {
+> +		n = sizeof(buf);
+> +		if (len < n)
+> +			n = len;
+> +		/* Use read because mmap won't work on proc files */
+> +		r = read(from, buf, n);
+> +		if (r < 0)
+> +			return -1;
+> +		if (!r)
+> +			break;
+> +		n = r;
+> +		r = write(to, buf, n);
+> +		if (r < 0)
+> +			return -1;
+> +		if ((size_t)r != n)
+> +			return -1;
+> +		len -= n;
+> +	}
+> +	return 0;
+> +}
+> +
+> +struct kcore {
+> +	int fd;
+> +	int elfclass;
+> +	Elf *elf;
+> +	GElf_Ehdr ehdr;
+> +};
+> +
+> +static int kcore_open(const char *filename, struct kcore *kcore)
+
+The style, since you almost matched it, is to separate the class (kcore)
+from the method (open) with double underscores, and also to have as the
+first parameter the class instance being acted upon (kcore), so:
+
+static int kcore__open(struct kcore *kcore, const char *filename)
+
+> +{
+> +	GElf_Ehdr *ehdr;
+> +
+> +	kcore->fd = open(filename, O_RDONLY);
+> +	if (kcore->fd == -1)
+> +		return -1;
+> +
+> +	kcore->elf = elf_begin(kcore->fd, ELF_C_READ, NULL);
+> +	if (!kcore->elf)
+> +		goto out_close;
+> +
+> +	kcore->elfclass = gelf_getclass(kcore->elf);
+> +	if (kcore->elfclass == ELFCLASSNONE)
+> +		goto out_end;
+> +
+> +	ehdr = gelf_getehdr(kcore->elf, &kcore->ehdr);
+> +	if (!ehdr)
+> +		goto out_end;
+> +
+> +	return 0;
+
+Other than the above comment, the error handling is done in the expected
+style, with forward gotos, etc, great!
+
+> +out_end:
+> +	elf_end(kcore->elf);
+> +out_close:
+> +	close(kcore->fd);
+> +	return -1;
+> +}
+> +
+> +static int kcore_new(char *filename, struct kcore *kcore, int elfclass,
+> +		     bool temp)
+> +{
+> +	GElf_Ehdr *ehdr;
+
+Normally when we receive an instance to just init its members, we call
+it "init", so this method would be:
+
+static int kcore__init(struct kcore *kcore, const char *filename,
+		       int elfclass, bool temp)
+
+See, for instance, machine__init(), etc
+
+> +	kcore->elfclass = elfclass;
+> +
+> +	if (temp)
+> +		kcore->fd = mkstemp(filename);
+> +	else
+> +		kcore->fd = open(filename, O_WRONLY | O_CREAT | O_EXCL, 0400);
+> +	if (kcore->fd == -1)
+> +		return -1;
+> +
+> +	kcore->elf = elf_begin(kcore->fd, ELF_C_WRITE, NULL);
+> +	if (!kcore->elf)
+> +		goto out_close;
+> +
+> +	if (!gelf_newehdr(kcore->elf, elfclass))
+> +		goto out_end;
+> +
+> +	ehdr = gelf_getehdr(kcore->elf, &kcore->ehdr);
+> +	if (!ehdr)
+> +		goto out_end;
+> +
+> +	return 0;
+> +
+> +out_end:
+> +	elf_end(kcore->elf);
+> +out_close:
+> +	close(kcore->fd);
+> +	unlink(filename);
+> +	return -1;
+> +}
+> +
+> +static void kcore_close(struct kcore *kcore)
+
+static void kcore__close(struct kcore *kcore)
+
+> +{
+> +	elf_end(kcore->elf);
+> +	close(kcore->fd);
+> +}
+> +
+> +static int kcore_copy_hdr(struct kcore *from, struct kcore *to, size_t count)
+
+just the __
+
+> +{
+> +	GElf_Ehdr *ehdr = &to->ehdr;
+> +	GElf_Ehdr *kehdr = &from->ehdr;
+> +
+> +	memcpy(ehdr->e_ident, kehdr->e_ident, EI_NIDENT);
+> +	ehdr->e_type      = kehdr->e_type;
+> +	ehdr->e_machine   = kehdr->e_machine;
+> +	ehdr->e_version   = kehdr->e_version;
+> +	ehdr->e_entry     = 0;
+> +	ehdr->e_shoff     = 0;
+> +	ehdr->e_flags     = kehdr->e_flags;
+> +	ehdr->e_phnum     = count;
+> +	ehdr->e_shentsize = 0;
+> +	ehdr->e_shnum     = 0;
+> +	ehdr->e_shstrndx  = 0;
+> +
+> +	if (from->elfclass == ELFCLASS32) {
+> +		ehdr->e_phoff     = sizeof(Elf32_Ehdr);
+> +		ehdr->e_ehsize    = sizeof(Elf32_Ehdr);
+> +		ehdr->e_phentsize = sizeof(Elf32_Phdr);
+> +	} else {
+> +		ehdr->e_phoff     = sizeof(Elf64_Ehdr);
+> +		ehdr->e_ehsize    = sizeof(Elf64_Ehdr);
+> +		ehdr->e_phentsize = sizeof(Elf64_Phdr);
+> +	}
+> +
+> +	if (!gelf_update_ehdr(to->elf, ehdr))
+> +		return -1;
+> +
+> +	if (!gelf_newphdr(to->elf, count))
+> +		return -1;
+> +
+> +	return 0;
+> +}
+> +
+> +static int kcore_add_phdr(struct kcore *kcore, int index, off_t offset,
+> +			  u64 addr, u64 len)
+
+ditto, and here the kcore pointer is the first, perfect.
+
+> +{
+> +	GElf_Phdr gphdr;
+> +	GElf_Phdr *phdr;
+> +
+> +	phdr = gelf_getphdr(kcore->elf, index, &gphdr);
+> +	if (!phdr)
+> +		return -1;
+> +
+> +	phdr->p_type	= PT_LOAD;
+> +	phdr->p_flags	= PF_R | PF_W | PF_X;
+> +	phdr->p_offset	= offset;
+> +	phdr->p_vaddr	= addr;
+> +	phdr->p_paddr	= 0;
+> +	phdr->p_filesz	= len;
+> +	phdr->p_memsz	= len;
+> +	phdr->p_align	= page_size;
+> +
+> +	if (!gelf_update_phdr(kcore->elf, index, phdr))
+> +		return -1;
+> +
+> +	return 0;
+> +}
+> +
+> +static off_t kcore_write(struct kcore *kcore)
+> +{
+> +	return elf_update(kcore->elf, ELF_C_WRITE);
+> +}
+> +
+> +int create_kcore_extract(struct kcore_extract *kce)
+> +{
+> +	struct kcore kcore;
+> +	struct kcore extract;
+> +	size_t count = 1;
+> +	int index = 0, err = -1;
+> +	off_t offset = page_size, sz;
+> +
+> +	if (kcore_open(kce->kcore_filename, &kcore))
+> +		return -1;
+> +
+> +	strcpy(kce->extract_filename, PERF_KCORE_EXTRACT);
+> +	if (kcore_new(kce->extract_filename, &extract, kcore.elfclass, true))
+> +		goto out_kcore_close;
+> +
+> +	if (kcore_copy_hdr(&kcore, &extract, count))
+> +		goto out_extract_close;
+> +
+> +	if (kcore_add_phdr(&extract, index, offset, kce->addr, kce->len))
+> +		goto out_extract_close;
+> +
+> +	sz = kcore_write(&extract);
+> +	if (sz < 0 || sz > offset)
+> +		goto out_extract_close;
+> +
+> +	if (copy_bytes(kcore.fd, kce->offs, extract.fd, offset, kce->len))
+> +		goto out_extract_close;
+> +
+> +	err = 0;
+> +
+> +out_extract_close:
+> +	kcore_close(&extract);
+> +	if (err)
+> +		unlink(kce->extract_filename);
+> +out_kcore_close:
+> +	kcore_close(&kcore);
+> +
+> +	return err;
+> +}
+> +
+> +void delete_kcore_extract(struct kcore_extract *kce)
+> +{
+> +	unlink(kce->extract_filename);
+> +}
+> +
+>  void symbol__elf_init(void)
+>  {
+>  	elf_version(EV_CURRENT);
+> diff --git a/tools/perf/util/symbol-minimal.c b/tools/perf/util/symbol-minimal.c
+> index 3a802c3..0330163 100644
+> --- a/tools/perf/util/symbol-minimal.c
+> +++ b/tools/perf/util/symbol-minimal.c
+> @@ -308,6 +308,15 @@ int file__read_maps(int fd __maybe_unused, bool exe __maybe_unused,
+>  	return -1;
+>  }
+>  
+> +int create_kcore_extract(struct kcore_extract *kce __maybe_unused)
+> +{
+> +	return -1;
+> +}
+> +
+> +void delete_kcore_extract(struct kcore_extract *kce __maybe_unused)
+> +{
+> +}
+> +
+>  void symbol__elf_init(void)
+>  {
+>  }
+> diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+> index a2543f0..54f3ed0 100644
+> --- a/tools/perf/util/symbol.h
+> +++ b/tools/perf/util/symbol.h
+> @@ -256,4 +256,18 @@ typedef int (*mapfn_t)(u64 start, u64 len, u64 pgoff, void *data);
+>  int file__read_maps(int fd, bool exe, mapfn_t mapfn, void *data,
+>  		    bool *is_64_bit);
+>  
+> +#define PERF_KCORE_EXTRACT "/tmp/perf-kcore-XXXXXX"
+> +
+> +struct kcore_extract {
+> +	char *kcore_filename;
+> +	u64 addr;
+> +	u64 offs;
+> +	u64 len;
+> +	char extract_filename[sizeof(PERF_KCORE_EXTRACT)];
+> +	int fd;
+> +};
+> +
+> +int create_kcore_extract(struct kcore_extract *kce);
+> +void delete_kcore_extract(struct kcore_extract *kce);
+> +
+>  #endif /* __PERF_SYMBOL */
+> -- 
+> 1.7.11.7
