@@ -1,44 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754354Ab3JHNKX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 09:10:23 -0400
-Received: from mail.abilis.ch ([195.70.19.74]:11830 "EHLO mail.abilis.ch"
+	id S1754444Ab3JHNK5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 09:10:57 -0400
+Received: from mga02.intel.com ([134.134.136.20]:56469 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752386Ab3JHNKU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 09:10:20 -0400
-X-Greylist: delayed 1909 seconds by postgrey-1.27 at vger.kernel.org; Tue, 08 Oct 2013 09:10:20 EDT
-Date: Tue, 8 Oct 2013 15:09:42 +0200
-From: Christian Ruppert <christian.ruppert@abilis.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Export symbols for splice in modules
-Message-ID: <20131008130941.GB24735@ab42.lan>
-References: <1381235898-24186-1-git-send-email-christian.ruppert@abilis.com>
- <20131008125229.GA8647@infradead.org>
+	id S1753828Ab3JHNK4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 09:10:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,1056,1371106800"; 
+   d="scan'208";a="389732478"
+Date: Tue, 8 Oct 2013 09:10:36 -0400
+From: Matthew Wilcox <willy@linux.intel.com>
+To: Matias =?iso-8859-1?Q?Bj=F8rling?= <m@bjorling.me>
+Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org,
+        linux-nvme@lists.infradead.org
+Subject: Re: [PATCH RFC 0/2] Convert from bio-based to blk-mq
+Message-ID: <20131008131036.GC7422@linux.intel.com>
+References: <1381224862-5299-1-git-send-email-m@bjorling.me>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20131008125229.GA8647@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1381224862-5299-1-git-send-email-m@bjorling.me>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 08, 2013 at 05:52:29AM -0700, Christoph Hellwig wrote:
-> On Tue, Oct 08, 2013 at 02:38:18PM +0200, Christian Ruppert wrote:
-> > The symbols splice_to_pipe, splice_grow_spd and splice_shrink_spd are not
-> > currently exported from the kernel. This prevents the implementation of
-> > drivers using splice in modules not statically linked with the kernel. This
-> > patch exports those symbols to make it possible to implement splice in
-> > kernel modules.
-> 
-> Please submit these together with your drivers.  In general it seems
-> a higher level interface should be exported anyway.
+On Tue, Oct 08, 2013 at 11:34:20AM +0200, Matias Bjørling wrote:
+> The nvme driver implements itself as a bio-based driver. This primarily because
+> of high lock congestion for high-performance nvm devices. To remove the
+> congestion, a multi-queue block layer is being implemented.
 
-Unluckily, the drivers are currently distributed as out-of-tree modules.
-We thought this patch might be useful anyway but if you prefer we can
-also resubmit it the moment we decide to upstream the drivers.
-
-Greetings,
-  Christian
+Um, no.  You'll crater performance by adding another memory allocation
+(of the struct request).  multi-queue is not the solution.
