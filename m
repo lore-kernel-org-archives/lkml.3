@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753115Ab3JHMfe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 08:35:34 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:58133 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751747Ab3JHMfb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 08:35:31 -0400
-Message-ID: <1381235727.15686.41.camel@marge.simpson.net>
-Subject: Re: perf: perf sched lat segfault - bisected
-From: Mike Galbraith <bitbucket@online.de>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Stephane Eranian <eranian@google.com>, LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 08 Oct 2013 14:35:27 +0200
-In-Reply-To: <1381235260.15686.38.camel@marge.simpson.net>
-References: <1381221715.15686.3.camel@marge.simpson.net>
-	 <20131008121709.GA3955@infradead.org>
-	 <1381235260.15686.38.camel@marge.simpson.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:PcBSIKSk44arTQPbEBwJ6/3KZ0lPDlXJoXH5II9Ff26
- R3+G1+QKMHeMjrrFtSy9Fdd0GXZ7PgqWOTRmc3mGErxTdRCHBT
- OwSuT8pERhJySeh+R4bFtkwAe1WSNaHESmYyUnpLt/E6gWO8VQ
- beLlRSSqePy0KUNcqvoA22S9wD2IRaeVTSmi5AhZWgyNhGDccv
- PUjI1CXRMYezz+aIBFPC1zEIZ3Szba2JutDVgWodibg3+BntGz
- c/biGwUtjkREDn45Pz7FvZNGpvpleGNEini0I2DcVz3sCrBtFU
- sGNiGb4cRAPI3gDhljwApNshkwFUEBz4EdEvgtzKFFxvu2wuOk
- thsudojT+vxXtaykX33LEkJEv/mGjy79fQfXv+cCw4Q8xtKwxI
- tT/By9/Ff7PvA==
+	id S1753485Ab3JHMic (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 08:38:32 -0400
+Received: from mail.abilis.ch ([195.70.19.74]:20768 "EHLO mail.abilis.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751896Ab3JHMib (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 08:38:31 -0400
+From: Christian Ruppert <christian.ruppert@abilis.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Christian Ruppert <christian.ruppert@abilis.com>
+Subject: [PATCH] Export symbols for splice in modules
+Date: Tue,  8 Oct 2013 14:38:18 +0200
+Message-Id: <1381235898-24186-1-git-send-email-christian.ruppert@abilis.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-10-08 at 14:27 +0200, Mike Galbraith wrote: 
-> On Tue, 2013-10-08 at 09:17 -0300, Arnaldo Carvalho de Melo wrote: 
-> > Em Tue, Oct 08, 2013 at 10:41:55AM +0200, Mike Galbraith escreveu:
-> > > Box: Q6600
-> > > 
-> > > Reproducer:
-> > > perf sched record -- sleep 1
-> > > perf sched lat (boom)
-> > > 
-> > > The bisect winner:
-> > 
-> > Can you try with today's tip/perf/urgent branch?
-> 
-> Works fine.
+The symbols splice_to_pipe, splice_grow_spd and splice_shrink_spd are not
+currently exported from the kernel. This prevents the implementation of
+drivers using splice in modules not statically linked with the kernel. This
+patch exports those symbols to make it possible to implement splice in
+kernel modules.
 
-(except replay segfaults, but lord knows when that last worked)
+Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
+---
+ fs/splice.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/fs/splice.c b/fs/splice.c
+index 3b7ee65..28e19b7 100644
+--- a/fs/splice.c
++++ b/fs/splice.c
+@@ -265,6 +265,7 @@ ssize_t splice_to_pipe(struct pipe_inode_info *pipe,
+ 
+ 	return ret;
+ }
++EXPORT_SYMBOL(splice_to_pipe);
+ 
+ void spd_release_page(struct splice_pipe_desc *spd, unsigned int i)
+ {
+@@ -293,6 +294,7 @@ int splice_grow_spd(const struct pipe_inode_info *pipe, struct splice_pipe_desc
+ 	kfree(spd->partial);
+ 	return -ENOMEM;
+ }
++EXPORT_SYMBOL(splice_grow_spd);
+ 
+ void splice_shrink_spd(struct splice_pipe_desc *spd)
+ {
+@@ -302,6 +304,7 @@ void splice_shrink_spd(struct splice_pipe_desc *spd)
+ 	kfree(spd->pages);
+ 	kfree(spd->partial);
+ }
++EXPORT_SYMBOL(splice_shrink_spd);
+ 
+ static int
+ __generic_file_splice_read(struct file *in, loff_t *ppos,
+-- 
+1.7.1
 
