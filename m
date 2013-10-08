@@ -1,74 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755677Ab3JHVXU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 17:23:20 -0400
-Received: from www.sr71.net ([198.145.64.142]:51372 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753965Ab3JHVXR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 17:23:17 -0400
-Message-ID: <525477A4.5060504@sr71.net>
-Date: Tue, 08 Oct 2013 14:22:44 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1756216Ab3JHVYl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 17:24:41 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:49660 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755311Ab3JHVYk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 17:24:40 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/FdLsV559o0I88Ow9BKdjp
+Date: Tue, 8 Oct 2013 14:24:36 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Afzal Mohammed <afzal@ti.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: OMAP2+: wakeupgen: AM43x adaptation
+Message-ID: <20131008212436.GR8313@atomide.com>
+References: <1378378535-2967-1-git-send-email-afzal@ti.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        Matt Helsley <matt.helsley@gmail.com>,
-        Anthony Liguori <anthony@codemonkey.ws>,
-        Michael Roth <mdroth@linux.vnet.ibm.com>,
-        Lei Li <lilei@linux.vnet.ibm.com>,
-        Leonardo Garcia <lagarcia@linux.vnet.ibm.com>,
-        Vlastimil Babka <vbabka@suse.cz>
-Subject: Re: [PATCH 1/2] vmsplice: unmap gifted pages for recipient
-References: <1381177293-27125-1-git-send-email-rcj@linux.vnet.ibm.com> <1381177293-27125-2-git-send-email-rcj@linux.vnet.ibm.com> <52542F53.4020807@sr71.net> <20131008194819.GB6129@linux.vnet.ibm.com>
-In-Reply-To: <20131008194819.GB6129@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1378378535-2967-1-git-send-email-afzal@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/08/2013 12:48 PM, Robert Jennings wrote:
-> * Dave Hansen (dave@sr71.net) wrote:
->> On 10/07/2013 01:21 PM, Robert C Jennings wrote:
->>> +					} else {
->>> +						if (vma)
->>> +							zap_page_range(vma,
->>> +								user_start,
->>> +								(user_end -
->>> +								 user_start),
->>> +								NULL);
->>> +						vma = find_vma_intersection(
->>> +								current->mm,
->>> +								useraddr,
->>> +								(useraddr +
->>> +								 PAGE_SIZE));
->>> +						if (!IS_ERR_OR_NULL(vma)) {
->>> +							user_start = useraddr;
->>> +							user_end = (useraddr +
->>> +								    PAGE_SIZE);
->>> +						} else
->>> +							vma = NULL;
->>> +					}
->>
->> This is pretty unspeakably hideous.  Was there truly no better way to do
->> this?
+Hi,
+
+Few minor comments below.
+
+* Afzal Mohammed <afzal@ti.com> [130905 04:03]:
+> AM43x has 224 interrupts and 7 banks, make it as maximum values. Keep
+> default values as earlier, if am43x is detected, update interrupts and
+> banks to maximum.
 > 
-> I was hoping to find a better way to coalesce pipe buffers and zap
-> entire VMAs (and it needs better documentation but your argument is with
-> structure and I agree). I would love suggestions for improving this but
-> that is not to say that I've abandoned it; I'm still looking for ways
-> to make this cleaner.
+> Also AM43x has only one cpu, ensure that clearing bitmask at wakeupgen
+> is done only for the single existing cpu, existing code assumes that
+> there are two cpu's.
+> 
+> If bitmask is cleared in wakeupgen for the nonexistent second cpu,
+> an imprecise abort happens as soon as Kernel switches to user space.
+> It was rootcaused by Sekhar Nori <nsekhar@ti.com>.
+> 
+> Signed-off-by: Afzal Mohammed <afzal@ti.com>
+> ---
+>  arch/arm/mach-omap2/omap-wakeupgen.c | 18 +++++++++++++-----
+>  1 file changed, 13 insertions(+), 5 deletions(-)
+> 
+> diff --git a/arch/arm/mach-omap2/omap-wakeupgen.c b/arch/arm/mach-omap2/omap-wakeupgen.c
+> index 813c615..899d4946 100644
+> --- a/arch/arm/mach-omap2/omap-wakeupgen.c
+> +++ b/arch/arm/mach-omap2/omap-wakeupgen.c
+> @@ -33,8 +33,11 @@
+>  #include "omap4-sar-layout.h"
+>  #include "common.h"
+>  
+> -#define MAX_NR_REG_BANKS	5
+> -#define MAX_IRQS		160
+> +/* maximum value correspond to that of AM43x */
+> +#define MAX_NR_REG_BANKS	7
+> +#define MAX_IRQS		224
+> +#define DEFAULT_NR_REG_BANKS	5
+> +#define DEFAULT_IRQS		160
+>  #define WKG_MASK_ALL		0x00000000
+>  #define WKG_UNMASK_ALL		0xffffffff
+>  #define CPU_ENA_OFFSET		0x400
 
-Doing the VMA search each and every time seems a bit silly.  Do one
-find_vma(), the look at the _end_ virtual address of the VMA.  You can
-continue to collect your set of zap_page_range() addresses as long as
-you do not hit the end of that address range.
+How about define it like this to avoid updating things
+in multiple places for new SoCs:
 
-If and only if you hit the end of the vma, do the zap_page_range(), and
-then look up the VMA again.
+#define AM43X_NR_REG_BANKS	7
+#define MAX_NR_REG_BANKS	AM43X_NR_REG_BANKS
+...
 
-Storing the .useraddr still seems odd to me, and you haven't fully
-explained why you're doing it or how it is safe, or why you store both
-virtual addresses and file locations in it.
+> @@ -402,6 +405,7 @@ int __init omap_wakeupgen_init(void)
+>  {
+>  	int i;
+>  	unsigned int boot_cpu = smp_processor_id();
+> +	bool am43x = soc_is_am43xx() ? true : false;
+>  
+>  	/* Not supported on OMAP4 ES1.0 silicon */
+>  	if (omap_rev() == OMAP4430_REV_ES1_0) {
+> @@ -418,12 +422,16 @@ int __init omap_wakeupgen_init(void)
+>  		irq_banks = OMAP4_NR_BANKS;
+>  		max_irqs = OMAP4_NR_IRQS;
+>  		omap_secure_apis = 1;
+> +	} else if (am43x) {
+> +		irq_banks = MAX_NR_REG_BANKS;
+> +		max_irqs = MAX_IRQS;
+>  	}
+
+Then here you can have:
+
+		irq_bankse = AM43X_NR_REG_BANKS
+		...
+  
+>  	/* Clear all IRQ bitmasks at wakeupGen level */
+>  	for (i = 0; i < irq_banks; i++) {
+>  		wakeupgen_writel(0, i, CPU0_ID);
+> -		wakeupgen_writel(0, i, CPU1_ID);
+> +		if (!am43x)
+> +			wakeupgen_writel(0, i, CPU1_ID);
+>  	}
+
+Why not use soc_is_am43xx() directly here?
+
+Regards,
+
+Tony
