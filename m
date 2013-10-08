@@ -1,73 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755728Ab3JHOsh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 10:48:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16298 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755693Ab3JHOsf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 10:48:35 -0400
-Date: Tue, 08 Oct 2013 10:47:00 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Pavel Emelyanov <xemul@parallels.com>,
-        Andy Lutomirski <luto@amacapital.net>, Matt Mackall <mpm@selenic.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Message-ID: <1381243620-hjcyg13o-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <20131008144030.GA19040@moon>
-References: <20131008090019.527108154@gmail.com>
- <20131008090236.951114091@gmail.com>
- <1381241500-bfdgpu61-mutt-n-horiguchi@ah.jp.nec.com>
- <20131008144030.GA19040@moon>
-Subject: Re: [patch 1/3] [PATCH] mm: migration -- Do not loose soft dirty bit
- if page is in migration state
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-X-Mutt-References: <20131008144030.GA19040@moon>
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
+	id S1755279Ab3JHOwE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 10:52:04 -0400
+Received: from mail1.bemta8.messagelabs.com ([216.82.243.209]:61381 "EHLO
+	mail1.bemta8.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754190Ab3JHOwB convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 10:52:01 -0400
+X-Greylist: delayed 380 seconds by postgrey-1.27 at vger.kernel.org; Tue, 08 Oct 2013 10:52:01 EDT
+X-Env-Sender: peter.korsgaard@barco.com
+X-Msg-Ref: server-16.tower-45.messagelabs.com!1381243536!28382190!3
+X-Originating-IP: [91.183.172.68]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.12; banners=-,-,-
+X-VirusChecked: Checked
+From: Peter Korsgaard <peter.korsgaard@barco.com>
+To: Ionut Nicu <ioan.nicu.ext@nsn.com>
+CC: Wolfram Sang <wsa@the-dreams.de>,
+        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
+        <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] i2c-mux-gpio: use deferred probing with the device tree
+References: <52540DF6.6050407@nsn.com>
+X-message-flag: thor uptime: 538 days, 17:50,  7 users
+Date: Tue, 8 Oct 2013 16:45:09 +0200
+In-Reply-To: <52540DF6.6050407@nsn.com> (Ionut Nicu's message of "Tue, 8 Oct
+	2013 15:51:50 +0200")
+Message-ID: <87bo2zn7nu.fsf@thor.barco.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 08, 2013 at 06:40:30PM +0400, Cyrill Gorcunov wrote:
-> On Tue, Oct 08, 2013 at 10:11:40AM -0400, Naoya Horiguchi wrote:
-> > > Index: linux-2.6.git/mm/memory.c
-> > > ===================================================================
-> > > --- linux-2.6.git.orig/mm/memory.c
-> > > +++ linux-2.6.git/mm/memory.c
-> > > @@ -837,6 +837,8 @@ copy_one_pte(struct mm_struct *dst_mm, s
-> > >  					 */
-> > >  					make_migration_entry_read(&entry);
-> > >  					pte = swp_entry_to_pte(entry);
-> > > +					if (pte_swp_soft_dirty(*src_pte))
-> > > +						pte = pte_swp_mksoft_dirty(pte);
-> > >  					set_pte_at(src_mm, addr, src_pte, pte);
-> > >  				}
-> > >  			}
-> > 
-> > When we convert pte to swap_entry, we convert soft-dirty bit in
-> > pte_to_swp_entry(). So I think that it's better to convert it back
-> > in swp_entry_to_pte() when we do swap_entry-to-pte conversion.
-> 
-> No, soft dirty bit lays _only_ inside pte entry in memory, iow
-> swp_entry_t never has this bit, thus to be able to find soft dirty
-> status in swp_entry_to_pte you need to extend this function and
-> pass pte entry itself as an argument, which eventually will bring
-> more massive patch and will be a way more confusing I think.
+>>>>> "IN" == Ionut Nicu <ioan.nicu.ext@nsn.com> writes:
 
-OK, you're right. Thanks for explanation.
+IN> If the i2c-parent bus driver is not loaded, returning
+IN> -EINVAL will force people to unload and then reload the
+IN> module again to get it working.
 
-> Or I misunderstood you?
+IN> Signed-off-by: Ionut Nicu <ioan.nicu.ext@nsn.com>
 
-No, I misread the code, sorry.
+Acked-by: Peter Korsgaard <peter.korsgaard@barco.com>
 
-Naoya
+--
+Sorry about disclaimer - It's out of my control.
+Bye, Peter Korsgaard
+This message is subject to the following terms and conditions: MAIL DISCLAIMER<http://www.barco.com/en/maildisclaimer>
