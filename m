@@ -1,64 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754882Ab3JHHra (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 03:47:30 -0400
-Received: from kiruna.synopsys.com ([198.182.44.80]:46100 "EHLO
-	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754817Ab3JHHrU (ORCPT
+	id S1754843Ab3JHHr0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 03:47:26 -0400
+Received: from demumfd002.nsn-inter.net ([93.183.12.31]:11253 "EHLO
+	demumfd002.nsn-inter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754800Ab3JHHrV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 03:47:20 -0400
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Paul Mundt <paul.mundt@gmail.com>
-CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: [PATCH v2 3/3] sched: Remove ARCH specific fpu_counter from task_struct
-Date: Tue, 8 Oct 2013 13:16:29 +0530
-Message-ID: <1381218389-16585-4-git-send-email-vgupta@synopsys.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1381218389-16585-1-git-send-email-vgupta@synopsys.com>
-References: <1381218389-16585-1-git-send-email-vgupta@synopsys.com>
+	Tue, 8 Oct 2013 03:47:21 -0400
+Message-ID: <5253B860.5030604@nsn.com>
+Date: Tue, 08 Oct 2013 09:46:40 +0200
+From: Alexander Sverdlin <alexander.sverdlin@nsn.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.12.197.243]
+To: ext Brian Norris <computersforpeace@gmail.com>
+CC: linux-mtd@lists.infradead.org, Joern Engel <joern@lazybastard.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mtd: phram: Make phram 64-bit compatible
+References: <524C4CF5.7060601@nsn.com> <20131007174943.GB23337@ld-irv-0074.broadcom.com>
+In-Reply-To: <20131007174943.GB23337@ld-irv-0074.broadcom.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-purgate-type: clean
+X-purgate-Ad: Categorized by eleven eXpurgate (R) http://www.eleven.de
+X-purgate: clean
+X-purgate: This mail is considered clean (visit http://www.eleven.de for further information)
+X-purgate-size: 611
+X-purgate-ID: 151667::1381218403-00005753-49411BB9/0-0/0-0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Hi!
 
-fpu_counter in task_struct was used only by sh/x86.
-Both of these now carry it in ARCH specific thread_struct, hence this
-can now be removed from generic task_struct, shrinking it slightly for
-other arches.
+On 10/07/2013 07:49 PM, ext Brian Norris wrote:
+> Are we (MTD) holding a revolutionary position against the standard
+> kernel libraries, which recognize [KkMmGg] prefixes, but not [kMG]i
+> prefixes? Should we extend memparse() to accept either form? Or would
+> doing so simply pollute the library and not really satisfy anyone?
 
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
----
- include/linux/sched.h | 9 ---------
- 1 file changed, 9 deletions(-)
+I was also irritated re-inventing the wheel here, but the problem is --
+millions of people out there have their startup scripts and uboot environments
+for phram, who expect this just to work with the next kernel upgrade...
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 6682da36b293..78386c1e04a3 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1046,15 +1046,6 @@ struct task_struct {
- 	struct hlist_head preempt_notifiers;
- #endif
- 
--	/*
--	 * fpu_counter contains the number of consecutive context switches
--	 * that the FPU is used. If this is over a threshold, the lazy fpu
--	 * saving becomes unlazy to save the trap. This is an unsigned char
--	 * so that after 256 times the counter wraps and the behavior turns
--	 * lazy again; this to deal with bursty apps that only use FPU for
--	 * a short time
--	 */
--	unsigned char fpu_counter;
- #ifdef CONFIG_BLK_DEV_IO_TRACE
- 	unsigned int btrace_seq;
- #endif
 -- 
-1.8.1.2
-
+Best regards,
+Alexander Sverdlin.
