@@ -1,94 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755035Ab3JHNfh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 09:35:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11113 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753042Ab3JHNfe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 09:35:34 -0400
-Date: Tue, 8 Oct 2013 09:35:32 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: kvm@vger.kernel.org, pbonzini@redhat.com, gleb@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/3] hung_task: add method to reset detector
-Message-ID: <20131008133532.GQ227855@redhat.com>
-References: <20131008010515.516032211@amt.cnet>
- <20131008010552.713337492@amt.cnet>
+	id S1755001Ab3JHNgr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 09:36:47 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:18537 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754267Ab3JHNgq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 09:36:46 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 08 Oct 2013 06:36:46 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <broonie@kernel.org>
+CC: <lgirdwood@gmail.com>, <swarren@nvidia.com>,
+        <linux-kernel@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH] regulator: tps65090: get regulators node from parent node only
+Date: Tue, 8 Oct 2013 19:31:02 +0530
+Message-ID: <1381240864-19639-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131008010552.713337492@amt.cnet>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 07, 2013 at 10:05:16PM -0300, Marcelo Tosatti wrote:
-> In certain occasions it is possible for a hung task detector
-> positive to be false: continuation from a paused VM, for example.
-> 
-> Add a method to reset detection, similar as is done
-> with other kernel watchdogs.
+As per the devicetree binding document of TPS65090, the "regulators"
+subnode should be under the parent node, not outside of parent node.
+Hence to get the regulator node, the correct call is
+of_get_child_by_name() rather than of_find_node_by_name() which searches
+the "regulators" node from the parent node to end of DTS file.
 
-This makes sense to me.  Should we throw the 'reset_hung_task_detector' in
-include/linux/sched.h like some of the other watchdog functions?  Or is
-having a small hung_task.h file like this fine?
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+ drivers/regulator/tps65090-regulator.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Cheers,
-Don
+diff --git a/drivers/regulator/tps65090-regulator.c b/drivers/regulator/tps65090-regulator.c
+index bd611cd..676f755 100644
+--- a/drivers/regulator/tps65090-regulator.c
++++ b/drivers/regulator/tps65090-regulator.c
+@@ -180,7 +180,7 @@ static struct tps65090_platform_data *tps65090_parse_dt_reg_data(
+ 		return ERR_PTR(-ENOMEM);
+ 	}
+ 
+-	regulators = of_find_node_by_name(np, "regulators");
++	regulators = of_get_child_by_name(np, "regulators");
+ 	if (!regulators) {
+ 		dev_err(&pdev->dev, "regulator node not found\n");
+ 		return ERR_PTR(-ENODEV);
+-- 
+1.7.1.1
 
-> 
-> Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
-> 
-> Index: kvm/kernel/hung_task.c
-> ===================================================================
-> --- kvm.orig/kernel/hung_task.c
-> +++ kvm/kernel/hung_task.c
-> @@ -203,6 +203,14 @@ int proc_dohung_task_timeout_secs(struct
->  	return ret;
->  }
->  
-> +static atomic_t reset_hung_task = ATOMIC_INIT(0);
-> +
-> +void reset_hung_task_detector(void)
-> +{
-> +	atomic_set(&reset_hung_task, 1);
-> +}
-> +EXPORT_SYMBOL_GPL(reset_hung_task_detector);
-> +
->  /*
->   * kthread which checks for tasks stuck in D state
->   */
-> @@ -216,6 +224,9 @@ static int watchdog(void *dummy)
->  		while (schedule_timeout_interruptible(timeout_jiffies(timeout)))
->  			timeout = sysctl_hung_task_timeout_secs;
->  
-> +		if (atomic_xchg(&reset_hung_task, 0))
-> +			continue;
-> +
->  		check_hung_uninterruptible_tasks(timeout);
->  	}
->  
-> Index: kvm/include/linux/hung_task.h
-> ===================================================================
-> --- /dev/null
-> +++ kvm/include/linux/hung_task.h
-> @@ -0,0 +1,15 @@
-> +/*
-> + *  linux/include/linux/hung_task.h
-> + */
-> +#ifndef LINUX_HUNG_TASK_H
-> +#define LINUX_HUNG_TASK_H
-> +
-> +#ifdef CONFIG_DETECT_HUNG_TASK
-> +void reset_hung_task_detector(void);
-> +#else
-> +static inline void reset_hung_task_detector(void)
-> +{
-> +}
-> +#endif
-> +
-> +#endif
-> 
-> 
