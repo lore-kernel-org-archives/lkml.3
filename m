@@ -1,45 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756217Ab3JHQST (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 12:18:19 -0400
-Received: from smtprelay0189.hostedemail.com ([216.40.44.189]:49579 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753442Ab3JHQSQ (ORCPT
+	id S1755980Ab3JHQT4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 12:19:56 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:34684 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754128Ab3JHQTy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 12:18:16 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:960:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1568:1593:1594:1711:1714:1730:1747:1777:1792:1981:2194:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3867:3872:4321:5007:7652:10004:10400:10848:11026:11232:11473:11658:11914:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: wall73_d8aa0942a05b
-X-Filterd-Recvd-Size: 1371
-Message-ID: <1381249090.2081.240.camel@joe-AO722>
-Subject: Re: [PATCH] core: Catch overflows in do_div() function
-From: Joe Perches <joe@perches.com>
-To: Anatol Pomozov <anatol.pomozov@gmail.com>
-Cc: linux-kernel@vger.kernel.org, rdunlap@infradead.org
-Date: Tue, 08 Oct 2013 09:18:10 -0700
-In-Reply-To: <1381248622-27809-1-git-send-email-anatol.pomozov@gmail.com>
-References: <CAOMFOmXfw2DkesOYip9VFDdUQgVN48qbJfuertPaSCz5aGdaeA@mail.gmail.com>
-	 <1381248622-27809-1-git-send-email-anatol.pomozov@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 8 Oct 2013 12:19:54 -0400
+Date: Tue, 8 Oct 2013 17:19:30 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Richard Genoud <richard.genoud@gmail.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Wenyou Yang <wenyou.yang@atmel.com>, linux-spi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-ID: <20131008161930.GG21581@sirena.org.uk>
+References: <CACQ1gAhNFTdG_2OCTnsOCaBozHnGb9EwAGHT5+f=cARRpC_WBg@mail.gmail.com>
+ <20131008121326.GB21581@sirena.org.uk>
+ <CACQ1gAjzanaYgP-pW0a+ahb+byH1FtAYp-Apfnc_LnUgpAiuCg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="2ctSxJPqE6GQjdSc"
+Content-Disposition: inline
+In-Reply-To: <CACQ1gAjzanaYgP-pW0a+ahb+byH1FtAYp-Apfnc_LnUgpAiuCg@mail.gmail.com>
+X-Cookie: Penalty for private use.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [BUG] spi/spi-atmel: DMA rx buffer corruption with
+ SPI_IOC_MESSAGE
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-10-08 at 09:10 -0700, Anatol Pomozov wrote:
-> If second parameter passed to this function was 64 then it silently
-> truncates to 32 bits. Catch such situation.
-[]
-> diff --git a/include/asm-generic/div64.h b/include/asm-generic/div64.h
-[]
-> @@ -25,6 +26,7 @@
->  # define do_div(n,base) ({					\
->  	uint32_t __base = (base);				\
->  	uint32_t __rem;						\
-> +	BUG_ON(sizeof(base) > 4 && base >= (1UL<<32));		\
 
-I think this would be better as a BUILD_BUG_ON
+--2ctSxJPqE6GQjdSc
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
+On Tue, Oct 08, 2013 at 02:52:58PM +0200, Richard Genoud wrote:
 
+> thanks !
+> here it is. (I hope !! Since this morning, I have a *very*
+> discontinued internet acces with small shooting windows)
+
+Got it.
+
+--2ctSxJPqE6GQjdSc
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSVDCPAAoJELSic+t+oim9n4gQAJFQyyL/8Ie05SNk7SrwmaSD
+TiU128XWj0lQJgAr7GDduidML+geCbmPbgOERfDIR7v7zAzFws8qwvEUNqSdw7De
+03zgDO5/GefTOdjFiitfievXUrfieolMIusGA8LVNrfI0CYROxTDjRU3KIoA/Czu
+2zHCQ9G5fW6iJDxip/8MAeTa5RWDNFkF4eJ0kocPeEOLlJC755pvGQVs5dZ46tgu
+eC3gfSHVkOrru2+lNSM2CKSWNv2PG+seGdW7NjYQ/WXFE2hMKnq3yWbsTE4iCsSu
+R2QlcEk9AoEIYRvD00NRbEYFxO5pV7LKCI5RuON8BSkwWSWc1NfqHNq1zEsWx9iP
+5diJkE5dm98369htNrcw24a9D5jHGq4BKfKcm9OzYyhEgO8uijWYJMGFSDR+UyDn
+TZALYDPr5DzwDos2kHI5+KO1gXKacZPue2R943u1pk/wYGcJKPvsyR+yCwKdt/Ug
+3fqwsCqZsKAMnroEpStFDco2mqL6RTJsDoCRJkpgpLFvEBGQve9nEYooPwxNXvnJ
+21AaAWykmGBsAHBf6LnESrh+CP0R67nhPzT3k1SRrkMSMW4/A9c+VimSlpOZA0wg
+lNwiNfFVEUJZP4PWtHhk+tn6fpXrHPpfPOmkM4+yUliufQuf7Jg+OHmv0wmJqYxd
+kNXfgyOXPAlGBAJBad17
+=wmsl
+-----END PGP SIGNATURE-----
+
+--2ctSxJPqE6GQjdSc--
