@@ -1,101 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754074Ab3JHJxR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 05:53:17 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:49485 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752015Ab3JHJxQ (ORCPT
+	id S1754917Ab3JHJxl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 05:53:41 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:34190 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752488Ab3JHJxh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 05:53:16 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
-Message-ID: <5253D5E4.7060004@jp.fujitsu.com>
-Date: Tue, 08 Oct 2013 18:52:36 +0900
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Tue, 8 Oct 2013 05:53:37 -0400
 MIME-Version: 1.0
-To: Dave Anderson <anderson@redhat.com>
-CC: Kees Cook <keescook@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
-        x86@kernel.org, kernel-hardening@lists.openwall.com,
-        Aaron Durbin <adurbin@google.com>,
-        Eric Northup <digitaleric@google.com>, Julien Tinnes <jln@google.com>,
-        Will Drewry <wad@google.com>, Mathias Krause <minipli@googlemail.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Discussion list for crash utility usage, maintenance and development" 
-	<crash-utility@redhat.com>
-Subject: Re: [PATCH 6/7] x86, kaslr: report kernel offset on panic
-References: <1380656245-29975-1-git-send-email-keescook@chromium.org> <1380656245-29975-7-git-send-email-keescook@chromium.org> <524B6AEE.90301@jp.fujitsu.com> <CAGXu5jLVt13p2X2e1C3ha1izg6U6wbmgSyYW1wa+X4cW8aCFug@mail.gmail.com> <524BE3C5.2070302@jp.fujitsu.com> <524CBB70.2060809@jp.fujitsu.com> <1408843968.872421.1380808038820.JavaMail.root@redhat.com> <52521566.20402@jp.fujitsu.com> <1678208981.2178058.1381152105871.JavaMail.root@redhat.com>
-In-Reply-To: <1678208981.2178058.1381152105871.JavaMail.root@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20131007151212.GF15365@e106331-lin.cambridge.arm.com>
+References: <1381151633-8576-1-git-send-email-jonas.jensen@gmail.com>
+	<1381155034-11254-1-git-send-email-jonas.jensen@gmail.com>
+	<20131007151212.GF15365@e106331-lin.cambridge.arm.com>
+Date: Tue, 8 Oct 2013 11:53:36 +0200
+Message-ID: <CACmBeS1tYwJBGscOSC=F=oup_+WfYOZMW-Xu-UmD65KuKNxfQA@mail.gmail.com>
+Subject: Re: [PATCH v10] dmaengine: Add MOXA ART DMA engine driver
+From: Jonas Jensen <jonas.jensen@gmail.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "arm@kernel.org" <arm@kernel.org>,
+        "vinod.koul@intel.com" <vinod.koul@intel.com>,
+        "djbw@fb.com" <djbw@fb.com>, "arnd@arndb.de" <arnd@arndb.de>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        devicetree@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/10/07 22:21), Dave Anderson wrote:
+On 7 October 2013 17:12, Mark Rutland <mark.rutland@arm.com> wrote:
+> Sorry I didn't notice this previously, but "moxa" isn't in
+> Documentation/devicetree/bindings/vendor-prefixes.txt (despite several
+> bindings using it). Could you cook up a separate patch to add an entry
+> for Moxa, please?
 
-> ----- Original Message -----
->> (2013/10/03 22:47), Dave Anderson wrote:
+Yes, I'll submit a separate patch.
 
->>> ----- Original Message -----
->>>> (2013/10/02 18:13), HATAYAMA Daisuke wrote:
->>>>> (2013/10/02 16:48), Kees Cook wrote:
+> Also, given the SoC is called "ART" it's a shame that we're calling this
+> "moxa,moxart-dma" rather than "moxa,art-dma". We already have precedent
+> for "moxart" in bindings though, so changing that's likely to lead to
+> more problems.
 
->>
->> Thanks for detailed explanation. So, there's already a feature in crash utility
->> to address relocation!, though it's better for me to try them to check if it's
->> really applicable to this feature. My concern is whether --reloc works well
->> on x86_64 too, because relocation has never done on x86_64 ever, right?
+Sorry about that, I think the "moxart" contraction was suggested and
+has been sticky ever since.
+
+It's at least a little appropriate because the physical chip text
+reads "MOXA ART" (photo):
+
+https://lh4.googleusercontent.com/-A-2FXDrObU8/UMcMc_K2vEI/AAAAAAAABwg/ldaLZ7ps1P4/w1331-h998-no/UC-7112-LX-picture4.jpg
+
+Currently three drivers in linux-next use the name with accompanying
+device tree bindings.
+Considering the amount of patches required, can we keep the name, please?
+
+> Sorry for yet more pendantry, but could we instead have:
 >
-> Correct.
->
->> Another concern is that in case of relocation, users need to additional information
->> regarding runtime symbol information to crash utility. I want to avoid additional
->> process, automation is preferable if possible.
->
-> Right.  As I mentioned in the case of 32-bit x86 dumpfiles, there is no automation
-> available when CONFIG_PHYSICAL_START is larger than CONFIG_PHYSICAL_ALIGN.  The user
-> either has to be aware of their values in order to calculate the --reloc argument,
-> or has to capture a copy of the /proc/kallsyms file on the crashed system.  Typically
-> users/distros using kdump changed their x86 configurations to avoid having to deal
-> with that.
->
+>  - interrupts: Should contain an interrupt-specifier for the sole
+>                interrupt generated by the device.
 
-Sorry, I don't understand why relocation size cannot be calculated when
-CONFIG_PHYSICALSTART > CONFIG_PHYSICAL_ALIGN. Could you explain that?
+Fixed in v11.
 
->> I guess it's enough if there's runtime symbol addresses because we can get relocated
->> offset value by comparing it with the compile-time symbol address contained in
->> a given debuginfo file. Candidates for such symbols are the ones contained in
->> VMCOREINFO note containing some symbol values for makedumpfile to refer to mm-related
->> objects in kernel, which is always contained in vmcore generated by current kdump and
->> also vmcores converted by makedumpfile from it. How about this idea?
->
-> But how would that differ from using an incorrect (non-matching) vmlinux file?
->
 
-It seems to me almost similar to what crash currently does even if we do relocation check.
-The current check crash currently does is trial-and-error since there's no information
-indicating given vmcore and vmlinuxcertainly match well.
-
-For example, the process I imagine is:
-
-   1) try to match vmcore and vmlinux with no relocation. If fails, go to 2).
-   2) try to match vmcore and vmlinux with relocation.
-
-The two steps include symbol table initialization so it might actually be difficult to
-resume back from 2) to 1).
-
-Also, if gap due to phys_base and gap due to relocation can happen at the same time,
-calculating two values automatically might be futher complicated. So, it would be better
-to add relocation value in VMCOREINFO. Then, what crash utility sholud do becomes very simple.
-
-BTW, can it really happen that gaps due to phys_base and due to relocation happen at the
-same time? I feel relocation covers phys_base mechanism. If there's relocation, phys_base
-is not necessary.
-
--- 
-Thanks.
-HATAYAMA, Daisuke
-
+Regards,
+Jonas
