@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756639Ab3JHLgd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 07:36:33 -0400
-Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
+	id S1756679Ab3JHLgj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 07:36:39 -0400
+Received: from b.ns.miles-group.at ([95.130.255.144]:1665 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756609Ab3JHLg2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 07:36:28 -0400
+	id S1756645Ab3JHLgf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 07:36:35 -0400
 From: Richard Weinberger <richard@nod.at>
 To: linux-kernel@vger.kernel.org
 Cc: linux-arch@vger.kernel.org, viro@zeniv.linux.org.uk, vgupta@synopsys.com,
@@ -22,149 +22,61 @@ Cc: linux-arch@vger.kernel.org, viro@zeniv.linux.org.uk, vgupta@synopsys.com,
         lethal@linux-sh.org, cmetcalf@tilera.com, gxt@mprc.pku.edu.cn,
         linux-xtensa@linux-xtensa.org, akpm@linux-foundation.org,
         oleg@redhat.com, tj@kernel.org, Richard Weinberger <richard@nod.at>
-Subject: [PATCH 26/29] xtensa: Use get_signal() signal_setup_done()
-Date: Tue,  8 Oct 2013 13:36:15 +0200
-Message-Id: <1381232179-4385-1-git-send-email-richard@nod.at>
+Subject: [PATCH 27/29] get_signal_to_deliver: remove regs and cookie args
+Date: Tue,  8 Oct 2013 13:36:17 +0200
+Message-Id: <1381232179-4385-3-git-send-email-richard@nod.at>
 X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1381232179-4385-1-git-send-email-richard@nod.at>
+References: <1381232179-4385-1-git-send-email-richard@nod.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the more generic functions get_signal() signal_setup_done()
-for signal delivery.
+Both arguments are unused, remove them.
 
 Signed-off-by: Richard Weinberger <richard@nod.at>
 ---
- arch/xtensa/kernel/signal.c | 43 ++++++++++++++++---------------------------
- 1 file changed, 16 insertions(+), 27 deletions(-)
+ include/linux/signal.h | 5 ++---
+ kernel/signal.c        | 3 +--
+ 2 files changed, 3 insertions(+), 5 deletions(-)
 
-diff --git a/arch/xtensa/kernel/signal.c b/arch/xtensa/kernel/signal.c
-index 718eca1..afc4059 100644
---- a/arch/xtensa/kernel/signal.c
-+++ b/arch/xtensa/kernel/signal.c
-@@ -331,17 +331,17 @@ gen_return_code(unsigned char *codemem)
+diff --git a/include/linux/signal.h b/include/linux/signal.h
+index 2ac423b..735e0a3 100644
+--- a/include/linux/signal.h
++++ b/include/linux/signal.h
+@@ -285,7 +285,7 @@ struct ksignal {
+ 	int sig;
+ };
+ 
+-extern int get_signal_to_deliver(siginfo_t *info, struct k_sigaction *return_ka, struct pt_regs *regs, void *cookie);
++extern int get_signal_to_deliver(siginfo_t *info, struct k_sigaction *return_ka);
+ extern void signal_setup_done(int failed, struct ksignal *ksig, int stepping);
+ extern void signal_delivered(int sig, siginfo_t *info, struct k_sigaction *ka, struct pt_regs *regs, int stepping);
+ extern void exit_signals(struct task_struct *tsk);
+@@ -297,8 +297,7 @@ extern void exit_signals(struct task_struct *tsk);
+ #define get_signal(ksig)					\
+ ({								\
+ 	struct ksignal *p = (ksig);				\
+-	p->sig = get_signal_to_deliver(&p->info, &p->ka,	\
+-					signal_pt_regs(), NULL);\
++	p->sig = get_signal_to_deliver(&p->info, &p->ka); \
+ 	p->sig > 0;						\
+ })
+ 
+diff --git a/kernel/signal.c b/kernel/signal.c
+index ded28b9..5cf68fb 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -2189,8 +2189,7 @@ static int ptrace_signal(int signr, siginfo_t *info)
+ 	return signr;
  }
  
- 
--static int setup_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
--		       sigset_t *set, struct pt_regs *regs)
-+static int setup_frame(struct ksignal *ksig, sigset_t *set,
-+		       struct pt_regs *regs)
+-int get_signal_to_deliver(siginfo_t *info, struct k_sigaction *return_ka,
+-			  struct pt_regs *regs, void *cookie)
++int get_signal_to_deliver(siginfo_t *info, struct k_sigaction *return_ka)
  {
- 	struct rt_sigframe *frame;
--	int err = 0;
-+	int err = 0, sig = ksig->sig;
- 	int signal;
- 	unsigned long sp, ra, tp;
- 
- 	sp = regs->areg[1];
- 
--	if ((ka->sa.sa_flags & SA_ONSTACK) != 0 && ! on_sig_stack(sp)) {
-+	if ((ksig->ka.sa.sa_flags & SA_ONSTACK) != 0 && ! on_sig_stack(sp)) {
- 		sp = current->sas_ss_sp + current->sas_ss_size;
- 	}
- 
-@@ -351,7 +351,7 @@ static int setup_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
- 		panic ("Double exception sys_sigreturn\n");
- 
- 	if (!access_ok(VERIFY_WRITE, frame, sizeof(*frame))) {
--		goto give_sigsegv;
-+		return -EFAULT;
- 	}
- 
- 	signal = current_thread_info()->exec_domain
-@@ -360,8 +360,8 @@ static int setup_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
- 		? current_thread_info()->exec_domain->signal_invmap[sig]
- 		: sig;
- 
--	if (ka->sa.sa_flags & SA_SIGINFO) {
--		err |= copy_siginfo_to_user(&frame->info, info);
-+	if (ksig->ka.sa.sa_flags & SA_SIGINFO) {
-+		err |= copy_siginfo_to_user(&frame->info, &ksig->info);
- 	}
- 
- 	/* Create the user context.  */
-@@ -372,8 +372,8 @@ static int setup_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
- 	err |= setup_sigcontext(frame, regs);
- 	err |= __copy_to_user(&frame->uc.uc_sigmask, set, sizeof(*set));
- 
--	if (ka->sa.sa_flags & SA_RESTORER) {
--		ra = (unsigned long)ka->sa.sa_restorer;
-+	if (ksig->ka.sa.sa_flags & SA_RESTORER) {
-+		ra = (unsigned long)ksig->ka.sa.sa_restorer;
- 	} else {
- 
- 		/* Create sys_rt_sigreturn syscall in stack frame */
-@@ -381,7 +381,7 @@ static int setup_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
- 		err |= gen_return_code(frame->retcode);
- 
- 		if (err) {
--			goto give_sigsegv;
-+			return -EFAULT;
- 		}
- 		ra = (unsigned long) frame->retcode;
- 	}
-@@ -393,7 +393,7 @@ static int setup_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
- 
- 	/* Set up registers for signal handler; preserve the threadptr */
- 	tp = regs->threadptr;
--	start_thread(regs, (unsigned long) ka->sa.sa_handler,
-+	start_thread(regs, (unsigned long) ksig->ka.sa.sa_handler,
- 		     (unsigned long) frame);
- 
- 	/* Set up a stack frame for a call4
-@@ -416,10 +416,6 @@ static int setup_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
- #endif
- 
- 	return 0;
--
--give_sigsegv:
--	force_sigsegv(sig, current);
--	return -EFAULT;
- }
- 
- /*
-@@ -433,15 +429,11 @@ give_sigsegv:
-  */
- static void do_signal(struct pt_regs *regs)
- {
--	siginfo_t info;
--	int signr;
--	struct k_sigaction ka;
-+	struct ksignal ksig;
- 
- 	task_pt_regs(current)->icountlevel = 0;
- 
--	signr = get_signal_to_deliver(&info, &ka, regs, NULL);
--
--	if (signr > 0) {
-+	if (get_signal(&ksig)) {
- 		int ret;
- 
- 		/* Are we from a system call? */
-@@ -457,7 +449,7 @@ static void do_signal(struct pt_regs *regs)
- 					break;
- 
- 				case -ERESTARTSYS:
--					if (!(ka.sa.sa_flags & SA_RESTART)) {
-+					if (!(ksig.ka.sa.sa_flags & SA_RESTART)) {
- 						regs->areg[2] = -EINTR;
- 						break;
- 					}
-@@ -476,11 +468,8 @@ static void do_signal(struct pt_regs *regs)
- 
- 		/* Whee!  Actually deliver the signal.  */
- 		/* Set up the stack frame */
--		ret = setup_frame(signr, &ka, &info, sigmask_to_save(), regs);
--		if (ret)
--			return;
--
--		signal_delivered(signr, &info, &ka, regs, 0);
-+		ret = setup_frame(&ksig, sigmask_to_save(), regs);
-+		signal_setup_done(ret, &ksig, 0);
- 		if (current->ptrace & PT_SINGLESTEP)
- 			task_pt_regs(current)->icountlevel = 1;
- 
+ 	struct sighand_struct *sighand = current->sighand;
+ 	struct signal_struct *signal = current->signal;
 -- 
 1.8.1.4
 
