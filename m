@@ -1,74 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756616Ab3JHK0n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 06:26:43 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:49420 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752676Ab3JHKMH (ORCPT
+	id S1756779Ab3JHK0x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 06:26:53 -0400
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:44327 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755659Ab3JHK0t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 06:12:07 -0400
+	Tue, 8 Oct 2013 06:26:49 -0400
+Date: Tue, 8 Oct 2013 12:26:45 +0200
 From: Ingo Molnar <mingo@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 03/52] tools/perf/build: Add 'autodep' functionality, generate feature test dependencies automatically
-Date: Tue,  8 Oct 2013 12:10:33 +0200
-Message-Id: <1381227082-22039-4-git-send-email-mingo@kernel.org>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1381227082-22039-1-git-send-email-mingo@kernel.org>
-References: <1381227082-22039-1-git-send-email-mingo@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Christoph Lameter <cl@linux.com>, Tejun Heo <tj@kernel.org>,
+        akpm@linuxfoundation.org, Eric Dumazet <edumazet@google.com>,
+        netdev@vger.kernel.org, Steven Rostedt <srostedt@redhat.com>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [raw v1 2/4] [NET] Use raw_cpu ops for SNMP stats
+Message-ID: <20131008102645.GA22639@gmail.com>
+References: <20131007183226.334180014@linux.com>
+ <0000014194309205-d0af4d2d-a046-4189-b4f0-ffea37374988-000000@email.amazonses.com>
+ <20131008072114.GA4455@gmail.com>
+ <20131008102142.GT3081@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131008102142.GT3081@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use GCC's -MD feature to generate a dependency file for each feature test .c file,
-and include that .d file in the config/feature-checks/Makefile.
 
-This allows us to do two things:
+* Peter Zijlstra <peterz@infradead.org> wrote:
 
- - speed up feature tests
- - detect removal or changes in build dependencies - including system libraries/headers
+> On Tue, Oct 08, 2013 at 09:21:14AM +0200, Ingo Molnar wrote:
+> > 
+> > * Christoph Lameter <cl@linux.com> wrote:
+> > 
+> > > SNMP stats are not protected by preemption but by bh handling.
+> > 
+> > Most forms of bh exclusion work via the preemption count though, and 
+> > softirq contexts themselves are generally not preemptible [to other CPUs] 
+> > either.
+> > 
+> > So the warnings should, in most cases, not trigger.
+> 
+> Right, so softirqs run either in the irq tail at which point 
+> preempt_count += SOFTIRQ_OFFSET and thus preemption is disabled, or it 
+> runs in ksoftirqd which has strict cpu affinity which also disables the 
+> warning, and it also increments preempt_count with SOFTIRQ_OFFSET to 
+> exclude the softirq from interrupts while its running, also disabling 
+> the warning.
 
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/n/tip-Jfma8pmPnnqzpxjbs3hpgmsj@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- tools/perf/config/feature-checks/Makefile | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+A third context would be syscall-level code that runs with 
+local_bh_disable()/enable() - but that too ought to have the preempt count 
+elevated.
 
-diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
-index b3f6372..4708cca 100644
---- a/tools/perf/config/feature-checks/Makefile
-+++ b/tools/perf/config/feature-checks/Makefile
-@@ -1,16 +1,20 @@
- 
- FILES=test-hello
- 
-+CC := $(CC) -MD
-+
- all: $(FILES)
- 
- BUILD = $(CC) -o $(OUTPUT)$@ $@.c
- 
- ###############################
- 
--test-hello: test-hello.c
-+test-hello:
- 	$(BUILD)
- 
-+-include *.d */*.d
-+
- ###############################
- 
- clean:
--	rm -f $(FILES)
-+	rm -f $(FILES) *.d
--- 
-1.8.3.1
+> So it should very much not trigger.. if it does you want to know about 
+> it.
 
+Yes. If nothing else then for the education value.
+
+Thanks,
+
+	Ingo
