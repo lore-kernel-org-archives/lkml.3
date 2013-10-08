@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755607Ab3JHTEe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 15:04:34 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42205 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754091Ab3JHTEa (ORCPT
+	id S1755797Ab3JHTFe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 15:05:34 -0400
+Received: from mail-vb0-f45.google.com ([209.85.212.45]:41535 "EHLO
+	mail-vb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754063Ab3JHTFd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 15:04:30 -0400
-Date: Tue, 8 Oct 2013 12:03:43 -0700
-From: tip-bot for Andre Richter <tipbot@zytor.com>
-Message-ID: <tip-122498738417c73943b71294c60ec34fc110f5d6@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, hpa@linux.intel.com, andre.o.richter@gmail.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, hpa@linux.intel.com, andre.o.richter@gmail.com
-In-Reply-To: <1381224142-3267-1-git-send-email-andre.o.richter@gmail.com>
-References: <1381224142-3267-1-git-send-email-andre.o.richter@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cleanups] x86, msr: Use file_inode(), not f_mapping->
- host
-Git-Commit-ID: 122498738417c73943b71294c60ec34fc110f5d6
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 8 Oct 2013 15:05:33 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131008185154.GA8258@redhat.com>
+References: <20131005234430.GA22485@localhost>
+	<CA+55aFxEeKixnH7mZZs5iwupA9_GsRN0N7QZxqcTcE4RKZvTTg@mail.gmail.com>
+	<20131008075151.GA15689@localhost>
+	<CA+55aFykGxmaE9hq9xd+6HHFtEube_2QnB+ipW4oF71c6vyXAw@mail.gmail.com>
+	<20131008185154.GA8258@redhat.com>
+Date: Tue, 8 Oct 2013 12:05:32 -0700
+X-Google-Sender-Auth: DvAeECJVyVq4ZBnlWmXamBK0G0g
+Message-ID: <CA+55aFzaWQV-f7PynpwCNy2J5WATnYVbfVT_tnq=AJFByd-HrQ@mail.gmail.com>
+Subject: Re: [x86] BUG: unable to handle kernel paging request at 00740060
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, Richard Henderson <rth@twiddle.net>,
+        Jakub Jelinek <jakub@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 08 Oct 2013 12:03:50 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  122498738417c73943b71294c60ec34fc110f5d6
-Gitweb:     http://git.kernel.org/tip/122498738417c73943b71294c60ec34fc110f5d6
-Author:     Andre Richter <andre.o.richter@gmail.com>
-AuthorDate: Tue, 8 Oct 2013 11:22:22 +0200
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Tue, 8 Oct 2013 12:01:29 -0700
+On Tue, Oct 8, 2013 at 11:51 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+>
+> I do not really understand inline assembly constraints, but I'll ask
+> anyway.
+>
+>         +#define __GEN_RMWcc(fullop, var, cc, ...) \
+>         +do { \
+>         + asm volatile goto (fullop "; j" cc " %l[cc_label]" \
+>         + : : "m" (var), ## __VA_ARGS__ \
+>               ^^^^^^^^^
+>
+> don't we need
+>
+>         "+m" (var)
 
-x86, msr: Use file_inode(), not f_mapping->host
+We have a memory clobber instead. So the memory is marked as input and
+clobbered.
 
-As discussed in [1], exchange f_mapping->host with file_inode().  This
-is a bug, but happens to be non-manifest in this case.
+And we'd love to mark it "+m", but "ask goto" cannot have outputs.
 
-[1] http://lkml.kernel.org/r/20131007190357.GA13318@ZenIV.linux.org.uk
+For the serializing ones, the memory clobber is ok - they have barrier
+semantics anyway. But we'd actually *want* to use "asm goto" for some
+cases where the memory clobber is too big of a hammer, so if we ever
+get input/output constraints to "asm goto" we'll be happy.
 
-Signed-off-by: Andre Richter <andre.o.richter@gmail.com>
-Link: http://lkml.kernel.org/r/1381224142-3267-1-git-send-email-andre.o.richter@gmail.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/kernel/msr.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Of course, right now it looks like we shouldn't be in a rush to use
+"asm goto" at all...
 
-diff --git a/arch/x86/kernel/msr.c b/arch/x86/kernel/msr.c
-index 88458fa..05266b5 100644
---- a/arch/x86/kernel/msr.c
-+++ b/arch/x86/kernel/msr.c
-@@ -46,7 +46,7 @@ static struct class *msr_class;
- static loff_t msr_seek(struct file *file, loff_t offset, int orig)
- {
- 	loff_t ret;
--	struct inode *inode = file->f_mapping->host;
-+	struct inode *inode = file_inode(file);
- 
- 	mutex_lock(&inode->i_mutex);
- 	switch (orig) {
+                   Linus
