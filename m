@@ -1,117 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753038Ab3JHCBK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 22:01:10 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:46282 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751746Ab3JHCBH (ORCPT
+	id S1753189Ab3JHCDS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 22:03:18 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:57217 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751799Ab3JHCDR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 22:01:07 -0400
-Message-ID: <52536739.2000602@huawei.com>
-Date: Tue, 8 Oct 2013 10:00:25 +0800
-From: Xishi Qiu <qiuxishi@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Mon, 7 Oct 2013 22:03:17 -0400
+X-AuditID: 9c930197-b7bd9ae000006889-fc-525367e464b4
+From: Namhyung Kim <namhyung@kernel.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH 1/8] perf callchain: Convert children list to rbtree
+References: <1380185890-25758-1-git-send-email-namhyung@kernel.org>
+	<1380185890-25758-2-git-send-email-namhyung@kernel.org>
+	<20131002101826.GC7941@localhost.localdomain>
+Date: Tue, 08 Oct 2013 11:03:16 +0900
+In-Reply-To: <20131002101826.GC7941@localhost.localdomain> (Frederic
+	Weisbecker's message of "Wed, 2 Oct 2013 12:18:28 +0200")
+Message-ID: <87siwcldsr.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Johannes Berg <johannes@sipsolutions.net>, Xishi Qiu <qiuxishi@huawei.com>,
-        <rob@landley.net>, Andrew Morton <akpm@linux-foundation.org>
-CC: <linux-doc@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH V2] doc: fix some typos in documentations
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.74.196]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix some typos in five documentations, no functional changes.
+On Wed, 2 Oct 2013 12:18:28 +0200, Frederic Weisbecker wrote:
+> On Thu, Sep 26, 2013 at 05:58:03PM +0900, Namhyung Kim wrote:
+>> From: Namhyung Kim <namhyung.kim@lge.com>
+>> 
+>> Current collapse stage has a scalability problem which can be
+>> reproduced easily with parallel kernel build.  This is because it
+>> needs to traverse every children of callchain linearly during the
+>> collapse/merge stage.  Convert it to rbtree reduced the overhead
+>> significantly.
+>> 
+>> On my 400MB perf.data file which recorded with make -j32 kernel build:
+>> 
+>>   $ time perf --no-pager report --stdio > /dev/null
+>> 
+>> before:
+>>   real	6m22.073s
+>>   user	6m18.683s
+>>   sys	0m0.706s
+>> 
+>> after:
+>>   real	0m20.780s
+>>   user	0m19.962s
+>>   sys	0m0.689s
+>> 
+>> During the perf report the overhead on append_chain_children went down
+>> from 96.69% to 18.16%:
+>> 
+>>   -  18.16%  perf  perf                [.] append_chain_children
+>>      - append_chain_children
+>>         - 77.48% append_chain_children
+>>            + 69.79% merge_chain_branch
+>>            - 22.96% append_chain_children
+>>               + 67.44% merge_chain_branch
+>>               + 30.15% append_chain_children
+>>               + 2.41% callchain_append
+>>            + 7.25% callchain_append
+>>         + 12.26% callchain_append
+>>         + 10.22% merge_chain_branch
+>>   +  11.58%  perf  perf                [.] dso__find_symbol
+>>   +   8.02%  perf  perf                [.] sort__comm_cmp
+>>   +   5.48%  perf  libc-2.17.so        [.] malloc_consolidate
+>> 
+>> Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
+>> Cc: Jiri Olsa <jolsa@redhat.com>
+>> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+>> Link: http://lkml.kernel.org/n/tip-d9tcfow6stbrp4btvgs51y67@git.kernel.org
+>> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+>
+> Have you tested this patchset when collapsing is not used?
+> There are fair chances that this patchset does not only improve collapsing
+> but also callchain insertion in general. So it's probably a win in any case. But
+> still it would be nice to make sure that it's the case because we are getting
+> rid of collapsing anyway.
+>
+> The test that could tell us about that is to run "perf report -s sym" and compare the
+> time it takes to complete before and after this patch, because "-s sym" shouldn't
+> involve collapses.
+>
+> Sorting by anything that is not comm should do the trick in fact.
 
-Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
----
- Documentation/md.txt              |    2 +-
- Documentation/rfkill.txt          |    2 +-
- Documentation/rt-mutex-design.txt |    2 +-
- Documentation/static-keys.txt     |    4 ++--
- Documentation/sysfs-rules.txt     |    2 +-
- 5 files changed, 6 insertions(+), 6 deletions(-)
+Yes, I have similar result when collapsing is not used.  Actually when I
+ran "perf report -s sym", the performance improves higher since it'd
+insert more callchains in a hist entry.
 
-diff --git a/Documentation/md.txt b/Documentation/md.txt
-index fbb2fcb..f925666 100644
---- a/Documentation/md.txt
-+++ b/Documentation/md.txt
-@@ -533,7 +533,7 @@ also have
-       found.  The count in 'mismatch_cnt' is the number of sectors
-       that were re-written, or (for 'check') would have been
-       re-written.  As most raid levels work in units of pages rather
--      than sectors, this my be larger than the number of actual errors
-+      than sectors, this may be larger than the number of actual errors
-       by a factor of the number of sectors in a page.
- 
-    bitmap_set_bits
-diff --git a/Documentation/rfkill.txt b/Documentation/rfkill.txt
-index 03c9d92..f430004 100644
---- a/Documentation/rfkill.txt
-+++ b/Documentation/rfkill.txt
-@@ -71,7 +71,7 @@ To create an rfkill driver, driver's Kconfig needs to have
- 	depends on RFKILL || !RFKILL
- 
- to ensure the driver cannot be built-in when rfkill is modular. The !RFKILL
--case allows the driver to be built when rfkill is not configured, which which
-+case allows the driver to be built when rfkill is not configured, in which
- case all rfkill API can still be used but will be provided by static inlines
- which compile to almost nothing.
- 
-diff --git a/Documentation/rt-mutex-design.txt b/Documentation/rt-mutex-design.txt
-index a5bcd7f..8666070 100644
---- a/Documentation/rt-mutex-design.txt
-+++ b/Documentation/rt-mutex-design.txt
-@@ -30,7 +30,7 @@ is something called unbounded priority inversion.  That is when the high
- priority process is prevented from running by a lower priority process for
- an undetermined amount of time.
- 
--The classic example of unbounded priority inversion is were you have three
-+The classic example of unbounded priority inversion is where you have three
- processes, let's call them processes A, B, and C, where A is the highest
- priority process, C is the lowest, and B is in between. A tries to grab a lock
- that C owns and must wait and lets C run to release the lock. But in the
-diff --git a/Documentation/static-keys.txt b/Documentation/static-keys.txt
-index 9f5263d..c4407a4 100644
---- a/Documentation/static-keys.txt
-+++ b/Documentation/static-keys.txt
-@@ -116,7 +116,7 @@ The branch(es) can then be switched via:
- 	static_key_slow_dec(&key);
- 
- Thus, 'static_key_slow_inc()' means 'make the branch true', and
--'static_key_slow_dec()' means 'make the the branch false' with appropriate
-+'static_key_slow_dec()' means 'make the branch false' with appropriate
- reference counting. For example, if the key is initialized true, a
- static_key_slow_dec(), will switch the branch to false. And a subsequent
- static_key_slow_inc(), will change the branch back to true. Likewise, if the
-@@ -236,7 +236,7 @@ label case adds:
- 
- If we then include the padding bytes, the jump label code saves, 16 total bytes
- of instruction memory for this small function. In this case the non-jump label
--function is 80 bytes long. Thus, we have have saved 20% of the instruction
-+function is 80 bytes long. Thus, we have saved 20% of the instruction
- footprint. We can in fact improve this even further, since the 5-byte no-op
- really can be a 2-byte no-op since we can reach the branch with a 2-byte jmp.
- However, we have not yet implemented optimal no-op sizes (they are currently
-diff --git a/Documentation/sysfs-rules.txt b/Documentation/sysfs-rules.txt
-index c1a1fd6..a5f985e 100644
---- a/Documentation/sysfs-rules.txt
-+++ b/Documentation/sysfs-rules.txt
-@@ -47,7 +47,7 @@ versions of the sysfs interface.
-         at device creation and removal
-       - the unique key to the device at that point in time
-       - the kernel's path to the device directory without the leading
--        /sys, and always starting with with a slash
-+        /sys, and always starting with a slash
-       - all elements of a devpath must be real directories. Symlinks
-         pointing to /sys/devices must always be resolved to their real
-         target and the target path must be used to access the device.
--- 
-1.7.1
-
-
-. 
-
+Thanks,
+Namhyung
