@@ -1,77 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752785Ab3JHB4z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 21:56:55 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:46042 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751613Ab3JHB4v (ORCPT
+	id S1753038Ab3JHCBK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 22:01:10 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:46282 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751746Ab3JHCBH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 21:56:51 -0400
-X-AuditID: 9c930197-b7bd9ae000006889-0e-52536661b621
-From: Namhyung Kim <namhyung@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH 8/8] perf tools: Get current comm instead of last one
-References: <1380185890-25758-1-git-send-email-namhyung@kernel.org>
-	<1380185890-25758-9-git-send-email-namhyung@kernel.org>
-	<20131002100149.GB7941@localhost.localdomain>
-Date: Tue, 08 Oct 2013 10:56:49 +0900
-In-Reply-To: <20131002100149.GB7941@localhost.localdomain> (Frederic
-	Weisbecker's message of "Wed, 2 Oct 2013 12:01:51 +0200")
-Message-ID: <87wqlole3i.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Mon, 7 Oct 2013 22:01:07 -0400
+Message-ID: <52536739.2000602@huawei.com>
+Date: Tue, 8 Oct 2013 10:00:25 +0800
+From: Xishi Qiu <qiuxishi@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: Johannes Berg <johannes@sipsolutions.net>, Xishi Qiu <qiuxishi@huawei.com>,
+        <rob@landley.net>, Andrew Morton <akpm@linux-foundation.org>
+CC: <linux-doc@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH V2] doc: fix some typos in documentations
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.74.196]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Frederic,
+Fix some typos in five documentations, no functional changes.
 
-On Wed, 2 Oct 2013 12:01:51 +0200, Frederic Weisbecker wrote:
-> On Thu, Sep 26, 2013 at 05:58:10PM +0900, Namhyung Kim wrote:
->> From: Namhyung Kim <namhyung.kim@lge.com>
->> 
->> At insert time, a hist entry should reference comm at the time
->> otherwise it'll get the last comm anyway.
+Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+---
+ Documentation/md.txt              |    2 +-
+ Documentation/rfkill.txt          |    2 +-
+ Documentation/rt-mutex-design.txt |    2 +-
+ Documentation/static-keys.txt     |    4 ++--
+ Documentation/sysfs-rules.txt     |    2 +-
+ 5 files changed, 6 insertions(+), 6 deletions(-)
 
-[SNIP]
+diff --git a/Documentation/md.txt b/Documentation/md.txt
+index fbb2fcb..f925666 100644
+--- a/Documentation/md.txt
++++ b/Documentation/md.txt
+@@ -533,7 +533,7 @@ also have
+       found.  The count in 'mismatch_cnt' is the number of sectors
+       that were re-written, or (for 'check') would have been
+       re-written.  As most raid levels work in units of pages rather
+-      than sectors, this my be larger than the number of actual errors
++      than sectors, this may be larger than the number of actual errors
+       by a factor of the number of sectors in a page.
+ 
+    bitmap_set_bits
+diff --git a/Documentation/rfkill.txt b/Documentation/rfkill.txt
+index 03c9d92..f430004 100644
+--- a/Documentation/rfkill.txt
++++ b/Documentation/rfkill.txt
+@@ -71,7 +71,7 @@ To create an rfkill driver, driver's Kconfig needs to have
+ 	depends on RFKILL || !RFKILL
+ 
+ to ensure the driver cannot be built-in when rfkill is modular. The !RFKILL
+-case allows the driver to be built when rfkill is not configured, which which
++case allows the driver to be built when rfkill is not configured, in which
+ case all rfkill API can still be used but will be provided by static inlines
+ which compile to almost nothing.
+ 
+diff --git a/Documentation/rt-mutex-design.txt b/Documentation/rt-mutex-design.txt
+index a5bcd7f..8666070 100644
+--- a/Documentation/rt-mutex-design.txt
++++ b/Documentation/rt-mutex-design.txt
+@@ -30,7 +30,7 @@ is something called unbounded priority inversion.  That is when the high
+ priority process is prevented from running by a lower priority process for
+ an undetermined amount of time.
+ 
+-The classic example of unbounded priority inversion is were you have three
++The classic example of unbounded priority inversion is where you have three
+ processes, let's call them processes A, B, and C, where A is the highest
+ priority process, C is the lowest, and B is in between. A tries to grab a lock
+ that C owns and must wait and lets C run to release the lock. But in the
+diff --git a/Documentation/static-keys.txt b/Documentation/static-keys.txt
+index 9f5263d..c4407a4 100644
+--- a/Documentation/static-keys.txt
++++ b/Documentation/static-keys.txt
+@@ -116,7 +116,7 @@ The branch(es) can then be switched via:
+ 	static_key_slow_dec(&key);
+ 
+ Thus, 'static_key_slow_inc()' means 'make the branch true', and
+-'static_key_slow_dec()' means 'make the the branch false' with appropriate
++'static_key_slow_dec()' means 'make the branch false' with appropriate
+ reference counting. For example, if the key is initialized true, a
+ static_key_slow_dec(), will switch the branch to false. And a subsequent
+ static_key_slow_inc(), will change the branch back to true. Likewise, if the
+@@ -236,7 +236,7 @@ label case adds:
+ 
+ If we then include the padding bytes, the jump label code saves, 16 total bytes
+ of instruction memory for this small function. In this case the non-jump label
+-function is 80 bytes long. Thus, we have have saved 20% of the instruction
++function is 80 bytes long. Thus, we have saved 20% of the instruction
+ footprint. We can in fact improve this even further, since the 5-byte no-op
+ really can be a 2-byte no-op since we can reach the branch with a 2-byte jmp.
+ However, we have not yet implemented optimal no-op sizes (they are currently
+diff --git a/Documentation/sysfs-rules.txt b/Documentation/sysfs-rules.txt
+index c1a1fd6..a5f985e 100644
+--- a/Documentation/sysfs-rules.txt
++++ b/Documentation/sysfs-rules.txt
+@@ -47,7 +47,7 @@ versions of the sysfs interface.
+         at device creation and removal
+       - the unique key to the device at that point in time
+       - the kernel's path to the device directory without the leading
+-        /sys, and always starting with with a slash
++        /sys, and always starting with a slash
+       - all elements of a devpath must be real directories. Symlinks
+         pointing to /sys/devices must always be resolved to their real
+         target and the target path must be used to access the device.
+-- 
+1.7.1
 
->> --- a/tools/perf/util/comm.h
->> +++ b/tools/perf/util/comm.h
->> @@ -16,5 +16,6 @@ struct comm {
->>  void comm__free(struct comm *comm);
->>  struct comm *comm__new(const char *str, u64 timestamp);
->>  const char *comm__str(const struct comm *comm);
->> +void comm__override(struct comm *self, const char *str, u64 timestamp);
->>  
->>  #endif  /* __PERF_COMM_H */
->> diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
->> index a2d58e7abdcf..1aa97b012a09 100644
->> --- a/tools/perf/util/hist.c
->> +++ b/tools/perf/util/hist.c
->> @@ -412,6 +412,7 @@ struct hist_entry *__hists__add_mem_entry(struct hists *self,
->>  {
->>  	struct hist_entry entry = {
->>  		.thread	= al->thread,
->> +		.comm = curr_comm(al->thread),
->
-> So now that we have an accessor for that, it clashes a bit with existing names.
->
-> I suggest we rename thread__comm_curr() -> thread__comm_str()
-> And rename curr_comm() -> thread__comm()
->
-> Hmm?
 
-Okay, I'll rename and resend.
+. 
 
-Thanks,
-Namhyung
