@@ -1,48 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756471Ab3JHLfY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 07:35:24 -0400
-Received: from webmail.zoner.com ([217.198.112.139]:55696 "EHLO
-	webmail.zoner.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756425Ab3JHLfT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 07:35:19 -0400
-X-Greylist: delayed 2335 seconds by postgrey-1.27 at vger.kernel.org; Tue, 08 Oct 2013 07:35:19 EDT
-Message-ID: <bf102b504b491a966dea896c96477473.squirrel@webmail.realityalpia.sk>
-Date: Tue, 8 Oct 2013 12:49:21 +0200
-Subject: =?utf-8?B?ICAgVsOhxb5lbsOtIEUtbWFpbCB1xb7DrXZhdGXEvmE7?=
-From: "Webmail update 2013" <henrysam123@outlook.com>
-User-Agent: SquirrelMail/1.4.22
-MIME-Version: 1.0
-Content-Type: text/plain;charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
+	id S1756559Ab3JHLfv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 07:35:51 -0400
+Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756389Ab3JHLfJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 07:35:09 -0400
+From: Richard Weinberger <richard@nod.at>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arch@vger.kernel.org, viro@zeniv.linux.org.uk, vgupta@synopsys.com,
+        catalin.marinas@arm.com, will.deacon@arm.com, hskinnemoen@gmail.com,
+        egtvedt@samfundet.no, vapier@gentoo.org, msalter@redhat.com,
+        a-jacquiot@ti.com, starvik@axis.com, jesper.nilsson@axis.com,
+        dhowells@redhat.com, rkuo@codeaurora.org, tony.luck@intel.com,
+        fenghua.yu@intel.com, takata@linux-m32r.org, geert@linux-m68k.org,
+        james.hogan@imgtec.com, monstr@monstr.eu,
+        yasutake.koichi@jp.panasonic.com, ralf@linux-mips.org,
+        jonas@southpole.se, jejb@parisc-linux.org, deller@gmx.de,
+        benh@kernel.crashing.org, paulus@samba.org, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com, liqin.linux@gmail.com, lennox.wu@gmail.com,
+        lethal@linux-sh.org, cmetcalf@tilera.com, gxt@mprc.pku.edu.cn,
+        linux-xtensa@linux-xtensa.org, akpm@linux-foundation.org,
+        oleg@redhat.com, tj@kernel.org, Richard Weinberger <richard@nod.at>
+Subject: [PATCH 25/29] unicore32: Use get_signal() signal_setup_done()
+Date: Tue,  8 Oct 2013 13:34:45 +0200
+Message-Id: <1381232085-4288-6-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1381232085-4288-1-git-send-email-richard@nod.at>
+References: <1381232085-4288-1-git-send-email-richard@nod.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Use the more generic functions get_signal() signal_setup_done()
+for signal delivery.
 
+Signed-off-by: Richard Weinberger <richard@nod.at>
+---
+ arch/unicore32/kernel/signal.c | 48 ++++++++++++++++++------------------------
+ 1 file changed, 20 insertions(+), 28 deletions(-)
 
-
-Vážení E-mail užívateľa;
-
-Prekročili ste 23432 boxy nastaviť svoje
-Webová služba / Administrátor, a budete mať problémy pri odosielaní a
-prijímať e-maily, kým znova overiť. Musíte aktualizovať kliknutím na
-odkaz nižšie a vyplňte údaje pre overenie vášho účtu
-Prosím,kliknite: na odkaz nižšie alebo skopírovať vložiť do e-prehliadač
-pre overenie Schránky.
-
-http://webmailupdate010.jimdo.com/
-
-Pozor!
-Ak tak neurobíte, budú mať obmedzený prístup k e-mailu schránky. Ak
-sa
-nepodarí aktualizovať svoj ​​účet do troch dní od aktualizácie
-oznámenia,
-bude váš účet natrvalo uzavretá.
-S pozdravom,
-System Administrator ®
+diff --git a/arch/unicore32/kernel/signal.c b/arch/unicore32/kernel/signal.c
+index 6905f0e..780d773 100644
+--- a/arch/unicore32/kernel/signal.c
++++ b/arch/unicore32/kernel/signal.c
+@@ -238,10 +238,10 @@ static int setup_return(struct pt_regs *regs, struct k_sigaction *ka,
+ 	return 0;
+ }
+ 
+-static int setup_frame(int usig, struct k_sigaction *ka,
+-		sigset_t *set, struct pt_regs *regs)
++static int setup_frame(struct ksignal *ksig, sigset_t *set,
++		       struct pt_regs *regs)
+ {
+-	struct sigframe __user *frame = get_sigframe(ka, regs, sizeof(*frame));
++	struct sigframe __user *frame = get_sigframe(&ksig->ka, regs, sizeof(*frame));
+ 	int err = 0;
+ 
+ 	if (!frame)
+@@ -254,29 +254,29 @@ static int setup_frame(int usig, struct k_sigaction *ka,
+ 
+ 	err |= setup_sigframe(frame, regs, set);
+ 	if (err == 0)
+-		err |= setup_return(regs, ka, frame->retcode, frame, usig);
++		err |= setup_return(regs, &ksig->ka, frame->retcode, frame, usig);
+ 
+ 	return err;
+ }
+ 
+-static int setup_rt_frame(int usig, struct k_sigaction *ka, siginfo_t *info,
+-	       sigset_t *set, struct pt_regs *regs)
++static int setup_rt_frame(struct ksignal *ksig, sigset_t *set,
++			  struct pt_regs *regs)
+ {
+ 	struct rt_sigframe __user *frame =
+-			get_sigframe(ka, regs, sizeof(*frame));
++			get_sigframe(&ksig->ka, regs, sizeof(*frame));
+ 	int err = 0;
+ 
+ 	if (!frame)
+ 		return 1;
+ 
+-	err |= copy_siginfo_to_user(&frame->info, info);
++	err |= copy_siginfo_to_user(&frame->info, &ksig->info);
+ 
+ 	err |= __put_user(0, &frame->sig.uc.uc_flags);
+ 	err |= __put_user(NULL, &frame->sig.uc.uc_link);
+ 	err |= __save_altstack(&frame->sig.uc.uc_stack, regs->UCreg_sp);
+ 	err |= setup_sigframe(&frame->sig, regs, set);
+ 	if (err == 0)
+-		err |= setup_return(regs, ka, frame->sig.retcode, frame, usig);
++		err |= setup_return(regs, &ksig->ka, frame->sig.retcode, frame, usig);
+ 
+ 	if (err == 0) {
+ 		/*
+@@ -299,13 +299,13 @@ static inline void setup_syscall_restart(struct pt_regs *regs)
+ /*
+  * OK, we're invoking a handler
+  */
+-static void handle_signal(unsigned long sig, struct k_sigaction *ka,
+-	      siginfo_t *info, struct pt_regs *regs, int syscall)
++static void handle_signal(struct ksignal *ksig, struct pt_regs *regs,
++			  int syscall)
+ {
+ 	struct thread_info *thread = current_thread_info();
+ 	struct task_struct *tsk = current;
+ 	sigset_t *oldset = sigmask_to_save();
+-	int usig = sig;
++	int usig = ksig->sig;
+ 	int ret;
+ 
+ 	/*
+@@ -318,7 +318,7 @@ static void handle_signal(unsigned long sig, struct k_sigaction *ka,
+ 			regs->UCreg_00 = -EINTR;
+ 			break;
+ 		case -ERESTARTSYS:
+-			if (!(ka->sa.sa_flags & SA_RESTART)) {
++			if (!(ksig->ka.sa.sa_flags & SA_RESTART)) {
+ 				regs->UCreg_00 = -EINTR;
+ 				break;
+ 			}
+@@ -338,22 +338,17 @@ static void handle_signal(unsigned long sig, struct k_sigaction *ka,
+ 	/*
+ 	 * Set up the stack frame
+ 	 */
+-	if (ka->sa.sa_flags & SA_SIGINFO)
+-		ret = setup_rt_frame(usig, ka, info, oldset, regs);
++	if (ksig->ka.sa.sa_flags & SA_SIGINFO)
++		ret = setup_rt_frame(ksig, oldset, regs);
+ 	else
+-		ret = setup_frame(usig, ka, oldset, regs);
++		ret = setup_frame(ksig, oldset, regs);
+ 
+ 	/*
+ 	 * Check that the resulting registers are actually sane.
+ 	 */
+ 	ret |= !valid_user_regs(regs);
+ 
+-	if (ret != 0) {
+-		force_sigsegv(sig, tsk);
+-		return;
+-	}
+-
+-	signal_delivered(sig, info, ka, regs, 0);
++	signal_setup_done(ret, ksig, 0);
+ }
+ 
+ /*
+@@ -367,9 +362,7 @@ static void handle_signal(unsigned long sig, struct k_sigaction *ka,
+  */
+ static void do_signal(struct pt_regs *regs, int syscall)
+ {
+-	struct k_sigaction ka;
+-	siginfo_t info;
+-	int signr;
++	struct ksignal ksig;
+ 
+ 	/*
+ 	 * We want the common case to go fast, which
+@@ -380,9 +373,8 @@ static void do_signal(struct pt_regs *regs, int syscall)
+ 	if (!user_mode(regs))
+ 		return;
+ 
+-	signr = get_signal_to_deliver(&info, &ka, regs, NULL);
+-	if (signr > 0) {
+-		handle_signal(signr, &ka, &info, regs, syscall);
++	if (get_signsl(&ksig)) {
++		handle_signal(&ksig, regs, syscall);
+ 		return;
+ 	}
+ 
+-- 
+1.8.1.4
 
