@@ -1,167 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754850Ab3JHGkV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 02:40:21 -0400
-Received: from mga02.intel.com ([134.134.136.20]:14013 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754755Ab3JHGjr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 02:39:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1055,1371106800"; 
-   d="scan'208";a="415564936"
-From: Aaron Lu <aaron.lu@intel.com>
-To: linux-acpi@vger.kernel.org, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Cc: Daniel Vetter <daniel@ffwll.ch>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Lee Chun-Yi <joeyli.kernel@gmail.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Igor Gnatenko <i.gnatenko.brain@gmail.com>,
-        Yves-Alexis Perez <corsac@debian.org>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        Aaron Lu <aaron.lu@intel.com>, Ben Jencks <ben@bjencks.net>,
-        Steven Newbury <steve@snewbury.org.uk>,
-        James Hogan <james@albanarts.com>, Kamal Mostafa <kamal@canonical.com>,
-        Joerg Platte <jplatte@naasa.net>, Kalle Valo <kvalo@adurom.com>,
-        Martin Steigerwald <Martin@lichtvoll.de>,
-        =?UTF-8?q?J=C3=B6rg=20Otte?= <jrg.otte@gmail.com>,
-        Mike Galbraith <bitbucket@online.de>,
-        platform-driver-x86@vger.kernel.org,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Subject: [PATCH v4 3/4] ACPI / video: Do not register backlight if win8 and native interface exists
-Date: Tue,  8 Oct 2013 14:40:00 +0800
-Message-Id: <1381214401-24672-4-git-send-email-aaron.lu@intel.com>
-X-Mailer: git-send-email 1.8.4.12.g2ea3df6
-In-Reply-To: <1381214401-24672-1-git-send-email-aaron.lu@intel.com>
-References: <1381214401-24672-1-git-send-email-aaron.lu@intel.com>
+	id S1754739Ab3JHGmX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 02:42:23 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:38446 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754108Ab3JHGmV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 02:42:21 -0400
+Message-ID: <5253A9E7.5030707@oracle.com>
+Date: Tue, 08 Oct 2013 14:44:55 +0800
+From: vaughan <vaughan.cao@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Madper Xie <cxie@redhat.com>
+CC: linux-kernel@vger.kernel.org, Douglas Gilbert <dgilbert@interlog.com>
+Subject: Re: [Bug] 12.864681  BUG: lock held when returning to user space!
+References: <8761tilrl0.fsf@redhat.com> <874n8s2tjz.fsf@redhat.com>
+In-Reply-To: <874n8s2tjz.fsf@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to Matthew Garrett, "Windows 8 leaves backlight control up
-to individual graphics drivers rather than making ACPI calls itself.
-There's plenty of evidence to suggest that the Intel driver for
-Windows [8] doesn't use the ACPI interface, including the fact that
-it's broken on a bunch of machines when the OS claims to support
-Windows 8.  The simplest thing to do appears to be to disable the
-ACPI backlight interface on these systems".
+Hi Madper,
 
-So for Win8 systems, if there is native backlight control interface
-registered by GPU driver, ACPI video will not register its own. For
-users who prefer to keep ACPI video's backlight interface, the existing
-kernel cmdline option acpi_backlight=video can be used.
+CC to Douglas to get comments.
+I use the rw_semaphore o_sem to protect excl open, introduced in commit
+15b06f9a02406e5460001db6d5af5c738cd3d4e7 since v3.12-rc1.
+Is it forbidden to do like that in kernel?...
 
-Signed-off-by: Aaron Lu <aaron.lu@intel.com>
-Tested-by: Igor Gnatenko <i.gnatenko.brain@gmail.com>
-Tested-by: Yves-Alexis Perez <corsac@debian.org>
-Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
----
- drivers/acpi/internal.h     |  5 ++---
- drivers/acpi/video.c        | 10 +++++-----
- drivers/acpi/video_detect.c | 14 ++++++++++++--
- 3 files changed, 19 insertions(+), 10 deletions(-)
+Regards,
+Vaughan
 
-diff --git a/drivers/acpi/internal.h b/drivers/acpi/internal.h
-index 20f4233..453ae8d 100644
---- a/drivers/acpi/internal.h
-+++ b/drivers/acpi/internal.h
-@@ -169,9 +169,8 @@ int acpi_create_platform_device(struct acpi_device *adev,
- 					Video
-   -------------------------------------------------------------------------- */
- #if defined(CONFIG_ACPI_VIDEO) || defined(CONFIG_ACPI_VIDEO_MODULE)
--bool acpi_video_backlight_quirks(void);
--#else
--static inline bool acpi_video_backlight_quirks(void) { return false; }
-+bool acpi_osi_is_win8(void);
-+bool acpi_video_verify_backlight_support(void);
- #endif
- 
- #endif /* _ACPI_INTERNAL_H_ */
-diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
-index 3bd1eaa..343db59 100644
---- a/drivers/acpi/video.c
-+++ b/drivers/acpi/video.c
-@@ -1256,8 +1256,8 @@ acpi_video_switch_brightness(struct acpi_video_device *device, int event)
- 	unsigned long long level_current, level_next;
- 	int result = -EINVAL;
- 
--	/* no warning message if acpi_backlight=vendor is used */
--	if (!acpi_video_backlight_support())
-+	/* no warning message if acpi_backlight=vendor or a quirk is used */
-+	if (!acpi_video_verify_backlight_support())
- 		return 0;
- 
- 	if (!device->brightness)
-@@ -1386,13 +1386,13 @@ acpi_video_bus_get_devices(struct acpi_video_bus *video,
- static int acpi_video_bus_start_devices(struct acpi_video_bus *video)
- {
- 	return acpi_video_bus_DOS(video, 0,
--				  acpi_video_backlight_quirks() ? 1 : 0);
-+				  acpi_osi_is_win8() ? 1 : 0);
- }
- 
- static int acpi_video_bus_stop_devices(struct acpi_video_bus *video)
- {
- 	return acpi_video_bus_DOS(video, 0,
--				  acpi_video_backlight_quirks() ? 0 : 1);
-+				  acpi_osi_is_win8() ? 0 : 1);
- }
- 
- static void acpi_video_bus_notify(struct acpi_device *device, u32 event)
-@@ -1558,7 +1558,7 @@ acpi_video_bus_match(acpi_handle handle, u32 level, void *context,
- 
- static void acpi_video_dev_register_backlight(struct acpi_video_device *device)
- {
--	if (acpi_video_backlight_support()) {
-+	if (acpi_video_verify_backlight_support()) {
- 		struct backlight_properties props;
- 		struct pci_dev *pdev;
- 		acpi_handle acpi_parent;
-diff --git a/drivers/acpi/video_detect.c b/drivers/acpi/video_detect.c
-index 940edbf..23d7d26 100644
---- a/drivers/acpi/video_detect.c
-+++ b/drivers/acpi/video_detect.c
-@@ -37,6 +37,7 @@
- #include <linux/acpi.h>
- #include <linux/dmi.h>
- #include <linux/pci.h>
-+#include <linux/backlight.h>
- 
- #include "internal.h"
- 
-@@ -233,11 +234,11 @@ static void acpi_video_caps_check(void)
- 		acpi_video_get_capabilities(NULL);
- }
- 
--bool acpi_video_backlight_quirks(void)
-+bool acpi_osi_is_win8(void)
- {
- 	return acpi_gbl_osi_data >= ACPI_OSI_WIN_8;
- }
--EXPORT_SYMBOL(acpi_video_backlight_quirks);
-+EXPORT_SYMBOL(acpi_osi_is_win8);
- 
- /* Promote the vendor interface instead of the generic video module.
-  * This function allow DMI blacklists to be implemented by externals
-@@ -283,6 +284,15 @@ int acpi_video_backlight_support(void)
- }
- EXPORT_SYMBOL(acpi_video_backlight_support);
- 
-+bool acpi_video_verify_backlight_support(void)
-+{
-+	if (!(acpi_video_support & ACPI_VIDEO_BACKLIGHT_FORCE_VIDEO) &&
-+	    acpi_osi_is_win8() && backlight_device_registered(BACKLIGHT_RAW))
-+		return false;
-+	return acpi_video_backlight_support();
-+}
-+EXPORT_SYMBOL(acpi_video_verify_backlight_support);
-+
- /*
-  * Use acpi_backlight=vendor/video to force that backlight switching
-  * is processed by vendor specific acpi drivers or video.ko driver.
--- 
-1.8.4.12.g2ea3df6
+On 10/08/2013 01:57 PM, Madper Xie wrote:
+> Howdy Vaughan Cao,
+>    I can't meet this issue on both 3.11 and 3.11.4. There are only four
+>    patches between 3.11 and 3.12-rc2 and you are the author. Will you
+>    please check them if you have time. 
+>
+> cxie@redhat.com writes:
+>
+>> Hi all,
+>>    With kernel3.12-rc2 the dmesg shows following logs:
+>> [   12.864680] ================================================
+>> [   12.864681] [ BUG: lock held when returning to user space! ]
+>> [   12.864682] 3.12.0-rc2 #1 Not tainted
+>> [   12.864683] ------------------------------------------------
+>> [   12.864684] iprinit/719 is leaving the kernel with locks still held!
+>> [   12.864685] 1 lock held by iprinit/719:
+>> [   12.864686]  #0:  (&sdp->o_sem){.+.+..}, at: [<ffffffffa050de05>] sg_open+0x4b5/0x644 [sg]
+>> [   12.934954] ath9k 0000:01:00.0: enabling device (0000 -> 0002)
+>> [   12.940346] ath: phy0: timeout (1000 us) on reg 0x15f18: 0x00000000 & 0x00000007 != 0x00000004
+>> [   12.943125] ath: EEPROM regdomain: 0x60
+>> [   12.943127] ath: EEPROM indicates we should expect a direct regpair map
+>> [   12.943129] ath: Country alpha2 being used: 00
+>> [   12.943130] ath: Regpair used: 0x60
+>> [   12.960202] r8169 0000:02:00.0 p3p1: link down
+>> [   12.960236] r8169 0000:02:00.0 p3p1: link down
+>> [   12.960256] IPv6: ADDRCONF(NETDEV_UP): p3p1: link is not ready
+>> [   13.003523] ieee80211 phy0: Selected rate control algorithm 'minstrel_ht'
+>> [   13.003886] ieee80211 phy0: Atheros AR9485 Rev:1 mem=0xffffc9000bc80000, irq=16
+>> [   13.012120] ip6_tables: (C) 2000-2006 Netfilter Core Team
+>> [   13.023667] IPv6: ADDRCONF(NETDEV_UP): wlan0: link is not ready
+>> [   13.055802] Ebtables v2.0 registered
+>> [   13.192291] nf_conntrack version 0.5.0 (16384 buckets, 65536 max)
+>> [   15.906392] r8169 0000:02:00.0 p3p1: link up
+>> [   15.906416] IPv6: ADDRCONF(NETDEV_CHANGE): p3p1: link becomes ready
+>> [   17.121989] systemd-udevd (334) used greatest stack depth: 3352 bytes left
+>>
+>> I'm working on finding which version bring this bug in.
+>
 
