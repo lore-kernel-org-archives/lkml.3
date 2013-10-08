@@ -1,125 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755436Ab3JHNi5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 09:38:57 -0400
-Received: from mx3-phx2.redhat.com ([209.132.183.24]:55007 "EHLO
-	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753635Ab3JHNit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755101Ab3JHNit (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 8 Oct 2013 09:38:49 -0400
-Date: Tue, 8 Oct 2013 09:38:12 -0400 (EDT)
-From: Dave Anderson <anderson@redhat.com>
-To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Cc: Kees Cook <keescook@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
-        x86@kernel.org, kernel-hardening@lists.openwall.com,
-        Aaron Durbin <adurbin@google.com>,
-        Eric Northup <digitaleric@google.com>, Julien Tinnes <jln@google.com>,
-        Will Drewry <wad@google.com>, Mathias Krause <minipli@googlemail.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Discussion list for crash utility usage, maintenance and development" 
-	<crash-utility@redhat.com>
-Message-ID: <391752872.2807845.1381239492989.JavaMail.root@redhat.com>
-In-Reply-To: <5253D5E4.7060004@jp.fujitsu.com>
-References: <1380656245-29975-1-git-send-email-keescook@chromium.org> <CAGXu5jLVt13p2X2e1C3ha1izg6U6wbmgSyYW1wa+X4cW8aCFug@mail.gmail.com> <524BE3C5.2070302@jp.fujitsu.com> <524CBB70.2060809@jp.fujitsu.com> <1408843968.872421.1380808038820.JavaMail.root@redhat.com> <52521566.20402@jp.fujitsu.com> <1678208981.2178058.1381152105871.JavaMail.root@redhat.com> <5253D5E4.7060004@jp.fujitsu.com>
-Subject: Re: [PATCH 6/7] x86, kaslr: report kernel offset on panic
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:58643 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752510Ab3JHNir (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 09:38:47 -0400
+Message-ID: <52540AE2.4060909@monstr.eu>
+Date: Tue, 08 Oct 2013 15:38:42 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.82.12]
-X-Mailer: Zimbra 8.0.3_GA_5664 (ZimbraWebClient - FF22 (Linux)/8.0.3_GA_5664)
-Thread-Topic: x86, kaslr: report kernel offset on panic
-Thread-Index: oow6j72RxXTVZE9+WcJTNPMhIdhyQg==
+To: Richard Weinberger <richard@nod.at>
+CC: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        viro@zeniv.linux.org.uk, vgupta@synopsys.com, catalin.marinas@arm.com,
+        will.deacon@arm.com, hskinnemoen@gmail.com, egtvedt@samfundet.no,
+        vapier@gentoo.org, msalter@redhat.com, a-jacquiot@ti.com,
+        starvik@axis.com, jesper.nilsson@axis.com, dhowells@redhat.com,
+        rkuo@codeaurora.org, tony.luck@intel.com, fenghua.yu@intel.com,
+        takata@linux-m32r.org, geert@linux-m68k.org, james.hogan@imgtec.com,
+        yasutake.koichi@jp.panasonic.com, ralf@linux-mips.org,
+        jonas@southpole.se, jejb@parisc-linux.org, deller@gmx.de,
+        benh@kernel.crashing.org, paulus@samba.org, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com, liqin.linux@gmail.com, lennox.wu@gmail.com,
+        lethal@linux-sh.org, cmetcalf@tilera.com, gxt@mprc.pku.edu.cn,
+        linux-xtensa@linux-xtensa.org, akpm@linux-foundation.org,
+        oleg@redhat.com, tj@kernel.org
+Subject: Re: Global do_signal() cleanup
+References: <1381231701-4008-1-git-send-email-richard@nod.at>
+In-Reply-To: <1381231701-4008-1-git-send-email-richard@nod.at>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="SA5Ph8vhsBrP3AmTBk0tM9TO97CenAh6r"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--SA5Ph8vhsBrP3AmTBk0tM9TO97CenAh6r
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
+
+On 10/08/2013 01:27 PM, Richard Weinberger wrote:
+> This patch series moves all remaining archs to the get_signal() and
+> signal_setup_done() functions. Currently these archs use open coded
+> variants of the said functions.  Further, unused parameters get removed=
+
+> from get_signal_to_deliver(), tracehook_signal_handler() and signal_del=
+ivered().
+> After all we save around 350 lines of code. :-)
+>=20
+> The following archs are _untested_: arc, c6x, hexagon, metag, score, un=
+icore, sh64.
+> If someone points me to cross compilers for these arch I'll happily bui=
+ld test them too.
+
+Any link to the repo and branch with all these patches will be helpful.
+
+Thanks,
+Michal
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
 
 
------ Original Message -----
-> (2013/10/07 22:21), Dave Anderson wrote:
-> 
-> > ----- Original Message -----
-> >> (2013/10/03 22:47), Dave Anderson wrote:
-> 
-> >>> ----- Original Message -----
-> >>>> (2013/10/02 18:13), HATAYAMA Daisuke wrote:
-> >>>>> (2013/10/02 16:48), Kees Cook wrote:
-> 
-> >>
-> >> Thanks for detailed explanation. So, there's already a feature in crash
-> >> utility
-> >> to address relocation!, though it's better for me to try them to check if
-> >> it's
-> >> really applicable to this feature. My concern is whether --reloc works
-> >> well
-> >> on x86_64 too, because relocation has never done on x86_64 ever, right?
-> >
-> > Correct.
-> >
-> >> Another concern is that in case of relocation, users need to additional information
-> >> regarding runtime symbol information to crash utility. I want to avoid additional
-> >> process, automation is preferable if possible.
-> >
-> > Right.  As I mentioned in the case of 32-bit x86 dumpfiles, there is no automation
-> > available when CONFIG_PHYSICAL_START is larger than CONFIG_PHYSICAL_ALIGN.  The user
-> > either has to be aware of their values in order to calculate the --reloc argument,
-> > or has to capture a copy of the /proc/kallsyms file on the crashed system.  Typically
-> > users/distros using kdump changed their x86 configurations to avoid having to deal
-> > with that.
-> >
-> 
-> Sorry, I don't understand why relocation size cannot be calculated when
-> CONFIG_PHYSICALSTART > CONFIG_PHYSICAL_ALIGN. Could you explain that?
 
-I just meant that when CONFIG_PHYSICAL_START > CONFIG_PHYSICAL_ALIGN, the 32-bit x86 kernel
-gets relocated (like the secondary kdump kernel), but that information is not readily available
-from the vmlinux/vmcore pair.  
+--SA5Ph8vhsBrP3AmTBk0tM9TO97CenAh6r
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-> 
-> >> I guess it's enough if there's runtime symbol addresses because we can get relocated
-> >> offset value by comparing it with the compile-time symbol address contained in
-> >> a given debuginfo file. Candidates for such symbols are the ones contained in
-> >> VMCOREINFO note containing some symbol values for makedumpfile to refer to mm-related
-> >> objects in kernel, which is always contained in vmcore generated by current kdump and
-> >> also vmcores converted by makedumpfile from it. How about this idea?
-> >
-> > But how would that differ from using an incorrect (non-matching) vmlinux file?
-> >
-> 
-> It seems to me almost similar to what crash currently does even if we do relocation check.
-> The current check crash currently does is trial-and-error since there's no information
-> indicating given vmcore and vmlinuxcertainly match well.
-> 
-> For example, the process I imagine is:
-> 
->    1) try to match vmcore and vmlinux with no relocation. If fails, go to 2).
->    2) try to match vmcore and vmlinux with relocation.
-> 
-> The two steps include symbol table initialization so it might actually be difficult to
-> resume back from 2) to 1).
-> 
-> Also, if gap due to phys_base and gap due to relocation can happen at the same time,
-> calculating two values automatically might be futher complicated. So, it would be better
-> to add relocation value in VMCOREINFO. Then, what crash utility sholud do becomes very simple.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-Yes please...
+iEYEARECAAYFAlJUCuIACgkQykllyylKDCFhZQCfesCBcVTG2rR0YU4ExRYPyNx4
+IiIAnjMtbaaFcCxhGCL9QcNgfUlE9bba
+=SREd
+-----END PGP SIGNATURE-----
 
-And while you're at it, the kernel's
-
-  VMCOREINFO_SYMBOL(phys_base);
-
-is pretty much useless, at least w/respect to ELF vmcores, since we need to know its
-value in order to translate the address.  And I don't think that makedumpfile uses
-it when it calculates the phys_base that it stores in compressed kdump headers.  Why
-not put its value instead of its address?
-
-> BTW, can it really happen that gaps due to phys_base and due to relocation happen at the
-> same time? I feel relocation covers phys_base mechanism. If there's relocation, phys_base
-> is not necessary.
-> 
-> --
-> Thanks.
-> HATAYAMA, Daisuke
-> 
-> 
+--SA5Ph8vhsBrP3AmTBk0tM9TO97CenAh6r--
