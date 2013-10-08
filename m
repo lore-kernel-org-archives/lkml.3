@@ -1,81 +1,301 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755599Ab3JHPb5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 11:31:57 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:56740 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751732Ab3JHPby (ORCPT
+	id S1755451Ab3JHPc4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 11:32:56 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:56672 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752929Ab3JHPcw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 11:31:54 -0400
-Date: Tue, 8 Oct 2013 17:31:47 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Marc Kleine-Budde <mkl@pengutronix.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
-        Marc Pignat <marc.pignat@hevs.ch>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        John Stulz <john.stultz@linaro.org>, kernel@pengutronix.de,
-        Ronald Wahl <ronald.wahl@raritan.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: [GIT PULL] fixes for integer rounding in timer core (Was: [PATCH v2]
- clockevents: Sanitize ticks to nsec conversion)
-Message-ID: <20131008153147.GR10079@pengutronix.de>
-References: <alpine.DEB.2.02.1309191629040.4089@ionos.tec.linutronix.de>
- <1380052223-24139-1-git-send-email-u.kleine-koenig@pengutronix.de>
- <5253D9A1.1080106@pengutronix.de>
+	Tue, 8 Oct 2013 11:32:52 -0400
+Message-ID: <5254259F.9030907@atmel.com>
+Date: Tue, 8 Oct 2013 17:32:47 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5253D9A1.1080106@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Boris BREZILLON <b.brezillon@overkiz.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Andrew Victor <linux@maxim.org.za>,
+        "Jean-Christophe Plagniol-Villard" <plagnioj@jcrosoft.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@linaro.org>, "Felipe Balbi" <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Josh Wu <josh.wu@atmel.com>, Richard Genoud <richard.genoud@gmail.com>
+CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 09/19] clk: at91: add PMC system clocks
+References: <1375937608-3773-1-git-send-email-b.brezillon@overkiz.com> <1375942346-8966-1-git-send-email-b.brezillon@overkiz.com>
+In-Reply-To: <1375942346-8966-1-git-send-email-b.brezillon@overkiz.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 08/08/2013 08:12, Boris BREZILLON :
+> This patch adds new at91 system clock implementation using common clk
+> framework.
+>
+> Some peripherals need to enable a "system" clock in order to work properly.
+> Each system clock is given an id based on the bit position in SCER/SCDR
+> registers.
+>
+> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+> ---
+>   drivers/clk/at91/Makefile     |    1 +
+>   drivers/clk/at91/clk-system.c |  191 +++++++++++++++++++++++++++++++++++++++++
+>   drivers/clk/at91/pmc.c        |    5 ++
+>   drivers/clk/at91/pmc.h        |    3 +
+>   4 files changed, 200 insertions(+)
+>   create mode 100644 drivers/clk/at91/clk-system.c
+>
+> diff --git a/drivers/clk/at91/Makefile b/drivers/clk/at91/Makefile
+> index e28fb2b..c2b7068 100644
+> --- a/drivers/clk/at91/Makefile
+> +++ b/drivers/clk/at91/Makefile
+> @@ -4,3 +4,4 @@
+>
+>   obj-y += pmc.o
+>   obj-y += clk-main.o clk-pll.o clk-plldiv.o clk-master.o
+> +obj-y += clk-system.o
+> diff --git a/drivers/clk/at91/clk-system.c b/drivers/clk/at91/clk-system.c
+> new file mode 100644
+> index 0000000..11a3eb8
+> --- /dev/null
+> +++ b/drivers/clk/at91/clk-system.c
+> @@ -0,0 +1,191 @@
+> +/*
+> + * drivers/clk/at91/clk-system.c
+> + *
+> + *  Copyright (C) 2013 Boris BREZILLON <b.brezillon@overkiz.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + */
+> +
+> +#include <linux/clk-provider.h>
+> +#include <linux/clkdev.h>
+> +#include <linux/clk/at91_pmc.h>
+> +#include <linux/of.h>
+> +#include <linux/of_address.h>
+> +#include <linux/io.h>
+> +
+> +#include "pmc.h"
+> +
+> +#define SYSTEM_MAX		32
+> +
+> +#define to_clk_system(hw) container_of(hw, struct clk_system, hw)
+> +struct clk_system {
+> +	struct clk_hw hw;
+> +	struct at91_pmc *pmc;
+> +	u8 id;
+> +};
+> +
+> +static int clk_system_enable(struct clk_hw *hw)
+> +{
+> +	struct clk_system *sys = to_clk_system(hw);
+> +	struct at91_pmc *pmc = sys->pmc;
+> +
+> +	pmc_write(pmc, AT91_PMC_SCER, 1 << sys->id);
+> +	return 0;
+> +}
+> +
+> +static void clk_system_disable(struct clk_hw *hw)
+> +{
+> +	struct clk_system *sys = to_clk_system(hw);
+> +	struct at91_pmc *pmc = sys->pmc;
+> +
+> +	pmc_write(pmc, AT91_PMC_SCDR, 1 << sys->id);
+> +}
+> +
+> +static int clk_system_is_enabled(struct clk_hw *hw)
+> +{
+> +	struct clk_system *sys = to_clk_system(hw);
+> +	struct at91_pmc *pmc = sys->pmc;
+> +
+> +	return !!(pmc_read(pmc, AT91_PMC_SCSR) & (1 << sys->id));
+> +}
+> +
+> +static const struct clk_ops system_ops = {
+> +	.enable = clk_system_enable,
+> +	.disable = clk_system_disable,
+> +	.is_enabled = clk_system_is_enabled,
+> +};
+> +
+> +static struct clk * __init
+> +at91_clk_register_system(struct at91_pmc *pmc, const char *name, u8 id)
+> +{
+> +	struct clk_system *sys;
+> +	struct clk *clk = NULL;
+> +	struct clk_init_data init;
+> +
+> +	id &= 31;
 
-> What's the status of this patch?
-I pinged Thomas about it already via irc, but I didn't get a response up
-to now. It would be great to get that into 3.12. To make it easy for
-Thomas, here is a pull request that includes the fix and converts
-at91rm9200 back to clockevents_config_and_register dropping one of the
-workarounds for the fixed bug.
+defined constant. Or event return an error instead of masking it (same 
+for pll ids if I remember well).
 
-The following changes since commit 4a10c2ac2f368583138b774ca41fac4207911983:
+> +
+> +	sys = kzalloc(sizeof(*sys), GFP_KERNEL);
+> +	if (!sys)
+> +		return ERR_PTR(-ENOMEM);
+> +
+> +	init.name = name;
+> +	init.ops = &system_ops;
+> +	init.parent_names = NULL;
+> +	init.num_parents = 0;
+> +	/*
+> +	 * CLK_IGNORE_UNUSED is used to avoid ddrck switch off.
+> +	 * TODO : we should implement a driver supporting at91 ddr controller
+> +	 * (see drivers/memory) which would request and enable the ddrck clock.
+> +	 * When this is done we will be able to remove CLK_IGNORE_UNUSED flag.
+> +	 */
+> +	init.flags = CLK_IS_ROOT | CLK_IGNORE_UNUSED;
 
-  Linux 3.12-rc2 (2013-09-23 15:41:09 -0700)
+Is it a root clock? Usually clock parent for USB is UTMI or PLLB, LCD is 
+usually the MCK. But I do not know how it interfere with your clock tree...
 
-are available in the git repository at:
+> +
+> +	sys->id = id;
+> +	sys->hw.init = &init;
+> +	sys->pmc = pmc;
+> +
+> +	clk = clk_register(NULL, &sys->hw);
+> +
+> +	if (IS_ERR(clk))
+> +		kfree(sys);
+> +
+> +	return clk;
+> +}
+> +
+> +struct clk_system_data {
+> +	struct clk **clks;
+> +	u8 *ids;
+> +	unsigned int clk_num;
+> +};
+> +
+> +static struct clk * __init
+> +of_clk_src_system_get(struct of_phandle_args *clkspec, void *data)
+> +{
+> +	struct clk_system_data *clk_data = data;
+> +	unsigned int id = clkspec->args[0];
+> +	int i;
+> +
+> +	if (id >= SYSTEM_MAX)
+> +		goto err;
+> +
+> +	for (i = 0; i < clk_data->clk_num; i++) {
+> +		if (clk_data->ids[i] == id)
+> +			return clk_data->clks[i];
+> +	}
+> +
+> +err:
+> +	pr_err("%s: invalid clock id %d\n", __func__, id);
+> +	return ERR_PTR(-EINVAL);
+> +}
+> +
+> +static void __init
+> +of_at91_clk_sys_setup(struct device_node *np, struct at91_pmc *pmc)
+> +{
+> +	int i;
+> +	int num;
+> +	u32 id;
+> +	struct clk *clk;
+> +	u8 *ids;
+> +	struct clk **clks;
+> +	struct clk_system_data *clktab;
+> +	const char *name;
+> +	struct device_node *sysclknp;
+> +
+> +	num = of_get_child_count(np);
+> +	if (num > SYSTEM_MAX)
+> +		return;
+> +
+> +	clktab = kzalloc(sizeof(*clktab), GFP_KERNEL);
+> +	if (!clktab)
+> +		return;
+> +
+> +	ids = kzalloc(num * sizeof(*ids), GFP_KERNEL);
+> +	if (!ids)
+> +		goto out_free_clktab;
+> +
+> +	clks = kzalloc(num * sizeof(*clks), GFP_KERNEL);
+> +	if (!clks)
+> +		goto out_free_ids;
+> +
+> +	i = 0;
+> +	for_each_child_of_node(np, sysclknp) {
+> +		name = sysclknp->name;
+> +
+> +		if (of_property_read_u32(sysclknp, "atmel,clk-id", &id))
+> +			goto out_free_clks;
+> +		if (id >= SYSTEM_MAX)
+> +			goto out_free_clks;
+> +
+> +		clk = at91_clk_register_system(pmc, name, id);
+> +		if (IS_ERR(clk))
+> +			goto out_free_clks;
+> +
+> +		clks[i] = clk;
+> +		ids[i] = id;
+> +
+> +		i++;
+> +	}
+> +
+> +	clktab->clk_num = num;
+> +	clktab->clks = clks;
+> +	clktab->ids = ids;
+> +	of_clk_add_provider(np, of_clk_src_system_get, clktab);
+> +	return;
+> +
+> +out_free_clks:
+> +	kfree(clks);
+> +out_free_ids:
+> +	kfree(ids);
+> +out_free_clktab:
+> +	kfree(clktab);
+> +}
+> +
+> +void __init of_at91rm9200_clk_sys_setup(struct device_node *np,
+> +					struct at91_pmc *pmc)
+> +{
+> +	of_at91_clk_sys_setup(np, pmc);
+> +}
+> diff --git a/drivers/clk/at91/pmc.c b/drivers/clk/at91/pmc.c
+> index 5258f1d..c674ef2 100644
+> --- a/drivers/clk/at91/pmc.c
+> +++ b/drivers/clk/at91/pmc.c
+> @@ -251,6 +251,11 @@ static const struct of_device_id pmc_clk_ids[] __initdata = {
+>   		.compatible = "atmel,at91sam9x5-clk-master",
+>   		.data = of_at91sam9x5_clk_master_setup,
+>   	},
+> +	/* System clocks */
+> +	{
+> +		.compatible = "atmel,at91rm9200-clk-system",
+> +		.data = of_at91rm9200_clk_sys_setup,
+> +	},
+>   	{ /*sentinel*/ }
+>   };
+>
+> diff --git a/drivers/clk/at91/pmc.h b/drivers/clk/at91/pmc.h
+> index 2e1dcb8..f88ef41 100644
+> --- a/drivers/clk/at91/pmc.h
+> +++ b/drivers/clk/at91/pmc.h
+> @@ -74,4 +74,7 @@ extern void __init of_at91rm9200_clk_master_setup(struct device_node *np,
+>   extern void __init of_at91sam9x5_clk_master_setup(struct device_node *np,
+>   						  struct at91_pmc *pmc);
+>
+> +extern void __init of_at91rm9200_clk_sys_setup(struct device_node *np,
+> +					       struct at91_pmc *pmc);
+> +
+>   #endif /* __PMC_H_ */
+>
 
-  git://git.pengutronix.de/git/ukl/linux.git tags/timer-for-tip
-
-for you to fetch changes up to b58c4b70121070f45eefa739ecbb58d57da1c4d9:
-
-  ARM: at91: rm9200: switch back to clockevents_config_and_register (2013-10-08 16:58:22 +0200)
-
-----------------------------------------------------------------
-The first patch in this pull request fixes an old integer rounding bug in the
-timer core that was (and still is) worked around in a few arch's timer code.
-The second patch drops such a work around now that the core is fixed.
-
-----------------------------------------------------------------
-Thomas Gleixner (1):
-      clockevents: Sanitize ticks to nsec conversion
-
-Uwe Kleine-König (1):
-      ARM: at91: rm9200: switch back to clockevents_config_and_register
-
- arch/arm/mach-at91/at91rm9200_time.c |  7 ++--
- kernel/time/clockevents.c            | 65 +++++++++++++++++++++++++++---------
- 2 files changed, 52 insertions(+), 20 deletions(-)
 
 -- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Nicolas Ferre
