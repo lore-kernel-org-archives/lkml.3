@@ -1,77 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756889Ab3JHKnT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 06:43:19 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:37572 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756088Ab3JHKky (ORCPT
+	id S1756893Ab3JHKnj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 06:43:39 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:33587 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755596Ab3JHKkx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 06:40:54 -0400
-Date: Tue, 8 Oct 2013 03:40:30 -0700
-From: tip-bot for Namhyung Kim <tipbot@zytor.com>
-Message-ID: <tip-d20a47e70b57a77f4d1b0dba98a668e14c2f9bf9@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
-        paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, namhyung@kernel.org,
-        jolsa@redhat.com, dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
-        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, namhyung@kernel.org,
-        jolsa@redhat.com, dsahern@gmail.com, tglx@linutronix.de
-In-Reply-To: <1380531671-28076-1-git-send-email-namhyung@kernel.org>
-References: <1380531671-28076-1-git-send-email-namhyung@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf stat:
-  Set child_pid after perf_evlist__prepare_workload()
-Git-Commit-ID: d20a47e70b57a77f4d1b0dba98a668e14c2f9bf9
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 08 Oct 2013 03:40:37 -0700 (PDT)
+	Tue, 8 Oct 2013 06:40:53 -0400
+Message-Id: <20131008103830.347463501@infradead.org>
+User-Agent: quilt/0.60-1
+Date: Tue, 08 Oct 2013 12:25:10 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH 5/6] rcusync: Add the CONFIG_PROVE_RCU checks
+References: <20131008102505.404025673@infradead.org>
+Content-Disposition: inline; filename=oleg_nesterov-2_rcusync-add_the_config_prove_rcu_checks.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d20a47e70b57a77f4d1b0dba98a668e14c2f9bf9
-Gitweb:     http://git.kernel.org/tip/d20a47e70b57a77f4d1b0dba98a668e14c2f9bf9
-Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Mon, 30 Sep 2013 18:01:11 +0900
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 4 Oct 2013 15:16:05 -0300
+From: Oleg Nesterov <oleg@redhat.com>
 
-perf stat: Set child_pid after perf_evlist__prepare_workload()
+It would be nice to validate that the caller of rcu_sync_is_idle()
+holds the corresponding type of RCU read-side lock. Add the new
+rcu_sync_ops->held() method and change rcu_sync_is_idle() to
+WARN() if it returns false.
 
-The commit acf2892270dc ("perf stat: Use perf_evlist__prepare/
-start_workload()") converted to use the function but forgot to update
-child_pid.  Fix it.
+This obviously penalizes the readers (fast-path), but only if
+CONFIG_PROVE_RCU.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1380531671-28076-1-git-send-email-namhyung@kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Suggested-by: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/20131004184633.GA17557@redhat.com
 ---
- tools/perf/builtin-stat.c | 1 +
- 1 file changed, 1 insertion(+)
+ include/linux/rcusync.h |    6 ++++++
+ kernel/rcusync.c        |   21 +++++++++++++++++++++
+ 2 files changed, 27 insertions(+)
 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index f686d5f..5098f14 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -457,6 +457,7 @@ static int __run_perf_stat(int argc, const char **argv)
- 			perror("failed to prepare workload");
- 			return -1;
- 		}
-+		child_pid = evsel_list->workload.pid;
- 	}
+--- a/include/linux/rcusync.h
++++ b/include/linux/rcusync.h
+@@ -17,9 +17,15 @@ struct rcu_sync_struct {
+ 	enum rcu_sync_type	gp_type;
+ };
  
- 	if (group)
++extern bool __rcu_sync_is_idle(struct rcu_sync_struct *);
++
+ static inline bool rcu_sync_is_idle(struct rcu_sync_struct *rss)
+ {
++#ifdef CONFIG_PROVE_RCU
++	return __rcu_sync_is_idle(rss);
++#else
+ 	return !rss->gp_state; /* GP_IDLE */
++#endif
+ }
+ 
+ extern void rcu_sync_init(struct rcu_sync_struct *, enum rcu_sync_type);
+--- a/kernel/rcusync.c
++++ b/kernel/rcusync.c
+@@ -1,21 +1,33 @@
+ #include <linux/rcusync.h>
+ #include <linux/sched.h>
+ 
++#ifdef CONFIG_PROVE_RCU
++#define __INIT_HELD(func)	.held = func,
++#else
++#define __INIT_HELD(func)
++#endif
++
+ static const struct {
+ 	void (*sync)(void);
+ 	void (*call)(struct rcu_head *, void (*)(struct rcu_head *));
++#ifdef CONFIG_PROVE_RCU
++	int  (*held)(void);
++#endif
+ } gp_ops[] = {
+ 	[RCU_SYNC] = {
+ 		.sync = synchronize_rcu,
+ 		.call = call_rcu,
++		__INIT_HELD(rcu_read_lock_held)
+ 	},
+ 	[RCU_SCHED_SYNC] = {
+ 		.sync = synchronize_sched,
+ 		.call = call_rcu_sched,
++		__INIT_HELD(rcu_read_lock_sched_held)
+ 	},
+ 	[RCU_BH_SYNC] = {
+ 		.sync = synchronize_rcu_bh,
+ 		.call = call_rcu_bh,
++		__INIT_HELD(rcu_read_lock_bh_held)
+ 	},
+ };
+ 
+@@ -24,6 +36,15 @@ enum { CB_IDLE = 0, CB_PENDING, CB_REPLA
+ 
+ #define	rss_lock	gp_wait.lock
+ 
++#ifdef CONFIG_PROVE_RCU
++bool __rcu_sync_is_idle(struct rcu_sync_struct *rss)
++{
++	WARN_ON(!gp_ops[rss->gp_type].held());
++	return rss->gp_state == GP_IDLE;
++}
++EXPORT_SYMBOL_GPL(__rcu_sync_is_idle);
++#endif
++
+ void rcu_sync_init(struct rcu_sync_struct *rss, enum rcu_sync_type type)
+ {
+ 	memset(rss, 0, sizeof(*rss));
+
+
