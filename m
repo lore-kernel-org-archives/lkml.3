@@ -1,162 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756094Ab3JHRfh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 13:35:37 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:48437 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752547Ab3JHRff (ORCPT
+	id S1756170Ab3JHRhF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 13:37:05 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:46641 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752415Ab3JHRhB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 13:35:35 -0400
-Date: Tue, 8 Oct 2013 12:35:21 -0500
-From: Robert Jennings <rcj@linux.vnet.ibm.com>
-To: Dave Hansen <dave@sr71.net>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        Matt Helsley <matt.helsley@gmail.com>,
-        Anthony Liguori <anthony@codemonkey.ws>,
-        Michael Roth <mdroth@linux.vnet.ibm.com>,
-        Lei Li <lilei@linux.vnet.ibm.com>,
-        Leonardo Garcia <lagarcia@linux.vnet.ibm.com>,
-        Vlastimil Babka <vbabka@suse.cz>
-Subject: Re: [PATCH 2/2] vmsplice: Add limited zero copy to vmsplice
-Message-ID: <20131008173521.GA6129@linux.vnet.ibm.com>
-Mail-Followup-To: Dave Hansen <dave@sr71.net>, linux-kernel@vger.kernel.org,
-	linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-	Alexander Viro <viro@zeniv.linux.org.uk>,
-	Rik van Riel <riel@redhat.com>,
-	Andrea Arcangeli <aarcange@redhat.com>,
-	Matt Helsley <matt.helsley@gmail.com>,
-	Anthony Liguori <anthony@codemonkey.ws>,
-	Michael Roth <mdroth@linux.vnet.ibm.com>,
-	Lei Li <lilei@linux.vnet.ibm.com>,
-	Leonardo Garcia <lagarcia@linux.vnet.ibm.com>,
-	Vlastimil Babka <vbabka@suse.cz>
-References: <1381177293-27125-1-git-send-email-rcj@linux.vnet.ibm.com>
- <1381177293-27125-3-git-send-email-rcj@linux.vnet.ibm.com>
- <525436A5.20808@sr71.net>
+	Tue, 8 Oct 2013 13:37:01 -0400
+Message-ID: <525442A4.9060709@gmail.com>
+Date: Wed, 09 Oct 2013 01:36:36 +0800
+From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <525436A5.20808@sr71.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13100817-5564-0000-0000-00000A12015A
+To: "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>, lenb@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, mingo@elte.hu,
+        Toshi Kani <toshi.kani@hp.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Thomas Renninger <trenn@suse.de>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, Rik van Riel <riel@redhat.com>,
+        jweiner@redhat.com, prarit@redhat.com,
+        "x86@kernel.org" <x86@kernel.org>, linux-doc@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>, linux-acpi@vger.kernel.org,
+        imtangchen@gmail.com, Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>
+Subject: Re: [PATCH part1 v6 4/6] x86/mem-hotplug: Support initialize page
+ tables in bottom-up
+References: <524E2032.4020106@gmail.com> <524E2127.4090904@gmail.com> <5251F9AB.6000203@zytor.com>
+In-Reply-To: <5251F9AB.6000203@zytor.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Dave Hansen (dave@sr71.net) wrote:
-> On 10/07/2013 01:21 PM, Robert C Jennings wrote:
-> > +	if (!buf->offset && (buf->len == PAGE_SIZE) &&
-> > +	    (buf->flags & PIPE_BUF_FLAG_GIFT) && (sd->flags & SPLICE_F_MOVE)) {
-> > +		struct page *page = buf->page;
-> > +		struct mm_struct *mm;
-> > +		struct vm_area_struct *vma;
-> > +		spinlock_t *ptl;
-> > +		pte_t *ptep, pte;
-> > +		unsigned long useraddr;
-> > +
-> > +		if (!PageAnon(page))
-> > +			goto copy;
-> > +		if (PageCompound(page))
-> > +			goto copy;
-> > +		if (PageHuge(page) || PageTransHuge(page))
-> > +			goto copy;
-> > +		if (page_mapped(page))
-> > +			goto copy;
+Hello tejun
+CC: Peter
+
+On 10/07/2013 08:00 AM, H. Peter Anvin wrote:
+> On 10/03/2013 07:00 PM, Zhang Yanfei wrote:
+>> From: Tang Chen <tangchen@cn.fujitsu.com>
+>>
+>> The Linux kernel cannot migrate pages used by the kernel. As a
+>> result, kernel pages cannot be hot-removed. So we cannot allocate
+>> hotpluggable memory for the kernel.
+>>
+>> In a memory hotplug system, any numa node the kernel resides in
+>> should be unhotpluggable. And for a modern server, each node could
+>> have at least 16GB memory. So memory around the kernel image is
+>> highly likely unhotpluggable.
+>>
+>> ACPI SRAT (System Resource Affinity Table) contains the memory
+>> hotplug info. But before SRAT is parsed, memblock has already
+>> started to allocate memory for the kernel. So we need to prevent
+>> memblock from doing this.
+>>
+>> So direct memory mapping page tables setup is the case. init_mem_mapping()
+>> is called before SRAT is parsed. To prevent page tables being allocated
+>> within hotpluggable memory, we will use bottom-up direction to allocate
+>> page tables from the end of kernel image to the higher memory.
+>>
+>> Acked-by: Tejun Heo <tj@kernel.org>
+>> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+>> Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 > 
-> I'd really like to see some comments about those cases.  You touched on
-> page_mapped() above, but could you replicate some of that in a comment?
-
-Yes, I'll add comments in the code for these cases.
-
-> Also, considering that this is being targeted at QEMU VMs, I would
-> imagine that you're going to want to support PageTransHuge() in here
-> pretty fast.  Do you anticipate that being very much trouble?  Have you
-> planned for it in here?
-
-My focus with this patch set was to get agreement on the change in the
-first patch of the vmsplice syscall flags to perform page flipping rather
-than copying.
-
-I am working on support of PageTransHuge() but it is not complete.
-It reworks this function to coalesce PAGE_SIZE pipe buffers into THP-sized
-units and operate on those.
-
-> > +		useraddr = (unsigned long)sd->u.userptr;
-> > +		mm = current->mm;
-> > +
-> > +		ret = -EAGAIN;
-> > +		down_read(&mm->mmap_sem);
-> > +		vma = find_vma_intersection(mm, useraddr, useraddr + PAGE_SIZE);
+> I'm still seriously concerned about this.  This unconditionally
+> introduces new behavior which may very well break some classes of
+> systems -- the whole point of creating the page tables top down is
+> because the kernel tends to be allocated in lower memory, which is also
+> the memory that some devices need for DMA.
 > 
-> If oyu are only doing these a page at a time, why bother with
-> find_vma_intersection()?  Why not a plain find_vma()?
 
-You're correct, I can change this to use find_vma().
+After thinking for a while, this issue pointed by Peter seems to be really
+existing. And looking back to what you suggested the allocation close to the
+kernel, 
 
-> Also, if we fail to find a VMA, won't this return -EAGAIN?  That seems
-> like a rather uninformative error code to get returned back out to
-> userspace, especially since retrying won't help.
+> so if we allocate memory close to the kernel image,
+>   it's likely that we don't contaminate hotpluggable node.  We're
+>   talking about few megs at most right after the kernel image.  I
+>   can't see how that would make any noticeable difference.
 
-Yes, -EAGAIN is not good for this case, I will use -EFAULT.
+You meant that the memory size is about few megs. But here, page tables
+seems to be large enough in big memory machines, so that page tables will
+consume the precious lower memory. So I think we may really reorder
+the page table setup after we get the hotplug info in some way. Just like
+we have done in patch 5, we reorder reserve_crashkernel() to be called
+after initmem_init().
 
-> > +		if (IS_ERR_OR_NULL(vma))
-> > +			goto up_copy;
-> > +		if (!vma->anon_vma) {
-> > +			ret = anon_vma_prepare(vma);
-> > +			if (ret)
-> > +				goto up_copy;
-> > +		}
-> 
-> The first thing anon_vma_prepare() does is check vma->anon_vma.  This
-> extra check seems unnecessary.
+So do you still have any objection to the pagetable setup reorder?
 
-I'll fix this, thanks.
-
-> > +		zap_page_range(vma, useraddr, PAGE_SIZE, NULL);
-> > +		ret = lock_page_killable(page);
-> > +		if (ret)
-> > +			goto up_copy;
-> > +		ptep = get_locked_pte(mm, useraddr, &ptl);
-> > +		if (!ptep)
-> > +			goto unlock_up_copy;
-> > +		pte = *ptep;
-> > +		if (pte_present(pte))
-> > +			goto unlock_up_copy;
-> > +		get_page(page);
-> > +		page_add_anon_rmap(page, vma, useraddr);
-> > +		pte = mk_pte(page, vma->vm_page_prot);
-> 
-> 'pte' is getting used for two different things here, which makes it a
-> bit confusing.  I'd probably just skip this first assignment and
-> directly do:
-> 
-> 		if (pte_present(*ptep))
-> 			goto unlock_up_copy;
-
-I'll fix this, thanks.
-
-> > +		set_pte_at(mm, useraddr, ptep, pte);
-> > +		update_mmu_cache(vma, useraddr, ptep);
-> > +		pte_unmap_unlock(ptep, ptl);
-> > +		ret = 0;
-> > +unlock_up_copy:
-> > +		unlock_page(page);
-> > +up_copy:
-> > +		up_read(&mm->mmap_sem);
-> > +		if (!ret) {
-> > +			ret = sd->len;
-> > +			goto out;
-> > +		}
-> > +		/* else ret < 0 and we should fallback to copying */
-> > +		VM_BUG_ON(ret > 0);
-> > +	}
-> 
-> This also screams to be broken out in to a helper function instead of
-> just being thrown in with the existing code.
-
-You're right, it's very self-contained already.  I'll pull it out. 
-
+-- 
+Thanks.
+Zhang Yanfei
