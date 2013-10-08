@@ -1,83 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756165Ab3JHXYp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 19:24:45 -0400
-Received: from relay1.mentorg.com ([192.94.38.131]:46699 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755492Ab3JHXYo (ORCPT
+	id S1756741Ab3JHXZG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 19:25:06 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:21133 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755710Ab3JHXZD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 19:24:44 -0400
-Date: Tue, 8 Oct 2013 23:24:41 +0000
-From: "Joseph S. Myers" <joseph@codesourcery.com>
-X-X-Sender: jsm28@digraph.polyomino.org.uk
-To: <linux-kernel@vger.kernel.org>
-CC: <linuxppc-dev@lists.ozlabs.org>
-Subject: [PATCH] math-emu: fix floating-point to integer overflow detection
-Message-ID: <Pine.LNX.4.64.1310082323530.23637@digraph.polyomino.org.uk>
+	Tue, 8 Oct 2013 19:25:03 -0400
+X-Forefront-Antispam-Report: CIP:66.35.236.232;KIP:(null);UIP:(null);IPV:NLI;H:SJ-ITEXEDGE02.altera.priv.altera.com;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VS-4(zz98dI936eI154dI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz8275ch1de098h1de097h8275bh8275dhz2fh2a8h839h93fhd24hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1e23h1fe8h1ff5h1155h)
+Message-ID: <1381274699.5184.2.camel@linux-builds1>
+Subject: Re: [PATCH 8/8] ARM: add initial support for Marvell Berlin SoCs
+From: Dinh Nguyen <dinguyen@altera.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Date: Tue, 8 Oct 2013 18:24:59 -0500
+In-Reply-To: <1381235073-17134-9-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1381235073-17134-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	 <1381235073-17134-9-git-send-email-sebastian.hesselbarth@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-OriginalArrivalTime: 08 Oct 2013 23:24:44.0114 (UTC) FILETIME=[92152B20:01CEC47D]
+X-OriginatorOrg: altera.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joseph Myers <joseph@codesourcery.com>
+Hi Sebastian,
 
-On overflow, the math-emu macro _FP_TO_INT_ROUND tries to saturate its
-result (subject to the value of rsigned specifying the desired
-overflow semantics).  However, if the rounding step has the effect of
-increasing the exponent so as to cause overflow (if the rounded result
-is 1 larger than the largest positive value with the given number of
-bits, allowing for signedness), the overflow does not get detected,
-meaning that for unsigned results 0 is produced instead of the maximum
-unsigned integer with the give number of bits, without an exception
-being raised for overflow, and that for signed results the minimum
-(negative) value is produced instead of the maximum (positive) value,
-again without an exception.  This patch makes the code check for
-rounding increasing the exponent and adjusts the exponent value as
-needed for the overflow check.
+On Tue, 2013-10-08 at 14:24 +0200, Sebastian Hesselbarth wrote:
+> This adds initial support for the Marvell Berlin (88DE3xxx) SoC family
+> and basic machine setup for Armada 1500 (88DE3100) SoCs.
+> 
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> Reviewed-by: Jason Cooper <jason@lakedaemon.net>
+> Reviewed-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+> Reviewed-by: Arnd Bergmann <arnd@arndb.de>
+> ---
+> Changelog:
+> RFCv2->v1:
+> - remove custom .init_time, adds dependency for arch-wide of_clk_init call
+> RFCv1->RFCv2:
+> - nuke .map_io (Reported by Arnd Bergmann)
+> - add copyright reference
+> - switch to mach-berlin instead of mach-mvebu
+> 
+> Cc: Jason Cooper <jason@lakedaemon.net>
+> Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  arch/arm/Kconfig              |    2 ++
+>  arch/arm/Makefile             |    1 +
+>  arch/arm/mach-berlin/Kconfig  |   24 ++++++++++++++++++++++++
+>  arch/arm/mach-berlin/Makefile |    1 +
+>  arch/arm/mach-berlin/berlin.c |   39 +++++++++++++++++++++++++++++++++++++++
+>  5 files changed, 67 insertions(+)
+>  create mode 100644 arch/arm/mach-berlin/Kconfig
+>  create mode 100644 arch/arm/mach-berlin/Makefile
+>  create mode 100644 arch/arm/mach-berlin/berlin.c
+> 
+> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> index 1ad6fb6..5692426 100644
+> --- a/arch/arm/Kconfig
+> +++ b/arch/arm/Kconfig
+> @@ -932,6 +932,8 @@ source "arch/arm/mach-bcm/Kconfig"
+>  
+>  source "arch/arm/mach-bcm2835/Kconfig"
+>  
+> +source "arch/arm/mach-berlin/Kconfig"
+> +
+>  source "arch/arm/mach-clps711x/Kconfig"
+>  
+>  source "arch/arm/mach-cns3xxx/Kconfig"
+> diff --git a/arch/arm/Makefile b/arch/arm/Makefile
+> index a37a50f..3ba332b 100644
+> --- a/arch/arm/Makefile
+> +++ b/arch/arm/Makefile
+> @@ -147,6 +147,7 @@ textofs-$(CONFIG_ARCH_MSM8960) := 0x00208000
+>  machine-$(CONFIG_ARCH_AT91)		+= at91
+>  machine-$(CONFIG_ARCH_BCM)		+= bcm
+>  machine-$(CONFIG_ARCH_BCM2835)		+= bcm2835
+> +machine-$(CONFIG_ARCH_BERLIN)		+= berlin
+>  machine-$(CONFIG_ARCH_CLPS711X)		+= clps711x
+>  machine-$(CONFIG_ARCH_CNS3XXX)		+= cns3xxx
+>  machine-$(CONFIG_ARCH_DAVINCI)		+= davinci
+> diff --git a/arch/arm/mach-berlin/Kconfig b/arch/arm/mach-berlin/Kconfig
+> new file mode 100644
+> index 0000000..56a671e
+> --- /dev/null
+> +++ b/arch/arm/mach-berlin/Kconfig
+> @@ -0,0 +1,24 @@
+> +config ARCH_BERLIN
+> +	bool "Marvell Berlin (88DE3xxx) SoCs" if ARCH_MULTI_V7
+> +	select GENERIC_CLOCKEVENTS
+> +	select GENERIC_IRQ_CHIP
+> +	select COMMON_CLK
+> +	select DW_APB_ICTL
+> +	select DW_APB_TIMER_OF
+> +
+> +if ARCH_BERLIN
+> +
+> +menu "Marvell Berlin (88DE3xxx) SoC variants"
+> +
+> +config MACH_MV88DE3100
+> +	bool "Marvell 88DE3100 (Armada 1500)"
+> +	select ARM_GIC
+> +	select CACHE_L2X0
+> +	select CPU_PJ4B
+> +	select HAVE_ARM_TWD if LOCAL_TIMERS
+> +	select HAVE_SMP
+> +	select LOCAL_TIMERS if SMP
 
-Signed-off-by: Joseph Myers <joseph@codesourcery.com>
+I think because of commit: 
 
----
+a894fcc2d [ARM: smp_twd: Divorce smp_twd from local timer API]
 
-This macro is not present in the glibc/libgcc version of the code.
-This patch is independent of my separate patch
-<http://lkml.org/lkml/2013/10/8/694> to fix the results for unsigned
-saturation, although you need both patches together to get the correct
-results for the affected unsigned overflow case.  It remains the case
-both before and after this patch that the conversions wrongly treat a
-signed result of the most negative integer as an overflow, when
-actually only that integer minus 1 or smaller should be an overflow,
-although this only means an incorrect exception rather than affecting
-the value returned; that was one of the bugs I fixed in the
-glibc/libgcc version of this code in 2006 (as part of a major overhaul
-of the code including various interface changes, so not trivially
-backportable to the kernel version).
+you can remove the LOCAL_TIMERS for HAVE_ARM_TWD.
 
-diff --git a/include/math-emu/op-common.h b/include/math-emu/op-common.h
-index 9696a5e..6bdf8c6 100644
---- a/include/math-emu/op-common.h
-+++ b/include/math-emu/op-common.h
-@@ -743,12 +743,17 @@ do {									\
- 	  }									\
- 	else									\
- 	  {									\
-+	    int _lz0, _lz1;							\
- 	    if (X##_e <= -_FP_WORKBITS - 1)					\
- 	      _FP_FRAC_SET_##wc(X, _FP_MINFRAC_##wc);				\
- 	    else								\
- 	      _FP_FRAC_SRS_##wc(X, _FP_FRACBITS_##fs - 1 - X##_e,		\
- 				_FP_WFRACBITS_##fs);				\
-+	    _FP_FRAC_CLZ_##wc(_lz0, X);						\
- 	    _FP_ROUND(wc, X);							\
-+	    _FP_FRAC_CLZ_##wc(_lz1, X);						\
-+	    if (_lz1 < _lz0)							\
-+	      X##_e++; /* For overflow detection.  */				\
- 	    _FP_FRAC_SRL_##wc(X, _FP_WORKBITS);					\
- 	    _FP_FRAC_ASSEMBLE_##wc(r, X, rsize);				\
- 	  }									\
+Dinh
 
--- 
-Joseph S. Myers
-joseph@codesourcery.com
+
