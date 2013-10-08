@@ -1,40 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755451Ab3JHJ6Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 05:58:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11700 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752676Ab3JHJ6N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 05:58:13 -0400
-Message-ID: <5253D732.8060906@redhat.com>
-Date: Tue, 08 Oct 2013 11:58:10 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130923 Thunderbird/17.0.9
-MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: kvm@vger.kernel.org, dzickus@redhat.com, gleb@redhat.com,
+	id S1754705Ab3JHJ7k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 05:59:40 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:60293 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752015Ab3JHJ7j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 05:59:39 -0400
+Date: Tue, 8 Oct 2013 11:59:27 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo.kernel.org@gmail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/3] pvclock: detect watchdog reset at pvclock read
-References: <20131008010515.516032211@amt.cnet> <20131008010552.779616517@amt.cnet>
-In-Reply-To: <20131008010552.779616517@amt.cnet>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH 00/16] sched/wait: Collapse __wait_event macros -v5
+Message-ID: <20131008095927.GS3081@twins.programming.kicks-ass.net>
+References: <20131002092217.784439754@infradead.org>
+ <20131004204405.GU3081@twins.programming.kicks-ass.net>
+ <20131004204438.GR26785@twins.programming.kicks-ass.net>
+ <20131005080416.GA25193@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131005080416.GA25193@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 08/10/2013 03:05, Marcelo Tosatti ha scritto:
-> +void pvclock_touch_watchdogs(void)
-> +{
-> +	touch_softlockup_watchdog_sync();
-> +	clocksource_touch_watchdog();
-> +	rcu_cpu_stall_reset();
-> +	reset_hung_task_detector();
-> +}
-> +
+On Sat, Oct 05, 2013 at 10:04:16AM +0200, Ingo Molnar wrote:
+> 
+> * Peter Zijlstra <peterz@infradead.org> wrote:
+> 
+> > On Fri, Oct 04, 2013 at 10:44:05PM +0200, Peter Zijlstra wrote:
+> > > 
+> > > slightly related; do we want to do something like the following two
+> > > patches?
+> > 
+> > and
+> 
+> Yeah, both look good to me - but I'd move them into 
+> kernel/sched/completion.c and kernel/sched/wait.c if no-one objects.
 
-Should this function be in kernel/ instead?  It's not really
-pvclock-specific.
+Do you also want to suck in semaphore.c mutex.c rwsem.c spinlock.c etc?
+Or do you want to create something like kernel/locking/ for all that.
 
-Paolo
+I don't really mind too much either way except that I think that wait.c
+and completion.c on their own make for a somewhat random split or
+primitives.
+
+> > --- /dev/null
+> > +++ b/kernel/completion.c
+> > @@ -0,0 +1,287 @@
+> > +
+> > +#include <linux/sched.h>
+> > +#include <linux/completion.h>
+> 
+> Also, mind adding a small blurb at the top explaining what it's all about? 
+> Just one sentence or two.
+
+It got a bit longer:
+
++/*
++ * Generic wait-for-completion handler;
++ *
++ * It differs from semaphores in that their default case is the opposite,
++ * wait_for_completion default blocks whereas semaphore default non-block. The
++ * interface also makes it easy to 'complete' multiple waiting threads,
++ * something which isn't entirely natural for semaphores.
++ *
++ * But more importantly, the primitive documents the usage. Semaphores would
++ * typically be used for exclusion which gives rise to priority inversion.
++ * Waiting for completion is a typically sync point, but not an exclusion point.
++ */
