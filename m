@@ -1,68 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753778Ab3JHCvp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 22:51:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28510 "EHLO mx1.redhat.com"
+	id S1754099Ab3JHCzj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 22:55:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64350 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753253Ab3JHCvf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 22:51:35 -0400
-Message-ID: <525372EF.9090307@redhat.com>
-Date: Tue, 08 Oct 2013 10:50:23 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-CC: "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <edumazet@google.com>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: Re: [PATCH] tun: don't look at current when non-blocking
-References: <20131006182512.GA16504@redhat.com>
-In-Reply-To: <20131006182512.GA16504@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751806Ab3JHCzi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Oct 2013 22:55:38 -0400
+Date: Mon, 07 Oct 2013 22:54:54 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Pavel Emelyanov <xemul@parallels.com>, linux-mm@kvack.org,
+        Wu Fengguang <fengguang.wu@intel.com>, linux-kernel@vger.kernel.org
+Message-ID: <1381200894-g4p1jfd3-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <20131007175125.7bb300853d37b6a64eba248d@linux-foundation.org>
+References: <1380913335-17466-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <5252B56C.8030903@parallels.com>
+ <1381155304-2ro6e10t-mutt-n-horiguchi@ah.jp.nec.com>
+ <20131007175125.7bb300853d37b6a64eba248d@linux-foundation.org>
+Subject: Re: [PATCH 1/2 v2] smaps: show VM_SOFTDIRTY flag in VmFlags line
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Mutt-References: <20131007175125.7bb300853d37b6a64eba248d@linux-foundation.org>
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/07/2013 02:25 AM, Michael S. Tsirkin wrote:
-> We play with a wait queue even if socket is
-> non blocking. This is an obvious waste.
-> Besides, it will prevent calling the non blocking
-> variant when current is not valid.
->
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
+On Mon, Oct 07, 2013 at 05:51:25PM -0700, Andrew Morton wrote:
+> On Mon, 07 Oct 2013 10:15:04 -0400 Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
+> 
+> > From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> > Date: Fri, 4 Oct 2013 13:42:13 -0400
+> > Subject: [PATCH] smaps: show VM_SOFTDIRTY flag in VmFlags line
+> > 
+> > This flag shows that the VMA is "newly created" and thus represents
+> > "dirty" in the task's VM.
+> > You can clear it by "echo 4 > /proc/pid/clear_refs."
+> > 
+> > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> > ---
+> >  fs/proc/task_mmu.c | 3 +++
+> >  1 file changed, 3 insertions(+)
+> > 
+> > diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+> > index 7366e9d..c591928 100644
+> > --- a/fs/proc/task_mmu.c
+> > +++ b/fs/proc/task_mmu.c
+> > @@ -561,6 +561,9 @@ static void show_smap_vma_flags(struct seq_file *m, struct vm_area_struct *vma)
+> >  		[ilog2(VM_NONLINEAR)]	= "nl",
+> >  		[ilog2(VM_ARCH_1)]	= "ar",
+> >  		[ilog2(VM_DONTDUMP)]	= "dd",
+> > +#ifdef CONFIG_MEM_SOFT_DIRTY
+> > +		[ilog2(VM_SOFTDIRTY)]	= "sd",
+> > +#endif
+> >  		[ilog2(VM_MIXEDMAP)]	= "mm",
+> >  		[ilog2(VM_HUGEPAGE)]	= "hg",
+> >  		[ilog2(VM_NOHUGEPAGE)]	= "nh",
+> 
+> Documentation/filesystems/proc.txt needs updating, please.
 
-Acked-by: Jason Wang <jasowang@redhat.com>
->  drivers/net/tun.c | 8 +++++---
->  1 file changed, 5 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-> index 807815f..7cb105c 100644
-> --- a/drivers/net/tun.c
-> +++ b/drivers/net/tun.c
-> @@ -1293,7 +1293,8 @@ static ssize_t tun_do_read(struct tun_struct *tun, struct tun_file *tfile,
->  	if (unlikely(!noblock))
->  		add_wait_queue(&tfile->wq.wait, &wait);
->  	while (len) {
-> -		current->state = TASK_INTERRUPTIBLE;
-> +		if (unlikely(!noblock))
-> +			current->state = TASK_INTERRUPTIBLE;
->  
->  		/* Read frames from the queue */
->  		if (!(skb = skb_dequeue(&tfile->socket.sk->sk_receive_queue))) {
-> @@ -1320,9 +1321,10 @@ static ssize_t tun_do_read(struct tun_struct *tun, struct tun_file *tfile,
->  		break;
->  	}
->  
-> -	current->state = TASK_RUNNING;
-> -	if (unlikely(!noblock))
-> +	if (unlikely(!noblock)) {
-> +		current->state = TASK_RUNNING;
->  		remove_wait_queue(&tfile->wq.wait, &wait);
-> +	}
->  
->  	return ret;
->  }
+OK. Here's the revised one.
+---
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Date: Mon, 7 Oct 2013 22:52:00 -0400
+Subject: [PATCH] smaps: show VM_SOFTDIRTY flag in VmFlags line
+
+This flag shows that the VMA is "newly created" and thus represents
+"dirty" in the task's VM.
+You can clear it by "echo 4 > /proc/pid/clear_refs."
+
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Acked-by: Cyrill Gorcunov <gorcunov@openvz.org>
+---
+ Documentation/filesystems/proc.txt | 1 +
+ fs/proc/task_mmu.c                 | 3 +++
+ 2 files changed, 4 insertions(+)
+
+diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
+index 823c95f..22d89aa3 100644
+--- a/Documentation/filesystems/proc.txt
++++ b/Documentation/filesystems/proc.txt
+@@ -460,6 +460,7 @@ flags associated with the particular virtual memory area in two letter encoded
+     nl  - non-linear mapping
+     ar  - architecture specific flag
+     dd  - do not include area into core dump
++    sd  - soft-dirty flag
+     mm  - mixed map area
+     hg  - huge page advise flag
+     nh  - no-huge page advise flag
+diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+index 7366e9d..c591928 100644
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -561,6 +561,9 @@ static void show_smap_vma_flags(struct seq_file *m, struct vm_area_struct *vma)
+ 		[ilog2(VM_NONLINEAR)]	= "nl",
+ 		[ilog2(VM_ARCH_1)]	= "ar",
+ 		[ilog2(VM_DONTDUMP)]	= "dd",
++#ifdef CONFIG_MEM_SOFT_DIRTY
++		[ilog2(VM_SOFTDIRTY)]	= "sd",
++#endif
+ 		[ilog2(VM_MIXEDMAP)]	= "mm",
+ 		[ilog2(VM_HUGEPAGE)]	= "hg",
+ 		[ilog2(VM_NOHUGEPAGE)]	= "nh",
+-- 
+1.8.3.1
+
+
+
+
 
