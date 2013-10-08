@@ -1,50 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755239Ab3JHOgq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 10:36:46 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:56904 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754843Ab3JHOgi (ORCPT
+	id S1754903Ab3JHOkf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 10:40:35 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:34154 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752665Ab3JHOkc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 10:36:38 -0400
-From: Soren Brinkmann <soren.brinkmann@xilinx.com>
-To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>,
-        Michal Simek <michal.simek@xilinx.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-doc@vger.kernel.org, devicetree@vger.kernel.org,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>
-Subject: [PATCH 2/2] arm: dt: zynq: Add fclk-enable property to clkc node
-Date: Tue,  8 Oct 2013 07:36:12 -0700
-Message-Id: <1381242972-14752-2-git-send-email-soren.brinkmann@xilinx.com>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1381242972-14752-1-git-send-email-soren.brinkmann@xilinx.com>
-References: <1381242972-14752-1-git-send-email-soren.brinkmann@xilinx.com>
+	Tue, 8 Oct 2013 10:40:32 -0400
+Date: Tue, 8 Oct 2013 18:40:30 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Pavel Emelyanov <xemul@parallels.com>,
+        Andy Lutomirski <luto@amacapital.net>, Matt Mackall <mpm@selenic.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: Re: [patch 1/3] [PATCH] mm: migration -- Do not loose soft dirty bit
+ if page is in migration state
+Message-ID: <20131008144030.GA19040@moon>
+References: <20131008090019.527108154@gmail.com>
+ <20131008090236.951114091@gmail.com>
+ <1381241500-bfdgpu61-mutt-n-horiguchi@ah.jp.nec.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1381241500-bfdgpu61-mutt-n-horiguchi@ah.jp.nec.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
----
- arch/arm/boot/dts/zynq-7000.dtsi | 1 +
- 1 file changed, 1 insertion(+)
+On Tue, Oct 08, 2013 at 10:11:40AM -0400, Naoya Horiguchi wrote:
+> > Index: linux-2.6.git/mm/memory.c
+> > ===================================================================
+> > --- linux-2.6.git.orig/mm/memory.c
+> > +++ linux-2.6.git/mm/memory.c
+> > @@ -837,6 +837,8 @@ copy_one_pte(struct mm_struct *dst_mm, s
+> >  					 */
+> >  					make_migration_entry_read(&entry);
+> >  					pte = swp_entry_to_pte(entry);
+> > +					if (pte_swp_soft_dirty(*src_pte))
+> > +						pte = pte_swp_mksoft_dirty(pte);
+> >  					set_pte_at(src_mm, addr, src_pte, pte);
+> >  				}
+> >  			}
+> 
+> When we convert pte to swap_entry, we convert soft-dirty bit in
+> pte_to_swp_entry(). So I think that it's better to convert it back
+> in swp_entry_to_pte() when we do swap_entry-to-pte conversion.
 
-diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq-7000.dtsi
-index e32b92b949d2..b48d0403537b 100644
---- a/arch/arm/boot/dts/zynq-7000.dtsi
-+++ b/arch/arm/boot/dts/zynq-7000.dtsi
-@@ -77,6 +77,7 @@
- 					#clock-cells = <1>;
- 					compatible = "xlnx,ps7-clkc";
- 					ps-clk-frequency = <33333333>;
-+					fclk-enable = <0>;
- 					clock-output-names = "armpll", "ddrpll", "iopll", "cpu_6or4x",
- 							"cpu_3or2x", "cpu_2x", "cpu_1x", "ddr2x", "ddr3x",
- 							"dci", "lqspi", "smc", "pcap", "gem0", "gem1",
--- 
-1.8.4
+No, soft dirty bit lays _only_ inside pte entry in memory, iow
+swp_entry_t never has this bit, thus to be able to find soft dirty
+status in swp_entry_to_pte you need to extend this function and
+pass pte entry itself as an argument, which eventually will bring
+more massive patch and will be a way more confusing I think.
 
+Or I misunderstood you?
