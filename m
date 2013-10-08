@@ -1,100 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754063Ab3JHALx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 20:11:53 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:50167 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751696Ab3JHALu (ORCPT
+	id S1754128Ab3JHAMc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 20:12:32 -0400
+Received: from smtprelay0166.hostedemail.com ([216.40.44.166]:34792 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751750Ab3JHAM3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 20:11:50 -0400
-X-AuditID: 9c930179-b7b7fae000002758-07-52534dc4058f
-Date: Tue, 8 Oct 2013 09:13:06 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: John Stultz <john.stultz@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
-        Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
-        Andrea Righi <andrea@betterlinux.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>, Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>, Rob Clark <robdclark@gmail.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 05/14] vrange: Add new vrange(2) system call
-Message-ID: <20131008001306.GD25780@bbox>
-References: <1380761503-14509-1-git-send-email-john.stultz@linaro.org>
- <1380761503-14509-6-git-send-email-john.stultz@linaro.org>
- <52533C12.9090007@zytor.com>
- <5253404D.2030503@linaro.org>
- <52534331.2060402@zytor.com>
- <52534692.7010400@linaro.org>
- <525347BE.7040606@zytor.com>
- <525349AE.1070904@linaro.org>
- <52534AEC.5040403@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52534AEC.5040403@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 7 Oct 2013 20:12:29 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:960:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1714:1730:1747:1777:1792:1801:2393:2559:2562:2828:3138:3139:3140:3141:3142:3350:3622:3865:3868:3872:3873:4321:4605:5007:6248:7652:10004:10400:10848:11232:11473:11658:11914:12517:12519:12740:13069:13311:13357:13894,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: bell59_1569f48935b1b
+X-Filterd-Recvd-Size: 1877
+Message-ID: <1381191145.2081.230.camel@joe-AO722>
+Subject: Re: [PATCH] 9p: unsigned/signed wrap in p9/unix modes.
+From: Joe Perches <joe@perches.com>
+To: Geyslan =?ISO-8859-1?Q?Greg=F3rio?= Bem <geyslan@gmail.com>
+Cc: Eric Van Hensbergen <ericvh@gmail.com>, rminnich@sandia.gov,
+        lucho@ionkov.net, v9fs-developer@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, kernel-br <kernel-br@googlegroups.com>
+Date: Mon, 07 Oct 2013 17:12:25 -0700
+In-Reply-To: <CAGG-pURYyCV4waC8Z+5qAd1mAB2ZHhEkRaGspFuyEDrvj_dTdQ@mail.gmail.com>
+References: <1381184340-11190-1-git-send-email-geyslan@gmail.com>
+	 <1381185204.2081.221.camel@joe-AO722>
+	 <CAGG-pURYyCV4waC8Z+5qAd1mAB2ZHhEkRaGspFuyEDrvj_dTdQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Peter,
-
-On Mon, Oct 07, 2013 at 04:59:40PM -0700, H. Peter Anvin wrote:
-> On 10/07/2013 04:54 PM, John Stultz wrote:
-> >>>
-> >> And wouldn't this apply to MADV_DONTNEED just as well?  Perhaps what we
-> >> should do is an enhanced madvise() call?
-> > Well, I think MADV_DONTNEED doesn't *have* do to anything at all. Its
-> > advisory after all. So it may immediately wipe out any data, but it may not.
-> > 
-> > Those advisory semantics work fine w/ VRANGE_VOLATILE. However,
-> > VRANGE_NONVOLATILE is not quite advisory, its telling the system that it
-> > requires the memory at the specified range to not be volatile, and we
-> > need to correctly inform userland how much was changed and if any of the
-> > memory we did change to non-volatile was purged since being set volatile.
-> > 
-> > In that way it is sort of different from madvise. Some sort of an
-> > madvise2 could be done, but then the extra purge state argument would be
-> > oddly defined for any other mode.
-> > 
-> > Is your main concern here just wanting to have a zero-fill mode with
-> > volatile ranges? Or do you really want to squeeze this in to the madvise
-> > call interface?
+On Mon, 2013-10-07 at 21:09 -0300, Geyslan Gregório Bem wrote:
+> Joe,
 > 
-> The point is that MADV_DONTNEED is very similar in that sense,
-> especially if allowed to be lazy.  It makes a lot of sense to permit
-> both scrubbing modes orthogonally.
+> Thank you for reply.
 > 
-> The point you're making has to do with withdrawal of permission to flush
-> on demand, which is a result of having the lazy mode (ongoing
-> permission) and having to be able to withdraw such permission.
-
-I'm sorry I could not understand what you wanted to say.
-Could you elaborate a bit?
-
-Thanks.
-
+> What do you think about:
 > 
-> 	-0hpa
-> 
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>                  strncpy(ext, stat->extension, sizeof(ext));
+> +                 if (sscanf(ext, "%c %u %u", &type, &major, &minor) < 3) {
+> +                                  p9_debug(P9_DEBUG_ERROR,
+> +                                  "It's necessary define type, major
+> and minor values when using P9_DMDEVICE");
+> +                                  return res;
+> +                 }
+>                  switch (type) {
+>                  case 'c':
+>                          res |= S_IFCHR;
+>                          break;
+> ...
+>                  *rdev = MKDEV(major, minor);
 
--- 
-Kind regards,
-Minchan Kim
+I think the plan 9 folk should figure out what's right.
+
+
