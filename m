@@ -1,122 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754689Ab3JHCTO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 22:19:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36027 "EHLO
+	id S1754697Ab3JHCUN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 22:20:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36057 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752731Ab3JHCTN (ORCPT
+	with ESMTP id S1753170Ab3JHCUK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 22:19:13 -0400
-Date: Mon, 7 Oct 2013 18:58:49 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
+	Mon, 7 Oct 2013 22:20:10 -0400
+Date: Mon, 7 Oct 2013 19:13:04 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: linux-kernel@vger.kernel.org, Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [RFC] Add inline routine to free memory used in kobject name
-Message-ID: <20131008015849.GA2707@kroah.com>
-References: <5252f2cd.33yoX1hUWLRsRUrq%Larry.Finger@lwfinger.net>
- <20131007201044.GA6305@kroah.com>
- <52531C1B.9070502@lwfinger.net>
+Cc: linville@tuxdriver.com, Alex Dubov <oakad@yahoo.com>,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kay Sievers <kay.sievers@vrfy.org>
+Subject: Re: [PATCH V2] memstick: Fix memory leak in memstick_check() error
+ path
+Message-ID: <20131008021304.GB32733@kroah.com>
+References: <1380834798-5829-1-git-send-email-Larry.Finger@lwfinger.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52531C1B.9070502@lwfinger.net>
+In-Reply-To: <1380834798-5829-1-git-send-email-Larry.Finger@lwfinger.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 07, 2013 at 03:39:55PM -0500, Larry Finger wrote:
-> On 10/07/2013 03:10 PM, Greg KH wrote:
-> > On Mon, Oct 07, 2013 at 12:43:41PM -0500, Larry Finger wrote:
-> >> At present, if one wants to free the memory allocation used for
-> >> a dev->kobj name, it is necessary to go quite deeply into the structure.
-> >
-> > Why would you ever want to do this?
-> >
-> >> To avoid this much dependence on the structure details in driver
-> >> code, a new inline routine is created.
-> >>
-> >> Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-> >> ---
-> >>
-> >> Index: wireless-testing-save/include/linux/device.h
-> >> ===================================================================
-> >> --- wireless-testing-save.orig/include/linux/device.h
-> >> +++ wireless-testing-save/include/linux/device.h
-> >> @@ -27,6 +27,7 @@
-> >>   #include <linux/ratelimit.h>
-> >>   #include <linux/uidgid.h>
-> >>   #include <asm/device.h>
-> >> +#include <linux/slab.h>
-> >>
-> >>   struct device;
-> >>   struct device_private;
-> >> @@ -789,6 +790,11 @@ static inline const char *dev_name(const
-> >>   	return kobject_name(&dev->kobj);
-> >>   }
-> >>
-> >> +static inline void dev_free_name(struct device *dev)
-> >> +{
-> >> +	kfree(dev->kobj.name);
-> >> +}
-> >
-> > Please show how you would use this function, I can't add functions that
-> > no one calls.
-> >
-> > And given that this type of thing hasn't been needed before, I'm
-> > thinking that it still isn't needed :)
+On Sun, Oct 06, 2013 at 10:21:51PM -0500, Larry Finger wrote:
+> With kernel 3.12-rc3, kmemleak reports the following leak:
 > 
-> In the thread at 
-> http://lkml.indiana.edu/hypermail/linux/kernel/1310.0/02008.html, I reported a 
-> leak of kobj->name in the error path of the memstick driver. My solution was to 
-> free it in the error path by using
+> > unreferenced object 0xffff8800ae85c190 (size 16):
+> >   comm "kworker/u4:3", pid 685, jiffies 4294916336 (age 2831.760s)
+> >   hex dump (first 16 bytes):
+> >     6d 65 6d 73 74 69 63 6b 30 00 00 00 00 00 00 00  memstick0.......
+> >   backtrace:
+> >     [<ffffffff8146a0d1>] kmemleak_alloc+0x21/0x50
+> >     [<ffffffff81160720>] __kmalloc_track_caller+0x160/0x2f0
+> >     [<ffffffff81237b9b>] kvasprintf+0x5b/0x90
+> >     [<ffffffff8122c0c1>] kobject_set_name_vargs+0x21/0x60
+> >     [<ffffffff812e7f5c>] dev_set_name+0x3c/0x40
+> >     [<ffffffffa02bf918>] memstick_check+0xb8/0x340 [memstick]
+> >     [<ffffffff81069862>] process_one_work+0x1d2/0x670
+> >     [<ffffffff8106a88a>] worker_thread+0x11a/0x370
+> >     [<ffffffff81072ea6>] kthread+0xd6/0xe0
+> >     [<ffffffff81478bbc>] ret_from_fork+0x7c/0xb0
 > 
-> 	kfree(card->dev.kobj.name);
+> This problem was introduced by commit 0252c3b "memstick: struct device -
+> replace bus_id with dev_name(), dev_set_name()" where the name is not freed
+> in the error path. The name is also leaked in memstick_free_card(). 
 > 
-> Catalin Marinas responded with "It looks weird to go into dev.kobj internals 
-> here for freeing the name. There is also memstick_free_card() which doesn't seem 
-> to do anything about the name freeing."
+> Thanks to Catalin Marinas for suggesting the fix.
 > 
-> Later in the thread, he agreed that having a new function sounded like a good 
-> idea. I should have submitted the second patch using the new function as follows:
+> Cc: Kay Sievers <kay.sievers@vrfy.org>
+> Cc: Alex Dubov <oakad@yahoo.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+> ---
 > 
-> Index: wireless-testing-save/drivers/memstick/core/memstick.c
-> ===================================================================
-> --- wireless-testing-save.orig/drivers/memstick/core/memstick.c
-> +++ wireless-testing-save/drivers/memstick/core/memstick.c
-> @@ -195,6 +195,7 @@ static void memstick_free_card(struct de
->   {
->   	struct memstick_dev *card = container_of(dev, struct memstick_dev,
->   						 dev);
-> +	dev_free_name(&card->dev);
+> V2 fixes the typos in the commit message, and frees the name in
+> memstick_free_card() as well as the error path in memstick_check().
 
-This is incorrect, the cleanup for the struct device will have already
-freed the kobject name variable, you just did it twice :(
+Looking back at this, to try to figure out why the kmemleak report shows
+up, shows that this is a mess.  Why would we be erroring out _before_ we
+try to register the struct device with the driver core, yet we had
+already initialized the struct device structure?  Only set up the
+structure right before sending it to driver core, don't delay in
+allocation, only problems can happen (like here.)
 
->   	kfree(card);
->   }
-> 
-> @@ -415,6 +416,7 @@ static struct memstick_dev *memstick_all
->   	return card;
->   err_out:
->   	host->card = old_card;
-> +	dev_free_name(&card->dev);
-
-This shouldn't be needed, otherwise we need to do the same thing for all
-error paths for creating struct device.
-
-I've been down this path before, and every time I get confused.
-kobject_cleanup() frees the name of the kobject, and if you ever create
-a kobject (or struct device), you _have_ to properly dispose of it, you
-can't just think you can call 'kfree()' on the object if something fails
-(the driver core documentation should be saying this, right?)
-
-It's not just the name of the kobject that you will leak, struct device
-also has lots of internal pointers that needs to be freed.
-
-So this memstick patch isn't needed from what I can tell, so I don't see
-why we need the new .h inline function either.
-
-thanks,
+To fix this up, will take some major work, which I can't do, sorry, but
+this patch will not work either.
 
 greg k-h
