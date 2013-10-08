@@ -1,537 +1,736 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755899Ab3JHPnR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 11:43:17 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:58110 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755105Ab3JHPnN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 11:43:13 -0400
-Message-ID: <5254280B.6050705@atmel.com>
-Date: Tue, 8 Oct 2013 17:43:07 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Boris BREZILLON <b.brezillon@overkiz.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Andrew Victor <linux@maxim.org.za>,
-        "Jean-Christophe Plagniol-Villard" <plagnioj@jcrosoft.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>, "Felipe Balbi" <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Josh Wu <josh.wu@atmel.com>, Richard Genoud <richard.genoud@gmail.com>
-CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 11/19] clk: at91: add PMC peripheral clocks
-References: <1375937608-3773-1-git-send-email-b.brezillon@overkiz.com> <1375942611-9048-1-git-send-email-b.brezillon@overkiz.com>
-In-Reply-To: <1375942611-9048-1-git-send-email-b.brezillon@overkiz.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	id S1755934Ab3JHPn5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 11:43:57 -0400
+Received: from ns.mm-sol.com ([212.124.72.66]:38545 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755277Ab3JHPny (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 11:43:54 -0400
+Message-ID: <1381246952.24031.83.camel@iivanov-dev.int.mm-sol.com>
+Subject: Re: [PATCH v6 2/3] usb: phy: Add Qualcomm SS-USB and HS-USB drivers
+ for DW PHY's
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Stanimir Varbanov <svarbanov@mm-sol.com>
+Cc: balbi@ti.com, rob.herring@calxeda.com, pawel.moll@arm.com,
+        mark.rutland@arm.com, swarren@wwwdotorg.org, ian.campbell@citrix.com,
+        rob@landley.net, gregkh@linuxfoundation.org, grant.likely@linaro.org,
+        idos@codeaurora.org, mgautam@codeaurora.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Date: Tue, 08 Oct 2013 18:42:32 +0300
+In-Reply-To: <52527D38.1070505@mm-sol.com>
+References: <1381131897-13910-1-git-send-email-iivanov@mm-sol.com>
+	 <1381131897-13910-3-git-send-email-iivanov@mm-sol.com>
+	 <52527D38.1070505@mm-sol.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/08/2013 08:16, Boris BREZILLON :
-> This patch adds new at91 peripheral clock implementation using common clk
-> framework.
->
-> Almost all peripherals provided by at91 SoCs need a clock to work properly.
-> This clock is enabled/disabled using PCER/PCDR resgisters.
->
-> Each peripheral is given an id (see atmel's datasheets) which is used to
-> define and reference peripheral clocks.
->
-> Some new SoCs (at91sam9x5 and sama5d3) provide a new register (PCR) where you
-> can configure the peripheral clock as a division of the master clock.
-> This will help reducing the peripherals power comsumption.
->
-> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
-> ---
->   drivers/clk/at91/Makefile         |    2 +-
->   drivers/clk/at91/clk-peripheral.c |  401 +++++++++++++++++++++++++++++++++++++
->   drivers/clk/at91/pmc.c            |    9 +
->   drivers/clk/at91/pmc.h            |    5 +
->   4 files changed, 416 insertions(+), 1 deletion(-)
->   create mode 100644 drivers/clk/at91/clk-peripheral.c
->
-> diff --git a/drivers/clk/at91/Makefile b/drivers/clk/at91/Makefile
-> index c2b7068..04deba3 100644
-> --- a/drivers/clk/at91/Makefile
-> +++ b/drivers/clk/at91/Makefile
-> @@ -4,4 +4,4 @@
->
->   obj-y += pmc.o
->   obj-y += clk-main.o clk-pll.o clk-plldiv.o clk-master.o
-> -obj-y += clk-system.o
-> +obj-y += clk-system.o clk-peripheral.o
-> diff --git a/drivers/clk/at91/clk-peripheral.c b/drivers/clk/at91/clk-peripheral.c
-> new file mode 100644
-> index 0000000..1612739
-> --- /dev/null
-> +++ b/drivers/clk/at91/clk-peripheral.c
-> @@ -0,0 +1,401 @@
-> +/*
-> + * drivers/clk/at91/clk-peripheral.c
-> + *
-> + *  Copyright (C) 2013 Boris BREZILLON <b.brezillon@overkiz.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + *
-> + */
-> +
-> +#include <linux/clk-provider.h>
-> +#include <linux/clkdev.h>
-> +#include <linux/clk/at91_pmc.h>
-> +#include <linux/of.h>
-> +#include <linux/of_address.h>
-> +#include <linux/io.h>
-> +
-> +#include "pmc.h"
-> +
-> +#define PERIPHERAL_MAX		64
-> +
-> +#define PERIPHERAL_AT91RM9200	0
-> +#define PERIPHERAL_AT91SAM9X5	1
-> +
-> +#define to_clk_peripheral(hw) container_of(hw, struct clk_peripheral, hw)
-> +struct clk_peripheral {
-> +	struct clk_hw hw;
-> +	struct at91_pmc *pmc;
-> +	u32 id;
-> +};
-> +
-> +#define to_clk_sam9x5_peripheral(hw) \
-> +	container_of(hw, struct clk_sam9x5_peripheral, hw)
-> +struct clk_sam9x5_peripheral {
-> +	struct clk_hw hw;
-> +	struct at91_pmc *pmc;
-> +	u32 id;
-> +	u8 div;
-> +	u8 have_div_support;
-> +};
-> +
-> +static int clk_peripheral_enable(struct clk_hw *hw)
-> +{
-> +	struct clk_peripheral *periph = to_clk_peripheral(hw);
-> +	struct at91_pmc *pmc = periph->pmc;
-> +	int offset = AT91_PMC_PCER;
-> +
-> +	if (periph->id < 2)
-> +		return 0;
-> +	if (periph->id > 31)
 
-define constants
+Hi Stan,
 
-> +		offset = AT91_PMC_PCER1;
-> +	pmc_write(pmc, offset, 1 << (periph->id & 31));
+On Mon, 2013-10-07 at 12:22 +0300, Stanimir Varbanov wrote: 
+> Hi Ivan,
+> 
+> Few comments below.
+> 
+> On 10/07/2013 10:44 AM, Ivan T. Ivanov wrote:
+> > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+> > 
+> > These drivers handles control and configuration of the HS
+> > and SS USB PHY transceivers. They are part of the driver
+> > which manage Synopsys DesignWare USB3 controller stack
+> > inside Qualcomm SoC's.
+> > 
+> > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+> > ---
+> >  drivers/usb/phy/Kconfig         |   11 ++
+> >  drivers/usb/phy/Makefile        |    2 +
+> >  drivers/usb/phy/phy-msm-dw-hs.c |  329 ++++++++++++++++++++++++++++++++++
+> >  drivers/usb/phy/phy-msm-dw-ss.c |  375 +++++++++++++++++++++++++++++++++++++++
+> >  4 files changed, 717 insertions(+)
+> >  create mode 100644 drivers/usb/phy/phy-msm-dw-hs.c
+> >  create mode 100644 drivers/usb/phy/phy-msm-dw-ss.c
+> > 
+> > diff --git a/drivers/usb/phy/Kconfig b/drivers/usb/phy/Kconfig
+> > index d5589f9..bbb2d0e 100644
+> > --- a/drivers/usb/phy/Kconfig
+> > +++ b/drivers/usb/phy/Kconfig
+> > @@ -214,6 +214,17 @@ config USB_RCAR_PHY
+> >  	  To compile this driver as a module, choose M here: the
+> >  	  module will be called phy-rcar-usb.
+> >  
+> > +config USB_MSM_DW_PHYS
+> > +	tristate "Qualcomm USB controller DW PHY's wrappers support"
+> > +	depends on (USB || USB_GADGET) && ARCH_MSM
+> > +	select USB_PHY
+> > +	help
+> > +	  Enable this to support the DW USB PHY transceivers on MSM chips
+> > +	  with DWC3 USB core. It handles PHY initialization, clock
+> > +	  management required after resetting the hardware and power
+> > +	  management. This driver is required even for peripheral only or
+> > +	  host only mode configurations.
+> > +
+> >  config USB_ULPI
+> >  	bool "Generic ULPI Transceiver Driver"
+> >  	depends on ARM
+> > diff --git a/drivers/usb/phy/Makefile b/drivers/usb/phy/Makefile
+> > index 2135e85..4813eb5 100644
+> > --- a/drivers/usb/phy/Makefile
+> > +++ b/drivers/usb/phy/Makefile
+> > @@ -26,6 +26,8 @@ obj-$(CONFIG_USB_EHCI_TEGRA)		+= phy-tegra-usb.o
+> >  obj-$(CONFIG_USB_GPIO_VBUS)		+= phy-gpio-vbus-usb.o
+> >  obj-$(CONFIG_USB_ISP1301)		+= phy-isp1301.o
+> >  obj-$(CONFIG_USB_MSM_OTG)		+= phy-msm-usb.o
+> > +obj-$(CONFIG_USB_MSM_DW_PHYS)		+= phy-msm-dw-hs.o
+> > +obj-$(CONFIG_USB_MSM_DW_PHYS)		+= phy-msm-dw-ss.o
+> >  obj-$(CONFIG_USB_MV_OTG)		+= phy-mv-usb.o
+> >  obj-$(CONFIG_USB_MXS_PHY)		+= phy-mxs-usb.o
+> >  obj-$(CONFIG_USB_RCAR_PHY)		+= phy-rcar-usb.o
+> > diff --git a/drivers/usb/phy/phy-msm-dw-hs.c b/drivers/usb/phy/phy-msm-dw-hs.c
+> > new file mode 100644
+> > index 0000000..d29c1f1
+> > --- /dev/null
+> > +++ b/drivers/usb/phy/phy-msm-dw-hs.c
+> > @@ -0,0 +1,329 @@
+> > +/* Copyright (c) 2013, Code Aurora Forum. All rights reserved.
+> > + *
+> > + * This program is free software; you can redistribute it and/or modify
+> > + * it under the terms of the GNU General Public License version 2 and
+> > + * only version 2 as published by the Free Software Foundation.
+> > + *
+> > + * This program is distributed in the hope that it will be useful,
+> > + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> > + * GNU General Public License for more details.
+> > + */
+> > +
+> > +#include <linux/clk.h>
+> > +#include <linux/err.h>
+> > +#include <linux/io.h>
+> > +#include <linux/module.h>
+> > +#include <linux/of.h>
+> > +#include <linux/platform_device.h>
+> > +#include <linux/regulator/consumer.h>
+> > +#include <linux/usb/phy.h>
+> > +
+> > +/**
+> > + *  USB QSCRATCH Hardware registers
+> > + */
+> > +#define QSCRATCH_CTRL_REG		(0x04)
+> > +#define QSCRATCH_GENERAL_CFG		(0x08)
+> > +#define PHY_CTRL_REG			(0x10)
+> > +#define PARAMETER_OVERRIDE_X_REG	(0x14)
+> > +#define CHARGING_DET_CTRL_REG		(0x18)
+> > +#define CHARGING_DET_OUTPUT_REG		(0x1c)
+> > +#define ALT_INTERRUPT_EN_REG		(0x20)
+> > +#define PHY_IRQ_STAT_REG		(0x24)
+> > +#define CGCTL_REG			(0x28)
+> > +
+> 
+> Please remove braces above and below.
 
-A little macro here.
+ok
 
-> +	return 0;
-> +}
-> +
-> +static void clk_peripheral_disable(struct clk_hw *hw)
-> +{
-> +	struct clk_peripheral *periph = to_clk_peripheral(hw);
-> +	struct at91_pmc *pmc = periph->pmc;
-> +	int offset = AT91_PMC_PCDR;
-> +
-> +	if (periph->id < 2)
-> +		return;
-> +	if (periph->id > 31)
-> +		offset = AT91_PMC_PCDR1;
-> +	pmc_write(pmc, offset, 1 << (periph->id & 31));
+> 
+> > +#define PHY_3P3_VOL_MIN			3050000 /* uV */
+> > +#define PHY_3P3_VOL_MAX			3300000 /* uV */
+> > +#define PHY_3P3_HPM_LOAD		16000	/* uA */
+> > +
+> > +#define PHY_1P8_VOL_MIN			1800000 /* uV */
+> > +#define PHY_1P8_VOL_MAX			1800000 /* uV */
+> > +#define PHY_1P8_HPM_LOAD		19000	/* uA */
+> > +
+> > +/* TODO: these are suspicious */
+> > +#define USB_VDDCX_NO			1	/* index */
+> > +#define USB_VDDCX_MIN			5	/* index */
+> > +#define USB_VDDCX_MAX			7	/* index */
+> > +
+> > +struct msm_dw_hs_phy {
+> > +	struct usb_phy		phy;
+> > +	void __iomem		*base;
+> > +	struct device		*dev;
+> > +
+> > +	struct clk		*xo_clk;
+> > +	struct clk		*sleep_a_clk;
+> > +
+> > +	struct regulator	*v3p3;
+> > +	struct regulator	*v1p8;
+> > +	struct regulator	*vddcx;
+> > +	struct regulator	*vbus;
+> > +};
+> > +
+> > +#define	phy_to_dw_phy(x)	container_of((x), struct msm_dw_hs_phy, phy)
+> 
+> I think that using tab after #define is uncommon, isn't it?
 
-Ditto
+Not in this case. I see both patterns used.
 
-> +}
-> +
-> +static int clk_peripheral_is_enabled(struct clk_hw *hw)
-> +{
-> +	struct clk_peripheral *periph = to_clk_peripheral(hw);
-> +	struct at91_pmc *pmc = periph->pmc;
-> +	int offset = AT91_PMC_PCSR;
-> +
-> +	if (periph->id < 2)
-> +		return 1;
-> +	if (periph->id > 31)
-> +		offset = AT91_PMC_PCSR1;
-> +	return !!(pmc_read(pmc, offset) & (1 << (periph->id & 31)));
+> 
+> > +
+> > +
+> > +/**
+> > + * Write register.
+> > + *
+> > + * @base - MSM DWC3 PHY base virtual address.
+> > + * @offset - register offset.
+> > + * @val - value to write.
+> > + */
+> > +static inline void msm_dw_hs_write(void __iomem *base, u32 offset, u32 val)
+> 
+> Why inline? here and below
+> 
 
-Ditto
+Hm, because I will like function to be inlined??
 
-> +}
-> +
-> +static const struct clk_ops peripheral_ops = {
-> +	.enable = clk_peripheral_enable,
-> +	.disable = clk_peripheral_disable,
-> +	.is_enabled = clk_peripheral_is_enabled,
-> +};
-> +
-> +static struct clk * __init
-> +at91_clk_register_peripheral(struct at91_pmc *pmc, const char *name,
-> +			     const char *parent_name, u32 id)
-> +{
-> +	struct clk_peripheral *periph;
-> +	struct clk *clk = NULL;
-> +	struct clk_init_data init;
-> +
-> +	if (!pmc || !name || !parent_name)
-> +		return ERR_PTR(-EINVAL);
-> +
-> +	id &= 31;
+> > +{
+> > +	iowrite32(val, base + offset);
+> > +}
+> > +
+> > +/**
+> > + * Write register and read back masked value to confirm it is written
+> > + *
+> > + * @base - MSM DWC3 PHY base virtual address.
+> > + * @offset - register offset.
+> > + * @mask - register bitmask specifying what should be updated
+> > + * @val - value to write.
+> > + */
+> > +static inline void msm_dw_hs_write_readback(void __iomem *base, u32 offset,
+> > +					    const u32 mask, u32 val)
+> > +{
+> > +	u32 write_val, tmp = ioread32(base + offset);
+> > +
+> > +	tmp &= ~mask;		/* retain other bits */
+> > +	write_val = tmp | val;
+> > +
+> > +	iowrite32(write_val, base + offset);
+> > +
+> > +	/* Read back to see if val was written */
+> > +	tmp = ioread32(base + offset);
+> > +	tmp &= mask;		/* clear other bits */
+> > +
+> > +	if (tmp != val)
+> > +		pr_err("write: %x to QSCRATCH: %x FAILED\n", val, offset);
+> 
+> You should use dev_err() here. Or better remove the error printing and
+> make the function to return int.
 
-Ditto
+I change it to dev_err(). This could happen only if clocks are
+not properly setup.
 
-> +	periph = kzalloc(sizeof(*periph), GFP_KERNEL);
-> +	if (!periph)
-> +		return ERR_PTR(-ENOMEM);
-> +
-> +	init.name = name;
-> +	init.ops = &peripheral_ops;
-> +	init.parent_names = (parent_name ? &parent_name : NULL);
-> +	init.num_parents = (parent_name ? 1 : 0);
-> +	init.flags = 0;
-> +
-> +	periph->id = id;
-> +	periph->hw.init = &init;
-> +	periph->pmc = pmc;
-> +
-> +	clk = clk_register(NULL, &periph->hw);
-> +	if (IS_ERR(clk))
-> +		kfree(periph);
-> +
-> +	return clk;
-> +}
-> +
-> +static int clk_sam9x5_peripheral_enable(struct clk_hw *hw)
-> +{
-> +	struct clk_sam9x5_peripheral *periph = to_clk_sam9x5_peripheral(hw);
-> +	struct at91_pmc *pmc = periph->pmc;
-> +
-> +	if (periph->id < 2)
-> +		return 0;
-> +	pmc_write(pmc, AT91_PMC_PCR,
-> +		       (periph->id & AT91_PMC_PCR_PID) |
-> +		       AT91_PMC_PCR_CMD |
-> +		       AT91_PMC_PCR_DIV(periph->div) |
-> +		       AT91_PMC_PCR_EN);
-> +	return 0;
-> +}
-> +
-> +static void clk_sam9x5_peripheral_disable(struct clk_hw *hw)
-> +{
-> +	struct clk_sam9x5_peripheral *periph = to_clk_sam9x5_peripheral(hw);
-> +	struct at91_pmc *pmc = periph->pmc;
-> +
-> +	if (periph->id < 2)
-> +		return;
-> +
-> +	pmc_write(pmc, AT91_PMC_PCR,
-> +		       (periph->id & AT91_PMC_PCR_PID) |
-> +		       AT91_PMC_PCR_CMD);
-> +}
-> +
-> +static int clk_sam9x5_peripheral_is_enabled(struct clk_hw *hw)
-> +{
-> +	struct clk_sam9x5_peripheral *periph = to_clk_sam9x5_peripheral(hw);
-> +	struct at91_pmc *pmc = periph->pmc;
-> +	int ret;
-> +
-> +	if (periph->id < 2)
-> +		return 1;
-> +	pmc_lock(pmc);
-> +	pmc_write(pmc, AT91_PMC_PCR,
-> +		  (periph->id & AT91_PMC_PCR_PID));
-> +	ret = !!(pmc_read(pmc, AT91_PMC_PCR) & AT91_PMC_PCR_EN);
-> +	pmc_unlock(pmc);
-> +
-> +	return ret;
-> +}
-> +
-> +static unsigned long
-> +clk_sam9x5_peripheral_recalc_rate(struct clk_hw *hw,
-> +				  unsigned long parent_rate)
-> +{
-> +	struct clk_sam9x5_peripheral *periph = to_clk_sam9x5_peripheral(hw);
-> +	struct at91_pmc *pmc = periph->pmc;
-> +	u32 shift;
-> +
-> +	if (periph->id < 2 || !periph->have_div_support)
-> +		return parent_rate;
-> +	pmc_lock(pmc);
-> +	pmc_write(pmc, AT91_PMC_PCR,
-> +		       (periph->id & AT91_PMC_PCR_PID));
-> +	shift = (pmc_read(pmc, AT91_PMC_PCR) >> 16) & 0x3;
+> 
+> > +}
+> > +
+> > +static void msm_dw_hs_phy_shutdown(struct usb_phy *x)
+> > +{
+> > +	struct msm_dw_hs_phy *phy = phy_to_dw_phy(x);
+> > +	int ret;
+> > +
+> > +	ret = regulator_set_voltage(phy->v3p3, 0, PHY_3P3_VOL_MAX);
+> > +	if (ret)
+> > +		dev_err(phy->dev, "cannot set voltage for v3p3\n");
+> > +
+> > +	ret = regulator_set_voltage(phy->v1p8, 0, PHY_1P8_VOL_MAX);
+> > +	if (ret)
+> > +		dev_err(phy->dev, "cannot set voltage for v1p8\n");
+> > +
+> > +	ret = regulator_disable(phy->v1p8);
+> > +	if (ret)
+> > +		dev_err(phy->dev, "cannot disable v1p8\n");
+> > +
+> > +	ret = regulator_disable(phy->v3p3);
+> > +	if (ret)
+> > +		dev_err(phy->dev, "cannot disable v3p3\n");
+> > +
+> > +	ret = regulator_set_voltage(phy->vddcx, USB_VDDCX_NO, USB_VDDCX_MAX);
+> > +	if (ret)
+> > +		dev_err(phy->dev, "cannot set voltage for vddcx\n");
+> > +
+> > +	ret = regulator_disable(phy->vddcx);
+> > +	if (ret)
+> > +		dev_err(phy->dev, "cannot enable vddcx\n");
+> > +
+> > +	clk_disable_unprepare(phy->sleep_a_clk);
+> > +}
+> > +
+> > +static int msm_dw_hs_phy_init(struct usb_phy *x)
+> > +{
+> > +	struct msm_dw_hs_phy	*phy = phy_to_dw_phy(x);
+> 
+> Using tab after struct name is uncommon IMO. 
 
-define constants
+Take a look at OMAP's USB PHY driver, on which thes driver are based.
 
-> +	pmc_unlock(pmc);
-> +	return parent_rate >> shift;
-> +}
-> +
-> +static long clk_sam9x5_peripheral_round_rate(struct clk_hw *hw,
-> +					     unsigned long rate,
-> +					     unsigned long *parent_rate)
-> +{
-> +	int shift;
-> +	unsigned long best_rate;
-> +	unsigned long best_diff;
-> +	unsigned long cur_rate;
-> +	unsigned long cur_diff;
-> +	struct clk_sam9x5_peripheral *periph = to_clk_sam9x5_peripheral(hw);
-> +
-> +	if (periph->id < 2 || !periph->have_div_support)
-> +		return *parent_rate;
-> +	if (rate >= *parent_rate)
-> +		return rate;
-> +	best_diff = *parent_rate - rate;
-> +	best_rate = *parent_rate;
-> +	for (shift = 1; shift < 4; shift++) {
-> +		cur_rate = *parent_rate >> shift;
-> +		if (cur_rate < rate)
-> +			cur_diff = rate - cur_rate;
-> +		else
-> +			cur_diff = cur_rate - rate;
-> +		if (cur_diff < best_diff) {
-> +			best_diff = cur_diff;
-> +			best_rate = cur_rate;
-> +		}
-> +		if (!best_diff || cur_rate < rate)
-> +			break;
-> +	}
-> +	return best_rate;
-> +}
-> +
-> +static int clk_sam9x5_peripheral_set_rate(struct clk_hw *hw,
-> +					  unsigned long rate,
-> +					  unsigned long parent_rate)
-> +{
-> +	int shift;
-> +	struct clk_sam9x5_peripheral *periph = to_clk_sam9x5_peripheral(hw);
-> +	if (periph->id < 2 || !periph->have_div_support) {
-> +		if (parent_rate == rate)
-> +			return 0;
-> +		else
-> +			return -EINVAL;
-> +	}
-> +
-> +	for (shift = 0; shift < 4; shift++) {
-> +		if (parent_rate >> shift == rate) {
-> +			periph->div = shift;
-> +			return 0;
-> +		}
-> +	}
-> +
-> +	return -EINVAL;
-> +}
-> +
-> +static const struct clk_ops sam9x5_peripheral_ops = {
-> +	.enable = clk_sam9x5_peripheral_enable,
-> +	.disable = clk_sam9x5_peripheral_disable,
-> +	.is_enabled = clk_sam9x5_peripheral_is_enabled,
-> +	.recalc_rate = clk_sam9x5_peripheral_recalc_rate,
-> +	.round_rate = clk_sam9x5_peripheral_round_rate,
-> +	.set_rate = clk_sam9x5_peripheral_set_rate,
-> +};
-> +
-> +static struct clk * __init
-> +at91_clk_register_sam9x5_peripheral(struct at91_pmc *pmc, const char *name,
-> +				    const char *parent_name, u32 id,
-> +				    u32 default_div)
-> +{
-> +	struct clk_sam9x5_peripheral *periph;
-> +	struct clk *clk = NULL;
-> +	struct clk_init_data init;
-> +
-> +	if (!pmc || !name || !parent_name)
-> +		return ERR_PTR(-EINVAL);
-> +
-> +	periph = kzalloc(sizeof(*periph), GFP_KERNEL);
-> +	if (!periph)
-> +		return ERR_PTR(-ENOMEM);
-> +
-> +	init.name = name;
-> +	init.ops = &sam9x5_peripheral_ops;
-> +	init.parent_names = (parent_name ? &parent_name : NULL);
-> +	init.num_parents = (parent_name ? 1 : 0);
-> +	init.flags = CLK_SET_RATE_GATE;
-> +
-> +	periph->id = id;
-> +	periph->hw.init = &init;
-> +	periph->div = default_div;
-> +	periph->pmc = pmc;
-> +
-> +	clk = clk_register(NULL, &periph->hw);
-> +
+> 
+> > +	int ret;
 
-Ditto
+Important point is to consistent, and in this case I am not :-)
+Will remove variables indentation.
 
-> +	if (IS_ERR(clk))
-> +		kfree(periph);
-> +
-> +	return clk;
-> +}
-> +
-> +struct clk_periph_data {
-> +	struct clk **clks;
-> +	u8 *ids;
-> +	unsigned int clk_num;
-> +};
-> +
-> +static struct clk * __init
-> +of_clk_src_periph_get(struct of_phandle_args *clkspec, void *data)
-> +{
-> +	struct clk_periph_data *clk_data = data;
-> +	unsigned int id = clkspec->args[0];
-> +	int i;
-> +
-> +	if (id >= PERIPHERAL_MAX)
-> +		goto err;
-> +
-> +	for (i = 0; i < clk_data->clk_num; i++) {
-> +		if (clk_data->ids[i] == id)
-> +			return clk_data->clks[i];
-> +	}
-> +
-> +err:
-> +	pr_err("%s: invalid clock id %d\n", __func__, id);
-> +	return ERR_PTR(-EINVAL);
-> +}
-> +
-> +static void __init
-> +of_at91_clk_periph_setup(struct device_node *np, struct at91_pmc *pmc, u8 type)
-> +{
-> +	int num;
-> +	int i;
-> +	u32 id;
-> +	struct clk *clk;
-> +	const char *parent_name;
-> +	const char *name;
-> +	u32 divisor;
-> +	struct clk **clks;
-> +	u8 *ids;
-> +	struct clk_periph_data *clktab;
-> +	struct device_node *periphclknp;
-> +
-> +	parent_name = of_clk_get_parent_name(np, 0);
-> +	if (!parent_name)
-> +		return;
-> +
-> +	num = of_get_child_count(np);
-> +	if (!num || num > PERIPHERAL_MAX)
-> +		return;
-> +
-> +	clktab = kzalloc(sizeof(*clktab), GFP_KERNEL);
-> +	if (!clktab)
-> +		return;
-> +
-> +	ids = kzalloc(num * sizeof(*ids), GFP_KERNEL);
-> +	if (!ids)
-> +		goto out_free_clktab;
-> +
-> +	clks = kzalloc(num * sizeof(*clks), GFP_KERNEL);
-> +	if (!clks)
-> +		goto out_free_ids;
-> +
-> +	i = 0;
-> +	for_each_child_of_node(np, periphclknp) {
-> +		name = periphclknp->name;
-> +
-> +		if (of_property_read_u32(periphclknp, "atmel,clk-id", &id))
-> +			goto out_free_clks;
-> +		if (id >= PERIPHERAL_MAX)
-> +			goto out_free_clks;
-> +
-> +		if (type == PERIPHERAL_AT91RM9200) {
-> +			clk = at91_clk_register_peripheral(pmc, name,
-> +							   parent_name, id);
-> +		} else {
-> +			if (of_property_read_u32(periphclknp,
-> +						 "atmel,clk-default-divisor",
-> +						 &divisor))
-> +				divisor = 0;
-> +
-> +			clk = at91_clk_register_sam9x5_peripheral(pmc, name,
-> +								  parent_name,
-> +								  id,
-> +								  divisor);
-> +		}
-> +		if (IS_ERR(clk))
-> +			goto out_free_clks;
-> +
-> +		clks[i] = clk;
-> +		ids[i++] = id;
-> +	}
-> +
-> +	clktab->clk_num = num;
-> +	clktab->clks = clks;
-> +	clktab->ids = ids;
-> +	of_clk_add_provider(np, of_clk_src_periph_get, clktab);
-> +	return;
-> +
-> +out_free_clks:
-> +	kfree(clks);
-> +out_free_ids:
-> +	kfree(ids);
-> +out_free_clktab:
-> +	kfree(clktab);
-> +}
-> +
-> +void __init of_at91rm9200_clk_periph_setup(struct device_node *np,
-> +					   struct at91_pmc *pmc)
-> +{
-> +	of_at91_clk_periph_setup(np, pmc, PERIPHERAL_AT91RM9200);
-> +}
-> +
-> +void __init of_at91sam9x5_clk_periph_setup(struct device_node *np,
-> +					   struct at91_pmc *pmc)
-> +{
-> +	of_at91_clk_periph_setup(np, pmc, PERIPHERAL_AT91SAM9X5);
-> +}
-> diff --git a/drivers/clk/at91/pmc.c b/drivers/clk/at91/pmc.c
-> index c674ef2..1a56f1c 100644
-> --- a/drivers/clk/at91/pmc.c
-> +++ b/drivers/clk/at91/pmc.c
-> @@ -256,6 +256,15 @@ static const struct of_device_id pmc_clk_ids[] __initdata = {
->   		.compatible = "atmel,at91rm9200-clk-system",
->   		.data = of_at91rm9200_clk_sys_setup,
->   	},
-> +	/* Peripheral clocks */
-> +	{
-> +		.compatible = "atmel,at91rm9200-clk-peripheral",
-> +		.data = of_at91rm9200_clk_periph_setup,
-> +	},
-> +	{
-> +		.compatible = "atmel,at91sam9x5-clk-peripheral",
-> +		.data = of_at91sam9x5_clk_periph_setup,
-> +	},
->   	{ /*sentinel*/ }
->   };
->
-> diff --git a/drivers/clk/at91/pmc.h b/drivers/clk/at91/pmc.h
-> index f88ef41..08c30fb 100644
-> --- a/drivers/clk/at91/pmc.h
-> +++ b/drivers/clk/at91/pmc.h
-> @@ -77,4 +77,9 @@ extern void __init of_at91sam9x5_clk_master_setup(struct device_node *np,
->   extern void __init of_at91rm9200_clk_sys_setup(struct device_node *np,
->   					       struct at91_pmc *pmc);
->
-> +extern void __init of_at91rm9200_clk_periph_setup(struct device_node *np,
-> +						  struct at91_pmc *pmc);
-> +extern void __init of_at91sam9x5_clk_periph_setup(struct device_node *np,
-> +						  struct at91_pmc *pmc);
-> +
->   #endif /* __PMC_H_ */
->
+> > +
+> > +	clk_prepare_enable(phy->sleep_a_clk);
+> > +
+> > +	ret = regulator_set_voltage(phy->vddcx, USB_VDDCX_MIN, USB_VDDCX_MAX);
+> > +	if (ret) {
+> > +		dev_err(phy->dev, "cannot set voltage for vddcx\n");
+> > +		return ret;
+> > +	}
+> > +
+> > +	ret = regulator_enable(phy->vddcx);
+> > +	if (ret) {
+> > +		dev_err(phy->dev, "cannot enable vddcx\n");
+> > +		return ret;
+> > +	}
+> > +
+> > +	ret = regulator_set_voltage(phy->v3p3, PHY_3P3_VOL_MIN,
+> > +				    PHY_3P3_VOL_MAX);
+> > +	if (ret) {
+> > +		dev_err(phy->dev, "cannot set voltage for v3p3\n");
+> > +		return ret;
+> > +	}
+> > +
+> > +	ret = regulator_set_voltage(phy->v1p8, PHY_1P8_VOL_MIN,
+> > +				    PHY_1P8_VOL_MAX);
+> > +	if (ret) {
+> > +		dev_err(phy->dev, "cannot set voltage for v1p8\n");
+> > +		return ret;
+> > +	}
+> > +
+> > +	ret = regulator_set_optimum_mode(phy->v1p8, PHY_1P8_HPM_LOAD);
+> > +	if (ret < 0) {
+> > +		dev_err(phy->dev, "cannot set HPM of regulator v1p8\n");
+> > +		return ret;
+> > +	}
+> > +
+> > +	ret = regulator_enable(phy->v1p8);
+> > +	if (ret) {
+> > +		dev_err(phy->dev, "cannot enable v1p8\n");
+> > +		return ret;
+> > +	}
+> > +
+> > +	ret = regulator_set_optimum_mode(phy->v3p3, PHY_3P3_HPM_LOAD);
+> > +	if (ret < 0) {
+> > +		dev_err(phy->dev, "cannot set HPM of regulator v3p3\n");
+> > +		return ret;
+> > +	}
+> > +
+> > +	ret = regulator_enable(phy->v3p3);
+> > +	if (ret) {
+> > +		dev_err(phy->dev, "cannot enable v3p3\n");
+> > +		return ret;
+> > +	}
+> > +
+> > +	/*
+> > +	 * HSPHY Initialization: Enable UTMI clock and clamp enable HVINTs,
+> > +	 * and disable RETENTION (power-on default is ENABLED)
+> > +	 */
+> > +	msm_dw_hs_write(phy->base, PHY_CTRL_REG, 0x5220bb2);
+> > +	usleep_range(2000, 2200);
+> > +
+> > +	/*
+> > +	 * write HSPHY init value to QSCRATCH reg to set HSPHY parameters like
+> > +	 * VBUS valid threshold, disconnect valid threshold, DC voltage level,
+> > +	 * preempasis and rise/fall time.
+> > +	 */
+> > +	msm_dw_hs_write_readback(phy->base, PARAMETER_OVERRIDE_X_REG,
+> > +				0x03ffffff, 0x00d191a4);
+> > +
+> > +	/* Disable (bypass) VBUS and ID filters */
+> > +	msm_dw_hs_write(phy->base, QSCRATCH_GENERAL_CFG, 0x78);
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static int msm_dw_hs_phy_set_vbus(struct usb_phy *x, int on)
+> > +{
+> > +	struct msm_dw_hs_phy	*phy = phy_to_dw_phy(x);
+> > +	int ret;
+> > +
+> > +	if (IS_ERR(phy->vbus))
+> > +		return on ? PTR_ERR(phy->vbus) : 0;
+> > +
+> > +	if (on)
+> > +		ret = regulator_enable(phy->vbus);
+> > +	else
+> > +		ret = regulator_disable(phy->vbus);
+> > +
+> > +	if (ret)
+> > +		dev_err(x->dev, "Cannot %s Vbus\n", on ? "set" : "off");
+> 
+> This looks like debug code. Should the error being handled by the upper
+> layers? I'd remove this.
+
+I could lower this to debug, but will prefer to keep message here.
+
+> 
+> > +	return ret;
+> > +}
+> > +
+> > +static int msm_dw_hs_probe(struct platform_device *pdev)
+> > +{
+> > +	struct msm_dw_hs_phy	*phy;
+> > +	struct resource		*res;
+> > +	void __iomem		*base;
+> > +
+> > +	phy = devm_kzalloc(&pdev->dev, sizeof(*phy), GFP_KERNEL);
+> > +	if (!phy)
+> > +		return -ENOMEM;
+> > +
+> > +	platform_set_drvdata(pdev, phy);
+> > +
+> > +	phy->dev = &pdev->dev;
+> > +
+> > +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> > +	base = devm_ioremap_resource(phy->dev, res);
+> > +	if (IS_ERR(base))
+> > +		return PTR_ERR(base);
+> > +
+> > +	phy->vddcx = devm_regulator_get(phy->dev, "vddcx");
+> > +	if (IS_ERR(phy->vddcx)) {
+> > +		dev_dbg(phy->dev, "cannot get vddcx\n");
+> > +		return  PTR_ERR(phy->vddcx);
+> > +	}
+> > +
+> > +	phy->v3p3 = devm_regulator_get(phy->dev, "v3p3");
+> > +	if (IS_ERR(phy->v3p3)) {
+> > +		dev_dbg(phy->dev, "cannot get v3p3\n");
+> > +		return PTR_ERR(phy->v3p3);
+> > +	}
+> > +
+> > +	phy->v1p8 = devm_regulator_get(phy->dev, "v1p8");
+> > +	if (IS_ERR(phy->v1p8)) {
+> > +		dev_dbg(phy->dev, "cannot get v1p8\n");
+> > +		return PTR_ERR(phy->v1p8);
+> > +	}
+> > +
+> > +	phy->vbus = devm_regulator_get(phy->dev, "vbus");
+> > +	if (IS_ERR(phy->vbus))
+> > +		dev_dbg(phy->dev, "Failed to get vbus\n");
+> > +
+> > +	phy->xo_clk = devm_clk_get(phy->dev, "xo");
+> > +	if (IS_ERR(phy->xo_clk)) {
+> > +		dev_dbg(phy->dev, "cannot get TCXO buffer handle\n");
+> > +		return PTR_ERR(phy->xo_clk);
+> > +	}
+> > +
+> > +	phy->sleep_a_clk = devm_clk_get(phy->dev, "sleep_a");
+> 
+> What means the "_a" in clock name?
+
+They are 2 PHY's on 8074 chip. This drivers is supposed to 
+operate on PHY 0, thus sleep_a. PHY 1 is using sleep_b. Take a look 
+here http://www.spinics.net/lists/arm-kernel/msg276945.html
 
 
--- 
-Nicolas Ferre
+> 
+> > +	if (IS_ERR(phy->sleep_a_clk)) {
+> > +		dev_dbg(phy->dev, "failed to get sleep_a clock\n");
+> > +		return PTR_ERR(phy->sleep_a_clk);
+> > +	}
+> > +
+> > +	clk_prepare_enable(phy->xo_clk);
+> > +
+> > +	phy->base		= base;
+> > +	phy->phy.dev		= phy->dev;
+> > +	phy->phy.label		= "msm-dw-hsphy";
+> > +	phy->phy.init		= msm_dw_hs_phy_init;
+> > +	phy->phy.shutdown	= msm_dw_hs_phy_shutdown;
+> > +	phy->phy.set_vbus	= msm_dw_hs_phy_set_vbus;
+> > +	phy->phy.type		= USB_PHY_TYPE_USB2;
+> > +	phy->phy.state          = OTG_STATE_UNDEFINED;
+> > +
+> > +	usb_add_phy_dev(&phy->phy);
+> 
+> this function returns int, why you don't checked it?
+> 
+
+Functions will fail only if we do not pass correct 'dev' instance, 
+which could not happen here. Anyway will check for error.
+
+> > +
+> > +	return 0;
+> > +}
+
+<snip>
+
+> > +
+> > +static struct platform_driver msm_dw_hs_driver = {
+> > +	.probe		= msm_dw_hs_probe,
+> > +	.remove		= msm_dw_hs_remove,
+> > +	.driver		= {
+> > +		.name	= "msm-dw-hsphy",
+> > +		.owner	= THIS_MODULE,
+> > +		.of_match_table = msm_dw_hs_id_table,
+> > +	},
+> > +};
+> > +
+> > +module_platform_driver(msm_dw_hs_driver);
+> > +
+> > +MODULE_ALIAS("platform:msm-dw-hsphy");
+> > +MODULE_LICENSE("GPL v2");
+> > +MODULE_DESCRIPTION("DesignWare USB3 MSM HSPHY driver");
+> > diff --git a/drivers/usb/phy/phy-msm-dw-ss.c b/drivers/usb/phy/phy-msm-dw-ss.c
+> > new file mode 100644
+> > index 0000000..6734fa1
+> > --- /dev/null
+> > +++ b/drivers/usb/phy/phy-msm-dw-ss.c
+> > @@ -0,0 +1,375 @@
+> > +/* Copyright (c) 2013, Code Aurora Forum. All rights reserved.
+> > + *
+> > + * This program is free software; you can redistribute it and/or modify
+> > + * it under the terms of the GNU General Public License version 2 and
+> > + * only version 2 as published by the Free Software Foundation.
+> > + *
+> > + * This program is distributed in the hope that it will be useful,
+> > + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> > + * GNU General Public License for more details.
+> > + */
+> > +
+> > +#include <linux/clk.h>
+> > +#include <linux/err.h>
+> > +#include <linux/io.h>
+> > +#include <linux/module.h>
+> > +#include <linux/of.h>
+> > +#include <linux/platform_device.h>
+> > +#include <linux/regulator/consumer.h>
+> > +#include <linux/usb/phy.h>
+> > +
+> > +/**
+> > + *  USB QSCRATCH Hardware registers
+> > + */
+> > +#define PHY_CTRL_REG			(0x00)
+> > +#define PHY_PARAM_CTRL_1		(0x04)
+> > +#define PHY_PARAM_CTRL_2		(0x08)
+> > +#define CR_PROTOCOL_DATA_IN_REG		(0x0c)
+> > +#define CR_PROTOCOL_DATA_OUT_REG	(0x10)
+> > +#define CR_PROTOCOL_CAP_ADDR_REG	(0x14)
+> > +#define CR_PROTOCOL_CAP_DATA_REG	(0x18)
+> > +#define CR_PROTOCOL_READ_REG		(0x1c)
+> > +#define CR_PROTOCOL_WRITE_REG		(0x20)
+> 
+> Remove braces.
+
+sure.
+
+> 
+
+<snip>
+
+> > +
+> > +static int msm_dw_ss_phy_init(struct usb_phy *x)
+> > +{
+> > +	struct msm_dw_ss_phy *phy = phy_to_dw_phy(x);
+> > +	u32 data = 0;
+> > +	int ret;
+> > +
+> > +	ret = regulator_set_voltage(phy->vddcx, USB_VDDCX_MIN, USB_VDDCX_MAX);
+> > +	if (ret) {
+> > +		dev_err(phy->dev, "cannot set voltage for vddcx\n");
+> > +		return ret;
+> > +	}
+> > +
+> > +	ret = regulator_enable(phy->vddcx);
+> > +	if (ret) {
+> > +		dev_err(phy->dev, "cannot enable vddcx\n");
+> > +		return ret;
+> > +	}
+> > +
+> > +	ret = regulator_set_voltage(phy->v1p8, PHY_1P8_VOL_MIN,
+> > +				    PHY_1P8_VOL_MAX);
+> > +	if (ret) {
+> > +		regulator_disable(phy->vddcx);
+> > +		dev_err(phy->dev, "cannot set v1p8\n");
+> > +		return ret;
+> > +	}
+> > +
+> > +	ret = regulator_enable(phy->v1p8);
+> > +	if (ret) {
+> > +		regulator_disable(phy->vddcx);
+> > +		dev_err(phy->dev, "cannot enable v1p8\n");
+> > +		return ret;
+> > +	}
+> > +
+> > +	clk_prepare_enable(phy->ref_clk);
+> > +	usleep_range(1000, 1200);
+> > +
+> > +	/* SSPHY: Use ref_clk from pads and set its parameters */
+> > +	msm_dw_ss_write(phy->base, PHY_CTRL_REG, 0x10210002);
+> 
+> Defines?
+> 
+> > +	msleep(30);
+> > +	/* Assert SSPHY reset */
+> > +	msm_dw_ss_write(phy->base, PHY_CTRL_REG, 0x10210082);
+> > +	usleep_range(2000, 2200);
+> > +	/* De-assert SSPHY reset - power and ref_clock must be ON */
+> > +	msm_dw_ss_write(phy->base, PHY_CTRL_REG, 0x10210002);
+> > +	usleep_range(2000, 2200);
+> > +	/* Ref clock must be stable now, enable ref clock for HS mode */
+> > +	msm_dw_ss_write(phy->base, PHY_CTRL_REG, 0x10210102);
+> > +	usleep_range(2000, 2200);
+> 
+> You can extract the bits and add defines with names got from comments.
+
+You know as much as I know, suggestions for define names?
+
+> 
+> > +
+> > +	/*
+> > +	 * WORKAROUND: There is SSPHY suspend bug due to which USB enumerates
+> > +	 * in HS mode instead of SS mode. Workaround it by asserting
+> > +	 * LANE0.TX_ALT_BLOCK.EN_ALT_BUS to enable TX to use alt bus mode
+> > +	 */
+> > +	data = msm_dw_ss_read_phycreg(phy->base, 0x102d);
+> > +	data |= (1 << 7);
+> > +	msm_dw_ss_write_phycreg(phy->base, 0x102D, data);
+> > +
+> 
+> Defines? 
+
+ok. this one is easy :-)
+
+> Also you mixing uppper and lower case in hex numberes, use
+> lower case.
+> 
+
+will fix it.
+
+> > +	data = msm_dw_ss_read_phycreg(phy->base, 0x1010);
+> > +	data &= ~0xff0;
+> > +	data |= 0x20;
+> > +	msm_dw_ss_write_phycreg(phy->base, 0x1010, data);
+> > +
+> > +	/*
+> > +	 * Fix RX Equalization setting as follows
+> > +	 * LANE0.RX_OVRD_IN_HI. RX_EQ_EN set to 0
+> > +	 * LANE0.RX_OVRD_IN_HI.RX_EQ_EN_OVRD set to 1
+> > +	 * LANE0.RX_OVRD_IN_HI.RX_EQ set to 3
+> > +	 * LANE0.RX_OVRD_IN_HI.RX_EQ_OVRD set to 1
+> > +	 */
+> > +	data = msm_dw_ss_read_phycreg(phy->base, 0x1006);
+> 
+> Defines?
+
+Ok this is also easy, but will #define make code easy to read. 
+We have such nice comment here.
+
+> 
+> > +	data &= ~(1 << 6);
+> > +	data |= (1 << 7);
+> > +	data &= ~(0x7 << 8);
+> > +	data |= (0x3 << 8);
+> > +	data |= (0x1 << 11);
+> > +	msm_dw_ss_write_phycreg(phy->base, 0x1006, data);
+> 
+> You mixing two styles. The first is using magic numbers combined with
+> comment and the second style is mixing magic bits and masks. Could you
+> use one defines on all places?
+
+Will try to make it consistent.
+
+> 
+> > +
+> > +	/*
+> > +	 * Set EQ and TX launch amplitudes as follows
+> > +	 * LANE0.TX_OVRD_DRV_LO.PREEMPH set to 22
+> > +	 * LANE0.TX_OVRD_DRV_LO.AMPLITUDE set to 127
+> > +	 * LANE0.TX_OVRD_DRV_LO.EN set to 1.
+> > +	 */
+> > +	data = msm_dw_ss_read_phycreg(phy->base, 0x1002);
+> > +	data &= ~0x3f80;
+> > +	data |= (0x16 << 7);
+> > +	data &= ~0x7f;
+> > +	data |= (0x7f | (1 << 14));
+> > +	msm_dw_ss_write_phycreg(phy->base, 0x1002, data);
+> > +
+> > +	/*
+> > +	 * Set the QSCRATCH PHY_PARAM_CTRL1 parameters as follows
+> > +	 * TX_FULL_SWING [26:20] amplitude to 127
+> > +	 * TX_DEEMPH_3_5DB [13:8] to 22
+> > +	 * LOS_BIAS [2:0] to 0x5
+> > +	 */
+> > +	msm_dw_ss_write_readback(phy->base, PHY_PARAM_CTRL_1,
+> > +				   0x07f03f07, 0x07f01605);
+> > +	return 0;
+> > +}
+> > +
+> > +static int msm_dw_ss_probe(struct platform_device *pdev)
+> > +{
+> > +	struct msm_dw_ss_phy	*phy;
+> > +	struct resource		*res;
+> > +	void __iomem		*base;
+> > +
+> > +	phy = devm_kzalloc(&pdev->dev, sizeof(*phy), GFP_KERNEL);
+> > +	if (!phy)
+> > +		return -ENOMEM;
+> > +
+> > +	platform_set_drvdata(pdev, phy);
+> > +
+> > +	phy->dev = &pdev->dev;
+> > +
+> > +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> > +	base = devm_ioremap_resource(phy->dev, res);
+> > +	if (IS_ERR(base))
+> > +		return PTR_ERR(base);
+> > +
+> > +	phy->vddcx = devm_regulator_get(phy->dev, "vddcx");
+> > +	if (IS_ERR(phy->vddcx)) {
+> > +		dev_dbg(phy->dev, "cannot get vddcx\n");
+> > +		return  PTR_ERR(phy->vddcx);
+> > +	}
+> > +
+> > +	phy->v1p8 = devm_regulator_get(phy->dev, "v1p8");
+> > +	if (IS_ERR(phy->v1p8)) {
+> > +		dev_dbg(phy->dev, "cannot get v1p8\n");
+> > +		return  PTR_ERR(phy->v1p8);
+> > +	}
+> > +
+> > +	phy->xo_clk = devm_clk_get(phy->dev, "xo");
+> > +	if (IS_ERR(phy->xo_clk)) {
+> > +		dev_dbg(phy->dev, "cannot get TCXO buffer handle\n");
+> > +		return PTR_ERR(phy->xo_clk);
+> > +	}
+> > +
+> > +	phy->ref_clk = devm_clk_get(phy->dev, "ref");
+> > +	if (IS_ERR(phy->ref_clk)) {
+> > +		dev_dbg(phy->dev, "cannot get ref clock handle\n");
+> > +		return PTR_ERR(phy->ref_clk);
+> > +	}
+> > +
+> > +	clk_prepare_enable(phy->xo_clk);
+> > +
+> > +	phy->base		= base;
+> > +	phy->phy.dev		= phy->dev;
+> > +	phy->phy.label		= "msm-dw-ssphy";
+> > +	phy->phy.init		= msm_dw_ss_phy_init;
+> > +	phy->phy.shutdown       = msm_dw_ss_phy_shutdown;
+> > +	phy->phy.type		= USB_PHY_TYPE_USB3;
+> > +
+> > +	usb_add_phy_dev(&phy->phy);
+> 
+> Check the error, please.
+
+Same comment.
+
+> 
+> > +
+> > +	return 0;
+> > +}
+> > +
+
+<snip> 
+> > 
+> 
+> regards,
+> Stan
+
+Thanks,
+Ivan
+
+
