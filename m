@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755354Ab3JHIrd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 04:47:33 -0400
-Received: from mga09.intel.com ([134.134.136.24]:59651 "EHLO mga09.intel.com"
+	id S1755402Ab3JHIrk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 04:47:40 -0400
+Received: from mga09.intel.com ([134.134.136.24]:12893 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754927Ab3JHIrW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 04:47:22 -0400
+	id S1754927Ab3JHIrf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 04:47:35 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,1056,1371106800"; 
-   d="scan'208";a="389469459"
+   d="scan'208";a="389469559"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
@@ -17,9 +17,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
         Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH V5 5/9] perf tools: fix annotate_browser__callq()
-Date: Tue,  8 Oct 2013 11:45:52 +0300
-Message-Id: <1381221956-16699-6-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH V5 9/9] perf tools: add ability to find kcore in build-id cache
+Date: Tue,  8 Oct 2013 11:45:56 +0300
+Message-Id: <1381221956-16699-10-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1381221956-16699-1-git-send-email-adrian.hunter@intel.com>
 References: <1381221956-16699-1-git-send-email-adrian.hunter@intel.com>
@@ -28,51 +28,181 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When following a call, annotate_browser__callq()
-uses the current symbol's map to look up the
-target ip.  That will not work if the target ip
-is on a map with a different mapping (i.e.
-start - pgoff is different).
+When no vmlinux is found, tools will use kallsyms and,
+if possible, kcore.  Add the ability to find kcore in
+the build-id cache.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/ui/browsers/annotate.c | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ tools/perf/util/symbol.c | 147 +++++++++++++++++++++++++++++++++--------------
+ 1 file changed, 103 insertions(+), 44 deletions(-)
 
-diff --git a/tools/perf/ui/browsers/annotate.c b/tools/perf/ui/browsers/annotate.c
-index 08545ae..d9edb35 100644
---- a/tools/perf/ui/browsers/annotate.c
-+++ b/tools/perf/ui/browsers/annotate.c
-@@ -445,14 +445,16 @@ static bool annotate_browser__callq(struct annotate_browser *browser,
- 	struct symbol *sym = ms->sym;
- 	struct annotation *notes;
- 	struct symbol *target;
-+	struct map *map;
- 	u64 ip;
- 	char title[SYM_TITLE_MAX_SIZE];
- 
- 	if (!ins__is_call(dl->ins))
- 		return false;
- 
--	ip = ms->map->map_ip(ms->map, dl->ops.target.addr);
--	target = map__find_symbol(ms->map, ip, NULL);
-+	map = ms->map;
-+	ip = dl->ops.target.addr;
-+	target = map__find_other_map_symbol(&map, &ip, NULL);
- 	if (target == NULL) {
- 		ui_helpline__puts("The called function was not found.");
- 		return true;
-@@ -469,8 +471,8 @@ static bool annotate_browser__callq(struct annotate_browser *browser,
- 	}
- 
- 	pthread_mutex_unlock(&notes->lock);
--	symbol__tui_annotate(target, ms->map, evsel, hbt);
--	sym_title(sym, ms->map, title, sizeof(title));
-+	symbol__tui_annotate(target, map, evsel, hbt);
-+	sym_title(sym, map, title, sizeof(title));
- 	ui_browser__show_title(&browser->b, title);
- 	return true;
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index dc5783c..9049f62 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -1442,6 +1442,105 @@ out:
+ 	return err;
  }
+ 
++static int find_matching_kcore(struct map *map, char *dir, size_t dir_sz)
++{
++	char kallsyms_filename[PATH_MAX];
++	struct dirent *dent;
++	int ret = -1;
++	DIR *d;
++
++	d = opendir(dir);
++	if (!d)
++		return -1;
++
++	while (1) {
++		dent = readdir(d);
++		if (!dent)
++			break;
++		if (dent->d_type != DT_DIR)
++			continue;
++		scnprintf(kallsyms_filename, sizeof(kallsyms_filename),
++			  "%s/%s/kallsyms", dir, dent->d_name);
++		if (!validate_kcore_modules(kallsyms_filename, map)) {
++			strlcpy(dir, kallsyms_filename, dir_sz);
++			ret = 0;
++			break;
++		}
++	}
++
++	closedir(d);
++
++	return ret;
++}
++
++static char *dso__find_kallsyms(struct dso *dso, struct map *map)
++{
++	u8 host_build_id[BUILD_ID_SIZE];
++	char sbuild_id[BUILD_ID_SIZE * 2 + 1];
++	bool is_host = false;
++	char path[PATH_MAX];
++
++	if (!dso->has_build_id) {
++		/*
++		 * Last resort, if we don't have a build-id and couldn't find
++		 * any vmlinux file, try the running kernel kallsyms table.
++		 */
++		goto proc_kallsyms;
++	}
++
++	if (sysfs__read_build_id("/sys/kernel/notes", host_build_id,
++				 sizeof(host_build_id)) == 0)
++		is_host = dso__build_id_equal(dso, host_build_id);
++
++	build_id__sprintf(dso->build_id, sizeof(dso->build_id), sbuild_id);
++
++	/* Use /proc/kallsyms if possible */
++	if (is_host) {
++		DIR *d;
++		int fd;
++
++		/* If no cached kcore go with /proc/kallsyms */
++		scnprintf(path, sizeof(path), "%s/[kernel.kcore]/%s",
++			  buildid_dir, sbuild_id);
++		d = opendir(path);
++		if (!d)
++			goto proc_kallsyms;
++		closedir(d);
++
++		/*
++		 * Do not check the build-id cache, until we know we cannot use
++		 * /proc/kcore.
++		 */
++		fd = open("/proc/kcore", O_RDONLY);
++		if (fd != -1) {
++			close(fd);
++			/* If module maps match go with /proc/kallsyms */
++			if (!validate_kcore_modules("/proc/kallsyms", map))
++				goto proc_kallsyms;
++		}
++
++		/* Find kallsyms in build-id cache with kcore */
++		if (!find_matching_kcore(map, path, sizeof(path)))
++			return strdup(path);
++
++		goto proc_kallsyms;
++	}
++
++	scnprintf(path, sizeof(path), "%s/[kernel.kallsyms]/%s",
++		  buildid_dir, sbuild_id);
++
++	if (access(path, F_OK)) {
++		pr_err("No kallsyms or vmlinux with build-id %s was found\n",
++		       sbuild_id);
++		return NULL;
++	}
++
++	return strdup(path);
++
++proc_kallsyms:
++	return strdup("/proc/kallsyms");
++}
++
+ static int dso__load_kernel_sym(struct dso *dso, struct map *map,
+ 				symbol_filter_t filter)
+ {
+@@ -1490,51 +1589,11 @@ static int dso__load_kernel_sym(struct dso *dso, struct map *map,
+ 	if (symbol_conf.symfs[0] != 0)
+ 		return -1;
+ 
+-	/*
+-	 * Say the kernel DSO was created when processing the build-id header table,
+-	 * we have a build-id, so check if it is the same as the running kernel,
+-	 * using it if it is.
+-	 */
+-	if (dso->has_build_id) {
+-		u8 kallsyms_build_id[BUILD_ID_SIZE];
+-		char sbuild_id[BUILD_ID_SIZE * 2 + 1];
+-
+-		if (sysfs__read_build_id("/sys/kernel/notes", kallsyms_build_id,
+-					 sizeof(kallsyms_build_id)) == 0) {
+-			if (dso__build_id_equal(dso, kallsyms_build_id)) {
+-				kallsyms_filename = "/proc/kallsyms";
+-				goto do_kallsyms;
+-			}
+-		}
+-		/*
+-		 * Now look if we have it on the build-id cache in
+-		 * $HOME/.debug/[kernel.kallsyms].
+-		 */
+-		build_id__sprintf(dso->build_id, sizeof(dso->build_id),
+-				  sbuild_id);
+-
+-		if (asprintf(&kallsyms_allocated_filename,
+-			     "%s/.debug/[kernel.kallsyms]/%s",
+-			     getenv("HOME"), sbuild_id) == -1) {
+-			pr_err("Not enough memory for kallsyms file lookup\n");
+-			return -1;
+-		}
+-
+-		kallsyms_filename = kallsyms_allocated_filename;
++	kallsyms_allocated_filename = dso__find_kallsyms(dso, map);
++	if (!kallsyms_allocated_filename)
++		return -1;
+ 
+-		if (access(kallsyms_filename, F_OK)) {
+-			pr_err("No kallsyms or vmlinux with build-id %s "
+-			       "was found\n", sbuild_id);
+-			free(kallsyms_allocated_filename);
+-			return -1;
+-		}
+-	} else {
+-		/*
+-		 * Last resort, if we don't have a build-id and couldn't find
+-		 * any vmlinux file, try the running kernel kallsyms table.
+-		 */
+-		kallsyms_filename = "/proc/kallsyms";
+-	}
++	kallsyms_filename = kallsyms_allocated_filename;
+ 
+ do_kallsyms:
+ 	err = dso__load_kallsyms(dso, kallsyms_filename, map, filter);
 -- 
 1.7.11.7
 
