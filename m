@@ -1,129 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756110Ab3JHWsP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 18:48:15 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:8231 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755789Ab3JHWsL (ORCPT
+	id S1756684Ab3JHWts (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 18:49:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44855 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755840Ab3JHWtr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 18:48:11 -0400
-X-Greylist: delayed 601 seconds by postgrey-1.27 at vger.kernel.org; Tue, 08 Oct 2013 18:48:11 EDT
-From: Tim Bird <tim.bird@sonymobile.com>
-To: <cl@linux.com>, <catalin.marinas@arm.com>,
-        <bjorn.andersson@sonymobile.com>, <frowand.list@gmail.com>,
-        <tim.bird@sonymobile.com>, <tbird20d@gmail.com>
-CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        Roman Bobniev <Roman.Bobniev@sonymobile.com>
-Subject: [PATCH] slub: proper kmemleak tracking if CONFIG_SLUB_DEBUG disabled
-Date: Tue, 8 Oct 2013 15:37:12 -0700
-Message-ID: <1381271832-13047-1-git-send-email-tim.bird@sonymobile.com>
-X-Mailer: git-send-email 1.8.2.2
+	Tue, 8 Oct 2013 18:49:47 -0400
+Date: Tue, 8 Oct 2013 15:48:40 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Fengguang Wu <fengguang.wu@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        xen-devel@lists.xenproject.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [xen] double fault: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+Message-ID: <20131008224840.GA15303@kroah.com>
+References: <CA+55aFz85in-ntjF_VT4=kBoUrw1m8ON7xL-=431vQKL5oCMxQ@mail.gmail.com>
+ <20131007083505.GA22585@localhost>
+ <CA+55aFzknXawREZRBrr0Hs+crKt62fPf+S8SubJHXk84U8AFaw@mail.gmail.com>
+ <CA+55aFyrDme-oNKe9=9vppct5+qCo4=Ug35np1fZiC1da64i_Q@mail.gmail.com>
+ <20131008020918.GA1220@localhost>
+ <20131008021452.GA6456@localhost>
+ <CA+55aFwrovZf-LYa=_SyMNvqQkTfxREm0YuzDk8wJy+Krs0xzw@mail.gmail.com>
+ <20131008031152.GA8218@localhost>
+ <20131008121742.GA29280@localhost>
+ <20131008221417.GF25034@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131008221417.GF25034@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Roman Bobniev <Roman.Bobniev@sonymobile.com>
+On Tue, Oct 08, 2013 at 11:14:17PM +0100, Russell King - ARM Linux wrote:
+> On Tue, Oct 08, 2013 at 08:17:42PM +0800, Fengguang Wu wrote:
+> > I find the above debug messages very helpful in locating the buggy
+> > driver. How about enabling it whenever CONFIG_DEBUG_KOBJECT_RELEASE is
+> > enabled? Something like
+> > 
+> >  #ifdef CONFIG_DEBUG_KOBJECT_RELEASE
+> > -       pr_debug("kobject: '%s' (%p): %s, parent %p (delayed)\n",
+> > +       printk(KERN_INFO "kobject: '%s' (%p): %s, parent %p (delayed)\n",
+> >                  kobject_name(kobj), kobj, __func__, kobj->parent);
+> > 
+> > pr_debug() won't be displayed by default, and it depends on
+> > CONFIG_DYNAMIC_DEBUG.
+> 
+> Please consider using pr_info() instead of printk(KERN_INFO - it's
+> slightly less typing.
+> 
+> I can see that being a useful change while we have these problematical
+> instances to track down, but I do wonder whether it'll make the thing
+> too noisy.  Does anyone have other opinions on this point?  Linus?
+> Greg?
 
-Move more kmemleak calls into hook functions, and make it so
-that all hooks (both inside and outside of #ifdef CONFIG_SLUB_DEBUG_ON)
-call the appropriate kmemleak routines.  This allows for
-kmemleak to be configured independently of slub debug features.
+It's going to make things really noisy at boot time, but then it should
+settle down and not be bad at all.  Let's try it and see if it helps or
+not.
 
-It also fixes a bug where kmemleak was only partially enabled
-in some configurations.
+thanks,
 
-Signed-off-by: Roman Bobniev <Roman.Bobniev@sonymobile.com>
-Signed-off-by: Tim Bird <tim.bird@sonymobile.com>
----
- mm/slub.c | 40 ++++++++++++++++++++++++++++++++++++----
- 1 file changed, 36 insertions(+), 4 deletions(-)
-
-diff --git a/mm/slub.c b/mm/slub.c
-index c3eb3d3..95e170e 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -933,6 +933,11 @@ static void trace(struct kmem_cache *s, struct page *page, void *object,
-  * Hooks for other subsystems that check memory allocations. In a typical
-  * production configuration these hooks all should produce no code at all.
-  */
-+static inline post_alloc_hook(void *ptr, size_t size, gfp_t flags)
-+{
-+	kmemleak_alloc(ptr, size, 1, flags);
-+}
-+
- static inline int slab_pre_alloc_hook(struct kmem_cache *s, gfp_t flags)
- {
- 	flags &= gfp_allowed_mask;
-@@ -973,6 +978,11 @@ static inline void slab_free_hook(struct kmem_cache *s, void *x)
- 		debug_check_no_obj_freed(x, s->object_size);
- }
- 
-+static inline void free_hook(void *x)
-+{
-+	kmemleak_free(x);
-+}
-+
- /*
-  * Tracking of fully allocated slabs for debugging purposes.
-  *
-@@ -1260,13 +1270,35 @@ static inline void inc_slabs_node(struct kmem_cache *s, int node,
- static inline void dec_slabs_node(struct kmem_cache *s, int node,
- 							int objects) {}
- 
-+/*
-+ * Define the hook functions as empty of most debug code.
-+ * However, leave the kmemleak calls so they can be configured
-+ * independently of CONFIG_SLUB_DEBUG_ON.
-+ */
-+static inline post_alloc_hook(void *ptr, size_t size, gfp_t flags)
-+{
-+	kmemleak_alloc(ptr, size, 1, flags);
-+}
-+
- static inline int slab_pre_alloc_hook(struct kmem_cache *s, gfp_t flags)
- 							{ return 0; }
- 
- static inline void slab_post_alloc_hook(struct kmem_cache *s, gfp_t flags,
--		void *object) {}
-+		void *object)
-+{
-+	kmemleak_alloc_recursive(object, s->object_size, 1, s->flags,
-+		flags & gfp_allowed_mask);
-+}
- 
--static inline void slab_free_hook(struct kmem_cache *s, void *x) {}
-+static inline void slab_free_hook(struct kmem_cache *s, void *x)
-+{
-+	kmemleak_free_recursive(x, s->flags);
-+}
-+
-+static inline void free_hook(void *x)
-+{
-+	kmemleak_free(x);
-+}
- 
- #endif /* CONFIG_SLUB_DEBUG */
- 
-@@ -3272,7 +3304,7 @@ static void *kmalloc_large_node(size_t size, gfp_t flags, int node)
- 	if (page)
- 		ptr = page_address(page);
- 
--	kmemleak_alloc(ptr, size, 1, flags);
-+	post_alloc_hook(ptr, size, flags);
- 	return ptr;
- }
- 
-@@ -3336,7 +3368,7 @@ void kfree(const void *x)
- 	page = virt_to_head_page(x);
- 	if (unlikely(!PageSlab(page))) {
- 		BUG_ON(!PageCompound(page));
--		kmemleak_free(x);
-+		free_hook(x);
- 		__free_memcg_kmem_pages(page, compound_order(page));
- 		return;
- 	}
--- 
-1.8.2.2
-
+greg k-h
