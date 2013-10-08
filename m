@@ -1,96 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756420Ab3JHUey (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 16:34:54 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:55518 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754418Ab3JHUeu (ORCPT
+	id S1756564Ab3JHUfH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 16:35:07 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:41711 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756484Ab3JHUfA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 16:34:50 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>, Rob Landley <rob@landley.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-References: <CAJfpegsxgnSRUW-E5HM3uT5QfGyUtn_v=i4Ppkkkutp34287AA@mail.gmail.com>
-	<87a9kkax0j.fsf@xmission.com>
-	<CAJfpeguv+7giYNpAuXE9Ja_9BEwB0-fZBVgRSeVqpzSXgQYZ6Q@mail.gmail.com>
-	<8761v7h2pt.fsf@tw-ebiederman.twitter.com>
-	<CAJfpegtT7y-1HhbEVAMKkdQugTG_w7G_epGtQHGvQLpcZB5FVA@mail.gmail.com>
-	<87li281wx6.fsf_-_@xmission.com> <87fvsg1wv6.fsf_-_@xmission.com>
-	<20131008134453.GG14242@tucsk.piliscsaba.szeredi.hu>
-Date: Tue, 08 Oct 2013 13:31:45 -0700
-In-Reply-To: <20131008134453.GG14242@tucsk.piliscsaba.szeredi.hu> (Miklos
-	Szeredi's message of "Tue, 8 Oct 2013 15:44:53 +0200")
-Message-ID: <87li23y05q.fsf@tw-ebiederman.twitter.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Tue, 8 Oct 2013 16:35:00 -0400
+Date: Tue, 8 Oct 2013 22:34:55 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 6/6] x86: Allow disabling HW_BREAKPOINTS and PERF_EVENTS
+Message-ID: <20131008203453.GF8392@localhost.localdomain>
+References: <1380922788-23112-1-git-send-email-andi@firstfloor.org>
+ <1380922788-23112-7-git-send-email-andi@firstfloor.org>
+ <20131005070806.GA16922@gmail.com>
+ <20131005170552.GI6882@two.firstfloor.org>
+ <20131008195556.GD8392@localhost.localdomain>
+ <20131008200521.GE13848@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1+wuGYIVd97zIDVXW7oN+gatWMDAPh4RCI=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  1.5 TR_Symld_Words too many words that have symbols inside
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
-	*      [score: 0.0287]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: **;Miklos Szeredi <miklos@szeredi.hu>
-X-Spam-Relay-Country: 
-Subject: Re: [RFC][PATCH 1/3] vfs: Keep a list of mounts on a mount point
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131008200521.GE13848@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Miklos Szeredi <miklos@szeredi.hu> writes:
+On Tue, Oct 08, 2013 at 10:05:21PM +0200, Peter Zijlstra wrote:
+> On Tue, Oct 08, 2013 at 09:55:59PM +0200, Frederic Weisbecker wrote:
+> > 1) make breakpoints independant from perf. The drawback is that we must then
+> > add seperate hooks on context switch for ptrace breakpoints. OTOH we get
+> > rid of the perf -> breakpoint -> perf circular dependency, which is the very
+> > controversial thing.
+> 
+> we used to have this in __switch_to_xtra(), right?
 
->> @@ -691,6 +693,7 @@ static void detach_mnt(struct mount *mnt, struct path *old_path)
->>  	list_del_init(&mnt->mnt_hash);
->>  	put_mountpoint(mnt->mnt_mp);
->>  	mnt->mnt_mp = NULL;
->> +	list_del_init(&mnt->mnt_mp_list);
->
-> Should be done *before* put_mountpoint(), for obvious reasons.
->
-> And a BUG_ON(!list_empty(&mp->m_list)) in put_mountpoint() for good measure (and
-> no, WARN_ON() is not better here, since use-after-free is definitely worse than
-> a BUG).
-
-Good point.  I will take a look at making this change shortly and repost
-the patches.
-
-
->>  }
->>  
->>  /*
->> @@ -705,6 +708,7 @@ void mnt_set_mountpoint(struct mount *mnt,
->>  	child_mnt->mnt_mountpoint = dget(mp->m_dentry);
->>  	child_mnt->mnt_parent = mnt;
->>  	child_mnt->mnt_mp = mp;
->> +	list_add_tail(&child_mnt->mnt_mp_list, &mp->m_list);
->>  }
->>  
->>  /*
->> @@ -1193,6 +1197,7 @@ void umount_tree(struct mount *mnt, int propagate)
->>  			p->mnt_parent->mnt_ghosts++;
->>  			put_mountpoint(p->mnt_mp);
->>  			p->mnt_mp = NULL;
->> +			list_del_init(&mnt->mnt_mp_list);
->
-> Ditto.
->
->>  		}
->>  		change_mnt_propagation(p, MS_PRIVATE);
->>  	}
->> -- 
->> 1.7.5.4
->> 
+Right.
