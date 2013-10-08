@@ -1,42 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755971Ab3JHRb7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 13:31:59 -0400
-Received: from mail-vb0-f48.google.com ([209.85.212.48]:35722 "EHLO
-	mail-vb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753013Ab3JHRb5 (ORCPT
+	id S1756052Ab3JHRdy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 13:33:54 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:45691 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753013Ab3JHRdw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 13:31:57 -0400
+	Tue, 8 Oct 2013 13:33:52 -0400
+Message-ID: <525441DD.2090109@ti.com>
+Date: Tue, 8 Oct 2013 12:33:17 -0500
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-In-Reply-To: <20131008171522.GA29277@localhost>
-References: <CA+55aFykGxmaE9hq9xd+6HHFtEube_2QnB+ipW4oF71c6vyXAw@mail.gmail.com>
-	<20131008171522.GA29277@localhost>
-Date: Tue, 8 Oct 2013 10:31:57 -0700
-X-Google-Sender-Auth: mjX4diNXkRtoo_cZMARPrtxMWFs
-Message-ID: <CA+55aFzQC=W010GTxjXjBnsKO0CycXe7VZB+LTiNNtuBug_rbw@mail.gmail.com>
-Subject: Re: [x86] BUG: unable to handle kernel NULL pointer dereference at (null)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Richard Henderson <rth@twiddle.net>, Jakub Jelinek <jakub@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+CC: "mturquette@linaro.org" <mturquette@linaro.org>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "broonie@linaro.org" <broonie@linaro.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        J Keerthy <j-keerthy@ti.com>
+Subject: Re: [PATCH V3] clk: palmas: add clock driver for palmas
+References: <1381238480-18852-1-git-send-email-ldewangan@nvidia.com> <525408B3.1000107@ti.com> <5254193A.70104@nvidia.com> <52542F69.30407@ti.com> <52543C1B.3000403@wwwdotorg.org>
+In-Reply-To: <52543C1B.3000403@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 8, 2013 at 10:15 AM, Fengguang Wu <fengguang.wu@intel.com> wrote:
->
-> [   27.865982] Kernel BUG at c10563af [verbose debug info unavailable]
+On 10/08/2013 12:08 PM, Stephen Warren wrote:
+> On 10/08/2013 10:14 AM, Nishanth Menon wrote:
+>> On 10/08/2013 09:39 AM, Laxman Dewangan wrote:
+>>> Thanks Nishanth for review.
+>>>
+>>> On Tuesday 08 October 2013 06:59 PM, Nishanth Menon wrote:
+>>>> On 10/08/2013 08:21 AM, Laxman Dewangan wrote:
+>>>>> Palmas devices has two clock output CLK32K_KG and CLK32K_KG_AUDIO
+>>>> not all palmas devices have 2 clocks - example: tps659038
+>>>
+>>> This is for generic palmas and I have seen it for TPS65913, TPS65914, 
+>>> TPS80036. If the generic one is not compatible then it need to add  
+>>> device specific and at that time, it is require to update the binding 
+>>> document accordingly.
+>>
+>> ?? you do have two clocks inside the device they should be represented
+>> as two compatible entities - that simplifies everyone's life.
+> 
+> I think the terminology you're using here is quite confusing.
+> 
+> Are you talking about having two different compatible values for two
+> different HW designs, where those different designs implement different
+> sets of clocks (which makes sense), or two different DT nodes for two
+> different clocks (which IMHO doesn't always, unless those different
+> clocks *truly* are separate IP blocks with completely independent
+> register regions, and where those IP blocks are likely to be re-used
+> as-is in other chips).
+> 
+clk32k and clk32k_audio are two different resources and since these
+are two different resource instances - a "compatible" matching an
+actual device is my suggestion.
 
-Ugh, you've turned off DEBUG_BUGVERBOSE.
+clk32k and clk32k_audio are two different resources because they have
+their specific set of controls registers and may even be independently
+present in a Palmas variant.
 
-We probably shouldn't even allow that. The space savings aren't worth the pain.
+To highlight this: The example of tps659038 where clk32k is not
+present, but clk32k_audio is present (and happens to be disabled by
+default - thanks to an OTP on the chip - on platform like DRA7-evm, it
+is used to for 32k clk for wlan -currently hacked in u-boot using
+plain i2c writes[1] - yes it is yucky).
 
-I'm not seeing the pattern in your oopses, there's at least three
-different cases. At a guess, it's some lock - or a memory allocator -
-that is broken by the bitop breakage, and then the oopses are just
-fallout from that..
+Obviously, there are many ways to implement this. based on the current
+implementation, it indicates that if i create a node with
+"ti,palmas-clk" -i'd create two clocks - that is wrong for tps659038.
 
-            Linus
+Now (with the current approach), if I have to create a one clock for
+tps659038, i have to fix the for adding clock providers, add up
+"ti,tps659038-clk" etc.. it is doable - but IMHO, I dont need to do it
+with only the relevant nodes in dts.
+
+Further, it has no way to indicate that device X uses clock Y using
+clocks =<&xyz> either.
+
+[1] DRA7-evm u-boot hack.
+i2c dev 0
+i2c probe
+i2c mw 0x58 0xfb 0x2b (select secondary function for GPIO_5)
+i2c mw 0x58 0xd5 0x01 (enable audio clock)
+
+-- 
+Regards,
+Nishanth Menon
