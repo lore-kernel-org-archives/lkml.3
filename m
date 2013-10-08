@@ -1,82 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755782Ab3JHT3t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 15:29:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43913 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752488Ab3JHT3s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 15:29:48 -0400
-Date: Tue, 8 Oct 2013 12:29:40 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Christian Ruppert <christian.ruppert@abilis.com>
-Cc: linux-kernel@vger.kernel.org, alexander.stein@systec-electronic.com,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Noam Camus <noamc@ezchip.com>,
-        pierrick hascoet <pierrick.hascoet@abilis.com>
-Subject: Re: [PATCH REBASE] Add option to disable kernel compression
-Message-Id: <20131008122940.63aae6f1769a162eb8e5e602@linux-foundation.org>
-In-Reply-To: <1381235612-23988-1-git-send-email-christian.ruppert@abilis.com>
-References: <2065777.DKEM6dSyjc@ws-stein>
-	<1381235612-23988-1-git-send-email-christian.ruppert@abilis.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756135Ab3JHTbo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 15:31:44 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:38555 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754509Ab3JHTbm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 15:31:42 -0400
+Date: Tue, 8 Oct 2013 12:31:17 -0700
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+To: Michael Ellerman <michael@ellerman.id.au>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Michael Ellerman <michaele@au1.ibm.com>, linux-kernel@vger.kernel.org,
+        Stephane Eranian <eranian@google.com>, linuxppc-dev@ozlabs.org,
+        Paul Mackerras <paulus@samba.org>,
+        Anshuman Khandual <khandual@linux.vnet.ibm.com>
+Subject: Re: [PATCH 5/9][v5] powerpc: implement is_instr_load_store().
+Message-ID: <20131008193117.GA699@us.ibm.com>
+References: <1380672911-12812-1-git-send-email-sukadev@linux.vnet.ibm.com>
+ <1380672911-12812-6-git-send-email-sukadev@linux.vnet.ibm.com>
+ <20131003053519.GC17237@concordia>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131003053519.GC17237@concordia>
+X-Operating-System: Linux 2.0.32 on an i486
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13100819-0320-0000-0000-00000148A2F0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  8 Oct 2013 14:33:32 +0200 Christian Ruppert <christian.ruppert@abilis.com> wrote:
+Michael Ellerman [michael@ellerman.id.au] wrote:
+| bool is_load_store(int ext_opcode)
+| {
+|         upper = ext_opcode >> 5;
+|         lower = ext_opcode & 0x1f;
+| 
+|         /* Short circuit as many misses as we can */
+|         if (lower < 3 || lower > 23)
+|             return false;
 
-> Until now, kernel compression can only be disabled by deselecting
-> HAVE_<compression> in the architecture Kconfig.
+I see some loads/stores like these which are not covered by
+the above check. Is it ok to ignore them ?
 
-Scratching my head a bit.  There's no way of deselecting these things. 
-I *think* you mean "by editing arch/xxx/Kconfig and removing all the
-"select HAVE_KERNEL_<compression>" lines"?
+	lower == 29: ldepx, stdepx, eviddepx, evstddepx
 
-> However, some
-> users/platforms within the same architecture might want to use
-> compression while others might want to disable it.
+	lower == 31: lwepx, lbepx, lfdepx, stfdepx,
 
-Why would anyone want to run an uncompressed kernel, btw?  Boot time?
+Looking through the opcode maps, I also see these for primary
+op code 4:
 
-> This patch is a solution to the dilemma.
-> 
-> ...
->
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -118,7 +118,6 @@ config HAVE_KERNEL_LZ4
->  choice
->  	prompt "Kernel compression mode"
->  	default KERNEL_GZIP
-> -	depends on HAVE_KERNEL_GZIP || HAVE_KERNEL_BZIP2 || HAVE_KERNEL_LZMA || HAVE_KERNEL_XZ || HAVE_KERNEL_LZO || HAVE_KERNEL_LZ4
->  	help
->  	  The linux kernel is a kind of self-extracting executable.
->  	  Several compression algorithms are available, which differ
-> @@ -137,6 +136,13 @@ choice
->  
->  	  If in doubt, select 'gzip'
->  
-> +config KERNEL_UNCOMPRESSED
-> +	bool "No compression"
-> +	help
-> +	  No compression at all. The kernel is huge but the compression and
-> +	  decompression times are zero.
-> +	  This is usually not what you want.
-> +
->  config KERNEL_GZIP
->  	bool "Gzip"
->  	depends on HAVE_KERNEL_GZIP
+	evldd, evlddx, evldwx, evldw, evldh, evldhx.
 
-It's odd to create CONFIG_KERNEL_UNCOMPRESSED and not use it for
-anything, but I guess Kconfig's `choice' forces this.
+Should we include those also ?
 
+Sukadev
 
