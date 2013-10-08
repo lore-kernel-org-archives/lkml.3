@@ -1,106 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753826Ab3JHFcY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 01:32:24 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:65219 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751932Ab3JHFcX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 01:32:23 -0400
-Date: Tue, 8 Oct 2013 07:32:18 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Sonny Rao <sonnyrao@chromium.org>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [GIT PULL 0/6] perf/urgent fixes
-Message-ID: <20131008053218.GC14353@gmail.com>
-References: <1381172549-3210-1-git-send-email-acme@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1381172549-3210-1-git-send-email-acme@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754135Ab3JHFdM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 01:33:12 -0400
+Received: from gw.cm.dream.jp ([59.157.128.2]:38423 "EHLO vsmtp02.cm.dti.ne.jp"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752721Ab3JHFdJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 01:33:09 -0400
+Date: Tue, 8 Oct 2013 14:30:40 +0900
+From: takasi-y@ops.dti.ne.jp
+To: SH-Linux <linux-sh@vger.kernel.org>
+Cc: Magnus Damm <magnus.damm@gmail.com>, ben.dooks@codethink.co.uk,
+        Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        devicetree@vger.kernel.org, Simon Horman <horms@verge.net.au>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 0/3] ARM: shmobile: kzm9d: migrate to common clock
+ framework with DT
+Message-Id: <20131008143040.52f36df8edb7ab63224d8433@ops.dti.ne.jp>
+X-Mailer: Sylpheed 3.4.0beta3 (GTK+ 2.24.17; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch series makes kzm9d to move to new clk implementation
+ based on the common clock framework and device tree, when configured
+ as a part of multi-platform.
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+These patches do not remove sh-clkfwk version, even on emev2.
+Non multi-platform configuration still uses sh-clkfwk.
 
-> From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> 
-> Hi Ingo,
-> 
-> 	Please consider pulling,
-> 
-> - Arnaldo
-> 
-> The following changes since commit d8b11a0cbd1c66ce283eb9dabe0498dfa6483f32:
-> 
->   perf/x86: Clean up cap_user_time* setting (2013-10-04 09:58:55 +0200)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-urgent-for-mingo
-> 
-> for you to fetch changes up to b314e5cfd11fd78545ce6c2be42646254390c1aa:
-> 
->   perf session: Fix infinite loop on invalid perf.data file (2013-10-04 15:17:46 -0300)
-> 
-> ----------------------------------------------------------------
-> perf/urgent fixes:
-> 
-> . The libaudit test was failing in some systems due to a unescaped newline, fix
->   it so that the 'trace' tool can be built in such systems.
-> 
-> . Fix installation of libexec components.
-> 
-> . Add default handler for mmap2 events so that tools that don't explicitely
->   define an MMAP2 handler don't crash, fix from David Ahern.
-> 
-> . Fix to find line information for probe list, from Masami Hiramatsu.
-> 
-> . Set child_pid after perf_evlist__prepare_workload(), fix from Namhyung Kim.
-> 
-> . Fix infinite loop on invalid perf.data file, from Namhyung Kim.
-> 
-> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-> 
-> ----------------------------------------------------------------
-> Arnaldo Carvalho de Melo (2):
->       perf tools: Fix libaudit test
->       perf tools: Fix installation of libexec components
-> 
-> David Ahern (1):
->       perf tools: Add default handler for mmap2 events
-> 
-> Masami Hiramatsu (1):
->       perf probe: Fix to find line information for probe list
-> 
-> Namhyung Kim (2):
->       perf stat: Set child_pid after perf_evlist__prepare_workload()
->       perf session: Fix infinite loop on invalid perf.data file
-> 
->  tools/perf/Makefile                 |  1 +
->  tools/perf/builtin-stat.c           |  1 +
->  tools/perf/config/feature-tests.mak |  2 +-
->  tools/perf/util/dwarf-aux.c         | 25 ++++++++++++++++---
->  tools/perf/util/dwarf-aux.h         |  6 ++++-
->  tools/perf/util/header.c            | 12 +++++++++
->  tools/perf/util/probe-finder.c      | 49 +++++++++++++++++++++++++------------
->  tools/perf/util/session.c           |  4 ++-
->  8 files changed, 77 insertions(+), 23 deletions(-)
+Should be applied and compiled on
+ kernel/git/horms/renesas.git tag:renesas-devel-20131008
 
-Pulled, thanks Arnaldo!
+Confirmed for boot up to command prompt.
+- kzm9d board / multi-platform + kzm9d configuration
+- kzm9d board / kzm9d configuration for regression
+for compilation
+- ape6evm(non-multi-platform) configuration for regression.
 
-	Ingo
+Changes since v1:
+
+Generally, simplified, depending on
+ [PATCH 00/05] ARM: shmobile: KZM9D Multiplatform update
+series posted recently by Magnus.
+
+[PATCH 1/6] clocksource: em_sti: convert to clk_prepare/unprepare
+[PATCH 2/6] serial8250-em: convert to clk_prepare/unprepare
+Removed because the new base includes it.
+Thank you for your review, Daniel, Greg, Laurent, and Magnus.
+
+[PATCH 3/6] sh: clkfwk: Select sh-/common- clkfwk alternatively
+Removed because "KZM9D Multiplatform update" had made this not needed.
+
+[PATCH v2 1/3] clk: emev2: Add support for emev2 SMU clocks with DT
+[PATCH v2 2/3] ARM: shmobile: emev2: Add clock tree description in DT
+(was 3/6, 4/6)
+Add @unit-address to smu in dts.
+Reassemble patches to (.txt + .c) + .dts from .txt + (.c + .dts).
+Only used when multi-platform configuration.
+Extra blank line removed.
+
+[PATCH v2 3/3] ARM: shmobile: kzm9d: Use common clock framework
+(was 6/6)
+No Kconfig modification because of "KZM9D Multiplatform update".
+
+
+Takashi YOSHII (3):
+  clk: emev2: Add support for emev2 SMU clocks with DT
+  ARM: shmobile: emev2: Add clock tree description in DT
+  ARM: shmobile: kzm9d: Use common clock framework
+
+ .../devicetree/bindings/clock/emev2-clock.txt      |  98 +++++++++++++++++++
+ arch/arm/boot/dts/emev2.dtsi                       |  84 +++++++++++++++++
+ arch/arm/mach-shmobile/board-kzm9d-reference.c     |   5 +-
