@@ -1,291 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754533Ab3JHFfv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 01:35:51 -0400
-Received: from gw.cm.dream.jp ([59.157.128.2]:34692 "EHLO vsmtp02.cm.dti.ne.jp"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754456Ab3JHFfr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 01:35:47 -0400
-Date: Tue, 8 Oct 2013 14:32:17 +0900
-From: takasi-y@ops.dti.ne.jp
-To: SH-Linux <linux-sh@vger.kernel.org>
-Cc: Magnus Damm <magnus.damm@gmail.com>, ben.dooks@codethink.co.uk,
-        Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        devicetree@vger.kernel.org, Simon Horman <horms@verge.net.au>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/3] clk: emev2: Add support for emev2 SMU clocks with DT
-Message-Id: <20131008143217.0611fba0c0d27d9c622759f3@ops.dti.ne.jp>
-In-Reply-To: <20131008143040.52f36df8edb7ab63224d8433@ops.dti.ne.jp>
-References: <20131008143040.52f36df8edb7ab63224d8433@ops.dti.ne.jp>
-X-Mailer: Sylpheed 3.4.0beta3 (GTK+ 2.24.17; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753630Ab3JHFnE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 01:43:04 -0400
+Received: from alvesta.synopsys.com ([198.182.60.77]:36213 "EHLO
+	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751919Ab3JHFnC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 01:43:02 -0400
+Message-ID: <52539B4C.9040400@synopsys.com>
+Date: Tue, 8 Oct 2013 11:12:36 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Rob Herring <robherring2@gmail.com>, lkml <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>
+CC: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH v2 25/29] arc: use common of_flat_dt_match_machine
+References: <1381163377-21044-1-git-send-email-robherring2@gmail.com> <1381163377-21044-26-git-send-email-robherring2@gmail.com>
+In-Reply-To: <1381163377-21044-26-git-send-email-robherring2@gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.243]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Device tree clock binding document for EMMA Mobile EV2 SMU,
-And Common clock framework based implementation of it.
-Following nodes are defined to describe clock tree.
-- renesas,emev2-smu
-- renesas,emev2-smu-clkdiv
-- renesas,emev2-smu-gclk
+Hi Rob,
 
-These bindings are designed manually based on
- 19UH0037EJ1000_SMU : System Management Unit User's Manual
+On 10/07/2013 09:59 PM, Rob Herring wrote:
+> From: Rob Herring <rob.herring-bsGFqQB8/DxBDgjK7y7TUQ@public.gmane.org>
+> 
+> Convert arc to use the common of_flat_dt_match_machine function.
+> 
+> Signed-off-by: Rob Herring <rob.herring-bsGFqQB8/DxBDgjK7y7TUQ@public.gmane.org>
+> Acked-by: Vineet Gupta <vgupta-HKixBCOQz3hWk0Htik3J/w@public.gmane.org>
+> ---
+>  arch/arc/kernel/devtree.c | 65 +++++++++++++----------------------------------
+>  1 file changed, 18 insertions(+), 47 deletions(-)
+> 
+> diff --git a/arch/arc/kernel/devtree.c b/arch/arc/kernel/devtree.c
+> index 1ab6f35..12de555 100644
+> --- a/arch/arc/kernel/devtree.c
+> +++ b/arch/arc/kernel/devtree.c
+> @@ -18,6 +18,19 @@
+>  #include <asm/clk.h>
+>  #include <asm/mach_desc.h>
+>  
+> +static const void * __init arch_get_next_mach(const char *const **match)
+> +{
+> +	static const struct machine_desc *mdesc = __arch_info_begin;
+> +	const struct machine_desc *m = mdesc;
+> +
+> +	if (m >= __arch_info_end)
+> +		return NULL;
+> +
+> +	mdesc++;
+> +	*match = m->dt_compat;
+> +	return m;
+> +}
+> +
+>  /**
+>   * setup_machine_fdt - Machine setup when an dtb was passed to the kernel
+>   * @dt:		virtual address pointer to dt blob
+> @@ -27,64 +40,22 @@
+>   */
+>  struct machine_desc * __init setup_machine_fdt(void *dt)
+>  {
+> -	struct machine_desc *mdesc = NULL, *mdesc_best = NULL;
+> -	unsigned int score, mdesc_score = ~1;
+> +	struct machine_desc *mdesc;
+>  	unsigned long dt_root;
+> -	const char *model, *compat;
+>  	void *clk;
+> -	char manufacturer[16];
+>  	unsigned long len;
+>  
+>  	if (!early_init_dt_scan(dt))
+>  		return NULL;
+>  
+> -	dt_root = of_get_flat_dt_root();
+> -
+> -	/*
+> -	 * The kernel could be multi-platform enabled, thus could have many
+> -	 * "baked-in" machine descriptors. Search thru all for the best
+> -	 * "compatible" string match.
+> -	 */
+> -	for_each_machine_desc(mdesc) {
+> -		score = of_flat_dt_match(dt_root, mdesc->dt_compat);
+> -		if (score > 0 && score < mdesc_score) {
+> -			mdesc_best = mdesc;
+> -			mdesc_score = score;
+> -		}
+> -	}
+> -	if (!mdesc_best) {
+> -		const char *prop;
+> -		long size;
+> -
+> -		pr_err("\n unrecognized device tree list:\n[ ");
+> -
+> -		prop = of_get_flat_dt_prop(dt_root, "compatible", &size);
+> -		if (prop) {
+> -			while (size > 0) {
+> -				printk("'%s' ", prop);
+> -				size -= strlen(prop) + 1;
+> -				prop += strlen(prop) + 1;
+> -			}
+> -		}
+> -		printk("]\n\n");
+> -
+> +	mdesc = of_flat_dt_match_machine(NULL, arch_get_next_mach);
+> +	if (!mdesc)
+>  		machine_halt();
+> -	}
+> -
+> -	/* compat = "<manufacturer>,<model>" */
+> -	compat =  mdesc_best->dt_compat[0];
+> -
+> -	model = strchr(compat, ',');
+> -	if (model)
+> -		model++;
+> -
+> -	strlcpy(manufacturer, compat, model ? model - compat : strlen(compat));
+> -
+> -	pr_info("Board \"%s\" from %s (Manufacturer)\n", model, manufacturer);
+>  
+> +	dt_root = of_get_flat_dt_root();
+>  	clk = of_get_flat_dt_prop(dt_root, "clock-frequency", &len);
+>  	if (clk)
+>  		arc_set_core_freq(of_read_ulong(clk, len/4));
+>  
+> -	return mdesc_best;
+> +	return mdesc;
+>  }
+> 
 
-So far, reparent is not implemented, and is fixed to index #0.
-Clock tree description is not included, and should be provided
-by device-tree.
+Can you please fold the following into this patch. This removes the const warning
+and also gets rid of some dead code.
 
-Signed-off-by: Takashi Yoshii <takasi-y@ops.dti.ne.jp>
+Thx,
+-Vineet
+
+------------------->
+>From 3cd48b4955e9763248e306fff7ddf420b126ebab Mon Sep 17 00:00:00 2001
+From: Vineet Gupta <vgupta@synopsys.com>
+Date: Tue, 8 Oct 2013 09:53:17 +0530
+Subject: [PATCH] ARC: Addendum to "use common of_flat_dt_match_machine"
+
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 ---
- .../devicetree/bindings/clock/emev2-clock.txt      |  98 +++++++++++++++++++
- drivers/clk/Makefile                               |   1 +
- drivers/clk/shmobile/Makefile                      |   3 +
- drivers/clk/shmobile/clk-emev2.c                   | 104 +++++++++++++++++++++
- 4 files changed, 206 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/clock/emev2-clock.txt
- create mode 100644 drivers/clk/shmobile/Makefile
- create mode 100644 drivers/clk/shmobile/clk-emev2.c
+ arch/arc/include/asm/mach_desc.h | 14 ++------------
+ arch/arc/kernel/devtree.c        |  4 ++--
+ arch/arc/kernel/setup.c          |  2 +-
+ 3 files changed, 5 insertions(+), 15 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/clock/emev2-clock.txt b/Documentation/devicetree/bindings/clock/emev2-clock.txt
-new file mode 100644
-index 0000000..60bbb1a
---- /dev/null
-+++ b/Documentation/devicetree/bindings/clock/emev2-clock.txt
-@@ -0,0 +1,98 @@
-+Device tree Clock bindings for Renesas EMMA Mobile EV2
-+
-+This binding uses the common clock binding.
-+
-+* SMU
-+System Management Unit described in user's manual R19UH0037EJ1000_SMU.
-+This is not a clock provider, but clocks under SMU depend on it.
-+
-+Required properties:
-+- compatible: Should be "renesas,emev2-smu"
-+- reg: Address and Size of SMU registers
-+
-+* SMU_CLKDIV
-+Function block with an input mux and a divider, which corresponds to
-+"Serial clock generator" in fig."Clock System Overview" of the manual,
-+and "xxx frequency division setting register" (XXXCLKDIV) registers.
-+This makes internal (neither input nor output) clock that is provided
-+to input of xxxGCLK block.
-+
-+Required properties:
-+- compatible: Should be "renesas,emev2-smu-clkdiv"
-+- reg: Byte offset from SMU base and Bit position in the register
-+- clocks: Parent clocks. Input clocks as described in clock-bindings.txt
-+- #clock-cells: Should be <0>
-+
-+* SMU_GCLK
-+Clock gating node shown as "Clock stop processing block" in the
-+fig."Clock System Overview" of the manual.
-+Registers are "xxx clock gate control register" (XXXGCLKCTRL).
-+
-+Required properties:
-+- compatible: Should be "renesas,emev2-smu-gclk"
-+- reg: Byte offset from SMU base and Bit position in the register
-+- clocks: Input clock as described in clock-bindings.txt
-+- #clock-cells: Should be <0>
-+
-+Example of provider:
-+
-+usia_u0_sclkdiv: usia_u0_sclkdiv {
-+	compatible = "renesas,emev2-smu-clkdiv";
-+	reg = <0x610 0>;
-+	clocks = <&pll3_fo>, <&pll4_fo>, <&pll1_fo>, <&osc1_fo>;
-+	#clock-cells = <0>;
-+};
-+
-+usia_u0_sclk: usia_u0_sclk {
-+	compatible = "renesas,emev2-smu-gclk";
-+	reg = <0x4a0 1>;
-+	clocks = <&usia_u0_sclkdiv>;
-+	#clock-cells = <0>;
-+};
-+
-+Example of consumer:
-+
-+uart@e1020000 {
-+	compatible = "renesas,em-uart";
-+	reg = <0xe1020000 0x38>;
-+	interrupts = <0 8 0>;
-+	clocks = <&usia_u0_sclk>;
-+	clock-names = "sclk";
-+};
-+
-+Example of clock-tree description:
-+
-+ This describes a clock path in the clock tree
-+  c32ki -> pll3_fo -> usia_u0_sclkdiv -> usia_u0_sclk
-+
-+smu@e0110000 {
-+	compatible = "renesas,emev2-smu";
-+	reg = <0xe0110000 0x10000>;
-+	#address-cells = <2>;
-+	#size-cells = <0>;
-+
-+	c32ki: c32ki {
-+		compatible = "fixed-clock";
-+		clock-frequency = <32768>;
-+		#clock-cells = <0>;
-+	};
-+	pll3_fo: pll3_fo {
-+		compatible = "fixed-factor-clock";
-+		clocks = <&c32ki>;
-+		clock-div = <1>;
-+		clock-mult = <7000>;
-+		#clock-cells = <0>;
-+	};
-+	usia_u0_sclkdiv: usia_u0_sclkdiv {
-+		compatible = "renesas,emev2-smu-clkdiv";
-+		reg = <0x610 0>;
-+		clocks = <&pll3_fo>;
-+		#clock-cells = <0>;
-+	};
-+	usia_u0_sclk: usia_u0_sclk {
-+		compatible = "renesas,emev2-smu-gclk";
-+		reg = <0x4a0 1>;
-+		clocks = <&usia_u0_sclkdiv>;
-+		#clock-cells = <0>;
-+	};
-+};
-diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-index 7b11106..d25da26 100644
---- a/drivers/clk/Makefile
-+++ b/drivers/clk/Makefile
-@@ -32,6 +32,7 @@ obj-$(CONFIG_ARCH_VT8500)	+= clk-vt8500.o
- obj-$(CONFIG_ARCH_ZYNQ)		+= zynq/
- obj-$(CONFIG_ARCH_TEGRA)	+= tegra/
- obj-$(CONFIG_PLAT_SAMSUNG)	+= samsung/
-+obj-$(CONFIG_ARCH_SHMOBILE_MULTI)	+= shmobile/
- 
- obj-$(CONFIG_X86)		+= x86/
- 
-diff --git a/drivers/clk/shmobile/Makefile b/drivers/clk/shmobile/Makefile
-new file mode 100644
-index 0000000..2240730
---- /dev/null
-+++ b/drivers/clk/shmobile/Makefile
-@@ -0,0 +1,3 @@
-+obj-$(CONFIG_ARCH_EMEV2)	+= clk-emev2.o
-+# for emply built-in.o
-+obj-n	:= dummy
-diff --git a/drivers/clk/shmobile/clk-emev2.c b/drivers/clk/shmobile/clk-emev2.c
-new file mode 100644
-index 0000000..6c7c929
---- /dev/null
-+++ b/drivers/clk/shmobile/clk-emev2.c
-@@ -0,0 +1,104 @@
-+/*
-+ * EMMA Mobile EV2 common clock framework support
-+ *
-+ * Copyright (C) 2013 Takashi Yoshii <takashi.yoshii.ze@renesas.com>
-+ * Copyright (C) 2012 Magnus Damm
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; version 2 of the License.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-+ */
-+#include <linux/clk-provider.h>
-+#include <linux/clkdev.h>
-+#include <linux/io.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+
-+/* EMEV2 SMU registers */
-+#define USIAU0_RSTCTRL 0x094
-+#define USIBU1_RSTCTRL 0x0ac
-+#define USIBU2_RSTCTRL 0x0b0
-+#define USIBU3_RSTCTRL 0x0b4
-+#define STI_RSTCTRL 0x124
-+#define STI_CLKSEL 0x688
-+
-+static DEFINE_SPINLOCK(lock);
-+
-+/* not pretty, but hey */
-+void __iomem *smu_base;
-+
-+static void __init emev2_smu_write(unsigned long value, int offs)
-+{
-+	BUG_ON(!smu_base || (offs >= PAGE_SIZE));
-+	writel_relaxed(value, smu_base + offs);
-+}
-+
-+static const struct of_device_id smu_id[] __initconst = {
-+	{ .compatible = "renesas,emev2-smu", },
-+	{},
-+};
-+
-+static void __init emev2_smu_init(void)
-+{
-+	struct device_node *np;
-+
-+	np = of_find_matching_node(NULL, smu_id);
-+	BUG_ON(!np);
-+	smu_base = of_iomap(np, 0);
-+	BUG_ON(!smu_base);
-+	of_node_put(np);
-+
-+	/* setup STI timer to run on 32.768 kHz and deassert reset */
-+	emev2_smu_write(0, STI_CLKSEL);
-+	emev2_smu_write(1, STI_RSTCTRL);
-+
-+	/* deassert reset for UART0->UART3 */
-+	emev2_smu_write(2, USIAU0_RSTCTRL);
-+	emev2_smu_write(2, USIBU1_RSTCTRL);
-+	emev2_smu_write(2, USIBU2_RSTCTRL);
-+	emev2_smu_write(2, USIBU3_RSTCTRL);
-+}
-+
-+static void __init emev2_smu_clkdiv_init(struct device_node *np)
-+{
-+	u32 reg[2];
-+	struct clk *clk;
-+	const char *parent_name = of_clk_get_parent_name(np, 0);
-+	if (WARN_ON(of_property_read_u32_array(np, "reg", reg, 2)))
-+		return;
-+	if (!smu_base)
-+		emev2_smu_init();
-+	clk = clk_register_divider(NULL, np->name, parent_name, 0,
-+				   smu_base + reg[0], reg[1], 8, 0, &lock);
-+	of_clk_add_provider(np, of_clk_src_simple_get, clk);
-+	clk_register_clkdev(clk, np->name, NULL);
-+	pr_debug("## %s %s %p\n", __func__, np->name, clk);
-+}
-+CLK_OF_DECLARE(emev2_smu_clkdiv, "renesas,emev2-smu-clkdiv",
-+		emev2_smu_clkdiv_init);
-+
-+static void __init emev2_smu_gclk_init(struct device_node *np)
-+{
-+	u32 reg[2];
-+	struct clk *clk;
-+	const char *parent_name = of_clk_get_parent_name(np, 0);
-+	if (WARN_ON(of_property_read_u32_array(np, "reg", reg, 2)))
-+		return;
-+	if (!smu_base)
-+		emev2_smu_init();
-+	clk = clk_register_gate(NULL, np->name, parent_name, 0,
-+				smu_base + reg[0], reg[1], 0, &lock);
-+	of_clk_add_provider(np, of_clk_src_simple_get, clk);
-+	clk_register_clkdev(clk, np->name, NULL);
-+	pr_debug("## %s %s %p\n", __func__, np->name, clk);
-+}
-+CLK_OF_DECLARE(emev2_smu_gclk, "renesas,emev2-smu-gclk", emev2_smu_gclk_init);
--- 
-1.8.1.5
+diff --git a/arch/arc/include/asm/mach_desc.h b/arch/arc/include/asm/mach_desc.h
+index d3e9c0a05be8..c88c59c4183c 100644
+--- a/arch/arc/include/asm/mach_desc.h
++++ b/arch/arc/include/asm/mach_desc.h
+@@ -51,22 +51,12 @@ struct machine_desc {
+ /*
+  * Current machine - only accessible during boot.
+  */
+-extern struct machine_desc *machine_desc;
++extern const struct machine_desc *machine_desc;
+
+ /*
+  * Machine type table - also only accessible during boot
+  */
+ extern struct machine_desc __arch_info_begin[], __arch_info_end[];
+-#define for_each_machine_desc(p)            \
+-    for (p = __arch_info_begin; p < __arch_info_end; p++)
+-
+-static inline struct machine_desc *default_machine_desc(void)
+-{
+-    /* the default machine is the last one linked in */
+-    if (__arch_info_end - 1 < __arch_info_begin)
+-        return NULL;
+-    return __arch_info_end - 1;
+-}
+
+ /*
+  * Set of macros to define architecture features.
+@@ -81,6 +71,6 @@ __attribute__((__section__(".arch.info.init"))) = {    \
+ #define MACHINE_END                \
+ };
+
+-extern struct machine_desc *setup_machine_fdt(void *dt);
++extern const struct machine_desc *setup_machine_fdt(void *dt);
+
+ #endif
+diff --git a/arch/arc/kernel/devtree.c b/arch/arc/kernel/devtree.c
+index 336396300e53..b6dc4e21fd32 100644
+--- a/arch/arc/kernel/devtree.c
++++ b/arch/arc/kernel/devtree.c
+@@ -37,9 +37,9 @@ static const void * __init arch_get_next_mach(const char *const
+**match)
+  * If a dtb was passed to the kernel, then use it to choose the correct
+  * machine_desc and to setup the system.
+  */
+-struct machine_desc * __init setup_machine_fdt(void *dt)
++const struct machine_desc * __init setup_machine_fdt(void *dt)
+ {
+-    struct machine_desc *mdesc;
++    const struct machine_desc *mdesc;
+     unsigned long dt_root;
+     void *clk;
+     unsigned long len;
+diff --git a/arch/arc/kernel/setup.c b/arch/arc/kernel/setup.c
+index 5ae542454bed..f7d4a41d0629 100644
+--- a/arch/arc/kernel/setup.c
++++ b/arch/arc/kernel/setup.c
+@@ -30,7 +30,7 @@
+ int running_on_hw = 1;    /* vs. on ISS */
+
+ char __initdata command_line[COMMAND_LINE_SIZE];
+-struct machine_desc *machine_desc;
++const struct machine_desc *machine_desc;
+
+ struct task_struct *_current_task[NR_CPUS];    /* For stack switching */
+
+-- 1.8.1.2
