@@ -1,65 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752459Ab3JHASP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Oct 2013 20:18:15 -0400
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:47127 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751591Ab3JHASM convert rfc822-to-8bit (ORCPT
+	id S1753531Ab3JHASr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Oct 2013 20:18:47 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:60293 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751885Ab3JHASp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Oct 2013 20:18:12 -0400
+	Mon, 7 Oct 2013 20:18:45 -0400
+Message-ID: <52534F60.9030500@linaro.org>
+Date: Mon, 07 Oct 2013 17:18:40 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-In-Reply-To: <1381191145.2081.230.camel@joe-AO722>
-References: <1381184340-11190-1-git-send-email-geyslan@gmail.com>
-	<1381185204.2081.221.camel@joe-AO722>
-	<CAGG-pURYyCV4waC8Z+5qAd1mAB2ZHhEkRaGspFuyEDrvj_dTdQ@mail.gmail.com>
-	<1381191145.2081.230.camel@joe-AO722>
-Date: Mon, 7 Oct 2013 21:18:11 -0300
-Message-ID: <CAGG-pUQJCGcY=hAobBodH-dTLLohUpe6KJbuMvwWkhdt3RSk+A@mail.gmail.com>
-Subject: Re: [PATCH] 9p: unsigned/signed wrap in p9/unix modes.
-From: =?UTF-8?Q?Geyslan_Greg=C3=B3rio_Bem?= <geyslan@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: Eric Van Hensbergen <ericvh@gmail.com>, rminnich@sandia.gov,
-        lucho@ionkov.net, v9fs-developer@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, kernel-br <kernel-br@googlegroups.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Minchan Kim <minchan@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
+        Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
+        Andrea Righi <andrea@betterlinux.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>, Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>, Rob Clark <robdclark@gmail.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH 05/14] vrange: Add new vrange(2) system call
+References: <1380761503-14509-1-git-send-email-john.stultz@linaro.org> <1380761503-14509-6-git-send-email-john.stultz@linaro.org> <52533C12.9090007@zytor.com> <5253404D.2030503@linaro.org> <52534331.2060402@zytor.com> <52534692.7010400@linaro.org> <525347BE.7040606@zytor.com> <525349AE.1070904@linaro.org> <52534AEC.5040403@zytor.com> <20131008001306.GD25780@bbox>
+In-Reply-To: <20131008001306.GD25780@bbox>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joe,
-
-Nice, I'll wait their reply, there are other p9 patches that I have
-already sent and am awaiting Eric's.
-
-Thank you again.
-
-Geyslan Gregório Bem
-hackingbits.com
-
-
-2013/10/7 Joe Perches <joe@perches.com>:
-> On Mon, 2013-10-07 at 21:09 -0300, Geyslan Gregório Bem wrote:
->> Joe,
->>
->> Thank you for reply.
->>
->> What do you think about:
->>
->>                  strncpy(ext, stat->extension, sizeof(ext));
->> +                 if (sscanf(ext, "%c %u %u", &type, &major, &minor) < 3) {
->> +                                  p9_debug(P9_DEBUG_ERROR,
->> +                                  "It's necessary define type, major
->> and minor values when using P9_DMDEVICE");
->> +                                  return res;
->> +                 }
->>                  switch (type) {
->>                  case 'c':
->>                          res |= S_IFCHR;
->>                          break;
->> ...
->>                  *rdev = MKDEV(major, minor);
+On 10/07/2013 05:13 PM, Minchan Kim wrote:
+> Hello Peter,
 >
-> I think the plan 9 folk should figure out what's right.
->
->
+> On Mon, Oct 07, 2013 at 04:59:40PM -0700, H. Peter Anvin wrote:
+>> On 10/07/2013 04:54 PM, John Stultz wrote:
+>>>> And wouldn't this apply to MADV_DONTNEED just as well?  Perhaps what we
+>>>> should do is an enhanced madvise() call?
+>>> Well, I think MADV_DONTNEED doesn't *have* do to anything at all. Its
+>>> advisory after all. So it may immediately wipe out any data, but it may not.
+>>>
+>>> Those advisory semantics work fine w/ VRANGE_VOLATILE. However,
+>>> VRANGE_NONVOLATILE is not quite advisory, its telling the system that it
+>>> requires the memory at the specified range to not be volatile, and we
+>>> need to correctly inform userland how much was changed and if any of the
+>>> memory we did change to non-volatile was purged since being set volatile.
+>>>
+>>> In that way it is sort of different from madvise. Some sort of an
+>>> madvise2 could be done, but then the extra purge state argument would be
+>>> oddly defined for any other mode.
+>>>
+>>> Is your main concern here just wanting to have a zero-fill mode with
+>>> volatile ranges? Or do you really want to squeeze this in to the madvise
+>>> call interface?
+>> The point is that MADV_DONTNEED is very similar in that sense,
+>> especially if allowed to be lazy.  It makes a lot of sense to permit
+>> both scrubbing modes orthogonally.
+>>
+>> The point you're making has to do with withdrawal of permission to flush
+>> on demand, which is a result of having the lazy mode (ongoing
+>> permission) and having to be able to withdraw such permission.
+> I'm sorry I could not understand what you wanted to say.
+> Could you elaborate a bit?
+My understanding of his point is that VRANGE_VOLATILE is like a lazy
+MADV_DONTNEED (with sigbus, rather then zero fill on fault), suggests
+that we should find a way to have VRANGE_VOLATILE be something like
+MADV_DONTNEED|MADV_LAZY|MADV_SIGBUS_FAULT, instead of adding a new
+syscall.  This would provide more options, since one could instead just
+do MADV_DONTNEED|MADV_LAZY if they wanted zero-fill faults.
+
+And indeed, for the VRANGE_VOLATILE case, we could do something like
+that, but the unresolved problem I see is that that we still need to
+handle the VRANGE_NONVOLATILE case, and the madvise() interface doesn't
+seem to accomodate the needed semantics well.
+
+thanks
+-john
+
+
