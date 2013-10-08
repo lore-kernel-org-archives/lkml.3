@@ -1,86 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754216Ab3JHNRp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 09:17:45 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:61696 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751747Ab3JHNRm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 09:17:42 -0400
-Message-ID: <525405F0.8050407@gmail.com>
-Date: Tue, 08 Oct 2013 22:17:36 +0900
-From: Akira Hayakawa <ruby.wktk@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1752753Ab3JHNSC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 09:18:02 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:53714 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754316Ab3JHNSA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 09:18:00 -0400
+Message-ID: <52540604.9000100@ti.com>
+Date: Tue, 8 Oct 2013 16:17:56 +0300
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: dm-devel@redhat.com
-CC: mpatocka@redhat.com, devel@driverdev.osuosl.org, thornber@redhat.com,
-        snitzer@redhat.com, cesarb@cesarb.net, gregkh@linuxfoundation.org,
-        david@fromorbit.com, linux-kernel@vger.kernel.org, tj@kernel.org,
-        agk@redhat.com, joe@perches.com, akpm@linux-foundation.org,
-        ejt@redhat.com, dan.carpenter@oracle.com, m.chehab@samsung.com,
-        ruby.wktk@gmail.com
-Subject: Re: [dm-devel] A review of dm-writeboost
-References: <alpine.LRH.2.02.1310031719340.24440@file01.intranet.prod.int.rdu2.redhat.com> <52515BD6.5000701@gmail.com> <alpine.LRH.2.02.1310071327390.19115@file01.intranet.prod.int.rdu2.redhat.com>
-In-Reply-To: <alpine.LRH.2.02.1310071327390.19115@file01.intranet.prod.int.rdu2.redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+To: Mike Turquette <mturquette@linaro.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+CC: "Kristo, Tero" <t-kristo@ti.com>, Shawn Guo <shawn.guo@linaro.org>
+Subject: Rounding issue in drivers/clk/clk-divider.c
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="akciE2l5uF1K6J1LGLfltsWehiSlClT3P"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mikulas,
+--akciE2l5uF1K6J1LGLfltsWehiSlClT3P
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Let me ask you about this comment
-of choosing the best API.
-For the rest, I will reply later.
+Hi,
 
-> BTW. You should use wait_event_interruptible_lock_irq instead of 
-> wait_event_interruptible and wait_event_interruptible_lock_irq_timeout 
-> instead of wait_event_interruptible_timeout. The functions with "lock_irq" 
-> automatically drop and re-acquire the spinlock, so that the condition is 
-> tested while the lock is held - so that there are no asynchronous accesses 
-> to !list_empty(&cache->flush_queue).
+I'm seeing the following issue on omap3 with dpll4_m4 clock. dpll4_m4's
+parent is a PLL set to 864000000 and dpll4_m4 is a divider, handled by
+clk-divider.c.
 
-wait_event_interruptible_lock_irq_timeout is
-added to the kernel since 3.12 by this patch.
-https://lkml.org/lkml/2013/8/21/362
-However, it is only used by zfcp itself.
+Now, if I call clk_round_rate(dpll4_m4, 143999999), I get 123428571
+which is correct. However, if I call clk_round_rate(dpll4_m4,
+123428571), I would presume to get the same answer, 123428571, as that
+was already "verified" by the previous clk_round_rate() call. However, I
+get 108000000.
 
-I am afraid I want to refrain from this new API
-and keep the code as it is now.
-Later if this API is widely accepted
-it is time to use it in writeboost
-is my opinion.
-The fact this API is not added for a long time
-makes me feel it should not be used at least at this moment of time.
-I want to use only those truly stable.
-writeboost as a storage kernel module should be stable.
-I believe depending only on the stable APIs is a
-good way of making a software stable.
+So, if I have the following code:
 
-All said, I tried to fix this.
-Is this change what you meant?
+rate =3D clk_round_rate(dpll4_m4, 143999999);
+/* rate is 123428571 */
+clk_set_rate(dpll4_m4, rate);
 
-@@ -24,10 +24,10 @@ int flush_proc(void *data)
+the resulting rate is 108000000.
 
-                spin_lock_irqsave(&cache->flush_queue_lock, flags);
-                while (list_empty(&cache->flush_queue)) {
--                       spin_unlock_irqrestore(&cache->flush_queue_lock, flags);
--                       wait_event_interruptible_timeout(
-+                       wait_event_interruptible_lock_irq_timeout(
-                                cache->flush_wait_queue,
--                               (!list_empty(&cache->flush_queue)),
-+                               !list_empty(&cache->flush_queue),
-+                               cache->flush_queue_lock,
-                                msecs_to_jiffies(100));
+ Tomi
 
-                        /*
-@@ -36,8 +36,6 @@ int flush_proc(void *data)
-                         */
-                        if (kthread_should_stop())
-                                return 0;
--                       else
--                               spin_lock_irqsave(&cache->flush_queue_lock, flags);
-                }
 
-Akira
+--akciE2l5uF1K6J1LGLfltsWehiSlClT3P
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJSVAYEAAoJEPo9qoy8lh715wYP/A18wh/i2LD69FTFBdQrmgUk
+KPz/1U1bW40zBl3fNxHdMNom0f9VaUKx0k7KwUxgMtICMwd6lngVNx/r7rvAA4+2
+acm4jwf1B4ZPCk23+/INfhiX12XDPJ9Nb5bmkKbcwQUj7mfMJNrfoIA0wBUPhFAQ
+/4TZkHfs/oo/d5rDj+YzsSS6AwqXEqKVRAGzgJVxXGHcnsMiy+6HZyPiHwfVej2V
+HoDcsnyps3+HJdSNqVwtA0PnMV/cqMW/l2u9HT81obdipNt7pY8WTBHP7b5mMick
+P0LNRyilRWwcdzesrq9mve2RAOTcLlA6Us0evkcm6UPAhFft132zL7K4u1ewdPzh
+VbV5x7Pe9ytrOwM3jOEURubKraVN69Dp2gNA1yX7PChyKvT39/Weu9GwxRfG3NYJ
+Pf5jHkXyOA5VFnNLZbElLUfA1xbm3V3FyD94eQaNV0F8bRoSgE58/rRbrdb5vZqC
+pQ2mhKSjAjpNhJiepDfakLx/agkAbNMnB4Q86jfNiyEqsEB36OG3vK7Ii4AMLGuQ
+u87wDBjHJQ7XFVVXMc4cTideOO2d87SvuV+wAS+hFMKzF6V3+z9TjPRXAbYvveC6
+ChQdAkMJ0X/+CC3Di2ir9J72w+l4sbzeCoXfjufcCJW2jE537ZjuvhTX3cuE8kG3
+RJh6hBGlJE7u6k7DYf4J
+=AGoK
+-----END PGP SIGNATURE-----
+
+--akciE2l5uF1K6J1LGLfltsWehiSlClT3P--
