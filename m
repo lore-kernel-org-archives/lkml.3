@@ -1,62 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756607Ab3JIHFU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 03:05:20 -0400
-Received: from utopia.booyaka.com ([74.50.51.50]:39240 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752577Ab3JIHFR (ORCPT
+	id S1754562Ab3JIHIU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 03:08:20 -0400
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:45696 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751347Ab3JIHIT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 03:05:17 -0400
-Date: Wed, 9 Oct 2013 07:05:16 +0000 (UTC)
-From: Paul Walmsley <paul@pwsan.com>
-To: Roger Quadros <rogerq@ti.com>
-cc: tony@atomide.com, balbi@ti.com, rnayak@ti.com, t-kristo@ti.com,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: OMAP4: clock: Initialize USB DPLL
-In-Reply-To: <514B1553.6030701@ti.com>
-Message-ID: <alpine.DEB.2.02.1310090704180.30199@utopia.booyaka.com>
-References: <1363873705-3224-1-git-send-email-rogerq@ti.com> <514B1553.6030701@ti.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 9 Oct 2013 03:08:19 -0400
+Message-ID: <525500DD.8050204@gmail.com>
+Date: Wed, 09 Oct 2013 09:08:13 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+To: Dinh Nguyen <dinguyen@altera.com>
+CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 8/8] ARM: add initial support for Marvell Berlin SoCs
+References: <1381235073-17134-1-git-send-email-sebastian.hesselbarth@gmail.com> <1381235073-17134-9-git-send-email-sebastian.hesselbarth@gmail.com> <1381274699.5184.2.camel@linux-builds1>
+In-Reply-To: <1381274699.5184.2.camel@linux-builds1>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Roger,
+On 10/09/2013 01:24 AM, Dinh Nguyen wrote:
+> Hi Sebastian,
+>
+> On Tue, 2013-10-08 at 14:24 +0200, Sebastian Hesselbarth wrote:
+>> This adds initial support for the Marvell Berlin (88DE3xxx) SoC family
+>> and basic machine setup for Armada 1500 (88DE3100) SoCs.
+[...]
+>> +config MACH_MV88DE3100
+>> +	bool "Marvell 88DE3100 (Armada 1500)"
+>> +	select ARM_GIC
+>> +	select CACHE_L2X0
+>> +	select CPU_PJ4B
+>> +	select HAVE_ARM_TWD if LOCAL_TIMERS
+>> +	select HAVE_SMP
+>> +	select LOCAL_TIMERS if SMP
+>
+> I think because of commit:
+>
+> a894fcc2d [ARM: smp_twd: Divorce smp_twd from local timer API]
+>
+> you can remove the LOCAL_TIMERS for HAVE_ARM_TWD.
 
-On Thu, 21 Mar 2013, Roger Quadros wrote:
-
-> +Paul
-> 
-> On 03/21/2013 03:48 PM, Roger Quadros wrote:
-> > If the bootloader doesn't configure USB DPLL (e.g. in u-boot,
-> > disable CONFIG_USB_EHCI_OMAP), then we get all sorts of problems
-> > like
-> > - division by zero errors at boot [1]
-> > - USB DPLL fails to enter locked state
-> > - USB EHCI Host is non functional
-> > - Device can't enter OFF mode
-> > 
-> > Initializing the USB DPLL fixes all these issues.
-
-Looks like I may have lost track of this - do we still need this one?
-
-Also:
-
-> > diff --git a/arch/arm/mach-omap2/cclock44xx_data.c b/arch/arm/mach-omap2/cclock44xx_data.c
-> > index bfc46c1..6127bb9 100644
-> > --- a/arch/arm/mach-omap2/cclock44xx_data.c
-> > +++ b/arch/arm/mach-omap2/cclock44xx_data.c
-> > @@ -53,6 +53,12 @@
-> >   */
-> >  #define OMAP4_DPLL_ABE_DEFFREQ				98304000
-> >  
-> > +/*
-> > + * OMAP4450 TRM Rev X, section "3.6.3.9.5 DPLL_USB Preferred Settings"
-
-4450?
+Thanks, Dinh, I will have a look at this.
 
 
-- Paul
