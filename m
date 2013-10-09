@@ -1,83 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754888Ab3JITao (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 15:30:44 -0400
-Received: from asmtp.lnxw.com ([207.21.185.2]:57898 "EHLO asmtp.lnxw.com"
+	id S1755420Ab3JITdp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 15:33:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53882 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752144Ab3JITan (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 15:30:43 -0400
-From: Alexey Neyman <stilor@att.net>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: [PATCH] Fix coalescing host bridge windows in arch/x86/pci/acpi.c
-Date: Wed, 9 Oct 2013 12:30:10 -0700
-User-Agent: KMail/1.13.5 (Linux/2.6.34-020634-generic; KDE/4.4.5; i686; ; )
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Feng Tang <feng.tang@intel.com>, Yijing Wang <wangyijing@huawei.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <6362938.J7ZtNEOFpc@mistral> <CAErSpo6XCu4ROJCh5=+7zwupjbtobowoNeF1PcXEvdg349C_pg@mail.gmail.com> <201310031616.08617.stilor@att.net>
-In-Reply-To: <201310031616.08617.stilor@att.net>
+	id S1755127Ab3JITdl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 15:33:41 -0400
+Date: Wed, 9 Oct 2013 16:33:22 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, peterz@infradead.org,
+        dsahern@gmail.com, ak@linux.intel.com, jolsa@redhat.com,
+        hughd@google.com, keescook@chromium.org, akpm@linux-foundation.org
+Subject: Re: [PATCH] perf: disable mmap2 support
+Message-ID: <20131009193322.GA3794@infradead.org>
+References: <20131009161743.GA3022@quad>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201310091230.11050.stilor@att.net>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131009161743.GA3022@quad>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Patch ping #5]
-
-On Thursday, October 03, 2013 04:16:07 pm Alexey Neyman wrote:
-> On Thursday, October 03, 2013 12:14:38 pm Bjorn Helgaas wrote:
-> > On Mon, Sep 23, 2013 at 12:15 AM, Alexey Neyman <stilor@att.net> wrote:
-> > > [Resending due to no response to the original message in a week]
-> > > 
-> > > Hi all,
-> > > 
-> > > I have a board with a BIOS bug that reports the following I/O port
-> > > regions in _CRS on one of the host bridges:
-> > > 
-> > > 0x0000-0x03af // #0
-> > > 0x03e0-0x0cf7 // #1
-> > > 0x03b0-0x03bb // #2
-> > > 0x03c0-0x03df // #3
-> > > 0x0000-0xdfff // #4
-> > > 0xf000-0xffff // #5
-> > > 
-> > > Obviously, region number #4 is erroneous as it overlaps with regions
-> > > #0..3. The code in coalesce_windows() in arch/x86/pci/acpi.c attempts
-> > > to recover from such kind of BIOS bugs by merging the overlapping
-> > > regions. Current code expands region #0 to 0x0000-0xdffff and makes
-> > > region #4 ignored. As a result, overlap of the expanded region #0 with
-> > > regions #1..3 remains undetected (as the inner loop already compared
-> > > them with region #0). As a result, regions #1..3 are inserted into the
-> > > resource tree even though they overlap with adjusted region #0 - which
-> > > later results in resource conflicts for PCI devices with IO ports in
-> > > one of those regions (e.g., for an PCI IDE controller in legacy mode -
-> > > which has port 0x3f6). The kernel then refuses to initialize these
-> > > devices.
-> > > 
-> > > The fix: instead of expanding res1 and ignoring res2, do the opposite.
-> > > The res2 window is yet to be compared against all windows between res1
-> > > and res2 (regions #1..3 in the above example), so the resulting
-> > > resource map will include just the expanded region - and will ignore
-> > > any overlapping ones.
-> > > 
-> > > Signed-off-by: Alexey Neyman <stilor@att.net>
-> > 
-> > Can you please open a report at http://bugzilla.kernel.org, assign it
-> > to drivers/pci, and attach a complete dmesg log?
+Em Wed, Oct 09, 2013 at 06:17:43PM +0200, Stephane Eranian escreveu:
+> This patch disables the mmap2 record format support
+> for now. The support needs a bit more work to cover
+> VM_CLONE cases.
 > 
-> https://bugzilla.kernel.org/show_bug.cgi?id=62511
+> The patch leaves attr->mmap2 defined, but returns
+> an error if it is set. That ensures no PERF_RECORD_MMAP2
+> record can be generated. Yet it minimizes the reverts in
+> the perf tool.
+
+Would be interesting to have a simple new tool that would detect all the
+mmaps that are shared in a given perf.data file, using the
+PERF_RECORD_MMAP2 information, and that tool should come together with
+the reworked kernel ABI, showing how it is used.
+
+A 'perf test' entry, based on the test programs you guys are using to
+test this functionality would be even better, showing that all cases
+you've been striving to cover are in fact covered by the new ABI.
+
+- Arnaldo
+ 
 > 
-> I am not at liberty to disclose full hardware configuration of the board,
-> as it is a proprietary prototype board not in production. I've provided
-> the relevant messages from dmesg though.
-
-Could anybody review/commit?
-
-Regards,
-Alexey.
+> Signed-off-by: Stephane Eranian <eranian@google.com>
+> ---
+>  include/uapi/linux/perf_event.h |   18 +-----------------
+>  kernel/events/core.c            |    4 ++++
+>  2 files changed, 5 insertions(+), 17 deletions(-)
+> 
+> diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+> index da48837..8074b29 100644
+> --- a/include/uapi/linux/perf_event.h
+> +++ b/include/uapi/linux/perf_event.h
+> @@ -682,23 +682,7 @@ enum perf_event_type {
+>  	PERF_RECORD_SAMPLE			= 9,
+>  
+>  	/*
+> -	 * The MMAP2 records are an augmented version of MMAP, they add
+> -	 * maj, min, ino numbers to be used to uniquely identify each mapping
+> -	 *
+> -	 * struct {
+> -	 *	struct perf_event_header	header;
+> -	 *
+> -	 *	u32				pid, tid;
+> -	 *	u64				addr;
+> -	 *	u64				len;
+> -	 *	u64				pgoff;
+> -	 *	u32				maj;
+> -	 *	u32				min;
+> -	 *	u64				ino;
+> -	 *	u64				ino_generation;
+> -	 *	char				filename[];
+> -	 * 	struct sample_id		sample_id;
+> -	 * };
+> +	 * reserved, do not use
+>  	 */
+>  	PERF_RECORD_MMAP2			= 10,
+>  
+> diff --git a/kernel/events/core.c b/kernel/events/core.c
+> index c716385..d7152a6 100644
+> --- a/kernel/events/core.c
+> +++ b/kernel/events/core.c
+> @@ -6782,6 +6782,10 @@ static int perf_copy_attr(struct perf_event_attr __user *uattr,
+>  	if (attr->read_format & ~(PERF_FORMAT_MAX-1))
+>  		return -EINVAL;
+>  
+> +	/* disable for now */
+> +	if (attr->mmap2)
+> +		return -EINVAL;
+> +
+>  	if (attr->sample_type & PERF_SAMPLE_BRANCH_STACK) {
+>  		u64 mask = attr->branch_sample_type;
+>  
+> -- 
+> 1.7.10.4
