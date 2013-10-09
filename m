@@ -1,106 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756687Ab3JIHNF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 03:13:05 -0400
-Received: from mail-bk0-f43.google.com ([209.85.214.43]:46690 "EHLO
-	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756471Ab3JIHMx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 03:12:53 -0400
-Message-ID: <525501EF.8030301@bjorling.me>
-Date: Wed, 09 Oct 2013 09:12:47 +0200
-From: =?UTF-8?B?TWF0aWFzIEJqw7hybGluZw==?= <m@bjorling.me>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Keith Busch <keith.busch@intel.com>
-CC: axboe@kernel.dk, willy@linux.intel.com, linux-kernel@vger.kernel.org,
-        linux-nvme@lists.infradead.org
-Subject: Re: [PATCH RFC 2/2] NVMe: rfc blk-mq support
-References: <1381224862-5299-1-git-send-email-m@bjorling.me> <1381224862-5299-3-git-send-email-m@bjorling.me> <alpine.LRH.2.03.1310081254150.4763@AMR>
-In-Reply-To: <alpine.LRH.2.03.1310081254150.4763@AMR>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1756708Ab3JIHOT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 03:14:19 -0400
+Received: from mout.gmx.net ([212.227.15.19]:59930 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751902Ab3JIHOS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 03:14:18 -0400
+Message-ID: <1381302852.5388.40.camel@marge.simpson.net>
+Subject: Re: [PATCH 3/3] perf record: mmap output file
+From: Mike Galbraith <efault@gmx.de>
+To: David Ahern <dsahern@gmail.com>
+Cc: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Stephane Eranian <eranian@google.com>
+Date: Wed, 09 Oct 2013 09:14:12 +0200
+In-Reply-To: <1381289214-24885-4-git-send-email-dsahern@gmail.com>
+References: <1381289214-24885-1-git-send-email-dsahern@gmail.com>
+	 <1381289214-24885-4-git-send-email-dsahern@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V03:K0:OgQHHcJ+Yv5V8veehTGZrfOiHsBV9dTw/Hrnjbf0njyMUpLgIXm
+ 6b2zKoayOIFjD4zHPKa8JHIksCfQ3KmLm/z/F97BT8kDMmVRZo00EEf6X+4evpaGi4Twdtp
+ 0FieHjyDD9iKTHPvqnNUb621SKp7UDXyRAazb+Spr7Nh19VYRRVLMfWNzNaFoa7w29FbH4J
+ 3NZm9RMxBMJWQXMX6c3LQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for the feedback. I'll make a v2 and report back measurements of 
-gain/loss for the machines I have available.
+On Tue, 2013-10-08 at 21:26 -0600, David Ahern wrote: 
+> When recording raw_syscalls for the entire system, e.g.,
+>     perf record -e raw_syscalls:*,sched:sched_switch -a -- sleep 1
+> 
+> you end up with a negative feedback loop as perf itself calls
+> write() fairly often. This patch handles the problem by mmap'ing the
+> file in chunks of 64M at a time and copies events from the event buffers
+> to the file avoiding write system calls.
+> 
+> Before (with write syscall):
+> 
+> perf record -o /tmp/perf.data -e raw_syscalls:*,sched:sched_switch -a -- sleep 1
+> [ perf record: Woken up 0 times to write data ]
+> [ perf record: Captured and wrote 81.843 MB /tmp/perf.data (~3575786 samples) ]
+> 
+> After (using mmap):
+> 
+> perf record -o /tmp/perf.data -e raw_syscalls:*,sched:sched_switch -a -- sleep 1
+> [ perf record: Woken up 31 times to write data ]
+> [ perf record: Captured and wrote 8.203 MB /tmp/perf.data (~358388 samples) ]
 
-On 10/08/2013 10:59 PM, Keith Busch wrote:
-> On Tue, 8 Oct 2013, Matias Bjørling wrote:
->> Convert the driver to blk mq.
->>
->> The patch consists of:
->>
->> * Initializion of mq data structures.
->> * Convert function calls from bio to request data structures.
->> * IO queues are split into an admin queue and io queues.
->> * bio splits are removed as it should be handled by block layer.
->>
->> Signed-off-by: Matias Bjørling <m@bjorling.me>
->
-> I have no opinion right now if this is a good idea or not. I'll just
-> comment on a couple issues on this implementation. Otherwise I think
-> it's pretty neat and gave me a reason to explore multiqueues!
->
-> First a couple minor suggestions:
->
-> You might want to use "REQ_END" from the rq->cmd_flags to know if you
-> should write the queue doorbell or not. Aggregating these would help
-> most devices but we didn't have a good way of knowing before if this
-> was the last request or not.
->
-> Maybe change nvme_submit_bio_queue to return a BLK_MQ_RQ_QUEUE_ status
-> so you don't need that switch statement after calling it.
->
-> Must do something about requests that don't align to PRPs. I think you
-> mentioned this in the outstanding work in [0/2].
->
->> struct nvme_queue *get_nvmeq(struct nvme_dev *dev)
->> {
->> -    return dev->queues[get_cpu() + 1];
->> +    get_cpu();
->> +    return dev->admin_queue;
->> }
->
-> get_nvmeq now returns only the admin queue when it used to return only
-> IO queues. This breaks NVME_IO and SG_IO ioctl handling.
->
->> +static int nvme_init_hctx(struct blk_mq_hw_ctx *hctx, void *data,
->> +              unsigned int i)
->> +{
->> +    struct nvme_ns *ns = data;
->> +    struct nvme_dev *dev = ns->dev;
->> +    struct nvme_queue *nq;
->> +
->> +    nq = nvme_create_queue(dev, i + 1, hctx->queue_depth, i);
->> +    if (IS_ERR(nq))
->> +        return PTR_ERR(nq);
->> +
->> +    hctx->driver_data = nq;
->> +
->> +    return 0;
->> +}
->
-> This right here is the biggest problem with the implemenation. It is
-> going to fail for every namespace but the first one since each namespace
-> registers a multiqueue and each mulitqueue requires a hw context to
-> work. The number of queues is for the device, not namespace, so only
-> the first namespace is going to successfully return from nvme_init_hctx;
-> the rest will be unable to create an NVMe IO queue for trying to create
-> one with already allocated QID.
->
-> You should instead create the IO queues on the device like how it was
-> done before then just set the hctx->driver_data to dev->queues[i + 1]
-> or something like.
->
->> +static enum blk_eh_timer_return nvme_timeout(struct request *rq)
->> +{
->> +    /* Currently the driver handle timeouts by itself */
->> +    return BLK_EH_NOT_HANDLED;
->> +}
->
-> Need do something with the command timeouts here or somewhere. You've
-> changed the driver to poll only on the admin queue for timed out commands,
-> and left the multiqueue timeout a no-op.
+You cured some annoying lost chunks too.
+
+master (cache is hot in target tip tree)
+
+[ perf record: Woken up 0 times to write data ]
+[ perf record: Captured and wrote 1398.520 MB perf.data (~61102281 samples) ]
+Warning:
+Processed 15894046 events and lost 15 chunks!
+
+Check IO/CPU overload!
+
+
+ Performance counter stats for 'sh -c cd /usr/local/src/kernel/linux-3.x-tip/tools/perf; make clean; perf record -a -e raw_syscalls:* -- make -j4':
+
+      90405.531301 task-clock                #    2.580 CPUs utilized          
+             18433 context-switches          #    0.204 K/sec                  
+              1503 cpu-migrations            #    0.017 K/sec                  
+           2543758 page-faults               #    0.028 M/sec                  
+      214649052820 cycles                    #    2.374 GHz                     [50.40%]
+   <not supported> stalled-cycles-frontend 
+   <not supported> stalled-cycles-backend  
+      201026412643 instructions              #    0.94  insns per cycle         [75.48%]
+       41960433084 branches                  #  464.136 M/sec                   [75.22%]
+        1835477524 branch-misses             #    4.37% of all branches         [75.13%]
+
+      35.039394045 seconds time elapsed
+
+
+patched master
+marge:/usr/local/src/kernel/linux-3.x.git/tools/perf # export PERF=`pwd`/perf
+
+[ perf record: Woken up 1070 times to write data ]
+[ perf record: Captured and wrote 269.060 MB perf.data (~11755404 samples) ]
+
+ Performance counter stats for 'sh -c cd /usr/local/src/kernel/linux-3.x-tip/tools/perf; make clean; $PERF record -a -e raw_syscalls:* -- make -j4':
+
+      67553.069792 task-clock                #    2.934 CPUs utilized          
+             16183 context-switches          #    0.240 K/sec                  
+               880 cpu-migrations            #    0.013 K/sec                  
+           2253888 page-faults               #    0.033 M/sec                  
+      159940676657 cycles                    #    2.368 GHz                     [50.20%]
+   <not supported> stalled-cycles-frontend 
+   <not supported> stalled-cycles-backend  
+      152420909413 instructions              #    0.95  insns per cycle         [75.39%]
+       32857102452 branches                  #  486.389 M/sec                   [75.58%]
+        1674403244 branch-misses             #    5.10% of all branches         [75.15%]
+
+      23.020412569 seconds time elapsed
+
