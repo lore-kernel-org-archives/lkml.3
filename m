@@ -1,98 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756909Ab3JIK6q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 06:58:46 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44326 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751718Ab3JIK6p (ORCPT
+	id S1757258Ab3JILAG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 07:00:06 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:41761 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757219Ab3JILAE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 06:58:45 -0400
-Message-ID: <525536DC.5020801@canonical.com>
-Date: Wed, 09 Oct 2013 12:58:36 +0200
-From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Wed, 9 Oct 2013 07:00:04 -0400
+Date: Wed, 9 Oct 2013 11:59:50 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-spi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20131009105950.GI21581@sirena.org.uk>
+References: <1381264542-29396-1-git-send-email-wsa@the-dreams.de>
+ <1381264542-29396-6-git-send-email-wsa@the-dreams.de>
 MIME-Version: 1.0
-To: Jerome Glisse <j.glisse@gmail.com>,
-        Thomas Hellstrom <thellstrom@vmware.com>
-CC: =?ISO-8859-1?Q?Christian_K=F6nig?= <deathsimple@vodafone.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [RFC PATCH] drm/radeon: fixup locking inversion between mmap_sem
- and reservations
-References: <CAKMK7uFF2GkYapa2_DLv4WYAd0t+POaT+Vy9HG=HQhzMmtH9nA@mail.gmail.com> <5231E18D.7070306@canonical.com> <5231EF5A.7010901@vmware.com> <52323734.4070908@canonical.com> <5232A39B.5040205@vmware.com> <52541350.5060807@canonical.com> <20131008143354.GA2355@gmail.com> <52541A7E.6050807@vodafone.de> <20131008145540.GB2355@gmail.com> <525432EF.3050005@vmware.com> <20131008164737.GA2782@gmail.com>
-In-Reply-To: <20131008164737.GA2782@gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="gfpq6yKqvKwri7QU"
+Content-Disposition: inline
+In-Reply-To: <1381264542-29396-6-git-send-email-wsa@the-dreams.de>
+X-Cookie: Penalty for private use.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 5/9] spi: spi-au1550: replace platform_driver_probe to
+ support deferred probing
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-op 08-10-13 18:47, Jerome Glisse schreef:
-> On Tue, Oct 08, 2013 at 06:29:35PM +0200, Thomas Hellstrom wrote:
->> On 10/08/2013 04:55 PM, Jerome Glisse wrote:
->>> On Tue, Oct 08, 2013 at 04:45:18PM +0200, Christian König wrote:
->>>> Am 08.10.2013 16:33, schrieb Jerome Glisse:
->>>>> On Tue, Oct 08, 2013 at 04:14:40PM +0200, Maarten Lankhorst wrote:
->>>>>> Allocate and copy all kernel memory before doing reservations. This prevents a locking
->>>>>> inversion between mmap_sem and reservation_class, and allows us to drop the trylocking
->>>>>> in ttm_bo_vm_fault without upsetting lockdep.
->>>>>>
->>>>>> Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
->>>>> I would say NAK. Current code only allocate temporary page in AGP case.
->>>>> So AGP case is userspace -> temp page -> cs checker -> radeon ib.
->>>>>
->>>>> Non AGP is directly memcpy to radeon IB.
->>>>>
->>>>> Your patch allocate memory memcpy userspace to it and it will then be
->>>>> memcpy to IB. Which means you introduce an extra memcpy in the process
->>>>> not something we want.
->>>> Totally agree. Additional to that there is no good reason to provide
->>>> anything else than anonymous system memory to the CS ioctl, so the
->>>> dependency between the mmap_sem and reservations are not really
->>>> clear to me.
->>>>
->>>> Christian.
->>> I think is that in other code path you take mmap_sem first then reserve
->>> bo. But here we reserve bo and then we take mmap_sem because of copy
->> >from user.
->>> Cheers,
->>> Jerome
->>>
->> Actually the log message is a little confusing. I think the mmap_sem
->> locking inversion problem is orthogonal to what's being fixed here.
->>
->> This patch fixes the possible recursive bo::reserve caused by
->> malicious user-space handing a pointer to ttm memory so that the ttm
->> fault handler is called when bos are already reserved. That may
->> cause a (possibly interruptible) livelock.
->>
->> Once that is fixed, we are free to choose the mmap_sem ->
->> bo::reserve locking order. Currently it's bo::reserve->mmap_sem(),
->> but the hack required in the ttm fault handler is admittedly a bit
->> ugly.  The plan is to change the locking order to
->> mmap_sem->bo::reserve
->>
->> I'm not sure if it applies to this particular case, but it should be
->> possible to make sure that copy_from_user_inatomic() will always
->> succeed, by making sure the pages are present using
->> get_user_pages(), and release the pages after
->> copy_from_user_inatomic() is done. That way there's no need for a
->> double memcpy slowpath, but if the copied data is very fragmented I
->> guess the resulting code may look ugly. The get_user_pages()
->> function will return an error if it hits TTM pages.
->>
->> /Thomas
-> get_user_pages + copy_from_user_inatomic is overkill. We should just
-> do get_user_pages which fails with ttm memory and then use copy_highpage
-> helper.
-I don't think we have to do anything that complicated, the easiest solution seems to be to
-call radeon_ib_get before calling radeon_cs_parser_relocs, and copy everything to the ib
-buffer before taking the reserve lock.
 
-~Maarten
+--gfpq6yKqvKwri7QU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Tue, Oct 08, 2013 at 10:35:37PM +0200, Wolfram Sang wrote:
+> Subsystems like pinctrl and gpio rightfully make use of deferred probing at
+> core level. Now, deferred drivers won't be retried if they don't have a .probe
+> function specified in the driver struct. Fix this driver to have that, so the
+> devices it supports won't get lost in a deferred probe.
+
+Applied 5-9, thanks - if there's patches 1-4 you'll need to resend them.
+
+--gfpq6yKqvKwri7QU
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSVTcjAAoJELSic+t+oim9xeQQAISdlk5LAlK3K/yZT53nyUpx
+WhGF1p42vNNrEWHx3oDBwK2taGy1K6i9XV6SyJ2+LMhMfNFrziIR9mXAbsBA2z3O
+FqzakokYsGG40qgR6+eG/9IqxponAjyshULcU4Tn8k4YI82fBw8Mo+tzBOSSIafq
+f1Q4apeLglIQiqquGr9jYoknRIM9zdEeoEkym9gZ45WRPeNfhcfsPc8Eh+ml+e6r
+eE4jkUmwBOE8UVp/QZEqZWAg7IxYgbGkTXVuaHiBHFRZx0kafDcMWvmInFchCkMc
+UP7qOlLPPpvjwoCEIBENb1/1i9hQn+AugzYxeBjbHI1OOlbG4/vqPXDb0aZ4JoWU
+zFuGEHrcp4RWP7EPuEHV3zJRpKj1f7HUDrlOsx13SdzsFv+KiNZyvyKl3G0mXzjb
+VN1FLLOEnVLEFmxEFDb6sbsQLORoMbgxS02yzVRxznmNIzu5OeXF77ba04PifbVp
+wl+ip0A26YqcW/xdMvWieYvQObfvoK1Ia9/zKHyT+fKAS9qgT9vZ7zBrKxWJwby1
+5o5n3K7AQo4qUPXSgGSZxk6g1PD10uHW/sxbF+z64rz47yW/WB0e7aZ2qS1aLj0X
+mGSk+AyPKofTD96qicz40q5FlxiOxfg0W+BpvtiPXC+eTU8r8yKx4Zl7yggpucdR
+i88lXUGQDmEiaXT3ArF+
+=YT7h
+-----END PGP SIGNATURE-----
+
+--gfpq6yKqvKwri7QU--
