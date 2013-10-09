@@ -1,125 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757167Ab3JILHD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 07:07:03 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:62433 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752523Ab3JILHA (ORCPT
+	id S1757220Ab3JILIA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 07:08:00 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:50560 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752530Ab3JILH7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 07:07:00 -0400
-Date: Wed, 9 Oct 2013 12:06:52 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Michal Simek <michal.simek@xilinx.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "monstr@monstr.eu" <monstr@monstr.eu>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v2 1/3] video: xilinxfb: Use standard variable name
- convention
-Message-ID: <20131009110651.GH4981@e106331-lin.cambridge.arm.com>
-References: <631df9a44b366af4129d00f1d4e1d3baad7d4903.1381315928.git.michal.simek@xilinx.com>
+	Wed, 9 Oct 2013 07:07:59 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <631df9a44b366af4129d00f1d4e1d3baad7d4903.1381315928.git.michal.simek@xilinx.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1381217421-17198-1-git-send-email-sonic.adi@gmail.com>
+References: <1381217421-17198-1-git-send-email-sonic.adi@gmail.com>
+Date: Wed, 9 Oct 2013 13:07:58 +0200
+Message-ID: <CACRpkdZc2gQ2gwpD2Rgvc-+xoEA_h-qRSM2ntbKwz_7qg52y2g@mail.gmail.com>
+Subject: Re: [PATCH v2] pinctrl: pinctrl-adi2: Remove nested lock+irqsave that
+ resue flags.
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Sonic Zhang <sonic.adi@gmail.com>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        adi-buildroot-devel@lists.sourceforge.net,
+        Sonic Zhang <sonic.zhang@analog.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 09, 2013 at 11:52:12AM +0100, Michal Simek wrote:
-> s/op/pdev/ in xilinxfb_of_probe().
-> No functional chagnes.
-> 
-> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
-> ---
-> Changes in v2: None
-> 
->  drivers/video/xilinxfb.c | 18 +++++++++---------
->  1 file changed, 9 insertions(+), 9 deletions(-)
-> 
-> diff --git a/drivers/video/xilinxfb.c b/drivers/video/xilinxfb.c
-> index 0e1dd33..d12345f 100644
-> --- a/drivers/video/xilinxfb.c
-> +++ b/drivers/video/xilinxfb.c
-> @@ -411,7 +411,7 @@ static int xilinxfb_release(struct device *dev)
->   * OF bus binding
->   */
-> 
-> -static int xilinxfb_of_probe(struct platform_device *op)
-> +static int xilinxfb_of_probe(struct platform_device *pdev)
->  {
->  	const u32 *prop;
->  	u32 tft_access = 0;
-> @@ -425,7 +425,7 @@ static int xilinxfb_of_probe(struct platform_device *op)
->  	/* Allocate the driver data region */
->  	drvdata = kzalloc(sizeof(*drvdata), GFP_KERNEL);
->  	if (!drvdata) {
-> -		dev_err(&op->dev, "Couldn't allocate device private record\n");
-> +		dev_err(&pdev->dev, "Couldn't allocate device private record\n");
->  		return -ENOMEM;
->  	}
-> 
-> @@ -433,7 +433,7 @@ static int xilinxfb_of_probe(struct platform_device *op)
->  	 * To check whether the core is connected directly to DCR or BUS
->  	 * interface and initialize the tft_access accordingly.
->  	 */
-> -	of_property_read_u32(op->dev.of_node, "xlnx,dcr-splb-slave-if",
-> +	of_property_read_u32(pdev->dev.of_node, "xlnx,dcr-splb-slave-if",
->  			     &tft_access);
-> 
->  	/*
-> @@ -457,29 +457,29 @@ static int xilinxfb_of_probe(struct platform_device *op)
->  	}
->  #endif
-> 
-> -	prop = of_get_property(op->dev.of_node, "phys-size", &size);
-> +	prop = of_get_property(pdev->dev.of_node, "phys-size", &size);
->  	if ((prop) && (size >= sizeof(u32)*2)) {
->  		pdata.screen_width_mm = prop[0];
->  		pdata.screen_height_mm = prop[1];
->  	}
+On Tue, Oct 8, 2013 at 9:30 AM, Sonic Zhang <sonic.adi@gmail.com> wrote:
 
-While you're changing these lines, it would be nice to change this
-pattern (here and elsewhere) to use of_property_read_u32_array, so that
-it's endian-safe and consistent with other devicetree parsing code:
+> From: Sonic Zhang <sonic.zhang@analog.com>
+>
+> Also avoid use NULL pointer in error message.
+>
+> v2-changes:
+> - use port pinter only after checking
+>
+> Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
 
-  of_property_read_u32_array(pdev->dev.of_node, "phys-size", prop, 2);
+Nice cleanup! Patch applied.
 
-It won't read the values if the property data's too short, so that
-should be consistent with the existing code.
-
-It would also make the diffstat negative :)
-
-> 
-> -	prop = of_get_property(op->dev.of_node, "resolution", &size);
-> +	prop = of_get_property(pdev->dev.of_node, "resolution", &size);
->  	if ((prop) && (size >= sizeof(u32)*2)) {
->  		pdata.xres = prop[0];
->  		pdata.yres = prop[1];
->  	}
-> 
-> -	prop = of_get_property(op->dev.of_node, "virtual-resolution", &size);
-> +	prop = of_get_property(pdev->dev.of_node, "virtual-resolution", &size);
->  	if ((prop) && (size >= sizeof(u32)*2)) {
->  		pdata.xvirt = prop[0];
->  		pdata.yvirt = prop[1];
->  	}
-> 
-> -	if (of_find_property(op->dev.of_node, "rotate-display", NULL))
-> +	if (of_find_property(pdev->dev.of_node, "rotate-display", NULL))
->  		pdata.rotate_screen = 1;
-
-Similarly, this could use of_property_read_bool:
-
-  pdata.rotate_screen = of_property_read_bool(pdev->dev.of_node,
-                                              "rotate-display");
-
-It won't help the diffstat, but it makes the intent clearer.
-
-Cheers,
-Mark.
+Yours,
+Linus Walleij
