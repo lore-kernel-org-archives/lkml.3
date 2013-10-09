@@ -1,58 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932265Ab3JIRku (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 13:40:50 -0400
-Received: from mail-qe0-f44.google.com ([209.85.128.44]:59833 "EHLO
-	mail-qe0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932075Ab3JIRkr (ORCPT
+	id S1756564Ab3JIR0F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 13:26:05 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:55944 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755265Ab3JIR0A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 13:40:47 -0400
+	Wed, 9 Oct 2013 13:26:00 -0400
+Date: Wed, 9 Oct 2013 10:25:22 -0700
+From: tip-bot for Mel Gorman <tipbot@zytor.com>
+Message-ID: <tip-afcae2655b0ab67e65f161b1bb214efcfa1db415@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, hannes@cmpxchg.org, riel@redhat.com,
+        aarcange@redhat.com, srikar@linux.vnet.ibm.com, mgorman@suse.de,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, hannes@cmpxchg.org, riel@redhat.com,
+        aarcange@redhat.com, srikar@linux.vnet.ibm.com, mgorman@suse.de,
+        tglx@linutronix.de
+In-Reply-To: <1381141781-10992-10-git-send-email-mgorman@suse.de>
+References: <1381141781-10992-10-git-send-email-mgorman@suse.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] mm:
+  Account for a THP NUMA hinting update as one PTE update
+Git-Commit-ID: afcae2655b0ab67e65f161b1bb214efcfa1db415
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <5255900A.5050103@gmail.com>
-References: <20131009161743.GA3022@quad>
-	<52558278.6080206@gmail.com>
-	<CABPqkBRx1CqwXOjJXWeqEBqkLkZMHWVQJNjv1jjqPakoDNB3Gg@mail.gmail.com>
-	<CABPqkBQKaMd_LuvfUreYb_9hiR-j0BkAyiP2yP-C0TTy+15_fQ@mail.gmail.com>
-	<5255900A.5050103@gmail.com>
-Date: Wed, 9 Oct 2013 19:40:43 +0200
-Message-ID: <CABPqkBQZz=80he07yzagwPjhJBOK-bc_C=hfsK+LjMvcYWZvew@mail.gmail.com>
-Subject: Re: [PATCH] perf: disable mmap2 support
-From: Stephane Eranian <eranian@google.com>
-To: David Ahern <dsahern@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Jiri Olsa <jolsa@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Kees Cook <keescook@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 09 Oct 2013 10:25:29 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 9, 2013 at 7:19 PM, David Ahern <dsahern@gmail.com> wrote:
-> On 10/9/13 10:39 AM, Stephane Eranian wrote:
->>
->> Looks like the easiest thing to do for perf is to revert:
->>
->>     Revert "perf tools: Add default handler for mmap2 events"
->>     git revert 6adb0b0ae26fcc35cfec068d71f13863faac5b44
->>
->>     Revert "perf tools: Add attr->mmap2 support"
->>     git revert 5c5e854bc760a2e2c878df3cfcf2afa4febcd511
->>
->> Do you agree?
->
->
-> If you want to strip all of mmap2 you also need
-> 5654a0257a86c093c2b38ea5d3ceaa17affd735b.
->
-You mean:
-commit 384c671e33a7ddf905f2c60b433b9883f0e5a605
-Author: David Ahern <dsahern@gmail.com>
-Date:   Sun Sep 22 19:44:58 2013 -0600
+Commit-ID:  afcae2655b0ab67e65f161b1bb214efcfa1db415
+Gitweb:     http://git.kernel.org/tip/afcae2655b0ab67e65f161b1bb214efcfa1db415
+Author:     Mel Gorman <mgorman@suse.de>
+AuthorDate: Mon, 7 Oct 2013 11:28:47 +0100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 9 Oct 2013 12:39:46 +0200
 
-    perf trace: Add mmap2 handler
+mm: Account for a THP NUMA hinting update as one PTE update
 
-Right?
+A THP PMD update is accounted for as 512 pages updated in vmstat.  This is
+large difference when estimating the cost of automatic NUMA balancing and
+can be misleading when comparing results that had collapsed versus split
+THP. This patch addresses the accounting issue.
+
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1381141781-10992-10-git-send-email-mgorman@suse.de
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ mm/mprotect.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/mm/mprotect.c b/mm/mprotect.c
+index 94722a4..2bbb648 100644
+--- a/mm/mprotect.c
++++ b/mm/mprotect.c
+@@ -145,7 +145,7 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
+ 				split_huge_page_pmd(vma, addr, pmd);
+ 			else if (change_huge_pmd(vma, pmd, addr, newprot,
+ 						 prot_numa)) {
+-				pages += HPAGE_PMD_NR;
++				pages++;
+ 				continue;
+ 			}
+ 			/* fall through */
