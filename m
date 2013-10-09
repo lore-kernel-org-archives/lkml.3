@@ -1,114 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754738Ab3JIPag (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 11:30:36 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:60036 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754523Ab3JIPad (ORCPT
+	id S1755761Ab3JIPhQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 11:37:16 -0400
+Received: from relay.parallels.com ([195.214.232.42]:57761 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752211Ab3JIPhO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 11:30:33 -0400
-Date: Wed, 9 Oct 2013 10:30:22 -0500
-From: Seth Jennings <spartacus06@gmail.com>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Bob Liu <bob.liu@oracle.com>, Mel Gorman <mgorman@suse.de>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Tomasz Stanislawski <t.stanislaws@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Dave Hansen <dave.hansen@intel.com>, Minchan Kim <minchan@kernel.org>
-Subject: Re: [PATCH v3 5/6] zswap: replace tree in zswap with radix tree in
- zbud
-Message-ID: <20131009153022.GB5406@variantweb.net>
-References: <1381238980-2491-1-git-send-email-k.kozlowski@samsung.com>
- <1381238980-2491-6-git-send-email-k.kozlowski@samsung.com>
+	Wed, 9 Oct 2013 11:37:14 -0400
+Message-ID: <52557827.3020807@parallels.com>
+Date: Wed, 9 Oct 2013 19:37:11 +0400
+From: Maxim Patlasov <mpatlasov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1381238980-2491-6-git-send-email-k.kozlowski@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "miklos@szeredi.hu" <miklos@szeredi.hu>
+CC: fuse-devel <fuse-devel@lists.sourceforge.net>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [fuse-devel] [PATCH 2/4] fuse: writepages: crop secondary requests
+References: <20131002173701.31188.33547.stgit@dhcp-10-30-17-2.sw.ru> <20131002173823.31188.77171.stgit@dhcp-10-30-17-2.sw.ru> <20131003095749.GB14242@tucsk.piliscsaba.szeredi.hu> <524D70FE.5000701@parallels.com> <20131003151432.GE14242@tucsk.piliscsaba.szeredi.hu> <524D925A.8050402@parallels.com> <CAJfpeguzpFcZnZV7nfbeETRKcu9zn1AA--N6cOA2qF+zMgEANA@mail.gmail.com> <524D99BC.1030007@parallels.com> <525511CA.5010601@parallels.com>
+In-Reply-To: <525511CA.5010601@parallels.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.17.2]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 08, 2013 at 03:29:39PM +0200, Krzysztof Kozlowski wrote:
-> This allows migration of zbud pages.
-> 
-> Add radix tree to zbud replacing the red-black tree in zswap. Use
-> offset as index to this tree so effectively the handle concept is not
-> needed anymore. Zswap uses only offset to access data stored in zbud.
-> 
-> Functionality of red-black tree from zswap was merged into zbud's radix
-> tree.
-> 
-> The patch changes the way of storing duplicated pages. Now zswap refused
-> to store them.
-> 
-> This change also exposes and fixes race condition between:
->  - zbud_reclaim_page() (called from zswap_frontswap_store())
-> and
->  - zbud_free() (called from zswap_frontswap_invalidate_page()).
-> This race was present already but additional locking and in-direct use
-> of handle makes it frequent during high memory pressure.
-> 
-> Race typically looks like:
->  - thread 1: zbud_reclaim_page()
->    - thread 1: zswap_writeback_entry()
->      - zbud_map()
->  - thread 0: zswap_frontswap_invalidate_page()
->    - zbud_free()
->  - thread 1: read zswap_entry from memory or call zbud_unmap(), now on
->    invalid memory address
-> 
-> The zbud_reclaim_page() calls evict handler (zswap_writeback_entry())
-> without holding pool lock. The zswap_writeback_entry() reads
-> memory under address obtained from zbud_map() without any lock held.
-> If invalidate happens during this time the zbud_free() will remove handle
-> from the tree and zbud_unmap() won't succeed.
-> 
-> The new map_count fields in zbud_header try to address this problem by
-> protecting handles from freeing.
-> 
-> Still are some things to do in this patch:
-> 1. Accept storing of duplicated pages (as it was in original zswap).
-> 2. Use RCU for radix tree reads and updates.
-> 3. Optimize locking in zbud_free_all().
-> 4. Iterate over LRU list instead of radix tree in zbud_free_all().
+On 10/09/2013 12:20 PM, Maxim Patlasov wrote:
+> Hi Miklos,
+>
+> On 10/03/2013 08:22 PM, Maxim Patlasov wrote:
+>> On 10/03/2013 08:09 PM, Miklos Szeredi wrote:
+>>> On Thu, Oct 3, 2013 at 5:50 PM, Maxim Patlasov <mpatlasov@parallels.com> wrote:
+>>>> On 10/03/2013 07:14 PM, Miklos Szeredi wrote:
+>>>>> On Thu, Oct 03, 2013 at 05:28:30PM +0400, Maxim Patlasov wrote:
+>>>>>
+>>>>>> 1. There is an in-flight primary request with a chain of secondary ones.
+>>>>>> 2. User calls ftruncate(2) to extend file; fuse_set_nowrite() makes
+>>>>>> fi->writectr negative and starts waiting for completion of that
+>>>>>> in-flight request
+>>>>>> 3. Userspace fuse daemon ACKs the request and fuse_writepage_end()
+>>>>>> is called; it calls __fuse_flush_writepages(), but the latter does
+>>>>>> nothing because fi->writectr < 0
+>>>>>> 4. fuse_do_setattr() proceeds extending i_size and calling
+>>>>>> __fuse_release_nowrite(). But now new (increased) i_size will be
+>>>>>> used as 'crop' arg of __fuse_flush_writepages()
+>>>>>>
+>>>>>> stale data can leak to the server.
+>>>>> So, lets do this then: skip fuse_flush_writepages() and call
+>>>>> fuse_send_writepage() directly.  It will ignore the NOWRITE logic, but
+>>>>> that's
+>>>>> okay, this happens rarely and cannot happen more than once in a row.
+>>>>>
+>>>>> Does this look good?
+>>>> Yes, but let's at least add a comment explaining why it's safe. There are
+>>>> three different cases and what you write above explains only one of them:
+>>>>
+>>>> 1st case (trivial): there are no concurrent activities using
+>>>> fuse_set/release_nowrite. Then we're on safe side because
+>>>> fuse_flush_writepages() would call fuse_send_writepage() anyway.
+>>>> 2nd case: someone called fuse_set_nowrite and it is waiting now for
+>>>> completion of all in-flight requests. Here what you wrote about "happening
+>>>> rarely and no more than once" is applicable.
+>>>> 3rd case: someone (e.g. fuse_do_setattr()) is in the middle of
+>>>> fuse_set_nowrite..fuse_release_nowrite section. The fact that
+>>>> fuse_set_nowrite returned implies that all in-flight requests were completed
+>>>> along with all its secondary requests (because we increment writectr for a
+>>>> secondry before decrementing it for the primary -- that's how
+>>>> fuse_writepage_end is implemeted). Further requests are blocked by negative
+>>>> writectr. Hence there cannot be any in-flight requests and no invocations of
+>>>> fuse_writepage_end while we're in fuse_set_nowrite..fuse_release_nowrite
+>>>> section.
+>>>>
+>>>> It looks obvious now, but I'm not sure we'll able to recollect it later.
+>>> Added your analysis as a comment and all patches pushed to writepages.v2.
+>> Great! So I can proceed with re-basing the rest of
+>> writeback-cache-policy pile to writepages.v2 soon.
+> More testing (with writeback-cache-policy enabled) revealed another bug
+> in that implementation. The problem deals with a write(2) extending i_size:
+>
+> 1. There is an in-flight primary request now. It was properly cropped
+> against i_size which was valid then and is valid now. So there is a page
+> in the request that will be written to the server partially.
+> 2. write(2) to a distant offset makes a hole and extends i_size.
+> 3. write(2) populates that whole page by new user data.
+> 4. Writeback happens and fuse_writepage_in_flight() attaches a secondary
+> request to the primary request.
+> 5. fuse_writepage_end() for the primary request calls
+> fuse_send_writepage() with 'crop' arg equal to "inarg->offset +
+> inarg->size". But inarg->size was calculated before i_size extension, so
+> the second request will be cropped as well as primary. The result is
+> that the tail of secondary request populated by valid actual user data
+> won't be stored on the server.
+>
+> The problem will be hidden by adding fuse_wait_on_page_writeback() to
+> write_begin fuse method, but the implementation will remain unsafe if we
+> believe a re-dirty may happen spontaneously. Straightforward solution
+> would be to crop secondary requests at the time of their queuing (using
+> actual i_size). Then fuse_send_writepage() would crop further only if
+> i_size shrunk. Please let me know if you come up with a smarter idea.
 
-I started working on this in parallel to see if we come up with the
-same solutions.  In many places we did :)
+Sorry for flooding. I've just realized that the problem is actually 
+solved (not "hidden") by adding fuse_wait_on_page_writeback() to 
+write_begin fuse method. No need to rework cropping mechanism again.
 
-A few places where we did things differently:
-
-I see you changed the first|last size in zbud from a size in chunks to
-a size in bytes and then proceed to do size_to_chunks() in many places.
-
-I think we should keep the size in chunks and track the exact size of the
-entry at the zswap level in the struct zswap_header before the compressed
-page data inside the zbud allocation.  Doing that also does away with
-the struct zbud_mapped_entry argument in the zbud_map() call used to
-return both the address and the length.  Now we can just return the
-address and the zswap layer can determine the length from it's own
-zswap_header inside the mapped data.
-
-In my approach, I was also looking at allowing the zbud pools to use
-HIGHMEM pages, since the handle is no longer an address.  This requires
-the pages that are being mapped to be kmapped (atomic) which will
-disable preemption.  This isn't an additional overhead since the
-map/unmap corresponds with a compress/decompress operation at the zswap
-level which uses per-cpu variables that disable preemption already.
-
-With preemption disabled during the map, a per-cpu variable can store
-any current zbud mapping at the zbud layer.  This would eliminate the
-lookup by offset in zbud_unmap() and possibly do away the race condition
-you mention and remove the need for per-buddy mapcounts which is kinda
-messy.
-
-Once we get this sorted, the next step in my mind is to teach the MM
-about zbud pages in the reclaim page so we can do away with the LRU
-logic in zbud.
-
-Thanks again for all your work!
-
-Seth
+Thanks,
+Maxim
