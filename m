@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753965Ab3JIOEa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 10:04:30 -0400
-Received: from mga11.intel.com ([192.55.52.93]:5841 "EHLO mga11.intel.com"
+	id S1753820Ab3JIOE3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 10:04:29 -0400
+Received: from mga02.intel.com ([134.134.136.20]:51517 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753445Ab3JIOE0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753013Ab3JIOE0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 Oct 2013 10:04:26 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,1063,1371106800"; 
-   d="scan'208";a="408297988"
+   d="scan'208";a="390561611"
 From: Mika Westerberg <mika.westerberg@linux.intel.com>
 To: linux-acpi@vger.kernel.org
 Cc: Wolfram Sang <wsa@the-dreams.de>, Mark Brown <broonie@kernel.org>,
@@ -16,75 +16,50 @@ Cc: Wolfram Sang <wsa@the-dreams.de>, Mark Brown <broonie@kernel.org>,
         Lv Zheng <lv.zheng@intel.com>,
         Mika Westerberg <mika.westerberg@linux.intel.com>,
         linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/3] ACPI / PM: allow child devices to ignore parent power state
-Date: Wed,  9 Oct 2013 17:04:19 +0300
-Message-Id: <1381327461-10562-2-git-send-email-mika.westerberg@linux.intel.com>
+Subject: [PATCH 0/3] ACPI power management support for I2C and SPI devices
+Date: Wed,  9 Oct 2013 17:04:18 +0300
+Message-Id: <1381327461-10562-1-git-send-email-mika.westerberg@linux.intel.com>
 X-Mailer: git-send-email 1.8.4.rc3
-In-Reply-To: <1381327461-10562-1-git-send-email-mika.westerberg@linux.intel.com>
-References: <1381327461-10562-1-git-send-email-mika.westerberg@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some serial buses like I2C and SPI don't require that the parent device is
-in D0 before any of its children transitions to D0, but instead the parent
-device can control its own power independently from the children.
+Hi,
 
-This does not follow the ACPI specification as it requires the parent to be
-powered on before its children. However, Windows seems to ignore this
-requirement so I think we can do the same in Linux.
+We originally tried to add runtime PM support for I2C adapter devices in
+order to have runtime PM core to power on the I2C host controller device
+automatically whenever any of its children I2C device is powered on (See
+[1] for the last patch series).
 
-Implement this by adding a new power flag 'ignore_parent' to struct
-acpi_device.  If this flag is set the ACPI core ignores checking of the
-parent device power state when the device is powered on/off.
+The rationale was that it is what the ACPI 5.0 specification requires: the
+parent device cannot be lower power states than its children.
 
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
----
- drivers/acpi/device_pm.c | 8 +++++---
- include/acpi/acpi_bus.h  | 3 ++-
- 2 files changed, 7 insertions(+), 4 deletions(-)
+However, it looks like Windows can put the I2C controller device to low
+power states independently of its children power states, just like Linux
+does.
 
-diff --git a/drivers/acpi/device_pm.c b/drivers/acpi/device_pm.c
-index 59d3202..ca723a4 100644
---- a/drivers/acpi/device_pm.c
-+++ b/drivers/acpi/device_pm.c
-@@ -118,9 +118,10 @@ int acpi_device_get_power(struct acpi_device *device, int *state)
- 	/*
- 	 * If we were unsure about the device parent's power state up to this
- 	 * point, the fact that the device is in D0 implies that the parent has
--	 * to be in D0 too.
-+	 * to be in D0 too, except if ignore_parent is set.
- 	 */
--	if (device->parent && device->parent->power.state == ACPI_STATE_UNKNOWN
-+	if (!device->power.flags.ignore_parent && device->parent
-+	    && device->parent->power.state == ACPI_STATE_UNKNOWN
- 	    && result == ACPI_STATE_D0)
- 		device->parent->power.state = ACPI_STATE_D0;
- 
-@@ -177,7 +178,8 @@ int acpi_device_set_power(struct acpi_device *device, int state)
- 			 acpi_power_state_string(state));
- 		return -ENODEV;
- 	}
--	if (device->parent && (state < device->parent->power.state)) {
-+	if (!device->power.flags.ignore_parent &&
-+	    device->parent && (state < device->parent->power.state)) {
- 		dev_warn(&device->dev,
- 			 "Cannot transition to power state %s for parent in %s\n",
- 			 acpi_power_state_string(state),
-diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
-index 02e113b..e830ab0 100644
---- a/include/acpi/acpi_bus.h
-+++ b/include/acpi/acpi_bus.h
-@@ -222,7 +222,8 @@ struct acpi_device_power_flags {
- 	u32 power_resources:1;	/* Power resources */
- 	u32 inrush_current:1;	/* Serialize Dx->D0 */
- 	u32 power_removed:1;	/* Optimize Dx->D0 */
--	u32 reserved:28;
-+	u32 ignore_parent:1;	/* Power is independent of parent power state */
-+	u32 reserved:27;
- };
- 
- struct acpi_device_power_state {
+This patch series only adds I2C and SPI devices to the ACPI power domain
+and make sure that the parent device power state is ignored when
+transitioning child device to a different power states.
+
+Since patches [2-3/3] depend on patch [1/3] it would be good if these all
+could be merged together.
+
+[1] http://lwn.net/Articles/568961/
+
+Lv Zheng (1):
+  i2c: attach/detach I2C client device to the ACPI power domain
+
+Mika Westerberg (2):
+  ACPI / PM: allow child devices to ignore parent power state
+  spi: attach/detach SPI device to the ACPI power domain
+
+ drivers/acpi/device_pm.c |  8 +++++---
+ drivers/i2c/i2c-core.c   | 10 ++++++++++
+ drivers/spi/spi.c        | 20 ++++++++++++++++++--
+ include/acpi/acpi_bus.h  |  3 ++-
+ 4 files changed, 35 insertions(+), 6 deletions(-)
+
 -- 
 1.8.4.rc3
 
