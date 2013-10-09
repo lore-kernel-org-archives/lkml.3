@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756930Ab3JID1b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 23:27:31 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:59671 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756711Ab3JID1L (ORCPT
+	id S1756907Ab3JID13 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 23:27:29 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:54992 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755598Ab3JID1F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 23:27:11 -0400
+	Tue, 8 Oct 2013 23:27:05 -0400
 From: David Ahern <dsahern@gmail.com>
 To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
 Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 3/3] perf record: mmap output file
-Date: Tue,  8 Oct 2013 21:26:54 -0600
-Message-Id: <1381289214-24885-4-git-send-email-dsahern@gmail.com>
+Subject: [PATCH 1/3] perf util: Add findnew method to intlist - v2
+Date: Tue,  8 Oct 2013 21:26:52 -0600
+Message-Id: <1381289214-24885-2-git-send-email-dsahern@gmail.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1381289214-24885-1-git-send-email-dsahern@gmail.com>
 References: <1381289214-24885-1-git-send-email-dsahern@gmail.com>
@@ -24,181 +24,141 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When recording raw_syscalls for the entire system, e.g.,
-    perf record -e raw_syscalls:*,sched:sched_switch -a -- sleep 1
+Similar to other findnew based methods if the requested
+object is not found, add it to the list.
 
-you end up with a negative feedback loop as perf itself calls
-write() fairly often. This patch handles the problem by mmap'ing the
-file in chunks of 64M at a time and copies events from the event buffers
-to the file avoiding write system calls.
-
-Before (with write syscall):
-
-perf record -o /tmp/perf.data -e raw_syscalls:*,sched:sched_switch -a -- sleep 1
-[ perf record: Woken up 0 times to write data ]
-[ perf record: Captured and wrote 81.843 MB /tmp/perf.data (~3575786 samples) ]
-
-After (using mmap):
-
-perf record -o /tmp/perf.data -e raw_syscalls:*,sched:sched_switch -a -- sleep 1
-[ perf record: Woken up 31 times to write data ]
-[ perf record: Captured and wrote 8.203 MB /tmp/perf.data (~358388 samples) ]
-
-In addition to perf-trace benefits using mmap lowers the overhead of
-perf-record. For example,
-
-  perf stat -i -- perf record -g -o /tmp/perf.data openssl speed aes
-
-showsi a drop in time, CPU cycles, and instructions all drop by more than a
-factor of 3. Jiri also ran a test that showed a big improvement.
+v2: followed format of other findnew methods per acme's request
 
 Signed-off-by: David Ahern <dsahern@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
 Cc: Stephane Eranian <eranian@google.com>
 ---
- tools/perf/builtin-record.c |   87 +++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 87 insertions(+)
+ tools/perf/util/intlist.c |   22 ++++++++++++++++++----
+ tools/perf/util/intlist.h |    1 +
+ tools/perf/util/rblist.c  |   27 ++++++++++++++++++++++++---
+ tools/perf/util/rblist.h  |    1 +
+ 4 files changed, 44 insertions(+), 7 deletions(-)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index da1384012505..45bb565e0bb1 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -29,6 +29,9 @@
- #include <sched.h>
- #include <sys/mman.h>
- 
-+/* mmap file big chunks at a time */
-+#define MMAP_OUTPUT_SIZE   (64*1024*1024)
-+
- #ifndef HAVE_ON_EXIT
- #ifndef ATEXIT_MAX
- #define ATEXIT_MAX 32
-@@ -64,6 +67,14 @@ static void __handle_on_exit_funcs(void)
- struct perf_record {
- 	struct perf_tool	tool;
- 	struct perf_record_opts	opts;
-+
-+	/* for MMAP based file writes */
-+	void			*mmap_addr;
-+	u64			bytes_at_mmap_start; /* bytes in file when mmap use starts */
-+	u64			mmap_offset;    /* current location within mmap */
-+	size_t			mmap_size;      /* size of mmap segments */
-+	bool			use_mmap;
-+
- 	u64			bytes_written;
- 	const char		*output_name;
- 	struct perf_evlist	*evlist;
-@@ -82,8 +93,66 @@ static void advance_output(struct perf_record *rec, size_t size)
- 	rec->bytes_written += size;
+diff --git a/tools/perf/util/intlist.c b/tools/perf/util/intlist.c
+index 826d7b38c9a0..89715b64a315 100644
+--- a/tools/perf/util/intlist.c
++++ b/tools/perf/util/intlist.c
+@@ -58,22 +58,36 @@ void intlist__remove(struct intlist *ilist, struct int_node *node)
+ 	rblist__remove_node(&ilist->rblist, &node->rb_node);
  }
  
-+static int do_mmap_output(struct perf_record *rec, void *buf, size_t size)
+-struct int_node *intlist__find(struct intlist *ilist, int i)
++static struct int_node *__intlist__findnew(struct intlist *ilist,
++					   int i, bool create)
+ {
+-	struct int_node *node;
++	struct int_node *node = NULL;
+ 	struct rb_node *rb_node;
+ 
+ 	if (ilist == NULL)
+ 		return NULL;
+ 
+-	node = NULL;
+-	rb_node = rblist__find(&ilist->rblist, (void *)((long)i));
++	if (create)
++		rb_node = rblist__findnew(&ilist->rblist, (void *)((long)i));
++	else
++		rb_node = rblist__find(&ilist->rblist, (void *)((long)i));
++
+ 	if (rb_node)
+ 		node = container_of(rb_node, struct int_node, rb_node);
+ 
+ 	return node;
+ }
+ 
++struct int_node *intlist__find(struct intlist *ilist, int i)
 +{
-+	u64 remaining;
-+	off_t offset;
-+
-+	if (rec->mmap_addr == NULL) {
-+do_mmap:
-+		offset = rec->bytes_at_mmap_start + rec->bytes_written;
-+		if (offset < (ssize_t) rec->mmap_size) {
-+			rec->mmap_offset = offset;
-+			offset = 0;
-+		} else
-+			rec->mmap_offset = 0;
-+
-+		rec->mmap_addr = mmap(NULL, rec->mmap_size,
-+				     PROT_WRITE | PROT_READ,
-+				     MAP_SHARED,
-+				     rec->output,
-+				     offset);
-+
-+		if (rec->mmap_addr == MAP_FAILED) {
-+			pr_err("mmap failed: %d: %s\n", errno, strerror(errno));
-+			return -1;
-+		}
-+
-+		/* expand file to include this mmap segment */
-+		if (ftruncate(rec->output, offset + rec->mmap_size) != 0) {
-+			pr_err("ftruncate failed\n");
-+			return -1;
-+		}
-+	}
-+
-+	remaining = rec->mmap_size - rec->mmap_offset;
-+
-+	if (size > remaining) {
-+		memcpy(rec->mmap_addr + rec->mmap_offset, buf, remaining);
-+		rec->bytes_written += remaining;
-+
-+		size -= remaining;
-+		buf  += remaining;
-+
-+		msync(rec->mmap_addr, rec->mmap_size, MS_ASYNC);
-+		munmap(rec->mmap_addr, rec->mmap_size);
-+		goto do_mmap;
-+	}
-+
-+	if (size) {
-+		memcpy(rec->mmap_addr + rec->mmap_offset, buf, size);
-+		rec->bytes_written += size;
-+		rec->mmap_offset += size;
-+	}
-+
-+	return 0;
++	return __intlist__findnew(ilist, i, false);
 +}
 +
- static int write_output(struct perf_record *rec, void *buf, size_t size)
++struct int_node *intlist__findnew(struct intlist *ilist, int i)
++{
++	return __intlist__findnew(ilist, i, true);
++}
++
+ static int intlist__parse_list(struct intlist *ilist, const char *s)
  {
-+	if (rec->use_mmap)
-+		return do_mmap_output(rec, buf, size);
-+
- 	while (size) {
- 		int ret = write(rec->output, buf, size);
+ 	char *sep;
+diff --git a/tools/perf/util/intlist.h b/tools/perf/util/intlist.h
+index 0eb00ac39e01..aa6877d36858 100644
+--- a/tools/perf/util/intlist.h
++++ b/tools/perf/util/intlist.h
+@@ -24,6 +24,7 @@ int intlist__add(struct intlist *ilist, int i);
  
-@@ -546,6 +615,11 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
- 	if (forks)
- 		perf_evlist__start_workload(evsel_list);
+ struct int_node *intlist__entry(const struct intlist *ilist, unsigned int idx);
+ struct int_node *intlist__find(struct intlist *ilist, int i);
++struct int_node *intlist__findnew(struct intlist *ilist, int i);
  
-+	if (!rec->opts.pipe_output && stat(output_name, &st) == 0) {
-+		rec->use_mmap = true;
-+		rec->bytes_at_mmap_start = st.st_size - rec->bytes_written;
-+	}
-+
- 	for (;;) {
- 		int hits = rec->samples;
+ static inline bool intlist__has_entry(struct intlist *ilist, int i)
+ {
+diff --git a/tools/perf/util/rblist.c b/tools/perf/util/rblist.c
+index a16cdd2625ad..0dfe27d99458 100644
+--- a/tools/perf/util/rblist.c
++++ b/tools/perf/util/rblist.c
+@@ -48,10 +48,12 @@ void rblist__remove_node(struct rblist *rblist, struct rb_node *rb_node)
+ 	rblist->node_delete(rblist, rb_node);
+ }
  
-@@ -572,6 +646,18 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
- 		}
+-struct rb_node *rblist__find(struct rblist *rblist, const void *entry)
++static struct rb_node *__rblist__findnew(struct rblist *rblist,
++					 const void *entry,
++					 bool create)
+ {
+ 	struct rb_node **p = &rblist->entries.rb_node;
+-	struct rb_node *parent = NULL;
++	struct rb_node *parent = NULL, *new_node = NULL;
+ 
+ 	while (*p != NULL) {
+ 		int rc;
+@@ -67,7 +69,26 @@ struct rb_node *rblist__find(struct rblist *rblist, const void *entry)
+ 			return parent;
  	}
  
-+	if (rec->use_mmap) {
-+		off_t len = rec->bytes_at_mmap_start + rec->bytes_written;
-+
-+		rec->use_mmap = false;
-+		msync(rec->mmap_addr, rec->mmap_size, MS_ASYNC);
-+		munmap(rec->mmap_addr, rec->mmap_size);
-+		rec->mmap_addr = NULL;
-+
-+		if (ftruncate(rec->output, len) != 0)
-+			pr_err("ftruncate failed\n");
+-	return NULL;
++	if (create) {
++		new_node = rblist->node_new(rblist, entry);
++		if (new_node) {
++			rb_link_node(new_node, parent, p);
++			rb_insert_color(new_node, &rblist->entries);
++			++rblist->nr_entries;
++		}
 +	}
 +
- 	if (quiet || signr == SIGUSR1)
- 		return 0;
++	return new_node;
++}
++
++struct rb_node *rblist__find(struct rblist *rblist, const void *entry)
++{
++	return __rblist__findnew(rblist, entry, false);
++}
++
++struct rb_node *rblist__findnew(struct rblist *rblist, const void *entry)
++{
++	return __rblist__findnew(rblist, entry, true);
+ }
  
-@@ -804,6 +890,7 @@ static struct perf_record record = {
- 			.uses_mmap   = true,
- 		},
- 	},
-+	.mmap_size = MMAP_OUTPUT_SIZE,
- };
+ void rblist__init(struct rblist *rblist)
+diff --git a/tools/perf/util/rblist.h b/tools/perf/util/rblist.h
+index 6d0cae5ae83d..ff9913b994c2 100644
+--- a/tools/perf/util/rblist.h
++++ b/tools/perf/util/rblist.h
+@@ -32,6 +32,7 @@ void rblist__delete(struct rblist *rblist);
+ int rblist__add_node(struct rblist *rblist, const void *new_entry);
+ void rblist__remove_node(struct rblist *rblist, struct rb_node *rb_node);
+ struct rb_node *rblist__find(struct rblist *rblist, const void *entry);
++struct rb_node *rblist__findnew(struct rblist *rblist, const void *entry);
+ struct rb_node *rblist__entry(const struct rblist *rblist, unsigned int idx);
  
- #define CALLCHAIN_HELP "do call-graph (stack chain/backtrace) recording: "
+ static inline bool rblist__empty(const struct rblist *rblist)
 -- 
 1.7.10.1
 
