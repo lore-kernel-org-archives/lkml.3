@@ -1,85 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756433Ab3JIBol (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 21:44:41 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:55579 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753378Ab3JIBoi convert rfc822-to-8bit (ORCPT
+	id S1755990Ab3JIBz1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 21:55:27 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:55885 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754981Ab3JIBzZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 21:44:38 -0400
-Message-ID: <1381283037.5388.13.camel@marge.simpson.net>
-Subject: Re: [x86] BUG: unable to handle kernel paging request at 00740060
-From: Mike Galbraith <bitbucket@online.de>
-To: Jakub Jelinek <jakub@redhat.com>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Richard Henderson <rth@twiddle.net>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Wed, 09 Oct 2013 03:43:57 +0200
-In-Reply-To: <20131008190523.GW30970@tucnak.zalov.cz>
-References: <20131005234430.GA22485@localhost>
-	 <CA+55aFxEeKixnH7mZZs5iwupA9_GsRN0N7QZxqcTcE4RKZvTTg@mail.gmail.com>
-	 <20131008075151.GA15689@localhost>
-	 <CA+55aFykGxmaE9hq9xd+6HHFtEube_2QnB+ipW4oF71c6vyXAw@mail.gmail.com>
-	 <20131008185154.GA8258@redhat.com> <20131008190523.GW30970@tucnak.zalov.cz>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 8BIT
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:UvBZKMGRR2OHHcT9RdQSSuP1AF6w62AB1uAWV1ZF5Gd
- HRFEwWbMYPH2w3NA229ZlYoIr9/3XwA4JznDg9IZD42Ap3cZgc
- sBn8DYnNW1LodPOfxBe312VN3aQn7kSunexdzdBHnWnO1977il
- JLD3i315W/gtKtTdz721+YwQPDdHP15vnwFXNXD6cuuqDK9pAb
- z19/0Q7EnSoQWGVUz2hPJU5iKmK3YD3jhOPnZZTJYBLA2gCqw4
- gtTD2EtXSqjowwwqGPUUkMIKkSuiX36WN+nhubHz8sr9wbDI7I
- GItVh+oWyB/PAtYfubKwWitPkDq868BkOFdF2tunabg4ys5Eq9
- 7RCUa1nvR/anv2TU1WHlJnVlnb0LsHdKUuuPMd9lYD0+Frx03y
- 9uqbkcEbbYx8w==
+	Tue, 8 Oct 2013 21:55:25 -0400
+Message-ID: <5254B787.6080700@gmail.com>
+Date: Wed, 09 Oct 2013 12:55:19 +1100
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Joe Perches <joe@perches.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, eldad@fogrefinery.com,
+        Jiri Kosina <jkosina@suse.cz>, jgunthorpe@obsidianresearch.com,
+        Dan Rosenberg <dan.j.rosenberg@gmail.com>,
+        Kees Cook <keescook@chromium.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        George Spelvin <linux@horizon.com>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] vsprintf: Check real user/group id for %pK
+References: <5254A034.5020700@gmail.com>	 <1381279758.23937.42.camel@joe-AO722> <1381282200.23937.45.camel@joe-AO722>
+In-Reply-To: <1381282200.23937.45.camel@joe-AO722>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-10-08 at 21:05 +0200, Jakub Jelinek wrote: 
-> On Tue, Oct 08, 2013 at 08:51:54PM +0200, Oleg Nesterov wrote:
-> > On 10/08, Linus Torvalds wrote:
-> > >
-> > > (not yet merged), see:
-> > >
-> > >     http://git.kernel.org/cgit/linux/kernel/git/tip/tip.git/commit/?id=0c44c2d0f459cd7e275242b72f500137c4fa834d
-> > 
-> > I do not really understand inline assembly constraints, but I'll ask
-> > anyway.
-> > 
-> > 	+#define __GEN_RMWcc(fullop, var, cc, ...) \
-> > 	+do { \
-> > 	+ asm volatile goto (fullop "; j" cc " %l[cc_label]" \
-> > 	+ : : "m" (var), ## __VA_ARGS__ \
-> > 	      ^^^^^^^^^
-> > 
-> > don't we need
-> > 
-> > 	"+m" (var)
-> > 
-> > here?
+On 09/10/13 12:30, Joe Perches wrote:
+> On Tue, 2013-10-08 at 17:49 -0700, Joe Perches wrote:
+>> On Wed, 2013-10-09 at 11:15 +1100, Ryan Mallon wrote:
+>>> Some setuid binaries will allow reading of files which have read
+>>> permission by the real user id. This is problematic with files which
+>>> use %pK because the file access permission is checked at open() time,
+>>> but the kptr_restrict setting is checked at read() time. If a setuid
+>>> binary opens a %pK file as an unprivileged user, and then elevates
+>>> permissions before reading the file, then kernel pointer values may be
+>>> leaked.
+>>
+>> I think it should explicitly test 0.
 > 
-> You actually can't have output operands with asm goto, only inputs
-> and clobbers.  But the "memory" clobber should be enough here.
+> Also, Documentation/sysctl/kernel.txt should be updated too.
 > 
-> If you suspect a compiler bug, can somebody please narrow it down to
-> a single object file (if I've skimmed the patch right, it is just an
-> optimization, where object files compiled without and with the patch
-> should actually coexist fine in the same kernel), ideally to a single
-> routine if possible and post a preprocessed source + gcc command line
-> + version of gcc?
+> Here's a suggested patch:
+> 
+> ---
+>  Documentation/sysctl/kernel.txt | 14 ++++++++------
+>  lib/vsprintf.c                  | 38 ++++++++++++++++++++++++++------------
+>  2 files changed, 34 insertions(+), 18 deletions(-)
+> 
+> diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
+> index 9d4c1d1..eac53d5 100644
+> --- a/Documentation/sysctl/kernel.txt
+> +++ b/Documentation/sysctl/kernel.txt
+> @@ -290,13 +290,15 @@ Default value is "/sbin/hotplug".
+>  kptr_restrict:
+>  
+>  This toggle indicates whether restrictions are placed on
+> -exposing kernel addresses via /proc and other interfaces.  When
+> -kptr_restrict is set to (0), there are no restrictions.  When
+> -kptr_restrict is set to (1), the default, kernel pointers
+> +exposing kernel addresses via /proc and other interfaces.
+> +
+> +When kptr_restrict is set to (0), there are no restrictions.
+> +When kptr_restrict is set to (1), the default, kernel pointers
+>  printed using the %pK format specifier will be replaced with 0's
+> -unless the user has CAP_SYSLOG.  When kptr_restrict is set to
+> -(2), kernel pointers printed using %pK will be replaced with 0's
+> -regardless of privileges.
+> +unless the user has CAP_SYSLOG and effective user and group ids
+> +are equal to the real ids.
+> +When kptr_restrict is set to (2), kernel pointers printed using
+> +%pK will be replaced with 0's regardless of privileges.
 
-gcc version 4.6.2 (SUSE Linux) won't produce output, but where it dies
-might point in the general direction of newer gcc troubles? 
+I'll add this, thanks.
 
-  CC [M]  net/sunrpc/xprtsock.o
-net/sunrpc/xprtsock.c: In function ‘xs_setup_tcp’:
-net/sunrpc/xprtsock.c:2844:1: internal compiler error: in move_insn, at haifa-sched.c:2353
+I'm less fussed about the suggestions for the logic. The current test is
+small and concise. The original also does the in_irq tests regardless of
+the kptr_restrict setting since they are mostly intended to catch
+internal kernel bugs.
 
-	-Mike
+Anyway, I am mostly interested to hear if the solution is acceptable, or
+if a more involved open() vs read() time check is required.
+
+~Ryan
+
+>  
+>  ==============================================================
+>  
+> diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+> index 26559bd..986fdbe 100644
+> --- a/lib/vsprintf.c
+> +++ b/lib/vsprintf.c
+> @@ -27,6 +27,7 @@
+>  #include <linux/uaccess.h>
+>  #include <linux/ioport.h>
+>  #include <linux/dcache.h>
+> +#include <linux/cred.h>
+>  #include <net/addrconf.h>
+>  
+>  #include <asm/page.h>		/* for PAGE_SIZE */
+> @@ -1302,20 +1303,33 @@ char *pointer(const char *fmt, char *buf, char *end, void *ptr,
+>  			return buf;
+>  		}
+>  	case 'K':
+> -		/*
+> -		 * %pK cannot be used in IRQ context because its test
+> -		 * for CAP_SYSLOG would be meaningless.
+> -		 */
+> -		if (kptr_restrict && (in_irq() || in_serving_softirq() ||
+> -				      in_nmi())) {
+> -			if (spec.field_width == -1)
+> -				spec.field_width = default_width;
+> -			return string(buf, end, "pK-error", spec);
+> +		switch (kptr_restrict) {
+> +		case 0:			/* None */
+> +			break;
+> +		case 1: {		/* Restricted (the default) */
+> +			const struct cred *cred;
+> +
+> +			if (in_irq() || in_serving_softirq() || in_nmi()) {
+> +				/*
+> +				 * This cannot be used in IRQ context because
+> +				 * the test for CAP_SYSLOG would be meaningless
+> +				 */
+> +				if (spec.field_width == -1)
+> +					spec.field_width = default_width;
+> +				return string(buf, end, "pK-error", spec);
+> +			}
+> +			cred = current_cred();
+> +			if (!has_capability_noaudit(current, CAP_SYSLOG) ||
+> +			    !uid_eq(cred->euid, cred->uid) ||
+> +			    !gid_eq(cred->egid, cred->gid))
+> +				ptr = NULL;
+> +			break;
+>  		}
+> -		if (!((kptr_restrict == 0) ||
+> -		      (kptr_restrict == 1 &&
+> -		       has_capability_noaudit(current, CAP_SYSLOG))))
+> +		case 2:			/* Forbidden - Always 0 */
+> +		default:
+>  			ptr = NULL;
+> +			break;
+> +		}
+>  		break;
+>  	case 'N':
+>  		switch (fmt[1]) {
+> 
+> 
 
