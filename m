@@ -1,85 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757085Ab3JIKrB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 06:47:01 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:34292 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756932Ab3JIKq7 (ORCPT
+	id S1757162Ab3JIKu1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 06:50:27 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:14836 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753530Ab3JIKuY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 06:46:59 -0400
-MIME-Version: 1.0
-In-Reply-To: <52552FBA.7040806@suse.cz>
-References: <CA+55aFxtvT3Yvbxe5JGBThZS13payymFJ7jCLyEiE2iNDvsZtQ@mail.gmail.com>
-	<20130711135445.GA21500@sepie.suse.cz>
-	<CA+55aFyVjugxM7cUDWi0ASWttYthCxa6e7X3CADknBcSFxWgew@mail.gmail.com>
-	<20130712105721.GF8731@rric.localhost>
-	<20130717160506.GI8731@rric.localhost>
-	<CA+55aFx4G5gME3ByqE0Wr-_t2x_6WkP3Ta4k1z4jfW+PrcK0og@mail.gmail.com>
-	<20130717165743.GK8731@rric.localhost>
-	<CA+55aFzhmV7iq+Pv37trMCmdNzk53ORAoj0a6rV14fzKta3Dhw@mail.gmail.com>
-	<51E7B3D0.4060609@suse.cz>
-	<20130930084945.GA1963@rric.localhost>
-	<20130930163139.GA12450@free.fr>
-	<CAMuHMdW-YWGgZjR9ow6FMW7BrOorbbVAEm9sYsVvPkfg-_=jag@mail.gmail.com>
-	<52552FBA.7040806@suse.cz>
-Date: Wed, 9 Oct 2013 12:46:59 +0200
-X-Google-Sender-Auth: DdvbmzMy6u28d8SK_HmuUstME-M
-Message-ID: <CAMuHMdXwdYACK_yvH3=OrO+MWkvOXQCzZ6f35hNq-k-7gieFLQ@mail.gmail.com>
-Subject: Re: [PATCH] arm, kbuild: make "make install" not depend on vmlinux
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Michal Marek <mmarek@suse.cz>
-Cc: "Yann E. MORIN" <yann.morin.1998@free.fr>,
-        Robert Richter <rric@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linux Kbuild mailing list <linux-kbuild@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 9 Oct 2013 06:50:24 -0400
+X-AuditID: cbfee68e-b7f756d000004512-c6-525534ac51c1
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Kishon Vijay Abraham I'" <kishon@ti.com>
+Cc: "'Bjorn Helgaas'" <bhelgaas@google.com>, linux-pci@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Pratyush Anand'" <pratyush.anand@st.com>,
+        "'Mohit KUMAR'" <Mohit.KUMAR@st.com>,
+        "'Siva Reddy Kallam'" <siva.kallam@samsung.com>,
+        "'SRIKANTH TUMKUR SHIVANAND'" <ts.srikanth@samsung.com>,
+        "'Arnd Bergmann'" <arnd@arndb.de>, "'Sean Cross'" <xobs@kosagi.com>,
+        "'Thierry Reding'" <thierry.reding@gmail.com>,
+        "'Thomas Petazzoni'" <thomas.petazzoni@free-electrons.com>,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <000401cec4c6$dc415180$94c3f480$%han@samsung.com>
+ <52551C6E.1040404@ti.com> <003901cec4d0$5d83e650$188bb2f0$%han@samsung.com>
+ <5255266B.6040809@ti.com> <000501cec4d7$1233a3f0$369aebd0$%han@samsung.com>
+ <52552F84.2020901@ti.com>
+In-reply-to: <52552F84.2020901@ti.com>
+Subject: Re: [PATCH] PCI: designware: Add irq_create_mapping()
+Date: Wed, 09 Oct 2013 19:49:15 +0900
+Message-id: <000c01cec4dd$32d92070$988b6150$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac7E2iov1gM0Hxg1TNSocIyaK2vtawAAuCSg
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrCKsWRmVeSWpSXmKPExsVy+t8zY901JqFBBn2N4hZ/Jx1jt1jSlGHx
+	8pCmxfwj51gtLi+8xGrRu+Aqm8WFpz1sFpd3zWGzODvvOJvFjPP7mCw2Tv3FaNF+SdliRdNW
+	Roufu+axWDx90MRk0Xj0AatF65MHjA6CHr9/TWL0eLLpIqPHzll32T0WbCr1+L5wPrtH35ZV
+	jB5Pf+xl9jh+YzuTx+dNcgGcUVw2Kak5mWWpRfp2CVwZ19dMZCp4KlTxa9cv9gbGifxdjJwc
+	EgImEv9/bGWEsMUkLtxbz9bFyMUhJLCMUWJnWx8rTFH3gu3sEInpjBJPP15khXB+MUosOnqW
+	CaSKTUBN4suXw+wgtoiAjsTC0+uZQWxmgZssErdeqkI0fGWUWDDzFtg+TqCGN6c+gxUJC9hJ
+	NG38wgZiswioSvxofgE2lFfAVmLzbYihvAKCEj8m32OBGKolsX7ncSYIW15i85q3QHM4gE5V
+	l3j0VxfiBiOJ93P/sEOUiEjse/EO6s0zHBJbX7JArBKQ+Db5EAtEq6zEpgPMECWSEgdX3GCZ
+	wCgxC8niWUgWz0KyeBaSDQsYWVYxiqYWJBcUJ6UXGekVJ+YWl+al6yXn525ihKSQvh2MNw9Y
+	H2JMBlo/kVlKNDkfmILySuINjc2MLExNTI2NzC3NSBNWEudVa7EOFBJITyxJzU5NLUgtii8q
+	zUktPsTIxMEp1cC4dnFZbezSQyk/2A51LtNVdzD/c/p45nzzpt+fDsy/vbJ+RsO61zVLJp9e
+	WL7DcubC3ES5w/uPNDyeEj3rwAzDGyf2Xr7c4btvXkOLlsv2OG/WXd5BW15+4qw7ueGzRl6t
+	8bXIrZaH/30V9PT7GxOzydfmCI/Lnm169alFLwUPF+gmbDsdt2uDnBJLcUaioRZzUXEiAJEk
+	nWM3AwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpik+LIzCtJLcpLzFFi42I5/e+xoO4ak9AggyPnBCz+TjrGbrGkKcPi
+	5SFNi/lHzrFaXF54idWid8FVNosLT3vYLC7vmsNmcXbecTaLGef3MVlsnPqL0aL9krLFiqat
+	jBY/d81jsXj6oInJovHoA1aL1icPGB0EPX7/msTo8WTTRUaPnbPusnss2FTq8X3hfHaPvi2r
+	GD2e/tjL7HH8xnYmj8+b5AI4oxoYbTJSE1NSixRS85LzUzLz0m2VvIPjneNNzQwMdQ0tLcyV
+	FPISc1NtlVx8AnTdMnOAPlFSKEvMKQUKBSQWFyvp22GaEBripmsB0xih6xsSBNdjZIAGEtYx
+	ZlxfM5Gp4KlQxa9dv9gbGCfydzFyckgImEh0L9jODmGLSVy4t56ti5GLQ0hgOqPE048XWSGc
+	X4wSi46eZQKpYhNQk/jy5TBYh4iAjsTC0+uZQWxmgZssErdeqkI0fGWUWDDzFiNIghOo4c2p
+	z2BFwgJ2Ek0bv7CB2CwCqhI/ml+ADeUVsJXYfBtiKK+AoMSPyfdYIIZqSazfeZwJwpaX2Lzm
+	LdAcDqBT1SUe/dWFuMFI4v3cP+wQJSIS+168Y5zAKDQLyaRZSCbNQjJpFpKWBYwsqxhFUwuS
+	C4qT0nON9IoTc4tL89L1kvNzNzGCU9Qz6R2MqxosDjEKcDAq8fA+4A8JEmJNLCuuzD3EKMHB
+	rCTCu14qNEiINyWxsiq1KD++qDQntfgQYzLQoxOZpUST84HpM68k3tDYxMzI0sjMwsjE3Jw0
+	YSVx3oOt1oFCAumJJanZqakFqUUwW5g4OKUaGLsV3j6KnCpqr+Ze+TTHf+m0t45Mt7d3/U5R
+	P3xwUmSTj1HYTquHnYsusE8Jjdy6I6mJq+HIMY25CoIMIXWeUf95Cvbw7Lglol1T+4Ol1s9R
+	t8Dgze9yjstiaXbtacfmze6vuhW2xsA0eKNNgnnSrWm+m6dGWG39+eO3+u0TJvvfzXVk11nJ
+	rsRSnJFoqMVcVJwIAOioqSqVAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 9, 2013 at 12:28 PM, Michal Marek <mmarek@suse.cz> wrote:
-> On 9.10.2013 09:18, Geert Uytterhoeven wrote:
->> Sorry for chiming in that late, but I didn't think of this when reading the
->> original submission.
->>
->> Just doing "make oldconfig; make install" used to work.
+On Wednesday, October 09, 2013 7:27 PM, Kishon Vijay Abraham I wrote:
+> On Wednesday 09 October 2013 03:35 PM, Jingoo Han wrote:
+> > On Wednesday, October 09, 2013 6:48 PM, Kishon Vijay Abraham I wrote:
+> >> On Wednesday 09 October 2013 02:47 PM, Jingoo Han wrote:
+> >>> On Wednesday, October 09, 2013 6:06 PM, Kishon Vijay Abraham I wrote:
+> >>>> On Wednesday 09 October 2013 01:39 PM, Jingoo Han wrote:
+> >>>>> Without irq_create_mapping(), the correct irq number cannot be
+> >>>>> provided. In this case, it makes problem such as NULL deference.
+> >>>>> Thus, irq_create_mapping() should be added for MSI.
+> >>>>>
+> >>>>> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> >>>>> Cc: Kishon Vijay Abraham I <kishon@ti.com>
+> >>>>> ---
+> >>>>> Tested on Exynos5440.
+> >>>>>
+> >>>>>  drivers/pci/host/pcie-designware.c |   10 ++++------
+> >>>>>  drivers/pci/host/pcie-designware.h |    1 +
+> >>>>>  2 files changed, 5 insertions(+), 6 deletions(-)
+> >>>>>
+> >>>>> diff --git a/drivers/pci/host/pcie-designware.c b/drivers/pci/host/pcie-designware.c
+> >>>>> index 8963017..e536bb6 100644
+> >>>>> --- a/drivers/pci/host/pcie-designware.c
+> >>>>> +++ b/drivers/pci/host/pcie-designware.c
+> >>>>> @@ -237,6 +237,8 @@ static int assign_irq(int no_irqs, struct msi_desc *desc, int *pos)
+> >>>>>  		}
+> >>>>>  	}
+> >>>>>
+> >>>>> +	pp->msi_irq_start = irq_create_mapping(pp->irq_domain, 0);
+> >>>>> +
+> >>>>
+> >>>> I think irq_create_mapping should be done for all the MSI irq lines instead of
+> >>>> only the first line. So you might have to do for MAX_MSI_IRQS lines.
+> >>
+> >> Maybe it should be only till MAX_MSI_IRQS-1?
+> 
+> I meant something like this,
+> 
+> 	for (i = 0; i < MAX_MSI_IRQS; i++)
+> 		irq_create_mapping(pp->irq_domain, i);
 >
-> On ARM and maybe other architectures.
+> That didn't give me any issues though.
 
-Until 2009 it also worked on x86 ;-)
+However, no driver calls irq_create_mapping() like this.
+For example, Tegra PCI driver gives 'hwirq' as single offset value
+to irq_create_mapping() without any loop.
 
->> Removing the dependency of "make vmlinux" on vmlinux breaks this, doesn't it?
->
->> Not that I'm strongly attached to it, but there may be other users...
->
-> We can't eat the cake and have it :). What can be done is to make
+static int tegra_msi_setup_irq(struct msi_chip *chip, struct pci_dev *pdev,
+                               struct msi_desc *desc)
+{
+	hwirq = tegra_msi_alloc(msi);
+	irq = irq_create_mapping(msi->domain, hwirq);
 
-Sure.
+Maybe, the following can be used, it uses 'pos0' as the offset value.
 
-> arch/arm/boot/install.sh print a friendlier error message, like the x86
-> version does:
->
-> if [ ! -f "$1" ]; then
->         echo ""                                                   1>&2
->         echo " *** Missing file: $1"                              1>&2
->         echo ' *** You need to run "make" before "make install".' 1>&2
->         echo ""                                                   1>&2
->         exit 1
-> fi
+	pp->msi_irq_start = irq_create_mapping(pp->irq_domain, pos0);
+	irq = pp->msi_irq_start;
 
-Definitely!
 
-Gr{oetje,eeting}s,
+Best regards,
+Jingoo Han
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
