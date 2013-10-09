@@ -1,10 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757512Ab3JIXby (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 19:31:54 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:35221 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757217Ab3JIXaw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757500Ab3JIXbx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 19:31:53 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:33126 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757426Ab3JIXaw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 Oct 2013 19:30:52 -0400
 From: Nishanth Menon <nm@ti.com>
 To: Kevin Hilman <khilman@linaro.org>, Benoit Cousson <bcousson@baylibre.com>,
@@ -14,9 +15,9 @@ CC: <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <devicetree@vger.kernel.org>, Nishanth Menon <nm@ti.com>,
         Kevin Hilman <khilman@deeprootsystems.com>,
         Paul Walmsley <paul@pwsan.com>
-Subject: [PATCH V6 04/15] ARM: OMAP2+: OMAP5: add lateinit hook for calling pm late init
-Date: Wed, 9 Oct 2013 18:30:04 -0500
-Message-ID: <1381361414-8851-3-git-send-email-nm@ti.com>
+Subject: [PATCH V6 05/15] ARM: OMAP2+: DRA7: add lateinit hook for calling pm late init
+Date: Wed, 9 Oct 2013 18:30:05 -0500
+Message-ID: <1381361414-8851-4-git-send-email-nm@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1381361414-8851-1-git-send-email-nm@ti.com>
 References: <1381354144-7134-1-git-send-email-nm@ti.com>
@@ -27,7 +28,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Call OMAP2+ generic lateinit hook from AM specific late init hook.
+Call OMAP2+ generic lateinit hook from DRA7 specific late init hook.
 This allows the generic late initializations such as cpufreq hooks
 to be active.
 
@@ -43,46 +44,46 @@ Signed-off-by: Nishanth Menon <nm@ti.com>
  3 files changed, 8 insertions(+)
 
 diff --git a/arch/arm/mach-omap2/board-generic.c b/arch/arm/mach-omap2/board-generic.c
-index d4371c7..67dbae2 100644
+index 67dbae2..c0b0848 100644
 --- a/arch/arm/mach-omap2/board-generic.c
 +++ b/arch/arm/mach-omap2/board-generic.c
-@@ -220,6 +220,7 @@ DT_MACHINE_START(OMAP5_DT, "Generic OMAP5 (Flattened Device Tree)")
- 	.init_early	= omap5_init_early,
+@@ -255,6 +255,7 @@ DT_MACHINE_START(DRA7XX_DT, "Generic DRA7XX (Flattened Device Tree)")
+ 	.smp		= smp_ops(omap4_smp_ops),
+ 	.map_io		= omap5_map_io,
+ 	.init_early	= dra7xx_init_early,
++	.init_late	= dra7xx_init_late,
  	.init_irq	= omap_gic_of_init,
  	.init_machine	= omap_generic_init,
-+	.init_late	= omap5_init_late,
  	.init_time	= omap5_realtime_timer_init,
- 	.dt_compat	= omap5_boards_compat,
- 	.restart	= omap44xx_restart,
 diff --git a/arch/arm/mach-omap2/common.h b/arch/arm/mach-omap2/common.h
-index 09f6736..ceb208b 100644
+index ceb208b..352fa9d 100644
 --- a/arch/arm/mach-omap2/common.h
 +++ b/arch/arm/mach-omap2/common.h
-@@ -111,6 +111,7 @@ void omap3630_init_late(void);
- void am35xx_init_late(void);
- void ti81xx_init_late(void);
- void am33xx_init_late(void);
-+void omap5_init_late(void);
+@@ -114,6 +114,7 @@ void am33xx_init_late(void);
+ void omap5_init_late(void);
  int omap2_common_pm_late_init(void);
  void dra7xx_init_early(void);
++void dra7xx_init_late(void);
  
+ #ifdef CONFIG_SOC_BUS
+ void omap_soc_device_init(void);
 diff --git a/arch/arm/mach-omap2/io.c b/arch/arm/mach-omap2/io.c
-index 300eac0..6226e0d 100644
+index 6226e0d..3b7b543 100644
 --- a/arch/arm/mach-omap2/io.c
 +++ b/arch/arm/mach-omap2/io.c
-@@ -675,6 +675,12 @@ void __init omap5_init_early(void)
+@@ -702,6 +702,12 @@ void __init dra7xx_init_early(void)
  	omap_hwmod_init_postsetup();
- 	omap_clk_init = omap5xxx_dt_clk_init;
+ 	omap_clk_init = dra7xx_dt_clk_init;
  }
 +
-+void __init omap5_init_late(void)
++void __init dra7xx_init_late(void)
 +{
 +	omap2_common_pm_late_init();
 +}
 +
  #endif
  
- #ifdef CONFIG_SOC_DRA7XX
+ 
 -- 
 1.7.9.5
 
