@@ -1,102 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757227Ab3JILQC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 07:16:02 -0400
-Received: from numidia.opendz.org ([98.142.220.152]:36967 "EHLO
-	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751971Ab3JILQA (ORCPT
+	id S1754884Ab3JILSz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 07:18:55 -0400
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:51581 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751718Ab3JILSx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 07:16:00 -0400
-Date: Wed, 9 Oct 2013 12:15:56 +0100
-From: Djalal Harouni <tixxdz@opendz.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        David Rientjes <rientjes@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        Djalal Harouni <tixxdz@gmail.com>
-Subject: Re: [PATCH v2 2/9] procfs: add proc_allow_access() to check if
- file's opener may access task
-Message-ID: <20131009111556.GA8781@dztty>
-References: <CALCETrVs2Nd82dpURQxAVetK814bAm8TvnSyA4e=YeTWxTFsmA@mail.gmail.com>
- <20131004191113.GA3916@dztty>
- <CALCETrVMBh0nNgpOHOMrsOjHez7NnCNbY5nHxeQ3RToP4nKO+A@mail.gmail.com>
- <20131004192712.GA4334@dztty>
- <CALCETrUuMRMgJ1OV3-ZRQ5wwzSQsdf9tKY9iKesk1QJPtj6-qw@mail.gmail.com>
- <20131004194142.GA4524@dztty>
- <CALCETrXghsx-2rK8QqgtfMaJJhkwcYgRMnqGQfKw-T3O7jBTUA@mail.gmail.com>
- <20131005132337.GA4095@dztty>
- <CALCETrV2YZUQsFiahmcQECF37=sX6EMiEEjwXX_mcuPf-X3-yw@mail.gmail.com>
- <20131009105402.GA4810@dztty>
+	Wed, 9 Oct 2013 07:18:53 -0400
+Message-ID: <52553B9A.6090901@monstr.eu>
+Date: Wed, 09 Oct 2013 13:18:50 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131009105402.GA4810@dztty>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mark Rutland <mark.rutland@arm.com>
+CC: Michal Simek <michal.simek@xilinx.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v2 1/3] video: xilinxfb: Use standard variable name convention
+References: <631df9a44b366af4129d00f1d4e1d3baad7d4903.1381315928.git.michal.simek@xilinx.com> <20131009110651.GH4981@e106331-lin.cambridge.arm.com>
+In-Reply-To: <20131009110651.GH4981@e106331-lin.cambridge.arm.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="rHVM98jJUei5I1WoM7B7f6V9mWmbi38s1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 09, 2013 at 11:54:02AM +0100, Djalal Harouni wrote:
-> On Mon, Oct 07, 2013 at 02:41:33PM -0700, Andy Lutomirski wrote:
-> > On Sat, Oct 5, 2013 at 6:23 AM, Djalal Harouni <tixxdz@opendz.org> wrote:
-> > > On Fri, Oct 04, 2013 at 03:17:08PM -0700, Andy Lutomirski wrote:
-> > >>
-> > >> Exactly.  Hence the NAK.
-> > > But Having two LSM Hooks there is really not practical!
-> > 
-> > It'd doable *if* it turns out that it's the right solution.
-> > 
-> > But revoke seems much more likely to be simple, comprehensible, and
-> > obviously correct to me.
-> Yes Andy, I agree, revoke is much better!
-> 
-> But it will not handle or fix all the situations, as I've said what if
-> revoke is not invloved here? there is no an execve from the target task!
-> 
-> 
-> Remember:
-> /proc/*/{stat,maps} and perhaps others have 0444 and don't have ptrace
-> checks during ->open() to not break some userspace... especially
-> /proc/*/stat file
-> 
-> 
-> So you will have an fd on these privileged files!
-> 
-> Current will execve a privileged process, and pass ptrace_may_access()
-> checks during ->read()...
-> 
-> Here revoke is not involved at all! so it will not fix these files and
-> they will continue to be vulnerable.
-> 
-> IMO to fix them, we must have the correct ptrace_may_access() check and
-> this involves: current doing an execve + current's cred
-> 
-> 
-> 
-> BTW, Andy we already return 0 (end of file) for /proc/*/mem
->   ->read()
->     ->mem_read()
->       ->mem_rw()
->         if (!atomic_inc_not_zero(&mm->mm_users))
-> 		return 0
-> 
-> So can this be considered some sort of simple revoke?
-Or create dummy compat-quirk maps inode as Ingo put it in the other mail:
-00000000-00000000 ---p 00000000 00:00 0
-...
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--rHVM98jJUei5I1WoM7B7f6V9mWmbi38s1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-For /proc/*/maps files, to not break userspace
+On 10/09/2013 01:06 PM, Mark Rutland wrote:
+> On Wed, Oct 09, 2013 at 11:52:12AM +0100, Michal Simek wrote:
+>> s/op/pdev/ in xilinxfb_of_probe().
+>> No functional chagnes.
+>>
+>> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+>> ---
+>> Changes in v2: None
+>>
+>>  drivers/video/xilinxfb.c | 18 +++++++++---------
+>>  1 file changed, 9 insertions(+), 9 deletions(-)
+>>
+>> diff --git a/drivers/video/xilinxfb.c b/drivers/video/xilinxfb.c
+>> index 0e1dd33..d12345f 100644
+>> --- a/drivers/video/xilinxfb.c
+>> +++ b/drivers/video/xilinxfb.c
+>> @@ -411,7 +411,7 @@ static int xilinxfb_release(struct device *dev)
+>>   * OF bus binding
+>>   */
+>>
+>> -static int xilinxfb_of_probe(struct platform_device *op)
+>> +static int xilinxfb_of_probe(struct platform_device *pdev)
+>>  {
+>>  	const u32 *prop;
+>>  	u32 tft_access =3D 0;
+>> @@ -425,7 +425,7 @@ static int xilinxfb_of_probe(struct platform_devic=
+e *op)
+>>  	/* Allocate the driver data region */
+>>  	drvdata =3D kzalloc(sizeof(*drvdata), GFP_KERNEL);
+>>  	if (!drvdata) {
+>> -		dev_err(&op->dev, "Couldn't allocate device private record\n");
+>> +		dev_err(&pdev->dev, "Couldn't allocate device private record\n");
+>>  		return -ENOMEM;
+>>  	}
+>>
+>> @@ -433,7 +433,7 @@ static int xilinxfb_of_probe(struct platform_devic=
+e *op)
+>>  	 * To check whether the core is connected directly to DCR or BUS
+>>  	 * interface and initialize the tft_access accordingly.
+>>  	 */
+>> -	of_property_read_u32(op->dev.of_node, "xlnx,dcr-splb-slave-if",
+>> +	of_property_read_u32(pdev->dev.of_node, "xlnx,dcr-splb-slave-if",
+>>  			     &tft_access);
+>>
+>>  	/*
+>> @@ -457,29 +457,29 @@ static int xilinxfb_of_probe(struct platform_dev=
+ice *op)
+>>  	}
+>>  #endif
+>>
+>> -	prop =3D of_get_property(op->dev.of_node, "phys-size", &size);
+>> +	prop =3D of_get_property(pdev->dev.of_node, "phys-size", &size);
+>>  	if ((prop) && (size >=3D sizeof(u32)*2)) {
+>>  		pdata.screen_width_mm =3D prop[0];
+>>  		pdata.screen_height_mm =3D prop[1];
+>>  	}
+>=20
+> While you're changing these lines, it would be nice to change this
+> pattern (here and elsewhere) to use of_property_read_u32_array, so that=
+
+> it's endian-safe and consistent with other devicetree parsing code:
+>=20
+>   of_property_read_u32_array(pdev->dev.of_node, "phys-size", prop, 2);
+>=20
+> It won't read the values if the property data's too short, so that
+> should be consistent with the existing code.
+>=20
+> It would also make the diffstat negative :)
+
+The intention of this patch is simple rename which is exactly how
+patch should look like. It means one change per patch.
+
+It means these changes you have describe should be in separate patch
+and I definitely agree with them.
+
+Thanks,
+Michal
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
 
 
--- 
-Djalal Harouni
-http://opendz.org
+
+--rHVM98jJUei5I1WoM7B7f6V9mWmbi38s1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlJVO5oACgkQykllyylKDCHAhACghAAMQdQ5kp067E6Cd0L4LdbI
+PrgAnisV7CG7ukAzjIc5p/2dxbDG8hv6
+=oZ5p
+-----END PGP SIGNATURE-----
+
+--rHVM98jJUei5I1WoM7B7f6V9mWmbi38s1--
