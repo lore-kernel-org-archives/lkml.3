@@ -1,64 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756112Ab3JIV3t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 17:29:49 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:58472 "EHLO comal.ext.ti.com"
+	id S1756725Ab3JIVaN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 17:30:13 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:48223 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752090Ab3JIV3m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 17:29:42 -0400
-From: Nishanth Menon <nm@ti.com>
-To: Kevin Hilman <khilman@linaro.org>, Benoit Cousson <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>, Tero Kristo <t-kristo@ti.com>
-CC: <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-doc@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, Nishanth Menon <nm@ti.com>
-Subject: [PATCH V6 01/15] ARM: OMAP3+: do not register non-dt OPP tables for device tree boot
-Date: Wed, 9 Oct 2013 16:28:50 -0500
-Message-ID: <1381354144-7134-2-git-send-email-nm@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1381354144-7134-1-git-send-email-nm@ti.com>
-References: <1381354144-7134-1-git-send-email-nm@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1756255Ab3JIV35 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 17:29:57 -0400
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>, Thomas Graf <tgraf@suug.ch>,
+        Gao feng <gaofeng@cn.fujitsu.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        linux-decnet-user@lists.sourceforge.net, netdev@vger.kernel.org
+Subject: [PATCH v2 tip/core/rcu 05/13] decnet: Apply rcu_access_pointer() to avoid sparse false positive
+Date: Wed,  9 Oct 2013 14:29:38 -0700
+Message-Id: <1381354186-16285-5-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1381354186-16285-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20131009212920.GA15413@linux.vnet.ibm.com>
+ <1381354186-16285-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13100921-7182-0000-0000-000008AF2AD0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OMAP3+ supports both device tree and non-device tree boot.
-Device tree bindings for OMAP3+ is supposed to be added via dts following:
-Documentation/devicetree/bindings/power/opp.txt
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-Since we now have device tree entries for OMAP3+ cpu OPPs,
-The current code wrongly adds duplicate OPPs. So, dont register OPPs
-when booting using device tree.
+The sparse checking for rcu_assign_pointer() was recently upgraded
+to reject non-__kernel address spaces.  This also rejects __rcu,
+which is almost always the right thing to do.  However, the use in
+dn_insert_route() is legitimate: It is assigning a pointer to an element
+from an RCU-protected list, and all elements of this list are already
+visible to caller.
 
-Signed-off-by: Nishanth Menon <nm@ti.com>
+This commit therefore silences this false positive by laundering the
+pointer using rcu_access_pointer() as suggested by Josh Triplett.
+
+Reported-by: kbuild test robot <fengguang.wu@intel.com>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Thomas Graf <tgraf@suug.ch>
+Cc: Gao feng <gaofeng@cn.fujitsu.com>
+Cc: Stephen Hemminger <shemminger@vyatta.com>
+Cc: linux-decnet-user@lists.sourceforge.net
+Cc: netdev@vger.kernel.org
 ---
- arch/arm/mach-omap2/opp.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ net/decnet/dn_route.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/opp.c b/arch/arm/mach-omap2/opp.c
-index bd41d59..82fd8c7 100644
---- a/arch/arm/mach-omap2/opp.c
-+++ b/arch/arm/mach-omap2/opp.c
-@@ -17,6 +17,7 @@
-  * GNU General Public License for more details.
-  */
- #include <linux/module.h>
-+#include <linux/of.h>
- #include <linux/opp.h>
- #include <linux/cpu.h>
+diff --git a/net/decnet/dn_route.c b/net/decnet/dn_route.c
+index fe32388ea24f..3b1357bcfc92 100644
+--- a/net/decnet/dn_route.c
++++ b/net/decnet/dn_route.c
+@@ -345,7 +345,7 @@ static int dn_insert_route(struct dn_route *rt, unsigned int hash, struct dn_rou
+ 			/* Put it first */
+ 			*rthp = rth->dst.dn_next;
+ 			rcu_assign_pointer(rth->dst.dn_next,
+-					   dn_rt_hash_table[hash].chain);
++					   rcu_access_pointer(dn_rt_hash_table[hash].chain));
+ 			rcu_assign_pointer(dn_rt_hash_table[hash].chain, rth);
  
-@@ -40,6 +41,9 @@ int __init omap_init_opp_table(struct omap_opp_def *opp_def,
- {
- 	int i, r;
+ 			dst_use(&rth->dst, now);
+@@ -358,7 +358,8 @@ static int dn_insert_route(struct dn_route *rt, unsigned int hash, struct dn_rou
+ 		rthp = &rth->dst.dn_next;
+ 	}
  
-+	if (of_have_populated_dt())
-+		return -EINVAL;
-+
- 	if (!opp_def || !opp_def_size) {
- 		pr_err("%s: invalid params!\n", __func__);
- 		return -EINVAL;
+-	rcu_assign_pointer(rt->dst.dn_next, dn_rt_hash_table[hash].chain);
++	rcu_assign_pointer(rt->dst.dn_next,
++			   rcu_access_pointer(dn_rt_hash_table[hash].chain));
+ 	rcu_assign_pointer(dn_rt_hash_table[hash].chain, rt);
+ 
+ 	dst_use(&rt->dst, now);
 -- 
-1.7.9.5
+1.8.1.5
 
