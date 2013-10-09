@@ -1,79 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757180Ab3JINOc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 09:14:32 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:13459 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752034Ab3JINOa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 09:14:30 -0400
-Message-ID: <525556B4.4020809@atmel.com>
-Date: Wed, 9 Oct 2013 15:14:28 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1754288Ab3JINRJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 09:17:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33850 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752228Ab3JINRI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 09:17:08 -0400
+Date: Wed, 9 Oct 2013 15:16:39 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 2/3] perf trace: Add summary option to dump syscall
+ statistics
+Message-ID: <20131009131639.GB5459@krava.redhat.com>
+References: <1381289214-24885-1-git-send-email-dsahern@gmail.com>
+ <1381289214-24885-3-git-send-email-dsahern@gmail.com>
 MIME-Version: 1.0
-To: Boris BREZILLON <b.brezillon@overkiz.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Victor <linux@maxim.org.za>,
-        "Jean-Christophe Plagniol-Villard" <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 6/6] ARM: at91/dt: remove old main clk definition from
- sama5d3xcm.dtsi
-References: <1375951572-10829-1-git-send-email-b.brezillon@overkiz.com> <1375957837-11600-1-git-send-email-b.brezillon@overkiz.com>
-In-Reply-To: <1375957837-11600-1-git-send-email-b.brezillon@overkiz.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1381289214-24885-3-git-send-email-dsahern@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/08/2013 12:30, Boris BREZILLON :
-> This patch removes the old main clk node which is now useless as sama5d3
-> SoCs and boards are no longer compatible with the old at91 clk
-> implementations.
->
-> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+On Tue, Oct 08, 2013 at 09:26:53PM -0600, David Ahern wrote:
+> When enabled dumps a summary of all syscalls by task with the usual
+> statistics -- min, max, average and relative stddev. For example,
+> 
+> make - 26341 :       3344   [ 17.4% ]      0.000 ms
+> 
+>                 read :   52    0.000     4.802     0.644   30.08
+>                write :   20    0.004     0.036     0.010   21.72
+>                 open :   24    0.003     0.046     0.014   23.68
+>                close :   64    0.002     0.055     0.008   22.53
+>                 stat : 2714    0.002     0.222     0.004    4.47
+>                fstat :   18    0.001     0.041     0.006   46.26
+>                 mmap :   30    0.003     0.009     0.006    5.71
+>             mprotect :    8    0.006     0.039     0.016   32.16
+>               munmap :   12    0.007     0.077     0.020   38.25
+>                  brk :   48    0.002     0.014     0.004   10.18
+>         rt_sigaction :   18    0.002     0.002     0.002    2.11
+>       rt_sigprocmask :   60    0.002     0.128     0.010   32.88
+>               access :    2    0.006     0.006     0.006    0.00
+>                 pipe :   12    0.004     0.048     0.013   35.98
+>                vfork :   34    0.448     0.980     0.692    3.04
+>               execve :   20    0.000     0.387     0.046   56.66
+>                wait4 :   34    0.017  9923.287   593.221   68.45
+>                fcntl :    8    0.001     0.041     0.013   48.79
+>             getdents :   48    0.002     0.079     0.013   19.62
+>               getcwd :    2    0.005     0.005     0.005    0.00
+>                chdir :    2    0.070     0.070     0.070    0.00
+>            getrlimit :    2    0.045     0.045     0.045    0.00
+>           arch_prctl :    2    0.002     0.002     0.002    0.00
+>            setrlimit :    2    0.002     0.002     0.002    0.00
+>               openat :   94    0.003     0.005     0.003    2.11
+> 
 
-As said earlier, removal of old clock definitions is needed in this 
-patch. You can even squash all this cleanup stuff in a single patch to 
-remove all old material.
+Should the syscalls columns be aligned with the data?
 
-otherwise:
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+jirka
+---
+              [ task - pid ]     [ events ] [ ratio ]  [ runtime ]
+                                  syscall  count    min     max    avg  stddev
+                                                   msec    msec   msec     %
+ _____________________________________________________________________________
 
-> ---
->   arch/arm/boot/dts/sama5d3xcm.dtsi |   11 -----------
->   1 file changed, 11 deletions(-)
->
-> diff --git a/arch/arm/boot/dts/sama5d3xcm.dtsi b/arch/arm/boot/dts/sama5d3xcm.dtsi
-> index f19d5bf..81c3957 100644
-> --- a/arch/arm/boot/dts/sama5d3xcm.dtsi
-> +++ b/arch/arm/boot/dts/sama5d3xcm.dtsi
-> @@ -18,17 +18,6 @@
->   		reg = <0x20000000 0x20000000>;
->   	};
->
-> -	clocks {
-> -		#address-cells = <1>;
-> -		#size-cells = <1>;
-> -		ranges;
-> -
-> -		main_clock: clock@0 {
-> -			compatible = "atmel,osc", "fixed-clock";
-> -			clock-frequency = <12000000>;
-> -		};
-> -	};
-> -
->   	ahb {
->   		apb {
->   			spi0: spi@f0004000 {
->
+                  ls - 10994 :        530   [ 97.4% ]      0.000 ms
 
+                                    read :    18     0.000     0.016     0.003   25.51
+                                    open :    24     0.002     0.026     0.005   19.46
 
--- 
-Nicolas Ferre
