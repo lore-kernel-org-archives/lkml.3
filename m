@@ -1,63 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753469Ab3JIHSP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 03:18:15 -0400
-Received: from cnbjrel02.sonyericsson.com ([219.141.167.166]:16099 "EHLO
-	cnbjrel02.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751867Ab3JIHSM convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 03:18:12 -0400
-X-Greylist: delayed 602 seconds by postgrey-1.27 at vger.kernel.org; Wed, 09 Oct 2013 03:18:11 EDT
-From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-To: "'Will Deacon'" <will.deacon@arm.com>
-CC: "'linux-arm-msm-owner@vger.kernel.org'" 
-	<linux-arm-msm-owner@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 9 Oct 2013 15:08:05 +0800
-Subject: SDIV / UDIV  Question
-Thread-Topic: SDIV / UDIV  Question
-Thread-Index: Ac7Evkz2wQunAGFERXCJXNbvarEymQ==
-Message-ID: <35FD53F367049845BC99AC72306C23D1014D1A0971AC@CNBJMBX05.corpusers.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	id S1755534Ab3JIHSs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 03:18:48 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:41132 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752715Ab3JIHSq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 03:18:46 -0400
 MIME-Version: 1.0
+In-Reply-To: <20130930163139.GA12450@free.fr>
+References: <CA+55aFxtvT3Yvbxe5JGBThZS13payymFJ7jCLyEiE2iNDvsZtQ@mail.gmail.com>
+	<20130711135445.GA21500@sepie.suse.cz>
+	<CA+55aFyVjugxM7cUDWi0ASWttYthCxa6e7X3CADknBcSFxWgew@mail.gmail.com>
+	<20130712105721.GF8731@rric.localhost>
+	<20130717160506.GI8731@rric.localhost>
+	<CA+55aFx4G5gME3ByqE0Wr-_t2x_6WkP3Ta4k1z4jfW+PrcK0og@mail.gmail.com>
+	<20130717165743.GK8731@rric.localhost>
+	<CA+55aFzhmV7iq+Pv37trMCmdNzk53ORAoj0a6rV14fzKta3Dhw@mail.gmail.com>
+	<51E7B3D0.4060609@suse.cz>
+	<20130930084945.GA1963@rric.localhost>
+	<20130930163139.GA12450@free.fr>
+Date: Wed, 9 Oct 2013 09:18:46 +0200
+X-Google-Sender-Auth: ftId3PYA2I6qeFBut9lhILOhu_w
+Message-ID: <CAMuHMdW-YWGgZjR9ow6FMW7BrOorbbVAEm9sYsVvPkfg-_=jag@mail.gmail.com>
+Subject: Re: [PATCH] arm, kbuild: make "make install" not depend on vmlinux
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Cc: Robert Richter <rric@kernel.org>, Michal Marek <mmarek@suse.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linux Kbuild mailing list <linux-kbuild@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi  Will
+On Mon, Sep 30, 2013 at 6:31 PM, Yann E. MORIN <yann.morin.1998@free.fr> wrote:
+> On 2013-09-30 10:49 +0200, Robert Richter spake thusly:
+>> On 18.07.13 11:22:24, Michal Marek wrote:
+>> > > So Michal (or ARM people - whoever wants to take the patch), just take
+>> > > my ack. No objections.
+>> >
+>> > I can add it to the kbuild tree if needed. Otherwise you can add
+>> > Acked-by: Michal Marek <mmarek@suse.cz>.
+>>
+>> This didn't make it upstream yet, can somebody at it to a tree?
+>
+> Since it's been acked-by Linus, I'll queue it in my tree, for Michal to
+> pull from. Expect a pull-request soon.
 
-I have a question about sdiv/ udiv  instructions :
-In  armv7 A/R  TRM, it said sdiv/udiv will cause 
-Divide by zero as undefined exception or just return zero
-(decided by implementation) .
+Sorry for chiming in that late, but I didn't think of this when reading the
+original submission.
 
-So  in kernel ,  should we need register a undef hook to 
-Get this undef exception and send SIGFPE to user space
-Process ?  
+Just doing "make oldconfig; make install" used to work.
+Removing the dependency of "make vmlinux" on vmlinux breaks this, doesn't it?
 
+I had the habit of doing the above many years ago, when I was mostly doing
+native builds, and before I had my own custom linux-install-kernel
+script that e.g.
+knows how to copy kernels and modules around to NFS servers.
 
-Thanks 
+Not that I'm strongly attached to it, but there may be other users...
 
+Gr{oetje,eeting}s,
 
+                        Geert
 
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-Yalin.Wang
-Software Engineer 
-OS Kernel&Graphics
- 
-Sony Mobile Communications
-Tel: +86 10 5966 9819
-Phone: 18610323092
-Address: No.16 Guangshun South Street, Chaoyang, Beijing, P.R.C.
-
-sonymobile.com
-  
- 
-
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
