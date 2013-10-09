@@ -1,64 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756182Ab3JIC1T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 22:27:19 -0400
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:61090 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751288Ab3JIC1Q (ORCPT
+	id S1756318Ab3JICaO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 22:30:14 -0400
+Received: from smtprelay0126.hostedemail.com ([216.40.44.126]:43226 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751255Ab3JICaL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 22:27:16 -0400
-MIME-Version: 1.0
-In-Reply-To: <20131009020623.GG13318@ZenIV.linux.org.uk>
-References: <E1VThRL-0002yt-ON@ZenIV.linux.org.uk>
-	<CA+55aFxvNhuXoux88tcYemMWe5Nxdc-srfj3YgBZ7LJ-JaBEdQ@mail.gmail.com>
-	<20131009011833.GE13318@ZenIV.linux.org.uk>
-	<CA+55aFyej+u+JmWeGZgVECGFQPY909HkDc83+fuC5M1r1HSeHA@mail.gmail.com>
-	<20131009020623.GG13318@ZenIV.linux.org.uk>
-Date: Tue, 8 Oct 2013 19:27:15 -0700
-X-Google-Sender-Auth: ME-i_aROttx3KwcAqspdI8Ds5Gg
-Message-ID: <CA+55aFz4JWB65bQRu7J6vQt7NPOoGKTxCYW4GQ8o5PHTZsYWKg@mail.gmail.com>
-Subject: Re: [RFC][PATCH 10/13] make dump_emit() use vfs_write() instead of
- banging at ->f_op->write directly
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Al Viro <viro@ftp.linux.org.uk>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 8 Oct 2013 22:30:11 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:2895:3138:3139:3140:3141:3142:3352:3622:3865:3868:3871:4321:4605:5007:7652:10004:10400:10848:11026:11232:11658:11914:12043:12295:12296:12438:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none
+X-HE-Tag: queen69_75897b63ba01d
+X-Filterd-Recvd-Size: 2101
+Message-ID: <1381285806.23937.51.camel@joe-AO722>
+Subject: Re: [PATCH v2] vsprintf: Check real user/group id for %pK
+From: Joe Perches <joe@perches.com>
+To: Ryan Mallon <rmallon@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, eldad@fogrefinery.com,
+        Jiri Kosina <jkosina@suse.cz>, jgunthorpe@obsidianresearch.com,
+        Dan Rosenberg <dan.j.rosenberg@gmail.com>,
+        Kees Cook <keescook@chromium.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        George Spelvin <linux@horizon.com>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 08 Oct 2013 19:30:06 -0700
+In-Reply-To: <5254BDD0.7040001@gmail.com>
+References: <5254A034.5020700@gmail.com>
+	 <1381279758.23937.42.camel@joe-AO722> <1381282200.23937.45.camel@joe-AO722>
+		 <5254B787.6080700@gmail.com> <1381284056.23937.49.camel@joe-AO722>
+	 <5254BDD0.7040001@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 8, 2013 at 7:06 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> On Tue, Oct 08, 2013 at 06:38:47PM -0700, Linus Torvalds wrote:
->> On Tue, Oct 8, 2013 at 6:18 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->> >
->> > Point, but I would argue that we should yell very loud if we get 0 from
->> > vfs_write() for non-zero size.  I'm not sure if POSIX allows write(2)
->> > to return that, but a lot of userland code won't be expecting that and
->> > won't be able to cope...
->>
->> Actually POSIX very much allows zero returns. O_NDELAY is mentioned as
->> a possible cause, in addition to zero-sized writes themselves, of
->> course.
->
-> Umm...  What it says is "If some data can be written without blocking the
-> thread, write() shall write what it can and return the number of bytes
-> written. Otherwise, it shall return -1 and set errno to EAGAIN."
+On Wed, 2013-10-09 at 13:22 +1100, Ryan Mallon wrote:
 
-Look closer.
+> Anyway, updated patch below:
 
-  ".. most historical implementations return zero (with the O_NDELAY
-flag set, which is the historical predecessor of O_NONBLOCK .."
+nit:
 
->> Also, writing to (but not past) the end of a block device returns 0
->> for "end of device", iirc.
->
-> What do you mean?  If the starting position is below the end of device,
-> we get a non-zero length write, not exceeding the end.  If it's at
-> the end of device, we get -ENOSPC.  It's out of scope for POSIX, but
-> Linux is definitely acting that way...
+> diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+[]
+> @@ -1312,11 +1313,36 @@ char *pointer(const char *fmt, char *buf, char *end, void *ptr,
+>  				spec.field_width = default_width;
+>  			return string(buf, end, "pK-error", spec);
+>  		}
+> -		if (!((kptr_restrict == 0) ||
+> -		      (kptr_restrict == 1 &&
+> -		       has_capability_noaudit(current, CAP_SYSLOG))))
+> +
+> +		switch (kptr_restrict) {
+> +		case 0:
+> +			/* Always print %pK values */
+> +			break;
+> +		case 1: {
+> +			/*
+> +			 * Only print the real pointer value if the current
+> +			 * proccess has CAP_SYSLOG and is running with the
 
-Hmm. I'm pretty sure I've seen zero returns for EOF somewhere..
+s/proccess/process/ typo
 
-         Linus
+
