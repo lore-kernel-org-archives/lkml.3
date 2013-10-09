@@ -1,67 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755126Ab3JIOr6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 10:47:58 -0400
-Received: from ns.mm-sol.com ([212.124.72.66]:48373 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754900Ab3JIOry (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 10:47:54 -0400
-Message-ID: <52556C4E.9000604@mm-sol.com>
-Date: Wed, 09 Oct 2013 17:46:38 +0300
-From: Stanimir Varbanov <svarbanov@mm-sol.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	id S1755154Ab3JIOwD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 10:52:03 -0400
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:57596 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752531Ab3JIOwB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 10:52:01 -0400
+Date: Wed, 9 Oct 2013 16:51:57 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [GIT PULL] tools/perf/build: Speed up the perf build system
+Message-ID: <20131009145157.GA27139@gmail.com>
+References: <20131009070149.GA32023@gmail.com>
+ <20131009143830.GA28369@ghostprotocols.net>
 MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Matt Mackall <mpm@selenic.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH 0/2] Add support for Qualcomm's PRNG
-References: <1380811955-18085-1-git-send-email-svarbanov@mm-sol.com> <20131003165130.GA11974@thunk.org> <524EEB96.6040707@mm-sol.com> <20131004181005.GA7022@thunk.org>
-In-Reply-To: <20131004181005.GA7022@thunk.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131009143830.GA28369@ghostprotocols.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ted,
 
-On 10/04/2013 09:10 PM, Theodore Ts'o wrote:
-> On Fri, Oct 04, 2013 at 07:23:50PM +0300, Stanimir Varbanov wrote:
->> I guess that it should follow NIST 800-90 recommendation, but I'm not
->> aware what DRBG mechanism is used.
->>
->> To be honest I really don't know the hardware implementation details. I
->> put PRNG abbreviation in the cover letter just because I saw that
->> defines for register offsets are prefixed with PRNG_*. I could rename
->> all occurrences of PRNG to RNG. Is that will be enough to avoid confusions?
+* Arnaldo Carvalho de Melo <acme@ghostprotocols.net> wrote:
+
+> Em Wed, Oct 09, 2013 at 09:01:49AM +0200, Ingo Molnar escreveu:
+> > Arnaldo,
+> > 
+> > Please pull the tools/perf/build git tree from:
+> > 
+> >    git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git tmp.tools/perf/build
+> > 
+> >    # HEAD: 165108a92fc554d51e73b143b69b77e7c278da78 tools/perf/build: Clean up feature_print_code()
+> > 
+> > This tree contains the build system speedup series described at:
+> > 
+> >    https://lkml.org/lkml/2013/10/7/199
+> > 
+> > Reviewed by David Ahern and Jiri Olsa (thanks guys!).
 > 
-> If that's what the Qualcomm documentation uses, maybe we should stick
-> with it, and add some explanatory comments.  Is there any
-> documentation for this block that is public that you can either send
-> me a a pointer to?
+> One problem I just noticed, and that is not preventing me from merging
+> this now, as it has a (obvious) workaround:
+> 
+> If I try using O= I better make sure the directory it points to exists:
+> 
+> [acme@sandy linux]$ ls -la tools/perf/*.o tools/perf/util/*.o
+> ls: cannot access tools/perf/*.o: No such file or directory
+> ls: cannot access tools/perf/util/*.o: No such file or directory
+> [acme@sandy linux]$ mkdir -p /tmp/build/perf/
+> [acme@sandy linux]$ time make O=/tmp/build/perf -C tools/perf/ install-bin
+> make: Entering directory `/home/acme/git/linux/tools/perf'
+>     BUILD: Doing 'make -j8' parallel build
+> 
+> Auto-detecting system features:
+> ...                     backtrace: [ on  ]
+> ...                         dwarf: [ on  ]
+> <SNIP>
+> make: Leaving directory `/home/acme/git/linux/tools/perf'
+> 
+> real	0m2.751s
+> user	0m4.270s
+> sys	0m1.240s
+> [acme@sandy linux]$ ls -la tools/perf/*.o tools/perf/util/*.o
+> ls: cannot access tools/perf/*.o: No such file or directory
+> ls: cannot access tools/perf/util/*.o: No such file or directory
+> [acme@sandy linux]$ ls -la /tmp/build/perf/perf
+> -rwxrwxr-x. 1 acme acme 9791281 Oct  9 11:32 /tmp/build/perf/perf
+> [acme@sandy linux]$
+> 
+> ---------------------------------------------------------------------------------
+> 
+> Works as expected, but if I do:
+> 
+> [acme@sandy linux]$ rm -rf /tmp/build
+> [acme@sandy linux]$ time make O=/tmp/build/perf -C tools/perf/ install-bin
+> make: Entering directory `/home/acme/git/linux/tools/perf'
+>     BUILD: Doing 'make -j8' parallel build
+> 
+> Auto-detecting system features:
+> ...                     backtrace: [ on  ]
+> <SNIP>
+> make: Leaving directory `/home/acme/git/linux/tools/perf'
+> 
+> real	0m2.715s
+> user	0m4.118s
+> sys	0m1.204s
+> [acme@sandy linux]$ ls -la tools/perf/*.o tools/perf/util/*.o | wc -l
+> 94
+> [acme@sandy linux]$ ls -la /tmp/build
+> ls: cannot access /tmp/build: No such file or directory
+> [acme@sandy linux]$
+> 
+> ---------------------------------------------------------------------------------
+> 
+> It silently ignores the O= target, as it doesn't exists.
+> 
+> Previous, expected behaviour is for the build process to stop, 
+> complaining that the target directory doesn't exists.
 
-No, there is no public documentation for the block. Here is the driver
-documentation which I used as a base [1].
+Yeah. So the reproducer for me is:
 
-My guess was that - if it is PRNG (got from hardware description link
-above) than according to wiki [2] it is also known as a deterministic
-random bit generator (DRBG). The recommendation for RNG using DRBG is
-NIST 800-90.
+ rm -rf /tmp/build
+ mkdir -p /tmp/build/perf
+ make O=/tmp/build/perf -C tools/perf/ install-bin
+ rm -rf /tmp/build
+ make O=/tmp/build/perf -C tools/perf/ install-bin
 
-Of course I could be wrong, so I can add a comment that this is just a
-guess and we shouldn't over-reliance on this.
+the second install-bin should fail, and on the old tree it fails correctly 
+- but with the new tree it pretends that it succeeds.
 
-regards,
-Stan
+Looking into it.
 
-[1]
-https://www.codeaurora.org/cgit/quic/la/kernel/msm/tree/Documentation/arm/msm/msm_rng-driver.txt?h=jb_3.2.1
+Thanks,
 
-[2] http://en.wikipedia.org/wiki/Pseudorandom_number_generator
+	Ingo
