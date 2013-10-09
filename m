@@ -1,105 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932148Ab3JIVG5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 17:06:57 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:4418 "EHLO SMTP02.CITRIX.COM"
+	id S932165Ab3JIVIA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 17:08:00 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:37823 "EHLO quartz.orcorp.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756147Ab3JIVGD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 17:06:03 -0400
-X-IronPort-AV: E=Sophos;i="4.90,1066,1371081600"; 
-   d="scan'208";a="59435259"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: <xen-devel@lists.xensource.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <konrad.wilk@oracle.com>, <Stefano.Stabellini@eu.citrix.com>,
-        <Ian.Campbell@citrix.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v8 16/17] arm,arm64: do not always merge biovec if we are running on Xen
-Date: Wed, 9 Oct 2013 21:48:29 +0100
-Message-ID: <1381351710-1876-16-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <alpine.DEB.2.02.1310092109190.26077@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1310092109190.26077@kaball.uk.xensource.com>
+	id S1752357Ab3JIVH6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 17:07:58 -0400
+Date: Wed, 9 Oct 2013 15:07:15 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, monstr@monstr.eu,
+        delicious quinoa <delicious.quinoa@gmail.com>,
+        Alan Tull <atull@altera.com>, Pavel Machek <pavel@denx.de>,
+        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Philip Balister <philip@balister.org>,
+        Alessandro Rubini <rubini@gnudd.com>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Yves Vandervennet <rocket.yvanderv@gmail.com>,
+        Kyle Teske <kyle.teske@ni.com>, Josh Cartwright <joshc@eso.teric.us>,
+        Nicolas Pitre <nico@linaro.org>,
+        Mark Langsdorf <mark.langsdorf@calxeda.com>,
+        Felipe Balbi <balbi@ti.com>, linux-doc@vger.kernel.org,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        David Brown <davidb@codeaurora.org>, Rob Landley <rob@landley.net>,
+        "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
+        Cesar Eduardo Barros <cesarb@cesarb.net>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC PATCH v2 0/1] FPGA subsystem core
+Message-ID: <20131009210715.GA17467@obsidianresearch.com>
+References: <1381250986.6062.3.camel@atx-linux-37>
+ <20131008214221.GB11941@kroah.com>
+ <CANk1AXS9fpypVVWgvvUCZjKXDvLPpB7=kCNucwFcktgBHmV37w@mail.gmail.com>
+ <20131009014027.GA17066@kroah.com>
+ <5254EC8A.8060609@monstr.eu>
+ <20131009055332.GA4510@kroah.com>
+ <52550638.2080301@monstr.eu>
+ <52556585.3050603@zytor.com>
+ <20131009192439.GC18611@kroah.com>
+ <5255BE71.8010801@zytor.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DLP: MIA1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5255BE71.8010801@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is similar to what it is done on X86: biovecs are prevented from merging
-otherwise every dma requests would be forced to bounce on the swiotlb buffer.
+On Wed, Oct 09, 2013 at 01:37:05PM -0700, H. Peter Anvin wrote:
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> A very common use case would be where a device contains an FPGA but is
+> presented to the user as a product, often having its own device driver
+> to drive the programmed device and/or additional logic.  From *that*
+> point of view it would be nice if the FPGA subsystem had the capability
+> for the *device driver* to trigger a firmware load request which is then
+> fed to the FPGA subsystem for programming.  This would be an in-kernel
+> interface, in other words.
 
+That is sort of backwards though, how does the driver know it should
+load and start fpga progamming?
 
-Changes in v7:
-- remove the extra autotranslate check in biomerge.c.
----
- arch/arm/include/asm/io.h   |    8 ++++++++
- arch/arm64/include/asm/io.h |    9 +++++++++
- 2 files changed, 17 insertions(+), 0 deletions(-)
+The way we are working driver attach today is to program the FPGA,
+under control of user space, and then do a PCI rescan, which discovers
+the FPGA device and triggers driver binding of the PCI FPGA driver.
 
-diff --git a/arch/arm/include/asm/io.h b/arch/arm/include/asm/io.h
-index d070741..c45effc 100644
---- a/arch/arm/include/asm/io.h
-+++ b/arch/arm/include/asm/io.h
-@@ -24,9 +24,11 @@
- #ifdef __KERNEL__
- 
- #include <linux/types.h>
-+#include <linux/blk_types.h>
- #include <asm/byteorder.h>
- #include <asm/memory.h>
- #include <asm-generic/pci_iomap.h>
-+#include <xen/xen.h>
- 
- /*
-  * ISA I/O bus memory addresses are 1:1 with the physical address.
-@@ -372,6 +374,12 @@ extern void pci_iounmap(struct pci_dev *dev, void __iomem *addr);
- #define BIOVEC_MERGEABLE(vec1, vec2)	\
- 	((bvec_to_phys((vec1)) + (vec1)->bv_len) == bvec_to_phys((vec2)))
- 
-+extern bool xen_biovec_phys_mergeable(const struct bio_vec *vec1,
-+				      const struct bio_vec *vec2);
-+#define BIOVEC_PHYS_MERGEABLE(vec1, vec2)				\
-+	(__BIOVEC_PHYS_MERGEABLE(vec1, vec2) &&				\
-+	 (!xen_domain() || xen_biovec_phys_mergeable(vec1, vec2)))
-+
- #ifdef CONFIG_MMU
- #define ARCH_HAS_VALID_PHYS_ADDR_RANGE
- extern int valid_phys_addr_range(phys_addr_t addr, size_t size);
-diff --git a/arch/arm64/include/asm/io.h b/arch/arm64/include/asm/io.h
-index 1d12f89..c163287b 100644
---- a/arch/arm64/include/asm/io.h
-+++ b/arch/arm64/include/asm/io.h
-@@ -22,11 +22,14 @@
- #ifdef __KERNEL__
- 
- #include <linux/types.h>
-+#include <linux/blk_types.h>
- 
- #include <asm/byteorder.h>
- #include <asm/barrier.h>
- #include <asm/pgtable.h>
- 
-+#include <xen/xen.h>
-+
- /*
-  * Generic IO read/write.  These perform native-endian accesses.
-  */
-@@ -263,5 +266,11 @@ extern int devmem_is_allowed(unsigned long pfn);
-  */
- #define xlate_dev_kmem_ptr(p)	p
- 
-+extern bool xen_biovec_phys_mergeable(const struct bio_vec *vec1,
-+				      const struct bio_vec *vec2);
-+#define BIOVEC_PHYS_MERGEABLE(vec1, vec2)				\
-+	(__BIOVEC_PHYS_MERGEABLE(vec1, vec2) &&				\
-+	 (!xen_domain() || xen_biovec_phys_mergeable(vec1, vec2)))
-+
- #endif	/* __KERNEL__ */
- #endif	/* __ASM_IO_H */
--- 
-1.7.2.5
+Please keep in mind that loading the wrong FPGA could permanently
+destroy the system. This is why we have meta-data encoded with the
+bitstream. The user space loader does some sanity checks :)
 
+Jason
