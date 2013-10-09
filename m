@@ -1,97 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754164Ab3JIMuR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 08:50:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61554 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751245Ab3JIMuP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 08:50:15 -0400
-Date: Wed, 9 Oct 2013 14:43:10 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+	id S1756238Ab3JIMwc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 08:52:32 -0400
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:60080 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751819Ab3JIMwb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 08:52:31 -0400
+Date: Wed, 9 Oct 2013 14:52:28 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Subject: Re: [x86] BUG: unable to handle kernel paging request at 00740060
-Message-ID: <20131009124310.GA11769@redhat.com>
-References: <20131005234430.GA22485@localhost> <CA+55aFxEeKixnH7mZZs5iwupA9_GsRN0N7QZxqcTcE4RKZvTTg@mail.gmail.com> <20131008143400.GA14721@redhat.com> <20131009080459.GA2298@localhost>
+Message-ID: <20131009125228.GA24215@gmail.com>
+References: <20131005234430.GA22485@localhost>
+ <CA+55aFxEeKixnH7mZZs5iwupA9_GsRN0N7QZxqcTcE4RKZvTTg@mail.gmail.com>
+ <20131008143400.GA14721@redhat.com>
+ <20131009080459.GA2298@localhost>
+ <20131009121911.GA18770@localhost>
+ <20131009122705.GG3081@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131009080459.GA2298@localhost>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20131009122705.GG3081@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Fengguang,
 
-On 10/09, Fengguang Wu wrote:
->
-> Thanks for looking into this. Attached is the task_work.s for you.
+* Peter Zijlstra <peterz@infradead.org> wrote:
 
-Thanks a lot!
+> On Wed, Oct 09, 2013 at 08:19:11PM +0800, Fengguang Wu wrote:
+> > > > Fengguang, I do not think this will help, but just in case. Could you
+> > > > show the result of
+> > > > 
+> > > >         $ kernel/task_work.s
+> > 
+> > Update: I recompiled the kernel with gcc 4.4.7 and find it booting fine!
+> 
+> > # 208 "/c/wfg/tip/arch/x86/include/asm/bitops.h" 1
+> > 	bts $1, 8(%eax); setc %dl	#,, c
+> 
+> That compiler doesn't appear to have asm goto support, so we fall back
+> to the code we already knew worked :-)
 
-I'm afraid I am wrong, my asm skills are close to zero... but this
-code looks wrong to me, and this can explain the oopses.
+I'm using 4.7.2 with randconfig testing, which has asm goto support, and I 
+haven't seen this crash yet.
 
-> task_work_add:
-> 	pushl	%ebp	#
-> 	movl	%esp, %ebp	#,
-> 	pushl	%edi	#
-> 	pushl	%esi	#
-> 	pushl	%ebx	#
-> 	subl	$12, %esp	#,
-> 	call	mcount
-> 	movl	%eax, %edi	# task, task
-> 	movl	%edx, -16(%ebp)	# work, %sfp
-> 	movb	%cl, -21(%ebp)	# notify, %sfp
-> 	.p2align 4,,15
-> .L3:
-> 	movl	904(%edi), %esi	# task_3(D)->task_works, head
-> 	cmpl	$work_exited, %esi	#, head
-> 	sete	%bl	#, D.14145
-> 	andl	$255, %ebx	#, D.14145
-> 	xorl	%ecx, %ecx	#
-> 	movl	%ebx, %edx	# D.14145,
-> 	movl	$______f.14042, %eax	#,
-> 	call	ftrace_likely_update	#
-> 	testl	%ebx, %ebx	# D.14145
-> 	jne	.L4	#,
-> 	movl	-16(%ebp), %edx	# %sfp,
-> 	movl	%esi, (%edx)	# head, work_13(D)->next
-> 	movl	%esi, %eax	# head, __ret
-> #APP
-> # 34 "/c/wfg/tip/kernel/task_work.c" 1
-> 	cmpxchgl %edx,904(%edi)	#, *__ptr_16
-> # 0 "" 2
-> #NO_APP
-> 	cmpl	%eax, %esi	# __ret, head
-> 	jne	.L3	#,
+Unless my testing is off it might be a bug in GCC 4.8, or a pre-existing 
+bug gets exposed by GCC 4.8.
 
-OK, we added the new work successfully, we should return 0. If we return
-non-zero, fput() (the likely caller) assumes that it should use the workqueues
-to close/free this file. Then later task_work_run() will do __fput() again.
+Thanks,
 
-> 	cmpb	$0, -21(%ebp)	#, %sfp
-> 	je	.L5	#,
-> 	movl	4(%edi), %eax	# task_3(D)->stack, task_3(D)->stack
-> #APP
-> # 208 "/c/wfg/tip/arch/x86/include/asm/bitops.h" 1
-> 	bts $1, 8(%eax); jc .L2	#, MEM[(volatile long unsigned int *)D.14203_29],
-
-This is set_notify_resume(). Probably !CONFIG_SMP (I do not see kick_process).
-
-> # 0 "" 2
-> #NO_APP
-> .L5:
-> 	movl	$0, -20(%ebp)	#, %sfp
-> .L2:
-> 	movl	-20(%ebp), %eax	# %sfp,
-
-This is what we are going to return. But note that -20(%ebp) was not
-initialized if TIF_NOTIFY_RESUME was already set, "jc .L2" skips .L5
-above. IOW, in this case we seem to return a random value from stack.
-
-Oleg.
-
+	Ingo
