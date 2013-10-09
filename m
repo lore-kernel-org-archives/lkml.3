@@ -1,88 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932083Ab3JIR1i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 13:27:38 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56072 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756856Ab3JIR1f (ORCPT
+	id S932097Ab3JIR1q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 13:27:46 -0400
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:39050 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756883Ab3JIR1n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 13:27:35 -0400
-Date: Wed, 9 Oct 2013 10:26:51 -0700
-From: tip-bot for Mel Gorman <tipbot@zytor.com>
-Message-ID: <tip-f307cd1a32fab53012b01749a1f5ba10b0a7243f@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, hannes@cmpxchg.org, riel@redhat.com,
-        aarcange@redhat.com, srikar@linux.vnet.ibm.com, mgorman@suse.de,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, hannes@cmpxchg.org, riel@redhat.com,
-        aarcange@redhat.com, srikar@linux.vnet.ibm.com, mgorman@suse.de,
-        tglx@linutronix.de
-In-Reply-To: <1381141781-10992-19-git-send-email-mgorman@suse.de>
-References: <1381141781-10992-19-git-send-email-mgorman@suse.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/numa:
-  Slow scan rate if no NUMA hinting faults are being recorded
-Git-Commit-ID: f307cd1a32fab53012b01749a1f5ba10b0a7243f
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 9 Oct 2013 13:27:43 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 09 Oct 2013 10:26:58 -0700 (PDT)
+In-Reply-To: <20131009105402.GA4810@dztty>
+References: <20131004182353.GA2600@dztty> <CALCETrVs2Nd82dpURQxAVetK814bAm8TvnSyA4e=YeTWxTFsmA@mail.gmail.com>
+ <20131004191113.GA3916@dztty> <CALCETrVMBh0nNgpOHOMrsOjHez7NnCNbY5nHxeQ3RToP4nKO+A@mail.gmail.com>
+ <20131004192712.GA4334@dztty> <CALCETrUuMRMgJ1OV3-ZRQ5wwzSQsdf9tKY9iKesk1QJPtj6-qw@mail.gmail.com>
+ <20131004194142.GA4524@dztty> <CALCETrXghsx-2rK8QqgtfMaJJhkwcYgRMnqGQfKw-T3O7jBTUA@mail.gmail.com>
+ <20131005132337.GA4095@dztty> <CALCETrV2YZUQsFiahmcQECF37=sX6EMiEEjwXX_mcuPf-X3-yw@mail.gmail.com>
+ <20131009105402.GA4810@dztty>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 9 Oct 2013 18:27:22 +0100
+Message-ID: <CALCETrUTppUmPVy-GZg1xBimb95Xq-vD6qkJFrkT4qUKx0-iSA@mail.gmail.com>
+Subject: Re: [PATCH v2 2/9] procfs: add proc_allow_access() to check if file's
+ opener may access task
+To: Djalal Harouni <tixxdz@opendz.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        David Rientjes <rientjes@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        Djalal Harouni <tixxdz@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f307cd1a32fab53012b01749a1f5ba10b0a7243f
-Gitweb:     http://git.kernel.org/tip/f307cd1a32fab53012b01749a1f5ba10b0a7243f
-Author:     Mel Gorman <mgorman@suse.de>
-AuthorDate: Mon, 7 Oct 2013 11:28:56 +0100
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 9 Oct 2013 12:40:21 +0200
+On Wed, Oct 9, 2013 at 11:54 AM, Djalal Harouni <tixxdz@opendz.org> wrote:
+> On Mon, Oct 07, 2013 at 02:41:33PM -0700, Andy Lutomirski wrote:
+>> On Sat, Oct 5, 2013 at 6:23 AM, Djalal Harouni <tixxdz@opendz.org> wrote:
+>> > On Fri, Oct 04, 2013 at 03:17:08PM -0700, Andy Lutomirski wrote:
+>> >>
+>> >> Exactly.  Hence the NAK.
+>> > But Having two LSM Hooks there is really not practical!
+>>
+>> It'd doable *if* it turns out that it's the right solution.
+>>
+>> But revoke seems much more likely to be simple, comprehensible, and
+>> obviously correct to me.
+> Yes Andy, I agree, revoke is much better!
+>
+> But it will not handle or fix all the situations, as I've said what if
+> revoke is not invloved here? there is no an execve from the target task!
+>
+>
+> Remember:
+> /proc/*/{stat,maps} and perhaps others have 0444 and don't have ptrace
+> checks during ->open() to not break some userspace... especially
+> /proc/*/stat file
 
-sched/numa: Slow scan rate if no NUMA hinting faults are being recorded
+For /proc/*/stat: check permissions when opening.  If the opener
+passes the ptrace check, set a flag in file->private_data indicating
+that this struct file has permission.
 
-NUMA PTE scanning slows if a NUMA hinting fault was trapped and no page
-was migrated. For long-lived but idle processes there may be no faults
-but the scan rate will be high and just waste CPU. This patch will slow
-the scan rate for processes that are not trapping faults.
+For /proc/*/maps: either fail the open if the check fails or set a
+flag that causes the resulting struct file to be useless.
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1381141781-10992-19-git-send-email-mgorman@suse.de
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/sched/fair.c | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+>
+>
+> So you will have an fd on these privileged files!
+>
+> Current will execve a privileged process, and pass ptrace_may_access()
+> checks during ->read()...
+>
+> Here revoke is not involved at all! so it will not fix these files and
+> they will continue to be vulnerable.
+>
+> IMO to fix them, we must have the correct ptrace_may_access() check and
+> this involves: current doing an execve + current's cred
+>
+>
+>
+> BTW, Andy we already return 0 (end of file) for /proc/*/mem
+>   ->read()
+>     ->mem_read()
+>       ->mem_rw()
+>         if (!atomic_inc_not_zero(&mm->mm_users))
+>                 return 0
+>
+> So can this be considered some sort of simple revoke?
+>
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index e08d757..c6c3302 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1039,6 +1039,18 @@ void task_numa_work(struct callback_head *work)
- 
- out:
- 	/*
-+	 * If the whole process was scanned without updates then no NUMA
-+	 * hinting faults are being recorded and scan rate should be lower.
-+	 */
-+	if (mm->numa_scan_offset == 0 && !nr_pte_updates) {
-+		p->numa_scan_period = min(p->numa_scan_period_max,
-+			p->numa_scan_period << 1);
-+
-+		next_scan = now + msecs_to_jiffies(p->numa_scan_period);
-+		mm->numa_next_scan = next_scan;
-+	}
-+
-+	/*
- 	 * It is possible to reach the end of the VMA list but the last few
- 	 * VMAs are not guaranteed to the vma_migratable. If they are not, we
- 	 * would find the !migratable VMA on the next scan but not reset the
+Apparently not.  I haven't looked at the code, but I just tried it.
+The fd from /proc/<pid>/maps survives an exec of the process it's
+pointing at.  That means that either the mm changing has no effect on
+the struct file or that an unshared mm survives exec.
+
+--Andy
