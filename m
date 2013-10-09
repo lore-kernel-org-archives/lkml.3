@@ -1,159 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757040Ab3JIX6i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 19:58:38 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:18523 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755191Ab3JIX6g (ORCPT
+	id S1757179Ab3JIX7Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 19:59:24 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:53064 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754640Ab3JIX7X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 19:58:36 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AgsIAKfsVVJ5LFuj/2dsb2JhbABagiVig0q5LIU/gR8XdIIlAQEEATocIwULCAMOBwMJJQ8FJQMhE4gABbdogUAWjy8HhCMDmAKSAoFmgVIo
-Date: Thu, 10 Oct 2013 10:58:28 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: viro@zeniv.linux.org.uk, mtk.manpages@gmail.com, tytso@mit.edu,
-        adilger.kernel@dilger.ca, bpm@sgi.com, elder@kernel.org,
-        hch@infradead.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        xfs@oss.sgi.com, a.sangwan@samsung.com,
-        Namjae Jeon <namjae.jeon@samsung.com>
-Subject: Re: [PATCH RESEND 6/7] xfstest: Add test case to test multiple
- collapse range call
-Message-ID: <20131009235828.GR4446@dastard>
-References: <1381090446-2897-1-git-send-email-linkinjeon@gmail.com>
+	Wed, 9 Oct 2013 19:59:23 -0400
+Message-ID: <5255EDD6.1050401@linaro.org>
+Date: Wed, 09 Oct 2013 16:59:18 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1381090446-2897-1-git-send-email-linkinjeon@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Will Deacon <will.deacon@arm.com>
+CC: Stephen Boyd <sboyd@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "arm@kernel.org" <arm@kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: Re: [PATCH] sched_clock: fix postinit no sched_clock function check
+References: <1380732928-13897-1-git-send-email-santosh.shilimkar@ti.com> <20131002170917.GB30298@mudshark.cambridge.arm.com> <524C5484.5000601@ti.com> <524C565C.8010709@codeaurora.org> <524C5786.2090008@ti.com> <524C5B10.20006@codeaurora.org> <20131002174841.GH30298@mudshark.cambridge.arm.com> <524C60F4.7000802@ti.com>
+In-Reply-To: <524C60F4.7000802@ti.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 07, 2013 at 05:14:06AM +0900, Namjae Jeon wrote:
-> From: Namjae Jeon <namjae.jeon@samsung.com>
-> 
-> We execute collapse range multiple times on same file.
-> Each collapse range call collapses a single alternate block.
-> After the test execution, file will be left with 80 blocks and
-> as much number of extents.
-> We also check for file system consistency after the completion.
-.....
-> +. ./common/rc
-> +. ./common/filter
-> +
-> +# real QA test starts here
-> +_supported_fs xfs ext4
-> +_supported_os Linux
-> +
-> +_require_scratch
-> +_require_xfs_io_fiemap
-> +_require_xfs_io_falloc_collapse
-> +_do_die_on_error=y
-> +test=$SCRATCH_MNT/test
+On 10/02/2013 11:07 AM, Santosh Shilimkar wrote:
+> On Wednesday 02 October 2013 01:48 PM, Will Deacon wrote:
+>> On Wed, Oct 02, 2013 at 06:42:40PM +0100, Stephen Boyd wrote:
+>>> On 10/02/13 10:27, Santosh Shilimkar wrote:
+>>>> Really... I have not created patch out of fun.
+>>>> Its broken on my keystone machine at least where the sched_clock is
+>>>> falling back on jiffy based sched_clock even in presence of arch_timer
+>>>> sched_clock.
+>>> How is that possible? sched_clock_func is only assigned by
+>>> arch/arm/kernel/arch_timer.c when the architected timer is detected and
+>>> sched_clock() in kernel/time/sched_clock.c calls that function pointer
+>>> unconditionally. The only way I see this happening is if the architected
+>>> timer rate is zero.
+>>   ^^^^^^^^^^^^^^^^^^
+>>
+>> *cough* CNTFRQ *cough*
+>>
+> :) CNTFRQ as such is fine. I think the below print mis-lead me mostly. 
+>
+> sched_clock: ARM arch timer >56 bits at 6144kHz, resolution 162ns
+> sched_clock: 32 bits at 100 Hz, resolution 10000000ns, wraps every 4294967286ms
+>
+> So yes, now the subject patch actually just avoids the jiffy sched_clock()
+> registration and nothing else. Even without the patch arch_timer sched_clock
+> will be in use.
 
-Not used.
+Just wanted to follow up here, as I've not been paying close attention.
+Is this issue then resolved, or is something still needed to be queued
+for 3.12/3.13?
 
-> +testfile=$SCRATCH_MNT/317.$$
-> +BSIZE=4096
-> +BLOCKS=10240
-> +
-> +# Filters fiemap output
-> +_filter_fiemap()
-> +{
-> +	awk --posix '
-> +		$3 ~ /hole/ {
-> +			print $1, $2, $3;
-> +			next;
-> +		}
-> +		$5 ~ /0x[[:xdigit:]]+/ {
-> +			print $1, $2, "extent";
-> +		}'
-> +}
-
-There's already a function in common/punch of this name, and it does
-pretty much the same thing. Why not use that?
-
-> +
-> +case $FSTYP in
-> +	ext4)
-> +		export MKFS_OPTIONS="-F -b $BSIZE"
-> +		;;
-> +	xfs)
-> +		export MKFS_OPTIONS="-f -b size=$BSIZE"
-> +		;;
-> +esac
-
-_scratch_mkfs takes options on the command line - there is no need
-to do this.
-
-In fact, this test needs to run on all block sizes that filesystems
-are capable of using, not just 4k and different architectures
-exercise different code paths and so we must be able to test the
-case where block size is smaller than page size on x86-64 so when
-the code is run on an ia64 or ppc64 box with a 64k page size we know
-that it's not completely broken...
-
-Anyway, if you really need to make a 4k block size filesystem, then
-_scratch_mkfs_sized() is the generic way of doing this.
-
-> +# make filesystem on scratch with 4KB blocksize
-> +_do 'make filesystem on $SCRATCH_DEV' '_scratch_mkfs'
-> +_do 'mount filesytem' '_scratch_mount'
-
-I really dislike this "_do" wrapper. The text does not add anything
-to the test, and it makes it hard to see the command being run and
-harder to modify it when necessary. It is used only by a couple of
-old tests, and we'd do better to remove it than to propagate it
-further.  This:
-
-_scratch_mkfs >> $seqres.full 2>&1 || _fail "scratch_mkfs failed."
-_scratch_mount >> $seqres.full 2>&1 || _fail "scratch_mount failed."
-
-does everything that the _do wrapper does.
-
-> +
-> +# Write file
-> +length=$(($BLOCKS*$BSIZE))
-> +$XFS_IO_PROG -f -c "pwrite 0 $length" -c fsync $testfile > /dev/null
-> +
-> +# Collapse alternate blocks
-> +for (( i = 1; i <= 7; i++ )); do
-> +	for(( j=0 ; j < $(($BLOCKS/(2**$i))) ; j++ )); do
-> +		offset=$(($j*$BSIZE))
-> +		$XFS_IO_PROG -c "fcollapse $offset $BSIZE" $testfile > /dev/null
-> +	done
-> +done
-> +
-> +# Check if 80 extents are present
-> +$XFS_IO_PROG -c "fiemap -v" $testfile | _filter_fiemap
-
-If all you care about is that there are 80 extents, then why not
-just something like:
-
-$XFS_IO_PROG -c "fiemap -v" $testfile |grep "^ *[0-9]*:" |wc -l
-
-> +
-> +_do 'unmount $SCRATCH_DEV' 'umount $SCRATCH_DEV'
-> +_do 'repair filesystem' '_check_scratch_fs'
-
-_check_scratch_fs is all you need to call here.
-
-> index 3a69294..80ff7ec 100644
-> --- a/tests/shared/group
-> +++ b/tests/shared/group
-> @@ -12,3 +12,4 @@
->  298 auto trim
->  305 aio dangerous enospc rw stress
->  316 auto quick collapse
-> +317 auto collapse
-
-Again, I think the prealloc group is better for this.
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+thanks
+-john
