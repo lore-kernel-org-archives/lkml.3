@@ -1,349 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756180Ab3JIIFO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 04:05:14 -0400
-Received: from mga01.intel.com ([192.55.52.88]:64944 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751942Ab3JIIFD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 04:05:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1062,1371106800"; 
-   d="s'?scan'208";a="408113335"
-Date: Wed, 9 Oct 2013 16:04:59 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [x86] BUG: unable to handle kernel paging request at 00740060
-Message-ID: <20131009080459.GA2298@localhost>
-References: <20131005234430.GA22485@localhost>
- <CA+55aFxEeKixnH7mZZs5iwupA9_GsRN0N7QZxqcTcE4RKZvTTg@mail.gmail.com>
- <20131008143400.GA14721@redhat.com>
-MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="7JfCtLOvnd9MIVvH"
-Content-Disposition: inline
-In-Reply-To: <20131008143400.GA14721@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756830Ab3JIIKS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 04:10:18 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:29612 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751798Ab3JIIKM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 04:10:12 -0400
+X-AuditID: cbfee691-b7f4a6d0000074fc-fd-52550f328915
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Bjorn Helgaas'" <bhelgaas@google.com>
+Cc: "'Kishon Vijay Abraham I'" <kishon@ti.com>, linux-pci@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Pratyush Anand'" <pratyush.anand@st.com>,
+        "'Mohit KUMAR'" <Mohit.KUMAR@st.com>,
+        "'Siva Reddy Kallam'" <siva.kallam@samsung.com>,
+        "'SRIKANTH TUMKUR SHIVANAND'" <ts.srikanth@samsung.com>,
+        "'Arnd Bergmann'" <arnd@arndb.de>, "'Sean Cross'" <xobs@kosagi.com>,
+        "'Thierry Reding'" <thierry.reding@gmail.com>,
+        "'Thomas Petazzoni'" <thomas.petazzoni@free-electrons.com>,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH] PCI: designware: Add irq_create_mapping()
+Date: Wed, 09 Oct 2013 17:09:21 +0900
+Message-id: <000401cec4c6$dc415180$94c3f480$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac7Extwbs09DEKhMT+CyRFEgzGK6CA==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuphleLIzCtJLcpLzFFi42I5/e+Zka4Rf2iQwYV7vBZ/Jx1jt1jSlGHx
+	8pCmxfwj51gtLi+8xGrRu+Aqm8WFpz1sFpd3zWGzODvvOJvFjPP7mCw2Tv3FaNF+SdliRdNW
+	Roufu+axWDx90MRk0Xj0AatF65MHjA6CHr9/TWL0eLLpIqPHzll32T0WbCr1+L5wPrtH35ZV
+	jB5Pf+xl9jh+YzuTx+dNcgGcUVw2Kak5mWWpRfp2CVwZ0w88YS74KlBxtP0OawPjX94uRk4O
+	CQETiUmv17BD2GISF+6tZ+ti5OIQEljGKLHz6QkmmKKVd1tYIRLTGSXaP69jhHB+MUo0HFoL
+	VsUmoCbx5cthsFEiApoSs1dsYQIpYha4wyLxe98MoHYODmEBK4kFf7NAalgEVCXWXd3DCGLz
+	CthKrHi1hx3CFpT4MfkeC4jNLKAlsX7ncSYIW15i85q3zCBjJATUJR791YVYpSex4MANZogS
+	EYl9L96B3SYhsIdDYuOjScwQuwQkvk0+xALRKyux6QAzxGOSEgdX3GCZwCg2C8nmWUg2z0Ky
+	eRaSFQsYWVYxiqYWJBcUJ6UXmeoVJ+YWl+al6yXn525ihKSEiTsY7x+wPsSYDLR+IrOUaHI+
+	MKXklcQbGpsZWZiamBobmVuakSasJM6r3mIdKCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoFR
+	WoRP1vQsw/zjV4RUG/1durhvcflGz65RdGljXWHk3833f2LVd0nHXTYzJYV+m6R9fmWUySpc
+	/ulPF+t/xUkRrDFKXAxRV1r7y94VNKeoT/zw/8ZN05Sk1id7ts6RnfGaUY9j3VN16QrZHaxl
+	CRUGfw841Cc++/5Rt25XqZa2s2KtzXe+FCWW4oxEQy3mouJEAHSDaukfAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrJKsWRmVeSWpSXmKPExsVy+t9jQV0j/tAgg9WX2S3+TjrGbrGkKcPi
+	5SFNi/lHzrFaXF54idWid8FVNosLT3vYLC7vmsNmcXbecTaLGef3MVlsnPqL0aL9krLFiqat
+	jBY/d81jsXj6oInJovHoA1aL1icPGB0EPX7/msTo8WTTRUaPnbPusnss2FTq8X3hfHaPvi2r
+	GD2e/tjL7HH8xnYmj8+b5AI4oxoYbTJSE1NSixRS85LzUzLz0m2VvIPjneNNzQwMdQ0tLcyV
+	FPISc1NtlVx8AnTdMnOAPlFSKEvMKQUKBSQWFyvp22GaEBripmsB0xih6xsSBNdjZIAGEtYx
+	Zkw/8IS54KtAxdH2O6wNjH95uxg5OSQETCRW3m1hhbDFJC7cW8/WxcjFISQwnVGi/fM6Rgjn
+	F6NEw6G1TCBVbAJqEl++HGYHsUUENCVmr9jCBFLELHCHReL3vhlAozg4hAWsJBb8zQKpYRFQ
+	lVh3dQ8jiM0rYCux4tUedghbUOLH5HssIDazgJbE+p3HmSBseYnNa94yg4yREFCXePRXF2KV
+	nsSCAzeYIUpEJPa9eMc4gVFgFpJJs5BMmoVk0iwkLQsYWVYxiqYWJBcUJ6XnGukVJ+YWl+al
+	6yXn525iBCecZ9I7GFc1WBxiFOBgVOLhfcAfEiTEmlhWXJl7iFGCg1lJhPcwZ2iQEG9KYmVV
+	alF+fFFpTmrxIcZkoEcnMkuJJucDk2FeSbyhsYmZkaWRmYWRibk5acJK4rwHW60DhQTSE0tS
+	s1NTC1KLYLYwcXBKNTBKW7BZnf+XfuPqRKeE4pCnb86dmVBlZ13J3qyz4+raHW639JSLZ17I
+	aK+oONK+8Qlf+F1hbaPLltO77u7NCSviyJn66c/xK3MSZE6zTngdu+629Ed338613le+FE5/
+	7relxSXV4O66oweNHT1YNxaZbd/28trCgvlfJbkZEyaL3s5h4RBMTr+rxFKckWioxVxUnAgA
+	XOhJ9nwDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Without irq_create_mapping(), the correct irq number cannot be
+provided. In this case, it makes problem such as NULL deference.
+Thus, irq_create_mapping() should be added for MSI.
 
---7JfCtLOvnd9MIVvH
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>
+---
+Tested on Exynos5440.
 
-Hi Oleg,
+ drivers/pci/host/pcie-designware.c |   10 ++++------
+ drivers/pci/host/pcie-designware.h |    1 +
+ 2 files changed, 5 insertions(+), 6 deletions(-)
 
-Thanks for looking into this. Attached is the task_work.s for you.
+diff --git a/drivers/pci/host/pcie-designware.c b/drivers/pci/host/pcie-designware.c
+index 8963017..e536bb6 100644
+--- a/drivers/pci/host/pcie-designware.c
++++ b/drivers/pci/host/pcie-designware.c
+@@ -237,6 +237,8 @@ static int assign_irq(int no_irqs, struct msi_desc *desc, int *pos)
+ 		}
+ 	}
+ 
++	pp->msi_irq_start = irq_create_mapping(pp->irq_domain, 0);
++
+ 	irq = (pp->msi_irq_start + pos0);
+ 
+ 	if ((irq + no_irqs) > (pp->msi_irq_start + MAX_MSI_IRQS-1))
+@@ -372,8 +374,6 @@ int __init dw_pcie_host_init(struct pcie_port *pp)
+ 	struct of_pci_range_parser parser;
+ 	u32 val;
+ 
+-	struct irq_domain *irq_domain;
+-
+ 	if (of_pci_range_parser_init(&parser, np)) {
+ 		dev_err(pp->dev, "missing ranges property\n");
+ 		return -EINVAL;
+@@ -441,15 +441,13 @@ int __init dw_pcie_host_init(struct pcie_port *pp)
+ 	}
+ 
+ 	if (IS_ENABLED(CONFIG_PCI_MSI)) {
+-		irq_domain = irq_domain_add_linear(pp->dev->of_node,
++		pp->irq_domain = irq_domain_add_linear(pp->dev->of_node,
+ 					MAX_MSI_IRQS, &msi_domain_ops,
+ 					&dw_pcie_msi_chip);
+-		if (!irq_domain) {
++		if (!pp->irq_domain) {
+ 			dev_err(pp->dev, "irq domain init failed\n");
+ 			return -ENXIO;
+ 		}
+-
+-		pp->msi_irq_start = irq_find_mapping(irq_domain, 0);
+ 	}
+ 
+ 	if (pp->ops->host_init)
+diff --git a/drivers/pci/host/pcie-designware.h b/drivers/pci/host/pcie-designware.h
+index faccbbf..240fc11 100644
+--- a/drivers/pci/host/pcie-designware.h
++++ b/drivers/pci/host/pcie-designware.h
+@@ -50,6 +50,7 @@ struct pcie_port {
+ 	int			msi_irq_start;
+ 	unsigned long		msi_data;
+ 	DECLARE_BITMAP(msi_irq_in_use, MAX_MSI_IRQS);
++	struct irq_domain	*irq_domain;
+ };
+ 
+ struct pcie_host_ops {
+-- 
+1.7.10.4
 
-> Fengguang, I do not think this will help, but just in case. Could you
-> show the result of
-> 
->         $ kernel/task_work.s
-> 
-> ?
 
-Sorry I lost some emails and found it back in LKML. Opened up too many
-mutt clients..
-
-Thanks,
-Fengguang
-
---7JfCtLOvnd9MIVvH
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="task_work.s"
-
-	.file	"task_work.c"
-# GNU C (Debian 4.6.3-1) version 4.6.3 (x86_64-linux-gnu)
-#	compiled by GNU C version 4.6.3, GMP version 5.0.4, MPFR version 3.1.0-p3, MPC version 0.9
-# warning: GMP header version 5.0.4 differs from library version 5.0.2.
-# warning: MPFR header version 3.1.0-p3 differs from library version 3.1.1-p2.
-# GGC heuristics: --param ggc-min-expand=100 --param ggc-min-heapsize=131072
-# options passed:  -nostdinc -I /c/wfg/tip/arch/x86/include
-# -I arch/x86/include/generated -I /c/wfg/tip/include -I include
-# -I /c/wfg/tip/arch/x86/include/uapi -I arch/x86/include/generated/uapi
-# -I /c/wfg/tip/include/uapi -I include/generated/uapi -I /c/wfg/tip/kernel
-# -I kernel -imultilib 32 -imultiarch i386-linux-gnu -D __KERNEL__
-# -D CONFIG_AS_CFI=1 -D CONFIG_AS_CFI_SIGNAL_FRAME=1
-# -D CONFIG_AS_CFI_SECTIONS=1 -D CONFIG_AS_AVX=1 -D CONFIG_AS_AVX2=1
-# -D CC_HAVE_ASM_GOTO -D KBUILD_STR(s)=#s
-# -D KBUILD_BASENAME=KBUILD_STR(task_work)
-# -D KBUILD_MODNAME=KBUILD_STR(task_work)
-# -isystem /usr/lib/gcc/x86_64-linux-gnu/4.6/include
-# -include /c/wfg/tip/include/linux/kconfig.h -MD kernel/.task_work.s.d
-# /c/wfg/tip/kernel/task_work.c -m32 -msoft-float -mregparm=3
-# -mpreferred-stack-boundary=2 -march=winchip2 -maccumulate-outgoing-args
-# -mno-sse -mno-mmx -mno-sse2 -mno-3dnow -mno-avx
-# -auxbase-strip kernel/task_work.s -O2 -Wall -Wundef -Wstrict-prototypes
-# -Wno-trigraphs -Werror=implicit-function-declaration -Wno-format-security
-# -Wno-sign-compare -Wframe-larger-than=1024 -Wno-unused-but-set-variable
-# -Wdeclaration-after-statement -Wno-pointer-sign -p -fno-strict-aliasing
-# -fno-common -fno-delete-null-pointer-checks -freg-struct-return -fno-pic
-# -ffreestanding -fno-asynchronous-unwind-tables -fno-stack-protector
-# -fno-omit-frame-pointer -fno-optimize-sibling-calls -fno-strict-overflow
-# -fconserve-stack -fverbose-asm
-# options enabled:  -fauto-inc-dec -fbranch-count-reg -fcaller-saves
-# -fcombine-stack-adjustments -fcompare-elim -fcprop-registers
-# -fcrossjumping -fcse-follow-jumps -fdefer-pop -fdevirtualize
-# -fdwarf2-cfi-asm -fearly-inlining -feliminate-unused-debug-types
-# -fexpensive-optimizations -fforward-propagate -ffunction-cse -fgcse
-# -fgcse-lm -fguess-branch-probability -fident -fif-conversion
-# -fif-conversion2 -findirect-inlining -finline
-# -finline-functions-called-once -finline-small-functions -fipa-cp
-# -fipa-profile -fipa-pure-const -fipa-reference -fipa-sra
-# -fira-share-save-slots -fira-share-spill-slots -fivopts
-# -fkeep-static-consts -fleading-underscore -fmath-errno -fmerge-constants
-# -fmerge-debug-strings -fmove-loop-invariants -foptimize-register-move
-# -fpartial-inlining -fpeephole -fpeephole2 -fprefetch-loop-arrays
-# -fprofile -freg-struct-return -fregmove -freorder-blocks
-# -freorder-functions -frerun-cse-after-loop
-# -fsched-critical-path-heuristic -fsched-dep-count-heuristic
-# -fsched-group-heuristic -fsched-interblock -fsched-last-insn-heuristic
-# -fsched-rank-heuristic -fsched-spec -fsched-spec-insn-heuristic
-# -fsched-stalled-insns-dep -fshow-column -fsigned-zeros
-# -fsplit-ivs-in-unroller -fsplit-wide-types -fstrict-volatile-bitfields
-# -fthread-jumps -ftoplevel-reorder -ftrapping-math -ftree-bit-ccp
-# -ftree-builtin-call-dce -ftree-ccp -ftree-ch -ftree-copy-prop
-# -ftree-copyrename -ftree-cselim -ftree-dce -ftree-dominator-opts
-# -ftree-dse -ftree-forwprop -ftree-fre -ftree-loop-if-convert
-# -ftree-loop-im -ftree-loop-ivcanon -ftree-loop-optimize
-# -ftree-parallelize-loops= -ftree-phiprop -ftree-pre -ftree-pta
-# -ftree-reassoc -ftree-scev-cprop -ftree-sink -ftree-slp-vectorize
-# -ftree-sra -ftree-switch-conversion -ftree-ter -ftree-vect-loop-version
-# -ftree-vrp -funit-at-a-time -fvect-cost-model -fverbose-asm
-# -fzero-initialized-in-bss -m32 -m96bit-long-double
-# -maccumulate-outgoing-args -malign-stringops -mglibc -mieee-fp
-# -mno-fancy-math-387 -mno-red-zone -mno-sse4 -mpush-args -msahf
-# -mtls-direct-seg-refs
-
-# Compiler executable checksum: aa5cb4c8e9c62c6cc9349213df314c34
-
-	.text
-	.p2align 4,,15
-	.globl	task_work_add
-	.type	task_work_add, @function
-task_work_add:
-	pushl	%ebp	#
-	movl	%esp, %ebp	#,
-	pushl	%edi	#
-	pushl	%esi	#
-	pushl	%ebx	#
-	subl	$12, %esp	#,
-	call	mcount
-	movl	%eax, %edi	# task, task
-	movl	%edx, -16(%ebp)	# work, %sfp
-	movb	%cl, -21(%ebp)	# notify, %sfp
-	.p2align 4,,15
-.L3:
-	movl	904(%edi), %esi	# task_3(D)->task_works, head
-	cmpl	$work_exited, %esi	#, head
-	sete	%bl	#, D.14145
-	andl	$255, %ebx	#, D.14145
-	xorl	%ecx, %ecx	#
-	movl	%ebx, %edx	# D.14145,
-	movl	$______f.14042, %eax	#,
-	call	ftrace_likely_update	#
-	testl	%ebx, %ebx	# D.14145
-	jne	.L4	#,
-	movl	-16(%ebp), %edx	# %sfp,
-	movl	%esi, (%edx)	# head, work_13(D)->next
-	movl	%esi, %eax	# head, __ret
-#APP
-# 34 "/c/wfg/tip/kernel/task_work.c" 1
-	cmpxchgl %edx,904(%edi)	#, *__ptr_16
-# 0 "" 2
-#NO_APP
-	cmpl	%eax, %esi	# __ret, head
-	jne	.L3	#,
-	cmpb	$0, -21(%ebp)	#, %sfp
-	je	.L5	#,
-	movl	4(%edi), %eax	# task_3(D)->stack, task_3(D)->stack
-#APP
-# 208 "/c/wfg/tip/arch/x86/include/asm/bitops.h" 1
-	bts $1, 8(%eax); jc .L2	#, MEM[(volatile long unsigned int *)D.14203_29],
-# 0 "" 2
-#NO_APP
-.L5:
-	movl	$0, -20(%ebp)	#, %sfp
-.L2:
-	movl	-20(%ebp), %eax	# %sfp,
-	addl	$12, %esp	#,
-	popl	%ebx	#
-	popl	%esi	#
-	popl	%edi	#
-	popl	%ebp	#
-	ret
-	.p2align 4,,15
-.L4:
-	movl	$-3, -20(%ebp)	#, %sfp
-	movl	-20(%ebp), %eax	# %sfp,
-	addl	$12, %esp	#,
-	popl	%ebx	#
-	popl	%esi	#
-	popl	%edi	#
-	popl	%ebp	#
-	ret
-	.size	task_work_add, .-task_work_add
-	.p2align 4,,15
-	.globl	task_work_cancel
-	.type	task_work_cancel, @function
-task_work_cancel:
-	pushl	%ebp	#
-	movl	%esp, %ebp	#,
-	pushl	%edi	#
-	pushl	%esi	#
-	pushl	%ebx	#
-	pushl	%ecx	#
-	call	mcount
-	movl	%edx, %edi	# func, func
-	leal	904(%eax), %esi	#, pprev
-	addl	$960, %eax	#,
-	movl	%eax, -16(%ebp)	#, %sfp
-	call	_raw_spin_lock_irqsave	#
-	movl	%eax, %ecx	#, flags
-	jmp	.L14	#
-	.p2align 4,,15
-.L15:
-	movl	%ebx, %esi	# work, pprev
-.L14:
-	movl	(%esi), %ebx	# MEM[(struct callback_head * volatile *)pprev_1], work
-	testl	%ebx, %ebx	# work
-	je	.L12	#,
-	cmpl	%edi, 4(%ebx)	# func, work_7->func
-	jne	.L15	#,
-	movl	(%ebx), %edx	# work_7->next, __new
-	movl	%ebx, %eax	# work, __ret
-#APP
-# 69 "/c/wfg/tip/kernel/task_work.c" 1
-	cmpxchgl %edx,(%esi)	# __new, MEM[(volatile u32 *)pprev_1]
-# 0 "" 2
-#NO_APP
-	cmpl	%eax, %ebx	# __ret, work
-	jne	.L14	#,
-	.p2align 4,,15
-.L12:
-	movl	%ecx, %edx	# flags,
-	movl	-16(%ebp), %eax	# %sfp,
-	call	_raw_spin_unlock_irqrestore	#
-	movl	%ebx, %eax	# work,
-	popl	%edx	#
-	popl	%ebx	#
-	popl	%esi	#
-	popl	%edi	#
-	popl	%ebp	#
-	ret
-	.size	task_work_cancel, .-task_work_cancel
-	.section	.rodata.str1.1,"aMS",@progbits,1
-.LC0:
-	.string	"/c/wfg/tip/kernel/task_work.c"
-	.text
-	.p2align 4,,15
-	.globl	task_work_run
-	.type	task_work_run, @function
-task_work_run:
-	pushl	%ebp	#
-	movl	%esp, %ebp	#,
-	pushl	%edi	#
-	pushl	%esi	#
-	pushl	%ebx	#
-	call	mcount
-#APP
-# 14 "/c/wfg/tip/arch/x86/include/asm/current.h" 1
-	movl current_task,%esi	#, task
-# 0 "" 2
-#NO_APP
-	leal	904(%esi), %edi	#, __ptr
-	.p2align 4,,15
-.L31:
-	movl	904(%esi), %edx	# task_39->task_works, work
-	testl	%edx, %edx	# work
-	je	.L32	#,
-.L24:
-	xorl	%ecx, %ecx	# head
-.L17:
-	movl	%edx, %eax	# work, __ret
-#APP
-# 99 "/c/wfg/tip/kernel/task_work.c" 1
-	cmpxchgl %ecx,(%edi)	# head, *__ptr_14
-# 0 "" 2
-#NO_APP
-	cmpl	%eax, %edx	# __ret, work
-	jne	.L31	#,
-	testl	%edx, %edx	# work
-	je	.L16	#,
-	.p2align 4,,15
-.L28:
-#APP
-# 656 "/c/wfg/tip/arch/x86/include/asm/processor.h" 1
-	rep; nop
-# 0 "" 2
-#NO_APP
-	movl	960(%esi), %eax	# task_39->pi_lock.raw_lock.slock, D.14132
-	testl	%eax, %eax	# D.14132
-	je	.L28	#,
-	xorl	%ebx, %ebx	# head
-	jmp	.L21	#
-	.p2align 4,,15
-.L26:
-	movl	%edx, %ebx	# work, head
-	movl	%eax, %edx	# next, work
-.L21:
-	movl	(%edx), %eax	# work_1->next, next
-	movl	%ebx, (%edx)	# head, work_1->next
-	testl	%eax, %eax	# next
-	jne	.L26	#,
-	jmp	.L23	#
-	.p2align 4,,15
-.L32:
-	testb	$4, 12(%esi)	#, task_39->flags
-	je	.L24	#,
-	movl	$work_exited, %ecx	#, head
-	jmp	.L17	#
-	.p2align 4,,15
-.L33:
-	movl	%ebx, %edx	# work, work
-	movl	(%ebx), %ebx	# work_5->next, work
-.L23:
-	movl	%edx, %eax	# work,
-	call	*4(%edx)	# work_2->func
-	xorl	%ecx, %ecx	#
-	movl	$125, %edx	#,
-	movl	$.LC0, %eax	#,
-	call	__might_sleep	#
-	call	_cond_resched	#
-	testl	%ebx, %ebx	# work
-	jne	.L33	#,
-	jmp	.L31	#
-	.p2align 4,,15
-.L16:
-	popl	%ebx	#
-	popl	%esi	#
-	popl	%edi	#
-	popl	%ebp	#
-	ret
-	.size	task_work_run, .-task_work_run
-	.local	work_exited
-	.comm	work_exited,8,4
-	.section	_ftrace_annotated_branch,"aw",@progbits
-	.align 4
-	.type	______f.14042, @object
-	.size	______f.14042, 20
-______f.14042:
-# func:
-	.long	__func__.14043
-# file:
-	.long	.LC0
-# line:
-	.long	31
-	.zero	8
-	.section	.rodata
-	.type	__func__.14043, @object
-	.size	__func__.14043, 14
-__func__.14043:
-	.string	"task_work_add"
-	.ident	"GCC: (Debian 4.6.3-1) 4.6.3"
-	.section	.note.GNU-stack,"",@progbits
-
---7JfCtLOvnd9MIVvH--
