@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756498Ab3JIWa6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 18:30:58 -0400
-Received: from relay5-d.mail.gandi.net ([217.70.183.197]:58172 "EHLO
-	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752834Ab3JIWa4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 18:30:56 -0400
-X-Originating-IP: 173.246.103.110
-Date: Wed, 9 Oct 2013 15:30:37 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu, fengguang.wu@intel.com, stephen@networkplumber.org,
-        davem@davemloft.net, bridge@lists.linux-foundation.org,
-        netdev@vger.kernel.org, tgraf@suug.ch, gaofeng@cn.fujitsu.com,
-        linux-decnet-user@lists.sourceforge.net, kuznet@ms2.inr.ac.ru,
-        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
-        linville@tuxdriver.com, johannes@sipsolutions.net
-Subject: Re: [PATCH v2 tip/core/rcu 0/13] Sparse-related updates for 3.13
-Message-ID: <20131009223036.GE11709@jtriplet-mobl1>
-References: <20131009212920.GA15413@linux.vnet.ibm.com>
+	id S1756805Ab3JIWbP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 18:31:15 -0400
+Received: from mga03.intel.com ([143.182.124.21]:54580 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753662Ab3JIWa5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 18:30:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,1066,1371106800"; 
+   d="scan'208";a="408527676"
+From: Andi Kleen <andi@firstfloor.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Adrian Hunter <adrian.hunter@intel.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH V6 0/8] perf tools: kcore improvements
+References: <1381320078-16497-1-git-send-email-adrian.hunter@intel.com>
+	<20131009120744.GF3081@twins.programming.kicks-ass.net>
+Date: Wed, 09 Oct 2013 15:30:56 -0700
+In-Reply-To: <20131009120744.GF3081@twins.programming.kicks-ass.net> (Peter
+	Zijlstra's message of "Wed, 9 Oct 2013 14:07:44 +0200")
+Message-ID: <874n8qyt3z.fsf@tassilo.jf.intel.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131009212920.GA15413@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 09, 2013 at 02:29:20PM -0700, Paul E. McKenney wrote:
-> Hello!
-> 
-> This series features updates to allow sparse to do a better job of
-> statically analyzing RCU usage:
-> 
-> 1.	Apply ACCESS_ONCE() to rcu_assign_pointer()'s target to prevent
-> 	comiler mischief.  Also require that the source pointer be from
-> 	the kernel address space.  Sometimes it can be from the RCU address
-> 	space, which necessitates the remaining patches in this series.
-> 	Which, it must be admitted, apply to a very small fraction of
-> 	the rcu_assign_pointer() invocations in the kernel.  This commit
-> 	courtesy of Josh Triplett.
-> 
-> 2-13.	Apply rcu_access_pointer() to avoid a number of false positives.
+Peter Zijlstra <peterz@infradead.org> writes:
 
-I posted one minor nit in response to one of these patches, but in any
-case, for 2-13:
+> On Wed, Oct 09, 2013 at 03:01:10PM +0300, Adrian Hunter wrote:
+>> 	- workaround objdump difficulties with kcore
+>
+> I've no idea, but given that've 'inlined' addr2line, should we also
+> consider polling in objdump -- or at least that subset of functionality
+> that we actually use?
 
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+FWIW addr2line is just a straight forward BFD call.
 
-I'm obviously OK with patch 1 as well, but it should move to the end of
-the series, and you need a new patch 1 that adds a comment constraining
-rcu_assign_pointer to evaluate its argument exactly once.
+objdump is significantly more complex, a lot of it is outside BFD
+(including the full disassembler and all the logic for syncing
+the source files)
 
-- Josh Triplett
+Another problem is that you would need to sync regularly to keep
+up with new instructions.
+
+-Andi
+
+
+-- 
+ak@linux.intel.com -- Speaking for myself only
