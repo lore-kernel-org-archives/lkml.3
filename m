@@ -1,189 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757000Ab3JIKjM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 06:39:12 -0400
-Received: from mga03.intel.com ([143.182.124.21]:55527 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751821Ab3JIKjL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 06:39:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1062,1371106800"; 
-   d="scan'208";a="408201376"
-Message-ID: <5255320C.9020009@intel.com>
-Date: Wed, 09 Oct 2013 13:38:04 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1757106Ab3JIKjZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 06:39:25 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:54651 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753464Ab3JIKjW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 06:39:22 -0400
+Date: Wed, 9 Oct 2013 19:39:18 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Magnus Damm <magnus.damm@gmail.com>
+Cc: takasi-y@ops.dti.ne.jp, SH-Linux <linux-sh@vger.kernel.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        devicetree@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 3/3] ARM: shmobile: kzm9d: Use common clock framework
+Message-ID: <20131009103915.GB17869@verge.net.au>
+References: <20131008143040.52f36df8edb7ab63224d8433@ops.dti.ne.jp>
+ <20131008143403.c11f294c8a1701a2ab3bc5fd@ops.dti.ne.jp>
+ <20131009034057.GO15065@verge.net.au>
+ <CANqRtoQs+31mv0ZULOd3SGshkBkvp-kGoaVOSb10+Ncdp+WNXw@mail.gmail.com>
+ <20131009065438.GA7220@verge.net.au>
+ <CANqRtoSGFEjcBPDAtq3YCDbkiFCftyr8b=qniYqyMafng=zurw@mail.gmail.com>
 MIME-Version: 1.0
-To: Jiri Olsa <jolsa@redhat.com>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH V5 3/9] perf tools: workaround objdump difficulties with
- kcore
-References: <1381221956-16699-1-git-send-email-adrian.hunter@intel.com> <1381221956-16699-4-git-send-email-adrian.hunter@intel.com> <20131008140236.GD1348@krava.redhat.com> <525506C5.3020101@intel.com> <20131009101249.GC1005@krava.redhat.com>
-In-Reply-To: <20131009101249.GC1005@krava.redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANqRtoSGFEjcBPDAtq3YCDbkiFCftyr8b=qniYqyMafng=zurw@mail.gmail.com>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/13 13:12, Jiri Olsa wrote:
-> On Wed, Oct 09, 2013 at 10:33:25AM +0300, Adrian Hunter wrote:
->> On 08/10/13 17:02, Jiri Olsa wrote:
->>> On Tue, Oct 08, 2013 at 11:45:50AM +0300, Adrian Hunter wrote:
->>>> objdump fails to annotate module symbols when looking
->>>> at kcore.  Workaround this by extracting object code
->>>> from kcore and putting it in a temporary file for
->>>> objdump to use instead.  The temporary file is created
->>>> to look like kcore but contains only the function
->>>> being disassembled.
->>>
->>> Excited to ses this one, but looks like I'm hitting some
->>> issue.  All annotation starts for me like this:
->>>
->>>                                                                                                        ▒
->>>        │              Disassembly of section load0:                                                            ▒
->>>        │                                                                                                       ▒
->>>        │              ffffffff815eee80 <load0>:                                                                ◆
->>>   9.33 │ffffffff815eee80:   data32 data32 data32 xchg %ax,%ax                                                  
->>>
->>>
->>> which does not seem right
->>
->> Can you tell me the commits of the kernel and perf tools you
->> were using, plus the commands and what symbol it was?
+On Wed, Oct 09, 2013 at 04:29:56PM +0900, Magnus Damm wrote:
+> Hi Simon,
 > 
-> kernel: 3.9.10-100.fc17.x86_64
-> perf:   latest acme's perf/core (06de626 perf evlist: Fix perf_evlist__mmap_read event overflow )
->         plus your V5 patches
+> On Wed, Oct 9, 2013 at 3:54 PM, Simon Horman <horms@verge.net.au> wrote:
+> > On Wed, Oct 09, 2013 at 01:59:46PM +0900, Magnus Damm wrote:
+> >> Hi Simon,
+> >>
+> >> On Wed, Oct 9, 2013 at 12:40 PM, Simon Horman <horms@verge.net.au> wrote:
+> >> > On Tue, Oct 08, 2013 at 02:34:03PM +0900, takasi-y@ops.dti.ne.jp wrote:
+> >> >> Use common clock framework version of clock
+> >> >>  drivers/clk/shmobile/clk-emev2.c
+> >> >> instead of sh-clkfwk version
+> >> >>  arch/arm/mach-shmobile/clock-emev2.c
+> >> >> when it is configured as a part of multi-platform.
+> >> >>
+> >> >> Signed-off-by: Takashi Yoshii <takasi-y@ops.dti.ne.jp>
+> >> >
+> >> > Thanks.
+> >> >
+> >> > I plan to add this patch to a new topic branch,
+> >> > topic/emev2-common-clock, in the renesas tree and
+> >> > queue it up from there for inclusion in mainline
+> >> > if/when the first patch of this series is accepted
+> >> > by Mike Turquette.
+> >>
+> >> Thanks for picking up patches, Simon.
+> >>
+> >> I think you can simply merge this patch after the following series:
+> >>
+> >> [PATCH 00/05] ARM: shmobile: KZM9D Multiplatform update
+> >
+> > This is already queued up.
 > 
-> commands:
->   sudo ./perf record -e cycles:k -a 
->   sudo ./perf report
+> Yes, I know, thanks for that. I tried to explain the dependency in the
+> 00/00 cover letter but I will try to be more clear next time!
 > 
-> ---
-> Samples: 2K of event 'cycles:k', Event count (approx.): 445188286                                               
->  14.73%          swapper  [kernel.kallsyms]   [k] intel_idle                                                   ◆
->   3.19%                X  [kernel.kallsyms]   [k] smp_call_function_many                                       ▒
->   1.58%                X  [kernel.kallsyms]   [k] i915_gem_write_fence__ipi                                    ▒
->   1.58%          swapper  [kernel.kallsyms]   [k] iwl_trans_pcie_read32                                        ▒
+> >> There are no build time dependencies on patch 1 and 2 so this patch
+> >> can be merged independently. Regarding run-time operation, the
+> >> multiplatform series above makes KZM9D DT reference only build for
+> >> multiplatform, and in such case CCF is required.
+> >>
+> >> So if you want to keep KZM9D DT reference working until Mike Turquette
+> >> accepts the CCF bits, then I recommend you to wait with "[PATCH 00/05]
+> >> ARM: shmobile: KZM9D Multiplatform update" until all EMEV2 CCF bits
+> >> have been merged.
+> >>
+> >> Another way is to merge "[PATCH 00/05] ARM: shmobile: KZM9D
+> >> Multiplatform update" before the EMEV2 CCF bits, but if so you may as
+> >> well merge this patch as well IMO. This
+> >> multiplatform-update-series-merge-before-CCF plan will result in
+> >> untestable KZM9D DT reference until EMEV2 CCF is merged. Either way is
+> >> fine with me.
+> >
+> > I am mainly concerned that the bindings may change before
+> > they are finally merged. And I thought it would be nice to avoid
+> > having to fix up the usage of the bindings if they change.
 > 
+> Sure, but the code in this patch looks like it simply starts DT CCF
+> probing regardless of what the bindings look like. So I don't think
+> you will have to worry about actual bindings detail.
 > 
-> annotation of 1st 4 symbols:
+> > But I'm happy to just queue-up patches 2 and 3 of this series
+> > now if you prefer.
 > 
-> ---
-> intel_idle  /proc/kcore                                                                                         
->        │                                                                                                       ▒
->        │                                                                                                       ▒
->        │                                                                                                       ▒
->        │     Disassembly of section load0:                                                                     ▒
->        │                                                                                                       ▒
->        │     ffffffff8135f490 <load0>:                                                                         ▒
->   1.18 │       data32 data32 data32 xchg %ax,%ax                                                               ▒
-> 
-> 
-> ---
-> smp_call_function_many  /proc/kcore                                                                             
->        │                                                                                                       ◆
->        │                                                                                                       ▒
->        │                                                                                                       ▒
->        │     Disassembly of section load0:                                                                     ▒
->        │                                                                                                       ▒
->        │     ffffffff810bc270 <load0>:                                                                         ▒
->        │       data32 data32 data32 xchg %ax,%ax                                                               ▒
-> 
-> ---
-> i915_gem_write_fence__ipi  /proc/kcore                                                                          
->        │
->        │
->        │
->        │    Disassembly of section load0:
->        │
->        │    ffffffffa0086630 <load0>:
->        │      data32 data32 data32 xchg %ax,%ax
-> 
-> ---
-> iwl_trans_pcie_read32  /proc/kcore                                                                              
->        │
->        │
->        │
->        │    Disassembly of section load0:
->        │
->        │    ffffffffa0414a50 <load0>:
->        │      data32 data32 data32 xchg %ax,%ax
-> 
-> 
-> the rest of the instruction decode differs.. just the first
-> line is same for all
-> 
-> addresses seem ok:
-> 
-> [jolsa@krava perf]$ egrep 'ffffffff8135f490|ffffffff810bc270|ffffffffa0086630|ffffffffa0414a50' /proc/kallsyms 
-> ffffffff810bc270 T smp_call_function_many
-> ffffffff8135f490 t intel_idle
-> ffffffffa0414a50 t iwl_trans_pcie_read32        [iwlwifi]
-> ffffffffa0086630 t i915_gem_write_fence__ipi    [i915]
-> 
-> so.. the name of the section, name of the <function> plus the first
-> instruction decode seem wrong.. I can see that in every symbol I
-> annotate in the report and in annotate command as well.
+> Well, I meant patch 3 only. Patch 1 and 2 are tied together by dependencies. =)
 
-If you use the --asm-raw option you can see the bytes:
+Thanks, I understand now.
 
-	66 66 66 90 
-
-That looks like a "nop" e.g. K8_NOP4 in arch/x86/include/asm/nops.h
-
-	/*
-	 * Define nops for use with alternative() and for tracing.
-	 *
-	 * *_NOP5_ATOMIC must be a single instruction.
-	 */
-
-	#define NOP_DS_PREFIX 0x3e
-
-	/* generic versions from gas
-	   1: nop
-	   the following instructions are NOT nops in 64-bit mode,
-	   for 64-bit mode use K8 or P6 nops instead
-	   2: movl %esi,%esi
-	   3: leal 0x00(%esi),%esi
-	   4: leal 0x00(,%esi,1),%esi
-	   6: leal 0x00000000(%esi),%esi
-	   7: leal 0x00000000(,%esi,1),%esi
-	*/
-	#define GENERIC_NOP1 0x90
-	#define GENERIC_NOP2 0x89,0xf6
-	#define GENERIC_NOP3 0x8d,0x76,0x00
-	#define GENERIC_NOP4 0x8d,0x74,0x26,0x00
-	#define GENERIC_NOP5 GENERIC_NOP1,GENERIC_NOP4
-	#define GENERIC_NOP6 0x8d,0xb6,0x00,0x00,0x00,0x00
-	#define GENERIC_NOP7 0x8d,0xb4,0x26,0x00,0x00,0x00,0x00
-	#define GENERIC_NOP8 GENERIC_NOP1,GENERIC_NOP7
-	#define GENERIC_NOP5_ATOMIC NOP_DS_PREFIX,GENERIC_NOP4
-
-	/* Opteron 64bit nops
-	   1: nop
-	   2: osp nop
-	   3: osp osp nop
-	   4: osp osp osp nop
-	*/
-	#define K8_NOP1 GENERIC_NOP1
-	#define K8_NOP2 0x66,K8_NOP1
-	#define K8_NOP3 0x66,K8_NOP2
-	#define K8_NOP4 0x66,K8_NOP3
-	#define K8_NOP5 K8_NOP3,K8_NOP2
-	#define K8_NOP6 K8_NOP3,K8_NOP3
-	#define K8_NOP7 K8_NOP4,K8_NOP3
-	#define K8_NOP8 K8_NOP4,K8_NOP4
-	#define K8_NOP5_ATOMIC 0x66,K8_NOP4
-
-I think what you see is correct.
-
+I'll queue-up 3/3.
