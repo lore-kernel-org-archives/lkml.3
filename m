@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932185Ab3JIReC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 13:34:02 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56536 "EHLO
+	id S1757314Ab3JIReV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 13:34:21 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56566 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753828Ab3JIRd7 (ORCPT
+	with ESMTP id S1753592Ab3JIReS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 13:33:59 -0400
-Date: Wed, 9 Oct 2013 10:33:22 -0700
-From: tip-bot for Mel Gorman <tipbot@zytor.com>
-Message-ID: <tip-3e6a9418cf05638b103e34f5d13be0321872e623@git.kernel.org>
+	Wed, 9 Oct 2013 13:34:18 -0400
+Date: Wed, 9 Oct 2013 10:33:31 -0700
+From: tip-bot for Rik van Riel <tipbot@zytor.com>
+Message-ID: <tip-04bb2f9475054298f0c67a89ca92cade42d3fe5e@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         peterz@infradead.org, hannes@cmpxchg.org, riel@redhat.com,
         aarcange@redhat.com, srikar@linux.vnet.ibm.com, mgorman@suse.de,
@@ -18,12 +18,12 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         peterz@infradead.org, hannes@cmpxchg.org, riel@redhat.com,
         aarcange@redhat.com, srikar@linux.vnet.ibm.com, mgorman@suse.de,
         tglx@linutronix.de
-In-Reply-To: <1381141781-10992-58-git-send-email-mgorman@suse.de>
-References: <1381141781-10992-58-git-send-email-mgorman@suse.de>
+In-Reply-To: <1381141781-10992-59-git-send-email-mgorman@suse.de>
+References: <1381141781-10992-59-git-send-email-mgorman@suse.de>
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:sched/core] sched/numa:
-  Take false sharing into account when adapting scan rate
-Git-Commit-ID: 3e6a9418cf05638b103e34f5d13be0321872e623
+  Adjust scan rate in task_numa_placement
+Git-Commit-ID: 04bb2f9475054298f0c67a89ca92cade42d3fe5e
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,66 +32,291 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 09 Oct 2013 10:33:29 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 09 Oct 2013 10:33:38 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3e6a9418cf05638b103e34f5d13be0321872e623
-Gitweb:     http://git.kernel.org/tip/3e6a9418cf05638b103e34f5d13be0321872e623
-Author:     Mel Gorman <mgorman@suse.de>
-AuthorDate: Mon, 7 Oct 2013 11:29:35 +0100
+Commit-ID:  04bb2f9475054298f0c67a89ca92cade42d3fe5e
+Gitweb:     http://git.kernel.org/tip/04bb2f9475054298f0c67a89ca92cade42d3fe5e
+Author:     Rik van Riel <riel@redhat.com>
+AuthorDate: Mon, 7 Oct 2013 11:29:36 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 9 Oct 2013 14:48:14 +0200
+CommitDate: Wed, 9 Oct 2013 14:48:16 +0200
 
-sched/numa: Take false sharing into account when adapting scan rate
+sched/numa: Adjust scan rate in task_numa_placement
 
-Scan rate is altered based on whether shared/private faults dominated.
-task_numa_group() may detect false sharing but that information is not
-taken into account when adapting the scan rate. Take it into account.
+Adjust numa_scan_period in task_numa_placement, depending on how much
+useful work the numa code can do. The more local faults there are in a
+given scan window the longer the period (and hence the slower the scan rate)
+during the next window. If there are excessive shared faults then the scan
+period will decrease with the amount of scaling depending on whether the
+ratio of shared/private faults. If the preferred node changes then the
+scan rate is reset to recheck if the task is properly placed.
 
+Signed-off-by: Rik van Riel <riel@redhat.com>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Rik van Riel <riel@redhat.com>
 Cc: Andrea Arcangeli <aarcange@redhat.com>
 Cc: Johannes Weiner <hannes@cmpxchg.org>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1381141781-10992-58-git-send-email-mgorman@suse.de
+Link: http://lkml.kernel.org/r/1381141781-10992-59-git-send-email-mgorman@suse.de
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/fair.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ include/linux/sched.h |   9 ++++
+ kernel/sched/fair.c   | 112 +++++++++++++++++++++++++++++++++++++++-----------
+ mm/huge_memory.c      |   4 +-
+ mm/memory.c           |   9 ++--
+ 4 files changed, 105 insertions(+), 29 deletions(-)
 
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 59f953b..2292f6c 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1365,6 +1365,14 @@ struct task_struct {
+ 	 */
+ 	unsigned long *numa_faults_buffer;
+ 
++	/*
++	 * numa_faults_locality tracks if faults recorded during the last
++	 * scan window were remote/local. The task scan period is adapted
++	 * based on the locality of the faults with different weights
++	 * depending on whether they were shared or private faults
++	 */
++	unsigned long numa_faults_locality[2];
++
+ 	int numa_preferred_nid;
+ 	unsigned long numa_pages_migrated;
+ #endif /* CONFIG_NUMA_BALANCING */
+@@ -1455,6 +1463,7 @@ struct task_struct {
+ #define TNF_MIGRATED	0x01
+ #define TNF_NO_GROUP	0x02
+ #define TNF_SHARED	0x04
++#define TNF_FAULT_LOCAL	0x08
+ 
+ #ifdef CONFIG_NUMA_BALANCING
+ extern void task_numa_fault(int last_node, int node, int pages, int flags);
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 222c2d0..d26a16e 100644
+index d26a16e..66237ff 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -1381,7 +1381,8 @@ static void double_lock(spinlock_t *l1, spinlock_t *l2)
- 	spin_lock_nested(l2, SINGLE_DEPTH_NESTING);
+@@ -1241,6 +1241,12 @@ static int task_numa_migrate(struct task_struct *p)
+ 
+ 	sched_setnuma(p, env.dst_nid);
+ 
++	/*
++	 * Reset the scan period if the task is being rescheduled on an
++	 * alternative node to recheck if the tasks is now properly placed.
++	 */
++	p->numa_scan_period = task_scan_min(p);
++
+ 	if (env.best_task == NULL) {
+ 		int ret = migrate_task_to(p, env.best_cpu);
+ 		return ret;
+@@ -1276,10 +1282,86 @@ static void numa_migrate_preferred(struct task_struct *p)
+ 		p->numa_migrate_retry = jiffies + HZ*5;
  }
  
--static void task_numa_group(struct task_struct *p, int cpupid, int flags)
-+static void task_numa_group(struct task_struct *p, int cpupid, int flags,
-+			int *priv)
- {
- 	struct numa_group *grp, *my_grp;
- 	struct task_struct *tsk;
-@@ -1447,6 +1448,9 @@ static void task_numa_group(struct task_struct *p, int cpupid, int flags)
- 	if (flags & TNF_SHARED)
- 		join = true;
- 
-+	/* Update priv based on whether false sharing was detected */
-+	*priv = !join;
++/*
++ * When adapting the scan rate, the period is divided into NUMA_PERIOD_SLOTS
++ * increments. The more local the fault statistics are, the higher the scan
++ * period will be for the next scan window. If local/remote ratio is below
++ * NUMA_PERIOD_THRESHOLD (where range of ratio is 1..NUMA_PERIOD_SLOTS) the
++ * scan period will decrease
++ */
++#define NUMA_PERIOD_SLOTS 10
++#define NUMA_PERIOD_THRESHOLD 3
 +
- 	if (join && !get_numa_group(grp))
- 		join = false;
++/*
++ * Increase the scan period (slow down scanning) if the majority of
++ * our memory is already on our local node, or if the majority of
++ * the page accesses are shared with other processes.
++ * Otherwise, decrease the scan period.
++ */
++static void update_task_scan_period(struct task_struct *p,
++			unsigned long shared, unsigned long private)
++{
++	unsigned int period_slot;
++	int ratio;
++	int diff;
++
++	unsigned long remote = p->numa_faults_locality[0];
++	unsigned long local = p->numa_faults_locality[1];
++
++	/*
++	 * If there were no record hinting faults then either the task is
++	 * completely idle or all activity is areas that are not of interest
++	 * to automatic numa balancing. Scan slower
++	 */
++	if (local + shared == 0) {
++		p->numa_scan_period = min(p->numa_scan_period_max,
++			p->numa_scan_period << 1);
++
++		p->mm->numa_next_scan = jiffies +
++			msecs_to_jiffies(p->numa_scan_period);
++
++		return;
++	}
++
++	/*
++	 * Prepare to scale scan period relative to the current period.
++	 *	 == NUMA_PERIOD_THRESHOLD scan period stays the same
++	 *       <  NUMA_PERIOD_THRESHOLD scan period decreases (scan faster)
++	 *	 >= NUMA_PERIOD_THRESHOLD scan period increases (scan slower)
++	 */
++	period_slot = DIV_ROUND_UP(p->numa_scan_period, NUMA_PERIOD_SLOTS);
++	ratio = (local * NUMA_PERIOD_SLOTS) / (local + remote);
++	if (ratio >= NUMA_PERIOD_THRESHOLD) {
++		int slot = ratio - NUMA_PERIOD_THRESHOLD;
++		if (!slot)
++			slot = 1;
++		diff = slot * period_slot;
++	} else {
++		diff = -(NUMA_PERIOD_THRESHOLD - ratio) * period_slot;
++
++		/*
++		 * Scale scan rate increases based on sharing. There is an
++		 * inverse relationship between the degree of sharing and
++		 * the adjustment made to the scanning period. Broadly
++		 * speaking the intent is that there is little point
++		 * scanning faster if shared accesses dominate as it may
++		 * simply bounce migrations uselessly
++		 */
++		period_slot = DIV_ROUND_UP(diff, NUMA_PERIOD_SLOTS);
++		ratio = DIV_ROUND_UP(private * NUMA_PERIOD_SLOTS, (private + shared));
++		diff = (diff * ratio) / NUMA_PERIOD_SLOTS;
++	}
++
++	p->numa_scan_period = clamp(p->numa_scan_period + diff,
++			task_scan_min(p), task_scan_max(p));
++	memset(p->numa_faults_locality, 0, sizeof(p->numa_faults_locality));
++}
++
+ static void task_numa_placement(struct task_struct *p)
+ {
+ 	int seq, nid, max_nid = -1, max_group_nid = -1;
+ 	unsigned long max_faults = 0, max_group_faults = 0;
++	unsigned long fault_types[2] = { 0, 0 };
+ 	spinlock_t *group_lock = NULL;
  
-@@ -1545,7 +1549,7 @@ void task_numa_fault(int last_cpupid, int node, int pages, int flags)
- 	} else {
- 		priv = cpupid_match_pid(p, last_cpupid);
- 		if (!priv && !(flags & TNF_NO_GROUP))
--			task_numa_group(p, last_cpupid, flags);
-+			task_numa_group(p, last_cpupid, flags, &priv);
+ 	seq = ACCESS_ONCE(p->mm->numa_scan_seq);
+@@ -1309,6 +1391,7 @@ static void task_numa_placement(struct task_struct *p)
+ 			/* Decay existing window, copy faults since last scan */
+ 			p->numa_faults[i] >>= 1;
+ 			p->numa_faults[i] += p->numa_faults_buffer[i];
++			fault_types[priv] += p->numa_faults_buffer[i];
+ 			p->numa_faults_buffer[i] = 0;
+ 
+ 			faults += p->numa_faults[i];
+@@ -1333,6 +1416,8 @@ static void task_numa_placement(struct task_struct *p)
+ 		}
+ 	}
+ 
++	update_task_scan_period(p, fault_types[0], fault_types[1]);
++
+ 	if (p->numa_group) {
+ 		/*
+ 		 * If the preferred task and group nids are different,
+@@ -1538,6 +1623,7 @@ void task_numa_fault(int last_cpupid, int node, int pages, int flags)
+ 		BUG_ON(p->numa_faults_buffer);
+ 		p->numa_faults_buffer = p->numa_faults + (2 * nr_node_ids);
+ 		p->total_numa_faults = 0;
++		memset(p->numa_faults_locality, 0, sizeof(p->numa_faults_locality));
  	}
  
  	/*
+@@ -1552,19 +1638,6 @@ void task_numa_fault(int last_cpupid, int node, int pages, int flags)
+ 			task_numa_group(p, last_cpupid, flags, &priv);
+ 	}
+ 
+-	/*
+-	 * If pages are properly placed (did not migrate) then scan slower.
+-	 * This is reset periodically in case of phase changes
+-	 */
+-	if (!migrated) {
+-		/* Initialise if necessary */
+-		if (!p->numa_scan_period_max)
+-			p->numa_scan_period_max = task_scan_max(p);
+-
+-		p->numa_scan_period = min(p->numa_scan_period_max,
+-			p->numa_scan_period + 10);
+-	}
+-
+ 	task_numa_placement(p);
+ 
+ 	/* Retry task to preferred node migration if it previously failed */
+@@ -1575,6 +1648,7 @@ void task_numa_fault(int last_cpupid, int node, int pages, int flags)
+ 		p->numa_pages_migrated += pages;
+ 
+ 	p->numa_faults_buffer[task_faults_idx(node, priv)] += pages;
++	p->numa_faults_locality[!!(flags & TNF_FAULT_LOCAL)] += pages;
+ }
+ 
+ static void reset_ptenuma_scan(struct task_struct *p)
+@@ -1702,18 +1776,6 @@ void task_numa_work(struct callback_head *work)
+ 
+ out:
+ 	/*
+-	 * If the whole process was scanned without updates then no NUMA
+-	 * hinting faults are being recorded and scan rate should be lower.
+-	 */
+-	if (mm->numa_scan_offset == 0 && !nr_pte_updates) {
+-		p->numa_scan_period = min(p->numa_scan_period_max,
+-			p->numa_scan_period << 1);
+-
+-		next_scan = now + msecs_to_jiffies(p->numa_scan_period);
+-		mm->numa_next_scan = next_scan;
+-	}
+-
+-	/*
+ 	 * It is possible to reach the end of the VMA list but the last few
+ 	 * VMAs are not guaranteed to the vma_migratable. If they are not, we
+ 	 * would find the !migratable VMA on the next scan but not reset the
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 7ab4e32..1be2a1f 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1296,8 +1296,10 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	page_nid = page_to_nid(page);
+ 	last_cpupid = page_cpupid_last(page);
+ 	count_vm_numa_event(NUMA_HINT_FAULTS);
+-	if (page_nid == this_nid)
++	if (page_nid == this_nid) {
+ 		count_vm_numa_event(NUMA_HINT_FAULTS_LOCAL);
++		flags |= TNF_FAULT_LOCAL;
++	}
+ 
+ 	/*
+ 	 * Avoid grouping on DSO/COW pages in specific and RO pages
+diff --git a/mm/memory.c b/mm/memory.c
+index 823720c..1c7501f 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3527,13 +3527,16 @@ static int do_nonlinear_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ }
+ 
+ int numa_migrate_prep(struct page *page, struct vm_area_struct *vma,
+-				unsigned long addr, int page_nid)
++				unsigned long addr, int page_nid,
++				int *flags)
+ {
+ 	get_page(page);
+ 
+ 	count_vm_numa_event(NUMA_HINT_FAULTS);
+-	if (page_nid == numa_node_id())
++	if (page_nid == numa_node_id()) {
+ 		count_vm_numa_event(NUMA_HINT_FAULTS_LOCAL);
++		*flags |= TNF_FAULT_LOCAL;
++	}
+ 
+ 	return mpol_misplaced(page, vma, addr);
+ }
+@@ -3593,7 +3596,7 @@ int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 
+ 	last_cpupid = page_cpupid_last(page);
+ 	page_nid = page_to_nid(page);
+-	target_nid = numa_migrate_prep(page, vma, addr, page_nid);
++	target_nid = numa_migrate_prep(page, vma, addr, page_nid, &flags);
+ 	pte_unmap_unlock(ptep, ptl);
+ 	if (target_nid == -1) {
+ 		put_page(page);
