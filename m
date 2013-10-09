@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756986Ab3JIJYR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 05:24:17 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:38599 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752021Ab3JIJYP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 05:24:15 -0400
-Message-ID: <525520BA.3010304@free-electrons.com>
-Date: Wed, 09 Oct 2013 11:24:10 +0200
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+	id S1753823Ab3JIJsr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 05:48:47 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:54415 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752163Ab3JIJsq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 05:48:46 -0400
+Message-ID: <5255266B.6040809@ti.com>
+Date: Wed, 9 Oct 2013 15:18:27 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Jisheng Zhang <jszhang@marvell.com>
-CC: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 8/8] ARM: add initial support for Marvell Berlin SoCs
-References: <1381235073-17134-1-git-send-email-sebastian.hesselbarth@gmail.com> <1381235073-17134-9-git-send-email-sebastian.hesselbarth@gmail.com> <20131009112058.683739d0@xhacker>
-In-Reply-To: <20131009112058.683739d0@xhacker>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jingoo Han <jg1.han@samsung.com>
+CC: "'Bjorn Helgaas'" <bhelgaas@google.com>, <linux-pci@vger.kernel.org>,
+        <linux-samsung-soc@vger.kernel.org>,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Pratyush Anand'" <pratyush.anand@st.com>,
+        "'Mohit KUMAR'" <Mohit.KUMAR@st.com>,
+        "'Siva Reddy Kallam'" <siva.kallam@samsung.com>,
+        "'SRIKANTH TUMKUR SHIVANAND'" <ts.srikanth@samsung.com>,
+        "'Arnd Bergmann'" <arnd@arndb.de>, "'Sean Cross'" <xobs@kosagi.com>,
+        "'Thierry Reding'" <thierry.reding@gmail.com>,
+        "'Thomas Petazzoni'" <thomas.petazzoni@free-electrons.com>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>
+Subject: Re: [PATCH] PCI: designware: Add irq_create_mapping()
+References: <000401cec4c6$dc415180$94c3f480$%han@samsung.com> <52551C6E.1040404@ti.com> <003901cec4d0$5d83e650$188bb2f0$%han@samsung.com>
+In-Reply-To: <003901cec4d0$5d83e650$188bb2f0$%han@samsung.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Jisheng,
+On Wednesday 09 October 2013 02:47 PM, Jingoo Han wrote:
+> On Wednesday, October 09, 2013 6:06 PM, Kishon Vijay Abraham I wrote:
+>> On Wednesday 09 October 2013 01:39 PM, Jingoo Han wrote:
+>>> Without irq_create_mapping(), the correct irq number cannot be
+>>> provided. In this case, it makes problem such as NULL deference.
+>>> Thus, irq_create_mapping() should be added for MSI.
+>>>
+>>> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+>>> Cc: Kishon Vijay Abraham I <kishon@ti.com>
+>>> ---
+>>> Tested on Exynos5440.
+>>>
+>>>  drivers/pci/host/pcie-designware.c |   10 ++++------
+>>>  drivers/pci/host/pcie-designware.h |    1 +
+>>>  2 files changed, 5 insertions(+), 6 deletions(-)
+>>>
+>>> diff --git a/drivers/pci/host/pcie-designware.c b/drivers/pci/host/pcie-designware.c
+>>> index 8963017..e536bb6 100644
+>>> --- a/drivers/pci/host/pcie-designware.c
+>>> +++ b/drivers/pci/host/pcie-designware.c
+>>> @@ -237,6 +237,8 @@ static int assign_irq(int no_irqs, struct msi_desc *desc, int *pos)
+>>>  		}
+>>>  	}
+>>>
+>>> +	pp->msi_irq_start = irq_create_mapping(pp->irq_domain, 0);
+>>> +
+>>
+>> I think irq_create_mapping should be done for all the MSI irq lines instead of
+>> only the first line. So you might have to do for MAX_MSI_IRQS lines.
 
-[...]
+Maybe it should be only till MAX_MSI_IRQS-1?
 
->> +config MACH_MV88DE3100
-> Can you please use MACH_BERLIN2? This is what we used internally in latest BSP
->> +	bool "Marvell 88DE3100 (Armada 1500)"
->> +	select ARM_GIC
->> +	select CACHE_L2X0
-> The tauros3 and PL310 are different although the programming interface are
-> compatible. In PJ4B and Tauros3, the CP15 cache maintenance commands include
-> both L1 and L2, memory mapped PA-based maintenance operations in L2 are not needed.
-> How to handle this in cache-l2x0.c?
-
-In this case you can do the same things we have done for Aurora when we use
-the "aurora-system-cache" compatible string.
-
-[...]
-
-Regards,
-Gregory
-
--- 
-Gregory Clement, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+Thanks
+Kishon
