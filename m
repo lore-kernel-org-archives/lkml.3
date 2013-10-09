@@ -1,87 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755468Ab3JIAqJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 20:46:09 -0400
-Received: from mga02.intel.com ([134.134.136.20]:17979 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752747Ab3JIAqG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 20:46:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1059,1371106800"; 
-   d="scan'208";a="407977300"
-Date: Wed, 9 Oct 2013 08:46:02 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        xen-devel@lists.xenproject.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [xen] double fault: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-Message-ID: <20131009004602.GB2315@localhost>
-References: <20131007083505.GA22585@localhost>
- <CA+55aFzknXawREZRBrr0Hs+crKt62fPf+S8SubJHXk84U8AFaw@mail.gmail.com>
- <CA+55aFyrDme-oNKe9=9vppct5+qCo4=Ug35np1fZiC1da64i_Q@mail.gmail.com>
- <20131008020918.GA1220@localhost>
- <20131008021452.GA6456@localhost>
- <CA+55aFwrovZf-LYa=_SyMNvqQkTfxREm0YuzDk8wJy+Krs0xzw@mail.gmail.com>
- <20131008031152.GA8218@localhost>
- <20131008121742.GA29280@localhost>
- <20131008221417.GF25034@n2100.arm.linux.org.uk>
- <20131008224840.GA15303@kroah.com>
+	id S1755987Ab3JIAsJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 20:48:09 -0400
+Received: from mail-qe0-f49.google.com ([209.85.128.49]:57101 "EHLO
+	mail-qe0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755539Ab3JIAsH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 20:48:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131008224840.GA15303@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1380223380-22451-7-git-send-email-grundler@chromium.org>
+References: <1380223380-22451-1-git-send-email-grundler@chromium.org>
+	<1380223380-22451-7-git-send-email-grundler@chromium.org>
+Date: Tue, 8 Oct 2013 17:48:05 -0700
+X-Google-Sender-Auth: bYJU6RGSZbWdFFeDHaDrqRHHuhE
+Message-ID: <CANEJEGvcV6GnCUZUm7CfdNUoPXGbJBEff3tiu14PHsEtP1trGA@mail.gmail.com>
+Subject: Re: [PATCH 6/7] mmc: core: protect references to host->areq with host->lock
+From: Grant Grundler <grundler@chromium.org>
+To: Grant Grundler <grundler@chromium.org>
+Cc: Chris Ball <cjb@laptop.org>, Ulf Hansson <ulf.hansson@linaro.org>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 08, 2013 at 03:48:40PM -0700, Greg KH wrote:
-> On Tue, Oct 08, 2013 at 11:14:17PM +0100, Russell King - ARM Linux wrote:
-> > On Tue, Oct 08, 2013 at 08:17:42PM +0800, Fengguang Wu wrote:
-> > > I find the above debug messages very helpful in locating the buggy
-> > > driver. How about enabling it whenever CONFIG_DEBUG_KOBJECT_RELEASE is
-> > > enabled? Something like
-> > > 
-> > >  #ifdef CONFIG_DEBUG_KOBJECT_RELEASE
-> > > -       pr_debug("kobject: '%s' (%p): %s, parent %p (delayed)\n",
-> > > +       printk(KERN_INFO "kobject: '%s' (%p): %s, parent %p (delayed)\n",
-> > >                  kobject_name(kobj), kobj, __func__, kobj->parent);
-> > > 
-> > > pr_debug() won't be displayed by default, and it depends on
-> > > CONFIG_DYNAMIC_DEBUG.
-> > 
-> > Please consider using pr_info() instead of printk(KERN_INFO - it's
-> > slightly less typing.
+Ulf,
+While this patch might be correct, it's not solving the problem I
+claimed and my explanation was wrong. See comments in this code
+review:
+    https://chromium-review.googlesource.com/#/c/170880/1//COMMIT_MSG
 
-Good suggestion!
+While I no longer see the same crash with this change in our "ToT
+tree", I'm able to reproduce the original mmcqd crash on a different
+kernel variant (also based on chromeos-3.4 kernel).
 
-> > I can see that being a useful change while we have these problematical
-> > instances to track down, but I do wonder whether it'll make the thing
-> > too noisy.  Does anyone have other opinions on this point?  Linus?
-> > Greg?
-> 
-> It's going to make things really noisy at boot time, but then it should
-> settle down and not be bad at all.
+I think I need to review references to mqrq_prev and mqrq_cur since
+those appear to be protected by mq->thread_sem and I suspect
+references are happening from dw_mmc tasklet without holding this
+semaphore.
 
-FYI, in the randconfig kernel involved in this thread, it will emit
-about 20 lines of dmesg.
+apologies,
+grant
 
-> Let's try it and see if it helps or not.
 
-OK, I'll submit a patch. These messages would allow me to do a
-statistic analyze of similar bugs: since I'm testing 100+ new
-randconfigs every day, some of them will include the buggy drivers and
-some not, we can collect all these lines
-
-[    2.929669] kobject: 'drm' (ffff880006db2848): kobject_release, parent ffff880000189648 (delayed)
-...
-[    3.750200] kobject: 'mc13783-adc' (ffff880007707000): kobject_release, parent ffff880000189248 (delayed)
-
-, count how many times each one shows up in the GOOD kernel boots and
-how many show up in the BAD boots. Then we may be able to learn which
-drivers are likely buggy and should be manually checked.
-
-Thanks,
-Fengguang
+On Thu, Sep 26, 2013 at 12:22 PM, Grant Grundler <grundler@chromium.org> wrote:
+> Races between host->areq being NULL or not are resulting in mmcqd
+> hung_task panics. Like this one:
+>
+> <3>[  240.501202] INFO: task mmcqd/1:85 blocked for more than 120 seconds.
+> <3>[  240.501213] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> <6>[  240.501223] mmcqd/1         D 80528020     0    85      2 0x00000000
+> <5>[  240.501254] [<80528020>] (__schedule+0x614/0x780) from [<80528550>] (schedule+0x94/0x98)
+> <5>[  240.501269] [<80528550>] (schedule+0x94/0x98) from [<80526270>] (schedule_timeout+0x38/0x2d0)
+> <5>[  240.501284] [<80526270>] (schedule_timeout+0x38/0x2d0) from [<805283a4>] (wait_for_common+0x164/0x1a0)
+> <5>[  240.501298] [<805283a4>] (wait_for_common+0x164/0x1a0) from [<805284b8>] (wait_for_completion+0x20/0x24)
+> <5>[  240.501313] [<805284b8>] (wait_for_completion+0x20/0x24) from [<803d7068>] (mmc_wait_for_req_done+0x2c/0x84)
+> <5>[  240.501327] [<803d7068>] (mmc_wait_for_req_done+0x2c/0x84) from [<803d81c0>] (mmc_start_req+0x60/0x120)
+> <5>[  240.501342] [<803d81c0>] (mmc_start_req+0x60/0x120) from [<803e402c>] (mmc_blk_issue_rw_rq+0xa0/0x3a8)
+> <5>[  240.501355] [<803e402c>] (mmc_blk_issue_rw_rq+0xa0/0x3a8) from [<803e4758>] (mmc_blk_issue_rq+0x424/0x478)
+> <5>[  240.501368] [<803e4758>] (mmc_blk_issue_rq+0x424/0x478) from [<803e587c>] (mmc_queue_thread+0xb0/0x118)
+> <5>[  240.501382] [<803e587c>] (mmc_queue_thread+0xb0/0x118) from [<8004d61c>] (kthread+0xa8/0xbc)
+> <5>[  240.501396] [<8004d61c>] (kthread+0xa8/0xbc) from [<8000f1c8>] (kernel_thread_exit+0x0/0x8)
+> <0>[  240.501407] Kernel panic - not syncing: hung_task: blocked tasks
+> <5>[  240.501421] [<800150a4>] (unwind_backtrace+0x0/0x114) from [<80521920>] (dump_stack+0x20/0x24)
+> <5>[  240.501434] [<80521920>] (dump_stack+0x20/0x24) from [<80521a90>] (panic+0xa8/0x1f4)
+> <5>[  240.501447] [<80521a90>] (panic+0xa8/0x1f4) from [<80086d3c>] (watchdog+0x1f4/0x25c)
+> <5>[  240.501459] [<80086d3c>] (watchdog+0x1f4/0x25c) from [<8004d61c>] (kthread+0xa8/0xbc)
+> <5>[  240.501471] [<8004d61c>] (kthread+0xa8/0xbc) from [<8000f1c8>] (kernel_thread_exit+0x0/0x8)
+>
+> I was able to reproduce the mmcqd "hung task" timeout consistently
+> with this fio command line on an Exynos5250 system with Toshiba HS200
+> eMMC running in HS200 mode:
+>         fio --name=short_randwrite --size=2G --time_based --runtime=3m \
+>                 --readwrite=randwrite --numjobs=2 --bs=4k --norandommap \
+>                 --ioengine=psync --direct=0 --filename=/dev/mmcblk0p5
+>
+> I believe the key parameters are "--numjobs=2" (or more) and "randwrite"
+> workload.  Then the completions are happening around the same time as
+> mmc_start_req() is referencing and/or updating host->areq.
+>
+> I was NOT able to consistently reproduce the problem on a similar
+> Exynos 5250 system which had "engineering samples" of Samsung HS200
+> capable eMMC installed. Just my clue that the timing is different
+> (and the fio performance numbers are different too).
+>
+> Signed-off-by: Grant Grundler <grundler@chromium.org>
+> ---
+>  drivers/mmc/core/core.c | 34 +++++++++++++++++++++++-----------
+>  1 file changed, 23 insertions(+), 11 deletions(-)
+>
+> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+> index 36cfe91..e5a9599 100644
+> --- a/drivers/mmc/core/core.c
+> +++ b/drivers/mmc/core/core.c
+> @@ -529,29 +529,40 @@ struct mmc_async_req *mmc_start_req(struct mmc_host *host,
+>  {
+>         int saved_err = 0;
+>         int start_err = 0;
+> -       struct mmc_async_req *saved_areq = host->areq;
+> +       struct mmc_async_req *saved_areq;
+> +       unsigned long flags;
+>
+> -       if (!saved_areq && !areq)
+> -               /* Nothing to do...some code is polling. */
+> +       spin_lock_irqsave(&host->lock, flags);
+> +       saved_areq = host->areq;
+> +       if (!saved_areq && !areq) {
+> +               /* Nothing? Code is racing to harvest a completion. */
+> +               spin_unlock_irqrestore(&host->lock, flags);
+>                 goto set_error;
+> +       }
+>
+>         /* Prepare a new request */
+>         if (areq)
+>                 mmc_pre_req(host, areq->mrq, !saved_areq);
+>
+>         if (saved_areq) {
+> +               /* This thread owns this IO (saved_areq) for now. */
+> +               host->areq = NULL;
+> +               spin_unlock_irqrestore(&host->lock, flags);
+> +
+>                 saved_err = mmc_wait_for_data_req_done(host, saved_areq->mrq,   areq);
+>                 if (saved_err == MMC_BLK_NEW_REQUEST) {
+> -                       /*
+> -                        * The previous request was not completed,
+> -                        * nothing to return
+> -                        */
+> +                       spin_lock_irqsave(&host->lock, flags);
+> +                       BUG_ON(host->areq != NULL);
+> +
+> +                       /* Not completed. Don't report it. */
+> +                       host->areq = saved_areq;
+>                         saved_areq = NULL;
+> +                       saved_err = 0;
+> +                       spin_unlock_irqrestore(&host->lock, flags);
+>                         goto set_error;
+>                 }
+> -               /*
+> -                * Check BKOPS urgency for each R1 response
+> -                */
+> +
+> +               /* Check BKOPS urgency for each R1 response */
+>                 if (host->card && mmc_card_mmc(host->card) &&
+>                     ((mmc_resp_type(saved_areq->mrq->cmd) == MMC_RSP_R1) ||
+>                      (mmc_resp_type(saved_areq->mrq->cmd) == MMC_RSP_R1B)) &&
+> @@ -562,11 +573,12 @@ struct mmc_async_req *mmc_start_req(struct mmc_host *host,
+>         /* Don't start something new if previous one failed. */
+>         if (!saved_err && areq) {
+>                 start_err = __mmc_start_data_req(host, areq->mrq);
+> +
+>                 /* Cancel a prepared request if it was not started. */
+>                 if (start_err) {
+>                         mmc_post_req(host, areq->mrq, -EINVAL);
+>                         host->areq = NULL;
+> -               } else
+> +               } else
+>                         host->areq = areq;
+>         }
+>
+> --
+> 1.8.4
+>
