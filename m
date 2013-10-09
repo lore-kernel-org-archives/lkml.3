@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754799Ab3JIGat (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 02:30:49 -0400
+	id S1755627Ab3JIGa7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 02:30:59 -0400
 Received: from mailout4.samsung.com ([203.254.224.34]:37377 "EHLO
 	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752601Ab3JIGan (ORCPT
+	with ESMTP id S1754705Ab3JIGas (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 02:30:43 -0400
-X-AuditID: cbfee61a-b7f7a6d00000235f-3d-5254f7eddd31
+	Wed, 9 Oct 2013 02:30:48 -0400
+X-AuditID: cbfee61a-b7f7a6d00000235f-70-5254f802b5be
 From: Lukasz Majewski <l.majewski@samsung.com>
 To: Zhang Rui <rui.zhang@intel.com>,
         Eduardo Valentin <eduardo.valentin@ti.com>, kgene.kim@samsung.com
@@ -22,57 +22,61 @@ Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         Myungjoo Ham <myungjoo.ham@samsung.com>, devicetree@vger.kernel.org,
         Amit Daniel Kachhap <amit.daniel@samsung.com>,
         linux-samsung-soc@vger.kernel.org
-Subject: [PATCH v2 0/5] thermal: exynos: Fixes for v3.12
-Date: Wed, 09 Oct 2013 08:29:49 +0200
-Message-id: <1381300194-13134-1-git-send-email-l.majewski@samsung.com>
+Subject: [PATCH v2 4/5] ARM: dts: exynos4x12: Device tree node definition for
+ TMU on Exynos4x12
+Date: Wed, 09 Oct 2013 08:29:53 +0200
+Message-id: <1381300194-13134-5-git-send-email-l.majewski@samsung.com>
 X-Mailer: git-send-email 1.7.10
-In-reply-to: <1380010102-25817-1-git-send-email-l.majewski@samsung.com>
+In-reply-to: <1381300194-13134-1-git-send-email-l.majewski@samsung.com>
 References: <1380010102-25817-1-git-send-email-l.majewski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPLMWRmVeSWpSXmKPExsVy+t9jQd2330OCDC7/M7JouBpisXHGelaL
-	+UfOsVqs2f+TyaLz7BNmi94FV9ks3jzitnjzcDOjxeVdc9gsPvceYbSYcX4fk8XtxhVsFmdO
-	X2K1ePKwj81i/YzXLA78Hov3vGTyWDftLbPHlqvtLB59W1Yxehy/sZ3J4/MmuQC2KC6blNSc
-	zLLUIn27BK6M7697WApOclVc/j2HpYFxCUcXIyeHhICJxOnHq9ggbDGJC/fWA9lcHEIC0xkl
-	dj3uZQVJCAl0MUl0toM1sAnoSXy++5QJxBYRyJA4dWk2E0gDs8BfZonr046xgCSEBSwkpk16
-	ADaVRUBVYub0xcwgNq+Am8Tj/T/YIbbJSzy93wdWwyngLtH+dAojxDI3ibePtrJMYORdwMiw
-	ilE0tSC5oDgpPddQrzgxt7g0L10vOT93EyM4WJ9J7WBc2WBxiFGAg1GJh/cBf0iQEGtiWXFl
-	7iFGCQ5mJRHevIVAId6UxMqq1KL8+KLSnNTiQ4zSHCxK4rwHWq0DhQTSE0tSs1NTC1KLYLJM
-	HJxSDYwuP/sqT5rlmsaEFaREvz0V79B8TPm46eZ7fO0vH96aH1sutUjvctS2QE8DQ9snez5+
-	fZj2K+TQ5Tt7/4tYHFp2tPHDHJcVj8P0M7dH7N7/xf6i5/z2TTsrBSdk83fW/brfPGnPf8Yl
-	awwmWLS02Txp53hSanr0pjXD+9W+19YsnLXhvs6FjPn7lFiKMxINtZiLihMBnxv84lICAAA=
+ <1381300194-13134-1-git-send-email-l.majewski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrILMWRmVeSWpSXmKPExsVy+t9jQV2mHyFBBg9fCVo0XA2x2DhjPavF
+	/CPnWC3W7P/JZNF59gmzRe+Cq2wWbx5xW7x5uJnR4vKuOWwWn3uPMFrMOL+PyeJ24wo2izOn
+	L7FaPHnYx2axfsZrFgd+j8V7XjJ5rJv2ltljy9V2Fo++LasYPY7f2M7k8XmTXABbFJdNSmpO
+	Zllqkb5dAlfG/PmHmQues1U0rL7C2sB4krWLkZNDQsBE4tbD+1C2mMSFe+vZuhi5OIQEpjNK
+	nJq/DcrpYpKYsWsbE0gVm4CexOe7T8FsEYEMiVOXZjOBFDEL/GWWuD7tGAtIQlggUWLS6ufM
+	IDaLgKrEx94DjCA2r4CbxKnFVxkh1slLPL3fxwZicwq4Sxy8844dYlszo8Sji5tYJjDyLmBk
+	WMUomlqQXFCclJ5rqFecmFtcmpeul5yfu4kRHLDPpHYwrmywOMQowMGoxMP7gD8kSIg1say4
+	MvcQowQHs5IIb95CoBBvSmJlVWpRfnxRaU5q8SFGaQ4WJXHeA63WgUIC6YklqdmpqQWpRTBZ
+	Jg5OqQbG6MMa1tyMVzIMAm4wvT5/9Y3tGZ3tcWLMvV5Jhpofjbv15dQO6wtqeesfVYpIW/tB
+	4lvka92n9heORIudTtrJuuRr9FHBZacKv698mVY8KWwfh7Jb6A4VhTkpqmci19+PCOHPnlf2
+	sPcY87lQ1/TVe4on7v5w/9s7/povq76uC/f/tlRk35mpSizFGYmGWsxFxYkAGzDRXVQCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series is divided into two parts:
-1. Device tree node definition and enabelement for TMU at Exynos4412 (Trats2)
-2. Exynos thermal subsystem regressions for v3.12-rc4. Several commits were 
-   necessary to properly fix regression for TMU test MUX address setting after
-   reset.
+The TMU device tree node definition for Exynos4x12 family of SoCs.
 
-Test HW:
-- Exynos4412 - TRATS2 board (Linux v3.12-rc4)
-SHA1: 8b5ede69d24db939f52b47effff2f6fe1e83e08b
+Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
+Reviewed-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Reviewed-by: Tomasz Figa <t.figa@samsung.com>
 
+---
+Changes for v2:
+- None
 
-Lukasz Majewski (5):
-  thermal: exynos: Remove check for thermal device pointer at
-    exynos_report_trigger()
-  thermal: exynos: Provide separate TMU data for Exynos4412
-  thermal: exynos: Provide initial setting for TMU's test MUX address
-    at Exynos4412
-  ARM: dts: exynos4x12: Device tree node definition for TMU on
-    Exynos4x12
-  ARM: dts: exynos4412-trats2: Enable TMU support at Trats2
+ arch/arm/boot/dts/exynos4x12.dtsi |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
- arch/arm/boot/dts/exynos4412-trats2.dts         |    5 ++++
- arch/arm/boot/dts/exynos4x12.dtsi               |   10 ++++++++
- drivers/thermal/samsung/exynos_thermal_common.c |    2 --
- drivers/thermal/samsung/exynos_tmu.c            |   12 ++++++---
- drivers/thermal/samsung/exynos_tmu.h            |    7 +++++-
- drivers/thermal/samsung/exynos_tmu_data.c       |   30 ++++++++++++++++++-----
- drivers/thermal/samsung/exynos_tmu_data.h       |   13 +++++++++-
- 7 files changed, 65 insertions(+), 14 deletions(-)
-
+diff --git a/arch/arm/boot/dts/exynos4x12.dtsi b/arch/arm/boot/dts/exynos4x12.dtsi
+index ad531fe..64c0ece 100644
+--- a/arch/arm/boot/dts/exynos4x12.dtsi
++++ b/arch/arm/boot/dts/exynos4x12.dtsi
+@@ -176,4 +176,14 @@
+ 			};
+ 		};
+ 	};
++
++	tmu@100C0000 {
++		compatible = "samsung,exynos4412-tmu";
++		interrupt-parent = <&combiner>;
++		interrupts = <2 4>;
++		reg = <0x100C0000 0x100>;
++		clocks = <&clock 383>;
++		clock-names = "tmu_apbif";
++		status = "disabled";
++	};
+ };
 -- 
 1.7.10.4
 
