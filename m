@@ -1,129 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754010Ab3JIKEv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 06:04:51 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:54316 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753111Ab3JIKEt (ORCPT
+	id S1757029Ab3JIKF2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 06:05:28 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:36748 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752719Ab3JIKF1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 06:04:49 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
-Message-ID: <52552A2A.8030505@jp.fujitsu.com>
-Date: Wed, 09 Oct 2013 19:04:26 +0900
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Wed, 9 Oct 2013 06:05:27 -0400
 MIME-Version: 1.0
-To: Dave Anderson <anderson@redhat.com>
-CC: Kees Cook <keescook@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
-        x86@kernel.org, kernel-hardening@lists.openwall.com,
-        Aaron Durbin <adurbin@google.com>,
-        Eric Northup <digitaleric@google.com>, Julien Tinnes <jln@google.com>,
-        Will Drewry <wad@google.com>, Mathias Krause <minipli@googlemail.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Discussion list for crash utility usage, maintenance and development" 
-	<crash-utility@redhat.com>
-Subject: Re: [PATCH 6/7] x86, kaslr: report kernel offset on panic
-References: <1380656245-29975-1-git-send-email-keescook@chromium.org> <CAGXu5jLVt13p2X2e1C3ha1izg6U6wbmgSyYW1wa+X4cW8aCFug@mail.gmail.com> <524BE3C5.2070302@jp.fujitsu.com> <524CBB70.2060809@jp.fujitsu.com> <1408843968.872421.1380808038820.JavaMail.root@redhat.com> <52521566.20402@jp.fujitsu.com> <1678208981.2178058.1381152105871.JavaMail.root@redhat.com> <5253D5E4.7060004@jp.fujitsu.com> <391752872.2807845.1381239492989.JavaMail.root@redhat.com>
-In-Reply-To: <391752872.2807845.1381239492989.JavaMail.root@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20131002223437.GA15728@redhat.com>
+References: <CAAeHK+w+8=DGvFeuMAwS50RRvAGw1KkWHcivja5q-wmX8GtH2w@mail.gmail.com>
+	<CAAeHK+wy+vs2PniKh8DbWzZoS99g1eZ-U3mv+6SzoznC8WHW6A@mail.gmail.com>
+	<20131002185723.GA32614@redhat.com>
+	<1380745082.12351.6.camel@pippen.local.home>
+	<20131002223437.GA15728@redhat.com>
+Date: Wed, 9 Oct 2013 14:05:26 +0400
+Message-ID: <CAAeHK+wTs3THbh+EVoTm0wqQH8cg2VbT8aKYBX67A385+ohq0w@mail.gmail.com>
+Subject: Re: Fwd: Potential out-of-bounds in ftrace_regex_release
+From: Andrey Konovalov <andreyknvl@google.com>
+To: Dave Jones <davej@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Andrey Konovalov <andreyknvl@google.com>, linux-kernel@vger.kernel.org,
+        fweisbec@gmail.com, mingo@redhat.com,
+        Dmitry Vyukov <dvyukov@google.com>, Kostya Serebryany <kcc@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/10/08 22:38), Dave Anderson wrote:
->
->
-> ----- Original Message -----
->> (2013/10/07 22:21), Dave Anderson wrote:
->>
->>> ----- Original Message -----
->>>> (2013/10/03 22:47), Dave Anderson wrote:
->>
->>>>> ----- Original Message -----
->>>>>> (2013/10/02 18:13), HATAYAMA Daisuke wrote:
->>>>>>> (2013/10/02 16:48), Kees Cook wrote:
->>
->>>>
->>>> Thanks for detailed explanation. So, there's already a feature in crash
->>>> utility
->>>> to address relocation!, though it's better for me to try them to check if
->>>> it's
->>>> really applicable to this feature. My concern is whether --reloc works
->>>> well
->>>> on x86_64 too, because relocation has never done on x86_64 ever, right?
->>>
->>> Correct.
->>>
->>>> Another concern is that in case of relocation, users need to additional information
->>>> regarding runtime symbol information to crash utility. I want to avoid additional
->>>> process, automation is preferable if possible.
->>>
->>> Right.  As I mentioned in the case of 32-bit x86 dumpfiles, there is no automation
->>> available when CONFIG_PHYSICAL_START is larger than CONFIG_PHYSICAL_ALIGN.  The user
->>> either has to be aware of their values in order to calculate the --reloc argument,
->>> or has to capture a copy of the /proc/kallsyms file on the crashed system.  Typically
->>> users/distros using kdump changed their x86 configurations to avoid having to deal
->>> with that.
->>>
->>
->> Sorry, I don't understand why relocation size cannot be calculated when
->> CONFIG_PHYSICALSTART > CONFIG_PHYSICAL_ALIGN. Could you explain that?
->
-> I just meant that when CONFIG_PHYSICAL_START > CONFIG_PHYSICAL_ALIGN, the 32-bit x86 kernel
-> gets relocated (like the secondary kdump kernel), but that information is not readily available
-> from the vmlinux/vmcore pair.
->
+I got one more report of a similar bug:
 
-My understanding on CONFIG_PHYSICAL_ALIGN was that starting address of kernel text area
-is always rounded up to CONFIG_PHYSICAL_ALIGN, only. Your explanation would be part I don't
-understand well. I'll reconsider it locally...
+AddressSanitizer: heap-buffer-overflow on address ffff8800205f0e40
+Write of size 1 by thread T14005:
+ [<ffffffff811e2542>] ftrace_event_write+0xe2/0x130
+./kernel/trace/trace_events.c:583
+ [<ffffffff8128c497>] vfs_write+0x127/0x2f0 ??:0
+ [<ffffffff8128d572>] SyS_write+0x72/0xd0 ??:0
+ [<ffffffff818423d2>] system_call_fastpath+0x16/0x1b
+./arch/x86/kernel/entry_64.S:629
 
->>
->>>> I guess it's enough if there's runtime symbol addresses because we can get relocated
->>>> offset value by comparing it with the compile-time symbol address contained in
->>>> a given debuginfo file. Candidates for such symbols are the ones contained in
->>>> VMCOREINFO note containing some symbol values for makedumpfile to refer to mm-related
->>>> objects in kernel, which is always contained in vmcore generated by current kdump and
->>>> also vmcores converted by makedumpfile from it. How about this idea?
->>>
->>> But how would that differ from using an incorrect (non-matching) vmlinux file?
->>>
->>
->> It seems to me almost similar to what crash currently does even if we do relocation check.
->> The current check crash currently does is trial-and-error since there's no information
->> indicating given vmcore and vmlinuxcertainly match well.
->>
->> For example, the process I imagine is:
->>
->>     1) try to match vmcore and vmlinux with no relocation. If fails, go to 2).
->>     2) try to match vmcore and vmlinux with relocation.
->>
->> The two steps include symbol table initialization so it might actually be difficult to
->> resume back from 2) to 1).
->>
->> Also, if gap due to phys_base and gap due to relocation can happen at the same time,
->> calculating two values automatically might be futher complicated. So, it would be better
->> to add relocation value in VMCOREINFO. Then, what crash utility sholud do becomes very simple.
->
-> Yes please...
->
-> And while you're at it, the kernel's
->
->    VMCOREINFO_SYMBOL(phys_base);
->
-> is pretty much useless, at least w/respect to ELF vmcores, since we need to know its
-> value in order to translate the address.  And I don't think that makedumpfile uses
-> it when it calculates the phys_base that it stores in compressed kdump headers.  Why
-> not put its value instead of its address?
->
+Allocated by thread T14005:
+ [<     inlined    >] trace_parser_get_init+0x28/0x70 kmalloc
+./include/linux/slab.h:413
+ [<ffffffff811cc258>] trace_parser_get_init+0x28/0x70 ./kernel/trace/trace.c:759
+ [<ffffffff811e24d2>] ftrace_event_write+0x72/0x130
+./kernel/trace/trace_events.c:572
+ [<ffffffff8128c497>] vfs_write+0x127/0x2f0 ??:0
+ [<ffffffff8128d572>] SyS_write+0x72/0xd0 ??:0
+ [<ffffffff818423d2>] system_call_fastpath+0x16/0x1b
+./arch/x86/kernel/entry_64.S:629
 
-Yes, I've also noticed this fact. Anyway, I'll post a patch to improvement this phys_base
-and a patch to export relocation information in VMCOREINFO.
+The buggy address ffff8800205f0e40 is located 0 bytes to the right
+ of 128-byte region [ffff8800205f0dc0, ffff8800205f0e40)
 
--- 
-Thanks.
-HATAYAMA, Daisuke
+Memory state around the buggy address:
+ ffff8800205f0900: rrrrrrrr rrrrrrrr rrrrrrrr rrrrrrrr
+ ffff8800205f0a00: rrrrrrrr ........ ........ rrrrrrrr
+ ffff8800205f0b00: rrrrrrrr rrrrrrrr rrrrrrrr rrrrrrrr
+ ffff8800205f0c00: ........ .......5 rrrrrrrr rrrrrrrr
+ ffff8800205f0d00: rrrrrrrr rrrrrrrr rrrrrrrr ........
+>ffff8800205f0e00: ........ rrrrrrrr rrrrrrrr rrrrrrrr
+                            ^
+ ffff8800205f0f00: rrrrrrrr rrrrrrrr rrrrrrrr rrrrrrrr
+ ffff8800205f1000: ........ ........ ........ ........
+ ffff8800205f1100: ........ ........ ........ ........
+ ffff8800205f1200: ........ ........ ........ ........
+ ffff8800205f1300: ........ ........ ........ ........
+Legend:
+ f - 8 freed bytes
+ r - 8 redzone bytes
+ . - 8 allocated bytes
+ x=1..7 - x allocated bytes + (8-x) redzone bytes
 
+This time it was caused by 'parser.buffer[parser.idx] = 0;' in
+'ftrace_event_write()', which calls 'trace_get_user()' right before
+the bad assignment.
+
+So I still think that the bug is in 'trage_get_user()':
+Checking that 'parser->idx < parser->size - 1' is not performed in 'if
+(isspace(ch))' section, so 'parser->idx' becomes equal to
+'parser->size' after 'parser->buffer[parser->idx++] = ch;'.
+(However in 'while (cnt && !isspace(ch))' loop checking is performed.)
