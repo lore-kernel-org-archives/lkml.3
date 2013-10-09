@@ -1,117 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756845Ab3JIB5q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 21:57:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29453 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756658Ab3JIB5l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 21:57:41 -0400
-Date: Tue, 8 Oct 2013 22:56:27 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
-Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>, gleb@redhat.com,
-        avi.kivity@gmail.com, pbonzini@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v2 12/15] KVM: MMU: allow locklessly access shadow page
- table out of vcpu thread
-Message-ID: <20131009015627.GA4816@amt.cnet>
-References: <1378376958-27252-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <1378376958-27252-13-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <20131008012355.GA3588@amt.cnet>
- <CAD6C3B4-DD55-47EB-9BC0-17867937AE2D@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAD6C3B4-DD55-47EB-9BC0-17867937AE2D@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756060Ab3JICBE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 22:01:04 -0400
+Received: from smtprelay0013.hostedemail.com ([216.40.44.13]:36052 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753958Ab3JICBC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 22:01:02 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 10,1,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::,RULES_HIT:41:69:196:355:379:541:599:967:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1622:1711:1730:1747:1777:1792:1963:2393:2525:2553:2561:2564:2682:2685:2693:2828:2859:2894:2895:2901:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3355:3622:3657:3865:3866:3867:3868:3871:3872:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956
+X-HE-Tag: rod59_870227d9755b
+X-Filterd-Recvd-Size: 4086
+Message-ID: <1381284056.23937.49.camel@joe-AO722>
+Subject: Re: [PATCH v2] vsprintf: Check real user/group id for %pK
+From: Joe Perches <joe@perches.com>
+To: Ryan Mallon <rmallon@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, eldad@fogrefinery.com,
+        Jiri Kosina <jkosina@suse.cz>, jgunthorpe@obsidianresearch.com,
+        Dan Rosenberg <dan.j.rosenberg@gmail.com>,
+        Kees Cook <keescook@chromium.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        George Spelvin <linux@horizon.com>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 08 Oct 2013 19:00:56 -0700
+In-Reply-To: <5254B787.6080700@gmail.com>
+References: <5254A034.5020700@gmail.com>
+	 <1381279758.23937.42.camel@joe-AO722> <1381282200.23937.45.camel@joe-AO722>
+	 <5254B787.6080700@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 08, 2013 at 12:02:32PM +0800, Xiao Guangrong wrote:
-> 
-> Hi Marcelo,
-> 
-> On Oct 8, 2013, at 9:23 AM, Marcelo Tosatti <mtosatti@redhat.com> wrote:
-> 
-> >> 
-> >> +	if (kvm->arch.rcu_free_shadow_page) {
-> >> +		kvm_mmu_isolate_pages(invalid_list);
-> >> +		sp = list_first_entry(invalid_list, struct kvm_mmu_page, link);
-> >> +		list_del_init(invalid_list);
-> >> +		call_rcu(&sp->rcu, free_pages_rcu);
-> >> +		return;
-> >> +	}
+On Wed, 2013-10-09 at 12:55 +1100, Ryan Mallon wrote:
+> On 09/10/13 12:30, Joe Perches wrote:
+> > On Tue, 2013-10-08 at 17:49 -0700, Joe Perches wrote:
+> >> On Wed, 2013-10-09 at 11:15 +1100, Ryan Mallon wrote:
+> >>> Some setuid binaries will allow reading of files which have read
+> >>> permission by the real user id. This is problematic with files which
+> >>> use %pK because the file access permission is checked at open() time,
+> >>> but the kptr_restrict setting is checked at read() time. If a setuid
+> >>> binary opens a %pK file as an unprivileged user, and then elevates
+> >>> permissions before reading the file, then kernel pointer values may be
+> >>> leaked.
+> >>
+> >> I think it should explicitly test 0.
 > > 
-> > This is unbounded (there was a similar problem with early fast page fault
-> > implementations):
+> > Also, Documentation/sysctl/kernel.txt should be updated too.
 > > 
-> > From RCU/checklist.txt:
+> > Here's a suggested patch:
 > > 
-> > "        An especially important property of the synchronize_rcu()
-> >        primitive is that it automatically self-limits: if grace periods
-> >        are delayed for whatever reason, then the synchronize_rcu()
-> >        primitive will correspondingly delay updates.  In contrast,
-> >        code using call_rcu() should explicitly limit update rate in
-> >        cases where grace periods are delayed, as failing to do so can
-> >        result in excessive realtime latencies or even OOM conditions.
-> > "
-> 
-> I understand what you are worrying about… Hmm, can it be avoided by
-> just using kvm->arch.rcu_free_shadow_page in a small window? - Then
-> there are slight chance that the page need to be freed by call_rcu.
-
-The point that must be addressed is that you cannot allow an unlimited
-number of sp's to be freed via call_rcu between two grace periods.
-
-So something like:
-
-- For every 17MB worth of shadow pages.
-- Guarantee a grace period has passed.
-
-If you control kvm->arch.rcu_free_shadow_page, you could periodically
-verify how many MBs worth of shadow pages are in the queue for RCU
-freeing and force grace period after a certain number.
-
-> > Moreover, freeing pages differently depending on some state should 
-> > be avoided.
+> > ---
+> >  Documentation/sysctl/kernel.txt | 14 ++++++++------
+> >  lib/vsprintf.c                  | 38 ++++++++++++++++++++++++++------------
+> >  2 files changed, 34 insertions(+), 18 deletions(-)
 > > 
-> > Alternatives:
-> > 
-> > - Disable interrupts at write protect sites.
+> > diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
+> > index 9d4c1d1..eac53d5 100644
+> > --- a/Documentation/sysctl/kernel.txt
+> > +++ b/Documentation/sysctl/kernel.txt
+> > @@ -290,13 +290,15 @@ Default value is "/sbin/hotplug".
+> >  kptr_restrict:
+> >  
+> >  This toggle indicates whether restrictions are placed on
+> > -exposing kernel addresses via /proc and other interfaces.  When
+> > -kptr_restrict is set to (0), there are no restrictions.  When
+> > -kptr_restrict is set to (1), the default, kernel pointers
+> > +exposing kernel addresses via /proc and other interfaces.
+> > +
+> > +When kptr_restrict is set to (0), there are no restrictions.
+> > +When kptr_restrict is set to (1), the default, kernel pointers
+> >  printed using the %pK format specifier will be replaced with 0's
+> > -unless the user has CAP_SYSLOG.  When kptr_restrict is set to
+> > -(2), kernel pointers printed using %pK will be replaced with 0's
+> > -regardless of privileges.
+> > +unless the user has CAP_SYSLOG and effective user and group ids
+> > +are equal to the real ids.
+> > +When kptr_restrict is set to (2), kernel pointers printed using
+> > +%pK will be replaced with 0's regardless of privileges.
 > 
-> The write-protection can be triggered by KVM ioctl that is not in the VCPU
-> context, if we do this, we also need to send IPI to the KVM thread when do
-> TLB flush.
-
-Yes. However for the case being measured, simultaneous page freeing by vcpus 
-should be minimal (therefore not affecting the latency of GET_DIRTY_LOG).
-
-> And we can not do much work while interrupt is disabled due to
-> interrupt latency.
+> I'll add this, thanks.
 > 
-> > - Rate limit the number of pages freed via call_rcu
-> > per grace period.
-> 
-> Seems complex. :(
-> 
-> > - Some better alternative.
-> 
-> Gleb has a idea that uses RCU_DESTORY to protect the shadow page table
-> and encodes the page-level into the spte (since we need to check if the spte
-> is the last-spte. ).  How about this?
+> I'm less fussed about the suggestions for the logic. The current test is
+> small and concise.
 
-Pointer please? Why is DESTROY_SLAB_RCU any safer than call_rcu with
-regards to limitation? (maybe it is).
+The logic ends up the same to the compiler, but it's
+human readers that want simple and clear.
 
-> I planned to do it after this patchset merged, if you like it and if you think
-> that "using kvm->arch.rcu_free_shadow_page in a small window" can not avoid
-> the issue, i am happy to do it in the next version. :)
+> The original also does the in_irq tests regardless of
+> the kptr_restrict setting since they are mostly intended to catch
+> internal kernel bugs.
 
-Unfortunately the window can be large (as it depends on the size of the
-memslot), so it would be best if this problem can be addressed before 
-merging. What is your idea for reducing rcu_free_shadow_page=1 window?
+Not so.
 
-Thank you for the good work.
+http://marc.info/?l=linux-security-module&m=129303800912245&w=4
+https://lkml.org/lkml/2012/7/13/428
+
 
