@@ -1,143 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932128Ab3JIVGb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 17:06:31 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:50375 "EHLO SMTP.CITRIX.COM"
+	id S932148Ab3JIVG5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 17:06:57 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:4418 "EHLO SMTP02.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932072Ab3JIVG2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 17:06:28 -0400
+	id S1756147Ab3JIVGD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 17:06:03 -0400
 X-IronPort-AV: E=Sophos;i="4.90,1066,1371081600"; 
-   d="scan'208";a="62117115"
+   d="scan'208";a="59435259"
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 To: <xen-devel@lists.xensource.com>
 CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <konrad.wilk@oracle.com>, <Stefano.Stabellini@eu.citrix.com>,
         <Ian.Campbell@citrix.com>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v8 13/17] swiotlb-xen: use xen_dma_map/unmap_page, xen_dma_sync_single_for_cpu/device
-Date: Wed, 9 Oct 2013 21:48:26 +0100
-Message-ID: <1381351710-1876-13-git-send-email-stefano.stabellini@eu.citrix.com>
+Subject: [PATCH v8 16/17] arm,arm64: do not always merge biovec if we are running on Xen
+Date: Wed, 9 Oct 2013 21:48:29 +0100
+Message-ID: <1381351710-1876-16-git-send-email-stefano.stabellini@eu.citrix.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <alpine.DEB.2.02.1310092109190.26077@kaball.uk.xensource.com>
 References: <alpine.DEB.2.02.1310092109190.26077@kaball.uk.xensource.com>
 MIME-Version: 1.0
 Content-Type: text/plain
-X-DLP: MIA2
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Call xen_dma_map_page, xen_dma_unmap_page, xen_dma_sync_single_for_cpu,
-xen_dma_sync_single_for_device from swiotlb-xen to ensure cpu/device
-coherency of the pages used for DMA, including the ones belonging to the
-swiotlb buffer.
+This is similar to what it is done on X86: biovecs are prevented from merging
+otherwise every dma requests would be forced to bounce on the swiotlb buffer.
 
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
----
- drivers/xen/swiotlb-xen.c |   39 +++++++++++++++++++++++++++++++--------
- 1 files changed, 31 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-index 189b8db..4221cb5 100644
---- a/drivers/xen/swiotlb-xen.c
-+++ b/drivers/xen/swiotlb-xen.c
-@@ -378,8 +378,13 @@ dma_addr_t xen_swiotlb_map_page(struct device *dev, struct page *page,
- 	 * buffering it.
- 	 */
- 	if (dma_capable(dev, dev_addr, size) &&
--	    !range_straddles_page_boundary(phys, size) && !swiotlb_force)
-+	    !range_straddles_page_boundary(phys, size) && !swiotlb_force) {
-+		/* we are not interested in the dma_addr returned by
-+		 * xen_dma_map_page, only in the potential cache flushes executed
-+		 * by the function. */
-+		xen_dma_map_page(dev, page, offset, size, dir, attrs);
- 		return dev_addr;
-+	}
+
+Changes in v7:
+- remove the extra autotranslate check in biomerge.c.
+---
+ arch/arm/include/asm/io.h   |    8 ++++++++
+ arch/arm64/include/asm/io.h |    9 +++++++++
+ 2 files changed, 17 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/include/asm/io.h b/arch/arm/include/asm/io.h
+index d070741..c45effc 100644
+--- a/arch/arm/include/asm/io.h
++++ b/arch/arm/include/asm/io.h
+@@ -24,9 +24,11 @@
+ #ifdef __KERNEL__
  
- 	/*
- 	 * Oh well, have to allocate and map a bounce buffer.
-@@ -388,6 +393,8 @@ dma_addr_t xen_swiotlb_map_page(struct device *dev, struct page *page,
- 	if (map == SWIOTLB_MAP_ERROR)
- 		return DMA_ERROR_CODE;
+ #include <linux/types.h>
++#include <linux/blk_types.h>
+ #include <asm/byteorder.h>
+ #include <asm/memory.h>
+ #include <asm-generic/pci_iomap.h>
++#include <xen/xen.h>
  
-+	xen_dma_map_page(dev, pfn_to_page(map >> PAGE_SHIFT),
-+					map & ~PAGE_MASK, size, dir, attrs);
- 	dev_addr = xen_phys_to_bus(map);
+ /*
+  * ISA I/O bus memory addresses are 1:1 with the physical address.
+@@ -372,6 +374,12 @@ extern void pci_iounmap(struct pci_dev *dev, void __iomem *addr);
+ #define BIOVEC_MERGEABLE(vec1, vec2)	\
+ 	((bvec_to_phys((vec1)) + (vec1)->bv_len) == bvec_to_phys((vec2)))
  
- 	/*
-@@ -410,12 +417,15 @@ EXPORT_SYMBOL_GPL(xen_swiotlb_map_page);
-  * whatever the device wrote there.
++extern bool xen_biovec_phys_mergeable(const struct bio_vec *vec1,
++				      const struct bio_vec *vec2);
++#define BIOVEC_PHYS_MERGEABLE(vec1, vec2)				\
++	(__BIOVEC_PHYS_MERGEABLE(vec1, vec2) &&				\
++	 (!xen_domain() || xen_biovec_phys_mergeable(vec1, vec2)))
++
+ #ifdef CONFIG_MMU
+ #define ARCH_HAS_VALID_PHYS_ADDR_RANGE
+ extern int valid_phys_addr_range(phys_addr_t addr, size_t size);
+diff --git a/arch/arm64/include/asm/io.h b/arch/arm64/include/asm/io.h
+index 1d12f89..c163287b 100644
+--- a/arch/arm64/include/asm/io.h
++++ b/arch/arm64/include/asm/io.h
+@@ -22,11 +22,14 @@
+ #ifdef __KERNEL__
+ 
+ #include <linux/types.h>
++#include <linux/blk_types.h>
+ 
+ #include <asm/byteorder.h>
+ #include <asm/barrier.h>
+ #include <asm/pgtable.h>
+ 
++#include <xen/xen.h>
++
+ /*
+  * Generic IO read/write.  These perform native-endian accesses.
   */
- static void xen_unmap_single(struct device *hwdev, dma_addr_t dev_addr,
--			     size_t size, enum dma_data_direction dir)
-+			     size_t size, enum dma_data_direction dir,
-+				 struct dma_attrs *attrs)
- {
- 	phys_addr_t paddr = xen_bus_to_phys(dev_addr);
+@@ -263,5 +266,11 @@ extern int devmem_is_allowed(unsigned long pfn);
+  */
+ #define xlate_dev_kmem_ptr(p)	p
  
- 	BUG_ON(dir == DMA_NONE);
- 
-+	xen_dma_unmap_page(hwdev, paddr, size, dir, attrs);
++extern bool xen_biovec_phys_mergeable(const struct bio_vec *vec1,
++				      const struct bio_vec *vec2);
++#define BIOVEC_PHYS_MERGEABLE(vec1, vec2)				\
++	(__BIOVEC_PHYS_MERGEABLE(vec1, vec2) &&				\
++	 (!xen_domain() || xen_biovec_phys_mergeable(vec1, vec2)))
 +
- 	/* NOTE: We use dev_addr here, not paddr! */
- 	if (is_xen_swiotlb_buffer(dev_addr)) {
- 		swiotlb_tbl_unmap_single(hwdev, paddr, size, dir);
-@@ -438,7 +448,7 @@ void xen_swiotlb_unmap_page(struct device *hwdev, dma_addr_t dev_addr,
- 			    size_t size, enum dma_data_direction dir,
- 			    struct dma_attrs *attrs)
- {
--	xen_unmap_single(hwdev, dev_addr, size, dir);
-+	xen_unmap_single(hwdev, dev_addr, size, dir, attrs);
- }
- EXPORT_SYMBOL_GPL(xen_swiotlb_unmap_page);
- 
-@@ -461,11 +471,15 @@ xen_swiotlb_sync_single(struct device *hwdev, dma_addr_t dev_addr,
- 
- 	BUG_ON(dir == DMA_NONE);
- 
-+	if (target == SYNC_FOR_CPU)
-+		xen_dma_sync_single_for_cpu(hwdev, paddr, size, dir);
-+
- 	/* NOTE: We use dev_addr here, not paddr! */
--	if (is_xen_swiotlb_buffer(dev_addr)) {
-+	if (is_xen_swiotlb_buffer(dev_addr))
- 		swiotlb_tbl_sync_single(hwdev, paddr, size, dir, target);
--		return;
--	}
-+
-+	if (target == SYNC_FOR_DEVICE)
-+		xen_dma_sync_single_for_cpu(hwdev, paddr, size, dir);
- 
- 	if (dir != DMA_FROM_DEVICE)
- 		return;
-@@ -536,8 +550,17 @@ xen_swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
- 				return DMA_ERROR_CODE;
- 			}
- 			sg->dma_address = xen_phys_to_bus(map);
--		} else
-+		} else {
-+			/* we are not interested in the dma_addr returned by
-+			 * xen_dma_map_page, only in the potential cache flushes executed
-+			 * by the function. */
-+			xen_dma_map_page(hwdev, pfn_to_page(paddr >> PAGE_SHIFT),
-+						paddr & ~PAGE_MASK,
-+						sg->length,
-+						dir,
-+						attrs);
- 			sg->dma_address = dev_addr;
-+		}
- 		sg_dma_len(sg) = sg->length;
- 	}
- 	return nelems;
-@@ -559,7 +582,7 @@ xen_swiotlb_unmap_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
- 	BUG_ON(dir == DMA_NONE);
- 
- 	for_each_sg(sgl, sg, nelems, i)
--		xen_unmap_single(hwdev, sg->dma_address, sg_dma_len(sg), dir);
-+		xen_unmap_single(hwdev, sg->dma_address, sg_dma_len(sg), dir, attrs);
- 
- }
- EXPORT_SYMBOL_GPL(xen_swiotlb_unmap_sg_attrs);
+ #endif	/* __KERNEL__ */
+ #endif	/* __ASM_IO_H */
 -- 
 1.7.2.5
 
