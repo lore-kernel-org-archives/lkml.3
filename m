@@ -1,52 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757399Ab3JIMGT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 08:06:19 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:20454 "EHLO
+	id S1757419Ab3JIMGx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 08:06:53 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:20464 "EHLO
 	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756811Ab3JIMGO (ORCPT
+	with ESMTP id S1756834Ab3JIMGQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 08:06:14 -0400
-X-AuditID: cbfee68f-b7f1e6d000004e8d-8c-525546b50f82
+	Wed, 9 Oct 2013 08:06:16 -0400
+X-AuditID: cbfee691-b7f4a6d0000074fc-3d-525546b75bec
 From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
 To: linux-pm@vger.kernel.org
 Cc: naveenkrishna.ch@gmail.com, rui.zhang@intel.com, eduardo.valentin@ti.com,
         linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
         amit.daniel@samsung.com, kgene.kim@samsung.com,
         devicetree@vger.kernel.org, b.zolnierkie@samsung.com
-Subject: [PATCH 2/3 v4] thermal: samsung: change base_common to more meaningful
- base_second
-Date: Wed, 09 Oct 2013 17:38:28 +0530
-Message-id: <1381320509-23967-2-git-send-email-ch.naveen@samsung.com>
+Subject: [PATCH 3/3 v4] thermal: samsung: Add TMU support for Exynos5420 SoCs
+Date: Wed, 09 Oct 2013 17:38:29 +0530
+Message-id: <1381320509-23967-3-git-send-email-ch.naveen@samsung.com>
 X-Mailer: git-send-email 1.7.10.4
 In-reply-to: <1381320509-23967-1-git-send-email-ch.naveen@samsung.com>
 References: <1378268629-2886-3-git-send-email-ch.naveen@samsung.com>
  <1381320509-23967-1-git-send-email-ch.naveen@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmplkeLIzCtJLcpLzFFi42JZI2JSo7vVLTTI4MIaI4uGqyEWG2esZ7WY
-	f+Qcq8Wa/T+ZLHoXXGWzuLxrDpvF594jjBYzzu9jsli07T+zxZOHfWwOXB47Z91l91i85yWT
-	R9+WVYwex29sZ/L4vEkugDWKyyYlNSezLLVI3y6BK2PdjLtMBRt1KxoaprE3MK5S7WLk4JAQ
-	MJF4/Lq4i5ETyBSTuHBvPRuILSSwlFHi6wRxiLiJxPHJExi7GLmA4tMZJe482ccE4fQwSfx9
-	cIERpIpNwEzi4KLV7CC2iICMxNQr+1lBipgFfjJKdM5pBBsrLBAr8ez3MlYQm0VAVWLNgzvM
-	IDavgKvEpN52Zoh1ihLdzyaA1XMKuElcntULta2BUeLC4SYWEEdCYBu7xMa5PVCTBCS+TT7E
-	AvGPrMSmA1CDJCUOrrjBMoFReAEjwypG0dSC5ILipPQiY73ixNzi0rx0veT83E2MwCg4/e9Z
-	/w7GuwesDzEmA42byCwlmpwPjKK8knhDYzMjC1MTU2Mjc0sz0oSVxHnVWqwDhQTSE0tSs1NT
-	C1KL4otKc1KLDzEycXBKNTAGnptTH8dYHpV0/72Lnfk6jidXOI6F6k+zKytjTglbHB9eoHOQ
-	5WHStlO7mpQsj7446/Gjbv5xG95lM2Z57u57a7TcOU9jq879nR5rn3yOOPB76uulH5mYZFd+
-	rfuvcn2Z9YGP842/qt1gWP5r+/PpSRLc/gHHZE35f/D0Tpzpl7zm4mevi08ElViKMxINtZiL
-	ihMBVYjaAZgCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCIsWRmVeSWpSXmKPExsVy+t9jQd2tbqFBBg9WaFk0XA2x2DhjPavF
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpjkeLIzCtJLcpLzFFi42JZI2JSrbvdLTTIoO+djEXD1RCLjTPWs1rM
+	P3KO1WLN/p9MFr0LrrJZXN41h83ic+8RRosZ5/cxWSza9p/Z4snDPjYHLo+ds+6yeyze85LJ
+	o2/LKkaP4ze2M3l83iQXwBrFZZOSmpNZllqkb5fAldGx5y1LwamAigtXF7A3MC527mLk5JAQ
+	MJHY9XYRI4QtJnHh3nq2LkYuDiGBpYwSr1e/YYYpWjNxBytEYjqjxNtT38ASQgI9TBIT5iuD
+	2GwCZhIHF61mB7FFBGQkpl7ZD9bALPCTUaJzTiMbSEJYwFdi7+NXYEUsAqoSPS+Wgtm8Aq4S
+	m8/tYoHYpijR/WwCWD2ngJvE5Vm9TBCbGxglLhxuYgFxJAS2sUvcONHHBjFJQOLb5ENACQ6g
+	hKzEpgNQZ0tKHFxxg2UCo/ACRoZVjKKpBckFxUnpRaZ6xYm5xaV56XrJ+bmbGIFxcPrfs4k7
+	GO8fsD7EmAw0biKzlGhyPjCO8kriDY3NjCxMTUyNjcwtzUgTVhLnVW+xDhQSSE8sSc1OTS1I
+	LYovKs1JLT7EyMTBKdXA6CPQHRlj/EUloyzALkJnRhqb2RS5+3X5Agc/f3x2zkaoj/9r/zOZ
+	ue/PFMXP7FHdGHrPsn7Vzb2sh/zkYxeFHHF+kmh+SLTeTzu/48G6vEzeKwy7vitqC5UcMpdw
+	WcbQM9V0lquhx3GTixF6L9Ot70azHW0OetSVxcvw5n3Eo2ID/xneTWuVWIozEg21mIuKEwHy
+	pbiGmQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMIsWRmVeSWpSXmKPExsVy+t9jQd3tbqFBBmc2iVg0XA2x2DhjPavF
 	/CPnWC3W7P/JZNG74CqbxeVdc9gsPvceYbSYcX4fk8Wibf+ZLZ487GNz4PLYOesuu8fiPS+Z
 	PPq2rGL0OH5jO5PH501yAaxRDYw2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koK
 	eYm5qbZKLj4Bum6ZOUBXKSmUJeaUAoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJaxgz
-	1s24y1SwUbeioWEaewPjKtUuRk4OCQETieOTJzBC2GISF+6tZ+ti5OIQEpjOKHHnyT4mCKeH
-	SeLvgwtgVWwCZhIHF61mB7FFBGQkpl7ZzwpSxCzwk1Gic04jG0hCWCBW4tnvZawgNouAqsSa
-	B3eYQWxeAVeJSb3tzBDrFCW6n00Aq+cUcJO4PKsXalsDo8SFw00sExh5FzAyrGIUTS1ILihO
-	Ss811CtOzC0uzUvXS87P3cQIjrNnUjsYVzZYHGIU4GBU4uF9wB8SJMSaWFZcmXuIUYKDWUmE
-	19ciNEiINyWxsiq1KD++qDQntfgQYzLQWROZpUST84EpIK8k3tDYxNzU2NTSxMLEzJI0YSVx
-	3gOt1oFCAumJJanZqakFqUUwW5g4OKUaGOe27Tp8eaXJ3KsVedrrlj85pDdH4wXX/O7JaX9O
-	Jt/NiVPo2Sc8r+G4YM7etxt9H/ee2/orUmjeTYn11Y47VyT457ctjll942tk2J3AjWs+VV2Y
-	M+f8JMVMXttmvXurDfoFjr72P6sfe8NOwknjefzN/VaCDVfnF67Njwx9JxystDKS9/vc2XFK
-	LMUZiYZazEXFiQDmVGuG9wIAAA==
+	Ova8ZSk4FVBx4eoC9gbGxc5djJwcEgImEmsm7mCFsMUkLtxbz9bFyMUhJDCdUeLtqW/MIAkh
+	gR4miQnzlUFsNgEziYOLVrOD2CICMhJTr+xnBWlgFvjJKNE5p5ENJCEs4Cux9/ErsCIWAVWJ
+	nhdLwWxeAVeJzed2sUBsU5TofjYBrJ5TwE3i8qxeJojNDYwSFw43sUxg5F3AyLCKUTS1ILmg
+	OCk910ivODG3uDQvXS85P3cTIzjKnknvYFzVYHGIUYCDUYmH9wF/SJAQa2JZcWXuIUYJDmYl
+	EV5fi9AgId6UxMqq1KL8+KLSnNTiQ4zJQGdNZJYSTc4HJoC8knhDYxNzU2NTSxMLEzNL0oSV
+	xHkPtloHCgmkJ5akZqemFqQWwWxh4uCUamAsU7q8SlomRMCuv2JR0bT205s2OWx+uI19QkTQ
+	d5kivbfLWv76meV8WT2/Q/tNUetnj9XH4tYXTThicSTbv4l3YU0el0GviZuk+4OJH2pjTt9Y
+	JaNy+4Tt9LelTwqT5j9h3S9uuXrSuWSuaVzd23wfqQsGnvL4O1dOYsHWxE98b2tuF10vemag
+	xFKckWioxVxUnAgA2Xet4PYCAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -54,140 +53,275 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Exynos5440 and Exynos5420 there are registers common
-across the TMU channels.
+This patch adds the neccessary register changes and arch information
+to support Exynos5420 SoCs
+Exynos5420 has 5 TMU channels one for each CPU 0, 1, 2 and 3 and GPU
 
-To support that, we introduced a ADDRESS_MULTIPLE flag in the
-driver and the 2nd set of register base and size are provided
-in the "reg" property of the node.
+Also updated the Documentation at
+Documentation/devicetree/bindings/thermal/exynos-thermal.txt
 
-As per Amit's suggestion, this patch changes the base_common
-to base_second and SHARED_MEMORY to ADDRESS_MULTIPLE.
+Note: The platform data structure will be handled properly once the driver
+ moves to complete device driver solution.
 
 Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
----
-Changes since v1:
- None
-Changes since v2:
- Changed the flag name from SHARED_MEMORY to ADDRESS_MULTIPLE.
- https://lkml.org/lkml/2013/8/1/38
+-Changes since v1:
+1. modified the platform data structure in order to pass SHARED flag
+   for channels that need sharing of address space.
+2. https://lkml.org/lkml/2013/8/1/38 is merged into this patch.
+   As the changes are minimum and can be added here.
 Changes since v3:
- None
-
- .../devicetree/bindings/thermal/exynos-thermal.txt         |    4 ++--
- drivers/thermal/samsung/exynos_tmu.c                       |   12 ++++++------
- drivers/thermal/samsung/exynos_tmu.h                       |    4 ++--
- drivers/thermal/samsung/exynos_tmu_data.c                  |    2 +-
- 4 files changed, 11 insertions(+), 11 deletions(-)
+   a. Rearraged the code alphabetically, make exynso5420 come before exynso5440
+   b. Reduce code duplication in passing platform data by introducing a common macro
+      Bartlomiej Zolnierkiewicz Thanks for review and suggestions
+---
+ .../devicetree/bindings/thermal/exynos-thermal.txt |   39 ++++++++
+ drivers/thermal/samsung/exynos_tmu.c               |   12 ++-
+ drivers/thermal/samsung/exynos_tmu.h               |    1 +
+ drivers/thermal/samsung/exynos_tmu_data.c          |   99 ++++++++++++++++++++
+ drivers/thermal/samsung/exynos_tmu_data.h          |    7 ++
+ 5 files changed, 157 insertions(+), 1 deletion(-)
 
 diff --git a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
-index 284f530..116cca0 100644
+index 116cca0..c5f9a74 100644
 --- a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
 +++ b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
-@@ -11,8 +11,8 @@
+@@ -6,6 +6,7 @@
+ 	       "samsung,exynos4412-tmu"
+ 	       "samsung,exynos4210-tmu"
+ 	       "samsung,exynos5250-tmu"
++	       "samsung,exynos5420-tmu"
+ 	       "samsung,exynos5440-tmu"
+ - interrupt-parent : The phandle for the interrupt controller
  - reg : Address range of the thermal registers. For soc's which has multiple
- 	instances of TMU and some registers are shared across all TMU's like
+@@ -13,6 +14,16 @@
  	interrupt related then 2 set of register has to supplied. First set
--	belongs	to each instance of TMU and second set belongs to common TMU
--	registers.
-+	belongs	to each instance of TMU and second set belongs to second set
-+	of common TMU registers.
+ 	belongs	to each instance of TMU and second set belongs to second set
+ 	of common TMU registers.
++  NOTE: On Exynos5420, the TRIMINFO register is misplaced for TMU
++	channels 2, 3 and 4
++
++	TRIMINFO at 0x1006c000 contains data for TMU channel 3
++	TRIMINFO at 0x100a0000 contains data for TMU channel 4
++	TRIMINFO at 0x10068000 contains data for TMU channel 2
++
++	The misplaced register address is passed through devicetree as the
++	second base
++
  - interrupts : Should contain interrupt for thermal system
  - clocks : The main clock for TMU device
  - clock-names : Thermal system clock name
+@@ -43,6 +54,34 @@ Example 2):
+ 		clock-names = "tmu_apbif";
+ 	};
+ 
++Example 3): (In case of Exynos5420)
++	/* tmu for CPU2 */
++	tmu@10068000 {
++		compatible = "samsung,exynos5420-tmu";
++		reg = <0x10068000 0x100>, <0x1006c000 0x4>;
++		interrupts = <0 184 0>;
++		clocks = <&clock 318>;
++		clock-names = "tmu_apbif";
++	};
++
++	/* tmu for CPU3 */
++	tmu@1006c000 {
++		compatible = "samsung,exynos5420-tmu";
++		reg = <0x1006c000 0x100>, <0x100a0000 0x4>;
++		interrupts = <0 185 0>;
++		clocks = <&clock 318>;
++		clock-names = "tmu_apbif";
++	};
++
++	/* tmu for GPU */
++	tmu@100a0000 {
++		compatible = "samsung,exynos5420-tmu";
++		reg = <0x100a0000 0x100>, <0x10068000 0x4>;
++		interrupts = <0 215 0>;
++		clocks = <&clock 318>;
++		clock-names = "tmu_apbif";
++	};
++
+ Note: For multi-instance tmu each instance should have an alias correctly
+ numbered in "aliases" node.
+ 
 diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
-index af69209..40c4243 100644
+index 40c4243..852034f 100644
 --- a/drivers/thermal/samsung/exynos_tmu.c
 +++ b/drivers/thermal/samsung/exynos_tmu.c
-@@ -41,7 +41,7 @@
-  * @id: identifier of the one instance of the TMU controller.
-  * @pdata: pointer to the tmu platform/configuration data
-  * @base: base address of the single instance of the TMU controller.
-- * @base_common: base address of the common registers of the TMU controller.
-+ * @base_second: base address of the common registers of the TMU controller.
-  * @irq: irq number of the TMU controller.
-  * @soc: id of the SOC type.
-  * @irq_work: pointer to the irq work structure.
-@@ -56,7 +56,7 @@ struct exynos_tmu_data {
- 	int id;
- 	struct exynos_tmu_platform_data *pdata;
- 	void __iomem *base;
--	void __iomem *base_common;
-+	void __iomem *base_second;
- 	int irq;
- 	enum soc_type soc;
- 	struct work_struct irq_work;
-@@ -297,7 +297,7 @@ skip_calib_data:
+@@ -186,7 +186,12 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
+ 			EXYNOS5440_EFUSE_SWAP_OFFSET + reg->triminfo_data);
+ 		}
+ 	} else {
+-		trim_info = readl(data->base + reg->triminfo_data);
++		/* On exynos5420 the triminfo register is in the shared space */
++		if (data->base_second && (data->soc == SOC_ARCH_EXYNOS5420))
++			trim_info = readl(data->base_second +
++							reg->triminfo_data);
++		else
++			trim_info = readl(data->base + reg->triminfo_data);
  	}
- 	/*Clear the PMIN in the common TMU register*/
- 	if (reg->tmu_pmin && !data->id)
--		writel(0, data->base_common + reg->tmu_pmin);
-+		writel(0, data->base_second + reg->tmu_pmin);
- out:
- 	clk_disable(data->clk);
- 	mutex_unlock(&data->lock);
-@@ -451,7 +451,7 @@ static void exynos_tmu_work(struct work_struct *work)
+ 	data->temp_error1 = trim_info & EXYNOS_TMU_TEMP_MASK;
+ 	data->temp_error2 = ((trim_info >> reg->triminfo_85_shift) &
+@@ -495,6 +500,10 @@ static const struct of_device_id exynos_tmu_match[] = {
+ 		.data = (void *)EXYNOS5250_TMU_DRV_DATA,
+ 	},
+ 	{
++		.compatible = "samsung,exynos5420-tmu",
++		.data = (void *)EXYNOS5420_TMU_DRV_DATA,
++	},
++	{
+ 		.compatible = "samsung,exynos5440-tmu",
+ 		.data = (void *)EXYNOS5440_TMU_DRV_DATA,
+ 	},
+@@ -631,6 +640,7 @@ static int exynos_tmu_probe(struct platform_device *pdev)
  
- 	/* Find which sensor generated this interrupt */
- 	if (reg->tmu_irqstatus) {
--		val_type = readl(data->base_common + reg->tmu_irqstatus);
-+		val_type = readl(data->base_second + reg->tmu_irqstatus);
- 		if (!((val_type >> data->id) & 0x1))
- 			goto out;
- 	}
-@@ -576,7 +576,7 @@ static int exynos_map_dt_data(struct platform_device *pdev)
- 	 * Check if the TMU shares some registers and then try to map the
- 	 * memory of common registers.
- 	 */
--	if (!TMU_SUPPORTS(pdata, SHARED_MEMORY))
-+	if (!TMU_SUPPORTS(pdata, ADDRESS_MULTIPLE))
- 		return 0;
- 
- 	if (of_address_to_resource(pdev->dev.of_node, 1, &res)) {
-@@ -584,7 +584,7 @@ static int exynos_map_dt_data(struct platform_device *pdev)
- 		return -ENODEV;
- 	}
- 
--	data->base_common = devm_ioremap(&pdev->dev, res.start,
-+	data->base_second = devm_ioremap(&pdev->dev, res.start,
- 					resource_size(&res));
- 	if (!data->base_common) {
- 		dev_err(&pdev->dev, "Failed to ioremap memory\n");
+ 	if (pdata->type == SOC_ARCH_EXYNOS ||
+ 		pdata->type == SOC_ARCH_EXYNOS4210 ||
++				pdata->type == SOC_ARCH_EXYNOS5420 ||
+ 				pdata->type == SOC_ARCH_EXYNOS5440)
+ 		data->soc = pdata->type;
+ 	else {
 diff --git a/drivers/thermal/samsung/exynos_tmu.h b/drivers/thermal/samsung/exynos_tmu.h
-index 7c6c34a..ebd2ec1 100644
+index ebd2ec1..c2f362f 100644
 --- a/drivers/thermal/samsung/exynos_tmu.h
 +++ b/drivers/thermal/samsung/exynos_tmu.h
-@@ -59,7 +59,7 @@ enum soc_type {
-  *			state(active/idle) can be checked.
-  * TMU_SUPPORT_EMUL_TIME - This features allows to set next temp emulation
-  *			sample time.
-- * TMU_SUPPORT_SHARED_MEMORY - This feature tells that the different TMU
-+ * TMU_SUPPORT_ADDRESS_MULTIPLE - This feature tells that the different TMU
-  *			sensors shares some common registers.
-  * TMU_SUPPORT - macro to compare the above features with the supplied.
-  */
-@@ -69,7 +69,7 @@ enum soc_type {
- #define TMU_SUPPORT_FALLING_TRIP		BIT(3)
- #define TMU_SUPPORT_READY_STATUS		BIT(4)
- #define TMU_SUPPORT_EMUL_TIME			BIT(5)
--#define TMU_SUPPORT_SHARED_MEMORY		BIT(6)
-+#define TMU_SUPPORT_ADDRESS_MULTIPLE		BIT(6)
- 
- #define TMU_SUPPORTS(a, b)	(a->features & TMU_SUPPORT_ ## b)
+@@ -42,6 +42,7 @@ enum calibration_mode {
+ enum soc_type {
+ 	SOC_ARCH_EXYNOS4210 = 1,
+ 	SOC_ARCH_EXYNOS,
++	SOC_ARCH_EXYNOS5420,
+ 	SOC_ARCH_EXYNOS5440,
+ };
  
 diff --git a/drivers/thermal/samsung/exynos_tmu_data.c b/drivers/thermal/samsung/exynos_tmu_data.c
-index 23fea23..58570d0 100644
+index 58570d0..8610f12 100644
 --- a/drivers/thermal/samsung/exynos_tmu_data.c
 +++ b/drivers/thermal/samsung/exynos_tmu_data.c
-@@ -239,7 +239,7 @@ static const struct exynos_tmu_registers exynos5440_tmu_registers = {
- 	.type = SOC_ARCH_EXYNOS5440, \
- 	.registers = &exynos5440_tmu_registers, \
- 	.features = (TMU_SUPPORT_EMULATION | TMU_SUPPORT_FALLING_TRIP | \
--			TMU_SUPPORT_MULTI_INST | TMU_SUPPORT_SHARED_MEMORY),
-+			TMU_SUPPORT_MULTI_INST | TMU_SUPPORT_ADDRESS_MULTIPLE),
+@@ -177,6 +177,105 @@ struct exynos_tmu_init_data const exynos5250_default_tmu_data = {
+ };
+ #endif
  
- struct exynos_tmu_init_data const exynos5440_default_tmu_data = {
- 	.tmu_data = {
++#if defined(CONFIG_SOC_EXYNOS5420)
++static const struct exynos_tmu_registers exynos5420_tmu_registers = {
++	.triminfo_data = EXYNOS_TMU_REG_TRIMINFO,
++	.triminfo_25_shift = EXYNOS_TRIMINFO_25_SHIFT,
++	.triminfo_85_shift = EXYNOS_TRIMINFO_85_SHIFT,
++	.tmu_ctrl = EXYNOS_TMU_REG_CONTROL,
++	.buf_vref_sel_shift = EXYNOS_TMU_REF_VOLTAGE_SHIFT,
++	.buf_vref_sel_mask = EXYNOS_TMU_REF_VOLTAGE_MASK,
++	.therm_trip_mode_shift = EXYNOS_TMU_TRIP_MODE_SHIFT,
++	.therm_trip_mode_mask = EXYNOS_TMU_TRIP_MODE_MASK,
++	.therm_trip_en_shift = EXYNOS_TMU_THERM_TRIP_EN_SHIFT,
++	.buf_slope_sel_shift = EXYNOS_TMU_BUF_SLOPE_SEL_SHIFT,
++	.buf_slope_sel_mask = EXYNOS_TMU_BUF_SLOPE_SEL_MASK,
++	.core_en_shift = EXYNOS_TMU_CORE_EN_SHIFT,
++	.tmu_status = EXYNOS_TMU_REG_STATUS,
++	.tmu_cur_temp = EXYNOS_TMU_REG_CURRENT_TEMP,
++	.threshold_th0 = EXYNOS_THD_TEMP_RISE,
++	.threshold_th1 = EXYNOS_THD_TEMP_FALL,
++	.tmu_inten = EXYNOS_TMU_REG_INTEN,
++	.inten_rise_mask = EXYNOS_TMU_RISE_INT_MASK,
++	.inten_rise_shift = EXYNOS_TMU_RISE_INT_SHIFT,
++	.inten_fall_mask = EXYNOS_TMU_FALL_INT_MASK,
++	.inten_fall_shift = EXYNOS_TMU_FALL_INT_SHIFT,
++	.inten_rise0_shift = EXYNOS_TMU_INTEN_RISE0_SHIFT,
++	.inten_rise1_shift = EXYNOS_TMU_INTEN_RISE1_SHIFT,
++	.inten_rise2_shift = EXYNOS_TMU_INTEN_RISE2_SHIFT,
++	/* INTEN_RISE3 Not availble in exynos5420 */
++	.inten_rise3_shift = EXYNOS_TMU_INTEN_RISE3_SHIFT,
++	.inten_fall0_shift = EXYNOS_TMU_INTEN_FALL0_SHIFT,
++	.tmu_intstat = EXYNOS_TMU_REG_INTSTAT,
++	.tmu_intclear = EXYNOS_TMU_REG_INTCLEAR,
++	.intclr_fall_shift = EXYNOS_TMU_FALL_INT_SHIFT,
++	.emul_con = EXYNOS_EMUL_CON,
++	.emul_temp_shift = EXYNOS_EMUL_DATA_SHIFT,
++	.emul_time_shift = EXYNOS_EMUL_TIME_SHIFT,
++	.emul_time_mask = EXYNOS_EMUL_TIME_MASK,
++};
++
++#define __EXYNOS5420_TMU_DATA	\
++	.threshold_falling = 10, \
++	.trigger_levels[0] = 85, \
++	.trigger_levels[1] = 103, \
++	.trigger_levels[2] = 110, \
++	.trigger_levels[3] = 120, \
++	.trigger_enable[0] = true, \
++	.trigger_enable[1] = true, \
++	.trigger_enable[2] = true, \
++	.trigger_enable[3] = false, \
++	.trigger_type[0] = THROTTLE_ACTIVE, \
++	.trigger_type[1] = THROTTLE_ACTIVE, \
++	.trigger_type[2] = SW_TRIP, \
++	.trigger_type[3] = HW_TRIP, \
++	.max_trigger_level = 4, \
++	.gain = 8, \
++	.reference_voltage = 16, \
++	.noise_cancel_mode = 4, \
++	.cal_type = TYPE_ONE_POINT_TRIMMING, \
++	.efuse_value = 55, \
++	.min_efuse_value = 40, \
++	.max_efuse_value = 100, \
++	.first_point_trim = 25, \
++	.second_point_trim = 85, \
++	.default_temp_offset = 50, \
++	.freq_tab[0] = { \
++		.freq_clip_max = 800 * 1000, \
++		.temp_level = 85, \
++	}, \
++	.freq_tab[1] = { \
++		.freq_clip_max = 200 * 1000, \
++		.temp_level = 103, \
++	}, \
++	.freq_tab_count = 2, \
++	.type = SOC_ARCH_EXYNOS5420, \
++	.registers = &exynos5420_tmu_registers, \
++
++#define EXYNOS5420_TMU_DATA \
++	__EXYNOS5420_TMU_DATA \
++	.features = (TMU_SUPPORT_EMULATION | TMU_SUPPORT_TRIM_RELOAD | \
++			TMU_SUPPORT_FALLING_TRIP | TMU_SUPPORT_READY_STATUS | \
++			TMU_SUPPORT_EMUL_TIME)
++
++#define EXYNOS5420_TMU_DATA_SHARED \
++	__EXYNOS5420_TMU_DATA \
++	.features = (TMU_SUPPORT_EMULATION | TMU_SUPPORT_TRIM_RELOAD | \
++			TMU_SUPPORT_FALLING_TRIP | TMU_SUPPORT_READY_STATUS | \
++			TMU_SUPPORT_EMUL_TIME | TMU_SUPPORT_ADDRESS_MULTIPLE)
++
++struct exynos_tmu_init_data const exynos5420_default_tmu_data = {
++	.tmu_data = {
++		{ EXYNOS5420_TMU_DATA },
++		{ EXYNOS5420_TMU_DATA },
++		{ EXYNOS5420_TMU_DATA_SHARED },
++		{ EXYNOS5420_TMU_DATA_SHARED },
++		{ EXYNOS5420_TMU_DATA_SHARED },
++	},
++	.tmu_count = 5,
++};
++#endif
++
+ #if defined(CONFIG_SOC_EXYNOS5440)
+ static const struct exynos_tmu_registers exynos5440_tmu_registers = {
+ 	.triminfo_data = EXYNOS5440_TMU_S0_7_TRIM,
+diff --git a/drivers/thermal/samsung/exynos_tmu_data.h b/drivers/thermal/samsung/exynos_tmu_data.h
+index 8788a87..59e2f33 100644
+--- a/drivers/thermal/samsung/exynos_tmu_data.h
++++ b/drivers/thermal/samsung/exynos_tmu_data.h
+@@ -146,6 +146,13 @@ extern struct exynos_tmu_init_data const exynos5250_default_tmu_data;
+ #define EXYNOS5250_TMU_DRV_DATA (NULL)
+ #endif
+ 
++#if defined(CONFIG_SOC_EXYNOS5420)
++extern struct exynos_tmu_init_data const exynos5420_default_tmu_data;
++#define EXYNOS5420_TMU_DRV_DATA (&exynos5420_default_tmu_data)
++#else
++#define EXYNOS5420_TMU_DRV_DATA (NULL)
++#endif
++
+ #if defined(CONFIG_SOC_EXYNOS5440)
+ extern struct exynos_tmu_init_data const exynos5440_default_tmu_data;
+ #define EXYNOS5440_TMU_DRV_DATA (&exynos5440_default_tmu_data)
 -- 
 1.7.10.4
 
