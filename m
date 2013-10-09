@@ -1,142 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754884Ab3JILSz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 07:18:55 -0400
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:51581 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751718Ab3JILSx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 07:18:53 -0400
-Message-ID: <52553B9A.6090901@monstr.eu>
-Date: Wed, 09 Oct 2013 13:18:50 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	id S1752588Ab3JILit (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 07:38:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49467 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751704Ab3JILir (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 07:38:47 -0400
+Date: Wed, 9 Oct 2013 13:36:38 +0200
+From: Veaceslav Falico <vfalico@redhat.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] msi: free msi_desc entry only after we've released
+ the kobject
+Message-ID: <20131009113638.GA19020@redhat.com>
+References: <1380189591-1368-1-git-send-email-vfalico@redhat.com>
+ <20130928213727.GC32063@redhat.com>
+ <CAErSpo67Uy0OZ+9jB6xvCwfjwh-NxX3FHuBnqdpWviJPVhG4dQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: Michal Simek <michal.simek@xilinx.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v2 1/3] video: xilinxfb: Use standard variable name convention
-References: <631df9a44b366af4129d00f1d4e1d3baad7d4903.1381315928.git.michal.simek@xilinx.com> <20131009110651.GH4981@e106331-lin.cambridge.arm.com>
-In-Reply-To: <20131009110651.GH4981@e106331-lin.cambridge.arm.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="rHVM98jJUei5I1WoM7B7f6V9mWmbi38s1"
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+In-Reply-To: <CAErSpo67Uy0OZ+9jB6xvCwfjwh-NxX3FHuBnqdpWviJPVhG4dQ@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---rHVM98jJUei5I1WoM7B7f6V9mWmbi38s1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
-
-On 10/09/2013 01:06 PM, Mark Rutland wrote:
-> On Wed, Oct 09, 2013 at 11:52:12AM +0100, Michal Simek wrote:
->> s/op/pdev/ in xilinxfb_of_probe().
->> No functional chagnes.
+On Fri, Oct 04, 2013 at 10:46:31AM -0600, Bjorn Helgaas wrote:
+>On Sat, Sep 28, 2013 at 3:37 PM, Veaceslav Falico <vfalico@redhat.com> wrote:
+>> On Thu, Sep 26, 2013 at 11:59:51AM +0200, Veaceslav Falico wrote:
+>>>
+>>> Currently, we first do kobject_put(&entry->kobj) and the kfree(entry),
+>>> however kobject_put() doesn't guarantee us that it was the last reference
+>>> and that the kobj isn't used currently by someone else, so after we
+>>> kfree(entry) with the struct kobject - other users will begin using the
+>>> freed memory, instead of the actual kobject.
 >>
->> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
->> ---
->> Changes in v2: None
 >>
->>  drivers/video/xilinxfb.c | 18 +++++++++---------
->>  1 file changed, 9 insertions(+), 9 deletions(-)
+>> Hi Bjorn,
 >>
->> diff --git a/drivers/video/xilinxfb.c b/drivers/video/xilinxfb.c
->> index 0e1dd33..d12345f 100644
->> --- a/drivers/video/xilinxfb.c
->> +++ b/drivers/video/xilinxfb.c
->> @@ -411,7 +411,7 @@ static int xilinxfb_release(struct device *dev)
->>   * OF bus binding
->>   */
->>
->> -static int xilinxfb_of_probe(struct platform_device *op)
->> +static int xilinxfb_of_probe(struct platform_device *pdev)
->>  {
->>  	const u32 *prop;
->>  	u32 tft_access =3D 0;
->> @@ -425,7 +425,7 @@ static int xilinxfb_of_probe(struct platform_devic=
-e *op)
->>  	/* Allocate the driver data region */
->>  	drvdata =3D kzalloc(sizeof(*drvdata), GFP_KERNEL);
->>  	if (!drvdata) {
->> -		dev_err(&op->dev, "Couldn't allocate device private record\n");
->> +		dev_err(&pdev->dev, "Couldn't allocate device private record\n");
->>  		return -ENOMEM;
->>  	}
->>
->> @@ -433,7 +433,7 @@ static int xilinxfb_of_probe(struct platform_devic=
-e *op)
->>  	 * To check whether the core is connected directly to DCR or BUS
->>  	 * interface and initialize the tft_access accordingly.
->>  	 */
->> -	of_property_read_u32(op->dev.of_node, "xlnx,dcr-splb-slave-if",
->> +	of_property_read_u32(pdev->dev.of_node, "xlnx,dcr-splb-slave-if",
->>  			     &tft_access);
->>
->>  	/*
->> @@ -457,29 +457,29 @@ static int xilinxfb_of_probe(struct platform_dev=
-ice *op)
->>  	}
->>  #endif
->>
->> -	prop =3D of_get_property(op->dev.of_node, "phys-size", &size);
->> +	prop =3D of_get_property(pdev->dev.of_node, "phys-size", &size);
->>  	if ((prop) && (size >=3D sizeof(u32)*2)) {
->>  		pdata.screen_width_mm =3D prop[0];
->>  		pdata.screen_height_mm =3D prop[1];
->>  	}
->=20
-> While you're changing these lines, it would be nice to change this
-> pattern (here and elsewhere) to use of_property_read_u32_array, so that=
+>> I've seen that you've dropped this bugfix (and the 3 cleanup patches) with
+>> "Changes Requested", however I don't recall any request to change this.
+>
+>I talked to Greg KH about this recently, and he said he might take a
+>look at doing a more extensive cleanup of populate_msi_sysfs() using
+>attribute groups, so I don't know if you want to wait and see whether
+>he does anything, or go ahead on the path you were on.
 
-> it's endian-safe and consistent with other devicetree parsing code:
->=20
->   of_property_read_u32_array(pdev->dev.of_node, "phys-size", prop, 2);
->=20
-> It won't read the values if the property data's too short, so that
-> should be consistent with the existing code.
->=20
-> It would also make the diffstat negative :)
+Sorry for the delay, was sick. I'll continue going ahead, however if
+Greg/you don't really need it or are working on it - please say now, so I'll
+stop waisting your time.
 
-The intention of this patch is simple rename which is exactly how
-patch should look like. It means one change per patch.
+>
+>If you continue, my advice is:
+>
+>  - Put all these patches in a single series with a version number (I
+>think the next posting would be v3) to help me keep track of them.
 
-It means these changes you have describe should be in separate patch
-and I definitely agree with them.
+Will do, if/when there'll be next version. Now they're divided into 1
+bugfix and 1 cleanup patchset.
 
-Thanks,
-Michal
+>
+>  - In populate_msi_sysfs(), drop the pci_dev_get() (or explain why
+>it's needed).  My reasoning is that the "msi_irqs" kset should already
+>hold a reference on the pdev (acquired in kset_create_and_add() ->
+>kset_register() -> kobject_add_internal()), and each irq entry should
+>hold a reference on the kset (see kobject_add_internal() again),  so
+>it is redundant to acquire a reference on the pdev directly.  This
+>means dropping the pci_dev_put() in msi_kobj_release(), of course.
 
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+It's done in my patch
 
+     pci: remove redundant pci_dev_get/put() on kobject (un)register
 
+http://patchwork.ozlabs.org/patch/278201/
 
---rHVM98jJUei5I1WoM7B7f6V9mWmbi38s1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+>
+>- Move the kfree(entry) from free_msi_irqs() to msi_kobj_release() (I
+>think one of your patches already did this).
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+It's done in my patch
 
-iEYEARECAAYFAlJVO5oACgkQykllyylKDCHAhACghAAMQdQ5kp067E6Cd0L4LdbI
-PrgAnisV7CG7ukAzjIc5p/2dxbDG8hv6
-=oZ5p
------END PGP SIGNATURE-----
+	    msi: free msi_desc entry only after we've released the kobject
 
---rHVM98jJUei5I1WoM7B7f6V9mWmbi38s1--
+http://patchwork.ozlabs.org/patch/278150/
+
+>
+>  - In populate_msi_sysfs(), drop the kobject_del() in the out_unroll
+>loop.  I think we would only need that if there were a way to create a
+>new irq entry in "msi_irqs" before the old irq entry was released.
+>But I don't think that's possible.  We only create irq entries in
+>populate_msi_sysfs(), which always starts with a fresh, empty
+>"msi_irqs" kset.
+
+It's done in my patch
+
+     msi: free msi_desc entry only after we've released the kobject
+
+http://patchwork.ozlabs.org/patch/278150/
+
+>
+>  - In free_msi_irqs(), similarly remove the kobject_del().
+
+It's done in my patch
+
+	    msi: remove useless kobject_del() in free_msi_irqs()
+
+http://patchwork.ozlabs.org/patch/278202/
+
+>
+>  - Add a kobject_del() before each kset_unregister(dev->msi_kset)
+>call.  This will remove "msi_irqs" from sysfs, so future creates will
+>succeed even if somebody still has the old "msi_irqs" open.
+
+I think it's done in your patch
+
+	kobject: remove kset from sysfs immediately in kset_unregister()
+
+http://patchwork.ozlabs.org/patch/281618/
+
+So it'll collide and use kobject_del() twice.
+
+Or did you actually drop your patch?
+
+>
+>  - Keep the msi_kset cleanup in populate_msi_sysfs() instead of
+>relying on free_msi_irqs().  I think it's less error prone to keep the
+>creation and error path cleanup in the same function.
+
+It is less error prone, however the current design is that "once we fail
+something while creating irqs, always call free_msi_irqs()", so, if we add
+the msi_kset cleanup to populate_msi_sysfs() (it wasn't there before, so we
+can't 'keep' it) - we'll have to verify if it was don in free_msi_irqs(),
+cause free_msi_irqs() is being called not only on rollback in
+msi_capability_init(), but also in pci_disable_msi() and friends.
+
+>
+>Bjorn
