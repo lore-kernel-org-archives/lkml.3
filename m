@@ -1,82 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755849Ab3JIM4U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 08:56:20 -0400
-Received: from mga11.intel.com ([192.55.52.93]:35263 "EHLO mga11.intel.com"
+	id S1753250Ab3JIM4M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 08:56:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62518 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753697Ab3JIM4Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 08:56:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1063,1371106800"; 
-   d="sh'?scan'208";a="408264269"
-Date: Wed, 9 Oct 2013 20:56:11 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [x86] BUG: unable to handle kernel paging request at 00740060
-Message-ID: <20131009125611.GA20450@localhost>
-References: <20131005234430.GA22485@localhost>
- <CA+55aFxEeKixnH7mZZs5iwupA9_GsRN0N7QZxqcTcE4RKZvTTg@mail.gmail.com>
- <20131008143400.GA14721@redhat.com>
- <20131009080459.GA2298@localhost>
- <20131009121911.GA18770@localhost>
- <20131009122705.GG3081@twins.programming.kicks-ass.net>
+	id S1751380Ab3JIM4J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 08:56:09 -0400
+Date: Wed, 9 Oct 2013 14:57:16 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
+        Jon Mason <jon.mason@intel.com>,
+        Matt Porter <mporter@kernel.crashing.org>, linux-pci@vger.kernel.org,
+        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
+        linux390@de.ibm.com, linux-s390@vger.kernel.org, x86@kernel.org,
+        linux-ide@vger.kernel.org, iss_storagedev@hp.com,
+        linux-nvme@lists.infradead.org, linux-rdma@vger.kernel.org,
+        netdev@vger.kernel.org, e1000-devel@lists.sourceforge.net,
+        linux-driver@qlogic.com,
+        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
+        "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH RFC 00/77] Re-design MSI/MSI-X interrupts enablement
+ pattern
+Message-ID: <20131009125715.GC32733@dhcp-26-207.brq.redhat.com>
+References: <cover.1380703262.git.agordeev@redhat.com>
+ <1380840585.3419.50.camel@bwh-desktop.uk.level5networks.com>
+ <20131004082920.GA4536@dhcp-26-207.brq.redhat.com>
+ <1380922156.3214.49.camel@bwh-desktop.uk.level5networks.com>
+ <20131005142054.GA11270@dhcp-26-207.brq.redhat.com>
+ <1381009586.645.141.camel@pasglop>
+ <20131006060243.GB28142@dhcp-26-207.brq.redhat.com>
+ <1381040386.645.143.camel@pasglop>
+ <20131006071027.GA29143@dhcp-26-207.brq.redhat.com>
+ <20131007180111.GC2481@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="qDbXVdCdHGoSgWSk"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131009122705.GG3081@twins.programming.kicks-ass.net>
+In-Reply-To: <20131007180111.GC2481@htj.dyndns.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Oct 07, 2013 at 02:01:11PM -0400, Tejun Heo wrote:
+> Hmmm... yean, the race condition could be an issue as multiple msi
+> allocation might fail even if the driver can and explicitly handle
+> multiple allocation if the quota gets reduced inbetween.
 
---qDbXVdCdHGoSgWSk
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+BTW, should we care about the quota getting increased inbetween?
+That would entail.. kind of pci_get_msi_limit() :), but IMHO it is
+not worth it.
 
-On Wed, Oct 09, 2013 at 02:27:05PM +0200, Peter Zijlstra wrote:
-> On Wed, Oct 09, 2013 at 08:19:11PM +0800, Fengguang Wu wrote:
-> > > > Fengguang, I do not think this will help, but just in case. Could you
-> > > > show the result of
-> > > > 
-> > > >         $ kernel/task_work.s
-> > 
-> > Update: I recompiled the kernel with gcc 4.4.7 and find it booting fine!
-> 
-> > # 208 "/c/wfg/tip/arch/x86/include/asm/bitops.h" 1
-> > 	bts $1, 8(%eax); setc %dl	#,, c
-> 
-> That compiler doesn't appear to have asm goto support, so we fall back
-> to the code we already knew worked :-)
+> tejun
 
-Ah OK..
-
-btw, here is a simple script I used to reproduce the problem. I'll
-attach the 3MB yocto initrd in another email. However I suspect
-whatever initrd would be OK.
-
-Thanks,
-Fengguang
-
---qDbXVdCdHGoSgWSk
-Content-Type: application/x-sh
-Content-Disposition: attachment; filename="kvm-0day.sh"
-Content-Transfer-Encoding: quoted-printable
-
-#!/bin/bash=0A=0Akvm=3D(=0A	qemu-system-x86_64 -cpu kvm64 -enable-kvm=0A	-k=
-ernel $1=0A	-initrd /kernel-tests/initrd/yocto-minimal-i386.cgz=0A	# -initr=
-d /kernel-tests/initrd/quantal-core-i386.cgz=0A	# -initrd /kernel-tests/ini=
-trd/quantal-core-x86_64.cgz=0A	-smp 2=0A	-m 256M=0A	-net nic,vlan=3D0,macad=
-dr=3D00:00:00:00:00:00,model=3Dvirtio=0A	-net user,vlan=3D0=0A	-net nic,vla=
-n=3D1,model=3De1000=0A	-net user,vlan=3D1=0A	-boot order=3Dnc=0A	-no-reboot=
-=0A	-watchdog i6300esb=0A	-serial stdio=0A	-display none=0A	-monitor null=
-=0A)=0A=0Aappend=3D(=0A	debug=0A	sched_debug=0A	ignore_loglevel=0A	apic=3Dd=
-ebug=0A	dyndbg=3D\"func kobject_release +p\"=0A	sysrq_always_enabled=0A	pan=
-ic=3D10=0A	prompt_ramdisk=3D0=0A	console=3DttyS0,115200=0A	console=3Dtty0=
-=0A	vga=3Dnormal=0A	root=3D/dev/ram0=0A	rw=0A)=0A=0A"${kvm[@]}" --append "$=
-{append[*]}"=0A
---qDbXVdCdHGoSgWSk--
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
