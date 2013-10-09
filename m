@@ -1,87 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753115Ab3JIPZf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 11:25:35 -0400
-Received: from co1ehsobe005.messaging.microsoft.com ([216.32.180.188]:27411
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751339Ab3JIPZd convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 11:25:33 -0400
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: -1
-X-BigFish: VPS-1(zz98dIc89bh1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzzz2fh95h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh906i1155h192ch)
-Date: Wed, 9 Oct 2013 08:25:27 -0700
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Mark Rutland <mark.rutland@arm.com>,
-        Michal Simek <michal.simek@xilinx.com>
-CC: "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>,
-        Michal Simek <michal.simek@xilinx.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 1/2] clk/zynq/clkc: Add 'fclk-enable' feature
-References: <1381242972-14752-1-git-send-email-soren.brinkmann@xilinx.com>
- <20131008153816.GB4981@e106331-lin.cambridge.arm.com>
+	id S1753828Ab3JIP2b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 11:28:31 -0400
+Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:58441 "EHLO
+	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752108Ab3JIP23 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 11:28:29 -0400
+Message-ID: <52557606.8030201@st.com>
+Date: Wed, 9 Oct 2013 17:28:06 +0200
+From: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-In-Reply-To: <20131008153816.GB4981@e106331-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <fe3858e7-e3e2-4806-aeca-a2a4676e09aa@CO1EHSMHS007.ehs.local>
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: Romain Baeriswyl <Romain.Baeriswyl@abilis.com>
+Cc: "David S. Miller" <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Romain Baeriswyl <romainba@abilis.com>
+Subject: Re: [RFC] net: stmmac: keep RXC running in LPI mode to avoid system
+ overload
+References: <1381244795-3922-1-git-send-email-romainba@abilis.com>
+In-Reply-To: <1381244795-3922-1-git-send-email-romainba@abilis.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.52.138.186]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 08, 2013 at 04:38:17PM +0100, Mark Rutland wrote:
-> On Tue, Oct 08, 2013 at 03:36:11PM +0100, Soren Brinkmann wrote:
-> > In some use cases Zynq's FPGA clocks are used as static clock
-> > generators for IP in the FPGA part of the SOC for which no Linux driver
-> > exists and would control those clocks. To avoid automatic
-> > gating of these clocks in such cases a new property - fclk-enable - is
-> > added to the clock controller's DT description to accomodate such use
-> > cases. It's value is a bitmask, where a set bit results in enabling
-> > the corresponding FCLK through the clkc.
-> > 
-> > FPGA clocks are handled following the rules below:
-> > 
-> > If an FCLK is not enabled by bootloaders, that FCLK will be disabled in
-> > Linux. Drivers can enable and control it through the CCF as usual.
-> > 
-> > If an FCLK is enabled by bootloaders AND the corresponding bit in the
-> > 'fclk-enable' DT property is set, that FCLK will be enabled by the clkc,
-> > resulting in an off by one reference count for that clock. Ensuring it
-> > will always be running.
-> > 
-> > The default value for 'fclk-enable' is '0xf' (all FCLK's enabled by the
-> > bootloader are enabled through the clkc.
-> 
-> Why? Juding by the diff that's not what the code currently does, so why
-> not leave it as 0, and only set it where required as a work-around?
-The default is set as described here:
-[...]
-> > +	ret = of_property_read_u32(np, "fclk-enable", &fclk_enable);
-> > +	if (ret)
-> > +		fclk_enable = 0xf;
-> > +
+Hello Romain
 
-The default has been chosen this way, because it avoids trouble with
-customers. Customers expect the FPGA clocks to be running, once they
-configured them in the FPGA tools. If Linux gates them off for some
-reason, it creates confusion and often ends up in customer support.
-But in general I agree. It is kind of a work around and having zero as
-default would be desirable. I'd leave this to Michal.
+On 10/8/2013 5:06 PM, Romain Baeriswyl wrote:
+> In order to avoid system overload, the clock RXC from the Phy should not be
+> stopped when in LPI mode.
+>
+> With the RTL8211E PHY which support EEE mode and with Apple Airport Extreme that
+> supports it also, the kernel get frozen as soon as some Ethernet transfers are
 
-	Sören
 
+hmm, I have a board with this transceiver so I could do some tests
+this could take a while, unfortunately.
+
+> on-going. System seems to be overloaded with too many interrupts. The 'top'
+> command reports often around ~80% irq.
+
+do you mean lpi mac interrupts?
+
+>
+> By letting the RXC clock running even in LPI mode as proposed below, the issue
+> seems solved. Is it the right way to proceed?
+
+For EEE capability, RX_CLK may be halted for this reason i used it as 
+default in the stmmac and never seen your issue.
+
+>
+> What is the power impact to not stop RXC in LPI mode?
+
+I can point you to "22.2.2.8a Receive direction LPI transition"
+in IEEE802-3az... where is it reported that the PHY  halt the RX_CLK
+in LPI mode.
+
+May I suspect some issues on your HW? or disable it with ethtool
+
+
+peppe
+
+>
+> ---
+>   drivers/net/ethernet/stmicro/stmmac/stmmac_main.c |    6 ++++--
+>   1 files changed, 4 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+> index e9eab29..d40d26b 100644
+> --- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+> +++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+> @@ -314,7 +314,8 @@ bool stmmac_eee_init(struct stmmac_priv *priv)
+>   	/* MAC core supports the EEE feature. */
+>   	if (priv->dma_cap.eee) {
+>   		/* Check if the PHY supports EEE */
+> -		if (phy_init_eee(priv->phydev, 1))
+> +		/* Keeps RXC running in LPI mode to avoid stability issue */
+> +		if (phy_init_eee(priv->phydev, 0))
+>   			goto out;
+>
+>   		if (!priv->eee_active) {
+> @@ -770,7 +771,8 @@ static void stmmac_adjust_link(struct net_device *dev)
+>   	/* At this stage, it could be needed to setup the EEE or adjust some
+>   	 * MAC related HW registers.
+>   	 */
+> -	priv->eee_enabled = stmmac_eee_init(priv);
+> +	if (new_state)
+> +		priv->eee_enabled = stmmac_eee_init(priv);
+
+this seems out of context and not necessary
+
+>
+>   	spin_unlock_irqrestore(&priv->lock, flags);
+>   }
+>
 
