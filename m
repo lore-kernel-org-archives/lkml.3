@@ -1,157 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754961Ab3JIVqx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 17:46:53 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:40831 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750799Ab3JIVqv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 17:46:51 -0400
-Date: Wed, 9 Oct 2013 22:46:38 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Suman Anna <s-anna@ti.com>
-Cc: Kumar Gala <galak@codeaurora.org>, Ohad Ben-Cohen <ohad@wizery.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Benoit Cousson <bcousson@baylibre.com>, Paul Walmsley <paul@pwsan.com>,
+	id S1756040Ab3JIVrj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 17:47:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39526 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751897Ab3JIVrh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 17:47:37 -0400
+Date: Wed, 9 Oct 2013 23:47:33 +0200
+From: Jan Kara <jack@suse.cz>
+To: Richard Weinberger <richard@nod.at>
+Cc: Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        UML devel <user-mode-linux-devel@lists.sourceforge.net>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCHv2 2/9] hwspinlock/omap: add support for dt nodes
-Message-ID: <20131009214638.GB2322@kartoffel>
-References: <cover.1379445653.git.s-anna@ti.com>
- <0fd6a11880894260d627a50b1e35f363625e9b1d.1379445653.git.s-anna@ti.com>
- <AE597DCC-83D7-4BCD-8990-3D63540F32EA@codeaurora.org>
- <20131001084015.GH22259@e106331-lin.cambridge.arm.com>
- <524CEE9F.8060407@ti.com>
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Jan Kara <jack@suse.cz>, hannes@cmpxchg.org, darrick.wong@oracle.com,
+        Michal Hocko <mhocko@suse.cz>, Wu Fengguang <fengguang.wu@intel.com>
+Subject: Re: [uml-devel] BUG: soft lockup for a user mode linux image
+Message-ID: <20131009214733.GB25608@quack.suse.cz>
+References: <524DC675.4020201@gmx.de>
+ <524E57BA.805@nod.at>
+ <52517109.90605@gmx.de>
+ <CAMuHMdXrU0e_6AxvdboMkDs+N+tSWD+b8ou92j28c0vsq2eQQA@mail.gmail.com>
+ <5251C334.3010604@gmx.de>
+ <CAMuHMdUo8dSd4s3089ZDEc485wL1sFxBKLeaExJuqNiQY+S-Lw@mail.gmail.com>
+ <5251CF94.5040101@gmx.de>
+ <CAMuHMdWs6Y7y12STJ+YXKJjxRF0k5yU9C9+0fiPPmq-GgeW-6Q@mail.gmail.com>
+ <525591AD.4060401@gmx.de>
+ <5255A3E6.6020100@nod.at>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <524CEE9F.8060407@ti.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5255A3E6.6020100@nod.at>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 03, 2013 at 05:12:15AM +0100, Suman Anna wrote:
-> Hi Mark,
-> 
-> > On Fri, Sep 27, 2013 at 05:06:38PM +0100, Kumar Gala wrote:
-> >>
-> >> On Sep 17, 2013, at 2:30 PM, Suman Anna wrote:
-> >>
-> >>> HwSpinlock IP is present only on OMAP4 and other newer SoCs,
-> >>> which are all device-tree boot only. This patch adds the
-> >>> base support for parsing the DT nodes, and removes the code
-> >>> dealing with the traditional platform device instantiation.
+On Wed 09-10-13 20:43:50, Richard Weinberger wrote:
+> CC'ing mm folks.
+> Please see below.
+  Added Fenguang to CC since he is the author of this code.
+
+> Am 09.10.2013 19:26, schrieb Toralf Förster:
+> > On 10/08/2013 10:07 PM, Geert Uytterhoeven wrote:
+> >> On Sun, Oct 6, 2013 at 11:01 PM, Toralf Förster <toralf.foerster@gmx.de> wrote:
+> >>>> Hmm, now pages_dirtied is zero, according to the backtrace, but the BUG_ON()
+> >>>> asserts its strict positive?!?
+> >>>>
+> >>>> Can you please try the following instead of the BUG_ON():
+> >>>>
+> >>>> if (pause < 0) {
+> >>>>         printk("pages_dirtied = %lu\n", pages_dirtied);
+> >>>>         printk("task_ratelimit = %lu\n", task_ratelimit);
+> >>>>         printk("pause = %ld\n", pause);
+> >>>> }
+> >>>>
+> >>>> Gr{oetje,eeting}s,
+> >>>>
+> >>>>                         Geert
+> >>> I tried it in different ways already - I'm completely unsuccessful in getting any printk output.
+> >>> As soon as the issue happens I do have a
 > >>>
-> >>> Signed-off-by: Suman Anna <s-anna@ti.com>
-> >>> ---
-> >>> .../devicetree/bindings/hwlock/omap-hwspinlock.txt | 31 +++++++++++
-> >>> arch/arm/mach-omap2/Makefile                       |  3 --
-> >>> arch/arm/mach-omap2/hwspinlock.c                   | 60 ----------------------
-> >>> drivers/hwspinlock/omap_hwspinlock.c               | 23 +++++++--
-> >>> 4 files changed, 50 insertions(+), 67 deletions(-)
-> >>> create mode 100644 Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
-> >>> delete mode 100644 arch/arm/mach-omap2/hwspinlock.c
+> >>> BUG: soft lockup - CPU#0 stuck for 22s! [trinity-child0:1521]
 > >>>
-> >>> diff --git a/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt b/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
-> >>> new file mode 100644
-> >>> index 0000000..235b7c5
-> >>> --- /dev/null
-> >>> +++ b/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
-> >>> @@ -0,0 +1,31 @@
-> >>> +OMAP4+ HwSpinlock Driver
-> >>> +========================
-> >>> +
-> >>> +Required properties:
-> >>> +- compatible:		Currently supports only "ti,omap4-hwspinlock" for
-> >>> +				OMAP44xx, OMAP54xx, AM33xx, AM43xx, DRA7xx SoCs
-> > 
-> > "Currently supports" is not something I expect to see in a binding
-> > document. That sounds like a description of the driver rather than the
-> > binding.
-> > 
-> > How similar are these hardware modules? What are the differences?
+> >>> at stderr of the UML and then no further input is accepted. With uml_mconsole I'm however able
+> >>> to run very basic commands like a crash dump, sysrq ond so on.
+> >>
+> >> You may get an idea of the magnitude of pages_dirtied by using a chain of
+> >> BUG_ON()s, like:
+> >>
+> >> BUG_ON(pages_dirtied > 2000000000);
+> >> BUG_ON(pages_dirtied > 1000000000);
+> >> BUG_ON(pages_dirtied > 100000000);
+> >> BUG_ON(pages_dirtied > 10000000);
+> >> BUG_ON(pages_dirtied > 1000000);
+> >>
+> >> Probably 1 million is already too much for normal operation?
+> >>
+> > period = HZ * pages_dirtied / task_ratelimit;
+> > 		BUG_ON(pages_dirtied > 2000000000);
+> > 		BUG_ON(pages_dirtied > 1000000000);      <-------------- this is line 1467
 > 
-> The IP is almost the same, they all have the same revision id. The
-> number of locks (each represented by a register) though vary from one
-> SoC to another (OMAP4, OMAP5, DRA7 have same number of locks, and
-> AM33xx/AM43xx have a different number). The number of locks is directly
-> read by the driver from a module register. There is no separate .data
-> associated with the of_device_id table, so I used a single compatible
-> property for all the SoCs.
-
-Ok. Probeability is good, it keeps these simpler :)
-
-I think This can be reworded to say "should contain" rather than "currently
-supports only":
-
-- compatible:		Should contain "ti,omap4-hwspinlock" for
-			OMAP44xx, OMAP54xx, AM33xx, AM43xx, or DRA7xx SoCs
-
-That way the binding allows for a future backwards-compatible variant, and
-doesn't mention the current level of support in Linux.
-
+> Summary for mm people:
 > 
-> > 
-> >>> +- reg:			Contains the hwspinlock register address range (base
-> >>> +			address and length)
-> > 
-> > Is there only one register bank for the hwlock module?
-> 
-> The lock registers start at a certain offset (0x800) within the module
-> register space, and the offsets for various registers are identical
-> between all SoCs.
+> Toralf runs trinty on UML/i386.
+> After some time pages_dirtied becomes very large.
+> More than 1000000000 pages in this case.
+  Huh, this is really strange. pages_dirtied is passed into
+balance_dirty_pages() from current->nr_dirtied. So I wonder how a value
+over 10^9 can get there. After all that is over 4TB so I somewhat doubt the
+task was ever able to dirty that much during its lifetime (but correct me
+if I'm wrong here, with UML and memory backed disks it is not totally
+impossible)... I went through the logic of handling ->nr_dirtied but
+I didn't find any obvious problem there. Hum, maybe one thing - what
+'task_ratelimit' values do you see in balance_dirty_pages? If that one was
+huge, we could possibly accumulate huge current->nr_dirtied.
 
-What are the other registers within the module? Are they shared with other
-devices, or are they simply unused by the hwspinlock driver?
+> Thus, period = HZ * pages_dirtied / task_ratelimit overflows
+> and period/pause becomes extremely large.
+> 
+> It looks like io_schedule_timeout() get's called with a very large timeout.
+> I don't know why "if (unlikely(pause > max_pause)) {" does not help.
+> 
+> 
+> > the back trace is :
+> > 
+> > tfoerste@n22 ~/devel/linux $ gdb --core=/mnt/ramdisk/core /home/tfoerste/devel/linux/linux -batch -ex bt
+> > [New LWP 6911]
+> > Core was generated by `/home/tfoerste/devel/linux/linux earlyprintk ubda=/home/tfoerste/virtual/uml/tr'.
+> > Program terminated with signal 6, Aborted.
+> > #0  0xb77a7424 in __kernel_vsyscall ()
+> > #0  0xb77a7424 in __kernel_vsyscall ()
+> > #1  0x083bdf35 in kill ()
+> > #2  0x0807296d in uml_abort () at arch/um/os-Linux/util.c:93
+> > #3  0x08072ca5 in os_dump_core () at arch/um/os-Linux/util.c:148
+> > #4  0x080623c4 in panic_exit (self=0x85c1558 <panic_exit_notifier>, unused1=0, unused2=0x85f76e0 <buf.16221>) at arch/um/kernel/um_arch.c:240
+> > #5  0x0809ba86 in notifier_call_chain (nl=0x0, val=0, v=0x85f76e0 <buf.16221>, nr_to_call=-2, nr_calls=0x0) at kernel/notifier.c:93
+> > #6  0x0809bba1 in __atomic_notifier_call_chain (nh=0x85f76c4 <panic_notifier_list>, val=0, v=0x85f76e0 <buf.16221>, nr_to_call=0, nr_calls=0x0) at kernel/notifier.c:182
+> > #7  0x0809bbdf in atomic_notifier_call_chain (nh=0x0, val=0, v=0x0) at kernel/notifier.c:191
+> > #8  0x0841b5bc in panic (fmt=0x0) at kernel/panic.c:130
+> > #9  0x0841c470 in balance_dirty_pages (pages_dirtied=23, mapping=<optimized out>) at mm/page-writeback.c:1467
+> > #10 0x080d3595 in balance_dirty_pages_ratelimited (mapping=0x6) at mm/page-writeback.c:1661
+> > #11 0x080e4a3f in __do_fault (mm=0x45ba3600, vma=0x48777b90, address=1084678144, pmd=0x0, pgoff=0, flags=0, orig_pte=<incomplete type>) at mm/memory.c:3452
+> > #12 0x080e6e0f in do_linear_fault (orig_pte=..., flags=<optimized out>, pmd=<optimized out>, address=<optimized out>, vma=<optimized out>, mm=<optimized out>, page_table=<optimized out>) at mm/memory.c:3486
+> > #13 handle_pte_fault (flags=<optimized out>, pmd=<optimized out>, pte=<optimized out>, address=<optimized out>, vma=<optimized out>, mm=<optimized out>) at mm/memory.c:3710
+> > #14 __handle_mm_fault (flags=<optimized out>, address=<optimized out>, vma=<optimized out>, mm=<optimized out>) at mm/memory.c:3845
+> > #15 handle_mm_fault (mm=0x45ba3600, vma=0x487034c8, address=1084678144, flags=1) at mm/memory.c:3868
+> > #16 0x080e7817 in __get_user_pages (tsk=0x48705800, mm=0x45ba3600, start=1084678144, nr_pages=1025, gup_flags=519, pages=0x48558000, vmas=0x0, nonblocking=0x0) at mm/memory.c:1822
+> > #17 0x080e7ae3 in get_user_pages (tsk=0x0, mm=0x0, start=0, nr_pages=0, write=1, force=0, pages=0x48777b90, vmas=0x6) at mm/memory.c:2019
+> > #18 0x08143dc6 in aio_setup_ring (ctx=<optimized out>) at fs/aio.c:340
+> > #19 ioctx_alloc (nr_events=<optimized out>) at fs/aio.c:605
+> > #20 SYSC_io_setup (ctxp=<optimized out>, nr_events=<optimized out>) at fs/aio.c:1122
+> > #21 SyS_io_setup (nr_events=65535, ctxp=135081984) at fs/aio.c:1105
+> > #22 0x08062984 in handle_syscall (r=0x487059d4) at arch/um/kernel/skas/syscall.c:35
+> > #23 0x08074fb5 in handle_trap (local_using_sysemu=<optimized out>, regs=<optimized out>, pid=<optimized out>) at arch/um/os-Linux/skas/process.c:198
+> > #24 userspace (regs=0x487059d4) at arch/um/os-Linux/skas/process.c:431
+> > #25 0x0805f750 in fork_handler () at arch/um/kernel/process.c:160
+> > #26 0x00000000 in ?? ()
 
-> 
-> > 
-> >>> +- ti,hwmods:		Name of the hwmod associated with the hwspinlock device
-> >>> +
-> >>> +Common hwlock properties:
-> >>> +The following describes the usage of the common hwlock properties (defined in
-> >>> +Documentation/devicetree/bindings/hwlock/hwlock.txt) on OMAP.
-> >>> +
-> >>> +- hwlock-base-id:	There are currently no OMAP SoCs with multiple
-> >>> +			hwspinlock devices. The OMAP driver uses a default
-> >>> +			base id value of 0 for the locks present within the
-> >>> +			single hwspinlock device on all SoCs.
-> > 
-> > 
-> > Driver details should not leak into bindngs...
-> 
-> OK, will remove the info on driver details.
-> 
-> > 
-> > As mentioned in the other patch, I don't think this is the way to handle
-> > this. I think we need a phandle + args representation.
-> 
-> This is an optional parameter for now and I was going to revise the
-> description based on comments from Kumar Gala on this thread, but I will
-> wait and adjust this based on the outcome on the first patch.
-
-Ok.
-
-> 
-> > 
-> >>> +- hwlock-num-locks:	This property is not required on OMAP SoCs, since the
-> >>> +			number of locks present within a device can be deduced
-> >>> +			from the SPINLOCK_SYSSTATUS device register.
-> > 
-> > Huh? Why define this property at all here if we don't need it and don't
-> > use it?
-> > 
-> > The common document should state that specific bindings may use it and
-> > should explicitly state if they do, rather than stating they don't...
-> 
-> Yeah, I wasn't sure how to go about the split between the common file
-> and the platform-specific bindings. I will clean this up and revise the
-> common bindings.
-
-Ok.
-
-Cheers,
-Mark.
-> 
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
