@@ -1,41 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754873Ab3JIOrt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 10:47:49 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:40820 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753878Ab3JIOrp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 10:47:45 -0400
-Date: Wed, 9 Oct 2013 15:47:18 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        xen-devel@lists.xenproject.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>
-Subject: Re: [PATCH] kobject: show debug info on delayed kobject release
-Message-ID: <20131009144718.GK25034@n2100.arm.linux.org.uk>
-References: <20131008020918.GA1220@localhost> <20131008021452.GA6456@localhost> <CA+55aFwrovZf-LYa=_SyMNvqQkTfxREm0YuzDk8wJy+Krs0xzw@mail.gmail.com> <20131008031152.GA8218@localhost> <20131008121742.GA29280@localhost> <20131008221417.GF25034@n2100.arm.linux.org.uk> <20131008224840.GA15303@kroah.com> <CA+55aFzdABn=TiBbM0fdok1xO3UY7hUjXA8q7rUrg2dHCsN=Ng@mail.gmail.com> <20131009011833.GA14579@redhat.com> <20131009012621.GA7126@localhost>
+	id S1755126Ab3JIOr6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 10:47:58 -0400
+Received: from ns.mm-sol.com ([212.124.72.66]:48373 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754900Ab3JIOry (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 10:47:54 -0400
+Message-ID: <52556C4E.9000604@mm-sol.com>
+Date: Wed, 09 Oct 2013 17:46:38 +0300
+From: Stanimir Varbanov <svarbanov@mm-sol.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131009012621.GA7126@localhost>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: "Theodore Ts'o" <tytso@mit.edu>, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Matt Mackall <mpm@selenic.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH 0/2] Add support for Qualcomm's PRNG
+References: <1380811955-18085-1-git-send-email-svarbanov@mm-sol.com> <20131003165130.GA11974@thunk.org> <524EEB96.6040707@mm-sol.com> <20131004181005.GA7022@thunk.org>
+In-Reply-To: <20131004181005.GA7022@thunk.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 09, 2013 at 09:26:21AM +0800, Fengguang Wu wrote:
-> Useful for locating buggy drivers on kernel oops.
-> 
-> It may add dozens of new lines to boot dmesg. DEBUG_KOBJECT_RELEASE is
-> hopefully only enabled in debug kernels (like maybe the Fedora rawhide
-> one, or at developers), so being a bit more verbose is likely ok.
-> 
-> CC: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Hi Ted,
 
-Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
+On 10/04/2013 09:10 PM, Theodore Ts'o wrote:
+> On Fri, Oct 04, 2013 at 07:23:50PM +0300, Stanimir Varbanov wrote:
+>> I guess that it should follow NIST 800-90 recommendation, but I'm not
+>> aware what DRBG mechanism is used.
+>>
+>> To be honest I really don't know the hardware implementation details. I
+>> put PRNG abbreviation in the cover letter just because I saw that
+>> defines for register offsets are prefixed with PRNG_*. I could rename
+>> all occurrences of PRNG to RNG. Is that will be enough to avoid confusions?
+> 
+> If that's what the Qualcomm documentation uses, maybe we should stick
+> with it, and add some explanatory comments.  Is there any
+> documentation for this block that is public that you can either send
+> me a a pointer to?
 
-Thanks.
+No, there is no public documentation for the block. Here is the driver
+documentation which I used as a base [1].
+
+My guess was that - if it is PRNG (got from hardware description link
+above) than according to wiki [2] it is also known as a deterministic
+random bit generator (DRBG). The recommendation for RNG using DRBG is
+NIST 800-90.
+
+Of course I could be wrong, so I can add a comment that this is just a
+guess and we shouldn't over-reliance on this.
+
+regards,
+Stan
+
+[1]
+https://www.codeaurora.org/cgit/quic/la/kernel/msm/tree/Documentation/arm/msm/msm_rng-driver.txt?h=jb_3.2.1
+
+[2] http://en.wikipedia.org/wiki/Pseudorandom_number_generator
