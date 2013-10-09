@@ -1,107 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756339Ab3JIBl4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 21:41:56 -0400
-Received: from co1ehsobe003.messaging.microsoft.com ([216.32.180.186]:6847
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751494Ab3JIBly (ORCPT
+	id S1756755Ab3JIBn6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 21:43:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46079 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755992Ab3JIBny (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 21:41:54 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275bhz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Wed, 9 Oct 2013 09:42:09 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Fabio Estevam <fabio.estevam@freescale.com>
-CC: <cjb@laptop.org>, <festevam@gmail.com>, <linux-mmc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mmc: sdhci-esdhc-imx: Check the return value from
- clk_prepare_enable()
-Message-ID: <20131009014208.GD8946@S2101-09.ap.freescale.net>
-References: <1381240048-22685-1-git-send-email-fabio.estevam@freescale.com>
+	Tue, 8 Oct 2013 21:43:54 -0400
+Date: Tue, 8 Oct 2013 18:41:44 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: delicious quinoa <delicious.quinoa@gmail.com>
+Cc: Alan Tull <atull@altera.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        monstr@monstr.eu, Pavel Machek <pavel@denx.de>,
+        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Philip Balister <philip@balister.org>,
+        Alessandro Rubini <rubini@gnudd.com>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Yves Vandervennet <rocket.yvanderv@gmail.com>,
+        Kyle Teske <kyle.teske@ni.com>, Josh Cartwright <joshc@eso.teric.us>,
+        Nicolas Pitre <nico@linaro.org>,
+        Mark Langsdorf <mark.langsdorf@calxeda.com>,
+        Felipe Balbi <balbi@ti.com>, linux-doc@vger.kernel.org,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        David Brown <davidb@codeaurora.org>, Rob Landley <rob@landley.net>,
+        "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
+        Cesar Eduardo Barros <cesarb@cesarb.net>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC PATCH v2 0/1] FPGA subsystem core
+Message-ID: <20131009014144.GB17066@kroah.com>
+References: <20131004141646.GA9396@kroah.com>
+ <d700a91e-1319-4c35-895d-55e323c40703@email.android.com>
+ <524ED081.1040600@monstr.eu>
+ <524EF0CE.4040002@zytor.com>
+ <524EFE76.70200@monstr.eu>
+ <524F04FD.5020804@zytor.com>
+ <20131004233341.GA4028@kroah.com>
+ <1381251614.6062.9.camel@atx-linux-37>
+ <20131008214401.GC11941@kroah.com>
+ <CANk1AXTLW_-eZgUjEh8ENK2vC4ckNhaGBMbQycy+-h9x-t1BoQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1381240048-22685-1-git-send-email-fabio.estevam@freescale.com>
+In-Reply-To: <CANk1AXTLW_-eZgUjEh8ENK2vC4ckNhaGBMbQycy+-h9x-t1BoQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 08, 2013 at 10:47:28AM -0300, Fabio Estevam wrote:
-> clk_prepare_enable() may fail, so let's check its return value and propagate it
-> in the case of error.
+On Tue, Oct 08, 2013 at 06:47:41PM -0500, delicious quinoa wrote:
+> On Tue, Oct 8, 2013 at 4:44 PM, Greg Kroah-Hartman
+> <gregkh@linuxfoundation.org> wrote:
+> > On Tue, Oct 08, 2013 at 12:00:14PM -0500, Alan Tull wrote:
+> >> On Fri, 2013-10-04 at 16:33 -0700, Greg Kroah-Hartman wrote:
+> >> > On Fri, Oct 04, 2013 at 11:12:13AM -0700, H. Peter Anvin wrote:
+> >> > > On 10/04/2013 10:44 AM, Michal Simek wrote:
+> >> > > >
+> >> > > > If you look at it in general I believe that there is wide range of
+> >> > > > applications which just contain one bitstream per fpga and the
+> >> > > > bitstream is replaced by newer version in upgrade. For them
+> >> > > > firmware interface should be pretty useful. Just setup firmware
+> >> > > > name with bitstream and it will be automatically loaded in startup
+> >> > > > phase.
+> >> > > >
+> >> > > > Then there is another set of applications especially in connection
+> >> > > > to partial reconfiguration where this can be done statically by
+> >> > > > pregenerated partial bitstreams or automatically generated on
+> >> > > > target cpu. For doing everything on the target firmware interface
+> >> > > > is not the best because everything can be handled by user
+> >> > > > application and it is easier just to push this bitstream to do
+> >> > > > device and not to save it to the fs.
+> >> > > >
+> >> > > > I think the question here is if this subsystem could have several
+> >> > > > interfaces. For example Alan is asking for adding char support.
+> >> > > > Does it even make sense to have more interfaces with the same
+> >> > > > backend driver? When this is answered then we can talk which one
+> >> > > > make sense to have. In v2 is sysfs and firmware one. Adding char
+> >> > > > is also easy to do.
+> >> > > >
+> >> > >
+> >> > > Greg, what do you think?
+> >> > >
+> >> > > I agree that the firmware interface makes sense when the use of the
+> >> > > FPGA is an implementation detail in a fixed hardware configuration,
+> >> > > but that is a fairly restricted use case all things considered.
+> >> >
+> >> > Ideally I thought this would be just like "firmware", you dump the file
+> >> > to the FPGA, it validates it and away you go with a new image running in
+> >> > the chip.
+> >> >
+> >> > But, it sounds like this is much more complicated, so much so that
+> >> > configfs might be the correct interface for it, as you can do lots of
+> >> > things there, and it is very flexible (some say too flexible...)
+> >> >
+> >> > A char device, with a zillion different custom ioctls is also a way to
+> >> > do it, but one that I really want to avoid as that gets messy really
+> >> > quickly.
+> >>
+> >> Hi Greg,
+> >>
+> >> We are discussing a char device that has very few interfaces:
+> >>  - a way of writing the image to fpga
+> >>  - a way of getting fpga manager status
+> >>  - a way of setting fpga manager state
+> >>
+> >> This all looks like standard char driver interface to me.  Writing the
+> >> image could be writing to the devnode (cat image.bin > /dev/fpga0). The
+> >> status stuff would be sysfs attributes.  All normal stuff any char
+> >> driver in the kernel would do.  Why not just go with that?
+> >
+> > Because we really hate to add new ioctls to the kernel if at all
+> > possible.
 > 
-> Also, fix the sequence for disabling the clock in the probe error path and 
-> also in the remove function.
+> I don't see any need for adding any ioctls.
 > 
-> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
-> ---
->  drivers/mmc/host/sdhci-esdhc-imx.c | 24 +++++++++++++++++-------
->  1 file changed, 17 insertions(+), 7 deletions(-)
+> > Using sysfs (and it's one-value-per-file rule), makes
+> > userspace tools easier, and managing the different devices in the system
+> > easier (you know _exactly_ which device you are talking to, you don't
+> > have to guess based on minor number).
 > 
-> diff --git a/drivers/mmc/host/sdhci-esdhc-imx.c b/drivers/mmc/host/sdhci-esdhc-imx.c
-> index b9899e9..abc9836 100644
-> --- a/drivers/mmc/host/sdhci-esdhc-imx.c
-> +++ b/drivers/mmc/host/sdhci-esdhc-imx.c
-> @@ -877,9 +877,17 @@ static int sdhci_esdhc_imx_probe(struct platform_device *pdev)
->  
->  	pltfm_host->clk = imx_data->clk_per;
->  
-> -	clk_prepare_enable(imx_data->clk_per);
-> -	clk_prepare_enable(imx_data->clk_ipg);
-> -	clk_prepare_enable(imx_data->clk_ahb);
-> +	err = clk_prepare_enable(imx_data->clk_per);
-> +	if (err)
-> +		goto free_sdhci;
-> +
-> +	err = clk_prepare_enable(imx_data->clk_ipg);
-> +	if (err)
-> +		goto err_ipg;
-> +
-> +	err = clk_prepare_enable(imx_data->clk_ahb);
-> +	if (err)
-> +		goto err_ahb;
->  
->  	imx_data->pinctrl = devm_pinctrl_get(&pdev->dev);
->  	if (IS_ERR(imx_data->pinctrl)) {
-> @@ -995,9 +1003,11 @@ static int sdhci_esdhc_imx_probe(struct platform_device *pdev)
->  	return 0;
->  
->  disable_clk:
-> -	clk_disable_unprepare(imx_data->clk_per);
-> -	clk_disable_unprepare(imx_data->clk_ipg);
->  	clk_disable_unprepare(imx_data->clk_ahb);
-> +err_ahb:
+> That's cool.  The interface we could use is writing the raw fpga data
+> to /sys/class/fpga_manager/fpga0/fpga_config_data
+> 
+> Reading or setting the fpga state could be from
+> /sys/class/fpga_manager/fpga0/fpga_config_state
 
-Naming schema of the existing labels seems to be 'acting' rather than
-'reasoning', so I guess 'disable_ipg:' might fit here better?
+Ok, that's fine, I don't object to that, but you are giving up the
+notification and loading ability of the kernel for the image files by
+doing this, which will require you to use/write/maintain userspace
+tools.  If you use the firmware interface, no userspace tool is needed
+at all, which I can see some people really wanting, right?
 
-Shawn
+> Or do I misunderstand?  Do you include sysfs attributes when you
+> are talking about ioctls?
 
-> +	clk_disable_unprepare(imx_data->clk_ipg);
-> +err_ipg:
-> +	clk_disable_unprepare(imx_data->clk_per);
->  free_sdhci:
->  	sdhci_pltfm_free(pdev);
->  	return err;
-> @@ -1012,9 +1022,9 @@ static int sdhci_esdhc_imx_remove(struct platform_device *pdev)
->  
->  	sdhci_remove_host(host, dead);
->  
-> -	clk_disable_unprepare(imx_data->clk_per);
-> -	clk_disable_unprepare(imx_data->clk_ipg);
->  	clk_disable_unprepare(imx_data->clk_ahb);
-> +	clk_disable_unprepare(imx_data->clk_ipg);
-> +	clk_disable_unprepare(imx_data->clk_per);
->  
->  	sdhci_pltfm_free(pdev);
->  
-> -- 
-> 1.8.1.2
-> 
-> 
+You can't do ioctls on sysfs files, so no.
 
+greg k-h
