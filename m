@@ -1,105 +1,2383 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756157Ab3JIBHm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 21:07:42 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:58894 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751565Ab3JIBHk (ORCPT
+	id S1756248Ab3JIBIe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 21:08:34 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:34295 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753317Ab3JIBIa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 21:07:40 -0400
-Message-ID: <5254AC56.3070608@gmail.com>
-Date: Wed, 09 Oct 2013 10:07:34 +0900
-From: Akira Hayakawa <ruby.wktk@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Tue, 8 Oct 2013 21:08:30 -0400
+Message-ID: <5254AC7F.8010909@ti.com>
+Date: Tue, 8 Oct 2013 21:08:15 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: snitzer@redhat.com
-CC: hch@infradead.org, dm-devel@redhat.com, devel@driverdev.osuosl.org,
-        thornber@redhat.com, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, mpatocka@redhat.com,
-        dan.carpenter@oracle.com, joe@perches.com, akpm@linux-foundation.org,
-        m.chehab@samsung.com, ejt@redhat.com, agk@redhat.com,
-        cesarb@cesarb.net, ruby.wktk@gmail.com
-Subject: Re: Reworking dm-writeboost [was: Re: staging: Add dm-writeboost]
-References: <523E3522.2060607@gmail.com> <524183A2.9050301@gmail.com> <20130926034325.GO26872@dastard> <20131001082654.GA10326@debian> <alpine.LRH.2.02.1310021956130.22612@file01.intranet.prod.int.rdu2.redhat.com> <20131004020417.GF4446@dastard> <524FC4F4.6050401@gmail.com> <20131007234307.GP4446@dastard> <20131008094144.GA10261@infradead.org> <5253E06C.6040101@gmail.com> <20131008152924.GA3644@redhat.com>
-In-Reply-To: <20131008152924.GA3644@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+To: Jacob Pan <jacob.jun.pan@linux.intel.com>
+CC: Zhang Rui <rui.zhang@intel.com>, Linux PM <linux-pm@vger.kernel.org>,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>
+Subject: Re: [PATCH] tools/thermal: Introduce tmon, a tool for thermal subsystem
+References: <1381259024-25433-1-git-send-email-jacob.jun.pan@linux.intel.com>
+In-Reply-To: <1381259024-25433-1-git-send-email-jacob.jun.pan@linux.intel.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature";
+	boundary="3IMRoiGF1KCQ8To7oNi86Idd4m6VhIXq5"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mike,
+--3IMRoiGF1KCQ8To7oNi86Idd4m6VhIXq5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-I am happy to see that
-guys from filesystem to the block subsystem
-have been discussing how to handle barriers in each layer
-almost independently.
+On 08-10-2013 15:03, Jacob Pan wrote:
+> Increasingly, Linux is running on thermally constrained devices. The si=
+mple
+> thermal relationship between processor and fan has become past for mode=
+rn
+> computers.
+>=20
+> As hardware vendors cope with the thermal constraints on their products=
+,
+> more sensors are added, new cooling capabilities are introduced. The
+> complexity of the thermal relationship can grow exponentially among coo=
+ling
+> devices, zones, sensors, and trip points. They can also change dynamica=
+lly.
+>=20
+> To expose such relationship to the userspace, Linux generic thermal lay=
+er
+> introduced sysfs entry at /sys/class/thermal with a matrix of symbolic
+> links, trip point bindings, and device instances. To traverse such
+> matrix by hand is not a trivial task. Testing is also difficult in that=
 
->> Merging the barriers and replacing it with a single FLUSH
->> by accepting a lot of writes
->> is the reason for deferring barriers in writeboost.
->> If you want to know further I recommend you to
->> look at the source code to see
->> how queue_barrier_io() is used and
->> how the barriers are kidnapped in queue_flushing().
-> 
-> AFAICT, this is an unfortunate hack resulting from dm-writeboost being a
-> bio-based DM target.  The block layer already has support for FLUSH
-> merging, see commit ae1b1539622fb4 ("block: reimplement FLUSH/FUA to
-> support merge")
+> thermal conditions are often exception cases that hard to reach in
+> normal operations.
+>=20
+> TMON is conceived as a tool to help visualize, tune, and test the
+> complex thermal subsystem.
+>=20
+> Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+> ---
+>  tools/thermal/tmon/Makefile |   47 ++++
+>  tools/thermal/tmon/README   |   50 ++++
+>  tools/thermal/tmon/pid.c    |  131 +++++++++
+>  tools/thermal/tmon/sysfs.c  |  585 +++++++++++++++++++++++++++++++++++=
+++++
+>  tools/thermal/tmon/tmon.8   |  142 ++++++++++
+>  tools/thermal/tmon/tmon.c   |  350 ++++++++++++++++++++++++
+>  tools/thermal/tmon/tmon.h   |  204 ++++++++++++++
+>  tools/thermal/tmon/tui.c    |  631 +++++++++++++++++++++++++++++++++++=
+++++++++
+>  8 files changed, 2140 insertions(+)
+>  create mode 100644 tools/thermal/tmon/Makefile
+>  create mode 100644 tools/thermal/tmon/README
+>  create mode 100644 tools/thermal/tmon/pid.c
+>  create mode 100644 tools/thermal/tmon/sysfs.c
+>  create mode 100644 tools/thermal/tmon/tmon.8
+>  create mode 100644 tools/thermal/tmon/tmon.c
+>  create mode 100644 tools/thermal/tmon/tmon.h
+>  create mode 100644 tools/thermal/tmon/tui.c
+>=20
+> diff --git a/tools/thermal/tmon/Makefile b/tools/thermal/tmon/Makefile
+> new file mode 100644
+> index 0000000..c17131b
+> --- /dev/null
+> +++ b/tools/thermal/tmon/Makefile
+> @@ -0,0 +1,47 @@
+> +VERSION =3D 1.0
+> +
+> +BINDIR=3Dusr/bin
+> +WARNFLAGS=3D-Wall -Wshadow -W -Wformat -Wimplicit-function-declaration=
+ -Wimplicit-int
+> +CFLAGS=3D -O1 ${WARNFLAGS} -fstack-protector
+> +CC=3Dgcc
+> +
+> +CFLAGS+=3D-D VERSION=3D\"$(VERSION)\"
+> +LDFLAGS+=3D
+> +TARGET=3Dtmon
+> +
+> +INSTALL_PROGRAM=3Dinstall -m 755 -p
+> +DEL_FILE=3Drm -f
+> +
+> +INSTALL_CONFIGFILE=3Dinstall -m 644 -p
+> +CONFIG_FILE=3D
+> +CONFIG_PATH=3D
+> +
+> +
+> +OBJS =3D tmon.o tui.o sysfs.o pid.o
+> +OBJS +=3D
+> +
+> +tmon: $(OBJS) Makefile tmon.h
+> +	$(CC) ${CFLAGS} $(LDFLAGS) $(OBJS)  -o $(TARGET) -lncursesw -lm -lpan=
+el -lpthread
 
-I have read the comments on this patch.
-http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=ae1b1539622fb46e51b4d13b3f9e5f4c713f86ae
+I actually tried static linking tmon. There seams to be some
+interdependency with libpanel and libncurses and while static linking
+them, we need to first specify libpanel. So I suggest you to do:
++	$(CC) ${CFLAGS} $(LDFLAGS) $(OBJS)  -o $(TARGET) -lm -lpanel
+-lncursesw -lpthread
 
-My understanding is that
-REQ_FUA and REQ_FLUSH are decomposed to more primitive flags
-in accordance with the property of the device.
-{PRE|POST}FLUSH request are queued in flush_queue[one of the two]
-(which is often called "pending" queue) and
-calls blk_kick_flush that defers flushing and later
-if few conditions are satisfied it actually inserts "a single" flush request
-no matter how many flush requests are in the pending queue
-(just judged by !list_empty(pending)).
 
-If my understanding is correct,
-we are deferring flush across three layers.
 
-Let me summarize.
-- For filesystem, Dave said that metadata journaling defers
-  barriers.
-- For device-mapper, writeboost, dm-cache and dm-thin defers
-  barriers.
-- For block, it defers barriers and results it to
-  merging several requests into one after all.
+> +
+> +valgrind: tmon
+> +	 sudo valgrind -v --track-origins=3Dyes --tool=3Dmemcheck --leak-chec=
+k=3Dyes --show-reachable=3Dyes --num-callers=3D20 --track-fds=3Dyes ./$(T=
+ARGET)  1> /dev/null
+> +
+> +install:
+> +	- mkdir -p $(INSTALL_ROOT)/$(BINDIR)
+> +	- $(INSTALL_PROGRAM) "$(TARGET)" "$(INSTALL_ROOT)/$(BINDIR)/$(TARGET)=
+"
+> +	- mkdir -p $(INSTALL_ROOT)/$(CONFIG_PATH)
+> +	- $(INSTALL_CONFIGFILE) "$(CONFIG_FILE)" "$(INSTALL_ROOT)/$(CONFIG_PA=
+TH)"
+> +
+> +uninstall:
+> +	$(DEL_FILE) "$(INSTALL_ROOT)/$(BINDIR)/$(TARGET)"
+> +	$(CONFIG_FILE) "$(CONFIG_PATH)"
+> +
+> +
+> +clean:
+> +	find . -name "*.o" | xargs $(DEL_FILE)
+> +	rm -f $(TARGET)
+> +
+> +dist:
+> +	git tag v$(VERSION)
+> +	git archive --format=3Dtar --prefix=3D"$(TARGET)-$(VERSION)/" v$(VERS=
+ION) | \
+> +		gzip > $(TARGET)-$(VERSION).tar.gz
+> diff --git a/tools/thermal/tmon/README b/tools/thermal/tmon/README
+> new file mode 100644
+> index 0000000..4579498
+> --- /dev/null
+> +++ b/tools/thermal/tmon/README
+> @@ -0,0 +1,50 @@
+> +TMON - A Monitoring and Testing Tool for Linux kernel thermal subsyste=
+m
+> +
+> +Why TMON?
+> +=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+> +Increasingly, Linux is running on thermally constrained devices. The s=
+imple
+> +thermal relationship between processor and fan has become past for mod=
+ern
+> +computers.
+> +
+> +As hardware vendors cope with the thermal constraints on their product=
+s, more
+> +and more sensors are added, new cooling capabilities are introduced. T=
+he
+> +complexity of the thermal relationship can grow exponentially among co=
+oling
+> +devices, zones, sensors, and trip points. They can also change dynamic=
+ally.
+> +
+> +To expose such relationship to the userspace, Linux generic thermal la=
+yer
+> +introduced sysfs entry at /sys/class/thermal with a matrix of symbolic=
 
-I think writeboost can not discard this deferring hack because
-deferring the barriers is usually very effective to
-make it likely to fulfill the RAM buffer which
-makes the write throughput higher and decrease the CPU usage.
-However, for particular case such as what Dave pointed out,
-this hack is just a disturbance.
-Even for writeboost, the hack in the patch
-is just a disturbance too unfortunately.
-Upper layer dislikes the lower layers hidden optimization is
-just a limitation of the layered architecture of Linux kernel.
+> +links, trip point bindings, and device instances. To traverse such
+> +matrix by hand is not a trivial task. Testing is also difficult in tha=
+t
+> +thermal conditions are often exception cases that hard to reach in
+> +normal operations.
+> +
+> +TMON is conceived as a tool to help visualize, tune, and test the
+> +complex thermal subsystem.
+> +
+> +Files
+> +=3D=3D=3D=3D=3D
+> +	tmon.c : main function for set up and configurations.
+> +	tui.c : handles ncurses based user interface
+> +	sysfs.c : access to the generic thermal sysfs
+> +	pid.c : a proportional-integral-derivative (PID) controller
+> +	that can be used for thermal relationship training.
+> +
+> +Requirements
+> +=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+> +Depends on ncurses
+> +
+> +Build
+> +=3D=3D=3D=3D=3D=3D=3D=3D=3D
+> +$ make
+> +$ sudo ./tmon -h
+> +Usage: tmon [OPTION...]
+> +  -c, --control         cooling device in control
+> +  -d, --daemon          run as daemon, no TUI
+> +  -l, --log             log data to /var/tmp/tmon.log
+> +  -h, --help            show this help message
+> +  -t, --time-interval   set time interval for sampling
+> +  -v, --version         show version
+> +  -g, --debug           debug message in syslog
+> +
+> +1. For monitoring only:
+> +$ sudo ./tmon
+> diff --git a/tools/thermal/tmon/pid.c b/tools/thermal/tmon/pid.c
+> new file mode 100644
+> index 0000000..fd7e9e9
+> --- /dev/null
+> +++ b/tools/thermal/tmon/pid.c
+> @@ -0,0 +1,131 @@
+> +/*
+> + * pid.c PID controller for testing cooling devices
+> + *
+> + *
+> + *
+> + * Copyright (C) 2012 Intel Corporation. All rights reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License version=
 
-I think these three layers are thinking almost the same thing
-is that these hacks are all good and each layer
-preparing a switch to turn on/off the optimization
-is what we have to do for compromise.
+> + * 2 or later as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * Author Name Jacob Pan <jacob.jun.pan@linux.intel.com>
+> + *
+> + */
+> +
+> +#include <unistd.h>
+> +#include <stdio.h>
+> +#include <stdlib.h>
+> +#include <string.h>
+> +#include <stdint.h>
+> +#include <sys/types.h>
+> +#include <dirent.h>
+> +#include <libintl.h>
+> +#include <ctype.h>
+> +#include <assert.h>
+> +#include <time.h>
+> +#include <limits.h>
+> +#include <math.h>
+> +#include <sys/stat.h>
+> +#include <syslog.h>
+> +
+> +#include "tmon.h"
+> +
+> +/*********************************************************************=
+*****
+> + * PID (Proportional-Integral-Derivative) controller is commonly used =
+in
+> + * linear control system, consider the the process.
+> + * G(s) =3D U(s)/E(s)
+> + * kp =3D proportional gain
+> + * ki =3D integral gain
+> + * kd =3D derivative gain
+> + * Ts
+> + * We use type C Alan Bradley equation which takes set point off the
+> + * output dependency in P and D term.
+> + *
+> + *   y[k] =3D y[k-1] - kp*(x[k] - x[k-1]) + Ki*Ts*e[k] - Kd*(x[k]
+> + *          - 2*x[k-1]+x[k-2])/Ts
+> + *
+> + *
+> + *********************************************************************=
+**/
+> +struct pid_params p_param;
+> +/* cached data from previous loop */
+> +static double xk_1, xk_2; /* input temperature x[k-#] */
+> +
+> +/*
+> + * TODO: make PID parameters tuned automatically,
+> + * 1. use CPU burn to produce open loop unit step response
+> + * 2. calculate PID based on Ziegler-Nichols rule
+> + *
+> + * add a flag for tuning PID
+> + */
+> +int init_thermal_controller(void)
+> +{
+> +	int ret =3D 0;
+> +
+> +	/* init pid params */
+> +	p_param.ts =3D ticktime;
+> +	/* TODO: get it from TUI tuning tab */
+> +	p_param.kp =3D .36;
+> +	p_param.ki =3D 5.0;
+> +	p_param.kd =3D 0.19;
+> +
+> +	p_param.t_target =3D target_temp_user;
+> +
+> +	return ret;
+> +}
+> +
+> +void controller_reset(void)
+> +{
+> +	/* TODO: relax control data when not over thermal limit */
+> +	syslog(LOG_DEBUG, "TC inactive, relax p-state\n");
+> +	p_param.y_k =3D 0.0;
+> +	xk_1 =3D 0.0;
+> +	xk_2 =3D 0.0;
+> +	set_ctrl_state(0);
+> +}
+> +
+> +/* To be called at time interval Ts. Type C PID controller.
+> + *    y[k] =3D y[k-1] - kp*(x[k] - x[k-1]) + Ki*Ts*e[k] - Kd*(x[k]
+> + *          - 2*x[k-1]+x[k-2])/Ts
+> + * TODO: add low pass filter for D term
+> + */
+> +#define GUARD_BAND (2)
+> +void controller_handler(const double xk, double *yk)
+> +{
+> +	double ek;
+> +	double p_term, i_term, d_term;
+> +
+> +	ek =3D p_param.t_target - xk; /* error */
+> +	if (ek >=3D 3.0) {
+> +		syslog(LOG_DEBUG, "PID: %3.1f Below set point %3.1f, stop\n",
+> +			xk, p_param.t_target);
+> +		controller_reset();
+> +		*yk =3D 0.0;
+> +		return;
+> +	}
+> +	/* compute intermediate PID terms */
+> +	p_term =3D -p_param.kp * (xk - xk_1);
+> +	i_term =3D p_param.kp * p_param.ki * p_param.ts * ek;
+> +	d_term =3D -p_param.kp * p_param.kd * (xk - 2 * xk_1 + xk_2) / p_para=
+m.ts;
+> +	/* compute output */
+> +	*yk +=3D p_term + i_term + d_term;
+> +	/* update sample data */
+> +	xk_1 =3D xk;
+> +	xk_2 =3D xk_1;
+> +
+> +	/* clamp output adjustment range */
+> +	if (*yk < -LIMIT_HIGH)
+> +		*yk =3D -LIMIT_HIGH;
+> +	else if (*yk > -LIMIT_LOW)
+> +		*yk =3D -LIMIT_LOW;
+> +
+> +	p_param.y_k =3D *yk;
+> +
+> +	set_ctrl_state(lround(fabs(p_param.y_k)));
+> +
+> +}
+> diff --git a/tools/thermal/tmon/sysfs.c b/tools/thermal/tmon/sysfs.c
+> new file mode 100644
+> index 0000000..54e24b3
+> --- /dev/null
+> +++ b/tools/thermal/tmon/sysfs.c
+> @@ -0,0 +1,585 @@
+> +/*
+> + * sysfs.c sysfs ABI access functions for TMON program
+> + *
+> + * Copyright (C) 2013 Intel Corporation. All rights reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License version=
 
-All the problems originates from the fact that
-we have volatile cache and persistent memory can
-take these problems away.
+> + * 2 or later as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * Author: Jacob Pan <jacob.jun.pan@linux.intel.com>
+> + *
+> + */
+> +#include <unistd.h>
+> +#include <stdio.h>
+> +#include <stdlib.h>
+> +#include <string.h>
+> +#include <stdint.h>
+> +#include <dirent.h>
+> +#include <libintl.h>
+> +#include <ctype.h>
+> +#include <time.h>
+> +#include <syslog.h>
+> +#include <sys/time.h>
+> +#include <errno.h>
+> +
+> +#include "tmon.h"
+> +
+> +struct tmon_platform_data ptdata;
+> +const char *trip_type_name[] =3D {
+> +	"critical",
+> +	"hot",
+> +	"passive",
+> +	"active",
+> +};
+> +
+> +int sysfs_set_ulong(char *path, char *filename, unsigned long val)
+> +{
+> +	FILE *fd;
+> +	int ret =3D -1;
+> +	char filepath[256];
+> +
+> +	snprintf(filepath, 256, "%s/%s", path, filename);
+> +
+> +	fd =3D fopen(filepath, "w");
+> +	if (!fd) {
+> +		syslog(LOG_ERR, "Err: open %s: %s\n", __func__, filepath);
+> +		return ret;
+> +	}
+> +	ret =3D fprintf(fd, "%lu", val);
+> +	fclose(fd);
+> +
+> +	return 0;
+> +}
+> +
+> +/* history of thermal data, used for control algo */
+> +#define NR_THERMAL_RECORDS 3
+> +struct thermal_data_record trec[NR_THERMAL_RECORDS];
+> +int cur_thermal_record; /* index to the trec array */
+> +
+> +static int sysfs_get_ulong(char *path, char *filename, unsigned long *=
+p_ulong)
+> +{
+> +	FILE *fd;
+> +	int ret =3D -1;
+> +	char filepath[256];
+> +
+> +	snprintf(filepath, 256, "%s/%s", path, filename);
+> +
+> +	fd =3D fopen(filepath, "r");
+> +	if (!fd) {
+> +		syslog(LOG_ERR, "Err: open %s: %s\n", __func__, filepath);
+> +		return ret;
+> +	}
+> +	ret =3D fscanf(fd, "%lu", p_ulong);
+> +	fclose(fd);
+> +
+> +	return 0;
+> +}
+> +
+> +static int sysfs_get_string(char *path, char *filename, char *str)
+> +{
+> +	FILE *fd;
+> +	int ret =3D -1;
+> +	char filepath[256];
+> +
+> +	snprintf(filepath, 256, "%s/%s", path, filename);
+> +
+> +	fd =3D fopen(filepath, "r");
+> +	if (!fd) {
+> +		syslog(LOG_ERR, "Err: open %s: %s\n", __func__, filepath);
+> +		return ret;
+> +	}
+> +	ret =3D fscanf(fd, "%256s", str);
+> +	fclose(fd);
+> +
+> +	return ret;
+> +}
+> +
+> +/* get states of the cooling device instance */
+> +static int probe_cdev(struct cdev_info *cdi, char *path)
+> +{
+> +	sysfs_get_string(path, "type", cdi->type);
+> +	sysfs_get_ulong(path, "max_state",  &cdi->max_state);
+> +	sysfs_get_ulong(path, "cur_state", &cdi->cur_state);
+> +
+> +	syslog(LOG_INFO, "%s: %s: type %s, max %lu, curr %lu inst %d\n",
+> +		__func__, path,
+> +		cdi->type, cdi->max_state, cdi->cur_state, cdi->instance);
+> +
+> +	return 0;
+> +}
+> +
+> +static int str_to_trip_type(char *name)
+> +{
+> +	int i;
+> +
+> +	for (i =3D 0; i < NR_THERMAL_TRIP_TYPE; i++) {
+> +		if (!strcmp(name, trip_type_name[i]))
+> +			return i;
+> +	}
+> +
+> +	return -ENOENT;
+> +}
+> +
+> +/* scan and fill in trip point info for a thermal zone and trip point =
+id */
+> +static int get_trip_point_data(char *tz_path, int tzid, int tpid)
+> +{
+> +	char filename[256];
+> +	char temp_str[256];
+> +	int trip_type;
+> +
+> +	if (tpid >=3D MAX_NR_TRIP)
+> +		return -EINVAL;
+> +	/* check trip point type */
+> +	snprintf(filename, sizeof(filename), "trip_point_%d_type", tpid);
+> +	sysfs_get_string(tz_path, filename, temp_str);
+> +	trip_type =3D str_to_trip_type(temp_str);
+> +	if (trip_type < 0) {
+> +		syslog(LOG_ERR, "%s:%s no matching type\n", __func__, temp_str);
+> +		return -ENOENT;
+> +	}
+> +	ptdata.tzi[tzid].tp[tpid].type =3D trip_type;
+> +	syslog(LOG_INFO, "%s:tz:%d tp:%d:type:%s type id %d\n", __func__, tzi=
+d,
+> +		tpid, temp_str, trip_type);
+> +
+> +	/* TODO: check attribute */
+> +
+> +	return 0;
+> +}
+> +
+> +/* return instance id for file format such as trip_point_4_temp */
+> +static int get_instance_id(char *name, int pos, int skip)
+> +{
+> +	char *ch;
+> +	int i =3D 0;
+> +
+> +	ch =3D strtok(name, "_");
+> +	while (ch !=3D NULL) {
+> +		++i;
+> +		syslog(LOG_INFO, "%s:%s:%s:%d", __func__, name, ch, i);
+> +		ch =3D strtok(NULL, "_");
+> +		if (pos =3D=3D i)
+> +			return atol(ch + skip);
+> +	}
+> +
+> +	return -1;
+> +}
+> +
+> +/* Find trip point info of a thermal zone */
+> +static int find_tzone_tp(char *tz_name, char *d_name, struct tz_info *=
+tzi,
+> +			int tz_id)
+> +{
+> +	int tp_id;
+> +	unsigned long temp_ulong;
+> +
+> +	if (strstr(d_name, "trip_point") &&
+> +		strstr(d_name, "temp")) {
+> +		/* check if trip point temp is non-zero
+> +		 * ignore 0/invalid trip points
+> +		 */
+> +		sysfs_get_ulong(tz_name, d_name, &temp_ulong);
+> +		if (temp_ulong < MAX_TEMP_KC) {
+> +			tzi->nr_trip_pts++;
+> +			/* found a valid trip point */
+> +			tp_id =3D get_instance_id(d_name, 2, 0);
+> +			syslog(LOG_DEBUG, "tzone %s trip %d temp %lu tpnode %s",
+> +				tz_name, tp_id, temp_ulong, d_name);
+> +			if (tp_id < 0 || tp_id >=3D MAX_NR_TRIP) {
+> +				syslog(LOG_ERR, "Failed to find TP inst %s\n",
+> +					d_name);
+> +				return -1;
+> +			}
+> +			get_trip_point_data(tz_name, tz_id, tp_id);
+> +			tzi->tp[tp_id].temp =3D temp_ulong;
+> +		}
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +/* check cooling devices for binding info. */
+> +static int find_tzone_cdev(struct dirent *nl, char *tz_name,
+> +			struct tz_info *tzi, int tz_id, int cid)
+> +{
+> +	unsigned long trip_instance =3D 0;
+> +	char cdev_name_linked[256];
+> +	char cdev_name[256];
+> +	char cdev_trip_name[256];
+> +	int cdev_id;
+> +
+> +	if (nl->d_type =3D=3D DT_LNK) {
+> +		syslog(LOG_DEBUG, "TZ%d: cdev: %s cid %d\n", tz_id, nl->d_name,
+> +			cid);
+> +		tzi->nr_cdev++;
+> +		if (tzi->nr_cdev > ptdata.nr_cooling_dev) {
+> +			syslog(LOG_ERR, "Err: Too many cdev? %d\n",
+> +				tzi->nr_cdev);
+> +			return -EINVAL;
+> +		}
+> +		/* find the link to real cooling device record binding */
+> +		snprintf(cdev_name, 256, "%s/%s", tz_name, nl->d_name);
+> +		memset(cdev_name_linked, 0, sizeof(cdev_name_linked));
+> +		if (readlink(cdev_name, cdev_name_linked,
+> +				sizeof(cdev_name_linked) - 1) !=3D -1) {
+> +			cdev_id =3D get_instance_id(cdev_name_linked, 1,
+> +						sizeof("device") - 1);
+> +			syslog(LOG_DEBUG, "cdev %s linked to %s : %d\n",
+> +				cdev_name, cdev_name_linked, cdev_id);
+> +			tzi->cdev_binding |=3D (1 << cdev_id);
+> +
+> +			/* find the trip point in which the cdev is binded to
+> +			 * in this tzone
+> +			 */
+> +			snprintf(cdev_trip_name, 256, "%s%s", nl->d_name,
+> +				"_trip_point");
+> +			sysfs_get_ulong(tz_name, cdev_trip_name,
+> +					&trip_instance);
+> +			/* validate trip point range, e.g. trip could return -1
+> +			 * when passive is enabled
+> +			 */
+> +			if (trip_instance > MAX_NR_TRIP)
+> +				trip_instance =3D 0;
+> +			tzi->trip_binding[cdev_id] |=3D 1 << trip_instance;
+> +			syslog(LOG_DEBUG, "cdev %s -> trip:%lu: 0x%lx %d\n",
+> +				cdev_name, trip_instance,
+> +				tzi->trip_binding[cdev_id],
+> +				cdev_id);
+> +
+> +
+> +		}
+> +		return 0;
+> +	}
+> +
+> +	return -ENODEV;
+> +}
+> +
+> +
+> +
+> +/*********************************************************************=
+********
+> + * Before calling scan_tzones, thermal sysfs must be probed to determi=
+ne
+> + * the number of thermal zones and cooling devices.
+> + * We loop through each thermal zone and fill in tz_info struct, i.e.
+> + * ptdata.tzi[]
+> +root@jacob-chiefriver:~# tree -d /sys/class/thermal/thermal_zone0
+> +/sys/class/thermal/thermal_zone0
+> +|-- cdev0 -> ../cooling_device4
+> +|-- cdev1 -> ../cooling_device3
+> +|-- cdev10 -> ../cooling_device7
+> +|-- cdev11 -> ../cooling_device6
+> +|-- cdev12 -> ../cooling_device5
+> +|-- cdev2 -> ../cooling_device2
+> +|-- cdev3 -> ../cooling_device1
+> +|-- cdev4 -> ../cooling_device0
+> +|-- cdev5 -> ../cooling_device12
+> +|-- cdev6 -> ../cooling_device11
+> +|-- cdev7 -> ../cooling_device10
+> +|-- cdev8 -> ../cooling_device9
+> +|-- cdev9 -> ../cooling_device8
+> +|-- device -> ../../../LNXSYSTM:00/device:62/LNXTHERM:00
+> +|-- power
+> +`-- subsystem -> ../../../../class/thermal
+> +**********************************************************************=
+*******/
+> +static int scan_tzones(void)
+> +{
+> +	DIR *dir;
+> +	struct dirent **namelist;
+> +	char tz_name[256];
+> +	int i, j, n, k =3D 0;
+> +
+> +	if (!ptdata.nr_tz_sensor) {
+> +		syslog(LOG_ERR, "No thermal zones found!\n");
+> +		return -1;
+> +	}
+> +
+> +	for (i =3D 0; i <=3D ptdata.max_tz_instance; i++) {
+> +		memset(tz_name, 0, sizeof(tz_name));
+> +		snprintf(tz_name, 256, "%s/%s%d", THERMAL_SYSFS, TZONE, i);
+> +
+> +		dir =3D opendir(tz_name);
+> +		if (!dir) {
+> +			syslog(LOG_INFO, "Thermal zone %s skipped\n", tz_name);
+> +			continue;
+> +		}
+> +		/* keep track of valid tzones */
+> +		n =3D scandir(tz_name, &namelist, 0, alphasort);
+> +		if (n < 0)
+> +			syslog(LOG_ERR, "scandir failed in %s",  tz_name);
+> +		else {
+> +			sysfs_get_string(tz_name, "type", ptdata.tzi[k].type);
+> +			ptdata.tzi[k].instance =3D i;
+> +			/* detect trip points and cdev attached to this tzone */
+> +			j =3D 0; /* index for cdev */
+> +			ptdata.tzi[k].nr_cdev =3D 0;
+> +			ptdata.tzi[k].nr_trip_pts =3D 0;
+> +			while (n--) {
+> +				char *temp_str;
+> +
+> +				if (find_tzone_tp(tz_name, namelist[n]->d_name,
+> +							&ptdata.tzi[k], k))
+> +					break;
+> +				temp_str =3D strstr(namelist[n]->d_name, "cdev");
+> +				if (!temp_str) {
+> +					free(namelist[n]);
+> +					continue;
+> +				}
+> +				if (!find_tzone_cdev(namelist[n], tz_name,
+> +							&ptdata.tzi[k], i, j))
+> +					j++; /* increment cdev index */
+> +				free(namelist[n]);
+> +			}
+> +			free(namelist);
+> +		}
+> +		/*TODO: reverse trip points */
+> +		closedir(dir);
+> +		syslog(LOG_INFO, "TZ %d has %d cdev\n",	i,
+> +			ptdata.tzi[k].nr_cdev);
+> +		k++;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static int scan_cdevs(void)
+> +{
+> +	DIR *dir;
+> +	struct dirent **namelist;
+> +	char cdev_name[256];
+> +	int i, n, k =3D 0;
+> +
+> +	for (i =3D 0; i <=3D ptdata.max_cdev_instance; i++) {
+> +		memset(cdev_name, 0, sizeof(cdev_name));
+> +		snprintf(cdev_name, 256, "%s/%s%d", THERMAL_SYSFS, CDEV, i);
+> +
+> +		dir =3D opendir(cdev_name);
+> +		if (!dir) {
+> +			syslog(LOG_INFO, "Cooling dev %s skipped\n", cdev_name);
+> +			/* there is a gap in cooling device id, check again
+> +			 * for the same index.
+> +			 */
+> +			continue;
+> +		}
+> +
+> +		n =3D scandir(cdev_name, &namelist, 0, alphasort);
+> +		if (n < 0)
+> +			syslog(LOG_ERR, "scandir failed in %s",  cdev_name);
+> +		else {
+> +			sysfs_get_string(cdev_name, "type", ptdata.cdi[k].type);
+> +			ptdata.cdi[k].instance =3D i;
+> +			if (strstr(ptdata.cdi[k].type, ctrl_cdev)) {
+> +				ptdata.cdi[k].flag |=3D CDEV_FLAG_IN_CONTROL;
+> +				syslog(LOG_DEBUG, "control cdev id %d\n", i);
+> +			}
+> +			while (n--)
+> +				free(namelist[n]);
+> +			free(namelist);
+> +		}
+> +		closedir(dir);
+> +		k++;
+> +	}
+> +	return 0;
+> +}
+> +
+> +
+> +int probe_thermal_sysfs(void)
+> +{
+> +	DIR *dir;
+> +	struct dirent **namelist;
+> +	int n;
+> +
+> +	dir =3D opendir(THERMAL_SYSFS);
+> +	if (!dir) {
+> +		syslog(LOG_ERR, "No thermal sysfs\n");
+> +		return -1;
+> +	}
+> +	n =3D scandir(THERMAL_SYSFS, &namelist, 0, alphasort);
+> +	if (n < 0)
+> +		syslog(LOG_ERR, "scandir failed in thermal sysfs");
+> +	else {
+> +		/* detect number of thermal zones and cooling devices */
+> +		while (n--) {
+> +			int inst;
+> +
+> +			if (strstr(namelist[n]->d_name, CDEV)) {
+> +				inst =3D get_instance_id(namelist[n]->d_name, 1,
+> +						sizeof("device") - 1);
+> +				/* keep track of the max cooling device since
+> +				 * there may be gaps.
+> +				 */
+> +				if (inst > ptdata.max_cdev_instance)
+> +					ptdata.max_cdev_instance =3D inst;
+> +
+> +				syslog(LOG_DEBUG, "found cdev: %s %d %d\n",
+> +					namelist[n]->d_name,
+> +					ptdata.nr_cooling_dev,
+> +					ptdata.max_cdev_instance);
+> +				ptdata.nr_cooling_dev++;
+> +			} else if (strstr(namelist[n]->d_name, TZONE)) {
+> +				inst =3D get_instance_id(namelist[n]->d_name, 1,
+> +						sizeof("zone") - 1);
+> +				if (inst > ptdata.max_tz_instance)
+> +					ptdata.max_tz_instance =3D inst;
+> +
+> +				syslog(LOG_DEBUG, "found tzone: %s %d %d\n",
+> +					namelist[n]->d_name,
+> +					ptdata.nr_tz_sensor,
+> +					ptdata.max_tz_instance);
+> +				ptdata.nr_tz_sensor++;
+> +			}
+> +			free(namelist[n]);
+> +		}
+> +		free(namelist);
+> +	}
+> +	syslog(LOG_INFO, "found %d tzone(s), %d cdev(s), target zone %d\n",
+> +		ptdata.nr_tz_sensor, ptdata.nr_cooling_dev,
+> +		target_thermal_zone);
+> +	closedir(dir);
+> +
+> +	ptdata.tzi =3D calloc(sizeof(struct tz_info), ptdata.nr_tz_sensor+1);=
 
-With persistent memory provided
-writeboost can switch off the deferring barriers.
-However,
-I think all the servers are equipped with
-persistent memory is the future tale.
-So, my idea is to maintain both modes
-for RAM buffer type (volatile, non-volatile)
-and in case of the former type
-deferring hack is a good compromise.
+> +	if (!ptdata.tzi) {
+> +		syslog(LOG_ERR, "Err: allocate tz_info\n");
+> +		return -1;
+> +	}
+> +
+> +	ptdata.cdi =3D calloc(sizeof(struct cdev_info), ptdata.nr_cooling_dev=
++1);
+> +	if (!ptdata.cdi) {
+> +		syslog(LOG_ERR, "Err: allocate cdev_info\n");
+> +		return -1;
+> +	}
+> +
+> +	/* now probe tzones */
+> +	if (scan_tzones())
+> +		return -1;
+> +	if (scan_cdevs())
+> +		return -1;
+> +	return 0;
+> +}
+> +
+> +/* convert sysfs zone instance to zone array index */
+> +int zone_instance_to_index(int zone_inst)
+> +{
+> +	int i;
+> +
+> +	for (i =3D 0; i < ptdata.nr_tz_sensor; i++)
+> +		if (ptdata.tzi[i].instance =3D=3D zone_inst)
+> +			return i;
+> +	return -ENOENT;
+> +}
+> +
+> +/* read temperature of all thermal zones */
+> +int update_thermal_data()
+> +{
+> +	int i;
+> +	char tz_name[256];
+> +	static unsigned long samples;
+> +
+> +	if (!ptdata.nr_tz_sensor) {
+> +		syslog(LOG_ERR, "No thermal zones found!\n");
+> +		return -1;
+> +	}
+> +
+> +	/* circular buffer for keeping historic data */
+> +	if (cur_thermal_record >=3D NR_THERMAL_RECORDS)
+> +		cur_thermal_record =3D 0;
+> +	gettimeofday(&trec[cur_thermal_record].tv, NULL);
+> +	if (tmon_log) {
+> +		fprintf(tmon_log, "%lu ", ++samples);
+> +		fprintf(tmon_log, "%3.1f ", p_param.t_target);
+> +	}
+> +	for (i =3D 0; i < ptdata.nr_tz_sensor; i++) {
+> +		memset(tz_name, 0, sizeof(tz_name));
+> +		snprintf(tz_name, 256, "%s/%s%d", THERMAL_SYSFS, TZONE,
+> +			ptdata.tzi[i].instance);
+> +		sysfs_get_ulong(tz_name, "temp",
+> +				&trec[cur_thermal_record].temp[i]);
+> +		if (tmon_log)
+> +			fprintf(tmon_log, "%lu ",
+> +				trec[cur_thermal_record].temp[i]/1000);
+> +	}
+> +	for (i =3D 0; i < ptdata.nr_cooling_dev; i++) {
+> +		char cdev_name[256];
+> +		unsigned long val;
+> +
+> +		snprintf(cdev_name, 256, "%s/%s%d", THERMAL_SYSFS, CDEV,
+> +			ptdata.cdi[i].instance);
+> +		probe_cdev(&ptdata.cdi[i], cdev_name);
+> +		val =3D ptdata.cdi[i].cur_state;
+> +		if (val > 1000000)
+> +			val =3D 0;
+> +		if (tmon_log)
+> +			fprintf(tmon_log, "%lu ", val);
+> +	}
+> +
+> +	if (tmon_log) {
+> +		fprintf(tmon_log, "\n");
+> +		fflush(tmon_log);
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +void set_ctrl_state(unsigned long state)
+> +{
+> +	char ctrl_cdev_path[256];
+> +	int i;
+> +	unsigned long cdev_state;
+> +
+> +	if (no_control)
+> +		return;
+> +	/* set all ctrl cdev to the same state */
+> +	for (i =3D 0; i < ptdata.nr_cooling_dev; i++) {
+> +		if (ptdata.cdi[i].flag & CDEV_FLAG_IN_CONTROL) {
+> +			if (ptdata.cdi[i].max_state < 10) {
+> +				syslog(LOG_WARNING,
+> +					"not enough states in control cdev\n");
+> +				return;
+> +			}
+> +			/* scale to percentage of max_state */
+> +			cdev_state =3D state * ptdata.cdi[i].max_state/100;
+> +			syslog(LOG_DEBUG,
+> +				"ctrl cdev %d set state %lu scaled to %lu\n",
+> +				ptdata.cdi[i].instance, state, cdev_state);
+> +			snprintf(ctrl_cdev_path, 256, "%s/%s%d", THERMAL_SYSFS,
+> +				CDEV, ptdata.cdi[i].instance);
+> +			syslog(LOG_DEBUG, "ctrl cdev path %s", ctrl_cdev_path);
+> +			sysfs_set_ulong(ctrl_cdev_path, "cur_state",
+> +					cdev_state);
+> +		}
+> +	}
+> +}
+> +
+> +void get_ctrl_state(unsigned long *state)
+> +{
+> +	char ctrl_cdev_path[256];
+> +	int ctrl_cdev_id =3D -1;
+> +	int i;
+> +
+> +	/* TODO: take average of all ctrl types. also consider change based o=
+n
+> +	 * uevent. Take the first reading for now.
+> +	 */
+> +	for (i =3D 0; i < ptdata.nr_cooling_dev; i++) {
+> +		if (ptdata.cdi[i].flag & CDEV_FLAG_IN_CONTROL) {
+> +			ctrl_cdev_id =3D ptdata.cdi[i].instance;
+> +			syslog(LOG_INFO, "ctrl cdev %d get state\n",
+> +				ptdata.cdi[i].instance);
+> +			break;
+> +		}
+> +	}
+> +	if (ctrl_cdev_id =3D=3D -1) {
+> +		*state =3D 0;
+> +		return;
+> +	}
+> +	snprintf(ctrl_cdev_path, 256, "%s/%s%d", THERMAL_SYSFS,
+> +		CDEV, ctrl_cdev_id);
+> +	sysfs_get_ulong(ctrl_cdev_path, "cur_state", state);
+> +}
+> +
+> +void free_thermal_data(void)
+> +{
+> +	free(ptdata.tzi);
+> +	free(ptdata.cdi);
+> +}
+> diff --git a/tools/thermal/tmon/tmon.8 b/tools/thermal/tmon/tmon.8
+> new file mode 100644
+> index 0000000..0be727c
+> --- /dev/null
+> +++ b/tools/thermal/tmon/tmon.8
+> @@ -0,0 +1,142 @@
+> +.TH TMON 8
+> +.SH NAME
+> +\fBtmon\fP - A monitoring and testing tool for Linux kernel thermal su=
+bsystem
+> +
+> +.SH SYNOPSIS
+> +.ft B
+> +.B tmon
+> +.RB [ Options ]
+> +.br
+> +.SH DESCRIPTION
+> +\fBtmon \fP can be used to visualize thermal relationship and
+> +real-time thermal data; tune
+> +and test cooling devices and sensors; collect thermal data for offline=
 
-Akira
+> +analysis and plot. \fBtmon\fP must be run as root in order to control =
+device
+> +states via sysfs.
+> +.PP
+> +\fBFunctions\fP
+> +.PP
+> +.nf
+> +1. Thermal relationships:
+> +- show thermal zone information
+> +- show cooling device information
+> +- show trip point binding within each thermal zone
+> +- show trip point and cooling device instance bindings
+> +.PP
+> +2. Real time data display
+> +- show temperature of all thermal zones w.r.t. its trip points and typ=
+es
+> +- show states of all cooling devices
+> +.PP
+> +3. Thermal relationship learning and device tuning
+> +- with a built-in Proportional Integral Derivative (\fBPID\fP)
+> +controller, user can pair a cooling device to a thermal sensor for
+> +testing the effectiveness and learn about the thermal distance between=
+ the two
+> +- allow manual control of cooling device states and target temperature=
+
+> +.PP
+> +4. Data logging in /var/tmp/tmon.log
+> +- contains thermal configuration data, i.e. cooling device, thermal
+> + zones, and trip points. Can be used for data  collection in remote
+> + debugging.
+> +- log real-time thermal data into space separated format that can be
+> + directly consumed by plotting tools such as Rscript.
+> +
+> +.SS Options
+> +.PP
+> +The \fB-c --control\fP option sets a cooling device type to control te=
+mperature
+> +of a thermal zone
+> +.PP
+> +The \fB-d --daemon\fP option runs \fBtmon \fP as daemon without user i=
+nterface
+> +.PP
+> +The \fB-g --debug\fP option allow debug messages to be stored in syslo=
+g
+> +.PP
+> +The \fB-h --help\fP option shows help message
+> +.PP
+> +The \fB-l --log\fP option write data to /var/tmp/tmon.log
+> +.PP
+> +The \fB-t --time-interval\fP option sets the polling interval in secon=
+ds
+> +.PP
+> +The \fB-v --version\fP option shows the version of \fBtmon \fP
+> +.PP
+> +The \fB-z --zone\fP option sets the target therma zone instance to be =
+controlled
+> +.PP
+> +
+> +.SH FIELD DESCRIPTIONS
+> +.nf
+> +.PP
+> +\fBP \fP passive cooling trip point type
+> +\fBA \fP active cooling trip point type (fan)
+> +\fBC \fP critical trip point type
+> +\fBA \fP hot trip point type
+> +\fBkp \fP proportional gain of \fBPID\fP controller
+> +\fBki \fP integral gain of \fBPID\fP controller
+> +\fBkd \fP derivative gain of \fBPID\fP controller
+> +
+> +.SH REQUIREMENT
+> +Build depends on ncurses
+> +.PP
+> +Runtime depends on window size large enough to show the number of
+> +devices found on the system.
+> +
+> +.PP
+> +
+> +.SH INTERACTIVE COMMANDS
+> +.pp
+> +.nf
+> +\fBCtrl-C, q/Q\fP stops \fBtmon\fP
+> +\fBTAB\fP shows tuning pop up panel, choose a letter to modify
+> +
+> +.SH EXAMPLES
+> +Without any parameters, tmon is in monitoring only mode and refresh
+> +screen every 1 second.
+> +.PP
+> +1. For monitoring only:
+> +.nf
+> +$ sudo ./tmon
+> +
+> +2. Use Processor cooling device to control thermal zone 0 at default 6=
+5C.
+> +$ sudo ./tmon -c Processor -z 0
+> +
+> +3. Use intel_powerclamp(idle injection) cooling device to control ther=
+mal zone 1
+> +$ sudo ./tmon -c intel_powerclamp -z 1
+> +
+> +4. Turn on debug and collect data log at /var/tmp/tmon.log
+> +$ sudo ./tmon -g -l
+> +
+> +For example, the log below shows PID controller was adjusting current =
+states
+> +for all cooling devices with "Processor" type such that thermal zone 0=
+
+> +can stay below 65 dC.
+> +
+> +#---------- THERMAL DATA LOG STARTED -----------
+> +Samples TargetTemp acpitz0    acpitz1    Fan0 Fan1 Fan2 Fan3 Fan4 Fan5=
+
+> +Fan6 Fan7 Fan8 Fan9 Processor10 Processor11 Processor12 Processor13
+> +LCD14 intel_powerclamp15 1 65.0 65 65 0 0 0 0 0 0 0 0 0 0 0 0 0 0 6 0 =
+2
+> +65.0 66 65 0 0 0 0 0 0 0 0 0 0 4 4 4 4 6 0 3 65.0 60 54 0 0 0 0 0 0 0 =
+0
+> +0 0 4 4 4 4 6 0 4 65.0 53 53 0 0 0 0 0 0 0 0 0 0 4 4 4 4 6 0
+> +5 65.0 52 52 0 0 0 0 0 0 0 0 0 0 0 0 0 0 6 0
+> +6 65.0 53 65 0 0 0 0 0 0 0 0 0 0 0 0 0 0 6 0
+> +7 65.0 68 70 0 0 0 0 0 0 0 0 0 0 0 0 0 0 6 0
+> +8 65.0 68 68 0 0 0 0 0 0 0 0 0 0 5 5 5 5 6 0
+> +9 65.0 68 68 0 0 0 0 0 0 0 0 0 0 6 6 6 6 6 0
+> +10 65.0 67 67 0 0 0 0 0 0 0 0 0 0 7 7 7 7 6 0
+> +11 65.0 67 67 0 0 0 0 0 0 0 0 0 0 8 8 8 8 6 0
+> +12 65.0 67 67 0 0 0 0 0 0 0 0 0 0 8 8 8 8 6 0
+> +13 65.0 67 67 0 0 0 0 0 0 0 0 0 0 9 9 9 9 6 0
+> +14 65.0 66 66 0 0 0 0 0 0 0 0 0 0 10 10 10 10 6 0
+> +15 65.0 66 67 0 0 0 0 0 0 0 0 0 0 10 10 10 10 6 0
+> +16 65.0 66 66 0 0 0 0 0 0 0 0 0 0 11 11 11 11 6 0
+> +17 65.0 66 66 0 0 0 0 0 0 0 0 0 0 11 11 11 11 6 0
+> +18 65.0 64 61 0 0 0 0 0 0 0 0 0 0 11 11 11 11 6 0
+> +19 65.0 60 59 0 0 0 0 0 0 0 0 0 0 12 12 12 12 6 0
+> +
+> +Data can be read directly into an array by an example R-script below:
+> +
+> +#!/usr/bin/Rscript
+> +tdata <- read.table("/var/tmp/tmon.log", header=3DT, comment.char=3D"#=
+")
+> +attach(tdata)
+> +jpeg("tmon.jpg")
+> +X11()
+> +g_range <- range(0, intel_powerclamp15, TargetTemp, acpitz0)
+> +plot( Samples, intel_powerclamp15, col=3D"blue", ylim=3Dg_range, axes=3D=
+FALSE, ann=3DFALSE)
+> +par(new=3DTRUE)
+> +lines(TargetTemp, type=3D"o", pch=3D22, lty=3D2, col=3D"red")
+> +dev.off()
+> diff --git a/tools/thermal/tmon/tmon.c b/tools/thermal/tmon/tmon.c
+> new file mode 100644
+> index 0000000..5f13fb1
+> --- /dev/null
+> +++ b/tools/thermal/tmon/tmon.c
+> @@ -0,0 +1,350 @@
+> +/*
+> + * tmon.c Thermal Monitor (TMON) main function and entry point
+> + *
+> + * Copyright (C) 2012 Intel Corporation. All rights reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License version=
+
+> + * 2 or later as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * Author: Jacob Pan <jacob.jun.pan@linux.intel.com>
+> + *
+> + */
+> +
+> +#include <getopt.h>
+> +#include <unistd.h>
+> +#include <stdio.h>
+> +#include <stdlib.h>
+> +#include <string.h>
+> +#include <sys/types.h>
+> +#include <sys/stat.h>
+> +#include <ncurses.h>
+> +#include <ctype.h>
+> +#include <time.h>
+> +#include <signal.h>
+> +#include <limits.h>
+> +#include <sys/time.h>
+> +#include <pthread.h>
+> +#include <math.h>
+> +#include <stdarg.h>
+> +#include <syslog.h>
+> +
+> +#include "tmon.h"
+> +
+> +unsigned long ticktime =3D 1; /* seconds */
+> +unsigned long no_control =3D 1; /* monitoring only or use cooling devi=
+ce for
+> +			       * temperature control.
+> +			       */
+> +double time_elapsed =3D 0.0;
+> +unsigned long target_temp_user =3D 65; /* can be select by tui later *=
+/
+> +int dialogue_on;
+> +int tmon_exit;
+> +static short	daemon_mode;
+> +static int logging; /* for recording thermal data to a file */
+> +static int debug_on;
+> +FILE *tmon_log;
+> +char ctrl_cdev[CDEV_NAME_SIZE]; /*cooling device used for the PID cont=
+roller */
+> +int target_thermal_zone; /* user selected target zone instance */
+> +static void	start_daemon_mode(void);
+> +
+> +pthread_t event_tid;
+> +pthread_mutex_t input_lock;
+> +void usage()
+> +{
+> +	printf("Usage: tmon [OPTION...]\n");
+> +	printf("  -c, --control         cooling device in control\n");
+> +	printf("  -d, --daemon          run as daemon, no TUI\n");
+> +	printf("  -g, --debug           debug message in syslog\n");
+> +	printf("  -h, --help            show this help message\n");
+> +	printf("  -l, --log             log data to /var/tmp/tmon.log\n");
+> +	printf("  -t, --time-interval   sampling time interval, > 1 sec.\n");=
+
+> +	printf("  -v, --version         show version\n");
+> +	printf("  -z, --zone            target thermal zone id\n");
+> +
+> +	exit(0);
+> +}
+> +
+> +void version()
+> +{
+> +	printf("TMON version %s\n", VERSION);
+> +	exit(EXIT_SUCCESS);
+> +}
+> +
+> +static void tmon_cleanup(void)
+> +{
+> +
+> +	syslog(LOG_INFO, "TMON exit cleanup\n");
+> +	fflush(stdout);
+> +	refresh();
+> +	if (tmon_log)
+> +		fclose(tmon_log);
+> +	if (event_tid) {
+> +		pthread_mutex_lock(&input_lock);
+> +		pthread_cancel(event_tid);
+> +		pthread_mutex_unlock(&input_lock);
+> +		pthread_mutex_destroy(&input_lock);
+> +	}
+> +	closelog();
+> +	/* relax control knobs, undo throttling */
+> +	set_ctrl_state(0);
+> +
+> +	keypad(stdscr, FALSE);
+> +	echo();
+> +	nocbreak();
+> +	close_windows();
+> +	endwin();
+> +	free_thermal_data();
+> +
+> +	exit(1);
+> +}
+> +
+> +
+> +static void tmon_sig_handler(int sig)
+> +{
+> +	syslog(LOG_INFO, "TMON caught signal %d\n", sig);
+> +	refresh();
+> +	switch (sig) {
+> +	case SIGTERM:
+> +		printf("sigterm, exit and clean up\n");
+> +		fflush(stdout);
+> +		break;
+> +	case SIGKILL:
+> +		printf("sigkill, exit and clean up\n");
+> +		fflush(stdout);
+> +		break;
+> +	case SIGINT:
+> +		printf("ctrl-c, exit and clean up\n");
+> +		fflush(stdout);
+> +		break;
+> +	default:
+> +		break;
+> +	}
+> +	tmon_exit =3D true;
+> +}
+> +
+> +
+> +static void start_syslog(void)
+> +{
+> +	if (debug_on)
+> +		setlogmask(LOG_UPTO(LOG_DEBUG));
+> +	else
+> +		setlogmask(LOG_UPTO(LOG_ERR));
+> +	openlog("tmon.log", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL0);
+> +	syslog(LOG_NOTICE, "TMON started by User %d", getuid());
+> +}
+> +
+> +static void prepare_logging(void)
+> +{
+> +	int i;
+> +
+> +	if (!logging)
+> +		return;
+> +	/* open local data log file */
+> +	tmon_log =3D fopen(TMON_LOG_FILE, "w+");
+> +	if (!tmon_log) {
+> +		syslog(LOG_ERR, "failed to open log file %s\n", TMON_LOG_FILE);
+> +		return;
+> +	}
+> +
+> +	fprintf(tmon_log, "#----------- THERMAL SYSTEM CONFIG -------------\n=
+");
+> +	for (i =3D 0; i < ptdata.nr_tz_sensor; i++) {
+> +		char binding_str[33]; /* size of long + 1 */
+> +		int j;
+> +
+> +		memset(binding_str, 0, sizeof(binding_str));
+> +		for (j =3D 0; j < 32; j++)
+> +			binding_str[j] =3D (ptdata.tzi[i].cdev_binding & 1<<j) ?
+> +				'1' : '0';
+> +
+> +		fprintf(tmon_log, "#thermal zone %s%02d cdevs binding: %32s\n",
+> +			ptdata.tzi[i].type,
+> +			ptdata.tzi[i].instance,
+> +			binding_str);
+> +		for (j =3D 0; j <	ptdata.tzi[i].nr_trip_pts; j++) {
+> +			fprintf(tmon_log, "#\tTP%02d type:%s, temp:%lu\n", j,
+> +				trip_type_name[ptdata.tzi[i].tp[j].type],
+> +				ptdata.tzi[i].tp[j].temp);
+> +		}
+> +
+> +	}
+> +
+> +	for (i =3D 0; i <	ptdata.nr_cooling_dev; i++)
+> +		fprintf(tmon_log, "#cooling devices%02d: %s\n",
+> +			i, ptdata.cdi[i].type);
+> +
+> +	fprintf(tmon_log, "#---------- THERMAL DATA LOG STARTED -----------\n=
+");
+> +	fprintf(tmon_log, "Samples TargetTemp ");
+> +	for (i =3D 0; i < ptdata.nr_tz_sensor; i++) {
+> +		fprintf(tmon_log, "%s%d    ", ptdata.tzi[i].type,
+> +			ptdata.tzi[i].instance);
+> +	}
+> +	for (i =3D 0; i <	ptdata.nr_cooling_dev; i++)
+> +		fprintf(tmon_log, "%s%d ", ptdata.cdi[i].type,
+> +			ptdata.cdi[i].instance);
+> +
+> +	fprintf(tmon_log, "\n");
+> +}
+> +
+> +static struct option opts[] =3D {
+> +	{ "control", 1, NULL, 'c' },
+> +	{ "daemon", 0, NULL, 'd' },
+> +	{ "time-interval", 1, NULL, 't' },
+> +	{ "log", 0, NULL, 'l' },
+> +	{ "help", 0, NULL, 'h' },
+> +	{ "version", 0, NULL, 'v' },
+> +	{ "debug", 0, NULL, 'g' },
+> +	{ 0, 0, NULL, 0 }
+> +};
+> +
+> +
+> +int main(int argc, char **argv)
+> +{
+> +	int err =3D 0;
+> +	int id2 =3D 0, c;
+> +	double yk =3D 0.0; /* controller output */
+> +	int target_tz_index;
+> +
+> +	if (geteuid() !=3D 0) {
+> +		printf("TMON needs to be run as root\n");
+> +		exit(EXIT_FAILURE);
+> +	}
+> +
+> +	while ((c =3D getopt_long(argc, argv, "c:dlht:vgz:", opts, &id2)) !=3D=
+ -1) {
+> +		switch (c) {
+> +		case 'c':
+> +			no_control =3D 0;
+> +			strncpy(ctrl_cdev, optarg, CDEV_NAME_SIZE);
+> +			break;
+> +		case 'd':
+> +			start_daemon_mode();
+> +			printf("Run TMON in daemon mode\n");
+> +			break;
+> +		case 't':
+> +			ticktime =3D strtod(optarg, NULL);
+> +			if (ticktime < 1)
+> +				ticktime =3D 1;
+> +			break;
+> +		case 'l':
+> +			printf("Logging data to /var/tmp/tmon.log\n");
+> +			logging =3D 1;
+> +			break;
+> +		case 'h':
+> +			usage();
+> +			break;
+> +		case 'v':
+> +			version();
+> +			break;
+> +		case 'g':
+> +			debug_on =3D 1;
+> +			break;
+> +		case 'z':
+> +			target_thermal_zone =3D strtod(optarg, NULL);
+> +			break;
+> +		default:
+> +			break;
+> +		}
+> +	}
+> +	if (pthread_mutex_init(&input_lock, NULL) !=3D 0) {
+> +		printf("\n mutex init failed\n");
+> +		return 1;
+> +	}
+> +	start_syslog();
+> +	if (signal(SIGINT, tmon_sig_handler) =3D=3D SIG_ERR)
+> +		syslog(LOG_DEBUG, "Cannot handle SIGINT\n");
+> +	if (signal(SIGTERM, tmon_sig_handler) =3D=3D SIG_ERR)
+> +		syslog(LOG_DEBUG, "Cannot handle SIGINT\n");
+> +
+> +	if (probe_thermal_sysfs()) {
+> +		closelog();
+> +		return -1;
+> +	}
+> +	initialize_curses();
+> +	setup_windows();
+> +	signal(SIGWINCH, resize_handler);
+> +	show_title_bar();
+> +	show_sensors_w();
+> +	show_cooling_device();
+> +	update_thermal_data();
+> +	show_data_w();
+> +	prepare_logging();
+> +	init_thermal_controller();
+> +
+> +	nodelay(stdscr, TRUE);
+> +	err =3D pthread_create(&event_tid, NULL, &handle_tui_events, NULL);
+> +	if (err !=3D 0) {
+> +		printf("\ncan't create thread :[%s]", strerror(err));
+> +		tmon_cleanup();
+> +		exit(EXIT_FAILURE);
+> +	}
+> +
+> +	/* validate range of user selected target zone, default to the first
+> +	 * instance if out of range
+> +	 */
+> +	target_tz_index =3D zone_instance_to_index(target_thermal_zone);
+> +	if (target_tz_index < 0) {
+> +		target_thermal_zone =3D ptdata.tzi[0].instance;
+> +		syslog(LOG_ERR, "target zone is not found, default to %d\n",
+> +			target_thermal_zone);
+> +	}
+> +	while (1) {
+> +		sleep(ticktime);
+> +		show_title_bar();
+> +		show_sensors_w();
+> +		update_thermal_data();
+> +		if (!dialogue_on) {
+> +			show_data_w();
+> +			show_cooling_device();
+> +		}
+> +		cur_thermal_record++;
+> +		time_elapsed +=3D ticktime;
+> +		controller_handler(trec[0].temp[target_tz_index] / 1000,
+> +				&yk);
+> +		trec[0].pid_out_pct =3D yk;
+> +		if (!dialogue_on)
+> +			show_control_w();
+> +		if (tmon_exit)
+> +			break;
+> +	}
+> +	tmon_cleanup();
+> +	return 0;
+> +}
+> +
+> +static void start_daemon_mode()
+> +{
+> +	daemon_mode =3D 1;
+> +	/* fork */
+> +	pid_t	sid, pid =3D fork();
+> +	if (pid < 0) {
+> +		exit(EXIT_FAILURE);
+> +	} else if (pid > 0)
+> +		/* kill parent */
+> +		exit(EXIT_SUCCESS);
+> +
+> +	/* disable TUI, it may not be necessary, but saves some resource */
+> +	disable_tui();
+> +
+> +	/* change the file mode mask */
+> +	umask(0);
+> +
+> +	/* new SID for the daemon process */
+> +	sid =3D setsid();
+> +	if (sid < 0)
+> +		exit(EXIT_FAILURE);
+> +
+> +	/* change working directory */
+> +	if ((chdir("/")) < 0)
+> +		exit(EXIT_FAILURE);
+> +
+> +
+> +	sleep(10);
+> +
+> +	close(STDIN_FILENO);
+> +	close(STDOUT_FILENO);
+> +	close(STDERR_FILENO);
+> +
+> +}
+> diff --git a/tools/thermal/tmon/tmon.h b/tools/thermal/tmon/tmon.h
+> new file mode 100644
+> index 0000000..9e3c49c
+> --- /dev/null
+> +++ b/tools/thermal/tmon/tmon.h
+> @@ -0,0 +1,204 @@
+> +/*
+> + * tmon.h contains data structures and constants used by TMON
+> + *
+> + * Copyright (C) 2012 Intel Corporation. All rights reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License version=
+
+> + * 2 or later as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * Author Name Jacob Pan <jacob.jun.pan@linux.intel.com>
+> + *
+> + */
+> +
+> +#ifndef TMON_H
+> +#define TMON_H
+> +
+> +#define MAX_DISP_TEMP 125
+> +#define MAX_CTRL_TEMP 105
+> +#define MIN_CTRL_TEMP 40
+> +#define MAX_NR_TZONE 16
+> +#define MAX_NR_CDEV 32
+> +#define MAX_NR_TRIP 16
+> +#define MAX_NR_CDEV_TRIP 12 /* number of cooling devices that can bind=
+
+> +			     * to a thermal zone trip.
+> +			     */
+> +#define MAX_TEMP_KC 140000
+> +/* starting char position to draw sensor data, such as tz names
+> + * trip point list, etc.
+> + */
+> +#define DATA_LEFT_ALIGN 10
+> +#define NR_LINES_TZDATA 1
+> +#define TMON_LOG_FILE "/var/tmp/tmon.log"
+> +
+> +extern unsigned long ticktime;
+> +extern double time_elapsed;
+> +extern unsigned long target_temp_user;
+> +extern int dialogue_on;
+> +extern char ctrl_cdev[];
+> +extern pthread_mutex_t input_lock;
+> +extern int tmon_exit;
+> +extern int target_thermal_zone;
+> +/* use fixed size record to simplify data processing and transfer
+> + * TBD: more info to be added, e.g. programmable trip point data.
+> +*/
+> +struct thermal_data_record {
+> +	struct timeval tv;
+> +	unsigned long temp[MAX_NR_TZONE];
+> +	double pid_out_pct;
+> +};
+> +
+> +struct cdev_info {
+> +	char type[64];
+> +	int instance;
+> +	unsigned long max_state;
+> +	unsigned long cur_state;
+> +	unsigned long flag;
+> +};
+> +
+> +enum trip_type {
+> +	THERMAL_TRIP_CRITICAL,
+> +	THERMAL_TRIP_HOT,
+> +	THERMAL_TRIP_PASSIVE,
+> +	THERMAL_TRIP_ACTIVE,
+> +	NR_THERMAL_TRIP_TYPE,
+> +};
+> +
+> +struct trip_point {
+> +	enum trip_type type;
+> +	unsigned long temp;
+> +	unsigned long hysteresis;
+> +	int attribute; /* programmability etc. */
+> +};
+> +
+> +/* thermal zone configuration information, binding with cooling device=
+s could
+> + * change at runtime.
+> + */
+> +struct tz_info {
+> +	char type[256]; /* e.g. acpitz */
+> +	int instance;
+> +	int passive; /* active zone has passive node to force passive mode */=
+
+> +	int nr_cdev; /* number of cooling device binded */
+> +	int nr_trip_pts;
+> +	struct trip_point tp[MAX_NR_TRIP];
+> +	unsigned long cdev_binding; /* bitmap for attached cdevs */
+> +	/* cdev bind trip points, allow one cdev bind to multiple trips */
+> +	unsigned long trip_binding[MAX_NR_CDEV];
+> +};
+> +
+> +struct tmon_platform_data {
+> +	int nr_tz_sensor;
+> +	int nr_cooling_dev;
+> +	/* keep track of instance ids since there might be gaps */
+> +	int max_tz_instance;
+> +	int max_cdev_instance;
+> +	struct tz_info *tzi;
+> +	struct cdev_info *cdi;
+> +};
+> +
+> +struct control_ops {
+> +	void (*set_ratio)(unsigned long ratio);
+> +	unsigned long (*get_ratio)(unsigned long ratio);
+> +
+> +};
+> +
+> +enum cdev_types {
+> +	CDEV_TYPE_PROC,
+> +	CDEV_TYPE_FAN,
+> +	CDEV_TYPE_MEM,
+> +	CDEV_TYPE_NR,
+> +};
+> +
+> +/* REVISIT: the idea is to group sensors if possible, e.g. on intel mi=
+d
+> + * we have "skin0", "skin1", "sys", "msicdie"
+> + * on DPTF enabled systems, we might have PCH, TSKN, TAMB, etc.
+> + */
+> +enum tzone_types {
+> +	TZONE_TYPE_ACPI,
+> +	TZONE_TYPE_PCH,
+> +	TZONE_TYPE_NR,
+> +};
+> +
+> +/* limit the output of PID controller adjustment */
+> +#define LIMIT_HIGH (95)
+> +#define LIMIT_LOW  (2)
+> +
+> +struct pid_params {
+> +	double kp;  /* Controller gain from Dialog Box */
+> +	double ki;  /* Time-constant for I action from Dialog Box */
+> +	double kd;  /* Time-constant for D action from Dialog Box */
+> +	double ts;
+> +	double k_lpf;
+> +
+> +	double t_target;
+> +	double y_k;
+> +};
+> +
+> +extern int init_thermal_controller(void);
+> +extern void controller_handler(const double xk, double *yk);
+> +
+> +extern struct tmon_platform_data ptdata;
+> +extern struct pid_params p_param;
+> +
+> +extern FILE *tmon_log;
+> +extern int cur_thermal_record; /* index to the trec array */
+> +extern struct thermal_data_record trec[];
+> +extern const char *trip_type_name[];
+> +extern unsigned long no_control;
+> +
+> +extern void initialize_curses(void);
+> +extern void show_controller_stats(char *line);
+> +extern void show_title_bar(void);
+> +extern void setup_windows(void);
+> +extern void disable_tui(void);
+> +extern void show_sensors_w(void);
+> +extern void show_data_w(void);
+> +extern void write_status_bar(int x, char *line);
+> +extern void show_control_w();
+> +
+> +extern void show_cooling_device(void);
+> +extern void show_dialogue(void);
+> +extern int update_thermal_data(void);
+> +
+> +extern int probe_thermal_sysfs(void);
+> +extern void free_thermal_data(void);
+> +extern	void resize_handler(int sig);
+> +extern void set_ctrl_state(unsigned long state);
+> +extern void get_ctrl_state(unsigned long *state);
+> +extern void *handle_tui_events(void *arg);
+> +extern int sysfs_set_ulong(char *path, char *filename, unsigned long v=
+al);
+> +extern int zone_instance_to_index(int zone_inst);
+> +extern void close_windows(void);
+> +
+> +#define PT_COLOR_DEFAULT    1
+> +#define PT_COLOR_HEADER_BAR 2
+> +#define PT_COLOR_ERROR      3
+> +#define PT_COLOR_RED        4
+> +#define PT_COLOR_YELLOW     5
+> +#define PT_COLOR_GREEN      6
+> +#define PT_COLOR_BRIGHT     7
+> +#define PT_COLOR_BLUE	    8
+> +
+> +/* each thermal zone uses 12 chars, 8 for name, 2 for instance, 2 spac=
+e
+> + * also used to list trip points in forms of AAAC, which represents
+> + * A: Active
+> + * C: Critical
+> + */
+> +#define TZONE_RECORD_SIZE 12
+> +#define TZ_LEFT_ALIGN 32
+> +#define CDEV_NAME_SIZE 20
+> +#define CDEV_FLAG_IN_CONTROL (1 << 0)
+> +
+> +/* dialogue box starts */
+> +#define DIAG_X 48
+> +#define DIAG_Y 8
+> +#define THERMAL_SYSFS "/sys/class/thermal"
+> +#define CDEV "cooling_device"
+> +#define TZONE "thermal_zone"
+> +#define TDATA_LEFT 16
+> +#endif /* TMON_H */
+> diff --git a/tools/thermal/tmon/tui.c b/tools/thermal/tmon/tui.c
+> new file mode 100644
+> index 0000000..957ecf3
+> --- /dev/null
+> +++ b/tools/thermal/tmon/tui.c
+> @@ -0,0 +1,631 @@
+> +/*
+> + * tui.c ncurses text user interface for TMON program
+> + *
+> + * Copyright (C) 2013 Intel Corporation. All rights reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License version=
+
+> + * 2 or later as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * Author: Jacob Pan <jacob.jun.pan@linux.intel.com>
+> + *
+> + */
+> +
+> +#include <unistd.h>
+> +#include <stdio.h>
+> +#include <stdlib.h>
+> +#include <string.h>
+> +#include <stdint.h>
+> +#include <ncurses.h>
+> +#include <time.h>
+> +#include <syslog.h>
+> +#include <panel.h>
+> +#include <pthread.h>
+> +#include <signal.h>
+> +
+> +#include "tmon.h"
+> +
+> +static PANEL *data_panel;
+> +static PANEL *dialogue_panel;
+> +static PANEL *top;
+> +
+> +static WINDOW *title_bar_window;
+> +static WINDOW *tz_sensor_window;
+> +static WINDOW *cooling_device_window;
+> +static WINDOW *control_window;
+> +static WINDOW *status_bar_window;
+> +static WINDOW *thermal_data_window;
+> +static WINDOW *dialogue_window;
+> +
+> +char status_bar_slots[10][40];
+> +static void draw_hbar(WINDOW *win, int y, int start, int len,
+> +		unsigned long pattern, bool end);
+> +
+> +static int maxx, maxy;
+> +static int maxwidth =3D 200;
+> +
+> +#define TITLE_BAR_HIGHT 1
+> +#define SENSOR_WIN_HIGHT 4 /* one row for tz name, one for trip points=
+ */
+> +
+> +
+> +/* daemon mode flag (set by startup parameter -d) */
+> +static int  tui_disabled;
+> +
+> +static void close_panel(PANEL *p)
+> +{
+> +	if (p) {
+> +		del_panel(p);
+> +		p =3D NULL;
+> +	}
+> +}
+> +
+> +static void close_window(WINDOW *win)
+> +{
+> +	if (win) {
+> +		delwin(win);
+> +		win =3D NULL;
+> +	}
+> +}
+> +
+> +void close_windows(void)
+> +{
+> +	if (tui_disabled)
+> +		return;
+> +	/* must delete panels before their attached windows */
+> +	if (dialogue_window)
+> +		close_panel(dialogue_panel);
+> +	if (cooling_device_window)
+> +		close_panel(data_panel);
+> +
+> +	close_window(title_bar_window);
+> +	close_window(tz_sensor_window);
+> +	close_window(status_bar_window);
+> +	close_window(cooling_device_window);
+> +	close_window(control_window);
+> +	close_window(thermal_data_window);
+> +	close_window(dialogue_window);
+> +
+> +}
+> +
+> +void write_status_bar(int x, char *line)
+> +{
+> +	mvwprintw(status_bar_window, 0, x, "%s", line);
+> +	wrefresh(status_bar_window);
+> +}
+> +
+> +void setup_windows(void)
+> +{
+> +	int y_begin =3D 1;
+> +
+> +	if (tui_disabled)
+> +		return;
+> +
+> +	getmaxyx(stdscr, maxy, maxx);
+> +	resizeterm(maxy, maxx);
+> +
+> +	title_bar_window =3D subwin(stdscr, TITLE_BAR_HIGHT, maxx, 0, 0);
+> +	y_begin +=3D TITLE_BAR_HIGHT;
+> +
+> +	tz_sensor_window =3D subwin(stdscr, SENSOR_WIN_HIGHT, maxx, y_begin, =
+0);
+> +	y_begin +=3D SENSOR_WIN_HIGHT;
+> +
+> +	cooling_device_window =3D subwin(stdscr, ptdata.nr_cooling_dev + 3, m=
+axx,
+> +				y_begin, 0);
+> +	y_begin +=3D ptdata.nr_cooling_dev + 3; /* 2 lines for border */
+> +	/* two lines to show borders, one line per tz show trip point positio=
+n
+> +	 * and value.
+> +	 * dialogue window is a pop-up, when needed it lays on top of cdev wi=
+n
+> +	 */
+> +
+> +	dialogue_window =3D subwin(stdscr, ptdata.nr_cooling_dev+5, maxx-50,
+> +				DIAG_Y, DIAG_X);
+> +
+> +	thermal_data_window =3D subwin(stdscr, ptdata.nr_tz_sensor *
+> +				NR_LINES_TZDATA + 3, maxx, y_begin, 0);
+> +	y_begin +=3D ptdata.nr_tz_sensor * NR_LINES_TZDATA + 3;
+> +	control_window =3D subwin(stdscr, 4, maxx, y_begin, 0);
+> +
+> +	scrollok(cooling_device_window, TRUE);
+> +	maxwidth =3D maxx - 18;
+> +	status_bar_window =3D subwin(stdscr, 1, maxx, maxy-1, 0);
+> +
+> +	strcpy(status_bar_slots[0], " Ctrl-c - Quit ");
+> +	strcpy(status_bar_slots[1], " TAB - Tuning ");
+> +	wmove(status_bar_window, 1, 30);
+> +
+> +	/* prepare panels for dialogue, if panel already created then we must=
+
+> +	 * be doing resizing, so just replace windows with new ones, old ones=
+
+> +	 * should have been deleted by close_window
+> +	 */
+> +	data_panel =3D new_panel(cooling_device_window);
+> +	if (!data_panel)
+> +		syslog(LOG_DEBUG, "No data panel\n");
+> +	else {
+> +		if (dialogue_window) {
+> +			dialogue_panel =3D new_panel(dialogue_window);
+> +			if (!dialogue_panel)
+> +				syslog(LOG_DEBUG, "No dialogue panel\n");
+> +			else {
+> +				/* Set up the user pointer to the next panel*/
+> +				set_panel_userptr(data_panel, dialogue_panel);
+> +				set_panel_userptr(dialogue_panel, data_panel);
+> +				top =3D data_panel;
+> +			}
+> +		} else
+> +			syslog(LOG_INFO, "no dialogue win, term too small\n");
+> +	}
+> +	doupdate();
+> +	werase(stdscr);
+> +	refresh();
+> +}
+> +
+> +void resize_handler(int sig)
+> +{
+> +	/* start over when term gets resized, but first we clean up */
+> +	close_windows();
+> +	endwin();
+> +	refresh();
+> +	clear();
+> +	getmaxyx(stdscr, maxy, maxx);  /* get the new screen size */
+> +	setup_windows();
+> +	/* rate limit */
+> +	sleep(1);
+> +	syslog(LOG_DEBUG, "SIG %d, term resized to %d x %d\n",
+> +		sig, maxy, maxx);
+> +	signal(SIGWINCH, resize_handler);
+> +}
+> +
+> +const char cdev_title[] =3D " COOLING DEVICES ";
+> +void show_cooling_device(void)
+> +{
+> +	int i, j, x, y =3D 0;
+> +
+> +	if (tui_disabled || !cooling_device_window)
+> +		return;
+> +
+> +	werase(cooling_device_window);
+> +
+> +	wattron(cooling_device_window, A_BOLD);
+> +	mvwprintw(cooling_device_window, 0, maxx/2 - sizeof(cdev_title),
+> +		cdev_title);
+> +
+> +	mvwprintw(cooling_device_window,  1, 1,
+> +		"ID  Cooling Dev   Cur    Max   Thermal Zone Binding");
+> +	wattroff(cooling_device_window, A_BOLD);
+> +	for (j =3D 0; j <	ptdata.nr_cooling_dev; j++) {
+> +		/* draw cooling device list on the left in the order of
+> +		 * cooling device instances. skip unused idr.
+> +		 */
+> +		mvwprintw(cooling_device_window, j + 2, 1,
+> +			"%02d %12.12s%6d %6d",
+> +			ptdata.cdi[j].instance,
+> +			ptdata.cdi[j].type,
+> +			ptdata.cdi[j].cur_state,
+> +			ptdata.cdi[j].max_state);
+> +	}
+> +
+> +	/* show cdev binding, y is the global cooling device instance */
+> +	for (i =3D 0; i < ptdata.nr_tz_sensor; i++) {
+> +		int tz_inst =3D ptdata.tzi[i].instance;
+> +		for (j =3D 0; j < ptdata.nr_cooling_dev; j++) {
+> +			int cdev_inst;
+> +			y =3D j;
+> +			x =3D tz_inst * TZONE_RECORD_SIZE + TZ_LEFT_ALIGN;
+> +
+> +			draw_hbar(cooling_device_window, y+2, x,
+> +				TZONE_RECORD_SIZE-1, ACS_VLINE, false);
+> +
+> +			/* draw a column of spaces to separate thermal zones */
+> +			mvwprintw(cooling_device_window, y+2, x-1, " ");
+> +			if (ptdata.tzi[i].cdev_binding) {
+> +				cdev_inst =3D ptdata.cdi[j].instance;
+> +				unsigned long trip_binding =3D
+> +					ptdata.tzi[i].trip_binding[cdev_inst];
+> +				int k =3D 0; /* per zone trip point id that
+> +					    * binded to this cdev, one to
+> +					    * many possible based on the
+> +					    * binding bitmask.
+> +					    */
+> +				syslog(LOG_DEBUG,
+> +					"bind tz%d cdev%d tp%lx %d cdev%lx\n",
+> +					i, j, trip_binding, y,
+> +					ptdata.tzi[i].cdev_binding);
+> +				/* draw each trip binding for the cdev */
+> +				while (trip_binding >>=3D 1) {
+> +					k++;
+> +					if (!(trip_binding & 1))
+> +						continue;
+> +					/* draw '*' to show binding */
+> +					mvwprintw(cooling_device_window,
+> +						y + 2,
+> +						x + ptdata.tzi[i].nr_trip_pts -
+> +						k - 1, "*");
+> +				}
+> +			}
+> +		}
+> +	}
+> +	wborder(cooling_device_window, 0, 0, 0, 0, 0, 0, 0, 0);
+> +	wrefresh(cooling_device_window);
+> +}
+> +
+> +const char DIAG_TITLE[] =3D "[ TUNABLES ]";
+> +#define DIAG_DEV_ROWS  5
+> +void show_dialogue(void)
+> +{
+> +	int j, x =3D 0, y =3D 0;
+> +	WINDOW *w =3D dialogue_window;
+> +
+> +	if (tui_disabled || !w)
+> +		return;
+> +
+> +	werase(w);
+> +	box(w, 0, 0);
+> +	mvwprintw(w, 0, maxx/4, DIAG_TITLE);
+> +	/* list all the available tunables */
+> +	for (j =3D 0; j <=3D ptdata.nr_cooling_dev; j++) {
+> +		y =3D j % DIAG_DEV_ROWS;
+> +		if (y =3D=3D 0 && j !=3D 0)
+> +			x +=3D 20;
+> +		if (j =3D=3D ptdata.nr_cooling_dev)
+> +			/* save last choice for target temp */
+> +			mvwprintw(w, y+1, x+1, "%C-%.12s", 'A'+j, "Set Temp");
+> +		else
+> +			mvwprintw(w, y+1, x+1, "%C-%.10s-%2d", 'A'+j,
+> +				ptdata.cdi[j].type, ptdata.cdi[j].instance);
+> +	}
+> +	wattron(w, A_BOLD);
+> +	mvwprintw(w, DIAG_DEV_ROWS+1, 1, "Enter Choice [A-Z]?");
+> +	wattroff(w, A_BOLD);
+> +	/* y size of dialogue win is nr cdev + 5, so print legend
+> +	 * at the bottom line
+> +	 */
+> +	mvwprintw(w, ptdata.nr_cooling_dev+3, 1,
+> +		"Legend: A=3DActive, P=3DPassive, C=3DCritical");
+> +
+> +	wrefresh(dialogue_window);
+> +}
+> +
+> +void write_dialogue_win(char *buf, int y, int x)
+> +{
+> +	WINDOW *w =3D dialogue_window;
+> +
+> +	mvwprintw(w, y, x, "%s", buf);
+> +}
+> +
+> +const char control_title[] =3D " CONTROLS ";
+> +void show_control_w(void)
+> +{
+> +	unsigned long state;
+> +
+> +	get_ctrl_state(&state);
+> +
+> +	if (tui_disabled || !control_window)
+> +		return;
+> +
+> +	werase(control_window);
+> +	wattron(control_window, A_BOLD);
+> +	mvwprintw(control_window, 0, maxx/2 - sizeof(control_title),
+> +		control_title);
+> +	wattroff(control_window, A_BOLD);
+> +
+> +	mvwprintw(control_window, 1, 1, "PID gain: kp=3D%2.2f ki=3D%2.2f, kd=3D=
+%2.2f",
+> +		p_param.kp, p_param.ki, p_param.kd);
+> +
+> +	mvwprintw(control_window, 2, 1,
+> +		"Target Temp: %2.1f, Zone: %d, Control Device: %.12s, PID output: %2=
+=2E2f, state: %d",
+> +		target_thermal_zone, ctrl_cdev,
+> +		p_param.t_target, p_param.y_k, state);
+> +	/* draw border last such that everything is within boundary */
+> +	wborder(control_window, 0, 0, 0, 0, 0, 0, 0, 0);
+> +	wrefresh(control_window);
+> +}
+> +
+> +void initialize_curses(void)
+> +{
+> +	if (tui_disabled)
+> +		return;
+> +
+> +	initscr();
+> +	start_color();
+> +	keypad(stdscr, TRUE);	/* enable keyboard mapping */
+> +	nonl();			/* tell curses not to do NL->CR/NL on output */
+> +	cbreak();		/* take input chars one at a time */
+> +	noecho();		/* dont echo input */
+> +	curs_set(0);		/* turn off cursor */
+> +	use_default_colors();
+> +
+> +	init_pair(PT_COLOR_DEFAULT, COLOR_WHITE, COLOR_BLACK);
+> +	init_pair(PT_COLOR_HEADER_BAR, COLOR_BLACK, COLOR_WHITE);
+> +	init_pair(PT_COLOR_ERROR, COLOR_BLACK, COLOR_RED);
+> +	init_pair(PT_COLOR_RED, COLOR_WHITE, COLOR_RED);
+> +	init_pair(PT_COLOR_YELLOW, COLOR_WHITE, COLOR_YELLOW);
+> +	init_pair(PT_COLOR_GREEN, COLOR_WHITE, COLOR_GREEN);
+> +	init_pair(PT_COLOR_BLUE, COLOR_WHITE, COLOR_BLUE);
+> +	init_pair(PT_COLOR_BRIGHT, COLOR_WHITE, COLOR_BLACK);
+> +
+> +}
+> +
+> +void show_title_bar(void)
+> +{
+> +	int i;
+> +	int x =3D 0;
+> +
+> +	if (tui_disabled || !title_bar_window)
+> +		return;
+> +
+> +	wattrset(title_bar_window, COLOR_PAIR(PT_COLOR_HEADER_BAR));
+> +	wbkgd(title_bar_window, COLOR_PAIR(PT_COLOR_HEADER_BAR));
+> +	werase(title_bar_window);
+> +
+> +	mvwprintw(title_bar_window, 0, 0,
+> +		"     TMON v%s", VERSION);
+> +
+> +	wrefresh(title_bar_window);
+> +
+> +	werase(status_bar_window);
+> +
+> +	for (i =3D 0; i < 10; i++) {
+> +		if (strlen(status_bar_slots[i]) =3D=3D 0)
+> +			continue;
+> +		wattron(status_bar_window, A_REVERSE);
+> +		mvwprintw(status_bar_window, 0, x, "%s", status_bar_slots[i]);
+> +		wattroff(status_bar_window, A_REVERSE);
+> +		x +=3D strlen(status_bar_slots[i]) + 1;
+> +	}
+> +	wrefresh(status_bar_window);
+> +}
+> +
+> +static void handle_input_val(int ch)
+> +{
+> +	char buf[32];
+> +	int val;
+> +	char path[256];
+> +	WINDOW *w =3D dialogue_window;
+> +
+> +	echo();
+> +	keypad(w, TRUE);
+> +	wgetnstr(w, buf, 31);
+> +	val =3D atoi(buf);
+> +
+> +	if (ch =3D=3D ptdata.nr_cooling_dev) {
+> +		snprintf(buf, 31, "Invalid Temp %d! %d-%d", val,
+> +			MIN_CTRL_TEMP, MAX_CTRL_TEMP);
+> +		if (val < MIN_CTRL_TEMP || val > MAX_CTRL_TEMP)
+> +			write_status_bar(40, buf);
+> +		else {
+> +			p_param.t_target =3D val;
+> +			snprintf(buf, 31, "Set New Target Temp %d", val);
+> +			write_status_bar(40, buf);
+> +		}
+> +	} else {
+> +		snprintf(path, 256, "%s/%s%d", THERMAL_SYSFS,
+> +			CDEV, ptdata.cdi[ch].instance);
+> +		sysfs_set_ulong(path, "cur_state", val);
+> +	}
+> +	noecho();
+> +	dialogue_on =3D 0;
+> +	show_data_w();
+> +	show_control_w();
+> +
+> +	top =3D (PANEL *)panel_userptr(top);
+> +	top_panel(top);
+> +}
+> +
+> +static void handle_input_choice(int ch)
+> +{
+> +	char buf[48];
+> +	int base =3D 0;
+> +	int cdev_id =3D 0;
+> +
+> +	if ((ch >=3D 'A' && ch <=3D 'A' + ptdata.nr_cooling_dev) ||
+> +		(ch >=3D 'a' && ch <=3D 'a' + ptdata.nr_cooling_dev)) {
+> +		base =3D (ch < 'a') ? 'A' : 'a';
+> +		cdev_id =3D ch - base;
+> +		if (ptdata.nr_cooling_dev =3D=3D cdev_id)
+> +			snprintf(buf, sizeof(buf), "New Target Temp:");
+> +		else
+> +			snprintf(buf, sizeof(buf), "New Value for %.10s-%2d: ",
+> +				ptdata.cdi[cdev_id].type,
+> +				ptdata.cdi[cdev_id].instance);
+> +		write_dialogue_win(buf, DIAG_DEV_ROWS+2, 2);
+> +		handle_input_val(cdev_id);
+> +	} else {
+> +		snprintf(buf, sizeof(buf), "Invalid selection %d", ch);
+> +		write_dialogue_win(buf, 8, 2);
+> +	}
+> +}
+> +
+> +void *handle_tui_events(void *arg)
+> +{
+> +	int ch;
+> +
+> +	keypad(cooling_device_window, TRUE);
+> +	while ((ch =3D wgetch(cooling_device_window)) !=3D EOF) {
+> +		if (tmon_exit)
+> +			break;
+> +		/* when term size is too small, no dialogue panels are set.
+> +		 * we need to filter out such cases.
+> +		 */
+> +		if (!data_panel || !dialogue_panel ||
+> +			!cooling_device_window ||
+> +			!dialogue_window) {
+> +
+> +			continue;
+> +		}
+> +		pthread_mutex_lock(&input_lock);
+> +		if (dialogue_on) {
+> +			handle_input_choice(ch);
+> +			/* top panel filter */
+> +			if (ch =3D=3D 'q' || ch =3D=3D 'Q')
+> +				ch =3D 0;
+> +		}
+> +		switch (ch) {
+> +		case KEY_LEFT:
+> +			box(cooling_device_window, 10, 0);
+> +			break;
+> +		case 9: /* TAB */
+> +			top =3D (PANEL *)panel_userptr(top);
+> +			top_panel(top);
+> +			if (top =3D=3D dialogue_panel) {
+> +				dialogue_on =3D 1;
+> +				show_dialogue();
+> +			} else {
+> +				dialogue_on =3D 0;
+> +				/* force refresh */
+> +				show_data_w();
+> +				show_control_w();
+> +			}
+> +			break;
+> +		case 'q':
+> +		case 'Q':
+> +			tmon_exit =3D 1;
+> +			break;
+> +		}
+> +		update_panels();
+> +		doupdate();
+> +		pthread_mutex_unlock(&input_lock);
+> +	}
+> +
+> +	if (arg)
+> +		*(int *)arg =3D 0; /* make gcc happy */
+> +
+> +	return NULL;
+> +}
+> +
+> +/* draw a horizontal bar in given pattern */
+> +static void draw_hbar(WINDOW *win, int y, int start, int len, unsigned=
+ long ptn,
+> +		bool end)
+> +{
+> +	mvwaddch(win, y, start, ptn);
+> +	whline(win, ptn, len);
+> +	if (end)
+> +		mvwaddch(win, y, MAX_DISP_TEMP+TDATA_LEFT, ']');
+> +}
+> +
+> +static char trip_type_to_char(int type)
+> +{
+> +	switch (type) {
+> +	case THERMAL_TRIP_CRITICAL: return 'C';
+> +	case THERMAL_TRIP_HOT: return 'H';
+> +	case THERMAL_TRIP_PASSIVE: return 'P';
+> +	case THERMAL_TRIP_ACTIVE: return 'A';
+> +	default:
+> +		return '?';
+> +	}
+> +}
+> +
+> +/* fill a string with trip point type and value in one line
+> + * e.g.      P(56)    C(106)
+> + * maintain the distance one degree per char
+> + */
+> +static void draw_tp_line(int tz, int y)
+> +{
+> +	int j;
+> +	int x;
+> +
+> +	for (j =3D 0; j < ptdata.tzi[tz].nr_trip_pts; j++) {
+> +		x =3D ptdata.tzi[tz].tp[j].temp / 1000;
+> +		mvwprintw(thermal_data_window, y + 0, x + TDATA_LEFT,
+> +			"%c%d", trip_type_to_char(ptdata.tzi[tz].tp[j].type),
+> +			x);
+> +		syslog(LOG_INFO, "%s:tz %d tp %d temp =3D %lu\n", __func__,
+> +			tz, j, ptdata.tzi[tz].tp[j].temp);
+> +	}
+> +}
+> +
+> +const char data_win_title[] =3D " THERMAL DATA ";
+> +void show_data_w(void)
+> +{
+> +	int i;
+> +
+> +
+> +	if (tui_disabled || !thermal_data_window)
+> +		return;
+> +
+> +	werase(thermal_data_window);
+> +	wattron(thermal_data_window, A_BOLD);
+> +	mvwprintw(thermal_data_window, 0, maxx/2 - sizeof(data_win_title),
+> +		data_win_title);
+> +	wattroff(thermal_data_window, A_BOLD);
+> +	/* draw a line as ruler */
+> +	for (i =3D 10; i < MAX_DISP_TEMP; i +=3D 10)
+> +		mvwprintw(thermal_data_window, 1, i+TDATA_LEFT, "%2d", i);
+> +
+> +	for (i =3D 0; i < ptdata.nr_tz_sensor; i++) {
+> +		int temp =3D trec[cur_thermal_record].temp[i] / 1000;
+> +		int y =3D 0;
+> +
+> +		y =3D i * NR_LINES_TZDATA + 2;
+> +		/* y at tz temp data line */
+> +		mvwprintw(thermal_data_window, y, 1, "%6.6s%2d:[%3d][",
+> +			ptdata.tzi[i].type,
+> +			ptdata.tzi[i].instance, temp);
+> +		draw_hbar(thermal_data_window, y, TDATA_LEFT, temp, ACS_RARROW,
+> +			true);
+> +		draw_tp_line(i, y);
+> +	}
+> +	wborder(thermal_data_window, 0, 0, 0, 0, 0, 0, 0, 0);
+> +	wrefresh(thermal_data_window);
+> +}
+> +
+> +const char tz_title[] =3D "THERMAL ZONES/SENSORS";
+> +
+> +void show_sensors_w(void)
+> +{
+> +	int i, j;
+> +	char buffer[512];
+> +
+> +	if (tui_disabled || !tz_sensor_window)
+> +		return;
+> +
+> +	werase(tz_sensor_window);
+> +
+> +	memset(buffer, 0, sizeof(buffer));
+> +	wattron(tz_sensor_window, A_BOLD);
+> +	mvwprintw(tz_sensor_window, 0, maxx/2 - sizeof(tz_title), tz_title);
+> +	mvwprintw(tz_sensor_window, 1, 1, "Thermal Zones:");
+> +	wattroff(tz_sensor_window, A_BOLD);
+> +
+> +	mvwprintw(tz_sensor_window, 1, TZ_LEFT_ALIGN, "%s", buffer);
+> +	/* fill trip points for each tzone */
+> +	wattron(tz_sensor_window, A_BOLD);
+> +	mvwprintw(tz_sensor_window, 2, 1, "Trip Points:");
+> +	wattroff(tz_sensor_window, A_BOLD);
+> +
+> +	/* draw trip point from low to high for each tz */
+> +	for (i =3D 0; i < ptdata.nr_tz_sensor; i++) {
+> +		int inst =3D ptdata.tzi[i].instance;
+> +
+> +		mvwprintw(tz_sensor_window, 1,
+> +			TZ_LEFT_ALIGN+TZONE_RECORD_SIZE * inst, "%.9s%02d",
+> +			ptdata.tzi[i].type, ptdata.tzi[i].instance);
+> +		for (j =3D ptdata.tzi[i].nr_trip_pts - 1; j >=3D 0; j--) {
+> +			/* loop through all trip points */
+> +			char type;
+> +			int tp_pos;
+> +			/* reverse the order here since trips are sorted
+> +			 * in ascending order in terms of temperature.
+> +			 */
+> +			tp_pos =3D ptdata.tzi[i].nr_trip_pts - j - 1;
+> +
+> +			type =3D trip_type_to_char(ptdata.tzi[i].tp[j].type);
+> +			mvwaddch(tz_sensor_window, 2,
+> +				inst * TZONE_RECORD_SIZE + TZ_LEFT_ALIGN +
+> +				tp_pos,	type);
+> +			syslog(LOG_DEBUG, "draw tz %d tp %d ch:%c\n",
+> +				inst, j, type);
+> +		}
+> +	}
+> +	wborder(tz_sensor_window, 0, 0, 0, 0, 0, 0, 0, 0);
+> +	wrefresh(tz_sensor_window);
+> +}
+> +
+> +void disable_tui(void)
+> +{
+> +	tui_disabled =3D 1;
+> +}
+>=20
+
+
+--=20
+You have got to be excited about what you are doing. (L. Lamport)
+
+Eduardo Valentin
+
+
+--3IMRoiGF1KCQ8To7oNi86Idd4m6VhIXq5
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iF4EAREIAAYFAlJUrH8ACgkQCXcVR3XQvP1THAEAzYSYmLbaOmPrQQ1W05EmcFua
+GWh+Q+4WIGMLNvsx+/sBAOFn+bHlXjrJLenX7ZtAMibbvl/WZSKxJzOUkruxzF/f
+=R7qo
+-----END PGP SIGNATURE-----
+
+--3IMRoiGF1KCQ8To7oNi86Idd4m6VhIXq5--
