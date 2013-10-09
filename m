@@ -1,196 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756523Ab3JIGcW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 02:32:22 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:37377 "EHLO
+	id S1752051Ab3JIGhr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 02:37:47 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:38061 "EHLO
 	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752851Ab3JIGap (ORCPT
+	with ESMTP id S1751347Ab3JIGhq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 02:30:45 -0400
-X-AuditID: cbfee61a-b7f7a6d00000235f-59-5254f7f7cce3
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>, kgene.kim@samsung.com
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Lukasz Majewski <l.majewski@samsung.com>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>, devicetree@vger.kernel.org,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>,
-        linux-samsung-soc@vger.kernel.org
-Subject: [PATCH v2 2/5] thermal: exynos: Provide separate TMU data for
- Exynos4412
-Date: Wed, 09 Oct 2013 08:29:51 +0200
-Message-id: <1381300194-13134-3-git-send-email-l.majewski@samsung.com>
-X-Mailer: git-send-email 1.7.10
-In-reply-to: <1381300194-13134-1-git-send-email-l.majewski@samsung.com>
-References: <1380010102-25817-1-git-send-email-l.majewski@samsung.com>
- <1381300194-13134-1-git-send-email-l.majewski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrALMWRmVeSWpSXmKPExsVy+t9jQd0f30OCDCYuZrNouBpisXHGelaL
-	+UfOsVqs2f+TyaLz7BNmi94FV9ks3jzitnjzcDOjxeVdc9gsPvceYbSYcX4fk8XtxhVsFmdO
-	X2K1ePKwj81i/YzXLA78Hov3vGTyWDftLbPHlqvtLB59W1Yxehy/sZ3J4/MmuQC2KC6blNSc
-	zLLUIn27BK6Mn+2PWQuWaFb83/CGrYGxRbmLkZNDQsBE4tyjp4wQtpjEhXvr2UBsIYHpjBKL
-	Lqt3MXIB2V1MEvvWHWMBSbAJ6El8vvuUCcQWEciQOHVpNhNIEbPAX2aJ69MgioQFgiWu9u8A
-	s1kEVCXe3Z7CDGLzCrhJHJ+4jQ1im7zE0/t9YDangLvEwTvv2CG2NTNKPLq4iWUCI+8CRoZV
-	jKKpBckFxUnpuYZ6xYm5xaV56XrJ+bmbGMHh+kxqB+PKBotDjAIcjEo8vA/4Q4KEWBPLiitz
-	DzFKcDArifDmLQQK8aYkVlalFuXHF5XmpBYfYpTmYFES5z3Qah0oJJCeWJKanZpakFoEk2Xi
-	4JRqYGQ/Gxtje/11z1xubqGTX6/eucKZnr73czzb7PREzcSK5aWXGzTX1Jwpcir/1qwmfzXX
-	/0Yjx7ekidxrd93rXHVvkv+2wo82ivMubE1u+HdnYR3D6dcJgjy2luflSo56NCpd+n7zKu/q
-	rBnyU9w+GuyJS1l6uKtsp9M8qQXFkneelJW9ztmY/1GJpTgj0VCLuag4EQBIa3W6UwIAAA==
+	Wed, 9 Oct 2013 02:37:46 -0400
+X-AuditID: cbfee690-b7f3b6d000007a15-c9-5254f9592614
+From: Sangjung Woo <sangjung.woo@samsung.com>
+To: Guan Xuetao <gxt@mprc.pku.edu.cn>, Alessandro Zummo <a.zummo@towertech.it>
+Cc: Joe Perches <joe@perches.com>, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org, Sangjung Woo <sangjung.woo@samsung.com>
+Subject: [PATCH v2] rtc: rtc-puv3: use dev_dbg() instead of pr_debug()
+Date: Wed, 09 Oct 2013 15:36:05 +0900
+Message-id: <1381300565-27203-1-git-send-email-sangjung.woo@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDLMWRmVeSWpSXmKPExsWyRsSkUDfyZ0iQweJXhhZLLl5ltzh44xu7
+	xez7j1ksLu+aw2axv7OD0WLBnhIHNo89E0+yeTzea+nxZdU1Zo++LasYPabP+8nk8XmTXABb
+	FJdNSmpOZllqkb5dAlfG2muzWAomyFd8//6evYHxvWQXIyeHhICJxPfVl1ggbDGJC/fWs4HY
+	QgJLGSX2/fGHqdn9bhJrFyMXUHwRo8Tiae/YIJw2JomtR/6CdbMJ6Eo8OXCZGcQWEfCT2Lvg
+	EjNIEbNAG6PE+1M7wIqEBdwkjrx5D1bEIqAq8aelHSzOK+Ah0bFlF3sXIwfQOgWJOZNsQHol
+	BP6zSczY9JgJol5A4tvkQywQNbISmw4wQ1wnKXFwxQ2WCYyCCxgZVjGKphYkFxQnpReZ6BUn
+	5haX5qXrJefnbmIEhuzpf88m7GC8d8D6EGMy0LiJzFKiyfnAkM8riTc0NjOyMDUxNTYytzQj
+	TVhJnFe9xTpQSCA9sSQ1OzW1ILUovqg0J7X4ECMTB6dUA6PVM7XQW0X3D3wu/qPXtcx4V6jS
+	1INabMwvPm20L42razQOvyhw1lTHITaiLJVvc/5W/+uKVau0i3Uy71zeNyv+vY+G/RS1Dzcf
+	fX/4WDtUdcbaRxxMV076nw/9UvK8PLFapu/Ab842F8kDzOlHgxS4N3vy7r29OLvi/Psl0veF
+	Zt489LjXu1aJpTgj0VCLuag4EQBUz2jhbwIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrFIsWRmVeSWpSXmKPExsVy+t9jAd3InyFBBjO/alosuXiV3eLgjW/s
+	FrPvP2axuLxrDpvF/s4ORosFe0oc2Dz2TDzJ5vF4r6XHl1XXmD36tqxi9Jg+7yeTx+dNcgFs
+	UQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlAVygp
+	lCXmlAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0JgusxMkADCWsYM9Zem8VSMEG+4vv39+wNjO8l
+	uxg5OSQETCR2v5vECmGLSVy4t56ti5GLQ0hgEaPE4mnvoJw2JomtR/6ygFSxCehKPDlwmRnE
+	FhHwk9i74BIzSBGzQBujxPtTO8CKhAXcJI68eQ9WxCKgKvGnpR0szivgIdGxZRd7FyMH0DoF
+	iTmTbCYwci9gZFjFKJpakFxQnJSea6RXnJhbXJqXrpecn7uJERwTz6R3MK5qsDjEKMDBqMTD
+	+4A/JEiINbGsuDL3EKMEB7OSCG/eQqAQb0piZVVqUX58UWlOavEhxmSg5ROZpUST84HxmlcS
+	b2hsYmZkaWRuaGFkbE6asJI478FW60AhgfTEktTs1NSC1CKYLUwcnFINjK2WBi1P3hW//aKi
+	smf7wQPpnBlCj+RS+GIafph2F8vv4NDfnFD3XW3VFV9J79NvVUpDIrc9mBwsfGe9+hGhXmUm
+	XqU/f576nq9ruvsgw5+BwVx6/37L6R/WbPw6+dtGRv7jrOL5mv7MDVc+74i43nF32sLHzb/d
+	bV+t+ChonxLO2rT1n+ilq0osxRmJhlrMRcWJAPswHq/NAgAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Up till now Exynos5250 and Exynos4412 had the same definitions for TMU
-data. Following commit changes that, by introducing separate
-exynos4412_default_tmu_data structure.
+Because dev_*() are used along with pr_debug() function in this code,
+the debug message is not tidy. This patch converts from pr_debug() to
+dev_dbg() since dev_*() are encouraged to use in device driver code.
 
-Since Exynos4412 was chronologically first, the corresponding name for
-TMU registers and default data was renamed.
-
-Additionally, new SOC_ARCH_EXYNOS4412 type has been defined.
-
-Moreover, the SOC_ARCH_EXYNOS name has been changed to SOC_ARCH_EXYNOS5250.
-
-Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
-Reviewed-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Reviewed-by: Tomasz Figa <t.figa@samsung.com>
-
+Signed-off-by: Sangjung Woo <sangjung.woo@samsung.com>
 ---
-Changes for v2:
-- Replace SOC_ARCH_EXYNOS with SOC_ARCH_EXYNOS5250
-- Fix coding style for tmu_data elements definition
+ drivers/rtc/rtc-puv3.c |   22 +++++++++++-----------
+ 1 file changed, 11 insertions(+), 11 deletions(-)
 
- drivers/thermal/samsung/exynos_tmu.c      |    9 +++++----
- drivers/thermal/samsung/exynos_tmu.h      |    3 ++-
- drivers/thermal/samsung/exynos_tmu_data.c |   28 ++++++++++++++++++++++------
- drivers/thermal/samsung/exynos_tmu_data.h |    9 ++++++++-
- 4 files changed, 37 insertions(+), 12 deletions(-)
-
-diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
-index b43afda..1312b34 100644
---- a/drivers/thermal/samsung/exynos_tmu.c
-+++ b/drivers/thermal/samsung/exynos_tmu.c
-@@ -488,7 +488,7 @@ static const struct of_device_id exynos_tmu_match[] = {
- 	},
- 	{
- 		.compatible = "samsung,exynos4412-tmu",
--		.data = (void *)EXYNOS5250_TMU_DRV_DATA,
-+		.data = (void *)EXYNOS4412_TMU_DRV_DATA,
- 	},
- 	{
- 		.compatible = "samsung,exynos5250-tmu",
-@@ -629,9 +629,10 @@ static int exynos_tmu_probe(struct platform_device *pdev)
- 	if (ret)
- 		return ret;
+diff --git a/drivers/rtc/rtc-puv3.c b/drivers/rtc/rtc-puv3.c
+index 402732c..1ecfe3b 100644
+--- a/drivers/rtc/rtc-puv3.c
++++ b/drivers/rtc/rtc-puv3.c
+@@ -53,11 +53,11 @@ static irqreturn_t puv3_rtc_tickirq(int irq, void *id)
+ }
  
--	if (pdata->type == SOC_ARCH_EXYNOS ||
--		pdata->type == SOC_ARCH_EXYNOS4210 ||
--				pdata->type == SOC_ARCH_EXYNOS5440)
-+	if (pdata->type == SOC_ARCH_EXYNOS4210 ||
-+	    pdata->type == SOC_ARCH_EXYNOS4412 ||
-+	    pdata->type == SOC_ARCH_EXYNOS5250 ||
-+	    pdata->type == SOC_ARCH_EXYNOS5440)
- 		data->soc = pdata->type;
- 	else {
- 		ret = -EINVAL;
-diff --git a/drivers/thermal/samsung/exynos_tmu.h b/drivers/thermal/samsung/exynos_tmu.h
-index b364c9e..b42ece4 100644
---- a/drivers/thermal/samsung/exynos_tmu.h
-+++ b/drivers/thermal/samsung/exynos_tmu.h
-@@ -41,7 +41,8 @@ enum calibration_mode {
+ /* Update control registers */
+-static void puv3_rtc_setaie(int to)
++static void puv3_rtc_setaie(struct device *dev, int to)
+ {
+ 	unsigned int tmp;
  
- enum soc_type {
- 	SOC_ARCH_EXYNOS4210 = 1,
--	SOC_ARCH_EXYNOS,
-+	SOC_ARCH_EXYNOS4412,
-+	SOC_ARCH_EXYNOS5250,
- 	SOC_ARCH_EXYNOS5440,
- };
+-	pr_debug("%s: aie=%d\n", __func__, to);
++	dev_dbg(dev, "%s: aie=%d\n", __func__, to);
  
-diff --git a/drivers/thermal/samsung/exynos_tmu_data.c b/drivers/thermal/samsung/exynos_tmu_data.c
-index 9002499..d8de5c1 100644
---- a/drivers/thermal/samsung/exynos_tmu_data.c
-+++ b/drivers/thermal/samsung/exynos_tmu_data.c
-@@ -90,8 +90,8 @@ struct exynos_tmu_init_data const exynos4210_default_tmu_data = {
- };
- #endif
+ 	tmp = readl(RTC_RTSR) & ~RTC_RTSR_ALE;
  
--#if defined(CONFIG_SOC_EXYNOS5250) || defined(CONFIG_SOC_EXYNOS4412)
--static const struct exynos_tmu_registers exynos5250_tmu_registers = {
-+#if defined(CONFIG_SOC_EXYNOS4412) || defined(CONFIG_SOC_EXYNOS5250)
-+static const struct exynos_tmu_registers exynos4412_tmu_registers = {
- 	.triminfo_data = EXYNOS_TMU_REG_TRIMINFO,
- 	.triminfo_25_shift = EXYNOS_TRIMINFO_25_SHIFT,
- 	.triminfo_85_shift = EXYNOS_TRIMINFO_85_SHIFT,
-@@ -128,7 +128,7 @@ static const struct exynos_tmu_registers exynos5250_tmu_registers = {
- 	.emul_time_mask = EXYNOS_EMUL_TIME_MASK,
- };
+@@ -71,7 +71,7 @@ static int puv3_rtc_setpie(struct device *dev, int enabled)
+ {
+ 	unsigned int tmp;
  
--#define EXYNOS5250_TMU_DATA \
-+#define EXYNOS4412_TMU_DATA \
- 	.threshold_falling = 10, \
- 	.trigger_levels[0] = 85, \
- 	.trigger_levels[1] = 103, \
-@@ -162,15 +162,31 @@ static const struct exynos_tmu_registers exynos5250_tmu_registers = {
- 		.temp_level = 103, \
- 	}, \
- 	.freq_tab_count = 2, \
--	.type = SOC_ARCH_EXYNOS, \
--	.registers = &exynos5250_tmu_registers, \
-+	.registers = &exynos4412_tmu_registers, \
- 	.features = (TMU_SUPPORT_EMULATION | TMU_SUPPORT_TRIM_RELOAD | \
- 			TMU_SUPPORT_FALLING_TRIP | TMU_SUPPORT_READY_STATUS | \
- 			TMU_SUPPORT_EMUL_TIME)
-+#endif
+-	pr_debug("%s: pie=%d\n", __func__, enabled);
++	dev_debug(dev, "%s: pie=%d\n", __func__, enabled);
  
-+#if defined(CONFIG_SOC_EXYNOS4412)
-+struct exynos_tmu_init_data const exynos4412_default_tmu_data = {
-+	.tmu_data = {
-+		{
-+			EXYNOS4412_TMU_DATA,
-+			.type = SOC_ARCH_EXYNOS4412,
-+		},
-+	},
-+	.tmu_count = 1,
-+};
-+#endif
-+
-+#if defined(CONFIG_SOC_EXYNOS5250)
- struct exynos_tmu_init_data const exynos5250_default_tmu_data = {
- 	.tmu_data = {
--		{ EXYNOS5250_TMU_DATA },
-+		{
-+			EXYNOS4412_TMU_DATA,
-+			.type = SOC_ARCH_EXYNOS5250,
-+		},
- 	},
- 	.tmu_count = 1,
- };
-diff --git a/drivers/thermal/samsung/exynos_tmu_data.h b/drivers/thermal/samsung/exynos_tmu_data.h
-index dc7feb5..b130b1e 100644
---- a/drivers/thermal/samsung/exynos_tmu_data.h
-+++ b/drivers/thermal/samsung/exynos_tmu_data.h
-@@ -138,7 +138,14 @@ extern struct exynos_tmu_init_data const exynos4210_default_tmu_data;
- #define EXYNOS4210_TMU_DRV_DATA (NULL)
- #endif
+ 	spin_lock_irq(&puv3_rtc_pie_lock);
+ 	tmp = readl(RTC_RTSR) & ~RTC_RTSR_HZE;
+@@ -90,7 +90,7 @@ static int puv3_rtc_gettime(struct device *dev, struct rtc_time *rtc_tm)
+ {
+ 	rtc_time_to_tm(readl(RTC_RCNR), rtc_tm);
  
--#if (defined(CONFIG_SOC_EXYNOS5250) || defined(CONFIG_SOC_EXYNOS4412))
-+#if defined(CONFIG_SOC_EXYNOS4412)
-+extern struct exynos_tmu_init_data const exynos4412_default_tmu_data;
-+#define EXYNOS4412_TMU_DRV_DATA (&exynos4412_default_tmu_data)
-+#else
-+#define EXYNOS4412_TMU_DRV_DATA (NULL)
-+#endif
-+
-+#if defined(CONFIG_SOC_EXYNOS5250)
- extern struct exynos_tmu_init_data const exynos5250_default_tmu_data;
- #define EXYNOS5250_TMU_DRV_DATA (&exynos5250_default_tmu_data)
- #else
+-	pr_debug("read time %02x.%02x.%02x %02x/%02x/%02x\n",
++	dev_dbg(dev, "read time %02x.%02x.%02x %02x/%02x/%02x\n",
+ 		 rtc_tm->tm_year, rtc_tm->tm_mon, rtc_tm->tm_mday,
+ 		 rtc_tm->tm_hour, rtc_tm->tm_min, rtc_tm->tm_sec);
+ 
+@@ -101,7 +101,7 @@ static int puv3_rtc_settime(struct device *dev, struct rtc_time *tm)
+ {
+ 	unsigned long rtc_count = 0;
+ 
+-	pr_debug("set time %02d.%02d.%02d %02d/%02d/%02d\n",
++	dev_dbg(dev, "set time %02d.%02d.%02d %02d/%02d/%02d\n",
+ 		 tm->tm_year, tm->tm_mon, tm->tm_mday,
+ 		 tm->tm_hour, tm->tm_min, tm->tm_sec);
+ 
+@@ -119,7 +119,7 @@ static int puv3_rtc_getalarm(struct device *dev, struct rtc_wkalrm *alrm)
+ 
+ 	alrm->enabled = readl(RTC_RTSR) & RTC_RTSR_ALE;
+ 
+-	pr_debug("read alarm %02x %02x.%02x.%02x %02x/%02x/%02x\n",
++	dev_dbg(dev, "read alarm %02x %02x.%02x.%02x %02x/%02x/%02x\n",
+ 		 alrm->enabled,
+ 		 alm_tm->tm_year, alm_tm->tm_mon, alm_tm->tm_mday,
+ 		 alm_tm->tm_hour, alm_tm->tm_min, alm_tm->tm_sec);
+@@ -132,7 +132,7 @@ static int puv3_rtc_setalarm(struct device *dev, struct rtc_wkalrm *alrm)
+ 	struct rtc_time *tm = &alrm->time;
+ 	unsigned long rtcalarm_count = 0;
+ 
+-	pr_debug("puv3_rtc_setalarm: %d, %02x/%02x/%02x %02x.%02x.%02x\n",
++	dev_dbg(dev, "puv3_rtc_setalarm: %d, %02x/%02x/%02x %02x.%02x.%02x\n",
+ 		 alrm->enabled,
+ 		 tm->tm_mday & 0xff, tm->tm_mon & 0xff, tm->tm_year & 0xff,
+ 		 tm->tm_hour & 0xff, tm->tm_min & 0xff, tm->tm_sec);
+@@ -140,7 +140,7 @@ static int puv3_rtc_setalarm(struct device *dev, struct rtc_wkalrm *alrm)
+ 	rtc_tm_to_time(tm, &rtcalarm_count);
+ 	writel(rtcalarm_count, RTC_RTAR);
+ 
+-	puv3_rtc_setaie(alrm->enabled);
++	puv3_rtc_setaie(&dev->dev, alrm->enabled);
+ 
+ 	if (alrm->enabled)
+ 		enable_irq_wake(puv3_rtc_alarmno);
+@@ -227,7 +227,7 @@ static int puv3_rtc_remove(struct platform_device *dev)
+ 	rtc_device_unregister(rtc);
+ 
+ 	puv3_rtc_setpie(&dev->dev, 0);
+-	puv3_rtc_setaie(0);
++	puv3_rtc_setaie(&dev->dev, 0);
+ 
+ 	release_resource(puv3_rtc_mem);
+ 	kfree(puv3_rtc_mem);
+@@ -241,7 +241,7 @@ static int puv3_rtc_probe(struct platform_device *pdev)
+ 	struct resource *res;
+ 	int ret;
+ 
+-	pr_debug("%s: probe=%p\n", __func__, pdev);
++	dev_dbg(&pdev->dev, "%s: probe=%p\n", __func__, pdev);
+ 
+ 	/* find the IRQs */
+ 	puv3_rtc_tickno = platform_get_irq(pdev, 1);
+@@ -256,7 +256,7 @@ static int puv3_rtc_probe(struct platform_device *pdev)
+ 		return -ENOENT;
+ 	}
+ 
+-	pr_debug("PKUnity_rtc: tick irq %d, alarm irq %d\n",
++	dev_dbg(&pdev->dev, "PKUnity_rtc: tick irq %d, alarm irq %d\n",
+ 		 puv3_rtc_tickno, puv3_rtc_alarmno);
+ 
+ 	/* get the memory region */
 -- 
-1.7.10.4
+1.7.9.5
 
