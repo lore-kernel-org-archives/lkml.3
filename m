@@ -1,56 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756123Ab3JIBSz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 21:18:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19714 "EHLO mx1.redhat.com"
+	id S1756307Ab3JIBTG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 21:19:06 -0400
+Received: from mga03.intel.com ([143.182.124.21]:35668 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753317Ab3JIBSx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 21:18:53 -0400
-Date: Tue, 8 Oct 2013 21:18:33 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Fengguang Wu <fengguang.wu@intel.com>, xen-devel@lists.xenproject.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [xen] double fault: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-Message-ID: <20131009011833.GA14579@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	Russell King - ARM Linux <linux@arm.linux.org.uk>,
-	Fengguang Wu <fengguang.wu@intel.com>,
-	xen-devel@lists.xenproject.org,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <CA+55aFzknXawREZRBrr0Hs+crKt62fPf+S8SubJHXk84U8AFaw@mail.gmail.com>
- <CA+55aFyrDme-oNKe9=9vppct5+qCo4=Ug35np1fZiC1da64i_Q@mail.gmail.com>
- <20131008020918.GA1220@localhost>
- <20131008021452.GA6456@localhost>
- <CA+55aFwrovZf-LYa=_SyMNvqQkTfxREm0YuzDk8wJy+Krs0xzw@mail.gmail.com>
- <20131008031152.GA8218@localhost>
- <20131008121742.GA29280@localhost>
- <20131008221417.GF25034@n2100.arm.linux.org.uk>
- <20131008224840.GA15303@kroah.com>
- <CA+55aFzdABn=TiBbM0fdok1xO3UY7hUjXA8q7rUrg2dHCsN=Ng@mail.gmail.com>
+	id S1753317Ab3JIBTC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 21:19:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,1059,1371106800"; 
+   d="scan'208";a="305387359"
+Message-ID: <5254AEB0.9060304@linux.intel.com>
+Date: Tue, 08 Oct 2013 18:17:36 -0700
+From: David Cohen <david.a.cohen@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzdABn=TiBbM0fdok1xO3UY7hUjXA8q7rUrg2dHCsN=Ng@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: cjb@laptop.org, bhelgaas@google.com, adrian.hunter@intel.com,
+        wfp5p@virginia.edu, gregkh@linuxfoundation.org, g.liakhovetski@gmx.de
+CC: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH v2] mmc: sdhci-pci: add Intel Merrifield support
+References: <1380658695-20047-1-git-send-email-david.a.cohen@linux.intel.com>
+In-Reply-To: <1380658695-20047-1-git-send-email-david.a.cohen@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 08, 2013 at 05:45:37PM -0700, Linus Torvalds wrote:
+Kindly ping :)
+Any comments?
 
- > normally that whole DEBUG_KOBJECT_RELEASE
- > thing is hopefully only enabled in debug kernels (like maybe the
- > Fedora rawhide one
+Br, David Cohen
 
-Nope. After spending a couple of days fruitlessly trying to get my machine to boot
-with it enabled, I think we decided it's not worth the pain.  Debugging
-"hangs instantly and silently on boot" bugs are hard enough when you're in front of the machine,
-doing so via bugzilla isn't something I'd wish on my worst enemy.
-
-	Dave
+On 10/01/2013 01:18 PM, David Cohen wrote:
+> Implement initial SDHCI Intel Merrifield support.
+> This patch is based on previous one from Yunpeng Gao <yunpeng.gao@intel.com>
+>
+> Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+> ---
+>   drivers/mmc/host/sdhci-pci.c | 30 ++++++++++++++++++++++++++++++
+>   1 file changed, 30 insertions(+)
+>
+> diff --git a/drivers/mmc/host/sdhci-pci.c b/drivers/mmc/host/sdhci-pci.c
+> index d7d6bc8..06f026a 100644
+> --- a/drivers/mmc/host/sdhci-pci.c
+> +++ b/drivers/mmc/host/sdhci-pci.c
+> @@ -37,6 +37,7 @@
+>   #define PCI_DEVICE_ID_INTEL_BYT_SDIO	0x0f15
+>   #define PCI_DEVICE_ID_INTEL_BYT_SD	0x0f16
+>   #define PCI_DEVICE_ID_INTEL_BYT_EMMC2	0x0f50
+> +#define PCI_DEVICE_ID_INTEL_MRFL_MMC	0x1190
+>
+>   /*
+>    * PCI registers
+> @@ -356,6 +357,28 @@ static const struct sdhci_pci_fixes sdhci_intel_byt_sd = {
+>   	.allow_runtime_pm = true,
+>   };
+>
+> +/* Define Host controllers for Intel Merrifield platform */
+> +#define INTEL_MRFL_EMMC_0	0
+> +#define INTEL_MRFL_EMMC_1	1
+> +
+> +static int intel_mrfl_mmc_probe_slot(struct sdhci_pci_slot *slot)
+> +{
+> +	if ((PCI_FUNC(slot->chip->pdev->devfn) != INTEL_MRFL_EMMC_0) &&
+> +	    (PCI_FUNC(slot->chip->pdev->devfn) != INTEL_MRFL_EMMC_1))
+> +		/* SD support is not ready yet */
+> +		return -ENODEV;
+> +
+> +	slot->host->mmc->caps |= MMC_CAP_8_BIT_DATA | MMC_CAP_NONREMOVABLE |
+> +				 MMC_CAP_1_8V_DDR;
+> +
+> +	return 0;
+> +}
+> +
+> +static const struct sdhci_pci_fixes sdhci_intel_mrfl_mmc = {
+> +	.quirks		= SDHCI_QUIRK_NO_ENDATTR_IN_NOPDESC,
+> +	.probe_slot	= intel_mrfl_mmc_probe_slot,
+> +};
+> +
+>   /* O2Micro extra registers */
+>   #define O2_SD_LOCK_WP		0xD3
+>   #define O2_SD_MULTI_VCC3V	0xEE
+> @@ -940,6 +963,13 @@ static const struct pci_device_id pci_ids[] = {
+>   	},
+>
+>   	{
+> +		.vendor		= PCI_VENDOR_ID_INTEL,
+> +		.device		= PCI_DEVICE_ID_INTEL_MRFL_MMC,
+> +		.subvendor	= PCI_ANY_ID,
+> +		.subdevice	= PCI_ANY_ID,
+> +		.driver_data	= (kernel_ulong_t)&sdhci_intel_mrfl_mmc,
+> +	},
+> +	{
+>   		.vendor		= PCI_VENDOR_ID_O2,
+>   		.device		= PCI_DEVICE_ID_O2_8120,
+>   		.subvendor	= PCI_ANY_ID,
+>
 
