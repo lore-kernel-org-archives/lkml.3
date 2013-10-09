@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757372Ab3JIX1q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 19:27:46 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:32914 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756934Ab3JIXZd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 19:25:33 -0400
+	id S1756925Ab3JIXZc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 19:25:32 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:43719 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756610Ab3JIXZ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 19:25:29 -0400
 From: Nishanth Menon <nm@ti.com>
 To: Kevin Hilman <khilman@linaro.org>, Benoit Cousson <bcousson@baylibre.com>,
         Tony Lindgren <tony@atomide.com>, Tero Kristo <t-kristo@ti.com>
 CC: <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <linux-doc@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, J Keerthy <j-keerthy@ti.com>,
-        Nishanth Menon <nm@ti.com>
-Subject: [PATCH V6 10/15] ARM: dts: DRA7: Add CPU OPP table
-Date: Wed, 9 Oct 2013 18:24:53 -0500
-Message-ID: <1381361098-8283-9-git-send-email-nm@ti.com>
+        <devicetree@vger.kernel.org>, Nishanth Menon <nm@ti.com>
+Subject: [PATCH V6 07/15] ARM: dts: omap5-uevm: add smps123 supply for CPU
+Date: Wed, 9 Oct 2013 18:24:50 -0500
+Message-ID: <1381361098-8283-6-git-send-email-nm@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1381361098-8283-1-git-send-email-nm@ti.com>
 References: <1381354144-7134-1-git-send-email-nm@ti.com>
@@ -27,43 +25,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: J Keerthy <j-keerthy@ti.com>
+regulator smps123 supply from Palmas PMIC powers CPU0 on OMAP5uEVM.
 
-Add DT OPP table for DRA7xx family of devices. This data is decoded by
-OF with of_init_opp_table() helper function.
+Based on a patch by J Keerthy <j-keerthy@ti.com>
 
-The data is based on DRA75x, DRA74x Data Manual revision F (Sept 2013).
-
-TODO: add OPP_HIGH after AVS-Class0 is functional
-NOTE: The voltage and frequency values work well only on NOM samples
-and it is mandatory to use ABB/AVS Class 0 support for all OPPs.
-
-Clock nodes are pending clock node alignment.
-
-[nm@ti.com: cleanups and rebase to latest]
 Signed-off-by: Nishanth Menon <nm@ti.com>
-Signed-off-by: J Keerthy <j-keerthy@ti.com>
 ---
- arch/arm/boot/dts/dra7.dtsi |    6 ++++++
- 1 file changed, 6 insertions(+)
+ arch/arm/boot/dts/omap5-uevm.dts |    4 ++++
+ arch/arm/boot/dts/omap5.dtsi     |    2 +-
+ 2 files changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
-index 02e430b..92cbe3b 100644
---- a/arch/arm/boot/dts/dra7.dtsi
-+++ b/arch/arm/boot/dts/dra7.dtsi
-@@ -36,6 +36,12 @@
+diff --git a/arch/arm/boot/dts/omap5-uevm.dts b/arch/arm/boot/dts/omap5-uevm.dts
+index d784b3a..3188511 100644
+--- a/arch/arm/boot/dts/omap5-uevm.dts
++++ b/arch/arm/boot/dts/omap5-uevm.dts
+@@ -503,3 +503,7 @@
+         pinctrl-names = "default";
+         pinctrl-0 = <&uart5_pins>;
+ };
++
++&cpu0 {
++	cpu0-supply = <&smps123_reg>;
++};
+diff --git a/arch/arm/boot/dts/omap5.dtsi b/arch/arm/boot/dts/omap5.dtsi
+index 86295d2..2e83e24 100644
+--- a/arch/arm/boot/dts/omap5.dtsi
++++ b/arch/arm/boot/dts/omap5.dtsi
+@@ -33,7 +33,7 @@
+ 		#address-cells = <1>;
+ 		#size-cells = <0>;
+ 
+-		cpu@0 {
++		cpu0: cpu@0 {
  			device_type = "cpu";
  			compatible = "arm,cortex-a15";
- 			reg = <0>;
-+
-+			operating-points = <
-+				/* kHz    uV */
-+				1000000	1060000
-+				1176000	1160000
-+				>;
- 		};
- 		cpu@1 {
- 			device_type = "cpu";
+ 			reg = <0x0>;
 -- 
 1.7.9.5
 
