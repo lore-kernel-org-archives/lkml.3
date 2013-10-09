@@ -1,77 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757586Ab3JIXfk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 19:35:40 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:51336 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756800Ab3JIXfj (ORCPT
+	id S1757488Ab3JIXgR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 19:36:17 -0400
+Received: from out03.mta.xmission.com ([166.70.13.233]:51762 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754223Ab3JIXgP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 19:35:39 -0400
-Message-ID: <5255E847.9030502@linaro.org>
-Date: Wed, 09 Oct 2013 16:35:35 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Wed, 9 Oct 2013 19:36:15 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, "Serge E. Hallyn" <serge@hallyn.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rob Landley <rob@landley.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+References: <CAJfpegsxgnSRUW-E5HM3uT5QfGyUtn_v=i4Ppkkkutp34287AA@mail.gmail.com>
+	<87a9kkax0j.fsf@xmission.com>
+	<CAJfpeguv+7giYNpAuXE9Ja_9BEwB0-fZBVgRSeVqpzSXgQYZ6Q@mail.gmail.com>
+	<8761v7h2pt.fsf@tw-ebiederman.twitter.com>
+	<CAJfpegtT7y-1HhbEVAMKkdQugTG_w7G_epGtQHGvQLpcZB5FVA@mail.gmail.com>
+	<87li281wx6.fsf_-_@xmission.com> <874n8w1wsz.fsf_-_@xmission.com>
+	<20131008155041.GI14242@tucsk.piliscsaba.szeredi.hu>
+	<877gdne8pr.fsf@xmission.com> <8761t65kd2.fsf_-_@xmission.com>
+	<CALCETrUqXTj7T_bYOgwMiO_kcU=NPD_+ck+Z=JsmXuUJJGshuQ@mail.gmail.com>
+Date: Wed, 09 Oct 2013 16:35:56 -0700
+In-Reply-To: <CALCETrUqXTj7T_bYOgwMiO_kcU=NPD_+ck+Z=JsmXuUJJGshuQ@mail.gmail.com>
+	(Andy Lutomirski's message of "Wed, 9 Oct 2013 13:09:17 -0700")
+Message-ID: <87ob6yyq3n.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Xie XiuQi <xiexiuqi@huawei.com>, Thomas Gleixner <tglx@linutronix.de>
-CC: Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] clocksource: fix misleading comment for __clocksource_updatefreq_scale()
-References: <5239167D.7090404@huawei.com>
-In-Reply-To: <5239167D.7090404@huawei.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX18OZDXbvk8KGrwAfqVULjhwrGCl5Yto9Aw=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
+	*      [score: 0.0103]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  1.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
+	*  1.0 XMSubMetaSx_00 1+ Sexy Words
+X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Andy Lutomirski <luto@amacapital.net>
+X-Spam-Relay-Country: 
+Subject: Re: Grrrr fusermount.
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/17/2013 07:57 PM, Xie XiuQi wrote:
-> Functions clocksource_updatefreq_hz() and clocksource_updatefreq_khz()
-> mentioned in the comment of __clocksource_updatefreq_scale() do not exist.
+Andy Lutomirski <luto@amacapital.net> writes:
+
+> On Wed, Oct 9, 2013 at 12:12 PM, Eric W. Biederman
+> <ebiederm@xmission.com> wrote:
+>> ebiederm@xmission.com (Eric W. Biederman) writes:
+>>
+>>> But I will go through and read the old fusermount code before I get too
+>>> much farther just so I understand what I am potentially breaking.
+>>
+>> Grr.
+>>
+>> So I have just read the fusermount umount code and the hack that it uses
+>> before there was UMOUNT_NOFOLLOW support in the vm.
+>>
+>> If I walk this path of lazy unmounts and detaching directories, anyone
+>> with a new kernel and an old copy of fusermount and a nfs mounted home
+>> directory will be able to exploit the fusermount umount symlink race.
+>>
+>> Unless we can declare that old fusermount binaries are buggy beyond
+>> supporting this patchset as it exists is dead.
 >
-> As Thomas Gleixner's suggestion, I renamed the functions and the few call
-> sites because the underscores are completely meaningless.
+> What's the hack that it does?
 
-First of all, sorry for taking so long to reply here.
+The problem is that "umount -l /some/user/supplied/path" can unmount
+anything.
 
-So I think the __ tries to imply that those are semi-internal functions
-that aren't to be causally used w/o understanding the internal details.
+Even after checking mtab etc there are races, and replacing "path" with
+a symlink will still allow you to unmount anything.
 
-> Signed-off-by: Xie XiuQi <xiexiuqi@huawei.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> ---
->  drivers/clocksource/cadence_ttc_timer.c | 2 +-
->  drivers/clocksource/em_sti.c            | 2 +-
->  drivers/clocksource/sh_cmt.c            | 2 +-
->  drivers/clocksource/sh_tmu.c            | 2 +-
->  include/linux/clocksource.h             | 4 ++--
->  5 files changed, 6 insertions(+), 6 deletions(-)
->
-> diff --git a/drivers/clocksource/cadence_ttc_timer.c b/drivers/clocksource/cadence_ttc_timer.c
-> index 4cbe28c..05f00e7 100644
-> --- a/drivers/clocksource/cadence_ttc_timer.c
-> +++ b/drivers/clocksource/cadence_ttc_timer.c
-> @@ -226,7 +226,7 @@ static int ttc_rate_change_clocksource_cb(struct notifier_block *nb,
->  		 * Do whatever is necessary to maintain a proper time base
->  		 *
->  		 * I cannot find a way to adjust the currently used clocksource
-> -		 * to the new frequency. __clocksource_updatefreq_hz() sounds
-> +		 * to the new frequency. clocksource_updatefreq_hz() sounds
->  		 * good, but does not work. Not sure what's that missing.
->  		 *
+So when not usering UMOUNT_NOFOLLOW fusermount will do:
 
-So I know you didn't write the comment, but my issue with this comment
-is that there isn't a way to adjust the currently used clocksource
-frequency, because that is totally unsupported. The
-__clocksource_updatefreq_hz() method is really only there for
-clocksources that are currently not in-use and are disabled.
-Specifically for clocksources that may come out of resume at a different
-frequency, like the sh_ ones. Hacks like what the cadence_ttc driver is
-trying to do result in very poor timekeeping.
+cd "/some/user/supplied/"
 
-So I'm sort of on the fence about this patch.
+clone(CLONE_NEWNS)
+   mount --make-rprivate /
+   COUNT=$(cat /proc/mounts | wc -l)
+   mount --rbind . /
+   Look at new /proc/mounts entries past $COUNT and see if there is an
+     entry for "path"
+   if $found
+	exit 0
+   else
+        exit 1
+wait
+if ($? == 0) umount -l "path"
 
-Thomas: Any other thoughts?
+As everything happens in the directory just below the mount point
+we are only concerned about things that happen in that directory.
 
-thanks
--john
+This does mean there is a window between checking that path is
+a valid fuse mount point and when that mountpoint is unmounted.
+
+So if someone can unlink/rename the mount point and replace it
+with a symlink during that small window it is possible to unmount
+anything.
+
+Today the d_mountpoint tests and the requirement distributed filesystems
+(aka nfs) lie to the vfs prevent those issues.
+
+The UMOUNT_NOFOLLOW code which appears in fuse 2.9.0 is new enough that
+distro's like CentOS6 don't ship it yet.
+
+Eric
+
+
