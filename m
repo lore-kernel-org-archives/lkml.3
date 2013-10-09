@@ -1,60 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756443Ab3JICNL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 22:13:11 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:37313 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754092Ab3JICNI (ORCPT
+	id S1755935Ab3JICWW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 22:22:22 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:46103 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751288Ab3JICWV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 22:13:08 -0400
-From: Brian Norris <computersforpeace@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        <linux-mtd@lists.infradead.org>,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>
-Subject: [GIT PULL] MTD fixes for 3.12-rc
-Date: Tue,  8 Oct 2013 19:10:22 -0700
-Message-Id: <1381284622-24286-1-git-send-email-computersforpeace@gmail.com>
-X-Mailer: git-send-email 1.8.4
+	Tue, 8 Oct 2013 22:22:21 -0400
+Message-ID: <5254BDD0.7040001@gmail.com>
+Date: Wed, 09 Oct 2013 13:22:08 +1100
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Joe Perches <joe@perches.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, eldad@fogrefinery.com,
+        Jiri Kosina <jkosina@suse.cz>, jgunthorpe@obsidianresearch.com,
+        Dan Rosenberg <dan.j.rosenberg@gmail.com>,
+        Kees Cook <keescook@chromium.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        George Spelvin <linux@horizon.com>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] vsprintf: Check real user/group id for %pK
+References: <5254A034.5020700@gmail.com>	 <1381279758.23937.42.camel@joe-AO722> <1381282200.23937.45.camel@joe-AO722>	 <5254B787.6080700@gmail.com> <1381284056.23937.49.camel@joe-AO722>
+In-Reply-To: <1381284056.23937.49.camel@joe-AO722>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus!
+On 09/10/13 13:00, Joe Perches wrote:
+> On Wed, 2013-10-09 at 12:55 +1100, Ryan Mallon wrote:
+>> On 09/10/13 12:30, Joe Perches wrote:
+>>> On Tue, 2013-10-08 at 17:49 -0700, Joe Perches wrote:
+>>>> On Wed, 2013-10-09 at 11:15 +1100, Ryan Mallon wrote:
+>>>>> Some setuid binaries will allow reading of files which have read
+>>>>> permission by the real user id. This is problematic with files which
+>>>>> use %pK because the file access permission is checked at open() time,
+>>>>> but the kptr_restrict setting is checked at read() time. If a setuid
+>>>>> binary opens a %pK file as an unprivileged user, and then elevates
+>>>>> permissions before reading the file, then kernel pointer values may be
+>>>>> leaked.
+>>>> I think it should explicitly test 0.
+>>> Also, Documentation/sysctl/kernel.txt should be updated too.
+>>>
+>>> Here's a suggested patch:
+>>>
+>>> ---
+>>>  Documentation/sysctl/kernel.txt | 14 ++++++++------
+>>>  lib/vsprintf.c                  | 38 ++++++++++++++++++++++++++------------
+>>>  2 files changed, 34 insertions(+), 18 deletions(-)
+>>>
+>>> diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
+>>> index 9d4c1d1..eac53d5 100644
+>>> --- a/Documentation/sysctl/kernel.txt
+>>> +++ b/Documentation/sysctl/kernel.txt
+>>> @@ -290,13 +290,15 @@ Default value is "/sbin/hotplug".
+>>>  kptr_restrict:
+>>>  
+>>>  This toggle indicates whether restrictions are placed on
+>>> -exposing kernel addresses via /proc and other interfaces.  When
+>>> -kptr_restrict is set to (0), there are no restrictions.  When
+>>> -kptr_restrict is set to (1), the default, kernel pointers
+>>> +exposing kernel addresses via /proc and other interfaces.
+>>> +
+>>> +When kptr_restrict is set to (0), there are no restrictions.
+>>> +When kptr_restrict is set to (1), the default, kernel pointers
+>>>  printed using the %pK format specifier will be replaced with 0's
+>>> -unless the user has CAP_SYSLOG.  When kptr_restrict is set to
+>>> -(2), kernel pointers printed using %pK will be replaced with 0's
+>>> -regardless of privileges.
+>>> +unless the user has CAP_SYSLOG and effective user and group ids
+>>> +are equal to the real ids.
+>>> +When kptr_restrict is set to (2), kernel pointers printed using
+>>> +%pK will be replaced with 0's regardless of privileges.
+>> I'll add this, thanks.
+>>
+>> I'm less fussed about the suggestions for the logic. The current test is
+>> small and concise.
+> The logic ends up the same to the compiler, but it's
+> human readers that want simple and clear.
+>
+>> The original also does the in_irq tests regardless of
+>> the kptr_restrict setting since they are mostly intended to catch
+>> internal kernel bugs.
+> Not so.
+>
+> http://marc.info/?l=linux-security-module&m=129303800912245&w=4
+> https://lkml.org/lkml/2012/7/13/428
+>
 
-David Woodhouse and I have queued up a few MTD fixes for 3.12. As David seems
-to be MIA again, I am sending the following pull request with his permission.
+Ah, I misread it. It does however check when kptr_restrict != 0, not
+just when kptr_restrict is 1. I've left the in_irq test as-is, but used
+a switch as suggested. I don't really care either way, I think the
+original check is quite readable. Anyway, updated patch below:
 
-Thanks,
-Brian
+~Ryan
 
-The following changes since commit 7b9e3a6ac00be4f3d654a711573b1794b046c22f:
+---
 
-  Merge tag 'fixes-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc (2013-09-19 18:49:08 -0500)
+diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
+index 9d4c1d1..eac53d5 100644
+--- a/Documentation/sysctl/kernel.txt
++++ b/Documentation/sysctl/kernel.txt
+@@ -290,13 +290,15 @@ Default value is "/sbin/hotplug".
+ kptr_restrict:
+ 
+ This toggle indicates whether restrictions are placed on
+-exposing kernel addresses via /proc and other interfaces.  When
+-kptr_restrict is set to (0), there are no restrictions.  When
+-kptr_restrict is set to (1), the default, kernel pointers
++exposing kernel addresses via /proc and other interfaces.
++
++When kptr_restrict is set to (0), there are no restrictions.
++When kptr_restrict is set to (1), the default, kernel pointers
+ printed using the %pK format specifier will be replaced with 0's
+-unless the user has CAP_SYSLOG.  When kptr_restrict is set to
+-(2), kernel pointers printed using %pK will be replaced with 0's
+-regardless of privileges.
++unless the user has CAP_SYSLOG and effective user and group ids
++are equal to the real ids.
++When kptr_restrict is set to (2), kernel pointers printed using
++%pK will be replaced with 0's regardless of privileges.
+ 
+ ==============================================================
+ 
+diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+index 26559bd..6dd8c5d 100644
+--- a/lib/vsprintf.c
++++ b/lib/vsprintf.c
+@@ -27,6 +27,7 @@
+ #include <linux/uaccess.h>
+ #include <linux/ioport.h>
+ #include <linux/dcache.h>
++#include <linux/cred.h>
+ #include <net/addrconf.h>
+ 
+ #include <asm/page.h>		/* for PAGE_SIZE */
+@@ -1312,11 +1313,36 @@ char *pointer(const char *fmt, char *buf, char *end, void *ptr,
+ 				spec.field_width = default_width;
+ 			return string(buf, end, "pK-error", spec);
+ 		}
+-		if (!((kptr_restrict == 0) ||
+-		      (kptr_restrict == 1 &&
+-		       has_capability_noaudit(current, CAP_SYSLOG))))
++
++		switch (kptr_restrict) {
++		case 0:
++			/* Always print %pK values */
++			break;
++		case 1: {
++			/*
++			 * Only print the real pointer value if the current
++			 * proccess has CAP_SYSLOG and is running with the
++			 * same credentials it started with. This is because
++			 * access to files is checked at open() time, but %pK
++			 * checks permission at read() time. We don't want to
++			 * leak pointer values if a binary opens a file using
++			 * %pK and then elevates privileges before reading it.
++			 */
++			const struct cred *cred = current_cred();
++
++			if (!has_capability_noaudit(current, CAP_SYSLOG) ||
++			    !uid_eq(cred->euid, cred->uid) ||
++			    !gid_eq(cred->egid, cred->gid))
++				ptr = NULL;
++			break;
++		}
++		default:
++			/* Always print 0's for %pK */
+ 			ptr = NULL;
++			break;
++		}
+ 		break;
++
+ 	case 'N':
+ 		switch (fmt[1]) {
+ 		case 'F':
 
-are available in the git repository at:
 
 
-  git://git.infradead.org/linux-mtd.git tags/for-linus-20131008
 
-for you to fetch changes up to 2b468ef0e7959b703626b64c4d264ef822c9267a:
 
-  mtd: m25p80: Fix 4 byte addressing mode for Micron devices. (2013-09-27 05:56:22 -0500)
-
-----------------------------------------------------------------
-
-- fix a small memory leak in some new ONFI code
-- account for additional odd variations of Micron SPI flash
-
-----------------------------------------------------------------
-Brian Norris (1):
-      mtd: nand: fix memory leak in ONFI extended parameter page
-
-Elie De Brauwer (1):
-      mtd: m25p80: Fix 4 byte addressing mode for Micron devices.
-
- drivers/mtd/devices/m25p80.c | 17 +++++++++++++++--
- drivers/mtd/nand/nand_base.c |  8 +++-----
- 2 files changed, 18 insertions(+), 7 deletions(-)
