@@ -1,106 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755849Ab3JIV3s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 17:29:48 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:48491 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755415Ab3JIV3n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 17:29:43 -0400
-From: Nishanth Menon <nm@ti.com>
-To: Kevin Hilman <khilman@linaro.org>, Benoit Cousson <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>, Tero Kristo <t-kristo@ti.com>
-CC: <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-doc@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, Nishanth Menon <nm@ti.com>
-Subject: [PATCH V6 00/15] ARM: OMAP3+: support cpufreq-cpu0 for device tree boot
-Date: Wed, 9 Oct 2013 16:28:49 -0500
-Message-ID: <1381354144-7134-1-git-send-email-nm@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1754908Ab3JIVlA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 17:41:00 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:40733 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752090Ab3JIVk5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 17:40:57 -0400
+Date: Wed, 9 Oct 2013 22:40:46 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Suman Anna <s-anna@ti.com>
+Cc: Kumar Gala <galak@codeaurora.org>, Ohad Ben-Cohen <ohad@wizery.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Benoit Cousson <bcousson@baylibre.com>, Paul Walmsley <paul@pwsan.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCHv2 1/9] hwspinlock/core: add common dt bindings and OF
+ helpers
+Message-ID: <20131009214046.GA2322@kartoffel>
+References: <cover.1379445653.git.s-anna@ti.com>
+ <4df03ac30dcc79132e3acc2e586d0ca99b431258.1379445653.git.s-anna@ti.com>
+ <14DB8294-1148-446A-A6D3-34E66BA8732C@codeaurora.org>
+ <20131001083602.GG22259@e106331-lin.cambridge.arm.com>
+ <524CECBF.2070805@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <524CECBF.2070805@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Oct 03, 2013 at 05:04:15AM +0100, Suman Anna wrote:
+> Hi Mark,
+> 
+> On 10/01/2013 03:36 AM, Mark Rutland wrote:
+> > Hi Suman,
+> > 
+> > Apologies for replying to a subthread, due to an earlier mistake on my
+> > part I don't have the original to hand.
+> 
+> No issues, thanks for your review.
+> 
+> > 
+> > On Fri, Sep 27, 2013 at 05:04:22PM +0100, Kumar Gala wrote:
+> >>
+> >> On Sep 17, 2013, at 2:30 PM, Suman Anna wrote:
+> >>
+> >>> All the platform-specific hwlock driver implementations need the
+> >>> number of locks and the associated base id for registering the
+> >>> locks present within a hwspinlock device with the driver core.
+> >>> These two variables are represented by 'hwlock-num-locks' and
+> >>> 'hwlock-base-id' properties. The documentation and OF helpers to
+> >>> retrieve these common properties have been added to the driver core.
+> >>>
+> >>> Signed-off-by: Suman Anna <s-anna@ti.com>
+> >>> ---
+> >>> .../devicetree/bindings/hwlock/hwlock.txt          | 26 +++++++++
+> >>> drivers/hwspinlock/hwspinlock_core.c               | 61 +++++++++++++++++++++-
+> >>> include/linux/hwspinlock.h                         | 11 ++--
+> >>> 3 files changed, 93 insertions(+), 5 deletions(-)
+> >>> create mode 100644 Documentation/devicetree/bindings/hwlock/hwlock.txt
+> >>>
+> >>> diff --git a/Documentation/devicetree/bindings/hwlock/hwlock.txt b/Documentation/devicetree/bindings/hwlock/hwlock.txt
+> >>> new file mode 100644
+> >>> index 0000000..789930e
+> >>> --- /dev/null
+> >>> +++ b/Documentation/devicetree/bindings/hwlock/hwlock.txt
+> >>> @@ -0,0 +1,26 @@
+> >>> +Generic hwlock bindings
+> >>> +=======================
+> >>> +
+> >>> +Generic bindings that are common to all the hwlock platform specific driver
+> >>> +implementations, the retrieved values are used for registering the device
+> >>> +specific parameters with the hwspinlock core.
+> >>> +
+> >>> +The validity and need of these common properties may vary from one driver
+> >>> +implementation to another. Look through the individual hwlock driver
+> >>> +binding documentations for identifying which are mandatory and which are
+> >>> +optional for that specific driver.
+> >>> +
+> >>> +Common properties:
+> >>> +- hwlock-base-id:	Base Id for the locks for a particular hwlock device.
+> >>> +			This property is used for representing a set of locks
+> >>> +			present in a hwlock device with a unique base id in
+> >>> +			the driver core. This property is mandatory ONLY if a
+> >>> +			SoC has several hwlock devices.
+> >>> +
+> >>> +			See documentation on struct hwspinlock_pdata in
+> >>> +			linux/hwspinlock.h for more details.
+> > 
+> > I don't like this, as it seems to be encoding a Linux implementation
+> > detail (the ID of the lock, which means that we have to have a numeric
+> > representation of each hwlock) in the device tree.
+> > 
+> > I don't see why the ID within Linux should be a concern of the device
+> > tree binding. I think that whatever internal identifier we have in Linux
+> > (be it an integer or struct) should be allocated by Linux. If a driver
+> > needs to request specific hwlocks, then we should have a phandle + args
+> > representation for referring to a specific hwlock that bidnings can use,
+> > and some code for parsing that and returning a Linux-internal
+> > identifier/struct as we do with interrupts and clocks.
+> 
+> This is based on gathering the information required by the platform
+> implementation drivers for registering with the driver core. The driver
+> core currently maintains all the locks from different instances as a
+> radix tree, as it is simpler to manage when granting locks to users.
+> The current version is based on allowing the platform implementation
+> drivers to retrieve the required data for registering with the
+> hwspinlock driver core.
 
-The series is based on Tero's V8 of patches[1] - enables the use of
-cpufreq-cpu0 generic driver for all OMAP and related derivatives.
+Ok. I don't see why this implementation detail needs to leak into the dt.
 
-I will stop copy pasting the series complete history and point at [2].
+> 
+> The users would either get a lock dynamically by requesting any free one
+> (and extract the id thereafter to share with others), or a specific one
+> which is currently by id. I agree that the phandle + args approach is
+> best suited for requesting a specific one through DT, but I would think
+> that the args would still have to be a relative lock number from 0 w.r.t
+> a phandle. I will look into the feasibility of such an approach
+> retaining the radix tree implementation, as this requires new OF
+> friendly registration and request functions.
 
-Main changes since V5:
-- no more clock driver as part of this series[3] - instead depend on clock
-  conversion[1].
-- added DRA7/OMAP5
+The value in the args would be a unique identifier within the unit pointed to
+be the phandle, but the mechanism by which it would refer to a particular lock
+would be binding-specific. It's perfectly fine for this to be an zero-based
+index in most bindings, but it should not be a global namespace as with the
+hwlock-base-id property approach.
 
-Notes:
-- i have organized the series such that
-  * patches 1-6 could go to Tony/Kevin/Paul trees
-  * Dts series is further split up given continued uncertaininty of v8 clock dts
-    nodes into two sets
-	- patches 7-10 are based on Benoit's for_13/dts branch and can apply
-	  there independently.
-	- patches 11-15 are dependent on 7-10 patches + clock nodes being
-	  available.
-- Given the uncertainity with clock nodes, I recommend we get rid of the
-  dependencies (1-10) and decide on clock nodes once the story is clearer.
-	- if we feel I should squash up clock nodes 9+14, 10+15, I can do that
-	  as well.
+> 
+> > 
+> >>> +
+> >>> +- hwlock-num-locks:	Number of locks present in a hwlock device. This
+> >>> +			property is needed on hwlock devices, where the number
+> >>> +			of supported locks within a hwlock device cannot be
+> >>> +			read from a register.
+> > 
+> > Hmm... this seems generic, but it doesn't allow for sparse ID spaces on
+> > the hwlock module. It should probably be common for the moment, but if
+> > we encounter a hwlock module with a sparse ID space, we'll need to come
+> > up with a way of handling sparse IDs (that might be device-specific).
+> 
+> Agreed.
+> 
+> > 
+> >>> diff --git a/drivers/hwspinlock/hwspinlock_core.c b/drivers/hwspinlock/hwspinlock_core.c
+> >>> index 461a0d7..aec32e7 100644
+> >>> --- a/drivers/hwspinlock/hwspinlock_core.c
+> >>> +++ b/drivers/hwspinlock/hwspinlock_core.c
+> >>> @@ -1,7 +1,7 @@
+> >>> /*
+> >>>  * Hardware spinlock framework
+> >>>  *
+> >>> - * Copyright (C) 2010 Texas Instruments Incorporated - http://www.ti.com
+> >>> + * Copyright (C) 2010-2013 Texas Instruments Incorporated - http://www.ti.com
+> >>>  *
+> >>>  * Contact: Ohad Ben-Cohen <ohad@wizery.com>
+> >>>  *
+> >>> @@ -27,6 +27,7 @@
+> >>> #include <linux/hwspinlock.h>
+> >>> #include <linux/pm_runtime.h>
+> >>> #include <linux/mutex.h>
+> >>> +#include <linux/of.h>
+> >>>
+> >>> #include "hwspinlock_internal.h"
+> >>>
+> >>> @@ -308,6 +309,64 @@ out:
+> >>> }
+> >>>
+> >>> /**
+> >>> + * of_hwspin_lock_get_base_id() - OF helper to retrieve base id
+> >>> + * @dn: device node pointer
+> >>> + *
+> >>> + * This is an OF helper function that can be called by the underlying
+> >>> + * platform-specific implementations, to retrieve the base id for the
+> >>> + * set of locks present within a hwspinlock device instance.
+> >>> + *
+> >>> + * Returns the base id value on success, -ENODEV on generic failure or
+> >>> + * an appropriate error code as returned by the OF layer
+> >>> + */
+> >>> +int of_hwspin_lock_get_base_id(struct device_node *dn)
+> >>> +{
+> >>> +	unsigned int val;
+> >>> +	int ret = -ENODEV;
+> >>> +
+> >>> +#ifdef CONFIG_OF
+> >>> +	if (!dn)
+> >>> +		return -ENODEV;
+> >>
+> >> Checking !dn is done in of_property_read_u32, so you don't need to duplicate
+> >>
+> >>> +
+> >>> +	ret = of_property_read_u32(dn, "hwlock-base-id", &val);
+> >>> +	if (!ret)
+> >>> +		ret = val;
+> >>> +#endif
+> > 
+> > Do we need the CONFIG_OF check? of_property_read_u32 is defined to
+> > return -ENOSYS if CONFIG_OF isn't defined. Or would that confuse a
+> > higher layer?
+> 
+> These are primarily OF helpers and provided for the SoC implementation
+> drivers, and I have used the CONFIG_OF check within the function to
+> streamline the function prototypes and behavior in the common
+> hwspinlock.h header file between combinations of CONFIG_HWSPINLOCK and
+> CONFIG_OF.
 
-Series is built on top of V3.12-rc4 + the following maintainer tree merges
-	git://git.kernel.org/pub/scm/linux/kernel/git/bcousson/linux-omap-dt for_3.13/dts
-	git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap tag 'fixes-against-v3.12-rc3-take2' and omap-for-v3.13/soc branch
-Available here: https://github.com/nmenon/linux-2.6-playground/commits/push/cpufreq-cpu0-omap-all-v6
+Ok. Due to the !CONFIG_OF stub for of_property_read_u32, and the check for !dn
+done in of_property_read_u32, you could just have:
 
-Test Script: http://pastebin.pandaboard.org/index.php/view/64137893
+int of_hwspin_lock_get_base_id(struct device_node *dn)
+{
+	u32 val;
+	if (of_property_read_u32(dn, "hwlock-base-id", &val) != 0)
+		return -ENODEV;
+	
+	return val;
+}
 
-Test-log:
-BeagleBoard-XM (OMAP36xx): http://pastebin.pandaboard.org/index.php/view/64740438
-PandaBoard-ES (OMAP4460): http://pastebin.pandaboard.org/index.php/view/13763478
-BeagleBone-Black(AM335x): http://pastebin.pandaboard.org/index.php/view/46018613
-OMAP5uEVM (OMAP5432): http://pastebin.pandaboard.org/index.php/view/54353148
-DRA7-EVM (DRA7xx): http://pastebin.pandaboard.org/index.php/view/70955776
+Which would work regardless of CONFIG_OF. That said, I don't think this
+function is necessary because a phandle + args approach would be fundamantally
+better.
 
-J Keerthy (5):
-  ARM: dts: dra7-evm: add smps123 supply for CPU
-  ARM: dts: OMAP5: Add CPU OPP table
-  ARM: dts: DRA7: Add CPU OPP table
-  ARM: dts: OMAP5: add clock nodes for CPU
-  ARM: dts: DRA7: add clock nodes for CPU
+> 
+> The check for !dn is done deliberately to help the implementation drivers.
 
-Nishanth Menon (10):
-  ARM: OMAP3+: do not register non-dt OPP tables for device tree boot
-  ARM: OMAP2+: AM33XX: add lateinit hook for calling pm late init
-  ARM: OMAP2+: AM43XX: add lateinit hook for calling pm late init
-  ARM: OMAP2+: OMAP5: add lateinit hook for calling pm late init
-  ARM: OMAP2+: DRA7: add lateinit hook for calling pm late init
-  ARM: OMAP3+: use cpu0-cpufreq driver in device tree supported boot
-  ARM: dts: omap5-uevm: add smps123 supply for CPU
-  ARM: dts: OMAP3: add clock nodes for CPU
-  ARM: dts: OMAP4: add clock nodes for CPU
-  ARM: dts: AM33XX: add clock nodes for CPU
+As I mentioned above, of_property_read_u32 already checks for !dn, so the check
+here is redundant.
 
- arch/arm/boot/dts/am33xx.dtsi       |    4 ++++
- arch/arm/boot/dts/dra7-evm.dts      |    4 ++++
- arch/arm/boot/dts/dra7.dtsi         |   13 ++++++++++++-
- arch/arm/boot/dts/omap3.dtsi        |    5 +++++
- arch/arm/boot/dts/omap4.dtsi        |    5 +++++
- arch/arm/boot/dts/omap5-uevm.dts    |    4 ++++
- arch/arm/boot/dts/omap5.dtsi        |   15 ++++++++++++++-
- arch/arm/mach-omap2/board-generic.c |    4 ++++
- arch/arm/mach-omap2/common.h        |    4 ++++
- arch/arm/mach-omap2/io.c            |   24 ++++++++++++++++++++++++
- arch/arm/mach-omap2/opp.c           |    4 ++++
- arch/arm/mach-omap2/pm.c            |   12 +++++++++---
- 12 files changed, 93 insertions(+), 5 deletions(-)
-
-[1] http://marc.info/?t=138133284200006&r=1&w=2
-[2] http://marc.info/?l=linux-arm-kernel&m=136804009618594&w=2
-[3] http://marc.info/?t=136804008400001&r=1&w=2
-
-Regards,
-Nishanth Menon
--- 
-1.7.9.5
-
+Cheers,
+Mark.
