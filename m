@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755816Ab3JIMbC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 08:31:02 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:46265 "EHLO
+	id S1756582Ab3JIMbU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 08:31:20 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:46258 "EHLO
 	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754114Ab3JIMbA (ORCPT
+	with ESMTP id S1756238Ab3JIMbS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 08:31:00 -0400
+	Wed, 9 Oct 2013 08:31:18 -0400
 From: Mark Brown <broonie@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: linaro-kernel@lists.linaro.org, Mark Brown <broonie@linaro.org>
-Date: Wed,  9 Oct 2013 13:30:46 +0100
-Message-Id: <1381321847-5766-1-git-send-email-broonie@kernel.org>
+Date: Wed,  9 Oct 2013 13:30:47 +0100
+Message-Id: <1381321847-5766-2-git-send-email-broonie@kernel.org>
 X-Mailer: git-send-email 1.8.4.rc3
+In-Reply-To: <1381321847-5766-1-git-send-email-broonie@kernel.org>
+References: <1381321847-5766-1-git-send-email-broonie@kernel.org>
 X-SA-Exim-Connect-IP: 94.175.92.69
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: [PATCH 1/2] regmap: Simplify the initiation of async I/O
+Subject: [PATCH 2/2] regmap: Provide asynchronous write and update bits operations
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
 X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -24,125 +26,219 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mark Brown <broonie@linaro.org>
 
-Rather than passing a flag around through the entire call stack store it
-in the regmap struct and read it when required. This minimises the
-visibility of the feature through the API, minimising the code updates
-needed to use it more widely.
+Make it easier for drivers to include single register writes in
+asynchronous sequences by providing async versions of the write
+and update bits operations. The update bits operations are only
+likely to be effective when used with devices that have caches
+but this is common enough to be useful.
 
 Signed-off-by: Mark Brown <broonie@linaro.org>
 ---
- drivers/base/regmap/internal.h |  3 ++-
- drivers/base/regmap/regcache.c |  3 +--
- drivers/base/regmap/regmap.c   | 19 +++++++++++--------
- 3 files changed, 14 insertions(+), 11 deletions(-)
+ drivers/base/regmap/regmap.c | 103 +++++++++++++++++++++++++++++++++++++++++++
+ include/linux/regmap.h       |  31 +++++++++++++
+ 2 files changed, 134 insertions(+)
 
-diff --git a/drivers/base/regmap/internal.h b/drivers/base/regmap/internal.h
-index 63c22bc..33414b1 100644
---- a/drivers/base/regmap/internal.h
-+++ b/drivers/base/regmap/internal.h
-@@ -63,6 +63,7 @@ struct regmap {
- 	void *bus_context;
- 	const char *name;
- 
-+	bool async;
- 	spinlock_t async_lock;
- 	wait_queue_head_t async_waitq;
- 	struct list_head async_list;
-@@ -221,7 +222,7 @@ bool regcache_set_val(struct regmap *map, void *base, unsigned int idx,
- int regcache_lookup_reg(struct regmap *map, unsigned int reg);
- 
- int _regmap_raw_write(struct regmap *map, unsigned int reg,
--		      const void *val, size_t val_len, bool async);
-+		      const void *val, size_t val_len);
- 
- void regmap_async_complete_cb(struct regmap_async *async, int ret);
- 
-diff --git a/drivers/base/regmap/regcache.c b/drivers/base/regmap/regcache.c
-index d6c2d69..a36112a 100644
---- a/drivers/base/regmap/regcache.c
-+++ b/drivers/base/regmap/regcache.c
-@@ -631,8 +631,7 @@ static int regcache_sync_block_raw_flush(struct regmap *map, const void **data,
- 
- 	map->cache_bypass = 1;
- 
--	ret = _regmap_raw_write(map, base, *data, count * val_bytes,
--				false);
-+	ret = _regmap_raw_write(map, base, *data, count * val_bytes);
- 
- 	map->cache_bypass = 0;
- 
 diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-index 4866ae5..6f15519 100644
+index 6f15519..ccdac61 100644
 --- a/drivers/base/regmap/regmap.c
 +++ b/drivers/base/regmap/regmap.c
-@@ -1043,7 +1043,7 @@ static int _regmap_select_page(struct regmap *map, unsigned int *reg,
- }
+@@ -1340,6 +1340,37 @@ int regmap_write(struct regmap *map, unsigned int reg, unsigned int val)
+ EXPORT_SYMBOL_GPL(regmap_write);
  
- int _regmap_raw_write(struct regmap *map, unsigned int reg,
--		      const void *val, size_t val_len, bool async)
-+		      const void *val, size_t val_len)
- {
- 	struct regmap_range_node *range;
- 	unsigned long flags;
-@@ -1095,7 +1095,7 @@ int _regmap_raw_write(struct regmap *map, unsigned int reg,
- 			dev_dbg(map->dev, "Writing window %d/%zu\n",
- 				win_residue, val_len / map->format.val_bytes);
- 			ret = _regmap_raw_write(map, reg, val, win_residue *
--						map->format.val_bytes, async);
-+						map->format.val_bytes);
- 			if (ret != 0)
- 				return ret;
- 
-@@ -1128,7 +1128,7 @@ int _regmap_raw_write(struct regmap *map, unsigned int reg,
- 		val = work_val;
- 	}
- 
--	if (async && map->bus->async_write) {
-+	if (map->async && map->bus->async_write) {
- 		struct regmap_async *async;
- 
- 		trace_regmap_async_write_start(map->dev, reg, val_len);
-@@ -1275,7 +1275,7 @@ static int _regmap_bus_raw_write(void *context, unsigned int reg,
- 				 map->work_buf +
- 				 map->format.reg_bytes +
- 				 map->format.pad_bytes,
--				 map->format.val_bytes, false);
-+				 map->format.val_bytes);
- }
- 
- static inline void *_regmap_map_get_context(struct regmap *map)
-@@ -1367,7 +1367,7 @@ int regmap_raw_write(struct regmap *map, unsigned int reg,
- 
- 	map->lock(map->lock_arg);
- 
--	ret = _regmap_raw_write(map, reg, val, val_len, false);
-+	ret = _regmap_raw_write(map, reg, val, val_len);
- 
- 	map->unlock(map->lock_arg);
- 
-@@ -1516,8 +1516,7 @@ int regmap_bulk_write(struct regmap *map, unsigned int reg, const void *val,
- 				return ret;
- 		}
- 	} else {
--		ret = _regmap_raw_write(map, reg, wval, val_bytes * val_count,
--					false);
-+		ret = _regmap_raw_write(map, reg, wval, val_bytes * val_count);
- 	}
- 
- 	if (val_bytes != 1)
-@@ -1563,7 +1562,11 @@ int regmap_raw_write_async(struct regmap *map, unsigned int reg,
- 
- 	map->lock(map->lock_arg);
- 
--	ret = _regmap_raw_write(map, reg, val, val_len, true);
+ /**
++ * regmap_write_async(): Write a value to a single register asynchronously
++ *
++ * @map: Register map to write to
++ * @reg: Register to write to
++ * @val: Value to be written
++ *
++ * A value of zero will be returned on success, a negative errno will
++ * be returned in error cases.
++ */
++int regmap_write_async(struct regmap *map, unsigned int reg, unsigned int val)
++{
++	int ret;
++
++	if (reg % map->reg_stride)
++		return -EINVAL;
++
++	map->lock(map->lock_arg);
++
 +	map->async = true;
 +
-+	ret = _regmap_raw_write(map, reg, val, val_len);
++	ret = _regmap_write(map, reg, val);
 +
 +	map->async = false;
++
++	map->unlock(map->lock_arg);
++
++	return ret;
++}
++EXPORT_SYMBOL_GPL(regmap_write_async);
++
++/**
+  * regmap_raw_write(): Write raw values to one or more registers
+  *
+  * @map: Register map to write to
+@@ -1914,6 +1945,41 @@ int regmap_update_bits(struct regmap *map, unsigned int reg,
+ EXPORT_SYMBOL_GPL(regmap_update_bits);
  
- 	map->unlock(map->lock_arg);
+ /**
++ * regmap_update_bits_async: Perform a read/modify/write cycle on the register
++ *                           map asynchronously
++ *
++ * @map: Register map to update
++ * @reg: Register to update
++ * @mask: Bitmask to change
++ * @val: New value for bitmask
++ *
++ * With most buses the read must be done synchronously so this is most
++ * useful for devices with a cache which do not need to interact with
++ * the hardware to determine the current register value.
++ *
++ * Returns zero for success, a negative number on error.
++ */
++int regmap_update_bits_async(struct regmap *map, unsigned int reg,
++			     unsigned int mask, unsigned int val)
++{
++	bool change;
++	int ret;
++
++	map->lock(map->lock_arg);
++
++	map->async = true;
++
++	ret = _regmap_update_bits(map, reg, mask, val, &change);
++
++	map->async = false;
++
++	map->unlock(map->lock_arg);
++
++	return ret;
++}
++EXPORT_SYMBOL_GPL(regmap_update_bits_async);
++
++/**
+  * regmap_update_bits_check: Perform a read/modify/write cycle on the
+  *                           register map and report if updated
+  *
+@@ -1938,6 +2004,43 @@ int regmap_update_bits_check(struct regmap *map, unsigned int reg,
+ }
+ EXPORT_SYMBOL_GPL(regmap_update_bits_check);
  
++/**
++ * regmap_update_bits_check_async: Perform a read/modify/write cycle on the
++ *                                 register map asynchronously and report if
++ *                                 updated
++ *
++ * @map: Register map to update
++ * @reg: Register to update
++ * @mask: Bitmask to change
++ * @val: New value for bitmask
++ * @change: Boolean indicating if a write was done
++ *
++ * With most buses the read must be done synchronously so this is most
++ * useful for devices with a cache which do not need to interact with
++ * the hardware to determine the current register value.
++ *
++ * Returns zero for success, a negative number on error.
++ */
++int regmap_update_bits_check_async(struct regmap *map, unsigned int reg,
++				   unsigned int mask, unsigned int val,
++				   bool *change)
++{
++	int ret;
++
++	map->lock(map->lock_arg);
++
++	map->async = true;
++
++	ret = _regmap_update_bits(map, reg, mask, val, change);
++
++	map->async = false;
++
++	map->unlock(map->lock_arg);
++
++	return ret;
++}
++EXPORT_SYMBOL_GPL(regmap_update_bits_check_async);
++
+ void regmap_async_complete_cb(struct regmap_async *async, int ret)
+ {
+ 	struct regmap *map = async->map;
+diff --git a/include/linux/regmap.h b/include/linux/regmap.h
+index 9b313f0..8267680 100644
+--- a/include/linux/regmap.h
++++ b/include/linux/regmap.h
+@@ -388,6 +388,7 @@ int regmap_reinit_cache(struct regmap *map,
+ 			const struct regmap_config *config);
+ struct regmap *dev_get_regmap(struct device *dev, const char *name);
+ int regmap_write(struct regmap *map, unsigned int reg, unsigned int val);
++int regmap_write_async(struct regmap *map, unsigned int reg, unsigned int val);
+ int regmap_raw_write(struct regmap *map, unsigned int reg,
+ 		     const void *val, size_t val_len);
+ int regmap_bulk_write(struct regmap *map, unsigned int reg, const void *val,
+@@ -401,9 +402,14 @@ int regmap_bulk_read(struct regmap *map, unsigned int reg, void *val,
+ 		     size_t val_count);
+ int regmap_update_bits(struct regmap *map, unsigned int reg,
+ 		       unsigned int mask, unsigned int val);
++int regmap_update_bits_async(struct regmap *map, unsigned int reg,
++			     unsigned int mask, unsigned int val);
+ int regmap_update_bits_check(struct regmap *map, unsigned int reg,
+ 			     unsigned int mask, unsigned int val,
+ 			     bool *change);
++int regmap_update_bits_check_async(struct regmap *map, unsigned int reg,
++				   unsigned int mask, unsigned int val,
++				   bool *change);
+ int regmap_get_val_bytes(struct regmap *map);
+ int regmap_async_complete(struct regmap *map);
+ bool regmap_can_raw_write(struct regmap *map);
+@@ -554,6 +560,13 @@ static inline int regmap_write(struct regmap *map, unsigned int reg,
+ 	return -EINVAL;
+ }
+ 
++static inline int regmap_write_async(struct regmap *map, unsigned int reg,
++				     unsigned int val)
++{
++	WARN_ONCE(1, "regmap API is disabled");
++	return -EINVAL;
++}
++
+ static inline int regmap_raw_write(struct regmap *map, unsigned int reg,
+ 				   const void *val, size_t val_len)
+ {
+@@ -603,6 +616,14 @@ static inline int regmap_update_bits(struct regmap *map, unsigned int reg,
+ 	return -EINVAL;
+ }
+ 
++static inline int regmap_update_bits_async(struct regmap *map,
++					   unsigned int reg,
++					   unsigned int mask, unsigned int val)
++{
++	WARN_ONCE(1, "regmap API is disabled");
++	return -EINVAL;
++}
++
+ static inline int regmap_update_bits_check(struct regmap *map,
+ 					   unsigned int reg,
+ 					   unsigned int mask, unsigned int val,
+@@ -612,6 +633,16 @@ static inline int regmap_update_bits_check(struct regmap *map,
+ 	return -EINVAL;
+ }
+ 
++static inline int regmap_update_bits_check_async(struct regmap *map,
++						 unsigned int reg,
++						 unsigned int mask,
++						 unsigned int val,
++						 bool *change)
++{
++	WARN_ONCE(1, "regmap API is disabled");
++	return -EINVAL;
++}
++
+ static inline int regmap_get_val_bytes(struct regmap *map)
+ {
+ 	WARN_ONCE(1, "regmap API is disabled");
 -- 
 1.8.4.rc3
 
