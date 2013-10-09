@@ -1,83 +1,329 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756978Ab3JIXqf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 19:46:35 -0400
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:34025 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752515Ab3JIXqe convert rfc822-to-8bit (ORCPT
+	id S1757136Ab3JIXrZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 19:47:25 -0400
+Received: from mail-qe0-f45.google.com ([209.85.128.45]:56521 "EHLO
+	mail-qe0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756615Ab3JIXrW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 19:46:34 -0400
+	Wed, 9 Oct 2013 19:47:22 -0400
 MIME-Version: 1.0
-In-Reply-To: <1381362030-29595-1-git-send-email-geyslan@gmail.com>
-References: <1381362030-29595-1-git-send-email-geyslan@gmail.com>
-Date: Wed, 9 Oct 2013 20:46:33 -0300
-Message-ID: <CAGG-pUR5q4gw1_Q8spEJgpqMXk0ZyHfFMKR8G3PczHPk9L=H5g@mail.gmail.com>
-Subject: Re: [PATCH v3] btrfs: Fix memory leakage in the tree-log.c
-From: =?UTF-8?Q?Geyslan_Greg=C3=B3rio_Bem?= <geyslan@gmail.com>
-To: chris.mason@fusionio.com
-Cc: linux-btrfs@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        kernel-br <kernel-br@googlegroups.com>,
-        "Geyslan G. Bem" <geyslan@gmail.com>, Joe Perches <joe@perches.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
+In-Reply-To: <1380904635-18113-2-git-send-email-acourbot@nvidia.com>
+References: <1380904635-18113-1-git-send-email-acourbot@nvidia.com>
+	<1380904635-18113-2-git-send-email-acourbot@nvidia.com>
+Date: Wed, 9 Oct 2013 16:47:21 -0700
+Message-ID: <CAOesGMj74Pui1V5O7zxEipM5Hg6nboVTUCFuMY0c0aUh=wuu3Q@mail.gmail.com>
+Subject: Re: [PATCH v7 1/5] ARM: add basic support for Trusted Foundations
+From: Olof Johansson <olof@lixom.net>
+To: Alexandre Courbot <acourbot@nvidia.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Tomasz Figa <t.figa@samsung.com>, Dave Martin <Dave.Martin@arm.com>,
+        Arnd Bergmann <arnd@arndb.de>, Kevin Hilman <khilman@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please,
-
-Analyze [PATCH v3].
-
-Regards,
-
-Geyslan Gregório Bem
-hackingbits.com
-
-
-2013/10/9 Geyslan G. Bem <geyslan@gmail.com>:
-> In some cases, add_inode_ref() is returning without freeing
-> the 'name' pointer.
+On Fri, Oct 4, 2013 at 9:37 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+> Trusted Foundations is a TrustZone-based secure monitor for ARM that
+> can be invoked using the same SMC-based API on all supported
+> platforms. This patch adds initial basic support for Trusted
+> Foundations using the ARM firmware API. Current features are limited
+> to the ability to boot secondary processors.
 >
-> Added bail out to explicitly call kfree when necessary.
+> Note: The API followed by Trusted Foundations does *not* follow the SMC
+> calling conventions. It has nothing to do with PSCI neither and is only
+> relevant to devices that use Trusted Foundations (like most Tegra-based
+> retail devices).
 >
-> Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
+> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+> Reviewed-by: Stephen Warren <swarren@nvidia.com>
 > ---
->  fs/btrfs/tree-log.c | 10 ++++++++--
->  1 file changed, 8 insertions(+), 2 deletions(-)
+>  .../arm/firmware/tl,trusted-foundations.txt        | 17 +++++
+>  .../devicetree/bindings/vendor-prefixes.txt        |  1 +
+>  arch/arm/Kconfig                                   |  2 +
+>  arch/arm/Makefile                                  |  1 +
+>  arch/arm/firmware/Kconfig                          | 28 ++++++++
+>  arch/arm/firmware/Makefile                         |  1 +
+>  arch/arm/firmware/trusted_foundations.c            | 77 ++++++++++++++++++++++
+>  arch/arm/include/asm/trusted_foundations.h         | 64 ++++++++++++++++++
+>  8 files changed, 191 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/arm/firmware/tl,trusted-foundations.txt
+>  create mode 100644 arch/arm/firmware/Kconfig
+>  create mode 100644 arch/arm/firmware/Makefile
+>  create mode 100644 arch/arm/firmware/trusted_foundations.c
+>  create mode 100644 arch/arm/include/asm/trusted_foundations.h
 >
-> diff --git a/fs/btrfs/tree-log.c b/fs/btrfs/tree-log.c
-> index 79f057c..ad7cc5f 100644
-> --- a/fs/btrfs/tree-log.c
-> +++ b/fs/btrfs/tree-log.c
-> @@ -1170,13 +1170,16 @@ static noinline int add_inode_ref(struct btrfs_trans_handle *trans,
->                         if (!dir)
->                                 dir = read_one_inode(root, parent_objectid);
->                         if (!dir)
-> -                               return -ENOENT;
-> +                       {
-> +                               ret = -ENOENT;
-> +                               goto bail;
-> +                       }
->                 } else {
->                         ret = ref_get_fields(eb, ref_ptr, &namelen, &name,
->                                              &ref_index);
->                 }
->                 if (ret)
-> -                       return ret;
-> +                       goto bail;
+> diff --git a/Documentation/devicetree/bindings/arm/firmware/tl,trusted-foundations.txt b/Documentation/devicetree/bindings/arm/firmware/tl,trusted-foundations.txt
+> new file mode 100644
+> index 0000000..3954bbd
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/arm/firmware/tl,trusted-foundations.txt
+> @@ -0,0 +1,17 @@
+> +Trusted Foundations
+> +
+> +Boards that use the Trusted Foundations secure monitor can signal its
+> +presence by declaring a node compatible with "tl,trusted-foundations"
+> +under the root node.
+> +
+> +Required properties:
+> +- compatible : "tl,trusted-foundations"
+> +- version-major : major version number of Trusted Foundations firmware
+> +- version-minor: minor version number of Trusted Foundations firmware
+> +
+> +Example:
+> +       firmware {
+> +               compatible = "tl,trusted-foundations";
+> +               version-major = <2>;
+> +               version-minor = <8>;
+> +       };
+> diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+> index 2956800..a374eaa 100644
+> --- a/Documentation/devicetree/bindings/vendor-prefixes.txt
+> +++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+> @@ -66,6 +66,7 @@ ste   ST-Ericsson
+>  stericsson     ST-Ericsson
+>  toumaz Toumaz
+>  ti     Texas Instruments
+> +tl     Trusted Logic
+>  toshiba        Toshiba Corporation
+>  v3     V3 Semiconductor
+>  via    VIA Technologies, Inc.
+> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> index 1ad6fb6..bf14cec 100644
+> --- a/arch/arm/Kconfig
+> +++ b/arch/arm/Kconfig
+> @@ -1076,6 +1076,8 @@ config ARM_TIMER_SP804
+>         select CLKSRC_MMIO
+>         select CLKSRC_OF if OF
 >
->                 /* if we already have a perfect match, we're done */
->                 if (!inode_in_dir(root, path, btrfs_ino(dir), btrfs_ino(inode),
-> @@ -1227,6 +1230,9 @@ out:
->         btrfs_release_path(path);
->         iput(dir);
->         iput(inode);
-> +bail:
-> +       if (name)
-> +               kfree(name);
->         return ret;
->  }
+> +source "arch/arm/firmware/Kconfig"
+> +
+>  source arch/arm/mm/Kconfig
 >
-> --
-> 1.8.4
+>  config ARM_NR_BANKS
+> diff --git a/arch/arm/Makefile b/arch/arm/Makefile
+> index a37a50f..f26712c 100644
+> --- a/arch/arm/Makefile
+> +++ b/arch/arm/Makefile
+> @@ -268,6 +268,7 @@ core-$(CONFIG_KVM_ARM_HOST)         += arch/arm/kvm/
+>  core-y                         += arch/arm/kernel/ arch/arm/mm/ arch/arm/common/
+>  core-y                         += arch/arm/net/
+>  core-y                         += arch/arm/crypto/
+> +core-y                         += arch/arm/firmware/
+>  core-y                         += $(machdirs) $(platdirs)
 >
+>  drivers-$(CONFIG_OPROFILE)      += arch/arm/oprofile/
+> diff --git a/arch/arm/firmware/Kconfig b/arch/arm/firmware/Kconfig
+> new file mode 100644
+> index 0000000..bb00ccf
+> --- /dev/null
+> +++ b/arch/arm/firmware/Kconfig
+> @@ -0,0 +1,28 @@
+> +config ARCH_SUPPORTS_FIRMWARE
+> +       bool
+> +
+> +config ARCH_SUPPORTS_TRUSTED_FOUNDATIONS
+> +       bool
+> +       select ARCH_SUPPORTS_FIRMWARE
+> +
+> +menu "Firmware options"
+> +       depends on ARCH_SUPPORTS_FIRMWARE
+> +
+> +config TRUSTED_FOUNDATIONS
+> +       bool "Trusted Foundations secure monitor support"
+> +       depends on ARCH_SUPPORTS_TRUSTED_FOUNDATIONS
+> +       help
+> +         Some devices (including most Tegra-based consumer devices on the
+> +         market) are booted with the Trusted Foundations secure monitor
+> +         active, requiring some core operations to be performed by the secure
+> +         monitor instead of the kernel.
+> +
+> +         This option allows the kernel to invoke the secure monitor whenever
+> +         required on devices using Trusted Foundations. See
+> +         arch/arm/include/asm/trusted_foundations.h or the
+> +         tl,trusted-foundations device tree binding documentation for details
+> +         on how to use it.
+> +
+> +         Say n if you don't know what this is about.
+> +
+> +endmenu
+> diff --git a/arch/arm/firmware/Makefile b/arch/arm/firmware/Makefile
+> new file mode 100644
+> index 0000000..a71f165
+> --- /dev/null
+> +++ b/arch/arm/firmware/Makefile
+> @@ -0,0 +1 @@
+> +obj-$(CONFIG_TRUSTED_FOUNDATIONS)      += trusted_foundations.o
+> diff --git a/arch/arm/firmware/trusted_foundations.c b/arch/arm/firmware/trusted_foundations.c
+> new file mode 100644
+> index 0000000..c93c5e0
+> --- /dev/null
+> +++ b/arch/arm/firmware/trusted_foundations.c
+> @@ -0,0 +1,77 @@
+> +/*
+> + * Trusted Foundations support for ARM CPUs
+> + *
+> + * Copyright (c) 2013, NVIDIA Corporation.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful, but WITHOUT
+> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+> + * more details.
+> + */
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/init.h>
+> +#include <linux/of.h>
+> +#include <asm/firmware.h>
+> +#include <asm/trusted_foundations.h>
+> +
+> +#define TF_SET_CPU_BOOT_ADDR_SMC 0xfffff200
+> +
+> +static void __naked tf_generic_smc(u32 type, u32 subtype, u32 arg)
+> +{
+> +       asm volatile(
+> +               ".arch_extension        sec\n\t"
+> +               "stmfd  sp!, {r4 - r11, lr}\n\t"
+> +               __asmeq("%0", "r0")
+> +               __asmeq("%1", "r1")
+> +               __asmeq("%2", "r2")
+> +               "mov    r3, #0\n\t"
+> +               "mov    r4, #0\n\t"
+> +               "smc    #0\n\t"
+> +               "ldmfd  sp!, {r4 - r11, pc}"
+> +               :
+> +               : "r" (type), "r" (subtype), "r" (arg)
+> +               : "memory");
+> +}
+> +
+> +static int tf_set_cpu_boot_addr(int cpu, unsigned long boot_addr)
+> +{
+> +       tf_generic_smc(TF_SET_CPU_BOOT_ADDR_SMC, boot_addr, 0);
+> +
+> +       return 0;
+> +}
+> +
+> +static const struct firmware_ops trusted_foundations_ops = {
+> +       .set_cpu_boot_addr = tf_set_cpu_boot_addr,
+> +};
+> +
+> +void register_trusted_foundations(struct trusted_foundations_platform_data *pd)
+> +{
+> +       /* we are not using version information for now since currently
+> +        * supported SMCs are compatible with all TF releases */
+> +       register_firmware_ops(&trusted_foundations_ops);
+> +}
+> +
+> +void of_register_trusted_foundations(void)
+> +{
+> +       struct device_node *node;
+> +       struct trusted_foundations_platform_data pdata;
+> +       int err;
+> +
+> +       node = of_find_compatible_node(NULL, NULL, "tl,trusted-foundations");
+> +       if (!node)
+> +               return;
+> +
+> +       err = of_property_read_u32(node, "version-major", &pdata.version_major);
+> +       if (err != 0)
+> +               panic("Trusted Foundation: missing version-major property\n");
+> +       err = of_property_read_u32(node, "version-minor", &pdata.version_minor);
+> +       if (err != 0)
+> +               panic("Trusted Foundation: missing version-minor property\n");
+> +       register_trusted_foundations(&pdata);
+> +}
+> diff --git a/arch/arm/include/asm/trusted_foundations.h b/arch/arm/include/asm/trusted_foundations.h
+> new file mode 100644
+> index 0000000..749edbf
+> --- /dev/null
+> +++ b/arch/arm/include/asm/trusted_foundations.h
+> @@ -0,0 +1,64 @@
+> +/*
+> + * Copyright (c) 2013, NVIDIA Corporation.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful, but WITHOUT
+> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+> + * more details.
+> + */
+> +
+> +/*
+> + * Support for the Trusted Foundations secure monitor.
+> + *
+> + * Trusted Foundation comes active on some ARM consumer devices (most
+> + * Tegra-based devices sold on the market are concerned). Such devices can only
+> + * perform some basic operations, like setting the CPU reset vector, through
+> + * SMC calls to the secure monitor. The calls are completely specific to
+> + * Trusted Foundations, and do *not* follow the SMC calling convention or the
+> + * PSCI standard.
+> + */
+> +
+> +#ifndef __ASM_ARM_TRUSTED_FOUNDATIONS_H
+> +#define __ASM_ARM_TRUSTED_FOUNDATIONS_H
+> +
+> +#include <linux/kconfig.h>
+> +
+> +struct trusted_foundations_platform_data {
+> +       unsigned int version_major;
+> +       unsigned int version_minor;
+> +};
+> +
+> +#if IS_ENABLED(CONFIG_TRUSTED_FOUNDATIONS)
+> +
+> +void register_trusted_foundations(struct trusted_foundations_platform_data *pd);
+> +void of_register_trusted_foundations(void);
+> +
+> +#else /* CONFIG_TRUSTED_FOUNDATIONS */
+> +
+> +#include <linux/printk.h>
+> +#include <linux/of.h>
+> +#include <asm/bug.h>
+> +
+> +static inline void register_trusted_foundations(
+> +                                  struct trusted_foundations_platform_data *pd)
+> +{
+> +       /* If we try to register TF, this means the system needs it to continue.
+> +        * Its absence if thus a fatal error. */
+> +       panic("No support for Trusted Foundations, stopping...\n");
+> +}
+> +
+> +static inline void of_register_trusted_foundations(void)
+> +{
+> +       /* If we find the target should enable TF but does not support it,
+> +        * fail as the system won't be able to do much anyway */
+> +       if (of_find_compatible_node(NULL, NULL, "tl,trusted-foundations"))
+> +               register_trusted_foundations(NULL);
+> +}
+> +#endif /* CONFIG_TRUSTED_FOUNDATIONS */
+
+The latter function can just be shortcut unto a local panic too.
+
+But do we really need to panic here? It's a PITA to debug since it'll
+be a very early panic. I'd rather have the system log errors in dmesg
+but continue booting with one cpu.
+
+(That can be done incrementally on top of this, and doesn't need to
+hold up this patch series).
+
+
+-Olof
