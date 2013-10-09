@@ -1,176 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754741Ab3JIQeH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 12:34:07 -0400
-Received: from mga09.intel.com ([134.134.136.24]:10444 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752216Ab3JIQeE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 12:34:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1064,1371106800"; 
-   d="scan'208";a="416736107"
-Subject: Re: [PATCH v8 0/9] rwsem performance optimizations
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
-        Jason Low <jason.low2@hp.com>, Waiman Long <Waiman.Long@hp.com>,
-        linux-kernel@vger.kernel.org, linux-mm <linux-mm@kvack.org>
-In-Reply-To: <20131009061551.GD7664@gmail.com>
-References: <cover.1380748401.git.tim.c.chen@linux.intel.com>
-	 <1380753493.11046.82.camel@schen9-DESK> <20131003073212.GC5775@gmail.com>
-	 <1381186674.11046.105.camel@schen9-DESK>  <20131009061551.GD7664@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 09 Oct 2013 09:34:01 -0700
-Message-ID: <1381336441.11046.128.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1754322Ab3JIQhO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 12:37:14 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:45735 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751692Ab3JIQhL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 12:37:11 -0400
+MIME-Version: 1.0
+In-Reply-To: <20131009075830.GS3521@intel.com>
+References: <1380639537-23406-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1380639537-23406-3-git-send-email-mika.westerberg@linux.intel.com>
+ <CAAVeFuJZ3TwozZzpuHcYPDLjEsb2D_qvQADf85s3-eywYYHs8A@mail.gmail.com>
+ <20131008084508.GI3521@intel.com> <CAAVeFu+_EUCs+70+WzCq530JUesrHzULi34mCf7-pRVVP1WV7g@mail.gmail.com>
+ <20131009075830.GS3521@intel.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Wed, 9 Oct 2013 09:36:50 -0700
+Message-ID: <CAAVeFuK4dwfOs_vxuC7wG4icCq-wbGhN5sCzYy+Z+rb0A2djJQ@mail.gmail.com>
+Subject: Re: [PATCH 2/5] gpiolib / ACPI: convert to gpiod interfaces
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        rjw@rjwysocki.net, Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Alexandre Courbot <acourbot@nvidia.com>, Rob Landley <rob@landley.net>,
+        linux-acpi@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-10-09 at 08:15 +0200, Ingo Molnar wrote:
-> * Tim Chen <tim.c.chen@linux.intel.com> wrote:
-> 
-> > Ingo,
-> > 
-> > I ran the vanilla kernel, the kernel with all rwsem patches and the 
-> > kernel with all patches except the optimistic spin one.  I am listing 
-> > two presentations of the data.  Please note that there is about 5% 
-> > run-run variation.
-> > 
-> > % change in performance vs vanilla kernel
-> > #threads	all	without optspin
-> > mmap only		
-> > 1		1.9%	1.6%
-> > 5		43.8%	2.6%
-> > 10		22.7%	-3.0%
-> > 20		-12.0%	-4.5%
-> > 40		-26.9%	-2.0%
-> > mmap with mutex acquisition		
-> > 1		-2.1%	-3.0%
-> > 5		-1.9%	1.0%
-> > 10		4.2%	12.5%
-> > 20		-4.1%	0.6%
-> > 40		-2.8%	-1.9%
-> 
-> Silly question: how do the two methods of starting N threads compare to 
-> each other? 
+On Wed, Oct 9, 2013 at 12:58 AM, Mika Westerberg
+<mika.westerberg@linux.intel.com> wrote:
+> On Tue, Oct 08, 2013 at 09:24:50AM -0700, Alexandre Courbot wrote:
+>> On Tue, Oct 8, 2013 at 1:45 AM, Mika Westerberg
+>> <mika.westerberg@linux.intel.com> wrote:
+>> > On Mon, Oct 07, 2013 at 09:54:13PM -0700, Alexandre Courbot wrote:
+>> >> > +struct gpio_desc *acpi_get_gpiod(char *path, int pin)
+>> >> >  {
+>> >> >         struct gpio_chip *chip;
+>> >> >         acpi_handle handle;
+>> >> > @@ -48,18 +49,15 @@ int acpi_get_gpio(char *path, int pin)
+>> >> >
+>> >> >         status = acpi_get_handle(NULL, path, &handle);
+>> >> >         if (ACPI_FAILURE(status))
+>> >> > -               return -ENODEV;
+>> >> > +               return ERR_PTR(-ENODEV);
+>> >> >
+>> >> >         chip = gpiochip_find(handle, acpi_gpiochip_find);
+>> >> >         if (!chip)
+>> >> > -               return -ENODEV;
+>> >> > +               return ERR_PTR(-ENODEV);
+>> >> >
+>> >> > -       if (!gpio_is_valid(chip->base + pin))
+>> >> > -               return -EINVAL;
+>> >> > -
+>> >> > -       return chip->base + pin;
+>> >> > +       return gpio_to_desc(chip->base + pin);
+>> >>
+>> >> I think you want to avoid using gpio_to_desc(). It is just a
+>> >> convenience function provided to ease the transition for consumers
+>> >> that still need to rely on GPIO numbers for some reason. The same
+>> >> applies to desc_to_gpio(), although the usage you are making of it
+>> >> (implemented fallbacks for the integer space) is the one that is
+>> >> intended.
+>> >>
+>> >> The last line could be changed to "return &chip->desc[pin];" after
+>> >> checking that 0 <= pin <= chip->ngpio.
+>> >
+>> > I tried that but it doesn't compile anymore :-(
+>> >
+>> > drivers/gpio/gpiolib-acpi.c: In function ‘acpi_get_gpiod’:
+>> > drivers/gpio/gpiolib-acpi.c:61:2: error: invalid use of undefined type ‘struct gpio_desc’
+>> > drivers/gpio/gpiolib-acpi.c:61:20: error: dereferencing pointer to incomplete type
+>>
+>> Ah right, there is no way to know the size of a gpio_desc from here...
+>> Maybe I should make a gpiochip_get_desc(index) function accessible to
+>> drivers only that takes care of this. Another possibility would be to
+>> move this function into gpiolib.c but there are probably too many
+>> dependencies with ACPI for that.
+>>
+>> In the long term I would like to see gpio_to_desc()/desc_to_gpio()
+>> disappear from the consumer interface as they allow unsafe use of GPIO
+>> descriptors.
+>>
+>> > The DT version also uses gpio_to_desc().
+>>
+>> That seems to speak in favor of that gpiochip_get_desc() function I
+>> talked about earlier.
+>
+> OK, I can convert the ACPI code to use that once such function exists. I
+> the meanwhile, can I use gpio_to_desc() in the next revision of the
+> patches?
 
-They both started N pthreads and run for a fixed time. 
-The throughput of pure mmap with mutex is below vs pure mmap is below:
-
-% change in performance of the mmap with pthread-mutex vs pure mmap
-#threads        vanilla 	all rwsem    	without optspin
-				patches
-1               3.0%    	-1.0%   	-1.7%
-5               7.2%    	-26.8%  	5.5%
-10              5.2%    	-10.6%  	22.1%
-20              6.8%    	16.4%   	12.5%
-40              -0.2%   	32.7%   	0.0%
-
-So with mutex, the vanilla kernel and the one without optspin both
-run faster.  This is consistent with what Peter reported.  With
-optspin, the picture is more mixed, with lower throughput at low to
-moderate number of threads and higher throughput with high number
-of threads.
-
-> Do they have identical runtimes? 
-
-Yes, they both have identical runtimes.  I look at the number 
-of mmap and munmap operations I could push through.
-
-> I think PeterZ's point was 
-> that the pthread_mutex case, despite adding extra serialization, actually 
-> runs faster in some circumstances.
-
-Yes, I also see the pthread mutex run faster for the vanilla kernel
-from the data above.
-
-> 
-> Also, mind posting the testcase? What 'work' do the threads do - clear 
-> some memory area? 
-
-The test case do simple mmap and munmap 1MB memory per iteration.
-
-> How big is the memory area?
-
-1MB
-
-The two cases are created as:
-
-#define MEMSIZE (1 * 1024 * 1024)
-
-char *testcase_description = "Anonymous memory mmap/munmap of 1MB";
-
-void testcase(unsigned long long *iterations)
-{
-        while (1) {
-                char *c = mmap(NULL, MEMSIZE, PROT_READ|PROT_WRITE,
-                               MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
-                assert(c != MAP_FAILED);
-                munmap(c, MEMSIZE);
-
-                (*iterations)++;
-        }
-}
-
-and adding mutex to serialize:
-
-#define MEMSIZE (1 * 1024 * 1024)
-
-char *testcase_description = "Anonymous memory mmap/munmap of 1MB with
-mutex";
-
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-
-void testcase(unsigned long long *iterations)
-{
-        while (1) {
-                pthread_mutex_lock(&mutex);
-                char *c = mmap(NULL, MEMSIZE, PROT_READ|PROT_WRITE,
-                               MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
-                assert(c != MAP_FAILED);
-                munmap(c, MEMSIZE);
-                pthread_mutex_unlock(&mutex);
-
-                (*iterations)++;
-        }
-}
-
-and run as a pthread.
-> 
-> I'd expect this to be about large enough mmap()s showing page fault 
-> processing to be mmap_sem bound and the serialization via pthread_mutex() 
-> sets up a 'train' of threads in one case, while the parallel startup would 
-> run into the mmap_sem in the regular case.
-> 
-> So I'd expect this to be a rather sensitive workload and you'd have to 
-> actively engineer it to hit the effect PeterZ mentioned. I could imagine 
-> MPI workloads to run into such patterns - but not deterministically.
-> 
-> Only once you've convinced yourself that you are hitting that kind of 
-> effect reliably on the vanilla kernel, could/should the effects of an 
-> improved rwsem implementation be measured.
-> 
-> Thanks,
-> 
-> 	Ingo
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
+Sure, please do so - anyway that's the only way you have at the
+moment. I will add gpiochip_get_desc() to v2 of gpiod and we'll
+convert your code either before or after it is merged, depending on
+our timing.
