@@ -1,45 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932080Ab3JIX5u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 19:57:50 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:50292 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755367Ab3JIX5s (ORCPT
+	id S1757040Ab3JIX6i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 19:58:38 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:18523 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755191Ab3JIX6g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 19:57:48 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Zoran Markovic <zoran.markovic@linaro.org>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Benoit Goby <benoit@android.com>,
-        Android Kernel Team <kernel-team@android.com>,
-        Colin Cross <ccross@android.com>, Todd Poynor <toddpoynor@google.com>,
-        San Mehat <san@google.com>, John Stultz <john.stultz@linaro.org>,
-        Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [RFC PATCHv4] drivers: power: Detect device suspend/resume lockup and log event in pstore.
-Date: Thu, 10 Oct 2013 02:09:30 +0200
-Message-ID: <4530022.alWsZxkjYN@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <CAME+o4=jpqyoVyRM6bz9xF5rzOHse0n95pG_cW9J=b=kYNicEg@mail.gmail.com>
-References: <1380148313-763-1-git-send-email-zoran.markovic@linaro.org> <CAME+o4=jpqyoVyRM6bz9xF5rzOHse0n95pG_cW9J=b=kYNicEg@mail.gmail.com>
+	Wed, 9 Oct 2013 19:58:36 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AgsIAKfsVVJ5LFuj/2dsb2JhbABagiVig0q5LIU/gR8XdIIlAQEEATocIwULCAMOBwMJJQ8FJQMhE4gABbdogUAWjy8HhCMDmAKSAoFmgVIo
+Date: Thu, 10 Oct 2013 10:58:28 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: viro@zeniv.linux.org.uk, mtk.manpages@gmail.com, tytso@mit.edu,
+        adilger.kernel@dilger.ca, bpm@sgi.com, elder@kernel.org,
+        hch@infradead.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        xfs@oss.sgi.com, a.sangwan@samsung.com,
+        Namjae Jeon <namjae.jeon@samsung.com>
+Subject: Re: [PATCH RESEND 6/7] xfstest: Add test case to test multiple
+ collapse range call
+Message-ID: <20131009235828.GR4446@dastard>
+References: <1381090446-2897-1-git-send-email-linkinjeon@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1381090446-2897-1-git-send-email-linkinjeon@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, October 09, 2013 11:51:51 AM Zoran Markovic wrote:
-> Hi Rafael,
-> Just wondering if you would like anything changed in this patch in
-> order to get it into 3.13. I'd prefer not missing yet another merge
-> window...
+On Mon, Oct 07, 2013 at 05:14:06AM +0900, Namjae Jeon wrote:
+> From: Namjae Jeon <namjae.jeon@samsung.com>
+> 
+> We execute collapse range multiple times on same file.
+> Each collapse range call collapses a single alternate block.
+> After the test execution, file will be left with 80 blocks and
+> as much number of extents.
+> We also check for file system consistency after the completion.
+.....
+> +. ./common/rc
+> +. ./common/filter
+> +
+> +# real QA test starts here
+> +_supported_fs xfs ext4
+> +_supported_os Linux
+> +
+> +_require_scratch
+> +_require_xfs_io_fiemap
+> +_require_xfs_io_falloc_collapse
+> +_do_die_on_error=y
+> +test=$SCRATCH_MNT/test
 
-Sent my comments in a reply to the original patch message.
+Not used.
 
-Thanks!
+> +testfile=$SCRATCH_MNT/317.$$
+> +BSIZE=4096
+> +BLOCKS=10240
+> +
+> +# Filters fiemap output
+> +_filter_fiemap()
+> +{
+> +	awk --posix '
+> +		$3 ~ /hole/ {
+> +			print $1, $2, $3;
+> +			next;
+> +		}
+> +		$5 ~ /0x[[:xdigit:]]+/ {
+> +			print $1, $2, "extent";
+> +		}'
+> +}
 
+There's already a function in common/punch of this name, and it does
+pretty much the same thing. Why not use that?
+
+> +
+> +case $FSTYP in
+> +	ext4)
+> +		export MKFS_OPTIONS="-F -b $BSIZE"
+> +		;;
+> +	xfs)
+> +		export MKFS_OPTIONS="-f -b size=$BSIZE"
+> +		;;
+> +esac
+
+_scratch_mkfs takes options on the command line - there is no need
+to do this.
+
+In fact, this test needs to run on all block sizes that filesystems
+are capable of using, not just 4k and different architectures
+exercise different code paths and so we must be able to test the
+case where block size is smaller than page size on x86-64 so when
+the code is run on an ia64 or ppc64 box with a 64k page size we know
+that it's not completely broken...
+
+Anyway, if you really need to make a 4k block size filesystem, then
+_scratch_mkfs_sized() is the generic way of doing this.
+
+> +# make filesystem on scratch with 4KB blocksize
+> +_do 'make filesystem on $SCRATCH_DEV' '_scratch_mkfs'
+> +_do 'mount filesytem' '_scratch_mount'
+
+I really dislike this "_do" wrapper. The text does not add anything
+to the test, and it makes it hard to see the command being run and
+harder to modify it when necessary. It is used only by a couple of
+old tests, and we'd do better to remove it than to propagate it
+further.  This:
+
+_scratch_mkfs >> $seqres.full 2>&1 || _fail "scratch_mkfs failed."
+_scratch_mount >> $seqres.full 2>&1 || _fail "scratch_mount failed."
+
+does everything that the _do wrapper does.
+
+> +
+> +# Write file
+> +length=$(($BLOCKS*$BSIZE))
+> +$XFS_IO_PROG -f -c "pwrite 0 $length" -c fsync $testfile > /dev/null
+> +
+> +# Collapse alternate blocks
+> +for (( i = 1; i <= 7; i++ )); do
+> +	for(( j=0 ; j < $(($BLOCKS/(2**$i))) ; j++ )); do
+> +		offset=$(($j*$BSIZE))
+> +		$XFS_IO_PROG -c "fcollapse $offset $BSIZE" $testfile > /dev/null
+> +	done
+> +done
+> +
+> +# Check if 80 extents are present
+> +$XFS_IO_PROG -c "fiemap -v" $testfile | _filter_fiemap
+
+If all you care about is that there are 80 extents, then why not
+just something like:
+
+$XFS_IO_PROG -c "fiemap -v" $testfile |grep "^ *[0-9]*:" |wc -l
+
+> +
+> +_do 'unmount $SCRATCH_DEV' 'umount $SCRATCH_DEV'
+> +_do 'repair filesystem' '_check_scratch_fs'
+
+_check_scratch_fs is all you need to call here.
+
+> index 3a69294..80ff7ec 100644
+> --- a/tests/shared/group
+> +++ b/tests/shared/group
+> @@ -12,3 +12,4 @@
+>  298 auto trim
+>  305 aio dangerous enospc rw stress
+>  316 auto quick collapse
+> +317 auto collapse
+
+Again, I think the prealloc group is better for this.
+
+Cheers,
+
+Dave.
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Dave Chinner
+david@fromorbit.com
