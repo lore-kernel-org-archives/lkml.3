@@ -1,38 +1,37 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756780Ab3JIIIx (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Wed, 9 Oct 2013 04:08:53 -0400
-Received: from simplewebmail.uom.gr ([195.251.213.88]:40280 "EHLO
-	simplewebmail.uom.gr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756696Ab3JIIIw (ORCPT
+	id S1755023Ab3JIU23 (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Wed, 9 Oct 2013 16:28:29 -0400
+Received: from outrelay03.libero.it ([212.52.84.103]:49366 "EHLO
+	outrelay03.libero.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751458Ab3JIU22 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 04:08:52 -0400
-X-Greylist: delayed 764 seconds by postgrey-1.27 at vger.kernel.org; Wed, 09 Oct 2013 04:08:51 EDT
-Message-ID: <f72af479c59d66d3fa353331da601929.squirrel@simplewebmail.uom.gr>
-Date: Wed, 9 Oct 2013 10:56:05 +0300
+	Wed, 9 Oct 2013 16:28:28 -0400
+X-CTCH-Spam: Unknown
+X-CTCH-RefID: str=0001.0A0C0201.5255BB7A.0078,ss=1,re=0.000,fgs=0
+X-libjamoibt: 1587
+Message-ID: <4008015.11711381350266288.JavaMail.defaultUser@defaultHost>
+Date: Wed, 9 Oct 2013 22:24:26 +0200 (CEST)
+From: olukk <olukk@libero.it>
+Reply-To: hassana1919@gmx.com
 Subject: Hello
-From: it0795@uom.gr
-Reply-To: waliddamascus@qq.com
-User-Agent: SquirrelMail/1.4.21
 MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
+Content-Type: text/plain;charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-SenderIP: 41.82.110.120
+X-libjamv: 9KZyFl1BLbY=
+X-libjamsun: xXgqQzDb9hMlNfSnfgMFzyKSOoV1n2Tz
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
 Hello,
-
- I am Walid Almoualem  base in Damascus.I require urgently a good property
-to buy at your location.
-
-please send details on my email:waliddamascus@qq.com
-
-
-Regards
-
-Walid
-
+How
+are you? hope fine, I Want to
+introduce my self to you before I go
+further, My Name is Hassana. I will like to have a good
+relationship with you, if you wouldn't mind, I will like to hear from
+you soon I
+have something very important I will like to tell you. Thanks and God
+bless you,
+Miss Hassana,
