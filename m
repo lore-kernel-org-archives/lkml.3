@@ -1,139 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756838Ab3JIRzu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 13:55:50 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:24168 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756751Ab3JIRzs (ORCPT
+	id S1757007Ab3JIRz5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 13:55:57 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:58713 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756833Ab3JIRzy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 13:55:48 -0400
-X-IronPort-AV: E=Sophos;i="4.90,1065,1371081600"; 
-   d="scan'208";a="59354264"
-Date: Wed, 9 Oct 2013 18:54:56 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <Ian.Campbell@citrix.com>
-Subject: Re: [PATCH v6 16/19] arm,arm64: do not always merge biovec if we
- are running on Xen
-In-Reply-To: <20130930160646.GV3106@phenom.dumpdata.com>
-Message-ID: <alpine.DEB.2.02.1310091853540.26077@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1309271653420.5498@kaball.uk.xensource.com> <1380298207-29151-16-git-send-email-stefano.stabellini@eu.citrix.com> <20130930160646.GV3106@phenom.dumpdata.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 9 Oct 2013 13:55:54 -0400
+Date: Wed, 9 Oct 2013 18:55:28 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: linux-acpi@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Aaron Lu <aaron.lu@intel.com>,
+        Lv Zheng <lv.zheng@intel.com>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20131009175528.GV21581@sirena.org.uk>
+References: <1381327461-10562-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1381327461-10562-4-git-send-email-mika.westerberg@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="OxWh+UR3R7TveXYN"
+Content-Disposition: inline
+In-Reply-To: <1381327461-10562-4-git-send-email-mika.westerberg@linux.intel.com>
+X-Cookie: Penalty for private use.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 3/3] spi: attach/detach SPI device to the ACPI power
+ domain
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 30 Sep 2013, Konrad Rzeszutek Wilk wrote:
-> On Fri, Sep 27, 2013 at 05:10:04PM +0100, Stefano Stabellini wrote:
-> > This is similar to what it is done on X86: biovecs are prevented from merging
-> > otherwise every dma requests would be forced to bounce on the swiotlb buffer.
-> > 
-> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> 
-> 
-> This also alters the generic (well, was x86, now it is generic) code.
-> Perhaps that change should be made in a seperate patch and explain
-> what the autotranslate extra check will do for PV, PVH and HVM guests?
-> 
-> Wait, does that mean we had not been merging requests on HVM guests?
-> Is that good or bad?
 
-With the new introduction of a p2m for xen on arm and arm64, I don't
-need the change to drivers/xen/biomerge.c anymore.
-No more autotranslate extra check.
+--OxWh+UR3R7TveXYN
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> > ---
-> >  arch/arm/include/asm/io.h   |    8 ++++++++
-> >  arch/arm64/include/asm/io.h |    9 +++++++++
-> >  drivers/xen/biomerge.c      |    4 +++-
-> >  3 files changed, 20 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/arch/arm/include/asm/io.h b/arch/arm/include/asm/io.h
-> > index d070741..c45effc 100644
-> > --- a/arch/arm/include/asm/io.h
-> > +++ b/arch/arm/include/asm/io.h
-> > @@ -24,9 +24,11 @@
-> >  #ifdef __KERNEL__
-> >  
-> >  #include <linux/types.h>
-> > +#include <linux/blk_types.h>
-> >  #include <asm/byteorder.h>
-> >  #include <asm/memory.h>
-> >  #include <asm-generic/pci_iomap.h>
-> > +#include <xen/xen.h>
-> >  
-> >  /*
-> >   * ISA I/O bus memory addresses are 1:1 with the physical address.
-> > @@ -372,6 +374,12 @@ extern void pci_iounmap(struct pci_dev *dev, void __iomem *addr);
-> >  #define BIOVEC_MERGEABLE(vec1, vec2)	\
-> >  	((bvec_to_phys((vec1)) + (vec1)->bv_len) == bvec_to_phys((vec2)))
-> >  
-> > +extern bool xen_biovec_phys_mergeable(const struct bio_vec *vec1,
-> > +				      const struct bio_vec *vec2);
-> > +#define BIOVEC_PHYS_MERGEABLE(vec1, vec2)				\
-> > +	(__BIOVEC_PHYS_MERGEABLE(vec1, vec2) &&				\
-> > +	 (!xen_domain() || xen_biovec_phys_mergeable(vec1, vec2)))
-> > +
-> >  #ifdef CONFIG_MMU
-> >  #define ARCH_HAS_VALID_PHYS_ADDR_RANGE
-> >  extern int valid_phys_addr_range(phys_addr_t addr, size_t size);
-> > diff --git a/arch/arm64/include/asm/io.h b/arch/arm64/include/asm/io.h
-> > index 1d12f89..c163287b 100644
-> > --- a/arch/arm64/include/asm/io.h
-> > +++ b/arch/arm64/include/asm/io.h
-> > @@ -22,11 +22,14 @@
-> >  #ifdef __KERNEL__
-> >  
-> >  #include <linux/types.h>
-> > +#include <linux/blk_types.h>
-> >  
-> >  #include <asm/byteorder.h>
-> >  #include <asm/barrier.h>
-> >  #include <asm/pgtable.h>
-> >  
-> > +#include <xen/xen.h>
-> > +
-> >  /*
-> >   * Generic IO read/write.  These perform native-endian accesses.
-> >   */
-> > @@ -263,5 +266,11 @@ extern int devmem_is_allowed(unsigned long pfn);
-> >   */
-> >  #define xlate_dev_kmem_ptr(p)	p
-> >  
-> > +extern bool xen_biovec_phys_mergeable(const struct bio_vec *vec1,
-> > +				      const struct bio_vec *vec2);
-> > +#define BIOVEC_PHYS_MERGEABLE(vec1, vec2)				\
-> > +	(__BIOVEC_PHYS_MERGEABLE(vec1, vec2) &&				\
-> > +	 (!xen_domain() || xen_biovec_phys_mergeable(vec1, vec2)))
-> > +
-> >  #endif	/* __KERNEL__ */
-> >  #endif	/* __ASM_IO_H */
-> > diff --git a/drivers/xen/biomerge.c b/drivers/xen/biomerge.c
-> > index 0edb91c..f323a2d 100644
-> > --- a/drivers/xen/biomerge.c
-> > +++ b/drivers/xen/biomerge.c
-> > @@ -2,6 +2,7 @@
-> >  #include <linux/io.h>
-> >  #include <linux/export.h>
-> >  #include <xen/page.h>
-> > +#include <xen/features.h>
-> >  
-> >  bool xen_biovec_phys_mergeable(const struct bio_vec *vec1,
-> >  			       const struct bio_vec *vec2)
-> > @@ -9,7 +10,8 @@ bool xen_biovec_phys_mergeable(const struct bio_vec *vec1,
-> >  	unsigned long mfn1 = pfn_to_mfn(page_to_pfn(vec1->bv_page));
-> >  	unsigned long mfn2 = pfn_to_mfn(page_to_pfn(vec2->bv_page));
-> >  
-> > -	return __BIOVEC_PHYS_MERGEABLE(vec1, vec2) &&
-> > +	return !xen_feature(XENFEAT_auto_translated_physmap) &&
-> > +		__BIOVEC_PHYS_MERGEABLE(vec1, vec2) &&
-> >  		((mfn1 == mfn2) || ((mfn1+1) == mfn2));
-> >  }
-> >  EXPORT_SYMBOL(xen_biovec_phys_mergeable);
+On Wed, Oct 09, 2013 at 05:04:21PM +0300, Mika Westerberg wrote:
+> If the SPI device is enumerated from ACPI namespace (it has an ACPI handle)
+> it might have ACPI methods that needs to be called in order to transition
+> the device to different power states (such as _PSx).
 
+Acked-by: Mark Brown <broonie@linaro.org>
+
+> +	if (ACPI_HANDLE(&spi->dev))
+> +		acpi_dev_pm_attach(&spi->dev, true);
+
+Though I do wonder if it wouldn't be sensible to push the if () here
+inside acpi_dev_pm_attach() and similarly for _detach().  Terribly
+trivial either way.
+
+--OxWh+UR3R7TveXYN
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSVZiNAAoJELSic+t+oim9YlYP/0gXTLvice4UKl4gaWNo7EQX
+OrQHKw5iUy0ZEOymDlYdZ+f2rtJcUTmp/tW5SEYX7Fc93wQZGbcc9qdhKbECTPt8
+y+lYBS64fEp9kQf2sZ5GZ6psODV5w/8Z1lmTaPG9w95w1K/SVwty1KdXYBdxOlyR
+fXk0rZgGchKCQlqjxJi6N0tqpZWIHT/y1fjidgjSL4+3s6ctwYSJQlhsMa0rrMe8
+QdYUFmG7QZo5y6LQrj/M41naN4oXtuF6GGqRkSya5hD1wY8HgMhpKPxkmS+DBXoA
+I4u11dtwB7a3VcOy8a0yzMzGKWshGIPrOu5k7YbrZU3wlz1ejpL9Bg4XBHyfeFK0
+87xANoSG6Ob9B9gYOJRF3bK/eFtuq9bY811f8/x+zbMcTEI3B3NspDQpKkFWJHmG
+N5Kfp7quQJb44ldR0iChEu+6hxzH+ASDYpfSR1lxZY/EkbY911Q6GgDtCo3c0hAi
+aQVm6nV22csj70rFsfrrZMRr+UMEsgM6I1iiSf6zOVhu7xaERWZ/xljqT/fJul/8
+5rjVbrfsLEEkJh3EskWzbMNyHDt7o5a3MJ6/tCeF+ONpCMSYVnMjwFu2wGaQWPTJ
+Eliz8gINjcuyAE57rqh+XNWwSu/dHvD66UDP9QtmXzRemR9QxMDrW6LZGw4RZP9q
+dEayJ46LEmrlEYUS00Rw
+=rrml
+-----END PGP SIGNATURE-----
+
+--OxWh+UR3R7TveXYN--
