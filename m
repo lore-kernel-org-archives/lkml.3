@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756630Ab3JIR0X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 13:26:23 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55967 "EHLO
+	id S1756647Ab3JIR0e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 13:26:34 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:55981 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754878Ab3JIR0T (ORCPT
+	with ESMTP id S1752079Ab3JIR03 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 13:26:19 -0400
-Date: Wed, 9 Oct 2013 10:25:42 -0700
+	Wed, 9 Oct 2013 13:26:29 -0400
+Date: Wed, 9 Oct 2013 10:25:52 -0700
 From: tip-bot for Mel Gorman <tipbot@zytor.com>
-Message-ID: <tip-f123d74abf91574837d14e5ea58f6a779a387bf5@git.kernel.org>
+Message-ID: <tip-a1a46184e34cfd0764f06a54870defa052b0a094@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         peterz@infradead.org, hannes@cmpxchg.org, riel@redhat.com,
         aarcange@redhat.com, srikar@linux.vnet.ibm.com, mgorman@suse.de,
@@ -18,12 +18,12 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         peterz@infradead.org, hannes@cmpxchg.org, riel@redhat.com,
         aarcange@redhat.com, srikar@linux.vnet.ibm.com, mgorman@suse.de,
         tglx@linutronix.de
-In-Reply-To: <1381141781-10992-12-git-send-email-mgorman@suse.de>
-References: <1381141781-10992-12-git-send-email-mgorman@suse.de>
+In-Reply-To: <1381141781-10992-13-git-send-email-mgorman@suse.de>
+References: <1381141781-10992-13-git-send-email-mgorman@suse.de>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] mm:
-  Only flush TLBs if a transhuge PMD is modified for NUMA pte scanning
-Git-Commit-ID: f123d74abf91574837d14e5ea58f6a779a387bf5
+Subject: [tip:sched/core] mm: numa:
+  Do not migrate or account for hinting faults on the zero page
+Git-Commit-ID: a1a46184e34cfd0764f06a54870defa052b0a094
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,111 +32,79 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 09 Oct 2013 10:25:49 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 09 Oct 2013 10:26:00 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f123d74abf91574837d14e5ea58f6a779a387bf5
-Gitweb:     http://git.kernel.org/tip/f123d74abf91574837d14e5ea58f6a779a387bf5
+Commit-ID:  a1a46184e34cfd0764f06a54870defa052b0a094
+Gitweb:     http://git.kernel.org/tip/a1a46184e34cfd0764f06a54870defa052b0a094
 Author:     Mel Gorman <mgorman@suse.de>
-AuthorDate: Mon, 7 Oct 2013 11:28:49 +0100
+AuthorDate: Mon, 7 Oct 2013 11:28:50 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 9 Oct 2013 12:39:49 +0200
+CommitDate: Wed, 9 Oct 2013 12:39:50 +0200
 
-mm: Only flush TLBs if a transhuge PMD is modified for NUMA pte scanning
+mm: numa: Do not migrate or account for hinting faults on the zero page
 
-NUMA PTE scanning is expensive both in terms of the scanning itself and
-the TLB flush if there are any updates. The TLB flush is avoided if no
-PTEs are updated but there is a bug where transhuge PMDs are considered
-to be updated even if they were already pmd_numa. This patch addresses
-the problem and TLB flushes should be reduced.
+The zero page is not replicated between nodes and is often shared between
+processes. The data is read-only and likely to be cached in local CPUs
+if heavily accessed meaning that the remote memory access cost is less
+of a concern. This patch prevents trapping faults on the zero pages. For
+tasks using the zero page this will reduce the number of PTE updates,
+TLB flushes and hinting faults.
 
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Rik van Riel <riel@redhat.com>
 Cc: Andrea Arcangeli <aarcange@redhat.com>
 Cc: Johannes Weiner <hannes@cmpxchg.org>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
+[ Correct use of is_huge_zero_page]
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1381141781-10992-12-git-send-email-mgorman@suse.de
+Link: http://lkml.kernel.org/r/1381141781-10992-13-git-send-email-mgorman@suse.de
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- mm/huge_memory.c | 19 ++++++++++++++++---
- mm/mprotect.c    | 14 ++++++++++----
- 2 files changed, 26 insertions(+), 7 deletions(-)
+ mm/huge_memory.c | 10 +++++++++-
+ mm/memory.c      |  1 +
+ 2 files changed, 10 insertions(+), 1 deletion(-)
 
 diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index d4928769..de8d5cf 100644
+index de8d5cf..8677dbf 100644
 --- a/mm/huge_memory.c
 +++ b/mm/huge_memory.c
-@@ -1458,6 +1458,12 @@ out:
- 	return ret;
- }
+@@ -1291,6 +1291,7 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		goto out_unlock;
  
-+/*
-+ * Returns
-+ *  - 0 if PMD could not be locked
-+ *  - 1 if PMD was locked but protections unchange and TLB flush unnecessary
-+ *  - HPAGE_PMD_NR is protections changed and TLB flush necessary
-+ */
- int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
- 		unsigned long addr, pgprot_t newprot, int prot_numa)
- {
-@@ -1466,9 +1472,11 @@ int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
- 
- 	if (__pmd_trans_huge_lock(pmd, vma) == 1) {
- 		pmd_t entry;
--		entry = pmdp_get_and_clear(mm, addr, pmd);
-+		ret = 1;
- 		if (!prot_numa) {
-+			entry = pmdp_get_and_clear(mm, addr, pmd);
- 			entry = pmd_modify(entry, newprot);
-+			ret = HPAGE_PMD_NR;
- 			BUG_ON(pmd_write(entry));
+ 	page = pmd_page(pmd);
++	BUG_ON(is_huge_zero_page(page));
+ 	page_nid = page_to_nid(page);
+ 	count_vm_numa_event(NUMA_HINT_FAULTS);
+ 	if (page_nid == this_nid)
+@@ -1481,8 +1482,15 @@ int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
  		} else {
  			struct page *page = pmd_page(*pmd);
-@@ -1476,12 +1484,17 @@ int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
- 			/* only check non-shared pages */
- 			if (page_mapcount(page) == 1 &&
- 			    !pmd_numa(*pmd)) {
-+				entry = pmdp_get_and_clear(mm, addr, pmd);
- 				entry = pmd_mknuma(entry);
-+				ret = HPAGE_PMD_NR;
- 			}
- 		}
--		set_pmd_at(mm, addr, pmd, entry);
-+
-+		/* Set PMD if cleared earlier */
-+		if (ret == HPAGE_PMD_NR)
-+			set_pmd_at(mm, addr, pmd, entry);
-+
- 		spin_unlock(&vma->vm_mm->page_table_lock);
--		ret = 1;
- 	}
  
- 	return ret;
-diff --git a/mm/mprotect.c b/mm/mprotect.c
-index 7bdbd4b..2da33dc 100644
---- a/mm/mprotect.c
-+++ b/mm/mprotect.c
-@@ -144,10 +144,16 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
- 		if (pmd_trans_huge(*pmd)) {
- 			if (next - addr != HPAGE_PMD_SIZE)
- 				split_huge_page_pmd(vma, addr, pmd);
--			else if (change_huge_pmd(vma, pmd, addr, newprot,
--						 prot_numa)) {
--				pages++;
--				continue;
-+			else {
-+				int nr_ptes = change_huge_pmd(vma, pmd, addr,
-+						newprot, prot_numa);
-+
-+				if (nr_ptes) {
-+					if (nr_ptes == HPAGE_PMD_NR)
-+						pages++;
-+
-+					continue;
-+				}
- 			}
- 			/* fall through */
- 		}
+-			/* only check non-shared pages */
++			/*
++			 * Only check non-shared pages. Do not trap faults
++			 * against the zero page. The read-only data is likely
++			 * to be read-cached on the local CPU cache and it is
++			 * less useful to know about local vs remote hits on
++			 * the zero page.
++			 */
+ 			if (page_mapcount(page) == 1 &&
++			    !is_huge_zero_page(page) &&
+ 			    !pmd_numa(*pmd)) {
+ 				entry = pmdp_get_and_clear(mm, addr, pmd);
+ 				entry = pmd_mknuma(entry);
+diff --git a/mm/memory.c b/mm/memory.c
+index 42ae82e..ed51f15 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3564,6 +3564,7 @@ int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		pte_unmap_unlock(ptep, ptl);
+ 		return 0;
+ 	}
++	BUG_ON(is_zero_pfn(page_to_pfn(page)));
+ 
+ 	page_nid = page_to_nid(page);
+ 	target_nid = numa_migrate_prep(page, vma, addr, page_nid);
