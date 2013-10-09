@@ -1,150 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751692Ab3JIEsF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 00:48:05 -0400
-Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:28992
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750799Ab3JIEsC (ORCPT
+	id S1751776Ab3JIE7e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 00:59:34 -0400
+Received: from smtprelay0239.hostedemail.com ([216.40.44.239]:59459 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751042Ab3JIE7a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 00:48:02 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(zz98dI9371I936eI542I1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097hz2dh2a8h839h8e2h8e3h93fhd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5hbe9i2184m1155h)
-From: Bhushan Bharat-R65777 <R65777@freescale.com>
-To: Wood Scott-B07421 <B07421@freescale.com>
-CC: "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
-        "joro@8bytes.org" <joro@8bytes.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "galak@kernel.crashing.org" <galak@kernel.crashing.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "agraf@suse.de" <agraf@suse.de>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>
-Subject: RE: [PATCH 1/7] powerpc: Add interface to get msi region information
-Thread-Topic: [PATCH 1/7] powerpc: Add interface to get msi region
- information
-Thread-Index: AQHOtQsCCE10MlaCVk+3VPe/9gzyOZnriWKAgABgYOA=
-Date: Wed, 9 Oct 2013 04:47:19 +0000
-Message-ID: <6A3DF150A5B70D4F9B66A25E3F7C888D071A1526@039-SN2MPN1-011.039d.mgd.msft.net>
-References: <1379575763-2091-1-git-send-email-Bharat.Bhushan@freescale.com>
-	 <1379575763-2091-2-git-send-email-Bharat.Bhushan@freescale.com>
- <1381273037.7979.298.camel@snotra.buserror.net>
-In-Reply-To: <1381273037.7979.298.camel@snotra.buserror.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.232.14.2]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	Wed, 9 Oct 2013 00:59:30 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:966:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2196:2198:2199:2200:2393:2559:2562:2731:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:3873:4321:4385:5007:6119:7652:10004:10400:10848:11232:11658:11914:12296:12517:12519:12740:13069:13095:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: kite17_6fd0a6e438b17
+X-Filterd-Recvd-Size: 1965
+Message-ID: <1381294767.2040.5.camel@joe-AO722>
+Subject: Re: [PATCH] rtc: pl030: Use devm_kzalloc() instead of kmalloc()
+From: Joe Perches <joe@perches.com>
+To: "sangjung.woo" <sangjung.woo@samsung.com>
+Cc: Alessandro Rubini <rubini@gnudd.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org
+Date: Tue, 08 Oct 2013 21:59:27 -0700
+In-Reply-To: <5254DD64.4090205@samsung.com>
+References: <1381291240-23727-1-git-send-email-sangjung.woo@samsung.com>
+	 <1381291649.2040.1.camel@joe-AO722> <5254DD64.4090205@samsung.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r994mItB009052
 
-
-
-> -----Original Message-----
-> From: Wood Scott-B07421
-> Sent: Wednesday, October 09, 2013 4:27 AM
-> To: Bhushan Bharat-R65777
-> Cc: alex.williamson@redhat.com; joro@8bytes.org; benh@kernel.crashing.org;
-> galak@kernel.crashing.org; linux-kernel@vger.kernel.org; linuxppc-
-> dev@lists.ozlabs.org; linux-pci@vger.kernel.org; agraf@suse.de;
-> iommu@lists.linux-foundation.org; Bhushan Bharat-R65777
-> Subject: Re: [PATCH 1/7] powerpc: Add interface to get msi region information
-> 
-> On Thu, 2013-09-19 at 12:59 +0530, Bharat Bhushan wrote:
-> > @@ -376,6 +405,7 @@ static int fsl_of_msi_probe(struct platform_device *dev)
-> >  	int len;
-> >  	u32 offset;
-> >  	static const u32 all_avail[] = { 0, NR_MSI_IRQS };
-> > +	static int bank_index;
+On Wed, 2013-10-09 at 13:36 +0900, sangjung.woo wrote:
+> On 10/09/2013 01:07 PM, Joe Perches wrote:
+> > On Wed, 2013-10-09 at 13:00 +0900, Sangjung Woo wrote:
+> >> In order to be free automatically and make the cleanup paths more
+> >> simple, use devm_kzalloc() instead of kzalloc().
+> > []
+> >> diff --git a/drivers/rtc/rtc-pl030.c b/drivers/rtc/rtc-pl030.c
+> > []
+> >> @@ -106,7 +106,7 @@ static int pl030_probe(struct amba_device *dev, const struct amba_id *id)
+> >>   	if (ret)
+> >>   		goto err_req;
+> >>   
+> >> -	rtc = kmalloc(sizeof(*rtc), GFP_KERNEL);
+> >> +	rtc = devm_kzalloc(&dev->dev, sizeof(*rtc), GFP_KERNEL);
+[]
+> > You're not deleting a memset and you're
+> > converting a kmalloc.
+> You are right.
 > >
-> >  	match = of_match_device(fsl_of_msi_ids, &dev->dev);
-> >  	if (!match)
-> > @@ -419,8 +449,8 @@ static int fsl_of_msi_probe(struct platform_device *dev)
-> >  				dev->dev.of_node->full_name);
-> >  			goto error_out;
-> >  		}
-> > -		msi->msiir_offset =
-> > -			features->msiir_offset + (res.start & 0xfffff);
-> > +		msi->msiir = res.start + features->msiir_offset;
-> > +		printk("msi->msiir = %llx\n", msi->msiir);
-> 
-> dev_dbg or remove
-
-Oops, sorry it was leftover of debugging :(
-
-> 
-> >  	}
+> > Why do you need the zalloc version?
 > >
-> >  	msi->feature = features->fsl_pic_ip; @@ -470,6 +500,7 @@ static int
-> > fsl_of_msi_probe(struct platform_device *dev)
-> >  		}
-> >  	}
-> >
-> > +	msi->bank_index = bank_index++;
-> 
-> What if multiple MSIs are boing probed in parallel?
+> The key point of this patch is resource-managed memory allocation.
 
-Ohh, I have not thought that it can be called in parallel
+The commit message doesn't match the patch subject
+(shows kzalloc)
 
->  bank_index is not atomic.
+I was a bit surprised to find there isn't a devm_kmalloc.
 
-Will declare bank_intex as atomic_t and use atomic_inc_return(&bank_index)
+This seems fine otherwise.
 
-> 
-> > diff --git a/arch/powerpc/sysdev/fsl_msi.h
-> > b/arch/powerpc/sysdev/fsl_msi.h index 8225f86..6bd5cfc 100644
-> > --- a/arch/powerpc/sysdev/fsl_msi.h
-> > +++ b/arch/powerpc/sysdev/fsl_msi.h
-> > @@ -29,12 +29,19 @@ struct fsl_msi {
-> >  	struct irq_domain *irqhost;
-> >
-> >  	unsigned long cascade_irq;
-> > -
-> > -	u32 msiir_offset; /* Offset of MSIIR, relative to start of CCSR */
-> > +	dma_addr_t msiir; /* MSIIR Address in CCSR */
-> 
-> Are you sure dma_addr_t is right here, versus phys_addr_t?  It implies that it's
-> the output of the DMA API, but I don't think the DMA API is used in the MSI
-> driver.  Perhaps it should be, but we still want the raw physical address to
-> pass on to VFIO.
-
-Looking through the conversation I will make this phys_addr_t
-
-> 
-> >  	void __iomem *msi_regs;
-> >  	u32 feature;
-> >  	int msi_virqs[NR_MSI_REG];
-> >
-> > +	/*
-> > +	 * During probe each bank is assigned a index number.
-> > +	 * index number ranges from 0 to 2^32.
-> > +	 * Example  MSI bank 1 = 0
-> > +	 * MSI bank 2 = 1, and so on.
-> > +	 */
-> > +	int bank_index;
-> 
-> 2^32 doesn't fit in "int" (nor does 2^32 - 1).
-
-Right :(
-
-> 
-> Just say that indices start at 0.
-
-Will correct this
-
-Thanks
--Bharat
-
-> 
-> -Scott
-> 
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
