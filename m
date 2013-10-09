@@ -1,75 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756788Ab3JIXR7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 19:17:59 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:52268 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756615Ab3JIXR6 (ORCPT
+	id S1756843Ab3JIXSj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 19:18:39 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:54640 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754223Ab3JIXSi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 19:17:58 -0400
-Message-ID: <1381360675.4971.45.camel@edumazet-glaptop.roam.corp.google.com>
-Subject: Re: [PATCH v2 tip/core/rcu 07/13] ipv6/ip6_tunnel: Apply
- rcu_access_pointer() to avoid sparse false positive
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org, mingo@kernel.org,
-        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu, "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
-Date: Wed, 09 Oct 2013 16:17:55 -0700
-In-Reply-To: <20131009225617.GH11709@jtriplet-mobl1>
-References: <20131009212920.GA15413@linux.vnet.ibm.com>
-	 <1381354186-16285-1-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <1381354186-16285-7-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <1381354949.4971.20.camel@edumazet-glaptop.roam.corp.google.com>
-	 <20131009215747.GA5790@linux.vnet.ibm.com>
-	 <1381356624.4971.26.camel@edumazet-glaptop.roam.corp.google.com>
-	 <20131009223652.GC5790@linux.vnet.ibm.com>
-	 <1381359077.4971.37.camel@edumazet-glaptop.roam.corp.google.com>
-	 <20131009225617.GH11709@jtriplet-mobl1>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Wed, 9 Oct 2013 19:18:38 -0400
+Message-ID: <5255E446.2000400@gmail.com>
+Date: Thu, 10 Oct 2013 10:18:30 +1100
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Joe Perches <joe@perches.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, eldad@fogrefinery.com,
+        Jiri Kosina <jkosina@suse.cz>, jgunthorpe@obsidianresearch.com,
+        Dan Rosenberg <dan.j.rosenberg@gmail.com>,
+        Kees Cook <keescook@chromium.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        George Spelvin <linux@horizon.com>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3a] vsprintf: Check real user/group id for %pK
+References: <5255D023.2030907@gmail.com>	 <1381356014.2050.28.camel@joe-AO722> <5255D2FD.6050705@gmail.com>	 <1381356861.2050.33.camel@joe-AO722> <5255D7D4.8050204@gmail.com>	 <1381358030.2050.36.camel@joe-AO722> <5255DBD8.30005@gmail.com> <1381360187.2050.44.camel@joe-AO722>
+In-Reply-To: <1381360187.2050.44.camel@joe-AO722>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-10-09 at 15:56 -0700, Josh Triplett wrote:
+On 10/10/13 10:09, Joe Perches wrote:
 
-> I'd be really hesitant to introduce that type of direct assignment to an
-> __rcu pointer without wrapping it in some appropriately named macro, or
-> at the very least adding a comment.
+> Changes in V3a:
+> 
+> Do the in_irq tests only when kptr_restrict is 1.
+> Document the %pK mechanism in vsnprintf
+> Add missing documentation for %pV and %pNF too
 
-Well, there is no special magic here, in this specific case :
+I really did mean post a follow-up/separate patch, not a different
+version of mine. The missing documentation for %pV and %pNF fix is fine,
+but does not belong in this patch. The kptr_restrict pK-error is a
+separate issue, my patch deliberately did not touch it because it is
+unrelated. If you want to change it, please do so in a seperate patch.
+You also removed my comment explaining why the uid/gid check is
+necessary :-/.
 
-- deleting an item in an rcu list
+~Ryan
 
-Check list_del_rcu(), and you'll notice there is no _barrier_
-
-Adding correct barriers is good, but please do not add them when not
-needed.
-
-It makes code hard to understand.
-
-
-ACCESS(*ptr) = value;
-
-is clear and autodocumented, because it highlights the potential
-problem, that is *ptr can be read without any barrier from another cpu.
-So we ask the compiler to not write temporary garbage in it.
-
-rcu_assign_pointer(*ptr, rcu_access_pointer(value)) 
-
-is very confusing, because it hides the _real_ problem and add defensive
-programming tricks.
-
-
-
+>  Documentation/sysctl/kernel.txt | 17 ++++++++--------
+>  lib/vsprintf.c                  | 43 ++++++++++++++++++++++++++++-------------
+>  2 files changed, 39 insertions(+), 21 deletions(-)
+> 
+> diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
+> index 9d4c1d1..c17d5ca 100644
+> --- a/Documentation/sysctl/kernel.txt
+> +++ b/Documentation/sysctl/kernel.txt
+> @@ -289,14 +289,15 @@ Default value is "/sbin/hotplug".
+>  
+>  kptr_restrict:
+>  
+> -This toggle indicates whether restrictions are placed on
+> -exposing kernel addresses via /proc and other interfaces.  When
+> -kptr_restrict is set to (0), there are no restrictions.  When
+> -kptr_restrict is set to (1), the default, kernel pointers
+> -printed using the %pK format specifier will be replaced with 0's
+> -unless the user has CAP_SYSLOG.  When kptr_restrict is set to
+> -(2), kernel pointers printed using %pK will be replaced with 0's
+> -regardless of privileges.
+> +This toggle indicates whether restrictions are placed on exposing kernel
+> +addresses via /proc and other interfaces.
+> +
+> +When kptr_restrict is set to (0), the default, there are no restrictions.
+> +When kptr_restrict is set to (1), kernel pointers printed using the %pK
+> +format specifier will be replaced with 0's unless the user has CAP_SYSLOG
+> +and effective user and group ids are equal to the real ids.
+> +When kptr_restrict is set to (2), kernel pointers printed using %pK will
+> +be replaced with 0's regardless of privileges.
+>  
+>  ==============================================================
+>  
+> diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+> index 26559bd..3efcf29 100644
+> --- a/lib/vsprintf.c
+> +++ b/lib/vsprintf.c
+> @@ -27,6 +27,7 @@
+>  #include <linux/uaccess.h>
+>  #include <linux/ioport.h>
+>  #include <linux/dcache.h>
+> +#include <linux/cred.h>
+>  #include <net/addrconf.h>
+>  
+>  #include <asm/page.h>		/* for PAGE_SIZE */
+> @@ -1301,21 +1302,34 @@ char *pointer(const char *fmt, char *buf, char *end, void *ptr,
+>  			va_end(va);
+>  			return buf;
+>  		}
+> -	case 'K':
+> -		/*
+> -		 * %pK cannot be used in IRQ context because its test
+> -		 * for CAP_SYSLOG would be meaningless.
+> -		 */
+> -		if (kptr_restrict && (in_irq() || in_serving_softirq() ||
+> -				      in_nmi())) {
+> -			if (spec.field_width == -1)
+> -				spec.field_width = default_width;
+> -			return string(buf, end, "pK-error", spec);
+> +	case 'K':		/* see: Documentation/sysctl/kernel.txt */
+> +		switch (kptr_restrict) {
+> +		case 0:			/* None (default) */
+> +			break;
+> +		case 1: {		/* Restricted */
+> +			const struct cred *cred;
+> +
+> +			if (in_irq() || in_serving_softirq() || in_nmi()) {
+> +				/*
+> +				 * This cannot be used in IRQ context because
+> +				 * the test for CAP_SYSLOG would be meaningless
+> +				 */
+> +				if (spec.field_width == -1)
+> +					spec.field_width = default_width;
+> +				return string(buf, end, "pK-error", spec);
+> +			}
+> +			cred = current_cred();
+> +			if (!has_capability_noaudit(current, CAP_SYSLOG) ||
+> +			    !uid_eq(cred->euid, cred->uid) ||
+> +			    !gid_eq(cred->egid, cred->gid))
+> +				ptr = NULL;
+> +			break;
+>  		}
+> -		if (!((kptr_restrict == 0) ||
+> -		      (kptr_restrict == 1 &&
+> -		       has_capability_noaudit(current, CAP_SYSLOG))))
+> +		case 2:			/* Never - Always emit 0 */
+> +		default:
+>  			ptr = NULL;
+> +			break;
+> +		}
+>  		break;
+>  	case 'N':
+>  		switch (fmt[1]) {
+> @@ -1574,6 +1588,9 @@ qualifier:
+>   * %piS depending on sa_family of 'struct sockaddr *' print IPv4/IPv6 address
+>   * %pU[bBlL] print a UUID/GUID in big or little endian using lower or upper
+>   *   case.
+> + * %pV recurse and output a struct va_format (const char *fmt, va_list *)
+> + * %pK output a kernel address or 0 depending on sysctl kptr_restrict
+> + * %pNF output a netdev_features_t
+>   * %*ph[CDN] a variable-length hex string with a separator (supports up to 64
+>   *           bytes of the input)
+>   * %n is ignored
+> 
+> 
 
