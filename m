@@ -1,68 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754871Ab3JIRIx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 13:08:53 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:46498 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750920Ab3JIRIw (ORCPT
+	id S1754967Ab3JIRJj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 13:09:39 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:62092 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752480Ab3JIRJi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 13:08:52 -0400
-Date: Wed, 9 Oct 2013 19:08:37 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+	Wed, 9 Oct 2013 13:09:38 -0400
+Date: Wed, 9 Oct 2013 19:09:34 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Andrea Arcangeli <aarcange@redhat.com>,
         Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>
 Subject: Re: [PATCH 0/63] Basic scheduler support for automatic NUMA
  balancing V9
-Message-ID: <20131009170837.GF13848@laptop.programming.kicks-ass.net>
+Message-ID: <20131009170934.GA12601@gmail.com>
 References: <1381141781-10992-1-git-send-email-mgorman@suse.de>
  <20131009162801.GA10452@gmail.com>
+ <20131009162942.GA12178@gmail.com>
+ <20131009165738.GA12572@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131009162801.GA10452@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20131009165738.GA12572@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 09, 2013 at 06:28:01PM +0200, Ingo Molnar wrote:
-> 
-> Hm, so I'm seeing boot crashes with the config attached:
-> 
->  INIT: version 2.86 booting 
->  BUG: unable to handle kernel BUG: unable to handle kernel paging 
->  requestpaging request at eaf10f40 
->   at eaf10f40 
->  IP:IP: [<b103e0ef>] task_work_run+0x52/0x87 
->   [<b103e0ef>] task_work_run+0x52/0x87 
->  *pde = 3fbf9067 *pde = 3fbf9067 *pte = 3af10060 *pte = 3af10060  
->  
->  Oops: 0000 [#1] Oops: 0000 [#1] DEBUG_PAGEALLOCDEBUG_PAGEALLOC 
->  
->  CPU: 0 PID: 171 Comm: hostname Tainted: G        W    
->  3.12.0-rc4-01668-gfd71a04-dirty #229484 
->  CPU: 0 PID: 171 Comm: hostname Tainted: G        W    
->  3.12.0-rc4-01668-gfd71a04-dirty #229484 
->  task: eaf157a0 ti: eacf2000 task.ti: eacf2000 
-> 
-> Note that the config does not have NUMA_BALANCING enabled. With another 
-> config I also had a failed bootup due to the OOM killer kicking in. That 
-> didn't have NUMA_BALANCING enabled either.
-> 
-> Yet this all started today, after merging the NUMA patches.
-> 
-> Any ideas?
 
-> CONFIG_MGEODE_LX=y
+I started bisecting the crash, and the good news is that it's bisectable 
+and it's not the NUMA bits that are causing the crash.
 
-It looks like -march=geode generates similar borkage to the
--march=winchip2 like we found earlier today.
+(the bad news is that I now face a boring, possibly very long bisection, 
+but hey ;-)
 
-Must be randconfig luck to only hit it now.
+Thanks,
 
-Very easy to see if you build kernel/task_work.s, the bitops jc label
-path fails to initialize the return value.
+	Ingo
