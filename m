@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755500Ab3JIXQK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 19:16:10 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59902 "EHLO
+	id S1756138Ab3JIXQV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 19:16:21 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59910 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752515Ab3JIXQI (ORCPT
+	with ESMTP id S1752515Ab3JIXQS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 19:16:08 -0400
-Date: Wed, 9 Oct 2013 16:15:53 -0700
+	Wed, 9 Oct 2013 19:16:18 -0400
+Date: Wed, 9 Oct 2013 16:16:03 -0700
 From: tip-bot for HATAYAMA Daisuke <tipbot@zytor.com>
-Message-ID: <tip-68c3467bb95a9e99f46d04cb96f60c04bb997ac8@git.kernel.org>
+Message-ID: <tip-1d79e607332d67d9132c176d99b5e7fabe1b6b7f@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         tglx@linutronix.de, hpa@linux.intel.com, d.hatayama@jp.fujitsu.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         tglx@linutronix.de, d.hatayama@jp.fujitsu.com, hpa@linux.intel.com
-In-Reply-To: <20130829092758.5476.90694.stgit@localhost6.localdomain6>
-References: <20130829092758.5476.90694.stgit@localhost6.localdomain6>
+In-Reply-To: <20130829092804.5476.95588.stgit@localhost6.localdomain6>
+References: <20130829092804.5476.95588.stgit@localhost6.localdomain6>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/bsp-hotplug] x86, apic: Add boot_cpu_is_bsp()
-  to check if boot cpu is BSP
-Git-Commit-ID: 68c3467bb95a9e99f46d04cb96f60c04bb997ac8
+Subject: [tip:x86/bsp-hotplug] x86, apic: Disable BSP if boot cpu is AP
+Git-Commit-ID: 1d79e607332d67d9132c176d99b5e7fabe1b6b7f
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,90 +27,240 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 09 Oct 2013 16:15:59 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 09 Oct 2013 16:16:09 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  68c3467bb95a9e99f46d04cb96f60c04bb997ac8
-Gitweb:     http://git.kernel.org/tip/68c3467bb95a9e99f46d04cb96f60c04bb997ac8
+Commit-ID:  1d79e607332d67d9132c176d99b5e7fabe1b6b7f
+Gitweb:     http://git.kernel.org/tip/1d79e607332d67d9132c176d99b5e7fabe1b6b7f
 Author:     HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-AuthorDate: Thu, 29 Aug 2013 18:27:58 +0900
+AuthorDate: Thu, 29 Aug 2013 18:28:04 +0900
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Wed, 9 Oct 2013 15:41:10 -0700
+CommitDate: Wed, 9 Oct 2013 15:41:11 -0700
 
-x86, apic: Add boot_cpu_is_bsp() to check if boot cpu is BSP
+x86, apic: Disable BSP if boot cpu is AP
 
-Kexec can enter the kdump 2nd kernel on AP if crash happens on AP. To
-check if boot cpu is BSP, introduce a helper function
-boot_cpu_is_bsp().
+Currently, on x86 architecture, if crash happens on AP in the kdump
+1st kernel, the 2nd kernel fails to wake up multiple CPUs. The typical
+behaviour we actually see is immediate system reset or hang.
+
+This comes from the hardware specification that the processor with BSP
+flag is jumped at BIOS init code when receiving INIT; the behaviour we
+then see depends on the init code.
+
+This never happens if we use only one cpu in the 2nd kernel. So, we
+have avoided the issue by the workaround that specifying maxcpus=1 or
+nr_cpus=1 in kernel parameter of the 2nd kernel.
+
+In order to address the issue, this patch disables BSP if boot cpu is
+an AP, and thus we don't try to wake up the BSP by sending INIT.
+
+Before this idea we discussed the following two ideas but we cannot
+adopt them in each reasons:
+
+  1. Switch CPU from AP to BSP via IPI NMI at crash in the 1st kernel
+
+    This is done in the kdump crash path where logic is in
+    inconsistent state. Any part of memory can be corrupted, including
+    hardware-related table being accessed for example when paging is
+    performed or interruption is performed.
+
+  2. Unset BSP flag of the boot cpu in the 1st kernel
+
+    Unsetting BSP flag can affect some real world firmware badly. For
+    example, Ma verified that some HP systems fail to reboot under
+    this configuration. See:
+    http://lkml.indiana.edu/hypermail/linux/kernel/1308.1/03574.html
+
+Due to the idea 1, we have to address the issue in the 2nd kernel on
+AP. Then, it's impossible to know which CPU is BSP by rdmsr
+instruction because the CPU is the one we are now trying to wake
+up. From the same reason, it's also impossible to unset BSP flag of
+the BSP by wrmsr instruction.
+
+Next, due to the idea 2, BSP is halting in the 1st kernel while
+keeping BSP flag set (or possibly could be running somewhere in
+catastrophic state.) In generall, CPUs except for the boot cpu in the
+2nd kernel -- the cpu under which crash happened --- can be thought of
+as remaining in any inconsistent state in the 1st kernel. For APs,
+it's possible to recover sane state by initiating INIT to them; see
+3.7.3 Processor-specific INIT in MultiProcessor
+specification. However, there's no way for BSP. Therefore, there's no
+other way to disable BSP.
+
+My motivation is to generate crash dump quickly on the system with
+huge memory. We can assume such system also has a lot of N-cpus and
+(N-1)-cpus are still available.
+
+To identify which CPU is BSP, we lookup ACPI table or MP table. One
+concern is that ACPI guidlines BIOS *should* list the BSP in the first
+MADT LAPIC entry; not *must*. In this sense, this logic relis on BIOS
+following ACPI's guideline. On the other hand, we don't need to worry
+about this in MP table case because it has explit BSP flag.
+
+To avoid any undesirable bahaviour caused by any broken BIOS that
+doesn't conform to the guideline, it's enough to limit the number of
+cpus to 1 by specifying maxcpu=1 or nr_cpus=1, as is currently done in
+default kdump configuration. (But of course, it's problematic in
+maxcpu=1 case if trying to wake up other cpus later in user space.)
+
+SFI and devicetree doesn't provide BSP information, so there's no
+functionality change in their codes, only assigning false for all the
+entries, keeping interface uniform.
+
+[ hpa: it might be better in the future for the primary kernel to
+  explicitly export the APIC ID for the BSP.  The primary kernel will
+  know, both due to which CPU it was booted from and because it can
+  see the BSP flag.  However, this seems like a net win for now. ]
 
 Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Link: http://lkml.kernel.org/r/20130829092758.5476.90694.stgit@localhost6.localdomain6
+Link: http://lkml.kernel.org/r/20130829092804.5476.95588.stgit@localhost6.localdomain6
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/include/asm/mpspec.h |  3 +++
- arch/x86/kernel/apic/apic.c   | 14 ++++++++++++++
- arch/x86/kernel/setup.c       |  2 ++
- 3 files changed, 19 insertions(+)
+ arch/x86/include/asm/mpspec.h |  2 +-
+ arch/x86/kernel/acpi/boot.c   | 11 ++++++++++-
+ arch/x86/kernel/apic/apic.c   | 18 +++++++++++++++++-
+ arch/x86/kernel/devicetree.c  |  1 +
+ arch/x86/kernel/mpparse.c     | 15 +++++++++++++--
+ arch/x86/platform/sfi/sfi.c   |  2 +-
+ 6 files changed, 43 insertions(+), 6 deletions(-)
 
 diff --git a/arch/x86/include/asm/mpspec.h b/arch/x86/include/asm/mpspec.h
-index 626cf70..a8a4338 100644
+index a8a4338..d96f409 100644
 --- a/arch/x86/include/asm/mpspec.h
 +++ b/arch/x86/include/asm/mpspec.h
-@@ -47,10 +47,13 @@ extern int mp_bus_id_to_type[MAX_MP_BUSSES];
- extern DECLARE_BITMAP(mp_bus_not_pci, MAX_MP_BUSSES);
+@@ -97,7 +97,7 @@ static inline void early_reserve_e820_mpc_new(void) { }
+ #define default_get_smp_config x86_init_uint_noop
+ #endif
  
- extern unsigned int boot_cpu_physical_apicid;
-+extern bool boot_cpu_is_bsp;
- extern unsigned int max_physical_apicid;
- extern int mpc_default_type;
- extern unsigned long mp_lapic_addr;
+-void generic_processor_info(int apicid, int version);
++void generic_processor_info(int apicid, bool isbsp, int version);
+ #ifdef CONFIG_ACPI
+ extern void mp_register_ioapic(int id, u32 address, u32 gsi_base);
+ extern void mp_override_legacy_irq(u8 bus_irq, u8 polarity, u8 trigger,
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index 40c7660..e0ea929 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -192,6 +192,7 @@ static int __init acpi_parse_madt(struct acpi_table_header *table)
+ static void acpi_register_lapic(int id, u8 enabled)
+ {
+ 	unsigned int ver = 0;
++	bool isbsp = false;
  
-+extern void boot_cpu_is_bsp_init(void);
+ 	if (id >= MAX_LOCAL_APIC) {
+ 		printk(KERN_INFO PREFIX "skipped apicid that is too big\n");
+@@ -206,7 +207,15 @@ static void acpi_register_lapic(int id, u8 enabled)
+ 	if (boot_cpu_physical_apicid != -1U)
+ 		ver = apic_version[boot_cpu_physical_apicid];
+ 
+-	generic_processor_info(id, ver);
++	/*
++	 * ACPI specification describes that platform firmware should
++	 * list the boot processor as the first LAPIC entry in the
++	 * MADT.
++	 */
++	if (!num_processors && !disabled_cpus)
++		isbsp = true;
 +
- #ifdef CONFIG_X86_LOCAL_APIC
- extern int smp_found_config;
- #else
++	generic_processor_info(id, isbsp, ver);
+ }
+ 
+ static int __init
 diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index a7eb82d..488709d 100644
+index 488709d..a6046bb 100644
 --- a/arch/x86/kernel/apic/apic.c
 +++ b/arch/x86/kernel/apic/apic.c
-@@ -64,6 +64,12 @@ unsigned disabled_cpus;
- unsigned int boot_cpu_physical_apicid = -1U;
+@@ -2113,13 +2113,29 @@ void disconnect_bsp_APIC(int virt_wire_setup)
+ 	apic_write(APIC_LVT1, value);
+ }
  
- /*
-+ * Indicates whether the processor that is doing the boot up, is BSP
-+ * processor or not.
-+ */
-+bool boot_cpu_is_bsp;
-+
-+/*
-  * The highest APIC ID seen during enumeration.
-  */
- unsigned int max_physical_apicid;
-@@ -2589,3 +2595,11 @@ static int __init lapic_insert_resource(void)
-  * that is using request_resource
-  */
- late_initcall(lapic_insert_resource);
-+
-+void boot_cpu_is_bsp_init(void)
-+{
-+	u32 l, h;
-+
-+	rdmsr(MSR_IA32_APICBASE, l, h);
-+	boot_cpu_is_bsp = (l & MSR_IA32_APICBASE_BSP) ? true : false;
-+}
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index f0de629..a30bc06 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -1166,6 +1166,8 @@ void __init setup_arch(char **cmdline_p)
+-void generic_processor_info(int apicid, int version)
++void generic_processor_info(int apicid, bool isbsp, int version)
+ {
+ 	int cpu, max = nr_cpu_ids;
+ 	bool boot_cpu_detected = physid_isset(boot_cpu_physical_apicid,
+ 				phys_cpu_present_map);
  
- 	early_quirks();
- 
-+	boot_cpu_is_bsp_init();
-+
  	/*
- 	 * Read APIC and some other early information from ACPI tables.
++	 * If boot cpu is AP, we now don't have any way to initialize
++	 * BSP. To save memory consumed, we disable BSP this case and
++	 * use (N-1)-cpus.
++	 */
++	if (isbsp && !boot_cpu_is_bsp) {
++		int thiscpu = num_processors + disabled_cpus;
++
++		pr_warning("ACPI: The boot cpu is not BSP. "
++			   "The BSP Processor %d/0x%x ignored.\n",
++			   thiscpu, apicid);
++
++		disabled_cpus++;
++		return;
++	}
++
++	/*
+ 	 * If boot cpu has not been detected yet, then only allow upto
+ 	 * nr_cpu_ids - 1 processors and keep one slot free for boot cpu
  	 */
+diff --git a/arch/x86/kernel/devicetree.c b/arch/x86/kernel/devicetree.c
+index 376dc78..0ed2da8 100644
+--- a/arch/x86/kernel/devicetree.c
++++ b/arch/x86/kernel/devicetree.c
+@@ -182,6 +182,7 @@ static void __init dtb_lapic_setup(void)
+ 	pic_mode = 1;
+ 	register_lapic_address(r.start);
+ 	generic_processor_info(boot_cpu_physical_apicid,
++			       false,
+ 			       GET_APIC_VERSION(apic_read(APIC_LVR)));
+ #endif
+ }
+diff --git a/arch/x86/kernel/mpparse.c b/arch/x86/kernel/mpparse.c
+index d2b5648..003b07fe 100644
+--- a/arch/x86/kernel/mpparse.c
++++ b/arch/x86/kernel/mpparse.c
+@@ -54,6 +54,7 @@ static void __init MP_processor_info(struct mpc_cpu *m)
+ {
+ 	int apicid;
+ 	char *bootup_cpu = "";
++	bool isbsp = false;
+ 
+ 	if (!(m->cpuflag & CPU_ENABLED)) {
+ 		disabled_cpus++;
+@@ -64,11 +65,21 @@ static void __init MP_processor_info(struct mpc_cpu *m)
+ 
+ 	if (m->cpuflag & CPU_BOOTPROCESSOR) {
+ 		bootup_cpu = " (Bootup-CPU)";
+-		boot_cpu_physical_apicid = m->apicid;
++		/*
++		 * boot cpu cannot be BSP if any crash happens on AP
++		 * and kexec enters the 2nd kernel.
++		 *
++		 * Also, boot_cpu_physical_apicid can be initialized
++		 * before reaching here; for example, in
++		 * register_lapic_address().
++		 */
++		if (boot_cpu_is_bsp && boot_cpu_physical_apicid == -1U)
++			boot_cpu_physical_apicid = m->apicid;
++		isbsp = true;
+ 	}
+ 
+ 	printk(KERN_INFO "Processor #%d%s\n", m->apicid, bootup_cpu);
+-	generic_processor_info(apicid, m->apicver);
++	generic_processor_info(apicid, isbsp, m->apicver);
+ }
+ 
+ #ifdef CONFIG_X86_IO_APIC
+diff --git a/arch/x86/platform/sfi/sfi.c b/arch/x86/platform/sfi/sfi.c
+index bcd1a70..4f111c7 100644
+--- a/arch/x86/platform/sfi/sfi.c
++++ b/arch/x86/platform/sfi/sfi.c
+@@ -45,7 +45,7 @@ static void __init mp_sfi_register_lapic(u8 id)
+ 
+ 	pr_info("registering lapic[%d]\n", id);
+ 
+-	generic_processor_info(id, GET_APIC_VERSION(apic_read(APIC_LVR)));
++	generic_processor_info(id, false, GET_APIC_VERSION(apic_read(APIC_LVR)));
+ }
+ 
+ static int __init sfi_parse_cpus(struct sfi_table_header *table)
