@@ -1,68 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753871Ab3JIPIT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 11:08:19 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53536 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751462Ab3JIPIR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 11:08:17 -0400
-Message-ID: <52557137.5050200@zytor.com>
-Date: Wed, 09 Oct 2013 08:07:35 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1754366Ab3JIPIj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 11:08:39 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:41474 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752246Ab3JIPIi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 11:08:38 -0400
+Date: Wed, 9 Oct 2013 08:08:29 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Thoughts on this RCU idle entry/exit patch?
+Message-ID: <20131009150829.GW5790@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20131007153955.GA30925@linux.vnet.ibm.com>
+ <20131008203427.GE8392@localhost.localdomain>
+ <20131008211218.GV5790@linux.vnet.ibm.com>
+ <20131009145614.GA20828@localhost.localdomain>
 MIME-Version: 1.0
-To: Stanimir Varbanov <svarbanov@mm-sol.com>
-CC: "Theodore Ts'o" <tytso@mit.edu>, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Matt Mackall <mpm@selenic.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH 0/2] Add support for Qualcomm's PRNG
-References: <1380811955-18085-1-git-send-email-svarbanov@mm-sol.com> <20131003165130.GA11974@thunk.org> <524EEB96.6040707@mm-sol.com> <20131004181005.GA7022@thunk.org> <52556C4E.9000604@mm-sol.com>
-In-Reply-To: <52556C4E.9000604@mm-sol.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131009145614.GA20828@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13100915-8236-0000-0000-00000289CA52
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/09/2013 07:46 AM, Stanimir Varbanov wrote:
+On Wed, Oct 09, 2013 at 04:56:19PM +0200, Frederic Weisbecker wrote:
+> On Tue, Oct 08, 2013 at 02:12:18PM -0700, Paul E. McKenney wrote:
+> > On Tue, Oct 08, 2013 at 10:34:28PM +0200, Frederic Weisbecker wrote:
+> > > So I wonder, do we want to continue to allow this nesting? I remember that DYNTICK_TASK_NEST_*
+> > > stuff is there to protects against non finishing interrupts on some archs (I also remember that
+> > > this, or at least a practical scenario for this, was hard to really define though :o)
+> > > But then wouldn't it involve other kind of scenario like this?
+> > > 
+> > >        rcu_irq_enter()
+> > >            rcu_eqs_enter()
+> > >            rcu_eqs_exit()
+> > >            ...
+> > > 
+> > > Anyway, that's just random thougths on further simplifications, in any case, this
+> > > patch looks good.
+> > 
+> > Yep, if no task-level nesting is ever required, things could be a bit
+> > simpler.  I would be a bit slow about making such a change, though.
+> > After all, the need to deal with Hotel California interrupts means that
+> > handling nesting isn't that big of a deal comparatively.  ;-)
 > 
-> No, there is no public documentation for the block. Here is the driver
-> documentation which I used as a base [1].
+> Right, well ideally it would be even best to fix the corner case(s) if there aren't
+> that many of them. I mean calling rcu_irq_exit() from the end of those half interrupts
+> I guess. It would make it much simpler than this complicated nesting handled on the core code.
+> But I agree there is a bit of unknown out there, so yeah lets be prudent :)
 > 
-> My guess was that - if it is PRNG (got from hardware description link
-> above) than according to wiki [2] it is also known as a deterministic
-> random bit generator (DRBG). The recommendation for RNG using DRBG is
-> NIST 800-90.
+> > May I add your Reviewed-by?
 > 
-> Of course I could be wrong, so I can add a comment that this is just a
-> guess and we shouldn't over-reliance on this.
-> 
+> Sure, thanks!
 
-There needs to be an architecturally guaranteed lower bound on the
-entropic content for this to be at all useful.  However, the hwrandom
-interface is currently expecting fully entropic output (which is almost
-certainly bogus... consider the PowerPC random number generator[1]) and
-so using it for a PRNG output is directly wrong.  This is part of why
-RDRAND support is implemented directly in rngd so that we can do the
-required cryptographic data reduction to produce fully entropic output.
+Done!
 
-	-hpa
-
-
-
-[1] which has a known first-order bias which they "correct" for by
-XORing two datums together in a very simple data reduction step.
-However, if their random source has bias it is extremely likely it also
-has nonzero correlations, which require stronger reductions.  It would
-make a lot more sense to feed this data into the random pools but
-derated at a lower entropy level.  This would be useful for RDRAND as well.
-
+							Thanx, Paul
 
