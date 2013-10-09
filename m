@@ -1,69 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756318Ab3JICaO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 22:30:14 -0400
-Received: from smtprelay0126.hostedemail.com ([216.40.44.126]:43226 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751255Ab3JICaL (ORCPT
+	id S1755503Ab3JICob (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 22:44:31 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:33039 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751288Ab3JICo3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 22:30:11 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:2895:3138:3139:3140:3141:3142:3352:3622:3865:3868:3871:4321:4605:5007:7652:10004:10400:10848:11026:11232:11658:11914:12043:12295:12296:12438:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none
-X-HE-Tag: queen69_75897b63ba01d
-X-Filterd-Recvd-Size: 2101
-Message-ID: <1381285806.23937.51.camel@joe-AO722>
-Subject: Re: [PATCH v2] vsprintf: Check real user/group id for %pK
-From: Joe Perches <joe@perches.com>
-To: Ryan Mallon <rmallon@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, eldad@fogrefinery.com,
-        Jiri Kosina <jkosina@suse.cz>, jgunthorpe@obsidianresearch.com,
-        Dan Rosenberg <dan.j.rosenberg@gmail.com>,
-        Kees Cook <keescook@chromium.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        George Spelvin <linux@horizon.com>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 08 Oct 2013 19:30:06 -0700
-In-Reply-To: <5254BDD0.7040001@gmail.com>
-References: <5254A034.5020700@gmail.com>
-	 <1381279758.23937.42.camel@joe-AO722> <1381282200.23937.45.camel@joe-AO722>
-		 <5254B787.6080700@gmail.com> <1381284056.23937.49.camel@joe-AO722>
-	 <5254BDD0.7040001@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	Tue, 8 Oct 2013 22:44:29 -0400
+Message-ID: <5254C305.5000005@gmail.com>
+Date: Wed, 09 Oct 2013 11:44:21 +0900
+From: Akira Hayakawa <ruby.wktk@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: mpatocka@redhat.com
+CC: dm-devel@redhat.com, devel@driverdev.osuosl.org, thornber@redhat.com,
+        snitzer@redhat.com, cesarb@cesarb.net, gregkh@linuxfoundation.org,
+        david@fromorbit.com, linux-kernel@vger.kernel.org, tj@kernel.org,
+        agk@redhat.com, joe@perches.com, akpm@linux-foundation.org,
+        ejt@redhat.com, dan.carpenter@oracle.com, m.chehab@samsung.com,
+        ruby.wktk@gmail.com
+Subject: Re: [dm-devel] A review of dm-writeboost
+References: <alpine.LRH.2.02.1310031719340.24440@file01.intranet.prod.int.rdu2.redhat.com> <52515BD6.5000701@gmail.com> <alpine.LRH.2.02.1310071327390.19115@file01.intranet.prod.int.rdu2.redhat.com>
+In-Reply-To: <alpine.LRH.2.02.1310071327390.19115@file01.intranet.prod.int.rdu2.redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-10-09 at 13:22 +1100, Ryan Mallon wrote:
+Mikulas,
 
-> Anyway, updated patch below:
+> Waking up every 100ms in flush_proc is not good because it wastes CPU time 
+> and energy if the driver is idle.
+Yes, 100ms is too short. I will change it to 1sec then.
+We can wait for 1 sec in termination.
 
-nit:
+> The problem is that if you fill up the whole cache device in less time 
+> than 1 second. Then, you are waiting for 1 second until the migration 
+> process notices that it has some work to do. That waiting is pointless and 
+> degrades performance - the new write requests received by your driver sit 
+> in queue_current_buffer, waiting for data to be migrated. And the 
+> migration process sits in 
+> schedule_timeout_interruptible(msecs_to_jiffies(1000)), waiting for the 
+> end of the timeout. Your driver does absolutely nothing in this moment.
+> 
+> For this reason, you should wake the migration process as soon as 
+> it is needed.
+I see the reason. I agree.
 
-> diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-[]
-> @@ -1312,11 +1313,36 @@ char *pointer(const char *fmt, char *buf, char *end, void *ptr,
->  				spec.field_width = default_width;
->  			return string(buf, end, "pK-error", spec);
->  		}
-> -		if (!((kptr_restrict == 0) ||
-> -		      (kptr_restrict == 1 &&
-> -		       has_capability_noaudit(current, CAP_SYSLOG))))
-> +
-> +		switch (kptr_restrict) {
-> +		case 0:
-> +			/* Always print %pK values */
-> +			break;
-> +		case 1: {
-> +			/*
-> +			 * Only print the real pointer value if the current
-> +			 * proccess has CAP_SYSLOG and is running with the
+Migration is not restlessly executed in writeboost.
+The cache device is full and needs migration to make room for new writes
+is "urgent" situation.
+Setting reserving_segment_id to non-zero can tell
+migration daemon that the migration is urgent.
 
-s/proccess/process/ typo
+There is also a non-urgent migration
+when the backing store is loaded lower than threshold.
+Restlessly migrating to the backing store may affect the
+whole system. For example, it may defer the read request
+to the backing store.
+So, migrating only in idle time can be a good strategy.
 
+> Pointless modulator_proc
+> ------------------------
+> 
+> This thread does no work, it just turns cache->allow_migrate on and off. 
+> Thus, the thread is useless, you can just remove it. In the place where 
+> you read cache->allow_migrate (in migrate_proc) you could just do the work 
+> that used to be performed in modulator_proc.
+Sure, it turns the flag on and off, and this daemon is needful.
+This daemon calculates the load of the backing store then
+moving this code to migrate_proc and do the same thing
+every loop is too CPU consuming.
+Make a decision every second seems to be reasonable.
 
+However, some system doesn't want to delay migration at all
+because the backing store has a large write back cache
+and wants it filled for its optimization
+(e.g. reordering) to be effective.
+In this case, setting both enable_migration_modulator 
+and allow_migrate to 0 will do.
+
+Also, note that related to migration
+nr_max_batched_migration can determine how many segments
+can be migrated at a time.
+
+Back to the urgent migration,
+the problem can be solved easily.
+How about inserting waking up the migration daemon
+just after reserving_segment_id to non-zero.
+It is similar to waking up flush daemon when it queues a flush job.
+
+void wait_for_migration(struct wb_cache *cache, u64 id)
+{
+        struct segment_header *seg = get_segment_header_by_id(cache, id);
+
+        /*
+         * Set reserving_segment_id to non zero
+         * to force the migartion daemon
+         * to complete migarate of this segment
+         * immediately.
+         */
+        cache->reserving_segment_id = id;
+        // HERE
+        wait_for_completion(&seg->migrate_done);
+        cache->reserving_segment_id = 0;
+}
+
+> flush_proc is woken up correctly. But the other threads aren't. 
+> migrate_proc, modulator_proc, recorder_proc, sync_proc all do polling.
+For other daemons,
+modulator: turns on and off according to the load of the backing store every second (default ON)
+recorder: update the super block record every T seconds (default T=60)
+sync: make all the transient data persistent every T seconds (default T=60)
+
+They are just looping themselves.
+
+Maybe, recorder and sync should be turned off for default.
+- Recorder daemon is just for fast rebooting. The record section contains
+  the last_migrated_segment_id which is used in recover_cache()
+  to decrease the segments to recover.
+- Sync daemon is for SLA in enterprise. Some user want to
+  make the storage system persistent every given period.
+  This is needless intrinsically. So, turning it off by default is appropriate.
+
+Akira
