@@ -1,62 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751776Ab3JIE7e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 00:59:34 -0400
-Received: from smtprelay0239.hostedemail.com ([216.40.44.239]:59459 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751042Ab3JIE7a (ORCPT
+	id S1752027Ab3JIE7x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 00:59:53 -0400
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:65429 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751909Ab3JIE7s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 00:59:30 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:966:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2196:2198:2199:2200:2393:2559:2562:2731:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:3873:4321:4385:5007:6119:7652:10004:10400:10848:11232:11658:11914:12296:12517:12519:12740:13069:13095:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: kite17_6fd0a6e438b17
-X-Filterd-Recvd-Size: 1965
-Message-ID: <1381294767.2040.5.camel@joe-AO722>
-Subject: Re: [PATCH] rtc: pl030: Use devm_kzalloc() instead of kmalloc()
-From: Joe Perches <joe@perches.com>
-To: "sangjung.woo" <sangjung.woo@samsung.com>
-Cc: Alessandro Rubini <rubini@gnudd.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org
-Date: Tue, 08 Oct 2013 21:59:27 -0700
-In-Reply-To: <5254DD64.4090205@samsung.com>
-References: <1381291240-23727-1-git-send-email-sangjung.woo@samsung.com>
-	 <1381291649.2040.1.camel@joe-AO722> <5254DD64.4090205@samsung.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 9 Oct 2013 00:59:48 -0400
+MIME-Version: 1.0
+In-Reply-To: <20131009034057.GO15065@verge.net.au>
+References: <20131008143040.52f36df8edb7ab63224d8433@ops.dti.ne.jp>
+	<20131008143403.c11f294c8a1701a2ab3bc5fd@ops.dti.ne.jp>
+	<20131009034057.GO15065@verge.net.au>
+Date: Wed, 9 Oct 2013 13:59:46 +0900
+Message-ID: <CANqRtoQs+31mv0ZULOd3SGshkBkvp-kGoaVOSb10+Ncdp+WNXw@mail.gmail.com>
+Subject: Re: [PATCH v2 3/3] ARM: shmobile: kzm9d: Use common clock framework
+From: Magnus Damm <magnus.damm@gmail.com>
+To: Simon Horman <horms@verge.net.au>
+Cc: takasi-y@ops.dti.ne.jp, SH-Linux <linux-sh@vger.kernel.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        devicetree@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-10-09 at 13:36 +0900, sangjung.woo wrote:
-> On 10/09/2013 01:07 PM, Joe Perches wrote:
-> > On Wed, 2013-10-09 at 13:00 +0900, Sangjung Woo wrote:
-> >> In order to be free automatically and make the cleanup paths more
-> >> simple, use devm_kzalloc() instead of kzalloc().
-> > []
-> >> diff --git a/drivers/rtc/rtc-pl030.c b/drivers/rtc/rtc-pl030.c
-> > []
-> >> @@ -106,7 +106,7 @@ static int pl030_probe(struct amba_device *dev, const struct amba_id *id)
-> >>   	if (ret)
-> >>   		goto err_req;
-> >>   
-> >> -	rtc = kmalloc(sizeof(*rtc), GFP_KERNEL);
-> >> +	rtc = devm_kzalloc(&dev->dev, sizeof(*rtc), GFP_KERNEL);
-[]
-> > You're not deleting a memset and you're
-> > converting a kmalloc.
-> You are right.
-> >
-> > Why do you need the zalloc version?
-> >
-> The key point of this patch is resource-managed memory allocation.
+Hi Simon,
 
-The commit message doesn't match the patch subject
-(shows kzalloc)
+On Wed, Oct 9, 2013 at 12:40 PM, Simon Horman <horms@verge.net.au> wrote:
+> On Tue, Oct 08, 2013 at 02:34:03PM +0900, takasi-y@ops.dti.ne.jp wrote:
+>> Use common clock framework version of clock
+>>  drivers/clk/shmobile/clk-emev2.c
+>> instead of sh-clkfwk version
+>>  arch/arm/mach-shmobile/clock-emev2.c
+>> when it is configured as a part of multi-platform.
+>>
+>> Signed-off-by: Takashi Yoshii <takasi-y@ops.dti.ne.jp>
+>
+> Thanks.
+>
+> I plan to add this patch to a new topic branch,
+> topic/emev2-common-clock, in the renesas tree and
+> queue it up from there for inclusion in mainline
+> if/when the first patch of this series is accepted
+> by Mike Turquette.
 
-I was a bit surprised to find there isn't a devm_kmalloc.
+Thanks for picking up patches, Simon.
 
-This seems fine otherwise.
+I think you can simply merge this patch after the following series:
 
+[PATCH 00/05] ARM: shmobile: KZM9D Multiplatform update
+
+There are no build time dependencies on patch 1 and 2 so this patch
+can be merged independently. Regarding run-time operation, the
+multiplatform series above makes KZM9D DT reference only build for
+multiplatform, and in such case CCF is required.
+
+So if you want to keep KZM9D DT reference working until Mike Turquette
+accepts the CCF bits, then I recommend you to wait with "[PATCH 00/05]
+ARM: shmobile: KZM9D Multiplatform update" until all EMEV2 CCF bits
+have been merged.
+
+Another way is to merge "[PATCH 00/05] ARM: shmobile: KZM9D
+Multiplatform update" before the EMEV2 CCF bits, but if so you may as
+well merge this patch as well IMO. This
+multiplatform-update-series-merge-before-CCF plan will result in
+untestable KZM9D DT reference until EMEV2 CCF is merged. Either way is
+fine with me.
+
+Cheers,
+
+/ magnus
