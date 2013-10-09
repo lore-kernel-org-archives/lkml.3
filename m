@@ -1,77 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755621Ab3JIRPm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 13:15:42 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:39299 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753250Ab3JIRPk (ORCPT
+	id S1755849Ab3JIRQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 13:16:28 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:38412 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754112Ab3JIRQ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 13:15:40 -0400
-Date: Wed, 9 Oct 2013 19:15:37 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/63] Basic scheduler support for automatic NUMA
- balancing V9
-Message-ID: <20131009171537.GA12575@gmail.com>
-References: <1381141781-10992-1-git-send-email-mgorman@suse.de>
- <20131009162801.GA10452@gmail.com>
- <20131009170837.GF13848@laptop.programming.kicks-ass.net>
+	Wed, 9 Oct 2013 13:16:27 -0400
+Date: Wed, 9 Oct 2013 12:16:17 -0500
+From: Seth Jennings <spartacus06@gmail.com>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Bob Liu <bob.liu@oracle.com>, Mel Gorman <mgorman@suse.de>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Tomasz Stanislawski <t.stanislaws@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Dave Hansen <dave.hansen@intel.com>, Minchan Kim <minchan@kernel.org>
+Subject: Re: [PATCH v3 5/6] zswap: replace tree in zswap with radix tree in
+ zbud
+Message-ID: <20131009171617.GA21057@variantweb.net>
+References: <1381238980-2491-1-git-send-email-k.kozlowski@samsung.com>
+ <1381238980-2491-6-git-send-email-k.kozlowski@samsung.com>
+ <20131009153022.GB5406@variantweb.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131009170837.GF13848@laptop.programming.kicks-ass.net>
+In-Reply-To: <20131009153022.GB5406@variantweb.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Oct 09, 2013 at 10:30:22AM -0500, Seth Jennings wrote:
+> In my approach, I was also looking at allowing the zbud pools to use
+> HIGHMEM pages, since the handle is no longer an address.  This requires
+> the pages that are being mapped to be kmapped (atomic) which will
+> disable preemption.  This isn't an additional overhead since the
+> map/unmap corresponds with a compress/decompress operation at the zswap
+> level which uses per-cpu variables that disable preemption already.
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+On second though, lets not mess with the HIGHMEM page support for now.
+Turns out it is tricker than I thought since the unbuddied lists are
+linked through the zbud header stored in the page.  But we can still
+disable preemption to allow per-cpu tracking of the current mapping and
+avoid a lookup (and races) in zbud_unmap().
 
-> On Wed, Oct 09, 2013 at 06:28:01PM +0200, Ingo Molnar wrote:
-> > 
-> > Hm, so I'm seeing boot crashes with the config attached:
-> > 
-> >  INIT: version 2.86 booting 
-> >  BUG: unable to handle kernel BUG: unable to handle kernel paging 
-> >  requestpaging request at eaf10f40 
-> >   at eaf10f40 
-> >  IP:IP: [<b103e0ef>] task_work_run+0x52/0x87 
-> >   [<b103e0ef>] task_work_run+0x52/0x87 
-> >  *pde = 3fbf9067 *pde = 3fbf9067 *pte = 3af10060 *pte = 3af10060  
-> >  
-> >  Oops: 0000 [#1] Oops: 0000 [#1] DEBUG_PAGEALLOCDEBUG_PAGEALLOC 
-> >  
-> >  CPU: 0 PID: 171 Comm: hostname Tainted: G        W    
-> >  3.12.0-rc4-01668-gfd71a04-dirty #229484 
-> >  CPU: 0 PID: 171 Comm: hostname Tainted: G        W    
-> >  3.12.0-rc4-01668-gfd71a04-dirty #229484 
-> >  task: eaf157a0 ti: eacf2000 task.ti: eacf2000 
-> > 
-> > Note that the config does not have NUMA_BALANCING enabled. With another 
-> > config I also had a failed bootup due to the OOM killer kicking in. That 
-> > didn't have NUMA_BALANCING enabled either.
-> > 
-> > Yet this all started today, after merging the NUMA patches.
-> > 
-> > Any ideas?
-> 
-> > CONFIG_MGEODE_LX=y
-> 
-> It looks like -march=geode generates similar borkage to the
-> -march=winchip2 like we found earlier today.
-> 
-> Must be randconfig luck to only hit it now.
-
-Yes, very weird but such is life :-)
-
-Also note that this reproduces with GCC 4.7 ...
-
-Thanks,
-
-	Ingo
+Seth
