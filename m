@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756197Ab3JIWCR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 18:02:17 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:63927 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753532Ab3JIWCP (ORCPT
+	id S1756291Ab3JIWEM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 18:04:12 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:55061 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754291Ab3JIWEL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 18:02:15 -0400
+	Wed, 9 Oct 2013 18:04:11 -0400
 MIME-Version: 1.0
-In-Reply-To: <5255C5B3.60004@zytor.com>
+In-Reply-To: <1381353063.2050.24.camel@joe-AO722>
 References: <20131009210219.31110.62076.stgit@bhelgaas-glaptop.roam.corp.google.com>
- <CAErSpo4RYGakLpJuhHyGTAMXvaZc63sjLiMrMneG9NjohanVZA@mail.gmail.com> <5255C5B3.60004@zytor.com>
+ <1381353063.2050.24.camel@joe-AO722>
 From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 9 Oct 2013 16:01:54 -0600
-Message-ID: <CAErSpo7EJD1AvUt7ahmKR5xgQc8EpJOca2CSTcS2vG2gLa5teQ@mail.gmail.com>
+Date: Wed, 9 Oct 2013 16:03:50 -0600
+Message-ID: <CAErSpo7nv0tRihEJyLUQqhcTE7+VfWMoq4JQgomgkQy+nNQPPg@mail.gmail.com>
 Subject: Re: [PATCH] MAINTAINERS: Add arch/x86/pci to PCI file patterns
-To: "H. Peter Anvin" <hpa@zytor.com>
+To: Joe Perches <joe@perches.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
         "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
         "x86@kernel.org" <x86@kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
@@ -25,25 +26,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 9, 2013 at 3:08 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 10/09/2013 02:04 PM, Bjorn Helgaas wrote:
->> On Wed, Oct 9, 2013 at 3:02 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->>> I handle many arch/x86/pci changes, so help those patches get to the
->>> PCI patchwork.
->>>
->>> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
->>
->> I'll merge this via the PCI tree unless anybody objects.
->>
+On Wed, Oct 9, 2013 at 3:11 PM, Joe Perches <joe@perches.com> wrote:
+> Hey Bjorn
 >
-> Acked-by: H. Peter Anvin <hpa@zytor.com>
+> On Wed, 2013-10-09 at 15:02 -0600, Bjorn Helgaas wrote:
+>> I handle many arch/x86/pci changes, so help those patches get to the
+>> PCI patchwork.
 >
-> ... as long as you don't keep us out of the loop.
+> []
+>> diff --git a/MAINTAINERS b/MAINTAINERS
+>> index e61c2e8..d1ab647 100644
+>> --- a/MAINTAINERS
+>> +++ b/MAINTAINERS
+>> @@ -6338,6 +6338,7 @@ S:      Supported
+>>  F:   Documentation/PCI/
+>>  F:   drivers/pci/
+>>  F:   include/linux/pci*
+>> +F:   arch/x86/pci/*
+>
+> This could be
+>
+> F:      arch/x86/pci/
+>
+> so that if anyone ever sticks a subdirectory
+> in there, you'd still get notified.
 
-Thanks.  I'm certainly not trying to keep you out of the loop; my
-objective is to make get_maintainer.pl show both the x86 folks (as it
-does today) *and* linux-pci (so things show up in the PCI patchwork).
-I've been slow responding to an arch/x86/pci/acpi.c patch partly
-because it's not in my patchwork, so it's easy to forget.
+Thanks, I made that change.
 
 Bjorn
