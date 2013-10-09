@@ -1,43 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755394Ab3JIQNg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 12:13:36 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:33118 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754372Ab3JIQNe (ORCPT
+	id S1756031Ab3JIQRu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 12:17:50 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:46562 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754299Ab3JIQRt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 12:13:34 -0400
-Message-ID: <525580A8.5050902@wwwdotorg.org>
-Date: Wed, 09 Oct 2013 10:13:28 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Wed, 9 Oct 2013 12:17:49 -0400
+Date: Wed, 9 Oct 2013 18:17:43 +0200
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, peterz@infradead.org, acme@redhat.com, dsahern@gmail.com,
+        ak@linux.intel.com, jolsa@redhat.com, hughd@google.com,
+        keescook@chromium.org, akpm@linux-foundation.org
+Subject: [PATCH] perf: disable mmap2 support
+Message-ID: <20131009161743.GA3022@quad>
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>, lee.jones@linaro.org,
-        sameo@linux.intel.com, broonie@kernel.org, linus.walleij@linaro.org,
-        akpm@linux-foundation.org
-CC: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
-        rtc-linux@googlegroups.com, rob.herring@calxeda.com,
-        mark.rutland@arm.com, pawel.moll@arm.com, rob@landley.net,
-        ijc+devicetree@hellion.org.uk, grant.likely@linaro.org,
-        Florian Lobmaier <florian.lobmaier@ams.com>
-Subject: Re: [PATCH V5 1/3] mfd: add support for ams AS3722 PMIC
-References: <1381321761-8898-1-git-send-email-ldewangan@nvidia.com> <1381321761-8898-2-git-send-email-ldewangan@nvidia.com>
-In-Reply-To: <1381321761-8898-2-git-send-email-ldewangan@nvidia.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/09/2013 06:29 AM, Laxman Dewangan wrote:
-> The ams AS3722 is a compact system PMU suitable for mobile phones,
-> tablets etc. It has 4 DC/DC step-down regulators, 3 DC/DC step-down
-> controller, 11 LDOs, RTC, automatic battery, temperature and
-> over-current monitoring, 8 GPIOs, ADC and a watchdog.
-> 
-> Add MFD core driver for the AS3722 to support core functionality.
 
-OK, I think the binding here is about clear enough, so the binding,
-Acked-by: Stephen Warren <swarren@nvidia.com>
+This patch disables the mmap2 record format support
+for now. The support needs a bit more work to cover
+VM_CLONE cases.
+
+The patch leaves attr->mmap2 defined, but returns
+an error if it is set. That ensures no PERF_RECORD_MMAP2
+record can be generated. Yet it minimizes the reverts in
+the perf tool.
+
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
+ include/uapi/linux/perf_event.h |   18 +-----------------
+ kernel/events/core.c            |    4 ++++
+ 2 files changed, 5 insertions(+), 17 deletions(-)
+
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index da48837..8074b29 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -682,23 +682,7 @@ enum perf_event_type {
+ 	PERF_RECORD_SAMPLE			= 9,
+ 
+ 	/*
+-	 * The MMAP2 records are an augmented version of MMAP, they add
+-	 * maj, min, ino numbers to be used to uniquely identify each mapping
+-	 *
+-	 * struct {
+-	 *	struct perf_event_header	header;
+-	 *
+-	 *	u32				pid, tid;
+-	 *	u64				addr;
+-	 *	u64				len;
+-	 *	u64				pgoff;
+-	 *	u32				maj;
+-	 *	u32				min;
+-	 *	u64				ino;
+-	 *	u64				ino_generation;
+-	 *	char				filename[];
+-	 * 	struct sample_id		sample_id;
+-	 * };
++	 * reserved, do not use
+ 	 */
+ 	PERF_RECORD_MMAP2			= 10,
+ 
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index c716385..d7152a6 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -6782,6 +6782,10 @@ static int perf_copy_attr(struct perf_event_attr __user *uattr,
+ 	if (attr->read_format & ~(PERF_FORMAT_MAX-1))
+ 		return -EINVAL;
+ 
++	/* disable for now */
++	if (attr->mmap2)
++		return -EINVAL;
++
+ 	if (attr->sample_type & PERF_SAMPLE_BRANCH_STACK) {
+ 		u64 mask = attr->branch_sample_type;
+ 
+-- 
+1.7.10.4
+
