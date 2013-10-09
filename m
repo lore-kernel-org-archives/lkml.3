@@ -1,65 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756711Ab3JIIiV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 04:38:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41511 "EHLO mx1.redhat.com"
+	id S1756864Ab3JIIjL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 04:39:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40135 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752469Ab3JIIiR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 04:38:17 -0400
-Date: Wed, 9 Oct 2013 10:38:04 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 53/52] tools/perf/build: Clean up feature_print_code()
-Message-ID: <20131009083804.GA1005@krava.redhat.com>
-References: <1381147003-2574-1-git-send-email-mingo@kernel.org>
- <1381147003-2574-38-git-send-email-mingo@kernel.org>
- <20131007221233.GF2900@krava.redhat.com>
- <20131008084610.GB3295@gmail.com>
- <20131008155110.GA15558@krava.redhat.com>
- <20131009064205.GG7664@gmail.com>
+	id S1753491Ab3JIIjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 04:39:08 -0400
+Message-ID: <52551628.5080800@redhat.com>
+Date: Wed, 09 Oct 2013 10:39:04 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130923 Thunderbird/17.0.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131009064205.GG7664@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: kvm@vger.kernel.org, dzickus@redhat.com, gleb@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 2/3] pvclock: detect watchdog reset at pvclock read
+References: <20131008010515.516032211@amt.cnet> <20131008010552.779616517@amt.cnet> <5253D732.8060906@redhat.com> <20131009012230.GA27210@amt.cnet>
+In-Reply-To: <20131009012230.GA27210@amt.cnet>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 09, 2013 at 08:42:05AM +0200, Ingo Molnar wrote:
-
-SNIP
-
-> > 
-> > I think the issue might be in the eval handling the $(info $(MSG)).
-> > With following change on top of your v2 patchset it works for me.
+Il 09/10/2013 03:22, Marcelo Tosatti ha scritto:
+> On Tue, Oct 08, 2013 at 11:58:10AM +0200, Paolo Bonzini wrote:
+>> Il 08/10/2013 03:05, Marcelo Tosatti ha scritto:
+>>> +void pvclock_touch_watchdogs(void)
+>>> +{
+>>> +	touch_softlockup_watchdog_sync();
+>>> +	clocksource_touch_watchdog();
+>>> +	rcu_cpu_stall_reset();
+>>> +	reset_hung_task_detector();
+>>> +}
+>>> +
+>>
+>> Should this function be in kernel/ instead?  It's not really
+>> pvclock-specific.
+>>
+>> Paolo
 > 
-> Indeed - and that works here too. Initially I was trying to solve it by 
-> forcing expansion:
+> kernel/watchdog.c is configurable via CONFIG_LOCKUP_DETECTOR, so its not
+> appropriate.
 > 
-> 	MSG := ...
+> And, the choice of watchdogs to reset might be different for the caller.
 > 
-> but I forgot that expansion does not necessarily force evaluation of the 
-> expression and that Make can still optimize such assignments away if their 
-> result is not used by a target, correct?
 
-I saw that the $(info $(MSG)) output was delayed to next
-iteration, that's why an extra item (DUMMY) was needed
-to display all of them
+Thanks for clarifying.
 
-so I guessed the eval had issues with $(info ...) and put
-it away.. not sure what the actual reason was.. we could
-go with your explanation ;-)
-
-
-> 
-> I've applied your cleanup patch below and added your signoff - is that 
-> fine with you?
-
-sure, np
-
-thanks,
-jirka
+Paolo
