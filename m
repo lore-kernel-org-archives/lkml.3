@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756191Ab3JIB4m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 21:56:42 -0400
-Received: from mouse.start.ca ([64.140.120.56]:50642 "EHLO mouse.start.ca"
+	id S1756763Ab3JIB5l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 21:57:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7401 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753378Ab3JIB4j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 21:56:39 -0400
-Message-ID: <5254B78E.3020009@start.ca>
-Date: Tue, 08 Oct 2013 21:55:26 -0400
-From: Mark Lord <kernel@start.ca>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1754092Ab3JIB5h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 21:57:37 -0400
+Date: Tue, 8 Oct 2013 22:22:30 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: kvm@vger.kernel.org, dzickus@redhat.com, gleb@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 2/3] pvclock: detect watchdog reset at pvclock read
+Message-ID: <20131009012230.GA27210@amt.cnet>
+References: <20131008010515.516032211@amt.cnet>
+ <20131008010552.779616517@amt.cnet>
+ <5253D732.8060906@redhat.com>
 MIME-Version: 1.0
-To: Alexander Gordeev <agordeev@redhat.com>, linux-kernel@vger.kernel.org
-CC: Bjorn Helgaas <bhelgaas@google.com>, Ralf Baechle <ralf@linux-mips.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
-        Jon Mason <jon.mason@intel.com>,
-        Matt Porter <mporter@kernel.crashing.org>, linux-pci@vger.kernel.org,
-        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
-        linux390@de.ibm.com, linux-s390@vger.kernel.org, x86@kernel.org,
-        linux-ide@vger.kernel.org, iss_storagedev@hp.com,
-        linux-nvme@lists.infradead.org, linux-rdma@vger.kernel.org,
-        netdev@vger.kernel.org, e1000-devel@lists.sourceforge.net,
-        linux-driver@qlogic.com,
-        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
-        VMware@dhcp-26-207.brq.redhat.com, "Inc." <pv-drivers@vmware.com>,
-        linux-scsi@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH RFC 00/77] Re-design MSI/MSI-X interrupts enablement pattern
-References: <cover.1380703262.git.agordeev@redhat.com>
-In-Reply-To: <cover.1380703262.git.agordeev@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5253D732.8060906@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-10-02 06:29 AM, Alexander Gordeev wrote:
-..
-> This update converts pci_enable_msix() and pci_enable_msi_block()
-> interfaces to canonical kernel functions and makes them return a
-> error code in case of failure or 0 in case of success.
+On Tue, Oct 08, 2013 at 11:58:10AM +0200, Paolo Bonzini wrote:
+> Il 08/10/2013 03:05, Marcelo Tosatti ha scritto:
+> > +void pvclock_touch_watchdogs(void)
+> > +{
+> > +	touch_softlockup_watchdog_sync();
+> > +	clocksource_touch_watchdog();
+> > +	rcu_cpu_stall_reset();
+> > +	reset_hung_task_detector();
+> > +}
+> > +
+> 
+> Should this function be in kernel/ instead?  It's not really
+> pvclock-specific.
+> 
+> Paolo
 
-Rather than silently break dozens of drivers in mysterious ways,
-please invent new function names for the replacements to the
-existing pci_enable_msix() and pci_enable_msi_block() functions.
+kernel/watchdog.c is configurable via CONFIG_LOCKUP_DETECTOR, so its not
+appropriate.
 
-That way, both in-tree and out-of-tree drivers will notice the API change,
-rather than having it go unseen and just failing for unknown reasons.
+And, the choice of watchdogs to reset might be different for the caller.
 
-Thanks.
