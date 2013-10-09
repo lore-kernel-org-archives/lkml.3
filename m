@@ -1,73 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932313Ab3JIRbz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 13:31:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52809 "EHLO mx1.redhat.com"
+	id S932258Ab3JIRjD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 13:39:03 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:33719 "EHLO quartz.orcorp.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932272Ab3JIRbv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 13:31:51 -0400
-Message-ID: <1381339905.8305.31.camel@deneb.redhat.com>
-Subject: Re: [PATCH] arm64: add PAGE_ALIGNED_DATA to linker script
-From: Mark Salter <msalter@redhat.com>
-To: Will Deacon <will.deacon@arm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>
-Date: Wed, 09 Oct 2013 13:31:45 -0400
-In-Reply-To: <20131009101447.GC5985@mudshark.cambridge.arm.com>
-References: <1381264659-11132-1-git-send-email-msalter@redhat.com>
-	 <20131009101447.GC5985@mudshark.cambridge.arm.com>
-Organization: Red Hat, Inc
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932075Ab3JIRjA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 13:39:00 -0400
+Date: Wed, 9 Oct 2013 11:38:48 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: "Fuchs, Andreas" <andreas.fuchs@sit.fraunhofer.de>
+Cc: Joel Schopp <jschopp@linux.vnet.ibm.com>,
+        Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rajiv Andrade <mail@srajiv.net>,
+        "tpmdd-devel@lists.sourceforge.net" 
+	<tpmdd-devel@lists.sourceforge.net>,
+        Richard Maciel Costa <richardm@br.ibm.com>,
+        "trousers-tech@lists.sourceforge.net" 
+	<trousers-tech@lists.sourceforge.net>,
+        Daniel De Graaf <dgdegra@tycho.nsa.gov>, Sirrix AG <tpmdd@sirrix.com>
+Subject: Re: [TrouSerS-tech] [tpmdd-devel] [PATCH 09/13] tpm: Pull everything
+ related to sysfs into tpm-sysfs.c
+Message-ID: <20131009173847.GC18899@obsidianresearch.com>
+References: <5240A2A3.4040102@tycho.nsa.gov>
+ <20130923204232.GB16345@obsidianresearch.com>
+ <5240BA0E.3000304@tycho.nsa.gov>
+ <20130923222324.GA9533@obsidianresearch.com>
+ <5241A199.1080505@tycho.nsa.gov>
+ <20130930181005.GG28898@obsidianresearch.com>
+ <5249E0CB.2070106@tycho.nsa.gov>
+ <5249F6AF.7050608@linux.vnet.ibm.com>
+ <20131004170803.GB6955@obsidianresearch.com>
+ <9F48E1A823B03B4790B7E6E69430724D2E99F4E9@EXCH2010A.sit.fraunhofer.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <9F48E1A823B03B4790B7E6E69430724D2E99F4E9@EXCH2010A.sit.fraunhofer.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-10-09 at 11:14 +0100, Will Deacon wrote:
-> On Tue, Oct 08, 2013 at 09:37:39PM +0100, Mark Salter wrote:
-> > The arm64 linker script doesn't use the PAGE_ALIGNED_DATA macro which
-> > leads to a ".data..page_aligned" section being placed between the end
-> > of .data and start of .bss:
-> > 
-> >  % readelf -e vmlinux
-> >    ...
-> >  Section to Segment mapping:
-> >   Segment Sections...
-> >    00     .head.text .text .text.init .rodata __ksymtab __ksymtab_gpl \
-> >           __ksymtab_strings __param __modver __ex_table .notes \
-> >           .init.text .init.data .data..percpu .data .data..page_aligned .bss
-> > 
-> > This causes problems for the EFI stub which may have to relocate the
-> > kernel image based on stext and _edata symbols.
-> > 
-> > This patch adds PAGE_ALIGNED_DATA() to the linker script inside the
-> > the .data section.
-> > 
-> > Signed-off-by: Mark Salter <msalter@redhat.com>
-> > ---
-> >  arch/arm64/kernel/vmlinux.lds.S | 1 +
-> >  1 file changed, 1 insertion(+)
-> > 
-> > diff --git a/arch/arm64/kernel/vmlinux.lds.S b/arch/arm64/kernel/vmlinux.lds.S
-> > index f8ab9d8..e441556 100644
-> > --- a/arch/arm64/kernel/vmlinux.lds.S
-> > +++ b/arch/arm64/kernel/vmlinux.lds.S
-> > @@ -110,6 +110,7 @@ SECTIONS
-> >  		 */
-> >  		INIT_TASK_DATA(THREAD_SIZE)
-> >  		NOSAVE_DATA
-> > +		PAGE_ALIGNED_DATA(PAGE_SIZE)
-> >  		CACHELINE_ALIGNED_DATA(64)
-> >  		READ_MOSTLY_DATA(64)
-> 
-> Can we just replace this chunk with RW_DATA_SECTION(64, PAGE_SIZE,
-> THREAD_SIZE) instead?
-
-Possibly. The layout of the included macros is the same. The only
-difference being the placement of _data, _sdata, and _edata inside
-.data and the use of __data_loc.
-
---Mark
+On Tue, Oct 08, 2013 at 09:15:55AM +0000, Fuchs, Andreas wrote:
 
 
+> Rather than an ioctl, why not provide a different tpm-device per
+> locality. This way, the access to the different localities can be
+> restricted via standard user/group of the device.  i.e. /dev/tpm0l1,
+> /dev/tpm0l2, ... or similar approaches...
+
+The way the TPM architecture is setup you will need the middle ware to
+do the switching between localities and managing cross locality
+resources, so it doesn't make sense for the kernel to export a
+locality specific char device.
+
+You'd have to do the above by having trousers create unix domain
+sockets for each of the privilege levels and using the usual security
+mechanisms to protect access to those sockets.
+
+Jason
