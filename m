@@ -1,142 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756755Ab3JIBn6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 21:43:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46079 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755992Ab3JIBny (ORCPT
+	id S1756433Ab3JIBol (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 21:44:41 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:55579 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753378Ab3JIBoi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 21:43:54 -0400
-Date: Tue, 8 Oct 2013 18:41:44 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: delicious quinoa <delicious.quinoa@gmail.com>
-Cc: Alan Tull <atull@altera.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        monstr@monstr.eu, Pavel Machek <pavel@denx.de>,
-        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        Dinh Nguyen <dinguyen@altera.com>,
-        Philip Balister <philip@balister.org>,
-        Alessandro Rubini <rubini@gnudd.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Yves Vandervennet <rocket.yvanderv@gmail.com>,
-        Kyle Teske <kyle.teske@ni.com>, Josh Cartwright <joshc@eso.teric.us>,
-        Nicolas Pitre <nico@linaro.org>,
-        Mark Langsdorf <mark.langsdorf@calxeda.com>,
-        Felipe Balbi <balbi@ti.com>, linux-doc@vger.kernel.org,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        David Brown <davidb@codeaurora.org>, Rob Landley <rob@landley.net>,
-        "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
-        Cesar Eduardo Barros <cesarb@cesarb.net>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC PATCH v2 0/1] FPGA subsystem core
-Message-ID: <20131009014144.GB17066@kroah.com>
-References: <20131004141646.GA9396@kroah.com>
- <d700a91e-1319-4c35-895d-55e323c40703@email.android.com>
- <524ED081.1040600@monstr.eu>
- <524EF0CE.4040002@zytor.com>
- <524EFE76.70200@monstr.eu>
- <524F04FD.5020804@zytor.com>
- <20131004233341.GA4028@kroah.com>
- <1381251614.6062.9.camel@atx-linux-37>
- <20131008214401.GC11941@kroah.com>
- <CANk1AXTLW_-eZgUjEh8ENK2vC4ckNhaGBMbQycy+-h9x-t1BoQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANk1AXTLW_-eZgUjEh8ENK2vC4ckNhaGBMbQycy+-h9x-t1BoQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 8 Oct 2013 21:44:38 -0400
+Message-ID: <1381283037.5388.13.camel@marge.simpson.net>
+Subject: Re: [x86] BUG: unable to handle kernel paging request at 00740060
+From: Mike Galbraith <bitbucket@online.de>
+To: Jakub Jelinek <jakub@redhat.com>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Richard Henderson <rth@twiddle.net>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Wed, 09 Oct 2013 03:43:57 +0200
+In-Reply-To: <20131008190523.GW30970@tucnak.zalov.cz>
+References: <20131005234430.GA22485@localhost>
+	 <CA+55aFxEeKixnH7mZZs5iwupA9_GsRN0N7QZxqcTcE4RKZvTTg@mail.gmail.com>
+	 <20131008075151.GA15689@localhost>
+	 <CA+55aFykGxmaE9hq9xd+6HHFtEube_2QnB+ipW4oF71c6vyXAw@mail.gmail.com>
+	 <20131008185154.GA8258@redhat.com> <20131008190523.GW30970@tucnak.zalov.cz>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 8BIT
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:UvBZKMGRR2OHHcT9RdQSSuP1AF6w62AB1uAWV1ZF5Gd
+ HRFEwWbMYPH2w3NA229ZlYoIr9/3XwA4JznDg9IZD42Ap3cZgc
+ sBn8DYnNW1LodPOfxBe312VN3aQn7kSunexdzdBHnWnO1977il
+ JLD3i315W/gtKtTdz721+YwQPDdHP15vnwFXNXD6cuuqDK9pAb
+ z19/0Q7EnSoQWGVUz2hPJU5iKmK3YD3jhOPnZZTJYBLA2gCqw4
+ gtTD2EtXSqjowwwqGPUUkMIKkSuiX36WN+nhubHz8sr9wbDI7I
+ GItVh+oWyB/PAtYfubKwWitPkDq868BkOFdF2tunabg4ys5Eq9
+ 7RCUa1nvR/anv2TU1WHlJnVlnb0LsHdKUuuPMd9lYD0+Frx03y
+ 9uqbkcEbbYx8w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 08, 2013 at 06:47:41PM -0500, delicious quinoa wrote:
-> On Tue, Oct 8, 2013 at 4:44 PM, Greg Kroah-Hartman
-> <gregkh@linuxfoundation.org> wrote:
-> > On Tue, Oct 08, 2013 at 12:00:14PM -0500, Alan Tull wrote:
-> >> On Fri, 2013-10-04 at 16:33 -0700, Greg Kroah-Hartman wrote:
-> >> > On Fri, Oct 04, 2013 at 11:12:13AM -0700, H. Peter Anvin wrote:
-> >> > > On 10/04/2013 10:44 AM, Michal Simek wrote:
-> >> > > >
-> >> > > > If you look at it in general I believe that there is wide range of
-> >> > > > applications which just contain one bitstream per fpga and the
-> >> > > > bitstream is replaced by newer version in upgrade. For them
-> >> > > > firmware interface should be pretty useful. Just setup firmware
-> >> > > > name with bitstream and it will be automatically loaded in startup
-> >> > > > phase.
-> >> > > >
-> >> > > > Then there is another set of applications especially in connection
-> >> > > > to partial reconfiguration where this can be done statically by
-> >> > > > pregenerated partial bitstreams or automatically generated on
-> >> > > > target cpu. For doing everything on the target firmware interface
-> >> > > > is not the best because everything can be handled by user
-> >> > > > application and it is easier just to push this bitstream to do
-> >> > > > device and not to save it to the fs.
-> >> > > >
-> >> > > > I think the question here is if this subsystem could have several
-> >> > > > interfaces. For example Alan is asking for adding char support.
-> >> > > > Does it even make sense to have more interfaces with the same
-> >> > > > backend driver? When this is answered then we can talk which one
-> >> > > > make sense to have. In v2 is sysfs and firmware one. Adding char
-> >> > > > is also easy to do.
-> >> > > >
-> >> > >
-> >> > > Greg, what do you think?
-> >> > >
-> >> > > I agree that the firmware interface makes sense when the use of the
-> >> > > FPGA is an implementation detail in a fixed hardware configuration,
-> >> > > but that is a fairly restricted use case all things considered.
-> >> >
-> >> > Ideally I thought this would be just like "firmware", you dump the file
-> >> > to the FPGA, it validates it and away you go with a new image running in
-> >> > the chip.
-> >> >
-> >> > But, it sounds like this is much more complicated, so much so that
-> >> > configfs might be the correct interface for it, as you can do lots of
-> >> > things there, and it is very flexible (some say too flexible...)
-> >> >
-> >> > A char device, with a zillion different custom ioctls is also a way to
-> >> > do it, but one that I really want to avoid as that gets messy really
-> >> > quickly.
-> >>
-> >> Hi Greg,
-> >>
-> >> We are discussing a char device that has very few interfaces:
-> >>  - a way of writing the image to fpga
-> >>  - a way of getting fpga manager status
-> >>  - a way of setting fpga manager state
-> >>
-> >> This all looks like standard char driver interface to me.  Writing the
-> >> image could be writing to the devnode (cat image.bin > /dev/fpga0). The
-> >> status stuff would be sysfs attributes.  All normal stuff any char
-> >> driver in the kernel would do.  Why not just go with that?
-> >
-> > Because we really hate to add new ioctls to the kernel if at all
-> > possible.
+On Tue, 2013-10-08 at 21:05 +0200, Jakub Jelinek wrote: 
+> On Tue, Oct 08, 2013 at 08:51:54PM +0200, Oleg Nesterov wrote:
+> > On 10/08, Linus Torvalds wrote:
+> > >
+> > > (not yet merged), see:
+> > >
+> > >     http://git.kernel.org/cgit/linux/kernel/git/tip/tip.git/commit/?id=0c44c2d0f459cd7e275242b72f500137c4fa834d
+> > 
+> > I do not really understand inline assembly constraints, but I'll ask
+> > anyway.
+> > 
+> > 	+#define __GEN_RMWcc(fullop, var, cc, ...) \
+> > 	+do { \
+> > 	+ asm volatile goto (fullop "; j" cc " %l[cc_label]" \
+> > 	+ : : "m" (var), ## __VA_ARGS__ \
+> > 	      ^^^^^^^^^
+> > 
+> > don't we need
+> > 
+> > 	"+m" (var)
+> > 
+> > here?
 > 
-> I don't see any need for adding any ioctls.
+> You actually can't have output operands with asm goto, only inputs
+> and clobbers.  But the "memory" clobber should be enough here.
 > 
-> > Using sysfs (and it's one-value-per-file rule), makes
-> > userspace tools easier, and managing the different devices in the system
-> > easier (you know _exactly_ which device you are talking to, you don't
-> > have to guess based on minor number).
-> 
-> That's cool.  The interface we could use is writing the raw fpga data
-> to /sys/class/fpga_manager/fpga0/fpga_config_data
-> 
-> Reading or setting the fpga state could be from
-> /sys/class/fpga_manager/fpga0/fpga_config_state
+> If you suspect a compiler bug, can somebody please narrow it down to
+> a single object file (if I've skimmed the patch right, it is just an
+> optimization, where object files compiled without and with the patch
+> should actually coexist fine in the same kernel), ideally to a single
+> routine if possible and post a preprocessed source + gcc command line
+> + version of gcc?
 
-Ok, that's fine, I don't object to that, but you are giving up the
-notification and loading ability of the kernel for the image files by
-doing this, which will require you to use/write/maintain userspace
-tools.  If you use the firmware interface, no userspace tool is needed
-at all, which I can see some people really wanting, right?
+gcc version 4.6.2 (SUSE Linux) won't produce output, but where it dies
+might point in the general direction of newer gcc troubles? 
 
-> Or do I misunderstand?  Do you include sysfs attributes when you
-> are talking about ioctls?
+  CC [M]  net/sunrpc/xprtsock.o
+net/sunrpc/xprtsock.c: In function ‘xs_setup_tcp’:
+net/sunrpc/xprtsock.c:2844:1: internal compiler error: in move_insn, at haifa-sched.c:2353
 
-You can't do ioctls on sysfs files, so no.
+	-Mike
 
-greg k-h
