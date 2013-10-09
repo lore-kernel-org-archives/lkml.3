@@ -1,89 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752535Ab3JIGyr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 02:54:47 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:33807 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751632Ab3JIGyo (ORCPT
+	id S1753838Ab3JIG6I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 02:58:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47830 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751347Ab3JIG6F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 02:54:44 -0400
-Date: Wed, 9 Oct 2013 15:54:42 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: takasi-y@ops.dti.ne.jp, SH-Linux <linux-sh@vger.kernel.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        devicetree@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 3/3] ARM: shmobile: kzm9d: Use common clock framework
-Message-ID: <20131009065438.GA7220@verge.net.au>
-References: <20131008143040.52f36df8edb7ab63224d8433@ops.dti.ne.jp>
- <20131008143403.c11f294c8a1701a2ab3bc5fd@ops.dti.ne.jp>
- <20131009034057.GO15065@verge.net.au>
- <CANqRtoQs+31mv0ZULOd3SGshkBkvp-kGoaVOSb10+Ncdp+WNXw@mail.gmail.com>
+	Wed, 9 Oct 2013 02:58:05 -0400
+Date: Tue, 8 Oct 2013 23:54:04 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Joe Perches <joe@perches.com>
+Cc: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Sangjung Woo <sangjung.woo@samsung.com>
+Subject: Re: [RFC PATCH] device: Add kernel standard devm_k.alloc functions
+Message-ID: <20131009065404.GA7005@kroah.com>
+References: <1381296747.2040.17.camel@joe-AO722>
+ <20131009054335.GA3525@kroah.com>
+ <1381299404.2040.19.camel@joe-AO722>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CANqRtoQs+31mv0ZULOd3SGshkBkvp-kGoaVOSb10+Ncdp+WNXw@mail.gmail.com>
-Organisation: Horms Solutions Ltd.
+In-Reply-To: <1381299404.2040.19.camel@joe-AO722>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 09, 2013 at 01:59:46PM +0900, Magnus Damm wrote:
-> Hi Simon,
+On Tue, Oct 08, 2013 at 11:16:44PM -0700, Joe Perches wrote:
+> On Tue, 2013-10-08 at 22:43 -0700, Greg KH wrote:
+> > On Tue, Oct 08, 2013 at 10:32:27PM -0700, Joe Perches wrote:
+> > > Currently, devm_ managed memory only supports kzalloc.
+> > > 
+> > > Convert the devm_kzalloc implementation to devm_kmalloc
+> > > and remove the complete memset to 0 but still set the
+> > > initial struct devres header and whatever padding before
+> > > data to 0.
+> > > 
+> > > Add the other normal alloc variants as static inlines with
+> > > __GFP_ZERO added to the gfp flag where appropriate:
+> > > 
+> > > 	devm_kzalloc
+> > > 	devm_kcalloc
+> > > 	devm_kmalloc_array
+> > > 
+> > > Add gfp.h to device.h for the newly added static inlines.
+> > > 
+> > > Signed-off-by: Joe Perches <joe@perches.com>
+> > > ---
+> > >  drivers/base/devres.c  | 27 ++++++++++++++++-----------
+> > >  include/linux/device.h | 21 +++++++++++++++++++--
+> > >  2 files changed, 35 insertions(+), 13 deletions(-)
+> > 
+> > Makes sense to me, does this let other drivers start to use this where
+> > they were not able to in the past?
 > 
-> On Wed, Oct 9, 2013 at 12:40 PM, Simon Horman <horms@verge.net.au> wrote:
-> > On Tue, Oct 08, 2013 at 02:34:03PM +0900, takasi-y@ops.dti.ne.jp wrote:
-> >> Use common clock framework version of clock
-> >>  drivers/clk/shmobile/clk-emev2.c
-> >> instead of sh-clkfwk version
-> >>  arch/arm/mach-shmobile/clock-emev2.c
-> >> when it is configured as a part of multi-platform.
-> >>
-> >> Signed-off-by: Takashi Yoshii <takasi-y@ops.dti.ne.jp>
-> >
-> > Thanks.
-> >
-> > I plan to add this patch to a new topic branch,
-> > topic/emev2-common-clock, in the renesas tree and
-> > queue it up from there for inclusion in mainline
-> > if/when the first patch of this series is accepted
-> > by Mike Turquette.
+> Yes.
 > 
-> Thanks for picking up patches, Simon.
-> 
-> I think you can simply merge this patch after the following series:
-> 
-> [PATCH 00/05] ARM: shmobile: KZM9D Multiplatform update
+> There are some existing uses of devm_kzalloc(dev, n*size, gfp)
+> that could/should be converted.
 
-This is already queued up.
+Ok, great, want me to take the "RFC" off of this and apply it to my
+tree?
 
-> There are no build time dependencies on patch 1 and 2 so this patch
-> can be merged independently. Regarding run-time operation, the
-> multiplatform series above makes KZM9D DT reference only build for
-> multiplatform, and in such case CCF is required.
-> 
-> So if you want to keep KZM9D DT reference working until Mike Turquette
-> accepts the CCF bits, then I recommend you to wait with "[PATCH 00/05]
-> ARM: shmobile: KZM9D Multiplatform update" until all EMEV2 CCF bits
-> have been merged.
-> 
-> Another way is to merge "[PATCH 00/05] ARM: shmobile: KZM9D
-> Multiplatform update" before the EMEV2 CCF bits, but if so you may as
-> well merge this patch as well IMO. This
-> multiplatform-update-series-merge-before-CCF plan will result in
-> untestable KZM9D DT reference until EMEV2 CCF is merged. Either way is
-> fine with me.
-
-I am mainly concerned that the bindings may change before
-they are finally merged. And I thought it would be nice to avoid
-having to fix up the usage of the bindings if they change.
-
-But I'm happy to just queue-up patches 2 and 3 of this series
-now if you prefer.
+greg k-h
