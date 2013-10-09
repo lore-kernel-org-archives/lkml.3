@@ -1,104 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754529Ab3JISU2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 14:20:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62181 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751854Ab3JISU0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 14:20:26 -0400
-Date: Wed, 9 Oct 2013 18:54:48 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Li Zefan <lizefan@huawei.com>
-Cc: Tejun Heo <tj@kernel.org>, anjana vk <anjanvk12@gmail.com>,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        eunki_kim@samsung.com
-Subject: cgroup_attach_task && while_each_thread (Was: cgroup attach task -
-	slogging cpu)
-Message-ID: <20131009165448.GA22437@redhat.com>
-References: <CALPf4Tz+Gf_Q7wKKBufCc1mtV1qVPVrOW0S1qhHxfOv6pJa2Kg@mail.gmail.com> <20131004130207.GA9338@redhat.com> <20131007184507.GD27396@htj.dyndns.org> <20131008145833.GA15600@redhat.com> <5254EB2A.7090803@huawei.com> <20131009133047.GA12414@redhat.com> <20131009140551.GA15849@redhat.com>
+	id S1754780Ab3JIS3n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 14:29:43 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:49266 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752470Ab3JIS3l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 14:29:41 -0400
+Date: Wed, 9 Oct 2013 19:29:05 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Inki Dae <inki.dae@samsung.com>
+Cc: Olof Johansson <olof@lixom.net>, Sean Paul <seanpaul@chromium.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Message-ID: <20131009182905.GY21581@sirena.org.uk>
+References: <1380670860-17621-1-git-send-email-seanpaul@chromium.org>
+ <1380670860-17621-4-git-send-email-seanpaul@chromium.org>
+ <CAAQKjZN_r-=-sj=Vb-o-KUS4ab5=cjCq1ni3VZeMeVc3NL=MMg@mail.gmail.com>
+ <CAOw6vbLiJLLKn=gb1=j5TBeM0ijEK13+goG-=mw7MZTyNT1kpQ@mail.gmail.com>
+ <CAAQKjZPwyKCpju4Ndd+MB_aN24-zA5xTHFsFsun2617h7YT6dw@mail.gmail.com>
+ <CAOesGMgKastzdFHYQzyL8gxkBN=86wFZ4jbgP8BHxfkOuZvJxg@mail.gmail.com>
+ <CAAQKjZMhovKLxNfnXnbF-6diM2zF1cWyi+xHGyL3v83vBh4p6g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="RJZzeD23Ed8sO2FB"
 Content-Disposition: inline
-In-Reply-To: <20131009140551.GA15849@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CAAQKjZMhovKLxNfnXnbF-6diM2zF1cWyi+xHGyL3v83vBh4p6g@mail.gmail.com>
+X-Cookie: Penalty for private use.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 3/5] drm/bridge: Add PTN3460 bridge driver
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-And I am starting to think that this change should also fix the
-while_each_thread() problems in this particular case.
 
-In generak the code like
+--RJZzeD23Ed8sO2FB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-	rcu_read_lock();
-	task = find_get_task(...);
-	rcu_read_unlock();
+On Fri, Oct 04, 2013 at 11:05:48AM +0900, Inki Dae wrote:
+> 2013/10/4 Olof Johansson <olof@lixom.net>:
 
-	rcu_read_lock();
-	t = task;
-	do {
-		...
-	} while_each_thread (task, t);
-	rcu_read_unlock();
+> > "If PD_N is LOW, then the device is in Deep power-down completely,
+> > even if supply rail is ON; for the device to be able to operate, the
+> > PD_N pin must be HIGH."
 
-is wrong even if while_each_thread() was correct (and we have a lot
-of examples of this pattern). A GP can pass before the 2nd rcu-lock,
-and we simply can't trust ->thread_group.next.
+> I still think the pin could be replaced with a regulator. But
+> lvds-bridge node has "powerdown-gpio" property - it say this board
+> will use gpio pin - specific to board.  So it seems no problem.
 
-But I didn't notice that cgroup_attach_task(tsk, threadgroup) can only
-be called with threadgroup == T when a) tsk is ->group_leader and b)
-we hold threadgroup_lock() which blocks de_thread(). IOW, in this case
-"tsk" can't be removed from ->thread_group list before other threads.
+No, don't model things that aren't regulators as regulators - it's just
+confusing from a usability standpoint and causes breakage when the pins
+don't behave like regulators.
 
-If next_thread() sees thread_group.next != leader, we know that the
-that .next thread didn't do __unhash_process() yet, and since we
-know that in this case "leader" didn't do this too we are safe.
+--RJZzeD23Ed8sO2FB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-In short: __unhash_process(leader) (in this) case can never change
-->thread_group.next of another thread, because leader->thread_group
-should be already list_empty().
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-On 10/09, Oleg Nesterov wrote:
->
-> On 10/09, Oleg Nesterov wrote:
-> >
-> > On 10/09, Li Zefan wrote:
-> > >
-> > > Anjana, could you revise the patch and send it out with proper changelog
-> > > and Signed-off-by? And please add "Cc: <stable@vger.kernel.org> # 3.9+"
-> >
-> > Yes, Anjana, please!
->
-> Please note also that the PF_EXITING check has the same problem, it also
-> needs "goto next".
->
-> > > > check in the main loop. So Anjana was right (sorry again!), and we
-> > > > should probably do
-> > > >
-> > > > 		ent.cgrp = task_cgroup_from_root(...);
-> > > > 		if (ent.cgrp != cgrp) {
-> > > > 			retval = flex_array_put(...);
-> > > > 			...
-> > > > 		}
-> > > >
-> > > > 		if (!threadgroup)
-> > > > 			break;
-> > > >
-> > >
-> > > Or
-> > >
-> > > do {
-> > > 	...
-> > > 	if (ent.cgrp == cgrp)
-> > > 		goto next;
-> >
-> > Or this, agreed.
-> >
-> > > > Or I am wrong again?
-> > >
-> > > No, you are not! :)
-> >
-> > Thanks ;)
-> >
-> > Oleg.
+iQIcBAEBAgAGBQJSVaBuAAoJELSic+t+oim9t9YP/2zdxi1e2TqVNIcxbbSYUvWy
+LySnpmymlG/Sh3k86KJwkDd+2X7kq8xm8T2hfx6SgKPw/hNFBfMvJc5rh7r0Z9d0
+Jb+kpEVEDNaLpZBHN9HN6yejQ3aMoy1NEIgkGlqmGNUG8NQmNq0nDBCmTysGpoA0
+xes+miLMs5WXRK/kpA2r/J9FnOEhlNxM5i8budaqcbJAeLRTo3ePqavTW9AGPXWH
+TLruZFFu71/UgLMDRYny42lOCdcagNZJn6/gDNEvreIaObDSZJ7kxHO41/F/to45
+gEskdwyzgfZ25M+I7pMuFlIzaBWsGtjQlSc7PVJcplCVd7KOTvtfsN+FeOzhHVHr
+s5oVn6q+kO97Hg1Al1B49wRtQFban0K42ZD717iV4nUEnMmeVlqdSz5AvjSvUK5g
+Pc52RRManESWdaSB+R3/1ZctPQZxGZMy+fCjl51+3dfJnfsWUhxE4YJBkp4hNz9v
+ooEVBPASa8VdD/KqObGyQzP74SpPuKHRfNRbSVf84I0TY0oERn/rS/xxJo2uhqWv
+8dhkS3RzfJqxVtEHSLQxbgRgKcN2vfGTb6X/VVyikA6vyfR0luvUYbu/qK3g/9ux
+JRS6HeZtkZLBN4FT08Mj46zPJMrqFSHfalXI8jY+oxPJwbLx5WifbvhlakjvjMKP
+jtx5H7T/C1tB5SGc9y3f
+=GFIi
+-----END PGP SIGNATURE-----
 
+--RJZzeD23Ed8sO2FB--
