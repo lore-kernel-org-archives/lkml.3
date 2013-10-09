@@ -1,157 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756995Ab3JIJOP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 05:14:15 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:38516 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753165Ab3JIJOL (ORCPT
+	id S1756822Ab3JIJRa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 05:17:30 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:62993 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751424Ab3JIJR1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 05:14:11 -0400
-Message-ID: <52551E5F.8000404@free-electrons.com>
-Date: Wed, 09 Oct 2013 11:14:07 +0200
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/8] ARM: l2x0: add Marvell Tauros3 compatible
-References: <1381235073-17134-1-git-send-email-sebastian.hesselbarth@gmail.com> <1381235073-17134-4-git-send-email-sebastian.hesselbarth@gmail.com> <20131008134100.GD1412@e106331-lin.cambridge.arm.com> <52542D64.5010800@gmail.com> <525433D3.2090906@free-electrons.com> <20131009085026.GD4981@e106331-lin.cambridge.arm.com>
-In-Reply-To: <20131009085026.GD4981@e106331-lin.cambridge.arm.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 9 Oct 2013 05:17:27 -0400
+X-AuditID: cbfee68d-b7fe86d0000077a5-7e-52551f251ecc
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Kishon Vijay Abraham I'" <kishon@ti.com>
+Cc: "'Bjorn Helgaas'" <bhelgaas@google.com>, linux-pci@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Pratyush Anand'" <pratyush.anand@st.com>,
+        "'Mohit KUMAR'" <Mohit.KUMAR@st.com>,
+        "'Siva Reddy Kallam'" <siva.kallam@samsung.com>,
+        "'SRIKANTH TUMKUR SHIVANAND'" <ts.srikanth@samsung.com>,
+        "'Arnd Bergmann'" <arnd@arndb.de>, "'Sean Cross'" <xobs@kosagi.com>,
+        "'Thierry Reding'" <thierry.reding@gmail.com>,
+        "'Thomas Petazzoni'" <thomas.petazzoni@free-electrons.com>,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <000401cec4c6$dc415180$94c3f480$%han@samsung.com>
+ <52551C6E.1040404@ti.com>
+In-reply-to: <52551C6E.1040404@ti.com>
+Subject: Re: [PATCH] PCI: designware: Add irq_create_mapping()
+Date: Wed, 09 Oct 2013 18:17:24 +0900
+Message-id: <003901cec4d0$5d83e650$188bb2f0$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Content-language: ko
+Thread-index: Ac7EzsnnQGQIkUxoTmaN/6N9rmGS1wAAYnCA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrMKsWRmVeSWpSXmKPExsVy+t8zY11V+dAgg+23WC3+TjrGbrGkKcPi
+	5SFNi/lHzrFaXF54idWid8FVNosLT3vYLC7vmsNmcXbecTaLGef3MVlsnPqL0aL9krLFiqat
+	jBY/d81jsXj6oInJovHoA1aL1icPGB0EPX7/msTo8WTTRUaPnbPusnss2FTq8X3hfHaPvi2r
+	GD2e/tjL7HH8xnYmj8+b5AI4o7hsUlJzMstSi/TtErgyNh77ylzwjrvizgfBBsZznF2MnBwS
+	AiYSt289ZYGwxSQu3FvP1sXIxSEksIxRYtLjmUwwRXcObWOGSExnlNhx7xlU1S9GiaUPOthA
+	qtgE1CS+fDnMDmKLCOhILDy9nhnEZha4ySJx66UqiC0kECmx7Xkj2DpOoPqWX51gG4QF7CSa
+	Nn4Bm8MioCox4/BaRhCbV8BW4tiezewQtqDEj8n3WCBmakms33mcCcKWl9i85i3QLg6gS9Ul
+	Hv3VhQiLSOx78Y4R4hwjiQ+zNoA9ICFwhkNi/4c3zBC7BCS+TT7EAtErK7HpADPEw5ISB1fc
+	YJnAKDELyeZZSDbPQrJ5FpJ1CxhZVjGKphYkFxQnpRcZ6hUn5haX5qXrJefnbmKEJJDeHYy3
+	D1gfYkwGWj+RWUo0OR+YgPJK4g2NzYwsTE1MjY3MLc1IE1YS51VrsQ4UEkhPLEnNTk0tSC2K
+	LyrNSS0+xMjEwSnVwKg7T1wpbc/H3ZZyBZXFn1sP3uS+s/BghvhkufXCkx4ej1r5I/LcpSuc
+	e2XNdB4cqZ76xHaL2kGG7iSTJg+t45WNG+9v49u4q+zcbqsdm1LLrs0M+Lt+4sK9ntcZRfpT
+	GfiPzj+uyTvHfo1Il43Zspn3p3/Y8edj5Pnr1f4xyzW/98nYdAa3tUUrsRRnJBpqMRcVJwIA
+	Y7fz0DYDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgk+LIzCtJLcpLzFFi42I5/e+xoK6KfGiQwfyjkhZ/Jx1jt1jSlGHx
+	8pCmxfwj51gtLi+8xGrRu+Aqm8WFpz1sFpd3zWGzODvvOJvFjPP7mCw2Tv3FaNF+SdliRdNW
+	Roufu+axWDx90MRk0Xj0AatF65MHjA6CHr9/TWL0eLLpIqPHzll32T0WbCr1+L5wPrtH35ZV
+	jB5Pf+xl9jh+YzuTx+dNcgGcUQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZK
+	CnmJuam2Si4+AbpumTlAnygplCXmlAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0JgusxMkADCesY
+	MzYe+8pc8I674s4HwQbGc5xdjJwcEgImEncObWOGsMUkLtxbz9bFyMUhJDCdUWLHvWdQzi9G
+	iaUPOthAqtgE1CS+fDnMDmKLCOhILDy9HqybWeAmi8Stl6ogtpBApMS2540sIDYnUH3Lr04m
+	EFtYwE6iaeMXsDksAqoSMw6vZQSxeQVsJY7t2cwOYQtK/Jh8jwVippbE+p3HmSBseYnNa94C
+	7eIAulRd4tFfXYiwiMS+F+8YIc4xkvgwawPzBEahWUgmzUIyaRaSSbOQtC9gZFnFKJpakFxQ
+	nJSea6RXnJhbXJqXrpecn7uJEZyenknvYFzVYHGIUYCDUYmH9wF/SJAQa2JZcWXuIUYJDmYl
+	Ed71UqFBQrwpiZVVqUX58UWlOanFhxiTgR6dyCwlmpwPTJ15JfGGxiZmRpZGZhZGJubmpAkr
+	ifMebLUOFBJITyxJzU5NLUgtgtnCxMEp1cAYM5lDb+W91C3bOiPOvumOuVTt7hMy7fsvFpfJ
+	q/Mt/aJtPYTXbzpWHmXUc+xw4e+JYiatfo9P7P9z0M/87qVI83OTVtntYK7eVR0Ybm7+5v7Z
+	oGOa3/lTVuo8PP5wW+g678NvbjquvvdywhH7Q/IVp1Y/i3k8t/CaaWeCyK0nkVwJxze82G+4
+	SYmlOCPRUIu5qDgRABv0dfOTAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2013 10:50, Mark Rutland wrote:
-> On Tue, Oct 08, 2013 at 05:33:23PM +0100, Gregory CLEMENT wrote:
->> On 08/10/2013 18:05, Sebastian Hesselbarth wrote:
->>> On 10/08/2013 03:41 PM, Mark Rutland wrote:
->>>> On Tue, Oct 08, 2013 at 01:24:28PM +0100, Sebastian Hesselbarth wrote:
->>>>> This add a compatible for the Marvell Tauros3 cache controller which
->>>>> is compatible with l2x0 cache controllers. While updating the binding
->>>>> documentation, clean up the list of possible compatibles.
->>>>>
->>>>> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
->>>>> ---
->>> [...]
->>>>> diff --git a/Documentation/devicetree/bindings/arm/l2cc.txt b/Documentation/devicetree/bindings/arm/l2cc.txt
->>>>> index c0c7626..a1d0cbd 100644
->>>>> --- a/Documentation/devicetree/bindings/arm/l2cc.txt
->>>>> +++ b/Documentation/devicetree/bindings/arm/l2cc.txt
->>>>> @@ -7,20 +7,20 @@ The ARM L2 cache representation in the device tree should be done as follows:
->>>>>   Required properties:
->>>>>
->>>>>   - compatible : should be one of:
->>>>> -	"arm,pl310-cache"
->>>>> -	"arm,l220-cache"
->>>>> -	"arm,l210-cache"
->>>>> -	"marvell,aurora-system-cache": Marvell Controller designed to be
->>>>> +  "arm,pl310-cache"
->>>>> +  "arm,l220-cache"
->>>>> +  "arm,l210-cache"
->>>>> +  "bcm,bcm11351-a2-pl310-cache": DEPRECATED by "brcm,bcm11351-a2-pl310-cache"
->>>>> +  "brcm,bcm11351-a2-pl310-cache": For Broadcom bcm11351 chipset where an
->>>>> +     offset needs to be added to the address before passing down to the L2
->>>>> +     cache controller
->>>>> +  "marvell,aurora-system-cache": Marvell Controller designed to be
->>>>>        compatible with the ARM one, with system cache mode (meaning
->>>>>        maintenance operations on L1 are broadcasted to the L2 and L2
->>>>>        performs the same operation).
->>>>> -	"marvell,"aurora-outer-cache: Marvell Controller designed to be
->>>>> -	 compatible with the ARM one with outer cache mode.
->>>>> -	"brcm,bcm11351-a2-pl310-cache": For Broadcom bcm11351 chipset where an
->>>>> -	offset needs to be added to the address before passing down to the L2
->>>>> -	cache controller
->>>>> -	"bcm,bcm11351-a2-pl310-cache": DEPRECATED by
->>>>> -	                               "brcm,bcm11351-a2-pl310-cache"
->>>>> +  "marvell,aurora-outer-cache": Marvell Controller designed to be
->>>>> +     compatible with the ARM one with outer cache mode.
->>>>> +  "marvell,tauros3-cache": Marvell Tauros3 cache controller.
->>>>
->>>> How does the tauros3 cache differ from the other caches supported by the
->>>> l2x0 driver?
->>>
->>> [added Gregory to Cc]
->>>
->>> Good question. I cannot say at this time. I would have guessed that l2cc
->>> on Armada 1500 and Armada 370/XP are more or less the same, as both use
->>> Marvell's PJ4B CPU. Maybe, Gregory or Thomas can shed some light into
->>> this.
->>>
->>>>>   - cache-unified : Specifies the cache is a unified cache.
->>>>>   - cache-level : Should be set to 2 for a level 2 cache.
->>>>>   - reg : Physical base address and size of cache controller's memory mapped
->>>>> diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
->>>>> index 447da6f..90c776e 100644
->>>>> --- a/arch/arm/mm/cache-l2x0.c
->>>>> +++ b/arch/arm/mm/cache-l2x0.c
->>>>> @@ -929,6 +929,7 @@ static const struct of_device_id l2x0_ids[] __initconst = {
->>>>>   	  .data = (void *)&aurora_no_outer_data},
->>>>>   	{ .compatible = "marvell,aurora-outer-cache",
->>>>>   	  .data = (void *)&aurora_with_outer_data},
->>>>> +	{ .compatible = "marvell,tauros3-cache", .data = (void *)&l2x0_data },
->>>>
->>>> Are we intending to handle this differently later?
->>>>
->>>> Or is it 100% compatible with the pl210 or pl220? We could just require
->>>> an entry later in the compatible string list instead...
->>>
->>> No public documentation, no clear answer.
->>>
->>> Tauros3 isn't 100% compatible with any of the ARM l2cc above, it has
->>> additional "features" or "bugs" - call it whatever you want.
->>>
->>> I am not an l2cc expert, but basically I see two options:
->>> a) use (possibly) wrong existing compatible in current mv88de3100.dtsi
->>>     now and fix later.
->>> b) add tauros3 compatible now and add (possible) quirks/marvell-specific
->>>     properties later.
->>>
->>> IMHO b) is very likely to happen as l2x0_of_init in patch 8/8 already 
->>> sets bits, I wasn't able to verify in public ARM l2cc docu.
->>
->> I agree with Sebastian. I don't have more information that Sebastian, but
->> as it is definitely a different controller of the ones from ARM, it should
->> have its own compatible string. Then latter when we will discover new feature
->> and/or bugs, we will be able to manage them without requiring people to update
->> their dtb. If I understood well it is the philosophy behind the device tree.
+On Wednesday, October 09, 2013 6:06 PM, Kishon Vijay Abraham I wrote:
+> On Wednesday 09 October 2013 01:39 PM, Jingoo Han wrote:
+> > Without irq_create_mapping(), the correct irq number cannot be
+> > provided. In this case, it makes problem such as NULL deference.
+> > Thus, irq_create_mapping() should be added for MSI.
+> >
+> > Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> > Cc: Kishon Vijay Abraham I <kishon@ti.com>
+> > ---
+> > Tested on Exynos5440.
+> >
+> >  drivers/pci/host/pcie-designware.c |   10 ++++------
+> >  drivers/pci/host/pcie-designware.h |    1 +
+> >  2 files changed, 5 insertions(+), 6 deletions(-)
+> >
+> > diff --git a/drivers/pci/host/pcie-designware.c b/drivers/pci/host/pcie-designware.c
+> > index 8963017..e536bb6 100644
+> > --- a/drivers/pci/host/pcie-designware.c
+> > +++ b/drivers/pci/host/pcie-designware.c
+> > @@ -237,6 +237,8 @@ static int assign_irq(int no_irqs, struct msi_desc *desc, int *pos)
+> >  		}
+> >  	}
+> >
+> > +	pp->msi_irq_start = irq_create_mapping(pp->irq_domain, 0);
+> > +
 > 
-> Please note that I wasn't arguing for people to have to update their
-> dtb. I was only suggesting that we'd have something like:
-> 
-> 	compatible = "marvell,tauros3-cache", "arm,l220-cache";
-> 
-> Which would function now, and later the driver could choose to check for
-> "marvell,tauros3-cache" and do something different.
-> 
+> I think irq_create_mapping should be done for all the MSI irq lines instead of
+> only the first line. So you might have to do for MAX_MSI_IRQS lines.
 
-Oh you're right, I didn't think about it
+I tested PCIe LAN card after I replaced 0 with MAX_MSI_IRQS.
+However, it makes an error message as below:
+But, PCIe LAN card works properly.
 
-> However, given that we don't have sufficient documentation to tell how
-> close the tauros3 cache is to any ARM l2x0 variant, having just the
-> "marvell,tauros3-cache" string in dts and supporting this in the driver
-> makes sense to me.
+WARNING: CPU: 1 PID: 1 at kernel/irq/irqdomain.c:276 irq_domain_associate+0x150/0x1a8()
+error: hwirq 0x20 is too large for (null)
 
-Given the information we get from Jisheng "The tauros3 and PL310 are
-different although the programming interface are compatible" something like:
+Best regards,
+Jingoo Han
 
-compatible = "marvell,tauros3-cache", "arm,pl310-cache";
-
-should work.
-
-Regards,
--- 
-Gregory Clement, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
