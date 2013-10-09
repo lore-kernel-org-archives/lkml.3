@@ -1,174 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757172Ab3JIJHe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 05:07:34 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:37230 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757152Ab3JIJH3 (ORCPT
+	id S1756970Ab3JIJK0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 05:10:26 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:46017 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753492Ab3JIJKX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 05:07:29 -0400
+	Wed, 9 Oct 2013 05:10:23 -0400
 MIME-Version: 1.0
-In-Reply-To: <CANEJEGvcV6GnCUZUm7CfdNUoPXGbJBEff3tiu14PHsEtP1trGA@mail.gmail.com>
-References: <1380223380-22451-1-git-send-email-grundler@chromium.org>
-	<1380223380-22451-7-git-send-email-grundler@chromium.org>
-	<CANEJEGvcV6GnCUZUm7CfdNUoPXGbJBEff3tiu14PHsEtP1trGA@mail.gmail.com>
-Date: Wed, 9 Oct 2013 11:07:27 +0200
-Message-ID: <CAPDyKFp9OgGP=2GDCOY9g=6eQcWVAvwdfAK+iKiKLcLz0FGAPg@mail.gmail.com>
-Subject: Re: [PATCH 6/7] mmc: core: protect references to host->areq with host->lock
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Grant Grundler <grundler@chromium.org>
-Cc: Chris Ball <cjb@laptop.org>, Seungwon Jeon <tgih.jun@samsung.com>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1380846199-12829-4-git-send-email-syin@broadcom.com>
+References: <1380846199-12829-1-git-send-email-syin@broadcom.com>
+	<1380846199-12829-4-git-send-email-syin@broadcom.com>
+Date: Wed, 9 Oct 2013 11:10:22 +0200
+Message-ID: <CACRpkdZah4fFuJL2Vh5JmbBCgnekg8MKqMWHzeheOx3N1Kzwng@mail.gmail.com>
+Subject: Re: [PATCH 3/4] ARM: pinctrl: Add Broadcom Capri pinctrl driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Sherman Yin <syin@broadcom.com>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Christian Daudt <bcm@fixthebug.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        bcm-kernel-feedback-list@broadcom.com,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9 October 2013 02:48, Grant Grundler <grundler@chromium.org> wrote:
-> Ulf,
-> While this patch might be correct, it's not solving the problem I
-> claimed and my explanation was wrong. See comments in this code
-> review:
->     https://chromium-review.googlesource.com/#/c/170880/1//COMMIT_MSG
->
-> While I no longer see the same crash with this change in our "ToT
-> tree", I'm able to reproduce the original mmcqd crash on a different
-> kernel variant (also based on chromeos-3.4 kernel).
->
-> I think I need to review references to mqrq_prev and mqrq_cur since
-> those appear to be protected by mq->thread_sem and I suspect
-> references are happening from dw_mmc tasklet without holding this
-> semaphore.
->
-> apologies,
-> grant
->
+On Fri, Oct 4, 2013 at 2:23 AM, Sherman Yin <syin@broadcom.com> wrote:
 
-No worries Grant. Feel free to add me on Cc if you send a patch for
-dw_mmc to fix the problem, maybe I can help out reviewing.
-
-Kind regards
-Ulf Hansson
-
-
-
+> Adds pinctrl driver for Broadcom Capri (BCM281xx) SoCs.
 >
-> On Thu, Sep 26, 2013 at 12:22 PM, Grant Grundler <grundler@chromium.org> wrote:
->> Races between host->areq being NULL or not are resulting in mmcqd
->> hung_task panics. Like this one:
->>
->> <3>[  240.501202] INFO: task mmcqd/1:85 blocked for more than 120 seconds.
->> <3>[  240.501213] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
->> <6>[  240.501223] mmcqd/1         D 80528020     0    85      2 0x00000000
->> <5>[  240.501254] [<80528020>] (__schedule+0x614/0x780) from [<80528550>] (schedule+0x94/0x98)
->> <5>[  240.501269] [<80528550>] (schedule+0x94/0x98) from [<80526270>] (schedule_timeout+0x38/0x2d0)
->> <5>[  240.501284] [<80526270>] (schedule_timeout+0x38/0x2d0) from [<805283a4>] (wait_for_common+0x164/0x1a0)
->> <5>[  240.501298] [<805283a4>] (wait_for_common+0x164/0x1a0) from [<805284b8>] (wait_for_completion+0x20/0x24)
->> <5>[  240.501313] [<805284b8>] (wait_for_completion+0x20/0x24) from [<803d7068>] (mmc_wait_for_req_done+0x2c/0x84)
->> <5>[  240.501327] [<803d7068>] (mmc_wait_for_req_done+0x2c/0x84) from [<803d81c0>] (mmc_start_req+0x60/0x120)
->> <5>[  240.501342] [<803d81c0>] (mmc_start_req+0x60/0x120) from [<803e402c>] (mmc_blk_issue_rw_rq+0xa0/0x3a8)
->> <5>[  240.501355] [<803e402c>] (mmc_blk_issue_rw_rq+0xa0/0x3a8) from [<803e4758>] (mmc_blk_issue_rq+0x424/0x478)
->> <5>[  240.501368] [<803e4758>] (mmc_blk_issue_rq+0x424/0x478) from [<803e587c>] (mmc_queue_thread+0xb0/0x118)
->> <5>[  240.501382] [<803e587c>] (mmc_queue_thread+0xb0/0x118) from [<8004d61c>] (kthread+0xa8/0xbc)
->> <5>[  240.501396] [<8004d61c>] (kthread+0xa8/0xbc) from [<8000f1c8>] (kernel_thread_exit+0x0/0x8)
->> <0>[  240.501407] Kernel panic - not syncing: hung_task: blocked tasks
->> <5>[  240.501421] [<800150a4>] (unwind_backtrace+0x0/0x114) from [<80521920>] (dump_stack+0x20/0x24)
->> <5>[  240.501434] [<80521920>] (dump_stack+0x20/0x24) from [<80521a90>] (panic+0xa8/0x1f4)
->> <5>[  240.501447] [<80521a90>] (panic+0xa8/0x1f4) from [<80086d3c>] (watchdog+0x1f4/0x25c)
->> <5>[  240.501459] [<80086d3c>] (watchdog+0x1f4/0x25c) from [<8004d61c>] (kthread+0xa8/0xbc)
->> <5>[  240.501471] [<8004d61c>] (kthread+0xa8/0xbc) from [<8000f1c8>] (kernel_thread_exit+0x0/0x8)
->>
->> I was able to reproduce the mmcqd "hung task" timeout consistently
->> with this fio command line on an Exynos5250 system with Toshiba HS200
->> eMMC running in HS200 mode:
->>         fio --name=short_randwrite --size=2G --time_based --runtime=3m \
->>                 --readwrite=randwrite --numjobs=2 --bs=4k --norandommap \
->>                 --ioengine=psync --direct=0 --filename=/dev/mmcblk0p5
->>
->> I believe the key parameters are "--numjobs=2" (or more) and "randwrite"
->> workload.  Then the completions are happening around the same time as
->> mmc_start_req() is referencing and/or updating host->areq.
->>
->> I was NOT able to consistently reproduce the problem on a similar
->> Exynos 5250 system which had "engineering samples" of Samsung HS200
->> capable eMMC installed. Just my clue that the timing is different
->> (and the fio performance numbers are different too).
->>
->> Signed-off-by: Grant Grundler <grundler@chromium.org>
->> ---
->>  drivers/mmc/core/core.c | 34 +++++++++++++++++++++++-----------
->>  1 file changed, 23 insertions(+), 11 deletions(-)
->>
->> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
->> index 36cfe91..e5a9599 100644
->> --- a/drivers/mmc/core/core.c
->> +++ b/drivers/mmc/core/core.c
->> @@ -529,29 +529,40 @@ struct mmc_async_req *mmc_start_req(struct mmc_host *host,
->>  {
->>         int saved_err = 0;
->>         int start_err = 0;
->> -       struct mmc_async_req *saved_areq = host->areq;
->> +       struct mmc_async_req *saved_areq;
->> +       unsigned long flags;
->>
->> -       if (!saved_areq && !areq)
->> -               /* Nothing to do...some code is polling. */
->> +       spin_lock_irqsave(&host->lock, flags);
->> +       saved_areq = host->areq;
->> +       if (!saved_areq && !areq) {
->> +               /* Nothing? Code is racing to harvest a completion. */
->> +               spin_unlock_irqrestore(&host->lock, flags);
->>                 goto set_error;
->> +       }
->>
->>         /* Prepare a new request */
->>         if (areq)
->>                 mmc_pre_req(host, areq->mrq, !saved_areq);
->>
->>         if (saved_areq) {
->> +               /* This thread owns this IO (saved_areq) for now. */
->> +               host->areq = NULL;
->> +               spin_unlock_irqrestore(&host->lock, flags);
->> +
->>                 saved_err = mmc_wait_for_data_req_done(host, saved_areq->mrq,   areq);
->>                 if (saved_err == MMC_BLK_NEW_REQUEST) {
->> -                       /*
->> -                        * The previous request was not completed,
->> -                        * nothing to return
->> -                        */
->> +                       spin_lock_irqsave(&host->lock, flags);
->> +                       BUG_ON(host->areq != NULL);
->> +
->> +                       /* Not completed. Don't report it. */
->> +                       host->areq = saved_areq;
->>                         saved_areq = NULL;
->> +                       saved_err = 0;
->> +                       spin_unlock_irqrestore(&host->lock, flags);
->>                         goto set_error;
->>                 }
->> -               /*
->> -                * Check BKOPS urgency for each R1 response
->> -                */
->> +
->> +               /* Check BKOPS urgency for each R1 response */
->>                 if (host->card && mmc_card_mmc(host->card) &&
->>                     ((mmc_resp_type(saved_areq->mrq->cmd) == MMC_RSP_R1) ||
->>                      (mmc_resp_type(saved_areq->mrq->cmd) == MMC_RSP_R1B)) &&
->> @@ -562,11 +573,12 @@ struct mmc_async_req *mmc_start_req(struct mmc_host *host,
->>         /* Don't start something new if previous one failed. */
->>         if (!saved_err && areq) {
->>                 start_err = __mmc_start_data_req(host, areq->mrq);
->> +
->>                 /* Cancel a prepared request if it was not started. */
->>                 if (start_err) {
->>                         mmc_post_req(host, areq->mrq, -EINVAL);
->>                         host->areq = NULL;
->> -               } else
->> +               } else
->>                         host->areq = areq;
->>         }
->>
->> --
->> 1.8.4
->>
+> Signed-off-by: Sherman Yin <syin@broadcom.com>
+> Reviewed-by: Christian Daudt <bcm@fixthebug.org>
+> Reviewed-by: Matt Porter <matt.porter@linaro.org>
+(...)
+
+> +config PINCTRL_CAPRI
+> +       bool "Broadcom Capri pinctrl driver"
+> +       select PINMUX
+> +       select PINCONF
+> +       help
+> +         Say Y here to support Broadcom Capri pinctrl driver, which is used for
+> +         the BCM281xx SoC family, including BCM11130, BCM11140, BCM11351,
+> +         BCM28145, and BCM28155 SoCs.  This driver requires the pinctrl
+> +         framework.  GPIO is provided by a separate GPIO driver.
+
+As mentioned this should be selecting and using GENERIC_PINCONF.
+Basically I want that to happen before we look further at this code.
+
+(But I'll take a quick glance anyway...)
+
+> +#define CAPRI_PINCONF_PACK(val, mask)     (((val) << 16) | ((mask) & 0xffff))
+> +#define CAPRI_PINCONF_UNPACK_VAL(conf)    ((conf) >> 16)
+> +#define CAPRI_PINCONF_UNPACK_MASK(conf)   ((conf) & 0xffff)
+
+This custom horror goes away by using the macros from genric pin config
+<linux/pinctrl/pinconf-generic.h> instead.
+
+> +static const struct capri_cfg_param capri_pinconf_params[] = {
+> +       {"brcm,hysteresis",     CAPRI_PINCONF_PARAM_HYST},
+> +       {"brcm,pull",           CAPRI_PINCONF_PARAM_PULL},
+> +       {"brcm,slew",           CAPRI_PINCONF_PARAM_SLEW},
+> +       {"brcm,input_dis",      CAPRI_PINCONF_PARAM_INPUT_DIS},
+> +       {"brcm,drive_str",      CAPRI_PINCONF_PARAM_DRV_STR},
+> +       {"brcm,pull_up_str",    CAPRI_PINCONF_PARAM_PULL_UP_STR},
+> +       {"brcm,mode",           CAPRI_PINCONF_PARAM_MODE},
+> +};
+
+As well as all this stuff...
+
+> +/* Standard pin register */
+
+Add some more elaborate explanation here. I am half-guessing that
+most of the registers are laid out like this and then there are
+two exceptions, then write that right here in the comment.
+
+(BTW: this is a HW/driver detail and should not be written in the
+device tree doc as was done in patch 2)
+
+> +/* Macro to update reg with new pin config param */
+> +#define CAPRI_PIN_REG_SET(reg, type, param, val)                       \
+> +       (((reg) & ~CAPRI_ ## type ## _PIN_REG_ ## param ## _MASK)       \
+> +       | (((val) << CAPRI_ ## type ## _PIN_REG_ ## param ## _SHIFT)    \
+> +       & CAPRI_ ## type ## _PIN_REG_ ## param ## _MASK))
+
+No thanks.
+
+Rewrite this into a static inline which has the same effect when
+compiling, but produces *WAY* more readable code than this
+horrid thing. Plus you can type the arguments.
+
+> +#define _PIN(offset)                   (offset)
+
+This macro isn't exactly useful.
+
+> +/*
+> + * Pin number definition.  The order here must be the same as defined in the
+> + * PADCTRLREG block in the RDB.
+> + */
+> +#define CAPRI_PIN_ADCSYNC              _PIN(0)
+
+If it's just going to be like that, then skip the _PIN() macro.
+
+> +/* Process the pin configuration node */
+> +static int capri_pinctrl_dt_node_to_map(struct pinctrl_dev *pctldev,
+> +                                       struct device_node *pnode,
+> +                                       struct pinctrl_map **map,
+> +                                       unsigned *nmaps)
+> +{
+
+Make use of these from pinctrl-utils.c:
+pinctrl_utils_reserve_map()
+pinctrl_utils_add_map_mux()
+pinctrl_utils_add_map_configs()
+pinctrl_utils_dt_free_map()
+
+Then you get rid of another big chunk of boilerplate code.
+
+After these changes the driver will be much smaller and
+cleaner and we can take a closer look.
+
+Yours,
+Linus Walleij
