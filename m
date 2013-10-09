@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755627Ab3JIGa7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 02:30:59 -0400
+	id S1755359Ab3JIGaz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 02:30:55 -0400
 Received: from mailout4.samsung.com ([203.254.224.34]:37377 "EHLO
 	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754705Ab3JIGas (ORCPT
+	with ESMTP id S1752605Ab3JIGao (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 02:30:48 -0400
-X-AuditID: cbfee61a-b7f7a6d00000235f-70-5254f802b5be
+	Wed, 9 Oct 2013 02:30:44 -0400
+X-AuditID: cbfee61a-b7f7a6d00000235f-4b-5254f7f2e4a0
 From: Lukasz Majewski <l.majewski@samsung.com>
 To: Zhang Rui <rui.zhang@intel.com>,
         Eduardo Valentin <eduardo.valentin@ti.com>, kgene.kim@samsung.com
@@ -22,30 +22,42 @@ Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         Myungjoo Ham <myungjoo.ham@samsung.com>, devicetree@vger.kernel.org,
         Amit Daniel Kachhap <amit.daniel@samsung.com>,
         linux-samsung-soc@vger.kernel.org
-Subject: [PATCH v2 4/5] ARM: dts: exynos4x12: Device tree node definition for
- TMU on Exynos4x12
-Date: Wed, 09 Oct 2013 08:29:53 +0200
-Message-id: <1381300194-13134-5-git-send-email-l.majewski@samsung.com>
+Subject: [PATCH v2 1/5] thermal: exynos: Remove check for thermal device
+ pointer at exynos_report_trigger()
+Date: Wed, 09 Oct 2013 08:29:50 +0200
+Message-id: <1381300194-13134-2-git-send-email-l.majewski@samsung.com>
 X-Mailer: git-send-email 1.7.10
 In-reply-to: <1381300194-13134-1-git-send-email-l.majewski@samsung.com>
 References: <1380010102-25817-1-git-send-email-l.majewski@samsung.com>
  <1381300194-13134-1-git-send-email-l.majewski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrILMWRmVeSWpSXmKPExsVy+t9jQV2mHyFBBg9fCVo0XA2x2DhjPavF
-	/CPnWC3W7P/JZNF59gmzRe+Cq2wWbx5xW7x5uJnR4vKuOWwWn3uPMFrMOL+PyeJ24wo2izOn
-	L7FaPHnYx2axfsZrFgd+j8V7XjJ5rJv2ltljy9V2Fo++LasYPY7f2M7k8XmTXABbFJdNSmpO
-	Zllqkb5dAlfG/PmHmQues1U0rL7C2sB4krWLkZNDQsBE4tbD+1C2mMSFe+vZuhi5OIQEpjNK
-	nJq/DcrpYpKYsWsbE0gVm4CexOe7T8FsEYEMiVOXZjOBFDEL/GWWuD7tGAtIQlggUWLS6ufM
-	IDaLgKrEx94DjCA2r4CbxKnFVxkh1slLPL3fxwZicwq4Sxy8844dYlszo8Sji5tYJjDyLmBk
-	WMUomlqQXFCclJ5rqFecmFtcmpeul5yfu4kRHLDPpHYwrmywOMQowMGoxMP7gD8kSIg1say4
-	MvcQowQHs5IIb95CoBBvSmJlVWpRfnxRaU5q8SFGaQ4WJXHeA63WgUIC6YklqdmpqQWpRTBZ
-	Jg5OqQbG6MMa1tyMVzIMAm4wvT5/9Y3tGZ3tcWLMvV5Jhpofjbv15dQO6wtqeesfVYpIW/tB
-	4lvka92n9heORIudTtrJuuRr9FHBZacKv698mVY8KWwfh7Jb6A4VhTkpqmci19+PCOHPnlf2
-	sPcY87lQ1/TVe4on7v5w/9s7/povq76uC/f/tlRk35mpSizFGYmGWsxFxYkAGzDRXVQCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPLMWRmVeSWpSXmKPExsVy+t9jQd1P30OCDP790LVouBpisXHGelaL
+	+UfOsVqs2f+TyaLz7BNmi94FV9ks3jzitnjzcDOjxeVdc9gsPvceYbSYcX4fk8XtxhVsFmdO
+	X2K1ePKwj81i/YzXLA78Hov3vGTyWDftLbPHlqvtLB59W1Yxehy/sZ3J4/MmuQC2KC6blNSc
+	zLLUIn27BK6Mn9fvMxfM5amY+P8icwPjRq4uRg4OCQETifdzCrsYOYFMMYkL99azdTFycQgJ
+	TGeU2POtlQXC6WKSaFmxnQWkik1AT+Lz3adMILaIQIbEqUuzmUCKmAX+Mktcn3YMrEhYIFfi
+	5etGdhCbRUBV4vu+3awg23gF3CQmXcmG2CYv8fR+HxuIzSngLnHwzjt2iGXNjBKPLm5imcDI
+	u4CRYRWjaGpBckFxUnquoV5xYm5xaV66XnJ+7iZGcLA+k9rBuLLB4hCjAAejEg/vA/6QICHW
+	xLLiytxDjBIczEoivHkLgUK8KYmVValF+fFFpTmpxYcYpTlYlMR5D7RaBwoJpCeWpGanphak
+	FsFkmTg4pRoYdezWv3nefIOJ7yPXwschM56InzqdlW8tYsATbHvosKMa44bGZbdeVblHLheX
+	meDgwR6RwPPG7MWfpODUqwvb1/ou2JsZ1scukxJfWFes6DJJcf/Xgu7Y4nXPdz/RlXRL2qch
+	0JPSvTP0RtvHqz51eouzXleeEP27h+m1WO4JqeZXHy8b+05TYinOSDTUYi4qTgQAbPCtb1IC	AAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The TMU device tree node definition for Exynos4x12 family of SoCs.
+The commit 4de0bdaa9677d11406c9becb70c60887c957e1f0
+("thermal: exynos: Add support for instance based register/unregister")
+broke check for presence of therm_dev at global thermal zone in
+exynos_report_trigger().
+
+The resulting wrong test prevents thermal_zone_device_update() call, which
+calls handlers for situation when trip points are passed.
+Such behavior prevents thermal driver from proper reaction (when TMU interrupt
+is raised) in a situation when overheating is detected at TMU hardware.
+
+It turns out, that after exynos thermal subsystem redesign (at v3.12) this
+check is not needed, since it is not possible to register thermal zone
+without valid thermal device.
 
 Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
 Reviewed-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
@@ -53,30 +65,24 @@ Reviewed-by: Tomasz Figa <t.figa@samsung.com>
 
 ---
 Changes for v2:
-- None
+- Remove check for th_zone->therm_dev at exynos_report_trigger()
 
- arch/arm/boot/dts/exynos4x12.dtsi |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/thermal/samsung/exynos_thermal_common.c |    2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/arch/arm/boot/dts/exynos4x12.dtsi b/arch/arm/boot/dts/exynos4x12.dtsi
-index ad531fe..64c0ece 100644
---- a/arch/arm/boot/dts/exynos4x12.dtsi
-+++ b/arch/arm/boot/dts/exynos4x12.dtsi
-@@ -176,4 +176,14 @@
- 			};
- 		};
- 	};
-+
-+	tmu@100C0000 {
-+		compatible = "samsung,exynos4412-tmu";
-+		interrupt-parent = <&combiner>;
-+		interrupts = <2 4>;
-+		reg = <0x100C0000 0x100>;
-+		clocks = <&clock 383>;
-+		clock-names = "tmu_apbif";
-+		status = "disabled";
-+	};
- };
+diff --git a/drivers/thermal/samsung/exynos_thermal_common.c b/drivers/thermal/samsung/exynos_thermal_common.c
+index f10a6ad..c2301da 100644
+--- a/drivers/thermal/samsung/exynos_thermal_common.c
++++ b/drivers/thermal/samsung/exynos_thermal_common.c
+@@ -310,8 +310,6 @@ void exynos_report_trigger(struct thermal_sensor_conf *conf)
+ 	}
+ 
+ 	th_zone = conf->pzone_data;
+-	if (th_zone->therm_dev)
+-		return;
+ 
+ 	if (th_zone->bind == false) {
+ 		for (i = 0; i < th_zone->cool_dev_size; i++) {
 -- 
 1.7.10.4
 
