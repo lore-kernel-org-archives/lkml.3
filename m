@@ -1,45 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756177Ab3JIRTA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 13:19:00 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:46720 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750971Ab3JIRS7 (ORCPT
+	id S1756203Ab3JIRTP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 13:19:15 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:36112 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752357Ab3JIRTL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 13:18:59 -0400
-Date: Wed, 9 Oct 2013 19:18:49 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/63] Basic scheduler support for automatic NUMA
- balancing V9
-Message-ID: <20131009171849.GH13848@laptop.programming.kicks-ass.net>
-References: <1381141781-10992-1-git-send-email-mgorman@suse.de>
- <20131009162801.GA10452@gmail.com>
- <20131009170837.GF13848@laptop.programming.kicks-ass.net>
- <20131009171537.GA12575@gmail.com>
+	Wed, 9 Oct 2013 13:19:11 -0400
+Message-ID: <5255900A.5050103@gmail.com>
+Date: Wed, 09 Oct 2013 11:19:06 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131009171537.GA12575@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Stephane Eranian <eranian@google.com>
+CC: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Jiri Olsa <jolsa@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Kees Cook <keescook@chromium.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] perf: disable mmap2 support
+References: <20131009161743.GA3022@quad> <52558278.6080206@gmail.com> <CABPqkBRx1CqwXOjJXWeqEBqkLkZMHWVQJNjv1jjqPakoDNB3Gg@mail.gmail.com> <CABPqkBQKaMd_LuvfUreYb_9hiR-j0BkAyiP2yP-C0TTy+15_fQ@mail.gmail.com>
+In-Reply-To: <CABPqkBQKaMd_LuvfUreYb_9hiR-j0BkAyiP2yP-C0TTy+15_fQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 09, 2013 at 07:15:37PM +0200, Ingo Molnar wrote:
-> > It looks like -march=geode generates similar borkage to the
-> > -march=winchip2 like we found earlier today.
-> > 
-> > Must be randconfig luck to only hit it now.
-> 
-> Yes, very weird but such is life :-)
-> 
-> Also note that this reproduces with GCC 4.7 ...
+On 10/9/13 10:39 AM, Stephane Eranian wrote:
+> Looks like the easiest thing to do for perf is to revert:
+>
+>     Revert "perf tools: Add default handler for mmap2 events"
+>     git revert 6adb0b0ae26fcc35cfec068d71f13863faac5b44
+>
+>     Revert "perf tools: Add attr->mmap2 support"
+>     git revert 5c5e854bc760a2e2c878df3cfcf2afa4febcd511
+>
+> Do you agree?
 
-Yes, it does so too for me, I tried both 4.7 and 4.8; they generate
-different but similarly broken code.
+If you want to strip all of mmap2 you also need 
+5654a0257a86c093c2b38ea5d3ceaa17affd735b.
+
+David
