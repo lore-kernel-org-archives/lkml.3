@@ -1,55 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755221Ab3JIUJm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 16:09:42 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:63992 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752606Ab3JIUJj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 16:09:39 -0400
+	id S1755419Ab3JIUSz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 16:18:55 -0400
+Received: from mga09.intel.com ([134.134.136.24]:47086 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752606Ab3JIUSy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 16:18:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,1066,1371106800"; 
+   d="scan'208";a="390720694"
+Date: Wed, 9 Oct 2013 13:18:46 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Xiao Jin <jin.xiao@intel.com>
+Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org, mingo@elte.hu,
+        a.p.zijlstra@chello.nl, rusty@rustcorp.com.au,
+        william.douglas@intel.com, sboyd@codeaurora.org, jslaby@suse.cz
+Subject: Re: [PATCH] xhci-hub.c: handle command_trb that may be link TRB
+Message-ID: <20131009201846.GA8222@xanatos>
+References: <1381282956.9531.14.camel@xiaojin>
 MIME-Version: 1.0
-In-Reply-To: <8761t65kd2.fsf_-_@xmission.com>
-References: <CAJfpegsxgnSRUW-E5HM3uT5QfGyUtn_v=i4Ppkkkutp34287AA@mail.gmail.com>
- <87a9kkax0j.fsf@xmission.com> <CAJfpeguv+7giYNpAuXE9Ja_9BEwB0-fZBVgRSeVqpzSXgQYZ6Q@mail.gmail.com>
- <8761v7h2pt.fsf@tw-ebiederman.twitter.com> <CAJfpegtT7y-1HhbEVAMKkdQugTG_w7G_epGtQHGvQLpcZB5FVA@mail.gmail.com>
- <87li281wx6.fsf_-_@xmission.com> <874n8w1wsz.fsf_-_@xmission.com>
- <20131008155041.GI14242@tucsk.piliscsaba.szeredi.hu> <877gdne8pr.fsf@xmission.com>
- <8761t65kd2.fsf_-_@xmission.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 9 Oct 2013 13:09:17 -0700
-Message-ID: <CALCETrUqXTj7T_bYOgwMiO_kcU=NPD_+ck+Z=JsmXuUJJGshuQ@mail.gmail.com>
-Subject: Re: Grrrr fusermount.
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, "Serge E. Hallyn" <serge@hallyn.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rob Landley <rob@landley.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1381282956.9531.14.camel@xiaojin>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 9, 2013 at 12:12 PM, Eric W. Biederman
-<ebiederm@xmission.com> wrote:
-> ebiederm@xmission.com (Eric W. Biederman) writes:
->
->> But I will go through and read the old fusermount code before I get too
->> much farther just so I understand what I am potentially breaking.
->
-> Grr.
->
-> So I have just read the fusermount umount code and the hack that it uses
-> before there was UMOUNT_NOFOLLOW support in the vm.
->
-> If I walk this path of lazy unmounts and detaching directories, anyone
-> with a new kernel and an old copy of fusermount and a nfs mounted home
-> directory will be able to exploit the fusermount umount symlink race.
->
-> Unless we can declare that old fusermount binaries are buggy beyond
-> supporting this patchset as it exists is dead.
+Hi Xiao,
 
-What's the hack that it does?
+Thanks for taking the time to submit this patch.  Comments below.
 
---Andy
+On Wed, Oct 09, 2013 at 09:42:36AM +0800, Xiao Jin wrote:
+> From: xiao jin <jin.xiao@intel.com>
+> Date: Wed, 9 Oct 2013 09:38:45 +0800
+> Subject: [PATCH] xhci-hub.c: handle command_trb that may be link TRB
+
+I won't be able to apply your patch  because it has these extra lines in
+the body ^^^.  I suspect you used `git format-patch` to produce this,
+and then tried to copy-paste it into your mail client?  You can't do
+that, because your mail client will probably word-wrap your patch, and
+possibly turn tabs into spaces.  You need to use `git send-email`
+instead to send your patches.
+
+> When xhci stop device, it's possible cmd_ring enqueue point to
+> link TRB after queue the last but one stop endpoint. We must
+> handle the command_trb point to the next segment trb. Otherwise
+> xhci stop devie will timeout because command_trb can't match
+> with cmd_ring dequeue.
+> 
+> The patch is to let command_trb point to the next segment trb if
+> cmd_ring enqueue point to link TRB.
+> 
+> Signed-off-by: xiao jin <jin.xiao@intel.com>
+> ---
+>  drivers/usb/host/xhci-hub.c |    7 +++++++
+>  1 files changed, 7 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/usb/host/xhci-hub.c b/drivers/usb/host/xhci-hub.c
+> index 1d35459..4872640 100644
+> --- a/drivers/usb/host/xhci-hub.c
+> +++ b/drivers/usb/host/xhci-hub.c
+> @@ -287,6 +287,13 @@ static int xhci_stop_device(struct xhci_hcd *xhci, int slot_id, int suspend)
+>  			xhci_queue_stop_endpoint(xhci, slot_id, i, suspend);
+>  	}
+>  	cmd->command_trb = xhci->cmd_ring->enqueue;
+> +	/* Enqueue pointer can be left pointing to the link TRB,
+> +	 * we must handle that
+> +	 */
+> +	if (TRB_TYPE_LINK_LE32(cmd->command_trb->link.control))
+> +		cmd->command_trb =
+> +			xhci->cmd_ring->enq_seg->next->trbs;
+> +
+>  	list_add_tail(&cmd->cmd_list, &virt_dev->cmd_list);
+>  	xhci_queue_stop_endpoint(xhci, slot_id, 0, suspend);
+>  	xhci_ring_cmd_db(xhci);
+
+What kernel version or tree is it against?  I ask because there's
+already a fix in the 3.12-rc4 kernel for this:
+
+static int xhci_stop_device(struct xhci_hcd *xhci, int slot_id, int suspend)
+{
+...
+        spin_lock_irqsave(&xhci->lock, flags);
+        for (i = LAST_EP_INDEX; i > 0; i--) {
+                if (virt_dev->eps[i].ring && virt_dev->eps[i].ring->dequeue)
+                        xhci_queue_stop_endpoint(xhci, slot_id, i, suspend);
+        }
+        cmd->command_trb = xhci_find_next_enqueue(xhci->cmd_ring);
+...
+
+Where xhci_find_next_enqueue is defined as:
+
+union xhci_trb *xhci_find_next_enqueue(struct xhci_ring *ring)
+{
+        /* Enqueue pointer can be left pointing to the link TRB,
+         * we must handle that
+         */
+        if (TRB_TYPE_LINK_LE32(ring->enqueue->link.control))
+                return ring->enq_seg->next->trbs;
+        return ring->enqueue;
+}
+
+That was added in commit ec7e43e2d98173483866fe2e4e690143626b659c "xhci:
+Ensure a command structure points to the correct trb on the command
+ring"  It's in (or should be in soon) the stable kernels as well.
+
+Sarah Sharp
