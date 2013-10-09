@@ -1,55 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757139Ab3JIJLb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 05:11:31 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:64996 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757000Ab3JIJL3 (ORCPT
+	id S1756995Ab3JIJOP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 05:14:15 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:38516 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753165Ab3JIJOL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 05:11:29 -0400
+	Wed, 9 Oct 2013 05:14:11 -0400
+Message-ID: <52551E5F.8000404@free-electrons.com>
+Date: Wed, 09 Oct 2013 11:14:07 +0200
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <1380846199-12829-5-git-send-email-syin@broadcom.com>
-References: <1380846199-12829-1-git-send-email-syin@broadcom.com>
-	<1380846199-12829-5-git-send-email-syin@broadcom.com>
-Date: Wed, 9 Oct 2013 11:11:28 +0200
-Message-ID: <CACRpkdYj2MagpVGbA2k+B_NhhMUfXNpXQxBn1z1kxmTKCLZA4A@mail.gmail.com>
-Subject: Re: [PATCH 4/4] pinctrl: Enable pinctrl for Broadcom Capri SoCs
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Sherman Yin <syin@broadcom.com>
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Christian Daudt <bcm@fixthebug.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Matt Porter <matt.porter@linaro.org>,
+To: Mark Rutland <mark.rutland@arm.com>
+CC: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Arnd Bergmann <arnd@arndb.de>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
         "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        bcm-kernel-feedback-list@broadcom.com,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/8] ARM: l2x0: add Marvell Tauros3 compatible
+References: <1381235073-17134-1-git-send-email-sebastian.hesselbarth@gmail.com> <1381235073-17134-4-git-send-email-sebastian.hesselbarth@gmail.com> <20131008134100.GD1412@e106331-lin.cambridge.arm.com> <52542D64.5010800@gmail.com> <525433D3.2090906@free-electrons.com> <20131009085026.GD4981@e106331-lin.cambridge.arm.com>
+In-Reply-To: <20131009085026.GD4981@e106331-lin.cambridge.arm.com>
+X-Enigmail-Version: 1.5.2
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 4, 2013 at 2:23 AM, Sherman Yin <syin@broadcom.com> wrote:
+On 09/10/2013 10:50, Mark Rutland wrote:
+> On Tue, Oct 08, 2013 at 05:33:23PM +0100, Gregory CLEMENT wrote:
+>> On 08/10/2013 18:05, Sebastian Hesselbarth wrote:
+>>> On 10/08/2013 03:41 PM, Mark Rutland wrote:
+>>>> On Tue, Oct 08, 2013 at 01:24:28PM +0100, Sebastian Hesselbarth wrote:
+>>>>> This add a compatible for the Marvell Tauros3 cache controller which
+>>>>> is compatible with l2x0 cache controllers. While updating the binding
+>>>>> documentation, clean up the list of possible compatibles.
+>>>>>
+>>>>> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+>>>>> ---
+>>> [...]
+>>>>> diff --git a/Documentation/devicetree/bindings/arm/l2cc.txt b/Documentation/devicetree/bindings/arm/l2cc.txt
+>>>>> index c0c7626..a1d0cbd 100644
+>>>>> --- a/Documentation/devicetree/bindings/arm/l2cc.txt
+>>>>> +++ b/Documentation/devicetree/bindings/arm/l2cc.txt
+>>>>> @@ -7,20 +7,20 @@ The ARM L2 cache representation in the device tree should be done as follows:
+>>>>>   Required properties:
+>>>>>
+>>>>>   - compatible : should be one of:
+>>>>> -	"arm,pl310-cache"
+>>>>> -	"arm,l220-cache"
+>>>>> -	"arm,l210-cache"
+>>>>> -	"marvell,aurora-system-cache": Marvell Controller designed to be
+>>>>> +  "arm,pl310-cache"
+>>>>> +  "arm,l220-cache"
+>>>>> +  "arm,l210-cache"
+>>>>> +  "bcm,bcm11351-a2-pl310-cache": DEPRECATED by "brcm,bcm11351-a2-pl310-cache"
+>>>>> +  "brcm,bcm11351-a2-pl310-cache": For Broadcom bcm11351 chipset where an
+>>>>> +     offset needs to be added to the address before passing down to the L2
+>>>>> +     cache controller
+>>>>> +  "marvell,aurora-system-cache": Marvell Controller designed to be
+>>>>>        compatible with the ARM one, with system cache mode (meaning
+>>>>>        maintenance operations on L1 are broadcasted to the L2 and L2
+>>>>>        performs the same operation).
+>>>>> -	"marvell,"aurora-outer-cache: Marvell Controller designed to be
+>>>>> -	 compatible with the ARM one with outer cache mode.
+>>>>> -	"brcm,bcm11351-a2-pl310-cache": For Broadcom bcm11351 chipset where an
+>>>>> -	offset needs to be added to the address before passing down to the L2
+>>>>> -	cache controller
+>>>>> -	"bcm,bcm11351-a2-pl310-cache": DEPRECATED by
+>>>>> -	                               "brcm,bcm11351-a2-pl310-cache"
+>>>>> +  "marvell,aurora-outer-cache": Marvell Controller designed to be
+>>>>> +     compatible with the ARM one with outer cache mode.
+>>>>> +  "marvell,tauros3-cache": Marvell Tauros3 cache controller.
+>>>>
+>>>> How does the tauros3 cache differ from the other caches supported by the
+>>>> l2x0 driver?
+>>>
+>>> [added Gregory to Cc]
+>>>
+>>> Good question. I cannot say at this time. I would have guessed that l2cc
+>>> on Armada 1500 and Armada 370/XP are more or less the same, as both use
+>>> Marvell's PJ4B CPU. Maybe, Gregory or Thomas can shed some light into
+>>> this.
+>>>
+>>>>>   - cache-unified : Specifies the cache is a unified cache.
+>>>>>   - cache-level : Should be set to 2 for a level 2 cache.
+>>>>>   - reg : Physical base address and size of cache controller's memory mapped
+>>>>> diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
+>>>>> index 447da6f..90c776e 100644
+>>>>> --- a/arch/arm/mm/cache-l2x0.c
+>>>>> +++ b/arch/arm/mm/cache-l2x0.c
+>>>>> @@ -929,6 +929,7 @@ static const struct of_device_id l2x0_ids[] __initconst = {
+>>>>>   	  .data = (void *)&aurora_no_outer_data},
+>>>>>   	{ .compatible = "marvell,aurora-outer-cache",
+>>>>>   	  .data = (void *)&aurora_with_outer_data},
+>>>>> +	{ .compatible = "marvell,tauros3-cache", .data = (void *)&l2x0_data },
+>>>>
+>>>> Are we intending to handle this differently later?
+>>>>
+>>>> Or is it 100% compatible with the pl210 or pl220? We could just require
+>>>> an entry later in the compatible string list instead...
+>>>
+>>> No public documentation, no clear answer.
+>>>
+>>> Tauros3 isn't 100% compatible with any of the ARM l2cc above, it has
+>>> additional "features" or "bugs" - call it whatever you want.
+>>>
+>>> I am not an l2cc expert, but basically I see two options:
+>>> a) use (possibly) wrong existing compatible in current mv88de3100.dtsi
+>>>     now and fix later.
+>>> b) add tauros3 compatible now and add (possible) quirks/marvell-specific
+>>>     properties later.
+>>>
+>>> IMHO b) is very likely to happen as l2x0_of_init in patch 8/8 already 
+>>> sets bits, I wasn't able to verify in public ARM l2cc docu.
+>>
+>> I agree with Sebastian. I don't have more information that Sebastian, but
+>> as it is definitely a different controller of the ones from ARM, it should
+>> have its own compatible string. Then latter when we will discover new feature
+>> and/or bugs, we will be able to manage them without requiring people to update
+>> their dtb. If I understood well it is the philosophy behind the device tree.
+> 
+> Please note that I wasn't arguing for people to have to update their
+> dtb. I was only suggesting that we'd have something like:
+> 
+> 	compatible = "marvell,tauros3-cache", "arm,l220-cache";
+> 
+> Which would function now, and later the driver could choose to check for
+> "marvell,tauros3-cache" and do something different.
+> 
 
-> Enable pinctrl for Broadcom Capri (BCM281xx) SoCs.
->
-> Signed-off-by: Sherman Yin <syin@broadcom.com>
-> Reviewed-by: Christian Daudt <bcm@fixthebug.org>
-> Reviewed-by: Matt Porter <matt.porter@linaro.org>
-(...)
-> +       pinctrl@35004800 {
-> +               compatible = "brcm,capri-pinctrl";
-> +               reg = <0x35004800 0x430>;
-> +       };
+Oh you're right, I didn't think about it
 
-What is the point of doing this without defining some pins
-and connecting them to some devices?
+> However, given that we don't have sufficient documentation to tell how
+> close the tauros3 cache is to any ARM l2x0 variant, having just the
+> "marvell,tauros3-cache" string in dts and supporting this in the driver
+> makes sense to me.
 
-Yours,
-Linus Walleij
+Given the information we get from Jisheng "The tauros3 and PL310 are
+different although the programming interface are compatible" something like:
+
+compatible = "marvell,tauros3-cache", "arm,pl310-cache";
+
+should work.
+
+Regards,
+-- 
+Gregory Clement, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
