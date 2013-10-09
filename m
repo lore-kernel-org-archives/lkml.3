@@ -1,79 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757193Ab3JIK2S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 06:28:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43742 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753158Ab3JIK2O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 06:28:14 -0400
-Message-ID: <52552FBA.7040806@suse.cz>
-Date: Wed, 09 Oct 2013 12:28:10 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: "Yann E. MORIN" <yann.morin.1998@free.fr>,
-        Robert Richter <rric@kernel.org>,
+	id S1755692Ab3JIKfd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 06:35:33 -0400
+Received: from numidia.opendz.org ([98.142.220.152]:33809 "EHLO
+	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751611Ab3JIKf3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 06:35:29 -0400
+Date: Wed, 9 Oct 2013 11:35:21 +0100
+From: Djalal Harouni <tixxdz@opendz.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Andy Lutomirski <luto@amacapital.net>, Kees Cook <keescook@chromium.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linux Kbuild mailing list <linux-kbuild@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] arm, kbuild: make "make install" not depend on vmlinux
-References: <CA+55aFxtvT3Yvbxe5JGBThZS13payymFJ7jCLyEiE2iNDvsZtQ@mail.gmail.com> <20130711135445.GA21500@sepie.suse.cz> <CA+55aFyVjugxM7cUDWi0ASWttYthCxa6e7X3CADknBcSFxWgew@mail.gmail.com> <20130712105721.GF8731@rric.localhost> <20130717160506.GI8731@rric.localhost> <CA+55aFx4G5gME3ByqE0Wr-_t2x_6WkP3Ta4k1z4jfW+PrcK0og@mail.gmail.com> <20130717165743.GK8731@rric.localhost> <CA+55aFzhmV7iq+Pv37trMCmdNzk53ORAoj0a6rV14fzKta3Dhw@mail.gmail.com> <51E7B3D0.4060609@suse.cz> <20130930084945.GA1963@rric.localhost> <20130930163139.GA12450@free.fr> <CAMuHMdW-YWGgZjR9ow6FMW7BrOorbbVAEm9sYsVvPkfg-_=jag@mail.gmail.com>
-In-Reply-To: <CAMuHMdW-YWGgZjR9ow6FMW7BrOorbbVAEm9sYsVvPkfg-_=jag@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+        Ingo Molnar <mingo@kernel.org>,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        David Rientjes <rientjes@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        Djalal Harouni <tixxdz@gmail.com>
+Subject: Re: [PATCH v2 2/9] procfs: add proc_allow_access() to check if
+ file's opener may access task
+Message-ID: <20131009103521.GA4108@dztty>
+References: <CALCETrVs2Nd82dpURQxAVetK814bAm8TvnSyA4e=YeTWxTFsmA@mail.gmail.com>
+ <20131004191113.GA3916@dztty>
+ <CALCETrVMBh0nNgpOHOMrsOjHez7NnCNbY5nHxeQ3RToP4nKO+A@mail.gmail.com>
+ <20131004192712.GA4334@dztty>
+ <CALCETrUuMRMgJ1OV3-ZRQ5wwzSQsdf9tKY9iKesk1QJPtj6-qw@mail.gmail.com>
+ <20131004194142.GA4524@dztty>
+ <CALCETrXghsx-2rK8QqgtfMaJJhkwcYgRMnqGQfKw-T3O7jBTUA@mail.gmail.com>
+ <87fvsgy7cn.fsf@xmission.com>
+ <CALCETrVFNcGtsm3N50sZRDWmBOJ3VWn=BidAOV4Q+eDwYhJ+vw@mail.gmail.com>
+ <871u40r1v9.fsf@xmission.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <871u40r1v9.fsf@xmission.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9.10.2013 09:18, Geert Uytterhoeven wrote:
-> On Mon, Sep 30, 2013 at 6:31 PM, Yann E. MORIN <yann.morin.1998@free.fr> wrote:
->> On 2013-09-30 10:49 +0200, Robert Richter spake thusly:
->>> On 18.07.13 11:22:24, Michal Marek wrote:
->>>>> So Michal (or ARM people - whoever wants to take the patch), just take
->>>>> my ack. No objections.
->>>>
->>>> I can add it to the kbuild tree if needed. Otherwise you can add
->>>> Acked-by: Michal Marek <mmarek@suse.cz>.
->>>
->>> This didn't make it upstream yet, can somebody at it to a tree?
->>
->> Since it's been acked-by Linus, I'll queue it in my tree, for Michal to
->> pull from. Expect a pull-request soon.
+On Fri, Oct 04, 2013 at 05:35:22PM -0700, Eric W. Biederman wrote:
+> Andy Lutomirski <luto@amacapital.net> writes:
 > 
-> Sorry for chiming in that late, but I didn't think of this when reading the
-> original submission.
+> > On Fri, Oct 4, 2013 at 3:55 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
+> >> Andy Lutomirski <luto@amacapital.net> writes:
+> >>
+> >>> On Fri, Oct 4, 2013 at 12:41 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
+> >>>> On Fri, Oct 04, 2013 at 12:32:09PM -0700, Andy Lutomirski wrote:
+> >>>>> On Fri, Oct 4, 2013 at 12:27 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
+> >>
+> >>>>> > So sorry Andy, I don't follow what you are describing.
+> >>>>>
+> >>>>> And what parameters are you passing to security_ptrace_access_check?
+> >>>>> It's supposed to be f_cred, right?  Because you want to make sure
+> >>>>> that, if the opener had some low-privilege label, the target has
+> >>>>> execed and gotten a more secure label, and the reader has a
+> >>>>> high-privilege label, that the opener's label is checked against the
+> >>>>> target's new label.
+> >>>> The current's cred each time.
+> >>>
+> >>> Exactly.  Hence the NAK.
+> >>>
+> >>>>
+> >>>> Is there some mechanism to check what you describe?
+> >>>>
+> >>>
+> >>> No.  You could try to add one, but getting it to be compatible with
+> >>> YAMA might be really messy.
+> >>>
+> >>> Or you could see if destroying and recreating all the inodes on exec
+> >>> or some other revoke-like approach would work.
+> >>
+> >> This is a revoke like approach, and yes proc has a fully functional
+> >> revoke infrastructure.  Right now that revoke is based on the process
+> >> going away.  The problem challenge is that the process is morphing.
+> >>
+> >> The practical question is which runtime checks do we want to perform.
+> >>
+> >> If we can say in no uncertain terms that short of a suid exec that
+> >> no calls (such as setuid) can change the process permissions beyond
+> >> our ability to access the file, we can detect and exec and use that
+> >> as a signal.
+> >
+> > If you could ptrace a process before it calls setuid and you can't
+> > after it calls setuid, then this is stupid and doesn't matter -- once
+> > you've pwned a process, you retain your pwnership at least until exec.
 > 
-> Just doing "make oldconfig; make install" used to work.
-
-On ARM and maybe other architectures.
-
-
-> Removing the dependency of "make vmlinux" on vmlinux breaks this, doesn't it?
-
-Yes.
-
-
-> I had the habit of doing the above many years ago, when I was mostly doing
-> native builds, and before I had my own custom linux-install-kernel
-> script that e.g.
-> knows how to copy kernels and modules around to NFS servers.
+> That is a reasonable principle to work from.  Still I am seeing cases
+> where dumpable can change in principle if not in fact with a cred
+> change.
 > 
-> Not that I'm strongly attached to it, but there may be other users...
+> But yes exec does appear to be the event to focus on.
+> 
+> > So yes, except that it's not just suid exec.  It's any exec that any
+> > LSM would not do if no_new_privs were set.
+> 
+> >> Alternatively we may to look at a processes credentials and in all
+> >> cases where those change use that as a signal that the file must
+> >> be reopened.
+> >
+> > Hmm.  So why don't we just do a revoke whenever an exec that changes
+> > cred happens?  (This will have some false positives, like unsharing
+> > userns, I think, but we probably don't care.)
+> 
+> But because it is proc and because people do crazy things we have to
+> investigate and test before we merge something like that.  I believe
+> there was a patch not long ago that would fail an access if the openers
+> and and the accessors creds which blew up rather quickly.
+> 
+> But it is definitely worth looking at.
+We can track current exec or even target exec, use the percpu id solution
+that was discussed here, and it seems Ingo like the solution:
+https://lkml.org/lkml/2012/3/11/23
 
-We can't eat the cake and have it :). What can be done is to make
-arch/arm/boot/install.sh print a friendlier error message, like the x86
-version does:
+Grsecurity already do this!
 
-if [ ! -f "$1" ]; then
-	echo ""                                                   1>&2
-	echo " *** Missing file: $1"                              1>&2
-	echo ' *** You need to run "make" before "make install".' 1>&2
-	echo ""                                                   1>&2
-	exit 1
-fi
 
-Michal
+Now to not break things and allow file descriptor to be passed, we couple
+the exec id with the *cred and capability superset* check
+
+The advantage of this solution would be:
+* We'll have only a *one* ptrace_may_access(),LSM and permission check
+  during ->open() or ->read()/write()...
+
+A one check will do the job.
+
+
+We do this by:
+1) During ->open() store the opener exec id somewhere...
+
+2) Call ptrace_may_access() and LSM check during ->open() or later
+during ->read(),write()...
+
+3) Then during ->read(),write(): check if current's exec id matches the
+opener exec id, if not then there was an execve and continue with the
+cred superset check using file->f_cred, the logic here is to check if
+opener is privileged than current:
+
+  * Same user namespace: check same uid, gid and capability superset
+  * Different user namespaces: check if opener is an ancestor and its
+    file->f_cred->euid is the owner...
+
+   IOW make sure that opener is more privileged than current, or with
+   the same privileges!
+
+If it fails we return 0, end of file! otherwise allow the operation.
+
+
+So if opener execve a more privileged process, the read() will fail.
+
+This will make it easy to have a *one* ptrace_may_access() during all
+syscalls!
+
+
+Thoughts ?
+
+-- 
+Djalal Harouni
+http://opendz.org
