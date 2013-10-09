@@ -1,62 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756157Ab3JIWK1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 18:10:27 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41157 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752463Ab3JIWK0 (ORCPT
+	id S1756054Ab3JIWO1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 18:14:27 -0400
+Received: from smtprelay0215.hostedemail.com ([216.40.44.215]:59659 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754076Ab3JIWO0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 18:10:26 -0400
-Message-ID: <1381356624.4971.26.camel@edumazet-glaptop.roam.corp.google.com>
-Subject: Re: [PATCH v2 tip/core/rcu 07/13] ipv6/ip6_tunnel: Apply
- rcu_access_pointer() to avoid sparse false positive
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
-Date: Wed, 09 Oct 2013 15:10:24 -0700
-In-Reply-To: <20131009215747.GA5790@linux.vnet.ibm.com>
-References: <20131009212920.GA15413@linux.vnet.ibm.com>
-	 <1381354186-16285-1-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <1381354186-16285-7-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <1381354949.4971.20.camel@edumazet-glaptop.roam.corp.google.com>
-	 <20131009215747.GA5790@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+	Wed, 9 Oct 2013 18:14:26 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2692:2828:2904:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3871:3872:3873:3874:4321:5007:6119:7652:7903:10004:10400:10848:11232:11658:11914:12296:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netchec
+X-HE-Tag: bed50_7d82f3677bf39
+X-Filterd-Recvd-Size: 2086
+Message-ID: <1381356861.2050.33.camel@joe-AO722>
+Subject: Re: [PATCH v3] vsprintf: Check real user/group id for %pK
+From: Joe Perches <joe@perches.com>
+To: Ryan Mallon <rmallon@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, eldad@fogrefinery.com,
+        Jiri Kosina <jkosina@suse.cz>, jgunthorpe@obsidianresearch.com,
+        Dan Rosenberg <dan.j.rosenberg@gmail.com>,
+        Kees Cook <keescook@chromium.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        George Spelvin <linux@horizon.com>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 09 Oct 2013 15:14:21 -0700
+In-Reply-To: <5255D2FD.6050705@gmail.com>
+References: <5255D023.2030907@gmail.com>
+	 <1381356014.2050.28.camel@joe-AO722> <5255D2FD.6050705@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
 Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-10-09 at 14:57 -0700, Paul E. McKenney wrote:
-
-> Hmmm...  I could use RCU_INIT_POINTER().  Something like the following?
+On Thu, 2013-10-10 at 09:04 +1100, Ryan Mallon wrote:
+> On 10/10/13 09:00, Joe Perches wrote:
+[]
+> > Move the interrupt tests and pK-error printk
+> > into case 1:
+> > 
+> > It's the only case where CAP_SYSLOG needs to be
+> > tested so it doesn't need to be above the switch.
 > 
-> 	RCU_INIT_POINTER(ACCESS_ONCE(*tp), t->next);
-> 
-> The ACCESS_ONCE() to prevent the compiler from doing anything stupid.
-> Presumably the value of t->next cannot change, so a normal load suffices.
-> 
-> Or did you have something else in mind?
+> Like I said, I think it is useful to do the pK-error check anyway. It is
+> checking for internal kernel bugs, since if 'pK-error' ever gets
+> printed, then some kernel code is doing the wrong thing.
 
-Well, *tp and t->next are both of the same type, with __rcu attribute.
+I think you don't quite understand how kptr_restrict works.
 
-struct ip6_tnl __rcu **tp;
+If it's 0, then the ptr value is always emitted naturally.
+if it's 2, then the ptr value is always emitted as 0.
 
-So I meant :
+> Therefore, I
+> think it is useful to print it always (I would argue it even makes sense
+> when kptr_restrict=0).
 
-ACCESS_ONCE(*tp) = t->next;
-
-If really we can have a really stupid compiler.
+How?  Maybe it's me that doesn't quite understand.
 
 
