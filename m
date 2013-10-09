@@ -1,182 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754952Ab3JISjw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 14:39:52 -0400
-Received: from mail-db8lp0189.outbound.messaging.microsoft.com ([213.199.154.189]:41436
-	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754759Ab3JISjs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 14:39:48 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(zzzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzd2iz1de098h1de097h8275bhz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h1155h)
-From: Varun Sethi <Varun.Sethi@freescale.com>
-To: <joro@8bytes.org>, <iommu@lists.linux-foundation.org>,
-        <linuxppc-dev@lists.ozabs.org>, <linux-kernel@vger.kernel.org>,
-        <stuart.yoder@freescale.com>, <alex.williamson@redhat.com>
-CC: Varun Sethi <Varun.Sethi@freescale.com>
-Subject: [PATCH 2/2] iommu/fsl: Enable default DMA window for PCIe devices once detached
-Date: Wed, 9 Oct 2013 23:56:34 +0530
-Message-ID: <1381343194-24059-2-git-send-email-Varun.Sethi@freescale.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1381343194-24059-1-git-send-email-Varun.Sethi@freescale.com>
-References: <1381343194-24059-1-git-send-email-Varun.Sethi@freescale.com>
+	id S1754580Ab3JISn7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 14:43:59 -0400
+Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751854Ab3JISn6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 14:43:58 -0400
+Message-ID: <5255A3E6.6020100@nod.at>
+Date: Wed, 09 Oct 2013 20:43:50 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
+CC: Geert Uytterhoeven <geert@linux-m68k.org>,
+        UML devel <user-mode-linux-devel@lists.sourceforge.net>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Jan Kara <jack@suse.cz>, hannes@cmpxchg.org, darrick.wong@oracle.com,
+        Michal Hocko <mhocko@suse.cz>
+Subject: Re: [uml-devel] BUG: soft lockup for a user mode linux image
+References: <524C6643.2040209@gmx.de>	<CAFLxGvwiH7L4oAW8tw6FyeGczg+rKjUDCdkLKdegy9yX==2cMA@mail.gmail.com>	<524DBD5D.1040203@gmx.de>	<524DBFBB.1050002@nod.at>	<524DC278.3020106@gmx.de>	<524DC394.6030406@nod.at>	<524DC675.4020201@gmx.de>	<524E57BA.805@nod.at>	<52517109.90605@gmx.de>	<CAMuHMdXrU0e_6AxvdboMkDs+N+tSWD+b8ou92j28c0vsq2eQQA@mail.gmail.com>	<5251C334.3010604@gmx.de>	<CAMuHMdUo8dSd4s3089ZDEc485wL1sFxBKLeaExJuqNiQY+S-Lw@mail.gmail.com>	<5251CF94.5040101@gmx.de> <CAMuHMdWs6Y7y12STJ+YXKJjxRF0k5yU9C9+0fiPPmq-GgeW-6Q@mail.gmail.com> <525591AD.4060401@gmx.de>
+In-Reply-To: <525591AD.4060401@gmx.de>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Once the PCIe device assigned to a guest VM (via VFIO) gets detached from the iommu domain
-(when guest terminates), its PAMU table entry is disabled. So, this would prevent the device
-from being used once it's assigned back to the host.
+CC'ing mm folks.
+Please see below.
 
-This patch allows for creation of a default DMA window corresponding to the device
-and subsequently enabling the PAMU table entry. Before we enable the entry, we ensure that
-the device's bus master capability is disabled (device quiesced).  
+Am 09.10.2013 19:26, schrieb Toralf Förster:
+> On 10/08/2013 10:07 PM, Geert Uytterhoeven wrote:
+>> On Sun, Oct 6, 2013 at 11:01 PM, Toralf Förster <toralf.foerster@gmx.de> wrote:
+>>>> Hmm, now pages_dirtied is zero, according to the backtrace, but the BUG_ON()
+>>>> asserts its strict positive?!?
+>>>>
+>>>> Can you please try the following instead of the BUG_ON():
+>>>>
+>>>> if (pause < 0) {
+>>>>         printk("pages_dirtied = %lu\n", pages_dirtied);
+>>>>         printk("task_ratelimit = %lu\n", task_ratelimit);
+>>>>         printk("pause = %ld\n", pause);
+>>>> }
+>>>>
+>>>> Gr{oetje,eeting}s,
+>>>>
+>>>>                         Geert
+>>> I tried it in different ways already - I'm completely unsuccessful in getting any printk output.
+>>> As soon as the issue happens I do have a
+>>>
+>>> BUG: soft lockup - CPU#0 stuck for 22s! [trinity-child0:1521]
+>>>
+>>> at stderr of the UML and then no further input is accepted. With uml_mconsole I'm however able
+>>> to run very basic commands like a crash dump, sysrq ond so on.
+>>
+>> You may get an idea of the magnitude of pages_dirtied by using a chain of
+>> BUG_ON()s, like:
+>>
+>> BUG_ON(pages_dirtied > 2000000000);
+>> BUG_ON(pages_dirtied > 1000000000);
+>> BUG_ON(pages_dirtied > 100000000);
+>> BUG_ON(pages_dirtied > 10000000);
+>> BUG_ON(pages_dirtied > 1000000);
+>>
+>> Probably 1 million is already too much for normal operation?
+>>
+> period = HZ * pages_dirtied / task_ratelimit;
+> 		BUG_ON(pages_dirtied > 2000000000);
+> 		BUG_ON(pages_dirtied > 1000000000);      <-------------- this is line 1467
 
-Signed-off-by: Varun Sethi <Varun.Sethi@freescale.com>
----
- drivers/iommu/fsl_pamu.c        |   43 +++++++++++++++++++++++++++++++--------
- drivers/iommu/fsl_pamu.h        |    1 +
- drivers/iommu/fsl_pamu_domain.c |   35 +++++++++++++++++++++++++++++++
- 3 files changed, 70 insertions(+), 9 deletions(-)
+Summary for mm people:
 
-diff --git a/drivers/iommu/fsl_pamu.c b/drivers/iommu/fsl_pamu.c
-index cba0498..fb4a031 100644
---- a/drivers/iommu/fsl_pamu.c
-+++ b/drivers/iommu/fsl_pamu.c
-@@ -225,6 +225,21 @@ static struct paace *pamu_get_spaace(struct paace *paace, u32 wnum)
- 	return spaace;
- }
- 
-+/*
-+ * Defaul PPAACE settings for an LIODN.
-+ */
-+static void setup_default_ppaace(struct paace *ppaace)
-+{
-+	pamu_init_ppaace(ppaace);
-+	/* window size is 2^(WSE+1) bytes */
-+	set_bf(ppaace->addr_bitfields, PPAACE_AF_WSE, 35);
-+	ppaace->wbah = 0;
-+	set_bf(ppaace->addr_bitfields, PPAACE_AF_WBAL, 0);
-+	set_bf(ppaace->impl_attr, PAACE_IA_ATM,
-+		PAACE_ATM_NO_XLATE);
-+	set_bf(ppaace->addr_bitfields, PAACE_AF_AP,
-+		PAACE_AP_PERMS_ALL);
-+}
- /**
-  * pamu_get_fspi_and_allocate() - Allocates fspi index and reserves subwindows
-  *                                required for primary PAACE in the secondary
-@@ -253,6 +268,24 @@ static unsigned long pamu_get_fspi_and_allocate(u32 subwin_cnt)
- 	return (spaace_addr - (unsigned long)spaact) / (sizeof(struct paace));
- }
- 
-+/* Reset the PAACE entry to the default state */
-+void enable_default_dma_window(int liodn)
-+{
-+	struct paace *ppaace;
-+
-+	ppaace = pamu_get_ppaace(liodn);
-+	if (!ppaace) {
-+		pr_debug("Invalid liodn entry\n");
-+		return;
-+	}
-+
-+	memset(ppaace, 0, sizeof(struct paace));
-+
-+	setup_default_ppaace(ppaace);
-+	mb();
-+	pamu_enable_liodn(liodn);
-+}
-+
- /* Release the subwindows reserved for a particular LIODN */
- void pamu_free_subwins(int liodn)
- {
-@@ -752,15 +785,7 @@ static void __init setup_liodns(void)
- 				continue;
- 			}
- 			ppaace = pamu_get_ppaace(liodn);
--			pamu_init_ppaace(ppaace);
--			/* window size is 2^(WSE+1) bytes */
--			set_bf(ppaace->addr_bitfields, PPAACE_AF_WSE, 35);
--			ppaace->wbah = 0;
--			set_bf(ppaace->addr_bitfields, PPAACE_AF_WBAL, 0);
--			set_bf(ppaace->impl_attr, PAACE_IA_ATM,
--				PAACE_ATM_NO_XLATE);
--			set_bf(ppaace->addr_bitfields, PAACE_AF_AP,
--				PAACE_AP_PERMS_ALL);
-+			setup_default_ppaace(ppaace);
- 			if (of_device_is_compatible(node, "fsl,qman-portal"))
- 				setup_qbman_paace(ppaace, QMAN_PORTAL_PAACE);
- 			if (of_device_is_compatible(node, "fsl,qman"))
-diff --git a/drivers/iommu/fsl_pamu.h b/drivers/iommu/fsl_pamu.h
-index 8fc1a12..0edcbbbb 100644
---- a/drivers/iommu/fsl_pamu.h
-+++ b/drivers/iommu/fsl_pamu.h
-@@ -406,5 +406,6 @@ void get_ome_index(u32 *omi_index, struct device *dev);
- int  pamu_update_paace_stash(int liodn, u32 subwin, u32 value);
- int pamu_disable_spaace(int liodn, u32 subwin);
- u32 pamu_get_max_subwin_cnt(void);
-+void enable_default_dma_window(int liodn);
- 
- #endif  /* __FSL_PAMU_H */
-diff --git a/drivers/iommu/fsl_pamu_domain.c b/drivers/iommu/fsl_pamu_domain.c
-index e02e1de..553ef3c 100644
---- a/drivers/iommu/fsl_pamu_domain.c
-+++ b/drivers/iommu/fsl_pamu_domain.c
-@@ -340,6 +340,40 @@ static inline struct device_domain_info *find_domain(struct device *dev)
- 	return dev->archdata.iommu_domain;
- }
- 
-+/* Disable device DMA capability and enable default DMA window */
-+static void disable_device_dma(struct device_domain_info *info)
-+{
-+	struct device_domain_info *tmp;
-+	int enable_dma_window = 1;
-+
-+#ifdef CONFIG_PCI
-+	if (info->dev->bus == &pci_bus_type) {
-+		struct pci_dev *pdev = NULL;
-+		pdev = to_pci_dev(info->dev);
-+		if (pci_is_enabled(pdev))
-+			pci_disable_device(pdev);
-+	}
-+#endif
-+	/*
-+	 * Sanity check, to ensure that this is not a
-+	 * shared LIODN. In case of a PCIe controller
-+	 * it's possible that all PCIe devices share
-+	 * the same LIODN. We can't enable the default
-+	 * DMA window till all the devices have been
-+	 * quiesced (for PCIe devices, we explicitly
-+	 * disable the bus master capability).
-+	 */
-+	list_for_each_entry(tmp, &info->domain->devices, link) {
-+		if (info->dev->iommu_group == tmp->dev->iommu_group) {
-+			enable_dma_window = 0;
-+			break;
-+		}
-+	}
-+
-+	if (enable_dma_window)
-+		enable_default_dma_window(info->liodn);
-+}
-+
- static void remove_device_ref(struct device_domain_info *info, u32 win_cnt)
- {
- 	unsigned long flags;
-@@ -351,6 +385,7 @@ static void remove_device_ref(struct device_domain_info *info, u32 win_cnt)
- 	pamu_disable_liodn(info->liodn);
- 	spin_unlock_irqrestore(&iommu_lock, flags);
- 	spin_lock_irqsave(&device_domain_lock, flags);
-+	disable_device_dma(info);
- 	info->dev->archdata.iommu_domain = NULL;
- 	kmem_cache_free(iommu_devinfo_cache, info);
- 	spin_unlock_irqrestore(&device_domain_lock, flags);
--- 
-1.7.9.5
+Toralf runs trinty on UML/i386.
+After some time pages_dirtied becomes very large.
+More than 1000000000 pages in this case.
 
+Thus, period = HZ * pages_dirtied / task_ratelimit overflows
+and period/pause becomes extremely large.
+
+It looks like io_schedule_timeout() get's called with a very large timeout.
+I don't know why "if (unlikely(pause > max_pause)) {" does not help.
+
+Any ideas?
+
+Thanks,
+//richard
+
+> the back trace is :
+> 
+> tfoerste@n22 ~/devel/linux $ gdb --core=/mnt/ramdisk/core /home/tfoerste/devel/linux/linux -batch -ex bt
+> [New LWP 6911]
+> Core was generated by `/home/tfoerste/devel/linux/linux earlyprintk ubda=/home/tfoerste/virtual/uml/tr'.
+> Program terminated with signal 6, Aborted.
+> #0  0xb77a7424 in __kernel_vsyscall ()
+> #0  0xb77a7424 in __kernel_vsyscall ()
+> #1  0x083bdf35 in kill ()
+> #2  0x0807296d in uml_abort () at arch/um/os-Linux/util.c:93
+> #3  0x08072ca5 in os_dump_core () at arch/um/os-Linux/util.c:148
+> #4  0x080623c4 in panic_exit (self=0x85c1558 <panic_exit_notifier>, unused1=0, unused2=0x85f76e0 <buf.16221>) at arch/um/kernel/um_arch.c:240
+> #5  0x0809ba86 in notifier_call_chain (nl=0x0, val=0, v=0x85f76e0 <buf.16221>, nr_to_call=-2, nr_calls=0x0) at kernel/notifier.c:93
+> #6  0x0809bba1 in __atomic_notifier_call_chain (nh=0x85f76c4 <panic_notifier_list>, val=0, v=0x85f76e0 <buf.16221>, nr_to_call=0, nr_calls=0x0) at kernel/notifier.c:182
+> #7  0x0809bbdf in atomic_notifier_call_chain (nh=0x0, val=0, v=0x0) at kernel/notifier.c:191
+> #8  0x0841b5bc in panic (fmt=0x0) at kernel/panic.c:130
+> #9  0x0841c470 in balance_dirty_pages (pages_dirtied=23, mapping=<optimized out>) at mm/page-writeback.c:1467
+> #10 0x080d3595 in balance_dirty_pages_ratelimited (mapping=0x6) at mm/page-writeback.c:1661
+> #11 0x080e4a3f in __do_fault (mm=0x45ba3600, vma=0x48777b90, address=1084678144, pmd=0x0, pgoff=0, flags=0, orig_pte=<incomplete type>) at mm/memory.c:3452
+> #12 0x080e6e0f in do_linear_fault (orig_pte=..., flags=<optimized out>, pmd=<optimized out>, address=<optimized out>, vma=<optimized out>, mm=<optimized out>, page_table=<optimized out>) at mm/memory.c:3486
+> #13 handle_pte_fault (flags=<optimized out>, pmd=<optimized out>, pte=<optimized out>, address=<optimized out>, vma=<optimized out>, mm=<optimized out>) at mm/memory.c:3710
+> #14 __handle_mm_fault (flags=<optimized out>, address=<optimized out>, vma=<optimized out>, mm=<optimized out>) at mm/memory.c:3845
+> #15 handle_mm_fault (mm=0x45ba3600, vma=0x487034c8, address=1084678144, flags=1) at mm/memory.c:3868
+> #16 0x080e7817 in __get_user_pages (tsk=0x48705800, mm=0x45ba3600, start=1084678144, nr_pages=1025, gup_flags=519, pages=0x48558000, vmas=0x0, nonblocking=0x0) at mm/memory.c:1822
+> #17 0x080e7ae3 in get_user_pages (tsk=0x0, mm=0x0, start=0, nr_pages=0, write=1, force=0, pages=0x48777b90, vmas=0x6) at mm/memory.c:2019
+> #18 0x08143dc6 in aio_setup_ring (ctx=<optimized out>) at fs/aio.c:340
+> #19 ioctx_alloc (nr_events=<optimized out>) at fs/aio.c:605
+> #20 SYSC_io_setup (ctxp=<optimized out>, nr_events=<optimized out>) at fs/aio.c:1122
+> #21 SyS_io_setup (nr_events=65535, ctxp=135081984) at fs/aio.c:1105
+> #22 0x08062984 in handle_syscall (r=0x487059d4) at arch/um/kernel/skas/syscall.c:35
+> #23 0x08074fb5 in handle_trap (local_using_sysemu=<optimized out>, regs=<optimized out>, pid=<optimized out>) at arch/um/os-Linux/skas/process.c:198
+> #24 userspace (regs=0x487059d4) at arch/um/os-Linux/skas/process.c:431
+> #25 0x0805f750 in fork_handler () at arch/um/kernel/process.c:160
+> #26 0x00000000 in ?? ()
+> 
+> 
+> 
+>> Gr{oetje,eeting}s,
+>>
+>>                         Geert
+>>
+>> --
+>> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+>>
+>> In personal conversations with technical people, I call myself a hacker. But
+>> when I'm talking to journalists I just say "programmer" or something like that.
+>>                                 -- Linus Torvalds
+>>
+> 
+> 
 
