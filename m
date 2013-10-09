@@ -1,28 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932428Ab3JIRdT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 13:33:19 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56486 "EHLO
+	id S1757295Ab3JIRdp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 13:33:45 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56514 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932371Ab3JIRdP (ORCPT
+	with ESMTP id S932435Ab3JIRdm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 13:33:15 -0400
-Date: Wed, 9 Oct 2013 10:31:43 -0700
-From: tip-bot for Mel Gorman <tipbot@zytor.com>
-Message-ID: <tip-0f19c17929c952c6f0966d93ab05558e7bf814cc@git.kernel.org>
+	Wed, 9 Oct 2013 13:33:42 -0400
+Date: Wed, 9 Oct 2013 10:33:03 -0700
+From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
+Message-ID: <tip-0ec8aa00f2b4dc457836ef4e2662b02483e94fb7@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         peterz@infradead.org, hannes@cmpxchg.org, riel@redhat.com,
-        aarcange@redhat.com, srikar@linux.vnet.ibm.com, mgorman@suse.de,
+        srikar@linux.vnet.ibm.com, aarcange@redhat.com, mgorman@suse.de,
         tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         peterz@infradead.org, hannes@cmpxchg.org, riel@redhat.com,
-        aarcange@redhat.com, srikar@linux.vnet.ibm.com, mgorman@suse.de,
+        srikar@linux.vnet.ibm.com, aarcange@redhat.com, mgorman@suse.de,
         tglx@linutronix.de
-In-Reply-To: <1381141781-10992-48-git-send-email-mgorman@suse.de>
-References: <1381141781-10992-48-git-send-email-mgorman@suse.de>
+In-Reply-To: <1381141781-10992-56-git-send-email-mgorman@suse.de>
+References: <1381141781-10992-56-git-send-email-mgorman@suse.de>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] mm: numa: Do not batch handle PMD pages
-Git-Commit-ID: 0f19c17929c952c6f0966d93ab05558e7bf814cc
+Subject: [tip:sched/core] sched/numa:
+  Avoid migrating tasks that are placed on their preferred node
+Git-Commit-ID: 0ec8aa00f2b4dc457836ef4e2662b02483e94fb7
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,266 +32,347 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 09 Oct 2013 10:31:50 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 09 Oct 2013 10:33:10 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0f19c17929c952c6f0966d93ab05558e7bf814cc
-Gitweb:     http://git.kernel.org/tip/0f19c17929c952c6f0966d93ab05558e7bf814cc
-Author:     Mel Gorman <mgorman@suse.de>
-AuthorDate: Mon, 7 Oct 2013 11:29:25 +0100
+Commit-ID:  0ec8aa00f2b4dc457836ef4e2662b02483e94fb7
+Gitweb:     http://git.kernel.org/tip/0ec8aa00f2b4dc457836ef4e2662b02483e94fb7
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Mon, 7 Oct 2013 11:29:33 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 9 Oct 2013 14:47:55 +0200
+CommitDate: Wed, 9 Oct 2013 14:48:10 +0200
 
-mm: numa: Do not batch handle PMD pages
+sched/numa: Avoid migrating tasks that are placed on their preferred node
 
-With the THP migration races closed it is still possible to occasionally
-see corruption. The problem is related to handling PMD pages in batch.
-When a page fault is handled it can be assumed that the page being
-faulted will also be flushed from the TLB. The same flushing does not
-happen when handling PMD pages in batch. Fixing is straight forward but
-there are a number of reasons not to
+This patch classifies scheduler domains and runqueues into types depending
+the number of tasks that are about their NUMA placement and the number
+that are currently running on their preferred node. The types are
 
-1. Multiple TLB flushes may have to be sent depending on what pages get
-   migrated
-2. The handling of PMDs in batch means that faults get accounted to
-   the task that is handling the fault. While care is taken to only
-   mark PMDs where the last CPU and PID match it can still have problems
-   due to PID truncation when matching PIDs.
-3. Batching on the PMD level may reduce faults but setting pmd_numa
-   requires taking a heavy lock that can contend with THP migration
-   and handling the fault requires the release/acquisition of the PTL
-   for every page migrated. It's still pretty heavy.
+regular: There are tasks running that do not care about their NUMA
+	placement.
 
-PMD batch handling is not something that people ever have been happy
-with. This patch removes it and later patches will deal with the
-additional fault overhead using more installigent migrate rate adaption.
+remote: There are tasks running that care about their placement but are
+	currently running on a node remote to their ideal placement
 
+all: No distinction
+
+To implement this the patch tracks the number of tasks that are optimally
+NUMA placed (rq->nr_preferred_running) and the number of tasks running
+that care about their placement (nr_numa_running). The load balancer
+uses this information to avoid migrating idea placed NUMA tasks as long
+as better options for load balancing exists. For example, it will not
+consider balancing between a group whose tasks are all perfectly placed
+and a group with remote tasks.
+
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 Reviewed-by: Rik van Riel <riel@redhat.com>
 Cc: Andrea Arcangeli <aarcange@redhat.com>
 Cc: Johannes Weiner <hannes@cmpxchg.org>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1381141781-10992-48-git-send-email-mgorman@suse.de
+Link: http://lkml.kernel.org/r/1381141781-10992-56-git-send-email-mgorman@suse.de
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- mm/memory.c   | 101 ++--------------------------------------------------------
- mm/mprotect.c |  47 ++-------------------------
- 2 files changed, 4 insertions(+), 144 deletions(-)
+ kernel/sched/core.c  |  29 +++++++++++++
+ kernel/sched/fair.c  | 120 +++++++++++++++++++++++++++++++++++++++++++++------
+ kernel/sched/sched.h |   5 +++
+ 3 files changed, 142 insertions(+), 12 deletions(-)
 
-diff --git a/mm/memory.c b/mm/memory.c
-index eba846b..9898eeb 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3606,103 +3606,6 @@ out:
- 	return 0;
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 3e2c893..8cfd51f 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -4468,6 +4468,35 @@ int migrate_task_to(struct task_struct *p, int target_cpu)
+ 
+ 	return stop_one_cpu(curr_cpu, migration_cpu_stop, &arg);
+ }
++
++/*
++ * Requeue a task on a given node and accurately track the number of NUMA
++ * tasks on the runqueues
++ */
++void sched_setnuma(struct task_struct *p, int nid)
++{
++	struct rq *rq;
++	unsigned long flags;
++	bool on_rq, running;
++
++	rq = task_rq_lock(p, &flags);
++	on_rq = p->on_rq;
++	running = task_current(rq, p);
++
++	if (on_rq)
++		dequeue_task(rq, p, 0);
++	if (running)
++		p->sched_class->put_prev_task(rq, p);
++
++	p->numa_preferred_nid = nid;
++	p->numa_migrate_seq = 1;
++
++	if (running)
++		p->sched_class->set_curr_task(rq);
++	if (on_rq)
++		enqueue_task(rq, p, 0);
++	task_rq_unlock(rq, p, &flags);
++}
+ #endif
+ 
+ /*
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 423316c..5166b9b 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -888,6 +888,18 @@ static unsigned int task_scan_max(struct task_struct *p)
+  */
+ unsigned int sysctl_numa_balancing_settle_count __read_mostly = 4;
+ 
++static void account_numa_enqueue(struct rq *rq, struct task_struct *p)
++{
++	rq->nr_numa_running += (p->numa_preferred_nid != -1);
++	rq->nr_preferred_running += (p->numa_preferred_nid == task_node(p));
++}
++
++static void account_numa_dequeue(struct rq *rq, struct task_struct *p)
++{
++	rq->nr_numa_running -= (p->numa_preferred_nid != -1);
++	rq->nr_preferred_running -= (p->numa_preferred_nid == task_node(p));
++}
++
+ struct numa_group {
+ 	atomic_t refcount;
+ 
+@@ -1227,6 +1239,8 @@ static int task_numa_migrate(struct task_struct *p)
+ 	if (env.best_cpu == -1)
+ 		return -EAGAIN;
+ 
++	sched_setnuma(p, env.dst_nid);
++
+ 	if (env.best_task == NULL) {
+ 		int ret = migrate_task_to(p, env.best_cpu);
+ 		return ret;
+@@ -1342,8 +1356,7 @@ static void task_numa_placement(struct task_struct *p)
+ 	/* Preferred node as the node with the most faults */
+ 	if (max_faults && max_nid != p->numa_preferred_nid) {
+ 		/* Update the preferred nid and migrate task if possible */
+-		p->numa_preferred_nid = max_nid;
+-		p->numa_migrate_seq = 1;
++		sched_setnuma(p, max_nid);
+ 		numa_migrate_preferred(p);
+ 	}
+ }
+@@ -1741,6 +1754,14 @@ void task_tick_numa(struct rq *rq, struct task_struct *curr)
+ static void task_tick_numa(struct rq *rq, struct task_struct *curr)
+ {
+ }
++
++static inline void account_numa_enqueue(struct rq *rq, struct task_struct *p)
++{
++}
++
++static inline void account_numa_dequeue(struct rq *rq, struct task_struct *p)
++{
++}
+ #endif /* CONFIG_NUMA_BALANCING */
+ 
+ static void
+@@ -1750,8 +1771,12 @@ account_entity_enqueue(struct cfs_rq *cfs_rq, struct sched_entity *se)
+ 	if (!parent_entity(se))
+ 		update_load_add(&rq_of(cfs_rq)->load, se->load.weight);
+ #ifdef CONFIG_SMP
+-	if (entity_is_task(se))
+-		list_add(&se->group_node, &rq_of(cfs_rq)->cfs_tasks);
++	if (entity_is_task(se)) {
++		struct rq *rq = rq_of(cfs_rq);
++
++		account_numa_enqueue(rq, task_of(se));
++		list_add(&se->group_node, &rq->cfs_tasks);
++	}
+ #endif
+ 	cfs_rq->nr_running++;
+ }
+@@ -1762,8 +1787,10 @@ account_entity_dequeue(struct cfs_rq *cfs_rq, struct sched_entity *se)
+ 	update_load_sub(&cfs_rq->load, se->load.weight);
+ 	if (!parent_entity(se))
+ 		update_load_sub(&rq_of(cfs_rq)->load, se->load.weight);
+-	if (entity_is_task(se))
++	if (entity_is_task(se)) {
++		account_numa_dequeue(rq_of(cfs_rq), task_of(se));
+ 		list_del_init(&se->group_node);
++	}
+ 	cfs_rq->nr_running--;
  }
  
--/* NUMA hinting page fault entry point for regular pmds */
--#ifdef CONFIG_NUMA_BALANCING
--static int do_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
--		     unsigned long addr, pmd_t *pmdp)
--{
--	pmd_t pmd;
--	pte_t *pte, *orig_pte;
--	unsigned long _addr = addr & PMD_MASK;
--	unsigned long offset;
--	spinlock_t *ptl;
--	bool numa = false;
--	int last_cpupid;
--
--	spin_lock(&mm->page_table_lock);
--	pmd = *pmdp;
--	if (pmd_numa(pmd)) {
--		set_pmd_at(mm, _addr, pmdp, pmd_mknonnuma(pmd));
--		numa = true;
--	}
--	spin_unlock(&mm->page_table_lock);
--
--	if (!numa)
--		return 0;
--
--	/* we're in a page fault so some vma must be in the range */
--	BUG_ON(!vma);
--	BUG_ON(vma->vm_start >= _addr + PMD_SIZE);
--	offset = max(_addr, vma->vm_start) & ~PMD_MASK;
--	VM_BUG_ON(offset >= PMD_SIZE);
--	orig_pte = pte = pte_offset_map_lock(mm, pmdp, _addr, &ptl);
--	pte += offset >> PAGE_SHIFT;
--	for (addr = _addr + offset; addr < _addr + PMD_SIZE; pte++, addr += PAGE_SIZE) {
--		pte_t pteval = *pte;
--		struct page *page;
--		int page_nid = -1;
--		int target_nid;
--		bool migrated = false;
--		int flags = 0;
--
--		if (!pte_present(pteval))
--			continue;
--		if (!pte_numa(pteval))
--			continue;
--		if (addr >= vma->vm_end) {
--			vma = find_vma(mm, addr);
--			/* there's a pte present so there must be a vma */
--			BUG_ON(!vma);
--			BUG_ON(addr < vma->vm_start);
--		}
--		if (pte_numa(pteval)) {
--			pteval = pte_mknonnuma(pteval);
--			set_pte_at(mm, addr, pte, pteval);
--		}
--		page = vm_normal_page(vma, addr, pteval);
--		if (unlikely(!page))
--			continue;
--
--		/*
--		 * Avoid grouping on DSO/COW pages in specific and RO pages
--		 * in general, RO pages shouldn't hurt as much anyway since
--		 * they can be in shared cache state.
--		 */
--		if (!pte_write(pteval))
--			flags |= TNF_NO_GROUP;
--
--		last_cpupid = page_cpupid_last(page);
--		page_nid = page_to_nid(page);
--		target_nid = numa_migrate_prep(page, vma, addr, page_nid);
--		pte_unmap_unlock(pte, ptl);
--		if (target_nid != -1) {
--			migrated = migrate_misplaced_page(page, vma, target_nid);
--			if (migrated) {
--				page_nid = target_nid;
--				flags |= TNF_MIGRATED;
--			}
--		} else {
--			put_page(page);
--		}
--
--		if (page_nid != -1)
--			task_numa_fault(last_cpupid, page_nid, 1, flags);
--
--		pte = pte_offset_map_lock(mm, pmdp, addr, &ptl);
--	}
--	pte_unmap_unlock(orig_pte, ptl);
--
--	return 0;
--}
--#else
--static int do_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
--		     unsigned long addr, pmd_t *pmdp)
--{
--	BUG();
--	return 0;
--}
--#endif /* CONFIG_NUMA_BALANCING */
--
- /*
-  * These routines also need to handle stuff like marking pages dirty
-  * and/or accessed for architectures that don't do it in hardware (most
-@@ -3841,8 +3744,8 @@ retry:
- 		}
- 	}
+@@ -4605,6 +4632,8 @@ static bool yield_to_task_fair(struct rq *rq, struct task_struct *p, bool preemp
  
--	if (pmd_numa(*pmd))
--		return do_pmd_numa_page(mm, vma, address, pmd);
-+	/* THP should already have been handled */
-+	BUG_ON(pmd_numa(*pmd));
+ static unsigned long __read_mostly max_load_balance_interval = HZ/10;
+ 
++enum fbq_type { regular, remote, all };
++
+ #define LBF_ALL_PINNED	0x01
+ #define LBF_NEED_BREAK	0x02
+ #define LBF_DST_PINNED  0x04
+@@ -4631,6 +4660,8 @@ struct lb_env {
+ 	unsigned int		loop;
+ 	unsigned int		loop_break;
+ 	unsigned int		loop_max;
++
++	enum fbq_type		fbq_type;
+ };
+ 
+ /*
+@@ -5092,6 +5123,10 @@ struct sg_lb_stats {
+ 	unsigned int group_weight;
+ 	int group_imb; /* Is there an imbalance in the group ? */
+ 	int group_has_capacity; /* Is there extra capacity in the group? */
++#ifdef CONFIG_NUMA_BALANCING
++	unsigned int nr_numa_running;
++	unsigned int nr_preferred_running;
++#endif
+ };
+ 
+ /*
+@@ -5409,6 +5444,10 @@ static inline void update_sg_lb_stats(struct lb_env *env,
+ 
+ 		sgs->group_load += load;
+ 		sgs->sum_nr_running += nr_running;
++#ifdef CONFIG_NUMA_BALANCING
++		sgs->nr_numa_running += rq->nr_numa_running;
++		sgs->nr_preferred_running += rq->nr_preferred_running;
++#endif
+ 		sgs->sum_weighted_load += weighted_cpuload(i);
+ 		if (idle_cpu(i))
+ 			sgs->idle_cpus++;
+@@ -5474,14 +5513,43 @@ static bool update_sd_pick_busiest(struct lb_env *env,
+ 	return false;
+ }
+ 
++#ifdef CONFIG_NUMA_BALANCING
++static inline enum fbq_type fbq_classify_group(struct sg_lb_stats *sgs)
++{
++	if (sgs->sum_nr_running > sgs->nr_numa_running)
++		return regular;
++	if (sgs->sum_nr_running > sgs->nr_preferred_running)
++		return remote;
++	return all;
++}
++
++static inline enum fbq_type fbq_classify_rq(struct rq *rq)
++{
++	if (rq->nr_running > rq->nr_numa_running)
++		return regular;
++	if (rq->nr_running > rq->nr_preferred_running)
++		return remote;
++	return all;
++}
++#else
++static inline enum fbq_type fbq_classify_group(struct sg_lb_stats *sgs)
++{
++	return all;
++}
++
++static inline enum fbq_type fbq_classify_rq(struct rq *rq)
++{
++	return regular;
++}
++#endif /* CONFIG_NUMA_BALANCING */
++
+ /**
+  * update_sd_lb_stats - Update sched_domain's statistics for load balancing.
+  * @env: The load balancing environment.
+  * @balance: Should we balance.
+  * @sds: variable to hold the statistics for this sched_domain.
+  */
+-static inline void update_sd_lb_stats(struct lb_env *env,
+-					struct sd_lb_stats *sds)
++static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sds)
+ {
+ 	struct sched_domain *child = env->sd->child;
+ 	struct sched_group *sg = env->sd->groups;
+@@ -5538,6 +5606,9 @@ next_group:
+ 
+ 		sg = sg->next;
+ 	} while (sg != env->sd->groups);
++
++	if (env->sd->flags & SD_NUMA)
++		env->fbq_type = fbq_classify_group(&sds->busiest_stat);
+ }
+ 
+ /**
+@@ -5841,15 +5912,39 @@ static struct rq *find_busiest_queue(struct lb_env *env,
+ 	int i;
+ 
+ 	for_each_cpu_and(i, sched_group_cpus(group), env->cpus) {
+-		unsigned long power = power_of(i);
+-		unsigned long capacity = DIV_ROUND_CLOSEST(power,
+-							   SCHED_POWER_SCALE);
+-		unsigned long wl;
++		unsigned long power, capacity, wl;
++		enum fbq_type rt;
++
++		rq = cpu_rq(i);
++		rt = fbq_classify_rq(rq);
+ 
++		/*
++		 * We classify groups/runqueues into three groups:
++		 *  - regular: there are !numa tasks
++		 *  - remote:  there are numa tasks that run on the 'wrong' node
++		 *  - all:     there is no distinction
++		 *
++		 * In order to avoid migrating ideally placed numa tasks,
++		 * ignore those when there's better options.
++		 *
++		 * If we ignore the actual busiest queue to migrate another
++		 * task, the next balance pass can still reduce the busiest
++		 * queue by moving tasks around inside the node.
++		 *
++		 * If we cannot move enough load due to this classification
++		 * the next pass will adjust the group classification and
++		 * allow migration of more tasks.
++		 *
++		 * Both cases only affect the total convergence complexity.
++		 */
++		if (rt > env->fbq_type)
++			continue;
++
++		power = power_of(i);
++		capacity = DIV_ROUND_CLOSEST(power, SCHED_POWER_SCALE);
+ 		if (!capacity)
+ 			capacity = fix_small_capacity(env->sd, group);
+ 
+-		rq = cpu_rq(i);
+ 		wl = weighted_cpuload(i);
+ 
+ 		/*
+@@ -5966,6 +6061,7 @@ static int load_balance(int this_cpu, struct rq *this_rq,
+ 		.idle		= idle,
+ 		.loop_break	= sched_nr_migrate_break,
+ 		.cpus		= cpus,
++		.fbq_type	= all,
+ 	};
  
  	/*
- 	 * Use __pte_alloc instead of pte_alloc_map, because we can't
-diff --git a/mm/mprotect.c b/mm/mprotect.c
-index 9a74855..a0302ac 100644
---- a/mm/mprotect.c
-+++ b/mm/mprotect.c
-@@ -37,15 +37,12 @@ static inline pgprot_t pgprot_modify(pgprot_t oldprot, pgprot_t newprot)
- 
- static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
- 		unsigned long addr, unsigned long end, pgprot_t newprot,
--		int dirty_accountable, int prot_numa, bool *ret_all_same_cpupid)
-+		int dirty_accountable, int prot_numa)
- {
- 	struct mm_struct *mm = vma->vm_mm;
- 	pte_t *pte, oldpte;
- 	spinlock_t *ptl;
- 	unsigned long pages = 0;
--	bool all_same_cpupid = true;
--	int last_cpu = -1;
--	int last_pid = -1;
- 
- 	pte = pte_offset_map_lock(mm, pmd, addr, &ptl);
- 	arch_enter_lazy_mmu_mode();
-@@ -64,19 +61,6 @@ static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
- 
- 				page = vm_normal_page(vma, addr, oldpte);
- 				if (page) {
--					int cpupid = page_cpupid_last(page);
--					int this_cpu = cpupid_to_cpu(cpupid);
--					int this_pid = cpupid_to_pid(cpupid);
--
--					if (last_cpu == -1)
--						last_cpu = this_cpu;
--					if (last_pid == -1)
--						last_pid = this_pid;
--					if (last_cpu != this_cpu ||
--					    last_pid != this_pid) {
--						all_same_cpupid = false;
--					}
--
- 					if (!pte_numa(oldpte)) {
- 						ptent = pte_mknuma(ptent);
- 						updated = true;
-@@ -115,26 +99,9 @@ static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
- 	arch_leave_lazy_mmu_mode();
- 	pte_unmap_unlock(pte - 1, ptl);
- 
--	*ret_all_same_cpupid = all_same_cpupid;
- 	return pages;
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index eeb1923..d69cb32 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -409,6 +409,10 @@ struct rq {
+ 	 * remote CPUs use both these fields when doing load calculation.
+ 	 */
+ 	unsigned int nr_running;
++#ifdef CONFIG_NUMA_BALANCING
++	unsigned int nr_numa_running;
++	unsigned int nr_preferred_running;
++#endif
+ 	#define CPU_LOAD_IDX_MAX 5
+ 	unsigned long cpu_load[CPU_LOAD_IDX_MAX];
+ 	unsigned long last_load_update_tick;
+@@ -557,6 +561,7 @@ static inline u64 rq_clock_task(struct rq *rq)
  }
  
--#ifdef CONFIG_NUMA_BALANCING
--static inline void change_pmd_protnuma(struct mm_struct *mm, unsigned long addr,
--				       pmd_t *pmd)
--{
--	spin_lock(&mm->page_table_lock);
--	set_pmd_at(mm, addr & PMD_MASK, pmd, pmd_mknuma(*pmd));
--	spin_unlock(&mm->page_table_lock);
--}
--#else
--static inline void change_pmd_protnuma(struct mm_struct *mm, unsigned long addr,
--				       pmd_t *pmd)
--{
--	BUG();
--}
--#endif /* CONFIG_NUMA_BALANCING */
--
- static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
- 		pud_t *pud, unsigned long addr, unsigned long end,
- 		pgprot_t newprot, int dirty_accountable, int prot_numa)
-@@ -142,7 +109,6 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
- 	pmd_t *pmd;
- 	unsigned long next;
- 	unsigned long pages = 0;
--	bool all_same_cpupid;
- 
- 	pmd = pmd_offset(pud, addr);
- 	do {
-@@ -168,17 +134,8 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
- 		if (pmd_none_or_clear_bad(pmd))
- 			continue;
- 		this_pages = change_pte_range(vma, pmd, addr, next, newprot,
--				 dirty_accountable, prot_numa, &all_same_cpupid);
-+				 dirty_accountable, prot_numa);
- 		pages += this_pages;
--
--		/*
--		 * If we are changing protections for NUMA hinting faults then
--		 * set pmd_numa if the examined pages were all on the same
--		 * node. This allows a regular PMD to be handled as one fault
--		 * and effectively batches the taking of the PTL
--		 */
--		if (prot_numa && this_pages && all_same_cpupid)
--			change_pmd_protnuma(vma->vm_mm, addr, pmd);
- 	} while (pmd++, addr = next, addr != end);
- 
- 	return pages;
+ #ifdef CONFIG_NUMA_BALANCING
++extern void sched_setnuma(struct task_struct *p, int node);
+ extern int migrate_task_to(struct task_struct *p, int cpu);
+ extern int migrate_swap(struct task_struct *, struct task_struct *);
+ #endif /* CONFIG_NUMA_BALANCING */
