@@ -1,68 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753823Ab3JIJsr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 05:48:47 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:54415 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752163Ab3JIJsq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 05:48:46 -0400
-Message-ID: <5255266B.6040809@ti.com>
-Date: Wed, 9 Oct 2013 15:18:27 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Jingoo Han <jg1.han@samsung.com>
-CC: "'Bjorn Helgaas'" <bhelgaas@google.com>, <linux-pci@vger.kernel.org>,
-        <linux-samsung-soc@vger.kernel.org>,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Pratyush Anand'" <pratyush.anand@st.com>,
-        "'Mohit KUMAR'" <Mohit.KUMAR@st.com>,
-        "'Siva Reddy Kallam'" <siva.kallam@samsung.com>,
-        "'SRIKANTH TUMKUR SHIVANAND'" <ts.srikanth@samsung.com>,
-        "'Arnd Bergmann'" <arnd@arndb.de>, "'Sean Cross'" <xobs@kosagi.com>,
-        "'Thierry Reding'" <thierry.reding@gmail.com>,
-        "'Thomas Petazzoni'" <thomas.petazzoni@free-electrons.com>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>
-Subject: Re: [PATCH] PCI: designware: Add irq_create_mapping()
-References: <000401cec4c6$dc415180$94c3f480$%han@samsung.com> <52551C6E.1040404@ti.com> <003901cec4d0$5d83e650$188bb2f0$%han@samsung.com>
-In-Reply-To: <003901cec4d0$5d83e650$188bb2f0$%han@samsung.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1756987Ab3JIJtk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 05:49:40 -0400
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:58167 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752497Ab3JIJti (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 05:49:38 -0400
+From: Ingo Molnar <mingo@kernel.org>
+To: linux-kernel@vger.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 0/4] tools/perf/build: Improve 'make', 'make install' and 'make clean' output
+Date: Wed,  9 Oct 2013 11:49:25 +0200
+Message-Id: <1381312169-17354-1-git-send-email-mingo@kernel.org>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 09 October 2013 02:47 PM, Jingoo Han wrote:
-> On Wednesday, October 09, 2013 6:06 PM, Kishon Vijay Abraham I wrote:
->> On Wednesday 09 October 2013 01:39 PM, Jingoo Han wrote:
->>> Without irq_create_mapping(), the correct irq number cannot be
->>> provided. In this case, it makes problem such as NULL deference.
->>> Thus, irq_create_mapping() should be added for MSI.
->>>
->>> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
->>> Cc: Kishon Vijay Abraham I <kishon@ti.com>
->>> ---
->>> Tested on Exynos5440.
->>>
->>>  drivers/pci/host/pcie-designware.c |   10 ++++------
->>>  drivers/pci/host/pcie-designware.h |    1 +
->>>  2 files changed, 5 insertions(+), 6 deletions(-)
->>>
->>> diff --git a/drivers/pci/host/pcie-designware.c b/drivers/pci/host/pcie-designware.c
->>> index 8963017..e536bb6 100644
->>> --- a/drivers/pci/host/pcie-designware.c
->>> +++ b/drivers/pci/host/pcie-designware.c
->>> @@ -237,6 +237,8 @@ static int assign_irq(int no_irqs, struct msi_desc *desc, int *pos)
->>>  		}
->>>  	}
->>>
->>> +	pp->msi_irq_start = irq_create_mapping(pp->irq_domain, 0);
->>> +
->>
->> I think irq_create_mapping should be done for all the MSI irq lines instead of
->> only the first line. So you might have to do for MAX_MSI_IRQS lines.
+This series improves perf's default 'make', 'make install' and 'make clean'
+output messages: less console spam, more summaries, more consistency.
 
-Maybe it should be only till MAX_MSI_IRQS-1?
+For example the new 'make install' output is now:
 
-Thanks
-Kishon
+  comet:~/tip/tools/perf> make install
+    BUILD:   Doing 'make -j12' parallel build
+    SUBDIR   Documentation
+    INSTALL  Documentation-man
+    INSTALL  binaries
+    INSTALL  libexec
+    INSTALL  perf-archive
+    INSTALL  perl-scripts
+    INSTALL  python-scripts
+    INSTALL  bash_completion-script
+    INSTALL  tests
+
+The Git tree can be found at:
+
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git tmp.perf
+
+(The commits are top of the build system speedup patches.)
+
+Thanks,
+
+	Ingo
+
+===============>
+Ingo Molnar (4):
+  tools/perf/build: Implement summary output for 'make clean'
+  tools/build: Harmonize the various build messages in perf, lib-traceevent, lib-lk
+  tools/perf/build: Align perf version output to other build messages
+  tools/perf/build: Implement summary output for 'make install'
+
+ tools/lib/traceevent/Makefile     | 18 +++++++--------
+ tools/perf/Documentation/Makefile | 62 +++++++++++++++++++++++++++-----------------------
+ tools/perf/Makefile               |  2 +-
+ tools/perf/Makefile.perf          | 72 +++++++++++++++++++++++++++++++++--------------------------
+ tools/perf/config/utilities.mak   |  8 +++++++
+ tools/perf/util/PERF-VERSION-GEN  |  2 +-
+ tools/scripts/Makefile.include    | 23 ++++++++++---------
+ 7 files changed, 105 insertions(+), 82 deletions(-)
+
+-- 
+1.8.3.1
+
