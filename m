@@ -1,86 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756883Ab3JIJXK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 05:23:10 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:51927 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752534Ab3JIJXI (ORCPT
+	id S1756986Ab3JIJYR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 05:24:17 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:38599 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752021Ab3JIJYP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 05:23:08 -0400
-Message-ID: <52552075.7020104@redhat.com>
-Date: Wed, 09 Oct 2013 11:23:01 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130923 Thunderbird/17.0.9
+	Wed, 9 Oct 2013 05:24:15 -0400
+Message-ID: <525520BA.3010304@free-electrons.com>
+Date: Wed, 09 Oct 2013 11:24:10 +0200
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-CC: mingo@redhat.com, hpa@zytor.com, x86@kernel.org, gleb@redhat.com,
-        tglx@linutronix.de, konrad.wilk@oracle.com,
-        habanero@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, mtosatti@redhat.com,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] kvm fix: Enable pvspinlock after jump_label_init() to
- avoid VM hang
-References: <y> <1381309401-23663-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
-In-Reply-To: <1381309401-23663-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
+To: Jisheng Zhang <jszhang@marvell.com>
+CC: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 8/8] ARM: add initial support for Marvell Berlin SoCs
+References: <1381235073-17134-1-git-send-email-sebastian.hesselbarth@gmail.com> <1381235073-17134-9-git-send-email-sebastian.hesselbarth@gmail.com> <20131009112058.683739d0@xhacker>
+In-Reply-To: <20131009112058.683739d0@xhacker>
 X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-15
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 09/10/2013 11:03, Raghavendra K T ha scritto:
-> We use jump label to enable pv-spinlock. With the changes in
-> (442e0973e927 Merge branch 'x86/jumplabel'), the jump label behaviour has changed
-> that would result in evntual hang of the VM since we would end up in a situation
-> where slowpath locks would halt the vcpus but we will not be able to wakeup the
-> vcpu by lock releaser using unlock kick.
-> 
-> Similar problem in Xen and more detailed description is available in
-> a945928ea270 (xen: Do not enable spinlocks before jump_label_init() has executed)
-> 
-> This patch splits kvm_spinlock_init to separate jump label changes with pvops
-> patching and also make jump label enabling after jump_label_init().
-> 
-> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-> ---
->  Thanks to Andrew Theurer who reported weird behaviour of pvspinlock
->  in 3.12-rc that led to my git bisection and investigation and Konrad
->  for his jump label findings for Xen.
-> 
->  arch/x86/kernel/kvm.c | 17 ++++++++++++++---
->  1 file changed, 14 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-> index 697b93a..a0e2a8a 100644
-> --- a/arch/x86/kernel/kvm.c
-> +++ b/arch/x86/kernel/kvm.c
-> @@ -775,11 +775,22 @@ void __init kvm_spinlock_init(void)
->  	if (!kvm_para_has_feature(KVM_FEATURE_PV_UNHALT))
->  		return;
->  
-> -	printk(KERN_INFO "KVM setup paravirtual spinlock\n");
-> +	pv_lock_ops.lock_spinning = PV_CALLEE_SAVE(kvm_lock_spinning);
-> +	pv_lock_ops.unlock_kick = kvm_unlock_kick;
-> +}
-> +
-> +static __init int kvm_spinlock_init_jump(void)
-> +{
-> +	if (!kvm_para_available())
-> +		return 0;
-> +	if (!kvm_para_has_feature(KVM_FEATURE_PV_UNHALT))
-> +		return 0;
->  
->  	static_key_slow_inc(&paravirt_ticketlocks_enabled);
-> +	printk(KERN_INFO "KVM setup paravirtual spinlock\n");
->  
-> -	pv_lock_ops.lock_spinning = PV_CALLEE_SAVE(kvm_lock_spinning);
-> -	pv_lock_ops.unlock_kick = kvm_unlock_kick;
-> +	return 0;
->  }
-> +early_initcall(kvm_spinlock_init_jump);
-> +
->  #endif	/* CONFIG_PARAVIRT_SPINLOCKS */
-> 
+Hello Jisheng,
 
-Reviewed-by: Paolo Bonzini <pbonzini@redhat.com>
+[...]
+
+>> +config MACH_MV88DE3100
+> Can you please use MACH_BERLIN2? This is what we used internally in latest BSP
+>> +	bool "Marvell 88DE3100 (Armada 1500)"
+>> +	select ARM_GIC
+>> +	select CACHE_L2X0
+> The tauros3 and PL310 are different although the programming interface are
+> compatible. In PJ4B and Tauros3, the CP15 cache maintenance commands include
+> both L1 and L2, memory mapped PA-based maintenance operations in L2 are not needed.
+> How to handle this in cache-l2x0.c?
+
+In this case you can do the same things we have done for Aurora when we use
+the "aurora-system-cache" compatible string.
+
+[...]
+
+Regards,
+Gregory
+
+-- 
+Gregory Clement, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
