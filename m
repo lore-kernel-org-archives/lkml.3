@@ -1,112 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754542Ab3JIVSJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 17:18:09 -0400
-Received: from ring0.de ([91.143.88.219]:60950 "EHLO smtp.ring0.de"
+	id S1754699Ab3JIV0s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 17:26:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11443 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751398Ab3JIVSG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 17:18:06 -0400
-X-Spam-Report: * -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-From: Sebastian Reichel <sre@debian.org>
-To: Sebastian Reichel <sre@ring0.de>, linux-input@vger.kernel.org
-Cc: =?UTF-8?q?=27Beno=C3=AEt=20Cousson=27?= <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        Sebastian Reichel <sre@debian.org>
-Subject: [PATCH 2/2] ARM: dts: N900: TWL4030 Keypad Matrix definition
-Date: Wed,  9 Oct 2013 23:17:27 +0200
-Message-Id: <1381353447-32708-2-git-send-email-sre@debian.org>
-X-Mailer: git-send-email 1.8.4.rc3
-In-Reply-To: <1381353447-32708-1-git-send-email-sre@debian.org>
-References: <1381353447-32708-1-git-send-email-sre@debian.org>
+	id S1751986Ab3JIV0r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 17:26:47 -0400
+Date: Wed, 9 Oct 2013 18:26:33 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: kvm@vger.kernel.org, pbonzini@redhat.com, gleb@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 2/3] pvclock: detect watchdog reset at pvclock read
+Message-ID: <20131009212633.GB24695@amt.cnet>
+References: <20131008010515.516032211@amt.cnet>
+ <20131008010552.779616517@amt.cnet>
+ <20131008133705.GR227855@redhat.com>
+ <20131008220811.GC16625@amt.cnet>
+ <20131009135519.GF227855@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131009135519.GF227855@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add Keyboard Matrix information to N900's DTS file.
-This patch maps the keys exactly as the original
-board code.
+On Wed, Oct 09, 2013 at 09:55:19AM -0400, Don Zickus wrote:
+> On Tue, Oct 08, 2013 at 07:08:11PM -0300, Marcelo Tosatti wrote:
+> > On Tue, Oct 08, 2013 at 09:37:05AM -0400, Don Zickus wrote:
+> > > On Mon, Oct 07, 2013 at 10:05:17PM -0300, Marcelo Tosatti wrote:
+> > > > Implement reset of kernel watchdogs at pvclock read time. This avoids
+> > > > adding special code to every watchdog.
+> > > > 
+> > > > This is possible for watchdogs which measure time based on sched_clock() or 
+> > > > ktime_get() variants.
+> > > > 
+> > > > Suggested by Don Zickus.
+> > > > 
+> > > > Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+> > > 
+> > > Awesome.  Thanks for figuring this out Marcelo.  Does that mean we can
+> > > revert commit 5d1c0f4a now? :-)
+> > 
+> > Unfortunately no: soft lockup watchdog does not measure time based on
+> > sched_clock but on hrtimer interrupt count :-(
+> 
+> I believe it does.  See __touch_watchdog() which calls get_timestamp() -->
+> local_clock().  That is how it calculates the duration of the softlockup.
+> 
+> Now with your patch, it just sets the timestamp to zero with
+> touch_softlockup_watchdog_sync(), which is fine.  It will just sync up the
+> clock, set a new timestamp, and check again in the next hrtimer interrupt.
+> 
+> So I guess I am confused what that commit does compared to this patch.
+> 
+> > (see the the softlockup code in question, perhaps you can point to 
+> > something that i'm missing).
+> > 
+> > BTW, are you OK with printing additional steal time information?
+> > https://lkml.org/lkml/2013/6/27/755
+> 
+> Well, I thought this patch was supposed to replace that patch?  Why do you
+> still need that patch?
 
-Signed-off-by: Sebastian Reichel <sre@debian.org>
----
- arch/arm/boot/dts/omap3-n900.dts | 55 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 55 insertions(+)
+>From https://lkml.org/lkml/2013/7/3/675:
 
-diff --git a/arch/arm/boot/dts/omap3-n900.dts b/arch/arm/boot/dts/omap3-n900.dts
-index 0fbb77e..d11ff6e 100644
---- a/arch/arm/boot/dts/omap3-n900.dts
-+++ b/arch/arm/boot/dts/omap3-n900.dts
-@@ -120,6 +120,61 @@
- #include "twl4030.dtsi"
- #include "twl4030_omap3.dtsi"
- 
-+&twl_keypad {
-+	linux,keymap = < 0x00000010 /* KEY_Q */
-+			 0x00010018 /* KEY_O */
-+			 0x00020019 /* KEY_P */
-+			 0x00030033 /* KEY_COMMA */
-+			 0x0004000e /* KEY_BACKSPACE */
-+			 0x0006001e /* KEY_A */
-+			 0x0007001f /* KEY_S */
-+
-+			 0x01000011 /* KEY_W */
-+			 0x01010020 /* KEY_D */
-+			 0x01020021 /* KEY_F */
-+			 0x01030022 /* KEY_G */
-+			 0x01040023 /* KEY_H */
-+			 0x01050024 /* KEY_J */
-+			 0x01060025 /* KEY_K */
-+			 0x01070026 /* KEY_L */
-+
-+			 0x02000012 /* KEY_E */
-+			 0x02010034 /* KEY_DOT */
-+			 0x02020067 /* KEY_UP */
-+			 0x0203001c /* KEY_ENTER */
-+			 0x0205002c /* KEY_Z */
-+			 0x0206002d /* KEY_X */
-+			 0x0207002e /* KEY_C */
-+			 0x02080043 /* KEY_F9 */
-+
-+			 0x03000013 /* KEY_R */
-+			 0x0301002f /* KEY_V */
-+			 0x03020030 /* KEY_B */
-+			 0x03030031 /* KEY_N */
-+			 0x03040032 /* KEY_M */
-+			 0x03050039 /* KEY_SPACE */
-+			 0x03060039 /* KEY_SPACE */
-+			 0x03070069 /* KEY_LEFT */
-+
-+			 0x04000014 /* KEY_T */
-+			 0x0401006c /* KEY_DOWN */
-+			 0x0402006a /* KEY_RIGHT */
-+			 0x0404001d /* KEY_LEFTCTRL */
-+			 0x04050064 /* KEY_RIGHTALT */
-+			 0x0406002a /* KEY_LEFTSHIFT */
-+			 0x04080044 /* KEY_F10 */
-+
-+			 0x05000015 /* KEY_Y */
-+			 0x05080057 /* KEY_F11 */
-+
-+			 0x06000016 /* KEY_U */
-+
-+			 0x07000017 /* KEY_I */
-+			 0x07010041 /* KEY_F7 */
-+			 0x07020042 /* KEY_F8 */
-+			 >;
-+};
-+
- &twl_gpio {
- 	ti,pullups	= <0x0>;
- 	ti,pulldowns	= <0x03ff3f>; /* BIT(0..5) | BIT(8..17) */
--- 
-1.8.4.rc3
+"Agree. However, can't see how there is a way around "having custom
+kvm/paravirt splat all over", for watchdogs that do:
+
+1. check for watchdog resets
+2. read time via sched_clock or xtime.
+3. based on 2, decide whether there has been a longer delay than
+acceptable.
+
+This is the case for the softlockup timer interrupt. So the splat there
+is necessary (otherwise any potential notification of vm-pause event 
+noticed at 2 might be missed because its checked at 1).
+
+For watchdogs that measure time based on interrupt event (such as hung
+task, rcu_cpu_stall, checking for the notification at sched_clock or
+lower is fine)."
 
