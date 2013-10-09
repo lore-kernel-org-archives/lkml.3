@@ -1,70 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756061Ab3JITMz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 15:12:55 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:55858 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754491Ab3JITMw (ORCPT
+	id S1752019Ab3JITQh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 15:16:37 -0400
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:56345 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751055Ab3JITQg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 15:12:52 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>, Rob Landley <rob@landley.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-References: <CAJfpegsxgnSRUW-E5HM3uT5QfGyUtn_v=i4Ppkkkutp34287AA@mail.gmail.com>
-	<87a9kkax0j.fsf@xmission.com>
-	<CAJfpeguv+7giYNpAuXE9Ja_9BEwB0-fZBVgRSeVqpzSXgQYZ6Q@mail.gmail.com>
-	<8761v7h2pt.fsf@tw-ebiederman.twitter.com>
-	<CAJfpegtT7y-1HhbEVAMKkdQugTG_w7G_epGtQHGvQLpcZB5FVA@mail.gmail.com>
-	<87li281wx6.fsf_-_@xmission.com> <874n8w1wsz.fsf_-_@xmission.com>
-	<20131008155041.GI14242@tucsk.piliscsaba.szeredi.hu>
-	<877gdne8pr.fsf@xmission.com>
-Date: Wed, 09 Oct 2013 12:12:41 -0700
-In-Reply-To: <877gdne8pr.fsf@xmission.com> (Eric W. Biederman's message of
-	"Tue, 08 Oct 2013 14:47:12 -0700")
-Message-ID: <8761t65kd2.fsf_-_@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Wed, 9 Oct 2013 15:16:36 -0400
+Date: Wed, 9 Oct 2013 16:16:26 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [GIT PULL] tools/perf/build: Speed up the perf build system
+Message-ID: <20131009191626.GD28369@ghostprotocols.net>
+References: <20131009070149.GA32023@gmail.com>
+ <20131009143830.GA28369@ghostprotocols.net>
+ <20131009145157.GA27139@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1+YpLzbH+dX3VnOpFHtjWLnFs7RaezZUGQ=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0073]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  1.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
-	*  1.0 XMSubMetaSx_00 1+ Sexy Words
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Miklos Szeredi <miklos@szeredi.hu>
-X-Spam-Relay-Country: 
-Subject: Grrrr fusermount.
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131009145157.GA27139@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ebiederm@xmission.com (Eric W. Biederman) writes:
+So while merging what I have in my perf/core branch I got to Vitillo's, as
+peterz called it, "inlining" of addr2line, i.e. using libbfd to do that work,
+it will look if lbfd is in EXTLIBS and if so, use it, otherwise we continue
+exec'in the addr2line tool.
 
-> But I will go through and read the old fusermount code before I get too
-> much farther just so I understand what I am potentially breaking.
+Since this appears when doing the feature check:
 
-Grr.
+...                        libbfd: [ on  ]
 
-So I have just read the fusermount umount code and the hack that it uses
-before there was UMOUNT_NOFOLLOW support in the vm.
+I wanted to build just one object file that is related to this:
 
-If I walk this path of lazy unmounts and detaching directories, anyone
-with a new kernel and an old copy of fusermount and a nfs mounted home
-directory will be able to exploit the fusermount umount symlink race.
+[acme@sandy linux]$ ls -la /tmp/build/perf/util/util/srcline.o
+ls: cannot access /tmp/build/perf/util/util/srcline.o: No such file or directory
+[acme@sandy linux]$ ls -la tools/perf/util/srcline.c 
+-rw-rw-r--. 1 acme acme 1777 Oct  9 16:06 tools/perf/util/srcline.c
+[acme@sandy linux]$ ls -la tools/perf/util/srcline.*
+-rw-rw-r--. 1 acme acme 1777 Oct  9 16:06 tools/perf/util/srcline.c
+[acme@sandy linux]$ make V=1 O=/tmp/build/perf -C tools/perf/ util/srcline.o
+make: Entering directory `/home/acme/git/linux/tools/perf'
+    BUILD: Doing 'make -j8' parallel build
+    # Redirected target util/srcline.o => /tmp/build/perf/util/util/srcline.o
+make: Leaving directory `/home/acme/git/linux/tools/perf'
+[acme@sandy linux]$ 
+[acme@sandy linux]$ ls -la /tmp/build/perf/util/util/srcline.o
+ls: cannot access /tmp/build/perf/util/util/srcline.o: No such file or directory
+[acme@sandy linux]$ make V=1 O=/tmp/build/perf -C tools/perf/ /tmp/build/perf/util/util/srcline.o
+make: Entering directory `/home/acme/git/linux/tools/perf'
+    BUILD: Doing 'make -j8' parallel build
+make[1]: *** No rule to make target `/tmp/build/perf/util/util/srcline.o'.  Stop.
+make: *** [/tmp/build/perf/util/util/srcline.o] Error 2
+make: Leaving directory `/home/acme/git/linux/tools/perf'
+[acme@sandy linux]$ ls -la tools/perf/util/srcline.*
+-rw-rw-r--. 1 acme acme 1777 Oct  9 16:06 tools/perf/util/srcline.c
+[acme@sandy linux]$
 
-Unless we can declare that old fusermount binaries are buggy beyond
-supporting this patchset as it exists is dead.
+	What am I doing wrong here while trying to build just one .o file?
 
-Eric
+	Back to checking why it is not using the 'inline' addr2line...
+
+- Arnaldo
