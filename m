@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932525Ab3JIRex (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 13:34:53 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56615 "EHLO
+	id S1757337Ab3JIRfE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 13:35:04 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56620 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757325Ab3JIReu (ORCPT
+	with ESMTP id S1756031Ab3JIRe7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 13:34:50 -0400
-Date: Wed, 9 Oct 2013 10:34:11 -0700
-From: tip-bot for Mel Gorman <tipbot@zytor.com>
-Message-ID: <tip-989348b5fc2367d6880d23a1c779a90bbb6f9baf@git.kernel.org>
+	Wed, 9 Oct 2013 13:34:59 -0400
+Date: Wed, 9 Oct 2013 10:34:22 -0700
+From: tip-bot for Rik van Riel <tipbot@zytor.com>
+Message-ID: <tip-2739d3eef3a93a92c366a3a0bb85a0afe09e8b8c@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         peterz@infradead.org, hannes@cmpxchg.org, riel@redhat.com,
         aarcange@redhat.com, srikar@linux.vnet.ibm.com, mgorman@suse.de,
@@ -18,12 +18,12 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         peterz@infradead.org, hannes@cmpxchg.org, riel@redhat.com,
         aarcange@redhat.com, srikar@linux.vnet.ibm.com, mgorman@suse.de,
         tglx@linutronix.de
-In-Reply-To: <1381141781-10992-63-git-send-email-mgorman@suse.de>
-References: <1381141781-10992-63-git-send-email-mgorman@suse.de>
+In-Reply-To: <1381141781-10992-64-git-send-email-mgorman@suse.de>
+References: <1381141781-10992-64-git-send-email-mgorman@suse.de>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/numa:
-  Use unsigned longs for numa group fault stats
-Git-Commit-ID: 989348b5fc2367d6880d23a1c779a90bbb6f9baf
+Subject: [tip:sched/core] sched/numa: Retry task_numa_migrate()
+  periodically
+Git-Commit-ID: 2739d3eef3a93a92c366a3a0bb85a0afe09e8b8c
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,149 +32,86 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 09 Oct 2013 10:34:17 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 09 Oct 2013 10:34:28 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  989348b5fc2367d6880d23a1c779a90bbb6f9baf
-Gitweb:     http://git.kernel.org/tip/989348b5fc2367d6880d23a1c779a90bbb6f9baf
-Author:     Mel Gorman <mgorman@suse.de>
-AuthorDate: Mon, 7 Oct 2013 11:29:40 +0100
+Commit-ID:  2739d3eef3a93a92c366a3a0bb85a0afe09e8b8c
+Gitweb:     http://git.kernel.org/tip/2739d3eef3a93a92c366a3a0bb85a0afe09e8b8c
+Author:     Rik van Riel <riel@redhat.com>
+AuthorDate: Mon, 7 Oct 2013 11:29:41 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 9 Oct 2013 14:48:23 +0200
+CommitDate: Wed, 9 Oct 2013 14:48:25 +0200
 
-sched/numa: Use unsigned longs for numa group fault stats
+sched/numa: Retry task_numa_migrate() periodically
 
-As Peter says "If you're going to hold locks you can also do away with all
-that atomic_long_*() nonsense". Lock aquisition moved slightly to protect
-the updates.
+Short spikes of CPU load can lead to a task being migrated
+away from its preferred node for temporary reasons.
 
+It is important that the task is migrated back to where it
+belongs, in order to avoid migrating too much memory to its
+new location, and generally disturbing a task's NUMA location.
+
+This patch fixes NUMA placement for 4 specjbb instances on
+a 4 node system. Without this patch, things take longer to
+converge, and processes are not always completely on their
+own node.
+
+Signed-off-by: Rik van Riel <riel@redhat.com>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Rik van Riel <riel@redhat.com>
 Cc: Andrea Arcangeli <aarcange@redhat.com>
 Cc: Johannes Weiner <hannes@cmpxchg.org>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1381141781-10992-63-git-send-email-mgorman@suse.de
+Link: http://lkml.kernel.org/r/1381141781-10992-64-git-send-email-mgorman@suse.de
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/fair.c | 49 ++++++++++++++++++++-----------------------------
- 1 file changed, 20 insertions(+), 29 deletions(-)
+ kernel/sched/fair.c | 22 +++++++++++++---------
+ 1 file changed, 13 insertions(+), 9 deletions(-)
 
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index e7884dc..5b2208e 100644
+index 5b2208e..e914930 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -916,8 +916,8 @@ struct numa_group {
- 	struct list_head task_list;
+@@ -1259,18 +1259,19 @@ static int task_numa_migrate(struct task_struct *p)
+ /* Attempt to migrate a task to a CPU on the preferred node. */
+ static void numa_migrate_preferred(struct task_struct *p)
+ {
+-	/* Success if task is already running on preferred CPU */
+-	p->numa_migrate_retry = 0;
+-	if (cpu_to_node(task_cpu(p)) == p->numa_preferred_nid)
++	/* This task has no NUMA fault statistics yet */
++	if (unlikely(p->numa_preferred_nid == -1 || !p->numa_faults))
+ 		return;
  
- 	struct rcu_head rcu;
--	atomic_long_t total_faults;
--	atomic_long_t faults[0];
-+	unsigned long total_faults;
-+	unsigned long faults[0];
- };
+-	/* This task has no NUMA fault statistics yet */
+-	if (unlikely(p->numa_preferred_nid == -1))
++	/* Periodically retry migrating the task to the preferred node */
++	p->numa_migrate_retry = jiffies + HZ;
++
++	/* Success if task is already running on preferred CPU */
++	if (cpu_to_node(task_cpu(p)) == p->numa_preferred_nid)
+ 		return;
  
- pid_t task_numa_group_id(struct task_struct *p)
-@@ -944,8 +944,7 @@ static inline unsigned long group_faults(struct task_struct *p, int nid)
- 	if (!p->numa_group)
- 		return 0;
- 
--	return atomic_long_read(&p->numa_group->faults[2*nid]) +
--	       atomic_long_read(&p->numa_group->faults[2*nid+1]);
-+	return p->numa_group->faults[2*nid] + p->numa_group->faults[2*nid+1];
+ 	/* Otherwise, try migrate to a CPU on the preferred node */
+-	if (task_numa_migrate(p) != 0)
+-		p->numa_migrate_retry = jiffies + HZ*5;
++	task_numa_migrate(p);
  }
  
  /*
-@@ -971,17 +970,10 @@ static inline unsigned long task_weight(struct task_struct *p, int nid)
+@@ -1629,8 +1630,11 @@ void task_numa_fault(int last_cpupid, int node, int pages, int flags)
  
- static inline unsigned long group_weight(struct task_struct *p, int nid)
- {
--	unsigned long total_faults;
--
--	if (!p->numa_group)
--		return 0;
--
--	total_faults = atomic_long_read(&p->numa_group->total_faults);
--
--	if (!total_faults)
-+	if (!p->numa_group || !p->numa_group->total_faults)
- 		return 0;
+ 	task_numa_placement(p);
  
--	return 1000 * group_faults(p, nid) / total_faults;
-+	return 1000 * group_faults(p, nid) / p->numa_group->total_faults;
- }
+-	/* Retry task to preferred node migration if it previously failed */
+-	if (p->numa_migrate_retry && time_after(jiffies, p->numa_migrate_retry))
++	/*
++	 * Retry task to preferred node migration periodically, in case it
++	 * case it previously failed, or the scheduler moved us.
++	 */
++	if (time_after(jiffies, p->numa_migrate_retry))
+ 		numa_migrate_preferred(p);
  
- static unsigned long weighted_cpuload(const int cpu);
-@@ -1397,9 +1389,9 @@ static void task_numa_placement(struct task_struct *p)
- 			p->total_numa_faults += diff;
- 			if (p->numa_group) {
- 				/* safe because we can only change our own group */
--				atomic_long_add(diff, &p->numa_group->faults[i]);
--				atomic_long_add(diff, &p->numa_group->total_faults);
--				group_faults += atomic_long_read(&p->numa_group->faults[i]);
-+				p->numa_group->faults[i] += diff;
-+				p->numa_group->total_faults += diff;
-+				group_faults += p->numa_group->faults[i];
- 			}
- 		}
- 
-@@ -1475,7 +1467,7 @@ static void task_numa_group(struct task_struct *p, int cpupid, int flags,
- 
- 	if (unlikely(!p->numa_group)) {
- 		unsigned int size = sizeof(struct numa_group) +
--				    2*nr_node_ids*sizeof(atomic_long_t);
-+				    2*nr_node_ids*sizeof(unsigned long);
- 
- 		grp = kzalloc(size, GFP_KERNEL | __GFP_NOWARN);
- 		if (!grp)
-@@ -1487,9 +1479,9 @@ static void task_numa_group(struct task_struct *p, int cpupid, int flags,
- 		grp->gid = p->pid;
- 
- 		for (i = 0; i < 2*nr_node_ids; i++)
--			atomic_long_set(&grp->faults[i], p->numa_faults[i]);
-+			grp->faults[i] = p->numa_faults[i];
- 
--		atomic_long_set(&grp->total_faults, p->total_numa_faults);
-+		grp->total_faults = p->total_numa_faults;
- 
- 		list_add(&p->numa_entry, &grp->task_list);
- 		grp->nr_tasks++;
-@@ -1543,14 +1535,14 @@ unlock:
- 	if (!join)
- 		return;
- 
-+	double_lock(&my_grp->lock, &grp->lock);
-+
- 	for (i = 0; i < 2*nr_node_ids; i++) {
--		atomic_long_sub(p->numa_faults[i], &my_grp->faults[i]);
--		atomic_long_add(p->numa_faults[i], &grp->faults[i]);
-+		my_grp->faults[i] -= p->numa_faults[i];
-+		grp->faults[i] += p->numa_faults[i];
- 	}
--	atomic_long_sub(p->total_numa_faults, &my_grp->total_faults);
--	atomic_long_add(p->total_numa_faults, &grp->total_faults);
--
--	double_lock(&my_grp->lock, &grp->lock);
-+	my_grp->total_faults -= p->total_numa_faults;
-+	grp->total_faults += p->total_numa_faults;
- 
- 	list_move(&p->numa_entry, &grp->task_list);
- 	my_grp->nr_tasks--;
-@@ -1571,12 +1563,11 @@ void task_numa_free(struct task_struct *p)
- 	void *numa_faults = p->numa_faults;
- 
- 	if (grp) {
-+		spin_lock(&grp->lock);
- 		for (i = 0; i < 2*nr_node_ids; i++)
--			atomic_long_sub(p->numa_faults[i], &grp->faults[i]);
--
--		atomic_long_sub(p->total_numa_faults, &grp->total_faults);
-+			grp->faults[i] -= p->numa_faults[i];
-+		grp->total_faults -= p->total_numa_faults;
- 
--		spin_lock(&grp->lock);
- 		list_del(&p->numa_entry);
- 		grp->nr_tasks--;
- 		spin_unlock(&grp->lock);
+ 	if (migrated)
