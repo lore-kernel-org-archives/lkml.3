@@ -1,2383 +1,3547 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756248Ab3JIBIe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 21:08:34 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:34295 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753317Ab3JIBIa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 21:08:30 -0400
-Message-ID: <5254AC7F.8010909@ti.com>
-Date: Tue, 8 Oct 2013 21:08:15 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1756384Ab3JIBJZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 21:09:25 -0400
+Received: from mga01.intel.com ([192.55.52.88]:58741 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751896Ab3JIBJW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 21:09:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,1059,1371106800"; 
+   d="scan'208";a="407986320"
+Date: Wed, 9 Oct 2013 09:09:11 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Richard Henderson <rth@twiddle.net>, Jakub Jelinek <jakub@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [x86] BUG: unable to handle kernel NULL pointer dereference at
+ (null)
+Message-ID: <20131009010911.GA4222@localhost>
+References: <CA+55aFykGxmaE9hq9xd+6HHFtEube_2QnB+ipW4oF71c6vyXAw@mail.gmail.com>
+ <20131008171522.GA29277@localhost>
+ <CA+55aFzQC=W010GTxjXjBnsKO0CycXe7VZB+LTiNNtuBug_rbw@mail.gmail.com>
 MIME-Version: 1.0
-To: Jacob Pan <jacob.jun.pan@linux.intel.com>
-CC: Zhang Rui <rui.zhang@intel.com>, Linux PM <linux-pm@vger.kernel.org>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>
-Subject: Re: [PATCH] tools/thermal: Introduce tmon, a tool for thermal subsystem
-References: <1381259024-25433-1-git-send-email-jacob.jun.pan@linux.intel.com>
-In-Reply-To: <1381259024-25433-1-git-send-email-jacob.jun.pan@linux.intel.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature";
-	boundary="3IMRoiGF1KCQ8To7oNi86Idd4m6VhIXq5"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzQC=W010GTxjXjBnsKO0CycXe7VZB+LTiNNtuBug_rbw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---3IMRoiGF1KCQ8To7oNi86Idd4m6VhIXq5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Tue, Oct 08, 2013 at 10:31:57AM -0700, Linus Torvalds wrote:
+> On Tue, Oct 8, 2013 at 10:15 AM, Fengguang Wu <fengguang.wu@intel.com> wrote:
+> >
+> > [   27.865982] Kernel BUG at c10563af [verbose debug info unavailable]
+> 
+> Ugh, you've turned off DEBUG_BUGVERBOSE.
+> 
+> We probably shouldn't even allow that. The space savings aren't worth the pain.
 
-On 08-10-2013 15:03, Jacob Pan wrote:
-> Increasingly, Linux is running on thermally constrained devices. The si=
-mple
-> thermal relationship between processor and fan has become past for mode=
-rn
-> computers.
->=20
-> As hardware vendors cope with the thermal constraints on their products=
-,
-> more sensors are added, new cooling capabilities are introduced. The
-> complexity of the thermal relationship can grow exponentially among coo=
-ling
-> devices, zones, sensors, and trip points. They can also change dynamica=
-lly.
->=20
-> To expose such relationship to the userspace, Linux generic thermal lay=
-er
-> introduced sysfs entry at /sys/class/thermal with a matrix of symbolic
-> links, trip point bindings, and device instances. To traverse such
-> matrix by hand is not a trivial task. Testing is also difficult in that=
+Ah yes, will always turn it on in future. (Was randomly turned on/off due to randconfig..)
 
-> thermal conditions are often exception cases that hard to reach in
-> normal operations.
->=20
-> TMON is conceived as a tool to help visualize, tune, and test the
-> complex thermal subsystem.
->=20
-> Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
-> ---
->  tools/thermal/tmon/Makefile |   47 ++++
->  tools/thermal/tmon/README   |   50 ++++
->  tools/thermal/tmon/pid.c    |  131 +++++++++
->  tools/thermal/tmon/sysfs.c  |  585 +++++++++++++++++++++++++++++++++++=
-++++
->  tools/thermal/tmon/tmon.8   |  142 ++++++++++
->  tools/thermal/tmon/tmon.c   |  350 ++++++++++++++++++++++++
->  tools/thermal/tmon/tmon.h   |  204 ++++++++++++++
->  tools/thermal/tmon/tui.c    |  631 +++++++++++++++++++++++++++++++++++=
-++++++++
->  8 files changed, 2140 insertions(+)
->  create mode 100644 tools/thermal/tmon/Makefile
->  create mode 100644 tools/thermal/tmon/README
->  create mode 100644 tools/thermal/tmon/pid.c
->  create mode 100644 tools/thermal/tmon/sysfs.c
->  create mode 100644 tools/thermal/tmon/tmon.8
->  create mode 100644 tools/thermal/tmon/tmon.c
->  create mode 100644 tools/thermal/tmon/tmon.h
->  create mode 100644 tools/thermal/tmon/tui.c
->=20
-> diff --git a/tools/thermal/tmon/Makefile b/tools/thermal/tmon/Makefile
-> new file mode 100644
-> index 0000000..c17131b
-> --- /dev/null
-> +++ b/tools/thermal/tmon/Makefile
-> @@ -0,0 +1,47 @@
-> +VERSION =3D 1.0
-> +
-> +BINDIR=3Dusr/bin
-> +WARNFLAGS=3D-Wall -Wshadow -W -Wformat -Wimplicit-function-declaration=
- -Wimplicit-int
-> +CFLAGS=3D -O1 ${WARNFLAGS} -fstack-protector
-> +CC=3Dgcc
-> +
-> +CFLAGS+=3D-D VERSION=3D\"$(VERSION)\"
-> +LDFLAGS+=3D
-> +TARGET=3Dtmon
-> +
-> +INSTALL_PROGRAM=3Dinstall -m 755 -p
-> +DEL_FILE=3Drm -f
-> +
-> +INSTALL_CONFIGFILE=3Dinstall -m 644 -p
-> +CONFIG_FILE=3D
-> +CONFIG_PATH=3D
-> +
-> +
-> +OBJS =3D tmon.o tui.o sysfs.o pid.o
-> +OBJS +=3D
-> +
-> +tmon: $(OBJS) Makefile tmon.h
-> +	$(CC) ${CFLAGS} $(LDFLAGS) $(OBJS)  -o $(TARGET) -lncursesw -lm -lpan=
-el -lpthread
+> I'm not seeing the pattern in your oopses, there's at least three
+> different cases. At a guess, it's some lock - or a memory allocator -
+> that is broken by the bitop breakage, and then the oopses are just
+> fallout from that..
 
-I actually tried static linking tmon. There seams to be some
-interdependency with libpanel and libncurses and while static linking
-them, we need to first specify libpanel. So I suggest you to do:
-+	$(CC) ${CFLAGS} $(LDFLAGS) $(OBJS)  -o $(TARGET) -lm -lpanel
--lncursesw -lpthread
+Here I got the new set of 100 dmesgs with DEBUG_BUGVERBOSE.
+
+Summary:
+
+     53 kernel BUG at kernel/cred.c:138!
+     53 invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+     42 BUG: unable to handle kernel NULL pointer dereference at   (null)
+     31 Oops: 0000 [#1] DEBUG_PAGEALLOC
+     19 Kernel panic - not syncing: CRED: put_cred_rcu() sees cd0c6c80 with usage -1
+     13 Oops: 0010 [#1] DEBUG_PAGEALLOC
+      7 Kernel panic - not syncing: CRED: put_cred_rcu() sees cd0c6d00 with usage -1
+      2 Oops: 0011 [#1] DEBUG_PAGEALLOC
+      2 BUG: unable to handle kernel NULL pointer dereference at 00000108
+      1 Kernel panic - not syncing: CRED: put_cred_rcu() sees cd0c6b00 with usage -2
+      1 Kernel panic - not syncing: CRED: put_cred_rcu() sees cd0c6a80 with usage -2
+      1 Kernel panic - not syncing: CRED: put_cred_rcu() sees c6d29280 with usage -184
+      1 Kernel panic - not syncing: CRED: put_cred_rcu() sees c6d28100 with usage -233
+      1 BUG: unable to handle kernel paging request at cd0dcc08
+      1 BUG: unable to handle kernel paging request at cd0dc408
+
+First oops dump in each dmesg:
+
+dmesg-quantal-ant-12:20131009083033:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+[   26.874938]   No soundcards found.
+[   26.947413] debug: unmapping init [mem 0xc14df000-0xc1524fff]
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+[   27.189229] BUG: unable to handle kernel NULL pointer dereference at 00000108
+[   27.190165] IP: [<c1109200>] rw_verify_area+0xa0/0x1b0
+[   27.190529] *pdpt = 0000000006d2c001 *pde = 0000000000000000 
+[   27.190529] Oops: 0000 [#1] DEBUG_PAGEALLOC
+[   27.190529] Modules linked in:
+[   27.190529] CPU: 0 PID: 37 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[   27.190529] task: c6c31160 ti: c6d18000 task.ti: c6d18000
+[   27.190529] EIP: 0060:[<c1109200>] EFLAGS: 00000246 CPU: 0
+[   27.190529] EIP is at rw_verify_area+0xa0/0x1b0
+[   27.190529] EAX: 00000000 EBX: 00000000 ECX: 00000000 EDX: 00000000
+[   27.190529] ESI: 00000000 EDI: c0064cc0 EBP: c6d19f60 ESP: c6d19f38
+[   27.190529]  DS: 007b ES: 007b FS: 0000 GS: 0033 SS: 0068
+[   27.190529] CR0: 8005003b CR2: 00000108 CR3: 06d2b000 CR4: 000006b0
+[   27.190529] DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+[   27.190529] DR6: 00000000 DR7: 00000000
+[   27.190529] Stack:
+[   27.190529]  00000000 c6c70c00 000000a9 00000001 00000000 00000000 00000000 0000006e
+[   27.190529]  00000000 c0064cc0 c6d19f88 c1109519 0000006e 00000030 c1307b0e c6d19f98
+[   27.190529]  b7772000 c0064cc0 00000000 b7772000 c6d19fac c1109b79 c6d19f98 0000006e
+[   27.190529] Call Trace:
+[   27.190529]  [<c1109519>] vfs_write+0xb9/0x1a0
+[   27.190529]  [<c1307b0e>] ? restore_all+0xf/0xf
+[   27.190529]  [<c1109b79>] SyS_write+0x49/0xa0
+[   27.190529]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[   27.190529] Code: d6 c1 ee 1f 89 f2 81 e2 ff 00 00 00 31 c9 b8 04 e9 4c c1 e8 d3 ee f9 ff 89 f0 84 c0 74 0a f6 47 41 20 0f 84 03 01 00 00 8b 45 f0 <8b> 80 08 01 00 00 85 c0 74 0c 8b 45 f0 8b 40 14 f6 40 30 40 75
+[   27.190529] EIP: [<c1109200>] rw_verify_area+0xa0/0x1b0 SS:ESP 0068:c6d19f38
+[   27.190529] CR2: 0000000000000108
+[   27.216510] ---[ end trace 22befdde0740782e ]---
 
 
+dmesg-quantal-ant-13:20131009083038:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
 
-> +
-> +valgrind: tmon
-> +	 sudo valgrind -v --track-origins=3Dyes --tool=3Dmemcheck --leak-chec=
-k=3Dyes --show-reachable=3Dyes --num-callers=3D20 --track-fds=3Dyes ./$(T=
-ARGET)  1> /dev/null
-> +
-> +install:
-> +	- mkdir -p $(INSTALL_ROOT)/$(BINDIR)
-> +	- $(INSTALL_PROGRAM) "$(TARGET)" "$(INSTALL_ROOT)/$(BINDIR)/$(TARGET)=
-"
-> +	- mkdir -p $(INSTALL_ROOT)/$(CONFIG_PATH)
-> +	- $(INSTALL_CONFIGFILE) "$(CONFIG_FILE)" "$(INSTALL_ROOT)/$(CONFIG_PA=
-TH)"
-> +
-> +uninstall:
-> +	$(DEL_FILE) "$(INSTALL_ROOT)/$(BINDIR)/$(TARGET)"
-> +	$(CONFIG_FILE) "$(CONFIG_PATH)"
-> +
-> +
-> +clean:
-> +	find . -name "*.o" | xargs $(DEL_FILE)
-> +	rm -f $(TARGET)
-> +
-> +dist:
-> +	git tag v$(VERSION)
-> +	git archive --format=3Dtar --prefix=3D"$(TARGET)-$(VERSION)/" v$(VERS=
-ION) | \
-> +		gzip > $(TARGET)-$(VERSION).tar.gz
-> diff --git a/tools/thermal/tmon/README b/tools/thermal/tmon/README
-> new file mode 100644
-> index 0000000..4579498
-> --- /dev/null
-> +++ b/tools/thermal/tmon/README
-> @@ -0,0 +1,50 @@
-> +TMON - A Monitoring and Testing Tool for Linux kernel thermal subsyste=
-m
-> +
-> +Why TMON?
-> +=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
-> +Increasingly, Linux is running on thermally constrained devices. The s=
-imple
-> +thermal relationship between processor and fan has become past for mod=
-ern
-> +computers.
-> +
-> +As hardware vendors cope with the thermal constraints on their product=
-s, more
-> +and more sensors are added, new cooling capabilities are introduced. T=
-he
-> +complexity of the thermal relationship can grow exponentially among co=
-oling
-> +devices, zones, sensors, and trip points. They can also change dynamic=
-ally.
-> +
-> +To expose such relationship to the userspace, Linux generic thermal la=
-yer
-> +introduced sysfs entry at /sys/class/thermal with a matrix of symbolic=
-
-> +links, trip point bindings, and device instances. To traverse such
-> +matrix by hand is not a trivial task. Testing is also difficult in tha=
-t
-> +thermal conditions are often exception cases that hard to reach in
-> +normal operations.
-> +
-> +TMON is conceived as a tool to help visualize, tune, and test the
-> +complex thermal subsystem.
-> +
-> +Files
-> +=3D=3D=3D=3D=3D
-> +	tmon.c : main function for set up and configurations.
-> +	tui.c : handles ncurses based user interface
-> +	sysfs.c : access to the generic thermal sysfs
-> +	pid.c : a proportional-integral-derivative (PID) controller
-> +	that can be used for thermal relationship training.
-> +
-> +Requirements
-> +=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
-> +Depends on ncurses
-> +
-> +Build
-> +=3D=3D=3D=3D=3D=3D=3D=3D=3D
-> +$ make
-> +$ sudo ./tmon -h
-> +Usage: tmon [OPTION...]
-> +  -c, --control         cooling device in control
-> +  -d, --daemon          run as daemon, no TUI
-> +  -l, --log             log data to /var/tmp/tmon.log
-> +  -h, --help            show this help message
-> +  -t, --time-interval   set time interval for sampling
-> +  -v, --version         show version
-> +  -g, --debug           debug message in syslog
-> +
-> +1. For monitoring only:
-> +$ sudo ./tmon
-> diff --git a/tools/thermal/tmon/pid.c b/tools/thermal/tmon/pid.c
-> new file mode 100644
-> index 0000000..fd7e9e9
-> --- /dev/null
-> +++ b/tools/thermal/tmon/pid.c
-> @@ -0,0 +1,131 @@
-> +/*
-> + * pid.c PID controller for testing cooling devices
-> + *
-> + *
-> + *
-> + * Copyright (C) 2012 Intel Corporation. All rights reserved.
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License version=
-
-> + * 2 or later as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * Author Name Jacob Pan <jacob.jun.pan@linux.intel.com>
-> + *
-> + */
-> +
-> +#include <unistd.h>
-> +#include <stdio.h>
-> +#include <stdlib.h>
-> +#include <string.h>
-> +#include <stdint.h>
-> +#include <sys/types.h>
-> +#include <dirent.h>
-> +#include <libintl.h>
-> +#include <ctype.h>
-> +#include <assert.h>
-> +#include <time.h>
-> +#include <limits.h>
-> +#include <math.h>
-> +#include <sys/stat.h>
-> +#include <syslog.h>
-> +
-> +#include "tmon.h"
-> +
-> +/*********************************************************************=
-*****
-> + * PID (Proportional-Integral-Derivative) controller is commonly used =
-in
-> + * linear control system, consider the the process.
-> + * G(s) =3D U(s)/E(s)
-> + * kp =3D proportional gain
-> + * ki =3D integral gain
-> + * kd =3D derivative gain
-> + * Ts
-> + * We use type C Alan Bradley equation which takes set point off the
-> + * output dependency in P and D term.
-> + *
-> + *   y[k] =3D y[k-1] - kp*(x[k] - x[k-1]) + Ki*Ts*e[k] - Kd*(x[k]
-> + *          - 2*x[k-1]+x[k-2])/Ts
-> + *
-> + *
-> + *********************************************************************=
-**/
-> +struct pid_params p_param;
-> +/* cached data from previous loop */
-> +static double xk_1, xk_2; /* input temperature x[k-#] */
-> +
-> +/*
-> + * TODO: make PID parameters tuned automatically,
-> + * 1. use CPU burn to produce open loop unit step response
-> + * 2. calculate PID based on Ziegler-Nichols rule
-> + *
-> + * add a flag for tuning PID
-> + */
-> +int init_thermal_controller(void)
-> +{
-> +	int ret =3D 0;
-> +
-> +	/* init pid params */
-> +	p_param.ts =3D ticktime;
-> +	/* TODO: get it from TUI tuning tab */
-> +	p_param.kp =3D .36;
-> +	p_param.ki =3D 5.0;
-> +	p_param.kd =3D 0.19;
-> +
-> +	p_param.t_target =3D target_temp_user;
-> +
-> +	return ret;
-> +}
-> +
-> +void controller_reset(void)
-> +{
-> +	/* TODO: relax control data when not over thermal limit */
-> +	syslog(LOG_DEBUG, "TC inactive, relax p-state\n");
-> +	p_param.y_k =3D 0.0;
-> +	xk_1 =3D 0.0;
-> +	xk_2 =3D 0.0;
-> +	set_ctrl_state(0);
-> +}
-> +
-> +/* To be called at time interval Ts. Type C PID controller.
-> + *    y[k] =3D y[k-1] - kp*(x[k] - x[k-1]) + Ki*Ts*e[k] - Kd*(x[k]
-> + *          - 2*x[k-1]+x[k-2])/Ts
-> + * TODO: add low pass filter for D term
-> + */
-> +#define GUARD_BAND (2)
-> +void controller_handler(const double xk, double *yk)
-> +{
-> +	double ek;
-> +	double p_term, i_term, d_term;
-> +
-> +	ek =3D p_param.t_target - xk; /* error */
-> +	if (ek >=3D 3.0) {
-> +		syslog(LOG_DEBUG, "PID: %3.1f Below set point %3.1f, stop\n",
-> +			xk, p_param.t_target);
-> +		controller_reset();
-> +		*yk =3D 0.0;
-> +		return;
-> +	}
-> +	/* compute intermediate PID terms */
-> +	p_term =3D -p_param.kp * (xk - xk_1);
-> +	i_term =3D p_param.kp * p_param.ki * p_param.ts * ek;
-> +	d_term =3D -p_param.kp * p_param.kd * (xk - 2 * xk_1 + xk_2) / p_para=
-m.ts;
-> +	/* compute output */
-> +	*yk +=3D p_term + i_term + d_term;
-> +	/* update sample data */
-> +	xk_1 =3D xk;
-> +	xk_2 =3D xk_1;
-> +
-> +	/* clamp output adjustment range */
-> +	if (*yk < -LIMIT_HIGH)
-> +		*yk =3D -LIMIT_HIGH;
-> +	else if (*yk > -LIMIT_LOW)
-> +		*yk =3D -LIMIT_LOW;
-> +
-> +	p_param.y_k =3D *yk;
-> +
-> +	set_ctrl_state(lround(fabs(p_param.y_k)));
-> +
-> +}
-> diff --git a/tools/thermal/tmon/sysfs.c b/tools/thermal/tmon/sysfs.c
-> new file mode 100644
-> index 0000000..54e24b3
-> --- /dev/null
-> +++ b/tools/thermal/tmon/sysfs.c
-> @@ -0,0 +1,585 @@
-> +/*
-> + * sysfs.c sysfs ABI access functions for TMON program
-> + *
-> + * Copyright (C) 2013 Intel Corporation. All rights reserved.
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License version=
-
-> + * 2 or later as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * Author: Jacob Pan <jacob.jun.pan@linux.intel.com>
-> + *
-> + */
-> +#include <unistd.h>
-> +#include <stdio.h>
-> +#include <stdlib.h>
-> +#include <string.h>
-> +#include <stdint.h>
-> +#include <dirent.h>
-> +#include <libintl.h>
-> +#include <ctype.h>
-> +#include <time.h>
-> +#include <syslog.h>
-> +#include <sys/time.h>
-> +#include <errno.h>
-> +
-> +#include "tmon.h"
-> +
-> +struct tmon_platform_data ptdata;
-> +const char *trip_type_name[] =3D {
-> +	"critical",
-> +	"hot",
-> +	"passive",
-> +	"active",
-> +};
-> +
-> +int sysfs_set_ulong(char *path, char *filename, unsigned long val)
-> +{
-> +	FILE *fd;
-> +	int ret =3D -1;
-> +	char filepath[256];
-> +
-> +	snprintf(filepath, 256, "%s/%s", path, filename);
-> +
-> +	fd =3D fopen(filepath, "w");
-> +	if (!fd) {
-> +		syslog(LOG_ERR, "Err: open %s: %s\n", __func__, filepath);
-> +		return ret;
-> +	}
-> +	ret =3D fprintf(fd, "%lu", val);
-> +	fclose(fd);
-> +
-> +	return 0;
-> +}
-> +
-> +/* history of thermal data, used for control algo */
-> +#define NR_THERMAL_RECORDS 3
-> +struct thermal_data_record trec[NR_THERMAL_RECORDS];
-> +int cur_thermal_record; /* index to the trec array */
-> +
-> +static int sysfs_get_ulong(char *path, char *filename, unsigned long *=
-p_ulong)
-> +{
-> +	FILE *fd;
-> +	int ret =3D -1;
-> +	char filepath[256];
-> +
-> +	snprintf(filepath, 256, "%s/%s", path, filename);
-> +
-> +	fd =3D fopen(filepath, "r");
-> +	if (!fd) {
-> +		syslog(LOG_ERR, "Err: open %s: %s\n", __func__, filepath);
-> +		return ret;
-> +	}
-> +	ret =3D fscanf(fd, "%lu", p_ulong);
-> +	fclose(fd);
-> +
-> +	return 0;
-> +}
-> +
-> +static int sysfs_get_string(char *path, char *filename, char *str)
-> +{
-> +	FILE *fd;
-> +	int ret =3D -1;
-> +	char filepath[256];
-> +
-> +	snprintf(filepath, 256, "%s/%s", path, filename);
-> +
-> +	fd =3D fopen(filepath, "r");
-> +	if (!fd) {
-> +		syslog(LOG_ERR, "Err: open %s: %s\n", __func__, filepath);
-> +		return ret;
-> +	}
-> +	ret =3D fscanf(fd, "%256s", str);
-> +	fclose(fd);
-> +
-> +	return ret;
-> +}
-> +
-> +/* get states of the cooling device instance */
-> +static int probe_cdev(struct cdev_info *cdi, char *path)
-> +{
-> +	sysfs_get_string(path, "type", cdi->type);
-> +	sysfs_get_ulong(path, "max_state",  &cdi->max_state);
-> +	sysfs_get_ulong(path, "cur_state", &cdi->cur_state);
-> +
-> +	syslog(LOG_INFO, "%s: %s: type %s, max %lu, curr %lu inst %d\n",
-> +		__func__, path,
-> +		cdi->type, cdi->max_state, cdi->cur_state, cdi->instance);
-> +
-> +	return 0;
-> +}
-> +
-> +static int str_to_trip_type(char *name)
-> +{
-> +	int i;
-> +
-> +	for (i =3D 0; i < NR_THERMAL_TRIP_TYPE; i++) {
-> +		if (!strcmp(name, trip_type_name[i]))
-> +			return i;
-> +	}
-> +
-> +	return -ENOENT;
-> +}
-> +
-> +/* scan and fill in trip point info for a thermal zone and trip point =
-id */
-> +static int get_trip_point_data(char *tz_path, int tzid, int tpid)
-> +{
-> +	char filename[256];
-> +	char temp_str[256];
-> +	int trip_type;
-> +
-> +	if (tpid >=3D MAX_NR_TRIP)
-> +		return -EINVAL;
-> +	/* check trip point type */
-> +	snprintf(filename, sizeof(filename), "trip_point_%d_type", tpid);
-> +	sysfs_get_string(tz_path, filename, temp_str);
-> +	trip_type =3D str_to_trip_type(temp_str);
-> +	if (trip_type < 0) {
-> +		syslog(LOG_ERR, "%s:%s no matching type\n", __func__, temp_str);
-> +		return -ENOENT;
-> +	}
-> +	ptdata.tzi[tzid].tp[tpid].type =3D trip_type;
-> +	syslog(LOG_INFO, "%s:tz:%d tp:%d:type:%s type id %d\n", __func__, tzi=
-d,
-> +		tpid, temp_str, trip_type);
-> +
-> +	/* TODO: check attribute */
-> +
-> +	return 0;
-> +}
-> +
-> +/* return instance id for file format such as trip_point_4_temp */
-> +static int get_instance_id(char *name, int pos, int skip)
-> +{
-> +	char *ch;
-> +	int i =3D 0;
-> +
-> +	ch =3D strtok(name, "_");
-> +	while (ch !=3D NULL) {
-> +		++i;
-> +		syslog(LOG_INFO, "%s:%s:%s:%d", __func__, name, ch, i);
-> +		ch =3D strtok(NULL, "_");
-> +		if (pos =3D=3D i)
-> +			return atol(ch + skip);
-> +	}
-> +
-> +	return -1;
-> +}
-> +
-> +/* Find trip point info of a thermal zone */
-> +static int find_tzone_tp(char *tz_name, char *d_name, struct tz_info *=
-tzi,
-> +			int tz_id)
-> +{
-> +	int tp_id;
-> +	unsigned long temp_ulong;
-> +
-> +	if (strstr(d_name, "trip_point") &&
-> +		strstr(d_name, "temp")) {
-> +		/* check if trip point temp is non-zero
-> +		 * ignore 0/invalid trip points
-> +		 */
-> +		sysfs_get_ulong(tz_name, d_name, &temp_ulong);
-> +		if (temp_ulong < MAX_TEMP_KC) {
-> +			tzi->nr_trip_pts++;
-> +			/* found a valid trip point */
-> +			tp_id =3D get_instance_id(d_name, 2, 0);
-> +			syslog(LOG_DEBUG, "tzone %s trip %d temp %lu tpnode %s",
-> +				tz_name, tp_id, temp_ulong, d_name);
-> +			if (tp_id < 0 || tp_id >=3D MAX_NR_TRIP) {
-> +				syslog(LOG_ERR, "Failed to find TP inst %s\n",
-> +					d_name);
-> +				return -1;
-> +			}
-> +			get_trip_point_data(tz_name, tz_id, tp_id);
-> +			tzi->tp[tp_id].temp =3D temp_ulong;
-> +		}
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +/* check cooling devices for binding info. */
-> +static int find_tzone_cdev(struct dirent *nl, char *tz_name,
-> +			struct tz_info *tzi, int tz_id, int cid)
-> +{
-> +	unsigned long trip_instance =3D 0;
-> +	char cdev_name_linked[256];
-> +	char cdev_name[256];
-> +	char cdev_trip_name[256];
-> +	int cdev_id;
-> +
-> +	if (nl->d_type =3D=3D DT_LNK) {
-> +		syslog(LOG_DEBUG, "TZ%d: cdev: %s cid %d\n", tz_id, nl->d_name,
-> +			cid);
-> +		tzi->nr_cdev++;
-> +		if (tzi->nr_cdev > ptdata.nr_cooling_dev) {
-> +			syslog(LOG_ERR, "Err: Too many cdev? %d\n",
-> +				tzi->nr_cdev);
-> +			return -EINVAL;
-> +		}
-> +		/* find the link to real cooling device record binding */
-> +		snprintf(cdev_name, 256, "%s/%s", tz_name, nl->d_name);
-> +		memset(cdev_name_linked, 0, sizeof(cdev_name_linked));
-> +		if (readlink(cdev_name, cdev_name_linked,
-> +				sizeof(cdev_name_linked) - 1) !=3D -1) {
-> +			cdev_id =3D get_instance_id(cdev_name_linked, 1,
-> +						sizeof("device") - 1);
-> +			syslog(LOG_DEBUG, "cdev %s linked to %s : %d\n",
-> +				cdev_name, cdev_name_linked, cdev_id);
-> +			tzi->cdev_binding |=3D (1 << cdev_id);
-> +
-> +			/* find the trip point in which the cdev is binded to
-> +			 * in this tzone
-> +			 */
-> +			snprintf(cdev_trip_name, 256, "%s%s", nl->d_name,
-> +				"_trip_point");
-> +			sysfs_get_ulong(tz_name, cdev_trip_name,
-> +					&trip_instance);
-> +			/* validate trip point range, e.g. trip could return -1
-> +			 * when passive is enabled
-> +			 */
-> +			if (trip_instance > MAX_NR_TRIP)
-> +				trip_instance =3D 0;
-> +			tzi->trip_binding[cdev_id] |=3D 1 << trip_instance;
-> +			syslog(LOG_DEBUG, "cdev %s -> trip:%lu: 0x%lx %d\n",
-> +				cdev_name, trip_instance,
-> +				tzi->trip_binding[cdev_id],
-> +				cdev_id);
-> +
-> +
-> +		}
-> +		return 0;
-> +	}
-> +
-> +	return -ENODEV;
-> +}
-> +
-> +
-> +
-> +/*********************************************************************=
-********
-> + * Before calling scan_tzones, thermal sysfs must be probed to determi=
-ne
-> + * the number of thermal zones and cooling devices.
-> + * We loop through each thermal zone and fill in tz_info struct, i.e.
-> + * ptdata.tzi[]
-> +root@jacob-chiefriver:~# tree -d /sys/class/thermal/thermal_zone0
-> +/sys/class/thermal/thermal_zone0
-> +|-- cdev0 -> ../cooling_device4
-> +|-- cdev1 -> ../cooling_device3
-> +|-- cdev10 -> ../cooling_device7
-> +|-- cdev11 -> ../cooling_device6
-> +|-- cdev12 -> ../cooling_device5
-> +|-- cdev2 -> ../cooling_device2
-> +|-- cdev3 -> ../cooling_device1
-> +|-- cdev4 -> ../cooling_device0
-> +|-- cdev5 -> ../cooling_device12
-> +|-- cdev6 -> ../cooling_device11
-> +|-- cdev7 -> ../cooling_device10
-> +|-- cdev8 -> ../cooling_device9
-> +|-- cdev9 -> ../cooling_device8
-> +|-- device -> ../../../LNXSYSTM:00/device:62/LNXTHERM:00
-> +|-- power
-> +`-- subsystem -> ../../../../class/thermal
-> +**********************************************************************=
-*******/
-> +static int scan_tzones(void)
-> +{
-> +	DIR *dir;
-> +	struct dirent **namelist;
-> +	char tz_name[256];
-> +	int i, j, n, k =3D 0;
-> +
-> +	if (!ptdata.nr_tz_sensor) {
-> +		syslog(LOG_ERR, "No thermal zones found!\n");
-> +		return -1;
-> +	}
-> +
-> +	for (i =3D 0; i <=3D ptdata.max_tz_instance; i++) {
-> +		memset(tz_name, 0, sizeof(tz_name));
-> +		snprintf(tz_name, 256, "%s/%s%d", THERMAL_SYSFS, TZONE, i);
-> +
-> +		dir =3D opendir(tz_name);
-> +		if (!dir) {
-> +			syslog(LOG_INFO, "Thermal zone %s skipped\n", tz_name);
-> +			continue;
-> +		}
-> +		/* keep track of valid tzones */
-> +		n =3D scandir(tz_name, &namelist, 0, alphasort);
-> +		if (n < 0)
-> +			syslog(LOG_ERR, "scandir failed in %s",  tz_name);
-> +		else {
-> +			sysfs_get_string(tz_name, "type", ptdata.tzi[k].type);
-> +			ptdata.tzi[k].instance =3D i;
-> +			/* detect trip points and cdev attached to this tzone */
-> +			j =3D 0; /* index for cdev */
-> +			ptdata.tzi[k].nr_cdev =3D 0;
-> +			ptdata.tzi[k].nr_trip_pts =3D 0;
-> +			while (n--) {
-> +				char *temp_str;
-> +
-> +				if (find_tzone_tp(tz_name, namelist[n]->d_name,
-> +							&ptdata.tzi[k], k))
-> +					break;
-> +				temp_str =3D strstr(namelist[n]->d_name, "cdev");
-> +				if (!temp_str) {
-> +					free(namelist[n]);
-> +					continue;
-> +				}
-> +				if (!find_tzone_cdev(namelist[n], tz_name,
-> +							&ptdata.tzi[k], i, j))
-> +					j++; /* increment cdev index */
-> +				free(namelist[n]);
-> +			}
-> +			free(namelist);
-> +		}
-> +		/*TODO: reverse trip points */
-> +		closedir(dir);
-> +		syslog(LOG_INFO, "TZ %d has %d cdev\n",	i,
-> +			ptdata.tzi[k].nr_cdev);
-> +		k++;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static int scan_cdevs(void)
-> +{
-> +	DIR *dir;
-> +	struct dirent **namelist;
-> +	char cdev_name[256];
-> +	int i, n, k =3D 0;
-> +
-> +	for (i =3D 0; i <=3D ptdata.max_cdev_instance; i++) {
-> +		memset(cdev_name, 0, sizeof(cdev_name));
-> +		snprintf(cdev_name, 256, "%s/%s%d", THERMAL_SYSFS, CDEV, i);
-> +
-> +		dir =3D opendir(cdev_name);
-> +		if (!dir) {
-> +			syslog(LOG_INFO, "Cooling dev %s skipped\n", cdev_name);
-> +			/* there is a gap in cooling device id, check again
-> +			 * for the same index.
-> +			 */
-> +			continue;
-> +		}
-> +
-> +		n =3D scandir(cdev_name, &namelist, 0, alphasort);
-> +		if (n < 0)
-> +			syslog(LOG_ERR, "scandir failed in %s",  cdev_name);
-> +		else {
-> +			sysfs_get_string(cdev_name, "type", ptdata.cdi[k].type);
-> +			ptdata.cdi[k].instance =3D i;
-> +			if (strstr(ptdata.cdi[k].type, ctrl_cdev)) {
-> +				ptdata.cdi[k].flag |=3D CDEV_FLAG_IN_CONTROL;
-> +				syslog(LOG_DEBUG, "control cdev id %d\n", i);
-> +			}
-> +			while (n--)
-> +				free(namelist[n]);
-> +			free(namelist);
-> +		}
-> +		closedir(dir);
-> +		k++;
-> +	}
-> +	return 0;
-> +}
-> +
-> +
-> +int probe_thermal_sysfs(void)
-> +{
-> +	DIR *dir;
-> +	struct dirent **namelist;
-> +	int n;
-> +
-> +	dir =3D opendir(THERMAL_SYSFS);
-> +	if (!dir) {
-> +		syslog(LOG_ERR, "No thermal sysfs\n");
-> +		return -1;
-> +	}
-> +	n =3D scandir(THERMAL_SYSFS, &namelist, 0, alphasort);
-> +	if (n < 0)
-> +		syslog(LOG_ERR, "scandir failed in thermal sysfs");
-> +	else {
-> +		/* detect number of thermal zones and cooling devices */
-> +		while (n--) {
-> +			int inst;
-> +
-> +			if (strstr(namelist[n]->d_name, CDEV)) {
-> +				inst =3D get_instance_id(namelist[n]->d_name, 1,
-> +						sizeof("device") - 1);
-> +				/* keep track of the max cooling device since
-> +				 * there may be gaps.
-> +				 */
-> +				if (inst > ptdata.max_cdev_instance)
-> +					ptdata.max_cdev_instance =3D inst;
-> +
-> +				syslog(LOG_DEBUG, "found cdev: %s %d %d\n",
-> +					namelist[n]->d_name,
-> +					ptdata.nr_cooling_dev,
-> +					ptdata.max_cdev_instance);
-> +				ptdata.nr_cooling_dev++;
-> +			} else if (strstr(namelist[n]->d_name, TZONE)) {
-> +				inst =3D get_instance_id(namelist[n]->d_name, 1,
-> +						sizeof("zone") - 1);
-> +				if (inst > ptdata.max_tz_instance)
-> +					ptdata.max_tz_instance =3D inst;
-> +
-> +				syslog(LOG_DEBUG, "found tzone: %s %d %d\n",
-> +					namelist[n]->d_name,
-> +					ptdata.nr_tz_sensor,
-> +					ptdata.max_tz_instance);
-> +				ptdata.nr_tz_sensor++;
-> +			}
-> +			free(namelist[n]);
-> +		}
-> +		free(namelist);
-> +	}
-> +	syslog(LOG_INFO, "found %d tzone(s), %d cdev(s), target zone %d\n",
-> +		ptdata.nr_tz_sensor, ptdata.nr_cooling_dev,
-> +		target_thermal_zone);
-> +	closedir(dir);
-> +
-> +	ptdata.tzi =3D calloc(sizeof(struct tz_info), ptdata.nr_tz_sensor+1);=
-
-> +	if (!ptdata.tzi) {
-> +		syslog(LOG_ERR, "Err: allocate tz_info\n");
-> +		return -1;
-> +	}
-> +
-> +	ptdata.cdi =3D calloc(sizeof(struct cdev_info), ptdata.nr_cooling_dev=
-+1);
-> +	if (!ptdata.cdi) {
-> +		syslog(LOG_ERR, "Err: allocate cdev_info\n");
-> +		return -1;
-> +	}
-> +
-> +	/* now probe tzones */
-> +	if (scan_tzones())
-> +		return -1;
-> +	if (scan_cdevs())
-> +		return -1;
-> +	return 0;
-> +}
-> +
-> +/* convert sysfs zone instance to zone array index */
-> +int zone_instance_to_index(int zone_inst)
-> +{
-> +	int i;
-> +
-> +	for (i =3D 0; i < ptdata.nr_tz_sensor; i++)
-> +		if (ptdata.tzi[i].instance =3D=3D zone_inst)
-> +			return i;
-> +	return -ENOENT;
-> +}
-> +
-> +/* read temperature of all thermal zones */
-> +int update_thermal_data()
-> +{
-> +	int i;
-> +	char tz_name[256];
-> +	static unsigned long samples;
-> +
-> +	if (!ptdata.nr_tz_sensor) {
-> +		syslog(LOG_ERR, "No thermal zones found!\n");
-> +		return -1;
-> +	}
-> +
-> +	/* circular buffer for keeping historic data */
-> +	if (cur_thermal_record >=3D NR_THERMAL_RECORDS)
-> +		cur_thermal_record =3D 0;
-> +	gettimeofday(&trec[cur_thermal_record].tv, NULL);
-> +	if (tmon_log) {
-> +		fprintf(tmon_log, "%lu ", ++samples);
-> +		fprintf(tmon_log, "%3.1f ", p_param.t_target);
-> +	}
-> +	for (i =3D 0; i < ptdata.nr_tz_sensor; i++) {
-> +		memset(tz_name, 0, sizeof(tz_name));
-> +		snprintf(tz_name, 256, "%s/%s%d", THERMAL_SYSFS, TZONE,
-> +			ptdata.tzi[i].instance);
-> +		sysfs_get_ulong(tz_name, "temp",
-> +				&trec[cur_thermal_record].temp[i]);
-> +		if (tmon_log)
-> +			fprintf(tmon_log, "%lu ",
-> +				trec[cur_thermal_record].temp[i]/1000);
-> +	}
-> +	for (i =3D 0; i < ptdata.nr_cooling_dev; i++) {
-> +		char cdev_name[256];
-> +		unsigned long val;
-> +
-> +		snprintf(cdev_name, 256, "%s/%s%d", THERMAL_SYSFS, CDEV,
-> +			ptdata.cdi[i].instance);
-> +		probe_cdev(&ptdata.cdi[i], cdev_name);
-> +		val =3D ptdata.cdi[i].cur_state;
-> +		if (val > 1000000)
-> +			val =3D 0;
-> +		if (tmon_log)
-> +			fprintf(tmon_log, "%lu ", val);
-> +	}
-> +
-> +	if (tmon_log) {
-> +		fprintf(tmon_log, "\n");
-> +		fflush(tmon_log);
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +void set_ctrl_state(unsigned long state)
-> +{
-> +	char ctrl_cdev_path[256];
-> +	int i;
-> +	unsigned long cdev_state;
-> +
-> +	if (no_control)
-> +		return;
-> +	/* set all ctrl cdev to the same state */
-> +	for (i =3D 0; i < ptdata.nr_cooling_dev; i++) {
-> +		if (ptdata.cdi[i].flag & CDEV_FLAG_IN_CONTROL) {
-> +			if (ptdata.cdi[i].max_state < 10) {
-> +				syslog(LOG_WARNING,
-> +					"not enough states in control cdev\n");
-> +				return;
-> +			}
-> +			/* scale to percentage of max_state */
-> +			cdev_state =3D state * ptdata.cdi[i].max_state/100;
-> +			syslog(LOG_DEBUG,
-> +				"ctrl cdev %d set state %lu scaled to %lu\n",
-> +				ptdata.cdi[i].instance, state, cdev_state);
-> +			snprintf(ctrl_cdev_path, 256, "%s/%s%d", THERMAL_SYSFS,
-> +				CDEV, ptdata.cdi[i].instance);
-> +			syslog(LOG_DEBUG, "ctrl cdev path %s", ctrl_cdev_path);
-> +			sysfs_set_ulong(ctrl_cdev_path, "cur_state",
-> +					cdev_state);
-> +		}
-> +	}
-> +}
-> +
-> +void get_ctrl_state(unsigned long *state)
-> +{
-> +	char ctrl_cdev_path[256];
-> +	int ctrl_cdev_id =3D -1;
-> +	int i;
-> +
-> +	/* TODO: take average of all ctrl types. also consider change based o=
-n
-> +	 * uevent. Take the first reading for now.
-> +	 */
-> +	for (i =3D 0; i < ptdata.nr_cooling_dev; i++) {
-> +		if (ptdata.cdi[i].flag & CDEV_FLAG_IN_CONTROL) {
-> +			ctrl_cdev_id =3D ptdata.cdi[i].instance;
-> +			syslog(LOG_INFO, "ctrl cdev %d get state\n",
-> +				ptdata.cdi[i].instance);
-> +			break;
-> +		}
-> +	}
-> +	if (ctrl_cdev_id =3D=3D -1) {
-> +		*state =3D 0;
-> +		return;
-> +	}
-> +	snprintf(ctrl_cdev_path, 256, "%s/%s%d", THERMAL_SYSFS,
-> +		CDEV, ctrl_cdev_id);
-> +	sysfs_get_ulong(ctrl_cdev_path, "cur_state", state);
-> +}
-> +
-> +void free_thermal_data(void)
-> +{
-> +	free(ptdata.tzi);
-> +	free(ptdata.cdi);
-> +}
-> diff --git a/tools/thermal/tmon/tmon.8 b/tools/thermal/tmon/tmon.8
-> new file mode 100644
-> index 0000000..0be727c
-> --- /dev/null
-> +++ b/tools/thermal/tmon/tmon.8
-> @@ -0,0 +1,142 @@
-> +.TH TMON 8
-> +.SH NAME
-> +\fBtmon\fP - A monitoring and testing tool for Linux kernel thermal su=
-bsystem
-> +
-> +.SH SYNOPSIS
-> +.ft B
-> +.B tmon
-> +.RB [ Options ]
-> +.br
-> +.SH DESCRIPTION
-> +\fBtmon \fP can be used to visualize thermal relationship and
-> +real-time thermal data; tune
-> +and test cooling devices and sensors; collect thermal data for offline=
-
-> +analysis and plot. \fBtmon\fP must be run as root in order to control =
-device
-> +states via sysfs.
-> +.PP
-> +\fBFunctions\fP
-> +.PP
-> +.nf
-> +1. Thermal relationships:
-> +- show thermal zone information
-> +- show cooling device information
-> +- show trip point binding within each thermal zone
-> +- show trip point and cooling device instance bindings
-> +.PP
-> +2. Real time data display
-> +- show temperature of all thermal zones w.r.t. its trip points and typ=
-es
-> +- show states of all cooling devices
-> +.PP
-> +3. Thermal relationship learning and device tuning
-> +- with a built-in Proportional Integral Derivative (\fBPID\fP)
-> +controller, user can pair a cooling device to a thermal sensor for
-> +testing the effectiveness and learn about the thermal distance between=
- the two
-> +- allow manual control of cooling device states and target temperature=
-
-> +.PP
-> +4. Data logging in /var/tmp/tmon.log
-> +- contains thermal configuration data, i.e. cooling device, thermal
-> + zones, and trip points. Can be used for data  collection in remote
-> + debugging.
-> +- log real-time thermal data into space separated format that can be
-> + directly consumed by plotting tools such as Rscript.
-> +
-> +.SS Options
-> +.PP
-> +The \fB-c --control\fP option sets a cooling device type to control te=
-mperature
-> +of a thermal zone
-> +.PP
-> +The \fB-d --daemon\fP option runs \fBtmon \fP as daemon without user i=
-nterface
-> +.PP
-> +The \fB-g --debug\fP option allow debug messages to be stored in syslo=
-g
-> +.PP
-> +The \fB-h --help\fP option shows help message
-> +.PP
-> +The \fB-l --log\fP option write data to /var/tmp/tmon.log
-> +.PP
-> +The \fB-t --time-interval\fP option sets the polling interval in secon=
-ds
-> +.PP
-> +The \fB-v --version\fP option shows the version of \fBtmon \fP
-> +.PP
-> +The \fB-z --zone\fP option sets the target therma zone instance to be =
-controlled
-> +.PP
-> +
-> +.SH FIELD DESCRIPTIONS
-> +.nf
-> +.PP
-> +\fBP \fP passive cooling trip point type
-> +\fBA \fP active cooling trip point type (fan)
-> +\fBC \fP critical trip point type
-> +\fBA \fP hot trip point type
-> +\fBkp \fP proportional gain of \fBPID\fP controller
-> +\fBki \fP integral gain of \fBPID\fP controller
-> +\fBkd \fP derivative gain of \fBPID\fP controller
-> +
-> +.SH REQUIREMENT
-> +Build depends on ncurses
-> +.PP
-> +Runtime depends on window size large enough to show the number of
-> +devices found on the system.
-> +
-> +.PP
-> +
-> +.SH INTERACTIVE COMMANDS
-> +.pp
-> +.nf
-> +\fBCtrl-C, q/Q\fP stops \fBtmon\fP
-> +\fBTAB\fP shows tuning pop up panel, choose a letter to modify
-> +
-> +.SH EXAMPLES
-> +Without any parameters, tmon is in monitoring only mode and refresh
-> +screen every 1 second.
-> +.PP
-> +1. For monitoring only:
-> +.nf
-> +$ sudo ./tmon
-> +
-> +2. Use Processor cooling device to control thermal zone 0 at default 6=
-5C.
-> +$ sudo ./tmon -c Processor -z 0
-> +
-> +3. Use intel_powerclamp(idle injection) cooling device to control ther=
-mal zone 1
-> +$ sudo ./tmon -c intel_powerclamp -z 1
-> +
-> +4. Turn on debug and collect data log at /var/tmp/tmon.log
-> +$ sudo ./tmon -g -l
-> +
-> +For example, the log below shows PID controller was adjusting current =
-states
-> +for all cooling devices with "Processor" type such that thermal zone 0=
-
-> +can stay below 65 dC.
-> +
-> +#---------- THERMAL DATA LOG STARTED -----------
-> +Samples TargetTemp acpitz0    acpitz1    Fan0 Fan1 Fan2 Fan3 Fan4 Fan5=
-
-> +Fan6 Fan7 Fan8 Fan9 Processor10 Processor11 Processor12 Processor13
-> +LCD14 intel_powerclamp15 1 65.0 65 65 0 0 0 0 0 0 0 0 0 0 0 0 0 0 6 0 =
-2
-> +65.0 66 65 0 0 0 0 0 0 0 0 0 0 4 4 4 4 6 0 3 65.0 60 54 0 0 0 0 0 0 0 =
-0
-> +0 0 4 4 4 4 6 0 4 65.0 53 53 0 0 0 0 0 0 0 0 0 0 4 4 4 4 6 0
-> +5 65.0 52 52 0 0 0 0 0 0 0 0 0 0 0 0 0 0 6 0
-> +6 65.0 53 65 0 0 0 0 0 0 0 0 0 0 0 0 0 0 6 0
-> +7 65.0 68 70 0 0 0 0 0 0 0 0 0 0 0 0 0 0 6 0
-> +8 65.0 68 68 0 0 0 0 0 0 0 0 0 0 5 5 5 5 6 0
-> +9 65.0 68 68 0 0 0 0 0 0 0 0 0 0 6 6 6 6 6 0
-> +10 65.0 67 67 0 0 0 0 0 0 0 0 0 0 7 7 7 7 6 0
-> +11 65.0 67 67 0 0 0 0 0 0 0 0 0 0 8 8 8 8 6 0
-> +12 65.0 67 67 0 0 0 0 0 0 0 0 0 0 8 8 8 8 6 0
-> +13 65.0 67 67 0 0 0 0 0 0 0 0 0 0 9 9 9 9 6 0
-> +14 65.0 66 66 0 0 0 0 0 0 0 0 0 0 10 10 10 10 6 0
-> +15 65.0 66 67 0 0 0 0 0 0 0 0 0 0 10 10 10 10 6 0
-> +16 65.0 66 66 0 0 0 0 0 0 0 0 0 0 11 11 11 11 6 0
-> +17 65.0 66 66 0 0 0 0 0 0 0 0 0 0 11 11 11 11 6 0
-> +18 65.0 64 61 0 0 0 0 0 0 0 0 0 0 11 11 11 11 6 0
-> +19 65.0 60 59 0 0 0 0 0 0 0 0 0 0 12 12 12 12 6 0
-> +
-> +Data can be read directly into an array by an example R-script below:
-> +
-> +#!/usr/bin/Rscript
-> +tdata <- read.table("/var/tmp/tmon.log", header=3DT, comment.char=3D"#=
-")
-> +attach(tdata)
-> +jpeg("tmon.jpg")
-> +X11()
-> +g_range <- range(0, intel_powerclamp15, TargetTemp, acpitz0)
-> +plot( Samples, intel_powerclamp15, col=3D"blue", ylim=3Dg_range, axes=3D=
-FALSE, ann=3DFALSE)
-> +par(new=3DTRUE)
-> +lines(TargetTemp, type=3D"o", pch=3D22, lty=3D2, col=3D"red")
-> +dev.off()
-> diff --git a/tools/thermal/tmon/tmon.c b/tools/thermal/tmon/tmon.c
-> new file mode 100644
-> index 0000000..5f13fb1
-> --- /dev/null
-> +++ b/tools/thermal/tmon/tmon.c
-> @@ -0,0 +1,350 @@
-> +/*
-> + * tmon.c Thermal Monitor (TMON) main function and entry point
-> + *
-> + * Copyright (C) 2012 Intel Corporation. All rights reserved.
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License version=
-
-> + * 2 or later as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * Author: Jacob Pan <jacob.jun.pan@linux.intel.com>
-> + *
-> + */
-> +
-> +#include <getopt.h>
-> +#include <unistd.h>
-> +#include <stdio.h>
-> +#include <stdlib.h>
-> +#include <string.h>
-> +#include <sys/types.h>
-> +#include <sys/stat.h>
-> +#include <ncurses.h>
-> +#include <ctype.h>
-> +#include <time.h>
-> +#include <signal.h>
-> +#include <limits.h>
-> +#include <sys/time.h>
-> +#include <pthread.h>
-> +#include <math.h>
-> +#include <stdarg.h>
-> +#include <syslog.h>
-> +
-> +#include "tmon.h"
-> +
-> +unsigned long ticktime =3D 1; /* seconds */
-> +unsigned long no_control =3D 1; /* monitoring only or use cooling devi=
-ce for
-> +			       * temperature control.
-> +			       */
-> +double time_elapsed =3D 0.0;
-> +unsigned long target_temp_user =3D 65; /* can be select by tui later *=
-/
-> +int dialogue_on;
-> +int tmon_exit;
-> +static short	daemon_mode;
-> +static int logging; /* for recording thermal data to a file */
-> +static int debug_on;
-> +FILE *tmon_log;
-> +char ctrl_cdev[CDEV_NAME_SIZE]; /*cooling device used for the PID cont=
-roller */
-> +int target_thermal_zone; /* user selected target zone instance */
-> +static void	start_daemon_mode(void);
-> +
-> +pthread_t event_tid;
-> +pthread_mutex_t input_lock;
-> +void usage()
-> +{
-> +	printf("Usage: tmon [OPTION...]\n");
-> +	printf("  -c, --control         cooling device in control\n");
-> +	printf("  -d, --daemon          run as daemon, no TUI\n");
-> +	printf("  -g, --debug           debug message in syslog\n");
-> +	printf("  -h, --help            show this help message\n");
-> +	printf("  -l, --log             log data to /var/tmp/tmon.log\n");
-> +	printf("  -t, --time-interval   sampling time interval, > 1 sec.\n");=
-
-> +	printf("  -v, --version         show version\n");
-> +	printf("  -z, --zone            target thermal zone id\n");
-> +
-> +	exit(0);
-> +}
-> +
-> +void version()
-> +{
-> +	printf("TMON version %s\n", VERSION);
-> +	exit(EXIT_SUCCESS);
-> +}
-> +
-> +static void tmon_cleanup(void)
-> +{
-> +
-> +	syslog(LOG_INFO, "TMON exit cleanup\n");
-> +	fflush(stdout);
-> +	refresh();
-> +	if (tmon_log)
-> +		fclose(tmon_log);
-> +	if (event_tid) {
-> +		pthread_mutex_lock(&input_lock);
-> +		pthread_cancel(event_tid);
-> +		pthread_mutex_unlock(&input_lock);
-> +		pthread_mutex_destroy(&input_lock);
-> +	}
-> +	closelog();
-> +	/* relax control knobs, undo throttling */
-> +	set_ctrl_state(0);
-> +
-> +	keypad(stdscr, FALSE);
-> +	echo();
-> +	nocbreak();
-> +	close_windows();
-> +	endwin();
-> +	free_thermal_data();
-> +
-> +	exit(1);
-> +}
-> +
-> +
-> +static void tmon_sig_handler(int sig)
-> +{
-> +	syslog(LOG_INFO, "TMON caught signal %d\n", sig);
-> +	refresh();
-> +	switch (sig) {
-> +	case SIGTERM:
-> +		printf("sigterm, exit and clean up\n");
-> +		fflush(stdout);
-> +		break;
-> +	case SIGKILL:
-> +		printf("sigkill, exit and clean up\n");
-> +		fflush(stdout);
-> +		break;
-> +	case SIGINT:
-> +		printf("ctrl-c, exit and clean up\n");
-> +		fflush(stdout);
-> +		break;
-> +	default:
-> +		break;
-> +	}
-> +	tmon_exit =3D true;
-> +}
-> +
-> +
-> +static void start_syslog(void)
-> +{
-> +	if (debug_on)
-> +		setlogmask(LOG_UPTO(LOG_DEBUG));
-> +	else
-> +		setlogmask(LOG_UPTO(LOG_ERR));
-> +	openlog("tmon.log", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL0);
-> +	syslog(LOG_NOTICE, "TMON started by User %d", getuid());
-> +}
-> +
-> +static void prepare_logging(void)
-> +{
-> +	int i;
-> +
-> +	if (!logging)
-> +		return;
-> +	/* open local data log file */
-> +	tmon_log =3D fopen(TMON_LOG_FILE, "w+");
-> +	if (!tmon_log) {
-> +		syslog(LOG_ERR, "failed to open log file %s\n", TMON_LOG_FILE);
-> +		return;
-> +	}
-> +
-> +	fprintf(tmon_log, "#----------- THERMAL SYSTEM CONFIG -------------\n=
-");
-> +	for (i =3D 0; i < ptdata.nr_tz_sensor; i++) {
-> +		char binding_str[33]; /* size of long + 1 */
-> +		int j;
-> +
-> +		memset(binding_str, 0, sizeof(binding_str));
-> +		for (j =3D 0; j < 32; j++)
-> +			binding_str[j] =3D (ptdata.tzi[i].cdev_binding & 1<<j) ?
-> +				'1' : '0';
-> +
-> +		fprintf(tmon_log, "#thermal zone %s%02d cdevs binding: %32s\n",
-> +			ptdata.tzi[i].type,
-> +			ptdata.tzi[i].instance,
-> +			binding_str);
-> +		for (j =3D 0; j <	ptdata.tzi[i].nr_trip_pts; j++) {
-> +			fprintf(tmon_log, "#\tTP%02d type:%s, temp:%lu\n", j,
-> +				trip_type_name[ptdata.tzi[i].tp[j].type],
-> +				ptdata.tzi[i].tp[j].temp);
-> +		}
-> +
-> +	}
-> +
-> +	for (i =3D 0; i <	ptdata.nr_cooling_dev; i++)
-> +		fprintf(tmon_log, "#cooling devices%02d: %s\n",
-> +			i, ptdata.cdi[i].type);
-> +
-> +	fprintf(tmon_log, "#---------- THERMAL DATA LOG STARTED -----------\n=
-");
-> +	fprintf(tmon_log, "Samples TargetTemp ");
-> +	for (i =3D 0; i < ptdata.nr_tz_sensor; i++) {
-> +		fprintf(tmon_log, "%s%d    ", ptdata.tzi[i].type,
-> +			ptdata.tzi[i].instance);
-> +	}
-> +	for (i =3D 0; i <	ptdata.nr_cooling_dev; i++)
-> +		fprintf(tmon_log, "%s%d ", ptdata.cdi[i].type,
-> +			ptdata.cdi[i].instance);
-> +
-> +	fprintf(tmon_log, "\n");
-> +}
-> +
-> +static struct option opts[] =3D {
-> +	{ "control", 1, NULL, 'c' },
-> +	{ "daemon", 0, NULL, 'd' },
-> +	{ "time-interval", 1, NULL, 't' },
-> +	{ "log", 0, NULL, 'l' },
-> +	{ "help", 0, NULL, 'h' },
-> +	{ "version", 0, NULL, 'v' },
-> +	{ "debug", 0, NULL, 'g' },
-> +	{ 0, 0, NULL, 0 }
-> +};
-> +
-> +
-> +int main(int argc, char **argv)
-> +{
-> +	int err =3D 0;
-> +	int id2 =3D 0, c;
-> +	double yk =3D 0.0; /* controller output */
-> +	int target_tz_index;
-> +
-> +	if (geteuid() !=3D 0) {
-> +		printf("TMON needs to be run as root\n");
-> +		exit(EXIT_FAILURE);
-> +	}
-> +
-> +	while ((c =3D getopt_long(argc, argv, "c:dlht:vgz:", opts, &id2)) !=3D=
- -1) {
-> +		switch (c) {
-> +		case 'c':
-> +			no_control =3D 0;
-> +			strncpy(ctrl_cdev, optarg, CDEV_NAME_SIZE);
-> +			break;
-> +		case 'd':
-> +			start_daemon_mode();
-> +			printf("Run TMON in daemon mode\n");
-> +			break;
-> +		case 't':
-> +			ticktime =3D strtod(optarg, NULL);
-> +			if (ticktime < 1)
-> +				ticktime =3D 1;
-> +			break;
-> +		case 'l':
-> +			printf("Logging data to /var/tmp/tmon.log\n");
-> +			logging =3D 1;
-> +			break;
-> +		case 'h':
-> +			usage();
-> +			break;
-> +		case 'v':
-> +			version();
-> +			break;
-> +		case 'g':
-> +			debug_on =3D 1;
-> +			break;
-> +		case 'z':
-> +			target_thermal_zone =3D strtod(optarg, NULL);
-> +			break;
-> +		default:
-> +			break;
-> +		}
-> +	}
-> +	if (pthread_mutex_init(&input_lock, NULL) !=3D 0) {
-> +		printf("\n mutex init failed\n");
-> +		return 1;
-> +	}
-> +	start_syslog();
-> +	if (signal(SIGINT, tmon_sig_handler) =3D=3D SIG_ERR)
-> +		syslog(LOG_DEBUG, "Cannot handle SIGINT\n");
-> +	if (signal(SIGTERM, tmon_sig_handler) =3D=3D SIG_ERR)
-> +		syslog(LOG_DEBUG, "Cannot handle SIGINT\n");
-> +
-> +	if (probe_thermal_sysfs()) {
-> +		closelog();
-> +		return -1;
-> +	}
-> +	initialize_curses();
-> +	setup_windows();
-> +	signal(SIGWINCH, resize_handler);
-> +	show_title_bar();
-> +	show_sensors_w();
-> +	show_cooling_device();
-> +	update_thermal_data();
-> +	show_data_w();
-> +	prepare_logging();
-> +	init_thermal_controller();
-> +
-> +	nodelay(stdscr, TRUE);
-> +	err =3D pthread_create(&event_tid, NULL, &handle_tui_events, NULL);
-> +	if (err !=3D 0) {
-> +		printf("\ncan't create thread :[%s]", strerror(err));
-> +		tmon_cleanup();
-> +		exit(EXIT_FAILURE);
-> +	}
-> +
-> +	/* validate range of user selected target zone, default to the first
-> +	 * instance if out of range
-> +	 */
-> +	target_tz_index =3D zone_instance_to_index(target_thermal_zone);
-> +	if (target_tz_index < 0) {
-> +		target_thermal_zone =3D ptdata.tzi[0].instance;
-> +		syslog(LOG_ERR, "target zone is not found, default to %d\n",
-> +			target_thermal_zone);
-> +	}
-> +	while (1) {
-> +		sleep(ticktime);
-> +		show_title_bar();
-> +		show_sensors_w();
-> +		update_thermal_data();
-> +		if (!dialogue_on) {
-> +			show_data_w();
-> +			show_cooling_device();
-> +		}
-> +		cur_thermal_record++;
-> +		time_elapsed +=3D ticktime;
-> +		controller_handler(trec[0].temp[target_tz_index] / 1000,
-> +				&yk);
-> +		trec[0].pid_out_pct =3D yk;
-> +		if (!dialogue_on)
-> +			show_control_w();
-> +		if (tmon_exit)
-> +			break;
-> +	}
-> +	tmon_cleanup();
-> +	return 0;
-> +}
-> +
-> +static void start_daemon_mode()
-> +{
-> +	daemon_mode =3D 1;
-> +	/* fork */
-> +	pid_t	sid, pid =3D fork();
-> +	if (pid < 0) {
-> +		exit(EXIT_FAILURE);
-> +	} else if (pid > 0)
-> +		/* kill parent */
-> +		exit(EXIT_SUCCESS);
-> +
-> +	/* disable TUI, it may not be necessary, but saves some resource */
-> +	disable_tui();
-> +
-> +	/* change the file mode mask */
-> +	umask(0);
-> +
-> +	/* new SID for the daemon process */
-> +	sid =3D setsid();
-> +	if (sid < 0)
-> +		exit(EXIT_FAILURE);
-> +
-> +	/* change working directory */
-> +	if ((chdir("/")) < 0)
-> +		exit(EXIT_FAILURE);
-> +
-> +
-> +	sleep(10);
-> +
-> +	close(STDIN_FILENO);
-> +	close(STDOUT_FILENO);
-> +	close(STDERR_FILENO);
-> +
-> +}
-> diff --git a/tools/thermal/tmon/tmon.h b/tools/thermal/tmon/tmon.h
-> new file mode 100644
-> index 0000000..9e3c49c
-> --- /dev/null
-> +++ b/tools/thermal/tmon/tmon.h
-> @@ -0,0 +1,204 @@
-> +/*
-> + * tmon.h contains data structures and constants used by TMON
-> + *
-> + * Copyright (C) 2012 Intel Corporation. All rights reserved.
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License version=
-
-> + * 2 or later as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * Author Name Jacob Pan <jacob.jun.pan@linux.intel.com>
-> + *
-> + */
-> +
-> +#ifndef TMON_H
-> +#define TMON_H
-> +
-> +#define MAX_DISP_TEMP 125
-> +#define MAX_CTRL_TEMP 105
-> +#define MIN_CTRL_TEMP 40
-> +#define MAX_NR_TZONE 16
-> +#define MAX_NR_CDEV 32
-> +#define MAX_NR_TRIP 16
-> +#define MAX_NR_CDEV_TRIP 12 /* number of cooling devices that can bind=
-
-> +			     * to a thermal zone trip.
-> +			     */
-> +#define MAX_TEMP_KC 140000
-> +/* starting char position to draw sensor data, such as tz names
-> + * trip point list, etc.
-> + */
-> +#define DATA_LEFT_ALIGN 10
-> +#define NR_LINES_TZDATA 1
-> +#define TMON_LOG_FILE "/var/tmp/tmon.log"
-> +
-> +extern unsigned long ticktime;
-> +extern double time_elapsed;
-> +extern unsigned long target_temp_user;
-> +extern int dialogue_on;
-> +extern char ctrl_cdev[];
-> +extern pthread_mutex_t input_lock;
-> +extern int tmon_exit;
-> +extern int target_thermal_zone;
-> +/* use fixed size record to simplify data processing and transfer
-> + * TBD: more info to be added, e.g. programmable trip point data.
-> +*/
-> +struct thermal_data_record {
-> +	struct timeval tv;
-> +	unsigned long temp[MAX_NR_TZONE];
-> +	double pid_out_pct;
-> +};
-> +
-> +struct cdev_info {
-> +	char type[64];
-> +	int instance;
-> +	unsigned long max_state;
-> +	unsigned long cur_state;
-> +	unsigned long flag;
-> +};
-> +
-> +enum trip_type {
-> +	THERMAL_TRIP_CRITICAL,
-> +	THERMAL_TRIP_HOT,
-> +	THERMAL_TRIP_PASSIVE,
-> +	THERMAL_TRIP_ACTIVE,
-> +	NR_THERMAL_TRIP_TYPE,
-> +};
-> +
-> +struct trip_point {
-> +	enum trip_type type;
-> +	unsigned long temp;
-> +	unsigned long hysteresis;
-> +	int attribute; /* programmability etc. */
-> +};
-> +
-> +/* thermal zone configuration information, binding with cooling device=
-s could
-> + * change at runtime.
-> + */
-> +struct tz_info {
-> +	char type[256]; /* e.g. acpitz */
-> +	int instance;
-> +	int passive; /* active zone has passive node to force passive mode */=
-
-> +	int nr_cdev; /* number of cooling device binded */
-> +	int nr_trip_pts;
-> +	struct trip_point tp[MAX_NR_TRIP];
-> +	unsigned long cdev_binding; /* bitmap for attached cdevs */
-> +	/* cdev bind trip points, allow one cdev bind to multiple trips */
-> +	unsigned long trip_binding[MAX_NR_CDEV];
-> +};
-> +
-> +struct tmon_platform_data {
-> +	int nr_tz_sensor;
-> +	int nr_cooling_dev;
-> +	/* keep track of instance ids since there might be gaps */
-> +	int max_tz_instance;
-> +	int max_cdev_instance;
-> +	struct tz_info *tzi;
-> +	struct cdev_info *cdi;
-> +};
-> +
-> +struct control_ops {
-> +	void (*set_ratio)(unsigned long ratio);
-> +	unsigned long (*get_ratio)(unsigned long ratio);
-> +
-> +};
-> +
-> +enum cdev_types {
-> +	CDEV_TYPE_PROC,
-> +	CDEV_TYPE_FAN,
-> +	CDEV_TYPE_MEM,
-> +	CDEV_TYPE_NR,
-> +};
-> +
-> +/* REVISIT: the idea is to group sensors if possible, e.g. on intel mi=
-d
-> + * we have "skin0", "skin1", "sys", "msicdie"
-> + * on DPTF enabled systems, we might have PCH, TSKN, TAMB, etc.
-> + */
-> +enum tzone_types {
-> +	TZONE_TYPE_ACPI,
-> +	TZONE_TYPE_PCH,
-> +	TZONE_TYPE_NR,
-> +};
-> +
-> +/* limit the output of PID controller adjustment */
-> +#define LIMIT_HIGH (95)
-> +#define LIMIT_LOW  (2)
-> +
-> +struct pid_params {
-> +	double kp;  /* Controller gain from Dialog Box */
-> +	double ki;  /* Time-constant for I action from Dialog Box */
-> +	double kd;  /* Time-constant for D action from Dialog Box */
-> +	double ts;
-> +	double k_lpf;
-> +
-> +	double t_target;
-> +	double y_k;
-> +};
-> +
-> +extern int init_thermal_controller(void);
-> +extern void controller_handler(const double xk, double *yk);
-> +
-> +extern struct tmon_platform_data ptdata;
-> +extern struct pid_params p_param;
-> +
-> +extern FILE *tmon_log;
-> +extern int cur_thermal_record; /* index to the trec array */
-> +extern struct thermal_data_record trec[];
-> +extern const char *trip_type_name[];
-> +extern unsigned long no_control;
-> +
-> +extern void initialize_curses(void);
-> +extern void show_controller_stats(char *line);
-> +extern void show_title_bar(void);
-> +extern void setup_windows(void);
-> +extern void disable_tui(void);
-> +extern void show_sensors_w(void);
-> +extern void show_data_w(void);
-> +extern void write_status_bar(int x, char *line);
-> +extern void show_control_w();
-> +
-> +extern void show_cooling_device(void);
-> +extern void show_dialogue(void);
-> +extern int update_thermal_data(void);
-> +
-> +extern int probe_thermal_sysfs(void);
-> +extern void free_thermal_data(void);
-> +extern	void resize_handler(int sig);
-> +extern void set_ctrl_state(unsigned long state);
-> +extern void get_ctrl_state(unsigned long *state);
-> +extern void *handle_tui_events(void *arg);
-> +extern int sysfs_set_ulong(char *path, char *filename, unsigned long v=
-al);
-> +extern int zone_instance_to_index(int zone_inst);
-> +extern void close_windows(void);
-> +
-> +#define PT_COLOR_DEFAULT    1
-> +#define PT_COLOR_HEADER_BAR 2
-> +#define PT_COLOR_ERROR      3
-> +#define PT_COLOR_RED        4
-> +#define PT_COLOR_YELLOW     5
-> +#define PT_COLOR_GREEN      6
-> +#define PT_COLOR_BRIGHT     7
-> +#define PT_COLOR_BLUE	    8
-> +
-> +/* each thermal zone uses 12 chars, 8 for name, 2 for instance, 2 spac=
-e
-> + * also used to list trip points in forms of AAAC, which represents
-> + * A: Active
-> + * C: Critical
-> + */
-> +#define TZONE_RECORD_SIZE 12
-> +#define TZ_LEFT_ALIGN 32
-> +#define CDEV_NAME_SIZE 20
-> +#define CDEV_FLAG_IN_CONTROL (1 << 0)
-> +
-> +/* dialogue box starts */
-> +#define DIAG_X 48
-> +#define DIAG_Y 8
-> +#define THERMAL_SYSFS "/sys/class/thermal"
-> +#define CDEV "cooling_device"
-> +#define TZONE "thermal_zone"
-> +#define TDATA_LEFT 16
-> +#endif /* TMON_H */
-> diff --git a/tools/thermal/tmon/tui.c b/tools/thermal/tmon/tui.c
-> new file mode 100644
-> index 0000000..957ecf3
-> --- /dev/null
-> +++ b/tools/thermal/tmon/tui.c
-> @@ -0,0 +1,631 @@
-> +/*
-> + * tui.c ncurses text user interface for TMON program
-> + *
-> + * Copyright (C) 2013 Intel Corporation. All rights reserved.
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License version=
-
-> + * 2 or later as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * Author: Jacob Pan <jacob.jun.pan@linux.intel.com>
-> + *
-> + */
-> +
-> +#include <unistd.h>
-> +#include <stdio.h>
-> +#include <stdlib.h>
-> +#include <string.h>
-> +#include <stdint.h>
-> +#include <ncurses.h>
-> +#include <time.h>
-> +#include <syslog.h>
-> +#include <panel.h>
-> +#include <pthread.h>
-> +#include <signal.h>
-> +
-> +#include "tmon.h"
-> +
-> +static PANEL *data_panel;
-> +static PANEL *dialogue_panel;
-> +static PANEL *top;
-> +
-> +static WINDOW *title_bar_window;
-> +static WINDOW *tz_sensor_window;
-> +static WINDOW *cooling_device_window;
-> +static WINDOW *control_window;
-> +static WINDOW *status_bar_window;
-> +static WINDOW *thermal_data_window;
-> +static WINDOW *dialogue_window;
-> +
-> +char status_bar_slots[10][40];
-> +static void draw_hbar(WINDOW *win, int y, int start, int len,
-> +		unsigned long pattern, bool end);
-> +
-> +static int maxx, maxy;
-> +static int maxwidth =3D 200;
-> +
-> +#define TITLE_BAR_HIGHT 1
-> +#define SENSOR_WIN_HIGHT 4 /* one row for tz name, one for trip points=
- */
-> +
-> +
-> +/* daemon mode flag (set by startup parameter -d) */
-> +static int  tui_disabled;
-> +
-> +static void close_panel(PANEL *p)
-> +{
-> +	if (p) {
-> +		del_panel(p);
-> +		p =3D NULL;
-> +	}
-> +}
-> +
-> +static void close_window(WINDOW *win)
-> +{
-> +	if (win) {
-> +		delwin(win);
-> +		win =3D NULL;
-> +	}
-> +}
-> +
-> +void close_windows(void)
-> +{
-> +	if (tui_disabled)
-> +		return;
-> +	/* must delete panels before their attached windows */
-> +	if (dialogue_window)
-> +		close_panel(dialogue_panel);
-> +	if (cooling_device_window)
-> +		close_panel(data_panel);
-> +
-> +	close_window(title_bar_window);
-> +	close_window(tz_sensor_window);
-> +	close_window(status_bar_window);
-> +	close_window(cooling_device_window);
-> +	close_window(control_window);
-> +	close_window(thermal_data_window);
-> +	close_window(dialogue_window);
-> +
-> +}
-> +
-> +void write_status_bar(int x, char *line)
-> +{
-> +	mvwprintw(status_bar_window, 0, x, "%s", line);
-> +	wrefresh(status_bar_window);
-> +}
-> +
-> +void setup_windows(void)
-> +{
-> +	int y_begin =3D 1;
-> +
-> +	if (tui_disabled)
-> +		return;
-> +
-> +	getmaxyx(stdscr, maxy, maxx);
-> +	resizeterm(maxy, maxx);
-> +
-> +	title_bar_window =3D subwin(stdscr, TITLE_BAR_HIGHT, maxx, 0, 0);
-> +	y_begin +=3D TITLE_BAR_HIGHT;
-> +
-> +	tz_sensor_window =3D subwin(stdscr, SENSOR_WIN_HIGHT, maxx, y_begin, =
-0);
-> +	y_begin +=3D SENSOR_WIN_HIGHT;
-> +
-> +	cooling_device_window =3D subwin(stdscr, ptdata.nr_cooling_dev + 3, m=
-axx,
-> +				y_begin, 0);
-> +	y_begin +=3D ptdata.nr_cooling_dev + 3; /* 2 lines for border */
-> +	/* two lines to show borders, one line per tz show trip point positio=
-n
-> +	 * and value.
-> +	 * dialogue window is a pop-up, when needed it lays on top of cdev wi=
-n
-> +	 */
-> +
-> +	dialogue_window =3D subwin(stdscr, ptdata.nr_cooling_dev+5, maxx-50,
-> +				DIAG_Y, DIAG_X);
-> +
-> +	thermal_data_window =3D subwin(stdscr, ptdata.nr_tz_sensor *
-> +				NR_LINES_TZDATA + 3, maxx, y_begin, 0);
-> +	y_begin +=3D ptdata.nr_tz_sensor * NR_LINES_TZDATA + 3;
-> +	control_window =3D subwin(stdscr, 4, maxx, y_begin, 0);
-> +
-> +	scrollok(cooling_device_window, TRUE);
-> +	maxwidth =3D maxx - 18;
-> +	status_bar_window =3D subwin(stdscr, 1, maxx, maxy-1, 0);
-> +
-> +	strcpy(status_bar_slots[0], " Ctrl-c - Quit ");
-> +	strcpy(status_bar_slots[1], " TAB - Tuning ");
-> +	wmove(status_bar_window, 1, 30);
-> +
-> +	/* prepare panels for dialogue, if panel already created then we must=
-
-> +	 * be doing resizing, so just replace windows with new ones, old ones=
-
-> +	 * should have been deleted by close_window
-> +	 */
-> +	data_panel =3D new_panel(cooling_device_window);
-> +	if (!data_panel)
-> +		syslog(LOG_DEBUG, "No data panel\n");
-> +	else {
-> +		if (dialogue_window) {
-> +			dialogue_panel =3D new_panel(dialogue_window);
-> +			if (!dialogue_panel)
-> +				syslog(LOG_DEBUG, "No dialogue panel\n");
-> +			else {
-> +				/* Set up the user pointer to the next panel*/
-> +				set_panel_userptr(data_panel, dialogue_panel);
-> +				set_panel_userptr(dialogue_panel, data_panel);
-> +				top =3D data_panel;
-> +			}
-> +		} else
-> +			syslog(LOG_INFO, "no dialogue win, term too small\n");
-> +	}
-> +	doupdate();
-> +	werase(stdscr);
-> +	refresh();
-> +}
-> +
-> +void resize_handler(int sig)
-> +{
-> +	/* start over when term gets resized, but first we clean up */
-> +	close_windows();
-> +	endwin();
-> +	refresh();
-> +	clear();
-> +	getmaxyx(stdscr, maxy, maxx);  /* get the new screen size */
-> +	setup_windows();
-> +	/* rate limit */
-> +	sleep(1);
-> +	syslog(LOG_DEBUG, "SIG %d, term resized to %d x %d\n",
-> +		sig, maxy, maxx);
-> +	signal(SIGWINCH, resize_handler);
-> +}
-> +
-> +const char cdev_title[] =3D " COOLING DEVICES ";
-> +void show_cooling_device(void)
-> +{
-> +	int i, j, x, y =3D 0;
-> +
-> +	if (tui_disabled || !cooling_device_window)
-> +		return;
-> +
-> +	werase(cooling_device_window);
-> +
-> +	wattron(cooling_device_window, A_BOLD);
-> +	mvwprintw(cooling_device_window, 0, maxx/2 - sizeof(cdev_title),
-> +		cdev_title);
-> +
-> +	mvwprintw(cooling_device_window,  1, 1,
-> +		"ID  Cooling Dev   Cur    Max   Thermal Zone Binding");
-> +	wattroff(cooling_device_window, A_BOLD);
-> +	for (j =3D 0; j <	ptdata.nr_cooling_dev; j++) {
-> +		/* draw cooling device list on the left in the order of
-> +		 * cooling device instances. skip unused idr.
-> +		 */
-> +		mvwprintw(cooling_device_window, j + 2, 1,
-> +			"%02d %12.12s%6d %6d",
-> +			ptdata.cdi[j].instance,
-> +			ptdata.cdi[j].type,
-> +			ptdata.cdi[j].cur_state,
-> +			ptdata.cdi[j].max_state);
-> +	}
-> +
-> +	/* show cdev binding, y is the global cooling device instance */
-> +	for (i =3D 0; i < ptdata.nr_tz_sensor; i++) {
-> +		int tz_inst =3D ptdata.tzi[i].instance;
-> +		for (j =3D 0; j < ptdata.nr_cooling_dev; j++) {
-> +			int cdev_inst;
-> +			y =3D j;
-> +			x =3D tz_inst * TZONE_RECORD_SIZE + TZ_LEFT_ALIGN;
-> +
-> +			draw_hbar(cooling_device_window, y+2, x,
-> +				TZONE_RECORD_SIZE-1, ACS_VLINE, false);
-> +
-> +			/* draw a column of spaces to separate thermal zones */
-> +			mvwprintw(cooling_device_window, y+2, x-1, " ");
-> +			if (ptdata.tzi[i].cdev_binding) {
-> +				cdev_inst =3D ptdata.cdi[j].instance;
-> +				unsigned long trip_binding =3D
-> +					ptdata.tzi[i].trip_binding[cdev_inst];
-> +				int k =3D 0; /* per zone trip point id that
-> +					    * binded to this cdev, one to
-> +					    * many possible based on the
-> +					    * binding bitmask.
-> +					    */
-> +				syslog(LOG_DEBUG,
-> +					"bind tz%d cdev%d tp%lx %d cdev%lx\n",
-> +					i, j, trip_binding, y,
-> +					ptdata.tzi[i].cdev_binding);
-> +				/* draw each trip binding for the cdev */
-> +				while (trip_binding >>=3D 1) {
-> +					k++;
-> +					if (!(trip_binding & 1))
-> +						continue;
-> +					/* draw '*' to show binding */
-> +					mvwprintw(cooling_device_window,
-> +						y + 2,
-> +						x + ptdata.tzi[i].nr_trip_pts -
-> +						k - 1, "*");
-> +				}
-> +			}
-> +		}
-> +	}
-> +	wborder(cooling_device_window, 0, 0, 0, 0, 0, 0, 0, 0);
-> +	wrefresh(cooling_device_window);
-> +}
-> +
-> +const char DIAG_TITLE[] =3D "[ TUNABLES ]";
-> +#define DIAG_DEV_ROWS  5
-> +void show_dialogue(void)
-> +{
-> +	int j, x =3D 0, y =3D 0;
-> +	WINDOW *w =3D dialogue_window;
-> +
-> +	if (tui_disabled || !w)
-> +		return;
-> +
-> +	werase(w);
-> +	box(w, 0, 0);
-> +	mvwprintw(w, 0, maxx/4, DIAG_TITLE);
-> +	/* list all the available tunables */
-> +	for (j =3D 0; j <=3D ptdata.nr_cooling_dev; j++) {
-> +		y =3D j % DIAG_DEV_ROWS;
-> +		if (y =3D=3D 0 && j !=3D 0)
-> +			x +=3D 20;
-> +		if (j =3D=3D ptdata.nr_cooling_dev)
-> +			/* save last choice for target temp */
-> +			mvwprintw(w, y+1, x+1, "%C-%.12s", 'A'+j, "Set Temp");
-> +		else
-> +			mvwprintw(w, y+1, x+1, "%C-%.10s-%2d", 'A'+j,
-> +				ptdata.cdi[j].type, ptdata.cdi[j].instance);
-> +	}
-> +	wattron(w, A_BOLD);
-> +	mvwprintw(w, DIAG_DEV_ROWS+1, 1, "Enter Choice [A-Z]?");
-> +	wattroff(w, A_BOLD);
-> +	/* y size of dialogue win is nr cdev + 5, so print legend
-> +	 * at the bottom line
-> +	 */
-> +	mvwprintw(w, ptdata.nr_cooling_dev+3, 1,
-> +		"Legend: A=3DActive, P=3DPassive, C=3DCritical");
-> +
-> +	wrefresh(dialogue_window);
-> +}
-> +
-> +void write_dialogue_win(char *buf, int y, int x)
-> +{
-> +	WINDOW *w =3D dialogue_window;
-> +
-> +	mvwprintw(w, y, x, "%s", buf);
-> +}
-> +
-> +const char control_title[] =3D " CONTROLS ";
-> +void show_control_w(void)
-> +{
-> +	unsigned long state;
-> +
-> +	get_ctrl_state(&state);
-> +
-> +	if (tui_disabled || !control_window)
-> +		return;
-> +
-> +	werase(control_window);
-> +	wattron(control_window, A_BOLD);
-> +	mvwprintw(control_window, 0, maxx/2 - sizeof(control_title),
-> +		control_title);
-> +	wattroff(control_window, A_BOLD);
-> +
-> +	mvwprintw(control_window, 1, 1, "PID gain: kp=3D%2.2f ki=3D%2.2f, kd=3D=
-%2.2f",
-> +		p_param.kp, p_param.ki, p_param.kd);
-> +
-> +	mvwprintw(control_window, 2, 1,
-> +		"Target Temp: %2.1f, Zone: %d, Control Device: %.12s, PID output: %2=
-=2E2f, state: %d",
-> +		target_thermal_zone, ctrl_cdev,
-> +		p_param.t_target, p_param.y_k, state);
-> +	/* draw border last such that everything is within boundary */
-> +	wborder(control_window, 0, 0, 0, 0, 0, 0, 0, 0);
-> +	wrefresh(control_window);
-> +}
-> +
-> +void initialize_curses(void)
-> +{
-> +	if (tui_disabled)
-> +		return;
-> +
-> +	initscr();
-> +	start_color();
-> +	keypad(stdscr, TRUE);	/* enable keyboard mapping */
-> +	nonl();			/* tell curses not to do NL->CR/NL on output */
-> +	cbreak();		/* take input chars one at a time */
-> +	noecho();		/* dont echo input */
-> +	curs_set(0);		/* turn off cursor */
-> +	use_default_colors();
-> +
-> +	init_pair(PT_COLOR_DEFAULT, COLOR_WHITE, COLOR_BLACK);
-> +	init_pair(PT_COLOR_HEADER_BAR, COLOR_BLACK, COLOR_WHITE);
-> +	init_pair(PT_COLOR_ERROR, COLOR_BLACK, COLOR_RED);
-> +	init_pair(PT_COLOR_RED, COLOR_WHITE, COLOR_RED);
-> +	init_pair(PT_COLOR_YELLOW, COLOR_WHITE, COLOR_YELLOW);
-> +	init_pair(PT_COLOR_GREEN, COLOR_WHITE, COLOR_GREEN);
-> +	init_pair(PT_COLOR_BLUE, COLOR_WHITE, COLOR_BLUE);
-> +	init_pair(PT_COLOR_BRIGHT, COLOR_WHITE, COLOR_BLACK);
-> +
-> +}
-> +
-> +void show_title_bar(void)
-> +{
-> +	int i;
-> +	int x =3D 0;
-> +
-> +	if (tui_disabled || !title_bar_window)
-> +		return;
-> +
-> +	wattrset(title_bar_window, COLOR_PAIR(PT_COLOR_HEADER_BAR));
-> +	wbkgd(title_bar_window, COLOR_PAIR(PT_COLOR_HEADER_BAR));
-> +	werase(title_bar_window);
-> +
-> +	mvwprintw(title_bar_window, 0, 0,
-> +		"     TMON v%s", VERSION);
-> +
-> +	wrefresh(title_bar_window);
-> +
-> +	werase(status_bar_window);
-> +
-> +	for (i =3D 0; i < 10; i++) {
-> +		if (strlen(status_bar_slots[i]) =3D=3D 0)
-> +			continue;
-> +		wattron(status_bar_window, A_REVERSE);
-> +		mvwprintw(status_bar_window, 0, x, "%s", status_bar_slots[i]);
-> +		wattroff(status_bar_window, A_REVERSE);
-> +		x +=3D strlen(status_bar_slots[i]) + 1;
-> +	}
-> +	wrefresh(status_bar_window);
-> +}
-> +
-> +static void handle_input_val(int ch)
-> +{
-> +	char buf[32];
-> +	int val;
-> +	char path[256];
-> +	WINDOW *w =3D dialogue_window;
-> +
-> +	echo();
-> +	keypad(w, TRUE);
-> +	wgetnstr(w, buf, 31);
-> +	val =3D atoi(buf);
-> +
-> +	if (ch =3D=3D ptdata.nr_cooling_dev) {
-> +		snprintf(buf, 31, "Invalid Temp %d! %d-%d", val,
-> +			MIN_CTRL_TEMP, MAX_CTRL_TEMP);
-> +		if (val < MIN_CTRL_TEMP || val > MAX_CTRL_TEMP)
-> +			write_status_bar(40, buf);
-> +		else {
-> +			p_param.t_target =3D val;
-> +			snprintf(buf, 31, "Set New Target Temp %d", val);
-> +			write_status_bar(40, buf);
-> +		}
-> +	} else {
-> +		snprintf(path, 256, "%s/%s%d", THERMAL_SYSFS,
-> +			CDEV, ptdata.cdi[ch].instance);
-> +		sysfs_set_ulong(path, "cur_state", val);
-> +	}
-> +	noecho();
-> +	dialogue_on =3D 0;
-> +	show_data_w();
-> +	show_control_w();
-> +
-> +	top =3D (PANEL *)panel_userptr(top);
-> +	top_panel(top);
-> +}
-> +
-> +static void handle_input_choice(int ch)
-> +{
-> +	char buf[48];
-> +	int base =3D 0;
-> +	int cdev_id =3D 0;
-> +
-> +	if ((ch >=3D 'A' && ch <=3D 'A' + ptdata.nr_cooling_dev) ||
-> +		(ch >=3D 'a' && ch <=3D 'a' + ptdata.nr_cooling_dev)) {
-> +		base =3D (ch < 'a') ? 'A' : 'a';
-> +		cdev_id =3D ch - base;
-> +		if (ptdata.nr_cooling_dev =3D=3D cdev_id)
-> +			snprintf(buf, sizeof(buf), "New Target Temp:");
-> +		else
-> +			snprintf(buf, sizeof(buf), "New Value for %.10s-%2d: ",
-> +				ptdata.cdi[cdev_id].type,
-> +				ptdata.cdi[cdev_id].instance);
-> +		write_dialogue_win(buf, DIAG_DEV_ROWS+2, 2);
-> +		handle_input_val(cdev_id);
-> +	} else {
-> +		snprintf(buf, sizeof(buf), "Invalid selection %d", ch);
-> +		write_dialogue_win(buf, 8, 2);
-> +	}
-> +}
-> +
-> +void *handle_tui_events(void *arg)
-> +{
-> +	int ch;
-> +
-> +	keypad(cooling_device_window, TRUE);
-> +	while ((ch =3D wgetch(cooling_device_window)) !=3D EOF) {
-> +		if (tmon_exit)
-> +			break;
-> +		/* when term size is too small, no dialogue panels are set.
-> +		 * we need to filter out such cases.
-> +		 */
-> +		if (!data_panel || !dialogue_panel ||
-> +			!cooling_device_window ||
-> +			!dialogue_window) {
-> +
-> +			continue;
-> +		}
-> +		pthread_mutex_lock(&input_lock);
-> +		if (dialogue_on) {
-> +			handle_input_choice(ch);
-> +			/* top panel filter */
-> +			if (ch =3D=3D 'q' || ch =3D=3D 'Q')
-> +				ch =3D 0;
-> +		}
-> +		switch (ch) {
-> +		case KEY_LEFT:
-> +			box(cooling_device_window, 10, 0);
-> +			break;
-> +		case 9: /* TAB */
-> +			top =3D (PANEL *)panel_userptr(top);
-> +			top_panel(top);
-> +			if (top =3D=3D dialogue_panel) {
-> +				dialogue_on =3D 1;
-> +				show_dialogue();
-> +			} else {
-> +				dialogue_on =3D 0;
-> +				/* force refresh */
-> +				show_data_w();
-> +				show_control_w();
-> +			}
-> +			break;
-> +		case 'q':
-> +		case 'Q':
-> +			tmon_exit =3D 1;
-> +			break;
-> +		}
-> +		update_panels();
-> +		doupdate();
-> +		pthread_mutex_unlock(&input_lock);
-> +	}
-> +
-> +	if (arg)
-> +		*(int *)arg =3D 0; /* make gcc happy */
-> +
-> +	return NULL;
-> +}
-> +
-> +/* draw a horizontal bar in given pattern */
-> +static void draw_hbar(WINDOW *win, int y, int start, int len, unsigned=
- long ptn,
-> +		bool end)
-> +{
-> +	mvwaddch(win, y, start, ptn);
-> +	whline(win, ptn, len);
-> +	if (end)
-> +		mvwaddch(win, y, MAX_DISP_TEMP+TDATA_LEFT, ']');
-> +}
-> +
-> +static char trip_type_to_char(int type)
-> +{
-> +	switch (type) {
-> +	case THERMAL_TRIP_CRITICAL: return 'C';
-> +	case THERMAL_TRIP_HOT: return 'H';
-> +	case THERMAL_TRIP_PASSIVE: return 'P';
-> +	case THERMAL_TRIP_ACTIVE: return 'A';
-> +	default:
-> +		return '?';
-> +	}
-> +}
-> +
-> +/* fill a string with trip point type and value in one line
-> + * e.g.      P(56)    C(106)
-> + * maintain the distance one degree per char
-> + */
-> +static void draw_tp_line(int tz, int y)
-> +{
-> +	int j;
-> +	int x;
-> +
-> +	for (j =3D 0; j < ptdata.tzi[tz].nr_trip_pts; j++) {
-> +		x =3D ptdata.tzi[tz].tp[j].temp / 1000;
-> +		mvwprintw(thermal_data_window, y + 0, x + TDATA_LEFT,
-> +			"%c%d", trip_type_to_char(ptdata.tzi[tz].tp[j].type),
-> +			x);
-> +		syslog(LOG_INFO, "%s:tz %d tp %d temp =3D %lu\n", __func__,
-> +			tz, j, ptdata.tzi[tz].tp[j].temp);
-> +	}
-> +}
-> +
-> +const char data_win_title[] =3D " THERMAL DATA ";
-> +void show_data_w(void)
-> +{
-> +	int i;
-> +
-> +
-> +	if (tui_disabled || !thermal_data_window)
-> +		return;
-> +
-> +	werase(thermal_data_window);
-> +	wattron(thermal_data_window, A_BOLD);
-> +	mvwprintw(thermal_data_window, 0, maxx/2 - sizeof(data_win_title),
-> +		data_win_title);
-> +	wattroff(thermal_data_window, A_BOLD);
-> +	/* draw a line as ruler */
-> +	for (i =3D 10; i < MAX_DISP_TEMP; i +=3D 10)
-> +		mvwprintw(thermal_data_window, 1, i+TDATA_LEFT, "%2d", i);
-> +
-> +	for (i =3D 0; i < ptdata.nr_tz_sensor; i++) {
-> +		int temp =3D trec[cur_thermal_record].temp[i] / 1000;
-> +		int y =3D 0;
-> +
-> +		y =3D i * NR_LINES_TZDATA + 2;
-> +		/* y at tz temp data line */
-> +		mvwprintw(thermal_data_window, y, 1, "%6.6s%2d:[%3d][",
-> +			ptdata.tzi[i].type,
-> +			ptdata.tzi[i].instance, temp);
-> +		draw_hbar(thermal_data_window, y, TDATA_LEFT, temp, ACS_RARROW,
-> +			true);
-> +		draw_tp_line(i, y);
-> +	}
-> +	wborder(thermal_data_window, 0, 0, 0, 0, 0, 0, 0, 0);
-> +	wrefresh(thermal_data_window);
-> +}
-> +
-> +const char tz_title[] =3D "THERMAL ZONES/SENSORS";
-> +
-> +void show_sensors_w(void)
-> +{
-> +	int i, j;
-> +	char buffer[512];
-> +
-> +	if (tui_disabled || !tz_sensor_window)
-> +		return;
-> +
-> +	werase(tz_sensor_window);
-> +
-> +	memset(buffer, 0, sizeof(buffer));
-> +	wattron(tz_sensor_window, A_BOLD);
-> +	mvwprintw(tz_sensor_window, 0, maxx/2 - sizeof(tz_title), tz_title);
-> +	mvwprintw(tz_sensor_window, 1, 1, "Thermal Zones:");
-> +	wattroff(tz_sensor_window, A_BOLD);
-> +
-> +	mvwprintw(tz_sensor_window, 1, TZ_LEFT_ALIGN, "%s", buffer);
-> +	/* fill trip points for each tzone */
-> +	wattron(tz_sensor_window, A_BOLD);
-> +	mvwprintw(tz_sensor_window, 2, 1, "Trip Points:");
-> +	wattroff(tz_sensor_window, A_BOLD);
-> +
-> +	/* draw trip point from low to high for each tz */
-> +	for (i =3D 0; i < ptdata.nr_tz_sensor; i++) {
-> +		int inst =3D ptdata.tzi[i].instance;
-> +
-> +		mvwprintw(tz_sensor_window, 1,
-> +			TZ_LEFT_ALIGN+TZONE_RECORD_SIZE * inst, "%.9s%02d",
-> +			ptdata.tzi[i].type, ptdata.tzi[i].instance);
-> +		for (j =3D ptdata.tzi[i].nr_trip_pts - 1; j >=3D 0; j--) {
-> +			/* loop through all trip points */
-> +			char type;
-> +			int tp_pos;
-> +			/* reverse the order here since trips are sorted
-> +			 * in ascending order in terms of temperature.
-> +			 */
-> +			tp_pos =3D ptdata.tzi[i].nr_trip_pts - j - 1;
-> +
-> +			type =3D trip_type_to_char(ptdata.tzi[i].tp[j].type);
-> +			mvwaddch(tz_sensor_window, 2,
-> +				inst * TZONE_RECORD_SIZE + TZ_LEFT_ALIGN +
-> +				tp_pos,	type);
-> +			syslog(LOG_DEBUG, "draw tz %d tp %d ch:%c\n",
-> +				inst, j, type);
-> +		}
-> +	}
-> +	wborder(tz_sensor_window, 0, 0, 0, 0, 0, 0, 0, 0);
-> +	wrefresh(tz_sensor_window);
-> +}
-> +
-> +void disable_tui(void)
-> +{
-> +	tui_disabled =3D 1;
-> +}
->=20
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
 
 
---=20
-You have got to be excited about what you are doing. (L. Lamport)
+[   27.092532] BUG: unable to handle kernel NULL pointer dereference at 00000108
+[   27.093449] IP: [<c1109200>] rw_verify_area+0xa0/0x1b0
+[   27.094162] *pdpt = 0000000006d2c001 *pde = 0000000000000000 
+[   27.094162] Oops: 0000 [#1] DEBUG_PAGEALLOC
+[   27.094162] Modules linked in:
+[   27.094162] CPU: 0 PID: 37 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[   27.094162] task: c6c31160 ti: c6d18000 task.ti: c6d18000
+[   27.094162] EIP: 0060:[<c1109200>] EFLAGS: 00000246 CPU: 0
+[   27.094162] EIP is at rw_verify_area+0xa0/0x1b0
+[   27.094162] EAX: 00000000 EBX: 00000000 ECX: 00000000 EDX: 00000000
+[   27.094162] ESI: 00000000 EDI: c0064cc0 EBP: c6d19f60 ESP: c6d19f38
+[   27.094162]  DS: 007b ES: 007b FS: 0000 GS: 0033 SS: 0068
+[   27.094162] CR0: 8005003b CR2: 00000108 CR3: 06d2b000 CR4: 000006b0
+[   27.094162] DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+[   27.094162] DR6: 00000000 DR7: 00000000
+[   27.094162] Stack:
+[   27.094162]  00000002 00000000 00000000 00000001 00000000 00000000 00000000 00000002
+[   27.094162]  00000000 c0064cc0 c6d19f88 c1109519 00000002 00000000 c1307b0e c6d19f98
+[   27.094162]  b7792000 c0064cc0 00000000 b7792000 c6d19fac c1109b79 c6d19f98 00000002
+[   27.094162] Call Trace:
+[   27.094162]  [<c1109519>] vfs_write+0xb9/0x1a0
+[   27.094162]  [<c1307b0e>] ? restore_all+0xf/0xf
+[   27.094162]  [<c1109b79>] SyS_write+0x49/0xa0
+[   27.094162]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[   27.094162] Code: d6 c1 ee 1f 89 f2 81 e2 ff 00 00 00 31 c9 b8 04 e9 4c c1 e8 d3 ee f9 ff 89 f0 84 c0 74 0a f6 47 41 20 0f 84 03 01 00 00 8b 45 f0 <8b> 80 08 01 00 00 85 c0 74 0c 8b 45 f0 8b 40 14 f6 40 30 40 75
+[   27.094162] EIP: [<c1109200>] rw_verify_area+0xa0/0x1b0 SS:ESP 0068:c6d19f38
+[   27.094162] CR2: 0000000000000108
+[   27.119392] ---[ end trace 2bb714af200792b7 ]---
+[   27.144424] Kernel panic - not syncing: CRED: put_cred_rcu() sees c6d28100 with usage -233
 
-Eduardo Valentin
+dmesg-quantal-ant-9:20131009083014:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
 
 
---3IMRoiGF1KCQ8To7oNi86Idd4m6VhIXq5
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+[   26.385658] VFS: Close: file count is 0
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+[   26.427323] Kernel panic - not syncing: CRED: put_cred_rcu() sees c6d29280 with usage -184
+[   26.427323] 
+[   26.428852] CPU: 0 PID: 3 Comm: ksoftirqd/0 Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[   26.429851]  c6d29280 c0041e6c c1301381 c0041e8c c12fdceb c1402ea8 c1533f80 00000293
+[   26.429851]  c6d292d8 c6d29280 00000293 c0041ea8 c1056641 c1403e6c c6d29280 ffffff48
+[   26.429851]  c6d292d8 c6d29158 c0041ebc c1092942 c0031160 00000009 c0040000 c0041ec4
+[   26.429851] Call Trace:
+[   26.429851]  [<c1301381>] dump_stack+0x16/0x18
+[   26.429851]  [<c12fdceb>] panic+0x8c/0x17c
+[   26.429851]  [<c1056641>] put_cred_rcu+0x91/0xa0
+[   26.429851]  [<c1092942>] __rcu_process_callbacks+0x62/0xc0
+[   26.429851]  [<c10929b2>] rcu_process_callbacks+0x12/0x20
+[   26.429851]  [<c10351c8>] __do_softirq+0xc8/0x210
+[   26.429851]  [<c1196294>] ? trace_hardirqs_on_thunk+0xc/0x10
+[   26.429851]  [<c109313e>] ? rcu_irq_exit+0xee/0x130
+[   26.429851]  [<c1035351>] ? run_ksoftirqd+0x41/0x60
+[   26.429851]  [<c1035345>] run_ksoftirqd+0x35/0x60
+[   26.429851]  [<c10587d3>] smpboot_thread_fn+0xf3/0x190
+[   26.429851]  [<c10586e0>] ? lg_global_unlock+0x30/0x30
+[   26.429851]  [<c1050c42>] kthread+0x92/0xa0
+[   26.429851]  [<c130ee1b>] ret_from_kernel_thread+0x1b/0x30
+[   26.429851]  [<c1050bb0>] ? kthread_create_on_node+0xd0/0xd0
 
-iF4EAREIAAYFAlJUrH8ACgkQCXcVR3XQvP1THAEAzYSYmLbaOmPrQQ1W05EmcFua
-GWh+Q+4WIGMLNvsx+/sBAOFn+bHlXjrJLenX7ZtAMibbvl/WZSKxJzOUkruxzF/f
-=R7qo
------END PGP SIGNATURE-----
 
---3IMRoiGF1KCQ8To7oNi86Idd4m6VhIXq5--
+dmesg-quantal-bens-3:20131009082943:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    2.268582] ------------[ cut here ]------------
+[    2.269353] kernel BUG at kernel/cred.c:138!
+[    2.270402] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    2.271287] Modules linked in:
+[    2.271456] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    2.271456] task: c6c322c0 ti: c6d1a000 task.ti: c6d1a000
+[    2.271456] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    2.271456] EIP is at __put_cred+0x56/0x90
+[    2.271456] EAX: c14c3720 EBX: c6d17380 ECX: 00000000 EDX: 00000001
+[    2.271456] ESI: c6c322c0 EDI: 00000001 EBP: c6d1bf24 ESP: c6d1bf18
+[    2.271456]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    2.271456] CR0: 8005003b CR2: b779e000 CR3: 06d1e000 CR4: 000006b0
+[    2.271456] Stack:
+[    2.271456]  c006ee00 c6c32558 c6c322c0 c6d1bf30 c110a678 c006ed00 c6d1bf44 c104d7d9
+[    2.271456]  c6c32570 c6d1c000 c6c322c0 c6d1bf8c c10311d2 00000000 c6d1bf80 c110a8a6
+[    2.271456]  00000001 00000001 00000000 00000246 00000001 c6c32558 c6d1c050 c6c322c0
+[    2.271456] Call Trace:
+[    2.271456]  [<c110a678>] file_free_rcu+0x28/0x40
+[    2.271456]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    2.271456]  [<c10311d2>] do_exit+0x2f2/0x960
+[    2.271456]  [<c110a8a6>] ? __fput+0x216/0x380
+[    2.271456]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    2.271456]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    2.271456]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    2.271456] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    2.271456] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d1bf18
+[    2.295544] ---[ end trace a3de6cf436968a03 ]---
+[    2.296305] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-cairo-13:20131009082930:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    1.135621] ------------[ cut here ]------------
+[    1.135783] kernel BUG at kernel/cred.c:138!
+[    1.135783] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    1.135783] Modules linked in:
+[    1.135783] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    1.135783] task: c6c322c0 ti: c6d1a000 task.ti: c6d1a000
+[    1.135783] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    1.135783] EIP is at __put_cred+0x56/0x90
+[    1.135783] EAX: c14c3720 EBX: c6d17380 ECX: 00000000 EDX: 00000001
+[    1.135783] ESI: c6c322c0 EDI: 00000001 EBP: c6d1bf24 ESP: c6d1bf18
+[    1.135783]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    1.135783] CR0: 8005003b CR2: b7737000 CR3: 06d1e000 CR4: 000006b0
+[    1.135783] Stack:
+[    1.135783]  c006ee00 c6c32558 c6c322c0 c6d1bf30 c110a678 c006ed00 c6d1bf44 c104d7d9
+[    1.135783]  c6c32570 c6d1c000 c6c322c0 c6d1bf8c c10311d2 00000000 c6d1bf80 c110a8a6
+[    1.135783]  00000001 00000001 00000000 00000246 00000001 c6c32558 c6d1c050 c6c322c0
+[    1.135783] Call Trace:
+[    1.135783]  [<c110a678>] file_free_rcu+0x28/0x40
+[    1.135783]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    1.135783]  [<c10311d2>] do_exit+0x2f2/0x960
+[    1.135783]  [<c110a8a6>] ? __fput+0x216/0x380
+[    1.135783]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    1.135783]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    1.135783]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    1.135783] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    1.135783] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d1bf18
+[    1.151317] ---[ end trace 38eec569d1938da4 ]---
+[    1.151773] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-cairo-22:20131009083037:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    1.112717] ------------[ cut here ]------------
+[    1.112954] kernel BUG at kernel/cred.c:138!
+[    1.112954] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    1.112954] Modules linked in:
+[    1.112954] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    1.112954] task: c6c322c0 ti: c6d1a000 task.ti: c6d1a000
+[    1.112954] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    1.112954] EIP is at __put_cred+0x56/0x90
+[    1.112954] EAX: c14c3720 EBX: c6d17380 ECX: 00000000 EDX: 00000001
+[    1.112954] ESI: c6c322c0 EDI: 00000001 EBP: c6d1bf24 ESP: c6d1bf18
+[    1.112954]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    1.112954] CR0: 8005003b CR2: b7728000 CR3: 06d1e000 CR4: 000006b0
+[    1.112954] Stack:
+[    1.112954]  c006ee00 c6c32558 c6c322c0 c6d1bf30 c110a678 c006ed00 c6d1bf44 c104d7d9
+[    1.112954]  c6c32570 c6d1c000 c6c322c0 c6d1bf8c c10311d2 00000000 c6d1bf80 c110a8a6
+[    1.112954]  00000001 00000001 00000000 00000246 00000001 c6c32558 c6d1c050 c6c322c0
+[    1.112954] Call Trace:
+[    1.112954]  [<c110a678>] file_free_rcu+0x28/0x40
+[    1.112954]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    1.112954]  [<c10311d2>] do_exit+0x2f2/0x960
+[    1.112954]  [<c110a8a6>] ? __fput+0x216/0x380
+[    1.112954]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    1.112954]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    1.112954]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    1.112954] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    1.112954] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d1bf18
+[    1.128337] ---[ end trace fd184ac698a97fbc ]---
+[    1.128782] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-cairo-24:20131009083033:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    1.153145] ------------[ cut here ]------------
+[    1.153623] kernel BUG at kernel/cred.c:138!
+[    1.154236] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    1.154236] Modules linked in:
+[    1.154236] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    1.154236] task: c6c322c0 ti: c6d1a000 task.ti: c6d1a000
+[    1.154236] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    1.154236] EIP is at __put_cred+0x56/0x90
+[    1.154236] EAX: c14c3720 EBX: c6d17380 ECX: 00000000 EDX: 00000001
+[    1.154236] ESI: c6c322c0 EDI: 00000001 EBP: c6d1bf24 ESP: c6d1bf18
+[    1.154236]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    1.154236] CR0: 8005003b CR2: b777a000 CR3: 06d1e000 CR4: 000006b0
+[    1.154236] Stack:
+[    1.154236]  c006ee00 c6c32558 c6c322c0 c6d1bf30 c110a678 c006ed00 c6d1bf44 c104d7d9
+[    1.154236]  c6c32570 c6d1c000 c6c322c0 c6d1bf8c c10311d2 00000000 c6d1bf80 c110a8a6
+[    1.154236]  00000001 00000001 00000000 00000246 00000001 c6c32558 c6d1c050 c6c322c0
+[    1.154236] Call Trace:
+[    1.154236]  [<c110a678>] file_free_rcu+0x28/0x40
+[    1.154236]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    1.154236]  [<c10311d2>] do_exit+0x2f2/0x960
+[    1.154236]  [<c110a8a6>] ? __fput+0x216/0x380
+[    1.154236]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    1.154236]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    1.154236]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    1.154236] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    1.154236] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d1bf18
+[    1.169448] ---[ end trace 50e2047aac671e3f ]---
+[    1.169900] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-cairo-33:20131009082955:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    1.123293] ------------[ cut here ]------------
+[    1.123563] kernel BUG at kernel/cred.c:138!
+[    1.123563] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    1.123563] Modules linked in:
+[    1.123563] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    1.123563] task: c6c322c0 ti: c6d1a000 task.ti: c6d1a000
+[    1.123563] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    1.123563] EIP is at __put_cred+0x56/0x90
+[    1.123563] EAX: c14c3720 EBX: c6d17380 ECX: 00000000 EDX: 00000001
+[    1.123563] ESI: c6c322c0 EDI: 00000001 EBP: c6d1bf24 ESP: c6d1bf18
+[    1.123563]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    1.123563] CR0: 8005003b CR2: b77ae000 CR3: 06d1e000 CR4: 000006b0
+[    1.123563] Stack:
+[    1.123563]  c006ee00 c6c32558 c6c322c0 c6d1bf30 c110a678 c006ed00 c6d1bf44 c104d7d9
+[    1.123563]  c6c32570 c6d1c000 c6c322c0 c6d1bf8c c10311d2 00000000 c6d1bf80 c110a8a6
+[    1.123563]  00000001 00000001 00000000 00000246 00000001 c6c32558 c6d1c050 c6c322c0
+[    1.123563] Call Trace:
+[    1.123563]  [<c110a678>] file_free_rcu+0x28/0x40
+[    1.123563]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    1.123563]  [<c10311d2>] do_exit+0x2f2/0x960
+[    1.123563]  [<c110a8a6>] ? __fput+0x216/0x380
+[    1.123563]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    1.123563]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    1.123563]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    1.123563] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    1.123563] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d1bf18
+[    1.143604] ---[ end trace 91b0b65f94c59b56 ]---
+[    1.144073] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-inn-10:20131009083017:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    0.962733] ------------[ cut here ]------------
+[    0.963146] kernel BUG at kernel/cred.c:138!
+[    0.963693] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    0.964156] Modules linked in:
+[    0.964437] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.964711] task: c6c322c0 ti: c6d1a000 task.ti: c6d1a000
+[    0.964711] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    0.964711] EIP is at __put_cred+0x56/0x90
+[    0.964711] EAX: c14c3720 EBX: c6d17380 ECX: 00000000 EDX: 00000001
+[    0.964711] ESI: c6c322c0 EDI: 00000001 EBP: c6d1bf24 ESP: c6d1bf18
+[    0.964711]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.964711] CR0: 8005003b CR2: b77b6000 CR3: 06d1e000 CR4: 000006b0
+[    0.964711] Stack:
+[    0.964711]  c006ee00 c6c32558 c6c322c0 c6d1bf30 c110a678 c006ed00 c6d1bf44 c104d7d9
+[    0.964711]  c6c32570 c6d1c000 c6c322c0 c6d1bf8c c10311d2 00000000 c6d1bf80 c110a8a6
+[    0.964711]  00000001 00000001 00000000 00000246 00000001 c6c32558 c6d1c050 c6c322c0
+[    0.964711] Call Trace:
+[    0.964711]  [<c110a678>] file_free_rcu+0x28/0x40
+[    0.964711]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    0.964711]  [<c10311d2>] do_exit+0x2f2/0x960
+[    0.964711]  [<c110a8a6>] ? __fput+0x216/0x380
+[    0.964711]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    0.964711]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    0.964711]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    0.964711] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    0.964711] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d1bf18
+[    0.976567] ---[ end trace 0cff5600ae12fa6a ]---
+[    0.976970] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-inn-10:20131009083046:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    0.998718] ------------[ cut here ]------------
+[    0.999107] kernel BUG at kernel/cred.c:138!
+[    0.999617] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    1.000053] Modules linked in:
+[    1.000315] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    1.000917] task: c6c322c0 ti: c6d1a000 task.ti: c6d1a000
+[    1.001354] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    1.001354] EIP is at __put_cred+0x56/0x90
+[    1.001354] EAX: c14c3720 EBX: c6d17380 ECX: 00000000 EDX: 00000001
+[    1.001354] ESI: c6c322c0 EDI: 00000001 EBP: c6d1bf24 ESP: c6d1bf18
+[    1.001354]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    1.001354] CR0: 8005003b CR2: b7725000 CR3: 06d1e000 CR4: 000006b0
+[    1.001354] Stack:
+[    1.001354]  c006ee00 c6c32558 c6c322c0 c6d1bf30 c110a678 c006ed00 c6d1bf44 c104d7d9
+[    1.001354]  c6c32570 c6d1c000 c6c322c0 c6d1bf8c c10311d2 00000000 c6d1bf80 c110a8a6
+[    1.001354]  00000001 00000001 00000000 00000246 00000001 c6c32558 c6d1c050 c6c322c0
+[    1.001354] Call Trace:
+[    1.001354]  [<c110a678>] file_free_rcu+0x28/0x40
+[    1.001354]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    1.001354]  [<c10311d2>] do_exit+0x2f2/0x960
+[    1.001354]  [<c110a8a6>] ? __fput+0x216/0x380
+[    1.001354]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    1.001354]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    1.001354]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    1.001354] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    1.001354] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d1bf18
+[    1.011887] ---[ end trace 3d22c23b9f09a820 ]---
+[    1.012260] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-inn-11:20131009082919:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    0.888031] ------------[ cut here ]------------
+[    0.888200] kernel BUG at kernel/cred.c:138!
+[    0.888200] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    0.888200] Modules linked in:
+[    0.888200] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.888200] task: c6c322c0 ti: c6d1a000 task.ti: c6d1a000
+[    0.888200] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    0.888200] EIP is at __put_cred+0x56/0x90
+[    0.888200] EAX: c14c3720 EBX: c6d17380 ECX: 00000000 EDX: 00000001
+[    0.888200] ESI: c6c322c0 EDI: 00000001 EBP: c6d1bf24 ESP: c6d1bf18
+[    0.888200]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.888200] CR0: 8005003b CR2: b77d1000 CR3: 06d1e000 CR4: 000006b0
+[    0.888200] Stack:
+[    0.888200]  c006ee00 c6c32558 c6c322c0 c6d1bf30 c110a678 c006ed00 c6d1bf44 c104d7d9
+[    0.888200]  c6c32570 c6d1c000 c6c322c0 c6d1bf8c c10311d2 00000000 c6d1bf80 c110a8a6
+[    0.888200]  00000001 00000001 00000000 00000246 00000001 c6c32558 c6d1c050 c6c322c0
+[    0.888200] Call Trace:
+[    0.888200]  [<c110a678>] file_free_rcu+0x28/0x40
+[    0.888200]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    0.888200]  [<c10311d2>] do_exit+0x2f2/0x960
+[    0.888200]  [<c110a8a6>] ? __fput+0x216/0x380
+[    0.888200]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    0.888200]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    0.888200]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    0.888200] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    0.888200] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d1bf18
+[    0.899760] ---[ end trace 9a6328c0b52429fd ]---
+[    0.900100] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-inn-11:20131009082959:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    0.952986] ------------[ cut here ]------------
+[    0.953386] kernel BUG at kernel/cred.c:138!
+[    0.953592] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    0.953592] Modules linked in:
+[    0.953592] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.953592] task: c6c322c0 ti: c6d1a000 task.ti: c6d1a000
+[    0.953592] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    0.953592] EIP is at __put_cred+0x56/0x90
+[    0.953592] EAX: c14c3720 EBX: c6d17380 ECX: 00000000 EDX: 00000001
+[    0.953592] ESI: c6c322c0 EDI: 00000001 EBP: c6d1bf24 ESP: c6d1bf18
+[    0.953592]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.953592] CR0: 8005003b CR2: b773a000 CR3: 06d1e000 CR4: 000006b0
+[    0.953592] Stack:
+[    0.953592]  c006ee00 c6c32558 c6c322c0 c6d1bf30 c110a678 c006ed00 c6d1bf44 c104d7d9
+[    0.953592]  c6c32570 c6d1c000 c6c322c0 c6d1bf8c c10311d2 00000000 c6d1bf80 c110a8a6
+[    0.953592]  00000001 00000001 00000000 00000246 00000001 c6c32558 c6d1c050 c6c322c0
+[    0.953592] Call Trace:
+[    0.953592]  [<c110a678>] file_free_rcu+0x28/0x40
+[    0.953592]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    0.953592]  [<c10311d2>] do_exit+0x2f2/0x960
+[    0.953592]  [<c110a8a6>] ? __fput+0x216/0x380
+[    0.953592]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    0.953592]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    0.953592]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    0.953592] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    0.953592] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d1bf18
+[    0.966456] ---[ end trace c173b35c9b101412 ]---
+[    0.966844] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-inn-11:20131009083034:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    0.955160] ------------[ cut here ]------------
+[    0.955536] kernel BUG at kernel/cred.c:138!
+[    0.956108] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    0.956531] Modules linked in:
+[    0.956809] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.957415] task: c6c322c0 ti: c6d1a000 task.ti: c6d1a000
+[    0.957875] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    0.958307] EIP is at __put_cred+0x56/0x90
+[    0.958432] EAX: c14c3720 EBX: c6d17380 ECX: 00000000 EDX: 00000001
+[    0.958432] ESI: c6c322c0 EDI: 00000001 EBP: c6d1bf24 ESP: c6d1bf18
+[    0.958432]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.958432] CR0: 8005003b CR2: b775b000 CR3: 06d1e000 CR4: 000006b0
+[    0.958432] Stack:
+[    0.958432]  c006ee00 c6c32558 c6c322c0 c6d1bf30 c110a678 c006ed00 c6d1bf44 c104d7d9
+[    0.958432]  c6c32570 c6d1c000 c6c322c0 c6d1bf8c c10311d2 00000000 c6d1bf80 c110a8a6
+[    0.958432]  00000001 00000001 00000000 00000246 00000001 c6c32558 c6d1c050 c6c322c0
+[    0.958432] Call Trace:
+[    0.958432]  [<c110a678>] file_free_rcu+0x28/0x40
+[    0.958432]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    0.958432]  [<c10311d2>] do_exit+0x2f2/0x960
+[    0.958432]  [<c110a8a6>] ? __fput+0x216/0x380
+[    0.958432]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    0.958432]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    0.958432]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    0.958432] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    0.958432] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d1bf18
+[    0.968706] ---[ end trace 2a42ce5a98fb95b1 ]---
+[    0.969107] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-inn-19:20131009083025:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    0.991460] ------------[ cut here ]------------
+[    0.991864] kernel BUG at kernel/cred.c:138!
+[    0.992413] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    0.992866] Modules linked in:
+[    0.992985] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.992985] task: c6c322c0 ti: c6d1a000 task.ti: c6d1a000
+[    0.992985] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    0.992985] EIP is at __put_cred+0x56/0x90
+[    0.992985] EAX: c14c3720 EBX: c6d17380 ECX: 00000000 EDX: 00000001
+[    0.992985] ESI: c6c322c0 EDI: 00000001 EBP: c6d1bf24 ESP: c6d1bf18
+[    0.992985]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.992985] CR0: 8005003b CR2: b77a3000 CR3: 06d1e000 CR4: 000006b0
+[    0.992985] Stack:
+[    0.992985]  c006ee00 c6c32558 c6c322c0 c6d1bf30 c110a678 c006ed00 c6d1bf44 c104d7d9
+[    0.992985]  c6c32570 c6d1c000 c6c322c0 c6d1bf8c c10311d2 00000000 c6d1bf80 c110a8a6
+[    0.992985]  00000001 00000001 00000000 00000246 00000001 c6c32558 c6d1c050 c6c322c0
+[    0.992985] Call Trace:
+[    0.992985]  [<c110a678>] file_free_rcu+0x28/0x40
+[    0.992985]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    0.992985]  [<c10311d2>] do_exit+0x2f2/0x960
+[    0.992985]  [<c110a8a6>] ? __fput+0x216/0x380
+[    0.992985]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    0.992985]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    0.992985]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    0.992985] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    0.992985] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d1bf18
+[    1.005137] ---[ end trace 20d6a5e900451e9c ]---
+[    1.005534] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-inn-23:20131009083004:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    0.882992] ------------[ cut here ]------------
+[    0.883362] kernel BUG at kernel/cred.c:138!
+[    0.883483] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    0.883483] Modules linked in:
+[    0.883483] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.883483] task: c6c322c0 ti: c6d1a000 task.ti: c6d1a000
+[    0.883483] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    0.883483] EIP is at __put_cred+0x56/0x90
+[    0.883483] EAX: c14c3720 EBX: c6d17380 ECX: 00000000 EDX: 00000001
+[    0.883483] ESI: c6c322c0 EDI: 00000001 EBP: c6d1bf24 ESP: c6d1bf18
+[    0.883483]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.883483] CR0: 8005003b CR2: b775e000 CR3: 06d1e000 CR4: 000006b0
+[    0.883483] Stack:
+[    0.883483]  c006ee00 c6c32558 c6c322c0 c6d1bf30 c110a678 c006ed00 c6d1bf44 c104d7d9
+[    0.883483]  c6c32570 c6d1c000 c6c322c0 c6d1bf8c c10311d2 00000000 c6d1bf80 c110a8a6
+[    0.883483]  00000001 00000001 00000000 00000246 00000001 c6c32558 c6d1c050 c6c322c0
+[    0.883483] Call Trace:
+[    0.883483]  [<c110a678>] file_free_rcu+0x28/0x40
+[    0.883483]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    0.883483]  [<c10311d2>] do_exit+0x2f2/0x960
+[    0.883483]  [<c110a8a6>] ? __fput+0x216/0x380
+[    0.883483]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    0.883483]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    0.883483]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    0.883483] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    0.883483] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d1bf18
+[    0.895298] ---[ end trace 5ff84eada961bbe0 ]---
+[    0.895657] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-inn-27:20131009082953:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    0.894829] ------------[ cut here ]------------
+[    0.895201] kernel BUG at kernel/cred.c:138!
+[    0.895709] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    0.896127] Modules linked in:
+[    0.896383] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.896974] task: c6c322c0 ti: c6d1a000 task.ti: c6d1a000
+[    0.897393] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    0.897708] EIP is at __put_cred+0x56/0x90
+[    0.897708] EAX: c14c3720 EBX: c6d17380 ECX: 00000000 EDX: 00000001
+[    0.897708] ESI: c6c322c0 EDI: 00000001 EBP: c6d1bf24 ESP: c6d1bf18
+[    0.897708]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.897708] CR0: 8005003b CR2: b7715000 CR3: 06d1e000 CR4: 000006b0
+[    0.897708] Stack:
+[    0.897708]  c006ee00 c6c32558 c6c322c0 c6d1bf30 c110a678 c006ed00 c6d1bf44 c104d7d9
+[    0.897708]  c6c32570 c6d1c000 c6c322c0 c6d1bf8c c10311d2 00000000 c6d1bf80 c110a8a6
+[    0.897708]  00000001 00000001 00000000 00000246 00000001 c6c32558 c6d1c050 c6c322c0
+[    0.897708] Call Trace:
+[    0.897708]  [<c110a678>] file_free_rcu+0x28/0x40
+[    0.897708]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    0.897708]  [<c10311d2>] do_exit+0x2f2/0x960
+[    0.897708]  [<c110a8a6>] ? __fput+0x216/0x380
+[    0.897708]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    0.897708]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    0.897708]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    0.897708] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    0.897708] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d1bf18
+[    0.907572] ---[ end trace 1d83451c0cb952ef ]---
+[    0.908004] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-inn-28:20131009083000:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    0.988359] ------------[ cut here ]------------
+[    0.988513] kernel BUG at kernel/cred.c:138!
+[    0.988513] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    0.988513] Modules linked in:
+[    0.988513] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.988513] task: c6c322c0 ti: c6d1a000 task.ti: c6d1a000
+[    0.988513] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    0.988513] EIP is at __put_cred+0x56/0x90
+[    0.988513] EAX: c14c3720 EBX: c6d17380 ECX: 00000000 EDX: 00000001
+[    0.988513] ESI: c6c322c0 EDI: 00000001 EBP: c6d1bf24 ESP: c6d1bf18
+[    0.988513]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.988513] CR0: 8005003b CR2: b76f0000 CR3: 06d1e000 CR4: 000006b0
+[    0.988513] Stack:
+[    0.988513]  c006ee00 c6c32558 c6c322c0 c6d1bf30 c110a678 c006ed00 c6d1bf44 c104d7d9
+[    0.988513]  c6c32570 c6d1c000 c6c322c0 c6d1bf8c c10311d2 00000000 c6d1bf80 c110a8a6
+[    0.988513]  00000001 00000001 00000000 00000246 00000001 c6c32558 c6d1c050 c6c322c0
+[    0.988513] Call Trace:
+[    0.988513]  [<c110a678>] file_free_rcu+0x28/0x40
+[    0.988513]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    0.988513]  [<c10311d2>] do_exit+0x2f2/0x960
+[    0.988513]  [<c110a8a6>] ? __fput+0x216/0x380
+[    0.988513]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    0.988513]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    0.988513]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    0.988513] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    0.988513] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d1bf18
+[    1.001452] ---[ end trace 9ac2dd9a66eec0e0 ]---
+[    1.001898] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-inn-2:20131009082911:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    1.108180] ------------[ cut here ]------------
+[    1.108621] kernel BUG at kernel/cred.c:138!
+[    1.109218] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    1.109715] Modules linked in:
+[    1.110023] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    1.110711] task: c6c322c0 ti: c6d1a000 task.ti: c6d1a000
+[    1.111209] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    1.111319] EIP is at __put_cred+0x56/0x90
+[    1.111319] EAX: c14c3720 EBX: c6d17380 ECX: 00000000 EDX: 00000001
+[    1.111319] ESI: c6c322c0 EDI: 00000001 EBP: c6d1bf24 ESP: c6d1bf18
+[    1.111319]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    1.111319] CR0: 8005003b CR2: b76f5000 CR3: 06d1e000 CR4: 000006b0
+[    1.111319] Stack:
+[    1.111319]  c006ee00 c6c32558 c6c322c0 c6d1bf30 c110a678 c006ed00 c6d1bf44 c104d7d9
+[    1.111319]  c6c32570 c6d1c000 c6c322c0 c6d1bf8c c10311d2 00000000 c6d1bf80 c110a8a6
+[    1.111319]  00000001 00000001 00000000 00000246 00000001 c6c32558 c6d1c050 c6c322c0
+[    1.111319] Call Trace:
+[    1.111319]  [<c110a678>] file_free_rcu+0x28/0x40
+[    1.111319]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    1.111319]  [<c10311d2>] do_exit+0x2f2/0x960
+[    1.111319]  [<c110a8a6>] ? __fput+0x216/0x380
+[    1.111319]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    1.111319]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    1.111319]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    1.111319] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    1.111319] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d1bf18
+[    1.123117] ---[ end trace 9e8ea8004d1d2e91 ]---
+[    1.123548] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-inn-2:20131009082950:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    0.925433] ------------[ cut here ]------------
+[    0.925785] kernel BUG at kernel/cred.c:138!
+[    0.926256] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    0.926654] Modules linked in:
+[    0.926896] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.927451] task: c6c322c0 ti: c6d1a000 task.ti: c6d1a000
+[    0.927943] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    0.928141] EIP is at __put_cred+0x56/0x90
+[    0.928141] EAX: c14c3720 EBX: c6d17380 ECX: 00000000 EDX: 00000001
+[    0.928141] ESI: c6c322c0 EDI: 00000001 EBP: c6d1bf24 ESP: c6d1bf18
+[    0.928141]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.928141] CR0: 8005003b CR2: b771d000 CR3: 06d1e000 CR4: 000006b0
+[    0.928141] Stack:
+[    0.928141]  c006ee00 c6c32558 c6c322c0 c6d1bf30 c110a678 c006ed00 c6d1bf44 c104d7d9
+[    0.928141]  c6c32570 c6d1c000 c6c322c0 c6d1bf8c c10311d2 00000000 c6d1bf80 c110a8a6
+[    0.928141]  00000001 00000001 00000000 00000246 00000001 c6c32558 c6d1c050 c6c322c0
+[    0.928141] Call Trace:
+[    0.928141]  [<c110a678>] file_free_rcu+0x28/0x40
+[    0.928141]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    0.928141]  [<c10311d2>] do_exit+0x2f2/0x960
+[    0.928141]  [<c110a8a6>] ? __fput+0x216/0x380
+[    0.928141]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    0.928141]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    0.928141]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    0.928141] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    0.928141] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d1bf18
+[    0.937198] ---[ end trace ddb5714942bd4736 ]---
+[    0.937544] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-inn-34:20131009083013:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    1.037940] ------------[ cut here ]------------
+[    1.038094] kernel BUG at kernel/cred.c:138!
+[    1.038094] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    1.038094] Modules linked in:
+[    1.038094] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    1.038094] task: c6c322c0 ti: c6d1a000 task.ti: c6d1a000
+[    1.038094] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    1.038094] EIP is at __put_cred+0x56/0x90
+[    1.038094] EAX: c14c3720 EBX: c6d17380 ECX: 00000000 EDX: 00000001
+[    1.038094] ESI: c6c322c0 EDI: 00000001 EBP: c6d1bf24 ESP: c6d1bf18
+[    1.038094]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    1.038094] CR0: 8005003b CR2: b7782000 CR3: 06d1e000 CR4: 000006b0
+[    1.038094] Stack:
+[    1.038094]  c006ee00 c6c32558 c6c322c0 c6d1bf30 c110a678 c006ed00 c6d1bf44 c104d7d9
+[    1.038094]  c6c32570 c6d1c000 c6c322c0 c6d1bf8c c10311d2 00000000 c6d1bf80 c110a8a6
+[    1.038094]  00000001 00000001 00000000 00000246 00000001 c6c32558 c6d1c050 c6c322c0
+[    1.038094] Call Trace:
+[    1.038094]  [<c110a678>] file_free_rcu+0x28/0x40
+[    1.038094]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    1.038094]  [<c10311d2>] do_exit+0x2f2/0x960
+[    1.038094]  [<c110a8a6>] ? __fput+0x216/0x380
+[    1.038094]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    1.038094]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    1.038094]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    1.038094] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    1.038094] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d1bf18
+[    1.051035] ---[ end trace b78a771439c9a685 ]---
+[    1.051451] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-inn-39:20131009083045:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    1.015270] ------------[ cut here ]------------
+[    1.015695] kernel BUG at kernel/cred.c:138!
+[    1.016189] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    1.016189] Modules linked in:
+[    1.016189] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    1.016189] task: c6c322c0 ti: c6d1a000 task.ti: c6d1a000
+[    1.016189] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    1.016189] EIP is at __put_cred+0x56/0x90
+[    1.016189] EAX: c14c3720 EBX: c6d17380 ECX: 00000000 EDX: 00000001
+[    1.016189] ESI: c6c322c0 EDI: 00000001 EBP: c6d1bf24 ESP: c6d1bf18
+[    1.016189]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    1.016189] CR0: 8005003b CR2: b7775000 CR3: 06d1e000 CR4: 000006b0
+[    1.016189] Stack:
+[    1.016189]  c006ee00 c6c32558 c6c322c0 c6d1bf30 c110a678 c006ed00 c6d1bf44 c104d7d9
+[    1.016189]  c6c32570 c6d1c000 c6c322c0 c6d1bf8c c10311d2 00000000 c6d1bf80 c110a8a6
+[    1.016189]  00000001 00000001 00000000 00000246 00000001 c6c32558 c6d1c050 c6c322c0
+[    1.016189] Call Trace:
+[    1.016189]  [<c110a678>] file_free_rcu+0x28/0x40
+[    1.016189]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    1.016189]  [<c10311d2>] do_exit+0x2f2/0x960
+[    1.016189]  [<c110a8a6>] ? __fput+0x216/0x380
+[    1.016189]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    1.016189]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    1.016189]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    1.016189] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    1.016189] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d1bf18
+[    1.028301] ---[ end trace 989bdfa831fbd776 ]---
+[    1.028745] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-inn-44:20131009083043:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    0.926919] ------------[ cut here ]------------
+[    0.927291] kernel BUG at kernel/cred.c:138!
+[    0.927707] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    0.927707] Modules linked in:
+[    0.927707] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.927707] task: c6c322c0 ti: c6d1a000 task.ti: c6d1a000
+[    0.927707] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    0.927707] EIP is at __put_cred+0x56/0x90
+[    0.927707] EAX: c14c3720 EBX: c6d17380 ECX: 00000000 EDX: 00000001
+[    0.927707] ESI: c6c322c0 EDI: 00000001 EBP: c6d1bf24 ESP: c6d1bf18
+[    0.927707]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.927707] CR0: 8005003b CR2: b77cb000 CR3: 06d1e000 CR4: 000006b0
+[    0.927707] Stack:
+[    0.927707]  c006ee00 c6c32558 c6c322c0 c6d1bf30 c110a678 c006ed00 c6d1bf44 c104d7d9
+[    0.927707]  c6c32570 c6d1c000 c6c322c0 c6d1bf8c c10311d2 00000000 c6d1bf80 c110a8a6
+[    0.927707]  00000001 00000001 00000000 00000246 00000001 c6c32558 c6d1c050 c6c322c0
+[    0.927707] Call Trace:
+[    0.927707]  [<c110a678>] file_free_rcu+0x28/0x40
+[    0.927707]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    0.927707]  [<c10311d2>] do_exit+0x2f2/0x960
+[    0.927707]  [<c110a8a6>] ? __fput+0x216/0x380
+[    0.927707]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    0.927707]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    0.927707]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    0.927707] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    0.927707] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d1bf18
+[    0.939538] ---[ end trace 799bfb3cd9dae4f8 ]---
+[    0.939907] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-inn-46:20131009083026:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    0.939364] ------------[ cut here ]------------
+[    0.939749] kernel BUG at kernel/cred.c:138!
+[    0.940241] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    0.940433] Modules linked in:
+[    0.940433] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.940433] task: c6c322c0 ti: c6d1a000 task.ti: c6d1a000
+[    0.940433] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    0.940433] EIP is at __put_cred+0x56/0x90
+[    0.940433] EAX: c14c3720 EBX: c6d17380 ECX: 00000000 EDX: 00000001
+[    0.940433] ESI: c6c322c0 EDI: 00000001 EBP: c6d1bf24 ESP: c6d1bf18
+[    0.940433]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.940433] CR0: 8005003b CR2: b7772000 CR3: 06d1e000 CR4: 000006b0
+[    0.940433] Stack:
+[    0.940433]  c006ee00 c6c32558 c6c322c0 c6d1bf30 c110a678 c006ed00 c6d1bf44 c104d7d9
+[    0.940433]  c6c32570 c6d1c000 c6c322c0 c6d1bf8c c10311d2 00000000 c6d1bf80 c110a8a6
+[    0.940433]  00000001 00000001 00000000 00000246 00000001 c6c32558 c6d1c050 c6c322c0
+[    0.940433] Call Trace:
+[    0.940433]  [<c110a678>] file_free_rcu+0x28/0x40
+[    0.940433]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    0.940433]  [<c10311d2>] do_exit+0x2f2/0x960
+[    0.940433]  [<c110a8a6>] ? __fput+0x216/0x380
+[    0.940433]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    0.940433]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    0.940433]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    0.940433] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    0.940433] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d1bf18
+[    0.951713] ---[ end trace c8ed5a640a0f5929 ]---
+[    0.952074] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-inn-47:20131009083039:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    0.981110] ------------[ cut here ]------------
+[    0.981492] kernel BUG at kernel/cred.c:138!
+[    0.982018] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    0.982446] Modules linked in:
+[    0.982750] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.982750] task: c6c322c0 ti: c6d1a000 task.ti: c6d1a000
+[    0.982750] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    0.982750] EIP is at __put_cred+0x56/0x90
+[    0.982750] EAX: c14c3720 EBX: c6d17380 ECX: 00000000 EDX: 00000001
+[    0.982750] ESI: c6c322c0 EDI: 00000001 EBP: c6d1bf24 ESP: c6d1bf18
+[    0.982750]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.982750] CR0: 8005003b CR2: b776f000 CR3: 06d1e000 CR4: 000006b0
+[    0.982750] Stack:
+[    0.982750]  c006ee00 c6c32558 c6c322c0 c6d1bf30 c110a678 c006ed00 c6d1bf44 c104d7d9
+[    0.982750]  c6c32570 c6d1c000 c6c322c0 c6d1bf8c c10311d2 00000000 c6d1bf80 c110a8a6
+[    0.982750]  00000001 00000001 00000000 00000246 00000001 c6c32558 c6d1c050 c6c322c0
+[    0.982750] Call Trace:
+[    0.982750]  [<c110a678>] file_free_rcu+0x28/0x40
+[    0.982750]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    0.982750]  [<c10311d2>] do_exit+0x2f2/0x960
+[    0.982750]  [<c110a8a6>] ? __fput+0x216/0x380
+[    0.982750]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    0.982750]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    0.982750]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    0.982750] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    0.982750] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d1bf18
+[    0.994204] ---[ end trace 0be85597c1e160f7 ]---
+[    0.994578] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-inn-6:20131009083024:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    0.940191] ------------[ cut here ]------------
+[    0.940466] kernel BUG at kernel/cred.c:138!
+[    0.940466] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    0.940466] Modules linked in:
+[    0.940466] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.940466] task: c6c322c0 ti: c6d1a000 task.ti: c6d1a000
+[    0.940466] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    0.940466] EIP is at __put_cred+0x56/0x90
+[    0.940466] EAX: c14c3720 EBX: c6d17380 ECX: 00000000 EDX: 00000001
+[    0.940466] ESI: c6c322c0 EDI: 00000001 EBP: c6d1bf24 ESP: c6d1bf18
+[    0.940466]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.940466] CR0: 8005003b CR2: b7778000 CR3: 06d1e000 CR4: 000006b0
+[    0.940466] Stack:
+[    0.940466]  c006ee00 c6c32558 c6c322c0 c6d1bf30 c110a678 c006ed00 c6d1bf44 c104d7d9
+[    0.940466]  c6c32570 c6d1c000 c6c322c0 c6d1bf8c c10311d2 00000000 c6d1bf80 c110a8a6
+[    0.940466]  00000001 00000001 00000000 00000246 00000001 c6c32558 c6d1c050 c6c322c0
+[    0.940466] Call Trace:
+[    0.940466]  [<c110a678>] file_free_rcu+0x28/0x40
+[    0.940466]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    0.940466]  [<c10311d2>] do_exit+0x2f2/0x960
+[    0.940466]  [<c110a8a6>] ? __fput+0x216/0x380
+[    0.940466]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    0.940466]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    0.940466]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    0.940466] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    0.940466] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d1bf18
+[    0.952421] ---[ end trace f6790d9b0982f4ad ]---
+[    0.952766] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-jaketown-14:20131009083036:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    3.729442] ------------[ cut here ]------------
+[    3.731501] kernel BUG at kernel/cred.c:138!
+[    3.731646] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    3.731646] Modules linked in:
+[    3.731646] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    3.731646] task: c6c2a2c0 ti: c6d16000 task.ti: c6d16000
+[    3.731646] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    3.731646] EIP is at __put_cred+0x56/0x90
+[    3.731646] EAX: c14c3720 EBX: c6d11080 ECX: 00000000 EDX: 00000001
+[    3.731646] ESI: c6c2a2c0 EDI: 00000001 EBP: c6d17f24 ESP: c6d17f18
+[    3.731646]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    3.731646] CR0: 8005003b CR2: b77af000 CR3: 06d12000 CR4: 000006b0
+[    3.731646] Stack:
+[    3.731646]  c006ee00 c6c2a558 c6c2a2c0 c6d17f30 c110a678 c006ed00 c6d17f44 c104d7d9
+[    3.731646]  c6c2a570 c6d18000 c6c2a2c0 c6d17f8c c10311d2 00000000 c6d17f80 c110a8a6
+[    3.731646]  00000001 00000001 00000000 00000246 00000001 c6c2a558 c6d18050 c6c2a2c0
+[    3.731646] Call Trace:
+[    3.731646]  [<c110a678>] file_free_rcu+0x28/0x40
+[    3.731646]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    3.731646]  [<c10311d2>] do_exit+0x2f2/0x960
+[    3.731646]  [<c110a8a6>] ? __fput+0x216/0x380
+[    3.731646]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    3.731646]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    3.731646]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    3.731646] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    3.731646] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d17f18
+[    3.798770] ---[ end trace d4ea3bd32256ce77 ]---
+[    3.800768] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-jaketown-24:20131009082937:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    3.101013] ------------[ cut here ]------------
+[    3.102243] kernel BUG at kernel/cred.c:138!
+[    3.103409] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    3.103409] Modules linked in:
+[    3.103409] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    3.103409] task: c6c2a2c0 ti: c6d16000 task.ti: c6d16000
+[    3.103409] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    3.103409] EIP is at __put_cred+0x56/0x90
+[    3.103409] EAX: c14c3720 EBX: c6d11080 ECX: 00000000 EDX: 00000001
+[    3.103409] ESI: c6c2a2c0 EDI: 00000001 EBP: c6d17f24 ESP: c6d17f18
+[    3.103409]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    3.103409] CR0: 8005003b CR2: bfab1fe8 CR3: 06d12000 CR4: 000006b0
+[    3.103409] Stack:
+[    3.103409]  c006ee00 c6c2a558 c6c2a2c0 c6d17f30 c110a678 c006ed00 c6d17f44 c104d7d9
+[    3.103409]  c6c2a570 c6d18000 c6c2a2c0 c6d17f8c c10311d2 00000000 c6d17f80 c110a8a6
+[    3.103409]  00000001 00000001 00000000 00000246 00000001 c6c2a558 c6d18050 c6c2a2c0
+[    3.103409] Call Trace:
+[    3.103409]  [<c110a678>] file_free_rcu+0x28/0x40
+[    3.103409]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    3.103409]  [<c10311d2>] do_exit+0x2f2/0x960
+[    3.103409]  [<c110a8a6>] ? __fput+0x216/0x380
+[    3.103409]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    3.103409]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    3.103409]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    3.103409] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    3.103409] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d17f18
+[    3.142873] ---[ end trace 93e1e854462d0bf5 ]---
+[    3.144183] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-jaketown-36:20131009082956:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    3.597372] ------------[ cut here ]------------
+[    3.599193] kernel BUG at kernel/cred.c:138!
+[    3.600469] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    3.600469] Modules linked in:
+[    3.600469] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    3.600469] task: c6c2a2c0 ti: c6d16000 task.ti: c6d16000
+[    3.600469] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    3.600469] EIP is at __put_cred+0x56/0x90
+[    3.600469] EAX: c14c3720 EBX: c6d11080 ECX: 00000000 EDX: 00000001
+[    3.600469] ESI: c6c2a2c0 EDI: 00000001 EBP: c6d17f24 ESP: c6d17f18
+[    3.600469]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    3.600469] CR0: 8005003b CR2: b7778000 CR3: 06d12000 CR4: 000006b0
+[    3.600469] Stack:
+[    3.600469]  c006ee00 c6c2a558 c6c2a2c0 c6d17f30 c110a678 c006ed00 c6d17f44 c104d7d9
+[    3.600469]  c6c2a570 c6d18000 c6c2a2c0 c6d17f8c c10311d2 00000000 c6d17f80 c110a8a6
+[    3.600469]  00000001 00000001 00000000 00000246 00000001 c6c2a558 c6d18050 c6c2a2c0
+[    3.600469] Call Trace:
+[    3.600469]  [<c110a678>] file_free_rcu+0x28/0x40
+[    3.600469]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    3.600469]  [<c10311d2>] do_exit+0x2f2/0x960
+[    3.600469]  [<c110a8a6>] ? __fput+0x216/0x380
+[    3.600469]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    3.600469]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    3.600469]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    3.600469] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    3.600469] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d17f18
+[    3.660723] ---[ end trace a74e540bbc8c14e0 ]---
+[    3.662884] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-jaketown-3:20131009083032:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    3.635049] ------------[ cut here ]------------
+[    3.637062] kernel BUG at kernel/cred.c:138!
+[    3.637162] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    3.637162] Modules linked in:
+[    3.637162] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    3.637162] task: c6c2a2c0 ti: c6d16000 task.ti: c6d16000
+[    3.637162] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    3.637162] EIP is at __put_cred+0x56/0x90
+[    3.637162] EAX: c14c3720 EBX: c6d11080 ECX: 00000000 EDX: 00000001
+[    3.637162] ESI: c6c2a2c0 EDI: 00000001 EBP: c6d17f24 ESP: c6d17f18
+[    3.637162]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    3.637162] CR0: 8005003b CR2: b7787000 CR3: 06d12000 CR4: 000006b0
+[    3.637162] Stack:
+[    3.637162]  c006ee00 c6c2a558 c6c2a2c0 c6d17f30 c110a678 c006ed00 c6d17f44 c104d7d9
+[    3.637162]  c6c2a570 c6d18000 c6c2a2c0 c6d17f8c c10311d2 00000000 c6d17f80 c110a8a6
+[    3.637162]  00000001 00000001 00000000 00000246 00000001 c6c2a558 c6d18050 c6c2a2c0
+[    3.637162] Call Trace:
+[    3.637162]  [<c110a678>] file_free_rcu+0x28/0x40
+[    3.637162]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    3.637162]  [<c10311d2>] do_exit+0x2f2/0x960
+[    3.637162]  [<c110a8a6>] ? __fput+0x216/0x380
+[    3.637162]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    3.637162]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    3.637162]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    3.637162] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    3.637162] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d17f18
+[    3.703278] ---[ end trace 6a2dbe544903d737 ]---
+[    3.705295] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-jaketown-43:20131009083041:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    3.606671] ------------[ cut here ]------------
+[    3.608216] kernel BUG at kernel/cred.c:138!
+[    3.608216] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    3.608216] Modules linked in:
+[    3.608216] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    3.608216] task: c6c2a2c0 ti: c6d16000 task.ti: c6d16000
+[    3.608216] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    3.608216] EIP is at __put_cred+0x56/0x90
+[    3.608216] EAX: c14c3720 EBX: c6d11080 ECX: 00000000 EDX: 00000001
+[    3.608216] ESI: c6c2a2c0 EDI: 00000001 EBP: c6d17f24 ESP: c6d17f18
+[    3.608216]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    3.608216] CR0: 8005003b CR2: b77a4000 CR3: 06d12000 CR4: 000006b0
+[    3.608216] Stack:
+[    3.608216]  c006ee00 c6c2a558 c6c2a2c0 c6d17f30 c110a678 c006ed00 c6d17f44 c104d7d9
+[    3.608216]  c6c2a570 c6d18000 c6c2a2c0 c6d17f8c c10311d2 00000000 c6d17f80 c110a8a6
+[    3.608216]  00000001 00000001 00000000 00000246 00000001 c6c2a558 c6d18050 c6c2a2c0
+[    3.608216] Call Trace:
+[    3.608216]  [<c110a678>] file_free_rcu+0x28/0x40
+[    3.608216]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    3.608216]  [<c10311d2>] do_exit+0x2f2/0x960
+[    3.608216]  [<c110a8a6>] ? __fput+0x216/0x380
+[    3.608216]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    3.608216]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    3.608216]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    3.608216] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    3.608216] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d17f18
+[    3.677889] ---[ end trace 3635cf3e99716285 ]---
+[    3.680041] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-jaketown-45:20131009083009:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    3.654877] ------------[ cut here ]------------
+[    3.656772] kernel BUG at kernel/cred.c:138!
+[    3.656772] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    3.656772] Modules linked in:
+[    3.656772] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    3.656772] task: c6c2a2c0 ti: c6d16000 task.ti: c6d16000
+[    3.656772] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    3.656772] EIP is at __put_cred+0x56/0x90
+[    3.656772] EAX: c14c3720 EBX: c6d11080 ECX: 00000000 EDX: 00000001
+[    3.656772] ESI: c6c2a2c0 EDI: 00000001 EBP: c6d17f24 ESP: c6d17f18
+[    3.656772]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    3.656772] CR0: 8005003b CR2: b76f3000 CR3: 06d12000 CR4: 000006b0
+[    3.656772] Stack:
+[    3.656772]  c006ee00 c6c2a558 c6c2a2c0 c6d17f30 c110a678 c006ed00 c6d17f44 c104d7d9
+[    3.656772]  c6c2a570 c6d18000 c6c2a2c0 c6d17f8c c10311d2 00000000 c6d17f80 c110a8a6
+[    3.656772]  00000001 00000001 00000000 00000246 00000001 c6c2a558 c6d18050 c6c2a2c0
+[    3.656772] Call Trace:
+[    3.656772]  [<c110a678>] file_free_rcu+0x28/0x40
+[    3.656772]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    3.656772]  [<c10311d2>] do_exit+0x2f2/0x960
+[    3.656772]  [<c110a8a6>] ? __fput+0x216/0x380
+[    3.656772]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    3.656772]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    3.656772]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    3.656772] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    3.656772] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d17f18
+[    3.722735] ---[ end trace 3f09cc8c57ae58ba ]---
+[    3.724859] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-lkp-st01-8:20131009083023:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    2.192466] ------------[ cut here ]------------
+[    2.193203] kernel BUG at kernel/cred.c:138!
+[    2.194201] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    2.194739] Modules linked in:
+[    2.194739] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    2.194739] task: c6c322c0 ti: c6d1a000 task.ti: c6d1a000
+[    2.194739] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    2.194739] EIP is at __put_cred+0x56/0x90
+[    2.194739] EAX: c14c3720 EBX: c6d17380 ECX: 00000000 EDX: 00000001
+[    2.194739] ESI: c6c322c0 EDI: 00000001 EBP: c6d1bf24 ESP: c6d1bf18
+[    2.194739]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    2.194739] CR0: 8005003b CR2: b76ee000 CR3: 06d1e000 CR4: 000006b0
+[    2.194739] Stack:
+[    2.194739]  c006ee00 c6c32558 c6c322c0 c6d1bf30 c110a678 c006ed00 c6d1bf44 c104d7d9
+[    2.194739]  c6c32570 c6d1c000 c6c322c0 c6d1bf8c c10311d2 00000000 c6d1bf80 c110a8a6
+[    2.194739]  00000001 00000001 00000000 00000246 00000001 c6c32558 c6d1c050 c6c322c0
+[    2.194739] Call Trace:
+[    2.194739]  [<c110a678>] file_free_rcu+0x28/0x40
+[    2.194739]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    2.194739]  [<c10311d2>] do_exit+0x2f2/0x960
+[    2.194739]  [<c110a8a6>] ? __fput+0x216/0x380
+[    2.194739]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    2.194739]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    2.194739]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    2.194739] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    2.194739] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d1bf18
+[    2.218314] ---[ end trace 366043f64f01e8ee ]---
+[    2.219045] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-lkp-tt02-15:20131008230210:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    2.379238] ------------[ cut here ]------------
+[    2.380183] kernel BUG at kernel/cred.c:138!
+[    2.381466] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    2.381912] Modules linked in:
+[    2.381912] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    2.381912] task: c6c2a2c0 ti: c6d16000 task.ti: c6d16000
+[    2.381912] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    2.381912] EIP is at __put_cred+0x56/0x90
+[    2.381912] EAX: c14c3720 EBX: c6d11080 ECX: 00000000 EDX: 00000001
+[    2.381912] ESI: c6c2a2c0 EDI: 00000001 EBP: c6d17f24 ESP: c6d17f18
+[    2.381912]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    2.381912] CR0: 8005003b CR2: b770d000 CR3: 06d12000 CR4: 000006b0
+[    2.381912] Stack:
+[    2.381912]  c006ee00 c6c2a558 c6c2a2c0 c6d17f30 c110a678 c006ed00 c6d17f44 c104d7d9
+[    2.381912]  c6c2a570 c6d18000 c6c2a2c0 c6d17f8c c10311d2 00000000 c6d17f80 c110a8a6
+[    2.381912]  00000001 00000001 00000000 00000246 00000001 c6c2a558 c6d18050 c6c2a2c0
+[    2.381912] Call Trace:
+[    2.381912]  [<c110a678>] file_free_rcu+0x28/0x40
+[    2.381912]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    2.381912]  [<c10311d2>] do_exit+0x2f2/0x960
+[    2.381912]  [<c110a8a6>] ? __fput+0x216/0x380
+[    2.381912]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    2.381912]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    2.381912]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    2.381912] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    2.381912] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d17f18
+[    2.413399] ---[ end trace a336c8b3db89df5e ]---
+[    2.414332] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-lkp-tt02-1:20131008230114:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    2.375013] ------------[ cut here ]------------
+[    2.376110] kernel BUG at kernel/cred.c:138!
+[    2.376223] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    2.376223] Modules linked in:
+[    2.376223] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    2.376223] task: c6c2a2c0 ti: c6d16000 task.ti: c6d16000
+[    2.376223] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    2.376223] EIP is at __put_cred+0x56/0x90
+[    2.376223] EAX: c14c3720 EBX: c6d11080 ECX: 00000000 EDX: 00000001
+[    2.376223] ESI: c6c2a2c0 EDI: 00000001 EBP: c6d17f24 ESP: c6d17f18
+[    2.376223]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    2.376223] CR0: 8005003b CR2: b779c000 CR3: 06d12000 CR4: 000006b0
+[    2.376223] Stack:
+[    2.376223]  c006ee00 c6c2a558 c6c2a2c0 c6d17f30 c110a678 c006ed00 c6d17f44 c104d7d9
+[    2.376223]  c6c2a570 c6d18000 c6c2a2c0 c6d17f8c c10311d2 00000000 c6d17f80 c110a8a6
+[    2.376223]  00000001 00000001 00000000 00000246 00000001 c6c2a558 c6d18050 c6c2a2c0
+[    2.376223] Call Trace:
+[    2.376223]  [<c110a678>] file_free_rcu+0x28/0x40
+[    2.376223]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    2.376223]  [<c10311d2>] do_exit+0x2f2/0x960
+[    2.376223]  [<c110a8a6>] ? __fput+0x216/0x380
+[    2.376223]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    2.376223]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    2.376223]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    2.376223] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    2.376223] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d17f18
+[    2.409111] ---[ end trace 15e91cbb155c85af ]---
+[    2.410031] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-lkp-tt02-3:20131008230155:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    2.378589] ------------[ cut here ]------------
+[    2.379533] kernel BUG at kernel/cred.c:138!
+[    2.380830] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    2.381639] Modules linked in:
+[    2.381639] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    2.381639] task: c6c2a2c0 ti: c6d16000 task.ti: c6d16000
+[    2.381639] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    2.381639] EIP is at __put_cred+0x56/0x90
+[    2.381639] EAX: c14c3720 EBX: c6d11080 ECX: 00000000 EDX: 00000001
+[    2.381639] ESI: c6c2a2c0 EDI: 00000001 EBP: c6d17f24 ESP: c6d17f18
+[    2.381639]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    2.381639] CR0: 8005003b CR2: b779f000 CR3: 06d12000 CR4: 000006b0
+[    2.381639] Stack:
+[    2.381639]  c006ee00 c6c2a558 c6c2a2c0 c6d17f30 c110a678 c006ed00 c6d17f44 c104d7d9
+[    2.381639]  c6c2a570 c6d18000 c6c2a2c0 c6d17f8c c10311d2 00000000 c6d17f80 c110a8a6
+[    2.381639]  00000001 00000001 00000000 00000246 00000001 c6c2a558 c6d18050 c6c2a2c0
+[    2.381639] Call Trace:
+[    2.381639]  [<c110a678>] file_free_rcu+0x28/0x40
+[    2.381639]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    2.381639]  [<c10311d2>] do_exit+0x2f2/0x960
+[    2.381639]  [<c110a8a6>] ? __fput+0x216/0x380
+[    2.381639]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    2.381639]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    2.381639]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    2.381639] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    2.381639] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d17f18
+[    2.412645] ---[ end trace 3eed1ab81a840f9b ]---
+[    2.413568] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-nhm4-3:20131009003525:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    0.925097] ------------[ cut here ]------------
+[    0.925493] kernel BUG at kernel/cred.c:138!
+[    0.926026] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    0.926466] Modules linked in:
+[    0.926740] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.927357] task: c6c322c0 ti: c6d2a000 task.ti: c6d2a000
+[    0.927806] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    0.927866] EIP is at __put_cred+0x56/0x90
+[    0.927866] EAX: c14c3720 EBX: c6d17400 ECX: 00000000 EDX: 00000001
+[    0.927866] ESI: c6c322c0 EDI: 00000001 EBP: c6d2bf24 ESP: c6d2bf18
+[    0.927866]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.927866] CR0: 8005003b CR2: bfce7ff0 CR3: 06d19000 CR4: 000006b0
+[    0.927866] Stack:
+[    0.927866]  c006ee00 c6c32558 c6c322c0 c6d2bf30 c110a678 c006ed00 c6d2bf44 c104d7d9
+[    0.927866]  c6c32570 c6d2c000 c6c322c0 c6d2bf8c c10311d2 00000000 c6d2bf80 c110a8a6
+[    0.927866]  00000001 00000001 00000000 00000246 00000001 c6c32558 c6d2c050 c6c322c0
+[    0.927866] Call Trace:
+[    0.927866]  [<c110a678>] file_free_rcu+0x28/0x40
+[    0.927866]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    0.927866]  [<c10311d2>] do_exit+0x2f2/0x960
+[    0.927866]  [<c110a8a6>] ? __fput+0x216/0x380
+[    0.927866]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    0.927866]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    0.927866]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    0.927866] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    0.927866] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d2bf18
+[    0.938659] ---[ end trace 3b2f487beedf4727 ]---
+[    0.939045] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-nhm4-5:20131009003430:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    0.924386] ------------[ cut here ]------------
+[    0.924582] kernel BUG at kernel/cred.c:138!
+[    0.924582] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    0.924582] Modules linked in:
+[    0.924582] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.924582] task: c6c322c0 ti: c6d2a000 task.ti: c6d2a000
+[    0.924582] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    0.924582] EIP is at __put_cred+0x56/0x90
+[    0.924582] EAX: c14c3720 EBX: c6d17400 ECX: 00000000 EDX: 00000001
+[    0.924582] ESI: c6c322c0 EDI: 00000001 EBP: c6d2bf24 ESP: c6d2bf18
+[    0.924582]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.924582] CR0: 8005003b CR2: b7793000 CR3: 06d19000 CR4: 000006b0
+[    0.924582] Stack:
+[    0.924582]  c006ee00 c6c32558 c6c322c0 c6d2bf30 c110a678 c006ed00 c6d2bf44 c104d7d9
+[    0.924582]  c6c32570 c6d2c000 c6c322c0 c6d2bf8c c10311d2 00000000 c6d2bf80 c110a8a6
+[    0.924582]  00000001 00000001 00000000 00000246 00000001 c6c32558 c6d2c050 c6c322c0
+[    0.924582] Call Trace:
+[    0.924582]  [<c110a678>] file_free_rcu+0x28/0x40
+[    0.924582]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    0.924582]  [<c10311d2>] do_exit+0x2f2/0x960
+[    0.924582]  [<c110a8a6>] ? __fput+0x216/0x380
+[    0.924582]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    0.924582]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    0.924582]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    0.924582] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    0.924582] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d2bf18
+[    0.937680] ---[ end trace 7f0ecf16967dcc43 ]---
+[    0.938100] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-nhm4-5:20131009003511:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    0.924555] ------------[ cut here ]------------
+[    0.924949] kernel BUG at kernel/cred.c:138!
+[    0.925469] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    0.925910] Modules linked in:
+[    0.926178] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.926793] task: c6c322c0 ti: c6d2a000 task.ti: c6d2a000
+[    0.927232] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    0.927679] EIP is at __put_cred+0x56/0x90
+[    0.927881] EAX: c14c3720 EBX: c6d17400 ECX: 00000000 EDX: 00000001
+[    0.927881] ESI: c6c322c0 EDI: 00000001 EBP: c6d2bf24 ESP: c6d2bf18
+[    0.927881]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.927881] CR0: 8005003b CR2: b7726000 CR3: 06d19000 CR4: 000006b0
+[    0.927881] Stack:
+[    0.927881]  c006ee00 c6c32558 c6c322c0 c6d2bf30 c110a678 c006ed00 c6d2bf44 c104d7d9
+[    0.927881]  c6c32570 c6d2c000 c6c322c0 c6d2bf8c c10311d2 00000000 c6d2bf80 c110a8a6
+[    0.927881]  00000001 00000001 00000000 00000246 00000001 c6c32558 c6d2c050 c6c322c0
+[    0.927881] Call Trace:
+[    0.927881]  [<c110a678>] file_free_rcu+0x28/0x40
+[    0.927881]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    0.927881]  [<c10311d2>] do_exit+0x2f2/0x960
+[    0.927881]  [<c110a8a6>] ? __fput+0x216/0x380
+[    0.927881]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    0.927881]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    0.927881]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    0.927881] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    0.927881] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d2bf18
+[    0.937979] ---[ end trace 9f56434269907c1f ]---
+[    0.938358] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-roam-1:20131009083030:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    1.130287] ------------[ cut here ]------------
+[    1.130741] kernel BUG at kernel/cred.c:138!
+[    1.131345] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    1.131508] Modules linked in:
+[    1.131508] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    1.131508] task: c6c322c0 ti: c6d1a000 task.ti: c6d1a000
+[    1.131508] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    1.131508] EIP is at __put_cred+0x56/0x90
+[    1.131508] EAX: c14c3720 EBX: c6d17380 ECX: 00000000 EDX: 00000001
+[    1.131508] ESI: c6c322c0 EDI: 00000001 EBP: c6d1bf24 ESP: c6d1bf18
+[    1.131508]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    1.131508] CR0: 8005003b CR2: b77a9000 CR3: 06d1e000 CR4: 000006b0
+[    1.131508] Stack:
+[    1.131508]  c006ee00 c6c32558 c6c322c0 c6d1bf30 c110a678 c006ed00 c6d1bf44 c104d7d9
+[    1.131508]  c6c32570 c6d1c000 c6c322c0 c6d1bf8c c10311d2 00000000 c6d1bf80 c110a8a6
+[    1.131508]  00000001 00000001 00000000 00000246 00000001 c6c32558 c6d1c050 c6c322c0
+[    1.131508] Call Trace:
+[    1.131508]  [<c110a678>] file_free_rcu+0x28/0x40
+[    1.131508]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    1.131508]  [<c10311d2>] do_exit+0x2f2/0x960
+[    1.131508]  [<c110a8a6>] ? __fput+0x216/0x380
+[    1.131508]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    1.131508]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    1.131508]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    1.131508] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    1.131508] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d1bf18
+[    1.145451] ---[ end trace 18ee4133d403afe6 ]---
+[    1.145894] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-snb-10:20131009082954:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    1.267650] ------------[ cut here ]------------
+[    1.268157] kernel BUG at kernel/cred.c:138!
+[    1.268839] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    1.269410] Modules linked in:
+[    1.269757] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    1.270560] task: c6c322c0 ti: c6d1a000 task.ti: c6d1a000
+[    1.270907] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    1.270907] EIP is at __put_cred+0x56/0x90
+[    1.270907] EAX: c14c3720 EBX: c6d17380 ECX: 00000000 EDX: 00000001
+[    1.270907] ESI: c6c322c0 EDI: 00000001 EBP: c6d1bf24 ESP: c6d1bf18
+[    1.270907]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    1.270907] CR0: 8005003b CR2: b76f0000 CR3: 06d1e000 CR4: 000006b0
+[    1.270907] Stack:
+[    1.270907]  c006ee00 c6c32558 c6c322c0 c6d1bf30 c110a678 c006ed00 c6d1bf44 c104d7d9
+[    1.270907]  c6c32570 c6d1c000 c6c322c0 c6d1bf8c c10311d2 00000000 c6d1bf80 c110a8a6
+[    1.270907]  00000001 00000001 00000000 00000246 00000001 c6c32558 c6d1c050 c6c322c0
+[    1.270907] Call Trace:
+[    1.270907]  [<c110a678>] file_free_rcu+0x28/0x40
+[    1.270907]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    1.270907]  [<c10311d2>] do_exit+0x2f2/0x960
+[    1.270907]  [<c110a8a6>] ? __fput+0x216/0x380
+[    1.270907]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    1.270907]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    1.270907]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    1.270907] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    1.270907] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d1bf18
+[    1.285006] ---[ end trace 2a08b659136e771e ]---
+[    1.285506] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-snb-11:20131009083046:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    1.267812] ------------[ cut here ]------------
+[    1.268328] kernel BUG at kernel/cred.c:138!
+[    1.268463] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    1.268463] Modules linked in:
+[    1.268463] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    1.268463] task: c6c322c0 ti: c6d1a000 task.ti: c6d1a000
+[    1.268463] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    1.268463] EIP is at __put_cred+0x56/0x90
+[    1.268463] EAX: c14c3720 EBX: c6d17380 ECX: 00000000 EDX: 00000001
+[    1.268463] ESI: c6c322c0 EDI: 00000001 EBP: c6d1bf24 ESP: c6d1bf18
+[    1.268463]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    1.268463] CR0: 8005003b CR2: b7760000 CR3: 06d1e000 CR4: 000006b0
+[    1.268463] Stack:
+[    1.268463]  c006ee00 c6c32558 c6c322c0 c6d1bf30 c110a678 c006ed00 c6d1bf44 c104d7d9
+[    1.268463]  c6c32570 c6d1c000 c6c322c0 c6d1bf8c c10311d2 00000000 c6d1bf80 c110a8a6
+[    1.268463]  00000001 00000001 00000000 00000246 00000001 c6c32558 c6d1c050 c6c322c0
+[    1.268463] Call Trace:
+[    1.268463]  [<c110a678>] file_free_rcu+0x28/0x40
+[    1.268463]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    1.268463]  [<c10311d2>] do_exit+0x2f2/0x960
+[    1.268463]  [<c110a8a6>] ? __fput+0x216/0x380
+[    1.268463]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    1.268463]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    1.268463]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    1.268463] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    1.268463] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d1bf18
+[    1.285133] ---[ end trace b2bca5ffc6ea2c3f ]---
+[    1.285653] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-snb-21:20131009082917:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    1.282220] ------------[ cut here ]------------
+[    1.282756] kernel BUG at kernel/cred.c:138!
+[    1.283288] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    1.283288] Modules linked in:
+[    1.283288] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    1.283288] task: c6c322c0 ti: c6d1a000 task.ti: c6d1a000
+[    1.283288] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    1.283288] EIP is at __put_cred+0x56/0x90
+[    1.283288] EAX: c14c3720 EBX: c6d17380 ECX: 00000000 EDX: 00000001
+[    1.283288] ESI: c6c322c0 EDI: 00000001 EBP: c6d1bf24 ESP: c6d1bf18
+[    1.283288]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    1.283288] CR0: 8005003b CR2: b775e000 CR3: 06d1e000 CR4: 000006b0
+[    1.283288] Stack:
+[    1.283288]  c006ee00 c6c32558 c6c322c0 c6d1bf30 c110a678 c006ed00 c6d1bf44 c104d7d9
+[    1.283288]  c6c32570 c6d1c000 c6c322c0 c6d1bf8c c10311d2 00000000 c6d1bf80 c110a8a6
+[    1.283288]  00000001 00000001 00000000 00000246 00000001 c6c32558 c6d1c050 c6c322c0
+[    1.283288] Call Trace:
+[    1.283288]  [<c110a678>] file_free_rcu+0x28/0x40
+[    1.283288]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    1.283288]  [<c10311d2>] do_exit+0x2f2/0x960
+[    1.283288]  [<c110a8a6>] ? __fput+0x216/0x380
+[    1.283288]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    1.283288]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    1.283288]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    1.283288] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    1.283288] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d1bf18
+[    1.299898] ---[ end trace fa556be854dc3398 ]---
+[    1.300431] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-snb-24:20131009083041:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    1.262976] ------------[ cut here ]------------
+[    1.263491] kernel BUG at kernel/cred.c:138!
+[    1.263599] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    1.263599] Modules linked in:
+[    1.263599] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    1.263599] task: c6c322c0 ti: c6d1a000 task.ti: c6d1a000
+[    1.263599] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    1.263599] EIP is at __put_cred+0x56/0x90
+[    1.263599] EAX: c14c3720 EBX: c6d17380 ECX: 00000000 EDX: 00000001
+[    1.263599] ESI: c6c322c0 EDI: 00000001 EBP: c6d1bf24 ESP: c6d1bf18
+[    1.263599]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    1.263599] CR0: 8005003b CR2: bfc89ff8 CR3: 06d1e000 CR4: 000006b0
+[    1.263599] Stack:
+[    1.263599]  c006ee00 c6c32558 c6c322c0 c6d1bf30 c110a678 c006ed00 c6d1bf44 c104d7d9
+[    1.263599]  c6c32570 c6d1c000 c6c322c0 c6d1bf8c c10311d2 00000000 c6d1bf80 c110a8a6
+[    1.263599]  00000001 00000001 00000000 00000246 00000001 c6c32558 c6d1c050 c6c322c0
+[    1.263599] Call Trace:
+[    1.263599]  [<c110a678>] file_free_rcu+0x28/0x40
+[    1.263599]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    1.263599]  [<c10311d2>] do_exit+0x2f2/0x960
+[    1.263599]  [<c110a8a6>] ? __fput+0x216/0x380
+[    1.263599]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    1.263599]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    1.263599]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    1.263599] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    1.263599] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d1bf18
+[    1.280144] ---[ end trace 3122307b9f7be18f ]---
+[    1.280666] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-snb-25:20131009083041:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    1.263536] ------------[ cut here ]------------
+[    1.264035] kernel BUG at kernel/cred.c:138!
+[    1.264711] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    1.265276] Modules linked in:
+[    1.265639] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    1.265978] task: c6c322c0 ti: c6d1a000 task.ti: c6d1a000
+[    1.265978] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    1.265978] EIP is at __put_cred+0x56/0x90
+[    1.265978] EAX: c14c3720 EBX: c6d17380 ECX: 00000000 EDX: 00000001
+[    1.265978] ESI: c6c322c0 EDI: 00000001 EBP: c6d1bf24 ESP: c6d1bf18
+[    1.265978]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    1.265978] CR0: 8005003b CR2: b779e000 CR3: 06d1e000 CR4: 000006b0
+[    1.265978] Stack:
+[    1.265978]  c006ee00 c6c32558 c6c322c0 c6d1bf30 c110a678 c006ed00 c6d1bf44 c104d7d9
+[    1.265978]  c6c32570 c6d1c000 c6c322c0 c6d1bf8c c10311d2 00000000 c6d1bf80 c110a8a6
+[    1.265978]  00000001 00000001 00000000 00000246 00000001 c6c32558 c6d1c050 c6c322c0
+[    1.265978] Call Trace:
+[    1.265978]  [<c110a678>] file_free_rcu+0x28/0x40
+[    1.265978]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    1.265978]  [<c10311d2>] do_exit+0x2f2/0x960
+[    1.265978]  [<c110a8a6>] ? __fput+0x216/0x380
+[    1.265978]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    1.265978]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    1.265978]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    1.265978] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    1.265978] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d1bf18
+[    1.280305] ---[ end trace db43d2964c13d3c6 ]---
+[    1.280794] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-snb-31:20131009083030:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    1.268757] ------------[ cut here ]------------
+[    1.269290] kernel BUG at kernel/cred.c:138!
+[    1.269995] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    1.270320] Modules linked in:
+[    1.270320] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    1.270320] task: c6c322c0 ti: c6d1a000 task.ti: c6d1a000
+[    1.270320] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    1.270320] EIP is at __put_cred+0x56/0x90
+[    1.270320] EAX: c14c3720 EBX: c6d17380 ECX: 00000000 EDX: 00000001
+[    1.270320] ESI: c6c322c0 EDI: 00000001 EBP: c6d1bf24 ESP: c6d1bf18
+[    1.270320]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    1.270320] CR0: 8005003b CR2: b77c9000 CR3: 06d1e000 CR4: 000006b0
+[    1.270320] Stack:
+[    1.270320]  c006ee00 c6c32558 c6c322c0 c6d1bf30 c110a678 c006ed00 c6d1bf44 c104d7d9
+[    1.270320]  c6c32570 c6d1c000 c6c322c0 c6d1bf8c c10311d2 00000000 c6d1bf80 c110a8a6
+[    1.270320]  00000001 00000001 00000000 00000246 00000001 c6c32558 c6d1c050 c6c322c0
+[    1.270320] Call Trace:
+[    1.270320]  [<c110a678>] file_free_rcu+0x28/0x40
+[    1.270320]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    1.270320]  [<c10311d2>] do_exit+0x2f2/0x960
+[    1.270320]  [<c110a8a6>] ? __fput+0x216/0x380
+[    1.270320]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    1.270320]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    1.270320]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    1.270320] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    1.270320] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d1bf18
+[    1.286494] ---[ end trace cfea269f1eaa7443 ]---
+[    1.287052] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-snb-33:20131009083029:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    1.263869] ------------[ cut here ]------------
+[    1.264376] kernel BUG at kernel/cred.c:138!
+[    1.265055] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    1.265236] Modules linked in:
+[    1.265236] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    1.265236] task: c6c322c0 ti: c6d1a000 task.ti: c6d1a000
+[    1.265236] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    1.265236] EIP is at __put_cred+0x56/0x90
+[    1.265236] EAX: c14c3720 EBX: c6d17380 ECX: 00000000 EDX: 00000001
+[    1.265236] ESI: c6c322c0 EDI: 00000001 EBP: c6d1bf24 ESP: c6d1bf18
+[    1.265236]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    1.265236] CR0: 8005003b CR2: b770c000 CR3: 06d1e000 CR4: 000006b0
+[    1.265236] Stack:
+[    1.265236]  c006ee00 c6c32558 c6c322c0 c6d1bf30 c110a678 c006ed00 c6d1bf44 c104d7d9
+[    1.265236]  c6c32570 c6d1c000 c6c322c0 c6d1bf8c c10311d2 00000000 c6d1bf80 c110a8a6
+[    1.265236]  00000001 00000001 00000000 00000246 00000001 c6c32558 c6d1c050 c6c322c0
+[    1.265236] Call Trace:
+[    1.265236]  [<c110a678>] file_free_rcu+0x28/0x40
+[    1.265236]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    1.265236]  [<c10311d2>] do_exit+0x2f2/0x960
+[    1.265236]  [<c110a8a6>] ? __fput+0x216/0x380
+[    1.265236]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    1.265236]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    1.265236]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    1.265236] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    1.265236] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d1bf18
+[    1.280632] ---[ end trace fad9b18b03fcbc65 ]---
+[    1.281122] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-snb-35:20131009082924:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    1.283238] ------------[ cut here ]------------
+[    1.283747] kernel BUG at kernel/cred.c:138!
+[    1.284453] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    1.285035] Modules linked in:
+[    1.285450] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    1.285683] task: c6c322c0 ti: c6d1a000 task.ti: c6d1a000
+[    1.285683] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    1.285683] EIP is at __put_cred+0x56/0x90
+[    1.285683] EAX: c14c3720 EBX: c6d17380 ECX: 00000000 EDX: 00000001
+[    1.285683] ESI: c6c322c0 EDI: 00000001 EBP: c6d1bf24 ESP: c6d1bf18
+[    1.285683]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    1.285683] CR0: 8005003b CR2: b7721000 CR3: 06d1e000 CR4: 000006b0
+[    1.285683] Stack:
+[    1.285683]  c006ee00 c6c32558 c6c322c0 c6d1bf30 c110a678 c006ed00 c6d1bf44 c104d7d9
+[    1.285683]  c6c32570 c6d1c000 c6c322c0 c6d1bf8c c10311d2 00000000 c6d1bf80 c110a8a6
+[    1.285683]  00000001 00000001 00000000 00000246 00000001 c6c32558 c6d1c050 c6c322c0
+[    1.285683] Call Trace:
+[    1.285683]  [<c110a678>] file_free_rcu+0x28/0x40
+[    1.285683]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    1.285683]  [<c10311d2>] do_exit+0x2f2/0x960
+[    1.285683]  [<c110a8a6>] ? __fput+0x216/0x380
+[    1.285683]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    1.285683]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    1.285683]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    1.285683] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    1.285683] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d1bf18
+[    1.300758] ---[ end trace e06a35604c6d002c ]---
+[    1.301265] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-snb-35:20131009083027:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    1.289153] ------------[ cut here ]------------
+[    1.289669] kernel BUG at kernel/cred.c:138!
+[    1.290371] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    1.290952] Modules linked in:
+[    1.291312] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    1.291604] task: c6c322c0 ti: c6d1a000 task.ti: c6d1a000
+[    1.291604] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    1.291604] EIP is at __put_cred+0x56/0x90
+[    1.291604] EAX: c14c3720 EBX: c6d17380 ECX: 00000000 EDX: 00000001
+[    1.291604] ESI: c6c322c0 EDI: 00000001 EBP: c6d1bf24 ESP: c6d1bf18
+[    1.291604]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    1.291604] CR0: 8005003b CR2: b7777000 CR3: 06d1e000 CR4: 000006b0
+[    1.291604] Stack:
+[    1.291604]  c006ee00 c6c32558 c6c322c0 c6d1bf30 c110a678 c006ed00 c6d1bf44 c104d7d9
+[    1.291604]  c6c32570 c6d1c000 c6c322c0 c6d1bf8c c10311d2 00000000 c6d1bf80 c110a8a6
+[    1.291604]  00000001 00000001 00000000 00000246 00000001 c6c32558 c6d1c050 c6c322c0
+[    1.291604] Call Trace:
+[    1.291604]  [<c110a678>] file_free_rcu+0x28/0x40
+[    1.291604]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    1.291604]  [<c10311d2>] do_exit+0x2f2/0x960
+[    1.291604]  [<c110a8a6>] ? __fput+0x216/0x380
+[    1.291604]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    1.291604]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    1.291604]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    1.291604] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    1.291604] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d1bf18
+[    1.306635] ---[ end trace 2355eb76f3d67d41 ]---
+[    1.307144] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-snb-39:20131009082957:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    1.271515] ------------[ cut here ]------------
+[    1.272027] kernel BUG at kernel/cred.c:138!
+[    1.272717] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    1.273295] Modules linked in:
+[    1.273645] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    1.274228] task: c6c322c0 ti: c6d1a000 task.ti: c6d1a000
+[    1.274228] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    1.274228] EIP is at __put_cred+0x56/0x90
+[    1.274228] EAX: c14c3720 EBX: c6d17380 ECX: 00000000 EDX: 00000001
+[    1.274228] ESI: c6c322c0 EDI: 00000001 EBP: c6d1bf24 ESP: c6d1bf18
+[    1.274228]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    1.274228] CR0: 8005003b CR2: b7748000 CR3: 06d1e000 CR4: 000006b0
+[    1.274228] Stack:
+[    1.274228]  c006ee00 c6c32558 c6c322c0 c6d1bf30 c110a678 c006ed00 c6d1bf44 c104d7d9
+[    1.274228]  c6c32570 c6d1c000 c6c322c0 c6d1bf8c c10311d2 00000000 c6d1bf80 c110a8a6
+[    1.274228]  00000001 00000001 00000000 00000246 00000001 c6c32558 c6d1c050 c6c322c0
+[    1.274228] Call Trace:
+[    1.274228]  [<c110a678>] file_free_rcu+0x28/0x40
+[    1.274228]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    1.274228]  [<c10311d2>] do_exit+0x2f2/0x960
+[    1.274228]  [<c110a8a6>] ? __fput+0x216/0x380
+[    1.274228]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    1.274228]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    1.274228]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    1.274228] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    1.274228] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d1bf18
+[    1.289221] ---[ end trace 0e8d6bb3d3b9eed9 ]---
+[    1.289715] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-snb-48:20131009083032:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    1.290473] ------------[ cut here ]------------
+[    1.290999] kernel BUG at kernel/cred.c:138!
+[    1.291715] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    1.292306] Modules linked in:
+[    1.292673] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    1.293513] task: c6c322c0 ti: c6d1a000 task.ti: c6d1a000
+[    1.293631] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    1.293631] EIP is at __put_cred+0x56/0x90
+[    1.293631] EAX: c14c3720 EBX: c6d17380 ECX: 00000000 EDX: 00000001
+[    1.293631] ESI: c6c322c0 EDI: 00000001 EBP: c6d1bf24 ESP: c6d1bf18
+[    1.293631]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    1.293631] CR0: 8005003b CR2: b7742000 CR3: 06d1e000 CR4: 000006b0
+[    1.293631] Stack:
+[    1.293631]  c006ee00 c6c32558 c6c322c0 c6d1bf30 c110a678 c006ed00 c6d1bf44 c104d7d9
+[    1.293631]  c6c32570 c6d1c000 c6c322c0 c6d1bf8c c10311d2 00000000 c6d1bf80 c110a8a6
+[    1.293631]  00000001 00000001 00000000 00000246 00000001 c6c32558 c6d1c050 c6c322c0
+[    1.293631] Call Trace:
+[    1.293631]  [<c110a678>] file_free_rcu+0x28/0x40
+[    1.293631]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    1.293631]  [<c10311d2>] do_exit+0x2f2/0x960
+[    1.293631]  [<c110a8a6>] ? __fput+0x216/0x380
+[    1.293631]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    1.293631]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    1.293631]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    1.293631] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    1.293631] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d1bf18
+[    1.308539] ---[ end trace a20bc4a5948506b8 ]---
+[    1.309055] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-snb-8:20131009083035:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    1.271191] ------------[ cut here ]------------
+[    1.271732] kernel BUG at kernel/cred.c:138!
+[    1.272444] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    1.273030] Modules linked in:
+[    1.273394] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    1.274258] task: c6c322c0 ti: c6d1a000 task.ti: c6d1a000
+[    1.274413] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    1.274413] EIP is at __put_cred+0x56/0x90
+[    1.274413] EAX: c14c3720 EBX: c6d17380 ECX: 00000000 EDX: 00000001
+[    1.274413] ESI: c6c322c0 EDI: 00000001 EBP: c6d1bf24 ESP: c6d1bf18
+[    1.274413]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    1.274413] CR0: 8005003b CR2: b77cd000 CR3: 06d1e000 CR4: 000006b0
+[    1.274413] Stack:
+[    1.274413]  c006ee00 c6c32558 c6c322c0 c6d1bf30 c110a678 c006ed00 c6d1bf44 c104d7d9
+[    1.274413]  c6c32570 c6d1c000 c6c322c0 c6d1bf8c c10311d2 00000000 c6d1bf80 c110a8a6
+[    1.274413]  00000001 00000001 00000000 00000246 00000001 c6c32558 c6d1c050 c6c322c0
+[    1.274413] Call Trace:
+[    1.274413]  [<c110a678>] file_free_rcu+0x28/0x40
+[    1.274413]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    1.274413]  [<c10311d2>] do_exit+0x2f2/0x960
+[    1.274413]  [<c110a8a6>] ? __fput+0x216/0x380
+[    1.274413]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    1.274413]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    1.274413]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    1.274413] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    1.274413] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d1bf18
+[    1.289024] ---[ end trace 98ba9fd422ad8aea ]---
+[    1.289537] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-stoakley-1:20131009082944:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    2.023245] ------------[ cut here ]------------
+[    2.023898] kernel BUG at kernel/cred.c:138!
+[    2.024787] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    2.025523] Modules linked in:
+[    2.025979] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    2.026303] task: c6c322c0 ti: c6d1a000 task.ti: c6d1a000
+[    2.026303] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    2.026303] EIP is at __put_cred+0x56/0x90
+[    2.026303] EAX: c14c3720 EBX: c6d17380 ECX: 00000000 EDX: 00000001
+[    2.026303] ESI: c6c322c0 EDI: 00000001 EBP: c6d1bf24 ESP: c6d1bf18
+[    2.026303]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    2.026303] CR0: 8005003b CR2: bfd7fffc CR3: 06d1e000 CR4: 000006b0
+[    2.026303] Stack:
+[    2.026303]  c006ee00 c6c32558 c6c322c0 c6d1bf30 c110a678 c006ed00 c6d1bf44 c104d7d9
+[    2.026303]  c6c32570 c6d1c000 c6c322c0 c6d1bf8c c10311d2 00000000 c6d1bf80 c110a8a6
+[    2.026303]  00000001 00000001 00000000 00000246 00000001 c6c32558 c6d1c050 c6c322c0
+[    2.026303] Call Trace:
+[    2.026303]  [<c110a678>] file_free_rcu+0x28/0x40
+[    2.026303]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    2.026303]  [<c10311d2>] do_exit+0x2f2/0x960
+[    2.026303]  [<c110a8a6>] ? __fput+0x216/0x380
+[    2.026303]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    2.026303]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    2.026303]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    2.026303] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    2.026303] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d1bf18
+[    2.045970] ---[ end trace f238037b91c10924 ]---
+[    2.046641] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-stoakley-3:20131009083031:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    2.033152] ------------[ cut here ]------------
+[    2.033813] kernel BUG at kernel/cred.c:138!
+[    2.034716] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    2.035103] Modules linked in:
+[    2.035103] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    2.035103] task: c6c322c0 ti: c6d1a000 task.ti: c6d1a000
+[    2.035103] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    2.035103] EIP is at __put_cred+0x56/0x90
+[    2.035103] EAX: c14c3720 EBX: c6d17380 ECX: 00000000 EDX: 00000001
+[    2.035103] ESI: c6c322c0 EDI: 00000001 EBP: c6d1bf24 ESP: c6d1bf18
+[    2.035103]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    2.035103] CR0: 8005003b CR2: b76ff000 CR3: 06d1e000 CR4: 000006b0
+[    2.035103] Stack:
+[    2.035103]  c006ee00 c6c32558 c6c322c0 c6d1bf30 c110a678 c006ed00 c6d1bf44 c104d7d9
+[    2.035103]  c6c32570 c6d1c000 c6c322c0 c6d1bf8c c10311d2 00000000 c6d1bf80 c110a8a6
+[    2.035103]  00000001 00000001 00000000 00000246 00000001 c6c32558 c6d1c050 c6c322c0
+[    2.035103] Call Trace:
+[    2.035103]  [<c110a678>] file_free_rcu+0x28/0x40
+[    2.035103]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    2.035103]  [<c10311d2>] do_exit+0x2f2/0x960
+[    2.035103]  [<c110a8a6>] ? __fput+0x216/0x380
+[    2.035103]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    2.035103]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    2.035103]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    2.035103] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    2.035103] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d1bf18
+[    2.056055] ---[ end trace b431bddf9fc347bf ]---
+[    2.056710] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-waimea-11:20131009162710:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    0.887588] ------------[ cut here ]------------
+[    0.888068] kernel BUG at kernel/cred.c:138!
+[    0.888726] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    0.889276] Modules linked in:
+[    0.889554] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.889554] task: c6c322c0 ti: c6d2a000 task.ti: c6d2a000
+[    0.889554] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    0.889554] EIP is at __put_cred+0x56/0x90
+[    0.889554] EAX: c14c3720 EBX: c6d17400 ECX: 00000000 EDX: 00000001
+[    0.889554] ESI: c6c322c0 EDI: 00000001 EBP: c6d2bf24 ESP: c6d2bf18
+[    0.889554]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.889554] CR0: 8005003b CR2: b77d2000 CR3: 06d19000 CR4: 000006b0
+[    0.889554] Stack:
+[    0.889554]  c006ee00 c6c32558 c6c322c0 c6d2bf30 c110a678 c006ed00 c6d2bf44 c104d7d9
+[    0.889554]  c6c32570 c6d2c000 c6c322c0 c6d2bf8c c10311d2 00000000 c6d2bf80 c110a8a6
+[    0.889554]  00000001 00000001 00000000 00000246 00000001 c6c32558 c6d2c050 c6c322c0
+[    0.889554] Call Trace:
+[    0.889554]  [<c110a678>] file_free_rcu+0x28/0x40
+[    0.889554]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    0.889554]  [<c10311d2>] do_exit+0x2f2/0x960
+[    0.889554]  [<c110a8a6>] ? __fput+0x216/0x380
+[    0.889554]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    0.889554]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    0.889554]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    0.889554] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    0.889554] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d2bf18
+[    0.904450] ---[ end trace 000353ff35790159 ]---
+[    0.904925] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-xian-21:20131009083032:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    1.240102] ------------[ cut here ]------------
+[    1.240374] kernel BUG at kernel/cred.c:138!
+[    1.240374] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    1.240374] Modules linked in:
+[    1.240374] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    1.240374] task: c6c322c0 ti: c6d1a000 task.ti: c6d1a000
+[    1.240374] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    1.240374] EIP is at __put_cred+0x56/0x90
+[    1.240374] EAX: c14c3720 EBX: c6d17380 ECX: 00000000 EDX: 00000001
+[    1.240374] ESI: c6c322c0 EDI: 00000001 EBP: c6d1bf24 ESP: c6d1bf18
+[    1.240374]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    1.240374] CR0: 8005003b CR2: b7710000 CR3: 06d1e000 CR4: 000006b0
+[    1.240374] Stack:
+[    1.240374]  c006ee00 c6c32558 c6c322c0 c6d1bf30 c110a678 c006ed00 c6d1bf44 c104d7d9
+[    1.240374]  c6c32570 c6d1c000 c6c322c0 c6d1bf8c c10311d2 00000000 c6d1bf80 c110a8a6
+[    1.240374]  00000001 00000001 00000000 00000246 00000001 c6c32558 c6d1c050 c6c322c0
+[    1.240374] Call Trace:
+[    1.240374]  [<c110a678>] file_free_rcu+0x28/0x40
+[    1.240374]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    1.240374]  [<c10311d2>] do_exit+0x2f2/0x960
+[    1.240374]  [<c110a8a6>] ? __fput+0x216/0x380
+[    1.240374]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    1.240374]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    1.240374]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    1.240374] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    1.240374] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d1bf18
+[    1.255823] ---[ end trace d6c84abf11088fa0 ]---
+[    1.256281] Fixing recursive fault but reboot is needed!
+
+dmesg-quantal-xian-23:20131009082947:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+modprobe: FATAL: Could not load /lib/modules/3.12.0-rc1-00050-g0c44c2d/modules.dep: No such file or directory
+
+[    1.501753] ------------[ cut here ]------------
+[    1.502309] kernel BUG at kernel/cred.c:138!
+[    1.503038] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
+[    1.503719] Modules linked in:
+[    1.504090] CPU: 0 PID: 36 Comm: modprobe Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    1.504117] task: c6c322c0 ti: c6d1a000 task.ti: c6d1a000
+[    1.504117] EIP: 0060:[<c1056716>] EFLAGS: 00010202 CPU: 0
+[    1.504117] EIP is at __put_cred+0x56/0x90
+[    1.504117] EAX: c14c3720 EBX: c6d17380 ECX: 00000000 EDX: 00000001
+[    1.504117] ESI: c6c322c0 EDI: 00000001 EBP: c6d1bf24 ESP: c6d1bf18
+[    1.504117]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    1.504117] CR0: 8005003b CR2: b776d000 CR3: 06d1e000 CR4: 000006b0
+[    1.504117] Stack:
+[    1.504117]  c006ee00 c6c32558 c6c322c0 c6d1bf30 c110a678 c006ed00 c6d1bf44 c104d7d9
+[    1.504117]  c6c32570 c6d1c000 c6c322c0 c6d1bf8c c10311d2 00000000 c6d1bf80 c110a8a6
+[    1.504117]  00000001 00000001 00000000 00000246 00000001 c6c32558 c6d1c050 c6c322c0
+[    1.504117] Call Trace:
+[    1.504117]  [<c110a678>] file_free_rcu+0x28/0x40
+[    1.504117]  [<c104d7d9>] task_work_run+0x79/0xa0
+[    1.504117]  [<c10311d2>] do_exit+0x2f2/0x960
+[    1.504117]  [<c110a8a6>] ? __fput+0x216/0x380
+[    1.504117]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    1.504117]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    1.504117]  [<c130eeb0>] sysenter_do_call+0x12/0x3c
+[    1.504117] Code: 85 f6 74 02 0f 0b 8b 35 88 57 47 c1 31 c0 39 9e a4 01 00 00 0f 94 c0 89 c7 31 c9 89 fa b8 20 37 4c c1 e8 ae 19 05 00 85 ff 74 02 <0f> 0b 31 c0 3b 9e a0 01 00 00 0f 94 c0 89 c6 31 c9 89 f2 b8 0c
+[    1.504117] EIP: [<c1056716>] __put_cred+0x56/0x90 SS:ESP 0068:c6d1bf18
+[    1.518217] ---[ end trace 3ef53dce4d64dd7a ]---
+[    1.518644] Fixing recursive fault but reboot is needed!
+
+dmesg-yocto-ant-15:20131009082944:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+[    7.680434] debug: unmapping init [mem 0xc14df000-0xc1524fff]
+
+mount: mounting proc on /proc failed: No such device
+[    8.182500] BUG: unable to handle kernel NULL pointer dereference at   (null)
+[    8.183571] IP: [<  (null)>]   (null)
+[    8.184160] *pdpt = 0000000000000000 *pde = f000ff53f000ff53 
+[    8.185292] Oops: 0010 [#1] DEBUG_PAGEALLOC
+[    8.185292] Modules linked in:
+[    8.185292] CPU: 0 PID: 46 Comm: mount Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    8.185292] task: cd7cbcd0 ti: cd10c000 task.ti: cd10c000
+[    8.185292] EIP: 0060:[<00000000>] EFLAGS: 00000246 CPU: 0
+[    8.185292] EIP is at 0x0
+[    8.185292] EAX: cd0def00 EBX: cd0dee40 ECX: 00000000 EDX: cd0def00
+[    8.185292] ESI: cd7cbf68 EDI: cd7cbcd0 EBP: cd10df44 ESP: cd10df34
+[    8.185292]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    8.185292] CR0: 8005003b CR2: 00000000 CR3: 0d108000 CR4: 000006b0
+[    8.185292] DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+[    8.185292] DR6: 00000000 DR7: 00000000
+[    8.185292] Stack:
+[    8.185292]  c104d7d9 cd7cbf80 cd0da900 cd7cbcd0 cd10df8c c10311d2 00000000 cd10df58
+[    8.185292]  c10762db cd10df78 00000001 00000100 00000000 00000046 00000030 cd0da950
+[    8.185292]  cd7cbcd0 ffffffff cd10df9c 0000ff00 ce867b80 cd7cbcd0 cd10dfa4 c10327ca
+[    8.185292] Call Trace:
+[    8.185292]  [<c104d7d9>] ? task_work_run+0x79/0xa0
+[    8.185292]  [<c10311d2>] do_exit+0x2f2/0x960
+[    8.185292]  [<c10762db>] ? trace_hardirqs_off+0xb/0x10
+[    8.185292]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    8.185292]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    8.185292]  [<c1307ad5>] syscall_call+0x7/0xb
+[    8.185292] Code:  Bad EIP value.
+[    8.185292] EIP: [<00000000>] 0x0 SS:ESP 0068:cd10df34
+[    8.185292] CR2: 0000000000000000
+[    8.206298] ---[ end trace 5ac61493344427c5 ]---
+[    8.206999] Fixing recursive fault but reboot is needed!
+
+dmesg-yocto-cairo-25:20131009083038:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+[    0.501170] debug: unmapping init [mem 0xc14df000-0xc1524fff]
+
+mount: mounting proc on /proc failed: No such device
+[    0.509709] BUG: unable to handle kernel NULL pointer dereference at   (null)
+[    0.510451] IP: [<c110a6e0>] __fput+0x50/0x380
+[    0.510904] *pdpt = 0000000000000000 *pde = f000ff53f000ff53 
+[    0.511500] Oops: 0000 [#1] DEBUG_PAGEALLOC
+[    0.511937] Modules linked in:
+[    0.512160] CPU: 0 PID: 12 Comm: kworker/0:1 Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.512160] Workqueue: events delayed_fput
+[    0.512160] task: c0035f90 ti: ce866000 task.ti: ce866000
+[    0.512160] EIP: 0060:[<c110a6e0>] EFLAGS: 00010212 CPU: 0
+[    0.512160] EIP is at __fput+0x50/0x380
+[    0.512160] EAX: 00000000 EBX: cd0e3200 ECX: 00000000 EDX: 0000001d
+[    0.512160] ESI: 00000010 EDI: 00000000 EBP: ce867e98 ESP: ce867e70
+[    0.512160]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.512160] CR0: 8005003b CR2: 00000000 CR3: 0d10a000 CR4: 000006b0
+[    0.512160] Stack:
+[    0.512160]  00000246 00000000 00000002 00000000 00000000 00000000 00000000 00000000
+[    0.512160]  00000000 c0124540 ce867ea4 c110aa39 c1495640 ce867efc c10492f9 00000000
+[    0.512160]  00000002 00000000 c10492c1 00000000 00000000 00000000 0019f047 c0083400
+[    0.512160] Call Trace:
+[    0.512160]  [<c110aa39>] delayed_fput+0x29/0x30
+[    0.512160]  [<c10492f9>] process_one_work+0x2f9/0x650
+[    0.512160]  [<c10492c1>] ? process_one_work+0x2c1/0x650
+[    0.512160]  [<c104ac2f>] worker_thread+0x28f/0x610
+[    0.512160]  [<c104a9a0>] ? cancel_delayed_work_sync+0x20/0x20
+[    0.512160]  [<c1050c42>] kthread+0x92/0xa0
+[    0.512160]  [<c130ee1b>] ret_from_kernel_thread+0x1b/0x30
+[    0.512160]  [<c1050bb0>] ? kthread_create_on_node+0xd0/0xd0
+[    0.512160] Code: 00 b8 a0 53 41 c1 e8 80 ff f4 ff e8 1b b0 1f 00 8b 43 10 89 c1 89 45 e8 8b 53 40 89 d0 83 e0 02 83 f8 01 19 f6 83 e6 08 83 c6 08 <8b> 01 25 00 f0 ff ff 66 3d 00 40 0f 84 2f 02 00 00 81 e2 00 00
+[    0.512160] EIP: [<c110a6e0>] __fput+0x50/0x380 SS:ESP 0068:ce867e70
+[    0.512160] CR2: 0000000000000000
+[    0.527574] ---[ end trace 5cd69806bf0ab30d ]---
+[    0.531770] Kernel panic - not syncing: CRED: put_cred_rcu() sees cd0c6c80 with usage -1
+
+dmesg-yocto-inn-11:20131009082955:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+[    0.430180] debug: unmapping init [mem 0xc14df000-0xc1524fff]
+
+mount: mounting proc on /proc failed: No such device
+[    0.437632] BUG: unable to handle kernel NULL pointer dereference at   (null)
+[    0.438241] IP: [<c110a6e0>] __fput+0x50/0x380
+[    0.438614] *pdpt = 0000000000000000 *pde = f000ff53f000ff53 
+[    0.439112] Oops: 0000 [#1] DEBUG_PAGEALLOC
+[    0.439477] Modules linked in:
+[    0.439748] CPU: 0 PID: 12 Comm: kworker/0:1 Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.440371] Workqueue: events delayed_fput
+[    0.440719] task: c0035f90 ti: ce866000 task.ti: ce866000
+[    0.440920] EIP: 0060:[<c110a6e0>] EFLAGS: 00010212 CPU: 0
+[    0.440920] EIP is at __fput+0x50/0x380
+[    0.440920] EAX: 00000000 EBX: cd0e3200 ECX: 00000000 EDX: 0000001d
+[    0.440920] ESI: 00000010 EDI: 00000000 EBP: ce867e98 ESP: ce867e70
+[    0.440920]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.440920] CR0: 8005003b CR2: 00000000 CR3: 0d10a000 CR4: 000006b0
+[    0.440920] Stack:
+[    0.440920]  00000246 00000000 00000002 00000000 00000000 00000000 00000000 00000000
+[    0.440920]  00000000 c0124540 ce867ea4 c110aa39 c1495640 ce867efc c10492f9 00000000
+[    0.440920]  00000002 00000000 c10492c1 00000000 00000000 00000000 0019f047 c0083400
+[    0.440920] Call Trace:
+[    0.440920]  [<c110aa39>] delayed_fput+0x29/0x30
+[    0.440920]  [<c10492f9>] process_one_work+0x2f9/0x650
+[    0.440920]  [<c10492c1>] ? process_one_work+0x2c1/0x650
+[    0.440920]  [<c104ac2f>] worker_thread+0x28f/0x610
+[    0.440920]  [<c104a9a0>] ? cancel_delayed_work_sync+0x20/0x20
+[    0.440920]  [<c1050c42>] kthread+0x92/0xa0
+[    0.440920]  [<c130ee1b>] ret_from_kernel_thread+0x1b/0x30
+[    0.440920]  [<c1050bb0>] ? kthread_create_on_node+0xd0/0xd0
+[    0.440920] Code: 00 b8 a0 53 41 c1 e8 80 ff f4 ff e8 1b b0 1f 00 8b 43 10 89 c1 89 45 e8 8b 53 40 89 d0 83 e0 02 83 f8 01 19 f6 83 e6 08 83 c6 08 <8b> 01 25 00 f0 ff ff 66 3d 00 40 0f 84 2f 02 00 00 81 e2 00 00
+[    0.440920] EIP: [<c110a6e0>] __fput+0x50/0x380 SS:ESP 0068:ce867e70
+[    0.440920] CR2: 0000000000000000
+[    0.452539] ---[ end trace 225518712278e9ab ]---
+[    0.456251] Kernel panic - not syncing: CRED: put_cred_rcu() sees cd0c6c80 with usage -1
+
+dmesg-yocto-inn-16:20131009082959:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+[    0.424763] debug: unmapping init [mem 0xc14df000-0xc1524fff]
+
+mount: mounting proc on /proc failed: No such device
+[    0.432191] BUG: unable to handle kernel NULL pointer dereference at   (null)
+[    0.432798] IP: [<c110a6e0>] __fput+0x50/0x380
+[    0.433094] *pdpt = 0000000000000000 *pde = f000ff53f000ff53 
+[    0.433094] Oops: 0000 [#1] DEBUG_PAGEALLOC
+[    0.433094] Modules linked in:
+[    0.433094] CPU: 0 PID: 12 Comm: kworker/0:1 Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.433094] Workqueue: events delayed_fput
+[    0.433094] task: c0035f90 ti: ce866000 task.ti: ce866000
+[    0.433094] EIP: 0060:[<c110a6e0>] EFLAGS: 00010212 CPU: 0
+[    0.433094] EIP is at __fput+0x50/0x380
+[    0.433094] EAX: 00000000 EBX: cd0e3200 ECX: 00000000 EDX: 0000001d
+[    0.433094] ESI: 00000010 EDI: 00000000 EBP: ce867e98 ESP: ce867e70
+[    0.433094]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.433094] CR0: 8005003b CR2: 00000000 CR3: 0d10a000 CR4: 000006b0
+[    0.433094] Stack:
+[    0.433094]  00000246 00000000 00000002 00000000 00000000 00000000 00000000 00000000
+[    0.433094]  00000000 c0124540 ce867ea4 c110aa39 c1495640 ce867efc c10492f9 00000000
+[    0.433094]  00000002 00000000 c10492c1 00000000 00000000 00000000 0019f047 c0083400
+[    0.433094] Call Trace:
+[    0.433094]  [<c110aa39>] delayed_fput+0x29/0x30
+[    0.433094]  [<c10492f9>] process_one_work+0x2f9/0x650
+[    0.433094]  [<c10492c1>] ? process_one_work+0x2c1/0x650
+[    0.433094]  [<c104ac2f>] worker_thread+0x28f/0x610
+[    0.433094]  [<c104a9a0>] ? cancel_delayed_work_sync+0x20/0x20
+[    0.433094]  [<c1050c42>] kthread+0x92/0xa0
+[    0.433094]  [<c130ee1b>] ret_from_kernel_thread+0x1b/0x30
+[    0.433094]  [<c1050bb0>] ? kthread_create_on_node+0xd0/0xd0
+[    0.433094] Code: 00 b8 a0 53 41 c1 e8 80 ff f4 ff e8 1b b0 1f 00 8b 43 10 89 c1 89 45 e8 8b 53 40 89 d0 83 e0 02 83 f8 01 19 f6 83 e6 08 83 c6 08 <8b> 01 25 00 f0 ff ff 66 3d 00 40 0f 84 2f 02 00 00 81 e2 00 00
+[    0.433094] EIP: [<c110a6e0>] __fput+0x50/0x380 SS:ESP 0068:ce867e70
+[    0.433094] CR2: 0000000000000000
+[    0.446916] ---[ end trace 34a537809b14cc4f ]---
+[    0.449762] Kernel panic - not syncing: CRED: put_cred_rcu() sees cd0c6c80 with usage -1
+
+dmesg-yocto-inn-16:20131009083032:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+[    0.502675] debug: unmapping init [mem 0xc14df000-0xc1524fff]
+
+mount: mounting proc on /proc failed: No such device
+[    0.511910] BUG: unable to handle kernel NULL pointer dereference at   (null)
+[    0.512629] IP: [<c110a6e0>] __fput+0x50/0x380
+[    0.513067] *pdpt = 0000000000000000 *pde = f000ff53f000ff53 
+[    0.513647] Oops: 0000 [#1] DEBUG_PAGEALLOC
+[    0.513867] Modules linked in:
+[    0.513867] CPU: 0 PID: 12 Comm: kworker/0:1 Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.513867] Workqueue: events delayed_fput
+[    0.513867] task: c0035f90 ti: ce866000 task.ti: ce866000
+[    0.513867] EIP: 0060:[<c110a6e0>] EFLAGS: 00010212 CPU: 0
+[    0.513867] EIP is at __fput+0x50/0x380
+[    0.513867] EAX: 00000000 EBX: cd0e3600 ECX: 00000000 EDX: 0000001d
+[    0.513867] ESI: 00000010 EDI: 00000000 EBP: ce867e98 ESP: ce867e70
+[    0.513867]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.513867] CR0: 8005003b CR2: 00000000 CR3: 0d10a000 CR4: 000006b0
+[    0.513867] Stack:
+[    0.513867]  00000246 00000000 00000002 00000000 00000000 00000000 00000000 00000000
+[    0.513867]  00000000 c0124540 ce867ea4 c110aa39 c1495640 ce867efc c10492f9 00000000
+[    0.513867]  00000002 00000000 c10492c1 00000000 00000000 00000000 0019f047 c0083400
+[    0.513867] Call Trace:
+[    0.513867]  [<c110aa39>] delayed_fput+0x29/0x30
+[    0.513867]  [<c10492f9>] process_one_work+0x2f9/0x650
+[    0.513867]  [<c10492c1>] ? process_one_work+0x2c1/0x650
+[    0.513867]  [<c104ac2f>] worker_thread+0x28f/0x610
+[    0.513867]  [<c104a9a0>] ? cancel_delayed_work_sync+0x20/0x20
+[    0.513867]  [<c1050c42>] kthread+0x92/0xa0
+[    0.513867]  [<c130ee1b>] ret_from_kernel_thread+0x1b/0x30
+[    0.513867]  [<c1050bb0>] ? kthread_create_on_node+0xd0/0xd0
+[    0.513867] Code: 00 b8 a0 53 41 c1 e8 80 ff f4 ff e8 1b b0 1f 00 8b 43 10 89 c1 89 45 e8 8b 53 40 89 d0 83 e0 02 83 f8 01 19 f6 83 e6 08 83 c6 08 <8b> 01 25 00 f0 ff ff 66 3d 00 40 0f 84 2f 02 00 00 81 e2 00 00
+[    0.513867] EIP: [<c110a6e0>] __fput+0x50/0x380 SS:ESP 0068:ce867e70
+[    0.513867] CR2: 0000000000000000
+[    0.529167] ---[ end trace a83aad245ec4094c ]---
+[    0.533890] kernel tried to execute NX-protected page - exploit attempt? (uid: 0)
+
+dmesg-yocto-inn-17:20131009083026:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+[    0.434086] debug: unmapping init [mem 0xc14df000-0xc1524fff]
+
+mount: mounting proc on /proc failed: No such device
+[    0.441392] BUG: unable to handle kernel NULL pointer dereference at   (null)
+[    0.442025] IP: [<c110a6e0>] __fput+0x50/0x380
+[    0.442025] *pdpt = 0000000000000000 *pde = f000ff53f000ff53 
+[    0.442025] Oops: 0000 [#1] DEBUG_PAGEALLOC
+[    0.442025] Modules linked in:
+[    0.442025] CPU: 0 PID: 12 Comm: kworker/0:1 Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.442025] Workqueue: events delayed_fput
+[    0.442025] task: c0035f90 ti: ce866000 task.ti: ce866000
+[    0.442025] EIP: 0060:[<c110a6e0>] EFLAGS: 00010212 CPU: 0
+[    0.442025] EIP is at __fput+0x50/0x380
+[    0.442025] EAX: 00000000 EBX: cd0e3200 ECX: 00000000 EDX: 0000001d
+[    0.442025] ESI: 00000010 EDI: 00000000 EBP: ce867e98 ESP: ce867e70
+[    0.442025]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.442025] CR0: 8005003b CR2: 00000000 CR3: 0d10a000 CR4: 000006b0
+[    0.442025] Stack:
+[    0.442025]  00000246 00000000 00000002 00000000 00000000 00000000 00000000 00000000
+[    0.442025]  00000000 c0124540 ce867ea4 c110aa39 c1495640 ce867efc c10492f9 00000000
+[    0.442025]  00000002 00000000 c10492c1 00000000 00000000 00000000 0019f047 c0083400
+[    0.442025] Call Trace:
+[    0.442025]  [<c110aa39>] delayed_fput+0x29/0x30
+[    0.442025]  [<c10492f9>] process_one_work+0x2f9/0x650
+[    0.442025]  [<c10492c1>] ? process_one_work+0x2c1/0x650
+[    0.442025]  [<c104ac2f>] worker_thread+0x28f/0x610
+[    0.442025]  [<c104a9a0>] ? cancel_delayed_work_sync+0x20/0x20
+[    0.442025]  [<c1050c42>] kthread+0x92/0xa0
+[    0.442025]  [<c130ee1b>] ret_from_kernel_thread+0x1b/0x30
+[    0.442025]  [<c1050bb0>] ? kthread_create_on_node+0xd0/0xd0
+[    0.442025] Code: 00 b8 a0 53 41 c1 e8 80 ff f4 ff e8 1b b0 1f 00 8b 43 10 89 c1 89 45 e8 8b 53 40 89 d0 83 e0 02 83 f8 01 19 f6 83 e6 08 83 c6 08 <8b> 01 25 00 f0 ff ff 66 3d 00 40 0f 84 2f 02 00 00 81 e2 00 00
+[    0.442025] EIP: [<c110a6e0>] __fput+0x50/0x380 SS:ESP 0068:ce867e70
+[    0.442025] CR2: 0000000000000000
+[    0.456868] ---[ end trace f890ee58c5fab7df ]---
+[    0.460395] Kernel panic - not syncing: CRED: put_cred_rcu() sees cd0c6c80 with usage -1
+
+dmesg-yocto-inn-19:20131009083017:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+[    0.410913] debug: unmapping init [mem 0xc14df000-0xc1524fff]
+
+mount: mounting proc on /proc failed: No such device
+[    0.417939] BUG: unable to handle kernel NULL pointer dereference at   (null)
+[    0.418185] IP: [<c110a6e0>] __fput+0x50/0x380
+[    0.418185] *pdpt = 0000000000000000 *pde = f000ff53f000ff53 
+[    0.418185] Oops: 0000 [#1] DEBUG_PAGEALLOC
+[    0.418185] Modules linked in:
+[    0.418185] CPU: 0 PID: 12 Comm: kworker/0:1 Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.418185] Workqueue: events delayed_fput
+[    0.418185] task: c0035f90 ti: ce866000 task.ti: ce866000
+[    0.418185] EIP: 0060:[<c110a6e0>] EFLAGS: 00010212 CPU: 0
+[    0.418185] EIP is at __fput+0x50/0x380
+[    0.418185] EAX: 00000000 EBX: cd0e3200 ECX: 00000000 EDX: 0000001d
+[    0.418185] ESI: 00000010 EDI: 00000000 EBP: ce867e98 ESP: ce867e70
+[    0.418185]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.418185] CR0: 8005003b CR2: 00000000 CR3: 0d10a000 CR4: 000006b0
+[    0.418185] Stack:
+[    0.418185]  00000246 00000000 00000002 00000000 00000000 00000000 00000000 00000000
+[    0.418185]  00000000 c0124540 ce867ea4 c110aa39 c1495640 ce867efc c10492f9 00000000
+[    0.418185]  00000002 00000000 c10492c1 00000000 00000000 00000000 0019f047 c0083400
+[    0.418185] Call Trace:
+[    0.418185]  [<c110aa39>] delayed_fput+0x29/0x30
+[    0.418185]  [<c10492f9>] process_one_work+0x2f9/0x650
+[    0.418185]  [<c10492c1>] ? process_one_work+0x2c1/0x650
+[    0.418185]  [<c104ac2f>] worker_thread+0x28f/0x610
+[    0.418185]  [<c104a9a0>] ? cancel_delayed_work_sync+0x20/0x20
+[    0.418185]  [<c1050c42>] kthread+0x92/0xa0
+[    0.418185]  [<c130ee1b>] ret_from_kernel_thread+0x1b/0x30
+[    0.418185]  [<c1050bb0>] ? kthread_create_on_node+0xd0/0xd0
+[    0.418185] Code: 00 b8 a0 53 41 c1 e8 80 ff f4 ff e8 1b b0 1f 00 8b 43 10 89 c1 89 45 e8 8b 53 40 89 d0 83 e0 02 83 f8 01 19 f6 83 e6 08 83 c6 08 <8b> 01 25 00 f0 ff ff 66 3d 00 40 0f 84 2f 02 00 00 81 e2 00 00
+[    0.418185] EIP: [<c110a6e0>] __fput+0x50/0x380 SS:ESP 0068:ce867e70
+[    0.418185] CR2: 0000000000000000
+[    0.432292] ---[ end trace 581eb8f1e6fe4c76 ]---
+[    0.434863] Kernel panic - not syncing: CRED: put_cred_rcu() sees cd0c6c80 with usage -1
+
+dmesg-yocto-inn-34:20131009083040:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+[    0.426450] debug: unmapping init [mem 0xc14df000-0xc1524fff]
+
+mount: mounting proc on /proc failed: No such device
+[    0.433565] BUG: unable to handle kernel NULL pointer dereference at   (null)
+[    0.434171] IP: [<c110a6e0>] __fput+0x50/0x380
+[    0.434545] *pdpt = 0000000000000000 *pde = f000ff53f000ff53 
+[    0.435027] Oops: 0000 [#1] DEBUG_PAGEALLOC
+[    0.435385] Modules linked in:
+[    0.435656] CPU: 0 PID: 12 Comm: kworker/0:1 Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.435656] Workqueue: events delayed_fput
+[    0.435656] task: c0035f90 ti: ce866000 task.ti: ce866000
+[    0.435656] EIP: 0060:[<c110a6e0>] EFLAGS: 00010212 CPU: 0
+[    0.435656] EIP is at __fput+0x50/0x380
+[    0.435656] EAX: 00000000 EBX: cd0e3200 ECX: 00000000 EDX: 0000001d
+[    0.435656] ESI: 00000010 EDI: 00000000 EBP: ce867e98 ESP: ce867e70
+[    0.435656]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.435656] CR0: 8005003b CR2: 00000000 CR3: 0d10a000 CR4: 000006b0
+[    0.435656] Stack:
+[    0.435656]  00000246 00000000 00000002 00000000 00000000 00000000 00000000 00000000
+[    0.435656]  00000000 c0124540 ce867ea4 c110aa39 c1495640 ce867efc c10492f9 00000000
+[    0.435656]  00000002 00000000 c10492c1 00000000 00000000 00000000 0019f047 c0083400
+[    0.435656] Call Trace:
+[    0.435656]  [<c110aa39>] delayed_fput+0x29/0x30
+[    0.435656]  [<c10492f9>] process_one_work+0x2f9/0x650
+[    0.435656]  [<c10492c1>] ? process_one_work+0x2c1/0x650
+[    0.435656]  [<c104ac2f>] worker_thread+0x28f/0x610
+[    0.435656]  [<c104a9a0>] ? cancel_delayed_work_sync+0x20/0x20
+[    0.435656]  [<c1050c42>] kthread+0x92/0xa0
+[    0.435656]  [<c130ee1b>] ret_from_kernel_thread+0x1b/0x30
+[    0.435656]  [<c1050bb0>] ? kthread_create_on_node+0xd0/0xd0
+[    0.435656] Code: 00 b8 a0 53 41 c1 e8 80 ff f4 ff e8 1b b0 1f 00 8b 43 10 89 c1 89 45 e8 8b 53 40 89 d0 83 e0 02 83 f8 01 19 f6 83 e6 08 83 c6 08 <8b> 01 25 00 f0 ff ff 66 3d 00 40 0f 84 2f 02 00 00 81 e2 00 00
+[    0.435656] EIP: [<c110a6e0>] __fput+0x50/0x380 SS:ESP 0068:ce867e70
+[    0.435656] CR2: 0000000000000000
+[    0.448224] ---[ end trace 6a3e5cea92ca5442 ]---
+[    0.451867] Kernel panic - not syncing: CRED: put_cred_rcu() sees cd0c6c80 with usage -1
+
+dmesg-yocto-inn-42:20131009082955:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+[    0.408103] debug: unmapping init [mem 0xc14df000-0xc1524fff]
+
+mount: mounting proc on /proc failed: No such device
+[    0.414988] BUG: unable to handle kernel NULL pointer dereference at   (null)
+[    0.415578] IP: [<c110a6e0>] __fput+0x50/0x380
+[    0.415938] *pdpt = 0000000000000000 *pde = f000ff53f000ff53 
+[    0.416400] Oops: 0000 [#1] DEBUG_PAGEALLOC
+[    0.416747] Modules linked in:
+[    0.416996] CPU: 0 PID: 12 Comm: kworker/0:1 Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.417584] Workqueue: events delayed_fput
+[    0.417693] task: c0035f90 ti: ce866000 task.ti: ce866000
+[    0.417693] EIP: 0060:[<c110a6e0>] EFLAGS: 00010212 CPU: 0
+[    0.417693] EIP is at __fput+0x50/0x380
+[    0.417693] EAX: 00000000 EBX: cd0e3e00 ECX: 00000000 EDX: 0000001d
+[    0.417693] ESI: 00000010 EDI: 00000000 EBP: ce867e98 ESP: ce867e70
+[    0.417693]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.417693] CR0: 8005003b CR2: 00000000 CR3: 0d10a000 CR4: 000006b0
+[    0.417693] Stack:
+[    0.417693]  00000246 00000000 00000002 00000000 00000000 00000000 00000000 00000000
+[    0.417693]  00000000 c0124540 ce867ea4 c110aa39 c1495640 ce867efc c10492f9 00000000
+[    0.417693]  00000002 00000000 c10492c1 00000000 00000000 00000000 0019f047 c0083400
+[    0.417693] Call Trace:
+[    0.417693]  [<c110aa39>] delayed_fput+0x29/0x30
+[    0.417693]  [<c10492f9>] process_one_work+0x2f9/0x650
+[    0.417693]  [<c10492c1>] ? process_one_work+0x2c1/0x650
+[    0.417693]  [<c104ac2f>] worker_thread+0x28f/0x610
+[    0.417693]  [<c104a9a0>] ? cancel_delayed_work_sync+0x20/0x20
+[    0.417693]  [<c1050c42>] kthread+0x92/0xa0
+[    0.417693]  [<c130ee1b>] ret_from_kernel_thread+0x1b/0x30
+[    0.417693]  [<c1050bb0>] ? kthread_create_on_node+0xd0/0xd0
+[    0.417693] Code: 00 b8 a0 53 41 c1 e8 80 ff f4 ff e8 1b b0 1f 00 8b 43 10 89 c1 89 45 e8 8b 53 40 89 d0 83 e0 02 83 f8 01 19 f6 83 e6 08 83 c6 08 <8b> 01 25 00 f0 ff ff 66 3d 00 40 0f 84 2f 02 00 00 81 e2 00 00
+[    0.417693] EIP: [<c110a6e0>] __fput+0x50/0x380 SS:ESP 0068:ce867e70
+[    0.417693] CR2: 0000000000000000
+[    0.428950] ---[ end trace 2261da89eba9a6f9 ]---
+[    0.432229] Kernel panic - not syncing: CRED: put_cred_rcu() sees cd0c6c80 with usage -1
+
+dmesg-yocto-inn-46:20131009083045:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+[    0.496471] debug: unmapping init [mem 0xc14df000-0xc1524fff]
+
+mount: mounting proc on /proc failed: No such device
+[    0.503853] BUG: unable to handle kernel NULL pointer dereference at   (null)
+[    0.504469] IP: [<c110a6e0>] __fput+0x50/0x380
+[    0.504851] *pdpt = 0000000000000000 *pde = f000ff53f000ff53 
+[    0.505348] Oops: 0000 [#1] DEBUG_PAGEALLOC
+[    0.505721] Modules linked in:
+[    0.506019] CPU: 0 PID: 12 Comm: kworker/0:1 Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.506160] Workqueue: events delayed_fput
+[    0.506160] task: c0035f90 ti: ce866000 task.ti: ce866000
+[    0.506160] EIP: 0060:[<c110a6e0>] EFLAGS: 00010212 CPU: 0
+[    0.506160] EIP is at __fput+0x50/0x380
+[    0.506160] EAX: 00000000 EBX: cd0e3600 ECX: 00000000 EDX: 0000001d
+[    0.506160] ESI: 00000010 EDI: 00000000 EBP: ce867e98 ESP: ce867e70
+[    0.506160]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.506160] CR0: 8005003b CR2: 00000000 CR3: 0d10a000 CR4: 000006b0
+[    0.506160] Stack:
+[    0.506160]  00000246 00000000 00000002 00000000 00000000 00000000 00000000 00000000
+[    0.506160]  00000000 c0124540 ce867ea4 c110aa39 c1495640 ce867efc c10492f9 00000000
+[    0.506160]  00000002 00000000 c10492c1 00000000 00000000 00000000 0019f047 c0083400
+[    0.506160] Call Trace:
+[    0.506160]  [<c110aa39>] delayed_fput+0x29/0x30
+[    0.506160]  [<c10492f9>] process_one_work+0x2f9/0x650
+[    0.506160]  [<c10492c1>] ? process_one_work+0x2c1/0x650
+[    0.506160]  [<c104ac2f>] worker_thread+0x28f/0x610
+[    0.506160]  [<c104a9a0>] ? cancel_delayed_work_sync+0x20/0x20
+[    0.506160]  [<c1050c42>] kthread+0x92/0xa0
+[    0.506160]  [<c130ee1b>] ret_from_kernel_thread+0x1b/0x30
+[    0.506160]  [<c1050bb0>] ? kthread_create_on_node+0xd0/0xd0
+[    0.506160] Code: 00 b8 a0 53 41 c1 e8 80 ff f4 ff e8 1b b0 1f 00 8b 43 10 89 c1 89 45 e8 8b 53 40 89 d0 83 e0 02 83 f8 01 19 f6 83 e6 08 83 c6 08 <8b> 01 25 00 f0 ff ff 66 3d 00 40 0f 84 2f 02 00 00 81 e2 00 00
+[    0.506160] EIP: [<c110a6e0>] __fput+0x50/0x380 SS:ESP 0068:ce867e70
+[    0.506160] CR2: 0000000000000000
+[    0.518909] ---[ end trace 28d48498ca9ee6eb ]---
+[    0.522478] Kernel panic - not syncing: CRED: put_cred_rcu() sees cd0c6a80 with usage -2
+
+dmesg-yocto-inn-9:20131009083033:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+[    0.441803] debug: unmapping init [mem 0xc14df000-0xc1524fff]
+
+mount: mounting proc on /proc failed: No such device
+[    0.449101] BUG: unable to handle kernel NULL pointer dereference at   (null)
+[    0.449725] IP: [<c110a6e0>] __fput+0x50/0x380
+[    0.450120] *pdpt = 0000000000000000 *pde = f000ff53f000ff53 
+[    0.450628] Oops: 0000 [#1] DEBUG_PAGEALLOC
+[    0.451010] Modules linked in:
+[    0.451287] CPU: 0 PID: 12 Comm: kworker/0:1 Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.451940] Workqueue: events delayed_fput
+[    0.452298] task: c0035f90 ti: ce866000 task.ti: ce866000
+[    0.452416] EIP: 0060:[<c110a6e0>] EFLAGS: 00010212 CPU: 0
+[    0.452416] EIP is at __fput+0x50/0x380
+[    0.452416] EAX: 00000000 EBX: cd0e3200 ECX: 00000000 EDX: 0000001d
+[    0.452416] ESI: 00000010 EDI: 00000000 EBP: ce867e98 ESP: ce867e70
+[    0.452416]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.452416] CR0: 8005003b CR2: 00000000 CR3: 0d10a000 CR4: 000006b0
+[    0.452416] Stack:
+[    0.452416]  00000246 00000000 00000002 00000000 00000000 00000000 00000000 00000000
+[    0.452416]  00000000 c0124540 ce867ea4 c110aa39 c1495640 ce867efc c10492f9 00000000
+[    0.452416]  00000002 00000000 c10492c1 00000000 00000000 00000000 0019f047 c0083400
+[    0.452416] Call Trace:
+[    0.452416]  [<c110aa39>] delayed_fput+0x29/0x30
+[    0.452416]  [<c10492f9>] process_one_work+0x2f9/0x650
+[    0.452416]  [<c10492c1>] ? process_one_work+0x2c1/0x650
+[    0.452416]  [<c104ac2f>] worker_thread+0x28f/0x610
+[    0.452416]  [<c104a9a0>] ? cancel_delayed_work_sync+0x20/0x20
+[    0.452416]  [<c1050c42>] kthread+0x92/0xa0
+[    0.452416]  [<c130ee1b>] ret_from_kernel_thread+0x1b/0x30
+[    0.452416]  [<c1050bb0>] ? kthread_create_on_node+0xd0/0xd0
+[    0.452416] Code: 00 b8 a0 53 41 c1 e8 80 ff f4 ff e8 1b b0 1f 00 8b 43 10 89 c1 89 45 e8 8b 53 40 89 d0 83 e0 02 83 f8 01 19 f6 83 e6 08 83 c6 08 <8b> 01 25 00 f0 ff ff 66 3d 00 40 0f 84 2f 02 00 00 81 e2 00 00
+[    0.452416] EIP: [<c110a6e0>] __fput+0x50/0x380 SS:ESP 0068:ce867e70
+[    0.452416] CR2: 0000000000000000
+[    0.464393] ---[ end trace ebfc7022f114ec65 ]---
+[    0.468186] Kernel panic - not syncing: CRED: put_cred_rcu() sees cd0c6c80 with usage -1
+
+dmesg-yocto-jaketown-12:20131009083043:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+[    1.551342] debug: unmapping init [mem 0xc14df000-0xc1524fff]
+
+mount: mounting proc on /proc failed: No such device
+[    1.586132] BUG: unable to handle kernel NULL pointer dereference at   (null)
+[    1.586642] IP: [<  (null)>]   (null)
+[    1.586642] *pdpt = 0000000000000000 *pde = f000ff53f000ff53 
+[    1.586642] Oops: 0010 [#1] DEBUG_PAGEALLOC
+[    1.586642] Modules linked in:
+[    1.586642] CPU: 0 PID: 46 Comm: mount Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    1.586642] task: cd7c3cd0 ti: cd10a000 task.ti: cd10a000
+[    1.586642] EIP: 0060:[<00000000>] EFLAGS: 00010246 CPU: 0
+[    1.586642] EIP is at 0x0
+[    1.586642] EAX: cd0dc500 EBX: cd0dce00 ECX: 00000000 EDX: cd0dc500
+[    1.586642] ESI: cd7c3f68 EDI: cd7c3cd0 EBP: cd10bf44 ESP: cd10bf34
+[    1.586642]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    1.586642] CR0: 8005003b CR2: 00000000 CR3: 0d102000 CR4: 000006b0
+[    1.586642] Stack:
+[    1.586642]  c104d7d9 cd7c3f80 cd0d6a00 cd7c3cd0 cd10bf8c c10311d2 00000000 00000000
+[    1.586642]  cee9d000 00000035 00000001 cd10bf88 c11095c1 00000001 00000000 cd0d6a50
+[    1.586642]  cd7c3cd0 080d3208 cd10bf9c 0000ff00 cd0ea600 cd7c3cd0 cd10bfa4 c10327ca
+[    1.586642] Call Trace:
+[    1.586642]  [<c104d7d9>] ? task_work_run+0x79/0xa0
+[    1.586642]  [<c10311d2>] do_exit+0x2f2/0x960
+[    1.586642]  [<c11095c1>] ? vfs_write+0x161/0x1a0
+[    1.586642]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    1.586642]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    1.586642]  [<c1307ad5>] syscall_call+0x7/0xb
+[    1.586642] Code:  Bad EIP value.
+[    1.586642] EIP: [<00000000>] 0x0 SS:ESP 0068:cd10bf34
+[    1.586642] CR2: 0000000000000000
+[    1.648930] ---[ end trace 7f02bd0664dace14 ]---
+[    1.650964] Fixing recursive fault but reboot is needed!
+
+dmesg-yocto-jaketown-15:20131009083013:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+[    1.530444] debug: unmapping init [mem 0xc14df000-0xc1524fff]
+
+mount: mounting proc on /proc failed: No such device
+[    1.566314] BUG: unable to handle kernel NULL pointer dereference at   (null)
+[    1.568802] IP: [<  (null)>]   (null)
+[    1.568802] *pdpt = 0000000000000000 *pde = f000ff53f000ff53 
+[    1.568802] Oops: 0010 [#1] DEBUG_PAGEALLOC
+[    1.568802] Modules linked in:
+[    1.568802] CPU: 0 PID: 46 Comm: mount Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    1.568802] task: cd7c3cd0 ti: cd10a000 task.ti: cd10a000
+[    1.568802] EIP: 0060:[<00000000>] EFLAGS: 00010246 CPU: 0
+[    1.568802] EIP is at 0x0
+[    1.568802] EAX: cd0dc500 EBX: cd0dce00 ECX: 00000000 EDX: cd0dc500
+[    1.568802] ESI: cd7c3f68 EDI: cd7c3cd0 EBP: cd10bf44 ESP: cd10bf34
+[    1.568802]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    1.568802] CR0: 8005003b CR2: 00000000 CR3: 0d102000 CR4: 000006b0
+[    1.568802] Stack:
+[    1.568802]  c104d7d9 cd7c3f80 cd0d6a00 cd7c3cd0 cd10bf8c c10311d2 00000000 00000000
+[    1.568802]  cee9d000 00000035 00000001 cd10bf88 c11095c1 00000001 00000000 cd0d6a50
+[    1.568802]  cd7c3cd0 080d3208 cd10bf9c 0000ff00 cd0ea600 cd7c3cd0 cd10bfa4 c10327ca
+[    1.568802] Call Trace:
+[    1.568802]  [<c104d7d9>] ? task_work_run+0x79/0xa0
+[    1.568802]  [<c10311d2>] do_exit+0x2f2/0x960
+[    1.568802]  [<c11095c1>] ? vfs_write+0x161/0x1a0
+[    1.568802]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    1.568802]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    1.568802]  [<c1307ad5>] syscall_call+0x7/0xb
+[    1.568802] Code:  Bad EIP value.
+[    1.568802] EIP: [<00000000>] 0x0 SS:ESP 0068:cd10bf34
+[    1.568802] CR2: 0000000000000000
+[    1.627698] ---[ end trace 6b2b793cd84617c3 ]---
+[    1.629800] Fixing recursive fault but reboot is needed!
+
+dmesg-yocto-jaketown-29:20131009083045:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+[    1.496690] debug: unmapping init [mem 0xc14df000-0xc1524fff]
+
+mount: mounting proc on /proc failed: No such device
+[    1.531112] BUG: unable to handle kernel NULL pointer dereference at   (null)
+[    1.534201] IP: [<  (null)>]   (null)
+[    1.534264] *pdpt = 0000000000000000 *pde = f000ff53f000ff53 
+[    1.534264] Oops: 0010 [#1] DEBUG_PAGEALLOC
+[    1.534264] Modules linked in:
+[    1.534264] CPU: 0 PID: 46 Comm: mount Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    1.534264] task: cd7c3cd0 ti: cd10a000 task.ti: cd10a000
+[    1.534264] EIP: 0060:[<00000000>] EFLAGS: 00010246 CPU: 0
+[    1.534264] EIP is at 0x0
+[    1.534264] EAX: cd0dc500 EBX: cd0dc400 ECX: 00000000 EDX: cd0dc500
+[    1.534264] ESI: cd7c3f68 EDI: cd7c3cd0 EBP: cd10bf44 ESP: cd10bf34
+[    1.534264]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    1.534264] CR0: 8005003b CR2: 00000000 CR3: 0d102000 CR4: 000006b0
+[    1.534264] Stack:
+[    1.534264]  c104d7d9 cd7c3f80 cd0d6a00 cd7c3cd0 cd10bf8c c10311d2 00000000 00000000
+[    1.534264]  cee9d000 00000035 00000001 cd10bf88 c11095c1 00000001 00000000 cd0d6a50
+[    1.534264]  cd7c3cd0 080d3208 cd10bf9c 0000ff00 cd0ea600 cd7c3cd0 cd10bfa4 c10327ca
+[    1.534264] Call Trace:
+[    1.534264]  [<c104d7d9>] ? task_work_run+0x79/0xa0
+[    1.534264]  [<c10311d2>] do_exit+0x2f2/0x960
+[    1.534264]  [<c11095c1>] ? vfs_write+0x161/0x1a0
+[    1.534264]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    1.534264]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    1.534264]  [<c1307ad5>] syscall_call+0x7/0xb
+[    1.534264] Code:  Bad EIP value.
+[    1.534264] EIP: [<00000000>] 0x0 SS:ESP 0068:cd10bf34
+[    1.534264] CR2: 0000000000000000
+[    1.589395] ---[ end trace d950a506c3655153 ]---
+[    1.591408] Fixing recursive fault but reboot is needed!
+
+dmesg-yocto-jaketown-32:20131009082958:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+[    1.546502] debug: unmapping init [mem 0xc14df000-0xc1524fff]
+
+mount: mounting proc on /proc failed: No such device
+[    1.580575] BUG: unable to handle kernel NULL pointer dereference at   (null)
+[    1.581657] IP: [<  (null)>]   (null)
+[    1.581657] *pdpt = 0000000000000000 *pde = f000ff53f000ff53 
+[    1.581657] Oops: 0010 [#1] DEBUG_PAGEALLOC
+[    1.581657] Modules linked in:
+[    1.581657] CPU: 0 PID: 46 Comm: mount Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    1.581657] task: cd7c3cd0 ti: cd10a000 task.ti: cd10a000
+[    1.581657] EIP: 0060:[<00000000>] EFLAGS: 00010246 CPU: 0
+[    1.581657] EIP is at 0x0
+[    1.581657] EAX: cd0dc500 EBX: cd0dce00 ECX: 00000000 EDX: cd0dc500
+[    1.581657] ESI: cd7c3f68 EDI: cd7c3cd0 EBP: cd10bf44 ESP: cd10bf34
+[    1.581657]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    1.581657] CR0: 8005003b CR2: 00000000 CR3: 0d102000 CR4: 000006b0
+[    1.581657] Stack:
+[    1.581657]  c104d7d9 cd7c3f80 cd0d6a00 cd7c3cd0 cd10bf8c c10311d2 00000000 00000000
+[    1.581657]  cee9d000 00000035 00000001 cd10bf88 c11095c1 00000001 00000000 cd0d6a50
+[    1.581657]  cd7c3cd0 080d3208 cd10bf9c 0000ff00 cd0ea600 cd7c3cd0 cd10bfa4 c10327ca
+[    1.581657] Call Trace:
+[    1.581657]  [<c104d7d9>] ? task_work_run+0x79/0xa0
+[    1.581657]  [<c10311d2>] do_exit+0x2f2/0x960
+[    1.581657]  [<c11095c1>] ? vfs_write+0x161/0x1a0
+[    1.581657]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    1.581657]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    1.581657]  [<c1307ad5>] syscall_call+0x7/0xb
+[    1.581657] Code:  Bad EIP value.
+[    1.581657] EIP: [<00000000>] 0x0 SS:ESP 0068:cd10bf34
+[    1.581657] CR2: 0000000000000000
+[    1.643072] ---[ end trace b28c2b43abeb7e04 ]---
+[    1.645210] Fixing recursive fault but reboot is needed!
+
+dmesg-yocto-jaketown-40:20131009082921:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+[    1.018438] debug: unmapping init [mem 0xc14df000-0xc1524fff]
+
+mount: mounting proc on /proc failed: No such device
+[    1.038912] BUG: unable to handle kernel NULL pointer dereference at   (null)
+[    1.040921] IP: [<  (null)>]   (null)
+[    1.041670] *pdpt = 0000000000000000 *pde = f000ff53f000ff53 
+[    1.041670] Oops: 0010 [#1] DEBUG_PAGEALLOC
+[    1.041670] Modules linked in:
+[    1.041670] CPU: 0 PID: 46 Comm: mount Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    1.041670] task: cd7c3cd0 ti: cd10a000 task.ti: cd10a000
+[    1.041670] EIP: 0060:[<00000000>] EFLAGS: 00010246 CPU: 0
+[    1.041670] EIP is at 0x0
+[    1.041670] EAX: cd0dc500 EBX: cd0dce00 ECX: 00000000 EDX: cd0dc500
+[    1.041670] ESI: cd7c3f68 EDI: cd7c3cd0 EBP: cd10bf44 ESP: cd10bf34
+[    1.041670]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    1.041670] CR0: 8005003b CR2: 00000000 CR3: 0d102000 CR4: 000006b0
+[    1.041670] Stack:
+[    1.041670]  c104d7d9 cd7c3f80 cd0d6a00 cd7c3cd0 cd10bf8c c10311d2 00000000 00000000
+[    1.041670]  cee9d000 00000035 00000001 cd10bf88 c11095c1 00000001 00000000 cd0d6a50
+[    1.041670]  cd7c3cd0 080d3208 cd10bf9c 0000ff00 cd0ea600 cd7c3cd0 cd10bfa4 c10327ca
+[    1.041670] Call Trace:
+[    1.041670]  [<c104d7d9>] ? task_work_run+0x79/0xa0
+[    1.041670]  [<c10311d2>] do_exit+0x2f2/0x960
+[    1.041670]  [<c11095c1>] ? vfs_write+0x161/0x1a0
+[    1.041670]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    1.041670]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    1.041670]  [<c1307ad5>] syscall_call+0x7/0xb
+[    1.041670] Code:  Bad EIP value.
+[    1.041670] EIP: [<00000000>] 0x0 SS:ESP 0068:cd10bf34
+[    1.041670] CR2: 0000000000000000
+[    1.076421] ---[ end trace 4b5bedf680260623 ]---
+[    1.077673] Fixing recursive fault but reboot is needed!
+
+dmesg-yocto-jaketown-41:20131009083036:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+[    1.535975] debug: unmapping init [mem 0xc14df000-0xc1524fff]
+
+mount: mounting proc on /proc failed: No such device
+[    1.570337] BUG: unable to handle kernel NULL pointer dereference at   (null)
+[    1.571212] IP: [<  (null)>]   (null)
+[    1.571212] *pdpt = 0000000000000000 *pde = f000ff53f000ff53 
+[    1.571212] Oops: 0010 [#1] DEBUG_PAGEALLOC
+[    1.571212] Modules linked in:
+[    1.571212] CPU: 0 PID: 46 Comm: mount Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    1.571212] task: cd7c3cd0 ti: cd10a000 task.ti: cd10a000
+[    1.571212] EIP: 0060:[<00000000>] EFLAGS: 00010246 CPU: 0
+[    1.571212] EIP is at 0x0
+[    1.571212] EAX: cd0dc500 EBX: cd0dce00 ECX: 00000000 EDX: cd0dc500
+[    1.571212] ESI: cd7c3f68 EDI: cd7c3cd0 EBP: cd10bf44 ESP: cd10bf34
+[    1.571212]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    1.571212] CR0: 8005003b CR2: 00000000 CR3: 0d102000 CR4: 000006b0
+[    1.571212] Stack:
+[    1.571212]  c104d7d9 cd7c3f80 cd0d6a00 cd7c3cd0 cd10bf8c c10311d2 00000000 00000000
+[    1.571212]  cee9d000 00000035 00000001 cd10bf88 c11095c1 00000001 00000000 cd0d6a50
+[    1.571212]  cd7c3cd0 080d3208 cd10bf9c 0000ff00 cd0ea600 cd7c3cd0 cd10bfa4 c10327ca
+[    1.571212] Call Trace:
+[    1.571212]  [<c104d7d9>] ? task_work_run+0x79/0xa0
+[    1.571212]  [<c10311d2>] do_exit+0x2f2/0x960
+[    1.571212]  [<c11095c1>] ? vfs_write+0x161/0x1a0
+[    1.571212]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    1.571212]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    1.571212]  [<c1307ad5>] syscall_call+0x7/0xb
+[    1.571212] Code:  Bad EIP value.
+[    1.571212] EIP: [<00000000>] 0x0 SS:ESP 0068:cd10bf34
+[    1.571212] CR2: 0000000000000000
+[    1.630732] ---[ end trace 72dc9de4dfb9e8df ]---
+[    1.632860] Fixing recursive fault but reboot is needed!
+
+dmesg-yocto-jaketown-46:20131009083002:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+[    1.567564] debug: unmapping init [mem 0xc14df000-0xc1524fff]
+
+mount: mounting proc on /proc failed: No such device
+[    1.602275] BUG: unable to handle kernel NULL pointer dereference at   (null)
+[    1.604681] IP: [<  (null)>]   (null)
+[    1.604681] *pdpt = 0000000000000000 *pde = f000ff53f000ff53 
+[    1.604681] Oops: 0010 [#1] DEBUG_PAGEALLOC
+[    1.604681] Modules linked in:
+[    1.604681] CPU: 0 PID: 46 Comm: mount Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    1.604681] task: cd7c3cd0 ti: cd10a000 task.ti: cd10a000
+[    1.604681] EIP: 0060:[<00000000>] EFLAGS: 00010246 CPU: 0
+[    1.604681] EIP is at 0x0
+[    1.604681] EAX: cd0dc500 EBX: cd0dce00 ECX: 00000000 EDX: cd0dc500
+[    1.604681] ESI: cd7c3f68 EDI: cd7c3cd0 EBP: cd10bf44 ESP: cd10bf34
+[    1.604681]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    1.604681] CR0: 8005003b CR2: 00000000 CR3: 0d102000 CR4: 000006b0
+[    1.604681] Stack:
+[    1.604681]  c104d7d9 cd7c3f80 cd0d6a00 cd7c3cd0 cd10bf8c c10311d2 00000000 00000000
+[    1.604681]  cee9d000 00000035 00000001 cd10bf88 c11095c1 00000001 00000000 cd0d6a50
+[    1.604681]  cd7c3cd0 080d3208 cd10bf9c 0000ff00 cd0ea600 cd7c3cd0 cd10bfa4 c10327ca
+[    1.604681] Call Trace:
+[    1.604681]  [<c104d7d9>] ? task_work_run+0x79/0xa0
+[    1.604681]  [<c10311d2>] do_exit+0x2f2/0x960
+[    1.604681]  [<c11095c1>] ? vfs_write+0x161/0x1a0
+[    1.604681]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    1.604681]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    1.604681]  [<c1307ad5>] syscall_call+0x7/0xb
+[    1.604681] Code:  Bad EIP value.
+[    1.604681] EIP: [<00000000>] 0x0 SS:ESP 0068:cd10bf34
+[    1.604681] CR2: 0000000000000000
+[    1.663708] ---[ end trace d7d60fed41220e4a ]---
+[    1.665897] Fixing recursive fault but reboot is needed!
+
+dmesg-yocto-jaketown-47:20131009083012:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+[    1.570224] debug: unmapping init [mem 0xc14df000-0xc1524fff]
+
+mount: mounting proc on /proc failed: No such device
+[    1.605401] BUG: unable to handle kernel NULL pointer dereference at   (null)
+[    1.608167] IP: [<  (null)>]   (null)
+[    1.608167] *pdpt = 0000000000000000 *pde = f000ff53f000ff53 
+[    1.608167] Oops: 0010 [#1] DEBUG_PAGEALLOC
+[    1.608167] Modules linked in:
+[    1.608167] CPU: 0 PID: 46 Comm: mount Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    1.608167] task: cd7c3cd0 ti: cd10a000 task.ti: cd10a000
+[    1.608167] EIP: 0060:[<00000000>] EFLAGS: 00010246 CPU: 0
+[    1.608167] EIP is at 0x0
+[    1.608167] EAX: cd0dc500 EBX: cd0dce00 ECX: 00000000 EDX: cd0dc500
+[    1.608167] ESI: cd7c3f68 EDI: cd7c3cd0 EBP: cd10bf44 ESP: cd10bf34
+[    1.608167]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    1.608167] CR0: 8005003b CR2: 00000000 CR3: 0d102000 CR4: 000006b0
+[    1.608167] Stack:
+[    1.608167]  c104d7d9 cd7c3f80 cd0d6a00 cd7c3cd0 cd10bf8c c10311d2 00000000 00000000
+[    1.608167]  cee9d000 00000035 00000001 cd10bf88 c11095c1 00000001 00000000 cd0d6a50
+[    1.608167]  cd7c3cd0 080d3208 cd10bf9c 0000ff00 cd0ea600 cd7c3cd0 cd10bfa4 c10327ca
+[    1.608167] Call Trace:
+[    1.608167]  [<c104d7d9>] ? task_work_run+0x79/0xa0
+[    1.608167]  [<c10311d2>] do_exit+0x2f2/0x960
+[    1.608167]  [<c11095c1>] ? vfs_write+0x161/0x1a0
+[    1.608167]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    1.608167]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    1.608167]  [<c1307ad5>] syscall_call+0x7/0xb
+[    1.608167] Code:  Bad EIP value.
+[    1.608167] EIP: [<00000000>] 0x0 SS:ESP 0068:cd10bf34
+[    1.608167] CR2: 0000000000000000
+[    1.666045] ---[ end trace db7ead92435cc1aa ]---
+[    1.668186] Fixing recursive fault but reboot is needed!
+
+dmesg-yocto-jaketown-4:20131009082939:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+[    1.020838] debug: unmapping init [mem 0xc14df000-0xc1524fff]
+
+mount: mounting proc on /proc failed: No such device
+[    1.042223] BUG: unable to handle kernel NULL pointer dereference at   (null)
+[    1.044259] IP: [<  (null)>]   (null)
+[    1.044958] *pdpt = 0000000000000000 *pde = f000ff53f000ff53 
+[    1.044958] Oops: 0010 [#1] DEBUG_PAGEALLOC
+[    1.044958] Modules linked in:
+[    1.044958] CPU: 0 PID: 46 Comm: mount Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    1.044958] task: cd7c3cd0 ti: cd10a000 task.ti: cd10a000
+[    1.044958] EIP: 0060:[<00000000>] EFLAGS: 00010246 CPU: 0
+[    1.044958] EIP is at 0x0
+[    1.044958] EAX: cd0dc500 EBX: cd0dce00 ECX: 00000000 EDX: cd0dc500
+[    1.044958] ESI: cd7c3f68 EDI: cd7c3cd0 EBP: cd10bf44 ESP: cd10bf34
+[    1.044958]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    1.044958] CR0: 8005003b CR2: 00000000 CR3: 0d102000 CR4: 000006b0
+[    1.044958] Stack:
+[    1.044958]  c104d7d9 cd7c3f80 cd0d6a00 cd7c3cd0 cd10bf8c c10311d2 00000000 00000000
+[    1.044958]  cee9d000 00000035 00000001 cd10bf88 c11095c1 00000001 00000000 cd0d6a50
+[    1.044958]  cd7c3cd0 080d3208 cd10bf9c 0000ff00 cd0ea600 cd7c3cd0 cd10bfa4 c10327ca
+[    1.044958] Call Trace:
+[    1.044958]  [<c104d7d9>] ? task_work_run+0x79/0xa0
+[    1.044958]  [<c10311d2>] do_exit+0x2f2/0x960
+[    1.044958]  [<c11095c1>] ? vfs_write+0x161/0x1a0
+[    1.044958]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    1.044958]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    1.044958]  [<c1307ad5>] syscall_call+0x7/0xb
+[    1.044958] Code:  Bad EIP value.
+[    1.044958] EIP: [<00000000>] 0x0 SS:ESP 0068:cd10bf34
+[    1.044958] CR2: 0000000000000000
+[    1.079981] ---[ end trace c2310af05059d583 ]---
+[    1.081346] Fixing recursive fault but reboot is needed!
+
+dmesg-yocto-lkp-st01-2:20131009083038:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+[    0.888984] debug: unmapping init [mem 0xc14df000-0xc1524fff]
+
+mount: mounting proc on /proc failed: No such device
+[    0.914539] BUG: unable to handle kernel NULL pointer dereference at   (null)
+[    0.915693] IP: [<  (null)>]   (null)
+[    0.916157] *pdpt = 0000000000000000 *pde = f000ff53f000ff53 
+[    0.916157] Oops: 0010 [#1] DEBUG_PAGEALLOC
+[    0.916157] Modules linked in:
+[    0.916157] CPU: 0 PID: 46 Comm: mount Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.916157] task: cd7cbcd0 ti: cd10e000 task.ti: cd10e000
+[    0.916157] EIP: 0060:[<00000000>] EFLAGS: 00010246 CPU: 0
+[    0.916157] EIP is at 0x0
+[    0.916157] EAX: cd0e3500 EBX: cd0e3e00 ECX: 00000000 EDX: cd0e3500
+[    0.916157] ESI: cd7cbf68 EDI: cd7cbcd0 EBP: cd10ff44 ESP: cd10ff34
+[    0.916157]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.916157] CR0: 8005003b CR2: 00000000 CR3: 0d10a000 CR4: 000006b0
+[    0.916157] Stack:
+[    0.916157]  c104d7d9 cd7cbf80 cd0daa00 cd7cbcd0 cd10ff8c c10311d2 00000000 00000000
+[    0.916157]  cee9d000 00000035 00000001 cd10ff88 c11095c1 00000001 00000000 cd0daa50
+[    0.916157]  cd7cbcd0 080d3208 cd10ff9c 0000ff00 cd0ee600 cd7cbcd0 cd10ffa4 c10327ca
+[    0.916157] Call Trace:
+[    0.916157]  [<c104d7d9>] ? task_work_run+0x79/0xa0
+[    0.916157]  [<c10311d2>] do_exit+0x2f2/0x960
+[    0.916157]  [<c11095c1>] ? vfs_write+0x161/0x1a0
+[    0.916157]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    0.916157]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    0.916157]  [<c1307ad5>] syscall_call+0x7/0xb
+[    0.916157] Code:  Bad EIP value.
+[    0.916157] EIP: [<00000000>] 0x0 SS:ESP 0068:cd10ff34
+[    0.916157] CR2: 0000000000000000
+[    0.936493] ---[ end trace f10ae585fb74f7e1 ]---
+[    0.937227] Fixing recursive fault but reboot is needed!
+
+dmesg-yocto-lkp-st01-8:20131009083013:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+[    0.889728] debug: unmapping init [mem 0xc14df000-0xc1524fff]
+
+mount: mounting proc on /proc failed: No such device
+[    0.915375] BUG: unable to handle kernel NULL pointer dereference at   (null)
+[    0.916273] IP: [<  (null)>]   (null)
+[    0.916273] *pdpt = 0000000000000000 *pde = f000ff53f000ff53 
+[    0.916273] Oops: 0010 [#1] DEBUG_PAGEALLOC
+[    0.916273] Modules linked in:
+[    0.916273] CPU: 0 PID: 46 Comm: mount Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.916273] task: cd7cbcd0 ti: cd10e000 task.ti: cd10e000
+[    0.916273] EIP: 0060:[<00000000>] EFLAGS: 00010246 CPU: 0
+[    0.916273] EIP is at 0x0
+[    0.916273] EAX: cd0e3200 EBX: cd0e3e00 ECX: 00000000 EDX: cd0e3200
+[    0.916273] ESI: cd7cbf68 EDI: cd7cbcd0 EBP: cd10ff44 ESP: cd10ff34
+[    0.916273]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.916273] CR0: 8005003b CR2: 00000000 CR3: 0d10a000 CR4: 000006b0
+[    0.916273] Stack:
+[    0.916273]  c104d7d9 cd7cbf80 cd0daa00 cd7cbcd0 cd10ff8c c10311d2 00000000 00000000
+[    0.916273]  cee9d000 00000035 00000001 cd10ff88 c11095c1 00000001 00000000 cd0daa50
+[    0.916273]  cd7cbcd0 080d3208 cd10ff9c 0000ff00 cd0ee600 cd7cbcd0 cd10ffa4 c10327ca
+[    0.916273] Call Trace:
+[    0.916273]  [<c104d7d9>] ? task_work_run+0x79/0xa0
+[    0.916273]  [<c10311d2>] do_exit+0x2f2/0x960
+[    0.916273]  [<c11095c1>] ? vfs_write+0x161/0x1a0
+[    0.916273]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    0.916273]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    0.916273]  [<c1307ad5>] syscall_call+0x7/0xb
+[    0.916273] Code:  Bad EIP value.
+[    0.916273] EIP: [<00000000>] 0x0 SS:ESP 0068:cd10ff34
+[    0.916273] CR2: 0000000000000000
+[    0.937421] ---[ end trace 76773643dbf59fe6 ]---
+[    0.938147] Fixing recursive fault but reboot is needed!
+
+dmesg-yocto-lkp-tt02-19:20131008230131:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+
+mount: mounting proc on /proc failed: No such device
+[    0.988873] kernel tried to execute NX-protected page - exploit attempt? (uid: 0)
+[    0.990372] BUG: unable to handle kernel paging request at cd0dcc08
+[    0.991192] IP: [<cd0dcc08>] 0xcd0dcc07
+[    0.991192] *pdpt = 0000000001525001 *pde = 000000000fbfc067 *pte = 800000000d0dc163 
+[    0.991192] Oops: 0011 [#1] DEBUG_PAGEALLOC
+[    0.991192] Modules linked in:
+[    0.991192] CPU: 0 PID: 46 Comm: mount Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.991192] task: cd7c3cd0 ti: cd10a000 task.ti: cd10a000
+[    0.991192] EIP: 0060:[<cd0dcc08>] EFLAGS: 00010246 CPU: 0
+[    0.991192] EIP is at 0xcd0dcc08
+[    0.991192] EAX: cd0dcc00 EBX: cd0dc600 ECX: 00000000 EDX: cd0dcc00
+[    0.991192] ESI: cd7c3f68 EDI: cd7c3cd0 EBP: cd10bf44 ESP: cd10bf34
+[    0.991192]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.991192] CR0: 8005003b CR2: cd0dcc08 CR3: 0d102000 CR4: 000006b0
+[    0.991192] Stack:
+[    0.991192]  c104d7d9 cd7c3f80 cd0d6a00 cd7c3cd0 cd10bf8c c10311d2 00000000 00000000
+[    0.991192]  cee9d000 00000035 00000001 cd10bf88 c11095c1 00000001 00000000 cd0d6a50
+[    0.991192]  cd7c3cd0 080d3208 cd10bf9c 0000ff00 cd0ea600 cd7c3cd0 cd10bfa4 c10327ca
+[    0.991192] Call Trace:
+[    0.991192]  [<c104d7d9>] ? task_work_run+0x79/0xa0
+[    0.991192]  [<c10311d2>] do_exit+0x2f2/0x960
+[    0.991192]  [<c11095c1>] ? vfs_write+0x161/0x1a0
+[    0.991192]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    0.991192]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    0.991192]  [<c1307ad5>] syscall_call+0x7/0xb
+[    0.991192] Code: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 c6 0d cd 08 cc 0d cd <20> 00 00 00 4c cc 0d cd 44 cc 0d cd 48 cc 0d cd 01 00 00 00 ad
+[    0.991192] EIP: [<cd0dcc08>] 0xcd0dcc08 SS:ESP 0068:cd10bf34
+[    0.991192] CR2: 00000000cd0dcc08
+[    0.991192] ---[ end trace c19536785f94c587 ]---
+[    0.991192] Fixing recursive fault but reboot is needed!
+
+dmesg-yocto-lkp-tt02-23:20131008230154:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+
+mount: mounting proc on /proc failed: No such device
+[    0.987575] kernel tried to execute NX-protected page - exploit attempt? (uid: 0)
+[    0.988107] BUG: unable to handle kernel paging request at cd0dc408
+[    0.988107] IP: [<cd0dc408>] 0xcd0dc407
+[    0.988107] *pdpt = 0000000001525001 *pde = 000000000fbfc067 *pte = 800000000d0dc163 
+[    0.988107] Oops: 0011 [#1] DEBUG_PAGEALLOC
+[    0.988107] Modules linked in:
+[    0.988107] CPU: 0 PID: 46 Comm: mount Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.988107] task: cd7c3cd0 ti: cd10a000 task.ti: cd10a000
+[    0.988107] EIP: 0060:[<cd0dc408>] EFLAGS: 00010246 CPU: 0
+[    0.988107] EIP is at 0xcd0dc408
+[    0.988107] EAX: cd0dc400 EBX: cd0dc600 ECX: 00000000 EDX: cd0dc400
+[    0.988107] ESI: cd7c3f68 EDI: cd7c3cd0 EBP: cd10bf44 ESP: cd10bf34
+[    0.988107]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.988107] CR0: 8005003b CR2: cd0dc408 CR3: 0d102000 CR4: 000006b0
+[    0.988107] Stack:
+[    0.988107]  c104d7d9 cd7c3f80 cd0d6a00 cd7c3cd0 cd10bf8c c10311d2 00000000 00000000
+[    0.988107]  cee9d000 00000035 00000001 cd10bf88 c11095c1 00000001 00000000 cd0d6a50
+[    0.988107]  cd7c3cd0 080d3208 cd10bf9c 0000ff00 cd0ea600 cd7c3cd0 cd10bfa4 c10327ca
+[    0.988107] Call Trace:
+[    0.988107]  [<c104d7d9>] ? task_work_run+0x79/0xa0
+[    0.988107]  [<c10311d2>] do_exit+0x2f2/0x960
+[    0.988107]  [<c11095c1>] ? vfs_write+0x161/0x1a0
+[    0.988107]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    0.988107]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    0.988107]  [<c1307ad5>] syscall_call+0x7/0xb
+[    0.988107] Code: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 c6 0d cd 08 c4 0d cd <20> 00 00 00 4c c4 0d cd 44 c4 0d cd 48 c4 0d cd 01 00 00 00 ad
+[    0.988107] EIP: [<cd0dc408>] 0xcd0dc408 SS:ESP 0068:cd10bf34
+[    0.988107] CR2: 00000000cd0dc408
+[    0.988107] ---[ end trace 3ebf8bf531c016bd ]---
+[    0.988107] Fixing recursive fault but reboot is needed!
+
+dmesg-yocto-nhm4-1:20131009003543:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+[    0.426035] debug: unmapping init [mem 0xc14df000-0xc1524fff]
+
+mount: mounting proc on /proc failed: No such device
+[    0.433333] BUG: unable to handle kernel NULL pointer dereference at   (null)
+[    0.433951] IP: [<c110a6e0>] __fput+0x50/0x380
+[    0.434335] *pdpt = 0000000000000000 *pde = f000ff53f000ff53 
+[    0.434839] Oops: 0000 [#1] DEBUG_PAGEALLOC
+[    0.434880] Modules linked in:
+[    0.434880] CPU: 0 PID: 12 Comm: kworker/0:1 Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.434880] Workqueue: events delayed_fput
+[    0.434880] task: c0035f90 ti: ce866000 task.ti: ce866000
+[    0.434880] EIP: 0060:[<c110a6e0>] EFLAGS: 00010212 CPU: 0
+[    0.434880] EIP is at __fput+0x50/0x380
+[    0.434880] EAX: 00000000 EBX: cd0e3200 ECX: 00000000 EDX: 0000001d
+[    0.434880] ESI: 00000010 EDI: 00000000 EBP: ce867e98 ESP: ce867e70
+[    0.434880]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.434880] CR0: 8005003b CR2: 00000000 CR3: 0d10b000 CR4: 000006b0
+[    0.434880] Stack:
+[    0.434880]  00000246 00000000 00000002 00000000 00000000 00000000 00000000 00000000
+[    0.434880]  00000000 c0124540 ce867ea4 c110aa39 c1495640 ce867efc c10492f9 00000000
+[    0.434880]  00000002 00000000 c10492c1 00000000 00000000 00000000 0019f047 c0083400
+[    0.434880] Call Trace:
+[    0.434880]  [<c110aa39>] delayed_fput+0x29/0x30
+[    0.434880]  [<c10492f9>] process_one_work+0x2f9/0x650
+[    0.434880]  [<c10492c1>] ? process_one_work+0x2c1/0x650
+[    0.434880]  [<c104ac2f>] worker_thread+0x28f/0x610
+[    0.434880]  [<c104a9a0>] ? cancel_delayed_work_sync+0x20/0x20
+[    0.434880]  [<c1050c42>] kthread+0x92/0xa0
+[    0.434880]  [<c130ee1b>] ret_from_kernel_thread+0x1b/0x30
+[    0.434880]  [<c1050bb0>] ? kthread_create_on_node+0xd0/0xd0
+[    0.434880] Code: 00 b8 a0 53 41 c1 e8 80 ff f4 ff e8 1b b0 1f 00 8b 43 10 89 c1 89 45 e8 8b 53 40 89 d0 83 e0 02 83 f8 01 19 f6 83 e6 08 83 c6 08 <8b> 01 25 00 f0 ff ff 66 3d 00 40 0f 84 2f 02 00 00 81 e2 00 00
+[    0.434880] EIP: [<c110a6e0>] __fput+0x50/0x380 SS:ESP 0068:ce867e70
+[    0.434880] CR2: 0000000000000000
+[    0.448662] ---[ end trace 08170cf8d35771e6 ]---
+[    0.451536] Kernel panic - not syncing: CRED: put_cred_rcu() sees cd0c6d00 with usage -1
+
+dmesg-yocto-nhm4-2:20131009003443:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+[    0.428450] debug: unmapping init [mem 0xc14df000-0xc1524fff]
+
+mount: mounting proc on /proc failed: No such device
+[    0.435717] BUG: unable to handle kernel NULL pointer dereference at   (null)
+[    0.436341] IP: [<c110a6e0>] __fput+0x50/0x380
+[    0.436733] *pdpt = 0000000000000000 *pde = f000ff53f000ff53 
+[    0.437233] Oops: 0000 [#1] DEBUG_PAGEALLOC
+[    0.437609] Modules linked in:
+[    0.437879] CPU: 0 PID: 12 Comm: kworker/0:1 Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.438404] Workqueue: events delayed_fput
+[    0.438404] task: c0035f90 ti: ce866000 task.ti: ce866000
+[    0.438404] EIP: 0060:[<c110a6e0>] EFLAGS: 00010212 CPU: 0
+[    0.438404] EIP is at __fput+0x50/0x380
+[    0.438404] EAX: 00000000 EBX: cd0e3200 ECX: 00000000 EDX: 0000001d
+[    0.438404] ESI: 00000010 EDI: 00000000 EBP: ce867e98 ESP: ce867e70
+[    0.438404]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.438404] CR0: 8005003b CR2: 00000000 CR3: 0d10b000 CR4: 000006b0
+[    0.438404] Stack:
+[    0.438404]  00000246 00000000 00000002 00000000 00000000 00000000 00000000 00000000
+[    0.438404]  00000000 c0124540 ce867ea4 c110aa39 c1495640 ce867efc c10492f9 00000000
+[    0.438404]  00000002 00000000 c10492c1 00000000 00000000 00000000 0019f047 c0083400
+[    0.438404] Call Trace:
+[    0.438404]  [<c110aa39>] delayed_fput+0x29/0x30
+[    0.438404]  [<c10492f9>] process_one_work+0x2f9/0x650
+[    0.438404]  [<c10492c1>] ? process_one_work+0x2c1/0x650
+[    0.438404]  [<c104ac2f>] worker_thread+0x28f/0x610
+[    0.438404]  [<c104a9a0>] ? cancel_delayed_work_sync+0x20/0x20
+[    0.438404]  [<c1050c42>] kthread+0x92/0xa0
+[    0.438404]  [<c130ee1b>] ret_from_kernel_thread+0x1b/0x30
+[    0.438404]  [<c1050bb0>] ? kthread_create_on_node+0xd0/0xd0
+[    0.438404] Code: 00 b8 a0 53 41 c1 e8 80 ff f4 ff e8 1b b0 1f 00 8b 43 10 89 c1 89 45 e8 8b 53 40 89 d0 83 e0 02 83 f8 01 19 f6 83 e6 08 83 c6 08 <8b> 01 25 00 f0 ff ff 66 3d 00 40 0f 84 2f 02 00 00 81 e2 00 00
+[    0.438404] EIP: [<c110a6e0>] __fput+0x50/0x380 SS:ESP 0068:ce867e70
+[    0.438404] CR2: 0000000000000000
+[    0.450971] ---[ end trace dc6249fbb8b3aa6f ]---
+[    0.454483] Kernel panic - not syncing: CRED: put_cred_rcu() sees cd0c6d00 with usage -1
+
+dmesg-yocto-roam-19:20131009082928:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+[    0.499036] debug: unmapping init [mem 0xc14df000-0xc1524fff]
+
+mount: mounting proc on /proc failed: No such device
+[    0.507597] BUG: unable to handle kernel NULL pointer dereference at   (null)
+[    0.508319] IP: [<c110a6e0>] __fput+0x50/0x380
+[    0.508766] *pdpt = 0000000000000000 *pde = f000ff53f000ff53 
+[    0.509356] Oops: 0000 [#1] DEBUG_PAGEALLOC
+[    0.509787] Modules linked in:
+[    0.510101] CPU: 0 PID: 12 Comm: kworker/0:1 Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.510745] Workqueue: events delayed_fput
+[    0.510745] task: c0035f90 ti: ce866000 task.ti: ce866000
+[    0.510745] EIP: 0060:[<c110a6e0>] EFLAGS: 00010212 CPU: 0
+[    0.510745] EIP is at __fput+0x50/0x380
+[    0.510745] EAX: 00000000 EBX: cd0e3200 ECX: 00000000 EDX: 0000001d
+[    0.510745] ESI: 00000010 EDI: 00000000 EBP: ce867e98 ESP: ce867e70
+[    0.510745]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.510745] CR0: 8005003b CR2: 00000000 CR3: 0d10c000 CR4: 000006b0
+[    0.510745] Stack:
+[    0.510745]  00000246 00000000 00000002 00000000 00000000 00000000 00000000 00000000
+[    0.510745]  00000000 c0124540 ce867ea4 c110aa39 c1495640 ce867efc c10492f9 00000000
+[    0.510745]  00000002 00000000 c10492c1 00000000 00000000 00000000 0019f047 c0083400
+[    0.510745] Call Trace:
+[    0.510745]  [<c110aa39>] delayed_fput+0x29/0x30
+[    0.510745]  [<c10492f9>] process_one_work+0x2f9/0x650
+[    0.510745]  [<c10492c1>] ? process_one_work+0x2c1/0x650
+[    0.510745]  [<c104ac2f>] worker_thread+0x28f/0x610
+[    0.510745]  [<c104a9a0>] ? cancel_delayed_work_sync+0x20/0x20
+[    0.510745]  [<c1050c42>] kthread+0x92/0xa0
+[    0.510745]  [<c130ee1b>] ret_from_kernel_thread+0x1b/0x30
+[    0.510745]  [<c1050bb0>] ? kthread_create_on_node+0xd0/0xd0
+[    0.510745] Code: 00 b8 a0 53 41 c1 e8 80 ff f4 ff e8 1b b0 1f 00 8b 43 10 89 c1 89 45 e8 8b 53 40 89 d0 83 e0 02 83 f8 01 19 f6 83 e6 08 83 c6 08 <8b> 01 25 00 f0 ff ff 66 3d 00 40 0f 84 2f 02 00 00 81 e2 00 00
+[    0.510745] EIP: [<c110a6e0>] __fput+0x50/0x380 SS:ESP 0068:ce867e70
+[    0.510745] CR2: 0000000000000000
+[    0.525145] ---[ end trace 646f8ad850537230 ]---
+[    0.529312] Kernel panic - not syncing: CRED: put_cred_rcu() sees cd0c6c80 with usage -1
+
+dmesg-yocto-roam-19:20131009083028:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+[    0.499251] debug: unmapping init [mem 0xc14df000-0xc1524fff]
+
+mount: mounting proc on /proc failed: No such device
+[    0.507900] BUG: unable to handle kernel NULL pointer dereference at   (null)
+[    0.508631] IP: [<c110a6e0>] __fput+0x50/0x380
+[    0.509091] *pdpt = 0000000000000000 *pde = f000ff53f000ff53 
+[    0.509677] Oops: 0000 [#1] DEBUG_PAGEALLOC
+[    0.510118] Modules linked in:
+[    0.510153] CPU: 0 PID: 12 Comm: kworker/0:1 Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.510153] Workqueue: events delayed_fput
+[    0.510153] task: c0035f90 ti: ce866000 task.ti: ce866000
+[    0.510153] EIP: 0060:[<c110a6e0>] EFLAGS: 00010212 CPU: 0
+[    0.510153] EIP is at __fput+0x50/0x380
+[    0.510153] EAX: 00000000 EBX: cd0e3200 ECX: 00000000 EDX: 0000001d
+[    0.510153] ESI: 00000010 EDI: 00000000 EBP: ce867e98 ESP: ce867e70
+[    0.510153]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.510153] CR0: 8005003b CR2: 00000000 CR3: 0d10a000 CR4: 000006b0
+[    0.510153] Stack:
+[    0.510153]  00000246 00000000 00000002 00000000 00000000 00000000 00000000 00000000
+[    0.510153]  00000000 c0124540 ce867ea4 c110aa39 c1495640 ce867efc c10492f9 00000000
+[    0.510153]  00000002 00000000 c10492c1 00000000 00000000 00000000 0019f047 c0083400
+[    0.510153] Call Trace:
+[    0.510153]  [<c110aa39>] delayed_fput+0x29/0x30
+[    0.510153]  [<c10492f9>] process_one_work+0x2f9/0x650
+[    0.510153]  [<c10492c1>] ? process_one_work+0x2c1/0x650
+[    0.510153]  [<c104ac2f>] worker_thread+0x28f/0x610
+[    0.510153]  [<c104a9a0>] ? cancel_delayed_work_sync+0x20/0x20
+[    0.510153]  [<c1050c42>] kthread+0x92/0xa0
+[    0.510153]  [<c130ee1b>] ret_from_kernel_thread+0x1b/0x30
+[    0.510153]  [<c1050bb0>] ? kthread_create_on_node+0xd0/0xd0
+[    0.510153] Code: 00 b8 a0 53 41 c1 e8 80 ff f4 ff e8 1b b0 1f 00 8b 43 10 89 c1 89 45 e8 8b 53 40 89 d0 83 e0 02 83 f8 01 19 f6 83 e6 08 83 c6 08 <8b> 01 25 00 f0 ff ff 66 3d 00 40 0f 84 2f 02 00 00 81 e2 00 00
+[    0.510153] EIP: [<c110a6e0>] __fput+0x50/0x380 SS:ESP 0068:ce867e70
+[    0.510153] CR2: 0000000000000000
+[    0.525438] ---[ end trace 7b73824a90479b7b ]---
+[    0.529939] Kernel panic - not syncing: CRED: put_cred_rcu() sees cd0c6c80 with usage -1
+
+dmesg-yocto-roam-31:20131009083002:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+[    0.495782] debug: unmapping init [mem 0xc14df000-0xc1524fff]
+
+mount: mounting proc on /proc failed: No such device
+[    0.504013] BUG: unable to handle kernel NULL pointer dereference at   (null)
+[    0.504136] IP: [<c110a6e0>] __fput+0x50/0x380
+[    0.504136] *pdpt = 0000000000000000 *pde = f000ff53f000ff53 
+[    0.504136] Oops: 0000 [#1] DEBUG_PAGEALLOC
+[    0.504136] Modules linked in:
+[    0.504136] CPU: 0 PID: 12 Comm: kworker/0:1 Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.504136] Workqueue: events delayed_fput
+[    0.504136] task: c0035f90 ti: ce866000 task.ti: ce866000
+[    0.504136] EIP: 0060:[<c110a6e0>] EFLAGS: 00010212 CPU: 0
+[    0.504136] EIP is at __fput+0x50/0x380
+[    0.504136] EAX: 00000000 EBX: cd0e3200 ECX: 00000000 EDX: 0000001d
+[    0.504136] ESI: 00000010 EDI: 00000000 EBP: ce867e98 ESP: ce867e70
+[    0.504136]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.504136] CR0: 8005003b CR2: 00000000 CR3: 0d10a000 CR4: 000006b0
+[    0.504136] Stack:
+[    0.504136]  00000246 00000000 00000002 00000000 00000000 00000000 00000000 00000000
+[    0.504136]  00000000 c0124540 ce867ea4 c110aa39 c1495640 ce867efc c10492f9 00000000
+[    0.504136]  00000002 00000000 c10492c1 00000000 00000000 00000000 0019f047 c0083400
+[    0.504136] Call Trace:
+[    0.504136]  [<c110aa39>] delayed_fput+0x29/0x30
+[    0.504136]  [<c10492f9>] process_one_work+0x2f9/0x650
+[    0.504136]  [<c10492c1>] ? process_one_work+0x2c1/0x650
+[    0.504136]  [<c104ac2f>] worker_thread+0x28f/0x610
+[    0.504136]  [<c104a9a0>] ? cancel_delayed_work_sync+0x20/0x20
+[    0.504136]  [<c1050c42>] kthread+0x92/0xa0
+[    0.504136]  [<c130ee1b>] ret_from_kernel_thread+0x1b/0x30
+[    0.504136]  [<c1050bb0>] ? kthread_create_on_node+0xd0/0xd0
+[    0.504136] Code: 00 b8 a0 53 41 c1 e8 80 ff f4 ff e8 1b b0 1f 00 8b 43 10 89 c1 89 45 e8 8b 53 40 89 d0 83 e0 02 83 f8 01 19 f6 83 e6 08 83 c6 08 <8b> 01 25 00 f0 ff ff 66 3d 00 40 0f 84 2f 02 00 00 81 e2 00 00
+[    0.504136] EIP: [<c110a6e0>] __fput+0x50/0x380 SS:ESP 0068:ce867e70
+[    0.504136] CR2: 0000000000000000
+[    0.521546] ---[ end trace 39b01e980fcb1dd0 ]---
+[    0.525685] Kernel panic - not syncing: CRED: put_cred_rcu() sees cd0c6c80 with usage -1
+
+dmesg-yocto-roam-7:20131009083018:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+[    0.493942] debug: unmapping init [mem 0xc14df000-0xc1524fff]
+
+mount: mounting proc on /proc failed: No such device
+[    0.502525] BUG: unable to handle kernel NULL pointer dereference at   (null)
+[    0.503224] IP: [<c110a6e0>] __fput+0x50/0x380
+[    0.503655] *pdpt = 0000000000000000 *pde = f000ff53f000ff53 
+[    0.504223] Oops: 0000 [#1] DEBUG_PAGEALLOC
+[    0.504638] Modules linked in:
+[    0.504940] CPU: 0 PID: 12 Comm: kworker/0:1 Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.505167] Workqueue: events delayed_fput
+[    0.505167] task: c0035f90 ti: ce866000 task.ti: ce866000
+[    0.505167] EIP: 0060:[<c110a6e0>] EFLAGS: 00010212 CPU: 0
+[    0.505167] EIP is at __fput+0x50/0x380
+[    0.505167] EAX: 00000000 EBX: cd0e3100 ECX: 00000000 EDX: 0000001d
+[    0.505167] ESI: 00000010 EDI: 00000000 EBP: ce867e98 ESP: ce867e70
+[    0.505167]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.505167] CR0: 8005003b CR2: 00000000 CR3: 0d10a000 CR4: 000006b0
+[    0.505167] Stack:
+[    0.505167]  00000246 00000000 00000002 00000000 00000000 00000000 00000000 00000000
+[    0.505167]  00000000 c0124540 ce867ea4 c110aa39 c1495640 ce867efc c10492f9 00000000
+[    0.505167]  00000002 00000000 c10492c1 00000000 00000000 00000000 0019f047 c0083400
+[    0.505167] Call Trace:
+[    0.505167]  [<c110aa39>] delayed_fput+0x29/0x30
+[    0.505167]  [<c10492f9>] process_one_work+0x2f9/0x650
+[    0.505167]  [<c10492c1>] ? process_one_work+0x2c1/0x650
+[    0.505167]  [<c104ac2f>] worker_thread+0x28f/0x610
+[    0.505167]  [<c104a9a0>] ? cancel_delayed_work_sync+0x20/0x20
+[    0.505167]  [<c1050c42>] kthread+0x92/0xa0
+[    0.505167]  [<c130ee1b>] ret_from_kernel_thread+0x1b/0x30
+[    0.505167]  [<c1050bb0>] ? kthread_create_on_node+0xd0/0xd0
+[    0.505167] Code: 00 b8 a0 53 41 c1 e8 80 ff f4 ff e8 1b b0 1f 00 8b 43 10 89 c1 89 45 e8 8b 53 40 89 d0 83 e0 02 83 f8 01 19 f6 83 e6 08 83 c6 08 <8b> 01 25 00 f0 ff ff 66 3d 00 40 0f 84 2f 02 00 00 81 e2 00 00
+[    0.505167] EIP: [<c110a6e0>] __fput+0x50/0x380 SS:ESP 0068:ce867e70
+[    0.505167] CR2: 0000000000000000
+[    0.519574] ---[ end trace 4c42a6d58bfb847a ]---
+[    0.523721] Kernel panic - not syncing: CRED: put_cred_rcu() sees cd0c6c80 with usage -1
+
+dmesg-yocto-snb-16:20131009083047:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+[    0.562054] debug: unmapping init [mem 0xc14df000-0xc1524fff]
+
+mount: mounting proc on /proc failed: No such device
+[    0.571826] BUG: unable to handle kernel NULL pointer dereference at   (null)
+[    0.572634] IP: [<c110a6e0>] __fput+0x50/0x380
+[    0.573140] *pdpt = 0000000000000000 *pde = f000ff53f000ff53 
+[    0.573797] Oops: 0000 [#1] DEBUG_PAGEALLOC
+[    0.574281] Modules linked in:
+[    0.574636] CPU: 0 PID: 12 Comm: kworker/0:1 Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.574925] Workqueue: events delayed_fput
+[    0.574925] task: c0035f90 ti: ce866000 task.ti: ce866000
+[    0.574925] EIP: 0060:[<c110a6e0>] EFLAGS: 00010212 CPU: 0
+[    0.574925] EIP is at __fput+0x50/0x380
+[    0.574925] EAX: 00000000 EBX: cd0e3200 ECX: 00000000 EDX: 0000001d
+[    0.574925] ESI: 00000010 EDI: 00000000 EBP: ce867e98 ESP: ce867e70
+[    0.574925]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.574925] CR0: 8005003b CR2: 00000000 CR3: 0d10a000 CR4: 000006b0
+[    0.574925] Stack:
+[    0.574925]  00000246 00000000 00000002 00000000 00000000 00000000 00000000 00000000
+[    0.574925]  00000000 c0124540 ce867ea4 c110aa39 c1495640 ce867efc c10492f9 00000000
+[    0.574925]  00000002 00000000 c10492c1 00000000 00000000 00000000 0019f047 c0083400
+[    0.574925] Call Trace:
+[    0.574925]  [<c110aa39>] delayed_fput+0x29/0x30
+[    0.574925]  [<c10492f9>] process_one_work+0x2f9/0x650
+[    0.574925]  [<c10492c1>] ? process_one_work+0x2c1/0x650
+[    0.574925]  [<c104ac2f>] worker_thread+0x28f/0x610
+[    0.574925]  [<c104a9a0>] ? cancel_delayed_work_sync+0x20/0x20
+[    0.574925]  [<c1050c42>] kthread+0x92/0xa0
+[    0.574925]  [<c130ee1b>] ret_from_kernel_thread+0x1b/0x30
+[    0.574925]  [<c1050bb0>] ? kthread_create_on_node+0xd0/0xd0
+[    0.574925] Code: 00 b8 a0 53 41 c1 e8 80 ff f4 ff e8 1b b0 1f 00 8b 43 10 89 c1 89 45 e8 8b 53 40 89 d0 83 e0 02 83 f8 01 19 f6 83 e6 08 83 c6 08 <8b> 01 25 00 f0 ff ff 66 3d 00 40 0f 84 2f 02 00 00 81 e2 00 00
+[    0.574925] EIP: [<c110a6e0>] __fput+0x50/0x380 SS:ESP 0068:ce867e70
+[    0.574925] CR2: 0000000000000000
+[    0.591274] ---[ end trace 86ab9df62a7af15b ]---
+[    0.594899] Kernel panic - not syncing: CRED: put_cred_rcu() sees cd0c6c80 with usage -1
+
+dmesg-yocto-snb-34:20131009083004:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+[    0.561343] debug: unmapping init [mem 0xc14df000-0xc1524fff]
+
+mount: mounting proc on /proc failed: No such device
+[    0.571257] BUG: unable to handle kernel NULL pointer dereference at   (null)
+[    0.572088] IP: [<c110a6e0>] __fput+0x50/0x380
+[    0.572619] *pdpt = 0000000000000000 *pde = f000ff53f000ff53 
+[    0.573285] Oops: 0000 [#1] DEBUG_PAGEALLOC
+[    0.573723] Modules linked in:
+[    0.573723] CPU: 0 PID: 12 Comm: kworker/0:1 Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.573723] Workqueue: events delayed_fput
+[    0.573723] task: c0035f90 ti: ce866000 task.ti: ce866000
+[    0.573723] EIP: 0060:[<c110a6e0>] EFLAGS: 00010212 CPU: 0
+[    0.573723] EIP is at __fput+0x50/0x380
+[    0.573723] EAX: 00000000 EBX: cd0e3200 ECX: 00000000 EDX: 0000001d
+[    0.573723] ESI: 00000010 EDI: 00000000 EBP: ce867e98 ESP: ce867e70
+[    0.573723]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.573723] CR0: 8005003b CR2: 00000000 CR3: 0d10a000 CR4: 000006b0
+[    0.573723] Stack:
+[    0.573723]  00000246 00000000 00000002 00000000 00000000 00000000 00000000 00000000
+[    0.573723]  00000000 c0124540 ce867ea4 c110aa39 c1495640 ce867efc c10492f9 00000000
+[    0.573723]  00000002 00000000 c10492c1 00000000 00000000 00000000 0019f047 c0083400
+[    0.573723] Call Trace:
+[    0.573723]  [<c110aa39>] delayed_fput+0x29/0x30
+[    0.573723]  [<c10492f9>] process_one_work+0x2f9/0x650
+[    0.573723]  [<c10492c1>] ? process_one_work+0x2c1/0x650
+[    0.573723]  [<c104ac2f>] worker_thread+0x28f/0x610
+[    0.573723]  [<c104a9a0>] ? cancel_delayed_work_sync+0x20/0x20
+[    0.573723]  [<c1050c42>] kthread+0x92/0xa0
+[    0.573723]  [<c130ee1b>] ret_from_kernel_thread+0x1b/0x30
+[    0.573723]  [<c1050bb0>] ? kthread_create_on_node+0xd0/0xd0
+[    0.573723] Code: 00 b8 a0 53 41 c1 e8 80 ff f4 ff e8 1b b0 1f 00 8b 43 10 89 c1 89 45 e8 8b 53 40 89 d0 83 e0 02 83 f8 01 19 f6 83 e6 08 83 c6 08 <8b> 01 25 00 f0 ff ff 66 3d 00 40 0f 84 2f 02 00 00 81 e2 00 00
+[    0.573723] EIP: [<c110a6e0>] __fput+0x50/0x380 SS:ESP 0068:ce867e70
+[    0.573723] CR2: 0000000000000000
+[    0.591594] ---[ end trace ce2ea4d7239919b0 ]---
+[    0.596515] Kernel panic - not syncing: CRED: put_cred_rcu() sees cd0c6c80 with usage -1
+
+dmesg-yocto-snb-38:20131009083044:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+[    0.557316] debug: unmapping init [mem 0xc14df000-0xc1524fff]
+
+mount: mounting proc on /proc failed: No such device
+[    0.567160] BUG: unable to handle kernel NULL pointer dereference at   (null)
+[    0.567941] IP: [<c110a6e0>] __fput+0x50/0x380
+[    0.568436] *pdpt = 0000000000000000 *pde = f000ff53f000ff53 
+[    0.569076] Oops: 0000 [#1] DEBUG_PAGEALLOC
+[    0.569544] Modules linked in:
+[    0.569887] CPU: 0 PID: 12 Comm: kworker/0:1 Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.570447] Workqueue: events delayed_fput
+[    0.570447] task: c0035f90 ti: ce866000 task.ti: ce866000
+[    0.570447] EIP: 0060:[<c110a6e0>] EFLAGS: 00010212 CPU: 0
+[    0.570447] EIP is at __fput+0x50/0x380
+[    0.570447] EAX: 00000000 EBX: cd0e3200 ECX: 00000000 EDX: 0000001d
+[    0.570447] ESI: 00000010 EDI: 00000000 EBP: ce867e98 ESP: ce867e70
+[    0.570447]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.570447] CR0: 8005003b CR2: 00000000 CR3: 0d10a000 CR4: 000006b0
+[    0.570447] Stack:
+[    0.570447]  00000246 00000000 00000002 00000000 00000000 00000000 00000000 00000000
+[    0.570447]  00000000 c0124540 ce867ea4 c110aa39 c1495640 ce867efc c10492f9 00000000
+[    0.570447]  00000002 00000000 c10492c1 00000000 00000000 00000000 0019f047 c0083400
+[    0.570447] Call Trace:
+[    0.570447]  [<c110aa39>] delayed_fput+0x29/0x30
+[    0.570447]  [<c10492f9>] process_one_work+0x2f9/0x650
+[    0.570447]  [<c10492c1>] ? process_one_work+0x2c1/0x650
+[    0.570447]  [<c104ac2f>] worker_thread+0x28f/0x610
+[    0.570447]  [<c104a9a0>] ? cancel_delayed_work_sync+0x20/0x20
+[    0.570447]  [<c1050c42>] kthread+0x92/0xa0
+[    0.570447]  [<c130ee1b>] ret_from_kernel_thread+0x1b/0x30
+[    0.570447]  [<c1050bb0>] ? kthread_create_on_node+0xd0/0xd0
+[    0.570447] Code: 00 b8 a0 53 41 c1 e8 80 ff f4 ff e8 1b b0 1f 00 8b 43 10 89 c1 89 45 e8 8b 53 40 89 d0 83 e0 02 83 f8 01 19 f6 83 e6 08 83 c6 08 <8b> 01 25 00 f0 ff ff 66 3d 00 40 0f 84 2f 02 00 00 81 e2 00 00
+[    0.570447] EIP: [<c110a6e0>] __fput+0x50/0x380 SS:ESP 0068:ce867e70
+[    0.570447] CR2: 0000000000000000
+[    0.586221] ---[ end trace e1d5a895fede2b91 ]---
+[    0.590456] Kernel panic - not syncing: CRED: put_cred_rcu() sees cd0c6c80 with usage -1
+
+dmesg-yocto-snb-40:20131009083017:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+[    0.551710] debug: unmapping init [mem 0xc14df000-0xc1524fff]
+
+mount: mounting proc on /proc failed: No such device
+[    0.561097] BUG: unable to handle kernel NULL pointer dereference at   (null)
+[    0.561887] IP: [<c110a6e0>] __fput+0x50/0x380
+[    0.562371] *pdpt = 0000000000000000 *pde = f000ff53f000ff53 
+[    0.563004] Oops: 0000 [#1] DEBUG_PAGEALLOC
+[    0.563467] Modules linked in:
+[    0.563669] CPU: 0 PID: 12 Comm: kworker/0:1 Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.563669] Workqueue: events delayed_fput
+[    0.563669] task: c0035f90 ti: ce866000 task.ti: ce866000
+[    0.563669] EIP: 0060:[<c110a6e0>] EFLAGS: 00010212 CPU: 0
+[    0.563669] EIP is at __fput+0x50/0x380
+[    0.563669] EAX: 00000000 EBX: cd0e3200 ECX: 00000000 EDX: 0000001d
+[    0.563669] ESI: 00000010 EDI: 00000000 EBP: ce867e98 ESP: ce867e70
+[    0.563669]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.563669] CR0: 8005003b CR2: 00000000 CR3: 0d10a000 CR4: 000006b0
+[    0.563669] Stack:
+[    0.563669]  00000246 00000000 00000002 00000000 00000000 00000000 00000000 00000000
+[    0.563669]  00000000 c0124540 ce867ea4 c110aa39 c1495640 ce867efc c10492f9 00000000
+[    0.563669]  00000002 00000000 c10492c1 00000000 00000000 00000000 0019f047 c0083400
+[    0.563669] Call Trace:
+[    0.563669]  [<c110aa39>] delayed_fput+0x29/0x30
+[    0.563669]  [<c10492f9>] process_one_work+0x2f9/0x650
+[    0.563669]  [<c10492c1>] ? process_one_work+0x2c1/0x650
+[    0.563669]  [<c104ac2f>] worker_thread+0x28f/0x610
+[    0.563669]  [<c104a9a0>] ? cancel_delayed_work_sync+0x20/0x20
+[    0.563669]  [<c1050c42>] kthread+0x92/0xa0
+[    0.563669]  [<c130ee1b>] ret_from_kernel_thread+0x1b/0x30
+[    0.563669]  [<c1050bb0>] ? kthread_create_on_node+0xd0/0xd0
+[    0.563669] Code: 00 b8 a0 53 41 c1 e8 80 ff f4 ff e8 1b b0 1f 00 8b 43 10 89 c1 89 45 e8 8b 53 40 89 d0 83 e0 02 83 f8 01 19 f6 83 e6 08 83 c6 08 <8b> 01 25 00 f0 ff ff 66 3d 00 40 0f 84 2f 02 00 00 81 e2 00 00
+[    0.563669] EIP: [<c110a6e0>] __fput+0x50/0x380 SS:ESP 0068:ce867e70
+[    0.563669] CR2: 0000000000000000
+[    0.580028] ---[ end trace d9920da2f1432e39 ]---
+[    0.583684] Kernel panic - not syncing: CRED: put_cred_rcu() sees cd0c6c80 with usage -1
+
+dmesg-yocto-snb-4:20131009083037:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+[    0.565218] debug: unmapping init [mem 0xc14df000-0xc1524fff]
+
+mount: mounting proc on /proc failed: No such device
+[    0.574878] BUG: unable to handle kernel NULL pointer dereference at   (null)
+[    0.575734] IP: [<c110a6e0>] __fput+0x50/0x380
+[    0.576267] *pdpt = 0000000000000000 *pde = f000ff53f000ff53 
+[    0.576964] Oops: 0000 [#1] DEBUG_PAGEALLOC
+[    0.577471] Modules linked in:
+[    0.577547] CPU: 0 PID: 12 Comm: kworker/0:1 Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.577547] Workqueue: events delayed_fput
+[    0.577547] task: c0035f90 ti: ce866000 task.ti: ce866000
+[    0.577547] EIP: 0060:[<c110a6e0>] EFLAGS: 00010212 CPU: 0
+[    0.577547] EIP is at __fput+0x50/0x380
+[    0.577547] EAX: 00000000 EBX: cd0e3200 ECX: 00000000 EDX: 0000001d
+[    0.577547] ESI: 00000010 EDI: 00000000 EBP: ce867e98 ESP: ce867e70
+[    0.577547]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.577547] CR0: 8005003b CR2: 00000000 CR3: 0d10a000 CR4: 000006b0
+[    0.577547] Stack:
+[    0.577547]  00000246 00000000 00000002 00000000 00000000 00000000 00000000 00000000
+[    0.577547]  00000000 c0124540 ce867ea4 c110aa39 c1495640 ce867efc c10492f9 00000000
+[    0.577547]  00000002 00000000 c10492c1 00000000 00000000 00000000 0019f047 c0083400
+[    0.577547] Call Trace:
+[    0.577547]  [<c110aa39>] delayed_fput+0x29/0x30
+[    0.577547]  [<c10492f9>] process_one_work+0x2f9/0x650
+[    0.577547]  [<c10492c1>] ? process_one_work+0x2c1/0x650
+[    0.577547]  [<c104ac2f>] worker_thread+0x28f/0x610
+[    0.577547]  [<c104a9a0>] ? cancel_delayed_work_sync+0x20/0x20
+[    0.577547]  [<c1050c42>] kthread+0x92/0xa0
+[    0.577547]  [<c130ee1b>] ret_from_kernel_thread+0x1b/0x30
+[    0.577547]  [<c1050bb0>] ? kthread_create_on_node+0xd0/0xd0
+[    0.577547] Code: 00 b8 a0 53 41 c1 e8 80 ff f4 ff e8 1b b0 1f 00 8b 43 10 89 c1 89 45 e8 8b 53 40 89 d0 83 e0 02 83 f8 01 19 f6 83 e6 08 83 c6 08 <8b> 01 25 00 f0 ff ff 66 3d 00 40 0f 84 2f 02 00 00 81 e2 00 00
+[    0.577547] EIP: [<c110a6e0>] __fput+0x50/0x380 SS:ESP 0068:ce867e70
+[    0.577547] CR2: 0000000000000000
+[    0.595690] ---[ end trace c3edee3d6a10ee16 ]---
+[    0.600571] Kernel panic - not syncing: CRED: put_cred_rcu() sees cd0c6c80 with usage -1
+
+dmesg-yocto-stoakley-6:20131009083037:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+[    0.805269] debug: unmapping init [mem 0xc14df000-0xc1524fff]
+
+mount: mounting proc on /proc failed: No such device
+[    0.828029] BUG: unable to handle kernel NULL pointer dereference at   (null)
+[    0.829058] IP: [<  (null)>]   (null)
+[    0.829589] *pdpt = 0000000000000000 *pde = f000ff53f000ff53 
+[    0.829639] Oops: 0010 [#1] DEBUG_PAGEALLOC
+[    0.829639] Modules linked in:
+[    0.829639] CPU: 0 PID: 46 Comm: mount Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.829639] task: cd7cbcd0 ti: cd10e000 task.ti: cd10e000
+[    0.829639] EIP: 0060:[<00000000>] EFLAGS: 00010246 CPU: 0
+[    0.829639] EIP is at 0x0
+[    0.829639] EAX: cd0e3500 EBX: cd0e3e00 ECX: 00000000 EDX: cd0e3500
+[    0.829639] ESI: cd7cbf68 EDI: cd7cbcd0 EBP: cd10ff44 ESP: cd10ff34
+[    0.829639]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.829639] CR0: 8005003b CR2: 00000000 CR3: 0d10a000 CR4: 000006b0
+[    0.829639] Stack:
+[    0.829639]  c104d7d9 cd7cbf80 cd0daa00 cd7cbcd0 cd10ff8c c10311d2 00000000 00000000
+[    0.829639]  cee9d000 00000035 00000001 cd10ff88 c11095c1 00000001 00000000 cd0daa50
+[    0.829639]  cd7cbcd0 080d3208 cd10ff9c 0000ff00 cd0ee600 cd7cbcd0 cd10ffa4 c10327ca
+[    0.829639] Call Trace:
+[    0.829639]  [<c104d7d9>] ? task_work_run+0x79/0xa0
+[    0.829639]  [<c10311d2>] do_exit+0x2f2/0x960
+[    0.829639]  [<c11095c1>] ? vfs_write+0x161/0x1a0
+[    0.829639]  [<c10327ca>] do_group_exit+0x4a/0xa0
+[    0.829639]  [<c1032838>] SyS_exit_group+0x18/0x20
+[    0.829639]  [<c1307ad5>] syscall_call+0x7/0xb
+[    0.829639] Code:  Bad EIP value.
+[    0.829639] EIP: [<00000000>] 0x0 SS:ESP 0068:cd10ff34
+[    0.829639] CR2: 0000000000000000
+[    0.847288] ---[ end trace 98305221751e108d ]---
+[    0.847937] Fixing recursive fault but reboot is needed!
+
+dmesg-yocto-waimea-12:20131009162634:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+[    0.431392] debug: unmapping init [mem 0xc14df000-0xc1524fff]
+
+mount: mounting proc on /proc failed: No such device
+[    0.438770] BUG: unable to handle kernel NULL pointer dereference at   (null)
+[    0.439521] IP: [<c110a6e0>] __fput+0x50/0x380
+[    0.439980] *pdpt = 0000000000000000 *pde = f000ff53f000ff53 
+[    0.440584] Oops: 0000 [#1] DEBUG_PAGEALLOC
+[    0.440780] Modules linked in:
+[    0.440780] CPU: 0 PID: 12 Comm: kworker/0:1 Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.440780] Workqueue: events delayed_fput
+[    0.440780] task: c0035f90 ti: ce866000 task.ti: ce866000
+[    0.440780] EIP: 0060:[<c110a6e0>] EFLAGS: 00010212 CPU: 0
+[    0.440780] EIP is at __fput+0x50/0x380
+[    0.440780] EAX: 00000000 EBX: cd0e3200 ECX: 00000000 EDX: 0000001d
+[    0.440780] ESI: 00000010 EDI: 00000000 EBP: ce867e98 ESP: ce867e70
+[    0.440780]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.440780] CR0: 8005003b CR2: 00000000 CR3: 0d10b000 CR4: 000006b0
+[    0.440780] Stack:
+[    0.440780]  00000246 00000000 00000002 00000000 00000000 00000000 00000000 00000000
+[    0.440780]  00000000 c0124540 ce867ea4 c110aa39 c1495640 ce867efc c10492f9 00000000
+[    0.440780]  00000002 00000000 c10492c1 00000000 00000000 00000000 0019f047 c0083400
+[    0.440780] Call Trace:
+[    0.440780]  [<c110aa39>] delayed_fput+0x29/0x30
+[    0.440780]  [<c10492f9>] process_one_work+0x2f9/0x650
+[    0.440780]  [<c10492c1>] ? process_one_work+0x2c1/0x650
+[    0.440780]  [<c104ac2f>] worker_thread+0x28f/0x610
+[    0.440780]  [<c104a9a0>] ? cancel_delayed_work_sync+0x20/0x20
+[    0.440780]  [<c1050c42>] kthread+0x92/0xa0
+[    0.440780]  [<c130ee1b>] ret_from_kernel_thread+0x1b/0x30
+[    0.440780]  [<c1050bb0>] ? kthread_create_on_node+0xd0/0xd0
+[    0.440780] Code: 00 b8 a0 53 41 c1 e8 80 ff f4 ff e8 1b b0 1f 00 8b 43 10 89 c1 89 45 e8 8b 53 40 89 d0 83 e0 02 83 f8 01 19 f6 83 e6 08 83 c6 08 <8b> 01 25 00 f0 ff ff 66 3d 00 40 0f 84 2f 02 00 00 81 e2 00 00
+[    0.440780] EIP: [<c110a6e0>] __fput+0x50/0x380 SS:ESP 0068:ce867e70
+[    0.440780] CR2: 0000000000000000
+[    0.457515] ---[ end trace 0e5a4f7de707cf42 ]---
+[    0.460786] Kernel panic - not syncing: CRED: put_cred_rcu() sees cd0c6d00 with usage -1
+
+dmesg-yocto-waimea-13:20131009162615:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+[    0.435422] debug: unmapping init [mem 0xc14df000-0xc1524fff]
+
+mount: mounting proc on /proc failed: No such device
+[    0.442521] BUG: unable to handle kernel NULL pointer dereference at   (null)
+[    0.443270] IP: [<c110a6e0>] __fput+0x50/0x380
+[    0.443728] *pdpt = 0000000000000000 *pde = f000ff53f000ff53 
+[    0.444339] Oops: 0000 [#1] DEBUG_PAGEALLOC
+[    0.444788] Modules linked in:
+[    0.445120] CPU: 0 PID: 12 Comm: kworker/0:1 Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.445669] Workqueue: events delayed_fput
+[    0.445669] task: c0035f90 ti: ce866000 task.ti: ce866000
+[    0.445669] EIP: 0060:[<c110a6e0>] EFLAGS: 00010212 CPU: 0
+[    0.445669] EIP is at __fput+0x50/0x380
+[    0.445669] EAX: 00000000 EBX: cd0e3200 ECX: 00000000 EDX: 0000001d
+[    0.445669] ESI: 00000010 EDI: 00000000 EBP: ce867e98 ESP: ce867e70
+[    0.445669]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.445669] CR0: 8005003b CR2: 00000000 CR3: 0d10d000 CR4: 000006b0
+[    0.445669] Stack:
+[    0.445669]  00000246 00000000 00000002 00000000 00000000 00000000 00000000 00000000
+[    0.445669]  00000000 c0124540 ce867ea4 c110aa39 c1495640 ce867efc c10492f9 00000000
+[    0.445669]  00000002 00000000 c10492c1 00000000 00000000 00000000 0019f047 c0083400
+[    0.445669] Call Trace:
+[    0.445669]  [<c110aa39>] delayed_fput+0x29/0x30
+[    0.445669]  [<c10492f9>] process_one_work+0x2f9/0x650
+[    0.445669]  [<c10492c1>] ? process_one_work+0x2c1/0x650
+[    0.445669]  [<c104ac2f>] worker_thread+0x28f/0x610
+[    0.445669]  [<c104a9a0>] ? cancel_delayed_work_sync+0x20/0x20
+[    0.445669]  [<c1050c42>] kthread+0x92/0xa0
+[    0.445669]  [<c130ee1b>] ret_from_kernel_thread+0x1b/0x30
+[    0.445669]  [<c1050bb0>] ? kthread_create_on_node+0xd0/0xd0
+[    0.445669] Code: 00 b8 a0 53 41 c1 e8 80 ff f4 ff e8 1b b0 1f 00 8b 43 10 89 c1 89 45 e8 8b 53 40 89 d0 83 e0 02 83 f8 01 19 f6 83 e6 08 83 c6 08 <8b> 01 25 00 f0 ff ff 66 3d 00 40 0f 84 2f 02 00 00 81 e2 00 00
+[    0.445669] EIP: [<c110a6e0>] __fput+0x50/0x380 SS:ESP 0068:ce867e70
+[    0.445669] CR2: 0000000000000000
+[    0.461494] ---[ end trace b2929bac14a5c78d ]---
+[    0.464652] Kernel panic - not syncing: CRED: put_cred_rcu() sees cd0c6d00 with usage -1
+
+dmesg-yocto-waimea-3:20131009162715:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+[    0.443848] debug: unmapping init [mem 0xc14df000-0xc1524fff]
+
+mount: mounting proc on /proc failed: No such device
+[    0.450955] BUG: unable to handle kernel NULL pointer dereference at   (null)
+[    0.451729] IP: [<c110a6e0>] __fput+0x50/0x380
+[    0.452205] *pdpt = 0000000000000000 *pde = f000ff53f000ff53 
+[    0.452834] Oops: 0000 [#1] DEBUG_PAGEALLOC
+[    0.453299] Modules linked in:
+[    0.453299] CPU: 0 PID: 12 Comm: kworker/0:1 Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.453299] Workqueue: events delayed_fput
+[    0.453299] task: c0035f90 ti: ce866000 task.ti: ce866000
+[    0.453299] EIP: 0060:[<c110a6e0>] EFLAGS: 00010212 CPU: 0
+[    0.453299] EIP is at __fput+0x50/0x380
+[    0.453299] EAX: 00000000 EBX: cd0e3200 ECX: 00000000 EDX: 0000001d
+[    0.453299] ESI: 00000010 EDI: 00000000 EBP: ce867e98 ESP: ce867e70
+[    0.453299]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.453299] CR0: 8005003b CR2: 00000000 CR3: 0d10b000 CR4: 000006b0
+[    0.453299] Stack:
+[    0.453299]  00000246 00000000 00000002 00000000 00000000 00000000 00000000 00000000
+[    0.453299]  00000000 c0124540 ce867ea4 c110aa39 c1495640 ce867efc c10492f9 00000000
+[    0.453299]  00000002 00000000 c10492c1 00000000 00000000 00000000 0019f047 c0083400
+[    0.453299] Call Trace:
+[    0.453299]  [<c110aa39>] delayed_fput+0x29/0x30
+[    0.453299]  [<c10492f9>] process_one_work+0x2f9/0x650
+[    0.453299]  [<c10492c1>] ? process_one_work+0x2c1/0x650
+[    0.453299]  [<c104ac2f>] worker_thread+0x28f/0x610
+[    0.453299]  [<c104a9a0>] ? cancel_delayed_work_sync+0x20/0x20
+[    0.453299]  [<c1050c42>] kthread+0x92/0xa0
+[    0.453299]  [<c130ee1b>] ret_from_kernel_thread+0x1b/0x30
+[    0.453299]  [<c1050bb0>] ? kthread_create_on_node+0xd0/0xd0
+[    0.453299] Code: 00 b8 a0 53 41 c1 e8 80 ff f4 ff e8 1b b0 1f 00 8b 43 10 89 c1 89 45 e8 8b 53 40 89 d0 83 e0 02 83 f8 01 19 f6 83 e6 08 83 c6 08 <8b> 01 25 00 f0 ff ff 66 3d 00 40 0f 84 2f 02 00 00 81 e2 00 00
+[    0.453299] EIP: [<c110a6e0>] __fput+0x50/0x380 SS:ESP 0068:ce867e70
+[    0.453299] CR2: 0000000000000000
+[    0.470056] ---[ end trace c86545004fb7c1f8 ]---
+[    0.473292] Kernel panic - not syncing: CRED: put_cred_rcu() sees cd0c6d00 with usage -1
+
+dmesg-yocto-waimea-5:20131009162638:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+[    0.444934] debug: unmapping init [mem 0xc14df000-0xc1524fff]
+
+mount: mounting proc on /proc failed: No such device
+[    0.452534] BUG: unable to handle kernel NULL pointer dereference at   (null)
+[    0.453092] IP: [<c110a6e0>] __fput+0x50/0x380
+[    0.453092] *pdpt = 0000000000000000 *pde = f000ff53f000ff53 
+[    0.453092] Oops: 0000 [#1] DEBUG_PAGEALLOC
+[    0.453092] Modules linked in:
+[    0.453092] CPU: 0 PID: 12 Comm: kworker/0:1 Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.453092] Workqueue: events delayed_fput
+[    0.453092] task: c0035f90 ti: ce866000 task.ti: ce866000
+[    0.453092] EIP: 0060:[<c110a6e0>] EFLAGS: 00010212 CPU: 0
+[    0.453092] EIP is at __fput+0x50/0x380
+[    0.453092] EAX: 00000000 EBX: cd0e3200 ECX: 00000000 EDX: 0000001d
+[    0.453092] ESI: 00000010 EDI: 00000000 EBP: ce867e98 ESP: ce867e70
+[    0.453092]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.453092] CR0: 8005003b CR2: 00000000 CR3: 0d10b000 CR4: 000006b0
+[    0.453092] Stack:
+[    0.453092]  00000246 00000000 00000002 00000000 00000000 00000000 00000000 00000000
+[    0.453092]  00000000 c0124540 ce867ea4 c110aa39 c1495640 ce867efc c10492f9 00000000
+[    0.453092]  00000002 00000000 c10492c1 00000000 00000000 00000000 0019f047 c0083400
+[    0.453092] Call Trace:
+[    0.453092]  [<c110aa39>] delayed_fput+0x29/0x30
+[    0.453092]  [<c10492f9>] process_one_work+0x2f9/0x650
+[    0.453092]  [<c10492c1>] ? process_one_work+0x2c1/0x650
+[    0.453092]  [<c104ac2f>] worker_thread+0x28f/0x610
+[    0.453092]  [<c104a9a0>] ? cancel_delayed_work_sync+0x20/0x20
+[    0.453092]  [<c1050c42>] kthread+0x92/0xa0
+[    0.453092]  [<c130ee1b>] ret_from_kernel_thread+0x1b/0x30
+[    0.453092]  [<c1050bb0>] ? kthread_create_on_node+0xd0/0xd0
+[    0.453092] Code: 00 b8 a0 53 41 c1 e8 80 ff f4 ff e8 1b b0 1f 00 8b 43 10 89 c1 89 45 e8 8b 53 40 89 d0 83 e0 02 83 f8 01 19 f6 83 e6 08 83 c6 08 <8b> 01 25 00 f0 ff ff 66 3d 00 40 0f 84 2f 02 00 00 81 e2 00 00
+[    0.453092] EIP: [<c110a6e0>] __fput+0x50/0x380 SS:ESP 0068:ce867e70
+[    0.453092] CR2: 0000000000000000
+[    0.471754] ---[ end trace a80cb7a793b7b7f8 ]---
+[    0.475157] Kernel panic - not syncing: CRED: put_cred_rcu() sees cd0c6d00 with usage -1
+
+dmesg-yocto-xian-13:20131009083020:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+[    0.502865] debug: unmapping init [mem 0xc14df000-0xc1524fff]
+
+mount: mounting proc on /proc failed: No such device
+[    0.511394] BUG: unable to handle kernel NULL pointer dereference at   (null)
+[    0.512125] IP: [<c110a6e0>] __fput+0x50/0x380
+[    0.512337] *pdpt = 0000000000000000 *pde = f000ff53f000ff53 
+[    0.512337] Oops: 0000 [#1] DEBUG_PAGEALLOC
+[    0.512337] Modules linked in:
+[    0.512337] CPU: 0 PID: 12 Comm: kworker/0:1 Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.512337] Workqueue: events delayed_fput
+[    0.512337] task: c0035f90 ti: ce866000 task.ti: ce866000
+[    0.512337] EIP: 0060:[<c110a6e0>] EFLAGS: 00010212 CPU: 0
+[    0.512337] EIP is at __fput+0x50/0x380
+[    0.512337] EAX: 00000000 EBX: cd0e3200 ECX: 00000000 EDX: 0000001d
+[    0.512337] ESI: 00000010 EDI: 00000000 EBP: ce867e98 ESP: ce867e70
+[    0.512337]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.512337] CR0: 8005003b CR2: 00000000 CR3: 0d10a000 CR4: 000006b0
+[    0.512337] Stack:
+[    0.512337]  00000246 00000000 00000002 00000000 00000000 00000000 00000000 00000000
+[    0.512337]  00000000 c0124540 ce867ea4 c110aa39 c1495640 ce867efc c10492f9 00000000
+[    0.512337]  00000002 00000000 c10492c1 00000000 00000000 00000000 0019f047 c0083400
+[    0.512337] Call Trace:
+[    0.512337]  [<c110aa39>] delayed_fput+0x29/0x30
+[    0.512337]  [<c10492f9>] process_one_work+0x2f9/0x650
+[    0.512337]  [<c10492c1>] ? process_one_work+0x2c1/0x650
+[    0.512337]  [<c104ac2f>] worker_thread+0x28f/0x610
+[    0.512337]  [<c104a9a0>] ? cancel_delayed_work_sync+0x20/0x20
+[    0.512337]  [<c1050c42>] kthread+0x92/0xa0
+[    0.512337]  [<c130ee1b>] ret_from_kernel_thread+0x1b/0x30
+[    0.512337]  [<c1050bb0>] ? kthread_create_on_node+0xd0/0xd0
+[    0.512337] Code: 00 b8 a0 53 41 c1 e8 80 ff f4 ff e8 1b b0 1f 00 8b 43 10 89 c1 89 45 e8 8b 53 40 89 d0 83 e0 02 83 f8 01 19 f6 83 e6 08 83 c6 08 <8b> 01 25 00 f0 ff ff 66 3d 00 40 0f 84 2f 02 00 00 81 e2 00 00
+[    0.512337] EIP: [<c110a6e0>] __fput+0x50/0x380 SS:ESP 0068:ce867e70
+[    0.512337] CR2: 0000000000000000
+[    0.529142] ---[ end trace 5a6c6b560abd06ef ]---
+[    0.532351] Kernel panic - not syncing: CRED: put_cred_rcu() sees cd0c6c80 with usage -1
+
+dmesg-yocto-xian-30:20131009082927:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+[    0.592775] debug: unmapping init [mem 0xc14df000-0xc1524fff]
+
+mount: mounting proc on /proc failed: No such device
+[    0.601919] BUG: unable to handle kernel NULL pointer dereference at   (null)
+[    0.602633] IP: [<c110a6e0>] __fput+0x50/0x380
+[    0.603067] *pdpt = 0000000000000000 *pde = f000ff53f000ff53 
+[    0.603573] Oops: 0000 [#1] DEBUG_PAGEALLOC
+[    0.603573] Modules linked in:
+[    0.603573] CPU: 0 PID: 12 Comm: kworker/0:1 Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.603573] Workqueue: events delayed_fput
+[    0.603573] task: c0035f90 ti: ce866000 task.ti: ce866000
+[    0.603573] EIP: 0060:[<c110a6e0>] EFLAGS: 00010212 CPU: 0
+[    0.603573] EIP is at __fput+0x50/0x380
+[    0.603573] EAX: 00000000 EBX: cd0e3200 ECX: 00000000 EDX: 0000001d
+[    0.603573] ESI: 00000010 EDI: 00000000 EBP: ce867e98 ESP: ce867e70
+[    0.603573]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.603573] CR0: 8005003b CR2: 00000000 CR3: 0d10a000 CR4: 000006b0
+[    0.603573] Stack:
+[    0.603573]  00000246 00000000 00000002 00000000 00000000 00000000 00000000 00000000
+[    0.603573]  00000000 c0124540 ce867ea4 c110aa39 c1495640 ce867efc c10492f9 00000000
+[    0.603573]  00000002 00000000 c10492c1 00000000 00000000 00000000 0019f047 c0083400
+[    0.603573] Call Trace:
+[    0.603573]  [<c110aa39>] delayed_fput+0x29/0x30
+[    0.603573]  [<c10492f9>] process_one_work+0x2f9/0x650
+[    0.603573]  [<c10492c1>] ? process_one_work+0x2c1/0x650
+[    0.603573]  [<c104ac2f>] worker_thread+0x28f/0x610
+[    0.603573]  [<c104a9a0>] ? cancel_delayed_work_sync+0x20/0x20
+[    0.603573]  [<c1050c42>] kthread+0x92/0xa0
+[    0.603573]  [<c130ee1b>] ret_from_kernel_thread+0x1b/0x30
+[    0.603573]  [<c1050bb0>] ? kthread_create_on_node+0xd0/0xd0
+[    0.603573] Code: 00 b8 a0 53 41 c1 e8 80 ff f4 ff e8 1b b0 1f 00 8b 43 10 89 c1 89 45 e8 8b 53 40 89 d0 83 e0 02 83 f8 01 19 f6 83 e6 08 83 c6 08 <8b> 01 25 00 f0 ff ff 66 3d 00 40 0f 84 2f 02 00 00 81 e2 00 00
+[    0.603573] EIP: [<c110a6e0>] __fput+0x50/0x380 SS:ESP 0068:ce867e70
+[    0.603573] CR2: 0000000000000000
+[    0.619888] ---[ end trace 89172d650daf067d ]---
+[    0.623592] Kernel panic - not syncing: CRED: put_cred_rcu() sees cd0c6c80 with usage -1
+
+dmesg-yocto-xps-7:20131009162609:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+[    0.458692] debug: unmapping init [mem 0xc14df000-0xc1524fff]
+
+mount: mounting proc on /proc failed: No such device
+[    0.466465] BUG: unable to handle kernel NULL pointer dereference at   (null)
+[    0.467123] IP: [<c110a6e0>] __fput+0x50/0x380
+[    0.467487] *pdpt = 0000000000000000 *pde = f000ff53f000ff53 
+[    0.467998] Oops: 0000 [#1] DEBUG_PAGEALLOC
+[    0.468382] Modules linked in:
+[    0.468434] CPU: 0 PID: 12 Comm: kworker/0:1 Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.468434] Workqueue: events delayed_fput
+[    0.468434] task: c0035f90 ti: ce866000 task.ti: ce866000
+[    0.468434] EIP: 0060:[<c110a6e0>] EFLAGS: 00010212 CPU: 0
+[    0.468434] EIP is at __fput+0x50/0x380
+[    0.468434] EAX: 00000000 EBX: cd0e3200 ECX: 00000000 EDX: 0000001d
+[    0.468434] ESI: 00000010 EDI: 00000000 EBP: ce867e98 ESP: ce867e70
+[    0.468434]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.468434] CR0: 8005003b CR2: 00000000 CR3: 0d10a000 CR4: 000006b0
+[    0.468434] Stack:
+[    0.468434]  00000246 00000000 00000002 00000000 00000000 00000000 00000000 00000000
+[    0.468434]  00000000 c0124540 ce867ea4 c110aa39 c1495640 ce867efc c10492f9 00000000
+[    0.468434]  00000002 00000000 c10492c1 00000000 00000000 00000000 0019f047 c0083400
+[    0.468434] Call Trace:
+[    0.468434]  [<c110aa39>] delayed_fput+0x29/0x30
+[    0.468434]  [<c10492f9>] process_one_work+0x2f9/0x650
+[    0.468434]  [<c10492c1>] ? process_one_work+0x2c1/0x650
+[    0.468434]  [<c104ac2f>] worker_thread+0x28f/0x610
+[    0.468434]  [<c104a9a0>] ? cancel_delayed_work_sync+0x20/0x20
+[    0.468434]  [<c1050c42>] kthread+0x92/0xa0
+[    0.468434]  [<c130ee1b>] ret_from_kernel_thread+0x1b/0x30
+[    0.468434]  [<c1050bb0>] ? kthread_create_on_node+0xd0/0xd0
+[    0.468434] Code: 00 b8 a0 53 41 c1 e8 80 ff f4 ff e8 1b b0 1f 00 8b 43 10 89 c1 89 45 e8 8b 53 40 89 d0 83 e0 02 83 f8 01 19 f6 83 e6 08 83 c6 08 <8b> 01 25 00 f0 ff ff 66 3d 00 40 0f 84 2f 02 00 00 81 e2 00 00
+[    0.468434] EIP: [<c110a6e0>] __fput+0x50/0x380 SS:ESP 0068:ce867e70
+[    0.468434] CR2: 0000000000000000
+[    0.482193] ---[ end trace ec2a3ff42e5d2c28 ]---
+[    0.485114] Kernel panic - not syncing: CRED: put_cred_rcu() sees cd0c6d00 with usage -1
+
+dmesg-yocto-xps-7:20131009162631:i386-randconfig-r8-1005:3.12.0-rc1-00050-g0c44c2d:1
+
+[    0.441321] debug: unmapping init [mem 0xc14df000-0xc1524fff]
+
+mount: mounting proc on /proc failed: No such device
+[    0.449600] BUG: unable to handle kernel NULL pointer dereference at   (null)
+[    0.450229] IP: [<c110a6e0>] __fput+0x50/0x380
+[    0.450626] *pdpt = 0000000000000000 *pde = f000ff53f000ff53 
+[    0.450913] Oops: 0000 [#1] DEBUG_PAGEALLOC
+[    0.450913] Modules linked in:
+[    0.450913] CPU: 0 PID: 12 Comm: kworker/0:1 Not tainted 3.12.0-rc1-00050-g0c44c2d #1
+[    0.450913] Workqueue: events delayed_fput
+[    0.450913] task: c0035f90 ti: ce866000 task.ti: ce866000
+[    0.450913] EIP: 0060:[<c110a6e0>] EFLAGS: 00010212 CPU: 0
+[    0.450913] EIP is at __fput+0x50/0x380
+[    0.450913] EAX: 00000000 EBX: cd0e3f00 ECX: 00000000 EDX: 0000001d
+[    0.450913] ESI: 00000010 EDI: 00000000 EBP: ce867e98 ESP: ce867e70
+[    0.450913]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[    0.450913] CR0: 8005003b CR2: 00000000 CR3: 0d10a000 CR4: 000006b0
+[    0.450913] Stack:
+[    0.450913]  00000246 00000000 00000002 00000000 00000000 00000000 00000000 00000000
+[    0.450913]  00000000 c0124540 ce867ea4 c110aa39 c1495640 ce867efc c10492f9 00000000
+[    0.450913]  00000002 00000000 c10492c1 00000000 00000000 00000000 0019f047 c0083400
+[    0.450913] Call Trace:
+[    0.450913]  [<c110aa39>] delayed_fput+0x29/0x30
+[    0.450913]  [<c10492f9>] process_one_work+0x2f9/0x650
+[    0.450913]  [<c10492c1>] ? process_one_work+0x2c1/0x650
+[    0.450913]  [<c104ac2f>] worker_thread+0x28f/0x610
+[    0.450913]  [<c104a9a0>] ? cancel_delayed_work_sync+0x20/0x20
+[    0.450913]  [<c1050c42>] kthread+0x92/0xa0
+[    0.450913]  [<c130ee1b>] ret_from_kernel_thread+0x1b/0x30
+[    0.450913]  [<c1050bb0>] ? kthread_create_on_node+0xd0/0xd0
+[    0.450913] Code: 00 b8 a0 53 41 c1 e8 80 ff f4 ff e8 1b b0 1f 00 8b 43 10 89 c1 89 45 e8 8b 53 40 89 d0 83 e0 02 83 f8 01 19 f6 83 e6 08 83 c6 08 <8b> 01 25 00 f0 ff ff 66 3d 00 40 0f 84 2f 02 00 00 81 e2 00 00
+[    0.450913] EIP: [<c110a6e0>] __fput+0x50/0x380 SS:ESP 0068:ce867e70
+[    0.450913] CR2: 0000000000000000
+[    0.465551] ---[ end trace 060e117f1134b075 ]---
+[    0.469319] Kernel panic - not syncing: CRED: put_cred_rcu() sees cd0c6b00 with usage -2
