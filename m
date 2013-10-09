@@ -1,108 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757106Ab3JIKjZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 06:39:25 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:54651 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753464Ab3JIKjW (ORCPT
+	id S1757184Ab3JIKjy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 06:39:54 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:36368 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757158Ab3JIKjx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 06:39:22 -0400
-Date: Wed, 9 Oct 2013 19:39:18 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: takasi-y@ops.dti.ne.jp, SH-Linux <linux-sh@vger.kernel.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        devicetree@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 3/3] ARM: shmobile: kzm9d: Use common clock framework
-Message-ID: <20131009103915.GB17869@verge.net.au>
-References: <20131008143040.52f36df8edb7ab63224d8433@ops.dti.ne.jp>
- <20131008143403.c11f294c8a1701a2ab3bc5fd@ops.dti.ne.jp>
- <20131009034057.GO15065@verge.net.au>
- <CANqRtoQs+31mv0ZULOd3SGshkBkvp-kGoaVOSb10+Ncdp+WNXw@mail.gmail.com>
- <20131009065438.GA7220@verge.net.au>
- <CANqRtoSGFEjcBPDAtq3YCDbkiFCftyr8b=qniYqyMafng=zurw@mail.gmail.com>
+	Wed, 9 Oct 2013 06:39:53 -0400
+Date: Wed, 9 Oct 2013 12:39:32 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Stephane Eranian <eranian@google.com>, David Ahern <dsahern@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, Hugh Dickins <hughd@google.com>
+Subject: Re: [RFC] perf: mmap2 not covering VM_CLONE regions
+Message-ID: <20131009103932.GB3081@twins.programming.kicks-ass.net>
+References: <CABPqkBQrTzMKnL-f5iCe4jhM1mHXNE6aZ=OwVmpsezOLaRLntA@mail.gmail.com>
+ <52541556.5060907@gmail.com>
+ <20131008194129.GC7315@gmail.com>
+ <CABPqkBTibSKs9qG_RARn2+vrHb6VODN9N9BPGSv_MAQEXZcGmw@mail.gmail.com>
+ <20131009095906.GB17480@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CANqRtoSGFEjcBPDAtq3YCDbkiFCftyr8b=qniYqyMafng=zurw@mail.gmail.com>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131009095906.GB17480@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 09, 2013 at 04:29:56PM +0900, Magnus Damm wrote:
-> Hi Simon,
-> 
-> On Wed, Oct 9, 2013 at 3:54 PM, Simon Horman <horms@verge.net.au> wrote:
-> > On Wed, Oct 09, 2013 at 01:59:46PM +0900, Magnus Damm wrote:
-> >> Hi Simon,
-> >>
-> >> On Wed, Oct 9, 2013 at 12:40 PM, Simon Horman <horms@verge.net.au> wrote:
-> >> > On Tue, Oct 08, 2013 at 02:34:03PM +0900, takasi-y@ops.dti.ne.jp wrote:
-> >> >> Use common clock framework version of clock
-> >> >>  drivers/clk/shmobile/clk-emev2.c
-> >> >> instead of sh-clkfwk version
-> >> >>  arch/arm/mach-shmobile/clock-emev2.c
-> >> >> when it is configured as a part of multi-platform.
-> >> >>
-> >> >> Signed-off-by: Takashi Yoshii <takasi-y@ops.dti.ne.jp>
-> >> >
-> >> > Thanks.
-> >> >
-> >> > I plan to add this patch to a new topic branch,
-> >> > topic/emev2-common-clock, in the renesas tree and
-> >> > queue it up from there for inclusion in mainline
-> >> > if/when the first patch of this series is accepted
-> >> > by Mike Turquette.
-> >>
-> >> Thanks for picking up patches, Simon.
-> >>
-> >> I think you can simply merge this patch after the following series:
-> >>
-> >> [PATCH 00/05] ARM: shmobile: KZM9D Multiplatform update
-> >
-> > This is already queued up.
-> 
-> Yes, I know, thanks for that. I tried to explain the dependency in the
-> 00/00 cover letter but I will try to be more clear next time!
-> 
-> >> There are no build time dependencies on patch 1 and 2 so this patch
-> >> can be merged independently. Regarding run-time operation, the
-> >> multiplatform series above makes KZM9D DT reference only build for
-> >> multiplatform, and in such case CCF is required.
-> >>
-> >> So if you want to keep KZM9D DT reference working until Mike Turquette
-> >> accepts the CCF bits, then I recommend you to wait with "[PATCH 00/05]
-> >> ARM: shmobile: KZM9D Multiplatform update" until all EMEV2 CCF bits
-> >> have been merged.
-> >>
-> >> Another way is to merge "[PATCH 00/05] ARM: shmobile: KZM9D
-> >> Multiplatform update" before the EMEV2 CCF bits, but if so you may as
-> >> well merge this patch as well IMO. This
-> >> multiplatform-update-series-merge-before-CCF plan will result in
-> >> untestable KZM9D DT reference until EMEV2 CCF is merged. Either way is
-> >> fine with me.
-> >
-> > I am mainly concerned that the bindings may change before
-> > they are finally merged. And I thought it would be nice to avoid
-> > having to fix up the usage of the bindings if they change.
-> 
-> Sure, but the code in this patch looks like it simply starts DT CCF
-> probing regardless of what the bindings look like. So I don't think
-> you will have to worry about actual bindings detail.
-> 
-> > But I'm happy to just queue-up patches 2 and 3 of this series
-> > now if you prefer.
-> 
-> Well, I meant patch 3 only. Patch 1 and 2 are tied together by dependencies. =)
+On Wed, Oct 09, 2013 at 11:59:06AM +0200, Ingo Molnar wrote:
+> PeterZ didn't like exposing the physical RAM address, right?
 
-Thanks, I understand now.
+More than not like; its useless and broken, see below.
 
-I'll queue-up 3/3.
+> Peter: could we expose the page frame number instead? (Maybe mix it with a 
+> random seed through the hash-mixer and expose that.) User-space will thus 
+> be able to discover whether two pages are shared or not, but not extract 
+> other information.
+
+No, all physical stuff is useless, a page can get moved about through
+swap/ksm/thp/compaction/etc.
+
+> The global MM ID thing looked rather ugly as well.
+
+I'm still having the argument with Stephane -- although it fell off-list
+-- on why this wouldn't work.
+
+AFAICT the mm_id should work for CLONE_VM, as CLONE_VM inherits the
+entire address space so all should be identical when mm_id match.
+
+> That way we could drop the inode info as well? That feels a bit hacky too.
+
+No, the inode stuff is required for shared pages, its the only way to
+track them; and barring a filename (which we've so far used for this)
+the dev:ino:gen thing is the only way to uniquely identify files -- it
+even works where filenames don't, eg. filesystem namespaces and weird
+things like shm that don't have stable filenames.
