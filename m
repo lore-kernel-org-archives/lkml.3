@@ -1,73 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756831Ab3JIMMx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 08:12:53 -0400
-Received: from exprod5og113.obsmtp.com ([64.18.0.26]:58470 "EHLO
-	exprod5og113.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752584Ab3JIMMw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 08:12:52 -0400
-X-Greylist: delayed 458 seconds by postgrey-1.27 at vger.kernel.org; Wed, 09 Oct 2013 08:12:51 EDT
-From: Illia Smyrnov <illia.smyrnov@globallogic.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, Illia Smyrnov <illia.smyrnov@ti.com>
-Subject: [PATCH] spi: omap2-mcspi: Fix FIFO support for transmit-and-receive mode
-Date: Wed,  9 Oct 2013 15:05:08 +0300
-Message-Id: <1381320308-25258-1-git-send-email-illia.smyrnov@globallogic.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752891Ab3JIMQu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 08:16:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30148 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751567Ab3JIMQt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 08:16:49 -0400
+Date: Wed, 9 Oct 2013 14:16:24 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH V5 3/9] perf tools: workaround objdump difficulties with
+ kcore
+Message-ID: <20131009121624.GA5459@krava.redhat.com>
+References: <1381221956-16699-1-git-send-email-adrian.hunter@intel.com>
+ <1381221956-16699-4-git-send-email-adrian.hunter@intel.com>
+ <20131008140236.GD1348@krava.redhat.com>
+ <525506C5.3020101@intel.com>
+ <20131009101249.GC1005@krava.redhat.com>
+ <5255320C.9020009@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5255320C.9020009@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes MCSPI FIFO buffer support when transmit-and-receive
-(full duplex) mode is used. In this mode FIFO can be used for RX or
-for TX or for both directions. If FIFO used for both directions the buffer
-is split into two 32-byte buffers - one for each direction.
-Also for full duplex mode both AEL and AFL need to be set in CHCONF0 register.
+On Wed, Oct 09, 2013 at 01:38:04PM +0300, Adrian Hunter wrote:
+> On 09/10/13 13:12, Jiri Olsa wrote:
+> > On Wed, Oct 09, 2013 at 10:33:25AM +0300, Adrian Hunter wrote:
+> >> On 08/10/13 17:02, Jiri Olsa wrote:
+> >>> On Tue, Oct 08, 2013 at 11:45:50AM +0300, Adrian Hunter wrote:
 
-Signed-off-by: Illia Smyrnov <illia.smyrnov@globallogic.com>
----
- drivers/spi/spi-omap2-mcspi.c |   12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
+SNIP
 
-diff --git a/drivers/spi/spi-omap2-mcspi.c b/drivers/spi/spi-omap2-mcspi.c
-index ed4af47..32dca0c 100644
---- a/drivers/spi/spi-omap2-mcspi.c
-+++ b/drivers/spi/spi-omap2-mcspi.c
-@@ -276,7 +276,7 @@ static void omap2_mcspi_set_fifo(const struct spi_device *spi,
- 	struct omap2_mcspi_cs *cs = spi->controller_state;
- 	struct omap2_mcspi *mcspi;
- 	unsigned int wcnt;
--	int fifo_depth, bytes_per_word;
-+	int max_fifo_depth, fifo_depth, bytes_per_word;
- 	u32 chconf, xferlevel;
- 
- 	mcspi = spi_master_get_devdata(master);
-@@ -287,7 +287,12 @@ static void omap2_mcspi_set_fifo(const struct spi_device *spi,
- 		if (t->len % bytes_per_word != 0)
- 			goto disable_fifo;
- 
--		fifo_depth = gcd(t->len, OMAP2_MCSPI_MAX_FIFODEPTH);
-+		if (t->rx_buf != NULL && t->tx_buf != NULL)
-+			max_fifo_depth = OMAP2_MCSPI_MAX_FIFODEPTH / 2;
-+		else
-+			max_fifo_depth = OMAP2_MCSPI_MAX_FIFODEPTH;
-+
-+		fifo_depth = gcd(t->len, max_fifo_depth);
- 		if (fifo_depth < 2 || fifo_depth % bytes_per_word != 0)
- 			goto disable_fifo;
- 
-@@ -299,7 +304,8 @@ static void omap2_mcspi_set_fifo(const struct spi_device *spi,
- 		if (t->rx_buf != NULL) {
- 			chconf |= OMAP2_MCSPI_CHCONF_FFER;
- 			xferlevel |= (fifo_depth - 1) << 8;
--		} else {
-+		}
-+		if (t->tx_buf != NULL) {
- 			chconf |= OMAP2_MCSPI_CHCONF_FFET;
- 			xferlevel |= fifo_depth - 1;
- 		}
--- 
-1.7.9.5
+> > 
+> > so.. the name of the section, name of the <function> plus the first
+> > instruction decode seem wrong.. I can see that in every symbol I
+> > annotate in the report and in annotate command as well.
+> 
+> If you use the --asm-raw option you can see the bytes:
+> 
+> 	66 66 66 90 
+> 
+> That looks like a "nop" e.g. K8_NOP4 in arch/x86/include/asm/nops.h
+> 
 
+hum, wierd for all those functions to start with nop
+
+ok, how about the '<load0>' function name?
+
+thanks,
+jirka
