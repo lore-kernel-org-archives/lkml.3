@@ -1,95 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755591Ab3JITq6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 15:46:58 -0400
-Received: from smtp.peak6.com ([38.98.137.6]:1992 "EHLO smtp.peak6.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752471Ab3JITq5 convert rfc822-to-8bit (ORCPT
+	id S1754384Ab3JITuB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 15:50:01 -0400
+Received: from mail-db9lp0251.outbound.messaging.microsoft.com ([213.199.154.251]:25493
+	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751986Ab3JITuA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 15:46:57 -0400
-X-Greylist: delayed 900 seconds by postgrey-1.27 at vger.kernel.org; Wed, 09 Oct 2013 15:46:56 EDT
-X-AuditID: 0a64cb20-b7fb66d000002a78-3e-5255af2b006e
-From: Shaun Thomas <sthomas@optionshouse.com>
-To: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
-Subject: Very odd memory behavior. Is this normal?
-Thread-Topic: Very odd memory behavior. Is this normal?
-Thread-Index: Ac7FHtzLTqQlbL5UQ7yx9cuUaAqt/g==
-Date: Wed, 9 Oct 2013 19:31:54 +0000
-Message-ID: <0683F5F5A5C7FE419A752A034B4A0B97973F7C13@sswchi5pmbx2.peak6.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.10.200.64]
-Content-Type: text/plain; charset="us-ascii"
-content-transfer-encoding: 8BIT
+	Wed, 9 Oct 2013 15:50:00 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VS-3(zz98dI936eI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275dhz2dh2a8h839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h1155h)
+Message-ID: <1381348191.7979.348.camel@snotra.buserror.net>
+Subject: Re: RFC: (re-)binding the VFIO platform driver to a platform device
+From: Scott Wood <scottwood@freescale.com>
+To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: Yoder Stuart-B08248 <B08248@freescale.com>,
+        Wood Scott-B07421 <B07421@freescale.com>,
+        Kim Phillips <kim.phillips@linaro.org>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "a.motakis@virtualopensystems.com" <a.motakis@virtualopensystems.com>,
+        "agraf@suse.de" <agraf@suse.de>,
+        Sethi Varun-B16395 <B16395@freescale.com>,
+        Bhushan Bharat-R65777 <R65777@freescale.com>,
+        "peter.maydell@linaro.org" <peter.maydell@linaro.org>,
+        "santosh.shukla@linaro.org" <santosh.shukla@linaro.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Date: Wed, 9 Oct 2013 14:49:51 -0500
+In-Reply-To: <20131009191652.GA18611@kroah.com>
+References: <20131002203735.GA10871@kroah.com>
+	 <1380748121.12932.89.camel@snotra.buserror.net>
+	 <20131002211631.GA11914@kroah.com>
+	 <1380749715.12932.109.camel@snotra.buserror.net>
+	 <20131002234009.GA27714@kroah.com>
+	 <1380825207.12932.151.camel@snotra.buserror.net>
+	 <20131003185434.GA26123@kroah.com>
+	 <1380827494.12932.161.camel@snotra.buserror.net>
+	 <20131003203226.GB27336@kroah.com>
+	 <9F6FE96B71CF29479FF1CDC8046E15036DDA62@039-SN1MPN1-002.039d.mgd.msft.net>
+	 <20131009191652.GA18611@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
 MIME-Version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFIsWRmVeSWpSXmKPExsXClcIrpqu9PjTIoKXRyOLyrjlsDowenzfJ
-	BTBGNTDaJObl5ZcklqQqpKQWJ9sq+ReUZObnFXvklxanKrhkFifnJGbmphYpKWSm2CoZKykU
-	5CQmp+am5pXYKiUWFKTmpSjZcSlgABugssw8hdS85PyUzLx0WyXPYH9dCwtTS11DJbt4ZJDQ
-	yZJxZ+o89oK7ghUnpx9gbWBczdvFyMkhIWAi8efyC3YIW0ziwr31bCA2m4CuxKT+FWC2iICz
-	xId9e8FsYQEjiYezL7NDxM0lbl/byAJh60lM2HYCyObgYBFQkTg6nxskzCvgK7G78zBYKyPQ
-	+O+n1jCB2MwC4hK3nsxnglgrILFkz3lmCFtU4uXjf6wQtoLEghPnWSHqdSQW7P7EBmFrSyxb
-	+JoZYr6gxMmZT1gmMArOQjJ2FpKWWUhaZiFpWcDIsopRvLgsMTkj07SgOLekwEivIDUx20wv
-	L7VkEyM4Qk8r7GD83ml1iFGAg1GJh3dCd2iQEGtiWXFl7iFGCQ5mJRHewC6gEG9KYmVValF+
-	fFFpTmrxIUYfYBBMZJYSTc4HJo+8knhDY1MDU0tTQ1NzU0MjHMJK4rz7mJYFCgmkAxNJdmpq
-	QWoRzDgmDk6pBsZjv0MEtSwmf9st/T113mWG512fGxeauxt1hoqLC33ZoLbL4s/Skzv/mu3K
-	Zu2e5dhorcsdynqpganA7tDSK394PY5M2Xi1yKF6ufR7pZzd0/MK/p6N4Jx2+caUHJUL0lHm
-	B7PiDisee/Bm5aSH05S27P6YJfrDUsDlm8PSLMO1ayavZlVeFe6gxFKckWioxVxUnAgAESf4
-	jP0CAAA=
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Devs,
+On Wed, 2013-10-09 at 12:16 -0700, gregkh@linuxfoundation.org wrote:
+> On Wed, Oct 09, 2013 at 07:02:25PM +0000, Yoder Stuart-B08248 wrote:
+> > Have been thinking about this issue some more.  As Scott mentioned,
+> > 'wildcard' matching for a driver can be fairly done in the platform
+> > bus driver.  We could add a new flag to the platform driver struct:
+> > 
+> > diff --git a/drivers/base/platform.c b/drivers/base/platform.c
+> > index 4f8bef3..4d6cf14 100644
+> > --- a/drivers/base/platform.c
+> > +++ b/drivers/base/platform.c
+> > @@ -727,6 +727,10 @@ static int platform_match(struct device *dev, struct device_driver *drv)
+> >         struct platform_device *pdev = to_platform_device(dev);
+> >         struct platform_driver *pdrv = to_platform_driver(drv);
+> > 
+> > +       /* the driver matches any device */
+> > +       if (pdrv->match_any)
+> > +               return 1;
+> > +
+> >         /* Attempt an OF style match first */
+> >         if (of_driver_match_device(dev, drv))
+> >                 return 1;
+> > 
+> > However, the more problematic issue is that a bus driver has no way to 
+> > differentiate from an explicit bind request via sysfs and a bind that
+> > happened through bus probing.
+> 
+> That was by design, nice to see I implemented it properly :)
+> 
+> > I think something like the new flag in the snippet below would enable the platform
+> > bus to support platform drivers that only bind on explicit request:
+> > 
+> > diff --git a/drivers/base/bus.c b/drivers/base/bus.c
+> > index 4c289ab..daf6d24 100644
+> > --- a/drivers/base/bus.c
+> > +++ b/drivers/base/bus.c
+> > @@ -201,7 +201,7 @@ static ssize_t bind_store(struct device_driver *drv, const char *buf,
+> >         int err = -ENODEV;
+> > 
+> >         dev = bus_find_device_by_name(bus, NULL, buf);
+> > -       if (dev && dev->driver == NULL && driver_match_device(drv, dev)) {
+> > +       if (dev && dev->driver == NULL && driver_match_device(drv, dev, 1)) {
+> 
+> Magic flags are the spawn of your favorite anti-$DIETY.  I'm never going
+> to accept that, sorry.
+> 
+> If you really want to do something "special" for the platform bus, then
+> do it only for the platform bus.  But even then, you'll find me arguing
+> that you really don't want to do it at all, sorry.
 
-Ever since we moved from 2.6.* to 3.*, I've noticed some very odd MM behavior I'd like to run past you. It's pretty difficult to replicate, but I've figured out a fairly straightforward method. But first, the issue:
+It's not (or shouldn't be) special for the platform bus.  The "don't
+bind by default" flag (note that I am *not* referring to the above code
+snippet) would be useful for VFIO PCI as well, as it would replace the
+hacky and racy usage of new_id.
 
-Our systems with 72GB of RAM on a 3.2 kernel eventually converge on this, from /proc/meminfo:
+> I'm still yet to be convinced this is even an issue at all, but maybe
+> that's just the jetlag talking...
 
-Active(file):   29059980 kB
-Inactive(file): 29069296 kB
+If this is because you think we should use new_id, we just had a
+discussion in this thread about why that's no good.
 
-Basically some kind of even split across Inactive and Active, suggesting a hard IO loop that's purging as fast as it can promote. It's pretty easy to cause, too. If you have PostgreSQL handy, any DB that just barely fits in memory should be sufficient.
-
-createdb pgbench
-pgbench -i -s 4000 pgbench
-pgbench -T 1800 -c 24 -S pgbench
-
-I let that run for a while to cache everything, until read IO slows down to a trickle according to iostat. Memory at that point looks like this:
-
-Active(file):   61056316 kB
-Inactive(file):   249968 kB
-
-And free -m looks like this:
-
-             total       used       free     shared    buffers     cached
-Mem:         72485      66963       5521          0          2      64183
--/+ buffers/cache:       2776      69708
-Swap:         2047          0       2047
-
-So I have 5GB available, 64GB cached... looks pretty normal. I leave the pgbench running, then in another terminal, I waste more memory than I have free:
-
-python - <<EOF
-foo = bytearray(8 * 1024 * 1024 * 1024)
-from time import sleep
-sleep(1000)
-EOF
-
-After a minute or two, Active and Inactive are even again, and IO to the underlying device is extremely high. In our case, that's 350MB/s in random reads. Every kernel I've tested does this. 3.2, 3.5, 3.8. I haven't been able to go higher than that, but the behavior seems pretty consistent. This is with zone_reclaim_mode disabled, and numactl --interleave=all doesn't change anything.
-
-I get that it needs to balance memory, but this seems excessive somehow. I'm probably missing something, though. Any insight would be helpful, and I can try to provide anything else you need if this is a legitimate complaint.
-
-Thanks!
-
---
-Shaun Thomas
-OptionsHouse | 141 W. Jackson Blvd | Suite 500 | Chicago IL, 60604
-312-676-8870
-sthomas@optionshouse.com
+-Scott
 
 
 
-______________________________________________
-
-See http://www.peak6.com/email_disclaimer/ for terms and conditions related to this email
