@@ -1,70 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757258Ab3JILAG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 07:00:06 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:41761 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757219Ab3JILAE (ORCPT
+	id S1756958Ab3JILD7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 07:03:59 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:49868 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752088Ab3JILD5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 07:00:04 -0400
-Date: Wed, 9 Oct 2013 11:59:50 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-spi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <20131009105950.GI21581@sirena.org.uk>
-References: <1381264542-29396-1-git-send-email-wsa@the-dreams.de>
- <1381264542-29396-6-git-send-email-wsa@the-dreams.de>
+	Wed, 9 Oct 2013 07:03:57 -0400
+Date: Wed, 9 Oct 2013 13:03:54 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/63] Basic scheduler support for automatic NUMA
+ balancing V9
+Message-ID: <20131009110353.GA19370@gmail.com>
+References: <1381141781-10992-1-git-send-email-mgorman@suse.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="gfpq6yKqvKwri7QU"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1381264542-29396-6-git-send-email-wsa@the-dreams.de>
-X-Cookie: Penalty for private use.
+In-Reply-To: <1381141781-10992-1-git-send-email-mgorman@suse.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 5/9] spi: spi-au1550: replace platform_driver_probe to
- support deferred probing
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---gfpq6yKqvKwri7QU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+* Mel Gorman <mgorman@suse.de> wrote:
 
-On Tue, Oct 08, 2013 at 10:35:37PM +0200, Wolfram Sang wrote:
-> Subsystems like pinctrl and gpio rightfully make use of deferred probing at
-> core level. Now, deferred drivers won't be retried if they don't have a .probe
-> function specified in the driver struct. Fix this driver to have that, so the
-> devices it supports won't get lost in a deferred probe.
+> This series has roughly the same goals as previous versions despite the
+> size. It reduces overhead of automatic balancing through scan rate reduction
+> and the avoidance of TLB flushes. It selects a preferred node and moves tasks
+> towards their memory as well as moving memory toward their task. It handles
+> shared pages and groups related tasks together. Some problems such as shared
+> page interleaving and properly dealing with processes that are larger than
+> a node are being deferred. This version should be ready for wider testing
+> in -tip.
 
-Applied 5-9, thanks - if there's patches 1-4 you'll need to resend them.
+Thanks Mel - the series looks really nice. I've applied the patches to 
+tip:sched/core and will push them out later today if they pass testing 
+here.
 
---gfpq6yKqvKwri7QU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> Note that with kernel 3.12-rc3 that numa balancing will fail to boot if 
+> CONFIG_JUMP_LABEL is configured. This is a separate bug that is 
+> currently being dealt with.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Okay, this is about:
 
-iQIcBAEBAgAGBQJSVTcjAAoJELSic+t+oim9xeQQAISdlk5LAlK3K/yZT53nyUpx
-WhGF1p42vNNrEWHx3oDBwK2taGy1K6i9XV6SyJ2+LMhMfNFrziIR9mXAbsBA2z3O
-FqzakokYsGG40qgR6+eG/9IqxponAjyshULcU4Tn8k4YI82fBw8Mo+tzBOSSIafq
-f1Q4apeLglIQiqquGr9jYoknRIM9zdEeoEkym9gZ45WRPeNfhcfsPc8Eh+ml+e6r
-eE4jkUmwBOE8UVp/QZEqZWAg7IxYgbGkTXVuaHiBHFRZx0kafDcMWvmInFchCkMc
-UP7qOlLPPpvjwoCEIBENb1/1i9hQn+AugzYxeBjbHI1OOlbG4/vqPXDb0aZ4JoWU
-zFuGEHrcp4RWP7EPuEHV3zJRpKj1f7HUDrlOsx13SdzsFv+KiNZyvyKl3G0mXzjb
-VN1FLLOEnVLEFmxEFDb6sbsQLORoMbgxS02yzVRxznmNIzu5OeXF77ba04PifbVp
-wl+ip0A26YqcW/xdMvWieYvQObfvoK1Ia9/zKHyT+fKAS9qgT9vZ7zBrKxWJwby1
-5o5n3K7AQo4qUPXSgGSZxk6g1PD10uHW/sxbF+z64rz47yW/WB0e7aZ2qS1aLj0X
-mGSk+AyPKofTD96qicz40q5FlxiOxfg0W+BpvtiPXC+eTU8r8yKx4Zl7yggpucdR
-i88lXUGQDmEiaXT3ArF+
-=YT7h
------END PGP SIGNATURE-----
+  https://lkml.org/lkml/2013/9/30/308
 
---gfpq6yKqvKwri7QU--
+Note that Peter and me saw no crashes so far, and we boot with 
+CONFIG_JUMP_LABEL=y and CONFIG_NUMA_BALANCING=y. It seems like an 
+unrelated bug in any case, perhaps related to specific details in your 
+kernel image?
+
+2)
+
+I also noticed a small Kconfig annoyance:
+
+config NUMA_BALANCING_DEFAULT_ENABLED
+        bool "Automatically enable NUMA aware memory/task placement"
+        default y
+        depends on NUMA_BALANCING
+        help
+          If set, autonumic NUMA balancing will be enabled if running on a NUMA
+          machine.
+
+config NUMA_BALANCING
+        bool "Memory placement aware NUMA scheduler"
+        depends on ARCH_SUPPORTS_NUMA_BALANCING
+        depends on !ARCH_WANT_NUMA_VARIABLE_LOCALITY
+        depends on SMP && NUMA && MIGRATION
+        help
+          This option adds support for automatic NUM
+
+the NUMA_BALANCING_DEFAULT_ENABLED option should come after the 
+NUMA_BALANCING entries - things like 'make oldconfig' produce weird output 
+otherwise.
+
+3)
+
+Plus in addition to PeterZ's build fix I noticed this new build warning on 
+i386 UP kernels:
+
+ kernel/sched/fair.c:819:22: warning: 'task_h_load' declared 'static' but never defined [-Wunused-function]
+
+Introduced here I think:
+
+    sched/numa: Use a system-wide search to find swap/migration candidates
+
+Thanks,
+
+	Ingo
