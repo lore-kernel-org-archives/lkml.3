@@ -1,270 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756711Ab3JIR0v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 13:26:51 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:40471 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752079Ab3JIR0t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 13:26:49 -0400
-X-IronPort-AV: E=Sophos;i="4.90,1064,1371081600"; 
-   d="scan'208";a="62021078"
-Date: Wed, 9 Oct 2013 18:25:57 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <Ian.Campbell@citrix.com>
-Subject: Re: [PATCH v6 18/19] swiotlb-xen: introduce a rbtree to track phys
- to bus mappings
-In-Reply-To: <20130930172718.GY3106@phenom.dumpdata.com>
-Message-ID: <alpine.DEB.2.02.1310091823410.26077@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1309271653420.5498@kaball.uk.xensource.com> <1380298207-29151-18-git-send-email-stefano.stabellini@eu.citrix.com> <20130930172718.GY3106@phenom.dumpdata.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1756781Ab3JIR1E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 13:27:04 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56020 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754774Ab3JIR07 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 13:26:59 -0400
+Date: Wed, 9 Oct 2013 10:26:22 -0700
+From: tip-bot for Mel Gorman <tipbot@zytor.com>
+Message-ID: <tip-b726b7dfb400c937546fa91cf8523dcb1aa2fc6e@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, hannes@cmpxchg.org, riel@redhat.com,
+        aarcange@redhat.com, srikar@linux.vnet.ibm.com, mgorman@suse.de,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, hannes@cmpxchg.org, riel@redhat.com,
+        aarcange@redhat.com, srikar@linux.vnet.ibm.com, mgorman@suse.de,
+        tglx@linutronix.de
+In-Reply-To: <1381141781-10992-16-git-send-email-mgorman@suse.de>
+References: <1381141781-10992-16-git-send-email-mgorman@suse.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] Revert "mm: sched: numa:
+  Delay PTE scanning until a task is scheduled on a new node"
+Git-Commit-ID: b726b7dfb400c937546fa91cf8523dcb1aa2fc6e
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA2
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 09 Oct 2013 10:26:29 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 30 Sep 2013, Konrad Rzeszutek Wilk wrote:
-> On Fri, Sep 27, 2013 at 05:10:06PM +0100, Stefano Stabellini wrote:
-> > Introduce a second red-back tree to track phys to bus mappings created after
-> > the initialization of the swiotlb buffer.
-> 
-> Could you explain the use case a bit more please?
-> 
-> As in:
->  a) why is this needed
->  b) why are we using the rb tree instead of something else (say FIFO queue)
->  c) how long are these in usage?
->  d) do we need locking now?
+Commit-ID:  b726b7dfb400c937546fa91cf8523dcb1aa2fc6e
+Gitweb:     http://git.kernel.org/tip/b726b7dfb400c937546fa91cf8523dcb1aa2fc6e
+Author:     Mel Gorman <mgorman@suse.de>
+AuthorDate: Mon, 7 Oct 2013 11:28:53 +0100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 9 Oct 2013 12:40:17 +0200
 
-Given that I was rebuilding a P2M for autotranslate guests in
-swiotlb-xen, making the code much harder to read, I decided to go the
-alternative route of providing a real P2M to ARM guest.
+Revert "mm: sched: numa: Delay PTE scanning until a task is scheduled on a new node"
 
-The next swiotlb series will introduce arch/arm/xen/p2m.c, moving the
-two rbtrees there. As a consequence we can start using swiotlb-xen on
-ARM with minimal changes. The whole thing looks much nicer now.
+PTE scanning and NUMA hinting fault handling is expensive so commit
+5bca2303 ("mm: sched: numa: Delay PTE scanning until a task is scheduled
+on a new node") deferred the PTE scan until a task had been scheduled on
+another node. The problem is that in the purely shared memory case that
+this may never happen and no NUMA hinting fault information will be
+captured. We are not ruling out the possibility that something better
+can be done here but for now, this patch needs to be reverted and depend
+entirely on the scan_delay to avoid punishing short-lived processes.
 
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1381141781-10992-16-git-send-email-mgorman@suse.de
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ include/linux/mm_types.h | 10 ----------
+ kernel/fork.c            |  3 ---
+ kernel/sched/fair.c      | 18 ------------------
+ kernel/sched/features.h  |  4 +---
+ 4 files changed, 1 insertion(+), 34 deletions(-)
 
-
-> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > ---
-> >  drivers/xen/swiotlb-xen.c |   99 +++++++++++++++++++++++++++++++++++++-------
-> >  1 files changed, 83 insertions(+), 16 deletions(-)
-> > 
-> > diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-> > index 3011736..022bcaf 100644
-> > --- a/drivers/xen/swiotlb-xen.c
-> > +++ b/drivers/xen/swiotlb-xen.c
-> > @@ -79,7 +79,8 @@ struct xen_dma_info {
-> >  	dma_addr_t dma_addr;
-> >  	phys_addr_t phys_addr;
-> >  	size_t size;
-> > -	struct rb_node rbnode;
-> > +	struct rb_node rbnode_dma;
-> > +	struct rb_node rbnode_phys;
-> >  };
-> >  
-> >  /*
-> > @@ -96,8 +97,13 @@ static struct xen_dma_info *xen_dma_seg;
-> >   * mappings.
-> >   */
-> >  static struct rb_root bus_to_phys = RB_ROOT;
-> > +/*
-> > + * This tree keeps track of physical address to bus address
-> > + * mappings apart from the ones belonging to the initial swiotlb buffer.
-> > + */
-> > +static struct rb_root phys_to_bus = RB_ROOT;
-> >  
-> > -static int xen_dma_add_entry(struct xen_dma_info *new)
-> > +static int xen_dma_add_entry_bus(struct xen_dma_info *new)
-> >  {
-> >  	struct rb_node **link = &bus_to_phys.rb_node;
-> >  	struct rb_node *parent = NULL;
-> > @@ -106,7 +112,7 @@ static int xen_dma_add_entry(struct xen_dma_info *new)
-> >  
-> >  	while (*link) {
-> >  		parent = *link;
-> > -		entry = rb_entry(parent, struct xen_dma_info, rbnode);
-> > +		entry = rb_entry(parent, struct xen_dma_info, rbnode_dma);
-> >  
-> >  		if (new->dma_addr == entry->dma_addr)
-> >  			goto err_out;
-> > @@ -118,8 +124,41 @@ static int xen_dma_add_entry(struct xen_dma_info *new)
-> >  		else
-> >  			link = &(*link)->rb_right;
-> >  	}
-> > -	rb_link_node(&new->rbnode, parent, link);
-> > -	rb_insert_color(&new->rbnode, &bus_to_phys);
-> > +	rb_link_node(&new->rbnode_dma, parent, link);
-> > +	rb_insert_color(&new->rbnode_dma, &bus_to_phys);
-> > +	goto out;
-> > +
-> > +err_out:
-> > +	rc = -EINVAL;
-> > +	pr_warn("%s: cannot add phys=%pa -> dma=%pa: phys=%pa -> dma=%pa already exists\n",
-> > +			__func__, &new->phys_addr, &new->dma_addr, &entry->phys_addr, &entry->dma_addr);
-> > +out:
-> > +	return rc;
-> > +}
-> > +
-> > +static int xen_dma_add_entry_phys(struct xen_dma_info *new)
-> > +{
-> > +	struct rb_node **link = &phys_to_bus.rb_node;
-> > +	struct rb_node *parent = NULL;
-> > +	struct xen_dma_info *entry;
-> > +	int rc = 0;
-> > +
-> > +	while (*link) {
-> > +		parent = *link;
-> > +		entry = rb_entry(parent, struct xen_dma_info, rbnode_phys);
-> > +
-> > +		if (new->dma_addr == entry->dma_addr)
-> > +			goto err_out;
-> > +		if (new->phys_addr == entry->phys_addr)
-> > +			goto err_out;
-> > +
-> > +		if (new->phys_addr < entry->phys_addr)
-> > +			link = &(*link)->rb_left;
-> > +		else
-> > +			link = &(*link)->rb_right;
-> > +	}
-> > +	rb_link_node(&new->rbnode_phys, parent, link);
-> > +	rb_insert_color(&new->rbnode_phys, &phys_to_bus);
-> >  	goto out;
-> >  
-> >  err_out:
-> > @@ -130,13 +169,22 @@ out:
-> >  	return rc;
-> >  }
-> >  
-> > +static int xen_dma_add_entry(struct xen_dma_info *new)
-> > +{
-> > +	int rc;
-> > +	if ((rc = xen_dma_add_entry_bus(new) < 0) ||
-> > +		(rc = xen_dma_add_entry_phys(new) < 0))
-> 
-> Please don't do that. Just do
-> 
-> 	rc = xen_dma_add_entry(bus);
-> 	if (rc)
-> 		return rc;
-> 	rc = xen_dma_add_entry_phys(new);
-> 	if (rc) {
-> 		// unwind it somehow? <<== This is important :-)
-> 	}
-> 	return rc;
-> 
-> 
-> > +		return rc;
-> > +	return 0;
-> > +}
-> > +
-> >  static struct xen_dma_info *xen_get_dma_info_from_dma(dma_addr_t dma_addr)
-> >  {
-> >  	struct rb_node *n = bus_to_phys.rb_node;
-> >  	struct xen_dma_info *entry;
-> >  
-> >  	while (n) {
-> > -		entry = rb_entry(n, struct xen_dma_info, rbnode);
-> > +		entry = rb_entry(n, struct xen_dma_info, rbnode_dma);
-> >  		if (entry->dma_addr <= dma_addr &&
-> >  				entry->dma_addr + entry->size > dma_addr) {
-> >  			return entry;
-> > @@ -150,11 +198,30 @@ static struct xen_dma_info *xen_get_dma_info_from_dma(dma_addr_t dma_addr)
-> >  	return NULL;
-> >  }
-> >  
-> > -static dma_addr_t xen_phys_to_bus(phys_addr_t paddr)
-> > +static struct xen_dma_info *xen_get_dma_info_from_phys(phys_addr_t phys)
-> >  {
-> > -	int nr_seg;
-> > -	unsigned long offset;
-> > -	char *vaddr;
-> > +	struct rb_node *n = phys_to_bus.rb_node;
-> > +	struct xen_dma_info *entry;
-> > +
-> > +	while (n) {
-> > +		entry = rb_entry(n, struct xen_dma_info, rbnode_phys);
-> > +		if (entry->phys_addr <= phys &&
-> > +				entry->phys_addr + entry->size > phys) {
-> > +			return entry;
-> > +		}
-> > +		if (phys < entry->phys_addr)
-> > +			n = n->rb_left;
-> > +		else
-> > +			n = n->rb_right;
-> > +	}
-> > +
-> > +	return NULL;
-> > +}
-> > +
-> > +/* Only looks into the initial buffer allocation in case of
-> > + * XENFEAT_auto_translated_physmap guests. */
-> > +static dma_addr_t xen_phys_to_bus_quick(phys_addr_t paddr) { int nr_seg;
-> > +	unsigned long offset; char *vaddr;
-> >  
-> >  	if (!xen_feature(XENFEAT_auto_translated_physmap))
-> >  		return phys_to_machine(XPADDR(paddr)).maddr;
-> > @@ -184,7 +251,7 @@ static phys_addr_t xen_bus_to_phys(dma_addr_t baddr)
-> >  
-> >  static dma_addr_t xen_virt_to_bus(void *address)
-> >  {
-> > -	return xen_phys_to_bus(virt_to_phys(address));
-> > +	return xen_phys_to_bus_quick(virt_to_phys(address));
-> >  }
-> >  
-> >  static int check_pages_physically_contiguous(unsigned long pfn,
-> > @@ -424,7 +491,7 @@ xen_swiotlb_alloc_coherent(struct device *hwdev, size_t size,
-> >  	 * Do not use virt_to_phys(ret) because on ARM it doesn't correspond
-> >  	 * to *dma_handle. */
-> >  	phys = *dma_handle;
-> > -	dev_addr = xen_phys_to_bus(phys);
-> > +	dev_addr = xen_phys_to_bus_quick(phys);
-> >  	if (!xen_feature(XENFEAT_auto_translated_physmap) &&
-> >  	    ((dev_addr + size - 1 <= dma_mask)) &&
-> >  	    !range_straddles_page_boundary(phys, size))
-> > @@ -503,7 +570,7 @@ dma_addr_t xen_swiotlb_map_page(struct device *dev, struct page *page,
-> >  				struct dma_attrs *attrs)
-> >  {
-> >  	phys_addr_t map, phys = page_to_phys(page) + offset;
-> > -	dma_addr_t dev_addr = xen_phys_to_bus(phys);
-> > +	dma_addr_t dev_addr = xen_phys_to_bus_quick(phys);
-> >  
-> >  	BUG_ON(dir == DMA_NONE);
-> >  	/*
-> > @@ -527,7 +594,7 @@ dma_addr_t xen_swiotlb_map_page(struct device *dev, struct page *page,
-> >  	if (map == SWIOTLB_MAP_ERROR)
-> >  		return DMA_ERROR_CODE;
-> >  
-> > -	dev_addr = xen_phys_to_bus(map);
-> > +	dev_addr = xen_phys_to_bus_quick(map);
-> >  
-> >  	/*
-> >  	 * Ensure that the address returned is DMA'ble
-> > @@ -656,7 +723,7 @@ xen_swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
-> >  
-> >  	for_each_sg(sgl, sg, nelems, i) {
-> >  		phys_addr_t paddr = sg_phys(sg);
-> > -		dma_addr_t dev_addr = xen_phys_to_bus(paddr);
-> > +		dma_addr_t dev_addr = xen_phys_to_bus_quick(paddr);
-> >  
-> >  		if (swiotlb_force ||
-> >  		    xen_feature(XENFEAT_auto_translated_physmap) ||
-> > @@ -682,7 +749,7 @@ xen_swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
-> >  				sg_dma_len(sgl) = 0;
-> >  				return DMA_ERROR_CODE;
-> >  			}
-> > -			sg->dma_address = xen_phys_to_bus(map);
-> > +			sg->dma_address = xen_phys_to_bus_quick(map);
-> >  		} else
-> >  			sg->dma_address = dev_addr;
-> >  		sg_dma_len(sg) = sg->length;
-> > -- 
-> > 1.7.2.5
-> > 
-> 
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+index d9851ee..b7adf1d 100644
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -428,20 +428,10 @@ struct mm_struct {
+ 
+ 	/* numa_scan_seq prevents two threads setting pte_numa */
+ 	int numa_scan_seq;
+-
+-	/*
+-	 * The first node a task was scheduled on. If a task runs on
+-	 * a different node than Make PTE Scan Go Now.
+-	 */
+-	int first_nid;
+ #endif
+ 	struct uprobes_state uprobes_state;
+ };
+ 
+-/* first nid will either be a valid NID or one of these values */
+-#define NUMA_PTE_SCAN_INIT	-1
+-#define NUMA_PTE_SCAN_ACTIVE	-2
+-
+ static inline void mm_init_cpumask(struct mm_struct *mm)
+ {
+ #ifdef CONFIG_CPUMASK_OFFSTACK
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 086fe73..7192d91 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -817,9 +817,6 @@ struct mm_struct *dup_mm(struct task_struct *tsk)
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+ 	mm->pmd_huge_pte = NULL;
+ #endif
+-#ifdef CONFIG_NUMA_BALANCING
+-	mm->first_nid = NUMA_PTE_SCAN_INIT;
+-#endif
+ 	if (!mm_init(mm, tsk))
+ 		goto fail_nomem;
+ 
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 464207f..49b11fa 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -901,24 +901,6 @@ void task_numa_work(struct callback_head *work)
+ 		return;
+ 
+ 	/*
+-	 * We do not care about task placement until a task runs on a node
+-	 * other than the first one used by the address space. This is
+-	 * largely because migrations are driven by what CPU the task
+-	 * is running on. If it's never scheduled on another node, it'll
+-	 * not migrate so why bother trapping the fault.
+-	 */
+-	if (mm->first_nid == NUMA_PTE_SCAN_INIT)
+-		mm->first_nid = numa_node_id();
+-	if (mm->first_nid != NUMA_PTE_SCAN_ACTIVE) {
+-		/* Are we running on a new node yet? */
+-		if (numa_node_id() == mm->first_nid &&
+-		    !sched_feat_numa(NUMA_FORCE))
+-			return;
+-
+-		mm->first_nid = NUMA_PTE_SCAN_ACTIVE;
+-	}
+-
+-	/*
+ 	 * Reset the scan period if enough time has gone by. Objective is that
+ 	 * scanning will be reduced if pages are properly placed. As tasks
+ 	 * can enter different phases this needs to be re-examined. Lacking
+diff --git a/kernel/sched/features.h b/kernel/sched/features.h
+index 99399f8..cba5c61 100644
+--- a/kernel/sched/features.h
++++ b/kernel/sched/features.h
+@@ -63,10 +63,8 @@ SCHED_FEAT(LB_MIN, false)
+ /*
+  * Apply the automatic NUMA scheduling policy. Enabled automatically
+  * at runtime if running on a NUMA machine. Can be controlled via
+- * numa_balancing=. Allow PTE scanning to be forced on UMA machines
+- * for debugging the core machinery.
++ * numa_balancing=
+  */
+ #ifdef CONFIG_NUMA_BALANCING
+ SCHED_FEAT(NUMA,	false)
+-SCHED_FEAT(NUMA_FORCE,	false)
+ #endif
