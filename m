@@ -1,99 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752735Ab3JILzH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 07:55:07 -0400
-Received: from science.horizon.com ([71.41.210.146]:28726 "HELO
-	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751718Ab3JILzE (ORCPT
+	id S1753445Ab3JIL6j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 07:58:39 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:60389 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752608Ab3JIL6g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 07:55:04 -0400
-Date: 9 Oct 2013 07:55:02 -0400
-Message-ID: <20131009115502.16230.qmail@science.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: 3.11.4: kernel BUG at fs/buffer.c:1268
-Cc: linux@horizon.com
+	Wed, 9 Oct 2013 07:58:36 -0400
+MIME-Version: 1.0
+In-Reply-To: <1381235122-23730-1-git-send-email-christian.ruppert@abilis.com>
+References: <20131008122145.GA21985@ab42.lan>
+	<1381235122-23730-1-git-send-email-christian.ruppert@abilis.com>
+Date: Wed, 9 Oct 2013 13:58:35 +0200
+Message-ID: <CACRpkdafaNE_fgiq8iW=_gT5gDVC_H8m-+0dfpunhAantLdJwQ@mail.gmail.com>
+Subject: Re: [PATCH 01/03] Make non-linear GPIO ranges accesible from gpiolib
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Christian Ruppert <christian.ruppert@abilis.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Patrice CHOTARD <patrice.chotard@st.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Sascha Leuenberger <sascha.leuenberger@abilis.com>,
+        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a newly built machine (although out of "tested" parts), so RAM
-problems are not unthinkable, but I had the chance to capture this so
-it seemed worth reporting.
+On Tue, Oct 8, 2013 at 2:25 PM, Christian Ruppert
+<christian.ruppert@abilis.com> wrote:
 
-i7-2xxx CPU, 8GB RAM, file system is ext4 on RAID-1.
-The local patches are to a char device driver (remote control/rf
-subsystem) that isn't even active ATM.
+> This patch adds the infrastructure required to register non-linear gpio
+> ranges through gpiolib and the standard GPIO device tree bindings.
+>
+> Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
 
-The BUG, BTW, is
-static inline void check_irqs_on(void)
-{
-#ifdef irqs_disabled
-        BUG_ON(irqs_disabled());
-#endif
-}
+I understand the goal of this patch, and why you want it this way,
+but it needs some scrutiny, especially from the device tree people.
 
-I'm not sure which config options are most important.
-One that comes to mind is CONFIG_PREEMPT_VOLUNTARY=y
+>  Here, a single GPIO controller has GPIOs 0..9 routed to pin controller
+>  pinctrl1's pins 20..29, and GPIOs 10..19 routed to pin controller pinctrl2's
+>  pins 50..59.
+
+(Yes this is previous text)
+
+This is quite straight-forward since it deals with a very definitive
+coupling of a physical pin and a GPIO line.
+
+> +In addition, named groups of pins can be mapped to pin groups of a given
+> +pin controller using the gpio-ranges property as described below:
+> +
+> +       gpio-range-list ::= <single-gpio-range> [gpio-range-list]
+> +       single-gpio-range ::= <numeric-gpio-range> | <named-gpio-range>
+> +       numeric-gpio-range ::=
+> +                       <pinctrl-phandle> <gpio-base> <pinctrl-base> <count>
+> +       named-gpio-range ::= <pinctrl-phandle> <gpio-base> '<0 0>'
+> +       pinctrl-phanle : phandle to pin controller node.
+
+phanle really?
+
+> +       gpio-base : Base GPIO ID in the GPIO controller
+> +       pinctrl-base : Base pinctrl pin ID in the pin controller
+> +       count : The number of GPIOs/pins in this range
+(...)
+
+You did not describe here that count can be 0 if a group is
+given and that 0 is a valid count for that case.
+
+> +In this case, the property gpio-ranges-group-names contains one string for
+> +every single-gpio-range in gpio-ranges:
+> +       gpiorange-names-list ::= <gpiorange-name> [gpiorange-names-list]
+> +       gpiorange-name : Name of the pingroup associated to the GPIO range in
+> +                       the respective pin controller.
+(...)
+> +Example:
+> +
+> +       gpio_pio_i: gpio-controller@14B0 {
+> +               #gpio-cells = <2>;
+> +               compatible = "fsl,qe-pario-bank-e", "fsl,qe-pario-bank";
+> +               reg = <0x1480 0x18>;
+> +               gpio-controller;
+> +               gpio-ranges =                   <&pinctrl1 0 20 10>,
+> +                                               <&pinctrl2 10 0 0>,
+> +                                               <&pinctrl1 15 0 10>,
+> +                                               <&pinctrl2 25 0 0>;
+> +               gpio-ranges-group-names =       "",
+> +                                               "foo",
+> +                                               "",
+> +                                               "bar";
+> +       };
+
+And here, I get a bit uneasy as I remember Stephen's stance that such
+groups must be a physical property of the controller. I am generally a
+bit soft on that, but that is from a driver point of view, and describing
+hardware in the devicetree must be reflecting an objective view of the
+hardware, not how the particular driver is written for Linux.
+
+This is very questionable :-/
+
+Are you sure this is useable on Windows and OpenBSD without
+first verbatim copying the structure of the Linux pinctrl driver?
+
+I am not 100% sure of this case but maybe I will come to realize
+as I read the rest of the patches...
+
+Empty group names for "anonymous" groups (I guess these become
+linear then?) is really looking strange. They are empty strings with
+a semantic effect, that is quite disturbing. but I don't know a better
+way either.
+
+Clarify that the number of ranges names must match the array of
+ranges, and that if you don't supply group names all ranges
+will be linear.
 
 
-[88395.501925] ------------[ cut here ]------------
-[88395.501952] kernel BUG at fs/buffer.c:1268!
-[88395.501970] invalid opcode: 0000 [#1] SMP 
-[88395.501992] Modules linked in: battery nfsd exportfs fuse ftdi_sio usbserial r8169 aesni_intel aes_x86_64 ablk_helper cryptd iTCO_wdt lrw gf128mul glue_helper mii
-[88395.502089] CPU: 0 PID: 4971 Comm: iceweasel Not tainted 3.11.4-00008-g9838365 #97
-[88395.502125] Hardware name: Gigabyte Technology Co., Ltd. Z68A-D3H-B3/Z68A-D3H-B3, BIOS F13 03/20/2012
-[88395.502168] task: ffff880210b62080 ti: ffff8802014cc000 task.ti: ffff8802014cc000
-[88395.502194] RIP: 0010:[<ffffffff810e115a>]  [<ffffffff810e115a>] check_irqs_on+0xb/0xf
-[88395.502226] RSP: 0018:ffff8802014cd6e0  EFLAGS: 00210046
-[88395.502245] RAX: 0000000000200086 RBX: 0000000000001000 RCX: ffff8802146e8000
-[88395.502269] RDX: 0000000000001000 RSI: 0000000000d00206 RDI: ffff8802165789c0
-[88395.502293] RBP: ffff8802014cd6e0 R08: 00000000000001a3 R09: 0000000000000003
-[88395.502317] R10: 0000000000000003 R11: ffff88020b265ae0 R12: ffff8802165789c0
-[88395.502341] R13: 0000000000d00206 R14: ffff88020092c920 R15: ffff880216ace400
-[88395.502365] FS:  0000000000000000(0000) GS:ffff88021fa00000(0000) knlGS:0000000000000000
-[88395.502393] CS:  0010 DS: 002b ES: 002b CR0: 0000000080050033
-[88395.502413] CR2: 0000000000000000 CR3: 0000000001614000 CR4: 00000000000407f0
-[88395.502436] Stack:
-[88395.502444]  ffff8802014cd750 ffffffff810e136d ffffea000305e900 ffff8802014cd7a8
-[88395.502473]  0000000000200292 ffff8802014cd788 ffff8802014cd720 ffffffff811af692
-[88395.502501]  ffff8802014cd750 ffffffff8108aeba 0000000000000010 0000000000001000
-[88395.502530] Call Trace:
-[88395.502541]  [<ffffffff810e136d>] __find_get_block+0x1c/0x176
-[88395.502563]  [<ffffffff811af692>] ? radix_tree_lookup_slot+0xe/0x10
-[88395.502586]  [<ffffffff8108aeba>] ? find_get_page+0x41/0x63
-[88395.502606]  [<ffffffff810e24cd>] __getblk+0x20/0x27e
-[88395.502625]  [<ffffffff8111411d>] __ext4_get_inode_loc+0xf5/0x32f
-[88395.502646]  [<ffffffff81115ba7>] ext4_get_inode_loc+0x29/0x2e
-[88395.502667]  [<ffffffff81117347>] ext4_reserve_inode_write+0x1f/0x7a
-[88395.502690]  [<ffffffff811173d8>] ext4_mark_inode_dirty+0x36/0x19b
-[88395.502713]  [<ffffffff8113f773>] ? jbd2_journal_dirty_metadata+0x1b5/0x1f0
-[88395.502737]  [<ffffffff81128f99>] __ext4_ext_dirty+0x5a/0x63
-[88395.502758]  [<ffffffff8112a67b>] ext4_ext_insert_extent+0xd8f/0xdcf
-[88395.502780]  [<ffffffff8112c9ab>] ext4_ext_map_blocks+0xc68/0xe01
-[88395.502802]  [<ffffffff81115607>] ext4_map_blocks+0x27b/0x42b
-[88395.502823]  [<ffffffff811178f5>] ext4_writepages+0x3b8/0x814
-[88395.502844]  [<ffffffff81436b02>] ? _raw_spin_lock+0x9/0xb
-[88395.502865]  [<ffffffff81092550>] do_writepages+0x19/0x27
-[88395.502884]  [<ffffffff8108baf1>] __filemap_fdatawrite_range+0x50/0x52
-[88395.502907]  [<ffffffff8108bb0a>] filemap_flush+0x17/0x19
-[88395.502926]  [<ffffffff81115a21>] ext4_alloc_da_blocks+0x21/0x23
-[88395.502947]  [<ffffffff81110c0b>] ext4_release_file+0x20/0x95
-[88395.502968]  [<ffffffff810c14cd>] __fput+0xf2/0x1cb
-[88395.502985]  [<ffffffff810c15d2>] ____fput+0x9/0xb
-[88395.503003]  [<ffffffff81041d3a>] task_work_run+0x78/0x8e
-[88395.503023]  [<ffffffff8102ea67>] do_exit+0x378/0x841
-[88395.503042]  [<ffffffff81036712>] ? __sigqueue_free+0x34/0x37
-[88395.503062]  [<ffffffff81036b15>] ? __dequeue_signal+0xa8/0xfd
-[88395.503083]  [<ffffffff8102fa32>] do_group_exit+0x3f/0x95
-[88395.503103]  [<ffffffff81038d53>] get_signal_to_deliver+0x423/0x443
-[88395.503125]  [<ffffffff81001cf0>] do_signal+0x44/0x5c3
-[88395.503144]  [<ffffffff81037d59>] ? do_send_sig_info+0x58/0x6d
-[88395.503165]  [<ffffffff81002294>] do_notify_resume+0x25/0x58
-[88395.503185]  [<ffffffff814376e0>] int_signal+0x12/0x17
-[88395.503203] Code: 80 4d 00 20 4d 8b 6d 08 48 ff c3 4c 3b 6d d0 75 b7 5a 4c 89 e0 5b 41 5c 41 5d 41 5e 41 5f 5d c3 55 48 89 e5 9c 58 f6 c4 02 75 02 <0f> 0b 5d c3 55 48 81 fa ff 0f 00 00 48 89 e5 48 89 77 10 76 02 
-[88395.503336] RIP  [<ffffffff810e115a>] check_irqs_on+0xb/0xf
-[88395.503356]  RSP <ffff8802014cd6e0>
-[88395.511861] ---[ end trace 2480df9f92ab983b ]---
-[88395.511862] Fixing recursive fault but reboot is needed!
+> -               ret = gpiochip_add_pin_range(chip,
+> -                                            pinctrl_dev_get_devname( pctldev),
+> -                                            pinspec.args[0],
+> -                                            pinspec.args[1],
+> -                                            pinspec.args[2]);
+> -
+> -               if (ret)
+> -                       break;
+> +               if (pinspec.args[2]) {
+> +                       /* npins != 0: linear range */
+> +                       ret = gpiochip_add_pin_range(chip,
+> +                                       pinctrl_dev_get_devname(pctldev),
+> +                                       pinspec.args[0],
+> +                                       pinspec.args[1],
+> +                                       pinspec.args[2]);
+> +                       if (ret)
+> +                               break;
+> +               } else {
+> +                       /* npins == 0: special range */
+> +                       if (pinspec.args[1]) {
+> +                               pr_err("%s: Illegal gpio-range format.\n",
+> +                                       np->full_name);
+> +                               break;
+> +                       }
+> +                       ret = of_property_read_string_index(np,
+> +                                               "gpio-ranges-group-names",
+> +                                               index, &name);
+> +                       if (ret)
+> +                               break;
+> +
+> +                       ret = gpiochip_add_pingroup_range(chip, pctldev,
+> +                                               pinspec.args[0], name);
+> +                       if (ret)
+> +                               break;
+> +               }
 
+Here you just alter the runpath if the count argument is zero.
+
+Try to be more strict:
+
+- If the count argument is zero, the
+  gpio-ranges-group-names index *must* also be set to a non-empty
+  string.
+
+- If the count argument is non-zeo, the gpio-ranges-group-names
+  index *must* be an empty string, or the gpio-ranges-group-names
+  must be non-existant (you have to check for it's presence before
+  entering the iterating loop).
+
+Both above checks need to be implemented and proper
+error messages printed on detected errors.
+
+(...)
+> diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
+> index 2a00239..52e2e6f 100644
+> --- a/drivers/pinctrl/core.c
+> +++ b/drivers/pinctrl/core.c
+> @@ -456,6 +456,29 @@ struct pinctrl_dev *pinctrl_find_and_add_gpio_range(const char *devname,
+>  }
+>  EXPORT_SYMBOL_GPL(pinctrl_find_and_add_gpio_range);
+>
+> +int pinctrl_add_gpio_pingrp_range(struct pinctrl_dev *pctldev,
+> +                               struct pinctrl_gpio_range *range,
+> +                               char *pin_group)
+> +{
+> +       const struct pinctrl_ops *pctlops = pctldev->desc->pctlops;
+> +       int group_selector, ret;
+> +
+> +       group_selector = pinctrl_get_group_selector(pctldev, pin_group);
+> +       if (group_selector < 0)
+> +               return group_selector;
+> +
+> +       ret = pctlops->get_group_pins(pctldev, group_selector,
+> +                               &range->pins,
+> +                               &range->npins);
+> +       if (ret < 0)
+> +               return ret;
+> +
+> +       pinctrl_add_gpio_range(pctldev, range);
+> +       return 0;
+> +
+> +}
+> +EXPORT_SYMBOL_GPL(pinctrl_add_gpio_pingrp_range);
+
+I don't think this is very elegant. It's quite strange that the range partly
+populated from the GPIO side gets the corresponding pins filled
+in by this function. Can't we think about something more elegant?
+It reflects the strangeness I'm reacting to above I guess.
+
+Yours,
+Linus Walleij
