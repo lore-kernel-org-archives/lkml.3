@@ -1,124 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754498Ab3JIPS5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 11:18:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54548 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751831Ab3JIPS4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 11:18:56 -0400
-Date: Wed, 9 Oct 2013 17:18:53 +0200
-From: Jan Kara <jack@suse.cz>
-To: George Spelvin <linux@horizon.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Al Viro <viro@ZenIV.linux.org.uk>
-Subject: Re: 3.11.4: kernel BUG at fs/buffer.c:1268
-Message-ID: <20131009151853.GA25608@quack.suse.cz>
-References: <20131009115502.16230.qmail@science.horizon.com>
+	id S1753115Ab3JIPZf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 11:25:35 -0400
+Received: from co1ehsobe005.messaging.microsoft.com ([216.32.180.188]:27411
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751339Ab3JIPZd convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 11:25:33 -0400
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: -1
+X-BigFish: VPS-1(zz98dIc89bh1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzzz2fh95h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh906i1155h192ch)
+Date: Wed, 9 Oct 2013 08:25:27 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Mark Rutland <mark.rutland@arm.com>,
+        Michal Simek <michal.simek@xilinx.com>
+CC: "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@linaro.org>,
+        Michal Simek <michal.simek@xilinx.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 1/2] clk/zynq/clkc: Add 'fclk-enable' feature
+References: <1381242972-14752-1-git-send-email-soren.brinkmann@xilinx.com>
+ <20131008153816.GB4981@e106331-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
 Content-Disposition: inline
-In-Reply-To: <20131009115502.16230.qmail@science.horizon.com>
+In-Reply-To: <20131008153816.GB4981@e106331-lin.cambridge.arm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <fe3858e7-e3e2-4806-aeca-a2a4676e09aa@CO1EHSMHS007.ehs.local>
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: xilinx.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 09-10-13 07:55:02, George Spelvin wrote:
-> This is a newly built machine (although out of "tested" parts), so RAM
-> problems are not unthinkable, but I had the chance to capture this so
-> it seemed worth reporting.
+On Tue, Oct 08, 2013 at 04:38:17PM +0100, Mark Rutland wrote:
+> On Tue, Oct 08, 2013 at 03:36:11PM +0100, Soren Brinkmann wrote:
+> > In some use cases Zynq's FPGA clocks are used as static clock
+> > generators for IP in the FPGA part of the SOC for which no Linux driver
+> > exists and would control those clocks. To avoid automatic
+> > gating of these clocks in such cases a new property - fclk-enable - is
+> > added to the clock controller's DT description to accomodate such use
+> > cases. It's value is a bitmask, where a set bit results in enabling
+> > the corresponding FCLK through the clkc.
+> > 
+> > FPGA clocks are handled following the rules below:
+> > 
+> > If an FCLK is not enabled by bootloaders, that FCLK will be disabled in
+> > Linux. Drivers can enable and control it through the CCF as usual.
+> > 
+> > If an FCLK is enabled by bootloaders AND the corresponding bit in the
+> > 'fclk-enable' DT property is set, that FCLK will be enabled by the clkc,
+> > resulting in an off by one reference count for that clock. Ensuring it
+> > will always be running.
+> > 
+> > The default value for 'fclk-enable' is '0xf' (all FCLK's enabled by the
+> > bootloader are enabled through the clkc.
 > 
-> i7-2xxx CPU, 8GB RAM, file system is ext4 on RAID-1.
-> The local patches are to a char device driver (remote control/rf
-> subsystem) that isn't even active ATM.
-> 
-> The BUG, BTW, is
-> static inline void check_irqs_on(void)
-> {
-> #ifdef irqs_disabled
->         BUG_ON(irqs_disabled());
-> #endif
-> }
-> 
-> I'm not sure which config options are most important.
-> One that comes to mind is CONFIG_PREEMPT_VOLUNTARY=y
-  This is really weird. We are delivering a signal to a task. While task is
-returning from kernel space we are running queued task works and one of
-that works is dropping last file reference. Ext4 then does some data
-flushing and at that point we find out irqs are disabled. It isn't really
-clear to me where in that call chain got irqs disabled. I went through it
-and didn't find any such place... If this is reproducible, there would be
-ways to debug this (like irq tracing). Otherwise I'm not sure... I'm CCing
-Al since he was digging in this code recently. Maybe he will have some
-idea.
+> Why? Juding by the diff that's not what the code currently does, so why
+> not leave it as 0, and only set it where required as a work-around?
+The default is set as described here:
+[...]
+> > +	ret = of_property_read_u32(np, "fclk-enable", &fclk_enable);
+> > +	if (ret)
+> > +		fclk_enable = 0xf;
+> > +
 
-								Honza 
- 
- 
-> [88395.501925] ------------[ cut here ]------------
-> [88395.501952] kernel BUG at fs/buffer.c:1268!
-> [88395.501970] invalid opcode: 0000 [#1] SMP 
-> [88395.501992] Modules linked in: battery nfsd exportfs fuse ftdi_sio usbserial r8169 aesni_intel aes_x86_64 ablk_helper cryptd iTCO_wdt lrw gf128mul glue_helper mii
-> [88395.502089] CPU: 0 PID: 4971 Comm: iceweasel Not tainted 3.11.4-00008-g9838365 #97
-> [88395.502125] Hardware name: Gigabyte Technology Co., Ltd. Z68A-D3H-B3/Z68A-D3H-B3, BIOS F13 03/20/2012
-> [88395.502168] task: ffff880210b62080 ti: ffff8802014cc000 task.ti: ffff8802014cc000
-> [88395.502194] RIP: 0010:[<ffffffff810e115a>]  [<ffffffff810e115a>] check_irqs_on+0xb/0xf
-> [88395.502226] RSP: 0018:ffff8802014cd6e0  EFLAGS: 00210046
-> [88395.502245] RAX: 0000000000200086 RBX: 0000000000001000 RCX: ffff8802146e8000
-> [88395.502269] RDX: 0000000000001000 RSI: 0000000000d00206 RDI: ffff8802165789c0
-> [88395.502293] RBP: ffff8802014cd6e0 R08: 00000000000001a3 R09: 0000000000000003
-> [88395.502317] R10: 0000000000000003 R11: ffff88020b265ae0 R12: ffff8802165789c0
-> [88395.502341] R13: 0000000000d00206 R14: ffff88020092c920 R15: ffff880216ace400
-> [88395.502365] FS:  0000000000000000(0000) GS:ffff88021fa00000(0000) knlGS:0000000000000000
-> [88395.502393] CS:  0010 DS: 002b ES: 002b CR0: 0000000080050033
-> [88395.502413] CR2: 0000000000000000 CR3: 0000000001614000 CR4: 00000000000407f0
-> [88395.502436] Stack:
-> [88395.502444]  ffff8802014cd750 ffffffff810e136d ffffea000305e900 ffff8802014cd7a8
-> [88395.502473]  0000000000200292 ffff8802014cd788 ffff8802014cd720 ffffffff811af692
-> [88395.502501]  ffff8802014cd750 ffffffff8108aeba 0000000000000010 0000000000001000
-> [88395.502530] Call Trace:
-> [88395.502541]  [<ffffffff810e136d>] __find_get_block+0x1c/0x176
-> [88395.502563]  [<ffffffff811af692>] ? radix_tree_lookup_slot+0xe/0x10
-> [88395.502586]  [<ffffffff8108aeba>] ? find_get_page+0x41/0x63
-> [88395.502606]  [<ffffffff810e24cd>] __getblk+0x20/0x27e
-> [88395.502625]  [<ffffffff8111411d>] __ext4_get_inode_loc+0xf5/0x32f
-> [88395.502646]  [<ffffffff81115ba7>] ext4_get_inode_loc+0x29/0x2e
-> [88395.502667]  [<ffffffff81117347>] ext4_reserve_inode_write+0x1f/0x7a
-> [88395.502690]  [<ffffffff811173d8>] ext4_mark_inode_dirty+0x36/0x19b
-> [88395.502713]  [<ffffffff8113f773>] ? jbd2_journal_dirty_metadata+0x1b5/0x1f0
-> [88395.502737]  [<ffffffff81128f99>] __ext4_ext_dirty+0x5a/0x63
-> [88395.502758]  [<ffffffff8112a67b>] ext4_ext_insert_extent+0xd8f/0xdcf
-> [88395.502780]  [<ffffffff8112c9ab>] ext4_ext_map_blocks+0xc68/0xe01
-> [88395.502802]  [<ffffffff81115607>] ext4_map_blocks+0x27b/0x42b
-> [88395.502823]  [<ffffffff811178f5>] ext4_writepages+0x3b8/0x814
-> [88395.502844]  [<ffffffff81436b02>] ? _raw_spin_lock+0x9/0xb
-> [88395.502865]  [<ffffffff81092550>] do_writepages+0x19/0x27
-> [88395.502884]  [<ffffffff8108baf1>] __filemap_fdatawrite_range+0x50/0x52
-> [88395.502907]  [<ffffffff8108bb0a>] filemap_flush+0x17/0x19
-> [88395.502926]  [<ffffffff81115a21>] ext4_alloc_da_blocks+0x21/0x23
-> [88395.502947]  [<ffffffff81110c0b>] ext4_release_file+0x20/0x95
-> [88395.502968]  [<ffffffff810c14cd>] __fput+0xf2/0x1cb
-> [88395.502985]  [<ffffffff810c15d2>] ____fput+0x9/0xb
-> [88395.503003]  [<ffffffff81041d3a>] task_work_run+0x78/0x8e
-> [88395.503023]  [<ffffffff8102ea67>] do_exit+0x378/0x841
-> [88395.503042]  [<ffffffff81036712>] ? __sigqueue_free+0x34/0x37
-> [88395.503062]  [<ffffffff81036b15>] ? __dequeue_signal+0xa8/0xfd
-> [88395.503083]  [<ffffffff8102fa32>] do_group_exit+0x3f/0x95
-> [88395.503103]  [<ffffffff81038d53>] get_signal_to_deliver+0x423/0x443
-> [88395.503125]  [<ffffffff81001cf0>] do_signal+0x44/0x5c3
-> [88395.503144]  [<ffffffff81037d59>] ? do_send_sig_info+0x58/0x6d
-> [88395.503165]  [<ffffffff81002294>] do_notify_resume+0x25/0x58
-> [88395.503185]  [<ffffffff814376e0>] int_signal+0x12/0x17
-> [88395.503203] Code: 80 4d 00 20 4d 8b 6d 08 48 ff c3 4c 3b 6d d0 75 b7 5a 4c 89 e0 5b 41 5c 41 5d 41 5e 41 5f 5d c3 55 48 89 e5 9c 58 f6 c4 02 75 02 <0f> 0b 5d c3 55 48 81 fa ff 0f 00 00 48 89 e5 48 89 77 10 76 02 
-> [88395.503336] RIP  [<ffffffff810e115a>] check_irqs_on+0xb/0xf
-> [88395.503356]  RSP <ffff8802014cd6e0>
-> [88395.511861] ---[ end trace 2480df9f92ab983b ]---
-> [88395.511862] Fixing recursive fault but reboot is needed!
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+The default has been chosen this way, because it avoids trouble with
+customers. Customers expect the FPGA clocks to be running, once they
+configured them in the FPGA tools. If Linux gates them off for some
+reason, it creates confusion and often ends up in customer support.
+But in general I agree. It is kind of a work around and having zero as
+default would be desirable. I'd leave this to Michal.
+
+	Sören
+
+
