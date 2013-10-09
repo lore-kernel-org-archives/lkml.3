@@ -1,66 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757200Ab3JIKOy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 06:14:54 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:61143 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757114Ab3JIKOx (ORCPT
+	id S1757212Ab3JIKPQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 06:15:16 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:59158 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752735Ab3JIKPO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 06:14:53 -0400
-Date: Wed, 9 Oct 2013 11:14:48 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Mark Salter <msalter@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>
-Subject: Re: [PATCH] arm64: add PAGE_ALIGNED_DATA to linker script
-Message-ID: <20131009101447.GC5985@mudshark.cambridge.arm.com>
-References: <1381264659-11132-1-git-send-email-msalter@redhat.com>
+	Wed, 9 Oct 2013 06:15:14 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
+Message-ID: <52552C9F.2030404@jp.fujitsu.com>
+Date: Wed, 09 Oct 2013 19:14:55 +0900
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1381264659-11132-1-git-send-email-msalter@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alexey Dobriyan <adobriyan@gmail.com>
+CC: Michael Holzheu <holzheu@linux.vnet.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Vivek Goyal <vgoyal@redhat.com>, Jan Willeke <willeke@de.ibm.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, kexec@lists.infradead.org
+Subject: Re: mmap for /proc/vmcore broken since 3.12-rc1
+References: <20131002140356.63706540@holzheu>	<524D0ADF.2010507@jp.fujitsu.com>	<52521FA5.3040101@jp.fujitsu.com> <CACVxJT8S7kA92=80DWVmVJJvbnaQ6WkyvsiFq4wP37WHV=tfuA@mail.gmail.com>
+In-Reply-To: <CACVxJT8S7kA92=80DWVmVJJvbnaQ6WkyvsiFq4wP37WHV=tfuA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 08, 2013 at 09:37:39PM +0100, Mark Salter wrote:
-> The arm64 linker script doesn't use the PAGE_ALIGNED_DATA macro which
-> leads to a ".data..page_aligned" section being placed between the end
-> of .data and start of .bss:
-> 
->  % readelf -e vmlinux
->    ...
->  Section to Segment mapping:
->   Segment Sections...
->    00     .head.text .text .text.init .rodata __ksymtab __ksymtab_gpl \
->           __ksymtab_strings __param __modver __ex_table .notes \
->           .init.text .init.data .data..percpu .data .data..page_aligned .bss
-> 
-> This causes problems for the EFI stub which may have to relocate the
-> kernel image based on stext and _edata symbols.
-> 
-> This patch adds PAGE_ALIGNED_DATA() to the linker script inside the
-> the .data section.
-> 
-> Signed-off-by: Mark Salter <msalter@redhat.com>
-> ---
->  arch/arm64/kernel/vmlinux.lds.S | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/arch/arm64/kernel/vmlinux.lds.S b/arch/arm64/kernel/vmlinux.lds.S
-> index f8ab9d8..e441556 100644
-> --- a/arch/arm64/kernel/vmlinux.lds.S
-> +++ b/arch/arm64/kernel/vmlinux.lds.S
-> @@ -110,6 +110,7 @@ SECTIONS
->  		 */
->  		INIT_TASK_DATA(THREAD_SIZE)
->  		NOSAVE_DATA
-> +		PAGE_ALIGNED_DATA(PAGE_SIZE)
->  		CACHELINE_ALIGNED_DATA(64)
->  		READ_MOSTLY_DATA(64)
+Hello,
 
-Can we just replace this chunk with RW_DATA_SECTION(64, PAGE_SIZE,
-THREAD_SIZE) instead?
+(2013/10/08 21:49), Alexey Dobriyan wrote:
+> On Mon, Oct 7, 2013 at 5:42 AM, HATAYAMA Daisuke
+> <d.hatayama@jp.fujitsu.com> wrote:
+>
+>> +static unsigned long
+>> +get_unmapped_area_vmcore(struct file *filp, unsigned long addr,
+>> +                        unsigned long len, unsigned long pgoff,
+>> +                        unsigned long flags)
+>> +{
+>> +#ifdef CONFIG_MMU
+>> +       return current->mm->get_unmapped_area(filp, addr, len, pgoff,
+>> flags);
+>> +#else
+>> +       return -EIO;
+>> +#endif
+>> +}
+>> +
+>>   static const struct file_operations proc_vmcore_operations = {
+>>          .read           = read_vmcore,
+>>          .llseek         = default_llseek,
+>>          .mmap           = mmap_vmcore,
+>> +       .get_unmapped_area = get_unmapped_area_vmcore,
+>
+> I think current->mm->get_unmapped_area should be used by core proc code.
 
-Will
+What do you actually suggest here? You mean moving this code in proc code?
+I don't think you suggest so.
+
+> ENOMEM bug looks unrelated though.
+>
+
+Next step I'll do is to look into vm_unmapped_region() that looks for
+for a region fit to a given mmap request and returns its address.
+In particular, I'll focus on when vm_unmapped_region() could return
+kernel-space address.
+
+-- 
+Thanks.
+HATAYAMA, Daisuke
+
