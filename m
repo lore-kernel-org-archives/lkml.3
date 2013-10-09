@@ -1,64 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756067Ab3JIXV6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 19:21:58 -0400
-Received: from smtprelay0008.hostedemail.com ([216.40.44.8]:37226 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752515Ab3JIXV5 (ORCPT
+	id S1756883Ab3JIXWx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 19:22:53 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:50405 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752343Ab3JIXWw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 19:21:57 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:3874:4321:5007:6119:7652:10004:10400:10848:11026:11232:11658:11914:12043:12296:12438:12517:12519:12740:13069:13161:13163:13229:13311:13357,0,RBL:none,CacheIP:none,Bay
-X-HE-Tag: brush99_84d6509417528
-X-Filterd-Recvd-Size: 2187
-Message-ID: <1381360911.2050.47.camel@joe-AO722>
-Subject: Re: [PATCH v3a] vsprintf: Check real user/group id for %pK
-From: Joe Perches <joe@perches.com>
-To: Ryan Mallon <rmallon@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, eldad@fogrefinery.com,
-        Jiri Kosina <jkosina@suse.cz>, jgunthorpe@obsidianresearch.com,
-        Dan Rosenberg <dan.j.rosenberg@gmail.com>,
-        Kees Cook <keescook@chromium.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        George Spelvin <linux@horizon.com>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 09 Oct 2013 16:21:51 -0700
-In-Reply-To: <5255E446.2000400@gmail.com>
-References: <5255D023.2030907@gmail.com>
-	 <1381356014.2050.28.camel@joe-AO722> <5255D2FD.6050705@gmail.com>
-	 <1381356861.2050.33.camel@joe-AO722> <5255D7D4.8050204@gmail.com>
-	 <1381358030.2050.36.camel@joe-AO722> <5255DBD8.30005@gmail.com>
-	 <1381360187.2050.44.camel@joe-AO722> <5255E446.2000400@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 9 Oct 2013 19:22:52 -0400
+MIME-Version: 1.0
+In-Reply-To: <1381360387-27535-1-git-send-email-geyslan@gmail.com>
+References: <1381360387-27535-1-git-send-email-geyslan@gmail.com>
+From: Felipe Pena <felipensp@gmail.com>
+Date: Wed, 9 Oct 2013 20:22:29 -0300
+Message-ID: <CA+5g0SKT+Zu9148eME=u=g5MWJ6mayE5S1xU319Vga3YiZK7YQ@mail.gmail.com>
+Subject: Re: [Kernel-BR] [PATCH] btrfs: Fix memory leakage in the tree-log.c
+To: kernel-br <kernel-br@googlegroups.com>
+Cc: chris.mason@fusionio.com, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "Geyslan G. Bem" <geyslan@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-10-10 at 10:18 +1100, Ryan Mallon wrote:
-> On 10/10/13 10:09, Joe Perches wrote:
-> > Do the in_irq tests only when kptr_restrict is 1.
-> > Document the %pK mechanism in vsnprintf
-> > Add missing documentation for %pV and %pNF too
-> 
-> I really did mean post a follow-up/separate patch, not a different
-> version of mine.
+Hi,
 
-I think that's not the right thing to do.
-There's no good reason to have multiple commits
-for the same content.
+On Wed, Oct 9, 2013 at 8:13 PM, Geyslan G. Bem <geyslan@gmail.com> wrote:
+> In some cases, add_inode_ref() is returning without freeing
+> the 'name' pointer.
+>
+> Added bail out to explicitly call kfree when necessary.
+>
+> Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
+> ---
+>  fs/btrfs/tree-log.c | 13 ++++++++++---
+>  1 file changed, 10 insertions(+), 3 deletions(-)
+>
+> diff --git a/fs/btrfs/tree-log.c b/fs/btrfs/tree-log.c
+> index 79f057c..37d32c3 100644
+> --- a/fs/btrfs/tree-log.c
+> +++ b/fs/btrfs/tree-log.c
+> @@ -1170,13 +1170,18 @@ static noinline int add_inode_ref(struct btrfs_trans_handle *trans,
+>                         if (!dir)
+>                                 dir = read_one_inode(root, parent_objectid);
+>                         if (!dir)
+> -                               return -ENOENT;
+> +                       {
+> +                               ret = -ENOENT;
+> +                               goto bail;
+> +                       }
 
-And almost all of that is actually stuff I wrote.
-Your content there is the cred checks.
-
-> > +			cred = current_cred();
-> > +			if (!has_capability_noaudit(current, CAP_SYSLOG) ||
-> > +			    !uid_eq(cred->euid, cred->uid) ||
-> > +			    !gid_eq(cred->egid, cred->gid))
+No braces required here.
 
 
+>                 } else {
+>                         ret = ref_get_fields(eb, ref_ptr, &namelen, &name,
+>                                              &ref_index);
+>                 }
+>                 if (ret)
+> -                       return ret;
+> +               {
+> +                       goto bail;
+> +               }
+>
+
+Ditto.
+
+>                 /* if we already have a perfect match, we're done */
+>                 if (!inode_in_dir(root, path, btrfs_ino(dir), btrfs_ino(inode),
+> @@ -1214,7 +1219,6 @@ static noinline int add_inode_ref(struct btrfs_trans_handle *trans,
+>                 }
+>
+>                 ref_ptr = (unsigned long)(ref_ptr + ref_struct_size) + namelen;
+> -               kfree(name);
+>                 if (log_ref_ver) {
+>                         iput(dir);
+>                         dir = NULL;
+> @@ -1227,6 +1231,9 @@ out:
+>         btrfs_release_path(path);
+>         iput(dir);
+>         iput(inode);
+> +bail:
+> +       if (name)
+> +               kfree(name);
+>         return ret;
+>  }
+>
+> --
+> 1.8.4
+>
+> --
+> Você está recebendo esta mensagem porque se inscreveu no grupo "Kernel Brasil" dos Grupos do Google.
+> Para cancelar a inscrição neste grupo e parar de receber seus e-mails, envie um e-mail para kernel-br+unsubscribe@googlegroups.com.
+> Para postar neste grupo, envie um e-mail para kernel-br@googlegroups.com.
+> Para ver esta discussão na web, acesse https://groups.google.com/d/msgid/kernel-br/1381360387-27535-1-git-send-email-geyslan%40gmail.com.
+> Para obter mais opções, acesse https://groups.google.com/groups/opt_out.
+
+
+
+-- 
+Regards,
+Felipe Pena
