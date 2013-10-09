@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932133Ab3JIUvI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 16:51:08 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:19220 "EHLO SMTP.CITRIX.COM"
+	id S932115Ab3JIUvG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 16:51:06 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:28260 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754291Ab3JIUta (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755608Ab3JIUta (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 Oct 2013 16:49:30 -0400
 X-IronPort-AV: E=Sophos;i="4.90,1066,1371081600"; 
-   d="scan'208";a="62111339"
+   d="scan'208";a="62111340"
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 To: <xen-devel@lists.xensource.com>
 CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <konrad.wilk@oracle.com>, <Stefano.Stabellini@eu.citrix.com>,
         <Ian.Campbell@citrix.com>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v8 05/17] xen: make xen_create_contiguous_region return the dma address
-Date: Wed, 9 Oct 2013 21:48:18 +0100
-Message-ID: <1381351710-1876-5-git-send-email-stefano.stabellini@eu.citrix.com>
+Subject: [PATCH v8 07/17] swiotlb-xen: introduce xen_swiotlb_set_dma_mask
+Date: Wed, 9 Oct 2013 21:48:20 +0100
+Message-ID: <1381351710-1876-7-git-send-email-stefano.stabellini@eu.citrix.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <alpine.DEB.2.02.1310092109190.26077@kaball.uk.xensource.com>
 References: <alpine.DEB.2.02.1310092109190.26077@kaball.uk.xensource.com>
@@ -27,92 +27,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Modify xen_create_contiguous_region to return the dma address of the
-newly contiguous buffer.
+Implement xen_swiotlb_set_dma_mask, use it for set_dma_mask on arm.
 
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Reviewed-by: David Vrabel <david.vrabel@citrix.com>
-
-
-Changes in v4:
-- use virt_to_machine instead of virt_to_bus.
 ---
- arch/x86/xen/mmu.c        |    4 +++-
- drivers/xen/swiotlb-xen.c |    6 +++---
- include/xen/xen-ops.h     |    3 ++-
- 3 files changed, 8 insertions(+), 5 deletions(-)
+ arch/arm/xen/mm.c         |    1 +
+ drivers/xen/swiotlb-xen.c |   12 ++++++++++++
+ include/xen/swiotlb-xen.h |    2 ++
+ 3 files changed, 15 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index fdc3ba2..6c34d7c 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -2329,7 +2329,8 @@ static int xen_exchange_memory(unsigned long extents_in, unsigned int order_in,
- }
+diff --git a/arch/arm/xen/mm.c b/arch/arm/xen/mm.c
+index 68d082e..042c43a 100644
+--- a/arch/arm/xen/mm.c
++++ b/arch/arm/xen/mm.c
+@@ -103,6 +103,7 @@ static struct dma_map_ops xen_swiotlb_dma_ops = {
+ 	.map_page = xen_swiotlb_map_page,
+ 	.unmap_page = xen_swiotlb_unmap_page,
+ 	.dma_supported = xen_swiotlb_dma_supported,
++	.set_dma_mask = xen_swiotlb_set_dma_mask,
+ };
  
- int xen_create_contiguous_region(unsigned long vstart, unsigned int order,
--				 unsigned int address_bits)
-+				 unsigned int address_bits,
-+				 dma_addr_t *dma_handle)
- {
- 	unsigned long *in_frames = discontig_frames, out_frame;
- 	unsigned long  flags;
-@@ -2368,6 +2369,7 @@ int xen_create_contiguous_region(unsigned long vstart, unsigned int order,
- 
- 	spin_unlock_irqrestore(&xen_reservation_lock, flags);
- 
-+	*dma_handle = virt_to_machine(vstart).maddr;
- 	return success ? 0 : -ENOMEM;
- }
- EXPORT_SYMBOL_GPL(xen_create_contiguous_region);
+ int __init xen_mm_init(void)
 diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-index 1b2277c..b72f31c 100644
+index f0fc1a4..d8ef0bf 100644
 --- a/drivers/xen/swiotlb-xen.c
 +++ b/drivers/xen/swiotlb-xen.c
-@@ -126,6 +126,7 @@ xen_swiotlb_fixup(void *buf, size_t size, unsigned long nslabs)
- {
- 	int i, rc;
- 	int dma_bits;
-+	dma_addr_t dma_handle;
+@@ -608,3 +608,15 @@ xen_swiotlb_dma_supported(struct device *hwdev, u64 mask)
+ 	return xen_virt_to_bus(xen_io_tlb_end - 1) <= mask;
+ }
+ EXPORT_SYMBOL_GPL(xen_swiotlb_dma_supported);
++
++int
++xen_swiotlb_set_dma_mask(struct device *dev, u64 dma_mask)
++{
++	if (!dev->dma_mask || !xen_swiotlb_dma_supported(dev, dma_mask))
++		return -EIO;
++
++	*dev->dma_mask = dma_mask;
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(xen_swiotlb_set_dma_mask);
+diff --git a/include/xen/swiotlb-xen.h b/include/xen/swiotlb-xen.h
+index de8bcc6..7b64465 100644
+--- a/include/xen/swiotlb-xen.h
++++ b/include/xen/swiotlb-xen.h
+@@ -55,4 +55,6 @@ xen_swiotlb_dma_mapping_error(struct device *hwdev, dma_addr_t dma_addr);
+ extern int
+ xen_swiotlb_dma_supported(struct device *hwdev, u64 mask);
  
- 	dma_bits = get_order(IO_TLB_SEGSIZE << IO_TLB_SHIFT) + PAGE_SHIFT;
- 
-@@ -137,7 +138,7 @@ xen_swiotlb_fixup(void *buf, size_t size, unsigned long nslabs)
- 			rc = xen_create_contiguous_region(
- 				(unsigned long)buf + (i << IO_TLB_SHIFT),
- 				get_order(slabs << IO_TLB_SHIFT),
--				dma_bits);
-+				dma_bits, &dma_handle);
- 		} while (rc && dma_bits++ < max_dma_bits);
- 		if (rc)
- 			return rc;
-@@ -294,11 +295,10 @@ xen_swiotlb_alloc_coherent(struct device *hwdev, size_t size,
- 		*dma_handle = dev_addr;
- 	else {
- 		if (xen_create_contiguous_region(vstart, order,
--						 fls64(dma_mask)) != 0) {
-+						 fls64(dma_mask), dma_handle) != 0) {
- 			free_pages(vstart, order);
- 			return NULL;
- 		}
--		*dma_handle = virt_to_machine(ret).maddr;
- 	}
- 	memset(ret, 0, size);
- 	return ret;
-diff --git a/include/xen/xen-ops.h b/include/xen/xen-ops.h
-index d6fe062..9ef704d 100644
---- a/include/xen/xen-ops.h
-+++ b/include/xen/xen-ops.h
-@@ -20,7 +20,8 @@ int xen_setup_shutdown_event(void);
- 
- extern unsigned long *xen_contiguous_bitmap;
- int xen_create_contiguous_region(unsigned long vstart, unsigned int order,
--				unsigned int address_bits);
-+				unsigned int address_bits,
-+				dma_addr_t *dma_handle);
- 
- void xen_destroy_contiguous_region(unsigned long vstart, unsigned int order);
- 
++extern int
++xen_swiotlb_set_dma_mask(struct device *dev, u64 dma_mask);
+ #endif /* __LINUX_SWIOTLB_XEN_H */
 -- 
 1.7.2.5
 
