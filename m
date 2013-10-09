@@ -1,37 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757086Ab3JIMIH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 08:08:07 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:38253 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751735Ab3JIMIE (ORCPT
+	id S1757270Ab3JIMIU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 08:08:20 -0400
+Received: from eddie.linux-mips.org ([78.24.191.182]:35842 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754445Ab3JIMIR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 08:08:04 -0400
-Date: Wed, 9 Oct 2013 14:07:44 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH V6 0/8] perf tools: kcore improvements
-Message-ID: <20131009120744.GF3081@twins.programming.kicks-ass.net>
-References: <1381320078-16497-1-git-send-email-adrian.hunter@intel.com>
+	Wed, 9 Oct 2013 08:08:17 -0400
+Date: Wed, 9 Oct 2013 14:08:09 +0200
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Oleg Nesterov <oleg@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Anton Arapov <anton@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org
+Subject: [PATCH] UPROBES: Remove useless __weak attribute
+Message-ID: <20131009120809.GN1615@linux-mips.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1381320078-16497-1-git-send-email-adrian.hunter@intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 09, 2013 at 03:01:10PM +0300, Adrian Hunter wrote:
-> 	- workaround objdump difficulties with kcore
+<linux/uprobes.h> declares arch_uprobe_skip_sstep() as a weak function.
+But as there is no definition of generic version so when trying to build
+uprobes for an architecture that doesn't yet have a arch_uprobe_skip_sstep()
+implementation, the vmlinux will try to call arch_uprobe_skip_sstep()
+somehwere in Stupidhistan leading to a system crash.  We rather want a
+proper link error so remove arch_uprobe_skip_sstep().
 
-I've no idea, but given that've 'inlined' addr2line, should we also
-consider polling in objdump -- or at least that subset of functionality
-that we actually use?
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 
+ include/linux/uprobes.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
+index 2a9d75d..cec7397 100644
+--- a/include/linux/uprobes.h
++++ b/include/linux/uprobes.h
+@@ -124,7 +124,7 @@ extern int uprobe_post_sstep_notifier(struct pt_regs *regs);
+ extern int uprobe_pre_sstep_notifier(struct pt_regs *regs);
+ extern void uprobe_notify_resume(struct pt_regs *regs);
+ extern bool uprobe_deny_signal(void);
+-extern bool __weak arch_uprobe_skip_sstep(struct arch_uprobe *aup, struct pt_regs *regs);
++extern bool arch_uprobe_skip_sstep(struct arch_uprobe *aup, struct pt_regs *regs);
+ extern void uprobe_clear_state(struct mm_struct *mm);
+ #else /* !CONFIG_UPROBES */
+ struct uprobes_state {
