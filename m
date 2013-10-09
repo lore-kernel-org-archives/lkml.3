@@ -1,108 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755761Ab3JIPhQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 11:37:16 -0400
-Received: from relay.parallels.com ([195.214.232.42]:57761 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752211Ab3JIPhO (ORCPT
+	id S1755807Ab3JIPl3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 11:41:29 -0400
+Received: from mail-qe0-f49.google.com ([209.85.128.49]:57145 "EHLO
+	mail-qe0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752397Ab3JIPlZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 11:37:14 -0400
-Message-ID: <52557827.3020807@parallels.com>
-Date: Wed, 9 Oct 2013 19:37:11 +0400
-From: Maxim Patlasov <mpatlasov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	Wed, 9 Oct 2013 11:41:25 -0400
+Date: Wed, 9 Oct 2013 11:41:17 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
+        Jon Mason <jon.mason@intel.com>,
+        Matt Porter <mporter@kernel.crashing.org>, linux-pci@vger.kernel.org,
+        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
+        linux390@de.ibm.com, linux-s390@vger.kernel.org, x86@kernel.org,
+        linux-ide@vger.kernel.org, iss_storagedev@hp.com,
+        linux-nvme@lists.infradead.org, linux-rdma@vger.kernel.org,
+        netdev@vger.kernel.org, e1000-devel@lists.sourceforge.net,
+        linux-driver@qlogic.com,
+        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
+        "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH RFC 00/77] Re-design MSI/MSI-X interrupts enablement
+ pattern
+Message-ID: <20131009154117.GA22495@htj.dyndns.org>
+References: <1380840585.3419.50.camel@bwh-desktop.uk.level5networks.com>
+ <20131004082920.GA4536@dhcp-26-207.brq.redhat.com>
+ <1380922156.3214.49.camel@bwh-desktop.uk.level5networks.com>
+ <20131005142054.GA11270@dhcp-26-207.brq.redhat.com>
+ <1381009586.645.141.camel@pasglop>
+ <20131006060243.GB28142@dhcp-26-207.brq.redhat.com>
+ <1381040386.645.143.camel@pasglop>
+ <20131006071027.GA29143@dhcp-26-207.brq.redhat.com>
+ <20131007180111.GC2481@htj.dyndns.org>
+ <20131008122215.GA14389@dhcp-26-207.brq.redhat.com>
 MIME-Version: 1.0
-To: "miklos@szeredi.hu" <miklos@szeredi.hu>
-CC: fuse-devel <fuse-devel@lists.sourceforge.net>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [fuse-devel] [PATCH 2/4] fuse: writepages: crop secondary requests
-References: <20131002173701.31188.33547.stgit@dhcp-10-30-17-2.sw.ru> <20131002173823.31188.77171.stgit@dhcp-10-30-17-2.sw.ru> <20131003095749.GB14242@tucsk.piliscsaba.szeredi.hu> <524D70FE.5000701@parallels.com> <20131003151432.GE14242@tucsk.piliscsaba.szeredi.hu> <524D925A.8050402@parallels.com> <CAJfpeguzpFcZnZV7nfbeETRKcu9zn1AA--N6cOA2qF+zMgEANA@mail.gmail.com> <524D99BC.1030007@parallels.com> <525511CA.5010601@parallels.com>
-In-Reply-To: <525511CA.5010601@parallels.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.17.2]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131008122215.GA14389@dhcp-26-207.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/09/2013 12:20 PM, Maxim Patlasov wrote:
-> Hi Miklos,
->
-> On 10/03/2013 08:22 PM, Maxim Patlasov wrote:
->> On 10/03/2013 08:09 PM, Miklos Szeredi wrote:
->>> On Thu, Oct 3, 2013 at 5:50 PM, Maxim Patlasov <mpatlasov@parallels.com> wrote:
->>>> On 10/03/2013 07:14 PM, Miklos Szeredi wrote:
->>>>> On Thu, Oct 03, 2013 at 05:28:30PM +0400, Maxim Patlasov wrote:
->>>>>
->>>>>> 1. There is an in-flight primary request with a chain of secondary ones.
->>>>>> 2. User calls ftruncate(2) to extend file; fuse_set_nowrite() makes
->>>>>> fi->writectr negative and starts waiting for completion of that
->>>>>> in-flight request
->>>>>> 3. Userspace fuse daemon ACKs the request and fuse_writepage_end()
->>>>>> is called; it calls __fuse_flush_writepages(), but the latter does
->>>>>> nothing because fi->writectr < 0
->>>>>> 4. fuse_do_setattr() proceeds extending i_size and calling
->>>>>> __fuse_release_nowrite(). But now new (increased) i_size will be
->>>>>> used as 'crop' arg of __fuse_flush_writepages()
->>>>>>
->>>>>> stale data can leak to the server.
->>>>> So, lets do this then: skip fuse_flush_writepages() and call
->>>>> fuse_send_writepage() directly.  It will ignore the NOWRITE logic, but
->>>>> that's
->>>>> okay, this happens rarely and cannot happen more than once in a row.
->>>>>
->>>>> Does this look good?
->>>> Yes, but let's at least add a comment explaining why it's safe. There are
->>>> three different cases and what you write above explains only one of them:
->>>>
->>>> 1st case (trivial): there are no concurrent activities using
->>>> fuse_set/release_nowrite. Then we're on safe side because
->>>> fuse_flush_writepages() would call fuse_send_writepage() anyway.
->>>> 2nd case: someone called fuse_set_nowrite and it is waiting now for
->>>> completion of all in-flight requests. Here what you wrote about "happening
->>>> rarely and no more than once" is applicable.
->>>> 3rd case: someone (e.g. fuse_do_setattr()) is in the middle of
->>>> fuse_set_nowrite..fuse_release_nowrite section. The fact that
->>>> fuse_set_nowrite returned implies that all in-flight requests were completed
->>>> along with all its secondary requests (because we increment writectr for a
->>>> secondry before decrementing it for the primary -- that's how
->>>> fuse_writepage_end is implemeted). Further requests are blocked by negative
->>>> writectr. Hence there cannot be any in-flight requests and no invocations of
->>>> fuse_writepage_end while we're in fuse_set_nowrite..fuse_release_nowrite
->>>> section.
->>>>
->>>> It looks obvious now, but I'm not sure we'll able to recollect it later.
->>> Added your analysis as a comment and all patches pushed to writepages.v2.
->> Great! So I can proceed with re-basing the rest of
->> writeback-cache-policy pile to writepages.v2 soon.
-> More testing (with writeback-cache-policy enabled) revealed another bug
-> in that implementation. The problem deals with a write(2) extending i_size:
->
-> 1. There is an in-flight primary request now. It was properly cropped
-> against i_size which was valid then and is valid now. So there is a page
-> in the request that will be written to the server partially.
-> 2. write(2) to a distant offset makes a hole and extends i_size.
-> 3. write(2) populates that whole page by new user data.
-> 4. Writeback happens and fuse_writepage_in_flight() attaches a secondary
-> request to the primary request.
-> 5. fuse_writepage_end() for the primary request calls
-> fuse_send_writepage() with 'crop' arg equal to "inarg->offset +
-> inarg->size". But inarg->size was calculated before i_size extension, so
-> the second request will be cropped as well as primary. The result is
-> that the tail of secondary request populated by valid actual user data
-> won't be stored on the server.
->
-> The problem will be hidden by adding fuse_wait_on_page_writeback() to
-> write_begin fuse method, but the implementation will remain unsafe if we
-> believe a re-dirty may happen spontaneously. Straightforward solution
-> would be to crop secondary requests at the time of their queuing (using
-> actual i_size). Then fuse_send_writepage() would crop further only if
-> i_size shrunk. Please let me know if you come up with a smarter idea.
+Hello,
 
-Sorry for flooding. I've just realized that the problem is actually 
-solved (not "hidden") by adding fuse_wait_on_page_writeback() to 
-write_begin fuse method. No need to rework cropping mechanism again.
+On Tue, Oct 08, 2013 at 02:22:16PM +0200, Alexander Gordeev wrote:
+> If we talk about pSeries quota, then the current pSeries pci_enable_msix()
+> implementation is racy internally and could fail if the quota went down
+> *while* pci_enable_msix() is executing. In this case the loop will have to
+> exit rather than retry with a lower number (what number?).
 
-Thanks,
-Maxim
+Ah, okay, so that one is already broken.
+
+> In this regard the new scheme does not bring anything new and relies on
+> the fact this race does not hit and therefore does not worry.
+> 
+> If we talk about quota as it has to be, then yes - the loop scheme seems
+> more preferable.
+> 
+> Overall, looks like we just need to fix the pSeries implementation,
+> if the guys want it, he-he :)
+
+If we can't figure out a better interface for the retry case, I think
+what can really help is having a simple interface for the simpler
+cases.
+
+> > The problem case is where multiple msi(x) allocation fails completely
+> > because the global limit went down before inquiry and allocation.  In
+> > the loop based interface, it'd retry with the lower number.
+> 
+> I am probably missing something here. If the global limit went down before
+> inquiry then the inquiry will get what is available and try to allocate with
+> than number.
+
+Oh, I should have written between inquiry and allocation.  Sorry.
+
+Thanks.
+
+-- 
+tejun
