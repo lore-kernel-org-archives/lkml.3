@@ -1,65 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755665Ab3JIHzs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 03:55:48 -0400
-Received: from mga14.intel.com ([143.182.124.37]:28855 "EHLO mga14.intel.com"
+	id S1754806Ab3JIIDS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 04:03:18 -0400
+Received: from mail.abilis.ch ([195.70.19.74]:15472 "EHLO mail.abilis.ch"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751508Ab3JIHzo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 03:55:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1062,1371106800"; 
-   d="scan'208";a="372238702"
-Date: Wed, 9 Oct 2013 11:01:09 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Alexandre Courbot <gnurou@gmail.com>
-Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        rjw@rjwysocki.net, Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Alexandre Courbot <acourbot@nvidia.com>, Rob Landley <rob@landley.net>,
-        linux-acpi@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/5] gpiolib / ACPI: convert to gpiod interfaces
-Message-ID: <20131009080109.GT3521@intel.com>
-References: <1380639537-23406-1-git-send-email-mika.westerberg@linux.intel.com>
- <1380639537-23406-3-git-send-email-mika.westerberg@linux.intel.com>
- <CAAVeFuJZ3TwozZzpuHcYPDLjEsb2D_qvQADf85s3-eywYYHs8A@mail.gmail.com>
- <20131008084508.GI3521@intel.com>
- <20131008103625.GK3521@intel.com>
- <CAAVeFuJLyqHO+uNm-ehLm4QQU-ZyxsZ0KUG4uYSLvBtbvGQeeQ@mail.gmail.com>
+	id S1751831Ab3JIIDJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 04:03:09 -0400
+Date: Wed, 9 Oct 2013 10:02:41 +0200
+From: Christian Ruppert <christian.ruppert@abilis.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, alexander.stein@systec-electronic.com,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Noam Camus <noamc@ezchip.com>,
+        pierrick hascoet <pierrick.hascoet@abilis.com>
+Subject: Re: [PATCH REBASE] Add option to disable kernel compression
+Message-ID: <20131009080240.GA3721@ab42.lan>
+References: <2065777.DKEM6dSyjc@ws-stein>
+ <1381235612-23988-1-git-send-email-christian.ruppert@abilis.com>
+ <20131008122940.63aae6f1769a162eb8e5e602@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAAVeFuJLyqHO+uNm-ehLm4QQU-ZyxsZ0KUG4uYSLvBtbvGQeeQ@mail.gmail.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131008122940.63aae6f1769a162eb8e5e602@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 08, 2013 at 09:26:14AM -0700, Alexandre Courbot wrote:
-> On Tue, Oct 8, 2013 at 3:36 AM, Mika Westerberg
-> <mika.westerberg@linux.intel.com> wrote:
-> > On Tue, Oct 08, 2013 at 11:45:08AM +0300, Mika Westerberg wrote:
-> >> > I also wonder whether you could also avoid exporting acpi_get_gpiod*
-> >> > (which allow GPIO consumers to shortcut gpiolib) by implementing
-> >> > acpi_get_gpio* into the C file (maybe even using gpiod_get()). I see a
-> >> > "char *path" parameter though, so maybe that would not be possible at
-> >> > the moment.
-> >>
-> >> Good point, I'll check if we can do that.
-> >
-> > Looks like we can get rid of acpi_get_gpio() and acpi_get_gpiod() as there
-> > are no users for those outside gpiolib-acpi. I'm going to do that in the
-> > next revision.
+On Tue, Oct 08, 2013 at 12:29:40PM -0700, Andrew Morton wrote:
+> On Tue,  8 Oct 2013 14:33:32 +0200 Christian Ruppert <christian.ruppert@abilis.com> wrote:
 > 
-> That's good news. If you can make it such that ACPI GPIO consumers
-> don't need to include acpi_gpio.h anymore, then this would make my
-> day. :)
+> > Until now, kernel compression can only be disabled by deselecting
+> > HAVE_<compression> in the architecture Kconfig.
+> 
+> Scratching my head a bit.  There's no way of deselecting these things. 
+> I *think* you mean "by editing arch/xxx/Kconfig and removing all the
+> "select HAVE_KERNEL_<compression>" lines"?
 
-We can get rid of the whole apci_gpio.h eventually. But before doing that I
-would like to have something that supports both the ACPI way and gpiod way
-in v3.13 if possible.
+Exactly. I actually meant "not selecting" instead of deselecting. In
+practise this comes down to editing arch/xxx/Kconfig and removing (or
+adding) the respective HAVE_KERNEL_<compression> lines.
 
-Once we have gpiod_get_index() in mainline, we can convert the existing
-user to it and drop acpi_gpio.h completely.
+> > However, some
+> > users/platforms within the same architecture might want to use
+> > compression while others might want to disable it.
+> 
+> Why would anyone want to run an uncompressed kernel, btw?  Boot time?
+
+Originally, the patch was developed because we wanted to compress the
+kernel but other users of the ARC architecture didn't. We now have
+customers of both camps ourselves, some say they can boot faster with
+compression and some say they can boot faster without compression. This
+probably depends on things like the FLASH chip they use etc.
+
+> > This patch is a solution to the dilemma.
+> > 
+> > ...
+> >
+> > --- a/init/Kconfig
+> > +++ b/init/Kconfig
+> > @@ -118,7 +118,6 @@ config HAVE_KERNEL_LZ4
+> >  choice
+> >  	prompt "Kernel compression mode"
+> >  	default KERNEL_GZIP
+> > -	depends on HAVE_KERNEL_GZIP || HAVE_KERNEL_BZIP2 || HAVE_KERNEL_LZMA || HAVE_KERNEL_XZ || HAVE_KERNEL_LZO || HAVE_KERNEL_LZ4
+> >  	help
+> >  	  The linux kernel is a kind of self-extracting executable.
+> >  	  Several compression algorithms are available, which differ
+> > @@ -137,6 +136,13 @@ choice
+> >  
+> >  	  If in doubt, select 'gzip'
+> >  
+> > +config KERNEL_UNCOMPRESSED
+> > +	bool "No compression"
+> > +	help
+> > +	  No compression at all. The kernel is huge but the compression and
+> > +	  decompression times are zero.
+> > +	  This is usually not what you want.
+> > +
+> >  config KERNEL_GZIP
+> >  	bool "Gzip"
+> >  	depends on HAVE_KERNEL_GZIP
+> 
+> It's odd to create CONFIG_KERNEL_UNCOMPRESSED and not use it for
+> anything, but I guess Kconfig's `choice' forces this.
+
+I haven't found another way to do this but I'd be happy to send an
+update if someone can point me to a cleaner implementation.
+
+Greetings,
+  Christian
