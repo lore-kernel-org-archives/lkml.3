@@ -1,81 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756541Ab3JIWmk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 18:42:40 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:49616 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755204Ab3JIWmj (ORCPT
+	id S1756217Ab3JIWqO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 18:46:14 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:39211 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753662Ab3JIWqM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 18:42:39 -0400
-Message-ID: <5255DBD8.30005@gmail.com>
-Date: Thu, 10 Oct 2013 09:42:32 +1100
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Wed, 9 Oct 2013 18:46:12 -0400
+Date: Wed, 9 Oct 2013 15:46:04 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu, "David S. Miller" <davem@davemloft.net>,
+        Thomas Graf <tgraf@suug.ch>, Gao feng <gaofeng@cn.fujitsu.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        linux-decnet-user@lists.sourceforge.net, netdev@vger.kernel.org
+Subject: Re: [PATCH v2 tip/core/rcu 05/13] decnet: Apply rcu_access_pointer()
+ to avoid sparse false positive
+Message-ID: <20131009224604.GF5790@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20131009212920.GA15413@linux.vnet.ibm.com>
+ <1381354186-16285-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1381354186-16285-5-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20131009222842.GD11709@jtriplet-mobl1>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, eldad@fogrefinery.com,
-        Jiri Kosina <jkosina@suse.cz>, jgunthorpe@obsidianresearch.com,
-        Dan Rosenberg <dan.j.rosenberg@gmail.com>,
-        Kees Cook <keescook@chromium.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        George Spelvin <linux@horizon.com>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3] vsprintf: Check real user/group id for %pK
-References: <5255D023.2030907@gmail.com>	 <1381356014.2050.28.camel@joe-AO722> <5255D2FD.6050705@gmail.com>	 <1381356861.2050.33.camel@joe-AO722> <5255D7D4.8050204@gmail.com> <1381358030.2050.36.camel@joe-AO722>
-In-Reply-To: <1381358030.2050.36.camel@joe-AO722>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131009222842.GD11709@jtriplet-mobl1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13100922-3532-0000-0000-0000020CA6C2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/10/13 09:33, Joe Perches wrote:
-> On Thu, 2013-10-10 at 09:25 +1100, Ryan Mallon wrote:
+On Wed, Oct 09, 2013 at 03:28:42PM -0700, Josh Triplett wrote:
+> On Wed, Oct 09, 2013 at 02:29:38PM -0700, Paul E. McKenney wrote:
+> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > 
+> > The sparse checking for rcu_assign_pointer() was recently upgraded
+> > to reject non-__kernel address spaces.  This also rejects __rcu,
+> > which is almost always the right thing to do.  However, the use in
+> > dn_insert_route() is legitimate: It is assigning a pointer to an element
 > 
->> 	if (kptr_restrict && (in_irq() || in_serving_softirq() ||
->> 			      in_nmi())) {
->>
->> Is making sure that you don't have kernel code doing something like this:
->>
->> 	irqreturn_t some_irq_handler(int irq, void *data)
->> 	{
->> 		struct seq_file *seq = to_seq(data);
->>
->> 		seq_printf(seq, "value = %pK\n");
->> 		return IRQ_HANDLED;
->> 	}
->>
->> Because that obviously won't work when kptr_restrict=1 (because the
->> CAP_SYSLOG check is meaningless). However, the code is broken regardless
->> of the kptr_restrict value.
-> 
-> The only brokenness I see here is that the code doesn't pass
-> a pointer along with %pK
-> 
-> 		seq_printf(seq, "value of seq: %pK\n", seq);
-> 
->>  Since the default value of kptr_restrict is
->> 0, this kind of bug can go over-looked because the seq file will print
->> the pointer value correctly when kptr_restrict=0, and it will correctly
->> print 0's when kptr_restrict=2, but it will print 'pK-error' when
->> kptr_restrict=1. Doing the check in all cases makes it more likely that
->> bugs like this get found. In fact, doing something like:
->>
->> 	if (WARN_ON(in_irq() || in_serving_softirq() || in_nmi())) {
->>
->> Might be better, since that will print a stack-trace showing where the
->> offending vsprintf is.
-> 
-> WARN_ON would be potentially _very_ noisy.
-> Maybe a long period (once a day?) ratelimited dump_stack();
+> Nit: "uses ... are", not "use ... is". :)
 
-If it was noisy, it would indicate a bunch of broken kernel code which
-needs fixing :-). Anyway, this is really a separate issue to what I am
-trying to fix, which is why I left the original code intact. If you want
-to change it, post a follow-up patch.
+Don't I already have "use ... is"?
 
-~Ryan
+							Thanx, Paul
+
+> > from an RCU-protected list, and all elements of this list are already
+> > visible to caller.
+> > 
+> > This commit therefore silences this false positive by laundering the
+> > pointer using rcu_access_pointer() as suggested by Josh Triplett.
+> > 
+> > Reported-by: kbuild test robot <fengguang.wu@intel.com>
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > Cc: "David S. Miller" <davem@davemloft.net>
+> > Cc: Thomas Graf <tgraf@suug.ch>
+> > Cc: Gao feng <gaofeng@cn.fujitsu.com>
+> > Cc: Stephen Hemminger <shemminger@vyatta.com>
+> > Cc: linux-decnet-user@lists.sourceforge.net
+> > Cc: netdev@vger.kernel.org
+> 
+> With or without the above typo fix:
+> 
+> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+> 
+> > ---
+> >  net/decnet/dn_route.c | 5 +++--
+> >  1 file changed, 3 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/net/decnet/dn_route.c b/net/decnet/dn_route.c
+> > index fe32388ea24f..3b1357bcfc92 100644
+> > --- a/net/decnet/dn_route.c
+> > +++ b/net/decnet/dn_route.c
+> > @@ -345,7 +345,7 @@ static int dn_insert_route(struct dn_route *rt, unsigned int hash, struct dn_rou
+> >  			/* Put it first */
+> >  			*rthp = rth->dst.dn_next;
+> >  			rcu_assign_pointer(rth->dst.dn_next,
+> > -					   dn_rt_hash_table[hash].chain);
+> > +					   rcu_access_pointer(dn_rt_hash_table[hash].chain));
+> >  			rcu_assign_pointer(dn_rt_hash_table[hash].chain, rth);
+> >  
+> >  			dst_use(&rth->dst, now);
+> > @@ -358,7 +358,8 @@ static int dn_insert_route(struct dn_route *rt, unsigned int hash, struct dn_rou
+> >  		rthp = &rth->dst.dn_next;
+> >  	}
+> >  
+> > -	rcu_assign_pointer(rt->dst.dn_next, dn_rt_hash_table[hash].chain);
+> > +	rcu_assign_pointer(rt->dst.dn_next,
+> > +			   rcu_access_pointer(dn_rt_hash_table[hash].chain));
+> >  	rcu_assign_pointer(dn_rt_hash_table[hash].chain, rt);
+> >  
+> >  	dst_use(&rt->dst, now);
+> > -- 
+> > 1.8.1.5
+> > 
+> 
 
