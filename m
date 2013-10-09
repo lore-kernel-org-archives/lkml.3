@@ -1,166 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755692Ab3JIKfd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 06:35:33 -0400
-Received: from numidia.opendz.org ([98.142.220.152]:33809 "EHLO
-	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751611Ab3JIKf3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 06:35:29 -0400
-Date: Wed, 9 Oct 2013 11:35:21 +0100
-From: Djalal Harouni <tixxdz@opendz.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Andy Lutomirski <luto@amacapital.net>, Kees Cook <keescook@chromium.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        David Rientjes <rientjes@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        Djalal Harouni <tixxdz@gmail.com>
-Subject: Re: [PATCH v2 2/9] procfs: add proc_allow_access() to check if
- file's opener may access task
-Message-ID: <20131009103521.GA4108@dztty>
-References: <CALCETrVs2Nd82dpURQxAVetK814bAm8TvnSyA4e=YeTWxTFsmA@mail.gmail.com>
- <20131004191113.GA3916@dztty>
- <CALCETrVMBh0nNgpOHOMrsOjHez7NnCNbY5nHxeQ3RToP4nKO+A@mail.gmail.com>
- <20131004192712.GA4334@dztty>
- <CALCETrUuMRMgJ1OV3-ZRQ5wwzSQsdf9tKY9iKesk1QJPtj6-qw@mail.gmail.com>
- <20131004194142.GA4524@dztty>
- <CALCETrXghsx-2rK8QqgtfMaJJhkwcYgRMnqGQfKw-T3O7jBTUA@mail.gmail.com>
- <87fvsgy7cn.fsf@xmission.com>
- <CALCETrVFNcGtsm3N50sZRDWmBOJ3VWn=BidAOV4Q+eDwYhJ+vw@mail.gmail.com>
- <871u40r1v9.fsf@xmission.com>
+	id S1757000Ab3JIKjM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 06:39:12 -0400
+Received: from mga03.intel.com ([143.182.124.21]:55527 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751821Ab3JIKjL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 06:39:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,1062,1371106800"; 
+   d="scan'208";a="408201376"
+Message-ID: <5255320C.9020009@intel.com>
+Date: Wed, 09 Oct 2013 13:38:04 +0300
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <871u40r1v9.fsf@xmission.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jiri Olsa <jolsa@redhat.com>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH V5 3/9] perf tools: workaround objdump difficulties with
+ kcore
+References: <1381221956-16699-1-git-send-email-adrian.hunter@intel.com> <1381221956-16699-4-git-send-email-adrian.hunter@intel.com> <20131008140236.GD1348@krava.redhat.com> <525506C5.3020101@intel.com> <20131009101249.GC1005@krava.redhat.com>
+In-Reply-To: <20131009101249.GC1005@krava.redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 04, 2013 at 05:35:22PM -0700, Eric W. Biederman wrote:
-> Andy Lutomirski <luto@amacapital.net> writes:
+On 09/10/13 13:12, Jiri Olsa wrote:
+> On Wed, Oct 09, 2013 at 10:33:25AM +0300, Adrian Hunter wrote:
+>> On 08/10/13 17:02, Jiri Olsa wrote:
+>>> On Tue, Oct 08, 2013 at 11:45:50AM +0300, Adrian Hunter wrote:
+>>>> objdump fails to annotate module symbols when looking
+>>>> at kcore.  Workaround this by extracting object code
+>>>> from kcore and putting it in a temporary file for
+>>>> objdump to use instead.  The temporary file is created
+>>>> to look like kcore but contains only the function
+>>>> being disassembled.
+>>>
+>>> Excited to ses this one, but looks like I'm hitting some
+>>> issue.  All annotation starts for me like this:
+>>>
+>>>                                                                                                        ▒
+>>>        │              Disassembly of section load0:                                                            ▒
+>>>        │                                                                                                       ▒
+>>>        │              ffffffff815eee80 <load0>:                                                                ◆
+>>>   9.33 │ffffffff815eee80:   data32 data32 data32 xchg %ax,%ax                                                  
+>>>
+>>>
+>>> which does not seem right
+>>
+>> Can you tell me the commits of the kernel and perf tools you
+>> were using, plus the commands and what symbol it was?
 > 
-> > On Fri, Oct 4, 2013 at 3:55 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
-> >> Andy Lutomirski <luto@amacapital.net> writes:
-> >>
-> >>> On Fri, Oct 4, 2013 at 12:41 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
-> >>>> On Fri, Oct 04, 2013 at 12:32:09PM -0700, Andy Lutomirski wrote:
-> >>>>> On Fri, Oct 4, 2013 at 12:27 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
-> >>
-> >>>>> > So sorry Andy, I don't follow what you are describing.
-> >>>>>
-> >>>>> And what parameters are you passing to security_ptrace_access_check?
-> >>>>> It's supposed to be f_cred, right?  Because you want to make sure
-> >>>>> that, if the opener had some low-privilege label, the target has
-> >>>>> execed and gotten a more secure label, and the reader has a
-> >>>>> high-privilege label, that the opener's label is checked against the
-> >>>>> target's new label.
-> >>>> The current's cred each time.
-> >>>
-> >>> Exactly.  Hence the NAK.
-> >>>
-> >>>>
-> >>>> Is there some mechanism to check what you describe?
-> >>>>
-> >>>
-> >>> No.  You could try to add one, but getting it to be compatible with
-> >>> YAMA might be really messy.
-> >>>
-> >>> Or you could see if destroying and recreating all the inodes on exec
-> >>> or some other revoke-like approach would work.
-> >>
-> >> This is a revoke like approach, and yes proc has a fully functional
-> >> revoke infrastructure.  Right now that revoke is based on the process
-> >> going away.  The problem challenge is that the process is morphing.
-> >>
-> >> The practical question is which runtime checks do we want to perform.
-> >>
-> >> If we can say in no uncertain terms that short of a suid exec that
-> >> no calls (such as setuid) can change the process permissions beyond
-> >> our ability to access the file, we can detect and exec and use that
-> >> as a signal.
-> >
-> > If you could ptrace a process before it calls setuid and you can't
-> > after it calls setuid, then this is stupid and doesn't matter -- once
-> > you've pwned a process, you retain your pwnership at least until exec.
+> kernel: 3.9.10-100.fc17.x86_64
+> perf:   latest acme's perf/core (06de626 perf evlist: Fix perf_evlist__mmap_read event overflow )
+>         plus your V5 patches
 > 
-> That is a reasonable principle to work from.  Still I am seeing cases
-> where dumpable can change in principle if not in fact with a cred
-> change.
+> commands:
+>   sudo ./perf record -e cycles:k -a 
+>   sudo ./perf report
 > 
-> But yes exec does appear to be the event to focus on.
+> ---
+> Samples: 2K of event 'cycles:k', Event count (approx.): 445188286                                               
+>  14.73%          swapper  [kernel.kallsyms]   [k] intel_idle                                                   ◆
+>   3.19%                X  [kernel.kallsyms]   [k] smp_call_function_many                                       ▒
+>   1.58%                X  [kernel.kallsyms]   [k] i915_gem_write_fence__ipi                                    ▒
+>   1.58%          swapper  [kernel.kallsyms]   [k] iwl_trans_pcie_read32                                        ▒
 > 
-> > So yes, except that it's not just suid exec.  It's any exec that any
-> > LSM would not do if no_new_privs were set.
 > 
-> >> Alternatively we may to look at a processes credentials and in all
-> >> cases where those change use that as a signal that the file must
-> >> be reopened.
-> >
-> > Hmm.  So why don't we just do a revoke whenever an exec that changes
-> > cred happens?  (This will have some false positives, like unsharing
-> > userns, I think, but we probably don't care.)
+> annotation of 1st 4 symbols:
 > 
-> But because it is proc and because people do crazy things we have to
-> investigate and test before we merge something like that.  I believe
-> there was a patch not long ago that would fail an access if the openers
-> and and the accessors creds which blew up rather quickly.
+> ---
+> intel_idle  /proc/kcore                                                                                         
+>        │                                                                                                       ▒
+>        │                                                                                                       ▒
+>        │                                                                                                       ▒
+>        │     Disassembly of section load0:                                                                     ▒
+>        │                                                                                                       ▒
+>        │     ffffffff8135f490 <load0>:                                                                         ▒
+>   1.18 │       data32 data32 data32 xchg %ax,%ax                                                               ▒
 > 
-> But it is definitely worth looking at.
-We can track current exec or even target exec, use the percpu id solution
-that was discussed here, and it seems Ingo like the solution:
-https://lkml.org/lkml/2012/3/11/23
+> 
+> ---
+> smp_call_function_many  /proc/kcore                                                                             
+>        │                                                                                                       ◆
+>        │                                                                                                       ▒
+>        │                                                                                                       ▒
+>        │     Disassembly of section load0:                                                                     ▒
+>        │                                                                                                       ▒
+>        │     ffffffff810bc270 <load0>:                                                                         ▒
+>        │       data32 data32 data32 xchg %ax,%ax                                                               ▒
+> 
+> ---
+> i915_gem_write_fence__ipi  /proc/kcore                                                                          
+>        │
+>        │
+>        │
+>        │    Disassembly of section load0:
+>        │
+>        │    ffffffffa0086630 <load0>:
+>        │      data32 data32 data32 xchg %ax,%ax
+> 
+> ---
+> iwl_trans_pcie_read32  /proc/kcore                                                                              
+>        │
+>        │
+>        │
+>        │    Disassembly of section load0:
+>        │
+>        │    ffffffffa0414a50 <load0>:
+>        │      data32 data32 data32 xchg %ax,%ax
+> 
+> 
+> the rest of the instruction decode differs.. just the first
+> line is same for all
+> 
+> addresses seem ok:
+> 
+> [jolsa@krava perf]$ egrep 'ffffffff8135f490|ffffffff810bc270|ffffffffa0086630|ffffffffa0414a50' /proc/kallsyms 
+> ffffffff810bc270 T smp_call_function_many
+> ffffffff8135f490 t intel_idle
+> ffffffffa0414a50 t iwl_trans_pcie_read32        [iwlwifi]
+> ffffffffa0086630 t i915_gem_write_fence__ipi    [i915]
+> 
+> so.. the name of the section, name of the <function> plus the first
+> instruction decode seem wrong.. I can see that in every symbol I
+> annotate in the report and in annotate command as well.
 
-Grsecurity already do this!
+If you use the --asm-raw option you can see the bytes:
 
+	66 66 66 90 
 
-Now to not break things and allow file descriptor to be passed, we couple
-the exec id with the *cred and capability superset* check
+That looks like a "nop" e.g. K8_NOP4 in arch/x86/include/asm/nops.h
 
-The advantage of this solution would be:
-* We'll have only a *one* ptrace_may_access(),LSM and permission check
-  during ->open() or ->read()/write()...
+	/*
+	 * Define nops for use with alternative() and for tracing.
+	 *
+	 * *_NOP5_ATOMIC must be a single instruction.
+	 */
 
-A one check will do the job.
+	#define NOP_DS_PREFIX 0x3e
 
+	/* generic versions from gas
+	   1: nop
+	   the following instructions are NOT nops in 64-bit mode,
+	   for 64-bit mode use K8 or P6 nops instead
+	   2: movl %esi,%esi
+	   3: leal 0x00(%esi),%esi
+	   4: leal 0x00(,%esi,1),%esi
+	   6: leal 0x00000000(%esi),%esi
+	   7: leal 0x00000000(,%esi,1),%esi
+	*/
+	#define GENERIC_NOP1 0x90
+	#define GENERIC_NOP2 0x89,0xf6
+	#define GENERIC_NOP3 0x8d,0x76,0x00
+	#define GENERIC_NOP4 0x8d,0x74,0x26,0x00
+	#define GENERIC_NOP5 GENERIC_NOP1,GENERIC_NOP4
+	#define GENERIC_NOP6 0x8d,0xb6,0x00,0x00,0x00,0x00
+	#define GENERIC_NOP7 0x8d,0xb4,0x26,0x00,0x00,0x00,0x00
+	#define GENERIC_NOP8 GENERIC_NOP1,GENERIC_NOP7
+	#define GENERIC_NOP5_ATOMIC NOP_DS_PREFIX,GENERIC_NOP4
 
-We do this by:
-1) During ->open() store the opener exec id somewhere...
+	/* Opteron 64bit nops
+	   1: nop
+	   2: osp nop
+	   3: osp osp nop
+	   4: osp osp osp nop
+	*/
+	#define K8_NOP1 GENERIC_NOP1
+	#define K8_NOP2 0x66,K8_NOP1
+	#define K8_NOP3 0x66,K8_NOP2
+	#define K8_NOP4 0x66,K8_NOP3
+	#define K8_NOP5 K8_NOP3,K8_NOP2
+	#define K8_NOP6 K8_NOP3,K8_NOP3
+	#define K8_NOP7 K8_NOP4,K8_NOP3
+	#define K8_NOP8 K8_NOP4,K8_NOP4
+	#define K8_NOP5_ATOMIC 0x66,K8_NOP4
 
-2) Call ptrace_may_access() and LSM check during ->open() or later
-during ->read(),write()...
+I think what you see is correct.
 
-3) Then during ->read(),write(): check if current's exec id matches the
-opener exec id, if not then there was an execve and continue with the
-cred superset check using file->f_cred, the logic here is to check if
-opener is privileged than current:
-
-  * Same user namespace: check same uid, gid and capability superset
-  * Different user namespaces: check if opener is an ancestor and its
-    file->f_cred->euid is the owner...
-
-   IOW make sure that opener is more privileged than current, or with
-   the same privileges!
-
-If it fails we return 0, end of file! otherwise allow the operation.
-
-
-So if opener execve a more privileged process, the read() will fail.
-
-This will make it easy to have a *one* ptrace_may_access() during all
-syscalls!
-
-
-Thoughts ?
-
--- 
-Djalal Harouni
-http://opendz.org
