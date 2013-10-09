@@ -1,73 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753990Ab3JIMra (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 08:47:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21883 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752292Ab3JIMr0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 08:47:26 -0400
-Date: Tue, 8 Oct 2013 10:39:14 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: chai wen <chaiw.fnst@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, pbonzini@redhat.com, tangchen@cn.fujitsu.com,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Subject: Re: [RFC/query] kvm async_pf anon pined pages migration
-Message-ID: <20131008073914.GA3574@redhat.com>
-References: <1380535387-26237-1-git-send-email-chaiw.fnst@cn.fujitsu.com>
- <20130930125158.GA11993@redhat.com>
- <BLU0-SMTP3062A22F7A685B9214BB05AE0150@phx.gbl>
- <5253AD0E.6060209@cn.fujitsu.com>
+	id S1754947Ab3JIMst (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 08:48:49 -0400
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:43392 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752103Ab3JIMss (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 08:48:48 -0400
+Date: Wed, 9 Oct 2013 14:48:44 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/63] Basic scheduler support for automatic NUMA
+ balancing V9
+Message-ID: <20131009124844.GA21428@gmail.com>
+References: <1381141781-10992-1-git-send-email-mgorman@suse.de>
+ <20131009110353.GA19370@gmail.com>
+ <20131009120544.GE3081@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5253AD0E.6060209@cn.fujitsu.com>
+In-Reply-To: <20131009120544.GE3081@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 08, 2013 at 02:58:22PM +0800, chai wen wrote:
-> On 10/02/2013 12:04 AM, chaiwen wrote:
-> >On 09/30/2013 08:51 PM, Gleb Natapov wrote:
-> >>On Mon, Sep 30, 2013 at 06:03:07PM +0800, chai wen wrote:
-> >>>Hi all
-> >>>
-> >>>Async page fault in kvm currently pin user pages via get_user_pages.
-> >>>when doing page migration,the method can be found via
-> >>>page->mmapping->a_ops->migratepage to offline old pages and migrate to
-> >>>new pages. As to anonymous page there is no file mapping but a anon_vma.So
-> >>>the migration will fall back to some *default* migration method.Anon pages
-> >>>that have been pined in memory by some reasons could be failed in the migration
-> >>>processing because of some reasons like ref-count checking.
-> >>>(or I misunderstand some thing?)
-> >>>
-> >>>Now we want to make these anon pages in async_pf can be migrated, I try some
-> >>>ways.But there are still many problems. The following is one that replaceing
-> >>>the mapping of anon page arbitrarily and doing some thing based on it.
-> >>>Kvm-based virtual machine can works on this patch,but have no experience of
-> >>>offline pages because of the limitaion of resouces.I'll check it later.
-> >>>
-> >>>I don't know weather it is a right direction of this issue.
-> >>>All comments/criticize are welcomed.
-> >>The pinning is not mandatory and can (and probably should) be dropped, but
-> >>pinning that is done by async page faults is short lived. What problems
-> >>are you seeing that warrant the complexity of handling their migration?
-> Hi Gleb
-> 
-> As to this issue, I still have some thing not very clear.
-> If pages pinning is successfully holding (although not mandatory) by
-> async page fault.
-> And at the same time page migration happens because of memory
-> hot-remove action.
-> It has 120*hz timeout setting in common page offline processing,
-> could it fail with
-> these async_pf pined pages migration ?
-> What's your opinion about this ?   If it may fail under this
-> circumstance, should we do
-> some thing on it ?
-> 
-120 seconds is more than enough time for pinning to go away, but as I
-said the pinning is not even necessary. Patch to remove it is welcomed.
 
---
-			Gleb.
+* Peter Zijlstra <peterz@infradead.org> wrote:
+
+> On Wed, Oct 09, 2013 at 01:03:54PM +0200, Ingo Molnar wrote:
+> >  kernel/sched/fair.c:819:22: warning: 'task_h_load' declared 'static' but never defined [-Wunused-function]
+> 
+> Not too pretty, but it avoids the warning:
+> 
+> ---
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -681,6 +681,8 @@ static u64 sched_vslice(struct cfs_rq *c
+>  }
+>  
+>  #ifdef CONFIG_SMP
+> +static unsigned long task_h_load(struct task_struct *p);
+> +
+>  static inline void __update_task_entity_contrib(struct sched_entity *se);
+>  
+>  /* Give new task start runnable values to heavy its load in infant time */
+> @@ -816,8 +818,6 @@ update_stats_curr_start(struct cfs_rq *c
+>   * Scheduling class queueing methods:
+>   */
+>  
+> -static unsigned long task_h_load(struct task_struct *p);
+> -
+>  #ifdef CONFIG_NUMA_BALANCING
+
+Hm, so we really want to do a split-up of this file once things have 
+calmed down - that will address such dependency issues.
+
+Until then this fix will do, I've backmerged it to the originating patch.
+
+Thanks,
+
+	Ingo
