@@ -1,64 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755713Ab3JIPsX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 11:48:23 -0400
-Received: from mga09.intel.com ([134.134.136.24]:35828 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753489Ab3JIPsW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 11:48:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1064,1371106800"; 
-   d="scan'208";a="416714764"
-Date: Wed, 9 Oct 2013 09:48:17 -0600 (MDT)
-From: Keith Busch <keith.busch@intel.com>
-X-X-Sender: vmware@localhost.localdom
-To: Jens Axboe <axboe@kernel.dk>
-cc: Matthew Wilcox <willy@linux.intel.com>,
-        =?ISO-8859-15?Q?Matias_Bj=F8rling?= <m@bjorling.me>,
-        linux-nvme@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC 0/2] Convert from bio-based to blk-mq
-In-Reply-To: <20131008183949.GB23288@kernel.dk>
-Message-ID: <alpine.LRH.2.03.1310090921220.4763@AMR>
-References: <1381224862-5299-1-git-send-email-m@bjorling.me> <20131008131036.GC7422@linux.intel.com> <20131008183949.GB23288@kernel.dk>
-User-Agent: Alpine 2.03 (LRH 1266 2009-07-14)
+	id S1755849Ab3JIPy0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 11:54:26 -0400
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:47679 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754410Ab3JIPyW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 11:54:22 -0400
+Date: Wed, 9 Oct 2013 11:54:13 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
+        Jon Mason <jon.mason@intel.com>,
+        Matt Porter <mporter@kernel.crashing.org>, linux-pci@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-mips@linux-mips.org,
+        linuxppc-dev@lists.ozlabs.org, linux390@de.ibm.com,
+        linux-s390@vger.kernel.org, x86@kernel.org, linux-ide@vger.kernel.org,
+        iss_storagedev@hp.com, linux-nvme@lists.infradead.org,
+        linux-rdma@vger.kernel.org, netdev@vger.kernel.org,
+        e1000-devel@lists.sourceforge.net, linux-driver@qlogic.com,
+        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
+        "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH RFC 07/77] PCI/MSI: Re-design MSI/MSI-X interrupts
+ enablement pattern
+Message-ID: <20131009155413.GD22495@htj.dyndns.org>
+References: <cover.1380703262.git.agordeev@redhat.com>
+ <d8c36203ada6efbfa9f7ce92c2f713ee3b6d6b8d.1380703262.git.agordeev@redhat.com>
+ <20131007181749.GB27396@htj.dyndns.org>
+ <20131008074826.GD10669@dhcp-26-207.brq.redhat.com>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1934113754-1381333702=:4763"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131008074826.GD10669@dhcp-26-207.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Hello, Alexander.
 
---8323328-1934113754-1381333702=:4763
-Content-Type: TEXT/PLAIN; charset=iso-8859-1; format=flowed
-Content-Transfer-Encoding: 8BIT
+On Tue, Oct 08, 2013 at 09:48:26AM +0200, Alexander Gordeev wrote:
+> > If there are many which duplicate the above pattern, it'd probably be
+> > worthwhile to provide a helper?  It's usually a good idea to reduce
+> > the amount of boilerplate code in drivers.
+> 
+> I wanted to limit discussion in v1 to as little changes as possible.
+> I 'planned' those helper(s) for a separate effort if/when the most
+> important change is accepted and soaked a bit.
 
-On Tue, 8 Oct 2013, Jens Axboe wrote:
-> On Tue, Oct 08 2013, Matthew Wilcox wrote:
->> On Tue, Oct 08, 2013 at 11:34:20AM +0200, Matias Bjørling wrote:
->>> The nvme driver implements itself as a bio-based driver. This primarily because
->>> of high lock congestion for high-performance nvm devices. To remove the
->>> congestion, a multi-queue block layer is being implemented.
->>
->> Um, no.  You'll crater performance by adding another memory allocation
->> (of the struct request).  multi-queue is not the solution.
->
-> That's a rather "jump to conclusions" statement to make. As Matias
-> mentioned, there are no extra fast path allocations. Once the tagging is
-> converted as well, I'd be surprised if it performs worse than before.
-> And that on top of a net reduction in code.
->
-> blk-mq might not be perfect as it stands, but it's a helluva lot better
-> than a bunch of flash based drivers with lots of duplicated code and
-> mechanisms. We need to move away from that.
->
-> -- 
-> Jens Axboe
+The thing is doing it this way generates more churns and noises.  Once
+the simpler ones live behind a wrapper which can be built on the
+existing interface, we can have both reduced cost and more latitude on
+the complex cases.
 
-But this wastes copious amounts of memory on an NVMe device with more
-than 1 namespace. The hardware's queues are shared among all namespaces,
-so you can't possibly have all the struct requests in use. What would
-be better is if I can create one blk-mq for each device/host and attach
-multiple gendisks to that.
---8323328-1934113754-1381333702=:4763--
+> > If we do things this way, it breaks all drivers using this interface
+> > until they're converted, right?
+> 
+> Right. And the rest of the series does it.
+
+Which breaks bisection which we shouldn't do.
+
+> > Also, it probably isn't the best idea
+> > to flip the behavior like this as this can go completely unnoticed (no
+> > compiler warning or anything, the same function just behaves
+> > differently).  Maybe it'd be a better idea to introduce a simpler
+> > interface that most can be converted to?
+> 
+> Well, an *other* interface is a good idea. What do you mean with the
+> simpler here?
+
+I'm still talking about a simpler wrapper for common cases, which is
+the important part anyway.
+
+Thanks.
+
+-- 
+tejun
