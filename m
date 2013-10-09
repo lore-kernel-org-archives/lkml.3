@@ -1,43 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756592Ab3JIIuI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 04:50:08 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:35394 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752497Ab3JIIuF (ORCPT
+	id S1756899Ab3JIIvK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 04:51:10 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:58719 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756784Ab3JIIvG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 04:50:05 -0400
-From: Abelardo Ricart <aricart@gmail.com>
-To: linux-pm@vger.kernel.org
-Cc: trivial@kernel.org, linux-kernel@vger.kernel.org,
-        Abelardo Ricart <aricart@gmail.com>
-Subject: [PATCH] Thermal: Fix Step-wise governor Kconfig help text
-Date: Wed,  9 Oct 2013 17:49:47 +0900
-Message-Id: <1381308587-25460-1-git-send-email-aricart@gmail.com>
-X-Mailer: git-send-email 1.8.4
+	Wed, 9 Oct 2013 04:51:06 -0400
+Date: Wed, 9 Oct 2013 09:50:27 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/8] ARM: l2x0: add Marvell Tauros3 compatible
+Message-ID: <20131009085026.GD4981@e106331-lin.cambridge.arm.com>
+References: <1381235073-17134-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1381235073-17134-4-git-send-email-sebastian.hesselbarth@gmail.com>
+ <20131008134100.GD1412@e106331-lin.cambridge.arm.com>
+ <52542D64.5010800@gmail.com>
+ <525433D3.2090906@free-electrons.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <525433D3.2090906@free-electrons.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Trivial fix for the help text of THERMAL_GOV_STEP_WISE.
+On Tue, Oct 08, 2013 at 05:33:23PM +0100, Gregory CLEMENT wrote:
+> On 08/10/2013 18:05, Sebastian Hesselbarth wrote:
+> > On 10/08/2013 03:41 PM, Mark Rutland wrote:
+> >> On Tue, Oct 08, 2013 at 01:24:28PM +0100, Sebastian Hesselbarth wrote:
+> >>> This add a compatible for the Marvell Tauros3 cache controller which
+> >>> is compatible with l2x0 cache controllers. While updating the binding
+> >>> documentation, clean up the list of possible compatibles.
+> >>>
+> >>> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> >>> ---
+> > [...]
+> >>> diff --git a/Documentation/devicetree/bindings/arm/l2cc.txt b/Documentation/devicetree/bindings/arm/l2cc.txt
+> >>> index c0c7626..a1d0cbd 100644
+> >>> --- a/Documentation/devicetree/bindings/arm/l2cc.txt
+> >>> +++ b/Documentation/devicetree/bindings/arm/l2cc.txt
+> >>> @@ -7,20 +7,20 @@ The ARM L2 cache representation in the device tree should be done as follows:
+> >>>   Required properties:
+> >>>
+> >>>   - compatible : should be one of:
+> >>> -	"arm,pl310-cache"
+> >>> -	"arm,l220-cache"
+> >>> -	"arm,l210-cache"
+> >>> -	"marvell,aurora-system-cache": Marvell Controller designed to be
+> >>> +  "arm,pl310-cache"
+> >>> +  "arm,l220-cache"
+> >>> +  "arm,l210-cache"
+> >>> +  "bcm,bcm11351-a2-pl310-cache": DEPRECATED by "brcm,bcm11351-a2-pl310-cache"
+> >>> +  "brcm,bcm11351-a2-pl310-cache": For Broadcom bcm11351 chipset where an
+> >>> +     offset needs to be added to the address before passing down to the L2
+> >>> +     cache controller
+> >>> +  "marvell,aurora-system-cache": Marvell Controller designed to be
+> >>>        compatible with the ARM one, with system cache mode (meaning
+> >>>        maintenance operations on L1 are broadcasted to the L2 and L2
+> >>>        performs the same operation).
+> >>> -	"marvell,"aurora-outer-cache: Marvell Controller designed to be
+> >>> -	 compatible with the ARM one with outer cache mode.
+> >>> -	"brcm,bcm11351-a2-pl310-cache": For Broadcom bcm11351 chipset where an
+> >>> -	offset needs to be added to the address before passing down to the L2
+> >>> -	cache controller
+> >>> -	"bcm,bcm11351-a2-pl310-cache": DEPRECATED by
+> >>> -	                               "brcm,bcm11351-a2-pl310-cache"
+> >>> +  "marvell,aurora-outer-cache": Marvell Controller designed to be
+> >>> +     compatible with the ARM one with outer cache mode.
+> >>> +  "marvell,tauros3-cache": Marvell Tauros3 cache controller.
+> >>
+> >> How does the tauros3 cache differ from the other caches supported by the
+> >> l2x0 driver?
+> > 
+> > [added Gregory to Cc]
+> > 
+> > Good question. I cannot say at this time. I would have guessed that l2cc
+> > on Armada 1500 and Armada 370/XP are more or less the same, as both use
+> > Marvell's PJ4B CPU. Maybe, Gregory or Thomas can shed some light into
+> > this.
+> > 
+> >>>   - cache-unified : Specifies the cache is a unified cache.
+> >>>   - cache-level : Should be set to 2 for a level 2 cache.
+> >>>   - reg : Physical base address and size of cache controller's memory mapped
+> >>> diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
+> >>> index 447da6f..90c776e 100644
+> >>> --- a/arch/arm/mm/cache-l2x0.c
+> >>> +++ b/arch/arm/mm/cache-l2x0.c
+> >>> @@ -929,6 +929,7 @@ static const struct of_device_id l2x0_ids[] __initconst = {
+> >>>   	  .data = (void *)&aurora_no_outer_data},
+> >>>   	{ .compatible = "marvell,aurora-outer-cache",
+> >>>   	  .data = (void *)&aurora_with_outer_data},
+> >>> +	{ .compatible = "marvell,tauros3-cache", .data = (void *)&l2x0_data },
+> >>
+> >> Are we intending to handle this differently later?
+> >>
+> >> Or is it 100% compatible with the pl210 or pl220? We could just require
+> >> an entry later in the compatible string list instead...
+> > 
+> > No public documentation, no clear answer.
+> > 
+> > Tauros3 isn't 100% compatible with any of the ARM l2cc above, it has
+> > additional "features" or "bugs" - call it whatever you want.
+> > 
+> > I am not an l2cc expert, but basically I see two options:
+> > a) use (possibly) wrong existing compatible in current mv88de3100.dtsi
+> >     now and fix later.
+> > b) add tauros3 compatible now and add (possible) quirks/marvell-specific
+> >     properties later.
+> > 
+> > IMHO b) is very likely to happen as l2x0_of_init in patch 8/8 already 
+> > sets bits, I wasn't able to verify in public ARM l2cc docu.
+> 
+> I agree with Sebastian. I don't have more information that Sebastian, but
+> as it is definitely a different controller of the ones from ARM, it should
+> have its own compatible string. Then latter when we will discover new feature
+> and/or bugs, we will be able to manage them without requiring people to update
+> their dtb. If I understood well it is the philosophy behind the device tree.
 
-Signed-off-by: Abelardo Ricart <aricart@gmail.com>
----
- drivers/thermal/Kconfig | 1 +
- 1 file changed, 1 insertion(+)
+Please note that I wasn't arguing for people to have to update their
+dtb. I was only suggesting that we'd have something like:
 
-diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
-index dbfc390..29007bd 100644
---- a/drivers/thermal/Kconfig
-+++ b/drivers/thermal/Kconfig
-@@ -69,6 +69,7 @@ config THERMAL_GOV_STEP_WISE
- 	bool "Step_wise thermal governor"
- 	help
- 	  Enable this to manage platform thermals using a simple linear
-+	  throttling algorithm.
- 
- config THERMAL_GOV_USER_SPACE
- 	bool "User_space thermal governor"
--- 
-1.8.4
+	compatible = "marvell,tauros3-cache", "arm,l220-cache";
 
+Which would function now, and later the driver could choose to check for
+"marvell,tauros3-cache" and do something different.
+
+However, given that we don't have sufficient documentation to tell how
+close the tauros3 cache is to any ARM l2x0 variant, having just the
+"marvell,tauros3-cache" string in dts and supporting this in the driver
+makes sense to me.
+
+Cheers,
+Mark.
