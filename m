@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932135Ab3JIVch (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 17:32:37 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:45746 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756373Ab3JIVaA (ORCPT
+	id S1756894Ab3JIVcf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 17:32:35 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:47764 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756407Ab3JIVaA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 Oct 2013 17:30:00 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
@@ -15,19 +15,21 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
         sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Stephen Hemminger <stephen@networkplumber.org>,
         "David S. Miller" <davem@davemloft.net>,
-        bridge@lists.linux-foundation.org, netdev@vger.kernel.org
-Subject: [PATCH v2 tip/core/rcu 12/13] bonding/bond_main: Apply rcu_access_pointer() to avoid sparse false positive
-Date: Wed,  9 Oct 2013 14:29:45 -0700
-Message-Id: <1381354186-16285-12-git-send-email-paulmck@linux.vnet.ibm.com>
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
+Subject: [PATCH v2 tip/core/rcu 06/13] ipv4/ip_socketglue: Apply rcu_access_pointer() to avoid sparse false positive
+Date: Wed,  9 Oct 2013 14:29:39 -0700
+Message-Id: <1381354186-16285-6-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1381354186-16285-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20131009212920.GA15413@linux.vnet.ibm.com>
  <1381354186-16285-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13100921-0928-0000-0000-000002691FD9
+x-cbid: 13100921-3532-0000-0000-0000020C57E2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -36,59 +38,39 @@ From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
 The sparse checking for rcu_assign_pointer() was recently upgraded
 to reject non-__kernel address spaces.  This also rejects __rcu,
-which is almost always the right thing to do.  However, the uses in
-bond_change_active_slave(), bond_enslave(), and __bond_release_one()
-are legitimate: They are assigning a pointer to an element from an
-RCU-protected list (or a NULL pointer), and all elements of this list
-are already visible to caller.
+which is almost always the right thing to do.  However, the use in
+ip_ra_control() is legitimate: It is assigning a pointer to an element
+from an RCU-protected list, and all elements of this list are already
+visible to caller.
 
-This commit therefore silences these false positives either by laundering
-the pointers using rcu_access_pointer() as suggested by Josh Triplett,
-or by using RCU_INIT_POINTER() for NULL pointer assignments.
+This commit therefore silences this false positive by laundering the
+pointer using rcu_access_pointer() as suggested by Josh Triplett.
 
 Reported-by: kbuild test robot <fengguang.wu@intel.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Stephen Hemminger <stephen@networkplumber.org>
 Cc: "David S. Miller" <davem@davemloft.net>
-Cc: bridge@lists.linux-foundation.org
+Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+Cc: James Morris <jmorris@namei.org>
+Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
+Cc: Patrick McHardy <kaber@trash.net>
 Cc: netdev@vger.kernel.org
 ---
- drivers/net/bonding/bond_main.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ net/ipv4/ip_sockglue.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
-index 72df399c4ab3..2f276b971bc4 100644
---- a/drivers/net/bonding/bond_main.c
-+++ b/drivers/net/bonding/bond_main.c
-@@ -890,7 +890,8 @@ void bond_change_active_slave(struct bonding *bond, struct slave *new_active)
- 		if (new_active)
- 			bond_set_slave_active_flags(new_active);
- 	} else {
--		rcu_assign_pointer(bond->curr_active_slave, new_active);
-+		rcu_assign_pointer(bond->curr_active_slave,
-+				   rcu_access_pointer(new_active));
- 	}
+diff --git a/net/ipv4/ip_sockglue.c b/net/ipv4/ip_sockglue.c
+index d9c4f113d709..d328f158f0e5 100644
+--- a/net/ipv4/ip_sockglue.c
++++ b/net/ipv4/ip_sockglue.c
+@@ -269,7 +269,7 @@ int ip_ra_control(struct sock *sk, unsigned char on,
+ 			}
+ 			/* dont let ip_call_ra_chain() use sk again */
+ 			ra->sk = NULL;
+-			rcu_assign_pointer(*rap, ra->next);
++			rcu_assign_pointer(*rap, rcu_access_pointer(ra->next));
+ 			spin_unlock_bh(&ip_ra_lock);
  
- 	if (bond->params.mode == BOND_MODE_ACTIVEBACKUP) {
-@@ -1601,7 +1602,8 @@ int bond_enslave(struct net_device *bond_dev, struct net_device *slave_dev)
- 		 * so we can change it without calling change_active_interface()
- 		 */
- 		if (!bond->curr_active_slave && new_slave->link == BOND_LINK_UP)
--			rcu_assign_pointer(bond->curr_active_slave, new_slave);
-+			rcu_assign_pointer(bond->curr_active_slave,
-+					   rcu_access_pointer(new_slave));
- 
- 		break;
- 	} /* switch(bond_mode) */
-@@ -1801,7 +1803,7 @@ static int __bond_release_one(struct net_device *bond_dev,
- 	}
- 
- 	if (all) {
--		rcu_assign_pointer(bond->curr_active_slave, NULL);
-+		RCU_INIT_POINTER(bond->curr_active_slave, NULL);
- 	} else if (oldcurrent == slave) {
- 		/*
- 		 * Note that we hold RTNL over this sequence, so there
+ 			if (ra->destructor)
 -- 
 1.8.1.5
 
