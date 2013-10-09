@@ -1,74 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756760Ab3JIWhG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 18:37:06 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:37286 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756526Ab3JIWhA (ORCPT
+	id S1756340Ab3JIWlL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 18:41:11 -0400
+Received: from usindpps06.hds.com ([207.126.252.19]:56483 "EHLO
+	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755362Ab3JIWlJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 18:37:00 -0400
-Date: Wed, 9 Oct 2013 15:36:52 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
-Subject: Re: [PATCH v2 tip/core/rcu 07/13] ipv6/ip6_tunnel: Apply
- rcu_access_pointer() to avoid sparse false positive
-Message-ID: <20131009223652.GC5790@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20131009212920.GA15413@linux.vnet.ibm.com>
- <1381354186-16285-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1381354186-16285-7-git-send-email-paulmck@linux.vnet.ibm.com>
- <1381354949.4971.20.camel@edumazet-glaptop.roam.corp.google.com>
- <20131009215747.GA5790@linux.vnet.ibm.com>
- <1381356624.4971.26.camel@edumazet-glaptop.roam.corp.google.com>
+	Wed, 9 Oct 2013 18:41:09 -0400
+From: Tomoki Sekiyama <tomoki.sekiyama@hds.com>
+To: Tejun Heo <tj@kernel.org>, "axboe@kernel.dk" <axboe@kernel.dk>,
+        "vgoyal@redhat.com" <vgoyal@redhat.com>
+CC: Seiji Aguchi <seiji.aguchi@hds.com>,
+        "majianpeng@gmail.com" <majianpeng@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/2] elevator: Fix a race in elevator switching and
+ md device initialization
+Thread-Topic: [PATCH v2 1/2] elevator: Fix a race in elevator switching and
+ md device initialization
+Thread-Index: AQHOpdLdNzajY7OslkaUETgfqPSrrZnSYvOAgAGDsgCAAEOzAIAZCgoA
+Date: Wed, 9 Oct 2013 22:36:39 +0000
+Message-ID: <CE7B51CA.7DB9%Tomoki.Sekiyama@hds.com>
+In-Reply-To: <20130923201412.GA28667@mtj.dyndns.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.73.11]
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <53E45E668556864E8B3491F78281CF5B@hds.com>
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1381356624.4971.26.camel@edumazet-glaptop.roam.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13100922-8236-0000-0000-0000028DC220
+X-Proofpoint-SPF-Result: pass
+X-Proofpoint-SPF-Record: v=spf1 mx ip4:207.126.244.0/26 ip4:207.126.252.0/25 include:mktomail.com
+ include:cloud.hds.com ~all
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
+ definitions=2013-10-09_07:2013-10-09,2013-10-09,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=outbound_policy score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1310090105
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 09, 2013 at 03:10:24PM -0700, Eric Dumazet wrote:
-> On Wed, 2013-10-09 at 14:57 -0700, Paul E. McKenney wrote:
-> 
-> > Hmmm...  I could use RCU_INIT_POINTER().  Something like the following?
-> > 
-> > 	RCU_INIT_POINTER(ACCESS_ONCE(*tp), t->next);
-> > 
-> > The ACCESS_ONCE() to prevent the compiler from doing anything stupid.
-> > Presumably the value of t->next cannot change, so a normal load suffices.
-> > 
-> > Or did you have something else in mind?
-> 
-> Well, *tp and t->next are both of the same type, with __rcu attribute.
-> 
-> struct ip6_tnl __rcu **tp;
-> 
-> So I meant :
-> 
-> ACCESS_ONCE(*tp) = t->next;
-> 
-> If really we can have a really stupid compiler.
+Hi all,
 
-That would work, though it would probably give sparse complaints.
 
-Of course, it is not the stupid compilers that worry me, but rather the
-smart ones...
+Is this patchset going to be merged into 3.12?
 
-							Thanx, Paul
+Thanks,
+-- 
+Tomoki
+
+On 9/23/13 16:14 , "Tejun Heo" <tj@kernel.org> wrote:
+
+>Hello,
+>
+>On Mon, Sep 23, 2013 at 08:11:55PM +0000, Tomoki Sekiyama wrote:
+>> >Hmm... why aren't we just changing elevator_init() to grab sysfs_lock
+>> >where necessary?
+>> 
+>> The locking cannot be moved into elevator_init() because it is called
+>> from elevator_switch() path, where the request_queue's sysfs_lock is
+>> already taken.
+>> 
+>> > It'd be more consistent with elevator_exit() that way.
+>> 
+>> What elevator_exit() locks is elevator_queue's sysfs_lock, not
+>> request_queue's sysfs_lock. What we need here is request_queue's
+>> sysfs_lock.
+>
+>Ah, okay.
+>
+> Reviewed-by: Tejun Heo <tj@kernel.org>
+>
+>Thanks.
+>
+>-- 
+>tejun
 
