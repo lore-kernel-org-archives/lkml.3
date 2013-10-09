@@ -1,77 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755534Ab3JIHSs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 03:18:48 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:41132 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752715Ab3JIHSq (ORCPT
+	id S1756175Ab3JIHUh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 03:20:37 -0400
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:47388 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752012Ab3JIHUf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 03:18:46 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130930163139.GA12450@free.fr>
-References: <CA+55aFxtvT3Yvbxe5JGBThZS13payymFJ7jCLyEiE2iNDvsZtQ@mail.gmail.com>
-	<20130711135445.GA21500@sepie.suse.cz>
-	<CA+55aFyVjugxM7cUDWi0ASWttYthCxa6e7X3CADknBcSFxWgew@mail.gmail.com>
-	<20130712105721.GF8731@rric.localhost>
-	<20130717160506.GI8731@rric.localhost>
-	<CA+55aFx4G5gME3ByqE0Wr-_t2x_6WkP3Ta4k1z4jfW+PrcK0og@mail.gmail.com>
-	<20130717165743.GK8731@rric.localhost>
-	<CA+55aFzhmV7iq+Pv37trMCmdNzk53ORAoj0a6rV14fzKta3Dhw@mail.gmail.com>
-	<51E7B3D0.4060609@suse.cz>
-	<20130930084945.GA1963@rric.localhost>
-	<20130930163139.GA12450@free.fr>
-Date: Wed, 9 Oct 2013 09:18:46 +0200
-X-Google-Sender-Auth: ftId3PYA2I6qeFBut9lhILOhu_w
-Message-ID: <CAMuHMdW-YWGgZjR9ow6FMW7BrOorbbVAEm9sYsVvPkfg-_=jag@mail.gmail.com>
-Subject: Re: [PATCH] arm, kbuild: make "make install" not depend on vmlinux
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Cc: Robert Richter <rric@kernel.org>, Michal Marek <mmarek@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+	Wed, 9 Oct 2013 03:20:35 -0400
+Message-ID: <525503BE.6000000@gmail.com>
+Date: Wed, 09 Oct 2013 09:20:30 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+To: Jisheng Zhang <jszhang@marvell.com>
+CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
         Russell King <linux@arm.linux.org.uk>,
-        Linux Kbuild mailing list <linux-kbuild@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Subject: Re: [PATCH 8/8] ARM: add initial support for Marvell Berlin SoCs
+References: <1381235073-17134-1-git-send-email-sebastian.hesselbarth@gmail.com> <1381235073-17134-9-git-send-email-sebastian.hesselbarth@gmail.com> <20131009112058.683739d0@xhacker>
+In-Reply-To: <20131009112058.683739d0@xhacker>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 30, 2013 at 6:31 PM, Yann E. MORIN <yann.morin.1998@free.fr> wrote:
-> On 2013-09-30 10:49 +0200, Robert Richter spake thusly:
->> On 18.07.13 11:22:24, Michal Marek wrote:
->> > > So Michal (or ARM people - whoever wants to take the patch), just take
->> > > my ack. No objections.
->> >
->> > I can add it to the kbuild tree if needed. Otherwise you can add
->> > Acked-by: Michal Marek <mmarek@suse.cz>.
->>
->> This didn't make it upstream yet, can somebody at it to a tree?
+On 10/09/2013 05:20 AM, Jisheng Zhang wrote:
+> On Tue, 8 Oct 2013 05:24:33 -0700
+> Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> wrote:
 >
-> Since it's been acked-by Linus, I'll queue it in my tree, for Michal to
-> pull from. Expect a pull-request soon.
+>> This adds initial support for the Marvell Berlin (88DE3xxx) SoC family
+>> and basic machine setup for Armada 1500 (88DE3100) SoCs.
+>
+> First of all, thanks for these patches. I worked and is still working on Marvell
+> Berlin Linux kernel BSP at Marvell. As the person who brought up Linux kernel for
+> various Berlin SoCs since BG2, I have some comments to share with you.
 
-Sorry for chiming in that late, but I didn't think of this when reading the
-original submission.
+Jisheng,
 
-Just doing "make oldconfig; make install" used to work.
-Removing the dependency of "make vmlinux" on vmlinux breaks this, doesn't it?
+great to finally have someone in the discussion who actually "knows" and
+is not just "guessing" as I am ;)
 
-I had the habit of doing the above many years ago, when I was mostly doing
-native builds, and before I had my own custom linux-install-kernel
-script that e.g.
-knows how to copy kernels and modules around to NFS servers.
+[...]
+>> diff --git a/arch/arm/mach-berlin/Kconfig b/arch/arm/mach-berlin/Kconfig
+>> new file mode 100644
+>> index 0000000..56a671e
+>> --- /dev/null
+>> +++ b/arch/arm/mach-berlin/Kconfig
+>> @@ -0,0 +1,24 @@
+>> +config ARCH_BERLIN
+>> +	bool "Marvell Berlin (88DE3xxx) SoCs" if ARCH_MULTI_V7
+>> +	select GENERIC_CLOCKEVENTS
+>> +	select GENERIC_IRQ_CHIP
+>> +	select COMMON_CLK
+>> +	select DW_APB_ICTL
+>> +	select DW_APB_TIMER_OF
+>> +
+>> +if ARCH_BERLIN
+>> +
+>> +menu "Marvell Berlin (88DE3xxx) SoC variants"
+> It would be better to s/88DE3xxx/88DExxxx or remove 88DE3xxx totally
 
-Not that I'm strongly attached to it, but there may be other users...
+Ok, we can get rid of the numbers.
 
-Gr{oetje,eeting}s,
+>> +
+>> +config MACH_MV88DE3100
+> Can you please use MACH_BERLIN2? This is what we used internally in latest BSP
 
-                        Geert
+Ok.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+>> +	bool "Marvell 88DE3100 (Armada 1500)"
+>> +	select ARM_GIC
+>> +	select CACHE_L2X0
+> The tauros3 and PL310 are different although the programming interface are
+> compatible. In PJ4B and Tauros3, the CP15 cache maintenance commands include
+> both L1 and L2, memory mapped PA-based maintenance operations in L2 are not needed.
+> How to handle this in cache-l2x0.c?
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+TBH, I haven't really looked into l2cc, yet. I will assemble some people
+and move this discussion over to the corresponding patch later this day.
+
+>> +	select CPU_PJ4B
+>> +	select HAVE_ARM_TWD if LOCAL_TIMERS
+>> +	select HAVE_SMP
+>> +	select LOCAL_TIMERS if SMP
+>> +
+>> +endmenu
+>> +
+>> +endif
+>> diff --git a/arch/arm/mach-berlin/Makefile b/arch/arm/mach-berlin/Makefile
+>> new file mode 100644
+>> index 0000000..ab69fe9
+>> --- /dev/null
+>> +++ b/arch/arm/mach-berlin/Makefile
+>> @@ -0,0 +1 @@
+>> +obj-y += berlin.o
+>> diff --git a/arch/arm/mach-berlin/berlin.c b/arch/arm/mach-berlin/berlin.c
+>> new file mode 100644
+>> index 0000000..54b3ba7
+>> --- /dev/null
+>> +++ b/arch/arm/mach-berlin/berlin.c
+>> @@ -0,0 +1,39 @@
+>> +/*
+>> + * Device Tree support for Marvell Berlin (88DE3xxx) platforms.
+> ditto
+
+Ok.
+
+>> + *
+>> + * Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+>> + *
+>> + * based on GPL'ed 2.6 kernel sources
+>> + *  (c) Marvell International Ltd.
+>> + *
+>> + * This file is licensed under the terms of the GNU General Public
+>> + * License version 2.  This program is licensed "as is" without any
+>> + * warranty of any kind, whether express or implied.
+>> + */
+>> +
+>> +#include <linux/init.h>
+>> +#include <linux/io.h>
+>> +#include <linux/kernel.h>
+>> +#include <linux/of_platform.h>
+>> +#include <asm/hardware/cache-l2x0.h>
+>> +#include <asm/mach/arch.h>
+>> +
+>> +static void __init berlin_init_machine(void)
+>> +{
+>> +	/*
+>> +	 * with DT probing for L2CCs, berlin_init_machine can be removed.
+>> +	 * Note: 88DE3005 (Armada 1500-mini) uses pl310 l2cc
+>> +	 */
+>> +	l2x0_of_init(0x70c00000, 0xfeffffff);
+>> +	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
+>> +}
+>> +
+>> +static const char * const berlin_dt_compat[] = {
+>> +	"marvell,berlin",
+>> +	NULL,
+>> +};
+>> +
+>> +DT_MACHINE_START(BERLIN_DT, "Marvell Berlin (88DE3xxx)")
+> ditto
+
+Ok.
+
+>> +	.dt_compat      = berlin_dt_compat,
+>> +	.init_machine   = berlin_init_machine,
+>> +MACHINE_END
+>
+>
+>>   create mode 100644 arch/arm/boot/dts/mv88de3100-sony-nsz-gs7.dts
+>>   create mode 100644 arch/arm/boot/dts/mv88de3100.dtsi
+>
+> Armada 1500 == mv88de3100 == BG2
+>
+> We always call BGx internally, so s/mv88de3100/berlin2 in all patches except
+> patch 4 would be better. IOW, I prefer to call berlin2/berlin2ct/berlin2cd etc
+> and never use mv88dexxxx or armada xxxx in code, dt bindings except documents.
+> This would remove unnecessary confusions. What do you think?
+
+I am fine with berlin2 instead of mv88de3100 where possible. But I
+think it would be good to have berlin2 <> Armada 1500 somewhere,
+possibly in all user visible places. Armada 1500 is the marketing
+name you have chosen, and that is what people will look for.
+
+Feel free to also directly comment on all the other patches, I am
+in no hurry to mainline this patch set. The more we can work out
+now, the better. But please keep it close to this patch set feature-
+wise, I prefer to get it first and add more features later.
+
+Sebastian
+
