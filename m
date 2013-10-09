@@ -1,69 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756823Ab3JIBbI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 21:31:08 -0400
-Received: from mga02.intel.com ([134.134.136.20]:35738 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754857Ab3JIBbE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 21:31:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1059,1371106800"; 
-   d="scan'208";a="407992287"
-Subject: [PATCH] xhci-hub.c: handle command_trb that may be link TRB
-From: Xiao Jin <jin.xiao@intel.com>
-To: sarah.a.sharp@linux.intel.com, gregkh@linuxfoundation.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, mingo@elte.hu, a.p.zijlstra@chello.nl,
-        rusty@rustcorp.com.au, william.douglas@intel.com, sboyd@codeaurora.org,
-        jslaby@suse.cz
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 09 Oct 2013 09:42:36 +0800
-Message-ID: <1381282956.9531.14.camel@xiaojin>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1756268Ab3JIBdy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 21:33:54 -0400
+Received: from mail-vb0-f49.google.com ([209.85.212.49]:62759 "EHLO
+	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755220Ab3JIBds (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Oct 2013 21:33:48 -0400
+MIME-Version: 1.0
+In-Reply-To: <20131009010911.GA4222@localhost>
+References: <CA+55aFykGxmaE9hq9xd+6HHFtEube_2QnB+ipW4oF71c6vyXAw@mail.gmail.com>
+	<20131008171522.GA29277@localhost>
+	<CA+55aFzQC=W010GTxjXjBnsKO0CycXe7VZB+LTiNNtuBug_rbw@mail.gmail.com>
+	<20131009010911.GA4222@localhost>
+Date: Tue, 8 Oct 2013 18:33:45 -0700
+X-Google-Sender-Auth: yvSaJZL8-17SCYd2K1NCovrnsUQ
+Message-ID: <CA+55aFyFJMUAADPmGHUVX9OWOt_jN=WhfQ0EBMCY5+LOKxMXqA@mail.gmail.com>
+Subject: Re: [x86] BUG: unable to handle kernel NULL pointer dereference at (null)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Richard Henderson <rth@twiddle.net>, Jakub Jelinek <jakub@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: xiao jin <jin.xiao@intel.com>
-Date: Wed, 9 Oct 2013 09:38:45 +0800
-Subject: [PATCH] xhci-hub.c: handle command_trb that may be link TRB
+On Tue, Oct 8, 2013 at 6:09 PM, Fengguang Wu <fengguang.wu@intel.com> wrote:
+> [   27.189229] BUG: unable to handle kernel NULL pointer dereference at 00000108
+> [   27.190165] IP: [<c1109200>] rw_verify_area+0xa0/0x1b0
 
-When xhci stop device, it's possible cmd_ring enqueue point to
-link TRB after queue the last but one stop endpoint. We must
-handle the command_trb point to the next segment trb. Otherwise
-xhci stop devie will timeout because command_trb can't match
-with cmd_ring dequeue.
+This looks like file->f_inode is NULL, and it's trying to access inode->i_flock.
 
-The patch is to let command_trb point to the next segment trb if
-cmd_ring enqueue point to link TRB.
+There's a number of other ones too (that last delayed __fput one, for
+example) that might be due to a NULL inode.
 
-Signed-off-by: xiao jin <jin.xiao@intel.com>
----
- drivers/usb/host/xhci-hub.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+And a lot of thre rest are file-handling too, with the BUG_ON() in
+__put_cred() when there's something wrong with file->f_cred.
 
-diff --git a/drivers/usb/host/xhci-hub.c b/drivers/usb/host/xhci-hub.c
-index 1d35459..4872640 100644
---- a/drivers/usb/host/xhci-hub.c
-+++ b/drivers/usb/host/xhci-hub.c
-@@ -287,6 +287,13 @@ static int xhci_stop_device(struct xhci_hcd *xhci, int slot_id, int suspend)
- 			xhci_queue_stop_endpoint(xhci, slot_id, i, suspend);
- 	}
- 	cmd->command_trb = xhci->cmd_ring->enqueue;
-+	/* Enqueue pointer can be left pointing to the link TRB,
-+	 * we must handle that
-+	 */
-+	if (TRB_TYPE_LINK_LE32(cmd->command_trb->link.control))
-+		cmd->command_trb =
-+			xhci->cmd_ring->enq_seg->next->trbs;
-+
- 	list_add_tail(&cmd->cmd_list, &virt_dev->cmd_list);
- 	xhci_queue_stop_endpoint(xhci, slot_id, 0, suspend);
- 	xhci_ring_cmd_db(xhci);
--- 
-1.7.1
+.. but I have no clue how that could happen and why the asm goto
+should matter for this.
 
-
-
+              Linus
