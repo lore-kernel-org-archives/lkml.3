@@ -1,101 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756359Ab3JIHaB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 03:30:01 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:64789 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752055Ab3JIH36 (ORCPT
+	id S1755287Ab3JIHeb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 03:34:31 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:41883 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751798Ab3JIHe2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 03:29:58 -0400
+	Wed, 9 Oct 2013 03:34:28 -0400
+Date: Wed, 9 Oct 2013 09:34:23 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: linux-arm-kernel@lists.infradead.org, kernel@pengutronix.de,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/9] i2c: i2c-imx: replace platform_driver_probe to
+ support deferred probing
+Message-ID: <20131009073423.GS10079@pengutronix.de>
+References: <1381264542-29396-1-git-send-email-wsa@the-dreams.de>
+ <1381264542-29396-3-git-send-email-wsa@the-dreams.de>
 MIME-Version: 1.0
-In-Reply-To: <20131009065438.GA7220@verge.net.au>
-References: <20131008143040.52f36df8edb7ab63224d8433@ops.dti.ne.jp>
-	<20131008143403.c11f294c8a1701a2ab3bc5fd@ops.dti.ne.jp>
-	<20131009034057.GO15065@verge.net.au>
-	<CANqRtoQs+31mv0ZULOd3SGshkBkvp-kGoaVOSb10+Ncdp+WNXw@mail.gmail.com>
-	<20131009065438.GA7220@verge.net.au>
-Date: Wed, 9 Oct 2013 16:29:56 +0900
-Message-ID: <CANqRtoSGFEjcBPDAtq3YCDbkiFCftyr8b=qniYqyMafng=zurw@mail.gmail.com>
-Subject: Re: [PATCH v2 3/3] ARM: shmobile: kzm9d: Use common clock framework
-From: Magnus Damm <magnus.damm@gmail.com>
-To: Simon Horman <horms@verge.net.au>
-Cc: takasi-y@ops.dti.ne.jp, SH-Linux <linux-sh@vger.kernel.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        devicetree@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1381264542-29396-3-git-send-email-wsa@the-dreams.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Simon,
+On Tue, Oct 08, 2013 at 10:35:34PM +0200, Wolfram Sang wrote:
+> Subsystems like pinctrl and gpio rightfully make use of deferred probing at
+> core level. Now, deferred drivers won't be retried if they don't have a .probe
+> function specified in the driver struct. Fix this driver to have that, so the
+> devices it supports won't get lost in a deferred probe.
+> 
+> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+> Cc: kernel@pengutronix.de
+Acked-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 
-On Wed, Oct 9, 2013 at 3:54 PM, Simon Horman <horms@verge.net.au> wrote:
-> On Wed, Oct 09, 2013 at 01:59:46PM +0900, Magnus Damm wrote:
->> Hi Simon,
->>
->> On Wed, Oct 9, 2013 at 12:40 PM, Simon Horman <horms@verge.net.au> wrote:
->> > On Tue, Oct 08, 2013 at 02:34:03PM +0900, takasi-y@ops.dti.ne.jp wrote:
->> >> Use common clock framework version of clock
->> >>  drivers/clk/shmobile/clk-emev2.c
->> >> instead of sh-clkfwk version
->> >>  arch/arm/mach-shmobile/clock-emev2.c
->> >> when it is configured as a part of multi-platform.
->> >>
->> >> Signed-off-by: Takashi Yoshii <takasi-y@ops.dti.ne.jp>
->> >
->> > Thanks.
->> >
->> > I plan to add this patch to a new topic branch,
->> > topic/emev2-common-clock, in the renesas tree and
->> > queue it up from there for inclusion in mainline
->> > if/when the first patch of this series is accepted
->> > by Mike Turquette.
->>
->> Thanks for picking up patches, Simon.
->>
->> I think you can simply merge this patch after the following series:
->>
->> [PATCH 00/05] ARM: shmobile: KZM9D Multiplatform update
->
-> This is already queued up.
+Thanks
+Uwe
 
-Yes, I know, thanks for that. I tried to explain the dependency in the
-00/00 cover letter but I will try to be more clear next time!
+> ---
+>  drivers/i2c/busses/i2c-imx.c | 11 ++++++-----
+>  1 file changed, 6 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/i2c/busses/i2c-imx.c b/drivers/i2c/busses/i2c-imx.c
+> index ccf4665..1d7efa3 100644
+> --- a/drivers/i2c/busses/i2c-imx.c
+> +++ b/drivers/i2c/busses/i2c-imx.c
+> @@ -365,7 +365,7 @@ static void i2c_imx_stop(struct imx_i2c_struct *i2c_imx)
+>  	clk_disable_unprepare(i2c_imx->clk);
+>  }
+>  
+> -static void __init i2c_imx_set_clk(struct imx_i2c_struct *i2c_imx,
+> +static void i2c_imx_set_clk(struct imx_i2c_struct *i2c_imx,
+>  							unsigned int rate)
+>  {
+>  	struct imx_i2c_clk_pair *i2c_clk_div = i2c_imx->hwdata->clk_div;
+> @@ -589,7 +589,7 @@ static struct i2c_algorithm i2c_imx_algo = {
+>  	.functionality	= i2c_imx_func,
+>  };
+>  
+> -static int __init i2c_imx_probe(struct platform_device *pdev)
+> +static int i2c_imx_probe(struct platform_device *pdev)
+>  {
+>  	const struct of_device_id *of_id = of_match_device(i2c_imx_dt_ids,
+>  							   &pdev->dev);
+> @@ -697,7 +697,7 @@ static int __init i2c_imx_probe(struct platform_device *pdev)
+>  	return 0;   /* Return OK */
+>  }
+>  
+> -static int __exit i2c_imx_remove(struct platform_device *pdev)
+> +static int i2c_imx_remove(struct platform_device *pdev)
+>  {
+>  	struct imx_i2c_struct *i2c_imx = platform_get_drvdata(pdev);
+>  
+> @@ -715,7 +715,8 @@ static int __exit i2c_imx_remove(struct platform_device *pdev)
+>  }
+>  
+>  static struct platform_driver i2c_imx_driver = {
+> -	.remove		= __exit_p(i2c_imx_remove),
+> +	.probe = i2c_imx_probe,
+> +	.remove = i2c_imx_remove,
+>  	.driver	= {
+>  		.name	= DRIVER_NAME,
+>  		.owner	= THIS_MODULE,
+> @@ -726,7 +727,7 @@ static struct platform_driver i2c_imx_driver = {
+>  
+>  static int __init i2c_adap_imx_init(void)
+>  {
+> -	return platform_driver_probe(&i2c_imx_driver, i2c_imx_probe);
+> +	return platform_driver_register(&i2c_imx_driver);
+>  }
+>  subsys_initcall(i2c_adap_imx_init);
+>  
+> -- 
+> 1.8.4.rc3
+> 
+> 
 
->> There are no build time dependencies on patch 1 and 2 so this patch
->> can be merged independently. Regarding run-time operation, the
->> multiplatform series above makes KZM9D DT reference only build for
->> multiplatform, and in such case CCF is required.
->>
->> So if you want to keep KZM9D DT reference working until Mike Turquette
->> accepts the CCF bits, then I recommend you to wait with "[PATCH 00/05]
->> ARM: shmobile: KZM9D Multiplatform update" until all EMEV2 CCF bits
->> have been merged.
->>
->> Another way is to merge "[PATCH 00/05] ARM: shmobile: KZM9D
->> Multiplatform update" before the EMEV2 CCF bits, but if so you may as
->> well merge this patch as well IMO. This
->> multiplatform-update-series-merge-before-CCF plan will result in
->> untestable KZM9D DT reference until EMEV2 CCF is merged. Either way is
->> fine with me.
->
-> I am mainly concerned that the bindings may change before
-> they are finally merged. And I thought it would be nice to avoid
-> having to fix up the usage of the bindings if they change.
-
-Sure, but the code in this patch looks like it simply starts DT CCF
-probing regardless of what the bindings look like. So I don't think
-you will have to worry about actual bindings detail.
-
-> But I'm happy to just queue-up patches 2 and 3 of this series
-> now if you prefer.
-
-Well, I meant patch 3 only. Patch 1 and 2 are tied together by dependencies. =)
-
-/ magnus
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
