@@ -1,83 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755340Ab3JIVmd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 17:42:33 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41385 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751854Ab3JIVmc (ORCPT
+	id S1754961Ab3JIVqx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 17:46:53 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:40831 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750799Ab3JIVqv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 17:42:32 -0400
-Message-ID: <1381354949.4971.20.camel@edumazet-glaptop.roam.corp.google.com>
-Subject: Re: [PATCH v2 tip/core/rcu 07/13] ipv6/ip6_tunnel: Apply
- rcu_access_pointer() to avoid sparse false positive
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
-Date: Wed, 09 Oct 2013 14:42:29 -0700
-In-Reply-To: <1381354186-16285-7-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20131009212920.GA15413@linux.vnet.ibm.com>
-	 <1381354186-16285-1-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <1381354186-16285-7-git-send-email-paulmck@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 9 Oct 2013 17:46:51 -0400
+Date: Wed, 9 Oct 2013 22:46:38 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Suman Anna <s-anna@ti.com>
+Cc: Kumar Gala <galak@codeaurora.org>, Ohad Ben-Cohen <ohad@wizery.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Benoit Cousson <bcousson@baylibre.com>, Paul Walmsley <paul@pwsan.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCHv2 2/9] hwspinlock/omap: add support for dt nodes
+Message-ID: <20131009214638.GB2322@kartoffel>
+References: <cover.1379445653.git.s-anna@ti.com>
+ <0fd6a11880894260d627a50b1e35f363625e9b1d.1379445653.git.s-anna@ti.com>
+ <AE597DCC-83D7-4BCD-8990-3D63540F32EA@codeaurora.org>
+ <20131001084015.GH22259@e106331-lin.cambridge.arm.com>
+ <524CEE9F.8060407@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <524CEE9F.8060407@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-10-09 at 14:29 -0700, Paul E. McKenney wrote:
-> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+On Thu, Oct 03, 2013 at 05:12:15AM +0100, Suman Anna wrote:
+> Hi Mark,
 > 
-> The sparse checking for rcu_assign_pointer() was recently upgraded
-> to reject non-__kernel address spaces.  This also rejects __rcu,
-> which is almost always the right thing to do.  However, the use in
-> ip6_tnl_unlink() is legitimate: It is assigning a pointer to an element
-> from an RCU-protected list, and all elements of this list are already
-> visible to caller.
+> > On Fri, Sep 27, 2013 at 05:06:38PM +0100, Kumar Gala wrote:
+> >>
+> >> On Sep 17, 2013, at 2:30 PM, Suman Anna wrote:
+> >>
+> >>> HwSpinlock IP is present only on OMAP4 and other newer SoCs,
+> >>> which are all device-tree boot only. This patch adds the
+> >>> base support for parsing the DT nodes, and removes the code
+> >>> dealing with the traditional platform device instantiation.
+> >>>
+> >>> Signed-off-by: Suman Anna <s-anna@ti.com>
+> >>> ---
+> >>> .../devicetree/bindings/hwlock/omap-hwspinlock.txt | 31 +++++++++++
+> >>> arch/arm/mach-omap2/Makefile                       |  3 --
+> >>> arch/arm/mach-omap2/hwspinlock.c                   | 60 ----------------------
+> >>> drivers/hwspinlock/omap_hwspinlock.c               | 23 +++++++--
+> >>> 4 files changed, 50 insertions(+), 67 deletions(-)
+> >>> create mode 100644 Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
+> >>> delete mode 100644 arch/arm/mach-omap2/hwspinlock.c
+> >>>
+> >>> diff --git a/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt b/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
+> >>> new file mode 100644
+> >>> index 0000000..235b7c5
+> >>> --- /dev/null
+> >>> +++ b/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
+> >>> @@ -0,0 +1,31 @@
+> >>> +OMAP4+ HwSpinlock Driver
+> >>> +========================
+> >>> +
+> >>> +Required properties:
+> >>> +- compatible:		Currently supports only "ti,omap4-hwspinlock" for
+> >>> +				OMAP44xx, OMAP54xx, AM33xx, AM43xx, DRA7xx SoCs
+> > 
+> > "Currently supports" is not something I expect to see in a binding
+> > document. That sounds like a description of the driver rather than the
+> > binding.
+> > 
+> > How similar are these hardware modules? What are the differences?
 > 
-> This commit therefore silences this false positive by laundering the
-> pointer using rcu_access_pointer() as suggested by Josh Triplett.
+> The IP is almost the same, they all have the same revision id. The
+> number of locks (each represented by a register) though vary from one
+> SoC to another (OMAP4, OMAP5, DRA7 have same number of locks, and
+> AM33xx/AM43xx have a different number). The number of locks is directly
+> read by the driver from a module register. There is no separate .data
+> associated with the of_device_id table, so I used a single compatible
+> property for all the SoCs.
+
+Ok. Probeability is good, it keeps these simpler :)
+
+I think This can be reworded to say "should contain" rather than "currently
+supports only":
+
+- compatible:		Should contain "ti,omap4-hwspinlock" for
+			OMAP44xx, OMAP54xx, AM33xx, AM43xx, or DRA7xx SoCs
+
+That way the binding allows for a future backwards-compatible variant, and
+doesn't mention the current level of support in Linux.
+
 > 
-> Reported-by: kbuild test robot <fengguang.wu@intel.com>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-> Cc: James Morris <jmorris@namei.org>
-> Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-> Cc: Patrick McHardy <kaber@trash.net>
-> Cc: netdev@vger.kernel.org
-> ---
->  net/ipv6/ip6_tunnel.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> >>> +- reg:			Contains the hwspinlock register address range (base
+> >>> +			address and length)
+> > 
+> > Is there only one register bank for the hwlock module?
 > 
-> diff --git a/net/ipv6/ip6_tunnel.c b/net/ipv6/ip6_tunnel.c
-> index 61355f7f4da5..ecc0166e1a9c 100644
-> --- a/net/ipv6/ip6_tunnel.c
-> +++ b/net/ipv6/ip6_tunnel.c
-> @@ -245,7 +245,7 @@ ip6_tnl_unlink(struct ip6_tnl_net *ip6n, struct ip6_tnl *t)
->  	     (iter = rtnl_dereference(*tp)) != NULL;
->  	     tp = &iter->next) {
->  		if (t == iter) {
-> -			rcu_assign_pointer(*tp, t->next);
-> +			rcu_assign_pointer(*tp, rcu_access_pointer(t->next));
->  			break;
->  		}
->  	}
+> The lock registers start at a certain offset (0x800) within the module
+> register space, and the offsets for various registers are identical
+> between all SoCs.
 
-Then it seems a mere "*tp = t->next;" would be enough  ?
+What are the other registers within the module? Are they shared with other
+devices, or are they simply unused by the hwspinlock driver?
 
-We do not really need a barrier.
+> 
+> > 
+> >>> +- ti,hwmods:		Name of the hwmod associated with the hwspinlock device
+> >>> +
+> >>> +Common hwlock properties:
+> >>> +The following describes the usage of the common hwlock properties (defined in
+> >>> +Documentation/devicetree/bindings/hwlock/hwlock.txt) on OMAP.
+> >>> +
+> >>> +- hwlock-base-id:	There are currently no OMAP SoCs with multiple
+> >>> +			hwspinlock devices. The OMAP driver uses a default
+> >>> +			base id value of 0 for the locks present within the
+> >>> +			single hwspinlock device on all SoCs.
+> > 
+> > 
+> > Driver details should not leak into bindngs...
+> 
+> OK, will remove the info on driver details.
+> 
+> > 
+> > As mentioned in the other patch, I don't think this is the way to handle
+> > this. I think we need a phandle + args representation.
+> 
+> This is an optional parameter for now and I was going to revise the
+> description based on comments from Kumar Gala on this thread, but I will
+> wait and adjust this based on the outcome on the first patch.
 
+Ok.
 
+> 
+> > 
+> >>> +- hwlock-num-locks:	This property is not required on OMAP SoCs, since the
+> >>> +			number of locks present within a device can be deduced
+> >>> +			from the SPINLOCK_SYSSTATUS device register.
+> > 
+> > Huh? Why define this property at all here if we don't need it and don't
+> > use it?
+> > 
+> > The common document should state that specific bindings may use it and
+> > should explicitly state if they do, rather than stating they don't...
+> 
+> Yeah, I wasn't sure how to go about the split between the common file
+> and the platform-specific bindings. I will clean this up and revise the
+> common bindings.
 
+Ok.
+
+Cheers,
+Mark.
+> 
