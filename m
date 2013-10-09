@@ -1,41 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757238Ab3JIKyB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 06:54:01 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:62169 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751611Ab3JIKyA (ORCPT
+	id S1757248Ab3JIKyK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 06:54:10 -0400
+Received: from numidia.opendz.org ([98.142.220.152]:53853 "EHLO
+	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752105Ab3JIKyG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 06:54:00 -0400
-Date: Wed, 9 Oct 2013 11:53:57 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-Cc: "'linux-arm-msm-owner@vger.kernel.org'" 
-	<linux-arm-msm-owner@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: SDIV / UDIV  Question
-Message-ID: <20131009105357.GC6564@mudshark.cambridge.arm.com>
-References: <35FD53F367049845BC99AC72306C23D1014D1A0971AC@CNBJMBX05.corpusers.net>
+	Wed, 9 Oct 2013 06:54:06 -0400
+Date: Wed, 9 Oct 2013 11:54:02 +0100
+From: Djalal Harouni <tixxdz@opendz.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        David Rientjes <rientjes@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        Djalal Harouni <tixxdz@gmail.com>
+Subject: Re: [PATCH v2 2/9] procfs: add proc_allow_access() to check if
+ file's opener may access task
+Message-ID: <20131009105402.GA4810@dztty>
+References: <20131004182353.GA2600@dztty>
+ <CALCETrVs2Nd82dpURQxAVetK814bAm8TvnSyA4e=YeTWxTFsmA@mail.gmail.com>
+ <20131004191113.GA3916@dztty>
+ <CALCETrVMBh0nNgpOHOMrsOjHez7NnCNbY5nHxeQ3RToP4nKO+A@mail.gmail.com>
+ <20131004192712.GA4334@dztty>
+ <CALCETrUuMRMgJ1OV3-ZRQ5wwzSQsdf9tKY9iKesk1QJPtj6-qw@mail.gmail.com>
+ <20131004194142.GA4524@dztty>
+ <CALCETrXghsx-2rK8QqgtfMaJJhkwcYgRMnqGQfKw-T3O7jBTUA@mail.gmail.com>
+ <20131005132337.GA4095@dztty>
+ <CALCETrV2YZUQsFiahmcQECF37=sX6EMiEEjwXX_mcuPf-X3-yw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <35FD53F367049845BC99AC72306C23D1014D1A0971AC@CNBJMBX05.corpusers.net>
+In-Reply-To: <CALCETrV2YZUQsFiahmcQECF37=sX6EMiEEjwXX_mcuPf-X3-yw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 09, 2013 at 08:08:05AM +0100, Wang, Yalin wrote:
-> I have a question about sdiv/ udiv  instructions :
-> In  armv7 A/R  TRM, it said sdiv/udiv will cause 
-> Divide by zero as undefined exception or just return zero
-> (decided by implementation) .
+On Mon, Oct 07, 2013 at 02:41:33PM -0700, Andy Lutomirski wrote:
+> On Sat, Oct 5, 2013 at 6:23 AM, Djalal Harouni <tixxdz@opendz.org> wrote:
+> > On Fri, Oct 04, 2013 at 03:17:08PM -0700, Andy Lutomirski wrote:
+> >>
+> >> Exactly.  Hence the NAK.
+> > But Having two LSM Hooks there is really not practical!
 > 
-> So  in kernel ,  should we need register a undef hook to 
-> Get this undef exception and send SIGFPE to user space
-> Process ?  
+> It'd doable *if* it turns out that it's the right solution.
+> 
+> But revoke seems much more likely to be simple, comprehensible, and
+> obviously correct to me.
+Yes Andy, I agree, revoke is much better!
 
-As far as I can see, this can only happen for R-class cores,
-based on SCTLR.DZ.
+But it will not handle or fix all the situations, as I've said what if
+revoke is not invloved here? there is no an execve from the target task!
 
-Will
+
+Remember:
+/proc/*/{stat,maps} and perhaps others have 0444 and don't have ptrace
+checks during ->open() to not break some userspace... especially
+/proc/*/stat file
+
+
+So you will have an fd on these privileged files!
+
+Current will execve a privileged process, and pass ptrace_may_access()
+checks during ->read()...
+
+Here revoke is not involved at all! so it will not fix these files and
+they will continue to be vulnerable.
+
+IMO to fix them, we must have the correct ptrace_may_access() check and
+this involves: current doing an execve + current's cred
+
+
+
+BTW, Andy we already return 0 (end of file) for /proc/*/mem
+  ->read()
+    ->mem_read()
+      ->mem_rw()
+        if (!atomic_inc_not_zero(&mm->mm_users))
+		return 0
+
+So can this be considered some sort of simple revoke?
+
+
+-- 
+Djalal Harouni
+http://opendz.org
