@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932466Ab3JIRdw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 13:33:52 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56522 "EHLO
+	id S932185Ab3JIReC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 13:34:02 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56536 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932435Ab3JIRdr (ORCPT
+	with ESMTP id S1753828Ab3JIRd7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 13:33:47 -0400
-Date: Wed, 9 Oct 2013 10:32:53 -0700
-From: tip-bot for Rik van Riel <tipbot@zytor.com>
-Message-ID: <tip-ca28aa53dd95868c9e38917b9881c09dacfacf1a@git.kernel.org>
+	Wed, 9 Oct 2013 13:33:59 -0400
+Date: Wed, 9 Oct 2013 10:33:22 -0700
+From: tip-bot for Mel Gorman <tipbot@zytor.com>
+Message-ID: <tip-3e6a9418cf05638b103e34f5d13be0321872e623@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         peterz@infradead.org, hannes@cmpxchg.org, riel@redhat.com,
         aarcange@redhat.com, srikar@linux.vnet.ibm.com, mgorman@suse.de,
@@ -18,11 +18,12 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         peterz@infradead.org, hannes@cmpxchg.org, riel@redhat.com,
         aarcange@redhat.com, srikar@linux.vnet.ibm.com, mgorman@suse.de,
         tglx@linutronix.de
-In-Reply-To: <1381141781-10992-55-git-send-email-mgorman@suse.de>
-References: <1381141781-10992-55-git-send-email-mgorman@suse.de>
+In-Reply-To: <1381141781-10992-58-git-send-email-mgorman@suse.de>
+References: <1381141781-10992-58-git-send-email-mgorman@suse.de>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/numa: Fix task or group comparison
-Git-Commit-ID: ca28aa53dd95868c9e38917b9881c09dacfacf1a
+Subject: [tip:sched/core] sched/numa:
+  Take false sharing into account when adapting scan rate
+Git-Commit-ID: 3e6a9418cf05638b103e34f5d13be0321872e623
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,98 +32,66 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 09 Oct 2013 10:32:59 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 09 Oct 2013 10:33:29 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ca28aa53dd95868c9e38917b9881c09dacfacf1a
-Gitweb:     http://git.kernel.org/tip/ca28aa53dd95868c9e38917b9881c09dacfacf1a
-Author:     Rik van Riel <riel@redhat.com>
-AuthorDate: Mon, 7 Oct 2013 11:29:32 +0100
+Commit-ID:  3e6a9418cf05638b103e34f5d13be0321872e623
+Gitweb:     http://git.kernel.org/tip/3e6a9418cf05638b103e34f5d13be0321872e623
+Author:     Mel Gorman <mgorman@suse.de>
+AuthorDate: Mon, 7 Oct 2013 11:29:35 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 9 Oct 2013 14:48:08 +0200
+CommitDate: Wed, 9 Oct 2013 14:48:14 +0200
 
-sched/numa: Fix task or group comparison
+sched/numa: Take false sharing into account when adapting scan rate
 
-This patch separately considers task and group affinities when
-searching for swap candidates during NUMA placement. If tasks
-are part of the same group, or no group at all, the task weights
-are considered.
+Scan rate is altered based on whether shared/private faults dominated.
+task_numa_group() may detect false sharing but that information is not
+taken into account when adapting the scan rate. Take it into account.
 
-Some hysteresis is added to prevent tasks within one group from
-getting bounced between NUMA nodes due to tiny differences.
-
-If tasks are part of different groups, the code compares group
-weights, in order to favor grouping task groups together.
-
-The patch also changes the group weight multiplier to be the
-same as the task weight multiplier, since the two are no longer
-added up like before.
-
-Signed-off-by: Rik van Riel <riel@redhat.com>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Rik van Riel <riel@redhat.com>
 Cc: Andrea Arcangeli <aarcange@redhat.com>
 Cc: Johannes Weiner <hannes@cmpxchg.org>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1381141781-10992-55-git-send-email-mgorman@suse.de
+Link: http://lkml.kernel.org/r/1381141781-10992-58-git-send-email-mgorman@suse.de
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/fair.c | 32 +++++++++++++++++++++++++-------
- 1 file changed, 25 insertions(+), 7 deletions(-)
+ kernel/sched/fair.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 6f45461..423316c 100644
+index 222c2d0..d26a16e 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -962,7 +962,7 @@ static inline unsigned long group_weight(struct task_struct *p, int nid)
- 	if (!total_faults)
- 		return 0;
- 
--	return 1200 * group_faults(p, nid) / total_faults;
-+	return 1000 * group_faults(p, nid) / total_faults;
+@@ -1381,7 +1381,8 @@ static void double_lock(spinlock_t *l1, spinlock_t *l2)
+ 	spin_lock_nested(l2, SINGLE_DEPTH_NESTING);
  }
  
- static unsigned long weighted_cpuload(const int cpu);
-@@ -1068,16 +1068,34 @@ static void task_numa_compare(struct task_numa_env *env,
+-static void task_numa_group(struct task_struct *p, int cpupid, int flags)
++static void task_numa_group(struct task_struct *p, int cpupid, int flags,
++			int *priv)
+ {
+ 	struct numa_group *grp, *my_grp;
+ 	struct task_struct *tsk;
+@@ -1447,6 +1448,9 @@ static void task_numa_group(struct task_struct *p, int cpupid, int flags)
+ 	if (flags & TNF_SHARED)
+ 		join = true;
  
- 		/*
- 		 * If dst and source tasks are in the same NUMA group, or not
--		 * in any group then look only at task weights otherwise give
--		 * priority to the group weights.
-+		 * in any group then look only at task weights.
- 		 */
--		if (!cur->numa_group || !env->p->numa_group ||
--		    cur->numa_group == env->p->numa_group) {
-+		if (cur->numa_group == env->p->numa_group) {
- 			imp = taskimp + task_weight(cur, env->src_nid) -
- 			      task_weight(cur, env->dst_nid);
-+			/*
-+			 * Add some hysteresis to prevent swapping the
-+			 * tasks within a group over tiny differences.
-+			 */
-+			if (cur->numa_group)
-+				imp -= imp/16;
- 		} else {
--			imp = groupimp + group_weight(cur, env->src_nid) -
--			       group_weight(cur, env->dst_nid);
-+			/*
-+			 * Compare the group weights. If a task is all by
-+			 * itself (not part of a group), use the task weight
-+			 * instead.
-+			 */
-+			if (env->p->numa_group)
-+				imp = groupimp;
-+			else
-+				imp = taskimp;
++	/* Update priv based on whether false sharing was detected */
++	*priv = !join;
 +
-+			if (cur->numa_group)
-+				imp += group_weight(cur, env->src_nid) -
-+				       group_weight(cur, env->dst_nid);
-+			else
-+				imp += task_weight(cur, env->src_nid) -
-+				       task_weight(cur, env->dst_nid);
- 		}
+ 	if (join && !get_numa_group(grp))
+ 		join = false;
+ 
+@@ -1545,7 +1549,7 @@ void task_numa_fault(int last_cpupid, int node, int pages, int flags)
+ 	} else {
+ 		priv = cpupid_match_pid(p, last_cpupid);
+ 		if (!priv && !(flags & TNF_NO_GROUP))
+-			task_numa_group(p, last_cpupid, flags);
++			task_numa_group(p, last_cpupid, flags, &priv);
  	}
  
+ 	/*
