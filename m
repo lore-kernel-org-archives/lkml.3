@@ -1,200 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752590Ab3JIOBI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 10:01:08 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:62163 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751769Ab3JIOBG (ORCPT
+	id S1753398Ab3JIOEF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 10:04:05 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:56427 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752088Ab3JIOED (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 10:01:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <20131009132837.GA23021@ab42.lan>
-References: <20131008122145.GA21985@ab42.lan>
-	<1381235122-23730-1-git-send-email-christian.ruppert@abilis.com>
-	<CACRpkdafaNE_fgiq8iW=_gT5gDVC_H8m-+0dfpunhAantLdJwQ@mail.gmail.com>
-	<20131009132837.GA23021@ab42.lan>
-Date: Wed, 9 Oct 2013 16:01:05 +0200
-Message-ID: <CACRpkdbo9MOuCY_UWhzbWwEAom_Z3=Vi575ELix9j3hsZdBzZw@mail.gmail.com>
-Subject: Re: [PATCH 01/03] Make non-linear GPIO ranges accesible from gpiolib
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Christian Ruppert <christian.ruppert@abilis.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Patrice CHOTARD <patrice.chotard@st.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Sascha Leuenberger <sascha.leuenberger@abilis.com>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 9 Oct 2013 10:04:03 -0400
+X-AuditID: cbfee61b-b7f776d0000016c8-8d-52556251564a
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+Cc: linux-pm@vger.kernel.org, naveenkrishna.ch@gmail.com, rui.zhang@intel.com,
+        eduardo.valentin@ti.com, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, amit.daniel@samsung.com,
+        kgene.kim@samsung.com, devicetree@vger.kernel.org,
+        Lukasz Majewski <l.majewski@samsung.com>
+Subject: Re: [PATCH 1/3 v4] thermal: samsung: correct the fall interrupt en,
+ status bit fields
+Date: Wed, 09 Oct 2013 16:03:54 +0200
+Message-id: <2386580.3V2pzai3k2@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-52-generic-pae; KDE/4.8.5; i686; ; )
+In-reply-to: <1381320509-23967-1-git-send-email-ch.naveen@samsung.com>
+References: <1378268629-2886-3-git-send-email-ch.naveen@samsung.com>
+ <1381320509-23967-1-git-send-email-ch.naveen@samsung.com>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=ISO-8859-1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrALMWRmVeSWpSXmKPExsVy+t9jAd3ApNAgg8MNEhYNV0Ms7j4/zGgx
+	/8g5Vos1+38yWfQuuMpm8ebhZkaLy7vmsFl87j3CaDHj/D4mi0Xb/jNbPHnYx+bA7bFz1l12
+	j8V7XjJ59G1Zxehx/MZ2Jo/Pm+QCWKO4bFJSczLLUov07RK4Mt5N/85c0KtScWN2VgPjIrku
+	Rk4OCQETiYmbJ7BA2GISF+6tZ+ti5OIQEljEKNE9cQ07hNPCJLHs8RmwKjYBK4mJ7asYQWwR
+	oO7jr86AFTELLGaSmLfzPRNIQlggQeLHyR4wm0VAVaLt72xmEJtXQFPizfJ1YHFRAU+JT5OW
+	gsU5BdwkLs/qZYLY1sAoceFwEwtEg6DEj8n3wGxmAXmJffunskLYOhL7W6exTWAUmIWkbBaS
+	sllIyhYwMq9iFE0tSC4oTkrPNdIrTswtLs1L10vOz93ECI6HZ9I7GFc1WBxiFOBgVOLhfcAf
+	EiTEmlhWXJl7iFGCg1lJhNc4OjRIiDclsbIqtSg/vqg0J7X4EKM0B4uSOO/BVutAIYH0xJLU
+	7NTUgtQimCwTB6dUA+OEpTqzH1Vdn18X9FNPmDdAW/WP0aHNrwQUfviJbf7l8Kr70HWG5C/t
+	m1bNvFX47JjPfc0r7GUyXxgZ8vxc99y9W2+fw1DT33734a1nKm37mdpqCro3dDeH6U+IWZmd
+	OMvO8IeC26LL++tvTMl+XlvG9i2hNcCfKfJK4PKPq5bKfT8i76SXeE2JpTgj0VCLuag4EQA/
+	NcTWgwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 9, 2013 at 3:28 PM, Christian Ruppert
-<christian.ruppert@abilis.com> wrote:
-> On Wed, Oct 09, 2013 at 01:58:35PM +0200, Linus Walleij wrote:
->> On Tue, Oct 8, 2013 at 2:25 PM, Christian Ruppert
->> <christian.ruppert@abilis.com> wrote:
->> > +In addition, named groups of pins can be mapped to pin groups of a given
->> > +pin controller using the gpio-ranges property as described below:
->> > +
->> > +       gpio-range-list ::= <single-gpio-range> [gpio-range-list]
->> > +       single-gpio-range ::= <numeric-gpio-range> | <named-gpio-range>
->> > +       numeric-gpio-range ::=
->> > +                       <pinctrl-phandle> <gpio-base> <pinctrl-base> <count>
->> > +       named-gpio-range ::= <pinctrl-phandle> <gpio-base> '<0 0>'
->> > +       pinctrl-phanle : phandle to pin controller node.
->>
->> phanle really?
->
-> Yes, this is actually identical to the numeric ranges. It specifies the
-> pin controller which is "responsible" for the pins/pin group in
-> question.
 
-I was more thinking about the speling, should it not be "phandle"?
+Hi,
 
-> The named pin groups actually are a physical property of the pin
-> controller hardware (well, at least the pin groups are, the names are
-> not ;).
+All patches (#1-#3) look good to me, FWIW you can add:
 
-OK.
+	Reviewed-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 
-It would be good if the names of the group could match, as close
-as possible, the names given to the same identity in the data
-sheet or similar documentation.
+Please note that (at least) patch #3 conflicts with Lukasz's EXYNOS4412
+fixup patchset:
 
-> Obviously, a driver (no matter for which OS) must be aware of
-> this hardware property so it can decide which value to write to which
-> register in order to control the pin mux. If we don't want to split (or
-> worse: duplicate) that information in the driver and device tree, I see
-> two alternatives.
-> 1. Define register offsets, masks and register values and the list of
->    pins controlled by those register/value pairs in the device tree.
+	https://lkml.org/lkml/2013/10/9/35
 
-This is not a viable alternative of course.
+It is up to Eduardo to resolve this but it probably would be better to
+merge EXYNOS4412 fixes first and then add EXYNOS5420 support. This would
+require you to port patch #3 over Lukasz's patchset though.
 
-> 2. Define register offsets, masks and register values and the list of
->    pins controlled by those register/value pairs in the drivers. Define
->    a portable high level interface for the device tree.
->
-> My personal preference is clearly 2.
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
 
-Yes you are also making a very good case for it, and I tend to
-think the same.
+On Wednesday, October 09, 2013 05:38:27 PM Naveen Krishna Chatradhi wrote:
+> The FALL interrupt related en, status bits are available at an offset of
+> 16 on INTEN, INTSTAT registers and at an offset of
+> 12 on INTCLEAR register.
+> 
+> This patch corrects the same for exyns5250 and exynos5440
+> 
+> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+> ---
+> Changes since v1:
+> Changes since v2:
+> Changes since v3:
+>   None
+> 
+>  drivers/thermal/samsung/exynos_tmu.c      |    2 +-
+>  drivers/thermal/samsung/exynos_tmu.h      |    2 ++
+>  drivers/thermal/samsung/exynos_tmu_data.c |    2 ++
+>  drivers/thermal/samsung/exynos_tmu_data.h |    3 ++-
+>  4 files changed, 7 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
+> index b43afda..af69209 100644
+> --- a/drivers/thermal/samsung/exynos_tmu.c
+> +++ b/drivers/thermal/samsung/exynos_tmu.c
+> @@ -265,7 +265,7 @@ skip_calib_data:
+>  				data->base + reg->threshold_th1);
+>  
+>  		writel((reg->inten_rise_mask << reg->inten_rise_shift) |
+> -			(reg->inten_fall_mask << reg->inten_fall_shift),
+> +			(reg->inten_fall_mask << reg->intclr_fall_shift),
+>  				data->base + reg->tmu_intclear);
+>  
+>  		/* if last threshold limit is also present */
+> diff --git a/drivers/thermal/samsung/exynos_tmu.h b/drivers/thermal/samsung/exynos_tmu.h
+> index b364c9e..7c6c34a 100644
+> --- a/drivers/thermal/samsung/exynos_tmu.h
+> +++ b/drivers/thermal/samsung/exynos_tmu.h
+> @@ -134,6 +134,7 @@ enum soc_type {
+>   * @inten_fall3_shift: shift bits of falling 3 interrupt bits.
+>   * @tmu_intstat: Register containing the interrupt status values.
+>   * @tmu_intclear: Register for clearing the raised interrupt status.
+> + * @intclr_fall_shift: shift bits for interrupt clear fall 0
+>   * @emul_con: TMU emulation controller register.
+>   * @emul_temp_shift: shift bits of emulation temperature.
+>   * @emul_time_shift: shift bits of emulation time.
+> @@ -204,6 +205,7 @@ struct exynos_tmu_registers {
+>  	u32	tmu_intstat;
+>  
+>  	u32	tmu_intclear;
+> +	u32	intclr_fall_shift;
+>  
+>  	u32	emul_con;
+>  	u32	emul_temp_shift;
+> diff --git a/drivers/thermal/samsung/exynos_tmu_data.c b/drivers/thermal/samsung/exynos_tmu_data.c
+> index 9002499..23fea23 100644
+> --- a/drivers/thermal/samsung/exynos_tmu_data.c
+> +++ b/drivers/thermal/samsung/exynos_tmu_data.c
+> @@ -122,6 +122,7 @@ static const struct exynos_tmu_registers exynos5250_tmu_registers = {
+>  	.inten_fall0_shift = EXYNOS_TMU_INTEN_FALL0_SHIFT,
+>  	.tmu_intstat = EXYNOS_TMU_REG_INTSTAT,
+>  	.tmu_intclear = EXYNOS_TMU_REG_INTCLEAR,
+> +	.intclr_fall_shift = EXYNOS_TMU_CLEAR_FALL_INT_SHIFT,
+>  	.emul_con = EXYNOS_EMUL_CON,
+>  	.emul_temp_shift = EXYNOS_EMUL_DATA_SHIFT,
+>  	.emul_time_shift = EXYNOS_EMUL_TIME_SHIFT,
+> @@ -210,6 +211,7 @@ static const struct exynos_tmu_registers exynos5440_tmu_registers = {
+>  	.inten_fall0_shift = EXYNOS5440_TMU_INTEN_FALL0_SHIFT,
+>  	.tmu_intstat = EXYNOS5440_TMU_S0_7_IRQ,
+>  	.tmu_intclear = EXYNOS5440_TMU_S0_7_IRQ,
+> +	.intclr_fall_shift = EXYNOS_TMU_CLEAR_FALL_INT_SHIFT,
+>  	.tmu_irqstatus = EXYNOS5440_TMU_IRQ_STATUS,
+>  	.emul_con = EXYNOS5440_TMU_S0_7_DEBUG,
+>  	.emul_temp_shift = EXYNOS_EMUL_DATA_SHIFT,
+> diff --git a/drivers/thermal/samsung/exynos_tmu_data.h b/drivers/thermal/samsung/exynos_tmu_data.h
+> index dc7feb5..8788a87 100644
+> --- a/drivers/thermal/samsung/exynos_tmu_data.h
+> +++ b/drivers/thermal/samsung/exynos_tmu_data.h
+> @@ -69,9 +69,10 @@
+>  #define EXYNOS_TMU_RISE_INT_MASK	0x111
+>  #define EXYNOS_TMU_RISE_INT_SHIFT	0
+>  #define EXYNOS_TMU_FALL_INT_MASK	0x111
+> -#define EXYNOS_TMU_FALL_INT_SHIFT	12
+> +#define EXYNOS_TMU_FALL_INT_SHIFT	16
+>  #define EXYNOS_TMU_CLEAR_RISE_INT	0x111
+>  #define EXYNOS_TMU_CLEAR_FALL_INT	(0x111 << 12)
+> +#define EXYNOS_TMU_CLEAR_FALL_INT_SHIFT	12
+>  #define EXYNOS_TMU_TRIP_MODE_SHIFT	13
+>  #define EXYNOS_TMU_TRIP_MODE_MASK	0x7
+>  #define EXYNOS_TMU_THERM_TRIP_EN_SHIFT	12
 
-But alt 1 is not the alternative, the alternative (3) is to reference
-the pin numbers in the device tree, if need be by a largeish
-set of one-pin-per-range ranges if these are disparate.
-
-Which is arguably quite ugly compared to (2) as well, but atleast
-reasonable.
-
->> Are you sure this is useable on Windows and OpenBSD without
->> first verbatim copying the structure of the Linux pinctrl driver?
->
-> Without knowing the pinctrl infrastructure in either Windows or OpenBSD,
-> I am actually convinced that this is _more_ portable than the numeric
-> ranges:
->
-> - The numeric ranges used today depend on a numbering scheme which
->   is specific to the Linux pinctrl framework.
-
-Not really, it's just a number, it is quite possible for driver developers
-to have this match an index number from the hardware documentation.
-Also these numbers are sparse, they don't have to be an array that
-begin with 0 and go to N. So *any* discrete numbering scheme will
-do, and it's not any more strange than the named groups, instead of
-putting five apples in a basket and labeling it "group" you can number
-the five apples { 7, 19, 22, 67, 216 } and say each one belongs in
-the basket.
-
-> One could very well
->   imagine pinctrl frameworks without any numbering scheme at all.
-
-Whether numbers or text labels are used to label the physical
-entities does not matter, what matters is that the device tree
-binding documentation is implementable by several OS:es.
-
-> - The actual numbers depend on the particulars of each individual Linux
->   pinctrl driver implementation.
-
-No, not from a device tree point of view. It is possible to select
-a numbering scheme coming from the device tree and use that
-in the driver instead of the other way around.
-
-Do not always assume that the driver comes first. It is possible
-to enumerate the pins in a DT binding and tree before even starting
-to implement the driver, and the pinctrl framework will cope with
-whatever number scheme you choose.
-
-> Adding the higher level concept of named pin groups (which accidentally
-> exists in Linux already) seems to be an elegant path to better
-> portability here.
-
-Same same, but it deals with sets of pins instead of individual
-pins.
-
->> Empty group names for "anonymous" groups (I guess these become
->> linear then?) is really looking strange. They are empty strings with
->> a semantic effect, that is quite disturbing. but I don't know a better
->> way either.
->
-> The alternative would probably be to skip them altogether but I'm afraid
-> that that makes it even worse...
-
-We'll have to live with this...
-
->> > diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
->> > index 2a00239..52e2e6f 100644
->> > --- a/drivers/pinctrl/core.c
->> > +++ b/drivers/pinctrl/core.c
->> > @@ -456,6 +456,29 @@ struct pinctrl_dev *pinctrl_find_and_add_gpio_range(const char *devname,
->> >  }
->> >  EXPORT_SYMBOL_GPL(pinctrl_find_and_add_gpio_range);
->> >
->> > +int pinctrl_add_gpio_pingrp_range(struct pinctrl_dev *pctldev,
->> > +                               struct pinctrl_gpio_range *range,
->> > +                               char *pin_group)
->> > +{
->> > +       const struct pinctrl_ops *pctlops = pctldev->desc->pctlops;
->> > +       int group_selector, ret;
->> > +
->> > +       group_selector = pinctrl_get_group_selector(pctldev, pin_group);
->> > +       if (group_selector < 0)
->> > +               return group_selector;
->> > +
->> > +       ret = pctlops->get_group_pins(pctldev, group_selector,
->> > +                               &range->pins,
->> > +                               &range->npins);
->> > +       if (ret < 0)
->> > +               return ret;
->> > +
->> > +       pinctrl_add_gpio_range(pctldev, range);
->> > +       return 0;
->> > +
->> > +}
->> > +EXPORT_SYMBOL_GPL(pinctrl_add_gpio_pingrp_range);
->>
->> I don't think this is very elegant. It's quite strange that the range partly
->> populated from the GPIO side gets the corresponding pins filled
->> in by this function. Can't we think about something more elegant?
->> It reflects the strangeness I'm reacting to above I guess.
->
-> I don't see in which respect the existence of this function is different
-> from the existence of pinctrl_find_and_add_gpio_range (the sole purpose
-> of which is to be called from gpiochip_add_pin_range). I like the idea
-> of being strict about the gpio framework only managing GPIO related
-> things and the pinctrl framework only managing pinctrl related things.
-> Thus, I adopted this concept to gpiochip_add_pingroup_range (which calls
-> pinctrl_add_gpio_pingrp_range).
->
-> Tell me if you want me to migrate the get_group_pins call to
-> gpiochip_add_pingroup_range but IMHO this would be less elegant.
-
-Hm there are several ways to skin this cat but well, this is OK.
-
-Yours,
-Linus Walleij
