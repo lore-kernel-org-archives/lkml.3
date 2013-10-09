@@ -1,81 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755371Ab3JIOkz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 10:40:55 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:55597 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753871Ab3JIOkx (ORCPT
+	id S1755436Ab3JIOlC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 10:41:02 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:37611 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753871Ab3JIOlA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 10:40:53 -0400
-Date: Wed, 9 Oct 2013 09:40:45 -0500
-From: Seth Jennings <spartacus06@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>, linux-mm@kvack.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org, Shaohua Li <shli@fusionio.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: Re: [PATCH] frontswap: enable call to invalidate area on swapoff
-Message-ID: <20131009144045.GA5406@variantweb.net>
-References: <1381159541-13981-1-git-send-email-k.kozlowski@samsung.com>
- <20131007150338.1fdee18b536bb1d9fe41a07b@linux-foundation.org>
- <1381220000.16135.10.camel@AMDC1943>
- <20131008130853.96139b79a0a4d3aaacc79ed2@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131008130853.96139b79a0a4d3aaacc79ed2@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 9 Oct 2013 10:41:00 -0400
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: hirofumi@mail.parknet.co.jp, akpm@linux-foundation.org
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        a.sahrawat@samsung.com, Namjae Jeon <linkinjeon@gmail.com>,
+        Namjae Jeon <namjae.jeon@samsung.com>
+Subject: [PATCH 3/5] fat: zero out seek range on _fat_get_block
+Date: Wed,  9 Oct 2013 23:40:53 +0900
+Message-Id: <1381329653-11905-1-git-send-email-linkinjeon@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 08, 2013 at 01:08:53PM -0700, Andrew Morton wrote:
-> On Tue, 08 Oct 2013 10:13:20 +0200 Krzysztof Kozlowski <k.kozlowski@samsung.com> wrote:
-> 
-> > On pon, 2013-10-07 at 15:03 -0700, Andrew Morton wrote:
-> > > On Mon, 07 Oct 2013 17:25:41 +0200 Krzysztof Kozlowski <k.kozlowski@samsung.com> wrote:
-> > > 
-> > > > During swapoff the frontswap_map was NULL-ified before calling
-> > > > frontswap_invalidate_area(). However the frontswap_invalidate_area()
-> > > > exits early if frontswap_map is NULL. Invalidate was never called during
-> > > > swapoff.
-> > > > 
-> > > > This patch moves frontswap_map_set() in swapoff just after calling
-> > > > frontswap_invalidate_area() so outside of locks
-> > > > (swap_lock and swap_info_struct->lock). This shouldn't be a problem as
-> > > > during swapon the frontswap_map_set() is called also outside of any
-> > > > locks.
-> > > > 
-> > > 
-> > > Ahem.  So there's a bunch of code in __frontswap_invalidate_area()
-> > > which hasn't ever been executed and nobody noticed it.  So perhaps that
-> > > code isn't actually needed?
-> > > 
-> > > More seriously, this patch looks like it enables code which hasn't been
-> > > used or tested before.  How well tested was this?
-> > > 
-> > > Are there any runtime-visible effects from this change?
-> > 
-> > I tested zswap on x86 and x86-64 and there was no difference. This is
-> > good as there shouldn't be visible anything because swapoff is unusing
-> > all pages anyway:
-> > 	try_to_unuse(type, false, 0); /* force all pages to be unused */
-> > 
-> > I haven't tested other frontswap users.
-> 
-> So is that code in __frontswap_invalidate_area() unneeded?
+From: Namjae Jeon <namjae.jeon@samsung.com>
 
-Yes, to expand on what Bob said, __frontswap_invalidate_area() is still
-needed to let any frontswap backend free per-swaptype resources.
+For normal buffered write operations, normally if we try to write to an
+offset > than file size, it does a cont_expand_zero till that offset.
+Now, in case of fallocated regions, since the blocks are already allocated.
+So, make it zero out that buffers for those blocks till the seek'ed offset.
 
-__frontswap_invalidate_area() is _not_ for freeing structures associated
-with individual swapped out pages since all of the pages should be
-brought back into memory by try_to_unuse() before
-__frontswap_invalidate_area() is called.
+Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
+---
+ fs/fat/cache.c |    3 ++-
+ fs/fat/inode.c |   15 +++++++++++++--
+ 2 files changed, 15 insertions(+), 3 deletions(-)
 
-The reason we never noticed this for zswap is that zswap has no
-dynamically allocated per-type resources.  In the expected case,
-where all of the pages have been drained from zswap,
-zswap_frontswap_invalidate_area() is a no-op.
+diff --git a/fs/fat/cache.c b/fs/fat/cache.c
+index 37572c2..7dc689e 100644
+--- a/fs/fat/cache.c
++++ b/fs/fat/cache.c
+@@ -334,7 +334,8 @@ int fat_bmap(struct inode *inode, sector_t sector, sector_t *phys,
+ 		 */
+ 		last_block = (MSDOS_I(inode)->i_disksize + (blocksize - 1))
+ 			>> blocksize_bits;
+-		if (sector >= last_block)
++		if (sector >= last_block &&
++		    MSDOS_I(inode)->mmu_private == MSDOS_I(inode)->i_disksize)
+ 			return 0;
+ 	}
+ 
+diff --git a/fs/fat/inode.c b/fs/fat/inode.c
+index 2211489..2f2a265 100644
+--- a/fs/fat/inode.c
++++ b/fs/fat/inode.c
+@@ -61,15 +61,26 @@ static inline int __fat_get_block(struct inode *inode, sector_t iblock,
+ 	struct super_block *sb = inode->i_sb;
+ 	struct msdos_sb_info *sbi = MSDOS_SB(sb);
+ 	unsigned long mapped_blocks;
+-	sector_t phys;
++	sector_t phys, last_block, disk_block;
+ 	int err, offset;
++	const unsigned long blocksize = sb->s_blocksize;
++	const unsigned char blocksize_bits = sb->s_blocksize_bits;
+ 
+ 	err = fat_bmap(inode, iblock, &phys, &mapped_blocks, create);
+ 	if (err)
+ 		return err;
+ 	if (phys) {
+-		map_bh(bh_result, sb, phys);
+ 		*max_blocks = min(mapped_blocks, *max_blocks);
++		last_block = (MSDOS_I(inode)->mmu_private + (blocksize - 1))
++			>> blocksize_bits;
++		disk_block = (MSDOS_I(inode)->i_disksize + (blocksize - 1))
++			>> blocksize_bits;
++		if (iblock >= last_block && iblock <= disk_block) {
++			MSDOS_I(inode)->mmu_private +=
++				*max_blocks << blocksize_bits;
++			set_buffer_new(bh_result);
++		}
++		map_bh(bh_result, sb, phys);
+ 		return 0;
+ 	}
+ 	if (!create)
+-- 
+1.7.9.5
 
-Seth
