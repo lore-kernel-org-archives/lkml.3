@@ -1,72 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757212Ab3JIKPQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 06:15:16 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:59158 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752735Ab3JIKPO (ORCPT
+	id S1756816Ab3JIK0B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 06:26:01 -0400
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:54574 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752444Ab3JIKZ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 06:15:14 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
-Message-ID: <52552C9F.2030404@jp.fujitsu.com>
-Date: Wed, 09 Oct 2013 19:14:55 +0900
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Wed, 9 Oct 2013 06:25:59 -0400
+Message-ID: <52552F2E.7080007@monstr.eu>
+Date: Wed, 09 Oct 2013 12:25:50 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Alexey Dobriyan <adobriyan@gmail.com>
-CC: Michael Holzheu <holzheu@linux.vnet.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Vivek Goyal <vgoyal@redhat.com>, Jan Willeke <willeke@de.ibm.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, kexec@lists.infradead.org
-Subject: Re: mmap for /proc/vmcore broken since 3.12-rc1
-References: <20131002140356.63706540@holzheu>	<524D0ADF.2010507@jp.fujitsu.com>	<52521FA5.3040101@jp.fujitsu.com> <CACVxJT8S7kA92=80DWVmVJJvbnaQ6WkyvsiFq4wP37WHV=tfuA@mail.gmail.com>
-In-Reply-To: <CACVxJT8S7kA92=80DWVmVJJvbnaQ6WkyvsiFq4wP37WHV=tfuA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+CC: monstr@monstr.eu, Michal Simek <michal.simek@xilinx.com>,
+        linux-kernel@vger.kernel.org,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH 3/3] video: xilinxfb: Simplify error path
+References: <7016a90750626ba866dddc6f85cfdd71943f6891.1378965270.git.michal.simek@xilinx.com> <940bbdfc5c67282ab461b9c82b55f18fc34c959d.1378965270.git.michal.simek@xilinx.com> <5236D4BD.9050707@ti.com> <5236DE60.3020901@monstr.eu> <5236DEBF.7070003@ti.com> <52496921.9080603@monstr.eu> <52551BAB.40805@ti.com>
+In-Reply-To: <52551BAB.40805@ti.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="W0u64NRjCG7Tx0BFFb7bUPXGaf2J9EwaB"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--W0u64NRjCG7Tx0BFFb7bUPXGaf2J9EwaB
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-(2013/10/08 21:49), Alexey Dobriyan wrote:
-> On Mon, Oct 7, 2013 at 5:42 AM, HATAYAMA Daisuke
-> <d.hatayama@jp.fujitsu.com> wrote:
->
->> +static unsigned long
->> +get_unmapped_area_vmcore(struct file *filp, unsigned long addr,
->> +                        unsigned long len, unsigned long pgoff,
->> +                        unsigned long flags)
->> +{
->> +#ifdef CONFIG_MMU
->> +       return current->mm->get_unmapped_area(filp, addr, len, pgoff,
->> flags);
->> +#else
->> +       return -EIO;
->> +#endif
->> +}
->> +
->>   static const struct file_operations proc_vmcore_operations = {
->>          .read           = read_vmcore,
->>          .llseek         = default_llseek,
->>          .mmap           = mmap_vmcore,
->> +       .get_unmapped_area = get_unmapped_area_vmcore,
->
-> I think current->mm->get_unmapped_area should be used by core proc code.
+On 10/09/2013 11:02 AM, Tomi Valkeinen wrote:
+> On 30/09/13 15:05, Michal Simek wrote:
+>> Hi Tomi,
+>>
+>> On 09/16/2013 12:34 PM, Tomi Valkeinen wrote:
+>>> On 16/09/13 13:33, Michal Simek wrote:
+>>>> On 09/16/2013 11:51 AM, Tomi Valkeinen wrote:
+>>>>> On 12/09/13 08:54, Michal Simek wrote:
+>>>>>
+>>>>>> @@ -394,16 +382,12 @@ static int xilinxfb_release(struct device *d=
+ev)
+>>>>>>  	/* Turn off the display */
+>>>>>>  	xilinx_fb_out32(drvdata, REG_CTRL, 0);
+>>>>>>
+>>>>>> -	/* Release the resources, as allocated based on interface */
+>>>>>> -	if (drvdata->flags & BUS_ACCESS_FLAG)
+>>>>>> -		devm_iounmap(dev, drvdata->regs);
+>>>>>>  #ifdef CONFIG_PPC_DCR
+>>>>>> -	else
+>>>>>> +	/* Release the resources, as allocated based on interface */
+>>>>>> +	if (!(drvdata->flags & BUS_ACCESS_FLAG))
+>>>>>>  		dcr_unmap(drvdata->dcr_host, drvdata->dcr_len);
+>>>>>>  #endif
+>>>>>
+>>>>> I might be mistaken, and it's not strictly part of this series, but=
 
-What do you actually suggest here? You mean moving this code in proc code?
-I don't think you suggest so.
+>>>>> shouldn't dcr_unmap be called somewhere else also, if the probe fai=
+ls?
+>>>>
+>>>> yes. It should.
+>>>
+>>> Do you want me to apply these patches as they are, or do you want to
+>>> improve the series to include the dcr_unmap fix?
+>>
+>> Sorry I have missed this email.
+>>
+>> Yes please apply it as is. I don't have ppc hw here to be able to test=
+ this
+>> change.
+>=20
+> This series does not apply. Can you rebase on top of linux-next, and re=
+send?
 
-> ENOMEM bug looks unrelated though.
->
+Do you mean Stephen Rothwell linux-next or any your linux-next branch?
+No problem to do so if you send me link to the repo.
 
-Next step I'll do is to look into vm_unmapped_region() that looks for
-for a region fit to a given mmap request and returns its address.
-In particular, I'll focus on when vm_unmapped_region() could return
-kernel-space address.
+Thanks,
+Michal
 
--- 
-Thanks.
-HATAYAMA, Daisuke
 
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+--W0u64NRjCG7Tx0BFFb7bUPXGaf2J9EwaB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlJVLy4ACgkQykllyylKDCEI8wCcDywJY4UYFEwdjCSYuVyTAn3m
+ejAAn24z3Vla3ldZENVcAgHY8i3ZeXjN
+=rUv+
+-----END PGP SIGNATURE-----
+
+--W0u64NRjCG7Tx0BFFb7bUPXGaf2J9EwaB--
