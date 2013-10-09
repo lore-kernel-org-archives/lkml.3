@@ -1,85 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754699Ab3JIV0s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 17:26:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11443 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751986Ab3JIV0r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 17:26:47 -0400
-Date: Wed, 9 Oct 2013 18:26:33 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: kvm@vger.kernel.org, pbonzini@redhat.com, gleb@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/3] pvclock: detect watchdog reset at pvclock read
-Message-ID: <20131009212633.GB24695@amt.cnet>
-References: <20131008010515.516032211@amt.cnet>
- <20131008010552.779616517@amt.cnet>
- <20131008133705.GR227855@redhat.com>
- <20131008220811.GC16625@amt.cnet>
- <20131009135519.GF227855@redhat.com>
+	id S1755322Ab3JIV3c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 17:29:32 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:45551 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753951Ab3JIV3a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 17:29:30 -0400
+Date: Wed, 9 Oct 2013 14:29:20 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu, fengguang.wu@intel.com, stephen@networkplumber.org,
+        davem@davemloft.net, bridge@lists.linux-foundation.org,
+        netdev@vger.kernel.org, tgraf@suug.ch, gaofeng@cn.fujitsu.com,
+        linux-decnet-user@lists.sourceforge.net, kuznet@ms2.inr.ac.ru,
+        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
+        linville@tuxdriver.com, johannes@sipsolutions.net
+Subject: [PATCH v2 tip/core/rcu 0/13] Sparse-related updates for 3.13
+Message-ID: <20131009212920.GA15413@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131009135519.GF227855@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13100921-1344-0000-0000-0000024E8130
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 09, 2013 at 09:55:19AM -0400, Don Zickus wrote:
-> On Tue, Oct 08, 2013 at 07:08:11PM -0300, Marcelo Tosatti wrote:
-> > On Tue, Oct 08, 2013 at 09:37:05AM -0400, Don Zickus wrote:
-> > > On Mon, Oct 07, 2013 at 10:05:17PM -0300, Marcelo Tosatti wrote:
-> > > > Implement reset of kernel watchdogs at pvclock read time. This avoids
-> > > > adding special code to every watchdog.
-> > > > 
-> > > > This is possible for watchdogs which measure time based on sched_clock() or 
-> > > > ktime_get() variants.
-> > > > 
-> > > > Suggested by Don Zickus.
-> > > > 
-> > > > Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
-> > > 
-> > > Awesome.  Thanks for figuring this out Marcelo.  Does that mean we can
-> > > revert commit 5d1c0f4a now? :-)
-> > 
-> > Unfortunately no: soft lockup watchdog does not measure time based on
-> > sched_clock but on hrtimer interrupt count :-(
-> 
-> I believe it does.  See __touch_watchdog() which calls get_timestamp() -->
-> local_clock().  That is how it calculates the duration of the softlockup.
-> 
-> Now with your patch, it just sets the timestamp to zero with
-> touch_softlockup_watchdog_sync(), which is fine.  It will just sync up the
-> clock, set a new timestamp, and check again in the next hrtimer interrupt.
-> 
-> So I guess I am confused what that commit does compared to this patch.
-> 
-> > (see the the softlockup code in question, perhaps you can point to 
-> > something that i'm missing).
-> > 
-> > BTW, are you OK with printing additional steal time information?
-> > https://lkml.org/lkml/2013/6/27/755
-> 
-> Well, I thought this patch was supposed to replace that patch?  Why do you
-> still need that patch?
+Hello!
 
->From https://lkml.org/lkml/2013/7/3/675:
+This series features updates to allow sparse to do a better job of
+statically analyzing RCU usage:
 
-"Agree. However, can't see how there is a way around "having custom
-kvm/paravirt splat all over", for watchdogs that do:
+1.	Apply ACCESS_ONCE() to rcu_assign_pointer()'s target to prevent
+	comiler mischief.  Also require that the source pointer be from
+	the kernel address space.  Sometimes it can be from the RCU address
+	space, which necessitates the remaining patches in this series.
+	Which, it must be admitted, apply to a very small fraction of
+	the rcu_assign_pointer() invocations in the kernel.  This commit
+	courtesy of Josh Triplett.
 
-1. check for watchdog resets
-2. read time via sched_clock or xtime.
-3. based on 2, decide whether there has been a longer delay than
-acceptable.
+2-13.	Apply rcu_access_pointer() to avoid a number of false positives.
 
-This is the case for the softlockup timer interrupt. So the splat there
-is necessary (otherwise any potential notification of vm-pause event 
-noticed at 2 might be missed because its checked at 1).
+Changes from v1:
 
-For watchdogs that measure time based on interrupt event (such as hung
-task, rcu_cpu_stall, checking for the notification at sched_clock or
-lower is fine)."
+o	Fix grammar nit in commit logs.
+
+							Thanx, Paul
+
+
+ b/drivers/net/bonding/bond_alb.c  |    3 ++-
+ b/drivers/net/bonding/bond_main.c |    8 +++++---
+ b/include/linux/rcupdate.h        |   12 +++++++++++-
+ b/kernel/notifier.c               |    2 +-
+ b/net/bridge/br_mdb.c             |    2 +-
+ b/net/bridge/br_multicast.c       |    4 ++--
+ b/net/decnet/dn_route.c           |    5 +++--
+ b/net/ipv4/ip_sockglue.c          |    2 +-
+ b/net/ipv6/ip6_gre.c              |    2 +-
+ b/net/ipv6/ip6_tunnel.c           |    2 +-
+ b/net/ipv6/sit.c                  |    2 +-
+ b/net/mac80211/sta_info.c         |    4 ++--
+ b/net/wireless/scan.c             |   14 +++++++-------
+ 13 files changed, 38 insertions(+), 24 deletions(-)
 
