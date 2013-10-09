@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756942Ab3JIAPK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Oct 2013 20:15:10 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:60571 "EHLO
+	id S1756978Ab3JIAPY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Oct 2013 20:15:24 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:60572 "EHLO
 	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754760Ab3JIAPI (ORCPT
+	with ESMTP id S1756948Ab3JIAPS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Oct 2013 20:15:08 -0400
-Date: Wed, 09 Oct 2013 01:15:07 +0100
+	Tue, 8 Oct 2013 20:15:18 -0400
+Date: Wed, 09 Oct 2013 01:15:17 +0100
 To: torvalds@linux-foundation.org
-Subject: [RFC][PATCH 06/13] convert the rest of binfmt_elf_fdpic to
+Subject: [RFC][PATCH 07/13] switch elf_coredump_extra_notes_write() to
  dump_emit()
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
 User-Agent: Heirloom mailx 12.5 7/5/10
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <E1VThQh-0002xS-N5@ZenIV.linux.org.uk>
+Message-Id: <E1VThQr-0002xf-Ni@ZenIV.linux.org.uk>
 From: Al Viro <viro@ftp.linux.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,210 +25,252 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 ---
- fs/binfmt_elf_fdpic.c |  109 ++++++++++++++-----------------------------------
- 1 files changed, 31 insertions(+), 78 deletions(-)
+ arch/powerpc/include/asm/spu.h               |    3 +-
+ arch/powerpc/platforms/cell/spu_syscalls.c   |    5 ++-
+ arch/powerpc/platforms/cell/spufs/coredump.c |   44 ++++++++++----------------
+ arch/powerpc/platforms/cell/spufs/spufs.h    |    3 +-
+ fs/binfmt_elf.c                              |    7 ++--
+ include/linux/elf.h                          |    6 ++--
+ 6 files changed, 30 insertions(+), 38 deletions(-)
 
-diff --git a/fs/binfmt_elf_fdpic.c b/fs/binfmt_elf_fdpic.c
-index 77bf7e3..1806e25 100644
---- a/fs/binfmt_elf_fdpic.c
-+++ b/fs/binfmt_elf_fdpic.c
-@@ -1267,35 +1267,23 @@ static int notesize(struct memelfnote *en)
+diff --git a/arch/powerpc/include/asm/spu.h b/arch/powerpc/include/asm/spu.h
+index 93f280e..37b7ca3 100644
+--- a/arch/powerpc/include/asm/spu.h
++++ b/arch/powerpc/include/asm/spu.h
+@@ -235,6 +235,7 @@ extern long spu_sys_callback(struct spu_syscall_block *s);
  
- /* #define DEBUG */
+ /* syscalls implemented in spufs */
+ struct file;
++struct coredump_params;
+ struct spufs_calls {
+ 	long (*create_thread)(const char __user *name,
+ 					unsigned int flags, umode_t mode,
+@@ -242,7 +243,7 @@ struct spufs_calls {
+ 	long (*spu_run)(struct file *filp, __u32 __user *unpc,
+ 						__u32 __user *ustatus);
+ 	int (*coredump_extra_notes_size)(void);
+-	int (*coredump_extra_notes_write)(struct file *file, loff_t *foffset);
++	int (*coredump_extra_notes_write)(struct coredump_params *cprm);
+ 	void (*notify_spus_active)(void);
+ 	struct module *owner;
+ };
+diff --git a/arch/powerpc/platforms/cell/spu_syscalls.c b/arch/powerpc/platforms/cell/spu_syscalls.c
+index db4e638..3844f13 100644
+--- a/arch/powerpc/platforms/cell/spu_syscalls.c
++++ b/arch/powerpc/platforms/cell/spu_syscalls.c
+@@ -25,6 +25,7 @@
+ #include <linux/module.h>
+ #include <linux/syscalls.h>
+ #include <linux/rcupdate.h>
++#include <linux/binfmts.h>
  
--#define DUMP_WRITE(addr, nr, foffset)	\
--	do { if (!dump_write(file, (addr), (nr))) return 0; *foffset += (nr); } while(0)
--
--static int alignfile(struct file *file, loff_t *foffset)
-+static int alignfile(struct coredump_params *cprm)
- {
- 	static const char buf[4] = { 0, };
--	DUMP_WRITE(buf, roundup(*foffset, 4) - *foffset, foffset);
--	return 1;
-+	return dump_emit(cprm, buf, roundup(cprm->written, 4) - cprm->written);
+ #include <asm/spu.h>
+ 
+@@ -126,7 +127,7 @@ int elf_coredump_extra_notes_size(void)
+ 	return ret;
  }
  
--static int writenote(struct memelfnote *men, struct file *file,
--			loff_t *foffset)
-+static int writenote(struct memelfnote *men, struct coredump_params *cprm)
+-int elf_coredump_extra_notes_write(struct file *file, loff_t *foffset)
++int elf_coredump_extra_notes_write(struct coredump_params *cprm)
  {
- 	struct elf_note en;
- 	en.n_namesz = strlen(men->name) + 1;
- 	en.n_descsz = men->datasz;
- 	en.n_type = men->type;
+ 	struct spufs_calls *calls;
+ 	int ret;
+@@ -135,7 +136,7 @@ int elf_coredump_extra_notes_write(struct file *file, loff_t *foffset)
+ 	if (!calls)
+ 		return 0;
  
--	DUMP_WRITE(&en, sizeof(en), foffset);
--	DUMP_WRITE(men->name, en.n_namesz, foffset);
--	if (!alignfile(file, foffset))
--		return 0;
--	DUMP_WRITE(men->data, men->datasz, foffset);
--	if (!alignfile(file, foffset))
--		return 0;
--
--	return 1;
-+	return dump_emit(cprm, &en, sizeof(en)) &&
-+		dump_emit(cprm, men->name, en.n_namesz) && alignfile(cprm) &&
-+		dump_emit(cprm, men->data, men->datasz) && alignfile(cprm);
- }
--#undef DUMP_WRITE
+-	ret = calls->coredump_extra_notes_write(file, foffset);
++	ret = calls->coredump_extra_notes_write(cprm);
  
- static inline void fill_elf_fdpic_header(struct elfhdr *elf, int segs)
- {
-@@ -1500,12 +1488,10 @@ static void fill_extnum_info(struct elfhdr *elf, struct elf_shdr *shdr4extnum,
- /*
-  * dump the segments for an MMU process
+ 	spufs_calls_put(calls);
+ 
+diff --git a/arch/powerpc/platforms/cell/spufs/coredump.c b/arch/powerpc/platforms/cell/spufs/coredump.c
+index c9500ea..5d9b0a2 100644
+--- a/arch/powerpc/platforms/cell/spufs/coredump.c
++++ b/arch/powerpc/platforms/cell/spufs/coredump.c
+@@ -27,6 +27,8 @@
+ #include <linux/gfp.h>
+ #include <linux/list.h>
+ #include <linux/syscalls.h>
++#include <linux/coredump.h>
++#include <linux/binfmts.h>
+ 
+ #include <asm/uaccess.h>
+ 
+@@ -52,35 +54,24 @@ static ssize_t do_coredump_read(int num, struct spu_context *ctx, void *buffer,
+  * These are the only things you should do on a core-file: use only these
+  * functions to write out all the necessary info.
   */
--#ifdef CONFIG_MMU
--static int elf_fdpic_dump_segments(struct file *file, size_t *size,
--			   unsigned long *limit, unsigned long mm_flags)
-+static bool elf_fdpic_dump_segments(struct coredump_params *cprm,
-+			   unsigned long mm_flags)
+-static int spufs_dump_write(struct file *file, const void *addr, int nr, loff_t *foffset)
++static int spufs_dump_write(struct coredump_params *cprm, const void *addr, int nr)
  {
- 	struct vm_area_struct *vma;
--	int err = 0;
- 
- 	for (vma = current->mm->mmap; vma; vma = vma->vm_next) {
- 		unsigned long addr;
-@@ -1513,53 +1499,30 @@ static int elf_fdpic_dump_segments(struct file *file, size_t *size,
- 		if (!maydump(vma, mm_flags))
- 			continue;
- 
-+#ifdef CONFIG_MMU
- 		for (addr = vma->vm_start; addr < vma->vm_end;
- 							addr += PAGE_SIZE) {
-+			bool res;
- 			struct page *page = get_dump_page(addr);
- 			if (page) {
- 				void *kaddr = kmap(page);
--				*size += PAGE_SIZE;
--				if (*size > *limit)
--					err = -EFBIG;
--				else if (!dump_write(file, kaddr, PAGE_SIZE))
--					err = -EIO;
-+				res = dump_emit(cprm, kaddr, PAGE_SIZE);
- 				kunmap(page);
- 				page_cache_release(page);
--			} else if (!dump_seek(file, PAGE_SIZE))
--				err = -EFBIG;
--			if (err)
--				goto out;
-+			} else {
-+				res = dump_seek(file, PAGE_SIZE);
-+			}
-+			if (!res)
-+				return false;
- 		}
--	}
--out:
--	return err;
--}
--#endif
+-	unsigned long limit = rlimit(RLIMIT_CORE);
+-	ssize_t written;
 -
--/*
-- * dump the segments for a NOMMU process
-- */
--#ifndef CONFIG_MMU
--static int elf_fdpic_dump_segments(struct file *file, size_t *size,
--			   unsigned long *limit, unsigned long mm_flags)
--{
--	struct vm_area_struct *vma;
+-	if (*foffset + nr > limit)
++	if (!dump_emit(cprm, addr, nr))
+ 		return -EIO;
 -
--	for (vma = current->mm->mmap; vma; vma = vma->vm_next) {
--		if (!maydump(vma, mm_flags))
--			continue;
+-	written = file->f_op->write(file, addr, nr, &file->f_pos);
+-	*foffset += written;
 -
--		if ((*size += PAGE_SIZE) > *limit)
--			return -EFBIG;
+-	if (written != nr)
+-		return -EIO;
 -
--		if (!dump_write(file, (void *) vma->vm_start,
-+#else
-+		if (!dump_emit(cprm, (void *) vma->vm_start,
- 				vma->vm_end - vma->vm_start))
--			return -EIO;
-+			return false;
-+#endif
- 	}
--
--	return 0;
-+	return true;
+ 	return 0;
  }
--#endif
  
- static size_t elf_core_vma_data_size(unsigned long mm_flags)
+-static int spufs_dump_align(struct file *file, char *buf, loff_t new_off,
+-			    loff_t *foffset)
++static int spufs_dump_align(struct coredump_params *cprm, char *buf, loff_t new_off)
  {
-@@ -1755,13 +1718,10 @@ static int elf_fdpic_core_dump(struct coredump_params *cprm)
+ 	int rc, size;
  
- 	offset = dataoff;
+-	size = min((loff_t)PAGE_SIZE, new_off - *foffset);
++	size = min((loff_t)PAGE_SIZE, new_off - cprm->written);
+ 	memset(buf, 0, size);
  
--	size += sizeof(*elf);
--	if (size > cprm->limit || !dump_write(cprm->file, elf, sizeof(*elf)))
-+	if (!dump_emit(cprm, elf, sizeof(*elf)))
- 		goto end_coredump;
- 
--	size += sizeof(*phdr4note);
--	if (size > cprm->limit
--	    || !dump_write(cprm->file, phdr4note, sizeof(*phdr4note)))
-+	if (!dump_emit(cprm, phdr4note, sizeof(*phdr4note)))
- 		goto end_coredump;
- 
- 	/* write program headers for segments dump */
-@@ -1785,20 +1745,18 @@ static int elf_fdpic_core_dump(struct coredump_params *cprm)
- 			phdr.p_flags |= PF_X;
- 		phdr.p_align = ELF_EXEC_PAGESIZE;
- 
--		size += sizeof(phdr);
--		if (size > cprm->limit
--		    || !dump_write(cprm->file, &phdr, sizeof(phdr)))
-+		if (!dump_emit(cprm, &phdr, sizeof(phdr)))
- 			goto end_coredump;
+ 	rc = 0;
+-	while (rc == 0 && new_off > *foffset) {
+-		size = min((loff_t)PAGE_SIZE, new_off - *foffset);
+-		rc = spufs_dump_write(file, buf, size, foffset);
++	while (rc == 0 && new_off > cprm->written) {
++		size = min((loff_t)PAGE_SIZE, new_off - cprm->written);
++		rc = spufs_dump_write(cprm, buf, size);
  	}
  
--	cprm->written = size;
- 	if (!elf_core_write_extra_phdrs(cprm, offset))
- 		goto end_coredump;
+ 	return rc;
+@@ -165,7 +156,7 @@ int spufs_coredump_extra_notes_size(void)
+ }
  
- 	size = cprm->written;
-+	cprm->written = foffset;
-  	/* write out the notes section */
- 	for (i = 0; i < numnote; i++)
--		if (!writenote(notes + i, cprm->file, &foffset))
-+		if (!writenote(notes + i, cprm))
- 			goto end_coredump;
+ static int spufs_arch_write_note(struct spu_context *ctx, int i,
+-				  struct file *file, int dfd, loff_t *foffset)
++				  struct coredump_params *cprm, int dfd)
+ {
+ 	loff_t pos = 0;
+ 	int sz, rc, nread, total = 0;
+@@ -186,22 +177,22 @@ static int spufs_arch_write_note(struct spu_context *ctx, int i,
+ 	en.n_descsz = sz;
+ 	en.n_type = NT_SPU;
  
- 	/* write out the thread status notes section */
-@@ -1807,27 +1765,22 @@ static int elf_fdpic_core_dump(struct coredump_params *cprm)
- 				list_entry(t, struct elf_thread_status, list);
+-	rc = spufs_dump_write(file, &en, sizeof(en), foffset);
++	rc = spufs_dump_write(cprm, &en, sizeof(en));
+ 	if (rc)
+ 		goto out;
  
- 		for (i = 0; i < tmp->num_notes; i++)
--			if (!writenote(&tmp->notes[i], cprm->file, &foffset))
-+			if (!writenote(&tmp->notes[i], cprm))
- 				goto end_coredump;
+-	rc = spufs_dump_write(file, fullname, en.n_namesz, foffset);
++	rc = spufs_dump_write(cprm, fullname, en.n_namesz);
+ 	if (rc)
+ 		goto out;
+ 
+-	rc = spufs_dump_align(file, buf, roundup(*foffset, 4), foffset);
++	rc = spufs_dump_align(cprm, buf, roundup(cprm->written, 4));
+ 	if (rc)
+ 		goto out;
+ 
+ 	do {
+ 		nread = do_coredump_read(i, ctx, buf, bufsz, &pos);
+ 		if (nread > 0) {
+-			rc = spufs_dump_write(file, buf, nread, foffset);
++			rc = spufs_dump_write(cprm, buf, nread);
+ 			if (rc)
+ 				goto out;
+ 			total += nread;
+@@ -213,15 +204,14 @@ static int spufs_arch_write_note(struct spu_context *ctx, int i,
+ 		goto out;
  	}
  
+-	rc = spufs_dump_align(file, buf, roundup(*foffset - total + sz, 4),
+-			      foffset);
++	rc = spufs_dump_align(cprm, buf, roundup(cprm->written - total + sz, 4));
+ 
+ out:
+ 	free_page((unsigned long)buf);
+ 	return rc;
+ }
+ 
+-int spufs_coredump_extra_notes_write(struct file *file, loff_t *foffset)
++int spufs_coredump_extra_notes_write(struct coredump_params *cprm)
+ {
+ 	struct spu_context *ctx;
+ 	int fd, j, rc;
+@@ -233,7 +223,7 @@ int spufs_coredump_extra_notes_write(struct file *file, loff_t *foffset)
+ 			return rc;
+ 
+ 		for (j = 0; spufs_coredump_read[j].name != NULL; j++) {
+-			rc = spufs_arch_write_note(ctx, j, file, fd, foffset);
++			rc = spufs_arch_write_note(ctx, j, cprm, fd);
+ 			if (rc) {
+ 				spu_release_saved(ctx);
+ 				return rc;
+diff --git a/arch/powerpc/platforms/cell/spufs/spufs.h b/arch/powerpc/platforms/cell/spufs/spufs.h
+index 67852ad..0ba3c95 100644
+--- a/arch/powerpc/platforms/cell/spufs/spufs.h
++++ b/arch/powerpc/platforms/cell/spufs/spufs.h
+@@ -247,12 +247,13 @@ extern const struct spufs_tree_descr spufs_dir_debug_contents[];
+ 
+ /* system call implementation */
+ extern struct spufs_calls spufs_calls;
++struct coredump_params;
+ long spufs_run_spu(struct spu_context *ctx, u32 *npc, u32 *status);
+ long spufs_create(struct path *nd, struct dentry *dentry, unsigned int flags,
+ 			umode_t mode, struct file *filp);
+ /* ELF coredump callbacks for writing SPU ELF notes */
+ extern int spufs_coredump_extra_notes_size(void);
+-extern int spufs_coredump_extra_notes_write(struct file *file, loff_t *foffset);
++extern int spufs_coredump_extra_notes_write(struct coredump_params *cprm);
+ 
+ extern const struct file_operations spufs_context_fops;
+ 
+diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
+index bc01aaf..bb59220 100644
+--- a/fs/binfmt_elf.c
++++ b/fs/binfmt_elf.c
+@@ -2037,7 +2037,7 @@ static int elf_core_dump(struct coredump_params *cprm)
+ 	size_t size = 0;
+ 	struct vm_area_struct *vma, *gate_vma;
+ 	struct elfhdr *elf = NULL;
+-	loff_t offset = 0, dataoff, foffset;
++	loff_t offset = 0, dataoff;
+ 	struct elf_note_info info = { };
+ 	struct elf_phdr *phdr4note = NULL;
+ 	struct elf_shdr *shdr4extnum = NULL;
+@@ -2160,12 +2160,11 @@ static int elf_core_dump(struct coredump_params *cprm)
+ 	if (!write_note_info(&info, cprm))
+ 		goto end_coredump;
+ 
+-	foffset = cprm->written;
+-	if (elf_coredump_extra_notes_write(cprm->file, &foffset))
++	if (elf_coredump_extra_notes_write(cprm))
+ 		goto end_coredump;
+ 
+ 	/* Align to page */
 -	if (!dump_seek(cprm->file, dataoff - foffset))
 +	if (!dump_seek(cprm->file, dataoff - cprm->written))
  		goto end_coredump;
  
--	if (elf_fdpic_dump_segments(cprm->file, &size, &cprm->limit,
--				    cprm->mm_flags) < 0)
-+	cprm->written = size;
-+	if (!elf_fdpic_dump_segments(cprm))
- 		goto end_coredump;
+ 	cprm->written = size;
+diff --git a/include/linux/elf.h b/include/linux/elf.h
+index 40a3c0e..67a5fa7 100644
+--- a/include/linux/elf.h
++++ b/include/linux/elf.h
+@@ -39,13 +39,13 @@ extern Elf64_Dyn _DYNAMIC [];
  
--	cprm->written = size;
- 	if (!elf_core_write_extra_data(cprm))
- 		goto end_coredump;
--	size = cprm->written;
+ /* Optional callbacks to write extra ELF notes. */
+ struct file;
++struct coredump_params;
  
- 	if (e_phnum == PN_XNUM) {
--		size += sizeof(*shdr4extnum);
--		if (size > cprm->limit
--		    || !dump_write(cprm->file, shdr4extnum,
--				   sizeof(*shdr4extnum)))
-+		if (!dump_emit(cprm, shdr4extnum, sizeof(*shdr4extnum)))
- 			goto end_coredump;
- 	}
- 
+ #ifndef ARCH_HAVE_EXTRA_ELF_NOTES
+ static inline int elf_coredump_extra_notes_size(void) { return 0; }
+-static inline int elf_coredump_extra_notes_write(struct file *file,
+-			loff_t *foffset) { return 0; }
++static inline int elf_coredump_extra_notes_write(struct coredump_params *cprm) { return 0; }
+ #else
+ extern int elf_coredump_extra_notes_size(void);
+-extern int elf_coredump_extra_notes_write(struct file *file, loff_t *foffset);
++extern int elf_coredump_extra_notes_write(struct coredump_params *cprm);
+ #endif
+ #endif /* _LINUX_ELF_H */
 -- 
 1.7.2.5
 
