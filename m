@@ -1,366 +1,281 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756993Ab3JIR2j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 13:28:39 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:38137 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932146Ab3JIR2d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 13:28:33 -0400
-X-IronPort-AV: E=Sophos;i="4.90,1064,1371081600"; 
-   d="scan'208";a="62021670"
-Date: Wed, 9 Oct 2013 18:27:41 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <Ian.Campbell@citrix.com>
-Subject: Re: [PATCH v6 19/19] swiotlb-xen: instead of bouncing on the swiotlb,
- pin single pages
-In-Reply-To: <20130930173945.GZ3106@phenom.dumpdata.com>
-Message-ID: <alpine.DEB.2.02.1310091826110.26077@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1309271653420.5498@kaball.uk.xensource.com> <1380298207-29151-19-git-send-email-stefano.stabellini@eu.citrix.com> <20130930173945.GZ3106@phenom.dumpdata.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1757007Ab3JIR2r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 13:28:47 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56157 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932146Ab3JIR2o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 13:28:44 -0400
+Date: Wed, 9 Oct 2013 10:28:02 -0700
+From: tip-bot for Mel Gorman <tipbot@zytor.com>
+Message-ID: <tip-ac8e895bd260cb8bb19ade6a3abd44e7abe9a01d@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, hannes@cmpxchg.org, riel@redhat.com,
+        aarcange@redhat.com, srikar@linux.vnet.ibm.com, mgorman@suse.de,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, hannes@cmpxchg.org, riel@redhat.com,
+        aarcange@redhat.com, srikar@linux.vnet.ibm.com, mgorman@suse.de,
+        tglx@linutronix.de
+In-Reply-To: <1381141781-10992-26-git-send-email-mgorman@suse.de>
+References: <1381141781-10992-26-git-send-email-mgorman@suse.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched/numa: Add infrastructure for split shared/
+ private accounting of NUMA hinting faults
+Git-Commit-ID: ac8e895bd260cb8bb19ade6a3abd44e7abe9a01d
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA2
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 09 Oct 2013 10:28:10 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 30 Sep 2013, Konrad Rzeszutek Wilk wrote:
-> On Fri, Sep 27, 2013 at 05:10:07PM +0100, Stefano Stabellini wrote:
-> > If we are dealing with single page mappings that don't cross page
-> > boundaries, we can try to pin the page and get the corresponding mfn,
-> > using xen_pin_page.  This avoids going through the swiotlb bounce
-> > buffer.  If xen_pin_page fails (because the underlying mfn doesn't
-> > respect the dma_mask) fall back to the swiotlb bounce buffer.
-> > Add a ref count to xen_dma_info, so that we can avoid pinnig pages that
-> > are already pinned.
-> > Use a spinlock to protect accesses, insertions and deletions in the
-> > rbtrees.
-> > 
-> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Commit-ID:  ac8e895bd260cb8bb19ade6a3abd44e7abe9a01d
+Gitweb:     http://git.kernel.org/tip/ac8e895bd260cb8bb19ade6a3abd44e7abe9a01d
+Author:     Mel Gorman <mgorman@suse.de>
+AuthorDate: Mon, 7 Oct 2013 11:29:03 +0100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 9 Oct 2013 12:40:30 +0200
 
-Thanks for the review, however I am dropping this patch because it
-wasn't improving performances as I was hoping it would be.
+sched/numa: Add infrastructure for split shared/private accounting of NUMA hinting faults
 
-I am taking a new approach now: I am keeping the 1:1 physical to machine
-mapping for dom0 and using swiotlb-xen only to handle dma requests
-involving foreign grants.
+Ideally it would be possible to distinguish between NUMA hinting faults
+that are private to a task and those that are shared.  This patch prepares
+infrastructure for separately accounting shared and private faults by
+allocating the necessary buffers and passing in relevant information. For
+now, all faults are treated as private and detection will be introduced
+later.
 
-The code is much nicer, and it runs much faster.
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1381141781-10992-26-git-send-email-mgorman@suse.de
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ include/linux/sched.h |  5 +++--
+ kernel/sched/fair.c   | 46 +++++++++++++++++++++++++++++++++++-----------
+ mm/huge_memory.c      |  5 +++--
+ mm/memory.c           |  8 ++++++--
+ 4 files changed, 47 insertions(+), 17 deletions(-)
 
-
-> >  drivers/xen/swiotlb-xen.c |  152 ++++++++++++++++++++++++++++++++++++++++++---
-> >  1 files changed, 143 insertions(+), 9 deletions(-)
-> > 
-> > diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-> > index 022bcaf..6f94285 100644
-> > --- a/drivers/xen/swiotlb-xen.c
-> > +++ b/drivers/xen/swiotlb-xen.c
-> > @@ -57,6 +57,8 @@
-> >  #define NR_DMA_SEGS  ((xen_io_tlb_nslabs + IO_TLB_SEGSIZE - 1) / IO_TLB_SEGSIZE)
-> >  static char *xen_io_tlb_start, *xen_io_tlb_end;
-> >  static unsigned long xen_io_tlb_nslabs;
-> > +spinlock_t swiotlb_lock;
-> > +
-> >  /*
-> >   * Quick lookup value of the bus address of the IOTLB.
-> >   */
-> > @@ -79,6 +81,7 @@ struct xen_dma_info {
-> >  	dma_addr_t dma_addr;
-> >  	phys_addr_t phys_addr;
-> >  	size_t size;
-> > +	atomic_t refs;
-> >  	struct rb_node rbnode_dma;
-> >  	struct rb_node rbnode_phys;
-> >  };
-> > @@ -254,6 +257,48 @@ static dma_addr_t xen_virt_to_bus(void *address)
-> >  	return xen_phys_to_bus_quick(virt_to_phys(address));
-> >  }
-> >  
-> > +static int xen_pin_dev_page(struct device *dev,
-> > +							phys_addr_t phys,
-> > +							dma_addr_t *dev_addr)
-> 
-> Something is odd with your tabs.
-> > +{
-> > +	u64 dma_mask = DMA_BIT_MASK(32);
-> 
-> Why 32?
-> 
-> > +	xen_pfn_t in;
-> > +	struct xen_dma_info *dma_info = xen_get_dma_info_from_phys(phys);
-> > +
-> > +	if (dma_info != NULL) {
-> > +		atomic_inc(&dma_info->refs);
-> > +		*dev_addr = dma_info->dma_addr + (phys - dma_info->phys_addr);
-> > +		return 0;
-> > +	}
-> > +
-> > +	if (dev && dev->coherent_dma_mask)
-> > +		dma_mask = dma_alloc_coherent_mask(dev, GFP_KERNEL);
-> > +
-> > +	in = phys >> PAGE_SHIFT;
-> > +	if (!xen_pin_page(&in, fls64(dma_mask))) {
-> 
-> Why not just make xen_pin_page use an phys address and it can also
-> do the appropiate bit shifting in it?
-> 
-> > +		*dev_addr = in << PAGE_SHIFT;
-> > +		dma_info = kzalloc(sizeof(struct xen_dma_info), GFP_NOWAIT);
-> > +		if (!dma_info) {
-> > +			pr_warn("cannot allocate xen_dma_info\n");
-> > +			xen_destroy_contiguous_region(phys & PAGE_MASK, 0);
-> 
-> Perhaps we should add an inline function for that called 'xen_unpin_page' ?
-> 
-> > +			return -ENOMEM;
-> > +		}
-> > +		dma_info->phys_addr = phys & PAGE_MASK;
-> > +		dma_info->size = PAGE_SIZE;
-> > +		dma_info->dma_addr = *dev_addr;
-> > +		if (xen_dma_add_entry(dma_info)) {
-> > +			pr_warn("cannot add new entry to bus_to_phys\n");
-> > +			xen_destroy_contiguous_region(phys & PAGE_MASK, 0);
-> > +			kfree(dma_info);
-> > +			return -EFAULT;
-> > +		}
-> > +		atomic_set(&dma_info->refs, 1);
-> > +		*dev_addr += (phys & ~PAGE_MASK);
-> > +		return 0;
-> > +	}
-> 
-> Don't you want to the opposite of dma_alloc_coherent_mask ?
-> 
-> > +	return -EFAULT;
-> > +}
-> > +
-> >  static int check_pages_physically_contiguous(unsigned long pfn,
-> >  					     unsigned int offset,
-> >  					     size_t length)
-> > @@ -434,6 +479,7 @@ retry:
-> >  		rc = 0;
-> >  	} else
-> >  		rc = swiotlb_late_init_with_tbl(xen_io_tlb_start, xen_io_tlb_nslabs);
-> > +	spin_lock_init(&swiotlb_lock);
-> >  	return rc;
-> >  error:
-> >  	if (repeat--) {
-> > @@ -461,6 +507,7 @@ xen_swiotlb_alloc_coherent(struct device *hwdev, size_t size,
-> >  	phys_addr_t phys;
-> >  	dma_addr_t dev_addr;
-> >  	struct xen_dma_info *dma_info = NULL;
-> > +	unsigned long irqflags;
-> >  
-> >  	/*
-> >  	* Ignore region specifiers - the kernel's ideas of
-> > @@ -497,7 +544,7 @@ xen_swiotlb_alloc_coherent(struct device *hwdev, size_t size,
-> >  	    !range_straddles_page_boundary(phys, size))
-> >  		*dma_handle = dev_addr;
-> >  	else {
-> > -		if (xen_create_contiguous_region(phys, order,
-> > +		if (xen_create_contiguous_region(phys & PAGE_MASK, order,
-> >  						 fls64(dma_mask), dma_handle) != 0) {
-> >  			xen_free_coherent_pages(hwdev, size, ret, (dma_addr_t)phys, attrs);
-> >  			return NULL;
-> > @@ -509,15 +556,19 @@ xen_swiotlb_alloc_coherent(struct device *hwdev, size_t size,
-> >  			xen_destroy_contiguous_region(phys, order);
-> >  			return NULL;
-> >  		}
-> > -		dma_info->phys_addr = phys;
-> > -		dma_info->size = size;
-> > +		dma_info->phys_addr = phys & PAGE_MASK;
-> > +		dma_info->size = (1U << order) << PAGE_SHIFT;
-> >  		dma_info->dma_addr = *dma_handle;
-> > +		atomic_set(&dma_info->refs, 1);
-> > +		spin_lock_irqsave(&swiotlb_lock, irqflags);
-> >  		if (xen_dma_add_entry(dma_info)) {
-> > +			spin_unlock_irqrestore(&swiotlb_lock, irqflags);
-> >  			pr_warn("cannot add new entry to bus_to_phys\n");
-> >  			xen_destroy_contiguous_region(phys, order);
-> >  			kfree(dma_info);
-> >  			return NULL;
-> >  		}
-> > +		spin_unlock_irqrestore(&swiotlb_lock, irqflags);
-> >  	}
-> >  	memset(ret, 0, size);
-> >  	return ret;
-> > @@ -532,6 +583,7 @@ xen_swiotlb_free_coherent(struct device *hwdev, size_t size, void *vaddr,
-> >  	phys_addr_t phys;
-> >  	u64 dma_mask = DMA_BIT_MASK(32);
-> >  	struct xen_dma_info *dma_info = NULL;
-> > +	unsigned long flags;
-> >  
-> >  	if (dma_release_from_coherent(hwdev, order, vaddr))
-> >  		return;
-> > @@ -539,6 +591,7 @@ xen_swiotlb_free_coherent(struct device *hwdev, size_t size, void *vaddr,
-> >  	if (hwdev && hwdev->coherent_dma_mask)
-> >  		dma_mask = hwdev->coherent_dma_mask;
-> >  
-> > +	spin_lock_irqsave(&swiotlb_lock, flags);
-> >  	/* do not use virt_to_phys because on ARM it doesn't return you the
-> >  	 * physical address */
-> >  	phys = xen_bus_to_phys(dev_addr);
-> > @@ -546,12 +599,16 @@ xen_swiotlb_free_coherent(struct device *hwdev, size_t size, void *vaddr,
-> >  	if (xen_feature(XENFEAT_auto_translated_physmap) ||
-> >  		(((dev_addr + size - 1 > dma_mask)) ||
-> >  		 range_straddles_page_boundary(phys, size))) {
-> > -		xen_destroy_contiguous_region(phys, order);
-> >  		dma_info = xen_get_dma_info_from_dma(dev_addr);
-> > -		rb_erase(&dma_info->rbnode, &bus_to_phys);
-> > -		kfree(dma_info);
-> > +		if (atomic_dec_and_test(&dma_info->refs)) {
-> > +			xen_destroy_contiguous_region(phys & PAGE_MASK, order);
-> > +			rb_erase(&dma_info->rbnode_dma, &bus_to_phys);
-> > +			rb_erase(&dma_info->rbnode_phys, &phys_to_bus);
-> > +			kfree(dma_info);
-> > +		}
-> 
-> If xen_pin_dev_page failed or was not called we would still end up
-> calling this. And we would decrement a potentially garbage value? Or not.
-> >  	}
-> >  
-> > +	spin_unlock_irqrestore(&swiotlb_lock, flags);
-> >  	xen_free_coherent_pages(hwdev, size, vaddr, (dma_addr_t)phys, attrs);
-> >  }
-> >  EXPORT_SYMBOL_GPL(xen_swiotlb_free_coherent);
-> > @@ -583,6 +640,23 @@ dma_addr_t xen_swiotlb_map_page(struct device *dev, struct page *page,
-> >  	    !range_straddles_page_boundary(phys, size) && !swiotlb_force)
-> >  		return dev_addr;
-> >  
-> > +	if (xen_feature(XENFEAT_auto_translated_physmap) &&
-> > +		size <= PAGE_SIZE &&
-> > +		!range_straddles_page_boundary(phys, size) &&
-> > +		!swiotlb_force) {
-> > +		unsigned long flags;
-> > +		int rc;
-> > +
-> > +		spin_lock_irqsave(&swiotlb_lock, flags);
-> > +		rc = xen_pin_dev_page(dev, phys, &dev_addr);
-> > +		spin_unlock_irqrestore(&swiotlb_lock, flags);
-> > +
-> > +		if (!rc) {
-> > +			dma_mark_clean(phys_to_virt(phys), size);
-> > +			return dev_addr;
-> > +		}
-> 
-> And if there is an rc you should probably do
-> 		dev_warn(.., "RC ..")
-> 
-> 
-> But more importantly - all of this code adds an extra lock on the X86 side
-> which will get -ENOxxx on the xen_pin_dev_page.
-> 
-> I am wondering if it makes sense to make most of this code dependent
-> on CONFIG_ARM? As the check for auto-xlat falls flat on X86 + PVH. Thought
-> I have no idea what we want to do with PVH and X86 at this point.
-> 
-> > +	}
-> > +
-> >  	/*
-> >  	 * Oh well, have to allocate and map a bounce buffer.
-> >  	 * Pass the dma_addr of the first slab in the iotlb buffer as
-> > @@ -618,10 +692,37 @@ EXPORT_SYMBOL_GPL(xen_swiotlb_map_page);
-> >  static void xen_unmap_single(struct device *hwdev, dma_addr_t dev_addr,
-> >  			     size_t size, enum dma_data_direction dir)
-> >  {
-> > -	phys_addr_t paddr = xen_bus_to_phys(dev_addr);
-> > +	struct xen_dma_info *dma_info;
-> > +	phys_addr_t paddr = DMA_ERROR_CODE;
-> > +	char *vaddr = NULL;
-> > +	unsigned long flags;
-> >  
-> >  	BUG_ON(dir == DMA_NONE);
-> >  
-> > +	spin_lock_irqsave(&swiotlb_lock, flags);
-> > +	dma_info = xen_get_dma_info_from_dma(dev_addr);
-> > +	if (dma_info != NULL) {
-> > +		paddr = dma_info->phys_addr + (dev_addr - dma_info->dma_addr);
-> > +		vaddr = phys_to_virt(paddr);
-> > +	}
-> > +
-> > +	if (xen_feature(XENFEAT_auto_translated_physmap) &&
-> > +		paddr != DMA_ERROR_CODE &&
-> > +		!(vaddr >= xen_io_tlb_start && vaddr < xen_io_tlb_end) &&
-> > +		!swiotlb_force) {
-> > +		if (atomic_dec_and_test(&dma_info->refs)) {
-> > +			xen_destroy_contiguous_region(paddr & PAGE_MASK, 0);
-> > +			rb_erase(&dma_info->rbnode_dma, &bus_to_phys);
-> > +			rb_erase(&dma_info->rbnode_phys, &phys_to_bus);
-> > +			kfree(dma_info);
-> > +		}
-> > +		spin_unlock_irqrestore(&swiotlb_lock, flags);
-> > +		if ((dir == DMA_FROM_DEVICE) || (dir == DMA_BIDIRECTIONAL))
-> > +			dma_mark_clean(vaddr, size);
-> > +		return;
-> > +	}
-> > +	spin_unlock_irqrestore(&swiotlb_lock, flags);
-> > +
-> >  	/* NOTE: We use dev_addr here, not paddr! */
-> >  	if (is_xen_swiotlb_buffer(dev_addr)) {
-> >  		swiotlb_tbl_unmap_single(hwdev, paddr, size, dir);
-> > @@ -664,9 +765,19 @@ xen_swiotlb_sync_single(struct device *hwdev, dma_addr_t dev_addr,
-> >  			enum dma_sync_target target)
-> >  {
-> >  	phys_addr_t paddr = xen_bus_to_phys(dev_addr);
-> > +	char *vaddr = phys_to_virt(paddr);
-> >  
-> >  	BUG_ON(dir == DMA_NONE);
-> >  
-> > +	if (xen_feature(XENFEAT_auto_translated_physmap) &&
-> > +		paddr != DMA_ERROR_CODE &&
-> > +		size <= PAGE_SIZE &&
-> > +		!(vaddr >= xen_io_tlb_start && vaddr < xen_io_tlb_end) &&
-> > +		!range_straddles_page_boundary(paddr, size) && !swiotlb_force) {
-> > +		dma_mark_clean(vaddr, size);		
-> > +		return;
-> > +	}
-> > +
-> >  	/* NOTE: We use dev_addr here, not paddr! */
-> >  	if (is_xen_swiotlb_buffer(dev_addr)) {
-> >  		swiotlb_tbl_sync_single(hwdev, paddr, size, dir, target);
-> > @@ -717,13 +828,36 @@ xen_swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
-> >  			 struct dma_attrs *attrs)
-> >  {
-> >  	struct scatterlist *sg;
-> > -	int i;
-> > +	int i, rc;
-> > +	u64 dma_mask = DMA_BIT_MASK(32);
-> > +	unsigned long flags;
-> >  
-> >  	BUG_ON(dir == DMA_NONE);
-> >  
-> > +	if (hwdev && hwdev->coherent_dma_mask)
-> > +		dma_mask = dma_alloc_coherent_mask(hwdev, GFP_KERNEL);
-> > +
-> >  	for_each_sg(sgl, sg, nelems, i) {
-> >  		phys_addr_t paddr = sg_phys(sg);
-> > -		dma_addr_t dev_addr = xen_phys_to_bus_quick(paddr);
-> > +		dma_addr_t dev_addr;
-> > +
-> > +		if (xen_feature(XENFEAT_auto_translated_physmap) &&
-> > +			!range_straddles_page_boundary(paddr, sg->length) &&
-> > +			sg->length <= PAGE_SIZE &&
-> > +			!swiotlb_force) {
-> > +
-> > +			spin_lock_irqsave(&swiotlb_lock, flags);
-> > +			rc = xen_pin_dev_page(hwdev, paddr, &dev_addr);
-> > +			spin_unlock_irqrestore(&swiotlb_lock, flags);
-> > +
-> > +			if (!rc) {
-> > +				dma_mark_clean(phys_to_virt(paddr), sg->length);
-> > +				sg_dma_len(sg) = sg->length;
-> > +				sg->dma_address = dev_addr;
-> > +				continue;
-> > +			}
-> > +		}
-> > +		dev_addr = xen_phys_to_bus_quick(paddr);
-> >  
-> >  		if (swiotlb_force ||
-> >  		    xen_feature(XENFEAT_auto_translated_physmap) ||
-> > -- 
-> > 1.7.2.5
-> > 
-> 
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index aecdc5a..d946195 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1445,10 +1445,11 @@ struct task_struct {
+ #define tsk_cpus_allowed(tsk) (&(tsk)->cpus_allowed)
+ 
+ #ifdef CONFIG_NUMA_BALANCING
+-extern void task_numa_fault(int node, int pages, bool migrated);
++extern void task_numa_fault(int last_node, int node, int pages, bool migrated);
+ extern void set_numabalancing_state(bool enabled);
+ #else
+-static inline void task_numa_fault(int node, int pages, bool migrated)
++static inline void task_numa_fault(int last_node, int node, int pages,
++				   bool migrated)
+ {
+ }
+ static inline void set_numabalancing_state(bool enabled)
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 8b15e9e..89eeb89 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -886,6 +886,20 @@ static unsigned int task_scan_max(struct task_struct *p)
+  */
+ unsigned int sysctl_numa_balancing_settle_count __read_mostly = 3;
+ 
++static inline int task_faults_idx(int nid, int priv)
++{
++	return 2 * nid + priv;
++}
++
++static inline unsigned long task_faults(struct task_struct *p, int nid)
++{
++	if (!p->numa_faults)
++		return 0;
++
++	return p->numa_faults[task_faults_idx(nid, 0)] +
++		p->numa_faults[task_faults_idx(nid, 1)];
++}
++
+ static unsigned long weighted_cpuload(const int cpu);
+ 
+ 
+@@ -928,13 +942,19 @@ static void task_numa_placement(struct task_struct *p)
+ 	/* Find the node with the highest number of faults */
+ 	for_each_online_node(nid) {
+ 		unsigned long faults;
++		int priv, i;
+ 
+-		/* Decay existing window and copy faults since last scan */
+-		p->numa_faults[nid] >>= 1;
+-		p->numa_faults[nid] += p->numa_faults_buffer[nid];
+-		p->numa_faults_buffer[nid] = 0;
++		for (priv = 0; priv < 2; priv++) {
++			i = task_faults_idx(nid, priv);
+ 
+-		faults = p->numa_faults[nid];
++			/* Decay existing window, copy faults since last scan */
++			p->numa_faults[i] >>= 1;
++			p->numa_faults[i] += p->numa_faults_buffer[i];
++			p->numa_faults_buffer[i] = 0;
++		}
++
++		/* Find maximum private faults */
++		faults = p->numa_faults[task_faults_idx(nid, 1)];
+ 		if (faults > max_faults) {
+ 			max_faults = faults;
+ 			max_nid = nid;
+@@ -970,16 +990,20 @@ static void task_numa_placement(struct task_struct *p)
+ /*
+  * Got a PROT_NONE fault for a page on @node.
+  */
+-void task_numa_fault(int node, int pages, bool migrated)
++void task_numa_fault(int last_nid, int node, int pages, bool migrated)
+ {
+ 	struct task_struct *p = current;
++	int priv;
+ 
+ 	if (!numabalancing_enabled)
+ 		return;
+ 
++	/* For now, do not attempt to detect private/shared accesses */
++	priv = 1;
++
+ 	/* Allocate buffer to track faults on a per-node basis */
+ 	if (unlikely(!p->numa_faults)) {
+-		int size = sizeof(*p->numa_faults) * nr_node_ids;
++		int size = sizeof(*p->numa_faults) * 2 * nr_node_ids;
+ 
+ 		/* numa_faults and numa_faults_buffer share the allocation */
+ 		p->numa_faults = kzalloc(size * 2, GFP_KERNEL|__GFP_NOWARN);
+@@ -987,7 +1011,7 @@ void task_numa_fault(int node, int pages, bool migrated)
+ 			return;
+ 
+ 		BUG_ON(p->numa_faults_buffer);
+-		p->numa_faults_buffer = p->numa_faults + nr_node_ids;
++		p->numa_faults_buffer = p->numa_faults + (2 * nr_node_ids);
+ 	}
+ 
+ 	/*
+@@ -1005,7 +1029,7 @@ void task_numa_fault(int node, int pages, bool migrated)
+ 
+ 	task_numa_placement(p);
+ 
+-	p->numa_faults_buffer[node] += pages;
++	p->numa_faults_buffer[task_faults_idx(node, priv)] += pages;
+ }
+ 
+ static void reset_ptenuma_scan(struct task_struct *p)
+@@ -4146,7 +4170,7 @@ static bool migrate_improves_locality(struct task_struct *p, struct lb_env *env)
+ 		return false;
+ 
+ 	if (dst_nid == p->numa_preferred_nid ||
+-	    p->numa_faults[dst_nid] > p->numa_faults[src_nid])
++	    task_faults(p, dst_nid) > task_faults(p, src_nid))
+ 		return true;
+ 
+ 	return false;
+@@ -4170,7 +4194,7 @@ static bool migrate_degrades_locality(struct task_struct *p, struct lb_env *env)
+ 	    p->numa_migrate_seq >= sysctl_numa_balancing_settle_count)
+ 		return false;
+ 
+-	if (p->numa_faults[dst_nid] < p->numa_faults[src_nid])
++	if (task_faults(p, dst_nid) < task_faults(p, src_nid))
+ 		return true;
+ 
+ 	return false;
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 8677dbf..9142167 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1282,7 +1282,7 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	struct page *page;
+ 	unsigned long haddr = addr & HPAGE_PMD_MASK;
+ 	int page_nid = -1, this_nid = numa_node_id();
+-	int target_nid;
++	int target_nid, last_nid = -1;
+ 	bool page_locked;
+ 	bool migrated = false;
+ 
+@@ -1293,6 +1293,7 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	page = pmd_page(pmd);
+ 	BUG_ON(is_huge_zero_page(page));
+ 	page_nid = page_to_nid(page);
++	last_nid = page_nid_last(page);
+ 	count_vm_numa_event(NUMA_HINT_FAULTS);
+ 	if (page_nid == this_nid)
+ 		count_vm_numa_event(NUMA_HINT_FAULTS_LOCAL);
+@@ -1361,7 +1362,7 @@ out:
+ 		page_unlock_anon_vma_read(anon_vma);
+ 
+ 	if (page_nid != -1)
+-		task_numa_fault(page_nid, HPAGE_PMD_NR, migrated);
++		task_numa_fault(last_nid, page_nid, HPAGE_PMD_NR, migrated);
+ 
+ 	return 0;
+ }
+diff --git a/mm/memory.c b/mm/memory.c
+index ed51f15..24bc9b8 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3536,6 +3536,7 @@ int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	struct page *page = NULL;
+ 	spinlock_t *ptl;
+ 	int page_nid = -1;
++	int last_nid;
+ 	int target_nid;
+ 	bool migrated = false;
+ 
+@@ -3566,6 +3567,7 @@ int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	}
+ 	BUG_ON(is_zero_pfn(page_to_pfn(page)));
+ 
++	last_nid = page_nid_last(page);
+ 	page_nid = page_to_nid(page);
+ 	target_nid = numa_migrate_prep(page, vma, addr, page_nid);
+ 	pte_unmap_unlock(ptep, ptl);
+@@ -3581,7 +3583,7 @@ int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 
+ out:
+ 	if (page_nid != -1)
+-		task_numa_fault(page_nid, 1, migrated);
++		task_numa_fault(last_nid, page_nid, 1, migrated);
+ 	return 0;
+ }
+ 
+@@ -3596,6 +3598,7 @@ static int do_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	unsigned long offset;
+ 	spinlock_t *ptl;
+ 	bool numa = false;
++	int last_nid;
+ 
+ 	spin_lock(&mm->page_table_lock);
+ 	pmd = *pmdp;
+@@ -3643,6 +3646,7 @@ static int do_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		if (unlikely(page_mapcount(page) != 1))
+ 			continue;
+ 
++		last_nid = page_nid_last(page);
+ 		page_nid = page_to_nid(page);
+ 		target_nid = numa_migrate_prep(page, vma, addr, page_nid);
+ 		pte_unmap_unlock(pte, ptl);
+@@ -3655,7 +3659,7 @@ static int do_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		}
+ 
+ 		if (page_nid != -1)
+-			task_numa_fault(page_nid, 1, migrated);
++			task_numa_fault(last_nid, page_nid, 1, migrated);
+ 
+ 		pte = pte_offset_map_lock(mm, pmdp, addr, &ptl);
+ 	}
