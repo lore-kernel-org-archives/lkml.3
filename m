@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932490Ab3JIRed (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 13:34:33 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56585 "EHLO
+	id S932476Ab3JIReb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 13:34:31 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56590 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753592Ab3JIReZ (ORCPT
+	with ESMTP id S1754678Ab3JIRe1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 13:34:25 -0400
-Date: Wed, 9 Oct 2013 10:33:12 -0700
-From: tip-bot for Rik van Riel <tipbot@zytor.com>
-Message-ID: <tip-dabe1d992414a6456e60e41f1d1ad8affc6d444d@git.kernel.org>
+	Wed, 9 Oct 2013 13:34:27 -0400
+Date: Wed, 9 Oct 2013 10:33:41 -0700
+From: tip-bot for Mel Gorman <tipbot@zytor.com>
+Message-ID: <tip-930aa174fcc8b0efaad102fd80f677b92f35eaa2@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         peterz@infradead.org, hannes@cmpxchg.org, riel@redhat.com,
         aarcange@redhat.com, srikar@linux.vnet.ibm.com, mgorman@suse.de,
@@ -18,12 +18,12 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         peterz@infradead.org, hannes@cmpxchg.org, riel@redhat.com,
         aarcange@redhat.com, srikar@linux.vnet.ibm.com, mgorman@suse.de,
         tglx@linutronix.de
-In-Reply-To: <1381141781-10992-57-git-send-email-mgorman@suse.de>
-References: <1381141781-10992-57-git-send-email-mgorman@suse.de>
+In-Reply-To: <1381141781-10992-60-git-send-email-mgorman@suse.de>
+References: <1381141781-10992-60-git-send-email-mgorman@suse.de>
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:sched/core] sched/numa:
-  Be more careful about joining numa groups
-Git-Commit-ID: dabe1d992414a6456e60e41f1d1ad8affc6d444d
+  Remove the numa_balancing_scan_period_reset sysctl
+Git-Commit-ID: 930aa174fcc8b0efaad102fd80f677b92f35eaa2
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,111 +32,165 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 09 Oct 2013 10:33:19 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 09 Oct 2013 10:33:48 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  dabe1d992414a6456e60e41f1d1ad8affc6d444d
-Gitweb:     http://git.kernel.org/tip/dabe1d992414a6456e60e41f1d1ad8affc6d444d
-Author:     Rik van Riel <riel@redhat.com>
-AuthorDate: Mon, 7 Oct 2013 11:29:34 +0100
+Commit-ID:  930aa174fcc8b0efaad102fd80f677b92f35eaa2
+Gitweb:     http://git.kernel.org/tip/930aa174fcc8b0efaad102fd80f677b92f35eaa2
+Author:     Mel Gorman <mgorman@suse.de>
+AuthorDate: Mon, 7 Oct 2013 11:29:37 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 9 Oct 2013 14:48:12 +0200
+CommitDate: Wed, 9 Oct 2013 14:48:18 +0200
 
-sched/numa: Be more careful about joining numa groups
+sched/numa: Remove the numa_balancing_scan_period_reset sysctl
 
-Due to the way the pid is truncated, and tasks are moved between
-CPUs by the scheduler, it is possible for the current task_numa_fault
-to group together tasks that do not actually share memory together.
+With scan rate adaptions based on whether the workload has properly
+converged or not there should be no need for the scan period reset
+hammer. Get rid of it.
 
-This patch adds a few easy sanity checks to task_numa_fault, joining
-tasks together if they share the same tsk->mm, or if the fault was on
-a page with an elevated mapcount, in a shared VMA.
-
-Signed-off-by: Rik van Riel <riel@redhat.com>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Rik van Riel <riel@redhat.com>
 Cc: Andrea Arcangeli <aarcange@redhat.com>
 Cc: Johannes Weiner <hannes@cmpxchg.org>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1381141781-10992-57-git-send-email-mgorman@suse.de
+Link: http://lkml.kernel.org/r/1381141781-10992-60-git-send-email-mgorman@suse.de
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- include/linux/sched.h |  1 +
- kernel/sched/fair.c   | 16 +++++++++++-----
- mm/memory.c           |  7 +++++++
- 3 files changed, 19 insertions(+), 5 deletions(-)
+ Documentation/sysctl/kernel.txt | 11 +++--------
+ include/linux/mm_types.h        |  3 ---
+ include/linux/sched/sysctl.h    |  1 -
+ kernel/sched/core.c             |  1 -
+ kernel/sched/fair.c             | 18 +-----------------
+ kernel/sysctl.c                 |  7 -------
+ 6 files changed, 4 insertions(+), 37 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 1127a46..59f953b 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1454,6 +1454,7 @@ struct task_struct {
+diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
+index d48bca4..84f1780 100644
+--- a/Documentation/sysctl/kernel.txt
++++ b/Documentation/sysctl/kernel.txt
+@@ -374,15 +374,13 @@ guarantee. If the target workload is already bound to NUMA nodes then this
+ feature should be disabled. Otherwise, if the system overhead from the
+ feature is too high then the rate the kernel samples for NUMA hinting
+ faults may be controlled by the numa_balancing_scan_period_min_ms,
+-numa_balancing_scan_delay_ms, numa_balancing_scan_period_reset,
+-numa_balancing_scan_period_max_ms, numa_balancing_scan_size_mb and
+-numa_balancing_settle_count sysctls.
++numa_balancing_scan_delay_ms, numa_balancing_scan_period_max_ms,
++numa_balancing_scan_size_mb and numa_balancing_settle_count sysctls.
  
- #define TNF_MIGRATED	0x01
- #define TNF_NO_GROUP	0x02
-+#define TNF_SHARED	0x04
+ ==============================================================
  
+ numa_balancing_scan_period_min_ms, numa_balancing_scan_delay_ms,
+-numa_balancing_scan_period_max_ms, numa_balancing_scan_period_reset,
+-numa_balancing_scan_size_mb
++numa_balancing_scan_period_max_ms, numa_balancing_scan_size_mb
+ 
+ Automatic NUMA balancing scans tasks address space and unmaps pages to
+ detect if pages are properly placed or if the data should be migrated to a
+@@ -418,9 +416,6 @@ rate for each task.
+ numa_balancing_scan_size_mb is how many megabytes worth of pages are
+ scanned for a given scan.
+ 
+-numa_balancing_scan_period_reset is a blunt instrument that controls how
+-often a tasks scan delay is reset to detect sudden changes in task behaviour.
+-
+ numa_balancing_settle_count is how many scan periods must complete before
+ the schedule balancer stops pushing the task towards a preferred node. This
+ gives the scheduler a chance to place the task on an alternative node if the
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+index a30f9ca..a3198e5 100644
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -420,9 +420,6 @@ struct mm_struct {
+ 	 */
+ 	unsigned long numa_next_scan;
+ 
+-	/* numa_next_reset is when the PTE scanner period will be reset */
+-	unsigned long numa_next_reset;
+-
+ 	/* Restart point for scanning and setting pte_numa */
+ 	unsigned long numa_scan_offset;
+ 
+diff --git a/include/linux/sched/sysctl.h b/include/linux/sched/sysctl.h
+index bf8086b..10d16c4f 100644
+--- a/include/linux/sched/sysctl.h
++++ b/include/linux/sched/sysctl.h
+@@ -47,7 +47,6 @@ extern enum sched_tunable_scaling sysctl_sched_tunable_scaling;
+ extern unsigned int sysctl_numa_balancing_scan_delay;
+ extern unsigned int sysctl_numa_balancing_scan_period_min;
+ extern unsigned int sysctl_numa_balancing_scan_period_max;
+-extern unsigned int sysctl_numa_balancing_scan_period_reset;
+ extern unsigned int sysctl_numa_balancing_scan_size;
+ extern unsigned int sysctl_numa_balancing_settle_count;
+ 
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 8cfd51f..89c5ae8 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1721,7 +1721,6 @@ static void __sched_fork(unsigned long clone_flags, struct task_struct *p)
  #ifdef CONFIG_NUMA_BALANCING
- extern void task_numa_fault(int last_node, int node, int pages, int flags);
+ 	if (p->mm && atomic_read(&p->mm->mm_users) == 1) {
+ 		p->mm->numa_next_scan = jiffies + msecs_to_jiffies(sysctl_numa_balancing_scan_delay);
+-		p->mm->numa_next_reset = jiffies + msecs_to_jiffies(sysctl_numa_balancing_scan_period_reset);
+ 		p->mm->numa_scan_seq = 0;
+ 	}
+ 
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 5166b9b..222c2d0 100644
+index 66237ff..da6fa22 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -1381,7 +1381,7 @@ static void double_lock(spinlock_t *l1, spinlock_t *l2)
- 	spin_lock_nested(l2, SINGLE_DEPTH_NESTING);
- }
+@@ -826,7 +826,6 @@ update_stats_curr_start(struct cfs_rq *cfs_rq, struct sched_entity *se)
+  */
+ unsigned int sysctl_numa_balancing_scan_period_min = 1000;
+ unsigned int sysctl_numa_balancing_scan_period_max = 60000;
+-unsigned int sysctl_numa_balancing_scan_period_reset = 60000;
  
--static void task_numa_group(struct task_struct *p, int cpupid)
-+static void task_numa_group(struct task_struct *p, int cpupid, int flags)
- {
- 	struct numa_group *grp, *my_grp;
- 	struct task_struct *tsk;
-@@ -1439,10 +1439,16 @@ static void task_numa_group(struct task_struct *p, int cpupid)
- 	if (my_grp->nr_tasks == grp->nr_tasks && my_grp > grp)
- 		goto unlock;
+ /* Portion of address space to scan in MB */
+ unsigned int sysctl_numa_balancing_scan_size = 256;
+@@ -1685,24 +1684,9 @@ void task_numa_work(struct callback_head *work)
+ 	if (p->flags & PF_EXITING)
+ 		return;
  
--	if (!get_numa_group(grp))
--		goto unlock;
-+	/* Always join threads in the same process. */
-+	if (tsk->mm == current->mm)
-+		join = true;
-+
-+	/* Simple filter to avoid false positives due to PID collisions */
-+	if (flags & TNF_SHARED)
-+		join = true;
- 
--	join = true;
-+	if (join && !get_numa_group(grp))
-+		join = false;
- 
- unlock:
- 	rcu_read_unlock();
-@@ -1539,7 +1545,7 @@ void task_numa_fault(int last_cpupid, int node, int pages, int flags)
- 	} else {
- 		priv = cpupid_match_pid(p, last_cpupid);
- 		if (!priv && !(flags & TNF_NO_GROUP))
--			task_numa_group(p, last_cpupid);
-+			task_numa_group(p, last_cpupid, flags);
+-	if (!mm->numa_next_reset || !mm->numa_next_scan) {
++	if (!mm->numa_next_scan) {
+ 		mm->numa_next_scan = now +
+ 			msecs_to_jiffies(sysctl_numa_balancing_scan_delay);
+-		mm->numa_next_reset = now +
+-			msecs_to_jiffies(sysctl_numa_balancing_scan_period_reset);
+-	}
+-
+-	/*
+-	 * Reset the scan period if enough time has gone by. Objective is that
+-	 * scanning will be reduced if pages are properly placed. As tasks
+-	 * can enter different phases this needs to be re-examined. Lacking
+-	 * proper tracking of reference behaviour, this blunt hammer is used.
+-	 */
+-	migrate = mm->numa_next_reset;
+-	if (time_after(now, migrate)) {
+-		p->numa_scan_period = task_scan_min(p);
+-		next_scan = now + msecs_to_jiffies(sysctl_numa_balancing_scan_period_reset);
+-		xchg(&mm->numa_next_reset, next_scan);
  	}
  
  	/*
-diff --git a/mm/memory.c b/mm/memory.c
-index 9898eeb..823720c 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3584,6 +3584,13 @@ int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	if (!pte_write(pte))
- 		flags |= TNF_NO_GROUP;
- 
-+	/*
-+	 * Flag if the page is shared between multiple address spaces. This
-+	 * is later used when determining whether to group tasks together
-+	 */
-+	if (page_mapcount(page) > 1 && (vma->vm_flags & VM_SHARED))
-+		flags |= TNF_SHARED;
-+
- 	last_cpupid = page_cpupid_last(page);
- 	page_nid = page_to_nid(page);
- 	target_nid = numa_migrate_prep(page, vma, addr, page_nid);
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 42f616a..e509b90 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -371,13 +371,6 @@ static struct ctl_table kern_table[] = {
+ 		.proc_handler	= proc_dointvec,
+ 	},
+ 	{
+-		.procname	= "numa_balancing_scan_period_reset",
+-		.data		= &sysctl_numa_balancing_scan_period_reset,
+-		.maxlen		= sizeof(unsigned int),
+-		.mode		= 0644,
+-		.proc_handler	= proc_dointvec,
+-	},
+-	{
+ 		.procname	= "numa_balancing_scan_period_max_ms",
+ 		.data		= &sysctl_numa_balancing_scan_period_max,
+ 		.maxlen		= sizeof(unsigned int),
