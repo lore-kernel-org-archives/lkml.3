@@ -1,77 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757059Ab3JIK1h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 06:27:37 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:47006 "EHLO bear.ext.ti.com"
+	id S1757166Ab3JIK2J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 06:28:09 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:47030 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756944Ab3JIK1f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 06:27:35 -0400
-Message-ID: <52552F84.2020901@ti.com>
-Date: Wed, 9 Oct 2013 15:57:16 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1757127Ab3JIK2G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 06:28:06 -0400
+Message-ID: <52552FB2.80903@ti.com>
+Date: Wed, 9 Oct 2013 13:28:02 +0300
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Jingoo Han <jg1.han@samsung.com>
-CC: "'Bjorn Helgaas'" <bhelgaas@google.com>, <linux-pci@vger.kernel.org>,
-        <linux-samsung-soc@vger.kernel.org>,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Pratyush Anand'" <pratyush.anand@st.com>,
-        "'Mohit KUMAR'" <Mohit.KUMAR@st.com>,
-        "'Siva Reddy Kallam'" <siva.kallam@samsung.com>,
-        "'SRIKANTH TUMKUR SHIVANAND'" <ts.srikanth@samsung.com>,
-        "'Arnd Bergmann'" <arnd@arndb.de>, "'Sean Cross'" <xobs@kosagi.com>,
-        "'Thierry Reding'" <thierry.reding@gmail.com>,
-        "'Thomas Petazzoni'" <thomas.petazzoni@free-electrons.com>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>
-Subject: Re: [PATCH] PCI: designware: Add irq_create_mapping()
-References: <000401cec4c6$dc415180$94c3f480$%han@samsung.com> <52551C6E.1040404@ti.com> <003901cec4d0$5d83e650$188bb2f0$%han@samsung.com> <5255266B.6040809@ti.com> <000501cec4d7$1233a3f0$369aebd0$%han@samsung.com>
-In-Reply-To: <000501cec4d7$1233a3f0$369aebd0$%han@samsung.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+To: <monstr@monstr.eu>
+CC: Michal Simek <michal.simek@xilinx.com>, <linux-kernel@vger.kernel.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        <linux-fbdev@vger.kernel.org>
+Subject: Re: [PATCH 3/3] video: xilinxfb: Simplify error path
+References: <7016a90750626ba866dddc6f85cfdd71943f6891.1378965270.git.michal.simek@xilinx.com> <940bbdfc5c67282ab461b9c82b55f18fc34c959d.1378965270.git.michal.simek@xilinx.com> <5236D4BD.9050707@ti.com> <5236DE60.3020901@monstr.eu> <5236DEBF.7070003@ti.com> <52496921.9080603@monstr.eu> <52551BAB.40805@ti.com> <52552F2E.7080007@monstr.eu>
+In-Reply-To: <52552F2E.7080007@monstr.eu>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="LdPAXweNwjqsNWetTeTOQIq9nTQOPr573"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 09 October 2013 03:35 PM, Jingoo Han wrote:
-> On Wednesday, October 09, 2013 6:48 PM, Kishon Vijay Abraham I wrote:
->> On Wednesday 09 October 2013 02:47 PM, Jingoo Han wrote:
->>> On Wednesday, October 09, 2013 6:06 PM, Kishon Vijay Abraham I wrote:
->>>> On Wednesday 09 October 2013 01:39 PM, Jingoo Han wrote:
->>>>> Without irq_create_mapping(), the correct irq number cannot be
->>>>> provided. In this case, it makes problem such as NULL deference.
->>>>> Thus, irq_create_mapping() should be added for MSI.
->>>>>
->>>>> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
->>>>> Cc: Kishon Vijay Abraham I <kishon@ti.com>
->>>>> ---
->>>>> Tested on Exynos5440.
->>>>>
->>>>>  drivers/pci/host/pcie-designware.c |   10 ++++------
->>>>>  drivers/pci/host/pcie-designware.h |    1 +
->>>>>  2 files changed, 5 insertions(+), 6 deletions(-)
->>>>>
->>>>> diff --git a/drivers/pci/host/pcie-designware.c b/drivers/pci/host/pcie-designware.c
->>>>> index 8963017..e536bb6 100644
->>>>> --- a/drivers/pci/host/pcie-designware.c
->>>>> +++ b/drivers/pci/host/pcie-designware.c
->>>>> @@ -237,6 +237,8 @@ static int assign_irq(int no_irqs, struct msi_desc *desc, int *pos)
->>>>>  		}
->>>>>  	}
->>>>>
->>>>> +	pp->msi_irq_start = irq_create_mapping(pp->irq_domain, 0);
->>>>> +
->>>>
->>>> I think irq_create_mapping should be done for all the MSI irq lines instead of
->>>> only the first line. So you might have to do for MAX_MSI_IRQS lines.
->>
->> Maybe it should be only till MAX_MSI_IRQS-1?
+--LdPAXweNwjqsNWetTeTOQIq9nTQOPr573
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-I meant something like this,
+On 09/10/13 13:25, Michal Simek wrote:
 
-	for (i = 0; i < MAX_MSI_IRQS; i++)
-		irq_create_mapping(pp->irq_domain, i);
+>> This series does not apply. Can you rebase on top of linux-next, and r=
+esend?
+>=20
+> Do you mean Stephen Rothwell linux-next or any your linux-next branch?
+> No problem to do so if you send me link to the repo.
 
-That didn't give me any issues though.
+Either one, my for-next is in Stephen's tree:
 
-Thanks
-Kishon
+git://git.kernel.org/pub/scm/linux/kernel/git/tomba/linux.git for-next
+
+ Tomi
+
+
+
+--LdPAXweNwjqsNWetTeTOQIq9nTQOPr573
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJSVS+yAAoJEPo9qoy8lh71R8YP/A17Lh4jepb+/dW52RkJEDWx
+FxN9fxzFar+a25nFTwwd97kqnWSyFGfWF0FI+IFUiu7eQQU9rflX4XM8sibE89RG
+OG7kGUCO3bNObh2W8xJQYwmvOzjGV7q8R2MmRqQhILLO5UD1AQYEXYaHuxn4yxCH
+mq30EGAxS01kIiGpxpxsTiFI87E7qI8KAUJs5qI+hBwodESM7PAXoJ7T99uSJU3F
+z45qNsaDx+Mx4DKNoziwLyO9MoQ//BphzAZuDSLK6azP6Zkb4U+bcr0ZW/RWhDDB
+5Pq3T/i6mpUlVPYe9WRi1bwDyFb7Rw80BkCbnLr0/YhdiFAja4FHlUs0QoMl+NkM
+vsI8pakVLC5zeFZvnh9DXzUQWEbUHDeVoRgYhsbthBPalQIAmBVU8AOOdrljfEXv
+KBoD/8S8T+KU22vB5eaUdK9fIhTeie9fyhv8F5nXp46w6QX3E9Dcf8idSIjT2Ul1
+QtOd5EqcnNqwGpClPH4aXliTUcDWzXs2DTZ/T3Kj2EKVO8vcF3/oqbpFJ6EY5TE+
+Is0sFfq0CH3WHRZ51/yhj0nOXj/dGnN0jiVe39+8gmmP4EO1CDwg3qZhEuARjWiK
+X3bWk6hwg61rQLtx18FOqluGSrlTx/3HT/zh8QBgjiPZTooS2eCONtNSBc9s6j9g
+8jWr/aUhXXsSCc0uXNWl
+=Q1jq
+-----END PGP SIGNATURE-----
+
+--LdPAXweNwjqsNWetTeTOQIq9nTQOPr573--
