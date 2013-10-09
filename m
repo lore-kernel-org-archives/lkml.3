@@ -1,97 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754599Ab3JIT2S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 15:28:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53286 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751986Ab3JIT2Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 15:28:16 -0400
-Date: Wed, 9 Oct 2013 12:16:52 -0700
-From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-To: Yoder Stuart-B08248 <B08248@freescale.com>
-Cc: Wood Scott-B07421 <B07421@freescale.com>,
-        Kim Phillips <kim.phillips@linaro.org>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "a.motakis@virtualopensystems.com" <a.motakis@virtualopensystems.com>,
-        "agraf@suse.de" <agraf@suse.de>,
-        Sethi Varun-B16395 <B16395@freescale.com>,
-        Bhushan Bharat-R65777 <R65777@freescale.com>,
-        "peter.maydell@linaro.org" <peter.maydell@linaro.org>,
-        "santosh.shukla@linaro.org" <santosh.shukla@linaro.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: Re: RFC: (re-)binding the VFIO platform driver to a platform device
-Message-ID: <20131009191652.GA18611@kroah.com>
-References: <20131002203735.GA10871@kroah.com>
- <1380748121.12932.89.camel@snotra.buserror.net>
- <20131002211631.GA11914@kroah.com>
- <1380749715.12932.109.camel@snotra.buserror.net>
- <20131002234009.GA27714@kroah.com>
- <1380825207.12932.151.camel@snotra.buserror.net>
- <20131003185434.GA26123@kroah.com>
- <1380827494.12932.161.camel@snotra.buserror.net>
- <20131003203226.GB27336@kroah.com>
- <9F6FE96B71CF29479FF1CDC8046E15036DDA62@039-SN1MPN1-002.039d.mgd.msft.net>
+	id S1754888Ab3JITao (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 15:30:44 -0400
+Received: from asmtp.lnxw.com ([207.21.185.2]:57898 "EHLO asmtp.lnxw.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752144Ab3JITan (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 15:30:43 -0400
+From: Alexey Neyman <stilor@att.net>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: [PATCH] Fix coalescing host bridge windows in arch/x86/pci/acpi.c
+Date: Wed, 9 Oct 2013 12:30:10 -0700
+User-Agent: KMail/1.13.5 (Linux/2.6.34-020634-generic; KDE/4.4.5; i686; ; )
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Feng Tang <feng.tang@intel.com>, Yijing Wang <wangyijing@huawei.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <6362938.J7ZtNEOFpc@mistral> <CAErSpo6XCu4ROJCh5=+7zwupjbtobowoNeF1PcXEvdg349C_pg@mail.gmail.com> <201310031616.08617.stilor@att.net>
+In-Reply-To: <201310031616.08617.stilor@att.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <9F6FE96B71CF29479FF1CDC8046E15036DDA62@039-SN1MPN1-002.039d.mgd.msft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201310091230.11050.stilor@att.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 09, 2013 at 07:02:25PM +0000, Yoder Stuart-B08248 wrote:
-> Have been thinking about this issue some more.  As Scott mentioned,
-> 'wildcard' matching for a driver can be fairly done in the platform
-> bus driver.  We could add a new flag to the platform driver struct:
+[Patch ping #5]
+
+On Thursday, October 03, 2013 04:16:07 pm Alexey Neyman wrote:
+> On Thursday, October 03, 2013 12:14:38 pm Bjorn Helgaas wrote:
+> > On Mon, Sep 23, 2013 at 12:15 AM, Alexey Neyman <stilor@att.net> wrote:
+> > > [Resending due to no response to the original message in a week]
+> > > 
+> > > Hi all,
+> > > 
+> > > I have a board with a BIOS bug that reports the following I/O port
+> > > regions in _CRS on one of the host bridges:
+> > > 
+> > > 0x0000-0x03af // #0
+> > > 0x03e0-0x0cf7 // #1
+> > > 0x03b0-0x03bb // #2
+> > > 0x03c0-0x03df // #3
+> > > 0x0000-0xdfff // #4
+> > > 0xf000-0xffff // #5
+> > > 
+> > > Obviously, region number #4 is erroneous as it overlaps with regions
+> > > #0..3. The code in coalesce_windows() in arch/x86/pci/acpi.c attempts
+> > > to recover from such kind of BIOS bugs by merging the overlapping
+> > > regions. Current code expands region #0 to 0x0000-0xdffff and makes
+> > > region #4 ignored. As a result, overlap of the expanded region #0 with
+> > > regions #1..3 remains undetected (as the inner loop already compared
+> > > them with region #0). As a result, regions #1..3 are inserted into the
+> > > resource tree even though they overlap with adjusted region #0 - which
+> > > later results in resource conflicts for PCI devices with IO ports in
+> > > one of those regions (e.g., for an PCI IDE controller in legacy mode -
+> > > which has port 0x3f6). The kernel then refuses to initialize these
+> > > devices.
+> > > 
+> > > The fix: instead of expanding res1 and ignoring res2, do the opposite.
+> > > The res2 window is yet to be compared against all windows between res1
+> > > and res2 (regions #1..3 in the above example), so the resulting
+> > > resource map will include just the expanded region - and will ignore
+> > > any overlapping ones.
+> > > 
+> > > Signed-off-by: Alexey Neyman <stilor@att.net>
+> > 
+> > Can you please open a report at http://bugzilla.kernel.org, assign it
+> > to drivers/pci, and attach a complete dmesg log?
 > 
-> diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-> index 4f8bef3..4d6cf14 100644
-> --- a/drivers/base/platform.c
-> +++ b/drivers/base/platform.c
-> @@ -727,6 +727,10 @@ static int platform_match(struct device *dev, struct device_driver *drv)
->         struct platform_device *pdev = to_platform_device(dev);
->         struct platform_driver *pdrv = to_platform_driver(drv);
+> https://bugzilla.kernel.org/show_bug.cgi?id=62511
 > 
-> +       /* the driver matches any device */
-> +       if (pdrv->match_any)
-> +               return 1;
-> +
->         /* Attempt an OF style match first */
->         if (of_driver_match_device(dev, drv))
->                 return 1;
-> 
-> However, the more problematic issue is that a bus driver has no way to 
-> differentiate from an explicit bind request via sysfs and a bind that
-> happened through bus probing.
+> I am not at liberty to disclose full hardware configuration of the board,
+> as it is a proprietary prototype board not in production. I've provided
+> the relevant messages from dmesg though.
 
-That was by design, nice to see I implemented it properly :)
+Could anybody review/commit?
 
-> I think something like the new flag in the snippet below would enable the platform
-> bus to support platform drivers that only bind on explicit request:
-> 
-> diff --git a/drivers/base/bus.c b/drivers/base/bus.c
-> index 4c289ab..daf6d24 100644
-> --- a/drivers/base/bus.c
-> +++ b/drivers/base/bus.c
-> @@ -201,7 +201,7 @@ static ssize_t bind_store(struct device_driver *drv, const char *buf,
->         int err = -ENODEV;
-> 
->         dev = bus_find_device_by_name(bus, NULL, buf);
-> -       if (dev && dev->driver == NULL && driver_match_device(drv, dev)) {
-> +       if (dev && dev->driver == NULL && driver_match_device(drv, dev, 1)) {
-
-Magic flags are the spawn of your favorite anti-$DIETY.  I'm never going
-to accept that, sorry.
-
-If you really want to do something "special" for the platform bus, then
-do it only for the platform bus.  But even then, you'll find me arguing
-that you really don't want to do it at all, sorry.
-
-I'm still yet to be convinced this is even an issue at all, but maybe
-that's just the jetlag talking...
-
-greg k-h
+Regards,
+Alexey.
