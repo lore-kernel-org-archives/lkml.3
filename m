@@ -1,73 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756846Ab3JIXk4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 19:40:56 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:50857 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754992Ab3JIXky (ORCPT
+	id S1756838Ab3JIXo4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 19:44:56 -0400
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:48529 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753951Ab3JIXoy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 19:40:54 -0400
-X-Originating-IP: 173.246.103.110
-Date: Wed, 9 Oct 2013 16:40:40 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org, mingo@kernel.org,
-        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu, "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
-Subject: Re: [PATCH v2 tip/core/rcu 07/13] ipv6/ip6_tunnel: Apply
- rcu_access_pointer() to avoid sparse false positive
-Message-ID: <20131009234040.GB14055@jtriplet-mobl1>
-References: <20131009212920.GA15413@linux.vnet.ibm.com>
- <1381354186-16285-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1381354186-16285-7-git-send-email-paulmck@linux.vnet.ibm.com>
- <1381354949.4971.20.camel@edumazet-glaptop.roam.corp.google.com>
- <20131009215747.GA5790@linux.vnet.ibm.com>
- <1381356624.4971.26.camel@edumazet-glaptop.roam.corp.google.com>
- <20131009223652.GC5790@linux.vnet.ibm.com>
- <1381359077.4971.37.camel@edumazet-glaptop.roam.corp.google.com>
- <20131009225617.GH11709@jtriplet-mobl1>
- <1381360675.4971.45.camel@edumazet-glaptop.roam.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1381360675.4971.45.camel@edumazet-glaptop.roam.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 9 Oct 2013 19:44:54 -0400
+From: "Geyslan G. Bem" <geyslan@gmail.com>
+To: chris.mason@fusionio.com
+Cc: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-br@googlegroups.com, "Geyslan G. Bem" <geyslan@gmail.com>
+Subject: [PATCH v3] btrfs: Fix memory leakage in the tree-log.c
+Date: Wed,  9 Oct 2013 20:40:30 -0300
+Message-Id: <1381362030-29595-1-git-send-email-geyslan@gmail.com>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 09, 2013 at 04:17:55PM -0700, Eric Dumazet wrote:
-> On Wed, 2013-10-09 at 15:56 -0700, Josh Triplett wrote:
-> 
-> > I'd be really hesitant to introduce that type of direct assignment to an
-> > __rcu pointer without wrapping it in some appropriately named macro, or
-> > at the very least adding a comment.
-> 
-> Well, there is no special magic here, in this specific case :
-> 
-> - deleting an item in an rcu list
-> 
-> Check list_del_rcu(), and you'll notice there is no _barrier_
-> 
-> Adding correct barriers is good, but please do not add them when not
-> needed.
-> 
-> It makes code hard to understand.
+In some cases, add_inode_ref() is returning without freeing
+the 'name' pointer.
 
-I'm not arguing for the inclusion of an unnecessary barrier.  I'm
-arguing for something more self-documenting than:
+Added bail out to explicitly call kfree when necessary.
 
-> ACCESS(*ptr) = value;
+Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
+---
+ fs/btrfs/tree-log.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-that.  Constructs like list_del_rcu are much clearer, and not
-open-coded.  Open-coding synchronization code is almost always a Bad
-Idea.
+diff --git a/fs/btrfs/tree-log.c b/fs/btrfs/tree-log.c
+index 79f057c..ad7cc5f 100644
+--- a/fs/btrfs/tree-log.c
++++ b/fs/btrfs/tree-log.c
+@@ -1170,13 +1170,16 @@ static noinline int add_inode_ref(struct btrfs_trans_handle *trans,
+ 			if (!dir)
+ 				dir = read_one_inode(root, parent_objectid);
+ 			if (!dir)
+-				return -ENOENT;
++			{
++				ret = -ENOENT;
++				goto bail;
++			}
+ 		} else {
+ 			ret = ref_get_fields(eb, ref_ptr, &namelen, &name,
+ 					     &ref_index);
+ 		}
+ 		if (ret)
+-			return ret;
++			goto bail;
+ 
+ 		/* if we already have a perfect match, we're done */
+ 		if (!inode_in_dir(root, path, btrfs_ino(dir), btrfs_ino(inode),
+@@ -1227,6 +1230,9 @@ out:
+ 	btrfs_release_path(path);
+ 	iput(dir);
+ 	iput(inode);
++bail:
++	if (name)
++		kfree(name);
+ 	return ret;
+ }
+ 
+-- 
+1.8.4
 
-- Josh Triplett
