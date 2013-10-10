@@ -1,93 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753806Ab3JJF0w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 01:26:52 -0400
-Received: from nm9-vm2.access.bullet.mail.gq1.yahoo.com ([216.39.63.37]:25789
-	"EHLO nm9-vm2.access.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752327Ab3JJF0v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 01:26:51 -0400
-X-Yahoo-Newman-Id: 72386.71861.bm@smtp117.sbc.mail.gq1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: 6WyHa8QVM1kjKg1C8OV_SnqyofKyHKS8_7viCzT.igaLZ.0
- jy5cpcXa.Fxw.b4aZ2AFOijKb7LtoKnqQn8594yfmmkd8PaPXdDxzfDdURu7
- ZkZgFizUGnGDjdeLEbuAeMKaNxqQLJnXxlyebOJUOsDgbIFtP6vEbkkz8GMy
- Ng6T8ZyQcQ1XDU7lHsSjKEQ19uPK82eNWV7j09AY.Wzjt7BKu.gyZh9xj.9m
- nwwYQuG7NEWs_3b8wN3dVD47ffIL4P3o1yp65HuM3blsWVhM_ZoIYlG8IBWY
- i0AylbRn0wHw3A_ixMXPKmlWHckRyD4nx9JhNIEu5YsbibUF8JJz77UFzMyt
- vgYH_7mXN.9OwuJpqVlUiotNKCZ3.yHwNi1R7Le5_zYZ8BuxFFPHBlfGrcjF
- MXVgzDBO2dVadqUV_toBAESjPqKtTiXqYF8qDnUXKAWV3fAwCAEPYtpeR_KF
- rDoEu8nIslsoOyuuiCJdtxpwuPZ8oeGRJpVqf3wzVlg4h.JAlJ3HYl.6DfDR
- CHTJ0WfhxYxhr9bOt97OJRPIS4PthzJLa1yo1ZF0zkJug
-X-Yahoo-SMTP: 0h0Q7euswBD_g.kcEqbzJWRFfrba801gq1M1
-X-Rocket-Received: from mistral.localnet (stilor@107.200.11.181 with )
-        by smtp117.sbc.mail.gq1.yahoo.com with SMTP; 10 Oct 2013 05:26:51 +0000 UTC
-From: Alexey Neyman <stilor@att.net>
-To: Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Avoid needless loop in sdhci_irq() for Card Interrupt
-Date: Wed, 09 Oct 2013 22:26:49 -0700
-Message-ID: <2565587.cJgUu2WKHe@mistral>
-User-Agent: KMail/4.10.4 (Linux/3.8.0-25-generic; KDE/4.10.5; x86_64; ; )
+	id S1753748Ab3JJFci (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 01:32:38 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:56269 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751318Ab3JJFcg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 01:32:36 -0400
+Message-ID: <52563BD8.1060703@ti.com>
+Date: Thu, 10 Oct 2013 00:32:08 -0500
+From: Joel Fernandes <joelf@ti.com>
+Reply-To: <joelf@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="nextPart2134488.pGrcClfXyO"
-Content-Transfer-Encoding: 7Bit
+To: Nishanth Menon <nm@ti.com>
+CC: Kevin Hilman <khilman@linaro.org>, Benoit Cousson <bcousson@baylibre.com>,
+        Tony Lindgren <tony@atomide.com>, Tero Kristo <t-kristo@ti.com>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-doc@vger.kernel.org>,
+        <devicetree@vger.kernel.org>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Paul Walmsley <paul@pwsan.com>
+Subject: Re: [PATCH V6 02/15] ARM: OMAP2+: AM33XX: add lateinit hook for calling
+ pm late init
+References: <1381354144-7134-1-git-send-email-nm@ti.com> <1381361098-8283-1-git-send-email-nm@ti.com>
+In-Reply-To: <1381361098-8283-1-git-send-email-nm@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
+On 10/09/2013 06:24 PM, Nishanth Menon wrote:
+> Call OMAP2+ generic lateinit hook from AM specific late init hook.
+> This allows the generic late initializations such as cpufreq hooks
+> to be active.
+> 
+> Cc: Benoit Cousson <bcousson@baylibre.com>
+> Cc: Kevin Hilman <khilman@deeprootsystems.com>
+> Cc: Paul Walmsley <paul@pwsan.com>
+> Cc: Tony Lindgren <tony@atomide.com>
+> Signed-off-by: Nishanth Menon <nm@ti.com>
+> ---
+>  arch/arm/mach-omap2/board-generic.c |    1 +
+>  arch/arm/mach-omap2/common.h        |    1 +
+>  arch/arm/mach-omap2/io.c            |    6 ++++++
+>  3 files changed, 8 insertions(+)
+> 
+> diff --git a/arch/arm/mach-omap2/board-generic.c b/arch/arm/mach-omap2/board-generic.c
+> index 87162e1..b474498 100644
+> --- a/arch/arm/mach-omap2/board-generic.c
+> +++ b/arch/arm/mach-omap2/board-generic.c
+> @@ -180,6 +180,7 @@ DT_MACHINE_START(AM33XX_DT, "Generic AM33XX (Flattened Device Tree)")
+>  	.init_irq	= omap_intc_of_init,
+>  	.handle_irq	= omap3_intc_handle_irq,
+>  	.init_machine	= omap_generic_init,
+> +	.init_late	= am33xx_init_late,
 
---nextPart2134488.pGrcClfXyO
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Instead of adding a new a *_init_late function for every platform, perhaps
+better to just do:
+.init_late	= omap2_common_pm_late_init;
 
-Hi all,
+since that's the only function you're calling.
 
-I've discovered that the sdhci_irq() function needlessly iterates re-reading 
-the interrupt status and doing nothing (until it runs out of max_loops) when 
-it handles the "Card Interrupt" status in the interrupt status register.
+Later if more functions are added, then it can be wrapped around.
 
-The reason is that the "Card Interrupt" bit is not cleared until the 
-sdhci_irq() calls mmc_signal_sdio_irq(), so if Card Interrupt was asserted, 
-re-reading the interrupt status will find this bit set over and over, even if 
-no other bits are reported.
+regards,
 
-The fix: ignore Card Interrupt bits in the interrupt status if we already know 
-that mmc_signal_sdio_irq() is going to be called at the end of sdhci_irq().
+-Joel
 
-Signed-off-by: Alexey Neyman <stilor@att.net>
 
---nextPart2134488.pGrcClfXyO
-Content-Disposition: attachment; filename="sdhci.c.diff"
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/x-patch; charset="UTF-8"; name="sdhci.c.diff"
 
-commit 7f23315b344ca51ddf22a78f326f88404fa8c81d
-Author: Alexey Neyman <stilor@att.net>
-Date:   Wed Oct 9 22:23:54 2013 -0700
 
-    Avoid a loop in sdhci.c.
-
-diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-index 7a7fb4f..a83cd1b 100644
---- a/drivers/mmc/host/sdhci.c
-+++ b/drivers/mmc/host/sdhci.c
-@@ -2491,6 +2491,14 @@ again:
- 	result = IRQ_HANDLED;
- 
- 	intmask = sdhci_readl(host, SDHCI_INT_STATUS);
-+
-+	/*
-+	 * If we know we'll call the driver to signal SDIO IRQ, disregard
-+	 * further indications of Card Interrupt in the status to avoid a
-+	 * needless loop.
-+	 */
-+	if (cardint)
-+		intmask &= ~SDHCI_INT_CARD_INT;
- 	if (intmask && --max_loops)
- 		goto again;
- out:
-
---nextPart2134488.pGrcClfXyO--
 
