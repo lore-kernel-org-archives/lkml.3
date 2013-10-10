@@ -1,109 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754769Ab3JJHDw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 03:03:52 -0400
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:55300 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753222Ab3JJHDu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 03:03:50 -0400
-Date: Thu, 10 Oct 2013 09:03:47 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH] tools/perf/build: Remove the volatile-register-var feature
- check
-Message-ID: <20131010070347.GH10246@gmail.com>
-References: <1381227082-22039-1-git-send-email-mingo@kernel.org>
- <1381227082-22039-8-git-send-email-mingo@kernel.org>
- <87d2ndk6tu.fsf@sejong.aot.lge.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87d2ndk6tu.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754782Ab3JJHER (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 03:04:17 -0400
+Received: from gate.crashing.org ([63.228.1.57]:58702 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751647Ab3JJHEP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 03:04:15 -0400
+Message-ID: <1381388635.4330.37.camel@pasglop>
+Subject: [PATCH] sysfs/bin: Fix size handling overflow for bin_attribute
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Tejun Heo <tj@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 10 Oct 2013 18:03:55 +1100
+In-Reply-To: <1381378788.4330.30.camel@pasglop>
+References: <1381378788.4330.30.camel@pasglop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Namhyung Kim noticed that the volatile-register-var feature check
-is superfluous:
+While looking at the code, I noticed that bin_attribute read() and write()
+ops copy the inode size into an int for futher comparisons.
 
- > The gcc manpage says this warning is enabled by -Wall, and we add -Wall
- > to CFLAGS before doing feature checks.  So all gcc versions that support
- > -Wvolatile-register-var enables it by default without this check and
- > older gcc versions will always fail the feature check.
+Some bin_attributes can be fairly large. For example, pci creates some for
+BARs set to the BAR size and giant BARs are around the corner, so this is
+going to break something somewhere eventually.
 
-Remove it - this will further speed up feature checks.
+Let's use the right type.
 
-Reported-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 ---
- tools/perf/config/Makefile                | 7 +------
- tools/perf/config/feature-checks/Makefile | 8 ++------
- 2 files changed, 3 insertions(+), 12 deletions(-)
 
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 587dd7e..d38119f 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -132,8 +132,7 @@ CORE_FEATURE_TESTS =			\
- 	libunwind			\
- 	on-exit				\
- 	stackprotector			\
--	stackprotector-all		\
--	volatile-register-var
-+	stackprotector-all
- 
- #
- # So here we detect whether test-all was rebuilt, to be able
-@@ -203,10 +202,6 @@ ifeq ($(feature-stackprotector), 1)
-   CFLAGS += -Wstack-protector
- endif
- 
--ifeq ($(feature-volatile-register-var), 1)
--  CFLAGS += -Wvolatile-register-var
--endif
--
- ifeq ($(DEBUG),0)
-   ifeq ($(feature-fortify-source), 1)
-     CFLAGS += -D_FORTIFY_SOURCE=2
-diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
-index cf33596..2eb8346 100644
---- a/tools/perf/config/feature-checks/Makefile
-+++ b/tools/perf/config/feature-checks/Makefile
-@@ -25,8 +25,7 @@ FILES=					\
- 	test-libunwind			\
- 	test-on-exit			\
- 	test-stackprotector-all		\
--	test-stackprotector		\
--	test-volatile-register-var
-+	test-stackprotector
- 
- CC := $(CC) -MD
- 
-@@ -37,7 +36,7 @@ BUILD = $(CC) $(LDFLAGS) -o $(OUTPUT)$@ $@.c
- ###############################
- 
- test-all:
--	$(BUILD) -Werror -fstack-protector -fstack-protector-all -Wvolatile-register-var -O2 -Werror -D_FORTIFY_SOURCE=2 -ldw -lelf -lnuma -lunwind -lunwind-x86_64 -lelf -laudit -I/usr/include/slang -lslang $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null) $(FLAGS_PERL_EMBED) $(FLAGS_PYTHON_EMBED) -DPACKAGE='"perf"' -lbfd -ldl
-+	$(BUILD) -Werror -fstack-protector -fstack-protector-all -O2 -Werror -D_FORTIFY_SOURCE=2 -ldw -lelf -lnuma -lunwind -lunwind-x86_64 -lelf -laudit -I/usr/include/slang -lslang $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null) $(FLAGS_PERL_EMBED) $(FLAGS_PYTHON_EMBED) -DPACKAGE='"perf"' -lbfd -ldl
- 
- test-hello:
- 	$(BUILD)
-@@ -48,9 +47,6 @@ test-stackprotector-all:
- test-stackprotector:
- 	$(BUILD) -Werror -fstack-protector
- 
--test-volatile-register-var:
--	$(BUILD) -Werror -Wvolatile-register-var
--
- test-fortify-source:
- 	$(BUILD) -O2 -Werror -D_FORTIFY_SOURCE=2
- 
+I noticed that while messing around with my "xscom" file which I had
+originally set to be LONG_MAX :-)
+
+I eventually decided to use an i_size of 0 instead which seems to be
+the way that sort of "special" file tend to be done (it's a bridge to
+a special sideband bus in the system which has a sparse addressing which
+is splattered all over 64 bits though I've somewhat "compressed" it to 63
+for the sake of sysfs).
+
+Note that I noticed that late and don't have a good test case for it,
+but code inspection didn't seem to show anything else cropping i_size. 
+
+diff --git a/fs/sysfs/bin.c b/fs/sysfs/bin.c
+index c590cab..373ddcf 100644
+--- a/fs/sysfs/bin.c
++++ b/fs/sysfs/bin.c
+@@ -69,7 +69,7 @@ static ssize_t
+ read(struct file *file, char __user *userbuf, size_t bytes, loff_t *off)
+ {
+ 	struct bin_buffer *bb = file->private_data;
+-	int size = file_inode(file)->i_size;
++	loff_t size = file_inode(file)->i_size;
+ 	loff_t offs = *off;
+ 	int count = min_t(size_t, bytes, PAGE_SIZE);
+ 	char *temp;
+@@ -139,7 +139,7 @@ static ssize_t write(struct file *file, const char __user *userbuf,
+ 		     size_t bytes, loff_t *off)
+ {
+ 	struct bin_buffer *bb = file->private_data;
+-	int size = file_inode(file)->i_size;
++	loff_t size = file_inode(file)->i_size;
+ 	loff_t offs = *off;
+ 	int count = min_t(size_t, bytes, PAGE_SIZE);
+ 	char *temp;
+
+
