@@ -1,78 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756597Ab3JJTEs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 15:04:48 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:4653 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754093Ab3JJTEr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 15:04:47 -0400
-Date: Thu, 10 Oct 2013 15:04:44 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/6] Optimize the cpu hotplug locking -v2
-Message-ID: <20131010150444.51f9c929@gandalf.local.home>
-In-Reply-To: <CA+55aFyoP5KFUg44Xenp_Jz0_5ssosn-KF6LDsa0qsmCjyJ56g@mail.gmail.com>
-References: <20131009225006.7101379c.akpm@linux-foundation.org>
-	<20131010121908.GB28601@twins.programming.kicks-ass.net>
-	<20131010145738.GA5167@gmail.com>
-	<20131010152612.GA13375@redhat.com>
-	<20131010090044.7f12ddaf.akpm@linux-foundation.org>
-	<20131010123631.1be60315@gandalf.local.home>
-	<20131010094355.6f75e5a2.akpm@linux-foundation.org>
-	<20131010165337.GT3081@twins.programming.kicks-ass.net>
-	<20131010131305.58558079@gandalf.local.home>
-	<20131010104856.8f042977112d5ac2693973ae@linux-foundation.org>
-	<20131010183409.GP13848@laptop.programming.kicks-ass.net>
-	<CA+55aFyoP5KFUg44Xenp_Jz0_5ssosn-KF6LDsa0qsmCjyJ56g@mail.gmail.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1757082Ab3JJTFo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 15:05:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6368 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755593Ab3JJTFm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 15:05:42 -0400
+Message-ID: <5256FA26.8010105@redhat.com>
+Date: Thu, 10 Oct 2013 15:04:06 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        hannes@cmpxchg.org, aarcange@redhat.com, srikar@linux.vnet.ibm.com,
+        mgorman@suse.de, tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:sched/core] sched/numa: Introduce migrate_swap()
+References: <1381141781-10992-39-git-send-email-mgorman@suse.de> <tip-ac66f5477239ebd3c4e2cbf2f591ef387aa09884@git.kernel.org> <20131010181722.GO13848@laptop.programming.kicks-ass.net>
+In-Reply-To: <20131010181722.GO13848@laptop.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Oct 2013 11:49:15 -0700
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
- 
-> Oh, and I'm sure there are several users that currently depend on
-> being able to sleep over get_online_cpu's.  But I'm pretty sure it's
-> "several", not "hundreds", and I think we could fix them up.
+On 10/10/2013 02:17 PM, Peter Zijlstra wrote:
+> On Wed, Oct 09, 2013 at 10:30:13AM -0700, tip-bot for Peter Zijlstra wrote:
+>> sched/numa: Introduce migrate_swap()
+>
+> Thanks to Rik for writing the Changelog!
+>
+> ---
+> From: Peter Zijlstra <peterz@infradead.org>
+> Subject: sched: Fix race in migrate_swap_stop
+>
+> There is a subtle race in migrate_swap, when task P, on CPU A, decides to swap
+> places with task T, on CPU B.
+>
+> Task P:
+>    - call migrate_swap
+> Task T:
+>    - go to sleep, removing itself from the runqueue
+> Task P:
+>    - double lock the runqueues on CPU A & B
+> Task T:
+>    - get woken up, place itself on the runqueue of CPU C
+> Task P:
+>    - see that task T is on a runqueue, and pretend to remove it
+>      from the runqueue on CPU B
+>
+> Now CPUs B & C both have corrupted scheduler data structures.
+>
+> This patch fixes it, by holding the pi_lock for both of the tasks
+> involved in the migrate swap. This prevents task T from waking up,
+> and placing itself onto another runqueue, until after migrate_swap
+> has released all locks.
+>
+> This means that, when migrate_swap checks, task T will be either
+> on the runqueue where it was originally seen, or not on any
+> runqueue at all. Migrate_swap deals correctly with of those cases.
+>
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> Tested-by: Joe Mario <jmario@redhat.com>
 
-I'm wondering if we can have a for_each_cpu() that only disables
-preemption in the loop. That is, each iteration will enable preemption,
-but the loop itself will guarantee that the current cpu to process
-still exists.
+Reviewed-by: Rik van Riel <riel@redhat.com>
 
-	rcu_read_lock();
-	for_each_cpu(cpu, mask) {
-		rcu_read_unlock();
-		rcu_read_lock();
-		if (!cpu_online(cpu))
-			continue;
-		[...]
-	}
-	rcu_read_unlock();
-
-That way expensive loops wont stop the current CPU to process all
-online CPUs.
-
-Of course, it will miss a CPU that comes online. But it would still
-need to handle the case of a CPU coming online after the final
-put_online_cpus(), so I'm not sure that's a problem.
-
--- Steve
