@@ -1,20 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757686Ab3JJPum (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 11:50:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53058 "EHLO
+	id S1757706Ab3JJPus (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 11:50:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53087 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757590Ab3JJPua (ORCPT
+	with ESMTP id S1757590Ab3JJPun (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 11:50:30 -0400
+	Thu, 10 Oct 2013 11:50:43 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Kees Cook <keescook@chromium.org>, Jiri Kosina <jkosina@suse.cz>,
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Josh Boyer <jwboyer@redhat.com>, Matt Fleming <matt.fleming@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 037/104] HID: provide a helper for validating hid reports
-Date: Thu, 10 Oct 2013 08:41:25 -0700
-Message-Id: <1381419752-29733-38-git-send-email-kamal@canonical.com>
+Subject: [PATCH 055/104] x86, efi: Don't map Boot Services on i386
+Date: Thu, 10 Oct 2013 08:41:43 -0700
+Message-Id: <1381419752-29733-56-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381419752-29733-1-git-send-email-kamal@canonical.com>
 References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
@@ -27,108 +32,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Josh Boyer <jwboyer@redhat.com>
 
-commit 331415ff16a12147d57d5c953f3a961b7ede348b upstream.
+commit 700870119f49084da004ab588ea2b799689efaf7 upstream.
 
-Many drivers need to validate the characteristics of their HID report
-during initialization to avoid misusing the reports. This adds a common
-helper to perform validation of the report exisitng, the field existing,
-and the expected number of values within the field.
+Add patch to fix 32bit EFI service mapping (rhbz 726701)
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Multiple people are reporting hitting the following WARNING on i386,
+
+  WARNING: at arch/x86/mm/ioremap.c:102 __ioremap_caller+0x3d3/0x440()
+  Modules linked in:
+  Pid: 0, comm: swapper Not tainted 3.9.0-rc7+ #95
+  Call Trace:
+   [<c102b6af>] warn_slowpath_common+0x5f/0x80
+   [<c1023fb3>] ? __ioremap_caller+0x3d3/0x440
+   [<c1023fb3>] ? __ioremap_caller+0x3d3/0x440
+   [<c102b6ed>] warn_slowpath_null+0x1d/0x20
+   [<c1023fb3>] __ioremap_caller+0x3d3/0x440
+   [<c106007b>] ? get_usage_chars+0xfb/0x110
+   [<c102d937>] ? vprintk_emit+0x147/0x480
+   [<c1418593>] ? efi_enter_virtual_mode+0x1e4/0x3de
+   [<c102406a>] ioremap_cache+0x1a/0x20
+   [<c1418593>] ? efi_enter_virtual_mode+0x1e4/0x3de
+   [<c1418593>] efi_enter_virtual_mode+0x1e4/0x3de
+   [<c1407984>] start_kernel+0x286/0x2f4
+   [<c1407535>] ? repair_env_string+0x51/0x51
+   [<c1407362>] i386_start_kernel+0x12c/0x12f
+
+Due to the workaround described in commit 916f676f8 ("x86, efi: Retain
+boot service code until after switching to virtual mode") EFI Boot
+Service regions are mapped for a period during boot. Unfortunately, with
+the limited size of the i386 direct kernel map it's possible that some
+of the Boot Service regions will not be directly accessible, which
+causes them to be ioremap()'d, triggering the above warning as the
+regions are marked as E820_RAM in the e820 memmap.
+
+There are currently only two situations where we need to map EFI Boot
+Service regions,
+
+  1. To workaround the firmware bug described in 916f676f8
+  2. To access the ACPI BGRT image
+
+but since we haven't seen an i386 implementation that requires either,
+this simple fix should suffice for now.
+
+[ Added to changelog - Matt ]
+
+Reported-by: Bryan O'Donoghue <bryan.odonoghue.lkml@nexus-software.ie>
+Acked-by: Tom Zanussi <tom.zanussi@intel.com>
+Acked-by: Darren Hart <dvhart@linux.intel.com>
+Cc: Josh Triplett <josh@joshtriplett.org>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Josh Boyer <jwboyer@redhat.com>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/hid/hid-core.c | 58 ++++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/hid.h    |  4 ++++
- 2 files changed, 62 insertions(+)
+ arch/x86/platform/efi/efi.c | 11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index 869ead1..bf31892 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -760,6 +760,64 @@ int hid_parse_report(struct hid_device *hid, __u8 *start, unsigned size)
- }
- EXPORT_SYMBOL_GPL(hid_parse_report);
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index fe2ac4f..cc657c8 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -900,10 +900,13 @@ void __init efi_enter_virtual_mode(void)
  
-+static const char * const hid_report_names[] = {
-+	"HID_INPUT_REPORT",
-+	"HID_OUTPUT_REPORT",
-+	"HID_FEATURE_REPORT",
-+};
-+/**
-+ * hid_validate_values - validate existing device report's value indexes
-+ *
-+ * @device: hid device
-+ * @type: which report type to examine
-+ * @id: which report ID to examine (0 for first)
-+ * @field_index: which report field to examine
-+ * @report_counts: expected number of values
-+ *
-+ * Validate the number of values in a given field of a given report, after
-+ * parsing.
-+ */
-+struct hid_report *hid_validate_values(struct hid_device *hid,
-+				       unsigned int type, unsigned int id,
-+				       unsigned int field_index,
-+				       unsigned int report_counts)
-+{
-+	struct hid_report *report;
-+
-+	if (type > HID_FEATURE_REPORT) {
-+		hid_err(hid, "invalid HID report type %u\n", type);
-+		return NULL;
-+	}
-+
-+	if (id >= HID_MAX_IDS) {
-+		hid_err(hid, "invalid HID report id %u\n", id);
-+		return NULL;
-+	}
-+
-+	/*
-+	 * Explicitly not using hid_get_report() here since it depends on
-+	 * ->numbered being checked, which may not always be the case when
-+	 * drivers go to access report values.
-+	 */
-+	report = hid->report_enum[type].report_id_hash[id];
-+	if (!report) {
-+		hid_err(hid, "missing %s %u\n", hid_report_names[type], id);
-+		return NULL;
-+	}
-+	if (report->maxfield <= field_index) {
-+		hid_err(hid, "not enough fields in %s %u\n",
-+			hid_report_names[type], id);
-+		return NULL;
-+	}
-+	if (report->field[field_index]->report_count < report_counts) {
-+		hid_err(hid, "not enough values in %s %u field %u\n",
-+			hid_report_names[type], id, field_index);
-+		return NULL;
-+	}
-+	return report;
-+}
-+EXPORT_SYMBOL_GPL(hid_validate_values);
-+
- /**
-  * hid_open_report - open a driver-specific device report
-  *
-diff --git a/include/linux/hid.h b/include/linux/hid.h
-index 13d812b..a79219f 100644
---- a/include/linux/hid.h
-+++ b/include/linux/hid.h
-@@ -717,6 +717,10 @@ void hid_output_report(struct hid_report *report, __u8 *data);
- struct hid_device *hid_allocate_device(void);
- struct hid_report *hid_register_report(struct hid_device *device, unsigned type, unsigned id);
- int hid_parse_report(struct hid_device *hid, __u8 *start, unsigned size);
-+struct hid_report *hid_validate_values(struct hid_device *hid,
-+				       unsigned int type, unsigned int id,
-+				       unsigned int field_index,
-+				       unsigned int report_counts);
- int hid_open_report(struct hid_device *device);
- int hid_check_keys_pressed(struct hid_device *hid);
- int hid_connect(struct hid_device *hid, unsigned int connect_mask);
+ 	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
+ 		md = p;
+-		if (!(md->attribute & EFI_MEMORY_RUNTIME) &&
+-		    md->type != EFI_BOOT_SERVICES_CODE &&
+-		    md->type != EFI_BOOT_SERVICES_DATA)
+-			continue;
++		if (!(md->attribute & EFI_MEMORY_RUNTIME)) {
++#ifdef CONFIG_X86_64
++			if (md->type != EFI_BOOT_SERVICES_CODE &&
++			    md->type != EFI_BOOT_SERVICES_DATA)
++#endif
++				continue;
++		}
+ 
+ 		size = md->num_pages << EFI_PAGE_SHIFT;
+ 		end = md->phys_addr + size;
 -- 
 1.8.1.2
 
