@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756896Ab3JJPrd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 11:47:33 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52794 "EHLO
+	id S1757848Ab3JJQEb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 12:04:31 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52789 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755263Ab3JJPrb (ORCPT
+	with ESMTP id S1755456Ab3JJPr2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 11:47:31 -0400
+	Thu, 10 Oct 2013 11:47:28 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Benson Leung <bleung@chromium.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Bing Zhao <bzhao@marvell.com>, "John W. Linville" <linville@tuxdriver.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 074/104] driver core : Fix use after free of dev->parent in device_shutdown
-Date: Thu, 10 Oct 2013 08:42:02 -0700
-Message-Id: <1381419752-29733-75-git-send-email-kamal@canonical.com>
+Subject: [PATCH 089/104] mwifiex: fix NULL pointer dereference in usb suspend handler
+Date: Thu, 10 Oct 2013 08:42:17 -0700
+Message-Id: <1381419752-29733-90-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381419752-29733-1-git-send-email-kamal@canonical.com>
 References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
@@ -28,94 +27,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benson Leung <bleung@chromium.org>
+From: Bing Zhao <bzhao@marvell.com>
 
-commit f123db8e9d6c84c863cb3c44d17e61995dc984fb upstream.
+commit 346ece0b7ba2730b4d633b9e371fe55488803102 upstream.
 
-The put_device(dev) at the bottom of the loop of device_shutdown
-may result in the dev being cleaned up. In device_create_release,
-the dev is kfreed.
+Bug 60815 - Interface hangs in mwifiex_usb
+https://bugzilla.kernel.org/show_bug.cgi?id=60815
 
-However, device_shutdown attempts to use the dev pointer again after
-put_device by referring to dev->parent.
+[ 2.883807] BUG: unable to handle kernel NULL pointer dereference
+            at 0000000000000048
+[ 2.883813] IP: [<ffffffff815a65e0>] pfifo_fast_enqueue+0x90/0x90
 
-Copy the parent pointer instead to avoid this condition.
+[ 2.883834] CPU: 1 PID: 3220 Comm: kworker/u8:90 Not tainted
+            3.11.1-monotone-l0 #6
+[ 2.883834] Hardware name: Microsoft Corporation Surface with
+            Windows 8 Pro/Surface with Windows 8 Pro,
+            BIOS 1.03.0450 03/29/2013
 
-This bug was found on Chromium OS's chromeos-3.8, which is based on v3.8.11.
-See bug report : https://code.google.com/p/chromium/issues/detail?id=297842
-This can easily be reproduced when shutting down with
-hidraw devices that report battery condition.
-Two examples are the HP Bluetooth Mouse X4000b and the Apple Magic Mouse.
-For example, with the magic mouse :
-The dev in question is "hidraw0"
-dev->parent is "magicmouse"
+On Surface Pro, suspend to ram gives a NULL pointer dereference in
+pfifo_fast_enqueue(). The stack trace reveals that the offending
+call is clearing carrier in mwifiex_usb suspend handler.
 
-In the course of the shutdown for this device, the input event cleanup calls
-a put on hidraw0, decrementing its reference count.
-When we finally get to put_device(dev) in device_shutdown, kobject_cleanup
-is called and device_create_release does kfree(dev).
-dev->parent is no longer valid, and we may crash in
-put_device(dev->parent).
+Since commit 1499d9f "mwifiex: don't drop carrier flag over suspend"
+has removed the carrier flag handling over suspend/resume in SDIO
+and PCIe drivers, I'm removing it in USB driver too. This also fixes
+the bug for Surface Pro.
 
-This change should be applied on any kernel with this change :
-d1c6c030fcec6f860d9bb6c632a3ebe62e28440b
-
-Signed-off-by: Benson Leung <bleung@chromium.org>
-Reviewed-by: Ming Lei <ming.lei@canonical.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Tested-by: Dmitry Khromov <icechrome@gmail.com>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/base/core.c | 14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ drivers/net/wireless/mwifiex/usb.c | 7 -------
+ 1 file changed, 7 deletions(-)
 
-diff --git a/drivers/base/core.c b/drivers/base/core.c
-index a235085..0ff9496 100644
---- a/drivers/base/core.c
-+++ b/drivers/base/core.c
-@@ -1825,7 +1825,7 @@ EXPORT_SYMBOL_GPL(device_move);
-  */
- void device_shutdown(void)
- {
--	struct device *dev;
-+	struct device *dev, *parent;
+diff --git a/drivers/net/wireless/mwifiex/usb.c b/drivers/net/wireless/mwifiex/usb.c
+index 63ac9f2..b96472c 100644
+--- a/drivers/net/wireless/mwifiex/usb.c
++++ b/drivers/net/wireless/mwifiex/usb.c
+@@ -446,9 +446,6 @@ static int mwifiex_usb_suspend(struct usb_interface *intf, pm_message_t message)
+ 	 */
+ 	adapter->is_suspended = true;
  
- 	spin_lock(&devices_kset->list_lock);
- 	/*
-@@ -1842,7 +1842,7 @@ void device_shutdown(void)
- 		 * prevent it from being freed because parent's
- 		 * lock is to be held
- 		 */
--		get_device(dev->parent);
-+		parent = get_device(dev->parent);
- 		get_device(dev);
- 		/*
- 		 * Make sure the device is off the kset list, in the
-@@ -1852,8 +1852,8 @@ void device_shutdown(void)
- 		spin_unlock(&devices_kset->list_lock);
+-	for (i = 0; i < adapter->priv_num; i++)
+-		netif_carrier_off(adapter->priv[i]->netdev);
+-
+ 	if (atomic_read(&card->rx_cmd_urb_pending) && card->rx_cmd.urb)
+ 		usb_kill_urb(card->rx_cmd.urb);
  
- 		/* hold lock to avoid race with probe/release */
--		if (dev->parent)
--			device_lock(dev->parent);
-+		if (parent)
-+			device_lock(parent);
- 		device_lock(dev);
- 
- 		/* Don't allow any more runtime suspends */
-@@ -1871,11 +1871,11 @@ void device_shutdown(void)
- 		}
- 
- 		device_unlock(dev);
--		if (dev->parent)
--			device_unlock(dev->parent);
-+		if (parent)
-+			device_unlock(parent);
- 
- 		put_device(dev);
--		put_device(dev->parent);
-+		put_device(parent);
- 
- 		spin_lock(&devices_kset->list_lock);
+@@ -508,10 +505,6 @@ static int mwifiex_usb_resume(struct usb_interface *intf)
+ 						  MWIFIEX_RX_CMD_BUF_SIZE);
  	}
+ 
+-	for (i = 0; i < adapter->priv_num; i++)
+-		if (adapter->priv[i]->media_connected)
+-			netif_carrier_on(adapter->priv[i]->netdev);
+-
+ 	/* Disable Host Sleep */
+ 	if (adapter->hs_activated)
+ 		mwifiex_cancel_hs(mwifiex_get_priv(adapter,
 -- 
 1.8.1.2
 
