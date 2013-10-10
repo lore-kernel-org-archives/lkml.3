@@ -1,77 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752890Ab3JJNFQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 09:05:16 -0400
-Received: from kiruna.synopsys.com ([198.182.44.80]:36082 "EHLO
-	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752076Ab3JJNFO (ORCPT
+	id S1753311Ab3JJNKB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 09:10:01 -0400
+Received: from relay.parallels.com ([195.214.232.42]:48012 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752024Ab3JJNJ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 09:05:14 -0400
-Message-ID: <5256A571.3070600@synopsys.com>
-Date: Thu, 10 Oct 2013 18:32:41 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Thu, 10 Oct 2013 09:09:59 -0400
+Subject: [PATCH v6 00/11] fuse: An attempt to implement a write-back cache
+ policy
+To: miklos@szeredi.hu
+From: Maxim Patlasov <MPatlasov@parallels.com>
+Cc: dev@parallels.com, xemul@parallels.com, fuse-devel@lists.sourceforge.net,
+        bfoster@redhat.com, linux-kernel@vger.kernel.org,
+        jbottomley@parallels.com, linux-fsdevel@vger.kernel.org,
+        akpm@linux-foundation.org, fengguang.wu@intel.com, devel@openvz.org
+Date: Thu, 10 Oct 2013 17:09:45 +0400
+Message-ID: <20131010130718.10089.6736.stgit@dhcp-10-30-17-2.sw.ru>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@redhat.com>, Andrew Morton <akpm@linux-foundation.org>
-CC: Peter Zijlstra <peterz@infradead.org>, Paul Mundt <paul.mundt@gmail.com>,
-        <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 0/3]  Move ARCH specific fpu_counter out of task_struct
-References: <1381218389-16585-1-git-send-email-vgupta@synopsys.com>
-In-Reply-To: <1381218389-16585-1-git-send-email-vgupta@synopsys.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.243]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/08/2013 01:16 PM, Vineet Gupta wrote:
-> Hi,
-> 
-> When debugging a ARC SMP 3.11 build failure due to a ST insn dealing with
-> task_struct.thread going out of range, I spotted @fpu_counter in task_struct
-> which only SH/x86 happen to use, and can be easily moved out into corresponding
-> ARCH specific thread_struct. This saves 4 bytes per task_struct instantiated,
-> for all the other 18 arches.
-> 
-> While the change is relatively strightforward, I've failed to connect with
-> SH arch folks / Paul Mundt, latter's SH email keeps bouncing back.
-> Hence I'm taking the liberty to use his alternate email (as listed on his
-> github page) and I appologize in advance if this causes any inconvenience.
-> 
-> Changes in v2:
-> - Rabased to 3.12-rc4
-> - Added ACK from Ingo on patch 2/3
-> 
-> Version 1 can be found here:
-> https://lkml.org/lkml/2013/9/17/49
-> 
-> Thx,
-> -Vineet
-> 
-> 
-> Vineet Gupta (3):
->   sh: Move fpu_counter into ARCH specific thread_struct
->   x86: Move fpu_counter into ARCH specific thread_struct
->   sched: Remove ARCH specific fpu_counter from task_struct
-> 
->  arch/sh/include/asm/fpu.h           |  2 +-
->  arch/sh/include/asm/processor_32.h  | 10 ++++++++++
->  arch/sh/include/asm/processor_64.h  | 10 ++++++++++
->  arch/sh/kernel/cpu/fpu.c            |  2 +-
->  arch/sh/kernel/process_32.c         |  6 +++---
->  arch/x86/include/asm/fpu-internal.h | 10 +++++-----
->  arch/x86/include/asm/processor.h    |  9 +++++++++
->  arch/x86/kernel/i387.c              |  2 +-
->  arch/x86/kernel/process_32.c        |  4 ++--
->  arch/x86/kernel/process_64.c        |  2 +-
->  arch/x86/kernel/traps.c             |  2 +-
->  include/linux/sched.h               |  9 ---------
->  12 files changed, 44 insertions(+), 24 deletions(-)
-> 
+Hi,
 
-Ingo, Andrew - do you think this series can be merged for 3.13. Is there anything
-else I need to do here.
+This is the sixth iteration of Pavel Emelyanov's patch-set implementing
+write-back policy for FUSE page cache. This version is for the branch
+"writepages.v2" of the fuse git tree, so a few patches from the previous
+version are dropped (because they are already in the tree). Initial patch-set
+description was the following:
 
--Vineet
+One of the problems with the existing FUSE implementation is that it uses the
+write-through cache policy which results in performance problems on certain
+workloads. E.g. when copying a big file into a FUSE file the cp pushes every
+128k to the userspace synchronously. This becomes a problem when the userspace
+back-end uses networking for storing the data.
+
+A good solution of this is switching the FUSE page cache into a write-back policy.
+With this file data are pushed to the userspace with big chunks (depending on the
+dirty memory limits, but this is much more than 128k) which lets the FUSE daemons
+handle the size updates in a more efficient manner.
+
+The writeback feature is per-connection and is explicitly configurable at the
+init stage (is it worth making it CAP_SOMETHING protected?) When the writeback is
+turned ON:
+
+* still copy writeback pages to temporary buffer when sending a writeback request
+  and finish the page writeback immediately
+
+* make kernel maintain the inode's i_size to avoid frequent i_size synchronization
+  with the user space
+
+* take NR_WRITEBACK_TEMP into account when makeing balance_dirty_pages decision.
+  This protects us from having too many dirty pages on FUSE
+
+The provided patchset survives the fsx test. Performance measurements are not yet
+all finished, but the mentioned copying of a huge file becomes noticeably faster
+even on machines with few RAM and doesn't make the system stuck (the dirty pages
+balancer does its work OK). Applies on top of v3.5-rc4.
+
+We are currently exploring this with our own distributed storage implementation
+which is heavily oriented on storing big blobs of data with extremely rare meta-data
+updates (virtual machines' and containers' disk images). With the existing cache
+policy a typical usage scenario -- copying a big VM disk into a cloud -- takes way
+too much time to proceed, much longer than if it was simply scp-ed over the same
+network. The write-back policy (as I mentioned) noticeably improves this scenario.
+Kirill (in Cc) can share more details about the performance and the storage concepts
+details if required.
+
+Changed in v2:
+ - numerous bugfixes:
+   - fuse_write_begin and fuse_writepages_fill and fuse_writepage_locked must wait
+     on page writeback because page writeback can extend beyond the lifetime of
+     the page-cache page
+   - fuse_send_writepages can end_page_writeback on original page only after adding
+     request to fi->writepages list; otherwise another writeback may happen inside
+     the gap between end_page_writeback and adding to the list
+   - fuse_direct_io must wait on page writeback; otherwise data corruption is possible
+     due to reordering requests
+   - fuse_flush must flush dirty memory and wait for all writeback on given inode
+     before sending FUSE_FLUSH to userspace; otherwise FUSE_FLUSH is not reliable
+   - fuse_file_fallocate must hold i_mutex around FUSE_FALLOCATE and i_size update;
+     otherwise a race with a writer extending i_size is possible
+   - fix handling errors in fuse_writepages and fuse_send_writepages
+ - handle i_mtime intelligently if writeback cache is on (see patch #7 (update i_mtime
+   on buffered writes) for details.
+ - put enabling writeback cache under fusermount control; (see mount option
+   'allow_wbcache' introduced by patch #13 (turn writeback cache on))
+ - rebased on v3.7-rc5
+
+Changed in v3:
+ - rebased on for-next branch of the fuse tree (fb05f41f5f96f7423c53da4d87913fb44fd0565d)
+
+Changed in v4:
+ - rebased on for-next branch of the fuse tree (634734b63ac39e137a1c623ba74f3e062b6577db)
+ - fixed fuse_fillattr() for non-writeback_chace case
+ - added comments explaining why we cannot trust size from server
+ - rewrote patch handling i_mtime; it's titled Trust-kernel-i_mtime-only now
+ - simplified patch titled Flush-files-on-wb-close
+ - eliminated code duplications from fuse_readpage() ans fuse_prepare_write()
+ - added comment about "disk full" errors to fuse_write_begin()
+
+Changed in v5:
+ - rebased on for-next branch of the fuse tree (e5c5f05dca0cf90f0f3bb1aea85dcf658baff185)
+   with "hold i_mutex in fuse_file_fallocate() - v2" patch applied manually
+ - updated patch descriptions according to Miklos' demand (using From: for
+   patches initially developed by someone else)
+ - moved ->writepages() to a separate patch and enabled it unconditionally
+   for mmaped writeback
+ - moved restructuring fuse_readpage to a separate patch
+ - avoided use of union for fuse_fill_data
+ - grabbed a ref to the request in fuse_send_writepages
+
+Changed in v6:
+ - rebased on writepages.v2 branch of the fuse tree (beba4ae4c2fda4e03a813aec640586087fa80a8b)
+ - added waiting for fuse writeback to ->write_begin fuse address space operation.
+
+Thanks,
+Maxim
+
+---
+
+Maxim Patlasov (9):
+      fuse: Linking file to inode helper
+      fuse: Connection bit for enabling writeback
+      fuse: Trust kernel i_size only - v4
+      fuse: Trust kernel i_mtime only -v2
+      fuse: Flush files on wb close -v2
+      fuse: restructure fuse_readpage()
+      fuse: fuse_flush() should wait on writeback
+      fuse: Fix O_DIRECT operations vs cached writeback misorder - v2
+      fuse: Turn writeback cache on
+
+Pavel Emelyanov (2):
+      fuse: Prepare to handle short reads
+      fuse: Implement write_begin/write_end callbacks -v2
+
+
+ fs/fuse/cuse.c            |    5 -
+ fs/fuse/dir.c             |  120 +++++++++++++++-
+ fs/fuse/file.c            |  328 +++++++++++++++++++++++++++++++++++++++------
+ fs/fuse/fuse_i.h          |   26 +++-
+ fs/fuse/inode.c           |   37 ++++-
+ include/uapi/linux/fuse.h |    2 
+ 6 files changed, 451 insertions(+), 67 deletions(-)
+
+-- 
+Signature
