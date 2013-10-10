@@ -1,119 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754697Ab3JJIad (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 04:30:33 -0400
-Received: from rrzmta1.uni-regensburg.de ([194.94.155.51]:59826 "EHLO
-	rrzmta1.uni-regensburg.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751491Ab3JJIaa convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:2:1>);
-	Thu, 10 Oct 2013 04:30:30 -0400
-Message-Id: <525681BD020000A100012B70@gwsmtp1.uni-regensburg.de>
-X-Mailer: Novell GroupWise Internet Agent 12.0.2 
-Date: Thu, 10 Oct 2013 10:30:21 +0200
-From: "Ulrich Windl" <Ulrich.Windl@rz.uni-regensburg.de>
-To: "Ulrich Windl" <Ulrich.Windl@rz.uni-regensburg.de>,
-        <linux-kernel@vger.kernel.org>
-Subject: Antw: read stalls with large RAM: transparent huges pages,
- dirty buffers, or I/O (block) scheduler?
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754962Ab3JJIbf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 04:31:35 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:64141 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753311Ab3JJIbc convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 04:31:32 -0400
+X-IronPort-AV: E=Sophos;i="4.93,465,1378828800"; 
+   d="scan'208";a="8711002"
+Message-ID: <52566149.1030702@cn.fujitsu.com>
+Date: Thu, 10 Oct 2013 16:11:53 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Jin Xu <jinuxstyle@live.com>
+CC: "yuan.mark.zhong@samsung.com" <yuan.mark.zhong@samsung.com>,
+        Jaegeuk Kim <jaegeuk.kim@samsung.com>,
+        "linux-f2fs-devel@lists.sourceforge.net" 
+	<linux-f2fs-devel@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        shu tan <shu.tan@samsung.com>
+Subject: Re: [f2fs-dev] [PATCH v2] f2fs: avoid congestion_wait when do_checkpoint
+ for better performance
+References: <30722427.272521381231813403.JavaMail.weblogic@epml26>,<5254D5B9.1040803@cn.fujitsu.com> <BLU175-W48D340F1A4D0966D8895D0B41E0@phx.gbl>
+In-Reply-To: <BLU175-W48D340F1A4D0966D8895D0B41E0@phx.gbl>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/10/10 16:15:06,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/10/10 16:29:22
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I forgot to mention: CPU power is not the problem: We have 2 * 6 Cores (2 Threads each), making 24 logical CPUs...
+Hi Jin,
 
->>> Ulrich Windl <Ulrich.Windl@rz.uni-regensburg.de> schrieb am 10.10.2013 um 10:15
-in Nachricht <52566237.478 : 161 : 60728>:
-> Hi!
+On 10/10/2013 04:09 PM, Jin Xu wrote:
+
+> Hi Gu,
 > 
-> We are running some x86_64 servers with large RAM (128GB). Just to imagine: 
-> With a memory speed of a little more than 9GB/s it takes > 10 seconds to read 
-> all RAM...
+> I have a comment below.
 > 
-> In the past and recently we had problems with read() stalls when the kernel 
-> was writing back big amounts (like 80GB) of dirty buffers on a somewhat slow 
-> (40MB/s) device. The problem is old and well-known, it seems, but to really 
-> solved.
+>> Date: Wed, 9 Oct 2013 12:04:09 +0800
+>> From: guz.fnst@cn.fujitsu.com
+>> To: yuan.mark.zhong@samsung.com
+>> CC: jaegeuk.kim@samsung.com; linux-f2fs-devel@lists.sourceforge.net; linux-kernel@vger.kernel.org; linux-fsdevel@vger.kernel.org; shu.tan@samsung.com
+>> Subject: Re: [f2fs-dev] [PATCH v2] f2fs: avoid congestion_wait when do_checkpoint for better performance
+>>
+>> Hi Yuan,
+>> On 10/08/2013 07:30 PM, Yuan Zhong wrote:
+>>
+> ...
+>>
+>> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+>> ---
+>> fs/f2fs/checkpoint.c | 11 +++++++++--
+>> fs/f2fs/f2fs.h | 1 +
+>> fs/f2fs/segment.c | 4 ++++
+>> 3 files changed, 14 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
+>> index d808827..2a5999d 100644
+>> --- a/fs/f2fs/checkpoint.c
+>> +++ b/fs/f2fs/checkpoint.c
+>> @@ -757,8 +757,15 @@ static void do_checkpoint(struct f2fs_sb_info *sbi, bool is_umount)
+>> f2fs_put_page(cp_page, 1);
+>>
+>> /* wait for previous submitted node/meta pages writeback */
+>> - while (get_pages(sbi, F2FS_WRITEBACK))
+>> - congestion_wait(BLK_RW_ASYNC, HZ / 50);
+>> + sbi->cp_task = current;
+>> + while (get_pages(sbi, F2FS_WRITEBACK)) {
+>> + set_current_state(TASK_UNINTERRUPTIBLE);
+>> + if (!get_pages(sbi, F2FS_WRITEBACK))
+>> + break;
+>> + io_schedule();
+>> + }
+>> + __set_current_state(TASK_RUNNING);
+>> + sbi->cp_task = NULL;
+>>
+>> filemap_fdatawait_range(sbi->node_inode->i_mapping, 0, LONG_MAX);
+>> filemap_fdatawait_range(sbi->meta_inode->i_mapping, 0, LONG_MAX);
+>> diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+>> index a955a59..408ace7 100644
+>> --- a/fs/f2fs/f2fs.h
+>> +++ b/fs/f2fs/f2fs.h
+>> @@ -365,6 +365,7 @@ struct f2fs_sb_info {
+>> struct mutex writepages; /* mutex for writepages() */
+>> int por_doing; /* recovery is doing or not */
+>> int on_build_free_nids; /* build_free_nids is doing */
+>> + struct task_struct *cp_task; /* checkpoint task */
+>>
+>> /* for orphan inode management */
+>> struct list_head orphan_inode_list; /* orphan inode list */
+>> diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+>> index bd79bbe..3b20359 100644
+>> --- a/fs/f2fs/segment.c
+>> +++ b/fs/f2fs/segment.c
+>> @@ -597,6 +597,10 @@ static void f2fs_end_io_write(struct bio *bio, int err)
+>>
+>> if (p->is_sync)
+>> complete(p->wait);
+>> +
+>> + if (!get_pages(p->sbi, F2FS_WRITEBACK) && p->sbi->cp_task)
+>> + wake_up_process(p->sbi->cp_task);
 > 
-> One recommendation was to limit the amount of dirty buffers, which actually 
-> did not help to really avoid the problem, specifically if new dirty buffers 
-> are used as soon as they are available (i.e.: some were flushed). I had 
-> success with limiting the used memory (including dirty pages) with control 
-> groups (memory:iothrottle, SLES11 SP2), but the control framework (rccgconfig 
-> setting up proper rights for /sys/fs/cgroup/mem/iothrottle/tasks) is quite 
-> incomplete (no group write permission or ACL setup possible), so the end user 
-> can hardly use that.
-> 
-> I still don't know whether read stalls are caused by the I/O channel or 
-> device being saturated, or whether the kernel is waiting for unused buffers 
-> to receive the read data, but I learned that I/O schedulers (and possibly the 
-> block layer optimizations) can cause extra delays, too.
-> 
-> We had one situation where a single sector could not be read with direct I/O 
-> for 10 seconds.
-> 
-> Recently we had the problem again, but it was clear that it was _not_ the 
-> device being overloaded, nor was it the I/O channel. The read problem was 
-> reported for a devioce that was almost idle, and the I/O channel (FC) can 
-> handle much more than the disk system can in both directions. So the problem 
-> seems to be inside the kernel.
-> 
-> Oracle recommends (in article  1557478.1, without explaining the details) to 
-> turn off transparent huge pages. Before that I didn't think much about that 
-> feature. It seems the kernel is not just creating huge pages when they are 
-> requested explicitly (that's what I had thought), but also implicitly to 
-> reduce the number of pages to me managed. Collecting smaller pages to combine 
-> them for huge pages may also involve moving memory around (compaction), it 
-> seems. I still don't know whether the kernel will also try to compact dirty 
-> cache pages to huge pages, but we still see read stalls when there are many 
-> dirty pages (like when copying 400GB of data to a somewhat slow (30MB/s) 
-> disk.
-> 
-> Now I wonder what the real solution to the problem (not the numerous 
-> work-arounds) would be. Obviously simply stopping (yield) dirty buffer flush 
-> to give read a chance may not be sufficient when read needs to wait for 
-> unused pages, especially if the disks being read from are faster than those 
-> being written to.
-> To my understanding dirty pages have an "age" that is used to decide whether 
-> to flush them or not. Also the I/O scheduler seems to prefer read requests 
-> over write requests. What I do not know is whether a read request is sent to 
-> the I/O scheduler before buffer pages are assigned to the request, or after 
-> the pages were assigned. So a read request only has the chance to have an 
-> "age" once it entered the I/O scheduler, right?
-> 
-> So if read and writes had an "age" both, some EDF (earliest deadline first) 
-> scheduling could be used to perform I/O (which would be controlling buffer 
-> usage as a side-effect). For transparent huge pages, requests for a huge page 
-> should also have an age and a priority that is significantly below that of 
-> I/O buffers. If there exists an efficient algorithm and data model to perform 
-> these tasks, the problem may be solved.
-> 
-> Unfortunately if many buffers are dirtied at one moment and reads are 
-> requested significantly later, there may be an additional need for 
-> time-slices when doing I/O (note: I'm not talking about quotas of some MB, 
-> but quotas of time). The I/O throughput may vary a lot, and time seems the 
-> only way to manage latency correctly. To avoid a situation where reads may 
-> cause stalling writes (and thus the age of dirty buffers growing without 
-> bounds), the priority of writes should be _carefully_ increased, taking care 
-> not to create a "fright train of dirty buffers" to be flushed. So maybe 
-> "smuggle in" a few dirty buffers between read requests. As a high-level flow 
-> control (like for the cgroups mechanism), processes with a high amount of 
-> dirty buffers should be suspended or scheduled with very low priority to give 
-> the memory and I/O systems a change to process the dirty buffers.
-> 
-> For reference: The machine in question is at 3.0.74-0.6.10-default with the 
-> latest SLES11 SP2 kernel being 3.0.93-0.5.
-> 
-> I'd like to know what the gurus thing about that. I think with increasing 
-> RAM this issue will become extremely important soon.
+> There is a risk of dereferencing a NULL pointer because here simply comparing the
+> cp_task against NULL is not enough to avoid race in multi-thread environment.
+> Another thread could have assigned it to NULL in the window between the comparison
+> and waking up.
+
+Can not be that, checkpoint routine is always singleton and protected by cp_mutex and cp_rwsem.
+
+Thanks,
+Gu
+
 > 
 > Regards,
-> Ulrich
-> P.S: Not subscribed to linux-kernel, so keep me on CC:, please
-> 
-> 
+> Jin
+>> +
+>> kfree(p);
+>> bio_put(bio);
+>> }
+>> --
+>> 1.7.7
+>>
+>> Regards,
+>> Gu
+>>
+>> >
+>> >
+>> >>> This is a problem here, especially, when sync a large number of small files or dirs.
+>> >>> In order to avoid this, a wait_list is introduced,
+>> >>> the checkpoint thread will be dropped into the wait_list if the pages have not been written back,
+>> >>> and will be waked up by contrast.
+>> >
+>> >> Please pay some attention to the mail form, this mail is out of format in my mail client.
+>> >
+>> >> Regards,
+>> >> Gu
+>> >
+>> > Regards,
+>> > Yuan
+>> >
+>> >>>
+>> >>> Signed-off-by: Yuan Zhong <yuan.mark.zhong@samsung.com>
+>> >>> ---
+>> >>> fs/f2fs/checkpoint.c | 3 +--
+>> >>> fs/f2fs/f2fs.h | 19 +++++++++++++++++++
+>> >>> fs/f2fs/segment.c | 1 +
+>> >>> fs/f2fs/super.c | 1 +
+>> >>> 4 files changed, 22 insertions(+), 2 deletions(-)
+>> >>>
+>> >>> diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
+>> >>> index ca39442..5d69ae0 100644
+>> >>> --- a/fs/f2fs/checkpoint.c
+>> >>> +++ b/fs/f2fs/checkpoint.c
+>> >>> @@ -758,8 +758,7 @@ static void do_checkpoint(struct f2fs_sb_info *sbi, bool is_umount)
+>> >>> f2fs_put_page(cp_page, 1);
+>> >>>
+>> >>> /* wait for previous submitted node/meta pages writeback */
+>> >>> - while (get_pages(sbi, F2FS_WRITEBACK))
+>> >>> - congestion_wait(BLK_RW_ASYNC, HZ / 50);
+>> >>> + f2fs_writeback_wait(sbi);
+>> >>>
+>> >>> filemap_fdatawait_range(sbi->node_inode->i_mapping, 0, LONG_MAX);
+>> >>> filemap_fdatawait_range(sbi->meta_inode->i_mapping, 0, LONG_MAX);
+>> >>> diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+>> >>> index 7fd99d8..4b0d70e 100644
+>> >>> --- a/fs/f2fs/f2fs.h
+>> >>> +++ b/fs/f2fs/f2fs.h
+>> >>> @@ -18,6 +18,8 @@
+>> >>> #include <linux/crc32.h>
+>> >>> #include <linux/magic.h>
+>> >>> #include <linux/kobject.h>
+>> >>> +#include <linux/wait.h>
+>> >>> +#include <linux/sched.h>
+>> >>>
+>> >>> /*
+>> >>> * For mount options
+>> >>> @@ -368,6 +370,7 @@ struct f2fs_sb_info {
+>> >>> struct mutex fs_lock[NR_GLOBAL_LOCKS]; /* blocking FS operations */
+>> >>> struct mutex node_write; /* locking node writes */
+>> >>> struct mutex writepages; /* mutex for writepages() */
+>> >>> + wait_queue_head_t writeback_wqh; /* wait_queue for writeback */
+>> >>> unsigned char next_lock_num; /* round-robin global locks */
+>> >>> int por_doing; /* recovery is doing or not */
+>> >>> int on_build_free_nids; /* build_free_nids is doing */
+>> >>> @@ -961,6 +964,22 @@ static inline int f2fs_readonly(struct super_block *sb)
+>> >>> return sb->s_flags & MS_RDONLY;
+>> >>> }
+>> >>>
+>> >>> +static inline void f2fs_writeback_wait(struct f2fs_sb_info *sbi)
+>> >>> +{
+>> >>> + DEFINE_WAIT(wait);
+>> >>> +
+>> >>> + prepare_to_wait(&sbi->writeback_wqh, &wait, TASK_UNINTERRUPTIBLE);
+>> >>> + if (get_pages(sbi, F2FS_WRITEBACK))
+>> >>> + io_schedule();
+>> >>> + finish_wait(&sbi->writeback_wqh, &wait);
+>> >>> +}
+>> >>> +
+>> >>> +static inline void f2fs_writeback_wake(struct f2fs_sb_info *sbi)
+>> >>> +{
+>> >>> + if (!get_pages(sbi, F2FS_WRITEBACK))
+>> >>> + wake_up_all(&sbi->writeback_wqh);
+>> >>> +}
+>> >>> +
+>> >>> /*
+>> >>> * file.c
+>> >>> */
+>> >>> diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+>> >>> index bd79bbe..0708aa9 100644
+>> >>> --- a/fs/f2fs/segment.c
+>> >>> +++ b/fs/f2fs/segment.c
+>> >>> @@ -597,6 +597,7 @@ static void f2fs_end_io_write(struct bio *bio, int err)
+>> >>>
+>> >>> if (p->is_sync)
+>> >>> complete(p->wait);
+>> >>> + f2fs_writeback_wake(p->sbi);
+>> >>> kfree(p);
+>> >>> bio_put(bio);
+>> >>> }
+>> >>> diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
+>> >>> index 094ccc6..3ac6d85 100644
+>> >>> --- a/fs/f2fs/super.c
+>> >>> +++ b/fs/f2fs/super.c
+>> >>> @@ -835,6 +835,7 @@ static int f2fs_fill_super(struct super_block *sb, void *data, int silent)
+>> >>> mutex_init(&sbi->gc_mutex);
+>> >>> mutex_init(&sbi->writepages);
+>> >>> mutex_init(&sbi->cp_mutex);
+>> >>> + init_waitqueue_head(&sbi->writeback_wqh);
+>> >>> for (i = 0; i < NR_GLOBAL_LOCKS; i++)
+>> >>> mutex_init(&sbi->fs_lock[i]);
+>> >>> mutex_init(&sbi->node_write);N‹§²æìr¸›yúèšØb²X¬¶Ç§vØ^–)Þº{.nÇ+‰·¥Š{±‘êçzX§¶›¡Ü¨}©ž²Æ zÚ&j:+v‰¨¾«‘êçzZ+€Ê+zf£¢·hšˆ§~†­†Ûiÿûàz¹®w¥¢¸?™¨è­Ú&¢)ß¢f”ù^jÇ«y§m…á@A«a¶Úÿ0¶ìh®å’i
+>>
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at http://vger.kernel.org/majordomo-info.html
 
 
