@@ -1,71 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755299Ab3JJL5U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 07:57:20 -0400
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:34849 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754221Ab3JJL5Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 07:57:16 -0400
+	id S1754599Ab3JJMIt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 08:08:49 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:52811 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753980Ab3JJMIr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 08:08:47 -0400
+Message-ID: <525698CC.3060406@ti.com>
+Date: Thu, 10 Oct 2013 07:08:44 -0500
+From: Dan Murphy <dmurphy@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-X-Originating-IP: [86.59.245.170]
-In-Reply-To: <87vc15mjuw.fsf@xmission.com>
-References: <8761v7h2pt.fsf@tw-ebiederman.twitter.com>
-	<CAJfpegtT7y-1HhbEVAMKkdQugTG_w7G_epGtQHGvQLpcZB5FVA@mail.gmail.com>
-	<87li281wx6.fsf_-_@xmission.com>
-	<87a9ioo37a.fsf_-_@xmission.com>
-	<20131007043919.GB10284@mail.hallyn.com>
-	<87vc191sf2.fsf@xmission.com>
-	<CALCETrUaubASZyeoNZcYxn5-GJO68=Ng=GYmas7K_OBsjM7f0Q@mail.gmail.com>
-	<87d2ngyb02.fsf@xmission.com>
-	<20131008160601.GJ14242@tucsk.piliscsaba.szeredi.hu>
-	<CALCETrWw=htmgxqq=RQztdJQ-a8c3860vmJh9Ni=Hhs0TkO3YA@mail.gmail.com>
-	<20131008161135.GK14242@tucsk.piliscsaba.szeredi.hu>
-	<87li23trll.fsf@tw-ebiederman.twitter.com>
-	<CAJfpegv+h7xh_2e-X7is9dq1Fp06A0eKwsyWFMPX=azbbDCX5Q@mail.gmail.com>
-	<87vc15mjuw.fsf@xmission.com>
-Date: Thu, 10 Oct 2013 13:57:15 +0200
-Message-ID: <CAJfpegvF89LzAvNB0h0otv7sKoS3rewZzQKAauQx3P+rCkCcSg@mail.gmail.com>
-Subject: Re: [RFC][PATCH 4/3] vfs: Allow rmdir to remove mounts in all but the
- current mount namespace
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rob Landley <rob@landley.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+To: Ming Lei <tom.leiming@gmail.com>
+CC: Steve Glendinning <steve.glendinning@shawell.net>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-usb <linux-usb@vger.kernel.org>, <mugunthanvnm@ti.com>
+Subject: Re: [PATCH] usbnet: smsc95xx: Add device tree input for MAC address
+References: <1380911156-14112-1-git-send-email-dmurphy@ti.com>	<CACVXFVOVMvP=3y9h2Jrqn2sBQdKOZtrhQDAFYkdHKXFgQj=d0Q@mail.gmail.com>	<52519E7A.40804@ti.com> <CACVXFVNAB3VnmdoP_LGJsBjQ17j1aoqKMsBE7LRt65OqROeRUQ@mail.gmail.com>
+In-Reply-To: <CACVXFVNAB3VnmdoP_LGJsBjQ17j1aoqKMsBE7LRt65OqROeRUQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 10, 2013 at 1:43 PM, Eric W. Biederman
-<ebiederm@xmission.com> wrote:
+Ming
 
-> I have been weighing the pros and the cons of this.
+On 10/07/2013 06:42 AM, Ming Lei wrote:
+> On Mon, Oct 7, 2013 at 1:31 AM, Dan Murphy <dmurphy@ti.com> wrote:
+>> On 10/06/2013 10:05 AM, Ming Lei wrote:
+>>> On Sat, Oct 5, 2013 at 2:25 AM, Dan Murphy <dmurphy@ti.com> wrote:
+>>>> If the smsc95xx does not have a valid MAC address stored within
+>>>> the eeprom then a random number is generated.  The MAC can also
+>>>> be set by uBoot but the smsc95xx does not have a way to read this.
+>>>>
+>>>> Create the binding for the smsc95xx so that uBoot can set the MAC
+>>>> and the code can retrieve the MAC from the modified DTB file.
+>>> Suppose there are two smsc95xx usbnet devices connected to usb bus, and
+>>> one is built-in, another is hotplug device, can your patch handle the situation
+>>> correctly?
+>> Look at this line in the patch below
+>>
+>> sprintf(of_name, "%s%i", SMSC95XX_OF_NAME, dev->udev->dev.id);
+>>
+>> I am appending the dev ID of the device to the of_name here.  As long as init_mac_address is called, the dev.id and the uBoot
+>> entry match then yes.
+> Currently, non-root-hub usb device is created and added into usb bus without
+> any platform(device tree) knowledge, so you can't expect the match here.
 >
-> At this point the most practical path I can see is to block unlink,
-> rename, and rmdir if there is a mount in the local namespace.
+> Also not mention the two smsc95xx devices may attach to two different
+> usb host controllers(buses).
 >
-> At the very least that makes very limited additions to what applications
-> can depend on from the vfs, and even more importantly that can be ready
-> by 3.13.
->
-> Furthermore it removes the nasty need for filesystems to lie to the vfs,
-> and removes the nasty DOS that non-local mountpoints are.
+> Thanks,
 
-Agreed 100%.
+You are correct I don't expect a match for PnP devices only devices that are hard wired.
 
-> Miklos if you as the fuse maintainer aren't worried about network
-> filesystems, and multiple namespaces I won't worry either.  Especially
-> since modern versions of fuse aren't affected.
+After thinking of it I should move the OF code below the EEPROM code as the EEPROM should take preference over the DT code.
 
-I think the above conditions (local mount blocks unlink/rename) are
-enough to prevent most of the problems, of which there aren't many in
-any case.
+I will need to post V2 for that.
 
-Thanks,
-Miklos
+Dan
+
+-- 
+------------------
+Dan Murphy
+
