@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757544Ab3JJPts (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 11:49:48 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52997 "EHLO
+	id S1757513Ab3JJPtl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 11:49:41 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52976 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757521Ab3JJPto (ORCPT
+	with ESMTP id S1757483Ab3JJPtf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 11:49:44 -0400
+	Thu, 10 Oct 2013 11:49:35 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Nishanth Aravamudan <nacc@us.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 104/104] net: Update the sysctl permissions handler to test effective uid/gid
-Date: Thu, 10 Oct 2013 08:42:32 -0700
-Message-Id: <1381419752-29733-105-git-send-email-kamal@canonical.com>
+Subject: [PATCH 100/104] powerpc/iommu: Use GFP_KERNEL instead of GFP_ATOMIC in iommu_init_table()
+Date: Thu, 10 Oct 2013 08:42:28 -0700
+Message-Id: <1381419752-29733-101-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381419752-29733-1-git-send-email-kamal@canonical.com>
 References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
@@ -28,41 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+From: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
 
-commit 2433c8f094a008895e66f25bd1773cdb01c91d01 upstream.
+commit 1cf389df090194a0976dc867b7fffe99d9d490cb upstream.
 
-Modify the code to use current_euid(), and in_egroup_p, as in done
-in fs/proc/proc_sysctl.c:test_perm()
+Under heavy (DLPAR?) stress, we tripped this panic() in
+arch/powerpc/kernel/iommu.c::iommu_init_table():
 
-Reviewed-by: Eric Sandeen <sandeen@redhat.com>
-Reported-by: Eric Sandeen <sandeen@redhat.com>
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+	page = alloc_pages_node(nid, GFP_ATOMIC, get_order(sz));
+	if (!page)
+		panic("iommu_init_table: Can't allocate %ld bytes\n", sz);
+
+Before the panic() we got a page allocation failure for an order-2
+allocation. There appears to be memory free, but perhaps not in the
+ATOMIC context. I looked through all the call-sites of
+iommu_init_table() and didn't see any obvious reason to need an ATOMIC
+allocation. Most call-sites in fact have an explicit GFP_KERNEL
+allocation shortly before the call to iommu_init_table(), indicating we
+are not in an atomic context. There is some indirection for some paths,
+but I didn't see any locks indicating that GFP_KERNEL is inappropriate.
+
+With this change under the same conditions, we have not been able to
+reproduce the panic.
+
+Signed-off-by: Nishanth Aravamudan <nacc@us.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/sysctl_net.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/powerpc/kernel/iommu.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/sysctl_net.c b/net/sysctl_net.c
-index 9bc6db0..e7000be 100644
---- a/net/sysctl_net.c
-+++ b/net/sysctl_net.c
-@@ -47,12 +47,12 @@ static int net_ctl_permissions(struct ctl_table_header *head,
+diff --git a/arch/powerpc/kernel/iommu.c b/arch/powerpc/kernel/iommu.c
+index c862fd7..0eb8da2 100644
+--- a/arch/powerpc/kernel/iommu.c
++++ b/arch/powerpc/kernel/iommu.c
+@@ -658,7 +658,7 @@ struct iommu_table *iommu_init_table(struct iommu_table *tbl, int nid)
+ 	/* number of bytes needed for the bitmap */
+ 	sz = BITS_TO_LONGS(tbl->it_size) * sizeof(unsigned long);
  
- 	/* Allow network administrator to have same access as root. */
- 	if (ns_capable(net->user_ns, CAP_NET_ADMIN) ||
--	    uid_eq(root_uid, current_uid())) {
-+	    uid_eq(root_uid, current_euid())) {
- 		int mode = (table->mode >> 6) & 7;
- 		return (mode << 6) | (mode << 3) | mode;
- 	}
- 	/* Allow netns root group to have the same access as the root group */
--	if (gid_eq(root_gid, current_gid())) {
-+	if (in_egroup_p(root_gid)) {
- 		int mode = (table->mode >> 3) & 7;
- 		return (mode << 3) | mode;
- 	}
+-	page = alloc_pages_node(nid, GFP_ATOMIC, get_order(sz));
++	page = alloc_pages_node(nid, GFP_KERNEL, get_order(sz));
+ 	if (!page)
+ 		panic("iommu_init_table: Can't allocate %ld bytes\n", sz);
+ 	tbl->it_map = page_address(page);
 -- 
 1.8.1.2
 
