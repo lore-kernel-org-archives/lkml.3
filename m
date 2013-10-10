@@ -1,71 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752618Ab3JJEsJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 00:48:09 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:35494 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751318Ab3JJEsH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 00:48:07 -0400
-Message-ID: <52563183.8000508@linaro.org>
-Date: Wed, 09 Oct 2013 21:48:03 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1752483Ab3JJEwg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 00:52:36 -0400
+Received: from mga02.intel.com ([134.134.136.20]:39548 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751647Ab3JJEwe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 00:52:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,1069,1371106800"; 
+   d="scan'208";a="390885230"
+Message-ID: <525632AE.2080909@intel.com>
+Date: Thu, 10 Oct 2013 12:53:02 +0800
+From: Aaron Lu <aaron.lu@intel.com>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>, Dong Zhu <bluezhudong@gmail.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND] timer stats: reset entries when disable the timer
- usage statistics
-References: <20131010025947.GD2139@zhudong.nay.redhat.com> <20131010043519.GB22519@gmail.com>
-In-Reply-To: <20131010043519.GB22519@gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jani Nikula <jani.nikula@linux.intel.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: linux-acpi@vger.kernel.org, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Daniel Vetter <daniel@ffwll.ch>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Lee Chun-Yi <joeyli.kernel@gmail.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Igor Gnatenko <i.gnatenko.brain@gmail.com>,
+        Yves-Alexis Perez <corsac@debian.org>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        Ben Jencks <ben@bjencks.net>, Steven Newbury <steve@snewbury.org.uk>,
+        James Hogan <james@albanarts.com>, Kamal Mostafa <kamal@canonical.com>,
+        Joerg Platte <jplatte@naasa.net>, Kalle Valo <kvalo@adurom.com>,
+        Martin Steigerwald <Martin@lichtvoll.de>,
+        =?UTF-8?B?SsO2cmcgT3R0ZQ==?= <jrg.otte@gmail.com>,
+        Mike Galbraith <bitbucket@online.de>,
+        platform-driver-x86@vger.kernel.org,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Subject: Re: [PATCH v4 1/4] backlight: introduce backlight_device_registered
+References: <1381214401-24672-1-git-send-email-aaron.lu@intel.com> <1381214401-24672-2-git-send-email-aaron.lu@intel.com> <2202423.8QyNjoNEPr@vostro.rjw.lan> <5255FAC5.2090105@intel.com> <878uy1694u.fsf@intel.com>
+In-Reply-To: <878uy1694u.fsf@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/09/2013 09:35 PM, Ingo Molnar wrote:
-> * Dong Zhu <bluezhudong@gmail.com> wrote:
->
->> From f41628c61d8a9172677ba33a55b61e37ce28f7a6 Mon Sep 17 00:00:00 2001
->> From: Dong Zhu <bluezhudong@gmail.com> 
->> Date: Thu, 10 Oct 2013 10:38:13 +0800
+On 10/10/2013 12:29 PM, Jani Nikula wrote:
+> On Thu, 10 Oct 2013, Aaron Lu <aaron.lu@intel.com> wrote:
+>> On 10/10/2013 08:25 AM, Rafael J. Wysocki wrote:
+>>> On Tuesday, October 08, 2013 02:39:58 PM Aaron Lu wrote:
+>>>> +bool backlight_device_registered(enum backlight_type type)
+>>>> +{
+>>>> +	bool found = false;
+>>>> +	struct backlight_device *bd;
+>>>> +
+>>>> +	mutex_lock(&bd_list_mutex);
+>>>> +	list_for_each_entry(bd, &bd_list_head, entry) {
+>>>> +		if (bd->props.type == type) {
+>>>> +			found = true;
+>>>> +			break;
+>>>> +		}
+>>>> +	}
+>>>
+>>> Isn't it useful to be able to register more than one backlight device of the
+>>> same type sometimes?
 >>
->> When we stop timer statistics collection (via echo 0 > 
->> /proc/timers_stats), the statistics data is still exported as if it were 
->> correct, which can cause applicaitons to misuse the statistics.
-> What misuse do you mean?
->
->> This patch resets the statistics when we stop collecting them, to avoid 
->> this problem.
-> Well, this loses the handy 'snapshot' property of /proc/timer_stats. 
-> Before this change one could do:
->
-> 	echo 1 > /proc/timers_stats
-> 	sleep 60 # run system workload
-> 	echo 0 > /proc/timers_stats
->
-> and examine the 1-minute collection result without it changing. Your 
-> change, if I understand it correctly, zeroes it all out.
+>> I think so for some kind of computers. OTOH, the above function should
+>> be enough for the problem we are solving here, if someday we need to
+>> differentiate, we can enhance the code then.
+> 
+> Since both Baytrail and Haswell already have two backlight PWMs, this
+> may be needed sooner than you think. But we shouldn't let that block
 
+Do we need to differentiate which backlight PWM is registered to decide
+if ACPI video backlight interface should be skipped? My understanding is
+no.
 
-Good point. I misunderstood the patch and thought it was an issue that
-the statistics are never cleared even if the collection was disabled,
-but looking closer I see we clear on enable (if we were disabled). So
-yes, this change doesn't seem right.
+Thanks,
+Aaron
 
+> fixing the more urgent issue we have now. So I'm fine with this. It
+> doesn't prevent one from registering more than one device of the same
+> type anyway.
+> 
+> BR,
+> Jani.
+> 
+> 
+> 
 
-
-> Instead of this change I'd suggest adding a 'status' line, with two 
-> outputs:
->
-> 	Status: collection active
->
-> 	Status: collection disabled
-
-Agreed.
-
-thanks
--john
