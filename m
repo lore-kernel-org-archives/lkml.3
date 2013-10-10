@@ -1,65 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757343Ab3JJBGO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 21:06:14 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:44817 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754899Ab3JJBGM (ORCPT
+	id S1757367Ab3JJBGb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 21:06:31 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:15586 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756623Ab3JJBG3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 21:06:12 -0400
-X-AuditID: 9c930179-b7c78ae000003065-35-5255fd817007
-From: Namhyung Kim <namhyung@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH 1/8] perf callchain: Convert children list to rbtree
-References: <1380185890-25758-1-git-send-email-namhyung@kernel.org>
-	<1380185890-25758-2-git-send-email-namhyung@kernel.org>
-	<20131002101826.GC7941@localhost.localdomain>
-	<87siwcldsr.fsf@sejong.aot.lge.com>
-	<20131008192242.GA8392@localhost.localdomain>
-Date: Thu, 10 Oct 2013 10:06:08 +0900
-In-Reply-To: <20131008192242.GA8392@localhost.localdomain> (Frederic
-	Weisbecker's message of "Tue, 8 Oct 2013 21:22:45 +0200")
-Message-ID: <87zjqij5of.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 9 Oct 2013 21:06:29 -0400
+X-AuditID: cbfee68e-b7f756d000004512-d0-5255fd7267dc
+From: Chanwoo Choi <cw00.choi@samsung.com>
+To: sameo@linux.intel.com, lee.jones@linaro.org
+Cc: linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
+        Chanwoo Choi <cw00.choi@samsung.com>
+Subject: [PATCH] mfd: max77693: Fix up bug of wrong interrupt number
+Date: Thu, 10 Oct 2013 10:05:55 +0900
+Message-id: <1381367155-4888-1-git-send-email-cw00.choi@samsung.com>
+X-Mailer: git-send-email 1.8.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDLMWRmVeSWpSXmKPExsWyRsSkRLfob2iQwf3Z8hbXvzxntTjb9Ibd
+	4v7Xo4wWl3fNYbM43c3qwOpx59oeNo95JwM9+rasYvT4vEkugCWKyyYlNSezLLVI3y6BK+Np
+	h2vBb/aKhhXbWBoYn7J1MXJySAiYSKzs3gtli0lcuLceyObiEBJYyigx/dcMFpiiDYsesEAk
+	pjNK/FizGcppZJLYNP8jE0gVm4CWxP4XN8BGiQjoS3zYcZUZxGYWSJbofT0JrEZYwEXi5sW7
+	7F2MHBwsAqoSOx9rgoR5gcIfD82EukJO4sOeR+wg8yUEHrNJXG3sBruCRUBA4tvkQywgvRIC
+	shKbDjBD1EtKHFxxg2UCo+ACRoZVjKKpBckFxUnpRUZ6xYm5xaV56XrJ+bmbGIEhefrfs74d
+	jDcPWB9iTAYaN5FZSjQ5HxjSeSXxhsZmRhamJqbGRuaWZqQJK4nzqrVYBwoJpCeWpGanphak
+	FsUXleakFh9iZOLglGpgjP3+0Ojs8hm3pvJHXTEKmjRr2i3FjI1B0bNmbmH2OF+5Mjlh0X2O
+	0o9p7sftO6Y+cL219sTZZSuitbhC3lYrLHHakBC27fX0VdMLpD9GPjnQvbzyhMnOL36PXZjz
+	jt4/7ls1P+1ASSvvkqqb8Yf+ZZ46KfOkXmPpR8+wT1/0KrWaHaz1pX1msiqxFGckGmoxFxUn
+	AgB/DaPtXwIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJIsWRmVeSWpSXmKPExsVy+t9jQd2iv6FBBg9viVtc//Kc1eJs0xt2
+	i/tfjzJaXN41h83idDerA6vHnWt72DzmnQz06NuyitHj8ya5AJaoBkabjNTElNQihdS85PyU
+	zLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKC1SgpliTmlQKGAxOJiJX07TBNC
+	Q9x0LWAaI3R9Q4LgeowM0EDCGsaMpx2uBb/ZKxpWbGNpYHzK1sXIySEhYCKxYdEDFghbTOLC
+	vfVAcS4OIYHpjBI/1mxmgXAamSQ2zf/IBFLFJqAlsf/FDbBuEQF9iQ87rjKD2MwCyRK9ryeB
+	1QgLuEjcvHiXvYuRg4NFQFVi52NNkDAvUPjjoZlQi+UkPux5xD6BkXsBI8MqRtHUguSC4qT0
+	XEO94sTc4tK8dL3k/NxNjOCAfya1g3Flg8UhRgEORiUe3oqy0CAh1sSy4srcQ4wSHMxKIrzT
+	TwKFeFMSK6tSi/Lji0pzUosPMSYDLZ/ILCWanA+MxrySeENjEzMjSyNzQwsjY3PShJXEeQ+0
+	WgcKCaQnlqRmp6YWpBbBbGHi4JRqYCxU394zb4r0j1c/bRNe/2DXjmNgidrD/P6vimPH0y1R
+	FadiMviiHny6durh5ofeHVdsXq6zNn5ZW+Da8/hhWEpKu8hjp/WRLv45K069iubb8kXeSS/P
+	eF97scFmNj/lf/lRs1/rWk3dUdefGMlt08H7e198Qsr/nIN77CaIr/qwz1A82y+8S4mlOCPR
+	UIu5qDgRALI9siy8AgAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Frederic,
+The max77693 MFD device use irq domain method which has hardware interrupt number
+and virtual interrupt number getting through irq domain mapping. This patch
+use hardware interrupt number instead of virtual interrupt number to get
+struct irq_data.
 
-On Tue, 8 Oct 2013 21:22:45 +0200, Frederic Weisbecker wrote:
-> On Tue, Oct 08, 2013 at 11:03:16AM +0900, Namhyung Kim wrote:
->> On Wed, 2 Oct 2013 12:18:28 +0200, Frederic Weisbecker wrote:
->> > Have you tested this patchset when collapsing is not used?
->> > There are fair chances that this patchset does not only improve collapsing
->> > but also callchain insertion in general. So it's probably a win in any case. But
->> > still it would be nice to make sure that it's the case because we are getting
->> > rid of collapsing anyway.
->> >
->> > The test that could tell us about that is to run "perf report -s sym" and compare the
->> > time it takes to complete before and after this patch, because "-s sym" shouldn't
->> > involve collapses.
->> >
->> > Sorting by anything that is not comm should do the trick in fact.
->> 
->> Yes, I have similar result when collapsing is not used.  Actually when I
->> ran "perf report -s sym", the performance improves higher since it'd
->> insert more callchains in a hist entry.
->
-> Great! I'll have a closer look and review on the callchain patches then. Please
-> resend these along the comm batch.
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ drivers/mfd/max77693-irq.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-I'll do it later today or tomorrow.
+diff --git a/drivers/mfd/max77693-irq.c b/drivers/mfd/max77693-irq.c
+index 1029d01..66b58fe 100644
+--- a/drivers/mfd/max77693-irq.c
++++ b/drivers/mfd/max77693-irq.c
+@@ -128,7 +128,8 @@ static void max77693_irq_sync_unlock(struct irq_data *data)
+ static const inline struct max77693_irq_data *
+ irq_to_max77693_irq(struct max77693_dev *max77693, int irq)
+ {
+-	return &max77693_irqs[irq];
++	struct irq_data *data = irq_get_irq_data(irq);
++	return &max77693_irqs[data->hwirq];
+ }
+ 
+ static void max77693_irq_mask(struct irq_data *data)
+-- 
+1.8.0
 
-Thanks,
-Namhyung
