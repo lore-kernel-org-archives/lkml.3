@@ -1,74 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755452Ab3JJI52 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 04:57:28 -0400
-Received: from demumfd001.nsn-inter.net ([93.183.12.32]:11348 "EHLO
-	demumfd001.nsn-inter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753907Ab3JJI50 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 04:57:26 -0400
-Message-ID: <52566BED.9010105@nsn.com>
-Date: Thu, 10 Oct 2013 10:57:17 +0200
-From: Ionut Nicu <ioan.nicu.ext@nsn.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1755515Ab3JJI6f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 04:58:35 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:57464 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752549Ab3JJI6d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 04:58:33 -0400
+Date: Thu, 10 Oct 2013 10:58:28 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Dave Young <dyoung@redhat.com>
+Cc: X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>, Matt Fleming <matt@console-pimps.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Vivek Goyal <vgoyal@redhat.com>, linux-efi@vger.kernel.org,
+        fwts-devel@lists.ubuntu.com
+Subject: Re: [PATCH 12/12] EFI: Runtime services virtual mapping
+Message-ID: <20131010085827.GA9929@pd.tnic>
+References: <1379602494-26684-1-git-send-email-bp@alien8.de>
+ <20131008164551.GB16793@pd.tnic>
+ <20131008164831.GD16793@pd.tnic>
+ <20131010080635.GA3692@dhcp-16-126.nay.redhat.com>
+ <20131010081434.GB3692@dhcp-16-126.nay.redhat.com>
 MIME-Version: 1.0
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: Peter Korsgaard <peter.korsgaard@barco.com>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] i2c-mux-gpio: test if the gpio can sleep
-References: <525667C4.3080309@nsn.com> <52566971.5020700@metafoo.de>
-In-Reply-To: <52566971.5020700@metafoo.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-purgate-type: clean
-X-purgate-Ad: Categorized by eleven eXpurgate (R) http://www.eleven.de
-X-purgate: clean
-X-purgate: This mail is considered clean (visit http://www.eleven.de for further information)
-X-purgate-size: 1477
-X-purgate-ID: 151667::1381395439-00004A43-714DC9AB/0-0/0-0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20131010081434.GB3692@dhcp-16-126.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10.10.2013 10:46, ext Lars-Peter Clausen wrote:
-> On 10/10/2013 10:39 AM, Ionut Nicu wrote:
->> Some gpio chips may have get/set operations that
->> can sleep. For this type of chips we must use the
->> _cansleep() version of gpio_set_value.
->>
->> Signed-off-by: Ionut Nicu <ioan.nicu.ext@nsn.com>
->> ---
->>  drivers/i2c/muxes/i2c-mux-gpio.c |   11 ++++++++---
->>  1 files changed, 8 insertions(+), 3 deletions(-)
->>
->> diff --git a/drivers/i2c/muxes/i2c-mux-gpio.c b/drivers/i2c/muxes/i2c-mux-gpio.c
->> index a764da7..b5f17ef 100644
->> --- a/drivers/i2c/muxes/i2c-mux-gpio.c
->> +++ b/drivers/i2c/muxes/i2c-mux-gpio.c
->> @@ -27,11 +27,16 @@ struct gpiomux {
->>  
->>  static void i2c_mux_gpio_set(const struct gpiomux *mux, unsigned val)
->>  {
->> +	unsigned gpio;
->>  	int i;
->>  
->> -	for (i = 0; i < mux->data.n_gpios; i++)
->> -		gpio_set_value(mux->gpio_base + mux->data.gpios[i],
->> -			       val & (1 << i));
->> +	for (i = 0; i < mux->data.n_gpios; i++) {
->> +		gpio = mux->gpio_base + mux->data.gpios[i];
->> +		if (gpio_cansleep(gpio))
->> +			gpio_set_value_cansleep(gpio, val & (1 << i));
->> +		else
->> +			gpio_set_value(gpio, val & (1 << i));
-> 
-> The proper way to do this is just always use the _cansleep() version.
-> gpio_set_value() only works for chips which do not sleep,
-> gpio_set_value_cansleep() works for both those who do sleep and those who do
-> not.
-> 
+On Thu, Oct 10, 2013 at 04:14:34PM +0800, Dave Young wrote:
+> Even though I still have no idea why kernel text overlap with efi boot
+> region, anyway map the un-overlapped part is necessary though.
+>
+> I can post the kexec related patches after your mapping patches settle
+> down
 
-Ok, then I will re-work the patch to do just that. Thanks!
+Right, "settle down" being the key here.
 
+Matt just mentioned on IRC that we might not need boot services mappings
+by the time we have to start the kexec kernel, which would mean, you
+don't have to do anything in efi_reserve_boot_services().
+
+The question which needs answering first though is, how the whole efi
+thing is going to handle any functionality like calling into efi boot
+regions from runtime functions and such. Which hasn't really been tested
+and fw vendors don't really want to support that. But this is all bits
+and pieces I heard yesterday so it is all pretty wet and I'll let efi
+guys, i.e. the Matts and a couple of others :-), figure out this whole
+issue.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
