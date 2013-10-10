@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758016Ab3JJQDM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 12:03:12 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52822 "EHLO
+	id S1756986Ab3JJPrn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 11:47:43 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52809 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757087Ab3JJPru (ORCPT
+	with ESMTP id S1755900Ab3JJPrl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 11:47:50 -0400
+	Thu, 10 Oct 2013 11:47:41 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, Mark Brown <broonie@linaro.org>,
+Cc: Andre Guedes <andre.guedes@openbossa.org>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 079/104] ASoC: ab8500-codec: info leak in anc_status_control_put()
-Date: Thu, 10 Oct 2013 08:42:07 -0700
-Message-Id: <1381419752-29733-80-git-send-email-kamal@canonical.com>
+Subject: [PATCH 083/104] Bluetooth: Fix encryption key size for peripheral role
+Date: Thu, 10 Oct 2013 08:42:11 -0700
+Message-Id: <1381419752-29733-84-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381419752-29733-1-git-send-email-kamal@canonical.com>
 References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
@@ -27,45 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Andre Guedes <andre.guedes@openbossa.org>
 
-commit d63733aed90b432e5cc489ddfa28e342f91b4652 upstream.
+commit 89cbb4da0abee2f39d75f67f9fd57f7410c8b65c upstream.
 
-If the user passes an invalid value it leads to an info leak when we
-print the error message or it could oops.  This is called with user
-supplied data from snd_ctl_elem_write().
+This patch fixes the connection encryption key size information when
+the host is playing the peripheral role. We should set conn->enc_key_
+size in hci_le_ltk_request_evt, otherwise it is left uninitialized.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Andre Guedes <andre.guedes@openbossa.org>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/soc/codecs/ab8500-codec.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ net/bluetooth/hci_event.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/sound/soc/codecs/ab8500-codec.c b/sound/soc/codecs/ab8500-codec.c
-index 6c12ac2..52509dd 100644
---- a/sound/soc/codecs/ab8500-codec.c
-+++ b/sound/soc/codecs/ab8500-codec.c
-@@ -1225,13 +1225,18 @@ static int anc_status_control_put(struct snd_kcontrol *kcontrol,
- 	struct ab8500_codec_drvdata *drvdata = dev_get_drvdata(codec->dev);
- 	struct device *dev = codec->dev;
- 	bool apply_fir, apply_iir;
--	int req, status;
-+	unsigned int req;
-+	int status;
+diff --git a/net/bluetooth/hci_event.c b/net/bluetooth/hci_event.c
+index 259776a..ea5c902 100644
+--- a/net/bluetooth/hci_event.c
++++ b/net/bluetooth/hci_event.c
+@@ -3971,6 +3971,8 @@ static void hci_le_ltk_request_evt(struct hci_dev *hdev, struct sk_buff *skb)
+ 	else
+ 		conn->pending_sec_level = BT_SECURITY_MEDIUM;
  
- 	dev_dbg(dev, "%s: Enter.\n", __func__);
++	conn->enc_key_size = ltk->enc_size;
++
+ 	hci_send_cmd(hdev, HCI_OP_LE_LTK_REPLY, sizeof(cp), &cp);
  
- 	mutex_lock(&drvdata->anc_lock);
- 
- 	req = ucontrol->value.integer.value[0];
-+	if (req >= ARRAY_SIZE(enum_anc_state)) {
-+		status = -EINVAL;
-+		goto cleanup;
-+	}
- 	if (req != ANC_APPLY_FIR_IIR && req != ANC_APPLY_FIR &&
- 		req != ANC_APPLY_IIR) {
- 		dev_err(dev, "%s: ERROR: Unsupported status to set '%s'!\n",
+ 	if (ltk->type & HCI_SMP_STK) {
 -- 
 1.8.1.2
 
