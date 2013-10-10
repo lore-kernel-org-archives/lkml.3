@@ -1,80 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754659Ab3JJCXv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 22:23:51 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:33951 "EHLO gir.skynet.ie"
+	id S1754726Ab3JJC0J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 22:26:09 -0400
+Received: from mga09.intel.com ([134.134.136.24]:14843 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754416Ab3JJCXu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 22:23:50 -0400
-Date: Thu, 10 Oct 2013 03:23:45 +0100 (IST)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-cc: Fengguang Wu <fengguang.wu@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        xen-devel@lists.xenproject.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [xen] double fault: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-In-Reply-To: <20131008080625.GA25034@n2100.arm.linux.org.uk>
-Message-ID: <alpine.DEB.2.00.1310100322040.14436@skynet.skynet.ie>
-References: <20131006082340.GA24568@localhost> <CA+55aFxk2FoG7+BpHJAysR2bz-WQXpje6buMd8Sp6-SBqHexZg@mail.gmail.com> <20131007021118.GA27927@localhost> <20131007051038.GA9764@localhost> <CA+55aFz85in-ntjF_VT4=kBoUrw1m8ON7xL-=431vQKL5oCMxQ@mail.gmail.com>
- <20131007083505.GA22585@localhost> <CA+55aFzknXawREZRBrr0Hs+crKt62fPf+S8SubJHXk84U8AFaw@mail.gmail.com> <CA+55aFyrDme-oNKe9=9vppct5+qCo4=Ug35np1fZiC1da64i_Q@mail.gmail.com> <20131008020918.GA1220@localhost> <20131008021452.GA6456@localhost>
- <20131008080625.GA25034@n2100.arm.linux.org.uk>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751318Ab3JJC0I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 22:26:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,1068,1371106800"; 
+   d="scan'208";a="416952608"
+Subject: Re: [PATCH] xhci-hub.c: handle command_trb that may be link TRB
+From: Xiao Jin <jin.xiao@intel.com>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org, mingo@elte.hu,
+        a.p.zijlstra@chello.nl, rusty@rustcorp.com.au,
+        william.douglas@intel.com, sboyd@codeaurora.org, jslaby@suse.cz
+In-Reply-To: <20131009201846.GA8222@xanatos>
+References: <1381282956.9531.14.camel@xiaojin>
+	 <20131009201846.GA8222@xanatos>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 10 Oct 2013 10:37:33 +0800
+Message-ID: <1381372653.9531.120.camel@xiaojin>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Sarah,
 
-> I think David Arlie also needs a quiet talking to about how to use the
-> device model:
+Thanks for the reminding. The kernel base of the patch is k3.10, I
+didn't notice k3.12 commit ec7e43e2d98173483866fe2e4e690143626b659c at
+that time. I will backport the patch from k3.12 for use.
+
+As you mentioned in another email, we meet with dpm timeout when xhci
+suspend, the root cause are what the patch aimed to solve. FYI.
+
+On Wed, 2013-10-09 at 13:18 -0700, Sarah Sharp wrote:
+> Hi Xiao,
 > 
-> int drm_sysfs_device_add(struct drm_minor *minor)
+> Thanks for taking the time to submit this patch.  Comments below.
+> 
+> On Wed, Oct 09, 2013 at 09:42:36AM +0800, Xiao Jin wrote:
+> > From: xiao jin <jin.xiao@intel.com>
+> > Date: Wed, 9 Oct 2013 09:38:45 +0800
+> > Subject: [PATCH] xhci-hub.c: handle command_trb that may be link TRB
+> 
+> I won't be able to apply your patch  because it has these extra lines in
+> the body ^^^.  I suspect you used `git format-patch` to produce this,
+> and then tried to copy-paste it into your mail client?  You can't do
+> that, because your mail client will probably word-wrap your patch, and
+> possibly turn tabs into spaces.  You need to use `git send-email`
+> instead to send your patches.
+> 
+> > When xhci stop device, it's possible cmd_ring enqueue point to
+> > link TRB after queue the last but one stop endpoint. We must
+> > handle the command_trb point to the next segment trb. Otherwise
+> > xhci stop devie will timeout because command_trb can't match
+> > with cmd_ring dequeue.
+> > 
+> > The patch is to let command_trb point to the next segment trb if
+> > cmd_ring enqueue point to link TRB.
+> > 
+> > Signed-off-by: xiao jin <jin.xiao@intel.com>
+> > ---
+> >  drivers/usb/host/xhci-hub.c |    7 +++++++
+> >  1 files changed, 7 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/drivers/usb/host/xhci-hub.c b/drivers/usb/host/xhci-hub.c
+> > index 1d35459..4872640 100644
+> > --- a/drivers/usb/host/xhci-hub.c
+> > +++ b/drivers/usb/host/xhci-hub.c
+> > @@ -287,6 +287,13 @@ static int xhci_stop_device(struct xhci_hcd *xhci, int slot_id, int suspend)
+> >  			xhci_queue_stop_endpoint(xhci, slot_id, i, suspend);
+> >  	}
+> >  	cmd->command_trb = xhci->cmd_ring->enqueue;
+> > +	/* Enqueue pointer can be left pointing to the link TRB,
+> > +	 * we must handle that
+> > +	 */
+> > +	if (TRB_TYPE_LINK_LE32(cmd->command_trb->link.control))
+> > +		cmd->command_trb =
+> > +			xhci->cmd_ring->enq_seg->next->trbs;
+> > +
+> >  	list_add_tail(&cmd->cmd_list, &virt_dev->cmd_list);
+> >  	xhci_queue_stop_endpoint(xhci, slot_id, 0, suspend);
+> >  	xhci_ring_cmd_db(xhci);
+> 
+> What kernel version or tree is it against?  I ask because there's
+> already a fix in the 3.12-rc4 kernel for this:
+> 
+> static int xhci_stop_device(struct xhci_hcd *xhci, int slot_id, int suspend)
 > {
->         minor->kdev.release = drm_sysfs_device_release;
 > ...
->         err = device_register(&minor->kdev);
-> }
+>         spin_lock_irqsave(&xhci->lock, flags);
+>         for (i = LAST_EP_INDEX; i > 0; i--) {
+>                 if (virt_dev->eps[i].ring && virt_dev->eps[i].ring->dequeue)
+>                         xhci_queue_stop_endpoint(xhci, slot_id, i, suspend);
+>         }
+>         cmd->command_trb = xhci_find_next_enqueue(xhci->cmd_ring);
+> ...
 > 
-> static void drm_sysfs_device_release(struct device *dev)
+> Where xhci_find_next_enqueue is defined as:
+> 
+> union xhci_trb *xhci_find_next_enqueue(struct xhci_ring *ring)
 > {
->         memset(dev, 0, sizeof(struct device));
->         return;
+>         /* Enqueue pointer can be left pointing to the link TRB,
+>          * we must handle that
+>          */
+>         if (TRB_TYPE_LINK_LE32(ring->enqueue->link.control))
+>                 return ring->enq_seg->next->trbs;
+>         return ring->enqueue;
 > }
 > 
-> Since when has that been acceptable in a release function?
-
-Well the commit that added it had a reason that seems to cover some other 
-device model abuses, so maybe someone who actually understands the device 
-model (all 2 people) can review usage.
-
-Dave.
-
-commit 77d26dc9b9805f322f5a1f6e559b18ad66205bd9
-Author: Ma Ling <ling.ma@intel.com>
-Date:   Thu Apr 16 17:51:25 2009 +0800
-
-    drm: clean dirty memory after device release
-    
-    In current code we register/unregister connector object by
-    drm_sysfs_connector_add/remove function.
-    
-    However under some cases, we need to dynamically register or 
-unregister device
-    multiple times, so we have to go through register -> unregister 
-->register
-    routine.
-    
-    Because after device_unregister function our memory is dirty, we need 
-to do
-    clean operation in order to re-register the device, otherwise the 
-system
-    will crash.  The patch intends to clean device after device release.
-    
-    Signed-off-by: Ma Ling <ling.ma@intel.com>
-    Signed-off-by: Dave Airlie <airlied@redhat.com>
+> That was added in commit ec7e43e2d98173483866fe2e4e690143626b659c "xhci:
+> Ensure a command structure points to the correct trb on the command
+> ring"  It's in (or should be in soon) the stable kernels as well.
+> 
+> Sarah Sharp
 
 
