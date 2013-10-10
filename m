@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757825Ab3JJPv6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 11:51:58 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53099 "EHLO
+	id S1757861Ab3JJPwl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 11:52:41 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53082 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757710Ab3JJPuu (ORCPT
+	with ESMTP id S1757666Ab3JJPuk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 11:50:50 -0400
+	Thu, 10 Oct 2013 11:50:40 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Kees Cook <keescook@chromium.org>,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 042/104] HID: logitech-dj: validate output report details
-Date: Thu, 10 Oct 2013 08:41:30 -0700
-Message-Id: <1381419752-29733-43-git-send-email-kamal@canonical.com>
+Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 035/104] sched/fair: Fix small race where child->se.parent,cfs_rq might point to invalid ones
+Date: Thu, 10 Oct 2013 08:41:23 -0700
+Message-Id: <1381419752-29733-36-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381419752-29733-1-git-send-email-kamal@canonical.com>
 References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
@@ -28,64 +28,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
 
-commit 297502abb32e225fb23801fcdb0e4f6f8e17099a upstream.
+commit 6c9a27f5da9609fca46cb2b183724531b48f71ad upstream.
 
-A HID device could send a malicious output report that would cause the
-logitech-dj HID driver to leak kernel memory contents to the device, or
-trigger a NULL dereference during initialization:
+There is a small race between copy_process() and cgroup_attach_task()
+where child->se.parent,cfs_rq points to invalid (old) ones.
 
-[  304.424553] usb 1-1: New USB device found, idVendor=046d, idProduct=c52b
-...
-[  304.780467] BUG: unable to handle kernel NULL pointer dereference at 0000000000000028
-[  304.781409] IP: [<ffffffff815d50aa>] logi_dj_recv_send_report.isra.11+0x1a/0x90
+        parent doing fork()      | someone moving the parent to another cgroup
+  -------------------------------+---------------------------------------------
+    copy_process()
+      + dup_task_struct()
+        -> parent->se is copied to child->se.
+           se.parent,cfs_rq of them point to old ones.
 
-CVE-2013-2895
+                                     cgroup_attach_task()
+                                       + cgroup_task_migrate()
+                                         -> parent->cgroup is updated.
+                                       + cpu_cgroup_attach()
+                                         + sched_move_task()
+                                           + task_move_group_fair()
+                                             +- set_task_rq()
+                                                -> se.parent,cfs_rq of parent
+                                                   are updated.
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+      + cgroup_fork()
+        -> parent->cgroup is copied to child->cgroup. (*1)
+      + sched_fork()
+        + task_fork_fair()
+          -> se.parent,cfs_rq of child are accessed
+             while they point to old ones. (*2)
+
+In the worst case, this bug can lead to "use-after-free" and cause a panic,
+because it's new cgroup's refcount that is incremented at (*1),
+so the old cgroup(and related data) can be freed before (*2).
+
+In fact, a panic caused by this bug was originally caught in RHEL6.4.
+
+    BUG: unable to handle kernel NULL pointer dereference at (null)
+    IP: [<ffffffff81051e3e>] sched_slice+0x6e/0xa0
+    [...]
+    Call Trace:
+     [<ffffffff81051f25>] place_entity+0x75/0xa0
+     [<ffffffff81056a3a>] task_fork_fair+0xaa/0x160
+     [<ffffffff81063c0b>] sched_fork+0x6b/0x140
+     [<ffffffff8106c3c2>] copy_process+0x5b2/0x1450
+     [<ffffffff81063b49>] ? wake_up_new_task+0xd9/0x130
+     [<ffffffff8106d2f4>] do_fork+0x94/0x460
+     [<ffffffff81072a9e>] ? sys_wait4+0xae/0x100
+     [<ffffffff81009598>] sys_clone+0x28/0x30
+     [<ffffffff8100b393>] stub_clone+0x13/0x20
+     [<ffffffff8100b072>] ? system_call_fastpath+0x16/0x1b
+
+Signed-off-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/039601ceae06$733d3130$59b79390$@mxp.nes.nec.co.jp
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/hid/hid-logitech-dj.c | 10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ kernel/sched/fair.c | 14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/hid/hid-logitech-dj.c b/drivers/hid/hid-logitech-dj.c
-index 8758f38c..4288123 100644
---- a/drivers/hid/hid-logitech-dj.c
-+++ b/drivers/hid/hid-logitech-dj.c
-@@ -462,7 +462,7 @@ static int logi_dj_recv_send_report(struct dj_receiver_dev *djrcv_dev,
- 	struct hid_report *report;
- 	struct hid_report_enum *output_report_enum;
- 	u8 *data = (u8 *)(&dj_report->device_index);
--	int i;
-+	unsigned int i;
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 7d0374f..e9ab160 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -5755,11 +5755,15 @@ static void task_fork_fair(struct task_struct *p)
+ 	cfs_rq = task_cfs_rq(current);
+ 	curr = cfs_rq->curr;
  
- 	output_report_enum = &hdev->report_enum[HID_OUTPUT_REPORT];
- 	report = output_report_enum->report_id_hash[REPORT_ID_DJ_SHORT];
-@@ -472,7 +472,7 @@ static int logi_dj_recv_send_report(struct dj_receiver_dev *djrcv_dev,
- 		return -ENODEV;
- 	}
+-	if (unlikely(task_cpu(p) != this_cpu)) {
+-		rcu_read_lock();
+-		__set_task_cpu(p, this_cpu);
+-		rcu_read_unlock();
+-	}
++	/*
++	 * Not only the cpu but also the task_group of the parent might have
++	 * been changed after parent->se.parent,cfs_rq were copied to
++	 * child->se.parent,cfs_rq. So call __set_task_cpu() to make those
++	 * of child point to valid ones.
++	 */
++	rcu_read_lock();
++	__set_task_cpu(p, this_cpu);
++	rcu_read_unlock();
  
--	for (i = 0; i < report->field[0]->report_count; i++)
-+	for (i = 0; i < DJREPORT_SHORT_LENGTH - 1; i++)
- 		report->field[0]->value[i] = data[i];
+ 	update_curr(cfs_rq);
  
- 	usbhid_submit_report(hdev, report, USB_DIR_OUT);
-@@ -784,6 +784,12 @@ static int logi_dj_probe(struct hid_device *hdev,
- 		goto hid_parse_fail;
- 	}
- 
-+	if (!hid_validate_values(hdev, HID_OUTPUT_REPORT, REPORT_ID_DJ_SHORT,
-+				 0, DJREPORT_SHORT_LENGTH - 1)) {
-+		retval = -ENODEV;
-+		goto hid_parse_fail;
-+	}
-+
- 	/* Starts the usb device and connects to upper interfaces hiddev and
- 	 * hidraw */
- 	retval = hid_hw_start(hdev, HID_CONNECT_DEFAULT);
 -- 
 1.8.1.2
 
