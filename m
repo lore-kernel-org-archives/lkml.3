@@ -1,89 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752483Ab3JJEwg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 00:52:36 -0400
-Received: from mga02.intel.com ([134.134.136.20]:39548 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751647Ab3JJEwe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 00:52:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1069,1371106800"; 
-   d="scan'208";a="390885230"
-Message-ID: <525632AE.2080909@intel.com>
-Date: Thu, 10 Oct 2013 12:53:02 +0800
-From: Aaron Lu <aaron.lu@intel.com>
+	id S1752959Ab3JJExP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 00:53:15 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:57120 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751647Ab3JJExN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 00:53:13 -0400
+Date: Thu, 10 Oct 2013 06:53:09 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Clark Williams <williams@redhat.com>, Borislav Petkov <bp@alien8.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Kleen, Andi" <andi.kleen@intel.com>
+Subject: Re: [RFC][PATCH] x86: Lazy disabling of interrupts
+Message-ID: <20131010045309.GB23267@gmail.com>
+References: <20131009144150.108f7041@gandalf.local.home>
+ <5255C07E.70805@linux.intel.com>
+ <878uy2ytd8.fsf@tassilo.jf.intel.com>
 MIME-Version: 1.0
-To: Jani Nikula <jani.nikula@linux.intel.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: linux-acpi@vger.kernel.org, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Daniel Vetter <daniel@ffwll.ch>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Lee Chun-Yi <joeyli.kernel@gmail.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Igor Gnatenko <i.gnatenko.brain@gmail.com>,
-        Yves-Alexis Perez <corsac@debian.org>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        Ben Jencks <ben@bjencks.net>, Steven Newbury <steve@snewbury.org.uk>,
-        James Hogan <james@albanarts.com>, Kamal Mostafa <kamal@canonical.com>,
-        Joerg Platte <jplatte@naasa.net>, Kalle Valo <kvalo@adurom.com>,
-        Martin Steigerwald <Martin@lichtvoll.de>,
-        =?UTF-8?B?SsO2cmcgT3R0ZQ==?= <jrg.otte@gmail.com>,
-        Mike Galbraith <bitbucket@online.de>,
-        platform-driver-x86@vger.kernel.org,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Subject: Re: [PATCH v4 1/4] backlight: introduce backlight_device_registered
-References: <1381214401-24672-1-git-send-email-aaron.lu@intel.com> <1381214401-24672-2-git-send-email-aaron.lu@intel.com> <2202423.8QyNjoNEPr@vostro.rjw.lan> <5255FAC5.2090105@intel.com> <878uy1694u.fsf@intel.com>
-In-Reply-To: <878uy1694u.fsf@intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <878uy2ytd8.fsf@tassilo.jf.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/10/2013 12:29 PM, Jani Nikula wrote:
-> On Thu, 10 Oct 2013, Aaron Lu <aaron.lu@intel.com> wrote:
->> On 10/10/2013 08:25 AM, Rafael J. Wysocki wrote:
->>> On Tuesday, October 08, 2013 02:39:58 PM Aaron Lu wrote:
->>>> +bool backlight_device_registered(enum backlight_type type)
->>>> +{
->>>> +	bool found = false;
->>>> +	struct backlight_device *bd;
->>>> +
->>>> +	mutex_lock(&bd_list_mutex);
->>>> +	list_for_each_entry(bd, &bd_list_head, entry) {
->>>> +		if (bd->props.type == type) {
->>>> +			found = true;
->>>> +			break;
->>>> +		}
->>>> +	}
->>>
->>> Isn't it useful to be able to register more than one backlight device of the
->>> same type sometimes?
->>
->> I think so for some kind of computers. OTOH, the above function should
->> be enough for the problem we are solving here, if someday we need to
->> differentiate, we can enhance the code then.
-> 
-> Since both Baytrail and Haswell already have two backlight PWMs, this
-> may be needed sooner than you think. But we shouldn't let that block
 
-Do we need to differentiate which backlight PWM is registered to decide
-if ACPI video backlight interface should be skipped? My understanding is
-no.
+* Andi Kleen <andi@firstfloor.org> wrote:
+
+> - That said, I think a software CLI/STI is somewhat useful for 
+> profiling, as it can allow to measure how long interrupts are delayed by 
+> CLI/STI. [...]
+
+That could be measured directly in a simpler way, without disrupting 
+CLI/STI: by turning all IRQs into NMIs and resending them from a special 
+NMI handler. (and of course timestamping the NMI arrival time and the IRQ 
+entry time so that instrumentation can recover it.)
+
+If indirect, statistical measurement suffices then IRQ delivery latencies 
+can also be estimated statistically without any kernel changes: by 
+profiling IRQ disable/enable sections (there's a counter for that), 
+calculating average IRQ-disable section length from that. The average IRQ 
+delay will be 50% of that value, assuming normal distribution of IRQs. 
+This should be good enough for most cases.
 
 Thanks,
-Aaron
 
-> fixing the more urgent issue we have now. So I'm fine with this. It
-> doesn't prevent one from registering more than one device of the same
-> type anyway.
-> 
-> BR,
-> Jani.
-> 
-> 
-> 
-
+	Ingo
