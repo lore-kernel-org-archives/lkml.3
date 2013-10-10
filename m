@@ -1,115 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754444Ab3JJGvk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 02:51:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25572 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752365Ab3JJGvi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 02:51:38 -0400
-Date: Thu, 10 Oct 2013 08:51:04 +0200
-From: Jakub Jelinek <jakub@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Richard Henderson <rth@twiddle.net>
-Subject: Re: [x86] BUG: unable to handle kernel paging request at 00740060
-Message-ID: <20131010065104.GY30970@tucnak.zalov.cz>
-Reply-To: Jakub Jelinek <jakub@redhat.com>
-References: <20131008143400.GA14721@redhat.com>
- <20131009080459.GA2298@localhost>
- <20131009124310.GA11769@redhat.com>
- <20131009140734.GH3081@twins.programming.kicks-ass.net>
- <20131009143359.GU26785@twins.programming.kicks-ass.net>
- <20131009144656.GV26785@twins.programming.kicks-ass.net>
- <20131009181613.GW30970@tucnak.zalov.cz>
- <20131009190231.GI13848@laptop.programming.kicks-ass.net>
- <20131009190851.GX30970@tucnak.zalov.cz>
- <20131010062238.GB9853@gmail.com>
+	id S1754618Ab3JJGwf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 02:52:35 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:40059 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752487Ab3JJGwe convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 02:52:34 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131010062238.GB9853@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131010024613.GA10719@localhost>
+References: <524E57BA.805@nod.at>
+	<52517109.90605@gmx.de>
+	<CAMuHMdXrU0e_6AxvdboMkDs+N+tSWD+b8ou92j28c0vsq2eQQA@mail.gmail.com>
+	<5251C334.3010604@gmx.de>
+	<CAMuHMdUo8dSd4s3089ZDEc485wL1sFxBKLeaExJuqNiQY+S-Lw@mail.gmail.com>
+	<5251CF94.5040101@gmx.de>
+	<CAMuHMdWs6Y7y12STJ+YXKJjxRF0k5yU9C9+0fiPPmq-GgeW-6Q@mail.gmail.com>
+	<525591AD.4060401@gmx.de>
+	<5255A3E6.6020100@nod.at>
+	<20131009214733.GB25608@quack.suse.cz>
+	<20131010024613.GA10719@localhost>
+Date: Thu, 10 Oct 2013 08:52:33 +0200
+X-Google-Sender-Auth: 9Gj7oma21fsi8VwHqdwrTXo_JRg
+Message-ID: <CAMuHMdWSQrgMtW84QLs1Q96Jg-sYntS9Ohz-sXd3dWhuR2O7mw@mail.gmail.com>
+Subject: Re: [uml-devel] BUG: soft lockup for a user mode linux image
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Jan Kara <jack@suse.cz>, Richard Weinberger <richard@nod.at>,
+        =?UTF-8?Q?Toralf_F=C3=B6rster?= <toralf.foerster@gmx.de>,
+        UML devel <user-mode-linux-devel@lists.sourceforge.net>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        hannes@cmpxchg.org, darrick.wong@oracle.com,
+        Michal Hocko <mhocko@suse.cz>, Gu Zheng <guz.fnst@cn.fujitsu.com>,
+        Benjamin LaHaise <bcrl@kvack.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 10, 2013 at 08:22:38AM +0200, Ingo Molnar wrote:
-> > On Wed, Oct 09, 2013 at 09:02:31PM +0200, Peter Zijlstra wrote:
-> > > On Wed, Oct 09, 2013 at 08:16:13PM +0200, Jakub Jelinek wrote:
-> > >
-> > > > Confirmed as gcc bug, filed http://gcc.gnu.org/PR58670 Seems all of 
-> > > > 4.[6-9] miscompile it.  Will have a look tomorrow unless somebody 
-> > > > beats me to it.  But historically, the case where asm goto labels 
-> > > > jump to fallthru basic block had numerous problems in the past.
-> > > 
-> > > That bug lists the component as middle end; this suggests x86_64 would 
-> > > be vulnerable too, can you confirm? So far we've only observed the 
-> > > wrong code on i386 targets, x86_64 targets appeared correct.
-> > 
-> > Any target, the testcase in the bugzilla aborts on x86_64 with -O2, and 
-> > even say on ppc64 (sure, one would have to rewrite the asm to have it 
-> > fail at runtime).
-> 
-> Please let us know once you know enough about the bug to suggest 
-> workarounds. Because it's a nice optimization even extra instruction(s) 
-> would be acceptable I suspect: we could perhaps put a NOP into a slowpath, 
-> with an (unused) goto to it, or something like that?
+On Thu, Oct 10, 2013 at 4:46 AM, Fengguang Wu <fengguang.wu@intel.com> wrote:
+> On Wed, Oct 09, 2013 at 11:47:33PM +0200, Jan Kara wrote:
+>> On Wed 09-10-13 20:43:50, Richard Weinberger wrote:
+>> > Am 09.10.2013 19:26, schrieb Toralf Förster:
+>> > > On 10/08/2013 10:07 PM, Geert Uytterhoeven wrote:
+>> > >> On Sun, Oct 6, 2013 at 11:01 PM, Toralf Förster <toralf.foerster@gmx.de> wrote:
+>> > >>>> Hmm, now pages_dirtied is zero, according to the backtrace, but the BUG_ON()
+>> > >>>> asserts its strict positive?!?
+>> > >>>>
+>> > >>>> Can you please try the following instead of the BUG_ON():
+>> > >>>>
+>> > >>>> if (pause < 0) {
+>> > >>>>         printk("pages_dirtied = %lu\n", pages_dirtied);
+>> > >>>>         printk("task_ratelimit = %lu\n", task_ratelimit);
+>> > >>>>         printk("pause = %ld\n", pause);
 
-IMHO you don't need to put there a nop, I guess asm (""); would be enough,
-that will still make sure the label is never in the fallthru basic block
-and the whole class of issues with asm goto with labels in the fallthru
-bb can't hit.  The disadvantage is that it will generate worse code.
+>> > >>> I tried it in different ways already - I'm completely unsuccessful in getting any printk output.
+>> > >>> As soon as the issue happens I do have a
+>> > >>>
+>> > >>> BUG: soft lockup - CPU#0 stuck for 22s! [trinity-child0:1521]
+>> > >>>
+>> > >>> at stderr of the UML and then no further input is accepted. With uml_mconsole I'm however able
+>> > >>> to run very basic commands like a crash dump, sysrq ond so on.
+>> > >>
+>> > >> You may get an idea of the magnitude of pages_dirtied by using a chain of
+>> > >> BUG_ON()s, like:
+>> > >>
+>> > >> BUG_ON(pages_dirtied > 2000000000);
+>> > >> BUG_ON(pages_dirtied > 1000000000);
+>> > >> BUG_ON(pages_dirtied > 100000000);
+>> > >> BUG_ON(pages_dirtied > 10000000);
+>> > >> BUG_ON(pages_dirtied > 1000000);
+>> > >>
+>> > >> Probably 1 million is already too much for normal operation?
+>> > >>
+>> > > period = HZ * pages_dirtied / task_ratelimit;
+>> > >           BUG_ON(pages_dirtied > 2000000000);
+>> > >           BUG_ON(pages_dirtied > 1000000000);      <-------------- this is line 1467
+>> >
+>> > Summary for mm people:
+>> >
+>> > Toralf runs trinty on UML/i386.
+>> > After some time pages_dirtied becomes very large.
+>> > More than 1000000000 pages in this case.
+>>   Huh, this is really strange. pages_dirtied is passed into
+>> balance_dirty_pages() from current->nr_dirtied. So I wonder how a value
+>> over 10^9 can get there.
+>
+> I noticed aio_setup_ring() in the call trace and find it recently
+> added a SetPageDirty() call in a loop by commit 36bc08cc01 ("fs/aio:
+> Add support to aio ring pages migration"). So added CC to its authors.
+>
+>> After all that is over 4TB so I somewhat doubt the
+>> task was ever able to dirty that much during its lifetime (but correct me
+>> if I'm wrong here, with UML and memory backed disks it is not totally
+>> impossible)... I went through the logic of handling ->nr_dirtied but
+>> I didn't find any obvious problem there. Hum, maybe one thing - what
+>> 'task_ratelimit' values do you see in balance_dirty_pages? If that one was
+>> huge, we could possibly accumulate huge current->nr_dirtied.
+>>
+>> > Thus, period = HZ * pages_dirtied / task_ratelimit overflows
+>> > and period/pause becomes extremely large.
 
-@@ -8,6 +8,7 @@ foo (int a, int b)
-   asm volatile goto ("bts $1, %0; jc %l[lab]" : : "m" (b) : "memory" : lab);
-   return 0;
- lab:
-+  asm ("");
-   return 0;
- }
+period/pause are signed long, so they become negative instead of
+extremely large when overflowing.
 
-on the testcase from the PR results in something like:
-#APP
-# 8 "pr58670-1.c" 1
-        bts $1, -4(%rsp); jc .L3
-# 0 "" 2
-#NO_APP
-.L5:
-        xorl    %eax, %eax
-        ret
-        .p2align 4,,10
-        .p2align 3
-.L3:
-        xorl    %eax, %eax
-        ret
-        .p2align 4,,10
-        .p2align 3
-.L4:
-        movl    $-3, %eax
-        ret
-while code without the extra asm (""); and with a fixed compiler:
-#APP
-# 6 "pr58670.c" 1
-        bts $1, -4(%rsp); jc .L3
-# 0 "" 2
-#NO_APP
-.L3:
-        xorl    %eax, %eax
-        ret
-        .p2align 4,,10
-        .p2align 3
-.L4:
-.L2:
-        movl    $-3, %eax
-        ret
+>> > It looks like io_schedule_timeout() get's called with a very large timeout.
+>> > I don't know why "if (unlikely(pause > max_pause)) {" does not help.
 
-FYI, list of past compiler issues with asm goto include:
-PR54127, PR46226, PR44071, PR52650, PR54455, PR51767.
+Because pause is now negative.
 
-I hope we get this fixed for 4.8.2, so you could then avoid
-these hacks for GCC 4.8.2 and later.
+Gr{oetje,eeting}s,
 
-	Jakub
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
