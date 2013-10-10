@@ -1,111 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754244Ab3JJGDj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 02:03:39 -0400
-Received: from mga01.intel.com ([192.55.52.88]:25171 "EHLO mga01.intel.com"
+	id S1754273Ab3JJGHc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 02:07:32 -0400
+Received: from mga14.intel.com ([143.182.124.37]:5202 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751949Ab3JJGDh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 02:03:37 -0400
+	id S1752879Ab3JJGHa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 02:07:30 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,1069,1371106800"; 
-   d="scan'208";a="408670917"
-Date: Thu, 10 Oct 2013 14:03:34 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Dave Chinner <dchinner@redhat.com>, linux-fsdevel@vger.kernel.org,
-        Ben Myers <bpm@sgi.com>, linux-kernel@vger.kernel.org, xfs@oss.sgi.com,
-        "ocfs2-devel@oss.oracle.com" <ocfs2-devel@oss.oracle.com>
-Subject: Re: [XFS on bad superblock] BUG: unable to handle kernel NULL
- pointer dereference at 00000003
-Message-ID: <20131010060334.GA17576@localhost>
-References: <20131009073910.GA387@localhost>
- <20131010005900.GE2025@devil.localdomain>
- <20131010011640.GA5726@localhost>
- <20131010014117.GA6017@localhost>
- <20131010031515.GT4446@dastard>
- <20131010032637.GA12725@localhost>
- <20131010033300.GA12952@localhost>
- <20131010033834.GA13141@localhost>
- <20131010042820.GA5663@dastard>
+   d="scan'208";a="408672305"
+Date: Thu, 10 Oct 2013 09:12:56 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: linux-acpi@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Aaron Lu <aaron.lu@intel.com>,
+        Lv Zheng <lv.zheng@intel.com>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] spi: attach/detach SPI device to the ACPI power
+ domain
+Message-ID: <20131010061256.GB3521@intel.com>
+References: <1381327461-10562-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1381327461-10562-4-git-send-email-mika.westerberg@linux.intel.com>
+ <20131009175528.GV21581@sirena.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131010042820.GA5663@dastard>
+In-Reply-To: <20131009175528.GV21581@sirena.org.uk>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 10, 2013 at 03:28:20PM +1100, Dave Chinner wrote:
-> On Thu, Oct 10, 2013 at 11:38:34AM +0800, Fengguang Wu wrote:
-> > On Thu, Oct 10, 2013 at 11:33:00AM +0800, Fengguang Wu wrote:
-> > > On Thu, Oct 10, 2013 at 11:26:37AM +0800, Fengguang Wu wrote:
-> > > > Dave,
-> > > > 
-> > > > > I note that you have CONFIG_SLUB=y, which means that the cache slabs
-> > > > > are shared with objects of other types. That means that the memory
-> > > > > corruption problem is likely to be caused by one of the other
-> > > > > filesystems that is probing the block device(s), not XFS.
-> > > > 
-> > > > Good to know that, it would easy to test then: just turn off every
-> > > > other filesystems. I'll try it right away.
-> > > 
-> > > Seems that we don't even need to do that. A dig through the oops
-> > > database and I find stack dumps from other FS.
-> > > 
-> > > This happens in the kernel with same kconfig and commit 3.12-rc1.
-> > 
-> > Here is a summary of all FS with oops:
-> > 
-> >     411 ocfs2_fill_super
-> >     189 xfs_fs_fill_super
-> >      86 jfs_fill_super
-> >      50 isofs_fill_super
-> >      33 fat_fill_super
-> >      18 vfat_fill_super
-> >      15 msdos_fill_super
-> >      11 ext2_fill_super
-> >      10 ext3_fill_super
-> >       3 reiserfs_fill_super
+On Wed, Oct 09, 2013 at 06:55:28PM +0100, Mark Brown wrote:
+> On Wed, Oct 09, 2013 at 05:04:21PM +0300, Mika Westerberg wrote:
+> > If the SPI device is enumerated from ACPI namespace (it has an ACPI handle)
+> > it might have ACPI methods that needs to be called in order to transition
+> > the device to different power states (such as _PSx).
 > 
-> The order of probing on the original dmesg output you reported is:
+> Acked-by: Mark Brown <broonie@linaro.org>
+
+Thanks!
+
+> > +	if (ACPI_HANDLE(&spi->dev))
+> > +		acpi_dev_pm_attach(&spi->dev, true);
 > 
-> 	ext3
-> 	ext2
-> 	fatfs
-> 	reiserfs
-> 	gfs2
-> 	isofs
-> 	ocfs2
+> Though I do wonder if it wouldn't be sensible to push the if () here
+> inside acpi_dev_pm_attach() and similarly for _detach().  Terribly
+> trivial either way.
 
-There are effectively no particular order, because there are many
-superblocks for these filesystems to scan.
+Actually, the check is already there in acpi_dev_pm_attach()/detach(). The
+above code follows what Rafael did for platform bus previously. I think the
+idea is to have visual hint that this is only for ACPI enumerated devices.
 
-        for superblocks:
-                for filesystems:
-                        scan super block
-
-In the end, any filesystem may impact the other (and perhaps a later
-run of itself).
-
-> which means that no XFS filesystem was mounted in the original bug
-> report, and hence that further indicates that XFS is not responsible
-> for the problem and that perhaps the original bisect was not
-> reliable...
-
-This is an easily reproducible bug. And I further confirmed it in
-two ways:
-
-1) turn off XFS, build 39 commits and boot them 2000+ times
-
-=> no single mount error
-
-2) turn off all other filesystems, build 2 kernels on v3.12-rc3
-   v3.12-rc4 and boot them
-
-=> half boots have oops
-
-So it may well be that XFS is impacted by an early run of itself.
-
-Thanks,
-Fengguang
+If preferred, I can drop the if() checks, though.
