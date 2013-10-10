@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757584Ab3JJPuJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 11:50:09 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53018 "EHLO
+	id S1757625Ab3JJPua (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 11:50:30 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53036 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755553Ab3JJPuD (ORCPT
+	with ESMTP id S1757590Ab3JJPuU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 11:50:03 -0400
+	Thu, 10 Oct 2013 11:50:20 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 098/104] powerpc: Restore registers on error exit from csum_partial_copy_generic()
-Date: Thu, 10 Oct 2013 08:42:26 -0700
-Message-Id: <1381419752-29733-99-git-send-email-kamal@canonical.com>
+Subject: [PATCH 032/104] cciss: fix info leak in cciss_ioctl32_passthru()
+Date: Thu, 10 Oct 2013 08:41:20 -0700
+Message-Id: <1381419752-29733-33-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381419752-29733-1-git-send-email-kamal@canonical.com>
 References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
@@ -29,160 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 8f21bd0090052e740944f9397e2be5ac7957ded7 upstream.
+commit 58f09e00ae095e46ef9edfcf3a5fd9ccdfad065e upstream.
 
-The csum_partial_copy_generic() function saves the PowerPC non-volatile
-r14, r15, and r16 registers for the main checksum-and-copy loop.
-Unfortunately, it fails to restore them upon error exit from this loop,
-which results in silent corruption of these registers in the presumably
-rare event of an access exception within that loop.
+The arg64 struct has a hole after ->buf_size which isn't cleared.  Or if
+any of the calls to copy_from_user() fail then that would cause an
+information leak as well.
 
-This commit therefore restores these register on error exit from the loop.
+This was assigned CVE-2013-2147.
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Mike Miller <mike.miller@hp.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/powerpc/lib/checksum_64.S | 54 +++++++++++++++++++++++++++++++-----------
- 1 file changed, 40 insertions(+), 14 deletions(-)
+ drivers/block/cciss.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/powerpc/lib/checksum_64.S b/arch/powerpc/lib/checksum_64.S
-index 609665a..57a0720 100644
---- a/arch/powerpc/lib/checksum_64.S
-+++ b/arch/powerpc/lib/checksum_64.S
-@@ -226,19 +226,35 @@ _GLOBAL(csum_partial)
- 	blr
+diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
+index d18b801..4b82bb4 100644
+--- a/drivers/block/cciss.c
++++ b/drivers/block/cciss.c
+@@ -1184,6 +1184,7 @@ static int cciss_ioctl32_passthru(struct block_device *bdev, fmode_t mode,
+ 	int err;
+ 	u32 cp;
  
- 
--	.macro source
-+	.macro srcnr
- 100:
- 	.section __ex_table,"a"
- 	.align 3
--	.llong 100b,.Lsrc_error
-+	.llong 100b,.Lsrc_error_nr
- 	.previous
- 	.endm
- 
--	.macro dest
-+	.macro source
-+150:
-+	.section __ex_table,"a"
-+	.align 3
-+	.llong 150b,.Lsrc_error
-+	.previous
-+	.endm
-+
-+	.macro dstnr
- 200:
- 	.section __ex_table,"a"
- 	.align 3
--	.llong 200b,.Ldest_error
-+	.llong 200b,.Ldest_error_nr
-+	.previous
-+	.endm
-+
-+	.macro dest
-+250:
-+	.section __ex_table,"a"
-+	.align 3
-+	.llong 250b,.Ldest_error
- 	.previous
- 	.endm
- 
-@@ -274,11 +290,11 @@ _GLOBAL(csum_partial_copy_generic)
- 	mtctr	r6
- 
- 1:
--source;	lhz	r6,0(r3)		/* align to doubleword */
-+srcnr;	lhz	r6,0(r3)		/* align to doubleword */
- 	subi	r5,r5,2
- 	addi	r3,r3,2
- 	adde	r0,r0,r6
--dest;	sth	r6,0(r4)
-+dstnr;	sth	r6,0(r4)
- 	addi	r4,r4,2
- 	bdnz	1b
- 
-@@ -392,10 +408,10 @@ dest;	std	r16,56(r4)
- 
- 	mtctr	r6
- 3:
--source;	ld	r6,0(r3)
-+srcnr;	ld	r6,0(r3)
- 	addi	r3,r3,8
- 	adde	r0,r0,r6
--dest;	std	r6,0(r4)
-+dstnr;	std	r6,0(r4)
- 	addi	r4,r4,8
- 	bdnz	3b
- 
-@@ -405,10 +421,10 @@ dest;	std	r6,0(r4)
- 	srdi.	r6,r5,2
- 	beq	.Lcopy_tail_halfword
- 
--source;	lwz	r6,0(r3)
-+srcnr;	lwz	r6,0(r3)
- 	addi	r3,r3,4
- 	adde	r0,r0,r6
--dest;	stw	r6,0(r4)
-+dstnr;	stw	r6,0(r4)
- 	addi	r4,r4,4
- 	subi	r5,r5,4
- 
-@@ -416,10 +432,10 @@ dest;	stw	r6,0(r4)
- 	srdi.	r6,r5,1
- 	beq	.Lcopy_tail_byte
- 
--source;	lhz	r6,0(r3)
-+srcnr;	lhz	r6,0(r3)
- 	addi	r3,r3,2
- 	adde	r0,r0,r6
--dest;	sth	r6,0(r4)
-+dstnr;	sth	r6,0(r4)
- 	addi	r4,r4,2
- 	subi	r5,r5,2
- 
-@@ -427,10 +443,10 @@ dest;	sth	r6,0(r4)
- 	andi.	r6,r5,1
- 	beq	.Lcopy_finish
- 
--source;	lbz	r6,0(r3)
-+srcnr;	lbz	r6,0(r3)
- 	sldi	r9,r6,8			/* Pad the byte out to 16 bits */
- 	adde	r0,r0,r9
--dest;	stb	r6,0(r4)
-+dstnr;	stb	r6,0(r4)
- 
- .Lcopy_finish:
- 	addze	r0,r0			/* add in final carry */
-@@ -440,6 +456,11 @@ dest;	stb	r6,0(r4)
- 	blr
- 
- .Lsrc_error:
-+	ld	r14,STK_REG(R14)(r1)
-+	ld	r15,STK_REG(R15)(r1)
-+	ld	r16,STK_REG(R16)(r1)
-+	addi	r1,r1,STACKFRAMESIZE
-+.Lsrc_error_nr:
- 	cmpdi	0,r7,0
- 	beqlr
- 	li	r6,-EFAULT
-@@ -447,6 +468,11 @@ dest;	stb	r6,0(r4)
- 	blr
- 
- .Ldest_error:
-+	ld	r14,STK_REG(R14)(r1)
-+	ld	r15,STK_REG(R15)(r1)
-+	ld	r16,STK_REG(R16)(r1)
-+	addi	r1,r1,STACKFRAMESIZE
-+.Ldest_error_nr:
- 	cmpdi	0,r8,0
- 	beqlr
- 	li	r6,-EFAULT
++	memset(&arg64, 0, sizeof(arg64));
+ 	err = 0;
+ 	err |=
+ 	    copy_from_user(&arg64.LUN_info, &arg32->LUN_info,
 -- 
 1.8.1.2
 
