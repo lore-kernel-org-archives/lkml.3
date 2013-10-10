@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757935Ab3JJQKx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 12:10:53 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52586 "EHLO
+	id S1758134Ab3JJQKt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 12:10:49 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52587 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755862Ab3JJPmu (ORCPT
+	with ESMTP id S1755865Ab3JJPmu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 10 Oct 2013 11:42:50 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dave Jones <davej@redhat.com>, "David S. Miller" <davem@davemloft.net>,
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 012/104] 8139cp: Fix skb leak in rx_status_loop failure path.
-Date: Thu, 10 Oct 2013 08:41:00 -0700
-Message-Id: <1381419752-29733-13-git-send-email-kamal@canonical.com>
+Subject: [PATCH 013/104] tun: signedness bug in tun_get_user()
+Date: Thu, 10 Oct 2013 08:41:01 -0700
+Message-Id: <1381419752-29733-14-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381419752-29733-1-git-send-email-kamal@canonical.com>
 References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
@@ -27,32 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Jones <davej@redhat.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-[ Upstream commit d06f5187469eee1b2932c02fd093d113cfc60d5e ]
+[ Upstream commit 15718ea0d844e4816dbd95d57a8a0e3e264ba90e ]
 
-Introduced in cf3c4c03060b688cbc389ebc5065ebcce5653e96
-("8139cp: Add dma_mapping_error checking")
+The recent fix d9bf5f1309 "tun: compare with 0 instead of total_len" is
+not totally correct.  Because "len" and "sizeof()" are size_t type, that
+means they are never less than zero.
 
-Signed-off-by: Dave Jones <davej@redhat.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/ethernet/realtek/8139cp.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/tun.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/ethernet/realtek/8139cp.c b/drivers/net/ethernet/realtek/8139cp.c
-index 9af14e0..35014cf 100644
---- a/drivers/net/ethernet/realtek/8139cp.c
-+++ b/drivers/net/ethernet/realtek/8139cp.c
-@@ -524,6 +524,7 @@ rx_status_loop:
- 					 PCI_DMA_FROMDEVICE);
- 		if (dma_mapping_error(&cp->pdev->dev, new_mapping)) {
- 			dev->stats.rx_dropped++;
-+			kfree_skb(new_skb);
- 			goto rx_next;
- 		}
+diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+index 340cee2..441c987 100644
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -1077,8 +1077,9 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
+ 	u32 rxhash;
  
+ 	if (!(tun->flags & TUN_NO_PI)) {
+-		if ((len -= sizeof(pi)) > total_len)
++		if (len < sizeof(pi))
+ 			return -EINVAL;
++		len -= sizeof(pi);
+ 
+ 		if (memcpy_fromiovecend((void *)&pi, iv, 0, sizeof(pi)))
+ 			return -EFAULT;
+@@ -1086,8 +1087,9 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
+ 	}
+ 
+ 	if (tun->flags & TUN_VNET_HDR) {
+-		if ((len -= tun->vnet_hdr_sz) > total_len)
++		if (len < tun->vnet_hdr_sz)
+ 			return -EINVAL;
++		len -= tun->vnet_hdr_sz;
+ 
+ 		if (memcpy_fromiovecend((void *)&gso, iv, offset, sizeof(gso)))
+ 			return -EFAULT;
 -- 
 1.8.1.2
 
