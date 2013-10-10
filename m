@@ -1,57 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755369Ab3JJIZY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 04:25:24 -0400
-Received: from rrzmta2.uni-regensburg.de ([194.94.155.52]:40272 "EHLO
-	rrzmta2.uni-regensburg.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754728Ab3JJIZV convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:2:1>);
-	Thu, 10 Oct 2013 04:25:21 -0400
-X-Greylist: delayed 562 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 Oct 2013 04:25:21 EDT
-Message-Id: <52567E57020000A100012B6A@gwsmtp1.uni-regensburg.de>
-X-Mailer: Novell GroupWise Internet Agent 12.0.2 
-Date: Thu, 10 Oct 2013 10:15:51 +0200
-From: "Ulrich Windl" <Ulrich.Windl@rz.uni-regensburg.de>
-To: <linux-kernel@vger.kernel.org>
-Cc: "Ulrich Windl" <Ulrich.Windl@rz.uni-regensburg.de>
-Subject: read stalls with large RAM: transparent huges pages, dirty
- buffers, or I/O (block) scheduler?
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1754032Ab3JJI2Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 04:28:25 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:49923 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751796Ab3JJI2X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 04:28:23 -0400
+X-AuditID: 9c93017d-b7b96ae000006e96-09-525665251640
+From: Namhyung Kim <namhyung@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH 32/52] tools/perf/build: Speed up auto-detection of features by adding a 'test-all' target
+References: <1381227082-22039-1-git-send-email-mingo@kernel.org>
+	<1381227082-22039-33-git-send-email-mingo@kernel.org>
+	<87siw9ir6i.fsf@sejong.aot.lge.com> <20131010072413.GN10246@gmail.com>
+Date: Thu, 10 Oct 2013 17:28:21 +0900
+In-Reply-To: <20131010072413.GN10246@gmail.com> (Ingo Molnar's message of
+	"Thu, 10 Oct 2013 09:24:13 +0200")
+Message-ID: <87li21cyxm.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Thu, 10 Oct 2013 09:24:13 +0200, Ingo Molnar wrote:
+> * Namhyung Kim <namhyung@kernel.org> wrote:
+>
+>> On Tue,  8 Oct 2013 12:11:02 +0200, Ingo Molnar wrote:
+>> > +test-all:
+>> > +	$(BUILD) -Werror -fstack-protector -Wvolatile-register-var -O2 
+>> > -Werror -D_FORTIFY_SOURCE=2 -ldw -lelf -lnuma -lunwind -lunwind-x86_64 
+>> > -lelf -laudit -I/usr/include/slang -lslang $(shell pkg-config --libs 
+>> > --cflags gtk+-2.0 2>/dev/null) $(FLAGS_PERL_EMBED) 
+>> > $(FLAGS_PYTHON_EMBED) -DPACKAGE='perf' -DPACKAGE=perf -lbfd -ldl
+>> 
+>> Also missed -Wstack-protector.  And duplicate -Werror.
+>> 
+>> Anyway, it'd be great to generate this flags as well as source file 
+>> automatically.
+>
+> Well, the source file would mean some extra construction overhead during 
+> detection - but generating the flags ought to be possible, by putting the 
+> test-all entry last and generating a rolling ALL_FLAGS variable via the 
+> rules above it.
+>
+> Would you like to write such a patch?
 
-We are running some x86_64 servers with large RAM (128GB). Just to imagine: With a memory speed of a little more than 9GB/s it takes > 10 seconds to read all RAM...
+Well, I'll try to do it tomorrow. :)
 
-In the past and recently we had problems with read() stalls when the kernel was writing back big amounts (like 80GB) of dirty buffers on a somewhat slow (40MB/s) device. The problem is old and well-known, it seems, but to really solved.
-
-One recommendation was to limit the amount of dirty buffers, which actually did not help to really avoid the problem, specifically if new dirty buffers are used as soon as they are available (i.e.: some were flushed). I had success with limiting the used memory (including dirty pages) with control groups (memory:iothrottle, SLES11 SP2), but the control framework (rccgconfig setting up proper rights for /sys/fs/cgroup/mem/iothrottle/tasks) is quite incomplete (no group write permission or ACL setup possible), so the end user can hardly use that.
-
-I still don't know whether read stalls are caused by the I/O channel or device being saturated, or whether the kernel is waiting for unused buffers to receive the read data, but I learned that I/O schedulers (and possibly the block layer optimizations) can cause extra delays, too.
-
-We had one situation where a single sector could not be read with direct I/O for 10 seconds.
-
-Recently we had the problem again, but it was clear that it was _not_ the device being overloaded, nor was it the I/O channel. The read problem was reported for a devioce that was almost idle, and the I/O channel (FC) can handle much more than the disk system can in both directions. So the problem seems to be inside the kernel.
-
-Oracle recommends (in article  1557478.1, without explaining the details) to turn off transparent huge pages. Before that I didn't think much about that feature. It seems the kernel is not just creating huge pages when they are requested explicitly (that's what I had thought), but also implicitly to reduce the number of pages to me managed. Collecting smaller pages to combine them for huge pages may also involve moving memory around (compaction), it seems. I still don't know whether the kernel will also try to compact dirty cache pages to huge pages, but we still see read stalls when there are many dirty pages (like when copying 400GB of data to a somewhat slow (30MB/s) disk.
-
-Now I wonder what the real solution to the problem (not the numerous work-arounds) would be. Obviously simply stopping (yield) dirty buffer flush to give read a chance may not be sufficient when read needs to wait for unused pages, especially if the disks being read from are faster than those being written to.
-To my understanding dirty pages have an "age" that is used to decide whether to flush them or not. Also the I/O scheduler seems to prefer read requests over write requests. What I do not know is whether a read request is sent to the I/O scheduler before buffer pages are assigned to the request, or after the pages were assigned. So a read request only has the chance to have an "age" once it entered the I/O scheduler, right?
-
-So if read and writes had an "age" both, some EDF (earliest deadline first) scheduling could be used to perform I/O (which would be controlling buffer usage as a side-effect). For transparent huge pages, requests for a huge page should also have an age and a priority that is significantly below that of I/O buffers. If there exists an efficient algorithm and data model to perform these tasks, the problem may be solved.
-
-Unfortunately if many buffers are dirtied at one moment and reads are requested significantly later, there may be an additional need for time-slices when doing I/O (note: I'm not talking about quotas of some MB, but quotas of time). The I/O throughput may vary a lot, and time seems the only way to manage latency correctly. To avoid a situation where reads may cause stalling writes (and thus the age of dirty buffers growing without bounds), the priority of writes should be _carefully_ increased, taking care not to create a "fright train of dirty buffers" to be flushed. So maybe "smuggle in" a few dirty buffers between read requests. As a high-level flow control (like for the cgroups mechanism), processes with a high amount of dirty buffers should be suspended or scheduled with very low priority to give the memory and I/O systems a change to process the dirty buffers.
-
-For reference: The machine in question is at 3.0.74-0.6.10-default with the latest SLES11 SP2 kernel being 3.0.93-0.5.
-
-I'd like to know what the gurus thing about that. I think with increasing RAM this issue will become extremely important soon.
-
-Regards,
-Ulrich
-P.S: Not subscribed to linux-kernel, so keep me on CC:, please
-
+Thanks,
+Namhyung
