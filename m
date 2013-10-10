@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757370Ab3JJPtC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 11:49:02 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52899 "EHLO
+	id S1757407Ab3JJPtM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 11:49:12 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52918 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755703Ab3JJPs7 (ORCPT
+	with ESMTP id S1757390Ab3JJPtI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 11:48:59 -0400
+	Thu, 10 Oct 2013 11:49:08 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, Mark Brown <broonie@linaro.org>,
+Cc: Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 080/104] ASoC: 88pm860x: array overflow in snd_soc_put_volsw_2r_st()
-Date: Thu, 10 Oct 2013 08:42:08 -0700
-Message-Id: <1381419752-29733-81-git-send-email-kamal@canonical.com>
+Subject: [PATCH 060/104] ARM: 7837/3: fix Thumb-2 bug in AES assembler code
+Date: Thu, 10 Oct 2013 08:41:48 -0700
+Message-Id: <1381419752-29733-61-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381419752-29733-1-git-send-email-kamal@canonical.com>
 References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
@@ -27,34 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
 
-commit d967967e8d1116fb38bad25e58714b5dddd03cca upstream.
+commit 40190c85f427dcfdbab5dbef4ffd2510d649da1f upstream.
 
-This is called from snd_ctl_elem_write() with user supplied data so we
-need to add some bounds checking.
+Patch 638591c enabled building the AES assembler code in Thumb2 mode.
+However, this code used arithmetic involving PC rather than adr{l}
+instructions to generate PC-relative references to the lookup tables,
+and this needs to take into account the different PC offset when
+running in Thumb mode.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Acked-by: Nicolas Pitre <nico@linaro.org>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/soc/codecs/88pm860x-codec.c | 3 +++
- 1 file changed, 3 insertions(+)
+ arch/arm/crypto/aes-armv4.S | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/sound/soc/codecs/88pm860x-codec.c b/sound/soc/codecs/88pm860x-codec.c
-index 60159c0..6fd174b 100644
---- a/sound/soc/codecs/88pm860x-codec.c
-+++ b/sound/soc/codecs/88pm860x-codec.c
-@@ -351,6 +351,9 @@ static int snd_soc_put_volsw_2r_st(struct snd_kcontrol *kcontrol,
- 	val = ucontrol->value.integer.value[0];
- 	val2 = ucontrol->value.integer.value[1];
- 
-+	if (val >= ARRAY_SIZE(st_table) || val2 >= ARRAY_SIZE(st_table))
-+		return -EINVAL;
-+
- 	err = snd_soc_update_bits(codec, reg, 0x3f, st_table[val].m);
- 	if (err < 0)
- 		return err;
+diff --git a/arch/arm/crypto/aes-armv4.S b/arch/arm/crypto/aes-armv4.S
+index 19d6cd6..3a14ea8 100644
+--- a/arch/arm/crypto/aes-armv4.S
++++ b/arch/arm/crypto/aes-armv4.S
+@@ -148,7 +148,7 @@ AES_Te:
+ @ 		 const AES_KEY *key) {
+ .align	5
+ ENTRY(AES_encrypt)
+-	sub	r3,pc,#8		@ AES_encrypt
++	adr	r3,AES_encrypt
+ 	stmdb   sp!,{r1,r4-r12,lr}
+ 	mov	r12,r0		@ inp
+ 	mov	r11,r2
+@@ -381,7 +381,7 @@ _armv4_AES_encrypt:
+ .align	5
+ ENTRY(private_AES_set_encrypt_key)
+ _armv4_AES_set_encrypt_key:
+-	sub	r3,pc,#8		@ AES_set_encrypt_key
++	adr	r3,_armv4_AES_set_encrypt_key
+ 	teq	r0,#0
+ 	moveq	r0,#-1
+ 	beq	.Labrt
+@@ -843,7 +843,7 @@ AES_Td:
+ @ 		 const AES_KEY *key) {
+ .align	5
+ ENTRY(AES_decrypt)
+-	sub	r3,pc,#8		@ AES_decrypt
++	adr	r3,AES_decrypt
+ 	stmdb   sp!,{r1,r4-r12,lr}
+ 	mov	r12,r0		@ inp
+ 	mov	r11,r2
 -- 
 1.8.1.2
 
