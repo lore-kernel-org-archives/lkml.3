@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754954Ab3JJF41 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 01:56:27 -0400
-Received: from mga02.intel.com ([134.134.136.20]:30735 "EHLO mga02.intel.com"
+	id S1754867Ab3JJF40 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 01:56:26 -0400
+Received: from mga02.intel.com ([134.134.136.20]:25163 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754282Ab3JJF4D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754252Ab3JJF4D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 10 Oct 2013 01:56:03 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,1069,1371106800"; 
-   d="scan'208";a="417008922"
+   d="scan'208";a="417008916"
 From: David Cohen <david.a.cohen@linux.intel.com>
 To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com
 Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
@@ -16,9 +16,9 @@ Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
         Kuppuswamy Sathyanarayanan 
 	<sathyanarayanan.kuppuswamy@linux.intel.com>,
         David Cohen <david.a.cohen@linux.intel.com>
-Subject: [PATCH v2 09/10] intel_mid: Moved board related code to a new file
-Date: Wed,  9 Oct 2013 23:00:06 -0700
-Message-Id: <1381384807-14146-10-git-send-email-david.a.cohen@linux.intel.com>
+Subject: [PATCH v2 04/10] intel_mid: Renamed *mrst* to *intel_mid*
+Date: Wed,  9 Oct 2013 23:00:01 -0700
+Message-Id: <1381384807-14146-5-git-send-email-david.a.cohen@linux.intel.com>
 X-Mailer: git-send-email 1.8.4.rc3
 In-Reply-To: <1381384807-14146-1-git-send-email-david.a.cohen@linux.intel.com>
 References: <1381384807-14146-1-git-send-email-david.a.cohen@linux.intel.com>
@@ -28,172 +28,1317 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Kuppuswamy Sathyanarayanan <sathyanarayanan.kuppuswamy@linux.intel.com>
 
-As Intel rolling out more SoC's after Moorestown, we need to re-structure
-the code in a way that is backward compatible and easy to expand.This
-patch implements a flexible way to support multiple boards and devices.
+Following files contains code that is common to all intel mid
+soc's. So renamed them as below.
 
-This patch does not add any new functional support. It just refactors
-the existing code to increase the modularity and decrease the code duplication
-for supporting multiple soc's and boards.
+mrst/mrst.c              -> intel-mid/intel-mid.c
+mrst/vrtc.c              -> intel-mid/intel_mid_vrtc.c
+mrst/early_printk_mrst.c -> intel-mid/intel_mid_vrtc.c
+pci/mrst.c               -> pci/intel_mid_pci.c
 
-Currently intel-mid.c has both board and soc related code in one file. This
-patch moves the board related code to new files in the following order.
+Also, renamed the corresponding header files and made changes
+to the driver files that included these header files.
 
-1. Moved the device specific code to arch/x86/platform/intel-mid/device-libs/
-   platform_<device>.*. A new device file is added for every supported device.
-   This code will get conditionally compiled by using corresponding device driver
-   CONFIG option.
-
-2. Moved the device_ids structure definition to board.c. All board specific code
-   are added to this file . This will provide better scalability for our code
-   when supporting multiple boards.
+To ensure that there are no functional changes, I have compared
+the objdump of renamed files before and after rename and found
+that the only difference is file name change.
 
 Signed-off-by: Kuppuswamy Sathyanarayanan <sathyanarayanan.kuppuswamy@linux.intel.com>
 Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
 ---
- arch/x86/include/asm/intel-mid.h                   |   12 +
- arch/x86/platform/intel-mid/Makefile               |    5 +
- arch/x86/platform/intel-mid/board.c                |  109 +++++
- arch/x86/platform/intel-mid/device_libs/Makefile   |   21 +
- .../intel-mid/device_libs/platform_emc1403.c       |   33 ++
- .../intel-mid/device_libs/platform_emc1403.h       |   16 +
- .../intel-mid/device_libs/platform_gpio_keys.c     |   82 ++++
- .../intel-mid/device_libs/platform_gpio_keys.h     |   16 +
- .../platform/intel-mid/device_libs/platform_ipc.c  |   59 +++
- .../platform/intel-mid/device_libs/platform_ipc.h  |   17 +
- .../intel-mid/device_libs/platform_lis331.c        |   32 ++
- .../intel-mid/device_libs/platform_lis331.h        |   16 +
- .../intel-mid/device_libs/platform_max3111.c       |   28 ++
- .../intel-mid/device_libs/platform_max3111.h       |   16 +
- .../intel-mid/device_libs/platform_max7315.c       |   62 +++
- .../intel-mid/device_libs/platform_max7315.h       |   19 +
- .../intel-mid/device_libs/platform_mpu3050.c       |   28 ++
- .../intel-mid/device_libs/platform_mpu3050.h       |   16 +
- .../platform/intel-mid/device_libs/platform_msic.c |   87 ++++
- .../platform/intel-mid/device_libs/platform_msic.h |   19 +
- .../intel-mid/device_libs/platform_msic_audio.c    |   36 ++
- .../intel-mid/device_libs/platform_msic_audio.h    |   16 +
- .../intel-mid/device_libs/platform_msic_battery.c  |   26 ++
- .../intel-mid/device_libs/platform_msic_battery.h  |   17 +
- .../intel-mid/device_libs/platform_msic_gpio.c     |   37 ++
- .../intel-mid/device_libs/platform_msic_gpio.h     |   16 +
- .../intel-mid/device_libs/platform_msic_ocd.c      |   39 ++
- .../intel-mid/device_libs/platform_msic_ocd.h      |   16 +
- .../device_libs/platform_msic_power_btn.c          |   25 ++
- .../device_libs/platform_msic_power_btn.h          |   17 +
- .../intel-mid/device_libs/platform_msic_thermal.c  |   26 ++
- .../intel-mid/device_libs/platform_msic_thermal.h  |   17 +
- .../intel-mid/device_libs/platform_pmic_gpio.c     |   36 ++
- .../intel-mid/device_libs/platform_pmic_gpio.h     |   16 +
- .../intel-mid/device_libs/platform_tc35876x.c      |   29 ++
- .../intel-mid/device_libs/platform_tc35876x.h      |   16 +
- .../intel-mid/device_libs/platform_tca6416.c       |   45 ++
- .../intel-mid/device_libs/platform_tca6416.h       |   20 +
- arch/x86/platform/intel-mid/intel-mid.c            |  432 +-------------------
- arch/x86/platform/intel-mid/intel_mid_weak_decls.h |   15 +
- 40 files changed, 1161 insertions(+), 429 deletions(-)
- create mode 100644 arch/x86/platform/intel-mid/board.c
- create mode 100644 arch/x86/platform/intel-mid/device_libs/Makefile
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_emc1403.c
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_emc1403.h
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_gpio_keys.c
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_gpio_keys.h
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_ipc.c
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_ipc.h
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_lis331.c
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_lis331.h
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_max3111.c
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_max3111.h
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_max7315.c
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_max7315.h
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_mpu3050.c
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_mpu3050.h
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_msic.c
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_msic.h
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_msic_audio.c
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_msic_audio.h
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_msic_battery.c
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_msic_battery.h
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_msic_gpio.c
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_msic_gpio.h
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_msic_ocd.c
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_msic_ocd.h
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_msic_power_btn.c
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_msic_power_btn.h
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_msic_thermal.c
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_msic_thermal.h
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_pmic_gpio.c
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_pmic_gpio.h
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_tc35876x.c
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_tc35876x.h
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_tca6416.c
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_tca6416.h
- create mode 100644 arch/x86/platform/intel-mid/intel_mid_weak_decls.h
+ arch/x86/include/asm/intel-mid.h                   |   81 ++
+ arch/x86/include/asm/intel_mid_vrtc.h              |    9 +
+ arch/x86/include/asm/mrst-vrtc.h                   |    9 -
+ arch/x86/include/asm/mrst.h                        |   81 --
+ arch/x86/kernel/apb_timer.c                        |    2 +-
+ arch/x86/kernel/early_printk.c                     |    2 +-
+ arch/x86/kernel/rtc.c                              |    2 +-
+ arch/x86/pci/Makefile                              |    2 +-
+ arch/x86/pci/intel_mid_pci.c                       |  310 ++++++
+ arch/x86/pci/mrst.c                                |  310 ------
+ arch/x86/platform/Makefile                         |    2 +-
+ arch/x86/platform/intel-mid/Makefile               |    3 +
+ .../platform/intel-mid/early_printk_intel_mid.c    |  325 ++++++
+ arch/x86/platform/intel-mid/intel-mid.c            | 1055 ++++++++++++++++++++
+ arch/x86/platform/intel-mid/intel_mid_vrtc.c       |  177 ++++
+ arch/x86/platform/mrst/Makefile                    |    3 -
+ arch/x86/platform/mrst/early_printk_mrst.c         |  325 ------
+ arch/x86/platform/mrst/mrst.c                      | 1054 -------------------
+ arch/x86/platform/mrst/vrtc.c                      |  177 ----
+ drivers/gpu/drm/gma500/mdfld_dsi_output.h          |    2 +-
+ drivers/gpu/drm/gma500/oaktrail_device.c           |    2 +-
+ drivers/gpu/drm/gma500/oaktrail_lvds.c             |    2 +-
+ drivers/platform/x86/intel_scu_ipc.c               |    2 +-
+ drivers/rtc/rtc-mrst.c                             |    4 +-
+ drivers/watchdog/intel_scu_watchdog.c              |    2 +-
+ 25 files changed, 1972 insertions(+), 1971 deletions(-)
+ create mode 100644 arch/x86/include/asm/intel-mid.h
+ create mode 100644 arch/x86/include/asm/intel_mid_vrtc.h
+ delete mode 100644 arch/x86/include/asm/mrst-vrtc.h
+ delete mode 100644 arch/x86/include/asm/mrst.h
+ create mode 100644 arch/x86/pci/intel_mid_pci.c
+ delete mode 100644 arch/x86/pci/mrst.c
+ create mode 100644 arch/x86/platform/intel-mid/Makefile
+ create mode 100644 arch/x86/platform/intel-mid/early_printk_intel_mid.c
+ create mode 100644 arch/x86/platform/intel-mid/intel-mid.c
+ create mode 100644 arch/x86/platform/intel-mid/intel_mid_vrtc.c
+ delete mode 100644 arch/x86/platform/mrst/Makefile
+ delete mode 100644 arch/x86/platform/mrst/early_printk_mrst.c
+ delete mode 100644 arch/x86/platform/mrst/mrst.c
+ delete mode 100644 arch/x86/platform/mrst/vrtc.c
 
 diff --git a/arch/x86/include/asm/intel-mid.h b/arch/x86/include/asm/intel-mid.h
-index ad236ae..afc282a 100644
---- a/arch/x86/include/asm/intel-mid.h
+new file mode 100644
+index 0000000..cc79a4f
+--- /dev/null
 +++ b/arch/x86/include/asm/intel-mid.h
-@@ -12,8 +12,11 @@
- #define _ASM_X86_INTEL_MID_H
- 
- #include <linux/sfi.h>
-+#include <linux/platform_device.h>
- 
- extern int intel_mid_pci_init(void);
-+extern int get_gpio_by_name(const char *name);
-+extern void intel_scu_device_register(struct platform_device *pdev);
- extern int __init sfi_parse_mrtc(struct sfi_table_header *table);
- extern int sfi_mrtc_num;
- extern struct sfi_rtc_table_entry sfi_mrtc_array[];
-@@ -54,9 +57,15 @@ static inline enum intel_mid_cpu_type intel_mid_identify_cpu(void)
- 	return __intel_mid_cpu_chip;
- }
- 
-+static inline bool intel_mid_has_msic(void)
+@@ -0,0 +1,81 @@
++/*
++ * intel-mid.h: Intel MID specific setup code
++ *
++ * (C) Copyright 2009 Intel Corporation
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; version 2
++ * of the License.
++ */
++#ifndef _ASM_X86_INTEL_MID_H
++#define _ASM_X86_INTEL_MID_H
++
++#include <linux/sfi.h>
++
++extern int pci_mrst_init(void);
++extern int __init sfi_parse_mrtc(struct sfi_table_header *table);
++extern int sfi_mrtc_num;
++extern struct sfi_rtc_table_entry sfi_mrtc_array[];
++
++/*
++ * Medfield is the follow-up of Moorestown, it combines two chip solution into
++ * one. Other than that it also added always-on and constant tsc and lapic
++ * timers. Medfield is the platform name, and the chip name is called Penwell
++ * we treat Medfield/Penwell as a variant of Moorestown. Penwell can be
++ * identified via MSRs.
++ */
++enum mrst_cpu_type {
++	/* 1 was Moorestown */
++	MRST_CPU_CHIP_PENWELL = 2,
++};
++
++extern enum mrst_cpu_type __mrst_cpu_chip;
++
++#ifdef CONFIG_X86_INTEL_MID
++
++static inline enum mrst_cpu_type mrst_identify_cpu(void)
 +{
-+	return (intel_mid_identify_cpu() == INTEL_MID_CPU_CHIP_PENWELL);
++	return __mrst_cpu_chip;
 +}
 +
- #else /* !CONFIG_X86_INTEL_MID */
- 
- #define intel_mid_identify_cpu()    (0)
-+#define intel_mid_has_msic()    (0)
- 
- #endif /* !CONFIG_X86_INTEL_MID */
- 
-@@ -93,4 +102,7 @@ extern void intel_scu_devices_destroy(void);
- 
- extern void intel_mid_rtc_init(void);
- 
-+/* the offset for the mapping of global gpio pin to irq */
-+#define INTEL_MID_IRQ_OFFSET 0x100
++#else /* !CONFIG_X86_INTEL_MID */
 +
- #endif /* _ASM_X86_INTEL_MID_H */
-diff --git a/arch/x86/platform/intel-mid/Makefile b/arch/x86/platform/intel-mid/Makefile
-index de29635..36323ee 100644
---- a/arch/x86/platform/intel-mid/Makefile
-+++ b/arch/x86/platform/intel-mid/Makefile
-@@ -1,3 +1,8 @@
- obj-$(CONFIG_X86_INTEL_MID) += intel-mid.o
- obj-$(CONFIG_X86_INTEL_MID)	+= intel_mid_vrtc.o
- obj-$(CONFIG_EARLY_PRINTK_INTEL_MID)	+= early_printk_intel_mid.o
++#define mrst_identify_cpu()    (0)
 +
-+# BOARD files
-+obj-$(CONFIG_X86_INTEL_MID) += board.o
-+# platform configuration for board devices
-+obj-y += device_libs/
-\ No newline at end of file
-diff --git a/arch/x86/platform/intel-mid/board.c b/arch/x86/platform/intel-mid/board.c
-new file mode 100644
-index 0000000..258d790
---- /dev/null
-+++ b/arch/x86/platform/intel-mid/board.c
-@@ -0,0 +1,109 @@
++#endif /* !CONFIG_X86_INTEL_MID */
++
++enum mrst_timer_options {
++	MRST_TIMER_DEFAULT,
++	MRST_TIMER_APBT_ONLY,
++	MRST_TIMER_LAPIC_APBT,
++};
++
++extern enum mrst_timer_options mrst_timer_options;
++
 +/*
-+ * board.c: Intel MID board file
++ * Penwell uses spread spectrum clock, so the freq number is not exactly
++ * the same as reported by MSR based on SDM.
++ */
++#define PENWELL_FSB_FREQ_83SKU         83200
++#define PENWELL_FSB_FREQ_100SKU        99840
++
++#define SFI_MTMR_MAX_NUM 8
++#define SFI_MRTC_MAX	8
++
++extern struct console early_mrst_console;
++extern void mrst_early_console_init(void);
++
++extern struct console early_hsu_console;
++extern void hsu_early_console_init(const char *);
++
++extern void intel_scu_devices_create(void);
++extern void intel_scu_devices_destroy(void);
++
++/* VRTC timer */
++#define MRST_VRTC_MAP_SZ	(1024)
++/*#define MRST_VRTC_PGOFFSET	(0xc00) */
++
++extern void mrst_rtc_init(void);
++
++#endif /* _ASM_X86_INTEL_MID_H */
+diff --git a/arch/x86/include/asm/intel_mid_vrtc.h b/arch/x86/include/asm/intel_mid_vrtc.h
+new file mode 100644
+index 0000000..86ff468
+--- /dev/null
++++ b/arch/x86/include/asm/intel_mid_vrtc.h
+@@ -0,0 +1,9 @@
++#ifndef _INTEL_MID_VRTC_H
++#define _INTEL_MID_VRTC_H
++
++extern unsigned char vrtc_cmos_read(unsigned char reg);
++extern void vrtc_cmos_write(unsigned char val, unsigned char reg);
++extern void vrtc_get_time(struct timespec *now);
++extern int vrtc_set_mmss(const struct timespec *now);
++
++#endif
+diff --git a/arch/x86/include/asm/mrst-vrtc.h b/arch/x86/include/asm/mrst-vrtc.h
+deleted file mode 100644
+index 1e69a75..0000000
+--- a/arch/x86/include/asm/mrst-vrtc.h
++++ /dev/null
+@@ -1,9 +0,0 @@
+-#ifndef _MRST_VRTC_H
+-#define _MRST_VRTC_H
+-
+-extern unsigned char vrtc_cmos_read(unsigned char reg);
+-extern void vrtc_cmos_write(unsigned char val, unsigned char reg);
+-extern void vrtc_get_time(struct timespec *now);
+-extern int vrtc_set_mmss(const struct timespec *now);
+-
+-#endif
+diff --git a/arch/x86/include/asm/mrst.h b/arch/x86/include/asm/mrst.h
+deleted file mode 100644
+index fc18bf3..0000000
+--- a/arch/x86/include/asm/mrst.h
++++ /dev/null
+@@ -1,81 +0,0 @@
+-/*
+- * mrst.h: Intel Moorestown platform specific setup code
+- *
+- * (C) Copyright 2009 Intel Corporation
+- *
+- * This program is free software; you can redistribute it and/or
+- * modify it under the terms of the GNU General Public License
+- * as published by the Free Software Foundation; version 2
+- * of the License.
+- */
+-#ifndef _ASM_X86_MRST_H
+-#define _ASM_X86_MRST_H
+-
+-#include <linux/sfi.h>
+-
+-extern int pci_mrst_init(void);
+-extern int __init sfi_parse_mrtc(struct sfi_table_header *table);
+-extern int sfi_mrtc_num;
+-extern struct sfi_rtc_table_entry sfi_mrtc_array[];
+-
+-/*
+- * Medfield is the follow-up of Moorestown, it combines two chip solution into
+- * one. Other than that it also added always-on and constant tsc and lapic
+- * timers. Medfield is the platform name, and the chip name is called Penwell
+- * we treat Medfield/Penwell as a variant of Moorestown. Penwell can be
+- * identified via MSRs.
+- */
+-enum mrst_cpu_type {
+-	/* 1 was Moorestown */
+-	MRST_CPU_CHIP_PENWELL = 2,
+-};
+-
+-extern enum mrst_cpu_type __mrst_cpu_chip;
+-
+-#ifdef CONFIG_X86_INTEL_MID
+-
+-static inline enum mrst_cpu_type mrst_identify_cpu(void)
+-{
+-	return __mrst_cpu_chip;
+-}
+-
+-#else /* !CONFIG_X86_INTEL_MID */
+-
+-#define mrst_identify_cpu()    (0)
+-
+-#endif /* !CONFIG_X86_INTEL_MID */
+-
+-enum mrst_timer_options {
+-	MRST_TIMER_DEFAULT,
+-	MRST_TIMER_APBT_ONLY,
+-	MRST_TIMER_LAPIC_APBT,
+-};
+-
+-extern enum mrst_timer_options mrst_timer_options;
+-
+-/*
+- * Penwell uses spread spectrum clock, so the freq number is not exactly
+- * the same as reported by MSR based on SDM.
+- */
+-#define PENWELL_FSB_FREQ_83SKU         83200
+-#define PENWELL_FSB_FREQ_100SKU        99840
+-
+-#define SFI_MTMR_MAX_NUM 8
+-#define SFI_MRTC_MAX	8
+-
+-extern struct console early_mrst_console;
+-extern void mrst_early_console_init(void);
+-
+-extern struct console early_hsu_console;
+-extern void hsu_early_console_init(const char *);
+-
+-extern void intel_scu_devices_create(void);
+-extern void intel_scu_devices_destroy(void);
+-
+-/* VRTC timer */
+-#define MRST_VRTC_MAP_SZ	(1024)
+-/*#define MRST_VRTC_PGOFFSET	(0xc00) */
+-
+-extern void mrst_rtc_init(void);
+-
+-#endif /* _ASM_X86_MRST_H */
+diff --git a/arch/x86/kernel/apb_timer.c b/arch/x86/kernel/apb_timer.c
+index c9876ef..9154836 100644
+--- a/arch/x86/kernel/apb_timer.c
++++ b/arch/x86/kernel/apb_timer.c
+@@ -40,7 +40,7 @@
+ 
+ #include <asm/fixmap.h>
+ #include <asm/apb_timer.h>
+-#include <asm/mrst.h>
++#include <asm/intel-mid.h>
+ #include <asm/time.h>
+ 
+ #define APBT_CLOCKEVENT_RATING		110
+diff --git a/arch/x86/kernel/early_printk.c b/arch/x86/kernel/early_printk.c
+index d15f575..38ca398 100644
+--- a/arch/x86/kernel/early_printk.c
++++ b/arch/x86/kernel/early_printk.c
+@@ -14,7 +14,7 @@
+ #include <xen/hvc-console.h>
+ #include <asm/pci-direct.h>
+ #include <asm/fixmap.h>
+-#include <asm/mrst.h>
++#include <asm/intel-mid.h>
+ #include <asm/pgtable.h>
+ #include <linux/usb/ehci_def.h>
+ 
+diff --git a/arch/x86/kernel/rtc.c b/arch/x86/kernel/rtc.c
+index 0aa2939..a1b52fe 100644
+--- a/arch/x86/kernel/rtc.c
++++ b/arch/x86/kernel/rtc.c
+@@ -12,7 +12,7 @@
+ #include <asm/vsyscall.h>
+ #include <asm/x86_init.h>
+ #include <asm/time.h>
+-#include <asm/mrst.h>
++#include <asm/intel-mid.h>
+ #include <asm/rtc.h>
+ 
+ #ifdef CONFIG_X86_32
+diff --git a/arch/x86/pci/Makefile b/arch/x86/pci/Makefile
+index ee0af58..e063eed 100644
+--- a/arch/x86/pci/Makefile
++++ b/arch/x86/pci/Makefile
+@@ -18,7 +18,7 @@ obj-$(CONFIG_X86_VISWS)		+= visws.o
+ obj-$(CONFIG_X86_NUMAQ)		+= numaq_32.o
+ obj-$(CONFIG_X86_NUMACHIP)	+= numachip.o
+ 
+-obj-$(CONFIG_X86_INTEL_MID)	+= mrst.o
++obj-$(CONFIG_X86_INTEL_MID)	+= intel_mid_pci.o
+ 
+ obj-y				+= common.o early.o
+ obj-y				+= bus_numa.o
+diff --git a/arch/x86/pci/intel_mid_pci.c b/arch/x86/pci/intel_mid_pci.c
+new file mode 100644
+index 0000000..f8715f7
+--- /dev/null
++++ b/arch/x86/pci/intel_mid_pci.c
+@@ -0,0 +1,310 @@
++/*
++ * Intel MID PCI support
++ *   Copyright (c) 2008 Intel Corporation
++ *     Jesse Barnes <jesse.barnes@intel.com>
 + *
-+ * (C) Copyright 2013 Intel Corporation
++ * Moorestown has an interesting PCI implementation:
++ *   - configuration space is memory mapped (as defined by MCFG)
++ *   - Lincroft devices also have a real, type 1 configuration space
++ *   - Early Lincroft silicon has a type 1 access bug that will cause
++ *     a hang if non-existent devices are accessed
++ *   - some devices have the "fixed BAR" capability, which means
++ *     they can't be relocated or modified; check for that during
++ *     BAR sizing
++ *
++ * So, we use the MCFG space for all reads and writes, but also send
++ * Lincroft writes to type 1 space.  But only read/write if the device
++ * actually exists, otherwise return all 1s for reads and bit bucket
++ * the writes.
++ */
++
++#include <linux/sched.h>
++#include <linux/pci.h>
++#include <linux/ioport.h>
++#include <linux/init.h>
++#include <linux/dmi.h>
++#include <linux/acpi.h>
++#include <linux/io.h>
++#include <linux/smp.h>
++
++#include <asm/segment.h>
++#include <asm/pci_x86.h>
++#include <asm/hw_irq.h>
++#include <asm/io_apic.h>
++
++#define PCIE_CAP_OFFSET	0x100
++
++/* Fixed BAR fields */
++#define PCIE_VNDR_CAP_ID_FIXED_BAR 0x00	/* Fixed BAR (TBD) */
++#define PCI_FIXED_BAR_0_SIZE	0x04
++#define PCI_FIXED_BAR_1_SIZE	0x08
++#define PCI_FIXED_BAR_2_SIZE	0x0c
++#define PCI_FIXED_BAR_3_SIZE	0x10
++#define PCI_FIXED_BAR_4_SIZE	0x14
++#define PCI_FIXED_BAR_5_SIZE	0x1c
++
++static int pci_soc_mode;
++
++/**
++ * fixed_bar_cap - return the offset of the fixed BAR cap if found
++ * @bus: PCI bus
++ * @devfn: device in question
++ *
++ * Look for the fixed BAR cap on @bus and @devfn, returning its offset
++ * if found or 0 otherwise.
++ */
++static int fixed_bar_cap(struct pci_bus *bus, unsigned int devfn)
++{
++	int pos;
++	u32 pcie_cap = 0, cap_data;
++
++	pos = PCIE_CAP_OFFSET;
++
++	if (!raw_pci_ext_ops)
++		return 0;
++
++	while (pos) {
++		if (raw_pci_ext_ops->read(pci_domain_nr(bus), bus->number,
++					  devfn, pos, 4, &pcie_cap))
++			return 0;
++
++		if (PCI_EXT_CAP_ID(pcie_cap) == 0x0000 ||
++			PCI_EXT_CAP_ID(pcie_cap) == 0xffff)
++			break;
++
++		if (PCI_EXT_CAP_ID(pcie_cap) == PCI_EXT_CAP_ID_VNDR) {
++			raw_pci_ext_ops->read(pci_domain_nr(bus), bus->number,
++					      devfn, pos + 4, 4, &cap_data);
++			if ((cap_data & 0xffff) == PCIE_VNDR_CAP_ID_FIXED_BAR)
++				return pos;
++		}
++
++		pos = PCI_EXT_CAP_NEXT(pcie_cap);
++	}
++
++	return 0;
++}
++
++static int pci_device_update_fixed(struct pci_bus *bus, unsigned int devfn,
++				   int reg, int len, u32 val, int offset)
++{
++	u32 size;
++	unsigned int domain, busnum;
++	int bar = (reg - PCI_BASE_ADDRESS_0) >> 2;
++
++	domain = pci_domain_nr(bus);
++	busnum = bus->number;
++
++	if (val == ~0 && len == 4) {
++		unsigned long decode;
++
++		raw_pci_ext_ops->read(domain, busnum, devfn,
++			       offset + 8 + (bar * 4), 4, &size);
++
++		/* Turn the size into a decode pattern for the sizing code */
++		if (size) {
++			decode = size - 1;
++			decode |= decode >> 1;
++			decode |= decode >> 2;
++			decode |= decode >> 4;
++			decode |= decode >> 8;
++			decode |= decode >> 16;
++			decode++;
++			decode = ~(decode - 1);
++		} else {
++			decode = 0;
++		}
++
++		/*
++		 * If val is all ones, the core code is trying to size the reg,
++		 * so update the mmconfig space with the real size.
++		 *
++		 * Note: this assumes the fixed size we got is a power of two.
++		 */
++		return raw_pci_ext_ops->write(domain, busnum, devfn, reg, 4,
++				       decode);
++	}
++
++	/* This is some other kind of BAR write, so just do it. */
++	return raw_pci_ext_ops->write(domain, busnum, devfn, reg, len, val);
++}
++
++/**
++ * type1_access_ok - check whether to use type 1
++ * @bus: bus number
++ * @devfn: device & function in question
++ *
++ * If the bus is on a Lincroft chip and it exists, or is not on a Lincroft at
++ * all, the we can go ahead with any reads & writes.  If it's on a Lincroft,
++ * but doesn't exist, avoid the access altogether to keep the chip from
++ * hanging.
++ */
++static bool type1_access_ok(unsigned int bus, unsigned int devfn, int reg)
++{
++	/*
++	 * This is a workaround for A0 LNC bug where PCI status register does
++	 * not have new CAP bit set. can not be written by SW either.
++	 *
++	 * PCI header type in real LNC indicates a single function device, this
++	 * will prevent probing other devices under the same function in PCI
++	 * shim. Therefore, use the header type in shim instead.
++	 */
++	if (reg >= 0x100 || reg == PCI_STATUS || reg == PCI_HEADER_TYPE)
++		return 0;
++	if (bus == 0 && (devfn == PCI_DEVFN(2, 0)
++				|| devfn == PCI_DEVFN(0, 0)
++				|| devfn == PCI_DEVFN(3, 0)))
++		return 1;
++	return 0; /* Langwell on others */
++}
++
++static int pci_read(struct pci_bus *bus, unsigned int devfn, int where,
++		    int size, u32 *value)
++{
++	if (type1_access_ok(bus->number, devfn, where))
++		return pci_direct_conf1.read(pci_domain_nr(bus), bus->number,
++					devfn, where, size, value);
++	return raw_pci_ext_ops->read(pci_domain_nr(bus), bus->number,
++			      devfn, where, size, value);
++}
++
++static int pci_write(struct pci_bus *bus, unsigned int devfn, int where,
++		     int size, u32 value)
++{
++	int offset;
++
++	/*
++	 * On MRST, there is no PCI ROM BAR, this will cause a subsequent read
++	 * to ROM BAR return 0 then being ignored.
++	 */
++	if (where == PCI_ROM_ADDRESS)
++		return 0;
++
++	/*
++	 * Devices with fixed BARs need special handling:
++	 *   - BAR sizing code will save, write ~0, read size, restore
++	 *   - so writes to fixed BARs need special handling
++	 *   - other writes to fixed BAR devices should go through mmconfig
++	 */
++	offset = fixed_bar_cap(bus, devfn);
++	if (offset &&
++	    (where >= PCI_BASE_ADDRESS_0 && where <= PCI_BASE_ADDRESS_5)) {
++		return pci_device_update_fixed(bus, devfn, where, size, value,
++					       offset);
++	}
++
++	/*
++	 * On Moorestown update both real & mmconfig space
++	 * Note: early Lincroft silicon can't handle type 1 accesses to
++	 *       non-existent devices, so just eat the write in that case.
++	 */
++	if (type1_access_ok(bus->number, devfn, where))
++		return pci_direct_conf1.write(pci_domain_nr(bus), bus->number,
++					      devfn, where, size, value);
++	return raw_pci_ext_ops->write(pci_domain_nr(bus), bus->number, devfn,
++			       where, size, value);
++}
++
++static int mrst_pci_irq_enable(struct pci_dev *dev)
++{
++	u8 pin;
++	struct io_apic_irq_attr irq_attr;
++
++	pci_read_config_byte(dev, PCI_INTERRUPT_PIN, &pin);
++
++	/*
++	 * MRST only have IOAPIC, the PCI irq lines are 1:1 mapped to
++	 * IOAPIC RTE entries, so we just enable RTE for the device.
++	 */
++	irq_attr.ioapic = mp_find_ioapic(dev->irq);
++	irq_attr.ioapic_pin = dev->irq;
++	irq_attr.trigger = 1; /* level */
++	irq_attr.polarity = 1; /* active low */
++	io_apic_set_pci_routing(&dev->dev, dev->irq, &irq_attr);
++
++	return 0;
++}
++
++struct pci_ops pci_mrst_ops = {
++	.read = pci_read,
++	.write = pci_write,
++};
++
++/**
++ * pci_mrst_init - installs pci_mrst_ops
++ *
++ * Moorestown has an interesting PCI implementation (see above).
++ * Called when the early platform detection installs it.
++ */
++int __init pci_mrst_init(void)
++{
++	pr_info("Intel MID platform detected, using MID PCI ops\n");
++	pci_mmcfg_late_init();
++	pcibios_enable_irq = mrst_pci_irq_enable;
++	pci_root_ops = pci_mrst_ops;
++	pci_soc_mode = 1;
++	/* Continue with standard init */
++	return 1;
++}
++
++/*
++ * Langwell devices are not true PCI devices; they are not subject to 10 ms
++ * d3 to d0 delay required by PCI spec.
++ */
++static void pci_d3delay_fixup(struct pci_dev *dev)
++{
++	/*
++	 * PCI fixups are effectively decided compile time. If we have a dual
++	 * SoC/non-SoC kernel we don't want to mangle d3 on non-SoC devices.
++	 */
++	if (!pci_soc_mode)
++		return;
++	/*
++	 * True PCI devices in Lincroft should allow type 1 access, the rest
++	 * are Langwell fake PCI devices.
++	 */
++	if (type1_access_ok(dev->bus->number, dev->devfn, PCI_DEVICE_ID))
++		return;
++	dev->d3_delay = 0;
++}
++DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, PCI_ANY_ID, pci_d3delay_fixup);
++
++static void mrst_power_off_unused_dev(struct pci_dev *dev)
++{
++	pci_set_power_state(dev, PCI_D3hot);
++}
++DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x0801, mrst_power_off_unused_dev);
++DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x0809, mrst_power_off_unused_dev);
++DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x080C, mrst_power_off_unused_dev);
++DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x0812, mrst_power_off_unused_dev);
++DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x0815, mrst_power_off_unused_dev);
++
++/*
++ * Langwell devices reside at fixed offsets, don't try to move them.
++ */
++static void pci_fixed_bar_fixup(struct pci_dev *dev)
++{
++	unsigned long offset;
++	u32 size;
++	int i;
++
++	if (!pci_soc_mode)
++		return;
++
++	/* Must have extended configuration space */
++	if (dev->cfg_size < PCIE_CAP_OFFSET + 4)
++		return;
++
++	/* Fixup the BAR sizes for fixed BAR devices and make them unmoveable */
++	offset = fixed_bar_cap(dev->bus, dev->devfn);
++	if (!offset || PCI_DEVFN(2, 0) == dev->devfn ||
++	    PCI_DEVFN(2, 2) == dev->devfn)
++		return;
++
++	for (i = 0; i < PCI_ROM_RESOURCE; i++) {
++		pci_read_config_dword(dev, offset + 8 + (i * 4), &size);
++		dev->resource[i].end = dev->resource[i].start + size - 1;
++		dev->resource[i].flags |= IORESOURCE_PCI_FIXED;
++	}
++}
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, PCI_ANY_ID, pci_fixed_bar_fixup);
+diff --git a/arch/x86/pci/mrst.c b/arch/x86/pci/mrst.c
+deleted file mode 100644
+index 903fded..0000000
+--- a/arch/x86/pci/mrst.c
++++ /dev/null
+@@ -1,310 +0,0 @@
+-/*
+- * Moorestown PCI support
+- *   Copyright (c) 2008 Intel Corporation
+- *     Jesse Barnes <jesse.barnes@intel.com>
+- *
+- * Moorestown has an interesting PCI implementation:
+- *   - configuration space is memory mapped (as defined by MCFG)
+- *   - Lincroft devices also have a real, type 1 configuration space
+- *   - Early Lincroft silicon has a type 1 access bug that will cause
+- *     a hang if non-existent devices are accessed
+- *   - some devices have the "fixed BAR" capability, which means
+- *     they can't be relocated or modified; check for that during
+- *     BAR sizing
+- *
+- * So, we use the MCFG space for all reads and writes, but also send
+- * Lincroft writes to type 1 space.  But only read/write if the device
+- * actually exists, otherwise return all 1s for reads and bit bucket
+- * the writes.
+- */
+-
+-#include <linux/sched.h>
+-#include <linux/pci.h>
+-#include <linux/ioport.h>
+-#include <linux/init.h>
+-#include <linux/dmi.h>
+-#include <linux/acpi.h>
+-#include <linux/io.h>
+-#include <linux/smp.h>
+-
+-#include <asm/segment.h>
+-#include <asm/pci_x86.h>
+-#include <asm/hw_irq.h>
+-#include <asm/io_apic.h>
+-
+-#define PCIE_CAP_OFFSET	0x100
+-
+-/* Fixed BAR fields */
+-#define PCIE_VNDR_CAP_ID_FIXED_BAR 0x00	/* Fixed BAR (TBD) */
+-#define PCI_FIXED_BAR_0_SIZE	0x04
+-#define PCI_FIXED_BAR_1_SIZE	0x08
+-#define PCI_FIXED_BAR_2_SIZE	0x0c
+-#define PCI_FIXED_BAR_3_SIZE	0x10
+-#define PCI_FIXED_BAR_4_SIZE	0x14
+-#define PCI_FIXED_BAR_5_SIZE	0x1c
+-
+-static int pci_soc_mode;
+-
+-/**
+- * fixed_bar_cap - return the offset of the fixed BAR cap if found
+- * @bus: PCI bus
+- * @devfn: device in question
+- *
+- * Look for the fixed BAR cap on @bus and @devfn, returning its offset
+- * if found or 0 otherwise.
+- */
+-static int fixed_bar_cap(struct pci_bus *bus, unsigned int devfn)
+-{
+-	int pos;
+-	u32 pcie_cap = 0, cap_data;
+-
+-	pos = PCIE_CAP_OFFSET;
+-
+-	if (!raw_pci_ext_ops)
+-		return 0;
+-
+-	while (pos) {
+-		if (raw_pci_ext_ops->read(pci_domain_nr(bus), bus->number,
+-					  devfn, pos, 4, &pcie_cap))
+-			return 0;
+-
+-		if (PCI_EXT_CAP_ID(pcie_cap) == 0x0000 ||
+-			PCI_EXT_CAP_ID(pcie_cap) == 0xffff)
+-			break;
+-
+-		if (PCI_EXT_CAP_ID(pcie_cap) == PCI_EXT_CAP_ID_VNDR) {
+-			raw_pci_ext_ops->read(pci_domain_nr(bus), bus->number,
+-					      devfn, pos + 4, 4, &cap_data);
+-			if ((cap_data & 0xffff) == PCIE_VNDR_CAP_ID_FIXED_BAR)
+-				return pos;
+-		}
+-
+-		pos = PCI_EXT_CAP_NEXT(pcie_cap);
+-	}
+-
+-	return 0;
+-}
+-
+-static int pci_device_update_fixed(struct pci_bus *bus, unsigned int devfn,
+-				   int reg, int len, u32 val, int offset)
+-{
+-	u32 size;
+-	unsigned int domain, busnum;
+-	int bar = (reg - PCI_BASE_ADDRESS_0) >> 2;
+-
+-	domain = pci_domain_nr(bus);
+-	busnum = bus->number;
+-
+-	if (val == ~0 && len == 4) {
+-		unsigned long decode;
+-
+-		raw_pci_ext_ops->read(domain, busnum, devfn,
+-			       offset + 8 + (bar * 4), 4, &size);
+-
+-		/* Turn the size into a decode pattern for the sizing code */
+-		if (size) {
+-			decode = size - 1;
+-			decode |= decode >> 1;
+-			decode |= decode >> 2;
+-			decode |= decode >> 4;
+-			decode |= decode >> 8;
+-			decode |= decode >> 16;
+-			decode++;
+-			decode = ~(decode - 1);
+-		} else {
+-			decode = 0;
+-		}
+-
+-		/*
+-		 * If val is all ones, the core code is trying to size the reg,
+-		 * so update the mmconfig space with the real size.
+-		 *
+-		 * Note: this assumes the fixed size we got is a power of two.
+-		 */
+-		return raw_pci_ext_ops->write(domain, busnum, devfn, reg, 4,
+-				       decode);
+-	}
+-
+-	/* This is some other kind of BAR write, so just do it. */
+-	return raw_pci_ext_ops->write(domain, busnum, devfn, reg, len, val);
+-}
+-
+-/**
+- * type1_access_ok - check whether to use type 1
+- * @bus: bus number
+- * @devfn: device & function in question
+- *
+- * If the bus is on a Lincroft chip and it exists, or is not on a Lincroft at
+- * all, the we can go ahead with any reads & writes.  If it's on a Lincroft,
+- * but doesn't exist, avoid the access altogether to keep the chip from
+- * hanging.
+- */
+-static bool type1_access_ok(unsigned int bus, unsigned int devfn, int reg)
+-{
+-	/*
+-	 * This is a workaround for A0 LNC bug where PCI status register does
+-	 * not have new CAP bit set. can not be written by SW either.
+-	 *
+-	 * PCI header type in real LNC indicates a single function device, this
+-	 * will prevent probing other devices under the same function in PCI
+-	 * shim. Therefore, use the header type in shim instead.
+-	 */
+-	if (reg >= 0x100 || reg == PCI_STATUS || reg == PCI_HEADER_TYPE)
+-		return 0;
+-	if (bus == 0 && (devfn == PCI_DEVFN(2, 0)
+-				|| devfn == PCI_DEVFN(0, 0)
+-				|| devfn == PCI_DEVFN(3, 0)))
+-		return 1;
+-	return 0; /* Langwell on others */
+-}
+-
+-static int pci_read(struct pci_bus *bus, unsigned int devfn, int where,
+-		    int size, u32 *value)
+-{
+-	if (type1_access_ok(bus->number, devfn, where))
+-		return pci_direct_conf1.read(pci_domain_nr(bus), bus->number,
+-					devfn, where, size, value);
+-	return raw_pci_ext_ops->read(pci_domain_nr(bus), bus->number,
+-			      devfn, where, size, value);
+-}
+-
+-static int pci_write(struct pci_bus *bus, unsigned int devfn, int where,
+-		     int size, u32 value)
+-{
+-	int offset;
+-
+-	/*
+-	 * On MRST, there is no PCI ROM BAR, this will cause a subsequent read
+-	 * to ROM BAR return 0 then being ignored.
+-	 */
+-	if (where == PCI_ROM_ADDRESS)
+-		return 0;
+-
+-	/*
+-	 * Devices with fixed BARs need special handling:
+-	 *   - BAR sizing code will save, write ~0, read size, restore
+-	 *   - so writes to fixed BARs need special handling
+-	 *   - other writes to fixed BAR devices should go through mmconfig
+-	 */
+-	offset = fixed_bar_cap(bus, devfn);
+-	if (offset &&
+-	    (where >= PCI_BASE_ADDRESS_0 && where <= PCI_BASE_ADDRESS_5)) {
+-		return pci_device_update_fixed(bus, devfn, where, size, value,
+-					       offset);
+-	}
+-
+-	/*
+-	 * On Moorestown update both real & mmconfig space
+-	 * Note: early Lincroft silicon can't handle type 1 accesses to
+-	 *       non-existent devices, so just eat the write in that case.
+-	 */
+-	if (type1_access_ok(bus->number, devfn, where))
+-		return pci_direct_conf1.write(pci_domain_nr(bus), bus->number,
+-					      devfn, where, size, value);
+-	return raw_pci_ext_ops->write(pci_domain_nr(bus), bus->number, devfn,
+-			       where, size, value);
+-}
+-
+-static int mrst_pci_irq_enable(struct pci_dev *dev)
+-{
+-	u8 pin;
+-	struct io_apic_irq_attr irq_attr;
+-
+-	pci_read_config_byte(dev, PCI_INTERRUPT_PIN, &pin);
+-
+-	/*
+-	 * MRST only have IOAPIC, the PCI irq lines are 1:1 mapped to
+-	 * IOAPIC RTE entries, so we just enable RTE for the device.
+-	 */
+-	irq_attr.ioapic = mp_find_ioapic(dev->irq);
+-	irq_attr.ioapic_pin = dev->irq;
+-	irq_attr.trigger = 1; /* level */
+-	irq_attr.polarity = 1; /* active low */
+-	io_apic_set_pci_routing(&dev->dev, dev->irq, &irq_attr);
+-
+-	return 0;
+-}
+-
+-struct pci_ops pci_mrst_ops = {
+-	.read = pci_read,
+-	.write = pci_write,
+-};
+-
+-/**
+- * pci_mrst_init - installs pci_mrst_ops
+- *
+- * Moorestown has an interesting PCI implementation (see above).
+- * Called when the early platform detection installs it.
+- */
+-int __init pci_mrst_init(void)
+-{
+-	pr_info("Intel MID platform detected, using MID PCI ops\n");
+-	pci_mmcfg_late_init();
+-	pcibios_enable_irq = mrst_pci_irq_enable;
+-	pci_root_ops = pci_mrst_ops;
+-	pci_soc_mode = 1;
+-	/* Continue with standard init */
+-	return 1;
+-}
+-
+-/*
+- * Langwell devices are not true PCI devices; they are not subject to 10 ms
+- * d3 to d0 delay required by PCI spec.
+- */
+-static void pci_d3delay_fixup(struct pci_dev *dev)
+-{
+-	/*
+-	 * PCI fixups are effectively decided compile time. If we have a dual
+-	 * SoC/non-SoC kernel we don't want to mangle d3 on non-SoC devices.
+-	 */
+-	if (!pci_soc_mode)
+-		return;
+-	/*
+-	 * True PCI devices in Lincroft should allow type 1 access, the rest
+-	 * are Langwell fake PCI devices.
+-	 */
+-	if (type1_access_ok(dev->bus->number, dev->devfn, PCI_DEVICE_ID))
+-		return;
+-	dev->d3_delay = 0;
+-}
+-DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, PCI_ANY_ID, pci_d3delay_fixup);
+-
+-static void mrst_power_off_unused_dev(struct pci_dev *dev)
+-{
+-	pci_set_power_state(dev, PCI_D3hot);
+-}
+-DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x0801, mrst_power_off_unused_dev);
+-DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x0809, mrst_power_off_unused_dev);
+-DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x080C, mrst_power_off_unused_dev);
+-DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x0812, mrst_power_off_unused_dev);
+-DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x0815, mrst_power_off_unused_dev);
+-
+-/*
+- * Langwell devices reside at fixed offsets, don't try to move them.
+- */
+-static void pci_fixed_bar_fixup(struct pci_dev *dev)
+-{
+-	unsigned long offset;
+-	u32 size;
+-	int i;
+-
+-	if (!pci_soc_mode)
+-		return;
+-
+-	/* Must have extended configuration space */
+-	if (dev->cfg_size < PCIE_CAP_OFFSET + 4)
+-		return;
+-
+-	/* Fixup the BAR sizes for fixed BAR devices and make them unmoveable */
+-	offset = fixed_bar_cap(dev->bus, dev->devfn);
+-	if (!offset || PCI_DEVFN(2, 0) == dev->devfn ||
+-	    PCI_DEVFN(2, 2) == dev->devfn)
+-		return;
+-
+-	for (i = 0; i < PCI_ROM_RESOURCE; i++) {
+-		pci_read_config_dword(dev, offset + 8 + (i * 4), &size);
+-		dev->resource[i].end = dev->resource[i].start + size - 1;
+-		dev->resource[i].flags |= IORESOURCE_PCI_FIXED;
+-	}
+-}
+-DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, PCI_ANY_ID, pci_fixed_bar_fixup);
+diff --git a/arch/x86/platform/Makefile b/arch/x86/platform/Makefile
+index 01e0231..20342d4 100644
+--- a/arch/x86/platform/Makefile
++++ b/arch/x86/platform/Makefile
+@@ -4,7 +4,7 @@ obj-y	+= efi/
+ obj-y	+= geode/
+ obj-y	+= goldfish/
+ obj-y	+= iris/
+-obj-y	+= mrst/
++obj-y	+= intel-mid/
+ obj-y	+= olpc/
+ obj-y	+= scx200/
+ obj-y	+= sfi/
+diff --git a/arch/x86/platform/intel-mid/Makefile b/arch/x86/platform/intel-mid/Makefile
+new file mode 100644
+index 0000000..de29635
+--- /dev/null
++++ b/arch/x86/platform/intel-mid/Makefile
+@@ -0,0 +1,3 @@
++obj-$(CONFIG_X86_INTEL_MID) += intel-mid.o
++obj-$(CONFIG_X86_INTEL_MID)	+= intel_mid_vrtc.o
++obj-$(CONFIG_EARLY_PRINTK_INTEL_MID)	+= early_printk_intel_mid.o
+diff --git a/arch/x86/platform/intel-mid/early_printk_intel_mid.c b/arch/x86/platform/intel-mid/early_printk_intel_mid.c
+new file mode 100644
+index 0000000..7c56e70
+--- /dev/null
++++ b/arch/x86/platform/intel-mid/early_printk_intel_mid.c
+@@ -0,0 +1,325 @@
++/*
++ * early_printk_intel_mid.c - early consoles for Intel MID platforms
++ *
++ * Copyright (c) 2008-2010, Intel Corporation
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; version 2
++ * of the License.
++ */
++
++/*
++ * This file implements two early consoles named mrst and hsu.
++ * mrst is based on Maxim3110 spi-uart device, it exists in both
++ * Moorestown and Medfield platforms, while hsu is based on a High
++ * Speed UART device which only exists in the Medfield platform
++ */
++
++#include <linux/serial_reg.h>
++#include <linux/serial_mfd.h>
++#include <linux/kmsg_dump.h>
++#include <linux/console.h>
++#include <linux/kernel.h>
++#include <linux/delay.h>
++#include <linux/init.h>
++#include <linux/io.h>
++
++#include <asm/fixmap.h>
++#include <asm/pgtable.h>
++#include <asm/intel-mid.h>
++
++#define MRST_SPI_TIMEOUT		0x200000
++#define MRST_REGBASE_SPI0		0xff128000
++#define MRST_REGBASE_SPI1		0xff128400
++#define MRST_CLK_SPI0_REG		0xff11d86c
++
++/* Bit fields in CTRLR0 */
++#define SPI_DFS_OFFSET			0
++
++#define SPI_FRF_OFFSET			4
++#define SPI_FRF_SPI			0x0
++#define SPI_FRF_SSP			0x1
++#define SPI_FRF_MICROWIRE		0x2
++#define SPI_FRF_RESV			0x3
++
++#define SPI_MODE_OFFSET			6
++#define SPI_SCPH_OFFSET			6
++#define SPI_SCOL_OFFSET			7
++#define SPI_TMOD_OFFSET			8
++#define	SPI_TMOD_TR			0x0		/* xmit & recv */
++#define SPI_TMOD_TO			0x1		/* xmit only */
++#define SPI_TMOD_RO			0x2		/* recv only */
++#define SPI_TMOD_EPROMREAD		0x3		/* eeprom read mode */
++
++#define SPI_SLVOE_OFFSET		10
++#define SPI_SRL_OFFSET			11
++#define SPI_CFS_OFFSET			12
++
++/* Bit fields in SR, 7 bits */
++#define SR_MASK				0x7f		/* cover 7 bits */
++#define SR_BUSY				(1 << 0)
++#define SR_TF_NOT_FULL			(1 << 1)
++#define SR_TF_EMPT			(1 << 2)
++#define SR_RF_NOT_EMPT			(1 << 3)
++#define SR_RF_FULL			(1 << 4)
++#define SR_TX_ERR			(1 << 5)
++#define SR_DCOL				(1 << 6)
++
++struct dw_spi_reg {
++	u32	ctrl0;
++	u32	ctrl1;
++	u32	ssienr;
++	u32	mwcr;
++	u32	ser;
++	u32	baudr;
++	u32	txfltr;
++	u32	rxfltr;
++	u32	txflr;
++	u32	rxflr;
++	u32	sr;
++	u32	imr;
++	u32	isr;
++	u32	risr;
++	u32	txoicr;
++	u32	rxoicr;
++	u32	rxuicr;
++	u32	msticr;
++	u32	icr;
++	u32	dmacr;
++	u32	dmatdlr;
++	u32	dmardlr;
++	u32	idr;
++	u32	version;
++
++	/* Currently operates as 32 bits, though only the low 16 bits matter */
++	u32	dr;
++} __packed;
++
++#define dw_readl(dw, name)		__raw_readl(&(dw)->name)
++#define dw_writel(dw, name, val)	__raw_writel((val), &(dw)->name)
++
++/* Default use SPI0 register for mrst, we will detect Penwell and use SPI1 */
++static unsigned long mrst_spi_paddr = MRST_REGBASE_SPI0;
++
++static u32 *pclk_spi0;
++/* Always contains an accessible address, start with 0 */
++static struct dw_spi_reg *pspi;
++
++static struct kmsg_dumper dw_dumper;
++static int dumper_registered;
++
++static void dw_kmsg_dump(struct kmsg_dumper *dumper,
++			 enum kmsg_dump_reason reason)
++{
++	static char line[1024];
++	size_t len;
++
++	/* When run to this, we'd better re-init the HW */
++	mrst_early_console_init();
++
++	while (kmsg_dump_get_line(dumper, true, line, sizeof(line), &len))
++		early_mrst_console.write(&early_mrst_console, line, len);
++}
++
++/* Set the ratio rate to 115200, 8n1, IRQ disabled */
++static void max3110_write_config(void)
++{
++	u16 config;
++
++	config = 0xc001;
++	dw_writel(pspi, dr, config);
++}
++
++/* Translate char to a eligible word and send to max3110 */
++static void max3110_write_data(char c)
++{
++	u16 data;
++
++	data = 0x8000 | c;
++	dw_writel(pspi, dr, data);
++}
++
++void mrst_early_console_init(void)
++{
++	u32 ctrlr0 = 0;
++	u32 spi0_cdiv;
++	u32 freq; /* Freqency info only need be searched once */
++
++	/* Base clk is 100 MHz, the actual clk = 100M / (clk_divider + 1) */
++	pclk_spi0 = (void *)set_fixmap_offset_nocache(FIX_EARLYCON_MEM_BASE,
++							MRST_CLK_SPI0_REG);
++	spi0_cdiv = ((*pclk_spi0) & 0xe00) >> 9;
++	freq = 100000000 / (spi0_cdiv + 1);
++
++	if (mrst_identify_cpu() == MRST_CPU_CHIP_PENWELL)
++		mrst_spi_paddr = MRST_REGBASE_SPI1;
++
++	pspi = (void *)set_fixmap_offset_nocache(FIX_EARLYCON_MEM_BASE,
++						mrst_spi_paddr);
++
++	/* Disable SPI controller */
++	dw_writel(pspi, ssienr, 0);
++
++	/* Set control param, 8 bits, transmit only mode */
++	ctrlr0 = dw_readl(pspi, ctrl0);
++
++	ctrlr0 &= 0xfcc0;
++	ctrlr0 |= 0xf | (SPI_FRF_SPI << SPI_FRF_OFFSET)
++		      | (SPI_TMOD_TO << SPI_TMOD_OFFSET);
++	dw_writel(pspi, ctrl0, ctrlr0);
++
++	/*
++	 * Change the spi0 clk to comply with 115200 bps, use 100000 to
++	 * calculate the clk dividor to make the clock a little slower
++	 * than real baud rate.
++	 */
++	dw_writel(pspi, baudr, freq/100000);
++
++	/* Disable all INT for early phase */
++	dw_writel(pspi, imr, 0x0);
++
++	/* Set the cs to spi-uart */
++	dw_writel(pspi, ser, 0x2);
++
++	/* Enable the HW, the last step for HW init */
++	dw_writel(pspi, ssienr, 0x1);
++
++	/* Set the default configuration */
++	max3110_write_config();
++
++	/* Register the kmsg dumper */
++	if (!dumper_registered) {
++		dw_dumper.dump = dw_kmsg_dump;
++		kmsg_dump_register(&dw_dumper);
++		dumper_registered = 1;
++	}
++}
++
++/* Slave select should be called in the read/write function */
++static void early_mrst_spi_putc(char c)
++{
++	unsigned int timeout;
++	u32 sr;
++
++	timeout = MRST_SPI_TIMEOUT;
++	/* Early putc needs to make sure the TX FIFO is not full */
++	while (--timeout) {
++		sr = dw_readl(pspi, sr);
++		if (!(sr & SR_TF_NOT_FULL))
++			cpu_relax();
++		else
++			break;
++	}
++
++	if (!timeout)
++		pr_warn("MRST earlycon: timed out\n");
++	else
++		max3110_write_data(c);
++}
++
++/* Early SPI only uses polling mode */
++static void early_mrst_spi_write(struct console *con, const char *str,
++					unsigned n)
++{
++	int i;
++
++	for (i = 0; i < n && *str; i++) {
++		if (*str == '\n')
++			early_mrst_spi_putc('\r');
++		early_mrst_spi_putc(*str);
++		str++;
++	}
++}
++
++struct console early_mrst_console = {
++	.name =		"earlymrst",
++	.write =	early_mrst_spi_write,
++	.flags =	CON_PRINTBUFFER,
++	.index =	-1,
++};
++
++/*
++ * Following is the early console based on Medfield HSU (High
++ * Speed UART) device.
++ */
++#define HSU_PORT_BASE		0xffa28080
++
++static void __iomem *phsu;
++
++void hsu_early_console_init(const char *s)
++{
++	unsigned long paddr, port = 0;
++	u8 lcr;
++
++	/*
++	 * Select the early HSU console port if specified by user in the
++	 * kernel command line.
++	 */
++	if (*s && !kstrtoul(s, 10, &port))
++		port = clamp_val(port, 0, 2);
++
++	paddr = HSU_PORT_BASE + port * 0x80;
++	phsu = (void *)set_fixmap_offset_nocache(FIX_EARLYCON_MEM_BASE, paddr);
++
++	/* Disable FIFO */
++	writeb(0x0, phsu + UART_FCR);
++
++	/* Set to default 115200 bps, 8n1 */
++	lcr = readb(phsu + UART_LCR);
++	writeb((0x80 | lcr), phsu + UART_LCR);
++	writeb(0x18, phsu + UART_DLL);
++	writeb(lcr,  phsu + UART_LCR);
++	writel(0x3600, phsu + UART_MUL*4);
++
++	writeb(0x8, phsu + UART_MCR);
++	writeb(0x7, phsu + UART_FCR);
++	writeb(0x3, phsu + UART_LCR);
++
++	/* Clear IRQ status */
++	readb(phsu + UART_LSR);
++	readb(phsu + UART_RX);
++	readb(phsu + UART_IIR);
++	readb(phsu + UART_MSR);
++
++	/* Enable FIFO */
++	writeb(0x7, phsu + UART_FCR);
++}
++
++#define BOTH_EMPTY (UART_LSR_TEMT | UART_LSR_THRE)
++
++static void early_hsu_putc(char ch)
++{
++	unsigned int timeout = 10000; /* 10ms */
++	u8 status;
++
++	while (--timeout) {
++		status = readb(phsu + UART_LSR);
++		if (status & BOTH_EMPTY)
++			break;
++		udelay(1);
++	}
++
++	/* Only write the char when there was no timeout */
++	if (timeout)
++		writeb(ch, phsu + UART_TX);
++}
++
++static void early_hsu_write(struct console *con, const char *str, unsigned n)
++{
++	int i;
++
++	for (i = 0; i < n && *str; i++) {
++		if (*str == '\n')
++			early_hsu_putc('\r');
++		early_hsu_putc(*str);
++		str++;
++	}
++}
++
++struct console early_hsu_console = {
++	.name =		"earlyhsu",
++	.write =	early_hsu_write,
++	.flags =	CON_PRINTBUFFER,
++	.index =	-1,
++};
+diff --git a/arch/x86/platform/intel-mid/intel-mid.c b/arch/x86/platform/intel-mid/intel-mid.c
+new file mode 100644
+index 0000000..0f39c4b
+--- /dev/null
++++ b/arch/x86/platform/intel-mid/intel-mid.c
+@@ -0,0 +1,1055 @@
++/*
++ * intel-mid.c: Intel MID platform setup code
++ *
++ * (C) Copyright 2008, 2012 Intel Corporation
++ * Author: Jacob Pan (jacob.jun.pan@intel.com)
 + * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
 + *
 + * This program is free software; you can redistribute it and/or
@@ -201,6 +1346,8 @@ index 0000000..258d790
 + * as published by the Free Software Foundation; version 2
 + * of the License.
 + */
++
++#define pr_fmt(fmt) "mrst: " fmt
 +
 +#include <linux/init.h>
 +#include <linux/kernel.h>
@@ -211,15 +1358,15 @@ index 0000000..258d790
 +#include <linux/spi/spi.h>
 +#include <linux/i2c.h>
 +#include <linux/platform_data/pca953x.h>
-+#include <linux/gpio.h>
 +#include <linux/gpio_keys.h>
 +#include <linux/input.h>
 +#include <linux/platform_device.h>
-+#include <linux/mfd/intel_msic.h>
 +#include <linux/irq.h>
 +#include <linux/module.h>
 +#include <linux/notifier.h>
-+#include <linux/i2c-gpio.h>
++#include <linux/mfd/intel_msic.h>
++#include <linux/gpio.h>
++#include <linux/i2c/tc35876x.h>
 +
 +#include <asm/setup.h>
 +#include <asm/mpspec_def.h>
@@ -235,440 +1382,377 @@ index 0000000..258d790
 +#include <asm/reboot.h>
 +
 +/*
-+ * IPC devices
++ * the clockevent devices on Moorestown/Medfield can be APBT or LAPIC clock,
++ * cmdline option x86_mrst_timer can be used to override the configuration
++ * to prefer one or the other.
++ * at runtime, there are basically three timer configurations:
++ * 1. per cpu apbt clock only
++ * 2. per cpu always-on lapic clocks only, this is Penwell/Medfield only
++ * 3. per cpu lapic clock (C3STOP) and one apbt clock, with broadcast.
++ *
++ * by default (without cmdline option), platform code first detects cpu type
++ * to see if we are on lincroft or penwell, then set up both lapic or apbt
++ * clocks accordingly.
++ * i.e. by default, medfield uses configuration #2, moorestown uses #1.
++ * config #3 is supported but not recommended on medfield.
++ *
++ * rating and feature summary:
++ * lapic (with C3STOP) --------- 100
++ * apbt (always-on) ------------ 110
++ * lapic (always-on,ARAT) ------ 150
 + */
-+#include "device_libs/platform_ipc.h"
-+#include "device_libs/platform_pmic_gpio.h"
-+#include "device_libs/platform_msic.h"
-+#include "device_libs/platform_msic_battery.h"
-+#include "device_libs/platform_msic_gpio.h"
-+#include "device_libs/platform_msic_audio.h"
-+#include "device_libs/platform_msic_power_btn.h"
-+#include "device_libs/platform_msic_ocd.h"
-+#include "device_libs/platform_msic_thermal.h"
 +
-+/*
-+ * I2C devices
-+ */
-+#include "device_libs/platform_max7315.h"
-+#include "device_libs/platform_tca6416.h"
-+#include "device_libs/platform_mpu3050.h"
-+#include "device_libs/platform_emc1403.h"
-+#include "device_libs/platform_lis331.h"
-+#include "device_libs/platform_mpu3050.h"
-+#include "device_libs/platform_tc35876x.h"
++enum mrst_timer_options mrst_timer_options;
 +
-+/*
-+ * SPI devices
-+ */
-+#include "device_libs/platform_max3111.h"
++static u32 sfi_mtimer_usage[SFI_MTMR_MAX_NUM];
++static struct sfi_timer_table_entry sfi_mtimer_array[SFI_MTMR_MAX_NUM];
++enum mrst_cpu_type __mrst_cpu_chip;
++EXPORT_SYMBOL_GPL(__mrst_cpu_chip);
 +
-+static void __init *no_platform_data(void *info)
++int sfi_mtimer_num;
++
++struct sfi_rtc_table_entry sfi_mrtc_array[SFI_MRTC_MAX];
++EXPORT_SYMBOL_GPL(sfi_mrtc_array);
++int sfi_mrtc_num;
++
++static void mrst_power_off(void)
 +{
++}
++
++static void mrst_reboot(void)
++{
++	intel_scu_ipc_simple_command(IPCMSG_COLD_BOOT, 0);
++}
++
++/* parse all the mtimer info to a static mtimer array */
++static int __init sfi_parse_mtmr(struct sfi_table_header *table)
++{
++	struct sfi_table_simple *sb;
++	struct sfi_timer_table_entry *pentry;
++	struct mpc_intsrc mp_irq;
++	int totallen;
++
++	sb = (struct sfi_table_simple *)table;
++	if (!sfi_mtimer_num) {
++		sfi_mtimer_num = SFI_GET_NUM_ENTRIES(sb,
++					struct sfi_timer_table_entry);
++		pentry = (struct sfi_timer_table_entry *) sb->pentry;
++		totallen = sfi_mtimer_num * sizeof(*pentry);
++		memcpy(sfi_mtimer_array, pentry, totallen);
++	}
++
++	pr_debug("SFI MTIMER info (num = %d):\n", sfi_mtimer_num);
++	pentry = sfi_mtimer_array;
++	for (totallen = 0; totallen < sfi_mtimer_num; totallen++, pentry++) {
++		pr_debug("timer[%d]: paddr = 0x%08x, freq = %dHz,"
++			" irq = %d\n", totallen, (u32)pentry->phys_addr,
++			pentry->freq_hz, pentry->irq);
++			if (!pentry->irq)
++				continue;
++			mp_irq.type = MP_INTSRC;
++			mp_irq.irqtype = mp_INT;
++/* triggering mode edge bit 2-3, active high polarity bit 0-1 */
++			mp_irq.irqflag = 5;
++			mp_irq.srcbus = MP_BUS_ISA;
++			mp_irq.srcbusirq = pentry->irq;	/* IRQ */
++			mp_irq.dstapic = MP_APIC_ALL;
++			mp_irq.dstirq = pentry->irq;
++			mp_save_irq(&mp_irq);
++	}
++
++	return 0;
++}
++
++struct sfi_timer_table_entry *sfi_get_mtmr(int hint)
++{
++	int i;
++	if (hint < sfi_mtimer_num) {
++		if (!sfi_mtimer_usage[hint]) {
++			pr_debug("hint taken for timer %d irq %d\n",
++				hint, sfi_mtimer_array[hint].irq);
++			sfi_mtimer_usage[hint] = 1;
++			return &sfi_mtimer_array[hint];
++		}
++	}
++	/* take the first timer available */
++	for (i = 0; i < sfi_mtimer_num;) {
++		if (!sfi_mtimer_usage[i]) {
++			sfi_mtimer_usage[i] = 1;
++			return &sfi_mtimer_array[i];
++		}
++		i++;
++	}
 +	return NULL;
 +}
 +
-+struct devs_id __initconst device_ids[] = {
-+	{"bma023", SFI_DEV_TYPE_I2C, 1, &no_platform_data, NULL},
-+	{"pmic_gpio", SFI_DEV_TYPE_SPI, 1, &pmic_gpio_platform_data, NULL},
-+	{"pmic_gpio", SFI_DEV_TYPE_IPC, 1, &pmic_gpio_platform_data,
-+					&ipc_device_handler},
-+	{"spi_max3111", SFI_DEV_TYPE_SPI, 0, &max3111_platform_data, NULL},
-+	{"i2c_max7315", SFI_DEV_TYPE_I2C, 1, &max7315_platform_data, NULL},
-+	{"i2c_max7315_2", SFI_DEV_TYPE_I2C, 1, &max7315_platform_data, NULL},
-+	{"tca6416", SFI_DEV_TYPE_I2C, 1, &tca6416_platform_data, NULL},
-+	{"emc1403", SFI_DEV_TYPE_I2C, 1, &emc1403_platform_data, NULL},
-+	{"i2c_accel", SFI_DEV_TYPE_I2C, 0, &lis331dl_platform_data, NULL},
-+	{"pmic_audio", SFI_DEV_TYPE_IPC, 1, &no_platform_data,
-+					&ipc_device_handler},
-+	{"mpu3050", SFI_DEV_TYPE_I2C, 1, &mpu3050_platform_data, NULL},
-+	{"i2c_disp_brig", SFI_DEV_TYPE_I2C, 0, &tc35876x_platform_data, NULL},
-+
-+	/* MSIC subdevices */
-+	{"msic_battery", SFI_DEV_TYPE_IPC, 1, &msic_battery_platform_data,
-+					&ipc_device_handler},
-+	{"msic_gpio", SFI_DEV_TYPE_IPC, 1, &msic_gpio_platform_data,
-+					&ipc_device_handler},
-+	{"msic_audio", SFI_DEV_TYPE_IPC, 1, &msic_audio_platform_data,
-+					&ipc_device_handler},
-+	{"msic_power_btn", SFI_DEV_TYPE_IPC, 1, &msic_power_btn_platform_data,
-+					&ipc_device_handler},
-+	{"msic_ocd", SFI_DEV_TYPE_IPC, 1, &msic_ocd_platform_data,
-+					&ipc_device_handler},
-+	{"msic_thermal", SFI_DEV_TYPE_IPC, 1, &msic_thermal_platform_data,
-+					&ipc_device_handler},
-+	{},
-+};
-diff --git a/arch/x86/platform/intel-mid/device_libs/Makefile b/arch/x86/platform/intel-mid/device_libs/Makefile
-new file mode 100644
-index 0000000..f076b09
---- /dev/null
-+++ b/arch/x86/platform/intel-mid/device_libs/Makefile
-@@ -0,0 +1,21 @@
-+# IPC Devices
-+obj-y += platform_ipc.o
-+obj-$(subst m,y,$(CONFIG_MFD_INTEL_MSIC)) += platform_msic.o
-+obj-$(subst m,y,$(CONFIG_SND_MFLD_MACHINE)) += platform_msic_audio.o
-+obj-$(subst m,y,$(CONFIG_GPIO_MSIC)) += platform_msic_gpio.o
-+obj-$(subst m,y,$(CONFIG_MFD_INTEL_MSIC)) += platform_msic_ocd.o
-+obj-$(subst m,y,$(CONFIG_BATTERY_INTEL_MDF)) += platform_msic_battery.o
-+obj-$(subst m,y,$(CONFIG_INTEL_MID_POWER_BUTTON)) += platform_msic_power_btn.o
-+obj-$(subst m,y,$(CONFIG_GPIO_INTEL_PMIC)) += platform_pmic_gpio.o
-+obj-$(subst m,y,$(CONFIG_INTEL_MFLD_THERMAL)) += platform_msic_thermal.o
-+# I2C Devices
-+obj-$(subst m,y,$(CONFIG_SENSORS_EMC1403)) += platform_emc1403.o
-+obj-$(subst m,y,$(CONFIG_SENSORS_LIS3LV02D)) += platform_lis331.o
-+obj-$(subst m,y,$(CONFIG_GPIO_PCA953X)) += platform_max7315.o
-+obj-$(subst m,y,$(CONFIG_SENSORS_MPU3050)) += platform_mpu3050.o
-+obj-$(subst m,y,$(CONFIG_GPIO_PCA953X)) += platform_tca6416.o
-+obj-$(subst m,y,$(CONFIG_DRM_MEDFIELD)) += platform_tc35876x.o
-+# SPI Devices
-+obj-$(subst m,y,$(CONFIG_SERIAL_MRST_MAX3110)) += platform_max3111.o
-+# MISC Devices
-+obj-$(subst m,y,$(CONFIG_KEYBOARD_GPIO)) += platform_gpio_keys.o
-diff --git a/arch/x86/platform/intel-mid/device_libs/platform_emc1403.c b/arch/x86/platform/intel-mid/device_libs/platform_emc1403.c
-new file mode 100644
-index 0000000..301e414
---- /dev/null
-+++ b/arch/x86/platform/intel-mid/device_libs/platform_emc1403.c
-@@ -0,0 +1,33 @@
-+/*
-+ * platform_emc1403.c: emc1403 platform data initilization file
-+ *
-+ * (C) Copyright 2013 Intel Corporation
-+ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; version 2
-+ * of the License.
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/gpio.h>
-+#include <linux/i2c.h>
-+#include <asm/intel-mid.h>
-+#include "platform_emc1403.h"
-+
-+void __init *emc1403_platform_data(void *info)
++void sfi_free_mtmr(struct sfi_timer_table_entry *mtmr)
 +{
-+	static short intr2nd_pdata;
-+	struct i2c_board_info *i2c_info = info;
-+	int intr = get_gpio_by_name("thermal_int");
-+	int intr2nd = get_gpio_by_name("thermal_alert");
-+
-+	if (intr == -1 || intr2nd == -1)
-+		return NULL;
-+
-+	i2c_info->irq = intr + INTEL_MID_IRQ_OFFSET;
-+	intr2nd_pdata = intr2nd + INTEL_MID_IRQ_OFFSET;
-+
-+	return &intr2nd_pdata;
++	int i;
++	for (i = 0; i < sfi_mtimer_num;) {
++		if (mtmr->irq == sfi_mtimer_array[i].irq) {
++			sfi_mtimer_usage[i] = 0;
++			return;
++		}
++		i++;
++	}
 +}
-diff --git a/arch/x86/platform/intel-mid/device_libs/platform_emc1403.h b/arch/x86/platform/intel-mid/device_libs/platform_emc1403.h
-new file mode 100644
-index 0000000..9e1fafd
---- /dev/null
-+++ b/arch/x86/platform/intel-mid/device_libs/platform_emc1403.h
-@@ -0,0 +1,16 @@
-+/*
-+ * platform_emc1403.h: emc1403 platform data header file
-+ *
-+ * (C) Copyright 2013 Intel Corporation
-+ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; version 2
-+ * of the License.
-+ */
-+#ifndef _PLATFORM_EMC1403_H_
-+#define _PLATFORM_EMC1403_H_
 +
-+extern void __init *emc1403_platform_data(void *info) __attribute__((weak));
-+#endif
-diff --git a/arch/x86/platform/intel-mid/device_libs/platform_gpio_keys.c b/arch/x86/platform/intel-mid/device_libs/platform_gpio_keys.c
-new file mode 100644
-index 0000000..4cae400
---- /dev/null
-+++ b/arch/x86/platform/intel-mid/device_libs/platform_gpio_keys.c
-@@ -0,0 +1,82 @@
-+/*
-+ * platform_gpio_keys.c: gpio_keys platform data initilization file
-+ *
-+ * (C) Copyright 2013 Intel Corporation
-+ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; version 2
-+ * of the License.
-+ */
-+
-+#include <linux/input.h>
-+#include <linux/init.h>
-+#include <linux/kernel.h>
-+#include <linux/gpio.h>
-+#include <linux/gpio_keys.h>
-+#include <linux/platform_device.h>
-+#include <asm/intel-mid.h>
-+#include "platform_gpio_keys.h"
-+
-+/*
-+ * we will search these buttons in SFI GPIO table (by name)
-+ * and register them dynamically. Please add all possible
-+ * buttons here, we will shrink them if no GPIO found.
-+ */
-+static struct gpio_keys_button gpio_button[] = {
-+	{KEY_POWER,		-1, 1, "power_btn",	EV_KEY, 0, 3000},
-+	{KEY_PROG1,		-1, 1, "prog_btn1",	EV_KEY, 0, 20},
-+	{KEY_PROG2,		-1, 1, "prog_btn2",	EV_KEY, 0, 20},
-+	{SW_LID,		-1, 1, "lid_switch",	EV_SW,  0, 20},
-+	{KEY_VOLUMEUP,		-1, 1, "vol_up",	EV_KEY, 0, 20},
-+	{KEY_VOLUMEDOWN,	-1, 1, "vol_down",	EV_KEY, 0, 20},
-+	{KEY_CAMERA,		-1, 1, "camera_full",	EV_KEY, 0, 20},
-+	{KEY_CAMERA_FOCUS,	-1, 1, "camera_half",	EV_KEY, 0, 20},
-+	{SW_KEYPAD_SLIDE,	-1, 1, "MagSw1",	EV_SW,  0, 20},
-+	{SW_KEYPAD_SLIDE,	-1, 1, "MagSw2",	EV_SW,  0, 20},
-+};
-+
-+static struct gpio_keys_platform_data gpio_keys = {
-+	.buttons	= gpio_button,
-+	.rep		= 1,
-+	.nbuttons	= -1, /* will fill it after search */
-+};
-+
-+static struct platform_device pb_device = {
-+	.name		= DEVICE_NAME,
-+	.id		= -1,
-+	.dev		= {
-+		.platform_data	= &gpio_keys,
-+	},
-+};
-+
-+/*
-+ * Shrink the non-existent buttons, register the gpio button
-+ * device if there is some
-+ */
-+static int __init pb_keys_init(void)
++/* parse all the mrtc info to a global mrtc array */
++int __init sfi_parse_mrtc(struct sfi_table_header *table)
 +{
-+	struct gpio_keys_button *gb = gpio_button;
-+	int i, num, good = 0;
++	struct sfi_table_simple *sb;
++	struct sfi_rtc_table_entry *pentry;
++	struct mpc_intsrc mp_irq;
 +
-+	num = sizeof(gpio_button) / sizeof(struct gpio_keys_button);
-+	for (i = 0; i < num; i++) {
-+		gb[i].gpio = get_gpio_by_name(gb[i].desc);
-+		pr_debug("info[%2d]: name = %s, gpio = %d\n", i, gb[i].desc,
-+					gb[i].gpio);
-+		if (gb[i].gpio == -1)
-+			continue;
++	int totallen;
 +
-+		if (i != good)
-+			gb[good] = gb[i];
-+		good++;
++	sb = (struct sfi_table_simple *)table;
++	if (!sfi_mrtc_num) {
++		sfi_mrtc_num = SFI_GET_NUM_ENTRIES(sb,
++						struct sfi_rtc_table_entry);
++		pentry = (struct sfi_rtc_table_entry *)sb->pentry;
++		totallen = sfi_mrtc_num * sizeof(*pentry);
++		memcpy(sfi_mrtc_array, pentry, totallen);
 +	}
 +
-+	if (good) {
-+		gpio_keys.nbuttons = good;
-+		return platform_device_register(&pb_device);
++	pr_debug("SFI RTC info (num = %d):\n", sfi_mrtc_num);
++	pentry = sfi_mrtc_array;
++	for (totallen = 0; totallen < sfi_mrtc_num; totallen++, pentry++) {
++		pr_debug("RTC[%d]: paddr = 0x%08x, irq = %d\n",
++			totallen, (u32)pentry->phys_addr, pentry->irq);
++		mp_irq.type = MP_INTSRC;
++		mp_irq.irqtype = mp_INT;
++		mp_irq.irqflag = 0xf;	/* level trigger and active low */
++		mp_irq.srcbus = MP_BUS_ISA;
++		mp_irq.srcbusirq = pentry->irq;	/* IRQ */
++		mp_irq.dstapic = MP_APIC_ALL;
++		mp_irq.dstirq = pentry->irq;
++		mp_save_irq(&mp_irq);
 +	}
 +	return 0;
 +}
-+late_initcall(pb_keys_init);
-diff --git a/arch/x86/platform/intel-mid/device_libs/platform_gpio_keys.h b/arch/x86/platform/intel-mid/device_libs/platform_gpio_keys.h
-new file mode 100644
-index 0000000..a671505
---- /dev/null
-+++ b/arch/x86/platform/intel-mid/device_libs/platform_gpio_keys.h
-@@ -0,0 +1,16 @@
-+/*
-+ * platform_gpio_keys.h: gpio_keys platform data header file
-+ *
-+ * (C) Copyright 2013 Intel Corporation
-+ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; version 2
-+ * of the License.
-+ */
-+#ifndef _PLATFORM_GPIO_KEYS_H_
-+#define _PLATFORM_GPIO_KEYS_H_
 +
-+#define DEVICE_NAME "gpio-keys"
-+#endif
-diff --git a/arch/x86/platform/intel-mid/device_libs/platform_ipc.c b/arch/x86/platform/intel-mid/device_libs/platform_ipc.c
-new file mode 100644
-index 0000000..a428c05
---- /dev/null
-+++ b/arch/x86/platform/intel-mid/device_libs/platform_ipc.c
-@@ -0,0 +1,59 @@
-+/*
-+ * platform_ipc.c: IPC platform library file
-+ *
-+ * (C) Copyright 2013 Intel Corporation
-+ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; version 2
-+ * of the License.
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/kernel.h>
-+#include <linux/interrupt.h>
-+#include <linux/sfi.h>
-+#include <linux/gpio.h>
-+#include <asm/intel-mid.h>
-+#include "platform_ipc.h"
-+
-+void __init ipc_device_handler(struct sfi_device_table_entry *pentry,
-+				struct devs_id *dev)
++static unsigned long __init mrst_calibrate_tsc(void)
 +{
-+	struct platform_device *pdev;
-+	void *pdata = NULL;
-+	static struct resource res __initdata = {
-+		.name = "IRQ",
-+		.flags = IORESOURCE_IRQ,
-+	};
++	unsigned long fast_calibrate;
++	u32 lo, hi, ratio, fsb;
 +
-+	pr_debug("IPC bus, name = %16.16s, irq = 0x%2x\n",
-+		pentry->name, pentry->irq);
++	rdmsr(MSR_IA32_PERF_STATUS, lo, hi);
++	pr_debug("IA32 perf status is 0x%x, 0x%0x\n", lo, hi);
++	ratio = (hi >> 8) & 0x1f;
++	pr_debug("ratio is %d\n", ratio);
++	if (!ratio) {
++		pr_err("read a zero ratio, should be incorrect!\n");
++		pr_err("force tsc ratio to 16 ...\n");
++		ratio = 16;
++	}
++	rdmsr(MSR_FSB_FREQ, lo, hi);
++	if ((lo & 0x7) == 0x7)
++		fsb = PENWELL_FSB_FREQ_83SKU;
++	else
++		fsb = PENWELL_FSB_FREQ_100SKU;
++	fast_calibrate = ratio * fsb;
++	pr_debug("read penwell tsc %lu khz\n", fast_calibrate);
++	lapic_timer_frequency = fsb * 1000 / HZ;
++	/* mark tsc clocksource as reliable */
++	set_cpu_cap(&boot_cpu_data, X86_FEATURE_TSC_RELIABLE);
 +
-+	/*
-+	 * We need to call platform init of IPC devices to fill misc_pdata
-+	 * structure. It will be used in msic_init for initialization.
-+	 */
-+	if (dev != NULL)
-+		pdata = dev->get_platform_data(pentry);
++	if (fast_calibrate)
++		return fast_calibrate;
 +
-+	/*
-+	 * On Medfield the platform device creation is handled by the MSIC
-+	 * MFD driver so we don't need to do it here.
-+	 */
-+	if (intel_mid_has_msic())
-+		return;
++	return 0;
++}
 +
-+	pdev = platform_device_alloc(pentry->name, 0);
-+	if (pdev == NULL) {
-+		pr_err("out of memory for SFI platform device '%s'.\n",
-+			pentry->name);
++static void __init mrst_time_init(void)
++{
++	sfi_table_parse(SFI_SIG_MTMR, NULL, NULL, sfi_parse_mtmr);
++	switch (mrst_timer_options) {
++	case MRST_TIMER_APBT_ONLY:
++		break;
++	case MRST_TIMER_LAPIC_APBT:
++		x86_init.timers.setup_percpu_clockev = setup_boot_APIC_clock;
++		x86_cpuinit.setup_percpu_clockev = setup_secondary_APIC_clock;
++		break;
++	default:
++		if (!boot_cpu_has(X86_FEATURE_ARAT))
++			break;
++		x86_init.timers.setup_percpu_clockev = setup_boot_APIC_clock;
++		x86_cpuinit.setup_percpu_clockev = setup_secondary_APIC_clock;
 +		return;
 +	}
-+	res.start = pentry->irq;
-+	platform_device_add_resources(pdev, &res, 1);
-+
-+	pdev->dev.platform_data = pdata;
-+	intel_scu_device_register(pdev);
++	/* we need at least one APB timer */
++	pre_init_apic_IRQ0();
++	apbt_time_init();
 +}
-diff --git a/arch/x86/platform/intel-mid/device_libs/platform_ipc.h b/arch/x86/platform/intel-mid/device_libs/platform_ipc.h
-new file mode 100644
-index 0000000..8f568dd
---- /dev/null
-+++ b/arch/x86/platform/intel-mid/device_libs/platform_ipc.h
-@@ -0,0 +1,17 @@
-+/*
-+ * platform_ipc.h: IPC platform library header file
-+ *
-+ * (C) Copyright 2013 Intel Corporation
-+ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; version 2
-+ * of the License.
-+ */
-+#ifndef _PLATFORM_IPC_H_
-+#define _PLATFORM_IPC_H_
 +
-+extern void __init ipc_device_handler(struct sfi_device_table_entry *pentry,
-+			struct devs_id *dev) __attribute__((weak));
-+#endif
-diff --git a/arch/x86/platform/intel-mid/device_libs/platform_lis331.c b/arch/x86/platform/intel-mid/device_libs/platform_lis331.c
-new file mode 100644
-index 0000000..db96e30
---- /dev/null
-+++ b/arch/x86/platform/intel-mid/device_libs/platform_lis331.c
-@@ -0,0 +1,32 @@
-+/*
-+ * platform_lis331.c:  lis331 platform data initilization file
-+ *
-+ * (C) Copyright 2013 Intel Corporation
-+ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; version 2
-+ * of the License.
-+ */
-+
-+#include <linux/i2c.h>
-+#include <linux/gpio.h>
-+#include <asm/intel-mid.h>
-+#include "platform_lis331.h"
-+
-+void __init *lis331dl_platform_data(void *info)
++static void mrst_arch_setup(void)
 +{
-+	static short intr2nd_pdata;
-+	struct i2c_board_info *i2c_info = info;
-+	int intr = get_gpio_by_name("accel_int");
-+	int intr2nd = get_gpio_by_name("accel_2");
-+
-+	if (intr == -1 || intr2nd == -1)
-+		return NULL;
-+
-+	i2c_info->irq = intr + INTEL_MID_IRQ_OFFSET;
-+	intr2nd_pdata = intr2nd + INTEL_MID_IRQ_OFFSET;
-+
-+	return &intr2nd_pdata;
++	if (boot_cpu_data.x86 == 6 && boot_cpu_data.x86_model == 0x27)
++		__mrst_cpu_chip = MRST_CPU_CHIP_PENWELL;
++	else {
++		pr_err("Unknown Intel MID CPU (%d:%d), default to Penwell\n",
++			boot_cpu_data.x86, boot_cpu_data.x86_model);
++		__mrst_cpu_chip = MRST_CPU_CHIP_PENWELL;
++	}
 +}
-diff --git a/arch/x86/platform/intel-mid/device_libs/platform_lis331.h b/arch/x86/platform/intel-mid/device_libs/platform_lis331.h
-new file mode 100644
-index 0000000..af7512b
---- /dev/null
-+++ b/arch/x86/platform/intel-mid/device_libs/platform_lis331.h
-@@ -0,0 +1,16 @@
++
++/* MID systems don't have i8042 controller */
++static int mrst_i8042_detect(void)
++{
++	return 0;
++}
++
 +/*
-+ * platform_lis331.h: lis331 platform data header file
-+ *
-+ * (C) Copyright 2013 Intel Corporation
-+ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; version 2
-+ * of the License.
++ * Moorestown does not have external NMI source nor port 0x61 to report
++ * NMI status. The possible NMI sources are from pmu as a result of NMI
++ * watchdog or lock debug. Reading io port 0x61 results in 0xff which
++ * misled NMI handler.
 + */
-+#ifndef _PLATFORM_LIS331_H_
-+#define _PLATFORM_LIS331_H_
++static unsigned char mrst_get_nmi_reason(void)
++{
++	return 0;
++}
 +
-+extern void __init *lis331dl_platform_data(void *info) __attribute__((weak));
-+#endif
-diff --git a/arch/x86/platform/intel-mid/device_libs/platform_max3111.c b/arch/x86/platform/intel-mid/device_libs/platform_max3111.c
-new file mode 100644
-index 0000000..1fdc259
---- /dev/null
-+++ b/arch/x86/platform/intel-mid/device_libs/platform_max3111.c
-@@ -0,0 +1,28 @@
 +/*
-+ * platform_max3111.c: max3111 platform data initilization file
-+ *
-+ * (C) Copyright 2013 Intel Corporation
-+ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; version 2
-+ * of the License.
++ * Moorestown specific x86_init function overrides and early setup
++ * calls.
 + */
++void __init x86_mrst_early_setup(void)
++{
++	x86_init.resources.probe_roms = x86_init_noop;
++	x86_init.resources.reserve_resources = x86_init_noop;
 +
-+#include <linux/gpio.h>
-+#include <linux/spi/spi.h>
-+#include <asm/intel-mid.h>
-+#include "platform_max3111.h"
++	x86_init.timers.timer_init = mrst_time_init;
++	x86_init.timers.setup_percpu_clockev = x86_init_noop;
 +
-+void __init *max3111_platform_data(void *info)
++	x86_init.irqs.pre_vector_init = x86_init_noop;
++
++	x86_init.oem.arch_setup = mrst_arch_setup;
++
++	x86_cpuinit.setup_percpu_clockev = apbt_setup_secondary_clock;
++
++	x86_platform.calibrate_tsc = mrst_calibrate_tsc;
++	x86_platform.i8042_detect = mrst_i8042_detect;
++	x86_init.timers.wallclock_init = mrst_rtc_init;
++	x86_platform.get_nmi_reason = mrst_get_nmi_reason;
++
++	x86_init.pci.init = pci_mrst_init;
++	x86_init.pci.fixup_irqs = x86_init_noop;
++
++	legacy_pic = &null_legacy_pic;
++
++	/* Moorestown specific power_off/restart method */
++	pm_power_off = mrst_power_off;
++	machine_ops.emergency_restart  = mrst_reboot;
++
++	/* Avoid searching for BIOS MP tables */
++	x86_init.mpparse.find_smp_config = x86_init_noop;
++	x86_init.mpparse.get_smp_config = x86_init_uint_noop;
++	set_bit(MP_BUS_ISA, mp_bus_not_pci);
++}
++
++/*
++ * if user does not want to use per CPU apb timer, just give it a lower rating
++ * than local apic timer and skip the late per cpu timer init.
++ */
++static inline int __init setup_x86_mrst_timer(char *arg)
++{
++	if (!arg)
++		return -EINVAL;
++
++	if (strcmp("apbt_only", arg) == 0)
++		mrst_timer_options = MRST_TIMER_APBT_ONLY;
++	else if (strcmp("lapic_and_apbt", arg) == 0)
++		mrst_timer_options = MRST_TIMER_LAPIC_APBT;
++	else {
++		pr_warn("X86 MRST timer option %s not recognised"
++			   " use x86_mrst_timer=apbt_only or lapic_and_apbt\n",
++			   arg);
++		return -EINVAL;
++	}
++	return 0;
++}
++__setup("x86_mrst_timer=", setup_x86_mrst_timer);
++
++/*
++ * Parsing GPIO table first, since the DEVS table will need this table
++ * to map the pin name to the actual pin.
++ */
++static struct sfi_gpio_table_entry *gpio_table;
++static int gpio_num_entry;
++
++static int __init sfi_parse_gpio(struct sfi_table_header *table)
++{
++	struct sfi_table_simple *sb;
++	struct sfi_gpio_table_entry *pentry;
++	int num, i;
++
++	if (gpio_table)
++		return 0;
++	sb = (struct sfi_table_simple *)table;
++	num = SFI_GET_NUM_ENTRIES(sb, struct sfi_gpio_table_entry);
++	pentry = (struct sfi_gpio_table_entry *)sb->pentry;
++
++	gpio_table = kmalloc(num * sizeof(*pentry), GFP_KERNEL);
++	if (!gpio_table)
++		return -1;
++	memcpy(gpio_table, pentry, num * sizeof(*pentry));
++	gpio_num_entry = num;
++
++	pr_debug("GPIO pin info:\n");
++	for (i = 0; i < num; i++, pentry++)
++		pr_debug("info[%2d]: controller = %16.16s, pin_name = %16.16s,"
++		" pin = %d\n", i,
++			pentry->controller_name,
++			pentry->pin_name,
++			pentry->pin_no);
++	return 0;
++}
++
++static int get_gpio_by_name(const char *name)
++{
++	struct sfi_gpio_table_entry *pentry = gpio_table;
++	int i;
++
++	if (!pentry)
++		return -1;
++	for (i = 0; i < gpio_num_entry; i++, pentry++) {
++		if (!strncmp(name, pentry->pin_name, SFI_NAME_LEN))
++			return pentry->pin_no;
++	}
++	return -1;
++}
++
++/*
++ * Here defines the array of devices platform data that IAFW would export
++ * through SFI "DEVS" table, we use name and type to match the device and
++ * its platform data.
++ */
++struct devs_id {
++	char name[SFI_NAME_LEN + 1];
++	u8 type;
++	u8 delay;
++	void *(*get_platform_data)(void *info);
++};
++
++/* the offset for the mapping of global gpio pin to irq */
++#define MRST_IRQ_OFFSET 0x100
++
++static void __init *pmic_gpio_platform_data(void *info)
++{
++	static struct intel_pmic_gpio_platform_data pmic_gpio_pdata;
++	int gpio_base = get_gpio_by_name("pmic_gpio_base");
++
++	if (gpio_base == -1)
++		gpio_base = 64;
++	pmic_gpio_pdata.gpio_base = gpio_base;
++	pmic_gpio_pdata.irq_base = gpio_base + MRST_IRQ_OFFSET;
++	pmic_gpio_pdata.gpiointr = 0xffffeff8;
++
++	return &pmic_gpio_pdata;
++}
++
++static void __init *max3111_platform_data(void *info)
 +{
 +	struct spi_board_info *spi_info = info;
 +	int intr = get_gpio_by_name("max3111_int");
@@ -676,58 +1760,13 @@ index 0000000..1fdc259
 +	spi_info->mode = SPI_MODE_0;
 +	if (intr == -1)
 +		return NULL;
-+	spi_info->irq = intr + INTEL_MID_IRQ_OFFSET;
++	spi_info->irq = intr + MRST_IRQ_OFFSET;
 +	return NULL;
 +}
-diff --git a/arch/x86/platform/intel-mid/device_libs/platform_max3111.h b/arch/x86/platform/intel-mid/device_libs/platform_max3111.h
-new file mode 100644
-index 0000000..66e1f26
---- /dev/null
-+++ b/arch/x86/platform/intel-mid/device_libs/platform_max3111.h
-@@ -0,0 +1,16 @@
-+/*
-+ * platform_max3111.h: max3111 platform data header file
-+ *
-+ * (C) Copyright 2013 Intel Corporation
-+ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; version 2
-+ * of the License.
-+ */
-+#ifndef _PLATFORM_MAX3111_H_
-+#define _PLATFORM_MAX3111_H_
 +
-+extern void *max3111_platform_data(void *info) __attribute__((weak));
-+#endif
-diff --git a/arch/x86/platform/intel-mid/device_libs/platform_max7315.c b/arch/x86/platform/intel-mid/device_libs/platform_max7315.c
-new file mode 100644
-index 0000000..e175190
---- /dev/null
-+++ b/arch/x86/platform/intel-mid/device_libs/platform_max7315.c
-@@ -0,0 +1,62 @@
-+/*
-+ * platform_max7315.c: max7315 platform data initilization file
-+ *
-+ * (C) Copyright 2013 Intel Corporation
-+ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; version 2
-+ * of the License.
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/gpio.h>
-+#include <linux/i2c.h>
-+#include <linux/platform_data/pca953x.h>
-+#include <asm/intel-mid.h>
-+#include "platform_max7315.h"
-+
-+
-+void __init *max7315_platform_data(void *info)
++/* we have multiple max7315 on the board ... */
++#define MAX7315_NUM 2
++static void __init *max7315_platform_data(void *info)
 +{
 +	static struct pca953x_platform_data max7315_pdata[MAX7315_NUM];
 +	static int nr;
@@ -761,63 +1800,44 @@ index 0000000..e175190
 +		return NULL;
 +	max7315->gpio_base = gpio_base;
 +	if (intr != -1) {
-+		i2c_info->irq = intr + INTEL_MID_IRQ_OFFSET;
-+		max7315->irq_base = gpio_base + INTEL_MID_IRQ_OFFSET;
++		i2c_info->irq = intr + MRST_IRQ_OFFSET;
++		max7315->irq_base = gpio_base + MRST_IRQ_OFFSET;
 +	} else {
 +		i2c_info->irq = -1;
 +		max7315->irq_base = -1;
 +	}
 +	return max7315;
 +}
-diff --git a/arch/x86/platform/intel-mid/device_libs/platform_max7315.h b/arch/x86/platform/intel-mid/device_libs/platform_max7315.h
-new file mode 100644
-index 0000000..d89cb7b
---- /dev/null
-+++ b/arch/x86/platform/intel-mid/device_libs/platform_max7315.h
-@@ -0,0 +1,19 @@
-+/*
-+ * platform_max7315.h: max7315 platform data header file
-+ *
-+ * (C) Copyright 2013 Intel Corporation
-+ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; version 2
-+ * of the License.
-+ */
-+#ifndef _PLATFORM_MAX7315_H_
-+#define _PLATFORM_MAX7315_H_
 +
-+/* we have multiple max7315 on the board ... */
-+#define MAX7315_NUM 2
++static void *tca6416_platform_data(void *info)
++{
++	static struct pca953x_platform_data tca6416;
++	struct i2c_board_info *i2c_info = info;
++	int gpio_base, intr;
++	char base_pin_name[SFI_NAME_LEN + 1];
++	char intr_pin_name[SFI_NAME_LEN + 1];
 +
-+extern void __init *max7315_platform_data(void *info) __attribute__((weak));
-+#endif
-diff --git a/arch/x86/platform/intel-mid/device_libs/platform_mpu3050.c b/arch/x86/platform/intel-mid/device_libs/platform_mpu3050.c
-new file mode 100644
-index 0000000..1f91ad3
---- /dev/null
-+++ b/arch/x86/platform/intel-mid/device_libs/platform_mpu3050.c
-@@ -0,0 +1,28 @@
-+/*
-+ * platform_mpu3050.c: mpu3050 platform data initilization file
-+ *
-+ * (C) Copyright 2013 Intel Corporation
-+ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; version 2
-+ * of the License.
-+ */
++	strcpy(i2c_info->type, "tca6416");
++	strcpy(base_pin_name, "tca6416_base");
++	strcpy(intr_pin_name, "tca6416_int");
 +
-+#include <linux/gpio.h>
-+#include <linux/i2c.h>
-+#include <asm/intel-mid.h>
-+#include "platform_mpu3050.h"
++	gpio_base = get_gpio_by_name(base_pin_name);
++	intr = get_gpio_by_name(intr_pin_name);
 +
-+void *mpu3050_platform_data(void *info)
++	if (gpio_base == -1)
++		return NULL;
++	tca6416.gpio_base = gpio_base;
++	if (intr != -1) {
++		i2c_info->irq = intr + MRST_IRQ_OFFSET;
++		tca6416.irq_base = gpio_base + MRST_IRQ_OFFSET;
++	} else {
++		i2c_info->irq = -1;
++		tca6416.irq_base = -1;
++	}
++	return &tca6416;
++}
++
++static void *mpu3050_platform_data(void *info)
 +{
 +	struct i2c_board_info *i2c_info = info;
 +	int intr = get_gpio_by_name("mpu3050_int");
@@ -825,60 +1845,46 @@ index 0000000..1f91ad3
 +	if (intr == -1)
 +		return NULL;
 +
-+	i2c_info->irq = intr + INTEL_MID_IRQ_OFFSET;
++	i2c_info->irq = intr + MRST_IRQ_OFFSET;
 +	return NULL;
 +}
-diff --git a/arch/x86/platform/intel-mid/device_libs/platform_mpu3050.h b/arch/x86/platform/intel-mid/device_libs/platform_mpu3050.h
-new file mode 100644
-index 0000000..44452d6
---- /dev/null
-+++ b/arch/x86/platform/intel-mid/device_libs/platform_mpu3050.h
-@@ -0,0 +1,16 @@
-+/*
-+ * platform_mpu3050.h: mpu3050 platform data header file
-+ *
-+ * (C) Copyright 2013 Intel Corporation
-+ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; version 2
-+ * of the License.
-+ */
-+#ifndef _PLATFORM_MPU3050_H_
-+#define _PLATFORM_MPU3050_H_
 +
-+extern void *mpu3050_platform_data(void *info) __attribute__((weak));
-+#endif
-diff --git a/arch/x86/platform/intel-mid/device_libs/platform_msic.c b/arch/x86/platform/intel-mid/device_libs/platform_msic.c
-new file mode 100644
-index 0000000..9f4a775
---- /dev/null
-+++ b/arch/x86/platform/intel-mid/device_libs/platform_msic.c
-@@ -0,0 +1,87 @@
-+/*
-+ * platform_msic.c: MSIC platform data initilization file
-+ *
-+ * (C) Copyright 2013 Intel Corporation
-+ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; version 2
-+ * of the License.
-+ */
++static void __init *emc1403_platform_data(void *info)
++{
++	static short intr2nd_pdata;
++	struct i2c_board_info *i2c_info = info;
++	int intr = get_gpio_by_name("thermal_int");
++	int intr2nd = get_gpio_by_name("thermal_alert");
 +
-+#include <linux/kernel.h>
-+#include <linux/interrupt.h>
-+#include <linux/scatterlist.h>
-+#include <linux/init.h>
-+#include <linux/sfi.h>
-+#include <linux/mfd/intel_msic.h>
-+#include <asm/intel_scu_ipc.h>
-+#include <asm/intel-mid.h>
-+#include "platform_msic.h"
++	if (intr == -1 || intr2nd == -1)
++		return NULL;
 +
-+struct intel_msic_platform_data msic_pdata;
++	i2c_info->irq = intr + MRST_IRQ_OFFSET;
++	intr2nd_pdata = intr2nd + MRST_IRQ_OFFSET;
++
++	return &intr2nd_pdata;
++}
++
++static void __init *lis331dl_platform_data(void *info)
++{
++	static short intr2nd_pdata;
++	struct i2c_board_info *i2c_info = info;
++	int intr = get_gpio_by_name("accel_int");
++	int intr2nd = get_gpio_by_name("accel_2");
++
++	if (intr == -1 || intr2nd == -1)
++		return NULL;
++
++	i2c_info->irq = intr + MRST_IRQ_OFFSET;
++	intr2nd_pdata = intr2nd + MRST_IRQ_OFFSET;
++
++	return &intr2nd_pdata;
++}
++
++static void __init *no_platform_data(void *info)
++{
++	return NULL;
++}
 +
 +static struct resource msic_resources[] = {
 +	{
@@ -887,6 +1893,8 @@ index 0000000..9f4a775
 +		.flags	= IORESOURCE_MEM,
 +	},
 +};
++
++static struct intel_msic_platform_data msic_pdata;
 +
 +static struct platform_device msic_device = {
 +	.name		= "intel_msic",
@@ -897,6 +1905,11 @@ index 0000000..9f4a775
 +	.num_resources	= ARRAY_SIZE(msic_resources),
 +	.resource	= msic_resources,
 +};
++
++static inline bool mrst_has_msic(void)
++{
++	return mrst_identify_cpu() == MRST_CPU_CHIP_PENWELL;
++}
 +
 +static int msic_scu_status_change(struct notifier_block *nb,
 +				  unsigned long code, void *data)
@@ -919,7 +1932,7 @@ index 0000000..9f4a775
 +	 * We need to be sure that the SCU IPC is ready before MSIC device
 +	 * can be registered.
 +	 */
-+	if (intel_mid_has_msic())
++	if (mrst_has_msic())
 +		intel_scu_notifier_add(&msic_scu_notifier);
 +
 +	return 0;
@@ -934,75 +1947,40 @@ index 0000000..9f4a775
 + * Function sets IRQ number from the SFI table entry for given device to
 + * the MSIC platform data.
 + */
-+void *msic_generic_platform_data(void *info, enum intel_msic_block block)
++static void *msic_generic_platform_data(void *info, enum intel_msic_block block)
 +{
 +	struct sfi_device_table_entry *entry = info;
 +
 +	BUG_ON(block < 0 || block >= INTEL_MSIC_BLOCK_LAST);
 +	msic_pdata.irq[block] = entry->irq;
 +
-+	return NULL;
++	return no_platform_data(info);
 +}
-diff --git a/arch/x86/platform/intel-mid/device_libs/platform_msic.h b/arch/x86/platform/intel-mid/device_libs/platform_msic.h
-new file mode 100644
-index 0000000..917eb56
---- /dev/null
-+++ b/arch/x86/platform/intel-mid/device_libs/platform_msic.h
-@@ -0,0 +1,19 @@
-+/*
-+ * platform_msic.h: MSIC platform data header file
-+ *
-+ * (C) Copyright 2013 Intel Corporation
-+ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; version 2
-+ * of the License.
-+ */
-+#ifndef _PLATFORM_MSIC_H_
-+#define _PLATFORM_MSIC_H_
 +
-+extern struct intel_msic_platform_data msic_pdata;
++static void *msic_battery_platform_data(void *info)
++{
++	return msic_generic_platform_data(info, INTEL_MSIC_BLOCK_BATTERY);
++}
 +
-+extern void *msic_generic_platform_data(void *info,
-+			enum intel_msic_block block) __attribute__((weak));
-+#endif
-diff --git a/arch/x86/platform/intel-mid/device_libs/platform_msic_audio.c b/arch/x86/platform/intel-mid/device_libs/platform_msic_audio.c
-new file mode 100644
-index 0000000..942cc47
---- /dev/null
-+++ b/arch/x86/platform/intel-mid/device_libs/platform_msic_audio.c
-@@ -0,0 +1,36 @@
-+/*
-+ * platform_msic_audio.c: MSIC audio platform data initilization file
-+ *
-+ * (C) Copyright 2013 Intel Corporation
-+ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; version 2
-+ * of the License.
-+ */
++static void *msic_gpio_platform_data(void *info)
++{
++	static struct intel_msic_gpio_pdata pdata;
++	int gpio = get_gpio_by_name("msic_gpio_base");
 +
-+#include <linux/kernel.h>
-+#include <linux/interrupt.h>
-+#include <linux/scatterlist.h>
-+#include <linux/init.h>
-+#include <linux/sfi.h>
-+#include <linux/platform_device.h>
-+#include <linux/mfd/intel_msic.h>
-+#include <asm/intel-mid.h>
-+#include "platform_msic.h"
-+#include "platform_msic_audio.h"
++	if (gpio < 0)
++		return NULL;
 +
-+void *msic_audio_platform_data(void *info)
++	pdata.gpio_base = gpio;
++	msic_pdata.gpio = &pdata;
++
++	return msic_generic_platform_data(info, INTEL_MSIC_BLOCK_GPIO);
++}
++
++static void *msic_audio_platform_data(void *info)
 +{
 +	struct platform_device *pdev;
 +
 +	pdev = platform_device_register_simple("sst-platform", -1, NULL, 0);
-+
 +	if (IS_ERR(pdev)) {
 +		pr_err("failed to create audio platform device\n");
 +		return NULL;
@@ -1010,413 +1988,33 @@ index 0000000..942cc47
 +
 +	return msic_generic_platform_data(info, INTEL_MSIC_BLOCK_AUDIO);
 +}
-diff --git a/arch/x86/platform/intel-mid/device_libs/platform_msic_audio.h b/arch/x86/platform/intel-mid/device_libs/platform_msic_audio.h
-new file mode 100644
-index 0000000..7d1a00e
---- /dev/null
-+++ b/arch/x86/platform/intel-mid/device_libs/platform_msic_audio.h
-@@ -0,0 +1,16 @@
-+/*
-+ * platform_msic_audio.h: MSIC audio platform data header file
-+ *
-+ * (C) Copyright 2013 Intel Corporation
-+ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; version 2
-+ * of the License.
-+ */
-+#ifndef _PLATFORM_MSIC_AUDIO_H_
-+#define _PLATFORM_MSIC_AUDIO_H_
 +
-+extern void __init *msic_audio_platform_data(void *info) __attribute__((weak));
-+#endif
-diff --git a/arch/x86/platform/intel-mid/device_libs/platform_msic_battery.c b/arch/x86/platform/intel-mid/device_libs/platform_msic_battery.c
-new file mode 100644
-index 0000000..38b6113
---- /dev/null
-+++ b/arch/x86/platform/intel-mid/device_libs/platform_msic_battery.c
-@@ -0,0 +1,26 @@
-+/*
-+ * platform_msic_battery.c: MSIC battery platform data initilization file
-+ *
-+ * (C) Copyright 2013 Intel Corporation
-+ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; version 2
-+ * of the License.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/interrupt.h>
-+#include <linux/scatterlist.h>
-+#include <linux/init.h>
-+#include <linux/sfi.h>
-+#include <linux/mfd/intel_msic.h>
-+#include <asm/intel-mid.h>
-+#include "platform_msic.h"
-+#include "platform_msic_battery.h"
-+
-+void __init *msic_battery_platform_data(void *info)
++static void *msic_power_btn_platform_data(void *info)
 +{
-+	return msic_generic_platform_data(info, INTEL_MSIC_BLOCK_BATTERY);
++	return msic_generic_platform_data(info, INTEL_MSIC_BLOCK_POWER_BTN);
 +}
-diff --git a/arch/x86/platform/intel-mid/device_libs/platform_msic_battery.h b/arch/x86/platform/intel-mid/device_libs/platform_msic_battery.h
-new file mode 100644
-index 0000000..d2d3d6c
---- /dev/null
-+++ b/arch/x86/platform/intel-mid/device_libs/platform_msic_battery.h
-@@ -0,0 +1,17 @@
-+/*
-+ * platform_msic_battery.h: MSIC battery platform data header file
-+ *
-+ * (C) Copyright 2013 Intel Corporation
-+ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; version 2
-+ * of the License.
-+ */
-+#ifndef _PLATFORM_MSIC_BATTERY_H_
-+#define _PLATFORM_MSIC_BATTERY_H_
 +
-+extern void __init *msic_battery_platform_data(void *info)
-+			__attribute__((weak));
-+#endif
-diff --git a/arch/x86/platform/intel-mid/device_libs/platform_msic_gpio.c b/arch/x86/platform/intel-mid/device_libs/platform_msic_gpio.c
-new file mode 100644
-index 0000000..ada9bd1
---- /dev/null
-+++ b/arch/x86/platform/intel-mid/device_libs/platform_msic_gpio.c
-@@ -0,0 +1,37 @@
-+/*
-+ * platform_msic_gpio.c: MSIC GPIO platform data initilization file
-+ *
-+ * (C) Copyright 2013 Intel Corporation
-+ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; version 2
-+ * of the License.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/interrupt.h>
-+#include <linux/scatterlist.h>
-+#include <linux/sfi.h>
-+#include <linux/init.h>
-+#include <linux/gpio.h>
-+#include <linux/mfd/intel_msic.h>
-+#include <asm/intel-mid.h>
-+#include "platform_msic.h"
-+#include "platform_msic_gpio.h"
-+
-+void __init *msic_gpio_platform_data(void *info)
++static void *msic_ocd_platform_data(void *info)
 +{
-+	static struct intel_msic_gpio_pdata msic_gpio_pdata;
-+
-+	int gpio = get_gpio_by_name("msic_gpio_base");
++	static struct intel_msic_ocd_pdata pdata;
++	int gpio = get_gpio_by_name("ocd_gpio");
 +
 +	if (gpio < 0)
 +		return NULL;
 +
-+	msic_gpio_pdata.gpio_base = gpio;
-+	msic_pdata.gpio = &msic_gpio_pdata;
-+
-+	return msic_generic_platform_data(info, INTEL_MSIC_BLOCK_GPIO);
-+}
-diff --git a/arch/x86/platform/intel-mid/device_libs/platform_msic_gpio.h b/arch/x86/platform/intel-mid/device_libs/platform_msic_gpio.h
-new file mode 100644
-index 0000000..19eebc0
---- /dev/null
-+++ b/arch/x86/platform/intel-mid/device_libs/platform_msic_gpio.h
-@@ -0,0 +1,16 @@
-+/*
-+ * platform_msic_gpio.h: MSIC GPIO platform data header file
-+ *
-+ * (C) Copyright 2013 Intel Corporation
-+ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; version 2
-+ * of the License.
-+ */
-+#ifndef _PLATFORM_MSIC_GPIO_H_
-+#define _PLATFORM_MSIC_GPIO_H_
-+
-+extern void __init *msic_gpio_platform_data(void *info) __attribute__((weak));
-+#endif
-diff --git a/arch/x86/platform/intel-mid/device_libs/platform_msic_ocd.c b/arch/x86/platform/intel-mid/device_libs/platform_msic_ocd.c
-new file mode 100644
-index 0000000..18446ca
---- /dev/null
-+++ b/arch/x86/platform/intel-mid/device_libs/platform_msic_ocd.c
-@@ -0,0 +1,39 @@
-+/*
-+ * platform_msic_ocd.c: MSIC OCD platform data initilization file
-+ *
-+ * (C) Copyright 2013 Intel Corporation
-+ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; version 2
-+ * of the License.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/interrupt.h>
-+#include <linux/scatterlist.h>
-+#include <linux/sfi.h>
-+#include <linux/init.h>
-+#include <linux/gpio.h>
-+#include <linux/mfd/intel_msic.h>
-+#include <asm/intel-mid.h>
-+#include "platform_msic.h"
-+#include "platform_msic_ocd.h"
-+
-+void __init *msic_ocd_platform_data(void *info)
-+{
-+	static struct intel_msic_ocd_pdata msic_ocd_pdata;
-+	int gpio;
-+
-+	gpio = get_gpio_by_name("ocd_gpio");
-+
-+	if (gpio < 0)
-+		return NULL;
-+
-+	msic_ocd_pdata.gpio = gpio;
-+	msic_pdata.ocd = &msic_ocd_pdata;
++	pdata.gpio = gpio;
++	msic_pdata.ocd = &pdata;
 +
 +	return msic_generic_platform_data(info, INTEL_MSIC_BLOCK_OCD);
 +}
 +
-diff --git a/arch/x86/platform/intel-mid/device_libs/platform_msic_ocd.h b/arch/x86/platform/intel-mid/device_libs/platform_msic_ocd.h
-new file mode 100644
-index 0000000..cb08fbf
---- /dev/null
-+++ b/arch/x86/platform/intel-mid/device_libs/platform_msic_ocd.h
-@@ -0,0 +1,16 @@
-+/*
-+ * platform_msic_ocd.h: MSIC OCD platform data header file
-+ *
-+ * (C) Copyright 2013 Intel Corporation
-+ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; version 2
-+ * of the License.
-+ */
-+#ifndef _PLATFORM_MSIC_OCD_H_
-+#define _PLATFORM_MSIC_OCD_H_
-+
-+extern void __init *msic_ocd_platform_data(void *info) __attribute__((weak));
-+#endif
-diff --git a/arch/x86/platform/intel-mid/device_libs/platform_msic_power_btn.c b/arch/x86/platform/intel-mid/device_libs/platform_msic_power_btn.c
-new file mode 100644
-index 0000000..d8b087f
---- /dev/null
-+++ b/arch/x86/platform/intel-mid/device_libs/platform_msic_power_btn.c
-@@ -0,0 +1,25 @@
-+/*
-+ * platform_msic_power_btn.c: MSIC power btn platform data initilization file
-+ *
-+ * (C) Copyright 2013 Intel Corporation
-+ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; version 2
-+ * of the License.
-+ */
-+#include <linux/kernel.h>
-+#include <linux/interrupt.h>
-+#include <linux/scatterlist.h>
-+#include <linux/sfi.h>
-+#include <linux/init.h>
-+#include <linux/mfd/intel_msic.h>
-+#include <asm/intel-mid.h>
-+#include "platform_msic.h"
-+#include "platform_msic_power_btn.h"
-+
-+void __init *msic_power_btn_platform_data(void *info)
-+{
-+	return msic_generic_platform_data(info, INTEL_MSIC_BLOCK_POWER_BTN);
-+}
-diff --git a/arch/x86/platform/intel-mid/device_libs/platform_msic_power_btn.h b/arch/x86/platform/intel-mid/device_libs/platform_msic_power_btn.h
-new file mode 100644
-index 0000000..f389b3d
---- /dev/null
-+++ b/arch/x86/platform/intel-mid/device_libs/platform_msic_power_btn.h
-@@ -0,0 +1,17 @@
-+/*
-+ * platform_msic_power_btn.h: MSIC power btn platform data header file
-+ *
-+ * (C) Copyright 2013 Intel Corporation
-+ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; version 2
-+ * of the License.
-+ */
-+#ifndef _PLATFORM_MSIC_POWER_BTN_H_
-+#define _PLATFORM_MSIC_POWER_BTN_H_
-+
-+extern void __init *msic_power_btn_platform_data(void *info)
-+				__attribute__((weak));
-+#endif
-diff --git a/arch/x86/platform/intel-mid/device_libs/platform_msic_thermal.c b/arch/x86/platform/intel-mid/device_libs/platform_msic_thermal.c
-new file mode 100644
-index 0000000..236aa21
---- /dev/null
-+++ b/arch/x86/platform/intel-mid/device_libs/platform_msic_thermal.c
-@@ -0,0 +1,26 @@
-+/*
-+ * platform_msic_thermal.c: msic_thermal platform data initilization file
-+ *
-+ * (C) Copyright 2013 Intel Corporation
-+ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; version 2
-+ * of the License.
-+ */
-+
-+#include <linux/input.h>
-+#include <linux/init.h>
-+#include <linux/kernel.h>
-+#include <linux/gpio.h>
-+#include <linux/platform_device.h>
-+#include <linux/mfd/intel_msic.h>
-+#include <asm/intel-mid.h>
-+#include "platform_msic.h"
-+#include "platform_msic_thermal.h"
-+
-+void __init *msic_thermal_platform_data(void *info)
++static void *msic_thermal_platform_data(void *info)
 +{
 +	return msic_generic_platform_data(info, INTEL_MSIC_BLOCK_THERMAL);
 +}
-diff --git a/arch/x86/platform/intel-mid/device_libs/platform_msic_thermal.h b/arch/x86/platform/intel-mid/device_libs/platform_msic_thermal.h
-new file mode 100644
-index 0000000..4cf45b8
---- /dev/null
-+++ b/arch/x86/platform/intel-mid/device_libs/platform_msic_thermal.h
-@@ -0,0 +1,17 @@
-+/*
-+ * platform_msic_thermal.h: msic_thermal platform data header file
-+ *
-+ * (C) Copyright 2013 Intel Corporation
-+ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; version 2
-+ * of the License.
-+ */
-+#ifndef _PLATFORM_MSIC_THERMAL_H_
-+#define _PLATFORM_MSIC_THERMAL_H_
 +
-+extern void __init *msic_thermal_platform_data(void *info)
-+			__attribute__((weak));
-+#endif
-diff --git a/arch/x86/platform/intel-mid/device_libs/platform_pmic_gpio.c b/arch/x86/platform/intel-mid/device_libs/platform_pmic_gpio.c
-new file mode 100644
-index 0000000..f5d3ec8
---- /dev/null
-+++ b/arch/x86/platform/intel-mid/device_libs/platform_pmic_gpio.c
-@@ -0,0 +1,36 @@
-+/*
-+ * platform_pmic_gpio.c: PMIC GPIO platform data initilization file
-+ *
-+ * (C) Copyright 2013 Intel Corporation
-+ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; version 2
-+ * of the License.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/interrupt.h>
-+#include <linux/scatterlist.h>
-+#include <linux/gpio.h>
-+#include <linux/init.h>
-+#include <linux/sfi.h>
-+#include <asm/intel-mid.h>
-+#include <linux/intel_pmic_gpio.h>
-+#include "platform_pmic_gpio.h"
-+
-+void __init *pmic_gpio_platform_data(void *info)
-+{
-+	static struct intel_pmic_gpio_platform_data pmic_gpio_pdata;
-+	int gpio_base = get_gpio_by_name("pmic_gpio_base");
-+
-+	if (gpio_base == -1)
-+		gpio_base = 64;
-+	pmic_gpio_pdata.gpio_base = gpio_base;
-+	pmic_gpio_pdata.irq_base = gpio_base + INTEL_MID_IRQ_OFFSET;
-+	pmic_gpio_pdata.gpiointr = 0xffffeff8;
-+
-+	return &pmic_gpio_pdata;
-+}
-+
-diff --git a/arch/x86/platform/intel-mid/device_libs/platform_pmic_gpio.h b/arch/x86/platform/intel-mid/device_libs/platform_pmic_gpio.h
-new file mode 100644
-index 0000000..e35d359
---- /dev/null
-+++ b/arch/x86/platform/intel-mid/device_libs/platform_pmic_gpio.h
-@@ -0,0 +1,16 @@
-+/*
-+ * platform_pmic_gpio.h: PMIC GPIO platform data header file
-+ *
-+ * (C) Copyright 2013 Intel Corporation
-+ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; version 2
-+ * of the License.
-+ */
-+#ifndef _PLATFORM_PMIC_GPIO_H_
-+#define _PLATFORM_PMIC_GPIO_H_
-+
-+extern void __init *pmic_gpio_platform_data(void *info) __attribute__((weak));
-+#endif
-diff --git a/arch/x86/platform/intel-mid/device_libs/platform_tc35876x.c b/arch/x86/platform/intel-mid/device_libs/platform_tc35876x.c
-new file mode 100644
-index 0000000..dd9ef63
---- /dev/null
-+++ b/arch/x86/platform/intel-mid/device_libs/platform_tc35876x.c
-@@ -0,0 +1,29 @@
-+/*
-+ * platform_tc35876x.c: tc35876x platform data initilization file
-+ *
-+ * (C) Copyright 2013 Intel Corporation
-+ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; version 2
-+ * of the License.
-+ */
-+
-+#include <linux/gpio.h>
-+#include <linux/i2c/tc35876x.h>
-+#include <asm/intel-mid.h>
-+#include "platform_tc35876x.h"
-+
-+/*tc35876x DSI_LVDS bridge chip and panel platform data*/
-+void *tc35876x_platform_data(void *data)
++/* tc35876x DSI-LVDS bridge chip and panel platform data */
++static void *tc35876x_platform_data(void *data)
 +{
 +	static struct tc35876x_platform_data pdata;
 +
@@ -1427,141 +2025,1301 @@ index 0000000..dd9ef63
 +
 +	return &pdata;
 +}
-diff --git a/arch/x86/platform/intel-mid/device_libs/platform_tc35876x.h b/arch/x86/platform/intel-mid/device_libs/platform_tc35876x.h
-new file mode 100644
-index 0000000..21ccf23
---- /dev/null
-+++ b/arch/x86/platform/intel-mid/device_libs/platform_tc35876x.h
-@@ -0,0 +1,16 @@
-+/*
-+ * platform_tc35876x.h: tc35876x platform data header file
-+ *
-+ * (C) Copyright 2013 Intel Corporation
-+ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; version 2
-+ * of the License.
-+ */
-+#ifndef _PLATFORM_TC35876X_H_
-+#define _PLATFORM_TC35876X_H_
 +
-+extern void *tc35876x_platform_data(void *info) __attribute__((weak));
-+#endif
-diff --git a/arch/x86/platform/intel-mid/device_libs/platform_tca6416.c b/arch/x86/platform/intel-mid/device_libs/platform_tca6416.c
-new file mode 100644
-index 0000000..a203fd7d
---- /dev/null
-+++ b/arch/x86/platform/intel-mid/device_libs/platform_tca6416.c
-@@ -0,0 +1,45 @@
-+/*
-+ * platform_tca6416.c: tca6416 platform data initilization file
-+ *
-+ * (C) Copyright 2013 Intel Corporation
-+ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; version 2
-+ * of the License.
-+ */
++static const struct devs_id __initconst device_ids[] = {
++	{"bma023", SFI_DEV_TYPE_I2C, 1, &no_platform_data},
++	{"pmic_gpio", SFI_DEV_TYPE_SPI, 1, &pmic_gpio_platform_data},
++	{"pmic_gpio", SFI_DEV_TYPE_IPC, 1, &pmic_gpio_platform_data},
++	{"spi_max3111", SFI_DEV_TYPE_SPI, 0, &max3111_platform_data},
++	{"i2c_max7315", SFI_DEV_TYPE_I2C, 1, &max7315_platform_data},
++	{"i2c_max7315_2", SFI_DEV_TYPE_I2C, 1, &max7315_platform_data},
++	{"tca6416", SFI_DEV_TYPE_I2C, 1, &tca6416_platform_data},
++	{"emc1403", SFI_DEV_TYPE_I2C, 1, &emc1403_platform_data},
++	{"i2c_accel", SFI_DEV_TYPE_I2C, 0, &lis331dl_platform_data},
++	{"pmic_audio", SFI_DEV_TYPE_IPC, 1, &no_platform_data},
++	{"mpu3050", SFI_DEV_TYPE_I2C, 1, &mpu3050_platform_data},
++	{"i2c_disp_brig", SFI_DEV_TYPE_I2C, 0, &tc35876x_platform_data},
 +
-+#include <linux/platform_data/pca953x.h>
-+#include <linux/i2c.h>
-+#include <linux/gpio.h>
-+#include <asm/intel-mid.h>
-+#include "platform_tca6416.h"
++	/* MSIC subdevices */
++	{"msic_battery", SFI_DEV_TYPE_IPC, 1, &msic_battery_platform_data},
++	{"msic_gpio", SFI_DEV_TYPE_IPC, 1, &msic_gpio_platform_data},
++	{"msic_audio", SFI_DEV_TYPE_IPC, 1, &msic_audio_platform_data},
++	{"msic_power_btn", SFI_DEV_TYPE_IPC, 1, &msic_power_btn_platform_data},
++	{"msic_ocd", SFI_DEV_TYPE_IPC, 1, &msic_ocd_platform_data},
++	{"msic_thermal", SFI_DEV_TYPE_IPC, 1, &msic_thermal_platform_data},
 +
-+void *tca6416_platform_data(void *info)
++	{},
++};
++
++#define MAX_IPCDEVS	24
++static struct platform_device *ipc_devs[MAX_IPCDEVS];
++static int ipc_next_dev;
++
++#define MAX_SCU_SPI	24
++static struct spi_board_info *spi_devs[MAX_SCU_SPI];
++static int spi_next_dev;
++
++#define MAX_SCU_I2C	24
++static struct i2c_board_info *i2c_devs[MAX_SCU_I2C];
++static int i2c_bus[MAX_SCU_I2C];
++static int i2c_next_dev;
++
++static void __init intel_scu_device_register(struct platform_device *pdev)
 +{
-+	static struct pca953x_platform_data tca6416;
-+	struct i2c_board_info *i2c_info = info;
-+	int gpio_base, intr;
-+	char base_pin_name[SFI_NAME_LEN + 1];
-+	char intr_pin_name[SFI_NAME_LEN + 1];
-+
-+	strcpy(i2c_info->type, TCA6416_NAME);
-+	strcpy(base_pin_name, TCA6416_BASE);
-+	strcpy(intr_pin_name, TCA6416_INTR);
-+
-+	gpio_base = get_gpio_by_name(base_pin_name);
-+	intr = get_gpio_by_name(intr_pin_name);
-+
-+	if (gpio_base == -1)
-+		return NULL;
-+	tca6416.gpio_base = gpio_base;
-+	if (intr != -1) {
-+		i2c_info->irq = intr + INTEL_MID_IRQ_OFFSET;
-+		tca6416.irq_base = gpio_base + INTEL_MID_IRQ_OFFSET;
-+	} else {
-+		i2c_info->irq = -1;
-+		tca6416.irq_base = -1;
-+	}
-+	return &tca6416;
++	if (ipc_next_dev == MAX_IPCDEVS)
++		pr_err("too many SCU IPC devices");
++	else
++		ipc_devs[ipc_next_dev++] = pdev;
 +}
-diff --git a/arch/x86/platform/intel-mid/device_libs/platform_tca6416.h b/arch/x86/platform/intel-mid/device_libs/platform_tca6416.h
-new file mode 100644
-index 0000000..fe9c041
---- /dev/null
-+++ b/arch/x86/platform/intel-mid/device_libs/platform_tca6416.h
-@@ -0,0 +1,20 @@
++
++static void __init intel_scu_spi_device_register(struct spi_board_info *sdev)
++{
++	struct spi_board_info *new_dev;
++
++	if (spi_next_dev == MAX_SCU_SPI) {
++		pr_err("too many SCU SPI devices");
++		return;
++	}
++
++	new_dev = kzalloc(sizeof(*sdev), GFP_KERNEL);
++	if (!new_dev) {
++		pr_err("failed to alloc mem for delayed spi dev %s\n",
++			sdev->modalias);
++		return;
++	}
++	memcpy(new_dev, sdev, sizeof(*sdev));
++
++	spi_devs[spi_next_dev++] = new_dev;
++}
++
++static void __init intel_scu_i2c_device_register(int bus,
++						struct i2c_board_info *idev)
++{
++	struct i2c_board_info *new_dev;
++
++	if (i2c_next_dev == MAX_SCU_I2C) {
++		pr_err("too many SCU I2C devices");
++		return;
++	}
++
++	new_dev = kzalloc(sizeof(*idev), GFP_KERNEL);
++	if (!new_dev) {
++		pr_err("failed to alloc mem for delayed i2c dev %s\n",
++			idev->type);
++		return;
++	}
++	memcpy(new_dev, idev, sizeof(*idev));
++
++	i2c_bus[i2c_next_dev] = bus;
++	i2c_devs[i2c_next_dev++] = new_dev;
++}
++
++BLOCKING_NOTIFIER_HEAD(intel_scu_notifier);
++EXPORT_SYMBOL_GPL(intel_scu_notifier);
++
++/* Called by IPC driver */
++void intel_scu_devices_create(void)
++{
++	int i;
++
++	for (i = 0; i < ipc_next_dev; i++)
++		platform_device_add(ipc_devs[i]);
++
++	for (i = 0; i < spi_next_dev; i++)
++		spi_register_board_info(spi_devs[i], 1);
++
++	for (i = 0; i < i2c_next_dev; i++) {
++		struct i2c_adapter *adapter;
++		struct i2c_client *client;
++
++		adapter = i2c_get_adapter(i2c_bus[i]);
++		if (adapter) {
++			client = i2c_new_device(adapter, i2c_devs[i]);
++			if (!client)
++				pr_err("can't create i2c device %s\n",
++					i2c_devs[i]->type);
++		} else
++			i2c_register_board_info(i2c_bus[i], i2c_devs[i], 1);
++	}
++	intel_scu_notifier_post(SCU_AVAILABLE, NULL);
++}
++EXPORT_SYMBOL_GPL(intel_scu_devices_create);
++
++/* Called by IPC driver */
++void intel_scu_devices_destroy(void)
++{
++	int i;
++
++	intel_scu_notifier_post(SCU_DOWN, NULL);
++
++	for (i = 0; i < ipc_next_dev; i++)
++		platform_device_del(ipc_devs[i]);
++}
++EXPORT_SYMBOL_GPL(intel_scu_devices_destroy);
++
++static void __init install_irq_resource(struct platform_device *pdev, int irq)
++{
++	/* Single threaded */
++	static struct resource __initdata res = {
++		.name = "IRQ",
++		.flags = IORESOURCE_IRQ,
++	};
++	res.start = irq;
++	platform_device_add_resources(pdev, &res, 1);
++}
++
++static void __init sfi_handle_ipc_dev(struct sfi_device_table_entry *entry)
++{
++	const struct devs_id *dev = device_ids;
++	struct platform_device *pdev;
++	void *pdata = NULL;
++
++	while (dev->name[0]) {
++		if (dev->type == SFI_DEV_TYPE_IPC &&
++			!strncmp(dev->name, entry->name, SFI_NAME_LEN)) {
++			pdata = dev->get_platform_data(entry);
++			break;
++		}
++		dev++;
++	}
++
++	/*
++	 * On Medfield the platform device creation is handled by the MSIC
++	 * MFD driver so we don't need to do it here.
++	 */
++	if (mrst_has_msic())
++		return;
++
++	pdev = platform_device_alloc(entry->name, 0);
++	if (pdev == NULL) {
++		pr_err("out of memory for SFI platform device '%s'.\n",
++			entry->name);
++		return;
++	}
++	install_irq_resource(pdev, entry->irq);
++
++	pdev->dev.platform_data = pdata;
++	intel_scu_device_register(pdev);
++}
++
++static void __init sfi_handle_spi_dev(struct spi_board_info *spi_info)
++{
++	const struct devs_id *dev = device_ids;
++	void *pdata = NULL;
++
++	while (dev->name[0]) {
++		if (dev->type == SFI_DEV_TYPE_SPI &&
++			!strncmp(dev->name, spi_info->modalias,
++						SFI_NAME_LEN)) {
++			pdata = dev->get_platform_data(spi_info);
++			break;
++		}
++		dev++;
++	}
++	spi_info->platform_data = pdata;
++	if (dev->delay)
++		intel_scu_spi_device_register(spi_info);
++	else
++		spi_register_board_info(spi_info, 1);
++}
++
++static void __init sfi_handle_i2c_dev(int bus, struct i2c_board_info *i2c_info)
++{
++	const struct devs_id *dev = device_ids;
++	void *pdata = NULL;
++
++	while (dev->name[0]) {
++		if (dev->type == SFI_DEV_TYPE_I2C &&
++			!strncmp(dev->name, i2c_info->type, SFI_NAME_LEN)) {
++			pdata = dev->get_platform_data(i2c_info);
++			break;
++		}
++		dev++;
++	}
++	i2c_info->platform_data = pdata;
++
++	if (dev->delay)
++		intel_scu_i2c_device_register(bus, i2c_info);
++	else
++		i2c_register_board_info(bus, i2c_info, 1);
++}
++
++
++static int __init sfi_parse_devs(struct sfi_table_header *table)
++{
++	struct sfi_table_simple *sb;
++	struct sfi_device_table_entry *pentry;
++	struct spi_board_info spi_info;
++	struct i2c_board_info i2c_info;
++	int num, i, bus;
++	int ioapic;
++	struct io_apic_irq_attr irq_attr;
++
++	sb = (struct sfi_table_simple *)table;
++	num = SFI_GET_NUM_ENTRIES(sb, struct sfi_device_table_entry);
++	pentry = (struct sfi_device_table_entry *)sb->pentry;
++
++	for (i = 0; i < num; i++, pentry++) {
++		int irq = pentry->irq;
++
++		if (irq != (u8)0xff) { /* native RTE case */
++			/* these SPI2 devices are not exposed to system as PCI
++			 * devices, but they have separate RTE entry in IOAPIC
++			 * so we have to enable them one by one here
++			 */
++			ioapic = mp_find_ioapic(irq);
++			irq_attr.ioapic = ioapic;
++			irq_attr.ioapic_pin = irq;
++			irq_attr.trigger = 1;
++			irq_attr.polarity = 1;
++			io_apic_set_pci_routing(NULL, irq, &irq_attr);
++		} else
++			irq = 0; /* No irq */
++
++		switch (pentry->type) {
++		case SFI_DEV_TYPE_IPC:
++			pr_debug("info[%2d]: IPC bus, name = %16.16s, "
++				"irq = 0x%2x\n", i, pentry->name, pentry->irq);
++			sfi_handle_ipc_dev(pentry);
++			break;
++		case SFI_DEV_TYPE_SPI:
++			memset(&spi_info, 0, sizeof(spi_info));
++			strncpy(spi_info.modalias, pentry->name, SFI_NAME_LEN);
++			spi_info.irq = irq;
++			spi_info.bus_num = pentry->host_num;
++			spi_info.chip_select = pentry->addr;
++			spi_info.max_speed_hz = pentry->max_freq;
++			pr_debug("info[%2d]: SPI bus = %d, name = %16.16s, "
++				"irq = 0x%2x, max_freq = %d, cs = %d\n", i,
++				spi_info.bus_num,
++				spi_info.modalias,
++				spi_info.irq,
++				spi_info.max_speed_hz,
++				spi_info.chip_select);
++			sfi_handle_spi_dev(&spi_info);
++			break;
++		case SFI_DEV_TYPE_I2C:
++			memset(&i2c_info, 0, sizeof(i2c_info));
++			bus = pentry->host_num;
++			strncpy(i2c_info.type, pentry->name, SFI_NAME_LEN);
++			i2c_info.irq = irq;
++			i2c_info.addr = pentry->addr;
++			pr_debug("info[%2d]: I2C bus = %d, name = %16.16s, "
++				"irq = 0x%2x, addr = 0x%x\n", i, bus,
++				i2c_info.type,
++				i2c_info.irq,
++				i2c_info.addr);
++			sfi_handle_i2c_dev(bus, &i2c_info);
++			break;
++		case SFI_DEV_TYPE_UART:
++		case SFI_DEV_TYPE_HSI:
++		default:
++			break;
++		}
++	}
++	return 0;
++}
++
++static int __init mrst_platform_init(void)
++{
++	sfi_table_parse(SFI_SIG_GPIO, NULL, NULL, sfi_parse_gpio);
++	sfi_table_parse(SFI_SIG_DEVS, NULL, NULL, sfi_parse_devs);
++	return 0;
++}
++arch_initcall(mrst_platform_init);
++
 +/*
-+ * platform_tca6416.h: tca6416 platform data header file
++ * we will search these buttons in SFI GPIO table (by name)
++ * and register them dynamically. Please add all possible
++ * buttons here, we will shrink them if no GPIO found.
++ */
++static struct gpio_keys_button gpio_button[] = {
++	{KEY_POWER,		-1, 1, "power_btn",	EV_KEY, 0, 3000},
++	{KEY_PROG1,		-1, 1, "prog_btn1",	EV_KEY, 0, 20},
++	{KEY_PROG2,		-1, 1, "prog_btn2",	EV_KEY, 0, 20},
++	{SW_LID,		-1, 1, "lid_switch",	EV_SW,  0, 20},
++	{KEY_VOLUMEUP,		-1, 1, "vol_up",	EV_KEY, 0, 20},
++	{KEY_VOLUMEDOWN,	-1, 1, "vol_down",	EV_KEY, 0, 20},
++	{KEY_CAMERA,		-1, 1, "camera_full",	EV_KEY, 0, 20},
++	{KEY_CAMERA_FOCUS,	-1, 1, "camera_half",	EV_KEY, 0, 20},
++	{SW_KEYPAD_SLIDE,	-1, 1, "MagSw1",	EV_SW,  0, 20},
++	{SW_KEYPAD_SLIDE,	-1, 1, "MagSw2",	EV_SW,  0, 20},
++};
++
++static struct gpio_keys_platform_data mrst_gpio_keys = {
++	.buttons	= gpio_button,
++	.rep		= 1,
++	.nbuttons	= -1, /* will fill it after search */
++};
++
++static struct platform_device pb_device = {
++	.name		= "gpio-keys",
++	.id		= -1,
++	.dev		= {
++		.platform_data	= &mrst_gpio_keys,
++	},
++};
++
++/*
++ * Shrink the non-existent buttons, register the gpio button
++ * device if there is some
++ */
++static int __init pb_keys_init(void)
++{
++	struct gpio_keys_button *gb = gpio_button;
++	int i, num, good = 0;
++
++	num = sizeof(gpio_button) / sizeof(struct gpio_keys_button);
++	for (i = 0; i < num; i++) {
++		gb[i].gpio = get_gpio_by_name(gb[i].desc);
++		pr_debug("info[%2d]: name = %s, gpio = %d\n", i, gb[i].desc,
++					gb[i].gpio);
++		if (gb[i].gpio == -1)
++			continue;
++
++		if (i != good)
++			gb[good] = gb[i];
++		good++;
++	}
++
++	if (good) {
++		mrst_gpio_keys.nbuttons = good;
++		return platform_device_register(&pb_device);
++	}
++	return 0;
++}
++late_initcall(pb_keys_init);
+diff --git a/arch/x86/platform/intel-mid/intel_mid_vrtc.c b/arch/x86/platform/intel-mid/intel_mid_vrtc.c
+new file mode 100644
+index 0000000..ded9fbd
+--- /dev/null
++++ b/arch/x86/platform/intel-mid/intel_mid_vrtc.c
+@@ -0,0 +1,177 @@
++/*
++ * intel_mid_vrtc.c: Driver for virtual RTC device on Intel MID platform
 + *
-+ * (C) Copyright 2013 Intel Corporation
-+ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
++ * (C) Copyright 2009 Intel Corporation
 + *
 + * This program is free software; you can redistribute it and/or
 + * modify it under the terms of the GNU General Public License
 + * as published by the Free Software Foundation; version 2
 + * of the License.
++ *
++ * Note:
++ * VRTC is emulated by system controller firmware, the real HW
++ * RTC is located in the PMIC device. SCU FW shadows PMIC RTC
++ * in a memory mapped IO space that is visible to the host IA
++ * processor.
++ *
++ * This driver is based on RTC CMOS driver.
 + */
-+#ifndef _PLATFORM_TCA6416_H_
-+#define _PLATFORM_TCA6416_H_
 +
-+#define TCA6416_NAME	"tca6416"
-+#define TCA6416_BASE	"tca6416_base"
-+#define TCA6416_INTR	"tca6416_int"
++#include <linux/kernel.h>
++#include <linux/export.h>
++#include <linux/init.h>
++#include <linux/sfi.h>
++#include <linux/platform_device.h>
 +
-+extern void *tca6416_platform_data(void *info) __attribute__((weak));
-+#endif
-diff --git a/arch/x86/platform/intel-mid/intel-mid.c b/arch/x86/platform/intel-mid/intel-mid.c
-index 3a210d9..0ac2bd6 100644
---- a/arch/x86/platform/intel-mid/intel-mid.c
-+++ b/arch/x86/platform/intel-mid/intel-mid.c
-@@ -44,6 +44,7 @@
- #include <asm/intel_scu_ipc.h>
- #include <asm/apb_timer.h>
- #include <asm/reboot.h>
-+#include "intel_mid_weak_decls.h"
- 
- /*
-  * the clockevent devices on Moorestown/Medfield can be APBT or LAPIC clock,
-@@ -78,8 +79,6 @@ int sfi_mtimer_num;
- struct sfi_rtc_table_entry sfi_mrtc_array[SFI_MRTC_MAX];
- EXPORT_SYMBOL_GPL(sfi_mrtc_array);
- int sfi_mrtc_num;
--static void __init ipc_device_handler(struct sfi_device_table_entry *pentry,
--			struct devs_id *dev);
- 
- static void intel_mid_power_off(void)
- {
-@@ -374,7 +373,7 @@ static int __init sfi_parse_gpio(struct sfi_table_header *table)
- 	return 0;
- }
- 
++#include <asm/intel-mid.h>
++#include <asm/intel_mid_vrtc.h>
++#include <asm/time.h>
++#include <asm/fixmap.h>
++
++static unsigned char __iomem *vrtc_virt_base;
++
++unsigned char vrtc_cmos_read(unsigned char reg)
++{
++	unsigned char retval;
++
++	/* vRTC's registers range from 0x0 to 0xD */
++	if (reg > 0xd || !vrtc_virt_base)
++		return 0xff;
++
++	lock_cmos_prefix(reg);
++	retval = __raw_readb(vrtc_virt_base + (reg << 2));
++	lock_cmos_suffix(reg);
++	return retval;
++}
++EXPORT_SYMBOL_GPL(vrtc_cmos_read);
++
++void vrtc_cmos_write(unsigned char val, unsigned char reg)
++{
++	if (reg > 0xd || !vrtc_virt_base)
++		return;
++
++	lock_cmos_prefix(reg);
++	__raw_writeb(val, vrtc_virt_base + (reg << 2));
++	lock_cmos_suffix(reg);
++}
++EXPORT_SYMBOL_GPL(vrtc_cmos_write);
++
++void vrtc_get_time(struct timespec *now)
++{
++	u8 sec, min, hour, mday, mon;
++	unsigned long flags;
++	u32 year;
++
++	spin_lock_irqsave(&rtc_lock, flags);
++
++	while ((vrtc_cmos_read(RTC_FREQ_SELECT) & RTC_UIP))
++		cpu_relax();
++
++	sec = vrtc_cmos_read(RTC_SECONDS);
++	min = vrtc_cmos_read(RTC_MINUTES);
++	hour = vrtc_cmos_read(RTC_HOURS);
++	mday = vrtc_cmos_read(RTC_DAY_OF_MONTH);
++	mon = vrtc_cmos_read(RTC_MONTH);
++	year = vrtc_cmos_read(RTC_YEAR);
++
++	spin_unlock_irqrestore(&rtc_lock, flags);
++
++	/* vRTC YEAR reg contains the offset to 1972 */
++	year += 1972;
++
++	pr_info("vRTC: sec: %d min: %d hour: %d day: %d "
++		"mon: %d year: %d\n", sec, min, hour, mday, mon, year);
++
++	now->tv_sec = mktime(year, mon, mday, hour, min, sec);
++	now->tv_nsec = 0;
++}
++
++int vrtc_set_mmss(const struct timespec *now)
++{
++	unsigned long flags;
++	struct rtc_time tm;
++	int year;
++	int retval = 0;
++
++	rtc_time_to_tm(now->tv_sec, &tm);
++	if (!rtc_valid_tm(&tm) && tm.tm_year >= 72) {
++		/*
++		 * tm.year is the number of years since 1900, and the
++		 * vrtc need the years since 1972.
++		 */
++		year = tm.tm_year - 72;
++		spin_lock_irqsave(&rtc_lock, flags);
++		vrtc_cmos_write(year, RTC_YEAR);
++		vrtc_cmos_write(tm.tm_mon, RTC_MONTH);
++		vrtc_cmos_write(tm.tm_mday, RTC_DAY_OF_MONTH);
++		vrtc_cmos_write(tm.tm_hour, RTC_HOURS);
++		vrtc_cmos_write(tm.tm_min, RTC_MINUTES);
++		vrtc_cmos_write(tm.tm_sec, RTC_SECONDS);
++		spin_unlock_irqrestore(&rtc_lock, flags);
++	} else {
++		pr_err("%s: Invalid vRTC value: write of %lx to vRTC failed\n",
++			__FUNCTION__, now->tv_sec);
++		retval = -EINVAL;
++	}
++	return retval;
++}
++
++void __init mrst_rtc_init(void)
++{
++	unsigned long vrtc_paddr;
++
++	sfi_table_parse(SFI_SIG_MRTC, NULL, NULL, sfi_parse_mrtc);
++
++	vrtc_paddr = sfi_mrtc_array[0].phys_addr;
++	if (!sfi_mrtc_num || !vrtc_paddr)
++		return;
++
++	vrtc_virt_base = (void __iomem *)set_fixmap_offset_nocache(FIX_LNW_VRTC,
++								vrtc_paddr);
++	x86_platform.get_wallclock = vrtc_get_time;
++	x86_platform.set_wallclock = vrtc_set_mmss;
++}
++
++/*
++ * The Moorestown platform has a memory mapped virtual RTC device that emulates
++ * the programming interface of the RTC.
++ */
++
++static struct resource vrtc_resources[] = {
++	[0] = {
++		.flags	= IORESOURCE_MEM,
++	},
++	[1] = {
++		.flags	= IORESOURCE_IRQ,
++	}
++};
++
++static struct platform_device vrtc_device = {
++	.name		= "rtc_mrst",
++	.id		= -1,
++	.resource	= vrtc_resources,
++	.num_resources	= ARRAY_SIZE(vrtc_resources),
++};
++
++/* Register the RTC device if appropriate */
++static int __init mrst_device_create(void)
++{
++	/* No Moorestown, no device */
++	if (!mrst_identify_cpu())
++		return -ENODEV;
++	/* No timer, no device */
++	if (!sfi_mrtc_num)
++		return -ENODEV;
++
++	/* iomem resource */
++	vrtc_resources[0].start = sfi_mrtc_array[0].phys_addr;
++	vrtc_resources[0].end = sfi_mrtc_array[0].phys_addr +
++				MRST_VRTC_MAP_SZ;
++	/* irq resource */
++	vrtc_resources[1].start = sfi_mrtc_array[0].irq;
++	vrtc_resources[1].end = sfi_mrtc_array[0].irq;
++
++	return platform_device_register(&vrtc_device);
++}
++
++module_init(mrst_device_create);
+diff --git a/arch/x86/platform/mrst/Makefile b/arch/x86/platform/mrst/Makefile
+deleted file mode 100644
+index af1da7e..0000000
+--- a/arch/x86/platform/mrst/Makefile
++++ /dev/null
+@@ -1,3 +0,0 @@
+-obj-$(CONFIG_X86_INTEL_MID)	+= mrst.o
+-obj-$(CONFIG_X86_INTEL_MID)	+= vrtc.o
+-obj-$(CONFIG_EARLY_PRINTK_INTEL_MID)	+= early_printk_mrst.o
+diff --git a/arch/x86/platform/mrst/early_printk_mrst.c b/arch/x86/platform/mrst/early_printk_mrst.c
+deleted file mode 100644
+index 39ecc27..0000000
+--- a/arch/x86/platform/mrst/early_printk_mrst.c
++++ /dev/null
+@@ -1,325 +0,0 @@
+-/*
+- * early_printk_mrst.c - early consoles for Intel MID platforms
+- *
+- * Copyright (c) 2008-2010, Intel Corporation
+- *
+- * This program is free software; you can redistribute it and/or
+- * modify it under the terms of the GNU General Public License
+- * as published by the Free Software Foundation; version 2
+- * of the License.
+- */
+-
+-/*
+- * This file implements two early consoles named mrst and hsu.
+- * mrst is based on Maxim3110 spi-uart device, it exists in both
+- * Moorestown and Medfield platforms, while hsu is based on a High
+- * Speed UART device which only exists in the Medfield platform
+- */
+-
+-#include <linux/serial_reg.h>
+-#include <linux/serial_mfd.h>
+-#include <linux/kmsg_dump.h>
+-#include <linux/console.h>
+-#include <linux/kernel.h>
+-#include <linux/delay.h>
+-#include <linux/init.h>
+-#include <linux/io.h>
+-
+-#include <asm/fixmap.h>
+-#include <asm/pgtable.h>
+-#include <asm/mrst.h>
+-
+-#define MRST_SPI_TIMEOUT		0x200000
+-#define MRST_REGBASE_SPI0		0xff128000
+-#define MRST_REGBASE_SPI1		0xff128400
+-#define MRST_CLK_SPI0_REG		0xff11d86c
+-
+-/* Bit fields in CTRLR0 */
+-#define SPI_DFS_OFFSET			0
+-
+-#define SPI_FRF_OFFSET			4
+-#define SPI_FRF_SPI			0x0
+-#define SPI_FRF_SSP			0x1
+-#define SPI_FRF_MICROWIRE		0x2
+-#define SPI_FRF_RESV			0x3
+-
+-#define SPI_MODE_OFFSET			6
+-#define SPI_SCPH_OFFSET			6
+-#define SPI_SCOL_OFFSET			7
+-#define SPI_TMOD_OFFSET			8
+-#define	SPI_TMOD_TR			0x0		/* xmit & recv */
+-#define SPI_TMOD_TO			0x1		/* xmit only */
+-#define SPI_TMOD_RO			0x2		/* recv only */
+-#define SPI_TMOD_EPROMREAD		0x3		/* eeprom read mode */
+-
+-#define SPI_SLVOE_OFFSET		10
+-#define SPI_SRL_OFFSET			11
+-#define SPI_CFS_OFFSET			12
+-
+-/* Bit fields in SR, 7 bits */
+-#define SR_MASK				0x7f		/* cover 7 bits */
+-#define SR_BUSY				(1 << 0)
+-#define SR_TF_NOT_FULL			(1 << 1)
+-#define SR_TF_EMPT			(1 << 2)
+-#define SR_RF_NOT_EMPT			(1 << 3)
+-#define SR_RF_FULL			(1 << 4)
+-#define SR_TX_ERR			(1 << 5)
+-#define SR_DCOL				(1 << 6)
+-
+-struct dw_spi_reg {
+-	u32	ctrl0;
+-	u32	ctrl1;
+-	u32	ssienr;
+-	u32	mwcr;
+-	u32	ser;
+-	u32	baudr;
+-	u32	txfltr;
+-	u32	rxfltr;
+-	u32	txflr;
+-	u32	rxflr;
+-	u32	sr;
+-	u32	imr;
+-	u32	isr;
+-	u32	risr;
+-	u32	txoicr;
+-	u32	rxoicr;
+-	u32	rxuicr;
+-	u32	msticr;
+-	u32	icr;
+-	u32	dmacr;
+-	u32	dmatdlr;
+-	u32	dmardlr;
+-	u32	idr;
+-	u32	version;
+-
+-	/* Currently operates as 32 bits, though only the low 16 bits matter */
+-	u32	dr;
+-} __packed;
+-
+-#define dw_readl(dw, name)		__raw_readl(&(dw)->name)
+-#define dw_writel(dw, name, val)	__raw_writel((val), &(dw)->name)
+-
+-/* Default use SPI0 register for mrst, we will detect Penwell and use SPI1 */
+-static unsigned long mrst_spi_paddr = MRST_REGBASE_SPI0;
+-
+-static u32 *pclk_spi0;
+-/* Always contains an accessible address, start with 0 */
+-static struct dw_spi_reg *pspi;
+-
+-static struct kmsg_dumper dw_dumper;
+-static int dumper_registered;
+-
+-static void dw_kmsg_dump(struct kmsg_dumper *dumper,
+-			 enum kmsg_dump_reason reason)
+-{
+-	static char line[1024];
+-	size_t len;
+-
+-	/* When run to this, we'd better re-init the HW */
+-	mrst_early_console_init();
+-
+-	while (kmsg_dump_get_line(dumper, true, line, sizeof(line), &len))
+-		early_mrst_console.write(&early_mrst_console, line, len);
+-}
+-
+-/* Set the ratio rate to 115200, 8n1, IRQ disabled */
+-static void max3110_write_config(void)
+-{
+-	u16 config;
+-
+-	config = 0xc001;
+-	dw_writel(pspi, dr, config);
+-}
+-
+-/* Translate char to a eligible word and send to max3110 */
+-static void max3110_write_data(char c)
+-{
+-	u16 data;
+-
+-	data = 0x8000 | c;
+-	dw_writel(pspi, dr, data);
+-}
+-
+-void mrst_early_console_init(void)
+-{
+-	u32 ctrlr0 = 0;
+-	u32 spi0_cdiv;
+-	u32 freq; /* Freqency info only need be searched once */
+-
+-	/* Base clk is 100 MHz, the actual clk = 100M / (clk_divider + 1) */
+-	pclk_spi0 = (void *)set_fixmap_offset_nocache(FIX_EARLYCON_MEM_BASE,
+-							MRST_CLK_SPI0_REG);
+-	spi0_cdiv = ((*pclk_spi0) & 0xe00) >> 9;
+-	freq = 100000000 / (spi0_cdiv + 1);
+-
+-	if (mrst_identify_cpu() == MRST_CPU_CHIP_PENWELL)
+-		mrst_spi_paddr = MRST_REGBASE_SPI1;
+-
+-	pspi = (void *)set_fixmap_offset_nocache(FIX_EARLYCON_MEM_BASE,
+-						mrst_spi_paddr);
+-
+-	/* Disable SPI controller */
+-	dw_writel(pspi, ssienr, 0);
+-
+-	/* Set control param, 8 bits, transmit only mode */
+-	ctrlr0 = dw_readl(pspi, ctrl0);
+-
+-	ctrlr0 &= 0xfcc0;
+-	ctrlr0 |= 0xf | (SPI_FRF_SPI << SPI_FRF_OFFSET)
+-		      | (SPI_TMOD_TO << SPI_TMOD_OFFSET);
+-	dw_writel(pspi, ctrl0, ctrlr0);
+-
+-	/*
+-	 * Change the spi0 clk to comply with 115200 bps, use 100000 to
+-	 * calculate the clk dividor to make the clock a little slower
+-	 * than real baud rate.
+-	 */
+-	dw_writel(pspi, baudr, freq/100000);
+-
+-	/* Disable all INT for early phase */
+-	dw_writel(pspi, imr, 0x0);
+-
+-	/* Set the cs to spi-uart */
+-	dw_writel(pspi, ser, 0x2);
+-
+-	/* Enable the HW, the last step for HW init */
+-	dw_writel(pspi, ssienr, 0x1);
+-
+-	/* Set the default configuration */
+-	max3110_write_config();
+-
+-	/* Register the kmsg dumper */
+-	if (!dumper_registered) {
+-		dw_dumper.dump = dw_kmsg_dump;
+-		kmsg_dump_register(&dw_dumper);
+-		dumper_registered = 1;
+-	}
+-}
+-
+-/* Slave select should be called in the read/write function */
+-static void early_mrst_spi_putc(char c)
+-{
+-	unsigned int timeout;
+-	u32 sr;
+-
+-	timeout = MRST_SPI_TIMEOUT;
+-	/* Early putc needs to make sure the TX FIFO is not full */
+-	while (--timeout) {
+-		sr = dw_readl(pspi, sr);
+-		if (!(sr & SR_TF_NOT_FULL))
+-			cpu_relax();
+-		else
+-			break;
+-	}
+-
+-	if (!timeout)
+-		pr_warn("MRST earlycon: timed out\n");
+-	else
+-		max3110_write_data(c);
+-}
+-
+-/* Early SPI only uses polling mode */
+-static void early_mrst_spi_write(struct console *con, const char *str,
+-					unsigned n)
+-{
+-	int i;
+-
+-	for (i = 0; i < n && *str; i++) {
+-		if (*str == '\n')
+-			early_mrst_spi_putc('\r');
+-		early_mrst_spi_putc(*str);
+-		str++;
+-	}
+-}
+-
+-struct console early_mrst_console = {
+-	.name =		"earlymrst",
+-	.write =	early_mrst_spi_write,
+-	.flags =	CON_PRINTBUFFER,
+-	.index =	-1,
+-};
+-
+-/*
+- * Following is the early console based on Medfield HSU (High
+- * Speed UART) device.
+- */
+-#define HSU_PORT_BASE		0xffa28080
+-
+-static void __iomem *phsu;
+-
+-void hsu_early_console_init(const char *s)
+-{
+-	unsigned long paddr, port = 0;
+-	u8 lcr;
+-
+-	/*
+-	 * Select the early HSU console port if specified by user in the
+-	 * kernel command line.
+-	 */
+-	if (*s && !kstrtoul(s, 10, &port))
+-		port = clamp_val(port, 0, 2);
+-
+-	paddr = HSU_PORT_BASE + port * 0x80;
+-	phsu = (void *)set_fixmap_offset_nocache(FIX_EARLYCON_MEM_BASE, paddr);
+-
+-	/* Disable FIFO */
+-	writeb(0x0, phsu + UART_FCR);
+-
+-	/* Set to default 115200 bps, 8n1 */
+-	lcr = readb(phsu + UART_LCR);
+-	writeb((0x80 | lcr), phsu + UART_LCR);
+-	writeb(0x18, phsu + UART_DLL);
+-	writeb(lcr,  phsu + UART_LCR);
+-	writel(0x3600, phsu + UART_MUL*4);
+-
+-	writeb(0x8, phsu + UART_MCR);
+-	writeb(0x7, phsu + UART_FCR);
+-	writeb(0x3, phsu + UART_LCR);
+-
+-	/* Clear IRQ status */
+-	readb(phsu + UART_LSR);
+-	readb(phsu + UART_RX);
+-	readb(phsu + UART_IIR);
+-	readb(phsu + UART_MSR);
+-
+-	/* Enable FIFO */
+-	writeb(0x7, phsu + UART_FCR);
+-}
+-
+-#define BOTH_EMPTY (UART_LSR_TEMT | UART_LSR_THRE)
+-
+-static void early_hsu_putc(char ch)
+-{
+-	unsigned int timeout = 10000; /* 10ms */
+-	u8 status;
+-
+-	while (--timeout) {
+-		status = readb(phsu + UART_LSR);
+-		if (status & BOTH_EMPTY)
+-			break;
+-		udelay(1);
+-	}
+-
+-	/* Only write the char when there was no timeout */
+-	if (timeout)
+-		writeb(ch, phsu + UART_TX);
+-}
+-
+-static void early_hsu_write(struct console *con, const char *str, unsigned n)
+-{
+-	int i;
+-
+-	for (i = 0; i < n && *str; i++) {
+-		if (*str == '\n')
+-			early_hsu_putc('\r');
+-		early_hsu_putc(*str);
+-		str++;
+-	}
+-}
+-
+-struct console early_hsu_console = {
+-	.name =		"earlyhsu",
+-	.write =	early_hsu_write,
+-	.flags =	CON_PRINTBUFFER,
+-	.index =	-1,
+-};
+diff --git a/arch/x86/platform/mrst/mrst.c b/arch/x86/platform/mrst/mrst.c
+deleted file mode 100644
+index 2a45eab..0000000
+--- a/arch/x86/platform/mrst/mrst.c
++++ /dev/null
+@@ -1,1054 +0,0 @@
+-/*
+- * mrst.c: Intel Moorestown platform specific setup code
+- *
+- * (C) Copyright 2008 Intel Corporation
+- * Author: Jacob Pan (jacob.jun.pan@intel.com)
+- *
+- * This program is free software; you can redistribute it and/or
+- * modify it under the terms of the GNU General Public License
+- * as published by the Free Software Foundation; version 2
+- * of the License.
+- */
+-
+-#define pr_fmt(fmt) "mrst: " fmt
+-
+-#include <linux/init.h>
+-#include <linux/kernel.h>
+-#include <linux/interrupt.h>
+-#include <linux/scatterlist.h>
+-#include <linux/sfi.h>
+-#include <linux/intel_pmic_gpio.h>
+-#include <linux/spi/spi.h>
+-#include <linux/i2c.h>
+-#include <linux/platform_data/pca953x.h>
+-#include <linux/gpio_keys.h>
+-#include <linux/input.h>
+-#include <linux/platform_device.h>
+-#include <linux/irq.h>
+-#include <linux/module.h>
+-#include <linux/notifier.h>
+-#include <linux/mfd/intel_msic.h>
+-#include <linux/gpio.h>
+-#include <linux/i2c/tc35876x.h>
+-
+-#include <asm/setup.h>
+-#include <asm/mpspec_def.h>
+-#include <asm/hw_irq.h>
+-#include <asm/apic.h>
+-#include <asm/io_apic.h>
+-#include <asm/mrst.h>
+-#include <asm/mrst-vrtc.h>
+-#include <asm/io.h>
+-#include <asm/i8259.h>
+-#include <asm/intel_scu_ipc.h>
+-#include <asm/apb_timer.h>
+-#include <asm/reboot.h>
+-
+-/*
+- * the clockevent devices on Moorestown/Medfield can be APBT or LAPIC clock,
+- * cmdline option x86_mrst_timer can be used to override the configuration
+- * to prefer one or the other.
+- * at runtime, there are basically three timer configurations:
+- * 1. per cpu apbt clock only
+- * 2. per cpu always-on lapic clocks only, this is Penwell/Medfield only
+- * 3. per cpu lapic clock (C3STOP) and one apbt clock, with broadcast.
+- *
+- * by default (without cmdline option), platform code first detects cpu type
+- * to see if we are on lincroft or penwell, then set up both lapic or apbt
+- * clocks accordingly.
+- * i.e. by default, medfield uses configuration #2, moorestown uses #1.
+- * config #3 is supported but not recommended on medfield.
+- *
+- * rating and feature summary:
+- * lapic (with C3STOP) --------- 100
+- * apbt (always-on) ------------ 110
+- * lapic (always-on,ARAT) ------ 150
+- */
+-
+-enum mrst_timer_options mrst_timer_options;
+-
+-static u32 sfi_mtimer_usage[SFI_MTMR_MAX_NUM];
+-static struct sfi_timer_table_entry sfi_mtimer_array[SFI_MTMR_MAX_NUM];
+-enum mrst_cpu_type __mrst_cpu_chip;
+-EXPORT_SYMBOL_GPL(__mrst_cpu_chip);
+-
+-int sfi_mtimer_num;
+-
+-struct sfi_rtc_table_entry sfi_mrtc_array[SFI_MRTC_MAX];
+-EXPORT_SYMBOL_GPL(sfi_mrtc_array);
+-int sfi_mrtc_num;
+-
+-static void mrst_power_off(void)
+-{
+-}
+-
+-static void mrst_reboot(void)
+-{
+-	intel_scu_ipc_simple_command(IPCMSG_COLD_BOOT, 0);
+-}
+-
+-/* parse all the mtimer info to a static mtimer array */
+-static int __init sfi_parse_mtmr(struct sfi_table_header *table)
+-{
+-	struct sfi_table_simple *sb;
+-	struct sfi_timer_table_entry *pentry;
+-	struct mpc_intsrc mp_irq;
+-	int totallen;
+-
+-	sb = (struct sfi_table_simple *)table;
+-	if (!sfi_mtimer_num) {
+-		sfi_mtimer_num = SFI_GET_NUM_ENTRIES(sb,
+-					struct sfi_timer_table_entry);
+-		pentry = (struct sfi_timer_table_entry *) sb->pentry;
+-		totallen = sfi_mtimer_num * sizeof(*pentry);
+-		memcpy(sfi_mtimer_array, pentry, totallen);
+-	}
+-
+-	pr_debug("SFI MTIMER info (num = %d):\n", sfi_mtimer_num);
+-	pentry = sfi_mtimer_array;
+-	for (totallen = 0; totallen < sfi_mtimer_num; totallen++, pentry++) {
+-		pr_debug("timer[%d]: paddr = 0x%08x, freq = %dHz,"
+-			" irq = %d\n", totallen, (u32)pentry->phys_addr,
+-			pentry->freq_hz, pentry->irq);
+-			if (!pentry->irq)
+-				continue;
+-			mp_irq.type = MP_INTSRC;
+-			mp_irq.irqtype = mp_INT;
+-/* triggering mode edge bit 2-3, active high polarity bit 0-1 */
+-			mp_irq.irqflag = 5;
+-			mp_irq.srcbus = MP_BUS_ISA;
+-			mp_irq.srcbusirq = pentry->irq;	/* IRQ */
+-			mp_irq.dstapic = MP_APIC_ALL;
+-			mp_irq.dstirq = pentry->irq;
+-			mp_save_irq(&mp_irq);
+-	}
+-
+-	return 0;
+-}
+-
+-struct sfi_timer_table_entry *sfi_get_mtmr(int hint)
+-{
+-	int i;
+-	if (hint < sfi_mtimer_num) {
+-		if (!sfi_mtimer_usage[hint]) {
+-			pr_debug("hint taken for timer %d irq %d\n",
+-				hint, sfi_mtimer_array[hint].irq);
+-			sfi_mtimer_usage[hint] = 1;
+-			return &sfi_mtimer_array[hint];
+-		}
+-	}
+-	/* take the first timer available */
+-	for (i = 0; i < sfi_mtimer_num;) {
+-		if (!sfi_mtimer_usage[i]) {
+-			sfi_mtimer_usage[i] = 1;
+-			return &sfi_mtimer_array[i];
+-		}
+-		i++;
+-	}
+-	return NULL;
+-}
+-
+-void sfi_free_mtmr(struct sfi_timer_table_entry *mtmr)
+-{
+-	int i;
+-	for (i = 0; i < sfi_mtimer_num;) {
+-		if (mtmr->irq == sfi_mtimer_array[i].irq) {
+-			sfi_mtimer_usage[i] = 0;
+-			return;
+-		}
+-		i++;
+-	}
+-}
+-
+-/* parse all the mrtc info to a global mrtc array */
+-int __init sfi_parse_mrtc(struct sfi_table_header *table)
+-{
+-	struct sfi_table_simple *sb;
+-	struct sfi_rtc_table_entry *pentry;
+-	struct mpc_intsrc mp_irq;
+-
+-	int totallen;
+-
+-	sb = (struct sfi_table_simple *)table;
+-	if (!sfi_mrtc_num) {
+-		sfi_mrtc_num = SFI_GET_NUM_ENTRIES(sb,
+-						struct sfi_rtc_table_entry);
+-		pentry = (struct sfi_rtc_table_entry *)sb->pentry;
+-		totallen = sfi_mrtc_num * sizeof(*pentry);
+-		memcpy(sfi_mrtc_array, pentry, totallen);
+-	}
+-
+-	pr_debug("SFI RTC info (num = %d):\n", sfi_mrtc_num);
+-	pentry = sfi_mrtc_array;
+-	for (totallen = 0; totallen < sfi_mrtc_num; totallen++, pentry++) {
+-		pr_debug("RTC[%d]: paddr = 0x%08x, irq = %d\n",
+-			totallen, (u32)pentry->phys_addr, pentry->irq);
+-		mp_irq.type = MP_INTSRC;
+-		mp_irq.irqtype = mp_INT;
+-		mp_irq.irqflag = 0xf;	/* level trigger and active low */
+-		mp_irq.srcbus = MP_BUS_ISA;
+-		mp_irq.srcbusirq = pentry->irq;	/* IRQ */
+-		mp_irq.dstapic = MP_APIC_ALL;
+-		mp_irq.dstirq = pentry->irq;
+-		mp_save_irq(&mp_irq);
+-	}
+-	return 0;
+-}
+-
+-static unsigned long __init mrst_calibrate_tsc(void)
+-{
+-	unsigned long fast_calibrate;
+-	u32 lo, hi, ratio, fsb;
+-
+-	rdmsr(MSR_IA32_PERF_STATUS, lo, hi);
+-	pr_debug("IA32 perf status is 0x%x, 0x%0x\n", lo, hi);
+-	ratio = (hi >> 8) & 0x1f;
+-	pr_debug("ratio is %d\n", ratio);
+-	if (!ratio) {
+-		pr_err("read a zero ratio, should be incorrect!\n");
+-		pr_err("force tsc ratio to 16 ...\n");
+-		ratio = 16;
+-	}
+-	rdmsr(MSR_FSB_FREQ, lo, hi);
+-	if ((lo & 0x7) == 0x7)
+-		fsb = PENWELL_FSB_FREQ_83SKU;
+-	else
+-		fsb = PENWELL_FSB_FREQ_100SKU;
+-	fast_calibrate = ratio * fsb;
+-	pr_debug("read penwell tsc %lu khz\n", fast_calibrate);
+-	lapic_timer_frequency = fsb * 1000 / HZ;
+-	/* mark tsc clocksource as reliable */
+-	set_cpu_cap(&boot_cpu_data, X86_FEATURE_TSC_RELIABLE);
+-	
+-	if (fast_calibrate)
+-		return fast_calibrate;
+-
+-	return 0;
+-}
+-
+-static void __init mrst_time_init(void)
+-{
+-	sfi_table_parse(SFI_SIG_MTMR, NULL, NULL, sfi_parse_mtmr);
+-	switch (mrst_timer_options) {
+-	case MRST_TIMER_APBT_ONLY:
+-		break;
+-	case MRST_TIMER_LAPIC_APBT:
+-		x86_init.timers.setup_percpu_clockev = setup_boot_APIC_clock;
+-		x86_cpuinit.setup_percpu_clockev = setup_secondary_APIC_clock;
+-		break;
+-	default:
+-		if (!boot_cpu_has(X86_FEATURE_ARAT))
+-			break;
+-		x86_init.timers.setup_percpu_clockev = setup_boot_APIC_clock;
+-		x86_cpuinit.setup_percpu_clockev = setup_secondary_APIC_clock;
+-		return;
+-	}
+-	/* we need at least one APB timer */
+-	pre_init_apic_IRQ0();
+-	apbt_time_init();
+-}
+-
+-static void mrst_arch_setup(void)
+-{
+-	if (boot_cpu_data.x86 == 6 && boot_cpu_data.x86_model == 0x27)
+-		__mrst_cpu_chip = MRST_CPU_CHIP_PENWELL;
+-	else {
+-		pr_err("Unknown Intel MID CPU (%d:%d), default to Penwell\n",
+-			boot_cpu_data.x86, boot_cpu_data.x86_model);
+-		__mrst_cpu_chip = MRST_CPU_CHIP_PENWELL;
+-	}
+-}
+-
+-/* MID systems don't have i8042 controller */
+-static int mrst_i8042_detect(void)
+-{
+-	return 0;
+-}
+-
+-/*
+- * Moorestown does not have external NMI source nor port 0x61 to report
+- * NMI status. The possible NMI sources are from pmu as a result of NMI
+- * watchdog or lock debug. Reading io port 0x61 results in 0xff which
+- * misled NMI handler.
+- */
+-static unsigned char mrst_get_nmi_reason(void)
+-{
+-	return 0;
+-}
+-
+-/*
+- * Moorestown specific x86_init function overrides and early setup
+- * calls.
+- */
+-void __init x86_mrst_early_setup(void)
+-{
+-	x86_init.resources.probe_roms = x86_init_noop;
+-	x86_init.resources.reserve_resources = x86_init_noop;
+-
+-	x86_init.timers.timer_init = mrst_time_init;
+-	x86_init.timers.setup_percpu_clockev = x86_init_noop;
+-
+-	x86_init.irqs.pre_vector_init = x86_init_noop;
+-
+-	x86_init.oem.arch_setup = mrst_arch_setup;
+-
+-	x86_cpuinit.setup_percpu_clockev = apbt_setup_secondary_clock;
+-
+-	x86_platform.calibrate_tsc = mrst_calibrate_tsc;
+-	x86_platform.i8042_detect = mrst_i8042_detect;
+-	x86_init.timers.wallclock_init = mrst_rtc_init;
+-	x86_platform.get_nmi_reason = mrst_get_nmi_reason;
+-
+-	x86_init.pci.init = pci_mrst_init;
+-	x86_init.pci.fixup_irqs = x86_init_noop;
+-
+-	legacy_pic = &null_legacy_pic;
+-
+-	/* Moorestown specific power_off/restart method */
+-	pm_power_off = mrst_power_off;
+-	machine_ops.emergency_restart  = mrst_reboot;
+-
+-	/* Avoid searching for BIOS MP tables */
+-	x86_init.mpparse.find_smp_config = x86_init_noop;
+-	x86_init.mpparse.get_smp_config = x86_init_uint_noop;
+-	set_bit(MP_BUS_ISA, mp_bus_not_pci);
+-}
+-
+-/*
+- * if user does not want to use per CPU apb timer, just give it a lower rating
+- * than local apic timer and skip the late per cpu timer init.
+- */
+-static inline int __init setup_x86_mrst_timer(char *arg)
+-{
+-	if (!arg)
+-		return -EINVAL;
+-
+-	if (strcmp("apbt_only", arg) == 0)
+-		mrst_timer_options = MRST_TIMER_APBT_ONLY;
+-	else if (strcmp("lapic_and_apbt", arg) == 0)
+-		mrst_timer_options = MRST_TIMER_LAPIC_APBT;
+-	else {
+-		pr_warn("X86 MRST timer option %s not recognised"
+-			   " use x86_mrst_timer=apbt_only or lapic_and_apbt\n",
+-			   arg);
+-		return -EINVAL;
+-	}
+-	return 0;
+-}
+-__setup("x86_mrst_timer=", setup_x86_mrst_timer);
+-
+-/*
+- * Parsing GPIO table first, since the DEVS table will need this table
+- * to map the pin name to the actual pin.
+- */
+-static struct sfi_gpio_table_entry *gpio_table;
+-static int gpio_num_entry;
+-
+-static int __init sfi_parse_gpio(struct sfi_table_header *table)
+-{
+-	struct sfi_table_simple *sb;
+-	struct sfi_gpio_table_entry *pentry;
+-	int num, i;
+-
+-	if (gpio_table)
+-		return 0;
+-	sb = (struct sfi_table_simple *)table;
+-	num = SFI_GET_NUM_ENTRIES(sb, struct sfi_gpio_table_entry);
+-	pentry = (struct sfi_gpio_table_entry *)sb->pentry;
+-
+-	gpio_table = kmalloc(num * sizeof(*pentry), GFP_KERNEL);
+-	if (!gpio_table)
+-		return -1;
+-	memcpy(gpio_table, pentry, num * sizeof(*pentry));
+-	gpio_num_entry = num;
+-
+-	pr_debug("GPIO pin info:\n");
+-	for (i = 0; i < num; i++, pentry++)
+-		pr_debug("info[%2d]: controller = %16.16s, pin_name = %16.16s,"
+-		" pin = %d\n", i,
+-			pentry->controller_name,
+-			pentry->pin_name,
+-			pentry->pin_no);
+-	return 0;
+-}
+-
 -static int get_gpio_by_name(const char *name)
-+int get_gpio_by_name(const char *name)
- {
- 	struct sfi_gpio_table_entry *pentry = gpio_table;
- 	int i;
-@@ -388,329 +387,6 @@ static int get_gpio_by_name(const char *name)
- 	return -1;
- }
- 
+-{
+-	struct sfi_gpio_table_entry *pentry = gpio_table;
+-	int i;
+-
+-	if (!pentry)
+-		return -1;
+-	for (i = 0; i < gpio_num_entry; i++, pentry++) {
+-		if (!strncmp(name, pentry->pin_name, SFI_NAME_LEN))
+-			return pentry->pin_no;
+-	}
+-	return -1;
+-}
+-
+-/*
+- * Here defines the array of devices platform data that IAFW would export
+- * through SFI "DEVS" table, we use name and type to match the device and
+- * its platform data.
+- */
+-struct devs_id {
+-	char name[SFI_NAME_LEN + 1];
+-	u8 type;
+-	u8 delay;
+-	void *(*get_platform_data)(void *info);
+-};
+-
 -/* the offset for the mapping of global gpio pin to irq */
--#define INTEL_MID_IRQ_OFFSET 0x100
+-#define MRST_IRQ_OFFSET 0x100
 -
 -static void __init *pmic_gpio_platform_data(void *info)
 -{
@@ -1571,7 +3329,7 @@ index 3a210d9..0ac2bd6 100644
 -	if (gpio_base == -1)
 -		gpio_base = 64;
 -	pmic_gpio_pdata.gpio_base = gpio_base;
--	pmic_gpio_pdata.irq_base = gpio_base + INTEL_MID_IRQ_OFFSET;
+-	pmic_gpio_pdata.irq_base = gpio_base + MRST_IRQ_OFFSET;
 -	pmic_gpio_pdata.gpiointr = 0xffffeff8;
 -
 -	return &pmic_gpio_pdata;
@@ -1585,7 +3343,7 @@ index 3a210d9..0ac2bd6 100644
 -	spi_info->mode = SPI_MODE_0;
 -	if (intr == -1)
 -		return NULL;
--	spi_info->irq = intr + INTEL_MID_IRQ_OFFSET;
+-	spi_info->irq = intr + MRST_IRQ_OFFSET;
 -	return NULL;
 -}
 -
@@ -1625,8 +3383,8 @@ index 3a210d9..0ac2bd6 100644
 -		return NULL;
 -	max7315->gpio_base = gpio_base;
 -	if (intr != -1) {
--		i2c_info->irq = intr + INTEL_MID_IRQ_OFFSET;
--		max7315->irq_base = gpio_base + INTEL_MID_IRQ_OFFSET;
+-		i2c_info->irq = intr + MRST_IRQ_OFFSET;
+-		max7315->irq_base = gpio_base + MRST_IRQ_OFFSET;
 -	} else {
 -		i2c_info->irq = -1;
 -		max7315->irq_base = -1;
@@ -1653,8 +3411,8 @@ index 3a210d9..0ac2bd6 100644
 -		return NULL;
 -	tca6416.gpio_base = gpio_base;
 -	if (intr != -1) {
--		i2c_info->irq = intr + INTEL_MID_IRQ_OFFSET;
--		tca6416.irq_base = gpio_base + INTEL_MID_IRQ_OFFSET;
+-		i2c_info->irq = intr + MRST_IRQ_OFFSET;
+-		tca6416.irq_base = gpio_base + MRST_IRQ_OFFSET;
 -	} else {
 -		i2c_info->irq = -1;
 -		tca6416.irq_base = -1;
@@ -1670,7 +3428,7 @@ index 3a210d9..0ac2bd6 100644
 -	if (intr == -1)
 -		return NULL;
 -
--	i2c_info->irq = intr + INTEL_MID_IRQ_OFFSET;
+-	i2c_info->irq = intr + MRST_IRQ_OFFSET;
 -	return NULL;
 -}
 -
@@ -1684,8 +3442,8 @@ index 3a210d9..0ac2bd6 100644
 -	if (intr == -1 || intr2nd == -1)
 -		return NULL;
 -
--	i2c_info->irq = intr + INTEL_MID_IRQ_OFFSET;
--	intr2nd_pdata = intr2nd + INTEL_MID_IRQ_OFFSET;
+-	i2c_info->irq = intr + MRST_IRQ_OFFSET;
+-	intr2nd_pdata = intr2nd + MRST_IRQ_OFFSET;
 -
 -	return &intr2nd_pdata;
 -}
@@ -1700,8 +3458,8 @@ index 3a210d9..0ac2bd6 100644
 -	if (intr == -1 || intr2nd == -1)
 -		return NULL;
 -
--	i2c_info->irq = intr + INTEL_MID_IRQ_OFFSET;
--	intr2nd_pdata = intr2nd + INTEL_MID_IRQ_OFFSET;
+-	i2c_info->irq = intr + MRST_IRQ_OFFSET;
+-	intr2nd_pdata = intr2nd + MRST_IRQ_OFFSET;
 -
 -	return &intr2nd_pdata;
 -}
@@ -1731,9 +3489,9 @@ index 3a210d9..0ac2bd6 100644
 -	.resource	= msic_resources,
 -};
 -
--static inline bool intel_mid_has_msic(void)
+-static inline bool mrst_has_msic(void)
 -{
--	return intel_mid_identify_cpu() == INTEL_MID_CPU_CHIP_PENWELL;
+-	return mrst_identify_cpu() == MRST_CPU_CHIP_PENWELL;
 -}
 -
 -static int msic_scu_status_change(struct notifier_block *nb,
@@ -1757,7 +3515,7 @@ index 3a210d9..0ac2bd6 100644
 -	 * We need to be sure that the SCU IPC is ready before MSIC device
 -	 * can be registered.
 -	 */
--	if (intel_mid_has_msic())
+-	if (mrst_has_msic())
 -		intel_scu_notifier_add(&msic_scu_notifier);
 -
 -	return 0;
@@ -1852,100 +3610,306 @@ index 3a210d9..0ac2bd6 100644
 -}
 -
 -static const struct devs_id __initconst device_ids[] = {
--	{"bma023", SFI_DEV_TYPE_I2C, 1, &no_platform_data, NULL},
--	{"pmic_gpio", SFI_DEV_TYPE_SPI, 1, &pmic_gpio_platform_data, NULL},
--	{"pmic_gpio", SFI_DEV_TYPE_IPC, 1, &pmic_gpio_platform_data,
--					&ipc_device_handler},
--	{"spi_max3111", SFI_DEV_TYPE_SPI, 0, &max3111_platform_data, NULL},
--	{"i2c_max7315", SFI_DEV_TYPE_I2C, 1, &max7315_platform_data, NULL},
--	{"i2c_max7315_2", SFI_DEV_TYPE_I2C, 1, &max7315_platform_data, NULL},
--	{"tca6416", SFI_DEV_TYPE_I2C, 1, &tca6416_platform_data, NULL},
--	{"emc1403", SFI_DEV_TYPE_I2C, 1, &emc1403_platform_data, NULL},
--	{"i2c_accel", SFI_DEV_TYPE_I2C, 0, &lis331dl_platform_data, NULL},
--	{"pmic_audio", SFI_DEV_TYPE_IPC, 1, &no_platform_data,
--					&ipc_device_handler},
--	{"mpu3050", SFI_DEV_TYPE_I2C, 1, &mpu3050_platform_data, NULL},
--	{"i2c_disp_brig", SFI_DEV_TYPE_I2C, 0, &tc35876x_platform_data, NULL},
+-	{"bma023", SFI_DEV_TYPE_I2C, 1, &no_platform_data},
+-	{"pmic_gpio", SFI_DEV_TYPE_SPI, 1, &pmic_gpio_platform_data},
+-	{"pmic_gpio", SFI_DEV_TYPE_IPC, 1, &pmic_gpio_platform_data},
+-	{"spi_max3111", SFI_DEV_TYPE_SPI, 0, &max3111_platform_data},
+-	{"i2c_max7315", SFI_DEV_TYPE_I2C, 1, &max7315_platform_data},
+-	{"i2c_max7315_2", SFI_DEV_TYPE_I2C, 1, &max7315_platform_data},
+-	{"tca6416", SFI_DEV_TYPE_I2C, 1, &tca6416_platform_data},
+-	{"emc1403", SFI_DEV_TYPE_I2C, 1, &emc1403_platform_data},
+-	{"i2c_accel", SFI_DEV_TYPE_I2C, 0, &lis331dl_platform_data},
+-	{"pmic_audio", SFI_DEV_TYPE_IPC, 1, &no_platform_data},
+-	{"mpu3050", SFI_DEV_TYPE_I2C, 1, &mpu3050_platform_data},
+-	{"i2c_disp_brig", SFI_DEV_TYPE_I2C, 0, &tc35876x_platform_data},
 -
 -	/* MSIC subdevices */
--	{"msic_battery", SFI_DEV_TYPE_IPC, 1, &msic_battery_platform_data,
--					&ipc_device_handler},
--	{"msic_gpio", SFI_DEV_TYPE_IPC, 1, &msic_gpio_platform_data,
--					&ipc_device_handler},
--	{"msic_audio", SFI_DEV_TYPE_IPC, 1, &msic_audio_platform_data,
--					&ipc_device_handler},
--	{"msic_power_btn", SFI_DEV_TYPE_IPC, 1, &msic_power_btn_platform_data,
--					&ipc_device_handler},
--	{"msic_ocd", SFI_DEV_TYPE_IPC, 1, &msic_ocd_platform_data,
--					&ipc_device_handler},
--	{"msic_thermal", SFI_DEV_TYPE_IPC, 1, &msic_thermal_platform_data,
--					&ipc_device_handler},
+-	{"msic_battery", SFI_DEV_TYPE_IPC, 1, &msic_battery_platform_data},
+-	{"msic_gpio", SFI_DEV_TYPE_IPC, 1, &msic_gpio_platform_data},
+-	{"msic_audio", SFI_DEV_TYPE_IPC, 1, &msic_audio_platform_data},
+-	{"msic_power_btn", SFI_DEV_TYPE_IPC, 1, &msic_power_btn_platform_data},
+-	{"msic_ocd", SFI_DEV_TYPE_IPC, 1, &msic_ocd_platform_data},
+-	{"msic_thermal", SFI_DEV_TYPE_IPC, 1, &msic_thermal_platform_data},
+-
 -	{},
 -};
 -
- #define MAX_IPCDEVS	24
- static struct platform_device *ipc_devs[MAX_IPCDEVS];
- static int ipc_next_dev;
-@@ -724,7 +400,7 @@ static struct i2c_board_info *i2c_devs[MAX_SCU_I2C];
- static int i2c_bus[MAX_SCU_I2C];
- static int i2c_next_dev;
- 
+-#define MAX_IPCDEVS	24
+-static struct platform_device *ipc_devs[MAX_IPCDEVS];
+-static int ipc_next_dev;
+-
+-#define MAX_SCU_SPI	24
+-static struct spi_board_info *spi_devs[MAX_SCU_SPI];
+-static int spi_next_dev;
+-
+-#define MAX_SCU_I2C	24
+-static struct i2c_board_info *i2c_devs[MAX_SCU_I2C];
+-static int i2c_bus[MAX_SCU_I2C];
+-static int i2c_next_dev;
+-
 -static void __init intel_scu_device_register(struct platform_device *pdev)
-+void __init intel_scu_device_register(struct platform_device *pdev)
- {
- 	if (ipc_next_dev == MAX_IPCDEVS)
- 		pr_err("too many SCU IPC devices");
-@@ -902,46 +578,6 @@ static void __init sfi_handle_i2c_dev(struct sfi_device_table_entry *pentry,
- 		i2c_register_board_info(pentry->host_num, &i2c_info, 1);
- }
- 
--static void __init ipc_device_handler(struct sfi_device_table_entry *pentry,
--				struct devs_id *dev)
 -{
--	struct platform_device *pdev;
--	void *pdata = NULL;
--	static struct resource res __initdata = {
+-	if (ipc_next_dev == MAX_IPCDEVS)
+-		pr_err("too many SCU IPC devices");
+-	else
+-		ipc_devs[ipc_next_dev++] = pdev;
+-}
+-
+-static void __init intel_scu_spi_device_register(struct spi_board_info *sdev)
+-{
+-	struct spi_board_info *new_dev;
+-
+-	if (spi_next_dev == MAX_SCU_SPI) {
+-		pr_err("too many SCU SPI devices");
+-		return;
+-	}
+-
+-	new_dev = kzalloc(sizeof(*sdev), GFP_KERNEL);
+-	if (!new_dev) {
+-		pr_err("failed to alloc mem for delayed spi dev %s\n",
+-			sdev->modalias);
+-		return;
+-	}
+-	memcpy(new_dev, sdev, sizeof(*sdev));
+-
+-	spi_devs[spi_next_dev++] = new_dev;
+-}
+-
+-static void __init intel_scu_i2c_device_register(int bus,
+-						struct i2c_board_info *idev)
+-{
+-	struct i2c_board_info *new_dev;
+-
+-	if (i2c_next_dev == MAX_SCU_I2C) {
+-		pr_err("too many SCU I2C devices");
+-		return;
+-	}
+-
+-	new_dev = kzalloc(sizeof(*idev), GFP_KERNEL);
+-	if (!new_dev) {
+-		pr_err("failed to alloc mem for delayed i2c dev %s\n",
+-			idev->type);
+-		return;
+-	}
+-	memcpy(new_dev, idev, sizeof(*idev));
+-
+-	i2c_bus[i2c_next_dev] = bus;
+-	i2c_devs[i2c_next_dev++] = new_dev;
+-}
+-
+-BLOCKING_NOTIFIER_HEAD(intel_scu_notifier);
+-EXPORT_SYMBOL_GPL(intel_scu_notifier);
+-
+-/* Called by IPC driver */
+-void intel_scu_devices_create(void)
+-{
+-	int i;
+-
+-	for (i = 0; i < ipc_next_dev; i++)
+-		platform_device_add(ipc_devs[i]);
+-
+-	for (i = 0; i < spi_next_dev; i++)
+-		spi_register_board_info(spi_devs[i], 1);
+-
+-	for (i = 0; i < i2c_next_dev; i++) {
+-		struct i2c_adapter *adapter;
+-		struct i2c_client *client;
+-
+-		adapter = i2c_get_adapter(i2c_bus[i]);
+-		if (adapter) {
+-			client = i2c_new_device(adapter, i2c_devs[i]);
+-			if (!client)
+-				pr_err("can't create i2c device %s\n",
+-					i2c_devs[i]->type);
+-		} else
+-			i2c_register_board_info(i2c_bus[i], i2c_devs[i], 1);
+-	}
+-	intel_scu_notifier_post(SCU_AVAILABLE, NULL);
+-}
+-EXPORT_SYMBOL_GPL(intel_scu_devices_create);
+-
+-/* Called by IPC driver */
+-void intel_scu_devices_destroy(void)
+-{
+-	int i;
+-
+-	intel_scu_notifier_post(SCU_DOWN, NULL);
+-
+-	for (i = 0; i < ipc_next_dev; i++)
+-		platform_device_del(ipc_devs[i]);
+-}
+-EXPORT_SYMBOL_GPL(intel_scu_devices_destroy);
+-
+-static void __init install_irq_resource(struct platform_device *pdev, int irq)
+-{
+-	/* Single threaded */
+-	static struct resource __initdata res = {
 -		.name = "IRQ",
 -		.flags = IORESOURCE_IRQ,
 -	};
+-	res.start = irq;
+-	platform_device_add_resources(pdev, &res, 1);
+-}
 -
--	pr_debug("IPC bus, name = %16.16s, irq = 0x%2x\n",
--		pentry->name, pentry->irq);
+-static void __init sfi_handle_ipc_dev(struct sfi_device_table_entry *entry)
+-{
+-	const struct devs_id *dev = device_ids;
+-	struct platform_device *pdev;
+-	void *pdata = NULL;
 -
--	/*
--	 * We need to call platform init of IPC devices to fill misc_pdata
--	 * structure. It will be used in msic_init for initialization.
--	 */
--	if (dev != NULL)
--		pdata = dev->get_platform_data(pentry);
+-	while (dev->name[0]) {
+-		if (dev->type == SFI_DEV_TYPE_IPC &&
+-			!strncmp(dev->name, entry->name, SFI_NAME_LEN)) {
+-			pdata = dev->get_platform_data(entry);
+-			break;
+-		}
+-		dev++;
+-	}
 -
 -	/*
 -	 * On Medfield the platform device creation is handled by the MSIC
 -	 * MFD driver so we don't need to do it here.
 -	 */
--	if (intel_mid_has_msic())
+-	if (mrst_has_msic())
 -		return;
 -
--	pdev = platform_device_alloc(pentry->name, 0);
+-	pdev = platform_device_alloc(entry->name, 0);
 -	if (pdev == NULL) {
 -		pr_err("out of memory for SFI platform device '%s'.\n",
--			pentry->name);
+-			entry->name);
 -		return;
 -	}
--	res.start = pentry->irq;
--	platform_device_add_resources(pdev, &res, 1);
+-	install_irq_resource(pdev, entry->irq);
 -
 -	pdev->dev.platform_data = pdata;
 -	intel_scu_device_register(pdev);
 -}
 -
- static struct devs_id __init *get_device_id(u8 type, char *name)
- {
- 	struct devs_id *dev = device_ids;
-@@ -1025,65 +661,3 @@ static int __init intel_mid_platform_init(void)
- 	return 0;
- }
- arch_initcall(intel_mid_platform_init);
+-static void __init sfi_handle_spi_dev(struct spi_board_info *spi_info)
+-{
+-	const struct devs_id *dev = device_ids;
+-	void *pdata = NULL;
+-
+-	while (dev->name[0]) {
+-		if (dev->type == SFI_DEV_TYPE_SPI &&
+-			!strncmp(dev->name, spi_info->modalias,
+-						SFI_NAME_LEN)) {
+-			pdata = dev->get_platform_data(spi_info);
+-			break;
+-		}
+-		dev++;
+-	}
+-	spi_info->platform_data = pdata;
+-	if (dev->delay)
+-		intel_scu_spi_device_register(spi_info);
+-	else
+-		spi_register_board_info(spi_info, 1);
+-}
+-
+-static void __init sfi_handle_i2c_dev(int bus, struct i2c_board_info *i2c_info)
+-{
+-	const struct devs_id *dev = device_ids;
+-	void *pdata = NULL;
+-
+-	while (dev->name[0]) {
+-		if (dev->type == SFI_DEV_TYPE_I2C &&
+-			!strncmp(dev->name, i2c_info->type, SFI_NAME_LEN)) {
+-			pdata = dev->get_platform_data(i2c_info);
+-			break;
+-		}
+-		dev++;
+-	}
+-	i2c_info->platform_data = pdata;
+-
+-	if (dev->delay)
+-		intel_scu_i2c_device_register(bus, i2c_info);
+-	else
+-		i2c_register_board_info(bus, i2c_info, 1);
+-}
+-
+-
+-static int __init sfi_parse_devs(struct sfi_table_header *table)
+-{
+-	struct sfi_table_simple *sb;
+-	struct sfi_device_table_entry *pentry;
+-	struct spi_board_info spi_info;
+-	struct i2c_board_info i2c_info;
+-	int num, i, bus;
+-	int ioapic;
+-	struct io_apic_irq_attr irq_attr;
+-
+-	sb = (struct sfi_table_simple *)table;
+-	num = SFI_GET_NUM_ENTRIES(sb, struct sfi_device_table_entry);
+-	pentry = (struct sfi_device_table_entry *)sb->pentry;
+-
+-	for (i = 0; i < num; i++, pentry++) {
+-		int irq = pentry->irq;
+-
+-		if (irq != (u8)0xff) { /* native RTE case */
+-			/* these SPI2 devices are not exposed to system as PCI
+-			 * devices, but they have separate RTE entry in IOAPIC
+-			 * so we have to enable them one by one here
+-			 */
+-			ioapic = mp_find_ioapic(irq);
+-			irq_attr.ioapic = ioapic;
+-			irq_attr.ioapic_pin = irq;
+-			irq_attr.trigger = 1;
+-			irq_attr.polarity = 1;
+-			io_apic_set_pci_routing(NULL, irq, &irq_attr);
+-		} else
+-			irq = 0; /* No irq */
+-
+-		switch (pentry->type) {
+-		case SFI_DEV_TYPE_IPC:
+-			pr_debug("info[%2d]: IPC bus, name = %16.16s, "
+-				"irq = 0x%2x\n", i, pentry->name, pentry->irq);
+-			sfi_handle_ipc_dev(pentry);
+-			break;
+-		case SFI_DEV_TYPE_SPI:
+-			memset(&spi_info, 0, sizeof(spi_info));
+-			strncpy(spi_info.modalias, pentry->name, SFI_NAME_LEN);
+-			spi_info.irq = irq;
+-			spi_info.bus_num = pentry->host_num;
+-			spi_info.chip_select = pentry->addr;
+-			spi_info.max_speed_hz = pentry->max_freq;
+-			pr_debug("info[%2d]: SPI bus = %d, name = %16.16s, "
+-				"irq = 0x%2x, max_freq = %d, cs = %d\n", i,
+-				spi_info.bus_num,
+-				spi_info.modalias,
+-				spi_info.irq,
+-				spi_info.max_speed_hz,
+-				spi_info.chip_select);
+-			sfi_handle_spi_dev(&spi_info);
+-			break;
+-		case SFI_DEV_TYPE_I2C:
+-			memset(&i2c_info, 0, sizeof(i2c_info));
+-			bus = pentry->host_num;
+-			strncpy(i2c_info.type, pentry->name, SFI_NAME_LEN);
+-			i2c_info.irq = irq;
+-			i2c_info.addr = pentry->addr;
+-			pr_debug("info[%2d]: I2C bus = %d, name = %16.16s, "
+-				"irq = 0x%2x, addr = 0x%x\n", i, bus,
+-				i2c_info.type,
+-				i2c_info.irq,
+-				i2c_info.addr);
+-			sfi_handle_i2c_dev(bus, &i2c_info);
+-			break;
+-		case SFI_DEV_TYPE_UART:
+-		case SFI_DEV_TYPE_HSI:
+-		default:
+-			break;
+-		}
+-	}
+-	return 0;
+-}
+-
+-static int __init mrst_platform_init(void)
+-{
+-	sfi_table_parse(SFI_SIG_GPIO, NULL, NULL, sfi_parse_gpio);
+-	sfi_table_parse(SFI_SIG_DEVS, NULL, NULL, sfi_parse_devs);
+-	return 0;
+-}
+-arch_initcall(mrst_platform_init);
 -
 -/*
 - * we will search these buttons in SFI GPIO table (by name)
@@ -1965,7 +3929,7 @@ index 3a210d9..0ac2bd6 100644
 -	{SW_KEYPAD_SLIDE,	-1, 1, "MagSw2",	EV_SW,  0, 20},
 -};
 -
--static struct gpio_keys_platform_data intel_mid_gpio_keys = {
+-static struct gpio_keys_platform_data mrst_gpio_keys = {
 -	.buttons	= gpio_button,
 -	.rep		= 1,
 -	.nbuttons	= -1, /* will fill it after search */
@@ -1975,7 +3939,7 @@ index 3a210d9..0ac2bd6 100644
 -	.name		= "gpio-keys",
 -	.id		= -1,
 -	.dev		= {
--		.platform_data	= &intel_mid_gpio_keys,
+-		.platform_data	= &mrst_gpio_keys,
 -	},
 -};
 -
@@ -2002,33 +3966,275 @@ index 3a210d9..0ac2bd6 100644
 -	}
 -
 -	if (good) {
--		intel_mid_gpio_keys.nbuttons = good;
+-		mrst_gpio_keys.nbuttons = good;
 -		return platform_device_register(&pb_device);
 -	}
 -	return 0;
 -}
 -late_initcall(pb_keys_init);
-diff --git a/arch/x86/platform/intel-mid/intel_mid_weak_decls.h b/arch/x86/platform/intel-mid/intel_mid_weak_decls.h
-new file mode 100644
-index 0000000..dcbe643
---- /dev/null
-+++ b/arch/x86/platform/intel-mid/intel_mid_weak_decls.h
-@@ -0,0 +1,15 @@
-+/*
-+ * intel_mid_weak_decls.h: Weak declarations of intel-mid.c
-+ *
-+ * (C) Copyright 2013 Intel Corporation
-+ * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; version 2
-+ * of the License.
-+ */
-+
-+
-+/* __attribute__((weak)) makes these declarations overridable */
-+extern struct devs_id __initconst device_ids[] __attribute__((weak));
+diff --git a/arch/x86/platform/mrst/vrtc.c b/arch/x86/platform/mrst/vrtc.c
+deleted file mode 100644
+index ca4f7d9..0000000
+--- a/arch/x86/platform/mrst/vrtc.c
++++ /dev/null
+@@ -1,177 +0,0 @@
+-/*
+- * vrtc.c: Driver for virtual RTC device on Intel MID platform
+- *
+- * (C) Copyright 2009 Intel Corporation
+- *
+- * This program is free software; you can redistribute it and/or
+- * modify it under the terms of the GNU General Public License
+- * as published by the Free Software Foundation; version 2
+- * of the License.
+- *
+- * Note:
+- * VRTC is emulated by system controller firmware, the real HW
+- * RTC is located in the PMIC device. SCU FW shadows PMIC RTC
+- * in a memory mapped IO space that is visible to the host IA
+- * processor.
+- *
+- * This driver is based on RTC CMOS driver.
+- */
+-
+-#include <linux/kernel.h>
+-#include <linux/export.h>
+-#include <linux/init.h>
+-#include <linux/sfi.h>
+-#include <linux/platform_device.h>
+-
+-#include <asm/mrst.h>
+-#include <asm/mrst-vrtc.h>
+-#include <asm/time.h>
+-#include <asm/fixmap.h>
+-
+-static unsigned char __iomem *vrtc_virt_base;
+-
+-unsigned char vrtc_cmos_read(unsigned char reg)
+-{
+-	unsigned char retval;
+-
+-	/* vRTC's registers range from 0x0 to 0xD */
+-	if (reg > 0xd || !vrtc_virt_base)
+-		return 0xff;
+-
+-	lock_cmos_prefix(reg);
+-	retval = __raw_readb(vrtc_virt_base + (reg << 2));
+-	lock_cmos_suffix(reg);
+-	return retval;
+-}
+-EXPORT_SYMBOL_GPL(vrtc_cmos_read);
+-
+-void vrtc_cmos_write(unsigned char val, unsigned char reg)
+-{
+-	if (reg > 0xd || !vrtc_virt_base)
+-		return;
+-
+-	lock_cmos_prefix(reg);
+-	__raw_writeb(val, vrtc_virt_base + (reg << 2));
+-	lock_cmos_suffix(reg);
+-}
+-EXPORT_SYMBOL_GPL(vrtc_cmos_write);
+-
+-void vrtc_get_time(struct timespec *now)
+-{
+-	u8 sec, min, hour, mday, mon;
+-	unsigned long flags;
+-	u32 year;
+-
+-	spin_lock_irqsave(&rtc_lock, flags);
+-
+-	while ((vrtc_cmos_read(RTC_FREQ_SELECT) & RTC_UIP))
+-		cpu_relax();
+-
+-	sec = vrtc_cmos_read(RTC_SECONDS);
+-	min = vrtc_cmos_read(RTC_MINUTES);
+-	hour = vrtc_cmos_read(RTC_HOURS);
+-	mday = vrtc_cmos_read(RTC_DAY_OF_MONTH);
+-	mon = vrtc_cmos_read(RTC_MONTH);
+-	year = vrtc_cmos_read(RTC_YEAR);
+-
+-	spin_unlock_irqrestore(&rtc_lock, flags);
+-
+-	/* vRTC YEAR reg contains the offset to 1972 */
+-	year += 1972;
+-
+-	pr_info("vRTC: sec: %d min: %d hour: %d day: %d "
+-		"mon: %d year: %d\n", sec, min, hour, mday, mon, year);
+-
+-	now->tv_sec = mktime(year, mon, mday, hour, min, sec);
+-	now->tv_nsec = 0;
+-}
+-
+-int vrtc_set_mmss(const struct timespec *now)
+-{
+-	unsigned long flags;
+-	struct rtc_time tm;
+-	int year;
+-	int retval = 0;
+-
+-	rtc_time_to_tm(now->tv_sec, &tm);
+-	if (!rtc_valid_tm(&tm) && tm.tm_year >= 72) {
+-		/*
+-		 * tm.year is the number of years since 1900, and the
+-		 * vrtc need the years since 1972.
+-		 */
+-		year = tm.tm_year - 72;
+-		spin_lock_irqsave(&rtc_lock, flags);
+-		vrtc_cmos_write(year, RTC_YEAR);
+-		vrtc_cmos_write(tm.tm_mon, RTC_MONTH);
+-		vrtc_cmos_write(tm.tm_mday, RTC_DAY_OF_MONTH);
+-		vrtc_cmos_write(tm.tm_hour, RTC_HOURS);
+-		vrtc_cmos_write(tm.tm_min, RTC_MINUTES);
+-		vrtc_cmos_write(tm.tm_sec, RTC_SECONDS);
+-		spin_unlock_irqrestore(&rtc_lock, flags);
+-	} else {
+-		pr_err("%s: Invalid vRTC value: write of %lx to vRTC failed\n",
+-			__FUNCTION__, now->tv_sec);
+-		retval = -EINVAL;
+-	}
+-	return retval;
+-}
+-
+-void __init mrst_rtc_init(void)
+-{
+-	unsigned long vrtc_paddr;
+-
+-	sfi_table_parse(SFI_SIG_MRTC, NULL, NULL, sfi_parse_mrtc);
+-
+-	vrtc_paddr = sfi_mrtc_array[0].phys_addr;
+-	if (!sfi_mrtc_num || !vrtc_paddr)
+-		return;
+-
+-	vrtc_virt_base = (void __iomem *)set_fixmap_offset_nocache(FIX_LNW_VRTC,
+-								vrtc_paddr);
+-	x86_platform.get_wallclock = vrtc_get_time;
+-	x86_platform.set_wallclock = vrtc_set_mmss;
+-}
+-
+-/*
+- * The Moorestown platform has a memory mapped virtual RTC device that emulates
+- * the programming interface of the RTC.
+- */
+-
+-static struct resource vrtc_resources[] = {
+-	[0] = {
+-		.flags	= IORESOURCE_MEM,
+-	},
+-	[1] = {
+-		.flags	= IORESOURCE_IRQ,
+-	}
+-};
+-
+-static struct platform_device vrtc_device = {
+-	.name		= "rtc_mrst",
+-	.id		= -1,
+-	.resource	= vrtc_resources,
+-	.num_resources	= ARRAY_SIZE(vrtc_resources),
+-};
+-
+-/* Register the RTC device if appropriate */
+-static int __init mrst_device_create(void)
+-{
+-	/* No Moorestown, no device */
+-	if (!mrst_identify_cpu())
+-		return -ENODEV;
+-	/* No timer, no device */
+-	if (!sfi_mrtc_num)
+-		return -ENODEV;
+-
+-	/* iomem resource */
+-	vrtc_resources[0].start = sfi_mrtc_array[0].phys_addr;
+-	vrtc_resources[0].end = sfi_mrtc_array[0].phys_addr +
+-				MRST_VRTC_MAP_SZ;
+-	/* irq resource */
+-	vrtc_resources[1].start = sfi_mrtc_array[0].irq;
+-	vrtc_resources[1].end = sfi_mrtc_array[0].irq;
+-
+-	return platform_device_register(&vrtc_device);
+-}
+-
+-module_init(mrst_device_create);
+diff --git a/drivers/gpu/drm/gma500/mdfld_dsi_output.h b/drivers/gpu/drm/gma500/mdfld_dsi_output.h
+index 45d5af0..5b646c1 100644
+--- a/drivers/gpu/drm/gma500/mdfld_dsi_output.h
++++ b/drivers/gpu/drm/gma500/mdfld_dsi_output.h
+@@ -39,7 +39,7 @@
+ #include "psb_intel_reg.h"
+ #include "mdfld_output.h"
+ 
+-#include <asm/mrst.h>
++#include <asm/intel-mid.h>
+ 
+ #define FLD_MASK(start, end)	(((1 << ((start) - (end) + 1)) - 1) << (end))
+ #define FLD_VAL(val, start, end) (((val) << (end)) & FLD_MASK(start, end))
+diff --git a/drivers/gpu/drm/gma500/oaktrail_device.c b/drivers/gpu/drm/gma500/oaktrail_device.c
+index 08747fd..7a9ce00 100644
+--- a/drivers/gpu/drm/gma500/oaktrail_device.c
++++ b/drivers/gpu/drm/gma500/oaktrail_device.c
+@@ -26,7 +26,7 @@
+ #include "psb_drv.h"
+ #include "psb_reg.h"
+ #include "psb_intel_reg.h"
+-#include <asm/mrst.h>
++#include <asm/intel-mid.h>
+ #include <asm/intel_scu_ipc.h>
+ #include "mid_bios.h"
+ #include "intel_bios.h"
+diff --git a/drivers/gpu/drm/gma500/oaktrail_lvds.c b/drivers/gpu/drm/gma500/oaktrail_lvds.c
+index e77d721..3ece553 100644
+--- a/drivers/gpu/drm/gma500/oaktrail_lvds.c
++++ b/drivers/gpu/drm/gma500/oaktrail_lvds.c
+@@ -22,7 +22,7 @@
+ 
+ #include <linux/i2c.h>
+ #include <drm/drmP.h>
+-#include <asm/mrst.h>
++#include <asm/intel-mid.h>
+ 
+ #include "intel_bios.h"
+ #include "psb_drv.h"
+diff --git a/drivers/platform/x86/intel_scu_ipc.c b/drivers/platform/x86/intel_scu_ipc.c
+index 9215ed7..5f8f6c9 100644
+--- a/drivers/platform/x86/intel_scu_ipc.c
++++ b/drivers/platform/x86/intel_scu_ipc.c
+@@ -25,7 +25,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/sfi.h>
+ #include <linux/module.h>
+-#include <asm/mrst.h>
++#include <asm/intel-mid.h>
+ #include <asm/intel_scu_ipc.h>
+ 
+ /* IPC defines the following message types */
+diff --git a/drivers/rtc/rtc-mrst.c b/drivers/rtc/rtc-mrst.c
+index 578baf9..315209d9 100644
+--- a/drivers/rtc/rtc-mrst.c
++++ b/drivers/rtc/rtc-mrst.c
+@@ -38,8 +38,8 @@
+ 
+ #include <asm-generic/rtc.h>
+ #include <asm/intel_scu_ipc.h>
+-#include <asm/mrst.h>
+-#include <asm/mrst-vrtc.h>
++#include <asm/intel-mid.h>
++#include <asm/intel_mid_vrtc.h>
+ 
+ struct mrst_rtc {
+ 	struct rtc_device	*rtc;
+diff --git a/drivers/watchdog/intel_scu_watchdog.c b/drivers/watchdog/intel_scu_watchdog.c
+index 9dda2d0..07964d8 100644
+--- a/drivers/watchdog/intel_scu_watchdog.c
++++ b/drivers/watchdog/intel_scu_watchdog.c
+@@ -48,7 +48,7 @@
+ #include <linux/atomic.h>
+ #include <asm/intel_scu_ipc.h>
+ #include <asm/apb_timer.h>
+-#include <asm/mrst.h>
++#include <asm/intel-mid.h>
+ 
+ #include "intel_scu_watchdog.h"
+ 
 -- 
 1.7.9.5
 
