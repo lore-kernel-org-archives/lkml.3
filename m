@@ -1,113 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754172Ab3JJKg7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 06:36:59 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:54307 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753748Ab3JJKg6 (ORCPT
+	id S1754484Ab3JJKjr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 06:39:47 -0400
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:53068 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752641Ab3JJKjo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 06:36:58 -0400
-Date: Thu, 10 Oct 2013 11:36:46 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: "broonie@kernel.org" <broonie@kernel.org>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "sbkim73@samsung.com" <sbkim73@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        YoungJun Cho <yj44.cho@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH 2/2] regulator: s5m8767: Modify parsing method of the
- voltage table of buck2/3/4
-Message-ID: <20131010103646.GH26954@e106331-lin.cambridge.arm.com>
-References: <1381369296-17101-1-git-send-email-cw00.choi@samsung.com>
- <1381369296-17101-2-git-send-email-cw00.choi@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1381369296-17101-2-git-send-email-cw00.choi@samsung.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 10 Oct 2013 06:39:44 -0400
+From: Michal Simek <michal.simek@xilinx.com>
+To: linux-kernel@vger.kernel.org, monstr@monstr.eu, wsa@the-dreams.de
+Cc: Kedareswara rao Appana <appana.durga.rao@xilinx.com>,
+        Jean Delvare <khali@linux-fr.org>, Peter Korsgaard <jacmet@sunsite.dk>,
+        Kedareswara rao Appana <appanad@xilinx.com>, linux-i2c@vger.kernel.org
+Subject: [PATCH v3 1/3] i2c: xilinx: Fix i2c checkpatch warnings
+Date: Thu, 10 Oct 2013 12:39:36 +0200
+Message-Id: <f3fd6f38d2553e59b077edff1969f4d07f8aa811.1381401561.git.michal.simek@xilinx.com>
+X-Mailer: git-send-email 1.8.2.3
+Content-Type: multipart/signed;
+    boundary="=_mimegpg-monstr-desktop-11210-1381401578-0001";
+    micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 10, 2013 at 02:41:36AM +0100, Chanwoo Choi wrote:
-> The s5m8767 regulator driver parse always the voltage table of buck2/3/4.
-> If gpio_dvs feature isn't used and dts haven't included the voltage table
-> of buck2/3/4, s5m8767 regulator driver return error and file probe state.
-> 
-> This patch check only voltage table of buck on s5m8767_pmic_dt_parse_pdata()
-> if buck[2-4]_gpiodvs is true.
-> 
-> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-> Signed-off-by: YoungJun Cho <yj44.cho@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
->  drivers/regulator/s5m8767.c | 54 +++++++++++++++++++++++----------------------
->  1 file changed, 28 insertions(+), 26 deletions(-)
-> 
-> diff --git a/drivers/regulator/s5m8767.c b/drivers/regulator/s5m8767.c
-> index cb6cdb3..29999c0 100644
-> --- a/drivers/regulator/s5m8767.c
-> +++ b/drivers/regulator/s5m8767.c
-> @@ -522,7 +522,7 @@ static int s5m8767_pmic_dt_parse_pdata(struct platform_device *pdev,
->  	struct device_node *pmic_np, *regulators_np, *reg_np;
->  	struct sec_regulator_data *rdata;
->  	struct sec_opmode_data *rmode;
-> -	unsigned int i, dvs_voltage_nr = 1, ret;
-> +	unsigned int i, dvs_voltage_nr = 8, ret;
->  
->  	pmic_np = iodev->dev->of_node;
->  	if (!pmic_np) {
-> @@ -586,15 +586,39 @@ static int s5m8767_pmic_dt_parse_pdata(struct platform_device *pdev,
->  		rmode++;
->  	}
->  
-> -	if (of_get_property(pmic_np, "s5m8767,pmic-buck2-uses-gpio-dvs", NULL))
-> +	if (of_get_property(pmic_np, "s5m8767,pmic-buck2-uses-gpio-dvs", NULL)) {
->  		pdata->buck2_gpiodvs = true;
+This is a MIME GnuPG-signed message.  If you see this text, it means that
+your E-mail or Usenet software does not support MIME signed messages.
+The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
+To open this message correctly you will need to install E-mail or Usenet
+software that supports modern Internet standards.
 
-As this line is being changed, please switch to of_property_read_bool.
+--=_mimegpg-monstr-desktop-11210-1381401578-0001
 
->  
-> -	if (of_get_property(pmic_np, "s5m8767,pmic-buck3-uses-gpio-dvs", NULL))
-> +		if (of_property_read_u32_array(pmic_np,
-> +				"s5m8767,pmic-buck2-dvs-voltage",
-> +				pdata->buck2_voltage, dvs_voltage_nr)) {
+From: Kedareswara rao Appana <appana.durga.rao@xilinx.com>
 
-Won't this break existing (not conforming to the binding) dts?
+Code changes to fix checkpatch warnings listed below.
+- WARNING: please, no space before tabs
+- WARNING: quoted string split across lines
 
-$(git grep s5m8767,pmic-buck2-dvs-voltage) shows me
-arch/arm/boot/dts/exynos5250-arndale.dts is only has one entry in its
-s5m8767,pmic-buck3-uses-gpio-dvs property's list.
+Signed-off-by: Kedareswara rao Appana <appanad@xilinx.com>
+Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+---
+Changes in v3: None
+Changes in v2:
+- It is checkpatch warnings not sparse
+- Extend patch description with checkpatch warnings
 
-> +			dev_err(iodev->dev, "buck2 voltages not specified\n");
-> +			return -EINVAL;
-> +		}
-> +	}
-> +
-> +	if (of_get_property(pmic_np, "s5m8767,pmic-buck3-uses-gpio-dvs", NULL)) {
->  		pdata->buck3_gpiodvs = true;
+Tested by:
+./scripts/checkpatch.pl -f drivers/i2c/busses/i2c-xiic.c
 
-Another of_proeprty_read_bool candidate.
+---
+ drivers/i2c/busses/i2c-xiic.c | 23 +++++++++++------------
+ 1 file changed, 11 insertions(+), 12 deletions(-)
 
->  
-> -	if (of_get_property(pmic_np, "s5m8767,pmic-buck4-uses-gpio-dvs", NULL))
-> +		if (of_property_read_u32_array(pmic_np,
-> +				"s5m8767,pmic-buck3-dvs-voltage",
-> +				pdata->buck3_voltage, dvs_voltage_nr)) {
-> +			dev_err(iodev->dev, "buck3 voltages not specified\n");
-> +			return -EINVAL;
-> +		}
-> +	}
-> +
-> +	if (of_get_property(pmic_np, "s5m8767,pmic-buck4-uses-gpio-dvs", NULL)) {
->  		pdata->buck4_gpiodvs = true;
+diff --git a/drivers/i2c/busses/i2c-xiic.c b/drivers/i2c/busses/i2c-xiic.c
+index 4c8b368..5eb0a8b 100644
+--- a/drivers/i2c/busses/i2c-xiic.c
++++ b/drivers/i2c/busses/i2c-xiic.c
+@@ -68,7 +68,7 @@ struct xiic_i2c {
+ 	struct i2c_adapter	adap;
+ 	struct i2c_msg		*tx_msg;
+ 	spinlock_t		lock;
+-	unsigned int 		tx_pos;
++	unsigned int		tx_pos;
+ 	unsigned int		nmsgs;
+ 	enum xilinx_i2c_state	state;
+ 	struct i2c_msg		*rx_msg;
+@@ -271,11 +271,8 @@ static void xiic_read_rx(struct xiic_i2c *i2c)
 
-Similarly.
+ 	bytes_in_fifo = xiic_getreg8(i2c, XIIC_RFO_REG_OFFSET) + 1;
 
-In general I'm confused by the need for the *-uses-gpio-dvs properties.
-Are they not implied by the presence of *-dvs-voltage properties?
+-	dev_dbg(i2c->adap.dev.parent, "%s entry, bytes in fifo: %d, msg: %d"
+-		", SR: 0x%x, CR: 0x%x\n",
+-		__func__, bytes_in_fifo, xiic_rx_space(i2c),
+-		xiic_getreg8(i2c, XIIC_SR_REG_OFFSET),
+-		xiic_getreg8(i2c, XIIC_CR_REG_OFFSET));
++	dev_dbg(i2c->adap.dev.parent, "%s entry, bytes in fifo: %d, msg: %d",
++		__func__, bytes_in_fifo, xiic_rx_space(i2c));
 
-Cheers,
-Mark.
+ 	if (bytes_in_fifo > xiic_rx_space(i2c))
+ 		bytes_in_fifo = xiic_rx_space(i2c);
+@@ -339,9 +336,10 @@ static void xiic_process(struct xiic_i2c *i2c)
+ 	ier = xiic_getreg32(i2c, XIIC_IIER_OFFSET);
+ 	pend = isr & ier;
+
+-	dev_dbg(i2c->adap.dev.parent, "%s entry, IER: 0x%x, ISR: 0x%x, "
+-		"pend: 0x%x, SR: 0x%x, msg: %p, nmsgs: %d\n",
+-		__func__, ier, isr, pend, xiic_getreg8(i2c, XIIC_SR_REG_OFFSET),
++	dev_dbg(i2c->adap.dev.parent, "%s: IER: 0x%x, ISR: 0x%x, pend: 0x%x\n",
++		__func__, ier, isr, pend);
++	dev_dbg(i2c->adap.dev.parent, "%s: SR: 0x%x, msg: %p, nmsgs: %d\n",
++		__func__, xiic_getreg8(i2c, XIIC_SR_REG_OFFSET),
+ 		i2c->tx_msg, i2c->nmsgs);
+
+ 	/* Do not processes a devices interrupts if the device has no
+@@ -541,9 +539,10 @@ static void xiic_start_send(struct xiic_i2c *i2c)
+
+ 	xiic_irq_clr(i2c, XIIC_INTR_TX_ERROR_MASK);
+
+-	dev_dbg(i2c->adap.dev.parent, "%s entry, msg: %p, len: %d, "
+-		"ISR: 0x%x, CR: 0x%x\n",
+-		__func__, msg, msg->len, xiic_getreg32(i2c, XIIC_IISR_OFFSET),
++	dev_dbg(i2c->adap.dev.parent, "%s entry, msg: %p, len: %d",
++		__func__, msg, msg->len);
++	dev_dbg(i2c->adap.dev.parent, "%s entry, ISR: 0x%x, CR: 0x%x\n",
++		__func__, xiic_getreg32(i2c, XIIC_IISR_OFFSET),
+ 		xiic_getreg8(i2c, XIIC_CR_REG_OFFSET));
+
+ 	if (!(msg->flags & I2C_M_NOSTART)) {
+--
+1.8.2.3
+
+
+--=_mimegpg-monstr-desktop-11210-1381401578-0001
+Content-Type: application/pgp-signature
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAlJWg+oACgkQykllyylKDCGU2ACeL+kHDBVXwY7jrY7XtCN9R++K
+RgoAoJpkTotx4ixRZmXwr7OjAcQGE9Lc
+=y+cm
+-----END PGP SIGNATURE-----
+
+--=_mimegpg-monstr-desktop-11210-1381401578-0001--
