@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757810Ab3JJQCx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 12:02:53 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52830 "EHLO
+	id S1758016Ab3JJQDM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 12:03:12 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52822 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756115Ab3JJPrw (ORCPT
+	with ESMTP id S1757087Ab3JJPru (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 11:47:52 -0400
+	Thu, 10 Oct 2013 11:47:50 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ramneek Mehresh <ramneek.mehresh@freescale.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Dan Carpenter <dan.carpenter@oracle.com>, Mark Brown <broonie@linaro.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 073/104] fsl/usb: Resolve PHY_CLK_VLD instability issue for ULPI phy
-Date: Thu, 10 Oct 2013 08:42:01 -0700
-Message-Id: <1381419752-29733-74-git-send-email-kamal@canonical.com>
+Subject: [PATCH 079/104] ASoC: ab8500-codec: info leak in anc_status_control_put()
+Date: Thu, 10 Oct 2013 08:42:07 -0700
+Message-Id: <1381419752-29733-80-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381419752-29733-1-git-send-email-kamal@canonical.com>
 References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
@@ -28,53 +27,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ramneek Mehresh <ramneek.mehresh@freescale.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit ad1260e9fbf768d6bed227d9604ebee76a84aae3 upstream.
+commit d63733aed90b432e5cc489ddfa28e342f91b4652 upstream.
 
-For controller versions greater than 1.6, setting ULPI_PHY_CLK_SEL
-bit when USB_EN bit is already set causes instability issues with
-PHY_CLK_VLD bit. So USB_EN is set only for IP controller version
-below 1.6 before setting ULPI_PHY_CLK_SEL bit
+If the user passes an invalid value it leads to an info leak when we
+print the error message or it could oops.  This is called with user
+supplied data from snd_ctl_elem_write().
 
-Signed-off-by: Ramneek Mehresh <ramneek.mehresh@freescale.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/host/ehci-fsl.c | 12 +++---------
- 1 file changed, 3 insertions(+), 9 deletions(-)
+ sound/soc/codecs/ab8500-codec.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/host/ehci-fsl.c b/drivers/usb/host/ehci-fsl.c
-index d81d2fc..512f117 100644
---- a/drivers/usb/host/ehci-fsl.c
-+++ b/drivers/usb/host/ehci-fsl.c
-@@ -130,7 +130,7 @@ static int usb_hcd_fsl_probe(const struct hc_driver *driver,
- 	}
+diff --git a/sound/soc/codecs/ab8500-codec.c b/sound/soc/codecs/ab8500-codec.c
+index 6c12ac2..52509dd 100644
+--- a/sound/soc/codecs/ab8500-codec.c
++++ b/sound/soc/codecs/ab8500-codec.c
+@@ -1225,13 +1225,18 @@ static int anc_status_control_put(struct snd_kcontrol *kcontrol,
+ 	struct ab8500_codec_drvdata *drvdata = dev_get_drvdata(codec->dev);
+ 	struct device *dev = codec->dev;
+ 	bool apply_fir, apply_iir;
+-	int req, status;
++	unsigned int req;
++	int status;
  
- 	/* Enable USB controller, 83xx or 8536 */
--	if (pdata->have_sysif_regs)
-+	if (pdata->have_sysif_regs && pdata->controller_ver < FSL_USB_VER_1_6)
- 		setbits32(hcd->regs + FSL_SOC_USB_CTRL, 0x4);
+ 	dev_dbg(dev, "%s: Enter.\n", __func__);
  
- 	/* Don't need to set host mode here. It will be done by tdi_reset() */
-@@ -232,15 +232,9 @@ static int ehci_fsl_setup_phy(struct usb_hcd *hcd,
- 	case FSL_USB2_PHY_ULPI:
- 		if (pdata->have_sysif_regs && pdata->controller_ver) {
- 			/* controller version 1.6 or above */
-+			clrbits32(non_ehci + FSL_SOC_USB_CTRL, UTMI_PHY_EN);
- 			setbits32(non_ehci + FSL_SOC_USB_CTRL,
--					ULPI_PHY_CLK_SEL);
--			/*
--			 * Due to controller issue of PHY_CLK_VALID in ULPI
--			 * mode, we set USB_CTRL_USB_EN before checking
--			 * PHY_CLK_VALID, otherwise PHY_CLK_VALID doesn't work.
--			 */
--			clrsetbits_be32(non_ehci + FSL_SOC_USB_CTRL,
--					UTMI_PHY_EN, USB_CTRL_USB_EN);
-+				ULPI_PHY_CLK_SEL | USB_CTRL_USB_EN);
- 		}
- 		portsc |= PORT_PTS_ULPI;
- 		break;
+ 	mutex_lock(&drvdata->anc_lock);
+ 
+ 	req = ucontrol->value.integer.value[0];
++	if (req >= ARRAY_SIZE(enum_anc_state)) {
++		status = -EINVAL;
++		goto cleanup;
++	}
+ 	if (req != ANC_APPLY_FIR_IIR && req != ANC_APPLY_FIR &&
+ 		req != ANC_APPLY_IIR) {
+ 		dev_err(dev, "%s: ERROR: Unsupported status to set '%s'!\n",
 -- 
 1.8.1.2
 
