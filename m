@@ -1,86 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756774Ab3JJTPT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 15:15:19 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:60323 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756812Ab3JJTPM (ORCPT
+	id S1757187Ab3JJTP3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 15:15:29 -0400
+Received: from cassarossa.samfundet.no ([193.35.52.29]:57602 "EHLO
+	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756812Ab3JJTPY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 15:15:12 -0400
-Date: Thu, 10 Oct 2013 12:15:06 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/6] Optimize the cpu hotplug locking -v2
-Message-ID: <20131010191506.GR5790@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20131010152612.GA13375@redhat.com>
- <20131010090044.7f12ddaf.akpm@linux-foundation.org>
- <20131010123631.1be60315@gandalf.local.home>
- <20131010094355.6f75e5a2.akpm@linux-foundation.org>
- <20131010165337.GT3081@twins.programming.kicks-ass.net>
- <20131010131305.58558079@gandalf.local.home>
- <20131010104856.8f042977112d5ac2693973ae@linux-foundation.org>
- <CA+55aFx-JxRBbPa5EF1foZORpX_+o3T-qqm+1vh5Goa9znmOxA@mail.gmail.com>
- <20131010144327.5ded02ec@gandalf.local.home>
- <20131010185032.GS13848@laptop.programming.kicks-ass.net>
+	Thu, 10 Oct 2013 15:15:24 -0400
+Date: Thu, 10 Oct 2013 21:14:58 +0200
+From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-arch@vger.kernel.org, Haavard Skinnemoen <hskinnemoen@gmail.com>
+Subject: Re: [PATCH 13/34] avr32: handle pgtable_page_ctor() fail
+Message-ID: <20131010191458.GA10670@samfundet.no>
+References: <1381428359-14843-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1381428359-14843-14-git-send-email-kirill.shutemov@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131010185032.GS13848@laptop.programming.kicks-ass.net>
+In-Reply-To: <1381428359-14843-14-git-send-email-kirill.shutemov@linux.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13101019-7164-0000-0000-0000025899BD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 10, 2013 at 08:50:32PM +0200, Peter Zijlstra wrote:
-> On Thu, Oct 10, 2013 at 02:43:27PM -0400, Steven Rostedt wrote:
-> > On Thu, 10 Oct 2013 11:10:35 -0700
-> > Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> >      .. now we can free all the percpu data and kill the CPU ..
-> > > 
-> > > without any locking anywhere - not stop-machine, not anything. If
-> > > somebody is doing a "for_each_cpu()" (under just a regular
-> > > rcu_read_lock()) and they see the bit set while it's going down, who
-> > > cares? The CPU is still there, the data is accessible..
-> > 
-> > The problem is that rcu_read_lock() requires preemption disabled unless
-> > you are using the preemptable rcu tree version. There's always
-> > srcu_read_lock() but that's not so free. It's basically the same as
-> > what Peter is doing.
+Around Thu 10 Oct 2013 21:05:38 +0300 or thereabout, Kirill A. Shutemov wrote:
+> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+
+Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+
+Given [1].
+
+> Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>
+> Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+> ---
+>  arch/avr32/include/asm/pgalloc.h | 5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
 > 
-> No, srcu is actually more expensive in the fast path. Although possibly
-> we could make SRCU more complex ;-)
+> diff --git a/arch/avr32/include/asm/pgalloc.h b/arch/avr32/include/asm/pgalloc.h
+> index bc7e8ae479..1aba19d68c 100644
+> --- a/arch/avr32/include/asm/pgalloc.h
+> +++ b/arch/avr32/include/asm/pgalloc.h
+> @@ -68,7 +68,10 @@ static inline pgtable_t pte_alloc_one(struct mm_struct *mm,
+>  		return NULL;
+>  
+>  	page = virt_to_page(pg);
+> -	pgtable_page_ctor(page);
+> +	if (!pgtable_page_ctor(page)) {
+> +		quicklist_free(QUICK_PT, NULL, pg);
+> +		return NULL;
+> +	}
+>  
+>  	return page;
+>  }
 
-Indeed.  Especially if we wanted to get rid of the memory barriers in
-srcu_read_lock() and srcu_read_unlock() and still allow SRCU to be used
-from idle and offline CPUs!  ;-)
+1: I'm assuming that pgtable_page_ctor() now returns success/error, but there
+is a patch series that I have not seen.
 
-							Thanx, Paul
-
-> > There's places in the kernel that does for_each_cpu() that I'm sure you
-> > don't want to disable preemption for. Especially when you start having
-> > 4096 CPU machines!
-> 
-> :-)
-
-But shouldn't you only have to disable over each separate pass through
-the loop rather across the entire loop?  "I guarantee that the CPU I
-just handed you will remain online through the body of the loop" rather
-than "I guarantee that no CPU is going anywhere through the entire loop."
-
-							Thanx, Paul
-
+-- 
+mvh
+Hans-Christian Egtvedt
