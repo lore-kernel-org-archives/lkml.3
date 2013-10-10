@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757460Ab3JJPt3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 11:49:29 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52937 "EHLO
+	id S1757544Ab3JJPts (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 11:49:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52997 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757390Ab3JJPtU (ORCPT
+	with ESMTP id S1757521Ab3JJPto (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 11:49:20 -0400
+	Thu, 10 Oct 2013 11:49:44 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Masoud Sharbiani <msharbiani@twitter.com>, Vinson Lee <vlee@twitter.com>,
-        Robin Holt <holt@sgi.com>, Russell King <rmk+kernel@arm.linux.org.uk>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>, Ingo Molnar <mingo@kernel.org>,
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 061/104] x86/reboot: Add quirk to make Dell C6100 use reboot=pci automatically
-Date: Thu, 10 Oct 2013 08:41:49 -0700
-Message-Id: <1381419752-29733-62-git-send-email-kamal@canonical.com>
+Subject: [PATCH 104/104] net: Update the sysctl permissions handler to test effective uid/gid
+Date: Thu, 10 Oct 2013 08:42:32 -0700
+Message-Id: <1381419752-29733-105-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381419752-29733-1-git-send-email-kamal@canonical.com>
 References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
@@ -29,51 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Masoud Sharbiani <msharbiani@twitter.com>
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-commit 4f0acd31c31f03ba42494c8baf6c0465150e2621 upstream.
+commit 2433c8f094a008895e66f25bd1773cdb01c91d01 upstream.
 
-Dell PowerEdge C6100 machines fail to completely reboot about 20% of the time.
+Modify the code to use current_euid(), and in_egroup_p, as in done
+in fs/proc/proc_sysctl.c:test_perm()
 
-Signed-off-by: Masoud Sharbiani <msharbiani@twitter.com>
-Signed-off-by: Vinson Lee <vlee@twitter.com>
-Cc: Robin Holt <holt@sgi.com>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
-Link: http://lkml.kernel.org/r/1379717947-18042-1-git-send-email-vlee@freedesktop.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Reviewed-by: Eric Sandeen <sandeen@redhat.com>
+Reported-by: Eric Sandeen <sandeen@redhat.com>
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/x86/kernel/reboot.c | 16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+ net/sysctl_net.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
-index 76fa1e9..90fd119 100644
---- a/arch/x86/kernel/reboot.c
-+++ b/arch/x86/kernel/reboot.c
-@@ -447,6 +447,22 @@ static struct dmi_system_id __initdata reboot_dmi_table[] = {
- 			DMI_MATCH(DMI_PRODUCT_NAME, "Precision M6600"),
- 		},
- 	},
-+	{	/* Handle problems with rebooting on the Dell PowerEdge C6100. */
-+		.callback = set_pci_reboot,
-+		.ident = "Dell PowerEdge C6100",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "C6100"),
-+		},
-+	},
-+	{	/* Some C6100 machines were shipped with vendor being 'Dell'. */
-+		.callback = set_pci_reboot,
-+		.ident = "Dell PowerEdge C6100",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Dell"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "C6100"),
-+		},
-+	},
- 	{ }
- };
+diff --git a/net/sysctl_net.c b/net/sysctl_net.c
+index 9bc6db0..e7000be 100644
+--- a/net/sysctl_net.c
++++ b/net/sysctl_net.c
+@@ -47,12 +47,12 @@ static int net_ctl_permissions(struct ctl_table_header *head,
  
+ 	/* Allow network administrator to have same access as root. */
+ 	if (ns_capable(net->user_ns, CAP_NET_ADMIN) ||
+-	    uid_eq(root_uid, current_uid())) {
++	    uid_eq(root_uid, current_euid())) {
+ 		int mode = (table->mode >> 6) & 7;
+ 		return (mode << 6) | (mode << 3) | mode;
+ 	}
+ 	/* Allow netns root group to have the same access as the root group */
+-	if (gid_eq(root_gid, current_gid())) {
++	if (in_egroup_p(root_gid)) {
+ 		int mode = (table->mode >> 3) & 7;
+ 		return (mode << 3) | mode;
+ 	}
 -- 
 1.8.1.2
 
