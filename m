@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758204Ab3JJQN4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 12:13:56 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52577 "EHLO
+	id S1758189Ab3JJQNy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 12:13:54 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52578 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755791Ab3JJPmt (ORCPT
+	with ESMTP id S1755816Ab3JJPmu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 11:42:49 -0400
+	Thu, 10 Oct 2013 11:42:50 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Phil Oester <kernel@linuxace.com>, "David S. Miller" <davem@davemloft.net>,
+Cc: Rob Gardner <robmatic@gmail.com>, "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 021/104] tcp: tcp_make_synack() should use sock_wmalloc
-Date: Thu, 10 Oct 2013 08:41:09 -0700
-Message-Id: <1381419752-29733-22-git-send-email-kamal@canonical.com>
+Subject: [PATCH 018/104] net: usb: Add HP hs2434 device to ZLP exception table
+Date: Thu, 10 Oct 2013 08:41:06 -0700
+Message-Id: <1381419752-29733-19-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381419752-29733-1-git-send-email-kamal@canonical.com>
 References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,41 +30,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Phil Oester <kernel@linuxace.com>
+From: Rob Gardner <robmatic@gmail.com>
 
-commit eb8895debe1baba41fcb62c78a16f0c63c21662a upstream.
+[ Upstream commit 03803a59e32453ee5737c6096a295f748f03cc49 ]
 
-In commit 90ba9b19 (tcp: tcp_make_synack() can use alloc_skb()), Eric changed
-the call to sock_wmalloc in tcp_make_synack to alloc_skb.  In doing so,
-the netfilter owner match lost its ability to block the SYNACK packet on
-outbound listening sockets.  Revert the change, restoring the owner match
-functionality.
+This patch adds another entry (HP hs2434 Mobile Broadband) to the list
+of exceptional devices that require a zero length packet in order to
+function properly. This list was added in commit 844e88f0. The hs2434
+is manufactured by Sierra Wireless, who also produces the MC7710,
+which the ZLP exception list was created for in the first place. So
+hopefully it is just this one producer's devices that will need this
+workaround.
 
-This closes netfilter bugzilla #847.
+Tested on a DM1-4310NR HP notebook, which does not function without this
+change.
 
-Signed-off-by: Phil Oester <kernel@linuxace.com>
+Signed-off-by: Rob Gardner <robmatic@gmail.com>
+Acked-by: Bjørn Mork <bjorn@mork.no>
 Signed-off-by: David S. Miller <davem@davemloft.net>
-[ kamal: backport to 3.8 ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/ipv4/tcp_output.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/usb/cdc_mbim.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
-index 0bdd879..436d8fb 100644
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -2705,8 +2705,8 @@ struct sk_buff *tcp_make_synack(struct sock *sk, struct dst_entry *dst,
- 
- 	if (cvp != NULL && cvp->s_data_constant && cvp->s_data_desired)
- 		s_data_desired = cvp->s_data_desired;
--	skb = alloc_skb(MAX_TCP_HEADER + 15 + s_data_desired,
--			sk_gfp_atomic(sk, GFP_ATOMIC));
-+	skb = sock_wmalloc(sk, MAX_TCP_HEADER + 15 + s_data_desired, 1,
-+			GFP_ATOMIC);
- 	if (unlikely(!skb)) {
- 		dst_release(dst);
- 		return NULL;
+diff --git a/drivers/net/usb/cdc_mbim.c b/drivers/net/usb/cdc_mbim.c
+index 6bd9167..353d0b8 100644
+--- a/drivers/net/usb/cdc_mbim.c
++++ b/drivers/net/usb/cdc_mbim.c
+@@ -395,6 +395,10 @@ static const struct usb_device_id mbim_devs[] = {
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(0x1199, 0x68a2, USB_CLASS_COMM, USB_CDC_SUBCLASS_MBIM, USB_CDC_PROTO_NONE),
+ 	  .driver_info = (unsigned long)&cdc_mbim_info_zlp,
+ 	},
++	/* HP hs2434 Mobile Broadband Module needs ZLPs */
++	{ USB_DEVICE_AND_INTERFACE_INFO(0x3f0, 0x4b1d, USB_CLASS_COMM, USB_CDC_SUBCLASS_MBIM, USB_CDC_PROTO_NONE),
++	  .driver_info = (unsigned long)&cdc_mbim_info_zlp,
++	},
+ 	{ USB_INTERFACE_INFO(USB_CLASS_COMM, USB_CDC_SUBCLASS_MBIM, USB_CDC_PROTO_NONE),
+ 	  .driver_info = (unsigned long)&cdc_mbim_info,
+ 	},
 -- 
 1.8.1.2
 
