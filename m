@@ -1,144 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756917Ab3JJAhj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 20:37:39 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:43459 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754179Ab3JJAhi (ORCPT
+	id S1755809Ab3JJArf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 20:47:35 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:35435 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754223Ab3JJArd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 20:37:38 -0400
-Message-ID: <1381365455.2297.14.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: Regression parsing GPT (EFI) partition tables
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, Karel Zak <kzak@redhat.com>,
-        Matt Fleming <matt.fleming@intel.com>
-Date: Wed, 09 Oct 2013 17:37:35 -0700
-In-Reply-To: <20131009232642.GA12776@jtriplet-mobl1>
-References: <20131009232642.GA12776@jtriplet-mobl1>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 9 Oct 2013 20:47:33 -0400
+Date: Thu, 10 Oct 2013 01:47:32 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: [RFC] do we want pipefs et.al. in /proc/filesystems?
+Message-ID: <20131010004732.GJ13318@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Josh,
+	We used to require register_filesystem() before any mounts
+(including the internal ones) could be done.  For userland mounts
+it's obviously right - how else could fs type name -> file_system_type
+lookup be done?  For internal ones, it used to be really needed for
+a while, but after some API massage (about 10 years ago, IIRC) it really
+became pointless - kern_mount() takes a pointer to file_system_type
+and doesn't bother with searching for it by name.  For a while there
+was one remaining reason - the list of struct superblock belonging to
+given fs type was a list_head one, with register_filesystem() initializing
+the list.  A couple of years ago we switched to hlist, which doesn't
+require anything of that sort - hlist_head initialized to NULL is an
+empty list.
 
-On Wed, 2013-10-09 at 16:26 -0700, Josh Triplett wrote:
-> When testing ChromeOS with a 3.12 kernel from git, I encountered a
-> regression introduced between 3.11 to 3.12: at boot time, the kernel
-> failed to find any partitions on the USB disk I booted from, which uses
-> a GPT partition table with 12 partitions.  This prevented the system
-> from booting.
-> 
-> Reverting all the patches to block/partitions/efi.c between 3.11 and
-> 3.12 allowed the system to detect partitions again.  The patches I
-> reverted:
-> 
-> 6b02fa5 partitions/efi: loosen check fot pmbr size in lba
-> b4bc4a1 block/partitions/efi.c: consistently use pr_foo()
-> 70f637e partitions/efi: some style cleanups
-> aa054bc partitions/efi: compare first and last usable LBAs
-> 27a7c64 partitions/efi: account for pmbr size in lba
-> b05ebbb partitions/efi: detect hybrid MBRs
-> 3e69ac3 partitions/efi: do not require gpt partition to begin at sector 1
-> 33afd7a partitions/efi: check pmbr record's starting lba
-> c2ebdc2 partitions/efi: use lba-aware partition records
+	These days there's no reason to register the filesystem types
+that can only be used for internal mounts - ia64 pfmfs, anon_inodes,
+bdev, pipefs and sockfs, in the current tree.  The only user-visible
+effect of dropping those register_filesystem() would be shorter
+/proc/filesystems - that bunch wouldn't be mentioned there anymore.
+Does anything care about that?  FWIW, the diff eliminating those
+would be as below (net/socket.c init leaks on early failures;
+I'd left that as-is - it's a separate story).
 
-It would be good to bisect this :)
-I suspect it might be caused by 33afd7a otherwise there's something
-wrong with the mbr size in lba (6b02fa5+27a7c64).
-
-> 
-> I haven't yet attempted to find out if reverting a subset of those patches
-> fixes the problem, though I'd strongly suspect the commits that introduce
-> strictness checks for the partition layout and fail when those checks don't
-> pass.  Most likely ChromeOS's partition layout tripped one of those checks.
-> 
-> Here's the partition layout:
-> 
-> $ gdisk -l /dev/sdc
-> GPT fdisk (gdisk) version 0.8.7
-> 
-> Partition table scan:
->   MBR: protective
->   BSD: not present
->   APM: not present
->   GPT: present
-> 
-> Found valid GPT with protective MBR; using GPT.
-> Disk /dev/sdc: 31293440 sectors, 14.9 GiB
-> Logical sector size: 512 bytes
-> Disk identifier (GUID): 44F4ACFD-546C-E04C-A788-6782FCBDDB3E
-> Partition table holds up to 128 entries
-> First usable sector is 34, last usable sector is 4956062
-> Partitions will be aligned on 1-sector boundaries
-> Total free space is 167801 sectors (81.9 MiB)
-> 
-> Number  Start (sector)    End (sector)  Size       Code  Name
->    1         2826240         4923391   1024.0 MiB  0700  STATE
->    2           20480           53247   16.0 MiB    7F00  KERN-A
->    3          286720         2826239   1.2 GiB     7F01  ROOT-A
->    4           53248           86015   16.0 MiB    7F00  KERN-B
->    5          282624          286719   2.0 MiB     7F01  ROOT-B
->    6           16448           16448   512 bytes   7F00  KERN-C
->    7           16449           16449   512 bytes   7F01  ROOT-C
->    8           86016          118783   16.0 MiB    0700  OEM
->    9           16450           16450   512 bytes   7F02  reserved
->   10           16451           16451   512 bytes   7F02  reserved
->   11              64           16447   8.0 MiB     FFFF  RWFW
->   12          249856          282623   16.0 MiB    EF00  EFI-SYSTEM
-> 
-> 
-> Also note that ChromeOS USB disks typically only have one valid GPT, at the
-> beginning of the disk, since they're imaged from a file and nothing moves the
-> secondary GPT from the end of the image to the end of the disk.  Partitioning
-> tools, and the kernel, typically gripe about this; for instance, dmesg from a
-> 3.10 kernel when I plug in a ChromeOS USB disk:
-> 
-> GPT:Primary header thinks Alt. header is not at the end of the disk.
-> GPT:4956095 != 31293439
-> GPT:Alternate GPT header not at the end of the disk.
-> GPT:4956095 != 31293439
-
-Hmmm, could you try the following? 
-
-diff --git a/block/partitions/efi.c b/block/partitions/efi.c
-index 1eb09ee..d589937 100644
---- a/block/partitions/efi.c
-+++ b/block/partitions/efi.c
-@@ -157,10 +157,6 @@ static inline int pmbr_part_valid(gpt_mbr_record *part)
-        if (part->os_type != EFI_PMBR_OSTYPE_EFI_GPT)
-                goto invalid;
+diff --git a/arch/ia64/kernel/perfmon.c b/arch/ia64/kernel/perfmon.c
+index 5a9ff1c..bb3968e 100644
+--- a/arch/ia64/kernel/perfmon.c
++++ b/arch/ia64/kernel/perfmon.c
+@@ -1529,16 +1529,10 @@ static struct vfsmount *pfmfs_mnt __read_mostly;
+ static int __init
+ init_pfm_fs(void)
+ {
+-	int err = register_filesystem(&pfm_fs_type);
+-	if (!err) {
+-		pfmfs_mnt = kern_mount(&pfm_fs_type);
+-		err = PTR_ERR(pfmfs_mnt);
+-		if (IS_ERR(pfmfs_mnt))
+-			unregister_filesystem(&pfm_fs_type);
+-		else
+-			err = 0;
+-	}
+-	return err;
++	pfmfs_mnt = kern_mount(&pfm_fs_type);
++	if (IS_ERR(pfmfs_mnt))
++		return PTR_ERR(pfmfs_mnt);
++	return 0;
+ }
  
--       /* set to 0x00000001 (i.e., the LBA of the GPT Partition Header) */
--       if (le32_to_cpu(part->starting_lba) != GPT_PRIMARY_PARTITION_TABLE_LBA)
--               goto invalid;
+ static ssize_t
+diff --git a/fs/anon_inodes.c b/fs/anon_inodes.c
+index 2408473..ad56c5a 100644
+--- a/fs/anon_inodes.c
++++ b/fs/anon_inodes.c
+@@ -175,22 +175,11 @@ EXPORT_SYMBOL_GPL(anon_inode_getfd);
+ 
+ static int __init anon_inode_init(void)
+ {
+-	int error;
 -
-        return GPT_MBR_PROTECTIVE;
- invalid:
-        return 0;
-
-
-If this doesn't work, could you bypass mbr checks with force_gpt option
-and add some printk to the partition_record.size_in_lba, like:
-
-diff --git a/block/partitions/efi.c b/block/partitions/efi.c
-index 1eb09ee..77cfed2 100644
---- a/block/partitions/efi.c
-+++ b/block/partitions/efi.c
-@@ -225,6 +225,7 @@ check_hybrid:
-         */
-        if (ret == GPT_MBR_PROTECTIVE) {
-                sz = le32_to_cpu(mbr->partition_record[part].size_in_lba);
-+               printk("gpt sz check: %d, %ld\n", sz, total_sectors);
-                if (sz != (uint32_t) total_sectors - 1 && sz != 0xFFFFFFFF)
-                        ret = 0;
-        }
-
-Thanks,
-Davidlohr
-
+-	error = register_filesystem(&anon_inode_fs_type);
+-	if (error)
+-		goto err_exit;
+ 	anon_inode_mnt = kern_mount(&anon_inode_fs_type);
+-	if (IS_ERR(anon_inode_mnt)) {
+-		error = PTR_ERR(anon_inode_mnt);
+-		goto err_unregister_filesystem;
+-	}
++	if (IS_ERR(anon_inode_mnt))
++		panic("anon_inode_init() failed (%ld)\n",
++			PTR_ERR(anon_inode_mnt));
+ 	return 0;
+-
+-err_unregister_filesystem:
+-	unregister_filesystem(&anon_inode_fs_type);
+-err_exit:
+-	panic(KERN_ERR "anon_inode_init() failed (%d)\n", error);
+ }
+ 
+ fs_initcall(anon_inode_init);
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index 1e86823..ff3bf6a 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -461,9 +461,6 @@ void __init bdev_cache_init(void)
+ 			0, (SLAB_HWCACHE_ALIGN|SLAB_RECLAIM_ACCOUNT|
+ 				SLAB_MEM_SPREAD|SLAB_PANIC),
+ 			init_once);
+-	err = register_filesystem(&bd_type);
+-	if (err)
+-		panic("Cannot register bdev pseudo-fs");
+ 	bd_mnt = kern_mount(&bd_type);
+ 	if (IS_ERR(bd_mnt))
+ 		panic("Cannot create bdev pseudo-fs");
+diff --git a/fs/pipe.c b/fs/pipe.c
+index d2c45e14..7a63d0a 100644
+--- a/fs/pipe.c
++++ b/fs/pipe.c
+@@ -1311,16 +1311,10 @@ static struct file_system_type pipe_fs_type = {
+ 
+ static int __init init_pipe_fs(void)
+ {
+-	int err = register_filesystem(&pipe_fs_type);
+-
+-	if (!err) {
+-		pipe_mnt = kern_mount(&pipe_fs_type);
+-		if (IS_ERR(pipe_mnt)) {
+-			err = PTR_ERR(pipe_mnt);
+-			unregister_filesystem(&pipe_fs_type);
+-		}
+-	}
+-	return err;
++	pipe_mnt = kern_mount(&pipe_fs_type);
++	if (IS_ERR(pipe_mnt))
++		panic("pipe init failed\n");
++	return 0;
+ }
+ 
+ fs_initcall(init_pipe_fs);
+diff --git a/net/socket.c b/net/socket.c
+index ebed4b6..ea534a3 100644
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -2617,7 +2617,7 @@ static int __init sock_init(void)
+ 	 */
+ 	err = net_sysctl_init();
+ 	if (err)
+-		goto out;
++		return err;
+ 
+ 	/*
+ 	 *      Initialize skbuff SLAB cache
+@@ -2630,14 +2630,9 @@ static int __init sock_init(void)
+ 
+ 	init_inodecache();
+ 
+-	err = register_filesystem(&sock_fs_type);
+-	if (err)
+-		goto out_fs;
+ 	sock_mnt = kern_mount(&sock_fs_type);
+-	if (IS_ERR(sock_mnt)) {
+-		err = PTR_ERR(sock_mnt);
+-		goto out_mount;
+-	}
++	if (IS_ERR(sock_mnt))
++		return PTR_ERR(sock_mnt);
+ 
+ 	/* The real protocol initialization is performed in later initcalls.
+ 	 */
+@@ -2645,20 +2640,13 @@ static int __init sock_init(void)
+ #ifdef CONFIG_NETFILTER
+ 	err = netfilter_init();
+ 	if (err)
+-		goto out;
++		return err;
+ #endif
+ 
+ #ifdef CONFIG_NETWORK_PHY_TIMESTAMPING
+ 	skb_timestamping_init();
+ #endif
+-
+-out:
+-	return err;
+-
+-out_mount:
+-	unregister_filesystem(&sock_fs_type);
+-out_fs:
+-	goto out;
++	return 0;
+ }
+ 
+ core_initcall(sock_init);	/* early initcall */
