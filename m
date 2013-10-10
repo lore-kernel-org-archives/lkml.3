@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757739Ab3JJP57 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 11:57:59 -0400
-Received: from mga01.intel.com ([192.55.52.88]:34863 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753980Ab3JJP54 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 11:57:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1072,1371106800"; 
-   d="scan'208";a="414953210"
-Date: Thu, 10 Oct 2013 17:54:43 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>
-Subject: Re: [REPOST/PATCH] mfd: tps65910: remove warning during dt node
- parsing
-Message-ID: <20131010155443.GB3942@zurbaran>
-References: <1348663684-1377-1-git-send-email-ldewangan@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1348663684-1377-1-git-send-email-ldewangan@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757447Ab3JJPt1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 11:49:27 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52945 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755433Ab3JJPtX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 11:49:23 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Malcolm Priestley <tvboxspy@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 067/104] staging: vt6656: [BUG] iwctl_siwencodeext return if device not open
+Date: Thu, 10 Oct 2013 08:41:55 -0700
+Message-Id: <1381419752-29733-68-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1381419752-29733-1-git-send-email-kamal@canonical.com>
+References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Laxman,
+3.8.13.11 -stable review patch.  If anyone has any objections, please let me know.
 
-On Wed, Sep 26, 2012 at 06:18:04PM +0530, Laxman Dewangan wrote:
-> Driver throw the warning message if dt node does not
-> have the info for VMBCH-Threshold and VMBCH2-Threshold.
-> These properties are optional property and hence it
-> is not mandatory to have these on DT node and in this case
-> it should not throw the warning message.
-> It creates noise from driver as follows:
-> [    0.384605] tps65910 4-002d: VMBCH-Threshold not specified
-> [    0.384616] tps65910 4-002d: VMBCH2-Threshold not specified
-> 
-> Removing the warning message from driver.
-> 
-> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-> ---
-> It seems orginal patch has been lost. Reposting it.
-> 
->  drivers/mfd/tps65910.c |    4 ----
->  1 files changed, 0 insertions(+), 4 deletions(-)
-Applied and pushed to mfd-next, thanks.
+------------------
 
-Cheers,
-Samuel.
+From: Malcolm Priestley <tvboxspy@gmail.com>
 
+commit 5e8c3d3e41b0bf241e830a1ee0752405adecc050 upstream.
+
+Don't allow entry to iwctl_siwencodeext if device not open.
+
+This fixes a race condition where wpa supplicant/network manager
+enters the function when the device is already closed.
+
+Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/staging/vt6656/iwctl.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/staging/vt6656/iwctl.c b/drivers/staging/vt6656/iwctl.c
+index 9f2f1be..e37dcb5 100644
+--- a/drivers/staging/vt6656/iwctl.c
++++ b/drivers/staging/vt6656/iwctl.c
+@@ -1637,6 +1637,9 @@ int iwctl_siwencodeext(struct net_device *dev, struct iw_request_info *info,
+ 	if (pMgmt == NULL)
+ 		return -EFAULT;
+ 
++	if (!(pDevice->flags & DEVICE_FLAGS_OPENED))
++		return -ENODEV;
++
+ 	buf = kzalloc(sizeof(struct viawget_wpa_param), GFP_KERNEL);
+ 	if (buf == NULL)
+ 		return -ENOMEM;
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+1.8.1.2
+
