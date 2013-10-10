@@ -1,74 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756774Ab3JJTsc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 15:48:32 -0400
-Received: from imap.thunk.org ([74.207.234.97]:44633 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756197Ab3JJTsb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 15:48:31 -0400
-Date: Thu, 10 Oct 2013 15:48:24 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Clemens Ladisch <clemens@ladisch.de>, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: rngd
-Message-ID: <20131010194824.GB32527@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	Clemens Ladisch <clemens@ladisch.de>, linux-kernel@vger.kernel.org,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-References: <1380811955-18085-1-git-send-email-svarbanov@mm-sol.com>
- <20131003165130.GA11974@thunk.org>
- <524EEB96.6040707@mm-sol.com>
- <20131004181005.GA7022@thunk.org>
- <52556C4E.9000604@mm-sol.com>
- <52557137.5050200@zytor.com>
- <20131009160338.GD1198@thunk.org>
- <52558320.9090603@zytor.com>
- <52565B56.1070606@ladisch.de>
- <5256C2F9.8090707@zytor.com>
+	id S1756912Ab3JJTuY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 15:50:24 -0400
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:45023 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756092Ab3JJTuW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 15:50:22 -0400
+Date: Thu, 10 Oct 2013 16:50:14 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [GIT PULL] tools/perf/build: Speed up the perf build system
+Message-ID: <20131010195014.GJ28369@ghostprotocols.net>
+References: <20131009070149.GA32023@gmail.com>
+ <20131009143830.GA28369@ghostprotocols.net>
+ <20131009145157.GA27139@gmail.com>
+ <20131010192608.GI28369@ghostprotocols.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5256C2F9.8090707@zytor.com>
+In-Reply-To: <20131010192608.GI28369@ghostprotocols.net>
+X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 10, 2013 at 08:08:41AM -0700, H. Peter Anvin wrote:
+Em Thu, Oct 10, 2013 at 04:26:08PM -0300, Arnaldo Carvalho de Melo escreveu:
+> Two problems:
 > 
-> Mainly the maintainer isn't merging in fixes from upstream, apparently
-> because he has misunderstood their function.
-
->From the README file from the Debian fork:
-
-rng-tools unofficial-mt is a living reminder to myself to not modify upstream
-code without sending the changes upstream at every step.  Suddenly, you have a
-mass of changes too big to send upstream, and yet you find yourself without the
-energy to break them into smallish patches to submit upstream (i.e. to
-"unfork").
-
-> > What I'm trying to say with all this is that self-tests must be
-> > customized for each entropy source.
+> the message:
 > 
-> Yes.  I don't think the FIPS tests make any sense at all (up to and
-> including rngd 3 they would eventually kill rngd, because it only
-> allowed for a fixed number of false positives.)
+>   BUILD:   Doing 'make -j1' parallel build
+> 
+> Looks funny: 'parallel' && -j1? :-)
+> 
+> This is on fedora12, on a kvm guest, nfs mounting /home/acme/git, all works
+> well up to the liblk.a part, cloning it to do it without NFS to continue
+> testing the integration of acme/perf/core with the build speedup patches.
 
-... and to the extent that output is crypto-whitened in the hardware,
-with no way of disabling the whitening, it's actually kind of hopeless
-to do any kind of testing.
+<SNIP>
 
-One of the reasons why I wanted to keep this functionality in
-userspace, as opposed to moving this into a kernel thread, is because
-I was hoping someone would create hardware which did not do hardware
-whitening, and userspace could do proper quality checking of the
-entropy source, and data reduction as necessary, all in the an open
-and auditable way.  If we are doing the those more heavyweight tests,
-it's not a clear it makes sense to put all of this in the kernel.
+>   AR       liblk.a
+> rm: cannot remove `liblk.a': Permission denied
+> make[2]: *** [liblk.a] Error 1
+> make[1]: *** [/tmp/build/perf/liblk.a] Error 2
+> make: *** [install] Error 2
+> make: Leaving directory `/home/acme/git/linux/tools/perf'
+> [acme@fedora12 linux]$ fg
+> -bash: fg: current: no such job
+> [acme@fedora12 linux]$ vim tools/perf/Makefile.perf 
 
-     	   	    	  	       - Ted
+/me scratches head, tried this on another kvm guest, ubuntu 13.04,
+x86_64, works as expected, but stumbled in another problem:
+
+acme@ubuntu-acme:~/git/linux$ time make -C tools/perf -f tests/make
+make: Entering directory `/home/acme/git/linux/tools/perf'
+make[3]: *** No rule to make target
+`/home/git/linux/tools/lib/traceevent/trace-seq.c', needed by
+`.trace-seq.d'.  Stop.
+make[2]: ***
+[/home/acme/git/linux/tools/lib/traceevent/libtraceevent.a-clean] Error
+2
+make[2]: *** Waiting for unfinished jobs....
+make[1]: *** [clean] Error 2
+make: *** [make_pure] Error 2
+make: Leaving directory `/home/acme/git/linux/tools/perf'
+
+real	0m0.254s
+user	0m0.064s
+sys	0m0.084s
+acme@ubuntu-acme:~/git/linux$
+
+And this does work on a RHEL6 box, continue to investigate...
+
+- Arnaldo
