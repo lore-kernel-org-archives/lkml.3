@@ -1,53 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755299Ab3JJMra (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 08:47:30 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:42762 "EHLO arroyo.ext.ti.com"
+	id S1755410Ab3JJMrl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 08:47:41 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:50645 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752763Ab3JJMr3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 08:47:29 -0400
-Message-ID: <5256A1DE.8010709@ti.com>
-Date: Thu, 10 Oct 2013 07:47:26 -0500
-From: Dan Murphy <dmurphy@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1752763Ab3JJMri (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 08:47:38 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Aaron Lu <aaron.lu@intel.com>
+Cc: linux-acpi@vger.kernel.org, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Daniel Vetter <daniel@ffwll.ch>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Lee Chun-Yi <joeyli.kernel@gmail.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Igor Gnatenko <i.gnatenko.brain@gmail.com>,
+        Yves-Alexis Perez <corsac@debian.org>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        Ben Jencks <ben@bjencks.net>, Steven Newbury <steve@snewbury.org.uk>,
+        James Hogan <james@albanarts.com>, Kamal Mostafa <kamal@canonical.com>,
+        Joerg Platte <jplatte@naasa.net>, Kalle Valo <kvalo@adurom.com>,
+        Martin Steigerwald <Martin@lichtvoll.de>,
+        =?ISO-8859-1?Q?J=F6rg?= Otte <jrg.otte@gmail.com>,
+        Mike Galbraith <bitbucket@online.de>,
+        platform-driver-x86@vger.kernel.org,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Subject: Re: [PATCH v4 3/4] ACPI / video: Do not register backlight if win8 and native interface exists
+Date: Thu, 10 Oct 2013 14:59:02 +0200
+Message-ID: <2800253.nfx2dehBQN@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <5255FCBF.6090708@intel.com>
+References: <1381214401-24672-1-git-send-email-aaron.lu@intel.com> <9897358.0Z0t2PgJOe@vostro.rjw.lan> <5255FCBF.6090708@intel.com>
 MIME-Version: 1.0
-To: Ming Lei <tom.leiming@gmail.com>
-CC: Steve Glendinning <steve.glendinning@shawell.net>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-usb <linux-usb@vger.kernel.org>, <mugunthanvnm@ti.com>
-Subject: Re: [PATCH] usbnet: smsc95xx: Add device tree input for MAC address
-References: <1380911156-14112-1-git-send-email-dmurphy@ti.com>	<CACVXFVOVMvP=3y9h2Jrqn2sBQdKOZtrhQDAFYkdHKXFgQj=d0Q@mail.gmail.com>	<52519E7A.40804@ti.com>	<CACVXFVNAB3VnmdoP_LGJsBjQ17j1aoqKMsBE7LRt65OqROeRUQ@mail.gmail.com>	<525698CC.3060406@ti.com> <CACVXFVP-KgqcNTnk+JZsLc188pYk6iUXvW6=kPXNaurSuevGeA@mail.gmail.com>
-In-Reply-To: <CACVXFVP-KgqcNTnk+JZsLc188pYk6iUXvW6=kPXNaurSuevGeA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/10/2013 07:39 AM, Ming Lei wrote:
-> On Thu, Oct 10, 2013 at 8:08 PM, Dan Murphy <dmurphy@ti.com> wrote:
->> You are correct I don't expect a match for PnP devices only devices that are hard wired.
->>
->> After thinking of it I should move the OF code below the EEPROM code as the EEPROM should take preference over the DT code.
->>
->> I will need to post V2 for that.
-> Your patch still doesn't deal with two smsc95xx devices built in
-> one board.
+On Thursday, October 10, 2013 09:02:55 AM Aaron Lu wrote:
+> On 10/10/2013 08:29 AM, Rafael J. Wysocki wrote:
+> > On Tuesday, October 08, 2013 02:40:00 PM Aaron Lu wrote:
+> >> According to Matthew Garrett, "Windows 8 leaves backlight control up
+> >> to individual graphics drivers rather than making ACPI calls itself.
+> >> There's plenty of evidence to suggest that the Intel driver for
+> >> Windows [8] doesn't use the ACPI interface, including the fact that
+> >> it's broken on a bunch of machines when the OS claims to support
+> >> Windows 8.  The simplest thing to do appears to be to disable the
+> >> ACPI backlight interface on these systems".
+> >>
+> >> So for Win8 systems, if there is native backlight control interface
+> >> registered by GPU driver, ACPI video will not register its own. For
+> >> users who prefer to keep ACPI video's backlight interface, the existing
+> >> kernel cmdline option acpi_backlight=video can be used.
+> >>
+> >> Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+> >> Tested-by: Igor Gnatenko <i.gnatenko.brain@gmail.com>
+> >> Tested-by: Yves-Alexis Perez <corsac@debian.org>
+> >> Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> >> ---
+> >>  drivers/acpi/internal.h     |  5 ++---
+> >>  drivers/acpi/video.c        | 10 +++++-----
+> >>  drivers/acpi/video_detect.c | 14 ++++++++++++--
+> >>  3 files changed, 19 insertions(+), 10 deletions(-)
+> >>
+> >> diff --git a/drivers/acpi/internal.h b/drivers/acpi/internal.h
+> >> index 20f4233..453ae8d 100644
+> >> --- a/drivers/acpi/internal.h
+> >> +++ b/drivers/acpi/internal.h
+> >> @@ -169,9 +169,8 @@ int acpi_create_platform_device(struct acpi_device *adev,
+> >>  					Video
+> >>    -------------------------------------------------------------------------- */
+> >>  #if defined(CONFIG_ACPI_VIDEO) || defined(CONFIG_ACPI_VIDEO_MODULE)
+> >> -bool acpi_video_backlight_quirks(void);
+> >> -#else
+> >> -static inline bool acpi_video_backlight_quirks(void) { return false; }
+> >> +bool acpi_osi_is_win8(void);
+> >> +bool acpi_video_verify_backlight_support(void);
+> >>  #endif
+> >>  
+> >>  #endif /* _ACPI_INTERNAL_H_ */
+> >> diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
+> >> index 3bd1eaa..343db59 100644
+> >> --- a/drivers/acpi/video.c
+> >> +++ b/drivers/acpi/video.c
+> >> @@ -1256,8 +1256,8 @@ acpi_video_switch_brightness(struct acpi_video_device *device, int event)
+> >>  	unsigned long long level_current, level_next;
+> >>  	int result = -EINVAL;
+> >>  
+> >> -	/* no warning message if acpi_backlight=vendor is used */
+> >> -	if (!acpi_video_backlight_support())
+> >> +	/* no warning message if acpi_backlight=vendor or a quirk is used */
+> >> +	if (!acpi_video_verify_backlight_support())
+> >>  		return 0;
+> >>  
+> >>  	if (!device->brightness)
+> >> @@ -1386,13 +1386,13 @@ acpi_video_bus_get_devices(struct acpi_video_bus *video,
+> >>  static int acpi_video_bus_start_devices(struct acpi_video_bus *video)
+> >>  {
+> >>  	return acpi_video_bus_DOS(video, 0,
+> >> -				  acpi_video_backlight_quirks() ? 1 : 0);
+> >> +				  acpi_osi_is_win8() ? 1 : 0);
+> >>  }
+> >>  
+> >>  static int acpi_video_bus_stop_devices(struct acpi_video_bus *video)
+> >>  {
+> >>  	return acpi_video_bus_DOS(video, 0,
+> >> -				  acpi_video_backlight_quirks() ? 0 : 1);
+> >> +				  acpi_osi_is_win8() ? 0 : 1);
+> >>  }
+> >>  
+> >>  static void acpi_video_bus_notify(struct acpi_device *device, u32 event)
+> >> @@ -1558,7 +1558,7 @@ acpi_video_bus_match(acpi_handle handle, u32 level, void *context,
+> >>  
+> >>  static void acpi_video_dev_register_backlight(struct acpi_video_device *device)
+> >>  {
+> >> -	if (acpi_video_backlight_support()) {
+> >> +	if (acpi_video_verify_backlight_support()) {
+> >>  		struct backlight_properties props;
+> >>  		struct pci_dev *pdev;
+> >>  		acpi_handle acpi_parent;
+> >> diff --git a/drivers/acpi/video_detect.c b/drivers/acpi/video_detect.c
+> >> index 940edbf..23d7d26 100644
+> >> --- a/drivers/acpi/video_detect.c
+> >> +++ b/drivers/acpi/video_detect.c
+> >> @@ -37,6 +37,7 @@
+> >>  #include <linux/acpi.h>
+> >>  #include <linux/dmi.h>
+> >>  #include <linux/pci.h>
+> >> +#include <linux/backlight.h>
+> >>  
+> >>  #include "internal.h"
+> >>  
+> >> @@ -233,11 +234,11 @@ static void acpi_video_caps_check(void)
+> >>  		acpi_video_get_capabilities(NULL);
+> >>  }
+> >>  
+> >> -bool acpi_video_backlight_quirks(void)
+> >> +bool acpi_osi_is_win8(void)
+> >>  {
+> >>  	return acpi_gbl_osi_data >= ACPI_OSI_WIN_8;
+> >>  }
+> >> -EXPORT_SYMBOL(acpi_video_backlight_quirks);
+> >> +EXPORT_SYMBOL(acpi_osi_is_win8);
+> >>  
+> >>  /* Promote the vendor interface instead of the generic video module.
+> >>   * This function allow DMI blacklists to be implemented by externals
+> >> @@ -283,6 +284,15 @@ int acpi_video_backlight_support(void)
+> >>  }
+> >>  EXPORT_SYMBOL(acpi_video_backlight_support);
+> >>  
+> >> +bool acpi_video_verify_backlight_support(void)
+> >> +{
+> >> +	if (!(acpi_video_support & ACPI_VIDEO_BACKLIGHT_FORCE_VIDEO) &&
+> >> +	    acpi_osi_is_win8() && backlight_device_registered(BACKLIGHT_RAW))
+> >> +		return false;
+> > 
+> > If I'm not mistaken, this will introduce a regression for the people who have
+> > problems with the native i915 backlight on Win8-compatible systems.  I'd prefer
+> > to avoid that at this point.
+> > 
+> 
+> OK, I see.
+> 
+> Then I'm afraid a new kernel command line option is needed, something
+> like video.use_native_backlight and set it to false by default, then
+> for people who need to avoid the ACPI video backlight interface, they
+> can add video.use_native_backlight=true to kernel cmdline.
+> 
+> One thing I need to mention is, with the new cmdline option, users will
+> need to manually add a kernel cmdline option to make backlight work on
+> their systems, while they can already make backlight work by modifying
+> xorg.conf to specify using intel_backlight interface, so it doesn't seem
+> this patchset will be very useful then...
 
-Is there a board that has 2 built in smsc devices?
+Except if we add a (black)list of systems where that option will be 'true'
+by default instead of the _OSI blacklist we have today.
 
-This is all dependent on what the dev.id is of udev.
+Also we can switch the default during development cycles to get an idea
+about how many systems are affected and maybe we can find a way to fix them,
+in which case we can simply drop the option.
 
->
-> The problem is a generic one, looks it is better to do it when OF supports
-> discoverable bus.
->
->
-> Thanks,
-
-
--- 
-------------------
-Dan Murphy
+Thanks,
+Rafael
 
