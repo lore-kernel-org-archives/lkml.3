@@ -1,95 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755899Ab3JJPcw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 11:32:52 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:34873 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755739Ab3JJPct (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 11:32:49 -0400
+	id S1755915Ab3JJPdf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 11:33:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61940 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755427Ab3JJPde (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 11:33:34 -0400
+Date: Thu, 10 Oct 2013 17:26:12 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/6] Optimize the cpu hotplug locking -v2
+Message-ID: <20131010152612.GA13375@redhat.com>
+References: <20131008102505.404025673@infradead.org> <20131009225006.7101379c.akpm@linux-foundation.org> <20131010121908.GB28601@twins.programming.kicks-ass.net> <20131010145738.GA5167@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <5256BB27.6010107@ti.com>
-References: <20131003054104.8941.88857.stgit@localhost>
-	<20131003054221.8941.87801.stgit@localhost>
-	<5256AA7F.8030005@ti.com>
-	<CACRpkdZx5+OCcQytkpjd7_nz4hw6VXoXOS0LByKgJ8_cQjbA4g@mail.gmail.com>
-	<5256BB27.6010107@ti.com>
-Date: Thu, 10 Oct 2013 17:32:47 +0200
-Message-ID: <CACRpkdY6NSR7gSc6=_nEr_BdTiEM0Mt9t4GoBSoP26ceVphDhA@mail.gmail.com>
-Subject: Re: [PATCH 4/6] pinctrl: single: Add support for wake-up interrupts
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Roger Quadros <rogerq@ti.com>
-Cc: Tony Lindgren <tony@atomide.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Prakash Manjunathappa <prakash.pm@ti.com>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>,
-        =?ISO-8859-1?Q?Beno=EEt_Cousson?= <bcousson@baylibre.com>,
-        Linux-OMAP <linux-omap@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131010145738.GA5167@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 10, 2013 at 4:35 PM, Roger Quadros <rogerq@ti.com> wrote:
-> On 10/10/2013 05:04 PM, Linus Walleij wrote:
-
->> As an innocent bystander who has no clue what the _reconfigure_io_chain()
->> is about can you tell me what this is all about?
+On 10/10, Ingo Molnar wrote:
 >
-> The OMAP SoC has a mechanism to monitor and wakeup from a low power state by creating
-> an IO ring of all the pads. But there is one bit in one of the control registers that
-> needs to be toggled each time the pad configuration is changed to re-arm the IO ring.
-> This is exactly what _reconfigure_io_chain() does.
-
-OK I get it, I checked the function in the machone.
-
->> Is this another one of the OMAP forked paths where you must call back into
->> the machine with a special callback from each and every driver?
+> * Peter Zijlstra <peterz@infradead.org> wrote:
 >
-> _reconfigure_io_chain() is not available for public use and is not called by any driver yet.
-> However, it somehow needs to be called from this pinctrl-single driver each time the
-> wakeup configuration for any pad is changed.
+> > But the thing is; our sense of NR_CPUS has shifted, where it used to be
+> > ok to do something like:
+> >
+> >   for_each_cpu()
+> >
+> > With preemption disabled; it gets to be less and less sane to do so,
+> > simply because 'common' hardware has 256+ CPUs these days. If we cannot
+> > rely on preempt disable to exclude hotplug, we must use
+> > get_online_cpus(), but get_online_cpus() is global state and thus cannot
+> > be used at any sort of frequency.
+>
+> So ... why not make it _really_ cheap, i.e. the read lock costing nothing,
+> and tie CPU hotplug to freezing all tasks in the system?
+>
+> Actual CPU hot unplugging and repluggin is _ridiculously_ rare in a
+> system, I don't understand how we tolerate _any_ overhead from this utter
+> slowpath.
 
-Actually this is one of those things where the complexity of the platform
-seems to start to leak into the nice picture of one-register-per-pin.
+Well, iirc Srivatsa (cc'ed) pointed out that some systems do cpu_down/up
+quite often to save the power.
 
-If this was *not* pinctrl-single but pinctrl-omap.c, it would make sense to
-move this _reconfigure_io code and the PRM registers it is touching down
-into the pinctrl driver, because it seems like absolutely no-one else
-is using it.
+Oleg.
 
-Both the other occurences seem to be in omap_hwmod.c, and seems
-to be related to pin muxing, which is now supposed to be handled by
-the pin control driver, right?
-
-I think the real solution to this would be something like:
-
-- Add the compatible strings "pinctrl-single-omap3" and
-"pinctrl-single-omap4" to drivers/pinctrl/pinctrl-single.c,
-
-- Pass an additional <&ampersand> resource for the prm
- thing to the single driver in the OMAP platform.
-
-- Move this _reconfigure_io code out of the mach-omap2
-  machines and hwmod and down into the pinctrl-single driver,
-  it can be #ifdef ARCH_OMAP with stubs or whatever, the
-  important thing is that it lives with the pinctrl driver.
-
-This does the right thing and let the pinctrl driver handle the io ring,
-instead of artificially trying to hide that in the mach-omap2 directory
-which is only creating a mess of things.
-
-I know this is sort of breaking the promise of pinctrl-single.c only
-handling single registers but we just need to accept the fact that
-if this idea is not perfect, trying to hide the facts of life isn't any
-good either.
-
-What do you say about this Tony? Good/bad/Linus is a moron? ;-)
-
-Yours,
-Linus Walleij
