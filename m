@@ -1,99 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756886Ab3JJVDo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 17:03:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16097 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756032Ab3JJVDm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 17:03:42 -0400
-Date: Thu, 10 Oct 2013 18:03:01 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Xiao Guangrong <xiaoguangrong.eric@gmail.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        avi.kivity@gmail.com, pbonzini@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v2 12/15] KVM: MMU: allow locklessly access shadow page
- table out of vcpu thread
-Message-ID: <20131010210301.GA7275@amt.cnet>
-References: <1378376958-27252-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <1378376958-27252-13-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <20131008012355.GA3588@amt.cnet>
- <CAD6C3B4-DD55-47EB-9BC0-17867937AE2D@gmail.com>
- <20131009015627.GA4816@amt.cnet>
- <525533DB.1060104@gmail.com>
- <20131010014710.GA2198@amt.cnet>
- <20131010120845.GT3574@redhat.com>
- <20131010164222.GB3211@amt.cnet>
- <20131010191646.GE15954@redhat.com>
+	id S1756589Ab3JJVIj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 17:08:39 -0400
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:42787 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754904Ab3JJVIi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 17:08:38 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131010191646.GE15954@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Thu, 10 Oct 2013 14:08:37 -0700
+Message-ID: <CAPu=PNYkX32ZzUmjHmy9GqcbWBVN-xrX_c_Hhrz5aDEKy2s2=g@mail.gmail.com>
+Subject: SDD disk and unmap granularity value 0xFFFF
+From: =?ISO-8859-1?Q?Jes=FAs_Velazquez?= <jesus.velazquez@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 10, 2013 at 10:16:46PM +0300, Gleb Natapov wrote:
-> On Thu, Oct 10, 2013 at 01:42:22PM -0300, Marcelo Tosatti wrote:
-> > On Thu, Oct 10, 2013 at 03:08:45PM +0300, Gleb Natapov wrote:
-> > > On Wed, Oct 09, 2013 at 10:47:10PM -0300, Marcelo Tosatti wrote:
-> > > > > >> Gleb has a idea that uses RCU_DESTORY to protect the shadow page table
-> > > > > >> and encodes the page-level into the spte (since we need to check if the spte
-> > > > > >> is the last-spte. ).  How about this?
-> > > > > > 
-> > > > > > Pointer please? Why is DESTROY_SLAB_RCU any safer than call_rcu with
-> > > > > > regards to limitation? (maybe it is).
-> > > > > 
-> > > > > For my experience, freeing shadow page and allocing shadow page are balanced,
-> > > > > we can check it by (make -j12 on a guest with 4 vcpus and):
-> > > > > 
-> > > > > # echo > trace
-> > > > > [root@eric-desktop tracing]# cat trace > ~/log | sleep 3
-> > > > > [root@eric-desktop tracing]# cat ~/log | grep new | wc -l
-> > > > > 10816
-> > > > > [root@eric-desktop tracing]# cat ~/log | grep prepare | wc -l
-> > > > > 10656
-> > > > > [root@eric-desktop tracing]# cat set_event
-> > > > > kvmmmu:kvm_mmu_get_page
-> > > > > kvmmmu:kvm_mmu_prepare_zap_page
-> > > > > 
-> > > > > alloc VS. free = 10816 : 10656
-> > > > > 
-> > > > > So that, mostly all allocing and freeing are done in the slab's
-> > > > > cache and the slab frees shdadow pages very slowly, there is no rcu issue.
-> > > > 
-> > > > A more detailed test case would be:
-> > > > 
-> > > > - cpu0-vcpu0 releasing pages as fast as possible
-> > > > - cpu1 executing get_dirty_log
-> > > > 
-> > > > Think of a very large guest.
-> > > > 
-> > > The number of shadow pages allocated from slab will be bounded by
-> > > n_max_mmu_pages, 
-> > 
-> > Correct, but that limit is not suitable (maximum number of mmu pages
-> > should be larger than number of mmu pages freeable in a rcu grace
-> > period).
-> > 
-> I am not sure I understand what you mean here. What I was sating is that if
-> we change code to allocate sp->spt from slab, this slab will never have
-> more then n_max_mmu_pages objects in it.
+Hi,
 
-n_max_mmu_pages is not a suitable limit to throttle freeing of pages via
-RCU (its too large). If the free memory watermarks are smaller than 
-n_max_mmu_pages for all guests, OOM is possible.
+I am facing an issue regarding unmap support with a couple of Intel SDD.
 
-> > > and, in addition, page released to slab is immediately
-> > > available for allocation, no need to wait for grace period. 
-> > 
-> > See SLAB_DESTROY_BY_RCU comment at include/linux/slab.h.
-> > 
-> This comment is exactly what I was referring to in the code you quoted. Do
-> you see anything problematic in what comment describes?
+/dev/sde:
 
-"This delays freeing the SLAB page by a grace period, it does _NOT_
-delay object freeing." The page is not available for allocation.
+ATA device, with non-removable media
+        Model Number:       INTEL SSDSA2BW300G3
+        Serial Number:      BTPR245400ZL300EGN
+        Firmware Revision:  4PC10362
+        Transport:          Serial, ATA8-AST, SATA 1.0a, SATA II
+Extensions, SATA Rev 2.5, SATA Rev 2.6
 
+The problem I am facing is that vpd page 0xb0 returns 0xFFFF... for
+unmap LBA count, descriptor count and granularity.
+
+# sg_vpd -p 0xb0 /dev/sde
+Block limits VPD page (SBC):
+  Optimal transfer length granularity: 0 blocks
+  Maximum transfer length: 0 blocks
+  Optimal transfer length: 0 blocks
+  Maximum prefetch, xdread, xdwrite transfer length: 0 blocks
+  Maximum unmap LBA count: 4294967295
+  Maximum unmap block descriptor count: 4294967295
+  Optimal unmap granularity: 65535
+  Unmap granularity alignment valid: 0
+  Unmap granularity alignment: 0
+
+# sg_vpd -p 0xb0 -H /dev/sde
+Block limits VPD page (SBC):
+ 00     00 b0 00 3c 00 00 00 00  00 00 00 00 00 00 00 00    ...<............
+ 10     00 00 00 00 ff ff ff ff  ff ff ff ff 00 00 ff ff    ................
+ 20     00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00    ................
+ 30     00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00    ................
+
+The response looks valid, taking a look at  Linux 3.12-rc3 (drivers/scsi/sd.c),
+
+  static void sd_read_block_limits(struct scsi_disk *sdkp)
+{
+.....
+                  sdkp->unmap_granularity
+=get_unaligned_be32(&buffer[28]);
+
+.....
+}
+
+That value is never validated, the final outcome is that I do not have
+TRIM support for those devices if I try to create a md raid0/1/10 with
+any other SSD driver with granularity < 0xFFFF.
+
+Have you ever seen a similar behaviour?
+
+Regards,
+
+Jesus
