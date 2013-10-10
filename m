@@ -1,76 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757610Ab3JJV1W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 17:27:22 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:57056 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752293Ab3JJV1T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 17:27:19 -0400
-Date: Thu, 10 Oct 2013 16:26:59 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Mark Brown <broonie@kernel.org>
-CC: Russell King <rmk+kernel@arm.linux.org.uk>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Felipe Balbi <balbi@ti.com>, <linux-usb@vger.kernel.org>,
-        <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Thierry Reding <thierry.reding@gmail.com>
-Subject: Re: linux-next: manual merge of the usb-gadget tree
-Message-ID: <20131010212659.GA22835@radagast>
-Reply-To: <balbi@ti.com>
-References: <20131010212030.GV21581@sirena.org.uk>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="HlL+5n6rz5pIUxbD"
-Content-Disposition: inline
-In-Reply-To: <20131010212030.GV21581@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756787Ab3JJVbQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 17:31:16 -0400
+Received: from gate.crashing.org ([63.228.1.57]:38619 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756167Ab3JJVbP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 17:31:15 -0400
+Message-ID: <1381440651.5630.31.camel@pasglop>
+Subject: Re: sysfs for my chips
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Tejun Heo <tj@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Date: Fri, 11 Oct 2013 08:30:51 +1100
+In-Reply-To: <CAMuHMdW7RXjS3vvLUdTPCafNu_PcgDgbVbzVCHTOEeTsfHK90g@mail.gmail.com>
+References: <1381378788.4330.30.camel@pasglop>
+	 <20131010174457.GE13759@kroah.com> <1381435276.5630.6.camel@pasglop>
+	 <CAMuHMdW7RXjS3vvLUdTPCafNu_PcgDgbVbzVCHTOEeTsfHK90g@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---HlL+5n6rz5pIUxbD
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, 2013-10-10 at 22:26 +0200, Geert Uytterhoeven wrote:
+> > This is not CPUs. CPUs are threads really. Even if they were cores,
+> that
+> > still wouldn't cut it. I'm looking at chips here and not all of them
+> > actually processor chips. The SCOM bus address space is global to a
+> > physical chip and allows to access various resources that are only
+> > remotely related to the cores on it.
+> 
+> What about a "bus" for the sideband bus? That allows to decouple it
+> from cores, and allows to support non-processor chips, too?
 
-Hi,
+Not sure what you mean .... create a linux bus type with devices on
+it ? 
 
-On Thu, Oct 10, 2013 at 10:20:30PM +0100, Mark Brown wrote:
-> Today's linux-next merge of the usb-gadget tree got conflicts in
-> drivers/usb/musb/davinci.c caused by an add in ea78201e2 (usb: musb:
-> davinci: fix resources passed to MUSB driver for DM6467) adjacent to
-> the modification of the device registration in 4c9ad1059 (DMA-API: usb:
-> musb: use platform_device_register_full() to avoid directly messing with
-> dma masks) from the ARM tree.
->=20
-> I've fixed trivially and can carry as required.
+That's really overkill I think... doable though.
 
-Thank you.
+I think sysdev, despite my previous qualms, might be the best way... we
+could have a "driver" in the form of the actual code that provide that
+sideband bus access. Right now the platform registers a single global
+"scom controller", we could make a sysdev instead with an instance per
+"chip" I suppose...
 
---=20
-balbi
+Though there's still some kind of namespace issue, if I start creating
+something like /sys/devices/system/chip/<id>/... but ...
 
---HlL+5n6rz5pIUxbD
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+That means doing something very platform specific in a location that is
+very "generic" with a name that's likely to clash with something else
+later on unless we start introducing a standard concept of "chip" with
+associated properties but what do that really mean ? With things like
+DCMs etc... the concept of "chip" is blurry at best.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Also what about other chips that do not participate in that xscom/scom
+sideband mechanism ? like PCIe device chips, or other random stuff on
+the mobo ?
 
-iQIcBAEBAgAGBQJSVxujAAoJEIaOsuA1yqREX7cQALABxxACszITjehrJziE1gOP
-4r0rxzeWOAXtxAlag4SJXOWjD7XBItWTrZBXTB+uhxhJnh93bzYqjG/FQn2iMVL+
-FuxmfGuA1xUPEC+RAS4hSxyFILtuSptLFXllGNeVn7P3fAGqQie9EcGv0Owafd/t
-1oFLe9Dj8h1gIo0BxjS524MFxIxZVGRB/8+EPrBo+1baUDxd7/hXoaRlrP2JQ/nz
-6FafI/nxFYofvnyukH0kdaYtWca3MfdD4OJ2OrDY2C3eYF+QkN3FF6QBYTYvsqfX
-d1+qYVInAZmPnzkh9+/DWQVHpHWKl6+U7SJ2qevTNRNnW9k2PefKsGkS+EGHV3MJ
-HnKGhDlH70vqW8B9/vVa8WPlBK0QmZVksU9guuFs8CFyw93YjyjmKMgiI1kEKyt/
-fr40qk4cEqS8jcY+js6uWW1y4jlXfDjRn5Fox5iHz/QQgX99CckmZlfMInRRRGDM
-Tp70j5pKNJcVLGCdWhy0ks/oEhz4AYqa2cpVKmvajoeFkVAT4KVYJuuiRz7icMLD
-DMec7uIPwqjhKLPtWNu66lKlWUEdDBQpXSlEdOjtSiGioFQ2pFBkxEOQZ22NJTp5
-woZ30c5Z74URfWp33YHmjCOnjHeKpZYQgtGHnt9ykuRTgRViBB6WVhvfkMPHmttb
-YJ0mD8iMP+Iz6MuOOXi5
-=yk9v
------END PGP SIGNATURE-----
+I'm trying to solve a very specific problem here, which is to provide a
+userspace scom access interface. I was trying to avoid a /dev/scom
+because I would need 32-bit minors or do ioctls and because it seemed
+simpler to just put it in sysfs somewhere but maybe that won't fly.
 
---HlL+5n6rz5pIUxbD--
+A last option is to put it in /sys/firmware/opal (OPAL is our firmware
+name). Under there, I can put a lot of stuff that's essentially
+firmware/platform specific. However our "scom" infrastructure is
+somewhat generic and is used by at least one platform that isn't using
+OPAL (though arguably that platform is dead: wsp).
+
+Cheers,
+Ben.
+
+
