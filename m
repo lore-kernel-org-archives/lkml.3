@@ -1,87 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756876Ab3JJSHH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 14:07:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21118 "EHLO mx1.redhat.com"
+	id S1756838Ab3JJSHE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 14:07:04 -0400
+Received: from mga01.intel.com ([192.55.52.88]:28691 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755863Ab3JJSG5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 14:06:57 -0400
-Date: Thu, 10 Oct 2013 20:07:05 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
-        Jon Mason <jon.mason@intel.com>,
-        Matt Porter <mporter@kernel.crashing.org>, linux-pci@vger.kernel.org,
-        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
-        linux390@de.ibm.com, linux-s390@vger.kernel.org, x86@kernel.org,
-        linux-ide@vger.kernel.org, iss_storagedev@hp.com,
-        linux-nvme@lists.infradead.org, linux-rdma@vger.kernel.org,
-        netdev@vger.kernel.org, e1000-devel@lists.sourceforge.net,
-        linux-driver@qlogic.com,
-        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
-        "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH RFC 00/77] Re-design MSI/MSI-X interrupts enablement
- pattern
-Message-ID: <20131010180704.GA15719@dhcp-26-207.brq.redhat.com>
-References: <cover.1380703262.git.agordeev@redhat.com>
- <5254D397.9030307@zytor.com>
- <1381292648.645.259.camel@pasglop>
- <20131010101704.GC11874@dhcp-26-207.brq.redhat.com>
- <5256D5AB.4050105@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5256D5AB.4050105@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756584Ab3JJSGO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 14:06:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,1073,1371106800"; 
+   d="scan'208";a="415021030"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-arch@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: [PATCH 33/34] iommu/arm-smmu: handle pgtable_page_ctor() fail
+Date: Thu, 10 Oct 2013 21:05:58 +0300
+Message-Id: <1381428359-14843-34-git-send-email-kirill.shutemov@linux.intel.com>
+X-Mailer: git-send-email 1.8.4.rc3
+In-Reply-To: <1381428359-14843-1-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1381428359-14843-1-git-send-email-kirill.shutemov@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 10, 2013 at 09:28:27AM -0700, H. Peter Anvin wrote:
-> On 10/10/2013 03:17 AM, Alexander Gordeev wrote:
-> > On Wed, Oct 09, 2013 at 03:24:08PM +1100, Benjamin Herrenschmidt wrote:
-> > 
-> > Ok, this suggestion sounded in one or another form by several people.
-> > What about name it pcim_enable_msix_range() and wrap in couple more
-> > helpers to complete an API:
-> > 
-> > int pcim_enable_msix_range(pdev, msix_entries, nvec, minvec);
-> > 	<0 - error code
-> > 	>0 - number of MSIs allocated, where minvec >= result <= nvec
-> > 
-> > int pcim_enable_msix(pdev, msix_entries, nvec);
-> > 	<0 - error code
-> > 	>0 - number of MSIs allocated, where 1 >= result <= nvec 
-> > 
-> > int pcim_enable_msix_exact(pdev, msix_entries, nvec);
-> > 	<0 - error code
-> > 	>0 - number of MSIs allocated, where result == nvec
-> > 
-> > The latter's return value seems odd, but I can not help to make
-> > it consistent with the first two.
-> > 
-> 
-> Is there a reason for the wrappers, as opposed to just specifying either
-> 1 or nvec as the minimum?
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Rob Herring <rob.herring@calxeda.com>
+---
+ drivers/iommu/arm-smmu.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-The wrappers are more handy IMO.
-
-I.e. can imagine people start struggling to figure out what minvec to provide:
-1 or 0? Why 1? Oh.. okay.. Or should we tolerate 0 (as opposite to -ERANGE)?
-
-Well, do not know.. pcim_enable_msix(pdev, msix_entries, nvec, nvec) is 
-less readable for me than just pcim_enable_msix_exact(pdev, msix_entries,
-nvec).
-
-> 	-hpa
-
+diff --git a/drivers/iommu/arm-smmu.c b/drivers/iommu/arm-smmu.c
+index f417e89e1e..2b256a5075 100644
+--- a/drivers/iommu/arm-smmu.c
++++ b/drivers/iommu/arm-smmu.c
+@@ -1211,7 +1211,10 @@ static int arm_smmu_alloc_init_pte(struct arm_smmu_device *smmu, pmd_t *pmd,
+ 
+ 		arm_smmu_flush_pgtable(smmu, page_address(table),
+ 				       ARM_SMMU_PTE_HWTABLE_SIZE);
+-		pgtable_page_ctor(table);
++		if (!pgtable_page_ctor(table)) {
++			__free_page(table);
++			return -ENOMEM;
++		}
+ 		pmd_populate(NULL, pmd, table);
+ 		arm_smmu_flush_pgtable(smmu, pmd, sizeof(*pmd));
+ 	}
 -- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+1.8.4.rc3
+
