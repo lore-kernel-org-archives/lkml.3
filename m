@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757518Ab3JJQKp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 12:10:45 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52594 "EHLO
+	id S1758204Ab3JJQN4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 12:13:56 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52577 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755880Ab3JJPmu (ORCPT
+	with ESMTP id S1755791Ab3JJPmt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 11:42:50 -0400
+	Thu, 10 Oct 2013 11:42:49 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Phil Oester <kernel@linuxace.com>, "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 015/104] ipv6: Store Router Alert option in IP6CB directly.
-Date: Thu, 10 Oct 2013 08:41:03 -0700
-Message-Id: <1381419752-29733-16-git-send-email-kamal@canonical.com>
+Subject: [PATCH 021/104] tcp: tcp_make_synack() should use sock_wmalloc
+Date: Thu, 10 Oct 2013 08:41:09 -0700
+Message-Id: <1381419752-29733-22-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381419752-29733-1-git-send-email-kamal@canonical.com>
 References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
@@ -28,97 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?YOSHIFUJI=20Hideaki=20/=20=E5=90=89=E8=97=A4=E8=8B=B1=E6?=
+From: Phil Oester <kernel@linuxace.com>
 
-commit dd3332bfcb2223458f553f341d3388cb84040e6a upstream.
+commit eb8895debe1baba41fcb62c78a16f0c63c21662a upstream.
 
-Router Alert option is very small and we can store the value
-itself in the skb.
+In commit 90ba9b19 (tcp: tcp_make_synack() can use alloc_skb()), Eric changed
+the call to sock_wmalloc in tcp_make_synack to alloc_skb.  In doing so,
+the netfilter owner match lost its ability to block the SYNACK packet on
+outbound listening sockets.  Revert the change, restoring the owner match
+functionality.
 
-Signed-off-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+This closes netfilter bugzilla #847.
+
+Signed-off-by: Phil Oester <kernel@linuxace.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
-[ kamal: 3.8.y-stable prereq for f46078cfcd77fa5165bf849f5e568a7ac5fa569c
-  "ipv6: drop packets with multiple fragmentation headers" ]
+[ kamal: backport to 3.8 ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- include/linux/ipv6.h      | 3 ++-
- include/uapi/linux/ipv6.h | 2 ++
- net/ipv6/exthdrs.c        | 3 ++-
- net/ipv6/ip6_input.c      | 5 ++---
- 4 files changed, 8 insertions(+), 5 deletions(-)
+ net/ipv4/tcp_output.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/ipv6.h b/include/linux/ipv6.h
-index faed1e3..8d766c2 100644
---- a/include/linux/ipv6.h
-+++ b/include/linux/ipv6.h
-@@ -89,7 +89,7 @@ static inline __u8 ipv6_tclass(const struct ipv6hdr *iph)
+diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
+index 0bdd879..436d8fb 100644
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -2705,8 +2705,8 @@ struct sk_buff *tcp_make_synack(struct sock *sk, struct dst_entry *dst,
  
- struct inet6_skb_parm {
- 	int			iif;
--	__u16			ra;
-+	__be16			ra;
- 	__u16			hop;
- 	__u16			dst0;
- 	__u16			srcrt;
-@@ -105,6 +105,7 @@ struct inet6_skb_parm {
- #define IP6SKB_XFRM_TRANSFORMED	1
- #define IP6SKB_FORWARDED	2
- #define IP6SKB_REROUTED		4
-+#define IP6SKB_ROUTERALERT	8
- };
- 
- #define IP6CB(skb)	((struct inet6_skb_parm*)((skb)->cb))
-diff --git a/include/uapi/linux/ipv6.h b/include/uapi/linux/ipv6.h
-index 5a2991c..4bda4cf 100644
---- a/include/uapi/linux/ipv6.h
-+++ b/include/uapi/linux/ipv6.h
-@@ -63,6 +63,8 @@ struct ipv6_opt_hdr {
- #define ipv6_destopt_hdr ipv6_opt_hdr
- #define ipv6_hopopt_hdr  ipv6_opt_hdr
- 
-+/* Router Alert option values (RFC2711) */
-+#define IPV6_OPT_ROUTERALERT_MLD	0x0000	/* MLD(RFC2710) */
- 
- /*
-  *	routing header type 0 (used in cmsghdr struct)
-diff --git a/net/ipv6/exthdrs.c b/net/ipv6/exthdrs.c
-index 473f628..07a7d65 100644
---- a/net/ipv6/exthdrs.c
-+++ b/net/ipv6/exthdrs.c
-@@ -553,7 +553,8 @@ static bool ipv6_hop_ra(struct sk_buff *skb, int optoff)
- 	const unsigned char *nh = skb_network_header(skb);
- 
- 	if (nh[optoff + 1] == 2) {
--		IP6CB(skb)->ra = optoff;
-+		IP6CB(skb)->flags |= IP6SKB_ROUTERALERT;
-+		memcpy(&IP6CB(skb)->ra, nh + optoff + 2, sizeof(IP6CB(skb)->ra));
- 		return true;
- 	}
- 	LIMIT_NETDEBUG(KERN_DEBUG "ipv6_hop_ra: wrong RA length %d\n",
-diff --git a/net/ipv6/ip6_input.c b/net/ipv6/ip6_input.c
-index dee9964..5345300 100644
---- a/net/ipv6/ip6_input.c
-+++ b/net/ipv6/ip6_input.c
-@@ -302,9 +302,8 @@ int ip6_mc_input(struct sk_buff *skb)
- 		struct inet6_skb_parm *opt = IP6CB(skb);
- 
- 		/* Check for MLD */
--		if (unlikely(opt->ra)) {
-+		if (unlikely(opt->flags & IP6SKB_ROUTERALERT)) {
- 			/* Check if this is a mld message */
--			u8 *ptr = skb_network_header(skb) + opt->ra;
- 			struct icmp6hdr *icmp6;
- 			u8 nexthdr = hdr->nexthdr;
- 			__be16 frag_off;
-@@ -313,7 +312,7 @@ int ip6_mc_input(struct sk_buff *skb)
- 			/* Check if the value of Router Alert
- 			 * is for MLD (0x0000).
- 			 */
--			if ((ptr[2] | ptr[3]) == 0) {
-+			if (opt->ra == htons(IPV6_OPT_ROUTERALERT_MLD)) {
- 				deliver = false;
- 
- 				if (!ipv6_ext_hdr(nexthdr)) {
+ 	if (cvp != NULL && cvp->s_data_constant && cvp->s_data_desired)
+ 		s_data_desired = cvp->s_data_desired;
+-	skb = alloc_skb(MAX_TCP_HEADER + 15 + s_data_desired,
+-			sk_gfp_atomic(sk, GFP_ATOMIC));
++	skb = sock_wmalloc(sk, MAX_TCP_HEADER + 15 + s_data_desired, 1,
++			GFP_ATOMIC);
+ 	if (unlikely(!skb)) {
+ 		dst_release(dst);
+ 		return NULL;
 -- 
 1.8.1.2
 
