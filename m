@@ -1,103 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755125Ab3JJJ7T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 05:59:19 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:53410 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752193Ab3JJJ7S (ORCPT
+	id S1755283Ab3JJKBK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 06:01:10 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:39461 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752846Ab3JJKBH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 05:59:18 -0400
-Date: Thu, 10 Oct 2013 10:58:41 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux390@de.ibm.com" <linux390@de.ibm.com>,
-        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/3] arm: include: asm: atomic.h: use 'unsigned int' and
- 'atomic' instead of 'unsigned long' for atomic_clear_mask()
-Message-ID: <20131010095841.GG3817@mudshark.cambridge.arm.com>
-References: <52561137.3070608@asianux.com>
- <5256117A.4000009@asianux.com>
- <5256121A.9030504@asianux.com>
+	Thu, 10 Oct 2013 06:01:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5256121A.9030504@asianux.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131009233421.GQ4446@dastard>
+References: <1381090432-2863-1-git-send-email-linkinjeon@gmail.com>
+	<20131009233421.GQ4446@dastard>
+Date: Thu, 10 Oct 2013 19:01:01 +0900
+Message-ID: <CAKYAXd84D8XpYTDZuaY=rUzZdyxSD0NKaV8nCkYvj_XRs_gV_Q@mail.gmail.com>
+Subject: Re: [PATCH RESEND 5/7] xfstest: Add test case to check various corner
+ cases for collapsing range
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: viro@zeniv.linux.org.uk, mtk.manpages@gmail.com, tytso@mit.edu,
+        adilger.kernel@dilger.ca, bpm@sgi.com, elder@kernel.org,
+        hch@infradead.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        xfs@oss.sgi.com, a.sangwan@samsung.com,
+        Namjae Jeon <namjae.jeon@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 10, 2013 at 03:34:02AM +0100, Chen Gang wrote:
-> In current kernel wide source, for arm, only s390 scsi drivers use
-> atomic_clear_mask(), now, s390 itself need use 'unsigned int' and
-> 'atomic_t', so need match s390's atomic_clear_mask().
-> 
-> 
-> Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> ---
->  arch/arm/include/asm/atomic.h |   13 +++++++------
->  1 files changed, 7 insertions(+), 6 deletions(-)
-> 
-> diff --git a/arch/arm/include/asm/atomic.h b/arch/arm/include/asm/atomic.h
-> index da1c77d..0832a7f 100644
-> --- a/arch/arm/include/asm/atomic.h
-> +++ b/arch/arm/include/asm/atomic.h
-> @@ -134,9 +134,10 @@ static inline int atomic_cmpxchg(atomic_t *ptr, int old, int new)
->  	return oldval;
->  }
->  
-> -static inline void atomic_clear_mask(unsigned long mask, unsigned long *addr)
-> +static inline void atomic_clear_mask(unsigned int mask, atomic_t *ptr)
->  {
-> -	unsigned long tmp, tmp2;
-> +	unsigned int tmp;
+>> +#
+>> +_test_generic_collapse()
+>> +{
+>
+> This function is just a copy and paste of _test_generic_punch() with
+> all the ranges increased by a factor of 4. Why can't you simply use
+> _test_generic_punch() and pass in a different $zero_cmd?
+Yes, you're right. We can use test_generic_punch as you said.
+I will update.
+>
+>
+>>
+>> +# check that xfs_io, kernel and filesystem all support fallocate with collapse
+>> +# range
+>> +_require_xfs_io_falloc_collapse()
+>> +{
+>> +     testfile=$TEST_DIR/$$.falloc
+>> +     testio=`$XFS_IO_PROG -F -f -c "pwrite 0 20k" -c "fsync" \
+>> +             -c "fcollapse 4k 8k" $testfile 2>&1`
+>
+> No need for the -F parameter anymore.
+Okay.
 
-I reckon this should be int (the mask parameter is unsigned, but
-atomic_t.counter is signed).
+>
+>> +     rm -f $testfile 2>&1 > /dev/null
+>> +     echo $testio | grep -q "not found" && \
+>> +             _notrun "xfs_io fallocate collapse range support is missing"
+>> +     echo $testio | grep -q "Operation not supported" && \
+>> +             _notrun "xfs_io fallocate collapse range failed (no fs support?)"
+>> +}
+>> +
+>>  # check that xfs_io, kernel and filesystem support fiemap
+>>  _require_xfs_io_fiemap()
+>>  {
+>> diff --git a/tests/shared/316 b/tests/shared/316
+>> new file mode 100644
+>> index 0000000..66a8489
+>> --- /dev/null
+>> +++ b/tests/shared/316
+>
+> You don't need to number this 316. shared/001 is not taken, so start
+> there....
+okay.
 
-> +	unsigned long tmp2;
->  
->  	__asm__ __volatile__("@ atomic_clear_mask\n"
->  "1:	ldrex	%0, [%3]\n"
-> @@ -144,8 +145,8 @@ static inline void atomic_clear_mask(unsigned long mask, unsigned long *addr)
->  "	strex	%1, %0, [%3]\n"
->  "	teq	%1, #0\n"
->  "	bne	1b"
-> -	: "=&r" (tmp), "=&r" (tmp2), "+Qo" (*addr)
-> -	: "r" (addr), "Ir" (mask)
-> +	: "=&r" (tmp), "=&r" (tmp2), "+Qo" (ptr->counter)
-> +	: "r" (&ptr->counter), "Ir" (mask)
->  	: "cc");
->  }
->  
-> @@ -197,12 +198,12 @@ static inline int atomic_cmpxchg(atomic_t *v, int old, int new)
->  	return ret;
->  }
->  
-> -static inline void atomic_clear_mask(unsigned long mask, unsigned long *addr)
-> +static inline void atomic_clear_mask(unsigned int mask, atomic_t *v)
->  {
->  	unsigned long flags;
->  
->  	raw_local_irq_save(flags);
-> -	*addr &= ~mask;
-> +	v->counter &= ~mask;
->  	raw_local_irq_restore(flags);
->  }
+>
+>> @@ -0,0 +1,70 @@
+>> +#! /bin/bash
+>> +# FS QA Test No. 316
+>> +#
+>> +# Test fallocate collapse range
+>
+> A more verbose test description is preferred. A paragraph describing
+> that the test exercises boundary conditions across different extent
+> types for the FALLOC_FL_COLLAPSE_RANGE operation would be ideal.
+Okay.
 
-This is now identical to asm-generic/atomic.h. I wonder whether we could
-just #include that file for the ARMv6 case? You'd need to check the
-differences carefully.
+>
+>> +trap "_cleanup ; exit \$status" 0 1 2 3 15
+>> +
+>> +# get standard environment, filters and checks
+>> +# we need to include common/punch to get defination fo filter functions
+>> +. ./common/rc
+>> +. ./common/filter
+>> +. ./common/punch
+>> +. ./common/collapse
+>> +
+>> +# real QA test starts here
+>> +_supported_fs xfs ext4
+>> +_supported_os Linux
+>> +
+>> +_require_xfs_io_falloc_punch
+>> +_require_xfs_io_falloc
+>> +_require_xfs_io_fiemap
+>> +_require_xfs_io_falloc_collapse
+>> +
+>> +testfile=$TEST_DIR/316.$$
+>
+> If you are going to use the test number to identify the file, you
+> should use $seq rather than hard coding the number....
+Okay.
 
-Finally, I still question the need for the clear_mask function anyway. We
-don't implement set_mask, and these functions are only used by either other
-arch code or in drivers that don't work on ARM anyway.
+>
+>> +# Standard collapse range tests
+>> +_test_generic_collapse falloc fcollapse fpunch fiemap _filter_hole_fiemap $testfile
+>> +
+>> +# Delayed allocation collapse range tests
+>> +_test_generic_collapse -d falloc fcollapse fpunch fiemap _filter_hole_fiemap $testfile
+>> +
+>> +# Multi collapse tests
+>> +_test_generic_collapse -k falloc fcollapse fpunch fiemap _filter_hole_fiemap $testfile
+>> +
+>> +# Delayed allocation multi collapse range tests
+>> +_test_generic_collapse -d -k falloc fcollapse fpunch fiemap _filter_hole_fiemap $testfile
+>
+> What I'd prefer is each of these is a separate unit test. i.e:
+>
+> shared/001: Standard collapse range tests
+> shared/002: Delayed allocation collapse range tests
+> shared/003: Multi collapse tests
+> shared/004: Delayed allocation multi collapse range tests
+>
+> The reason for doing this is that it means that:
+>
+>         a) we can track failures of the different types of tests
+>            independently; and
+>         b) the filesystem the tests are being run on is checked for
+>            consistency between each test
+>
+> I know, the punch tests you copied this from lump them all into the
+> one test, but I'd really like to get away from the complex tests
+> that aggregate lots of different things into a single pass/fail test
+> as it makes it hard to isolate failures and track them over the long
+> term...
+>
+Okay, I will do it as your suggestion.
 
-Will
+>> +
+>> +status=0 ; exit
+>
+> separate lines
+>
+>> diff --git a/tests/shared/group b/tests/shared/group
+>> index 0ad640b..3a69294 100644
+>> --- a/tests/shared/group
+>> +++ b/tests/shared/group
+>> @@ -11,4 +11,4 @@
+>>  289 auto quick
+>>  298 auto trim
+>>  305 aio dangerous enospc rw stress
+>> -
+>> +316 auto quick collapse
+>
+> I'd put this in the prealloc group rather than create a new one
+> called "collapse".
+Okay.
+
+Thanks for review.
+>
+> Cheers,
+>
+> Dave.
+> --
+> Dave Chinner
+> david@fromorbit.com
