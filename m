@@ -1,120 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755057Ab3JJIPJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 04:15:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23654 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752618Ab3JJIPF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 04:15:05 -0400
-Date: Thu, 10 Oct 2013 16:14:34 +0800
-From: Dave Young <dyoung@redhat.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>, Matt Fleming <matt@console-pimps.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Vivek Goyal <vgoyal@redhat.com>, linux-efi@vger.kernel.org,
-        fwts-devel@lists.ubuntu.com
-Subject: Re: [PATCH 12/12] EFI: Runtime services virtual mapping
-Message-ID: <20131010081434.GB3692@dhcp-16-126.nay.redhat.com>
-References: <1379602494-26684-1-git-send-email-bp@alien8.de>
- <20131008164551.GB16793@pd.tnic>
- <20131008164831.GD16793@pd.tnic>
- <20131010080635.GA3692@dhcp-16-126.nay.redhat.com>
+	id S1755246Ab3JJIQr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 04:16:47 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:65273 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754697Ab3JJIQp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 04:16:45 -0400
+X-AuditID: 9c930179-b7c78ae000003065-2b-5256626a8abf
+From: Namhyung Kim <namhyung@kernel.org>
+To: Felipe Pena <felipensp@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Borislav Petkov <bp@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tools/perf/util: Fix memory leak in trace-event-info.c
+References: <1381372135-4408-1-git-send-email-felipensp@gmail.com>
+Date: Thu, 10 Oct 2013 17:16:41 +0900
+In-Reply-To: <1381372135-4408-1-git-send-email-felipensp@gmail.com> (Felipe
+	Pena's message of "Wed, 9 Oct 2013 23:28:55 -0300")
+Message-ID: <87txgpczh2.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131010080635.GA3692@dhcp-16-126.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/10/13 at 04:06pm, Dave Young wrote:
-> On 10/08/13 at 06:48pm, Borislav Petkov wrote:
-> > From: Borislav Petkov <bp@suse.de>
-> > 
-> > We map the EFI regions needed for runtime services contiguously on
-> > virtual addresses starting from -4G down for a total max space of 64G.
-> > This way, we provide for stable runtime services addresses across
-> > kernels so that a kexec'd kernel can still use them.
-> > 
-> > This way, they're mapped in a separate pagetable so that we don't
-> > pollute the kernel namespace (you can see how the whole ioremapping and
-> > saving and restoring of PGDs is gone now).
-> > 
-> > Also, add a chicken bit called "efi=old_map" which can be used as a
-> > fallback to the old runtime services mapping method in case there's some
-> > b0rkage with a particular EFI implementation (haha, it is hard to hold
-> > up the sarcasm here...).
-> > 
-> > Add UEFI RT VA space to Documentation/x86/x86_64/mm.txt, while at it.
-> > 
-> 
-> Tested this new patch, the kexec kernel still get different mappings.
-> Same reason, in first kernel reserve boot service function the size is
-> set to 0.
-> 
-> With a little hack patch below (upon my previous test patches for kexec)
-> kexec and kdump works ok in qemu/ovmf, still not tried on real hardware.
+Hi Felipe,
 
-Even though I still have no idea why kernel text overlap with efi boot
-region, anyway map the un-overlapped part is necessary though.
+On Wed,  9 Oct 2013 23:28:55 -0300, Felipe Pena wrote:
+> Fix for a memory leak on tracing_data_get() function when returning NULL explicitly
 
-I can post the kexec related patches after your mapping patches settle
-down
+Thanks for fixing this bug.  Please see comment below.
 
-> 
-> --- bp.orig/arch/x86/platform/efi/efi.c
-> +++ bp/arch/x86/platform/efi/efi.c
-> @@ -445,10 +445,18 @@ static void __init print_efi_memmap(void
->  #endif  /*  EFI_DEBUG  */
->  }
->  
-> +static bool inline overlap_with_ktext(u64 start, u64 size)
-> +{
-> +	return (start + size >= __pa_symbol(_text)
-> +				&& start <= __pa_symbol(_end));
-> +}
+>
+> Signed-off-by: Felipe Pena <felipensp@gmail.com>
+> ---
+>  tools/perf/util/trace-event-info.c |    8 ++++++--
+>  1 file changed, 6 insertions(+), 2 deletions(-)
+>
+> diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
+> index f3c9e55..06f8624 100644
+> --- a/tools/perf/util/trace-event-info.c
+> +++ b/tools/perf/util/trace-event-info.c
+> @@ -518,13 +518,13 @@ struct tracing_data *tracing_data_get(struct list_head *pattrs,
+>  			 "/tmp/perf-XXXXXX");
+>  		if (!mkstemp(tdata->temp_file)) {
+>  			pr_debug("Can't make temp file");
+> -			return NULL;
+> +			goto err_tdata;
+>  		}
+>
+>  		temp_fd = open(tdata->temp_file, O_RDWR);
+>  		if (temp_fd < 0) {
+>  			pr_debug("Can't read '%s'", tdata->temp_file);
+> -			return NULL;
+> +			goto err_tdata;
+>  		}
+>
+>  		/*
+> @@ -569,6 +569,10 @@ out:
+>
+>  	put_tracepoints_path(tps);
+>  	return tdata;
 > +
->  void __init efi_reserve_boot_services(void)
->  {
->  	void *p;
->  
-> +	if (kexecboot)
-> +		return;
->  	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
->  		efi_memory_desc_t *md = p;
->  		u64 start = md->phys_addr;
-> @@ -463,13 +471,16 @@ void __init efi_reserve_boot_services(vo
->  		 * - Not within any part of the kernel
->  		 * - Not the bios reserved area
->  		*/
-> -		if ((start+size >= __pa_symbol(_text)
-> -				&& start <= __pa_symbol(_end)) ||
-> +		if (overlap_with_ktext(start, size) ||
->  			!e820_all_mapped(start, start+size, E820_RAM) ||
->  			memblock_is_region_reserved(start, size)) {
->  			/* Could not reserve, skip it */
-> -			md->num_pages = 0;
-> -			memblock_dbg("Could not reserve boot range "
-> +			if (overlap_with_ktext(start, size)) {
-> +				u64 s = __pa_symbol(_text) - start;
-> +				memblock_reserve(start, s);
-> +			} else
-> +				md->num_pages = 0;
-> +			memblock_dbg("Could not reserve whole boot range "
->  					"[0x%010llx-0x%010llx]\n",
->  						start, start+size-1);
->  		} else
-> @@ -490,6 +501,8 @@ void __init efi_free_boot_services(void)
->  {
->  	void *p;
->  
-> +	if (kexecboot)
-> +		return;
->  	if (!efi_is_native())
->  		return;
->  
-> 
+> +err_tdata:
+> +	free(tdata);
+> +	return NULL;
+>  }
+
+It should call put_tracepoints_path() too in case of error.  So I
+suggest that setting err to an appropriate code and goto if (err) block
+above put_tracepoints_path().
+
+Thanks,
+Namhyung
