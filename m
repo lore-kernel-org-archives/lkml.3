@@ -1,45 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753647Ab3JJNjw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 09:39:52 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:54514 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751269Ab3JJNju (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 09:39:50 -0400
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-To: LMML <linux-media@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH] v4l: tuner-core: fix typo
-Date: Thu, 10 Oct 2013 19:09:32 +0530
-Message-Id: <1381412372-3772-1-git-send-email-prabhakar.csengg@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1755211Ab3JJNkb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 09:40:31 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:45345 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754643Ab3JJNka (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 09:40:30 -0400
+Date: Thu, 10 Oct 2013 15:40:24 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, tglx@linutronix.de, mingo@kernel.org,
+        peterz@infradead.org, hpa@linux.intel.com, williams@redhat.com,
+        akpm@linux-foundation.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [RFC][PATCH] x86: Lazy disabling of interrupts
+Message-ID: <20131010134024.GC9929@pd.tnic>
+References: <20131009144150.108f7041@gandalf.local.home>
+ <20131010001153.1f171bff@gandalf.local.home>
+ <20131010.001939.1669180620160012783.davem@davemloft.net>
+ <20131010090300.GB9929@pd.tnic>
+ <20131010083047.6fb34a12@gandalf.local.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20131010083047.6fb34a12@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+On Thu, Oct 10, 2013 at 08:30:47AM -0400, Steven Rostedt wrote:
+> I just looked at my Address book, and sure enough, when you save an
+> email with quotes, Claws will strip them when adding it to the address
+> book. If you use the address book to send email, then it will use it
+> without quotes. This can explain why Paul wasn't getting a lot of my
+> emails too :-/
 
-Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
----
- drivers/media/v4l2-core/tuner-core.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+But why does it have quotes in the CC list of the copy I have in my
+mbox?
 
-diff --git a/drivers/media/v4l2-core/tuner-core.c b/drivers/media/v4l2-core/tuner-core.c
-index ddc9379..4b8a9a3 100644
---- a/drivers/media/v4l2-core/tuner-core.c
-+++ b/drivers/media/v4l2-core/tuner-core.c
-@@ -247,7 +247,7 @@ static const struct analog_demod_ops tuner_analog_ops = {
- /**
-  * set_type - Sets the tuner type for a given device
-  *
-- * @c:			i2c_client descriptoy
-+ * @c:			i2c_client descriptor
-  * @type:		type of the tuner (e. g. tuner number)
-  * @new_mode_mask:	Indicates if tuner supports TV and/or Radio
-  * @new_config:		an optional parameter used by a few tuners to adjust
 -- 
-1.7.9.5
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
