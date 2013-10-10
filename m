@@ -1,65 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756904Ab3JIX5V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 19:57:21 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:35447 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756763Ab3JIX5R (ORCPT
+	id S932080Ab3JIX5u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 19:57:50 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:50292 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755367Ab3JIX5s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 19:57:17 -0400
-Date: Wed, 9 Oct 2013 16:57:08 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu, "David S. Miller" <davem@davemloft.net>,
-        Thomas Graf <tgraf@suug.ch>, Gao feng <gaofeng@cn.fujitsu.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        linux-decnet-user@lists.sourceforge.net, netdev@vger.kernel.org
-Subject: Re: [PATCH v2 tip/core/rcu 05/13] decnet: Apply rcu_access_pointer()
- to avoid sparse false positive
-Message-ID: <20131009235708.GI5790@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20131009212920.GA15413@linux.vnet.ibm.com>
- <1381354186-16285-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1381354186-16285-5-git-send-email-paulmck@linux.vnet.ibm.com>
- <20131009222842.GD11709@jtriplet-mobl1>
- <20131009224604.GF5790@linux.vnet.ibm.com>
- <20131009225716.GI11709@jtriplet-mobl1>
+	Wed, 9 Oct 2013 19:57:48 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Zoran Markovic <zoran.markovic@linaro.org>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Benoit Goby <benoit@android.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        Colin Cross <ccross@android.com>, Todd Poynor <toddpoynor@google.com>,
+        San Mehat <san@google.com>, John Stultz <john.stultz@linaro.org>,
+        Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [RFC PATCHv4] drivers: power: Detect device suspend/resume lockup and log event in pstore.
+Date: Thu, 10 Oct 2013 02:09:30 +0200
+Message-ID: <4530022.alWsZxkjYN@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <CAME+o4=jpqyoVyRM6bz9xF5rzOHse0n95pG_cW9J=b=kYNicEg@mail.gmail.com>
+References: <1380148313-763-1-git-send-email-zoran.markovic@linaro.org> <CAME+o4=jpqyoVyRM6bz9xF5rzOHse0n95pG_cW9J=b=kYNicEg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131009225716.GI11709@jtriplet-mobl1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13100923-6688-0000-0000-0000026495AD
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 09, 2013 at 03:57:16PM -0700, Josh Triplett wrote:
-> On Wed, Oct 09, 2013 at 03:46:04PM -0700, Paul E. McKenney wrote:
-> > On Wed, Oct 09, 2013 at 03:28:42PM -0700, Josh Triplett wrote:
-> > > On Wed, Oct 09, 2013 at 02:29:38PM -0700, Paul E. McKenney wrote:
-> > > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > > > 
-> > > > The sparse checking for rcu_assign_pointer() was recently upgraded
-> > > > to reject non-__kernel address spaces.  This also rejects __rcu,
-> > > > which is almost always the right thing to do.  However, the use in
-> > > > dn_insert_route() is legitimate: It is assigning a pointer to an element
-> > > 
-> > > Nit: "uses ... are", not "use ... is". :)
-> > 
-> > Don't I already have "use ... is"?
-> 
-> I was suggesting that it needed to change from "use ... is" to "uses ...
-> are", not the other way around.
+On Wednesday, October 09, 2013 11:51:51 AM Zoran Markovic wrote:
+> Hi Rafael,
+> Just wondering if you would like anything changed in this patch in
+> order to get it into 3.13. I'd prefer not missing yet another merge
+> window...
 
-I guess there really are two uses rather than just one.  ;-)
+Sent my comments in a reply to the original patch message.
 
-							Thanx, Paul
+Thanks!
 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
