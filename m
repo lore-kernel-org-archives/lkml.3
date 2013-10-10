@@ -1,92 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752641Ab3JJEay (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 00:30:54 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:48024 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750920Ab3JJEax (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 00:30:53 -0400
-Date: Thu, 10 Oct 2013 06:30:49 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] More timekeeping items for 3.13
-Message-ID: <20131010043049.GA22519@gmail.com>
-References: <5256285F.7060705@linaro.org>
+	id S1752326Ab3JJEc6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 00:32:58 -0400
+Received: from mga01.intel.com ([192.55.52.88]:41225 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751318Ab3JJEc4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 00:32:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,1068,1371106800"; 
+   d="scan'208";a="408643561"
+From: Jani Nikula <jani.nikula@linux.intel.com>
+To: Aaron Lu <aaron.lu@intel.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: linux-acpi@vger.kernel.org, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Daniel Vetter <daniel@ffwll.ch>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Lee Chun-Yi <joeyli.kernel@gmail.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Igor Gnatenko <i.gnatenko.brain@gmail.com>,
+        Yves-Alexis Perez <corsac@debian.org>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        Ben Jencks <ben@bjencks.net>, Steven Newbury <steve@snewbury.org.uk>,
+        James Hogan <james@albanarts.com>, Kamal Mostafa <kamal@canonical.com>,
+        Joerg Platte <jplatte@naasa.net>, Kalle Valo <kvalo@adurom.com>,
+        Martin Steigerwald <Martin@lichtvoll.de>,
+        =?utf-8?Q?J=C3=B6rg?= Otte <jrg.otte@gmail.com>,
+        Mike Galbraith <bitbucket@online.de>,
+        platform-driver-x86@vger.kernel.org,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Subject: Re: [PATCH v4 1/4] backlight: introduce backlight_device_registered
+In-Reply-To: <5255FAC5.2090105@intel.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+References: <1381214401-24672-1-git-send-email-aaron.lu@intel.com> <1381214401-24672-2-git-send-email-aaron.lu@intel.com> <2202423.8QyNjoNEPr@vostro.rjw.lan> <5255FAC5.2090105@intel.com>
+User-Agent: Notmuch/0.16+88~gce1bf71 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Thu, 10 Oct 2013 07:29:53 +0300
+Message-ID: <878uy1694u.fsf@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5256285F.7060705@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 10 Oct 2013, Aaron Lu <aaron.lu@intel.com> wrote:
+> On 10/10/2013 08:25 AM, Rafael J. Wysocki wrote:
+>> On Tuesday, October 08, 2013 02:39:58 PM Aaron Lu wrote:
+>>> +bool backlight_device_registered(enum backlight_type type)
+>>> +{
+>>> +	bool found = false;
+>>> +	struct backlight_device *bd;
+>>> +
+>>> +	mutex_lock(&bd_list_mutex);
+>>> +	list_for_each_entry(bd, &bd_list_head, entry) {
+>>> +		if (bd->props.type == type) {
+>>> +			found = true;
+>>> +			break;
+>>> +		}
+>>> +	}
+>> 
+>> Isn't it useful to be able to register more than one backlight device of the
+>> same type sometimes?
+>
+> I think so for some kind of computers. OTOH, the above function should
+> be enough for the problem we are solving here, if someday we need to
+> differentiate, we can enhance the code then.
 
-* John Stultz <john.stultz@linaro.org> wrote:
+Since both Baytrail and Haswell already have two backlight PWMs, this
+may be needed sooner than you think. But we shouldn't let that block
+fixing the more urgent issue we have now. So I'm fine with this. It
+doesn't prevent one from registering more than one device of the same
+type anyway.
 
-> Hey Thomas,
->     Just wanted to send along the few minor time related items I've got
-> left for 3.13.
-> 
-> * Small cleanup in the clocksource code.
-> 
-> * Fix for rtc-pl031 to let it work with alarmtimers
-> 
-> * Move arm64 to using the generic sched_clock framework & resulting
-> cleanup in the generic sched_clock code.
-> 
-> 
-> thanks
-> -john
-> 
-> 
-> The following changes since commit 389e067032fbb96e439abafae848dd447e4cafb4:
-> 
->   Merge branch 'fortglx/3.12/time' into fortglx/3.13/time (2013-09-16
-> 18:54:07 -0700)
-> 
-> are available in the git repository at:
-> 
-> 
->   git://git.linaro.org/people/jstultz/linux.git fortglx/3.13/time
-> 
-> for you to fetch changes up to b4042ceaabbd913bc5b397ddd1e396eeb312d72f:
-> 
->   sched_clock: Remove sched_clock_func() hook (2013-10-09 16:54:39 -0700)
-> 
-> ----------------------------------------------------------------
-> Elad Wexler (1):
->       clocksource: Fix 'ret' data type of sysfs_override_clocksource()
-> and sysfs_unbind_clocksource()
-> 
-> John Stultz (1):
->       rtc: rtc-pl031: Set wakeup flag prior to registering rtcdev
-> 
-> Stephen Boyd (2):
->       arch_timer: Move to generic sched_clock framework
->       sched_clock: Remove sched_clock_func() hook
-> 
->  arch/arm/kernel/arch_timer.c         | 14 --------------
->  arch/arm64/Kconfig                   |  1 +
->  arch/arm64/kernel/time.c             | 10 ----------
->  drivers/clocksource/arm_arch_timer.c | 10 ++++++++++
->  drivers/rtc/rtc-pl031.c              |  3 +--
->  include/linux/sched_clock.h          |  2 --
->  kernel/time/clocksource.c            |  4 ++--
->  kernel/time/sched_clock.c            |  9 +--------
->  8 files changed, 15 insertions(+), 38 deletions(-)
+BR,
+Jani.
 
-Pulled into tip:timers/core, thanks John!
 
-One small detail I noticed, in commit 07783397c:
 
-    Cc: Linus Walleij <linus.walleij@linaro.org>
-    Acked-by: Linus Walleij <linus.walleij@linaro.org>
-
-Please remove the Cc: line in such cases in the future.
-
-Thanks,
-
-	Ingo
+-- 
+Jani Nikula, Intel Open Source Technology Center
