@@ -1,87 +1,290 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756904Ab3JJVOq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 17:14:46 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:56897 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751919Ab3JJVOo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 17:14:44 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Alexandre Courbot <gnurou@gmail.com>
-Cc: Olof Johansson <olof@lixom.net>, Alexandre Courbot <acourbot@nvidia.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Tomasz Figa <t.figa@samsung.com>, Dave Martin <Dave.Martin@arm.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "devicetree\@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra\@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel\@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v7 1/5] ARM: add basic support for Trusted Foundations
-References: <1380904635-18113-1-git-send-email-acourbot@nvidia.com>
-	<1380904635-18113-2-git-send-email-acourbot@nvidia.com>
-	<CAOesGMj74Pui1V5O7zxEipM5Hg6nboVTUCFuMY0c0aUh=wuu3Q@mail.gmail.com>
-	<CAAVeFuLvHdUuDurqA_=tvxJonNP+RekotM_MuysQrJD0PUgcSQ@mail.gmail.com>
-Date: Thu, 10 Oct 2013 14:14:41 -0700
-In-Reply-To: <CAAVeFuLvHdUuDurqA_=tvxJonNP+RekotM_MuysQrJD0PUgcSQ@mail.gmail.com>
-	(Alexandre Courbot's message of "Thu, 10 Oct 2013 13:58:24 -0700")
-Message-ID: <87y560q14u.fsf@linaro.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1757274Ab3JJVQn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 17:16:43 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:48583 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755263Ab3JJVQl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 17:16:41 -0400
+From: Suman Anna <s-anna@ti.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>, Mark Rutland <mark.rutland@arm.com>
+CC: Tony Lindgren <tony@atomide.com>, Benoit Cousson <bcousson@baylibre.com>,
+        Kumar Gala <galak@codeaurora.org>, Paul Walmsley <paul@pwsan.com>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, Suman Anna <s-anna@ti.com>
+Subject: [PATCHv3 2/8] hwspinlock/core: add common dt bindings and OF helpers
+Date: Thu, 10 Oct 2013 16:15:29 -0500
+Message-ID: <1381439735-52888-3-git-send-email-s-anna@ti.com>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1381439735-52888-1-git-send-email-s-anna@ti.com>
+References: <1381439735-52888-1-git-send-email-s-anna@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alexandre Courbot <gnurou@gmail.com> writes:
+This patch adds the necessary documentation and OF helpers to
+represent a hwlock device and use/request locks in a device-tree
+build.
 
-> On Wed, Oct 9, 2013 at 4:47 PM, Olof Johansson <olof@lixom.net> wrote:
->> On Fri, Oct 4, 2013 at 9:37 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+All the platform-specific hwlock driver implementations need the
+number of locks and associated base id for registering the locks
+present within the device with the driver core. The number of locks
+is represented by 'hwlock-num-locks' property in DT bindings. A
+property for base id is not needed in DT binding, as it can be
+satisfied using a phandle + args specifier.
 
-[...]
+OF helpers have been added to the driver core to read the common
+'hwlock-num-locks' property, and to request a specific lock using
+the phandle + args specifier. The latter function is different
+from the existing non-DT function, in that the specifier is
+relative to the hwlock device instead of being a global lock id
+registered with the core.
 
->>> +static inline void register_trusted_foundations(
->>> +                                  struct trusted_foundations_platform_data *pd)
->>> +{
->>> +       /* If we try to register TF, this means the system needs it to continue.
->>> +        * Its absence if thus a fatal error. */
->>> +       panic("No support for Trusted Foundations, stopping...\n");
->>> +}
->>> +
->>> +static inline void of_register_trusted_foundations(void)
->>> +{
->>> +       /* If we find the target should enable TF but does not support it,
->>> +        * fail as the system won't be able to do much anyway */
->>> +       if (of_find_compatible_node(NULL, NULL, "tl,trusted-foundations"))
->>> +               register_trusted_foundations(NULL);
->>> +}
->>> +#endif /* CONFIG_TRUSTED_FOUNDATIONS */
->>
->> The latter function can just be shortcut unto a local panic too.
->>
->> But do we really need to panic here? It's a PITA to debug since it'll
->> be a very early panic. I'd rather have the system log errors in dmesg
->> but continue booting with one cpu.
->
-> Actually the first version of this series continued on one CPU if TF
-> support was missing (as secondary CPUs would simply fail to boot), but
-> IIRC Stephen advocated for the current behavior (panic) instead. I
-> agree such an early panic is hard to debug, especially considering
-> that most devices using TF (Tegra retail devices) do not even feature
-> a serial port.
->
-> On the other hand, if we continue booting in these conditions the
-> system freezes as soon as cpuidle kicks in, so we won't be going very
-> far anyway. However the console is up when it happens.
+Signed-off-by: Suman Anna <s-anna@ti.com>
+---
+ .../devicetree/bindings/hwlock/hwlock.txt          | 49 +++++++++++++
+ drivers/hwspinlock/hwspinlock_core.c               | 85 +++++++++++++++++++++-
+ include/linux/hwspinlock.h                         | 19 ++++-
+ 3 files changed, 148 insertions(+), 5 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/hwlock/hwlock.txt
 
-cpu_idle_poll_ctrl(true) should solve that problem.
+diff --git a/Documentation/devicetree/bindings/hwlock/hwlock.txt b/Documentation/devicetree/bindings/hwlock/hwlock.txt
+new file mode 100644
+index 0000000..3fef8cc
+--- /dev/null
++++ b/Documentation/devicetree/bindings/hwlock/hwlock.txt
+@@ -0,0 +1,49 @@
++Generic hwlock bindings
++=======================
++
++Generic bindings that are common to all the hwlock platform specific driver
++implementations, the retrieved values are used for registering the device
++specific parameters with the hwspinlock core.
++
++The validity and need of these common properties may vary from one platform
++implementation to another. The platform specific bindings should explicitly
++state if a property is mandatory or optional. Please look through the
++individual platform specific hwlock binding documentations for identifying
++the applicable properties.
++
++Common properties:
++- hwlock-num-locks:	Number of locks present in a hwlock device. This
++			property is needed on hwlock devices, where the number
++			of supported locks within a hwlock device cannot be
++			read from a register.
++
++Hwlock Users:
++=============
++
++Nodes that require specific hwlock(s) should specify them using one or more
++properties, each containing a phandle to the hwlock node and a 0-indexed
++relative hwlock number within that hwlock node. Multiple hwlocks can be
++requested using an array of the phandle and hwlock number specifier tuple.
++
++1. Example of a node using a single specific hwlock:
++
++The following example has a node requesting third hwlock in the bank
++defined by the node hwlock1.
++
++	node {
++		...
++		hwlocks = <&hwlock1 2>;
++		...
++	};
++
++2. Example of a node using multiple specific hwlocks:
++
++The following example has a node requesting two hwlocks, third hwlock within
++the hwlock device node 'hwlock1', and the first hwlock within the hwlock
++device node 'hwlock2'.
++
++	node {
++		...
++		hwlocks = <&hwlock1 2>, <&hwlock2 0>;
++		...
++	};
+diff --git a/drivers/hwspinlock/hwspinlock_core.c b/drivers/hwspinlock/hwspinlock_core.c
+index 00c49d3..3f1089a 100644
+--- a/drivers/hwspinlock/hwspinlock_core.c
++++ b/drivers/hwspinlock/hwspinlock_core.c
+@@ -1,7 +1,7 @@
+ /*
+  * Hardware spinlock framework
+  *
+- * Copyright (C) 2010 Texas Instruments Incorporated - http://www.ti.com
++ * Copyright (C) 2010-2013 Texas Instruments Incorporated - http://www.ti.com
+  *
+  * Contact: Ohad Ben-Cohen <ohad@wizery.com>
+  *
+@@ -27,6 +27,7 @@
+ #include <linux/hwspinlock.h>
+ #include <linux/pm_runtime.h>
+ #include <linux/mutex.h>
++#include <linux/of.h>
+ 
+ #include "hwspinlock_internal.h"
+ 
+@@ -262,6 +263,33 @@ void __hwspin_unlock(struct hwspinlock *hwlock, int mode, unsigned long *flags)
+ }
+ EXPORT_SYMBOL_GPL(__hwspin_unlock);
+ 
++/**
++ * of_hwspin_lock_get_num_locks() - OF helper to retrieve number of locks
++ * @dn: device node pointer
++ *
++ * This is an OF helper function that can be called by the underlying
++ * platform-specific implementations, to retrieve the number of locks
++ * present within a hwspinlock device instance. The hwlock-num-locks
++ * DT property may be optional for some platforms, while mandatory for
++ * some others, so this function is typically called only by needed
++ * platform-specific implementations.
++ *
++ * Returns a positive number of locks on success, -ENODEV on generic
++ * failure or an appropriate error code as returned by the OF layer
++ */
++int of_hwspin_lock_get_num_locks(struct device_node *dn)
++{
++	unsigned int val;
++	int ret = -ENODEV;
++
++	ret = of_property_read_u32(dn, "hwlock-num-locks", &val);
++	if (!ret)
++		ret = val ? val : -ENODEV;
++
++	return ret;
++}
++EXPORT_SYMBOL_GPL(of_hwspin_lock_get_num_locks);
++
+ static int hwspin_lock_register_single(struct hwspinlock *hwlock, int id)
+ {
+ 	struct hwspinlock *tmp;
+@@ -589,6 +617,61 @@ out:
+ EXPORT_SYMBOL_GPL(hwspin_lock_request_specific);
+ 
+ /**
++ * of_hwspin_lock_request_specific() - request a OF phandle-based specific lock
++ * @np: device node from which to request the specific hwlock
++ * @propname: property name containing hwlock specifier(s)
++ * @index: index of the hwlock
++ *
++ * This function is the OF equivalent of hwspin_lock_request_specific(). This
++ * function provides a means for users of the hwspinlock module to request a
++ * specific hwspinlock using the phandle of the hwspinlock device. The requested
++ * lock number is indexed relative to the hwspinlock device, unlike the
++ * hwspin_lock_request_specific() which is an absolute lock number.
++ *
++ * Returns the address of the assigned hwspinlock, or NULL on error
++ */
++struct hwspinlock *of_hwspin_lock_request_specific(struct device_node *np,
++					const char *propname, int index)
++{
++	struct hwspinlock_device *bank;
++	struct of_phandle_args args;
++	unsigned int id;
++	int ret;
++
++	ret = of_parse_phandle_with_fixed_args(np, propname, 1, index, &args);
++	if (ret) {
++		pr_warn("%s: can't parse hwlocks property of node '%s[%d]' ret = %d\n",
++			__func__, np->full_name, index, ret);
++		return NULL;
++	}
++
++	/* sanity check (this shouldn't happen) */
++	WARN_ON(args.args_count != 1);
++
++	mutex_lock(&hwspinlock_tree_lock);
++	list_for_each_entry(bank, &hwspinlock_devices, list)
++		if (bank->dev->of_node == args.np)
++			break;
++	mutex_unlock(&hwspinlock_tree_lock);
++	if (&bank->list == &hwspinlock_devices) {
++		pr_warn("%s: requested hwspinlock device %s is not registered\n",
++			__func__, args.np->full_name);
++		return NULL;
++	}
++
++	id = args.args[0];
++	if (id >= bank->num_locks) {
++		pr_warn("%s: requested lock %d is out of range [0, %d]\n",
++			__func__, id, bank->num_locks - 1);
++		return NULL;
++	}
++
++	id += bank->base_id;
++	return hwspin_lock_request_specific(id);
++}
++EXPORT_SYMBOL(of_hwspin_lock_request_specific);
++
++/**
+  * hwspin_lock_free() - free a specific hwspinlock
+  * @hwlock: the specific hwspinlock to free
+  *
+diff --git a/include/linux/hwspinlock.h b/include/linux/hwspinlock.h
+index 3343298..4bd36be 100644
+--- a/include/linux/hwspinlock.h
++++ b/include/linux/hwspinlock.h
+@@ -1,7 +1,7 @@
+ /*
+  * Hardware spinlock public header
+  *
+- * Copyright (C) 2010 Texas Instruments Incorporated - http://www.ti.com
++ * Copyright (C) 2010-2013 Texas Instruments Incorporated - http://www.ti.com
+  *
+  * Contact: Ohad Ben-Cohen <ohad@wizery.com>
+  *
+@@ -26,6 +26,7 @@
+ #define HWLOCK_IRQ	0x02	/* Disable interrupts, don't save state */
+ 
+ struct device;
++struct device_node;
+ struct hwspinlock;
+ struct hwspinlock_device;
+ struct hwspinlock_ops;
+@@ -60,11 +61,14 @@ struct hwspinlock_pdata {
+ 
+ #if defined(CONFIG_HWSPINLOCK) || defined(CONFIG_HWSPINLOCK_MODULE)
+ 
++int of_hwspin_lock_get_num_locks(struct device_node *dn);
+ int hwspin_lock_register(struct hwspinlock_device *bank, struct device *dev,
+ 		const struct hwspinlock_ops *ops, int base_id, int num_locks);
+ int hwspin_lock_unregister(struct hwspinlock_device *bank);
+ struct hwspinlock *hwspin_lock_request(void);
+ struct hwspinlock *hwspin_lock_request_specific(unsigned int id);
++struct hwspinlock *of_hwspin_lock_request_specific(struct device_node *np,
++		const char *propname, int index);
+ int hwspin_lock_free(struct hwspinlock *hwlock);
+ int hwspin_lock_get_id(struct hwspinlock *hwlock);
+ int __hwspin_lock_timeout(struct hwspinlock *, unsigned int, int,
+@@ -80,9 +84,9 @@ void __hwspin_unlock(struct hwspinlock *, int, unsigned long *);
+  * code path get compiled away. This way, if CONFIG_HWSPINLOCK is not
+  * required on a given setup, users will still work.
+  *
+- * The only exception is hwspin_lock_register/hwspin_lock_unregister, with which
+- * we _do_ want users to fail (no point in registering hwspinlock instances if
+- * the framework is not available).
++ * The only exception is hwspin_lock_register/hwspin_lock_unregister and
++ * associated OF helpers, with which we _do_ want users to fail (no point
++ * in registering hwspinlock instances if the framework is not available).
+  *
+  * Note: ERR_PTR(-ENODEV) will still be considered a success for NULL-checking
+  * users. Others, which care, can still check this with IS_ERR.
+@@ -97,6 +101,13 @@ static inline struct hwspinlock *hwspin_lock_request_specific(unsigned int id)
+ 	return ERR_PTR(-ENODEV);
+ }
+ 
++static inline
++struct hwspinlock *of_hwspin_lock_request_specific(struct device_node *np,
++						const char *propname, int index)
++{
++	return ERR_PTR(-ENODEV);
++}
++
+ static inline int hwspin_lock_free(struct hwspinlock *hwlock)
+ {
+ 	return 0;
+-- 
+1.8.4
 
-Kevin
-
-> Maybe if there is a way to disable the kernel features TF is supposed
-> to manage (SMP & cpuidle at the moment) when registration fails, the
-> system could continue more gracefully (even if on one leg) and warn
-> the user about this condition. Stephen, can I have your thoughts on
-> this?
