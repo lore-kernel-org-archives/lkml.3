@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756866Ab3JJQnJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 12:43:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35019 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756683Ab3JJQnG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 12:43:06 -0400
-Date: Thu, 10 Oct 2013 09:43:55 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/6] Optimize the cpu hotplug locking -v2
-Message-Id: <20131010094355.6f75e5a2.akpm@linux-foundation.org>
-In-Reply-To: <20131010123631.1be60315@gandalf.local.home>
-References: <20131008102505.404025673@infradead.org>
-	<20131009225006.7101379c.akpm@linux-foundation.org>
-	<20131010121908.GB28601@twins.programming.kicks-ass.net>
-	<20131010145738.GA5167@gmail.com>
-	<20131010152612.GA13375@redhat.com>
-	<20131010090044.7f12ddaf.akpm@linux-foundation.org>
-	<20131010123631.1be60315@gandalf.local.home>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756116Ab3JJQpK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 12:45:10 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:37649 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755621Ab3JJQpH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 12:45:07 -0400
+From: Nishanth Menon <nm@ti.com>
+To: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
+        Rajendra Nayak <rnayak@ti.com>
+CC: <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Nishanth Menon <nm@ti.com>
+Subject: [PATCH] ARM: dts: omap4-panda-es: Do not reset gpio1
+Date: Thu, 10 Oct 2013 11:44:41 -0500
+Message-ID: <1381423481-5920-1-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1381313521-10422-1-git-send-email-rnayak@ti.com>
+References: <1381313521-10422-1-git-send-email-rnayak@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Oct 2013 12:36:31 -0400 Steven Rostedt <rostedt@goodmis.org> wrote:
+Do not reset GPIO1 at boot-up because GPIO 7 in GPIO1 block is used on
+OMAP4460 PandaBoard-ES to select voltage register in TPS62361 which
+supplies VDD_MPU.
 
-> On Thu, 10 Oct 2013 09:00:44 -0700
-> Andrew Morton <akpm@linux-foundation.org> wrote:
-> 
-> > It's been ages since I looked at this stuff :( Although it isn't used
-> > much, memory hotplug manages to use stop_machine() on the add/remove
-> > (ie, "writer") side and nothing at all on the "reader" side.  Is there
-> > anything which fundamentally prevents cpu hotplug from doing the same?
-> 
-> 
-> I would think that memory hotplug may require stop machine as all CPUs
-> may touch that memory.
+Without this, OMAP4460 PandaBoard-ES boards fail to boot-up because
+MPU voltage switches over to VSET0 voltage value (boot voltage) which
+is not sufficient to operate the device at OPP100.
 
-Sure.
+Signed-off-by: Nishanth Menon <nm@ti.com>
+---
+As explained here: http://marc.info/?l=u-boot&m=133066647800872&w=2
 
-> But we would like to remove stomp machine from
-> CPU hotplug.
+GPIO1 reset causes PandaBoard-ES to stop functioning.
+This depends on Patch series from Rajendra:
+http://marc.info/?l=linux-doc&m=138131355520116&w=2
+Applies on Benoit's for_13/dts branch:
+https://git.kernel.org/cgit/linux/kernel/git/bcousson/linux-omap-dt.git/log/?h=for_3.13/dts
 
-We do?  That's news.  It wasn't mentioned in the changelog and should
-have been.  Why?  
+Tested on PandaBoard-ES without the u-boot uenv hack
 
-> Why prevent all CPUs from running when we want to remove
-> one?
+ arch/arm/boot/dts/omap4-panda-es.dts |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-So get_online_cpus() goes away.  Nothing is more scalable than nothing!
+diff --git a/arch/arm/boot/dts/omap4-panda-es.dts b/arch/arm/boot/dts/omap4-panda-es.dts
+index 56c4354..816d1c9 100644
+--- a/arch/arm/boot/dts/omap4-panda-es.dts
++++ b/arch/arm/boot/dts/omap4-panda-es.dts
+@@ -62,3 +62,7 @@
+ 		gpios = <&gpio1 8 GPIO_ACTIVE_HIGH>;
+ 	};
+ };
++
++&gpio1 {
++	 ti,no-reset-on-init;
++};
+-- 
+1.7.9.5
+
