@@ -1,81 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752326Ab3JJEc6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 00:32:58 -0400
-Received: from mga01.intel.com ([192.55.52.88]:41225 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751318Ab3JJEc4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 00:32:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1068,1371106800"; 
-   d="scan'208";a="408643561"
-From: Jani Nikula <jani.nikula@linux.intel.com>
-To: Aaron Lu <aaron.lu@intel.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: linux-acpi@vger.kernel.org, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Daniel Vetter <daniel@ffwll.ch>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Lee Chun-Yi <joeyli.kernel@gmail.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Igor Gnatenko <i.gnatenko.brain@gmail.com>,
-        Yves-Alexis Perez <corsac@debian.org>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        Ben Jencks <ben@bjencks.net>, Steven Newbury <steve@snewbury.org.uk>,
-        James Hogan <james@albanarts.com>, Kamal Mostafa <kamal@canonical.com>,
-        Joerg Platte <jplatte@naasa.net>, Kalle Valo <kvalo@adurom.com>,
-        Martin Steigerwald <Martin@lichtvoll.de>,
-        =?utf-8?Q?J=C3=B6rg?= Otte <jrg.otte@gmail.com>,
-        Mike Galbraith <bitbucket@online.de>,
-        platform-driver-x86@vger.kernel.org,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Subject: Re: [PATCH v4 1/4] backlight: introduce backlight_device_registered
-In-Reply-To: <5255FAC5.2090105@intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-References: <1381214401-24672-1-git-send-email-aaron.lu@intel.com> <1381214401-24672-2-git-send-email-aaron.lu@intel.com> <2202423.8QyNjoNEPr@vostro.rjw.lan> <5255FAC5.2090105@intel.com>
-User-Agent: Notmuch/0.16+88~gce1bf71 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Thu, 10 Oct 2013 07:29:53 +0300
-Message-ID: <878uy1694u.fsf@intel.com>
+	id S1752701Ab3JJEfY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 00:35:24 -0400
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:49676 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751647Ab3JJEfX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 00:35:23 -0400
+Date: Thu, 10 Oct 2013 06:35:19 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Dong Zhu <bluezhudong@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, John Stultz <john.stultz@linaro.org>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND] timer stats: reset entries when disable the timer
+ usage statistics
+Message-ID: <20131010043519.GB22519@gmail.com>
+References: <20131010025947.GD2139@zhudong.nay.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131010025947.GD2139@zhudong.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Oct 2013, Aaron Lu <aaron.lu@intel.com> wrote:
-> On 10/10/2013 08:25 AM, Rafael J. Wysocki wrote:
->> On Tuesday, October 08, 2013 02:39:58 PM Aaron Lu wrote:
->>> +bool backlight_device_registered(enum backlight_type type)
->>> +{
->>> +	bool found = false;
->>> +	struct backlight_device *bd;
->>> +
->>> +	mutex_lock(&bd_list_mutex);
->>> +	list_for_each_entry(bd, &bd_list_head, entry) {
->>> +		if (bd->props.type == type) {
->>> +			found = true;
->>> +			break;
->>> +		}
->>> +	}
->> 
->> Isn't it useful to be able to register more than one backlight device of the
->> same type sometimes?
->
-> I think so for some kind of computers. OTOH, the above function should
-> be enough for the problem we are solving here, if someday we need to
-> differentiate, we can enhance the code then.
 
-Since both Baytrail and Haswell already have two backlight PWMs, this
-may be needed sooner than you think. But we shouldn't let that block
-fixing the more urgent issue we have now. So I'm fine with this. It
-doesn't prevent one from registering more than one device of the same
-type anyway.
+* Dong Zhu <bluezhudong@gmail.com> wrote:
 
-BR,
-Jani.
+> From f41628c61d8a9172677ba33a55b61e37ce28f7a6 Mon Sep 17 00:00:00 2001
+> From: Dong Zhu <bluezhudong@gmail.com> 
+> Date: Thu, 10 Oct 2013 10:38:13 +0800
+> 
+> When we stop timer statistics collection (via echo 0 > 
+> /proc/timers_stats), the statistics data is still exported as if it were 
+> correct, which can cause applicaitons to misuse the statistics.
 
+What misuse do you mean?
 
+> This patch resets the statistics when we stop collecting them, to avoid 
+> this problem.
 
--- 
-Jani Nikula, Intel Open Source Technology Center
+Well, this loses the handy 'snapshot' property of /proc/timer_stats. 
+Before this change one could do:
+
+	echo 1 > /proc/timers_stats
+	sleep 60 # run system workload
+	echo 0 > /proc/timers_stats
+
+and examine the 1-minute collection result without it changing. Your 
+change, if I understand it correctly, zeroes it all out.
+
+Instead of this change I'd suggest adding a 'status' line, with two 
+outputs:
+
+	Status: collection active
+
+	Status: collection disabled
+
+Thanks,
+
+	Ingo
