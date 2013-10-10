@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757622Ab3JJQBe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 12:01:34 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52894 "EHLO
+	id S1757751Ab3JJQCF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 12:02:05 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52867 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755649Ab3JJPs5 (ORCPT
+	with ESMTP id S1756094Ab3JJPso (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 11:48:57 -0400
+	Thu, 10 Oct 2013 11:48:44 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Felipe Balbi <balbi@ti.com>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 076/104] usb: dwc3: pci: add support for BayTrail
-Date: Thu, 10 Oct 2013 08:42:04 -0700
-Message-Id: <1381419752-29733-77-git-send-email-kamal@canonical.com>
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 027/104] net: ipv6: tcp: fix potential use after free in tcp_v6_do_rcv
+Date: Thu, 10 Oct 2013 08:41:15 -0700
+Message-Id: <1381419752-29733-28-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381419752-29733-1-git-send-email-kamal@canonical.com>
 References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
@@ -27,39 +29,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-commit b62cd96de3161dfb125a769030eec35a4cab3d3a upstream.
+[ Upstream commit 3a1c756590633c0e86df606e5c618c190926a0df ]
 
-Add PCI id for Intel BayTrail.
+In tcp_v6_do_rcv() code, when processing pkt options, we soley work
+on our skb clone opt_skb that we've created earlier before entering
+tcp_rcv_established() on our way. However, only in condition ...
 
-Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+  if (np->rxopt.bits.rxtclass)
+    np->rcv_tclass = ipv6_get_dsfield(ipv6_hdr(skb));
+
+... we work on skb itself. As we extract every other information out
+of opt_skb in ipv6_pktoptions path, this seems wrong, since skb can
+already be released by tcp_rcv_established() earlier on. When we try
+to access it in ipv6_hdr(), we will dereference freed skb.
+
+[ Bug added by commit 4c507d2897bd9b ("net: implement IP_RECVTOS for
+  IP_PKTOPTIONS") ]
+
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Acked-by: Jiri Benc <jbenc@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[ kamal: backport to 3.8 ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/dwc3/dwc3-pci.c | 2 ++
- 1 file changed, 2 insertions(+)
+ net/ipv6/tcp_ipv6.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/usb/dwc3/dwc3-pci.c b/drivers/usb/dwc3/dwc3-pci.c
-index 9c0306b..fb144a2b 100644
---- a/drivers/usb/dwc3/dwc3-pci.c
-+++ b/drivers/usb/dwc3/dwc3-pci.c
-@@ -50,6 +50,7 @@
- /* FIXME define these in <linux/pci_ids.h> */
- #define PCI_VENDOR_ID_SYNOPSYS		0x16c3
- #define PCI_DEVICE_ID_SYNOPSYS_HAPSUSB3	0xabcd
-+#define PCI_DEVICE_ID_INTEL_BYT		0x0f37
- 
- struct dwc3_pci {
- 	struct device		*dev;
-@@ -210,6 +211,7 @@ static DEFINE_PCI_DEVICE_TABLE(dwc3_pci_id_table) = {
- 		PCI_DEVICE(PCI_VENDOR_ID_SYNOPSYS,
- 				PCI_DEVICE_ID_SYNOPSYS_HAPSUSB3),
- 	},
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_BYT), },
- 	{  }	/* Terminating Entry */
- };
- MODULE_DEVICE_TABLE(pci, dwc3_pci_id_table);
+diff --git a/net/ipv6/tcp_ipv6.c b/net/ipv6/tcp_ipv6.c
+index 4cc834a..2eb71b4 100644
+--- a/net/ipv6/tcp_ipv6.c
++++ b/net/ipv6/tcp_ipv6.c
+@@ -1468,7 +1468,7 @@ ipv6_pktoptions:
+ 		if (np->rxopt.bits.rxhlim || np->rxopt.bits.rxohlim)
+ 			np->mcast_hops = ipv6_hdr(opt_skb)->hop_limit;
+ 		if (np->rxopt.bits.rxtclass)
+-			np->rcv_tclass = ipv6_tclass(ipv6_hdr(skb));
++			np->rcv_tclass = ipv6_tclass(ipv6_hdr(opt_skb));
+ 		if (ipv6_opt_accepted(sk, opt_skb)) {
+ 			skb_set_owner_r(opt_skb, sk);
+ 			opt_skb = xchg(&np->pktoptions, opt_skb);
 -- 
 1.8.1.2
 
