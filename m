@@ -1,67 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757179Ab3JIX7Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 19:59:24 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:53064 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754640Ab3JIX7X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 19:59:23 -0400
-Message-ID: <5255EDD6.1050401@linaro.org>
-Date: Wed, 09 Oct 2013 16:59:18 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Will Deacon <will.deacon@arm.com>
-CC: Stephen Boyd <sboyd@codeaurora.org>,
+	id S1756523Ab3JJAEZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 20:04:25 -0400
+Received: from mail-bl2lp0212.outbound.protection.outlook.com ([207.46.163.212]:33757
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752747Ab3JJAEY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 20:04:24 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Olaf Hering <olaf@aepfle.de>, "x86@kernel.org" <x86@kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "arm@kernel.org" <arm@kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Subject: Re: [PATCH] sched_clock: fix postinit no sched_clock function check
-References: <1380732928-13897-1-git-send-email-santosh.shilimkar@ti.com> <20131002170917.GB30298@mudshark.cambridge.arm.com> <524C5484.5000601@ti.com> <524C565C.8010709@codeaurora.org> <524C5786.2090008@ti.com> <524C5B10.20006@codeaurora.org> <20131002174841.GH30298@mudshark.cambridge.arm.com> <524C60F4.7000802@ti.com>
-In-Reply-To: <524C60F4.7000802@ti.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "JBeulich@suse.com" <JBeulich@suse.com>, "bp@alien8.de" <bp@alien8.de>
+Subject: RE: [PATCH V2 1/1] X86: Hyper-V: Get the local APIC timer frequency
+ from the hypervisor
+Thread-Topic: [PATCH V2 1/1] X86: Hyper-V: Get the local APIC timer
+ frequency from the hypervisor
+Thread-Index: AQHOqM30I+mkPB2b1kKq/5YqjRysqJnZ1ccAgAADeVCAAALBgIAAAGOQgBNVxwCAABSFkA==
+Date: Thu, 10 Oct 2013 00:04:09 +0000
+Message-ID: <b6228003e8704f819557eda0355da44e@SN2PR03MB061.namprd03.prod.outlook.com>
+References: <1378233023-4512-1-git-send-email-kys@microsoft.com>
+ <20130927151026.GA29416@aepfle.de>
+ <418dd0e9b1054189b61770edb57c5b37@SN2PR03MB061.namprd03.prod.outlook.com>
+ <20130927153242.GA29462@aepfle.de>
+ <778c69f5eae9483a8380755e4692bcaf@SN2PR03MB061.namprd03.prod.outlook.com>
+ <5255DD9A.6070600@zytor.com>
+In-Reply-To: <5255DD9A.6070600@zytor.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [2001:4898:80e0:ee43::2]
+x-forefront-prvs: 0995196AA2
+x-forefront-antispam-report: SFV:NSPM;SFS:(51704005)(479174003)(377454003)(189002)(199002)(13464003)(24454002)(74706001)(47446002)(79102001)(74502001)(74366001)(33646001)(50986001)(47736001)(47976001)(81816001)(54356001)(76482001)(80976001)(77982001)(59766001)(51856001)(31966008)(74662001)(56776001)(85306002)(81342001)(81686001)(49866001)(54316002)(46102001)(4396001)(53806001)(63696002)(81542001)(19580395003)(65816001)(83072001)(80022001)(69226001)(74876001)(83322001)(19580405001)(74316001)(56816003)(77096001)(76576001)(76786001)(76796001)(15583001)(3826001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:SN2PR03MB064;H:SN2PR03MB061.namprd03.prod.outlook.com;CLIP:2001:4898:80e0:ee43::2;FPR:;RD:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-OriginatorOrg: DuplicateDomain-a84fc36a-4ed7-4e57-ab1c-3e967bcbad48.microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r9A04V9N016456
 
-On 10/02/2013 11:07 AM, Santosh Shilimkar wrote:
-> On Wednesday 02 October 2013 01:48 PM, Will Deacon wrote:
->> On Wed, Oct 02, 2013 at 06:42:40PM +0100, Stephen Boyd wrote:
->>> On 10/02/13 10:27, Santosh Shilimkar wrote:
->>>> Really... I have not created patch out of fun.
->>>> Its broken on my keystone machine at least where the sched_clock is
->>>> falling back on jiffy based sched_clock even in presence of arch_timer
->>>> sched_clock.
->>> How is that possible? sched_clock_func is only assigned by
->>> arch/arm/kernel/arch_timer.c when the architected timer is detected and
->>> sched_clock() in kernel/time/sched_clock.c calls that function pointer
->>> unconditionally. The only way I see this happening is if the architected
->>> timer rate is zero.
->>   ^^^^^^^^^^^^^^^^^^
->>
->> *cough* CNTFRQ *cough*
->>
-> :) CNTFRQ as such is fine. I think the below print mis-lead me mostly. 
->
-> sched_clock: ARM arch timer >56 bits at 6144kHz, resolution 162ns
-> sched_clock: 32 bits at 100 Hz, resolution 10000000ns, wraps every 4294967286ms
->
-> So yes, now the subject patch actually just avoids the jiffy sched_clock()
-> registration and nothing else. Even without the patch arch_timer sched_clock
-> will be in use.
 
-Just wanted to follow up here, as I've not been paying close attention.
-Is this issue then resolved, or is something still needed to be queued
-for 3.12/3.13?
 
-thanks
--john
+> -----Original Message-----
+> From: H. Peter Anvin [mailto:hpa@zytor.com]
+> Sent: Wednesday, October 09, 2013 3:50 PM
+> To: KY Srinivasan
+> Cc: Olaf Hering; x86@kernel.org; gregkh@linuxfoundation.org; linux-
+> kernel@vger.kernel.org; devel@linuxdriverproject.org; apw@canonical.com;
+> jasowang@redhat.com; tglx@linutronix.de; JBeulich@suse.com; bp@alien8.de
+> Subject: Re: [PATCH V2 1/1] X86: Hyper-V: Get the local APIC timer frequency
+> from the hypervisor
+> 
+> On 09/27/2013 08:35 AM, KY Srinivasan wrote:
+> >
+> > Thanks Olaf. Could you submit the patch.
+> >
+> 
+> Haven't heard anything from Olaf... could you fold in the fix and resumbit?
+
+I think Olaf sent the updated patch out; I will dig up the email and resend it.
+
+Regards,
+
+K. Y
+> 
+> 	-hpa
+> 
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
