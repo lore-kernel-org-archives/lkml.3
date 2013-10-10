@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756670Ab3JJBCF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 21:02:05 -0400
-Received: from host171.canaca.com ([67.55.55.225]:38442 "EHLO
+	id S1756999Ab3JJBCN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 21:02:13 -0400
+Received: from host171.canaca.com ([67.55.55.225]:38447 "EHLO
 	host171.canaca.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754088Ab3JJBCD (ORCPT
+	with ESMTP id S1754088Ab3JJBCK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 21:02:03 -0400
-X-Greylist: delayed 3423 seconds by postgrey-1.27 at vger.kernel.org; Wed, 09 Oct 2013 21:02:03 EDT
+	Wed, 9 Oct 2013 21:02:10 -0400
 From: Simon Wood <simon@mungewell.org>
 To: linux-input@vger.kernel.org
 Cc: Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
         simon@mungewell.org, Elias Vanderstuyft <elias.vds@gmail.com>,
         =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@prifuk.cz>
-Subject: [PATCH 2/3] HID:hid-lg: Fixed Report Descriptor for Logitech MOMO Force (Black) to split Accel/Brake into seperate axis
-Date: Wed,  9 Oct 2013 18:04:46 -0600
-Message-Id: <1381363487-2167-2-git-send-email-simon@mungewell.org>
+Subject: [PATCH 1/3] HID:hid-lg: Fixed ReportDescriptor for Logitech Formular Vibration to split Accel/Brake into seperate axis
+Date: Wed,  9 Oct 2013 18:04:45 -0600
+Message-Id: <1381363487-2167-1-git-send-email-simon@mungewell.org>
 X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1381363487-2167-1-git-send-email-simon@mungewell.org>
-References: <1381363487-2167-1-git-send-email-simon@mungewell.org>
 X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
 X-AntiAbuse: Primary Hostname - host171.canaca.com
 X-AntiAbuse: Original Domain - vger.kernel.org
@@ -31,94 +28,114 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Requires https://patchwork.kernel.org/patch/2998241/
 
 Signed-off-by: Simon Wood <simon@mungewell.org>
 ---
- drivers/hid/hid-lg.c | 58 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 58 insertions(+)
+ drivers/hid/hid-lg.c | 77 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 77 insertions(+)
 
 diff --git a/drivers/hid/hid-lg.c b/drivers/hid/hid-lg.c
-index c6efdae..545da44 100644
+index c2c7dab..c6efdae 100644
 --- a/drivers/hid/hid-lg.c
 +++ b/drivers/hid/hid-lg.c
-@@ -47,6 +47,7 @@
+@@ -45,6 +45,7 @@
+ /* Size of the original descriptors of the Driving Force (and Pro) wheels */
+ #define DF_RDESC_ORIG_SIZE	130
  #define DFP_RDESC_ORIG_SIZE	97
- #define FV_RDESC_ORIG_SIZE	130
++#define FV_RDESC_ORIG_SIZE	130
  #define MOMO_RDESC_ORIG_SIZE	87
-+#define MOMO2_RDESC_ORIG_SIZE	87
  
  /* Fixed report descriptors for Logitech Driving Force (and Pro)
-  * wheel controllers
-@@ -284,6 +285,54 @@ static __u8 momo_rdesc_fixed[] = {
- 0xC0                /*  End Collection                      */
+@@ -170,6 +171,73 @@ static __u8 dfp_rdesc_fixed[] = {
+ 0xC0                /*  End Collection                          */
  };
  
-+static __u8 momo2_rdesc_fixed[] = {
-+0x05, 0x01,         /*  Usage Page (Desktop),               */
-+0x09, 0x04,         /*  Usage (Joystik),                    */
-+0xA1, 0x01,         /*  Collection (Application),           */
-+0xA1, 0x02,         /*      Collection (Logical),           */
-+0x95, 0x01,         /*          Report Count (1),           */
-+0x75, 0x0A,         /*          Report Size (10),           */
-+0x15, 0x00,         /*          Logical Minimum (0),        */
-+0x26, 0xFF, 0x03,   /*          Logical Maximum (1023),     */
-+0x35, 0x00,         /*          Physical Minimum (0),       */
-+0x46, 0xFF, 0x03,   /*          Physical Maximum (1023),    */
-+0x09, 0x30,         /*          Usage (X),                  */
-+0x81, 0x02,         /*          Input (Variable),           */
-+0x95, 0x0A,         /*          Report Count (10),          */
-+0x75, 0x01,         /*          Report Size (1),            */
-+0x25, 0x01,         /*          Logical Maximum (1),        */
-+0x45, 0x01,         /*          Physical Maximum (1),       */
-+0x05, 0x09,         /*          Usage Page (Button),        */
-+0x19, 0x01,         /*          Usage Minimum (01h),        */
-+0x29, 0x0A,         /*          Usage Maximum (0Ah),        */
-+0x81, 0x02,         /*          Input (Variable),           */
-+0x06, 0x00, 0xFF,   /*          Usage Page (FF00h),         */
-+0x09, 0x00,         /*          Usage (00h),                */
-+0x95, 0x04,         /*          Report Count (4),           */
-+0x81, 0x02,         /*          Input (Variable),           */
-+0x95, 0x01,         /*          Report Count (1),           */
-+0x75, 0x08,         /*          Report Size (8),            */
-+0x26, 0xFF, 0x00,   /*          Logical Maximum (255),      */
-+0x46, 0xFF, 0x00,   /*          Physical Maximum (255),     */
-+0x09, 0x01,         /*          Usage (01h),                */
-+0x81, 0x02,         /*          Input (Variable),           */
-+0x05, 0x01,         /*          Usage Page (Desktop),       */
-+0x09, 0x31,         /*          Usage (Y),                  */
-+0x81, 0x02,         /*          Input (Variable),           */
-+0x09, 0x32,         /*          Usage (Z),                  */
-+0x81, 0x02,         /*          Input (Variable),           */
-+0x06, 0x00, 0xFF,   /*          Usage Page (FF00h),         */
-+0x09, 0x00,         /*          Usage (00h),                */
-+0x81, 0x02,         /*          Input (Variable),           */
-+0xC0,               /*      End Collection,                 */
-+0xA1, 0x02,         /*      Collection (Logical),           */
-+0x09, 0x02,         /*          Usage (02h),                */
-+0x95, 0x07,         /*          Report Count (7),           */
-+0x91, 0x02,         /*          Output (Variable),          */
-+0xC0,               /*      End Collection,                 */
-+0xC0                /*  End Collection                      */
++static __u8 fv_rdesc_fixed[] = {
++0x05, 0x01,         /*  Usage Page (Desktop),                   */
++0x09, 0x04,         /*  Usage (Joystik),                        */
++0xA1, 0x01,         /*  Collection (Application),               */
++0xA1, 0x02,         /*      Collection (Logical),               */
++0x95, 0x01,         /*          Report Count (1),               */
++0x75, 0x0A,         /*          Report Size (10),               */
++0x15, 0x00,         /*          Logical Minimum (0),            */
++0x26, 0xFF, 0x03,   /*          Logical Maximum (1023),         */
++0x35, 0x00,         /*          Physical Minimum (0),           */
++0x46, 0xFF, 0x03,   /*          Physical Maximum (1023),        */
++0x09, 0x30,         /*          Usage (X),                      */
++0x81, 0x02,         /*          Input (Variable),               */
++0x95, 0x0C,         /*          Report Count (12),              */
++0x75, 0x01,         /*          Report Size (1),                */
++0x25, 0x01,         /*          Logical Maximum (1),            */
++0x45, 0x01,         /*          Physical Maximum (1),           */
++0x05, 0x09,         /*          Usage Page (Button),            */
++0x19, 0x01,         /*          Usage Minimum (01h),            */
++0x29, 0x0C,         /*          Usage Maximum (0Ch),            */
++0x81, 0x02,         /*          Input (Variable),               */
++0x95, 0x02,         /*          Report Count (2),               */
++0x06, 0x00, 0xFF,   /*          Usage Page (FF00h),             */
++0x09, 0x01,         /*          Usage (01h),                    */
++0x81, 0x02,         /*          Input (Variable),               */
++0x09, 0x02,         /*          Usage (02h),                    */
++0x26, 0xFF, 0x00,   /*          Logical Maximum (255),          */
++0x46, 0xFF, 0x00,   /*          Physical Maximum (255),         */
++0x95, 0x01,         /*          Report Count (1),               */
++0x75, 0x08,         /*          Report Size (8),                */
++0x81, 0x02,         /*          Input (Variable),               */
++0x05, 0x01,         /*          Usage Page (Desktop),           */
++0x25, 0x07,         /*          Logical Maximum (7),            */
++0x46, 0x3B, 0x01,   /*          Physical Maximum (315),         */
++0x75, 0x04,         /*          Report Size (4),                */
++0x65, 0x14,         /*          Unit (Degrees),                 */
++0x09, 0x39,         /*          Usage (Hat Switch),             */
++0x81, 0x42,         /*          Input (Variable, Null State),   */
++0x75, 0x01,         /*          Report Size (1),                */
++0x95, 0x04,         /*          Report Count (4),               */
++0x65, 0x00,         /*          Unit,                           */
++0x06, 0x00, 0xFF,   /*          Usage Page (FF00h),             */
++0x09, 0x01,         /*          Usage (01h),                    */
++0x25, 0x01,         /*          Logical Maximum (1),            */
++0x45, 0x01,         /*          Physical Maximum (1),           */
++0x81, 0x02,         /*          Input (Variable),               */
++0x05, 0x01,         /*          Usage Page (Desktop),           */
++0x95, 0x01,         /*          Report Count (1),               */
++0x75, 0x08,         /*          Report Size (8),                */
++0x26, 0xFF, 0x00,   /*          Logical Maximum (255),          */
++0x46, 0xFF, 0x00,   /*          Physical Maximum (255),         */
++0x09, 0x31,         /*          Usage (Y),                      */
++0x81, 0x02,         /*          Input (Variable),               */
++0x09, 0x32,         /*          Usage (Z),                      */
++0x81, 0x02,         /*          Input (Variable),               */
++0xC0,               /*      End Collection,                     */
++0xA1, 0x02,         /*      Collection (Logical),               */
++0x26, 0xFF, 0x00,   /*          Logical Maximum (255),          */
++0x46, 0xFF, 0x00,   /*          Physical Maximum (255),         */
++0x95, 0x07,         /*          Report Count (7),               */
++0x75, 0x08,         /*          Report Size (8),                */
++0x09, 0x03,         /*          Usage (03h),                    */
++0x91, 0x02,         /*          Output (Variable),              */
++0xC0,               /*      End Collection,                     */
++0xC0                /*  End Collection                          */
 +};
 +
- /*
-  * Certain Logitech keyboards send in report #3 keys which are far
-  * above the logical maximum described in descriptor. This extends
-@@ -343,6 +392,15 @@ static __u8 *lg_report_fixup(struct hid_device *hdev, __u8 *rdesc,
+ static __u8 momo_rdesc_fixed[] = {
+ 0x05, 0x01,         /*  Usage Page (Desktop),               */
+ 0x09, 0x04,         /*  Usage (Joystik),                    */
+@@ -275,6 +343,15 @@ static __u8 *lg_report_fixup(struct hid_device *hdev, __u8 *rdesc,
  		}
  		break;
  
-+	case USB_DEVICE_ID_LOGITECH_MOMO_WHEEL2:
-+		if (*rsize == MOMO2_RDESC_ORIG_SIZE) {
++	case USB_DEVICE_ID_LOGITECH_VIBRATION_WHEEL:
++		if (*rsize == FV_RDESC_ORIG_SIZE) {
 +			hid_info(hdev,
-+				"fixing up Logitech Momo Racing Force (Black) report descriptor\n");
-+			rdesc = momo2_rdesc_fixed;
-+			*rsize = sizeof(momo2_rdesc_fixed);
++				"fixing up Logitech Formula Vibration report descriptor\n");
++			rdesc = fv_rdesc_fixed;
++			*rsize = sizeof(fv_rdesc_fixed);
 +		}
 +		break;
 +
- 	case USB_DEVICE_ID_LOGITECH_VIBRATION_WHEEL:
- 		if (*rsize == FV_RDESC_ORIG_SIZE) {
+ 	case USB_DEVICE_ID_LOGITECH_DFP_WHEEL:
+ 		if (*rsize == DFP_RDESC_ORIG_SIZE) {
  			hid_info(hdev,
 -- 
 1.8.1.2
