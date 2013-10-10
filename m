@@ -1,75 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758031Ab3JJQEp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 12:04:45 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:47260 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756811Ab3JJQEn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 12:04:43 -0400
-Date: Thu, 10 Oct 2013 11:04:28 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Robert Baldyga <r.baldyga@samsung.com>
-CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <b.zolnierkie@samsung.com>,
-        <m.szyprowski@samsung.com>, <andrzej.p@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH v3] USB: gadget: s3c-hsotg: add isochronous transfers
- support
-Message-ID: <20131010160428.GV28375@radagast>
-Reply-To: <balbi@ti.com>
-References: <1381300917-7468-1-git-send-email-r.baldyga@samsung.com>
+	id S1758035Ab3JJQFJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 12:05:09 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52767 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756084Ab3JJPrF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 11:47:05 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@prifuk.cz>,
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 093/104] USB: serial: option: Ignore card reader interface on Huawei E1750
+Date: Thu, 10 Oct 2013 08:42:21 -0700
+Message-Id: <1381419752-29733-94-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1381419752-29733-1-git-send-email-kamal@canonical.com>
+References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Qesg98+uAFykT7J8"
-Content-Disposition: inline
-In-Reply-To: <1381300917-7468-1-git-send-email-r.baldyga@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Qesg98+uAFykT7J8
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+3.8.13.11 -stable review patch.  If anyone has any objections, please let me know.
+
+------------------
+
+From: =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@prifuk.cz>
+
+commit eb2addd4044b4b2ce77693bde5bc810536dd96ee upstream.
 
 Hi,
 
-On Wed, Oct 09, 2013 at 08:41:57AM +0200, Robert Baldyga wrote:
-> @@ -2616,14 +2630,19 @@ static int s3c_hsotg_ep_enable(struct usb_ep *ep,
->  	s3c_hsotg_set_ep_maxpacket(hsotg, hs_ep->index, mps);
-> =20
->  	/* default, set to non-periodic */
-> +	hs_ep->isochronous =3D 0;
->  	hs_ep->periodic =3D 0;
->  	hs_ep->halted =3D 0;
+my Huawei 3G modem has an embedded Smart Card reader which causes
+trouble when the modem is being detected (a bunch of "<warn>  (ttyUSBx):
+open blocked by driver for more than 7 seconds!" in messages.log). This
+trivial patch corrects the problem for me. The modem identifies itself
+as "12d1:1406 Huawei Technologies Co., Ltd. E1750" in lsusb although the
+description on the body says "Model E173u-1"
 
-this hunk doesn't apply because of this hs_ep->halted line, which patch
-does this depend on ?
+Signed-off-by: Michal Malý <madcatxster@prifuk.cz>
+Cc: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/usb/serial/option.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
---=20
-balbi
+diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+index 09e0581..0e33f7d 100644
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -81,6 +81,7 @@ static void option_instat_callback(struct urb *urb);
+ 
+ #define HUAWEI_VENDOR_ID			0x12D1
+ #define HUAWEI_PRODUCT_E173			0x140C
++#define HUAWEI_PRODUCT_E1750			0x1406
+ #define HUAWEI_PRODUCT_K4505			0x1464
+ #define HUAWEI_PRODUCT_K3765			0x1465
+ #define HUAWEI_PRODUCT_K4605			0x14C6
+@@ -567,6 +568,8 @@ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1c23, USB_CLASS_COMM, 0x02, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E173, 0xff, 0xff, 0xff),
+ 		.driver_info = (kernel_ulong_t) &net_intf1_blacklist },
++	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E1750, 0xff, 0xff, 0xff),
++		.driver_info = (kernel_ulong_t) &net_intf2_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1441, USB_CLASS_COMM, 0x02, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1442, USB_CLASS_COMM, 0x02, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4505, 0xff, 0xff, 0xff),
+-- 
+1.8.1.2
 
---Qesg98+uAFykT7J8
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSVtAMAAoJEIaOsuA1yqREuyMP/jHjgxfn/Xu+QfCpEvt65+Ee
-HWDRObuVWAuLyN21LFsnMT13f8H7yxW3D7rLR7ATQ+lvW/svP1mH5Py0yCX6nkC7
-cDZkgKD5/QZyPebUabPQMZMoUKFjGytc4YilAPNd9YiT/xyRUJhwzwZXhuTebohv
-cbzeO2o7SjxA+VVXhcDXQHS9R1gW03mKhlrpwRMGZOoKq/LjQ5/uUzfy3qmp7Z00
-BX9LXyV4+0G1Q50M94qF6Tbci2z85sb9gxI5REiRdnNEAw8d2jfnczTYrrH8rLtu
-6teHpFOUVnu3A02bb0flcNV+DcjEPI0ZdDWiDtnJfzyFZT7mRzzshI/v4fXx4XvS
-2hv7PM100S78Gn7wCT78p/jn9UpmgSa6jh/FFxcT0622sk3aak8E4XcJMkKPstbh
-S79PQ29tCrESlGNMeDMYSq4DpU5FQ3B0tAIno//0E44mSs+QXlgRt5n5p6EFV4Rg
-k8TFvzs0JeFi1JXhdzyiJ+/5rZiwzBJepXUXzqkKZBv3yTMMjM4sv9uaCeQ4ogvH
-7/+BI0b4MrMTfvcT2ZtNgcvmLTtcHNPZikiIfDuKPA3j8rbG7IWrIpxgIQJiUALH
-L8b/FfbETfIfJY3Gz26zpjyGxkJO8sWJ60P0deCF7XXgthhgC9m5HpdJiLNBE0Xa
-Qu8XSxZBquGrkk+ZfoQp
-=9Z//
------END PGP SIGNATURE-----
-
---Qesg98+uAFykT7J8--
