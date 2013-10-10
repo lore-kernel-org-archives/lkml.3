@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757113Ab3JJPru (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 11:47:50 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52814 "EHLO
+	id S1757810Ab3JJQCx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 12:02:53 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52830 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757035Ab3JJPrs (ORCPT
+	with ESMTP id S1756115Ab3JJPrw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 11:47:48 -0400
+	Thu, 10 Oct 2013 11:47:52 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andre Guedes <andre.guedes@openbossa.org>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
+Cc: Ramneek Mehresh <ramneek.mehresh@freescale.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 082/104] Bluetooth: Fix security level for peripheral role
-Date: Thu, 10 Oct 2013 08:42:10 -0700
-Message-Id: <1381419752-29733-83-git-send-email-kamal@canonical.com>
+Subject: [PATCH 073/104] fsl/usb: Resolve PHY_CLK_VLD instability issue for ULPI phy
+Date: Thu, 10 Oct 2013 08:42:01 -0700
+Message-Id: <1381419752-29733-74-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381419752-29733-1-git-send-email-kamal@canonical.com>
 References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
@@ -28,45 +28,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andre Guedes <andre.guedes@openbossa.org>
+From: Ramneek Mehresh <ramneek.mehresh@freescale.com>
 
-commit f8776218e8546397be64ad2bc0ebf4748522d6e3 upstream.
+commit ad1260e9fbf768d6bed227d9604ebee76a84aae3 upstream.
 
-While playing the peripheral role, the host gets a LE Long Term Key
-Request Event from the controller when a connection is established
-with a bonded device. The host then informs the LTK which should be
-used for the connection. Once the link is encrypted, the host gets
-an Encryption Change Event.
+For controller versions greater than 1.6, setting ULPI_PHY_CLK_SEL
+bit when USB_EN bit is already set causes instability issues with
+PHY_CLK_VLD bit. So USB_EN is set only for IP controller version
+below 1.6 before setting ULPI_PHY_CLK_SEL bit
 
-Therefore we should set conn->pending_sec_level instead of conn->
-sec_level in hci_le_ltk_request_evt. This way, conn->sec_level is
-properly updated in hci_encrypt_change_evt.
-
-Moreover, since we have a LTK associated to the device, we have at
-least BT_SECURITY_MEDIUM security level.
-
-Signed-off-by: Andre Guedes <andre.guedes@openbossa.org>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Signed-off-by: Ramneek Mehresh <ramneek.mehresh@freescale.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/bluetooth/hci_event.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/usb/host/ehci-fsl.c | 12 +++---------
+ 1 file changed, 3 insertions(+), 9 deletions(-)
 
-diff --git a/net/bluetooth/hci_event.c b/net/bluetooth/hci_event.c
-index 81b4448..259776a 100644
---- a/net/bluetooth/hci_event.c
-+++ b/net/bluetooth/hci_event.c
-@@ -3967,7 +3967,9 @@ static void hci_le_ltk_request_evt(struct hci_dev *hdev, struct sk_buff *skb)
- 	cp.handle = cpu_to_le16(conn->handle);
+diff --git a/drivers/usb/host/ehci-fsl.c b/drivers/usb/host/ehci-fsl.c
+index d81d2fc..512f117 100644
+--- a/drivers/usb/host/ehci-fsl.c
++++ b/drivers/usb/host/ehci-fsl.c
+@@ -130,7 +130,7 @@ static int usb_hcd_fsl_probe(const struct hc_driver *driver,
+ 	}
  
- 	if (ltk->authenticated)
--		conn->sec_level = BT_SECURITY_HIGH;
-+		conn->pending_sec_level = BT_SECURITY_HIGH;
-+	else
-+		conn->pending_sec_level = BT_SECURITY_MEDIUM;
+ 	/* Enable USB controller, 83xx or 8536 */
+-	if (pdata->have_sysif_regs)
++	if (pdata->have_sysif_regs && pdata->controller_ver < FSL_USB_VER_1_6)
+ 		setbits32(hcd->regs + FSL_SOC_USB_CTRL, 0x4);
  
- 	hci_send_cmd(hdev, HCI_OP_LE_LTK_REPLY, sizeof(cp), &cp);
- 
+ 	/* Don't need to set host mode here. It will be done by tdi_reset() */
+@@ -232,15 +232,9 @@ static int ehci_fsl_setup_phy(struct usb_hcd *hcd,
+ 	case FSL_USB2_PHY_ULPI:
+ 		if (pdata->have_sysif_regs && pdata->controller_ver) {
+ 			/* controller version 1.6 or above */
++			clrbits32(non_ehci + FSL_SOC_USB_CTRL, UTMI_PHY_EN);
+ 			setbits32(non_ehci + FSL_SOC_USB_CTRL,
+-					ULPI_PHY_CLK_SEL);
+-			/*
+-			 * Due to controller issue of PHY_CLK_VALID in ULPI
+-			 * mode, we set USB_CTRL_USB_EN before checking
+-			 * PHY_CLK_VALID, otherwise PHY_CLK_VALID doesn't work.
+-			 */
+-			clrsetbits_be32(non_ehci + FSL_SOC_USB_CTRL,
+-					UTMI_PHY_EN, USB_CTRL_USB_EN);
++				ULPI_PHY_CLK_SEL | USB_CTRL_USB_EN);
+ 		}
+ 		portsc |= PORT_PTS_ULPI;
+ 		break;
 -- 
 1.8.1.2
 
