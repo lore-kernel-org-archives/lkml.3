@@ -1,55 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758184Ab3JJQLd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 12:11:33 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:51140 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757411Ab3JJQLa (ORCPT
+	id S1757935Ab3JJQKx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 12:10:53 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52586 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755862Ab3JJPmu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 12:11:30 -0400
-MIME-Version: 1.0
-In-Reply-To: <20131010160018.GA29913@atomide.com>
-References: <20131003054104.8941.88857.stgit@localhost>
-	<20131003054221.8941.87801.stgit@localhost>
-	<5256AA7F.8030005@ti.com>
-	<20131010160018.GA29913@atomide.com>
-Date: Thu, 10 Oct 2013 18:11:29 +0200
-Message-ID: <CACRpkdaG-PQA39XSjKUgM9TyeD7srgm_8s+NazrDKJ0gmNLcwg@mail.gmail.com>
-Subject: Re: [PATCH 4/6] pinctrl: single: Add support for wake-up interrupts
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Roger Quadros <rogerq@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Prakash Manjunathappa <prakash.pm@ti.com>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>,
-        =?ISO-8859-1?Q?Beno=EEt_Cousson?= <bcousson@baylibre.com>,
-        Linux-OMAP <linux-omap@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 10 Oct 2013 11:42:50 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Dave Jones <davej@redhat.com>, "David S. Miller" <davem@davemloft.net>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 012/104] 8139cp: Fix skb leak in rx_status_loop failure path.
+Date: Thu, 10 Oct 2013 08:41:00 -0700
+Message-Id: <1381419752-29733-13-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1381419752-29733-1-git-send-email-kamal@canonical.com>
+References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 10, 2013 at 6:00 PM, Tony Lindgren <tony@atomide.com> wrote:
-> * Roger Quadros <rogerq@ti.com> [131010 06:32]:
->>
->> I tried testing this with the USB EHCI driver, but I'm not getting wake up interrupts
->> while the system is still running and only the EHCI controller is runtime suspended.
->>
->> It seems we need to somehow call _reconfigure_io_chain() to update the daisy chain
->> whenever the pad wakeup_enable bit is changed.
->
-> Sounds like this is on omap3? Have you tried calling pcs_soc->rearm() in the
-> pcs_irq_handle() like the comments there suggest? At least for me that keeps
-> the wake-up interrupts continuously running on omap3 instead of just idle modes.
+3.8.13.11 -stable review patch.  If anyone has any objections, please let me know.
 
-If the rearm() function is calling this _reconfigure_io_chain my comments
-on the fact that this is something that should be handled by the pin
-control driver still apply I think ....
+------------------
 
-Yours,
-Linus Walleij
+From: Dave Jones <davej@redhat.com>
+
+[ Upstream commit d06f5187469eee1b2932c02fd093d113cfc60d5e ]
+
+Introduced in cf3c4c03060b688cbc389ebc5065ebcce5653e96
+("8139cp: Add dma_mapping_error checking")
+
+Signed-off-by: Dave Jones <davej@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/net/ethernet/realtek/8139cp.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/net/ethernet/realtek/8139cp.c b/drivers/net/ethernet/realtek/8139cp.c
+index 9af14e0..35014cf 100644
+--- a/drivers/net/ethernet/realtek/8139cp.c
++++ b/drivers/net/ethernet/realtek/8139cp.c
+@@ -524,6 +524,7 @@ rx_status_loop:
+ 					 PCI_DMA_FROMDEVICE);
+ 		if (dma_mapping_error(&cp->pdev->dev, new_mapping)) {
+ 			dev->stats.rx_dropped++;
++			kfree_skb(new_skb);
+ 			goto rx_next;
+ 		}
+ 
+-- 
+1.8.1.2
+
