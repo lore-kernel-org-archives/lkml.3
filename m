@@ -1,69 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755424Ab3JJInJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 04:43:09 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:43534 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752327Ab3JJInG (ORCPT
+	id S1755469Ab3JJInh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 04:43:37 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:46636 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751491Ab3JJInf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 04:43:06 -0400
-X-AuditID: 9c93016f-b7c63ae00000696f-f5-525668983c30
-From: Namhyung Kim <namhyung@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH 50/52] tools/perf/build: Fix O=/some/dir perf.o type of targets
-References: <1381227082-22039-1-git-send-email-mingo@kernel.org>
-	<1381227082-22039-51-git-send-email-mingo@kernel.org>
-	<87fvs9iqfz.fsf@sejong.aot.lge.com> <20131010063917.GB10159@gmail.com>
-Date: Thu, 10 Oct 2013 17:43:04 +0900
-In-Reply-To: <20131010063917.GB10159@gmail.com> (Ingo Molnar's message of
-	"Thu, 10 Oct 2013 08:39:18 +0200")
-Message-ID: <87eh7tcy93.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Thu, 10 Oct 2013 04:43:35 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Josh Wu <josh.wu@atmel.com>, Bo Shen <voice.shen@atmel.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-serial@vger.kernel.org>
+CC: Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        <linux-kernel@vger.kernel.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH 1/2] tty/serial: at91: fix uart/usart selection for older products
+Date: Thu, 10 Oct 2013 10:43:31 +0200
+Message-ID: <a58fe8bc7fdd128a2f9cf60785f81ebde4c0c247.1381394411.git.nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.2.2
 MIME-Version: 1.0
 Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Since commit 055560b04a8cd063aea916fd083b7aec02c2adb8 (serial: at91:
+distinguish usart and uart) the older products which do not have a
+name field in their register map are unable to use their serial output.
+As the main console output is usually the serial interface (aka DBGU) it
+is pretty unfortunate.
+So, instead of failing during probe() we just silently configure the serial
+peripheral as an uart. It allows us to use these serial outputs.
+The proper solution is proposed in another patch.
 
-On Thu, 10 Oct 2013 08:39:18 +0200, Ingo Molnar wrote:
-> Yes, this is a limitation: it will only do the redirection if the source 
-> repository is clean.
->
-> I don't see a simple solution for that, do you?
->
->> > +util/%.o: $(OUTPUT)util/%.o
->> > +	@echo "    # Redirected target $@ => $(OUTPUT)util/$@"
->> > +bench/%.o: $(OUTPUT)bench/%.o
->> > +	@echo "    # Redirected target $@ => $(OUTPUT)bench/$@"
->> > +tests/%.o: $(OUTPUT)tests/%.o
->> > +	@echo "    # Redirected target $@ => $(OUTPUT)tests/$@"
->> > +endif
->> 
->> It also doesn't care about other directories - arch/, scripts/ and ui/ - 
->> and their subdirectories.  So even on clean build it'll failed to build 
->> these files with O=dir.
->
-> Correct - only tried to cover the most common cases. Could add all the 
-> other directories if this is something people would like to use on a 
-> regular basis.
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ drivers/tty/serial/atmel_serial.c | 9 ++-------
+ 1 file changed, 2 insertions(+), 7 deletions(-)
 
-I don't think it's a common usecase.
+diff --git a/drivers/tty/serial/atmel_serial.c b/drivers/tty/serial/atmel_serial.c
+index d067285..6b0f75e 100644
+--- a/drivers/tty/serial/atmel_serial.c
++++ b/drivers/tty/serial/atmel_serial.c
+@@ -1499,7 +1499,7 @@ static void atmel_set_ops(struct uart_port *port)
+ /*
+  * Get ip name usart or uart
+  */
+-static int atmel_get_ip_name(struct uart_port *port)
++static void atmel_get_ip_name(struct uart_port *port)
+ {
+ 	struct atmel_uart_port *atmel_port = to_atmel_uart_port(port);
+ 	int name = UART_GET_IP_NAME(port);
+@@ -1518,10 +1518,7 @@ static int atmel_get_ip_name(struct uart_port *port)
+ 		atmel_port->is_usart = false;
+ 	} else {
+ 		dev_err(port->dev, "Not supported ip name, set to uart\n");
+-		return -EINVAL;
+ 	}
+-
+-	return 0;
+ }
+ 
+ /*
+@@ -2405,9 +2402,7 @@ static int atmel_serial_probe(struct platform_device *pdev)
+ 	/*
+ 	 * Get port name of usart or uart
+ 	 */
+-	ret = atmel_get_ip_name(&port->uart);
+-	if (ret < 0)
+-		goto err_add_port;
++	atmel_get_ip_name(&port->uart);
+ 
+ 	return 0;
+ 
+-- 
+1.8.2.2
 
->
-> I also attempted to do a generic rule that can see into subdirectories, 
-> using secondary expansion rules, but my first few attempts failed at 
-> producing anything usable ;-) My Make fu still needs working on. 
-> Suggestions welcome!
-
-Well, my make fu (make skill?) is also poor. ;)
-
-I'll try to do something about it though.
-
-Thanks,
-Namhyung
