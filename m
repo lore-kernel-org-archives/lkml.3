@@ -1,72 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752802Ab3JJGdd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 02:33:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59000 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752192Ab3JJGdb (ORCPT
+	id S1753464Ab3JJGfQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 02:35:16 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:51244 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751458Ab3JJGfO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 02:33:31 -0400
-Date: Wed, 9 Oct 2013 23:34:19 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
+	Thu, 10 Oct 2013 02:35:14 -0400
+X-AuditID: 9c930197-b7b88ae0000032c4-10-52564aa083ab
+From: Namhyung Kim <namhyung@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/6] Optimize the cpu hotplug locking -v2
-Message-Id: <20131009233419.ea3d0b80.akpm@linux-foundation.org>
-In-Reply-To: <20131010062741.GA9999@gmail.com>
-References: <20131008102505.404025673@infradead.org>
-	<20131009225006.7101379c.akpm@linux-foundation.org>
-	<20131010062741.GA9999@gmail.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH 50/52] tools/perf/build: Fix O=/some/dir perf.o type of targets
+References: <1381227082-22039-1-git-send-email-mingo@kernel.org>
+	<1381227082-22039-51-git-send-email-mingo@kernel.org>
+Date: Thu, 10 Oct 2013 15:35:12 +0900
+In-Reply-To: <1381227082-22039-51-git-send-email-mingo@kernel.org> (Ingo
+	Molnar's message of "Tue, 8 Oct 2013 12:11:20 +0200")
+Message-ID: <87fvs9iqfz.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Oct 2013 08:27:41 +0200 Ingo Molnar <mingo@kernel.org> wrote:
+On Tue,  8 Oct 2013 12:11:20 +0200, Ingo Molnar wrote:
+> If someone specifies a single target, mixed with O=, the following way:
+>
+>     hubble:~/tip/tools/perf> make O=/tmp/perf util/stat.o
+>     BUILD: Doing 'make -j8' parallel build
+>     gcc  -Wbad-function-cast -Wdeclaration-after-statement -Wformat-security -Wformat-y2k [...]
+>
+> The build might even fail, if a target depends on other targets:
+>
+>     hubble:~/tip/tools/perf> make O=/tmp/perf perf.o
+>     ...
+>     perf.c: In function ‘handle_options’:
+>     perf.c:155:21: error: ‘PERF_HTML_PATH’ undeclared (first use in this function)
+>
+> The correct way to invoke such targets is:
+>
+>     hubble:~/tip/tools/perf> make O=/tmp/perf /tmp/perf/perf.o
+>     BUILD: Doing 'make -j8' parallel build
+>     GEN /tmp/perf/common-cmds.h
+>     CC /tmp/perf/perf.o
+>
+> But that's unnecessary typing and it's also easy to mistakenly build into the
+> source directory.
+>
+> To fix this remove the generic suffix rules and add redirection to $(OUTPUT)
+> for the most popular .o targets.
 
-> * Andrew Morton <akpm@linux-foundation.org> wrote:
-> 
-> > On Tue, 08 Oct 2013 12:25:05 +0200 Peter Zijlstra <peterz@infradead.org> wrote:
-> > 
-> > > The current cpu hotplug lock is a single global lock; therefore 
-> > > excluding hotplug is a very expensive proposition even though it is 
-> > > rare occurrence under normal operation.
-> > > 
-> > > There is a desire for a more light weight implementation of 
-> > > {get,put}_online_cpus() from both the NUMA scheduling as well as the 
-> > > -RT side.
-> > > 
-> > > The current hotplug lock is a full reader preference lock -- and thus 
-> > > supports reader recursion. However since we're making the read side 
-> > > lock much cheaper it is the expectation that it will also be used far 
-> > > more. Which in turn would lead to writer starvation.
-> > > 
-> > > Therefore the new lock proposed is completely fair; albeit somewhat 
-> > > expensive on the write side. This in turn means that we need a 
-> > > per-task nesting count to support reader recursion.
-> > 
-> > This is a lot of code and a lot of new complexity.  It needs some pretty 
-> > convincing performance numbers to justify its inclusion, no?
-> 
-> Should be fairly straightforward to test: the sys_sched_getaffinity() and 
-> sys_sched_setaffinity() syscalls both make use of 
-> get_online_cpus()/put_online_cpus(), so a testcase frobbing affinities on 
-> N CPUs in parallel ought to demonstrate scalability improvements pretty 
-> nicely.
+I got this:
 
-Well, an in-kernel microbenchmark which camps in a loop doing get/put
-would measure this as well.
+  $ cd tools/perf
+  $ make
+  ... (succeeded)
 
-But neither approach answers the question "how useful is this patchset".
+  $ make O=~/build/perf perf.o
+  make: `perf.o' is up to date.
+
+  $ rm ~/build/perf/perf.o
+  $ make O=~/build/perf/ perf.o
+  make: `perf.o' is up to date.
+
+> +#
+> +# If a target does not match any of the later rules then prefix it by $(OUTPUT)
+> +# This makes targets like 'make O=/tmp/perf perf.o' work in a natural way.
+> +#
+> +ifneq ($(OUTPUT),)
+> +%.o: $(OUTPUT)%.o
+> +	@echo "    # Redirected target $@ => $(OUTPUT)$@"
+> +util/%.o: $(OUTPUT)util/%.o
+> +	@echo "    # Redirected target $@ => $(OUTPUT)util/$@"
+> +bench/%.o: $(OUTPUT)bench/%.o
+> +	@echo "    # Redirected target $@ => $(OUTPUT)bench/$@"
+> +tests/%.o: $(OUTPUT)tests/%.o
+> +	@echo "    # Redirected target $@ => $(OUTPUT)tests/$@"
+> +endif
+
+It also doesn't care about other directories - arch/, scripts/ and ui/ -
+and their subdirectories.  So even on clean build it'll failed to build
+these files with O=dir.
+
+  $ make clean
+
+  $ make O=~/build/perf ui/stdio/hist.o
+      BUILD: Doing 'make -j12' parallel build
+  make[1]: *** No rule to make target `ui/stdio/hist.o'.  Stop.
+  make: *** [ui/stdio/hist.o] Error 2
+
+
+Thanks,
+Namhyung
