@@ -1,47 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752483Ab3JJGUb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 02:20:31 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:55587 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752193Ab3JJGUa (ORCPT
+	id S1752824Ab3JJGWo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 02:22:44 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:42743 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751598Ab3JJGWm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 02:20:30 -0400
-X-AuditID: 9c93017e-b7c75ae00000230e-c4-5256472da4cb
-From: Namhyung Kim <namhyung@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH 44/52] tools/perf/build: Clean up various testcases
-References: <1381227082-22039-1-git-send-email-mingo@kernel.org>
-	<1381227082-22039-45-git-send-email-mingo@kernel.org>
-Date: Thu, 10 Oct 2013 15:20:29 +0900
-In-Reply-To: <1381227082-22039-45-git-send-email-mingo@kernel.org> (Ingo
-	Molnar's message of "Tue, 8 Oct 2013 12:11:14 +0200")
-Message-ID: <87ob6xir4i.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Thu, 10 Oct 2013 02:22:42 -0400
+Date: Thu, 10 Oct 2013 08:22:38 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Jakub Jelinek <jakub@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Richard Henderson <rth@twiddle.net>
+Subject: Re: [x86] BUG: unable to handle kernel paging request at 00740060
+Message-ID: <20131010062238.GB9853@gmail.com>
+References: <CA+55aFxEeKixnH7mZZs5iwupA9_GsRN0N7QZxqcTcE4RKZvTTg@mail.gmail.com>
+ <20131008143400.GA14721@redhat.com>
+ <20131009080459.GA2298@localhost>
+ <20131009124310.GA11769@redhat.com>
+ <20131009140734.GH3081@twins.programming.kicks-ass.net>
+ <20131009143359.GU26785@twins.programming.kicks-ass.net>
+ <20131009144656.GV26785@twins.programming.kicks-ass.net>
+ <20131009181613.GW30970@tucnak.zalov.cz>
+ <20131009190231.GI13848@laptop.programming.kicks-ass.net>
+ <20131009190851.GX30970@tucnak.zalov.cz>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131009190851.GX30970@tucnak.zalov.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  8 Oct 2013 12:11:14 +0200, Ingo Molnar wrote:
-> --- a/tools/perf/config/feature-checks/test-gtk2.c
-> +++ b/tools/perf/config/feature-checks/test-gtk2.c
-> @@ -4,7 +4,7 @@
->  
->  int main(int argc, char *argv[])
->  {
-> -        gtk_init(&argc, &argv);
-> +	gtk_init(&argc, &argv);
->  
->          return 0;
->  }
 
-Whitespace damaged.
+* Jakub Jelinek <jakub@redhat.com> wrote:
+
+> On Wed, Oct 09, 2013 at 09:02:31PM +0200, Peter Zijlstra wrote:
+> > On Wed, Oct 09, 2013 at 08:16:13PM +0200, Jakub Jelinek wrote:
+> >
+> > > Confirmed as gcc bug, filed http://gcc.gnu.org/PR58670 Seems all of 
+> > > 4.[6-9] miscompile it.  Will have a look tomorrow unless somebody 
+> > > beats me to it.  But historically, the case where asm goto labels 
+> > > jump to fallthru basic block had numerous problems in the past.
+> > 
+> > That bug lists the component as middle end; this suggests x86_64 would 
+> > be vulnerable too, can you confirm? So far we've only observed the 
+> > wrong code on i386 targets, x86_64 targets appeared correct.
+> 
+> Any target, the testcase in the bugzilla aborts on x86_64 with -O2, and 
+> even say on ppc64 (sure, one would have to rewrite the asm to have it 
+> fail at runtime).
+
+Please let us know once you know enough about the bug to suggest 
+workarounds. Because it's a nice optimization even extra instruction(s) 
+would be acceptable I suspect: we could perhaps put a NOP into a slowpath, 
+with an (unused) goto to it, or something like that?
 
 Thanks,
-Namhyung
+
+	Ingo
