@@ -1,67 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755281Ab3JJJkU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 05:40:20 -0400
-Received: from eu1sys200aog119.obsmtp.com ([207.126.144.147]:46242 "EHLO
-	eu1sys200aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752205Ab3JJJkR convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 05:40:17 -0400
-From: Maxime COQUELIN <maxime.coquelin@st.com>
-To: Maxime COQUELIN <maxime.coquelin@st.com>, Wolfram Sang <wsa@the-dreams.de>,
-        Srinivas KANDAGATLA <srinivas.kandagatla@st.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+	id S1753264Ab3JJJnq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 05:43:46 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:52846 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752132Ab3JJJnp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 05:43:45 -0400
+Date: Thu, 10 Oct 2013 10:43:08 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
-Cc: Stephen GALLIMORE <stephen.gallimore@st.com>,
-        Stuart MENEFY <stuart.menefy@st.com>, Lee Jones <lee.jones@linaro.org>,
-        Gabriel FERNANDEZ <gabriel.fernandez@st.com>
-Date: Thu, 10 Oct 2013 11:39:02 +0200
-Subject: Re: [PATCH v4 0/4] Add I2C support to ST SoCs
-Thread-Topic: [PATCH v4 0/4] Add I2C support to ST SoCs
-Thread-Index: Ac7FnI5LLwXZ/atRTh63N01rwquwCg==
-Message-ID: <525675B6.4080404@st.com>
-References: <1381250576-7916-1-git-send-email-maxime.coquelin@st.com>
-In-Reply-To: <1381250576-7916-1-git-send-email-maxime.coquelin@st.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.0
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
+Subject: Re: [PATCH v8 01/17] arm: make SWIOTLB available
+Message-ID: <20131010094307.GD3817@mudshark.cambridge.arm.com>
+References: <alpine.DEB.2.02.1310092109190.26077@kaball.uk.xensource.com>
+ <1381351710-1876-1-git-send-email-stefano.stabellini@eu.citrix.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1381351710-1876-1-git-send-email-stefano.stabellini@eu.citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wolfram,
+On Wed, Oct 09, 2013 at 09:48:14PM +0100, Stefano Stabellini wrote:
+> IOMMU_HELPER is needed because SWIOTLB calls iommu_is_span_boundary,
+> provided by lib/iommu_helper.c.
+> 
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> CC: will.deacon@arm.com
+> CC: linux@arm.linux.org.uk
 
-On 10/08/2013 06:42 PM, Maxime COQUELIN wrote:
-> The goal of this series is to add I2C support to ST SoCs.
-> The DT definition is added for STiH415 and STiH416 SoCs on
-> B2000 and B2020 boards.
->
-> The series has been tested working on STiH416-B2020 board.
-> It applies on top of v3.12-rc4.
->
-> Changes since v3:
->    - Switch back to vendor specific DT properties regarding the anti-glitch
->      filter configuration, as this IP is the only one having such a filter.
-Do you agree to keep these properties vendor-specifics?
+[...]
 
-If so, could you take this series for v3.13?
+> diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
+> index 5b579b9..9aa5384 100644
+> --- a/arch/arm/include/asm/dma-mapping.h
+> +++ b/arch/arm/include/asm/dma-mapping.h
+> @@ -10,6 +10,7 @@
+>  
+>  #include <asm-generic/dma-coherent.h>
+>  #include <asm/memory.h>
+> +#include <asm/cacheflush.h>
+>  
+>  #define DMA_ERROR_CODE	(~0)
+>  extern struct dma_map_ops arm_dma_ops;
+> @@ -86,6 +87,42 @@ static inline dma_addr_t virt_to_dma(struct device *dev, void *addr)
+>  }
+>  #endif
+>  
+> +static inline dma_addr_t phys_to_dma(struct device *dev, phys_addr_t paddr)
+> +{
+> +	unsigned int offset = paddr & ~PAGE_MASK;
+> +	return pfn_to_dma(dev, paddr >> PAGE_SHIFT) + offset;
 
-Thanks,
-Maxime
+__phys_to_pfn instead of the explicit shift?
+
+> +}
+> +
+> +static inline phys_addr_t dma_to_phys(struct device *dev, dma_addr_t dev_addr)
+> +{
+> +	unsigned int offset = dev_addr & ~PAGE_MASK;
+> +	return (dma_to_pfn(dev, dev_addr) << PAGE_SHIFT) + offset;i
+
+then __pfn_to_phys here.
+
+> +}
+> +
+> +static inline bool dma_capable(struct device *dev, dma_addr_t addr, size_t size)
+> +{
+> +	u64 limit, mask;
+> +	
+> +	if (dev->dma_mask)
+> +		mask = *dev->dma_mask;
+> +	else 
+> +		mask = dev->coherent_dma_mask;
+> +
+> +	if (mask == 0)
+> +		return 0;
+> +
+> +	limit = (mask + 1) & ~mask;
+
+This looks like homebrew alignment to me. Can you use __ALIGN_KERNEL_MASK or
+one of thoese guys from kernel.h?
+
+Will
