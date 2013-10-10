@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756503Ab3JJP4R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 11:56:17 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53009 "EHLO
+	id S1757582Ab3JJP4y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 11:56:54 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52987 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755616Ab3JJPt6 (ORCPT
+	with ESMTP id S1757498Ab3JJPtk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 11:49:58 -0400
+	Thu, 10 Oct 2013 11:49:40 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+Cc: Jack Wang <jinpu.wang@profitbricks.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 063/104] xhci: Fix oops happening after address device timeout
-Date: Thu, 10 Oct 2013 08:41:51 -0700
-Message-Id: <1381419752-29733-64-git-send-email-kamal@canonical.com>
+Subject: [PATCH 102/104] ib_srpt: always set response for task management
+Date: Thu, 10 Oct 2013 08:42:30 -0700
+Message-Id: <1381419752-29733-103-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381419752-29733-1-git-send-email-kamal@canonical.com>
 References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
@@ -28,47 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
+From: Jack Wang <jinpu.wang@profitbricks.com>
 
-commit 284d20552461466b04d6bfeafeb1c47a8891b591 upstream.
+commit c807f64340932e19f0d2ac9b30c8381e1f60663a upstream.
 
-When a command times out, the command ring is first aborted,
-and then stopped. If the command ring is empty when it is stopped
-the stop event will point to next command which is not yet set.
-xHCI tries to handle this next event often causing an oops.
+The SRP specification requires:
 
-Don't handle command completion events on stopped cmd ring if ring is
-empty.
+  "Response data shall be provided in any SRP_RSP response that is sent in
+   response to an SRP_TSK_MGMT request (see 6.7). The information in the
+   RSP_CODE field (see table 24) shall indicate the completion status of
+   the task management function."
 
-This patch should be backported to kernels as old as 3.7, that contain
-the commit b92cc66c047ff7cf587b318fe377061a353c120f "xHCI: add aborting
-command ring function"
+So fix this to avoid the SRP initiator interprets task management functions
+that succeeded as failed.
 
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
-Reported-by: Giovanni <giovanni.nervi@yahoo.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Jack Wang <jinpu.wang@profitbricks.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/host/xhci-ring.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/infiniband/ulp/srpt/ib_srpt.c | 10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
-index 3020c71..04b212d 100644
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -1390,6 +1390,12 @@ static void handle_cmd_completion(struct xhci_hcd *xhci,
- 			inc_deq(xhci, xhci->cmd_ring);
- 			return;
- 		}
-+		/* There is no command to handle if we get a stop event when the
-+		 * command ring is empty, event->cmd_trb points to the next
-+		 * unset command
-+		 */
-+		if (xhci->cmd_ring->dequeue == xhci->cmd_ring->enqueue)
-+			return;
- 	}
+diff --git a/drivers/infiniband/ulp/srpt/ib_srpt.c b/drivers/infiniband/ulp/srpt/ib_srpt.c
+index 047ebe4..fb8abcb 100644
+--- a/drivers/infiniband/ulp/srpt/ib_srpt.c
++++ b/drivers/infiniband/ulp/srpt/ib_srpt.c
+@@ -1588,7 +1588,7 @@ static int srpt_build_tskmgmt_rsp(struct srpt_rdma_ch *ch,
+ 	int resp_data_len;
+ 	int resp_len;
  
- 	switch (le32_to_cpu(xhci->cmd_ring->dequeue->generic.field[3])
+-	resp_data_len = (rsp_code == SRP_TSK_MGMT_SUCCESS) ? 0 : 4;
++	resp_data_len = 4;
+ 	resp_len = sizeof(*srp_rsp) + resp_data_len;
+ 
+ 	srp_rsp = ioctx->ioctx.buf;
+@@ -1600,11 +1600,9 @@ static int srpt_build_tskmgmt_rsp(struct srpt_rdma_ch *ch,
+ 				    + atomic_xchg(&ch->req_lim_delta, 0));
+ 	srp_rsp->tag = tag;
+ 
+-	if (rsp_code != SRP_TSK_MGMT_SUCCESS) {
+-		srp_rsp->flags |= SRP_RSP_FLAG_RSPVALID;
+-		srp_rsp->resp_data_len = cpu_to_be32(resp_data_len);
+-		srp_rsp->data[3] = rsp_code;
+-	}
++	srp_rsp->flags |= SRP_RSP_FLAG_RSPVALID;
++	srp_rsp->resp_data_len = cpu_to_be32(resp_data_len);
++	srp_rsp->data[3] = rsp_code;
+ 
+ 	return resp_len;
+ }
 -- 
 1.8.1.2
 
