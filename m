@@ -1,105 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754977Ab3JJGMt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 02:12:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24783 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754309Ab3JJGMs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 02:12:48 -0400
-Date: Thu, 10 Oct 2013 14:14:08 +0800
-From: Dong Zhu <bluezhudong@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>, John Stultz <john.stultz@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] timer stats: add a 'status' line to timer usage
- statistics
-Message-ID: <20131010061408.GF2139@zhudong.nay.redhat.com>
-References: <20131010025947.GD2139@zhudong.nay.redhat.com>
- <20131010043519.GB22519@gmail.com>
+	id S1754219Ab3JJGPj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 02:15:39 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:57568 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750799Ab3JJGPi convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 02:15:38 -0400
+Date: Thu, 10 Oct 2013 01:15:34 -0500
+From: Rob Landley <rob@landley.net>
+Subject: Re: [PATCH] Squashfs: Refactor decompressor interface and code
+To: Phillip Lougher <phillip@squashfs.org.uk>
+Cc: linux-kernel@vger.kernel.org, minchan@kernel.org,
+        Phillip Lougher <phillip@squashfs.org.uk>
+In-Reply-To: <1381198450-2202-1-git-send-email-phillip@squashfs.org.uk>
+	(from phillip@squashfs.org.uk on Mon Oct  7 21:14:10 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1381385734.1974.183@driftwood>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
 Content-Disposition: inline
-In-Reply-To: <20131010043519.GB22519@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo and John,
+On 10/07/2013 09:14:10 PM, Phillip Lougher wrote:
+> The decompressor interface and code was written from
+> the point of view of single-threaded operation.  In doing
+> so it mixed a lot of single-threaded implementation specific
+> aspects into the decompressor code and elsewhere which makes it
+> difficult to seamlessly support multiple different decompressor
+> implementations.
+...
+>  11 files changed, 237 insertions(+), 136 deletions(-)
 
-On Thu, Oct 10, 2013 at 06:35:19AM +0200, Ingo Molnar wrote:
-> 
-> * Dong Zhu <bluezhudong@gmail.com> wrote:
-> 
-> > From f41628c61d8a9172677ba33a55b61e37ce28f7a6 Mon Sep 17 00:00:00 2001
-> > From: Dong Zhu <bluezhudong@gmail.com> 
-> > Date: Thu, 10 Oct 2013 10:38:13 +0800
-> > 
-> > When we stop timer statistics collection (via echo 0 > 
-> > /proc/timers_stats), the statistics data is still exported as if it were 
-> > correct, which can cause applicaitons to misuse the statistics.
-> 
-> What misuse do you mean?
-> 
-> > This patch resets the statistics when we stop collecting them, to avoid 
-> > this problem.
-> 
-> Well, this loses the handy 'snapshot' property of /proc/timer_stats. 
-> Before this change one could do:
-> 
-> 	echo 1 > /proc/timers_stats
-> 	sleep 60 # run system workload
-> 	echo 0 > /proc/timers_stats
-> 
-> and examine the 1-minute collection result without it changing. Your 
-> change, if I understand it correctly, zeroes it all out.
+It sounds like this is mostly refactoring, but it adds 100 lines of  
+code? Let's see, new function prototypes in the header, new #includes  
+in the added C file...
 
-Yes, I am wrong about it. Thanks for pointing this out and pretty sorry
-for confusing you John.
+Ah, here's the biggest chunk: a new instance of the FSF boilerplate  
+telling you to go to 51 Franklin Street to pick up a physical copy of  
+GPLv3 and try to figure out how it's relevant to Linux:
 
-> 
-> Instead of this change I'd suggest adding a 'status' line, with two 
-> outputs:
-> 
-> 	Status: collection active
-> 
-> 	Status: collection disabled
-> 
+> --- /dev/null
+> +++ b/fs/squashfs/decompressor_single.c
+> @@ -0,0 +1,107 @@
+> +/*
+> + * Squashfs - a compressed read only filesystem for Linux
+> + *
+> + * Copyright (c) 2013
+> + * Phillip Lougher <phillip@squashfs.org.uk>
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License
+> + * as published by the Free Software Foundation; either version 2,
+> + * or (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software
+> + * Foundation, 51 Franklin Street, Fifth Floor, Boston, MA  
+> 02110-1301, USA.
+> + *
+> + * decompressor_single.c
+> + */
 
-Agree, I modified this patch and resubmited it again, Could you help
-reviewing it again ? Thanks !
+*shrug* Mostly just curious...
 
->From 263c40abea8011c82582b2d671ae783b26f44bd5 Mon Sep 17 00:00:00 2001
-From: Dong Zhu <bluezhudong@gmail.com> 
-Date: Thu, 10 Oct 2013 13:46:08 +0800
-
-We can enable|disable timer statistics collection (via echo [1|0] >
-/proc/timers_stats), this patch adds a 'status' line to display the
-current timer collection status.
-
-Signed-off-by: Dong Zhu <bluezhudong@gmail.com>
----
- kernel/time/timer_stats.c | 4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/kernel/time/timer_stats.c b/kernel/time/timer_stats.c
-index 0b537f2..bac5e91 100644
---- a/kernel/time/timer_stats.c
-+++ b/kernel/time/timer_stats.c
-@@ -303,6 +303,10 @@ static int tstats_show(struct seq_file *m, void *v)
- 	if (atomic_read(&overflow_count))
- 		seq_printf(m, "Overflow: %d entries\n",
- 			atomic_read(&overflow_count));
-+	if (timer_stats_active)
-+		seq_puts(m, "Status: collection active\n");
-+	else
-+		seq_puts(m, "Status: collection disabled\n");
- 
- 	for (i = 0; i < nr_entries; i++) {
- 		entry = entries + i;
--- 
-1.7.11.7
-
-
--- 
-Best Regards,
-Dong Zhu
+Rob
