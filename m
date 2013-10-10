@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756332Ab3JJSAT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 14:00:19 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:42447 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756101Ab3JJSAR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 14:00:17 -0400
-Date: Thu, 10 Oct 2013 13:59:52 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: Alexey Khoroshilov <khoroshilov@ispras.ru>
-Cc: Fabio Estevam <festevam@gmail.com>,
-        Christian Lamparter <chunkeey@googlemail.com>,
-        linux-wireless@vger.kernel.org,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        ldv-project@linuxtesting.org
-Subject: Re: [PATCH] carl9170: fix leaks at failure path in
- carl9170_usb_probe()
-Message-ID: <20131010175952.GG2691@tuxdriver.com>
-References: <1380340311-4630-1-git-send-email-khoroshilov@ispras.ru>
- <CAOMZO5DE0OdXhWNEr2HAswvgryBqP8VNk3+vanwsi38L6pL9OA@mail.gmail.com>
- <52466624.4040106@ispras.ru>
+	id S1756503Ab3JJSA5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 14:00:57 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:55678 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756406Ab3JJSA4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 14:00:56 -0400
+Date: Thu, 10 Oct 2013 20:00:49 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        ak@linux.intel.com, acme@redhat.com, jolsa@redhat.com,
+        zheng.z.yan@intel.com
+Subject: Re: [PATCH v2 0/3] perf,x86: add Intel RAPL PMU support
+Message-ID: <20131010180049.GD9929@pd.tnic>
+References: <1381416608-2741-1-git-send-email-eranian@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <52466624.4040106@ispras.ru>
+In-Reply-To: <1381416608-2741-1-git-send-email-eranian@google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 28, 2013 at 01:16:20AM -0400, Alexey Khoroshilov wrote:
-> On 28.09.2013 00:17, Fabio Estevam wrote:
-> >On Sat, Sep 28, 2013 at 12:51 AM, Alexey Khoroshilov
-> ><khoroshilov@ispras.ru> wrote:
-> >
-> >>-       return request_firmware_nowait(THIS_MODULE, 1, CARL9170FW_NAME,
-> >>+       err = request_firmware_nowait(THIS_MODULE, 1, CARL9170FW_NAME,
-> >>                 &ar->udev->dev, GFP_KERNEL, ar, carl9170_usb_firmware_step2);
-> >>+       if (err) {
-> >>+               usb_put_dev(udev);
-> >>+               usb_put_dev(udev);
-> >You are doing the same free twice.
-> Yes, because it was get twice.
-> >I guess you meant to also free: usb_put_dev(ar->udev)
-> udev and ar->udev are equal, so technically the patch is correct.
-> 
-> I agree that there is some inconsistency, but I would prefer to fix
-> it at usb_get_dev() side with a comment about reasons for the double
-> get.
+On Thu, Oct 10, 2013 at 04:50:05PM +0200, Stephane Eranian wrote:
+> $ perf stat -a -e rapl/rapl-energy-cores/,rapl/rapl-energy-pkg/ -I 1000 sleep 10
+>             time             counts events
+>      1.000345931        772 278 493 rapl/rapl-energy-cores/
+>      1.000345931     55 539 138 560 rapl/rapl-energy-pkg/    
+>      2.000836387        771 751 936 rapl/rapl-energy-cores/  
+>      2.000836387     55 326 015 488 rapl/rapl-energy-pkg/
 
-What is the reason for the double get?
+Hmm, so I'm looking at builtin-stat.c::print_interval() and since
+it gets the perf_evsel counters and you can deduce the counter name
+from it, you probably could match the rapl counters and do the Watts
+conversion above as a special case.
+
+I dunno, it is much better than having some naked numbers for which
+people have to go stare at the sources + CPU vendor docs as to what they
+actually mean.
+
+Thanks.
 
 -- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
