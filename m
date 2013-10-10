@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757861Ab3JJPwl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 11:52:41 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53082 "EHLO
+	id S1757664Ab3JJPuh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 11:50:37 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53060 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757666Ab3JJPuk (ORCPT
+	with ESMTP id S1757627Ab3JJPub (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 11:50:40 -0400
+	Thu, 10 Oct 2013 11:50:31 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+Cc: Alex Ivanov <gnidorah@p0n4ik.tk>, Alex Deucher <alexander.deucher@amd.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 035/104] sched/fair: Fix small race where child->se.parent,cfs_rq might point to invalid ones
-Date: Thu, 10 Oct 2013 08:41:23 -0700
-Message-Id: <1381419752-29733-36-git-send-email-kamal@canonical.com>
+Subject: [PATCH 059/104] drm/radeon: Make r100_cp_ring_info() and radeon_ring_gfx() safe (v2)
+Date: Thu, 10 Oct 2013 08:41:47 -0700
+Message-Id: <1381419752-29733-60-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381419752-29733-1-git-send-email-kamal@canonical.com>
 References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
@@ -28,92 +27,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+From: Alex Ivanov <gnidorah@p0n4ik.tk>
 
-commit 6c9a27f5da9609fca46cb2b183724531b48f71ad upstream.
+commit 0eb3448aa6b31fbf24c31756aba7940cac5ad6b8 upstream.
 
-There is a small race between copy_process() and cgroup_attach_task()
-where child->se.parent,cfs_rq points to invalid (old) ones.
+Prevent NULL pointer dereference in case when radeon_ring_fini() did it's job.
 
-        parent doing fork()      | someone moving the parent to another cgroup
-  -------------------------------+---------------------------------------------
-    copy_process()
-      + dup_task_struct()
-        -> parent->se is copied to child->se.
-           se.parent,cfs_rq of them point to old ones.
+Reading of r100_cp_ring_info and radeon_ring_gfx debugfs entries will lead to a KP if ring buffer was deallocated, e.g. on failed ring test.
+Seen on PA-RISC machine having "radeon: ring test failed (scratch(0x8504)=0xCAFEDEAD)" issue.
 
-                                     cgroup_attach_task()
-                                       + cgroup_task_migrate()
-                                         -> parent->cgroup is updated.
-                                       + cpu_cgroup_attach()
-                                         + sched_move_task()
-                                           + task_move_group_fair()
-                                             +- set_task_rq()
-                                                -> se.parent,cfs_rq of parent
-                                                   are updated.
+v2: agd5f: add some parens around ring->ready check
 
-      + cgroup_fork()
-        -> parent->cgroup is copied to child->cgroup. (*1)
-      + sched_fork()
-        + task_fork_fair()
-          -> se.parent,cfs_rq of child are accessed
-             while they point to old ones. (*2)
-
-In the worst case, this bug can lead to "use-after-free" and cause a panic,
-because it's new cgroup's refcount that is incremented at (*1),
-so the old cgroup(and related data) can be freed before (*2).
-
-In fact, a panic caused by this bug was originally caught in RHEL6.4.
-
-    BUG: unable to handle kernel NULL pointer dereference at (null)
-    IP: [<ffffffff81051e3e>] sched_slice+0x6e/0xa0
-    [...]
-    Call Trace:
-     [<ffffffff81051f25>] place_entity+0x75/0xa0
-     [<ffffffff81056a3a>] task_fork_fair+0xaa/0x160
-     [<ffffffff81063c0b>] sched_fork+0x6b/0x140
-     [<ffffffff8106c3c2>] copy_process+0x5b2/0x1450
-     [<ffffffff81063b49>] ? wake_up_new_task+0xd9/0x130
-     [<ffffffff8106d2f4>] do_fork+0x94/0x460
-     [<ffffffff81072a9e>] ? sys_wait4+0xae/0x100
-     [<ffffffff81009598>] sys_clone+0x28/0x30
-     [<ffffffff8100b393>] stub_clone+0x13/0x20
-     [<ffffffff8100b072>] ? system_call_fastpath+0x16/0x1b
-
-Signed-off-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/039601ceae06$733d3130$59b79390$@mxp.nes.nec.co.jp
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Alex Ivanov <gnidorah@p0n4ik.tk>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/sched/fair.c | 14 +++++++++-----
- 1 file changed, 9 insertions(+), 5 deletions(-)
+ drivers/gpu/drm/radeon/r100.c        | 8 +++++---
+ drivers/gpu/drm/radeon/radeon_ring.c | 8 +++++---
+ 2 files changed, 10 insertions(+), 6 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 7d0374f..e9ab160 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -5755,11 +5755,15 @@ static void task_fork_fair(struct task_struct *p)
- 	cfs_rq = task_cfs_rq(current);
- 	curr = cfs_rq->curr;
- 
--	if (unlikely(task_cpu(p) != this_cpu)) {
--		rcu_read_lock();
--		__set_task_cpu(p, this_cpu);
--		rcu_read_unlock();
--	}
-+	/*
-+	 * Not only the cpu but also the task_group of the parent might have
-+	 * been changed after parent->se.parent,cfs_rq were copied to
-+	 * child->se.parent,cfs_rq. So call __set_task_cpu() to make those
-+	 * of child point to valid ones.
-+	 */
-+	rcu_read_lock();
-+	__set_task_cpu(p, this_cpu);
-+	rcu_read_unlock();
- 
- 	update_curr(cfs_rq);
- 
+diff --git a/drivers/gpu/drm/radeon/r100.c b/drivers/gpu/drm/radeon/r100.c
+index b833fbe..1ef003a 100644
+--- a/drivers/gpu/drm/radeon/r100.c
++++ b/drivers/gpu/drm/radeon/r100.c
+@@ -3045,9 +3045,11 @@ static int r100_debugfs_cp_ring_info(struct seq_file *m, void *data)
+ 	seq_printf(m, "CP_RB_RPTR 0x%08x\n", rdp);
+ 	seq_printf(m, "%u free dwords in ring\n", ring->ring_free_dw);
+ 	seq_printf(m, "%u dwords in ring\n", count);
+-	for (j = 0; j <= count; j++) {
+-		i = (rdp + j) & ring->ptr_mask;
+-		seq_printf(m, "r[%04d]=0x%08x\n", i, ring->ring[i]);
++	if (ring->ready) {
++		for (j = 0; j <= count; j++) {
++			i = (rdp + j) & ring->ptr_mask;
++			seq_printf(m, "r[%04d]=0x%08x\n", i, ring->ring[i]);
++		}
+ 	}
+ 	return 0;
+ }
+diff --git a/drivers/gpu/drm/radeon/radeon_ring.c b/drivers/gpu/drm/radeon/radeon_ring.c
+index cac9f20..37d870b 100644
+--- a/drivers/gpu/drm/radeon/radeon_ring.c
++++ b/drivers/gpu/drm/radeon/radeon_ring.c
+@@ -804,9 +804,11 @@ static int radeon_debugfs_ring_info(struct seq_file *m, void *data)
+ 	 * packet that is the root issue
+ 	 */
+ 	i = (ring->rptr + ring->ptr_mask + 1 - 32) & ring->ptr_mask;
+-	for (j = 0; j <= (count + 32); j++) {
+-		seq_printf(m, "r[%5d]=0x%08x\n", i, ring->ring[i]);
+-		i = (i + 1) & ring->ptr_mask;
++	if (ring->ready) {
++		for (j = 0; j <= (count + 32); j++) {
++			seq_printf(m, "r[%5d]=0x%08x\n", i, ring->ring[i]);
++			i = (i + 1) & ring->ptr_mask;
++		}
+ 	}
+ 	return 0;
+ }
 -- 
 1.8.1.2
 
