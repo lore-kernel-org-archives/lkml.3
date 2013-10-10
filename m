@@ -1,167 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757288Ab3JJS6a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 14:58:30 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:41099 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756934Ab3JJS61 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 14:58:27 -0400
-Date: Thu, 10 Oct 2013 11:58:19 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo.kernel.org@gmail.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/16] sched/wait: Collapse __wait_event macros -v5
-Message-ID: <20131010185819.GP5790@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20131008194718.GD7315@gmail.com>
- <20131008204056.GR5790@linux.vnet.ibm.com>
- <20131009032843.GA12970@linux.vnet.ibm.com>
- <20131009033502.GA14017@linux.vnet.ibm.com>
- <20131009060806.GC7664@gmail.com>
- <20131009142123.GT5790@linux.vnet.ibm.com>
- <20131010025904.GA4891@linux.vnet.ibm.com>
- <20131010080501.GA18481@gmail.com>
- <20131010171135.GL5790@linux.vnet.ibm.com>
- <20131010173937.GD26430@gmail.com>
+	id S1757141Ab3JJS6o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 14:58:44 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:55134 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756469Ab3JJS6m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 14:58:42 -0400
+Date: Thu, 10 Oct 2013 13:57:52 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
+CC: "balbi@ti.com" <balbi@ti.com>, Matt Porter <matt.porter@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Christian Daudt <bcm@fixthebug.org>,
+        Linux USB List <linux-usb@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Devicetree List <devicetree@vger.kernel.org>,
+        Linaro Patches <patches@linaro.org>
+Subject: Re: [PATCH 2/5] usb: gadget: s3c-hsotg: support configurable UTMI
+ PHY width
+Message-ID: <20131010185752.GD21240@radagast>
+Reply-To: <balbi@ti.com>
+References: <1381140752-312-1-git-send-email-matt.porter@linaro.org>
+ <1381140752-312-3-git-send-email-matt.porter@linaro.org>
+ <20131010152922.GF28375@radagast>
+ <5256DBD0.8030008@linaro.org>
+ <20131010174620.GC19802@radagast>
+ <A2CA0424C0A6F04399FB9E1CD98E030458E16893@US01WEMBX2.internal.synopsys.com>
+ <20131010180723.GF19802@radagast>
+ <A2CA0424C0A6F04399FB9E1CD98E030458E168E8@US01WEMBX2.internal.synopsys.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="UfEAyuTBtIjiZzX6"
 Content-Disposition: inline
-In-Reply-To: <20131010173937.GD26430@gmail.com>
+In-Reply-To: <A2CA0424C0A6F04399FB9E1CD98E030458E168E8@US01WEMBX2.internal.synopsys.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13101018-9332-0000-0000-000001B884DD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 10, 2013 at 07:39:37PM +0200, Ingo Molnar wrote:
-> 
-> * Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
-> 
-> > On Thu, Oct 10, 2013 at 10:05:01AM +0200, Ingo Molnar wrote:
-> > > 
-> > > * Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
-> > > 
-> > > > And it now builds, boots, and passes short rcutorture tests, updated 
-> > > > patch below.
-> > > > 
-> > > > One side-effect is the boot parameters, namely that what used to be 
-> > > > rcutree.blimit=10 is now simply tree.blimit=10.  Not a problem for me, I 
-> > > > just made my test scripts probe the source tree and generate the 
-> > > > corresponding format.  But is there some straightforward way to get the 
-> > > > name of the "rcu" directory involved?  The obvious approach of 
-> > > > "rcu.tree.blimit=10" does not work -- the kernel happily ignores any 
-> > > > such parameter.
-> > > 
-> > > Hm, that boot option parser attitude is a bit sad - more structure to boot 
-> > > parameters is IMHO a Good Thing.
-> > 
-> > No argument here!
-> > 
-> > > Does it accept :
-> > > 
-> > > 	rcu/tree/blimit=10
-> > > 
-> > > 	rcu/tree.blimit=10
-> > > 
-> > > type of structure perhaps?
-> > 
-> > Unfortunately, no.  :-(
-> 
-> So, I think this code lives within kernel/params.c. Might be fixable?
+--UfEAyuTBtIjiZzX6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-But of course!  I was just trying to be lazy. ;-)
+Hi,
 
-I could imagine adding a filename field to struct kernel_param that
-was initialized with __FILE__, then making something like parameq()
-that did the appropriate comparison allowing any match starting after a
-"/" and ignoring the trailing ".h" or ".c", and then calling that from
-parse_one() along with current parameq().  There doesn't seem to be any
-point for doing the same to do_early_param().
+On Thu, Oct 10, 2013 at 06:14:19PM +0000, Paul Zimmerman wrote:
+> > From: Felipe Balbi [mailto:balbi@ti.com]
+> > Sent: Thursday, October 10, 2013 11:07 AM
+> >=20
+> > On Thu, Oct 10, 2013 at 05:57:54PM +0000, Paul Zimmerman wrote:
+> > > > From: Felipe Balbi [mailto:balbi@ti.com]
+> > > > Sent: Thursday, October 10, 2013 10:46 AM
+> > > >
+> > > > On Thu, Oct 10, 2013 at 12:54:40PM -0400, Matt Porter wrote:
+> > > > > On 10/10/2013 11:29 AM, Felipe Balbi wrote:
+> > > > > >On Mon, Oct 07, 2013 at 06:12:29AM -0400, Matt Porter wrote:
+> > > > > >>Extend dwc2 binding with an optional utmi phy width property.
+> > > > > >>Enable the s3c-hsotg.c driver to use standard dwc2 binding
+> > > > > >>and enable configuration of the UTMI phy width based on the
+> > > > > >>property.
+> > > > > >>
+> > > > > >>Signed-off-by: Matt Porter <matt.porter@linaro.org>
+> > > > > >>Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
+> > > > > >>Reviewed-by: Tim Kryger <tim.kryger@linaro.org>
+> > > > > >>---
+> > > > > >>  Documentation/devicetree/bindings/staging/dwc2.txt |  4 ++++
+> > > > > >>  drivers/usb/gadget/s3c-hsotg.c                     | 18 +++++=
+++++++++++++-
+> > > > > >>  drivers/usb/gadget/s3c-hsotg.h                     |  1 +
+> > > > > >>  3 files changed, 22 insertions(+), 1 deletion(-)
+> > > > > >>
+> > > > > >>diff --git a/Documentation/devicetree/bindings/staging/dwc2.txt
+> > > > b/Documentation/devicetree/bindings/staging/dwc2.txt
+> > > > > >>index 1a1b7cf..fb6b8ee 100644
+> > > > > >>--- a/Documentation/devicetree/bindings/staging/dwc2.txt
+> > > > > >>+++ b/Documentation/devicetree/bindings/staging/dwc2.txt
+> > > > > >>@@ -6,10 +6,14 @@ Required properties:
+> > > > > >>  - reg : Should contain 1 register range (address and length)
+> > > > > >>  - interrupts : Should contain 1 interrupt
+> > > > > >>
+> > > > > >>+Optional properties:
+> > > > > >>+- snps,phy-utmi-width: Must contain the UTMI data width (eithe=
+r 8 or 16)
+> > > > > >
+> > > > > >isn't this available in any of the configuration registers ?
+> > > > >
+> > > > > Yes and no. HWCFG4 has a UTMI data width field. However, it has 3
+> > > > > valid states, "8", "16", or "8 or 16". The BCM281xx implementatio=
+n is
+> > > > > set to the latter and the attached phy is 8-bit.
+> > > > >
+> > > > > Looking at dwc2 prior to Matthijs Kooijman's patch [1] which star=
+ts
+> > > > > validating the value of phy_utmi_width in that driver, the pci.c
+> > > > > dwc2_module_params .phy_utmi_width field there even had the comme=
+nt,
+> > > > > "/* 16 bits - NOT DETECTABLE */". The autodetect code in
+> > > > > dwc2_set_param_phy_utmi_width() will fail if HWCFG4 has the "8 or=
+ 16"
+> > > > > option as it just decides to default to a phy width of 16 if noth=
+ing
+> > > > > is configured by the platform glue. This property would also allow
+> > > > > this issue to be addressed in that driver.
+> > > >
+> > > > fair enough, but I'd really like to hear from DT folks if your sugg=
+ested
+> > > > binding is acceptable. It seems like we can equally argue that it's=
+ a SW
+> > > > configuration or HW description.
+> > >
+> > > It's definitely a HW description - the width of the UTMI data connect=
+ion.
+> >=20
+> > right, but that description should be passed to the PHY, right ? DWC2
+> > works with both widths (8 or 16).
+>=20
+> I don't know what you mean by "passed to the PHY". The data width is the
+> number of physical wires connecting the PHY to the DWC2 controller. If
 
-There would be a few surprises with this approach, for example,
-rcu_idle_gp_delay and rcu_idle_lazy_gp_delay, which are defined
-in kernel/rcu/tree_plugin.h, would be:
+right, that's well understood.
 
-	tree_plugin.rcu_idle_gp_delay=4
-	tree_plugin.rcu_idle_lazy_gp_delay=6000
+> that value can be read from the PHY, fine. Otherwise, I think a DT
+> binding is the way to go.
 
-or:
+Let's see what the DT folks have to say.
 
-	rcu/tree_plugin.rcu_idle_gp_delay=4
-	rcu/tree_plugin.rcu_idle_lazy_gp_delay=6000
+--=20
+balbi
 
-or:
+--UfEAyuTBtIjiZzX6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-	kernel/rcu/tree_plugin.rcu_idle_gp_delay=4
-	kernel/rcu/tree_plugin.rcu_idle_lazy_gp_delay=6000
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-or I suppose even:
+iQIcBAEBAgAGBQJSVviwAAoJEIaOsuA1yqREc1cQAJYStNIqaUTNP9DbClN0cZ6e
+R5iTiWXOnJv5JD7/clMdLuY4P6rrTi3VmTcMu3QKdUg01zPu006QA/NwbF/QWnyJ
+imgQ868j7S2svSTflS1Ow/T/18zIoKWJJcaCHdri31VgJTUt5OdiPABXVz2HXJve
+K/By+2OEK/SNouyGp1mbUQaxsUtr17Nug1Xzpr5IVB1uh8AnIacz9V6GKBa+8Nwi
+zjNDbBZrpoTPwpCzycrdFSGS5rC3Es/MKpV+pCpgA8r6BDIr4h6qvrGlFBsCV+50
+NmFHdQL3x796mEOFQ7Jgq/RqpIQxJC1xK/S9xUdoH4VqhTvgg5Y+D2OpRnVIfEPr
+ELHJKtQDIY9hZep5qPq5yl9lEKWNDN8UZpuiKl8uxnZRCBhctw0eykRXyPb6puwQ
+oBeUdSvtFtslmTViGq/X9G2hEDtFNTEZCaBWvOr7HAls3jZ2uukpk6gNNBOZLfYk
+MYjV6RdZ3En9m8Rm1vpMIKhP34709uKQgCBCNPk4CWUNNmxNVqkQfSNAQkM/V3/a
+L9seW+xV5S2a0DfIWizq8maiaW6LiHIEvbDmzWSVWKk+bfMpsJz9ljCJsCepGuY7
+WwO98foDJd8d5bQAl2OJ5BtSr72S+b5jufl9xg+7aPB0jfTltlppd8LGnvW+djfe
+rDQ6GXljO2HoswRv0XMa
+=UuBU
+-----END PGP SIGNATURE-----
 
-	linux-rcu/kernel/rcu/tree_plugin.rcu_idle_gp_delay=4
-	linux-rcu/kernel/rcu/tree_plugin.rcu_idle_lazy_gp_delay=6000
-
-instead of (say):
-
-	kernel/rcu/tree.rcu_idle_gp_delay=4
-	kernel/rcu/tree.rcu_idle_lazy_gp_delay=6000
-
-This could of course also be fixed by comparing the filename up to
-the last "/" followed by the current parameter name.  Or, as Peter
-Zijlstra suggested, by manually expanding kernel/rcu/tree_plugin.h into
-kernel/rcu/tree.c.
-
-Or I could use the non-standard __BASE_FILE__ instead of __FILE__, which
-expands to .../kernel/rcu/tree.c.  LLVM seems to define this as well,
-so should be OK to use.
-
-So it doesn't look too horrible.  (Famous last words...)
-
-Thoughts?
-
-> > > > It looks like I should be able to do something like the following in 
-> > > > kernel/rcu/tree.c to get back the old parameter names:
-> > > > 
-> > > > MODULE_ALIAS("rcutree");
-> > > > #ifdef MODULE_PARAM_PREFIX
-> > > > #undef MODULE_PARAM_PREFIX
-> > > > #endif
-> > > > #define MODULE_PARAM_PREFIX "rcutree."
-> > > 
-> > > Yeah.
-> > > 
-> > > ( To keep it simple, the undef should be unnecessary, it's not like anyone 
-> > >   can slip in a MODULE_PARAM_PREFIX without you noticing, right? )
-> > 
-> > Works with the #undef, trying it without it...  And it works, but I do 
-> > get the following complaint from the compiler:
-> > 
-> > /home/paulmck/public_git/linux-rcu/kernel/rcu/tree.c:66:0: warning: "MODULE_PARAM_PREFIX" redefined [enabled by default]
-> > /home/paulmck/public_git/linux-rcu/include/linux/moduleparam.h:13:0: note: this is the location of the previous definition
-> > 
-> > The problem is that moduleparam.h contains the following:
-> > 
-> > #define MODULE_PARAM_PREFIX KBUILD_MODNAME "."
-> > 
-> > So the #undef is ugly, but better than the compiler warning.  :-(
-> 
-> agreed.
-> 
-> Thanks,
-> 
-> 	Ingo
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
+--UfEAyuTBtIjiZzX6--
