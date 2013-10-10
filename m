@@ -1,68 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754702Ab3JJDii (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 23:38:38 -0400
-Received: from mga01.intel.com ([192.55.52.88]:41343 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752523Ab3JJDih (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 23:38:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1068,1371106800"; 
-   d="scan'208";a="408625570"
-Date: Thu, 10 Oct 2013 11:38:34 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Dave Chinner <dchinner@redhat.com>, linux-fsdevel@vger.kernel.org,
-        Ben Myers <bpm@sgi.com>, linux-kernel@vger.kernel.org, xfs@oss.sgi.com,
-        "ocfs2-devel@oss.oracle.com" <ocfs2-devel@oss.oracle.com>
-Subject: Re: [XFS on bad superblock] BUG: unable to handle kernel NULL
- pointer dereference at 00000003
-Message-ID: <20131010033834.GA13141@localhost>
-References: <20131009073910.GA387@localhost>
- <20131010005900.GE2025@devil.localdomain>
- <20131010011640.GA5726@localhost>
- <20131010014117.GA6017@localhost>
- <20131010031515.GT4446@dastard>
- <20131010032637.GA12725@localhost>
- <20131010033300.GA12952@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131010033300.GA12952@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755146Ab3JJDjb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 23:39:31 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:55869 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752747Ab3JJDja (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 23:39:30 -0400
+Date: Wed, 09 Oct 2013 23:39:28 -0400 (EDT)
+Message-Id: <20131009.233928.1664631911260282195.davem@davemloft.net>
+To: rostedt@goodmis.org
+Cc: andi@firstfloor.org, hpa@linux.intel.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, tglx@linutronix.de, mingo@kernel.org,
+        peterz@infradead.org, williams@redhat.com, bp@alien8.de,
+        akpm@linux-foundation.org, andi.kleen@intel.com
+Subject: Re: [RFC][PATCH] x86: Lazy disabling of interrupts
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20131009203627.27166b20@gandalf.local.home>
+References: <5255C07E.70805@linux.intel.com>
+	<878uy2ytd8.fsf@tassilo.jf.intel.com>
+	<20131009203627.27166b20@gandalf.local.home>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Wed, 09 Oct 2013 20:39:30 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 10, 2013 at 11:33:00AM +0800, Fengguang Wu wrote:
-> On Thu, Oct 10, 2013 at 11:26:37AM +0800, Fengguang Wu wrote:
-> > Dave,
-> > 
-> > > I note that you have CONFIG_SLUB=y, which means that the cache slabs
-> > > are shared with objects of other types. That means that the memory
-> > > corruption problem is likely to be caused by one of the other
-> > > filesystems that is probing the block device(s), not XFS.
-> > 
-> > Good to know that, it would easy to test then: just turn off every
-> > other filesystems. I'll try it right away.
+From: Steven Rostedt <rostedt@goodmis.org>
+Date: Wed, 9 Oct 2013 20:36:27 -0400
+
+> I don't know why my email never reached LKML, was there something about
+> it that prevented it from going? The total character length was 46,972,
+> well below the 100,000 limit. Also the Cc list wasn't that big. Did my
+> ISP get flagged as a spam bot or something?
 > 
-> Seems that we don't even need to do that. A dig through the oops
-> database and I find stack dumps from other FS.
-> 
-> This happens in the kernel with same kconfig and commit 3.12-rc1.
+> I can bounce it to you to see what was wrong with it.
 
-Here is a summary of all FS with oops:
+That's odd, can you try sending it to the list again?  I'll watch
+very carefully for a bounce.
 
-    411 ocfs2_fill_super
-    189 xfs_fs_fill_super
-     86 jfs_fill_super
-     50 isofs_fill_super
-     33 fat_fill_super
-     18 vfat_fill_super
-     15 msdos_fill_super
-     11 ext2_fill_super
-     10 ext3_fill_super
-      3 reiserfs_fill_super
-
-Thanks,
-Fengguang
+Thanks.
