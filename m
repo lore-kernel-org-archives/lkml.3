@@ -1,79 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757838Ab3JJPxx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 11:53:53 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53050 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757616Ab3JJPu3 (ORCPT
+	id S1757895Ab3JJPyF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 11:54:05 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:42937 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757215Ab3JJPyC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 11:50:29 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 033/104] drm/radeon/atom: workaround vbios bug in transmitter table on rs880 (v2)
-Date: Thu, 10 Oct 2013 08:41:21 -0700
-Message-Id: <1381419752-29733-34-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1381419752-29733-1-git-send-email-kamal@canonical.com>
-References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Thu, 10 Oct 2013 11:54:02 -0400
+Message-ID: <5256CD7C.5080909@ti.com>
+Date: Thu, 10 Oct 2013 10:53:32 -0500
+From: Joel Fernandes <joelf@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Nishanth Menon <nm@ti.com>
+CC: dt list <devicetree@vger.kernel.org>, Paul Walmsley <paul@pwsan.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>, lkml <linux-kernel@vger.kernel.org>,
+        Tero Kristo <t-kristo@ti.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Benoit Cousson <bcousson@baylibre.com>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH V6 02/15] ARM: OMAP2+: AM33XX: add lateinit hook for calling
+ pm late init
+References: <1381354144-7134-1-git-send-email-nm@ti.com> <1381361098-8283-1-git-send-email-nm@ti.com> <52563BD8.1060703@ti.com> <20131010133209.GA13105@kahuna> <5256C5D2.9030302@ti.com> <5256C686.6000301@ti.com> <CAGo_u6r-tfnWFP_FNAm5PdWctuPVvh8-XXDscCw+zKHj0FRM_A@mail.gmail.com>
+In-Reply-To: <CAGo_u6r-tfnWFP_FNAm5PdWctuPVvh8-XXDscCw+zKHj0FRM_A@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.11 -stable review patch.  If anyone has any objections, please let me know.
+On 10/10/2013 10:45 AM, Nishanth Menon wrote:
+> On Thu, Oct 10, 2013 at 10:23 AM, Joel Fernandes <joelf@ti.com> wrote:
+>> I see a function of that name already exists. I guess you can leave your patch
+>> as is then and not have to do this.
+> 
+> 
+> Can I consider that as an Acked-by :) ?
 
-------------------
+Yes, sure, for this particular patch:
 
-From: Alex Deucher <alexander.deucher@amd.com>
+Acked-by: Joel Fernandes <joelf@ti.com>
 
-commit 91f3a6aaf280294b07c05dfe606e6c27b7ba3c72 upstream.
+thanks,
 
-The OUTPUT_ENABLE action jumps past the point in the coder where
-the data_offset is set on certain rs780 cards.  This worked
-previously because the OUTPUT_ENABLE action is always called
-immediately after the ENABLE action so the data_offset remained
-set.  In 6f8bbaf568c7f2c497558bfd04654c0b9841ad57
-(drm/radeon/atom: initialize more atom interpretor elements to 0),
-we explictly reset data_offset to 0 between atom calls which then
-caused this to fail.  The fix is to just skip calling the
-OUTPUT_ENABLE action on the problematic chipsets.  The ENABLE
-action does the same thing and more.  Ultimately, we could
-probably drop the OUTPUT_ENABLE action all together on DCE3
-asics.
-
-fixes:
-https://bugzilla.kernel.org/show_bug.cgi?id=60791
-
-v2: only rs880 seems to be affected
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/gpu/drm/radeon/atombios_encoders.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/gpu/drm/radeon/atombios_encoders.c b/drivers/gpu/drm/radeon/atombios_encoders.c
-index 8efd7e2..3b681de 100644
---- a/drivers/gpu/drm/radeon/atombios_encoders.c
-+++ b/drivers/gpu/drm/radeon/atombios_encoders.c
-@@ -1636,8 +1636,12 @@ radeon_atom_encoder_dpms_dig(struct drm_encoder *encoder, int mode)
- 			atombios_dig_encoder_setup(encoder, ATOM_ENABLE, 0);
- 			atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_SETUP, 0, 0);
- 			atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_ENABLE, 0, 0);
--			/* some early dce3.2 boards have a bug in their transmitter control table */
--			if ((rdev->family != CHIP_RV710) && (rdev->family != CHIP_RV730))
-+			/* some dce3.x boards have a bug in their transmitter control table.
-+			 * ACTION_ENABLE_OUTPUT can probably be dropped since ACTION_ENABLE
-+			 * does the same thing and more.
-+			 */
-+			if ((rdev->family != CHIP_RV710) && (rdev->family != CHIP_RV730) &&
-+			    (rdev->family != CHIP_RS880))
- 				atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_ENABLE_OUTPUT, 0, 0);
- 		}
- 		if (ENCODER_MODE_IS_DP(atombios_get_encoder_mode(encoder)) && connector) {
--- 
-1.8.1.2
+-Joel
 
