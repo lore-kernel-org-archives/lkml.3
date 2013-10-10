@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757447Ab3JJPt1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 11:49:27 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52945 "EHLO
+	id S1757811Ab3JJP6g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 11:58:36 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52955 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755433Ab3JJPtX (ORCPT
+	with ESMTP id S1757433Ab3JJPt0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 11:49:23 -0400
+	Thu, 10 Oct 2013 11:49:26 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Malcolm Priestley <tvboxspy@gmail.com>,
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 067/104] staging: vt6656: [BUG] iwctl_siwencodeext return if device not open
-Date: Thu, 10 Oct 2013 08:41:55 -0700
-Message-Id: <1381419752-29733-68-git-send-email-kamal@canonical.com>
+Subject: [PATCH 070/104] USB: fix PM config symbol in uhci-hcd, ehci-hcd, and xhci-hcd
+Date: Thu, 10 Oct 2013 08:41:58 -0700
+Message-Id: <1381419752-29733-71-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381419752-29733-1-git-send-email-kamal@canonical.com>
 References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
@@ -28,36 +29,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Malcolm Priestley <tvboxspy@gmail.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 5e8c3d3e41b0bf241e830a1ee0752405adecc050 upstream.
+commit f875fdbf344b9fde207f66b392c40845dd7e5aa6 upstream.
 
-Don't allow entry to iwctl_siwencodeext if device not open.
+Since uhci-hcd, ehci-hcd, and xhci-hcd support runtime PM, the .pm
+field in their pci_driver structures should be protected by CONFIG_PM
+rather than CONFIG_PM_SLEEP.  The corresponding change has already
+been made for ohci-hcd.
 
-This fixes a race condition where wpa supplicant/network manager
-enters the function when the device is already closed.
+Without this change, controllers won't do runtime suspend if system
+suspend or hibernation isn't enabled.
 
-Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/staging/vt6656/iwctl.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/usb/host/ehci-pci.c | 2 +-
+ drivers/usb/host/uhci-pci.c | 2 +-
+ drivers/usb/host/xhci-pci.c | 2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/staging/vt6656/iwctl.c b/drivers/staging/vt6656/iwctl.c
-index 9f2f1be..e37dcb5 100644
---- a/drivers/staging/vt6656/iwctl.c
-+++ b/drivers/staging/vt6656/iwctl.c
-@@ -1637,6 +1637,9 @@ int iwctl_siwencodeext(struct net_device *dev, struct iw_request_info *info,
- 	if (pMgmt == NULL)
- 		return -EFAULT;
+diff --git a/drivers/usb/host/ehci-pci.c b/drivers/usb/host/ehci-pci.c
+index 170b939..4620cfc 100644
+--- a/drivers/usb/host/ehci-pci.c
++++ b/drivers/usb/host/ehci-pci.c
+@@ -413,7 +413,7 @@ static struct pci_driver ehci_pci_driver = {
+ 	.remove =	usb_hcd_pci_remove,
+ 	.shutdown = 	usb_hcd_pci_shutdown,
  
-+	if (!(pDevice->flags & DEVICE_FLAGS_OPENED))
-+		return -ENODEV;
-+
- 	buf = kzalloc(sizeof(struct viawget_wpa_param), GFP_KERNEL);
- 	if (buf == NULL)
- 		return -ENOMEM;
+-#ifdef CONFIG_PM_SLEEP
++#ifdef CONFIG_PM
+ 	.driver =	{
+ 		.pm =	&usb_hcd_pci_pm_ops
+ 	},
+diff --git a/drivers/usb/host/uhci-pci.c b/drivers/usb/host/uhci-pci.c
+index c300bd2f7..0f228c4 100644
+--- a/drivers/usb/host/uhci-pci.c
++++ b/drivers/usb/host/uhci-pci.c
+@@ -293,7 +293,7 @@ static struct pci_driver uhci_pci_driver = {
+ 	.remove =	usb_hcd_pci_remove,
+ 	.shutdown =	uhci_shutdown,
+ 
+-#ifdef CONFIG_PM_SLEEP
++#ifdef CONFIG_PM
+ 	.driver =	{
+ 		.pm =	&usb_hcd_pci_pm_ops
+ 	},
+diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
+index 76fb7d9..8233c91 100644
+--- a/drivers/usb/host/xhci-pci.c
++++ b/drivers/usb/host/xhci-pci.c
+@@ -344,7 +344,7 @@ static struct pci_driver xhci_pci_driver = {
+ 	/* suspend and resume implemented later */
+ 
+ 	.shutdown = 	usb_hcd_pci_shutdown,
+-#ifdef CONFIG_PM_SLEEP
++#ifdef CONFIG_PM
+ 	.driver = {
+ 		.pm = &usb_hcd_pci_pm_ops
+ 	},
 -- 
 1.8.1.2
 
