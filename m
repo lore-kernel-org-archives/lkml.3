@@ -1,111 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753960Ab3JJJzW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 05:55:22 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:48457 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751598Ab3JJJzU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 05:55:20 -0400
-Message-ID: <5256796B.7070000@ti.com>
-Date: Thu, 10 Oct 2013 15:24:51 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1752660Ab3JJJ6d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 05:58:33 -0400
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:51788 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752112Ab3JJJ6a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 05:58:30 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av8GAEh5VlJ5LFuj/2dsb2JhbABTBoMHvGqFP4EfF3SCJQEBBTocIxAIAxgJJQ8FJQMhE4gFuSEWjgSBLQeEIwOYBJIDgWaBUig
+Date: Thu, 10 Oct 2013 20:58:24 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Dave Chinner <dchinner@redhat.com>, linux-fsdevel@vger.kernel.org,
+        Ben Myers <bpm@sgi.com>, linux-kernel@vger.kernel.org, xfs@oss.sgi.com,
+        "ocfs2-devel@oss.oracle.com" <ocfs2-devel@oss.oracle.com>
+Subject: Re: [XFS on bad superblock] BUG: unable to handle kernel NULL
+ pointer dereference at 00000003
+Message-ID: <20131010095824.GX4446@dastard>
+References: <20131010011640.GA5726@localhost>
+ <20131010014117.GA6017@localhost>
+ <20131010031515.GT4446@dastard>
+ <20131010032637.GA12725@localhost>
+ <20131010033300.GA12952@localhost>
+ <20131010033834.GA13141@localhost>
+ <20131010042820.GA5663@dastard>
+ <20131010060334.GA17576@localhost>
+ <20131010080652.GW4446@dastard>
+ <20131010082350.GA31385@localhost>
 MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "cw00.choi@samsung.com" <cw00.choi@samsung.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "rob@landley.net" <rob@landley.net>,
-        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
-        "ldewangan@nvidia.com" <ldewangan@nvidia.com>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5] extcon: palmas: Added a new compatible type *ti,palmas-usb-vid*
-References: <1381390377-11109-1-git-send-email-kishon@ti.com> <20131010093908.GD26954@e106331-lin.cambridge.arm.com>
-In-Reply-To: <20131010093908.GD26954@e106331-lin.cambridge.arm.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131010082350.GA31385@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 10 October 2013 03:09 PM, Mark Rutland wrote:
-> On Thu, Oct 10, 2013 at 08:32:57AM +0100, Kishon Vijay Abraham I wrote:
->> The Palmas device contains only a USB VBUS-ID detector, so added a
->> compatible type *ti,palmas-usb-vid*. Didn't remove the existing compatible
->> types for backward compatibility.
->>
->> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
->> ---
->> Changes from v4:
->> * added compatible property "ti,twl6035-usb-vid"
->>
->> Changes from v3:
->> * Fixed commit log message (VID to VBUS-ID).
->> * Fixed the Documentation to tell "ti,twl6035-usb" and "ti,palmas-usb" is
->> deprecated
->> Changes from [1]:
->> * Since the old compatible values will be in 3.11 kernel, we shouldn't remove
->> the old compatible values. So retain the old compatible values.
->>
->> [1] -> http://www.spinics.net/lists/linux-omap/msg95843.html
->>
->>  Documentation/devicetree/bindings/extcon/extcon-palmas.txt |    4 +++-
->>  drivers/extcon/extcon-palmas.c                             |    2 ++
->>  2 files changed, 5 insertions(+), 1 deletion(-)
->>
->> diff --git a/Documentation/devicetree/bindings/extcon/extcon-palmas.txt b/Documentation/devicetree/bindings/extcon/extcon-palmas.txt
->> index 7dab6a8..ce2100f 100644
->> --- a/Documentation/devicetree/bindings/extcon/extcon-palmas.txt
->> +++ b/Documentation/devicetree/bindings/extcon/extcon-palmas.txt
->> @@ -2,7 +2,9 @@ EXTCON FOR PALMAS/TWL CHIPS
->>  
->>  PALMAS USB COMPARATOR
->>  Required Properties:
->> - - compatible : Should be "ti,palmas-usb" or "ti,twl6035-usb"
->> + - compatible : Should be "ti,palmas-usb-vid" or "ti,twl6035-usb-vid".
->> +   "ti,twl6035-usb" and "ti,palmas-usb" is deprecated and is kept
->> +   for backward compatibility.
+On Thu, Oct 10, 2013 at 04:23:50PM +0800, Fengguang Wu wrote:
+> Dave,
 > 
-> How about having these one per line, with a description:
+> >> This is an easily reproducible bug. And I further confirmed it in
+> >> two ways:
+> >>
+> >> 1) turn off XFS, build 39 commits and boot them 2000+ times
+> >>
+> >> => no single mount error
+> >
+> >That doesn't tell you it is an XFS error. Absence of symptoms !=
+> >absence of bug.
 > 
-> - compatible: should contain one of:
->   * "ti,palmas-usb-vid" for palmas systems. 
->   * "ti,twl6035-usb-vid" for twl6035 systems.
->   * "ti,palmas-usb" (DEPRECATED - use "ti,palmas-usb-vid").
->   * "ti,twl6035-usb" (DEPRECATED - use "ti,twl6035-usb-vid").
+> True.
 > 
-> That makes it easier to add to in future, and hopefully makes things a
-> bit clearer.
+> >> 2) turn off all other filesystems, build 2 kernels on v3.12-rc3
+> >>    v3.12-rc4 and boot them
+> >> 
+> >> => half boots have oops
+> >
+> >Again, it doesn't tell you that it is an XFS bug. XFS is well known
+> >for exposing bugs in less used block devices, and you are definitely
+> >using devices that are unusual and not commonly tested by filesystem
+> >developers (e.g. zram, nbd, etc).
+> >
 > 
-> I don't think we need to state it's kept for backwards compatiblity.
-> The set of strings Linux understands is a Linux detail rather than a dt
-> detail.
-> 
->>  
->>  Optional Properties:
->>   - ti,wakeup : To enable the wakeup comparator in probe
->> diff --git a/drivers/extcon/extcon-palmas.c b/drivers/extcon/extcon-palmas.c
->> index 6c91976..6e83e9a 100644
->> --- a/drivers/extcon/extcon-palmas.c
->> +++ b/drivers/extcon/extcon-palmas.c
->> @@ -269,7 +269,9 @@ static const struct dev_pm_ops palmas_pm_ops = {
->>  
->>  static struct of_device_id of_palmas_match_tbl[] = {
->>  	{ .compatible = "ti,palmas-usb", },
->> +	{ .compatible = "ti,palmas-usb-vid", },
->>  	{ .compatible = "ti,twl6035-usb", },
->> +	{ .compatible = "ti,twl6035-usb-vid", },
-> 
-> It might be worth a /* DEPRECATED */ note on the old strings.
-> 
-> Otherwise, the looks sensible to me.
+> Yeah, it's possible that your commit exposed a bug in the less used
+> nbd/zram devices.
 
-Ok. I'll change it in the next version.
+So please reproduce it on a brd/scsi/sata/virtio block device before
+going any further. Preferably with a bash script I can point at a
+single block device, not a binary initrd blob that I have to
+deconstruct to try to work out what your test is doing.
 
-Thanks
-Kishon
+because this:
+
+> [    7.707009] end_request: I/O error, dev fd0, sector 0
+> [   10.475988] block nbd4: Attempted send on closed socket
+> [   10.478272] end_request: I/O error, dev nbd4, sector 0
+> [   10.492950] block nbd15: Attempted send on closed socket
+> [   10.498283] end_request: I/O error, dev nbd15, sector 0
+
+says that nbd is going through I/O error land, and that's the most
+likely cause of problems being seen by higher level IO completion
+operations....
+
+> [   10.504236] BUG: unable to handle kernel NULL pointer dereference at 00000004
+> [   10.507558] IP: [<c1034419>] pool_mayday_timeout+0x5f/0x9c
+
+And that's deep inside the workqueue infrastructure, indicating that
+rescues are being used (allocation deadlock?) which is also less
+tested error handling code path....
+
+> [   10.507558] *pdpt = 000000000ce6a001 *pde = 0000000000000000
+> [   10.507558] Oops: 0000 [#1]
+> [   10.507558] CPU: 0 PID: 516 Comm: mount Not tainted 3.12.0-rc4 #2
+> [   10.507558] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+> [   10.507558] task: ccda7440 ti: cf40a000 task.ti: cce2e000
+> [   10.507558] EIP: 0060:[<c1034419>] EFLAGS: 00010046 CPU: 0
+> [   10.507558] EIP is at pool_mayday_timeout+0x5f/0x9c
+> [   10.507558] EAX: 00000000 EBX: c1931d50 ECX: 00000000 EDX: 00000000
+> [   10.507558] ESI: c10343ba EDI: cd5a3258 EBP: cf40bf94 ESP: cf40bf80
+> [   10.507558]  DS: 007b ES: 007b FS: 0000 GS: 0033 SS: 0068
+> [   10.507558] CR0: 8005003b CR2: 00000004 CR3: 0cdbd000 CR4: 000006b0
+> [   10.507558] Stack:
+> [   10.507558]  c1931d60 cf40bf90 00000100 c10343ba cf40bfc0 cf40bfa4 c102cd96 c1a52700
+> [   10.507558]  cf40bfc0 cf40bfd4 c102cf7e c1931d50 c1a53110 c1a52f10 cf40bfc0 c10343ba
+> [   10.507558]  cf40bfc0 cf40bfc0 00000001 c1a52588 00000100 cf40bff8 c1028f61 00000001
+> [   10.507558] Call Trace:
+> [   10.507558]  [<c10343ba>] ? need_to_create_worker+0x32/0x32
+> [   10.507558]  [<c102cd96>] call_timer_fn.isra.39+0x16/0x60
+> [   10.507558]  [<c102cf7e>] run_timer_softirq+0x144/0x15e
+> [   10.507558]  [<c10343ba>] ? need_to_create_worker+0x32/0x32
+> [   10.507558]  [<c1028f61>] __do_softirq+0x87/0x12b
+> [   10.507558]  [<c1028eda>] ? local_bh_enable_ip+0xa/0xa
+> [   10.507558]  <IRQ>
+> [   10.507558]  [<c10290c4>] ? irq_exit+0x3a/0x48
+> [   10.507558]  [<c1018818>] ? smp_apic_timer_interrupt+0x23/0x2c
+> [   10.507558]  [<c164f38d>] ? apic_timer_interrupt+0x2d/0x34
+> [   10.507558]  [<c126f5e2>] ? arch_local_irq_restore+0x5/0xb
+> [   10.507558]  [<c126f694>] ? spin_unlock_irqrestore.isra.4+0x8/0x14
+> [   10.507558]  [<c126f705>] ? nbd_end_request+0x65/0x6d
+> [   10.507558]  [<c126f784>] ? do_nbd_request+0x77/0xc1
+> [   10.507558]  [<c11abe4f>] ? __blk_run_queue_uncond+0x1e/0x27
+> [   10.507558]  [<c11abe6b>] ? __blk_run_queue+0x13/0x15
+> [   10.507558]  [<c11abfe8>] ? queue_unplugged.isra.56+0x13/0x1f
+> [   10.507558]  [<c11ad70b>] ? blk_flush_plug_list+0x140/0x14f
+> [   10.507558]  [<c11ad95f>] ? blk_finish_plug+0xd/0x27
+> [   10.507558]  [<c11051b6>] ? _xfs_buf_ioapply+0x236/0x24e
+
+and it has happened deep inside the nbd IO path in the context of
+the xfs_buf allocation that has seen corruptions in previous dumps.
+
+So before I look any further at this, you need to rule out nbd as
+the cause of the problems because the XFS code paths on scsi, sata,
+brd and virtio block device don't cause any problems....
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
