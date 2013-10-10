@@ -1,86 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755257Ab3JJKQA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 06:16:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54440 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752774Ab3JJKP5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 06:15:57 -0400
-Date: Thu, 10 Oct 2013 12:17:05 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
-        Jon Mason <jon.mason@intel.com>,
-        Matt Porter <mporter@kernel.crashing.org>, linux-pci@vger.kernel.org,
-        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
-        linux390@de.ibm.com, linux-s390@vger.kernel.org, x86@kernel.org,
-        linux-ide@vger.kernel.org, iss_storagedev@hp.com,
-        linux-nvme@lists.infradead.org, linux-rdma@vger.kernel.org,
-        netdev@vger.kernel.org, e1000-devel@lists.sourceforge.net,
-        linux-driver@qlogic.com,
-        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
-        "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH RFC 00/77] Re-design MSI/MSI-X interrupts enablement
- pattern
-Message-ID: <20131010101704.GC11874@dhcp-26-207.brq.redhat.com>
-References: <cover.1380703262.git.agordeev@redhat.com>
- <5254D397.9030307@zytor.com>
- <1381292648.645.259.camel@pasglop>
+	id S1754806Ab3JJKUp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 06:20:45 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:55769 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752232Ab3JJKUn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 06:20:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1381292648.645.259.camel@pasglop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131009235828.GR4446@dastard>
+References: <1381090446-2897-1-git-send-email-linkinjeon@gmail.com>
+	<20131009235828.GR4446@dastard>
+Date: Thu, 10 Oct 2013 19:20:43 +0900
+Message-ID: <CAKYAXd8DZ1Obk6P+iX8fS7LPCUK7aD4gnDSvz4jCLan-76E4oQ@mail.gmail.com>
+Subject: Re: [PATCH RESEND 6/7] xfstest: Add test case to test multiple
+ collapse range call
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: viro@zeniv.linux.org.uk, mtk.manpages@gmail.com, tytso@mit.edu,
+        adilger.kernel@dilger.ca, bpm@sgi.com, elder@kernel.org,
+        hch@infradead.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        xfs@oss.sgi.com, a.sangwan@samsung.com,
+        Namjae Jeon <namjae.jeon@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 09, 2013 at 03:24:08PM +1100, Benjamin Herrenschmidt wrote:
-> On Tue, 2013-10-08 at 20:55 -0700, H. Peter Anvin wrote:
-> > Why not add a minimum number to pci_enable_msix(), i.e.:
-> > 
-> > pci_enable_msix(pdev, msix_entries, nvec, minvec)
-> > 
-> > ... which means "nvec" is the number of interrupts *requested*, and
-> > "minvec" is the minimum acceptable number (otherwise fail).
-> 
-> Which is exactly what Ben (the other Ben :-) suggested and that I
-> supports...
+>> +. ./common/rc
+>> +. ./common/filter
+>> +
+>> +# real QA test starts here
+>> +_supported_fs xfs ext4
+>> +_supported_os Linux
+>> +
+>> +_require_scratch
+>> +_require_xfs_io_fiemap
+>> +_require_xfs_io_falloc_collapse
+>> +_do_die_on_error=y
+>> +test=$SCRATCH_MNT/test
+>
+> Not used.
+Okay.
 
-Ok, this suggestion sounded in one or another form by several people.
-What about name it pcim_enable_msix_range() and wrap in couple more
-helpers to complete an API:
+>
+>> +testfile=$SCRATCH_MNT/317.$$
+>> +BSIZE=4096
+>> +BLOCKS=10240
+>> +
+>> +# Filters fiemap output
+>> +_filter_fiemap()
+>> +{
+>> +     awk --posix '
+>> +             $3 ~ /hole/ {
+>> +                     print $1, $2, $3;
+>> +                     next;
+>> +             }
+>> +             $5 ~ /0x[[:xdigit:]]+/ {
+>> +                     print $1, $2, "extent";
+>> +             }'
+>> +}
+>
+> There's already a function in common/punch of this name, and it does
+> pretty much the same thing. Why not use that?
+Ah, Okay, I will check.
 
-int pcim_enable_msix_range(pdev, msix_entries, nvec, minvec);
-	<0 - error code
-	>0 - number of MSIs allocated, where minvec >= result <= nvec
+>
+>> +
+>> +case $FSTYP in
+>> +     ext4)
+>> +             export MKFS_OPTIONS="-F -b $BSIZE"
+>> +             ;;
+>> +     xfs)
+>> +             export MKFS_OPTIONS="-f -b size=$BSIZE"
+>> +             ;;
+>> +esac
+>
+> _scratch_mkfs takes options on the command line - there is no need
+> to do this.
+Okay.
 
-int pcim_enable_msix(pdev, msix_entries, nvec);
-	<0 - error code
-	>0 - number of MSIs allocated, where 1 >= result <= nvec 
+>
+> In fact, this test needs to run on all block sizes that filesystems
+> are capable of using, not just 4k and different architectures
+> exercise different code paths and so we must be able to test the
+> case where block size is smaller than page size on x86-64 so when
+> the code is run on an ia64 or ppc64 box with a 64k page size we know
+> that it's not completely broken...
+Okay, I will update to test block size is smaller than page size.
 
-int pcim_enable_msix_exact(pdev, msix_entries, nvec);
-	<0 - error code
-	>0 - number of MSIs allocated, where result == nvec
+>
+> Anyway, if you really need to make a 4k block size filesystem, then
+> _scratch_mkfs_sized() is the generic way of doing this.
+>
+>> +# make filesystem on scratch with 4KB blocksize
+>> +_do 'make filesystem on $SCRATCH_DEV' '_scratch_mkfs'
+>> +_do 'mount filesytem' '_scratch_mount'
+>
+> I really dislike this "_do" wrapper. The text does not add anything
+> to the test, and it makes it hard to see the command being run and
+> harder to modify it when necessary. It is used only by a couple of
+> old tests, and we'd do better to remove it than to propagate it
+> further.  This:
+>
+> _scratch_mkfs >> $seqres.full 2>&1 || _fail "scratch_mkfs failed."
+> _scratch_mount >> $seqres.full 2>&1 || _fail "scratch_mount failed."
+>
+> does everything that the _do wrapper does.
+Okay.
 
-The latter's return value seems odd, but I can not help to make
-it consistent with the first two.
+>
+>> +
+>> +# Write file
+>> +length=$(($BLOCKS*$BSIZE))
+>> +$XFS_IO_PROG -f -c "pwrite 0 $length" -c fsync $testfile > /dev/null
+>> +
+>> +# Collapse alternate blocks
+>> +for (( i = 1; i <= 7; i++ )); do
+>> +     for(( j=0 ; j < $(($BLOCKS/(2**$i))) ; j++ )); do
+>> +             offset=$(($j*$BSIZE))
+>> +             $XFS_IO_PROG -c "fcollapse $offset $BSIZE" $testfile > /dev/null
+>> +     done
+>> +done
+>> +
+>> +# Check if 80 extents are present
+>> +$XFS_IO_PROG -c "fiemap -v" $testfile | _filter_fiemap
+>
+> If all you care about is that there are 80 extents, then why not
+> just something like:
+>
+> $XFS_IO_PROG -c "fiemap -v" $testfile |grep "^ *[0-9]*:" |wc -l
+Okay, I will check.
 
+>
+>> +
+>> +_do 'unmount $SCRATCH_DEV' 'umount $SCRATCH_DEV'
+>> +_do 'repair filesystem' '_check_scratch_fs'
+>
+> _check_scratch_fs is all you need to call here.
+Yes, right. I will update.
 
-(Sorry if you see this message twice - my MUA seems struggle with one of CC).
+>
+>> index 3a69294..80ff7ec 100644
+>> --- a/tests/shared/group
+>> +++ b/tests/shared/group
+>> @@ -12,3 +12,4 @@
+>>  298 auto trim
+>>  305 aio dangerous enospc rw stress
+>>  316 auto quick collapse
+>> +317 auto collapse
+>
+> Again, I think the prealloc group is better for this.
+Okay, I will add collpase range cases to prealloc group.
 
+Thanks for review.
+I will post patches included your all review points soon.
+>
 > Cheers,
-> Ben.
-> 
-> 
-
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+>
+> Dave.
+> --
+> Dave Chinner
+> david@fromorbit.com
