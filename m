@@ -1,61 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757080Ab3JJSPg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 14:15:36 -0400
-Received: from mga09.intel.com ([134.134.136.24]:16274 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755808Ab3JJSGI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755851Ab3JJSGI (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 10 Oct 2013 14:06:08 -0400
+Received: from mga01.intel.com ([192.55.52.88]:26345 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752602Ab3JJSGF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 14:06:05 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,1073,1371106800"; 
-   d="scan'208";a="391219905"
+   d="scan'208";a="408987074"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
         Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         linux-arch@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: [PATCH 11/34] arm: handle pgtable_page_ctor() fail
-Date: Thu, 10 Oct 2013 21:05:36 +0300
-Message-Id: <1381428359-14843-12-git-send-email-kirill.shutemov@linux.intel.com>
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: [PATCH 00/34] dynamically allocate split ptl if it cannot be embedded to struct page
+Date: Thu, 10 Oct 2013 21:05:25 +0300
+Message-Id: <1381428359-14843-1-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.8.4.rc3
-In-Reply-To: <1381428359-14843-1-git-send-email-kirill.shutemov@linux.intel.com>
-References: <1381428359-14843-1-git-send-email-kirill.shutemov@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Cc: Russell King <linux@arm.linux.org.uk>
----
- arch/arm/include/asm/pgalloc.h | 12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+In split page table lock case, we embed spinlock_t into struct page. For
+obvious reason, we don't want to increase size of struct page if
+spinlock_t is too big, like with DEBUG_SPINLOCK or DEBUG_LOCK_ALLOC or on
+-rt kernel. So we disble split page table lock, if spinlock_t is too big.
 
-diff --git a/arch/arm/include/asm/pgalloc.h b/arch/arm/include/asm/pgalloc.h
-index 943504f53f..78a7793616 100644
---- a/arch/arm/include/asm/pgalloc.h
-+++ b/arch/arm/include/asm/pgalloc.h
-@@ -102,12 +102,14 @@ pte_alloc_one(struct mm_struct *mm, unsigned long addr)
- #else
- 	pte = alloc_pages(PGALLOC_GFP, 0);
- #endif
--	if (pte) {
--		if (!PageHighMem(pte))
--			clean_pte_table(page_address(pte));
--		pgtable_page_ctor(pte);
-+	if (!pte)
-+		return NULL;
-+	if (!PageHighMem(pte))
-+		clean_pte_table(page_address(pte));
-+	if (!pgtable_page_ctor(pte)) {
-+		__free_page(pte);
-+		return NULL;
- 	}
--
- 	return pte;
- }
- 
+This patchset allows to allocate the lock dynamically if spinlock_t is
+big. In this page->ptl is used to store pointer to spinlock instead of
+spinlock itself. It costs additional cache line for indirect access, but
+fix page fault scalability for multi-threaded applications.
+
+LOCK_STAT depends on DEBUG_SPINLOCK, so on current kernel enabling
+LOCK_STAT to analyse scalability issues breaks scalability. ;)
+
+The patchset mostly fixes this. Results for ./thp_memscale -c 80 -b 512M
+on 4-socket machine:
+
+baseline, no CONFIG_LOCK_STAT:	9.115460703 seconds time elapsed
+baseline, CONFIG_LOCK_STAT=y:	53.890567123 seconds time elapsed
+patched, no CONFIG_LOCK_STAT:	8.852250368 seconds time elapsed
+patched, CONFIG_LOCK_STAT=y:	11.069770759 seconds time elapsed
+
+Patch count is scary, but most of them trivial. Overview:
+
+ Patches 1-4	Few bug fixes. No dependencies to other patches.
+		Probably should applied as soon as possible.
+
+ Patch 5	Changes signature of pgtable_page_ctor(). We will use it
+		for dynamic lock allocation, so it can fail.
+
+ Patches 6-8	Add missing constructor/destructor calls on few archs.
+		It's fixes NR_PAGETABLE accounting and prepare to use
+		split ptl.
+
+ Patches 9-33	Add pgtable_page_ctor() fail handling to all archs.
+
+ Patches 34	Finally adds support of dynamically-allocated page->pte.
+		Also contains documentation for split page table lock.
+
+Any comments?
+
+Kirill A. Shutemov (34):
+  x86: add missed pgtable_pmd_page_ctor/dtor calls for preallocated pmds
+  cris: fix potential NULL-pointer dereference
+  m32r: fix potential NULL-pointer dereference
+  xtensa: fix potential NULL-pointer dereference
+  mm: allow pgtable_page_ctor() to fail
+  microblaze: add missing pgtable_page_ctor/dtor calls
+  mn10300: add missing pgtable_page_ctor/dtor calls
+  openrisc: add missing pgtable_page_ctor/dtor calls
+  alpha: handle pgtable_page_ctor() fail
+  arc: handle pgtable_page_ctor() fail
+  arm: handle pgtable_page_ctor() fail
+  arm64: handle pgtable_page_ctor() fail
+  avr32: handle pgtable_page_ctor() fail
+  cris: handle pgtable_page_ctor() fail
+  frv: handle pgtable_page_ctor() fail
+  hexagon: handle pgtable_page_ctor() fail
+  ia64: handle pgtable_page_ctor() fail
+  m32r: handle pgtable_page_ctor() fail
+  m68k: handle pgtable_page_ctor() fail
+  metag: handle pgtable_page_ctor() fail
+  mips: handle pgtable_page_ctor() fail
+  parisc: handle pgtable_page_ctor() fail
+  powerpc: handle pgtable_page_ctor() fail
+  s390: handle pgtable_page_ctor() fail
+  score: handle pgtable_page_ctor() fail
+  sh: handle pgtable_page_ctor() fail
+  sparc: handle pgtable_page_ctor() fail
+  tile: handle pgtable_page_ctor() fail
+  um: handle pgtable_page_ctor() fail
+  unicore32: handle pgtable_page_ctor() fail
+  x86: handle pgtable_page_ctor() fail
+  xtensa: handle pgtable_page_ctor() fail
+  iommu/arm-smmu: handle pgtable_page_ctor() fail
+  mm: dynamically allocate page->ptl if it cannot be embedded to struct
+    page
+
+ Documentation/vm/split_page_table_lock   | 90 ++++++++++++++++++++++++++++++++
+ arch/alpha/include/asm/pgalloc.h         |  5 +-
+ arch/arc/include/asm/pgalloc.h           | 11 ++--
+ arch/arm/include/asm/pgalloc.h           | 12 +++--
+ arch/arm64/include/asm/pgalloc.h         |  9 ++--
+ arch/avr32/include/asm/pgalloc.h         |  5 +-
+ arch/cris/include/asm/pgalloc.h          |  7 ++-
+ arch/frv/mm/pgalloc.c                    | 12 +++--
+ arch/hexagon/include/asm/pgalloc.h       | 10 ++--
+ arch/ia64/include/asm/pgalloc.h          |  5 +-
+ arch/m32r/include/asm/pgalloc.h          |  7 ++-
+ arch/m68k/include/asm/motorola_pgalloc.h |  5 +-
+ arch/m68k/include/asm/sun3_pgalloc.h     |  5 +-
+ arch/metag/include/asm/pgalloc.h         |  8 ++-
+ arch/microblaze/include/asm/pgalloc.h    | 12 +++--
+ arch/mips/include/asm/pgalloc.h          |  9 ++--
+ arch/mn10300/include/asm/pgalloc.h       |  1 +
+ arch/mn10300/mm/pgtable.c                |  9 +++-
+ arch/openrisc/include/asm/pgalloc.h      | 10 +++-
+ arch/parisc/include/asm/pgalloc.h        |  8 ++-
+ arch/powerpc/include/asm/pgalloc-64.h    |  5 +-
+ arch/powerpc/mm/pgtable_32.c             |  5 +-
+ arch/powerpc/mm/pgtable_64.c             |  7 +--
+ arch/s390/mm/pgtable.c                   | 11 +++-
+ arch/score/include/asm/pgalloc.h         |  9 ++--
+ arch/sh/include/asm/pgalloc.h            |  5 +-
+ arch/sparc/mm/init_64.c                  | 11 ++--
+ arch/sparc/mm/srmmu.c                    |  5 +-
+ arch/tile/mm/pgtable.c                   |  6 ++-
+ arch/um/kernel/mem.c                     |  8 ++-
+ arch/unicore32/include/asm/pgalloc.h     | 14 ++---
+ arch/x86/mm/pgtable.c                    | 19 +++++--
+ arch/x86/xen/mmu.c                       |  2 +-
+ arch/xtensa/include/asm/pgalloc.h        | 11 +++-
+ drivers/iommu/arm-smmu.c                 |  5 +-
+ include/linux/mm.h                       | 73 +++++++++++++++++++-------
+ include/linux/mm_types.h                 |  5 +-
+ mm/Kconfig                               |  2 -
+ mm/memory.c                              | 19 +++++++
+ 39 files changed, 365 insertions(+), 97 deletions(-)
+ create mode 100644 Documentation/vm/split_page_table_lock
+
 -- 
 1.8.4.rc3
 
