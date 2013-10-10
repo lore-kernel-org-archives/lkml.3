@@ -1,65 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756322Ab3JJVhS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 17:37:18 -0400
-Received: from mail-vb0-f51.google.com ([209.85.212.51]:38260 "EHLO
-	mail-vb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752293Ab3JJVhQ (ORCPT
+	id S1756818Ab3JJVlj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 17:41:39 -0400
+Received: from libra.uberspace.de ([95.143.172.171]:59993 "HELO
+	libra.uberspace.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752293Ab3JJVlh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 17:37:16 -0400
-MIME-Version: 1.0
-In-Reply-To: <81272921.7ZJW2CaxNE@vostro.rjw.lan>
-References: <20131010165905.7815defa@gandalf.local.home>
-	<CA+55aFxTwBoeQOimg-ut+BipWx2veNOPT0yGvFBFn7nbX5yCkg@mail.gmail.com>
-	<81272921.7ZJW2CaxNE@vostro.rjw.lan>
-Date: Thu, 10 Oct 2013 14:37:15 -0700
-X-Google-Sender-Auth: bHO1GH73cryX-vn0yvo-kn4RCAQ
-Message-ID: <CA+55aFwA8WZ+ARtNFFY+z4d8kS5AUBLg32iu7Jkk3rsz_i1OZw@mail.gmail.com>
-Subject: Re: [BUG] WARN_ON(!context) in drivers/pci/hotplug/acpiphp_glue.c
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 10 Oct 2013 17:41:37 -0400
+From: Matthias Beyer <mail@beyermatthias.de>
+To: gregkh@linuxfoundation.org
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Matthias Beyer <mail@beyermatthias.de>
+Subject: [PATCH 0/6] drivers: usb: core: Adapt source to styleguide
+Date: Thu, 10 Oct 2013 23:41:26 +0200
+Message-Id: <1381441292-6145-1-git-send-email-mail@beyermatthias.de>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 10, 2013 at 2:35 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
->
-> Well, I must have overlooked the original report.  Is it available anywhere
-> I can find it?
+Hi,
 
-I think Steven has some buggered email system, he has other emails
-being eaten by lkml too, and apparently other mail gateways (because
-you were direct-cc'd on the original).
+I patches several files in drivers/usb/core/ to adapt them to the kernel
+styleguide.
 
-His email sender doesn't quote names with "," in them, and has headers
-like this:
+Most of these patches are whitespace/indention fixes.
 
-  From: Steven Rostedt <rostedt@goodmis.org>
-  To: LKML <linux-kernel@vger.kernel.org>
-  Cc: Linus Torvalds <torvalds@linux-foundation.org>, Rafael J. Wysocki
-   <rafael.j.wysocki@intel.com>, Mika Westerberg
-   <mika.westerberg@linux.intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
-   Andrew Morton <akpm@linux-foundation.org>
+As these patches are only style-patches, I just compiled the kernel, no compile
+errors or warnings. So I think everything seems to be okay!
 
-which is apparently against SMTP rules. The magic line is:
+Note: I did not fix all ERROR messages from the scripts/checkpatch.pl script, as
+I don't know what to do with "do not use assignments in if-condition" messages.
 
-  X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Matthias Beyer (6):
+  drivers: usb: core: {file,hub,sysfs,usb}.c: Whitespace fixes
+  drivers: usb: core: file.c: moved asterisk to variable name
+  drivers: usb: core: hub.c: Comments shouldnt be C99 // comment style
+  drivers: usb: core: devio.c: Coding style fixes
+  drivers: usb: core: devio.c: Braces around switch
+  drivers: usb: core: devio.c: Else should be on closing braces
 
-The tag-line for that mailer is quite appropriate: "The email reader
-that bites". That's what they put in the title on their web-page.
+ drivers/usb/core/devio.c |  97 ++++++++++++++++++++-------------------
+ drivers/usb/core/file.c  |   8 ++--
+ drivers/usb/core/hub.c   | 115 +++++++++++++++++++++++------------------------
+ drivers/usb/core/sysfs.c |   5 ++-
+ drivers/usb/core/usb.c   |   2 +-
+ 5 files changed, 116 insertions(+), 111 deletions(-)
 
-Because it sure bites. Except the claws people seemed to think that
-was supposed to be a good thing. They clearly don't know the slang
-meaning of "that bites".
+-- 
+1.8.4
 
-Or maybe they do, and they are just unusually self-aware.
-
-Steven, I'd suggest just jettisoning that mailer.
-
-                   Linus
