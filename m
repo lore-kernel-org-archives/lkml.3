@@ -1,28 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758109Ab3JJQIf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 12:08:35 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52663 "EHLO
+	id S1757915Ab3JJQId (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 12:08:33 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52682 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756242Ab3JJPo7 (ORCPT
+	with ESMTP id S1756268Ab3JJPpH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 11:44:59 -0400
+	Thu, 10 Oct 2013 11:45:07 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
-	<ville.syrjala@linux.intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 050/104] drm/i915: Don't enable the cursor on a disable pipe
-Date: Thu, 10 Oct 2013 08:41:38 -0700
-Message-Id: <1381419752-29733-51-git-send-email-kamal@canonical.com>
+Cc: Miklos Szeredi <mszeredi@suse.cz>, Steve French <sfrench@samba.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 046/104] cifs: fix filp leak in cifs_atomic_open()
+Date: Thu, 10 Oct 2013 08:41:34 -0700
+Message-Id: <1381419752-29733-47-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381419752-29733-1-git-send-email-kamal@canonical.com>
 References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,50 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= <ville.syrjala@linux.intel.com>
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-commit f2f5f771c5fc0fa252cde3d0d0452dcc785cc17a upstream.
+commit dfb1d61b0e9f9e2c542e9adc8d970689f4114ff6 upstream.
 
-On HSW enabling a plane on a disabled pipe may hang the entire system.
-And there's no good reason for doing it ever, so just don't.
+If an error occurs after having called finish_open() then fput() needs to
+be called on the already opened file.
 
-v2: Move the crtc active checks to intel_crtc_cursor_{set,move} to
-    avoid confusing people during modeset
-
-Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
-Tested-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
-Reviewed-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-[ kamal: backport to 3.8 (context) ]
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Cc: Steve French <sfrench@samba.org>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/i915/intel_display.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ fs/cifs/dir.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index 3e4e629..a38cbdc 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -6519,7 +6519,8 @@ static int intel_crtc_cursor_set(struct drm_crtc *crtc,
- 	intel_crtc->cursor_width = width;
- 	intel_crtc->cursor_height = height;
+diff --git a/fs/cifs/dir.c b/fs/cifs/dir.c
+index 8719bbe..adaee05 100644
+--- a/fs/cifs/dir.c
++++ b/fs/cifs/dir.c
+@@ -488,6 +488,7 @@ cifs_atomic_open(struct inode *inode, struct dentry *direntry,
+ 		if (server->ops->close)
+ 			server->ops->close(xid, tcon, &fid);
+ 		cifs_del_pending_open(&open);
++		fput(file);
+ 		rc = -ENOMEM;
+ 	}
  
--	intel_crtc_update_cursor(crtc, true);
-+	if (intel_crtc->active)
-+		intel_crtc_update_cursor(crtc, true);
- 
- 	return 0;
- fail_unpin:
-@@ -6538,7 +6539,8 @@ static int intel_crtc_cursor_move(struct drm_crtc *crtc, int x, int y)
- 	intel_crtc->cursor_x = x;
- 	intel_crtc->cursor_y = y;
- 
--	intel_crtc_update_cursor(crtc, true);
-+	if (intel_crtc->active)
-+		intel_crtc_update_cursor(crtc, true);
- 
- 	return 0;
- }
 -- 
 1.8.1.2
 
