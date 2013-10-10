@@ -1,73 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755842Ab3JJRB7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 13:01:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7257 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754091Ab3JJRB6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 13:01:58 -0400
-Date: Thu, 10 Oct 2013 18:54:12 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/6] Optimize the cpu hotplug locking -v2
-Message-ID: <20131010165412.GA16553@redhat.com>
-References: <20131008102505.404025673@infradead.org> <20131009225006.7101379c.akpm@linux-foundation.org> <20131010121908.GB28601@twins.programming.kicks-ass.net> <20131010145738.GA5167@gmail.com> <20131010152612.GA13375@redhat.com> <20131010090044.7f12ddaf.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131010090044.7f12ddaf.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1756128Ab3JJRKf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 13:10:35 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:63684 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755723Ab3JJRKb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 13:10:31 -0400
+From: Soren Brinkmann <soren.brinkmann@xilinx.com>
+To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@linaro.org>,
+        Michal Simek <michal.simek@xilinx.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-doc@vger.kernel.org, devicetree@vger.kernel.org,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>
+Subject: [PATCH v2 2/2] arm: dt: zynq: Add fclk-enable property to clkc node
+Date: Thu, 10 Oct 2013 10:10:18 -0700
+Message-Id: <1381425018-5653-2-git-send-email-soren.brinkmann@xilinx.com>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1381425018-5653-1-git-send-email-soren.brinkmann@xilinx.com>
+References: <1381425018-5653-1-git-send-email-soren.brinkmann@xilinx.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/10, Andrew Morton wrote:
->
-> On Thu, 10 Oct 2013 17:26:12 +0200 Oleg Nesterov <oleg@redhat.com> wrote:
->
-> > On 10/10, Ingo Molnar wrote:
-> > >
-> > > So ... why not make it _really_ cheap, i.e. the read lock costing nothing,
-> > > and tie CPU hotplug to freezing all tasks in the system?
-> > >
-> > > Actual CPU hot unplugging and repluggin is _ridiculously_ rare in a
-> > > system, I don't understand how we tolerate _any_ overhead from this utter
-> > > slowpath.
-> >
-> > Well, iirc Srivatsa (cc'ed) pointed out that some systems do cpu_down/up
-> > quite often to save the power.
->
-> cpu hotremove already uses stop_machine,
+Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+---
+This is kind of optional since it does not have any effect due to the changed
+default in 1/2.
 
-And Srivatsa wants to remove it from cpu_down().
+v2:
+ - no change
 
-> so such an approach shouldn't
-> actually worsen things (a lot) for them?
 
-this depends on what this "freezing all tasks" actually means.
-I understood it as try_to_freeze_tasks/etc, looks too heavy...
+ arch/arm/boot/dts/zynq-7000.dtsi | 1 +
+ 1 file changed, 1 insertion(+)
 
-But my only point was, I am not sure we can assume that cpu_down/up
-is extremly rare and its cost does not matter.
-
-> use stop_machine() on the add/remove
-> (ie, "writer") side and nothing at all on the "reader" side.  Is there
-> anything which fundamentally prevents cpu hotplug from doing the same?
-
-Well, then we actually need to park all tasks in system, I guess.
-IOW, freezer.
-
-Oleg.
+diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq-7000.dtsi
+index e32b92b949d2..b48d0403537b 100644
+--- a/arch/arm/boot/dts/zynq-7000.dtsi
++++ b/arch/arm/boot/dts/zynq-7000.dtsi
+@@ -77,6 +77,7 @@
+ 					#clock-cells = <1>;
+ 					compatible = "xlnx,ps7-clkc";
+ 					ps-clk-frequency = <33333333>;
++					fclk-enable = <0>;
+ 					clock-output-names = "armpll", "ddrpll", "iopll", "cpu_6or4x",
+ 							"cpu_3or2x", "cpu_2x", "cpu_1x", "ddr2x", "ddr3x",
+ 							"dci", "lqspi", "smc", "pcap", "gem0", "gem1",
+-- 
+1.8.4
 
