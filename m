@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757287Ab3JJPsp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 11:48:45 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52861 "EHLO
+	id S1757310Ab3JJPss (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 11:48:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52872 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754871Ab3JJPsl (ORCPT
+	with ESMTP id S1754871Ab3JJPsp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 11:48:41 -0400
+	Thu, 10 Oct 2013 11:48:45 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Jiri Bohac <jbohac@suse.cz>, "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 031/104] cpqarray: fix info leak in ida_locked_ioctl()
-Date: Thu, 10 Oct 2013 08:41:19 -0700
-Message-Id: <1381419752-29733-32-git-send-email-kamal@canonical.com>
+Subject: [PATCH 024/104] ICMPv6: treat dest unreachable codes 5 and 6 as EACCES, not EPROTO
+Date: Thu, 10 Oct 2013 08:41:12 -0700
+Message-Id: <1381419752-29733-25-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381419752-29733-1-git-send-email-kamal@canonical.com>
 References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
@@ -29,36 +27,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Jiri Bohac <jbohac@suse.cz>
 
-commit 627aad1c01da6f881e7f98d71fd928ca0c316b1a upstream.
+[ Upstream commit 61e76b178dbe7145e8d6afa84bb4ccea71918994 ]
 
-The pciinfo struct has a two byte hole after ->dev_fn so stack
-information could be leaked to the user.
+RFC 4443 has defined two additional codes for ICMPv6 type 1 (destination
+unreachable) messages:
+        5 - Source address failed ingress/egress policy
+	6 - Reject route to destination
 
-This was assigned CVE-2013-2147.
+Now they are treated as protocol error and icmpv6_err_convert() converts them
+to EPROTO.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Mike Miller <mike.miller@hp.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+RFC 4443 says:
+	"Codes 5 and 6 are more informative subsets of code 1."
+
+Treat codes 5 and 6 as code 1 (EACCES)
+
+Btw, connect() returning -EPROTO confuses firefox, so that fallback to
+other/IPv4 addresses does not work:
+https://bugzilla.mozilla.org/show_bug.cgi?id=910773
+
+Signed-off-by: Jiri Bohac <jbohac@suse.cz>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/block/cpqarray.c | 1 +
- 1 file changed, 1 insertion(+)
+ include/uapi/linux/icmpv6.h |  2 ++
+ net/ipv6/icmp.c             | 10 +++++++++-
+ 2 files changed, 11 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/block/cpqarray.c b/drivers/block/cpqarray.c
-index 3f08713..3997d04 100644
---- a/drivers/block/cpqarray.c
-+++ b/drivers/block/cpqarray.c
-@@ -1195,6 +1195,7 @@ out_passthru:
- 		ida_pci_info_struct pciinfo;
+diff --git a/include/uapi/linux/icmpv6.h b/include/uapi/linux/icmpv6.h
+index e0133c7..590beda 100644
+--- a/include/uapi/linux/icmpv6.h
++++ b/include/uapi/linux/icmpv6.h
+@@ -115,6 +115,8 @@ struct icmp6hdr {
+ #define ICMPV6_NOT_NEIGHBOUR		2
+ #define ICMPV6_ADDR_UNREACH		3
+ #define ICMPV6_PORT_UNREACH		4
++#define ICMPV6_POLICY_FAIL		5
++#define ICMPV6_REJECT_ROUTE		6
  
- 		if (!arg) return -EINVAL;
-+		memset(&pciinfo, 0, sizeof(pciinfo));
- 		pciinfo.bus = host->pci_dev->bus->number;
- 		pciinfo.dev_fn = host->pci_dev->devfn;
- 		pciinfo.board_id = host->board_id;
+ /*
+  *	Codes for Time Exceeded
+diff --git a/net/ipv6/icmp.c b/net/ipv6/icmp.c
+index fff5bdd..7463f05 100644
+--- a/net/ipv6/icmp.c
++++ b/net/ipv6/icmp.c
+@@ -924,6 +924,14 @@ static const struct icmp6_err {
+ 		.err	= ECONNREFUSED,
+ 		.fatal	= 1,
+ 	},
++	{	/* POLICY_FAIL */
++		.err	= EACCES,
++		.fatal	= 1,
++	},
++	{	/* REJECT_ROUTE	*/
++		.err	= EACCES,
++		.fatal	= 1,
++	},
+ };
+ 
+ int icmpv6_err_convert(u8 type, u8 code, int *err)
+@@ -935,7 +943,7 @@ int icmpv6_err_convert(u8 type, u8 code, int *err)
+ 	switch (type) {
+ 	case ICMPV6_DEST_UNREACH:
+ 		fatal = 1;
+-		if (code <= ICMPV6_PORT_UNREACH) {
++		if (code < ARRAY_SIZE(tab_unreach)) {
+ 			*err  = tab_unreach[code].err;
+ 			fatal = tab_unreach[code].fatal;
+ 		}
 -- 
 1.8.1.2
 
