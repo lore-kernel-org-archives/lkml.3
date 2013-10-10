@@ -1,70 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756373Ab3JJQaF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 12:30:05 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44646 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755688Ab3JJQaB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 12:30:01 -0400
-Message-ID: <5256D5AB.4050105@zytor.com>
-Date: Thu, 10 Oct 2013 09:28:27 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1756482Ab3JJQbz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 12:31:55 -0400
+Received: from exprod5og117.obsmtp.com ([64.18.0.149]:55776 "EHLO
+	exprod5og117.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755899Ab3JJQbx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 12:31:53 -0400
+X-Greylist: delayed 303 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 Oct 2013 12:31:53 EDT
+Date: Thu, 10 Oct 2013 18:25:35 +0200
+From: Karl Kiniger <karl.kiniger@med.ge.com>
+To: linux-kernel@vger.kernel.org
+Subject: per block device cache use adjustable?
+Message-ID: <20131010162535.GA12986@kipc2.localdomain>
 MIME-Version: 1.0
-To: Alexander Gordeev <agordeev@redhat.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
-        Jon Mason <jon.mason@intel.com>,
-        Matt Porter <mporter@kernel.crashing.org>, linux-pci@vger.kernel.org,
-        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
-        linux390@de.ibm.com, linux-s390@vger.kernel.org, x86@kernel.org,
-        linux-ide@vger.kernel.org, iss_storagedev@hp.com,
-        linux-nvme@lists.infradead.org, linux-rdma@vger.kernel.org,
-        netdev@vger.kernel.org, e1000-devel@lists.sourceforge.net,
-        linux-driver@qlogic.com,
-        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
-        "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH RFC 00/77] Re-design MSI/MSI-X interrupts enablement pattern
-References: <cover.1380703262.git.agordeev@redhat.com> <5254D397.9030307@zytor.com> <1381292648.645.259.camel@pasglop> <20131010101704.GC11874@dhcp-26-207.brq.redhat.com>
-In-Reply-To: <20131010101704.GC11874@dhcp-26-207.brq.redhat.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-GEHealthcare-MailScanner: Found to be clean
+X-GEHealthcare-MailScanner-From: karl.kiniger@med.ge.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/10/2013 03:17 AM, Alexander Gordeev wrote:
-> On Wed, Oct 09, 2013 at 03:24:08PM +1100, Benjamin Herrenschmidt wrote:
-> 
-> Ok, this suggestion sounded in one or another form by several people.
-> What about name it pcim_enable_msix_range() and wrap in couple more
-> helpers to complete an API:
-> 
-> int pcim_enable_msix_range(pdev, msix_entries, nvec, minvec);
-> 	<0 - error code
-> 	>0 - number of MSIs allocated, where minvec >= result <= nvec
-> 
-> int pcim_enable_msix(pdev, msix_entries, nvec);
-> 	<0 - error code
-> 	>0 - number of MSIs allocated, where 1 >= result <= nvec 
-> 
-> int pcim_enable_msix_exact(pdev, msix_entries, nvec);
-> 	<0 - error code
-> 	>0 - number of MSIs allocated, where result == nvec
-> 
-> The latter's return value seems odd, but I can not help to make
-> it consistent with the first two.
-> 
+Using a 4.7 GB 4x DVD+RW I did:
+(Fedora 19, x86_64, 4GB RAM)
 
-Is there a reason for the wrappers, as opposed to just specifying either
-1 or nvec as the minimum?
+mkudffs /dev/sr0
+mount /dev/sr0 /dvd0
+dd if=some-4gb-file of=/dvd0/bigfile.bin
 
-	-hpa
+After a few seconds ls -l /dvd0/bigfile.bin displayed 600 MB which
+means that more than 30 seconds are kept in RAM.
 
+Is it possible to limit the write cache to a sane value
+for this specific device? (perhaps a few seconds at 2..3 MB/sec
+write speed)
+
+Thanks in advance for anything helpful,
+
+Karl
+
+PS: dd oflag=direct helps of course but I would like to have
+a tuning knob to play with to get optimal performance in my
+situation.
 
