@@ -1,90 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756934Ab3JJAOl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 20:14:41 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:56815 "EHLO zene.cmpxchg.org"
+	id S1757099Ab3JJAQU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 20:16:20 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:54584 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755809Ab3JJAOj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 20:14:39 -0400
-Date: Wed, 9 Oct 2013 20:14:22 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: azurIt <azurit@pobox.sk>
-Cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 0/7] improve memcg oom killer robustness v2
-Message-ID: <20131010001422.GB856@cmpxchg.org>
-References: <20130917141013.GA30838@dhcp22.suse.cz>
- <20130918160304.6EDF2729@pobox.sk>
- <20130918180455.GD856@cmpxchg.org>
- <20130918181946.GE856@cmpxchg.org>
- <20130918195504.GF856@cmpxchg.org>
- <20130926185459.E5D2987F@pobox.sk>
- <20130926192743.GP856@cmpxchg.org>
- <20131007130149.5F5482D8@pobox.sk>
- <20131007192336.GU856@cmpxchg.org>
- <20131009204450.6AB97915@pobox.sk>
+	id S1754223Ab3JJAQT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 20:16:19 -0400
+Message-ID: <5255F1A1.5090201@ti.com>
+Date: Wed, 9 Oct 2013 20:15:29 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131009204450.6AB97915@pobox.sk>
+To: John Stultz <john.stultz@linaro.org>
+CC: Will Deacon <will.deacon@arm.com>, Stephen Boyd <sboyd@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "arm@kernel.org" <arm@kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: Re: [PATCH] sched_clock: fix postinit no sched_clock function check
+References: <1380732928-13897-1-git-send-email-santosh.shilimkar@ti.com> <20131002170917.GB30298@mudshark.cambridge.arm.com> <524C5484.5000601@ti.com> <524C565C.8010709@codeaurora.org> <524C5786.2090008@ti.com> <524C5B10.20006@codeaurora.org> <20131002174841.GH30298@mudshark.cambridge.arm.com> <524C60F4.7000802@ti.com> <5255EDD6.1050401@linaro.org>
+In-Reply-To: <5255EDD6.1050401@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi azur,
-
-On Wed, Oct 09, 2013 at 08:44:50PM +0200, azurIt wrote:
-> Joahnnes,
+On Wednesday 09 October 2013 07:59 PM, John Stultz wrote:
+> On 10/02/2013 11:07 AM, Santosh Shilimkar wrote:
+>> On Wednesday 02 October 2013 01:48 PM, Will Deacon wrote:
+>>> On Wed, Oct 02, 2013 at 06:42:40PM +0100, Stephen Boyd wrote:
+>>>> On 10/02/13 10:27, Santosh Shilimkar wrote:
+>>>>> Really... I have not created patch out of fun.
+>>>>> Its broken on my keystone machine at least where the sched_clock is
+>>>>> falling back on jiffy based sched_clock even in presence of arch_timer
+>>>>> sched_clock.
+>>>> How is that possible? sched_clock_func is only assigned by
+>>>> arch/arm/kernel/arch_timer.c when the architected timer is detected and
+>>>> sched_clock() in kernel/time/sched_clock.c calls that function pointer
+>>>> unconditionally. The only way I see this happening is if the architected
+>>>> timer rate is zero.
+>>>   ^^^^^^^^^^^^^^^^^^
+>>>
+>>> *cough* CNTFRQ *cough*
+>>>
+>> :) CNTFRQ as such is fine. I think the below print mis-lead me mostly. 
+>>
+>> sched_clock: ARM arch timer >56 bits at 6144kHz, resolution 162ns
+>> sched_clock: 32 bits at 100 Hz, resolution 10000000ns, wraps every 4294967286ms
+>>
+>> So yes, now the subject patch actually just avoids the jiffy sched_clock()
+>> registration and nothing else. Even without the patch arch_timer sched_clock
+>> will be in use.
 > 
-> i'm very sorry to say it but today something strange happened.. :) i was just right at the computer so i noticed it almost immediately but i don't have much info. Server stoped to respond from the net but i was already logged on ssh which was working quite fine (only a little slow). I was able to run commands on shell but i didn't do much because i was afraid that it will goes down for good soon. I noticed few things:
->  - htop was strange because all CPUs were doing nothing (totally nothing)
->  - there were enough of free memory
->  - server load was about 90 and was raising slowly
->  - i didn't see ANY process in 'run' state
->  - i also didn't see any process with strange behavior (taking much CPU, memory or so) so it wasn't obvious what to do to fix it
->  - i started to kill Apache processes, everytime i killed some, CPUs did some work, but it wasn't fixing the problem
->  - finally i did 'skill -kill apache2' in shell and everything started to work
->  - server monitoring wasn't sending any data so i have no graphs
->  - nothing interesting in logs
+> Just wanted to follow up here, as I've not been paying close attention.
+> Is this issue then resolved, or is something still needed to be queued
+> for 3.12/3.13?
 > 
-> I will send more info when i get some.
+There is no regression as I initially thought. Patch fixes the
+miss-leading sched_clock print and also prevents timer to handle 
+wrapping which is not needed.
 
-Somebody else reported a problem on the upstream patches as well.  Any
-chance you can confirm the stacks of the active but not running tasks?
+So no big deal and I don't mind if we don't apply it.
 
-It sounds like they are stuck on a waitqueue, the question is which
-one.  I forgot to disable OOM for __GFP_NOFAIL allocations, so they
-could succeed and leak an OOM context.  task structs are not
-reinitialized between alloc & free so a different task could later try
-to oom trylock a memcg that has been freed, fail, and wait
-indefinitely on the OOM waitqueue.  There might be a simpler
-explanation but I can't think of anything right now.
-
-But the OOM context is definitely being leaked, so please apply the
-following for your next reboot:
-
----
- mm/memcontrol.c | 3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 5aee2fa..83ad39b 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2341,6 +2341,9 @@ static int __mem_cgroup_try_charge(struct mm_struct *mm,
- 	 */
- 	if (!*ptr && !mm)
- 		goto bypass;
-+
-+	if (gfp_mask & __GFP_NOFAIL)
-+		oom = false;
- again:
- 	if (*ptr) { /* css should be a valid one */
- 		memcg = *ptr;
--- 
-1.8.4
+Regards,
+Santosh
 
