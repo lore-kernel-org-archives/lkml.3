@@ -1,96 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756081Ab3JJWsG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 18:48:06 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:36038 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755899Ab3JJWsE (ORCPT
+	id S1756144Ab3JJWtS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 18:49:18 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:17065 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754260Ab3JJWtR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 18:48:04 -0400
-Date: Thu, 10 Oct 2013 23:47:48 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>, lee.jones@linaro.org,
-        sameo@linux.intel.com, linus.walleij@linaro.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
-        rtc-linux@googlegroups.com, rob.herring@calxeda.com,
-        mark.rutland@arm.com, pawel.moll@arm.com, swarren@wwwdotorg.org,
-        rob@landley.net, ijc+devicetree@hellion.org.uk,
-        grant.likely@linaro.org, Florian Lobmaier <florian.lobmaier@ams.com>
-Message-ID: <20131010224748.GW21581@sirena.org.uk>
-References: <1381321761-8898-1-git-send-email-ldewangan@nvidia.com>
- <1381321761-8898-4-git-send-email-ldewangan@nvidia.com>
- <20131010152446.1715e64b70ddd0281a3971e9@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Vs6r5beQVWevPlSD"
-Content-Disposition: inline
-In-Reply-To: <20131010152446.1715e64b70ddd0281a3971e9@linux-foundation.org>
-X-Cookie: Penalty for private use.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH V5 3/3] drivers/rtc/rtc-as3722: add RTC driver
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Thu, 10 Oct 2013 18:49:17 -0400
+Message-ID: <1381445356.2367.52.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: Regression parsing GPT (EFI) partition tables
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, Karel Zak <kzak@redhat.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Sean Paul <seanpaul@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Bill Richardson <wfrichar@chromium.org>
+Date: Thu, 10 Oct 2013 15:49:16 -0700
+In-Reply-To: <CAD=FV=U4eBWQ6y0Pc3gHa+9JMAKMAghJL6eQ2VWNLTkwF+036Q@mail.gmail.com>
+References: <20131009232642.GA12776@jtriplet-mobl1>
+	 <1381365455.2297.14.camel@buesod1.americas.hpqcorp.net>
+	 <CAD=FV=UD2TDBVrQeC4862WQwKG32723mG0D4e1qrzVHF9+koFg@mail.gmail.com>
+	 <1381440403.2367.32.camel@buesod1.americas.hpqcorp.net>
+	 <CAD=FV=U4eBWQ6y0Pc3gHa+9JMAKMAghJL6eQ2VWNLTkwF+036Q@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2013-10-10 at 15:29 -0700, Doug Anderson wrote:
+> Hi,
+[...]
+> > Do you happen to know what tool was used to create the GPT partition(s)?
+> > I ask because it is up to the partitioning program to set sz correctly,
+> > and most if not all set it to either the disk size - 1 or 0xFFFFFFFF.
+> 
+> See Bill's email.  It was created using "cgpt" to create a binary
+> file, which was then "dd"ed onto removable media.
+> 
+> 
+> FWIW, I can "fix" my problems also by tweaking my image:
+> 
+> setword.py /.../chromiumos_test_image.bin 0x1ca 0xffffffff
+> 0x000001ca: 0x004b9fbf => 0xffffffff
+> 
+> Now things boot up nicely.  :)  Similarly I can get things to boot by running:
 
---Vs6r5beQVWevPlSD
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Right, now sz == 0xffffffff so you're "using" the whole disk, but you
+probably want 0xecdfff since the disk is smaller than that.
 
-On Thu, Oct 10, 2013 at 03:24:46PM -0700, Andrew Morton wrote:
-> On Wed, 9 Oct 2013 17:59:21 +0530 Laxman Dewangan <ldewangan@nvidia.com> =
-wrote:
+> 
+> cgpt boot -p /dev/mmcblk1
+> 
+> ...which appears to put the right size into this field.
+> 
+> 
+> >> ...so basically it looks like we're now considering something an error
+> >> that used to be considered a warning.
+> >
+> > It simply wasn't checked before.
+> >
+> > It's worthwhile finding out if this scenario also occurs without the
+> > recent GPT changes. If so, then we could go ahead and just use a warning
+> > and not consider it an error for the sake of booting. Otherwise there's
+> > something wrong with c2ebdc2 and replacing 'struct partition' with
+> > 'struct _gpt_mbr_record' caused some sort of structure offset problem
+> > and some fields are holding the wrong data.
+> >
+> > To check this, you can revert all patches, starting from c2ebdc2, then
+> > add the following (untested) to pmbr_part_valid():
+> >
+> > diff --git a/block/partitions/efi.c b/block/partitions/efi.c
+> > index c85fc89..7144d8a 100644
+> > --- a/block/partitions/efi.c
+> > +++ b/block/partitions/efi.c
+> > @@ -152,6 +152,8 @@ static u64 last_lba(struct block_device *bdev)
+> >  static inline int
+> >  pmbr_part_valid(struct partition *part)
+> >  {
+> > +       printk("part->nr_sects = %d\n", le32_to_cpu(part->nr_sects));
+> > +
+> >          if (part->sys_ind == EFI_PMBR_OSTYPE_EFI_GPT &&
+> >              le32_to_cpu(part->start_sect) == 1UL)
+> >                  return 1;
+> >
+> > Thanks,
+> > Davidlohr
+> 
+> I can run this test if you need, but it sounds like we're tracked it
+> down pretty well.
+> 
+> 
+> My dumb summary of this without digging and understanding everything is:
+> 
+> * It used to be "OK" if the sz was wrong.
 
-> > +config RTC_DRV_AS3722
-> > +	tristate "ams AS3722 RTC driver"
-> > +	depends on MFD_AS3722
+Yes, because it was never checked.
 
-> ... the rtc patch depends on an mfd patch, so everyone ends up sitting
-> around looking at everyone else, wondering who will merge it all.
+> 
+> * If you're "dd"ing an image from a smaller device to a bigger device,
+> the "sz" will likely be wrong.  It would be nice if this were a
+> warning not an error since this can be a useful thing to do.
+> 
+> * We could fix our tool to not specify "sz" (aka use "-1") when
+> creating our images and it would work.
 
-With the MFD ones providing you trust the interfaces with the core
-are going to be OK there's no problem to just merge them via individual
-trees - the dependency on the MFD will prevent bisection problems.
+You should use force_gpt and forget about MBR all together.
 
-> > +#ifdef CONFIG_PM
->=20
-> Most (but not all!) rtc drivers use CONFIG_PM_SLEEP.  People have madly
-> mucked with CONFIG_PM* and I don't know the difference and I don't know
-> what's going on and I don't know of a convenient place to go to find
-> out.  If you work it out, please be sure to tell me!  But as soon as I
-> figure it out I'm sure they'll go and madly muck with it again.
+> 
+> * This is not exactly the same as the GPT/alternate GPT error, since
+> it's a different header field.
+> 
+> 
+> Does that sound reasonable?
+> 
 
-The two effective options for this stuff are PM_SLEEP (for system
-suspend) and PM_RUNTIME (for runtime suspend which RTCs are unlikely to
-use I guess).  PM mostly just enables selection of the other two.
+Since it used to work before, I blame my change and it's a regression,
+I'll happily ack the "warn instead of not recognizing approach".
 
---Vs6r5beQVWevPlSD
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Thanks,
+Davidlohr
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJSVy6RAAoJELSic+t+oim9uQoQAI/jGxDlxhiuYUiEW0B1k1vQ
-fYBGYMv6XbuJAqC89fwCKA6uW45yHWTDBsn+AmW76My4d+O2lsYvp/oDrGAigYzf
-5neP8+jsNPbcX4JFDl55aMe7F4l3CfwXgIGSHDmL3ibe+ZXRv93cYTSORSBVGtgP
-ZdvJTJwjNft2hGs6Ibp2cLH8yDNXZXzEWsZcA5rYBmLvOOeBCst13O/EVPOeyMWN
-zwTTqvCkAuDnPh/DATFm/XVApxTR6TiMfLtw8G5Y8VzBVXpM9aTNM+1FA0BSOwly
-w7XUSzSTV1REPc2VY/y57lBx2pl6Xl70sUQE6qtsEhIVnhEKCbPxyWQome9a374O
-9rJ2cptzm3e3OxCMM8XCyd0hWFA1gqJGUKPFSZxo60L+gkLU7TrWNWaHiJpxyMPm
-RbttLH91SISGCBVf3QZ/f4skOt0yuNRzIeTryd/Y8xCWIYTR3aOOnKJog07Is+57
-GSQLlQSahRvsks/13VumbIQlHqo5zIs6Inrd5lVfMFlyNdyz8FDRZXtNS9SuM0MA
-/hafMJIcngykzin6nMgBQDsZ0Z/P/Gbr6SOcQWK+K+HhSQFCEHpmWPNrGo21OA/x
-5njidl90yJn7wRufXbDUCTjCEAXE2BBvAKkWKpU9vbG/7zshy8sUJG+G/Za0aO6h
-18LQtvvJP+FKDKdJEuiM
-=igyP
------END PGP SIGNATURE-----
-
---Vs6r5beQVWevPlSD--
