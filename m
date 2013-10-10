@@ -1,120 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753907Ab3JJJvj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 05:51:39 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:41686 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752019Ab3JJJvh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 05:51:37 -0400
-Message-ID: <1381398676.5293.7.camel@pizza.hi.pengutronix.de>
-Subject: Re: [PATCH] reset: Add non CONFIG_RESET_CONTROLLER routines
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-Cc: linux-kernel@vger.kernel.org, Pavel Machek <pavel@ucw.cz>,
-        Stephen Warren <swarren@nvidia.com>, Shawn Guo <shawn.guo@linaro.org>,
-        Marek Vasut <marex@denx.de>
-Date: Thu, 10 Oct 2013 11:51:16 +0200
-In-Reply-To: <1381396475-17848-1-git-send-email-iivanov@mm-sol.com>
-References: <1381396475-17848-1-git-send-email-iivanov@mm-sol.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:ca9c:dcff:febd:f1b5
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1754940Ab3JJJvr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 05:51:47 -0400
+Received: from [42.96.155.64] ([42.96.155.64]:4533 "HELO mail.wikinets.net"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with SMTP
+	id S1754233Ab3JJJvo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 05:51:44 -0400
+X-Greylist: delayed 3709 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 Oct 2013 05:51:44 EDT
+Message-ID: <02535e04-41557-39346797601968@wyqc000833>
+From: "Jeff Kitson" <kitson@elevateos.com>
+To: linux-kernel@vger.kernel.org
+Subject: Elevate Your Computer and Smart Phone with an External OS
+Date: Thu, 10 Oct 2013 16:17:51 +0800
+MIME-Version: 1.0
+Content-Type: text/plain
+Content-Transfer-Encoding: 8bit
+X-Priority: 3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ivan,
+Dear Colleague,
 
-Am Donnerstag, den 10.10.2013, 12:14 +0300 schrieb Ivan T. Ivanov:
-> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-> 
-> Make sure client drivers will still build on systems
-> without reset control support.
+You are invited to extend your computer and smart phone with a non-invasive External OS with which you can:
 
-the stubs should at least return errors, but then this turns a compile
-time error into a runtime error for devices that don't work without
-being properly reset.
+- Create and manage external resources as if they were on your computer or smart phone
+- Share your resources with friends and invite friends to share their resources with you
+- Connect your resources with others¡¯
 
-Please also refer to this thread:
-http://lists.infradead.org/pipermail/linux-arm-kernel/2013-June/174758.html
+We look forward to your joining us (http://www.ElevateOS.com). It¡¯s a new dimension, and a new experience!
 
-regards
-Philipp
+Sincerely,
+ElevateOS - A New Dimension
 
-> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-> Cc: Pavel Machek <pavel@ucw.cz>
-> Cc: Stephen Warren <swarren@nvidia.com>
-> Cc: Shawn Guo <shawn.guo@linaro.org>
-> Cc: Marek Vasut <marex@denx.de>
-> ---
->  include/linux/reset.h |   44 ++++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 44 insertions(+)
-> 
-> diff --git a/include/linux/reset.h b/include/linux/reset.h
-> index 6082247..0df3e30 100644
-> --- a/include/linux/reset.h
-> +++ b/include/linux/reset.h
-> @@ -4,6 +4,8 @@
->  struct device;
->  struct reset_control;
->  
-> +#if defined(CONFIG_RESET_CONTROLLER)
-> +
->  int reset_control_reset(struct reset_control *rstc);
->  int reset_control_assert(struct reset_control *rstc);
->  int reset_control_deassert(struct reset_control *rstc);
-> @@ -14,4 +16,46 @@ struct reset_control *devm_reset_control_get(struct device *dev, const char *id)
->  
->  int device_reset(struct device *dev);
->  
-> +#else /* !CONFIG_RESET_CONTROLLER */
-> +
-> +/*
-> + * Make sure client drivers will still build on systems without
-> + * reset control support.
-> + */
-> +static inline int reset_control_reset(struct reset_control *rstc)
-> +{
-> +	return 0;
-> +}
-> +
-> +static inline int reset_control_assert(struct reset_control *rstc)
-> +{
-> +	return 0;
-> +}
-> +
-> +static inline int reset_control_deassert(struct reset_control *rstc)
-> +{
-> +	return 0;
-> +}
-> +
-> +static inline struct reset_control *
-> +reset_control_get(struct device *dev, const char *id)
-> +{
-> +	return 0;
-> +}
-> +
-> +static inline void reset_control_put(struct reset_control *rstc){}
-> +
-> +static inline struct reset_control *
-> +devm_reset_control_get(struct device *dev, const char *id)
-> +{
-> +	return NULL;
-> +}
-> +
-> +static inline int device_reset(struct device *dev)
-> +{
-> +	return 0;
-> +}
-> +
-> +#endif
-> +
->  #endif
+To unsubscribe: http://www.urics.com
 
 
