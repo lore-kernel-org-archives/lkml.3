@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757310Ab3JJPss (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 11:48:48 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52872 "EHLO
+	id S1757329Ab3JJPsw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 11:48:52 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52877 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754871Ab3JJPsp (ORCPT
+	with ESMTP id S1757303Ab3JJPss (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 11:48:45 -0400
+	Thu, 10 Oct 2013 11:48:48 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jiri Bohac <jbohac@suse.cz>, "David S. Miller" <davem@davemloft.net>,
+Cc: Jason Wang <jasowang@redhat.com>, "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 024/104] ICMPv6: treat dest unreachable codes 5 and 6 as EACCES, not EPROTO
-Date: Thu, 10 Oct 2013 08:41:12 -0700
-Message-Id: <1381419752-29733-25-git-send-email-kamal@canonical.com>
+Subject: [PATCH 026/104] vhost_net: poll vhost queue after marking DMA is done
+Date: Thu, 10 Oct 2013 08:41:14 -0700
+Message-Id: <1381419752-29733-27-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381419752-29733-1-git-send-email-kamal@canonical.com>
 References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
@@ -27,77 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Bohac <jbohac@suse.cz>
+From: Jason Wang <jasowang@redhat.com>
 
-[ Upstream commit 61e76b178dbe7145e8d6afa84bb4ccea71918994 ]
+[ Upstream commit 19c73b3e08d16ee923f3962df4abf6205127896a ]
 
-RFC 4443 has defined two additional codes for ICMPv6 type 1 (destination
-unreachable) messages:
-        5 - Source address failed ingress/egress policy
-	6 - Reject route to destination
+We used to poll vhost queue before making DMA is done, this is racy if vhost
+thread were waked up before marking DMA is done which can result the signal to
+be missed. Fix this by always polling the vhost thread before DMA is done.
 
-Now they are treated as protocol error and icmpv6_err_convert() converts them
-to EPROTO.
-
-RFC 4443 says:
-	"Codes 5 and 6 are more informative subsets of code 1."
-
-Treat codes 5 and 6 as code 1 (EACCES)
-
-Btw, connect() returning -EPROTO confuses firefox, so that fallback to
-other/IPv4 addresses does not work:
-https://bugzilla.mozilla.org/show_bug.cgi?id=910773
-
-Signed-off-by: Jiri Bohac <jbohac@suse.cz>
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
+[ kamal: backport to 3.8 ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- include/uapi/linux/icmpv6.h |  2 ++
- net/ipv6/icmp.c             | 10 +++++++++-
- 2 files changed, 11 insertions(+), 1 deletion(-)
+ drivers/vhost/net.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/include/uapi/linux/icmpv6.h b/include/uapi/linux/icmpv6.h
-index e0133c7..590beda 100644
---- a/include/uapi/linux/icmpv6.h
-+++ b/include/uapi/linux/icmpv6.h
-@@ -115,6 +115,8 @@ struct icmp6hdr {
- #define ICMPV6_NOT_NEIGHBOUR		2
- #define ICMPV6_ADDR_UNREACH		3
- #define ICMPV6_PORT_UNREACH		4
-+#define ICMPV6_POLICY_FAIL		5
-+#define ICMPV6_REJECT_ROUTE		6
+diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+index dfff647..b8dfb94 100644
+--- a/drivers/vhost/net.c
++++ b/drivers/vhost/net.c
+@@ -210,6 +210,11 @@ static void vhost_zerocopy_callback(struct ubuf_info *ubuf, bool success)
+ 	struct vhost_virtqueue *vq = ubufs->vq;
+ 	int cnt = atomic_read(&ubufs->kref.refcount);
  
- /*
-  *	Codes for Time Exceeded
-diff --git a/net/ipv6/icmp.c b/net/ipv6/icmp.c
-index fff5bdd..7463f05 100644
---- a/net/ipv6/icmp.c
-+++ b/net/ipv6/icmp.c
-@@ -924,6 +924,14 @@ static const struct icmp6_err {
- 		.err	= ECONNREFUSED,
- 		.fatal	= 1,
- 	},
-+	{	/* POLICY_FAIL */
-+		.err	= EACCES,
-+		.fatal	= 1,
-+	},
-+	{	/* REJECT_ROUTE	*/
-+		.err	= EACCES,
-+		.fatal	= 1,
-+	},
- };
++	/* set len to mark this desc buffers done DMA */
++	vq->heads[ubuf->desc].len = success ?
++		VHOST_DMA_DONE_LEN : VHOST_DMA_FAILED_LEN;
++	vhost_ubuf_put(ubufs);
++
+ 	/*
+ 	 * Trigger polling thread if guest stopped submitting new buffers:
+ 	 * in this case, the refcount after decrement will eventually reach 1
+@@ -220,10 +225,6 @@ static void vhost_zerocopy_callback(struct ubuf_info *ubuf, bool success)
+ 	 */
+ 	if (cnt <= 2 || !(cnt % 16))
+ 		vhost_poll_queue(&vq->poll);
+-	/* set len to mark this desc buffers done DMA */
+-	vq->heads[ubuf->desc].len = success ?
+-		VHOST_DMA_DONE_LEN : VHOST_DMA_FAILED_LEN;
+-	vhost_ubuf_put(ubufs);
+ }
  
- int icmpv6_err_convert(u8 type, u8 code, int *err)
-@@ -935,7 +943,7 @@ int icmpv6_err_convert(u8 type, u8 code, int *err)
- 	switch (type) {
- 	case ICMPV6_DEST_UNREACH:
- 		fatal = 1;
--		if (code <= ICMPV6_PORT_UNREACH) {
-+		if (code < ARRAY_SIZE(tab_unreach)) {
- 			*err  = tab_unreach[code].err;
- 			fatal = tab_unreach[code].fatal;
- 		}
+ /* Expects to be always run from workqueue - which acts as
 -- 
 1.8.1.2
 
