@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757751Ab3JJQCF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 12:02:05 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52867 "EHLO
+	id S1757113Ab3JJPru (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 11:47:50 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52814 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756094Ab3JJPso (ORCPT
+	with ESMTP id S1757035Ab3JJPrs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 11:48:44 -0400
+	Thu, 10 Oct 2013 11:47:48 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Daniel Borkmann <dborkman@redhat.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Andre Guedes <andre.guedes@openbossa.org>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 027/104] net: ipv6: tcp: fix potential use after free in tcp_v6_do_rcv
-Date: Thu, 10 Oct 2013 08:41:15 -0700
-Message-Id: <1381419752-29733-28-git-send-email-kamal@canonical.com>
+Subject: [PATCH 082/104] Bluetooth: Fix security level for peripheral role
+Date: Thu, 10 Oct 2013 08:42:10 -0700
+Message-Id: <1381419752-29733-83-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381419752-29733-1-git-send-email-kamal@canonical.com>
 References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
@@ -29,49 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Andre Guedes <andre.guedes@openbossa.org>
 
-[ Upstream commit 3a1c756590633c0e86df606e5c618c190926a0df ]
+commit f8776218e8546397be64ad2bc0ebf4748522d6e3 upstream.
 
-In tcp_v6_do_rcv() code, when processing pkt options, we soley work
-on our skb clone opt_skb that we've created earlier before entering
-tcp_rcv_established() on our way. However, only in condition ...
+While playing the peripheral role, the host gets a LE Long Term Key
+Request Event from the controller when a connection is established
+with a bonded device. The host then informs the LTK which should be
+used for the connection. Once the link is encrypted, the host gets
+an Encryption Change Event.
 
-  if (np->rxopt.bits.rxtclass)
-    np->rcv_tclass = ipv6_get_dsfield(ipv6_hdr(skb));
+Therefore we should set conn->pending_sec_level instead of conn->
+sec_level in hci_le_ltk_request_evt. This way, conn->sec_level is
+properly updated in hci_encrypt_change_evt.
 
-... we work on skb itself. As we extract every other information out
-of opt_skb in ipv6_pktoptions path, this seems wrong, since skb can
-already be released by tcp_rcv_established() earlier on. When we try
-to access it in ipv6_hdr(), we will dereference freed skb.
+Moreover, since we have a LTK associated to the device, we have at
+least BT_SECURITY_MEDIUM security level.
 
-[ Bug added by commit 4c507d2897bd9b ("net: implement IP_RECVTOS for
-  IP_PKTOPTIONS") ]
-
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Acked-by: Jiri Benc <jbenc@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-[ kamal: backport to 3.8 ]
+Signed-off-by: Andre Guedes <andre.guedes@openbossa.org>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/ipv6/tcp_ipv6.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/bluetooth/hci_event.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/net/ipv6/tcp_ipv6.c b/net/ipv6/tcp_ipv6.c
-index 4cc834a..2eb71b4 100644
---- a/net/ipv6/tcp_ipv6.c
-+++ b/net/ipv6/tcp_ipv6.c
-@@ -1468,7 +1468,7 @@ ipv6_pktoptions:
- 		if (np->rxopt.bits.rxhlim || np->rxopt.bits.rxohlim)
- 			np->mcast_hops = ipv6_hdr(opt_skb)->hop_limit;
- 		if (np->rxopt.bits.rxtclass)
--			np->rcv_tclass = ipv6_tclass(ipv6_hdr(skb));
-+			np->rcv_tclass = ipv6_tclass(ipv6_hdr(opt_skb));
- 		if (ipv6_opt_accepted(sk, opt_skb)) {
- 			skb_set_owner_r(opt_skb, sk);
- 			opt_skb = xchg(&np->pktoptions, opt_skb);
+diff --git a/net/bluetooth/hci_event.c b/net/bluetooth/hci_event.c
+index 81b4448..259776a 100644
+--- a/net/bluetooth/hci_event.c
++++ b/net/bluetooth/hci_event.c
+@@ -3967,7 +3967,9 @@ static void hci_le_ltk_request_evt(struct hci_dev *hdev, struct sk_buff *skb)
+ 	cp.handle = cpu_to_le16(conn->handle);
+ 
+ 	if (ltk->authenticated)
+-		conn->sec_level = BT_SECURITY_HIGH;
++		conn->pending_sec_level = BT_SECURITY_HIGH;
++	else
++		conn->pending_sec_level = BT_SECURITY_MEDIUM;
+ 
+ 	hci_send_cmd(hdev, HCI_OP_LE_LTK_REPLY, sizeof(cp), &cp);
+ 
 -- 
 1.8.1.2
 
