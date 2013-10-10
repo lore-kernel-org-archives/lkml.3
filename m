@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755206Ab3JJDlj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 23:41:39 -0400
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:36958 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751269Ab3JJDli (ORCPT
+	id S1752891Ab3JJDyr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 23:54:47 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:20016 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751269Ab3JJDyq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 23:41:38 -0400
-MIME-Version: 1.0
-In-Reply-To: <001e01ceb840$f0628810$d1279830$%han@samsung.com>
-References: <001801ceb840$9a81ab10$cf850130$%han@samsung.com>
-	<001e01ceb840$f0628810$d1279830$%han@samsung.com>
-Date: Thu, 10 Oct 2013 11:41:37 +0800
-Message-ID: <CAD6h2NRxPR1WRKXQaFzDO-+OyF+jY1FA4ZrDC+aQP9d4QMZEBg@mail.gmail.com>
-Subject: Re: [PATCH 02/15] rtc: rtc-88pm860x: use dev_get_platdata()
-From: Haojian Zhuang <haojian.zhuang@linaro.org>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 9 Oct 2013 23:54:46 -0400
+Date: Wed, 9 Oct 2013 23:54:43 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: David Miller <davem@davemloft.net>
+Cc: andi@firstfloor.org, hpa@linux.intel.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, tglx@linutronix.de, mingo@kernel.org,
+        peterz@infradead.org, williams@redhat.com, bp@alien8.de,
+        akpm@linux-foundation.org, andi.kleen@intel.com
+Subject: Re: [RFC][PATCH] x86: Lazy disabling of interrupts
+Message-ID: <20131009235443.4158520f@gandalf.local.home>
+In-Reply-To: <20131009.233928.1664631911260282195.davem@davemloft.net>
+References: <5255C07E.70805@linux.intel.com>
+	<878uy2ytd8.fsf@tassilo.jf.intel.com>
+	<20131009203627.27166b20@gandalf.local.home>
+	<20131009.233928.1664631911260282195.davem@davemloft.net>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23 September 2013 17:40, Jingoo Han <jg1.han@samsung.com> wrote:
-> Use the wrapper function for retrieving the platform data instead of
-> accessing dev->platform_data directly. This is a cosmetic change
-> to make the code simpler and enhance the readability.
->
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-> ---
->  drivers/rtc/rtc-88pm860x.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/rtc/rtc-88pm860x.c b/drivers/rtc/rtc-88pm860x.c
-> index 4e30c85..81650484 100644
-> --- a/drivers/rtc/rtc-88pm860x.c
-> +++ b/drivers/rtc/rtc-88pm860x.c
-> @@ -316,7 +316,7 @@ static int pm860x_rtc_probe(struct platform_device *pdev)
->         unsigned long ticks = 0;
->         int ret;
->
-> -       pdata = pdev->dev.platform_data;
-> +       pdata = dev_get_platdata(&pdev->dev);
->
->         info = devm_kzalloc(&pdev->dev, sizeof(struct pm860x_rtc_info),
->                             GFP_KERNEL);
-> --
-> 1.7.10.4
->
->
+On Wed, 09 Oct 2013 23:39:28 -0400 (EDT)
+David Miller <davem@davemloft.net> wrote:
 
-Acked-by: Haojian Zhuang <haojian.zhuang@linaro.org>
+> From: Steven Rostedt <rostedt@goodmis.org>
+> Date: Wed, 9 Oct 2013 20:36:27 -0400
+> 
+> > I don't know why my email never reached LKML, was there something about
+> > it that prevented it from going? The total character length was 46,972,
+> > well below the 100,000 limit. Also the Cc list wasn't that big. Did my
+> > ISP get flagged as a spam bot or something?
+> > 
+> > I can bounce it to you to see what was wrong with it.
+> 
+> That's odd, can you try sending it to the list again?  I'll watch
+> very carefully for a bounce.
+> 
+
+I just sent it as a redirect to LKML. Hopefully that worked.
+
+Thanks,
+
+-- Steve
