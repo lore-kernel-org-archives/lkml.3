@@ -1,72 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757193Ab3JJS56 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 14:57:58 -0400
-Received: from smtp2.peak6.com ([38.98.137.9]:45445 "EHLO smtp2.peak6.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756260Ab3JJS5z convert rfc822-to-8bit (ORCPT
+	id S1756944Ab3JJS55 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 14:57:57 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:37257 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756102Ab3JJS5z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 10 Oct 2013 14:57:55 -0400
-X-AuditID: 0a02cb20-b7f5e6d00000250f-1c-5256f8b27318
-From: Shaun Thomas <sthomas@optionshouse.com>
-To: "'Matt'" <jackdachef@gmail.com>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: RE: Very odd memory behavior. Is this normal?
-Thread-Topic: Very odd memory behavior. Is this normal?
-Thread-Index: AQHOxel98LW9O+ThMUuaL3oPPhjaNJnum5sA//+s3bA=
-Date: Thu, 10 Oct 2013 18:57:53 +0000
-Message-ID: <0683F5F5A5C7FE419A752A034B4A0B97973FD07B@sswchi5pmbx2.peak6.net>
-References: <CAG-aW07mUqX5t-g4_cCvSVxrArzmc-vsOaPoHcFJuo_fXeRnzw@mail.gmail.com>
- <CAG-aW07kVTurn2mTH_2qR31wdOEzxfP34-6eR34MvNZaMkGYkw@mail.gmail.com>
-In-Reply-To: <CAG-aW07kVTurn2mTH_2qR31wdOEzxfP34-6eR34MvNZaMkGYkw@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.10.200.64]
-Content-Type: text/plain; charset="us-ascii"
-content-transfer-encoding: 8BIT
+Message-ID: <5256F8DF.2020801@metafoo.de>
+Date: Thu, 10 Oct 2013 20:58:39 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130827 Icedove/17.0.8
 MIME-Version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrEKsWRmVeSWpSXmKPExsXClcIrprvpR1iQwfLP8hYrph5ls7i8aw6b
-	A5PHzll32T0+b5ILYIpqYLRJzMvLL0ksSVVISS1OtlXyLyjJzM8r9sgvLU5VcMksTs5JzMxN
-	LVJSyEyxVTJWUijISUxOzU3NK7FVSiwoSM1LUbLjUsAANkBlmXkKqXnJ+SmZeem2Sp7B/roW
-	FqaWuoZKdvHIIKGTJWNR5yz2gqssFRcWrWFpYHzO3MXIySEhYCLxZu8BNghbTOLCvfVANheH
-	kMABRomW3otMEM4yRonT006zgFSxCehKTOpfAdYhIqAocfzVAfYuRg4OZgF9iZNPXUFMYQEz
-	ifvXZCAqzCVuX9vIAmFbSfw7s5oRxGYRUJV4vPsFmM0r4CvxoP01M8Sq6YwS1xongI3nFAiU
-	mPfzFyuIzQh03PdTa5hAbGYBcYlbT+YzQRwtILFkz3moZ0QlXj7+xwphK0gsOHGeFaJeR2LB
-	7k9sELa2xLKFr5khFgtKnJz5hGUCo9gsJGNnIWmZhaRlFpKWBYwsqxjFi8sSkzMyzQqKc0sK
-	jPQKUhOzzfTyUks2MYISBtNphR2Mm3usDjEKcDAq8fBO6A4NEmJNLCuuzD3EKMHBrCTCq/o6
-	LEiINyWxsiq1KD++qDQntfgQow8wcCYyS4km5wOTWV5JvKGxqYGppamhqbmpoREOYSVx3n1M
-	ywKFBNKBSSw7NbUgtQhmHBMHp1QDI4tcrcikHbOD2n4E7WPrD4939HtgkhMiK2PDu3mdYIxj
-	40SjVyvab7TM8j/9ze3WkvdBTFVL+NasXvXoJo8u9zLxnfsqAv7ZBvuo7ufWOyBzhGsKt1DY
-	n/dHPRjMLWw/+6eIxz86cqLi8ZwDFzqenFjjb7xwS6FMst31eVLKNUntjz8sXWJgrsRSnJFo
-	qMVcVJwIAOqIY6lFAwAA
+To: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
+CC: Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Marek Belisko <marek@goldelico.com>, plagnioj@jcrosoft.com,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH] omapdss: Add new panel driver for Topolly td028ttec1
+ LCD.
+References: <1381352915-17219-1-git-send-email-marek@goldelico.com> <525662F5.3090600@ti.com> <7FAC77D4-5E1E-4B11-B067-3A8233C69240@goldelico.com> <52568B40.4040802@ti.com> <04AC7291-38E4-421B-979C-BF03D52E94BD@goldelico.com> <525699EF.6090803@ti.com> <52569CE8.5070201@metafoo.de> <A7739B52-2632-4DD8-924D-B657A6BFE3ED@goldelico.com>
+In-Reply-To: <A7739B52-2632-4DD8-924D-B657A6BFE3ED@goldelico.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> just a user here, with a little android-kernel related experience who
-> also likes to tinker with the desktop kernel :)
-> 
-> Have you given the following patchset a try yet:
-> 
-> http://linux-kernel.2935.n7.nabble.com/patch-v2-0-3-mm-improve-
-> page-aging-fairness-between-zones-nodes-td696105.html
+On 10/10/2013 03:42 PM, Dr. H. Nikolaus Schaller wrote:
+>
+> Am 10.10.2013 um 14:26 schrieb Lars-Peter Clausen:
+>
+>> On 10/10/2013 02:13 PM, Tomi Valkeinen wrote:
+>>> On 10/10/13 14:52, Dr. H. Nikolaus Schaller wrote:
+>>>
+>>>> Yes, I agree and I am willing to help if someone comes up with such a SoC.
+>>>> At the moment we have connected it to the OMAP3 only.
+>>>
+>>> True, but even without that kind of SoC, SPI bitbanging should be
+>>> handled by an SPI driver, not by the drivers that use the bus.
+>>>
+>>>> I.e. I want not to do a lot of work for others who we just guess about that they
+>>>> might exist...
+>>>
+>>> Yep. It's fine for me, it's not that much extra code in the panel driver.
+>>>
+>>>>> The panel hardware has three wires, so the panel driver (if it does
+>>>>> handle the bus by bitbanging) can only refer to three gpios.
+>>>>
+>>>> Hm. The panle hardware has 3 but the SoC (OMAP3) the driver
+>>>> is running on has 4.
+>>>
+>>> Right, but this panel driver is a driver for the panel hardware. Not for
+>>> the SoC, or the SoC+panel combination. So the panel driver must only use
+>>> resources as seen by the panel hardware.
+>>>
+>>>>> So either
+>>>>> the bus details should be hidden by using the normal spi framework, or
+>>>>> if the driver does the bitbanging, use the gpios as specified in the
+>>>>> panel spec. The panel driver cannot contain any board specific stuff.
+>>>>
+>>>> The bitbang driver shown below can handle either 3 or 4 gpios (except
+>>>> for initialization).
+>>>
+>>> It's not a bitbang driver, it's a panel driver. And anyway, if I
+>>> understood right, your use of 4 gpios was just a hack to try to make it
+>>> look like a normal 4-wire SPI bus. What you really have is 3 wires, 3
+>>> gpios. I don't see any reason to use 4 gpios, as two of them are the same.
+>
+> There is a protection resistor in the one defined as "output" so that
+> protocol errors don't have two outputs work against each other.
+>
+>>>
+>>> Hmm, how does it work anyway. Did I understand it right, the panel's
+>>> 'DIN' pin is connected to two gpios on the SoC, and one of those gpios
+>>> is set as output, and the other as input?
+>
+> Yes.
+>
+>>> So the SoC is always pulling
+>>> that line up or down, and the panel is also pulling it up or down when
+>>> it's sending data. I'm no HW guy but that sounds quite bad =).
+>
+> Yes, that is the strange thing with this protocol. It does a direction reversal
+> after some time. I.e. the panel switches its input to output and the SoC has
+> to be fast enough to do the same. Therefore, we have one output GPIO
+> (protected by a resistor) and a separate input GPIO.
+>
+> Sometimes interfacing hardware is indeed strange.
+>
+>>>
+>>> I've never written or studied a bitbanging driver, but shouldn't there
+>>> be just one gpio used on the SoC for DIN, and it would be set to either
+>>> output or input mode, depending on if we are reading or writing?
+>>
+>> Back in the OpenMoko days we used the panel in normal 4-wire SPI mode with
+>> the GPIO bitbang SPI master. The bitbang code in this driver also looks like
+>> normal 4 wire.
+>
+>
+> Thanks for this hint!
+>
+> Maybe using a standard 4-wire SPI simply works if we only write data and
+> make sure the panel is not sending anything...
 
-Holy cow, that looks extremely promising. What version of the kernel is this compatible with? It looks like 3.11, but I'm not sure.
+According to the datasheet the the panel as a dedicated dout pin. Maybe you did 
+not connect it in your design, which means you won't be able to read any data 
+from the panel at all.
 
-Thanks!
+Also your custom bitbang code looks a bit strange:
 
---
-Shaun Thomas
-OptionsHouse | 141 W. Jackson Blvd | Suite 500 | Chicago IL, 60604
-312-676-8870
-sthomas@optionshouse.com
+	gpio_set_value(data->dout_gpio, 1);
+	if (gpio_get_value(data->din_gpio) == 0)
+		return 1;
 
+You set the state on the dout pin and then read the din pin, if both do not 
+match you abort with an error. This suggest that, for whatever reason, you feed 
+the dout pin back into the din pin in your design. Btw. this is also the only 
+place where din is used in your driver.
 
-
-
-
-______________________________________________
-
-See http://www.peak6.com/email_disclaimer/ for terms and conditions related to this email
+- Lars
