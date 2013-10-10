@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756112Ab3JJPnh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 11:43:37 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52630 "EHLO
+	id S1756011Ab3JJPmy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 11:42:54 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52552 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755260Ab3JJPne (ORCPT
+	with ESMTP id S1755771Ab3JJPmt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 11:43:34 -0400
+	Thu, 10 Oct 2013 11:42:49 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
-        David Lamparter <equinox@diac24.net>,
-        <boutier@pps.univ-paris-diderot.fr>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, Li Yu <raise.sail@gmail.com>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 011/104] ipv6: don't stop backtracking in fib6_lookup_1 if subtree does not match
-Date: Thu, 10 Oct 2013 08:40:59 -0700
-Message-Id: <1381419752-29733-12-git-send-email-kamal@canonical.com>
+Subject: [PATCH 002/104] net: avoid to hang up on sending due to sysctl configuration overflow.
+Date: Thu, 10 Oct 2013 08:40:50 -0700
+Message-Id: <1381419752-29733-3-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381419752-29733-1-git-send-email-kamal@canonical.com>
 References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
@@ -31,61 +28,138 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: "bingtian.ly@taobao.com" <bingtian.ly@taobao.com>
 
-[ Upstream commit 3e3be275851bc6fc90bfdcd732cd95563acd982b ]
+commit cdda88912d62f9603d27433338a18be83ef23ac1 upstream.
 
-In case a subtree did not match we currently stop backtracking and return
-NULL (root table from fib_lookup). This could yield in invalid routing
-table lookups when using subtrees.
+    I found if we write a larger than 4GB value to some sysctl
+variables, the sending syscall will hang up forever, because these
+variables are 32 bits, such large values make them overflow to 0 or
+negative.
 
-Instead continue to backtrack until a valid subtree or node is found
-and return this match.
+    This patch try to fix overflow or prevent from zero value setup
+of below sysctl variables:
 
-Also remove unneeded NULL check.
+net.core.wmem_default
+net.core.rmem_default
 
-Reported-by: Teco Boot <teco@inf-net.nl>
-Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-Cc: David Lamparter <equinox@diac24.net>
-Cc: <boutier@pps.univ-paris-diderot.fr>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+net.core.rmem_max
+net.core.wmem_max
+
+net.ipv4.udp_rmem_min
+net.ipv4.udp_wmem_min
+
+net.ipv4.tcp_wmem
+net.ipv4.tcp_rmem
+
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: Li Yu <raise.sail@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/ipv6/ip6_fib.c | 16 ++++++++++++----
- 1 file changed, 12 insertions(+), 4 deletions(-)
+ net/core/sysctl_net_core.c | 14 ++++++++++----
+ net/ipv4/sysctl_net_ipv4.c | 11 +++++++----
+ 2 files changed, 17 insertions(+), 8 deletions(-)
 
-diff --git a/net/ipv6/ip6_fib.c b/net/ipv6/ip6_fib.c
-index e67039f..7c39aa6 100644
---- a/net/ipv6/ip6_fib.c
-+++ b/net/ipv6/ip6_fib.c
-@@ -995,14 +995,22 @@ static struct fib6_node * fib6_lookup_1(struct fib6_node *root,
+diff --git a/net/core/sysctl_net_core.c b/net/core/sysctl_net_core.c
+index d1b0804..cfdb46a 100644
+--- a/net/core/sysctl_net_core.c
++++ b/net/core/sysctl_net_core.c
+@@ -20,6 +20,8 @@
+ #include <net/sock.h>
+ #include <net/net_ratelimit.h>
  
- 			if (ipv6_prefix_equal(&key->addr, args->addr, key->plen)) {
- #ifdef CONFIG_IPV6_SUBTREES
--				if (fn->subtree)
--					fn = fib6_lookup_1(fn->subtree, args + 1);
-+				if (fn->subtree) {
-+					struct fib6_node *sfn;
-+					sfn = fib6_lookup_1(fn->subtree,
-+							    args + 1);
-+					if (!sfn)
-+						goto backtrack;
-+					fn = sfn;
-+				}
- #endif
--				if (!fn || fn->fn_flags & RTN_RTINFO)
-+				if (fn->fn_flags & RTN_RTINFO)
- 					return fn;
- 			}
- 		}
--
-+#ifdef CONFIG_IPV6_SUBTREES
-+backtrack:
-+#endif
- 		if (fn->fn_flags & RTN_ROOT)
- 			break;
++static int one = 1;
++
+ #ifdef CONFIG_RPS
+ static int rps_sock_flow_sysctl(ctl_table *table, int write,
+ 				void __user *buffer, size_t *lenp, loff_t *ppos)
+@@ -92,28 +94,32 @@ static struct ctl_table net_core_table[] = {
+ 		.data		= &sysctl_wmem_max,
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dointvec
++		.proc_handler	= proc_dointvec_minmax,
++		.extra1		= &one,
+ 	},
+ 	{
+ 		.procname	= "rmem_max",
+ 		.data		= &sysctl_rmem_max,
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dointvec
++		.proc_handler	= proc_dointvec_minmax,
++		.extra1		= &one,
+ 	},
+ 	{
+ 		.procname	= "wmem_default",
+ 		.data		= &sysctl_wmem_default,
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dointvec
++		.proc_handler	= proc_dointvec_minmax,
++		.extra1		= &one,
+ 	},
+ 	{
+ 		.procname	= "rmem_default",
+ 		.data		= &sysctl_rmem_default,
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dointvec
++		.proc_handler	= proc_dointvec_minmax,
++		.extra1		= &one,
+ 	},
+ 	{
+ 		.procname	= "dev_weight",
+diff --git a/net/ipv4/sysctl_net_ipv4.c b/net/ipv4/sysctl_net_ipv4.c
+index 63632ea..d22765d 100644
+--- a/net/ipv4/sysctl_net_ipv4.c
++++ b/net/ipv4/sysctl_net_ipv4.c
+@@ -27,6 +27,7 @@
+ #include <net/tcp_memcontrol.h>
  
+ static int zero;
++static int one = 1;
+ static int two = 2;
+ static int tcp_retr1_max = 255;
+ static int ip_local_port_range_min[] = { 1, 1 };
+@@ -560,14 +561,16 @@ static struct ctl_table ipv4_table[] = {
+ 		.data		= &sysctl_tcp_wmem,
+ 		.maxlen		= sizeof(sysctl_tcp_wmem),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dointvec
++		.proc_handler	= proc_dointvec_minmax,
++		.extra1		= &one,
+ 	},
+ 	{
+ 		.procname	= "tcp_rmem",
+ 		.data		= &sysctl_tcp_rmem,
+ 		.maxlen		= sizeof(sysctl_tcp_rmem),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dointvec
++		.proc_handler	= proc_dointvec_minmax,
++		.extra1		= &one,
+ 	},
+ 	{
+ 		.procname	= "tcp_app_win",
+@@ -790,7 +793,7 @@ static struct ctl_table ipv4_table[] = {
+ 		.maxlen		= sizeof(sysctl_udp_rmem_min),
+ 		.mode		= 0644,
+ 		.proc_handler	= proc_dointvec_minmax,
+-		.extra1		= &zero
++		.extra1		= &one
+ 	},
+ 	{
+ 		.procname	= "udp_wmem_min",
+@@ -798,7 +801,7 @@ static struct ctl_table ipv4_table[] = {
+ 		.maxlen		= sizeof(sysctl_udp_wmem_min),
+ 		.mode		= 0644,
+ 		.proc_handler	= proc_dointvec_minmax,
+-		.extra1		= &zero
++		.extra1		= &one
+ 	},
+ 	{ }
+ };
 -- 
 1.8.1.2
 
