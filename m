@@ -1,80 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756886Ab3JJTej (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 15:34:39 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:47445 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756393Ab3JJTei (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 15:34:38 -0400
-Date: Thu, 10 Oct 2013 21:34:22 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/6] Optimize the cpu hotplug locking -v2
-Message-ID: <20131010193422.GT13848@laptop.programming.kicks-ass.net>
-References: <20131010090044.7f12ddaf.akpm@linux-foundation.org>
- <20131010123631.1be60315@gandalf.local.home>
- <20131010094355.6f75e5a2.akpm@linux-foundation.org>
- <20131010165337.GT3081@twins.programming.kicks-ass.net>
- <20131010131305.58558079@gandalf.local.home>
- <20131010104856.8f042977112d5ac2693973ae@linux-foundation.org>
- <20131010183409.GP13848@laptop.programming.kicks-ass.net>
- <CA+55aFyoP5KFUg44Xenp_Jz0_5ssosn-KF6LDsa0qsmCjyJ56g@mail.gmail.com>
- <20131010150444.51f9c929@gandalf.local.home>
- <CA+55aFw+gXxp-S0XxVGH=9TfudNSDRnFmntT6mK9B1Wbp2mDOg@mail.gmail.com>
+	id S1756246Ab3JJToC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 15:44:02 -0400
+Received: from sauhun.de ([89.238.76.85]:58030 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755710Ab3JJTn7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 15:43:59 -0400
+Date: Thu, 10 Oct 2013 21:43:54 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Ionut Nicu <ioan.nicu.ext@nsn.com>,
+        Peter Korsgaard <peter.korsgaard@barco.com>,
+        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-gpio@vger.kernel.org
+Subject: Re: [PATCH 1/2] i2c-mux-gpio: test if the gpio can sleep
+Message-ID: <20131010194354.GC23512@katana>
+References: <525667C4.3080309@nsn.com>
+ <52566971.5020700@metafoo.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="nmemrqcdn5VTmUEE"
 Content-Disposition: inline
-In-Reply-To: <CA+55aFw+gXxp-S0XxVGH=9TfudNSDRnFmntT6mK9B1Wbp2mDOg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <52566971.5020700@metafoo.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 10, 2013 at 12:16:16PM -0700, Linus Torvalds wrote:
-> On Thu, Oct 10, 2013 at 12:04 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> >
-> > I'm wondering if we can have a for_each_cpu() that only disables
-> > preemption in the loop.
-> 
-> I think we'd generally want to have it be something the loop asks for.
-> 
-> If the loop is just some kind of "gather statistics" thing, I don't
-> think it's required. The cost per loop is so low (usually adding up a
-> couple of words) that the downside drowns the upside.
-> 
-> And we could easily look at MAXSMP (or NR_CPUS) at compile-time, and
-> not do it for common small values (although it looks like Fedora
-> defaults to 128 CPU's for their distro kernels, which seems a bit
-> excessive - too many by far for normal people, too few for the crazy
-> big ones).
 
-Alternatively we could write it something like:
+--nmemrqcdn5VTmUEE
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-	rcu_read_lock();
-	for_each_online_node(node) {
-		for_each_cpu(cpu, cpumask_of_node(node)) {
-			...
-		}
-		cond_resched_rcu();
-	}
-	rcu_read_unlock();
+On Thu, Oct 10, 2013 at 10:46:41AM +0200, Lars-Peter Clausen wrote:
 
-But yes, I think this pattern (and variations) should work for most
-cases.
+> > +		if (gpio_cansleep(gpio))
+> > +			gpio_set_value_cansleep(gpio, val & (1 << i));
+> > +		else
+> > +			gpio_set_value(gpio, val & (1 << i));
+>=20
+> The proper way to do this is just always use the _cansleep() version.
+> gpio_set_value() only works for chips which do not sleep,
+> gpio_set_value_cansleep() works for both those who do sleep and those who=
+ do
+> not.
 
-The one I'm struggling with atm is kernel/cpuset.c:
-rebuild_sched_domains_locked(). Although I'm thinking we should do that
-seqlock style, just build it and verify if its still valid, if not, try
-again -- although I'm sure it'll be 'fun' to get correct.
+To the gpio-list: Has it been considered to have sth. like
+gpio_set_value and gpio_set_value_nosleep? I'd think it makes more sense
+to have the specific function have the specific name.
+
+Regards,
+
+   Wolfram
+
+
+--nmemrqcdn5VTmUEE
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSVwN6AAoJEBQN5MwUoCm2MuMQAJfpsgqRQ4QYK+J5fzp7Lgot
+kr41uwk7mRrX5hT/GlNBatG9PESrnTb6Baxf1wBAQMbSyBUzeJhrlDeISPuISXgf
+FX8qVLsCVIZj/aK/KzERLsRK9AUxKyFcGMFqW4MDYD/FlsWufyraPBsNrtIG6ict
+zzhGd6zIdWnmgwoUm5D0vPpOziBuEx1ltmQ0AsTf2qR7IvKCWTOqUlErCPnnYL8r
+7kPqM97wJ16sxg1DQcvL41AnEa/Qae8sRIpbwqP4ycRyCVVINmiaHiDY3GkbltEC
+iUUC95qSWscmi1klGoykZ9yrWHGWUlvpLZb2B7xBvz9J4P4Z+NhctkOD3Pn43lpK
+nKCEcGHyNuab5voxxEBwC9/WklnglhnEn87j9IcFXKbj2tcj33xXYIek3a9E0uOf
+ifKySkbv5rWRYYcOXQO4DnZQhYNbTA0akDLxp/Wr53oqUtFfCuRgoRVZMGppDJfB
+rJN4VmIKsDnYrpiLPqbuBWg3D3MNPnTTejfKie03mTyExEuyDAwzaQjXquKMCRJN
+7EQiBR5OoBfzyrwlToE/aISupn5+TncpdjVC27wlbhXVYhI46PFbLzwbQQirDsor
+vqrBMkyPzzz/3DJ36JDdlTgF/j+shznI0rGMzLRDOjm57PirrlOT3YMHJLUcSoGG
+0xydpcb2o6/86Cgt2F8k
+=ybw7
+-----END PGP SIGNATURE-----
+
+--nmemrqcdn5VTmUEE--
