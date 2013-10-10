@@ -1,55 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752891Ab3JJDyr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 23:54:47 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:20016 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751269Ab3JJDyq (ORCPT
+	id S1751933Ab3JJEEy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 00:04:54 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:54173 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751125Ab3JJEEx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 23:54:46 -0400
-Date: Wed, 9 Oct 2013 23:54:43 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: David Miller <davem@davemloft.net>
-Cc: andi@firstfloor.org, hpa@linux.intel.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, tglx@linutronix.de, mingo@kernel.org,
-        peterz@infradead.org, williams@redhat.com, bp@alien8.de,
-        akpm@linux-foundation.org, andi.kleen@intel.com
-Subject: Re: [RFC][PATCH] x86: Lazy disabling of interrupts
-Message-ID: <20131009235443.4158520f@gandalf.local.home>
-In-Reply-To: <20131009.233928.1664631911260282195.davem@davemloft.net>
-References: <5255C07E.70805@linux.intel.com>
-	<878uy2ytd8.fsf@tassilo.jf.intel.com>
-	<20131009203627.27166b20@gandalf.local.home>
-	<20131009.233928.1664631911260282195.davem@davemloft.net>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 10 Oct 2013 00:04:53 -0400
+Message-ID: <52562760.9010400@linaro.org>
+Date: Wed, 09 Oct 2013 21:04:48 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Dong Zhu <bluezhudong@gmail.com>, Thomas Gleixner <tglx@linutronix.de>
+CC: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND] timer stats: reset entries when disable the timer
+ usage statistics
+References: <20131010025947.GD2139@zhudong.nay.redhat.com>
+In-Reply-To: <20131010025947.GD2139@zhudong.nay.redhat.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 09 Oct 2013 23:39:28 -0400 (EDT)
-David Miller <davem@davemloft.net> wrote:
+On 10/09/2013 07:59 PM, Dong Zhu wrote:
+> From f41628c61d8a9172677ba33a55b61e37ce28f7a6 Mon Sep 17 00:00:00 2001
+> From: Dong Zhu <bluezhudong@gmail.com> 
+> Date: Thu, 10 Oct 2013 10:38:13 +0800
+>
+> When we stop timer statistics collection (via echo 0 >
+> /proc/timers_stats), the statistics data is still exported as if it were
+> correct, which can cause applicaitons to misuse the statistics.
+>
+> This patch resets the statistics when we stop collecting them, to avoid
+> this problem.
+>
+> Signed-off-by: Dong Zhu <bluezhudong@gmail.com>
+> ---
+>  kernel/time/timer_stats.c | 1 +
+>  1 file changed, 1 insertion(+)
+>
+> diff --git a/kernel/time/timer_stats.c b/kernel/time/timer_stats.c
+> index 0b537f2..43f05e7 100644
+> --- a/kernel/time/timer_stats.c
+> +++ b/kernel/time/timer_stats.c
+> @@ -371,6 +371,7 @@ static ssize_t tstats_write(struct file *file, const char __user *buf,
+>  	switch (ctl[0]) {
+>  	case '0':
+>  		if (timer_stats_active) {
+> +			reset_entries();
+>  			timer_stats_active = 0;
+>  			time_stop = ktime_get();
+>  			sync_access();
 
-> From: Steven Rostedt <rostedt@goodmis.org>
-> Date: Wed, 9 Oct 2013 20:36:27 -0400
-> 
-> > I don't know why my email never reached LKML, was there something about
-> > it that prevented it from going? The total character length was 46,972,
-> > well below the 100,000 limit. Also the Cc list wasn't that big. Did my
-> > ISP get flagged as a spam bot or something?
-> > 
-> > I can bounce it to you to see what was wrong with it.
-> 
-> That's odd, can you try sending it to the list again?  I'll watch
-> very carefully for a bounce.
-> 
+This looks ok to me. Thomas, do you have any objections here?
 
-I just sent it as a redirect to LKML. Hopefully that worked.
+thanks
+-john
 
-Thanks,
-
--- Steve
