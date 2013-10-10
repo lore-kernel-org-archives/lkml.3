@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757947Ab3JJP72 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 11:59:28 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52923 "EHLO
+	id S1757845Ab3JJP7y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 11:59:54 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52913 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757395Ab3JJPtL (ORCPT
+	with ESMTP id S1755744Ab3JJPtG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 11:49:11 -0400
+	Thu, 10 Oct 2013 11:49:06 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Henrik Rydberg <rydberg@euromail.se>, Guenter Roeck <linux@roeck-us.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 068/104] USB: UHCI: accept very late isochronous URBs
-Date: Thu, 10 Oct 2013 08:41:56 -0700
-Message-Id: <1381419752-29733-69-git-send-email-kamal@canonical.com>
+Subject: [PATCH 072/104] hwmon: (applesmc) Check key count before proceeding
+Date: Thu, 10 Oct 2013 08:42:00 -0700
+Message-Id: <1381419752-29733-73-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381419752-29733-1-git-send-email-kamal@canonical.com>
 References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
@@ -28,62 +27,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Henrik Rydberg <rydberg@euromail.se>
 
-commit bef073b067a7b1874a6b381e0035bb0516d71a77 upstream.
+commit 5f4513864304672e6ea9eac60583eeac32e679f2 upstream.
 
-Commit 24f531371de1 (USB: EHCI: accept very late isochronous URBs)
-changed the isochronous API provided by ehci-hcd.  URBs submitted too
-late, so that the time slots for all their packets have already
-expired, are no longer rejected outright.  Instead the submission is
-accepted, and the URB completes normally with a -EXDEV error for each
-packet.  This is what client drivers expect.
+After reports from Chris and Josh Boyer of a rare crash in applesmc,
+Guenter pointed at the initialization problem fixed below. The patch
+has not been verified to fix the crash, but should be applied
+regardless.
 
-This patch implements the same policy in uhci-hcd.  It should be
-applied to all kernels containing commit c44b225077bb (UHCI: implement
-new semantics for URB_ISO_ASAP).
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Reported-by: <jwboyer@fedoraproject.org>
+Suggested-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/host/uhci-q.c | 12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ drivers/hwmon/applesmc.c | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/host/uhci-q.c b/drivers/usb/host/uhci-q.c
-index 3b08519..3232578 100644
---- a/drivers/usb/host/uhci-q.c
-+++ b/drivers/usb/host/uhci-q.c
-@@ -1303,7 +1303,7 @@ static int uhci_submit_isochronous(struct uhci_hcd *uhci, struct urb *urb,
- 		}
+diff --git a/drivers/hwmon/applesmc.c b/drivers/hwmon/applesmc.c
+index b41baff..f75abcc 100644
+--- a/drivers/hwmon/applesmc.c
++++ b/drivers/hwmon/applesmc.c
+@@ -525,16 +525,25 @@ static int applesmc_init_smcreg_try(void)
+ {
+ 	struct applesmc_registers *s = &smcreg;
+ 	bool left_light_sensor, right_light_sensor;
++	unsigned int count;
+ 	u8 tmp[1];
+ 	int ret;
  
- 		/* Fell behind? */
--		if (uhci_frame_before_eq(frame, next)) {
-+		if (!uhci_frame_before_eq(next, frame)) {
+ 	if (s->init_complete)
+ 		return 0;
  
- 			/* USB_ISO_ASAP: Round up to the first available slot */
- 			if (urb->transfer_flags & URB_ISO_ASAP)
-@@ -1311,13 +1311,17 @@ static int uhci_submit_isochronous(struct uhci_hcd *uhci, struct urb *urb,
- 						-qh->period;
+-	ret = read_register_count(&s->key_count);
++	ret = read_register_count(&count);
+ 	if (ret)
+ 		return ret;
  
- 			/*
--			 * Not ASAP: Use the next slot in the stream.  If
--			 * the entire URB falls before the threshold, fail.
-+			 * Not ASAP: Use the next slot in the stream,
-+			 * no matter what.
- 			 */
- 			else if (!uhci_frame_before_eq(next,
- 					frame + (urb->number_of_packets - 1) *
- 						qh->period))
--				return -EXDEV;
-+				dev_dbg(uhci_dev(uhci), "iso underrun %p (%u+%u < %u)\n",
-+						urb, frame,
-+						(urb->number_of_packets - 1) *
-+							qh->period,
-+						next);
- 		}
- 	}
- 
++	if (s->cache && s->key_count != count) {
++		pr_warn("key count changed from %d to %d\n",
++			s->key_count, count);
++		kfree(s->cache);
++		s->cache = NULL;
++	}
++	s->key_count = count;
++
+ 	if (!s->cache)
+ 		s->cache = kcalloc(s->key_count, sizeof(*s->cache), GFP_KERNEL);
+ 	if (!s->cache)
 -- 
 1.8.1.2
 
