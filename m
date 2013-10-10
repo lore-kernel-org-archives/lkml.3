@@ -1,319 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756819Ab3JJQlM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 12:41:12 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:52569 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755784Ab3JJQlK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 12:41:10 -0400
-From: Matt Fleming <matt@console-pimps.org>
-To: linux-efi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Peter Jones <pjones@redhat.com>
-Subject: [PATCH] x86/efi: Add EFI framebuffer earlyprintk support
-Date: Thu, 10 Oct 2013 17:41:01 +0100
-Message-Id: <1381423261-30566-1-git-send-email-matt@console-pimps.org>
-X-Mailer: git-send-email 1.8.1.4
+	id S1756289Ab3JJQmw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 12:42:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59393 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754691Ab3JJQmu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 12:42:50 -0400
+Date: Thu, 10 Oct 2013 13:42:22 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: Xiao Guangrong <xiaoguangrong.eric@gmail.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        avi.kivity@gmail.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v2 12/15] KVM: MMU: allow locklessly access shadow page
+ table out of vcpu thread
+Message-ID: <20131010164222.GB3211@amt.cnet>
+References: <1378376958-27252-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <1378376958-27252-13-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <20131008012355.GA3588@amt.cnet>
+ <CAD6C3B4-DD55-47EB-9BC0-17867937AE2D@gmail.com>
+ <20131009015627.GA4816@amt.cnet>
+ <525533DB.1060104@gmail.com>
+ <20131010014710.GA2198@amt.cnet>
+ <20131010120845.GT3574@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131010120845.GT3574@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matt Fleming <matt.fleming@intel.com>
+On Thu, Oct 10, 2013 at 03:08:45PM +0300, Gleb Natapov wrote:
+> On Wed, Oct 09, 2013 at 10:47:10PM -0300, Marcelo Tosatti wrote:
+> > > >> Gleb has a idea that uses RCU_DESTORY to protect the shadow page table
+> > > >> and encodes the page-level into the spte (since we need to check if the spte
+> > > >> is the last-spte. ).  How about this?
+> > > > 
+> > > > Pointer please? Why is DESTROY_SLAB_RCU any safer than call_rcu with
+> > > > regards to limitation? (maybe it is).
+> > > 
+> > > For my experience, freeing shadow page and allocing shadow page are balanced,
+> > > we can check it by (make -j12 on a guest with 4 vcpus and):
+> > > 
+> > > # echo > trace
+> > > [root@eric-desktop tracing]# cat trace > ~/log | sleep 3
+> > > [root@eric-desktop tracing]# cat ~/log | grep new | wc -l
+> > > 10816
+> > > [root@eric-desktop tracing]# cat ~/log | grep prepare | wc -l
+> > > 10656
+> > > [root@eric-desktop tracing]# cat set_event
+> > > kvmmmu:kvm_mmu_get_page
+> > > kvmmmu:kvm_mmu_prepare_zap_page
+> > > 
+> > > alloc VS. free = 10816 : 10656
+> > > 
+> > > So that, mostly all allocing and freeing are done in the slab's
+> > > cache and the slab frees shdadow pages very slowly, there is no rcu issue.
+> > 
+> > A more detailed test case would be:
+> > 
+> > - cpu0-vcpu0 releasing pages as fast as possible
+> > - cpu1 executing get_dirty_log
+> > 
+> > Think of a very large guest.
+> > 
+> The number of shadow pages allocated from slab will be bounded by
+> n_max_mmu_pages, 
 
-It's incredibly difficult to diagnose early EFI boot issues without
-special hardware because earlyprintk=vga doesn't work on EFI systems.
+Correct, but that limit is not suitable (maximum number of mmu pages
+should be larger than number of mmu pages freeable in a rcu grace
+period).
 
-Add support for writing to the EFI framebuffer, via earlyprintk=efi,
-which will actually give users a chance of providing debug output.
+> and, in addition, page released to slab is immediately
+> available for allocation, no need to wait for grace period. 
 
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Jones <pjones@redhat.com>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
----
- Documentation/kernel-parameters.txt  |   8 +-
- arch/x86/Kconfig.debug               |   9 ++
- arch/x86/include/asm/efi.h           |   2 +
- arch/x86/kernel/early_printk.c       |   7 ++
- arch/x86/platform/efi/Makefile       |   1 +
- arch/x86/platform/efi/early_printk.c | 166 +++++++++++++++++++++++++++++++++++
- 6 files changed, 190 insertions(+), 3 deletions(-)
- create mode 100644 arch/x86/platform/efi/early_printk.c
+See SLAB_DESTROY_BY_RCU comment at include/linux/slab.h.
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index fcbb736..c07cb09 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -847,6 +847,7 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 
- 	earlyprintk=	[X86,SH,BLACKFIN,ARM]
- 			earlyprintk=vga
-+			earlyprintk=efi
- 			earlyprintk=xen
- 			earlyprintk=serial[,ttySn[,baudrate]]
- 			earlyprintk=serial[,0x...[,baudrate]]
-@@ -860,7 +861,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			Append ",keep" to not disable it when the real console
- 			takes over.
- 
--			Only vga or serial or usb debug port at a time.
-+			Only one of vga, efi, serial, or usb debug port can
-+			be used at a time.
- 
- 			Currently only ttyS0 and ttyS1 may be specified by
- 			name.  Other I/O ports may be explicitly specified
-@@ -874,8 +876,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			Interaction with the standard serial driver is not
- 			very good.
- 
--			The VGA output is eventually overwritten by the real
--			console.
-+			The VGA and EFI output is eventually overwritten by
-+			the real console.
- 
- 			The xen output can only be used by Xen PV guests.
- 
-diff --git a/arch/x86/Kconfig.debug b/arch/x86/Kconfig.debug
-index 78d91af..d05df92 100644
---- a/arch/x86/Kconfig.debug
-+++ b/arch/x86/Kconfig.debug
-@@ -59,6 +59,15 @@ config EARLY_PRINTK_DBGP
- 	  with klogd/syslogd or the X server. You should normally N here,
- 	  unless you want to debug such a crash. You need usb debug device.
- 
-+config EARLY_PRINTK_EFI
-+	bool "Early printk via EFI framebuffer"
-+	depends on EFI && EARLY_PRINTK && FONT_SUPPORT
-+	---help---
-+	  Write kernel log output directly into the EFI framebuffer.
-+
-+	  This is useful for kernel debugging when your machine crashes very
-+	  early before the console code is initialized.
-+
- config X86_PTDUMP
- 	bool "Export kernel pagetable layout to userspace via debugfs"
- 	depends on DEBUG_KERNEL
-diff --git a/arch/x86/include/asm/efi.h b/arch/x86/include/asm/efi.h
-index 0062a01..65c6e6e 100644
---- a/arch/x86/include/asm/efi.h
-+++ b/arch/x86/include/asm/efi.h
-@@ -109,6 +109,8 @@ static inline bool efi_is_native(void)
- 	return IS_ENABLED(CONFIG_X86_64) == efi_enabled(EFI_64BIT);
- }
- 
-+extern struct console early_efi_console;
-+
- #else
- /*
-  * IF EFI is not configured, have the EFI calls return -ENOSYS.
-diff --git a/arch/x86/kernel/early_printk.c b/arch/x86/kernel/early_printk.c
-index d15f575..6d3d200 100644
---- a/arch/x86/kernel/early_printk.c
-+++ b/arch/x86/kernel/early_printk.c
-@@ -17,6 +17,8 @@
- #include <asm/mrst.h>
- #include <asm/pgtable.h>
- #include <linux/usb/ehci_def.h>
-+#include <linux/efi.h>
-+#include <asm/efi.h>
- 
- /* Simple VGA output */
- #define VGABASE		(__ISA_IO_base + 0xb8000)
-@@ -234,6 +236,11 @@ static int __init setup_early_printk(char *buf)
- 			early_console_register(&early_hsu_console, keep);
- 		}
- #endif
-+#ifdef CONFIG_EARLY_PRINTK_EFI
-+		if (!strncmp(buf, "efi", 3))
-+			early_console_register(&early_efi_console, keep);
-+#endif
-+
- 		buf++;
- 	}
- 	return 0;
-diff --git a/arch/x86/platform/efi/Makefile b/arch/x86/platform/efi/Makefile
-index 6db1cc4..b7b0b35 100644
---- a/arch/x86/platform/efi/Makefile
-+++ b/arch/x86/platform/efi/Makefile
-@@ -1,2 +1,3 @@
- obj-$(CONFIG_EFI) 		+= efi.o efi_$(BITS).o efi_stub_$(BITS).o
- obj-$(CONFIG_ACPI_BGRT) += efi-bgrt.o
-+obj-$(CONFIG_EARLY_PRINTK_EFI)	+= early_printk.o
-diff --git a/arch/x86/platform/efi/early_printk.c b/arch/x86/platform/efi/early_printk.c
-new file mode 100644
-index 0000000..bfe597b
---- /dev/null
-+++ b/arch/x86/platform/efi/early_printk.c
-@@ -0,0 +1,166 @@
-+/*
-+ * Copyright (C) 2013 Intel Corporation; author Matt Fleming
-+ *
-+ *  This file is part of the Linux kernel, and is made available under
-+ *  the terms of the GNU General Public License version 2.
-+ */
-+
-+#include <linux/console.h>
-+#include <linux/font.h>
-+#include <linux/io.h>
-+#include <linux/kernel.h>
-+#include <asm/setup.h>
-+
-+static const struct font_desc *font;
-+
-+static void early_efi_clear_line(int y)
-+{
-+	unsigned long base, *dst;
-+	u16 len;
-+
-+	base = boot_params.screen_info.lfb_base;
-+	len = boot_params.screen_info.lfb_linelength;
-+
-+	dst = early_ioremap(base + (y * len), len);
-+	if (!dst)
-+		return;
-+
-+	memset(dst, 0, len);
-+	early_iounmap(dst, len);
-+}
-+
-+static __init void early_efi_clear_screen(void)
-+{
-+	struct screen_info *si;
-+	int y;
-+
-+	si = &boot_params.screen_info;
-+	for (y = 0; y < si->lfb_height; y++)
-+		early_efi_clear_line(y);
-+}
-+
-+static void early_efi_write_char(void *dst, char c, int h)
-+{
-+	const u8 *src;
-+	u32 fgcolor = 0xaaaaaa;
-+	u8 s8;
-+	int m;
-+
-+	src = font->data + (c * font->height);
-+	s8 = *(src + h);
-+
-+	for (m = 0; m < 8; m++) {
-+		u32 val, mask = 0;
-+
-+		if ((s8 >> (7 - m)) & 1)
-+			mask = 0xffffffff;
-+
-+		val = mask & fgcolor;
-+		memcpy(dst, &val, 4);
-+		dst += 4;
-+	}
-+}
-+
-+static uint32_t efi_x, efi_y;
-+
-+static __init void
-+early_efi_write(struct console *con, const char *str, unsigned int num)
-+{
-+	struct screen_info *si;
-+	unsigned long base;
-+	unsigned int len;
-+	const char *s;
-+	void *dst;
-+
-+	base = boot_params.screen_info.lfb_base;
-+	si = &boot_params.screen_info;
-+	len = si->lfb_linelength;
-+
-+	while (num) {
-+		unsigned int linemax;
-+		int h, count = 0;
-+
-+		for (s = str; *s && *s != '\n'; s++) {
-+			if (count == num)
-+				break;
-+			count++;
-+		}
-+
-+		linemax = (si->lfb_width - efi_x) / font->width;
-+		if (count > linemax)
-+			count = linemax;
-+
-+		for (h = 0; h < font->height; h++) {
-+			unsigned int n, x;
-+
-+			dst = early_ioremap(base + (efi_y + h) * len, len);
-+			if (!dst)
-+				return;
-+
-+			s = str;
-+			n = count;
-+			x = efi_x;
-+
-+			while (n-- > 0) {
-+				early_efi_write_char(dst + x * 4, *s++, h);
-+				x += font->width;
-+			}
-+
-+			early_iounmap(dst, len);
-+		}
-+
-+		num -= count;
-+		efi_x += count * font->width;
-+		str += count;
-+
-+		if (num > 0 && *s == '\n') {
-+			efi_x = 0;
-+			efi_y += font->height;
-+			str++;
-+			num--;
-+		}
-+
-+		if (efi_x >= si->lfb_width) {
-+			efi_x = 0;
-+			efi_y += font->height;
-+		}
-+
-+		if (efi_y + font->height >= si->lfb_height) {
-+			early_efi_clear_screen();
-+			efi_y = 0;
-+		}
-+	}
-+}
-+
-+static __init int early_efi_setup(struct console *con, char *options)
-+{
-+	struct screen_info *si;
-+	u16 xres, yres;
-+
-+	si = &boot_params.screen_info;
-+	xres = si->lfb_width;
-+	yres = si->lfb_height;
-+
-+	/*
-+	 * early_efi_write_char() implicitly assumes a framebuffer with
-+	 * 32-bits per pixel.
-+	 */
-+	if (si->lfb_depth != 32)
-+		return -ENODEV;
-+
-+	font = get_default_font(xres, yres, ~(u32)0, ~(u32)0);
-+	if (!font)
-+		return -ENODEV;
-+
-+	early_efi_clear_screen();
-+
-+	return 0;
-+}
-+
-+struct console early_efi_console = {
-+	.name =		"earlyefi",
-+	.write =	early_efi_write,
-+	.setup =	early_efi_setup,
-+	.flags =	CON_PRINTBUFFER,
-+	.index =	-1,
-+};
--- 
-1.8.1.4
+> RCU comes
+> into play only when slab is shrunk, which should be almost never. If
+> SLAB_DESTROY_BY_RCU slab does not rate limit how it frees its pages this
+> is for slab to fix, not for its users.
+
+Agree.
 
