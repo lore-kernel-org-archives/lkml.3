@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757153Ab3JJPrx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 11:47:53 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52824 "EHLO
+	id S1757028Ab3JJPro (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 11:47:44 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52804 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757112Ab3JJPru (ORCPT
+	with ESMTP id S1756894Ab3JJPrg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 11:47:50 -0400
+	Thu, 10 Oct 2013 11:47:36 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Chris Clark <chris.clark@alcatel-lucent.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Raphael Kubo da Costa <rakuco@FreeBSD.org>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 020/104] ipv4: sendto/hdrincl: don't use destination address found in header
-Date: Thu, 10 Oct 2013 08:41:08 -0700
-Message-Id: <1381419752-29733-21-git-send-email-kamal@canonical.com>
+Subject: [PATCH 084/104] Bluetooth: Add support for BCM20702A0 [0b05, 17cb]
+Date: Thu, 10 Oct 2013 08:42:12 -0700
+Message-Id: <1381419752-29733-85-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381419752-29733-1-git-send-email-kamal@canonical.com>
 References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
@@ -28,47 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Clark <chris.clark@alcatel-lucent.com>
+From: Raphael Kubo da Costa <rakuco@FreeBSD.org>
 
-[ Upstream commit c27c9322d015dc1d9dfdf31724fca71c0476c4d1 ]
+commit 38a172bef8c93ecbfd69715fd88396988e4073fd upstream.
 
-ipv4: raw_sendmsg: don't use header's destination address
+Yet another vendor specific ID for this chipset; this one for the ASUS
+USB-BT400 Bluetooth 4.0 adapter.
 
-A sendto() regression was bisected and found to start with commit
-f8126f1d5136be1 (ipv4: Adjust semantics of rt->rt_gateway.)
+T:  Bus=03 Lev=02 Prnt=02 Port=01 Cnt=01 Dev#=  6 Spd=12  MxCh= 0
+D:  Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=0b05 ProdID=17cb Rev=01.12
+S:  Manufacturer=Broadcom Corp
+S:  Product=BCM20702A0
+S:  SerialNumber=000272C64400
+C:  #Ifs= 4 Cfg#= 1 Atr=a0 MxPwr=100mA
+I:  If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=(none)
+I:  If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=(none)
+I:  If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+I:  If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
 
-The problem is that it tries to ARP-lookup the constructed packet's
-destination address rather than the explicitly provided address.
-
-Fix this using FLOWI_FLAG_KNOWN_NH so that given nexthop is used.
-
-cf. commit 2ad5b9e4bd314fc685086b99e90e5de3bc59e26b
-
-Reported-by: Chris Clark <chris.clark@alcatel-lucent.com>
-Bisected-by: Chris Clark <chris.clark@alcatel-lucent.com>
-Tested-by: Chris Clark <chris.clark@alcatel-lucent.com>
-Suggested-by: Julian Anastasov <ja@ssi.bg>
-Signed-off-by: Chris Clark <chris.clark@alcatel-lucent.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Raphael Kubo da Costa <rakuco@FreeBSD.org>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/ipv4/raw.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/bluetooth/btusb.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/net/ipv4/raw.c b/net/ipv4/raw.c
-index 6f08991..47b4797 100644
---- a/net/ipv4/raw.c
-+++ b/net/ipv4/raw.c
-@@ -573,7 +573,8 @@ static int raw_sendmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
- 	flowi4_init_output(&fl4, ipc.oif, sk->sk_mark, tos,
- 			   RT_SCOPE_UNIVERSE,
- 			   inet->hdrincl ? IPPROTO_RAW : sk->sk_protocol,
--			   inet_sk_flowi_flags(sk) | FLOWI_FLAG_CAN_SLEEP,
-+			   inet_sk_flowi_flags(sk) | FLOWI_FLAG_CAN_SLEEP |
-+			    (inet->hdrincl ? FLOWI_FLAG_KNOWN_NH : 0),
- 			   daddr, saddr, 0, 0);
+diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
+index ccf2d28..a9c58f7 100644
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -97,6 +97,7 @@ static struct usb_device_id btusb_table[] = {
  
- 	if (!inet->hdrincl) {
+ 	/* Broadcom BCM20702A0 */
+ 	{ USB_DEVICE(0x0b05, 0x17b5) },
++	{ USB_DEVICE(0x0b05, 0x17cb) },
+ 	{ USB_DEVICE(0x04ca, 0x2003) },
+ 	{ USB_DEVICE(0x0489, 0xe042) },
+ 	{ USB_DEVICE(0x413c, 0x8197) },
 -- 
 1.8.1.2
 
