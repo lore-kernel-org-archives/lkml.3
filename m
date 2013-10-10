@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755404Ab3JJNK6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 09:10:58 -0400
-Received: from relay.parallels.com ([195.214.232.42]:48197 "EHLO
+	id S1755500Ab3JJNLM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 09:11:12 -0400
+Received: from relay.parallels.com ([195.214.232.42]:48215 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755169Ab3JJNKz (ORCPT
+	with ESMTP id S1755169Ab3JJNLH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 09:10:55 -0400
-Subject: [PATCH 04/11] fuse: Trust kernel i_size only - v4
+	Thu, 10 Oct 2013 09:11:07 -0400
+Subject: [PATCH 05/11] fuse: Trust kernel i_mtime only -v2
 To: miklos@szeredi.hu
 From: Maxim Patlasov <MPatlasov@parallels.com>
 Cc: dev@parallels.com, xemul@parallels.com, fuse-devel@lists.sourceforge.net,
         bfoster@redhat.com, linux-kernel@vger.kernel.org,
         jbottomley@parallels.com, linux-fsdevel@vger.kernel.org,
         akpm@linux-foundation.org, fengguang.wu@intel.com, devel@openvz.org
-Date: Thu, 10 Oct 2013 17:10:46 +0400
-Message-ID: <20131010131036.10089.59063.stgit@dhcp-10-30-17-2.sw.ru>
+Date: Thu, 10 Oct 2013 17:10:56 +0400
+Message-ID: <20131010131051.10089.62357.stgit@dhcp-10-30-17-2.sw.ru>
 In-Reply-To: <20131010130718.10089.6736.stgit@dhcp-10-30-17-2.sw.ru>
 References: <20131010130718.10089.6736.stgit@dhcp-10-30-17-2.sw.ru>
 User-Agent: StGit/0.16
@@ -26,150 +26,316 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pavel Emelyanov <xemul@openvz.org>
+Let the kernel maintain i_mtime locally:
+ - clear S_NOCMTIME
+ - implement i_op->update_time()
+ - flush mtime on fsync and last close
+ - update i_mtime explicitly on truncate and fallocate
 
-Make fuse think that when writeback is on the inode's i_size is always
-up-to-date and not update it with the value received from the userspace.
-This is done because the page cache code may update i_size without letting
-the FS know.
+Fuse inode flag FUSE_I_MTIME_DIRTY serves as indication that local i_mtime
+should be flushed to the server eventually.
 
-This assumption implies fixing the previously introduced short-read helper --
-when a short read occurs the 'hole' is filled with zeroes.
+Changed in v2 (thanks to Brian):
+ - renamed FUSE_I_MTIME_UPDATED to FUSE_I_MTIME_DIRTY
+ - simplified fuse_set_mtime_local()
+ - abandoned optimizations: clearing the flag on some operations (like
+   direct write) is doable, but may lead to unexpected changes of
+   user-visible mtime.
 
-fuse_file_fallocate() is also fixed because now we should keep i_size up to
-date, so it must be updated if FUSE_FALLOCATE request succeeded.
-
-Changed in v2:
- - improved comment in fuse_short_read()
- - fixed fuse_file_fallocate() for KEEP_SIZE mode
-
-Changed in v3:
- - fixed fuse_fillattr() not to use local i_size if writeback-cache is off
- - added a comment explaining why we cannot trust attr.size from server
-
-Changed in v4:
- - do not change fuse_file_fallocate() because what we need is already
-   implemented in commits a200a2d and 14c1441
-
-Signed-off-by: Maxim V. Patlasov <MPatlasov@parallels.com>
+Signed-off-by: Maxim Patlasov <MPatlasov@parallels.com>
 ---
- fs/fuse/dir.c   |   13 +++++++++++--
- fs/fuse/file.c  |   26 ++++++++++++++++++++++++--
- fs/fuse/inode.c |   11 +++++++++--
- 3 files changed, 44 insertions(+), 6 deletions(-)
+ fs/fuse/dir.c    |  109 ++++++++++++++++++++++++++++++++++++++++++++++++------
+ fs/fuse/file.c   |   30 +++++++++++++--
+ fs/fuse/fuse_i.h |    6 ++-
+ fs/fuse/inode.c  |   13 +++++-
+ 4 files changed, 138 insertions(+), 20 deletions(-)
 
 diff --git a/fs/fuse/dir.c b/fs/fuse/dir.c
-index 62b43b5..f022968 100644
+index f022968..eda248b 100644
 --- a/fs/fuse/dir.c
 +++ b/fs/fuse/dir.c
-@@ -854,6 +854,11 @@ static void fuse_fillattr(struct inode *inode, struct fuse_attr *attr,
- 			  struct kstat *stat)
- {
- 	unsigned int blkbits;
-+	struct fuse_conn *fc = get_fuse_conn(inode);
-+
-+	/* see the comment in fuse_change_attributes() */
-+	if (fc->writeback_cache && S_ISREG(inode->i_mode))
-+		attr->size = i_size_read(inode);
+@@ -857,8 +857,11 @@ static void fuse_fillattr(struct inode *inode, struct fuse_attr *attr,
+ 	struct fuse_conn *fc = get_fuse_conn(inode);
+ 
+ 	/* see the comment in fuse_change_attributes() */
+-	if (fc->writeback_cache && S_ISREG(inode->i_mode))
++	if (fc->writeback_cache && S_ISREG(inode->i_mode)) {
+ 		attr->size = i_size_read(inode);
++		attr->mtime = inode->i_mtime.tv_sec;
++		attr->mtimensec = inode->i_mtime.tv_nsec;
++	}
  
  	stat->dev = inode->i_sb->s_dev;
  	stat->ino = attr->ino;
-@@ -1594,6 +1599,7 @@ int fuse_do_setattr(struct inode *inode, struct iattr *attr,
- 	struct fuse_setattr_in inarg;
- 	struct fuse_attr_out outarg;
- 	bool is_truncate = false;
-+	bool is_wb = fc->writeback_cache;
- 	loff_t oldsize;
- 	int err;
+@@ -1582,6 +1585,82 @@ void fuse_release_nowrite(struct inode *inode)
+ 	spin_unlock(&fc->lock);
+ }
  
-@@ -1665,7 +1671,9 @@ int fuse_do_setattr(struct inode *inode, struct iattr *attr,
++static void fuse_setattr_fill(struct fuse_conn *fc, struct fuse_req *req,
++			      struct inode *inode,
++			      struct fuse_setattr_in *inarg_p,
++			      struct fuse_attr_out *outarg_p)
++{
++	req->in.h.opcode = FUSE_SETATTR;
++	req->in.h.nodeid = get_node_id(inode);
++	req->in.numargs = 1;
++	req->in.args[0].size = sizeof(*inarg_p);
++	req->in.args[0].value = inarg_p;
++	req->out.numargs = 1;
++	if (fc->minor < 9)
++		req->out.args[0].size = FUSE_COMPAT_ATTR_OUT_SIZE;
++	else
++		req->out.args[0].size = sizeof(*outarg_p);
++	req->out.args[0].value = outarg_p;
++}
++
++/*
++ * Flush inode->i_mtime to the server
++ */
++int fuse_flush_mtime(struct file *file, bool nofail)
++{
++	struct inode *inode = file->f_mapping->host;
++	struct fuse_inode *fi = get_fuse_inode(inode);
++	struct fuse_conn *fc = get_fuse_conn(inode);
++	struct fuse_req *req = NULL;
++	struct fuse_setattr_in inarg;
++	struct fuse_attr_out outarg;
++	int err;
++
++	if (nofail) {
++		req = fuse_get_req_nofail_nopages(fc, file);
++	} else {
++		req = fuse_get_req_nopages(fc);
++		if (IS_ERR(req))
++			return PTR_ERR(req);
++	}
++
++	memset(&inarg, 0, sizeof(inarg));
++	memset(&outarg, 0, sizeof(outarg));
++
++	inarg.valid |= FATTR_MTIME;
++	inarg.mtime = inode->i_mtime.tv_sec;
++	inarg.mtimensec = inode->i_mtime.tv_nsec;
++
++	fuse_setattr_fill(fc, req, inode, &inarg, &outarg);
++	fuse_request_send(fc, req);
++	err = req->out.h.error;
++	fuse_put_request(fc, req);
++
++	if (!err)
++		clear_bit(FUSE_I_MTIME_DIRTY, &fi->state);
++
++	return err;
++}
++
++/*
++ * S_NOCMTIME is clear, so we need to update inode->i_mtime manually.
++ */
++static void fuse_set_mtime_local(struct iattr *iattr, struct inode *inode)
++{
++	unsigned ivalid = iattr->ia_valid;
++	struct fuse_inode *fi = get_fuse_inode(inode);
++
++	if ((ivalid & ATTR_MTIME) && (ivalid & ATTR_MTIME_SET)) {
++		/* client fs has just set mtime to iattr->ia_mtime */
++		inode->i_mtime = iattr->ia_mtime;
++		clear_bit(FUSE_I_MTIME_DIRTY, &fi->state);
++	} else if ((ivalid & ATTR_MTIME) || (ivalid & ATTR_SIZE)) {
++		/* client fs doesn't know that we're updating i_mtime */
++		inode->i_mtime = current_fs_time(inode->i_sb);
++		set_bit(FUSE_I_MTIME_DIRTY, &fi->state);
++	}
++}
++
+ /*
+  * Set attributes, and at the same time refresh them.
+  *
+@@ -1641,17 +1720,7 @@ int fuse_do_setattr(struct inode *inode, struct iattr *attr,
+ 		inarg.valid |= FATTR_LOCKOWNER;
+ 		inarg.lock_owner = fuse_lock_owner_id(fc, current->files);
+ 	}
+-	req->in.h.opcode = FUSE_SETATTR;
+-	req->in.h.nodeid = get_node_id(inode);
+-	req->in.numargs = 1;
+-	req->in.args[0].size = sizeof(inarg);
+-	req->in.args[0].value = &inarg;
+-	req->out.numargs = 1;
+-	if (fc->minor < 9)
+-		req->out.args[0].size = FUSE_COMPAT_ATTR_OUT_SIZE;
+-	else
+-		req->out.args[0].size = sizeof(outarg);
+-	req->out.args[0].value = &outarg;
++	fuse_setattr_fill(fc, req, inode, &inarg, &outarg);
+ 	fuse_request_send(fc, req);
+ 	err = req->out.h.error;
+ 	fuse_put_request(fc, req);
+@@ -1668,6 +1737,10 @@ int fuse_do_setattr(struct inode *inode, struct iattr *attr,
+ 	}
+ 
+ 	spin_lock(&fc->lock);
++	/* the kernel maintains i_mtime locally */
++	if (fc->writeback_cache && S_ISREG(inode->i_mode))
++		fuse_set_mtime_local(attr, inode);
++
  	fuse_change_attributes_common(inode, &outarg.attr,
  				      attr_timeout(&outarg));
  	oldsize = inode->i_size;
--	i_size_write(inode, outarg.attr.size);
-+	/* see the comment in fuse_change_attributes() */
-+	if (!is_wb || is_truncate || !S_ISREG(inode->i_mode))
-+		i_size_write(inode, outarg.attr.size);
- 
- 	if (is_truncate) {
- 		/* NOTE: this may release/reacquire fc->lock */
-@@ -1677,7 +1685,8 @@ int fuse_do_setattr(struct inode *inode, struct iattr *attr,
- 	 * Only call invalidate_inode_pages2() after removing
- 	 * FUSE_NOWRITE, otherwise fuse_launder_page() would deadlock.
- 	 */
--	if (S_ISREG(inode->i_mode) && oldsize != outarg.attr.size) {
-+	if ((is_truncate || !is_wb) &&
-+	    S_ISREG(inode->i_mode) && oldsize != outarg.attr.size) {
- 		truncate_pagecache(inode, outarg.attr.size);
- 		invalidate_inode_pages2(inode->i_mapping);
- 	}
-diff --git a/fs/fuse/file.c b/fs/fuse/file.c
-index 886f3a2..333a764 100644
---- a/fs/fuse/file.c
-+++ b/fs/fuse/file.c
-@@ -658,9 +658,31 @@ static void fuse_short_read(struct fuse_req *req, struct inode *inode,
- 			    u64 attr_ver)
- {
- 	size_t num_read = req->out.args[0].size;
-+	struct fuse_conn *fc = get_fuse_conn(inode);
-+
-+	if (fc->writeback_cache) {
-+		/*
-+		 * A hole in a file. Some data after the hole are in page cache,
-+		 * but have not reached the client fs yet. So, the hole is not
-+		 * present there.
-+		 */
-+		int i;
-+		int start_idx = num_read >> PAGE_CACHE_SHIFT;
-+		size_t off = num_read & (PAGE_CACHE_SIZE - 1);
-+
-+		for (i = start_idx; i < req->num_pages; i++) {
-+			struct page *page = req->pages[i];
-+			void *mapaddr = kmap_atomic(page);
- 
--	loff_t pos = page_offset(req->pages[0]) + num_read;
--	fuse_read_update_size(inode, pos, attr_ver);
-+			memset(mapaddr + off, 0, PAGE_CACHE_SIZE - off);
-+
-+			kunmap_atomic(mapaddr);
-+			off = 0;
-+		}
-+	} else {
-+		loff_t pos = page_offset(req->pages[0]) + num_read;
-+		fuse_read_update_size(inode, pos, attr_ver);
-+	}
+@@ -1898,6 +1971,17 @@ static int fuse_removexattr(struct dentry *entry, const char *name)
+ 	return err;
  }
  
- static int fuse_readpage(struct file *file, struct page *page)
-diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
-index a8ce6da..63818ab 100644
---- a/fs/fuse/inode.c
-+++ b/fs/fuse/inode.c
-@@ -197,6 +197,7 @@ void fuse_change_attributes(struct inode *inode, struct fuse_attr *attr,
++static int fuse_update_time(struct inode *inode, struct timespec *now,
++			    int flags)
++{
++	if (flags & S_MTIME) {
++		inode->i_mtime = *now;
++		set_bit(FUSE_I_MTIME_DIRTY, &get_fuse_inode(inode)->state);
++		BUG_ON(!S_ISREG(inode->i_mode));
++	}
++	return 0;
++}
++
+ static const struct inode_operations fuse_dir_inode_operations = {
+ 	.lookup		= fuse_lookup,
+ 	.mkdir		= fuse_mkdir,
+@@ -1937,6 +2021,7 @@ static const struct inode_operations fuse_common_inode_operations = {
+ 	.getxattr	= fuse_getxattr,
+ 	.listxattr	= fuse_listxattr,
+ 	.removexattr	= fuse_removexattr,
++	.update_time	= fuse_update_time,
+ };
+ 
+ static const struct inode_operations fuse_symlink_inode_operations = {
+diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+index 333a764..eabe202 100644
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -291,6 +291,9 @@ static int fuse_open(struct inode *inode, struct file *file)
+ 
+ static int fuse_release(struct inode *inode, struct file *file)
+ {
++	if (test_bit(FUSE_I_MTIME_DIRTY, &get_fuse_inode(inode)->state))
++		fuse_flush_mtime(file, true);
++
+ 	fuse_release_common(file, FUSE_RELEASE);
+ 
+ 	/* return value is ignored by VFS */
+@@ -458,6 +461,12 @@ int fuse_fsync_common(struct file *file, loff_t start, loff_t end,
+ 
+ 	fuse_sync_writes(inode);
+ 
++	if (test_bit(FUSE_I_MTIME_DIRTY, &get_fuse_inode(inode)->state)) {
++		int err = fuse_flush_mtime(file, false);
++		if (err)
++			goto out;
++	}
++
+ 	req = fuse_get_req_nopages(fc);
+ 	if (IS_ERR(req)) {
+ 		err = PTR_ERR(req);
+@@ -948,16 +957,21 @@ static size_t fuse_send_write(struct fuse_req *req, struct fuse_io_priv *io,
+ 	return req->misc.write.out.size;
+ }
+ 
+-void fuse_write_update_size(struct inode *inode, loff_t pos)
++bool fuse_write_update_size(struct inode *inode, loff_t pos)
  {
  	struct fuse_conn *fc = get_fuse_conn(inode);
  	struct fuse_inode *fi = get_fuse_inode(inode);
-+	bool is_wb = fc->writeback_cache;
- 	loff_t oldsize;
- 	struct timespec old_mtime;
++	bool ret = false;
  
-@@ -211,10 +212,16 @@ void fuse_change_attributes(struct inode *inode, struct fuse_attr *attr,
- 	fuse_change_attributes_common(inode, attr, attr_valid);
- 
- 	oldsize = inode->i_size;
--	i_size_write(inode, attr->size);
-+	/*
-+	 * In case of writeback_cache enabled, the cached writes beyond EOF
-+	 * extend local i_size without keeping userspace server in sync. So,
-+	 * attr->size coming from server can be stale. We cannot trust it.
-+	 */
-+	if (!is_wb || !S_ISREG(inode->i_mode))
-+		i_size_write(inode, attr->size);
+ 	spin_lock(&fc->lock);
+ 	fi->attr_version = ++fc->attr_version;
+-	if (pos > inode->i_size)
++	if (pos > inode->i_size) {
+ 		i_size_write(inode, pos);
++		ret = true;
++	}
  	spin_unlock(&fc->lock);
++
++	return ret;
+ }
  
--	if (S_ISREG(inode->i_mode)) {
-+	if (!is_wb && S_ISREG(inode->i_mode)) {
- 		bool inval = false;
+ static size_t fuse_send_write_pages(struct fuse_req *req, struct file *file,
+@@ -2862,8 +2876,16 @@ static long fuse_file_fallocate(struct file *file, int mode, loff_t offset,
+ 		goto out;
  
- 		if (oldsize != attr->size) {
+ 	/* we could have extended the file */
+-	if (!(mode & FALLOC_FL_KEEP_SIZE))
+-		fuse_write_update_size(inode, offset + length);
++	if (!(mode & FALLOC_FL_KEEP_SIZE)) {
++		bool changed = fuse_write_update_size(inode, offset + length);
++
++		if (changed && fc->writeback_cache) {
++			struct fuse_inode *fi = get_fuse_inode(inode);
++
++			inode->i_mtime = current_fs_time(inode->i_sb);
++			set_bit(FUSE_I_MTIME_DIRTY, &fi->state);
++		}
++	}
+ 
+ 	if (mode & FALLOC_FL_PUNCH_HOLE)
+ 		truncate_pagecache_range(inode, offset, offset + length - 1);
+diff --git a/fs/fuse/fuse_i.h b/fs/fuse/fuse_i.h
+index a490ba3..3028b8a 100644
+--- a/fs/fuse/fuse_i.h
++++ b/fs/fuse/fuse_i.h
+@@ -117,6 +117,8 @@ enum {
+ 	FUSE_I_ADVISE_RDPLUS,
+ 	/** An operation changing file size is in progress  */
+ 	FUSE_I_SIZE_UNSTABLE,
++	/** i_mtime has been updated locally; a flush to userspace needed */
++	FUSE_I_MTIME_DIRTY,
+ };
+ 
+ struct fuse_conn;
+@@ -870,7 +872,9 @@ long fuse_ioctl_common(struct file *file, unsigned int cmd,
+ unsigned fuse_file_poll(struct file *file, poll_table *wait);
+ int fuse_dev_release(struct inode *inode, struct file *file);
+ 
+-void fuse_write_update_size(struct inode *inode, loff_t pos);
++bool fuse_write_update_size(struct inode *inode, loff_t pos);
++
++int fuse_flush_mtime(struct file *file, bool nofail);
+ 
+ int fuse_do_setattr(struct inode *inode, struct iattr *attr,
+ 		    struct file *file);
+diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
+index 63818ab..253701f 100644
+--- a/fs/fuse/inode.c
++++ b/fs/fuse/inode.c
+@@ -170,8 +170,11 @@ void fuse_change_attributes_common(struct inode *inode, struct fuse_attr *attr,
+ 	inode->i_blocks  = attr->blocks;
+ 	inode->i_atime.tv_sec   = attr->atime;
+ 	inode->i_atime.tv_nsec  = attr->atimensec;
+-	inode->i_mtime.tv_sec   = attr->mtime;
+-	inode->i_mtime.tv_nsec  = attr->mtimensec;
++	/* mtime from server may be stale due to local buffered write */
++	if (!fc->writeback_cache || !S_ISREG(inode->i_mode)) {
++		inode->i_mtime.tv_sec   = attr->mtime;
++		inode->i_mtime.tv_nsec  = attr->mtimensec;
++	}
+ 	inode->i_ctime.tv_sec   = attr->ctime;
+ 	inode->i_ctime.tv_nsec  = attr->ctimensec;
+ 
+@@ -250,6 +253,8 @@ static void fuse_init_inode(struct inode *inode, struct fuse_attr *attr)
+ {
+ 	inode->i_mode = attr->mode & S_IFMT;
+ 	inode->i_size = attr->size;
++	inode->i_mtime.tv_sec  = attr->mtime;
++	inode->i_mtime.tv_nsec = attr->mtimensec;
+ 	if (S_ISREG(inode->i_mode)) {
+ 		fuse_init_common(inode);
+ 		fuse_init_file_inode(inode);
+@@ -296,7 +301,9 @@ struct inode *fuse_iget(struct super_block *sb, u64 nodeid,
+ 		return NULL;
+ 
+ 	if ((inode->i_state & I_NEW)) {
+-		inode->i_flags |= S_NOATIME|S_NOCMTIME;
++		inode->i_flags |= S_NOATIME;
++		if (!fc->writeback_cache)
++			inode->i_flags |= S_NOCMTIME;
+ 		inode->i_generation = generation;
+ 		inode->i_data.backing_dev_info = &fc->bdi;
+ 		fuse_init_inode(inode, attr);
 
