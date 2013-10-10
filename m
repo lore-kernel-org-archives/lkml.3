@@ -1,145 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757472Ab3JJUaO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 16:30:14 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:54703 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756538Ab3JJUaM (ORCPT
+	id S1757271Ab3JJUll (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 16:41:41 -0400
+Received: from natasha.panasas.com ([67.152.220.90]:37608 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756028Ab3JJUlj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 16:30:12 -0400
-Message-ID: <52570E0D.80507@ti.com>
-Date: Thu, 10 Oct 2013 15:29:01 -0500
-From: Suman Anna <s-anna@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Thu, 10 Oct 2013 16:41:39 -0400
+Message-ID: <525710F3.1000209@panasas.com>
+Date: Thu, 10 Oct 2013 13:41:23 -0700
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: Kumar Gala <galak@codeaurora.org>, Ohad Ben-Cohen <ohad@wizery.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Benoit Cousson <bcousson@baylibre.com>, Paul Walmsley <paul@pwsan.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCHv2 2/9] hwspinlock/omap: add support for dt nodes
-References: <cover.1379445653.git.s-anna@ti.com> <0fd6a11880894260d627a50b1e35f363625e9b1d.1379445653.git.s-anna@ti.com> <AE597DCC-83D7-4BCD-8990-3D63540F32EA@codeaurora.org> <20131001084015.GH22259@e106331-lin.cambridge.arm.com> <524CEE9F.8060407@ti.com> <20131009214638.GB2322@kartoffel>
-In-Reply-To: <20131009214638.GB2322@kartoffel>
+To: Fengguang Wu <fengguang.wu@intel.com>
+CC: <linux-crypto@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: initcall calibrate_xor_blocks returned with preemption imbalance
+References: <20131010090217.GB2541@localhost>
+In-Reply-To: <20131010090217.GB2541@localhost>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [172.17.67.163]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+On 10/10/2013 02:02 AM, Fengguang Wu wrote:
+> Greetings,
+> 
+> I got the below dmesg and the first bad commit is
+> 
 
->>
->>> On Fri, Sep 27, 2013 at 05:06:38PM +0100, Kumar Gala wrote:
->>>>
->>>> On Sep 17, 2013, at 2:30 PM, Suman Anna wrote:
->>>>
->>>>> HwSpinlock IP is present only on OMAP4 and other newer SoCs,
->>>>> which are all device-tree boot only. This patch adds the
->>>>> base support for parsing the DT nodes, and removes the code
->>>>> dealing with the traditional platform device instantiation.
->>>>>
->>>>> Signed-off-by: Suman Anna <s-anna@ti.com>
->>>>> ---
->>>>> .../devicetree/bindings/hwlock/omap-hwspinlock.txt | 31 +++++++++++
->>>>> arch/arm/mach-omap2/Makefile                       |  3 --
->>>>> arch/arm/mach-omap2/hwspinlock.c                   | 60 ----------------------
->>>>> drivers/hwspinlock/omap_hwspinlock.c               | 23 +++++++--
->>>>> 4 files changed, 50 insertions(+), 67 deletions(-)
->>>>> create mode 100644 Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
->>>>> delete mode 100644 arch/arm/mach-omap2/hwspinlock.c
->>>>>
->>>>> diff --git a/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt b/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
->>>>> new file mode 100644
->>>>> index 0000000..235b7c5
->>>>> --- /dev/null
->>>>> +++ b/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
->>>>> @@ -0,0 +1,31 @@
->>>>> +OMAP4+ HwSpinlock Driver
->>>>> +========================
->>>>> +
->>>>> +Required properties:
->>>>> +- compatible:		Currently supports only "ti,omap4-hwspinlock" for
->>>>> +				OMAP44xx, OMAP54xx, AM33xx, AM43xx, DRA7xx SoCs
->>>
->>> "Currently supports" is not something I expect to see in a binding
->>> document. That sounds like a description of the driver rather than the
->>> binding.
->>>
->>> How similar are these hardware modules? What are the differences?
->>
->> The IP is almost the same, they all have the same revision id. The
->> number of locks (each represented by a register) though vary from one
->> SoC to another (OMAP4, OMAP5, DRA7 have same number of locks, and
->> AM33xx/AM43xx have a different number). The number of locks is directly
->> read by the driver from a module register. There is no separate .data
->> associated with the of_device_id table, so I used a single compatible
->> property for all the SoCs.
-> 
-> Ok. Probeability is good, it keeps these simpler :)
-> 
-> I think This can be reworded to say "should contain" rather than "currently
-> supports only":
-> 
-> - compatible:		Should contain "ti,omap4-hwspinlock" for
-> 			OMAP44xx, OMAP54xx, AM33xx, AM43xx, or DRA7xx SoCs
-> 
-> That way the binding allows for a future backwards-compatible variant, and
-> doesn't mention the current level of support in Linux.
+Dear Wu
 
-Yes, that is the change I have made in my current working set as well.
+This 20545536cd8ea949c61527b6395ec8c0d2c237b1 is from my tree at linux-open-osd.org
+How did you happen to find it and run with it at all?
 
+I have never pushed it to any mailing list or blessed it for release.
+Yes it has a known problem that I never bothered to fix. I carry
+it in my own development trees so I can run xor.ko on UML.
+
+If it has leaked to any upstream trees, I'm so sorry tell me where
+you found it and I'll have it removed.
+
+I can see below:
+	Merge 'open-osd/exofs_ioctl' into devel-hourly-2013101007
+
+What is devel-hourly and what does exofs_ioctl branch useful for.
+exofs_ioctl is for NFS-Ganesha pnfs support. It is not good for
+any other purpose. 
+If you are developing NFS-Ganesha pnfs code feel free to remove
+this patch, again it is so I can run exofs on UML which uses
+xor.ko. If you use VMs or HW you do not have this problem.
+
+Thanks
+Boaz
+
+> commit 20545536cd8ea949c61527b6395ec8c0d2c237b1
+> Author: Boaz Harrosh <bharrosh@panasas.com>
+> Date:   Thu Jul 19 15:22:37 2012 +0300
 > 
->>
->>>
->>>>> +- reg:			Contains the hwspinlock register address range (base
->>>>> +			address and length)
->>>
->>> Is there only one register bank for the hwlock module?
->>
->> The lock registers start at a certain offset (0x800) within the module
->> register space, and the offsets for various registers are identical
->> between all SoCs.
+>     RFC: do_xor_speed Broken on UML do to jiffies
+>     
+>     Remember that hang I reported a while back on UML. Well
+>     I'm at it again, and it still hangs and I found why.
+>     
+>     I have dprinted jiffies and it never advances during the
+>     loop at do_xor_speed. There for it is stuck in an endless
+>     loop. I have also dprinted current_kernel_time() and it
+>     returns the same constant value as well.
+>     
+>     Note that it does usually work on UML, only during
+>     the modprobe of xor.ko while that test is running. It looks
+>     like some lucking is preventing the clock from ticking.
+>     
+>     However ktime_get_ts does work for me so I changed the code
+>     as below, so I can work. See how I put several safety
+>     guards, to never get hangs again.
+>     And I think my time based approach is more accurate then
+>     previous system.
+>     
+>     UML guys please investigate the jiffies issue? what is
+>     xor.ko not doing right?
+>     
+>     Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
 > 
-> What are the other registers within the module? Are they shared with other
-> devices, or are they simply unused by the hwspinlock driver?
-
-No, they are not shared with other devices. These are like revision
-register, and a SYSCONFIG register which is used by the OMAP hwmod
-layer. This register definition is in line with other modules on OMAP.
-
+> [    0.232004]    generic_sse:  6816.333 MB/sec
+> [    0.233534] xor: using function: prefetch64-sse (9178.666 MB/sec)
+> [    0.235445] ------------[ cut here ]------------
+> [    0.236010] WARNING: CPU: 0 PID: 1 at init/main.c:701 do_one_initcall+0x128/0x138()
+> [    0.240041] initcall calibrate_xor_blocks+0x0/0x144 returned with preemption imbalance 
+> [    0.242872] Modules linked in:
+> [    0.244006] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.12.0-rc4-wl-02197-g3d5587e #119
+> [    0.246837] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+> [    0.248004]  0000000000000000 ffff88000e1e5e00 ffffffff81a3a6bf ffff88000e1e5e48
+> [    0.252003]  ffff88000e1e5e38 ffffffff810c53d5 ffffffff81000315 ffffffff8256ff16
+> [    0.255243]  0000000000000000 0000000000000000 ffff88000e1e5fd8 ffff88000e1e5e98
+> [    0.258537] Call Trace:
+> [    0.260010]  [<ffffffff81a3a6bf>] dump_stack+0x54/0x74
+> [    0.261730]  [<ffffffff810c53d5>] warn_slowpath_common+0x7f/0x98
+> [    0.263623]  [<ffffffff81000315>] ? do_one_initcall+0x128/0x138
+> [    0.264006]  [<ffffffff8256ff16>] ? do_xor_speed+0xe2/0xe2
+> [    0.265785]  [<ffffffff810c543a>] warn_slowpath_fmt+0x4c/0x4e
+> [    0.268007]  [<ffffffff811767d9>] ? free_pages+0x45/0x47
+> [    0.269751]  [<ffffffff8256ff16>] ? do_xor_speed+0xe2/0xe2
+> [    0.272006]  [<ffffffff81000315>] do_one_initcall+0x128/0x138
+> [    0.273843]  [<ffffffff82532ed3>] kernel_init_freeable+0x159/0x1da
+> [    0.276005]  [<ffffffff8253274d>] ? do_early_param+0x88/0x88
+> [    0.277835]  [<ffffffff81a2a057>] ? rest_init+0xdb/0xdb
+> [    0.280006]  [<ffffffff81a2a065>] kernel_init+0xe/0xdb
+> [    0.281718]  [<ffffffff81a4d97c>] ret_from_fork+0x7c/0xb0
+> [    0.283485]  [<ffffffff81a2a057>] ? rest_init+0xdb/0xdb
+> [    0.284021] ---[ end trace 3592511960ba24aa ]---
+> [    0.285636] atomic64 test passed for x86-64 platform with CX8 and with SSE
 > 
->>
->>>
->>>>> +- ti,hwmods:		Name of the hwmod associated with the hwspinlock device
->>>>> +
->>>>> +Common hwlock properties:
->>>>> +The following describes the usage of the common hwlock properties (defined in
->>>>> +Documentation/devicetree/bindings/hwlock/hwlock.txt) on OMAP.
->>>>> +
->>>>> +- hwlock-base-id:	There are currently no OMAP SoCs with multiple
->>>>> +			hwspinlock devices. The OMAP driver uses a default
->>>>> +			base id value of 0 for the locks present within the
->>>>> +			single hwspinlock device on all SoCs.
->>>
->>>
->>> Driver details should not leak into bindngs...
->>
->> OK, will remove the info on driver details.
->>
->>>
->>> As mentioned in the other patch, I don't think this is the way to handle
->>> this. I think we need a phandle + args representation.
->>
->> This is an optional parameter for now and I was going to revise the
->> description based on comments from Kumar Gala on this thread, but I will
->> wait and adjust this based on the outcome on the first patch.
+> git bisect start 3d5587ec7222eebd6d2fa2d4b245ef837a8f36fa 15c03dd4859ab16f9212238f29dd315654aa94f6 --
+> git bisect good bd1bc39506ad6ce236bf932757d6e3a81b3e3d55  # 09:41     20+      0  Merge 'regmap/topic/core' into devel-hourly-2013101007
+> git bisect good f0a6d5852cc8b4e9e518c0426580f0589327e438  # 10:56     20+      0  Merge 'arm-soc/next/dt' into devel-hourly-2013101007
+> git bisect good 909dc6fa1f1f42dcdae62b07c4d6b894a392e0d7  # 11:36     20+      0  Merge 'ipsec-next/testing' into devel-hourly-2013101007
+> git bisect good 7fb1b0615235b3975def59fbffd0f52c71736bd3  # 11:57     20+      1  Merge 'arm-soc/next/drivers' into devel-hourly-2013101007
+> git bisect good ac5fb9846698e9dffc430ab38c1aaefe50a51980  # 12:22     20+      0  Merge remote-tracking branch 'regulator/topic/optional' into regulator-next
+> git bisect good b9729e9f8d82724c98f13dd358c7b08a4d7de3d2  # 13:31     20+      3  mtd: nand: pxa3xx_nand: Remove redundant of_match_ptr
+> git bisect  bad c420082bfcc00a908360edd4bb5826ece1c59ae4  # 14:13      0-     20  Merge 'open-osd/exofs_ioctl' into devel-hourly-2013101007
+> git bisect good 3f8985b977fbab1bf7ddea03bf311949ebca4afd  # 15:03     20+      0  Merge remote-tracking branch 'regulator/topic/tps6586x' into regulator-next
+> git bisect  bad 7425910fffb08f541e4d2819c4ae7900894fc504  # 15:41      0-      1  {OUT-OF-TREE-DEBUG}: Remove the cdb_offset check because of osc-osd bug
+> git bisect  bad 71e6bb4b77c4782642b3cb6b4f9369191e08b934  # 15:48      0-      1  pnfs_osd_xdr_srv (private): Add pnfs-objects server side XDR encoding/decoding
+> git bisect  bad 20545536cd8ea949c61527b6395ec8c0d2c237b1  # 16:03      0-     16  RFC: do_xor_speed Broken on UML do to jiffies
+> git bisect good 4a9a4b3528afce48d3f4b1c07b988040e78112e2  # 16:22     20+      0  pnfs: Proper delay for NFS4ERR_RECALLCONFLICT in layout_get_done
+> git bisect good 4a9a4b3528afce48d3f4b1c07b988040e78112e2  # 16:36     60+      0  pnfs: Proper delay for NFS4ERR_RECALLCONFLICT in layout_get_done
+> git bisect  bad 3d5587ec7222eebd6d2fa2d4b245ef837a8f36fa  # 16:36      0-     19  Merge 'tip/x86/bsp-hotplug' into devel-hourly-2013101007
+> git bisect good 0e7a3ed04f0cd4311096d691888f88569310ee6c  # 16:57     63+      0  Merge branch 'perf-urgent-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
+> git bisect good a0cf1abc25ac197dd97b857c0f6341066a8cb1cf  # 16:57     63+      0  Add linux-next specific files for 20130927
 > 
-> Ok.
+> Thanks,
+> Fengguang
+> 
 
-I have removed this property altogether in my current working set. Will
-post the v3 of the series soon.
 
-regards
-Suman
