@@ -1,91 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755521Ab3JJNnd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 09:43:33 -0400
-Received: from mail-db9lp0250.outbound.messaging.microsoft.com ([213.199.154.250]:20054
-	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752611Ab3JJNnb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 09:43:31 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zz1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzzz2dh2a8h839h8e2h8e3h93fhd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5hbe9i1155h)
-From: Yoder Stuart-B08248 <B08248@freescale.com>
-To: Bhushan Bharat-R65777 <R65777@freescale.com>,
-        Wood Scott-B07421 <B07421@freescale.com>
-CC: Kim Phillips <kim.phillips@linaro.org>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "a.motakis@virtualopensystems.com" <a.motakis@virtualopensystems.com>,
-        "agraf@suse.de" <agraf@suse.de>,
-        Sethi Varun-B16395 <B16395@freescale.com>,
-        "peter.maydell@linaro.org" <peter.maydell@linaro.org>,
-        "santosh.shukla@linaro.org" <santosh.shukla@linaro.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Subject: RE: RFC: (re-)binding the VFIO platform driver to a platform device
-Thread-Topic: RFC: (re-)binding the VFIO platform driver to a platform device
-Thread-Index: AQHOvtVyiXjaos/F7ECAilSa5Xx4A5ngRDQAgAAiCgCAAECXgIAAC74AgADT3ICAADSaMIAAAtYAgAADCQCAAB/ggIAACLGAgAACMICAAAU8gIAAIuWAgAE8pICAAAXnAIAABMAAgAAWmACACVE7IIAACQSAgAAB3+CAAAm8gIAAxBKAgABjQBA=
-Date: Thu, 10 Oct 2013 13:43:22 +0000
-Message-ID: <9F6FE96B71CF29479FF1CDC8046E15036DF30E@039-SN1MPN1-002.039d.mgd.msft.net>
-References: <1380738758.12932.43.camel@snotra.buserror.net>
-	 <20131002184330.GC5108@cbox> <20131002203735.GA10871@kroah.com>
-	 <1380748121.12932.89.camel@snotra.buserror.net>
-	 <20131002211631.GA11914@kroah.com>
-	 <1380749715.12932.109.camel@snotra.buserror.net>
-	 <20131002234009.GA27714@kroah.com>
-	 <1380825207.12932.151.camel@snotra.buserror.net>
-	 <20131003185434.GA26123@kroah.com>
-	 <1380827494.12932.161.camel@snotra.buserror.net>
-	 <20131003203226.GB27336@kroah.com>
-	 <9F6FE96B71CF29479FF1CDC8046E15036DDA62@039-SN1MPN1-002.039d.mgd.msft.net>
-	 <1381346507.7979.334.camel@snotra.buserror.net>
-	 <9F6FE96B71CF29479FF1CDC8046E15036DDAB4@039-SN1MPN1-002.039d.mgd.msft.net>
- <1381348999.7979.360.camel@snotra.buserror.net>
- <6A3DF150A5B70D4F9B66A25E3F7C888D071AEE4C@039-SN2MPN1-012.039d.mgd.msft.net>
-In-Reply-To: <6A3DF150A5B70D4F9B66A25E3F7C888D071AEE4C@039-SN2MPN1-012.039d.mgd.msft.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.214.86.89]
-Content-Type: text/plain; charset="utf-8"
+	id S1754751Ab3JJNtD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 09:49:03 -0400
+Received: from ns.mm-sol.com ([212.124.72.66]:56929 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752197Ab3JJNtA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 09:49:00 -0400
+Message-ID: <5256AFFE.5090605@mm-sol.com>
+Date: Thu, 10 Oct 2013 16:47:42 +0300
+From: Stanimir Varbanov <svarbanov@mm-sol.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: "Theodore Ts'o" <tytso@mit.edu>, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Matt Mackall <mpm@selenic.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH 0/2] Add support for Qualcomm's PRNG
+References: <1380811955-18085-1-git-send-email-svarbanov@mm-sol.com> <20131003165130.GA11974@thunk.org> <524EEB96.6040707@mm-sol.com> <20131004181005.GA7022@thunk.org> <52556C4E.9000604@mm-sol.com> <52557137.5050200@zytor.com>
+In-Reply-To: <52557137.5050200@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r9ADheRM020743
 
-> I am trying to understand what you are proposing here (example "DEVICE"
-> can be handled by "DRIVER1" and "VFIO-PLATFORM-DRIVER"):
->  - By default drv->explicit_bind_only will be clear in all drivers.
->  - By default device->explicit_bind_only will also be clear for all
-> devices.
->  - On boot, matching devices will bound to the respective driver (DEVICE
-> >==> DRIVER1).
->    This will never bound with VFIO-PLATFORM-DRIVER. So far same as
-> before.
->  - Via Sysfs interface set drv->explicit_bind_only for VFIO-PLATFORM-
-> DRIVER.
+Hi Ted, Peter,
 
-No.  VFIO-PLATFORM-DRIVER is _always_ explicit_bind_only and thus will be
-statically set in the driver.  See Kim's patch.
+On 10/09/2013 06:07 PM, H. Peter Anvin wrote:
+> On 10/09/2013 07:46 AM, Stanimir Varbanov wrote:
+>>
+>> No, there is no public documentation for the block. Here is the driver
+>> documentation which I used as a base [1].
+>>
+>> My guess was that - if it is PRNG (got from hardware description link
+>> above) than according to wiki [2] it is also known as a deterministic
+>> random bit generator (DRBG). The recommendation for RNG using DRBG is
+>> NIST 800-90.
+>>
+>> Of course I could be wrong, so I can add a comment that this is just a
+>> guess and we shouldn't over-reliance on this.
+>>
+> 
+> There needs to be an architecturally guaranteed lower bound on the
+> entropic content for this to be at all useful.  However, the hwrandom
+> interface is currently expecting fully entropic output (which is almost
+> certainly bogus... consider the PowerPC random number generator[1]) and
+> so using it for a PRNG output is directly wrong.  This is part of why
+> RDRAND support is implemented directly in rngd so that we can do the
+> required cryptographic data reduction to produce fully entropic output.
 
->  - Then for the devices user want, set device->explicit_bind_only.
->  - unbind DEVICE from DRIVER1
->  - bind DEVICE with VFIO-PLATFORM-DRIVER. This time it will be successful
-> because (device->explicit_bind_only && drv->explicit_bind_only) is set.
->  - Now when done, unbind the DEVICE from VFIO-PLATFORM-DRIVER.
->  - Now user can re-bind the device with either DRIVER1 or VFIO-PLATFORM-
-> DRIVER.
->  - Now once drv->explicit_bind_only is set in VFIO-PLATFORM-DRIVER, and a
-> new device comes (device - hotplug) then can gets bound to matching drive
-> and not with VFIO-PLATFORM-DRIVER.
+I ran the rngtest with following command line:
 
-Otherwise, it looks correct to me.
+# cat /dev/hw_random | rngtest -c 100000
 
-Stuart
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+Copyright (c) 2004 by Henrique de Moraes Holschuh
+This is free software; see the source for copying conditions.  There is
+NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR
+PURPOSE.
+
+rngtest: starting FIPS tests...
+rngtest: bits received from input: 2000000032
+rngtest: FIPS 140-2 successes: 99925
+rngtest: FIPS 140-2 failures: 75
+rngtest: FIPS 140-2(2001-10-10) Monobit: 10
+rngtest: FIPS 140-2(2001-10-10) Poker: 9
+rngtest: FIPS 140-2(2001-10-10) Runs: 20
+rngtest: FIPS 140-2(2001-10-10) Long run: 38
+rngtest: FIPS 140-2(2001-10-10) Continuous run: 0
+rngtest: input channel speed: (min=1.267; avg=53.222; max=2384.186)Mibits/s
+rngtest: FIPS tests speed: (min=3.016; avg=48.847; max=49.931)Mibits/s
+rngtest: Program run time: 75191914 microseconds
+
+Could you guys comment those results?
+
+regards,
+Stan
+
