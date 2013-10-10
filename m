@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757920Ab3JJPz1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 11:55:27 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53030 "EHLO
+	id S1756503Ab3JJP4R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 11:56:17 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53009 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755955Ab3JJPuS (ORCPT
+	with ESMTP id S1755616Ab3JJPt6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 11:50:18 -0400
+	Thu, 10 Oct 2013 11:49:58 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Kees Cook <keescook@chromium.org>, Jiri Kosina <jkosina@suse.cz>,
+Cc: Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 038/104] HID: zeroplus: validate output report details
-Date: Thu, 10 Oct 2013 08:41:26 -0700
-Message-Id: <1381419752-29733-39-git-send-email-kamal@canonical.com>
+Subject: [PATCH 063/104] xhci: Fix oops happening after address device timeout
+Date: Thu, 10 Oct 2013 08:41:51 -0700
+Message-Id: <1381419752-29733-64-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381419752-29733-1-git-send-email-kamal@canonical.com>
 References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
@@ -27,60 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
 
-commit 78214e81a1bf43740ce89bb5efda78eac2f8ef83 upstream.
+commit 284d20552461466b04d6bfeafeb1c47a8891b591 upstream.
 
-The zeroplus HID driver was not checking the size of allocated values
-in fields it used. A HID device could send a malicious output report
-that would cause the driver to write beyond the output report allocation
-during initialization, causing a heap overflow:
+When a command times out, the command ring is first aborted,
+and then stopped. If the command ring is empty when it is stopped
+the stop event will point to next command which is not yet set.
+xHCI tries to handle this next event often causing an oops.
 
-[ 1442.728680] usb 1-1: New USB device found, idVendor=0c12, idProduct=0005
-...
-[ 1466.243173] BUG kmalloc-192 (Tainted: G        W   ): Redzone overwritten
+Don't handle command completion events on stopped cmd ring if ring is
+empty.
 
-CVE-2013-2889
+This patch should be backported to kernels as old as 3.7, that contain
+the commit b92cc66c047ff7cf587b318fe377061a353c120f "xHCI: add aborting
+command ring function"
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Reported-by: Giovanni <giovanni.nervi@yahoo.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/hid/hid-zpff.c | 18 +++++-------------
- 1 file changed, 5 insertions(+), 13 deletions(-)
+ drivers/usb/host/xhci-ring.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/drivers/hid/hid-zpff.c b/drivers/hid/hid-zpff.c
-index f6ba81d..f348f7f 100644
---- a/drivers/hid/hid-zpff.c
-+++ b/drivers/hid/hid-zpff.c
-@@ -70,21 +70,13 @@ static int zpff_init(struct hid_device *hid)
- 	struct hid_report *report;
- 	struct hid_input *hidinput = list_entry(hid->inputs.next,
- 						struct hid_input, list);
--	struct list_head *report_list =
--			&hid->report_enum[HID_OUTPUT_REPORT].report_list;
- 	struct input_dev *dev = hidinput->input;
--	int error;
-+	int i, error;
- 
--	if (list_empty(report_list)) {
--		hid_err(hid, "no output report found\n");
--		return -ENODEV;
--	}
--
--	report = list_entry(report_list->next, struct hid_report, list);
--
--	if (report->maxfield < 4) {
--		hid_err(hid, "not enough fields in report\n");
--		return -ENODEV;
-+	for (i = 0; i < 4; i++) {
-+		report = hid_validate_values(hid, HID_OUTPUT_REPORT, 0, i, 1);
-+		if (!report)
-+			return -ENODEV;
+diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
+index 3020c71..04b212d 100644
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -1390,6 +1390,12 @@ static void handle_cmd_completion(struct xhci_hcd *xhci,
+ 			inc_deq(xhci, xhci->cmd_ring);
+ 			return;
+ 		}
++		/* There is no command to handle if we get a stop event when the
++		 * command ring is empty, event->cmd_trb points to the next
++		 * unset command
++		 */
++		if (xhci->cmd_ring->dequeue == xhci->cmd_ring->enqueue)
++			return;
  	}
  
- 	zpff = kzalloc(sizeof(struct zpff_device), GFP_KERNEL);
+ 	switch (le32_to_cpu(xhci->cmd_ring->dequeue->generic.field[3])
 -- 
 1.8.1.2
 
