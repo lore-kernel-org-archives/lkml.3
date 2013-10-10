@@ -1,203 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757523Ab3JJUWJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 16:22:09 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:61361 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755311Ab3JJUWH (ORCPT
+	id S1756818Ab3JJU01 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 16:26:27 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:51224 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754904Ab3JJU0Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 16:22:07 -0400
-Message-ID: <52570C50.5050302@gmail.com>
-Date: Fri, 11 Oct 2013 04:21:36 +0800
-From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
+	Thu, 10 Oct 2013 16:26:25 -0400
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>, lenb@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, mingo@elte.hu,
-        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
-        Toshi Kani <toshi.kani@hp.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Thomas Renninger <trenn@suse.de>, Yinghai Lu <yinghai@kernel.org>,
-        Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, Mel Gorman <mgorman@suse.de>,
-        mina86@mina86.com, Minchan Kim <minchan@kernel.org>,
-        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
-        lwoodman@redhat.com, Rik van Riel <riel@redhat.com>,
-        jweiner@redhat.com, prarit@redhat.com
-CC: "x86@kernel.org" <x86@kernel.org>, linux-doc@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>, linux-acpi@vger.kernel.org,
-        imtangchen@gmail.com, Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>
-Subject: [PATCH part1 v7 6/6] mem-hotplug: Introduce movable_node boot option
-References: <52570A6E.2010806@gmail.com>
-In-Reply-To: <52570A6E.2010806@gmail.com>
+In-Reply-To: <1381435276.5630.6.camel@pasglop>
+References: <1381378788.4330.30.camel@pasglop>
+	<20131010174457.GE13759@kroah.com>
+	<1381435276.5630.6.camel@pasglop>
+Date: Thu, 10 Oct 2013 22:26:25 +0200
+X-Google-Sender-Auth: Ot21G1JlrNz6ly3InCmHCroI9IU
+Message-ID: <CAMuHMdW7RXjS3vvLUdTPCafNu_PcgDgbVbzVCHTOEeTsfHK90g@mail.gmail.com>
+Subject: Re: sysfs for my chips
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Tejun Heo <tj@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tang Chen <tangchen@cn.fujitsu.com>
+On Thu, Oct 10, 2013 at 10:01 PM, Benjamin Herrenschmidt
+<benh@kernel.crashing.org> wrote:
+>> > Among other, I want a sysfs file in there to access "xscom" on the chip
+>> > which is a sideband bus used for low level stuff (think jtag on steroid)
+>> > which we can use, among others, for chip health monitoring, general
+>> > debugging and diagnostics, etc...
+>> >
+>> > I might add more such as VPD, model information, etc... later or at
+>> > least a link to corresponding device-tree node.
+>>
+>> So a mixture of things that traditionally have been in /proc/cpuinfo?
+>
+> Not really no. /proc/cpuinfo is per-thread, and potentially might have a
+> core number and a few global things. Here I'm talking mostly about
+>
+>   - A pseudo-file that gives access to a sideband HW bus to perform
+> read/write of system registers essentially, which is per physical
+> "chip" (chip in this context is processor chip, which can have lots of
+> cores/threads, but also can be our memory buffer chips).
+>
+>   - The other stuff is much more than the kind of one-liner than one
+> finds in cpuinfo. For now I'm just slapping the usual "devspec" file
+> that contains the corresponding device-tree path and whatever additional
+> info can be retrieved from there. Things like VPDs for example can be
+> pretty big.
+>
+>> I've always wanted to see the cpuinfo files turn into sysfs files, so
+>> that tools can parse them "properly" and not have to do different things
+>> on different arches, like the proc/cpuinfo file is today (a mess).
+>>
+>> > How do you suggest I expose that ? So far I've been thinking about
+>> > something like
+>> >
+>> >     /sys/chips/{processor,centaur}/chip#/files
+>> >
+>> > or to avoid namespace clashes
+>> >
+>> >     /sys/firmware/chips/{processor,centaur}/chip#/files
+>> >
+>> > Or maybe just
+>> >
+>> >     /sys/firmware/chips/chip#/files
+>> >
+>> > (the chip type can be inferred from the chip#, they use the same space
+>> > at least as far my firmware exposes them to Linux)
+>> >
+>> > (the actual access to xscom goes via firmware tho it makes *some* sense)
+>> >
+>> > But I could instead create platform devices corresponding to the
+>> > device-tree representation of each of those chips ... and have the
+>> > platform devices contain the magic attributes. That's a bit more
+>> > convoluted though.
+>>
+>> We already create platform devices for the cpus in the system in
+>> /sys/devices/system/, so can you just hang the attribute files off of
+>> those platform devices?
+>
+> This is not CPUs. CPUs are threads really. Even if they were cores, that
+> still wouldn't cut it. I'm looking at chips here and not all of them
+> actually processor chips. The SCOM bus address space is global to a
+> physical chip and allows to access various resources that are only
+> remotely related to the cores on it.
 
-The hot-Pluggable field in SRAT specifies which memory is hotpluggable.
-As we mentioned before, if hotpluggable memory is used by the kernel,
-it cannot be hot-removed. So memory hotplug users may want to set all
-hotpluggable memory in ZONE_MOVABLE so that the kernel won't use it.
+What about a "bus" for the sideband bus? That allows to decouple it
+from cores, and allows to support non-processor chips, too?
 
-Memory hotplug users may also set a node as movable node, which has
-ZONE_MOVABLE only, so that the whole node can be hot-removed.
+Gr{oetje,eeting}s,
 
-But the kernel cannot use memory in ZONE_MOVABLE. By doing this, the
-kernel cannot use memory in movable nodes. This will cause NUMA
-performance down. And other users may be unhappy.
+                        Geert
 
-So we need a way to allow users to enable and disable this functionality.
-In this patch, we introduce movable_node boot option to allow users to
-choose to not to consume hotpluggable memory at early boot time and
-later we can set it as ZONE_MOVABLE.
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-To achieve this, the movable_node boot option will control the memblock
-allocation direction. That said, after memblock is ready, before SRAT is
-parsed, we should allocate memory near the kernel image as we explained
-in the previous patches. So if movable_node boot option is set, the kernel
-does the following:
-
-1. After memblock is ready, make memblock allocate memory bottom up.
-2. After SRAT is parsed, make memblock behave as default, allocate memory
-   top down.
-
-Users can specify "movable_node" in kernel commandline to enable this
-functionality. For those who don't use memory hotplug or who don't want
-to lose their NUMA performance, just don't specify anything. The kernel
-will work as before.
-
-Suggested-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Suggested-by: Ingo Molnar <mingo@kernel.org>
-Acked-by: Tejun Heo <tj@kernel.org>
-Acked-by: Toshi Kani <toshi.kani@hp.com>
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
----
- Documentation/kernel-parameters.txt |    3 +++
- arch/x86/mm/numa.c                  |   11 +++++++++++
- mm/Kconfig                          |   17 ++++++++++++-----
- mm/memory_hotplug.c                 |   31 +++++++++++++++++++++++++++++++
- 4 files changed, 57 insertions(+), 5 deletions(-)
-
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index fcbb736..a75a70a 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1773,6 +1773,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			that the amount of memory usable for all allocations
- 			is not too small.
- 
-+	movable_node	[KNL,X86] Boot-time switch to enable the effects
-+			of CONFIG_MOVABLE_NODE=y. See mm/Kconfig for details.
-+
- 	MTD_Partition=	[MTD]
- 			Format: <name>,<region-number>,<size>,<offset>
- 
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index 8bf93ba..24aec58 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -567,6 +567,17 @@ static int __init numa_init(int (*init_func)(void))
- 	ret = init_func();
- 	if (ret < 0)
- 		return ret;
-+
-+	/*
-+	 * We reset memblock back to the top-down direction
-+	 * here because if we configured ACPI_NUMA, we have
-+	 * parsed SRAT in init_func(). It is ok to have the
-+	 * reset here even if we did't configure ACPI_NUMA
-+	 * or acpi numa init fails and fallbacks to dummy
-+	 * numa init.
-+	 */
-+	memblock_set_bottom_up(false);
-+
- 	ret = numa_cleanup_meminfo(&numa_meminfo);
- 	if (ret < 0)
- 		return ret;
-diff --git a/mm/Kconfig b/mm/Kconfig
-index 394838f..3f4ffda 100644
---- a/mm/Kconfig
-+++ b/mm/Kconfig
-@@ -153,11 +153,18 @@ config MOVABLE_NODE
- 	help
- 	  Allow a node to have only movable memory.  Pages used by the kernel,
- 	  such as direct mapping pages cannot be migrated.  So the corresponding
--	  memory device cannot be hotplugged.  This option allows users to
--	  online all the memory of a node as movable memory so that the whole
--	  node can be hotplugged.  Users who don't use the memory hotplug
--	  feature are fine with this option on since they don't online memory
--	  as movable.
-+	  memory device cannot be hotplugged.  This option allows the following
-+	  two things:
-+	  - When the system is booting, node full of hotpluggable memory can
-+	  be arranged to have only movable memory so that the whole node can
-+	  be hot-removed. (need movable_node boot option specified).
-+	  - After the system is up, the option allows users to online all the
-+	  memory of a node as movable memory so that the whole node can be
-+	  hot-removed.
-+
-+	  Users who don't use the memory hotplug feature are fine with this
-+	  option on since they don't specify movable_node boot option or they
-+	  don't online memory as movable.
- 
- 	  Say Y here if you want to hotplug a whole node.
- 	  Say N here if you want kernel to use memory on all nodes evenly.
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index ed85fe3..8c91d0a 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -31,6 +31,7 @@
- #include <linux/firmware-map.h>
- #include <linux/stop_machine.h>
- #include <linux/hugetlb.h>
-+#include <linux/memblock.h>
- 
- #include <asm/tlbflush.h>
- 
-@@ -1412,6 +1413,36 @@ static bool can_offline_normal(struct zone *zone, unsigned long nr_pages)
- }
- #endif /* CONFIG_MOVABLE_NODE */
- 
-+static int __init cmdline_parse_movable_node(char *p)
-+{
-+#ifdef CONFIG_MOVABLE_NODE
-+	/*
-+	 * Memory used by the kernel cannot be hot-removed because Linux
-+	 * cannot migrate the kernel pages. When memory hotplug is
-+	 * enabled, we should prevent memblock from allocating memory
-+	 * for the kernel.
-+	 *
-+	 * ACPI SRAT records all hotpluggable memory ranges. But before
-+	 * SRAT is parsed, we don't know about it.
-+	 *
-+	 * The kernel image is loaded into memory at very early time. We
-+	 * cannot prevent this anyway. So on NUMA system, we set any
-+	 * node the kernel resides in as un-hotpluggable.
-+	 *
-+	 * Since on modern servers, one node could have double-digit
-+	 * gigabytes memory, we can assume the memory around the kernel
-+	 * image is also un-hotpluggable. So before SRAT is parsed, just
-+	 * allocate memory near the kernel image to try the best to keep
-+	 * the kernel away from hotpluggable memory.
-+	 */
-+	memblock_set_bottom_up(true);
-+#else
-+	pr_warn("movable_node option not supported\n");
-+#endif
-+	return 0;
-+}
-+early_param("movable_node", cmdline_parse_movable_node);
-+
- /* check which state of node_states will be changed when offline memory */
- static void node_states_check_changes_offline(unsigned long nr_pages,
- 		struct zone *zone, struct memory_notify *arg)
--- 
-1.7.1
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
