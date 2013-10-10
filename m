@@ -1,52 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752326Ab3JJXfn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 19:35:43 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:64838 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751912Ab3JJXfl (ORCPT
+	id S1752395Ab3JJXke (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 19:40:34 -0400
+Received: from mail-vb0-f48.google.com ([209.85.212.48]:39584 "EHLO
+	mail-vb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751741Ab3JJXkd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 19:35:41 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>
-Subject: [PATCH] ACPI / hotplug / PCI: Fix error code path in acpiphp_enumerate_slots()
-Date: Fri, 11 Oct 2013 01:47:23 +0200
-Message-ID: <2737842.bynDuCj2Fi@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
+	Thu, 10 Oct 2013 19:40:33 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <1381444274.2367.44.camel@buesod1.americas.hpqcorp.net>
+References: <20131009232642.GA12776@jtriplet-mobl1>
+	<1381365455.2297.14.camel@buesod1.americas.hpqcorp.net>
+	<CAD=FV=UD2TDBVrQeC4862WQwKG32723mG0D4e1qrzVHF9+koFg@mail.gmail.com>
+	<1381440403.2367.32.camel@buesod1.americas.hpqcorp.net>
+	<CAEgFheKsx+gKZa76333m4C-gPbEy2AFSVA3mCNR8HjaLFNb1Ww@mail.gmail.com>
+	<1381444274.2367.44.camel@buesod1.americas.hpqcorp.net>
+Date: Thu, 10 Oct 2013 16:40:32 -0700
+X-Google-Sender-Auth: bHQSq469JqgVxg1JVcTrp3S44E0
+Message-ID: <CAD=FV=X_x9Ryn483H_gU9Wnq5bx7AAeMov0LY_nHACBL1X3ywQ@mail.gmail.com>
+Subject: Re: Regression parsing GPT (EFI) partition tables
+From: Doug Anderson <dianders@chromium.org>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Bill Richardson <wfrichar@chromium.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, Karel Zak <kzak@redhat.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Sean Paul <seanpaul@chromium.org>, Olof Johansson <olof@lixom.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Davidlohr,
 
-One of the error code paths in acpiphp_enumerate_slots() is missing
-a pci_dev_put(bridge->pci_dev) call, so add it.
+On Thu, Oct 10, 2013 at 3:31 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
+> Then you should *really* use the force_gpt option, which is there to
+> bypass any MBR checks, and you can avoid issues like this :)
+>
+> Anyway, this is still a regression and I believe we can go ahead and
+> just warn the user about the case instead of not recognizing the disk.
+>
+> Bill/Doug, care to send a formal patch (with corresponding comments)?
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
+OK, I've posted up at <https://patchwork.kernel.org/patch/3019531/>.
+As I've said, I haven't spent the time to really understand every last
+detail (I was just doing dumb git bisects), so if my explanation /
+comments don't actually make sense then please correct me.
 
-This is new in 3.12-rc.
+Thanks for your help in tracking this down!
 
----
- drivers/pci/hotplug/acpiphp_glue.c |    1 +
- 1 file changed, 1 insertion(+)
-
-Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-===================================================================
---- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
-+++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-@@ -1007,6 +1007,7 @@ void acpiphp_enumerate_slots(struct pci_
- 		if (WARN_ON(!context)) {
- 			mutex_unlock(&acpiphp_context_lock);
- 			put_device(&bus->dev);
-+			pci_dev_put(bridge->pci_dev);
- 			kfree(bridge);
- 			return;
- 		}
-
+-Doug
