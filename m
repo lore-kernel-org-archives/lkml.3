@@ -1,58 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757464Ab3JJUTa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 16:19:30 -0400
-Received: from filtteri6.pp.htv.fi ([213.243.153.189]:49968 "EHLO
-	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757416Ab3JJUTW (ORCPT
+	id S1757490Ab3JJUUN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 16:20:13 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:55253 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756028Ab3JJUUK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 16:19:22 -0400
-Date: Thu, 10 Oct 2013 23:19:14 +0300
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
-        Carlos Chinea <cch.devel@gmail.com>, Paul Walmsley <paul@pwsan.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>,
-        "=?iso-8859-1?Q?'Beno=EEt?= Cousson'" <bcousson@baylibre.com>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org,
-        "'Pali =?iso-8859-1?Q?Roh=E1r'?=" <pali.rohar@gmail.com>,
-        =?utf-8?B?J9CY0LLQsNC50LvQviDQlNC40LzQuNGC0YDQvtCyJw==?= 
-	<freemangordon@abv.bg>,
-        Joni Lapilainen <joni.lapilainen@gmail.com>,
-        Tony Lindgren <tony@atomide.com>
-Subject: Re: [RFCv3 0/7] OMAP SSI driver
-Message-ID: <20131010201914.GC29989@blackmetal.musicnaut.iki.fi>
-References: <1381091235-18293-1-git-send-email-sre@debian.org>
- <20131008172815.GA8313@atomide.com>
- <20131010172128.GF28657@earth.universe>
- <20131010182801.GB29989@blackmetal.musicnaut.iki.fi>
- <20131010200236.GA6603@earth.universe>
+	Thu, 10 Oct 2013 16:20:10 -0400
+Message-ID: <52570BE0.3040101@gmail.com>
+Date: Fri, 11 Oct 2013 04:19:44 +0800
+From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131010200236.GA6603@earth.universe>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andrew Morton <akpm@linux-foundation.org>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>, lenb@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, mingo@elte.hu,
+        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
+        Toshi Kani <toshi.kani@hp.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Thomas Renninger <trenn@suse.de>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, Mel Gorman <mgorman@suse.de>,
+        mina86@mina86.com, Minchan Kim <minchan@kernel.org>,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, Rik van Riel <riel@redhat.com>,
+        jweiner@redhat.com, prarit@redhat.com
+CC: "x86@kernel.org" <x86@kernel.org>, linux-doc@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>, linux-acpi@vger.kernel.org,
+        imtangchen@gmail.com, Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>
+Subject: [PATCH part1 v7 4/6] x86/mem-hotplug: Support initialize page tables
+ in bottom-up
+References: <52570A6E.2010806@gmail.com>
+In-Reply-To: <52570A6E.2010806@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 10, 2013 at 10:02:36PM +0200, Sebastian Reichel wrote:
-> P.S.: You can get a mainline kernel status matrix for the Nokia
->       N900 on this page: http://elinux.org/N900
+From: Tang Chen <tangchen@cn.fujitsu.com>
 
-Thanks for summary, and the above page looks very useful. I wonder
-would it make sense to add also N9/N950 there (some functionality is
-shared)? Also TWL4030 DT status could be updated, e.g. watchdog support
-was done already last year with 8899b8d93ec64b7a8e54807a68a958e1206535e2.
+The Linux kernel cannot migrate pages used by the kernel. As a
+result, kernel pages cannot be hot-removed. So we cannot allocate
+hotpluggable memory for the kernel.
 
-A.
+In a memory hotplug system, any numa node the kernel resides in
+should be unhotpluggable. And for a modern server, each node could
+have at least 16GB memory. So memory around the kernel image is
+highly likely unhotpluggable.
+
+ACPI SRAT (System Resource Affinity Table) contains the memory
+hotplug info. But before SRAT is parsed, memblock has already
+started to allocate memory for the kernel. So we need to prevent
+memblock from doing this.
+
+So direct memory mapping page tables setup is the case. init_mem_mapping()
+is called before SRAT is parsed. To prevent page tables being allocated
+within hotpluggable memory, we will use bottom-up direction to allocate
+page tables from the end of kernel image to the higher memory.
+
+Note:
+As for allocating page tables in lower memory, TJ said:
+[This is an optional behavior which is triggered by a very specific
+kernel boot param, which I suspect is gonna need to stick around to
+support memory hotplug in the current setup unless we add another
+layer of address translation to support memory hotplug.]
+
+As for page tables may occupy too much lower memory if using 4K mapping
+(CONFIG_DEBUG_PAGEALLOC and CONFIG_KMEMCHECK both disable using >4k
+pages), TJ said:
+[But as I said in the same paragraph, parsing SRAT earlier doesn't
+solve the problem in itself either. Ignoring the option if 4k mapping
+is required and memory consumption would be prohibitive should work, no?
+Something like that would be necessary if we're gonna worry about cases
+like this no matter how we implement it, but, frankly, I'm not sure this
+is something worth worrying about.]
+
+Acked-by: Tejun Heo <tj@kernel.org>
+Acked-by: Toshi Kani <toshi.kani@hp.com>
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+---
+ arch/x86/mm/init.c |   66 ++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 64 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index ea2be79..b6892a7 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -458,6 +458,51 @@ static void __init memory_map_top_down(unsigned long map_start,
+ 		init_range_memory_mapping(real_end, map_end);
+ }
+ 
++/**
++ * memory_map_bottom_up - Map [map_start, map_end) bottom up
++ * @map_start: start address of the target memory range
++ * @map_end: end address of the target memory range
++ *
++ * This function will setup direct mapping for memory range
++ * [map_start, map_end) in bottom-up. Since we have limited the
++ * bottom-up allocation above the kernel, the page tables will
++ * be allocated just above the kernel and we map the memory
++ * in [map_start, map_end) in bottom-up.
++ */
++static void __init memory_map_bottom_up(unsigned long map_start,
++					unsigned long map_end)
++{
++	unsigned long next, new_mapped_ram_size, start;
++	unsigned long mapped_ram_size = 0;
++	/* step_size need to be small so pgt_buf from BRK could cover it */
++	unsigned long step_size = PMD_SIZE;
++
++	start = map_start;
++	min_pfn_mapped = start >> PAGE_SHIFT;
++
++	/*
++	 * We start from the bottom (@map_start) and go to the top (@map_end).
++	 * The memblock_find_in_range() gets us a block of RAM from the
++	 * end of RAM in [min_pfn_mapped, max_pfn_mapped) used as new pages
++	 * for page table.
++	 */
++	while (start < map_end) {
++		if (map_end - start > step_size) {
++			next = round_up(start + 1, step_size);
++			if (next > map_end)
++				next = map_end;
++		} else
++			next = map_end;
++
++		new_mapped_ram_size = init_range_memory_mapping(start, next);
++		start = next;
++
++		if (new_mapped_ram_size > mapped_ram_size)
++			step_size <<= STEP_SIZE_SHIFT;
++		mapped_ram_size += new_mapped_ram_size;
++	}
++}
++
+ void __init init_mem_mapping(void)
+ {
+ 	unsigned long end;
+@@ -473,8 +518,25 @@ void __init init_mem_mapping(void)
+ 	/* the ISA range is always mapped regardless of memory holes */
+ 	init_memory_mapping(0, ISA_END_ADDRESS);
+ 
+-	/* setup direct mapping for range [ISA_END_ADDRESS, end) in top-down*/
+-	memory_map_top_down(ISA_END_ADDRESS, end);
++	/*
++	 * If the allocation is in bottom-up direction, we setup direct mapping
++	 * in bottom-up, otherwise we setup direct mapping in top-down.
++	 */
++	if (memblock_bottom_up()) {
++		unsigned long kernel_end = __pa_symbol(_end);
++
++		/*
++		 * we need two separate calls here. This is because we want to
++		 * allocate page tables above the kernel. So we first map
++		 * [kernel_end, end) to make memory above the kernel be mapped
++		 * as soon as possible. And then use page tables allocated above
++		 * the kernel to map [ISA_END_ADDRESS, kernel_end).
++		 */
++		memory_map_bottom_up(kernel_end, end);
++		memory_map_bottom_up(ISA_END_ADDRESS, kernel_end);
++	} else {
++		memory_map_top_down(ISA_END_ADDRESS, end);
++	}
+ 
+ #ifdef CONFIG_X86_64
+ 	if (max_pfn > max_low_pfn) {
+-- 
+1.7.1
+
