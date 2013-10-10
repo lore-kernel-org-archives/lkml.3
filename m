@@ -1,153 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757672Ab3JJVTP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 17:19:15 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:60897 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756278Ab3JJVQm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 17:16:42 -0400
-From: Suman Anna <s-anna@ti.com>
-To: Ohad Ben-Cohen <ohad@wizery.com>, Mark Rutland <mark.rutland@arm.com>
-CC: Tony Lindgren <tony@atomide.com>, Benoit Cousson <bcousson@baylibre.com>,
-        Kumar Gala <galak@codeaurora.org>, Paul Walmsley <paul@pwsan.com>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, Suman Anna <s-anna@ti.com>
-Subject: [PATCHv3 1/8] hwspinlock/core: maintain a list of registered hwspinlock banks
-Date: Thu, 10 Oct 2013 16:15:28 -0500
-Message-ID: <1381439735-52888-2-git-send-email-s-anna@ti.com>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1381439735-52888-1-git-send-email-s-anna@ti.com>
-References: <1381439735-52888-1-git-send-email-s-anna@ti.com>
+	id S1756977Ab3JJVVD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 17:21:03 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:35116 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751919Ab3JJVVA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 17:21:00 -0400
+Date: Thu, 10 Oct 2013 22:20:30 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Russell King <rmk+kernel@arm.linux.org.uk>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Felipe Balbi <balbi@ti.com>
+Cc: linux-usb@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Thierry Reding <thierry.reding@gmail.com>
+Message-ID: <20131010212030.GV21581@sirena.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="n6e+1ms4ENB7zzLn"
+Content-Disposition: inline
+X-Cookie: Penalty for private use.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: linux-next: manual merge of the usb-gadget tree
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The hwspinlock_device structure is used for registering a bank of
-locks with the driver core. The structure already contains the
-necessary members to identify the bank of locks. The core does not
-maintain the hwspinlock_devices itself, but maintains only a radix
-tree for all the registered locks. A specific lock can be requested
-by users using a global lock id, and any device-specific fields
-can be retrieved through a reference to the hwspinlock_device in
-each lock.
 
-The global lock id, however, is not friendly to be requested for
-users using the device-tree model. The device-tree representation
-will typically have each of the hwspinlock devices represented as
-a DT node, and a specific lock can be requested using the device's
-phandle and a lock specifier. Add support to the core therefore to
-maintain all the registered hwspinlock_devices, so that a device
-can be looked up and a specific lock belonging to the device
-requested through a phandle + args approach.
+--n6e+1ms4ENB7zzLn
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Signed-off-by: Suman Anna <s-anna@ti.com>
----
- drivers/hwspinlock/hwspinlock_core.c     | 48 ++++++++++++++++++++++++++++++++
- drivers/hwspinlock/hwspinlock_internal.h |  2 ++
- 2 files changed, 50 insertions(+)
+Today's linux-next merge of the usb-gadget tree got conflicts in
+drivers/usb/musb/davinci.c caused by an add in ea78201e2 (usb: musb:
+davinci: fix resources passed to MUSB driver for DM6467) adjacent to
+the modification of the device registration in 4c9ad1059 (DMA-API: usb:
+musb: use platform_device_register_full() to avoid directly messing with
+dma masks) from the ARM tree.
 
-diff --git a/drivers/hwspinlock/hwspinlock_core.c b/drivers/hwspinlock/hwspinlock_core.c
-index 461a0d7..00c49d3 100644
---- a/drivers/hwspinlock/hwspinlock_core.c
-+++ b/drivers/hwspinlock/hwspinlock_core.c
-@@ -59,6 +59,11 @@ static RADIX_TREE(hwspinlock_tree, GFP_KERNEL);
-  */
- static DEFINE_MUTEX(hwspinlock_tree_lock);
- 
-+/*
-+ * A linked list for maintaining all the registered hwspinlock devices.
-+ * The list is maintained in an ordered-list of the supported locks group.
-+ */
-+static LIST_HEAD(hwspinlock_devices);
- 
- /**
-  * __hwspin_trylock() - attempt to lock a specific hwspinlock
-@@ -307,6 +312,40 @@ out:
- 	return hwlock;
- }
- 
-+/*
-+ * Add a new hwspinlock device to the global list, keeping the list of
-+ * devices sorted by base order.
-+ *
-+ * Returns 0 on success, or -EBUSY if the new device overlaps with some
-+ * other device's lock space.
-+ */
-+static int hwspinlock_device_add(struct hwspinlock_device *bank)
-+{
-+	struct list_head *entry = &hwspinlock_devices;
-+	struct hwspinlock_device *_bank;
-+	int ret = 0;
-+
-+	list_for_each(entry, &hwspinlock_devices) {
-+		_bank = list_entry(entry, struct hwspinlock_device, list);
-+		if (_bank->base_id >= bank->base_id + bank->num_locks)
-+			break;
-+	}
-+
-+	if (entry != &hwspinlock_devices &&
-+	    entry->prev != &hwspinlock_devices) {
-+		_bank = list_entry(entry->prev, struct hwspinlock_device, list);
-+		if (_bank->base_id + _bank->num_locks > bank->base_id) {
-+			dev_err(bank->dev, "hwlock space overlap, cannot add device\n");
-+			ret = -EBUSY;
-+		}
-+	}
-+
-+	if (!ret)
-+		list_add_tail(&bank->list, entry);
-+
-+	return ret;
-+}
-+
- /**
-  * hwspin_lock_register() - register a new hw spinlock device
-  * @bank: the hwspinlock device, which usually provides numerous hw locks
-@@ -339,6 +378,12 @@ int hwspin_lock_register(struct hwspinlock_device *bank, struct device *dev,
- 	bank->base_id = base_id;
- 	bank->num_locks = num_locks;
- 
-+	mutex_lock(&hwspinlock_tree_lock);
-+	ret = hwspinlock_device_add(bank);
-+	mutex_unlock(&hwspinlock_tree_lock);
-+	if (ret)
-+		return ret;
-+
- 	for (i = 0; i < num_locks; i++) {
- 		hwlock = &bank->lock[i];
- 
-@@ -355,6 +400,9 @@ int hwspin_lock_register(struct hwspinlock_device *bank, struct device *dev,
- reg_failed:
- 	while (--i >= 0)
- 		hwspin_lock_unregister_single(base_id + i);
-+	mutex_lock(&hwspinlock_tree_lock);
-+	list_del(&bank->list);
-+	mutex_unlock(&hwspinlock_tree_lock);
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(hwspin_lock_register);
-diff --git a/drivers/hwspinlock/hwspinlock_internal.h b/drivers/hwspinlock/hwspinlock_internal.h
-index d26f78b..aff560c 100644
---- a/drivers/hwspinlock/hwspinlock_internal.h
-+++ b/drivers/hwspinlock/hwspinlock_internal.h
-@@ -53,6 +53,7 @@ struct hwspinlock {
- 
- /**
-  * struct hwspinlock_device - a device which usually spans numerous hwspinlocks
-+ * @list: list element to link hwspinlock devices together
-  * @dev: underlying device, will be used to invoke runtime PM api
-  * @ops: platform-specific hwspinlock handlers
-  * @base_id: id index of the first lock in this device
-@@ -60,6 +61,7 @@ struct hwspinlock {
-  * @lock: dynamically allocated array of 'struct hwspinlock'
-  */
- struct hwspinlock_device {
-+	struct list_head list;
- 	struct device *dev;
- 	const struct hwspinlock_ops *ops;
- 	int base_id;
--- 
-1.8.4
+I've fixed trivially and can carry as required.
 
+--n6e+1ms4ENB7zzLn
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSVxobAAoJELSic+t+oim9/qgP/RNbnGpcK/IYci+ayu7askU1
+cj+2+zBxmAC8Ygi0goYvk5IqBrMiLo5LzCV3MjEj47M1fDxQOnlOL/wuWnZipTxE
+SLStZfyw102uipvkaq7Howf02e/gUQ9mbJNqfFsdKf0ABQJDMhghrm06lQhpCN7C
+IWLtOC5g0IANijm1pFYIT9WOs4ss40FHEmWA3FpisrUiinN4SHVvnH33A9LU+6rK
+6pRMUN6ciia1TPbkFWDSBeGrgbXtjVyBEnbF0ROeCjtAQ+GbZpHfu8eGZdvl444R
+QAblRvHn0JfKaEfM8leyOXXVfpAObsUmGPDGgFVozbTBrOFAIF3VSbvLKXgeys8c
+/4cWDr2lQfYv77J/aVSTF0mxSe5Kk1u7+GLcdewYrmrljwCzB+SK+KeejWkcCr5C
+JFzT3QL3P3QPsrCP2NWJp+FQW9zZt6gvBFRLR2tNs8sI1ooJceNxMW47RM+y0IdQ
+r3kQzuY+nL4HlUuI9AIJD4GOY6vwANLJ4OGDf+qR40cqVpiviDnmDZ1jhdA59+tA
+ZVTht4T8CWcfoEpuhTUbSz0iIroTU3D02tPExQojjUYHUvRyM2h+ovQmIbrwAE0U
+MYfsu6GUsuwhfrTZiAjWpGeBbLAjCmjtqWlisVzqzefQn4UfrylVcsG9vxVb8AUj
+4QdJHp3pqtsKY5g89vAL
+=ckCF
+-----END PGP SIGNATURE-----
+
+--n6e+1ms4ENB7zzLn--
