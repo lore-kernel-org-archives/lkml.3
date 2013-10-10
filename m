@@ -1,99 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754862Ab3JJJjN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 05:39:13 -0400
-Received: from mail-db8lp0189.outbound.messaging.microsoft.com ([213.199.154.189]:41393
-	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754285Ab3JJJjK (ORCPT
+	id S1755105Ab3JJJje (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 05:39:34 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:52733 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754889Ab3JJJjb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 05:39:10 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -5
-X-BigFish: VS-5(zz9371I103dK542I1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275bhz2dh2a8h839h8e2h8e3h93fhd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5hbe9i1155h)
-From: Lu Jingchang-B35083 <B35083@freescale.com>
-To: "vinod.koul@intel.com" <vinod.koul@intel.com>
-CC: "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: RE: [PATCH v6 3/3] dma: Add Freescale eDMA engine driver support
-Thread-Topic: [PATCH v6 3/3] dma: Add Freescale eDMA engine driver support
-Thread-Index: AQHOtFY1IowHKOMYeU+9K682+M69vpntzd0g
-Date: Thu, 10 Oct 2013 09:39:04 +0000
-Message-ID: <B56CDBE15CE27145A4B77D2D24263E8522EFE6@039-SN1MPN1-004.039d.mgd.msft.net>
-References: <1379498279-16096-1-git-send-email-b35083@freescale.com>
-In-Reply-To: <1379498279-16096-1-git-send-email-b35083@freescale.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.193.20.98]
-Content-Type: text/plain; charset="utf-8"
+	Thu, 10 Oct 2013 05:39:31 -0400
+Date: Thu, 10 Oct 2013 10:39:08 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "cw00.choi@samsung.com" <cw00.choi@samsung.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "rob@landley.net" <rob@landley.net>,
+        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
+        "ldewangan@nvidia.com" <ldewangan@nvidia.com>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5] extcon: palmas: Added a new compatible type
+ *ti,palmas-usb-vid*
+Message-ID: <20131010093908.GD26954@e106331-lin.cambridge.arm.com>
+References: <1381390377-11109-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1381390377-11109-1-git-send-email-kishon@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r9A9dHRk019327
 
-Hi, Vinod,
-
-  Could you please help review this patch? Could it be merged into your next tree?
-  Thanks!
-
-
-Best Regards,
-Jingchang
-
-
-> -----Original Message-----
-> From: Lu Jingchang-B35083
-> Sent: Wednesday, September 18, 2013 5:58 PM
-> To: vinod.koul@intel.com
-> Cc: shawn.guo@linaro.org; linux-kernel@vger.kernel.org; linux-arm-
-> kernel@lists.infradead.org; devicetree@vger.kernel.org; Lu Jingchang-
-> B35083; Wang Huan-B18965
-> Subject: [PATCH v6 3/3] dma: Add Freescale eDMA engine driver support
+On Thu, Oct 10, 2013 at 08:32:57AM +0100, Kishon Vijay Abraham I wrote:
+> The Palmas device contains only a USB VBUS-ID detector, so added a
+> compatible type *ti,palmas-usb-vid*. Didn't remove the existing compatible
+> types for backward compatibility.
 > 
-> Add Freescale enhanced direct memory(eDMA) controller support.
-> The eDMA controller deploys DMAMUXs routing DMA request sources(slot)
-> to eDMA channels.
-> This module can be found on Vybrid and LS-1 SoCs.
-> 
-> Signed-off-by: Alison Wang <b18965@freescale.com>
-> Signed-off-by: Jingchang Lu <b35083@freescale.com>
+> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 > ---
-> changes in v6:
->   holding lock in dma_control to prevent race.
+> Changes from v4:
+> * added compatible property "ti,twl6035-usb-vid"
 > 
-> changes in v5:
->   config slave_id when dmaengine_slave_config intead of channel request.
->   adding residue calculation and dma pause/resume device control.
+> Changes from v3:
+> * Fixed commit log message (VID to VBUS-ID).
+> * Fixed the Documentation to tell "ti,twl6035-usb" and "ti,palmas-usb" is
+> deprecated
+> Changes from [1]:
+> * Since the old compatible values will be in 3.11 kernel, we shouldn't remove
+> the old compatible values. So retain the old compatible values.
 > 
-> changes in v4:
->   using exact compatible string in binding document.
+> [1] -> http://www.spinics.net/lists/linux-omap/msg95843.html
 > 
-> changes in v3:
->   handle all pending interrupt one time.
->   add protect lock on dma transfer complete handling.
->   change desc and tcd alloc flag to GFP_NOWAIT.
->   add sanity check and error messages.
+>  Documentation/devicetree/bindings/extcon/extcon-palmas.txt |    4 +++-
+>  drivers/extcon/extcon-palmas.c                             |    2 ++
+>  2 files changed, 5 insertions(+), 1 deletion(-)
 > 
-> changes in v2:
->   using generic dma-channels property instead of fsl,dma-channel.
->   rename the binding document to fsl-edma.txt.
-> 
-> 
->  Documentation/devicetree/bindings/dma/fsl-edma.txt |  84 ++
->  drivers/dma/Kconfig                                |  10 +
->  drivers/dma/Makefile                               |   1 +
->  drivers/dma/fsl-edma.c                             | 944
-> +++++++++++++++++++++
->  4 files changed, 1039 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/dma/fsl-edma.txt
->  create mode 100644 drivers/dma/fsl-edma.c
+> diff --git a/Documentation/devicetree/bindings/extcon/extcon-palmas.txt b/Documentation/devicetree/bindings/extcon/extcon-palmas.txt
+> index 7dab6a8..ce2100f 100644
+> --- a/Documentation/devicetree/bindings/extcon/extcon-palmas.txt
+> +++ b/Documentation/devicetree/bindings/extcon/extcon-palmas.txt
+> @@ -2,7 +2,9 @@ EXTCON FOR PALMAS/TWL CHIPS
+>  
+>  PALMAS USB COMPARATOR
+>  Required Properties:
+> - - compatible : Should be "ti,palmas-usb" or "ti,twl6035-usb"
+> + - compatible : Should be "ti,palmas-usb-vid" or "ti,twl6035-usb-vid".
+> +   "ti,twl6035-usb" and "ti,palmas-usb" is deprecated and is kept
+> +   for backward compatibility.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+How about having these one per line, with a description:
+
+- compatible: should contain one of:
+  * "ti,palmas-usb-vid" for palmas systems. 
+  * "ti,twl6035-usb-vid" for twl6035 systems.
+  * "ti,palmas-usb" (DEPRECATED - use "ti,palmas-usb-vid").
+  * "ti,twl6035-usb" (DEPRECATED - use "ti,twl6035-usb-vid").
+
+That makes it easier to add to in future, and hopefully makes things a
+bit clearer.
+
+I don't think we need to state it's kept for backwards compatiblity.
+The set of strings Linux understands is a Linux detail rather than a dt
+detail.
+
+>  
+>  Optional Properties:
+>   - ti,wakeup : To enable the wakeup comparator in probe
+> diff --git a/drivers/extcon/extcon-palmas.c b/drivers/extcon/extcon-palmas.c
+> index 6c91976..6e83e9a 100644
+> --- a/drivers/extcon/extcon-palmas.c
+> +++ b/drivers/extcon/extcon-palmas.c
+> @@ -269,7 +269,9 @@ static const struct dev_pm_ops palmas_pm_ops = {
+>  
+>  static struct of_device_id of_palmas_match_tbl[] = {
+>  	{ .compatible = "ti,palmas-usb", },
+> +	{ .compatible = "ti,palmas-usb-vid", },
+>  	{ .compatible = "ti,twl6035-usb", },
+> +	{ .compatible = "ti,twl6035-usb-vid", },
+
+It might be worth a /* DEPRECATED */ note on the old strings.
+
+Otherwise, the looks sensible to me.
+
+Thanks,
+Mark.
