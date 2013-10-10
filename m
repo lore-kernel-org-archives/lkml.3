@@ -1,225 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756257Ab3JJQtj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 12:49:39 -0400
-Received: from mout.gmx.net ([212.227.17.21]:53222 "EHLO mout.gmx.net"
+	id S1756203Ab3JJQuk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 12:50:40 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:37337 "EHLO quartz.orcorp.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756140Ab3JJQtg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 12:49:36 -0400
-Message-ID: <5256DA9A.5060904@gmx.de>
-Date: Thu, 10 Oct 2013 18:49:30 +0200
-From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>, Jan Kara <jack@suse.cz>
-CC: Geert Uytterhoeven <geert@linux-m68k.org>,
-        UML devel <user-mode-linux-devel@lists.sourceforge.net>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+	id S1754091Ab3JJQuj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 12:50:39 -0400
+Date: Thu, 10 Oct 2013 10:50:24 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: "Fuchs, Andreas" <andreas.fuchs@sit.fraunhofer.de>
+Cc: Joel Schopp <jschopp@linux.vnet.ibm.com>,
+        Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        hannes@cmpxchg.org, darrick.wong@oracle.com,
-        Michal Hocko <mhocko@suse.cz>, Wu Fengguang <fengguang.wu@intel.com>
-Subject: Re: [uml-devel] BUG: soft lockup for a user mode linux image
-References: <524DC675.4020201@gmx.de> <524E57BA.805@nod.at> <52517109.90605@gmx.de> <CAMuHMdXrU0e_6AxvdboMkDs+N+tSWD+b8ou92j28c0vsq2eQQA@mail.gmail.com> <5251C334.3010604@gmx.de> <CAMuHMdUo8dSd4s3089ZDEc485wL1sFxBKLeaExJuqNiQY+S-Lw@mail.gmail.com> <5251CF94.5040101@gmx.de> <CAMuHMdWs6Y7y12STJ+YXKJjxRF0k5yU9C9+0fiPPmq-GgeW-6Q@mail.gmail.com> <525591AD.4060401@gmx.de> <5255A3E6.6020100@nod.at> <20131009214733.GB25608@quack.suse.cz> <5255D9A6.3010208@nod.at>
-In-Reply-To: <5255D9A6.3010208@nod.at>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Provags-ID: V03:K0:PyoqYgZh/PhIYTfiWscppADH+paufi0ctTxCts5xZZYvUuBvjGD
- aKTX6IQ3Ww+wTF4tgQsjgFDXWsJM2URv7t/IjmvOaKjUpq+ImAOMcnFQFhzzNBUA/7lk3p5
- iUIoK0XsyiUblkOHWxwM7hCT1YC+akXYER6agkmv/1otPtzoNAxUX6+0nKVIeijxQQ1Ono1
- Lq3aOMULkx/vk6Zcdn7Mg==
+        Rajiv Andrade <mail@srajiv.net>,
+        "tpmdd-devel@lists.sourceforge.net" 
+	<tpmdd-devel@lists.sourceforge.net>,
+        Richard Maciel Costa <richardm@br.ibm.com>,
+        "trousers-tech@lists.sourceforge.net" 
+	<trousers-tech@lists.sourceforge.net>,
+        Daniel De Graaf <dgdegra@tycho.nsa.gov>, Sirrix AG <tpmdd@sirrix.com>
+Subject: Re: [TrouSerS-tech] [tpmdd-devel] [PATCH 09/13] tpm: Pull everything
+ related to sysfs into tpm-sysfs.c
+Message-ID: <20131010165024.GA19997@obsidianresearch.com>
+References: <5240BA0E.3000304@tycho.nsa.gov>
+ <20130923222324.GA9533@obsidianresearch.com>
+ <5241A199.1080505@tycho.nsa.gov>
+ <20130930181005.GG28898@obsidianresearch.com>
+ <5249E0CB.2070106@tycho.nsa.gov>
+ <5249F6AF.7050608@linux.vnet.ibm.com>
+ <20131004170803.GB6955@obsidianresearch.com>
+ <9F48E1A823B03B4790B7E6E69430724D2E99F4E9@EXCH2010A.sit.fraunhofer.de>
+ <20131009173847.GC18899@obsidianresearch.com>
+ <9F48E1A823B03B4790B7E6E69430724D2E99FB07@EXCH2010A.sit.fraunhofer.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <9F48E1A823B03B4790B7E6E69430724D2E99FB07@EXCH2010A.sit.fraunhofer.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/10/2013 12:33 AM, Richard Weinberger wrote:
-> Am 09.10.2013 23:47, schrieb Jan Kara:
->> On Wed 09-10-13 20:43:50, Richard Weinberger wrote:
->>> CC'ing mm folks.
->>> Please see below.
->>   Added Fenguang to CC since he is the author of this code.
-> 
-> Thx, get_maintainer.pl didn't list him.
-> 
->>> Am 09.10.2013 19:26, schrieb Toralf Förster:
->>>> On 10/08/2013 10:07 PM, Geert Uytterhoeven wrote:
->>>>> On Sun, Oct 6, 2013 at 11:01 PM, Toralf Förster <toralf.foerster@gmx.de> wrote:
->>>>>>> Hmm, now pages_dirtied is zero, according to the backtrace, but the BUG_ON()
->>>>>>> asserts its strict positive?!?
->>>>>>>
->>>>>>> Can you please try the following instead of the BUG_ON():
->>>>>>>
->>>>>>> if (pause < 0) {
->>>>>>>         printk("pages_dirtied = %lu\n", pages_dirtied);
->>>>>>>         printk("task_ratelimit = %lu\n", task_ratelimit);
->>>>>>>         printk("pause = %ld\n", pause);
->>>>>>> }
->>>>>>>
->>>>>>> Gr{oetje,eeting}s,
->>>>>>>
->>>>>>>                         Geert
->>>>>> I tried it in different ways already - I'm completely unsuccessful in getting any printk output.
->>>>>> As soon as the issue happens I do have a
->>>>>>
->>>>>> BUG: soft lockup - CPU#0 stuck for 22s! [trinity-child0:1521]
->>>>>>
->>>>>> at stderr of the UML and then no further input is accepted. With uml_mconsole I'm however able
->>>>>> to run very basic commands like a crash dump, sysrq ond so on.
->>>>>
->>>>> You may get an idea of the magnitude of pages_dirtied by using a chain of
->>>>> BUG_ON()s, like:
->>>>>
->>>>> BUG_ON(pages_dirtied > 2000000000);
->>>>> BUG_ON(pages_dirtied > 1000000000);
->>>>> BUG_ON(pages_dirtied > 100000000);
->>>>> BUG_ON(pages_dirtied > 10000000);
->>>>> BUG_ON(pages_dirtied > 1000000);
->>>>>
->>>>> Probably 1 million is already too much for normal operation?
->>>>>
->>>> period = HZ * pages_dirtied / task_ratelimit;
->>>> 		BUG_ON(pages_dirtied > 2000000000);
->>>> 		BUG_ON(pages_dirtied > 1000000000);      <-------------- this is line 1467
->>>
->>> Summary for mm people:
->>>
->>> Toralf runs trinty on UML/i386.
->>> After some time pages_dirtied becomes very large.
->>> More than 1000000000 pages in this case.
->>   Huh, this is really strange. pages_dirtied is passed into
->> balance_dirty_pages() from current->nr_dirtied. So I wonder how a value
->> over 10^9 can get there. After all that is over 4TB so I somewhat doubt the
->> task was ever able to dirty that much during its lifetime (but correct me
->> if I'm wrong here, with UML and memory backed disks it is not totally
->> impossible)... I went through the logic of handling ->nr_dirtied but
->> I didn't find any obvious problem there. Hum, maybe one thing - what
->> 'task_ratelimit' values do you see in balance_dirty_pages? If that one was
->> huge, we could possibly accumulate huge current->nr_dirtied.
-> 
-> Toralf, you can try a snipplet like this one to get the values printed out:
-> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-> index f5236f8..a80e520 100644
-> --- a/mm/page-writeback.c
-> +++ b/mm/page-writeback.c
-> @@ -1463,6 +1463,12 @@ static void balance_dirty_pages(struct address_space *mapping,
->                         goto pause;
->                 }
->                 period = HZ * pages_dirtied / task_ratelimit;
-> +
-> +               {
-> +                       extern int printf(char *, ...);
-> +                       printf("---> task_ratelimit: %lu\n", task_ratelimit);
-> +               }
-> +
->                 pause = period;
->                 if (current->dirty_paused_when)
->                         pause -= now - current->dirty_paused_when;
-> 
-> 
-> Yes, printf(), not printk().
-> Using this hack we print directly to host's stdout. :)
-> 
-*head smack* ofc - works fine.
-So given this diff :
+On Thu, Oct 10, 2013 at 07:42:49AM +0000, Fuchs, Andreas wrote:
 
-iff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index f5236f8..5a2c337 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -1464,6 +1464,13 @@ static void balance_dirty_pages(struct address_space *mapping,
-                }
-                period = HZ * pages_dirtied / task_ratelimit;
-                pause = period;
-+               if (pause < 0)  {
-+                       extern int printf(char *, ...);
-+                       printf("overflow : pause : %li\n", pause);
-+                       printf("overflow : pages_dirtied : %lu\n", pages_dirtied);
-+                       printf("overflow :  task_ratelimit: %lu\n", task_ratelimit);
-+                       BUG_ON(1);
-+               }
-                if (current->dirty_paused_when)
-                        pause -= now - current->dirty_paused_when;
-                /*
-@@ -1503,6 +1510,13 @@ static void balance_dirty_pages(struct address_space *mapping,
-                }
+> In any case, I like your idea to split trousers IPC to two distinct
+> unix sockets for localities. In this case, we could also split tcsd
+> into two processes along with it for accessing the distinct
+> char-devices and thereby make it more robust against bugs for
+> "locality-escalation".
 
- pause:
-+               if (pause < 0)  {
-+                       extern int printf(char *, ...);
-+                       printf("ick : pause : %li\n", pause);
-+                       printf("ick: pages_dirtied : %lu\n", pages_dirtied);
-+                       printf("ick: task_ratelimit: %lu\n", task_ratelimit);
-+                       BUG_ON(1);
-+               }
-                trace_balance_dirty_pages(bdi,
-                                          dirty_thresh,
-                                          background_thresh,
+You still have to somehow manage cross locality state between the two
+daemons..
+ 
+> Also remember that many people have developed alternative stacks
+> that don't use trousers but operate directly on the char-device.
+> They would also benefit from char-device access control for localities.
 
+I am one of those people, we actually don't use any middleware at
+all. But to make that work I've had to carry the multi-open patch for
+years :|
 
-I got this :
+> Even with only a single trousers, I see no harm in two devices. For
+> backwards compatibility, the current /dev/tpm0 could be exported (with
+> highest level access control) along with tpm0l1, tpm0l2, ... and/or 
+> trousers could open both char-devices if it wanted to.
 
+Well, we could start with a 'no way out IOCTL'. So trousers can open
+/dev/tpm twice and lock the two FDs to a specific locality then drop
+privileges and fork priv-sep style sub processes.
 
+The current kernel code is not ready for multiple char devices, it
+will need a device class first..
 
+> The kernel may want to use localityAtRelease OS in order to protect sealed
+> data (trusted keyrings) such that user-space could not even unseal
 
- * Starting local
-net.core.warnings = 0                                                                                                                            [ ok ]
-ick : pause : -984
-                  ick: pages_dirtied : 0
-                                        ick: task_ratelimit: 0
-                                                              Kernel panic - not syncing: BUG!
-CPU: 0 PID: 1434 Comm: trinity-child2 Not tainted 3.12.0-rc4-00029-g0e7a3ed-dirty #12
-47397c84 47397cb0 0841b5a0 084c30e8 085f76e0 084b4745 47397cbc 00000000 
-       fffffc28 01fff278 085cb4a0 47397d2c 0841c5a0 084b4745 084c5398 000005ee 
-       08432cf0 43e47600 471757f8 47397cf0 ffffff0c 47397cdc 5256d8b9 3417ec18 47397c5c:  [<08060b2c>] show_stack+0x7c/0xd0
-47397c7c:  [<0841e34d>] dump_stack+0x26/0x28
-47397c8c:  [<0841b5a0>] panic+0x7a/0x180
-47397cb4:  [<0841c5a0>] balance_dirty_pages.isra.32+0x4e3/0x5ad
-47397d30:  [<080d3595>] balance_dirty_pages_ratelimited+0xf5/0x100
-47397d44:  [<080e4a3f>] __do_fault+0x3cf/0x440
-47397d9c:  [<080e6e0f>] handle_mm_fault+0xef/0x7c0
-47397dec:  [<080e7817>] __get_user_pages+0x227/0x420
-47397e24:  [<080e7ae3>] get_user_pages+0x63/0x70
-47397e4c:  [<08143dc6>] SyS_io_setup+0x3c6/0x760
-47397eb0:  [<08062984>] handle_syscall+0x64/0x80
-47397ef0:  [<08074fb5>] userspace+0x475/0x5f0
-47397fec:  [<0805f750>] fork_handler+0x60/0x70
-47397ffc:  [<00000000>] 0x0
+It seems reasonable to have TPM data that will only live in the kernel
+to be only releasable by the kernel..
 
-
-EIP: 0073:[<40001282>] CPU: 0 Not tainted ESP: 007b:bfb348f8 EFLAGS: 00000246
-    Not tainted
-EAX: ffffffda EBX: 00001000 ECX: 080d0000 EDX: 80000048
-ESI: 80fbff1f EDI: ffe02f77 EBP: 90f6e2a3 DS: 007b ES: 007b
-47397c0c:  [<0807947f>] show_regs+0x10f/0x120
-47397c28:  [<080623a9>] panic_exit+0x29/0x50
-47397c38:  [<0809ba86>] notifier_call_chain+0x36/0x60
-47397c60:  [<0809bba1>] __atomic_notifier_call_chain+0x21/0x30
-47397c70:  [<0809bbdf>] atomic_notifier_call_chain+0x2f/0x40
-47397c8c:  [<0841b5bc>] panic+0x96/0x180
-47397cb4:  [<0841c5a0>] balance_dirty_pages.isra.32+0x4e3/0x5ad
-47397d30:  [<080d3595>] balance_dirty_pages_ratelimited+0xf5/0x100
-47397d44:  [<080e4a3f>] __do_fault+0x3cf/0x440
-47397d9c:  [<080e6e0f>] handle_mm_fault+0xef/0x7c0
-47397dec:  [<080e7817>] __get_user_pages+0x227/0x420
-47397e24:  [<080e7ae3>] get_user_pages+0x63/0x70
-47397e4c:  [<08143dc6>] SyS_io_setup+0x3c6/0x760
-47397eb0:  [<08062984>] handle_syscall+0x64/0x80
-47397ef0:  [<08074fb5>] userspace+0x475/0x5f0
-47397fec:  [<0805f750>] fork_handler+0x60/0x70
-47397ffc:  [<00000000>] 0x0
-
-/home/tfoerste/workspace/bin/start_uml.sh: line 115: 18718 Aborted                 (core dumped) $LINUX earlyprintk ubda=$ROOTFS ubdb=$SWAP eth0=$NET mem=$MEM $TTY umid=uml_$NAME rootfstype=ext4 "$ARGS"
-
-
->From what I see there are 2 different types of issues - and this is an example of the other of both 
-
-> Thanks,
-> //richard
-> 
-
-
--- 
-MfG/Sincerely
-Toralf Förster
-pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+Jason
