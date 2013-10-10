@@ -1,45 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753165Ab3JJCAh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 22:00:37 -0400
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:36602 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751269Ab3JJCAg (ORCPT
+	id S1753951Ab3JJCE0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 22:04:26 -0400
+Received: from order.stressinduktion.org ([87.106.68.36]:51849 "EHLO
+	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751318Ab3JJCEY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 22:00:36 -0400
-From: Felipe Pena <felipensp@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Felipe Pena <felipensp@gmail.com>
-Subject: [PATCH] tools/perf/tests: Fix memory leak in dso-data.c
-Date: Wed,  9 Oct 2013 23:00:38 -0300
-Message-Id: <1381370438-4209-1-git-send-email-felipensp@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Wed, 9 Oct 2013 22:04:24 -0400
+Date: Thu, 10 Oct 2013 04:04:22 +0200
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
+        darren@dvhart.com, fweisbec@gmail.com, sbw@mit.edu,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
+Subject: Re: [PATCH v2 tip/core/rcu 07/13] ipv6/ip6_tunnel: Apply rcu_access_pointer() to avoid sparse false positive
+Message-ID: <20131010020422.GB24368@order.stressinduktion.org>
+Mail-Followup-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+	Eric Dumazet <eric.dumazet@gmail.com>,
+	Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
+	mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+	akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+	niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+	rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
+	darren@dvhart.com, fweisbec@gmail.com, sbw@mit.edu,
+	"David S. Miller" <davem@davemloft.net>,
+	Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+	James Morris <jmorris@namei.org>,
+	Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+	Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
+References: <1381354949.4971.20.camel@edumazet-glaptop.roam.corp.google.com> <20131009215747.GA5790@linux.vnet.ibm.com> <1381356624.4971.26.camel@edumazet-glaptop.roam.corp.google.com> <20131009223652.GC5790@linux.vnet.ibm.com> <1381359077.4971.37.camel@edumazet-glaptop.roam.corp.google.com> <20131009225617.GH11709@jtriplet-mobl1> <1381360675.4971.45.camel@edumazet-glaptop.roam.corp.google.com> <20131009234040.GB14055@jtriplet-mobl1> <1381363960.4971.55.camel@edumazet-glaptop.roam.corp.google.com> <20131010002833.GJ5790@linux.vnet.ibm.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20131010002833.GJ5790@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix for a memory leak on test_file() function in dso-data.c
+On Wed, Oct 09, 2013 at 05:28:33PM -0700, Paul E. McKenney wrote:
+> On Wed, Oct 09, 2013 at 05:12:40PM -0700, Eric Dumazet wrote:
+> > On Wed, 2013-10-09 at 16:40 -0700, Josh Triplett wrote:
+> > 
+> > > that.  Constructs like list_del_rcu are much clearer, and not
+> > > open-coded.  Open-coding synchronization code is almost always a Bad
+> > > Idea.
+> > 
+> > OK, so you think there is synchronization code.
+> > 
+> > I will shut up then, no need to waste time.
+> 
+> As you said earlier, we should at least get rid of the memory barrier
+> as long as we are changing the code.
 
-Signed-off-by: Felipe Pena <felipensp@gmail.com>
----
- tools/perf/tests/dso-data.c |    1 +
- 1 file changed, 1 insertion(+)
+Interesting thread!
 
-diff --git a/tools/perf/tests/dso-data.c b/tools/perf/tests/dso-data.c
-index dffe055..9cc81a3 100644
---- a/tools/perf/tests/dso-data.c
-+++ b/tools/perf/tests/dso-data.c
-@@ -35,6 +35,7 @@ static char *test_file(int size)
- 	if (size != write(fd, buf, size))
- 		templ = NULL;
+Sorry to chime in and asking a question:
 
-+	free(buf);
- 	close(fd);
- 	return templ;
- }
---
-1.7.10.4
+Why do we need an ACCESS_ONCE here if rcu_assign_pointer can do without one?
+In other words I wonder why rcu_assign_pointer is not a static inline function
+to use the sequence point in argument evaluation (if I remember correctly this
+also holds for inline functions) to not allow something like this:
+
+E.g. we want to publish which lock to take first to prevent an ABBA problem
+(extreme example):
+
+rcu_assign_pointer(lockptr, min(lptr1, lptr2));
+
+Couldn't a compiler spill the lockptr memory location as a temporary buffer
+if the compiler is under register pressure? (yes, this seems unlikely if we
+flushed out most registers to memory because of the barrier, but still... ;) )
+
+This seems to be also the case if we publish a multi-dereferencing pointers
+e.g. ptr->ptr->ptr.
+
+Thanks,
+
+  Hannes
 
