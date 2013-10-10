@@ -1,104 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932116Ab3JJTFv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 15:05:51 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:35957 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757106Ab3JJTFq (ORCPT
+	id S1757218Ab3JJTGp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 15:06:45 -0400
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:61068 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756150Ab3JJTGn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 15:05:46 -0400
-Date: Thu, 10 Oct 2013 12:05:32 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>,
-        Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
-        darren@dvhart.com, fweisbec@gmail.com, sbw@mit.edu,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
-Subject: Re: [PATCH v2 tip/core/rcu 07/13] ipv6/ip6_tunnel: Apply
- rcu_access_pointer() to avoid sparse false positive
-Message-ID: <20131010190532.GQ5790@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20131009215747.GA5790@linux.vnet.ibm.com>
- <1381356624.4971.26.camel@edumazet-glaptop.roam.corp.google.com>
- <20131009223652.GC5790@linux.vnet.ibm.com>
- <1381359077.4971.37.camel@edumazet-glaptop.roam.corp.google.com>
- <20131009225617.GH11709@jtriplet-mobl1>
- <1381360675.4971.45.camel@edumazet-glaptop.roam.corp.google.com>
- <20131009234040.GB14055@jtriplet-mobl1>
- <1381363960.4971.55.camel@edumazet-glaptop.roam.corp.google.com>
- <20131010002833.GJ5790@linux.vnet.ibm.com>
- <20131010020422.GB24368@order.stressinduktion.org>
+	Thu, 10 Oct 2013 15:06:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131010020422.GB24368@order.stressinduktion.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13101019-0928-0000-0000-0000025151BC
+In-Reply-To: <0683F5F5A5C7FE419A752A034B4A0B97973FD07B@sswchi5pmbx2.peak6.net>
+References: <CAG-aW07mUqX5t-g4_cCvSVxrArzmc-vsOaPoHcFJuo_fXeRnzw@mail.gmail.com>
+	<CAG-aW07kVTurn2mTH_2qR31wdOEzxfP34-6eR34MvNZaMkGYkw@mail.gmail.com>
+	<0683F5F5A5C7FE419A752A034B4A0B97973FD07B@sswchi5pmbx2.peak6.net>
+Date: Thu, 10 Oct 2013 21:06:42 +0200
+Message-ID: <CAG-aW07vf2nBeHGna+92qn02uAfVdGrdjx-a0E0Ez7Xx4C-rEg@mail.gmail.com>
+Subject: Re: Very odd memory behavior. Is this normal?
+From: Matt <jackdachef@gmail.com>
+To: Shaun Thomas <sthomas@optionshouse.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 10, 2013 at 04:04:22AM +0200, Hannes Frederic Sowa wrote:
-> On Wed, Oct 09, 2013 at 05:28:33PM -0700, Paul E. McKenney wrote:
-> > On Wed, Oct 09, 2013 at 05:12:40PM -0700, Eric Dumazet wrote:
-> > > On Wed, 2013-10-09 at 16:40 -0700, Josh Triplett wrote:
-> > > 
-> > > > that.  Constructs like list_del_rcu are much clearer, and not
-> > > > open-coded.  Open-coding synchronization code is almost always a Bad
-> > > > Idea.
-> > > 
-> > > OK, so you think there is synchronization code.
-> > > 
-> > > I will shut up then, no need to waste time.
-> > 
-> > As you said earlier, we should at least get rid of the memory barrier
-> > as long as we are changing the code.
-> 
-> Interesting thread!
-> 
-> Sorry to chime in and asking a question:
-> 
-> Why do we need an ACCESS_ONCE here if rcu_assign_pointer can do without one?
-> In other words I wonder why rcu_assign_pointer is not a static inline function
-> to use the sequence point in argument evaluation (if I remember correctly this
-> also holds for inline functions) to not allow something like this:
-> 
-> E.g. we want to publish which lock to take first to prevent an ABBA problem
-> (extreme example):
-> 
-> rcu_assign_pointer(lockptr, min(lptr1, lptr2));
-> 
-> Couldn't a compiler spill the lockptr memory location as a temporary buffer
-> if the compiler is under register pressure? (yes, this seems unlikely if we
-> flushed out most registers to memory because of the barrier, but still... ;) )
-> 
-> This seems to be also the case if we publish a multi-dereferencing pointers
-> e.g. ptr->ptr->ptr.
+On Thu, Oct 10, 2013 at 8:57 PM, Shaun Thomas <sthomas@optionshouse.com> wrote:
+>> just a user here, with a little android-kernel related experience who
+>> also likes to tinker with the desktop kernel :)
+>>
+>> Have you given the following patchset a try yet:
+>>
+>> http://linux-kernel.2935.n7.nabble.com/patch-v2-0-3-mm-improve-
+>> page-aging-fairness-between-zones-nodes-td696105.html
+>
+> Holy cow, that looks extremely promising. What version of the kernel is this compatible with? It looks like 3.11, but I'm not sure.
+>
+> Thanks!
+>
+> --
+> Shaun Thomas
+> OptionsHouse | 141 W. Jackson Blvd | Suite 500 | Chicago IL, 60604
+> 312-676-8870
+> sthomas@optionshouse.com
+>
+>
 
-IIRC, sequence points only confine volatile accesses.  For non-volatile
-accesses, the so-called "as-if rule" allows compiler writers to do some
-surprisingly global reordering.
+CC'ing: Johannes Weiner
 
-The reason that rcu_assign_pointer() isn't an inline function is because
-it needs to be type-generic, in other words, it needs to be OK to use
-it on any type of pointers as long as the C types of the two pointers
-match (the sparse types can vary a bit).
 
-One of the reasons for wanting a volatile cast in rcu_assign_pointer() is
-to prevent compiler mischief such as you described in your last two
-paragraphs.  That said, it would take a very brave compiler to pull
-a pointer-referenced memory location into a register and keep it there.
-Unfortunately, increasing compiler bravery seems to be a solid long-term
-trend.
+I started using it with a 3.10 kernel (V1, V2) and now have it applied
+against a heavily modified 3.11 kernel (V2).
 
-							Thanx, Paul
+So I can't say anything whether it'll work with older versions of the
+kernel but the following:
 
+it's "stable" material which needs backporting to the longterm kernels ;)
+
+
+Glad if I can be of help
+
+
+Matt
