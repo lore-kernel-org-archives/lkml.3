@@ -1,75 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754643Ab3JJNya (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 09:54:30 -0400
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:37199 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751269Ab3JJNy3 (ORCPT
+	id S1754795Ab3JJNzr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 09:55:47 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:47204 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751979Ab3JJNzp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 09:54:29 -0400
+	Thu, 10 Oct 2013 09:55:45 -0400
 MIME-Version: 1.0
-In-Reply-To: <1381297228-2443-2-git-send-email-zhouqiao@marvell.com>
-References: <1381297228-2443-1-git-send-email-zhouqiao@marvell.com>
-	<1381297228-2443-2-git-send-email-zhouqiao@marvell.com>
-Date: Thu, 10 Oct 2013 21:54:28 +0800
-Message-ID: <CAMj5BkgVw+uSCKzvY5tJY68NHUo_Ty-nvyhDQ+PGQo-kL7suWA@mail.gmail.com>
-Subject: Re: [PATCH] dma: mmp_tdma: add multiple burst size support for 910-squ
-From: zhangfei gao <zhangfei.gao@gmail.com>
-To: Qiao Zhou <zhouqiao@marvell.com>
-Cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
+X-Originating-IP: [190.2.98.55]
+In-Reply-To: <20131004140925.GA27809@localhost>
+References: <1380891203-17617-1-git-send-email-ezequiel@vanguardiasur.com.ar>
+	<1380891203-17617-3-git-send-email-ezequiel@vanguardiasur.com.ar>
+	<20131004131956.GE6999@e106331-lin.cambridge.arm.com>
+	<20131004140925.GA27809@localhost>
+Date: Thu, 10 Oct 2013 10:55:45 -0300
+Message-ID: <CAAEAJfA8iiuT-8k2psXLt5a9fAndwU=_YVR8OXU1Lz1xzZX5pA@mail.gmail.com>
+Subject: Re: [PATCH v2 2/2] input: rotary-encoder: Add 'on-each-step' to
+ binding documentation
+From: =?ISO-8859-1?Q?Ezequiel_Garc=EDa?= <ezequiel@vanguardiasur.com.ar>
+To: linux-input@vger.kernel.org, devicetree@vger.kernel.org
+Cc: Mark Rutland <mark.rutland@arm.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        chao.xie@marvell.com
+        Daniel Mack <zonque@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 9, 2013 at 1:40 PM, Qiao Zhou <zhouqiao@marvell.com> wrote:
-> add multiple burst size support for 910-squ.
+On 4 October 2013 11:09, Ezequiel Garcia
+<ezequiel.garcia@free-electrons.com> wrote:
+> On Fri, Oct 04, 2013 at 02:19:56PM +0100, Mark Rutland wrote:
+>> On Fri, Oct 04, 2013 at 01:53:23PM +0100, Ezequiel Garcia wrote:
+>> > The driver now supports a new mode to handle the interruptions generated
+>> > by the device: on this new mode an input event is generated on each step
+>> > (i.e. on each IRQ). Therefore, add a new DT property, to select the
+>> > mode: 'rotary-encoder,on-each-step'.
+>> >
+>> > Cc: Daniel Mack <zonque@gmail.com>
+>> > Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+>> > Cc: Rob Herring <rob.herring@calxeda.com>
+>> > Cc: devicetree@vger.kernel.org
+>> > Signed-off-by: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>
+>> > ---
+>> > I'm not at all happy with this DT binding as it's way to customized
+>> > for the current driver. For instance, if we want to support mapping
+>> > key events (or better arbitrary linux-input event types) it seems
+>> > there's no easy way to fix the binding.
+>> >
+>> > Maybe a better way of handling the different 'modes' is through
+>> > compatible strings?
+>>
+>> I'd prefer not to have more pseudo-devices in DT, and would prefer not
+>> to have compatible strings that boil down to driver options. We end up
+>> just embedding a tonne of Linux-specific driver configuration in the DT
+>> rather than describing hardware.
+>>
+>> That said, I'm not sure what the best solution is here.
+>>
+>> >
+>> > I'm not really sure, so I hope the DT guys have some comment on this.
+>> >
+>> >  Documentation/devicetree/bindings/input/rotary-encoder.txt | 1 +
+>> >  1 file changed, 1 insertion(+)
+>> >
+>> > diff --git a/Documentation/devicetree/bindings/input/rotary-encoder.txt b/Documentation/devicetree/bindings/input/rotary-encoder.txt
+>> > index 3315495..b89e38d 100644
+>> > --- a/Documentation/devicetree/bindings/input/rotary-encoder.txt
+>> > +++ b/Documentation/devicetree/bindings/input/rotary-encoder.txt
+>> > @@ -15,6 +15,7 @@ Optional properties:
+>> >  - rotary-encoder,rollover: Automatic rollove when the rotary value becomes
+>> >    greater than the specified steps or smaller than 0. For absolute axis only.
+>> >  - rotary-encoder,half-period: Makes the driver work on half-period mode.
+>> > +- rotary-encoder,on-each-step: Makes the driver send an event on each step.
+>>
+>> Could this not be something requested at runtime?
+>>
 >
-> Signed-off-by: Qiao Zhou <zhouqiao@marvell.com>
-> ---
->  drivers/dma/mmp_tdma.c |   25 ++++++++++++++++++++++++-
->  1 files changed, 24 insertions(+), 1 deletions(-)
+> Sure. The different modes:
 >
-> diff --git a/drivers/dma/mmp_tdma.c b/drivers/dma/mmp_tdma.c
-> index 38cb517..d84354b 100644
-> --- a/drivers/dma/mmp_tdma.c
-> +++ b/drivers/dma/mmp_tdma.c
-> @@ -228,8 +228,31 @@ static int mmp_tdma_config_chan(struct mmp_tdma_chan *tdmac)
->                         return -EINVAL;
->                 }
->         } else if (tdmac->type == PXA910_SQU) {
-> -               tdcr |= TDCR_BURSTSZ_SQU_32B;
->                 tdcr |= TDCR_SSPMOD;
-> +
-> +               switch (tdmac->burst_sz) {
-> +               case 1:
-> +                       tdcr |= TDCR_BURSTSZ_SQU_1B;
-> +                       break;
-> +               case 2:
-> +                       tdcr |= TDCR_BURSTSZ_SQU_2B;
-> +                       break;
-> +               case 4:
-> +                       tdcr |= TDCR_BURSTSZ_SQU_4B;
-> +                       break;
-> +               case 8:
-> +                       tdcr |= TDCR_BURSTSZ_SQU_8B;
-> +                       break;
-> +               case 16:
-> +                       tdcr |= TDCR_BURSTSZ_SQU_16B;
-> +                       break;
-> +               case 32:
-> +                       tdcr |= TDCR_BURSTSZ_SQU_32B;
-> +                       break;
-> +               default:
-> +                       dev_err(tdmac->dev, "mmp_tdma: unknown burst size.\n");
-> +                       return -EINVAL;
-> +               }
+> * default (no option)
+> * rotary-encoder,half-period
+> * rotary-encoder,on-each-step
+>
+> Just map to different interruption handlers. I don't have any other
+> rotary-encoder device, so I'm not at all sure what's the use of the
+> other two cases.
+> My particular device is detented, and produces a 'stable' event on each
+> step (i.e on each IRQ).
+>
+> Regarding the runtime specification: you mean as a module parameter?
+> That should be trivial to add, no?
+>
+>> Could you explain what you want to achieve with this? -- what events do
+>> you want to occur when, to be handled in what way?
+>>
+>
+> Hm.. maybe I should have added the binding to the 1/2 patch and CCed
+> everybody involved for better context.
+>
+> Anyway, I hope the above is clearer, I'm not really sure how to specify
+> the details in the DT binding, since it's a specific interruption handler
+> for this class of encoder devices (stable on each step).
+>
+> That said, I really hope I'm crafting a generic solution and not some
+> tailor-made implementation that just happens to match my use case.
+>
+> The input maintainer's opinion on this would be valuable.
 
-Sorry, do I make mistake,
-Not find definition TDCR_BURSTSZ_SQU_16B ~
-Only find
-#define TDCR_BURSTSZ_SQU_32B    (0x7 << 6)
+Any insights on this binding?
 
-Thanks
+If nobody objects, then I'd like to get this change accepted,
+together with the driver change.
+
+Thanks!
+-- 
+Ezequiel García, VanguardiaSur
+www.vanguardiasur.com.ar
