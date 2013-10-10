@@ -1,49 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754810Ab3JJOET (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 10:04:19 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:64284 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751847Ab3JJOER (ORCPT
+	id S1755263Ab3JJOE1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 10:04:27 -0400
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:52685 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754832Ab3JJOEY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 10:04:17 -0400
+	Thu, 10 Oct 2013 10:04:24 -0400
+Message-ID: <5256B3E2.4060401@twiddle.net>
+Date: Thu, 10 Oct 2013 07:04:18 -0700
+From: Richard Henderson <rth@twiddle.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-In-Reply-To: <5256AA7F.8030005@ti.com>
-References: <20131003054104.8941.88857.stgit@localhost>
-	<20131003054221.8941.87801.stgit@localhost>
-	<5256AA7F.8030005@ti.com>
-Date: Thu, 10 Oct 2013 16:04:16 +0200
-Message-ID: <CACRpkdZx5+OCcQytkpjd7_nz4hw6VXoXOS0LByKgJ8_cQjbA4g@mail.gmail.com>
-Subject: Re: [PATCH 4/6] pinctrl: single: Add support for wake-up interrupts
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Roger Quadros <rogerq@ti.com>
-Cc: Tony Lindgren <tony@atomide.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Prakash Manjunathappa <prakash.pm@ti.com>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>,
-        =?ISO-8859-1?Q?Beno=EEt_Cousson?= <bcousson@baylibre.com>,
-        Linux-OMAP <linux-omap@vger.kernel.org>
+To: Jakub Jelinek <jakub@redhat.com>, Ingo Molnar <mingo@kernel.org>
+CC: Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] gcc4: Add 'asm goto' miscompilation quirk
+References: <20131009140734.GH3081@twins.programming.kicks-ass.net> <20131009143359.GU26785@twins.programming.kicks-ass.net> <20131009144656.GV26785@twins.programming.kicks-ass.net> <20131009181613.GW30970@tucnak.zalov.cz> <20131009190231.GI13848@laptop.programming.kicks-ass.net> <20131009190851.GX30970@tucnak.zalov.cz> <20131010062238.GB9853@gmail.com> <20131010065104.GY30970@tucnak.zalov.cz> <20131010080457.GC21875@tucnak.zalov.cz> <20131010082430.GA20577@gmail.com> <20131010083107.GZ30970@tucnak.zalov.cz>
+In-Reply-To: <20131010083107.GZ30970@tucnak.zalov.cz>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 10, 2013 at 3:24 PM, Roger Quadros <rogerq@ti.com> wrote:
+On 10/10/2013 01:31 AM, Jakub Jelinek wrote:
+> Also, for the bitops patch, you probably want an asm_volatile_goto variant.
 
-> I think pcs_irq_set_wake() is where need to control system wakeup behaviour for the irq.
-> This is where we should be able to change WAKEUP_EN bit of the pad
-> to enable/disable system wakeup for that pad and also call _reconfigure_io_chain().
+Why?  Asm without output (which asm goto must be) are automatically volatile.
 
-As an innocent bystander who has no clue what the _reconfigure_io_chain()
-is about can you tell me what this is all about?
 
-Is this another one of the OMAP forked paths where you must call back into
-the machine with a special callback from each and every driver?
-
-Yours,
-Linus Walleij
+r!
