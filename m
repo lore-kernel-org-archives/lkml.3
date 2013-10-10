@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756035Ab3JJPmz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 11:42:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52558 "EHLO
+	id S1756058Ab3JJPm6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 11:42:58 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52616 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755779Ab3JJPmt (ORCPT
+	with ESMTP id S1755779Ab3JJPm4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 11:42:49 -0400
+	Thu, 10 Oct 2013 11:42:56 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <edumazet@google.com>, Neal Cardwell <ncardwell@google.com>,
-        Yuchung Cheng <ycheng@google.com>,
+Cc: Ding Tianhong <dingtianhong@huawei.com>,
+        George Kargiotakis <kargig@void.gr>, P J P <ppandit@redhat.com>,
+        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
         "David S. Miller" <davem@davemloft.net>,
+        Luis Henriques <luis.henriques@canonical.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 010/104] tcp: cubic: fix bug in bictcp_acked()
-Date: Thu, 10 Oct 2013 08:40:58 -0700
-Message-Id: <1381419752-29733-11-git-send-email-kamal@canonical.com>
+Subject: [PATCH 014/104] ipv6: remove max_addresses check from ipv6_create_tempaddr
+Date: Thu, 10 Oct 2013 08:41:02 -0700
+Message-Id: <1381419752-29733-15-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381419752-29733-1-git-send-email-kamal@canonical.com>
 References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
@@ -29,49 +32,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-[ Upstream commit cd6b423afd3c08b27e1fed52db828ade0addbc6b ]
+commit 4b08a8f1bd8cb4541c93ec170027b4d0782dab52 upstream.
 
-While investigating about strange increase of retransmit rates
-on hosts ~24 days after boot, Van found hystart was disabled
-if ca->epoch_start was 0, as following condition is true
-when tcp_time_stamp high order bit is set.
+Because of the max_addresses check attackers were able to disable privacy
+extensions on an interface by creating enough autoconfigured addresses:
 
-(s32)(tcp_time_stamp - ca->epoch_start) < HZ
+<http://seclists.org/oss-sec/2012/q4/292>
 
-Quoting Van :
+But the check is not actually needed: max_addresses protects the
+kernel to install too many ipv6 addresses on an interface and guards
+addrconf_prefix_rcv to install further addresses as soon as this limit
+is reached. We only generate temporary addresses in direct response of
+a new address showing up. As soon as we filled up the maximum number of
+addresses of an interface, we stop installing more addresses and thus
+also stop generating more temp addresses.
 
- At initialization & after every loss ca->epoch_start is set to zero so
- I believe that the above line will turn off hystart as soon as the 2^31
- bit is set in tcp_time_stamp & hystart will stay off for 24 days.
- I think we've observed that cubic's restart is too aggressive without
- hystart so this might account for the higher drop rate we observe.
+Even if the attacker tries to generate a lot of temporary addresses
+by announcing a prefix and removing it again (lifetime == 0) we won't
+install more temp addresses, because the temporary addresses do count
+to the maximum number of addresses, thus we would stop installing new
+autoconfigured addresses when the limit is reached.
 
-Diagnosed-by: Van Jacobson <vanj@google.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Neal Cardwell <ncardwell@google.com>
-Cc: Yuchung Cheng <ycheng@google.com>
-Acked-by: Neal Cardwell <ncardwell@google.com>
+This patch fixes CVE-2013-0343 (but other layer-2 attacks are still
+possible).
+
+Thanks to Ding Tianhong to bring this topic up again.
+
+Cc: Ding Tianhong <dingtianhong@huawei.com>
+Cc: George Kargiotakis <kargig@void.gr>
+Cc: P J P <ppandit@redhat.com>
+Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Acked-by: Ding Tianhong <dingtianhong@huawei.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
+[ luis: backported to 3.5: adjusted context ]
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/ipv4/tcp_cubic.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ipv6/addrconf.c | 10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
 
-diff --git a/net/ipv4/tcp_cubic.c b/net/ipv4/tcp_cubic.c
-index b6b591f..b6ae92a 100644
---- a/net/ipv4/tcp_cubic.c
-+++ b/net/ipv4/tcp_cubic.c
-@@ -416,7 +416,7 @@ static void bictcp_acked(struct sock *sk, u32 cnt, s32 rtt_us)
- 		return;
+diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
+index 7b54fff..e169782 100644
+--- a/net/ipv6/addrconf.c
++++ b/net/ipv6/addrconf.c
+@@ -1046,12 +1046,10 @@ retry:
+ 	if (ifp->flags & IFA_F_OPTIMISTIC)
+ 		addr_flags |= IFA_F_OPTIMISTIC;
  
- 	/* Discard delay samples right after fast recovery */
--	if ((s32)(tcp_time_stamp - ca->epoch_start) < HZ)
-+	if (ca->epoch_start && (s32)(tcp_time_stamp - ca->epoch_start) < HZ)
- 		return;
- 
- 	delay = (rtt_us << 3) / USEC_PER_MSEC;
+-	ift = !max_addresses ||
+-	      ipv6_count_addresses(idev) < max_addresses ?
+-		ipv6_add_addr(idev, &addr, tmp_plen,
+-			      ipv6_addr_type(&addr)&IPV6_ADDR_SCOPE_MASK,
+-			      addr_flags) : NULL;
+-	if (!ift || IS_ERR(ift)) {
++	ift = ipv6_add_addr(idev, &addr, tmp_plen,
++			    ipv6_addr_type(&addr)&IPV6_ADDR_SCOPE_MASK,
++			    addr_flags);
++	if (IS_ERR(ift)) {
+ 		in6_ifa_put(ifp);
+ 		in6_dev_put(idev);
+ 		pr_info("%s: retry temporary address regeneration\n", __func__);
 -- 
 1.8.1.2
 
