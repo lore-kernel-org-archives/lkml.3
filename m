@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756083Ab3JJPn1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 11:43:27 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52626 "EHLO
+	id S1756112Ab3JJPnh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 11:43:37 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52630 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755260Ab3JJPnY (ORCPT
+	with ESMTP id S1755260Ab3JJPne (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 11:43:24 -0400
+	Thu, 10 Oct 2013 11:43:34 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, Andrey Vagin <avagin@openvz.org>,
+Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
+        David Lamparter <equinox@diac24.net>,
+        <boutier@pps.univ-paris-diderot.fr>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 017/104] tcp: set timestamps for restored skb-s
-Date: Thu, 10 Oct 2013 08:41:05 -0700
-Message-Id: <1381419752-29733-18-git-send-email-kamal@canonical.com>
+Subject: [PATCH 011/104] ipv6: don't stop backtracking in fib6_lookup_1 if subtree does not match
+Date: Thu, 10 Oct 2013 08:40:59 -0700
+Message-Id: <1381419752-29733-12-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381419752-29733-1-git-send-email-kamal@canonical.com>
 References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
@@ -31,49 +31,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrey Vagin <avagin@openvz.org>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-[ Upstream commit 7ed5c5ae96d23da22de95e1c7a239537acd378b1 ]
+[ Upstream commit 3e3be275851bc6fc90bfdcd732cd95563acd982b ]
 
-When the repair mode is turned off, the write queue seqs are
-updated so that the whole queue is considered to be 'already sent.
+In case a subtree did not match we currently stop backtracking and return
+NULL (root table from fib_lookup). This could yield in invalid routing
+table lookups when using subtrees.
 
-The "when" field must be set for such skb. It's used in tcp_rearm_rto
-for example. If the "when" field isn't set, the retransmit timeout can
-be calculated incorrectly and a tcp connected can stop for two minutes
-(TCP_RTO_MAX).
+Instead continue to backtrack until a valid subtree or node is found
+and return this match.
 
-Acked-by: Pavel Emelyanov <xemul@parallels.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-Cc: James Morris <jmorris@namei.org>
-Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-Cc: Patrick McHardy <kaber@trash.net>
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
+Also remove unneeded NULL check.
+
+Reported-by: Teco Boot <teco@inf-net.nl>
+Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Cc: David Lamparter <equinox@diac24.net>
+Cc: <boutier@pps.univ-paris-diderot.fr>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/ipv4/tcp.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+ net/ipv6/ip6_fib.c | 16 ++++++++++++----
+ 1 file changed, 12 insertions(+), 4 deletions(-)
 
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index 425058e..2c108f7 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -1124,6 +1124,13 @@ new_segment:
- 					goto wait_for_memory;
+diff --git a/net/ipv6/ip6_fib.c b/net/ipv6/ip6_fib.c
+index e67039f..7c39aa6 100644
+--- a/net/ipv6/ip6_fib.c
++++ b/net/ipv6/ip6_fib.c
+@@ -995,14 +995,22 @@ static struct fib6_node * fib6_lookup_1(struct fib6_node *root,
  
- 				/*
-+				 * All packets are restored as if they have
-+				 * already been sent.
-+				 */
-+				if (tp->repair)
-+					TCP_SKB_CB(skb)->when = tcp_time_stamp;
-+
-+				/*
- 				 * Check whether we can use HW checksum.
- 				 */
- 				if (sk->sk_route_caps & NETIF_F_ALL_CSUM)
+ 			if (ipv6_prefix_equal(&key->addr, args->addr, key->plen)) {
+ #ifdef CONFIG_IPV6_SUBTREES
+-				if (fn->subtree)
+-					fn = fib6_lookup_1(fn->subtree, args + 1);
++				if (fn->subtree) {
++					struct fib6_node *sfn;
++					sfn = fib6_lookup_1(fn->subtree,
++							    args + 1);
++					if (!sfn)
++						goto backtrack;
++					fn = sfn;
++				}
+ #endif
+-				if (!fn || fn->fn_flags & RTN_RTINFO)
++				if (fn->fn_flags & RTN_RTINFO)
+ 					return fn;
+ 			}
+ 		}
+-
++#ifdef CONFIG_IPV6_SUBTREES
++backtrack:
++#endif
+ 		if (fn->fn_flags & RTN_ROOT)
+ 			break;
+ 
 -- 
 1.8.1.2
 
