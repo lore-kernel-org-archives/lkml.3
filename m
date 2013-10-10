@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756292Ab3JJPpJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 11:45:09 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52675 "EHLO
+	id S1756344Ab3JJPpb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 11:45:31 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52687 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755506Ab3JJPpE (ORCPT
+	with ESMTP id S1756319Ab3JJPp1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 11:45:04 -0400
+	Thu, 10 Oct 2013 11:45:27 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 045/104] drm/radeon: fix panel scaling with eDP and LVDS bridges
-Date: Thu, 10 Oct 2013 08:41:33 -0700
-Message-Id: <1381419752-29733-46-git-send-email-kamal@canonical.com>
+Cc: Ben Skeggs <bskeggs@redhat.com>, Jerome Glisse <jglisse@redhat.com>,
+        Dave Airlie <airlied@redhat.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 051/104] drm/ttm: fix the tt_populated check in ttm_tt_destroy()
+Date: Thu, 10 Oct 2013 08:41:39 -0700
+Message-Id: <1381419752-29733-52-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381419752-29733-1-git-send-email-kamal@canonical.com>
 References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
@@ -27,100 +27,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Ben Skeggs <bskeggs@redhat.com>
 
-commit 855f5f1d882a34e4e9dd27b299737cd3508a5624 upstream.
+commit 182b17c8dc4e83aab000ce86587b6810e515da87 upstream.
 
-We were using the wrong set_properly callback so we always
-ended up with Full scaling even if something else (Center or
-Full aspect) was selected.
+After a vmalloc failure in ttm_dma_tt_alloc_page_directory(),
+ttm_dma_tt_init() will call ttm_tt_destroy() to cleanup, and end up
+inside the driver's unpopulate() hook when populate() has never yet
+been called.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+On nouveau, the first issue to be hit because of this is that
+dma_address[] may be a NULL pointer.  After working around this,
+ttm_pool_unpopulate() may potentially hit the same issue with
+the pages[] array.
+
+It seems to make more sense to avoid calling unpopulate on already
+unpopulated TTMs than to add checks to all the implementations.
+
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+Reviewed-by: Thomas Hellstrom <thellstrom@vmware.com>
+Cc: Jerome Glisse <jglisse@redhat.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/radeon/radeon_connectors.c | 34 +++++++++++++++++++++++++++---
- 1 file changed, 31 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/ttm/ttm_tt.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_connectors.c b/drivers/gpu/drm/radeon/radeon_connectors.c
-index 2399f25..5a87c9f 100644
---- a/drivers/gpu/drm/radeon/radeon_connectors.c
-+++ b/drivers/gpu/drm/radeon/radeon_connectors.c
-@@ -1489,6 +1489,24 @@ static const struct drm_connector_funcs radeon_dp_connector_funcs = {
- 	.force = radeon_dvi_force,
- };
+diff --git a/drivers/gpu/drm/ttm/ttm_tt.c b/drivers/gpu/drm/ttm/ttm_tt.c
+index 7d759a4..cacf2e4 100644
+--- a/drivers/gpu/drm/ttm/ttm_tt.c
++++ b/drivers/gpu/drm/ttm/ttm_tt.c
+@@ -170,7 +170,7 @@ void ttm_tt_destroy(struct ttm_tt *ttm)
+ 		ttm_tt_unbind(ttm);
+ 	}
  
-+static const struct drm_connector_funcs radeon_edp_connector_funcs = {
-+	.dpms = drm_helper_connector_dpms,
-+	.detect = radeon_dp_detect,
-+	.fill_modes = drm_helper_probe_single_connector_modes,
-+	.set_property = radeon_lvds_set_property,
-+	.destroy = radeon_dp_connector_destroy,
-+	.force = radeon_dvi_force,
-+};
-+
-+static const struct drm_connector_funcs radeon_lvds_bridge_connector_funcs = {
-+	.dpms = drm_helper_connector_dpms,
-+	.detect = radeon_dp_detect,
-+	.fill_modes = drm_helper_probe_single_connector_modes,
-+	.set_property = radeon_lvds_set_property,
-+	.destroy = radeon_dp_connector_destroy,
-+	.force = radeon_dvi_force,
-+};
-+
- void
- radeon_add_atom_connector(struct drm_device *dev,
- 			  uint32_t connector_id,
-@@ -1580,8 +1598,6 @@ radeon_add_atom_connector(struct drm_device *dev,
- 			goto failed;
- 		radeon_dig_connector->igp_lane_info = igp_lane_info;
- 		radeon_connector->con_priv = radeon_dig_connector;
--		drm_connector_init(dev, &radeon_connector->base, &radeon_dp_connector_funcs, connector_type);
--		drm_connector_helper_add(&radeon_connector->base, &radeon_dp_connector_helper_funcs);
- 		if (i2c_bus->valid) {
- 			/* add DP i2c bus */
- 			if (connector_type == DRM_MODE_CONNECTOR_eDP)
-@@ -1598,6 +1614,10 @@ radeon_add_atom_connector(struct drm_device *dev,
- 		case DRM_MODE_CONNECTOR_VGA:
- 		case DRM_MODE_CONNECTOR_DVIA:
- 		default:
-+			drm_connector_init(dev, &radeon_connector->base,
-+					   &radeon_dp_connector_funcs, connector_type);
-+			drm_connector_helper_add(&radeon_connector->base,
-+						 &radeon_dp_connector_helper_funcs);
- 			connector->interlace_allowed = true;
- 			connector->doublescan_allowed = true;
- 			radeon_connector->dac_load_detect = true;
-@@ -1610,6 +1630,10 @@ radeon_add_atom_connector(struct drm_device *dev,
- 		case DRM_MODE_CONNECTOR_HDMIA:
- 		case DRM_MODE_CONNECTOR_HDMIB:
- 		case DRM_MODE_CONNECTOR_DisplayPort:
-+			drm_connector_init(dev, &radeon_connector->base,
-+					   &radeon_dp_connector_funcs, connector_type);
-+			drm_connector_helper_add(&radeon_connector->base,
-+						 &radeon_dp_connector_helper_funcs);
- 			drm_object_attach_property(&radeon_connector->base.base,
- 						      rdev->mode_info.underscan_property,
- 						      UNDERSCAN_OFF);
-@@ -1634,6 +1658,10 @@ radeon_add_atom_connector(struct drm_device *dev,
- 			break;
- 		case DRM_MODE_CONNECTOR_LVDS:
- 		case DRM_MODE_CONNECTOR_eDP:
-+			drm_connector_init(dev, &radeon_connector->base,
-+					   &radeon_lvds_bridge_connector_funcs, connector_type);
-+			drm_connector_helper_add(&radeon_connector->base,
-+						 &radeon_dp_connector_helper_funcs);
- 			drm_object_attach_property(&radeon_connector->base.base,
- 						      dev->mode_config.scaling_mode_property,
- 						      DRM_MODE_SCALE_FULLSCREEN);
-@@ -1797,7 +1825,7 @@ radeon_add_atom_connector(struct drm_device *dev,
- 				goto failed;
- 			radeon_dig_connector->igp_lane_info = igp_lane_info;
- 			radeon_connector->con_priv = radeon_dig_connector;
--			drm_connector_init(dev, &radeon_connector->base, &radeon_dp_connector_funcs, connector_type);
-+			drm_connector_init(dev, &radeon_connector->base, &radeon_edp_connector_funcs, connector_type);
- 			drm_connector_helper_add(&radeon_connector->base, &radeon_dp_connector_helper_funcs);
- 			if (i2c_bus->valid) {
- 				/* add DP i2c bus */
+-	if (likely(ttm->pages != NULL)) {
++	if (ttm->state == tt_unbound) {
+ 		ttm->bdev->driver->ttm_tt_unpopulate(ttm);
+ 	}
+ 
 -- 
 1.8.1.2
 
