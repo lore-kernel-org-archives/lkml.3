@@ -1,76 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757367Ab3JJBGb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 21:06:31 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:15586 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756623Ab3JJBG3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 21:06:29 -0400
-X-AuditID: cbfee68e-b7f756d000004512-d0-5255fd7267dc
-From: Chanwoo Choi <cw00.choi@samsung.com>
-To: sameo@linux.intel.com, lee.jones@linaro.org
-Cc: linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [PATCH] mfd: max77693: Fix up bug of wrong interrupt number
-Date: Thu, 10 Oct 2013 10:05:55 +0900
-Message-id: <1381367155-4888-1-git-send-email-cw00.choi@samsung.com>
-X-Mailer: git-send-email 1.8.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDLMWRmVeSWpSXmKPExsWyRsSkRLfob2iQwf3Z8hbXvzxntTjb9Ibd
-	4v7Xo4wWl3fNYbM43c3qwOpx59oeNo95JwM9+rasYvT4vEkugCWKyyYlNSezLLVI3y6BK+Np
-	h2vBb/aKhhXbWBoYn7J1MXJySAiYSKzs3gtli0lcuLceyObiEBJYyigx/dcMFpiiDYsesEAk
-	pjNK/FizGcppZJLYNP8jE0gVm4CWxP4XN8BGiQjoS3zYcZUZxGYWSJbofT0JrEZYwEXi5sW7
-	7F2MHBwsAqoSOx9rgoR5gcIfD82EukJO4sOeR+wg8yUEHrNJXG3sBruCRUBA4tvkQywgvRIC
-	shKbDjBD1EtKHFxxg2UCo+ACRoZVjKKpBckFxUnpRUZ6xYm5xaV56XrJ+bmbGIEhefrfs74d
-	jDcPWB9iTAYaN5FZSjQ5HxjSeSXxhsZmRhamJqbGRuaWZqQJK4nzqrVYBwoJpCeWpGanphak
-	FsUXleakFh9iZOLglGpgjP3+0Ojs8hm3pvJHXTEKmjRr2i3FjI1B0bNmbmH2OF+5Mjlh0X2O
-	0o9p7sftO6Y+cL219sTZZSuitbhC3lYrLHHakBC27fX0VdMLpD9GPjnQvbzyhMnOL36PXZjz
-	jt4/7ls1P+1ASSvvkqqb8Yf+ZZ46KfOkXmPpR8+wT1/0KrWaHaz1pX1msiqxFGckGmoxFxUn
-	AgB/DaPtXwIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJIsWRmVeSWpSXmKPExsVy+t9jQd2iv6FBBg9viVtc//Kc1eJs0xt2
-	i/tfjzJaXN41h83idDerA6vHnWt72DzmnQz06NuyitHj8ya5AJaoBkabjNTElNQihdS85PyU
-	zLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKC1SgpliTmlQKGAxOJiJX07TBNC
-	Q9x0LWAaI3R9Q4LgeowM0EDCGsaMpx2uBb/ZKxpWbGNpYHzK1sXIySEhYCKxYdEDFghbTOLC
-	vfVAcS4OIYHpjBI/1mxmgXAamSQ2zf/IBFLFJqAlsf/FDbBuEQF9iQ87rjKD2MwCyRK9ryeB
-	1QgLuEjcvHiXvYuRg4NFQFVi52NNkDAvUPjjoZlQi+UkPux5xD6BkXsBI8MqRtHUguSC4qT0
-	XEO94sTc4tK8dL3k/NxNjOCAfya1g3Flg8UhRgEORiUe3oqy0CAh1sSy4srcQ4wSHMxKIrzT
-	TwKFeFMSK6tSi/Lji0pzUosPMSYDLZ/ILCWanA+MxrySeENjEzMjSyNzQwsjY3PShJXEeQ+0
-	WgcKCaQnlqRmp6YWpBbBbGHi4JRqYCxU394zb4r0j1c/bRNe/2DXjmNgidrD/P6vimPH0y1R
-	FadiMviiHny6durh5ofeHVdsXq6zNn5ZW+Da8/hhWEpKu8hjp/WRLv45K069iubb8kXeSS/P
-	eF97scFmNj/lf/lRs1/rWk3dUdefGMlt08H7e198Qsr/nIN77CaIr/qwz1A82y+8S4mlOCPR
-	UIu5qDgRALI9siy8AgAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1755294Ab3JJBQq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 21:16:46 -0400
+Received: from mga09.intel.com ([134.134.136.24]:27990 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753264Ab3JJBQo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 21:16:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,1067,1371106800"; 
+   d="scan'208";a="408589048"
+Date: Thu, 10 Oct 2013 09:16:40 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Dave Chinner <dchinner@redhat.com>
+Cc: Ben Myers <bpm@sgi.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Subject: Re: [XFS on bad superblock] BUG: unable to handle kernel NULL
+ pointer dereference at 00000003
+Message-ID: <20131010011640.GA5726@localhost>
+References: <20131009073910.GA387@localhost>
+ <20131010005900.GE2025@devil.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131010005900.GE2025@devil.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The max77693 MFD device use irq domain method which has hardware interrupt number
-and virtual interrupt number getting through irq domain mapping. This patch
-use hardware interrupt number instead of virtual interrupt number to get
-struct irq_data.
+On Thu, Oct 10, 2013 at 11:59:00AM +1100, Dave Chinner wrote:
+> [add xfs@oss.sgi.com to cc]
 
-Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- drivers/mfd/max77693-irq.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Thanks.
 
-diff --git a/drivers/mfd/max77693-irq.c b/drivers/mfd/max77693-irq.c
-index 1029d01..66b58fe 100644
---- a/drivers/mfd/max77693-irq.c
-+++ b/drivers/mfd/max77693-irq.c
-@@ -128,7 +128,8 @@ static void max77693_irq_sync_unlock(struct irq_data *data)
- static const inline struct max77693_irq_data *
- irq_to_max77693_irq(struct max77693_dev *max77693, int irq)
- {
--	return &max77693_irqs[irq];
-+	struct irq_data *data = irq_get_irq_data(irq);
-+	return &max77693_irqs[data->hwirq];
- }
- 
- static void max77693_irq_mask(struct irq_data *data)
--- 
-1.8.0
+To help debug the problem, I searched XFS in my tests' oops database
+and find one kernel that failed 4 times (out of 12 total boots) with
+basically the same error:
 
+      4 BUG: sleeping function called from invalid context at kernel/workqueue.c:2810
+      1 WARNING: CPU: 1 PID: 372 at lib/debugobjects.c:260 debug_print_object+0x94/0xa2()
+      1 WARNING: CPU: 1 PID: 360 at lib/debugobjects.c:260 debug_print_object+0x94/0xa2()
+      1 WARNING: CPU: 0 PID: 381 at lib/debugobjects.c:260 debug_print_object+0x94/0xa2()
+      1 WARNING: CPU: 0 PID: 361 at lib/debugobjects.c:260 debug_print_object+0x94/0xa2()
+
+dmesg-yocto-cairo-28:20131004225501:i386-randconfig-j0-10042023:3.12.0-rc2-next-20130927-03100-ga0cf1ab:3
+
+[   29.709162] qnx6: unable to set blocksize
+[   29.716037] ADFS-fs error (device zram0): adfs_fill_super: unable to read superblock
+[   29.719395] ------------[ cut here ]------------
+[   29.719838] WARNING: CPU: 1 PID: 372 at lib/debugobjects.c:260 debug_print_object+0x94/0xa2()
+[   29.720016] ODEBUG: free active (active state 0) object type: work_struct hint: xfs_buf_iodone_work+0x0/0xfe
+[   29.720016] CPU: 1 PID: 372 Comm: mount Not tainted 3.12.0-rc2-next-20130927-03100-ga0cf1ab #3
+[   29.720016]  00000000 00000000 8a3efd30 8275c9a2 8a3efd70 00000000 00000104 8a3efd60
+[   29.720016]  8103f5e3 8334fafe 8a3efd8c 00000174 8334fb3b 00000104 817001fb 817001fb
+[   29.720016]  8a121e90 8355b58c 83323588 8a3efd78 8103f641 00000009 8a3efd70 8334fafe
+[   29.720016] Call Trace:
+[   29.720016]  [<8275c9a2>] dump_stack+0x7a/0xaa
+[   29.720016]  [<8103f5e3>] warn_slowpath_common+0x8c/0xa3
+[   29.720016]  [<817001fb>] ? debug_print_object+0x94/0xa2
+[   29.720016]  [<817001fb>] ? debug_print_object+0x94/0xa2
+[   29.720016]  [<8103f641>] warn_slowpath_fmt+0x2e/0x30
+[   29.720016]  [<817001fb>] debug_print_object+0x94/0xa2
+[   29.720016]  [<81344703>] ? xfs_buf_unlock+0x17f/0x17f
+[   29.720016]  [<81700f1a>] debug_check_no_obj_freed+0xe2/0x1f8
+[   29.720016]  [<8115aaa1>] kmem_cache_free+0xfe/0x32b
+[   29.720016]  [<81342be0>] xfs_buf_free+0x263/0x26f
+[   29.720016]  [<81343a71>] xfs_buf_rele+0x3e0/0x3f0
+[   29.720016]  [<813635f6>] ? xfs_readsb+0x25e/0x268
+[   29.720016]  [<813635f6>] xfs_readsb+0x25e/0x268
+[   29.720016]  [<827243a5>] ? register_cpu_notifier+0x20/0x27
+[   29.720016]  [<81367344>] xfs_fs_fill_super+0x27d/0x495
+[   29.720016]  [<813670c7>] ? xfs_finish_flags+0x24e/0x24e
+[   29.720016]  [<811666bf>] mount_bdev+0x1d6/0x256
+[   29.720016]  [<813670c7>] ? xfs_finish_flags+0x24e/0x24e
+[   29.720016]  [<8115a80b>] ? __kmalloc_track_caller+0x21a/0x3b2
+[   29.720016]  [<816d87d6>] ? ida_get_new_above+0x24a/0x25b
+[   29.720016]  [<81364b69>] xfs_fs_mount+0x1a/0x1f
+[   29.720016]  [<813670c7>] ? xfs_finish_flags+0x24e/0x24e
+[   29.720016]  [<81166a09>] mount_fs+0x38/0x1b3
+[   29.720016]  [<811395a4>] ? __alloc_percpu+0xa/0xc
+[   29.720016]  [<8118b7ff>] ? alloc_vfsmnt+0x108/0x1d6
+[   29.720016]  [<8118ca68>] vfs_kern_mount+0x97/0x123
+[   29.720016]  [<8118ef8f>] do_mount+0xc8e/0xe0d
+[   29.720016]  [<8118e2e3>] ? copy_mount_string+0x51/0x6f
+[   29.720016]  [<8118f1ee>] SyS_mount+0xe0/0x10d
+[   29.720016]  [<827889ff>] syscall_call+0x7/0xb
+[   29.720016] ---[ end trace dbf8d35123ab64b3 ]---
+[   29.720016] BUG: sleeping function called from invalid context at kernel/workqueue.c:2810
+
+dmesg-yocto-cairo-33:20131004225518:i386-randconfig-j0-10042023:3.12.0-rc2-next-20130927-03100-ga0cf1ab:3
+
+[   30.423344] qnx6: unable to set blocksize
+[   30.424465] ADFS-fs error (device zram0): adfs_fill_super: unable to read superblock
+[   30.428281] ------------[ cut here ]------------
+[   30.428765] WARNING: CPU: 0 PID: 381 at lib/debugobjects.c:260 debug_print_object+0x94/0xa2()
+[   30.429826] ODEBUG: free active (active state 0) object type: work_struct hint: xfs_buf_iodone_work+0x0/0xfe
+[   30.430014] CPU: 0 PID: 381 Comm: mount Not tainted 3.12.0-rc2-next-20130927-03100-ga0cf1ab #3
+[   30.430014]  00000000 00000000 8982dd30 8275c9a2 8982dd70 00000000 00000104 8982dd60
+[   30.430014]  8103f5e3 8334fafe 8982dd8c 0000017d 8334fb3b 00000104 817001fb 817001fb
+[   30.430014]  8a7ba8c0 8355b58c 83323588 8982dd78 8103f641 00000009 8982dd70 8334fafe
+[   30.434063] Call Trace:
+[   30.434063]  [<8275c9a2>] dump_stack+0x7a/0xaa
+[   30.434063]  [<8103f5e3>] warn_slowpath_common+0x8c/0xa3
+[   30.434063]  [<817001fb>] ? debug_print_object+0x94/0xa2
+[   30.434063]  [<817001fb>] ? debug_print_object+0x94/0xa2
+[   30.434063]  [<8103f641>] warn_slowpath_fmt+0x2e/0x30
+[   30.434063]  [<817001fb>] debug_print_object+0x94/0xa2
+[   30.434063]  [<81344703>] ? xfs_buf_unlock+0x17f/0x17f
+[   30.434063]  [<81700f1a>] debug_check_no_obj_freed+0xe2/0x1f8
+[   30.434063]  [<8115aaa1>] kmem_cache_free+0xfe/0x32b
+[   30.434063]  [<81342be0>] xfs_buf_free+0x263/0x26f
+[   30.434063]  [<81343a71>] xfs_buf_rele+0x3e0/0x3f0
+[   30.434063]  [<813635f6>] ? xfs_readsb+0x25e/0x268
+[   30.434063]  [<813635f6>] xfs_readsb+0x25e/0x268
+[   30.434063]  [<827243a5>] ? register_cpu_notifier+0x20/0x27
+[   30.434063]  [<81367344>] xfs_fs_fill_super+0x27d/0x495
+[   30.434063]  [<813670c7>] ? xfs_finish_flags+0x24e/0x24e
+[   30.434063]  [<811666bf>] mount_bdev+0x1d6/0x256
+[   30.434063]  [<813670c7>] ? xfs_finish_flags+0x24e/0x24e
+[   30.434063]  [<8115a80b>] ? __kmalloc_track_caller+0x21a/0x3b2
+[   30.434063]  [<816d87d6>] ? ida_get_new_above+0x24a/0x25b
+[   30.434063]  [<81364b69>] xfs_fs_mount+0x1a/0x1f
+[   30.434063]  [<813670c7>] ? xfs_finish_flags+0x24e/0x24e
+[   30.434063]  [<81166a09>] mount_fs+0x38/0x1b3
+[   30.434063]  [<811395a4>] ? __alloc_percpu+0xa/0xc
+[   30.434063]  [<8118b7ff>] ? alloc_vfsmnt+0x108/0x1d6
+[   30.434063]  [<8118ca68>] vfs_kern_mount+0x97/0x123
+[   30.434063]  [<8118ef8f>] do_mount+0xc8e/0xe0d
+[   30.434063]  [<8118e2e3>] ? copy_mount_string+0x51/0x6f
+[   30.434063]  [<8118f1ee>] SyS_mount+0xe0/0x10d
+[   30.434063]  [<827889ff>] syscall_call+0x7/0xb
+[   30.434063] ---[ end trace ea8cda3cc7585b8a ]---
+[   30.434063] BUG: sleeping function called from invalid context at kernel/workqueue.c:2810
+
+dmesg-yocto-jaketown-25:20131004225448:i386-randconfig-j0-10042023:3.12.0-rc2-next-20130927-03100-ga0cf1ab:3
+
+[   35.635867] qnx6: unable to set blocksize
+[   35.638410] ADFS-fs error (device zram0): adfs_fill_super: unable to read superblock
+[   35.662564] ------------[ cut here ]------------
+[   35.664652] WARNING: CPU: 0 PID: 361 at lib/debugobjects.c:260 debug_print_object+0x94/0xa2()
+[   35.669001] ODEBUG: free active (active state 0) object type: work_struct hint: xfs_buf_iodone_work+0x0/0xfe
+[   35.670149] CPU: 0 PID: 361 Comm: mount Not tainted 3.12.0-rc2-next-20130927-03100-ga0cf1ab #3
+[   35.670149]  00000000 00000000 8a299d30 8275c9a2 8a299d70 00000000 00000104 8a299d60
+[   35.670149]  8103f5e3 8334fafe 8a299d8c 00000169 8334fb3b 00000104 817001fb 817001fb
+[   35.670149]  8a73ebd8 8355b58c 83323588 8a299d78 8103f641 00000009 8a299d70 8334fafe
+[   35.670149] Call Trace:
+[   35.670149]  [<8275c9a2>] dump_stack+0x7a/0xaa
+[   35.670149]  [<8103f5e3>] warn_slowpath_common+0x8c/0xa3
+[   35.670149]  [<817001fb>] ? debug_print_object+0x94/0xa2
+[   35.670149]  [<817001fb>] ? debug_print_object+0x94/0xa2
+[   35.670149]  [<8103f641>] warn_slowpath_fmt+0x2e/0x30
+[   35.670149]  [<817001fb>] debug_print_object+0x94/0xa2
+[   35.670149]  [<81344703>] ? xfs_buf_unlock+0x17f/0x17f
+[   35.670149]  [<81700f1a>] debug_check_no_obj_freed+0xe2/0x1f8
+[   35.670149]  [<8115aaa1>] kmem_cache_free+0xfe/0x32b
+[   35.670149]  [<81342be0>] xfs_buf_free+0x263/0x26f
+[   35.670149]  [<81343a71>] xfs_buf_rele+0x3e0/0x3f0
+[   35.670149]  [<813635f6>] ? xfs_readsb+0x25e/0x268
+[   35.670149]  [<813635f6>] xfs_readsb+0x25e/0x268
+[   35.670149]  [<827243a5>] ? register_cpu_notifier+0x20/0x27
+[   35.670149]  [<81367344>] xfs_fs_fill_super+0x27d/0x495
+[   35.670149]  [<813670c7>] ? xfs_finish_flags+0x24e/0x24e
+[   35.670149]  [<811666bf>] mount_bdev+0x1d6/0x256
+[   35.670149]  [<813670c7>] ? xfs_finish_flags+0x24e/0x24e
+[   35.670149]  [<8115a80b>] ? __kmalloc_track_caller+0x21a/0x3b2
+[   35.670149]  [<816d87d6>] ? ida_get_new_above+0x24a/0x25b
+[   35.670149]  [<81364b69>] xfs_fs_mount+0x1a/0x1f
+[   35.670149]  [<813670c7>] ? xfs_finish_flags+0x24e/0x24e
+[   35.670149]  [<81166a09>] mount_fs+0x38/0x1b3
+[   35.670149]  [<811395a4>] ? __alloc_percpu+0xa/0xc
+[   35.670149]  [<8118b7ff>] ? alloc_vfsmnt+0x108/0x1d6
+[   35.670149]  [<8118ca68>] vfs_kern_mount+0x97/0x123
+[   35.670149]  [<8118ef8f>] do_mount+0xc8e/0xe0d
+[   35.670149]  [<8118e2e3>] ? copy_mount_string+0x51/0x6f
+[   35.670149]  [<8118f1ee>] SyS_mount+0xe0/0x10d
+[   35.670149]  [<827889ff>] syscall_call+0x7/0xb
+[   35.670149] ---[ end trace d814169ab0ed4dd3 ]---
+[   35.670149] BUG: sleeping function called from invalid context at kernel/workqueue.c:2810
+
+dmesg-yocto-jaketown-26:20131004225504:i386-randconfig-j0-10042023:3.12.0-rc2-next-20130927-03100-ga0cf1ab:3
+
+[   32.274597] qnx6: unable to set blocksize
+[   32.279268] ADFS-fs error (device zram0): adfs_fill_super: unable to read superblock
+[   32.295808] ------------[ cut here ]------------
+[   32.297779] WARNING: CPU: 1 PID: 360 at lib/debugobjects.c:260 debug_print_object+0x94/0xa2()
+[   32.300113] ODEBUG: free active (active state 0) object type: work_struct hint: xfs_buf_iodone_work+0x0/0xfe
+[   32.300113] CPU: 1 PID: 360 Comm: mount Not tainted 3.12.0-rc2-next-20130927-03100-ga0cf1ab #3
+[   32.300113]  00000000 00000000 8a34fd30 8275c9a2 8a34fd70 00000000 00000104 8a34fd60
+[   32.300113]  8103f5e3 8334fafe 8a34fd8c 00000168 8334fb3b 00000104 817001fb 817001fb
+[   32.300113]  8a7b1b00 8355b58c 83323588 8a34fd78 8103f641 00000009 8a34fd70 8334fafe
+[   32.300113] Call Trace:
+[   32.300113]  [<8275c9a2>] dump_stack+0x7a/0xaa
+[   32.300113]  [<8103f5e3>] warn_slowpath_common+0x8c/0xa3
+[   32.300113]  [<817001fb>] ? debug_print_object+0x94/0xa2
+[   32.300113]  [<817001fb>] ? debug_print_object+0x94/0xa2
+[   32.300113]  [<8103f641>] warn_slowpath_fmt+0x2e/0x30
+[   32.300113]  [<817001fb>] debug_print_object+0x94/0xa2
+[   32.300113]  [<81344703>] ? xfs_buf_unlock+0x17f/0x17f
+[   32.300113]  [<81700f1a>] debug_check_no_obj_freed+0xe2/0x1f8
+[   32.300113]  [<8115aaa1>] kmem_cache_free+0xfe/0x32b
+[   32.300113]  [<81342be0>] xfs_buf_free+0x263/0x26f
+[   32.300113]  [<81343a71>] xfs_buf_rele+0x3e0/0x3f0
+[   32.300113]  [<813635f6>] ? xfs_readsb+0x25e/0x268
+[   32.300113]  [<813635f6>] xfs_readsb+0x25e/0x268
+[   32.300113]  [<827243a5>] ? register_cpu_notifier+0x20/0x27
+[   32.300113]  [<81367344>] xfs_fs_fill_super+0x27d/0x495
+[   32.300113]  [<813670c7>] ? xfs_finish_flags+0x24e/0x24e
+[   32.300113]  [<811666bf>] mount_bdev+0x1d6/0x256
+[   32.300113]  [<813670c7>] ? xfs_finish_flags+0x24e/0x24e
+[   32.300113]  [<8115a80b>] ? __kmalloc_track_caller+0x21a/0x3b2
+[   32.300113]  [<816d87d6>] ? ida_get_new_above+0x24a/0x25b
+[   32.300113]  [<81364b69>] xfs_fs_mount+0x1a/0x1f
+[   32.300113]  [<813670c7>] ? xfs_finish_flags+0x24e/0x24e
+[   32.300113]  [<81166a09>] mount_fs+0x38/0x1b3
+[   32.300113]  [<811395a4>] ? __alloc_percpu+0xa/0xc
+[   32.300113]  [<8118b7ff>] ? alloc_vfsmnt+0x108/0x1d6
+[   32.300113]  [<8118ca68>] vfs_kern_mount+0x97/0x123
+[   32.300113]  [<8118ef8f>] do_mount+0xc8e/0xe0d
+[   32.300113]  [<8118e2e3>] ? copy_mount_string+0x51/0x6f
+[   32.300113]  [<8118f1ee>] SyS_mount+0xe0/0x10d
+[   32.300113]  [<827889ff>] syscall_call+0x7/0xb
+[   32.300113] ---[ end trace 53e0053082cb2d71 ]---
+[   32.300113] BUG: sleeping function called from invalid context at kernel/workqueue.c:2810
+
+Thanks,
+Fengguang
