@@ -1,102 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755433Ab3JJPOk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 11:14:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51050 "EHLO mx1.redhat.com"
+	id S1755620Ab3JJPPt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 11:15:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46384 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753311Ab3JJPOj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 11:14:39 -0400
-Date: Thu, 10 Oct 2013 20:44:32 +0530 (IST)
-From: P J P <ppandit@redhat.com>
-X-X-Sender: pjp@javelin.pnq.redhat.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] Export initial ramdisk compression config
-In-Reply-To: <20131009144849.96389b7cdb3a553e52682137@linux-foundation.org>
-Message-ID: <alpine.LFD.2.03.1310102041090.3691@erqung.pbz>
-References: <alpine.LFD.2.03.1309151434580.7830@erqung.pbz> <20130923125256.e53b51a137a19a972c6026a2@linux-foundation.org> <alpine.LFD.2.03.1309250035480.5312@erqung.pbz> <20131009144849.96389b7cdb3a553e52682137@linux-foundation.org>
+	id S1754078Ab3JJPPs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 11:15:48 -0400
+Date: Thu, 10 Oct 2013 18:15:39 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: chai wen <chaiw.fnst@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, pbonzini@redhat.com, tangchen@cn.fujitsu.com,
+        guz.fnst@cn.fujitsu.com, zhangyanfei@cn.fujitsu.com,
+        guijianfeng@cn.fujitsu.com, chaiwen_0825@hotmail.com
+Subject: Re: [RFC][PATCH] Drop FOLL_GET in GUP when doing async_pf in kvm
+Message-ID: <20131010151539.GD15954@redhat.com>
+References: <1381411215-23830-1-git-send-email-chaiw.fnst@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="0-1345281293-1381418077=:3691"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1381411215-23830-1-git-send-email-chaiw.fnst@cn.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Thu, Oct 10, 2013 at 09:20:15PM +0800, chai wen wrote:
+> Hi Gleb
+> 
+> Thanks for you explanation about async_pf in kvm.
+> Page pinning is not mandatory in kvm async_pf processing and probably should
+> be dropped later.this patch drops the FOLL_GET flag when doing GUP in async_pf
+> and uses a bool (marking result of GUP) to replace the *page in kvm_async_pf
+> structure to simplify some following async_pf check/clear processing.
+Thanks, but the patch need to be on top of
+git://git.kernel.org/pub/scm/virt/kvm/kvm.git queue branch.
 
---0-1345281293-1381418077=:3691
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Some more comment bellow.
 
-   Hello Andrew,
-+-- On Wed, 9 Oct 2013, Andrew Morton wrote --+
-| It would be better to make the change in one place, rather than for
-| each architecture.  That would appear to involve moving a hunk from
-| arch/x86/Makefile into init/Makefile, or perhaps ./Makefile.
+> Thanks.
+> 
+> Suggested-by:  gleb@redhat.com
+> Signed-off-by: chai wen <chaiw.fnst@cn.fujitsu.com>
+> ---
+>  arch/x86/kvm/x86.c       |    5 ++---
+>  include/linux/kvm_host.h |    2 +-
+>  virt/kvm/async_pf.c      |   16 ++++++----------
+>  3 files changed, 9 insertions(+), 14 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index e5ca72a..0ff7d02 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -7282,8 +7282,7 @@ void kvm_arch_async_page_ready(struct kvm_vcpu *vcpu, struct kvm_async_pf *work)
+>  {
+>  	int r;
+>  
+> -	if ((vcpu->arch.mmu.direct_map != work->arch.direct_map) ||
+> -	      is_error_page(work->page))
+> +	if ((vcpu->arch.mmu.direct_map != work->arch.direct_map))
+>  		return;
+>  
+>  	r = kvm_mmu_reload(vcpu);
+> @@ -7393,7 +7392,7 @@ void kvm_arch_async_page_present(struct kvm_vcpu *vcpu,
+>  	struct x86_exception fault;
+>  
+>  	trace_kvm_async_pf_ready(work->arch.token, work->gva);
+> -	if (is_error_page(work->page))
+> +	if (!work->got_page)
+>  		work->arch.token = ~0; /* broadcast wakeup */
+>  	else
+>  		kvm_del_async_pf_gfn(vcpu, work->arch.gfn);
+> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+> index 0fbbc7a..232a7d0 100644
+> --- a/include/linux/kvm_host.h
+> +++ b/include/linux/kvm_host.h
+> @@ -189,7 +189,7 @@ struct kvm_async_pf {
+>  	gva_t gva;
+>  	unsigned long addr;
+>  	struct kvm_arch_async_pf arch;
+> -	struct page *page;
+> +	bool got_page;
+I would call it wakeup_all.
 
-  Please see this revised version, I missed to include init/do_mounts_rd.c 
-changes in the previous one.
+>  	bool done;
+>  };
+>  
+> diff --git a/virt/kvm/async_pf.c b/virt/kvm/async_pf.c
+> index 8a39dda..0cafdc7 100644
+> --- a/virt/kvm/async_pf.c
+> +++ b/virt/kvm/async_pf.c
+> @@ -56,7 +56,7 @@ void kvm_async_pf_vcpu_init(struct kvm_vcpu *vcpu)
+>  
+>  static void async_pf_execute(struct work_struct *work)
+>  {
+> -	struct page *page = NULL;
+> +	long nrpages = 0;
+>  	struct kvm_async_pf *apf =
+>  		container_of(work, struct kvm_async_pf, work);
+>  	struct mm_struct *mm = apf->mm;
+> @@ -68,13 +68,13 @@ static void async_pf_execute(struct work_struct *work)
+>  
+>  	use_mm(mm);
+>  	down_read(&mm->mmap_sem);
+> -	get_user_pages(current, mm, addr, 1, 1, 0, &page, NULL);
+> +	nrpages = get_user_pages(current, mm, addr, 1, 1, 0, NULL, NULL);
+>  	up_read(&mm->mmap_sem);
+>  	unuse_mm(mm);
+>  
+>  	spin_lock(&vcpu->async_pf.lock);
+>  	list_add_tail(&apf->link, &vcpu->async_pf.done);
+> -	apf->page = page;
+> +	apf->got_page = (1==nrpages);
+Space before and after ==, but this is not needed at all.  It does
+not matter if GUP failed or not here. We need to wake up guest process
+that is waiting on a page, so just set wakeup_all to false in kvm_setup_async_pf().
 
-Thank you.
+>  	apf->done = true;
+>  	spin_unlock(&vcpu->async_pf.lock);
+>  
+> @@ -114,8 +114,6 @@ void kvm_clear_async_pf_completion_queue(struct kvm_vcpu *vcpu)
+>  			list_entry(vcpu->async_pf.done.next,
+>  				   typeof(*work), link);
+>  		list_del(&work->link);
+> -		if (!is_error_page(work->page))
+> -			kvm_release_page_clean(work->page);
+>  		kmem_cache_free(async_pf_cache, work);
+>  	}
+>  	spin_unlock(&vcpu->async_pf.lock);
+> @@ -135,14 +133,12 @@ void kvm_check_async_pf_completion(struct kvm_vcpu *vcpu)
+>  		list_del(&work->link);
+>  		spin_unlock(&vcpu->async_pf.lock);
+>  
+> -		if (work->page)
+> +		if (work->got_page)
+>  			kvm_arch_async_page_ready(vcpu, work);
+>  		kvm_arch_async_page_present(vcpu, work);
+>  
+>  		list_del(&work->queue);
+>  		vcpu->async_pf.queued--;
+> -		if (!is_error_page(work->page))
+> -			kvm_release_page_clean(work->page);
+>  		kmem_cache_free(async_pf_cache, work);
+>  	}
+>  }
+> @@ -165,7 +161,7 @@ int kvm_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn,
+>  	if (!work)
+>  		return 0;
+>  
+> -	work->page = NULL;
+> +	work->got_page = false;
+Sp here do:
+	work->wakeup_all = false;
+
+>  	work->done = false;
+>  	work->vcpu = vcpu;
+>  	work->gva = gva;
+> @@ -206,7 +202,7 @@ int kvm_async_pf_wakeup_all(struct kvm_vcpu *vcpu)
+>  	if (!work)
+>  		return -ENOMEM;
+>  
+> -	work->page = KVM_ERR_PTR_BAD_PAGE;
+> +	work->got_page = false;
+And here:
+	work->wakeup_all = true;
+>  	INIT_LIST_HEAD(&work->queue); /* for list_del to work */
+>  
+>  	spin_lock(&vcpu->async_pf.lock);
+> -- 
+> 1.7.1
+
 --
-Prasad J Pandit / Red Hat Security Response Team
---0-1345281293-1381418077=:3691
-Content-Type: TEXT/PLAIN; charset=US-ASCII; name=0001-Export-initial-ramdisk-compression-config-option.patch
-Content-Transfer-Encoding: BASE64
-Content-ID: <alpine.LFD.2.03.1310102044320.3691@erqung.pbz>
-Content-Description: 
-Content-Disposition: attachment; filename=0001-Export-initial-ramdisk-compression-config-option.patch
-
-RnJvbSAxNGRjY2VlOThmMTJmMmRiY2EyMjQ1MTBiY2ZlZGQxYTM5N2VkMTc3
-IE1vbiBTZXAgMTcgMDA6MDA6MDAgMjAwMQ0KRnJvbTogUCBKIFAgPHByYXNh
-ZEByZWRoYXQuY29tPg0KRGF0ZTogVGh1LCAxMCBPY3QgMjAxMyAyMDozNzo0
-OCArMDUzMA0KU3ViamVjdDogRXhwb3J0IGluaXRpYWwgcmFtZGlzayBjb21w
-cmVzc2lvbiBjb25maWcgb3B0aW9uDQoNCk1ha2UgbWVudWNvbmZpZyBhbGxv
-d3Mgb25lIHRvIGNob29zZSBjb21wcmVzc2lvbiBmb3JtYXQgb2YgYW4NCmlu
-aXRpYWwgcmFtZGlzayBpbWFnZS4gQnV0IHRoaXMgY2hvaWNlIGRvZXMgbm90
-IHJlc3VsdCBpbiBkdWx5DQpjb21wcmVzc2VkIHJhbWRpc2sgaW1hZ2UuIEJl
-Y2F1c2UgLSAkIG1ha2UgaW5zdGFsbCAtIGRvZXMgbm90DQpwYXNzIG9uIHRo
-ZSBzZWxlY3RlZCBjb21wcmVzc2lvbiBjaG9pY2UgdG8gdGhlIGRyYWN1dCg4
-KSB0b29sLA0Kd2hpY2ggY3JlYXRlcyB0aGUgaW5pdHJhbWZzIGZpbGUuIGRy
-YWN1dCg4KSBnZW5lcmF0ZXMgdGhlIGltYWdlDQp3aXRoIHRoZSBkZWZhdWx0
-IGNvbXByZXNzaW9uLCBpZS4gZ3ppcCgxKS4NCg0KVGhpcyBwYXRjaCBleHBv
-cnRzIHRoZSBzZWxlY3RlZCBjb21wcmVzc2lvbiBvcHRpb24gdG8gYSBzdWIt
-c2hlbGwNCmVudmlyb25tZW50LCBzbyB0aGF0IGl0IGNvdWxkIGJlIHVzZWQg
-YnkgZHJhY3V0KDgpIHRvb2wgdG8gZ2VuZXJhdGUNCmFwcHJvcHJpYXRlbHkg
-Y29tcHJlc3NlZCBpbml0cmFtZnMgaW1hZ2VzLg0KDQpUaGVyZSBpc24ndCBh
-IHN0cmFpZ2h0IGZvcndhcmQgd2F5IHRvIHBhc3Mgb24gb3B0aW9ucyB0byBk
-cmFjdXQoOCkNCnZpYSBwb3NpdGlvbmFsIHBhcmFtZXRlcnMuIEJlY2F1c2Ug
-aXQgaXMgaW5kaXJlY3RseSBpbnZva2VkIGF0IHRoZQ0KZW5kIG9mIGEgJCBt
-YWtlIGluc3RhbGwgc2VxdWVuY2UuDQoNCiAjIG1ha2UgaW5zdGFsbA0KICAg
-LT4gYXJjaC8kYXJjaC9ib290L01ha2VmaWxlDQogICAgLT4gYXJjaC8kYXJj
-aC9ib290L2luc3RhbGwuc2gNCiAgICAgLT4gL3NiaW5nL2luc3RhbGxrZXJu
-ZWwgLi4uDQogICAgICAtPiAvc2Jpbi9uZXcta2VybmVsLXBrZyAuLi4NCiAg
-ICAgICAtPiAvc2Jpbi9kcmFjdXQgLi4uDQoNCmRpZmYgLS1naXQgYS9NYWtl
-ZmlsZSBiL01ha2VmaWxlDQppbmRleCA4ZDA2NjhmLi41YzdmOGFhIDEwMDY0
-NA0KLS0tIGEvTWFrZWZpbGUNCisrKyBiL01ha2VmaWxlDQpAQCAtNzIwLDYg
-KzcyMCwyMiBAQCBtb2Rfc3RyaXBfY21kID0gdHJ1ZQ0KIGVuZGlmICMgSU5T
-VEFMTF9NT0RfU1RSSVANCiBleHBvcnQgbW9kX3N0cmlwX2NtZA0KIA0KKyMg
-U2VsZWN0IGluaXRpYWwgcmFtZGlzayBjb21wcmVzc2lvbiBmb3JtYXQsIGRl
-ZmF1bHQgaXMgZ3ppcCgxKS4NCisjIFRoaXMgc2hhbGwgYmUgdXNlZCBieSB0
-aGUgZHJhY3V0KDgpIHRvb2wgd2hpbGUgY3JlYXRpbmcgYW4gaW5pdHJhbWZz
-IGltYWdlLg0KKyMNCitJTklUUkRfQ09NUFJFU1M9Z3ppcA0KK2lmZXEgKCQo
-Q09ORklHX1JEX0JaSVAyKSwgeSkNCisgICAgICAgIElOSVRSRF9DT01QUkVT
-Uz1iemlwMg0KK2Vsc2UgaWZlcSAoJChDT05GSUdfUkRfTFpNQSksIHkpDQor
-ICAgICAgICBJTklUUkRfQ09NUFJFU1M9bHptYQ0KK2Vsc2UgaWZlcSAoJChD
-T05GSUdfUkRfWFopLCB5KQ0KKyAgICAgICAgSU5JVFJEX0NPTVBSRVNTPXh6
-DQorZWxzZSBpZmVxICgkKENPTkZJR19SRF9MWk8pLCB5KQ0KKyAgICAgICAg
-SU5JVFJEX0NPTVBSRVNTPWx6bw0KK2Vsc2UgaWZlcSAoJChDT05GSUdfUkRf
-TFo0KSwgeSkNCisgICAgICAgIElOSVRSRF9DT01QUkVTUz1sejQNCitlbmRp
-Zg0KK2V4cG9ydCBJTklUUkRfQ09NUFJFU1MNCiANCiBpZmRlZiBDT05GSUdf
-TU9EVUxFX1NJR19BTEwNCiBNT0RTRUNLRVkgPSAuL3NpZ25pbmdfa2V5LnBy
-aXYNCmRpZmYgLS1naXQgYS9pbml0L2RvX21vdW50c19yZC5jIGIvaW5pdC9k
-b19tb3VudHNfcmQuYw0KaW5kZXggYmRhYTM0NS4uOWVlMzQyNyAxMDA2NDQN
-Ci0tLSBhL2luaXQvZG9fbW91bnRzX3JkLmMNCisrKyBiL2luaXQvZG9fbW91
-bnRzX3JkLmMNCkBAIC01Nyw2ICs1NywxMSBAQCBzdGF0aWMgaW50IF9faW5p
-dCBjcmRfbG9hZChpbnQgaW5fZmQsIGludCBvdXRfZmQsIGRlY29tcHJlc3Nf
-Zm4gZGVjbyk7DQogICoJY3JhbWZzDQogICoJc3F1YXNoZnMNCiAgKglnemlw
-DQorICoJYnppcDINCisgKglsem1hDQorICoJeHoNCisgKglsem8NCisgKgls
-ejQNCiAgKi8NCiBzdGF0aWMgaW50IF9faW5pdA0KIGlkZW50aWZ5X3JhbWRp
-c2tfaW1hZ2UoaW50IGZkLCBpbnQgc3RhcnRfYmxvY2ssIGRlY29tcHJlc3Nf
-Zm4gKmRlY29tcHJlc3NvcikNCi0tIA0KMS44LjMuMQ0KDQo=
-
---0-1345281293-1381418077=:3691--
+			Gleb.
