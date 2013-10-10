@@ -1,280 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754578Ab3JJL4K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 07:56:10 -0400
-Received: from mail-vb0-f42.google.com ([209.85.212.42]:36327 "EHLO
-	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753035Ab3JJL4I (ORCPT
+	id S1755237Ab3JJL4m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 07:56:42 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:36748 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753189Ab3JJL4k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 07:56:08 -0400
+	Thu, 10 Oct 2013 07:56:40 -0400
+Date: Thu, 10 Oct 2013 13:56:17 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Jakub Jelinek <jakub@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Richard Henderson <rth@twiddle.net>
+Subject: Re: [PATCH, -v2] compiler/gcc4: Add quirk for 'asm goto'
+ miscompilation bug
+Message-ID: <20131010115617.GY28601@twins.programming.kicks-ass.net>
+References: <20131009181613.GW30970@tucnak.zalov.cz>
+ <20131009190231.GI13848@laptop.programming.kicks-ass.net>
+ <20131009190851.GX30970@tucnak.zalov.cz>
+ <20131010062238.GB9853@gmail.com>
+ <20131010065104.GY30970@tucnak.zalov.cz>
+ <20131010080457.GC21875@tucnak.zalov.cz>
+ <20131010082430.GA20577@gmail.com>
+ <20131010083107.GZ30970@tucnak.zalov.cz>
+ <20131010084535.GA10620@gmail.com>
+ <20131010085506.GA11775@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1572166.uWxBjPOJOn@vostro.rjw.lan>
-References: <1380148313-763-1-git-send-email-zoran.markovic@linaro.org>
-	<1572166.uWxBjPOJOn@vostro.rjw.lan>
-Date: Thu, 10 Oct 2013 13:56:06 +0200
-Message-ID: <CAPDyKFo7hs0WLDNqj8hYzYrCTYgO1rDOmADZhLdUWGVkrgQPrg@mail.gmail.com>
-Subject: Re: [RFC PATCHv4] drivers: power: Detect device suspend/resume lockup
- and log event in pstore.
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Zoran Markovic <zoran.markovic@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Benoit Goby <benoit@android.com>,
-        Android Kernel Team <kernel-team@android.com>,
-        Colin Cross <ccross@android.com>, Todd Poynor <toddpoynor@google.com>,
-        San Mehat <san@google.com>, John Stultz <john.stultz@linaro.org>,
-        Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131010085506.GA11775@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10 October 2013 02:08, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> On Wednesday, September 25, 2013 03:31:53 PM Zoran Markovic wrote:
->> From: Benoit Goby <benoit@android.com>
->>
->> Rather than hard-lock the kernel, dump the suspend/resume thread stack and
->> panic() to capture a message in pstore when a driver takes too long to
->> suspend/resume. Default suspend/resume watchdog timeout is set to 12
->> seconds to be longer than the usbhid 10 second timeout, but could be
->> changed at compile time.
->>
->> Exclude from the watchdog the time spent waiting for children that
->> are resumed asynchronously and time every device, whether or not they
->> resumed synchronously.
->>
->> This patch is targeted for mobile devices where a suspend/resume lockup
->> could cause a system reboot. Information about failing device can be
->> retrieved in subsequent boot session by mounting pstore and inspecting
->> the log. Laptops with EFI-enabled pstore could also benefit from
->> this feature.
->>
->> The hardware watchdog timer is likely suspended during this time and
->> couldn't be relied upon. The soft-lockup detector would eventually tell
->> that tasks are not scheduled, but would provide little context as to why.
->> The patch hence uses system timer and assumes it is still active while the
->> devices are suspended/resumed.
->>
->> This feature can be enabled/disabled during kernel configuration.
->>
->> Cc: Android Kernel Team <kernel-team@android.com>
->> Cc: Colin Cross <ccross@android.com>
->> Cc: Todd Poynor <toddpoynor@google.com>
->> Cc: San Mehat <san@google.com>
->> Cc: Benoit Goby <benoit@android.com>
->> Cc: John Stultz <john.stultz@linaro.org>
->> Cc: Pavel Machek <pavel@ucw.cz>
->> Cc: Rafael J. Wysocki <rjw@sisk.pl>
->> Cc: Len Brown <len.brown@intel.com>
->> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> Original-author: San Mehat <san@google.com>
->> Signed-off-by: Benoit Goby <benoit@android.com>
->> [zoran.markovic@linaro.org: Changed printk(KERN_EMERG,...) to pr_emerg(...),
->> tweaked commit message. Moved call to dpm_wd_set() before device_lock() in
->> device_resume(). Minor changes to add compile-time inclusion of the feature.]
->> Signed-off-by: Zoran Markovic <zoran.markovic@linaro.org>
->
-> I wonder if anyone who thinks that this is useful can ACK it?
+On Thu, Oct 10, 2013 at 10:55:06AM +0200, Ingo Molnar wrote:
+> +/*
+> + * GCC 'asm goto' miscompiles certain code sequences:
+> + *
+> + *   http://gcc.gnu.org/bugzilla/show_bug.cgi?id=58670
+> + *
+> + * Work it around via quirk suggested by Jakub Jelinek.
+> + * Fixed in GCC 4.8.2 and later versions.
+> + */
+> +#if GCC_VERSION <= 40801
 
-Hi Rafael,
+We didn't do version checks for CC_HAVE_ASM_GOTO because of vendor
+backports; can't we detect this in the same way?
 
-For whatever you think it is worth. :-)
+> +# define __asm_goto(vol, x...) do { asm vol goto(x); asm (""); } while (0)
+> +#else
+> +# define __asm_goto(vol, x...) do { asm vol goto(x); } while (0)
+> +#endif
 
-Acked-by: Ulf Hansson <ulf.hansson@linaro.org>
+This places the asm("") in the fallthrough case; but Jakub wrote:
 
-Also note, this feature has been most valuable when we were debugging
-suspend/resume hangs for the ux500 Android platforms.
+> @@ -8,6 +8,7 @@ foo (int a, int b)
+>    asm volatile goto ("bts $1, %0; jc %l[lab]" : : "m" (b) : "memory" : lab);
+>    return 0;
+>  lab:
+> +  asm ("");
+>    return 0;
+>  }
 
-Kind regards
-Ulf Hansson
-
->
->> ---
->>  drivers/base/power/main.c |   68 +++++++++++++++++++++++++++++++++++++++++++++
->>  kernel/power/Kconfig      |   16 +++++++++++
->>  2 files changed, 84 insertions(+)
->>
->> diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
->> index 9f098a8..9b7e6b6 100644
->> --- a/drivers/base/power/main.c
->> +++ b/drivers/base/power/main.c
->> @@ -30,6 +30,8 @@
->>  #include <linux/suspend.h>
->>  #include <trace/events/power.h>
->>  #include <linux/cpuidle.h>
->> +#include <linux/timer.h>
->> +
->>  #include "../base.h"
->>  #include "power.h"
->>
->> @@ -55,6 +57,12 @@ struct suspend_stats suspend_stats;
->>  static DEFINE_MUTEX(dpm_list_mtx);
->>  static pm_message_t pm_transition;
->>
->> +struct dpm_watchdog {
->> +     struct device           *dev;
->> +     struct task_struct      *tsk;
->> +     struct timer_list       timer;
->> +};
->> +
->>  static int async_error;
->>
->>  static char *pm_verb(int event)
->> @@ -390,6 +398,60 @@ static int dpm_run_callback(pm_callback_t cb, struct device *dev,
->>       return error;
->>  }
->>
->> +#ifdef CONFIG_DPM_WD
->> +/**
->> + * dpm_wd_handler - Driver suspend / resume watchdog handler.
->> + *
->> + * Called when a driver has timed out suspending or resuming.
->> + * There's not much we can do here to recover so panic() to
->> + * capture a crash-dump in pstore.
->> + */
->> +static void dpm_wd_handler(unsigned long data)
->
-> I'd prefer this to be called dpm_watchdog_handler() and similarly everywhere
-> below.
->
->> +{
->> +     struct dpm_watchdog *wd = (void *)data;
->> +
->> +     dev_emerg(wd->dev, "**** DPM device timeout ****\n");
->> +     show_stack(wd->tsk, NULL);
->> +     panic("%s %s: unrecoverable failure\n",
->> +             dev_driver_string(wd->dev), dev_name(wd->dev));
->> +}
->> +
->> +/**
->> + * dpm_wd_set - Enable pm watchdog for given device.
->> + * @wd: Watchdog. Must be allocated on the stack.
->> + * @dev: Device to handle.
->> + */
->> +static void dpm_wd_set(struct dpm_watchdog *wd, struct device *dev)
->> +{
->> +     struct timer_list *timer = &wd->timer;
->> +
->> +     wd->dev = dev;
->> +     wd->tsk = get_current();
->> +
->> +     init_timer_on_stack(timer);
->> +     /* use same timeout value for both suspend and resume */
->> +     timer->expires = jiffies + HZ * CONFIG_DPM_WD_TIMEOUT;
->> +     timer->function = dpm_wd_handler;
->> +     timer->data = (unsigned long)wd;
->> +     add_timer(timer);
->> +}
->> +
->> +/**
->> + * dpm_wd_clear - Disable suspend/resume watchdog.
->> + * @wd: Watchdog to disable.
->> + */
->> +static void dpm_wd_clear(struct dpm_watchdog *wd)
->> +{
->> +     struct timer_list *timer = &wd->timer;
->> +
->> +     del_timer_sync(timer);
->> +     destroy_timer_on_stack(timer);
->> +}
->> +#else
->> +#define dpm_wd_set(x, y)
->> +#define dpm_wd_clear(x)
->> +#endif
->> +
->>  /*------------------------- Resume routines -------------------------*/
->>
->>  /**
->> @@ -576,6 +638,7 @@ static int device_resume(struct device *dev, pm_message_t state, bool async)
->>       pm_callback_t callback = NULL;
->>       char *info = NULL;
->>       int error = 0;
->> +     struct dpm_watchdog wd;
->>
->>       TRACE_DEVICE(dev);
->>       TRACE_RESUME(0);
->> @@ -584,6 +647,7 @@ static int device_resume(struct device *dev, pm_message_t state, bool async)
->>               goto Complete;
->>
->>       dpm_wait(dev->parent, async);
->> +     dpm_wd_set(&wd, dev);
->>       device_lock(dev);
->>
->>       /*
->> @@ -642,6 +706,7 @@ static int device_resume(struct device *dev, pm_message_t state, bool async)
->>
->>   Unlock:
->>       device_unlock(dev);
->> +     dpm_wd_clear(&wd);
->>
->>   Complete:
->>       complete_all(&dev->power.completion);
->> @@ -1060,6 +1125,7 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
->>       pm_callback_t callback = NULL;
->>       char *info = NULL;
->>       int error = 0;
->> +     struct dpm_watchdog wd;
->>
->>       dpm_wait_for_children(dev, async);
->>
->> @@ -1083,6 +1149,7 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
->>       if (dev->power.syscore)
->>               goto Complete;
->>
->> +     dpm_wd_set(&wd, dev);
->>       device_lock(dev);
->>
->>       if (dev->pm_domain) {
->> @@ -1139,6 +1206,7 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
->>       }
->>
->>       device_unlock(dev);
->> +     dpm_wd_clear(&wd);
->>
->>   Complete:
->>       complete_all(&dev->power.completion);
->> diff --git a/kernel/power/Kconfig b/kernel/power/Kconfig
->> index d444c4e..6a6b763 100644
->> --- a/kernel/power/Kconfig
->> +++ b/kernel/power/Kconfig
->> @@ -178,6 +178,22 @@ config PM_SLEEP_DEBUG
->>       def_bool y
->>       depends on PM_DEBUG && PM_SLEEP
->>
->> +config DPM_WD
->
-> Please expand this to DPM_WATCHDOG ->
->
->> +     bool "Device suspend/resume watchdog"
->> +     depends on PM_DEBUG && PSTORE
->> +     ---help---
->> +       Sets up a watchdog timer to capture drivers that are
->> +       locked up attempting to suspend/resume a device.
->> +       A detected lockup causes system panic with message
->> +       captured in pstore device for inspection in subsequent
->> +       boot session.
->> +
->> +config DPM_WD_TIMEOUT
->
-> -> and this to DPM_WATCHDOG_TIMEOUT
->
->> +     int "Watchdog timeout in seconds"
->> +     range 1 120
->> +     default 12
->> +     depends on DPM_WD
->> +
->>  config PM_TRACE
->>       bool
->>       help
->
-> Thanks!
->
-> --
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Which places the asm ("") after the label, these two are not the same.
