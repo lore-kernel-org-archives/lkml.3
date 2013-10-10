@@ -1,239 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754994Ab3JJIYn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 04:24:43 -0400
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:49974 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753813Ab3JJIYe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 04:24:34 -0400
-Date: Thu, 10 Oct 2013 10:24:30 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Jakub Jelinek <jakub@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Richard Henderson <rth@twiddle.net>
-Subject: [PATCH] gcc4: Add 'asm goto' miscompilation quirk
-Message-ID: <20131010082430.GA20577@gmail.com>
-References: <20131009124310.GA11769@redhat.com>
- <20131009140734.GH3081@twins.programming.kicks-ass.net>
- <20131009143359.GU26785@twins.programming.kicks-ass.net>
- <20131009144656.GV26785@twins.programming.kicks-ass.net>
- <20131009181613.GW30970@tucnak.zalov.cz>
- <20131009190231.GI13848@laptop.programming.kicks-ass.net>
- <20131009190851.GX30970@tucnak.zalov.cz>
- <20131010062238.GB9853@gmail.com>
- <20131010065104.GY30970@tucnak.zalov.cz>
- <20131010080457.GC21875@tucnak.zalov.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1755369Ab3JJIZY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 04:25:24 -0400
+Received: from rrzmta2.uni-regensburg.de ([194.94.155.52]:40272 "EHLO
+	rrzmta2.uni-regensburg.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754728Ab3JJIZV convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:2:1>);
+	Thu, 10 Oct 2013 04:25:21 -0400
+X-Greylist: delayed 562 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 Oct 2013 04:25:21 EDT
+Message-Id: <52567E57020000A100012B6A@gwsmtp1.uni-regensburg.de>
+X-Mailer: Novell GroupWise Internet Agent 12.0.2 
+Date: Thu, 10 Oct 2013 10:15:51 +0200
+From: "Ulrich Windl" <Ulrich.Windl@rz.uni-regensburg.de>
+To: <linux-kernel@vger.kernel.org>
+Cc: "Ulrich Windl" <Ulrich.Windl@rz.uni-regensburg.de>
+Subject: read stalls with large RAM: transparent huges pages, dirty
+ buffers, or I/O (block) scheduler?
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <20131010080457.GC21875@tucnak.zalov.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi!
 
-* Jakub Jelinek <jakub@redhat.com> wrote:
+We are running some x86_64 servers with large RAM (128GB). Just to imagine: With a memory speed of a little more than 9GB/s it takes > 10 seconds to read all RAM...
 
-> On Thu, Oct 10, 2013 at 08:51:04AM +0200, Jakub Jelinek wrote:
-> > @@ -8,6 +8,7 @@ foo (int a, int b)
-> >    asm volatile goto ("bts $1, %0; jc %l[lab]" : : "m" (b) : "memory" : lab);
-> >    return 0;
-> >  lab:
-> > +  asm ("");
-> >    return 0;
-> >  }
-> 
-> Or alternatively put the asm (""); right after asm goto,
->   asm volatile goto ("bts $1, %0; jc %l[lab]" : : "m" (b) : "memory" : lab);
->   asm ("");
->   return ...;
-> lab;
->   return ...;
-> What generates better code remains to be tested.  In any case, please
-> conditionalize the hacks on non-fixed compilers once the fix is released.
+In the past and recently we had problems with read() stalls when the kernel was writing back big amounts (like 80GB) of dirty buffers on a somewhat slow (40MB/s) device. The problem is old and well-known, it seems, but to really solved.
 
-Something like the patch below? (Totally untested and all that.)
+One recommendation was to limit the amount of dirty buffers, which actually did not help to really avoid the problem, specifically if new dirty buffers are used as soon as they are available (i.e.: some were flushed). I had success with limiting the used memory (including dirty pages) with control groups (memory:iothrottle, SLES11 SP2), but the control framework (rccgconfig setting up proper rights for /sys/fs/cgroup/mem/iothrottle/tasks) is quite incomplete (no group write permission or ACL setup possible), so the end user can hardly use that.
 
-Notes:
+I still don't know whether read stalls are caused by the I/O channel or device being saturated, or whether the kernel is waiting for unused buffers to receive the read data, but I learned that I/O schedulers (and possibly the block layer optimizations) can cause extra delays, too.
 
-- If the bug is fixed in 4.8.3 then the version check can be sharpened
-  from 99999 to 40803.
+We had one situation where a single sector could not be read with direct I/O for 10 seconds.
 
-- I'd really prefer this quirk versus having to add the extra barrier to 
-  the label, as it makes the actual usage sites a lot less painful.
+Recently we had the problem again, but it was clear that it was _not_ the device being overloaded, nor was it the I/O channel. The read problem was reported for a devioce that was almost idle, and the I/O channel (FC) can handle much more than the disk system can in both directions. So the problem seems to be inside the kernel.
 
-Thanks,
+Oracle recommends (in article  1557478.1, without explaining the details) to turn off transparent huge pages. Before that I didn't think much about that feature. It seems the kernel is not just creating huge pages when they are requested explicitly (that's what I had thought), but also implicitly to reduce the number of pages to me managed. Collecting smaller pages to combine them for huge pages may also involve moving memory around (compaction), it seems. I still don't know whether the kernel will also try to compact dirty cache pages to huge pages, but we still see read stalls when there are many dirty pages (like when copying 400GB of data to a somewhat slow (30MB/s) disk.
 
-	Ingo
+Now I wonder what the real solution to the problem (not the numerous work-arounds) would be. Obviously simply stopping (yield) dirty buffer flush to give read a chance may not be sufficient when read needs to wait for unused pages, especially if the disks being read from are faster than those being written to.
+To my understanding dirty pages have an "age" that is used to decide whether to flush them or not. Also the I/O scheduler seems to prefer read requests over write requests. What I do not know is whether a read request is sent to the I/O scheduler before buffer pages are assigned to the request, or after the pages were assigned. So a read request only has the chance to have an "age" once it entered the I/O scheduler, right?
 
-=======================>
->From 76372b417b900f8c13f42af6dae67751add339dd Mon Sep 17 00:00:00 2001
-From: Ingo Molnar <mingo@kernel.org>
-Date: Thu, 10 Oct 2013 10:16:30 +0200
-Subject: [PATCH] gcc4: Add 'asm goto' miscompilation quirk
+So if read and writes had an "age" both, some EDF (earliest deadline first) scheduling could be used to perform I/O (which would be controlling buffer usage as a side-effect). For transparent huge pages, requests for a huge page should also have an age and a priority that is significantly below that of I/O buffers. If there exists an efficient algorithm and data model to perform these tasks, the problem may be solved.
 
-Fengguang Wu, Oleg Nesterov and Peter Zijlstra tracked down
-a kernel crash to a GCC bug: GCC miscompiles certain 'asm goto'
-constructs, as outlined here:
+Unfortunately if many buffers are dirtied at one moment and reads are requested significantly later, there may be an additional need for time-slices when doing I/O (note: I'm not talking about quotas of some MB, but quotas of time). The I/O throughput may vary a lot, and time seems the only way to manage latency correctly. To avoid a situation where reads may cause stalling writes (and thus the age of dirty buffers growing without bounds), the priority of writes should be _carefully_ increased, taking care not to create a "fright train of dirty buffers" to be flushed. So maybe "smuggle in" a few dirty buffers between read requests. As a high-level flow control (like for the cgroups mechanism), processes with a high amount of dirty buffers should be suspended or scheduled with very low priority to give the memory and I/O systems a change to process the dirty buffers.
 
-  http://gcc.gnu.org/bugzilla/show_bug.cgi?id=58670
+For reference: The machine in question is at 3.0.74-0.6.10-default with the latest SLES11 SP2 kernel being 3.0.93-0.5.
 
-Implement a workaround suggested by Jakub Jelinek.
+I'd like to know what the gurus thing about that. I think with increasing RAM this issue will become extremely important soon.
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Reported-by: Oleg Nesterov <oleg@redhat.com>
-Reported-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Suggested-by: Jakub Jelinek <jakub@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/arm/include/asm/jump_label.h     |  2 +-
- arch/mips/include/asm/jump_label.h    |  2 +-
- arch/powerpc/include/asm/jump_label.h |  2 +-
- arch/s390/include/asm/jump_label.h    |  2 +-
- arch/sparc/include/asm/jump_label.h   |  2 +-
- arch/x86/include/asm/cpufeature.h     |  6 +++---
- arch/x86/include/asm/jump_label.h     |  2 +-
- include/linux/compiler-gcc4.h         | 13 +++++++++++++
- 8 files changed, 22 insertions(+), 9 deletions(-)
+Regards,
+Ulrich
+P.S: Not subscribed to linux-kernel, so keep me on CC:, please
 
-diff --git a/arch/arm/include/asm/jump_label.h b/arch/arm/include/asm/jump_label.h
-index bfc198c..1ab0cf6 100644
---- a/arch/arm/include/asm/jump_label.h
-+++ b/arch/arm/include/asm/jump_label.h
-@@ -16,7 +16,7 @@
- 
- static __always_inline bool arch_static_branch(struct static_key *key)
- {
--	asm goto("1:\n\t"
-+	asm_goto("1:\n\t"
- 		 JUMP_LABEL_NOP "\n\t"
- 		 ".pushsection __jump_table,  \"aw\"\n\t"
- 		 ".word 1b, %l[l_yes], %c0\n\t"
-diff --git a/arch/mips/include/asm/jump_label.h b/arch/mips/include/asm/jump_label.h
-index 4d6d77e..c0f8f5d 100644
---- a/arch/mips/include/asm/jump_label.h
-+++ b/arch/mips/include/asm/jump_label.h
-@@ -22,7 +22,7 @@
- 
- static __always_inline bool arch_static_branch(struct static_key *key)
- {
--	asm goto("1:\tnop\n\t"
-+	asm_goto("1:\tnop\n\t"
- 		"nop\n\t"
- 		".pushsection __jump_table,  \"aw\"\n\t"
- 		WORD_INSN " 1b, %l[l_yes], %0\n\t"
-diff --git a/arch/powerpc/include/asm/jump_label.h b/arch/powerpc/include/asm/jump_label.h
-index ae098c4..2b843a2 100644
---- a/arch/powerpc/include/asm/jump_label.h
-+++ b/arch/powerpc/include/asm/jump_label.h
-@@ -19,7 +19,7 @@
- 
- static __always_inline bool arch_static_branch(struct static_key *key)
- {
--	asm goto("1:\n\t"
-+	asm_goto("1:\n\t"
- 		 "nop\n\t"
- 		 ".pushsection __jump_table,  \"aw\"\n\t"
- 		 JUMP_ENTRY_TYPE "1b, %l[l_yes], %c0\n\t"
-diff --git a/arch/s390/include/asm/jump_label.h b/arch/s390/include/asm/jump_label.h
-index 6c32190..323422e 100644
---- a/arch/s390/include/asm/jump_label.h
-+++ b/arch/s390/include/asm/jump_label.h
-@@ -15,7 +15,7 @@
- 
- static __always_inline bool arch_static_branch(struct static_key *key)
- {
--	asm goto("0:	brcl 0,0\n"
-+	asm_goto("0:	brcl 0,0\n"
- 		".pushsection __jump_table, \"aw\"\n"
- 		ASM_ALIGN "\n"
- 		ASM_PTR " 0b, %l[label], %0\n"
-diff --git a/arch/sparc/include/asm/jump_label.h b/arch/sparc/include/asm/jump_label.h
-index 5080d16..e466c37 100644
---- a/arch/sparc/include/asm/jump_label.h
-+++ b/arch/sparc/include/asm/jump_label.h
-@@ -9,7 +9,7 @@
- 
- static __always_inline bool arch_static_branch(struct static_key *key)
- {
--		asm goto("1:\n\t"
-+		asm_goto("1:\n\t"
- 			 "nop\n\t"
- 			 "nop\n\t"
- 			 ".pushsection __jump_table,  \"aw\"\n\t"
-diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index d3f5c63..acba4ad 100644
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -374,7 +374,7 @@ static __always_inline __pure bool __static_cpu_has(u16 bit)
- 		 * Catch too early usage of this before alternatives
- 		 * have run.
- 		 */
--		asm goto("1: jmp %l[t_warn]\n"
-+		asm_goto("1: jmp %l[t_warn]\n"
- 			 "2:\n"
- 			 ".section .altinstructions,\"a\"\n"
- 			 " .long 1b - .\n"
-@@ -388,7 +388,7 @@ static __always_inline __pure bool __static_cpu_has(u16 bit)
- 
- #endif
- 
--		asm goto("1: jmp %l[t_no]\n"
-+		asm_goto("1: jmp %l[t_no]\n"
- 			 "2:\n"
- 			 ".section .altinstructions,\"a\"\n"
- 			 " .long 1b - .\n"
-@@ -453,7 +453,7 @@ static __always_inline __pure bool _static_cpu_has_safe(u16 bit)
-  * have. Thus, we force the jump to the widest, 4-byte, signed relative
-  * offset even though the last would often fit in less bytes.
-  */
--		asm goto("1: .byte 0xe9\n .long %l[t_dynamic] - 2f\n"
-+		asm_goto("1: .byte 0xe9\n .long %l[t_dynamic] - 2f\n"
- 			 "2:\n"
- 			 ".section .altinstructions,\"a\"\n"
- 			 " .long 1b - .\n"		/* src offset */
-diff --git a/arch/x86/include/asm/jump_label.h b/arch/x86/include/asm/jump_label.h
-index 64507f3..65e951e 100644
---- a/arch/x86/include/asm/jump_label.h
-+++ b/arch/x86/include/asm/jump_label.h
-@@ -18,7 +18,7 @@
- 
- static __always_inline bool arch_static_branch(struct static_key *key)
- {
--	asm goto("1:"
-+	asm_goto("1:"
- 		".byte " __stringify(STATIC_KEY_INIT_NOP) "\n\t"
- 		".pushsection __jump_table,  \"aw\" \n\t"
- 		_ASM_ALIGN "\n\t"
-diff --git a/include/linux/compiler-gcc4.h b/include/linux/compiler-gcc4.h
-index 842de22..b2ae613 100644
---- a/include/linux/compiler-gcc4.h
-+++ b/include/linux/compiler-gcc4.h
-@@ -65,6 +65,19 @@
- #define __visible __attribute__((externally_visible))
- #endif
- 
-+/*
-+ * GCC 'asm goto' miscompiles certain code sequences:
-+ *
-+ *   http://gcc.gnu.org/bugzilla/show_bug.cgi?id=58670
-+ *
-+ * Work it around via quirk suggested by Jakub Jelinek.
-+ * Not yet fixed, so use the quirk on all compiler versions:
-+ */
-+#if GCC_VERSION <= 99999
-+# define asm_goto(x...) do { asm goto(x); asm (""); } while (0)
-+#else
-+# define asm_goto(x...) do { asm goto(x); } while (0)
-+#endif
- 
- #ifdef CONFIG_ARCH_USE_BUILTIN_BSWAP
- #if GCC_VERSION >= 40400
