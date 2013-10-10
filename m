@@ -1,227 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754962Ab3JJLBK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 07:01:10 -0400
-Received: from mail1.bemta3.messagelabs.com ([195.245.230.165]:24156 "EHLO
-	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753226Ab3JJLBI (ORCPT
+	id S1754697Ab3JJLDQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 07:03:16 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:54958 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752365Ab3JJLDO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 07:01:08 -0400
-X-Greylist: delayed 429 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 Oct 2013 07:01:07 EDT
-X-Env-Sender: anthony.olech.opensource@diasemi.com
-X-Msg-Ref: server-9.tower-38.messagelabs.com!1381402433!601121!1
-X-Originating-IP: [82.210.246.133]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.12; banners=-,-,-
-X-VirusChecked: Checked
-Message-ID: <201310101053.r9AArpal039552@swsrvapps-02.lan>
-From: Anthony Olech <anthony.olech.opensource@diasemi.com>
-Date: Thu, 10 Oct 2013 11:50:23 +0100
-Subject: [PATCH V1] new API regmap_multi_write()
-To: Mark Brown <broonie@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        David Dajun Chen <david.chen@diasemi.com>
+	Thu, 10 Oct 2013 07:03:14 -0400
+Date: Thu, 10 Oct 2013 12:03:09 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+Cc: "'linux-arm-msm-owner@vger.kernel.org'" 
+	<linux-arm-msm-owner@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Peng, Arthur" <Arthur.Peng@sonymobile.com>,
+        "Zhang, Bojie" <Bojie.Zhang@sonymobile.com>
+Subject: Re: BUG report about ipt_do_table( )
+Message-ID: <20131010110309.GA6199@mudshark.cambridge.arm.com>
+References: <35FD53F367049845BC99AC72306C23D1014D1A0971B1@CNBJMBX05.corpusers.net>
+ <20131010094824.GF3817@mudshark.cambridge.arm.com>
+ <35FD53F367049845BC99AC72306C23D1014D1A0971B4@CNBJMBX05.corpusers.net>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <35FD53F367049845BC99AC72306C23D1014D1A0971B4@CNBJMBX05.corpusers.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-New API regmap_multi_write() to support a single I2C transfer consisting
-of writes to multiple non-sequential registers for those I2C clients that
-implement the alternative non-standard MULTIWRITE block write mode.
+On Thu, Oct 10, 2013 at 11:22:21AM +0100, Wang, Yalin wrote:
+> Thanks for your reply .
 
-Signed-off-by: Anthony Olech <anthony.olech.opensource@diasemi.com>
-Signed-off-by: David Dajun Chen <david.chen@diasemi.com>
----
-This patch is relative to linux-mainline repository tag v3.12-rc4
+No problem.
 
-The Dialog DA9052 family of multifunction power management devices implement
-an alternative non-standard I2C MULTIWRITE block write mode that appears on
-the I2C bus looking like a normal block write A1-D1-D2-D3-..-Dn, but in fact
-the I2C client decodes the bytes as A1-D1-A2-D2-A3-D3-..-An-Dn, where both
-the data and addresses are 8 bits wide.
+> I have compare our kernel with 3.12 ,  
+> Ip_tables.c x_tables.c  is the same ,
+> So the BUG should can also be reproduce on 3.12 (just my guess).
 
-The reason for this unusual mode is to ensure that the set of registers are
-recieved atomically, and is crutial in a multi-I2C-master system where the
-application processor (a modem chip for example) competes for the I2C bus.
+[...]
 
-This patch only adds functionality, it does not alter any existing regmap API.
+> /-----------------------------------------------------------------------/
+> diff --git a/net/netfilter/x_tables.c b/net/netfilter/x_tables.c
+> index 8d987c3..2353bcc 100644
+> --- a/net/netfilter/x_tables.c
+> +++ b/net/netfilter/x_tables.c
+> @@ -819,6 +819,12 @@ xt_replace_table(struct xt_table *table,
+>  		return NULL;
+>  	}
+>  
+> +	/*
+> +	 * make sure the change is write to the memory
+> +	 * so that the other CPU can see the changes
+> +	 */
+> +	mb();
+> +
+>  	/* Do the substitution. */
+>  	local_bh_disable();
+>  	private = table->private;
+> 
+> /-----------------------------------------------------------------------/
+> 
+> 
+> I add a memory barrier before update table->private .
+> Make sure the other CPU can see the update memory correctly.
+> When the BUG happened, the other CPU can get the new private (struct xt_table_info *),
+> But sometimes it see private->jumpstack == NULL  , or sometimes it see private->jumpstack[cpu] == NULL ,
 
-The new API works in the degenerative case of a single register write as well.
- drivers/base/regmap/regmap.c |  144 ++++++++++++++++++++++++++++++++++++++++++
- include/linux/regmap.h       |    2 +
- 2 files changed, 146 insertions(+)
+On one CPU, xt_replace_table is basically doing:
 
-diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-index 7d689a1..d47b00d 100644
---- a/drivers/base/regmap/regmap.c
-+++ b/drivers/base/regmap/regmap.c
-@@ -1439,6 +1439,150 @@ out:
- }
- EXPORT_SYMBOL_GPL(regmap_bulk_write);
+	newinfo->jumpstack = kzalloc(...);
+	table->private = newinfo;
+
+so this can be thought of as the `writer' thread.
+
+Then, on another CPU (the `reader'), we run ipt_do_table:
+
+	private = table->private;
+	jumpstack  = (struct ipt_entry **)private->jumpstack[cpu];
+
+The reader has an address dependency, so the loads are guaranteed to be
+observed in order (on sane CPUs... this is probably broken for Alpha).
+
+However, the two stores from the writer can be observed in any order by other
+CPUs. To make this clearer, I think you actually want an smb_wmb() immediately
+before the assignment to table->private (and that assignment to
+newinfo->initial_entries probably needs moving above it). Then you want an
+smb_read_barrier_depends on the read path immediately after reading
+table->private.
+
+> This is caused by CPU write buffer ? 
+> It has written table->private , but has not update private-> members (still in write buffer)  ,
+> This is really out of order write, will this happened on modern armv7 CPU?
+> Especially like cortex-a15 , it can execute code out of order .
+
+Well, stores aren't speculated and stores to the same location are always
+observed in order (on ARM). This is more a consequence of the weakly ordered
+memory model, which largely comes about due to speculative loads and write
+buffering (including read forwarding). Things like cache coherence protocols
+and buffers in the interconnect can also cause stores to be observed in
+different orders, since there conceptually end up being multi copies of the
+data being written.
+
+Anyway, can you see if the patch below fixes your problem please?
+
+Will
+
+--->8
+
+diff --git a/net/ipv4/netfilter/ip_tables.c b/net/ipv4/netfilter/ip_tables.c
+index d23118d..cadda40 100644
+--- a/net/ipv4/netfilter/ip_tables.c
++++ b/net/ipv4/netfilter/ip_tables.c
+@@ -326,6 +326,7 @@ ipt_do_table(struct sk_buff *skb,
+        local_bh_disable();
+        addend = xt_write_recseq_begin();
+        private = table->private;
++       smp_read_barrier_depends();
+        cpu        = smp_processor_id();
+        table_base = private->entries[cpu];
+        jumpstack  = (struct ipt_entry **)private->jumpstack[cpu];
+diff --git a/net/netfilter/x_tables.c b/net/netfilter/x_tables.c
+index 8b03028..ee5e184 100644
+--- a/net/netfilter/x_tables.c
++++ b/net/netfilter/x_tables.c
+@@ -845,8 +845,9 @@ xt_replace_table(struct xt_table *table,
+                return NULL;
+        }
  
-+int _regmap_raw_multi_write(struct regmap *map, size_t reg_count,
-+			    unsigned int *reg, const void *val)
-+{
-+	u8 *u8;
-+	void *buf;
-+	int ret;
-+	size_t len;
-+	int i;
-+	size_t unit_len;
-+	int val_bytes = map->format.val_bytes;
-+
-+	WARN_ON(!map->bus);
-+
-+	/* Check for unwritable registers before we start */
-+	if (map->writeable_reg)
-+		for (i = 0; i < reg_count; i++)
-+			if (!map->writeable_reg(map->dev,
-+						reg[i]))
-+				return -EINVAL;
-+
-+	if (!map->cache_bypass && map->format.parse_val) {
-+		unsigned int ival;
-+		for (i = 0; i < reg_count; i++) {
-+			ival = map->format.parse_val(val + (i * val_bytes));
-+			ret = regcache_write(map, reg[i], ival);
-+			if (ret) {
-+				dev_err(map->dev,
-+					"Error in caching of register: %x ret: %d\n",
-+					reg[i], ret);
-+				return ret;
-+			}
-+		}
-+		if (map->cache_only) {
-+			map->cache_dirty = true;
-+			return 0;
-+		}
-+	}
-+
-+	trace_regmap_hw_write_start(map->dev, reg[0], reg_count);
-+
-+	/* Because a multi-write has an array of registers and an array
-+	 * of values a gather_write will not work and in the simple case
-+	 * of a single register write the client driver should not be
-+	 * using this API anyway. So we have to linearise by hand.
-+	 */
-+	unit_len = map->format.reg_bytes + map->format.pad_bytes + val_bytes;
-+
-+	len = reg_count * unit_len;
-+	buf = kzalloc(len, GFP_KERNEL);
-+	if (!buf)
-+		return -ENOMEM;
-+	u8 = buf;
-+
-+	for (i = 0; i < reg_count; i++) {
-+
-+		map->format.format_reg(u8, reg[i], map->reg_shift);
-+		*u8 |= map->write_flag_mask;
-+		u8 += map->format.reg_bytes + map->format.pad_bytes;
-+
-+		memcpy(u8, val + (i * val_bytes), val_bytes);
-+		u8 += val_bytes;
-+	}
-+
-+	ret = map->bus->write(map->bus_context, buf, len);
-+
-+	kfree(buf);
-+
-+	trace_regmap_hw_write_done(map->dev, reg[0], reg_count);
-+
-+	return ret;
-+}
-+
-+/*
-+ * regmap_multi_write(): Write multiple non sequential registers to the device
-+ *
-+ * @map: Register map to write to
-+ * @reg: Array of registers to be written, all on the same page
-+ * @val: Block of data to be written, in native register size for device
-+ * @reg_count: Number of registers to write
-+ *
-+ * This function is intended to be used for writing a large block of data
-+ * atomically to the device in single transfer for those I2C client devices
-+ * that implement this alternative block write mode.
-+ *
-+ * A value of zero will be returned on success, a negative errno will
-+ * be returned in error cases.
-+ */
-+int regmap_multi_write(struct regmap *map, unsigned int *reg, const void *val,
-+		     size_t reg_count)
-+{
-+	int ret = 0, i;
-+	size_t val_bytes = map->format.val_bytes;
-+	void *wval;
-+
-+	if (!map->bus)
-+		return -EINVAL;
-+	if (!map->format.parse_inplace)
-+		return -EINVAL;
-+
-+	map->lock(map->lock_arg);
-+
-+	/* No formatting is require if val_byte is 1 */
-+	if (val_bytes == 1) {
-+		wval = (void *)val;
-+	} else {
-+		wval = kmemdup(val, reg_count * val_bytes, GFP_KERNEL);
-+		if (!wval) {
-+			ret = -ENOMEM;
-+			dev_err(map->dev, "Error in memory allocation\n");
-+			goto out;
-+		}
-+		for (i = 0; i < reg_count * val_bytes; i += val_bytes)
-+			map->format.parse_inplace(wval + i);
-+	}
-+	/*
-+	 * Some devices do not support multi write, for
-+	 * them we have a series of single write operations.
-+	 */
-+	if (map->use_single_rw) {
-+		for (i = 0; i < reg_count; i++) {
-+			ret = _regmap_raw_write(map,
-+						reg[i],
-+						val + (i * val_bytes),
-+						val_bytes,
-+						false);
-+			if (ret != 0)
-+				return ret;
-+		}
-+	} else {
-+		ret = _regmap_raw_multi_write(map,
-+					      reg_count,
-+					      reg,
-+					      wval);
-+	}
-+
-+	if (val_bytes != 1)
-+		kfree(wval);
-+
-+out:
-+	map->unlock(map->lock_arg);
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(regmap_multi_write);
-+
- /**
-  * regmap_raw_write_async(): Write raw values to one or more registers
-  *                           asynchronously
-diff --git a/include/linux/regmap.h b/include/linux/regmap.h
-index a10380b..f9c16db 100644
---- a/include/linux/regmap.h
-+++ b/include/linux/regmap.h
-@@ -378,6 +378,8 @@ int regmap_raw_write(struct regmap *map, unsigned int reg,
- 		     const void *val, size_t val_len);
- int regmap_bulk_write(struct regmap *map, unsigned int reg, const void *val,
- 			size_t val_count);
-+int regmap_multi_write(struct regmap *map, unsigned int *reg, const void *val,
-+			size_t reg_count);
- int regmap_raw_write_async(struct regmap *map, unsigned int reg,
- 			   const void *val, size_t val_len);
- int regmap_read(struct regmap *map, unsigned int reg, unsigned int *val);
--- 
-end-of-patch for new API regmap_multi_write() V1
+-       table->private = newinfo;
+        newinfo->initial_entries = private->initial_entries;
++       smb_wmb();
++       table->private = newinfo;
+ 
+        /*
+         * Even though table entries have now been swapped, other CPU's
 
