@@ -1,165 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754806Ab3JJKUp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 06:20:45 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:55769 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752232Ab3JJKUn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 06:20:43 -0400
+	id S1755379Ab3JJKW1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 06:22:27 -0400
+Received: from cnbjrel02.sonyericsson.com ([219.141.167.166]:16680 "EHLO
+	cnbjrel02.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754044Ab3JJKW0 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 06:22:26 -0400
+From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+To: "'Will Deacon'" <will.deacon@arm.com>
+CC: "'linux-arm-msm-owner@vger.kernel.org'" 
+	<linux-arm-msm-owner@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Peng, Arthur" <Arthur.Peng@sonymobile.com>,
+        "Zhang, Bojie" <Bojie.Zhang@sonymobile.com>
+Date: Thu, 10 Oct 2013 18:22:21 +0800
+Subject: RE: BUG report about ipt_do_table( )
+Thread-Topic: BUG report about ipt_do_table( )
+Thread-Index: Ac7FneG/wMIB3geZS0yZ5fCLjND6mAAAUsEA
+Message-ID: <35FD53F367049845BC99AC72306C23D1014D1A0971B4@CNBJMBX05.corpusers.net>
+References: <35FD53F367049845BC99AC72306C23D1014D1A0971B1@CNBJMBX05.corpusers.net>
+ <20131010094824.GF3817@mudshark.cambridge.arm.com>
+In-Reply-To: <20131010094824.GF3817@mudshark.cambridge.arm.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20131009235828.GR4446@dastard>
-References: <1381090446-2897-1-git-send-email-linkinjeon@gmail.com>
-	<20131009235828.GR4446@dastard>
-Date: Thu, 10 Oct 2013 19:20:43 +0900
-Message-ID: <CAKYAXd8DZ1Obk6P+iX8fS7LPCUK7aD4gnDSvz4jCLan-76E4oQ@mail.gmail.com>
-Subject: Re: [PATCH RESEND 6/7] xfstest: Add test case to test multiple
- collapse range call
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: viro@zeniv.linux.org.uk, mtk.manpages@gmail.com, tytso@mit.edu,
-        adilger.kernel@dilger.ca, bpm@sgi.com, elder@kernel.org,
-        hch@infradead.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        xfs@oss.sgi.com, a.sangwan@samsung.com,
-        Namjae Jeon <namjae.jeon@samsung.com>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> +. ./common/rc
->> +. ./common/filter
->> +
->> +# real QA test starts here
->> +_supported_fs xfs ext4
->> +_supported_os Linux
->> +
->> +_require_scratch
->> +_require_xfs_io_fiemap
->> +_require_xfs_io_falloc_collapse
->> +_do_die_on_error=y
->> +test=$SCRATCH_MNT/test
->
-> Not used.
-Okay.
+Hi   Will,
 
->
->> +testfile=$SCRATCH_MNT/317.$$
->> +BSIZE=4096
->> +BLOCKS=10240
->> +
->> +# Filters fiemap output
->> +_filter_fiemap()
->> +{
->> +     awk --posix '
->> +             $3 ~ /hole/ {
->> +                     print $1, $2, $3;
->> +                     next;
->> +             }
->> +             $5 ~ /0x[[:xdigit:]]+/ {
->> +                     print $1, $2, "extent";
->> +             }'
->> +}
->
-> There's already a function in common/punch of this name, and it does
-> pretty much the same thing. Why not use that?
-Ah, Okay, I will check.
+Thanks for your reply .
 
->
->> +
->> +case $FSTYP in
->> +     ext4)
->> +             export MKFS_OPTIONS="-F -b $BSIZE"
->> +             ;;
->> +     xfs)
->> +             export MKFS_OPTIONS="-f -b size=$BSIZE"
->> +             ;;
->> +esac
->
-> _scratch_mkfs takes options on the command line - there is no need
-> to do this.
-Okay.
+This is the kernel that we use:
 
->
-> In fact, this test needs to run on all block sizes that filesystems
-> are capable of using, not just 4k and different architectures
-> exercise different code paths and so we must be able to test the
-> case where block size is smaller than page size on x86-64 so when
-> the code is run on an ia64 or ppc64 box with a 64k page size we know
-> that it's not completely broken...
-Okay, I will update to test block size is smaller than page size.
+https://www.codeaurora.org/cgit/quic/la/kernel/msm/tree/net/ipv4/netfilter/ip_tables.c?id=M8960AAAAANLYA26144005
+https://www.codeaurora.org/cgit/quic/la/kernel/msm/tree/net/netfilter/x_tables.c?id=M8960AAAAANLYA26144005
 
->
-> Anyway, if you really need to make a 4k block size filesystem, then
-> _scratch_mkfs_sized() is the generic way of doing this.
->
->> +# make filesystem on scratch with 4KB blocksize
->> +_do 'make filesystem on $SCRATCH_DEV' '_scratch_mkfs'
->> +_do 'mount filesytem' '_scratch_mount'
->
-> I really dislike this "_do" wrapper. The text does not add anything
-> to the test, and it makes it hard to see the command being run and
-> harder to modify it when necessary. It is used only by a couple of
-> old tests, and we'd do better to remove it than to propagate it
-> further.  This:
->
-> _scratch_mkfs >> $seqres.full 2>&1 || _fail "scratch_mkfs failed."
-> _scratch_mount >> $seqres.full 2>&1 || _fail "scratch_mount failed."
->
-> does everything that the _do wrapper does.
-Okay.
 
->
->> +
->> +# Write file
->> +length=$(($BLOCKS*$BSIZE))
->> +$XFS_IO_PROG -f -c "pwrite 0 $length" -c fsync $testfile > /dev/null
->> +
->> +# Collapse alternate blocks
->> +for (( i = 1; i <= 7; i++ )); do
->> +     for(( j=0 ; j < $(($BLOCKS/(2**$i))) ; j++ )); do
->> +             offset=$(($j*$BSIZE))
->> +             $XFS_IO_PROG -c "fcollapse $offset $BSIZE" $testfile > /dev/null
->> +     done
->> +done
->> +
->> +# Check if 80 extents are present
->> +$XFS_IO_PROG -c "fiemap -v" $testfile | _filter_fiemap
->
-> If all you care about is that there are 80 extents, then why not
-> just something like:
->
-> $XFS_IO_PROG -c "fiemap -v" $testfile |grep "^ *[0-9]*:" |wc -l
-Okay, I will check.
 
->
->> +
->> +_do 'unmount $SCRATCH_DEV' 'umount $SCRATCH_DEV'
->> +_do 'repair filesystem' '_check_scratch_fs'
->
-> _check_scratch_fs is all you need to call here.
-Yes, right. I will update.
+I am sorry that I can't use the latest kernel to reproduce
+This BUG, make the new kernel running on our 
+Platform is not easy, and need do a lot of porting work .
 
->
->> index 3a69294..80ff7ec 100644
->> --- a/tests/shared/group
->> +++ b/tests/shared/group
->> @@ -12,3 +12,4 @@
->>  298 auto trim
->>  305 aio dangerous enospc rw stress
->>  316 auto quick collapse
->> +317 auto collapse
->
-> Again, I think the prealloc group is better for this.
-Okay, I will add collpase range cases to prealloc group.
+I have compare our kernel with 3.12 ,  
+Ip_tables.c x_tables.c  is the same ,
+So the BUG should can also be reproduce on 3.12 (just my guess).
 
-Thanks for review.
-I will post patches included your all review points soon.
->
-> Cheers,
->
-> Dave.
-> --
-> Dave Chinner
-> david@fromorbit.com
+
+I make a patch for this BUG, but have not test it:
+
+
+/-----------------------------------------------------------------------/
+diff --git a/net/netfilter/x_tables.c b/net/netfilter/x_tables.c
+index 8d987c3..2353bcc 100644
+--- a/net/netfilter/x_tables.c
++++ b/net/netfilter/x_tables.c
+@@ -819,6 +819,12 @@ xt_replace_table(struct xt_table *table,
+ 		return NULL;
+ 	}
+ 
++	/*
++	 * make sure the change is write to the memory
++	 * so that the other CPU can see the changes
++	 */
++	mb();
++
+ 	/* Do the substitution. */
+ 	local_bh_disable();
+ 	private = table->private;
+
+/-----------------------------------------------------------------------/
+
+
+I add a memory barrier before update table->private .
+Make sure the other CPU can see the update memory correctly.
+When the BUG happened, the other CPU can get the new private (struct xt_table_info *),
+But sometimes it see private->jumpstack == NULL  , or sometimes it see private->jumpstack[cpu] == NULL ,
+
+Our several crash dumps show different crash point .
+
+This is caused by CPU write buffer ? 
+It has written table->private , but has not update private-> members (still in write buffer)  ,
+This is really out of order write, will this happened on modern armv7 CPU?
+Especially like cortex-a15 , it can execute code out of order .
+
+
+Thanks you .
+
+
+-----Original Message-----
+From: Will Deacon [mailto:will.deacon@arm.com] 
+Sent: Thursday, October 10, 2013 5:48 PM
+To: Wang, Yalin
+Cc: 'linux-arm-msm-owner@vger.kernel.org'; linux-kernel@vger.kernel.org
+Subject: Re: BUG report about ipt_do_table( )
+
+On Thu, Oct 10, 2013 at 06:16:05AM +0100, Wang, Yalin wrote:
+> Dear all,
+
+Hello,
+
+> We encounter a crash in ipt_do_table( ) function During our stability 
+> test .
+> 
+> The CPU is  qcom msm8960 / dual core  , linux kernel version is 3.4
+
+I appreciate that this is a mammoth task, but can you reproduce this failure with a mainline kernel (3.12-rc4)? If you suspect a synchronisation issue in core code, I'm afraid you'll have to show the failure with the current sources.
+
+Will
