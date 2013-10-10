@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757647Ab3JJPue (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 11:50:34 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53064 "EHLO
+	id S1757882Ab3JJPx3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 11:53:29 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53069 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757628Ab3JJPuc (ORCPT
+	with ESMTP id S1757632Ab3JJPud (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 11:50:32 -0400
+	Thu, 10 Oct 2013 11:50:33 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dave Airlie <airlied@redhat.com>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 034/104] drm/ast: fix the ast open key function
-Date: Thu, 10 Oct 2013 08:41:22 -0700
-Message-Id: <1381419752-29733-35-git-send-email-kamal@canonical.com>
+Cc: Jani Nikula <jani.nikula@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 065/104] drm/i915/dp: increase i2c-over-aux retry interval on AUX DEFER
+Date: Thu, 10 Oct 2013 08:41:53 -0700
+Message-Id: <1381419752-29733-66-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381419752-29733-1-git-send-email-kamal@canonical.com>
 References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
@@ -26,33 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Airlie <airlied@redhat.com>
+From: Jani Nikula <jani.nikula@intel.com>
 
-commit 2e8378136f28bea960cec643d3fa5d843c9049ec upstream.
+commit 8d16f258217f2f583af1fd57c5144aa4bbe73e48 upstream.
 
-When porting from UMS I mistyped this from the wrong place, AST noticed
-and pointed it out, so we should fix it to be like the X.org driver.
+There is no clear cut rules or specs for the retry interval, as there
+are many factors that affect overall response time. Increase the
+interval, and even more so on branch devices which may have limited i2c
+bit rates.
 
-Reported-by: Y.C. Chen <yc_chen@aspeedtech.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Reference: https://bugs.freedesktop.org/show_bug.cgi?id=60263
+Tested-by: Nicolas Suzor <nic@suzor.com>
+Reviewed-by: Todd Previte <tprevite@gmail.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/ast/ast_drv.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/i915/intel_dp.c | 13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/ast/ast_drv.h b/drivers/gpu/drm/ast/ast_drv.h
-index cac9c9a..848f04b 100644
---- a/drivers/gpu/drm/ast/ast_drv.h
-+++ b/drivers/gpu/drm/ast/ast_drv.h
-@@ -175,7 +175,7 @@ uint8_t ast_get_index_reg_mask(struct ast_private *ast,
- 
- static inline void ast_open_key(struct ast_private *ast)
- {
--	ast_set_index_reg_mask(ast, AST_IO_CRTC_PORT, 0xA1, 0xFF, 0x04);
-+	ast_set_index_reg(ast, AST_IO_CRTC_PORT, 0x80, 0xA8);
- }
- 
- #define AST_VIDMEM_SIZE_8M    0x00800000
+diff --git a/drivers/gpu/drm/i915/intel_dp.c b/drivers/gpu/drm/i915/intel_dp.c
+index 616aaea..37c6d3f 100644
+--- a/drivers/gpu/drm/i915/intel_dp.c
++++ b/drivers/gpu/drm/i915/intel_dp.c
+@@ -629,7 +629,18 @@ intel_dp_i2c_aux_ch(struct i2c_adapter *adapter, int mode,
+ 			DRM_DEBUG_KMS("aux_ch native nack\n");
+ 			return -EREMOTEIO;
+ 		case AUX_NATIVE_REPLY_DEFER:
+-			udelay(100);
++			/*
++			 * For now, just give more slack to branch devices. We
++			 * could check the DPCD for I2C bit rate capabilities,
++			 * and if available, adjust the interval. We could also
++			 * be more careful with DP-to-Legacy adapters where a
++			 * long legacy cable may force very low I2C bit rates.
++			 */
++			if (intel_dp->dpcd[DP_DOWNSTREAMPORT_PRESENT] &
++			    DP_DWN_STRM_PORT_PRESENT)
++				usleep_range(500, 600);
++			else
++				usleep_range(300, 400);
+ 			continue;
+ 		default:
+ 			DRM_ERROR("aux_ch invalid native reply 0x%02x\n",
 -- 
 1.8.1.2
 
