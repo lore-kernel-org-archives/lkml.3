@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754246Ab3JJCF6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 22:05:58 -0400
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:46788 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751269Ab3JJCF4 (ORCPT
+	id S1753828Ab3JJCL4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 22:11:56 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:19194 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752100Ab3JJCLt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 22:05:56 -0400
-From: "Geyslan G. Bem" <geyslan@gmail.com>
-To: chris.mason@fusionio.com
-Cc: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jbacik@fusionio.com, joe@perches.com, kernel-br@googlegroups.com,
-        "Geyslan G. Bem" <geyslan@gmail.com>
-Subject: [PATCH v4] btrfs: Fix memory leakage in the tree-log.c
-Date: Wed,  9 Oct 2013 23:01:35 -0300
-Message-Id: <1381370495-13702-1-git-send-email-geyslan@gmail.com>
-X-Mailer: git-send-email 1.8.4
+	Wed, 9 Oct 2013 22:11:49 -0400
+Date: Wed, 9 Oct 2013 22:11:44 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [RFC/PATCH] ftrace: add set_graph_notrace filter
+Message-ID: <20131009221144.3be54f27@gandalf.local.home>
+In-Reply-To: <87vc15ki4l.fsf@sejong.aot.lge.com>
+References: <1378184708-31385-1-git-send-email-namhyung@kernel.org>
+	<87txh2okn9.fsf@sejong.aot.lge.com>
+	<1380599926.16752.7.camel@pippen.local.home>
+	<87vc15ki4l.fsf@sejong.aot.lge.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When 'dir' is NULL, after calling extref_get_fields(), add_inode_ref()
-can be returning without freeing the 'name' pointer.
+On Thu, 10 Oct 2013 10:51:54 +0900
+Namhyung Kim <namhyung@kernel.org> wrote:
 
-Added kfree when necessary.
+> Hi Steve,
+> 
+> On Mon, 30 Sep 2013 23:58:46 -0400, Steven Rostedt wrote:
+> > On Mon, 2013-09-30 at 16:04 +0900, Namhyung Kim wrote:
+> >> Ping!
+> >
+> > Ah I missed this patch. And I'm currently traveling.
+> >
+> > I'll start testing it when I get back on Friday, but feel free to ping
+> > me again next Monday.
+> 
+> Would you take a look at it this time? :)
 
-Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
----
- fs/btrfs/tree-log.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+Yep! I just finished a bunch of stuff, and now have time to look into
+patches. I'm working backward (although I should be working forward).
+I'll definitely get to this tomorrow.
 
-diff --git a/fs/btrfs/tree-log.c b/fs/btrfs/tree-log.c
-index 79f057c..63c0b72 100644
---- a/fs/btrfs/tree-log.c
-+++ b/fs/btrfs/tree-log.c
-@@ -1169,8 +1169,11 @@ static noinline int add_inode_ref(struct btrfs_trans_handle *trans,
- 			 */
- 			if (!dir)
- 				dir = read_one_inode(root, parent_objectid);
--			if (!dir)
-+			if (!dir) {
-+				if (!ret)
-+					kfree(name);
- 				return -ENOENT;
-+			}
- 		} else {
- 			ret = ref_get_fields(eb, ref_ptr, &namelen, &name,
- 					     &ref_index);
--- 
-1.8.4
-
+-- Steve
