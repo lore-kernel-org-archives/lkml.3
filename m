@@ -1,66 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756207Ab3JJWNi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 18:13:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28449 "EHLO mx1.redhat.com"
+	id S1756928Ab3JJWN6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 18:13:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33684 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751470Ab3JJWNh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 18:13:37 -0400
-Date: Fri, 11 Oct 2013 00:13:22 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@kernel.org>
-Subject: [GIT PULL] tools/perf/build: Speed up the perf build system
-Message-ID: <20131010221322.GA1067@krava.redhat.com>
-References: <20131009070149.GA32023@gmail.com>
- <20131009143830.GA28369@ghostprotocols.net>
- <20131009145157.GA27139@gmail.com>
- <20131010192608.GI28369@ghostprotocols.net>
- <20131010195014.GJ28369@ghostprotocols.net>
- <20131010200627.GK28369@ghostprotocols.net>
+	id S1756602Ab3JJWN5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 18:13:57 -0400
+Date: Thu, 10 Oct 2013 19:13:43 -0300
+From: Rafael Aquini <aquini@redhat.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, qemu-devel@nongnu.org,
+        kvm@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Gleb Natapov <gleb@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH] mm: hugetlb: initialize PG_reserved for tail pages of
+ gigantig compound pages
+Message-ID: <20131010221343.GA23021@localhost.localdomain>
+References: <1381421561-10203-1-git-send-email-aarcange@redhat.com>
+ <1381421561-10203-2-git-send-email-aarcange@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131010200627.GK28369@ghostprotocols.net>
+In-Reply-To: <1381421561-10203-2-git-send-email-aarcange@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnaldo, David,
-wrt to our IRC discussion..
+On Thu, Oct 10, 2013 at 06:12:41PM +0200, Andrea Arcangeli wrote:
+> 11feeb498086a3a5907b8148bdf1786a9b18fc55 introduced a memory leak when
+> KVM is run on gigantic compound pages.
+> 
+> 11feeb498086a3a5907b8148bdf1786a9b18fc55 depends on the assumption
+> that PG_reserved is identical for all head and tail pages of a
+> compound page. So that if get_user_pages returns a tail page, we don't
+> need to check the head page in order to know if we deal with a
+> reserved page that requires different refcounting.
+> 
+> The assumption that PG_reserved is the same for head and tail pages is
+> certainly correct for THP and regular hugepages, but gigantic
+> hugepages allocated through bootmem don't clear the PG_reserved on the
+> tail pages (the clearing of PG_reserved is done later only if the
+> gigantic hugepage is freed).
+> 
+> This patch corrects the gigantic compound page initialization so that
+> we can retain the optimization in
+> 11feeb498086a3a5907b8148bdf1786a9b18fc55. The cacheline was already
+> modified in order to set PG_tail so this won't affect the boot time of
+> large memory systems.
+> 
+> Reported-by: andy123 <ajs124.ajs124@gmail.com>
+> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+> ---
 
-attached patch fixies the static build David is using:
-make O=/tmp/perf LDFLAGS=-static DEBUG=1 -j 4
+Acked-by: Rafael Aquini <aquini@redhat.com>
 
-I still got some warning though:
-  LINK     /tmp/perf/perf
-/tmp/perf/libperf.a(target.o): In function `perf_target__parse_uid':
-/home/jolsa/kernel.org/linux-perf/tools/perf/util/target.c:72: warning: Using 'getpwnam_r' in statically linked applications requires at runtime the shared libraries from the glibc version used for linking
-/home/jolsa/kernel.org/linux-perf/tools/perf/util/target.c:84: warning: Using 'getpwuid_r' in statically linked applications requires at runtime the shared libraries from the glibc version used for linking
-/usr/lib/gcc/x86_64-redhat-linux/4.7.2/../../../../lib64/libpthread.a(libpthread.o): In function `sem_open':
-(.text+0x67f8): warning: the use of `mktemp' is dangerous, better use `mkstemp'
 
-but I guess it's ok ;-) feel free to melt the
-change into the original patch
-
-This change is on top of the NO_DEMANGLE fix in:
-  git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
-  acme_test
-
-jirka
-
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 233dd36..9680424 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -504,7 +504,7 @@ else
-   endif
- endif
- 
--ifndef ($(filter -lbfd,$(EXTLIBS)),)
-+ifneq ($(filter -lbfd,$(EXTLIBS)),)
-   CFLAGS += -DHAVE_LIBBFD_SUPPORT
- endif
+>  mm/hugetlb.c | 18 +++++++++++++++++-
+>  1 file changed, 17 insertions(+), 1 deletion(-)
+> 
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index b49579c..315450e 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -695,8 +695,24 @@ static void prep_compound_gigantic_page(struct page *page, unsigned long order)
+>  	/* we rely on prep_new_huge_page to set the destructor */
+>  	set_compound_order(page, order);
+>  	__SetPageHead(page);
+> +	__ClearPageReserved(page);
+>  	for (i = 1; i < nr_pages; i++, p = mem_map_next(p, page, i)) {
+>  		__SetPageTail(p);
+> +		/*
+> +		 * For gigantic hugepages allocated through bootmem at
+> +		 * boot, it's safer to be consistent with the
+> +		 * not-gigantic hugepages and to clear the PG_reserved
+> +		 * bit from all tail pages too. Otherwse drivers using
+> +		 * get_user_pages() to access tail pages, may get the
+> +		 * reference counting wrong if they see the
+> +		 * PG_reserved bitflag set on a tail page (despite the
+> +		 * head page didn't have PG_reserved set). Enforcing
+> +		 * this consistency between head and tail pages,
+> +		 * allows drivers to optimize away a check on the head
+> +		 * page when they need know if put_page is needed after
+> +		 * get_user_pages() or not.
+> +		 */
+> +		__ClearPageReserved(p);
+>  		set_page_count(p, 0);
+>  		p->first_page = page;
+>  	}
+> @@ -1329,9 +1345,9 @@ static void __init gather_bootmem_prealloc(void)
+>  #else
+>  		page = virt_to_page(m);
+>  #endif
+> -		__ClearPageReserved(page);
+>  		WARN_ON(page_count(page) != 1);
+>  		prep_compound_huge_page(page, h->order);
+> +		WARN_ON(PageReserved(page));
+>  		prep_new_huge_page(h, page, page_to_nid(page));
+>  		/*
+>  		 * If we had gigantic hugepages allocated at boot time, we need
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
