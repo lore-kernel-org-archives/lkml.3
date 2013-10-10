@@ -1,58 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755611Ab3JJJDH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 05:03:07 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:37869 "EHLO mail.skyhub.de"
+	id S1754578Ab3JJJQF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 05:16:05 -0400
+Received: from ns.mm-sol.com ([212.124.72.66]:41414 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753982Ab3JJJDE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 05:03:04 -0400
-Date: Thu, 10 Oct 2013 11:03:00 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: David Miller <davem@davemloft.net>
-Cc: rostedt@goodmis.org, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, tglx@linutronix.de, mingo@kernel.org,
-        peterz@infradead.org, hpa@linux.intel.com, williams@redhat.com,
-        akpm@linux-foundation.org
-Subject: Re: [RFC][PATCH] x86: Lazy disabling of interrupts
-Message-ID: <20131010090300.GB9929@pd.tnic>
-References: <20131009144150.108f7041@gandalf.local.home>
- <20131010001153.1f171bff@gandalf.local.home>
- <20131010.001939.1669180620160012783.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20131010.001939.1669180620160012783.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752019Ab3JJJQE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 05:16:04 -0400
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: p.zabel@pengutronix.de
+Cc: linux-kernel@vger.kernel.org, "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        Pavel Machek <pavel@ucw.cz>, Stephen Warren <swarren@nvidia.com>,
+        Shawn Guo <shawn.guo@linaro.org>, Marek Vasut <marex@denx.de>
+Subject: [PATCH] reset: Add non CONFIG_RESET_CONTROLLER routines
+Date: Thu, 10 Oct 2013 12:14:35 +0300
+Message-Id: <1381396475-17848-1-git-send-email-iivanov@mm-sol.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 10, 2013 at 12:19:39AM -0400, David Miller wrote:
-> From: Steven Rostedt <rostedt@goodmis.org>
-> Date: Thu, 10 Oct 2013 00:11:53 -0400
-> 
-> > 
-> > I'm replying to my email to see if that helps make it to LKML. If it
-> > doesn't, I'm sorry for the noise to all I Cc'd.
-> 
-> The problem is the:
-> 
-> H.PeterAnvin
-> 
-> in the CC list, you can't have a name with the "." charater it appear in
-> email headers unless the string is surrounded by double quotes.  Otherwise
-> it's a syntax error.
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 
-That's strange - I see
+Make sure client drivers will still build on systems
+without reset control support.
 
-"H. Peter Anvin" <hpa@linux.intel.com>
+Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+Cc: Pavel Machek <pavel@ucw.cz>
+Cc: Stephen Warren <swarren@nvidia.com>
+Cc: Shawn Guo <shawn.guo@linaro.org>
+Cc: Marek Vasut <marex@denx.de>
+---
+ include/linux/reset.h |   44 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 44 insertions(+)
 
-in the CC list here. Did something get mangled on the way or is Claws
-acting outlook-like?
-
+diff --git a/include/linux/reset.h b/include/linux/reset.h
+index 6082247..0df3e30 100644
+--- a/include/linux/reset.h
++++ b/include/linux/reset.h
+@@ -4,6 +4,8 @@
+ struct device;
+ struct reset_control;
+ 
++#if defined(CONFIG_RESET_CONTROLLER)
++
+ int reset_control_reset(struct reset_control *rstc);
+ int reset_control_assert(struct reset_control *rstc);
+ int reset_control_deassert(struct reset_control *rstc);
+@@ -14,4 +16,46 @@ struct reset_control *devm_reset_control_get(struct device *dev, const char *id)
+ 
+ int device_reset(struct device *dev);
+ 
++#else /* !CONFIG_RESET_CONTROLLER */
++
++/*
++ * Make sure client drivers will still build on systems without
++ * reset control support.
++ */
++static inline int reset_control_reset(struct reset_control *rstc)
++{
++	return 0;
++}
++
++static inline int reset_control_assert(struct reset_control *rstc)
++{
++	return 0;
++}
++
++static inline int reset_control_deassert(struct reset_control *rstc)
++{
++	return 0;
++}
++
++static inline struct reset_control *
++reset_control_get(struct device *dev, const char *id)
++{
++	return 0;
++}
++
++static inline void reset_control_put(struct reset_control *rstc){}
++
++static inline struct reset_control *
++devm_reset_control_get(struct device *dev, const char *id)
++{
++	return NULL;
++}
++
++static inline int device_reset(struct device *dev)
++{
++	return 0;
++}
++
++#endif
++
+ #endif
 -- 
-Regards/Gruss,
-    Boris.
+1.7.9.5
 
-Sent from a fat crate under my desk. Formatting is fine.
---
