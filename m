@@ -1,81 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755492Ab3JJKCa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 06:02:30 -0400
-Received: from mail-qe0-f54.google.com ([209.85.128.54]:38438 "EHLO
-	mail-qe0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755299Ab3JJKCZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 06:02:25 -0400
+	id S1755521Ab3JJKEL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 06:04:11 -0400
+Received: from sauhun.de ([89.238.76.85]:36567 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752232Ab3JJKEI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 06:04:08 -0400
+Date: Thu, 10 Oct 2013 12:03:54 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Maxime COQUELIN <maxime.coquelin@st.com>
+Cc: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        Stephen GALLIMORE <stephen.gallimore@st.com>,
+        Stuart MENEFY <stuart.menefy@st.com>, Lee Jones <lee.jones@linaro.org>,
+        Gabriel FERNANDEZ <gabriel.fernandez@st.com>
+Subject: Re: [PATCH v4 0/4] Add I2C support to ST SoCs
+Message-ID: <20131010100354.GE2638@katana>
+References: <1381250576-7916-1-git-send-email-maxime.coquelin@st.com>
+ <525675B6.4080404@st.com>
 MIME-Version: 1.0
-X-Originating-IP: [86.59.245.170]
-In-Reply-To: <87li23trll.fsf@tw-ebiederman.twitter.com>
-References: <8761v7h2pt.fsf@tw-ebiederman.twitter.com>
-	<CAJfpegtT7y-1HhbEVAMKkdQugTG_w7G_epGtQHGvQLpcZB5FVA@mail.gmail.com>
-	<87li281wx6.fsf_-_@xmission.com>
-	<87a9ioo37a.fsf_-_@xmission.com>
-	<20131007043919.GB10284@mail.hallyn.com>
-	<87vc191sf2.fsf@xmission.com>
-	<CALCETrUaubASZyeoNZcYxn5-GJO68=Ng=GYmas7K_OBsjM7f0Q@mail.gmail.com>
-	<87d2ngyb02.fsf@xmission.com>
-	<20131008160601.GJ14242@tucsk.piliscsaba.szeredi.hu>
-	<CALCETrWw=htmgxqq=RQztdJQ-a8c3860vmJh9Ni=Hhs0TkO3YA@mail.gmail.com>
-	<20131008161135.GK14242@tucsk.piliscsaba.szeredi.hu>
-	<87li23trll.fsf@tw-ebiederman.twitter.com>
-Date: Thu, 10 Oct 2013 12:02:24 +0200
-Message-ID: <CAJfpegv+h7xh_2e-X7is9dq1Fp06A0eKwsyWFMPX=azbbDCX5Q@mail.gmail.com>
-Subject: Re: [RFC][PATCH 4/3] vfs: Allow rmdir to remove mounts in all but the
- current mount namespace
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rob Landley <rob@landley.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="UnaWdueM1EBWVRzC"
+Content-Disposition: inline
+In-Reply-To: <525675B6.4080404@st.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 8, 2013 at 10:50 PM, Eric W. Biederman
-<ebiederm@xmission.com> wrote:
 
-> If we are going to fix the VFS deficiency we have to let these changes
-> happen in other mount namespaces.  To make that safe it has to be
-> sufficient to rely on the directory permissions and the conditions that
-> ensure that the directory permissions are sufficient.
+--UnaWdueM1EBWVRzC
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Yes.
 
-> So I find it far safer to allow as much as possible even in the local
-> mount namespace so we can actually see if there are problems with
-> relying on the directory permissions.
+> > Changes since v3:
+> >    - Switch back to vendor specific DT properties regarding the anti-glitch
+> >      filter configuration, as this IP is the only one having such a filter.
+> Do you agree to keep these properties vendor-specifics?
 
-But it's not safer in terms of breaking legacy environments, which are
-single namespace, usually.
+My preference is generic bindings. There are no other users right now,
+yet there might be in the future. At least with something similar enough
+that the bindings will apply. Was hoping for some additional input,
+though, but I am not depending on it.
 
-I see it this way: the current behavior (blocking unlink/rename if
-mounted) may not be nice, but it's expected.  But once we have
-multiple namespaces it becomes problematic.   Just like  network
-filesystems where we cannot prevent unlink on another host just
-because it's mounted on this.  So we have to have some way of dealing
-with this.
+> If so, could you take this series for v3.13?
 
-Is it worth changing behavor in the "current namespace" case too?  It
-has advantages, but it's not absolutely necessary and there are
-unknown dangers.  But if we disable it for rmdir() then what's the
-point in enabling it for unlink()?  Directory mounts far outnumber
-non-directory ones, so the additional testing is minimal, but the
-holes left are probably just as real.
+Sure, if it passes the second review...
 
-And there's rename().  We have a real security hole in fusermount by
-allowing it in the local namespace.  I don't think changing the
-behavior of rename() in the local namespace is  important enough to
-risk such problems.  And as Andy pointed out, we can just have an
-option to turn it on and that's that.
 
-Thanks,
-Miklos
+--UnaWdueM1EBWVRzC
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSVnuKAAoJEBQN5MwUoCm29YAP/j86Uvw2t0c5cudusZoI5pBT
+mWGREfUbrGlgNBb3AFMeTdJtZRFPOn1ZJx8K/FHOz7e//tgTH0ebQm9dTDZ7ZwWQ
+WD17mFEWsRq/yFyYxV9wr1bXu6OuKoUzLz9tDcLlN9BAYwJCXUHuQBt3Os6ELsb8
+2HqUdPdsWhN+iEan8qwi4DeU0HA58IPiU71QeLCk6+ex8yGh5SOI2Q3HMES+eMDL
+fgivJzU0u0SBUKNtfrhdK6RYmSYAm5qI/RezMhl/oU2r0q//bps8aF5aGNV1y9ZX
+6b8cnpV3KGsju4DuPccGGAMKb7k4Yi/Z3lENsm57+FnsZu0cPpp3GentG0WiiLVI
+BY57HKex3JwGblHKeYeM8+A+YCMg1Ju4+dY2gZ4wxWFPxaxORsXqdeufSRFXJErv
+lHCOi91GyH2aYgxMi9EwE/Miwp59oQSCSzYsaVp/rvg2q2+75No4NSstq1qd0eLB
+9B7zuEaXwVCzI1Ep9r+0nVSv6PRiNm74uzdgjUd7GbdxinaFRCrO21nNCvQFZVwv
+Qj2+bUGequCP/55a4x/LJdYa2lNEjJImbyRwSPzI60pD7VEhYBZwopAlc3P39bGQ
+0G0BsO46cFUGFagdiNMJkk1+kvmYmd6HS1Haua/nuKb2zfRhJ8LXyy9a/EYwwnOf
+stNvDh3H5XFreu94BEwD
+=Yzfa
+-----END PGP SIGNATURE-----
+
+--UnaWdueM1EBWVRzC--
