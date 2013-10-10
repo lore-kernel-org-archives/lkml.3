@@ -1,123 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754272Ab3JJLoG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 07:44:06 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:44952 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752080Ab3JJLoD (ORCPT
+	id S1754817Ab3JJLqJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 07:46:09 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:14295 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753011Ab3JJLqH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 07:44:03 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rob Landley <rob@landley.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-References: <8761v7h2pt.fsf@tw-ebiederman.twitter.com>
-	<CAJfpegtT7y-1HhbEVAMKkdQugTG_w7G_epGtQHGvQLpcZB5FVA@mail.gmail.com>
-	<87li281wx6.fsf_-_@xmission.com> <87a9ioo37a.fsf_-_@xmission.com>
-	<20131007043919.GB10284@mail.hallyn.com> <87vc191sf2.fsf@xmission.com>
-	<CALCETrUaubASZyeoNZcYxn5-GJO68=Ng=GYmas7K_OBsjM7f0Q@mail.gmail.com>
-	<87d2ngyb02.fsf@xmission.com>
-	<20131008160601.GJ14242@tucsk.piliscsaba.szeredi.hu>
-	<CALCETrWw=htmgxqq=RQztdJQ-a8c3860vmJh9Ni=Hhs0TkO3YA@mail.gmail.com>
-	<20131008161135.GK14242@tucsk.piliscsaba.szeredi.hu>
-	<87li23trll.fsf@tw-ebiederman.twitter.com>
-	<CAJfpegv+h7xh_2e-X7is9dq1Fp06A0eKwsyWFMPX=azbbDCX5Q@mail.gmail.com>
-Date: Thu, 10 Oct 2013 04:43:51 -0700
-In-Reply-To: <CAJfpegv+h7xh_2e-X7is9dq1Fp06A0eKwsyWFMPX=azbbDCX5Q@mail.gmail.com>
-	(Miklos Szeredi's message of "Thu, 10 Oct 2013 12:02:24 +0200")
-Message-ID: <87vc15mjuw.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/2gdYHs5kv3NJP2ni6Zucg9YyRJryr+sw=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  1.5 TR_Symld_Words too many words that have symbols inside
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0083]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Miklos Szeredi <miklos@szeredi.hu>
-X-Spam-Relay-Country: 
-Subject: Re: [RFC][PATCH 4/3] vfs: Allow rmdir to remove mounts in all but the current mount namespace
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+	Thu, 10 Oct 2013 07:46:07 -0400
+X-AuditID: cbfee68d-b7fe86d0000077a5-ba-5256937e9237
+Message-id: <52569383.5050502@samsung.com>
+Date: Thu, 10 Oct 2013 20:46:11 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: "broonie@kernel.org" <broonie@kernel.org>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "sbkim73@samsung.com" <sbkim73@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        YoungJun Cho <yj44.cho@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH 2/2] regulator: s5m8767: Modify parsing method of the
+ voltage table of buck2/3/4
+References: <1381369296-17101-1-git-send-email-cw00.choi@samsung.com>
+ <1381369296-17101-2-git-send-email-cw00.choi@samsung.com>
+ <20131010103646.GH26954@e106331-lin.cambridge.arm.com>
+In-reply-to: <20131010103646.GH26954@e106331-lin.cambridge.arm.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKIsWRmVeSWpSXmKPExsWyRsSkQLducliQQWsrt8XUh0/YLOYfOcdq
+	cbbpDbvFtysdTBaXd81hs1h6/SKTxcUVX5gs9u6czOjA4bFm3hpGj52z7rJ7bFrVyebRt2UV
+	o8fnTXIBrFFcNimpOZllqUX6dglcGStXf2AvOCxfsefmDtYGxplSXYycHBICJhLrJ91ng7DF
+	JC7cWw9mCwksZZSY3qcKUzPxzW/WLkYuoPgiRon5jYugnFeMEi+eHgHr4BXQkph7t4cJxGYR
+	UJVYcHsDWJwNKL7/xQ0wW1QgTGLl9CssEPWCEj8m3wOzRQTUJXp2fWEBGcoscJtJ4tS3GWCD
+	hAXSJNavusEEsW0Xo8SRU2tZQRKcAs4Sq6fuZQaxmQV0JPa3TmODsOUlNq95ywzSICFwjV3i
+	W+8dFoiTBCS+TT4EZHMAJWQlNh1ghvhNUuLgihssExjFZiE5ahaSsbOQjF3AyLyKUTS1ILmg
+	OCm9yFCvODG3uDQvXS85P3cTIzAKT/971ruD8fYB60OMyUArJzJLiSbnA6M4ryTe0NjMyMLU
+	xNTYyNzSjDRhJXFetRbrQCGB9MSS1OzU1ILUovii0pzU4kOMTBycUg2M6rZrxT/cvqxtfEjv
+	vnZ+QfvCjW8q9TUOuN1SuejVY1m+vDIp4vLe6oLFP92aCzbL99deKG2umXHl5vuuxYV5exc9
+	Dfk/IcFTQ/Z74oSCy48WWsS/vafxrclG/MaZ5k7J5zXuVTMuvcj9P41f2oxfZ/qlp4Kfry7p
+	etzz57yZUMhyzTClNcU6SizFGYmGWsxFxYkAhPQwYdgCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrMKsWRmVeSWpSXmKPExsVy+t9jAd26yWFBBrdXMVlMffiEzWL+kXOs
+	Fmeb3rBbfLvSwWRxedccNoul1y8yWVxc8YXJYu/OyYwOHB5r5q1h9Ng56y67x6ZVnWwefVtW
+	MXp83iQXwBrVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8cb2pmYKhraGlhrqSQl5ibaqvk4hOg
+	65aZA3SMkkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3fkCC4HiMDNJCwhjFj5eoP7AWH5Sv2
+	3NzB2sA4U6qLkZNDQsBEYuKb36wQtpjEhXvr2boYuTiEBBYxSsxvXMQK4bxilHjx9AgbSBWv
+	gJbE3Ls9TCA2i4CqxILbG8DibEDx/S9ugNmiAmESK6dfYYGoF5T4MfkemC0ioC7Rs+sLC8hQ
+	ZoHbTBKnvs0AGyQskCaxftUNJohtuxgljpxaC3YTp4CzxOqpe5lBbGYBHYn9rdPYIGx5ic1r
+	3jJPYBSYhWTJLCRls5CULWBkXsUomlqQXFCclJ5rpFecmFtcmpeul5yfu4kRHOXPpHcwrmqw
+	OMQowMGoxMNbURYaJMSaWFZcmXuIUYKDWUmEd055WJAQb0piZVVqUX58UWlOavEhxmRgGExk
+	lhJNzgcmoLySeENjEzMjSyNzQwsjY3PShJXEeQ+2WgcKCaQnlqRmp6YWpBbBbGHi4JRqYJyY
+	FrDRPqXa9s2EMuvi01saVKT0RCy3z0177xbwXcP1zeJMzkyH8n7efB7Ou3MlX8Svywm9bhF2
+	7+apiznem4w3+KW/rY+7V2nqKPFsftfNgiVvWVJ6Cng/Lvmx9ubvOLu5bZZ1u27FKou/jOXi
+	m7npbb67Unle5fSYV+en9Mba/ty+ycU5X4mlOCPRUIu5qDgRAMyrMgU2AwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Miklos Szeredi <miklos@szeredi.hu> writes:
+On 10/10/2013 07:36 PM, Mark Rutland wrote:
+> On Thu, Oct 10, 2013 at 02:41:36AM +0100, Chanwoo Choi wrote:
+>> The s5m8767 regulator driver parse always the voltage table of buck2/3/4.
+>> If gpio_dvs feature isn't used and dts haven't included the voltage table
+>> of buck2/3/4, s5m8767 regulator driver return error and file probe state.
+>>
+>> This patch check only voltage table of buck on s5m8767_pmic_dt_parse_pdata()
+>> if buck[2-4]_gpiodvs is true.
+>>
+>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+>> Signed-off-by: YoungJun Cho <yj44.cho@samsung.com>
+>> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+>> ---
+>>  drivers/regulator/s5m8767.c | 54 +++++++++++++++++++++++----------------------
+>>  1 file changed, 28 insertions(+), 26 deletions(-)
+>>
+>> diff --git a/drivers/regulator/s5m8767.c b/drivers/regulator/s5m8767.c
+>> index cb6cdb3..29999c0 100644
+>> --- a/drivers/regulator/s5m8767.c
+>> +++ b/drivers/regulator/s5m8767.c
+>> @@ -522,7 +522,7 @@ static int s5m8767_pmic_dt_parse_pdata(struct platform_device *pdev,
+>>  	struct device_node *pmic_np, *regulators_np, *reg_np;
+>>  	struct sec_regulator_data *rdata;
+>>  	struct sec_opmode_data *rmode;
+>> -	unsigned int i, dvs_voltage_nr = 1, ret;
+>> +	unsigned int i, dvs_voltage_nr = 8, ret;
+>>  
+>>  	pmic_np = iodev->dev->of_node;
+>>  	if (!pmic_np) {
+>> @@ -586,15 +586,39 @@ static int s5m8767_pmic_dt_parse_pdata(struct platform_device *pdev,
+>>  		rmode++;
+>>  	}
+>>  
+>> -	if (of_get_property(pmic_np, "s5m8767,pmic-buck2-uses-gpio-dvs", NULL))
+>> +	if (of_get_property(pmic_np, "s5m8767,pmic-buck2-uses-gpio-dvs", NULL)) {
+>>  		pdata->buck2_gpiodvs = true;
+> 
+> As this line is being changed, please switch to of_property_read_bool.
 
-> On Tue, Oct 8, 2013 at 10:50 PM, Eric W. Biederman
-> <ebiederm@xmission.com> wrote:
->
->> If we are going to fix the VFS deficiency we have to let these changes
->> happen in other mount namespaces.  To make that safe it has to be
->> sufficient to rely on the directory permissions and the conditions that
->> ensure that the directory permissions are sufficient.
->
-> Yes.
->
->> So I find it far safer to allow as much as possible even in the local
->> mount namespace so we can actually see if there are problems with
->> relying on the directory permissions.
->
-> But it's not safer in terms of breaking legacy environments, which are
-> single namespace, usually.
->
-> I see it this way: the current behavior (blocking unlink/rename if
-> mounted) may not be nice, but it's expected.  But once we have
-> multiple namespaces it becomes problematic.   Just like  network
-> filesystems where we cannot prevent unlink on another host just
-> because it's mounted on this.  So we have to have some way of dealing
-> with this.
->
-> Is it worth changing behavor in the "current namespace" case too?  It
-> has advantages, but it's not absolutely necessary and there are
-> unknown dangers.  But if we disable it for rmdir() then what's the
-> point in enabling it for unlink()?  Directory mounts far outnumber
-> non-directory ones, so the additional testing is minimal, but the
-> holes left are probably just as real.
->
-> And there's rename().  We have a real security hole in fusermount by
-> allowing it in the local namespace.  I don't think changing the
-> behavior of rename() in the local namespace is  important enough to
-> risk such problems.  And as Andy pointed out, we can just have an
-> option to turn it on and that's that.
+OK.
 
-I have been weighing the pros and the cons of this.
+> 
+>>  
+>> -	if (of_get_property(pmic_np, "s5m8767,pmic-buck3-uses-gpio-dvs", NULL))
+>> +		if (of_property_read_u32_array(pmic_np,
+>> +				"s5m8767,pmic-buck2-dvs-voltage",
+>> +				pdata->buck2_voltage, dvs_voltage_nr)) {
+> 
+> Won't this break existing (not conforming to the binding) dts?
+> 
+> $(git grep s5m8767,pmic-buck2-dvs-voltage) shows me
+> arch/arm/boot/dts/exynos5250-arndale.dts is only has one entry in its
+> s5m8767,pmic-buck3-uses-gpio-dvs property's list.
 
-At this point the most practical path I can see is to block unlink,
-rename, and rmdir if there is a mount in the local namespace.
+I checked it but exynos5250-arndale.dts haven't included pmic-buck3-uses-gpio-dvs property.
+What is reference code?
 
-At the very least that makes very limited additions to what applications
-can depend on from the vfs, and even more importantly that can be ready
-by 3.13.
+> 
+>> +			dev_err(iodev->dev, "buck2 voltages not specified\n");
+>> +			return -EINVAL;
+>> +		}
+>> +	}
+>> +
+>> +	if (of_get_property(pmic_np, "s5m8767,pmic-buck3-uses-gpio-dvs", NULL)) {
+>>  		pdata->buck3_gpiodvs = true;
+> 
+> Another of_proeprty_read_bool candidate.
 
-Furthermore it removes the nasty need for filesystems to lie to the vfs,
-and removes the nasty DOS that non-local mountpoints are.
+OK.
 
-Miklos if you as the fuse maintainer aren't worried about network
-filesystems, and multiple namespaces I won't worry either.  Especially
-since modern versions of fuse aren't affected.
+> 
+>>  
+>> -	if (of_get_property(pmic_np, "s5m8767,pmic-buck4-uses-gpio-dvs", NULL))
+>> +		if (of_property_read_u32_array(pmic_np,
+>> +				"s5m8767,pmic-buck3-dvs-voltage",
+>> +				pdata->buck3_voltage, dvs_voltage_nr)) {
+>> +			dev_err(iodev->dev, "buck3 voltages not specified\n");
+>> +			return -EINVAL;
+>> +		}
+>> +	}
+>> +
+>> +	if (of_get_property(pmic_np, "s5m8767,pmic-buck4-uses-gpio-dvs", NULL)) {
+>>  		pdata->buck4_gpiodvs = true;
+> 
+> Similarly.
+> 
+> In general I'm confused by the need for the *-uses-gpio-dvs properties.
+> Are they not implied by the presence of *-dvs-voltage properties?
+> 
 
-I have a implementable looking plan B if we really need it of creating
-ghost dentries for mounts to ride on if their underlying dentry gets
-renamed or unlinked.  And I don't see this removing the possibility of
-implementing that plan B.  But ick.  I think deciding we need plan B
-would just enough more work that it would kill getting any change made
-in a timely fashion.  So I will take my little blue pill and ignore the
-possible slings and arrows of outrageous fortune, and see what happens.
+The s5m8767 support the power control using DVS(Dynamic Voltage scaling) by using
+GPIO or I2C interface between PMIC and AP. 
 
-Eric
+When controlling DVS by using GPIO interface, *-uses-gpio-dvs/*-dvs-voltage properties is used.
+The s5m8767 pmic control DVS of one only buck using GPIO. If specific target use GPIO interface
+to control buck2 DVS, must set buck2-uses-gpio-dvs as true and buck3/4-uses-gpio-dvs is false.
+Also, GPIO interface include three gpio pin which select total 8 step voltage according to
+three gpio state. *-dvs-voltage properties include the voltage table of 8 step.
+
+Also, you can check the aim of *-uses-gpio-dvs/*-dvs-voltage properties
+on Documentation/devicetree/bindings/regulator/s5m8767-regulator.txt.
+
+
+
+
