@@ -1,97 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755136Ab3JJIJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 04:09:29 -0400
-Received: from sauhun.de ([89.238.76.85]:45152 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752251Ab3JJIJZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 04:09:25 -0400
-Date: Thu, 10 Oct 2013 10:09:19 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: linux-acpi@vger.kernel.org, Mark Brown <broonie@kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Aaron Lu <aaron.lu@intel.com>,
-        Lv Zheng <lv.zheng@intel.com>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] i2c: attach/detach I2C client device to the ACPI
- power domain
-Message-ID: <20131010080919.GC2638@katana>
-References: <1381327461-10562-1-git-send-email-mika.westerberg@linux.intel.com>
- <1381327461-10562-3-git-send-email-mika.westerberg@linux.intel.com>
+	id S1755196Ab3JJILL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 04:11:11 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:17094 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751737Ab3JJILA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 04:11:00 -0400
+X-IronPort-AV: E=Sophos;i="4.93,465,1378828800"; 
+   d="scan'208";a="8710837"
+Message-ID: <52565FD1.50400@cn.fujitsu.com>
+Date: Thu, 10 Oct 2013 16:05:37 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="GZVR6ND4mMseVXL/"
-Content-Disposition: inline
-In-Reply-To: <1381327461-10562-3-git-send-email-mika.westerberg@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Gleb Natapov <gleb@redhat.com>
+CC: chai wen <chaiw.fnst@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
+        pbonzini@redhat.com, tangchen@cn.fujitsu.com,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+Subject: Re: [RFC/query] kvm async_pf anon pined pages migration
+References: <1380535387-26237-1-git-send-email-chaiw.fnst@cn.fujitsu.com> <20130930125158.GA11993@redhat.com> <BLU0-SMTP3062A22F7A685B9214BB05AE0150@phx.gbl> <5253AD0E.6060209@cn.fujitsu.com> <20131008073914.GA3574@redhat.com> <525651D6.3040202@cn.fujitsu.com> <20131010071540.GR3574@redhat.com> <52565CE4.9030103@cn.fujitsu.com> <20131010080147.GS3574@redhat.com>
+In-Reply-To: <20131010080147.GS3574@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/10/10 16:08:50,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/10/10 16:08:50,
+	Serialize complete at 2013/10/10 16:08:50
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/10/2013 04:01 PM, Gleb Natapov wrote:
 
---GZVR6ND4mMseVXL/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> On Thu, Oct 10, 2013 at 03:53:08PM +0800, Gu Zheng wrote:
+>> Hi Gleb,
+>>
+>> On 10/10/2013 03:15 PM, Gleb Natapov wrote:
+>>
+>>> On Thu, Oct 10, 2013 at 03:05:58PM +0800, chai wen wrote:
+>>>> On 10/08/2013 03:39 PM, Gleb Natapov wrote:
+>>>>> On Tue, Oct 08, 2013 at 02:58:22PM +0800, chai wen wrote:
+>>>>>> On 10/02/2013 12:04 AM, chaiwen wrote:
+>>>>>>> On 09/30/2013 08:51 PM, Gleb Natapov wrote:
+>>>>>>>> On Mon, Sep 30, 2013 at 06:03:07PM +0800, chai wen wrote:
+>>>>>>>>> Hi all
+>>>>>>>>>
+>>>>>>>>> Async page fault in kvm currently pin user pages via get_user_pages.
+>>>>>>>>> when doing page migration,the method can be found via
+>>>>>>>>> page->mmapping->a_ops->migratepage to offline old pages and migrate to
+>>>>>>>>> new pages. As to anonymous page there is no file mapping but a anon_vma.So
+>>>>>>>>> the migration will fall back to some *default* migration method.Anon pages
+>>>>>>>>> that have been pined in memory by some reasons could be failed in the migration
+>>>>>>>>> processing because of some reasons like ref-count checking.
+>>>>>>>>> (or I misunderstand some thing?)
+>>>>>>>>>
+>>>>>>>>> Now we want to make these anon pages in async_pf can be migrated, I try some
+>>>>>>>>> ways.But there are still many problems. The following is one that replaceing
+>>>>>>>>> the mapping of anon page arbitrarily and doing some thing based on it.
+>>>>>>>>> Kvm-based virtual machine can works on this patch,but have no experience of
+>>>>>>>>> offline pages because of the limitaion of resouces.I'll check it later.
+>>>>>>>>>
+>>>>>>>>> I don't know weather it is a right direction of this issue.
+>>>>>>>>> All comments/criticize are welcomed.
+>>>>>>>> The pinning is not mandatory and can (and probably should) be dropped, but
+>>>>>>>> pinning that is done by async page faults is short lived. What problems
+>>>>>>>> are you seeing that warrant the complexity of handling their migration?
+>>>>>> Hi Gleb
+>>>>>>
+>>>>>> As to this issue, I still have some thing not very clear.
+>>>>>> If pages pinning is successfully holding (although not mandatory) by
+>>>>>> async page fault.
+>>>>>> And at the same time page migration happens because of memory
+>>>>>> hot-remove action.
+>>>>>> It has 120*hz timeout setting in common page offline processing,
+>>>>>> could it fail with
+>>>>>> these async_pf pined pages migration ?
+>>>>>> What's your opinion about this ?   If it may fail under this
+>>>>>> circumstance, should we do
+>>>>>> some thing on it ?
+>>>>>>
+>>>>> 120 seconds is more than enough time for pinning to go away, but as I
+>>>>> said the pinning is not even necessary. Patch to remove it is welcomed.
+>>>> Thank you for your clarification !  I've got it. we will still work on it.
+>>>>
+>>> Should be extremely easy. Drop FOLL_GET from GUP in async_pf_execute().
+>>
+>> One lower question, why pinning page is not necessary here?
+>>
+> The purpose of GUP here is to bring page from swap, the page itself is
+> never used directly by async pf code. The page is used when guest
+> accesses it next time, but that code path does its own GUP.
 
-On Wed, Oct 09, 2013 at 05:04:20PM +0300, Mika Westerberg wrote:
-> From: Lv Zheng <lv.zheng@intel.com>
->=20
-> If the I2C client device is enumerated from ACPI namespace it might have
-> ACPI methods that needs to be called in order to transition the device to
-> different power states (such as _PSx).
->=20
-> Implement this for I2C client devices by checking if the device has an AC=
-PI
-> handle and if that's the case, attach it to the ACPI power domain. In
-> addition we make sure that the device is fully powered when its ->probe()
-> function gets called.
->=20
-> For non-ACPI devices this patch is a no-op.
->=20
-> Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> ---
->  drivers/i2c/i2c-core.c | 10 ++++++++++
->  1 file changed, 10 insertions(+)
->=20
-> diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-> index 29d3f04..f25dee3 100644
-> --- a/drivers/i2c/i2c-core.c
-> +++ b/drivers/i2c/i2c-core.c
-> @@ -254,10 +254,16 @@ static int i2c_device_probe(struct device *dev)
->  					client->flags & I2C_CLIENT_WAKE);
->  	dev_dbg(dev, "probe\n");
-> =20
-> +	if (ACPI_HANDLE(&client->dev))
-> +		acpi_dev_pm_attach(&client->dev, true);
+Got it, thanks for your explanation.:)
 
-I'd prefer to drop the 'if's in case they are checked inside the acpi_*
-calls anyway. Not a show-stopper, though, so:
+Regards,
+Gu
 
-Acked-by: Wolfram Sang <wsa@the-dreams.de>
+> 
+> --
+> 			Gleb.
+> 
 
 
---GZVR6ND4mMseVXL/
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSVmCvAAoJEBQN5MwUoCm2vX8QAIm6y2W45orHnvxDkqZb5hO/
-RWmYovEd9GccUoCJWLRh3vZusjDM6bOsMqPmfkuLZ93s/Tk2j6DpnRj/2yNiwF4/
-DuyP8GEdQwN1b9Jjhy7EAqeeZY/qcuhu6C0yWQw9A7lmECDDIDoGKMkXpA3s28vc
-Y+HGJjlzkagV58akwrvnA2VievfpgteXTmLj+lRl4Dm3G+uQAx8L8f1TbIRhxazB
-qYwcATmEfy8eiu8JNIhBo+mFLc2r2E8UtExyHx0MwQv62lPK0Xz1XJUjUM/W0uhr
-7YRwd2+5+cjW8u7XCJ0uz0H+prVLnLryOq78zpbb63eWpeC8TD0MEqzq2BQ2JqXI
-Xpz/u4/eIfMVZfXZw2UJ+rg047Jw36H4WaLd+3SBpoJeuWEfVtmKjGrgjj3a17u+
-ky7zoQ3O36GxKgALPmD1Jc7HVxuVrgDYBQ1xyJY+cugqUN9O3hMPeeUl6/SpXEtL
-aVw3Kl94QgG0X0vJLRQdDzv6vXMNZ1vWtHnBTr+7ur+BOGHIYKt8Iz6XY37gzGU+
-VV/m7ZjDL3EBPSgDymAT/90VnZ7HGRsbrZb6mPe2enPBWR9T1st0QWQcedH0dsQ6
-9qzfKob4p2XQUBrpu04JU36Gc3WgyfFFez+GS+T0E7FmqZzt382L5Y5Lf46HZwGc
-oEjJvr5zlpDKVk8Z5SLq
-=JPAE
------END PGP SIGNATURE-----
-
---GZVR6ND4mMseVXL/--
