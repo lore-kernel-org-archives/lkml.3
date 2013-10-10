@@ -1,58 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755739Ab3JJOVE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 10:21:04 -0400
-Received: from host171.canaca.com ([67.55.55.225]:58978 "EHLO
-	host171.canaca.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755263Ab3JJOUc (ORCPT
+	id S1754272Ab3JJOXu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 10:23:50 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:59145 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751979Ab3JJOXt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 10:20:32 -0400
-From: Simon Wood <simon@mungewell.org>
-To: linux-input@vger.kernel.org
-Cc: Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
-        simon@mungewell.org, Elias Vanderstuyft <elias.vds@gmail.com>,
-        =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@prifuk.cz>
-Subject: [PATCHv2 3/3] HID:Kconfig: Correct MOMO description in wrong place (handled by LG4FF).
-Date: Thu, 10 Oct 2013 08:20:14 -0600
-Message-Id: <1381414814-2107-3-git-send-email-simon@mungewell.org>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1381414814-2107-1-git-send-email-simon@mungewell.org>
-References: <alpine.LNX.2.00.1310101002120.13289@pobox.suse.cz>
- <1381414814-2107-1-git-send-email-simon@mungewell.org>
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - host171.canaca.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - mungewell.org
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Thu, 10 Oct 2013 10:23:49 -0400
+Date: Thu, 10 Oct 2013 15:23:05 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux390@de.ibm.com" <linux390@de.ibm.com>,
+        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] arm64: include: asm: atomic.h: use 'unsigned int'
+ and 'atomic_t' instead of 'unsigned long' for atomic_clear_mask()
+Message-ID: <20131010142305.GG6199@mudshark.cambridge.arm.com>
+References: <52561137.3070608@asianux.com>
+ <5256117A.4000009@asianux.com>
+ <5256121A.9030504@asianux.com>
+ <52561269.60900@asianux.com>
+ <20131010100733.GH3817@mudshark.cambridge.arm.com>
+ <52568998.2080108@asianux.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52568998.2080108@asianux.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Minor correction to the description in Kconfig.
+On Thu, Oct 10, 2013 at 12:03:52PM +0100, Chen Gang wrote:
+> On 10/10/2013 06:07 PM, Will Deacon wrote:
+> > On Thu, Oct 10, 2013 at 03:35:21AM +0100, Chen Gang wrote:
+> >> In current kernel wide source, for arm64, only s390 scsi drivers use
+> >> atomic_clear_mask(), now, s390 itself need use 'unsigned int' and
+> >> 'atomic_t', so need match s390's atomic_clear_mask().
+> >>
+> >>
+> >> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+> >> ---
+> >>  arch/arm64/include/asm/atomic.h |   13 +++++++------
+> >>  1 files changed, 7 insertions(+), 6 deletions(-)
+> >>
+> >> diff --git a/arch/arm64/include/asm/atomic.h b/arch/arm64/include/asm/atomic.h
+> >> index 8363644..58808fc 100644
+> >> --- a/arch/arm64/include/asm/atomic.h
+> >> +++ b/arch/arm64/include/asm/atomic.h
+> >> @@ -126,16 +126,17 @@ static inline int atomic_cmpxchg(atomic_t *ptr, int old, int new)
+> >>  	return oldval;
+> >>  }
+> >>  
+> >> -static inline void atomic_clear_mask(unsigned long mask, unsigned long *addr)
+> >> +static inline void atomic_clear_mask(unsigned int mask, atomic_t *ptr)
+> >>  {
+> >> -	unsigned long tmp, tmp2;
+> >> +	unsigned int tmp;
+> > 
+> > Same comment here as for ARM; I think you want a signed int.
+> > 
+> 
+> OK, replied in patch 2/3 for ARM.
+> 
+> BTW: do arm64 need atomic_clear_mask()?
 
-The Logitect MOMO wheel is actually handled by the LOGITECH_WHEELS (hid-lg4ff) 
-section, not by the LOGITECH_FF (hid-lgff).
+No. Neither ARM nor arm64 need this function.
 
-Signed-off-by: Simon Wood <simon@mungewell.org>
----
- drivers/hid/Kconfig | 1 -
- 1 file changed, 1 deletion(-)
-
-diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index 46fd27f..aee7182 100644
---- a/drivers/hid/Kconfig
-+++ b/drivers/hid/Kconfig
-@@ -362,7 +362,6 @@ config LOGITECH_FF
- 	  - Logitech WingMan Force 3D
- 	  - Logitech Formula Force EX
- 	  - Logitech WingMan Formula Force GP
--	  - Logitech MOMO Force wheel
- 
- 	  and if you want to enable force feedback for them.
- 	  Note: if you say N here, this device will still be supported, but without
--- 
-1.8.1.2
-
+Will
