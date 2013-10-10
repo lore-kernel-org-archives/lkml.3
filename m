@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756260Ab3JJPo7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 11:44:59 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52658 "EHLO
+	id S1756292Ab3JJPpJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 11:45:09 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52675 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756219Ab3JJPo5 (ORCPT
+	with ESMTP id S1755506Ab3JJPpE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 11:44:57 -0400
+	Thu, 10 Oct 2013 11:45:04 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mikulas Patocka <mpatocka@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
+Cc: Alex Deucher <alexander.deucher@amd.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 058/104] dm-snapshot: fix performance degradation due to small hash size
-Date: Thu, 10 Oct 2013 08:41:46 -0700
-Message-Id: <1381419752-29733-59-git-send-email-kamal@canonical.com>
+Subject: [PATCH 045/104] drm/radeon: fix panel scaling with eDP and LVDS bridges
+Date: Thu, 10 Oct 2013 08:41:33 -0700
+Message-Id: <1381419752-29733-46-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381419752-29733-1-git-send-email-kamal@canonical.com>
 References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
@@ -27,52 +27,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 60e356f381954d79088d0455e357db48cfdd6857 upstream.
+commit 855f5f1d882a34e4e9dd27b299737cd3508a5624 upstream.
 
-LVM2, since version 2.02.96, creates origin with zero size, then loads
-the snapshot driver and then loads the origin.  Consequently, the
-snapshot driver sees the origin size zero and sets the hash size to the
-lower bound 64.  Such small hash table causes performance degradation.
+We were using the wrong set_properly callback so we always
+ended up with Full scaling even if something else (Center or
+Full aspect) was selected.
 
-This patch changes it so that the hash size is determined by the size of
-snapshot volume, not minimum of origin and snapshot size.  It doesn't
-make sense to set the snapshot size significantly larger than the origin
-size, so we do not need to take origin size into account when
-calculating the hash size.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/md/dm-snap.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/radeon/radeon_connectors.c | 34 +++++++++++++++++++++++++++---
+ 1 file changed, 31 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/md/dm-snap.c b/drivers/md/dm-snap.c
-index 900eb23..8b36c52 100644
---- a/drivers/md/dm-snap.c
-+++ b/drivers/md/dm-snap.c
-@@ -723,17 +723,16 @@ static int calc_max_buckets(void)
-  */
- static int init_hash_tables(struct dm_snapshot *s)
- {
--	sector_t hash_size, cow_dev_size, origin_dev_size, max_buckets;
-+	sector_t hash_size, cow_dev_size, max_buckets;
+diff --git a/drivers/gpu/drm/radeon/radeon_connectors.c b/drivers/gpu/drm/radeon/radeon_connectors.c
+index 2399f25..5a87c9f 100644
+--- a/drivers/gpu/drm/radeon/radeon_connectors.c
++++ b/drivers/gpu/drm/radeon/radeon_connectors.c
+@@ -1489,6 +1489,24 @@ static const struct drm_connector_funcs radeon_dp_connector_funcs = {
+ 	.force = radeon_dvi_force,
+ };
  
- 	/*
- 	 * Calculate based on the size of the original volume or
- 	 * the COW volume...
- 	 */
- 	cow_dev_size = get_dev_size(s->cow->bdev);
--	origin_dev_size = get_dev_size(s->origin->bdev);
- 	max_buckets = calc_max_buckets();
- 
--	hash_size = min(origin_dev_size, cow_dev_size) >> s->store->chunk_shift;
-+	hash_size = cow_dev_size >> s->store->chunk_shift;
- 	hash_size = min(hash_size, max_buckets);
- 
- 	if (hash_size < 64)
++static const struct drm_connector_funcs radeon_edp_connector_funcs = {
++	.dpms = drm_helper_connector_dpms,
++	.detect = radeon_dp_detect,
++	.fill_modes = drm_helper_probe_single_connector_modes,
++	.set_property = radeon_lvds_set_property,
++	.destroy = radeon_dp_connector_destroy,
++	.force = radeon_dvi_force,
++};
++
++static const struct drm_connector_funcs radeon_lvds_bridge_connector_funcs = {
++	.dpms = drm_helper_connector_dpms,
++	.detect = radeon_dp_detect,
++	.fill_modes = drm_helper_probe_single_connector_modes,
++	.set_property = radeon_lvds_set_property,
++	.destroy = radeon_dp_connector_destroy,
++	.force = radeon_dvi_force,
++};
++
+ void
+ radeon_add_atom_connector(struct drm_device *dev,
+ 			  uint32_t connector_id,
+@@ -1580,8 +1598,6 @@ radeon_add_atom_connector(struct drm_device *dev,
+ 			goto failed;
+ 		radeon_dig_connector->igp_lane_info = igp_lane_info;
+ 		radeon_connector->con_priv = radeon_dig_connector;
+-		drm_connector_init(dev, &radeon_connector->base, &radeon_dp_connector_funcs, connector_type);
+-		drm_connector_helper_add(&radeon_connector->base, &radeon_dp_connector_helper_funcs);
+ 		if (i2c_bus->valid) {
+ 			/* add DP i2c bus */
+ 			if (connector_type == DRM_MODE_CONNECTOR_eDP)
+@@ -1598,6 +1614,10 @@ radeon_add_atom_connector(struct drm_device *dev,
+ 		case DRM_MODE_CONNECTOR_VGA:
+ 		case DRM_MODE_CONNECTOR_DVIA:
+ 		default:
++			drm_connector_init(dev, &radeon_connector->base,
++					   &radeon_dp_connector_funcs, connector_type);
++			drm_connector_helper_add(&radeon_connector->base,
++						 &radeon_dp_connector_helper_funcs);
+ 			connector->interlace_allowed = true;
+ 			connector->doublescan_allowed = true;
+ 			radeon_connector->dac_load_detect = true;
+@@ -1610,6 +1630,10 @@ radeon_add_atom_connector(struct drm_device *dev,
+ 		case DRM_MODE_CONNECTOR_HDMIA:
+ 		case DRM_MODE_CONNECTOR_HDMIB:
+ 		case DRM_MODE_CONNECTOR_DisplayPort:
++			drm_connector_init(dev, &radeon_connector->base,
++					   &radeon_dp_connector_funcs, connector_type);
++			drm_connector_helper_add(&radeon_connector->base,
++						 &radeon_dp_connector_helper_funcs);
+ 			drm_object_attach_property(&radeon_connector->base.base,
+ 						      rdev->mode_info.underscan_property,
+ 						      UNDERSCAN_OFF);
+@@ -1634,6 +1658,10 @@ radeon_add_atom_connector(struct drm_device *dev,
+ 			break;
+ 		case DRM_MODE_CONNECTOR_LVDS:
+ 		case DRM_MODE_CONNECTOR_eDP:
++			drm_connector_init(dev, &radeon_connector->base,
++					   &radeon_lvds_bridge_connector_funcs, connector_type);
++			drm_connector_helper_add(&radeon_connector->base,
++						 &radeon_dp_connector_helper_funcs);
+ 			drm_object_attach_property(&radeon_connector->base.base,
+ 						      dev->mode_config.scaling_mode_property,
+ 						      DRM_MODE_SCALE_FULLSCREEN);
+@@ -1797,7 +1825,7 @@ radeon_add_atom_connector(struct drm_device *dev,
+ 				goto failed;
+ 			radeon_dig_connector->igp_lane_info = igp_lane_info;
+ 			radeon_connector->con_priv = radeon_dig_connector;
+-			drm_connector_init(dev, &radeon_connector->base, &radeon_dp_connector_funcs, connector_type);
++			drm_connector_init(dev, &radeon_connector->base, &radeon_edp_connector_funcs, connector_type);
+ 			drm_connector_helper_add(&radeon_connector->base, &radeon_dp_connector_helper_funcs);
+ 			if (i2c_bus->valid) {
+ 				/* add DP i2c bus */
 -- 
 1.8.1.2
 
