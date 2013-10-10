@@ -1,66 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752748Ab3JJJTr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 05:19:47 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:40866 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751598Ab3JJJTq (ORCPT
+	id S1753100Ab3JJJVv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 05:21:51 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:52248 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752024Ab3JJJVt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 05:19:46 -0400
-Date: Thu, 10 Oct 2013 10:19:20 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Dave Airlie <airlied@linux.ie>
-Cc: Fengguang Wu <fengguang.wu@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        xen-devel@lists.xenproject.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [xen] double fault: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-Message-ID: <20131010091920.GO25034@n2100.arm.linux.org.uk>
-References: <20131007021118.GA27927@localhost> <20131007051038.GA9764@localhost> <CA+55aFz85in-ntjF_VT4=kBoUrw1m8ON7xL-=431vQKL5oCMxQ@mail.gmail.com> <20131007083505.GA22585@localhost> <CA+55aFzknXawREZRBrr0Hs+crKt62fPf+S8SubJHXk84U8AFaw@mail.gmail.com> <CA+55aFyrDme-oNKe9=9vppct5+qCo4=Ug35np1fZiC1da64i_Q@mail.gmail.com> <20131008020918.GA1220@localhost> <20131008021452.GA6456@localhost> <20131008080625.GA25034@n2100.arm.linux.org.uk> <alpine.DEB.2.00.1310100322040.14436@skynet.skynet.ie>
+	Thu, 10 Oct 2013 05:21:49 -0400
+Date: Thu, 10 Oct 2013 10:21:46 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+Cc: "'linux-arm-msm-owner@vger.kernel.org'" 
+	<linux-arm-msm-owner@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        jonathan.austin@arm.com
+Subject: Re: SDIV / UDIV  Question
+Message-ID: <20131010092146.GC3817@mudshark.cambridge.arm.com>
+References: <35FD53F367049845BC99AC72306C23D1014D1A0971AC@CNBJMBX05.corpusers.net>
+ <20131009105357.GC6564@mudshark.cambridge.arm.com>
+ <35FD53F367049845BC99AC72306C23D1014D1A0971B0@CNBJMBX05.corpusers.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1310100322040.14436@skynet.skynet.ie>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <35FD53F367049845BC99AC72306C23D1014D1A0971B0@CNBJMBX05.corpusers.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 10, 2013 at 03:23:45AM +0100, Dave Airlie wrote:
+[Adding Jonny]
+
+On Thu, Oct 10, 2013 at 06:04:41AM +0100, Wang, Yalin wrote:
+> Oh ,  I see ,
+> Thanks for your clarification !
+> So R-class cores will not run linux ?
+
+R-class cores can run Linux, but I don't reckon we touch SCTLR.DZ. I've
+added Jonny, so he can clarify the behaviour here. (I'm also not sure which
+cores have these instructions either).
+
+Will
+
+> -----Original Message-----
+> From: Will Deacon [mailto:will.deacon@arm.com] 
+> Sent: Wednesday, October 09, 2013 6:54 PM
+> To: Wang, Yalin
+> Cc: 'linux-arm-msm-owner@vger.kernel.org'; linux-kernel@vger.kernel.org
+> Subject: Re: SDIV / UDIV Question
 > 
-> > I think David Arlie also needs a quiet talking to about how to use the
-> > device model:
+> On Wed, Oct 09, 2013 at 08:08:05AM +0100, Wang, Yalin wrote:
+> > I have a question about sdiv/ udiv  instructions :
+> > In  armv7 A/R  TRM, it said sdiv/udiv will cause Divide by zero as 
+> > undefined exception or just return zero (decided by implementation) .
 > > 
-> > int drm_sysfs_device_add(struct drm_minor *minor)
-> > {
-> >         minor->kdev.release = drm_sysfs_device_release;
-> > ...
-> >         err = device_register(&minor->kdev);
-> > }
-> > 
-> > static void drm_sysfs_device_release(struct device *dev)
-> > {
-> >         memset(dev, 0, sizeof(struct device));
-> >         return;
-> > }
-> > 
-> > Since when has that been acceptable in a release function?
+> > So  in kernel ,  should we need register a undef hook to Get this 
+> > undef exception and send SIGFPE to user space Process ?
 > 
-> Well the commit that added it had a reason that seems to cover some other 
-> device model abuses, so maybe someone who actually understands the device 
-> model (all 2 people) can review usage.
-
-Please - there's more than two people who understand this stuff.
-
-You appear to manage to understand the refcounting principle for things
-like the DRM framebuffers, DRM buffer objects etc, and the driver model
-(and kobjects in general) are no different.
-
-I've just been reading the code around here little more, and hit the usb
-implementation.  I don't see how USB drivers get cleaned up when they're
-disconnected from the USB bus.  I see drm_unplug_dev() which gets called
-on a USB disconnection (from udl/udl_drv.c) which effectively makes the
-device unavailable, but I don't see anything which frees anything.  I see
-nothing calling drm_put_dev() here.  How does the drm_device in this case
-get freed?
+> As far as I can see, this can only happen for R-class cores, based on SCTLR.DZ.
+> 
+> Will
+> 
