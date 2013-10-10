@@ -1,58 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755355Ab3JJOfv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 10:35:51 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:42497 "EHLO comal.ext.ti.com"
+	id S1754779Ab3JJOnp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 10:43:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29592 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752214Ab3JJOft (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 10:35:49 -0400
-Message-ID: <5256BB27.6010107@ti.com>
-Date: Thu, 10 Oct 2013 17:35:19 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1752443Ab3JJOno (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 10:43:44 -0400
+Date: Thu, 10 Oct 2013 20:13:36 +0530 (IST)
+From: P J P <ppandit@redhat.com>
+X-X-Sender: pjp@javelin.pnq.redhat.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] Export initial ramdisk compression config
+In-Reply-To: <20131009144849.96389b7cdb3a553e52682137@linux-foundation.org>
+Message-ID: <alpine.LFD.2.03.1310102010120.2894@erqung.pbz>
+References: <alpine.LFD.2.03.1309151434580.7830@erqung.pbz> <20130923125256.e53b51a137a19a972c6026a2@linux-foundation.org> <alpine.LFD.2.03.1309250035480.5312@erqung.pbz> <20131009144849.96389b7cdb3a553e52682137@linux-foundation.org>
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Tony Lindgren <tony@atomide.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Prakash Manjunathappa <prakash.pm@ti.com>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>,
-        =?ISO-8859-1?Q?Beno=EEt_Cousson?= <bcousson@baylibre.com>,
-        Linux-OMAP <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH 4/6] pinctrl: single: Add support for wake-up interrupts
-References: <20131003054104.8941.88857.stgit@localhost> <20131003054221.8941.87801.stgit@localhost> <5256AA7F.8030005@ti.com> <CACRpkdZx5+OCcQytkpjd7_nz4hw6VXoXOS0LByKgJ8_cQjbA4g@mail.gmail.com>
-In-Reply-To: <CACRpkdZx5+OCcQytkpjd7_nz4hw6VXoXOS0LByKgJ8_cQjbA4g@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: MULTIPART/MIXED; BOUNDARY="0-2056422954-1381416222=:2894"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/10/2013 05:04 PM, Linus Walleij wrote:
-> On Thu, Oct 10, 2013 at 3:24 PM, Roger Quadros <rogerq@ti.com> wrote:
-> 
->> I think pcs_irq_set_wake() is where need to control system wakeup behaviour for the irq.
->> This is where we should be able to change WAKEUP_EN bit of the pad
->> to enable/disable system wakeup for that pad and also call _reconfigure_io_chain().
-> 
-> As an innocent bystander who has no clue what the _reconfigure_io_chain()
-> is about can you tell me what this is all about?
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-The OMAP SoC has a mechanism to monitor and wakeup from a low power state by creating
-an IO ring of all the pads. But there is one bit in one of the control registers that
-needs to be toggled each time the pad configuration is changed to re-arm the IO ring.
-This is exactly what _reconfigure_io_chain() does.
-> 
-> Is this another one of the OMAP forked paths where you must call back into
-> the machine with a special callback from each and every driver?
+--0-2056422954-1381416222=:2894
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 
-_reconfigure_io_chain() is not available for public use and is not called by any driver yet.
-However, it somehow needs to be called from this pinctrl-single driver each time the
-wakeup configuration for any pad is changed.
+  Hi,
 
-cheers,
--roger
++-- On Wed, 9 Oct 2013, Andrew Morton wrote --+
+| It would be better to make the change in one place, rather than for
+| each architecture.  That would appear to involve moving a hunk from
+| arch/x86/Makefile into init/Makefile, or perhaps ./Makefile.
+
+  Please find attached herein, an updated patch which adds the export snippet 
+to the top level ./Makefile. I tried init/Makefile too, but it does not seem 
+to work.
+
+Thank you!
+--
+Prasad J Pandit / Red Hat Security Response Team
+--0-2056422954-1381416222=:2894
+Content-Type: TEXT/PLAIN; charset=US-ASCII; name=0001-Export-initial-ramdisk-compression-config-option.patch
+Content-Transfer-Encoding: BASE64
+Content-ID: <alpine.LFD.2.03.1310102013360.2894@erqung.pbz>
+Content-Description: 
+Content-Disposition: attachment; filename=0001-Export-initial-ramdisk-compression-config-option.patch
+
+RnJvbSAyYmI2MDNmNjY2MzcxMjg5ZWU2NjBiZTVjZjdhNmY4Nzc0MGVkZDhl
+IE1vbiBTZXAgMTcgMDA6MDA6MDAgMjAwMQ0KRnJvbTogUCBKIFAgPHByYXNh
+ZEByZWRoYXQuY29tPg0KRGF0ZTogVGh1LCAxMCBPY3QgMjAxMyAxOTo1Mzoy
+NCArMDUzMA0KU3ViamVjdDogRXhwb3J0IGluaXRpYWwgcmFtZGlzayBjb21w
+cmVzc2lvbiBjb25maWcgb3B0aW9uDQoNCk1ha2UgbWVudWNvbmZpZyBhbGxv
+d3Mgb25lIHRvIGNob29zZSBjb21wcmVzc2lvbiBmb3JtYXQgb2YgYW4NCmlu
+aXRpYWwgcmFtZGlzayBpbWFnZS4gQnV0IHRoaXMgY2hvaWNlIGRvZXMgbm90
+IHJlc3VsdCBpbiBkdWx5DQpjb21wcmVzc2VkIHJhbWRpc2sgaW1hZ2UuIEJl
+Y2F1c2UgLSAkIG1ha2UgaW5zdGFsbCAtIGRvZXMgbm90DQpwYXNzIG9uIHRo
+ZSBzZWxlY3RlZCBjb21wcmVzc2lvbiBjaG9pY2UgdG8gdGhlIGRyYWN1dCg4
+KSB0b29sLA0Kd2hpY2ggY3JlYXRlcyB0aGUgaW5pdHJhbWZzIGZpbGUuIGRy
+YWN1dCg4KSBnZW5lcmF0ZXMgdGhlIGltYWdlDQp3aXRoIHRoZSBkZWZhdWx0
+IGNvbXByZXNzaW9uLCBpZS4gZ3ppcCgxKS4NCg0KVGhpcyBwYXRjaCBleHBv
+cnRzIHRoZSBzZWxlY3RlZCBjb21wcmVzc2lvbiBvcHRpb24gdG8gYSBzdWIt
+c2hlbGwNCmVudmlyb25tZW50LCBzbyB0aGF0IGl0IGNvdWxkIGJlIHVzZWQg
+YnkgZHJhY3V0KDgpIHRvb2wgdG8gZ2VuZXJhdGUNCmFwcHJvcHJpYXRlbHkg
+Y29tcHJlc3NlZCBpbml0cmFtZnMgaW1hZ2VzLg0KDQpUaGVyZSBpc24ndCBh
+IHN0cmFpZ2h0IGZvcndhcmQgd2F5IHRvIHBhc3Mgb24gb3B0aW9ucyB0byBk
+cmFjdXQoOCkNCnZpYSBwb3NpdGlvbmFsIHBhcmFtZXRlcnMuIEJlY2F1c2Ug
+aXQgaXMgaW5kaXJlY3RseSBpbnZva2VkIGF0IHRoZQ0KZW5kIG9mIGEgJCBt
+YWtlIGluc3RhbGwgc2VxdWVuY2UuDQoNCiAjIG1ha2UgaW5zdGFsbA0KICAg
+LT4gYXJjaC8kYXJjaC9ib290L01ha2VmaWxlDQogICAgLT4gYXJjaC8kYXJj
+aC9ib290L2luc3RhbGwuc2gNCiAgICAgLT4gL3NiaW5nL2luc3RhbGxrZXJu
+ZWwgLi4uDQogICAgICAtPiAvc2Jpbi9uZXcta2VybmVsLXBrZyAuLi4NCiAg
+ICAgICAtPiAvc2Jpbi9kcmFjdXQgLi4uDQoNCmRpZmYgLS1naXQgYS9NYWtl
+ZmlsZSBiL01ha2VmaWxlDQppbmRleCA4ZDA2NjhmLi41YzdmOGFhIDEwMDY0
+NA0KLS0tIGEvTWFrZWZpbGUNCisrKyBiL01ha2VmaWxlDQpAQCAtNzIwLDYg
+KzcyMCwyMiBAQCBtb2Rfc3RyaXBfY21kID0gdHJ1ZQ0KIGVuZGlmICMgSU5T
+VEFMTF9NT0RfU1RSSVANCiBleHBvcnQgbW9kX3N0cmlwX2NtZA0KIA0KKyMg
+U2VsZWN0IGluaXRpYWwgcmFtZGlzayBjb21wcmVzc2lvbiBmb3JtYXQsIGRl
+ZmF1bHQgaXMgZ3ppcCgxKS4NCisjIFRoaXMgc2hhbGwgYmUgdXNlZCBieSB0
+aGUgZHJhY3V0KDgpIHRvb2wgd2hpbGUgY3JlYXRpbmcgYW4gaW5pdHJhbWZz
+IGltYWdlLg0KKyMNCitJTklUUkRfQ09NUFJFU1M9Z3ppcA0KK2lmZXEgKCQo
+Q09ORklHX1JEX0JaSVAyKSwgeSkNCisgICAgICAgIElOSVRSRF9DT01QUkVT
+Uz1iemlwMg0KK2Vsc2UgaWZlcSAoJChDT05GSUdfUkRfTFpNQSksIHkpDQor
+ICAgICAgICBJTklUUkRfQ09NUFJFU1M9bHptYQ0KK2Vsc2UgaWZlcSAoJChD
+T05GSUdfUkRfWFopLCB5KQ0KKyAgICAgICAgSU5JVFJEX0NPTVBSRVNTPXh6
+DQorZWxzZSBpZmVxICgkKENPTkZJR19SRF9MWk8pLCB5KQ0KKyAgICAgICAg
+SU5JVFJEX0NPTVBSRVNTPWx6bw0KK2Vsc2UgaWZlcSAoJChDT05GSUdfUkRf
+TFo0KSwgeSkNCisgICAgICAgIElOSVRSRF9DT01QUkVTUz1sejQNCitlbmRp
+Zg0KK2V4cG9ydCBJTklUUkRfQ09NUFJFU1MNCiANCiBpZmRlZiBDT05GSUdf
+TU9EVUxFX1NJR19BTEwNCiBNT0RTRUNLRVkgPSAuL3NpZ25pbmdfa2V5LnBy
+aXYNCi0tIA0KMS44LjMuMQ0KDQo=
+
+--0-2056422954-1381416222=:2894--
