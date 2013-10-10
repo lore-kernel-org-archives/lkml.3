@@ -1,51 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755392Ab3JJMtK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 08:49:10 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:37628 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751664Ab3JJMtJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 08:49:09 -0400
-Date: Thu, 10 Oct 2013 14:48:43 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Adrian Hunter <adrian.hunter@intel.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH V6 0/8] perf tools: kcore improvements
-Message-ID: <20131010124843.GM3081@twins.programming.kicks-ass.net>
-References: <1381320078-16497-1-git-send-email-adrian.hunter@intel.com>
- <20131009120744.GF3081@twins.programming.kicks-ass.net>
- <874n8qyt3z.fsf@tassilo.jf.intel.com>
+	id S1755494Ab3JJMtw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 08:49:52 -0400
+Received: from eu1sys200aog121.obsmtp.com ([207.126.144.151]:60672 "EHLO
+	eu1sys200aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752076Ab3JJMtv convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 08:49:51 -0400
+From: Maxime COQUELIN <maxime.coquelin@st.com>
+To: Stephen GALLIMORE <stephen.gallimore@st.com>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
+Cc: Stuart MENEFY <stuart.menefy@st.com>, Lee Jones <lee.jones@linaro.org>,
+        Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
+        Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+Date: Thu, 10 Oct 2013 14:49:45 +0200
+Subject: Re: [PATCH v4 3/4] ARM: STi: Supply I2C configuration to STiH415 SoC
+Thread-Topic: [PATCH v4 3/4] ARM: STi: Supply I2C configuration to STiH415
+ SoC
+Thread-Index: Ac7FtzJGqQ/QUIhWQs6vIHELX9KZqw==
+Message-ID: <5256A269.9070809@st.com>
+References: <1381250576-7916-1-git-send-email-maxime.coquelin@st.com>
+ <1381250576-7916-4-git-send-email-maxime.coquelin@st.com>
+ <A3BF01DB4A606149A4C20C4C4C808F6C5BC8A70D4E@SAFEX1MAIL1.st.com>
+In-Reply-To: <A3BF01DB4A606149A4C20C4C4C808F6C5BC8A70D4E@SAFEX1MAIL1.st.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.0
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <874n8qyt3z.fsf@tassilo.jf.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 09, 2013 at 03:30:56PM -0700, Andi Kleen wrote:
-> Peter Zijlstra <peterz@infradead.org> writes:
-> 
-> > On Wed, Oct 09, 2013 at 03:01:10PM +0300, Adrian Hunter wrote:
-> >> 	- workaround objdump difficulties with kcore
-> >
-> > I've no idea, but given that've 'inlined' addr2line, should we also
-> > consider polling in objdump -- or at least that subset of functionality
-> > that we actually use?
-> 
-> FWIW addr2line is just a straight forward BFD call.
-> 
-> objdump is significantly more complex, a lot of it is outside BFD
-> (including the full disassembler and all the logic for syncing
-> the source files)
 
-Oh, that's unfortunate, I was hoping most of that would indeed be in
-some library form or other.
+On 10/10/2013 02:33 PM, Stephen GALLIMORE wrote:
+>> -----Original Message-----
+>> From: Maxime COQUELIN [mailto:maxime.coquelin@st.com]
+>> Sent: 08 October 2013 17:43
+>> .....
+>> +
+>> +		i2c@fed40000 {
+>> +			compatible	= "st,comms-ssc-i2c";
+>> +			reg		= <0xfed40000 0x110>;
+>> +			interrupts	=  <GIC_SPI 187 IRQ_TYPE_EDGE_RISING>;
+> This should specify level (high) triggered, not edge triggered, for our
+> SoC integrations.
+>
+> Note that level triggered is the default GIC setup and was therefore
+> what was being used when you specified "0" for the flags previously.
+Thanks Stephen.
+As discussed this morning, I agree this should be high level triggered.
+
+This will be fixed in next revision.
+
+>
+>> +			clocks		= <&CLKS_ICN_REG_0>;
+>> +			clock-names	= "ssc";
+>> +			clock-frequency = <400000>;
+>> +			pinctrl-names	= "default";
+>> +			pinctrl-0	= <&pinctrl_i2c0_default>;
+>> +
+>> +			status		= "disabled";
+>> +		};
