@@ -1,89 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754424Ab3JJBlu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 21:41:50 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:15495 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754224Ab3JJBlq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 21:41:46 -0400
-X-AuditID: cbfee68e-b7f756d000004512-f2-525605d19d07
-From: Chanwoo Choi <cw00.choi@samsung.com>
-To: broonie@kernel.org, lgirdwood@gmail.com, sbkim73@samsung.com
-Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: [PATCH 1/2] regulator: s5m8767: Modify parse_dt function to parse data
- related to ramp
-Date: Thu, 10 Oct 2013 10:41:35 +0900
-Message-id: <1381369296-17101-1-git-send-email-cw00.choi@samsung.com>
-X-Mailer: git-send-email 1.8.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrBLMWRmVeSWpSXmKPExsWyRsSkWPcia1iQwd3b8hZTHz5hs7j+5Tmr
-	xfwj51gtzja9Ybf4dqWDyeLyrjlsFhdXfGFyYPfYOesuu8emVZ1sHn1bVjF6fN4kF8ASxWWT
-	kpqTWZZapG+XwJXRs/0ZY8EOzopZ/bdZGhjbOboYOTkkBEwk5p45yA5hi0lcuLeerYuRi0NI
-	YCmjxLL/95lhiuZvW8oGYgsJLGKUOLGxFKKokUliaWMHE0iCTUBLYv+LG0BFHBwiAg4Skxfo
-	gtQwC/QzSmy+vIUFpEZYIFHibU8zI4jNIqAqsbBzGlicV8BV4vnEW1BXyEl82PMIyv7NJvHn
-	YhFEvYDEt8mHWEDmSwjISmw6AHWbpMTBFTdYJjAKLmBkWMUomlqQXFCclF5kpFecmFtcmpeu
-	l5yfu4kRGKqn/z3r28F484D1IcZkoHETmaVEk/OBoZ5XEm9obGZkYWpiamxkbmlGmrCSOK9a
-	i3WgkEB6YklqdmpqQWpRfFFpTmrxIUYmDk6pBkZh5nWXAr5e1cs5V1NX4147JZs389uvD69D
-	ZEVqPG7fy2FudzjkWPP68YsP7d+V/Wcf3TeN9aKcaIegXHJ4f+Mrh2JJvevJdudWPG6SL1HW
-	Wrhpy+p+K+Go6RqRi9RWq+93r1A7wC8f/+vJP92u87MeShW+aQ86U7/yplyrff6OPZPmRf3Z
-	pa/EUpyRaKjFXFScCABfoYNGawIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrGIsWRmVeSWpSXmKPExsVy+t9jAd2LrGFBBvfWSFhMffiEzeL6l+es
-	FvOPnGO1ONv0ht3i25UOJovLu+awWVxc8YXJgd1j56y77B6bVnWyefRtWcXo8XmTXABLVAOj
-	TUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7QCUoKZYk5
-	pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwhrGjJ7tzxgLdnBWzOq/zdLA2M7RxcjJ
-	ISFgIjF/21I2CFtM4sK99WC2kMAiRokTG0u7GLmA7EYmiaWNHUwgCTYBLYn9L24AFXFwiAg4
-	SExeoAtSwyzQzyix+fIWFpAaYYFEibc9zYwgNouAqsTCzmlgcV4BV4nnE2+xQyyTk/iw5xH7
-	BEbuBYwMqxhFUwuSC4qT0nON9IoTc4tL89L1kvNzNzGCY+GZ9A7GVQ0WhxgFOBiVeHgrykKD
-	hFgTy4orcw8xSnAwK4nwTj8JFOJNSaysSi3Kjy8qzUktPsSYDLR9IrOUaHI+ME7zSuINjU3M
-	jCyNzA0tjIzNSRNWEuc92GodKCSQnliSmp2aWpBaBLOFiYNTqoExdUbHuXB5nXO5PRZ3I7W1
-	VXSvT//cZ+F5/JbgUeeP0jPsZcpCvp6QVlbRcDobPKnih9QMAZ35O5wXHdw0fYd30lsV80Oz
-	a7I2OKaHPPZ/vFJ3v5p/krz/1KW2PCsyamIyZySfOWjw1E8mlNv18X5PVRaXa/M+GMQ98phb
-	r3TZxpD9zN4ZQqVKLMUZiYZazEXFiQDQ0nP5yQIAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1753807Ab3JJBrt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 21:47:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60578 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751318Ab3JJBrr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 21:47:47 -0400
+Date: Wed, 9 Oct 2013 22:47:10 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>, gleb@redhat.com,
+        avi.kivity@gmail.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v2 12/15] KVM: MMU: allow locklessly access shadow page
+ table out of vcpu thread
+Message-ID: <20131010014710.GA2198@amt.cnet>
+References: <1378376958-27252-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <1378376958-27252-13-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <20131008012355.GA3588@amt.cnet>
+ <CAD6C3B4-DD55-47EB-9BC0-17867937AE2D@gmail.com>
+ <20131009015627.GA4816@amt.cnet>
+ <525533DB.1060104@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <525533DB.1060104@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch parse 'buck[2-4]_ramp_enable and buck_ramp_delay' platform data
-from dts file.
+On Wed, Oct 09, 2013 at 06:45:47PM +0800, Xiao Guangrong wrote:
+> On 10/09/2013 09:56 AM, Marcelo Tosatti wrote:
+> > On Tue, Oct 08, 2013 at 12:02:32PM +0800, Xiao Guangrong wrote:
+> >>
+> >> Hi Marcelo,
+> >>
+> >> On Oct 8, 2013, at 9:23 AM, Marcelo Tosatti <mtosatti@redhat.com> wrote:
+> >>
+> >>>>
+> >>>> +	if (kvm->arch.rcu_free_shadow_page) {
+> >>>> +		kvm_mmu_isolate_pages(invalid_list);
+> >>>> +		sp = list_first_entry(invalid_list, struct kvm_mmu_page, link);
+> >>>> +		list_del_init(invalid_list);
+> >>>> +		call_rcu(&sp->rcu, free_pages_rcu);
+> >>>> +		return;
+> >>>> +	}
+> >>>
+> >>> This is unbounded (there was a similar problem with early fast page fault
+> >>> implementations):
+> >>>
+> >>> From RCU/checklist.txt:
+> >>>
+> >>> "        An especially important property of the synchronize_rcu()
+> >>>        primitive is that it automatically self-limits: if grace periods
+> >>>        are delayed for whatever reason, then the synchronize_rcu()
+> >>>        primitive will correspondingly delay updates.  In contrast,
+> >>>        code using call_rcu() should explicitly limit update rate in
+> >>>        cases where grace periods are delayed, as failing to do so can
+> >>>        result in excessive realtime latencies or even OOM conditions.
+> >>> "
+> >>
+> >> I understand what you are worrying about… Hmm, can it be avoided by
+> >> just using kvm->arch.rcu_free_shadow_page in a small window? - Then
+> >> there are slight chance that the page need to be freed by call_rcu.
+> > 
+> > The point that must be addressed is that you cannot allow an unlimited
+> > number of sp's to be freed via call_rcu between two grace periods.
+> > 
+> > So something like:
+> > 
+> > - For every 17MB worth of shadow pages.
+> > - Guarantee a grace period has passed.
+> 
+> Hmm, the 'qhimark' in rcu is 10000, that means rcu allows call_rcu
+> to pend 10000 times in a grace-period without slowdown. Can we really
+> reach this number while rcu_free_shadow_page is set? Anyway, if it can,
+> we can use rcu tech-break to avoid it, can't we?
 
-Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- drivers/regulator/s5m8767.c | 16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+Yes.
 
-diff --git a/drivers/regulator/s5m8767.c b/drivers/regulator/s5m8767.c
-index c24448b..cb6cdb3 100644
---- a/drivers/regulator/s5m8767.c
-+++ b/drivers/regulator/s5m8767.c
-@@ -640,6 +640,22 @@ static int s5m8767_pmic_dt_parse_pdata(struct platform_device *pdev,
- 		return -EINVAL;
- 	}
- 
-+	if (of_get_property(pmic_np, "s5m8767,pmic-buck2-ramp-enable", NULL))
-+		pdata->buck2_ramp_enable = true;
-+
-+	if (of_get_property(pmic_np, "s5m8767,pmic-buck3-ramp-enable", NULL))
-+		pdata->buck3_ramp_enable = true;
-+
-+	if (of_get_property(pmic_np, "s5m8767,pmic-buck4-ramp-enable", NULL))
-+		pdata->buck4_ramp_enable = true;
-+
-+	if (pdata->buck2_ramp_enable || pdata->buck3_ramp_enable
-+			|| pdata->buck4_ramp_enable) {
-+		if (of_property_read_u32(pmic_np, "s5m8767,pmic-buck-ramp-delay",
-+				&pdata->buck_ramp_delay))
-+			pdata->buck_ramp_delay = 0;
-+	}
-+
- 	return 0;
- }
- #else
--- 
-1.8.0
+> > If you control kvm->arch.rcu_free_shadow_page, you could periodically
+> > verify how many MBs worth of shadow pages are in the queue for RCU
+> > freeing and force grace period after a certain number.
+> 
+> I have no idea how to froce grace-period for the cpu which is running
+> in rcu-read side. IIUC, only dyntick-idle and offline CPU can be froced,
+> see rcu_gp_fqs().
+
+synchronize_rcu.
+
+> >>> Moreover, freeing pages differently depending on some state should 
+> >>> be avoided.
+> >>>
+> >>> Alternatives:
+> >>>
+> >>> - Disable interrupts at write protect sites.
+> >>
+> >> The write-protection can be triggered by KVM ioctl that is not in the VCPU
+> >> context, if we do this, we also need to send IPI to the KVM thread when do
+> >> TLB flush.
+> > 
+> > Yes. However for the case being measured, simultaneous page freeing by vcpus 
+> > should be minimal (therefore not affecting the latency of GET_DIRTY_LOG).
+> 
+> I agree, but write-protection will cost lots of time, we need to:
+> 1) do write-protection under irq disabled, that is not good for device
+> Or
+> 2) do pieces of works, then enable irq and disable it agian to continue
+>    the work. Enabling and disabing irq many times are not cheap for x86.
+> 
+> no?
+
+Its getting cheaper (see performance optimization guide).
+
+> >> And we can not do much work while interrupt is disabled due to
+> >> interrupt latency.
+> >>
+> >>> - Rate limit the number of pages freed via call_rcu
+> >>> per grace period.
+> >>
+> >> Seems complex. :(
+> >>
+> >>> - Some better alternative.
+> >>
+> >> Gleb has a idea that uses RCU_DESTORY to protect the shadow page table
+> >> and encodes the page-level into the spte (since we need to check if the spte
+> >> is the last-spte. ).  How about this?
+> > 
+> > Pointer please? Why is DESTROY_SLAB_RCU any safer than call_rcu with
+> > regards to limitation? (maybe it is).
+> 
+> For my experience, freeing shadow page and allocing shadow page are balanced,
+> we can check it by (make -j12 on a guest with 4 vcpus and):
+> 
+> # echo > trace
+> [root@eric-desktop tracing]# cat trace > ~/log | sleep 3
+> [root@eric-desktop tracing]# cat ~/log | grep new | wc -l
+> 10816
+> [root@eric-desktop tracing]# cat ~/log | grep prepare | wc -l
+> 10656
+> [root@eric-desktop tracing]# cat set_event
+> kvmmmu:kvm_mmu_get_page
+> kvmmmu:kvm_mmu_prepare_zap_page
+> 
+> alloc VS. free = 10816 : 10656
+> 
+> So that, mostly all allocing and freeing are done in the slab's
+> cache and the slab frees shdadow pages very slowly, there is no rcu issue.
+
+A more detailed test case would be:
+
+- cpu0-vcpu0 releasing pages as fast as possible
+- cpu1 executing get_dirty_log
+
+Think of a very large guest.
+
+> >> I planned to do it after this patchset merged, if you like it and if you think
+> >> that "using kvm->arch.rcu_free_shadow_page in a small window" can not avoid
+> >> the issue, i am happy to do it in the next version. :)
+> > 
+> > Unfortunately the window can be large (as it depends on the size of the
+> > memslot), so it would be best if this problem can be addressed before 
+> > merging. What is your idea for reducing rcu_free_shadow_page=1 window?
+> > 
+> 
+> I mean something like:
+> 
+> for (i =0; i <= page_nr; i++) {
+>     rcu_free_shadow_page=1;
+>     write_protect(&rmap[i]);
+>     rcu_free_shadow_page=0;
+> }
+> 
+> we write-protect less entries per time rather than a memslot.
+> 
+> BTW, i think rcu_need_break() would be usefull for this case, then the
+> rcu_read side do not dealy synchronize_rcu() too much.
+
+Yes, that works, you'd have to synchronize_sched eventually, depending on the
+count of pending pages to be freed via RCU (so that rate limiting is
+performed).
+
+Or, you could bound the problematic callsites, those that can free a
+large number of shadow pages (mmu_shrink, kvm_mmu_change_mmu_pages,
+...), and limit there:
+
+if (spin_needbreak(mmu_lock) || (sp_pending_rcu_free > sp_pending_rcu_free_max)) {
+		if (sp_pending...)
+			synchronize_rcu();
+}
+
+And any other code path that can possibly free pages, outside locks of
+course (even those that can free 1 page). In a similar fashion as to how
+the per-vcpu mmu object slabs are grown.
 
