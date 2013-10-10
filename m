@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756344Ab3JJPpb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 11:45:31 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52687 "EHLO
+	id S1756381Ab3JJPpe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 11:45:34 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52696 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756319Ab3JJPp1 (ORCPT
+	with ESMTP id S1755878Ab3JJPpb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 11:45:27 -0400
+	Thu, 10 Oct 2013 11:45:31 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ben Skeggs <bskeggs@redhat.com>, Jerome Glisse <jglisse@redhat.com>,
-        Dave Airlie <airlied@redhat.com>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 051/104] drm/ttm: fix the tt_populated check in ttm_tt_destroy()
-Date: Thu, 10 Oct 2013 08:41:39 -0700
-Message-Id: <1381419752-29733-52-git-send-email-kamal@canonical.com>
+Cc: "Passion,Zhao" <passion.zhao@intel.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 053/104] Smack: Fix the bug smackcipso can't set CIPSO correctly
+Date: Thu, 10 Oct 2013 08:41:41 -0700
+Message-Id: <1381419752-29733-54-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381419752-29733-1-git-send-email-kamal@canonical.com>
 References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
@@ -27,45 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Skeggs <bskeggs@redhat.com>
+From: "Passion,Zhao" <passion.zhao@intel.com>
 
-commit 182b17c8dc4e83aab000ce86587b6810e515da87 upstream.
+commit 0fcfee61d63b82c1eefb5b1a914240480f17d63f upstream.
 
-After a vmalloc failure in ttm_dma_tt_alloc_page_directory(),
-ttm_dma_tt_init() will call ttm_tt_destroy() to cleanup, and end up
-inside the driver's unpopulate() hook when populate() has never yet
-been called.
+Bug report: https://tizendev.org/bugs/browse/TDIS-3891
 
-On nouveau, the first issue to be hit because of this is that
-dma_address[] may be a NULL pointer.  After working around this,
-ttm_pool_unpopulate() may potentially hit the same issue with
-the pages[] array.
+The reason is userspace libsmack only use "smackfs/cipso2" long-label interface,
+but the code's logical is still for orginal fixed length label. Now update
+smack_cipso_apply() to support flexible label (<=256 including tailing '\0')
 
-It seems to make more sense to avoid calling unpopulate on already
-unpopulated TTMs than to add checks to all the implementations.
+There is also a bug in kernel/security/smack/smackfs.c:
+When smk_set_cipso() parsing the CIPSO setting from userspace, the offset of
+CIPSO level should be "strlen(label)+1" instead of "strlen(label)"
 
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
-Reviewed-by: Thomas Hellstrom <thellstrom@vmware.com>
-Cc: Jerome Glisse <jglisse@redhat.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Passion,Zhao <passion.zhao@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/ttm/ttm_tt.c | 2 +-
+ security/smack/smackfs.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/ttm/ttm_tt.c b/drivers/gpu/drm/ttm/ttm_tt.c
-index 7d759a4..cacf2e4 100644
---- a/drivers/gpu/drm/ttm/ttm_tt.c
-+++ b/drivers/gpu/drm/ttm/ttm_tt.c
-@@ -170,7 +170,7 @@ void ttm_tt_destroy(struct ttm_tt *ttm)
- 		ttm_tt_unbind(ttm);
- 	}
+diff --git a/security/smack/smackfs.c b/security/smack/smackfs.c
+index 76a5dca..c4fe705 100644
+--- a/security/smack/smackfs.c
++++ b/security/smack/smackfs.c
+@@ -818,7 +818,7 @@ static ssize_t smk_set_cipso(struct file *file, const char __user *buf,
+ 	if (format == SMK_FIXED24_FMT)
+ 		rule += SMK_LABELLEN;
+ 	else
+-		rule += strlen(skp->smk_known);
++		rule += strlen(skp->smk_known) + 1;
  
--	if (likely(ttm->pages != NULL)) {
-+	if (ttm->state == tt_unbound) {
- 		ttm->bdev->driver->ttm_tt_unpopulate(ttm);
- 	}
- 
+ 	ret = sscanf(rule, "%d", &maplevel);
+ 	if (ret != 1 || maplevel > SMACK_CIPSO_MAXLEVEL)
 -- 
 1.8.1.2
 
