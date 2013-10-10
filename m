@@ -1,75 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757954Ab3JJP77 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 11:59:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34598 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755685Ab3JJP74 (ORCPT
+	id S1757972Ab3JJQA1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 12:00:27 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:32860 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757851Ab3JJQAZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 11:59:56 -0400
-Date: Thu, 10 Oct 2013 09:00:44 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/6] Optimize the cpu hotplug locking -v2
-Message-Id: <20131010090044.7f12ddaf.akpm@linux-foundation.org>
-In-Reply-To: <20131010152612.GA13375@redhat.com>
-References: <20131008102505.404025673@infradead.org>
-	<20131009225006.7101379c.akpm@linux-foundation.org>
-	<20131010121908.GB28601@twins.programming.kicks-ass.net>
-	<20131010145738.GA5167@gmail.com>
-	<20131010152612.GA13375@redhat.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 10 Oct 2013 12:00:25 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+uVYl1g2rZ4Ct1hBYY8eur
+Date: Thu, 10 Oct 2013 09:00:19 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Roger Quadros <rogerq@ti.com>
+Cc: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Prakash Manjunathappa <prakash.pm@ti.com>,
+        Haojian Zhuang <haojian.zhuang@linaro.org>,
+        =?utf-8?Q?Beno=C3=AEt?= Cousson <bcousson@baylibre.com>,
+        linux-omap@vger.kernel.org
+Subject: Re: [PATCH 4/6] pinctrl: single: Add support for wake-up interrupts
+Message-ID: <20131010160018.GA29913@atomide.com>
+References: <20131003054104.8941.88857.stgit@localhost>
+ <20131003054221.8941.87801.stgit@localhost>
+ <5256AA7F.8030005@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5256AA7F.8030005@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Oct 2013 17:26:12 +0200 Oleg Nesterov <oleg@redhat.com> wrote:
-
-> On 10/10, Ingo Molnar wrote:
-> >
-> > * Peter Zijlstra <peterz@infradead.org> wrote:
-> >
-> > > But the thing is; our sense of NR_CPUS has shifted, where it used to be
-> > > ok to do something like:
-> > >
-> > >   for_each_cpu()
-> > >
-> > > With preemption disabled; it gets to be less and less sane to do so,
-> > > simply because 'common' hardware has 256+ CPUs these days. If we cannot
-> > > rely on preempt disable to exclude hotplug, we must use
-> > > get_online_cpus(), but get_online_cpus() is global state and thus cannot
-> > > be used at any sort of frequency.
-> >
-> > So ... why not make it _really_ cheap, i.e. the read lock costing nothing,
-> > and tie CPU hotplug to freezing all tasks in the system?
-> >
-> > Actual CPU hot unplugging and repluggin is _ridiculously_ rare in a
-> > system, I don't understand how we tolerate _any_ overhead from this utter
-> > slowpath.
+* Roger Quadros <rogerq@ti.com> [131010 06:32]:
 > 
-> Well, iirc Srivatsa (cc'ed) pointed out that some systems do cpu_down/up
-> quite often to save the power.
+> I tried testing this with the USB EHCI driver, but I'm not getting wake up interrupts
+> while the system is still running and only the EHCI controller is runtime suspended.
+> 
+> It seems we need to somehow call _reconfigure_io_chain() to update the daisy chain
+> whenever the pad wakeup_enable bit is changed.
 
-cpu hotremove already uses stop_machine, so such an approach shouldn't
-actually worsen things (a lot) for them?
+Sounds like this is on omap3? Have you tried calling pcs_soc->rearm() in the
+pcs_irq_handle() like the comments there suggest? At least for me that keeps
+the wake-up interrupts continuously running on omap3 instead of just idle modes.
 
-It's been ages since I looked at this stuff :( Although it isn't used
-much, memory hotplug manages to use stop_machine() on the add/remove
-(ie, "writer") side and nothing at all on the "reader" side.  Is there
-anything which fundamentally prevents cpu hotplug from doing the same?
+Now on omap4, I've noticed the wake up interrupts are on all the time based on tests
+with the serial driver.
+ 
+> I think pcs_irq_set_wake() is where need to control system wakeup behaviour for the irq.
+> This is where we should be able to change WAKEUP_EN bit of the pad
+> to enable/disable system wakeup for that pad and also call _reconfigure_io_chain().
 
+Well the irq_set_wake() should only be needed for suspend and resume. For runtime PM
+the wake-events should be always enabled by default as pointed out by Alan Stern
+a while back.
+ 
+> This would mean that we don't really need to set WAKEUP_EN for the pads in the DTS file.
+
+Well for runtime PM, we should also do the automatic handling if configured.
+But how to do that best is still open..
+
+Regards,
+
+Tony
