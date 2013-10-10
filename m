@@ -1,76 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754414Ab3JJBwa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 21:52:30 -0400
-Received: from mga02.intel.com ([134.134.136.20]:53047 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751318Ab3JJBw0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 21:52:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1068,1371106800"; 
-   d="scan'208";a="416944296"
-Message-ID: <52560879.8000001@intel.com>
-Date: Thu, 10 Oct 2013 09:52:57 +0800
-From: Aaron Lu <aaron.lu@intel.com>
-MIME-Version: 1.0
-To: Phillip Susi <psusi@ubuntu.com>, Alan Stern <stern@rowland.harvard.edu>,
-        Jens Axboe <axboe@kernel.dk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Tejun Heo <tj@kernel.org>
-CC: linux-pm@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        Aaron Lu <aaron.lwe@gmail.com>, Shane Huang <shane.huang@amd.com>,
-        Oliver Neukum <oneukum@suse.de>
-Subject: Re: block layer runtime pm and udisks
-References: <1364010148-8584-1-git-send-email-aaron.lu@intel.com> <5256058F.3010802@ubuntu.com>
-In-Reply-To: <5256058F.3010802@ubuntu.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1753165Ab3JJCAh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 22:00:37 -0400
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:36602 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751269Ab3JJCAg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 22:00:36 -0400
+From: Felipe Pena <felipensp@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Felipe Pena <felipensp@gmail.com>
+Subject: [PATCH] tools/perf/tests: Fix memory leak in dso-data.c
+Date: Wed,  9 Oct 2013 23:00:38 -0300
+Message-Id: <1381370438-4209-1-git-send-email-felipensp@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/10/2013 09:40 AM, Phillip Susi wrote:
-> -----BEGIN PGP SIGNED MESSAGE-----
-> Hash: SHA512
-> 
-> I have been trying out the new block layer runtime pm, and run into a
-> problem: udisks keeps waking up the disk.  Every 10 minutes it tries
-> to poll the SMART status of the drive, but it does first issue an ata
-> CHECK POWER command to see if it is in standby, and skips the check to
-> avoid waking the disk.  The problem with runtime pm is that *any*
-> request brings the drive out of suspend, and the suspend wake path
-> forces the drive to spin up by issuing a verify command on sector 0.
-> 
-> Is there a reason that the wakeup path forces the drive to spin up, or
-> could this be removed and rely on the drive waking up automatically if
-> the request requires it?
-> 
-> Or would it be possible to notice that the command being sent is a
-> check power command, and fake the reply instead of resuming the device?
-> 
-> Or does udisks just need to check the runtime pm status before trying
-> the check power command?
+Fix for a memory leak on test_file() function in dso-data.c
 
-I think the udisks can be modified to check if the drive is runtime
-suspended and if so, avoid poll the SMART status.
+Signed-off-by: Felipe Pena <felipensp@gmail.com>
+---
+ tools/perf/tests/dso-data.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-Thanks,
-Aaron
+diff --git a/tools/perf/tests/dso-data.c b/tools/perf/tests/dso-data.c
+index dffe055..9cc81a3 100644
+--- a/tools/perf/tests/dso-data.c
++++ b/tools/perf/tests/dso-data.c
+@@ -35,6 +35,7 @@ static char *test_file(int size)
+ 	if (size != write(fd, buf, size))
+ 		templ = NULL;
 
-> 
-> 
-> -----BEGIN PGP SIGNATURE-----
-> Version: GnuPG v1.4.14 (GNU/Linux)
-> Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-> 
-> iQEcBAEBCgAGBQJSVgWPAAoJEJrBOlT6nu75k/cH+gMAb9YtMS21rEt94umJpBYj
-> BcNoyGoK39tAKZHW7pXfP2hRIm1+kPTPi44Wp7kQHu7m6BSp4YetmDkqjNv+6yAy
-> 8SUvPcqRsJVbF1oBXN09phBEnk/JfxqID7n6hB1lT6NqYV72VVVUEUOlnSnpHtDJ
-> gszV+TLH37uhd5/KiDFja3J2bJC0R/klzDF1x1clc53tGJd1NZ+h9tZZBLszIdnS
-> EnjukLA02Q7ooq+445WyWth2cypTXKfRbigZW+FfCI3hfAKOShVevodlGmmrQb7Z
-> 0xzhSoO5JTpNqJPLaNL3+JZFdXwANd+7PuO9v2XVKKUkydQ9+Vl4CfydSFhqo5U=
-> =iuSZ
-> -----END PGP SIGNATURE-----
-> 
++	free(buf);
+ 	close(fd);
+ 	return templ;
+ }
+--
+1.7.10.4
 
