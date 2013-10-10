@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757496Ab3JJPti (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 11:49:38 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52967 "EHLO
+	id S1757528Ab3JJPto (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 11:49:44 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52992 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754832Ab3JJPtb (ORCPT
+	with ESMTP id S1754810Ab3JJPtm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 11:49:31 -0400
+	Thu, 10 Oct 2013 11:49:42 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Nithin Nayak Sujir <nsujir@broadcom.com>,
-        Michael Chan <mchan@broadcom.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Prarit Bhargava <prarit@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 025/104] tg3: Don't turn off led on 5719 serdes port 0
-Date: Thu, 10 Oct 2013 08:41:13 -0700
-Message-Id: <1381419752-29733-26-git-send-email-kamal@canonical.com>
+Subject: [PATCH 101/104] powerpc/vio: Fix modalias_show return values
+Date: Thu, 10 Oct 2013 08:42:29 -0700
+Message-Id: <1381419752-29733-102-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381419752-29733-1-git-send-email-kamal@canonical.com>
 References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
@@ -29,60 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nithin Sujir <nsujir@broadcom.com>
+From: Prarit Bhargava <prarit@redhat.com>
 
-[ Upstream commit 989038e217e94161862a959e82f9a1ecf8dda152 ]
+commit e82b89a6f19bae73fb064d1b3dd91fcefbb478f4 upstream.
 
-Turning off led on port 0 of the 5719 serdes causes all other ports to
-lose power and stop functioning. Add tg3_phy_led_bug() function to check
-for this condition. We use a switch() in tg3_phy_led_bug() for
-consistency with the tg3_phy_power_bug() function.
+modalias_show() should return an empty string on error, not -ENODEV.
 
-Signed-off-by: Nithin Nayak Sujir <nsujir@broadcom.com>
-Signed-off-by: Michael Chan <mchan@broadcom.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-[ kamal: backport to 3.8 (context) ]
+This causes the following false and annoying error:
+
+> find /sys/devices -name modalias -print0 | xargs -0 cat >/dev/null
+cat: /sys/devices/vio/4000/modalias: No such device
+cat: /sys/devices/vio/4001/modalias: No such device
+cat: /sys/devices/vio/4002/modalias: No such device
+cat: /sys/devices/vio/4004/modalias: No such device
+cat: /sys/devices/vio/modalias: No such device
+
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/ethernet/broadcom/tg3.c | 18 ++++++++++++++++--
- 1 file changed, 16 insertions(+), 2 deletions(-)
+ arch/powerpc/kernel/vio.c | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
-index 929a092..0ffe6c0 100644
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -2921,6 +2921,19 @@ static bool tg3_phy_power_bug(struct tg3 *tp)
- 	return false;
- }
+diff --git a/arch/powerpc/kernel/vio.c b/arch/powerpc/kernel/vio.c
+index 536016d..2d845d8 100644
+--- a/arch/powerpc/kernel/vio.c
++++ b/arch/powerpc/kernel/vio.c
+@@ -1529,11 +1529,15 @@ static ssize_t modalias_show(struct device *dev, struct device_attribute *attr,
+ 	const char *cp;
  
-+static bool tg3_phy_led_bug(struct tg3 *tp)
-+{
-+	switch (GET_ASIC_REV(tp->pci_chip_rev_id)) {
-+	case ASIC_REV_5719:
-+		if ((tp->phy_flags & TG3_PHYFLG_MII_SERDES) &&
-+		    !tp->pci_fn)
-+			return true;
-+		return false;
+ 	dn = dev->of_node;
+-	if (!dn)
+-		return -ENODEV;
++	if (!dn) {
++		strcat(buf, "\n");
++		return strlen(buf);
 +	}
-+
-+	return false;
-+}
-+
- static void tg3_power_down_phy(struct tg3 *tp, bool do_low_power)
- {
- 	u32 val;
-@@ -2965,8 +2978,9 @@ static void tg3_power_down_phy(struct tg3 *tp, bool do_low_power)
- 		}
- 		return;
- 	} else if (do_low_power) {
--		tg3_writephy(tp, MII_TG3_EXT_CTRL,
--			     MII_TG3_EXT_CTRL_FORCE_LED_OFF);
-+		if (!tg3_phy_led_bug(tp))
-+			tg3_writephy(tp, MII_TG3_EXT_CTRL,
-+				     MII_TG3_EXT_CTRL_FORCE_LED_OFF);
+ 	cp = of_get_property(dn, "compatible", NULL);
+-	if (!cp)
+-		return -ENODEV;
++	if (!cp) {
++		strcat(buf, "\n");
++		return strlen(buf);
++	}
  
- 		val = MII_TG3_AUXCTL_PCTL_100TX_LPWR |
- 		      MII_TG3_AUXCTL_PCTL_SPR_ISOLATE |
+ 	return sprintf(buf, "vio:T%sS%s\n", vio_dev->type, cp);
+ }
 -- 
 1.8.1.2
 
