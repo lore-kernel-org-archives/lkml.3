@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755990Ab3JJPmx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 11:42:53 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52551 "EHLO
+	id S1756180Ab3JJPoo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 11:44:44 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52599 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755759Ab3JJPmt (ORCPT
+	with ESMTP id S1755888Ab3JJPmv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 11:42:49 -0400
+	Thu, 10 Oct 2013 11:42:51 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <edumazet@google.com>, Dmitry Vyukov <dvyukov@google.com>,
+Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 007/104] fib_trie: remove potential out of bound access
-Date: Thu, 10 Oct 2013 08:40:55 -0700
-Message-Id: <1381419752-29733-8-git-send-email-kamal@canonical.com>
+Subject: [PATCH 016/104] ipv6: drop packets with multiple fragmentation headers
+Date: Thu, 10 Oct 2013 08:41:04 -0700
+Message-Id: <1381419752-29733-17-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381419752-29733-1-git-send-email-kamal@canonical.com>
 References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
@@ -28,54 +29,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-[ Upstream commit aab515d7c32a34300312416c50314e755ea6f765 ]
+[ Upstream commit f46078cfcd77fa5165bf849f5e568a7ac5fa569c ]
 
-AddressSanitizer [1] dynamic checker pointed a potential
-out of bound access in leaf_walk_rcu()
+It is not allowed for an ipv6 packet to contain multiple fragmentation
+headers. So discard packets which were already reassembled by
+fragmentation logic and send back a parameter problem icmp.
 
-We could allocate one more slot in tnode_new() to leave the prefetch()
-in-place but it looks not worth the pain.
+The updates for RFC 6980 will come in later, I have to do a bit more
+research here.
 
-Bug added in commit 82cfbb008572b ("[IPV4] fib_trie: iterator recode")
-
-[1] :
-https://code.google.com/p/address-sanitizer/wiki/AddressSanitizerForKernel
-
-Reported-by: Andrey Konovalov <andreyknvl@google.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Dmitry Vyukov <dvyukov@google.com>
+Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/ipv4/fib_trie.c | 5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+ include/linux/ipv6.h  | 1 +
+ net/ipv6/reassembly.c | 5 +++++
+ 2 files changed, 6 insertions(+)
 
-diff --git a/net/ipv4/fib_trie.c b/net/ipv4/fib_trie.c
-index 31d771c..c005f03 100644
---- a/net/ipv4/fib_trie.c
-+++ b/net/ipv4/fib_trie.c
-@@ -71,7 +71,6 @@
- #include <linux/init.h>
- #include <linux/list.h>
- #include <linux/slab.h>
--#include <linux/prefetch.h>
- #include <linux/export.h>
- #include <net/net_namespace.h>
- #include <net/ip.h>
-@@ -1773,10 +1772,8 @@ static struct leaf *leaf_walk_rcu(struct tnode *p, struct rt_trie_node *c)
- 			if (!c)
- 				continue;
+diff --git a/include/linux/ipv6.h b/include/linux/ipv6.h
+index 8d766c2..53d18b2 100644
+--- a/include/linux/ipv6.h
++++ b/include/linux/ipv6.h
+@@ -106,6 +106,7 @@ struct inet6_skb_parm {
+ #define IP6SKB_FORWARDED	2
+ #define IP6SKB_REROUTED		4
+ #define IP6SKB_ROUTERALERT	8
++#define IP6SKB_FRAGMENTED      16
+ };
  
--			if (IS_LEAF(c)) {
--				prefetch(rcu_dereference_rtnl(p->child[idx]));
-+			if (IS_LEAF(c))
- 				return (struct leaf *) c;
--			}
+ #define IP6CB(skb)	((struct inet6_skb_parm*)((skb)->cb))
+diff --git a/net/ipv6/reassembly.c b/net/ipv6/reassembly.c
+index 7a610a6..1aa1434 100644
+--- a/net/ipv6/reassembly.c
++++ b/net/ipv6/reassembly.c
+@@ -487,6 +487,7 @@ static int ip6_frag_reasm(struct frag_queue *fq, struct sk_buff *prev,
+ 	head->tstamp = fq->q.stamp;
+ 	ipv6_hdr(head)->payload_len = htons(payload_len);
+ 	IP6CB(head)->nhoff = nhoff;
++	IP6CB(head)->flags |= IP6SKB_FRAGMENTED;
  
- 			/* Rescan start scanning in new node */
- 			p = (struct tnode *) c;
+ 	/* Yes, and fold redundant checksum back. 8) */
+ 	if (head->ip_summed == CHECKSUM_COMPLETE)
+@@ -521,6 +522,9 @@ static int ipv6_frag_rcv(struct sk_buff *skb)
+ 	struct net *net = dev_net(skb_dst(skb)->dev);
+ 	int evicted;
+ 
++	if (IP6CB(skb)->flags & IP6SKB_FRAGMENTED)
++		goto fail_hdr;
++
+ 	IP6_INC_STATS_BH(net, ip6_dst_idev(skb_dst(skb)), IPSTATS_MIB_REASMREQDS);
+ 
+ 	/* Jumbo payload inhibits frag. header */
+@@ -541,6 +545,7 @@ static int ipv6_frag_rcv(struct sk_buff *skb)
+ 				 ip6_dst_idev(skb_dst(skb)), IPSTATS_MIB_REASMOKS);
+ 
+ 		IP6CB(skb)->nhoff = (u8 *)fhdr - skb_network_header(skb);
++		IP6CB(skb)->flags |= IP6SKB_FRAGMENTED;
+ 		return 1;
+ 	}
+ 
 -- 
 1.8.1.2
 
