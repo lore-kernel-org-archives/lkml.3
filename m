@@ -1,75 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754219Ab3JJGPj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 02:15:39 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:57568 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750799Ab3JJGPi convert rfc822-to-8bit (ORCPT
+	id S1754370Ab3JJGQZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 02:16:25 -0400
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:46042 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751598Ab3JJGQY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 02:15:38 -0400
-Date: Thu, 10 Oct 2013 01:15:34 -0500
-From: Rob Landley <rob@landley.net>
-Subject: Re: [PATCH] Squashfs: Refactor decompressor interface and code
-To: Phillip Lougher <phillip@squashfs.org.uk>
-Cc: linux-kernel@vger.kernel.org, minchan@kernel.org,
-        Phillip Lougher <phillip@squashfs.org.uk>
-In-Reply-To: <1381198450-2202-1-git-send-email-phillip@squashfs.org.uk>
-	(from phillip@squashfs.org.uk on Mon Oct  7 21:14:10 2013)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1381385734.1974.183@driftwood>
+	Thu, 10 Oct 2013 02:16:24 -0400
+Date: Thu, 10 Oct 2013 08:16:21 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Dong Zhu <bluezhudong@gmail.com>
+Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] timer stats: add a 'status' line to timer usage
+ statistics
+Message-ID: <20131010061621.GA9853@gmail.com>
+References: <20131010025947.GD2139@zhudong.nay.redhat.com>
+ <20131010043519.GB22519@gmail.com>
+ <20131010061408.GF2139@zhudong.nay.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20131010061408.GF2139@zhudong.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/07/2013 09:14:10 PM, Phillip Lougher wrote:
-> The decompressor interface and code was written from
-> the point of view of single-threaded operation.  In doing
-> so it mixed a lot of single-threaded implementation specific
-> aspects into the decompressor code and elsewhere which makes it
-> difficult to seamlessly support multiple different decompressor
-> implementations.
-...
->  11 files changed, 237 insertions(+), 136 deletions(-)
 
-It sounds like this is mostly refactoring, but it adds 100 lines of  
-code? Let's see, new function prototypes in the header, new #includes  
-in the added C file...
+* Dong Zhu <bluezhudong@gmail.com> wrote:
 
-Ah, here's the biggest chunk: a new instance of the FSF boilerplate  
-telling you to go to 51 Franklin Street to pick up a physical copy of  
-GPLv3 and try to figure out how it's relevant to Linux:
+> Hi Ingo and John,
+> 
+> On Thu, Oct 10, 2013 at 06:35:19AM +0200, Ingo Molnar wrote:
+> > 
+> > * Dong Zhu <bluezhudong@gmail.com> wrote:
+> > 
+> > > From f41628c61d8a9172677ba33a55b61e37ce28f7a6 Mon Sep 17 00:00:00 2001
+> > > From: Dong Zhu <bluezhudong@gmail.com> 
+> > > Date: Thu, 10 Oct 2013 10:38:13 +0800
+> > > 
+> > > When we stop timer statistics collection (via echo 0 > 
+> > > /proc/timers_stats), the statistics data is still exported as if it were 
+> > > correct, which can cause applicaitons to misuse the statistics.
+> > 
+> > What misuse do you mean?
+> > 
+> > > This patch resets the statistics when we stop collecting them, to avoid 
+> > > this problem.
+> > 
+> > Well, this loses the handy 'snapshot' property of /proc/timer_stats. 
+> > Before this change one could do:
+> > 
+> > 	echo 1 > /proc/timers_stats
+> > 	sleep 60 # run system workload
+> > 	echo 0 > /proc/timers_stats
+> > 
+> > and examine the 1-minute collection result without it changing. Your 
+> > change, if I understand it correctly, zeroes it all out.
+> 
+> Yes, I am wrong about it. Thanks for pointing this out and pretty sorry
+> for confusing you John.
+> 
+> > 
+> > Instead of this change I'd suggest adding a 'status' line, with two 
+> > outputs:
+> > 
+> > 	Status: collection active
+> > 
+> > 	Status: collection disabled
+> > 
+> 
+> Agree, I modified this patch and resubmited it again, Could you help
+> reviewing it again ? Thanks !
+> 
+> From 263c40abea8011c82582b2d671ae783b26f44bd5 Mon Sep 17 00:00:00 2001
+> From: Dong Zhu <bluezhudong@gmail.com> 
+> Date: Thu, 10 Oct 2013 13:46:08 +0800
+> 
+> We can enable|disable timer statistics collection (via echo [1|0] >
+> /proc/timers_stats), this patch adds a 'status' line to display the
+> current timer collection status.
+> 
+> Signed-off-by: Dong Zhu <bluezhudong@gmail.com>
+> ---
+>  kernel/time/timer_stats.c | 4 ++++
+>  1 file changed, 4 insertions(+)
+> 
+> diff --git a/kernel/time/timer_stats.c b/kernel/time/timer_stats.c
+> index 0b537f2..bac5e91 100644
+> --- a/kernel/time/timer_stats.c
+> +++ b/kernel/time/timer_stats.c
+> @@ -303,6 +303,10 @@ static int tstats_show(struct seq_file *m, void *v)
+>  	if (atomic_read(&overflow_count))
+>  		seq_printf(m, "Overflow: %d entries\n",
+>  			atomic_read(&overflow_count));
+> +	if (timer_stats_active)
+> +		seq_puts(m, "Status: collection active\n");
+> +	else
+> +		seq_puts(m, "Status: collection disabled\n");
 
-> --- /dev/null
-> +++ b/fs/squashfs/decompressor_single.c
-> @@ -0,0 +1,107 @@
-> +/*
-> + * Squashfs - a compressed read only filesystem for Linux
-> + *
-> + * Copyright (c) 2013
-> + * Phillip Lougher <phillip@squashfs.org.uk>
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License
-> + * as published by the Free Software Foundation; either version 2,
-> + * or (at your option) any later version.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, write to the Free Software
-> + * Foundation, 51 Franklin Street, Fifth Floor, Boston, MA  
-> 02110-1301, USA.
-> + *
-> + * decompressor_single.c
-> + */
+I suspect we could do something like:
 
-*shrug* Mostly just curious...
+	seq_printf("Status: collection %s\n", timer_stats_active ? "enabled" : "disabled");
 
-Rob
+and save a bit of kernel image size?
+
+Also, please bump up the version to v0.3, to give parsers a chance.
+
+Otherwise it looks good to me.
+
+Thanks,
+
+	Ingo
