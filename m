@@ -1,67 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757082Ab3JJTFo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 15:05:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6368 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755593Ab3JJTFm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 15:05:42 -0400
-Message-ID: <5256FA26.8010105@redhat.com>
-Date: Thu, 10 Oct 2013 15:04:06 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S932116Ab3JJTFv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 15:05:51 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:35957 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757106Ab3JJTFq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 15:05:46 -0400
+Date: Thu, 10 Oct 2013 12:05:32 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>,
+        Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
+        darren@dvhart.com, fweisbec@gmail.com, sbw@mit.edu,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
+Subject: Re: [PATCH v2 tip/core/rcu 07/13] ipv6/ip6_tunnel: Apply
+ rcu_access_pointer() to avoid sparse false positive
+Message-ID: <20131010190532.GQ5790@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20131009215747.GA5790@linux.vnet.ibm.com>
+ <1381356624.4971.26.camel@edumazet-glaptop.roam.corp.google.com>
+ <20131009223652.GC5790@linux.vnet.ibm.com>
+ <1381359077.4971.37.camel@edumazet-glaptop.roam.corp.google.com>
+ <20131009225617.GH11709@jtriplet-mobl1>
+ <1381360675.4971.45.camel@edumazet-glaptop.roam.corp.google.com>
+ <20131009234040.GB14055@jtriplet-mobl1>
+ <1381363960.4971.55.camel@edumazet-glaptop.roam.corp.google.com>
+ <20131010002833.GJ5790@linux.vnet.ibm.com>
+ <20131010020422.GB24368@order.stressinduktion.org>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        hannes@cmpxchg.org, aarcange@redhat.com, srikar@linux.vnet.ibm.com,
-        mgorman@suse.de, tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:sched/core] sched/numa: Introduce migrate_swap()
-References: <1381141781-10992-39-git-send-email-mgorman@suse.de> <tip-ac66f5477239ebd3c4e2cbf2f591ef387aa09884@git.kernel.org> <20131010181722.GO13848@laptop.programming.kicks-ass.net>
-In-Reply-To: <20131010181722.GO13848@laptop.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131010020422.GB24368@order.stressinduktion.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13101019-0928-0000-0000-0000025151BC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/10/2013 02:17 PM, Peter Zijlstra wrote:
-> On Wed, Oct 09, 2013 at 10:30:13AM -0700, tip-bot for Peter Zijlstra wrote:
->> sched/numa: Introduce migrate_swap()
->
-> Thanks to Rik for writing the Changelog!
->
-> ---
-> From: Peter Zijlstra <peterz@infradead.org>
-> Subject: sched: Fix race in migrate_swap_stop
->
-> There is a subtle race in migrate_swap, when task P, on CPU A, decides to swap
-> places with task T, on CPU B.
->
-> Task P:
->    - call migrate_swap
-> Task T:
->    - go to sleep, removing itself from the runqueue
-> Task P:
->    - double lock the runqueues on CPU A & B
-> Task T:
->    - get woken up, place itself on the runqueue of CPU C
-> Task P:
->    - see that task T is on a runqueue, and pretend to remove it
->      from the runqueue on CPU B
->
-> Now CPUs B & C both have corrupted scheduler data structures.
->
-> This patch fixes it, by holding the pi_lock for both of the tasks
-> involved in the migrate swap. This prevents task T from waking up,
-> and placing itself onto another runqueue, until after migrate_swap
-> has released all locks.
->
-> This means that, when migrate_swap checks, task T will be either
-> on the runqueue where it was originally seen, or not on any
-> runqueue at all. Migrate_swap deals correctly with of those cases.
->
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-> Tested-by: Joe Mario <jmario@redhat.com>
+On Thu, Oct 10, 2013 at 04:04:22AM +0200, Hannes Frederic Sowa wrote:
+> On Wed, Oct 09, 2013 at 05:28:33PM -0700, Paul E. McKenney wrote:
+> > On Wed, Oct 09, 2013 at 05:12:40PM -0700, Eric Dumazet wrote:
+> > > On Wed, 2013-10-09 at 16:40 -0700, Josh Triplett wrote:
+> > > 
+> > > > that.  Constructs like list_del_rcu are much clearer, and not
+> > > > open-coded.  Open-coding synchronization code is almost always a Bad
+> > > > Idea.
+> > > 
+> > > OK, so you think there is synchronization code.
+> > > 
+> > > I will shut up then, no need to waste time.
+> > 
+> > As you said earlier, we should at least get rid of the memory barrier
+> > as long as we are changing the code.
+> 
+> Interesting thread!
+> 
+> Sorry to chime in and asking a question:
+> 
+> Why do we need an ACCESS_ONCE here if rcu_assign_pointer can do without one?
+> In other words I wonder why rcu_assign_pointer is not a static inline function
+> to use the sequence point in argument evaluation (if I remember correctly this
+> also holds for inline functions) to not allow something like this:
+> 
+> E.g. we want to publish which lock to take first to prevent an ABBA problem
+> (extreme example):
+> 
+> rcu_assign_pointer(lockptr, min(lptr1, lptr2));
+> 
+> Couldn't a compiler spill the lockptr memory location as a temporary buffer
+> if the compiler is under register pressure? (yes, this seems unlikely if we
+> flushed out most registers to memory because of the barrier, but still... ;) )
+> 
+> This seems to be also the case if we publish a multi-dereferencing pointers
+> e.g. ptr->ptr->ptr.
 
-Reviewed-by: Rik van Riel <riel@redhat.com>
+IIRC, sequence points only confine volatile accesses.  For non-volatile
+accesses, the so-called "as-if rule" allows compiler writers to do some
+surprisingly global reordering.
+
+The reason that rcu_assign_pointer() isn't an inline function is because
+it needs to be type-generic, in other words, it needs to be OK to use
+it on any type of pointers as long as the C types of the two pointers
+match (the sparse types can vary a bit).
+
+One of the reasons for wanting a volatile cast in rcu_assign_pointer() is
+to prevent compiler mischief such as you described in your last two
+paragraphs.  That said, it would take a very brave compiler to pull
+a pointer-referenced memory location into a register and keep it there.
+Unfortunately, increasing compiler bravery seems to be a solid long-term
+trend.
+
+							Thanx, Paul
 
