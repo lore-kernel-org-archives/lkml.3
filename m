@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757747Ab3JJPu4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 11:50:56 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53104 "EHLO
+	id S1757789Ab3JJPvf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 11:51:35 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53110 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757724Ab3JJPuw (ORCPT
+	with ESMTP id S1757730Ab3JJPuy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 11:50:52 -0400
+	Thu, 10 Oct 2013 11:50:54 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+Cc: Kees Cook <keescook@chromium.org>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
         Jiri Kosina <jkosina@suse.cz>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 041/104] HID: validate feature and input report details
-Date: Thu, 10 Oct 2013 08:41:29 -0700
-Message-Id: <1381419752-29733-42-git-send-email-kamal@canonical.com>
+Subject: [PATCH 040/104] HID: lenovo-tpkbd: validate output report details
+Date: Thu, 10 Oct 2013 08:41:28 -0700
+Message-Id: <1381419752-29733-41-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381419752-29733-1-git-send-email-kamal@canonical.com>
 References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
@@ -27,138 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+From: Kees Cook <keescook@chromium.org>
 
-commit cc6b54aa54bf40b762cab45a9fc8aa81653146eb upstream.
+commit 0a9cd0a80ac559357c6a90d26c55270ed752aa26 upstream.
 
-When dealing with usage_index, be sure to properly use unsigned instead of
-int to avoid overflows.
+A HID device could send a malicious output report that would cause the
+lenovo-tpkbd HID driver to write just beyond the output report allocation
+during initialization, causing a heap overflow:
 
-When working on report fields, always validate that their report_counts are
-in bounds.
-Without this, a HID device could report a malicious feature report that
-could trick the driver into a heap overflow:
-
-[  634.885003] usb 1-1: New USB device found, idVendor=0596, idProduct=0500
+[   76.109807] usb 1-1: New USB device found, idVendor=17ef, idProduct=6009
 ...
-[  676.469629] BUG kmalloc-192 (Tainted: G        W   ): Redzone overwritten
+[   80.462540] BUG kmalloc-192 (Tainted: G        W   ): Redzone overwritten
 
-CVE-2013-2897
+CVE-2013-2894
 
+Signed-off-by: Kees Cook <keescook@chromium.org>
 Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Acked-by: Kees Cook <keescook@chromium.org>
 Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/hid/hid-core.c  | 16 +++++++---------
- drivers/hid/hid-input.c | 11 ++++++++++-
- 2 files changed, 17 insertions(+), 10 deletions(-)
+ drivers/hid/hid-lenovo-tpkbd.c | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index bf31892..14744e0 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -94,7 +94,6 @@ EXPORT_SYMBOL_GPL(hid_register_report);
- static struct hid_field *hid_register_field(struct hid_report *report, unsigned usages, unsigned values)
- {
- 	struct hid_field *field;
--	int i;
- 
- 	if (report->maxfield == HID_MAX_FIELDS) {
- 		hid_err(report->device, "too many fields in report\n");
-@@ -113,9 +112,6 @@ static struct hid_field *hid_register_field(struct hid_report *report, unsigned
- 	field->value = (s32 *)(field->usage + usages);
- 	field->report = report;
- 
--	for (i = 0; i < usages; i++)
--		field->usage[i].usage_index = i;
--
- 	return field;
- }
- 
-@@ -226,9 +222,9 @@ static int hid_add_field(struct hid_parser *parser, unsigned report_type, unsign
- {
- 	struct hid_report *report;
- 	struct hid_field *field;
--	int usages;
-+	unsigned usages;
- 	unsigned offset;
--	int i;
-+	unsigned i;
- 
- 	report = hid_register_report(parser->device, report_type, parser->global.report_id);
- 	if (!report) {
-@@ -255,7 +251,8 @@ static int hid_add_field(struct hid_parser *parser, unsigned report_type, unsign
- 	if (!parser->local.usage_index) /* Ignore padding fields */
- 		return 0;
- 
--	usages = max_t(int, parser->local.usage_index, parser->global.report_count);
-+	usages = max_t(unsigned, parser->local.usage_index,
-+				 parser->global.report_count);
- 
- 	field = hid_register_field(report, usages, parser->global.report_count);
- 	if (!field)
-@@ -266,13 +263,14 @@ static int hid_add_field(struct hid_parser *parser, unsigned report_type, unsign
- 	field->application = hid_lookup_collection(parser, HID_COLLECTION_APPLICATION);
- 
- 	for (i = 0; i < usages; i++) {
--		int j = i;
-+		unsigned j = i;
- 		/* Duplicate the last usage we parsed if we have excess values */
- 		if (i >= parser->local.usage_index)
- 			j = parser->local.usage_index - 1;
- 		field->usage[i].hid = parser->local.usage[j];
- 		field->usage[i].collection_index =
- 			parser->local.collection_index[j];
-+		field->usage[i].usage_index = i;
- 	}
- 
- 	field->maxusage = usages;
-@@ -1295,7 +1293,7 @@ int hid_report_raw_event(struct hid_device *hid, int type, u8 *data, int size,
- 			goto out;
- 	}
- 
--	if (hid->claimed != HID_CLAIMED_HIDRAW) {
-+	if (hid->claimed != HID_CLAIMED_HIDRAW && report->maxfield) {
- 		for (a = 0; a < report->maxfield; a++)
- 			hid_input_field(hid, report->field[a], cdata, interrupt);
- 	}
-diff --git a/drivers/hid/hid-input.c b/drivers/hid/hid-input.c
-index f495ada..50487c2 100644
---- a/drivers/hid/hid-input.c
-+++ b/drivers/hid/hid-input.c
-@@ -484,6 +484,10 @@ static void hidinput_configure_usage(struct hid_input *hidinput, struct hid_fiel
- 	if (field->flags & HID_MAIN_ITEM_CONSTANT)
- 		goto ignore;
- 
-+	/* Ignore if report count is out of bounds. */
-+	if (field->report_count < 1)
-+		goto ignore;
+diff --git a/drivers/hid/hid-lenovo-tpkbd.c b/drivers/hid/hid-lenovo-tpkbd.c
+index cea016e..189a3fb 100644
+--- a/drivers/hid/hid-lenovo-tpkbd.c
++++ b/drivers/hid/hid-lenovo-tpkbd.c
+@@ -341,7 +341,15 @@ static int tpkbd_probe_tp(struct hid_device *hdev)
+ 	struct tpkbd_data_pointer *data_pointer;
+ 	size_t name_sz = strlen(dev_name(dev)) + 16;
+ 	char *name_mute, *name_micmute;
+-	int ret;
++	int i, ret;
 +
- 	/* only LED usages are supported in output fields */
- 	if (field->report_type == HID_OUTPUT_REPORT &&
- 			(usage->hid & HID_USAGE_PAGE) != HID_UP_LED) {
-@@ -1162,7 +1166,11 @@ static void report_features(struct hid_device *hid)
++	/* Validate required reports. */
++	for (i = 0; i < 4; i++) {
++		if (!hid_validate_values(hdev, HID_FEATURE_REPORT, 4, i, 1))
++			return -ENODEV;
++	}
++	if (!hid_validate_values(hdev, HID_OUTPUT_REPORT, 3, 0, 2))
++		return -ENODEV;
  
- 	rep_enum = &hid->report_enum[HID_FEATURE_REPORT];
- 	list_for_each_entry(rep, &rep_enum->report_list, list)
--		for (i = 0; i < rep->maxfield; i++)
-+		for (i = 0; i < rep->maxfield; i++) {
-+			/* Ignore if report count is out of bounds. */
-+			if (rep->field[i]->report_count < 1)
-+				continue;
-+
- 			for (j = 0; j < rep->field[i]->maxusage; j++) {
- 				/* Verify if Battery Strength feature is available */
- 				hidinput_setup_battery(hid, HID_FEATURE_REPORT, rep->field[i]);
-@@ -1171,6 +1179,7 @@ static void report_features(struct hid_device *hid)
- 					drv->feature_mapping(hid, rep->field[i],
- 							     rep->field[i]->usage + j);
- 			}
-+		}
- }
- 
- static struct hid_input *hidinput_allocate(struct hid_device *hid)
+ 	if (sysfs_create_group(&hdev->dev.kobj,
+ 				&tpkbd_attr_group_pointer)) {
 -- 
 1.8.1.2
 
