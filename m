@@ -1,124 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753615Ab3JJFVp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 01:21:45 -0400
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:58862 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752093Ab3JJFVn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 01:21:43 -0400
-Message-ID: <52563964.4030905@monstr.eu>
-Date: Thu, 10 Oct 2013 07:21:40 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	id S1753100Ab3JJF0I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 01:26:08 -0400
+Received: from mga02.intel.com ([134.134.136.20]:11526 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751318Ab3JJF0F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 01:26:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,1069,1371106800"; 
+   d="scan'208";a="408658506"
+From: Jani Nikula <jani.nikula@linux.intel.com>
+To: Aaron Lu <aaron.lu@intel.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: linux-acpi@vger.kernel.org, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Daniel Vetter <daniel@ffwll.ch>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Lee Chun-Yi <joeyli.kernel@gmail.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Igor Gnatenko <i.gnatenko.brain@gmail.com>,
+        Yves-Alexis Perez <corsac@debian.org>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        Ben Jencks <ben@bjencks.net>, Steven Newbury <steve@snewbury.org.uk>,
+        James Hogan <james@albanarts.com>, Kamal Mostafa <kamal@canonical.com>,
+        Joerg Platte <jplatte@naasa.net>, Kalle Valo <kvalo@adurom.com>,
+        Martin Steigerwald <Martin@lichtvoll.de>,
+        =?utf-8?Q?J=C3=B6rg?= Otte <jrg.otte@gmail.com>,
+        Mike Galbraith <bitbucket@online.de>,
+        platform-driver-x86@vger.kernel.org,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Subject: Re: [PATCH v4 1/4] backlight: introduce backlight_device_registered
+In-Reply-To: <525632AE.2080909@intel.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+References: <1381214401-24672-1-git-send-email-aaron.lu@intel.com> <1381214401-24672-2-git-send-email-aaron.lu@intel.com> <2202423.8QyNjoNEPr@vostro.rjw.lan> <5255FAC5.2090105@intel.com> <878uy1694u.fsf@intel.com> <525632AE.2080909@intel.com>
+User-Agent: Notmuch/0.16+88~gce1bf71 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Thu, 10 Oct 2013 08:23:02 +0300
+Message-ID: <874n8p66o9.fsf@intel.com>
 MIME-Version: 1.0
-To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>
-CC: Mark Rutland <mark.rutland@arm.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 1/2] clk/zynq/clkc: Add 'fclk-enable' feature
-References: <1381242972-14752-1-git-send-email-soren.brinkmann@xilinx.com> <20131008153816.GB4981@e106331-lin.cambridge.arm.com> <fe3858e7-e3e2-4806-aeca-a2a4676e09aa@CO1EHSMHS007.ehs.local>
-In-Reply-To: <fe3858e7-e3e2-4806-aeca-a2a4676e09aa@CO1EHSMHS007.ehs.local>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="O6jXRAOtL9nWNQH8g2kIHw9jhe88xgnNG"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---O6jXRAOtL9nWNQH8g2kIHw9jhe88xgnNG
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
-
-On 10/09/2013 05:25 PM, S=C3=B6ren Brinkmann wrote:
-> On Tue, Oct 08, 2013 at 04:38:17PM +0100, Mark Rutland wrote:
->> On Tue, Oct 08, 2013 at 03:36:11PM +0100, Soren Brinkmann wrote:
->>> In some use cases Zynq's FPGA clocks are used as static clock
->>> generators for IP in the FPGA part of the SOC for which no Linux driv=
-er
->>> exists and would control those clocks. To avoid automatic
->>> gating of these clocks in such cases a new property - fclk-enable - i=
-s
->>> added to the clock controller's DT description to accomodate such use=
-
->>> cases. It's value is a bitmask, where a set bit results in enabling
->>> the corresponding FCLK through the clkc.
+On Thu, 10 Oct 2013, Aaron Lu <aaron.lu@intel.com> wrote:
+> On 10/10/2013 12:29 PM, Jani Nikula wrote:
+>> On Thu, 10 Oct 2013, Aaron Lu <aaron.lu@intel.com> wrote:
+>>> On 10/10/2013 08:25 AM, Rafael J. Wysocki wrote:
+>>>> On Tuesday, October 08, 2013 02:39:58 PM Aaron Lu wrote:
+>>>>> +bool backlight_device_registered(enum backlight_type type)
+>>>>> +{
+>>>>> +	bool found = false;
+>>>>> +	struct backlight_device *bd;
+>>>>> +
+>>>>> +	mutex_lock(&bd_list_mutex);
+>>>>> +	list_for_each_entry(bd, &bd_list_head, entry) {
+>>>>> +		if (bd->props.type == type) {
+>>>>> +			found = true;
+>>>>> +			break;
+>>>>> +		}
+>>>>> +	}
+>>>>
+>>>> Isn't it useful to be able to register more than one backlight device of the
+>>>> same type sometimes?
 >>>
->>> FPGA clocks are handled following the rules below:
->>>
->>> If an FCLK is not enabled by bootloaders, that FCLK will be disabled =
-in
->>> Linux. Drivers can enable and control it through the CCF as usual.
->>>
->>> If an FCLK is enabled by bootloaders AND the corresponding bit in the=
+>>> I think so for some kind of computers. OTOH, the above function should
+>>> be enough for the problem we are solving here, if someday we need to
+>>> differentiate, we can enhance the code then.
+>> 
+>> Since both Baytrail and Haswell already have two backlight PWMs, this
+>> may be needed sooner than you think. But we shouldn't let that block
+>
+> Do we need to differentiate which backlight PWM is registered to decide
+> if ACPI video backlight interface should be skipped? My understanding is
+> no.
 
->>> 'fclk-enable' DT property is set, that FCLK will be enabled by the cl=
-kc,
->>> resulting in an off by one reference count for that clock. Ensuring i=
-t
->>> will always be running.
->>>
->>> The default value for 'fclk-enable' is '0xf' (all FCLK's enabled by t=
-he
->>> bootloader are enabled through the clkc.
->>
->> Why? Juding by the diff that's not what the code currently does, so wh=
-y
->> not leave it as 0, and only set it where required as a work-around?
-> The default is set as described here:
-> [...]
->>> +	ret =3D of_property_read_u32(np, "fclk-enable", &fclk_enable);
->>> +	if (ret)
->>> +		fclk_enable =3D 0xf;
->>> +
->=20
-> The default has been chosen this way, because it avoids trouble with
-> customers. Customers expect the FPGA clocks to be running, once they
-> configured them in the FPGA tools. If Linux gates them off for some
-> reason, it creates confusion and often ends up in customer support.
-> But in general I agree. It is kind of a work around and having zero as
-> default would be desirable. I'd leave this to Michal.
+That's correct. If things change, we can fix it then.
 
-No problem to have default value setup to 0. And use this workaround
-when it is set in DTS.
-
-Thanks,
-Michal
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+Jani.
 
 
+>
+> Thanks,
+> Aaron
+>
+>> fixing the more urgent issue we have now. So I'm fine with this. It
+>> doesn't prevent one from registering more than one device of the same
+>> type anyway.
+>> 
+>> BR,
+>> Jani.
+>> 
+>> 
+>> 
+>
 
---O6jXRAOtL9nWNQH8g2kIHw9jhe88xgnNG
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlJWOWQACgkQykllyylKDCHjvQCdG4/3Y4jQgwsLzdck2UYLUusL
-UKwAmwVN2ScmVRWBTTcunoQPgwWWA8tC
-=Rih1
------END PGP SIGNATURE-----
-
---O6jXRAOtL9nWNQH8g2kIHw9jhe88xgnNG--
+-- 
+Jani Nikula, Intel Open Source Technology Center
