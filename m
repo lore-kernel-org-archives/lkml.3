@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757979Ab3JJQOe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 12:14:34 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52541 "EHLO
+	id S1757866Ab3JJQOb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 12:14:31 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52559 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755355Ab3JJPmt (ORCPT
+	with ESMTP id S1755783Ab3JJPmt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 10 Oct 2013 11:42:49 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>,
+Cc: Eric Dumazet <edumazet@google.com>, Neal Cardwell <ncardwell@google.com>,
+        Yuchung Cheng <ycheng@google.com>,
+        Stephen Hemminger <stephen@networkplumber.org>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 008/104] bridge: don't try to update timers in case of broken MLD queries
-Date: Thu, 10 Oct 2013 08:40:56 -0700
-Message-Id: <1381419752-29733-9-git-send-email-kamal@canonical.com>
+Subject: [PATCH 009/104] tcp: cubic: fix overflow error in bictcp_update()
+Date: Thu, 10 Oct 2013 08:40:57 -0700
+Message-Id: <1381419752-29733-10-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381419752-29733-1-git-send-email-kamal@canonical.com>
 References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,41 +30,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 248ba8ec05a2c3b118c2224e57eb10c128176ab1 ]
+[ Upstream commit 2ed0edf9090bf4afa2c6fc4f38575a85a80d4b20 ]
 
-Currently we are reading an uninitialized value for the max_delay
-variable when snooping an MLD query message of invalid length and would
-update our timers with that.
+commit 17a6e9f1aa9 ("tcp_cubic: fix clock dependency") added an
+overflow error in bictcp_update() in following code :
 
-Fixing this by simply ignoring such broken MLD queries (just like we do
-for IGMP already).
+/* change the unit from HZ to bictcp_HZ */
+t = ((tcp_time_stamp + msecs_to_jiffies(ca->delay_min>>3) -
+      ca->epoch_start) << BICTCP_HZ) / HZ;
 
-This is a regression introduced by:
-"bridge: disable snooping if there is no querier" (b00589af3b04)
+Because msecs_to_jiffies() being unsigned long, compiler does
+implicit type promotion.
 
-Reported-by: Paul Bolle <pebolle@tiscali.nl>
-Signed-off-by: Linus Lüssing <linus.luessing@web.de>
+We really want to constrain (tcp_time_stamp - ca->epoch_start)
+to a signed 32bit value, or else 't' has unexpected high values.
+
+This bugs triggers an increase of retransmit rates ~24 days after
+boot [1], as the high order bit of tcp_time_stamp flips.
+
+[1] for hosts with HZ=1000
+
+Big thanks to Van Jacobson for spotting this problem.
+
+Diagnosed-by: Van Jacobson <vanj@google.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Neal Cardwell <ncardwell@google.com>
+Cc: Yuchung Cheng <ycheng@google.com>
+Cc: Stephen Hemminger <stephen@networkplumber.org>
+Acked-by: Neal Cardwell <ncardwell@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/bridge/br_multicast.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ipv4/tcp_cubic.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/net/bridge/br_multicast.c b/net/bridge/br_multicast.c
-index 155bc05..e4b8742 100644
---- a/net/bridge/br_multicast.c
-+++ b/net/bridge/br_multicast.c
-@@ -1167,7 +1167,7 @@ static int br_ip6_multicast_query(struct net_bridge *br,
- 		max_delay = msecs_to_jiffies(ntohs(mld->mld_maxdelay));
- 		if (max_delay)
- 			group = &mld->mld_mca;
--	} else if (skb->len >= sizeof(*mld2q)) {
-+	} else {
- 		if (!pskb_may_pull(skb, sizeof(*mld2q))) {
- 			err = -EINVAL;
- 			goto out;
+diff --git a/net/ipv4/tcp_cubic.c b/net/ipv4/tcp_cubic.c
+index a9077f4..b6b591f 100644
+--- a/net/ipv4/tcp_cubic.c
++++ b/net/ipv4/tcp_cubic.c
+@@ -206,8 +206,8 @@ static u32 cubic_root(u64 a)
+  */
+ static inline void bictcp_update(struct bictcp *ca, u32 cwnd)
+ {
+-	u64 offs;
+-	u32 delta, t, bic_target, max_cnt;
++	u32 delta, bic_target, max_cnt;
++	u64 offs, t;
+ 
+ 	ca->ack_cnt++;	/* count the number of ACKs */
+ 
+@@ -250,9 +250,11 @@ static inline void bictcp_update(struct bictcp *ca, u32 cwnd)
+ 	 * if the cwnd < 1 million packets !!!
+ 	 */
+ 
++	t = (s32)(tcp_time_stamp - ca->epoch_start);
++	t += msecs_to_jiffies(ca->delay_min >> 3);
+ 	/* change the unit from HZ to bictcp_HZ */
+-	t = ((tcp_time_stamp + msecs_to_jiffies(ca->delay_min>>3)
+-	      - ca->epoch_start) << BICTCP_HZ) / HZ;
++	t <<= BICTCP_HZ;
++	do_div(t, HZ);
+ 
+ 	if (t < ca->bic_K)		/* t - K */
+ 		offs = ca->bic_K - t;
 -- 
 1.8.1.2
 
