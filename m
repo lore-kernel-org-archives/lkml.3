@@ -1,45 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753016Ab3JJD0m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 23:26:42 -0400
-Received: from mga09.intel.com ([134.134.136.24]:15117 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751269Ab3JJD0l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 23:26:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1068,1371106800"; 
-   d="scan'208";a="408622137"
-Date: Thu, 10 Oct 2013 11:26:37 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Dave Chinner <dchinner@redhat.com>, linux-fsdevel@vger.kernel.org,
-        Ben Myers <bpm@sgi.com>, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Subject: Re: [XFS on bad superblock] BUG: unable to handle kernel NULL
- pointer dereference at 00000003
-Message-ID: <20131010032637.GA12725@localhost>
-References: <20131009073910.GA387@localhost>
- <20131010005900.GE2025@devil.localdomain>
- <20131010011640.GA5726@localhost>
- <20131010014117.GA6017@localhost>
- <20131010031515.GT4446@dastard>
+	id S1754721Ab3JJD32 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 23:29:28 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:34459 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754044Ab3JJD30 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 23:29:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131010031515.GT4446@dastard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1381365007-1782-4-git-send-email-cw00.choi@samsung.com>
+References: <1381365007-1782-1-git-send-email-cw00.choi@samsung.com>
+	<1381365007-1782-4-git-send-email-cw00.choi@samsung.com>
+Date: Thu, 10 Oct 2013 08:59:24 +0530
+Message-ID: <CAK9yfHxr27nsmaqkE+seDgZAkpUmOsPqdXdeogY89tAXYEEG2w@mail.gmail.com>
+Subject: Re: [PATCH 3/3] ARM: dts: exynos4x12: Add maudio/gps_alive power
+ domain for exynos4x12
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        devicetree@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Tomasz Figa <t.figa@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>, ijc+devicetree@hellion.org.uk,
+        Russell King <linux@arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave,
+On 10 October 2013 06:00, Chanwoo Choi <cw00.choi@samsung.com> wrote:
+> This patch maudio/gps_alive power domain to exynos4x12.dtsi.
+>
+> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> ---
+>  arch/arm/boot/dts/exynos4x12.dtsi | 10 ++++++++++
+>  1 file changed, 10 insertions(+)
+>
+> diff --git a/arch/arm/boot/dts/exynos4x12.dtsi b/arch/arm/boot/dts/exynos4x12.dtsi
+> index ad531fe..c04418e 100644
+> --- a/arch/arm/boot/dts/exynos4x12.dtsi
+> +++ b/arch/arm/boot/dts/exynos4x12.dtsi
+> @@ -35,6 +35,16 @@
+>                 reg = <0x10023CA0 0x20>;
+>         };
+>
+> +       pd_maudio: maudio-power-domain@10023CC0 {
+> +               compatible = "samsung,exynos4210-pd";
+> +               reg = <0x10023CC0 0x20>;
+> +       };
+> +
+> +       pd_gps_alive: gps-alive-power-domain@10023D04 {
+> +               compatible = "samsung,exynos4210-pd";
+> +               reg = <0x10023D00 0x20>;
 
-> I note that you have CONFIG_SLUB=y, which means that the cache slabs
-> are shared with objects of other types. That means that the memory
-> corruption problem is likely to be caused by one of the other
-> filesystems that is probing the block device(s), not XFS.
+There is mismatch between node name and register value.
 
-Good to know that, it would easy to test then: just turn off every
-other filesystems. I'll try it right away.
 
-Thanks,
-Fengguang
+-- 
+With warm regards,
+Sachin
