@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755404Ab3JJIbt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 04:31:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4511 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755230Ab3JJIbq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 04:31:46 -0400
-Date: Thu, 10 Oct 2013 10:31:07 +0200
-From: Jakub Jelinek <jakub@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
+	id S1755315Ab3JJIev (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 04:34:51 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:59229 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751657Ab3JJIes (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 04:34:48 -0400
+Date: Thu, 10 Oct 2013 10:34:45 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Jakub Jelinek <jakub@redhat.com>
 Cc: Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
         Fengguang Wu <fengguang.wu@intel.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Richard Henderson <rth@twiddle.net>
 Subject: Re: [PATCH] gcc4: Add 'asm goto' miscompilation quirk
-Message-ID: <20131010083107.GZ30970@tucnak.zalov.cz>
-Reply-To: Jakub Jelinek <jakub@redhat.com>
+Message-ID: <20131010083445.GA10622@gmail.com>
 References: <20131009140734.GH3081@twins.programming.kicks-ass.net>
  <20131009143359.GU26785@twins.programming.kicks-ass.net>
  <20131009144656.GV26785@twins.programming.kicks-ass.net>
@@ -36,44 +36,14 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 10, 2013 at 10:24:30AM +0200, Ingo Molnar wrote:
+
+* Ingo Molnar <mingo@kernel.org> wrote:
+
 > Something like the patch below? (Totally untested and all that.)
-> 
-> Notes:
-> 
-> - If the bug is fixed in 4.8.3 then the version check can be sharpened
->   from 99999 to 40803.
 
-The bug is likely going to be fixed already for 4.8.2 (to be released
-next week or so).
+It's up to 'lightly tested' state on x86: the .config that produced a 
+crash before now boots fine, so the workaround appears to work!
 
-> - I'd really prefer this quirk versus having to add the extra barrier to 
->   the label, as it makes the actual usage sites a lot less painful.
+Thanks,
 
-Please check how much it bloats the generated code.
-Also, for the bitops patch, you probably want an asm_volatile_goto variant.
-
-> --- a/include/linux/compiler-gcc4.h
-> +++ b/include/linux/compiler-gcc4.h
-> @@ -65,6 +65,19 @@
->  #define __visible __attribute__((externally_visible))
->  #endif
->  
-> +/*
-> + * GCC 'asm goto' miscompiles certain code sequences:
-> + *
-> + *   http://gcc.gnu.org/bugzilla/show_bug.cgi?id=58670
-> + *
-> + * Work it around via quirk suggested by Jakub Jelinek.
-> + * Not yet fixed, so use the quirk on all compiler versions:
-> + */
-> +#if GCC_VERSION <= 99999
-> +# define asm_goto(x...) do { asm goto(x); asm (""); } while (0)
-> +#else
-> +# define asm_goto(x...) do { asm goto(x); } while (0)
-> +#endif
->  
->  #ifdef CONFIG_ARCH_USE_BUILTIN_BSWAP
->  #if GCC_VERSION >= 40400
-
-	Jakub
+	Ingo
