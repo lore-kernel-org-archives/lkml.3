@@ -1,65 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755055Ab3JJCdB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 22:33:01 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:6482 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752717Ab3JJCc7 (ORCPT
+	id S1755149Ab3JJCfH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 22:35:07 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:24860 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752141Ab3JJCfE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 22:32:59 -0400
-X-Spam-Score: -100.8
-Message-ID: <5256117A.4000009@asianux.com>
-Date: Thu, 10 Oct 2013 10:31:22 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Wed, 9 Oct 2013 22:35:04 -0400
+Message-ID: <52561232.2060505@huawei.com>
+Date: Thu, 10 Oct 2013 10:34:26 +0800
+From: Xishi Qiu <qiuxishi@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>
-CC: linux390@de.ibm.com, linux-s390@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/3] s390: include: asm: atomic.h: use 'unsigned int' instead
- of 'unsigned long' for atomic_*_mask()
-References: <52561137.3070608@asianux.com>
-In-Reply-To: <52561137.3070608@asianux.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: kdump: kdump can't boot in this case
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.74.196]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The type of 'v->counter' is always 'int', and related inline assembly
-code also process 'int', so use 'unsigned int' instead of 'unsigned
-long' for the 'mask'.
+I write a module, and find kdump can't boot in this case.
+kernel version is 3.12, Intel(R) Xeon(R) CPU	E5620
 
+struct timer_list g_timer;
 
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- arch/s390/include/asm/atomic.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+void tmrhnd_invtssfault(unsigned long data)
+{
+	long __res;
+	printk(KERN_EMERG "invalid TSS fault in interrupt context.\n");
+	__asm__ volatile("int $0x0A" : "=a"(__res):);
+}
 
-diff --git a/arch/s390/include/asm/atomic.h b/arch/s390/include/asm/atomic.h
-index a62ed2d..12c5ec1 100644
---- a/arch/s390/include/asm/atomic.h
-+++ b/arch/s390/include/asm/atomic.h
-@@ -113,12 +113,12 @@ static inline void atomic_add(int i, atomic_t *v)
- #define atomic_dec_return(_v)		atomic_sub_return(1, _v)
- #define atomic_dec_and_test(_v)		(atomic_sub_return(1, _v) == 0)
- 
--static inline void atomic_clear_mask(unsigned long mask, atomic_t *v)
-+static inline void atomic_clear_mask(unsigned int mask, atomic_t *v)
- {
- 	__ATOMIC_LOOP(v, ~mask, __ATOMIC_AND);
- }
- 
--static inline void atomic_set_mask(unsigned long mask, atomic_t *v)
-+static inline void atomic_set_mask(unsigned int mask, atomic_t *v)
- {
- 	__ATOMIC_LOOP(v, mask, __ATOMIC_OR);
- }
--- 
-1.7.7.6
+{
+	...
+	init_timer(&g_timer);
+	g_timer.expires = jiffies + 10;
+	g_timer.data = 0;
+	g_timer.function = tmrhnd_invtssfault;
+	add_timer(&g_timer);
+	...
+}
+
+If access NULL pointer instead of "__asm__ volatile("int $0x0A" : "=a"(__res):);" 
+in tmrhnd_invtssfault(), kdump can boot.
+And if not use timer, just do "__asm__ volatile("int $0x0A" : "=a"(__res):);" only
+once in module, kdump can boot too.
+
