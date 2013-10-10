@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758134Ab3JJQKt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 12:10:49 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52587 "EHLO
+	id S1757899Ab3JJQKr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 12:10:47 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52590 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755865Ab3JJPmu (ORCPT
+	with ESMTP id S1755873Ab3JJPmu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 10 Oct 2013 11:42:50 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+Cc: Erik Hugne <erik.hugne@ericsson.com>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 013/104] tun: signedness bug in tun_get_user()
-Date: Thu, 10 Oct 2013 08:41:01 -0700
-Message-Id: <1381419752-29733-14-git-send-email-kamal@canonical.com>
+Subject: [PATCH 022/104] tipc: set sk_err correctly when connection fails
+Date: Thu, 10 Oct 2013 08:41:10 -0700
+Message-Id: <1381419752-29733-23-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381419752-29733-1-git-send-email-kamal@canonical.com>
 References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
@@ -28,49 +28,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Erik Hugne <erik.hugne@ericsson.com>
 
-[ Upstream commit 15718ea0d844e4816dbd95d57a8a0e3e264ba90e ]
+[ Upstream commit 2c8d85182348021fc0a1bed193a4be4161dc8364 ]
 
-The recent fix d9bf5f1309 "tun: compare with 0 instead of total_len" is
-not totally correct.  Because "len" and "sizeof()" are size_t type, that
-means they are never less than zero.
+Should a connect fail, if the publication/server is unavailable or
+due to some other error, a positive value will be returned and errno
+is never set. If the application code checks for an explicit zero
+return from connect (success) or a negative return (failure), it
+will not catch the error and subsequent send() calls will fail as
+shown from the strace snippet below.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
+socket(0x1e /* PF_??? */, SOCK_SEQPACKET, 0) = 3
+connect(3, {sa_family=0x1e /* AF_??? */, sa_data="\2\1\322\4\0\0\322\4\0\0\0\0\0\0"}, 16) = 111
+sendto(3, "test", 4, 0, NULL, 0)        = -1 EPIPE (Broken pipe)
+
+The reason for this behaviour is that TIPC wrongly inverts error
+codes set in sk_err.
+
+Signed-off-by: Erik Hugne <erik.hugne@ericsson.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/tun.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ net/tipc/socket.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index 340cee2..441c987 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -1077,8 +1077,9 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
- 	u32 rxhash;
- 
- 	if (!(tun->flags & TUN_NO_PI)) {
--		if ((len -= sizeof(pi)) > total_len)
-+		if (len < sizeof(pi))
- 			return -EINVAL;
-+		len -= sizeof(pi);
- 
- 		if (memcpy_fromiovecend((void *)&pi, iv, 0, sizeof(pi)))
- 			return -EFAULT;
-@@ -1086,8 +1087,9 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
- 	}
- 
- 	if (tun->flags & TUN_VNET_HDR) {
--		if ((len -= tun->vnet_hdr_sz) > total_len)
-+		if (len < tun->vnet_hdr_sz)
- 			return -EINVAL;
-+		len -= tun->vnet_hdr_sz;
- 
- 		if (memcpy_fromiovecend((void *)&gso, iv, offset, sizeof(gso)))
- 			return -EFAULT;
+diff --git a/net/tipc/socket.c b/net/tipc/socket.c
+index fc906d9..f6a8b59 100644
+--- a/net/tipc/socket.c
++++ b/net/tipc/socket.c
+@@ -1223,7 +1223,7 @@ static u32 filter_connect(struct tipc_sock *tsock, struct sk_buff **buf)
+ 		/* Accept only ACK or NACK message */
+ 		if (unlikely(msg_errcode(msg))) {
+ 			sock->state = SS_DISCONNECTING;
+-			sk->sk_err = -ECONNREFUSED;
++			sk->sk_err = ECONNREFUSED;
+ 			retval = TIPC_OK;
+ 			break;
+ 		}
+@@ -1234,7 +1234,7 @@ static u32 filter_connect(struct tipc_sock *tsock, struct sk_buff **buf)
+ 		res = auto_connect(sock, msg);
+ 		if (res) {
+ 			sock->state = SS_DISCONNECTING;
+-			sk->sk_err = res;
++			sk->sk_err = -res;
+ 			retval = TIPC_OK;
+ 			break;
+ 		}
 -- 
 1.8.1.2
 
