@@ -1,49 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754216Ab3JJBln (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 21:41:43 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:22524 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753991Ab3JJBll (ORCPT
+	id S1754424Ab3JJBlu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 21:41:50 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:15495 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754224Ab3JJBlq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 21:41:41 -0400
-X-AuditID: cbfee68e-b7f756d000004512-10-525605d34ed0
+	Wed, 9 Oct 2013 21:41:46 -0400
+X-AuditID: cbfee68e-b7f756d000004512-f2-525605d19d07
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: broonie@kernel.org, lgirdwood@gmail.com, sbkim73@samsung.com
 Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
         Chanwoo Choi <cw00.choi@samsung.com>,
-        YoungJun Cho <yj44.cho@samsung.com>,
         Kyungmin Park <kyungmin.park@samsung.com>
-Subject: [PATCH 2/2] regulator: s5m8767: Modify parsing method of the voltage
- table of buck2/3/4
-Date: Thu, 10 Oct 2013 10:41:36 +0900
-Message-id: <1381369296-17101-2-git-send-email-cw00.choi@samsung.com>
+Subject: [PATCH 1/2] regulator: s5m8767: Modify parse_dt function to parse data
+ related to ramp
+Date: Thu, 10 Oct 2013 10:41:35 +0900
+Message-id: <1381369296-17101-1-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.0
-In-reply-to: <1381369296-17101-1-git-send-email-cw00.choi@samsung.com>
-References: <1381369296-17101-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKLMWRmVeSWpSXmKPExsWyRsSkRPcKa1iQwa1nrBZTHz5hs7j+5Tmr
-	xfwj51gtzja9Ybf4dqWDyeLyrjlsFhdXfGGy2LtzMqMDh8fOWXfZPTat6mTz6NuyitHj8ya5
-	AJYoLpuU1JzMstQifbsErowDO9IKlstWbLqxg7mBca9EFyMHh4SAicTyG5ZdjJxAppjEhXvr
-	2boYuTiEBJYySjzt/skOkTCR2Ll4CjtEYhGjxJ5Vh6CqGpkkJv+7zwJSxSagJbH/xQ02kKki
-	Ag4SkxfogtQwC2xjlGje/IUNpEZYIEnixLqXYFNZBFQlrp1qBLN5BVwlDjZ2Qm2Tk/iw5xGY
-	zSngJnH75AcmEFsIqObH+hlgiyUEprNLNN5ewwwxSEDi2+RDLBDvyEpsOsAMMUdS4uCKGywT
-	GIUXMDKsYhRNLUguKE5KLzLSK07MLS7NS9dLzs/dxAgM8tP/nvXtYLx5wPoQYzLQuInMUqLJ
-	+cAoySuJNzQ2M7IwNTE1NjK3NCNNWEmcV63FOlBIID2xJDU7NbUgtSi+qDQntfgQIxMHp1QD
-	o8HFDskOaY9X1z3+3Jv7wqHwynKB9MdPc+daJdt9OqgQs3hn56pfZXePO5omfzTxck0Lqrc9
-	uSasQ0GxK5MveOuJPpeOl7/0+Q5vDW4Jr1qfsqx0YtuhrQ/MC4RWBLpc71h2r7SF55NL8eZY
-	9vu2f05VnlTz8b3v19guu2hjZ/kB8zWcod8FlViKMxINtZiLihMBwxmc44gCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMIsWRmVeSWpSXmKPExsVy+t9jAd3LrGFBBld2W1lMffiEzeL6l+es
-	FvOPnGO1ONv0ht3i25UOJovLu+awWVxc8YXJYu/OyYwOHB47Z91l99i0qpPNo2/LKkaPz5vk
-	AliiGhhtMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwCdN0yc4Du
-	UFIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jBmHNiRVrBctmLTjR3MDYx7
-	JboYOTkkBEwkdi6ewg5hi0lcuLeerYuRi0NIYBGjxJ5Vh6CcRiaJyf/us4BUsQloSex/cQMo
-	wcEhIuAgMXmBLkgNs8A2RonmzV/YQGqEBZIkTqx7CTaVRUBV4tqpRjCbV8BV4mBjJ9Q2OYkP
-	ex6B2ZwCbhK3T35gArGFgGp+rJ/BNoGRdwEjwypG0dSC5ILipPRcQ73ixNzi0rx0veT83E2M
-	4Ch6JrWDcWWDxSFGAQ5GJR7eirLQICHWxLLiytxDjBIczEoivNNPAoV4UxIrq1KL8uOLSnNS
-	iw8xJgNdNZFZSjQ5HxjheSXxhsYmZkaWRuaGFkbG5qQJK4nzHmi1DhQSSE8sSc1OTS1ILYLZ
-	wsTBKdXAWLrskqbjQ5bTzn0P/JxWvbhtcP55BjPnljkty+I1QmTm114KT5k8/VEuR8y+vV5T
-	D20MP37sVp5ZhK8pT33bRt4/zj8MzO8lNDryK0y/6H+WWZ9D8t3T/G1JPPc2XmDiCteOsHJq
-	6fcpNS1IE56TNFlwRb1Tgo/EccPuiXv9rxha6tYsnPpUiaU4I9FQi7moOBEAiCiwN+YCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrBLMWRmVeSWpSXmKPExsWyRsSkWPcia1iQwd3b8hZTHz5hs7j+5Tmr
+	xfwj51gtzja9Ybf4dqWDyeLyrjlsFhdXfGFyYPfYOesuu8emVZ1sHn1bVjF6fN4kF8ASxWWT
+	kpqTWZZapG+XwJXRs/0ZY8EOzopZ/bdZGhjbOboYOTkkBEwk5p45yA5hi0lcuLeerYuRi0NI
+	YCmjxLL/95lhiuZvW8oGYgsJLGKUOLGxFKKokUliaWMHE0iCTUBLYv+LG0BFHBwiAg4Skxfo
+	gtQwC/QzSmy+vIUFpEZYIFHibU8zI4jNIqAqsbBzGlicV8BV4vnEW1BXyEl82PMIyv7NJvHn
+	YhFEvYDEt8mHWEDmSwjISmw6AHWbpMTBFTdYJjAKLmBkWMUomlqQXFCclF5kpFecmFtcmpeu
+	l5yfu4kRGKqn/z3r28F484D1IcZkoHETmaVEk/OBoZ5XEm9obGZkYWpiamxkbmlGmrCSOK9a
+	i3WgkEB6YklqdmpqQWpRfFFpTmrxIUYmDk6pBkZh5nWXAr5e1cs5V1NX4147JZs389uvD69D
+	ZEVqPG7fy2FudzjkWPP68YsP7d+V/Wcf3TeN9aKcaIegXHJ4f+Mrh2JJvevJdudWPG6SL1HW
+	Wrhpy+p+K+Go6RqRi9RWq+93r1A7wC8f/+vJP92u87MeShW+aQ86U7/yplyrff6OPZPmRf3Z
+	pa/EUpyRaKjFXFScCABfoYNGawIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrGIsWRmVeSWpSXmKPExsVy+t9jAd2LrGFBBvfWSFhMffiEzeL6l+es
+	FvOPnGO1ONv0ht3i25UOJovLu+awWVxc8YXJgd1j56y77B6bVnWyefRtWcXo8XmTXABLVAOj
+	TUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7QCUoKZYk5
+	pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwhrGjJ7tzxgLdnBWzOq/zdLA2M7RxcjJ
+	ISFgIjF/21I2CFtM4sK99WC2kMAiRokTG0u7GLmA7EYmiaWNHUwgCTYBLYn9L24AFXFwiAg4
+	SExeoAtSwyzQzyix+fIWFpAaYYFEibc9zYwgNouAqsTCzmlgcV4BV4nnE2+xQyyTk/iw5xH7
+	BEbuBYwMqxhFUwuSC4qT0nON9IoTc4tL89L1kvNzNzGCY+GZ9A7GVQ0WhxgFOBiVeHgrykKD
+	hFgTy4orcw8xSnAwK4nwTj8JFOJNSaysSi3Kjy8qzUktPsSYDLR9IrOUaHI+ME7zSuINjU3M
+	jCyNzA0tjIzNSRNWEuc92GodKCSQnliSmp2aWpBaBLOFiYNTqoExdUbHuXB5nXO5PRZ3I7W1
+	VXSvT//cZ+F5/JbgUeeP0jPsZcpCvp6QVlbRcDobPKnih9QMAZ35O5wXHdw0fYd30lsV80Oz
+	a7I2OKaHPPZ/vFJ3v5p/krz/1KW2PCsyamIyZySfOWjw1E8mlNv18X5PVRaXa/M+GMQ98phb
+	r3TZxpD9zN4ZQqVKLMUZiYZazEXFiQDQ0nP5yQIAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -51,111 +48,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The s5m8767 regulator driver parse always the voltage table of buck2/3/4.
-If gpio_dvs feature isn't used and dts haven't included the voltage table
-of buck2/3/4, s5m8767 regulator driver return error and file probe state.
-
-This patch check only voltage table of buck on s5m8767_pmic_dt_parse_pdata()
-if buck[2-4]_gpiodvs is true.
+This patch parse 'buck[2-4]_ramp_enable and buck_ramp_delay' platform data
+from dts file.
 
 Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-Signed-off-by: YoungJun Cho <yj44.cho@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- drivers/regulator/s5m8767.c | 54 +++++++++++++++++++++++----------------------
- 1 file changed, 28 insertions(+), 26 deletions(-)
+ drivers/regulator/s5m8767.c | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
 diff --git a/drivers/regulator/s5m8767.c b/drivers/regulator/s5m8767.c
-index cb6cdb3..29999c0 100644
+index c24448b..cb6cdb3 100644
 --- a/drivers/regulator/s5m8767.c
 +++ b/drivers/regulator/s5m8767.c
-@@ -522,7 +522,7 @@ static int s5m8767_pmic_dt_parse_pdata(struct platform_device *pdev,
- 	struct device_node *pmic_np, *regulators_np, *reg_np;
- 	struct sec_regulator_data *rdata;
- 	struct sec_opmode_data *rmode;
--	unsigned int i, dvs_voltage_nr = 1, ret;
-+	unsigned int i, dvs_voltage_nr = 8, ret;
- 
- 	pmic_np = iodev->dev->of_node;
- 	if (!pmic_np) {
-@@ -586,15 +586,39 @@ static int s5m8767_pmic_dt_parse_pdata(struct platform_device *pdev,
- 		rmode++;
- 	}
- 
--	if (of_get_property(pmic_np, "s5m8767,pmic-buck2-uses-gpio-dvs", NULL))
-+	if (of_get_property(pmic_np, "s5m8767,pmic-buck2-uses-gpio-dvs", NULL)) {
- 		pdata->buck2_gpiodvs = true;
- 
--	if (of_get_property(pmic_np, "s5m8767,pmic-buck3-uses-gpio-dvs", NULL))
-+		if (of_property_read_u32_array(pmic_np,
-+				"s5m8767,pmic-buck2-dvs-voltage",
-+				pdata->buck2_voltage, dvs_voltage_nr)) {
-+			dev_err(iodev->dev, "buck2 voltages not specified\n");
-+			return -EINVAL;
-+		}
-+	}
-+
-+	if (of_get_property(pmic_np, "s5m8767,pmic-buck3-uses-gpio-dvs", NULL)) {
- 		pdata->buck3_gpiodvs = true;
- 
--	if (of_get_property(pmic_np, "s5m8767,pmic-buck4-uses-gpio-dvs", NULL))
-+		if (of_property_read_u32_array(pmic_np,
-+				"s5m8767,pmic-buck3-dvs-voltage",
-+				pdata->buck3_voltage, dvs_voltage_nr)) {
-+			dev_err(iodev->dev, "buck3 voltages not specified\n");
-+			return -EINVAL;
-+		}
-+	}
-+
-+	if (of_get_property(pmic_np, "s5m8767,pmic-buck4-uses-gpio-dvs", NULL)) {
- 		pdata->buck4_gpiodvs = true;
- 
-+		if (of_property_read_u32_array(pmic_np,
-+				"s5m8767,pmic-buck4-dvs-voltage",
-+				pdata->buck4_voltage, dvs_voltage_nr)) {
-+			dev_err(iodev->dev, "buck4 voltages not specified\n");
-+			return -EINVAL;
-+		}
-+	}
-+
- 	if (pdata->buck2_gpiodvs || pdata->buck3_gpiodvs ||
- 						pdata->buck4_gpiodvs) {
- 		ret = s5m8767_pmic_dt_parse_dvs_gpio(iodev, pdata, pmic_np);
-@@ -612,34 +636,12 @@ static int s5m8767_pmic_dt_parse_pdata(struct platform_device *pdev,
- 				"invalid value for default dvs index, use 0\n");
- 			}
- 		}
--		dvs_voltage_nr = 8;
- 	}
- 
- 	ret = s5m8767_pmic_dt_parse_ds_gpio(iodev, pdata, pmic_np);
- 	if (ret)
+@@ -640,6 +640,22 @@ static int s5m8767_pmic_dt_parse_pdata(struct platform_device *pdev,
  		return -EINVAL;
+ 	}
  
--	if (of_property_read_u32_array(pmic_np,
--				"s5m8767,pmic-buck2-dvs-voltage",
--				pdata->buck2_voltage, dvs_voltage_nr)) {
--		dev_err(iodev->dev, "buck2 voltages not specified\n");
--		return -EINVAL;
--	}
--
--	if (of_property_read_u32_array(pmic_np,
--				"s5m8767,pmic-buck3-dvs-voltage",
--				pdata->buck3_voltage, dvs_voltage_nr)) {
--		dev_err(iodev->dev, "buck3 voltages not specified\n");
--		return -EINVAL;
--	}
--
--	if (of_property_read_u32_array(pmic_np,
--				"s5m8767,pmic-buck4-dvs-voltage",
--				pdata->buck4_voltage, dvs_voltage_nr)) {
--		dev_err(iodev->dev, "buck4 voltages not specified\n");
--		return -EINVAL;
--	}
--
- 	if (of_get_property(pmic_np, "s5m8767,pmic-buck2-ramp-enable", NULL))
- 		pdata->buck2_ramp_enable = true;
- 
++	if (of_get_property(pmic_np, "s5m8767,pmic-buck2-ramp-enable", NULL))
++		pdata->buck2_ramp_enable = true;
++
++	if (of_get_property(pmic_np, "s5m8767,pmic-buck3-ramp-enable", NULL))
++		pdata->buck3_ramp_enable = true;
++
++	if (of_get_property(pmic_np, "s5m8767,pmic-buck4-ramp-enable", NULL))
++		pdata->buck4_ramp_enable = true;
++
++	if (pdata->buck2_ramp_enable || pdata->buck3_ramp_enable
++			|| pdata->buck4_ramp_enable) {
++		if (of_property_read_u32(pmic_np, "s5m8767,pmic-buck-ramp-delay",
++				&pdata->buck_ramp_delay))
++			pdata->buck_ramp_delay = 0;
++	}
++
+ 	return 0;
+ }
+ #else
 -- 
 1.8.0
 
