@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756762Ab3JJPq5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 11:46:57 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52755 "EHLO
+	id S1756793Ab3JJPrG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 11:47:06 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52760 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756725Ab3JJPqy (ORCPT
+	with ESMTP id S1755601Ab3JJPq5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 11:46:54 -0400
+	Thu, 10 Oct 2013 11:46:57 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
         Linus Walleij <linus.walleij@linaro.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 094/104] gpio/omap: maintain GPIO and IRQ usage separately
-Date: Thu, 10 Oct 2013 08:42:22 -0700
-Message-Id: <1381419752-29733-95-git-send-email-kamal@canonical.com>
+Subject: [PATCH 095/104] gpio/omap: auto-setup a GPIO when used as an IRQ
+Date: Thu, 10 Oct 2013 08:42:23 -0700
+Message-Id: <1381419752-29733-96-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381419752-29733-1-git-send-email-kamal@canonical.com>
 References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
@@ -30,16 +30,23 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 
-commit fa365e4d729065b5e85165df3dc9699ed47489cc upstream.
+commit fac7fa162a19100298d5d91359960037dc5bfca9 upstream.
 
-The GPIO OMAP controller pins can be used as IRQ and GPIO
-independently so is necessary to keep track GPIO pins and
-IRQ lines usage separately to make sure that the bank will
-always be enabled while being used.
+The OMAP GPIO controller HW requires a pin to be configured in GPIO
+input mode in order to operate as an interrupt input. Since drivers
+should not be aware of whether an interrupt pin is also a GPIO or not,
+the HW should be fully configured/enabled as an IRQ if a driver solely
+uses IRQ APIs such as request_irq(), and never calls any GPIO-related
+APIs. As such, add the missing HW setup to the OMAP GPIO controller's
+irq_chip driver.
 
-Also move gpio_is_input() definition in preparation for the
-next patch that setups the controller's irq_chip driver when
-a caller requests an interrupt line.
+Since this bypasses the GPIO subsystem we have to ensure that another
+driver won't be able to request the same GPIO pin that is used as an
+IRQ and set its direction as output. Requesting the GPIO and setting
+its direction as input is allowed though.
+
+This fixes smsc911x ethernet support for tobi and igep OMAP3 boards
+and OMAP4 SDP SPI based ethernet that use a GPIO as an interrupt line.
 
 Acked-by: Stephen Warren <swarren@nvidia.com>
 Tested-by: George Cherian <george.cherian@ti.com>
@@ -51,148 +58,209 @@ Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 Acked-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-[ kamal: backport to 3.8 (context) ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
-
-Conflicts:
-	drivers/gpio/gpio-omap.c
 ---
- drivers/gpio/gpio-omap.c | 36 +++++++++++++++++++++++-------------
- 1 file changed, 23 insertions(+), 13 deletions(-)
+ drivers/gpio/gpio-omap.c | 129 ++++++++++++++++++++++++++++++-----------------
+ 1 file changed, 83 insertions(+), 46 deletions(-)
 
 diff --git a/drivers/gpio/gpio-omap.c b/drivers/gpio/gpio-omap.c
-index f1fbedb2..343fc2f 100644
+index 343fc2f..fea4c50 100644
 --- a/drivers/gpio/gpio-omap.c
 +++ b/drivers/gpio/gpio-omap.c
-@@ -65,6 +65,7 @@ struct gpio_bank {
- 	struct gpio_chip chip;
- 	struct clk *dbck;
- 	u32 mod_usage;
-+	u32 irq_usage;
- 	u32 dbck_enable_mask;
- 	bool dbck_enabled;
- 	struct device *dev;
-@@ -87,6 +88,9 @@ struct gpio_bank {
- #define GPIO_BIT(bank, gpio) (1 << GPIO_INDEX(bank, gpio))
- #define GPIO_MOD_CTRL_BIT	BIT(0)
- 
-+#define BANK_USED(bank) (bank->mod_usage || bank->irq_usage)
-+#define LINE_USED(line, offset) (line & (1 << offset))
-+
- static int irq_to_gpio(struct gpio_bank *bank, unsigned int gpio_irq)
- {
- 	return gpio_irq - bank->irq_base + bank->chip.base;
-@@ -414,6 +418,13 @@ static int _set_gpio_triggering(struct gpio_bank *bank, int gpio,
+@@ -418,6 +418,52 @@ static int _set_gpio_triggering(struct gpio_bank *bank, int gpio,
  	return 0;
  }
  
-+static int gpio_is_input(struct gpio_bank *bank, int mask)
++static void _enable_gpio_module(struct gpio_bank *bank, unsigned offset)
 +{
-+	void __iomem *reg = bank->base + bank->regs->direction;
++	if (bank->regs->pinctrl) {
++		void __iomem *reg = bank->base + bank->regs->pinctrl;
 +
-+	return __raw_readl(reg) & mask;
++		/* Claim the pin for MPU */
++		__raw_writel(__raw_readl(reg) | (1 << offset), reg);
++	}
++
++	if (bank->regs->ctrl && !BANK_USED(bank)) {
++		void __iomem *reg = bank->base + bank->regs->ctrl;
++		u32 ctrl;
++
++		ctrl = __raw_readl(reg);
++		/* Module is enabled, clocks are not gated */
++		ctrl &= ~GPIO_MOD_CTRL_BIT;
++		__raw_writel(ctrl, reg);
++		bank->context.ctrl = ctrl;
++	}
 +}
 +
- static int gpio_irq_type(struct irq_data *d, unsigned type)
++static void _disable_gpio_module(struct gpio_bank *bank, unsigned offset)
++{
++	void __iomem *base = bank->base;
++
++	if (bank->regs->wkup_en &&
++	    !LINE_USED(bank->mod_usage, offset) &&
++	    !LINE_USED(bank->irq_usage, offset)) {
++		/* Disable wake-up during idle for dynamic tick */
++		_gpio_rmw(base, bank->regs->wkup_en, 1 << offset, 0);
++		bank->context.wake_en =
++			__raw_readl(bank->base + bank->regs->wkup_en);
++	}
++
++	if (bank->regs->ctrl && !BANK_USED(bank)) {
++		void __iomem *reg = bank->base + bank->regs->ctrl;
++		u32 ctrl;
++
++		ctrl = __raw_readl(reg);
++		/* Module is disabled, clocks are gated */
++		ctrl |= GPIO_MOD_CTRL_BIT;
++		__raw_writel(ctrl, reg);
++		bank->context.ctrl = ctrl;
++	}
++}
++
+ static int gpio_is_input(struct gpio_bank *bank, int mask)
  {
- 	struct gpio_bank *bank = irq_data_get_irq_chip_data(d);
-@@ -421,6 +432,9 @@ static int gpio_irq_type(struct irq_data *d, unsigned type)
+ 	void __iomem *reg = bank->base + bank->regs->direction;
+@@ -431,9 +477,10 @@ static int gpio_irq_type(struct irq_data *d, unsigned type)
+ 	unsigned gpio = 0;
  	int retval;
  	unsigned long flags;
++	unsigned offset;
  
-+	if (WARN_ON(!BANK_USED(bank)))
-+		return -EINVAL;
-+
+-	if (WARN_ON(!BANK_USED(bank)))
+-		return -EINVAL;
++	if (!BANK_USED(bank))
++		pm_runtime_get_sync(bank->dev);
+ 
  #ifdef CONFIG_ARCH_OMAP1
  	if (d->irq > IH_MPUIO_BASE)
- 		gpio = OMAP_MPUIO(d->irq - IH_MPUIO_BASE);
-@@ -438,6 +452,7 @@ static int gpio_irq_type(struct irq_data *d, unsigned type)
+@@ -451,7 +498,16 @@ static int gpio_irq_type(struct irq_data *d, unsigned type)
+ 		return -EINVAL;
  
  	spin_lock_irqsave(&bank->lock, flags);
- 	retval = _set_gpio_triggering(bank, GPIO_INDEX(bank, gpio), type);
-+	bank->irq_usage |= 1 << GPIO_INDEX(bank, gpio);
+-	retval = _set_gpio_triggering(bank, GPIO_INDEX(bank, gpio), type);
++	offset = GPIO_INDEX(bank, gpio);
++	retval = _set_gpio_triggering(bank, offset, type);
++	if (!LINE_USED(bank->mod_usage, offset)) {
++		_enable_gpio_module(bank, offset);
++		_set_gpio_direction(bank, offset, 1);
++	} else if (!gpio_is_input(bank, 1 << offset)) {
++		spin_unlock_irqrestore(&bank->lock, flags);
++		return -EINVAL;
++	}
++
+ 	bank->irq_usage |= 1 << GPIO_INDEX(bank, gpio);
  	spin_unlock_irqrestore(&bank->lock, flags);
  
- 	if (type & (IRQ_TYPE_LEVEL_LOW | IRQ_TYPE_LEVEL_HIGH))
-@@ -594,7 +609,7 @@ static int omap_gpio_request(struct gpio_chip *chip, unsigned offset)
- 	 * If this is the first gpio_request for the bank,
- 	 * enable the bank module.
- 	 */
--	if (!bank->mod_usage)
-+	if (!BANK_USED(bank))
- 		pm_runtime_get_sync(bank->dev);
+@@ -614,30 +670,14 @@ static int omap_gpio_request(struct gpio_chip *chip, unsigned offset)
  
  	spin_lock_irqsave(&bank->lock, flags);
-@@ -610,7 +625,7 @@ static int omap_gpio_request(struct gpio_chip *chip, unsigned offset)
- 		__raw_writel(__raw_readl(reg) | (1 << offset), reg);
+ 	/* Set trigger to none. You need to enable the desired trigger with
+-	 * request_irq() or set_irq_type().
++	 * request_irq() or set_irq_type(). Only do this if the IRQ line has
++	 * not already been requested.
+ 	 */
+-	_set_gpio_triggering(bank, offset, IRQ_TYPE_NONE);
+-
+-	if (bank->regs->pinctrl) {
+-		void __iomem *reg = bank->base + bank->regs->pinctrl;
+-
+-		/* Claim the pin for MPU */
+-		__raw_writel(__raw_readl(reg) | (1 << offset), reg);
++	if (!LINE_USED(bank->irq_usage, offset)) {
++		_set_gpio_triggering(bank, offset, IRQ_TYPE_NONE);
++		_enable_gpio_module(bank, offset);
  	}
+-
+-	if (bank->regs->ctrl && !BANK_USED(bank)) {
+-		void __iomem *reg = bank->base + bank->regs->ctrl;
+-		u32 ctrl;
+-
+-		ctrl = __raw_readl(reg);
+-		/* Module is enabled, clocks are not gated */
+-		ctrl &= ~GPIO_MOD_CTRL_BIT;
+-		__raw_writel(ctrl, reg);
+-		bank->context.ctrl = ctrl;
+-	}
+-
+ 	bank->mod_usage |= 1 << offset;
+-
+ 	spin_unlock_irqrestore(&bank->lock, flags);
  
--	if (bank->regs->ctrl && !bank->mod_usage) {
-+	if (bank->regs->ctrl && !BANK_USED(bank)) {
- 		void __iomem *reg = bank->base + bank->regs->ctrl;
- 		u32 ctrl;
- 
-@@ -645,7 +660,7 @@ static void omap_gpio_free(struct gpio_chip *chip, unsigned offset)
- 
- 	bank->mod_usage &= ~(1 << offset);
- 
--	if (bank->regs->ctrl && !bank->mod_usage) {
-+	if (bank->regs->ctrl && !BANK_USED(bank)) {
- 		void __iomem *reg = bank->base + bank->regs->ctrl;
- 		u32 ctrl;
- 
-@@ -663,7 +678,7 @@ static void omap_gpio_free(struct gpio_chip *chip, unsigned offset)
- 	 * If this is the last gpio to be freed in the bank,
- 	 * disable the bank module.
- 	 */
--	if (!bank->mod_usage)
-+	if (!BANK_USED(bank))
- 		pm_runtime_put(bank->dev);
- }
- 
-@@ -758,8 +773,10 @@ static void gpio_irq_shutdown(struct irq_data *d)
- 	struct gpio_bank *bank = irq_data_get_irq_chip_data(d);
- 	unsigned int gpio = irq_to_gpio(bank, d->irq);
+ 	return 0;
+@@ -646,31 +686,11 @@ static int omap_gpio_request(struct gpio_chip *chip, unsigned offset)
+ static void omap_gpio_free(struct gpio_chip *chip, unsigned offset)
+ {
+ 	struct gpio_bank *bank = container_of(chip, struct gpio_bank, chip);
+-	void __iomem *base = bank->base;
  	unsigned long flags;
-+	unsigned offset = GPIO_INDEX(bank, gpio);
  
  	spin_lock_irqsave(&bank->lock, flags);
-+	bank->irq_usage &= ~(1 << offset);
+-
+-	if (bank->regs->wkup_en) {
+-		/* Disable wake-up during idle for dynamic tick */
+-		_gpio_rmw(base, bank->regs->wkup_en, 1 << offset, 0);
+-		bank->context.wake_en =
+-			__raw_readl(bank->base + bank->regs->wkup_en);
+-	}
+-
+ 	bank->mod_usage &= ~(1 << offset);
+-
+-	if (bank->regs->ctrl && !BANK_USED(bank)) {
+-		void __iomem *reg = bank->base + bank->regs->ctrl;
+-		u32 ctrl;
+-
+-		ctrl = __raw_readl(reg);
+-		/* Module is disabled, clocks are gated */
+-		ctrl |= GPIO_MOD_CTRL_BIT;
+-		__raw_writel(ctrl, reg);
+-		bank->context.ctrl = ctrl;
+-	}
+-
++	_disable_gpio_module(bank, offset);
+ 	_reset_gpio(bank, bank->chip.base + offset);
+ 	spin_unlock_irqrestore(&bank->lock, flags);
+ 
+@@ -777,8 +797,16 @@ static void gpio_irq_shutdown(struct irq_data *d)
+ 
+ 	spin_lock_irqsave(&bank->lock, flags);
+ 	bank->irq_usage &= ~(1 << offset);
++	_disable_gpio_module(bank, offset);
  	_reset_gpio(bank, gpio);
  	spin_unlock_irqrestore(&bank->lock, flags);
- }
-@@ -893,13 +910,6 @@ static int gpio_input(struct gpio_chip *chip, unsigned offset)
- 	return 0;
++
++	/*
++	 * If this is the last IRQ to be freed in the bank,
++	 * disable the bank module.
++	 */
++	if (!BANK_USED(bank))
++		pm_runtime_put(bank->dev);
  }
  
--static int gpio_is_input(struct gpio_bank *bank, int mask)
--{
--	void __iomem *reg = bank->base + bank->regs->direction;
--
--	return __raw_readl(reg) & mask;
--}
--
- static int gpio_get(struct gpio_chip *chip, unsigned offset)
+ static void gpio_ack_irq(struct irq_data *d)
+@@ -928,13 +956,22 @@ static int gpio_output(struct gpio_chip *chip, unsigned offset, int value)
  {
  	struct gpio_bank *bank;
-@@ -1363,7 +1373,7 @@ void omap2_gpio_prepare_for_idle(int pwr_mode)
- 	struct gpio_bank *bank;
+ 	unsigned long flags;
++	int retval = 0;
  
- 	list_for_each_entry(bank, &omap_gpio_list, node) {
--		if (!bank->mod_usage || !bank->loses_context)
-+		if (!BANK_USED(bank) || !bank->loses_context)
- 			continue;
+ 	bank = container_of(chip, struct gpio_bank, chip);
+ 	spin_lock_irqsave(&bank->lock, flags);
++
++	if (LINE_USED(bank->irq_usage, offset)) {
++			retval = -EINVAL;
++			goto exit;
++	}
++
+ 	bank->set_dataout(bank, offset, value);
+ 	_set_gpio_direction(bank, offset, 0);
++
++exit:
+ 	spin_unlock_irqrestore(&bank->lock, flags);
+-	return 0;
++	return retval;
+ }
  
- 		bank->power_mode = pwr_mode;
-@@ -1377,7 +1387,7 @@ void omap2_gpio_resume_after_idle(void)
- 	struct gpio_bank *bank;
- 
- 	list_for_each_entry(bank, &omap_gpio_list, node) {
--		if (!bank->mod_usage || !bank->loses_context)
-+		if (!BANK_USED(bank) || !bank->loses_context)
- 			continue;
- 
- 		pm_runtime_get_sync(bank->dev);
+ static int gpio_debounce(struct gpio_chip *chip, unsigned offset,
 -- 
 1.8.1.2
 
