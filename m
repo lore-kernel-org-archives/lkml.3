@@ -1,124 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754618Ab3JJGwf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 02:52:35 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:40059 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752487Ab3JJGwe convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 02:52:34 -0400
+	id S1754667Ab3JJGxp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 02:53:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20839 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752137Ab3JJGxo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 02:53:44 -0400
+Date: Thu, 10 Oct 2013 14:55:03 +0800
+From: Dong Zhu <bluezhudong@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>, John Stultz <john.stultz@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v0.3] timer stats: add a 'status' line to timer usage
+ statistics
+Message-ID: <20131010065503.GG2139@zhudong.nay.redhat.com>
+References: <20131010025947.GD2139@zhudong.nay.redhat.com>
+ <20131010043519.GB22519@gmail.com>
+ <20131010061408.GF2139@zhudong.nay.redhat.com>
+ <20131010061621.GA9853@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20131010024613.GA10719@localhost>
-References: <524E57BA.805@nod.at>
-	<52517109.90605@gmx.de>
-	<CAMuHMdXrU0e_6AxvdboMkDs+N+tSWD+b8ou92j28c0vsq2eQQA@mail.gmail.com>
-	<5251C334.3010604@gmx.de>
-	<CAMuHMdUo8dSd4s3089ZDEc485wL1sFxBKLeaExJuqNiQY+S-Lw@mail.gmail.com>
-	<5251CF94.5040101@gmx.de>
-	<CAMuHMdWs6Y7y12STJ+YXKJjxRF0k5yU9C9+0fiPPmq-GgeW-6Q@mail.gmail.com>
-	<525591AD.4060401@gmx.de>
-	<5255A3E6.6020100@nod.at>
-	<20131009214733.GB25608@quack.suse.cz>
-	<20131010024613.GA10719@localhost>
-Date: Thu, 10 Oct 2013 08:52:33 +0200
-X-Google-Sender-Auth: 9Gj7oma21fsi8VwHqdwrTXo_JRg
-Message-ID: <CAMuHMdWSQrgMtW84QLs1Q96Jg-sYntS9Ohz-sXd3dWhuR2O7mw@mail.gmail.com>
-Subject: Re: [uml-devel] BUG: soft lockup for a user mode linux image
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Jan Kara <jack@suse.cz>, Richard Weinberger <richard@nod.at>,
-        =?UTF-8?Q?Toralf_F=C3=B6rster?= <toralf.foerster@gmx.de>,
-        UML devel <user-mode-linux-devel@lists.sourceforge.net>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        hannes@cmpxchg.org, darrick.wong@oracle.com,
-        Michal Hocko <mhocko@suse.cz>, Gu Zheng <guz.fnst@cn.fujitsu.com>,
-        Benjamin LaHaise <bcrl@kvack.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131010061621.GA9853@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 10, 2013 at 4:46 AM, Fengguang Wu <fengguang.wu@intel.com> wrote:
-> On Wed, Oct 09, 2013 at 11:47:33PM +0200, Jan Kara wrote:
->> On Wed 09-10-13 20:43:50, Richard Weinberger wrote:
->> > Am 09.10.2013 19:26, schrieb Toralf Förster:
->> > > On 10/08/2013 10:07 PM, Geert Uytterhoeven wrote:
->> > >> On Sun, Oct 6, 2013 at 11:01 PM, Toralf Förster <toralf.foerster@gmx.de> wrote:
->> > >>>> Hmm, now pages_dirtied is zero, according to the backtrace, but the BUG_ON()
->> > >>>> asserts its strict positive?!?
->> > >>>>
->> > >>>> Can you please try the following instead of the BUG_ON():
->> > >>>>
->> > >>>> if (pause < 0) {
->> > >>>>         printk("pages_dirtied = %lu\n", pages_dirtied);
->> > >>>>         printk("task_ratelimit = %lu\n", task_ratelimit);
->> > >>>>         printk("pause = %ld\n", pause);
+> > Agree, I modified this patch and resubmited it again, Could you help
+> > reviewing it again ? Thanks !
+> > 
+> > From 263c40abea8011c82582b2d671ae783b26f44bd5 Mon Sep 17 00:00:00 2001
+> > From: Dong Zhu <bluezhudong@gmail.com> 
+> > Date: Thu, 10 Oct 2013 13:46:08 +0800
+> > 
+> > We can enable|disable timer statistics collection (via echo [1|0] >
+> > /proc/timers_stats), this patch adds a 'status' line to display the
+> > current timer collection status.
+> > 
+> > Signed-off-by: Dong Zhu <bluezhudong@gmail.com>
+> > ---
+> >  kernel/time/timer_stats.c | 4 ++++
+> >  1 file changed, 4 insertions(+)
+> > 
+> > diff --git a/kernel/time/timer_stats.c b/kernel/time/timer_stats.c
+> > index 0b537f2..bac5e91 100644
+> > --- a/kernel/time/timer_stats.c
+> > +++ b/kernel/time/timer_stats.c
+> > @@ -303,6 +303,10 @@ static int tstats_show(struct seq_file *m, void *v)
+> >  	if (atomic_read(&overflow_count))
+> >  		seq_printf(m, "Overflow: %d entries\n",
+> >  			atomic_read(&overflow_count));
+> > +	if (timer_stats_active)
+> > +		seq_puts(m, "Status: collection active\n");
+> > +	else
+> > +		seq_puts(m, "Status: collection disabled\n");
+> 
+> I suspect we could do something like:
+> 
+> 	seq_printf("Status: collection %s\n", timer_stats_active ? "enabled" : "disabled");
+> 
+> and save a bit of kernel image size?
+> 
+> Also, please bump up the version to v0.3, to give parsers a chance.
+> 
+> Otherwise it looks good to me.
+> 
+Thanks for your comments, I refined this patch as below: 
+>From 1035e4e2b7ff28b1b2fccd407929179b5de8fbd4 Mon Sep 17 00:00:00 2001
+From: Dong Zhu <bluezhudong@gmail.com> 
+Date: Thu, 10 Oct 2013 14:48:24 +0800
 
->> > >>> I tried it in different ways already - I'm completely unsuccessful in getting any printk output.
->> > >>> As soon as the issue happens I do have a
->> > >>>
->> > >>> BUG: soft lockup - CPU#0 stuck for 22s! [trinity-child0:1521]
->> > >>>
->> > >>> at stderr of the UML and then no further input is accepted. With uml_mconsole I'm however able
->> > >>> to run very basic commands like a crash dump, sysrq ond so on.
->> > >>
->> > >> You may get an idea of the magnitude of pages_dirtied by using a chain of
->> > >> BUG_ON()s, like:
->> > >>
->> > >> BUG_ON(pages_dirtied > 2000000000);
->> > >> BUG_ON(pages_dirtied > 1000000000);
->> > >> BUG_ON(pages_dirtied > 100000000);
->> > >> BUG_ON(pages_dirtied > 10000000);
->> > >> BUG_ON(pages_dirtied > 1000000);
->> > >>
->> > >> Probably 1 million is already too much for normal operation?
->> > >>
->> > > period = HZ * pages_dirtied / task_ratelimit;
->> > >           BUG_ON(pages_dirtied > 2000000000);
->> > >           BUG_ON(pages_dirtied > 1000000000);      <-------------- this is line 1467
->> >
->> > Summary for mm people:
->> >
->> > Toralf runs trinty on UML/i386.
->> > After some time pages_dirtied becomes very large.
->> > More than 1000000000 pages in this case.
->>   Huh, this is really strange. pages_dirtied is passed into
->> balance_dirty_pages() from current->nr_dirtied. So I wonder how a value
->> over 10^9 can get there.
->
-> I noticed aio_setup_ring() in the call trace and find it recently
-> added a SetPageDirty() call in a loop by commit 36bc08cc01 ("fs/aio:
-> Add support to aio ring pages migration"). So added CC to its authors.
->
->> After all that is over 4TB so I somewhat doubt the
->> task was ever able to dirty that much during its lifetime (but correct me
->> if I'm wrong here, with UML and memory backed disks it is not totally
->> impossible)... I went through the logic of handling ->nr_dirtied but
->> I didn't find any obvious problem there. Hum, maybe one thing - what
->> 'task_ratelimit' values do you see in balance_dirty_pages? If that one was
->> huge, we could possibly accumulate huge current->nr_dirtied.
->>
->> > Thus, period = HZ * pages_dirtied / task_ratelimit overflows
->> > and period/pause becomes extremely large.
+We can enable|disable timer statistics collection (via echo [1|0] >
+/proc/timers_stats), this patch adds a 'status' line to display the
+current timer collection status.
 
-period/pause are signed long, so they become negative instead of
-extremely large when overflowing.
+Signed-off-by: Dong Zhu <bluezhudong@gmail.com>
+---
+ kernel/time/timer_stats.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
->> > It looks like io_schedule_timeout() get's called with a very large timeout.
->> > I don't know why "if (unlikely(pause > max_pause)) {" does not help.
+diff --git a/kernel/time/timer_stats.c b/kernel/time/timer_stats.c
+index 0b537f2..5236b45 100644
+--- a/kernel/time/timer_stats.c
++++ b/kernel/time/timer_stats.c
+@@ -303,6 +303,8 @@ static int tstats_show(struct seq_file *m, void *v)
+ 	if (atomic_read(&overflow_count))
+ 		seq_printf(m, "Overflow: %d entries\n",
+ 			atomic_read(&overflow_count));
++	seq_printf(m, "Status: collection %s\n",
++		timer_stats_active ? "enabled" : "disabled");
+ 
+ 	for (i = 0; i < nr_entries; i++) {
+ 		entry = entries + i;
+-- 
+1.7.11.7
 
-Because pause is now negative.
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-- 
+Best Regards,
+Dong Zhu
