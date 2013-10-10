@@ -1,100 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756058Ab3JJPm6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 11:42:58 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52616 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755779Ab3JJPm4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 11:42:56 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Ding Tianhong <dingtianhong@huawei.com>,
-        George Kargiotakis <kargig@void.gr>, P J P <ppandit@redhat.com>,
-        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Luis Henriques <luis.henriques@canonical.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 014/104] ipv6: remove max_addresses check from ipv6_create_tempaddr
-Date: Thu, 10 Oct 2013 08:41:02 -0700
-Message-Id: <1381419752-29733-15-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1381419752-29733-1-git-send-email-kamal@canonical.com>
-References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	id S1755963Ab3JJPnR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 11:43:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11030 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755260Ab3JJPnO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 11:43:14 -0400
+Date: Thu, 10 Oct 2013 17:36:03 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/6] Optimize the cpu hotplug locking -v2
+Message-ID: <20131010153603.GB13375@redhat.com>
+References: <20131008102505.404025673@infradead.org> <20131009225006.7101379c.akpm@linux-foundation.org> <20131010121908.GB28601@twins.programming.kicks-ass.net> <20131010145738.GA5167@gmail.com> <20131010152134.GQ3081@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131010152134.GQ3081@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.11 -stable review patch.  If anyone has any objections, please let me know.
+On 10/10, Peter Zijlstra wrote:
+>
+> That said, Oleg wants to use the same scheme for percpu_rwsem,
 
-------------------
+Yes, and later then (I hope) get_online_cpus() will be just
+current->cpuhp_ref++ || percpu_down_read().
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+(just in case, we only need ->cpuhp_ref to ensure that the readers
+ can't starve the writers as it currently possible. iow to block the
+ new readers but ensure that the recursive get/down_read can't block)
 
-commit 4b08a8f1bd8cb4541c93ec170027b4d0782dab52 upstream.
+And please look at sb_wait_write/sb_start_write. It uses the same
+logic except:
 
-Because of the max_addresses check attackers were able to disable privacy
-extensions on an interface by creating enough autoconfigured addresses:
+	- it doesn't have the "true" fast-path for readers
 
-<http://seclists.org/oss-sec/2012/q4/292>
+	- its "slow" mode is slower than necessary
 
-But the check is not actually needed: max_addresses protects the
-kernel to install too many ipv6 addresses on an interface and guards
-addrconf_prefix_rcv to install further addresses as soon as this limit
-is reached. We only generate temporary addresses in direct response of
-a new address showing up. As soon as we filled up the maximum number of
-addresses of an interface, we stop installing more addresses and thus
-also stop generating more temp addresses.
+	- it is buggy (afaics)
 
-Even if the attacker tries to generate a lot of temporary addresses
-by announcing a prefix and removing it again (lifetime == 0) we won't
-install more temp addresses, because the temporary addresses do count
-to the maximum number of addresses, thus we would stop installing new
-autoconfigured addresses when the limit is reached.
+> and I'm
+> not sure his write-side (something in uprobes) wants to do the same.
 
-This patch fixes CVE-2013-0343 (but other layer-2 attacks are still
-possible).
+surely not ;)
 
-Thanks to Ding Tianhong to bring this topic up again.
-
-Cc: Ding Tianhong <dingtianhong@huawei.com>
-Cc: George Kargiotakis <kargig@void.gr>
-Cc: P J P <ppandit@redhat.com>
-Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Acked-by: Ding Tianhong <dingtianhong@huawei.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-[ luis: backported to 3.5: adjusted context ]
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- net/ipv6/addrconf.c | 10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
-
-diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
-index 7b54fff..e169782 100644
---- a/net/ipv6/addrconf.c
-+++ b/net/ipv6/addrconf.c
-@@ -1046,12 +1046,10 @@ retry:
- 	if (ifp->flags & IFA_F_OPTIMISTIC)
- 		addr_flags |= IFA_F_OPTIMISTIC;
- 
--	ift = !max_addresses ||
--	      ipv6_count_addresses(idev) < max_addresses ?
--		ipv6_add_addr(idev, &addr, tmp_plen,
--			      ipv6_addr_type(&addr)&IPV6_ADDR_SCOPE_MASK,
--			      addr_flags) : NULL;
--	if (!ift || IS_ERR(ift)) {
-+	ift = ipv6_add_addr(idev, &addr, tmp_plen,
-+			    ipv6_addr_type(&addr)&IPV6_ADDR_SCOPE_MASK,
-+			    addr_flags);
-+	if (IS_ERR(ift)) {
- 		in6_ifa_put(ifp);
- 		in6_dev_put(idev);
- 		pr_info("%s: retry temporary address regeneration\n", __func__);
--- 
-1.8.1.2
+Oleg.
 
