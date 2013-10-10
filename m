@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757513Ab3JJPtl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 11:49:41 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52976 "EHLO
+	id S1757557Ab3JJPuA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 11:50:00 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53002 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757483Ab3JJPtf (ORCPT
+	with ESMTP id S1755553Ab3JJPt5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 11:49:35 -0400
+	Thu, 10 Oct 2013 11:49:57 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Nishanth Aravamudan <nacc@us.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: Alex Deucher <alexander.deucher@amd.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 100/104] powerpc/iommu: Use GFP_KERNEL instead of GFP_ATOMIC in iommu_init_table()
-Date: Thu, 10 Oct 2013 08:42:28 -0700
-Message-Id: <1381419752-29733-101-git-send-email-kamal@canonical.com>
+Subject: [PATCH 062/104] drm/radeon: disable tests/benchmarks if accel is disabled
+Date: Thu, 10 Oct 2013 08:41:50 -0700
+Message-Id: <1381419752-29733-63-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381419752-29733-1-git-send-email-kamal@canonical.com>
 References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
@@ -28,49 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 1cf389df090194a0976dc867b7fffe99d9d490cb upstream.
+commit 4a1132a023eb48cf10522d84c5908d43b612c041 upstream.
 
-Under heavy (DLPAR?) stress, we tripped this panic() in
-arch/powerpc/kernel/iommu.c::iommu_init_table():
+The tests are only usable if the acceleration engines have
+been successfully initialized.
 
-	page = alloc_pages_node(nid, GFP_ATOMIC, get_order(sz));
-	if (!page)
-		panic("iommu_init_table: Can't allocate %ld bytes\n", sz);
+Based on an initial patch from: Alex Ivanov <gnidorah@p0n4ik.tk>
 
-Before the panic() we got a page allocation failure for an order-2
-allocation. There appears to be memory free, but perhaps not in the
-ATOMIC context. I looked through all the call-sites of
-iommu_init_table() and didn't see any obvious reason to need an ATOMIC
-allocation. Most call-sites in fact have an explicit GFP_KERNEL
-allocation shortly before the call to iommu_init_table(), indicating we
-are not in an atomic context. There is some indirection for some paths,
-but I didn't see any locks indicating that GFP_KERNEL is inappropriate.
-
-With this change under the same conditions, we have not been able to
-reproduce the panic.
-
-Signed-off-by: Nishanth Aravamudan <nacc@us.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/powerpc/kernel/iommu.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/radeon_device.c | 15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
 
-diff --git a/arch/powerpc/kernel/iommu.c b/arch/powerpc/kernel/iommu.c
-index c862fd7..0eb8da2 100644
---- a/arch/powerpc/kernel/iommu.c
-+++ b/arch/powerpc/kernel/iommu.c
-@@ -658,7 +658,7 @@ struct iommu_table *iommu_init_table(struct iommu_table *tbl, int nid)
- 	/* number of bytes needed for the bitmap */
- 	sz = BITS_TO_LONGS(tbl->it_size) * sizeof(unsigned long);
- 
--	page = alloc_pages_node(nid, GFP_ATOMIC, get_order(sz));
-+	page = alloc_pages_node(nid, GFP_KERNEL, get_order(sz));
- 	if (!page)
- 		panic("iommu_init_table: Can't allocate %ld bytes\n", sz);
- 	tbl->it_map = page_address(page);
+diff --git a/drivers/gpu/drm/radeon/radeon_device.c b/drivers/gpu/drm/radeon/radeon_device.c
+index 57a7ac0..79169e3 100644
+--- a/drivers/gpu/drm/radeon/radeon_device.c
++++ b/drivers/gpu/drm/radeon/radeon_device.c
+@@ -1134,13 +1134,22 @@ int radeon_device_init(struct radeon_device *rdev,
+ 			return r;
+ 	}
+ 	if ((radeon_testing & 1)) {
+-		radeon_test_moves(rdev);
++		if (rdev->accel_working)
++			radeon_test_moves(rdev);
++		else
++			DRM_INFO("radeon: acceleration disabled, skipping move tests\n");
+ 	}
+ 	if ((radeon_testing & 2)) {
+-		radeon_test_syncing(rdev);
++		if (rdev->accel_working)
++			radeon_test_syncing(rdev);
++		else
++			DRM_INFO("radeon: acceleration disabled, skipping sync tests\n");
+ 	}
+ 	if (radeon_benchmarking) {
+-		radeon_benchmark(rdev, radeon_benchmarking);
++		if (rdev->accel_working)
++			radeon_benchmark(rdev, radeon_benchmarking);
++		else
++			DRM_INFO("radeon: acceleration disabled, skipping benchmarks\n");
+ 	}
+ 	return 0;
+ }
 -- 
 1.8.1.2
 
