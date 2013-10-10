@@ -1,115 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754370Ab3JJGQZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 02:16:25 -0400
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:46042 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751598Ab3JJGQY (ORCPT
+	id S1752129Ab3JJGTU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 02:19:20 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:65329 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751125Ab3JJGTT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 02:16:24 -0400
-Date: Thu, 10 Oct 2013 08:16:21 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Dong Zhu <bluezhudong@gmail.com>
-Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] timer stats: add a 'status' line to timer usage
- statistics
-Message-ID: <20131010061621.GA9853@gmail.com>
-References: <20131010025947.GD2139@zhudong.nay.redhat.com>
- <20131010043519.GB22519@gmail.com>
- <20131010061408.GF2139@zhudong.nay.redhat.com>
+	Thu, 10 Oct 2013 02:19:19 -0400
+X-AuditID: 9c930179-b7c78ae000003065-b1-525646e697d8
+From: Namhyung Kim <namhyung@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH 32/52] tools/perf/build: Speed up auto-detection of features by adding a 'test-all' target
+References: <1381227082-22039-1-git-send-email-mingo@kernel.org>
+	<1381227082-22039-33-git-send-email-mingo@kernel.org>
+Date: Thu, 10 Oct 2013 15:19:17 +0900
+In-Reply-To: <1381227082-22039-33-git-send-email-mingo@kernel.org> (Ingo
+	Molnar's message of "Tue, 8 Oct 2013 12:11:02 +0200")
+Message-ID: <87siw9ir6i.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131010061408.GF2139@zhudong.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue,  8 Oct 2013 12:11:02 +0200, Ingo Molnar wrote:
+> +test-all:
+> +	$(BUILD) -Werror -fstack-protector -Wvolatile-register-var -O2 -Werror -D_FORTIFY_SOURCE=2 -ldw -lelf -lnuma -lunwind -lunwind-x86_64 -lelf -laudit -I/usr/include/slang -lslang $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null) $(FLAGS_PERL_EMBED) $(FLAGS_PYTHON_EMBED) -DPACKAGE='perf' -DPACKAGE=perf -lbfd -ldl
 
-* Dong Zhu <bluezhudong@gmail.com> wrote:
+Also missed -Wstack-protector.  And duplicate -Werror.
 
-> Hi Ingo and John,
-> 
-> On Thu, Oct 10, 2013 at 06:35:19AM +0200, Ingo Molnar wrote:
-> > 
-> > * Dong Zhu <bluezhudong@gmail.com> wrote:
-> > 
-> > > From f41628c61d8a9172677ba33a55b61e37ce28f7a6 Mon Sep 17 00:00:00 2001
-> > > From: Dong Zhu <bluezhudong@gmail.com> 
-> > > Date: Thu, 10 Oct 2013 10:38:13 +0800
-> > > 
-> > > When we stop timer statistics collection (via echo 0 > 
-> > > /proc/timers_stats), the statistics data is still exported as if it were 
-> > > correct, which can cause applicaitons to misuse the statistics.
-> > 
-> > What misuse do you mean?
-> > 
-> > > This patch resets the statistics when we stop collecting them, to avoid 
-> > > this problem.
-> > 
-> > Well, this loses the handy 'snapshot' property of /proc/timer_stats. 
-> > Before this change one could do:
-> > 
-> > 	echo 1 > /proc/timers_stats
-> > 	sleep 60 # run system workload
-> > 	echo 0 > /proc/timers_stats
-> > 
-> > and examine the 1-minute collection result without it changing. Your 
-> > change, if I understand it correctly, zeroes it all out.
-> 
-> Yes, I am wrong about it. Thanks for pointing this out and pretty sorry
-> for confusing you John.
-> 
-> > 
-> > Instead of this change I'd suggest adding a 'status' line, with two 
-> > outputs:
-> > 
-> > 	Status: collection active
-> > 
-> > 	Status: collection disabled
-> > 
-> 
-> Agree, I modified this patch and resubmited it again, Could you help
-> reviewing it again ? Thanks !
-> 
-> From 263c40abea8011c82582b2d671ae783b26f44bd5 Mon Sep 17 00:00:00 2001
-> From: Dong Zhu <bluezhudong@gmail.com> 
-> Date: Thu, 10 Oct 2013 13:46:08 +0800
-> 
-> We can enable|disable timer statistics collection (via echo [1|0] >
-> /proc/timers_stats), this patch adds a 'status' line to display the
-> current timer collection status.
-> 
-> Signed-off-by: Dong Zhu <bluezhudong@gmail.com>
-> ---
->  kernel/time/timer_stats.c | 4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> diff --git a/kernel/time/timer_stats.c b/kernel/time/timer_stats.c
-> index 0b537f2..bac5e91 100644
-> --- a/kernel/time/timer_stats.c
-> +++ b/kernel/time/timer_stats.c
-> @@ -303,6 +303,10 @@ static int tstats_show(struct seq_file *m, void *v)
->  	if (atomic_read(&overflow_count))
->  		seq_printf(m, "Overflow: %d entries\n",
->  			atomic_read(&overflow_count));
-> +	if (timer_stats_active)
-> +		seq_puts(m, "Status: collection active\n");
-> +	else
-> +		seq_puts(m, "Status: collection disabled\n");
-
-I suspect we could do something like:
-
-	seq_printf("Status: collection %s\n", timer_stats_active ? "enabled" : "disabled");
-
-and save a bit of kernel image size?
-
-Also, please bump up the version to v0.3, to give parsers a chance.
-
-Otherwise it looks good to me.
+Anyway, it'd be great to generate this flags as well as source file
+automatically.
 
 Thanks,
-
-	Ingo
+Namhyung
