@@ -1,56 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753526Ab3JJHYS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 03:24:18 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:36862 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752183Ab3JJHYR (ORCPT
+	id S1754343Ab3JJH0f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 03:26:35 -0400
+Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:40933 "EHLO
+	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751338Ab3JJH0d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 03:24:17 -0400
-Date: Thu, 10 Oct 2013 09:24:13 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH 32/52] tools/perf/build: Speed up auto-detection of
- features by adding a 'test-all' target
-Message-ID: <20131010072413.GN10246@gmail.com>
-References: <1381227082-22039-1-git-send-email-mingo@kernel.org>
- <1381227082-22039-33-git-send-email-mingo@kernel.org>
- <87siw9ir6i.fsf@sejong.aot.lge.com>
+	Thu, 10 Oct 2013 03:26:33 -0400
+Date: Thu, 10 Oct 2013 09:25:08 +0200
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, linux390@de.ibm.com,
+        linux-s390@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] s390: include: asm: atomic.h: use 'unsigned int'
+ instead of 'unsigned long' for atomic_*_mask()
+Message-ID: <20131010072508.GA4383@osiris>
+References: <52561137.3070608@asianux.com>
+ <5256117A.4000009@asianux.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87siw9ir6i.fsf@sejong.aot.lge.com>
+In-Reply-To: <5256117A.4000009@asianux.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13101007-2966-0000-0000-000008FEDAA3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Namhyung Kim <namhyung@kernel.org> wrote:
-
-> On Tue,  8 Oct 2013 12:11:02 +0200, Ingo Molnar wrote:
-> > +test-all:
-> > +	$(BUILD) -Werror -fstack-protector -Wvolatile-register-var -O2 
-> > -Werror -D_FORTIFY_SOURCE=2 -ldw -lelf -lnuma -lunwind -lunwind-x86_64 
-> > -lelf -laudit -I/usr/include/slang -lslang $(shell pkg-config --libs 
-> > --cflags gtk+-2.0 2>/dev/null) $(FLAGS_PERL_EMBED) 
-> > $(FLAGS_PYTHON_EMBED) -DPACKAGE='perf' -DPACKAGE=perf -lbfd -ldl
+On Thu, Oct 10, 2013 at 10:31:22AM +0800, Chen Gang wrote:
+> The type of 'v->counter' is always 'int', and related inline assembly
+> code also process 'int', so use 'unsigned int' instead of 'unsigned
+> long' for the 'mask'.
 > 
-> Also missed -Wstack-protector.  And duplicate -Werror.
 > 
-> Anyway, it'd be great to generate this flags as well as source file 
-> automatically.
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+> ---
+>  arch/s390/include/asm/atomic.h |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/s390/include/asm/atomic.h b/arch/s390/include/asm/atomic.h
+> index a62ed2d..12c5ec1 100644
+> --- a/arch/s390/include/asm/atomic.h
+> +++ b/arch/s390/include/asm/atomic.h
+> @@ -113,12 +113,12 @@ static inline void atomic_add(int i, atomic_t *v)
+>  #define atomic_dec_return(_v)		atomic_sub_return(1, _v)
+>  #define atomic_dec_and_test(_v)		(atomic_sub_return(1, _v) == 0)
+> 
+> -static inline void atomic_clear_mask(unsigned long mask, atomic_t *v)
+> +static inline void atomic_clear_mask(unsigned int mask, atomic_t *v)
+>  {
 
-Well, the source file would mean some extra construction overhead during 
-detection - but generating the flags ought to be possible, by putting the 
-test-all entry last and generating a rolling ALL_FLAGS variable via the 
-rules above it.
+Applied. Thanks!
 
-Would you like to write such a patch?
-
-Thanks,
-
-	Ingo
