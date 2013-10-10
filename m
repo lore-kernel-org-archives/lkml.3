@@ -1,83 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755987Ab3JJRo7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 13:44:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35564 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751919Ab3JJRo6 (ORCPT
+	id S1756139Ab3JJRpM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 13:45:12 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:34677 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756007Ab3JJRpI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 13:44:58 -0400
-Date: Thu, 10 Oct 2013 10:44:57 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Tejun Heo <tj@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: sysfs for my chips
-Message-ID: <20131010174457.GE13759@kroah.com>
-References: <1381378788.4330.30.camel@pasglop>
+	Thu, 10 Oct 2013 13:45:08 -0400
+Date: Thu, 10 Oct 2013 10:44:58 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/6] Optimize the cpu hotplug locking -v2
+Message-ID: <20131010174458.GA30290@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20131008102505.404025673@infradead.org>
+ <20131009225006.7101379c.akpm@linux-foundation.org>
+ <20131010121908.GB28601@twins.programming.kicks-ass.net>
+ <20131010145738.GA5167@gmail.com>
+ <20131010152612.GA13375@redhat.com>
+ <20131010090044.7f12ddaf.akpm@linux-foundation.org>
+ <20131010165229.GC12998@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1381378788.4330.30.camel@pasglop>
+In-Reply-To: <20131010165229.GC12998@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13101017-9332-0000-0000-000001B84241
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 10, 2013 at 03:19:48PM +1100, Benjamin Herrenschmidt wrote:
-> Hi Greg !
+On Thu, Oct 10, 2013 at 06:52:29PM +0200, Ingo Molnar wrote:
 > 
-> (random CC list of clueful people)
+> * Andrew Morton <akpm@linux-foundation.org> wrote:
 > 
-> On some new powerpc platforms (non-hypervisor or rather linux is the
-> hypervisor), I want to expose a bunch of stuff per "chip", the chips
-> being currently the processor chips and the "centaurs" (think of them as
-> the bottom half of the memory controllers).
+> > On Thu, 10 Oct 2013 17:26:12 +0200 Oleg Nesterov <oleg@redhat.com> wrote:
+> > 
+> > > On 10/10, Ingo Molnar wrote:
+> > > >
+> > > > * Peter Zijlstra <peterz@infradead.org> wrote:
+> > > >
+> > > > > But the thing is; our sense of NR_CPUS has shifted, where it used to be
+> > > > > ok to do something like:
+> > > > >
+> > > > >   for_each_cpu()
+> > > > >
+> > > > > With preemption disabled; it gets to be less and less sane to do 
+> > > > > so, simply because 'common' hardware has 256+ CPUs these days. If 
+> > > > > we cannot rely on preempt disable to exclude hotplug, we must use 
+> > > > > get_online_cpus(), but get_online_cpus() is global state and thus 
+> > > > > cannot be used at any sort of frequency.
+> > > >
+> > > > So ... why not make it _really_ cheap, i.e. the read lock costing 
+> > > > nothing, and tie CPU hotplug to freezing all tasks in the system?
+> > > >
+> > > > Actual CPU hot unplugging and repluggin is _ridiculously_ rare in a 
+> > > > system, I don't understand how we tolerate _any_ overhead from this 
+> > > > utter slowpath.
+> > > 
+> > > Well, iirc Srivatsa (cc'ed) pointed out that some systems do 
+> > > cpu_down/up quite often to save the power.
+> > 
+> > cpu hotremove already uses stop_machine, so such an approach shouldn't 
+> > actually worsen things (a lot) for them?
 > 
-> Among other, I want a sysfs file in there to access "xscom" on the chip
-> which is a sideband bus used for low level stuff (think jtag on steroid)
-> which we can use, among others, for chip health monitoring, general
-> debugging and diagnostics, etc...
-> 
-> I might add more such as VPD, model information, etc... later or at
-> least a link to corresponding device-tree node.
+> Also, using CPU hotremove to save power, instead of implementing proper 
+> power aware scheduling, is very broken to begin with.
 
-So a mixture of things that traditionally have been in /proc/cpuinfo?
+In many cases, agreed.  Particularly on devices where there is an easy
+way to send out regular updates and bug fixes, and especially if they
+are connected to AC power.
 
-I've always wanted to see the cpuinfo files turn into sysfs files, so
-that tools can parse them "properly" and not have to do different things
-on different arches, like the proc/cpuinfo file is today (a mess).
+But if I was in charge of creating a battery-powered multicore embedded
+device that was to ship in million-unit quantities, especially in the
+not-uncommon case where more than one CPU is needed only for specific
+actions, I would offline the extra CPUs except when I was sure they were
+needed.  This would of course still rely on power-aware scheduling when
+more than one CPU was in use.  The power-aware scheduling conserves energy
+for short-term variations (in which case offlining really is useless),
+but longer term "keep this CPU -off-" is provided by offlining.
 
-> How do you suggest I expose that ? So far I've been thinking about
-> something like
-> 
-> 	/sys/chips/{processor,centaur}/chip#/files
-> 
-> or to avoid namespace clashes
-> 
-> 	/sys/firmware/chips/{processor,centaur}/chip#/files
-> 
-> Or maybe just
-> 
-> 	/sys/firmware/chips/chip#/files
-> 
-> (the chip type can be inferred from the chip#, they use the same space
-> at least as far my firmware exposes them to Linux)
-> 
-> (the actual access to xscom goes via firmware tho it makes *some* sense)
-> 
-> But I could instead create platform devices corresponding to the
-> device-tree representation of each of those chips ... and have the
-> platform devices contain the magic attributes. That's a bit more
-> convoluted though.
+Yes, the Linux kernel code quality is quite good, but bugs still happen,
+and bugs can easily cause CPUs to power up unnecessarily.  This doesn't
+have to happen very often to kill your battery.  If the extra CPUs are
+offline, a large class of those bugs are rendered harmless.  If you are
+going to have a very large number of difficult-to-update battery-powered
+devices in the field, defending against such bugs is worthwhile.
 
-We already create platform devices for the cpus in the system in
-/sys/devices/system/, so can you just hang the attribute files off of
-those platform devices?
+							Thanx, Paul
 
-And system devices seem like the correct thing for your "chips" that are
-not cpus, right?
-
-thanks,
-
-greg k-h
