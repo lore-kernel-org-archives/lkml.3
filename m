@@ -1,75 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755047Ab3JJHzg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 03:55:36 -0400
-Received: from sauhun.de ([89.238.76.85]:56478 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752352Ab3JJHzd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 03:55:33 -0400
-Date: Thu, 10 Oct 2013 09:55:31 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Taras Kondratiuk <taras.kondratiuk@linaro.org>
-Cc: linux-omap@vger.kernel.org, patches@linaro.org, steve.mcintyre@linaro.org,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Felipe Balbi <balbi@ti.com>, Richard woodruff <r-woodruff2@ti.com>,
-        Tony Lindgren <tony@atomide.com>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i2c: omap: Clear ARDY bit twice
-Message-ID: <20131010075531.GB2638@katana>
-References: <1381142519-29382-1-git-send-email-taras.kondratiuk@linaro.org>
+	id S1755146Ab3JJH7c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 03:59:32 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:48308 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752811Ab3JJH7b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 03:59:31 -0400
+X-IronPort-AV: E=Sophos;i="4.93,465,1378828800"; 
+   d="scan'208";a="8710712"
+Message-ID: <52565CE4.9030103@cn.fujitsu.com>
+Date: Thu, 10 Oct 2013 15:53:08 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="uZ3hkaAS1mZxFaxD"
-Content-Disposition: inline
-In-Reply-To: <1381142519-29382-1-git-send-email-taras.kondratiuk@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Gleb Natapov <gleb@redhat.com>
+CC: chai wen <chaiw.fnst@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
+        pbonzini@redhat.com, tangchen@cn.fujitsu.com,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+Subject: Re: [RFC/query] kvm async_pf anon pined pages migration
+References: <1380535387-26237-1-git-send-email-chaiw.fnst@cn.fujitsu.com> <20130930125158.GA11993@redhat.com> <BLU0-SMTP3062A22F7A685B9214BB05AE0150@phx.gbl> <5253AD0E.6060209@cn.fujitsu.com> <20131008073914.GA3574@redhat.com> <525651D6.3040202@cn.fujitsu.com> <20131010071540.GR3574@redhat.com>
+In-Reply-To: <20131010071540.GR3574@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/10/10 15:56:21,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/10/10 15:56:21,
+	Serialize complete at 2013/10/10 15:56:21
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Gleb,
 
---uZ3hkaAS1mZxFaxD
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 10/10/2013 03:15 PM, Gleb Natapov wrote:
 
-On Mon, Oct 07, 2013 at 01:41:59PM +0300, Taras Kondratiuk wrote:
-> Initially commit cb527ede1bf6ff2008a025606f25344b8ed7b4ac
-> "i2c-omap: Double clear of ARDY status in IRQ handler"
-> added a workaround for undocumented errata ProDB0017052.
-> But then commit 1d7afc95946487945cc7f5019b41255b72224b70
-> "i2c: omap: ack IRQ in parts" refactored code and missed
-> one of ARDY clearings. So current code violates errata.
-> It causes often i2c bus timeouts on my Pandaboard.
->=20
-> This patch adds a second clearing in place.
->=20
-> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
-> Signed-off-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
+> On Thu, Oct 10, 2013 at 03:05:58PM +0800, chai wen wrote:
+>> On 10/08/2013 03:39 PM, Gleb Natapov wrote:
+>>> On Tue, Oct 08, 2013 at 02:58:22PM +0800, chai wen wrote:
+>>>> On 10/02/2013 12:04 AM, chaiwen wrote:
+>>>>> On 09/30/2013 08:51 PM, Gleb Natapov wrote:
+>>>>>> On Mon, Sep 30, 2013 at 06:03:07PM +0800, chai wen wrote:
+>>>>>>> Hi all
+>>>>>>>
+>>>>>>> Async page fault in kvm currently pin user pages via get_user_pages.
+>>>>>>> when doing page migration,the method can be found via
+>>>>>>> page->mmapping->a_ops->migratepage to offline old pages and migrate to
+>>>>>>> new pages. As to anonymous page there is no file mapping but a anon_vma.So
+>>>>>>> the migration will fall back to some *default* migration method.Anon pages
+>>>>>>> that have been pined in memory by some reasons could be failed in the migration
+>>>>>>> processing because of some reasons like ref-count checking.
+>>>>>>> (or I misunderstand some thing?)
+>>>>>>>
+>>>>>>> Now we want to make these anon pages in async_pf can be migrated, I try some
+>>>>>>> ways.But there are still many problems. The following is one that replaceing
+>>>>>>> the mapping of anon page arbitrarily and doing some thing based on it.
+>>>>>>> Kvm-based virtual machine can works on this patch,but have no experience of
+>>>>>>> offline pages because of the limitaion of resouces.I'll check it later.
+>>>>>>>
+>>>>>>> I don't know weather it is a right direction of this issue.
+>>>>>>> All comments/criticize are welcomed.
+>>>>>> The pinning is not mandatory and can (and probably should) be dropped, but
+>>>>>> pinning that is done by async page faults is short lived. What problems
+>>>>>> are you seeing that warrant the complexity of handling their migration?
+>>>> Hi Gleb
+>>>>
+>>>> As to this issue, I still have some thing not very clear.
+>>>> If pages pinning is successfully holding (although not mandatory) by
+>>>> async page fault.
+>>>> And at the same time page migration happens because of memory
+>>>> hot-remove action.
+>>>> It has 120*hz timeout setting in common page offline processing,
+>>>> could it fail with
+>>>> these async_pf pined pages migration ?
+>>>> What's your opinion about this ?   If it may fail under this
+>>>> circumstance, should we do
+>>>> some thing on it ?
+>>>>
+>>> 120 seconds is more than enough time for pinning to go away, but as I
+>>> said the pinning is not even necessary. Patch to remove it is welcomed.
+>> Thank you for your clarification !  I've got it. we will still work on it.
+>>
+> Should be extremely easy. Drop FOLL_GET from GUP in async_pf_execute().
 
-Applied to for-current with stable tag, thanks!
+One lower question, why pinning page is not necessary here?
+
+Thanks,
+Gu
+
+> 
+> --
+> 			Gleb.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
 
---uZ3hkaAS1mZxFaxD
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSVl1zAAoJEBQN5MwUoCm2VwAP+gJ4HFNH6QzwEVIyqFU1yT0r
-KVn6VA8isQ/DCXfREswOGezJI9pwKSdxpM3yQf5RXKVhazU6A/yTrh2FOj9wYVat
-x+Xl7NY6/wptc2cU1kHve4IVyt1x/UcBVBpMI+WRV76ayEiP1O94SwRlIhDd/KnV
-Bi9q/hbrHGLeKVMPH++buzOUJ/wuzHgGy1Xcbzq8t5zoOhy8/jWiJIcyT+hLtDbO
-BlSdaMnbpq6bMJonb6fx9egxGJR1LFPC8t7c2AQ7KZ1WukddrChcNqo6dicnIJJD
-Gv3s4HKC4kE8oJpYTGcEluh75LEn3IwyLljQqlzfLY5VitYgaRnnOrCxyohaG2ga
-E1wJn9DsKEDt7D38VxNBeFLSXm5Rq1bIvpcdUbNyOEZZHx0tCWHiROak1CLNrWWa
-9F4pL2krPNi1jCyF8VaDKapELXWObDyFMZkt4Oji246dFaWzF1Xx5MSz4VwLuxw0
-Tt5QIaJto4bIkgo4NTaLH6kmkT0nf/Kq4rHVnAbYrNn4crp8bvH4QyZtVQthPkbX
-ljenEl8BSpQEDuZceMY0KSE5GYnHWQXlOcAtP+i9t0KnjcLKZEVr8+vrYVCvXD0D
-x9np9d6vcM4muyjgpojXyya+dhIGSsM32YcHb5jrXKgJl71ZqOhHRcqH2iCeHcc0
-8GNmHVBD3P6BNZHqzVpe
-=aY2K
------END PGP SIGNATURE-----
-
---uZ3hkaAS1mZxFaxD--
