@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757628Ab3JJQJw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 12:09:52 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52644 "EHLO
+	id S1756136Ab3JJPom (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 11:44:42 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52601 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755851Ab3JJPov (ORCPT
+	with ESMTP id S1755926Ab3JJPmv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 11:44:51 -0400
+	Thu, 10 Oct 2013 11:42:51 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mikulas Patocka <mpatocka@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
+Cc: "David S. Miller" <davem@davemloft.net>,
+        John Fastabend <john.r.fastabend@intel.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 057/104] dm snapshot: workaround for a false positive lockdep warning
-Date: Thu, 10 Oct 2013 08:41:45 -0700
-Message-Id: <1381419752-29733-58-git-send-email-kamal@canonical.com>
+Subject: [PATCH 004/104] macvlan: validate flags
+Date: Thu, 10 Oct 2013 08:40:52 -0700
+Message-Id: <1381419752-29733-5-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381419752-29733-1-git-send-email-kamal@canonical.com>
 References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
@@ -27,49 +29,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: "Michael S. Tsirkin" <mst@redhat.com>
 
-commit 5ea330a75bd86b2b2a01d7b85c516983238306fb upstream.
+[ Upstream commit 1512747820367c8b3b8b72035f0f78c62f2bf1e9 ]
 
-The kernel reports a lockdep warning if a snapshot is invalidated because
-it runs out of space.
+commit df8ef8f3aaa6692970a436204c4429210addb23a
+    macvlan: add FDB bridge ops and macvlan flags
+added a flags field to macvlan, which can be
+controlled from userspace.
+The idea is to make the interface future-proof
+so we can add flags and not new fields.
 
-The lockdep warning was triggered by commit 0976dfc1d0cd80a4e9dfaf87bd87
-("workqueue: Catch more locking problems with flush_work()") in v3.5.
+However, flags value isn't validated, as a result,
+userspace can't detect which flags are supported.
 
-The warning is false positive.  The real cause for the warning is that
-the lockdep engine treats different instances of md->lock as a single
-lock.
-
-This patch is a workaround - we use flush_workqueue instead of flush_work.
-This code path is not performance sensitive (it is called only on
-initialization or invalidation), thus it doesn't matter that we flush the
-whole workqueue.
-
-The real fix for the problem would be to teach the lockdep engine to treat
-different instances of md->lock as separate locks.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Acked-by: Alasdair G Kergon <agk@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: John Fastabend <john.r.fastabend@intel.com>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/md/dm-snap-persistent.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/macvlan.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/md/dm-snap-persistent.c b/drivers/md/dm-snap-persistent.c
-index 3ac4156..4caa8e6 100644
---- a/drivers/md/dm-snap-persistent.c
-+++ b/drivers/md/dm-snap-persistent.c
-@@ -256,7 +256,7 @@ static int chunk_io(struct pstore *ps, void *area, chunk_t chunk, int rw,
- 	 */
- 	INIT_WORK_ONSTACK(&req.work, do_metadata);
- 	queue_work(ps->metadata_wq, &req.work);
--	flush_work(&req.work);
-+	flush_workqueue(ps->metadata_wq);
+diff --git a/drivers/net/macvlan.c b/drivers/net/macvlan.c
+index d30fc4d..931a4d7 100644
+--- a/drivers/net/macvlan.c
++++ b/drivers/net/macvlan.c
+@@ -688,6 +688,10 @@ static int macvlan_validate(struct nlattr *tb[], struct nlattr *data[])
+ 			return -EADDRNOTAVAIL;
+ 	}
  
- 	return req.result;
- }
++	if (data && data[IFLA_MACVLAN_FLAGS] &&
++	    nla_get_u16(data[IFLA_MACVLAN_FLAGS]) & ~MACVLAN_FLAG_NOPROMISC)
++		return -EINVAL;
++
+ 	if (data && data[IFLA_MACVLAN_MODE]) {
+ 		switch (nla_get_u32(data[IFLA_MACVLAN_MODE])) {
+ 		case MACVLAN_MODE_PRIVATE:
 -- 
 1.8.1.2
 
