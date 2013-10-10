@@ -1,78 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756787Ab3JJVbQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 17:31:16 -0400
-Received: from gate.crashing.org ([63.228.1.57]:38619 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756167Ab3JJVbP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 17:31:15 -0400
-Message-ID: <1381440651.5630.31.camel@pasglop>
-Subject: Re: sysfs for my chips
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Greg KH <gregkh@linuxfoundation.org>, Tejun Heo <tj@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Date: Fri, 11 Oct 2013 08:30:51 +1100
-In-Reply-To: <CAMuHMdW7RXjS3vvLUdTPCafNu_PcgDgbVbzVCHTOEeTsfHK90g@mail.gmail.com>
-References: <1381378788.4330.30.camel@pasglop>
-	 <20131010174457.GE13759@kroah.com> <1381435276.5630.6.camel@pasglop>
-	 <CAMuHMdW7RXjS3vvLUdTPCafNu_PcgDgbVbzVCHTOEeTsfHK90g@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756322Ab3JJVhS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 17:37:18 -0400
+Received: from mail-vb0-f51.google.com ([209.85.212.51]:38260 "EHLO
+	mail-vb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752293Ab3JJVhQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 17:37:16 -0400
+MIME-Version: 1.0
+In-Reply-To: <81272921.7ZJW2CaxNE@vostro.rjw.lan>
+References: <20131010165905.7815defa@gandalf.local.home>
+	<CA+55aFxTwBoeQOimg-ut+BipWx2veNOPT0yGvFBFn7nbX5yCkg@mail.gmail.com>
+	<81272921.7ZJW2CaxNE@vostro.rjw.lan>
+Date: Thu, 10 Oct 2013 14:37:15 -0700
+X-Google-Sender-Auth: bHO1GH73cryX-vn0yvo-kn4RCAQ
+Message-ID: <CA+55aFwA8WZ+ARtNFFY+z4d8kS5AUBLg32iu7Jkk3rsz_i1OZw@mail.gmail.com>
+Subject: Re: [BUG] WARN_ON(!context) in drivers/pci/hotplug/acpiphp_glue.c
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-10-10 at 22:26 +0200, Geert Uytterhoeven wrote:
-> > This is not CPUs. CPUs are threads really. Even if they were cores,
-> that
-> > still wouldn't cut it. I'm looking at chips here and not all of them
-> > actually processor chips. The SCOM bus address space is global to a
-> > physical chip and allows to access various resources that are only
-> > remotely related to the cores on it.
-> 
-> What about a "bus" for the sideband bus? That allows to decouple it
-> from cores, and allows to support non-processor chips, too?
+On Thu, Oct 10, 2013 at 2:35 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+>
+> Well, I must have overlooked the original report.  Is it available anywhere
+> I can find it?
 
-Not sure what you mean .... create a linux bus type with devices on
-it ? 
+I think Steven has some buggered email system, he has other emails
+being eaten by lkml too, and apparently other mail gateways (because
+you were direct-cc'd on the original).
 
-That's really overkill I think... doable though.
+His email sender doesn't quote names with "," in them, and has headers
+like this:
 
-I think sysdev, despite my previous qualms, might be the best way... we
-could have a "driver" in the form of the actual code that provide that
-sideband bus access. Right now the platform registers a single global
-"scom controller", we could make a sysdev instead with an instance per
-"chip" I suppose...
+  From: Steven Rostedt <rostedt@goodmis.org>
+  To: LKML <linux-kernel@vger.kernel.org>
+  Cc: Linus Torvalds <torvalds@linux-foundation.org>, Rafael J. Wysocki
+   <rafael.j.wysocki@intel.com>, Mika Westerberg
+   <mika.westerberg@linux.intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
+   Andrew Morton <akpm@linux-foundation.org>
 
-Though there's still some kind of namespace issue, if I start creating
-something like /sys/devices/system/chip/<id>/... but ...
+which is apparently against SMTP rules. The magic line is:
 
-That means doing something very platform specific in a location that is
-very "generic" with a name that's likely to clash with something else
-later on unless we start introducing a standard concept of "chip" with
-associated properties but what do that really mean ? With things like
-DCMs etc... the concept of "chip" is blurry at best.
+  X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
 
-Also what about other chips that do not participate in that xscom/scom
-sideband mechanism ? like PCIe device chips, or other random stuff on
-the mobo ?
+The tag-line for that mailer is quite appropriate: "The email reader
+that bites". That's what they put in the title on their web-page.
 
-I'm trying to solve a very specific problem here, which is to provide a
-userspace scom access interface. I was trying to avoid a /dev/scom
-because I would need 32-bit minors or do ioctls and because it seemed
-simpler to just put it in sysfs somewhere but maybe that won't fly.
+Because it sure bites. Except the claws people seemed to think that
+was supposed to be a good thing. They clearly don't know the slang
+meaning of "that bites".
 
-A last option is to put it in /sys/firmware/opal (OPAL is our firmware
-name). Under there, I can put a lot of stuff that's essentially
-firmware/platform specific. However our "scom" infrastructure is
-somewhat generic and is used by at least one platform that isn't using
-OPAL (though arguably that platform is dead: wsp).
+Or maybe they do, and they are just unusually self-aware.
 
-Cheers,
-Ben.
+Steven, I'd suggest just jettisoning that mailer.
 
-
+                   Linus
