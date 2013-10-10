@@ -1,74 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932123Ab3JJVAT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 17:00:19 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:57123 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755947Ab3JJVAR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 17:00:17 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Len Brown <len.brown@intel.com>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Sujith Thomas <sujith.thomas@intel.com>
-Subject: [PATCH] MAINTAINERS / ACPI: Update links to the Linux-ACPI project web page
-Date: Thu, 10 Oct 2013 23:12:01 +0200
-Message-ID: <2537172.WAToVyMzMe@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
+	id S1756886Ab3JJVDo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 17:03:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16097 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756032Ab3JJVDm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 17:03:42 -0400
+Date: Thu, 10 Oct 2013 18:03:01 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: Xiao Guangrong <xiaoguangrong.eric@gmail.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        avi.kivity@gmail.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v2 12/15] KVM: MMU: allow locklessly access shadow page
+ table out of vcpu thread
+Message-ID: <20131010210301.GA7275@amt.cnet>
+References: <1378376958-27252-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <1378376958-27252-13-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <20131008012355.GA3588@amt.cnet>
+ <CAD6C3B4-DD55-47EB-9BC0-17867937AE2D@gmail.com>
+ <20131009015627.GA4816@amt.cnet>
+ <525533DB.1060104@gmail.com>
+ <20131010014710.GA2198@amt.cnet>
+ <20131010120845.GT3574@redhat.com>
+ <20131010164222.GB3211@amt.cnet>
+ <20131010191646.GE15954@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131010191646.GE15954@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Thu, Oct 10, 2013 at 10:16:46PM +0300, Gleb Natapov wrote:
+> On Thu, Oct 10, 2013 at 01:42:22PM -0300, Marcelo Tosatti wrote:
+> > On Thu, Oct 10, 2013 at 03:08:45PM +0300, Gleb Natapov wrote:
+> > > On Wed, Oct 09, 2013 at 10:47:10PM -0300, Marcelo Tosatti wrote:
+> > > > > >> Gleb has a idea that uses RCU_DESTORY to protect the shadow page table
+> > > > > >> and encodes the page-level into the spte (since we need to check if the spte
+> > > > > >> is the last-spte. ).  How about this?
+> > > > > > 
+> > > > > > Pointer please? Why is DESTROY_SLAB_RCU any safer than call_rcu with
+> > > > > > regards to limitation? (maybe it is).
+> > > > > 
+> > > > > For my experience, freeing shadow page and allocing shadow page are balanced,
+> > > > > we can check it by (make -j12 on a guest with 4 vcpus and):
+> > > > > 
+> > > > > # echo > trace
+> > > > > [root@eric-desktop tracing]# cat trace > ~/log | sleep 3
+> > > > > [root@eric-desktop tracing]# cat ~/log | grep new | wc -l
+> > > > > 10816
+> > > > > [root@eric-desktop tracing]# cat ~/log | grep prepare | wc -l
+> > > > > 10656
+> > > > > [root@eric-desktop tracing]# cat set_event
+> > > > > kvmmmu:kvm_mmu_get_page
+> > > > > kvmmmu:kvm_mmu_prepare_zap_page
+> > > > > 
+> > > > > alloc VS. free = 10816 : 10656
+> > > > > 
+> > > > > So that, mostly all allocing and freeing are done in the slab's
+> > > > > cache and the slab frees shdadow pages very slowly, there is no rcu issue.
+> > > > 
+> > > > A more detailed test case would be:
+> > > > 
+> > > > - cpu0-vcpu0 releasing pages as fast as possible
+> > > > - cpu1 executing get_dirty_log
+> > > > 
+> > > > Think of a very large guest.
+> > > > 
+> > > The number of shadow pages allocated from slab will be bounded by
+> > > n_max_mmu_pages, 
+> > 
+> > Correct, but that limit is not suitable (maximum number of mmu pages
+> > should be larger than number of mmu pages freeable in a rcu grace
+> > period).
+> > 
+> I am not sure I understand what you mean here. What I was sating is that if
+> we change code to allocate sp->spt from slab, this slab will never have
+> more then n_max_mmu_pages objects in it.
 
-The Linux-ACPI project web page is now hosted by 01.org, so update
-MAINTAINERS to reflect that.
+n_max_mmu_pages is not a suitable limit to throttle freeing of pages via
+RCU (its too large). If the free memory watermarks are smaller than 
+n_max_mmu_pages for all guests, OOM is possible.
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- MAINTAINERS |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+> > > and, in addition, page released to slab is immediately
+> > > available for allocation, no need to wait for grace period. 
+> > 
+> > See SLAB_DESTROY_BY_RCU comment at include/linux/slab.h.
+> > 
+> This comment is exactly what I was referring to in the code you quoted. Do
+> you see anything problematic in what comment describes?
 
-Index: linux-pm/MAINTAINERS
-===================================================================
---- linux-pm.orig/MAINTAINERS
-+++ linux-pm/MAINTAINERS
-@@ -270,21 +270,21 @@ F:	include/acpi/
- ACPI FAN DRIVER
- M:	Zhang Rui <rui.zhang@intel.com>
- L:	linux-acpi@vger.kernel.org
--W:	http://www.lesswatts.org/projects/acpi/
-+W:	https://01.org/linux-acpi
- S:	Supported
- F:	drivers/acpi/fan.c
- 
- ACPI THERMAL DRIVER
- M:	Zhang Rui <rui.zhang@intel.com>
- L:	linux-acpi@vger.kernel.org
--W:	http://www.lesswatts.org/projects/acpi/
-+W:	https://01.org/linux-acpi
- S:	Supported
- F:	drivers/acpi/*thermal*
- 
- ACPI VIDEO DRIVER
- M:	Zhang Rui <rui.zhang@intel.com>
- L:	linux-acpi@vger.kernel.org
--W:	http://www.lesswatts.org/projects/acpi/
-+W:	https://01.org/linux-acpi
- S:	Supported
- F:	drivers/acpi/video.c
- 
-@@ -4353,7 +4353,7 @@ F:	drivers/video/i810/
- INTEL MENLOW THERMAL DRIVER
- M:	Sujith Thomas <sujith.thomas@intel.com>
- L:	platform-driver-x86@vger.kernel.org
--W:	http://www.lesswatts.org/projects/acpi/
-+W:	https://01.org/linux-acpi
- S:	Supported
- F:	drivers/platform/x86/intel_menlow.c
- 
+"This delays freeing the SLAB page by a grace period, it does _NOT_
+delay object freeing." The page is not available for allocation.
 
