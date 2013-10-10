@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754867Ab3JJLrA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 07:47:00 -0400
-Received: from ns.mm-sol.com ([212.124.72.66]:48900 "EHLO extserv.mm-sol.com"
+	id S1754462Ab3JJLt5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 07:49:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61085 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753042Ab3JJLq7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 07:46:59 -0400
-Message-ID: <1381405539.24031.102.camel@iivanov-dev.int.mm-sol.com>
-Subject: Re: [PATCH] reset: Add non CONFIG_RESET_CONTROLLER routines
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Philipp Zabel <p.zabel@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org, Pavel Machek <pavel@ucw.cz>,
-        Stephen Warren <swarren@nvidia.com>, Shawn Guo <shawn.guo@linaro.org>,
-        Marek Vasut <marex@denx.de>
-Date: Thu, 10 Oct 2013 14:45:39 +0300
-In-Reply-To: <1381398676.5293.7.camel@pizza.hi.pengutronix.de>
-References: <1381396475-17848-1-git-send-email-iivanov@mm-sol.com>
-	 <1381398676.5293.7.camel@pizza.hi.pengutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752911Ab3JJLt4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 07:49:56 -0400
+Date: Thu, 10 Oct 2013 13:43:14 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Anton Arapov <anton@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org
+Subject: Re: [PATCH] UPROBES: Remove useless __weak attribute
+Message-ID: <20131010114314.GA24592@redhat.com>
+References: <20131009120809.GN1615@linux-mips.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131009120809.GN1615@linux-mips.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Hi, 
-
-On Thu, 2013-10-10 at 11:51 +0200, Philipp Zabel wrote: 
-> Hi Ivan,
+On 10/09, Ralf Baechle wrote:
+>
+> <linux/uprobes.h> declares arch_uprobe_skip_sstep() as a weak function.
+> But as there is no definition of generic version so when trying to build
+> uprobes for an architecture that doesn't yet have a arch_uprobe_skip_sstep()
+> implementation, the vmlinux will try to call arch_uprobe_skip_sstep()
+> somehwere in Stupidhistan leading to a system crash.  We rather want a
+> proper link error so remove arch_uprobe_skip_sstep().
 > 
-> Am Donnerstag, den 10.10.2013, 12:14 +0300 schrieb Ivan T. Ivanov:
-> > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-> > 
-> > Make sure client drivers will still build on systems
-> > without reset control support.
+> Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 > 
-> the stubs should at least return errors, but then this turns a compile
-> time error into a runtime error for devices that don't work without
-> being properly reset.
+>  include/linux/uprobes.h | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> Please also refer to this thread:
-> http://lists.infradead.org/pipermail/linux-arm-kernel/2013-June/174758.html
-> 
+> diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
+> index 2a9d75d..cec7397 100644
+> --- a/include/linux/uprobes.h
+> +++ b/include/linux/uprobes.h
+> @@ -124,7 +124,7 @@ extern int uprobe_post_sstep_notifier(struct pt_regs *regs);
+>  extern int uprobe_pre_sstep_notifier(struct pt_regs *regs);
+>  extern void uprobe_notify_resume(struct pt_regs *regs);
+>  extern bool uprobe_deny_signal(void);
+> -extern bool __weak arch_uprobe_skip_sstep(struct arch_uprobe *aup, struct pt_regs *regs);
+> +extern bool arch_uprobe_skip_sstep(struct arch_uprobe *aup, struct pt_regs *regs);
 
-I have missed this one. Is there conclusion on the topic? I have
-followed approach taken by clock and regulator consumer API.
+Agreed. I'll take this patch, thanks.
 
-Regards,
-Ivan
-
-> regards
-> Philipp
-> 
-
+Oleg.
 
