@@ -1,75 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755322Ab3JJIVL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 04:21:11 -0400
-Received: from mga14.intel.com ([143.182.124.37]:34272 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753615Ab3JJIVI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 04:21:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1070,1371106800"; 
-   d="scan'208";a="306016501"
-Date: Thu, 10 Oct 2013 11:26:34 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: linux-acpi@vger.kernel.org, Mark Brown <broonie@kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Aaron Lu <aaron.lu@intel.com>,
-        Lv Zheng <lv.zheng@intel.com>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] i2c: attach/detach I2C client device to the ACPI
- power domain
-Message-ID: <20131010082634.GF3521@intel.com>
-References: <1381327461-10562-1-git-send-email-mika.westerberg@linux.intel.com>
- <1381327461-10562-3-git-send-email-mika.westerberg@linux.intel.com>
- <20131010080919.GC2638@katana>
+	id S1755056Ab3JJIWL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 04:22:11 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:46770 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752019Ab3JJIWI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 04:22:08 -0400
+X-AuditID: 9c93017d-b7b96ae000006e96-fa-525663ae6582
+From: Namhyung Kim <namhyung@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH 02/52] tools/perf/build: Add feature check core code
+References: <1381227082-22039-1-git-send-email-mingo@kernel.org>
+	<1381227082-22039-3-git-send-email-mingo@kernel.org>
+	<87pprdk7ft.fsf@sejong.aot.lge.com> <20131010072121.GM10246@gmail.com>
+Date: Thu, 10 Oct 2013 17:22:06 +0900
+In-Reply-To: <20131010072121.GM10246@gmail.com> (Ingo Molnar's message of
+	"Thu, 10 Oct 2013 09:21:21 +0200")
+Message-ID: <87pprdcz81.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131010080919.GC2638@katana>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 10, 2013 at 10:09:19AM +0200, Wolfram Sang wrote:
-> On Wed, Oct 09, 2013 at 05:04:20PM +0300, Mika Westerberg wrote:
-> > From: Lv Zheng <lv.zheng@intel.com>
-> > 
-> > If the I2C client device is enumerated from ACPI namespace it might have
-> > ACPI methods that needs to be called in order to transition the device to
-> > different power states (such as _PSx).
-> > 
-> > Implement this for I2C client devices by checking if the device has an ACPI
-> > handle and if that's the case, attach it to the ACPI power domain. In
-> > addition we make sure that the device is fully powered when its ->probe()
-> > function gets called.
-> > 
-> > For non-ACPI devices this patch is a no-op.
-> > 
-> > Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> > ---
-> >  drivers/i2c/i2c-core.c | 10 ++++++++++
-> >  1 file changed, 10 insertions(+)
-> > 
-> > diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-> > index 29d3f04..f25dee3 100644
-> > --- a/drivers/i2c/i2c-core.c
-> > +++ b/drivers/i2c/i2c-core.c
-> > @@ -254,10 +254,16 @@ static int i2c_device_probe(struct device *dev)
-> >  					client->flags & I2C_CLIENT_WAKE);
-> >  	dev_dbg(dev, "probe\n");
-> >  
-> > +	if (ACPI_HANDLE(&client->dev))
-> > +		acpi_dev_pm_attach(&client->dev, true);
-> 
-> I'd prefer to drop the 'if's in case they are checked inside the acpi_*
-> calls anyway. Not a show-stopper, though, so:
+On Thu, 10 Oct 2013 09:21:21 +0200, Ingo Molnar wrote:
+> * Namhyung Kim <namhyung@kernel.org> wrote:
+>
+>> Hi Ingo,
+>> 
+>> On Tue,  8 Oct 2013 12:10:32 +0200, Ingo Molnar wrote:
+>> > +feature_check = $(eval $(feature_check_code)); $(info CHK: config/feature-checks/test-$(1))
+>> > +define feature_check_code
+>> > +  feature-$(2) := $(shell make -C config/feature-checks test-$1 >/dev/null 2>/dev/null && echo 1 || echo 0)
+>> > +endef
+>> > +
+>> > +#
+>> > +# Build the feature check binaries in parallel, ignore errors, ignore return value and suppress output:
+>> > +#
+>> > +$(info Testing features:)
+>> > +$(shell make -i -j -C config/feature-checks >/dev/null 2>&1)
+>> > +$(info done)
+>> > +
+>> > +FEATURE_TESTS = hello
+>> > +
+>> > +$(foreach test,$(FEATURE_TESTS),$(call feature_check,$(test),$(test)))
+>> 
+>> So as far as I can see, all the feature checking goes twice - once in 
+>> $(shell make ...) and another in $(foreach test,...).  They look like 
+>> doing exactly same thing.  And the final Makefile in this series still 
+>> has it twice.  Is it intentional or did I miss something?
+>
+> Yes - and this is a performance trick.
+>
+> The first run is to build them all in parallel:
+>
+>  $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) LDFLAGS=$(LDFLAGS) -i -j -C config/feature-checks $(CORE_FEATURE_TESTS) >/dev/null 2>&1)
+>
+> Note how we build in parallel (-j), ignore errors (-i) and suppress all 
+> output.
+>
+> This is very fast even if all testcases are rebuilt, but we cannot 
+> possibly recover which feature test failed.
+>
+> So we run it once more, this time serially, and recover the test results. 
+> The vast majority of testcases will pass, and the repeat build will do, in 
+> essence:
+>
+>  comet:~/tip/tools/perf/config/feature-checks> perf stat --null --repeat 10 make test-libelf >/dev/null
+>
+>  Performance counter stats for 'make test-libelf' (10 runs):
+>
+>        0.014682647 seconds time elapsed                                          ( +-  0.14% )
+>
+> so it's just 14 msecs to recover each testcase result.
 
-OK, I'll drop them then from the final version.
+Okay, got it.  Thanks for the explanation! :)
 
-> Acked-by: Wolfram Sang <wsa@the-dreams.de>
-> 
+>
+> In theory we could optimize this further, by generating an actual test 
+> success/failure file via the initial parallel make attempt, and recovering 
+> those flags via the serial loop. That should be even faster.
 
-Thanks!
+Well, I think it's already fast enough. ;)
+
+Thanks,
+Namhyung
