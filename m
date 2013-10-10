@@ -1,76 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757403Ab3JJW3H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 18:29:07 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:57435 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751675Ab3JJW3F (ORCPT
+	id S1757514Ab3JJW3Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 18:29:16 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:64194 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751675Ab3JJW3N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 18:29:05 -0400
+	Thu, 10 Oct 2013 18:29:13 -0400
+Message-ID: <52572A34.3040506@gmail.com>
+Date: Thu, 10 Oct 2013 16:29:08 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <5257288E.6000704@wwwdotorg.org>
-References: <1380904635-18113-1-git-send-email-acourbot@nvidia.com>
- <1380904635-18113-2-git-send-email-acourbot@nvidia.com> <CAOesGMj74Pui1V5O7zxEipM5Hg6nboVTUCFuMY0c0aUh=wuu3Q@mail.gmail.com>
- <CAAVeFuLvHdUuDurqA_=tvxJonNP+RekotM_MuysQrJD0PUgcSQ@mail.gmail.com> <5257288E.6000704@wwwdotorg.org>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Thu, 10 Oct 2013 15:28:43 -0700
-Message-ID: <CAAVeFuKAm75TX6mz5n9Pu83+LCP74jPYD43UcA1eCh2SEwaChQ@mail.gmail.com>
-Subject: Re: [PATCH v7 1/5] ARM: add basic support for Trusted Foundations
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Olof Johansson <olof@lixom.net>, Alexandre Courbot <acourbot@nvidia.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Tomasz Figa <t.figa@samsung.com>, Dave Martin <Dave.Martin@arm.com>,
-        Arnd Bergmann <arnd@arndb.de>, Kevin Hilman <khilman@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+To: Jiri Olsa <jolsa@redhat.com>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [GIT PULL] tools/perf/build: Speed up the perf build system
+References: <20131009070149.GA32023@gmail.com> <20131009143830.GA28369@ghostprotocols.net> <20131009145157.GA27139@gmail.com> <20131010192608.GI28369@ghostprotocols.net> <20131010195014.GJ28369@ghostprotocols.net> <20131010200627.GK28369@ghostprotocols.net> <20131010221322.GA1067@krava.redhat.com>
+In-Reply-To: <20131010221322.GA1067@krava.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 10, 2013 at 3:22 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 10/10/2013 02:58 PM, Alexandre Courbot wrote:
->> On Wed, Oct 9, 2013 at 4:47 PM, Olof Johansson <olof@lixom.net> wrote:
->>> On Fri, Oct 4, 2013 at 9:37 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
-> ...
->>> But do we really need to panic here? It's a PITA to debug since it'll
->>> be a very early panic. I'd rather have the system log errors in dmesg
->>> but continue booting with one cpu.
->>
->> Actually the first version of this series continued on one CPU if TF
->> support was missing (as secondary CPUs would simply fail to boot), but
->> IIRC Stephen advocated for the current behavior (panic) instead. I
->> agree such an early panic is hard to debug, especially considering
->> that most devices using TF (Tegra retail devices) do not even feature
->> a serial port.
->>
->> On the other hand, if we continue booting in these conditions the
->> system freezes as soon as cpuidle kicks in, so we won't be going very
->> far anyway. However the console is up when it happens.
->>
->> Maybe if there is a way to disable the kernel features TF is supposed
->> to manage (SMP & cpuidle at the moment) when registration fails, the
->> system could continue more gracefully (even if on one leg) and warn
->> the user about this condition. Stephen, can I have your thoughts on
->> this?
->
-> If we can disable the features that rely on TF/secure-mode when support
-> is missing, then doing that rather than panic is fine. We do something
-> similar for PCIe on Tegra20, where LP2 cpuidle state must be disabled or
-> PCIe interrupts won't work.
->
-> I would be inclined to merge the patch as-is right now, since it's only
-> enabling a new feature that won't see any regressions due to this panic,
-> and then add the disable-other-features with a separate patch/series
-> later. Does that seem reasonable?
+On 10/10/13 4:13 PM, Jiri Olsa wrote:
+> I still got some warning though:
+>    LINK     /tmp/perf/perf
+> /tmp/perf/libperf.a(target.o): In function `perf_target__parse_uid':
+> /home/jolsa/kernel.org/linux-perf/tools/perf/util/target.c:72: warning: Using 'getpwnam_r' in statically linked applications requires at runtime the shared libraries from the glibc version used for linking
+> /home/jolsa/kernel.org/linux-perf/tools/perf/util/target.c:84: warning: Using 'getpwuid_r' in statically linked applications requires at runtime the shared libraries from the glibc version used for linking
+> /usr/lib/gcc/x86_64-redhat-linux/4.7.2/../../../../lib64/libpthread.a(libpthread.o): In function `sem_open':
+> (.text+0x67f8): warning: the use of `mktemp' is dangerous, better use `mkstemp'
 
-According to Olof we should also be moving the DT node under
-/firmware, so I guess another revision is in order to at least get
-this part right.
+harmless.
 
-3.12 also added a powered-down cpuidle state for Tegra which freezes
-the system if TF is enabled as the firmware driver does not support
-idle yet, but this can be fixed later.
+
+> diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+> index 233dd36..9680424 100644
+> --- a/tools/perf/config/Makefile
+> +++ b/tools/perf/config/Makefile
+> @@ -504,7 +504,7 @@ else
+>     endif
+>   endif
+>
+> -ifndef ($(filter -lbfd,$(EXTLIBS)),)
+> +ifneq ($(filter -lbfd,$(EXTLIBS)),)
+>     CFLAGS += -DHAVE_LIBBFD_SUPPORT
+>   endif
+>
+
+Nice find.
+
+Tested-by: David Ahern <dsahern@gmail.com>
+
