@@ -1,142 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752660Ab3JJJ6d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 05:58:33 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:51788 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752112Ab3JJJ6a (ORCPT
+	id S1755125Ab3JJJ7T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 05:59:19 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:53410 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752193Ab3JJJ7S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 05:58:30 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av8GAEh5VlJ5LFuj/2dsb2JhbABTBoMHvGqFP4EfF3SCJQEBBTocIxAIAxgJJQ8FJQMhE4gFuSEWjgSBLQeEIwOYBJIDgWaBUig
-Date: Thu, 10 Oct 2013 20:58:24 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Dave Chinner <dchinner@redhat.com>, linux-fsdevel@vger.kernel.org,
-        Ben Myers <bpm@sgi.com>, linux-kernel@vger.kernel.org, xfs@oss.sgi.com,
-        "ocfs2-devel@oss.oracle.com" <ocfs2-devel@oss.oracle.com>
-Subject: Re: [XFS on bad superblock] BUG: unable to handle kernel NULL
- pointer dereference at 00000003
-Message-ID: <20131010095824.GX4446@dastard>
-References: <20131010011640.GA5726@localhost>
- <20131010014117.GA6017@localhost>
- <20131010031515.GT4446@dastard>
- <20131010032637.GA12725@localhost>
- <20131010033300.GA12952@localhost>
- <20131010033834.GA13141@localhost>
- <20131010042820.GA5663@dastard>
- <20131010060334.GA17576@localhost>
- <20131010080652.GW4446@dastard>
- <20131010082350.GA31385@localhost>
+	Thu, 10 Oct 2013 05:59:18 -0400
+Date: Thu, 10 Oct 2013 10:58:41 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux390@de.ibm.com" <linux390@de.ibm.com>,
+        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] arm: include: asm: atomic.h: use 'unsigned int' and
+ 'atomic' instead of 'unsigned long' for atomic_clear_mask()
+Message-ID: <20131010095841.GG3817@mudshark.cambridge.arm.com>
+References: <52561137.3070608@asianux.com>
+ <5256117A.4000009@asianux.com>
+ <5256121A.9030504@asianux.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131010082350.GA31385@localhost>
+In-Reply-To: <5256121A.9030504@asianux.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 10, 2013 at 04:23:50PM +0800, Fengguang Wu wrote:
-> Dave,
+On Thu, Oct 10, 2013 at 03:34:02AM +0100, Chen Gang wrote:
+> In current kernel wide source, for arm, only s390 scsi drivers use
+> atomic_clear_mask(), now, s390 itself need use 'unsigned int' and
+> 'atomic_t', so need match s390's atomic_clear_mask().
 > 
-> >> This is an easily reproducible bug. And I further confirmed it in
-> >> two ways:
-> >>
-> >> 1) turn off XFS, build 39 commits and boot them 2000+ times
-> >>
-> >> => no single mount error
-> >
-> >That doesn't tell you it is an XFS error. Absence of symptoms !=
-> >absence of bug.
 > 
-> True.
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+> ---
+>  arch/arm/include/asm/atomic.h |   13 +++++++------
+>  1 files changed, 7 insertions(+), 6 deletions(-)
 > 
-> >> 2) turn off all other filesystems, build 2 kernels on v3.12-rc3
-> >>    v3.12-rc4 and boot them
-> >> 
-> >> => half boots have oops
-> >
-> >Again, it doesn't tell you that it is an XFS bug. XFS is well known
-> >for exposing bugs in less used block devices, and you are definitely
-> >using devices that are unusual and not commonly tested by filesystem
-> >developers (e.g. zram, nbd, etc).
-> >
-> 
-> Yeah, it's possible that your commit exposed a bug in the less used
-> nbd/zram devices.
+> diff --git a/arch/arm/include/asm/atomic.h b/arch/arm/include/asm/atomic.h
+> index da1c77d..0832a7f 100644
+> --- a/arch/arm/include/asm/atomic.h
+> +++ b/arch/arm/include/asm/atomic.h
+> @@ -134,9 +134,10 @@ static inline int atomic_cmpxchg(atomic_t *ptr, int old, int new)
+>  	return oldval;
+>  }
+>  
+> -static inline void atomic_clear_mask(unsigned long mask, unsigned long *addr)
+> +static inline void atomic_clear_mask(unsigned int mask, atomic_t *ptr)
+>  {
+> -	unsigned long tmp, tmp2;
+> +	unsigned int tmp;
 
-So please reproduce it on a brd/scsi/sata/virtio block device before
-going any further. Preferably with a bash script I can point at a
-single block device, not a binary initrd blob that I have to
-deconstruct to try to work out what your test is doing.
+I reckon this should be int (the mask parameter is unsigned, but
+atomic_t.counter is signed).
 
-because this:
+> +	unsigned long tmp2;
+>  
+>  	__asm__ __volatile__("@ atomic_clear_mask\n"
+>  "1:	ldrex	%0, [%3]\n"
+> @@ -144,8 +145,8 @@ static inline void atomic_clear_mask(unsigned long mask, unsigned long *addr)
+>  "	strex	%1, %0, [%3]\n"
+>  "	teq	%1, #0\n"
+>  "	bne	1b"
+> -	: "=&r" (tmp), "=&r" (tmp2), "+Qo" (*addr)
+> -	: "r" (addr), "Ir" (mask)
+> +	: "=&r" (tmp), "=&r" (tmp2), "+Qo" (ptr->counter)
+> +	: "r" (&ptr->counter), "Ir" (mask)
+>  	: "cc");
+>  }
+>  
+> @@ -197,12 +198,12 @@ static inline int atomic_cmpxchg(atomic_t *v, int old, int new)
+>  	return ret;
+>  }
+>  
+> -static inline void atomic_clear_mask(unsigned long mask, unsigned long *addr)
+> +static inline void atomic_clear_mask(unsigned int mask, atomic_t *v)
+>  {
+>  	unsigned long flags;
+>  
+>  	raw_local_irq_save(flags);
+> -	*addr &= ~mask;
+> +	v->counter &= ~mask;
+>  	raw_local_irq_restore(flags);
+>  }
 
-> [    7.707009] end_request: I/O error, dev fd0, sector 0
-> [   10.475988] block nbd4: Attempted send on closed socket
-> [   10.478272] end_request: I/O error, dev nbd4, sector 0
-> [   10.492950] block nbd15: Attempted send on closed socket
-> [   10.498283] end_request: I/O error, dev nbd15, sector 0
+This is now identical to asm-generic/atomic.h. I wonder whether we could
+just #include that file for the ARMv6 case? You'd need to check the
+differences carefully.
 
-says that nbd is going through I/O error land, and that's the most
-likely cause of problems being seen by higher level IO completion
-operations....
+Finally, I still question the need for the clear_mask function anyway. We
+don't implement set_mask, and these functions are only used by either other
+arch code or in drivers that don't work on ARM anyway.
 
-> [   10.504236] BUG: unable to handle kernel NULL pointer dereference at 00000004
-> [   10.507558] IP: [<c1034419>] pool_mayday_timeout+0x5f/0x9c
-
-And that's deep inside the workqueue infrastructure, indicating that
-rescues are being used (allocation deadlock?) which is also less
-tested error handling code path....
-
-> [   10.507558] *pdpt = 000000000ce6a001 *pde = 0000000000000000
-> [   10.507558] Oops: 0000 [#1]
-> [   10.507558] CPU: 0 PID: 516 Comm: mount Not tainted 3.12.0-rc4 #2
-> [   10.507558] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-> [   10.507558] task: ccda7440 ti: cf40a000 task.ti: cce2e000
-> [   10.507558] EIP: 0060:[<c1034419>] EFLAGS: 00010046 CPU: 0
-> [   10.507558] EIP is at pool_mayday_timeout+0x5f/0x9c
-> [   10.507558] EAX: 00000000 EBX: c1931d50 ECX: 00000000 EDX: 00000000
-> [   10.507558] ESI: c10343ba EDI: cd5a3258 EBP: cf40bf94 ESP: cf40bf80
-> [   10.507558]  DS: 007b ES: 007b FS: 0000 GS: 0033 SS: 0068
-> [   10.507558] CR0: 8005003b CR2: 00000004 CR3: 0cdbd000 CR4: 000006b0
-> [   10.507558] Stack:
-> [   10.507558]  c1931d60 cf40bf90 00000100 c10343ba cf40bfc0 cf40bfa4 c102cd96 c1a52700
-> [   10.507558]  cf40bfc0 cf40bfd4 c102cf7e c1931d50 c1a53110 c1a52f10 cf40bfc0 c10343ba
-> [   10.507558]  cf40bfc0 cf40bfc0 00000001 c1a52588 00000100 cf40bff8 c1028f61 00000001
-> [   10.507558] Call Trace:
-> [   10.507558]  [<c10343ba>] ? need_to_create_worker+0x32/0x32
-> [   10.507558]  [<c102cd96>] call_timer_fn.isra.39+0x16/0x60
-> [   10.507558]  [<c102cf7e>] run_timer_softirq+0x144/0x15e
-> [   10.507558]  [<c10343ba>] ? need_to_create_worker+0x32/0x32
-> [   10.507558]  [<c1028f61>] __do_softirq+0x87/0x12b
-> [   10.507558]  [<c1028eda>] ? local_bh_enable_ip+0xa/0xa
-> [   10.507558]  <IRQ>
-> [   10.507558]  [<c10290c4>] ? irq_exit+0x3a/0x48
-> [   10.507558]  [<c1018818>] ? smp_apic_timer_interrupt+0x23/0x2c
-> [   10.507558]  [<c164f38d>] ? apic_timer_interrupt+0x2d/0x34
-> [   10.507558]  [<c126f5e2>] ? arch_local_irq_restore+0x5/0xb
-> [   10.507558]  [<c126f694>] ? spin_unlock_irqrestore.isra.4+0x8/0x14
-> [   10.507558]  [<c126f705>] ? nbd_end_request+0x65/0x6d
-> [   10.507558]  [<c126f784>] ? do_nbd_request+0x77/0xc1
-> [   10.507558]  [<c11abe4f>] ? __blk_run_queue_uncond+0x1e/0x27
-> [   10.507558]  [<c11abe6b>] ? __blk_run_queue+0x13/0x15
-> [   10.507558]  [<c11abfe8>] ? queue_unplugged.isra.56+0x13/0x1f
-> [   10.507558]  [<c11ad70b>] ? blk_flush_plug_list+0x140/0x14f
-> [   10.507558]  [<c11ad95f>] ? blk_finish_plug+0xd/0x27
-> [   10.507558]  [<c11051b6>] ? _xfs_buf_ioapply+0x236/0x24e
-
-and it has happened deep inside the nbd IO path in the context of
-the xfs_buf allocation that has seen corruptions in previous dumps.
-
-So before I look any further at this, you need to rule out nbd as
-the cause of the problems because the XFS code paths on scsi, sata,
-brd and virtio block device don't cause any problems....
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Will
