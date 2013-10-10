@@ -1,75 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752606Ab3JJEJJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 00:09:09 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:34762 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752033Ab3JJEJH (ORCPT
+	id S1752188Ab3JJERZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 00:17:25 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:56155 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751791Ab3JJERY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 00:09:07 -0400
-Message-ID: <5256285F.7060705@linaro.org>
-Date: Wed, 09 Oct 2013 21:09:03 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] More timekeeping items for 3.13
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 10 Oct 2013 00:17:24 -0400
+Date: Thu, 10 Oct 2013 00:17:22 -0400 (EDT)
+Message-Id: <20131010.001722.880038875298978753.davem@davemloft.net>
+To: baker.kernel@gmail.com
+Cc: kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net-next] fib_trie: only calc for the un-first node
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1381203411-12047-1-git-send-email-baker.kernel@gmail.com>
+References: <1381203411-12047-1-git-send-email-baker.kernel@gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Wed, 09 Oct 2013 21:17:24 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Thomas,
-    Just wanted to send along the few minor time related items I've got
-left for 3.13.
+From: baker.kernel@gmail.com
+Date: Tue,  8 Oct 2013 11:36:51 +0800
 
-* Small cleanup in the clocksource code.
+> From: "baker.zhang" <baker.kernel@gmail.com>
+> 
+> This is a enhancement.
+> 
+> for the first node in fib_trie, newpos is 0, bit is 1.
+> Only for the leaf or node with unmatched key need calc pos.
+> 
+> Signed-off-by: baker.zhang <baker.kernel@gmail.com>
 
-* Fix for rtc-pl031 to let it work with alarmtimers
-
-* Move arm64 to using the generic sched_clock framework & resulting
-cleanup in the generic sched_clock code.
-
-
-thanks
--john
-
-
-The following changes since commit 389e067032fbb96e439abafae848dd447e4cafb4:
-
-  Merge branch 'fortglx/3.12/time' into fortglx/3.13/time (2013-09-16
-18:54:07 -0700)
-
-are available in the git repository at:
-
-
-  git://git.linaro.org/people/jstultz/linux.git fortglx/3.13/time
-
-for you to fetch changes up to b4042ceaabbd913bc5b397ddd1e396eeb312d72f:
-
-  sched_clock: Remove sched_clock_func() hook (2013-10-09 16:54:39 -0700)
-
-----------------------------------------------------------------
-Elad Wexler (1):
-      clocksource: Fix 'ret' data type of sysfs_override_clocksource()
-and sysfs_unbind_clocksource()
-
-John Stultz (1):
-      rtc: rtc-pl031: Set wakeup flag prior to registering rtcdev
-
-Stephen Boyd (2):
-      arch_timer: Move to generic sched_clock framework
-      sched_clock: Remove sched_clock_func() hook
-
- arch/arm/kernel/arch_timer.c         | 14 --------------
- arch/arm64/Kconfig                   |  1 +
- arch/arm64/kernel/time.c             | 10 ----------
- drivers/clocksource/arm_arch_timer.c | 10 ++++++++++
- drivers/rtc/rtc-pl031.c              |  3 +--
- include/linux/sched_clock.h          |  2 --
- kernel/time/clocksource.c            |  4 ++--
- kernel/time/sched_clock.c            |  9 +--------
- 8 files changed, 15 insertions(+), 38 deletions(-)
+The compiler is probably doing this transformation all by itself,
+but applied anyways, thanks.
