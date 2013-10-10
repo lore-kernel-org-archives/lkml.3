@@ -1,145 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753926Ab3JJBlW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 21:41:22 -0400
-Received: from mga11.intel.com ([192.55.52.93]:43272 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752827Ab3JJBlU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 21:41:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1068,1371106800"; 
-   d="scan'208";a="408595818"
-Date: Thu, 10 Oct 2013 09:41:17 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Dave Chinner <dchinner@redhat.com>
-Cc: Ben Myers <bpm@sgi.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Subject: Re: [XFS on bad superblock] BUG: unable to handle kernel NULL
- pointer dereference at 00000003
-Message-ID: <20131010014117.GA6017@localhost>
-References: <20131009073910.GA387@localhost>
- <20131010005900.GE2025@devil.localdomain>
- <20131010011640.GA5726@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131010011640.GA5726@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754216Ab3JJBln (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 21:41:43 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:22524 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753991Ab3JJBll (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 21:41:41 -0400
+X-AuditID: cbfee68e-b7f756d000004512-10-525605d34ed0
+From: Chanwoo Choi <cw00.choi@samsung.com>
+To: broonie@kernel.org, lgirdwood@gmail.com, sbkim73@samsung.com
+Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        YoungJun Cho <yj44.cho@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: [PATCH 2/2] regulator: s5m8767: Modify parsing method of the voltage
+ table of buck2/3/4
+Date: Thu, 10 Oct 2013 10:41:36 +0900
+Message-id: <1381369296-17101-2-git-send-email-cw00.choi@samsung.com>
+X-Mailer: git-send-email 1.8.0
+In-reply-to: <1381369296-17101-1-git-send-email-cw00.choi@samsung.com>
+References: <1381369296-17101-1-git-send-email-cw00.choi@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKLMWRmVeSWpSXmKPExsWyRsSkRPcKa1iQwa1nrBZTHz5hs7j+5Tmr
+	xfwj51gtzja9Ybf4dqWDyeLyrjlsFhdXfGGy2LtzMqMDh8fOWXfZPTat6mTz6NuyitHj8ya5
+	AJYoLpuU1JzMstQifbsErowDO9IKlstWbLqxg7mBca9EFyMHh4SAicTyG5ZdjJxAppjEhXvr
+	2boYuTiEBJYySjzt/skOkTCR2Ll4CjtEYhGjxJ5Vh6CqGpkkJv+7zwJSxSagJbH/xQ02kKki
+	Ag4SkxfogtQwC2xjlGje/IUNpEZYIEnixLqXYFNZBFQlrp1qBLN5BVwlDjZ2Qm2Tk/iw5xGY
+	zSngJnH75AcmEFsIqObH+hlgiyUEprNLNN5ewwwxSEDi2+RDLBDvyEpsOsAMMUdS4uCKGywT
+	GIUXMDKsYhRNLUguKE5KLzLSK07MLS7NS9dLzs/dxAgM8tP/nvXtYLx5wPoQYzLQuInMUqLJ
+	+cAoySuJNzQ2M7IwNTE1NjK3NCNNWEmcV63FOlBIID2xJDU7NbUgtSi+qDQntfgQIxMHp1QD
+	o8HFDskOaY9X1z3+3Jv7wqHwynKB9MdPc+daJdt9OqgQs3hn56pfZXePO5omfzTxck0Lqrc9
+	uSasQ0GxK5MveOuJPpeOl7/0+Q5vDW4Jr1qfsqx0YtuhrQ/MC4RWBLpc71h2r7SF55NL8eZY
+	9vu2f05VnlTz8b3v19guu2hjZ/kB8zWcod8FlViKMxINtZiLihMBwxmc44gCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMIsWRmVeSWpSXmKPExsVy+t9jAd3LrGFBBld2W1lMffiEzeL6l+es
+	FvOPnGO1ONv0ht3i25UOJovLu+awWVxc8YXJYu/OyYwOHB47Z91l99i0qpPNo2/LKkaPz5vk
+	AliiGhhtMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwCdN0yc4Du
+	UFIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jBmHNiRVrBctmLTjR3MDYx7
+	JboYOTkkBEwkdi6ewg5hi0lcuLeerYuRi0NIYBGjxJ5Vh6CcRiaJyf/us4BUsQloSex/cQMo
+	wcEhIuAgMXmBLkgNs8A2RonmzV/YQGqEBZIkTqx7CTaVRUBV4tqpRjCbV8BV4mBjJ9Q2OYkP
+	ex6B2ZwCbhK3T35gArGFgGp+rJ/BNoGRdwEjwypG0dSC5ILipPRcQ73ixNzi0rx0veT83E2M
+	4Ch6JrWDcWWDxSFGAQ5GJR7eirLQICHWxLLiytxDjBIczEoivNNPAoV4UxIrq1KL8uOLSnNS
+	iw8xJgNdNZFZSjQ5HxjheSXxhsYmZkaWRuaGFkbG5qQJK4nzHmi1DhQSSE8sSc1OTS1ILYLZ
+	wsTBKdXAWLrskqbjQ5bTzn0P/JxWvbhtcP55BjPnljkty+I1QmTm114KT5k8/VEuR8y+vV5T
+	D20MP37sVp5ZhK8pT33bRt4/zj8MzO8lNDryK0y/6H+WWZ9D8t3T/G1JPPc2XmDiCteOsHJq
+	6fcpNS1IE56TNFlwRb1Tgo/EccPuiXv9rxha6tYsnPpUiaU4I9FQi7moOBEAiCiwN+YCAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 10, 2013 at 09:16:40AM +0800, Fengguang Wu wrote:
-> On Thu, Oct 10, 2013 at 11:59:00AM +1100, Dave Chinner wrote:
-> > [add xfs@oss.sgi.com to cc]
-> 
-> Thanks.
-> 
-> To help debug the problem, I searched XFS in my tests' oops database
-> and find one kernel that failed 4 times (out of 12 total boots) with
-> basically the same error:
-> 
->       4 BUG: sleeping function called from invalid context at kernel/workqueue.c:2810
->       1 WARNING: CPU: 1 PID: 372 at lib/debugobjects.c:260 debug_print_object+0x94/0xa2()
->       1 WARNING: CPU: 1 PID: 360 at lib/debugobjects.c:260 debug_print_object+0x94/0xa2()
->       1 WARNING: CPU: 0 PID: 381 at lib/debugobjects.c:260 debug_print_object+0x94/0xa2()
->       1 WARNING: CPU: 0 PID: 361 at lib/debugobjects.c:260 debug_print_object+0x94/0xa2()
+The s5m8767 regulator driver parse always the voltage table of buck2/3/4.
+If gpio_dvs feature isn't used and dts haven't included the voltage table
+of buck2/3/4, s5m8767 regulator driver return error and file probe state.
 
-And some other messages in an older kernel:
+This patch check only voltage table of buck on s5m8767_pmic_dt_parse_pdata()
+if buck[2-4]_gpiodvs is true.
 
-[   39.004416] F2FS-fs (nbd2): unable to read second superblock
-[   39.005088] XFS: Assertion failed: read && bp->b_ops, file: fs/xfs/xfs_buf.c, line: 1036
-[   39.005089] ------------[ cut here ]------------
-[   39.005096] WARNING: CPU: 1 PID: 20 at fs/xfs/xfs_message.c:100 asswarn+0x33/0x40()
-[   39.005099] CPU: 1 PID: 20 Comm: kworker/1:0H Not tainted 3.11.0-rc1-00667-gf70eb07 #64
-[   39.005100] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-[   39.005106] Workqueue: xfslogd xfs_buf_iodone_work
-[   39.005110]  0000000000000009 ffff88000ed91ce0 ffffffff824044a1 0000000000000000
-[   39.005113]  ffff88000ed91d18 ffffffff8109a0a8 ffff880007d6cea8 ffff880007d6cd80
-[   39.005116]  0000000000000000 0000000000000000 0000000000000060 ffff88000ed91d28
-[   39.005116] Call Trace:
-[   39.005122]  [<ffffffff824044a1>] dump_stack+0x4e/0x82
-[   39.005126]  [<ffffffff8109a0a8>] warn_slowpath_common+0x78/0xa0
-[   39.005129]  [<ffffffff8109a1ba>] warn_slowpath_null+0x1a/0x20
-[   39.005131]  [<ffffffff813e70d3>] asswarn+0x33/0x40
-[   39.005134]  [<ffffffff813d0f82>] xfs_buf_iodone_work+0x92/0x200
-[   39.005138]  [<ffffffff810bbdfa>] process_one_work+0x1fa/0x6f0
-[   39.005141]  [<ffffffff810bbd98>] ? process_one_work+0x198/0x6f0
-[   39.005144]  [<ffffffff810bc40d>] worker_thread+0x11d/0x3a0
-[   39.005146]  [<ffffffff810bc2f0>] ? process_one_work+0x6f0/0x6f0
-[   39.005149]  [<ffffffff810c80dd>] kthread+0xed/0x100
-[   39.005153]  [<ffffffff8110391d>] ? trace_hardirqs_on_caller+0xfd/0x1c0
-[   39.005156]  [<ffffffff810c7ff0>] ? insert_kthread_work+0x80/0x80
-[   39.005159]  [<ffffffff82418efc>] ret_from_fork+0x7c/0xb0
-[   39.005162]  [<ffffffff810c7ff0>] ? insert_kthread_work+0x80/0x80
-[   39.005164] ---[ end trace be5b205ae29d07cd ]---
-[   39.028229] block nbd6: Attempted send on closed socket
-[   39.028988] block nbd6: Attempted send on closed socket
-[   39.029109] block nbd6: Attempted send on closed socket
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+Signed-off-by: YoungJun Cho <yj44.cho@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ drivers/regulator/s5m8767.c | 54 +++++++++++++++++++++++----------------------
+ 1 file changed, 28 insertions(+), 26 deletions(-)
 
-[   41.550438] block nbd7: Attempted send on closed socket
-[   41.550471] ------------[ cut here ]------------
-[   41.550476] WARNING: CPU: 1 PID: 878 at lib/list_debug.c:33 __list_add+0xac/0xc0()
-[   41.550478] list_add corruption. prev->next should be next (ffff88000f3d7360), but was           (null). (prev=ffff880008786a30).
-[   41.550481] CPU: 1 PID: 878 Comm: mount Not tainted 3.11.0-rc1-00667-gf70eb07 #64
-[   41.550482] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-[   41.550485]  0000000000000009 ffff880007d6fb08 ffffffff824044a1 ffff880007d6fb50
-[   41.550488]  ffff880007d6fb40 ffffffff8109a0a8 ffff880007c6b530 ffff88000f3d7360
-[   41.550491]  ffff880008786a30 0000000000000007 0000000000000000 ffff880007d6fba0
-[   41.550491] Call Trace:
-[   41.550499]  [<ffffffff824044a1>] dump_stack+0x4e/0x82
-[   41.550503]  [<ffffffff8109a0a8>] warn_slowpath_common+0x78/0xa0
-[   41.550505]  [<ffffffff8109a14c>] warn_slowpath_fmt+0x4c/0x50
-[   41.550509]  [<ffffffff81101359>] ? get_lock_stats+0x19/0x60
-[   41.550511]  [<ffffffff8163434c>] __list_add+0xac/0xc0
-[   41.550515]  [<ffffffff810ba453>] insert_work+0x43/0xa0
-[   41.550518]  [<ffffffff810bb22b>] __queue_work+0x11b/0x510
-[   41.550520]  [<ffffffff810bb936>] queue_work_on+0x96/0xa0
-[   41.550526]  [<ffffffff813d2096>] ? _xfs_buf_ioend.constprop.15+0x26/0x30
-[   41.550529]  [<ffffffff813d1f6c>] xfs_buf_ioend+0x15c/0x260
-[   41.550531]  [<ffffffff813d2f92>] ? xfsbdstrat+0x22/0x170
-[   41.550534]  [<ffffffff813d2096>] _xfs_buf_ioend.constprop.15+0x26/0x30
-[   41.550537]  [<ffffffff813d2873>] xfs_buf_iorequest+0x73/0x1a0
-[   41.550539]  [<ffffffff813d2f92>] xfsbdstrat+0x22/0x170
-[   41.550542]  [<ffffffff813d3832>] xfs_buf_read_uncached+0x72/0xa0
-[   41.550546]  [<ffffffff81445846>] xfs_readsb+0x176/0x250
-[   41.550550]  [<ffffffff813ea2da>] xfs_fs_fill_super+0x24a/0x3a0
-[   41.550553]  [<ffffffff811b9f40>] mount_bdev+0x1c0/0x200
-[   41.550556]  [<ffffffff813ea090>] ? xfs_parseargs+0xc10/0xc10
-[   41.550559]  [<ffffffff81101ff6>] ? lock_release_holdtime.part.29+0xe6/0x160
-[   41.550561]  [<ffffffff813e84f5>] xfs_fs_mount+0x15/0x20
-[   41.550563]  [<ffffffff811ba199>] mount_fs+0x39/0x1b0
-[   41.550567]  [<ffffffff81190980>] ? __alloc_percpu+0x10/0x20
-[   41.550571]  [<ffffffff811d8ff3>] vfs_kern_mount+0x63/0xf0
-[   41.550574]  [<ffffffff811da85e>] do_mount+0x23e/0xa20
-[   41.550577]  [<ffffffff8118bcbb>] ? strndup_user+0x4b/0x60
-[   41.550579]  [<ffffffff811db0c3>] SyS_mount+0x83/0xc0
-[   41.550583]  [<ffffffff824191d0>] tracesys+0xdd/0xe2
-[   41.550584] ---[ end trace 5193f938804cbcca ]---
-[   41.550820] block nbd15: Attempted send on closed socket
+diff --git a/drivers/regulator/s5m8767.c b/drivers/regulator/s5m8767.c
+index cb6cdb3..29999c0 100644
+--- a/drivers/regulator/s5m8767.c
++++ b/drivers/regulator/s5m8767.c
+@@ -522,7 +522,7 @@ static int s5m8767_pmic_dt_parse_pdata(struct platform_device *pdev,
+ 	struct device_node *pmic_np, *regulators_np, *reg_np;
+ 	struct sec_regulator_data *rdata;
+ 	struct sec_opmode_data *rmode;
+-	unsigned int i, dvs_voltage_nr = 1, ret;
++	unsigned int i, dvs_voltage_nr = 8, ret;
+ 
+ 	pmic_np = iodev->dev->of_node;
+ 	if (!pmic_np) {
+@@ -586,15 +586,39 @@ static int s5m8767_pmic_dt_parse_pdata(struct platform_device *pdev,
+ 		rmode++;
+ 	}
+ 
+-	if (of_get_property(pmic_np, "s5m8767,pmic-buck2-uses-gpio-dvs", NULL))
++	if (of_get_property(pmic_np, "s5m8767,pmic-buck2-uses-gpio-dvs", NULL)) {
+ 		pdata->buck2_gpiodvs = true;
+ 
+-	if (of_get_property(pmic_np, "s5m8767,pmic-buck3-uses-gpio-dvs", NULL))
++		if (of_property_read_u32_array(pmic_np,
++				"s5m8767,pmic-buck2-dvs-voltage",
++				pdata->buck2_voltage, dvs_voltage_nr)) {
++			dev_err(iodev->dev, "buck2 voltages not specified\n");
++			return -EINVAL;
++		}
++	}
++
++	if (of_get_property(pmic_np, "s5m8767,pmic-buck3-uses-gpio-dvs", NULL)) {
+ 		pdata->buck3_gpiodvs = true;
+ 
+-	if (of_get_property(pmic_np, "s5m8767,pmic-buck4-uses-gpio-dvs", NULL))
++		if (of_property_read_u32_array(pmic_np,
++				"s5m8767,pmic-buck3-dvs-voltage",
++				pdata->buck3_voltage, dvs_voltage_nr)) {
++			dev_err(iodev->dev, "buck3 voltages not specified\n");
++			return -EINVAL;
++		}
++	}
++
++	if (of_get_property(pmic_np, "s5m8767,pmic-buck4-uses-gpio-dvs", NULL)) {
+ 		pdata->buck4_gpiodvs = true;
+ 
++		if (of_property_read_u32_array(pmic_np,
++				"s5m8767,pmic-buck4-dvs-voltage",
++				pdata->buck4_voltage, dvs_voltage_nr)) {
++			dev_err(iodev->dev, "buck4 voltages not specified\n");
++			return -EINVAL;
++		}
++	}
++
+ 	if (pdata->buck2_gpiodvs || pdata->buck3_gpiodvs ||
+ 						pdata->buck4_gpiodvs) {
+ 		ret = s5m8767_pmic_dt_parse_dvs_gpio(iodev, pdata, pmic_np);
+@@ -612,34 +636,12 @@ static int s5m8767_pmic_dt_parse_pdata(struct platform_device *pdev,
+ 				"invalid value for default dvs index, use 0\n");
+ 			}
+ 		}
+-		dvs_voltage_nr = 8;
+ 	}
+ 
+ 	ret = s5m8767_pmic_dt_parse_ds_gpio(iodev, pdata, pmic_np);
+ 	if (ret)
+ 		return -EINVAL;
+ 
+-	if (of_property_read_u32_array(pmic_np,
+-				"s5m8767,pmic-buck2-dvs-voltage",
+-				pdata->buck2_voltage, dvs_voltage_nr)) {
+-		dev_err(iodev->dev, "buck2 voltages not specified\n");
+-		return -EINVAL;
+-	}
+-
+-	if (of_property_read_u32_array(pmic_np,
+-				"s5m8767,pmic-buck3-dvs-voltage",
+-				pdata->buck3_voltage, dvs_voltage_nr)) {
+-		dev_err(iodev->dev, "buck3 voltages not specified\n");
+-		return -EINVAL;
+-	}
+-
+-	if (of_property_read_u32_array(pmic_np,
+-				"s5m8767,pmic-buck4-dvs-voltage",
+-				pdata->buck4_voltage, dvs_voltage_nr)) {
+-		dev_err(iodev->dev, "buck4 voltages not specified\n");
+-		return -EINVAL;
+-	}
+-
+ 	if (of_get_property(pmic_np, "s5m8767,pmic-buck2-ramp-enable", NULL))
+ 		pdata->buck2_ramp_enable = true;
+ 
+-- 
+1.8.0
 
-[   38.738751] block nbd9: Attempted send on closed socket
-[   38.738775] F2FS-fs (nbd9): unable to read first superblock
-[   38.738852] block nbd9: Attempted send on closed socket
-[   38.738875] F2FS-fs (nbd9): unable to read second superblock
- ffff8800001cbde0 ffffffff810b9ddf ffff8800081dfe18
-[   38.740053]  ffff88000f1d3638 ffff88000f1d3240 ffff88000f1d3298 ffff8800000394c8
-[   38.740053] Call Trace:
-[   38.740053]  [<ffffffff824130ce>] ? mutex_unlock+0xe/0x10
-[   38.740053]  [<ffffffff810b9ddf>] ? manage_workers.isra.28+0x1ef/0x2b0
-[   38.740053]  [<ffffffff810bc40d>] worker_thread+0x11d/0x3a0
-[   38.740053]  [<ffffffff810bc2f0>] ? process_one_work+0x6f0/0x6f0
-[   38.740053]  [<ffffffff810c80dd>] kthread+0xed/0x100
-[   38.740053]  [<ffffffff8110391d>] ? trace_hardirqs_on_caller+0xfd/0x1c0
-[   38.740053]  [<ffffffff810c7ff0>] ? insert_kthread_work+0x80/0x80
-[   38.740053]  [<ffffffff82418efc>] ret_from_fork+0x7c/0xb0
-[   38.740053]  [<ffffffff810c7ff0>] ? insert_kthread_work+0x80/0x80
-[   38.740053] Code: 57 41 56 41 55 45 31 ed 41 54 49 89 f4 53 48 89 fb 48 83 ec 48 48 8b 06 48 89 c2 30 d2 a8 04 48 8b 47 48 4c 0f 45 ea 48 89 45 a0 <49> 8b 45 08 48 c7 45 b0 00 00 00 00 48 c7 45 b8 00 00 00 00 44 
-[   38.740053] RIP  [<ffffffff810bbc35>] process_one_work+0x35/0x6f0
-[   38.740053]  RSP <ffff8800001cbd70>
-[   38.740053] CR2: 0000000000000008
-[   38.740053] ---[ end trace b1f41925f36484b0 ]---
-[   38.740053] BUG: sleeping function called from invalid context at kernel/rwsem.c:20
-
-Thanks,
-Fengguang
