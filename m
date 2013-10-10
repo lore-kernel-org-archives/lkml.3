@@ -1,44 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755595Ab3JJMur (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 08:50:47 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:62135 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753526Ab3JJMuf (ORCPT
+	id S1752890Ab3JJNFQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 09:05:16 -0400
+Received: from kiruna.synopsys.com ([198.182.44.80]:36082 "EHLO
+	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752076Ab3JJNFO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 08:50:35 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: linux-acpi@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
-        Mark Brown <broonie@kernel.org>, Aaron Lu <aaron.lu@intel.com>,
-        Lv Zheng <lv.zheng@intel.com>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/3] ACPI power management support for I2C and SPI devices
-Date: Thu, 10 Oct 2013 15:02:17 +0200
-Message-ID: <2209223.2krlQWGy9Q@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <1381400928-2689-1-git-send-email-mika.westerberg@linux.intel.com>
-References: <1381327461-10562-1-git-send-email-mika.westerberg@linux.intel.com> <1381400928-2689-1-git-send-email-mika.westerberg@linux.intel.com>
+	Thu, 10 Oct 2013 09:05:14 -0400
+Message-ID: <5256A571.3070600@synopsys.com>
+Date: Thu, 10 Oct 2013 18:32:41 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Ingo Molnar <mingo@redhat.com>, Andrew Morton <akpm@linux-foundation.org>
+CC: Peter Zijlstra <peterz@infradead.org>, Paul Mundt <paul.mundt@gmail.com>,
+        <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 0/3]  Move ARCH specific fpu_counter out of task_struct
+References: <1381218389-16585-1-git-send-email-vgupta@synopsys.com>
+In-Reply-To: <1381218389-16585-1-git-send-email-vgupta@synopsys.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.243]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, October 10, 2013 01:28:45 PM Mika Westerberg wrote:
-> Here is an updated version. I added acks from Mark and Wolfram and dropped
-> if (ACPI_HANDLE()) checks as requested. This is already handled by
-> acpi_dev_pm_attach()/detach().
+On 10/08/2013 01:16 PM, Vineet Gupta wrote:
+> Hi,
 > 
-> Rafael,
+> When debugging a ARC SMP 3.11 build failure due to a ST insn dealing with
+> task_struct.thread going out of range, I spotted @fpu_counter in task_struct
+> which only SH/x86 happen to use, and can be easily moved out into corresponding
+> ARCH specific thread_struct. This saves 4 bytes per task_struct instantiated,
+> for all the other 18 arches.
 > 
-> If you are OK with these, could you merge the series to your ACPI tree?
+> While the change is relatively strightforward, I've failed to connect with
+> SH arch folks / Paul Mundt, latter's SH email keeps bouncing back.
+> Hence I'm taking the liberty to use his alternate email (as listed on his
+> github page) and I appologize in advance if this causes any inconvenience.
 > 
-> Thanks!
+> Changes in v2:
+> - Rabased to 3.12-rc4
+> - Added ACK from Ingo on patch 2/3
+> 
+> Version 1 can be found here:
+> https://lkml.org/lkml/2013/9/17/49
+> 
+> Thx,
+> -Vineet
+> 
+> 
+> Vineet Gupta (3):
+>   sh: Move fpu_counter into ARCH specific thread_struct
+>   x86: Move fpu_counter into ARCH specific thread_struct
+>   sched: Remove ARCH specific fpu_counter from task_struct
+> 
+>  arch/sh/include/asm/fpu.h           |  2 +-
+>  arch/sh/include/asm/processor_32.h  | 10 ++++++++++
+>  arch/sh/include/asm/processor_64.h  | 10 ++++++++++
+>  arch/sh/kernel/cpu/fpu.c            |  2 +-
+>  arch/sh/kernel/process_32.c         |  6 +++---
+>  arch/x86/include/asm/fpu-internal.h | 10 +++++-----
+>  arch/x86/include/asm/processor.h    |  9 +++++++++
+>  arch/x86/kernel/i387.c              |  2 +-
+>  arch/x86/kernel/process_32.c        |  4 ++--
+>  arch/x86/kernel/process_64.c        |  2 +-
+>  arch/x86/kernel/traps.c             |  2 +-
+>  include/linux/sched.h               |  9 ---------
+>  12 files changed, 44 insertions(+), 24 deletions(-)
+> 
 
-I will, thanks!
+Ingo, Andrew - do you think this series can be merged for 3.13. Is there anything
+else I need to do here.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+-Vineet
