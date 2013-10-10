@@ -1,146 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755047Ab3JJKmO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 06:42:14 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.162]:36689 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752748Ab3JJKmM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 06:42:12 -0400
-X-RZG-AUTH: :IGUKYFjleetgZuRbHZjp6Ve7NzeE1efWuTR/wV06y353QgIuD5+acdRFtJ8MDHZp4u74mTVB5dOWYQ==
-X-RZG-CLASS-ID: mo00
-Message-ID: <52568477.3080008@giantdisaster.de>
-Date: Thu, 10 Oct 2013 12:41:59 +0200
-From: Stefan Behrens <sbehrens@giantdisaster.de>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1755176Ab3JJKmW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 06:42:22 -0400
+Received: from ozlabs.org ([203.10.76.45]:48500 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755052Ab3JJKmT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 06:42:19 -0400
+Date: Thu, 10 Oct 2013 21:41:40 +1100
+From: Paul Mackerras <paulus@samba.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Stanimir Varbanov <svarbanov@mm-sol.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Matt Mackall <mpm@selenic.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH 0/2] Add support for Qualcomm's PRNG
+Message-ID: <20131010104140.GE9906@iris.ozlabs.ibm.com>
+References: <1380811955-18085-1-git-send-email-svarbanov@mm-sol.com>
+ <20131003165130.GA11974@thunk.org>
+ <524EEB96.6040707@mm-sol.com>
+ <20131004181005.GA7022@thunk.org>
+ <52556C4E.9000604@mm-sol.com>
+ <52557137.5050200@zytor.com>
 MIME-Version: 1.0
-To: "Geyslan G. Bem" <geyslan@gmail.com>, chris.mason@fusionio.com
-CC: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jbacik@fusionio.com, joe@perches.com, kernel-br@googlegroups.com
-Subject: Re: [PATCH v4] btrfs: Fix memory leakage in the tree-log.c
-References: <1381370495-13702-1-git-send-email-geyslan@gmail.com>
-In-Reply-To: <1381370495-13702-1-git-send-email-geyslan@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52557137.5050200@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  9 Oct 2013 23:01:35 -0300, Geyslan G. Bem wrote:
-> When 'dir' is NULL, after calling extref_get_fields(), add_inode_ref()
-> can be returning without freeing the 'name' pointer.
-> 
-> Added kfree when necessary.
-> 
-> Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
-> ---
->  fs/btrfs/tree-log.c | 5 ++++-
->  1 file changed, 4 insertions(+), 1 deletion(-)
-> 
-> diff --git a/fs/btrfs/tree-log.c b/fs/btrfs/tree-log.c
-> index 79f057c..63c0b72 100644
-> --- a/fs/btrfs/tree-log.c
-> +++ b/fs/btrfs/tree-log.c
-> @@ -1169,8 +1169,11 @@ static noinline int add_inode_ref(struct btrfs_trans_handle *trans,
->  			 */
->  			if (!dir)
->  				dir = read_one_inode(root, parent_objectid);
-> -			if (!dir)
-> +			if (!dir) {
-> +				if (!ret)
-> +					kfree(name);
->  				return -ENOENT;
-> +			}
->  		} else {
->  			ret = ref_get_fields(eb, ref_ptr, &namelen, &name,
->  					     &ref_index);
-> 
+On Wed, Oct 09, 2013 at 08:07:35AM -0700, H. Peter Anvin wrote:
 
-There are many more places to fix up in this function. We lose up to two inodes ("if (!ret) return ret;" without the iput(dir), iput(inode)) and we can lose the memory for name ("if ... goto out;" and the out path does not contain the kfree(name)).
+> consider the PowerPC random number generator[1]) and
 
-I would prefer the approach with a label at the end of the function that handles all cleanup work and which is called from everywhere where a return is coded now.
+[snip]
 
-Like this (the code is completely untested since this is just a review comment):
+> [1] which has a known first-order bias which they "correct" for by
+> XORing two datums together in a very simple data reduction step.
 
-diff --git a/fs/btrfs/tree-log.c b/fs/btrfs/tree-log.c
-index 964c583..40035db 100644
---- a/fs/btrfs/tree-log.c
-+++ b/fs/btrfs/tree-log.c
-@@ -1113,11 +1113,11 @@ static noinline int add_inode_ref(struct btrfs_trans_handle *trans,
-                                  struct extent_buffer *eb, int slot,
-                                  struct btrfs_key *key)
- {
--       struct inode *dir;
--       struct inode *inode;
-+       struct inode *dir = NULL;
-+       struct inode *inode = NULL;
-        unsigned long ref_ptr;
-        unsigned long ref_end;
--       char *name;
-+       char *name = NULL;
-        int namelen;
-        int ret;
-        int search_done = 0;
-@@ -1150,13 +1150,15 @@ static noinline int add_inode_ref(struct btrfs_trans_handle *trans,
-         * care of the rest
-         */
-        dir = read_one_inode(root, parent_objectid);
--       if (!dir)
--               return -ENOENT;
-+       if (!dir) {
-+               ret = -ENOENT;
-+               goto out;
-+       }
+65 actually, not two.
 
-        inode = read_one_inode(root, inode_objectid);
-        if (!inode) {
--               iput(dir);
--               return -EIO;
-+               ret = -EIO;
-+               goto out;
-        }
+> However, if their random source has bias it is extremely likely it also
+> has nonzero correlations, which require stronger reductions.  It would
 
-        while (ref_ptr < ref_end) {
-@@ -1169,14 +1171,16 @@ static noinline int add_inode_ref(struct btrfs_trans_handle *trans,
-                         */
-                        if (!dir)
-                                dir = read_one_inode(root, parent_objectid);
--                       if (!dir)
--                               return -ENOENT;
-+                       if (!dir) {
-+                               ret = -ENOENT;
-+                               goto out;
-+                       }
-                } else {
-                        ret = ref_get_fields(eb, ref_ptr, &namelen, &name,
-                                             &ref_index);
-                }
-                if (ret)
--                       return ret;
-+                       goto out;
+The correlations are essentially zero, by design, and experiment
+confirms it.  Did you see my mail on the kvm list where I explained
+how it works?
 
-                /* if we already have a perfect match, we're done */
-                if (!inode_in_dir(root, path, btrfs_ino(dir), btrfs_ino(inode),
-@@ -1215,6 +1219,7 @@ static noinline int add_inode_ref(struct btrfs_trans_handle *trans,
-
-                ref_ptr = (unsigned long)(ref_ptr + ref_struct_size) + namelen;
-                kfree(name);
-+               name = NULL;
-                if (log_ref_ver) {
-                        iput(dir);
-                        dir = NULL;
-@@ -1225,6 +1230,7 @@ static noinline int add_inode_ref(struct btrfs_trans_handle *trans,
-        ret = overwrite_item(trans, root, path, eb, slot, key);
- out:
-        btrfs_release_path(path);
-+       kfree(name);
-        iput(dir);
-        iput(inode);
-        return ret;
-
-
-Could you rework your patch to do something similar to the code above?
-
-This approach is also documented in the file Documentation/CodingStyle in the kernel source tree in the section "Chapter 7: Centralized exiting of functions".
-
-
+Paul.
