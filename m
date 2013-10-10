@@ -1,96 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755897Ab3JJBTe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 21:19:34 -0400
-Received: from mail-qe0-f51.google.com ([209.85.128.51]:57779 "EHLO
-	mail-qe0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752227Ab3JJBTd convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 21:19:33 -0400
+	id S1754412Ab3JJBVw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 21:21:52 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:31090 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751598Ab3JJBVt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Oct 2013 21:21:49 -0400
+X-IronPort-AV: E=Sophos;i="4.93,462,1378828800"; 
+   d="scan'208";a="8706979"
+Message-ID: <525600E0.8020001@cn.fujitsu.com>
+Date: Thu, 10 Oct 2013 09:20:32 +0800
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <20131010005220.GI16461@localhost.localdomain>
-References: <1381362030-29595-1-git-send-email-geyslan@gmail.com>
-	<20131010005220.GI16461@localhost.localdomain>
-Date: Wed, 9 Oct 2013 22:19:31 -0300
-Message-ID: <CAGG-pUR2hQJ48z4SMi8S4uYVV6GvhQ9vDS5bbvZ41OfymZyw0Q@mail.gmail.com>
-Subject: Re: [PATCH v3] btrfs: Fix memory leakage in the tree-log.c
-From: =?UTF-8?Q?Geyslan_Greg=C3=B3rio_Bem?= <geyslan@gmail.com>
-To: Josef Bacik <jbacik@fusionio.com>
-Cc: chris.mason@fusionio.com, linux-btrfs@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        kernel-br <kernel-br@googlegroups.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>
+CC: Zhang Yanfei <zhangyanfei.yes@gmail.com>, Toshi Kani <toshi.kani@hp.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>, lenb@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, mingo@elte.hu,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Thomas Renninger <trenn@suse.de>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, Rik van Riel <riel@redhat.com>,
+        jweiner@redhat.com, prarit@redhat.com,
+        "x86@kernel.org" <x86@kernel.org>, linux-doc@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>, linux-acpi@vger.kernel.org,
+        imtangchen@gmail.com, Tang Chen <tangchen@cn.fujitsu.com>
+Subject: Re: [PATCH part1 v6 4/6] x86/mem-hotplug: Support initialize page
+ tables in bottom-up
+References: <524E2032.4020106@gmail.com> <524E2127.4090904@gmail.com> <5251F9AB.6000203@zytor.com> <525442A4.9060709@gmail.com> <20131009164449.GG22495@htj.dyndns.org> <52558EEF.4050009@gmail.com> <20131009192040.GA5592@mtj.dyndns.org> <1381352311.5429.115.camel@misato.fc.hp.com> <20131009211136.GH5592@mtj.dyndns.org> <5255C730.90602@zytor.com> <5255CE7D.8030007@gmail.com> <5255E253.3080905@zytor.com> <5255E60F.5010102@gmail.com>
+In-Reply-To: <5255E60F.5010102@gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/10/10 09:19:31,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/10/10 09:19:38,
+	Serialize complete at 2013/10/10 09:19:38
+Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Josef,
+Hello guys,
 
-Thank you. Sending v4.
+On 10/10/2013 07:26 AM, Zhang Yanfei wrote:
+> Hello Peter,
+> 
+> On 10/10/2013 07:10 AM, H. Peter Anvin wrote:
+>> On 10/09/2013 02:45 PM, Zhang Yanfei wrote:
+>>>>
+>>>> I would also argue that in the VM scenario -- and arguable even in the
+>>>> hardware scenario -- the right thing is to not expose the flexible
+>>>> memory in the e820/EFI tables, and instead have it hotadded (possibly
+>>>> *immediately* so) on boot.  This avoids both the boot time funnies as
+>>>> well as the scaling issues with metadata.
+>>>>
+>>>
+>>> So in this kind of scenario, hotpluggable memory will not be detected
+>>> at boot time, and admin should not use this movable_node boot option
+>>> and the kernel will act as before, using top-down allocation always.
+>>>
+>>
+>> Yes.  The idea is that the kernel will boot up without the hotplug
+>> memory, but if desired, will immediately see a hotplug-add event for the
+>> movable memory.
+> 
+> Yeah, this is good.
+> 
+> But in the scenario that boot with hotplug memory, we need the movable_node
+> option. So as tejun has explained a lot about this patchset, do you still
+> have objection to it or could I ask andrew to merge it into -mm tree for
+> more tests?
+> 
 
-Geyslan Gregório Bem
-hackingbits.com
+Since tejun has explained a lot about this approach, could we come to
+an agreement on this one?
 
+Peter? If you have no objection, I'll post a new v7 version which will fix
+the __pa_symbol problem pointed by you.
 
-2013/10/9 Josef Bacik <jbacik@fusionio.com>:
-> On Wed, Oct 09, 2013 at 08:40:30PM -0300, Geyslan G. Bem wrote:
->> In some cases, add_inode_ref() is returning without freeing
->> the 'name' pointer.
->>
->> Added bail out to explicitly call kfree when necessary.
->>
->> Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
->> ---
->>  fs/btrfs/tree-log.c | 10 ++++++++--
->>  1 file changed, 8 insertions(+), 2 deletions(-)
->>
->> diff --git a/fs/btrfs/tree-log.c b/fs/btrfs/tree-log.c
->> index 79f057c..ad7cc5f 100644
->> --- a/fs/btrfs/tree-log.c
->> +++ b/fs/btrfs/tree-log.c
->> @@ -1170,13 +1170,16 @@ static noinline int add_inode_ref(struct btrfs_trans_handle *trans,
->>                       if (!dir)
->>                               dir = read_one_inode(root, parent_objectid);
->>                       if (!dir)
->> -                             return -ENOENT;
->> +                     {
->> +                             ret = -ENOENT;
->> +                             goto bail;
->> +                     }
->
-> Code formatting is
->
-> if () {
-> }
->
-> not
->
-> if ()
-> {
-> }
->
->
->>               } else {
->>                       ret = ref_get_fields(eb, ref_ptr, &namelen, &name,
->>                                            &ref_index);
->>               }
->>               if (ret)
->> -                     return ret;
->> +                     goto bail;
->>
->>               /* if we already have a perfect match, we're done */
->>               if (!inode_in_dir(root, path, btrfs_ino(dir), btrfs_ino(inode),
->> @@ -1227,6 +1230,9 @@ out:
->>       btrfs_release_path(path);
->>       iput(dir);
->>       iput(inode);
->> +bail:
->> +     if (name)
->> +             kfree(name);
->
-> kfree already does the if (name) part of this so this is redundant.  Also if you
-> are going to do this you need to set name = NULL; after the kfree above it
-> otherwise we have a double free.  Thanks,
->
-> Josef
+-- 
+Thanks.
+Zhang Yanfei
