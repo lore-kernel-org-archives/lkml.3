@@ -1,45 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756724Ab3JJSf1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 14:35:27 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:46486 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755619Ab3JJSf0 (ORCPT
+	id S1755979Ab3JJSne (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 14:43:34 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:3215 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755322Ab3JJSnc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 14:35:26 -0400
-Date: Thu, 10 Oct 2013 20:35:17 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
+	Thu, 10 Oct 2013 14:43:32 -0400
+Date: Thu, 10 Oct 2013 14:43:27 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Andrea Arcangeli <aarcange@redhat.com>,
         Johannes Weiner <hannes@cmpxchg.org>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Subject: Re: [PATCH 0/6] Optimize the cpu hotplug locking -v2
-Message-ID: <20131010183517.GQ13848@laptop.programming.kicks-ass.net>
+Message-ID: <20131010144327.5ded02ec@gandalf.local.home>
+In-Reply-To: <CA+55aFx-JxRBbPa5EF1foZORpX_+o3T-qqm+1vh5Goa9znmOxA@mail.gmail.com>
 References: <20131008102505.404025673@infradead.org>
- <20131009225006.7101379c.akpm@linux-foundation.org>
- <20131010121908.GB28601@twins.programming.kicks-ass.net>
- <20131010145738.GA5167@gmail.com>
- <20131010152134.GQ3081@twins.programming.kicks-ass.net>
- <20131010165045.GB12998@gmail.com>
- <20131010171353.GM5790@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131010171353.GM5790@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	<20131009225006.7101379c.akpm@linux-foundation.org>
+	<20131010121908.GB28601@twins.programming.kicks-ass.net>
+	<20131010145738.GA5167@gmail.com>
+	<20131010152612.GA13375@redhat.com>
+	<20131010090044.7f12ddaf.akpm@linux-foundation.org>
+	<20131010123631.1be60315@gandalf.local.home>
+	<20131010094355.6f75e5a2.akpm@linux-foundation.org>
+	<20131010165337.GT3081@twins.programming.kicks-ass.net>
+	<20131010131305.58558079@gandalf.local.home>
+	<20131010104856.8f042977112d5ac2693973ae@linux-foundation.org>
+	<CA+55aFx-JxRBbPa5EF1foZORpX_+o3T-qqm+1vh5Goa9znmOxA@mail.gmail.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 10, 2013 at 10:13:53AM -0700, Paul E. McKenney wrote:
-> That does add quite a bit of latency to the hotplug operations, which
-> IIRC slows down things like boot, suspend, and resume.
+On Thu, 10 Oct 2013 11:10:35 -0700
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
+     .. now we can free all the percpu data and kill the CPU ..
+> 
+> without any locking anywhere - not stop-machine, not anything. If
+> somebody is doing a "for_each_cpu()" (under just a regular
+> rcu_read_lock()) and they see the bit set while it's going down, who
+> cares? The CPU is still there, the data is accessible..
 
-Guess what suspend does before it unplugs all these cpus?
+The problem is that rcu_read_lock() requires preemption disabled unless
+you are using the preemptable rcu tree version. There's always
+srcu_read_lock() but that's not so free. It's basically the same as
+what Peter is doing.
+
+There's places in the kernel that does for_each_cpu() that I'm sure you
+don't want to disable preemption for. Especially when you start having
+4096 CPU machines!
+
+-- Steve
