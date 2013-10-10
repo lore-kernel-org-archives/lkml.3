@@ -1,51 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755149Ab3JJCfH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 22:35:07 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:24860 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752141Ab3JJCfE (ORCPT
+	id S1754618Ab3JJCfG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 22:35:06 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:6522 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752045Ab3JJCfD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 22:35:04 -0400
-Message-ID: <52561232.2060505@huawei.com>
-Date: Thu, 10 Oct 2013 10:34:26 +0800
-From: Xishi Qiu <qiuxishi@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Wed, 9 Oct 2013 22:35:03 -0400
+X-Spam-Score: -100.8
+Message-ID: <5256121A.9030504@asianux.com>
+Date: Thu, 10 Oct 2013 10:34:02 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: kdump: kdump can't boot in this case
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>
+CC: linux390@de.ibm.com, linux-s390@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 2/3] arm: include: asm: atomic.h: use 'unsigned int' and 'atomic'
+ instead of 'unsigned long' for atomic_clear_mask()
+References: <52561137.3070608@asianux.com> <5256117A.4000009@asianux.com>
+In-Reply-To: <5256117A.4000009@asianux.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.74.196]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I write a module, and find kdump can't boot in this case.
-kernel version is 3.12, Intel(R) Xeon(R) CPU	E5620
+In current kernel wide source, for arm, only s390 scsi drivers use
+atomic_clear_mask(), now, s390 itself need use 'unsigned int' and
+'atomic_t', so need match s390's atomic_clear_mask().
 
-struct timer_list g_timer;
 
-void tmrhnd_invtssfault(unsigned long data)
-{
-	long __res;
-	printk(KERN_EMERG "invalid TSS fault in interrupt context.\n");
-	__asm__ volatile("int $0x0A" : "=a"(__res):);
-}
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+---
+ arch/arm/include/asm/atomic.h |   13 +++++++------
+ 1 files changed, 7 insertions(+), 6 deletions(-)
 
-{
-	...
-	init_timer(&g_timer);
-	g_timer.expires = jiffies + 10;
-	g_timer.data = 0;
-	g_timer.function = tmrhnd_invtssfault;
-	add_timer(&g_timer);
-	...
-}
-
-If access NULL pointer instead of "__asm__ volatile("int $0x0A" : "=a"(__res):);" 
-in tmrhnd_invtssfault(), kdump can boot.
-And if not use timer, just do "__asm__ volatile("int $0x0A" : "=a"(__res):);" only
-once in module, kdump can boot too.
-
+diff --git a/arch/arm/include/asm/atomic.h b/arch/arm/include/asm/atomic.h
+index da1c77d..0832a7f 100644
+--- a/arch/arm/include/asm/atomic.h
++++ b/arch/arm/include/asm/atomic.h
+@@ -134,9 +134,10 @@ static inline int atomic_cmpxchg(atomic_t *ptr, int old, int new)
+ 	return oldval;
+ }
+ 
+-static inline void atomic_clear_mask(unsigned long mask, unsigned long *addr)
++static inline void atomic_clear_mask(unsigned int mask, atomic_t *ptr)
+ {
+-	unsigned long tmp, tmp2;
++	unsigned int tmp;
++	unsigned long tmp2;
+ 
+ 	__asm__ __volatile__("@ atomic_clear_mask\n"
+ "1:	ldrex	%0, [%3]\n"
+@@ -144,8 +145,8 @@ static inline void atomic_clear_mask(unsigned long mask, unsigned long *addr)
+ "	strex	%1, %0, [%3]\n"
+ "	teq	%1, #0\n"
+ "	bne	1b"
+-	: "=&r" (tmp), "=&r" (tmp2), "+Qo" (*addr)
+-	: "r" (addr), "Ir" (mask)
++	: "=&r" (tmp), "=&r" (tmp2), "+Qo" (ptr->counter)
++	: "r" (&ptr->counter), "Ir" (mask)
+ 	: "cc");
+ }
+ 
+@@ -197,12 +198,12 @@ static inline int atomic_cmpxchg(atomic_t *v, int old, int new)
+ 	return ret;
+ }
+ 
+-static inline void atomic_clear_mask(unsigned long mask, unsigned long *addr)
++static inline void atomic_clear_mask(unsigned int mask, atomic_t *v)
+ {
+ 	unsigned long flags;
+ 
+ 	raw_local_irq_save(flags);
+-	*addr &= ~mask;
++	v->counter &= ~mask;
+ 	raw_local_irq_restore(flags);
+ }
+ 
+-- 
+1.7.7.6
