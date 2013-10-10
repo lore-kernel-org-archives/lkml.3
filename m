@@ -1,57 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754686Ab3JJO06 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 10:26:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48550 "EHLO mx1.redhat.com"
+	id S1755500Ab3JJO1j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 10:27:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21044 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752145Ab3JJO05 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 10:26:57 -0400
-Date: Thu, 10 Oct 2013 11:26:39 -0300
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: David Ahern <dsahern@gmail.com>
-Cc: Stephane Eranian <eranian@google.com>, LKML <linux-kernel@vger.kernel.org>,
-        "mingo@elte.hu" <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Jiri Olsa <jolsa@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Kees Cook <keescook@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] perf: disable mmap2 support
-Message-ID: <20131010142639.GA3790@infradead.org>
-References: <20131009161743.GA3022@quad>
- <52558278.6080206@gmail.com>
- <CABPqkBRx1CqwXOjJXWeqEBqkLkZMHWVQJNjv1jjqPakoDNB3Gg@mail.gmail.com>
- <CABPqkBQKaMd_LuvfUreYb_9hiR-j0BkAyiP2yP-C0TTy+15_fQ@mail.gmail.com>
- <5255900A.5050103@gmail.com>
- <CABPqkBQZz=80he07yzagwPjhJBOK-bc_C=hfsK+LjMvcYWZvew@mail.gmail.com>
- <52559A8E.1030101@gmail.com>
+	id S1755322Ab3JJO1h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 10:27:37 -0400
+Date: Thu, 10 Oct 2013 16:27:03 +0200
+From: Jakub Jelinek <jakub@redhat.com>
+To: Richard Henderson <rth@twiddle.net>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Oleg Nesterov <oleg@redhat.com>, Fengguang Wu <fengguang.wu@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] gcc4: Add 'asm goto' miscompilation quirk
+Message-ID: <20131010142703.GI30970@tucnak.zalov.cz>
+Reply-To: Jakub Jelinek <jakub@redhat.com>
+References: <20131009144656.GV26785@twins.programming.kicks-ass.net>
+ <20131009181613.GW30970@tucnak.zalov.cz>
+ <20131009190231.GI13848@laptop.programming.kicks-ass.net>
+ <20131009190851.GX30970@tucnak.zalov.cz>
+ <20131010062238.GB9853@gmail.com>
+ <20131010065104.GY30970@tucnak.zalov.cz>
+ <20131010080457.GC21875@tucnak.zalov.cz>
+ <20131010082430.GA20577@gmail.com>
+ <20131010083107.GZ30970@tucnak.zalov.cz>
+ <5256B3E2.4060401@twiddle.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52559A8E.1030101@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <5256B3E2.4060401@twiddle.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Oct 09, 2013 at 12:03:58PM -0600, David Ahern escreveu:
-> On 10/9/13 11:40 AM, Stephane Eranian wrote:
-> >On Wed, Oct 9, 2013 at 7:19 PM, David Ahern <dsahern@gmail.com> wrote:
-> >>On 10/9/13 10:39 AM, Stephane Eranian wrote:
-> >You mean:
-> >commit 384c671e33a7ddf905f2c60b433b9883f0e5a605
-> >Author: David Ahern <dsahern@gmail.com>
-> >Date:   Sun Sep 22 19:44:58 2013 -0600
-> >
-> >     perf trace: Add mmap2 handler
-> >
-> >Right?
+On Thu, Oct 10, 2013 at 07:04:18AM -0700, Richard Henderson wrote:
+> On 10/10/2013 01:31 AM, Jakub Jelinek wrote:
+> > Also, for the bitops patch, you probably want an asm_volatile_goto variant.
 > 
-> Yes, a couple of those have 2 commit ids. I pulled the id's from
-> acme's perf/core branch
+> Why?  Asm without output (which asm goto must be) are automatically volatile.
 
-I'm merging my perf/core branch with Ingo's build speedup series, so
-I've removed that patch already, will be ok as soon as the disabling is
-done in perf/urgent and those branches get merged.
- 
-- Arnaldo
+You're right.
+
+	Jakub
