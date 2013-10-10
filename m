@@ -1,68 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753063Ab3JJGqd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 02:46:33 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:35746 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751491Ab3JJGqa convert rfc822-to-8bit (ORCPT
+	id S1752922Ab3JJGuZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 02:50:25 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:45553 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751664Ab3JJGuX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 02:46:30 -0400
-Date: Thu, 10 Oct 2013 01:46:26 -0500
-From: Rob Landley <rob@landley.net>
-Subject: Re: [RFC][PATCH 0/3] vfs: Detach mounts on unlink.
-To: Karel Zak <kzak@redhat.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>
-References: <8761tctwhg.fsf@xmission.com> <1381016564.1974.163@driftwood>
-	<20131008080303.GH14360@x2.net.home>
-In-Reply-To: <20131008080303.GH14360@x2.net.home> (from kzak@redhat.com on
-	Tue Oct  8 03:03:03 2013)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1381387586.1974.185@driftwood>
+	Thu, 10 Oct 2013 02:50:23 -0400
+Date: Thu, 10 Oct 2013 08:50:17 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: "Theodore Ts'o" <tytso@mit.edu>, Stephan Mueller <smueller@chronox.de>,
+        LKML <linux-kernel@vger.kernel.org>, dave.taht@bufferbloat.net
+Subject: Re: [PATCH] /dev/random: Insufficient of entropy on many
+ architectures
+Message-ID: <20131010065017.GA1535@xo-6d-61-c0.localdomain>
+References: <10005394.BRCyBMYWy3@tauon>
+ <20130910150419.GA29237@thunk.org>
+ <2722901.IcH4JOB8ab@tauon>
+ <20130910182524.GE29237@thunk.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20130910182524.GE29237@thunk.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/08/2013 03:03:03 AM, Karel Zak wrote:
-> On Sat, Oct 05, 2013 at 06:42:44PM -0500, Rob Landley wrote:
-> > Oh, attached is a dumb "zapchroot" script I've been using for years  
-> to
-> > unlink all mount points under a given directory, taking advantage  
-> of the
-> > fact that mount points are appended to the end of the list so if  
-> you unlink
-> > from the end to the front you should get the sub-mounts before the  
-> parent
-> > mounts (modulo mount --move not reordering the list, but that's  
-> uncommon).
+Hi!
+
+(Sorry to be late and maybe with very early date).
+
+On Tue 2013-09-10 14:25:24, Theodore Ts'o wrote:
+> On Tue, Sep 10, 2013 at 06:54:38PM +0200, Stephan Mueller wrote:
 > 
->  util-linux umount supports --recursive, it uses /proc/self/mountinfo
->  to compose the hierarchy. The important is that the mountinfo file
->  contains Id and Parent_Id relations, so you don't rely on the order
->  only.
+> > Moreover, until having your proposed real fix, wouldn't it make sense to 
+> > have an interim patch to ensure we have entropy on the mentioned 
+> > platforms? I think /dev/random is critical enough to warrant some cache 
+> > miss even per interrupt?
+> 
+> We are already mixing in the IP from the saved irq registers, on every
+> single interrupt, so we are mixing in some entropy.  We would get more
+> entropy if we had a good cycle counter to mix in, but it's not the
+> case that we're completely exposed right now on those platforms which
+> don't have get_cycles() implemented.  If the system running so lock
+> step that the location of the interrupts is utterly predictable, then
+> it's not clear that using a clock source is going to help you....
 
-Ah, that's what happened.
+On the system with good power management and idle cpus (many of them), I'd
+expect most of the IPs to be pretty much equal -- arch specific version of
+"enter low power state" (mwait on recent intel machines, for example).
 
-For some reason /proc/self/mounts stopped adjusting itself for chroot a  
-while back, apparently because containers use switch_root instead so  
-chroot is generally deprecated or something? This made /proc/mounts  
-completely useless in a chroot because the paths it showed were not the  
-ones you actually had to use to umount anything.
+Would it make sense to mix the other registers, too?
 
-Instead they added a new way to get this info, in a new format where  
-you have to parse the 5th field out of each line to get the mount point  
-(to make it friendly to scripts and tools).
-
-Good to know.
-
-Rob
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
