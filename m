@@ -1,122 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754795Ab3JJNzr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 09:55:47 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:47204 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751979Ab3JJNzp convert rfc822-to-8bit (ORCPT
+	id S1754578Ab3JJOB3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 10:01:29 -0400
+Received: from smtprelay0253.hostedemail.com ([216.40.44.253]:45110 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751979Ab3JJOB2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 09:55:45 -0400
-MIME-Version: 1.0
-X-Originating-IP: [190.2.98.55]
-In-Reply-To: <20131004140925.GA27809@localhost>
-References: <1380891203-17617-1-git-send-email-ezequiel@vanguardiasur.com.ar>
-	<1380891203-17617-3-git-send-email-ezequiel@vanguardiasur.com.ar>
-	<20131004131956.GE6999@e106331-lin.cambridge.arm.com>
-	<20131004140925.GA27809@localhost>
-Date: Thu, 10 Oct 2013 10:55:45 -0300
-Message-ID: <CAAEAJfA8iiuT-8k2psXLt5a9fAndwU=_YVR8OXU1Lz1xzZX5pA@mail.gmail.com>
-Subject: Re: [PATCH v2 2/2] input: rotary-encoder: Add 'on-each-step' to
- binding documentation
-From: =?ISO-8859-1?Q?Ezequiel_Garc=EDa?= <ezequiel@vanguardiasur.com.ar>
-To: linux-input@vger.kernel.org, devicetree@vger.kernel.org
-Cc: Mark Rutland <mark.rutland@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Daniel Mack <zonque@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 10 Oct 2013 10:01:28 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:599:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2194:2199:2393:2559:2562:2693:2828:2892:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3870:3871:3872:3873:4321:5007:7652:7875:10004:10400:10848:11026:11232:11473:11658:11914:12043:12295:12517:12519:12740:13069:13095:13181:13229:13311:13357:13972,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: town85_6393600e1931e
+X-Filterd-Recvd-Size: 2517
+Message-ID: <1381413683.14017.9.camel@joe-AO722>
+Subject: Re: [PATCH v3 1/3] i2c: xilinx: Fix i2c checkpatch warnings
+From: Joe Perches <joe@perches.com>
+To: Michal Simek <michal.simek@xilinx.com>
+Cc: linux-kernel@vger.kernel.org, monstr@monstr.eu, wsa@the-dreams.de,
+        Kedareswara rao Appana <appana.durga.rao@xilinx.com>,
+        Jean Delvare <khali@linux-fr.org>, Peter Korsgaard <jacmet@sunsite.dk>,
+        Kedareswara rao Appana <appanad@xilinx.com>, linux-i2c@vger.kernel.org
+Date: Thu, 10 Oct 2013 07:01:23 -0700
+In-Reply-To: <f3fd6f38d2553e59b077edff1969f4d07f8aa811.1381401561.git.michal.simek@xilinx.com>
+References: <f3fd6f38d2553e59b077edff1969f4d07f8aa811.1381401561.git.michal.simek@xilinx.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4 October 2013 11:09, Ezequiel Garcia
-<ezequiel.garcia@free-electrons.com> wrote:
-> On Fri, Oct 04, 2013 at 02:19:56PM +0100, Mark Rutland wrote:
->> On Fri, Oct 04, 2013 at 01:53:23PM +0100, Ezequiel Garcia wrote:
->> > The driver now supports a new mode to handle the interruptions generated
->> > by the device: on this new mode an input event is generated on each step
->> > (i.e. on each IRQ). Therefore, add a new DT property, to select the
->> > mode: 'rotary-encoder,on-each-step'.
->> >
->> > Cc: Daniel Mack <zonque@gmail.com>
->> > Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
->> > Cc: Rob Herring <rob.herring@calxeda.com>
->> > Cc: devicetree@vger.kernel.org
->> > Signed-off-by: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>
->> > ---
->> > I'm not at all happy with this DT binding as it's way to customized
->> > for the current driver. For instance, if we want to support mapping
->> > key events (or better arbitrary linux-input event types) it seems
->> > there's no easy way to fix the binding.
->> >
->> > Maybe a better way of handling the different 'modes' is through
->> > compatible strings?
->>
->> I'd prefer not to have more pseudo-devices in DT, and would prefer not
->> to have compatible strings that boil down to driver options. We end up
->> just embedding a tonne of Linux-specific driver configuration in the DT
->> rather than describing hardware.
->>
->> That said, I'm not sure what the best solution is here.
->>
->> >
->> > I'm not really sure, so I hope the DT guys have some comment on this.
->> >
->> >  Documentation/devicetree/bindings/input/rotary-encoder.txt | 1 +
->> >  1 file changed, 1 insertion(+)
->> >
->> > diff --git a/Documentation/devicetree/bindings/input/rotary-encoder.txt b/Documentation/devicetree/bindings/input/rotary-encoder.txt
->> > index 3315495..b89e38d 100644
->> > --- a/Documentation/devicetree/bindings/input/rotary-encoder.txt
->> > +++ b/Documentation/devicetree/bindings/input/rotary-encoder.txt
->> > @@ -15,6 +15,7 @@ Optional properties:
->> >  - rotary-encoder,rollover: Automatic rollove when the rotary value becomes
->> >    greater than the specified steps or smaller than 0. For absolute axis only.
->> >  - rotary-encoder,half-period: Makes the driver work on half-period mode.
->> > +- rotary-encoder,on-each-step: Makes the driver send an event on each step.
->>
->> Could this not be something requested at runtime?
->>
->
-> Sure. The different modes:
->
-> * default (no option)
-> * rotary-encoder,half-period
-> * rotary-encoder,on-each-step
->
-> Just map to different interruption handlers. I don't have any other
-> rotary-encoder device, so I'm not at all sure what's the use of the
-> other two cases.
-> My particular device is detented, and produces a 'stable' event on each
-> step (i.e on each IRQ).
->
-> Regarding the runtime specification: you mean as a module parameter?
-> That should be trivial to add, no?
->
->> Could you explain what you want to achieve with this? -- what events do
->> you want to occur when, to be handled in what way?
->>
->
-> Hm.. maybe I should have added the binding to the 1/2 patch and CCed
-> everybody involved for better context.
->
-> Anyway, I hope the above is clearer, I'm not really sure how to specify
-> the details in the DT binding, since it's a specific interruption handler
-> for this class of encoder devices (stable on each step).
->
-> That said, I really hope I'm crafting a generic solution and not some
-> tailor-made implementation that just happens to match my use case.
->
-> The input maintainer's opinion on this would be valuable.
+On Thu, 2013-10-10 at 12:39 +0200, Michal Simek wrote:
+> Code changes to fix checkpatch warnings listed below.
+> - WARNING: quoted string split across lines
+[]
+> diff --git a/drivers/i2c/busses/i2c-xiic.c b/drivers/i2c/busses/i2c-xiic.c
+[]
+> @@ -271,11 +271,8 @@ static void xiic_read_rx(struct xiic_i2c *i2c)
+> 
+>  	bytes_in_fifo = xiic_getreg8(i2c, XIIC_RFO_REG_OFFSET) + 1;
+> 
+> -	dev_dbg(i2c->adap.dev.parent, "%s entry, bytes in fifo: %d, msg: %d"
+> -		", SR: 0x%x, CR: 0x%x\n",
+> -		__func__, bytes_in_fifo, xiic_rx_space(i2c),
+> -		xiic_getreg8(i2c, XIIC_SR_REG_OFFSET),
+> -		xiic_getreg8(i2c, XIIC_CR_REG_OFFSET));
+> +	dev_dbg(i2c->adap.dev.parent, "%s entry, bytes in fifo: %d, msg: %d",
+> +		__func__, bytes_in_fifo, xiic_rx_space(i2c));
 
-Any insights on this binding?
+This is a pretty odd way of silencing checkpatch
+by eliminating content.  Aren't the register values
+useful information?
 
-If nobody objects, then I'd like to get this change accepted,
-together with the driver change.
+You've also removed the terminating newline.
+It's necessary to avoid possible dmesg output log
+message interleaving.  Please put it back.
 
-Thanks!
--- 
-Ezequiel García, VanguardiaSur
-www.vanguardiasur.com.ar
+A more normal style fix would be to coalesce the
+format.  checkpatch will ignore lines exceeding
+80 columns for these formats.
+
+	dev_dbg(i2c->adap.dev.parent, "%s entry, bytes in fifo: %d, msg: %d, SR: 0x%x, CR: 0x%x\n",
+		__func__, bytes_in_fifo, xiic_rx_space(i2c),
+		xiic_getreg8(i2c, XIIC_SR_REG_OFFSET),
+		xiic_getreg8(i2c, XIIC_CR_REG_OFFSET));
+
+This passes checkpatch cleanly.
+
+etc...
+
+
