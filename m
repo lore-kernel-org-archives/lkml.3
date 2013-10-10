@@ -1,59 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757907Ab3JJQGs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 12:06:48 -0400
-Received: from mail-bn1lp0151.outbound.protection.outlook.com ([207.46.163.151]:17461
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756169Ab3JJQGp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 12:06:45 -0400
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: "corentin.chary@gmail.com" <corentin.chary@gmail.com>
-CC: "acpi4asus-user@lists.sourceforge.net" 
-	<acpi4asus-user@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "felipe.contreras@gmail.com" <felipe.contreras@gmail.com>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH v2] platform: x86: asus-wmi: add fan control
-Thread-Topic: [PATCH v2] platform: x86: asus-wmi: add fan control
-Thread-Index: AQHOxCWSnrH046wXjk2IRhS/h+9JZJnuGyYAgAAB9oA=
-Date: Thu, 10 Oct 2013 16:06:40 +0000
-Message-ID: <1381421199.4248.2.camel@x230.lan>
-References: <1381236524-19633-1-git-send-email-felipe.contreras@gmail.com>
-	 <CAHR064ge8zew7uMeD+_LXR3ju5ARGG1y8utLOFzOLexny_DPLA@mail.gmail.com>
-In-Reply-To: <CAHR064ge8zew7uMeD+_LXR3ju5ARGG1y8utLOFzOLexny_DPLA@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [2001:470:1f07:1371:6267:20ff:fec3:2318]
-x-forefront-prvs: 0995196AA2
-x-forefront-antispam-report: SFV:NSPM;SFS:(377424004)(24454002)(199002)(189002)(51704005)(19580405001)(19580395003)(83072001)(83322001)(80976001)(36756003)(74662001)(47446002)(74502001)(31966008)(74876001)(74366001)(80022001)(49866001)(79102001)(46102001)(51856001)(63696002)(56816003)(77096001)(47976001)(50986001)(81816001)(65816001)(47736001)(85306002)(54356001)(74706001)(4396001)(54316002)(81342001)(56776001)(69226001)(81686001)(53806001)(76796001)(76786001)(33646001)(81542001)(76482001)(59766001)(77982001)(3826001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR05MB223;H:BY2PR05MB222.namprd05.prod.outlook.com;CLIP:2001:470:1f07:1371:6267:20ff:fec3:2318;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <89C3BCDD5253D640A2B59ABFEDD1E8D3@namprd05.prod.outlook.com>
-MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+	id S1756424Ab3JJPpm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 11:45:42 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52710 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756384Ab3JJPpi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 11:45:38 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 052/104] PCI / ACPI / PM: Clear pme_poll for devices in D3cold on wakeup
+Date: Thu, 10 Oct 2013 08:41:40 -0700
+Message-Id: <1381419752-29733-53-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1381419752-29733-1-git-send-email-kamal@canonical.com>
+References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r9AG6qO3022151
 
-On Thu, 2013-10-10 at 16:59 +0100, Corentin Chary wrote:
+3.8.13.11 -stable review patch.  If anyone has any objections, please let me know.
 
-> 
-> This doesn't really seems to be related to wmi, and is likely to be
-> available only on a subset of models. Maybe it should a separate
-> driver instead ?
+------------------
 
-This version seems to be implemented entirely in WMI, and it's using the
-same WMI GUID as asus-wmi - implementing it here seems appropriate. I am
-concerned about the phys/virt thing, though. The ACPI interpreter is
-running in the kernel, not the hardware - are we artificially limiting
-SystemMemory opregions to physical addresses?
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 
+commit 834145156bedadfb50121f0bc5e9d9f9f942bcca upstream.
+
+Commit 448bd85 (PCI/PM: add PCIe runtime D3cold support) added a
+piece of code to pci_acpi_wake_dev() causing that function to behave
+in a special way for devices in D3cold (so that their configuration
+registers are not accessed before those devices are resumed).
+However, it didn't take the clearing of the pme_poll flag into
+account.  That has to be done for all devices, even if they are in
+D3cold, or pci_pme_list_scan() will not know that wakeup has been
+signaled for the device and will poll its PME Status bit
+unnecessarily.
+
+Fix the problem by moving the clearing of the pme_poll flag in
+pci_acpi_wake_dev() before the code introduced by commit 448bd85.
+
+Reported-and-tested-by: David E. Box <david.e.box@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Acked-by: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/pci/pci-acpi.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/pci/pci-acpi.c b/drivers/pci/pci-acpi.c
+index 21354bf..e1e3d1b 100644
+--- a/drivers/pci/pci-acpi.c
++++ b/drivers/pci/pci-acpi.c
+@@ -47,6 +47,9 @@ static void pci_acpi_wake_dev(acpi_handle handle, u32 event, void *context)
+ 	if (event != ACPI_NOTIFY_DEVICE_WAKE || !pci_dev)
+ 		return;
+ 
++	if (pci_dev->pme_poll)
++		pci_dev->pme_poll = false;
++
+ 	if (pci_dev->current_state == PCI_D3cold) {
+ 		pci_wakeup_event(pci_dev);
+ 		pm_runtime_resume(&pci_dev->dev);
+@@ -57,9 +60,6 @@ static void pci_acpi_wake_dev(acpi_handle handle, u32 event, void *context)
+ 	if (pci_dev->pme_support)
+ 		pci_check_pme_status(pci_dev);
+ 
+-	if (pci_dev->pme_poll)
+-		pci_dev->pme_poll = false;
+-
+ 	pci_wakeup_event(pci_dev);
+ 	pm_runtime_resume(&pci_dev->dev);
+ 
 -- 
-Matthew Garrett <matthew.garrett@nebula.com>
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+1.8.1.2
+
