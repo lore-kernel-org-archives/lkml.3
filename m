@@ -1,195 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754961Ab3JJHpM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 03:45:12 -0400
-Received: from co1ehsobe001.messaging.microsoft.com ([216.32.180.184]:39313
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754707Ab3JJHpK (ORCPT
+	id S1755065Ab3JJHp0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 03:45:26 -0400
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:62489 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755004Ab3JJHpU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 03:45:10 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VS-4(zz98dI9371I936eI542I1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275dhz2dh2a8h839h8e2h8e3h93fhd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5hbe9i1155h)
-From: Bhushan Bharat-R65777 <R65777@freescale.com>
-To: Wood Scott-B07421 <B07421@freescale.com>,
-        Yoder Stuart-B08248 <B08248@freescale.com>
-CC: Kim Phillips <kim.phillips@linaro.org>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "a.motakis@virtualopensystems.com" <a.motakis@virtualopensystems.com>,
-        "agraf@suse.de" <agraf@suse.de>,
-        Sethi Varun-B16395 <B16395@freescale.com>,
-        "peter.maydell@linaro.org" <peter.maydell@linaro.org>,
-        "santosh.shukla@linaro.org" <santosh.shukla@linaro.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Subject: RE: RFC: (re-)binding the VFIO platform driver to a platform device
-Thread-Topic: RFC: (re-)binding the VFIO platform driver to a platform device
-Thread-Index: AQHOvtVzBV4rU1waRU2d31z3B2ehfZngRDQAgAAiCgCAAECXgIAAC74AgADT3ICAADVkAIAAAgwAgAADCQCAAB/ggIAACLGAgAACMICAAAU8gIAAIuWAgAE8pICAAAXnAIAABMAAgAAWmACACVTWgIAABWmAgAAGVwCAAAVEgIAAkmlw
-Date: Thu, 10 Oct 2013 07:45:05 +0000
-Message-ID: <6A3DF150A5B70D4F9B66A25E3F7C888D071AEE4C@039-SN2MPN1-012.039d.mgd.msft.net>
-References: <1380738758.12932.43.camel@snotra.buserror.net>
-	 <20131002184330.GC5108@cbox> <20131002203735.GA10871@kroah.com>
-	 <1380748121.12932.89.camel@snotra.buserror.net>
-	 <20131002211631.GA11914@kroah.com>
-	 <1380749715.12932.109.camel@snotra.buserror.net>
-	 <20131002234009.GA27714@kroah.com>
-	 <1380825207.12932.151.camel@snotra.buserror.net>
-	 <20131003185434.GA26123@kroah.com>
-	 <1380827494.12932.161.camel@snotra.buserror.net>
-	 <20131003203226.GB27336@kroah.com>
-	 <9F6FE96B71CF29479FF1CDC8046E15036DDA62@039-SN1MPN1-002.039d.mgd.msft.net>
-	 <1381346507.7979.334.camel@snotra.buserror.net>
-	 <9F6FE96B71CF29479FF1CDC8046E15036DDAB4@039-SN1MPN1-002.039d.mgd.msft.net>
- <1381348999.7979.360.camel@snotra.buserror.net>
-In-Reply-To: <1381348999.7979.360.camel@snotra.buserror.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.232.14.2]
-Content-Type: text/plain; charset="utf-8"
+	Thu, 10 Oct 2013 03:45:20 -0400
+Date: Thu, 10 Oct 2013 09:45:16 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/6] Optimize the cpu hotplug locking -v2
+Message-ID: <20131010074516.GC17990@gmail.com>
+References: <20131008102505.404025673@infradead.org>
+ <20131009225006.7101379c.akpm@linux-foundation.org>
+ <20131010062741.GA9999@gmail.com>
+ <20131009233419.ea3d0b80.akpm@linux-foundation.org>
+ <20131010072757.GB17990@gmail.com>
+ <20131010003315.f49dacdf.akpm@linux-foundation.org>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131010003315.f49dacdf.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r9A7jKcd018680
 
 
+* Andrew Morton <akpm@linux-foundation.org> wrote:
 
-> -----Original Message-----
-> From: Wood Scott-B07421
-> Sent: Thursday, October 10, 2013 1:33 AM
-> To: Yoder Stuart-B08248
-> Cc: Wood Scott-B07421; Kim Phillips; Christoffer Dall; Alex Williamson; linux-
-> kernel@vger.kernel.org; a.motakis@virtualopensystems.com; agraf@suse.de; Sethi
-> Varun-B16395; Bhushan Bharat-R65777; peter.maydell@linaro.org;
-> santosh.shukla@linaro.org; kvm@vger.kernel.org; gregkh@linuxfoundation.org
-> Subject: Re: RFC: (re-)binding the VFIO platform driver to a platform device
+> On Thu, 10 Oct 2013 09:27:57 +0200 Ingo Molnar <mingo@kernel.org> wrote:
 > 
-> On Wed, 2013-10-09 at 14:44 -0500, Yoder Stuart-B08248 wrote:
-> >
-> > > -----Original Message-----
-> > > From: Wood Scott-B07421
-> > > Sent: Wednesday, October 09, 2013 2:22 PM
-> > > To: Yoder Stuart-B08248
-> > > Cc: Wood Scott-B07421; Kim Phillips; Christoffer Dall; Alex
-> > > Williamson; linux-kernel@vger.kernel.org;
-> > > a.motakis@virtualopensystems.com; agraf@suse.de; Sethi Varun-B16395;
-> > > Bhushan Bharat-R65777; peter.maydell@linaro.org;
-> > > santosh.shukla@linaro.org; kvm@vger.kernel.org;
-> > > gregkh@linuxfoundation.org
-> > > Subject: Re: RFC: (re-)binding the VFIO platform driver to a
-> > > platform device
-> > >
-> > > On Wed, 2013-10-09 at 14:02 -0500, Yoder Stuart-B08248 wrote:
-> > > > Have been thinking about this issue some more.  As Scott
-> > > > mentioned, 'wildcard' matching for a driver can be fairly done in
-> > > > the platform bus driver.  We could add a new flag to the platform driver
-> struct:
-> > > >
-> > > > diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-> > > > index 4f8bef3..4d6cf14 100644
-> > > > --- a/drivers/base/platform.c
-> > > > +++ b/drivers/base/platform.c
-> > > > @@ -727,6 +727,10 @@ static int platform_match(struct device *dev,
-> > > struct device_driver *drv)
-> > > >         struct platform_device *pdev = to_platform_device(dev);
-> > > >         struct platform_driver *pdrv = to_platform_driver(drv);
-> > > >
-> > > > +       /* the driver matches any device */
-> > > > +       if (pdrv->match_any)
-> > > > +               return 1;
-> > > > +
-> > > >         /* Attempt an OF style match first */
-> > > >         if (of_driver_match_device(dev, drv))
-> > > >                 return 1;
-> > > >
-> > > > However, the more problematic issue is that a bus driver has no
-> > > > way to differentiate from an explicit bind request via sysfs and a
-> > > > bind that happened through bus probing.
-> > >
-> > > Again, I think the wildcard match should be orthogonal to "don't
-> > > bind by default" as far as the mechanism goes.
-> > >
-> > > There's already a "bool suppress_bind_attrs" to prevent sysfs
-> > > bind/unbind.  I suggested a similar flag to mean the oppsosite --
-> > > bind
-> > > *only* through sysfs.  Greg KH was skeptical and wanted to see a
-> > > patch before any further discussion.
-> >
-> > Ah, think I understand now...yes that works as well, and would be
-> > less intrustive.   So are you writing a patch? :)
+> > > > Should be fairly straightforward to test: the sys_sched_getaffinity() 
+> > > > and sys_sched_setaffinity() syscalls both make use of 
+> > > > get_online_cpus()/put_online_cpus(), so a testcase frobbing affinities 
+> > > > on N CPUs in parallel ought to demonstrate scalability improvements 
+> > > > pretty nicely.
+> > > 
+> > > Well, an in-kernel microbenchmark which camps in a loop doing get/put 
+> > > would measure this as well.
+> > > 
+> > > But neither approach answers the question "how useful is this patchset".
+> > 
+> > Even ignoring all the other reasons cited, sys_sched_getaffinity() / 
+> > sys_sched_setaffinity() are prime time system calls, and as long as 
+> > the patches are correct, speeding them up is worthwhile.
 > 
-> I've been meaning to since the previous round of discussion, but I've been busy.
-> Would someone else be able to test it in the context of using it for VFIO?
+> That I would not have guessed.  What's the use case for calling 
+> get/set_affinity at high frequency?
 
-I wish I could have but I do not have vfio-platform stuff. 
+I don't think high-freq usage is common (at all).
 
-> 
-> > It would be something like this, right?
-> >
-> > diff --git a/drivers/base/dd.c b/drivers/base/dd.c index
-> > 35fa368..c9a61ea 100644
-> > --- a/drivers/base/dd.c
-> > +++ b/drivers/base/dd.c
-> > @@ -389,7 +389,7 @@ static int __device_attach(struct device_driver
-> > *drv, void *data)  {
-> >         struct device *dev = data;
-> >
-> > -       if (!driver_match_device(drv, dev))
-> > +       if (!drv->explicit_bind_only && !driver_match_device(drv,
-> > + dev))
-> >                 return 0;
-> 
-> if (drv->explicit_bind_only || !driver_match_device(drv, dev))
-> 	return 0;
+It could happen in AIM7-like workloads that start up a ton of binaries in 
+parallel, which can easily create parallel sched_getaffinity() calls 
+during process startup?
 
-Scott, 
-I am trying to understand what you are proposing here (example "DEVICE" can be handled by "DRIVER1" and "VFIO-PLATFORM-DRIVER"):
- - By default drv->explicit_bind_only will be clear in all drivers.
- - By default device->explicit_bind_only will also be clear for all devices.
- - On boot, matching devices will bound to the respective driver (DEVICE >==> DRIVER1).
-   This will never bound with VFIO-PLATFORM-DRIVER. So far same as before.
- - Via Sysfs interface set drv->explicit_bind_only for VFIO-PLATFORM-DRIVER.
- - Then for the devices user want, set device->explicit_bind_only.
- - unbind DEVICE from DRIVER1
- - bind DEVICE with VFIO-PLATFORM-DRIVER. This time it will be successful because (device->explicit_bind_only && drv->explicit_bind_only) is set.
- - Now when done, unbind the DEVICE from VFIO-PLATFORM-DRIVER.
- - Now user can re-bind the device with either DRIVER1 or VFIO-PLATFORM-DRIVER.
- - Now once drv->explicit_bind_only is set in VFIO-PLATFORM-DRIVER, and a new device comes (device - hotplug) then can gets bound to matching drive and not with VFIO-PLATFORM-DRIVER.
+Thanks,
 
-This looks ok to me :)
-
-Thanks
--Bharat
-> 
-> >         return driver_probe_device(drv, dev); @@ -450,7 +450,7 @@
-> > static int __driver_attach(struct device *dev, void *data)
-> >          * is an error.
-> >          */
-> >
-> > -       if (!driver_match_device(drv, dev))
-> > +       if (!drv->explicit_bind_only && !driver_match_device(drv,
-> > + dev))
-> >                 return 0;
-> 
-> Likewise -- or error out earlier in driver_attach().
-> 
-> Otherwise, that looks about right, for the driver side (though driver_attach
-> could error out earlier rather than testing it inside the loop).
-> 
-> The other half of fixing the raciness is to ensure that the device doesn't get
-> bound back to a non-VFIO driver (e.g. due to a module load or new_id).  The
-> solution I proposed for that was a similar explicit-bind-only flag for a device,
-> that the user sets through sysfs prior to unbinding.  This would also be useful
-> in non-VFIO contexts to simply say "I don't want to use this device at all".
-> 
-> -Scott
-> 
-
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+	Ingo
