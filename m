@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758189Ab3JJQNy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 12:13:54 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52578 "EHLO
+	id S1757979Ab3JJQOe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 12:14:34 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52541 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755816Ab3JJPmu (ORCPT
+	with ESMTP id S1755355Ab3JJPmt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 11:42:50 -0400
+	Thu, 10 Oct 2013 11:42:49 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Rob Gardner <robmatic@gmail.com>, "David S. Miller" <davem@davemloft.net>,
+Cc: =?UTF-8?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 018/104] net: usb: Add HP hs2434 device to ZLP exception table
-Date: Thu, 10 Oct 2013 08:41:06 -0700
-Message-Id: <1381419752-29733-19-git-send-email-kamal@canonical.com>
+Subject: [PATCH 008/104] bridge: don't try to update timers in case of broken MLD queries
+Date: Thu, 10 Oct 2013 08:40:56 -0700
+Message-Id: <1381419752-29733-9-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381419752-29733-1-git-send-email-kamal@canonical.com>
 References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
@@ -30,44 +31,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rob Gardner <robmatic@gmail.com>
+From: =?UTF-8?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>
 
-[ Upstream commit 03803a59e32453ee5737c6096a295f748f03cc49 ]
+[ Upstream commit 248ba8ec05a2c3b118c2224e57eb10c128176ab1 ]
 
-This patch adds another entry (HP hs2434 Mobile Broadband) to the list
-of exceptional devices that require a zero length packet in order to
-function properly. This list was added in commit 844e88f0. The hs2434
-is manufactured by Sierra Wireless, who also produces the MC7710,
-which the ZLP exception list was created for in the first place. So
-hopefully it is just this one producer's devices that will need this
-workaround.
+Currently we are reading an uninitialized value for the max_delay
+variable when snooping an MLD query message of invalid length and would
+update our timers with that.
 
-Tested on a DM1-4310NR HP notebook, which does not function without this
-change.
+Fixing this by simply ignoring such broken MLD queries (just like we do
+for IGMP already).
 
-Signed-off-by: Rob Gardner <robmatic@gmail.com>
-Acked-by: Bjørn Mork <bjorn@mork.no>
+This is a regression introduced by:
+"bridge: disable snooping if there is no querier" (b00589af3b04)
+
+Reported-by: Paul Bolle <pebolle@tiscali.nl>
+Signed-off-by: Linus Lüssing <linus.luessing@web.de>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/usb/cdc_mbim.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ net/bridge/br_multicast.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/usb/cdc_mbim.c b/drivers/net/usb/cdc_mbim.c
-index 6bd9167..353d0b8 100644
---- a/drivers/net/usb/cdc_mbim.c
-+++ b/drivers/net/usb/cdc_mbim.c
-@@ -395,6 +395,10 @@ static const struct usb_device_id mbim_devs[] = {
- 	{ USB_DEVICE_AND_INTERFACE_INFO(0x1199, 0x68a2, USB_CLASS_COMM, USB_CDC_SUBCLASS_MBIM, USB_CDC_PROTO_NONE),
- 	  .driver_info = (unsigned long)&cdc_mbim_info_zlp,
- 	},
-+	/* HP hs2434 Mobile Broadband Module needs ZLPs */
-+	{ USB_DEVICE_AND_INTERFACE_INFO(0x3f0, 0x4b1d, USB_CLASS_COMM, USB_CDC_SUBCLASS_MBIM, USB_CDC_PROTO_NONE),
-+	  .driver_info = (unsigned long)&cdc_mbim_info_zlp,
-+	},
- 	{ USB_INTERFACE_INFO(USB_CLASS_COMM, USB_CDC_SUBCLASS_MBIM, USB_CDC_PROTO_NONE),
- 	  .driver_info = (unsigned long)&cdc_mbim_info,
- 	},
+diff --git a/net/bridge/br_multicast.c b/net/bridge/br_multicast.c
+index 155bc05..e4b8742 100644
+--- a/net/bridge/br_multicast.c
++++ b/net/bridge/br_multicast.c
+@@ -1167,7 +1167,7 @@ static int br_ip6_multicast_query(struct net_bridge *br,
+ 		max_delay = msecs_to_jiffies(ntohs(mld->mld_maxdelay));
+ 		if (max_delay)
+ 			group = &mld->mld_mca;
+-	} else if (skb->len >= sizeof(*mld2q)) {
++	} else {
+ 		if (!pskb_may_pull(skb, sizeof(*mld2q))) {
+ 			err = -EINVAL;
+ 			goto out;
 -- 
 1.8.1.2
 
