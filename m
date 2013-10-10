@@ -1,81 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756896Ab3JJSqT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 14:46:19 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:46611 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755972Ab3JJSqR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 14:46:17 -0400
-Date: Thu, 10 Oct 2013 20:46:08 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Oleg Nesterov <oleg@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/6] Optimize the cpu hotplug locking -v2
-Message-ID: <20131010184608.GR13848@laptop.programming.kicks-ass.net>
-References: <20131010121908.GB28601@twins.programming.kicks-ass.net>
- <20131010145738.GA5167@gmail.com>
- <20131010152612.GA13375@redhat.com>
- <20131010090044.7f12ddaf.akpm@linux-foundation.org>
- <20131010123631.1be60315@gandalf.local.home>
- <20131010094355.6f75e5a2.akpm@linux-foundation.org>
- <20131010165337.GT3081@twins.programming.kicks-ass.net>
- <20131010131305.58558079@gandalf.local.home>
- <20131010104856.8f042977112d5ac2693973ae@linux-foundation.org>
- <CA+55aFx-JxRBbPa5EF1foZORpX_+o3T-qqm+1vh5Goa9znmOxA@mail.gmail.com>
+	id S1756808Ab3JJSsu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 14:48:50 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:54631 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754152Ab3JJSst (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 14:48:49 -0400
+From: George Cherian <george.cherian@ti.com>
+To: <myungjoo.ham@samsung.com>, <cw00.choi@samsung.com>
+CC: <kishon@ti.com>, <ldewangan@nvidia.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, George Cherian <george.cherian@ti.com>
+Subject: [PATCH] extcon: palmas: Handle ID interrupt properly using USB_ID_INT_SRC
+Date: Fri, 11 Oct 2013 00:18:39 +0530
+Message-ID: <1381430919-4635-1-git-send-email-george.cherian@ti.com>
+X-Mailer: git-send-email 1.8.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFx-JxRBbPa5EF1foZORpX_+o3T-qqm+1vh5Goa9znmOxA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 10, 2013 at 11:10:35AM -0700, Linus Torvalds wrote:
-> You can't do that right now - since you have to get the cpu list. So
-> it may not be with "preemption enabled", but it should always be under
-> the locking provided by get_online_cpus().. That one allows sleeping,
-> though.
-> 
-> I personally would *love* to make CPU hotplug be a lockless thing
-> entirely. But I detest stop-machine too, because it has these really
-> annoying properties.
-> 
-> So if we want to make it zero-cost to look at online CPU data, can we
-> avoid even the stop-machine synchronization, instead saying that the
-> cpu hotplug bitmap is updated completely locklessly, but if you see a
-> bit set, the data associated with that CPU is guaranteed to still be
-> available.
-> 
-> IOW, just use "RCU semantics" on a per-bit level. When we offline a CPU, we do
-> 
->      clear_bit(cpu, cpu_online_mask);
->      rcu_synchronize();
->      .. now we can free all the percpu data and kill the CPU ..
-> 
-> without any locking anywhere - not stop-machine, not anything. If
-> somebody is doing a "for_each_cpu()" (under just a regular
-> rcu_read_lock()) and they see the bit set while it's going down, who
-> cares? The CPU is still there, the data is accessible..
-> 
-> I'm sure there's some reason the above wouldn't work, but the above
-> would seem to be pretty optimal. Why do we really force this big
-> locking thing? The new patches make that locking _smarter_, but it's
-> still a damn big lock. Could we possibly go _beyond_ the lock?
+Always cross check with the ID state and the source of interrupt.
+Also add a case in which ID Source is ID_GND but LATCH state is set
+wrongly. This uses the previous Link stat to determine the new state.
 
-The only down-side to doing this is that you cannot actually allocate
-memory under rcu_read_lock() because it might not allow preemption.
+Signed-off-by: George Cherian <george.cherian@ti.com>
+---
+ drivers/extcon/extcon-palmas.c | 15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
 
-That said; I like the idea. I'll go try and audit the get_online_cpus()
-sites to see if there's any that really need full exclusion.
+diff --git a/drivers/extcon/extcon-palmas.c b/drivers/extcon/extcon-palmas.c
+index 6e83e9a..2aea4bc 100644
+--- a/drivers/extcon/extcon-palmas.c
++++ b/drivers/extcon/extcon-palmas.c
+@@ -78,20 +78,24 @@ static irqreturn_t palmas_vbus_irq_handler(int irq, void *_palmas_usb)
+ 
+ static irqreturn_t palmas_id_irq_handler(int irq, void *_palmas_usb)
+ {
+-	unsigned int set;
++	unsigned int set, id_src;
+ 	struct palmas_usb *palmas_usb = _palmas_usb;
+ 
+ 	palmas_read(palmas_usb->palmas, PALMAS_USB_OTG_BASE,
+ 		PALMAS_USB_ID_INT_LATCH_SET, &set);
++	palmas_read(palmas_usb->palmas, PALMAS_USB_OTG_BASE,
++		PALMAS_USB_ID_INT_SRC, &id_src);
+ 
+-	if (set & PALMAS_USB_ID_INT_SRC_ID_GND) {
++	if ((set & PALMAS_USB_ID_INT_SRC_ID_GND) &&
++				(id_src & PALMAS_USB_ID_INT_SRC_ID_GND)) {
+ 		palmas_write(palmas_usb->palmas, PALMAS_USB_OTG_BASE,
+ 			PALMAS_USB_ID_INT_LATCH_CLR,
+ 			PALMAS_USB_ID_INT_EN_HI_CLR_ID_GND);
+ 		palmas_usb->linkstat = PALMAS_USB_STATE_ID;
+ 		extcon_set_cable_state(&palmas_usb->edev, "USB-HOST", true);
+ 		dev_info(palmas_usb->dev, "USB-HOST cable is attached\n");
+-	} else if (set & PALMAS_USB_ID_INT_SRC_ID_FLOAT) {
++	} else if ((set & PALMAS_USB_ID_INT_SRC_ID_FLOAT) &&
++				(id_src & PALMAS_USB_ID_INT_SRC_ID_FLOAT)) {
+ 		palmas_write(palmas_usb->palmas, PALMAS_USB_OTG_BASE,
+ 			PALMAS_USB_ID_INT_LATCH_CLR,
+ 			PALMAS_USB_ID_INT_EN_HI_CLR_ID_FLOAT);
+@@ -103,6 +107,11 @@ static irqreturn_t palmas_id_irq_handler(int irq, void *_palmas_usb)
+ 		palmas_usb->linkstat = PALMAS_USB_STATE_DISCONNECT;
+ 		extcon_set_cable_state(&palmas_usb->edev, "USB-HOST", false);
+ 		dev_info(palmas_usb->dev, "USB-HOST cable is detached\n");
++	} else if ((palmas_usb->linkstat == PALMAS_USB_STATE_DISCONNECT) &&
++				(id_src & PALMAS_USB_ID_INT_SRC_ID_GND)) {
++		palmas_usb->linkstat = PALMAS_USB_STATE_ID;
++		extcon_set_cable_state(&palmas_usb->edev, "USB-HOST", true);
++		dev_info(palmas_usb->dev, " USB-HOST cable is attached\n");
+ 	}
+ 
+ 	return IRQ_HANDLED;
+-- 
+1.8.1
+
