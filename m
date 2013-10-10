@@ -1,205 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932100Ab3JJUOG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 16:14:06 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:58162 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754191Ab3JJUOD (ORCPT
+	id S1757079Ab3JJUPH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 16:15:07 -0400
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:41679 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755979Ab3JJUPF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 16:14:03 -0400
-Message-ID: <52570A6E.2010806@gmail.com>
-Date: Fri, 11 Oct 2013 04:13:34 +0800
-From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
+	Thu, 10 Oct 2013 16:15:05 -0400
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>, lenb@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, mingo@elte.hu,
-        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
-        Toshi Kani <toshi.kani@hp.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Thomas Renninger <trenn@suse.de>, Yinghai Lu <yinghai@kernel.org>,
-        Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, Mel Gorman <mgorman@suse.de>,
-        mina86@mina86.com, Minchan Kim <minchan@kernel.org>,
-        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
-        lwoodman@redhat.com, Rik van Riel <riel@redhat.com>,
-        jweiner@redhat.com, prarit@redhat.com
-CC: "x86@kernel.org" <x86@kernel.org>, linux-doc@vger.kernel.org,
+In-Reply-To: <1381365455.2297.14.camel@buesod1.americas.hpqcorp.net>
+References: <20131009232642.GA12776@jtriplet-mobl1>
+	<1381365455.2297.14.camel@buesod1.americas.hpqcorp.net>
+Date: Thu, 10 Oct 2013 13:15:03 -0700
+X-Google-Sender-Auth: XB5uqtVCOuc0E05YA6Dstm7cYP8
+Message-ID: <CAD=FV=UD2TDBVrQeC4862WQwKG32723mG0D4e1qrzVHF9+koFg@mail.gmail.com>
+Subject: Re: Regression parsing GPT (EFI) partition tables
+From: Doug Anderson <dianders@chromium.org>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Josh Triplett <josh@joshtriplett.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>, linux-acpi@vger.kernel.org,
-        imtangchen@gmail.com, Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>
-Subject: [PATCH part1 v7 0/6] x86, memblock: Allocate memory near kernel image
- before SRAT parsed
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, Karel Zak <kzak@redhat.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Sean Paul <seanpaul@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Bill Richardson <wfrichar@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, here is the v7 version. Any comments are welcome!
+Hi,
 
-The v7 version is based on linus's tree (3.12-rc4)
-HEAD is:
-commit d0e639c9e06d44e713170031fe05fb60ebe680af
-Author: Linus Torvalds <torvalds@linux-foundation.org>
-Date:   Sun Oct 6 14:00:20 2013 -0700
+Just ran into this same problem and tracked it down to the same
+commit.  Luckily Sean found this thread.  :)
 
-    Linux 3.12-rc4
+On Wed, Oct 9, 2013 at 5:37 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
+> Hi Josh,
+>
+> On Wed, 2013-10-09 at 16:26 -0700, Josh Triplett wrote:
+>> When testing ChromeOS with a 3.12 kernel from git, I encountered a
+>> regression introduced between 3.11 to 3.12: at boot time, the kernel
+>> failed to find any partitions on the USB disk I booted from, which uses
+>> a GPT partition table with 12 partitions.  This prevented the system
+>> from booting.
+>>
+>> Reverting all the patches to block/partitions/efi.c between 3.11 and
+>> 3.12 allowed the system to detect partitions again.  The patches I
+>> reverted:
+>>
+>> 6b02fa5 partitions/efi: loosen check fot pmbr size in lba
+>> b4bc4a1 block/partitions/efi.c: consistently use pr_foo()
+>> 70f637e partitions/efi: some style cleanups
+>> aa054bc partitions/efi: compare first and last usable LBAs
+>> 27a7c64 partitions/efi: account for pmbr size in lba
+>> b05ebbb partitions/efi: detect hybrid MBRs
+>> 3e69ac3 partitions/efi: do not require gpt partition to begin at sector 1
+>> 33afd7a partitions/efi: check pmbr record's starting lba
+>> c2ebdc2 partitions/efi: use lba-aware partition records
+>
+> It would be good to bisect this :)
+> I suspect it might be caused by 33afd7a otherwise there's something
+> wrong with the mbr size in lba (6b02fa5+27a7c64).
 
+So I found that (c2ebdc2 partitions/efi: use lba-aware partition
+records) broke things but that breakage is short-lived.  Specifically
+in c2ebdc2 we changed from looking at "part->start_sect" to
+"part->start_sector", but "part->start_sect" is equivalent to
+"part->starting_lba" in the new scheme.
 
-[Problem]
+...moving forward, I then found the next breakage was 27a7c64 and that
+appears to be the culprit.  Adjusting to further changes on ToT, you
+get a fix that looks roughly like:
 
-The current Linux cannot migrate pages used by the kerenl because
-of the kernel direct mapping. In Linux kernel space, va = pa + PAGE_OFFSET.
-When the pa is changed, we cannot simply update the pagetable and
-keep the va unmodified. So the kernel pages are not migratable.
+diff --git a/block/partitions/efi.c b/block/partitions/efi.c
+index 1eb09ee..9df329d 100644
+--- a/block/partitions/efi.c
++++ b/block/partitions/efi.c
+@@ -226,7 +226,8 @@ check_hybrid:
+        if (ret == GPT_MBR_PROTECTIVE) {
+                sz = le32_to_cpu(mbr->partition_record[part].size_in_lba);
+                if (sz != (uint32_t) total_sectors - 1 && sz != 0xFFFFFFFF)
+-                       ret = 0;
++                       pr_warn("%s sz=%u, total_sectors - 1=%u\n", __func__,
++                               sz, (uint32_t)((uint32_t) total_sectors - 1));
+        }
+ done:
+        return ret;
 
-There are also some other issues will cause the kernel pages not migratable.
-For example, the physical address may be cached somewhere and will be used.
-It is not to update all the caches.
+Now, when I boot up I see messages like:
 
-When doing memory hotplug in Linux, we first migrate all the pages in one
-memory device somewhere else, and then remove the device. But if pages are
-used by the kernel, they are not migratable. As a result, memory used by
-the kernel cannot be hot-removed.
+[    4.038359] is_pmbr_valid sz=4956095, total_sectors - 1=15523839
+[    4.043963] GPT:Primary header thinks Alt. header is not at the end
+of the disk.
+[    4.043967] GPT:4956095 != 15523839
+[    4.043969] GPT:Alternate GPT header not at the end of the disk.
+[    4.043972] GPT:4956095 != 15523839
+[    4.043975] GPT: Use GNU Parted to correct GPT errors.
 
-Modifying the kernel direct mapping mechanism is too difficult to do. And
-it may cause the kernel performance down and unstable. So we use the following
-way to do memory hotplug.
+...so basically it looks like we're now considering something an error
+that used to be considered a warning.
 
-
-[What we are doing]
-
-In Linux, memory in one numa node is divided into several zones. One of the
-zones is ZONE_MOVABLE, which the kernel won't use.
-
-In order to implement memory hotplug in Linux, we are going to arrange all
-hotpluggable memory in ZONE_MOVABLE so that the kernel won't use these memory.
-To do this, we need ACPI's help.
-
-In ACPI, SRAT(System Resource Affinity Table) contains NUMA info. The memory
-affinities in SRAT record every memory range in the system, and also, flags
-specifying if the memory range is hotpluggable.
-(Please refer to ACPI spec 5.0 5.2.16)
-
-With the help of SRAT, we have to do the following two things to achieve our
-goal:
-
-1. When doing memory hot-add, allow the users arranging hotpluggable as
-   ZONE_MOVABLE.
-   (This has been done by the MOVABLE_NODE functionality in Linux.)
-
-2. when the system is booting, prevent bootmem allocator from allocating
-   hotpluggable memory for the kernel before the memory initialization
-   finishes.
-
-The problem 2 is the key problem we are going to solve. But before solving it,
-we need some preparation. Please see below.
-
-
-[Preparation]
-
-Bootloader has to load the kernel image into memory. And this memory must be 
-unhotpluggable. We cannot prevent this anyway. So in a memory hotplug system, 
-we can assume any node the kernel resides in is not hotpluggable.
-
-Before SRAT is parsed, we don't know which memory ranges are hotpluggable. But
-memblock has already started to work. In the current kernel, memblock allocates 
-the following memory before SRAT is parsed:
-
-setup_arch()
- |->memblock_x86_fill()            /* memblock is ready */
- |......
- |->early_reserve_e820_mpc_new()   /* allocate memory under 1MB */
- |->reserve_real_mode()            /* allocate memory under 1MB */
- |->init_mem_mapping()             /* allocate page tables, about 2MB to map 1GB memory */
- |->dma_contiguous_reserve()       /* specified by user, should be low */
- |->setup_log_buf()                /* specified by user, several mega bytes */
- |->relocate_initrd()              /* could be large, but will be freed after boot, should reorder */
- |->acpi_initrd_override()         /* several mega bytes */
- |->reserve_crashkernel()          /* could be large, should reorder */
- |......
- |->initmem_init()                 /* Parse SRAT */
-
-According to Tejun's advice, before SRAT is parsed, we should try our best to
-allocate memory near the kernel image. Since the whole node the kernel resides 
-in won't be hotpluggable, and for a modern server, a node may have at least 16GB
-memory, allocating several mega bytes memory around the kernel image won't cross
-to hotpluggable memory.
+I don't know __anything__ about how GPT is supposed to work and I'll
+leave it to the experts to debate.  It always is possible that the
+Chrome OS GPT is somehow wrong, but Bill Richardson (CCed) says he
+thinks that what we're doing is OK and that the alternate header is
+supposed to be a backup copy (and thus it should only be a warning if
+it's missing).
 
 
-[About this patch-set]
+> diff --git a/block/partitions/efi.c b/block/partitions/efi.c
+> index 1eb09ee..d589937 100644
+> --- a/block/partitions/efi.c
+> +++ b/block/partitions/efi.c
+> @@ -157,10 +157,6 @@ static inline int pmbr_part_valid(gpt_mbr_record *part)
+>         if (part->os_type != EFI_PMBR_OSTYPE_EFI_GPT)
+>                 goto invalid;
+>
+> -       /* set to 0x00000001 (i.e., the LBA of the GPT Partition Header) */
+> -       if (le32_to_cpu(part->starting_lba) != GPT_PRIMARY_PARTITION_TABLE_LBA)
+> -               goto invalid;
+> -
+>         return GPT_MBR_PROTECTIVE;
+>  invalid:
+>         return 0;
+>
+>
+> If this doesn't work, could you bypass mbr checks with force_gpt option
+> and add some printk to the partition_record.size_in_lba, like:
+>
+> diff --git a/block/partitions/efi.c b/block/partitions/efi.c
+> index 1eb09ee..77cfed2 100644
+> --- a/block/partitions/efi.c
+> +++ b/block/partitions/efi.c
+> @@ -225,6 +225,7 @@ check_hybrid:
+>          */
+>         if (ret == GPT_MBR_PROTECTIVE) {
+>                 sz = le32_to_cpu(mbr->partition_record[part].size_in_lba);
+> +               printk("gpt sz check: %d, %ld\n", sz, total_sectors);
+>                 if (sz != (uint32_t) total_sectors - 1 && sz != 0xFFFFFFFF)
+>                         ret = 0;
+>         }
 
-So this patch-set is the preparation for the problem 2 that we want to solve. It
-does the following:
+Just for thoroughness, I did try this patch (without my patch) and it
+didn't work for me.
 
-1. Make memblock be able to allocate memory bottom up.
-   1) Keep all the memblock APIs' prototype unmodified.
-   2) When the direction is bottom up, keep the start address greater than the 
-      end of kernel image.
 
-2. Improve init_mem_mapping() to support allocate page tables in bottom up direction.
 
-3. Introduce "movable_node" boot option to enable and disable this functionality.
-
-Change log v6 -> v7:
-1. Add toshi's ack in several patches.
-2. Make __pa_symbol() available everywhere by putting a pesudo __pa_symbol define
-   in include/linux/mm.h. Thanks HPA.
-3. Add notes about the page table allocation in bottom-up.
-
-Change log v5 -> v6:
-1. Add tejun and toshi's ack in several patches.
-2. Change movablenode to movable_node boot option and update the description
-   for movable_node and CONFIG_MOVABLE_NODE. Thanks Ingo!
-3. Fix the __pa_symbol() issue pointed by Andrew Morton.
-4. Update some functions' comments and names.
-
-Change log v4 -> v5:
-1. Change memblock.current_direction to a boolean memblock.bottom_up. And remove 
-   the direction enum.
-2. Update and add some comments to explain things clearer.
-3. Misc fixes, such as removing unnecessary #ifdef
-
-Change log v3 -> v4:
-1. Use bottom-up/top-down to unify things. Thanks tj.
-2. Factor out of current top-down implementation and then introduce bottom-up mode,
-   not mixing them in one patch. Thanks tj.
-3. Changes function naming: memblock_direction_bottom_up -> memblock_bottom_up
-4. Use memblock_set_bottom_up to replace memblock_set_current_direction, which makes
-   the code simpler. Thanks tj.
-5. Define two implementions of function memblock_bottom_up and memblock_set_bottom_up
-   in order not to use #ifdef in the boot code. Thanks tj.
-6. Add comments to explain why retry top-down allocation when bottom_up allocation
-   failed. Thanks tj and toshi!
-
-Change log v2 -> v3:
-1. According to Toshi's suggestion, move the direction checking logic into memblock.
-   And simply the code more.
-
-Change log v1 -> v2:
-1. According to tj's suggestion, implemented a new function memblock_alloc_bottom_up() 
-   to allocate memory from bottom upwards, whihc can simplify the code.
-
-Tang Chen (6):
-  memblock: Factor out of top-down allocation
-  memblock: Introduce bottom-up allocation mode
-  x86/mm: Factor out of top-down direct mapping setup
-  x86/mem-hotplug: Support initialize page tables in bottom-up
-  x86, acpi, crash, kdump: Do reserve_crashkernel() after SRAT is
-    parsed.
-  mem-hotplug: Introduce movable_node boot option
-
- Documentation/kernel-parameters.txt |    3 +
- arch/x86/kernel/setup.c             |    9 ++-
- arch/x86/mm/init.c                  |  122 ++++++++++++++++++++++++++++------
- arch/x86/mm/numa.c                  |   11 +++
- include/linux/memblock.h            |   24 +++++++
- include/linux/mm.h                  |    4 +
- mm/Kconfig                          |   17 +++--
- mm/memblock.c                       |  126 +++++++++++++++++++++++++++++++----
- mm/memory_hotplug.c                 |   31 +++++++++
- 9 files changed, 306 insertions(+), 41 deletions(-)
-
+-Doug
