@@ -1,334 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932104Ab3JJSIL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 14:08:11 -0400
-Received: from mga01.intel.com ([192.55.52.88]:28691 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756556Ab3JJSGN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 14:06:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1073,1371106800"; 
-   d="scan'208";a="408987118"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-arch@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH 34/34] mm: dynamically allocate page->ptl if it cannot be embedded to struct page
-Date: Thu, 10 Oct 2013 21:05:59 +0300
-Message-Id: <1381428359-14843-35-git-send-email-kirill.shutemov@linux.intel.com>
-X-Mailer: git-send-email 1.8.4.rc3
-In-Reply-To: <1381428359-14843-1-git-send-email-kirill.shutemov@linux.intel.com>
-References: <1381428359-14843-1-git-send-email-kirill.shutemov@linux.intel.com>
+	id S1756923Ab3JJSIP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 14:08:15 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:48730 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756556Ab3JJSIM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 14:08:12 -0400
+Date: Thu, 10 Oct 2013 13:07:23 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
+CC: "balbi@ti.com" <balbi@ti.com>, Matt Porter <matt.porter@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Christian Daudt <bcm@fixthebug.org>,
+        Linux USB List <linux-usb@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Devicetree List <devicetree@vger.kernel.org>,
+        Linaro Patches <patches@linaro.org>
+Subject: Re: [PATCH 2/5] usb: gadget: s3c-hsotg: support configurable UTMI
+ PHY width
+Message-ID: <20131010180723.GF19802@radagast>
+Reply-To: <balbi@ti.com>
+References: <1381140752-312-1-git-send-email-matt.porter@linaro.org>
+ <1381140752-312-3-git-send-email-matt.porter@linaro.org>
+ <20131010152922.GF28375@radagast>
+ <5256DBD0.8030008@linaro.org>
+ <20131010174620.GC19802@radagast>
+ <A2CA0424C0A6F04399FB9E1CD98E030458E16893@US01WEMBX2.internal.synopsys.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="O98KdSgI27dgYlM5"
+Content-Disposition: inline
+In-Reply-To: <A2CA0424C0A6F04399FB9E1CD98E030458E16893@US01WEMBX2.internal.synopsys.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If split page table lock is in use, we embed the lock into struct page
-of table's page. We have to disable split lock, if spinlock_t is too big
-be to be embedded, like when DEBUG_SPINLOCK or DEBUG_LOCK_ALLOC enabled.
+--O98KdSgI27dgYlM5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This patch add support for dynamic allocation of split page table lock
-if we can't embed it to struct page.
+Hi,
 
-page->ptl is unsigned long now and we use it as spinlock_t if
-sizeof(spinlock_t) <= sizeof(long), otherwise it's pointer to
-spinlock_t.
+On Thu, Oct 10, 2013 at 05:57:54PM +0000, Paul Zimmerman wrote:
+> > From: Felipe Balbi [mailto:balbi@ti.com]
+> > Sent: Thursday, October 10, 2013 10:46 AM
+> >=20
+> > On Thu, Oct 10, 2013 at 12:54:40PM -0400, Matt Porter wrote:
+> > > On 10/10/2013 11:29 AM, Felipe Balbi wrote:
+> > > >On Mon, Oct 07, 2013 at 06:12:29AM -0400, Matt Porter wrote:
+> > > >>Extend dwc2 binding with an optional utmi phy width property.
+> > > >>Enable the s3c-hsotg.c driver to use standard dwc2 binding
+> > > >>and enable configuration of the UTMI phy width based on the
+> > > >>property.
+> > > >>
+> > > >>Signed-off-by: Matt Porter <matt.porter@linaro.org>
+> > > >>Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
+> > > >>Reviewed-by: Tim Kryger <tim.kryger@linaro.org>
+> > > >>---
+> > > >>  Documentation/devicetree/bindings/staging/dwc2.txt |  4 ++++
+> > > >>  drivers/usb/gadget/s3c-hsotg.c                     | 18 +++++++++=
+++++++++-
+> > > >>  drivers/usb/gadget/s3c-hsotg.h                     |  1 +
+> > > >>  3 files changed, 22 insertions(+), 1 deletion(-)
+> > > >>
+> > > >>diff --git a/Documentation/devicetree/bindings/staging/dwc2.txt
+> > b/Documentation/devicetree/bindings/staging/dwc2.txt
+> > > >>index 1a1b7cf..fb6b8ee 100644
+> > > >>--- a/Documentation/devicetree/bindings/staging/dwc2.txt
+> > > >>+++ b/Documentation/devicetree/bindings/staging/dwc2.txt
+> > > >>@@ -6,10 +6,14 @@ Required properties:
+> > > >>  - reg : Should contain 1 register range (address and length)
+> > > >>  - interrupts : Should contain 1 interrupt
+> > > >>
+> > > >>+Optional properties:
+> > > >>+- snps,phy-utmi-width: Must contain the UTMI data width (either 8 =
+or 16)
+> > > >
+> > > >isn't this available in any of the configuration registers ?
+> > >
+> > > Yes and no. HWCFG4 has a UTMI data width field. However, it has 3
+> > > valid states, "8", "16", or "8 or 16". The BCM281xx implementation is
+> > > set to the latter and the attached phy is 8-bit.
+> > >
+> > > Looking at dwc2 prior to Matthijs Kooijman's patch [1] which starts
+> > > validating the value of phy_utmi_width in that driver, the pci.c
+> > > dwc2_module_params .phy_utmi_width field there even had the comment,
+> > > "/* 16 bits - NOT DETECTABLE */". The autodetect code in
+> > > dwc2_set_param_phy_utmi_width() will fail if HWCFG4 has the "8 or 16"
+> > > option as it just decides to default to a phy width of 16 if nothing
+> > > is configured by the platform glue. This property would also allow
+> > > this issue to be addressed in that driver.
+> >=20
+> > fair enough, but I'd really like to hear from DT folks if your suggested
+> > binding is acceptable. It seems like we can equally argue that it's a SW
+> > configuration or HW description.
+>=20
+> It's definitely a HW description - the width of the UTMI data connection.
 
-The spinlock_t allocated in pgtable_page_ctor() for PTE table and in
-pgtable_pmd_page_ctor() for PMD table. All other helpers converted to
-support dynamically allocated page->ptl.
+right, but that description should be passed to the PHY, right ? DWC2
+works with both widths (8 or 16).
 
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
----
- Documentation/vm/split_page_table_lock | 90 ++++++++++++++++++++++++++++++++++
- arch/x86/xen/mmu.c                     |  2 +-
- include/linux/mm.h                     | 72 +++++++++++++++++++--------
- include/linux/mm_types.h               |  5 +-
- mm/Kconfig                             |  2 -
- mm/memory.c                            | 19 +++++++
- 6 files changed, 166 insertions(+), 24 deletions(-)
- create mode 100644 Documentation/vm/split_page_table_lock
+--=20
+balbi
 
-diff --git a/Documentation/vm/split_page_table_lock b/Documentation/vm/split_page_table_lock
-new file mode 100644
-index 0000000000..e2f617b732
---- /dev/null
-+++ b/Documentation/vm/split_page_table_lock
-@@ -0,0 +1,90 @@
-+Split page table lock
-+=====================
-+
-+Originally, mm->page_table_lock spinlock protected all page tables of the
-+mm_struct. But this approach leads to poor page fault scalability of
-+multi-threaded applications due high contention on the lock. To improve
-+scalability, split page table lock was introduced.
-+
-+With split page table lock we have separate per-table lock to serialize
-+access to the table. At the moment we use split lock for PTE and PMD
-+tables. Access to higher level tables protected by mm->page_table_lock.
-+
-+There are helpers to lock/unlock a table and other accessor functions:
-+ - pte_offset_map_lock()
-+	maps pte and takes PTE table lock, returns pointer to the taken
-+	lock;
-+ - pte_unmap_unlock()
-+	unlocks and unmaps PTE table;
-+ - pte_alloc_map_lock()
-+	allocates PTE table if needed and take the lock, returns pointer
-+	to taken lock or NULL if allocation failed;
-+ - pte_lockptr()
-+	returns pointer to PTE table lock;
-+ - pmd_lock()
-+	takes PMD table lock, returns pointer to taken lock;
-+ - pmd_lockptr()
-+	returns pointer to PMD table lock;
-+
-+Split page table lock for PTE tables is enabled compile-time if
-+CONFIG_SPLIT_PTLOCK_CPUS (usually 4) is less or equal to NR_CPUS.
-+If split lock is disabled, all tables guaded by mm->page_table_lock.
-+
-+Split page table lock for PMD tables is enabled, if it's enabled for PTE
-+tables and the architecture supports it (see below).
-+
-+Hugetlb and split page table lock
-+---------------------------------
-+
-+Hugetlb can support several page sizes. We use split lock only for PMD
-+level, but not for PUD.
-+
-+Hugetlb-specific helpers:
-+ - huge_pte_lock()
-+	takes pmd split lock for PMD_SIZE page, mm->page_table_lock
-+	otherwise;
-+ - huge_pte_lockptr()
-+	returns pointer to table lock;
-+
-+Support of split page table lock by an architecture
-+---------------------------------------------------
-+
-+There's no need in special enabling of PTE split page table lock:
-+everything required is done by pgtable_page_ctor() and pgtable_page_dtor(),
-+which must be called on PTE table allocation / freeing.
-+
-+PMD split lock only makes sense if you have more than two page table
-+levels.
-+
-+PMD split lock enabling requires pgtable_pmd_page_ctor() call on PMD table
-+allocation and pgtable_pmd_page_dtor() on freeing.
-+
-+Allocation usually happens in pmd_alloc_one(), freeing in pmd_free(), but
-+make sure you cover all PMD table allocation / freeing paths: i.e X86_PAE
-+preallocate few PMDs on pgd_alloc().
-+
-+With everything in place you can set CONFIG_ARCH_ENABLE_SPLIT_PMD_PTLOCK.
-+
-+NOTE: pgtable_page_ctor() and pgtable_pmd_page_ctor() can fail -- it must
-+be handled properly.
-+
-+page->ptl
-+---------
-+
-+page->ptl is used to access split page table lock, where 'page' is struct
-+page of page containing the table. It shares storage with page->private
-+(and few other fields in union).
-+
-+To avoid increasing size of struct page and have best performance, we use a
-+trick:
-+ - if spinlock_t fits into long, we use page->ptr as spinlock, so we
-+   can avoid indirect access and save a cache line.
-+ - if size of spinlock_t is bigger then size of long, we use page->ptl as
-+   pointer to spinlock_t and allocate it dynamically. This allows to use
-+   split lock with enabled DEBUG_SPINLOCK or DEBUG_LOCK_ALLOC, but costs
-+   one more cache line for indirect access;
-+
-+The spinlock_t allocated in pgtable_page_ctor() for PTE table and in
-+pgtable_pmd_page_ctor() for PMD table.
-+
-+Please, never access page->ptl directly -- use appropriate helper.
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index 455c873ce0..49c962fe7e 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -797,7 +797,7 @@ static spinlock_t *xen_pte_lock(struct page *page, struct mm_struct *mm)
- 	spinlock_t *ptl = NULL;
- 
- #if USE_SPLIT_PTE_PTLOCKS
--	ptl = __pte_lockptr(page);
-+	ptl = ptlock_ptr(page);
- 	spin_lock_nest_lock(ptl, &mm->page_table_lock);
- #endif
- 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index f6467032a9..658e8b317f 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1233,32 +1233,64 @@ static inline pmd_t *pmd_alloc(struct mm_struct *mm, pud_t *pud, unsigned long a
- #endif /* CONFIG_MMU && !__ARCH_HAS_4LEVEL_HACK */
- 
- #if USE_SPLIT_PTE_PTLOCKS
--/*
-- * We tuck a spinlock to guard each pagetable page into its struct page,
-- * at page->private, with BUILD_BUG_ON to make sure that this will not
-- * overflow into the next struct page (as it might with DEBUG_SPINLOCK).
-- * When freeing, reset page->mapping so free_pages_check won't complain.
-- */
--#define __pte_lockptr(page)	&((page)->ptl)
--#define pte_lock_init(_page)	do {					\
--	spin_lock_init(__pte_lockptr(_page));				\
--} while (0)
--#define pte_lock_deinit(page)	((page)->mapping = NULL)
--#define pte_lockptr(mm, pmd)	({(void)(mm); __pte_lockptr(pmd_page(*(pmd)));})
-+bool __ptlock_alloc(struct page *page);
-+void __ptlock_free(struct page *page);
-+static inline bool ptlock_alloc(struct page *page)
-+{
-+	if (sizeof(spinlock_t) > sizeof(page->ptl))
-+		return __ptlock_alloc(page);
-+	return true;
-+}
-+static inline void ptlock_free(struct page *page)
-+{
-+	if (sizeof(spinlock_t) > sizeof(page->ptl))
-+		__ptlock_free(page);
-+}
-+
-+static inline spinlock_t *ptlock_ptr(struct page *page)
-+{
-+	if (sizeof(spinlock_t) > sizeof(page->ptl))
-+		return (spinlock_t *) page->ptl;
-+	else
-+		return (spinlock_t *) &page->ptl;
-+}
-+
-+static inline spinlock_t *pte_lockptr(struct mm_struct *mm, pmd_t *pmd)
-+{
-+	return ptlock_ptr(pmd_page(*pmd));
-+}
-+
-+static inline bool ptlock_init(struct page *page)
-+{
-+	if (!ptlock_alloc(page))
-+		return false;
-+	spin_lock_init(ptlock_ptr(page));
-+	return true;
-+}
-+
-+/* Reset page->mapping so free_pages_check won't complain. */
-+static inline void pte_lock_deinit(struct page *page)
-+{
-+	page->mapping = NULL;
-+	ptlock_free(page);
-+}
-+
- #else	/* !USE_SPLIT_PTE_PTLOCKS */
- /*
-  * We use mm->page_table_lock to guard all pagetable pages of the mm.
-  */
--#define pte_lock_init(page)	do {} while (0)
--#define pte_lock_deinit(page)	do {} while (0)
--#define pte_lockptr(mm, pmd)	({(void)(pmd); &(mm)->page_table_lock;})
-+static inline spinlock_t *pte_lockptr(struct mm_struct *mm, pmd_t *pmd)
-+{
-+	return &mm->page_table_lock;
-+}
-+static inline bool ptlock_init(struct page *page) { return true; }
-+static inline void pte_lock_deinit(struct page *page) {}
- #endif /* USE_SPLIT_PTE_PTLOCKS */
- 
- static inline bool pgtable_page_ctor(struct page *page)
- {
--	pte_lock_init(page);
- 	inc_zone_page_state(page, NR_PAGETABLE);
--	return true;
-+	return ptlock_init(page);
- }
- 
- static inline void pgtable_page_dtor(struct page *page)
-@@ -1299,16 +1331,15 @@ static inline void pgtable_page_dtor(struct page *page)
- 
- static inline spinlock_t *pmd_lockptr(struct mm_struct *mm, pmd_t *pmd)
- {
--	return &virt_to_page(pmd)->ptl;
-+	return ptlock_ptr(virt_to_page(pmd));
- }
- 
- static inline bool pgtable_pmd_page_ctor(struct page *page)
- {
--	spin_lock_init(&page->ptl);
- #ifdef CONFIG_TRANSPARENT_HUGEPAGE
- 	page->pmd_huge_pte = NULL;
- #endif
--	return true;
-+	return ptlock_init(page);
- }
- 
- static inline void pgtable_pmd_page_dtor(struct page *page)
-@@ -1316,6 +1347,7 @@ static inline void pgtable_pmd_page_dtor(struct page *page)
- #ifdef CONFIG_TRANSPARENT_HUGEPAGE
- 	VM_BUG_ON(page->pmd_huge_pte);
- #endif
-+	ptlock_free(page);
- }
- 
- #define pmd_huge_pte(mm, pmd) (virt_to_page(pmd)->pmd_huge_pte)
-diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-index bacc15f078..257ac12fac 100644
---- a/include/linux/mm_types.h
-+++ b/include/linux/mm_types.h
-@@ -147,7 +147,10 @@ struct page {
- 						 * system if PG_buddy is set.
- 						 */
- #if USE_SPLIT_PTE_PTLOCKS
--		spinlock_t ptl;
-+		unsigned long ptl; /* It's spinlock_t if it fits to long,
-+				    * otherwise it's pointer to dynamicaly
-+				    * allocated spinlock_t.
-+				    */
- #endif
- 		struct kmem_cache *slab_cache;	/* SL[AU]B: Pointer to slab */
- 		struct page *first_page;	/* Compound tail pages */
-diff --git a/mm/Kconfig b/mm/Kconfig
-index d19f7d380b..9e8c8ae3b6 100644
---- a/mm/Kconfig
-+++ b/mm/Kconfig
-@@ -211,8 +211,6 @@ config SPLIT_PTLOCK_CPUS
- 	int
- 	default "999999" if ARM && !CPU_CACHE_VIPT
- 	default "999999" if PARISC && !PA20
--	default "999999" if DEBUG_SPINLOCK || DEBUG_LOCK_ALLOC
--	default "999999" if !64BIT && GENERIC_LOCKBREAK
- 	default "4"
- 
- config ARCH_ENABLE_SPLIT_PMD_PTLOCK
-diff --git a/mm/memory.c b/mm/memory.c
-index 1200d6230c..7e11f745bc 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -4330,3 +4330,22 @@ void copy_user_huge_page(struct page *dst, struct page *src,
- 	}
- }
- #endif /* CONFIG_TRANSPARENT_HUGEPAGE || CONFIG_HUGETLBFS */
-+
-+#if USE_SPLIT_PTE_PTLOCKS
-+bool __ptlock_alloc(struct page *page)
-+{
-+	spinlock_t *ptl;
-+
-+	ptl = kmalloc(sizeof(spinlock_t), GFP_KERNEL);
-+	if (!ptl)
-+		return false;
-+	page->ptl = (unsigned long)ptl;
-+	return true;
-+}
-+
-+void __ptlock_free(struct page *page)
-+{
-+	if (sizeof(spinlock_t) > sizeof(page->ptl))
-+		kfree((spinlock_t *)page->ptl);
-+}
-+#endif
--- 
-1.8.4.rc3
+--O98KdSgI27dgYlM5
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSVuzaAAoJEIaOsuA1yqRElc0P/3fSy3JmkgF6ueqJJ6uuP3xs
+pTymLwlYbWH/cRZPset6d8H1CVjQlV/n8GpVZhjlTeOolnVRoGaS25V/GS0etwE/
+LlV1KxwgoRKelfo84hCcGSIlwkFwpXPuwW1Bd8OUwh59zfd+ER7QECq0P71pmJzC
+HYEg1gSE0gKd3VNCnn2+pCX7tL4jDmIX08k7zHdXckGdI3Jysx0o6mTZKm0hovtB
+dPNcvskknafNnBNjAx6Rxw9TZqDjnCUQnboF0fLVNozHZI74kaZZYsWomgNiOT5B
+lZWmhOshdwFASVbk0UiFsZKILVcDtCqp2HXgTnhhgcLwPzYT4t+FxLv5LWWiQTS7
++RjcxuZvJHNa+392Sx4Z0TaQi/l71roUtbT9qxnsmonF0vpb2jpHm4hc2CrfZ52Q
+ywNZcoIeLA5U6aEC5sS7M4y6ypMQyNBpVjrnFxlVAA8LcSQcJmJ/6XjAyl/oCfvY
+JgQvSQ4KlRaIQ0etV3QCPVN+OZ/ODJzwSOh19gB7KBlVj403NufFvaULRQK48B/Y
+TQgMXheKLJjnhg5jFPPahGpyx82ckSfRTFRfMAZTe00YRPEyo/pcq4OFT/CmFUBd
++EiRtkfkdyAIBioc72ObGwqK8rXkAlfmxdmaYCt/3ynQ+t19mox6x5660oSXLvMp
+xN+hJHVqySDkNjzMYnOT
+=6BW3
+-----END PGP SIGNATURE-----
+
+--O98KdSgI27dgYlM5--
