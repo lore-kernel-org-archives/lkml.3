@@ -1,78 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756808Ab3JJSsu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 14:48:50 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:54631 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754152Ab3JJSst (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 14:48:49 -0400
-From: George Cherian <george.cherian@ti.com>
-To: <myungjoo.ham@samsung.com>, <cw00.choi@samsung.com>
-CC: <kishon@ti.com>, <ldewangan@nvidia.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, George Cherian <george.cherian@ti.com>
-Subject: [PATCH] extcon: palmas: Handle ID interrupt properly using USB_ID_INT_SRC
-Date: Fri, 11 Oct 2013 00:18:39 +0530
-Message-ID: <1381430919-4635-1-git-send-email-george.cherian@ti.com>
-X-Mailer: git-send-email 1.8.1
+	id S1756966Ab3JJStS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 14:49:18 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:59655 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755739Ab3JJStQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 14:49:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20131010183409.GP13848@laptop.programming.kicks-ass.net>
+References: <20131009225006.7101379c.akpm@linux-foundation.org>
+	<20131010121908.GB28601@twins.programming.kicks-ass.net>
+	<20131010145738.GA5167@gmail.com>
+	<20131010152612.GA13375@redhat.com>
+	<20131010090044.7f12ddaf.akpm@linux-foundation.org>
+	<20131010123631.1be60315@gandalf.local.home>
+	<20131010094355.6f75e5a2.akpm@linux-foundation.org>
+	<20131010165337.GT3081@twins.programming.kicks-ass.net>
+	<20131010131305.58558079@gandalf.local.home>
+	<20131010104856.8f042977112d5ac2693973ae@linux-foundation.org>
+	<20131010183409.GP13848@laptop.programming.kicks-ass.net>
+Date: Thu, 10 Oct 2013 11:49:15 -0700
+X-Google-Sender-Auth: E42-E30mbg5Uizr-Z1bYue4XWfM
+Message-ID: <CA+55aFyoP5KFUg44Xenp_Jz0_5ssosn-KF6LDsa0qsmCjyJ56g@mail.gmail.com>
+Subject: Re: [PATCH 0/6] Optimize the cpu hotplug locking -v2
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Oleg Nesterov <oleg@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Always cross check with the ID state and the source of interrupt.
-Also add a case in which ID Source is ID_GND but LATCH state is set
-wrongly. This uses the previous Link stat to determine the new state.
+On Thu, Oct 10, 2013 at 11:34 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+>
+> But my point is that even though there aren't many of these today; with
+> the growing number of cpus in 'commodity' hardware you want to move away
+> from using preempt_disable() as hotplug lock.
 
-Signed-off-by: George Cherian <george.cherian@ti.com>
----
- drivers/extcon/extcon-palmas.c | 15 ++++++++++++---
- 1 file changed, 12 insertions(+), 3 deletions(-)
+Umm.
 
-diff --git a/drivers/extcon/extcon-palmas.c b/drivers/extcon/extcon-palmas.c
-index 6e83e9a..2aea4bc 100644
---- a/drivers/extcon/extcon-palmas.c
-+++ b/drivers/extcon/extcon-palmas.c
-@@ -78,20 +78,24 @@ static irqreturn_t palmas_vbus_irq_handler(int irq, void *_palmas_usb)
- 
- static irqreturn_t palmas_id_irq_handler(int irq, void *_palmas_usb)
- {
--	unsigned int set;
-+	unsigned int set, id_src;
- 	struct palmas_usb *palmas_usb = _palmas_usb;
- 
- 	palmas_read(palmas_usb->palmas, PALMAS_USB_OTG_BASE,
- 		PALMAS_USB_ID_INT_LATCH_SET, &set);
-+	palmas_read(palmas_usb->palmas, PALMAS_USB_OTG_BASE,
-+		PALMAS_USB_ID_INT_SRC, &id_src);
- 
--	if (set & PALMAS_USB_ID_INT_SRC_ID_GND) {
-+	if ((set & PALMAS_USB_ID_INT_SRC_ID_GND) &&
-+				(id_src & PALMAS_USB_ID_INT_SRC_ID_GND)) {
- 		palmas_write(palmas_usb->palmas, PALMAS_USB_OTG_BASE,
- 			PALMAS_USB_ID_INT_LATCH_CLR,
- 			PALMAS_USB_ID_INT_EN_HI_CLR_ID_GND);
- 		palmas_usb->linkstat = PALMAS_USB_STATE_ID;
- 		extcon_set_cable_state(&palmas_usb->edev, "USB-HOST", true);
- 		dev_info(palmas_usb->dev, "USB-HOST cable is attached\n");
--	} else if (set & PALMAS_USB_ID_INT_SRC_ID_FLOAT) {
-+	} else if ((set & PALMAS_USB_ID_INT_SRC_ID_FLOAT) &&
-+				(id_src & PALMAS_USB_ID_INT_SRC_ID_FLOAT)) {
- 		palmas_write(palmas_usb->palmas, PALMAS_USB_OTG_BASE,
- 			PALMAS_USB_ID_INT_LATCH_CLR,
- 			PALMAS_USB_ID_INT_EN_HI_CLR_ID_FLOAT);
-@@ -103,6 +107,11 @@ static irqreturn_t palmas_id_irq_handler(int irq, void *_palmas_usb)
- 		palmas_usb->linkstat = PALMAS_USB_STATE_DISCONNECT;
- 		extcon_set_cable_state(&palmas_usb->edev, "USB-HOST", false);
- 		dev_info(palmas_usb->dev, "USB-HOST cable is detached\n");
-+	} else if ((palmas_usb->linkstat == PALMAS_USB_STATE_DISCONNECT) &&
-+				(id_src & PALMAS_USB_ID_INT_SRC_ID_GND)) {
-+		palmas_usb->linkstat = PALMAS_USB_STATE_ID;
-+		extcon_set_cable_state(&palmas_usb->edev, "USB-HOST", true);
-+		dev_info(palmas_usb->dev, " USB-HOST cable is attached\n");
- 	}
- 
- 	return IRQ_HANDLED;
--- 
-1.8.1
+Wasn't this pretty much the argument for the COMPLETELY F*CKED UP
+change to make the vma locking use a semaphore?
 
+The whole "it's more convenient to use sleeping locks" argument is
+PURE AND UTTER SHIT when it comes to really core code. We are *much*
+better off saying "this is core, we care so deeply about performance
+that you had better use your brain before you do this".
+
+Seriously. Your argument is bad, but more importantly, it is
+*dangerously* bad. It's crap that results in bad code: and the bad
+code is almost impossible to fix up later, because once you encourage
+people to do the easy thing, they'll do so.
+
+Yes, preempt_disable() is harder to use than sleeping locks. You need
+to do pre-allocation etc. But it is much *much* more efficient.
+
+And in the kernel, we care. We have the resources. Plus, we can also
+say "if you can't handle it, don't do it". We don't need new features
+so badly that we are willing to screw up core code.
+
+As to your kernel/events/core.c example, things like that are
+generally pretty easy to fix. The good thing about preemption-disable
+is:
+
+ - it's pretty easily debuggable, because you do get big warnings of
+"you screwed up exactly _here_"
+
+ - it's so cheap that especially when it comes to things that can
+sleep, it's perfectly ok to drop the preemption count, do the sleeping
+thing, re-disable preemption and then check if we still needed the
+data.
+
+Oh, and I'm sure there are several users that currently depend on
+being able to sleep over get_online_cpu's.  But I'm pretty sure it's
+"several", not "hundreds", and I think we could fix them up.
+
+                 Linus
