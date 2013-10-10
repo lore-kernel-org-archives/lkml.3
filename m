@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755771Ab3JJK3m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 06:29:42 -0400
-Received: from mga14.intel.com ([143.182.124.37]:54543 "EHLO mga14.intel.com"
+	id S1755729Ab3JJK3k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 06:29:40 -0400
+Received: from mga03.intel.com ([143.182.124.21]:53101 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754370Ab3JJK25 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754219Ab3JJK25 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 10 Oct 2013 06:28:57 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,1070,1371106800"; 
-   d="scan'208";a="306054709"
+   d="scan'208";a="372840371"
 From: Mika Westerberg <mika.westerberg@linux.intel.com>
 To: linux-acpi@vger.kernel.org
 Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Wolfram Sang <wsa@the-dreams.de>,
@@ -16,39 +16,73 @@ Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Wolfram Sang <wsa@the-dreams.de>,
         Lv Zheng <lv.zheng@intel.com>,
         Mika Westerberg <mika.westerberg@linux.intel.com>,
         linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 0/3] ACPI power management support for I2C and SPI devices
-Date: Thu, 10 Oct 2013 13:28:45 +0300
-Message-Id: <1381400928-2689-1-git-send-email-mika.westerberg@linux.intel.com>
+Subject: [PATCH v2 2/3] i2c: attach/detach I2C client device to the ACPI power domain
+Date: Thu, 10 Oct 2013 13:28:47 +0300
+Message-Id: <1381400928-2689-3-git-send-email-mika.westerberg@linux.intel.com>
 X-Mailer: git-send-email 1.8.4.rc3
-In-Reply-To: <1381327461-10562-1-git-send-email-mika.westerberg@linux.intel.com>
+In-Reply-To: <1381400928-2689-1-git-send-email-mika.westerberg@linux.intel.com>
 References: <1381327461-10562-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1381400928-2689-1-git-send-email-mika.westerberg@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here is an updated version. I added acks from Mark and Wolfram and dropped
-if (ACPI_HANDLE()) checks as requested. This is already handled by
-acpi_dev_pm_attach()/detach().
+From: Lv Zheng <lv.zheng@intel.com>
 
-Rafael,
+If the I2C client device is enumerated from ACPI namespace it might have
+ACPI methods that needs to be called in order to transition the device to
+different power states (such as _PSx).
 
-If you are OK with these, could you merge the series to your ACPI tree?
+Implement this for I2C client devices by checking if the device has an ACPI
+handle and if that's the case, attach it to the ACPI power domain. In
+addition we make sure that the device is fully powered when its ->probe()
+function gets called.
 
-Thanks!
+For non-ACPI devices this patch is a no-op.
 
-Lv Zheng (1):
-  i2c: attach/detach I2C client device to the ACPI power domain
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Acked-by: Wolfram Sang <wsa@the-dreams.de>
+---
+ drivers/i2c/i2c-core.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-Mika Westerberg (2):
-  ACPI / PM: allow child devices to ignore parent power state
-  spi: attach/detach SPI device to the ACPI power domain
-
- drivers/acpi/device_pm.c |  8 +++++---
- drivers/i2c/i2c-core.c   |  5 +++++
- drivers/spi/spi.c        | 18 ++++++++++++++++--
- include/acpi/acpi_bus.h  |  3 ++-
- 4 files changed, 28 insertions(+), 6 deletions(-)
-
+diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
+index 29d3f04..03a8ae6 100644
+--- a/drivers/i2c/i2c-core.c
++++ b/drivers/i2c/i2c-core.c
+@@ -254,10 +254,12 @@ static int i2c_device_probe(struct device *dev)
+ 					client->flags & I2C_CLIENT_WAKE);
+ 	dev_dbg(dev, "probe\n");
+ 
++	acpi_dev_pm_attach(&client->dev, true);
+ 	status = driver->probe(client, i2c_match_id(driver->id_table, client));
+ 	if (status) {
+ 		client->driver = NULL;
+ 		i2c_set_clientdata(client, NULL);
++		acpi_dev_pm_detach(&client->dev, true);
+ 	}
+ 	return status;
+ }
+@@ -283,6 +285,7 @@ static int i2c_device_remove(struct device *dev)
+ 		client->driver = NULL;
+ 		i2c_set_clientdata(client, NULL);
+ 	}
++	acpi_dev_pm_detach(&client->dev, true);
+ 	return status;
+ }
+ 
+@@ -1111,8 +1114,10 @@ static acpi_status acpi_i2c_add_device(acpi_handle handle, u32 level,
+ 	if (ret < 0 || !info.addr)
+ 		return AE_OK;
+ 
++	adev->power.flags.ignore_parent = true;
+ 	strlcpy(info.type, dev_name(&adev->dev), sizeof(info.type));
+ 	if (!i2c_new_device(adapter, &info)) {
++		adev->power.flags.ignore_parent = false;
+ 		dev_err(&adapter->dev,
+ 			"failed to add I2C device %s from ACPI\n",
+ 			dev_name(&adev->dev));
 -- 
 1.8.4.rc3
 
