@@ -1,84 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756678Ab3JJWbU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 18:31:20 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:6736 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756270Ab3JJWbS (ORCPT
+	id S1755146Ab3JJWmF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 18:42:05 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:33770 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751857Ab3JJWmC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 18:31:18 -0400
-Message-ID: <1381444274.2367.44.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: Regression parsing GPT (EFI) partition tables
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Bill Richardson <wfrichar@chromium.org>
-Cc: Doug Anderson <dianders@chromium.org>,
-        Josh Triplett <josh@joshtriplett.org>,
+	Thu, 10 Oct 2013 18:42:02 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18a09QdlIMbsF+PiYYOd8h6
+Date: Thu, 10 Oct 2013 15:41:57 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, Karel Zak <kzak@redhat.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Sean Paul <seanpaul@chromium.org>, Olof Johansson <olof@lixom.net>
-Date: Thu, 10 Oct 2013 15:31:14 -0700
-In-Reply-To: <CAEgFheKsx+gKZa76333m4C-gPbEy2AFSVA3mCNR8HjaLFNb1Ww@mail.gmail.com>
-References: <20131009232642.GA12776@jtriplet-mobl1>
-	 <1381365455.2297.14.camel@buesod1.americas.hpqcorp.net>
-	 <CAD=FV=UD2TDBVrQeC4862WQwKG32723mG0D4e1qrzVHF9+koFg@mail.gmail.com>
-	 <1381440403.2367.32.camel@buesod1.americas.hpqcorp.net>
-	 <CAEgFheKsx+gKZa76333m4C-gPbEy2AFSVA3mCNR8HjaLFNb1Ww@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+        Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Prakash Manjunathappa <prakash.pm@ti.com>,
+        Haojian Zhuang <haojian.zhuang@linaro.org>,
+        Linux-OMAP <linux-omap@vger.kernel.org>, Roger Quadros <rogerq@ti.com>
+Subject: Re: [PATCH 3/6] pinctrl: single: Prepare for supporting SoC
+ specific features
+Message-ID: <20131010224157.GJ29913@atomide.com>
+References: <20131003054104.8941.88857.stgit@localhost>
+ <20131003054218.8941.19273.stgit@localhost>
+ <20131007173531.GX8949@atomide.com>
+ <CACRpkdZ1CeSXJngo0gKpnag-=mT3FB-byJi3JSAWiS8hbHqBJA@mail.gmail.com>
+ <20131009151015.GZ8313@atomide.com>
+ <CACRpkdbX6RqP=ikap_4pq3BOuEt_7ZWv4JwS2NfhDn2up841Pg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdbX6RqP=ikap_4pq3BOuEt_7ZWv4JwS2NfhDn2up841Pg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-10-10 at 14:53 -0700, Bill Richardson wrote:
-> I'm about to go offline for a week, but here are some thoughts.
+* Linus Walleij <linus.walleij@linaro.org> [131010 08:43]:
+> On Wed, Oct 9, 2013 at 5:10 PM, Tony Lindgren <tony@atomide.com> wrote:
 > 
-> The GPT spec is over-constrained. It says that the secondary GPT
-> header must be in the last LBA of the disk, yet it also says that both
-> primary and secondary headers must point to each other using their
-> AlternateLBA fields. We don't need both of those rules - and the spec
-> is unclear what it means if the headers *don't* point to each other,
-> or if they do but from the wrong place.
+> > I was thinking I'll set up an immutable branch for the three
+> > pinctrl patches against -rc4 then both you and I can merge
+> > them in as needed. Does that work for you?
 > 
+> Hm it's fair enough to have them in your tree if they do
+> not collide ... especially if you want to do some of my
+> suggested follow-up moving the ioring handling down into
+> pinctrl-single on top of that.
 
-I completely agree. But I'm concerned about the size of lba, and not the
-primary/backup header differences.
-
-> Chrome OS install images are created in a binary file, so the ending
-> LBAs are just the last LBA in the binary image, and that's where the
-> primary GPT header's AlternateLBA field points. When we dd that image
-> onto a USB or SD card and boot it, the secondary GPT header is not at
-> the end of the disk. The primary GPT header is otherwise valid, so we
-> boot it anyway and the chromeos-install process creates valid primary
-> and secondary headers (with cross-pointing AlternateLBA fields) on the
-> fixed drive.
+OK, the PRM changes will have to wait until omap3 is DT only,
+probably not until v3.14.
+ 
+> > I can also do a test merge with pinctrl/for-next also to make
+> > sure there are no conflicts.
 > 
-> That bootable binary image does have a protective MBR (partition type
-> 0xEE), but again the extent of it is only that of the original binary,
-> not the USB drive it was copied onto.
+> Sure, as long as that works you should be safe.
 
-Ahh, now that makes a whole lot of sense for this problem. That's why
-your size in lba is the same as the backup gpt lba. All in all you're
-using the binary file as your "whole disk", instead of the actual disk
-itself, so while this is a very out of the ordinary configuration, it is
-constant for GPT: this way size in lba == last lba for the _file_.
+Seems to merge with no conflicts and build just fine. Here's
+the signed tag for the three pinctrl-single patches for you
+to pull in too in case you are planning to make some pinctrl
+wide changes. Let's consider those commits immutable now, if
+I need to fix something I will post them as separate patches.
 
-> 
-> Chrome OS BIOS pays no attention *at all* to the legacy MBR, or to the
-> AlternateLBA fields of either GPT header. It only looks for the GPT
-> headers in LBA 1 and LBA <last>.
+Regards,
 
-Then you should *really* use the force_gpt option, which is there to
-bypass any MBR checks, and you can avoid issues like this :) 
+Tony
 
-Anyway, this is still a regression and I believe we can go ahead and
-just warn the user about the case instead of not recognizing the disk.
 
-Bill/Doug, care to send a formal patch (with corresponding comments)?
 
-Thanks,
-Davidlohr
+The following changes since commit d0e639c9e06d44e713170031fe05fb60ebe680af:
 
+  Linux 3.12-rc4 (2013-10-06 14:00:20 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap tags/pinctrl-single-for-linus-for-v3.13-signed
+
+for you to fetch changes up to dc7743aa3c49fabbc6dc9edbcf7df74d776ac32e:
+
+  pinctrl: single: Add support for auxdata (2013-10-10 15:30:47 -0700)
+
+----------------------------------------------------------------
+Changes to pinctrl-single to allow handling the wake-up
+interrupts that most omaps have in each pinctrl register.
+
+As I need these merged also into the omap tree, it was
+agreed that I set them up into a separate branch for
+both pinctrl tree and linux-omap tree to merge as needed.
+
+----------------------------------------------------------------
+Tony Lindgren (3):
+      pinctrl: single: Prepare for supporting SoC specific features
+      pinctrl: single: Add support for wake-up interrupts
+      pinctrl: single: Add support for auxdata
+
+ .../devicetree/bindings/pinctrl/pinctrl-single.txt |  11 +
+ drivers/pinctrl/pinctrl-single.c                   | 383 ++++++++++++++++++++-
+ include/linux/platform_data/pinctrl-single.h       |  12 +
+ 3 files changed, 397 insertions(+), 9 deletions(-)
+ create mode 100644 include/linux/platform_data/pinctrl-single.h
