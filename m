@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756207Ab3JJPox (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 11:44:53 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52640 "EHLO
+	id S1756260Ab3JJPo7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 11:44:59 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52658 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755621Ab3JJPou (ORCPT
+	with ESMTP id S1756219Ab3JJPo5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 11:44:50 -0400
+	Thu, 10 Oct 2013 11:44:57 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jani Nikula <jani.nikula@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
+Cc: Mikulas Patocka <mpatocka@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 049/104] drm/i915: do not update cursor in crtc mode set
-Date: Thu, 10 Oct 2013 08:41:37 -0700
-Message-Id: <1381419752-29733-50-git-send-email-kamal@canonical.com>
+Subject: [PATCH 058/104] dm-snapshot: fix performance degradation due to small hash size
+Date: Thu, 10 Oct 2013 08:41:46 -0700
+Message-Id: <1381419752-29733-59-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381419752-29733-1-git-send-email-kamal@canonical.com>
 References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,64 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jani Nikula <jani.nikula@intel.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit cc173961a68034c1171a421f0dbed39edfb60880 upstream.
+commit 60e356f381954d79088d0455e357db48cfdd6857 upstream.
 
-The cursor is disabled before crtc mode set in crtc disable (and we
-assert this is the case), and enabled afterwards in crtc enable. Do not
-update it in crtc mode set.
+LVM2, since version 2.02.96, creates origin with zero size, then loads
+the snapshot driver and then loads the origin.  Consequently, the
+snapshot driver sees the origin size zero and sets the hash size to the
+lower bound 64.  Such small hash table causes performance degradation.
 
-On HSW enabling a plane on a disabled pipe may hang the entire system.
-And there's no good reason for doing it ever, so just don't.
+This patch changes it so that the hash size is determined by the size of
+snapshot volume, not minimum of origin and snapshot size.  It doesn't
+make sense to set the snapshot size significantly larger than the origin
+size, so we do not need to take origin size into account when
+calculating the hash size.
 
-v2: Add note about HSW hangs - vsyrjala
-
-Suggested-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
-Reviewed-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
-Tested-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-[ kamal: backport to 3.8 ]
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/i915/intel_display.c | 9 ---------
- 1 file changed, 9 deletions(-)
+ drivers/md/dm-snap.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index 33015db..3e4e629 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -4750,9 +4750,6 @@ static int i9xx_crtc_mode_set(struct drm_crtc *crtc,
- 		return -EINVAL;
- 	}
+diff --git a/drivers/md/dm-snap.c b/drivers/md/dm-snap.c
+index 900eb23..8b36c52 100644
+--- a/drivers/md/dm-snap.c
++++ b/drivers/md/dm-snap.c
+@@ -723,17 +723,16 @@ static int calc_max_buckets(void)
+  */
+ static int init_hash_tables(struct dm_snapshot *s)
+ {
+-	sector_t hash_size, cow_dev_size, origin_dev_size, max_buckets;
++	sector_t hash_size, cow_dev_size, max_buckets;
  
--	/* Ensure that the cursor is valid for the new mode before changing... */
--	intel_crtc_update_cursor(crtc, true);
--
- 	if (is_lvds && dev_priv->lvds_downclock_avail) {
- 		/*
- 		 * Ensure we match the reduced clock's P to the target clock.
-@@ -5639,9 +5636,6 @@ static int ironlake_crtc_mode_set(struct drm_crtc *crtc,
- 		return -EINVAL;
- 	}
+ 	/*
+ 	 * Calculate based on the size of the original volume or
+ 	 * the COW volume...
+ 	 */
+ 	cow_dev_size = get_dev_size(s->cow->bdev);
+-	origin_dev_size = get_dev_size(s->origin->bdev);
+ 	max_buckets = calc_max_buckets();
  
--	/* Ensure that the cursor is valid for the new mode before changing... */
--	intel_crtc_update_cursor(crtc, true);
--
- 	/* determine panel color depth */
- 	dither = intel_choose_pipe_bpp_dither(crtc, fb, &intel_crtc->bpp,
- 					      adjusted_mode);
-@@ -5842,9 +5836,6 @@ static int haswell_crtc_mode_set(struct drm_crtc *crtc,
- 		}
- 	}
+-	hash_size = min(origin_dev_size, cow_dev_size) >> s->store->chunk_shift;
++	hash_size = cow_dev_size >> s->store->chunk_shift;
+ 	hash_size = min(hash_size, max_buckets);
  
--	/* Ensure that the cursor is valid for the new mode before changing... */
--	intel_crtc_update_cursor(crtc, true);
--
- 	/* determine panel color depth */
- 	dither = intel_choose_pipe_bpp_dither(crtc, fb, &intel_crtc->bpp,
- 					      adjusted_mode);
+ 	if (hash_size < 64)
 -- 
 1.8.1.2
 
