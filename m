@@ -1,44 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752434Ab3JJE2v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 00:28:51 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:62409 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751647Ab3JJE2j (ORCPT
+	id S1752641Ab3JJEay (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 00:30:54 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:48024 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750920Ab3JJEax (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 00:28:39 -0400
-From: Manish Badarkhe <badarkhe.manish@gmail.com>
-To: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: plagnioj@jcrosoft.com, tomi.valkeinen@ti.com, nsekhar@ti.com,
-        badarkhe.manish@gmail.com
-Subject: [PATCH] video: da8xx-fb: remove unwanted define
-Date: Thu, 10 Oct 2013 09:58:31 +0530
-Message-Id: <1381379311-22240-1-git-send-email-badarkhe.manish@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Thu, 10 Oct 2013 00:30:53 -0400
+Date: Thu, 10 Oct 2013 06:30:49 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] More timekeeping items for 3.13
+Message-ID: <20131010043049.GA22519@gmail.com>
+References: <5256285F.7060705@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5256285F.7060705@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove unwanted define "WSI_TIMEOUT" present in code.
 
-Signed-off-by: Manish Badarkhe <badarkhe.manish@gmail.com>
----
-:100644 100644 e030e17... fa61323... M	drivers/video/da8xx-fb.c
- drivers/video/da8xx-fb.c |    1 -
- 1 file changed, 1 deletion(-)
+* John Stultz <john.stultz@linaro.org> wrote:
 
-diff --git a/drivers/video/da8xx-fb.c b/drivers/video/da8xx-fb.c
-index e030e17..fa61323 100644
---- a/drivers/video/da8xx-fb.c
-+++ b/drivers/video/da8xx-fb.c
-@@ -129,7 +129,6 @@
- 
- #define LCD_NUM_BUFFERS	2
- 
--#define WSI_TIMEOUT	50
- #define PALETTE_SIZE	256
- 
- #define	CLK_MIN_DIV	2
--- 
-1.7.10.4
+> Hey Thomas,
+>     Just wanted to send along the few minor time related items I've got
+> left for 3.13.
+> 
+> * Small cleanup in the clocksource code.
+> 
+> * Fix for rtc-pl031 to let it work with alarmtimers
+> 
+> * Move arm64 to using the generic sched_clock framework & resulting
+> cleanup in the generic sched_clock code.
+> 
+> 
+> thanks
+> -john
+> 
+> 
+> The following changes since commit 389e067032fbb96e439abafae848dd447e4cafb4:
+> 
+>   Merge branch 'fortglx/3.12/time' into fortglx/3.13/time (2013-09-16
+> 18:54:07 -0700)
+> 
+> are available in the git repository at:
+> 
+> 
+>   git://git.linaro.org/people/jstultz/linux.git fortglx/3.13/time
+> 
+> for you to fetch changes up to b4042ceaabbd913bc5b397ddd1e396eeb312d72f:
+> 
+>   sched_clock: Remove sched_clock_func() hook (2013-10-09 16:54:39 -0700)
+> 
+> ----------------------------------------------------------------
+> Elad Wexler (1):
+>       clocksource: Fix 'ret' data type of sysfs_override_clocksource()
+> and sysfs_unbind_clocksource()
+> 
+> John Stultz (1):
+>       rtc: rtc-pl031: Set wakeup flag prior to registering rtcdev
+> 
+> Stephen Boyd (2):
+>       arch_timer: Move to generic sched_clock framework
+>       sched_clock: Remove sched_clock_func() hook
+> 
+>  arch/arm/kernel/arch_timer.c         | 14 --------------
+>  arch/arm64/Kconfig                   |  1 +
+>  arch/arm64/kernel/time.c             | 10 ----------
+>  drivers/clocksource/arm_arch_timer.c | 10 ++++++++++
+>  drivers/rtc/rtc-pl031.c              |  3 +--
+>  include/linux/sched_clock.h          |  2 --
+>  kernel/time/clocksource.c            |  4 ++--
+>  kernel/time/sched_clock.c            |  9 +--------
+>  8 files changed, 15 insertions(+), 38 deletions(-)
 
+Pulled into tip:timers/core, thanks John!
+
+One small detail I noticed, in commit 07783397c:
+
+    Cc: Linus Walleij <linus.walleij@linaro.org>
+    Acked-by: Linus Walleij <linus.walleij@linaro.org>
+
+Please remove the Cc: line in such cases in the future.
+
+Thanks,
+
+	Ingo
