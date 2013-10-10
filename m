@@ -1,52 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755996Ab3JJPfq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 11:35:46 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:36638 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755055Ab3JJPfp (ORCPT
+	id S1755546Ab3JJPjJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 11:39:09 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:50216 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754604Ab3JJPjG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 11:35:45 -0400
+	Thu, 10 Oct 2013 11:39:06 -0400
 MIME-Version: 1.0
-In-Reply-To: <20131009151015.GZ8313@atomide.com>
-References: <20131003054104.8941.88857.stgit@localhost>
-	<20131003054218.8941.19273.stgit@localhost>
-	<20131007173531.GX8949@atomide.com>
-	<CACRpkdZ1CeSXJngo0gKpnag-=mT3FB-byJi3JSAWiS8hbHqBJA@mail.gmail.com>
-	<20131009151015.GZ8313@atomide.com>
-Date: Thu, 10 Oct 2013 17:35:44 +0200
-Message-ID: <CACRpkdbX6RqP=ikap_4pq3BOuEt_7ZWv4JwS2NfhDn2up841Pg@mail.gmail.com>
-Subject: Re: [PATCH 3/6] pinctrl: single: Prepare for supporting SoC specific features
+In-Reply-To: <5256728C.6060802@nvidia.com>
+References: <1380729030-25896-1-git-send-email-ldewangan@nvidia.com>
+	<1380729030-25896-3-git-send-email-ldewangan@nvidia.com>
+	<CACRpkdbmAnRxDpP17tmAAeC7U6Yibd5N7vFA1o1h=4DdhW+H-g@mail.gmail.com>
+	<5256728C.6060802@nvidia.com>
+Date: Thu, 10 Oct 2013 17:39:04 +0200
+Message-ID: <CACRpkdb8kRQLdAU+FKa4zwVpAotZ4+5J59b=yJz6VoGQ6QbwDA@mail.gmail.com>
+Subject: Re: [rtc-linux] [PATCH V5 2/3] pincntrl: add support for ams AS3722
+ pin control driver
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Tony Lindgren <tony@atomide.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
+To: "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>
+Cc: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Mark Brown <broonie@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Prakash Manjunathappa <prakash.pm@ti.com>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>,
-        Linux-OMAP <linux-omap@vger.kernel.org>, Roger Quadros <rogerq@ti.com>
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>, Rob Landley <rob@landley.net>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Grant Likely <grant.likely@linaro.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 9, 2013 at 5:10 PM, Tony Lindgren <tony@atomide.com> wrote:
+On Thu, Oct 10, 2013 at 11:25 AM, Laxman Dewangan <ldewangan@nvidia.com> wrote:
+> On Tuesday 08 October 2013 05:46 PM, Linus Walleij wrote:
+>> On Wed, Oct 2, 2013 at 5:50 PM, Laxman Dewangan <ldewangan@nvidia.com>
+>> wrote:
 
-> I was thinking I'll set up an immutable branch for the three
-> pinctrl patches against -rc4 then both you and I can merge
-> them in as needed. Does that work for you?
+>>> Changes from V4:
+>>> - Drop separate DT binding document as it is moved to mfd/as3722.txt.
+>>
+>> As mentioned I am happy with this driver,
+>> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+>>
+>> When you agreed with the DT folks and want me to merge it,
+>> tell me.
+>
+> Stephen has given the ACK from DT side, so I think you can merge this patch.
 
-Hm it's fair enough to have them in your tree if they do
-not collide ... especially if you want to do some of my
-suggested follow-up moving the ioring handling down into
-pinctrl-single on top of that.
-
-> I can also do a test merge with pinctrl/for-next also to make
-> sure there are no conflicts.
-
-Sure, as long as that works you should be safe.
+OK patch applied.
 
 Yours,
 Linus Walleij
