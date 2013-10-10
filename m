@@ -1,49 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755315Ab3JJIev (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 04:34:51 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:59229 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751657Ab3JJIes (ORCPT
+	id S1754443Ab3JJIjo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 04:39:44 -0400
+Received: from demumfd002.nsn-inter.net ([93.183.12.31]:14397 "EHLO
+	demumfd002.nsn-inter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751746Ab3JJIjm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 04:34:48 -0400
-Date: Thu, 10 Oct 2013 10:34:45 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Jakub Jelinek <jakub@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Richard Henderson <rth@twiddle.net>
-Subject: Re: [PATCH] gcc4: Add 'asm goto' miscompilation quirk
-Message-ID: <20131010083445.GA10622@gmail.com>
-References: <20131009140734.GH3081@twins.programming.kicks-ass.net>
- <20131009143359.GU26785@twins.programming.kicks-ass.net>
- <20131009144656.GV26785@twins.programming.kicks-ass.net>
- <20131009181613.GW30970@tucnak.zalov.cz>
- <20131009190231.GI13848@laptop.programming.kicks-ass.net>
- <20131009190851.GX30970@tucnak.zalov.cz>
- <20131010062238.GB9853@gmail.com>
- <20131010065104.GY30970@tucnak.zalov.cz>
- <20131010080457.GC21875@tucnak.zalov.cz>
- <20131010082430.GA20577@gmail.com>
+	Thu, 10 Oct 2013 04:39:42 -0400
+Message-ID: <525667C4.3080309@nsn.com>
+Date: Thu, 10 Oct 2013 10:39:32 +0200
+From: Ionut Nicu <ioan.nicu.ext@nsn.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131010082430.GA20577@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Korsgaard <peter.korsgaard@barco.com>
+CC: Wolfram Sang <wsa@the-dreams.de>,
+        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] i2c-mux-gpio: test if the gpio can sleep
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-purgate-type: clean
+X-purgate-Ad: Categorized by eleven eXpurgate (R) http://www.eleven.de
+X-purgate: clean
+X-purgate: This mail is considered clean (visit http://www.eleven.de for further information)
+X-purgate-size: 1106
+X-purgate-ID: 151667::1381394376-00005753-9BD42B1A/0-0/0-0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Some gpio chips may have get/set operations that
+can sleep. For this type of chips we must use the
+_cansleep() version of gpio_set_value.
 
-* Ingo Molnar <mingo@kernel.org> wrote:
+Signed-off-by: Ionut Nicu <ioan.nicu.ext@nsn.com>
+---
+ drivers/i2c/muxes/i2c-mux-gpio.c |   11 ++++++++---
+ 1 files changed, 8 insertions(+), 3 deletions(-)
 
-> Something like the patch below? (Totally untested and all that.)
-
-It's up to 'lightly tested' state on x86: the .config that produced a 
-crash before now boots fine, so the workaround appears to work!
-
-Thanks,
-
-	Ingo
+diff --git a/drivers/i2c/muxes/i2c-mux-gpio.c b/drivers/i2c/muxes/i2c-mux-gpio.c
+index a764da7..b5f17ef 100644
+--- a/drivers/i2c/muxes/i2c-mux-gpio.c
++++ b/drivers/i2c/muxes/i2c-mux-gpio.c
+@@ -27,11 +27,16 @@ struct gpiomux {
+ 
+ static void i2c_mux_gpio_set(const struct gpiomux *mux, unsigned val)
+ {
++	unsigned gpio;
+ 	int i;
+ 
+-	for (i = 0; i < mux->data.n_gpios; i++)
+-		gpio_set_value(mux->gpio_base + mux->data.gpios[i],
+-			       val & (1 << i));
++	for (i = 0; i < mux->data.n_gpios; i++) {
++		gpio = mux->gpio_base + mux->data.gpios[i];
++		if (gpio_cansleep(gpio))
++			gpio_set_value_cansleep(gpio, val & (1 << i));
++		else
++			gpio_set_value(gpio, val & (1 << i));
++	}
+ }
+ 
+ static int i2c_mux_gpio_select(struct i2c_adapter *adap, void *data, u32 chan)
+-- 
+1.7.1
