@@ -1,148 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755317Ab3JJOGi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 10:06:38 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:45865 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752251Ab3JJOGg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 10:06:36 -0400
-Message-ID: <5256B467.8080402@ti.com>
-Date: Thu, 10 Oct 2013 19:36:31 +0530
-From: Balaji T K <balajitk@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	id S1755334Ab3JJOJN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 10:09:13 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:44998 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751641Ab3JJOJL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 10:09:11 -0400
+Date: Thu, 10 Oct 2013 15:08:43 +0100
+From: Mark Brown <broonie@kernel.org>
+To: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Dajun Chen <david.chen@diasemi.com>
+Message-ID: <20131010140843.GM21581@sirena.org.uk>
+References: <201310101053.r9AArpal039552@swsrvapps-02.lan>
+ <20131010122048.GI21581@sirena.org.uk>
+ <24DF37198A1E704D9811D8F72B87EB516FC70765@NB-EX-MBX02.diasemi.com>
 MIME-Version: 1.0
-To: Ulf Hansson <ulf.hansson@linaro.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-mmc@vger.kernel.org>,
-        Chris Ball <cjb@laptop.org>, <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH 14/27] mmc: omap_hsmmc: Move away from using deprecated
- APIs
-References: <1380207292-16968-1-git-send-email-ulf.hansson@linaro.org> <1380207292-16968-15-git-send-email-ulf.hansson@linaro.org>
-In-Reply-To: <1380207292-16968-15-git-send-email-ulf.hansson@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="QRQinjjZUyRAa7p8"
+Content-Disposition: inline
+In-Reply-To: <24DF37198A1E704D9811D8F72B87EB516FC70765@NB-EX-MBX02.diasemi.com>
+X-Cookie: Penalty for private use.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH V1] new API regmap_multi_write()
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 26 September 2013 08:24 PM, Ulf Hansson wrote:
-> Suspend and resume of cards are being handled from the protocol layer
-> and consequently the mmc_suspend|resume_host APIs are deprecated.
->
-> This means we can simplify the suspend|resume callbacks by removing the
-> use of the deprecated APIs. Additional cleanup done for keeping track
-> suspended state.
->
-> Cc: Balaji T K <balajitk@ti.com>
-> Cc: linux-omap@vger.kernel.org
-> Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
 
-Acked-by: Balaji T K <balajitk@ti.com>
+--QRQinjjZUyRAa7p8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> ---
->   drivers/mmc/host/omap_hsmmc.c |   37 +++----------------------------------
->   1 file changed, 3 insertions(+), 34 deletions(-)
->
-> diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
-> index 6ac63df..eb6fb28 100644
-> --- a/drivers/mmc/host/omap_hsmmc.c
-> +++ b/drivers/mmc/host/omap_hsmmc.c
-> @@ -170,7 +170,6 @@ struct omap_hsmmc_host {
->   	unsigned int		dma_sg_idx;
->   	unsigned char		bus_mode;
->   	unsigned char		power_mode;
-> -	int			suspended;
->   	int			irq;
->   	int			use_dma, dma_ch;
->   	struct dma_chan		*tx_chan;
-> @@ -1178,9 +1177,6 @@ static irqreturn_t omap_hsmmc_detect(int irq, void *dev_id)
->   	struct omap_mmc_slot_data *slot = &mmc_slot(host);
->   	int carddetect;
->
-> -	if (host->suspended)
-> -		return IRQ_HANDLED;
-> -
->   	sysfs_notify(&host->mmc->class_dev.kobj, NULL, "cover_switch");
->
->   	if (slot->card_detect)
-> @@ -1643,11 +1639,6 @@ static int omap_hsmmc_regs_show(struct seq_file *s, void *data)
->   	seq_printf(s, "mmc%d:\n ctx_loss:\t%d:%d\n\nregs:\n",
->   			mmc->index, host->context_loss, context_loss);
->
-> -	if (host->suspended) {
-> -		seq_printf(s, "host suspended, can't read registers\n");
-> -		return 0;
-> -	}
-> -
->   	pm_runtime_get_sync(host->dev);
->
->   	seq_printf(s, "CON:\t\t0x%08x\n",
-> @@ -2119,23 +2110,12 @@ static void omap_hsmmc_complete(struct device *dev)
->
->   static int omap_hsmmc_suspend(struct device *dev)
->   {
-> -	int ret = 0;
->   	struct omap_hsmmc_host *host = dev_get_drvdata(dev);
->
->   	if (!host)
->   		return 0;
->
-> -	if (host && host->suspended)
-> -		return 0;
-> -
->   	pm_runtime_get_sync(host->dev);
-> -	host->suspended = 1;
-> -	ret = mmc_suspend_host(host->mmc);
-> -
-> -	if (ret) {
-> -		host->suspended = 0;
-> -		goto err;
-> -	}
->
->   	if (!(host->mmc->pm_flags & MMC_PM_KEEP_POWER)) {
->   		omap_hsmmc_disable_irq(host);
-> @@ -2145,23 +2125,19 @@ static int omap_hsmmc_suspend(struct device *dev)
->
->   	if (host->dbclk)
->   		clk_disable_unprepare(host->dbclk);
-> -err:
-> +
->   	pm_runtime_put_sync(host->dev);
-> -	return ret;
-> +	return 0;
->   }
->
->   /* Routine to resume the MMC device */
->   static int omap_hsmmc_resume(struct device *dev)
->   {
-> -	int ret = 0;
->   	struct omap_hsmmc_host *host = dev_get_drvdata(dev);
->
->   	if (!host)
->   		return 0;
->
-> -	if (host && !host->suspended)
-> -		return 0;
-> -
->   	pm_runtime_get_sync(host->dev);
->
->   	if (host->dbclk)
-> @@ -2172,16 +2148,9 @@ static int omap_hsmmc_resume(struct device *dev)
->
->   	omap_hsmmc_protect_card(host);
->
-> -	/* Notify the core to resume the host */
-> -	ret = mmc_resume_host(host->mmc);
-> -	if (ret == 0)
-> -		host->suspended = 0;
-> -
->   	pm_runtime_mark_last_busy(host->dev);
->   	pm_runtime_put_autosuspend(host->dev);
-> -
-> -	return ret;
-> -
-> +	return 0;
->   }
->
->   #else
->
+On Thu, Oct 10, 2013 at 12:45:03PM +0000, Opensource [Anthony Olech] wrote:
 
+> > Why all on the same page?  That doesn't seem helpful for things trying =
+to
+> > build on top of this.  We currently manage to split even block writes u=
+p over
+> > page boundaries.
+
+> As far as I could see, the splitting of a block write that spans a page b=
+oundary
+> requires a read-modify-write of a "page" register. That therefore breaks =
+the
+> primary raison d'etre for the new API, namely that it is atomic on the I2=
+C bus
+> with respect to multiple I2C bus masters.
+
+I would expect this to be handled by inserting a page update into the
+sequence (it could presumably go into the block write unless the
+hardware were being a bit perverse) or by just splitting the transfers
+at each page change.
+
+> Cutting the transfer at a page boundary and inserting a write to a "page"
+> register would work very well for most of our PM MFDs because there is
+> no requirement to do a read modify write. Indeed I had thought that it sh=
+ould
+> be the responsibility of the device driver to insert any necessary "page"=
+ register
+> writes into a transfer that spans page boundaries. The driver knows where=
+ the
+> boundaries are so it should be easy.
+
+This only works if it is chip specific code that is doing the update.
+If there is generic code doing an update (either core Linux framework
+code or something for an IP that appears on multiple chips) then it's
+not going to know that without jumping through hoops which are going to
+apply to all users that trigger this so may as well just be handled in
+the core.
+
+Of course a driver is free to not issue updates which cross page
+boundaries (or to group the writes so that they get split up into the
+minimum set of page boundary changes) but it doesn't seem helpful to
+require that the caller understands any paging the device has.
+
+> > This really doesn't feel like an idiomatic abstraction - it's a bit cum=
+bersome to
+> > have the pair of arrays and try to line them up especially in native re=
+gister
+> > format, normally we do this with an array reg_default.  This would also=
+ mean
+> > that generic code like patches and cache syncing could pick up on the s=
+ame
+> > functionality.
+
+> You seem to be suggesting that the API could be used by drivers of device=
+s that
+> do not support in hardware the MULTIWRITE capability. If that is the case=
+ then
+
+Yes, and for example all SPI devices have essentially this functionality
+as standard since it's possible to issue an uninterrupted batch of
+transfers to a device with no special hardware support.
+
+> driver need an config "multi_write_supported" field for initialization.
+
+It's I2C specific too.
+
+> What should the next step in progressing this be?
+
+Like I say I'd suggest getting an API that allows drivers to send a
+batch of writes to the framework done first (which should be fairly
+simple - a first pass should probably be something like
+
+	int regmap_multi_reg_write(struct regmap *map,
+				   struct reg_default *regs,=20
+				   int num_regs)
+	{
+		for (i =3D 0; i < num_regs; i++)
+			regmap_reg_write(map, regs[i].reg, regs[i].val);
+	}
+
+with error handling and stuff) and then loop round on how to implement
+the actual functionality to get I2C and SPI to do the right thing on the
+wire if the device supports it.  It's slightly different for each,
+obviously you only care about I2C which is fine - I'm not saying you'd
+need to actually do SPI yourself.
+
+For I2C type stuff a flag to say if the device can do this and then
+something to render the data appropriately and send it ought to do the
+trick, it should be fairly straightforward.  I'm more concerned about
+the external API than the implementation, it's much easier to refactor
+the implementation if there's a problem than it is to change the
+external API.
+
+--QRQinjjZUyRAa7p8
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSVrToAAoJELSic+t+oim9XYMP/2jNd+VgdfaNwe+z3d5OL9FX
+UFvH3Q2ILkzqxM2rivKw4/AqgpAH/aweuNuGoojTuYYvnahk6e3Flidu7puAck2D
+KsnniMmTH2JREZtv7zYytZwIGumkL6ozQZ5bdomjJ+P7L1ahR6Yc4b3f8szpDYqT
+GGjwZ8GFkniI4ySAHBdNg+mxEhchnj5Rq3AcnffxAwZ5GO+Xhl58jkEFaPuwYLcT
+JL2sU26anbXy6CcPH5Sw4ARgc7yOUtQQG8aN9ciDNoXVqkvCOkcGrhuJAyzadUEz
+lBqXOkyzAlc453AMNOqdoPVsgse+NioQHMg9BX5Comry3cQA5zZ4MluoP+gluJ/M
+qozvfpdvo0hrS2nkELTkO/+BhVB0rFT8atMfFBbZv4N5cQbygSG76iX9mM5jsBPY
+PsiF6AZTWRTridN0M8YtgAwFmaOdGX4vIMnJHi6m0gGSUnLmevhBvFhCJQ8ml8ET
+F0XjyAKMVrR0541Uc22AGy8wniDKcnaUFNVBASVmxzrAZOMvLyBGz+ecbYK6z8/7
+U6Zz2xWAkgYa7M6OfuGMGsSeMfyKsiHuQnTyhtIpp46v2B2JlNtC9FeKmheI0Dz8
+yrMt6Z7vYLIReHoEuvGBTQGUZqOHlXp7MYzMcF22ErwrgUFEp2N7abOxa3B6cNTu
+c8UQttpy2cYUJZi3qNFM
+=/Bah
+-----END PGP SIGNATURE-----
+
+--QRQinjjZUyRAa7p8--
