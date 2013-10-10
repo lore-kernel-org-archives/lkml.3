@@ -1,78 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755230Ab3JJIzT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 04:55:19 -0400
-Received: from mga11.intel.com ([192.55.52.93]:19273 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754921Ab3JJIzQ convert rfc822-to-8bit (ORCPT
+	id S1755452Ab3JJI52 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 04:57:28 -0400
+Received: from demumfd001.nsn-inter.net ([93.183.12.32]:11348 "EHLO
+	demumfd001.nsn-inter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753907Ab3JJI50 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 04:55:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1070,1371106800"; 
-   d="scan'208";a="414745057"
-From: "Zhang, Rui" <rui.zhang@intel.com>
-To: Abelardo Ricart <aricart@gmail.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-CC: "trivial@kernel.org" <trivial@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] Thermal: Fix Step-wise governor Kconfig help text
-Thread-Topic: [PATCH] Thermal: Fix Step-wise governor Kconfig help text
-Thread-Index: AQHOxMygforfDkHU+0KBMSMG7WcYapntotQg
-Date: Thu, 10 Oct 2013 08:55:11 +0000
-Message-ID: <744357E9AAD1214791ACBA4B0B90926301185773@SHSMSX101.ccr.corp.intel.com>
-References: <1381308587-25460-1-git-send-email-aricart@gmail.com>
-In-Reply-To: <1381308587-25460-1-git-send-email-aricart@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 10 Oct 2013 04:57:26 -0400
+Message-ID: <52566BED.9010105@nsn.com>
+Date: Thu, 10 Oct 2013 10:57:17 +0200
+From: Ionut Nicu <ioan.nicu.ext@nsn.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
+To: Lars-Peter Clausen <lars@metafoo.de>
+CC: Peter Korsgaard <peter.korsgaard@barco.com>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] i2c-mux-gpio: test if the gpio can sleep
+References: <525667C4.3080309@nsn.com> <52566971.5020700@metafoo.de>
+In-Reply-To: <52566971.5020700@metafoo.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-purgate-type: clean
+X-purgate-Ad: Categorized by eleven eXpurgate (R) http://www.eleven.de
+X-purgate: clean
+X-purgate: This mail is considered clean (visit http://www.eleven.de for further information)
+X-purgate-size: 1477
+X-purgate-ID: 151667::1381395439-00004A43-714DC9AB/0-0/0-0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Abelardo,
+On 10.10.2013 10:46, ext Lars-Peter Clausen wrote:
+> On 10/10/2013 10:39 AM, Ionut Nicu wrote:
+>> Some gpio chips may have get/set operations that
+>> can sleep. For this type of chips we must use the
+>> _cansleep() version of gpio_set_value.
+>>
+>> Signed-off-by: Ionut Nicu <ioan.nicu.ext@nsn.com>
+>> ---
+>>  drivers/i2c/muxes/i2c-mux-gpio.c |   11 ++++++++---
+>>  1 files changed, 8 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/drivers/i2c/muxes/i2c-mux-gpio.c b/drivers/i2c/muxes/i2c-mux-gpio.c
+>> index a764da7..b5f17ef 100644
+>> --- a/drivers/i2c/muxes/i2c-mux-gpio.c
+>> +++ b/drivers/i2c/muxes/i2c-mux-gpio.c
+>> @@ -27,11 +27,16 @@ struct gpiomux {
+>>  
+>>  static void i2c_mux_gpio_set(const struct gpiomux *mux, unsigned val)
+>>  {
+>> +	unsigned gpio;
+>>  	int i;
+>>  
+>> -	for (i = 0; i < mux->data.n_gpios; i++)
+>> -		gpio_set_value(mux->gpio_base + mux->data.gpios[i],
+>> -			       val & (1 << i));
+>> +	for (i = 0; i < mux->data.n_gpios; i++) {
+>> +		gpio = mux->gpio_base + mux->data.gpios[i];
+>> +		if (gpio_cansleep(gpio))
+>> +			gpio_set_value_cansleep(gpio, val & (1 << i));
+>> +		else
+>> +			gpio_set_value(gpio, val & (1 << i));
+> 
+> The proper way to do this is just always use the _cansleep() version.
+> gpio_set_value() only works for chips which do not sleep,
+> gpio_set_value_cansleep() works for both those who do sleep and those who do
+> not.
+> 
 
-> -----Original Message-----
-> From: linux-pm-owner@vger.kernel.org [mailto:linux-pm-
-> owner@vger.kernel.org] On Behalf Of Abelardo Ricart
-> Sent: Wednesday, October 09, 2013 4:50 PM
-> To: linux-pm@vger.kernel.org
-> Cc: trivial@kernel.org; linux-kernel@vger.kernel.org; Abelardo Ricart
-> Subject: [PATCH] Thermal: Fix Step-wise governor Kconfig help text
-> 
-> Trivial fix for the help text of THERMAL_GOV_STEP_WISE.
-> 
-> Signed-off-by: Abelardo Ricart <aricart@gmail.com>
+Ok, then I will re-work the patch to do just that. Thanks!
 
-Thanks for your patch, but we've already have a fix here
-https://patchwork.kernel.org/patch/2956561/
-
-thanks,
-rui
-> ---
->  drivers/thermal/Kconfig | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig index
-> dbfc390..29007bd 100644
-> --- a/drivers/thermal/Kconfig
-> +++ b/drivers/thermal/Kconfig
-> @@ -69,6 +69,7 @@ config THERMAL_GOV_STEP_WISE
->  	bool "Step_wise thermal governor"
->  	help
->  	  Enable this to manage platform thermals using a simple linear
-> +	  throttling algorithm.
-> 
->  config THERMAL_GOV_USER_SPACE
->  	bool "User_space thermal governor"
-> --
-> 1.8.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org More majordomo info
-> at  http://vger.kernel.org/majordomo-info.html
