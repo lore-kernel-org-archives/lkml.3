@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754804Ab3JJHM6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 03:12:58 -0400
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:44523 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753980Ab3JJHM4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 03:12:56 -0400
-Date: Thu, 10 Oct 2013 09:12:53 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH] tools/perf/build: Simplify the autodep inclusion rule
-Message-ID: <20131010071253.GL10246@gmail.com>
-References: <1381227082-22039-1-git-send-email-mingo@kernel.org>
- <1381227082-22039-4-git-send-email-mingo@kernel.org>
- <87li21k7d6.fsf@sejong.aot.lge.com>
+	id S1753887Ab3JJHP0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 03:15:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18958 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751125Ab3JJHPZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 03:15:25 -0400
+Date: Thu, 10 Oct 2013 09:15:06 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Felipe Pena <felipensp@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tools/perf/tests: Fix memory leak in dso-data.c
+Message-ID: <20131010071506.GA7997@krava.redhat.com>
+References: <1381370438-4209-1-git-send-email-felipensp@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87li21k7d6.fsf@sejong.aot.lge.com>
+In-Reply-To: <1381370438-4209-1-git-send-email-felipensp@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Namhyung Kim noticed that the autodep .d file inclusion rule was
-unnecessarily complicated:
+On Wed, Oct 09, 2013 at 11:00:38PM -0300, Felipe Pena wrote:
+> Fix for a memory leak on test_file() function in dso-data.c
 
-  > > +-include *.d */*.d
-  >
-  > Hmm.. this */*.d part is really needed?
+oops, thanks ;-)
 
-Only include *.d files.
+Acked-by: Jiri Olsa <jolsa@redhat.com>
 
-Reported-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- tools/perf/config/feature-checks/Makefile | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
-index c70d23e..452b67c 100644
---- a/tools/perf/config/feature-checks/Makefile
-+++ b/tools/perf/config/feature-checks/Makefile
-@@ -136,7 +136,7 @@ test-on-exit:
- test-backtrace:
- 	$(BUILD)
- 
---include *.d */*.d
-+-include *.d
- 
- ###############################
- 
+> 
+> Signed-off-by: Felipe Pena <felipensp@gmail.com>
+> ---
+>  tools/perf/tests/dso-data.c |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/tools/perf/tests/dso-data.c b/tools/perf/tests/dso-data.c
+> index dffe055..9cc81a3 100644
+> --- a/tools/perf/tests/dso-data.c
+> +++ b/tools/perf/tests/dso-data.c
+> @@ -35,6 +35,7 @@ static char *test_file(int size)
+>  	if (size != write(fd, buf, size))
+>  		templ = NULL;
+> 
+> +	free(buf);
+>  	close(fd);
+>  	return templ;
+>  }
+> --
+> 1.7.10.4
+> 
