@@ -1,81 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756207Ab3JJQrI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 12:47:08 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:42928 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754594Ab3JJQrF (ORCPT
+	id S1756196Ab3JJQt2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 12:49:28 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:41904 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754594Ab3JJQt1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 12:47:05 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/oqDXZeYzB4jT+BgoVJBw+
-Date: Thu, 10 Oct 2013 09:47:02 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Nishanth Menon <nm@ti.com>
-Cc: =?utf-8?Q?Beno=C3=AEt?= Cousson <bcousson@baylibre.com>,
-        Rajendra Nayak <rnayak@ti.com>, linux-omap@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: dts: omap4-panda-es: Do not reset gpio1
-Message-ID: <20131010164702.GF29913@atomide.com>
-References: <1381313521-10422-1-git-send-email-rnayak@ti.com>
- <1381423481-5920-1-git-send-email-nm@ti.com>
+	Thu, 10 Oct 2013 12:49:27 -0400
+Date: Thu, 10 Oct 2013 18:49:23 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Richard Henderson <rth@twiddle.net>
+Cc: Jakub Jelinek <jakub@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Oleg Nesterov <oleg@redhat.com>, Fengguang Wu <fengguang.wu@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH, -v3] compiler/gcc4: Add quirk for 'asm goto'
+ miscompilation bug
+Message-ID: <20131010164923.GA12998@gmail.com>
+References: <20131009190851.GX30970@tucnak.zalov.cz>
+ <20131010062238.GB9853@gmail.com>
+ <20131010065104.GY30970@tucnak.zalov.cz>
+ <20131010080457.GC21875@tucnak.zalov.cz>
+ <20131010082430.GA20577@gmail.com>
+ <20131010083107.GZ30970@tucnak.zalov.cz>
+ <5256B3E2.4060401@twiddle.net>
+ <20131010142703.GI30970@tucnak.zalov.cz>
+ <20131010151219.GC5167@gmail.com>
+ <5256D2A2.5060202@twiddle.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1381423481-5920-1-git-send-email-nm@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <5256D2A2.5060202@twiddle.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Nishanth Menon <nm@ti.com> [131010 09:53]:
-> Do not reset GPIO1 at boot-up because GPIO 7 in GPIO1 block is used on
-> OMAP4460 PandaBoard-ES to select voltage register in TPS62361 which
-> supplies VDD_MPU.
-> 
-> Without this, OMAP4460 PandaBoard-ES boards fail to boot-up because
-> MPU voltage switches over to VSET0 voltage value (boot voltage) which
-> is not sufficient to operate the device at OPP100.
 
-Is this needs as a fix for the -rc series?
+* Richard Henderson <rth@twiddle.net> wrote:
 
-Tony
- 
-> Signed-off-by: Nishanth Menon <nm@ti.com>
-> ---
-> As explained here: http://marc.info/?l=u-boot&m=133066647800872&w=2
+> On 10/10/2013 08:12 AM, Ingo Molnar wrote:
+> > Indeed. Something like the updated version below?
+> > 
+> > [ I kept the asm_volatile_goto() naming to make sure the implicit volatile 
+> >   is visible. ]
+> > 
+> > Thanks,
+> > 
+> > 	Ingo
 > 
-> GPIO1 reset causes PandaBoard-ES to stop functioning.
-> This depends on Patch series from Rajendra:
-> http://marc.info/?l=linux-doc&m=138131355520116&w=2
-> Applies on Benoit's for_13/dts branch:
-> https://git.kernel.org/cgit/linux/kernel/git/bcousson/linux-omap-dt.git/log/?h=for_3.13/dts
+> Looks good.
 > 
-> Tested on PandaBoard-ES without the u-boot uenv hack
-> 
->  arch/arm/boot/dts/omap4-panda-es.dts |    4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/omap4-panda-es.dts b/arch/arm/boot/dts/omap4-panda-es.dts
-> index 56c4354..816d1c9 100644
-> --- a/arch/arm/boot/dts/omap4-panda-es.dts
-> +++ b/arch/arm/boot/dts/omap4-panda-es.dts
-> @@ -62,3 +62,7 @@
->  		gpios = <&gpio1 8 GPIO_ACTIVE_HIGH>;
->  	};
->  };
-> +
-> +&gpio1 {
-> +	 ti,no-reset-on-init;
-> +};
-> -- 
-> 1.7.9.5
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Reviewed-by: Richard Henderson <rth@twiddle.net>
+
+The question then would be, does it solve Fengguang's crashes as well? He 
+was able to reproduce them faster than I.
+
+Thanks,
+
+	Ingo
