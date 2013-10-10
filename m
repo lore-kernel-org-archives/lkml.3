@@ -1,86 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757403Ab3JJUTT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 16:19:19 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:40900 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756676Ab3JJUTQ (ORCPT
+	id S1757464Ab3JJUTa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 16:19:30 -0400
+Received: from filtteri6.pp.htv.fi ([213.243.153.189]:49968 "EHLO
+	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757416Ab3JJUTW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 16:19:16 -0400
-Date: Thu, 10 Oct 2013 21:18:05 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-arch@vger.kernel.org
-Subject: Re: [PATCH 11/34] arm: handle pgtable_page_ctor() fail
-Message-ID: <20131010201805.GR25034@n2100.arm.linux.org.uk>
-References: <1381428359-14843-1-git-send-email-kirill.shutemov@linux.intel.com> <1381428359-14843-12-git-send-email-kirill.shutemov@linux.intel.com>
+	Thu, 10 Oct 2013 16:19:22 -0400
+Date: Thu, 10 Oct 2013 23:19:14 +0300
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
+        Carlos Chinea <cch.devel@gmail.com>, Paul Walmsley <paul@pwsan.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>,
+        "=?iso-8859-1?Q?'Beno=EEt?= Cousson'" <bcousson@baylibre.com>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org,
+        "'Pali =?iso-8859-1?Q?Roh=E1r'?=" <pali.rohar@gmail.com>,
+        =?utf-8?B?J9CY0LLQsNC50LvQviDQlNC40LzQuNGC0YDQvtCyJw==?= 
+	<freemangordon@abv.bg>,
+        Joni Lapilainen <joni.lapilainen@gmail.com>,
+        Tony Lindgren <tony@atomide.com>
+Subject: Re: [RFCv3 0/7] OMAP SSI driver
+Message-ID: <20131010201914.GC29989@blackmetal.musicnaut.iki.fi>
+References: <1381091235-18293-1-git-send-email-sre@debian.org>
+ <20131008172815.GA8313@atomide.com>
+ <20131010172128.GF28657@earth.universe>
+ <20131010182801.GB29989@blackmetal.musicnaut.iki.fi>
+ <20131010200236.GA6603@earth.universe>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1381428359-14843-12-git-send-email-kirill.shutemov@linux.intel.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20131010200236.GA6603@earth.universe>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So, all I see is this patch, with such a brilliant description which
-describes what this change is about, why it is being made, and so
-forth, and you're sending it to me, presumably because you want me to
-do something with it.  No, not really.
+On Thu, Oct 10, 2013 at 10:02:36PM +0200, Sebastian Reichel wrote:
+> P.S.: You can get a mainline kernel status matrix for the Nokia
+>       N900 on this page: http://elinux.org/N900
 
-What context do I have to say whether this is correct or not?  How can
-I test it when the mainline version of pgtable_page_ctor returns void,
-so if I were to apply this patch I'd get compile errors.
+Thanks for summary, and the above page looks very useful. I wonder
+would it make sense to add also N9/N950 there (some functionality is
+shared)? Also TWL4030 DT status could be updated, e.g. watchdog support
+was done already last year with 8899b8d93ec64b7a8e54807a68a958e1206535e2.
 
-Oh, I guess you're changing pgtable_page_ctor() in some way.  What is
-the nature of that change?
-
-Please, I'm not a mind reader.  Please ensure that your "generic" patch
-of your series reaches the appropriate recipients: if you don't want to
-explicitly Cc: all the people individually, please at least copy all
-relevant mailing lists found for the entire series.
-
-(No, I am not on the excessively noisy linux-arch: I dropped off it
-years ago because it just became yet another mailing list to endlessly
-talk mainly about x86 rather than being a separate list to linux-kernel
-which discussed problems relevant to many arch maintainers.)
-
-Thanks.
-
-On Thu, Oct 10, 2013 at 09:05:36PM +0300, Kirill A. Shutemov wrote:
-> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> ---
->  arch/arm/include/asm/pgalloc.h | 12 +++++++-----
->  1 file changed, 7 insertions(+), 5 deletions(-)
-> 
-> diff --git a/arch/arm/include/asm/pgalloc.h b/arch/arm/include/asm/pgalloc.h
-> index 943504f53f..78a7793616 100644
-> --- a/arch/arm/include/asm/pgalloc.h
-> +++ b/arch/arm/include/asm/pgalloc.h
-> @@ -102,12 +102,14 @@ pte_alloc_one(struct mm_struct *mm, unsigned long addr)
->  #else
->  	pte = alloc_pages(PGALLOC_GFP, 0);
->  #endif
-> -	if (pte) {
-> -		if (!PageHighMem(pte))
-> -			clean_pte_table(page_address(pte));
-> -		pgtable_page_ctor(pte);
-> +	if (!pte)
-> +		return NULL;
-> +	if (!PageHighMem(pte))
-> +		clean_pte_table(page_address(pte));
-> +	if (!pgtable_page_ctor(pte)) {
-> +		__free_page(pte);
-> +		return NULL;
->  	}
-> -
->  	return pte;
->  }
->  
-> -- 
-> 1.8.4.rc3
-> 
+A.
