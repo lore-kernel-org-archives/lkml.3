@@ -1,97 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756049Ab3JJAgf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Oct 2013 20:36:35 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:61942 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754640Ab3JJAgd (ORCPT
+	id S1756917Ab3JJAhj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Oct 2013 20:37:39 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:43459 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754179Ab3JJAhi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 20:36:33 -0400
-Date: Wed, 9 Oct 2013 20:36:27 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Clark Williams <williams@redhat.com>, Borislav Petkov <bp@alien8.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Kleen\, Andi" <andi.kleen@intel.com>,
-        David Miller <davem@davemloft.net>
-Subject: Re: [RFC][PATCH] x86: Lazy disabling of interrupts
-Message-ID: <20131009203627.27166b20@gandalf.local.home>
-In-Reply-To: <878uy2ytd8.fsf@tassilo.jf.intel.com>
-References: <20131009144150.108f7041@gandalf.local.home>
-	<5255C07E.70805@linux.intel.com>
-	<878uy2ytd8.fsf@tassilo.jf.intel.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+	Wed, 9 Oct 2013 20:37:38 -0400
+Message-ID: <1381365455.2297.14.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: Regression parsing GPT (EFI) partition tables
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, Karel Zak <kzak@redhat.com>,
+        Matt Fleming <matt.fleming@intel.com>
+Date: Wed, 09 Oct 2013 17:37:35 -0700
+In-Reply-To: <20131009232642.GA12776@jtriplet-mobl1>
+References: <20131009232642.GA12776@jtriplet-mobl1>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 09 Oct 2013 15:25:23 -0700
-Andi Kleen <andi@firstfloor.org> wrote:
+Hi Josh,
 
-> "H. Peter Anvin" <hpa@linux.intel.com> writes:
+On Wed, 2013-10-09 at 16:26 -0700, Josh Triplett wrote:
+> When testing ChromeOS with a 3.12 kernel from git, I encountered a
+> regression introduced between 3.11 to 3.12: at boot time, the kernel
+> failed to find any partitions on the USB disk I booted from, which uses
+> a GPT partition table with 12 partitions.  This prevented the system
+> from booting.
 > 
-> >> Summary
-> >> -------
-> >> 
-> >> Although the extreme case shows a nice improvement, I'm skeptical if it
-> >> is worth doing for real world applications.
-> >
-> > You did the experiment, and credit to you for not going "I did the work,
-> > now include it" but rather for publishing the results so we can learn
-> > from them.
-> >
-> > It *does* make me wonder if we can leverage RTM for a significant subset
-> > of these (as an interrupt will abort a transaction); that should be
-> > substantially cheaper and less complex.
+> Reverting all the patches to block/partitions/efi.c between 3.11 and
+> 3.12 allowed the system to detect partitions again.  The patches I
+> reverted:
 > 
-> I miss the original context and can't find the original patchkit, but:
+> 6b02fa5 partitions/efi: loosen check fot pmbr size in lba
+> b4bc4a1 block/partitions/efi.c: consistently use pr_foo()
+> 70f637e partitions/efi: some style cleanups
+> aa054bc partitions/efi: compare first and last usable LBAs
+> 27a7c64 partitions/efi: account for pmbr size in lba
+> b05ebbb partitions/efi: detect hybrid MBRs
+> 3e69ac3 partitions/efi: do not require gpt partition to begin at sector 1
+> 33afd7a partitions/efi: check pmbr record's starting lba
+> c2ebdc2 partitions/efi: use lba-aware partition records
 
-Yeah, for some reason, the original email didn't make it to LKML.
-
-Dave,
-
-I don't know why my email never reached LKML, was there something about
-it that prevented it from going? The total character length was 46,972,
-well below the 100,000 limit. Also the Cc list wasn't that big. Did my
-ISP get flagged as a spam bot or something?
-
-I can bounce it to you to see what was wrong with it.
-
--- Steve
+It would be good to bisect this :)
+I suspect it might be caused by 33afd7a otherwise there's something
+wrong with the mbr size in lba (6b02fa5+27a7c64).
 
 > 
-> - If the goal is to lower interrupt latency then RTM would still
-> need to use a fallback, so the worst case would be the fallback, thus
-> not be better.
+> I haven't yet attempted to find out if reverting a subset of those patches
+> fixes the problem, though I'd strongly suspect the commits that introduce
+> strictness checks for the partition layout and fail when those checks don't
+> pass.  Most likely ChromeOS's partition layout tripped one of those checks.
 > 
-> - If the goal is to make CLI/STI faster:
-> I'm not sure RTM is any faster than a PUSHF/CLI/POPF pair. It may
-> well be slightly slower in fact (guessing here, haven't benchmarked)
+> Here's the partition layout:
 > 
-> - Also when you abort you would need to reexecute of course.
+> $ gdisk -l /dev/sdc
+> GPT fdisk (gdisk) version 0.8.7
 > 
-> - My TSX patchkit actually elides CLI/STI inside transactions
-> (no need to do them, as any interrupt would abort anyways)
-> but the main motivation was to avoid extra aborts.
+> Partition table scan:
+>   MBR: protective
+>   BSD: not present
+>   APM: not present
+>   GPT: present
 > 
-> - That said, I think a software CLI/STI is somewhat useful for profiling,
-> as it can allow to measure how long interrupts are delayed
-> by CLI/STI.  I heard use cases of this, but I'm not 
-> sure how common it really is
+> Found valid GPT with protective MBR; using GPT.
+> Disk /dev/sdc: 31293440 sectors, 14.9 GiB
+> Logical sector size: 512 bytes
+> Disk identifier (GUID): 44F4ACFD-546C-E04C-A788-6782FCBDDB3E
+> Partition table holds up to 128 entries
+> First usable sector is 34, last usable sector is 4956062
+> Partitions will be aligned on 1-sector boundaries
+> Total free space is 167801 sectors (81.9 MiB)
 > 
-> [I presume a slightly modified RT kernel could also give the same
-> profiling results]
+> Number  Start (sector)    End (sector)  Size       Code  Name
+>    1         2826240         4923391   1024.0 MiB  0700  STATE
+>    2           20480           53247   16.0 MiB    7F00  KERN-A
+>    3          286720         2826239   1.2 GiB     7F01  ROOT-A
+>    4           53248           86015   16.0 MiB    7F00  KERN-B
+>    5          282624          286719   2.0 MiB     7F01  ROOT-B
+>    6           16448           16448   512 bytes   7F00  KERN-C
+>    7           16449           16449   512 bytes   7F01  ROOT-C
+>    8           86016          118783   16.0 MiB    0700  OEM
+>    9           16450           16450   512 bytes   7F02  reserved
+>   10           16451           16451   512 bytes   7F02  reserved
+>   11              64           16447   8.0 MiB     FFFF  RWFW
+>   12          249856          282623   16.0 MiB    EF00  EFI-SYSTEM
 > 
-> -Andi
 > 
+> Also note that ChromeOS USB disks typically only have one valid GPT, at the
+> beginning of the disk, since they're imaged from a file and nothing moves the
+> secondary GPT from the end of the image to the end of the disk.  Partitioning
+> tools, and the kernel, typically gripe about this; for instance, dmesg from a
+> 3.10 kernel when I plug in a ChromeOS USB disk:
+> 
+> GPT:Primary header thinks Alt. header is not at the end of the disk.
+> GPT:4956095 != 31293439
+> GPT:Alternate GPT header not at the end of the disk.
+> GPT:4956095 != 31293439
+
+Hmmm, could you try the following? 
+
+diff --git a/block/partitions/efi.c b/block/partitions/efi.c
+index 1eb09ee..d589937 100644
+--- a/block/partitions/efi.c
++++ b/block/partitions/efi.c
+@@ -157,10 +157,6 @@ static inline int pmbr_part_valid(gpt_mbr_record *part)
+        if (part->os_type != EFI_PMBR_OSTYPE_EFI_GPT)
+                goto invalid;
+ 
+-       /* set to 0x00000001 (i.e., the LBA of the GPT Partition Header) */
+-       if (le32_to_cpu(part->starting_lba) != GPT_PRIMARY_PARTITION_TABLE_LBA)
+-               goto invalid;
+-
+        return GPT_MBR_PROTECTIVE;
+ invalid:
+        return 0;
+
+
+If this doesn't work, could you bypass mbr checks with force_gpt option
+and add some printk to the partition_record.size_in_lba, like:
+
+diff --git a/block/partitions/efi.c b/block/partitions/efi.c
+index 1eb09ee..77cfed2 100644
+--- a/block/partitions/efi.c
++++ b/block/partitions/efi.c
+@@ -225,6 +225,7 @@ check_hybrid:
+         */
+        if (ret == GPT_MBR_PROTECTIVE) {
+                sz = le32_to_cpu(mbr->partition_record[part].size_in_lba);
++               printk("gpt sz check: %d, %ld\n", sz, total_sectors);
+                if (sz != (uint32_t) total_sectors - 1 && sz != 0xFFFFFFFF)
+                        ret = 0;
+        }
+
+Thanks,
+Davidlohr
 
