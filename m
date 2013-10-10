@@ -1,76 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755945Ab3JJRf6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 13:35:58 -0400
-Received: from mail-ea0-f181.google.com ([209.85.215.181]:37795 "EHLO
-	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754604Ab3JJRf5 (ORCPT
+	id S1756016Ab3JJRgh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 13:36:37 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:42635 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755958Ab3JJRgg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 13:35:57 -0400
-Date: Thu, 10 Oct 2013 19:35:53 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/6] Optimize the cpu hotplug locking -v2
-Message-ID: <20131010173553.GC26430@gmail.com>
-References: <20131008102505.404025673@infradead.org>
- <20131009225006.7101379c.akpm@linux-foundation.org>
- <20131010121908.GB28601@twins.programming.kicks-ass.net>
- <20131010145738.GA5167@gmail.com>
- <20131010152134.GQ3081@twins.programming.kicks-ass.net>
- <20131010165045.GB12998@gmail.com>
- <20131010171353.GM5790@linux.vnet.ibm.com>
+	Thu, 10 Oct 2013 13:36:36 -0400
+Date: Thu, 10 Oct 2013 18:36:27 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Chanwoo Choi <cw00.choi@samsung.com>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "sbkim73@samsung.com" <sbkim73@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Message-ID: <20131010173627.GR21581@sirena.org.uk>
+References: <1381369296-17101-1-git-send-email-cw00.choi@samsung.com>
+ <20131010102826.GG26954@e106331-lin.cambridge.arm.com>
+ <52568B3D.7020209@samsung.com>
+ <20131010165100.GA3910@e106331-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="myWHXexGRVC5aLMg"
 Content-Disposition: inline
-In-Reply-To: <20131010171353.GM5790@linux.vnet.ibm.com>
+In-Reply-To: <20131010165100.GA3910@e106331-lin.cambridge.arm.com>
+X-Cookie: Penalty for private use.
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/2] regulator: s5m8767: Modify parse_dt function to
+ parse data related to ramp
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+--myWHXexGRVC5aLMg
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> On Thu, Oct 10, 2013 at 06:50:46PM +0200, Ingo Molnar wrote:
-> > 
-> > * Peter Zijlstra <peterz@infradead.org> wrote:
-> > 
-> > > On Thu, Oct 10, 2013 at 04:57:38PM +0200, Ingo Molnar wrote:
-> > >
-> > > > So ... why not make it _really_ cheap, i.e. the read lock costing 
-> > > > nothing, and tie CPU hotplug to freezing all tasks in the system?
-> > > 
-> > > Such that we freeze regular tasks in userspace and kernel tasks in 
-> > > their special freezer callback so as to guarantee minimal state?
-> > 
-> > Yes, absolutely.
-> 
-> That does add quite a bit of latency to the hotplug operations, which 
-> IIRC slows down things like boot, suspend, and resume.
+On Thu, Oct 10, 2013 at 05:51:00PM +0100, Mark Rutland wrote:
+> On Thu, Oct 10, 2013 at 12:10:53PM +0100, Chanwoo Choi wrote:
 
-I think it should _speed up_ suspend: instead of bringing down each CPU 
-one by one, they could just be all stopped.
+> > Turn on ramp control of buck2/3/4.
 
-Same for bootup - it's not really a hotplug operation in the traditional 
-sense, as all CPUs are 'present' at once, and they could be added in one 
-group operation instead of serializing the bootup.
+> Ok, but why does this need to be in the dt?
 
-Also, most CPU bootup sequences are serialized.
+Ramp control is a hardware system integration decision which people
+working with regulators should be familiar with - you're trading off
+speed of power on or voltage change for maximum current draw from the
+regulator supply.  The term should be sufficiently clear to an engineer
+who can make an informed decision about using it.
 
-It would slow down individual CPU hotplug/hotunplug - and that is what is 
-a really rare operation outside broken schemes to save power ...
+--myWHXexGRVC5aLMg
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Thanks,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-	Ingo
+iQIcBAEBAgAGBQJSVuWYAAoJELSic+t+oim9imcP/jJVzRf/7IH32ah8qXU+rhRR
+OQgSUjup+4bzVDTl6O9NwCfuCZmuVjKu1uniT9pOd1oxLOZL0TSwAq5Srif6AyBi
+/l3a4a4OyEVFVLyE7Sb8ik/F22TeeAj0FBS2+LFRchLZmRR5+dzBAVUrP4t0Tg1D
+I/5qQqglAhzzjlDcHrAzMwlyjhp/zmpnK1huosBbQigKc61Ux6JSBqKeJwrvcliM
+8olKPXjlcVz+PCazM/EKtW0MbR5InJbr6VTwWrMlrPZWfeyZv812DsDmZS+DlKID
+sNdiZqTRQ9Lox9sjzrpkN2YzHsfWNfmsUkG8lco+UN7hlFPaN77BiSkxZXqth3YS
+ojwFUOyxbChkblCnYKLQSh45EVwHDa+r71Mz65NseiVULMokJtQ5GC64R4qzTcys
+5S9aeBq7L7Cbjgf+Dv/inB5VwJnmxI5wnN9kZtWRT7rlH4iVazuxIH//Io/lDf+T
+RCBTgH2Sx58auMv7UwegcDXfK+Re8HEM4Ov0Z3q6UB70NTk5R8kAUtSPvnrNNjFM
+QmMxaJukOsEY/i+wfCjFzh0143rYFMwWWUOKCAbA796k4il6hgmxVW9O94JSdDDD
+/1jIEBLWeDGav8DQULfdckolAqcuS4Wka3NYCh/6TenIC/JE2jAs+YYuf45J6REg
+61uBvt77tIFods5lLV3o
+=9dzG
+-----END PGP SIGNATURE-----
+
+--myWHXexGRVC5aLMg--
