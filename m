@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757915Ab3JJQId (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 12:08:33 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52682 "EHLO
+	id S1756227Ab3JJPo5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 11:44:57 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52649 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756268Ab3JJPpH (ORCPT
+	with ESMTP id S1754686Ab3JJPoy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 11:45:07 -0400
+	Thu, 10 Oct 2013 11:44:54 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Miklos Szeredi <mszeredi@suse.cz>, Steve French <sfrench@samba.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 046/104] cifs: fix filp leak in cifs_atomic_open()
-Date: Thu, 10 Oct 2013 08:41:34 -0700
-Message-Id: <1381419752-29733-47-git-send-email-kamal@canonical.com>
+Cc: Liam Girdwood <liam.r.girdwood@linux.intel.com>,
+        Takashi Iwai <tiwai@suse.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 056/104] ALSA: compress: Fix compress device unregister.
+Date: Thu, 10 Oct 2013 08:41:44 -0700
+Message-Id: <1381419752-29733-57-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381419752-29733-1-git-send-email-kamal@canonical.com>
 References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
@@ -27,32 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+From: Liam Girdwood <liam.r.girdwood@linux.intel.com>
 
-commit dfb1d61b0e9f9e2c542e9adc8d970689f4114ff6 upstream.
+commit 4028b6c4c03f213260e9290ff3a6b5439aad07ce upstream.
 
-If an error occurs after having called finish_open() then fput() needs to
-be called on the already opened file.
+snd_unregister_device() should return the device type and not stream
+direction.
 
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-Cc: Steve French <sfrench@samba.org>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Liam Girdwood <liam.r.girdwood@linux.intel.com>
+Acked-by: Vinod Koul <vinod.koul@intel.com>
+Tested-by: Vinod Koul <vinod.koul@intel.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/cifs/dir.c | 1 +
- 1 file changed, 1 insertion(+)
+ sound/core/compress_offload.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/fs/cifs/dir.c b/fs/cifs/dir.c
-index 8719bbe..adaee05 100644
---- a/fs/cifs/dir.c
-+++ b/fs/cifs/dir.c
-@@ -488,6 +488,7 @@ cifs_atomic_open(struct inode *inode, struct dentry *direntry,
- 		if (server->ops->close)
- 			server->ops->close(xid, tcon, &fid);
- 		cifs_del_pending_open(&open);
-+		fput(file);
- 		rc = -ENOMEM;
- 	}
+diff --git a/sound/core/compress_offload.c b/sound/core/compress_offload.c
+index 2401d06..a388a87 100644
+--- a/sound/core/compress_offload.c
++++ b/sound/core/compress_offload.c
+@@ -689,7 +689,8 @@ static int snd_compress_dev_disconnect(struct snd_device *device)
+ 	struct snd_compr *compr;
+ 
+ 	compr = device->device_data;
+-	snd_unregister_device(compr->direction, compr->card, compr->device);
++	snd_unregister_device(SNDRV_DEVICE_TYPE_COMPRESS, compr->card,
++		compr->device);
+ 	return 0;
+ }
  
 -- 
 1.8.1.2
