@@ -1,68 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755130Ab3JJHqf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 03:46:35 -0400
-Received: from smtprelay03.ispgateway.de ([80.67.31.37]:58245 "EHLO
-	smtprelay03.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750799Ab3JJHqe (ORCPT
+	id S1754302Ab3JJHyu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 03:54:50 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:40996 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751996Ab3JJHys (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 03:46:34 -0400
-Message-ID: <52565B56.1070606@ladisch.de>
-Date: Thu, 10 Oct 2013 09:46:30 +0200
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Thu, 10 Oct 2013 03:54:48 -0400
+Date: Thu, 10 Oct 2013 09:54:44 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jason Low <jason.low2@hp.com>, Waiman Long <Waiman.Long@hp.com>,
+        linux-kernel@vger.kernel.org, linux-mm <linux-mm@kvack.org>
+Subject: Re: [PATCH v8 0/9] rwsem performance optimizations
+Message-ID: <20131010075444.GD17990@gmail.com>
+References: <cover.1380748401.git.tim.c.chen@linux.intel.com>
+ <1380753493.11046.82.camel@schen9-DESK>
+ <20131003073212.GC5775@gmail.com>
+ <1381186674.11046.105.camel@schen9-DESK>
+ <20131009061551.GD7664@gmail.com>
+ <1381336441.11046.128.camel@schen9-DESK>
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: rngd (was: [PATCH 0/2] Add support for Qualcomm's PRNG)
-References: <1380811955-18085-1-git-send-email-svarbanov@mm-sol.com> <20131003165130.GA11974@thunk.org> <524EEB96.6040707@mm-sol.com> <20131004181005.GA7022@thunk.org> <52556C4E.9000604@mm-sol.com> <52557137.5050200@zytor.com> <20131009160338.GD1198@thunk.org> <52558320.9090603@zytor.com>
-In-Reply-To: <52558320.9090603@zytor.com>
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Df-Sender: bGludXgta2VybmVsQGNsLmRvbWFpbmZhY3Rvcnkta3VuZGUuZGU=
+Content-Disposition: inline
+In-Reply-To: <1381336441.11046.128.camel@schen9-DESK>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-H. Peter Anvin wrote:
-> On 10/09/2013 09:03 AM, Theodore Ts'o wrote:
->> You can specify as a command-line argument (-H) to rngd the entropy
->> per bit of input data.
+
+* Tim Chen <tim.c.chen@linux.intel.com> wrote:
+
+> The throughput of pure mmap with mutex is below vs pure mmap is below:
+> 
+> % change in performance of the mmap with pthread-mutex vs pure mmap
+> #threads        vanilla 	all rwsem    	without optspin
+> 				patches
+> 1               3.0%    	-1.0%   	-1.7%
+> 5               7.2%    	-26.8%  	5.5%
+> 10              5.2%    	-10.6%  	22.1%
+> 20              6.8%    	16.4%   	12.5%
+> 40              -0.2%   	32.7%   	0.0%
+> 
+> So with mutex, the vanilla kernel and the one without optspin both run 
+> faster.  This is consistent with what Peter reported.  With optspin, the 
+> picture is more mixed, with lower throughput at low to moderate number 
+> of threads and higher throughput with high number of threads.
+
+So, going back to your orignal table:
+
+> % change in performance of the mmap with pthread-mutex vs pure mmap
+> #threads        vanilla all     without optspin
+> 1               3.0%    -1.0%   -1.7%
+> 5               7.2%    -26.8%  5.5%
+> 10              5.2%    -10.6%  22.1%
+> 20              6.8%    16.4%   12.5%
+> 40              -0.2%   32.7%   0.0%
 >
-> There is no -H option in upstream rngd.  It might be in the Debian fork,
-> but the Debian fork has serious other problems.
+> In general, vanilla and no-optspin case perform better with 
+> pthread-mutex.  For the case with optspin, mmap with pthread-mutex is 
+> worse at low to moderate contention and better at high contention.
 
-What problems?  I have been thinking about adding another entropy source
-to rngd, and was wondering which fork to use, or if it would make sense
-to merge them.  Are there any features of the Debian fork that should
-not be ported to upstream?
+it appears that 'without optspin' appears to be a pretty good choice - if 
+it wasn't for that '1 thread' number, which, if I correctly assume is the 
+uncontended case, is one of the most common usecases ...
 
-> I don't understand how that would work with the FIPS tests in rngd,
-> unless of course the FIPS tests are so weak they are pointless anyway
+How can the single-threaded case get slower? None of the patches should 
+really cause noticeable overhead in the non-contended case. That looks 
+weird.
 
-Most of the FIPS tests assume that the bits are independently generated
-(the two other tests check for correlations in 4/32-bit groups).  None
-of these tests make sense if the bit stream is the output of an AES
-conditioner.  For RDRAND, it might be useful to check that we don't
-accidentally get a series of zeros or something like that, but otherwise
-we have to trust the built-in tests that Intel claims the hardware is
-doing before conditioning.
+It would also be nice to see the 2, 3, 4 thread numbers - those are the 
+most common contention scenarios in practice - where do we see the first 
+improvement in performance?
 
-As it happens, the 2002-12-03 change notice of FIPS 140-2 dropped the
-RNG tests.
+Also, it would be nice to include a noise/sttdev figure, it's really hard 
+to tell whether -1.7% is statistically significant.
 
+Thanks,
 
-For the entropy source I've been thinking about (captured audio
-samples), the FIPS tests would make sense only if done independently on
-each bit in the sample (e.g., with 24-bit samples, there would be 24
-parallel bit streams, most of which wouldn't be random).  Additional
-tests to check for correlations between the bits in a sample would be
-useful, too.
-
-What I'm trying to say with all this is that self-tests must be
-customized for each entropy source.
-
-
-Regards,
-Clemens
+	Ingo
