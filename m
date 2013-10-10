@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752959Ab3JJGaf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 02:30:35 -0400
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:44599 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752523Ab3JJGab (ORCPT
+	id S1754014Ab3JJGah (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 02:30:37 -0400
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:49075 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752523Ab3JJGaf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 02:30:31 -0400
+	Thu, 10 Oct 2013 02:30:35 -0400
 From: Michal Simek <michal.simek@xilinx.com>
 To: linux-kernel@vger.kernel.org, monstr@monstr.eu
 Cc: joe@perches.com, Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, linux-fbdev@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: [PATCH v3 1/3] video: xilinxfb: Use standard variable name convention
-Date: Thu, 10 Oct 2013 08:30:20 +0200
-Message-Id: <631df9a44b366af4129d00f1d4e1d3baad7d4903.1381386616.git.michal.simek@xilinx.com>
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org
+Subject: [PATCH v3 3/3] video: xilinxfb: Simplify error path
+Date: Thu, 10 Oct 2013 08:30:22 +0200
+Message-Id: <cd0b38241eccb712133c5a890a794508d78ae7e6.1381386616.git.michal.simek@xilinx.com>
 X-Mailer: git-send-email 1.8.2.3
+In-Reply-To: <631df9a44b366af4129d00f1d4e1d3baad7d4903.1381386616.git.michal.simek@xilinx.com>
+References: <631df9a44b366af4129d00f1d4e1d3baad7d4903.1381386616.git.michal.simek@xilinx.com>
+In-Reply-To: <631df9a44b366af4129d00f1d4e1d3baad7d4903.1381386616.git.michal.simek@xilinx.com>
+References: <631df9a44b366af4129d00f1d4e1d3baad7d4903.1381386616.git.michal.simek@xilinx.com>
 Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-26965-1381386623-0001";
+    boundary="=_mimegpg-monstr-desktop-26992-1381386633-0001";
     micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,100 +32,94 @@ The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
 To open this message correctly you will need to install E-mail or Usenet
 software that supports modern Internet standards.
 
---=_mimegpg-monstr-desktop-26965-1381386623-0001
+--=_mimegpg-monstr-desktop-26992-1381386633-0001
 
-s/op/pdev/ in xilinxfb_of_probe().
-No functional chagnes.
+devm_iounmap is called automatically that's why remove it from the code
+dev_set_drvdata(dev, NULL) is called by generic code
+after device_release or on probe failure.
 
 Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+
+Reviewed-by: Jingoo Han <jg1.han@samsung.com>
 ---
 Changes in v3: None
-Changes in v2: None
+Changes in v2:
+- Rebased on git://git.kernel.org/pub/scm/linux/kernel/git/tomba/linux.git for-next
 
- drivers/video/xilinxfb.c | 18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+ drivers/video/xilinxfb.c | 24 ++++++------------------
+ 1 file changed, 6 insertions(+), 18 deletions(-)
 
 diff --git a/drivers/video/xilinxfb.c b/drivers/video/xilinxfb.c
-index 0e1dd33..d12345f 100644
+index c420328..9eedf96 100644
 --- a/drivers/video/xilinxfb.c
 +++ b/drivers/video/xilinxfb.c
-@@ -411,7 +411,7 @@ static int xilinxfb_release(struct device *dev)
-  * OF bus binding
-  */
+@@ -260,10 +260,9 @@ static int xilinxfb_assign(struct platform_device *pdev,
 
--static int xilinxfb_of_probe(struct platform_device *op)
-+static int xilinxfb_of_probe(struct platform_device *pdev)
- {
- 	const u32 *prop;
- 	u32 tft_access = 0;
-@@ -425,7 +425,7 @@ static int xilinxfb_of_probe(struct platform_device *op)
- 	/* Allocate the driver data region */
- 	drvdata = kzalloc(sizeof(*drvdata), GFP_KERNEL);
- 	if (!drvdata) {
--		dev_err(&op->dev, "Couldn't allocate device private record\n");
-+		dev_err(&pdev->dev, "Couldn't allocate device private record\n");
- 		return -ENOMEM;
+ 		res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 		drvdata->regs = devm_ioremap_resource(&pdev->dev, res);
+-		if (IS_ERR(drvdata->regs)) {
+-			rc = PTR_ERR(drvdata->regs);
+-			goto err_region;
+-		}
++		if (IS_ERR(drvdata->regs))
++			return PTR_ERR(drvdata->regs);
++
+ 		drvdata->regs_phys = res->start;
  	}
 
-@@ -433,7 +433,7 @@ static int xilinxfb_of_probe(struct platform_device *op)
- 	 * To check whether the core is connected directly to DCR or BUS
- 	 * interface and initialize the tft_access accordingly.
- 	 */
--	of_property_read_u32(op->dev.of_node, "xlnx,dcr-splb-slave-if",
-+	of_property_read_u32(pdev->dev.of_node, "xlnx,dcr-splb-slave-if",
- 			     &tft_access);
+@@ -279,11 +278,7 @@ static int xilinxfb_assign(struct platform_device *pdev,
 
- 	/*
-@@ -457,29 +457,29 @@ static int xilinxfb_of_probe(struct platform_device *op)
- 	}
- #endif
-
--	prop = of_get_property(op->dev.of_node, "phys-size", &size);
-+	prop = of_get_property(pdev->dev.of_node, "phys-size", &size);
- 	if ((prop) && (size >= sizeof(u32)*2)) {
- 		pdata.screen_width_mm = prop[0];
- 		pdata.screen_height_mm = prop[1];
+ 	if (!drvdata->fb_virt) {
+ 		dev_err(dev, "Could not allocate frame buffer memory\n");
+-		rc = -ENOMEM;
+-		if (drvdata->flags & BUS_ACCESS_FLAG)
+-			goto err_fbmem;
+-		else
+-			goto err_region;
++		return -ENOMEM;
  	}
 
--	prop = of_get_property(op->dev.of_node, "resolution", &size);
-+	prop = of_get_property(pdev->dev.of_node, "resolution", &size);
- 	if ((prop) && (size >= sizeof(u32)*2)) {
- 		pdata.xres = prop[0];
- 		pdata.yres = prop[1];
- 	}
+ 	/* Clear (turn to black) the framebuffer */
+@@ -363,11 +358,6 @@ err_cmap:
+ 	/* Turn off the display */
+ 	xilinx_fb_out32(drvdata, REG_CTRL, 0);
 
--	prop = of_get_property(op->dev.of_node, "virtual-resolution", &size);
-+	prop = of_get_property(pdev->dev.of_node, "virtual-resolution", &size);
- 	if ((prop) && (size >= sizeof(u32)*2)) {
- 		pdata.xvirt = prop[0];
- 		pdata.yvirt = prop[1];
- 	}
-
--	if (of_find_property(op->dev.of_node, "rotate-display", NULL))
-+	if (of_find_property(pdev->dev.of_node, "rotate-display", NULL))
- 		pdata.rotate_screen = 1;
-
--	dev_set_drvdata(&op->dev, drvdata);
--	return xilinxfb_assign(op, drvdata, &pdata);
-+	dev_set_drvdata(&pdev->dev, drvdata);
-+	return xilinxfb_assign(pdev, drvdata, &pdata);
+-err_fbmem:
+-	if (drvdata->flags & BUS_ACCESS_FLAG)
+-		devm_iounmap(dev, drvdata->regs);
+-
+-err_region:
+ 	return rc;
  }
 
- static int xilinxfb_of_remove(struct platform_device *op)
+@@ -392,11 +382,9 @@ static int xilinxfb_release(struct device *dev)
+ 	/* Turn off the display */
+ 	xilinx_fb_out32(drvdata, REG_CTRL, 0);
+
+-	/* Release the resources, as allocated based on interface */
+-	if (drvdata->flags & BUS_ACCESS_FLAG)
+-		devm_iounmap(dev, drvdata->regs);
+ #ifdef CONFIG_PPC_DCR
+-	else
++	/* Release the resources, as allocated based on interface */
++	if (!(drvdata->flags & BUS_ACCESS_FLAG))
+ 		dcr_unmap(drvdata->dcr_host, drvdata->dcr_len);
+ #endif
+
 --
 1.8.2.3
 
 
---=_mimegpg-monstr-desktop-26965-1381386623-0001
+--=_mimegpg-monstr-desktop-26992-1381386633-0001
 Content-Type: application/pgp-signature
 Content-Transfer-Encoding: 7bit
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.10 (GNU/Linux)
 
-iEYEABECAAYFAlJWSX8ACgkQykllyylKDCGAQACeP+F2rvGoLlm79dZn4RNTDImB
-acYAn3DmSN5PDZaTivlAZQ6rMuwOj1yr
-=p0Ab
+iEYEABECAAYFAlJWSYkACgkQykllyylKDCHAXACfTuNzVxr/hyrfw0RSy8gYwEJF
+EeAAn14HxJ8e3arscsD492nqKJJYMXTb
+=TJbP
 -----END PGP SIGNATURE-----
 
---=_mimegpg-monstr-desktop-26965-1381386623-0001--
+--=_mimegpg-monstr-desktop-26992-1381386633-0001--
