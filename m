@@ -1,29 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752893Ab3JJKsi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 06:48:38 -0400
-Received: from mail-ie0-f193.google.com ([209.85.223.193]:42562 "EHLO
-	mail-ie0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751598Ab3JJKsh (ORCPT
+	id S1754488Ab3JJKun (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 06:50:43 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:57508 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752443Ab3JJKuk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 06:48:37 -0400
+	Thu, 10 Oct 2013 06:50:40 -0400
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <bcousson@baylibre.com>
+CC: <tony@atomide.com>, <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
+        <ijc+devicetree@hellion.org.uk>, <linux@arm.linux.org.uk>,
+        <kishon@ti.com>, <linux-omap@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/2] ARM: dts: omap5-uevm: remove always_on, boot_on from smps10_out1
+Date: Thu, 10 Oct 2013 16:19:53 +0530
+Message-ID: <1381402195-29257-1-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Date: Thu, 10 Oct 2013 06:48:36 -0400
-Message-ID: <CAAe2kbyysV4vRAYu=Ajg2KWCXSU8XDKJ=fNOyc0iPGqtqbqsXg@mail.gmail.com>
-Subject: Usability regressions over large periods of time
-From: Richard Cranium <cisrichard@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ladies and Gentlemen,
+smps10 should be enabled only in the case of host mode. So stop
+doing always_on, boot_on from smps10_out1. The driver will enable it in host
+mode.
 
-I've been tracking huge usability regressions in the Linux kernel
-dating back to the 1.2.x days.
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
+ arch/arm/boot/dts/omap5-uevm.dts |    2 --
+ 1 file changed, 2 deletions(-)
 
-The tl;dr here is: The linux kernel project has essentially turned
-into a big ball of bloated shit.
+diff --git a/arch/arm/boot/dts/omap5-uevm.dts b/arch/arm/boot/dts/omap5-uevm.dts
+index d784b3a..e06a04a 100644
+--- a/arch/arm/boot/dts/omap5-uevm.dts
++++ b/arch/arm/boot/dts/omap5-uevm.dts
+@@ -334,8 +334,6 @@
+ 					regulator-name = "smps10_out1";
+ 					regulator-min-microvolt = <5000000>;
+ 					regulator-max-microvolt = <5000000>;
+-					regulator-always-on;
+-					regulator-boot-on;
+ 				};
+ 
+ 				ldo1_reg: ldo1 {
+-- 
+1.7.10.4
 
-Please fix it immediately.
