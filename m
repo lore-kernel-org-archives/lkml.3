@@ -1,115 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752861Ab3JJKej (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 06:34:39 -0400
-Received: from demumfd002.nsn-inter.net ([93.183.12.31]:14612 "EHLO
-	demumfd002.nsn-inter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751821Ab3JJKeh (ORCPT
+	id S1754172Ab3JJKg7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 06:36:59 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:54307 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753748Ab3JJKg6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 06:34:37 -0400
-Message-ID: <525682B5.20102@nsn.com>
-Date: Thu, 10 Oct 2013 12:34:29 +0200
-From: Alexander Sverdlin <alexander.sverdlin@nsn.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Thu, 10 Oct 2013 06:36:58 -0400
+Date: Thu, 10 Oct 2013 11:36:46 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: "broonie@kernel.org" <broonie@kernel.org>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "sbkim73@samsung.com" <sbkim73@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        YoungJun Cho <yj44.cho@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH 2/2] regulator: s5m8767: Modify parsing method of the
+ voltage table of buck2/3/4
+Message-ID: <20131010103646.GH26954@e106331-lin.cambridge.arm.com>
+References: <1381369296-17101-1-git-send-email-cw00.choi@samsung.com>
+ <1381369296-17101-2-git-send-email-cw00.choi@samsung.com>
 MIME-Version: 1.0
-To: Ionut Nicu <ioan.nicu.ext@nsn.com>,
-        Peter Korsgaard <peter.korsgaard@barco.com>
-CC: Wolfram Sang <wsa@the-dreams.de>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] i2c-mux-gpio: eliminate i2c channel order assumptions
-References: <525667CA.3030504@nsn.com>
-In-Reply-To: <525667CA.3030504@nsn.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-purgate-type: clean
-X-purgate-Ad: Categorized by eleven eXpurgate (R) http://www.eleven.de
-X-purgate: clean
-X-purgate: This mail is considered clean (visit http://www.eleven.de for further information)
-X-purgate-size: 2652
-X-purgate-ID: 151667::1381401270-00005753-40BEC738/0-0/0-0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1381369296-17101-2-git-send-email-cw00.choi@samsung.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
-On 10/10/2013 10:39 AM, Ionut Nicu wrote:
-> The i2c-mux driver uses the chan_id parameter provided
-> in i2c_add_mux_adapter as a parameter to the select
-> and deselect callbacks while the i2c-mux-gpio driver
-> uses the chan_id as an index in the mux->data.values
-> array.
+On Thu, Oct 10, 2013 at 02:41:36AM +0100, Chanwoo Choi wrote:
+> The s5m8767 regulator driver parse always the voltage table of buck2/3/4.
+> If gpio_dvs feature isn't used and dts haven't included the voltage table
+> of buck2/3/4, s5m8767 regulator driver return error and file probe state.
 > 
-> A simple example of where this doesn't work is when we
-> have a device tree like this:
+> This patch check only voltage table of buck on s5m8767_pmic_dt_parse_pdata()
+> if buck[2-4]_gpiodvs is true.
 > 
-> i2cmux {
-> 	i2c@1 {
-> 		reg = <1>;
-> 		...
-> 	};
-> 
-> 	i2c@0 {
-> 		reg = <0>;
-> 		...
-> 	};
-> };
-> 
-> The mux->data.values array will be { 1, 0 }, but when
-> the i2-mux driver will try to select channel 0, the
-> i2c-mux-gpio driver will actually use values[0], hence 1
-> as the gpio selection value.
-
-The patch itself is correct, but the description is not precise,
-I suppose... i2c-mux-gpio is consistent inside itself, it will
-receive for every child adapter the value it has configured.
-The problem happens inside i2c-mux.c, i2c_add_mux_adapter():
-
-               	for_each_child_of_node(mux_dev->of_node, child) {
-                       	ret = of_property_read_u32(child, "reg", &reg);
-                       	if (ret)
-                               	continue;
-                       	if (chan_id == reg) {
-                               	priv->adap.dev.of_node = child;
-
-Which means, i2c-mux-gpio MUST pass reg, not its logical index inside
-array. Otherwise node will not be correctly assigned and i2c-mux will
-have problems selecting right adapter for the multiplexed devices.
-
-> Signed-off-by: Ionut Nicu <ioan.nicu.ext@nsn.com>
-
-So, for the code itself
-
-Acked-by: Alexander Sverdlin <alexander.sverdlin@nsn.com>
-
+> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+> Signed-off-by: YoungJun Cho <yj44.cho@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 > ---
->  drivers/i2c/muxes/i2c-mux-gpio.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
+>  drivers/regulator/s5m8767.c | 54 +++++++++++++++++++++++----------------------
+>  1 file changed, 28 insertions(+), 26 deletions(-)
 > 
-> diff --git a/drivers/i2c/muxes/i2c-mux-gpio.c b/drivers/i2c/muxes/i2c-mux-gpio.c
-> index b5f17ef..3505d0e 100644
-> --- a/drivers/i2c/muxes/i2c-mux-gpio.c
-> +++ b/drivers/i2c/muxes/i2c-mux-gpio.c
-> @@ -43,7 +43,7 @@ static int i2c_mux_gpio_select(struct i2c_adapter *adap, void *data, u32 chan)
->  {
->  	struct gpiomux *mux = data;
+> diff --git a/drivers/regulator/s5m8767.c b/drivers/regulator/s5m8767.c
+> index cb6cdb3..29999c0 100644
+> --- a/drivers/regulator/s5m8767.c
+> +++ b/drivers/regulator/s5m8767.c
+> @@ -522,7 +522,7 @@ static int s5m8767_pmic_dt_parse_pdata(struct platform_device *pdev,
+>  	struct device_node *pmic_np, *regulators_np, *reg_np;
+>  	struct sec_regulator_data *rdata;
+>  	struct sec_opmode_data *rmode;
+> -	unsigned int i, dvs_voltage_nr = 1, ret;
+> +	unsigned int i, dvs_voltage_nr = 8, ret;
 >  
-> -	i2c_mux_gpio_set(mux, mux->data.values[chan]);
-> +	i2c_mux_gpio_set(mux, chan);
+>  	pmic_np = iodev->dev->of_node;
+>  	if (!pmic_np) {
+> @@ -586,15 +586,39 @@ static int s5m8767_pmic_dt_parse_pdata(struct platform_device *pdev,
+>  		rmode++;
+>  	}
 >  
->  	return 0;
->  }
-> @@ -233,7 +233,7 @@ static int i2c_mux_gpio_probe(struct platform_device *pdev)
->  		unsigned int class = mux->data.classes ? mux->data.classes[i] : 0;
->  
->  		mux->adap[i] = i2c_add_mux_adapter(parent, &pdev->dev, mux, nr,
-> -						   i, class,
-> +						   mux->data.values[i], class,
->  						   i2c_mux_gpio_select, deselect);
->  		if (!mux->adap[i]) {
->  			ret = -ENODEV;
-> 
+> -	if (of_get_property(pmic_np, "s5m8767,pmic-buck2-uses-gpio-dvs", NULL))
+> +	if (of_get_property(pmic_np, "s5m8767,pmic-buck2-uses-gpio-dvs", NULL)) {
+>  		pdata->buck2_gpiodvs = true;
 
--- 
-Best regards,
-Alexander Sverdlin.
+As this line is being changed, please switch to of_property_read_bool.
+
+>  
+> -	if (of_get_property(pmic_np, "s5m8767,pmic-buck3-uses-gpio-dvs", NULL))
+> +		if (of_property_read_u32_array(pmic_np,
+> +				"s5m8767,pmic-buck2-dvs-voltage",
+> +				pdata->buck2_voltage, dvs_voltage_nr)) {
+
+Won't this break existing (not conforming to the binding) dts?
+
+$(git grep s5m8767,pmic-buck2-dvs-voltage) shows me
+arch/arm/boot/dts/exynos5250-arndale.dts is only has one entry in its
+s5m8767,pmic-buck3-uses-gpio-dvs property's list.
+
+> +			dev_err(iodev->dev, "buck2 voltages not specified\n");
+> +			return -EINVAL;
+> +		}
+> +	}
+> +
+> +	if (of_get_property(pmic_np, "s5m8767,pmic-buck3-uses-gpio-dvs", NULL)) {
+>  		pdata->buck3_gpiodvs = true;
+
+Another of_proeprty_read_bool candidate.
+
+>  
+> -	if (of_get_property(pmic_np, "s5m8767,pmic-buck4-uses-gpio-dvs", NULL))
+> +		if (of_property_read_u32_array(pmic_np,
+> +				"s5m8767,pmic-buck3-dvs-voltage",
+> +				pdata->buck3_voltage, dvs_voltage_nr)) {
+> +			dev_err(iodev->dev, "buck3 voltages not specified\n");
+> +			return -EINVAL;
+> +		}
+> +	}
+> +
+> +	if (of_get_property(pmic_np, "s5m8767,pmic-buck4-uses-gpio-dvs", NULL)) {
+>  		pdata->buck4_gpiodvs = true;
+
+Similarly.
+
+In general I'm confused by the need for the *-uses-gpio-dvs properties.
+Are they not implied by the presence of *-dvs-voltage properties?
+
+Cheers,
+Mark.
