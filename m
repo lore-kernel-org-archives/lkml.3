@@ -1,93 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755550Ab3JJK2h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 06:28:37 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:54031 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752846Ab3JJK2f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 06:28:35 -0400
-Date: Thu, 10 Oct 2013 11:28:26 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: "broonie@kernel.org" <broonie@kernel.org>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "sbkim73@samsung.com" <sbkim73@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH 1/2] regulator: s5m8767: Modify parse_dt function to
- parse data related to ramp
-Message-ID: <20131010102826.GG26954@e106331-lin.cambridge.arm.com>
-References: <1381369296-17101-1-git-send-email-cw00.choi@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1381369296-17101-1-git-send-email-cw00.choi@samsung.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755563Ab3JJK2y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 06:28:54 -0400
+Received: from mga14.intel.com ([143.182.124.37]:54543 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752893Ab3JJK2x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 06:28:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,1070,1371106800"; 
+   d="scan'208";a="306054660"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: linux-acpi@vger.kernel.org
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Wolfram Sang <wsa@the-dreams.de>,
+        Mark Brown <broonie@kernel.org>, Aaron Lu <aaron.lu@intel.com>,
+        Lv Zheng <lv.zheng@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 3/3] spi: attach/detach SPI device to the ACPI power domain
+Date: Thu, 10 Oct 2013 13:28:48 +0300
+Message-Id: <1381400928-2689-4-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 1.8.4.rc3
+In-Reply-To: <1381400928-2689-1-git-send-email-mika.westerberg@linux.intel.com>
+References: <1381327461-10562-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1381400928-2689-1-git-send-email-mika.westerberg@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 10, 2013 at 02:41:35AM +0100, Chanwoo Choi wrote:
-> This patch parse 'buck[2-4]_ramp_enable and buck_ramp_delay' platform data
-> from dts file.
+If the SPI device is enumerated from ACPI namespace (it has an ACPI handle)
+it might have ACPI methods that needs to be called in order to transition
+the device to different power states (such as _PSx).
 
-Why?
+We follow what has been done for platform and I2C buses here and attach the
+SPI device to the ACPI power domain if the device has an ACPI handle. This
+makes sure that the device is powered on when its ->probe() is called.
 
-What do these describe? Why do we need them?
+For non-ACPI devices this patch is a no-op.
 
-> 
-> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
->  drivers/regulator/s5m8767.c | 16 ++++++++++++++++
->  1 file changed, 16 insertions(+)
-> 
-> diff --git a/drivers/regulator/s5m8767.c b/drivers/regulator/s5m8767.c
-> index c24448b..cb6cdb3 100644
-> --- a/drivers/regulator/s5m8767.c
-> +++ b/drivers/regulator/s5m8767.c
-> @@ -640,6 +640,22 @@ static int s5m8767_pmic_dt_parse_pdata(struct platform_device *pdev,
->  		return -EINVAL;
->  	}
->  
-> +	if (of_get_property(pmic_np, "s5m8767,pmic-buck2-ramp-enable", NULL))
-> +		pdata->buck2_ramp_enable = true;
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Acked-by: Mark Brown <broonie@linaro.org>
+---
+ drivers/spi/spi.c | 18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
 
-Please describe what this is and why we need it.
+diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
+index 9e039c6..740f9dd 100644
+--- a/drivers/spi/spi.c
++++ b/drivers/spi/spi.c
+@@ -240,15 +240,27 @@ EXPORT_SYMBOL_GPL(spi_bus_type);
+ static int spi_drv_probe(struct device *dev)
+ {
+ 	const struct spi_driver		*sdrv = to_spi_driver(dev->driver);
++	struct spi_device		*spi = to_spi_device(dev);
++	int ret;
++
++	acpi_dev_pm_attach(&spi->dev, true);
++	ret = sdrv->probe(spi);
++	if (ret)
++		acpi_dev_pm_detach(&spi->dev, true);
+ 
+-	return sdrv->probe(to_spi_device(dev));
++	return ret;
+ }
+ 
+ static int spi_drv_remove(struct device *dev)
+ {
+ 	const struct spi_driver		*sdrv = to_spi_driver(dev->driver);
++	struct spi_device		*spi = to_spi_device(dev);
++	int ret;
++
++	ret = sdrv->remove(spi);
++	acpi_dev_pm_detach(&spi->dev, true);
+ 
+-	return sdrv->remove(to_spi_device(dev));
++	return ret;
+ }
+ 
+ static void spi_drv_shutdown(struct device *dev)
+@@ -1025,8 +1037,10 @@ static acpi_status acpi_spi_add_device(acpi_handle handle, u32 level,
+ 		return AE_OK;
+ 	}
+ 
++	adev->power.flags.ignore_parent = true;
+ 	strlcpy(spi->modalias, dev_name(&adev->dev), sizeof(spi->modalias));
+ 	if (spi_add_device(spi)) {
++		adev->power.flags.ignore_parent = false;
+ 		dev_err(&master->dev, "failed to add SPI device %s from ACPI\n",
+ 			dev_name(&adev->dev));
+ 		spi_dev_put(spi);
+-- 
+1.8.4.rc3
 
-For reading boolean proeprties, use of_property_read_bool.
-
-> +
-> +	if (of_get_property(pmic_np, "s5m8767,pmic-buck3-ramp-enable", NULL))
-> +		pdata->buck3_ramp_enable = true;
-> +
-> +	if (of_get_property(pmic_np, "s5m8767,pmic-buck4-ramp-enable", NULL))
-> +		pdata->buck4_ramp_enable = true;
-> +
-> +	if (pdata->buck2_ramp_enable || pdata->buck3_ramp_enable
-> +			|| pdata->buck4_ramp_enable) {
-> +		if (of_property_read_u32(pmic_np, "s5m8767,pmic-buck-ramp-delay",
-> +				&pdata->buck_ramp_delay))
-> +			pdata->buck_ramp_delay = 0;
-
-Why not initialise pdata->buck_ramp_delay to 0 beforehand?
-
-That way you don't need to check the return value of
-of_property_read_u32 here.
-
-I note that pdata->buck_ramp_delay is an int, not a u32. Please use a
-u32 temporary variable.
-
-> +	}
-> +
-
-NAK. None of these seem to be documented in mainline's
-Documentation/devicetree/bindings/regulator/s5m8767-regulator.txt, nor
-does documentation seem to be added here. Until there's some description
-of what these are and why they're needed, I don't think they're
-suitable.
-
-Thanks,
-Mark.
