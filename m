@@ -1,69 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757972Ab3JJQA1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 12:00:27 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:32860 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757851Ab3JJQAZ (ORCPT
+	id S1757799Ab3JJQBE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 12:01:04 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52903 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755827Ab3JJPtA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 12:00:25 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+uVYl1g2rZ4Ct1hBYY8eur
-Date: Thu, 10 Oct 2013 09:00:19 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Roger Quadros <rogerq@ti.com>
-Cc: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Prakash Manjunathappa <prakash.pm@ti.com>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>,
-        =?utf-8?Q?Beno=C3=AEt?= Cousson <bcousson@baylibre.com>,
-        linux-omap@vger.kernel.org
-Subject: Re: [PATCH 4/6] pinctrl: single: Add support for wake-up interrupts
-Message-ID: <20131010160018.GA29913@atomide.com>
-References: <20131003054104.8941.88857.stgit@localhost>
- <20131003054221.8941.87801.stgit@localhost>
- <5256AA7F.8030005@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5256AA7F.8030005@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 10 Oct 2013 11:49:00 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 064/104] xhci: Ensure a command structure points to the correct trb on the command ring
+Date: Thu, 10 Oct 2013 08:41:52 -0700
+Message-Id: <1381419752-29733-65-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1381419752-29733-1-git-send-email-kamal@canonical.com>
+References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Roger Quadros <rogerq@ti.com> [131010 06:32]:
-> 
-> I tried testing this with the USB EHCI driver, but I'm not getting wake up interrupts
-> while the system is still running and only the EHCI controller is runtime suspended.
-> 
-> It seems we need to somehow call _reconfigure_io_chain() to update the daisy chain
-> whenever the pad wakeup_enable bit is changed.
+3.8.13.11 -stable review patch.  If anyone has any objections, please let me know.
 
-Sounds like this is on omap3? Have you tried calling pcs_soc->rearm() in the
-pcs_irq_handle() like the comments there suggest? At least for me that keeps
-the wake-up interrupts continuously running on omap3 instead of just idle modes.
+------------------
 
-Now on omap4, I've noticed the wake up interrupts are on all the time based on tests
-with the serial driver.
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
+
+commit ec7e43e2d98173483866fe2e4e690143626b659c upstream.
+
+If a command on the command ring needs to be cancelled before it is handled
+it can be turned to a no-op operation when the ring is stopped.
+We want to store the command ring enqueue pointer in the command structure
+when the command in enqueued for the cancellation case.
+
+Some commands used to store the command ring dequeue pointers instead of enqueue
+(these often worked because enqueue happends to equal dequeue quite often)
+
+Other commands correctly used the enqueue pointer but did not check if it pointed
+to a valid trb or a link trb, this caused for example stop endpoint command to timeout in
+xhci_stop_device() in about 2% of suspend/resume cases.
+
+This should also solve some weird behavior happening in command cancellation cases.
+
+This patch is based on a patch submitted by Sarah Sharp to linux-usb, but
+then forgotten:
+    http://marc.info/?l=linux-usb&m=136269803207465&w=2
+
+This patch should be backported to kernels as old as 3.7, that contain
+the commit b92cc66c047ff7cf587b318fe377061a353c120f "xHCI: add aborting
+command ring function"
+
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/usb/host/xhci-hub.c  |  2 +-
+ drivers/usb/host/xhci-ring.c | 10 ++++++++++
+ drivers/usb/host/xhci.c      | 25 +++++--------------------
+ drivers/usb/host/xhci.h      |  1 +
+ 4 files changed, 17 insertions(+), 21 deletions(-)
+
+diff --git a/drivers/usb/host/xhci-hub.c b/drivers/usb/host/xhci-hub.c
+index 6891442..b698953 100644
+--- a/drivers/usb/host/xhci-hub.c
++++ b/drivers/usb/host/xhci-hub.c
+@@ -286,7 +286,7 @@ static int xhci_stop_device(struct xhci_hcd *xhci, int slot_id, int suspend)
+ 		if (virt_dev->eps[i].ring && virt_dev->eps[i].ring->dequeue)
+ 			xhci_queue_stop_endpoint(xhci, slot_id, i, suspend);
+ 	}
+-	cmd->command_trb = xhci->cmd_ring->enqueue;
++	cmd->command_trb = xhci_find_next_enqueue(xhci->cmd_ring);
+ 	list_add_tail(&cmd->cmd_list, &virt_dev->cmd_list);
+ 	xhci_queue_stop_endpoint(xhci, slot_id, 0, suspend);
+ 	xhci_ring_cmd_db(xhci);
+diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
+index 04b212d..3607da9 100644
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -122,6 +122,16 @@ static int enqueue_is_link_trb(struct xhci_ring *ring)
+ 	return TRB_TYPE_LINK_LE32(link->control);
+ }
  
-> I think pcs_irq_set_wake() is where need to control system wakeup behaviour for the irq.
-> This is where we should be able to change WAKEUP_EN bit of the pad
-> to enable/disable system wakeup for that pad and also call _reconfigure_io_chain().
-
-Well the irq_set_wake() should only be needed for suspend and resume. For runtime PM
-the wake-events should be always enabled by default as pointed out by Alan Stern
-a while back.
++union xhci_trb *xhci_find_next_enqueue(struct xhci_ring *ring)
++{
++	/* Enqueue pointer can be left pointing to the link TRB,
++	 * we must handle that
++	 */
++	if (TRB_TYPE_LINK_LE32(ring->enqueue->link.control))
++		return ring->enq_seg->next->trbs;
++	return ring->enqueue;
++}
++
+ /* Updates trb to point to the next TRB in the ring, and updates seg if the next
+  * TRB is in a new segment.  This does not skip over link TRBs, and it does not
+  * effect the ring dequeue or enqueue pointers.
+diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+index 8889d67..d3d4923 100644
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -2588,15 +2588,7 @@ static int xhci_configure_endpoint(struct xhci_hcd *xhci,
+ 	if (command) {
+ 		cmd_completion = command->completion;
+ 		cmd_status = &command->status;
+-		command->command_trb = xhci->cmd_ring->enqueue;
+-
+-		/* Enqueue pointer can be left pointing to the link TRB,
+-		 * we must handle that
+-		 */
+-		if (TRB_TYPE_LINK_LE32(command->command_trb->link.control))
+-			command->command_trb =
+-				xhci->cmd_ring->enq_seg->next->trbs;
+-
++		command->command_trb = xhci_find_next_enqueue(xhci->cmd_ring);
+ 		list_add_tail(&command->cmd_list, &virt_dev->cmd_list);
+ 	} else {
+ 		cmd_completion = &virt_dev->cmd_completion;
+@@ -2604,7 +2596,7 @@ static int xhci_configure_endpoint(struct xhci_hcd *xhci,
+ 	}
+ 	init_completion(cmd_completion);
  
-> This would mean that we don't really need to set WAKEUP_EN for the pads in the DTS file.
+-	cmd_trb = xhci->cmd_ring->dequeue;
++	cmd_trb = xhci_find_next_enqueue(xhci->cmd_ring);
+ 	if (!ctx_change)
+ 		ret = xhci_queue_configure_endpoint(xhci, in_ctx->dma,
+ 				udev->slot_id, must_succeed);
+@@ -3389,14 +3381,7 @@ int xhci_discover_or_reset_device(struct usb_hcd *hcd, struct usb_device *udev)
+ 
+ 	/* Attempt to submit the Reset Device command to the command ring */
+ 	spin_lock_irqsave(&xhci->lock, flags);
+-	reset_device_cmd->command_trb = xhci->cmd_ring->enqueue;
+-
+-	/* Enqueue pointer can be left pointing to the link TRB,
+-	 * we must handle that
+-	 */
+-	if (TRB_TYPE_LINK_LE32(reset_device_cmd->command_trb->link.control))
+-		reset_device_cmd->command_trb =
+-			xhci->cmd_ring->enq_seg->next->trbs;
++	reset_device_cmd->command_trb = xhci_find_next_enqueue(xhci->cmd_ring);
+ 
+ 	list_add_tail(&reset_device_cmd->cmd_list, &virt_dev->cmd_list);
+ 	ret = xhci_queue_reset_device(xhci, slot_id);
+@@ -3600,7 +3585,7 @@ int xhci_alloc_dev(struct usb_hcd *hcd, struct usb_device *udev)
+ 	union xhci_trb *cmd_trb;
+ 
+ 	spin_lock_irqsave(&xhci->lock, flags);
+-	cmd_trb = xhci->cmd_ring->dequeue;
++	cmd_trb = xhci_find_next_enqueue(xhci->cmd_ring);
+ 	ret = xhci_queue_slot_control(xhci, TRB_ENABLE_SLOT, 0);
+ 	if (ret) {
+ 		spin_unlock_irqrestore(&xhci->lock, flags);
+@@ -3727,7 +3712,7 @@ int xhci_address_device(struct usb_hcd *hcd, struct usb_device *udev)
+ 	xhci_dbg_ctx(xhci, virt_dev->in_ctx, 2);
+ 
+ 	spin_lock_irqsave(&xhci->lock, flags);
+-	cmd_trb = xhci->cmd_ring->dequeue;
++	cmd_trb = xhci_find_next_enqueue(xhci->cmd_ring);
+ 	ret = xhci_queue_address_device(xhci, virt_dev->in_ctx->dma,
+ 					udev->slot_id);
+ 	if (ret) {
+diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
+index d0dd206..e77f6c9 100644
+--- a/drivers/usb/host/xhci.h
++++ b/drivers/usb/host/xhci.h
+@@ -1821,6 +1821,7 @@ int xhci_cancel_cmd(struct xhci_hcd *xhci, struct xhci_command *command,
+ 		union xhci_trb *cmd_trb);
+ void xhci_ring_ep_doorbell(struct xhci_hcd *xhci, unsigned int slot_id,
+ 		unsigned int ep_index, unsigned int stream_id);
++union xhci_trb *xhci_find_next_enqueue(struct xhci_ring *ring);
+ 
+ /* xHCI roothub code */
+ void xhci_set_link_state(struct xhci_hcd *xhci, __le32 __iomem **port_array,
+-- 
+1.8.1.2
 
-Well for runtime PM, we should also do the automatic handling if configured.
-But how to do that best is still open..
-
-Regards,
-
-Tony
