@@ -1,53 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757451Ab3JJVrO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 17:47:14 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:33187
-	"EHLO p3plsmtps2ded02.prod.phx3.secureserver.net"
+	id S1757678Ab3JJVsU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 17:48:20 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:57161 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750983Ab3JJVrN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 17:47:13 -0400
-x-originating-ip: 72.167.245.219
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: hpa@zytor.com, linux-kernel@vger.kernel.org, mingo@kernel.org,
-        tglx@linutronix.de, olaf@aepfle.de, x86@kernel.org
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 1/1] X86: hypev: Correctly guard the local APIC calibration code.
-Date: Thu, 10 Oct 2013 15:30:24 -0700
-Message-Id: <1381444224-3303-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1756906Ab3JJVsQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 17:48:16 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andi Kleen <andi@firstfloor.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Greg Thelen <gthelen@google.com>,
+        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
+        Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Michel Lespinasse <walken@google.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Roman Gushchin <klamm@yandex-team.ru>,
+        Ozgun Erdogan <ozgun@citusdata.com>, Metin Doslu <metin@citusdata.com>,
+        Vlastimil Babka <vbabka@suse.cz>, Tejun Heo <tj@kernel.org>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [patch 1/8] fs: cachefiles: use add_to_page_cache_lru()
+Date: Thu, 10 Oct 2013 17:46:55 -0400
+Message-Id: <1381441622-26215-2-git-send-email-hannes@cmpxchg.org>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1381441622-26215-1-git-send-email-hannes@cmpxchg.org>
+References: <1381441622-26215-1-git-send-email-hannes@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correctly guard the code that gets the local APIC timer frequency from the
-hypervisor.
+This code used to have its own lru cache pagevec up until a0b8cab3
+("mm: remove lru parameter from __pagevec_lru_add and remove parts of
+pagevec API").  Now it's just add_to_page_cache() followed by
+lru_cache_add(), might as well use add_to_page_cache_lru() directly.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 ---
- arch/x86/kernel/cpu/mshyperv.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ fs/cachefiles/rdwr.c | 33 +++++++++++++--------------------
+ 1 file changed, 13 insertions(+), 20 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/mshyperv.c b/arch/x86/kernel/cpu/mshyperv.c
-index 0a490ca..628ff50 100644
---- a/arch/x86/kernel/cpu/mshyperv.c
-+++ b/arch/x86/kernel/cpu/mshyperv.c
-@@ -80,6 +80,7 @@ static void __init ms_hyperv_init_platform(void)
- 	printk(KERN_INFO "HyperV: features 0x%x, hints 0x%x\n",
- 	       ms_hyperv.features, ms_hyperv.hints);
- 
-+#ifdef CONFIG_X86_LOCAL_APIC
- 	if (ms_hyperv.features & HV_X64_MSR_APIC_FREQUENCY_AVAILABLE) {
- 		/*
- 		 * Get the APIC frequency.
-@@ -99,6 +100,7 @@ static void __init ms_hyperv_init_platform(void)
- 			legacy_pic = &null_legacy_pic;
+diff --git a/fs/cachefiles/rdwr.c b/fs/cachefiles/rdwr.c
+index ebaff36..4b1fb5c 100644
+--- a/fs/cachefiles/rdwr.c
++++ b/fs/cachefiles/rdwr.c
+@@ -265,24 +265,22 @@ static int cachefiles_read_backing_file_one(struct cachefiles_object *object,
+ 				goto nomem_monitor;
  		}
- 	}
-+#endif
  
- 	if (ms_hyperv.features & HV_X64_MSR_TIME_REF_COUNT_AVAILABLE)
- 		clocksource_register_hz(&hyperv_cs, NSEC_PER_SEC/100);
+-		ret = add_to_page_cache(newpage, bmapping,
+-					netpage->index, cachefiles_gfp);
++		ret = add_to_page_cache_lru(newpage, bmapping,
++					    netpage->index, cachefiles_gfp);
+ 		if (ret == 0)
+ 			goto installed_new_backing_page;
+ 		if (ret != -EEXIST)
+ 			goto nomem_page;
+ 	}
+ 
+-	/* we've installed a new backing page, so now we need to add it
+-	 * to the LRU list and start it reading */
++	/* we've installed a new backing page, so now we need to start
++	 * it reading */
+ installed_new_backing_page:
+ 	_debug("- new %p", newpage);
+ 
+ 	backpage = newpage;
+ 	newpage = NULL;
+ 
+-	lru_cache_add_file(backpage);
+-
+ read_backing_page:
+ 	ret = bmapping->a_ops->readpage(NULL, backpage);
+ 	if (ret < 0)
+@@ -510,24 +508,23 @@ static int cachefiles_read_backing_file(struct cachefiles_object *object,
+ 					goto nomem;
+ 			}
+ 
+-			ret = add_to_page_cache(newpage, bmapping,
+-						netpage->index, cachefiles_gfp);
++			ret = add_to_page_cache_lru(newpage, bmapping,
++						    netpage->index,
++						    cachefiles_gfp);
+ 			if (ret == 0)
+ 				goto installed_new_backing_page;
+ 			if (ret != -EEXIST)
+ 				goto nomem;
+ 		}
+ 
+-		/* we've installed a new backing page, so now we need to add it
+-		 * to the LRU list and start it reading */
++		/* we've installed a new backing page, so now we need
++		 * to start it reading */
+ 	installed_new_backing_page:
+ 		_debug("- new %p", newpage);
+ 
+ 		backpage = newpage;
+ 		newpage = NULL;
+ 
+-		lru_cache_add_file(backpage);
+-
+ 	reread_backing_page:
+ 		ret = bmapping->a_ops->readpage(NULL, backpage);
+ 		if (ret < 0)
+@@ -538,8 +535,8 @@ static int cachefiles_read_backing_file(struct cachefiles_object *object,
+ 	monitor_backing_page:
+ 		_debug("- monitor add");
+ 
+-		ret = add_to_page_cache(netpage, op->mapping, netpage->index,
+-					cachefiles_gfp);
++		ret = add_to_page_cache_lru(netpage, op->mapping,
++					    netpage->index, cachefiles_gfp);
+ 		if (ret < 0) {
+ 			if (ret == -EEXIST) {
+ 				page_cache_release(netpage);
+@@ -549,8 +546,6 @@ static int cachefiles_read_backing_file(struct cachefiles_object *object,
+ 			goto nomem;
+ 		}
+ 
+-		lru_cache_add_file(netpage);
+-
+ 		/* install a monitor */
+ 		page_cache_get(netpage);
+ 		monitor->netfs_page = netpage;
+@@ -613,8 +608,8 @@ static int cachefiles_read_backing_file(struct cachefiles_object *object,
+ 	backing_page_already_uptodate:
+ 		_debug("- uptodate");
+ 
+-		ret = add_to_page_cache(netpage, op->mapping, netpage->index,
+-					cachefiles_gfp);
++		ret = add_to_page_cache_lru(netpage, op->mapping,
++					    netpage->index, cachefiles_gfp);
+ 		if (ret < 0) {
+ 			if (ret == -EEXIST) {
+ 				page_cache_release(netpage);
+@@ -631,8 +626,6 @@ static int cachefiles_read_backing_file(struct cachefiles_object *object,
+ 
+ 		fscache_mark_page_cached(op, netpage);
+ 
+-		lru_cache_add_file(netpage);
+-
+ 		/* the netpage is unlocked and marked up to date here */
+ 		fscache_end_io(op, netpage, 0);
+ 		page_cache_release(netpage);
 -- 
-1.7.4.1
+1.8.4
 
