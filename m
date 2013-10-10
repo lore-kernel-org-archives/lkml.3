@@ -1,62 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757013Ab3JJUCT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 16:02:19 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:49908 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755972Ab3JJUCS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 16:02:18 -0400
-From: Mark Brown <broonie@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: linaro-kernel@lists.linaro.org, Mark Brown <broonie@linaro.org>
-Date: Thu, 10 Oct 2013 21:02:10 +0100
-Message-Id: <1381435330-23308-1-git-send-email-broonie@kernel.org>
-X-Mailer: git-send-email 1.8.4.rc3
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: [PATCH] regmap: Use async I/O for patch application
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	id S1757297Ab3JJUCr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 16:02:47 -0400
+Received: from gate.crashing.org ([63.228.1.57]:48252 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756977Ab3JJUCq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 16:02:46 -0400
+Message-ID: <1381435346.5630.7.camel@pasglop>
+Subject: Re: [PATCH] sysfs/bin: Fix size handling overflow for bin_attribute
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Tejun Heo <tj@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 11 Oct 2013 07:02:26 +1100
+In-Reply-To: <20131010174011.GA1376@kroah.com>
+References: <1381378788.4330.30.camel@pasglop>
+	 <1381388635.4330.37.camel@pasglop> <20131010173847.GD13759@kroah.com>
+	 <20131010174011.GA1376@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Brown <broonie@linaro.org>
+On Thu, 2013-10-10 at 10:40 -0700, Greg KH wrote:
+> > This file (fs/sysfs/bin.c) is no longer in linux-next as Tejun merged it
+> > with the other file handling code in sysfs, to remove a bunch of
+> > duplicated logic.
+> > 
+> > So, could you look at linux-next and see if this is still an issue there
+> > or not?
+> 
+> Ah, nevermind, I just looked, and it still is an issue there, I'll
+> hand-edit the patch to apply properly, thanks.
 
-Try to speed up patch application a little using async I/O.
+Ah sorry, nice to see that Tejun cleaned that stuff up, it took me a while
+to find my way around :-)
 
-Signed-off-by: Mark Brown <broonie@linaro.org>
----
- drivers/base/regmap/regmap.c | 4 ++++
- 1 file changed, 4 insertions(+)
+Cheers,
+Ben.
 
-diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-index ccdac61..437f7f6 100644
---- a/drivers/base/regmap/regmap.c
-+++ b/drivers/base/regmap/regmap.c
-@@ -2132,6 +2132,7 @@ int regmap_register_patch(struct regmap *map, const struct reg_default *regs,
- 	bypass = map->cache_bypass;
- 
- 	map->cache_bypass = true;
-+	map->async = true;
- 
- 	/* Write out first; it's useful to apply even if we fail later. */
- 	for (i = 0; i < num_regs; i++) {
-@@ -2155,10 +2156,13 @@ int regmap_register_patch(struct regmap *map, const struct reg_default *regs,
- 	}
- 
- out:
-+	map->async = false;
- 	map->cache_bypass = bypass;
- 
- 	map->unlock(map->lock_arg);
- 
-+	regmap_async_complete(map);
-+
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(regmap_register_patch);
--- 
-1.8.4.rc3
 
