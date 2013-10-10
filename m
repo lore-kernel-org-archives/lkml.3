@@ -1,71 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755065Ab3JJHp0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 03:45:26 -0400
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:62489 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755004Ab3JJHpU (ORCPT
+	id S1755130Ab3JJHqf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 03:46:35 -0400
+Received: from smtprelay03.ispgateway.de ([80.67.31.37]:58245 "EHLO
+	smtprelay03.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750799Ab3JJHqe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 03:45:20 -0400
-Date: Thu, 10 Oct 2013 09:45:16 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/6] Optimize the cpu hotplug locking -v2
-Message-ID: <20131010074516.GC17990@gmail.com>
-References: <20131008102505.404025673@infradead.org>
- <20131009225006.7101379c.akpm@linux-foundation.org>
- <20131010062741.GA9999@gmail.com>
- <20131009233419.ea3d0b80.akpm@linux-foundation.org>
- <20131010072757.GB17990@gmail.com>
- <20131010003315.f49dacdf.akpm@linux-foundation.org>
+	Thu, 10 Oct 2013 03:46:34 -0400
+Message-ID: <52565B56.1070606@ladisch.de>
+Date: Thu, 10 Oct 2013 09:46:30 +0200
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: rngd (was: [PATCH 0/2] Add support for Qualcomm's PRNG)
+References: <1380811955-18085-1-git-send-email-svarbanov@mm-sol.com> <20131003165130.GA11974@thunk.org> <524EEB96.6040707@mm-sol.com> <20131004181005.GA7022@thunk.org> <52556C4E.9000604@mm-sol.com> <52557137.5050200@zytor.com> <20131009160338.GD1198@thunk.org> <52558320.9090603@zytor.com>
+In-Reply-To: <52558320.9090603@zytor.com>
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131010003315.f49dacdf.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+X-Df-Sender: bGludXgta2VybmVsQGNsLmRvbWFpbmZhY3Rvcnkta3VuZGUuZGU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+H. Peter Anvin wrote:
+> On 10/09/2013 09:03 AM, Theodore Ts'o wrote:
+>> You can specify as a command-line argument (-H) to rngd the entropy
+>> per bit of input data.
+>
+> There is no -H option in upstream rngd.  It might be in the Debian fork,
+> but the Debian fork has serious other problems.
 
-* Andrew Morton <akpm@linux-foundation.org> wrote:
+What problems?  I have been thinking about adding another entropy source
+to rngd, and was wondering which fork to use, or if it would make sense
+to merge them.  Are there any features of the Debian fork that should
+not be ported to upstream?
 
-> On Thu, 10 Oct 2013 09:27:57 +0200 Ingo Molnar <mingo@kernel.org> wrote:
-> 
-> > > > Should be fairly straightforward to test: the sys_sched_getaffinity() 
-> > > > and sys_sched_setaffinity() syscalls both make use of 
-> > > > get_online_cpus()/put_online_cpus(), so a testcase frobbing affinities 
-> > > > on N CPUs in parallel ought to demonstrate scalability improvements 
-> > > > pretty nicely.
-> > > 
-> > > Well, an in-kernel microbenchmark which camps in a loop doing get/put 
-> > > would measure this as well.
-> > > 
-> > > But neither approach answers the question "how useful is this patchset".
-> > 
-> > Even ignoring all the other reasons cited, sys_sched_getaffinity() / 
-> > sys_sched_setaffinity() are prime time system calls, and as long as 
-> > the patches are correct, speeding them up is worthwhile.
-> 
-> That I would not have guessed.  What's the use case for calling 
-> get/set_affinity at high frequency?
+> I don't understand how that would work with the FIPS tests in rngd,
+> unless of course the FIPS tests are so weak they are pointless anyway
 
-I don't think high-freq usage is common (at all).
+Most of the FIPS tests assume that the bits are independently generated
+(the two other tests check for correlations in 4/32-bit groups).  None
+of these tests make sense if the bit stream is the output of an AES
+conditioner.  For RDRAND, it might be useful to check that we don't
+accidentally get a series of zeros or something like that, but otherwise
+we have to trust the built-in tests that Intel claims the hardware is
+doing before conditioning.
 
-It could happen in AIM7-like workloads that start up a ton of binaries in 
-parallel, which can easily create parallel sched_getaffinity() calls 
-during process startup?
+As it happens, the 2002-12-03 change notice of FIPS 140-2 dropped the
+RNG tests.
 
-Thanks,
 
-	Ingo
+For the entropy source I've been thinking about (captured audio
+samples), the FIPS tests would make sense only if done independently on
+each bit in the sample (e.g., with 24-bit samples, there would be 24
+parallel bit streams, most of which wouldn't be random).  Additional
+tests to check for correlations between the bits in a sample would be
+useful, too.
+
+What I'm trying to say with all this is that self-tests must be
+customized for each entropy source.
+
+
+Regards,
+Clemens
