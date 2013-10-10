@@ -1,95 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752286Ab3JJFEH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 01:04:07 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:13722 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751796Ab3JJFEF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 01:04:05 -0400
-Message-ID: <1381381437.2297.32.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH v8 0/9] rwsem performance optimizations
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
-        Jason Low <jason.low2@hp.com>, Waiman Long <Waiman.Long@hp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>
-Date: Wed, 09 Oct 2013 22:03:57 -0700
-In-Reply-To: <CA+55aFwECx-zQpzDunhNCd2PEbkQ7KYOfuPyzKM1X-SJ-88ZXA@mail.gmail.com>
-References: <cover.1380748401.git.tim.c.chen@linux.intel.com>
-	 <1380753493.11046.82.camel@schen9-DESK> <20131003073212.GC5775@gmail.com>
-	 <1381186674.11046.105.camel@schen9-DESK> <20131009061551.GD7664@gmail.com>
-	 <20131009072838.GY3081@twins.programming.kicks-ass.net>
-	 <CA+55aFwECx-zQpzDunhNCd2PEbkQ7KYOfuPyzKM1X-SJ-88ZXA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752824Ab3JJFEu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 01:04:50 -0400
+Received: from cnbjrel01.sonyericsson.com ([219.141.167.165]:18732 "EHLO
+	cnbjrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752339Ab3JJFEt convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 01:04:49 -0400
+From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+To: "'Will Deacon'" <will.deacon@arm.com>
+CC: "'linux-arm-msm-owner@vger.kernel.org'" 
+	<linux-arm-msm-owner@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 10 Oct 2013 13:04:41 +0800
+Subject: RE: SDIV / UDIV  Question
+Thread-Topic: SDIV / UDIV  Question
+Thread-Index: Ac7E3e52Lx0GfS52TyKYJV0V45BhWAAmBX0w
+Message-ID: <35FD53F367049845BC99AC72306C23D1014D1A0971B0@CNBJMBX05.corpusers.net>
+References: <35FD53F367049845BC99AC72306C23D1014D1A0971AC@CNBJMBX05.corpusers.net>
+ <20131009105357.GC6564@mudshark.cambridge.arm.com>
+In-Reply-To: <20131009105357.GC6564@mudshark.cambridge.arm.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-10-09 at 20:14 -0700, Linus Torvalds wrote:
-> On Wed, Oct 9, 2013 at 12:28 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> >
-> > The workload that I got the report from was a virus scanner, it would
-> > spawn nr_cpus threads and {mmap file, scan content, munmap} through your
-> > filesystem.
-> 
-> So I suspect we could make the mmap_sem write area *much* smaller for
-> the normal cases.
-> 
-> Look at do_mmap_pgoff(), for example: it is run entirely under
-> mmap_sem, but 99% of what it does doesn't actually need the lock.
-> 
-> The part that really needs the lock is
-> 
->         addr = get_unmapped_area(file, addr, len, pgoff, flags);
->         addr = mmap_region(file, addr, len, vm_flags, pgoff);
-> 
-> but we hold it over all the other stuff too.
-> 
+Hi  Will ,
 
-True. By looking at the callers, we're always doing:
 
-down_write(&mm->mmap_sem);
-do_mmap_pgoff()
-...
-up_write(&mm->mmap_sem);
+Oh ,  I see ,
+Thanks for your clarification !
+So R-class cores will not run linux ?
+This means we don't  need  care about this .
+Am I right ?
 
-That goes for shm, aio, and of course mmap_pgoff().
+Thank you .
 
-While I know you hate two level locking, one way to go about this is to
-take the lock inside do_mmap_pgoff() after the initial checks (flags,
-page align, etc.) and return with the lock held, leaving the caller to
-unlock it. 
+-----Original Message-----
+From: Will Deacon [mailto:will.deacon@arm.com] 
+Sent: Wednesday, October 09, 2013 6:54 PM
+To: Wang, Yalin
+Cc: 'linux-arm-msm-owner@vger.kernel.org'; linux-kernel@vger.kernel.org
+Subject: Re: SDIV / UDIV Question
 
-> In fact, even if we moved the mmap_sem down into do_mmap(), and moved
-> code around a bit to only hold it over those functions, it would still
-> cover unnecessarily much. For example, while merging is common, not
-> merging is pretty common too, and we do that
+On Wed, Oct 09, 2013 at 08:08:05AM +0100, Wang, Yalin wrote:
+> I have a question about sdiv/ udiv  instructions :
+> In  armv7 A/R  TRM, it said sdiv/udiv will cause Divide by zero as 
+> undefined exception or just return zero (decided by implementation) .
 > 
->         vma = kmem_cache_zalloc(vm_area_cachep, GFP_KERNEL);
-> 
-> allocation under the lock. We could easily do things like preallocate
-> it outside the lock.
-> 
+> So  in kernel ,  should we need register a undef hook to Get this 
+> undef exception and send SIGFPE to user space Process ?
 
-AFAICT there are also checks that should be done at the beginning of the
-function, such as checking for MAP_LOCKED and VM_LOCKED flags before
-calling get_unmapped_area().
+As far as I can see, this can only happen for R-class cores, based on SCTLR.DZ.
 
-Thanks,
-Davidlohr
-
+Will
