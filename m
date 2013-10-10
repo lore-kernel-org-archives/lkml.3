@@ -1,89 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752129Ab3JJE23 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 00:28:29 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:23590 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751543Ab3JJE21 (ORCPT
+	id S1752434Ab3JJE2v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 00:28:51 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:62409 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751647Ab3JJE2j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 00:28:27 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AggIADMsVlJ5LFuj/2dsb2JhbABZgweDSrkZhT+BHRd0giUBAQU6HCMQCAMYCSUPBSUDIROIBblNFo8vB4MfgQQDlCaDXJICgWaBUig
-Date: Thu, 10 Oct 2013 15:28:20 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Dave Chinner <dchinner@redhat.com>, linux-fsdevel@vger.kernel.org,
-        Ben Myers <bpm@sgi.com>, linux-kernel@vger.kernel.org, xfs@oss.sgi.com,
-        "ocfs2-devel@oss.oracle.com" <ocfs2-devel@oss.oracle.com>
-Subject: Re: [XFS on bad superblock] BUG: unable to handle kernel NULL
- pointer dereference at 00000003
-Message-ID: <20131010042820.GA5663@dastard>
-References: <20131009073910.GA387@localhost>
- <20131010005900.GE2025@devil.localdomain>
- <20131010011640.GA5726@localhost>
- <20131010014117.GA6017@localhost>
- <20131010031515.GT4446@dastard>
- <20131010032637.GA12725@localhost>
- <20131010033300.GA12952@localhost>
- <20131010033834.GA13141@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131010033834.GA13141@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 10 Oct 2013 00:28:39 -0400
+From: Manish Badarkhe <badarkhe.manish@gmail.com>
+To: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: plagnioj@jcrosoft.com, tomi.valkeinen@ti.com, nsekhar@ti.com,
+        badarkhe.manish@gmail.com
+Subject: [PATCH] video: da8xx-fb: remove unwanted define
+Date: Thu, 10 Oct 2013 09:58:31 +0530
+Message-Id: <1381379311-22240-1-git-send-email-badarkhe.manish@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 10, 2013 at 11:38:34AM +0800, Fengguang Wu wrote:
-> On Thu, Oct 10, 2013 at 11:33:00AM +0800, Fengguang Wu wrote:
-> > On Thu, Oct 10, 2013 at 11:26:37AM +0800, Fengguang Wu wrote:
-> > > Dave,
-> > > 
-> > > > I note that you have CONFIG_SLUB=y, which means that the cache slabs
-> > > > are shared with objects of other types. That means that the memory
-> > > > corruption problem is likely to be caused by one of the other
-> > > > filesystems that is probing the block device(s), not XFS.
-> > > 
-> > > Good to know that, it would easy to test then: just turn off every
-> > > other filesystems. I'll try it right away.
-> > 
-> > Seems that we don't even need to do that. A dig through the oops
-> > database and I find stack dumps from other FS.
-> > 
-> > This happens in the kernel with same kconfig and commit 3.12-rc1.
-> 
-> Here is a summary of all FS with oops:
-> 
->     411 ocfs2_fill_super
->     189 xfs_fs_fill_super
->      86 jfs_fill_super
->      50 isofs_fill_super
->      33 fat_fill_super
->      18 vfat_fill_super
->      15 msdos_fill_super
->      11 ext2_fill_super
->      10 ext3_fill_super
->       3 reiserfs_fill_super
+Remove unwanted define "WSI_TIMEOUT" present in code.
 
-The order of probing on the original dmesg output you reported is:
+Signed-off-by: Manish Badarkhe <badarkhe.manish@gmail.com>
+---
+:100644 100644 e030e17... fa61323... M	drivers/video/da8xx-fb.c
+ drivers/video/da8xx-fb.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-	ext3
-	ext2
-	fatfs
-	reiserfs
-	gfs2
-	isofs
-	ocfs2
-
-which means that no XFS filesystem was mounted in the original bug
-report, and hence that further indicates that XFS is not responsible
-for the problem and that perhaps the original bisect was not
-reliable...
-
-Cheers,
-
-Dave.
+diff --git a/drivers/video/da8xx-fb.c b/drivers/video/da8xx-fb.c
+index e030e17..fa61323 100644
+--- a/drivers/video/da8xx-fb.c
++++ b/drivers/video/da8xx-fb.c
+@@ -129,7 +129,6 @@
+ 
+ #define LCD_NUM_BUFFERS	2
+ 
+-#define WSI_TIMEOUT	50
+ #define PALETTE_SIZE	256
+ 
+ #define	CLK_MIN_DIV	2
 -- 
-Dave Chinner
-david@fromorbit.com
+1.7.10.4
+
