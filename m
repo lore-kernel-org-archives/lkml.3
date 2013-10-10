@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756926Ab3JJPrf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 11:47:35 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52799 "EHLO
+	id S1757153Ab3JJPrx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 11:47:53 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52824 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756894Ab3JJPrd (ORCPT
+	with ESMTP id S1757112Ab3JJPru (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 11:47:33 -0400
+	Thu, 10 Oct 2013 11:47:50 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, Mark Brown <broonie@linaro.org>,
+Cc: Chris Clark <chris.clark@alcatel-lucent.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 078/104] ASoC: max98095: a couple array underflows
-Date: Thu, 10 Oct 2013 08:42:06 -0700
-Message-Id: <1381419752-29733-79-git-send-email-kamal@canonical.com>
+Subject: [PATCH 020/104] ipv4: sendto/hdrincl: don't use destination address found in header
+Date: Thu, 10 Oct 2013 08:41:08 -0700
+Message-Id: <1381419752-29733-21-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381419752-29733-1-git-send-email-kamal@canonical.com>
 References: <1381419752-29733-1-git-send-email-kamal@canonical.com>
@@ -27,43 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Chris Clark <chris.clark@alcatel-lucent.com>
 
-commit f8d7b13e14357ed19d2ca2799539600418dc3939 upstream.
+[ Upstream commit c27c9322d015dc1d9dfdf31724fca71c0476c4d1 ]
 
-The ->put() function are called from snd_ctl_elem_write() with user
-supplied data.  The limit checks here could underflow leading to a
-crash.
+ipv4: raw_sendmsg: don't use header's destination address
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+A sendto() regression was bisected and found to start with commit
+f8126f1d5136be1 (ipv4: Adjust semantics of rt->rt_gateway.)
+
+The problem is that it tries to ARP-lookup the constructed packet's
+destination address rather than the explicitly provided address.
+
+Fix this using FLOWI_FLAG_KNOWN_NH so that given nexthop is used.
+
+cf. commit 2ad5b9e4bd314fc685086b99e90e5de3bc59e26b
+
+Reported-by: Chris Clark <chris.clark@alcatel-lucent.com>
+Bisected-by: Chris Clark <chris.clark@alcatel-lucent.com>
+Tested-by: Chris Clark <chris.clark@alcatel-lucent.com>
+Suggested-by: Julian Anastasov <ja@ssi.bg>
+Signed-off-by: Chris Clark <chris.clark@alcatel-lucent.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/soc/codecs/max98095.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/ipv4/raw.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/sound/soc/codecs/max98095.c b/sound/soc/codecs/max98095.c
-index 41cdd16..8dbcacd 100644
---- a/sound/soc/codecs/max98095.c
-+++ b/sound/soc/codecs/max98095.c
-@@ -1863,7 +1863,7 @@ static int max98095_put_eq_enum(struct snd_kcontrol *kcontrol,
- 	struct max98095_pdata *pdata = max98095->pdata;
- 	int channel = max98095_get_eq_channel(kcontrol->id.name);
- 	struct max98095_cdata *cdata;
--	int sel = ucontrol->value.integer.value[0];
-+	unsigned int sel = ucontrol->value.integer.value[0];
- 	struct max98095_eq_cfg *coef_set;
- 	int fs, best, best_val, i;
- 	int regmask, regsave;
-@@ -2016,7 +2016,7 @@ static int max98095_put_bq_enum(struct snd_kcontrol *kcontrol,
- 	struct max98095_pdata *pdata = max98095->pdata;
- 	int channel = max98095_get_bq_channel(codec, kcontrol->id.name);
- 	struct max98095_cdata *cdata;
--	int sel = ucontrol->value.integer.value[0];
-+	unsigned int sel = ucontrol->value.integer.value[0];
- 	struct max98095_biquad_cfg *coef_set;
- 	int fs, best, best_val, i;
- 	int regmask, regsave;
+diff --git a/net/ipv4/raw.c b/net/ipv4/raw.c
+index 6f08991..47b4797 100644
+--- a/net/ipv4/raw.c
++++ b/net/ipv4/raw.c
+@@ -573,7 +573,8 @@ static int raw_sendmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
+ 	flowi4_init_output(&fl4, ipc.oif, sk->sk_mark, tos,
+ 			   RT_SCOPE_UNIVERSE,
+ 			   inet->hdrincl ? IPPROTO_RAW : sk->sk_protocol,
+-			   inet_sk_flowi_flags(sk) | FLOWI_FLAG_CAN_SLEEP,
++			   inet_sk_flowi_flags(sk) | FLOWI_FLAG_CAN_SLEEP |
++			    (inet->hdrincl ? FLOWI_FLAG_KNOWN_NH : 0),
+ 			   daddr, saddr, 0, 0);
+ 
+ 	if (!inet->hdrincl) {
 -- 
 1.8.1.2
 
