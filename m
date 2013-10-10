@@ -1,27 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752422Ab3JJHV0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 03:21:26 -0400
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:36359 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751338Ab3JJHVZ (ORCPT
+	id S1753526Ab3JJHYS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 03:24:18 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:36862 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752183Ab3JJHYR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 03:21:25 -0400
-Date: Thu, 10 Oct 2013 09:21:21 +0200
+	Thu, 10 Oct 2013 03:24:17 -0400
+Date: Thu, 10 Oct 2013 09:24:13 +0200
 From: Ingo Molnar <mingo@kernel.org>
 To: Namhyung Kim <namhyung@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH 02/52] tools/perf/build: Add feature check core code
-Message-ID: <20131010072121.GM10246@gmail.com>
+Subject: Re: [PATCH 32/52] tools/perf/build: Speed up auto-detection of
+ features by adding a 'test-all' target
+Message-ID: <20131010072413.GN10246@gmail.com>
 References: <1381227082-22039-1-git-send-email-mingo@kernel.org>
- <1381227082-22039-3-git-send-email-mingo@kernel.org>
- <87pprdk7ft.fsf@sejong.aot.lge.com>
+ <1381227082-22039-33-git-send-email-mingo@kernel.org>
+ <87siw9ir6i.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87pprdk7ft.fsf@sejong.aot.lge.com>
+In-Reply-To: <87siw9ir6i.fsf@sejong.aot.lge.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,57 +31,25 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 * Namhyung Kim <namhyung@kernel.org> wrote:
 
-> Hi Ingo,
+> On Tue,  8 Oct 2013 12:11:02 +0200, Ingo Molnar wrote:
+> > +test-all:
+> > +	$(BUILD) -Werror -fstack-protector -Wvolatile-register-var -O2 
+> > -Werror -D_FORTIFY_SOURCE=2 -ldw -lelf -lnuma -lunwind -lunwind-x86_64 
+> > -lelf -laudit -I/usr/include/slang -lslang $(shell pkg-config --libs 
+> > --cflags gtk+-2.0 2>/dev/null) $(FLAGS_PERL_EMBED) 
+> > $(FLAGS_PYTHON_EMBED) -DPACKAGE='perf' -DPACKAGE=perf -lbfd -ldl
 > 
-> On Tue,  8 Oct 2013 12:10:32 +0200, Ingo Molnar wrote:
-> > +feature_check = $(eval $(feature_check_code)); $(info CHK: config/feature-checks/test-$(1))
-> > +define feature_check_code
-> > +  feature-$(2) := $(shell make -C config/feature-checks test-$1 >/dev/null 2>/dev/null && echo 1 || echo 0)
-> > +endef
-> > +
-> > +#
-> > +# Build the feature check binaries in parallel, ignore errors, ignore return value and suppress output:
-> > +#
-> > +$(info Testing features:)
-> > +$(shell make -i -j -C config/feature-checks >/dev/null 2>&1)
-> > +$(info done)
-> > +
-> > +FEATURE_TESTS = hello
-> > +
-> > +$(foreach test,$(FEATURE_TESTS),$(call feature_check,$(test),$(test)))
+> Also missed -Wstack-protector.  And duplicate -Werror.
 > 
-> So as far as I can see, all the feature checking goes twice - once in 
-> $(shell make ...) and another in $(foreach test,...).  They look like 
-> doing exactly same thing.  And the final Makefile in this series still 
-> has it twice.  Is it intentional or did I miss something?
+> Anyway, it'd be great to generate this flags as well as source file 
+> automatically.
 
-Yes - and this is a performance trick.
+Well, the source file would mean some extra construction overhead during 
+detection - but generating the flags ought to be possible, by putting the 
+test-all entry last and generating a rolling ALL_FLAGS variable via the 
+rules above it.
 
-The first run is to build them all in parallel:
-
- $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) LDFLAGS=$(LDFLAGS) -i -j -C config/feature-checks $(CORE_FEATURE_TESTS) >/dev/null 2>&1)
-
-Note how we build in parallel (-j), ignore errors (-i) and suppress all 
-output.
-
-This is very fast even if all testcases are rebuilt, but we cannot 
-possibly recover which feature test failed.
-
-So we run it once more, this time serially, and recover the test results. 
-The vast majority of testcases will pass, and the repeat build will do, in 
-essence:
-
- comet:~/tip/tools/perf/config/feature-checks> perf stat --null --repeat 10 make test-libelf >/dev/null
-
- Performance counter stats for 'make test-libelf' (10 runs):
-
-       0.014682647 seconds time elapsed                                          ( +-  0.14% )
-
-so it's just 14 msecs to recover each testcase result.
-
-In theory we could optimize this further, by generating an actual test 
-success/failure file via the initial parallel make attempt, and recovering 
-those flags via the serial loop. That should be even faster.
+Would you like to write such a patch?
 
 Thanks,
 
