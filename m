@@ -1,74 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753748Ab3JJFci (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 01:32:38 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:56269 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751318Ab3JJFcg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 01:32:36 -0400
-Message-ID: <52563BD8.1060703@ti.com>
-Date: Thu, 10 Oct 2013 00:32:08 -0500
-From: Joel Fernandes <joelf@ti.com>
-Reply-To: <joelf@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1752747Ab3JJFmu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 01:42:50 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:64668 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751737Ab3JJFmt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 01:42:49 -0400
+X-AuditID: 9c93016f-b7c63ae00000696f-d2-52563e575039
+From: Namhyung Kim <namhyung@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH 02/52] tools/perf/build: Add feature check core code
+References: <1381227082-22039-1-git-send-email-mingo@kernel.org>
+	<1381227082-22039-3-git-send-email-mingo@kernel.org>
+Date: Thu, 10 Oct 2013 14:42:46 +0900
+In-Reply-To: <1381227082-22039-3-git-send-email-mingo@kernel.org> (Ingo
+	Molnar's message of "Tue, 8 Oct 2013 12:10:32 +0200")
+Message-ID: <87pprdk7ft.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Nishanth Menon <nm@ti.com>
-CC: Kevin Hilman <khilman@linaro.org>, Benoit Cousson <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>, Tero Kristo <t-kristo@ti.com>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-doc@vger.kernel.org>,
-        <devicetree@vger.kernel.org>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Paul Walmsley <paul@pwsan.com>
-Subject: Re: [PATCH V6 02/15] ARM: OMAP2+: AM33XX: add lateinit hook for calling
- pm late init
-References: <1381354144-7134-1-git-send-email-nm@ti.com> <1381361098-8283-1-git-send-email-nm@ti.com>
-In-Reply-To: <1381361098-8283-1-git-send-email-nm@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/09/2013 06:24 PM, Nishanth Menon wrote:
-> Call OMAP2+ generic lateinit hook from AM specific late init hook.
-> This allows the generic late initializations such as cpufreq hooks
-> to be active.
-> 
-> Cc: Benoit Cousson <bcousson@baylibre.com>
-> Cc: Kevin Hilman <khilman@deeprootsystems.com>
-> Cc: Paul Walmsley <paul@pwsan.com>
-> Cc: Tony Lindgren <tony@atomide.com>
-> Signed-off-by: Nishanth Menon <nm@ti.com>
-> ---
->  arch/arm/mach-omap2/board-generic.c |    1 +
->  arch/arm/mach-omap2/common.h        |    1 +
->  arch/arm/mach-omap2/io.c            |    6 ++++++
->  3 files changed, 8 insertions(+)
-> 
-> diff --git a/arch/arm/mach-omap2/board-generic.c b/arch/arm/mach-omap2/board-generic.c
-> index 87162e1..b474498 100644
-> --- a/arch/arm/mach-omap2/board-generic.c
-> +++ b/arch/arm/mach-omap2/board-generic.c
-> @@ -180,6 +180,7 @@ DT_MACHINE_START(AM33XX_DT, "Generic AM33XX (Flattened Device Tree)")
->  	.init_irq	= omap_intc_of_init,
->  	.handle_irq	= omap3_intc_handle_irq,
->  	.init_machine	= omap_generic_init,
-> +	.init_late	= am33xx_init_late,
+Hi Ingo,
 
-Instead of adding a new a *_init_late function for every platform, perhaps
-better to just do:
-.init_late	= omap2_common_pm_late_init;
+On Tue,  8 Oct 2013 12:10:32 +0200, Ingo Molnar wrote:
+> +feature_check = $(eval $(feature_check_code)); $(info CHK: config/feature-checks/test-$(1))
+> +define feature_check_code
+> +  feature-$(2) := $(shell make -C config/feature-checks test-$1 >/dev/null 2>/dev/null && echo 1 || echo 0)
+> +endef
+> +
+> +#
+> +# Build the feature check binaries in parallel, ignore errors, ignore return value and suppress output:
+> +#
+> +$(info Testing features:)
+> +$(shell make -i -j -C config/feature-checks >/dev/null 2>&1)
+> +$(info done)
+> +
+> +FEATURE_TESTS = hello
+> +
+> +$(foreach test,$(FEATURE_TESTS),$(call feature_check,$(test),$(test)))
 
-since that's the only function you're calling.
+So as far as I can see, all the feature checking goes twice - once in
+$(shell make ...) and another in $(foreach test,...).  They look like
+doing exactly same thing.  And the final Makefile in this series still
+has it twice.  Is it intentional or did I miss something?
 
-Later if more functions are added, then it can be wrapped around.
-
-regards,
-
--Joel
-
-
-
-
-
+Thanks,
+Namhyung
