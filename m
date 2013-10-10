@@ -1,76 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754272Ab3JJOXu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 10:23:50 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:59145 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751979Ab3JJOXt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 10:23:49 -0400
-Date: Thu, 10 Oct 2013 15:23:05 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux390@de.ibm.com" <linux390@de.ibm.com>,
-        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] arm64: include: asm: atomic.h: use 'unsigned int'
- and 'atomic_t' instead of 'unsigned long' for atomic_clear_mask()
-Message-ID: <20131010142305.GG6199@mudshark.cambridge.arm.com>
-References: <52561137.3070608@asianux.com>
- <5256117A.4000009@asianux.com>
- <5256121A.9030504@asianux.com>
- <52561269.60900@asianux.com>
- <20131010100733.GH3817@mudshark.cambridge.arm.com>
- <52568998.2080108@asianux.com>
+	id S1754686Ab3JJO06 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 10:26:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48550 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752145Ab3JJO05 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 10:26:57 -0400
+Date: Thu, 10 Oct 2013 11:26:39 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: Stephane Eranian <eranian@google.com>, LKML <linux-kernel@vger.kernel.org>,
+        "mingo@elte.hu" <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Jiri Olsa <jolsa@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Kees Cook <keescook@chromium.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] perf: disable mmap2 support
+Message-ID: <20131010142639.GA3790@infradead.org>
+References: <20131009161743.GA3022@quad>
+ <52558278.6080206@gmail.com>
+ <CABPqkBRx1CqwXOjJXWeqEBqkLkZMHWVQJNjv1jjqPakoDNB3Gg@mail.gmail.com>
+ <CABPqkBQKaMd_LuvfUreYb_9hiR-j0BkAyiP2yP-C0TTy+15_fQ@mail.gmail.com>
+ <5255900A.5050103@gmail.com>
+ <CABPqkBQZz=80he07yzagwPjhJBOK-bc_C=hfsK+LjMvcYWZvew@mail.gmail.com>
+ <52559A8E.1030101@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52568998.2080108@asianux.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <52559A8E.1030101@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 10, 2013 at 12:03:52PM +0100, Chen Gang wrote:
-> On 10/10/2013 06:07 PM, Will Deacon wrote:
-> > On Thu, Oct 10, 2013 at 03:35:21AM +0100, Chen Gang wrote:
-> >> In current kernel wide source, for arm64, only s390 scsi drivers use
-> >> atomic_clear_mask(), now, s390 itself need use 'unsigned int' and
-> >> 'atomic_t', so need match s390's atomic_clear_mask().
-> >>
-> >>
-> >> Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> >> ---
-> >>  arch/arm64/include/asm/atomic.h |   13 +++++++------
-> >>  1 files changed, 7 insertions(+), 6 deletions(-)
-> >>
-> >> diff --git a/arch/arm64/include/asm/atomic.h b/arch/arm64/include/asm/atomic.h
-> >> index 8363644..58808fc 100644
-> >> --- a/arch/arm64/include/asm/atomic.h
-> >> +++ b/arch/arm64/include/asm/atomic.h
-> >> @@ -126,16 +126,17 @@ static inline int atomic_cmpxchg(atomic_t *ptr, int old, int new)
-> >>  	return oldval;
-> >>  }
-> >>  
-> >> -static inline void atomic_clear_mask(unsigned long mask, unsigned long *addr)
-> >> +static inline void atomic_clear_mask(unsigned int mask, atomic_t *ptr)
-> >>  {
-> >> -	unsigned long tmp, tmp2;
-> >> +	unsigned int tmp;
-> > 
-> > Same comment here as for ARM; I think you want a signed int.
-> > 
+Em Wed, Oct 09, 2013 at 12:03:58PM -0600, David Ahern escreveu:
+> On 10/9/13 11:40 AM, Stephane Eranian wrote:
+> >On Wed, Oct 9, 2013 at 7:19 PM, David Ahern <dsahern@gmail.com> wrote:
+> >>On 10/9/13 10:39 AM, Stephane Eranian wrote:
+> >You mean:
+> >commit 384c671e33a7ddf905f2c60b433b9883f0e5a605
+> >Author: David Ahern <dsahern@gmail.com>
+> >Date:   Sun Sep 22 19:44:58 2013 -0600
+> >
+> >     perf trace: Add mmap2 handler
+> >
+> >Right?
 > 
-> OK, replied in patch 2/3 for ARM.
-> 
-> BTW: do arm64 need atomic_clear_mask()?
+> Yes, a couple of those have 2 commit ids. I pulled the id's from
+> acme's perf/core branch
 
-No. Neither ARM nor arm64 need this function.
-
-Will
+I'm merging my perf/core branch with Ingo's build speedup series, so
+I've removed that patch already, will be ok as soon as the disabling is
+done in perf/urgent and those branches get merged.
+ 
+- Arnaldo
