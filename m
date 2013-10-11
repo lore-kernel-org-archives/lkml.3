@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757712Ab3JKKmo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 06:42:44 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58404 "EHLO
+	id S1757781Ab3JKKmu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 06:42:50 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58418 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757631Ab3JKKmk (ORCPT
+	with ESMTP id S1757699Ab3JKKmn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 06:42:40 -0400
+	Fri, 11 Oct 2013 06:42:43 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Anatol Pomozov <anatol.pomozov@gmail.com>, Jens Axboe <axboe@kernel.dk>,
-        Jonghwan Choi <jhbird.choi@gmail.com>,
+Cc: Andi Kleen <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Vinson Lee <vlee@freedesktop.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 018/100] cfq: explicitly use 64bit divide operation for 64bit arguments
-Date: Fri, 11 Oct 2013 11:40:48 +0100
-Message-Id: <1381488130-30235-19-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 019/100] perf tools: Handle JITed code in shared memory
+Date: Fri, 11 Oct 2013 11:40:49 +0100
+Message-Id: <1381488130-30235-20-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
 References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
@@ -28,39 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anatol Pomozov <anatol.pomozov@gmail.com>
+From: Andi Kleen <ak@linux.intel.com>
 
-commit f3cff25f05f2ac29b2ee355e611b0657482f6f1d upstream.
+commit 89365e6c9ad4c0e090e4c6a4b67a3ce319381d89 upstream.
 
-'samples' is 64bit operant, but do_div() second parameter is 32.
-do_div silently truncates high 32 bits and calculated result
-is invalid.
+Need to check for /dev/zero.
 
-In case if low 32bit of 'samples' are zeros then do_div() produces
-kernel crash.
+Most likely more strings are missing too.
 
-Signed-off-by: Anatol Pomozov <anatol.pomozov@gmail.com>
-Acked-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
-Cc: Jonghwan Choi <jhbird.choi@gmail.com>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Link: http://lkml.kernel.org/r/1366848182-30449-1-git-send-email-andi@firstfloor.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Vinson Lee <vlee@freedesktop.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- block/cfq-iosched.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/perf/util/map.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index fb52df9..4d27120 100644
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -1484,7 +1484,7 @@ static u64 cfqg_prfill_avg_queue_size(struct seq_file *sf,
+diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+index 81072b6..34d8298 100644
+--- a/tools/perf/util/map.c
++++ b/tools/perf/util/map.c
+@@ -16,6 +16,7 @@ const char *map_type__name[MAP__NR_TYPES] = {
+ static inline int is_anon_memory(const char *filename)
+ {
+ 	return !strcmp(filename, "//anon") ||
++	       !strcmp(filename, "/dev/zero (deleted)") ||
+ 	       !strcmp(filename, "/anon_hugepage (deleted)");
+ }
  
- 	if (samples) {
- 		v = blkg_stat_read(&cfqg->stats.avg_queue_size_sum);
--		do_div(v, samples);
-+		v = div64_u64(v, samples);
- 	}
- 	__blkg_prfill_u64(sf, pd, v);
- 	return 0;
 -- 
 1.8.3.2
 
