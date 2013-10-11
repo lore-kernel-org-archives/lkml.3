@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933328Ab3JKUU7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:20:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45959 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932135Ab3JKTks (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932209Ab3JKTks (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 11 Oct 2013 15:40:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45900 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932135Ab3JKTkk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 15:40:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tom Gundersen <teg@jklm.no>, David Herrmann <dh.herrmann@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [ 108/110] HID: uhid: allocate static minor
-Date: Fri, 11 Oct 2013 12:39:28 -0700
-Message-Id: <20131011193819.542445649@linuxfoundation.org>
+        Michael Grzeschik <m.grzeschik@pengutronix.de>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Jonghwan Choi <jhbird.choi@samsung.com>
+Subject: [ 095/110] dmaengine: imx-dma: fix callback path in tasklet
+Date: Fri, 11 Oct 2013 12:39:15 -0700
+Message-Id: <20131011193818.156266702@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
 References: <20131011193807.584188672@linuxfoundation.org>
@@ -27,64 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Herrmann <dh.herrmann@gmail.com>
+From: Michael Grzeschik <m.grzeschik@pengutronix.de>
 
-commit 19872d20c890073c5207d9e02bb8f14d451a11eb upstream.
+commit fcaaba6c7136fe47e5a13352f99a64b019b6d2c5 upstream.
 
-udev has this nice feature of creating "dead" /dev/<node> device-nodes if
-it finds a devnode:<node> modalias. Once the node is accessed, the kernel
-automatically loads the module that provides the node. However, this
-requires udev to know the major:minor code to use for the node. This
-feature was introduced by:
+We need to free the ld_active list head before jumping into the callback
+routine. Otherwise the callback could run into issue_pending and change
+our ld_active list head we just going to free. This will run the channel
+list into an currupted and undefined state.
 
-  commit 578454ff7eab61d13a26b568f99a89a2c9edc881
-  Author: Kay Sievers <kay.sievers@vrfy.org>
-  Date:   Thu May 20 18:07:20 2010 +0200
-
-      driver core: add devname module aliases to allow module on-demand auto-loading
-
-However, uhid uses dynamic minor numbers so this doesn't actually work. We
-need to load uhid to know which minor it's going to use.
-
-Hence, allocate a static minor (just like uinput does) and we're good
-to go.
-
-Reported-by: Tom Gundersen <teg@jklm.no>
-Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Michael Grzeschik <m.grzeschik@pengutronix.de>
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+Cc: Jonghwan Choi <jhbird.choi@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/uhid.c         |    3 ++-
- include/linux/miscdevice.h |    1 +
- 2 files changed, 3 insertions(+), 1 deletion(-)
+ drivers/dma/imx-dma.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
---- a/drivers/hid/uhid.c
-+++ b/drivers/hid/uhid.c
-@@ -640,7 +640,7 @@ static const struct file_operations uhid
+--- a/drivers/dma/imx-dma.c
++++ b/drivers/dma/imx-dma.c
+@@ -604,13 +604,11 @@ static void imxdma_tasklet(unsigned long
  
- static struct miscdevice uhid_misc = {
- 	.fops		= &uhid_fops,
--	.minor		= MISC_DYNAMIC_MINOR,
-+	.minor		= UHID_MINOR,
- 	.name		= UHID_NAME,
- };
+ 	if (list_empty(&imxdmac->ld_active)) {
+ 		/* Someone might have called terminate all */
+-		goto out;
++		spin_unlock_irqrestore(&imxdma->lock, flags);
++		return;
+ 	}
+ 	desc = list_first_entry(&imxdmac->ld_active, struct imxdma_desc, node);
  
-@@ -659,4 +659,5 @@ module_exit(uhid_exit);
- MODULE_LICENSE("GPL");
- MODULE_AUTHOR("David Herrmann <dh.herrmann@gmail.com>");
- MODULE_DESCRIPTION("User-space I/O driver support for HID subsystem");
-+MODULE_ALIAS_MISCDEV(UHID_MINOR);
- MODULE_ALIAS("devname:" UHID_NAME);
---- a/include/linux/miscdevice.h
-+++ b/include/linux/miscdevice.h
-@@ -45,6 +45,7 @@
- #define MAPPER_CTRL_MINOR	236
- #define LOOP_CTRL_MINOR		237
- #define VHOST_NET_MINOR		238
-+#define UHID_MINOR		239
- #define MISC_DYNAMIC_MINOR	255
+-	if (desc->desc.callback)
+-		desc->desc.callback(desc->desc.callback_param);
+-
+ 	/* If we are dealing with a cyclic descriptor, keep it on ld_active
+ 	 * and dont mark the descriptor as complete.
+ 	 * Only in non-cyclic cases it would be marked as complete
+@@ -638,6 +636,10 @@ static void imxdma_tasklet(unsigned long
+ 	}
+ out:
+ 	spin_unlock_irqrestore(&imxdma->lock, flags);
++
++	if (desc->desc.callback)
++		desc->desc.callback(desc->desc.callback_param);
++
+ }
  
- struct device;
+ static int imxdma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
 
 
