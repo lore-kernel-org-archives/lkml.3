@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759291Ab3JKUci (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:32:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45764 "EHLO
+	id S1758972Ab3JKTkQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:40:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45682 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758979Ab3JKTkS (ORCPT
+	with ESMTP id S1757438Ab3JKTkG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:40:18 -0400
+	Fri, 11 Oct 2013 15:40:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hedberg <johan.hedberg@intel.com>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Subject: [ 064/110] Bluetooth: Introduce a new HCI_RFKILLED flag
-Date: Fri, 11 Oct 2013 12:38:44 -0700
-Message-Id: <20131011193814.806562716@linuxfoundation.org>
+        Dan Aloni <alonid@stratoscale.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Denys Vlasenko <vda.linux@googlemail.com>,
+        Martin MOKREJS <mmokrejs@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 044/110] fs/binfmt_elf.c: prevent a coredump with a large vm_map_count from Oopsing
+Date: Fri, 11 Oct 2013 12:38:24 -0700
+Message-Id: <20131011193812.624643080@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
 References: <20131011193807.584188672@linuxfoundation.org>
@@ -28,72 +30,140 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hedberg <johan.hedberg@intel.com>
+From: Dan Aloni <alonid@stratoscale.com>
 
-commit 5e130367d43ff22836bbae380d197d600fe8ddbb upstream.
+commit 72023656961b8c81a168a7a6762d589339d0d7ec upstream.
 
-This makes it more convenient to check for rfkill (no need to check for
-dev->rfkill before calling rfkill_blocked()) and also avoids potential
-races if the RFKILL state needs to be checked from within the rfkill
-callback.
+A high setting of max_map_count, and a process core-dumping with a large
+enough vm_map_count could result in an NT_FILE note not being written,
+and the kernel crashing immediately later because it has assumed
+otherwise.
 
-Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
-Acked-by: Marcel Holtmann <marcel@holtmann.org>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Reproduction of the oops-causing bug described here:
+
+    https://lkml.org/lkml/2013/8/30/50
+
+Rge ussue originated in commit 2aa362c49c31 ("coredump: extend core dump
+note section to contain file names of mapped file") from Oct 4, 2012.
+
+This patch make that section optional in that case.  fill_files_note()
+should signify the error, and also let the info struct in
+elf_core_dump() be zero-initialized so that we can check for the
+optionally written note.
+
+[akpm@linux-foundation.org: avoid abusing E2BIG, remove a couple of not-really-needed local variables]
+[akpm@linux-foundation.org: fix sparse warning]
+Signed-off-by: Dan Aloni <alonid@stratoscale.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Denys Vlasenko <vda.linux@googlemail.com>
+Reported-by: Martin MOKREJS <mmokrejs@gmail.com>
+Tested-by: Martin MOKREJS <mmokrejs@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/net/bluetooth/hci.h |    1 +
- net/bluetooth/hci_core.c    |   15 ++++++++++-----
- 2 files changed, 11 insertions(+), 5 deletions(-)
+ fs/binfmt_elf.c |   30 ++++++++++++++++++------------
+ 1 file changed, 18 insertions(+), 12 deletions(-)
 
---- a/include/net/bluetooth/hci.h
-+++ b/include/net/bluetooth/hci.h
-@@ -104,6 +104,7 @@ enum {
- enum {
- 	HCI_SETUP,
- 	HCI_AUTO_OFF,
-+	HCI_RFKILLED,
- 	HCI_MGMT,
- 	HCI_PAIRABLE,
- 	HCI_SERVICE_CACHE,
---- a/net/bluetooth/hci_core.c
-+++ b/net/bluetooth/hci_core.c
-@@ -1123,7 +1123,7 @@ int hci_dev_open(__u16 dev)
- 		goto done;
- 	}
+--- a/fs/binfmt_elf.c
++++ b/fs/binfmt_elf.c
+@@ -1415,7 +1415,7 @@ static void fill_siginfo_note(struct mem
+  *   long file_ofs
+  * followed by COUNT filenames in ASCII: "FILE1" NUL "FILE2" NUL...
+  */
+-static void fill_files_note(struct memelfnote *note)
++static int fill_files_note(struct memelfnote *note)
+ {
+ 	struct vm_area_struct *vma;
+ 	unsigned count, size, names_ofs, remaining, n;
+@@ -1430,11 +1430,11 @@ static void fill_files_note(struct memel
+ 	names_ofs = (2 + 3 * count) * sizeof(data[0]);
+  alloc:
+ 	if (size >= MAX_FILE_NOTE_SIZE) /* paranoia check */
+-		goto err;
++		return -EINVAL;
+ 	size = round_up(size, PAGE_SIZE);
+ 	data = vmalloc(size);
+ 	if (!data)
+-		goto err;
++		return -ENOMEM;
  
--	if (hdev->rfkill && rfkill_blocked(hdev->rfkill)) {
-+	if (test_bit(HCI_RFKILLED, &hdev->dev_flags)) {
- 		ret = -ERFKILL;
- 		goto done;
- 	}
-@@ -1545,10 +1545,12 @@ static int hci_rfkill_set_block(void *da
+ 	start_end_ofs = data + 2;
+ 	name_base = name_curpos = ((char *)data) + names_ofs;
+@@ -1487,7 +1487,7 @@ static void fill_files_note(struct memel
  
- 	BT_DBG("%p name %s blocked %d", hdev, hdev->name, blocked);
- 
--	if (!blocked)
--		return 0;
--
--	hci_dev_do_close(hdev);
-+	if (blocked) {
-+		set_bit(HCI_RFKILLED, &hdev->dev_flags);
-+		hci_dev_do_close(hdev);
-+	} else {
-+		clear_bit(HCI_RFKILLED, &hdev->dev_flags);
-+}
- 
- 	return 0;
+ 	size = name_curpos - (char *)data;
+ 	fill_note(note, "CORE", NT_FILE, size, data);
+- err: ;
++	return 0;
  }
-@@ -2241,6 +2243,9 @@ int hci_register_dev(struct hci_dev *hde
- 		}
+ 
+ #ifdef CORE_DUMP_USE_REGSET
+@@ -1688,8 +1688,8 @@ static int fill_note_info(struct elfhdr
+ 	fill_auxv_note(&info->auxv, current->mm);
+ 	info->size += notesize(&info->auxv);
+ 
+-	fill_files_note(&info->files);
+-	info->size += notesize(&info->files);
++	if (fill_files_note(&info->files) == 0)
++		info->size += notesize(&info->files);
+ 
+ 	return 1;
+ }
+@@ -1721,7 +1721,8 @@ static int write_note_info(struct elf_no
+ 			return 0;
+ 		if (first && !writenote(&info->auxv, file, foffset))
+ 			return 0;
+-		if (first && !writenote(&info->files, file, foffset))
++		if (first && info->files.data &&
++				!writenote(&info->files, file, foffset))
+ 			return 0;
+ 
+ 		for (i = 1; i < info->thread_notes; ++i)
+@@ -1808,6 +1809,7 @@ static int elf_dump_thread_status(long s
+ 
+ struct elf_note_info {
+ 	struct memelfnote *notes;
++	struct memelfnote *notes_files;
+ 	struct elf_prstatus *prstatus;	/* NT_PRSTATUS */
+ 	struct elf_prpsinfo *psinfo;	/* NT_PRPSINFO */
+ 	struct list_head thread_list;
+@@ -1898,9 +1900,12 @@ static int fill_note_info(struct elfhdr
+ 
+ 	fill_siginfo_note(info->notes + 2, &info->csigdata, siginfo);
+ 	fill_auxv_note(info->notes + 3, current->mm);
+-	fill_files_note(info->notes + 4);
++	info->numnote = 4;
+ 
+-	info->numnote = 5;
++	if (fill_files_note(info->notes + info->numnote) == 0) {
++		info->notes_files = info->notes + info->numnote;
++		info->numnote++;
++	}
+ 
+ 	/* Try to dump the FPU. */
+ 	info->prstatus->pr_fpvalid = elf_core_copy_task_fpregs(current, regs,
+@@ -1962,8 +1967,9 @@ static void free_note_info(struct elf_no
+ 		kfree(list_entry(tmp, struct elf_thread_status, list));
  	}
  
-+	if (hdev->rfkill && rfkill_blocked(hdev->rfkill))
-+		set_bit(HCI_RFKILLED, &hdev->dev_flags);
-+
- 	set_bit(HCI_SETUP, &hdev->dev_flags);
+-	/* Free data allocated by fill_files_note(): */
+-	vfree(info->notes[4].data);
++	/* Free data possibly allocated by fill_files_note(): */
++	if (info->notes_files)
++		vfree(info->notes_files->data);
  
- 	if (hdev->dev_type != HCI_AMP)
+ 	kfree(info->prstatus);
+ 	kfree(info->psinfo);
+@@ -2046,7 +2052,7 @@ static int elf_core_dump(struct coredump
+ 	struct vm_area_struct *vma, *gate_vma;
+ 	struct elfhdr *elf = NULL;
+ 	loff_t offset = 0, dataoff, foffset;
+-	struct elf_note_info info;
++	struct elf_note_info info = { };
+ 	struct elf_phdr *phdr4note = NULL;
+ 	struct elf_shdr *shdr4extnum = NULL;
+ 	Elf_Half e_phnum;
 
 
