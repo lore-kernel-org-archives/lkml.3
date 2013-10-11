@@ -1,118 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759191Ab3JKTrI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:47:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46545 "EHLO
+	id S1759208Ab3JKTrZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:47:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46633 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759110Ab3JKTmR (ORCPT
+	with ESMTP id S1758588Ab3JKTrW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:42:17 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Paul Walmsley <pwalmsley@nvidia.com>
-Subject: [ 119/135] ARM: tegra: unify Tegras Kconfig a bit more
-Date: Fri, 11 Oct 2013 12:40:00 -0700
-Message-Id: <20131011193958.207192316@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
-References: <20131011193945.181603934@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Fri, 11 Oct 2013 15:47:22 -0400
+Date: Fri, 11 Oct 2013 12:47:20 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Paul Chavent <Paul.Chavent@onera.fr>
+Cc: giometti@enneenne.com, linux-kernel@vger.kernel.org,
+        Alexander Gordeev <agordeev@redhat.com>
+Subject: Re: [PATCH] pps : add non blocking option to PPS_FETCH ioctl.
+Message-Id: <20131011124720.bf38f18affa8baf0b009875a@linux-foundation.org>
+In-Reply-To: <1381495232-12152-1-git-send-email-paul.chavent@onera.fr>
+References: <1381495232-12152-1-git-send-email-paul.chavent@onera.fr>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11-stable review patch.  If anyone has any objections, please let me know.
+On Fri, 11 Oct 2013 14:40:32 +0200 Paul Chavent <Paul.Chavent@onera.fr> wrote:
 
-------------------
+> The PPS_FETCH ioctl is blocking still the reception of a PPS
+> event. But, in some case, one may immediately need the last event
+> date. This patch allow to get the result of PPS_FETCH if the device
+> has the O_NONBLOCK flag set.
 
-From: Stephen Warren <swarren@nvidia.com>
+Are the PPS ioctls actually documented anywhere? 
+Documentation/pps/pps.txt is silent.
 
-commit 20984c44b5a08620778ea14fa5807489170fd5ca upstream.
+That's a shame, because it would be nice to have a formal description
+of the the PPS_FETCH semantics which leads to an understanding of why
+things are the way they are, how PPS_FETCH is supposed to be used, etc.
 
-Move all common select clauses from ARCH_TEGRA_*_SOC to ARCH_TEGRA to
-eliminate duplication. The USB-related selects all should have been
-common too, but were missing from Tegra114 previously. Move these to
-ARCH_TEGRA too. The latter fixes a build break when only Tegra114
-support was enabled, but not Tegra20 or Tegra30 support.
+Also, the presence of such documentation would permit me to bug you for
+not having updated it!  We need *some* channel for telling people about
+the driver, and updates to it.  Maybe linuxpps.org has it somewhere,
+but I couldn't immediately find it.
 
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
-Reported-by: Paul Walmsley <pwalmsley@nvidia.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Your implementation requires that the file be opened non-blocking.  But
+I'd have thought that adding a new and separate ioctl mode would be a
+cleaner and more flexible implementation - that way an app which wants
+both blocking and non-blocking behaviour doesn't need to open the file
+twice.
 
----
- arch/arm/mach-tegra/Kconfig |   21 ++++++---------------
- 1 file changed, 6 insertions(+), 15 deletions(-)
-
---- a/arch/arm/mach-tegra/Kconfig
-+++ b/arch/arm/mach-tegra/Kconfig
-@@ -2,18 +2,24 @@ config ARCH_TEGRA
- 	bool "NVIDIA Tegra" if ARCH_MULTI_V7
- 	select ARCH_HAS_CPUFREQ
- 	select ARCH_REQUIRE_GPIOLIB
-+	select ARM_GIC
- 	select CLKDEV_LOOKUP
- 	select CLKSRC_MMIO
- 	select CLKSRC_OF
- 	select COMMON_CLK
-+	select CPU_V7
- 	select GENERIC_CLOCKEVENTS
- 	select HAVE_ARM_SCU if SMP
- 	select HAVE_ARM_TWD if LOCAL_TIMERS
- 	select HAVE_CLK
- 	select HAVE_SMP
- 	select MIGHT_HAVE_CACHE_L2X0
-+	select PINCTRL
- 	select SOC_BUS
- 	select SPARSE_IRQ
-+	select USB_ARCH_HAS_EHCI if USB_SUPPORT
-+	select USB_ULPI if USB_PHY
-+	select USB_ULPI_VIEWPORT if USB_PHY
- 	select USE_OF
- 	help
- 	  This enables support for NVIDIA Tegra based systems.
-@@ -27,15 +33,9 @@ config ARCH_TEGRA_2x_SOC
- 	select ARM_ERRATA_720789
- 	select ARM_ERRATA_754327 if SMP
- 	select ARM_ERRATA_764369 if SMP
--	select ARM_GIC
--	select CPU_V7
--	select PINCTRL
- 	select PINCTRL_TEGRA20
- 	select PL310_ERRATA_727915 if CACHE_L2X0
- 	select PL310_ERRATA_769419 if CACHE_L2X0
--	select USB_ARCH_HAS_EHCI if USB_SUPPORT
--	select USB_ULPI if USB_PHY
--	select USB_ULPI_VIEWPORT if USB_PHY
- 	help
- 	  Support for NVIDIA Tegra AP20 and T20 processors, based on the
- 	  ARM CortexA9MP CPU and the ARM PL310 L2 cache controller
-@@ -44,14 +44,8 @@ config ARCH_TEGRA_3x_SOC
- 	bool "Enable support for Tegra30 family"
- 	select ARM_ERRATA_754322
- 	select ARM_ERRATA_764369 if SMP
--	select ARM_GIC
--	select CPU_V7
--	select PINCTRL
- 	select PINCTRL_TEGRA30
- 	select PL310_ERRATA_769419 if CACHE_L2X0
--	select USB_ARCH_HAS_EHCI if USB_SUPPORT
--	select USB_ULPI if USB_PHY
--	select USB_ULPI_VIEWPORT if USB_PHY
- 	help
- 	  Support for NVIDIA Tegra T30 processor family, based on the
- 	  ARM CortexA9MP CPU and the ARM PL310 L2 cache controller
-@@ -59,10 +53,7 @@ config ARCH_TEGRA_3x_SOC
- config ARCH_TEGRA_114_SOC
- 	bool "Enable support for Tegra114 family"
- 	select HAVE_ARM_ARCH_TIMER
--	select ARM_GIC
- 	select ARM_L1_CACHE_SHIFT_6
--	select CPU_V7
--	select PINCTRL
- 	select PINCTRL_TEGRA114
- 	help
- 	  Support for NVIDIA Tegra T114 processor family, based on the
+Also, this is actually a non-backward-compatible change for any
+application which happened to be opening the file with O_NONBLOCK! 
+Hopefully there aren't any such applications...
 
 
