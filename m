@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759518Ab3JKUHj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:07:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46173 "EHLO
+	id S932552Ab3JKUIA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:08:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46165 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932498Ab3JKTlW (ORCPT
+	with ESMTP id S932488Ab3JKTlV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:41:22 -0400
+	Fri, 11 Oct 2013 15:41:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dmitry Kozlov <xeb@mail.ru>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Eric Dumazet <edumazet@google.com>,
+        Mark Wu <wudxw@linux.vnet.ibm.com>, Jay Vosburgh <fubar@us.ibm.com>,
+        Andy Gospodarek <andy@greyhouse.net>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 042/135] ipv6: gre: correct calculation of max_headroom
-Date: Fri, 11 Oct 2013 12:38:43 -0700
-Message-Id: <20131011193949.824851113@linuxfoundation.org>
+Subject: [ 041/135] bonding: Fix broken promiscuity reference counting issue
+Date: Fri, 11 Oct 2013 12:38:42 -0700
+Message-Id: <20131011193949.708029176@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -29,50 +28,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Neil Horman <nhorman@tuxdriver.com>
 
-[ Upstream commit 3da812d860755925da890e8c713f2d2e2d7b1bae ]
+[ Upstream commit 5a0068deb611109c5ba77358be533f763f395ee4 ]
 
-gre_hlen already accounts for sizeof(struct ipv6_hdr) + gre header,
-so initialize max_headroom to zero. Otherwise the
+Recently grabbed this report:
+https://bugzilla.redhat.com/show_bug.cgi?id=1005567
 
-	if (encap_limit >= 0) {
-		max_headroom += 8;
-		mtu -= 8;
-	}
+Of an issue in which the bonding driver, with an attached vlan encountered the
+following errors when bond0 was taken down and back up:
 
-increments an uninitialized variable before max_headroom was reset.
+dummy1: promiscuity touches roof, set promiscuity failed. promiscuity feature of
+device might be broken.
 
-Found with coverity: 728539
+The error occurs because, during __bond_release_one, if we release our last
+slave, we take on a random mac address and issue a NETDEV_CHANGEADDR
+notification.  With an attached vlan, the vlan may see that the vlan and bond
+mac address were in sync, but no longer are.  This triggers a call to dev_uc_add
+and dev_set_rx_mode, which enables IFF_PROMISC on the bond device.  Then, when
+we complete __bond_release_one, we use the current state of the bond flags to
+determine if we should decrement the promiscuity of the releasing slave.  But
+since the bond changed promiscuity state during the release operation, we
+incorrectly decrement the slave promisc count when it wasn't in promiscuous mode
+to begin with, causing the above error
 
-Cc: Dmitry Kozlov <xeb@mail.ru>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Acked-by: Eric Dumazet <edumazet@google.com>
+Fix is pretty simple, just cache the bonding flags at the start of the function
+and use those when determining the need to set promiscuity.
+
+This is also needed for the ALLMULTI flag
+
+Reported-by: Mark Wu <wudxw@linux.vnet.ibm.com>
+CC: Jay Vosburgh <fubar@us.ibm.com>
+CC: Andy Gospodarek <andy@greyhouse.net>
+CC: Mark Wu <wudxw@linux.vnet.ibm.com>
+CC: "David S. Miller" <davem@davemloft.net>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/ip6_gre.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/bonding/bond_main.c |   13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
 
---- a/net/ipv6/ip6_gre.c
-+++ b/net/ipv6/ip6_gre.c
-@@ -620,7 +620,7 @@ static netdev_tx_t ip6gre_xmit2(struct s
- 	struct ip6_tnl *tunnel = netdev_priv(dev);
- 	struct net_device *tdev;    /* Device to other host */
- 	struct ipv6hdr  *ipv6h;     /* Our new IP header */
--	unsigned int max_headroom;  /* The extra header space needed */
-+	unsigned int max_headroom = 0; /* The extra header space needed */
- 	int    gre_hlen;
- 	struct ipv6_tel_txoption opt;
- 	int    mtu;
-@@ -693,7 +693,7 @@ static netdev_tx_t ip6gre_xmit2(struct s
- 			tunnel->err_count = 0;
- 	}
+--- a/drivers/net/bonding/bond_main.c
++++ b/drivers/net/bonding/bond_main.c
+@@ -1947,6 +1947,7 @@ static int __bond_release_one(struct net
+ 	struct bonding *bond = netdev_priv(bond_dev);
+ 	struct slave *slave, *oldcurrent;
+ 	struct sockaddr addr;
++	int old_flags = bond_dev->flags;
+ 	netdev_features_t old_features = bond_dev->features;
  
--	max_headroom = LL_RESERVED_SPACE(tdev) + gre_hlen + dst->header_len;
-+	max_headroom += LL_RESERVED_SPACE(tdev) + gre_hlen + dst->header_len;
+ 	/* slave is not a slave or master is not master of this slave */
+@@ -2077,12 +2078,18 @@ static int __bond_release_one(struct net
+ 	 * bond_change_active_slave(..., NULL)
+ 	 */
+ 	if (!USES_PRIMARY(bond->params.mode)) {
+-		/* unset promiscuity level from slave */
+-		if (bond_dev->flags & IFF_PROMISC)
++		/* unset promiscuity level from slave
++		 * NOTE: The NETDEV_CHANGEADDR call above may change the value
++		 * of the IFF_PROMISC flag in the bond_dev, but we need the
++		 * value of that flag before that change, as that was the value
++		 * when this slave was attached, so we cache at the start of the
++		 * function and use it here. Same goes for ALLMULTI below
++		 */
++		if (old_flags & IFF_PROMISC)
+ 			dev_set_promiscuity(slave_dev, -1);
  
- 	if (skb_headroom(skb) < max_headroom || skb_shared(skb) ||
- 	    (skb_cloned(skb) && !skb_clone_writable(skb, 0))) {
+ 		/* unset allmulti level from slave */
+-		if (bond_dev->flags & IFF_ALLMULTI)
++		if (old_flags & IFF_ALLMULTI)
+ 			dev_set_allmulti(slave_dev, -1);
+ 
+ 		bond_hw_addr_flush(bond_dev, slave_dev);
 
 
