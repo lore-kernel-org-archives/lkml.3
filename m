@@ -1,60 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932106Ab3JKI1D (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 04:27:03 -0400
-Received: from mga01.intel.com ([192.55.52.88]:47754 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752612Ab3JKI1A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 04:27:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1078,1371106800"; 
-   d="scan'208";a="415324537"
-From: tianyu.lan@intel.com
-To: lenb@kernel.org, rjw@rjwysocki.net
-Cc: Lan Tianyu <tianyu.lan@intel.com>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] ACPI/Power: Check physical device's runtime pm status before requesting to resume it
-Date: Fri, 11 Oct 2013 16:16:25 +0800
-Message-Id: <1381479385-1614-1-git-send-email-tianyu.lan@intel.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1757107Ab3JKI3P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 04:29:15 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:1261 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753170Ab3JKI3M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 04:29:12 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        <linux-arm-kernel@lists.infradead.org>
+CC: Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Arnd Bergmann <arnd@arndb.de>, <linux-kernel@vger.kernel.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH] ARM: at91: remove init_machine() as default is suitable
+Date: Fri, 11 Oct 2013 10:29:07 +0200
+Message-ID: <1381480147-14190-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.2.2
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lan Tianyu <tianyu.lan@intel.com>
+Since 883a106b0866ca8d75b5520bdb3ca1cf8e3730ba (ARM: default
+machine descriptor for multiplatform) we can remove the SoC-specific
+callback init_machine() to use the default code.
+This cleans up the code and reduces the number of lines.
 
-Currently, when one power resource is turned on, devices owning it
-will be requested to resume regardless of their runtime pm status.
-ACPI power resource maybe turn on in some devices' runtime pm
-resume callback(E.G, usb port) while turning on the power resource
-will trigger one new resume request of the device. It causes
-infinite loop between resume and suspend. This has happened on
-clearing usb port's PM Qos NO_POWER_OFF flag twice. This patch is
-to add check of physical device's runtime pm status and request resume
-if the device is suspended.
-
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 ---
- drivers/acpi/power.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ arch/arm/mach-at91/board-dt-rm9200.c | 7 -------
+ arch/arm/mach-at91/board-dt-sam9.c   | 7 -------
+ 2 files changed, 14 deletions(-)
 
-diff --git a/drivers/acpi/power.c b/drivers/acpi/power.c
-index 0dbe5cd..228c138 100644
---- a/drivers/acpi/power.c
-+++ b/drivers/acpi/power.c
-@@ -250,8 +250,10 @@ static void acpi_power_resume_dependent(struct work_struct *work)
+diff --git a/arch/arm/mach-at91/board-dt-rm9200.c b/arch/arm/mach-at91/board-dt-rm9200.c
+index 3fcb662..3a185fa 100644
+--- a/arch/arm/mach-at91/board-dt-rm9200.c
++++ b/arch/arm/mach-at91/board-dt-rm9200.c
+@@ -14,7 +14,6 @@
+ #include <linux/gpio.h>
+ #include <linux/of.h>
+ #include <linux/of_irq.h>
+-#include <linux/of_platform.h>
  
- 	mutex_lock(&adev->physical_node_lock);
+ #include <asm/setup.h>
+ #include <asm/irq.h>
+@@ -36,11 +35,6 @@ static void __init at91rm9200_dt_init_irq(void)
+ 	of_irq_init(irq_of_match);
+ }
  
--	list_for_each_entry(pn, &adev->physical_node_list, node)
--		pm_request_resume(pn->dev);
-+	list_for_each_entry(pn, &adev->physical_node_list, node) {
-+		if (pm_runtime_suspended(pn->dev))
-+			pm_request_resume(pn->dev);
-+	}
+-static void __init at91rm9200_dt_device_init(void)
+-{
+-	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
+-}
+-
+ static const char *at91rm9200_dt_board_compat[] __initdata = {
+ 	"atmel,at91rm9200",
+ 	NULL
+@@ -52,6 +46,5 @@ DT_MACHINE_START(at91rm9200_dt, "Atmel AT91RM9200 (Device Tree)")
+ 	.handle_irq	= at91_aic_handle_irq,
+ 	.init_early	= at91rm9200_dt_initialize,
+ 	.init_irq	= at91rm9200_dt_init_irq,
+-	.init_machine	= at91rm9200_dt_device_init,
+ 	.dt_compat	= at91rm9200_dt_board_compat,
+ MACHINE_END
+diff --git a/arch/arm/mach-at91/board-dt-sam9.c b/arch/arm/mach-at91/board-dt-sam9.c
+index 8db3013..3dab868 100644
+--- a/arch/arm/mach-at91/board-dt-sam9.c
++++ b/arch/arm/mach-at91/board-dt-sam9.c
+@@ -13,7 +13,6 @@
+ #include <linux/gpio.h>
+ #include <linux/of.h>
+ #include <linux/of_irq.h>
+-#include <linux/of_platform.h>
  
- 	list_for_each_entry(pn, &adev->power_dependent, node)
- 		pm_request_resume(pn->dev);
+ #include <asm/setup.h>
+ #include <asm/irq.h>
+@@ -37,11 +36,6 @@ static void __init at91_dt_init_irq(void)
+ 	of_irq_init(irq_of_match);
+ }
+ 
+-static void __init at91_dt_device_init(void)
+-{
+-	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
+-}
+-
+ static const char *at91_dt_board_compat[] __initdata = {
+ 	"atmel,at91sam9",
+ 	NULL
+@@ -54,6 +48,5 @@ DT_MACHINE_START(at91sam_dt, "Atmel AT91SAM (Device Tree)")
+ 	.handle_irq	= at91_aic_handle_irq,
+ 	.init_early	= at91_dt_initialize,
+ 	.init_irq	= at91_dt_init_irq,
+-	.init_machine	= at91_dt_device_init,
+ 	.dt_compat	= at91_dt_board_compat,
+ MACHINE_END
 -- 
-1.8.4.rc0.1.g8f6a3e5.dirty
+1.8.2.2
 
