@@ -1,96 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932322Ab3JKTlA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:41:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45975 "EHLO
+	id S932351Ab3JKTlF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:41:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46049 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932227Ab3JKTku (ORCPT
+	with ESMTP id S932227Ab3JKTlB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:40:50 -0400
+	Fri, 11 Oct 2013 15:41:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Metcalf <cmetcalf@tilera.com>
-Subject: [ 101/110] tile: use a more conservative __my_cpu_offset in CONFIG_PREEMPT
-Date: Fri, 11 Oct 2013 12:39:21 -0700
-Message-Id: <20131011193818.793554215@linuxfoundation.org>
+        Vimalkumar <j.vimal@gmail.com>, Eric Dumazet <edumazet@google.com>,
+        Jesper Dangaard Brouer <brouer@redhat.com>,
+        Jiri Pirko <jpirko@redhat.com>, Jiri Pirko <jiri@resnulli.us>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 015/135] net_sched: htb: fix a typo in htb_change_class()
+Date: Fri, 11 Oct 2013 12:38:16 -0700
+Message-Id: <20131011193946.891447905@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
-References: <20131011193807.584188672@linuxfoundation.org>
+In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
+References: <20131011193945.181603934@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.11-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Chris Metcalf <cmetcalf@tilera.com>
+From: Vimalkumar <j.vimal@gmail.com>
 
-commit f862eefec0b68e099a9fa58d3761ffb10bad97e1 upstream.
+[ Upstream commit f3ad857e3da1abaea780dc892b592cd86c541c52 ]
 
-It turns out the kernel relies on barrier() to force a reload of the
-percpu offset value.  Since we can't easily modify the definition of
-barrier() to include "tp" as an output register, we instead provide a
-definition of __my_cpu_offset as extended assembly that includes a fake
-stack read to hazard against barrier(), forcing gcc to know that it
-must reread "tp" and recompute anything based on "tp" after a barrier.
+Fix a typo added in commit 56b765b79 ("htb: improved accuracy at high
+rates")
 
-This fixes observed hangs in the slub allocator when we are looping
-on a percpu cmpxchg_double.
+cbuffer should not be a copy of buffer.
 
-A similar fix for ARMv7 was made in June in change 509eb76ebf97.
-
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+Signed-off-by: Vimalkumar <j.vimal@gmail.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Jesper Dangaard Brouer <brouer@redhat.com>
+Cc: Jiri Pirko <jpirko@redhat.com>
+Reviewed-by: Jiri Pirko <jiri@resnulli.us>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/tile/include/asm/percpu.h |   34 +++++++++++++++++++++++++++++++---
- 1 file changed, 31 insertions(+), 3 deletions(-)
+ net/sched/sch_htb.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/tile/include/asm/percpu.h
-+++ b/arch/tile/include/asm/percpu.h
-@@ -15,9 +15,37 @@
- #ifndef _ASM_TILE_PERCPU_H
- #define _ASM_TILE_PERCPU_H
+--- a/net/sched/sch_htb.c
++++ b/net/sched/sch_htb.c
+@@ -1495,7 +1495,7 @@ static int htb_change_class(struct Qdisc
+ 	psched_ratecfg_precompute(&cl->ceil, &hopt->ceil);
  
--register unsigned long __my_cpu_offset __asm__("tp");
--#define __my_cpu_offset __my_cpu_offset
--#define set_my_cpu_offset(tp) (__my_cpu_offset = (tp))
-+register unsigned long my_cpu_offset_reg asm("tp");
-+
-+#ifdef CONFIG_PREEMPT
-+/*
-+ * For full preemption, we can't just use the register variable
-+ * directly, since we need barrier() to hazard against it, causing the
-+ * compiler to reload anything computed from a previous "tp" value.
-+ * But we also don't want to use volatile asm, since we'd like the
-+ * compiler to be able to cache the value across multiple percpu reads.
-+ * So we use a fake stack read as a hazard against barrier().
-+ * The 'U' constraint is like 'm' but disallows postincrement.
-+ */
-+static inline unsigned long __my_cpu_offset(void)
-+{
-+	unsigned long tp;
-+	register unsigned long *sp asm("sp");
-+	asm("move %0, tp" : "=r" (tp) : "U" (*sp));
-+	return tp;
-+}
-+#define __my_cpu_offset __my_cpu_offset()
-+#else
-+/*
-+ * We don't need to hazard against barrier() since "tp" doesn't ever
-+ * change with PREEMPT_NONE, and with PREEMPT_VOLUNTARY it only
-+ * changes at function call points, at which we are already re-reading
-+ * the value of "tp" due to "my_cpu_offset_reg" being a global variable.
-+ */
-+#define __my_cpu_offset my_cpu_offset_reg
-+#endif
-+
-+#define set_my_cpu_offset(tp) (my_cpu_offset_reg = (tp))
+ 	cl->buffer = PSCHED_TICKS2NS(hopt->buffer);
+-	cl->cbuffer = PSCHED_TICKS2NS(hopt->buffer);
++	cl->cbuffer = PSCHED_TICKS2NS(hopt->cbuffer);
  
- #include <asm-generic/percpu.h>
+ 	sch_tree_unlock(sch);
  
 
 
