@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964872Ab3JKUim (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:38:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45652 "EHLO
+	id S1161146Ab3JKUi7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:38:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45636 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758891Ab3JKTkB (ORCPT
+	with ESMTP id S1758882Ab3JKTj7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:40:01 -0400
+	Fri, 11 Oct 2013 15:39:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ansis Atteka <aatteka@nicira.com>,
+        Mark Wu <wudxw@linux.vnet.ibm.com>, Jay Vosburgh <fubar@us.ibm.com>,
+        Andy Gospodarek <andy@greyhouse.net>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 028/110] ip: use ip_hdr() in __ip_make_skb() to retrieve IP header
-Date: Fri, 11 Oct 2013 12:38:08 -0700
-Message-Id: <20131011193810.794480815@linuxfoundation.org>
+Subject: [ 035/110] bonding: Fix broken promiscuity reference counting issue
+Date: Fri, 11 Oct 2013 12:38:15 -0700
+Message-Id: <20131011193811.602201278@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
 References: <20131011193807.584188672@linuxfoundation.org>
@@ -27,30 +28,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ansis Atteka <aatteka@nicira.com>
+From: Neil Horman <nhorman@tuxdriver.com>
 
-[ Upstream commit 749154aa56b57652a282cbde57a57abc278d1205 ]
+[ Upstream commit 5a0068deb611109c5ba77358be533f763f395ee4 ]
 
-skb->data already points to IP header, but for the sake of
-consistency we can also use ip_hdr() to retrieve it.
+Recently grabbed this report:
+https://bugzilla.redhat.com/show_bug.cgi?id=1005567
 
-Signed-off-by: Ansis Atteka <aatteka@nicira.com>
+Of an issue in which the bonding driver, with an attached vlan encountered the
+following errors when bond0 was taken down and back up:
+
+dummy1: promiscuity touches roof, set promiscuity failed. promiscuity feature of
+device might be broken.
+
+The error occurs because, during __bond_release_one, if we release our last
+slave, we take on a random mac address and issue a NETDEV_CHANGEADDR
+notification.  With an attached vlan, the vlan may see that the vlan and bond
+mac address were in sync, but no longer are.  This triggers a call to dev_uc_add
+and dev_set_rx_mode, which enables IFF_PROMISC on the bond device.  Then, when
+we complete __bond_release_one, we use the current state of the bond flags to
+determine if we should decrement the promiscuity of the releasing slave.  But
+since the bond changed promiscuity state during the release operation, we
+incorrectly decrement the slave promisc count when it wasn't in promiscuous mode
+to begin with, causing the above error
+
+Fix is pretty simple, just cache the bonding flags at the start of the function
+and use those when determining the need to set promiscuity.
+
+This is also needed for the ALLMULTI flag
+
+Reported-by: Mark Wu <wudxw@linux.vnet.ibm.com>
+CC: Jay Vosburgh <fubar@us.ibm.com>
+CC: Andy Gospodarek <andy@greyhouse.net>
+CC: Mark Wu <wudxw@linux.vnet.ibm.com>
+CC: "David S. Miller" <davem@davemloft.net>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/ip_output.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/bonding/bond_main.c |   13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
 
---- a/net/ipv4/ip_output.c
-+++ b/net/ipv4/ip_output.c
-@@ -1324,7 +1324,7 @@ struct sk_buff *__ip_make_skb(struct soc
- 	else
- 		ttl = ip_select_ttl(inet, &rt->dst);
+--- a/drivers/net/bonding/bond_main.c
++++ b/drivers/net/bonding/bond_main.c
+@@ -1991,6 +1991,7 @@ static int __bond_release_one(struct net
+ 	struct bonding *bond = netdev_priv(bond_dev);
+ 	struct slave *slave, *oldcurrent;
+ 	struct sockaddr addr;
++	int old_flags = bond_dev->flags;
+ 	netdev_features_t old_features = bond_dev->features;
  
--	iph = (struct iphdr *)skb->data;
-+	iph = ip_hdr(skb);
- 	iph->version = 4;
- 	iph->ihl = 5;
- 	iph->tos = inet->tos;
+ 	/* slave is not a slave or master is not master of this slave */
+@@ -2123,12 +2124,18 @@ static int __bond_release_one(struct net
+ 	 * already taken care of above when we detached the slave
+ 	 */
+ 	if (!USES_PRIMARY(bond->params.mode)) {
+-		/* unset promiscuity level from slave */
+-		if (bond_dev->flags & IFF_PROMISC)
++		/* unset promiscuity level from slave
++		 * NOTE: The NETDEV_CHANGEADDR call above may change the value
++		 * of the IFF_PROMISC flag in the bond_dev, but we need the
++		 * value of that flag before that change, as that was the value
++		 * when this slave was attached, so we cache at the start of the
++		 * function and use it here. Same goes for ALLMULTI below
++		 */
++		if (old_flags & IFF_PROMISC)
+ 			dev_set_promiscuity(slave_dev, -1);
+ 
+ 		/* unset allmulti level from slave */
+-		if (bond_dev->flags & IFF_ALLMULTI)
++		if (old_flags & IFF_ALLMULTI)
+ 			dev_set_allmulti(slave_dev, -1);
+ 
+ 		/* flush master's mc_list from slave */
 
 
