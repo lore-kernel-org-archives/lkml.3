@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758179Ab3JKLM0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 07:12:26 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58364 "EHLO
+	id S1758474Ab3JKLMt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 07:12:49 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58351 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757440Ab3JKKm2 (ORCPT
+	with ESMTP id S1757262Ab3JKKmZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 06:42:28 -0400
+	Fri, 11 Oct 2013 06:42:25 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Kees Cook <keescook@chromium.org>,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
         Jiri Kosina <jkosina@suse.cz>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 009/100] HID: logitech-dj: validate output report details
-Date: Fri, 11 Oct 2013 11:40:39 +0100
-Message-Id: <1381488130-30235-10-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 007/100] HID: add usage_index in struct hid_usage.
+Date: Fri, 11 Oct 2013 11:40:37 +0100
+Message-Id: <1381488130-30235-8-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
 References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
@@ -29,65 +28,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
 
-commit 297502abb32e225fb23801fcdb0e4f6f8e17099a upstream.
+commit f262d1fa2c651a5e2f92b6aee8779597631cd5d4 upstream.
 
-A HID device could send a malicious output report that would cause the
-logitech-dj HID driver to leak kernel memory contents to the device, or
-trigger a NULL dereference during initialization:
+Currently, there is no way to know the index of the current field
+in the .input_mapping and .event callbacks  when this field is inside
+an array of HID fields.
+This patch adds this index to the struct hid_usage so that this
+information is available to input_mapping and event callbacks.
 
-[  304.424553] usb 1-1: New USB device found, idVendor=046d, idProduct=c52b
-...
-[  304.780467] BUG: unable to handle kernel NULL pointer dereference at 0000000000000028
-[  304.781409] IP: [<ffffffff815d50aa>] logi_dj_recv_send_report.isra.11+0x1a/0x90
-
-CVE-2013-2895
-
-Signed-off-by: Kees Cook <keescook@chromium.org>
 Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Acked-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-[ luis: backported to 3.5: adjusted context ]
+[ luis: 3.5.y prereq for:
+  cc6b54a HID: validate feature and input report details ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/hid/hid-logitech-dj.c | 10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ drivers/hid/hid-core.c | 4 ++++
+ include/linux/hid.h    | 1 +
+ 2 files changed, 5 insertions(+)
 
-diff --git a/drivers/hid/hid-logitech-dj.c b/drivers/hid/hid-logitech-dj.c
-index 8758f38c..4288123 100644
---- a/drivers/hid/hid-logitech-dj.c
-+++ b/drivers/hid/hid-logitech-dj.c
-@@ -462,7 +462,7 @@ static int logi_dj_recv_send_report(struct dj_receiver_dev *djrcv_dev,
- 	struct hid_report *report;
- 	struct hid_report_enum *output_report_enum;
- 	u8 *data = (u8 *)(&dj_report->device_index);
--	int i;
-+	unsigned int i;
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index d4111de..4043d73 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -94,6 +94,7 @@ EXPORT_SYMBOL_GPL(hid_register_report);
+ static struct hid_field *hid_register_field(struct hid_report *report, unsigned usages, unsigned values)
+ {
+ 	struct hid_field *field;
++	int i;
  
- 	output_report_enum = &hdev->report_enum[HID_OUTPUT_REPORT];
- 	report = output_report_enum->report_id_hash[REPORT_ID_DJ_SHORT];
-@@ -472,7 +472,7 @@ static int logi_dj_recv_send_report(struct dj_receiver_dev *djrcv_dev,
- 		return -ENODEV;
- 	}
+ 	if (report->maxfield == HID_MAX_FIELDS) {
+ 		hid_err(report->device, "too many fields in report\n");
+@@ -112,6 +113,9 @@ static struct hid_field *hid_register_field(struct hid_report *report, unsigned
+ 	field->value = (s32 *)(field->usage + usages);
+ 	field->report = report;
  
--	for (i = 0; i < report->field[0]->report_count; i++)
-+	for (i = 0; i < DJREPORT_SHORT_LENGTH - 1; i++)
- 		report->field[0]->value[i] = data[i];
- 
- 	usbhid_submit_report(hdev, report, USB_DIR_OUT);
-@@ -784,6 +784,12 @@ static int logi_dj_probe(struct hid_device *hdev,
- 		goto hid_parse_fail;
- 	}
- 
-+	if (!hid_validate_values(hdev, HID_OUTPUT_REPORT, REPORT_ID_DJ_SHORT,
-+				 0, DJREPORT_SHORT_LENGTH - 1)) {
-+		retval = -ENODEV;
-+		goto hid_parse_fail;
-+	}
++	for (i = 0; i < usages; i++)
++		field->usage[i].usage_index = i;
 +
- 	/* Starts the usb device and connects to upper interfaces hiddev and
- 	 * hidraw */
- 	retval = hid_hw_start(hdev, HID_CONNECT_DEFAULT);
+ 	return field;
+ }
+ 
+diff --git a/include/linux/hid.h b/include/linux/hid.h
+index cdf6171..be1afbc 100644
+--- a/include/linux/hid.h
++++ b/include/linux/hid.h
+@@ -378,6 +378,7 @@ struct hid_collection {
+ struct hid_usage {
+ 	unsigned  hid;			/* hid usage code */
+ 	unsigned  collection_index;	/* index into collection array */
++	unsigned  usage_index;		/* index into usage array */
+ 	/* hidinput data */
+ 	__u16     code;			/* input driver code */
+ 	__u8      type;			/* input driver type */
 -- 
 1.8.3.2
 
