@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759065Ab3JKTkb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:40:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45760 "EHLO
+	id S1161010Ab3JKU0z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:26:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45843 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758975Ab3JKTkR (ORCPT
+	with ESMTP id S1759058Ab3JKTkb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:40:17 -0400
+	Fri, 11 Oct 2013 15:40:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Raphael Kubo da Costa <rakuco@FreeBSD.org>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Subject: [ 063/110] Bluetooth: Add support for BCM20702A0 [0b05, 17cb]
-Date: Fri, 11 Oct 2013 12:38:43 -0700
-Message-Id: <20131011193814.695053438@linuxfoundation.org>
+        =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@prifuk.cz>,
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+Subject: [ 083/110] USB: serial: option: Ignore card reader interface on Huawei E1750
+Date: Fri, 11 Oct 2013 12:39:03 -0700
+Message-Id: <20131011193816.858584504@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
 References: <20131011193807.584188672@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,42 +30,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Raphael Kubo da Costa <rakuco@FreeBSD.org>
+From: Michal Malý <madcatxster@prifuk.cz>
 
-commit 38a172bef8c93ecbfd69715fd88396988e4073fd upstream.
+commit eb2addd4044b4b2ce77693bde5bc810536dd96ee upstream.
 
-Yet another vendor specific ID for this chipset; this one for the ASUS
-USB-BT400 Bluetooth 4.0 adapter.
+Hi,
 
-T:  Bus=03 Lev=02 Prnt=02 Port=01 Cnt=01 Dev#=  6 Spd=12  MxCh= 0
-D:  Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=0b05 ProdID=17cb Rev=01.12
-S:  Manufacturer=Broadcom Corp
-S:  Product=BCM20702A0
-S:  SerialNumber=000272C64400
-C:  #Ifs= 4 Cfg#= 1 Atr=a0 MxPwr=100mA
-I:  If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=(none)
-I:  If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=(none)
-I:  If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-I:  If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
+my Huawei 3G modem has an embedded Smart Card reader which causes
+trouble when the modem is being detected (a bunch of "<warn>  (ttyUSBx):
+open blocked by driver for more than 7 seconds!" in messages.log). This
+trivial patch corrects the problem for me. The modem identifies itself
+as "12d1:1406 Huawei Technologies Co., Ltd. E1750" in lsusb although the
+description on the body says "Model E173u-1"
 
-Signed-off-by: Raphael Kubo da Costa <rakuco@FreeBSD.org>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Signed-off-by: Michal Malý <madcatxster@prifuk.cz>
+Cc: Bjørn Mork <bjorn@mork.no>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/bluetooth/btusb.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/serial/option.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -102,6 +102,7 @@ static struct usb_device_id btusb_table[
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -81,6 +81,7 @@ static void option_instat_callback(struc
  
- 	/* Broadcom BCM20702A0 */
- 	{ USB_DEVICE(0x0b05, 0x17b5) },
-+	{ USB_DEVICE(0x0b05, 0x17cb) },
- 	{ USB_DEVICE(0x04ca, 0x2003) },
- 	{ USB_DEVICE(0x0489, 0xe042) },
- 	{ USB_DEVICE(0x413c, 0x8197) },
+ #define HUAWEI_VENDOR_ID			0x12D1
+ #define HUAWEI_PRODUCT_E173			0x140C
++#define HUAWEI_PRODUCT_E1750			0x1406
+ #define HUAWEI_PRODUCT_K4505			0x1464
+ #define HUAWEI_PRODUCT_K3765			0x1465
+ #define HUAWEI_PRODUCT_K4605			0x14C6
+@@ -567,6 +568,8 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1c23, USB_CLASS_COMM, 0x02, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E173, 0xff, 0xff, 0xff),
+ 		.driver_info = (kernel_ulong_t) &net_intf1_blacklist },
++	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E1750, 0xff, 0xff, 0xff),
++		.driver_info = (kernel_ulong_t) &net_intf2_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1441, USB_CLASS_COMM, 0x02, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1442, USB_CLASS_COMM, 0x02, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4505, 0xff, 0xff, 0xff),
 
 
