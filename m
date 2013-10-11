@@ -1,95 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932818Ab3JKUI4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:08:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46149 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932472Ab3JKTlT (ORCPT
+	id S932852Ab3JKUJG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:09:06 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:63370 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932472Ab3JKUJB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:41:19 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vineet Gupta <vgupta@synopsys.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Brodkin <abrodkin@synopsys.com>, netdev@vger.kernel.org,
-        arc-linux-dev@synopsys.com
-Subject: [ 028/135] ethernet/arc/arc_emac: Fix huge delays in large file copies
-Date: Fri, 11 Oct 2013 12:38:29 -0700
-Message-Id: <20131011193948.290109551@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
-References: <20131011193945.181603934@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Fri, 11 Oct 2013 16:09:01 -0400
+Date: Fri, 11 Oct 2013 22:08:49 +0200 (CEST)
+From: Roel Kluin <roel.kluin@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org
+Subject: tty: incorrect test of echo_buf() result for ECHO_OP_START
+Message-ID: <alpine.DEB.2.02.1310112126001.11060@Z>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11-stable review patch.  If anyone has any objections, please let me know.
+Untested, but this looks like a bug to me
+-----------
+test echo_buf() result for ECHO_OP_START
 
-------------------
-
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-
-[ Upstream commit 27082ee1b92f4d41e78b85fe40f6ab39673fba00 ]
-
-copying large files to a NFS mounted host was taking absurdly large
-time.
-
-Turns out that TX BD reclaim had a sublte bug.
-
-Loop starts off from @txbd_dirty cursor and stops when it hits a BD
-still in use by controller. However when it stops it needs to keep the
-cursor at that very BD to resume scanning in next iteration. However it
-was erroneously incrementing the cursor, causing the next scan(s) to
-fail too, unless the BD chain was completely drained out.
-
-[ARCLinux]$ ls -l -sh /disk/log.txt
- 17976 -rw-r--r--    1 root     root       17.5M Sep  /disk/log.txt
-
-========== Before =====================
-[ARCLinux]$ time cp /disk/log.txt /mnt/.
-real    31m 7.95s
-user    0m 0.00s
-sys     0m 0.10s
-
-========== After =====================
-[ARCLinux]$ time cp /disk/log.txt /mnt/.
-real    0m 24.33s
-user    0m 0.00s
-sys     0m 0.19s
-
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-Cc: Alexey Brodkin <abrodkin@synopsys.com> (commit_signer:3/4=75%)
-Cc: "David S. Miller" <davem@davemloft.net> (commit_signer:3/4=75%)
-Cc: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: arc-linux-dev@synopsys.com
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
 ---
- drivers/net/ethernet/arc/emac_main.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- a/drivers/net/ethernet/arc/emac_main.c
-+++ b/drivers/net/ethernet/arc/emac_main.c
-@@ -149,8 +149,6 @@ static void arc_emac_tx_clean(struct net
- 		struct sk_buff *skb = tx_buff->skb;
- 		unsigned int info = le32_to_cpu(txbd->info);
- 
--		*txbd_dirty = (*txbd_dirty + 1) % TX_BD_NUM;
--
- 		if ((info & FOR_EMAC) || !txbd->data)
- 			break;
- 
-@@ -180,6 +178,8 @@ static void arc_emac_tx_clean(struct net
- 		txbd->data = 0;
- 		txbd->info = 0;
- 
-+		*txbd_dirty = (*txbd_dirty + 1) % TX_BD_NUM;
-+
- 		if (netif_queue_stopped(ndev))
- 			netif_wake_queue(ndev);
- 	}
-
+diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+index 7a744b6..42b6cca 100644
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -767,7 +767,7 @@ static size_t __process_echoes(struct tty_struct *tty)
+ 	 * of echo overrun before the next commit), then discard enough
+ 	 * data at the tail to prevent a subsequent overrun */
+ 	while (ldata->echo_commit - tail >= ECHO_DISCARD_WATERMARK) {
+-		if (echo_buf(ldata, tail == ECHO_OP_START)) {
++		if (echo_buf(ldata, tail) == ECHO_OP_START) {
+ 			if (echo_buf(ldata, tail) == ECHO_OP_ERASE_TAB)
+ 				tail += 3;
+ 			else
 
