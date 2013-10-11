@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933073Ab3JKUMW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:12:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46113 "EHLO
+	id S933097Ab3JKUMx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:12:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46109 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932399Ab3JKTlK (ORCPT
+	with ESMTP id S932396Ab3JKTlJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:41:10 -0400
+	Fri, 11 Oct 2013 15:41:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wannes Rombouts <wannes.rombouts@epitech.eu>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Jason Wang <jasowang@redhat.com>,
+        Duan Jiong <duanj.fnst@cn.fujitsu.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Vlad Yasevich <vyasevich@gmail.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 019/135] tuntap: correctly handle error in tun_set_iff()
-Date: Fri, 11 Oct 2013 12:38:20 -0700
-Message-Id: <20131011193947.318056163@linuxfoundation.org>
+Subject: [ 027/135] net: sctp: rfc4443: do not report ICMP redirects to user space
+Date: Fri, 11 Oct 2013 12:38:28 -0700
+Message-Id: <20131011193948.185120014@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -29,59 +30,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Wang <jasowang@redhat.com>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-[ Upstream commit 662ca437e714caaab855b12415d6ffd815985bc0 ]
+[ Upstream commit 3f96a532113131d5a65ac9e00fc83cfa31b0295f ]
 
-Commit c8d68e6be1c3b242f1c598595830890b65cea64a
-(tuntap: multiqueue support) only call free_netdev() on error in
-tun_set_iff(). This causes several issues:
+Adapt the same behaviour for SCTP as present in TCP for ICMP redirect
+messages. For IPv6, RFC4443, section 2.4. says:
 
-- memory of tun security were leaked
-- use after free since the flow gc timer was not deleted and the tfile
-  were not detached
+  ...
+  (e) An ICMPv6 error message MUST NOT be originated as a result of
+      receiving the following:
+  ...
+       (e.2) An ICMPv6 redirect message [IPv6-DISC].
+  ...
 
-This patch solves the above issues.
+Therefore, do not report an error to user space, just invoke dst's redirect
+callback and leave, same for IPv4 as done in TCP as well. The implication
+w/o having this patch could be that the reception of such packets would
+generate a poll notification and in worst case it could even tear down the
+whole connection. Therefore, stop updating sk_err on redirects.
 
-Reported-by: Wannes Rombouts <wannes.rombouts@epitech.eu>
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Reported-by: Duan Jiong <duanj.fnst@cn.fujitsu.com>
+Reported-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Suggested-by: Vlad Yasevich <vyasevich@gmail.com>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/tun.c |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ net/sctp/input.c |    3 +--
+ net/sctp/ipv6.c  |    2 +-
+ 2 files changed, 2 insertions(+), 3 deletions(-)
 
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -1691,11 +1691,11 @@ static int tun_set_iff(struct net *net,
- 		INIT_LIST_HEAD(&tun->disabled);
- 		err = tun_attach(tun, file);
- 		if (err < 0)
--			goto err_free_dev;
-+			goto err_free_flow;
- 
- 		err = register_netdevice(tun->dev);
- 		if (err < 0)
--			goto err_free_dev;
-+			goto err_detach;
- 
- 		if (device_create_file(&tun->dev->dev, &dev_attr_tun_flags) ||
- 		    device_create_file(&tun->dev->dev, &dev_attr_owner) ||
-@@ -1739,7 +1739,12 @@ static int tun_set_iff(struct net *net,
- 	strcpy(ifr->ifr_name, tun->dev->name);
- 	return 0;
- 
-- err_free_dev:
-+err_detach:
-+	tun_detach_all(dev);
-+err_free_flow:
-+	tun_flow_uninit(tun);
-+	security_tun_dev_free_security(tun->security);
-+err_free_dev:
- 	free_netdev(dev);
- 	return err;
- }
+--- a/net/sctp/input.c
++++ b/net/sctp/input.c
+@@ -648,8 +648,7 @@ void sctp_v4_err(struct sk_buff *skb, __
+ 		break;
+ 	case ICMP_REDIRECT:
+ 		sctp_icmp_redirect(sk, transport, skb);
+-		err = 0;
+-		break;
++		/* Fall through to out_unlock. */
+ 	default:
+ 		goto out_unlock;
+ 	}
+--- a/net/sctp/ipv6.c
++++ b/net/sctp/ipv6.c
+@@ -189,7 +189,7 @@ static void sctp_v6_err(struct sk_buff *
+ 		break;
+ 	case NDISC_REDIRECT:
+ 		sctp_icmp_redirect(sk, transport, skb);
+-		break;
++		goto out_unlock;
+ 	default:
+ 		break;
+ 	}
 
 
