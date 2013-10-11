@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758907Ab3JKTkE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:40:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45644 "EHLO
+	id S932071Ab3JKTke (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:40:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45818 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758834Ab3JKTkA (ORCPT
+	with ESMTP id S1759028Ab3JKTkZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:40:00 -0400
+	Fri, 11 Oct 2013 15:40:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dmitry Kozlov <xeb@mail.ru>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 036/110] ipv6: gre: correct calculation of max_headroom
-Date: Fri, 11 Oct 2013 12:38:16 -0700
-Message-Id: <20131011193811.726557710@linuxfoundation.org>
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 077/110] kernel/kmod.c: check for NULL in call_usermodehelper_exec()
+Date: Fri, 11 Oct 2013 12:38:57 -0700
+Message-Id: <20131011193816.228955398@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
 References: <20131011193807.584188672@linuxfoundation.org>
@@ -29,50 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
 
-[ Upstream commit 3da812d860755925da890e8c713f2d2e2d7b1bae ]
+commit 4c1c7be95c345cf2ad537a0c48e9aeadc7304527 upstream.
 
-gre_hlen already accounts for sizeof(struct ipv6_hdr) + gre header,
-so initialize max_headroom to zero. Otherwise the
+If /proc/sys/kernel/core_pattern contains only "|", a NULL pointer
+dereference happens upon core dump because argv_split("") returns
+argv[0] == NULL.
 
-	if (encap_limit >= 0) {
-		max_headroom += 8;
-		mtu -= 8;
-	}
+This bug was once fixed by commit 264b83c07a84 ("usermodehelper: check
+subprocess_info->path != NULL") but was by error reintroduced by commit
+7f57cfa4e2aa ("usermodehelper: kill the sub_info->path[0] check").
 
-increments an uninitialized variable before max_headroom was reset.
+This bug seems to exist since 2.6.19 (the version which core dump to
+pipe was added).  Depending on kernel version and config, some side
+effect might happen immediately after this oops (e.g.  kernel panic with
+2.6.32-358.18.1.el6).
 
-Found with coverity: 728539
-
-Cc: Dmitry Kozlov <xeb@mail.ru>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Acked-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv6/ip6_gre.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/ipv6/ip6_gre.c
-+++ b/net/ipv6/ip6_gre.c
-@@ -620,7 +620,7 @@ static netdev_tx_t ip6gre_xmit2(struct s
- 	struct ip6_tnl *tunnel = netdev_priv(dev);
- 	struct net_device *tdev;    /* Device to other host */
- 	struct ipv6hdr  *ipv6h;     /* Our new IP header */
--	unsigned int max_headroom;  /* The extra header space needed */
-+	unsigned int max_headroom = 0; /* The extra header space needed */
- 	int    gre_hlen;
- 	struct ipv6_tel_txoption opt;
- 	int    mtu;
-@@ -693,7 +693,7 @@ static netdev_tx_t ip6gre_xmit2(struct s
- 			tunnel->err_count = 0;
- 	}
+---
+ kernel/kmod.c |    4 ++++
+ 1 file changed, 4 insertions(+)
+
+--- a/kernel/kmod.c
++++ b/kernel/kmod.c
+@@ -568,6 +568,10 @@ int call_usermodehelper_exec(struct subp
+ 	DECLARE_COMPLETION_ONSTACK(done);
+ 	int retval = 0;
  
--	max_headroom = LL_RESERVED_SPACE(tdev) + gre_hlen + dst->header_len;
-+	max_headroom += LL_RESERVED_SPACE(tdev) + gre_hlen + dst->header_len;
- 
- 	if (skb_headroom(skb) < max_headroom || skb_shared(skb) ||
- 	    (skb_cloned(skb) && !skb_clone_writable(skb, 0))) {
++	if (!sub_info->path) {
++		call_usermodehelper_freeinfo(sub_info);
++		return -EINVAL;
++	}
+ 	helper_lock();
+ 	if (!sub_info->path) {
+ 		retval = -EINVAL;
 
 
