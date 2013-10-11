@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757757Ab3JKKms (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 06:42:48 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58423 "EHLO
+	id S1758095Ab3JKLIU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 07:08:20 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58433 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757631Ab3JKKmo (ORCPT
+	with ESMTP id S1757725Ab3JKKmr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 06:42:44 -0400
+	Fri, 11 Oct 2013 06:42:47 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stefan Kriwanek <mail@stefankriwanek.de>, Jiri Kosina <jkosina@suse.cz>,
+Cc: David Miller <davem@redhat.com>, Michal Kubecek <mkubecek@suse.cz>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 021/100] HID: Fix Speedlink VAD Cezanne support for some devices
-Date: Fri, 11 Oct 2013 11:40:51 +0100
-Message-Id: <1381488130-30235-22-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 023/100] Revert "sctp: fix call to SCTP_CMD_PROCESS_SACK in sctp_cmd_interpreter()"
+Date: Fri, 11 Oct 2013 11:40:53 +0100
+Message-Id: <1381488130-30235-24-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
 References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
@@ -27,54 +27,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefan Kriwanek <dev@stefankriwanek.de>
+From: Luis Henriques <luis.henriques@canonical.com>
 
-commit 06bb5219118fb098f4b0c7dcb484b28a52bf1c14 upstream.
+This reverts commit 01ee5a524eaa7928e8ee1ae4a0051084cfcaf904 which is
+commit f6e80abeab928b7c47cc1fbf53df13b4398a2bec upstream.
 
-Some devices of the "Speedlink VAD Cezanne" model need more aggressive fixing
-than already done.
+Michal Kubecek reported:
 
-I made sure through testing that this patch would not interfere with the proper
-working of a device that is bug-free. (The driver drops EV_REL events with
-abs(val) >= 256, which are not achievable even on the highest laser resolution
-hardware setting.)
+Please revert backports of mainline commit
 
-Signed-off-by: Stefan Kriwanek <mail@stefankriwanek.de>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+   f6e80abe  sctp: fix call to SCTP_CMD_PROCESS_SACK in sctp_cmd_interpreter()
+
+ in stable branches before 3.7, in particular
+
+   stable-3.0.y  b23270416da409bd4e637a5acbe31a1126235fb6  (v3.0.52)
+   stable-3.4.y  c2f5b7507ac5d808f29287d77ee6148358d7fbfe  (v3.4.19)
+
+ Mainline commit f6e80abe was introduced in v3.7-rc2 as a follow-up fix
+ to commit
+
+   edfee033  sctp: check src addr when processing SACK to update transport state
+
+ (from v3.7-rc1) which changed the interpretation of third argument to
+ sctp_cmd_process_sack() and sctp_outq_sack(). But as commit edfee033 has
+ never been backported to stable branches, backport of commit f6e80abe
+ actually breaks the code rather than fixing it.
+
+Cc: David Miller <davem@redhat.com>
+Cc: Michal Kubecek <mkubecek@suse.cz>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/hid/hid-speedlink.c | 11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ net/sctp/sm_sideeffect.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/hid/hid-speedlink.c b/drivers/hid/hid-speedlink.c
-index 6020137..2b03c9b 100644
---- a/drivers/hid/hid-speedlink.c
-+++ b/drivers/hid/hid-speedlink.c
-@@ -3,7 +3,7 @@
-  *  Fixes "jumpy" cursor and removes nonexistent keyboard LEDS from
-  *  the HID descriptor.
-  *
-- *  Copyright (c) 2011 Stefan Kriwanek <mail@stefankriwanek.de>
-+ *  Copyright (c) 2011, 2013 Stefan Kriwanek <dev@stefankriwanek.de>
-  */
+diff --git a/net/sctp/sm_sideeffect.c b/net/sctp/sm_sideeffect.c
+index c461b1c..8716da1 100644
+--- a/net/sctp/sm_sideeffect.c
++++ b/net/sctp/sm_sideeffect.c
+@@ -1609,9 +1609,8 @@ static int sctp_cmd_interpreter(sctp_event_t event_type,
+ 					asoc->outqueue.outstanding_bytes;
+ 			sackh.num_gap_ack_blocks = 0;
+ 			sackh.num_dup_tsns = 0;
+-			chunk->subh.sack_hdr = &sackh;
+ 			sctp_add_cmd_sf(commands, SCTP_CMD_PROCESS_SACK,
+-					SCTP_CHUNK(chunk));
++					SCTP_SACKH(&sackh));
+ 			break;
  
- /*
-@@ -48,8 +48,13 @@ static int speedlink_event(struct hid_device *hdev, struct hid_field *field,
- 		struct hid_usage *usage, __s32 value)
- {
- 	/* No other conditions due to usage_table. */
--	/* Fix "jumpy" cursor (invalid events sent by device). */
--	if (value == 256)
-+
-+	/* This fixes the "jumpy" cursor occuring due to invalid events sent
-+	 * by the device. Some devices only send them with value==+256, others
-+	 * don't. However, catching abs(value)>=256 is restrictive enough not
-+	 * to interfere with devices that were bug-free (has been tested).
-+	 */
-+	if (abs(value) >= 256)
- 		return 1;
- 	/* Drop useless distance 0 events (on button clicks etc.) as well */
- 	if (value == 0)
+ 		case SCTP_CMD_DISCARD_PACKET:
 -- 
 1.8.3.2
 
