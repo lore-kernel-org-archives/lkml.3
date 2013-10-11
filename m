@@ -1,89 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758092Ab3JKNmF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 09:42:05 -0400
-Received: from mail-vb0-f44.google.com ([209.85.212.44]:64046 "EHLO
-	mail-vb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753386Ab3JKNmD (ORCPT
+	id S1758162Ab3JKNnF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 09:43:05 -0400
+Received: from mx3-phx2.redhat.com ([209.132.183.24]:43592 "EHLO
+	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756819Ab3JKNnD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 09:42:03 -0400
-Date: Fri, 11 Oct 2013 10:41:53 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH V6 3/8] perf tools: add map__find_other_map_symbol()
-Message-ID: <20131011134153.GL28369@ghostprotocols.net>
-References: <1381320078-16497-1-git-send-email-adrian.hunter@intel.com>
- <1381320078-16497-4-git-send-email-adrian.hunter@intel.com>
+	Fri, 11 Oct 2013 09:43:03 -0400
+Date: Fri, 11 Oct 2013 09:42:34 -0400 (EDT)
+From: Dave Young <dyoung@redhat.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Borislav Petkov <bp@alien8.de>, X86 ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Vivek Goyal <vgoyal@redhat.com>, linux-efi@vger.kernel.org,
+        fwts-devel@lists.ubuntu.com
+Message-ID: <643121905.4545046.1381498954428.JavaMail.root@redhat.com>
+In-Reply-To: <20131011102706.GE12321@console-pimps.org>
+References: <1379602494-26684-1-git-send-email-bp@alien8.de> <20131008164831.GD16793@pd.tnic> <20131010080635.GA3692@dhcp-16-126.nay.redhat.com> <20131010081434.GB3692@dhcp-16-126.nay.redhat.com> <20131010085827.GA9929@pd.tnic> <20131010123453.GA12321@console-pimps.org> <20131011062437.GA14115@dhcp-16-126.nay.redhat.com> <20131011102706.GE12321@console-pimps.org>
+Subject: Re: [PATCH 12/12] EFI: Runtime services virtual mapping
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1381320078-16497-4-git-send-email-adrian.hunter@intel.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.5.82.12]
+X-Mailer: Zimbra 8.0.3_GA_5664 (ZimbraWebClient - FF12 (Linux)/8.0.3_GA_5664)
+Thread-Topic: Runtime services virtual mapping
+Thread-Index: zOqUf+Ea2geoF8UNe9ASIVfs2qMwgA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Oct 09, 2013 at 03:01:13PM +0300, Adrian Hunter escreveu:
-> Add a function to find a symbol using an ip that
-> might be on a different map.
-> 
-> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Matt,
 
-Can you take a look at the following patch? Since we have an
-addr_map_symbol struct and the method looks more appropriate to be at
-the map_groups abstraction, I thought this is simpler, what do you
-think?
+The kernel I referring is the boot kernel aka the 1st kernel,
+the boot loader is grub2 from Fedora 19.
 
-This struct is used in the machine__resolve_{mem,bstack} functions.
+[sorry for top reply because of using webmail]
 
-- Arnaldo
 
-diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-index 17ee458a0870..8f80463d9d46 100644
---- a/tools/perf/util/map.c
-+++ b/tools/perf/util/map.c
-@@ -371,6 +371,22 @@ struct symbol *map_groups__find_symbol_by_name(struct map_groups *mg,
- 	return NULL;
- }
- 
-+int map_groups__find_ams(struct addr_map_symbol *ams, symbol_filter_t filter)
-+{
-+	if (ams->addr < ams->map->start || ams->addr > ams->map->end) {
-+		if (ams->map->groups == NULL)
-+			return -1;
-+		ams->map = map_groups__find(ams->map->groups, ams->map->type, ams->addr);
-+		if (ams->map == NULL)
-+			return -1;
-+	}
-+
-+	ams->al_addr = ams->map->map_ip(ams->map, ams->addr);
-+	ams->sym = map__find_symbol(ams->map, ams->al_addr, filter);
-+
-+	return ams->sym ? 0 : -1;
-+}
-+
- size_t __map_groups__fprintf_maps(struct map_groups *mg,
- 				  enum map_type type, int verbose, FILE *fp)
- {
-diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
-index 4886ca280536..0359b4a808f0 100644
---- a/tools/perf/util/map.h
-+++ b/tools/perf/util/map.h
-@@ -167,6 +167,10 @@ struct symbol *map_groups__find_symbol_by_name(struct map_groups *mg,
- 					       struct map **mapp,
- 					       symbol_filter_t filter);
- 
-+struct addr_map_symbol;
-+
-+int map_groups__find_ams(struct addr_map_symbol *ams, symbol_filter_t filter);
-+
- static inline
- struct symbol *map_groups__find_function_by_name(struct map_groups *mg,
- 						 const char *name, struct map **mapp,
+----- Original Message -----
+From: "Matt Fleming" <matt@console-pimps.org>
+To: "Dave Young" <dyoung@redhat.com>
+Cc: "Borislav Petkov" <bp@alien8.de>, "X86 ML" <x86@kernel.org>, "LKML" <linux-kernel@vger.kernel.org>, "Borislav Petkov" <bp@suse.de>, "Matthew Garrett" <mjg59@srcf.ucam.org>, "H. Peter Anvin" <hpa@zytor.com>, "James Bottomley" <James.Bottomley@HansenPartnership.com>, "Vivek Goyal" <vgoyal@redhat.com>, linux-efi@vger.kernel.org, fwts-devel@lists.ubuntu.com
+Sent: Friday, October 11, 2013 6:27:06 PM
+Subject: Re: [PATCH 12/12] EFI: Runtime services virtual mapping
+
+On Fri, 11 Oct, at 02:24:37PM, Dave Young wrote:
+> For the boot efi_reserve_boot_services code, it's mainly for the
+> SetVirtualAddressMap callback use, so boot regions should not be reused
+> before SetVirtualAddressMap, but the overlapping happens before the
+> efi_reserve_boot_services, isn't it a problem?
+
+Hang on, which kernel are you referring to here? The boot kernel or the
+kexec'd kernel? I thought you were saying you noticed the overlap when
+running in the second (kexec'd) kernel?
+
+The only reason that you would see this overlap in the first (boot)
+kernel is if the bootloader messed up and allocated the kernel text as
+EfiBootServicesCode/Data. I'd like to believe no bootloaders are still
+doing that.
+
+-- 
+Matt Fleming, Intel Open Source Technology Center
+--
+To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Please read the FAQ at  http://www.tux.org/lkml/
