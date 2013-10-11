@@ -1,65 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755324Ab3JKHlw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 03:41:52 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:42370 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751225Ab3JKHlv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 03:41:51 -0400
-Date: Fri, 11 Oct 2013 09:41:44 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Dave Young <dyoung@redhat.com>
-Cc: Matt Fleming <matt@console-pimps.org>, X86 ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Vivek Goyal <vgoyal@redhat.com>, linux-efi@vger.kernel.org,
-        fwts-devel@lists.ubuntu.com
-Subject: Re: [PATCH 12/12] EFI: Runtime services virtual mapping
-Message-ID: <20131011074144.GA18719@pd.tnic>
-References: <1379602494-26684-1-git-send-email-bp@alien8.de>
- <20131008164551.GB16793@pd.tnic>
- <20131008164831.GD16793@pd.tnic>
- <20131010080635.GA3692@dhcp-16-126.nay.redhat.com>
- <20131010081434.GB3692@dhcp-16-126.nay.redhat.com>
- <20131010085827.GA9929@pd.tnic>
- <20131010123453.GA12321@console-pimps.org>
- <20131011062437.GA14115@dhcp-16-126.nay.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20131011062437.GA14115@dhcp-16-126.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756113Ab3JKHmy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 03:42:54 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.162]:51417 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751665Ab3JKHmw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 03:42:52 -0400
+X-RZG-AUTH: :JGIXVUS7cutRB/49FwqZ7WcKdUCnXG6JabOfSXKWrat+g9Pvwo0=
+X-RZG-CLASS-ID: mo00
+Subject: Re: [PATCH] omapdss: Add new panel driver for Topolly td028ttec1 LCD.
+Mime-Version: 1.0 (Apple Message framework v1085)
+Content-Type: text/plain; charset=us-ascii
+From: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
+In-Reply-To: <5257A402.5030806@metafoo.de>
+Date: Fri, 11 Oct 2013 09:42:49 +0200
+Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Marek Belisko <marek@goldelico.com>, plagnioj@jcrosoft.com,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-fbdev@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <5570E6D7-4F66-40BE-A50C-6CCA8074BD83@goldelico.com>
+References: <1381352915-17219-1-git-send-email-marek@goldelico.com> <525662F5.3090600@ti.com> <7FAC77D4-5E1E-4B11-B067-3A8233C69240@goldelico.com> <52568B40.4040802@ti.com> <04AC7291-38E4-421B-979C-BF03D52E94BD@goldelico.com> <525699EF.6090803@ti.com> <52569CE8.5070201@metafoo.de> <A7739B52-2632-4DD8-924D-B657A6BFE3ED@goldelico.com> <5256F8DF.2020801@metafoo.de> <5257815F.5070803@ti.com> <5257A402.5030806@metafoo.de>
+To: Lars-Peter Clausen <lars@metafoo.de>
+X-Mailer: Apple Mail (2.1085)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 11, 2013 at 02:24:37PM +0800, Dave Young wrote:
-> But for current implementation from Boris, getting same mapping
-> between diffrent kernel depends on same md order (same start and
-> size for each one) How about using this mapping solution but at the
-> same time for kexec kernel we also pass the virtual mappings via
-> setup_data, only thing diffrent is we only need map the non boot
-> region and just use the boot region size to ensure the other regions
-> are mapped with same virtual address.
+Hi Lars-Peter,
+ah, I didn't see your mail while writing mine - so some overlap.
 
-Actually, as hpa suggested, we will need to be passing the explicit
-virtual addresses to the kexec kernel in case we change the mapping
-algorithm in the future. So all should go through setup_data.
+Am 11.10.2013 um 09:08 schrieb Lars-Peter Clausen:
 
-> OTOH, if we only passing ioremapped data without Boris's current patch
-> the problem I worry about is how can we ensure the addresses are not
-> used by other code before we mapping the in 2nd kernel efi_init.
+> On 10/11/2013 06:41 AM, Tomi Valkeinen wrote:
+>> On 10/10/13 21:58, Lars-Peter Clausen wrote:
+>> 
+>>> According to the datasheet the the panel as a dedicated dout pin. Maybe
+>>> you did not connect it in your design, which means you won't be able to
+>>> read any data from the panel at all.
+>> 
+>> I don't see a dedicated dout in the datasheet...
+>> http://dl.wolfgang-draxinger.net/openmoko/doc/TD028TTEC1.pdf
+> 
+> Hm, ok, looks like the display controller used in the panel (the jbt6k74) has separate DIN and DOUT, but the panel only has one pin.
 
-Right, the old method of mapping EFI runtime regions used ioremap and
-was mapping the regions in the same address space. Now we have reserved
-a 64G in the VA space ending at -4G (i.e. 0xffff_ffff_0000_0000) which
-is reserved only for EFI RT usage.
+Yes
 
--- 
-Regards/Gruss,
-    Boris.
+> But the datasheet for the panel is not exactly clear
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Yes
+
+> on whether it's DIN pin is both the DIN and DOUT pin from the controller or, just DIN and DOUT not being connected at all.
+
+I think they have a 4-wire controller in the panel and tied the lines together.
+This works if they properly control the data direction.
+There are some read commands where this direction reversal happens.
+
+> 
+>> 
+>>> Also your custom bitbang code looks a bit strange:
+>>> 
+>>>     gpio_set_value(data->dout_gpio, 1);
+>>>     if (gpio_get_value(data->din_gpio) == 0)
+>>>         return 1;
+>>> 
+>>> You set the state on the dout pin and then read the din pin, if both do
+>>> not match you abort with an error. This suggest that, for whatever
+>>> reason, you feed the dout pin back into the din pin in your design. Btw.
+>>> this is also the only place where din is used in your driver.
+>> 
+>> Yes, he said the single "Serial interface data input/output" pin is
+>> connected to both din and dout on the SoC. I guess the purpose of that
+>> gpio_get_value() is to ensure that the panel is not pulling the line
+>> when the SoC is writing to it. Not that I really understand how that can
+>> work, but I'm not a HW guy =).
+> 
+> Hm, ok. I don't think the panel will ever actively drive the line.
+
+Well it will drive it if we issue some read command (but I have no information
+about these commands).
+
+> So in my opinion using either the McBSP SPI master or the GPIO bitbang SPI master should work just fine. You just wouldn't be able to read any register from the device. But the driver is not attempting to do this, so it should be fine.
+
+I am not sure if there is a SPI driver for a McBSP port [1]? And to make that
+work (reliably) and tested it might need a lot of work for us. At least I think
+such a change (e.g. setting up clock polarity etc.) is not done in some minutes.
+And the only feedback we have from the panel is "does not work"/"works". I.e.
+if we are not lucky that it works immediately we have no real means to debug.
+
+IMHO it also gives more flexibility to board designers to choose GPIOs instead
+of enforcing some SPI interface by the driver (and encapsulate this arguable
+protocol in the driver). Maybe some board has 3 spare GPIOs but neither
+McBSPs nor McSPIs available.
+
+BR,
+Nikolaus
+
+http://lists.infradead.org/pipermail/linux-arm-kernel/2011-June/053064.html
+
