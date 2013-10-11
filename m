@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758953Ab3JKTkN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:40:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45671 "EHLO
+	id S1759408Ab3JKUdz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:33:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45737 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758909Ab3JKTkF (ORCPT
+	with ESMTP id S1758950Ab3JKTkN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:40:05 -0400
+	Fri, 11 Oct 2013 15:40:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 056/110] powerpc: Restore registers on error exit from csum_partial_copy_generic()
-Date: Fri, 11 Oct 2013 12:38:36 -0700
-Message-Id: <20131011193813.910392120@linuxfoundation.org>
+        Kirill Tkhai <tkhai@yandex.ru>, David Miller <davem@davemloft.net>
+Subject: [ 069/110] sparc64: Remove RWSEM export leftovers
+Date: Fri, 11 Oct 2013 12:38:49 -0700
+Message-Id: <20131011193815.367486327@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
 References: <20131011193807.584188672@linuxfoundation.org>
@@ -28,158 +26,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+From: Kirill Tkhai <tkhai@yandex.ru>
 
-commit 8f21bd0090052e740944f9397e2be5ac7957ded7 upstream.
+[ Upstream commit 61d9b9355b0d427bd1e732bd54628ff9103e496f ]
 
-The csum_partial_copy_generic() function saves the PowerPC non-volatile
-r14, r15, and r16 registers for the main checksum-and-copy loop.
-Unfortunately, it fails to restore them upon error exit from this loop,
-which results in silent corruption of these registers in the presumably
-rare event of an access exception within that loop.
+The functions
 
-This commit therefore restores these register on error exit from the loop.
+			__down_read
+			__down_read_trylock
+			__down_write
+			__down_write_trylock
+			__up_read
+			__up_write
+			__downgrade_write
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+are implemented inline, so remove corresponding EXPORT_SYMBOLs
+(They lead to compile errors on RT kernel).
+
+Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
+CC: David Miller <davem@davemloft.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/powerpc/lib/checksum_64.S |   54 ++++++++++++++++++++++++++++++-----------
- 1 file changed, 40 insertions(+), 14 deletions(-)
+ arch/sparc/lib/ksyms.c |    9 ---------
+ 1 file changed, 9 deletions(-)
 
---- a/arch/powerpc/lib/checksum_64.S
-+++ b/arch/powerpc/lib/checksum_64.S
-@@ -226,19 +226,35 @@ _GLOBAL(csum_partial)
- 	blr
+--- a/arch/sparc/lib/ksyms.c
++++ b/arch/sparc/lib/ksyms.c
+@@ -98,15 +98,6 @@ EXPORT_SYMBOL(___copy_from_user);
+ EXPORT_SYMBOL(___copy_in_user);
+ EXPORT_SYMBOL(__clear_user);
  
- 
--	.macro source
-+	.macro srcnr
- 100:
- 	.section __ex_table,"a"
- 	.align 3
--	.llong 100b,.Lsrc_error
-+	.llong 100b,.Lsrc_error_nr
- 	.previous
- 	.endm
- 
--	.macro dest
-+	.macro source
-+150:
-+	.section __ex_table,"a"
-+	.align 3
-+	.llong 150b,.Lsrc_error
-+	.previous
-+	.endm
-+
-+	.macro dstnr
- 200:
- 	.section __ex_table,"a"
- 	.align 3
--	.llong 200b,.Ldest_error
-+	.llong 200b,.Ldest_error_nr
-+	.previous
-+	.endm
-+
-+	.macro dest
-+250:
-+	.section __ex_table,"a"
-+	.align 3
-+	.llong 250b,.Ldest_error
- 	.previous
- 	.endm
- 
-@@ -274,11 +290,11 @@ _GLOBAL(csum_partial_copy_generic)
- 	mtctr	r6
- 
- 1:
--source;	lhz	r6,0(r3)		/* align to doubleword */
-+srcnr;	lhz	r6,0(r3)		/* align to doubleword */
- 	subi	r5,r5,2
- 	addi	r3,r3,2
- 	adde	r0,r0,r6
--dest;	sth	r6,0(r4)
-+dstnr;	sth	r6,0(r4)
- 	addi	r4,r4,2
- 	bdnz	1b
- 
-@@ -392,10 +408,10 @@ dest;	std	r16,56(r4)
- 
- 	mtctr	r6
- 3:
--source;	ld	r6,0(r3)
-+srcnr;	ld	r6,0(r3)
- 	addi	r3,r3,8
- 	adde	r0,r0,r6
--dest;	std	r6,0(r4)
-+dstnr;	std	r6,0(r4)
- 	addi	r4,r4,8
- 	bdnz	3b
- 
-@@ -405,10 +421,10 @@ dest;	std	r6,0(r4)
- 	srdi.	r6,r5,2
- 	beq	.Lcopy_tail_halfword
- 
--source;	lwz	r6,0(r3)
-+srcnr;	lwz	r6,0(r3)
- 	addi	r3,r3,4
- 	adde	r0,r0,r6
--dest;	stw	r6,0(r4)
-+dstnr;	stw	r6,0(r4)
- 	addi	r4,r4,4
- 	subi	r5,r5,4
- 
-@@ -416,10 +432,10 @@ dest;	stw	r6,0(r4)
- 	srdi.	r6,r5,1
- 	beq	.Lcopy_tail_byte
- 
--source;	lhz	r6,0(r3)
-+srcnr;	lhz	r6,0(r3)
- 	addi	r3,r3,2
- 	adde	r0,r0,r6
--dest;	sth	r6,0(r4)
-+dstnr;	sth	r6,0(r4)
- 	addi	r4,r4,2
- 	subi	r5,r5,2
- 
-@@ -427,10 +443,10 @@ dest;	sth	r6,0(r4)
- 	andi.	r6,r5,1
- 	beq	.Lcopy_finish
- 
--source;	lbz	r6,0(r3)
-+srcnr;	lbz	r6,0(r3)
- 	sldi	r9,r6,8			/* Pad the byte out to 16 bits */
- 	adde	r0,r0,r9
--dest;	stb	r6,0(r4)
-+dstnr;	stb	r6,0(r4)
- 
- .Lcopy_finish:
- 	addze	r0,r0			/* add in final carry */
-@@ -440,6 +456,11 @@ dest;	stb	r6,0(r4)
- 	blr
- 
- .Lsrc_error:
-+	ld	r14,STK_REG(R14)(r1)
-+	ld	r15,STK_REG(R15)(r1)
-+	ld	r16,STK_REG(R16)(r1)
-+	addi	r1,r1,STACKFRAMESIZE
-+.Lsrc_error_nr:
- 	cmpdi	0,r7,0
- 	beqlr
- 	li	r6,-EFAULT
-@@ -447,6 +468,11 @@ dest;	stb	r6,0(r4)
- 	blr
- 
- .Ldest_error:
-+	ld	r14,STK_REG(R14)(r1)
-+	ld	r15,STK_REG(R15)(r1)
-+	ld	r16,STK_REG(R16)(r1)
-+	addi	r1,r1,STACKFRAMESIZE
-+.Ldest_error_nr:
- 	cmpdi	0,r8,0
- 	beqlr
- 	li	r6,-EFAULT
+-/* RW semaphores */
+-EXPORT_SYMBOL(__down_read);
+-EXPORT_SYMBOL(__down_read_trylock);
+-EXPORT_SYMBOL(__down_write);
+-EXPORT_SYMBOL(__down_write_trylock);
+-EXPORT_SYMBOL(__up_read);
+-EXPORT_SYMBOL(__up_write);
+-EXPORT_SYMBOL(__downgrade_write);
+-
+ /* Atomic counter implementation. */
+ EXPORT_SYMBOL(atomic_add);
+ EXPORT_SYMBOL(atomic_add_ret);
 
 
