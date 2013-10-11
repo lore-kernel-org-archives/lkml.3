@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933204Ab3JKUQZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:16:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46024 "EHLO
+	id S933190Ab3JKUQY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:16:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46032 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932298Ab3JKTk6 (ORCPT
+	with ESMTP id S932121Ab3JKTk7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:40:58 -0400
+	Fri, 11 Oct 2013 15:40:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Jacob Keller <jacob.e.keller@intel.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
         Neil Horman <nhorman@tuxdriver.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Michio Honda <micchie@sfc.wide.ad.jp>,
         Vlad Yasevich <vyasevich@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 011/135] net: sctp: fix bug in sctp_poll for SOCK_SELECT_ERR_QUEUE
-Date: Fri, 11 Oct 2013 12:38:12 -0700
-Message-Id: <20131011193946.455367478@linuxfoundation.org>
+Subject: [ 012/135] net: sctp: fix smatch warning in sctp_send_asconf_del_ip
+Date: Fri, 11 Oct 2013 12:38:13 -0700
+Message-Id: <20131011193946.576758122@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -32,43 +33,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Daniel Borkmann <dborkman@redhat.com>
 
-[ Upstream commit a0fb05d1aef0f5df936f80b726d1b3bfd4275f95 ]
+[ Upstream commit 88362ad8f9a6cea787420b57cc27ccacef000dbe ]
 
-If we do not add braces around ...
+This was originally reported in [1] and posted by Neil Horman [2], he said:
 
-  mask |= POLLERR |
-          sock_flag(sk, SOCK_SELECT_ERR_QUEUE) ? POLLPRI : 0;
+  Fix up a missed null pointer check in the asconf code. If we don't find
+  a local address, but we pass in an address length of more than 1, we may
+  dereference a NULL laddr pointer. Currently this can't happen, as the only
+  users of the function pass in the value 1 as the addrcnt parameter, but
+  its not hot path, and it doesn't hurt to check for NULL should that ever
+  be the case.
 
-... then this condition always evaluates to true as POLLERR is
-defined as 8 and binary or'd with whatever result comes out of
-sock_flag(). Hence instead of (X | Y) ? A : B, transform it into
-X | (Y ? A : B). Unfortunatelty, commit 8facd5fb73 ("net: fix
-smatch warnings inside datagram_poll") forgot about SCTP. :-(
+The callpath from sctp_asconf_mgmt() looks okay. But this could be triggered
+from sctp_setsockopt_bindx() call with SCTP_BINDX_REM_ADDR and addrcnt > 1
+while passing all possible addresses from the bind list to SCTP_BINDX_REM_ADDR
+so that we do *not* find a single address in the association's bind address
+list that is not in the packed array of addresses. If this happens when we
+have an established association with ASCONF-capable peers, then we could get
+a NULL pointer dereference as we only check for laddr == NULL && addrcnt == 1
+and call later sctp_make_asconf_update_ip() with NULL laddr.
 
-Introduced by 7d4c04fc170 ("net: add option to enable error queue
-packets waking select").
+BUT: this actually won't happen as sctp_bindx_rem() will catch such a case
+and return with an error earlier. As this is incredably unintuitive and error
+prone, add a check to catch at least future bugs here. As Neil says, its not
+hot path. Introduced by 8a07eb0a5 ("sctp: Add ASCONF operation on the
+single-homed host").
 
+ [1] http://www.spinics.net/lists/linux-sctp/msg02132.html
+ [2] http://www.spinics.net/lists/linux-sctp/msg02133.html
+
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
 Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Cc: Jacob Keller <jacob.e.keller@intel.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Cc: Michio Honda <micchie@sfc.wide.ad.jp>
+Acked-By: Neil Horman <nhorman@tuxdriver.com>
 Acked-by: Vlad Yasevich <vyasevich@gmail.com>
-Acked-by: Jacob Keller <jacob.e.keller@intel.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/sctp/socket.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/sctp/socket.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
 --- a/net/sctp/socket.c
 +++ b/net/sctp/socket.c
-@@ -6182,7 +6182,7 @@ unsigned int sctp_poll(struct file *file
- 	/* Is there any exceptional events?  */
- 	if (sk->sk_err || !skb_queue_empty(&sk->sk_error_queue))
- 		mask |= POLLERR |
--			sock_flag(sk, SOCK_SELECT_ERR_QUEUE) ? POLLPRI : 0;
-+			(sock_flag(sk, SOCK_SELECT_ERR_QUEUE) ? POLLPRI : 0);
- 	if (sk->sk_shutdown & RCV_SHUTDOWN)
- 		mask |= POLLRDHUP | POLLIN | POLLRDNORM;
- 	if (sk->sk_shutdown == SHUTDOWN_MASK)
+@@ -812,6 +812,9 @@ static int sctp_send_asconf_del_ip(struc
+ 			goto skip_mkasconf;
+ 		}
+ 
++		if (laddr == NULL)
++			return -EINVAL;
++
+ 		/* We do not need RCU protection throughout this loop
+ 		 * because this is done under a socket lock from the
+ 		 * setsockopt call.
 
 
