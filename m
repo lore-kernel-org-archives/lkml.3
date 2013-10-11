@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757697Ab3JKNZF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 09:25:05 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:46567 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754338Ab3JKNZD (ORCPT
+	id S1757993Ab3JKNZY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 09:25:24 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:62181 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755213Ab3JKNZE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 09:25:03 -0400
+	Fri, 11 Oct 2013 09:25:04 -0400
 From: Antonios Motakis <a.motakis@virtualopensystems.com>
 To: Will Deacon <will.deacon@arm.com>, Joerg Roedel <joro@8bytes.org>,
         linux-arm-kernel@lists.infradead.org (moderated list:ARM SMMU DRIVER),
@@ -15,65 +15,43 @@ To: Will Deacon <will.deacon@arm.com>, Joerg Roedel <joro@8bytes.org>,
 Cc: kvmarm@lists.cs.columbia.edu, iommu@lists.linux-foundation.org,
         tech@virtualopensystems.com, agraf@suse.de, B08248@freescale.com,
         Antonios Motakis <a.motakis@virtualopensystems.com>
-Subject: [PATCH 1/2] ARM: SMMU: add devices attached to the SMMU to an IOMMU group
-Date: Fri, 11 Oct 2013 15:24:46 +0200
-Message-Id: <1381497887-14586-1-git-send-email-a.motakis@virtualopensystems.com>
+Subject: [PATCH 2/2] ARM: SMMU: return NULL on error in arm_smmu_iova_to_phys
+Date: Fri, 11 Oct 2013 15:24:47 +0200
+Message-Id: <1381497887-14586-2-git-send-email-a.motakis@virtualopensystems.com>
 X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1381497887-14586-1-git-send-email-a.motakis@virtualopensystems.com>
+References: <1381497887-14586-1-git-send-email-a.motakis@virtualopensystems.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-IOMMU groups are expected by certain users of the IOMMU API,
-e.g. VFIO. Add new devices found by the SMMU driver to an IOMMU
-group to satisfy those users.
+The return value of arm_smmu_iova_to_phys is directly passed to the
+user of the IOMMU API via iommu_iova_to_phys; however the ARM SMMU
+driver returns -EINVAL on error, which is not consistent with the
+rest of the drivers implementing the IOMMU API. VFIO also relies on
+the call returning NULL when a page has not been mapped already.
 
 Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
 ---
- drivers/iommu/arm-smmu.c | 18 +++++++++++++++++-
- 1 file changed, 17 insertions(+), 1 deletion(-)
+ drivers/iommu/arm-smmu.c | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
 diff --git a/drivers/iommu/arm-smmu.c b/drivers/iommu/arm-smmu.c
-index 0f45a48..8b71332 100644
+index 8b71332..fe81b20 100644
 --- a/drivers/iommu/arm-smmu.c
 +++ b/drivers/iommu/arm-smmu.c
-@@ -1502,6 +1502,8 @@ static int arm_smmu_add_device(struct device *dev)
- {
- 	struct arm_smmu_device *child, *parent, *smmu;
- 	struct arm_smmu_master *master = NULL;
-+	struct iommu_group *group;
-+	int ret;
+@@ -1480,10 +1480,7 @@ static phys_addr_t arm_smmu_iova_to_phys(struct iommu_domain *domain,
  
- 	spin_lock(&arm_smmu_devices_lock);
- 	list_for_each_entry(parent, &arm_smmu_devices, list) {
-@@ -1534,13 +1536,27 @@ static int arm_smmu_add_device(struct device *dev)
- 	if (!master)
- 		return -ENODEV;
- 
-+	group = iommu_group_get(dev);
-+
-+	if (!group) {
-+		group = iommu_group_alloc();
-+		if (IS_ERR(group)) {
-+			dev_err(dev, "Failed to allocate IOMMU group\n");
-+			return PTR_ERR(group);
-+		}
-+	}
-+
-+	ret = iommu_group_add_device(group, dev);
-+	iommu_group_put(group);
- 	dev->archdata.iommu = smmu;
--	return 0;
-+
-+	return ret;
+ err_unlock:
+ 	spin_unlock(&smmu_domain->lock);
+-	dev_warn(smmu->dev,
+-		 "invalid (corrupt?) page tables detected for iova 0x%llx\n",
+-		 (unsigned long long)iova);
+-	return -EINVAL;
++	return NULL;
  }
  
- static void arm_smmu_remove_device(struct device *dev)
- {
- 	dev->archdata.iommu = NULL;
-+	iommu_group_remove_device(dev);
- }
- 
- static struct iommu_ops arm_smmu_ops = {
+ static int arm_smmu_domain_has_cap(struct iommu_domain *domain,
 -- 
 1.8.1.2
 
