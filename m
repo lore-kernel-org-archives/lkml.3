@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759558Ab3JKUmN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:42:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45595 "EHLO
+	id S1759560Ab3JKUmi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:42:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45586 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758787Ab3JKTjy (ORCPT
+	with ESMTP id S1758824Ab3JKTjw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:39:54 -0400
+	Fri, 11 Oct 2013 15:39:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 041/110] sit: allow to use rtnl ops on fb tunnel
-Date: Fri, 11 Oct 2013 12:38:21 -0700
-Message-Id: <20131011193812.293601760@linuxfoundation.org>
+Subject: [ 039/110] ll_temac: Reset dma descriptors indexes on ndo_open
+Date: Fri, 11 Oct 2013 12:38:19 -0700
+Message-Id: <20131011193812.068048141@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
 References: <20131011193807.584188672@linuxfoundation.org>
@@ -27,34 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+From: Ricardo Ribalda <ricardo.ribalda@gmail.com>
 
-[ Upstream commit 205983c43700ac3a81e7625273a3fa83cd2759b5 ]
+[ Upstream commit 7167cf0e8cd10287b7912b9ffcccd9616f382922 ]
 
-rtnl ops where introduced by ba3e3f50a0e5 ("sit: advertise tunnel param via
-rtnl"), but I forget to assign rtnl ops to fb tunnels.
+The dma descriptors indexes are only initialized on the probe function.
 
-Now that it is done, we must remove the explicit call to
-unregister_netdevice_queue(), because  the fallback tunnel is added to the queue
-in sit_destroy_tunnels() when checking rtnl_link_ops of all netdevices (this
-is valid since commit 5e6700b3bf98 ("sit: add support of x-netns")).
+If a packet is on the buffer when temac_stop is called, the dma
+descriptors indexes can be left on a incorrect state where no other
+package can be sent.
 
-Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+So an interface could be left in an usable state after ifdow/ifup.
+
+This patch makes sure that the descriptors indexes are in a proper
+status when the device is open.
+
+Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/sit.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/ethernet/xilinx/ll_temac_main.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/net/ipv6/sit.c
-+++ b/net/ipv6/sit.c
-@@ -1561,6 +1561,7 @@ static int __net_init sit_init_net(struc
- 		goto err_alloc_dev;
- 	}
- 	dev_net_set(sitn->fb_tunnel_dev, net);
-+	sitn->fb_tunnel_dev->rtnl_link_ops = &sit_link_ops;
+--- a/drivers/net/ethernet/xilinx/ll_temac_main.c
++++ b/drivers/net/ethernet/xilinx/ll_temac_main.c
+@@ -297,6 +297,12 @@ static int temac_dma_bd_init(struct net_
+ 		       lp->rx_bd_p + (sizeof(*lp->rx_bd_v) * (RX_BD_NUM - 1)));
+ 	lp->dma_out(lp, TX_CURDESC_PTR, lp->tx_bd_p);
  
- 	err = ipip6_fb_tunnel_init(sitn->fb_tunnel_dev);
- 	if (err)
++	/* Init descriptor indexes */
++	lp->tx_bd_ci = 0;
++	lp->tx_bd_next = 0;
++	lp->tx_bd_tail = 0;
++	lp->rx_bd_ci = 0;
++
+ 	return 0;
+ 
+ out:
 
 
