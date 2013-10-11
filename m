@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757244Ab3JKVIS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 17:08:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45128 "EHLO
+	id S1756743Ab3JKTfk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:35:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45085 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753436Ab3JKTfm (ORCPT
+	with ESMTP id S1752851Ab3JKTff (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:35:42 -0400
+	Fri, 11 Oct 2013 15:35:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 21/39] powerpc: Fix parameter clobber in csum_partial_copy_generic()
-Date: Fri, 11 Oct 2013 12:35:05 -0700
-Message-Id: <20131011193213.197602728@linuxfoundation.org>
+        Salam Noureddine <noureddine@aristanetworks.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 10/39] ipv6 mcast: use in6_dev_put in timer handlers instead of __in6_dev_put
+Date: Fri, 11 Oct 2013 12:34:54 -0700
+Message-Id: <20131011193212.001316820@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193210.843963685@linuxfoundation.org>
 References: <20131011193210.843963685@linuxfoundation.org>
@@ -28,38 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+From: Salam Noureddine <noureddine@aristanetworks.com>
 
-commit d9813c3681a36774b254c0cdc9cce53c9e22c756 upstream.
+[ Upstream commit 9260d3e1013701aa814d10c8fc6a9f92bd17d643 ]
 
-The csum_partial_copy_generic() uses register r7 to adjust the remaining
-bytes to process.  Unfortunately, r7 also holds a parameter, namely the
-address of the flag to set in case of access exceptions while reading
-the source buffer.  Lacking a quantum implementation of PowerPC, this
-commit instead uses register r9 to do the adjusting, leaving r7's
-pointer uncorrupted.
+It is possible for the timer handlers to run after the call to
+ipv6_mc_down so use in6_dev_put instead of __in6_dev_put in the
+handler function in order to do proper cleanup when the refcnt
+reaches 0. Otherwise, the refcnt can reach zero without the
+inet6_dev being destroyed and we end up leaking a reference to
+the net_device and see messages like the following,
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+unregister_netdevice: waiting for eth0 to become free. Usage count = 1
+
+Tested on linux-3.4.43.
+
+Signed-off-by: Salam Noureddine <noureddine@aristanetworks.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/powerpc/lib/checksum_64.S |    4 ++--
+ net/ipv6/mcast.c |    4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/powerpc/lib/checksum_64.S
-+++ b/arch/powerpc/lib/checksum_64.S
-@@ -272,8 +272,8 @@ _GLOBAL(csum_partial_copy_generic)
- 	rldicl. r6,r3,64-1,64-2		/* r6 = (r3 & 0x3) >> 1 */
- 	beq	.Lcopy_aligned
+--- a/net/ipv6/mcast.c
++++ b/net/ipv6/mcast.c
+@@ -2159,7 +2159,7 @@ static void mld_gq_timer_expire(unsigned
  
--	li	r7,4
--	sub	r6,r7,r6
-+	li	r9,4
-+	sub	r6,r9,r6
- 	mtctr	r6
+ 	idev->mc_gq_running = 0;
+ 	mld_send_report(idev, NULL);
+-	__in6_dev_put(idev);
++	in6_dev_put(idev);
+ }
  
- 1:
+ static void mld_ifc_timer_expire(unsigned long data)
+@@ -2172,7 +2172,7 @@ static void mld_ifc_timer_expire(unsigne
+ 		if (idev->mc_ifc_count)
+ 			mld_ifc_start_timer(idev, idev->mc_maxdelay);
+ 	}
+-	__in6_dev_put(idev);
++	in6_dev_put(idev);
+ }
+ 
+ static void mld_ifc_event(struct inet6_dev *idev)
 
 
