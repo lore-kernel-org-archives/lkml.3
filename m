@@ -1,30 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758815Ab3JKTju (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:39:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45549 "EHLO
+	id S1756441Ab3JKUnP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:43:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45563 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758787Ab3JKTjr (ORCPT
+	with ESMTP id S1758800Ab3JKTjt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:39:47 -0400
+	Fri, 11 Oct 2013 15:39:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David R <david@unsolicited.net>,
-        =?UTF-8?q?Fr=C3=A9d=C3=A9ric=20Leroy?= <fredo@starox.org>,
-        Hayes Wang <hayeswang@realtek.com>,
-        Francois Romieu <romieu@fr.zoreil.com>,
+        Wannes Rombouts <wannes.rombouts@epitech.eu>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Jason Wang <jasowang@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 015/110] r8169: enforce RX_MULTI_EN for the 8168f.
-Date: Fri, 11 Oct 2013 12:37:55 -0700
-Message-Id: <20131011193809.266946639@linuxfoundation.org>
+Subject: [ 018/110] tuntap: correctly handle error in tun_set_iff()
+Date: Fri, 11 Oct 2013 12:37:58 -0700
+Message-Id: <20131011193809.587743984@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
 References: <20131011193807.584188672@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,35 +29,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Francois Romieu <romieu@fr.zoreil.com>
+From: Jason Wang <jasowang@redhat.com>
 
-[ Upstream commit 3ced8c955e74d319f3e3997f7169c79d524dfd06 ]
+[ Upstream commit 662ca437e714caaab855b12415d6ffd815985bc0 ]
 
-Same narrative as eb2dc35d99028b698cdedba4f5522bc43e576bd2 ("r8169: RxConfig
-hack for the 8168evl.") regarding AMD IOMMU errors.
+Commit c8d68e6be1c3b242f1c598595830890b65cea64a
+(tuntap: multiqueue support) only call free_netdev() on error in
+tun_set_iff(). This causes several issues:
 
-RTL_GIGA_MAC_VER_36 - 8168f as well - has not been reported to behave the
-same.
+- memory of tun security were leaked
+- use after free since the flow gc timer was not deleted and the tfile
+  were not detached
 
-Tested-by: David R <david@unsolicited.net>
-Tested-by: Frédéric Leroy <fredo@starox.org>
-Cc: Hayes Wang <hayeswang@realtek.com>
-Signed-off-by: Francois Romieu <romieu@fr.zoreil.com>
+This patch solves the above issues.
+
+Reported-by: Wannes Rombouts <wannes.rombouts@epitech.eu>
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/realtek/r8169.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/tun.c |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -4218,6 +4218,7 @@ static void rtl_init_rxcfg(struct rtl816
- 	case RTL_GIGA_MAC_VER_23:
- 	case RTL_GIGA_MAC_VER_24:
- 	case RTL_GIGA_MAC_VER_34:
-+	case RTL_GIGA_MAC_VER_35:
- 		RTL_W32(RxConfig, RX128_INT_EN | RX_MULTI_EN | RX_DMA_BURST);
- 		break;
- 	case RTL_GIGA_MAC_VER_40:
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -1693,11 +1693,11 @@ static int tun_set_iff(struct net *net,
+ 		INIT_LIST_HEAD(&tun->disabled);
+ 		err = tun_attach(tun, file);
+ 		if (err < 0)
+-			goto err_free_dev;
++			goto err_free_flow;
+ 
+ 		err = register_netdevice(tun->dev);
+ 		if (err < 0)
+-			goto err_free_dev;
++			goto err_detach;
+ 
+ 		if (device_create_file(&tun->dev->dev, &dev_attr_tun_flags) ||
+ 		    device_create_file(&tun->dev->dev, &dev_attr_owner) ||
+@@ -1741,7 +1741,12 @@ static int tun_set_iff(struct net *net,
+ 	strcpy(ifr->ifr_name, tun->dev->name);
+ 	return 0;
+ 
+- err_free_dev:
++err_detach:
++	tun_detach_all(dev);
++err_free_flow:
++	tun_flow_uninit(tun);
++	security_tun_dev_free_security(tun->security);
++err_free_dev:
+ 	free_netdev(dev);
+ 	return err;
+ }
 
 
