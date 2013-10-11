@@ -1,179 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758634Ab3JKLB4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 07:01:56 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58531 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757861Ab3JKKnM (ORCPT
+	id S932311Ab3JKLCI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 07:02:08 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:52538 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757718Ab3JKLCE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 06:43:12 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 042/100] xhci: Ensure a command structure points to the correct trb on the command ring
-Date: Fri, 11 Oct 2013 11:41:12 +0100
-Message-Id: <1381488130-30235-43-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
-References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Fri, 11 Oct 2013 07:02:04 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Subject: Re: [BUG] WARN_ON(!context) in drivers/pci/hotplug/acpiphp_glue.c
+Date: Fri, 11 Oct 2013 13:13:47 +0200
+Message-ID: <2096980.ZtIelfoX39@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <CA+55aFwqf7kkh0dy6AhCvB87XYkQ03YUpsYEDJmnkiRe8GQfMQ@mail.gmail.com>
+References: <20131010165905.7815defa@gandalf.local.home> <18685640.N2BnVjDmHD@vostro.rjw.lan> <CA+55aFwqf7kkh0dy6AhCvB87XYkQ03YUpsYEDJmnkiRe8GQfMQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.23 -stable review patch.  If anyone has any objections, please let me know.
+On Thursday, October 10, 2013 06:42:56 PM Linus Torvalds wrote:
+> On Thu, Oct 10, 2013 at 6:45 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> >
+> >         /* Register slots for ejectable funtions only. */
+> > -       if (acpi_pci_check_ejectable(pbus, handle)  || is_dock_device(handle)) {
+> > +       if ((acpi_pci_check_ejectable(pbus, handle) || is_dock_device(handle))
+> > +           && !(pdev && device_is_managed_by_native_pciehp(pdev))) {
+> >                 unsigned long long sun;
+> >                 int retval;
+> 
+> I can't even begin to say whether this is a good solution or not,
+> because that if-conditional makes me want to go out and kill some
+> homeless people to let my aggressions out.
+> 
+> Can we please agree to *never* write code like this? Ever?
+> 
+> Use a well-named inline helper function where the name describes what
+> the f*ck the code is trying to do, and then comment the separate
+> issues. Because none of the above line noise makes me go "Ahh, it's
+> the test for an ejectable function".
+> 
+> What the heck _is_ an "ejectable function" anyway? The only comment
+> there just makes the code even less sensible.
+> 
+> Please?
 
-------------------
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Subject: ACPI / hotplug / PCI: Accept coexistence with native PCIe hotplug
 
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
+Allow ACPIPHP (ACPI-based PCI hotplug) to handle event signaling for
+devices that have already been claimed by the native PCIe hotplug
+(pciehp).
 
-commit ec7e43e2d98173483866fe2e4e690143626b659c upstream.
+The ACPI hotplug events are essentially re-scan, remove and eject
+requests.  Re-scan and remove should work regardless, because they
+may be triggered by user space via sysfs and the ACPI eject (_EJ0)
+should work if the BIOS wants us to use it.  There may be an issue
+if the BIOS signals ACPI eject and wants us to use the native eject,
+but that doesn't work without this change anyway.
 
-If a command on the command ring needs to be cancelled before it is handled
-it can be turned to a no-op operation when the ring is stopped.
-We want to store the command ring enqueue pointer in the command structure
-when the command in enqueued for the cancellation case.
+This change prevents the WARN_ON() in acpiphp_enumerate_slots() from
+triggering unnecessarily for bridges whose parents are managed by
+pciehp.
 
-Some commands used to store the command ring dequeue pointers instead of enqueue
-(these often worked because enqueue happends to equal dequeue quite often)
-
-Other commands correctly used the enqueue pointer but did not check if it pointed
-to a valid trb or a link trb, this caused for example stop endpoint command to timeout in
-xhci_stop_device() in about 2% of suspend/resume cases.
-
-This should also solve some weird behavior happening in command cancellation cases.
-
-This patch is based on a patch submitted by Sarah Sharp to linux-usb, but
-then forgotten:
-    http://marc.info/?l=linux-usb&m=136269803207465&w=2
-
-This patch should be backported to kernels as old as 3.7, that contain
-the commit b92cc66c047ff7cf587b318fe377061a353c120f "xHCI: add aborting
-command ring function"
-
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- drivers/usb/host/xhci-hub.c  |  2 +-
- drivers/usb/host/xhci-ring.c | 10 ++++++++++
- drivers/usb/host/xhci.c      | 25 +++++--------------------
- drivers/usb/host/xhci.h      |  1 +
- 4 files changed, 17 insertions(+), 21 deletions(-)
+ drivers/pci/hotplug/acpiphp_glue.c |   32 ++++++++++++++++++++++++++------
+ 1 file changed, 26 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/usb/host/xhci-hub.c b/drivers/usb/host/xhci-hub.c
-index 7534bb4..b83a7b8 100644
---- a/drivers/usb/host/xhci-hub.c
-+++ b/drivers/usb/host/xhci-hub.c
-@@ -287,7 +287,7 @@ static int xhci_stop_device(struct xhci_hcd *xhci, int slot_id, int suspend)
- 		if (virt_dev->eps[i].ring && virt_dev->eps[i].ring->dequeue)
- 			xhci_queue_stop_endpoint(xhci, slot_id, i, suspend);
- 	}
--	cmd->command_trb = xhci->cmd_ring->enqueue;
-+	cmd->command_trb = xhci_find_next_enqueue(xhci->cmd_ring);
- 	list_add_tail(&cmd->cmd_list, &virt_dev->cmd_list);
- 	xhci_queue_stop_endpoint(xhci, slot_id, 0, suspend);
- 	xhci_ring_cmd_db(xhci);
-diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
-index 2c4df52..fde2282 100644
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -122,6 +122,16 @@ static int enqueue_is_link_trb(struct xhci_ring *ring)
- 	return TRB_TYPE_LINK_LE32(link->control);
+Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
+===================================================================
+--- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
++++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
+@@ -259,6 +259,31 @@ static void acpiphp_dock_release(void *d
+ 	put_bridge(context->func.parent);
  }
  
-+union xhci_trb *xhci_find_next_enqueue(struct xhci_ring *ring)
++/**
++ * slot_should_be_exposed - Check whether or not to expose a slot to userland.
++ * @bridge: ACPIPHP bridge the slot belongs to.
++ * @handle: ACPI handle of a device in the slot.
++ */
++static inline bool slot_should_be_exposed(struct acpiphp_bridge *bridge,
++					  acpi_handle handle)
 +{
-+	/* Enqueue pointer can be left pointing to the link TRB,
-+	 * we must handle that
++	struct pci_bus *pbus = bridge->pci_bus;
++	struct pci_dev *pdev = bridge->pci_dev;
++
++	/*
++	 * Do not expose slots whose bridges are managed by pciehp, because they
++	 * will be exposed to user space by the pciehp driver.
 +	 */
-+	if (TRB_TYPE_LINK_LE32(ring->enqueue->link.control))
-+		return ring->enq_seg->next->trbs;
-+	return ring->enqueue;
++	if (pdev && device_is_managed_by_native_pciehp(pdev))
++		return false;
++
++	/*
++	 * Expose slots for devices with either _EJ0 or _RMV and for devices
++	 * on docking stations.
++	 */
++	return acpi_pci_check_ejectable(pbus, handle) || is_dock_device(handle);
 +}
 +
- /* Updates trb to point to the next TRB in the ring, and updates seg if the next
-  * TRB is in a new segment.  This does not skip over link TRBs, and it does not
-  * effect the ring dequeue or enqueue pointers.
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index 2acae4d..eb31daa 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -2582,15 +2582,7 @@ static int xhci_configure_endpoint(struct xhci_hcd *xhci,
- 	if (command) {
- 		cmd_completion = command->completion;
- 		cmd_status = &command->status;
--		command->command_trb = xhci->cmd_ring->enqueue;
+ /* callback routine to register each ACPI PCI slot object */
+ static acpi_status register_slot(acpi_handle handle, u32 lvl, void *data,
+ 				 void **rv)
+@@ -271,12 +296,8 @@ static acpi_status register_slot(acpi_ha
+ 	unsigned long long adr;
+ 	int device, function;
+ 	struct pci_bus *pbus = bridge->pci_bus;
+-	struct pci_dev *pdev = bridge->pci_dev;
+ 	u32 val;
+ 
+-	if (pdev && device_is_managed_by_native_pciehp(pdev))
+-		return AE_OK;
 -
--		/* Enqueue pointer can be left pointing to the link TRB,
--		 * we must handle that
--		 */
--		if (TRB_TYPE_LINK_LE32(command->command_trb->link.control))
--			command->command_trb =
--				xhci->cmd_ring->enq_seg->next->trbs;
--
-+		command->command_trb = xhci_find_next_enqueue(xhci->cmd_ring);
- 		list_add_tail(&command->cmd_list, &virt_dev->cmd_list);
- 	} else {
- 		cmd_completion = &virt_dev->cmd_completion;
-@@ -2598,7 +2590,7 @@ static int xhci_configure_endpoint(struct xhci_hcd *xhci,
- 	}
- 	init_completion(cmd_completion);
+ 	status = acpi_evaluate_integer(handle, "_ADR", NULL, &adr);
+ 	if (ACPI_FAILURE(status)) {
+ 		acpi_handle_warn(handle, "can't evaluate _ADR (%#x)\n", status);
+@@ -325,8 +346,7 @@ static acpi_status register_slot(acpi_ha
  
--	cmd_trb = xhci->cmd_ring->dequeue;
-+	cmd_trb = xhci_find_next_enqueue(xhci->cmd_ring);
- 	if (!ctx_change)
- 		ret = xhci_queue_configure_endpoint(xhci, in_ctx->dma,
- 				udev->slot_id, must_succeed);
-@@ -3383,14 +3375,7 @@ int xhci_discover_or_reset_device(struct usb_hcd *hcd, struct usb_device *udev)
+ 	list_add_tail(&slot->node, &bridge->slots);
  
- 	/* Attempt to submit the Reset Device command to the command ring */
- 	spin_lock_irqsave(&xhci->lock, flags);
--	reset_device_cmd->command_trb = xhci->cmd_ring->enqueue;
--
--	/* Enqueue pointer can be left pointing to the link TRB,
--	 * we must handle that
--	 */
--	if (TRB_TYPE_LINK_LE32(reset_device_cmd->command_trb->link.control))
--		reset_device_cmd->command_trb =
--			xhci->cmd_ring->enq_seg->next->trbs;
-+	reset_device_cmd->command_trb = xhci_find_next_enqueue(xhci->cmd_ring);
+-	/* Register slots for ejectable funtions only. */
+-	if (acpi_pci_check_ejectable(pbus, handle)  || is_dock_device(handle)) {
++	if (slot_should_be_exposed(bridge, handle)) {
+ 		unsigned long long sun;
+ 		int retval;
  
- 	list_add_tail(&reset_device_cmd->cmd_list, &virt_dev->cmd_list);
- 	ret = xhci_queue_reset_device(xhci, slot_id);
-@@ -3594,7 +3579,7 @@ int xhci_alloc_dev(struct usb_hcd *hcd, struct usb_device *udev)
- 	union xhci_trb *cmd_trb;
- 
- 	spin_lock_irqsave(&xhci->lock, flags);
--	cmd_trb = xhci->cmd_ring->dequeue;
-+	cmd_trb = xhci_find_next_enqueue(xhci->cmd_ring);
- 	ret = xhci_queue_slot_control(xhci, TRB_ENABLE_SLOT, 0);
- 	if (ret) {
- 		spin_unlock_irqrestore(&xhci->lock, flags);
-@@ -3721,7 +3706,7 @@ int xhci_address_device(struct usb_hcd *hcd, struct usb_device *udev)
- 	xhci_dbg_ctx(xhci, virt_dev->in_ctx, 2);
- 
- 	spin_lock_irqsave(&xhci->lock, flags);
--	cmd_trb = xhci->cmd_ring->dequeue;
-+	cmd_trb = xhci_find_next_enqueue(xhci->cmd_ring);
- 	ret = xhci_queue_address_device(xhci, virt_dev->in_ctx->dma,
- 					udev->slot_id);
- 	if (ret) {
-diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
-index 30c3a1d..9a97918 100644
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -1819,6 +1819,7 @@ int xhci_cancel_cmd(struct xhci_hcd *xhci, struct xhci_command *command,
- 		union xhci_trb *cmd_trb);
- void xhci_ring_ep_doorbell(struct xhci_hcd *xhci, unsigned int slot_id,
- 		unsigned int ep_index, unsigned int stream_id);
-+union xhci_trb *xhci_find_next_enqueue(struct xhci_ring *ring);
- 
- /* xHCI roothub code */
- void xhci_set_link_state(struct xhci_hcd *xhci, __le32 __iomem **port_array,
--- 
-1.8.3.2
 
