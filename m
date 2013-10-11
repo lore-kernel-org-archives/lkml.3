@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754794Ab3JKUtn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:49:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45474 "EHLO
+	id S1754854Ab3JKUuE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:50:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45464 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758344Ab3JKTjg (ORCPT
+	with ESMTP id S1758692Ab3JKTjf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:39:36 -0400
+	Fri, 11 Oct 2013 15:39:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [ 004/110] HID: fix data access in implement()
-Date: Fri, 11 Oct 2013 12:37:44 -0700
-Message-Id: <20131011193808.079043170@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Mike Miller <mike.miller@hp.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 002/110] cpqarray: fix info leak in ida_locked_ioctl()
+Date: Fri, 11 Oct 2013 12:37:42 -0700
+Message-Id: <20131011193807.864361385@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
 References: <20131011193807.584188672@linuxfoundation.org>
@@ -28,243 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Kosina <jkosina@suse.cz>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 27ce405039bfe6d3f4143415c638f56a3df77dca upstream.
+commit 627aad1c01da6f881e7f98d71fd928ca0c316b1a upstream.
 
-implement() is setting bytes in LE data stream. In case the data is not
-aligned to 64bits, it reads past the allocated buffer. It doesn't really
-change any value there (it's properly bitmasked), but in case that this
-read past the boundary hits a page boundary, pagefault happens when
-accessing 64bits of 'x' in implement(), and kernel oopses.
+The pciinfo struct has a two byte hole after ->dev_fn so stack
+information could be leaked to the user.
 
-This happens much more often when numbered reports are in use, as the
-initial 8bit skip in the buffer makes the whole process work on values
-which are not aligned to 64bits.
+This was assigned CVE-2013-2147.
 
-This problem dates back to attempts in 2005 and 2006 to make implement()
-and extract() as generic as possible, and even back then the problem
-was realized by Adam Kroperlin, but falsely assumed to be impossible
-to cause any harm:
-
-  http://www.mail-archive.com/linux-usb-devel@lists.sourceforge.net/msg47690.html
-
-I have made several attempts at fixing it "on the spot" directly in
-implement(), but the results were horrible; the special casing for processing
-last 64bit chunk and switching to different math makes it unreadable mess.
-
-I therefore took a path to allocate a few bytes more which will never make
-it into final report, but are there as a cushion for all the 64bit math
-operations happening in implement() and extract().
-
-All callers of hid_output_report() are converted at the same time to allocate
-the buffer by newly introduced hid_alloc_report_buf() helper.
-
-Bruno noticed that the whole raw_size test can be dropped as well, as
-hid_alloc_report_buf() makes sure that the buffer is always of a proper
-size.
-
-Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Acked-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Mike Miller <mike.miller@hp.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-core.c            |   19 ++++++++++++++++++-
- drivers/hid/hid-logitech-dj.c     |   12 ++++++++++--
- drivers/hid/hid-picolcd_debugfs.c |   23 ++++++++++++-----------
- drivers/hid/usbhid/hid-core.c     |    5 ++---
- include/linux/hid.h               |    1 +
- net/bluetooth/hidp/core.c         |   14 +++++++++-----
- 6 files changed, 52 insertions(+), 22 deletions(-)
+ drivers/block/cpqarray.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1188,7 +1188,8 @@ static void hid_output_field(const struc
- }
+--- a/drivers/block/cpqarray.c
++++ b/drivers/block/cpqarray.c
+@@ -1193,6 +1193,7 @@ out_passthru:
+ 		ida_pci_info_struct pciinfo;
  
- /*
-- * Create a report.
-+ * Create a report. 'data' has to be allocated using
-+ * hid_alloc_report_buf() so that it has proper size.
-  */
- 
- void hid_output_report(struct hid_report *report, __u8 *data)
-@@ -1205,6 +1206,22 @@ void hid_output_report(struct hid_report
- EXPORT_SYMBOL_GPL(hid_output_report);
- 
- /*
-+ * Allocator for buffer that is going to be passed to hid_output_report()
-+ */
-+u8 *hid_alloc_report_buf(struct hid_report *report, gfp_t flags)
-+{
-+	/*
-+	 * 7 extra bytes are necessary to achieve proper functionality
-+	 * of implement() working on 8 byte chunks
-+	 */
-+
-+	int len = ((report->size - 1) >> 3) + 1 + (report->id > 0) + 7;
-+
-+	return kmalloc(len, flags);
-+}
-+EXPORT_SYMBOL_GPL(hid_alloc_report_buf);
-+
-+/*
-  * Set a field value. The report this field belongs to has to be
-  * created and transferred to the device, to set this value in the
-  * device.
---- a/drivers/hid/hid-logitech-dj.c
-+++ b/drivers/hid/hid-logitech-dj.c
-@@ -574,7 +574,7 @@ static int logi_dj_ll_input_event(struct
- 
- 	struct hid_field *field;
- 	struct hid_report *report;
--	unsigned char data[8];
-+	unsigned char *data;
- 	int offset;
- 
- 	dbg_hid("%s: %s, type:%d | code:%d | value:%d\n",
-@@ -590,6 +590,13 @@ static int logi_dj_ll_input_event(struct
- 		return -1;
- 	}
- 	hid_set_field(field, offset, value);
-+
-+	data = hid_alloc_report_buf(field->report, GFP_KERNEL);
-+	if (!data) {
-+		dev_warn(&dev->dev, "failed to allocate report buf memory\n");
-+		return -1;
-+	}
-+
- 	hid_output_report(field->report, &data[0]);
- 
- 	output_report_enum = &dj_rcv_hiddev->report_enum[HID_OUTPUT_REPORT];
-@@ -600,8 +607,9 @@ static int logi_dj_ll_input_event(struct
- 
- 	hid_hw_request(dj_rcv_hiddev, report, HID_REQ_SET_REPORT);
- 
--	return 0;
-+	kfree(data);
- 
-+	return 0;
- }
- 
- static int logi_dj_ll_start(struct hid_device *hid)
---- a/drivers/hid/hid-picolcd_debugfs.c
-+++ b/drivers/hid/hid-picolcd_debugfs.c
-@@ -394,7 +394,7 @@ static void dump_buff_as_hex(char *dst,
- void picolcd_debug_out_report(struct picolcd_data *data,
- 		struct hid_device *hdev, struct hid_report *report)
- {
--	u8 raw_data[70];
-+	u8 *raw_data;
- 	int raw_size = (report->size >> 3) + 1;
- 	char *buff;
- #define BUFF_SZ 256
-@@ -407,20 +407,20 @@ void picolcd_debug_out_report(struct pic
- 	if (!buff)
- 		return;
- 
--	snprintf(buff, BUFF_SZ, "\nout report %d (size %d) =  ",
--			report->id, raw_size);
--	hid_debug_event(hdev, buff);
--	if (raw_size + 5 > sizeof(raw_data)) {
-+	raw_data = hid_alloc_report_buf(report, GFP_ATOMIC);
-+	if (!raw_data) {
- 		kfree(buff);
--		hid_debug_event(hdev, " TOO BIG\n");
- 		return;
--	} else {
--		raw_data[0] = report->id;
--		hid_output_report(report, raw_data);
--		dump_buff_as_hex(buff, BUFF_SZ, raw_data, raw_size);
--		hid_debug_event(hdev, buff);
- 	}
- 
-+	snprintf(buff, BUFF_SZ, "\nout report %d (size %d) =  ",
-+			report->id, raw_size);
-+	hid_debug_event(hdev, buff);
-+	raw_data[0] = report->id;
-+	hid_output_report(report, raw_data);
-+	dump_buff_as_hex(buff, BUFF_SZ, raw_data, raw_size);
-+	hid_debug_event(hdev, buff);
-+
- 	switch (report->id) {
- 	case REPORT_LED_STATE:
- 		/* 1 data byte with GPO state */
-@@ -644,6 +644,7 @@ void picolcd_debug_out_report(struct pic
- 		break;
- 	}
- 	wake_up_interruptible(&hdev->debug_wait);
-+	kfree(raw_data);
- 	kfree(buff);
- }
- 
---- a/drivers/hid/usbhid/hid-core.c
-+++ b/drivers/hid/usbhid/hid-core.c
-@@ -535,7 +535,6 @@ static void __usbhid_submit_report(struc
- {
- 	int head;
- 	struct usbhid_device *usbhid = hid->driver_data;
--	int len = ((report->size - 1) >> 3) + 1 + (report->id > 0);
- 
- 	if ((hid->quirks & HID_QUIRK_NOGET) && dir == USB_DIR_IN)
- 		return;
-@@ -546,7 +545,7 @@ static void __usbhid_submit_report(struc
- 			return;
- 		}
- 
--		usbhid->out[usbhid->outhead].raw_report = kmalloc(len, GFP_ATOMIC);
-+		usbhid->out[usbhid->outhead].raw_report = hid_alloc_report_buf(report, GFP_ATOMIC);
- 		if (!usbhid->out[usbhid->outhead].raw_report) {
- 			hid_warn(hid, "output queueing failed\n");
- 			return;
-@@ -595,7 +594,7 @@ static void __usbhid_submit_report(struc
- 	}
- 
- 	if (dir == USB_DIR_OUT) {
--		usbhid->ctrl[usbhid->ctrlhead].raw_report = kmalloc(len, GFP_ATOMIC);
-+		usbhid->ctrl[usbhid->ctrlhead].raw_report = hid_alloc_report_buf(report, GFP_ATOMIC);
- 		if (!usbhid->ctrl[usbhid->ctrlhead].raw_report) {
- 			hid_warn(hid, "control queueing failed\n");
- 			return;
---- a/include/linux/hid.h
-+++ b/include/linux/hid.h
-@@ -746,6 +746,7 @@ struct hid_field *hidinput_get_led_field
- unsigned int hidinput_count_leds(struct hid_device *hid);
- __s32 hidinput_calc_abs_res(const struct hid_field *field, __u16 code);
- void hid_output_report(struct hid_report *report, __u8 *data);
-+u8 *hid_alloc_report_buf(struct hid_report *report, gfp_t flags);
- struct hid_device *hid_allocate_device(void);
- struct hid_report *hid_register_report(struct hid_device *device, unsigned type, unsigned id);
- int hid_parse_report(struct hid_device *hid, __u8 *start, unsigned size);
---- a/net/bluetooth/hidp/core.c
-+++ b/net/bluetooth/hidp/core.c
-@@ -231,17 +231,21 @@ static void hidp_input_report(struct hid
- 
- static int hidp_send_report(struct hidp_session *session, struct hid_report *report)
- {
--	unsigned char buf[32], hdr;
--	int rsize;
-+	unsigned char hdr;
-+	u8 *buf;
-+	int rsize, ret;
- 
--	rsize = ((report->size - 1) >> 3) + 1 + (report->id > 0);
--	if (rsize > sizeof(buf))
-+	buf = hid_alloc_report_buf(report, GFP_ATOMIC);
-+	if (!buf)
- 		return -EIO;
- 
- 	hid_output_report(report, buf);
- 	hdr = HIDP_TRANS_DATA | HIDP_DATA_RTYPE_OUPUT;
- 
--	return hidp_send_intr_message(session, hdr, buf, rsize);
-+	ret = hidp_send_intr_message(session, hdr, buf, rsize);
-+
-+	kfree(buf);
-+	return ret;
- }
- 
- static int hidp_get_raw_report(struct hid_device *hid,
+ 		if (!arg) return -EINVAL;
++		memset(&pciinfo, 0, sizeof(pciinfo));
+ 		pciinfo.bus = host->pci_dev->bus->number;
+ 		pciinfo.dev_fn = host->pci_dev->devfn;
+ 		pciinfo.board_id = host->board_id;
 
 
