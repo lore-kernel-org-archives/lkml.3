@@ -1,25 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756280Ab3JKVAn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 17:00:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45296 "EHLO
+	id S1756316Ab3JKVBG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 17:01:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45290 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757921Ab3JKThK (ORCPT
+	with ESMTP id S1757905Ab3JKThJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:37:10 -0400
+	Fri, 11 Oct 2013 15:37:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joseph Chang <joseph_chang@davicom.com.tw>,
-        Peter Korsgaard <peter@korsgaard.com>,
+        Roger Luethi <rl@hellgate.ch>,
+        =?UTF-8?q?Peter=20Bostr=C3=B6m?= <peter.bostrom@netrounds.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 15/48] dm9601: fix IFF_ALLMULTI handling
-Date: Fri, 11 Oct 2013 12:36:22 -0700
-Message-Id: <20131011193638.918557290@linuxfoundation.org>
+Subject: [ 14/48] via-rhine: fix VLAN priority field (PCP, IEEE 802.1p)
+Date: Fri, 11 Oct 2013 12:36:21 -0700
+Message-Id: <20131011193638.810458973@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193637.253208688@linuxfoundation.org>
 References: <20131011193637.253208688@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,31 +31,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Korsgaard <peter@korsgaard.com>
+From: Roger Luethi <rl@hellgate.ch>
 
-[ Upstream commit bf0ea6380724beb64f27a722dfc4b0edabff816e ]
+[ Upstream commit 207070f5221e2a901d56a49df9cde47d9b716cd7 ]
 
-Pass-all-multicast is controlled by bit 3 in RX control, not bit 2
-(pass undersized frames).
+Outgoing packets sent by via-rhine have their VLAN PCP field off by one
+(when hardware acceleration is enabled). The TX descriptor expects only VID
+and PCP (without a CFI/DEI bit).
 
-Reported-by: Joseph Chang <joseph_chang@davicom.com.tw>
-Signed-off-by: Peter Korsgaard <peter@korsgaard.com>
+Peter Boström noticed and reported the bug.
+
+Signed-off-by: Roger Luethi <rl@hellgate.ch>
+Cc: Peter Boström <peter.bostrom@netrounds.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/usb/dm9601.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/ethernet/via/via-rhine.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
---- a/drivers/net/usb/dm9601.c
-+++ b/drivers/net/usb/dm9601.c
-@@ -384,7 +384,7 @@ static void dm9601_set_multicast(struct
- 		rx_ctl |= 0x02;
- 	} else if (net->flags & IFF_ALLMULTI ||
- 		   netdev_mc_count(net) > DM_MAX_MCAST) {
--		rx_ctl |= 0x04;
-+		rx_ctl |= 0x08;
- 	} else if (!netdev_mc_empty(net)) {
- 		struct netdev_hw_addr *ha;
+--- a/drivers/net/ethernet/via/via-rhine.c
++++ b/drivers/net/ethernet/via/via-rhine.c
+@@ -32,7 +32,7 @@
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
  
+ #define DRV_NAME	"via-rhine"
+-#define DRV_VERSION	"1.5.0"
++#define DRV_VERSION	"1.5.1"
+ #define DRV_RELDATE	"2010-10-09"
+ 
+ #include <linux/types.h>
+@@ -1684,7 +1684,12 @@ static netdev_tx_t rhine_start_tx(struct
+ 		cpu_to_le32(TXDESC | (skb->len >= ETH_ZLEN ? skb->len : ETH_ZLEN));
+ 
+ 	if (unlikely(vlan_tx_tag_present(skb))) {
+-		rp->tx_ring[entry].tx_status = cpu_to_le32((vlan_tx_tag_get(skb)) << 16);
++		u16 vid_pcp = vlan_tx_tag_get(skb);
++
++		/* drop CFI/DEI bit, register needs VID and PCP */
++		vid_pcp = (vid_pcp & VLAN_VID_MASK) |
++			  ((vid_pcp & VLAN_PRIO_MASK) >> 1);
++		rp->tx_ring[entry].tx_status = cpu_to_le32((vid_pcp) << 16);
+ 		/* request tagging */
+ 		rp->tx_ring[entry].desc_length |= cpu_to_le32(0x020000);
+ 	}
 
 
