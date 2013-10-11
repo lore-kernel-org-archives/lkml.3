@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758089Ab3JKN1X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 09:27:23 -0400
+	id S1758178Ab3JKN1d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 09:27:33 -0400
 Received: from mga01.intel.com ([192.55.52.88]:15038 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755376Ab3JKN1S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 09:27:18 -0400
+	id S1758074Ab3JKN1a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 09:27:30 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,1080,1371106800"; 
-   d="scan'208";a="415484259"
+   d="scan'208";a="415484350"
 From: Aaron Lu <aaron.lu@intel.com>
 To: linux-acpi@vger.kernel.org, intel-gfx@lists.freedesktop.org,
         dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
@@ -31,9 +31,9 @@ Cc: Daniel Vetter <daniel@ffwll.ch>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         platform-driver-x86@vger.kernel.org,
         Mika Westerberg <mika.westerberg@linux.intel.com>,
         Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Subject: [PATCH v5 1/4] backlight: introduce backlight_device_registered
-Date: Fri, 11 Oct 2013 21:27:43 +0800
-Message-Id: <1381498066-16011-2-git-send-email-aaron.lu@intel.com>
+Subject: [PATCH v5 4/4] thinkpad-acpi: fix handle locate for video and query of _BCL
+Date: Fri, 11 Oct 2013 21:27:46 +0800
+Message-Id: <1381498066-16011-5-git-send-email-aaron.lu@intel.com>
 X-Mailer: git-send-email 1.8.4.12.g2ea3df6
 In-Reply-To: <1381498066-16011-1-git-send-email-aaron.lu@intel.com>
 References: <1381498066-16011-1-git-send-email-aaron.lu@intel.com>
@@ -41,106 +41,102 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce a new API for modules to query if a specific type of backlight
-device has been registered. This is useful for some backlight device
-provider module(e.g. ACPI video) to know if a native control
-interface(e.g. the interface created by i915) is available and then do
-things accordingly(e.g. avoid register its own on Win8 systems).
+The tpacpi_acpi_handle_locate function makes use of acpi_get_devices to
+locate handle for ACPI video by HID, the problem is, ACPI video node
+doesn't really have HID defined(i.e. no _HID control method is defined
+for video device), so.. that function would fail. This can be solved by
+enhancing the callback function for acpi_get_devices, where we can use
+acpi_device_hid function to check if the ACPI node corresponds to a
+video controller.
+
+In addition to that, the _BCL control method only exists under a video
+output device node, not a video controller device node. So to evaluate
+_BCL, we need the handle of a video output device node, which is child
+of the located video controller node from tpacpi_acpi_handle_locate.
+
+The two fix are necessary for some Thinkpad models to emit notification
+on backlight hotkey press as a result of evaluation of _BCL.
 
 Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+Tested-by: Igor Gnatenko <i.gnatenko.brain@gmail.com>
+Acked-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
 ---
- drivers/video/backlight/backlight.c | 31 +++++++++++++++++++++++++++++++
- include/linux/backlight.h           |  4 ++++
- 2 files changed, 35 insertions(+)
+ drivers/platform/x86/thinkpad_acpi.c | 31 ++++++++++++++++++++++++-------
+ 1 file changed, 24 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/video/backlight/backlight.c b/drivers/video/backlight/backlight.c
-index 94a403a..5d05555 100644
---- a/drivers/video/backlight/backlight.c
-+++ b/drivers/video/backlight/backlight.c
-@@ -21,6 +21,9 @@
- #include <asm/backlight.h>
- #endif
- 
-+static struct list_head backlight_dev_list;
-+static struct mutex backlight_dev_list_mutex;
-+
- static const char *const backlight_types[] = {
- 	[BACKLIGHT_RAW] = "raw",
- 	[BACKLIGHT_PLATFORM] = "platform",
-@@ -349,10 +352,32 @@ struct backlight_device *backlight_device_register(const char *name,
- 	mutex_unlock(&pmac_backlight_mutex);
- #endif
- 
-+	mutex_lock(&backlight_dev_list_mutex);
-+	list_add(&new_bd->entry, &backlight_dev_list);
-+	mutex_unlock(&backlight_dev_list_mutex);
-+
- 	return new_bd;
- }
- EXPORT_SYMBOL(backlight_device_register);
- 
-+bool backlight_device_registered(enum backlight_type type)
-+{
-+	bool found = false;
-+	struct backlight_device *bd;
-+
-+	mutex_lock(&backlight_dev_list_mutex);
-+	list_for_each_entry(bd, &backlight_dev_list, entry) {
-+		if (bd->props.type == type) {
-+			found = true;
-+			break;
-+		}
+diff --git a/drivers/platform/x86/thinkpad_acpi.c b/drivers/platform/x86/thinkpad_acpi.c
+index 03ca6c1..170f278 100644
+--- a/drivers/platform/x86/thinkpad_acpi.c
++++ b/drivers/platform/x86/thinkpad_acpi.c
+@@ -700,6 +700,14 @@ static void __init drv_acpi_handle_init(const char *name,
+ static acpi_status __init tpacpi_acpi_handle_locate_callback(acpi_handle handle,
+ 			u32 level, void *context, void **return_value)
+ {
++	struct acpi_device *dev;
++	if (!strcmp(context, "video")) {
++		if (acpi_bus_get_device(handle, &dev))
++			return AE_OK;
++		if (strcmp(ACPI_VIDEO_HID, acpi_device_hid(dev)))
++			return AE_OK;
 +	}
-+	mutex_unlock(&backlight_dev_list_mutex);
 +
-+	return found;
-+}
-+EXPORT_SYMBOL(backlight_device_registered);
+ 	*(acpi_handle *)return_value = handle;
+ 
+ 	return AE_CTRL_TERMINATE;
+@@ -712,10 +720,10 @@ static void __init tpacpi_acpi_handle_locate(const char *name,
+ 	acpi_status status;
+ 	acpi_handle device_found;
+ 
+-	BUG_ON(!name || !hid || !handle);
++	BUG_ON(!name || !handle);
+ 	vdbg_printk(TPACPI_DBG_INIT,
+ 			"trying to locate ACPI handle for %s, using HID %s\n",
+-			name, hid);
++			name, hid ? hid : "NULL");
+ 
+ 	memset(&device_found, 0, sizeof(device_found));
+ 	status = acpi_get_devices(hid, tpacpi_acpi_handle_locate_callback,
+@@ -6090,19 +6098,28 @@ static int __init tpacpi_query_bcl_levels(acpi_handle handle)
+ {
+ 	struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER, NULL };
+ 	union acpi_object *obj;
++	struct acpi_device *device, *child;
+ 	int rc;
+ 
+-	if (ACPI_SUCCESS(acpi_evaluate_object(handle, "_BCL", NULL, &buffer))) {
++	if (acpi_bus_get_device(handle, &device))
++		return 0;
 +
- /**
-  * backlight_device_unregister - unregisters a backlight device object.
-  * @bd: the backlight device object to be unregistered and freed.
-@@ -364,6 +389,10 @@ void backlight_device_unregister(struct backlight_device *bd)
- 	if (!bd)
- 		return;
- 
-+	mutex_lock(&backlight_dev_list_mutex);
-+	list_del(&bd->entry);
-+	mutex_unlock(&backlight_dev_list_mutex);
++	rc = 0;
++	list_for_each_entry(child, &device->children, node) {
++		acpi_status status = acpi_evaluate_object(child->handle, "_BCL",
++							  NULL, &buffer);
++		if (ACPI_FAILURE(status))
++			continue;
 +
- #ifdef CONFIG_PMAC_BACKLIGHT
- 	mutex_lock(&pmac_backlight_mutex);
- 	if (pmac_backlight == bd)
-@@ -499,6 +528,8 @@ static int __init backlight_class_init(void)
+ 		obj = (union acpi_object *)buffer.pointer;
+ 		if (!obj || (obj->type != ACPI_TYPE_PACKAGE)) {
+ 			pr_err("Unknown _BCL data, please report this to %s\n",
+-			       TPACPI_MAIL);
++				TPACPI_MAIL);
+ 			rc = 0;
+ 		} else {
+ 			rc = obj->package.count;
+ 		}
+-	} else {
+-		return 0;
++		break;
+ 	}
  
- 	backlight_class->dev_groups = bl_device_groups;
- 	backlight_class->pm = &backlight_class_dev_pm_ops;
-+	INIT_LIST_HEAD(&backlight_dev_list);
-+	mutex_init(&backlight_dev_list_mutex);
- 	return 0;
- }
+ 	kfree(buffer.pointer);
+@@ -6118,7 +6135,7 @@ static unsigned int __init tpacpi_check_std_acpi_brightness_support(void)
+ 	acpi_handle video_device;
+ 	int bcl_levels = 0;
  
-diff --git a/include/linux/backlight.h b/include/linux/backlight.h
-index 53b7794..5f9cd96 100644
---- a/include/linux/backlight.h
-+++ b/include/linux/backlight.h
-@@ -100,6 +100,9 @@ struct backlight_device {
- 	/* The framebuffer notifier block */
- 	struct notifier_block fb_notif;
- 
-+	/* list entry of all registered backlight devices */
-+	struct list_head entry;
-+
- 	struct device dev;
- };
- 
-@@ -123,6 +126,7 @@ extern void devm_backlight_device_unregister(struct device *dev,
- 					struct backlight_device *bd);
- extern void backlight_force_update(struct backlight_device *bd,
- 				   enum backlight_update_reason reason);
-+extern bool backlight_device_registered(enum backlight_type type);
- 
- #define to_backlight_device(obj) container_of(obj, struct backlight_device, dev)
+-	tpacpi_acpi_handle_locate("video", ACPI_VIDEO_HID, &video_device);
++	tpacpi_acpi_handle_locate("video", NULL, &video_device);
+ 	if (video_device)
+ 		bcl_levels = tpacpi_query_bcl_levels(video_device);
  
 -- 
 1.8.4.12.g2ea3df6
