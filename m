@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758762Ab3JKTjn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:39:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45489 "EHLO
+	id S1754412Ab3JKUrK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:47:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45513 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758723Ab3JKTji (ORCPT
+	with ESMTP id S1758751Ab3JKTjm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:39:38 -0400
+	Fri, 11 Oct 2013 15:39:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Jones <davej@fedoraproject.org>,
-        Neal Cardwell <ncardwell@google.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 007/110] tcp: Add missing braces to do_tcp_setsockopt
-Date: Fri, 11 Oct 2013 12:37:47 -0700
-Message-Id: <20131011193808.408947862@linuxfoundation.org>
+Subject: [ 022/110] bridge: Clamp forward_delay when enabling STP
+Date: Fri, 11 Oct 2013 12:38:02 -0700
+Message-Id: <20131011193810.088075785@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
 References: <20131011193807.584188672@linuxfoundation.org>
@@ -28,32 +27,106 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Jones <davej@redhat.com>
+From: Herbert Xu <herbert@gondor.apana.org.au>
 
-[ Upstream commit e2e5c4c07caf810d7849658dca42f598b3938e21 ]
+[ Upstream commit be4f154d5ef0ca147ab6bcd38857a774133f5450 ]
 
-Signed-off-by: Dave Jones <davej@fedoraproject.org>
-Acked-by: Neal Cardwell <ncardwell@google.com>
+At some point limits were added to forward_delay.  However, the
+limits are only enforced when STP is enabled.  This created a
+scenario where you could have a value outside the allowed range
+while STP is disabled, which then stuck around even after STP
+is enabled.
+
+This patch fixes this by clamping the value when we enable STP.
+
+I had to move the locking around a bit to ensure that there is
+no window where someone could insert a value outside the range
+while we're in the middle of enabling STP.
+
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/tcp.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/bridge/br_private.h |    1 +
+ net/bridge/br_stp.c     |   21 +++++++++++++++------
+ net/bridge/br_stp_if.c  |   12 ++++++++++--
+ 3 files changed, 26 insertions(+), 8 deletions(-)
 
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -2447,10 +2447,11 @@ static int do_tcp_setsockopt(struct sock
- 	case TCP_THIN_DUPACK:
- 		if (val < 0 || val > 1)
- 			err = -EINVAL;
--		else
-+		else {
- 			tp->thin_dupack = val;
- 			if (tp->thin_dupack)
- 				tcp_disable_early_retrans(tp);
-+		}
- 		break;
+--- a/net/bridge/br_private.h
++++ b/net/bridge/br_private.h
+@@ -714,6 +714,7 @@ extern struct net_bridge_port *br_get_po
+ extern void br_init_port(struct net_bridge_port *p);
+ extern void br_become_designated_port(struct net_bridge_port *p);
  
- 	case TCP_REPAIR:
++extern void __br_set_forward_delay(struct net_bridge *br, unsigned long t);
+ extern int br_set_forward_delay(struct net_bridge *br, unsigned long x);
+ extern int br_set_hello_time(struct net_bridge *br, unsigned long x);
+ extern int br_set_max_age(struct net_bridge *br, unsigned long x);
+--- a/net/bridge/br_stp.c
++++ b/net/bridge/br_stp.c
+@@ -544,18 +544,27 @@ int br_set_max_age(struct net_bridge *br
+ 
+ }
+ 
++void __br_set_forward_delay(struct net_bridge *br, unsigned long t)
++{
++	br->bridge_forward_delay = t;
++	if (br_is_root_bridge(br))
++		br->forward_delay = br->bridge_forward_delay;
++}
++
+ int br_set_forward_delay(struct net_bridge *br, unsigned long val)
+ {
+ 	unsigned long t = clock_t_to_jiffies(val);
++	int err = -ERANGE;
+ 
++	spin_lock_bh(&br->lock);
+ 	if (br->stp_enabled != BR_NO_STP &&
+ 	    (t < BR_MIN_FORWARD_DELAY || t > BR_MAX_FORWARD_DELAY))
+-		return -ERANGE;
++		goto unlock;
+ 
+-	spin_lock_bh(&br->lock);
+-	br->bridge_forward_delay = t;
+-	if (br_is_root_bridge(br))
+-		br->forward_delay = br->bridge_forward_delay;
++	__br_set_forward_delay(br, t);
++	err = 0;
++
++unlock:
+ 	spin_unlock_bh(&br->lock);
+-	return 0;
++	return err;
+ }
+--- a/net/bridge/br_stp_if.c
++++ b/net/bridge/br_stp_if.c
+@@ -129,6 +129,14 @@ static void br_stp_start(struct net_brid
+ 	char *envp[] = { NULL };
+ 
+ 	r = call_usermodehelper(BR_STP_PROG, argv, envp, UMH_WAIT_PROC);
++
++	spin_lock_bh(&br->lock);
++
++	if (br->bridge_forward_delay < BR_MIN_FORWARD_DELAY)
++		__br_set_forward_delay(br, BR_MIN_FORWARD_DELAY);
++	else if (br->bridge_forward_delay < BR_MAX_FORWARD_DELAY)
++		__br_set_forward_delay(br, BR_MAX_FORWARD_DELAY);
++
+ 	if (r == 0) {
+ 		br->stp_enabled = BR_USER_STP;
+ 		br_debug(br, "userspace STP started\n");
+@@ -137,10 +145,10 @@ static void br_stp_start(struct net_brid
+ 		br_debug(br, "using kernel STP\n");
+ 
+ 		/* To start timers on any ports left in blocking */
+-		spin_lock_bh(&br->lock);
+ 		br_port_state_selection(br);
+-		spin_unlock_bh(&br->lock);
+ 	}
++
++	spin_unlock_bh(&br->lock);
+ }
+ 
+ static void br_stp_stop(struct net_bridge *br)
 
 
