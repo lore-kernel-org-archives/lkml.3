@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933295Ab3JKUTt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:19:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45979 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932232Ab3JKTkv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932234Ab3JKTkv (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 11 Oct 2013 15:40:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45904 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932076Ab3JKTki (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 15:40:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Toralf=20F=C3=B6rster?= <toralf.foerster@gmx.de>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 001/135] nfsd4: fix leak of inode reference on delegation failure
-Date: Fri, 11 Oct 2013 12:38:02 -0700
-Message-Id: <20131011193945.369483735@linuxfoundation.org>
+        =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 093/110] Revert "drm/radeon: add missing hdmi callbacks for rv6xx"
+Date: Fri, 11 Oct 2013 12:39:13 -0700
+Message-Id: <20131011193817.949191202@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
-References: <20131011193945.181603934@linuxfoundation.org>
+In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
+References: <20131011193807.584188672@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,111 +26,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+From: Rafał Miłecki <zajec5@gmail.com>
 
-commit bf7bd3e98be5c74813bee6ad496139fb0a011b3b upstream.
+This reverts commit b2a9484006875ecd7d94582e7bcb72a02682be92.
 
-This fixes a regression from 68a3396178e6688ad7367202cdf0af8ed03c8727
-"nfsd4: shut down more of delegation earlier".
+Commit 99d79aa2f3b7729e7290e8bda5d0dd8b0240ec62 (backported by
+b2a9484006875ecd7d94582e7bcb72a02682be92) was supposed to fix rv6xx_asic
+struct.
 
-After that commit, nfs4_set_delegation() failures result in
-nfs4_put_delegation being called, but nfs4_put_delegation doesn't free
-the nfs4_file that has already been set by alloc_init_deleg().
+In kernel 3.10 we didn't have that struct yet, so the original patch
+should never be backported to the 3.10. Accidentally it has applied and
+modified different struct (r520_asic) that shouldn't have any HDMI
+callbacks at all.
 
-This can result in an oops on later unmounting the exported filesystem.
-
-Note also delaying the fi_had_conflict check we're able to return a
-better error (hence give 4.1 clients a better idea why the delegation
-failed; though note CONFLICT isn't an exact match here, as that's
-supposed to indicate a current conflict, but all we know here is that
-there was one recently).
-
-Reported-by: Toralf Förster <toralf.foerster@gmx.de>
-Tested-by: Toralf Förster <toralf.foerster@gmx.de>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
+Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfsd/nfs4state.c |   31 ++++++++++++++++++++-----------
- 1 file changed, 20 insertions(+), 11 deletions(-)
+ drivers/gpu/drm/radeon/radeon_asic.c |    2 --
+ 1 file changed, 2 deletions(-)
 
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -368,11 +368,8 @@ static struct nfs4_delegation *
- alloc_init_deleg(struct nfs4_client *clp, struct nfs4_ol_stateid *stp, struct svc_fh *current_fh)
- {
- 	struct nfs4_delegation *dp;
--	struct nfs4_file *fp = stp->st_file;
- 
- 	dprintk("NFSD alloc_init_deleg\n");
--	if (fp->fi_had_conflict)
--		return NULL;
- 	if (num_delegations > max_delegations)
- 		return NULL;
- 	dp = delegstateid(nfs4_alloc_stid(clp, deleg_slab));
-@@ -389,8 +386,7 @@ alloc_init_deleg(struct nfs4_client *clp
- 	INIT_LIST_HEAD(&dp->dl_perfile);
- 	INIT_LIST_HEAD(&dp->dl_perclnt);
- 	INIT_LIST_HEAD(&dp->dl_recall_lru);
--	get_nfs4_file(fp);
--	dp->dl_file = fp;
-+	dp->dl_file = NULL;
- 	dp->dl_type = NFS4_OPEN_DELEGATE_READ;
- 	fh_copy_shallow(&dp->dl_fh, &current_fh->fh_handle);
- 	dp->dl_time = 0;
-@@ -3044,22 +3040,35 @@ static int nfs4_setlease(struct nfs4_del
- 	return 0;
- }
- 
--static int nfs4_set_delegation(struct nfs4_delegation *dp)
-+static int nfs4_set_delegation(struct nfs4_delegation *dp, struct nfs4_file *fp)
- {
--	struct nfs4_file *fp = dp->dl_file;
-+	int status;
- 
--	if (!fp->fi_lease)
--		return nfs4_setlease(dp);
-+	if (fp->fi_had_conflict)
-+		return -EAGAIN;
-+	get_nfs4_file(fp);
-+	dp->dl_file = fp;
-+	if (!fp->fi_lease) {
-+		status = nfs4_setlease(dp);
-+		if (status)
-+			goto out_free;
-+		return 0;
-+	}
- 	spin_lock(&recall_lock);
- 	if (fp->fi_had_conflict) {
- 		spin_unlock(&recall_lock);
--		return -EAGAIN;
-+		status = -EAGAIN;
-+		goto out_free;
- 	}
- 	atomic_inc(&fp->fi_delegees);
- 	list_add(&dp->dl_perfile, &fp->fi_delegations);
- 	spin_unlock(&recall_lock);
- 	list_add(&dp->dl_perclnt, &dp->dl_stid.sc_client->cl_delegations);
- 	return 0;
-+out_free:
-+	put_nfs4_file(fp);
-+	dp->dl_file = fp;
-+	return status;
- }
- 
- static void nfsd4_open_deleg_none_ext(struct nfsd4_open *open, int status)
-@@ -3134,7 +3143,7 @@ nfs4_open_delegation(struct net *net, st
- 	dp = alloc_init_deleg(oo->oo_owner.so_client, stp, fh);
- 	if (dp == NULL)
- 		goto out_no_deleg;
--	status = nfs4_set_delegation(dp);
-+	status = nfs4_set_delegation(dp, stp->st_file);
- 	if (status)
- 		goto out_free;
- 
+--- a/drivers/gpu/drm/radeon/radeon_asic.c
++++ b/drivers/gpu/drm/radeon/radeon_asic.c
+@@ -892,8 +892,6 @@ static struct radeon_asic r520_asic = {
+ 		.wait_for_vblank = &avivo_wait_for_vblank,
+ 		.set_backlight_level = &atombios_set_backlight_level,
+ 		.get_backlight_level = &atombios_get_backlight_level,
+-		.hdmi_enable = &r600_hdmi_enable,
+-		.hdmi_setmode = &r600_hdmi_setmode,
+ 	},
+ 	.copy = {
+ 		.blit = &r100_copy_blit,
 
 
