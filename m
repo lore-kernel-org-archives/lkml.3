@@ -1,92 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757930Ab3JKM0B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 08:26:01 -0400
-Received: from mail-qe0-f54.google.com ([209.85.128.54]:38227 "EHLO
-	mail-qe0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757703Ab3JKMZb (ORCPT
+	id S1757548Ab3JKMZa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 08:25:30 -0400
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:38677 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753042Ab3JKMZ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 08:25:31 -0400
+	Fri, 11 Oct 2013 08:25:28 -0400
 From: Jeff Layton <jlayton@redhat.com>
 To: linux-fsdevel@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, nfs-ganesha-devel@lists.sourceforge.net,
         samba-technical@lists.samba.org
-Subject: [RFC PATCH 4/5] locks: handle merging of locks when FL_FILP_PRIVATE is set
-Date: Fri, 11 Oct 2013 08:25:21 -0400
-Message-Id: <1381494322-2426-5-git-send-email-jlayton@redhat.com>
+Subject: [RFC PATCH 0/5] locks: implement "filp-private" (aka UNPOSIX) locks
+Date: Fri, 11 Oct 2013 08:25:17 -0400
+Message-Id: <1381494322-2426-1-git-send-email-jlayton@redhat.com>
 X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1381494322-2426-1-git-send-email-jlayton@redhat.com>
-References: <1381494322-2426-1-git-send-email-jlayton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since FL_FILP_PRIVATE locks have different semantics on close, we can't
-merge them with "normal" locks or with other FL_FILP_PRIVATE locks that
-were acquired on different file descriptors. Consolidate the logic that
-determines this into its own function.
+At LSF this year, there was a discussion about the "wishlist" for
+userland file servers. One of the things brought up was the goofy and
+problematic behavior of POSIX locks when a file is closed. Boaz started
+a thread on it here:
 
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
----
- fs/locks.c | 38 +++++++++++++++++++++++++++++++++++---
- 1 file changed, 35 insertions(+), 3 deletions(-)
+    http://permalink.gmane.org/gmane.linux.file-systems/73364
 
-diff --git a/fs/locks.c b/fs/locks.c
-index 7186b9a..3bde157 100644
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -934,6 +934,39 @@ out:
- 	return error;
- }
- 
-+/**
-+ * posix_locks_mergeable - are two posix locks able to be merged?
-+ * @fl1: first posix lock
-+ * @fl2: second posix lock
-+ *
-+ * Determine whether two posix locks are potentially able to be merged. If
-+ * they are of different types or have different settings of FL_FILP_PRIVATE
-+ * then they cannot be. Ditto if they are FL_FILP_PRIVATE locks and are
-+ * associated with different file descriptors.
-+ */
-+static bool
-+posix_locks_mergeable(struct file_lock *fl1, struct file_lock *fl2)
-+{
-+	unsigned int p1, p2;
-+
-+	/* Different types are not mergeable */
-+	if (fl1->fl_type != fl2->fl_type)
-+		return false;
-+
-+	p1 = IS_PRIVATE(fl1);
-+	p2 = IS_PRIVATE(fl2);
-+
-+	/* Different settings of FL_FILP_PRIVATE aren't mergeable */
-+	if (p1 != p2)
-+		return false;
-+
-+	/* When FL_FILP_PRIVATE is set, fl_file must be same */
-+	if (p1 && fl1->fl_file != fl2->fl_file)
-+		return false;
-+
-+	return true;
-+}
-+
- static int __posix_lock_file(struct inode *inode, struct file_lock *request, struct file_lock *conflock)
- {
- 	struct file_lock *fl;
-@@ -1018,9 +1051,8 @@ static int __posix_lock_file(struct inode *inode, struct file_lock *request, str
- 		     request->fl_file != fl->fl_file)
- 			goto next_lock;
- 
--		/* Detect adjacent or overlapping regions (if same lock type)
--		 */
--		if (request->fl_type == fl->fl_type) {
-+		/* Detect adjacent or overlapping regions (if same lock type) */
-+		if (posix_locks_mergeable(fl, request)) {
- 			/* In all comparisons of start vs end, use
- 			 * "start - 1" rather than "end + 1". If end
- 			 * is OFFSET_MAX, end + 1 will become negative.
+Userland fileservers often need to maintain more than one open file
+descriptor on a file. The POSIX spec says:
+
+"All locks associated with a file for a given process shall be removed
+ when a file descriptor for that file is closed by that process or the
+ process holding that file descriptor terminates."
+
+This is problematic since you can't close any file descriptor without
+dropping all your POSIX locks. Most userland file servers therefore
+end up opening the file with more access than is really necessary, and
+keeping fd's open for longer than is necessary to work around this.
+
+This patchset is a first stab at an approach to address this problem by
+adding two new l_type values -- F_RDLCKP and F_WRLCKP (the 'P' is short
+for "private" -- I'm open to changing that if you have a better
+mnemonic).
+
+For all intents and purposes these lock types act just like their
+"non-P" counterpart. The difference is that they are only implicitly
+released when the fd against which they were acquired is closed. As a
+side effect, these locks cannot be merged with "non-P" locks since they
+have different semantics on close.
+
+I've given this patchset some very basic smoke testing and it seems to
+do the right thing, but it is still pretty rough. If this looks
+reasonable I'll plan to do some documentation updates and will take a
+stab at trying to get these new lock types added to the POSIX spec (as
+HCH recommended).
+
+At this point, my main questions are:
+
+1) does this look useful, particularly for fileserver implementors?
+
+2) does this look OK API-wise? We could consider different "cmd" values
+   or even different syscalls, but I figured this makes it clearer that
+   "P" and "non-P" locks will still conflict with one another.
+
+Jeff Layton (5):
+  locks: consolidate checks for compatible filp->f_mode values in setlk
+    handlers
+  locks: add definitions for F_RDLCKP and F_WRLCKP
+  locks: skip FL_FILP_PRIVATE locks on close unless we're closing the
+    correct filp
+  locks: handle merging of locks when FL_FILP_PRIVATE is set
+  locks: show private lock types in /proc/locks
+
+ fs/locks.c                       | 121 ++++++++++++++++++++++++++-------------
+ include/linux/fs.h               |   1 +
+ include/uapi/asm-generic/fcntl.h |   9 +++
+ 3 files changed, 91 insertions(+), 40 deletions(-)
+
 -- 
 1.8.3.1
 
