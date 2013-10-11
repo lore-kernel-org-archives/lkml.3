@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759327Ab3JKTwa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:52:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46440 "EHLO
+	id S1759312Ab3JKTw3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:52:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46444 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932781Ab3JKTmB (ORCPT
+	with ESMTP id S932783Ab3JKTmC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:42:01 -0400
+	Fri, 11 Oct 2013 15:42:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joerg Kalisch <the_force@gmx.de>,
-        Christian Lamparter <chunkeey@googlemail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 107/135] p54usb: add USB ID for Corega WLUSB2GTST USB adapter
-Date: Fri, 11 Oct 2013 12:39:48 -0700
-Message-Id: <20131011193956.912335441@linuxfoundation.org>
+        Andy Adamson <andros@netapp.com>, Jeff Layton <jlayton@redhat.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 097/135] NFSv4.1: nfs4_fl_prepare_ds - fix bugs when the connect attempt fails
+Date: Fri, 11 Oct 2013 12:39:38 -0700
+Message-Id: <20131011193955.801094071@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -28,30 +27,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian Lamparter <chunkeey@googlemail.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 1e43692cdb7cc445d6347d8a5207d9cef0c71434 upstream.
+commit 52b26a3e1bb3e065c32b3febdac1e1f117d88e15 upstream.
 
-Added USB ID for Corega WLUSB2GTST USB adapter.
+- Fix an Oops when nfs4_ds_connect() returns an error.
+- Always check the device status after waiting for a connect to complete.
 
-Reported-by: Joerg Kalisch <the_force@gmx.de>
-Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Reported-by: Andy Adamson <andros@netapp.com>
+Reported-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/p54/p54usb.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/nfs/nfs4filelayoutdev.c |   18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
---- a/drivers/net/wireless/p54/p54usb.c
-+++ b/drivers/net/wireless/p54/p54usb.c
-@@ -83,6 +83,7 @@ static struct usb_device_id p54u_table[]
- 	{USB_DEVICE(0x06a9, 0x000e)},	/* Westell 802.11g USB (A90-211WG-01) */
- 	{USB_DEVICE(0x06b9, 0x0121)},	/* Thomson SpeedTouch 121g */
- 	{USB_DEVICE(0x0707, 0xee13)},   /* SMC 2862W-G version 2 */
-+	{USB_DEVICE(0x07aa, 0x0020)},	/* Corega WLUSB2GTST USB */
- 	{USB_DEVICE(0x0803, 0x4310)},	/* Zoom 4410a */
- 	{USB_DEVICE(0x083a, 0x4521)},   /* Siemens Gigaset USB Adapter 54 version 2 */
- 	{USB_DEVICE(0x083a, 0x4531)},	/* T-Com Sinus 154 data II */
+--- a/fs/nfs/nfs4filelayoutdev.c
++++ b/fs/nfs/nfs4filelayoutdev.c
+@@ -801,34 +801,34 @@ nfs4_fl_prepare_ds(struct pnfs_layout_se
+ 	struct nfs4_file_layout_dsaddr *dsaddr = FILELAYOUT_LSEG(lseg)->dsaddr;
+ 	struct nfs4_pnfs_ds *ds = dsaddr->ds_list[ds_idx];
+ 	struct nfs4_deviceid_node *devid = FILELAYOUT_DEVID_NODE(lseg);
+-
+-	if (filelayout_test_devid_unavailable(devid))
+-		return NULL;
++	struct nfs4_pnfs_ds *ret = ds;
+ 
+ 	if (ds == NULL) {
+ 		printk(KERN_ERR "NFS: %s: No data server for offset index %d\n",
+ 			__func__, ds_idx);
+ 		filelayout_mark_devid_invalid(devid);
+-		return NULL;
++		goto out;
+ 	}
+ 	if (ds->ds_clp)
+-		return ds;
++		goto out_test_devid;
+ 
+ 	if (test_and_set_bit(NFS4DS_CONNECTING, &ds->ds_state) == 0) {
+ 		struct nfs_server *s = NFS_SERVER(lseg->pls_layout->plh_inode);
+ 		int err;
+ 
+ 		err = nfs4_ds_connect(s, ds);
+-		if (err) {
++		if (err)
+ 			nfs4_mark_deviceid_unavailable(devid);
+-			ds = NULL;
+-		}
+ 		nfs4_clear_ds_conn_bit(ds);
+ 	} else {
+ 		/* Either ds is connected, or ds is NULL */
+ 		nfs4_wait_ds_connect(ds);
+ 	}
+-	return ds;
++out_test_devid:
++	if (filelayout_test_devid_unavailable(devid))
++		ret = NULL;
++out:
++	return ret;
+ }
+ 
+ module_param(dataserver_retrans, uint, 0644);
 
 
