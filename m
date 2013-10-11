@@ -1,166 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757955Ab3JKNBD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 09:01:03 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.162]:57713 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752509Ab3JKNBA (ORCPT
+	id S1757997Ab3JKNB4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 09:01:56 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:56832 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752179Ab3JKNBz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 09:01:00 -0400
-X-RZG-AUTH: :IGUKYFjleetgZuRbHZjp6Ve7NzeE1efWuTR/wV06y353QgIuD5+acdRFtJ8MDHZp4u74mTVB5dOWYQ==
-X-RZG-CLASS-ID: mo00
-Message-ID: <5257F687.6020802@giantdisaster.de>
-Date: Fri, 11 Oct 2013 15:00:55 +0200
-From: Stefan Behrens <sbehrens@giantdisaster.de>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: "Geyslan G. Bem" <geyslan@gmail.com>, chris.mason@fusionio.com
-CC: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jbacik@fusionio.com, joe@perches.com, kernel-br@googlegroups.com
-Subject: Re: [PATCH v5] btrfs: Fix memory leakage in the tree-log.c
-References: <1381443082-7670-1-git-send-email-geyslan@gmail.com>
-In-Reply-To: <1381443082-7670-1-git-send-email-geyslan@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 11 Oct 2013 09:01:55 -0400
+Date: Fri, 11 Oct 2013 09:01:53 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Subject: Re: [BUG] WARN_ON(!context) in drivers/pci/hotplug/acpiphp_glue.c
+Message-ID: <20131011090153.7760db6b@gandalf.local.home>
+In-Reply-To: <2096980.ZtIelfoX39@vostro.rjw.lan>
+References: <20131010165905.7815defa@gandalf.local.home>
+	<18685640.N2BnVjDmHD@vostro.rjw.lan>
+	<CA+55aFwqf7kkh0dy6AhCvB87XYkQ03YUpsYEDJmnkiRe8GQfMQ@mail.gmail.com>
+	<2096980.ZtIelfoX39@vostro.rjw.lan>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Oct 2013 19:11:22 -0300, Geyslan G. Bem wrote:
-> In add_inode_ref() function:
+On Fri, 11 Oct 2013 13:13:47 +0200
+"Rafael J. Wysocki" <rjw@rjwysocki.net> wrote:
 > 
-> Initializes local pointers.
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> Subject: ACPI / hotplug / PCI: Accept coexistence with native PCIe hotplug
 > 
-> Reduces the logical condition with the __add_inode_ref() return
-> value by using only one 'goto out'.
+> Allow ACPIPHP (ACPI-based PCI hotplug) to handle event signaling for
+> devices that have already been claimed by the native PCIe hotplug
+> (pciehp).
 > 
-> Centralizes the exiting, ensuring the freeing of all used memory.
+> The ACPI hotplug events are essentially re-scan, remove and eject
+> requests.  Re-scan and remove should work regardless, because they
+> may be triggered by user space via sysfs and the ACPI eject (_EJ0)
+> should work if the BIOS wants us to use it.  There may be an issue
+> if the BIOS signals ACPI eject and wants us to use the native eject,
+> but that doesn't work without this change anyway.
 > 
-> Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
+> This change prevents the WARN_ON() in acpiphp_enumerate_slots() from
+> triggering unnecessarily for bridges whose parents are managed by
+> pciehp.
+> 
 
-The patch looks correct to me, but there are some nitpicking style issues.
+Reported-by: Steven Rostedt <rostedt@goodmis.org>
+Tested-by: Steven Rostedt <rostedt@goodmis.org>
 
+-- Steve
 
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 > ---
->  fs/btrfs/tree-log.c | 36 ++++++++++++++++++++++--------------
->  1 file changed, 22 insertions(+), 14 deletions(-)
+>  drivers/pci/hotplug/acpiphp_glue.c |   32 ++++++++++++++++++++++++++------
+>  1 file changed, 26 insertions(+), 6 deletions(-)
 > 
-> diff --git a/fs/btrfs/tree-log.c b/fs/btrfs/tree-log.c
-> index 79f057c..beb41b0 100644
-> --- a/fs/btrfs/tree-log.c
-> +++ b/fs/btrfs/tree-log.c
-> @@ -1113,11 +1113,11 @@ static noinline int add_inode_ref(struct btrfs_trans_handle *trans,
->  				  struct extent_buffer *eb, int slot,
->  				  struct btrfs_key *key)
->  {
-> -	struct inode *dir;
-> -	struct inode *inode;
-> +	struct inode *dir = NULL;
-> +	struct inode *inode = NULL;
->  	unsigned long ref_ptr;
->  	unsigned long ref_end;
-> -	char *name;
-> +	char *name = NULL;
->  	int namelen;
->  	int ret;
->  	int search_done = 0;
-> @@ -1150,13 +1150,15 @@ static noinline int add_inode_ref(struct btrfs_trans_handle *trans,
->  	 * care of the rest
->  	 */
->  	dir = read_one_inode(root, parent_objectid);
-> -	if (!dir)
-> -		return -ENOENT;
-> +	if (!dir) {
-> +		ret = -ENOENT;
-> +		goto out;
-> +	}
+> Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
+> ===================================================================
+> --- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
+> +++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
+> @@ -259,6 +259,31 @@ static void acpiphp_dock_release(void *d
+>  	put_bridge(context->func.parent);
+>  }
 >  
->  	inode = read_one_inode(root, inode_objectid);
->  	if (!inode) {
-> -		iput(dir);
-> -		return -EIO;
-> +		ret = -EIO;
-> +		goto out;
->  	}
->  
->  	while (ref_ptr < ref_end) {
-> @@ -1169,14 +1171,17 @@ static noinline int add_inode_ref(struct btrfs_trans_handle *trans,
->  			 */
->  			if (!dir)
->  				dir = read_one_inode(root, parent_objectid);
-> -			if (!dir)
-> -				return -ENOENT;
-> +			if (!dir) {
-> +				ret = -ENOENT;
-> +				goto out;
-> +			}
->  		} else {
->  			ret = ref_get_fields(eb, ref_ptr, &namelen, &name,
->  					     &ref_index);
->  		}
->  		if (ret)
-> -			return ret;
-> +			goto out;
+> +/**
+> + * slot_should_be_exposed - Check whether or not to expose a slot to userland.
+> + * @bridge: ACPIPHP bridge the slot belongs to.
+> + * @handle: ACPI handle of a device in the slot.
+> + */
+> +static inline bool slot_should_be_exposed(struct acpiphp_bridge *bridge,
+> +					  acpi_handle handle)
+> +{
+> +	struct pci_bus *pbus = bridge->pci_bus;
+> +	struct pci_dev *pdev = bridge->pci_dev;
 > +
-
-This additional empty line is not required, we would have two empty
-lines in a row.
-
-
->  
->  		/* if we already have a perfect match, we're done */
->  		if (!inode_in_dir(root, path, btrfs_ino(dir), btrfs_ino(inode),
-> @@ -1196,12 +1201,12 @@ static noinline int add_inode_ref(struct btrfs_trans_handle *trans,
->  						      parent_objectid,
->  						      ref_index, name, namelen,
->  						      &search_done);
-> -				if (ret == 1) {
-> -					ret = 0;
+> +	/*
+> +	 * Do not expose slots whose bridges are managed by pciehp, because they
+> +	 * will be exposed to user space by the pciehp driver.
+> +	 */
+> +	if (pdev && device_is_managed_by_native_pciehp(pdev))
+> +		return false;
 > +
-
-This empty line is also not required. You know, this hurts on regular
-80x24 terminals. Do you get more than 24 lines on your display?
-I thought there was a rule for this in Documentation/CodingStyle, but
-there isn't. Therefore it's up to you. But the two empty lines above are
-definitely not wanted.
-
-
-> +				if (ret) {
-> +					if (ret == 1)
-> +						ret--;
-
-I don't see a reason to change the "ret = 0" to a "ret--", this is not
-an optimization and makes the code less readable.
-
-
->  					goto out;
->  				}
-> -				if (ret)
-> -					goto out;
->  			}
->  
->  			/* insert our name */
-> @@ -1215,6 +1220,8 @@ static noinline int add_inode_ref(struct btrfs_trans_handle *trans,
->  
->  		ref_ptr = (unsigned long)(ref_ptr + ref_struct_size) + namelen;
->  		kfree(name);
-> +		name = NULL;
+> +	/*
+> +	 * Expose slots for devices with either _EJ0 or _RMV and for devices
+> +	 * on docking stations.
+> +	 */
+> +	return acpi_pci_check_ejectable(pbus, handle) || is_dock_device(handle);
+> +}
 > +
-
-Another empty line which is not required for the purpose of this patch.
-
-
->  		if (log_ref_ver) {
->  			iput(dir);
->  			dir = NULL;
-> @@ -1225,6 +1232,7 @@ static noinline int add_inode_ref(struct btrfs_trans_handle *trans,
->  	ret = overwrite_item(trans, root, path, eb, slot, key);
->  out:
->  	btrfs_release_path(path);
-> +	kfree(name);
->  	iput(dir);
->  	iput(inode);
->  	return ret;
-> 
-
+>  /* callback routine to register each ACPI PCI slot object */
+>  static acpi_status register_slot(acpi_handle handle, u32 lvl, void *data,
+>  				 void **rv)
+> @@ -271,12 +296,8 @@ static acpi_status register_slot(acpi_ha
+>  	unsigned long long adr;
+>  	int device, function;
+>  	struct pci_bus *pbus = bridge->pci_bus;
+> -	struct pci_dev *pdev = bridge->pci_dev;
+>  	u32 val;
+>  
+> -	if (pdev && device_is_managed_by_native_pciehp(pdev))
+> -		return AE_OK;
+> -
+>  	status = acpi_evaluate_integer(handle, "_ADR", NULL, &adr);
+>  	if (ACPI_FAILURE(status)) {
+>  		acpi_handle_warn(handle, "can't evaluate _ADR (%#x)\n", status);
+> @@ -325,8 +346,7 @@ static acpi_status register_slot(acpi_ha
+>  
+>  	list_add_tail(&slot->node, &bridge->slots);
+>  
+> -	/* Register slots for ejectable funtions only. */
+> -	if (acpi_pci_check_ejectable(pbus, handle)  || is_dock_device(handle)) {
+> +	if (slot_should_be_exposed(bridge, handle)) {
+>  		unsigned long long sun;
+>  		int retval;
+>  
 
