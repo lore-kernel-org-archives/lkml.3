@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161051Ab3JKU1u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:27:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45829 "EHLO
+	id S1758955Ab3JKU2K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:28:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45826 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759047Ab3JKTk2 (ORCPT
+	with ESMTP id S1759043Ab3JKTk1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:40:28 -0400
+	Fri, 11 Oct 2013 15:40:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dmitry Khromov <icechrome@gmail.com>, Bing Zhao <bzhao@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 080/110] mwifiex: fix NULL pointer dereference in usb suspend handler
-Date: Fri, 11 Oct 2013 12:39:00 -0700
-Message-Id: <20131011193816.542926019@linuxfoundation.org>
+        Andy Adamson <andros@netapp.com>, Jeff Layton <jlayton@redhat.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 079/110] NFSv4.1: nfs4_fl_prepare_ds - fix bugs when the connect attempt fails
+Date: Fri, 11 Oct 2013 12:38:59 -0700
+Message-Id: <20131011193816.437606813@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
 References: <20131011193807.584188672@linuxfoundation.org>
@@ -27,63 +27,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bing Zhao <bzhao@marvell.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 346ece0b7ba2730b4d633b9e371fe55488803102 upstream.
+commit 52b26a3e1bb3e065c32b3febdac1e1f117d88e15 upstream.
 
-Bug 60815 - Interface hangs in mwifiex_usb
-https://bugzilla.kernel.org/show_bug.cgi?id=60815
+- Fix an Oops when nfs4_ds_connect() returns an error.
+- Always check the device status after waiting for a connect to complete.
 
-[ 2.883807] BUG: unable to handle kernel NULL pointer dereference
-            at 0000000000000048
-[ 2.883813] IP: [<ffffffff815a65e0>] pfifo_fast_enqueue+0x90/0x90
-
-[ 2.883834] CPU: 1 PID: 3220 Comm: kworker/u8:90 Not tainted
-            3.11.1-monotone-l0 #6
-[ 2.883834] Hardware name: Microsoft Corporation Surface with
-            Windows 8 Pro/Surface with Windows 8 Pro,
-            BIOS 1.03.0450 03/29/2013
-
-On Surface Pro, suspend to ram gives a NULL pointer dereference in
-pfifo_fast_enqueue(). The stack trace reveals that the offending
-call is clearing carrier in mwifiex_usb suspend handler.
-
-Since commit 1499d9f "mwifiex: don't drop carrier flag over suspend"
-has removed the carrier flag handling over suspend/resume in SDIO
-and PCIe drivers, I'm removing it in USB driver too. This also fixes
-the bug for Surface Pro.
-
-Tested-by: Dmitry Khromov <icechrome@gmail.com>
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Reported-by: Andy Adamson <andros@netapp.com>
+Reported-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/mwifiex/usb.c |    7 -------
- 1 file changed, 7 deletions(-)
+ fs/nfs/nfs4filelayoutdev.c |   18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
---- a/drivers/net/wireless/mwifiex/usb.c
-+++ b/drivers/net/wireless/mwifiex/usb.c
-@@ -446,9 +446,6 @@ static int mwifiex_usb_suspend(struct us
- 	 */
- 	adapter->is_suspended = true;
- 
--	for (i = 0; i < adapter->priv_num; i++)
--		netif_carrier_off(adapter->priv[i]->netdev);
+--- a/fs/nfs/nfs4filelayoutdev.c
++++ b/fs/nfs/nfs4filelayoutdev.c
+@@ -797,34 +797,34 @@ nfs4_fl_prepare_ds(struct pnfs_layout_se
+ 	struct nfs4_file_layout_dsaddr *dsaddr = FILELAYOUT_LSEG(lseg)->dsaddr;
+ 	struct nfs4_pnfs_ds *ds = dsaddr->ds_list[ds_idx];
+ 	struct nfs4_deviceid_node *devid = FILELAYOUT_DEVID_NODE(lseg);
 -
- 	if (atomic_read(&card->rx_cmd_urb_pending) && card->rx_cmd.urb)
- 		usb_kill_urb(card->rx_cmd.urb);
+-	if (filelayout_test_devid_unavailable(devid))
+-		return NULL;
++	struct nfs4_pnfs_ds *ret = ds;
  
-@@ -508,10 +505,6 @@ static int mwifiex_usb_resume(struct usb
- 						  MWIFIEX_RX_CMD_BUF_SIZE);
+ 	if (ds == NULL) {
+ 		printk(KERN_ERR "NFS: %s: No data server for offset index %d\n",
+ 			__func__, ds_idx);
+ 		filelayout_mark_devid_invalid(devid);
+-		return NULL;
++		goto out;
  	}
+ 	if (ds->ds_clp)
+-		return ds;
++		goto out_test_devid;
  
--	for (i = 0; i < adapter->priv_num; i++)
--		if (adapter->priv[i]->media_connected)
--			netif_carrier_on(adapter->priv[i]->netdev);
--
- 	/* Disable Host Sleep */
- 	if (adapter->hs_activated)
- 		mwifiex_cancel_hs(mwifiex_get_priv(adapter,
+ 	if (test_and_set_bit(NFS4DS_CONNECTING, &ds->ds_state) == 0) {
+ 		struct nfs_server *s = NFS_SERVER(lseg->pls_layout->plh_inode);
+ 		int err;
+ 
+ 		err = nfs4_ds_connect(s, ds);
+-		if (err) {
++		if (err)
+ 			nfs4_mark_deviceid_unavailable(devid);
+-			ds = NULL;
+-		}
+ 		nfs4_clear_ds_conn_bit(ds);
+ 	} else {
+ 		/* Either ds is connected, or ds is NULL */
+ 		nfs4_wait_ds_connect(ds);
+ 	}
+-	return ds;
++out_test_devid:
++	if (filelayout_test_devid_unavailable(devid))
++		ret = NULL;
++out:
++	return ret;
+ }
+ 
+ module_param(dataserver_retrans, uint, 0644);
 
 
