@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754384Ab3JKUp6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:45:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45518 "EHLO
+	id S1752606Ab3JKUp4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:45:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45520 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758755Ab3JKTjn (ORCPT
+	with ESMTP id S1758763Ab3JKTjn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Oct 2013 15:39:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -13,9 +13,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Hong Zhiguo <zhiguohong@tencent.com>,
         Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 023/110] bridge: use br_port_get_rtnl within rtnl lock
-Date: Fri, 11 Oct 2013 12:38:03 -0700
-Message-Id: <20131011193810.208126478@linuxfoundation.org>
+Subject: [ 024/110] bridge: fix NULL pointer deref of br_port_get_rcu
+Date: Fri, 11 Oct 2013 12:38:04 -0700
+Message-Id: <20131011193810.333393700@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
 References: <20131011193807.584188672@linuxfoundation.org>
@@ -30,50 +30,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Hong Zhiguo <zhiguohong@tencent.com>
 
-[ Upstream commit 1fb1754a8c70d69ab480763c423e0a74369c4a67 ]
+[ Upstream commit 716ec052d2280d511e10e90ad54a86f5b5d4dcc2 ]
 
-current br_port_get_rcu is problematic in bridging path
-(NULL deref). Change these calls in netlink path first.
+The NULL deref happens when br_handle_frame is called between these
+2 lines of del_nbp:
+	dev->priv_flags &= ~IFF_BRIDGE_PORT;
+	/* --> br_handle_frame is called at this time */
+	netdev_rx_handler_unregister(dev);
+
+In br_handle_frame the return of br_port_get_rcu(dev) is dereferenced
+without check but br_port_get_rcu(dev) returns NULL if:
+	!(dev->priv_flags & IFF_BRIDGE_PORT)
+
+Eric Dumazet pointed out the testing of IFF_BRIDGE_PORT is not necessary
+here since we're in rcu_read_lock and we have synchronize_net() in
+netdev_rx_handler_unregister. So remove the testing of IFF_BRIDGE_PORT
+and by the previous patch, make sure br_port_get_rcu is called in
+bridging code.
 
 Signed-off-by: Hong Zhiguo <zhiguohong@tencent.com>
 Acked-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/bridge/br_netlink.c |    4 ++--
- net/bridge/br_private.h |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ net/bridge/br_private.h |    5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
---- a/net/bridge/br_netlink.c
-+++ b/net/bridge/br_netlink.c
-@@ -203,7 +203,7 @@ int br_getlink(struct sk_buff *skb, u32
- 	       struct net_device *dev, u32 filter_mask)
- {
- 	int err = 0;
--	struct net_bridge_port *port = br_port_get_rcu(dev);
-+	struct net_bridge_port *port = br_port_get_rtnl(dev);
- 
- 	/* not a bridge port and  */
- 	if (!port && !(filter_mask & RTEXT_FILTER_BRVLAN))
-@@ -443,7 +443,7 @@ static size_t br_get_link_af_size(const
- 	struct net_port_vlans *pv;
- 
- 	if (br_port_exists(dev))
--		pv = nbp_get_vlan_info(br_port_get_rcu(dev));
-+		pv = nbp_get_vlan_info(br_port_get_rtnl(dev));
- 	else if (dev->priv_flags & IFF_EBRIDGE)
- 		pv = br_get_vlan_info((struct net_bridge *)netdev_priv(dev));
- 	else
 --- a/net/bridge/br_private.h
 +++ b/net/bridge/br_private.h
-@@ -189,7 +189,7 @@ static inline struct net_bridge_port *br
- 	return br_port_exists(dev) ? port : NULL;
+@@ -183,10 +183,7 @@ struct net_bridge_port
+ 
+ static inline struct net_bridge_port *br_port_get_rcu(const struct net_device *dev)
+ {
+-	struct net_bridge_port *port =
+-			rcu_dereference_rtnl(dev->rx_handler_data);
+-
+-	return br_port_exists(dev) ? port : NULL;
++	return rcu_dereference(dev->rx_handler_data);
  }
  
--static inline struct net_bridge_port *br_port_get_rtnl(struct net_device *dev)
-+static inline struct net_bridge_port *br_port_get_rtnl(const struct net_device *dev)
- {
- 	return br_port_exists(dev) ?
- 		rtnl_dereference(dev->rx_handler_data) : NULL;
+ static inline struct net_bridge_port *br_port_get_rtnl(const struct net_device *dev)
 
 
