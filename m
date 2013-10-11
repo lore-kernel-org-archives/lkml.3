@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754285Ab3JKUsC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:48:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45499 "EHLO
+	id S1754449Ab3JKUs0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:48:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45492 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758738Ab3JKTjk (ORCPT
+	with ESMTP id S1758727Ab3JKTjj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:39:40 -0400
+	Fri, 11 Oct 2013 15:39:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Borkmann <dborkman@redhat.com>, Lin Ming <mlin@ss.pku.edu.cn>,
-        Matti Vaittinen <matti.vaittinen@nsn.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 009/110] net: fib: fib6_add: fix potential NULL pointer dereference
-Date: Fri, 11 Oct 2013 12:37:49 -0700
-Message-Id: <20131011193808.626187429@linuxfoundation.org>
+        Jiri Pirko <jiri@resnulli.us>, "David S. Miller" <davem@davemloft.net>
+Subject: [ 008/110] ipv6/exthdrs: accept tlv which includes only padding
+Date: Fri, 11 Oct 2013 12:37:48 -0700
+Message-Id: <20131011193808.514241863@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
 References: <20131011193807.584188672@linuxfoundation.org>
@@ -29,56 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Jiri Pirko <jiri@resnulli.us>
 
-[ Upstream commit ae7b4e1f213aa659aedf9c6ecad0bf5f0476e1e2 ]
+[ Upstream commit 8112b1fe071be01a28a774ed55909e6f4b29712d ]
 
-When the kernel is compiled with CONFIG_IPV6_SUBTREES, and we return
-with an error in fn = fib6_add_1(), then error codes are encoded into
-the return pointer e.g. ERR_PTR(-ENOENT). In such an error case, we
-write the error code into err and jump to out, hence enter the if(err)
-condition. Now, if CONFIG_IPV6_SUBTREES is enabled, we check for:
+In rfc4942 and rfc2460 I cannot find anything which would implicate to
+drop packets which have only padding in tlv.
 
-  if (pn != fn && pn->leaf == rt)
-    ...
-  if (pn != fn && !pn->leaf && !(pn->fn_flags & RTN_RTINFO))
-    ...
+Current behaviour breaks TAHI Test v6LC.1.2.6.
 
-Since pn is NULL and fn is f.e. ERR_PTR(-ENOENT), then pn != fn
-evaluates to true and causes a NULL-pointer dereference on further
-checks on pn. Fix it, by setting both NULL in error case, so that
-pn != fn already evaluates to false and no further dereference
-takes place.
+Problem was intruduced in:
+9b905fe6843 "ipv6/exthdrs: strict Pad1 and PadN check"
 
-This was first correctly implemented in 4a287eba2 ("IPv6 routing,
-NLM_F_* flag support: REPLACE and EXCL flags support, warn about
-missing CREATE flag"), but the bug got later on introduced by
-188c517a0 ("ipv6: return errno pointers consistently for fib6_add_1()").
-
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Cc: Lin Ming <mlin@ss.pku.edu.cn>
-Cc: Matti Vaittinen <matti.vaittinen@nsn.com>
-Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Acked-by: Matti Vaittinen <matti.vaittinen@nsn.com>
+Signed-off-by: Jiri Pirko <jiri@resnulli.us>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/ip6_fib.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ipv6/exthdrs.c |    6 ------
+ 1 file changed, 6 deletions(-)
 
---- a/net/ipv6/ip6_fib.c
-+++ b/net/ipv6/ip6_fib.c
-@@ -825,9 +825,9 @@ int fib6_add(struct fib6_node *root, str
- 	fn = fib6_add_1(root, &rt->rt6i_dst.addr, sizeof(struct in6_addr),
- 			rt->rt6i_dst.plen, offsetof(struct rt6_info, rt6i_dst),
- 			allow_create, replace_required);
--
- 	if (IS_ERR(fn)) {
- 		err = PTR_ERR(fn);
-+		fn = NULL;
- 		goto out;
+--- a/net/ipv6/exthdrs.c
++++ b/net/ipv6/exthdrs.c
+@@ -162,12 +162,6 @@ static bool ip6_parse_tlv(const struct t
+ 		off += optlen;
+ 		len -= optlen;
  	}
+-	/* This case will not be caught by above check since its padding
+-	 * length is smaller than 7:
+-	 * 1 byte NH + 1 byte Length + 6 bytes Padding
+-	 */
+-	if ((padlen == 6) && ((off - skb_network_header_len(skb)) == 8))
+-		goto bad;
  
+ 	if (len == 0)
+ 		return true;
 
 
