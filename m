@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932255Ab3JKKnv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 06:43:51 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58685 "EHLO
+	id S1758372Ab3JKKxb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 06:53:31 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58706 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758012Ab3JKKnr (ORCPT
+	with ESMTP id S932258Ab3JKKnw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 06:43:47 -0400
+	Fri, 11 Oct 2013 06:43:52 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Lino Sanfilippo <LinoSanfilipp@gmx.de>, Eric Paris <eparis@redhat.com>,
+Cc: Kirill Tkhai <tkhai@yandex.ru>, David Miller <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 067/100] fanotify: dont merge permission events
-Date: Fri, 11 Oct 2013 11:41:37 +0100
-Message-Id: <1381488130-30235-68-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 071/100] sparc64: Fix ITLB handler of null page
+Date: Fri, 11 Oct 2013 11:41:41 +0100
+Message-Id: <1381488130-30235-72-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
 References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
@@ -27,57 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+From: Kirill Tkhai <tkhai@yandex.ru>
 
-commit 03a1cec1f17ac1a6041996b3e40f96b5a2f90e1b upstream.
+commit 1c2696cdaad84580545a2e9c0879ff597880b1a9 upstream.
 
-Boyd Yang reported a problem for the case that multiple threads of the same
-thread group are waiting for a reponse for a permission event.
-In this case it is possible that some of the threads are never woken up, even
-if the response for the event has been received
-(see http://marc.info/?l=linux-kernel&m=131822913806350&w=2).
+1)Use kvmap_itlb_longpath instead of kvmap_dtlb_longpath.
 
-The reason is that we are currently merging permission events if they belong to
-the same thread group. But we are not prepared to wake up more than one waiter
-for each event. We do
+2)Handle page #0 only, don't handle page #1: bleu -> blu
 
-wait_event(group->fanotify_data.access_waitq, event->response ||
-			atomic_read(&group->fanotify_data.bypass_perm));
-and after that
-  event->response = 0;
+ (KERNBASE is 0x400000, so #1 does not exist too. But everything
+  is possible in the future. Fix to not to have problems later.)
 
-which is the reason that even if we woke up all waiters for the same event
-some of them may see event->response being already set 0 again, then go back to
-sleep and block forever.
+3)Remove unused kvmap_itlb_nonlinear.
 
-With this patch we avoid that more than one thread is waiting for a response
-by not merging permission events for the same thread group any more.
-
-Reported-by: Boyd Yang <boyd.yang@gmail.com>
-Signed-off-by: Lino Sanfilippo <LinoSanfilipp@gmx.de>
-Signed-off-by: Eric Paris <eparis@redhat.com>
+Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
+CC: David Miller <davem@davemloft.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/notify/fanotify/fanotify.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ arch/sparc/kernel/ktlb.S | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/fs/notify/fanotify/fanotify.c b/fs/notify/fanotify/fanotify.c
-index a506360..0c2f912 100644
---- a/fs/notify/fanotify/fanotify.c
-+++ b/fs/notify/fanotify/fanotify.c
-@@ -18,6 +18,12 @@ static bool should_merge(struct fsnotify_event *old, struct fsnotify_event *new)
- 	    old->tgid == new->tgid) {
- 		switch (old->data_type) {
- 		case (FSNOTIFY_EVENT_PATH):
-+#ifdef CONFIG_FANOTIFY_ACCESS_PERMISSIONS
-+			/* dont merge two permission events */
-+			if ((old->mask & FAN_ALL_PERM_EVENTS) &&
-+			    (new->mask & FAN_ALL_PERM_EVENTS))
-+				return false;
-+#endif
- 			if ((old->path.mnt == new->path.mnt) &&
- 			    (old->path.dentry == new->path.dentry))
- 				return true;
+diff --git a/arch/sparc/kernel/ktlb.S b/arch/sparc/kernel/ktlb.S
+index 79f3103..7c00735 100644
+--- a/arch/sparc/kernel/ktlb.S
++++ b/arch/sparc/kernel/ktlb.S
+@@ -25,11 +25,10 @@ kvmap_itlb:
+ 	 */
+ kvmap_itlb_4v:
+ 
+-kvmap_itlb_nonlinear:
+ 	/* Catch kernel NULL pointer calls.  */
+ 	sethi		%hi(PAGE_SIZE), %g5
+ 	cmp		%g4, %g5
+-	bleu,pn		%xcc, kvmap_dtlb_longpath
++	blu,pn		%xcc, kvmap_itlb_longpath
+ 	 nop
+ 
+ 	KERN_TSB_LOOKUP_TL1(%g4, %g6, %g5, %g1, %g2, %g3, kvmap_itlb_load)
 -- 
 1.8.3.2
 
