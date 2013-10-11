@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756271Ab3JKU7z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:59:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45299 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757955Ab3JKThL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757974Ab3JKThL (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 11 Oct 2013 15:37:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45279 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757895Ab3JKThI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 15:37:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mark Wu <wudxw@linux.vnet.ibm.com>, Jay Vosburgh <fubar@us.ibm.com>,
-        Andy Gospodarek <andy@greyhouse.net>,
+        Ansis Atteka <aatteka@nicira.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 16/48] bonding: Fix broken promiscuity reference counting issue
-Date: Fri, 11 Oct 2013 12:36:23 -0700
-Message-Id: <20131011193639.023335278@linuxfoundation.org>
+Subject: [ 12/48] ip: generate unique IP identificator if local fragmentation is allowed
+Date: Fri, 11 Oct 2013 12:36:19 -0700
+Message-Id: <20131011193638.595740341@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193637.253208688@linuxfoundation.org>
 References: <20131011193637.253208688@linuxfoundation.org>
@@ -28,77 +27,195 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neil Horman <nhorman@tuxdriver.com>
+From: Ansis Atteka <aatteka@nicira.com>
 
-[ Upstream commit 5a0068deb611109c5ba77358be533f763f395ee4 ]
+[ Upstream commit 703133de331a7a7df47f31fb9de51dc6f68a9de8 ]
 
-Recently grabbed this report:
-https://bugzilla.redhat.com/show_bug.cgi?id=1005567
+If local fragmentation is allowed, then ip_select_ident() and
+ip_select_ident_more() need to generate unique IDs to ensure
+correct defragmentation on the peer.
 
-Of an issue in which the bonding driver, with an attached vlan encountered the
-following errors when bond0 was taken down and back up:
+For example, if IPsec (tunnel mode) has to encrypt large skbs
+that have local_df bit set, then all IP fragments that belonged
+to different ESP datagrams would have used the same identificator.
+If one of these IP fragments would get lost or reordered, then
+peer could possibly stitch together wrong IP fragments that did
+not belong to the same datagram. This would lead to a packet loss
+or data corruption.
 
-dummy1: promiscuity touches roof, set promiscuity failed. promiscuity feature of
-device might be broken.
-
-The error occurs because, during __bond_release_one, if we release our last
-slave, we take on a random mac address and issue a NETDEV_CHANGEADDR
-notification.  With an attached vlan, the vlan may see that the vlan and bond
-mac address were in sync, but no longer are.  This triggers a call to dev_uc_add
-and dev_set_rx_mode, which enables IFF_PROMISC on the bond device.  Then, when
-we complete __bond_release_one, we use the current state of the bond flags to
-determine if we should decrement the promiscuity of the releasing slave.  But
-since the bond changed promiscuity state during the release operation, we
-incorrectly decrement the slave promisc count when it wasn't in promiscuous mode
-to begin with, causing the above error
-
-Fix is pretty simple, just cache the bonding flags at the start of the function
-and use those when determining the need to set promiscuity.
-
-This is also needed for the ALLMULTI flag
-
-Reported-by: Mark Wu <wudxw@linux.vnet.ibm.com>
-CC: Jay Vosburgh <fubar@us.ibm.com>
-CC: Andy Gospodarek <andy@greyhouse.net>
-CC: Mark Wu <wudxw@linux.vnet.ibm.com>
-CC: "David S. Miller" <davem@davemloft.net>
+Signed-off-by: Ansis Atteka <aatteka@nicira.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/bonding/bond_main.c |   13 ++++++++++---
- 1 file changed, 10 insertions(+), 3 deletions(-)
+ drivers/net/ppp/pptp.c          |    2 +-
+ include/net/ip.h                |   12 ++++++++----
+ include/net/ipip.h              |    2 +-
+ net/ipv4/igmp.c                 |    4 ++--
+ net/ipv4/inetpeer.c             |    4 ++--
+ net/ipv4/ip_output.c            |    6 +++---
+ net/ipv4/ipmr.c                 |    2 +-
+ net/ipv4/raw.c                  |    2 +-
+ net/ipv4/xfrm4_mode_tunnel.c    |    2 +-
+ net/netfilter/ipvs/ip_vs_xmit.c |    2 +-
+ 10 files changed, 21 insertions(+), 17 deletions(-)
 
---- a/drivers/net/bonding/bond_main.c
-+++ b/drivers/net/bonding/bond_main.c
-@@ -1933,6 +1933,7 @@ int bond_release(struct net_device *bond
- 	struct bonding *bond = netdev_priv(bond_dev);
- 	struct slave *slave, *oldcurrent;
- 	struct sockaddr addr;
-+	int old_flags = bond_dev->flags;
- 	netdev_features_t old_features = bond_dev->features;
+--- a/drivers/net/ppp/pptp.c
++++ b/drivers/net/ppp/pptp.c
+@@ -281,7 +281,7 @@ static int pptp_xmit(struct ppp_channel
+ 	nf_reset(skb);
  
- 	/* slave is not a slave or master is not master of this slave */
-@@ -2066,12 +2067,18 @@ int bond_release(struct net_device *bond
- 	 * already taken care of above when we detached the slave
- 	 */
- 	if (!USES_PRIMARY(bond->params.mode)) {
--		/* unset promiscuity level from slave */
--		if (bond_dev->flags & IFF_PROMISC)
-+		/* unset promiscuity level from slave
-+		 * NOTE: The NETDEV_CHANGEADDR call above may change the value
-+		 * of the IFF_PROMISC flag in the bond_dev, but we need the
-+		 * value of that flag before that change, as that was the value
-+		 * when this slave was attached, so we cache at the start of the
-+		 * function and use it here. Same goes for ALLMULTI below
-+		 */
-+		if (old_flags & IFF_PROMISC)
- 			dev_set_promiscuity(slave_dev, -1);
+ 	skb->ip_summed = CHECKSUM_NONE;
+-	ip_select_ident(iph, &rt->dst, NULL);
++	ip_select_ident(skb, &rt->dst, NULL);
+ 	ip_send_check(iph);
  
- 		/* unset allmulti level from slave */
--		if (bond_dev->flags & IFF_ALLMULTI)
-+		if (old_flags & IFF_ALLMULTI)
- 			dev_set_allmulti(slave_dev, -1);
+ 	ip_local_out(skb);
+--- a/include/net/ip.h
++++ b/include/net/ip.h
+@@ -266,9 +266,11 @@ int ip_dont_fragment(struct sock *sk, st
  
- 		/* flush master's mc_list from slave */
+ extern void __ip_select_ident(struct iphdr *iph, struct dst_entry *dst, int more);
+ 
+-static inline void ip_select_ident(struct iphdr *iph, struct dst_entry *dst, struct sock *sk)
++static inline void ip_select_ident(struct sk_buff *skb, struct dst_entry *dst, struct sock *sk)
+ {
+-	if (iph->frag_off & htons(IP_DF)) {
++	struct iphdr *iph = ip_hdr(skb);
++
++	if ((iph->frag_off & htons(IP_DF)) && !skb->local_df) {
+ 		/* This is only to work around buggy Windows95/2000
+ 		 * VJ compression implementations.  If the ID field
+ 		 * does not change, they drop every other packet in
+@@ -280,9 +282,11 @@ static inline void ip_select_ident(struc
+ 		__ip_select_ident(iph, dst, 0);
+ }
+ 
+-static inline void ip_select_ident_more(struct iphdr *iph, struct dst_entry *dst, struct sock *sk, int more)
++static inline void ip_select_ident_more(struct sk_buff *skb, struct dst_entry *dst, struct sock *sk, int more)
+ {
+-	if (iph->frag_off & htons(IP_DF)) {
++	struct iphdr *iph = ip_hdr(skb);
++
++	if ((iph->frag_off & htons(IP_DF)) && !skb->local_df) {
+ 		if (sk && inet_sk(sk)->inet_daddr) {
+ 			iph->id = htons(inet_sk(sk)->inet_id);
+ 			inet_sk(sk)->inet_id += 1 + more;
+--- a/include/net/ipip.h
++++ b/include/net/ipip.h
+@@ -50,7 +50,7 @@ struct ip_tunnel_prl_entry {
+ 	int pkt_len = skb->len - skb_transport_offset(skb);		\
+ 									\
+ 	skb->ip_summed = CHECKSUM_NONE;					\
+-	ip_select_ident(iph, &rt->dst, NULL);				\
++	ip_select_ident(skb, &rt->dst, NULL);				\
+ 									\
+ 	err = ip_local_out(skb);					\
+ 	if (likely(net_xmit_eval(err) == 0)) {				\
+--- a/net/ipv4/igmp.c
++++ b/net/ipv4/igmp.c
+@@ -343,7 +343,7 @@ static struct sk_buff *igmpv3_newpack(st
+ 	pip->saddr    = fl4.saddr;
+ 	pip->protocol = IPPROTO_IGMP;
+ 	pip->tot_len  = 0;	/* filled in later */
+-	ip_select_ident(pip, &rt->dst, NULL);
++	ip_select_ident(skb, &rt->dst, NULL);
+ 	((u8*)&pip[1])[0] = IPOPT_RA;
+ 	((u8*)&pip[1])[1] = 4;
+ 	((u8*)&pip[1])[2] = 0;
+@@ -687,7 +687,7 @@ static int igmp_send_report(struct in_de
+ 	iph->daddr    = dst;
+ 	iph->saddr    = fl4.saddr;
+ 	iph->protocol = IPPROTO_IGMP;
+-	ip_select_ident(iph, &rt->dst, NULL);
++	ip_select_ident(skb, &rt->dst, NULL);
+ 	((u8*)&iph[1])[0] = IPOPT_RA;
+ 	((u8*)&iph[1])[1] = 4;
+ 	((u8*)&iph[1])[2] = 0;
+--- a/net/ipv4/inetpeer.c
++++ b/net/ipv4/inetpeer.c
+@@ -32,8 +32,8 @@
+  *  At the moment of writing this notes identifier of IP packets is generated
+  *  to be unpredictable using this code only for packets subjected
+  *  (actually or potentially) to defragmentation.  I.e. DF packets less than
+- *  PMTU in size uses a constant ID and do not use this code (see
+- *  ip_select_ident() in include/net/ip.h).
++ *  PMTU in size when local fragmentation is disabled use a constant ID and do
++ *  not use this code (see ip_select_ident() in include/net/ip.h).
+  *
+  *  Route cache entries hold references to our nodes.
+  *  New cache entries get references via lookup by destination IP address in
+--- a/net/ipv4/ip_output.c
++++ b/net/ipv4/ip_output.c
+@@ -161,7 +161,7 @@ int ip_build_and_send_pkt(struct sk_buff
+ 	iph->daddr    = (opt && opt->opt.srr ? opt->opt.faddr : daddr);
+ 	iph->saddr    = saddr;
+ 	iph->protocol = sk->sk_protocol;
+-	ip_select_ident(iph, &rt->dst, sk);
++	ip_select_ident(skb, &rt->dst, sk);
+ 
+ 	if (opt && opt->opt.optlen) {
+ 		iph->ihl += opt->opt.optlen>>2;
+@@ -403,7 +403,7 @@ packet_routed:
+ 		ip_options_build(skb, &inet_opt->opt, inet->inet_daddr, rt, 0);
+ 	}
+ 
+-	ip_select_ident_more(iph, &rt->dst, sk,
++	ip_select_ident_more(skb, &rt->dst, sk,
+ 			     (skb_shinfo(skb)->gso_segs ?: 1) - 1);
+ 
+ 	skb->priority = sk->sk_priority;
+@@ -1347,7 +1347,7 @@ struct sk_buff *__ip_make_skb(struct soc
+ 	iph->ihl = 5;
+ 	iph->tos = inet->tos;
+ 	iph->frag_off = df;
+-	ip_select_ident(iph, &rt->dst, sk);
++	ip_select_ident(skb, &rt->dst, sk);
+ 	iph->ttl = ttl;
+ 	iph->protocol = sk->sk_protocol;
+ 	ip_copy_addrs(iph, fl4);
+--- a/net/ipv4/ipmr.c
++++ b/net/ipv4/ipmr.c
+@@ -1573,7 +1573,7 @@ static void ip_encap(struct sk_buff *skb
+ 	iph->protocol	=	IPPROTO_IPIP;
+ 	iph->ihl	=	5;
+ 	iph->tot_len	=	htons(skb->len);
+-	ip_select_ident(iph, skb_dst(skb), NULL);
++	ip_select_ident(skb, skb_dst(skb), NULL);
+ 	ip_send_check(iph);
+ 
+ 	memset(&(IPCB(skb)->opt), 0, sizeof(IPCB(skb)->opt));
+--- a/net/ipv4/raw.c
++++ b/net/ipv4/raw.c
+@@ -384,7 +384,7 @@ static int raw_send_hdrinc(struct sock *
+ 		iph->check   = 0;
+ 		iph->tot_len = htons(length);
+ 		if (!iph->id)
+-			ip_select_ident(iph, &rt->dst, NULL);
++			ip_select_ident(skb, &rt->dst, NULL);
+ 
+ 		iph->check = ip_fast_csum((unsigned char *)iph, iph->ihl);
+ 	}
+--- a/net/ipv4/xfrm4_mode_tunnel.c
++++ b/net/ipv4/xfrm4_mode_tunnel.c
+@@ -54,7 +54,7 @@ static int xfrm4_mode_tunnel_output(stru
+ 
+ 	top_iph->frag_off = (flags & XFRM_STATE_NOPMTUDISC) ?
+ 		0 : (XFRM_MODE_SKB_CB(skb)->frag_off & htons(IP_DF));
+-	ip_select_ident(top_iph, dst->child, NULL);
++	ip_select_ident(skb, dst->child, NULL);
+ 
+ 	top_iph->ttl = ip4_dst_hoplimit(dst->child);
+ 
+--- a/net/netfilter/ipvs/ip_vs_xmit.c
++++ b/net/netfilter/ipvs/ip_vs_xmit.c
+@@ -853,7 +853,7 @@ ip_vs_tunnel_xmit(struct sk_buff *skb, s
+ 	iph->daddr		=	cp->daddr.ip;
+ 	iph->saddr		=	saddr;
+ 	iph->ttl		=	old_iph->ttl;
+-	ip_select_ident(iph, &rt->dst, NULL);
++	ip_select_ident(skb, &rt->dst, NULL);
+ 
+ 	/* Another hack: avoid icmp_send in ip_fragment */
+ 	skb->local_df = 1;
 
 
