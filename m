@@ -1,89 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932525Ab3JKLLz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 07:11:55 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:51801 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932506Ab3JKLLf (ORCPT
+	id S1757420Ab3JKKm0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 06:42:26 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58345 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753122Ab3JKKmX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 07:11:35 -0400
-MIME-Version: 1.0
-In-Reply-To: <1380635719-31171-1-git-send-email-zonque@gmail.com>
-References: <1380635719-31171-1-git-send-email-zonque@gmail.com>
-Date: Fri, 11 Oct 2013 13:11:34 +0200
-Message-ID: <CACRpkdYhQ+-d1COcvmg_hEJ==cTFpKLNDnvF8kdK4QgXzHenEA@mail.gmail.com>
-Subject: Re: [PATCH] drivers: misc: add gpio wakeup driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Daniel Mack <zonque@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Mark Brown <broonie@kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 11 Oct 2013 06:42:23 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Kees Cook <keescook@chromium.org>, Jiri Kosina <jkosina@suse.cz>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 006/100] HID: LG: validate HID output report details
+Date: Fri, 11 Oct 2013 11:40:36 +0100
+Message-Id: <1381488130-30235-7-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
+References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 1, 2013 at 3:55 PM, Daniel Mack <zonque@gmail.com> wrote:
+3.5.7.23 -stable review patch.  If anyone has any objections, please let me know.
 
-> This patch adds a very simple driver that enables GPIO lines as wakeup
-> sources. It only operates on information passed in via DT, and depends
-> on CONFIG_OF && CONFIG_PM_SLEEP. It can for example be used to connect
-> wake-on-LAN (WOL) signals or other electric wakeup networks.
->
-> The driver accepts a list of GPIO nodes and claims them along with their
-> interrupt line. During suspend, the interrupts will be enabled and
-> selected as wakeup source. The driver doesn't do anything else with the
-> GPIO lines, and will ignore occured interrupts silently.
->
-> Signed-off-by: Daniel Mack <zonque@gmail.com>
+------------------
 
-This makes a weird kind of sense.
-Hm hm hm.
+From: Kees Cook <keescook@chromium.org>
 
-But I really need the misc mainatiners' help here...
-possibly also irqchip maintainers.
+commit 0fb6bd06e06792469acc15bbe427361b56ada528 upstream.
 
-> +++ b/Documentation/devicetree/bindings/misc/gpio-wakeup.txt
-> @@ -0,0 +1,16 @@
-> +GPIO WAKEUP DRIVER BINDINGS
-> +
-> +Required:
-> +
-> +       compatible:     Must be "gpio-wakeup"
-> +       gpios:          At list of GPIO nodes that are enabled as wakeup
-> +                       sources.
+A HID device could send a malicious output report that would cause the
+lg, lg3, and lg4 HID drivers to write beyond the output report allocation
+during an event, causing a heap overflow:
 
-Reword so this is OS independent. Describe what a wakeup source is
-for example.
+[  325.245240] usb 1-1: New USB device found, idVendor=046d, idProduct=c287
+...
+[  414.518960] BUG kmalloc-4096 (Not tainted): Redzone overwritten
 
-> +Example:
-> +
-> +       wake_up {
-> +               compatible = "gpio-wakeup";
-> +               gpios = <&gpio0 19 0>;
-> +       };
+Additionally, while lg2 did correctly validate the report details, it was
+cleaned up and shortened.
 
-This will not work if that GPIO chip is not capable of supporting
-interrupts on that GPIO line right?
+CVE-2013-2893
 
-We have recently had a very long discussion about this: such
-GPIO chips will also be marked "interrupt-controller" and you
-should be able to just state interrupt-parent and
-interrupts = <>; for this. (And it should accept an array.)
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/hid/hid-lg2ff.c | 19 +++----------------
+ drivers/hid/hid-lg3ff.c | 29 ++++++-----------------------
+ drivers/hid/hid-lg4ff.c | 20 +-------------------
+ drivers/hid/hid-lgff.c  | 17 ++---------------
+ 4 files changed, 12 insertions(+), 73 deletions(-)
 
-It *may* be that we have many GPIO drivers that do not accept
-that you request an interrupt on them before you have done
-request_gpio() followed by gpio_to_irq() on the pin. Then this
-shall be treated like a bug and the GPIO driver fixed to handle
-this. (That was the outcome of this discussion.)
+diff --git a/drivers/hid/hid-lg2ff.c b/drivers/hid/hid-lg2ff.c
+index 3c31bc6..128f011 100644
+--- a/drivers/hid/hid-lg2ff.c
++++ b/drivers/hid/hid-lg2ff.c
+@@ -66,26 +66,13 @@ int lg2ff_init(struct hid_device *hid)
+ 	struct hid_report *report;
+ 	struct hid_input *hidinput = list_entry(hid->inputs.next,
+ 						struct hid_input, list);
+-	struct list_head *report_list =
+-			&hid->report_enum[HID_OUTPUT_REPORT].report_list;
+ 	struct input_dev *dev = hidinput->input;
+ 	int error;
+ 
+-	if (list_empty(report_list)) {
+-		hid_err(hid, "no output report found\n");
++	/* Check that the report looks ok */
++	report = hid_validate_values(hid, HID_OUTPUT_REPORT, 0, 0, 7);
++	if (!report)
+ 		return -ENODEV;
+-	}
+-
+-	report = list_entry(report_list->next, struct hid_report, list);
+-
+-	if (report->maxfield < 1) {
+-		hid_err(hid, "output report is empty\n");
+-		return -ENODEV;
+-	}
+-	if (report->field[0]->report_count < 7) {
+-		hid_err(hid, "not enough values in the field\n");
+-		return -ENODEV;
+-	}
+ 
+ 	lg2ff = kmalloc(sizeof(struct lg2ff_device), GFP_KERNEL);
+ 	if (!lg2ff)
+diff --git a/drivers/hid/hid-lg3ff.c b/drivers/hid/hid-lg3ff.c
+index f98644c..91f981f 100644
+--- a/drivers/hid/hid-lg3ff.c
++++ b/drivers/hid/hid-lg3ff.c
+@@ -68,10 +68,11 @@ static int hid_lg3ff_play(struct input_dev *dev, void *data,
+ 	int x, y;
+ 
+ /*
+- * Maxusage should always be 63 (maximum fields)
+- * likely a better way to ensure this data is clean
++ * Available values in the field should always be 63, but we only use up to
++ * 35. Instead, clear the entire area, however big it is.
+  */
+-	memset(report->field[0]->value, 0, sizeof(__s32)*report->field[0]->maxusage);
++	memset(report->field[0]->value, 0,
++	       sizeof(__s32) * report->field[0]->report_count);
+ 
+ 	switch (effect->type) {
+ 	case FF_CONSTANT:
+@@ -131,32 +132,14 @@ static const signed short ff3_joystick_ac[] = {
+ int lg3ff_init(struct hid_device *hid)
+ {
+ 	struct hid_input *hidinput = list_entry(hid->inputs.next, struct hid_input, list);
+-	struct list_head *report_list = &hid->report_enum[HID_OUTPUT_REPORT].report_list;
+ 	struct input_dev *dev = hidinput->input;
+-	struct hid_report *report;
+-	struct hid_field *field;
+ 	const signed short *ff_bits = ff3_joystick_ac;
+ 	int error;
+ 	int i;
+ 
+-	/* Find the report to use */
+-	if (list_empty(report_list)) {
+-		hid_err(hid, "No output report found\n");
+-		return -1;
+-	}
+-
+ 	/* Check that the report looks ok */
+-	report = list_entry(report_list->next, struct hid_report, list);
+-	if (!report) {
+-		hid_err(hid, "NULL output report\n");
+-		return -1;
+-	}
+-
+-	field = report->field[0];
+-	if (!field) {
+-		hid_err(hid, "NULL field\n");
+-		return -1;
+-	}
++	if (!hid_validate_values(hid, HID_OUTPUT_REPORT, 0, 0, 35))
++		return -ENODEV;
+ 
+ 	/* Assume single fixed device G940 */
+ 	for (i = 0; ff_bits[i] >= 0; i++)
+diff --git a/drivers/hid/hid-lg4ff.c b/drivers/hid/hid-lg4ff.c
+index f3390ee..e092923 100644
+--- a/drivers/hid/hid-lg4ff.c
++++ b/drivers/hid/hid-lg4ff.c
+@@ -424,34 +424,16 @@ static enum led_brightness lg4ff_led_get_brightness(struct led_classdev *led_cde
+ int lg4ff_init(struct hid_device *hid)
+ {
+ 	struct hid_input *hidinput = list_entry(hid->inputs.next, struct hid_input, list);
+-	struct list_head *report_list = &hid->report_enum[HID_OUTPUT_REPORT].report_list;
+ 	struct input_dev *dev = hidinput->input;
+-	struct hid_report *report;
+-	struct hid_field *field;
+ 	struct lg4ff_device_entry *entry;
+ 	struct lg_drv_data *drv_data;
+ 	struct usb_device_descriptor *udesc;
+ 	int error, i, j;
+ 	__u16 bcdDevice, rev_maj, rev_min;
+ 
+-	/* Find the report to use */
+-	if (list_empty(report_list)) {
+-		hid_err(hid, "No output report found\n");
+-		return -1;
+-	}
+-
+ 	/* Check that the report looks ok */
+-	report = list_entry(report_list->next, struct hid_report, list);
+-	if (!report) {
+-		hid_err(hid, "NULL output report\n");
++	if (!hid_validate_values(hid, HID_OUTPUT_REPORT, 0, 0, 7))
+ 		return -1;
+-	}
+-
+-	field = report->field[0];
+-	if (!field) {
+-		hid_err(hid, "NULL field\n");
+-		return -1;
+-	}
+ 
+ 	/* Check what wheel has been connected */
+ 	for (i = 0; i < ARRAY_SIZE(lg4ff_devices); i++) {
+diff --git a/drivers/hid/hid-lgff.c b/drivers/hid/hid-lgff.c
+index 27bc54f..1d978daa 100644
+--- a/drivers/hid/hid-lgff.c
++++ b/drivers/hid/hid-lgff.c
+@@ -130,27 +130,14 @@ static void hid_lgff_set_autocenter(struct input_dev *dev, u16 magnitude)
+ int lgff_init(struct hid_device* hid)
+ {
+ 	struct hid_input *hidinput = list_entry(hid->inputs.next, struct hid_input, list);
+-	struct list_head *report_list = &hid->report_enum[HID_OUTPUT_REPORT].report_list;
+ 	struct input_dev *dev = hidinput->input;
+-	struct hid_report *report;
+-	struct hid_field *field;
+ 	const signed short *ff_bits = ff_joystick;
+ 	int error;
+ 	int i;
+ 
+-	/* Find the report to use */
+-	if (list_empty(report_list)) {
+-		hid_err(hid, "No output report found\n");
+-		return -1;
+-	}
+-
+ 	/* Check that the report looks ok */
+-	report = list_entry(report_list->next, struct hid_report, list);
+-	field = report->field[0];
+-	if (!field) {
+-		hid_err(hid, "NULL field\n");
+-		return -1;
+-	}
++	if (!hid_validate_values(hid, HID_OUTPUT_REPORT, 0, 0, 7))
++		return -ENODEV;
+ 
+ 	for (i = 0; i < ARRAY_SIZE(devices); i++) {
+ 		if (dev->id.vendor == devices[i].idVendor &&
+-- 
+1.8.3.2
 
-Since what the driver will then eventually provide is to
-flag an IRQ line as wakeup, I wonder if this should not just
-simply go into the interrupt core, or atleast of/irq.c.
-
-Yours,
-Linus Walleij
