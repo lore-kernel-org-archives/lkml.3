@@ -1,75 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758294Ab3JKQBv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 12:01:51 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:10371 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753823Ab3JKQBt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 12:01:49 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1834I1FYJLkDuGpmAiwli2M
-Date: Fri, 11 Oct 2013 09:01:46 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Roger Quadros <rogerq@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Prakash Manjunathappa <prakash.pm@ti.com>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>,
-        =?utf-8?Q?Beno=C3=AEt?= Cousson <bcousson@baylibre.com>,
-        Linux-OMAP <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH 4/6] pinctrl: single: Add support for wake-up interrupts
-Message-ID: <20131011160146.GR29913@atomide.com>
-References: <20131003054221.8941.87801.stgit@localhost>
- <5256AA7F.8030005@ti.com>
- <20131010160018.GA29913@atomide.com>
- <CACRpkdaG-PQA39XSjKUgM9TyeD7srgm_8s+NazrDKJ0gmNLcwg@mail.gmail.com>
- <20131010162015.GC29913@atomide.com>
- <CACRpkdYF83ghUf60Wmrti53UJ1bWV30GW_P9GjWnsOcZHbsv+Q@mail.gmail.com>
- <5257BD3E.5000707@ti.com>
- <CACRpkdYJNaiAAHhYatd6g5_wVt0QEUxOvsk6nQn9o=_i5zfWrA@mail.gmail.com>
- <20131011154352.GO29913@atomide.com>
- <CACRpkdZhbadd5d4P+2B0_DktqK4CHzZPVJC8kPHZYUnp8TaxsA@mail.gmail.com>
+	id S1758384Ab3JKQCR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 12:02:17 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:47998 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753396Ab3JKQCP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 12:02:15 -0400
+Date: Fri, 11 Oct 2013 18:02:08 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "Chen, Gong" <gong.chen@linux.intel.com>
+Cc: tony.luck@intel.com, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 7/8] ACPI, APEI, CPER: Cleanup CPER memory error output
+ format
+Message-ID: <20131011160208.GL5925@pd.tnic>
+References: <1381473166-29303-1-git-send-email-gong.chen@linux.intel.com>
+ <1381473166-29303-8-git-send-email-gong.chen@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CACRpkdZhbadd5d4P+2B0_DktqK4CHzZPVJC8kPHZYUnp8TaxsA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1381473166-29303-8-git-send-email-gong.chen@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Linus Walleij <linus.walleij@linaro.org> [131011 09:05]:
-> On Fri, Oct 11, 2013 at 5:43 PM, Tony Lindgren <tony@atomide.com> wrote:
-> > * Linus Walleij <linus.walleij@linaro.org> [131011 03:40]:
-> >> On Fri, Oct 11, 2013 at 10:56 AM, Roger Quadros <rogerq@ti.com> wrote:
-> >>
-> >> > The register handling is fine. But how do we deal with resource handling?
-> >> > e.g. the block that has the deep-core registers might need to be clocked or powered
-> >> > before the registers can be accessed.
-> >>
-> >> Yeah I saw this in the code there.
-> >>
-> >> In this case it seems syscon-type regmap access can be used to
-> >> read/write the registers, so maybe the pin controller also need to
-> >>  get a handle on some clock etc?
-> >
-> > Uhh, let's not go there.. The resource availability needs to be
-> > handled transparently in regmap code and the reg provider hardware
-> > module driver using runtime PM.
+On Fri, Oct 11, 2013 at 02:32:45AM -0400, Chen, Gong wrote:
+> Keep up only the most important fields for memory error
+> reporting. The detail information will be moved to perf/trace
+> interface.
 > 
-> OK we can surely discuss this with broonie, it makes sense to
-> have regmap be able to do its deed transparently.
+> Suggested-by: Tony Luck <tony.luck@intel.com>
+> Signed-off-by: Chen, Gong <gong.chen@linux.intel.com>
+> ---
+>  drivers/acpi/apei/cper.c | 42 ++++++++++++++----------------------------
+>  1 file changed, 14 insertions(+), 28 deletions(-)
+> 
+> diff --git a/drivers/acpi/apei/cper.c b/drivers/acpi/apei/cper.c
+> index 2a4389f..567410e 100644
+> --- a/drivers/acpi/apei/cper.c
+> +++ b/drivers/acpi/apei/cper.c
+> @@ -206,29 +206,29 @@ static void cper_print_mem(const char *pfx, const struct cper_sec_mem_err *mem)
+>  		printk("%s""physical_address_mask: 0x%016llx\n",
+>  		       pfx, mem->physical_addr_mask);
+>  	if (mem->validation_bits & CPER_MEM_VALID_NODE)
+> -		printk("%s""node: %d\n", pfx, mem->node);
+> +		pr_debug("node: %d\n", mem->node);
+>  	if (mem->validation_bits & CPER_MEM_VALID_CARD)
+> -		printk("%s""card: %d\n", pfx, mem->card);
+> +		pr_debug("card: %d\n", mem->card);
+>  	if (mem->validation_bits & CPER_MEM_VALID_MODULE)
+> -		printk("%s""module: %d\n", pfx, mem->module);
+> +		pr_debug("module: %d\n", mem->module);
+>  	if (mem->validation_bits & CPER_MEM_VALID_RANK_NUMBER)
+> -		printk("%s""rank: %d\n", pfx, mem->rank);
+> +		pr_debug("rank: %d\n", mem->rank);
+>  	if (mem->validation_bits & CPER_MEM_VALID_BANK)
+> -		printk("%s""bank: %d\n", pfx, mem->bank);
+> +		pr_debug("bank: %d\n", mem->bank);
+>  	if (mem->validation_bits & CPER_MEM_VALID_DEVICE)
+> -		printk("%s""device: %d\n", pfx, mem->device);
+> +		pr_debug("device: %d\n", mem->device);
+>  	if (mem->validation_bits & CPER_MEM_VALID_ROW)
+> -		printk("%s""row: %d\n", pfx, mem->row);
+> +		pr_debug("row: %d\n", mem->row);
+>  	if (mem->validation_bits & CPER_MEM_VALID_COLUMN)
+> -		printk("%s""column: %d\n", pfx, mem->column);
+> +		pr_debug("column: %d\n", mem->column);
+>  	if (mem->validation_bits & CPER_MEM_VALID_BIT_POSITION)
+> -		printk("%s""bit_position: %d\n", pfx, mem->bit_pos);
+> +		pr_debug("bit_position: %d\n", mem->bit_pos);
+>  	if (mem->validation_bits & CPER_MEM_VALID_REQUESTOR_ID)
+> -		printk("%s""requestor_id: 0x%016llx\n", pfx, mem->requestor_id);
+> +		pr_debug("requestor_id: 0x%016llx\n", mem->requestor_id);
+>  	if (mem->validation_bits & CPER_MEM_VALID_RESPONDER_ID)
+> -		printk("%s""responder_id: 0x%016llx\n", pfx, mem->responder_id);
+> +		pr_debug("responder_id: 0x%016llx\n", mem->responder_id);
+>  	if (mem->validation_bits & CPER_MEM_VALID_TARGET_ID)
+> -		printk("%s""target_id: 0x%016llx\n", pfx, mem->target_id);
+> +		pr_debug("target_id: 0x%016llx\n", mem->target_id);
+>  	if (mem->validation_bits & CPER_MEM_VALID_ERROR_TYPE) {
+>  		u8 etype = mem->error_type;
+>  		printk("%s""error_type: %d, %s\n", pfx, etype,
 
-Yes I think so too. Sounds like we need callbacks for the runtime PM
-checks to the "register provider" driver. Hwo knows, maybe those
-features are there already :)
+Hmm, so this cper_print_mem is called for CPER_SEC_PLATFORM_MEM section
+type.
 
-Tony
+With the change above, the other caller __ghes_print_estatus() won't see
+the error messages if they're debug. Do we want that?
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
