@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932209Ab3JKTks (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:40:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45900 "EHLO
+	id S933343Ab3JKUVV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:21:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45956 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932135Ab3JKTkk (ORCPT
+	with ESMTP id S932207Ab3JKTks (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:40:40 -0400
+	Fri, 11 Oct 2013 15:40:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Grzeschik <m.grzeschik@pengutronix.de>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Jonghwan Choi <jhbird.choi@samsung.com>
-Subject: [ 095/110] dmaengine: imx-dma: fix callback path in tasklet
-Date: Fri, 11 Oct 2013 12:39:15 -0700
-Message-Id: <20131011193818.156266702@linuxfoundation.org>
+        Marcel Holtmann <marcel@holtmann.org>,
+        David Herrmann <dh.herrmann@gmail.com>, Jiri Kosina <jkosina@suse.cz>
+Subject: [ 107/110] HID: uhid: add devname module alias
+Date: Fri, 11 Oct 2013 12:39:27 -0700
+Message-Id: <20131011193819.429854878@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
 References: <20131011193807.584188672@linuxfoundation.org>
@@ -28,52 +27,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Grzeschik <m.grzeschik@pengutronix.de>
+From: Marcel Holtmann <marcel@holtmann.org>
 
-commit fcaaba6c7136fe47e5a13352f99a64b019b6d2c5 upstream.
+commit 60cbd53e4bf623fe978e6f23a6da642e730fde3a upstream.
 
-We need to free the ld_active list head before jumping into the callback
-routine. Otherwise the callback could run into issue_pending and change
-our ld_active list head we just going to free. This will run the channel
-list into an currupted and undefined state.
+For simple device node creation, add the devname module alias.
 
-Signed-off-by: Michael Grzeschik <m.grzeschik@pengutronix.de>
-Signed-off-by: Vinod Koul <vinod.koul@intel.com>
-Cc: Jonghwan Choi <jhbird.choi@samsung.com>
+Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/dma/imx-dma.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ drivers/hid/uhid.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/dma/imx-dma.c
-+++ b/drivers/dma/imx-dma.c
-@@ -604,13 +604,11 @@ static void imxdma_tasklet(unsigned long
- 
- 	if (list_empty(&imxdmac->ld_active)) {
- 		/* Someone might have called terminate all */
--		goto out;
-+		spin_unlock_irqrestore(&imxdma->lock, flags);
-+		return;
- 	}
- 	desc = list_first_entry(&imxdmac->ld_active, struct imxdma_desc, node);
- 
--	if (desc->desc.callback)
--		desc->desc.callback(desc->desc.callback_param);
--
- 	/* If we are dealing with a cyclic descriptor, keep it on ld_active
- 	 * and dont mark the descriptor as complete.
- 	 * Only in non-cyclic cases it would be marked as complete
-@@ -638,6 +636,10 @@ static void imxdma_tasklet(unsigned long
- 	}
- out:
- 	spin_unlock_irqrestore(&imxdma->lock, flags);
-+
-+	if (desc->desc.callback)
-+		desc->desc.callback(desc->desc.callback_param);
-+
- }
- 
- static int imxdma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+--- a/drivers/hid/uhid.c
++++ b/drivers/hid/uhid.c
+@@ -659,3 +659,4 @@ module_exit(uhid_exit);
+ MODULE_LICENSE("GPL");
+ MODULE_AUTHOR("David Herrmann <dh.herrmann@gmail.com>");
+ MODULE_DESCRIPTION("User-space I/O driver support for HID subsystem");
++MODULE_ALIAS("devname:" UHID_NAME);
 
 
