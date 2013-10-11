@@ -1,128 +1,292 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756543Ab3JKJcE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 05:32:04 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:10041 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752444Ab3JKJcB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 05:32:01 -0400
-X-IronPort-AV: E=Sophos;i="4.93,474,1378828800"; 
-   d="scan'208";a="8723877"
-Message-ID: <5257C5D7.80308@cn.fujitsu.com>
-Date: Fri, 11 Oct 2013 17:33:11 +0800
-From: Gao feng <gaofeng@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1756947Ab3JKJca (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 05:32:30 -0400
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:35875 "EHLO
+	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756675Ab3JKJc1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 05:32:27 -0400
+Date: Fri, 11 Oct 2013 17:30:18 +0800
+From: Jisheng Zhang <jszhang@marvell.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/8] irqchip: add DesignWare APB ICTL interrupt
+ controller
+Message-ID: <20131011173018.04caee22@xhacker>
+In-Reply-To: <1381235073-17134-2-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1381235073-17134-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	<1381235073-17134-2-git-send-email-sebastian.hesselbarth@gmail.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.21; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
-CC: viro@zeniv.linux.org.uk, eparis@redhat.com, linux-audit@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [BUG][PATCH][RFC] audit: hang up in audit_log_start executed
- on auditd
-References: <20131011103645.6643fabff0eceb152e0be6c2@jp.fujitsu.com>
-In-Reply-To: <20131011103645.6643fabff0eceb152e0be6c2@jp.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/10/11 17:29:49,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/10/11 17:29:50,
-	Serialize complete at 2013/10/11 17:29:50
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
+ definitions=2013-10-11_02:2013-10-11,2013-10-10,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=2
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1310110010
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/11/2013 09:36 AM, Toshiyuki Okajima wrote:
-> Hi. 
+On Tue, 8 Oct 2013 05:24:26 -0700
+Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> wrote:
+
+> This adds an irqchip driver and corresponding devicetree binding for the
+> secondary interrupt controllers based on Synopsys DesignWare IP dw_apb_ictl.
 > 
-> The following reproducer causes auditd daemon hang up.
-> (But the hang up is released after the audit_backlog_wait_time passes.)
->  # auditctl -a exit,always -S all
->  # reboot
-> 
-> 
-> I reproduced the hangup on KVM, and then got a crash dump.
-> After I analyzed the dump, I found auditd daemon hung up in audit_log_start. 
-> (I have confirmed it on linux-3.12-rc4.)
-> 
-> Like this:
-> crash> bt 1426
-> PID: 1426   TASK: ffff88007b63e040  CPU: 1   COMMAND: "auditd"
->  #0 [ffff88007cb93918] __schedule at ffffffff8155d980
->  #1 [ffff88007cb939b0] schedule at ffffffff8155de99
->  #2 [ffff88007cb939c0] schedule_timeout at ffffffff8155b840
->  #3 [ffff88007cb93a60] audit_log_start at ffffffff810d3ce5
->  #4 [ffff88007cb93b20] audit_log_config_change at ffffffff810d3ece
->  #5 [ffff88007cb93b60] audit_receive_msg at ffffffff810d4fd6
->  #6 [ffff88007cb93c00] audit_receive at ffffffff810d5173
->  #7 [ffff88007cb93c30] netlink_unicast at ffffffff814c5269
->  #8 [ffff88007cb93c90] netlink_sendmsg at ffffffff814c6386
->  #9 [ffff88007cb93d20] sock_sendmsg at ffffffff814813c0
-> #10 [ffff88007cb93e30] SYSC_sendto at ffffffff81481524
-> #11 [ffff88007cb93f70] sys_sendto at ffffffff8148157e
-> #12 [ffff88007cb93f80] system_call_fastpath at ffffffff81568052
->     RIP: 00007f5c47f7fba3  RSP: 00007fffcf21a118  RFLAGS: 00010202
->     RAX: 000000000000002c  RBX: ffffffff81568052  RCX: 0000000000000000
->     RDX: 0000000000000030  RSI: 00007fffcf21e7d0  RDI: 0000000000000003
->     RBP: 00007fffcf21e7d0   R8: 00007fffcf21a130   R9: 000000000000000c
->     R10: 0000000000000000  R11: 0000000000000293  R12: ffffffff8148157e
->     R13: ffff88007cb93f78  R14: 0000000000000020  R15: 0000000000000030
->     ORIG_RAX: 000000000000002c  CS: 0033  SS: 002b
-> 
-> 
-> The reason is that auditd daemon itself cannot consume its backlog 
-> while audit_log_start is calling schedule_timeout on auditd daemon.  
-> So, that is a deadlock!
-> 
-> Therefore, I think audit_log_start shouldn't handle auditd's backlog
-> when auditd daemon executes audit_log_start.
-> 
-> For example, I made the following fix patch.
-> --------------------------------------------------------------
-> auditd daemon can execute the audit_log_start, and then it can cause 
-> a hang up because only auditd daemon can consume the backlog.
-> So, audit_log_start executed by auditd daemon should not handle the backlog 
-> in case auditd daemon hangs up (while wait_for_auditd is calling).
-> 
-> Signed-off-by: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 > ---
->  kernel/audit.c |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
+> Changelog:
+> RFCv1->RFCv2:
+> - added copyright reference
 > 
-> diff --git a/kernel/audit.c b/kernel/audit.c
-> index 7b0e23a..86c389e 100644
-> --- a/kernel/audit.c
-> +++ b/kernel/audit.c
-> @@ -1098,6 +1098,9 @@ struct audit_buffer *audit_log_start(struct audit_context *ctx, gfp_t gfp_mask,
->  	int reserve;
->  	unsigned long timeout_start = jiffies;
->  
-> +	if (audit_pid && (audit_pid == current->pid))
-> +		return NULL;
+> Cc: Jason Cooper <jason@lakedaemon.net>
+> Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: devicetree@vger.kernel.org
+> Cc: linux-doc@vger.kernel.org
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  .../interrupt-controller/snps,dw-apb-ictl.txt      |   29 ++++
+>  drivers/irqchip/Kconfig                            |    4 +
+>  drivers/irqchip/Makefile                           |    1 +
+>  drivers/irqchip/irq-dw-apb-ictl.c                  |  142
+> ++++++++++++++++++++ 4 files changed, 176 insertions(+)
+>  create mode 100644
+> Documentation/devicetree/bindings/interrupt-controller/snps,dw-apb-ictl.txt
+> create mode 100644 drivers/irqchip/irq-dw-apb-ictl.c
+> 
+> diff --git
+> a/Documentation/devicetree/bindings/interrupt-controller/snps,dw-apb-ictl.txt
+> b/Documentation/devicetree/bindings/interrupt-controller/snps,dw-apb-ictl.txt
+> new file mode 100644 index 0000000..7ccd1ba --- /dev/null
+> +++
+> b/Documentation/devicetree/bindings/interrupt-controller/snps,dw-apb-ictl.txt
+> @@ -0,0 +1,29 @@ +Synopsys DesignWare APB interrupt controller (dw_apb_ictl)
 > +
+> +Synopsys DesignWare provides interrupt controller IP for APB known as
+> +dw_apb_ictl. The IP is used as secondary interrupt controller in some SoCs
+> with +APB bus, e.g. Marvell Armada 1500.
+> +
+> +Required properties:
+> +- compatible: shall be "snps,dw-apb-ictl"
+> +- reg: base address of interrupt registers starting with ENABLE_LOW
+> register +- interrupt-controller: identifies the node as an interrupt
+> controller +- #interrupt-cells: number of cells to encode an interrupt
+> source, shall be 1 +- interrupts: interrupt reference to primary interrupt
+> controller +- interrupt-parent: (optional) reference specific primary
+> interrupt controller +
+> +The interrupt sources map to the corresponding bits in the interrupt
+> +registers, i.e.
+> +- 0 maps to bit 0 of low interrupts,
+> +- 1 maps to bit 1 of low interrupts,
+> +- 32 maps to bit 0 of high interrupts, and so on.
+> +
+> +Example:
+> +       aic: interrupt-controller@3000 {
+> +               compatible = "snps,dw-apb-ictl";
+> +               reg = <0x3000 0xc00>;
+> +               interrupt-controller;
+> +               #interrupt-cells = <1>;
+> +               interrupt-parent = <&gic>;
+> +               interrupts = <GIC_SPI 3 IRQ_TYPE_LEVEL_HIGH>;
+> +       };
+> diff --git a/drivers/irqchip/Kconfig b/drivers/irqchip/Kconfig
+> index 3792a1a..940638d 100644
+> --- a/drivers/irqchip/Kconfig
+> +++ b/drivers/irqchip/Kconfig
+> @@ -30,6 +30,10 @@ config ARM_VIC_NR
+>           The maximum number of VICs available in the system, for
+>           power management.
+> 
+> +config DW_APB_ICTL
+> +       bool
+> +       select IRQ_DOMAIN
+> +
+>  config IMGPDC_IRQ
+>         bool
+>         select GENERIC_IRQ_CHIP
+> diff --git a/drivers/irqchip/Makefile b/drivers/irqchip/Makefile
+> index c60b901..6427323 100644
+> --- a/drivers/irqchip/Makefile
+> +++ b/drivers/irqchip/Makefile
+> @@ -6,6 +6,7 @@ obj-$(CONFIG_ARCH_MMP)                  += irq-mmp.o
+>  obj-$(CONFIG_ARCH_MVEBU)               += irq-armada-370-xp.o
+>  obj-$(CONFIG_ARCH_MXS)                 += irq-mxs.o
+>  obj-$(CONFIG_ARCH_S3C24XX)             += irq-s3c24xx.o
+> +obj-$(CONFIG_DW_APB_ICTL)              += irq-dw-apb-ictl.o
+>  obj-$(CONFIG_METAG)                    += irq-metag-ext.o
+>  obj-$(CONFIG_METAG_PERFCOUNTER_IRQS)   += irq-metag.o
+>  obj-$(CONFIG_ARCH_MOXART)              += irq-moxart.o
+> diff --git a/drivers/irqchip/irq-dw-apb-ictl.c
+> b/drivers/irqchip/irq-dw-apb-ictl.c new file mode 100644
+> index 0000000..bbcacee
+> --- /dev/null
+> +++ b/drivers/irqchip/irq-dw-apb-ictl.c
+> @@ -0,0 +1,142 @@
+> +/*
+> + * Synopsys DW APB ICTL irqchip driver.
+> + *
+> + * Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> + *
+> + * based on GPL'ed 2.6 kernel sources
+> + *  (c) Marvell International Ltd.
+> + *
+> + * This file is licensed under the terms of the GNU General Public
+> + * License version 2.  This program is licensed "as is" without any
+> + * warranty of any kind, whether express or implied.
+> + */
+> +
+> +#include <linux/io.h>
+> +#include <linux/irq.h>
+> +#include <linux/irqchip/chained_irq.h>
+> +#include <linux/of_address.h>
+> +#include <linux/of_irq.h>
+> +
+> +#include "irqchip.h"
+> +
+> +#define APB_INT_ENABLE_L       0x00
+> +#define APB_INT_ENABLE_H       0x04
+> +#define APB_INT_MASK_L         0x08
+> +#define APB_INT_MASK_H         0x0c
+> +#define APB_INT_FINALSTATUS_L  0x30
+> +#define APB_INT_FINALSTATUS_H  0x34
+> +
+> +static void dw_apb_ictl_handler(unsigned int irq, struct irq_desc *desc)
+> +{
+> +       struct irq_chip *chip = irq_get_chip(irq);
+> +       struct irq_chip_generic *gc = irq_get_handler_data(irq);
+> +       struct irq_domain *d = gc->private;
+> +       u32 stat;
+> +       int n;
+> +
+> +       chained_irq_enter(chip, desc);
+> +
+> +       for (n = 0; n < gc->num_ct; n++) {
+> +               stat = readl_relaxed(gc->reg_base +
+> +                                    APB_INT_FINALSTATUS_L + 4 * n);
+> +               while (stat) {
+> +                       u32 hwirq = ffs(stat) - 1;
+> +                       generic_handle_irq(irq_find_mapping(d,
+> +                                           gc->irq_base + hwirq + 32 * n));
+> +                       stat &= ~(1 << hwirq);
+> +               }
+> +       }
+> +
+> +       chained_irq_exit(chip, desc);
+> +}
+> +
+> +static int __init dw_apb_ictl_init(struct device_node *np,
+> +                                  struct device_node *parent)
+> +{
+> +       unsigned int clr = IRQ_NOREQUEST | IRQ_NOPROBE | IRQ_NOAUTOEN;
+> +       struct resource r;
+> +       struct irq_domain *domain;
+> +       struct irq_chip_generic *gc;
+> +       void __iomem *iobase;
+> +       int ret, nrirqs, irq;
+> +       u32 reg;
+> +
+> +       /* Map the parent interrupt for the chained handler */
+> +       irq = irq_of_parse_and_map(np, 0);
+> +       if (irq <= 0) {
+> +               pr_err("%s: unable to parse irq\n", np->name);
+> +               return -EINVAL;
+> +       }
+> +
+> +       ret = of_address_to_resource(np, 0, &r);
+> +       if (ret) {
+> +               pr_err("%s: unable to get resource\n", np->name);
+> +               return ret;
+> +       }
+> +
+> +       if (!request_mem_region(r.start, resource_size(&r), np->name)) {
+> +               pr_err("%s: unable to request mem region\n", np->name);
+> +               return -ENOMEM;
+> +       }
+> +
+> +       iobase = ioremap(r.start, resource_size(&r));
+> +       if (!iobase) {
+> +               pr_err("%s: unable to map resource\n", np->name);
+release_mem_region() is missing
+> +               return -ENOMEM;
+> +       }
+> +
+> +       /*
+> +        * DW IP can be configured to allow 2-64 irqs. We can determine
+> +        * the number of irqs supported by writing into enable register
+> +        * and look for bits not set, as corresponding flip-flops will
+> +        * have been removed by sythesis tool.
+> +        */
+> +
+> +       /* mask and enable all interrupts */
+> +       writel(~0, iobase + APB_INT_MASK_L);
+> +       writel(~0, iobase + APB_INT_MASK_H);
+> +       writel(~0, iobase + APB_INT_ENABLE_L);
+> +       writel(~0, iobase + APB_INT_ENABLE_H);
+> +
+> +       reg = readl(iobase + APB_INT_ENABLE_H);
+> +       if (reg)
+> +               nrirqs = 32 + fls(reg);
+> +       else
+> +               nrirqs = fls(readl(iobase + APB_INT_ENABLE_L));
+> +
+> +       domain = irq_domain_add_linear(np, nrirqs,
+> +                                      &irq_generic_chip_ops, NULL);
+> +       if (!domain) {
+> +               pr_err("%s: unable to add irq domain\n", np->name);
+iounmap() and release_mem_region() is missing
+> +               return -ENOMEM;
+> +       }
+> +
+> +       ret = irq_alloc_domain_generic_chips(domain, 32, (nrirqs > 32) ?
+> 2 : 1,
+> +                                            np->name, handle_level_irq,
+> clr, 0,
+> +                                            IRQ_GC_INIT_MASK_CACHE);
+> +       if (ret) {
+> +               pr_err("%s: unable to alloc irq domain gc\n", np->name);
+> +               return ret;
+> +       }
+> +
+> +       gc = irq_get_domain_generic_chip(domain, 0);
+> +       gc->private = domain;
+> +       gc->reg_base = iobase;
+> +
+> +       gc->chip_types[0].regs.mask = APB_INT_MASK_L;
+> +       gc->chip_types[0].chip.irq_mask = irq_gc_mask_set_bit;
+> +       gc->chip_types[0].chip.irq_unmask = irq_gc_mask_clr_bit;
+> +
+> +       if (nrirqs > 32) {
+> +               gc->chip_types[1].regs.mask = APB_INT_MASK_H;
+> +               gc->chip_types[1].chip.irq_mask = irq_gc_mask_set_bit;
+> +               gc->chip_types[1].chip.irq_unmask = irq_gc_mask_clr_bit;
+> +       }
+> +
+> +       irq_set_handler_data(irq, gc);
+> +       irq_set_chained_handler(irq, dw_apb_ictl_handler);
+> +
+> +       return 0;
+> +}
+> +IRQCHIP_DECLARE(dw_apb_ictl,
+> +               "snps,dw-apb-ictl", dw_apb_ictl_init);
+> --
+> 1.7.10.4
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 
-audit_log_start can be called in interrupt context, such as iptables AUDIT module,
-we can't use current here.
-please try the patch below.
-
-diff --git a/kernel/audit.c b/kernel/audit.c
-index 7b0e23a..1f35f3d 100644
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -270,9 +270,13 @@ static int audit_log_config_change(char *function_name, int new, int old,
-                                   int allow_changes)
- {
-        struct audit_buffer *ab;
-+       gfp_t gfp_mask = GFP_KERNEL;
-        int rc = 0;
-
--       ab = audit_log_start(NULL, GFP_KERNEL, AUDIT_CONFIG_CHANGE);
-+       if (audit_pid && audit_pid == current->pid)
-+               gfp_mask = GFP_ATOMIC;
-+
-+       ab = audit_log_start(NULL, gfp_mask, AUDIT_CONFIG_CHANGE);
-        if (unlikely(!ab))
-                return rc;
-        audit_log_format(ab, "%s=%d old=%d", function_name, new, old);
-
-
-Thanks
