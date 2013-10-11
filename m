@@ -1,86 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753650Ab3JKSFJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 14:05:09 -0400
-Received: from mail-yh0-f46.google.com ([209.85.213.46]:42461 "EHLO
-	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752088Ab3JKSFH (ORCPT
+	id S1753981Ab3JKSIR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 14:08:17 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:53525 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752105Ab3JKSIQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 14:05:07 -0400
-Date: Fri, 11 Oct 2013 14:33:27 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Paul Mackerras <paulus@samba.org>, lkml <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH -tip ] [BUGFIX] perf probe: fix to initialize fname
- always before use it
-Message-ID: <20131011173327.GN28369@ghostprotocols.net>
-References: <20131011122317.9662.29736.stgit@kbuild-fedora.novalocal>
- <5257EFB3.9030009@hitachi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5257EFB3.9030009@hitachi.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 11 Oct 2013 14:08:16 -0400
+Date: Fri, 11 Oct 2013 14:08:14 -0400 (EDT)
+Message-Id: <20131011.140814.422793173894221852.davem@davemloft.net>
+To: cl@linux.com
+Cc: tj@kernel.org, akpm@linuxfoundation.org, srostedt@redhat.com,
+        linux-kernel@vger.kernel.org, mingo@kernel.org, peterz@infradead.org,
+        tglx@linutronix.de
+Subject: Re: [PATCH 0/6] percpu: Implement Preemption checks for __this_cpu
+ operations V4
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <00000141a8a7ea27-4ab5f822-e15f-4789-a5cf-f313c402a901-000000@email.amazonses.com>
+References: <00000141a8a7ea27-4ab5f822-e15f-4789-a5cf-f313c402a901-000000@email.amazonses.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Fri, 11 Oct 2013 11:08:16 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Oct 11, 2013 at 09:31:47PM +0900, Masami Hiramatsu escreveu:
-> Hi Arnaldo,
-> 
-> I've found a bug in my previous patch which was already picked
-> in the perf/urgent branch. The buggy commit id is
-> 
-> e08cfd4bda7683cdbe6971c26cf23e2afdb1e7a8
-> 
-> And this is not related to the previous series of perf probe
-> updates.
 
-Ok, so it must go via perf/urgent or if that ends up not being anymore
-possible, via stable, will try the perf/urgent path today,
+Most sites are rejecting your posting because the CC: list looked like this:
 
-- Arnaldo
- 
-> Thank you,
-> 
-> (2013/10/11 21:23), Masami Hiramatsu wrote:
-> > Fix perf probe --list to initialize fname local var always before
-> > use it. This may cause a SEGV if there is a probe which is in
-> > the function body but not in any inline function.
-> > 
-> > Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > Cc: Paul Mackerras <paulus@samba.org>
-> > Cc: Ingo Molnar <mingo@redhat.com>
-> > Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> > Cc: Namhyung Kim <namhyung@kernel.org>
-> > ---
-> >  tools/perf/util/probe-finder.c |    2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-> > index c044052..e41b094 100644
-> > --- a/tools/perf/util/probe-finder.c
-> > +++ b/tools/perf/util/probe-finder.c
-> > @@ -1460,10 +1460,10 @@ int debuginfo__find_probe_point(struct debuginfo *self, unsigned long addr,
-> >  			goto post;
-> >  		}
-> >  
-> > +		fname = dwarf_decl_file(&spdie);
-> >  		if (addr == (unsigned long)baseaddr) {
-> >  			/* Function entry - Relative line number is 0 */
-> >  			lineno = baseline;
-> > -			fname = dwarf_decl_file(&spdie);
-> >  			goto post;
-> >  		}
-> 
-> 
-> -- 
-> Masami HIRAMATSU
-> IT Management Research Dept. Linux Technology Center
-> Hitachi, Ltd., Yokohama Research Laboratory
-> E-mail: masami.hiramatsu.pt@hitachi.com
-> 
+Cc:	akpm@linuxfoundation.org
+Cc:	Steven Rostedt <srostedt@redhat.com>
+Cc:	linux-kernel@vger.kernel.org
+Cc:	Ingo Molnar <mingo@kernel.org>
+Cc:	Peter Zijlstra <peterz@infradead.org>
+Cc:	Thomas Gleixner <tglx@linutronix.de>
+
+Please only specify one CC: list with a comma separated list of recipients.
+
+Thanks.
