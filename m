@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932421Ab3JKKv1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 06:51:27 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58740 "EHLO
+	id S1758266Ab3JKKwB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 06:52:01 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58725 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932301Ab3JKKoB (ORCPT
+	with ESMTP id S932280Ab3JKKn5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 06:44:01 -0400
+	Fri, 11 Oct 2013 06:43:57 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andre Guedes <andre.guedes@openbossa.org>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
+Cc: Dan Carpenter <dan.carpenter@oracle.com>, Mark Brown <broonie@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 078/100] Bluetooth: Fix encryption key size for peripheral role
-Date: Fri, 11 Oct 2013 11:41:48 +0100
-Message-Id: <1381488130-30235-79-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 075/100] ASoC: 88pm860x: array overflow in snd_soc_put_volsw_2r_st()
+Date: Fri, 11 Oct 2013 11:41:45 +0100
+Message-Id: <1381488130-30235-76-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
 References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
@@ -28,34 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andre Guedes <andre.guedes@openbossa.org>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 89cbb4da0abee2f39d75f67f9fd57f7410c8b65c upstream.
+commit d967967e8d1116fb38bad25e58714b5dddd03cca upstream.
 
-This patch fixes the connection encryption key size information when
-the host is playing the peripheral role. We should set conn->enc_key_
-size in hci_le_ltk_request_evt, otherwise it is left uninitialized.
+This is called from snd_ctl_elem_write() with user supplied data so we
+need to add some bounds checking.
 
-Signed-off-by: Andre Guedes <andre.guedes@openbossa.org>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/bluetooth/hci_event.c | 2 ++
- 1 file changed, 2 insertions(+)
+ sound/soc/codecs/88pm860x-codec.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/net/bluetooth/hci_event.c b/net/bluetooth/hci_event.c
-index 9871e8b..7797c9d 100644
---- a/net/bluetooth/hci_event.c
-+++ b/net/bluetooth/hci_event.c
-@@ -3456,6 +3456,8 @@ static inline void hci_le_ltk_request_evt(struct hci_dev *hdev,
- 	else
- 		conn->pending_sec_level = BT_SECURITY_MEDIUM;
+diff --git a/sound/soc/codecs/88pm860x-codec.c b/sound/soc/codecs/88pm860x-codec.c
+index 9fd3b68..3ff2b94 100644
+--- a/sound/soc/codecs/88pm860x-codec.c
++++ b/sound/soc/codecs/88pm860x-codec.c
+@@ -351,6 +351,9 @@ static int snd_soc_put_volsw_2r_st(struct snd_kcontrol *kcontrol,
+ 	val = ucontrol->value.integer.value[0];
+ 	val2 = ucontrol->value.integer.value[1];
  
-+	conn->enc_key_size = ltk->enc_size;
++	if (val >= ARRAY_SIZE(st_table) || val2 >= ARRAY_SIZE(st_table))
++		return -EINVAL;
 +
- 	hci_send_cmd(hdev, HCI_OP_LE_LTK_REPLY, sizeof(cp), &cp);
- 
- 	if (ltk->type & HCI_SMP_STK) {
+ 	err = snd_soc_update_bits(codec, reg, 0x3f, st_table[val].m);
+ 	if (err < 0)
+ 		return err;
 -- 
 1.8.3.2
 
