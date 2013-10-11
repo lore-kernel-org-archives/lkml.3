@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932234Ab3JKTkv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:40:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45904 "EHLO
+	id S933308Ab3JKUUL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:20:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45969 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932076Ab3JKTki (ORCPT
+	with ESMTP id S932218Ab3JKTku (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:40:38 -0400
+	Fri, 11 Oct 2013 15:40:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 093/110] Revert "drm/radeon: add missing hdmi callbacks for rv6xx"
-Date: Fri, 11 Oct 2013 12:39:13 -0700
-Message-Id: <20131011193817.949191202@linuxfoundation.org>
+        Kent Overstreet <kmo@daterainc.com>,
+        Gabriel de Perthuis <g2p.code@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 110/110] bcache: Fix a null ptr deref regression
+Date: Fri, 11 Oct 2013 12:39:30 -0700
+Message-Id: <20131011193819.774377331@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
 References: <20131011193807.584188672@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,37 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rafał Miłecki <zajec5@gmail.com>
+From: Kent Overstreet <kmo@daterainc.com>
 
-This reverts commit b2a9484006875ecd7d94582e7bcb72a02682be92.
+commit 2fe80d3bbf1c8bd9efc5b8154207c8dd104e7306 upstream.
 
-Commit 99d79aa2f3b7729e7290e8bda5d0dd8b0240ec62 (backported by
-b2a9484006875ecd7d94582e7bcb72a02682be92) was supposed to fix rv6xx_asic
-struct.
+Commit c0f04d88e46d ("bcache: Fix flushes in writeback mode") was fixing
+a reported data corruption bug, but it seems some last minute
+refactoring or rebasing introduced a null pointer deref.
 
-In kernel 3.10 we didn't have that struct yet, so the original patch
-should never be backported to the 3.10. Accidentally it has applied and
-modified different struct (r520_asic) that shouldn't have any HDMI
-callbacks at all.
-
-Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
-Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Kent Overstreet <kmo@daterainc.com>
+Reported-by: Gabriel de Perthuis <g2p.code@gmail.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_asic.c |    2 --
- 1 file changed, 2 deletions(-)
+ drivers/md/bcache/request.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_asic.c
-+++ b/drivers/gpu/drm/radeon/radeon_asic.c
-@@ -892,8 +892,6 @@ static struct radeon_asic r520_asic = {
- 		.wait_for_vblank = &avivo_wait_for_vblank,
- 		.set_backlight_level = &atombios_set_backlight_level,
- 		.get_backlight_level = &atombios_get_backlight_level,
--		.hdmi_enable = &r600_hdmi_enable,
--		.hdmi_setmode = &r600_hdmi_setmode,
- 	},
- 	.copy = {
- 		.blit = &r100_copy_blit,
+--- a/drivers/md/bcache/request.c
++++ b/drivers/md/bcache/request.c
+@@ -1055,6 +1055,7 @@ static void request_write(struct cached_
+ 	} else {
+ 		trace_bcache_writeback(s->orig_bio);
+ 		bch_writeback_add(dc, bio_sectors(bio));
++		s->op.cache_bio = bio;
+ 
+ 		if (bio->bi_rw & REQ_FLUSH) {
+ 			/* Also need to send a flush to the backing device */
+@@ -1067,8 +1068,6 @@ static void request_write(struct cached_
+ 			flush->bi_private = cl;
+ 
+ 			closure_bio_submit(flush, cl, s->d);
+-		} else {
+-			s->op.cache_bio = bio;
+ 		}
+ 	}
+ out:
 
 
