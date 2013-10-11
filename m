@@ -1,156 +1,261 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757305Ab3JKIkH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 04:40:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65269 "EHLO mx1.redhat.com"
+	id S1752783Ab3JKIm3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 04:42:29 -0400
+Received: from mout.gmx.net ([212.227.17.20]:61274 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753771Ab3JKIj7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 04:39:59 -0400
-Date: Fri, 11 Oct 2013 10:41:09 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Mark Lord <kernel@start.ca>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Dan Williams <dan.j.williams@intel.com>, Andy King <acking@vmware.com>,
-        Jon Mason <jon.mason@intel.com>,
-        Matt Porter <mporter@kernel.crashing.org>, linux-pci@vger.kernel.org,
-        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
-        linux390@de.ibm.com, linux-s390@vger.kernel.org, x86@kernel.org,
-        linux-ide@vger.kernel.org, iss_storagedev@hp.com,
-        linux-nvme@lists.infradead.org, linux-rdma@vger.kernel.org,
-        netdev@vger.kernel.org, e1000-devel@lists.sourceforge.net,
-        linux-driver@qlogic.com,
-        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
-        "VMware, Inc." <pv-drivers@vmware.com>, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH RFC 00/77] Re-design MSI/MSI-X interrupts enablement
- pattern
-Message-ID: <20131011084108.GA25702@dhcp-26-207.brq.redhat.com>
-References: <cover.1380703262.git.agordeev@redhat.com>
- <5254D397.9030307@zytor.com>
- <1381292648.645.259.camel@pasglop>
- <20131010101704.GC11874@dhcp-26-207.brq.redhat.com>
- <5256D5AB.4050105@zytor.com>
- <20131010180704.GA15719@dhcp-26-207.brq.redhat.com>
- <5257357E.8080506@start.ca>
+	id S1751735Ab3JKImZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 04:42:25 -0400
+Message-ID: <5257B9EB.7080503@gmx.de>
+Date: Fri, 11 Oct 2013 10:42:19 +0200
+From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5257357E.8080506@start.ca>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Fengguang Wu <fengguang.wu@intel.com>
+CC: Richard Weinberger <richard@nod.at>, Jan Kara <jack@suse.cz>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        UML devel <user-mode-linux-devel@lists.sourceforge.net>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        hannes@cmpxchg.org, darrick.wong@oracle.com,
+        Michal Hocko <mhocko@suse.cz>
+Subject: Re: [uml-devel] BUG: soft lockup for a user mode linux image
+References: <CAMuHMdXrU0e_6AxvdboMkDs+N+tSWD+b8ou92j28c0vsq2eQQA@mail.gmail.com> <5251C334.3010604@gmx.de> <CAMuHMdUo8dSd4s3089ZDEc485wL1sFxBKLeaExJuqNiQY+S-Lw@mail.gmail.com> <5251CF94.5040101@gmx.de> <CAMuHMdWs6Y7y12STJ+YXKJjxRF0k5yU9C9+0fiPPmq-GgeW-6Q@mail.gmail.com> <525591AD.4060401@gmx.de> <5255A3E6.6020100@nod.at> <20131009214733.GB25608@quack.suse.cz> <5255D9A6.3010208@nod.at> <5256DA9A.5060904@gmx.de> <20131011011649.GA11191@localhost>
+In-Reply-To: <20131011011649.GA11191@localhost>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V03:K0:drYHPnPZbBTETNJB0gxOMKw+xtIBRnMsxr7AGuG7OLHlhPLGjlu
+ Cb0GrNAk2CV5eWUMAEUfohOFuYeOlJ675bUjhI2N259ZfoxnQzreIWJYd49xuBXqXb07sIr
+ 1xVJLWiSl76LVRS73zbk8eJoZO56SJPfUx6L577qCdZG39u17siCx8nW/eIRKTqPqqznoVA
+ yiw7oPxKuxSELer4NrnCQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 10, 2013 at 07:17:18PM -0400, Mark Lord wrote:
-> Just to help us all understand "the loop" issue..
+yeah, now the picture becomes more clear
+...
+net.core.warnings = 0                                                                         [ ok ]
+ick: pause : -717
+                 ick : min_pause : -177
+                                   ick : max_pause : -717
+                                                     ick: pages_dirtied : 14
+                                                                            ick: task_ratelimit: 0
+
+
+On 10/11/2013 03:16 AM, Fengguang Wu wrote:
+> On Thu, Oct 10, 2013 at 06:49:30PM +0200, Toralf Förster wrote:
+>> On 10/10/2013 12:33 AM, Richard Weinberger wrote:
+>>> Am 09.10.2013 23:47, schrieb Jan Kara:
+>>>> On Wed 09-10-13 20:43:50, Richard Weinberger wrote:
+>>>>> CC'ing mm folks.
+>>>>> Please see below.
+>>>>   Added Fenguang to CC since he is the author of this code.
+>>>
+>>> Thx, get_maintainer.pl didn't list him.
+>>>
+>>>>> Am 09.10.2013 19:26, schrieb Toralf Förster:
+>>>>>> On 10/08/2013 10:07 PM, Geert Uytterhoeven wrote:
+>>>>>>> On Sun, Oct 6, 2013 at 11:01 PM, Toralf Förster <toralf.foerster@gmx.de> wrote:
+>>>>>>>>> Hmm, now pages_dirtied is zero, according to the backtrace, but the BUG_ON()
+>>>>>>>>> asserts its strict positive?!?
+>>>>>>>>>
+>>>>>>>>> Can you please try the following instead of the BUG_ON():
+>>>>>>>>>
+>>>>>>>>> if (pause < 0) {
+>>>>>>>>>         printk("pages_dirtied = %lu\n", pages_dirtied);
+>>>>>>>>>         printk("task_ratelimit = %lu\n", task_ratelimit);
+>>>>>>>>>         printk("pause = %ld\n", pause);
+>>>>>>>>> }
+>>>>>>>>>
+>>>>>>>>> Gr{oetje,eeting}s,
+>>>>>>>>>
+>>>>>>>>>                         Geert
+>>>>>>>> I tried it in different ways already - I'm completely unsuccessful in getting any printk output.
+>>>>>>>> As soon as the issue happens I do have a
+>>>>>>>>
+>>>>>>>> BUG: soft lockup - CPU#0 stuck for 22s! [trinity-child0:1521]
+>>>>>>>>
+>>>>>>>> at stderr of the UML and then no further input is accepted. With uml_mconsole I'm however able
+>>>>>>>> to run very basic commands like a crash dump, sysrq ond so on.
+>>>>>>>
+>>>>>>> You may get an idea of the magnitude of pages_dirtied by using a chain of
+>>>>>>> BUG_ON()s, like:
+>>>>>>>
+>>>>>>> BUG_ON(pages_dirtied > 2000000000);
+>>>>>>> BUG_ON(pages_dirtied > 1000000000);
+>>>>>>> BUG_ON(pages_dirtied > 100000000);
+>>>>>>> BUG_ON(pages_dirtied > 10000000);
+>>>>>>> BUG_ON(pages_dirtied > 1000000);
+>>>>>>>
+>>>>>>> Probably 1 million is already too much for normal operation?
+>>>>>>>
+>>>>>> period = HZ * pages_dirtied / task_ratelimit;
+>>>>>> 		BUG_ON(pages_dirtied > 2000000000);
+>>>>>> 		BUG_ON(pages_dirtied > 1000000000);      <-------------- this is line 1467
+>>>>>
+>>>>> Summary for mm people:
+>>>>>
+>>>>> Toralf runs trinty on UML/i386.
+>>>>> After some time pages_dirtied becomes very large.
+>>>>> More than 1000000000 pages in this case.
+>>>>   Huh, this is really strange. pages_dirtied is passed into
+>>>> balance_dirty_pages() from current->nr_dirtied. So I wonder how a value
+>>>> over 10^9 can get there. After all that is over 4TB so I somewhat doubt the
+>>>> task was ever able to dirty that much during its lifetime (but correct me
+>>>> if I'm wrong here, with UML and memory backed disks it is not totally
+>>>> impossible)... I went through the logic of handling ->nr_dirtied but
+>>>> I didn't find any obvious problem there. Hum, maybe one thing - what
+>>>> 'task_ratelimit' values do you see in balance_dirty_pages? If that one was
+>>>> huge, we could possibly accumulate huge current->nr_dirtied.
+>>>
+>>> Toralf, you can try a snipplet like this one to get the values printed out:
+>>> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+>>> index f5236f8..a80e520 100644
+>>> --- a/mm/page-writeback.c
+>>> +++ b/mm/page-writeback.c
+>>> @@ -1463,6 +1463,12 @@ static void balance_dirty_pages(struct address_space *mapping,
+>>>                         goto pause;
+>>>                 }
+>>>                 period = HZ * pages_dirtied / task_ratelimit;
+>>> +
+>>> +               {
+>>> +                       extern int printf(char *, ...);
+>>> +                       printf("---> task_ratelimit: %lu\n", task_ratelimit);
+>>> +               }
+>>> +
+>>>                 pause = period;
+>>>                 if (current->dirty_paused_when)
+>>>                         pause -= now - current->dirty_paused_when;
+>>>
+>>>
+>>> Yes, printf(), not printk().
+>>> Using this hack we print directly to host's stdout. :)
+>>>
+>> *head smack* ofc - works fine.
+>> So given this diff :
+>>
+>> iff --git a/mm/page-writeback.c b/mm/page-writeback.c
+>> index f5236f8..5a2c337 100644
+>> --- a/mm/page-writeback.c
+>> +++ b/mm/page-writeback.c
+>> @@ -1464,6 +1464,13 @@ static void balance_dirty_pages(struct address_space *mapping,
+>>                 }
+>>                 period = HZ * pages_dirtied / task_ratelimit;
+>>                 pause = period;
+>> +               if (pause < 0)  {
+>> +                       extern int printf(char *, ...);
+>> +                       printf("overflow : pause : %li\n", pause);
+>> +                       printf("overflow : pages_dirtied : %lu\n", pages_dirtied);
+>> +                       printf("overflow :  task_ratelimit: %lu\n", task_ratelimit);
+>> +                       BUG_ON(1);
+>> +               }
+>>                 if (current->dirty_paused_when)
+>>                         pause -= now - current->dirty_paused_when;
+>>                 /*
+>> @@ -1503,6 +1510,13 @@ static void balance_dirty_pages(struct address_space *mapping,
+>>                 }
+>>
+>>  pause:
+>> +               if (pause < 0)  {
 > 
-> Here's an example of driver code which uses the existing MSI-X interfaces,
-> for a device which can work with either 16, 8, 4, 2, or 1 MSI-X interrupt.
-> This is from a new driver I'm working on right now:
+> Oops, we got 
 > 
+>         ick : pause : -984
 > 
-> static int xx_alloc_msix_irqs (struct xx_dev *dev, int nvec)
-> {
->         xx_disable_all_irqs(dev);
->         do {
->                 if (nvec < 2)
->                         xx_prep_for_1_msix_vector(dev);
->                 else if (nvec < 4)
->                         xx_prep_for_2_msix_vectors(dev);
->                 else if (nvec < 8)
->                         xx_prep_for_4_msix_vectors(dev);
->                 else if (nvec < 16)
->                         xx_prep_for_8_msix_vectors(dev);
->                 else
->                         xx_prep_for_16_msix_vectors(dev);
->                 nvec = pci_enable_msix(dev->pdev, dev->irqs, dev->num_vectors);
->         } while (nvec > 0);
+> here! Since pause is bounded by [min_pause, max_pause], it means
+> something goes wrong with the bounds. Would you help print min_pause
+> and max_pause as well?
 > 
->         if (nvec) {
->                 kerr(dev->name, "pci_enable_msix() failed, err=%d", nvec);
->                 dev->num_vectors = 0;
->                 return nvec;
->         }
->         return 0;       /* success */
-> }
+> It seems there are "long <=> unsigned long" conversion problems in
+> bdi_max_pause(), which might make max_pause a negative number. And the
+> min_pause calculation is based on max_pause to some degree..
+> 
+> Thanks,
+> Fengguang
+> 
+>> +                       extern int printf(char *, ...);
+>> +                       printf("ick : pause : %li\n", pause);
+>> +                       printf("ick: pages_dirtied : %lu\n", pages_dirtied);
+>> +                       printf("ick: task_ratelimit: %lu\n", task_ratelimit);
+>> +                       BUG_ON(1);
+>> +               }
+>>                 trace_balance_dirty_pages(bdi,
+>>                                           dirty_thresh,
+>>                                           background_thresh,
+>>
+>>
+>> I got this :
+>>
+>>
+>>
+>>
+>>  * Starting local
+>> net.core.warnings = 0                                                                                                                            [ ok ]
+>> ick : pause : -984
+>>                   ick: pages_dirtied : 0
+>>                                         ick: task_ratelimit: 0
+>>                                                               Kernel panic - not syncing: BUG!
+>> CPU: 0 PID: 1434 Comm: trinity-child2 Not tainted 3.12.0-rc4-00029-g0e7a3ed-dirty #12
+>> 47397c84 47397cb0 0841b5a0 084c30e8 085f76e0 084b4745 47397cbc 00000000 
+>>        fffffc28 01fff278 085cb4a0 47397d2c 0841c5a0 084b4745 084c5398 000005ee 
+>>        08432cf0 43e47600 471757f8 47397cf0 ffffff0c 47397cdc 5256d8b9 3417ec18 47397c5c:  [<08060b2c>] show_stack+0x7c/0xd0
+>> 47397c7c:  [<0841e34d>] dump_stack+0x26/0x28
+>> 47397c8c:  [<0841b5a0>] panic+0x7a/0x180
+>> 47397cb4:  [<0841c5a0>] balance_dirty_pages.isra.32+0x4e3/0x5ad
+>> 47397d30:  [<080d3595>] balance_dirty_pages_ratelimited+0xf5/0x100
+>> 47397d44:  [<080e4a3f>] __do_fault+0x3cf/0x440
+>> 47397d9c:  [<080e6e0f>] handle_mm_fault+0xef/0x7c0
+>> 47397dec:  [<080e7817>] __get_user_pages+0x227/0x420
+>> 47397e24:  [<080e7ae3>] get_user_pages+0x63/0x70
+>> 47397e4c:  [<08143dc6>] SyS_io_setup+0x3c6/0x760
+>> 47397eb0:  [<08062984>] handle_syscall+0x64/0x80
+>> 47397ef0:  [<08074fb5>] userspace+0x475/0x5f0
+>> 47397fec:  [<0805f750>] fork_handler+0x60/0x70
+>> 47397ffc:  [<00000000>] 0x0
+>>
+>>
+>> EIP: 0073:[<40001282>] CPU: 0 Not tainted ESP: 007b:bfb348f8 EFLAGS: 00000246
+>>     Not tainted
+>> EAX: ffffffda EBX: 00001000 ECX: 080d0000 EDX: 80000048
+>> ESI: 80fbff1f EDI: ffe02f77 EBP: 90f6e2a3 DS: 007b ES: 007b
+>> 47397c0c:  [<0807947f>] show_regs+0x10f/0x120
+>> 47397c28:  [<080623a9>] panic_exit+0x29/0x50
+>> 47397c38:  [<0809ba86>] notifier_call_chain+0x36/0x60
+>> 47397c60:  [<0809bba1>] __atomic_notifier_call_chain+0x21/0x30
+>> 47397c70:  [<0809bbdf>] atomic_notifier_call_chain+0x2f/0x40
+>> 47397c8c:  [<0841b5bc>] panic+0x96/0x180
+>> 47397cb4:  [<0841c5a0>] balance_dirty_pages.isra.32+0x4e3/0x5ad
+>> 47397d30:  [<080d3595>] balance_dirty_pages_ratelimited+0xf5/0x100
+>> 47397d44:  [<080e4a3f>] __do_fault+0x3cf/0x440
+>> 47397d9c:  [<080e6e0f>] handle_mm_fault+0xef/0x7c0
+>> 47397dec:  [<080e7817>] __get_user_pages+0x227/0x420
+>> 47397e24:  [<080e7ae3>] get_user_pages+0x63/0x70
+>> 47397e4c:  [<08143dc6>] SyS_io_setup+0x3c6/0x760
+>> 47397eb0:  [<08062984>] handle_syscall+0x64/0x80
+>> 47397ef0:  [<08074fb5>] userspace+0x475/0x5f0
+>> 47397fec:  [<0805f750>] fork_handler+0x60/0x70
+>> 47397ffc:  [<00000000>] 0x0
+>>
+>> /home/tfoerste/workspace/bin/start_uml.sh: line 115: 18718 Aborted                 (core dumped) $LINUX earlyprintk ubda=$ROOTFS ubdb=$SWAP eth0=$NET mem=$MEM $TTY umid=uml_$NAME rootfstype=ext4 "$ARGS"
+>>
+>>
+>> >From what I see there are 2 different types of issues - and this is an example of the other of both 
+>>
+>>> Thanks,
+>>> //richard
+>>>
+>>
+>>
+>> -- 
+>> MfG/Sincerely
+>> Toralf Förster
+>> pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+> 
 
-Yeah, that is a very good example.
-
-I would move all xx_prep_for_<pow2>_msix_vector() functions to a single
-helper i.e. xx_prep_msix_vectors(dev, ndev).
-
-Considering also (a) we do not want to waste unused platform resources
-associated with MSI-Xs and pull more quota than needed and (b) fixing
-couple of bugs, this function could look like this:
-
-static int xx_alloc_msix_irqs(struct xx_dev *dev, int nvec_in)
-{
-	int nvec = roundup_pow_of_two(nvec_in);	/* assume 0 > nvec_in <= 16 */
-	int rc;
-
-	xx_disable_all_irqs(dev);
-
-retry:
-       	xx_prep_for_msix_vectors(dev, nvec);
-
-	rc = pci_enable_msix(dev->pdev, dev->irqs, nvec);	/* (b) */
-	if (rc > 0) {
-		nvec = rounddown_pow_of_two(nvec);		/* (a) */
-		goto retry;
-	}
-
-	if (rc) {
-		kerr(dev->name, "pci_enable_msix() failed, err=%d", rc);
-		dev->num_vectors = 0;
-		return rc;
-	}
-
-	dev->num_vectors = nvec;				/* (b) */
-	return 0;       /* success */
-}
-
-Now, this is a loop-free alternative:
-
-static int xx_alloc_msix_irqs(struct xx_dev *dev, int nvec)
-{
-	nvec = roundup_pow_of_two(nvec);	/* assume 0 > nvec <= 16 */
-
-	xx_disable_all_irqs(dev);
-
-	pci_lock_msi(dev->pdev);
-
-	rc = pci_get_msix_limit(dev->pdev, nvec);
-	if (rc < 0)
-		goto err;
-
-	nvec = min(nvec, rc);		/* if limit is more than requested */
-	nvec = rounddown_pow_of_two(nvec);	/* (a) */
-
-	xx_prep_for_msix_vectors(dev, nvec);
-
-	rc = pci_enable_msix(dev->pdev, dev->irqs, nvec);	/* (b)	*/
-	if (rc < 0)
-		goto err;
-
-	pci_unlock_msi(dev->pdev);
-
-	dev->num_vectors = nvec;		/* (b) */
-	return 0;
-
-err:
-	pci_unlock_msi(dev->pdev);
-
-        kerr(dev->name, "pci_enable_msix() failed, err=%d", rc);
-        dev->num_vectors = 0;
-        return rc;
-}
 
 -- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+MfG/Sincerely
+Toralf Förster
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
