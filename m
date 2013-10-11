@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756908Ab3JKKmU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 06:42:20 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58322 "EHLO
+	id S1757239Ab3JKKmX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 06:42:23 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58332 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753122Ab3JKKmQ (ORCPT
+	with ESMTP id S1753122Ab3JKKmV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 06:42:16 -0400
+	Fri, 11 Oct 2013 06:42:21 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: Kees Cook <keescook@chromium.org>, Jiri Kosina <jkosina@suse.cz>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 001/100] drm/radeon/atom: workaround vbios bug in transmitter table on rs880 (v2)
-Date: Fri, 11 Oct 2013 11:40:31 +0100
-Message-Id: <1381488130-30235-2-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 004/100] HID: provide a helper for validating hid reports
+Date: Fri, 11 Oct 2013 11:40:34 +0100
+Message-Id: <1381488130-30235-5-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
 References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
@@ -27,53 +27,108 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Kees Cook <keescook@chromium.org>
 
-commit 91f3a6aaf280294b07c05dfe606e6c27b7ba3c72 upstream.
+commit 331415ff16a12147d57d5c953f3a961b7ede348b upstream.
 
-The OUTPUT_ENABLE action jumps past the point in the coder where
-the data_offset is set on certain rs780 cards.  This worked
-previously because the OUTPUT_ENABLE action is always called
-immediately after the ENABLE action so the data_offset remained
-set.  In 6f8bbaf568c7f2c497558bfd04654c0b9841ad57
-(drm/radeon/atom: initialize more atom interpretor elements to 0),
-we explictly reset data_offset to 0 between atom calls which then
-caused this to fail.  The fix is to just skip calling the
-OUTPUT_ENABLE action on the problematic chipsets.  The ENABLE
-action does the same thing and more.  Ultimately, we could
-probably drop the OUTPUT_ENABLE action all together on DCE3
-asics.
+Many drivers need to validate the characteristics of their HID report
+during initialization to avoid misusing the reports. This adds a common
+helper to perform validation of the report exisitng, the field existing,
+and the expected number of values within the field.
 
-fixes:
-https://bugzilla.kernel.org/show_bug.cgi?id=60791
-
-v2: only rs880 seems to be affected
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/radeon/atombios_encoders.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/hid/hid-core.c | 58 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/hid.h    |  4 ++++
+ 2 files changed, 62 insertions(+)
 
-diff --git a/drivers/gpu/drm/radeon/atombios_encoders.c b/drivers/gpu/drm/radeon/atombios_encoders.c
-index 66ecc38..64bc2bd 100644
---- a/drivers/gpu/drm/radeon/atombios_encoders.c
-+++ b/drivers/gpu/drm/radeon/atombios_encoders.c
-@@ -1425,8 +1425,12 @@ radeon_atom_encoder_dpms_dig(struct drm_encoder *encoder, int mode)
- 			atombios_dig_encoder_setup(encoder, ATOM_ENABLE, 0);
- 			atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_SETUP, 0, 0);
- 			atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_ENABLE, 0, 0);
--			/* some early dce3.2 boards have a bug in their transmitter control table */
--			if ((rdev->family != CHIP_RV710) && (rdev->family != CHIP_RV730))
-+			/* some dce3.x boards have a bug in their transmitter control table.
-+			 * ACTION_ENABLE_OUTPUT can probably be dropped since ACTION_ENABLE
-+			 * does the same thing and more.
-+			 */
-+			if ((rdev->family != CHIP_RV710) && (rdev->family != CHIP_RV730) &&
-+			    (rdev->family != CHIP_RS880))
- 				atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_ENABLE_OUTPUT, 0, 0);
- 		}
- 		if (ENCODER_MODE_IS_DP(atombios_get_encoder_mode(encoder)) && connector) {
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index 0d76d3f..d4111de 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -743,6 +743,64 @@ int hid_parse_report(struct hid_device *hid, __u8 *start, unsigned size)
+ }
+ EXPORT_SYMBOL_GPL(hid_parse_report);
+ 
++static const char * const hid_report_names[] = {
++	"HID_INPUT_REPORT",
++	"HID_OUTPUT_REPORT",
++	"HID_FEATURE_REPORT",
++};
++/**
++ * hid_validate_values - validate existing device report's value indexes
++ *
++ * @device: hid device
++ * @type: which report type to examine
++ * @id: which report ID to examine (0 for first)
++ * @field_index: which report field to examine
++ * @report_counts: expected number of values
++ *
++ * Validate the number of values in a given field of a given report, after
++ * parsing.
++ */
++struct hid_report *hid_validate_values(struct hid_device *hid,
++				       unsigned int type, unsigned int id,
++				       unsigned int field_index,
++				       unsigned int report_counts)
++{
++	struct hid_report *report;
++
++	if (type > HID_FEATURE_REPORT) {
++		hid_err(hid, "invalid HID report type %u\n", type);
++		return NULL;
++	}
++
++	if (id >= HID_MAX_IDS) {
++		hid_err(hid, "invalid HID report id %u\n", id);
++		return NULL;
++	}
++
++	/*
++	 * Explicitly not using hid_get_report() here since it depends on
++	 * ->numbered being checked, which may not always be the case when
++	 * drivers go to access report values.
++	 */
++	report = hid->report_enum[type].report_id_hash[id];
++	if (!report) {
++		hid_err(hid, "missing %s %u\n", hid_report_names[type], id);
++		return NULL;
++	}
++	if (report->maxfield <= field_index) {
++		hid_err(hid, "not enough fields in %s %u\n",
++			hid_report_names[type], id);
++		return NULL;
++	}
++	if (report->field[field_index]->report_count < report_counts) {
++		hid_err(hid, "not enough values in %s %u field %u\n",
++			hid_report_names[type], id, field_index);
++		return NULL;
++	}
++	return report;
++}
++EXPORT_SYMBOL_GPL(hid_validate_values);
++
+ /**
+  * hid_open_report - open a driver-specific device report
+  *
+diff --git a/include/linux/hid.h b/include/linux/hid.h
+index 69b6e30..cdf6171 100644
+--- a/include/linux/hid.h
++++ b/include/linux/hid.h
+@@ -745,6 +745,10 @@ void hid_output_report(struct hid_report *report, __u8 *data);
+ struct hid_device *hid_allocate_device(void);
+ struct hid_report *hid_register_report(struct hid_device *device, unsigned type, unsigned id);
+ int hid_parse_report(struct hid_device *hid, __u8 *start, unsigned size);
++struct hid_report *hid_validate_values(struct hid_device *hid,
++				       unsigned int type, unsigned int id,
++				       unsigned int field_index,
++				       unsigned int report_counts);
+ int hid_open_report(struct hid_device *device);
+ int hid_check_keys_pressed(struct hid_device *hid);
+ int hid_connect(struct hid_device *hid, unsigned int connect_mask);
 -- 
 1.8.3.2
 
