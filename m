@@ -1,20 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755421Ab3JKKnK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 06:43:10 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58513 "EHLO
+	id S932236Ab3JKKn3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 06:43:29 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58553 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932148Ab3JKKnH (ORCPT
+	with ESMTP id S1757899Ab3JKKnR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 06:43:07 -0400
+	Fri, 11 Oct 2013 06:43:17 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mikulas Patocka <mpatocka@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Josh Boyer <jwboyer@redhat.com>, Matt Fleming <matt.fleming@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 038/100] dm-snapshot: fix performance degradation due to small hash size
-Date: Fri, 11 Oct 2013 11:41:08 +0100
-Message-Id: <1381488130-30235-39-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 035/100] x86, efi: Don't map Boot Services on i386
+Date: Fri, 11 Oct 2013 11:41:05 +0100
+Message-Id: <1381488130-30235-36-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
 References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
@@ -27,52 +32,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Josh Boyer <jwboyer@redhat.com>
 
-commit 60e356f381954d79088d0455e357db48cfdd6857 upstream.
+commit 700870119f49084da004ab588ea2b799689efaf7 upstream.
 
-LVM2, since version 2.02.96, creates origin with zero size, then loads
-the snapshot driver and then loads the origin.  Consequently, the
-snapshot driver sees the origin size zero and sets the hash size to the
-lower bound 64.  Such small hash table causes performance degradation.
+Add patch to fix 32bit EFI service mapping (rhbz 726701)
 
-This patch changes it so that the hash size is determined by the size of
-snapshot volume, not minimum of origin and snapshot size.  It doesn't
-make sense to set the snapshot size significantly larger than the origin
-size, so we do not need to take origin size into account when
-calculating the hash size.
+Multiple people are reporting hitting the following WARNING on i386,
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+  WARNING: at arch/x86/mm/ioremap.c:102 __ioremap_caller+0x3d3/0x440()
+  Modules linked in:
+  Pid: 0, comm: swapper Not tainted 3.9.0-rc7+ #95
+  Call Trace:
+   [<c102b6af>] warn_slowpath_common+0x5f/0x80
+   [<c1023fb3>] ? __ioremap_caller+0x3d3/0x440
+   [<c1023fb3>] ? __ioremap_caller+0x3d3/0x440
+   [<c102b6ed>] warn_slowpath_null+0x1d/0x20
+   [<c1023fb3>] __ioremap_caller+0x3d3/0x440
+   [<c106007b>] ? get_usage_chars+0xfb/0x110
+   [<c102d937>] ? vprintk_emit+0x147/0x480
+   [<c1418593>] ? efi_enter_virtual_mode+0x1e4/0x3de
+   [<c102406a>] ioremap_cache+0x1a/0x20
+   [<c1418593>] ? efi_enter_virtual_mode+0x1e4/0x3de
+   [<c1418593>] efi_enter_virtual_mode+0x1e4/0x3de
+   [<c1407984>] start_kernel+0x286/0x2f4
+   [<c1407535>] ? repair_env_string+0x51/0x51
+   [<c1407362>] i386_start_kernel+0x12c/0x12f
+
+Due to the workaround described in commit 916f676f8 ("x86, efi: Retain
+boot service code until after switching to virtual mode") EFI Boot
+Service regions are mapped for a period during boot. Unfortunately, with
+the limited size of the i386 direct kernel map it's possible that some
+of the Boot Service regions will not be directly accessible, which
+causes them to be ioremap()'d, triggering the above warning as the
+regions are marked as E820_RAM in the e820 memmap.
+
+There are currently only two situations where we need to map EFI Boot
+Service regions,
+
+  1. To workaround the firmware bug described in 916f676f8
+  2. To access the ACPI BGRT image
+
+but since we haven't seen an i386 implementation that requires either,
+this simple fix should suffice for now.
+
+[ Added to changelog - Matt ]
+
+Reported-by: Bryan O'Donoghue <bryan.odonoghue.lkml@nexus-software.ie>
+Acked-by: Tom Zanussi <tom.zanussi@intel.com>
+Acked-by: Darren Hart <dvhart@linux.intel.com>
+Cc: Josh Triplett <josh@joshtriplett.org>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Josh Boyer <jwboyer@redhat.com>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/md/dm-snap.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ arch/x86/platform/efi/efi.c | 11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/md/dm-snap.c b/drivers/md/dm-snap.c
-index 8bd2d5f..330bfd6 100644
---- a/drivers/md/dm-snap.c
-+++ b/drivers/md/dm-snap.c
-@@ -721,17 +721,16 @@ static int calc_max_buckets(void)
-  */
- static int init_hash_tables(struct dm_snapshot *s)
- {
--	sector_t hash_size, cow_dev_size, origin_dev_size, max_buckets;
-+	sector_t hash_size, cow_dev_size, max_buckets;
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index ca4e1ad..cfe8b9c 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -861,10 +861,13 @@ void __init efi_enter_virtual_mode(void)
  
- 	/*
- 	 * Calculate based on the size of the original volume or
- 	 * the COW volume...
- 	 */
- 	cow_dev_size = get_dev_size(s->cow->bdev);
--	origin_dev_size = get_dev_size(s->origin->bdev);
- 	max_buckets = calc_max_buckets();
+ 	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
+ 		md = p;
+-		if (!(md->attribute & EFI_MEMORY_RUNTIME) &&
+-		    md->type != EFI_BOOT_SERVICES_CODE &&
+-		    md->type != EFI_BOOT_SERVICES_DATA)
+-			continue;
++		if (!(md->attribute & EFI_MEMORY_RUNTIME)) {
++#ifdef CONFIG_X86_64
++			if (md->type != EFI_BOOT_SERVICES_CODE &&
++			    md->type != EFI_BOOT_SERVICES_DATA)
++#endif
++				continue;
++		}
  
--	hash_size = min(origin_dev_size, cow_dev_size) >> s->store->chunk_shift;
-+	hash_size = cow_dev_size >> s->store->chunk_shift;
- 	hash_size = min(hash_size, max_buckets);
- 
- 	if (hash_size < 64)
+ 		size = md->num_pages << EFI_PAGE_SHIFT;
+ 		end = md->phys_addr + size;
 -- 
 1.8.3.2
 
