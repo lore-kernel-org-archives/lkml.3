@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964869Ab3JKT6O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:58:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46337 "EHLO
+	id S932649Ab3JKTlo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:41:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46259 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932657Ab3JKTlr (ORCPT
+	with ESMTP id S932567Ab3JKTle (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:41:47 -0400
+	Fri, 11 Oct 2013 15:41:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peng Chen <pengchen@qca.qualcomm.com>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Subject: [ 077/135] Bluetooth: Add a new PID/VID 0cf3/e005 for AR3012.
-Date: Fri, 11 Oct 2013 12:39:18 -0700
-Message-Id: <20131011193953.639299712@linuxfoundation.org>
+        Joerg Roedel <joro@8bytes.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Olof Johansson <olof@lixom.net>
+Subject: [ 059/135] ARM: mach-integrator: Add stub for pci_v3_early_init() for !CONFIG_PCI
+Date: Fri, 11 Oct 2013 12:39:00 -0700
+Message-Id: <20131011193951.694592128@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -27,60 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peng Chen <pengchen@qti.qualcomm.com>
+From: Joerg Roedel <joro@8bytes.org>
 
-commit 0a3658cccdf5326ea508efeb1879b0e2508bb0c3 upstream.
+commit 4dc3231f818baf7415c67ee06c51ace0973ae736 upstream.
 
-usb device info:
+This fixes a compile error where CONFIG_PCI is disabled:
 
-T:  Bus=06 Lev=01 Prnt=01 Port=01 Cnt=01 Dev#= 15 Spd=12   MxCh= 0
-D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=0cf3 ProdID=e005 Rev= 0.02
-C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
-I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
-E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
-E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
-I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+  LD      init/built-in.o
+arch/arm/mach-integrator/built-in.o: In function `ap_map_io':
+integrator_cp.c:(.init.text+0x570): undefined reference to `pci_v3_early_init'
+make[1]: *** [vmlinux] Error 1
+make: *** [sub-make] Error 2
 
-Signed-off-by: Peng Chen <pengchen@qca.qualcomm.com>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Signed-off-by: Joerg Roedel <joro@8bytes.org>
+Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Olof Johansson <olof@lixom.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/bluetooth/ath3k.c |    2 ++
- drivers/bluetooth/btusb.c |    1 +
- 2 files changed, 3 insertions(+)
+ arch/arm/mach-integrator/pci_v3.h |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/bluetooth/ath3k.c
-+++ b/drivers/bluetooth/ath3k.c
-@@ -85,6 +85,7 @@ static struct usb_device_id ath3k_table[
- 	{ USB_DEVICE(0x04CA, 0x3008) },
- 	{ USB_DEVICE(0x13d3, 0x3362) },
- 	{ USB_DEVICE(0x0CF3, 0xE004) },
-+	{ USB_DEVICE(0x0CF3, 0xE005) },
- 	{ USB_DEVICE(0x0930, 0x0219) },
- 	{ USB_DEVICE(0x0489, 0xe057) },
- 	{ USB_DEVICE(0x13d3, 0x3393) },
-@@ -126,6 +127,7 @@ static struct usb_device_id ath3k_blist_
- 	{ USB_DEVICE(0x04ca, 0x3008), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3362), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0xe004), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x0cf3, 0xe005), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0930, 0x0219), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0489, 0xe057), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3393), .driver_info = BTUSB_ATH3012 },
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -148,6 +148,7 @@ static struct usb_device_id blacklist_ta
- 	{ USB_DEVICE(0x04ca, 0x3008), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3362), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0xe004), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x0cf3, 0xe005), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0930, 0x0219), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0489, 0xe057), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3393), .driver_info = BTUSB_ATH3012 },
+--- a/arch/arm/mach-integrator/pci_v3.h
++++ b/arch/arm/mach-integrator/pci_v3.h
+@@ -1,2 +1,9 @@
+ /* Simple oneliner include to the PCIv3 early init */
++#ifdef CONFIG_PCI
+ extern int pci_v3_early_init(void);
++#else
++static inline int pci_v3_early_init(void)
++{
++	return 0;
++}
++#endif
 
 
