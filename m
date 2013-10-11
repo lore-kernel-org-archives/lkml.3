@@ -1,100 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758215Ab3JKKsp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 06:48:45 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58796 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932320Ab3JKKoQ (ORCPT
+	id S1758254Ab3JKKta (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 06:49:30 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:9717 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757784Ab3JKKt1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 06:44:16 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 088/100] powerpc/sysfs: Disable writing to PURR in guest mode
-Date: Fri, 11 Oct 2013 11:41:58 +0100
-Message-Id: <1381488130-30235-89-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
-References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Fri, 11 Oct 2013 06:49:27 -0400
+X-AuditID: cbfee61b-b7f776d0000016c8-a8-5257d7b50e15
+From: Robert Baldyga <r.baldyga@samsung.com>
+To: balbi@ti.com
+Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, b.zolnierkie@samsung.com,
+        m.szyprowski@samsung.com, andrzej.p@samsung.com,
+        Robert Baldyga <r.baldyga@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: [PATCH] USB: gadget: s3c-hsotg: remove unused label
+Date: Fri, 11 Oct 2013 12:48:51 +0200
+Message-id: <1381488531-29638-1-git-send-email-r.baldyga@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgluLIzCtJLcpLzFFi42I5/e+xoO7W6+FBBiteWlvMetnOYrFxxnpW
+	i4P36y2aF69nszjb9Ibd4vKuOWwWi5a1MlusPXKX3eLB4Z3sDpwe++euYffo27KK0eP4je1M
+	Hp83yQWwRHHZpKTmZJalFunbJXBldM/4xV4wj7Xi1dLlzA2M21i6GDk5JARMJFqvX2GFsMUk
+	Ltxbz9bFyMUhJDCdUWLvURinnUniwOUHbCBVbAI6Elu+T2AEsUUEBCTWv7jEDlLELPCXUeL2
+	w06wImEBG4lDDX1gK1gEVCU+7nrEBGLzCrhKPFnSwNzFyAG0TkFiziSbCYzcCxgZVjGKphYk
+	FxQnpeca6RUn5haX5qXrJefnbmIEh8sz6R2MqxosDjEKcDAq8fBaMIQHCbEmlhVX5h5ilOBg
+	VhLhFTwJFOJNSaysSi3Kjy8qzUktPsQozcGiJM57sNU6UEggPbEkNTs1tSC1CCbLxMEp1cC4
+	dkIug8e6rEs2M//J2vYutLjJ93Z+rHH4i8UvlBQUPizS2a8SeeGs49qD6VmK8efsWIv82uSf
+	bj0atit6V1etwNbvCzcs3/3IZk4pq3x75d59Zaos53x2Hw955fqt5YPv71knb3GzHfDbxFoj
+	JW+f0fN7SvPqj92rf99N2+4RJVCR8u+qQsZ7JZbijERDLeai4kQAAZMZnBMCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.23 -stable review patch.  If anyone has any objections, please let me know.
+This patch removes unused label.
 
-------------------
-
-From: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
-
-commit d1211af3049f4c9c1d8d4eb8f8098cc4f4f0d0c7 upstream.
-
-arch/powerpc/kernel/sysfs.c exports PURR with write permission.
-This may be valid for kernel in phyp mode. But writing to
-the file in guest mode causes crash due to a priviledge violation
-
-Signed-off-by: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- arch/powerpc/kernel/sysfs.c | 18 ++++++++++++++++--
- 1 file changed, 16 insertions(+), 2 deletions(-)
+ drivers/usb/gadget/s3c-hsotg.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/arch/powerpc/kernel/sysfs.c b/arch/powerpc/kernel/sysfs.c
-index 8302af6..bbe9965 100644
---- a/arch/powerpc/kernel/sysfs.c
-+++ b/arch/powerpc/kernel/sysfs.c
-@@ -17,6 +17,7 @@
- #include <asm/machdep.h>
- #include <asm/smp.h>
- #include <asm/pmc.h>
-+#include <asm/firmware.h>
+diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsotg.c
+index a955e6e..0646587 100644
+--- a/drivers/usb/gadget/s3c-hsotg.c
++++ b/drivers/usb/gadget/s3c-hsotg.c
+@@ -2712,7 +2712,6 @@ static int s3c_hsotg_ep_enable(struct usb_ep *ep,
+ 	/* enable the endpoint interrupt */
+ 	s3c_hsotg_ctrl_epint(hsotg, index, dir_in, 1);
  
- #include "cacheinfo.h"
- 
-@@ -179,15 +180,25 @@ SYSFS_PMCSETUP(spurr, SPRN_SPURR);
- SYSFS_PMCSETUP(dscr, SPRN_DSCR);
- SYSFS_PMCSETUP(pir, SPRN_PIR);
- 
-+/*
-+  Lets only enable read for phyp resources and
-+  enable write when needed with a separate function.
-+  Lets be conservative and default to pseries.
-+*/
- static DEVICE_ATTR(mmcra, 0600, show_mmcra, store_mmcra);
- static DEVICE_ATTR(spurr, 0600, show_spurr, NULL);
- static DEVICE_ATTR(dscr, 0600, show_dscr, store_dscr);
--static DEVICE_ATTR(purr, 0600, show_purr, store_purr);
-+static DEVICE_ATTR(purr, 0400, show_purr, store_purr);
- static DEVICE_ATTR(pir, 0400, show_pir, NULL);
- 
- unsigned long dscr_default = 0;
- EXPORT_SYMBOL(dscr_default);
- 
-+static void add_write_permission_dev_attr(struct device_attribute *attr)
-+{
-+	attr->attr.mode |= 0200;
-+}
-+
- static ssize_t show_dscr_default(struct device *dev,
- 		struct device_attribute *attr, char *buf)
- {
-@@ -394,8 +405,11 @@ static void __cpuinit register_cpu_online(unsigned int cpu)
- 	if (cpu_has_feature(CPU_FTR_MMCRA))
- 		device_create_file(s, &dev_attr_mmcra);
- 
--	if (cpu_has_feature(CPU_FTR_PURR))
-+	if (cpu_has_feature(CPU_FTR_PURR)) {
-+		if (!firmware_has_feature(FW_FEATURE_LPAR))
-+			add_write_permission_dev_attr(&dev_attr_purr);
- 		device_create_file(s, &dev_attr_purr);
-+	}
- 
- 	if (cpu_has_feature(CPU_FTR_SPURR))
- 		device_create_file(s, &dev_attr_spurr);
+-out:
+ 	spin_unlock_irqrestore(&hsotg->lock, flags);
+ 	return ret;
+ }
 -- 
-1.8.3.2
+1.7.9.5
 
