@@ -1,20 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758991Ab3JKTkT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:40:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45675 "EHLO
+	id S1161107Ab3JKUas (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:30:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45773 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758834Ab3JKTkF (ORCPT
+	with ESMTP id S1757604Ab3JKTkT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:40:05 -0400
+	Fri, 11 Oct 2013 15:40:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Maxim Patlasov <mpatlasov@parallels.com>,
-        Miklos Szeredi <mszeredi@suse.cz>
-Subject: [ 057/110] fuse: wait for writeback in fuse_file_fallocate()
-Date: Fri, 11 Oct 2013 12:38:37 -0700
-Message-Id: <20131011193814.018695886@linuxfoundation.org>
+        Jerome Poulin <jeromepoulin@gmail.com>,
+        Anton Eliasson <devel@antoneliasson.se>,
+        Paul Fertser <fercerpav@gmail.com>,
+        ARAI Shun-ichi <hermes@ceres.dti.ne.jp>,
+        Piotr Szymaniak <szarpaj@grubelek.pl>,
+        Juan Barry Manuel Canham <Linux@riotingpacifist.net>,
+        Zahid Chowdhury <zahid.chowdhury@starsolutions.com>,
+        Elmer Zhang <freeboy6716@gmail.com>,
+        Kenneth Langga <klangga@gmail.com>,
+        Vyacheslav Dubeyko <slava@dubeyko.com>,
+        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 066/110] nilfs2: fix issue with race condition of competition between segments for dirty blocks
+Date: Fri, 11 Oct 2013 12:38:46 -0700
+Message-Id: <20131011193815.021316174@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
 References: <20131011193807.584188672@linuxfoundation.org>
@@ -27,73 +38,285 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maxim Patlasov <MPatlasov@parallels.com>
+From: Vyacheslav Dubeyko <slava@dubeyko.com>
 
-commit bde52788bdb755b9e4b75db6c434f30e32a0ca0b upstream.
+commit 7f42ec3941560f0902fe3671e36f2c20ffd3af0a upstream.
 
-The patch fixes a race between mmap-ed write and fallocate(PUNCH_HOLE):
+Many NILFS2 users were reported about strange file system corruption
+(for example):
 
-1) An user makes a page dirty via mmap-ed write.
-2) The user performs fallocate(2) with mode == PUNCH_HOLE|KEEP_SIZE
-   and <offset, size> covering the page.
-3) Before truncate_pagecache_range call from fuse_file_fallocate,
-   the page goes to write-back. The page is fully processed by fuse_writepage
-   (including end_page_writeback on the page), but fuse_flush_writepages did
-   nothing because fi->writectr < 0.
-4) truncate_pagecache_range is called and fuse_file_fallocate is finishing
-   by calling fuse_release_nowrite. The latter triggers processing queued
-   write-back request which will write stale data to the hole soon.
+   NILFS: bad btree node (blocknr=185027): level = 0, flags = 0x0, nchildren = 768
+   NILFS error (device sda4): nilfs_bmap_last_key: broken bmap (inode number=11540)
 
-Changed in v2 (thanks to Brian for suggestion):
- - Do not truncate page cache until FUSE_FALLOCATE succeeded. Otherwise,
-   we can end up in returning -ENOTSUPP while user data is already punched
-   from page cache. Use filemap_write_and_wait_range() instead.
-Changed in v3 (thanks to Miklos for suggestion):
- - fuse_wait_on_writeback() is prone to livelocks; use fuse_set_nowrite()
-   instead. So far as we need a dirty-page barrier only, fuse_sync_writes()
-   should be enough.
- - rebased to for-linus branch of fuse.git
+But such error messages are consequence of file system's issue that takes
+place more earlier.  Fortunately, Jerome Poulin <jeromepoulin@gmail.com>
+and Anton Eliasson <devel@antoneliasson.se> were reported about another
+issue not so recently.  These reports describe the issue with segctor
+thread's crash:
 
-Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+  BUG: unable to handle kernel paging request at 0000000000004c83
+  IP: nilfs_end_page_io+0x12/0xd0 [nilfs2]
+
+  Call Trace:
+   nilfs_segctor_do_construct+0xf25/0x1b20 [nilfs2]
+   nilfs_segctor_construct+0x17b/0x290 [nilfs2]
+   nilfs_segctor_thread+0x122/0x3b0 [nilfs2]
+   kthread+0xc0/0xd0
+   ret_from_fork+0x7c/0xb0
+
+These two issues have one reason.  This reason can raise third issue
+too.  Third issue results in hanging of segctor thread with eating of
+100% CPU.
+
+REPRODUCING PATH:
+
+One of the possible way or the issue reproducing was described by
+Jermoe me Poulin <jeromepoulin@gmail.com>:
+
+1. init S to get to single user mode.
+2. sysrq+E to make sure only my shell is running
+3. start network-manager to get my wifi connection up
+4. login as root and launch "screen"
+5. cd /boot/log/nilfs which is a ext3 mount point and can log when NILFS dies.
+6. lscp | xz -9e > lscp.txt.xz
+7. mount my snapshot using mount -o cp=3360839,ro /dev/vgUbuntu/root /mnt/nilfs
+8. start a screen to dump /proc/kmsg to text file since rsyslog is killed
+9. start a screen and launch strace -f -o find-cat.log -t find
+/mnt/nilfs -type f -exec cat {} > /dev/null \;
+10. start a screen and launch strace -f -o apt-get.log -t apt-get update
+11. launch the last command again as it did not crash the first time
+12. apt-get crashes
+13. ps aux > ps-aux-crashed.log
+13. sysrq+W
+14. sysrq+E  wait for everything to terminate
+15. sysrq+SUSB
+
+Simplified way of the issue reproducing is starting kernel compilation
+task and "apt-get update" in parallel.
+
+REPRODUCIBILITY:
+
+The issue is reproduced not stable [60% - 80%].  It is very important to
+have proper environment for the issue reproducing.  The critical
+conditions for successful reproducing:
+
+(1) It should have big modified file by mmap() way.
+
+(2) This file should have the count of dirty blocks are greater that
+    several segments in size (for example, two or three) from time to time
+    during processing.
+
+(3) It should be intensive background activity of files modification
+    in another thread.
+
+INVESTIGATION:
+
+First of all, it is possible to see that the reason of crash is not valid
+page address:
+
+  NILFS [nilfs_segctor_complete_write]:2100 bh->b_count 0, bh->b_blocknr 13895680, bh->b_size 13897727, bh->b_page 0000000000001a82
+  NILFS [nilfs_segctor_complete_write]:2101 segbuf->sb_segnum 6783
+
+Moreover, value of b_page (0x1a82) is 6786.  This value looks like segment
+number.  And b_blocknr with b_size values look like block numbers.  So,
+buffer_head's pointer points on not proper address value.
+
+Detailed investigation of the issue is discovered such picture:
+
+  [-----------------------------SEGMENT 6783-------------------------------]
+  NILFS [nilfs_segctor_do_construct]:2310 nilfs_segctor_begin_construction
+  NILFS [nilfs_segctor_do_construct]:2321 nilfs_segctor_collect
+  NILFS [nilfs_segctor_do_construct]:2336 nilfs_segctor_assign
+  NILFS [nilfs_segctor_do_construct]:2367 nilfs_segctor_update_segusage
+  NILFS [nilfs_segctor_do_construct]:2371 nilfs_segctor_prepare_write
+  NILFS [nilfs_segctor_do_construct]:2376 nilfs_add_checksums_on_logs
+  NILFS [nilfs_segctor_do_construct]:2381 nilfs_segctor_write
+  NILFS [nilfs_segbuf_submit_bio]:464 bio->bi_sector 111149024, segbuf->sb_segnum 6783
+
+  [-----------------------------SEGMENT 6784-------------------------------]
+  NILFS [nilfs_segctor_do_construct]:2310 nilfs_segctor_begin_construction
+  NILFS [nilfs_segctor_do_construct]:2321 nilfs_segctor_collect
+  NILFS [nilfs_lookup_dirty_data_buffers]:782 bh->b_count 1, bh->b_page ffffea000709b000, page->index 0, i_ino 1033103, i_size 25165824
+  NILFS [nilfs_lookup_dirty_data_buffers]:783 bh->b_assoc_buffers.next ffff8802174a6798, bh->b_assoc_buffers.prev ffff880221cffee8
+  NILFS [nilfs_segctor_do_construct]:2336 nilfs_segctor_assign
+  NILFS [nilfs_segctor_do_construct]:2367 nilfs_segctor_update_segusage
+  NILFS [nilfs_segctor_do_construct]:2371 nilfs_segctor_prepare_write
+  NILFS [nilfs_segctor_do_construct]:2376 nilfs_add_checksums_on_logs
+  NILFS [nilfs_segctor_do_construct]:2381 nilfs_segctor_write
+  NILFS [nilfs_segbuf_submit_bh]:575 bh->b_count 1, bh->b_page ffffea000709b000, page->index 0, i_ino 1033103, i_size 25165824
+  NILFS [nilfs_segbuf_submit_bh]:576 segbuf->sb_segnum 6784
+  NILFS [nilfs_segbuf_submit_bh]:577 bh->b_assoc_buffers.next ffff880218a0d5f8, bh->b_assoc_buffers.prev ffff880218bcdf50
+  NILFS [nilfs_segbuf_submit_bio]:464 bio->bi_sector 111150080, segbuf->sb_segnum 6784, segbuf->sb_nbio 0
+  [----------] ditto
+  NILFS [nilfs_segbuf_submit_bio]:464 bio->bi_sector 111164416, segbuf->sb_segnum 6784, segbuf->sb_nbio 15
+
+  [-----------------------------SEGMENT 6785-------------------------------]
+  NILFS [nilfs_segctor_do_construct]:2310 nilfs_segctor_begin_construction
+  NILFS [nilfs_segctor_do_construct]:2321 nilfs_segctor_collect
+  NILFS [nilfs_lookup_dirty_data_buffers]:782 bh->b_count 2, bh->b_page ffffea000709b000, page->index 0, i_ino 1033103, i_size 25165824
+  NILFS [nilfs_lookup_dirty_data_buffers]:783 bh->b_assoc_buffers.next ffff880219277e80, bh->b_assoc_buffers.prev ffff880221cffc88
+  NILFS [nilfs_segctor_do_construct]:2367 nilfs_segctor_update_segusage
+  NILFS [nilfs_segctor_do_construct]:2371 nilfs_segctor_prepare_write
+  NILFS [nilfs_segctor_do_construct]:2376 nilfs_add_checksums_on_logs
+  NILFS [nilfs_segctor_do_construct]:2381 nilfs_segctor_write
+  NILFS [nilfs_segbuf_submit_bh]:575 bh->b_count 2, bh->b_page ffffea000709b000, page->index 0, i_ino 1033103, i_size 25165824
+  NILFS [nilfs_segbuf_submit_bh]:576 segbuf->sb_segnum 6785
+  NILFS [nilfs_segbuf_submit_bh]:577 bh->b_assoc_buffers.next ffff880218a0d5f8, bh->b_assoc_buffers.prev ffff880222cc7ee8
+  NILFS [nilfs_segbuf_submit_bio]:464 bio->bi_sector 111165440, segbuf->sb_segnum 6785, segbuf->sb_nbio 0
+  [----------] ditto
+  NILFS [nilfs_segbuf_submit_bio]:464 bio->bi_sector 111177728, segbuf->sb_segnum 6785, segbuf->sb_nbio 12
+
+  NILFS [nilfs_segctor_do_construct]:2399 nilfs_segctor_wait
+  NILFS [nilfs_segbuf_wait]:676 segbuf->sb_segnum 6783
+  NILFS [nilfs_segbuf_wait]:676 segbuf->sb_segnum 6784
+  NILFS [nilfs_segbuf_wait]:676 segbuf->sb_segnum 6785
+
+  NILFS [nilfs_segctor_complete_write]:2100 bh->b_count 0, bh->b_blocknr 13895680, bh->b_size 13897727, bh->b_page 0000000000001a82
+
+  BUG: unable to handle kernel paging request at 0000000000001a82
+  IP: [<ffffffffa024d0f2>] nilfs_end_page_io+0x12/0xd0 [nilfs2]
+
+Usually, for every segment we collect dirty files in list.  Then, dirty
+blocks are gathered for every dirty file, prepared for write and
+submitted by means of nilfs_segbuf_submit_bh() call.  Finally, it takes
+place complete write phase after calling nilfs_end_bio_write() on the
+block layer.  Buffers/pages are marked as not dirty on final phase and
+processed files removed from the list of dirty files.
+
+It is possible to see that we had three prepare_write and submit_bio
+phases before segbuf_wait and complete_write phase.  Moreover, segments
+compete between each other for dirty blocks because on every iteration
+of segments processing dirty buffer_heads are added in several lists of
+payload_buffers:
+
+  [SEGMENT 6784]: bh->b_assoc_buffers.next ffff880218a0d5f8, bh->b_assoc_buffers.prev ffff880218bcdf50
+  [SEGMENT 6785]: bh->b_assoc_buffers.next ffff880218a0d5f8, bh->b_assoc_buffers.prev ffff880222cc7ee8
+
+The next pointer is the same but prev pointer has changed.  It means
+that buffer_head has next pointer from one list but prev pointer from
+another.  Such modification can be made several times.  And, finally, it
+can be resulted in various issues: (1) segctor hanging, (2) segctor
+crashing, (3) file system metadata corruption.
+
+FIX:
+This patch adds:
+
+(1) setting of BH_Async_Write flag in nilfs_segctor_prepare_write()
+    for every proccessed dirty block;
+
+(2) checking of BH_Async_Write flag in
+    nilfs_lookup_dirty_data_buffers() and
+    nilfs_lookup_dirty_node_buffers();
+
+(3) clearing of BH_Async_Write flag in nilfs_segctor_complete_write(),
+    nilfs_abort_logs(), nilfs_forget_buffer(), nilfs_clear_dirty_page().
+
+Reported-by: Jerome Poulin <jeromepoulin@gmail.com>
+Reported-by: Anton Eliasson <devel@antoneliasson.se>
+Cc: Paul Fertser <fercerpav@gmail.com>
+Cc: ARAI Shun-ichi <hermes@ceres.dti.ne.jp>
+Cc: Piotr Szymaniak <szarpaj@grubelek.pl>
+Cc: Juan Barry Manuel Canham <Linux@riotingpacifist.net>
+Cc: Zahid Chowdhury <zahid.chowdhury@starsolutions.com>
+Cc: Elmer Zhang <freeboy6716@gmail.com>
+Cc: Kenneth Langga <klangga@gmail.com>
+Signed-off-by: Vyacheslav Dubeyko <slava@dubeyko.com>
+Acked-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/fuse/file.c |   16 ++++++++++------
- 1 file changed, 10 insertions(+), 6 deletions(-)
+ fs/nilfs2/page.c    |    2 ++
+ fs/nilfs2/segment.c |   11 +++++++++--
+ 2 files changed, 11 insertions(+), 2 deletions(-)
 
---- a/fs/fuse/file.c
-+++ b/fs/fuse/file.c
-@@ -2485,8 +2485,15 @@ static long fuse_file_fallocate(struct f
+--- a/fs/nilfs2/page.c
++++ b/fs/nilfs2/page.c
+@@ -94,6 +94,7 @@ void nilfs_forget_buffer(struct buffer_h
+ 	clear_buffer_nilfs_volatile(bh);
+ 	clear_buffer_nilfs_checked(bh);
+ 	clear_buffer_nilfs_redirected(bh);
++	clear_buffer_async_write(bh);
+ 	clear_buffer_dirty(bh);
+ 	if (nilfs_page_buffers_clean(page))
+ 		__nilfs_clear_page_dirty(page);
+@@ -429,6 +430,7 @@ void nilfs_clear_dirty_page(struct page
+ 					"discard block %llu, size %zu",
+ 					(u64)bh->b_blocknr, bh->b_size);
+ 			}
++			clear_buffer_async_write(bh);
+ 			clear_buffer_dirty(bh);
+ 			clear_buffer_nilfs_volatile(bh);
+ 			clear_buffer_nilfs_checked(bh);
+--- a/fs/nilfs2/segment.c
++++ b/fs/nilfs2/segment.c
+@@ -665,7 +665,7 @@ static size_t nilfs_lookup_dirty_data_bu
  
- 	if (lock_inode) {
- 		mutex_lock(&inode->i_mutex);
--		if (mode & FALLOC_FL_PUNCH_HOLE)
--			fuse_set_nowrite(inode);
-+		if (mode & FALLOC_FL_PUNCH_HOLE) {
-+			loff_t endbyte = offset + length - 1;
-+			err = filemap_write_and_wait_range(inode->i_mapping,
-+							   offset, endbyte);
-+			if (err)
-+				goto out;
-+
-+			fuse_sync_writes(inode);
-+		}
- 	}
+ 		bh = head = page_buffers(page);
+ 		do {
+-			if (!buffer_dirty(bh))
++			if (!buffer_dirty(bh) || buffer_async_write(bh))
+ 				continue;
+ 			get_bh(bh);
+ 			list_add_tail(&bh->b_assoc_buffers, listp);
+@@ -699,7 +699,8 @@ static void nilfs_lookup_dirty_node_buff
+ 		for (i = 0; i < pagevec_count(&pvec); i++) {
+ 			bh = head = page_buffers(pvec.pages[i]);
+ 			do {
+-				if (buffer_dirty(bh)) {
++				if (buffer_dirty(bh) &&
++						!buffer_async_write(bh)) {
+ 					get_bh(bh);
+ 					list_add_tail(&bh->b_assoc_buffers,
+ 						      listp);
+@@ -1579,6 +1580,7 @@ static void nilfs_segctor_prepare_write(
  
- 	req = fuse_get_req_nopages(fc);
-@@ -2521,11 +2528,8 @@ static long fuse_file_fallocate(struct f
- 	fuse_invalidate_attr(inode);
+ 		list_for_each_entry(bh, &segbuf->sb_segsum_buffers,
+ 				    b_assoc_buffers) {
++			set_buffer_async_write(bh);
+ 			if (bh->b_page != bd_page) {
+ 				if (bd_page) {
+ 					lock_page(bd_page);
+@@ -1592,6 +1594,7 @@ static void nilfs_segctor_prepare_write(
  
- out:
--	if (lock_inode) {
--		if (mode & FALLOC_FL_PUNCH_HOLE)
--			fuse_release_nowrite(inode);
-+	if (lock_inode)
- 		mutex_unlock(&inode->i_mutex);
--	}
+ 		list_for_each_entry(bh, &segbuf->sb_payload_buffers,
+ 				    b_assoc_buffers) {
++			set_buffer_async_write(bh);
+ 			if (bh == segbuf->sb_super_root) {
+ 				if (bh->b_page != bd_page) {
+ 					lock_page(bd_page);
+@@ -1677,6 +1680,7 @@ static void nilfs_abort_logs(struct list
+ 	list_for_each_entry(segbuf, logs, sb_list) {
+ 		list_for_each_entry(bh, &segbuf->sb_segsum_buffers,
+ 				    b_assoc_buffers) {
++			clear_buffer_async_write(bh);
+ 			if (bh->b_page != bd_page) {
+ 				if (bd_page)
+ 					end_page_writeback(bd_page);
+@@ -1686,6 +1690,7 @@ static void nilfs_abort_logs(struct list
  
- 	return err;
- }
+ 		list_for_each_entry(bh, &segbuf->sb_payload_buffers,
+ 				    b_assoc_buffers) {
++			clear_buffer_async_write(bh);
+ 			if (bh == segbuf->sb_super_root) {
+ 				if (bh->b_page != bd_page) {
+ 					end_page_writeback(bd_page);
+@@ -1755,6 +1760,7 @@ static void nilfs_segctor_complete_write
+ 				    b_assoc_buffers) {
+ 			set_buffer_uptodate(bh);
+ 			clear_buffer_dirty(bh);
++			clear_buffer_async_write(bh);
+ 			if (bh->b_page != bd_page) {
+ 				if (bd_page)
+ 					end_page_writeback(bd_page);
+@@ -1776,6 +1782,7 @@ static void nilfs_segctor_complete_write
+ 				    b_assoc_buffers) {
+ 			set_buffer_uptodate(bh);
+ 			clear_buffer_dirty(bh);
++			clear_buffer_async_write(bh);
+ 			clear_buffer_delay(bh);
+ 			clear_buffer_nilfs_volatile(bh);
+ 			clear_buffer_nilfs_redirected(bh);
 
 
