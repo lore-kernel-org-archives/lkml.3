@@ -1,170 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755553Ab3JKAgq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 20:36:46 -0400
-Received: from mga03.intel.com ([143.182.124.21]:29083 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751823Ab3JKAgp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 20:36:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1075,1371106800"; 
-   d="scan'208";a="409149859"
-From: xiao jin <jin.xiao@intel.com>
-To: sarah.a.sharp@linux.intel.com, gregkh@linuxfoundation.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Mathias Nyman <mathias.nyman@linux.intel.com>, stable@vger.kernel.org
-Subject: [PATCH] xhci: Ensure a command structure points to the correct trb on the command ring
-Date: Fri, 11 Oct 2013 08:47:54 +0800
-Message-Id: <1381452474-32613-1-git-send-email-jin.xiao@intel.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1754260Ab3JKAjj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 20:39:39 -0400
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:1125 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751915Ab3JKAjh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 20:39:37 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AroGADpIV1J5LFuj/2dsb2JhbABZgweDS7lAhUeBHxd0giUBAQQBOhwjBQsIAw4KCSUPBSUDIROIAAW6PxaPMQeDH4EEA5gEkgODOCg
+Date: Fri, 11 Oct 2013 11:39:30 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Greg Thelen <gthelen@google.com>,
+        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
+        Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Michel Lespinasse <walken@google.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Roman Gushchin <klamm@yandex-team.ru>,
+        Ozgun Erdogan <ozgun@citusdata.com>, Metin Doslu <metin@citusdata.com>,
+        Vlastimil Babka <vbabka@suse.cz>, Tejun Heo <tj@kernel.org>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 0/8] mm: thrash detection-based file cache sizing v5
+Message-ID: <20131011003930.GC4446@dastard>
+References: <1381441622-26215-1-git-send-email-hannes@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1381441622-26215-1-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
+On Thu, Oct 10, 2013 at 05:46:54PM -0400, Johannes Weiner wrote:
+> 	Costs
+> 
+> These patches increase struct inode by three words to manage shadow
+> entries in the page cache radix tree.
 
-If a command on the command ring needs to be cancelled before it is handled
-it can be turned to a no-op operation when the ring is stopped.
-We want to store the command ring enqueue pointer in the command structure
-when the command in enqueued for the cancellation case.
+An additional 24 bytes on a 64 bit system. Filesystem developers
+will kill to save 4 bytes in the struct inode, so adding 24 bytes is
+a *major* concern.
 
-Some commands used to store the command ring dequeue pointers instead of enqueue
-(these often worked because enqueue happends to equal dequeue quite often)
+> However, given that a typical
+> inode (like the ext4 inode) is already 1k in size, this is not much.
+> It's a 2% size increase for a reclaimable object. 
 
-Other commands correctly used the enqueue pointer but did not check if it pointed
-to a valid trb or a link trb, this caused for example stop endpoint command to timeout in
-xhci_stop_device() in about 2% of suspend/resume cases.
+The struct ext4_inode is one of the larger inodes in the system at
+960 bytes (same as the xfs_inode) - most of the filesystem inode
+structures are down around the 600-700 byte range.
 
-This should also solve some weird behavior happening in command cancellation cases.
+Really, the struct inode is what you should be comparing the
+increase against (i.e. the VFS inode footprint), not the filesystem
+specific inode footprint. In that case, it's actually an increase of
+closer to a 4% increase in size because we are talking about a 560
+byte structure....
 
-This patch is based on a patch submitted by Sarah Sharp to linux-usb, but
-then forgotten:
-    http://marc.info/?l=linux-usb&m=136269803207465&w=2
+> fs_mark metadata
+> tests with millions of inodes did not show a measurable difference.
+> And as soon as there is any file data involved, the page cache pages
+> dominate the memory cost anyway.
 
-This patch should be backported to kernels as old as 3.7, that contain
-the commit b92cc66c047ff7cf587b318fe377061a353c120f "xHCI: add aborting
-command ring function"
+We don't need to measure it at runtime to know the difference - a
+million inodes will consume an extra 24MB of RAM at minimum. If the
+size increase pushes the inode over a slab boundary, it might be
+significantly more than that...
 
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: stable@vger.kernel.org
----
- drivers/usb/host/xhci-hub.c  |    2 +-
- drivers/usb/host/xhci-ring.c |   10 ++++++++++
- drivers/usb/host/xhci.c      |   25 +++++--------------------
- drivers/usb/host/xhci.h      |    1 +
- 4 files changed, 17 insertions(+), 21 deletions(-)
+The main cost here is a new list head for a new shrinker. There's
+interesting new inode lifecycle issues introduced by this shadow
+tree - adding serialisation in evict() because the VM can now modify
+to the address space without having a reference to the inode
+is kinda nasty.
 
-diff --git a/drivers/usb/host/xhci-hub.c b/drivers/usb/host/xhci-hub.c
-index fae697e..ccf0a06 100644
---- a/drivers/usb/host/xhci-hub.c
-+++ b/drivers/usb/host/xhci-hub.c
-@@ -287,7 +287,7 @@ static int xhci_stop_device(struct xhci_hcd *xhci, int slot_id, int suspend)
- 		if (virt_dev->eps[i].ring && virt_dev->eps[i].ring->dequeue)
- 			xhci_queue_stop_endpoint(xhci, slot_id, i, suspend);
- 	}
--	cmd->command_trb = xhci->cmd_ring->enqueue;
-+	cmd->command_trb = xhci_find_next_enqueue(xhci->cmd_ring);
- 	list_add_tail(&cmd->cmd_list, &virt_dev->cmd_list);
- 	xhci_queue_stop_endpoint(xhci, slot_id, 0, suspend);
- 	xhci_ring_cmd_db(xhci);
-diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
-index aaa2906..9ac9672 100644
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -123,6 +123,16 @@ static int enqueue_is_link_trb(struct xhci_ring *ring)
- 	return TRB_TYPE_LINK_LE32(link->control);
- }
- 
-+union xhci_trb *xhci_find_next_enqueue(struct xhci_ring *ring)
-+{
-+	/* Enqueue pointer can be left pointing to the link TRB,
-+	 * we must handle that
-+	 */
-+	if (TRB_TYPE_LINK_LE32(ring->enqueue->link.control))
-+		return ring->enq_seg->next->trbs;
-+	return ring->enqueue;
-+}
-+
- /* Updates trb to point to the next TRB in the ring, and updates seg if the next
-  * TRB is in a new segment.  This does not skip over link TRBs, and it does not
-  * effect the ring dequeue or enqueue pointers.
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index 49b6edb..1e36dbb 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -2598,15 +2598,7 @@ static int xhci_configure_endpoint(struct xhci_hcd *xhci,
- 	if (command) {
- 		cmd_completion = command->completion;
- 		cmd_status = &command->status;
--		command->command_trb = xhci->cmd_ring->enqueue;
--
--		/* Enqueue pointer can be left pointing to the link TRB,
--		 * we must handle that
--		 */
--		if (TRB_TYPE_LINK_LE32(command->command_trb->link.control))
--			command->command_trb =
--				xhci->cmd_ring->enq_seg->next->trbs;
--
-+		command->command_trb = xhci_find_next_enqueue(xhci->cmd_ring);
- 		list_add_tail(&command->cmd_list, &virt_dev->cmd_list);
- 	} else {
- 		cmd_completion = &virt_dev->cmd_completion;
-@@ -2614,7 +2606,7 @@ static int xhci_configure_endpoint(struct xhci_hcd *xhci,
- 	}
- 	init_completion(cmd_completion);
- 
--	cmd_trb = xhci->cmd_ring->dequeue;
-+	cmd_trb = xhci_find_next_enqueue(xhci->cmd_ring);
- 	if (!ctx_change)
- 		ret = xhci_queue_configure_endpoint(xhci, in_ctx->dma,
- 				udev->slot_id, must_succeed);
-@@ -3439,14 +3431,7 @@ int xhci_discover_or_reset_device(struct usb_hcd *hcd, struct usb_device *udev)
- 
- 	/* Attempt to submit the Reset Device command to the command ring */
- 	spin_lock_irqsave(&xhci->lock, flags);
--	reset_device_cmd->command_trb = xhci->cmd_ring->enqueue;
--
--	/* Enqueue pointer can be left pointing to the link TRB,
--	 * we must handle that
--	 */
--	if (TRB_TYPE_LINK_LE32(reset_device_cmd->command_trb->link.control))
--		reset_device_cmd->command_trb =
--			xhci->cmd_ring->enq_seg->next->trbs;
-+	reset_device_cmd->command_trb = xhci_find_next_enqueue(xhci->cmd_ring);
- 
- 	list_add_tail(&reset_device_cmd->cmd_list, &virt_dev->cmd_list);
- 	ret = xhci_queue_reset_device(xhci, slot_id);
-@@ -3650,7 +3635,7 @@ int xhci_alloc_dev(struct usb_hcd *hcd, struct usb_device *udev)
- 	union xhci_trb *cmd_trb;
- 
- 	spin_lock_irqsave(&xhci->lock, flags);
--	cmd_trb = xhci->cmd_ring->dequeue;
-+	cmd_trb = xhci_find_next_enqueue(xhci->cmd_ring);
- 	ret = xhci_queue_slot_control(xhci, TRB_ENABLE_SLOT, 0);
- 	if (ret) {
- 		spin_unlock_irqrestore(&xhci->lock, flags);
-@@ -3785,7 +3770,7 @@ int xhci_address_device(struct usb_hcd *hcd, struct usb_device *udev)
- 				slot_ctx->dev_info >> 27);
- 
- 	spin_lock_irqsave(&xhci->lock, flags);
--	cmd_trb = xhci->cmd_ring->dequeue;
-+	cmd_trb = xhci_find_next_enqueue(xhci->cmd_ring);
- 	ret = xhci_queue_address_device(xhci, virt_dev->in_ctx->dma,
- 					udev->slot_id);
- 	if (ret) {
-diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
-index 46aa148..f3e1020 100644
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -1840,6 +1840,7 @@ int xhci_cancel_cmd(struct xhci_hcd *xhci, struct xhci_command *command,
- 		union xhci_trb *cmd_trb);
- void xhci_ring_ep_doorbell(struct xhci_hcd *xhci, unsigned int slot_id,
- 		unsigned int ep_index, unsigned int stream_id);
-+union xhci_trb *xhci_find_next_enqueue(struct xhci_ring *ring);
- 
- /* xHCI roothub code */
- void xhci_set_link_state(struct xhci_hcd *xhci, __le32 __iomem **port_array,
+Also, I really don't like the idea of a new inode cache shrinker
+that is completely uncoordinated with the existing inode cache
+shrinkers. It uses a global lock and list and is not node aware so
+all it will do under many workloads is re-introduce a scalability
+choke point we just got rid of in 3.12.
+
+I think that you could simply piggy-back on inode_lru_isolate() to
+remove shadow mappings in exactly the same manner it removes inode
+buffers and page cache pages on inodes that are about to be
+reclaimed.  Keeping the size of the inode cache down will have the
+side effect of keeping the shadow mappings under control, and so I
+don't see a need for a separate shrinker at all here.
+
+And removing the special shrinker will bring the struct inode size
+increase back to only 8 bytes, and I think we can live with that
+increase given the workload improvements that the rest of the
+functionality brings.
+
+Cheers,
+
+Dave.
 -- 
-1.7.1
-
+Dave Chinner
+david@fromorbit.com
