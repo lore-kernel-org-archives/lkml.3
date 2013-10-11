@@ -1,98 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757086Ab3JKHPo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 03:15:44 -0400
-Received: from gate.crashing.org ([63.228.1.57]:50680 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753710Ab3JKHPn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 03:15:43 -0400
-Message-ID: <1381475711.5630.67.camel@pasglop>
-Subject: Re: [PATCH 1/2] tty/hvc_console: Add DTR/RTS callback to handle
- HUPCL control
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Hendrik Brueckner <brueckner@linux.vnet.ibm.com>
-Cc: jslaby@suse.cz, gregkh@linuxfoundation.org, brueckner@linux.vnet.com,
-        heiko.carstens@de.ibm.com, schwidefsky@de.ibm.com,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org
-Date: Fri, 11 Oct 2013 18:15:11 +1100
-In-Reply-To: <1372777635-10423-2-git-send-email-brueckner@linux.vnet.ibm.com>
-References: <1372777635-10423-1-git-send-email-brueckner@linux.vnet.ibm.com>
-	 <1372777635-10423-2-git-send-email-brueckner@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756507Ab3JKHWG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 03:22:06 -0400
+Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:38730 "EHLO
+	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752632Ab3JKHWE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 03:22:04 -0400
+Date: Fri, 11 Oct 2013 09:21:56 +0200
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Namhyung Kim <namhyung@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: Re: [RFC/PATCH] ftrace: add set_graph_notrace filter
+Message-ID: <20131011072156.GC4154@osiris>
+References: <1378184708-31385-1-git-send-email-namhyung@kernel.org>
+ <20131011001717.26b92150@gandalf.local.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131011001717.26b92150@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13101107-0342-0000-0000-0000068665F9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-07-02 at 17:07 +0200, Hendrik Brueckner wrote:
-> Introduce a new callback to explicitly handle the HUPCL termios control flag.
-> This prepares for a follow-up commit for the hvc_iucv device driver to
-> improve handling when to drop an established network connection.
+On Fri, Oct 11, 2013 at 12:17:17AM -0400, Steven Rostedt wrote:
+> Isn't there a way we could pass the state? Hmm, I think we could use
+> depth to do that. As depth is a pointer to trace.depth and not used
+> before then. We could make it negative and then check that.
 > 
-> The callback naming is based on the recently added tty_port interface to
-> facilitate a potential refactoring of the hvc_console to use tty_port
-> functions.
-
-I only just noticed that ... oops. Why add those dtr_rts() calls ? We
-already have tiocmset in there which is used to set DTR on HVSI consoles
-such as hvc_opal when using hvsi_lib...
-
-Any reason why a separate callback was needed ?
-
-Cheers,
-Ben.
-
-> Signed-off-by: Hendrik Brueckner <brueckner@linux.vnet.ibm.com>
-> ---
->  drivers/tty/hvc/hvc_console.c |   11 ++++++++++-
->  drivers/tty/hvc/hvc_console.h |    3 +++
->  2 files changed, 13 insertions(+), 1 deletions(-)
+> /me looks at other archs.
 > 
-> diff --git a/drivers/tty/hvc/hvc_console.c b/drivers/tty/hvc/hvc_console.c
-> index eb255e8..9eba119 100644
-> --- a/drivers/tty/hvc/hvc_console.c
-> +++ b/drivers/tty/hvc/hvc_console.c
-> @@ -361,7 +361,12 @@ static int hvc_open(struct tty_struct *tty, struct file * filp)
->  		tty->driver_data = NULL;
->  		tty_port_put(&hp->port);
->  		printk(KERN_ERR "hvc_open: request_irq failed with rc %d.\n", rc);
-> -	}
-> +	} else
-> +		/* We are ready... raise DTR/RTS */
-> +		if (C_BAUD(tty))
-> +			if (hp->ops->dtr_rts)
-> +				hp->ops->dtr_rts(hp, 1);
-> +
->  	/* Force wakeup of the polling thread */
->  	hvc_kick();
->  
-> @@ -393,6 +398,10 @@ static void hvc_close(struct tty_struct *tty, struct file * filp)
->  		/* We are done with the tty pointer now. */
->  		tty_port_tty_set(&hp->port, NULL);
->  
-> +		if (C_HUPCL(tty))
-> +			if (hp->ops->dtr_rts)
-> +				hp->ops->dtr_rts(hp, 0);
-> +
->  		if (hp->ops->notifier_del)
->  			hp->ops->notifier_del(hp, hp->data);
->  
-> diff --git a/drivers/tty/hvc/hvc_console.h b/drivers/tty/hvc/hvc_console.h
-> index 674d23c..9131019 100644
-> --- a/drivers/tty/hvc/hvc_console.h
-> +++ b/drivers/tty/hvc/hvc_console.h
-> @@ -75,6 +75,9 @@ struct hv_ops {
->  	/* tiocmget/set implementation */
->  	int (*tiocmget)(struct hvc_struct *hp);
->  	int (*tiocmset)(struct hvc_struct *hp, unsigned int set, unsigned int clear);
-> +
-> +	/* Callbacks to handle tty ports */
-> +	void (*dtr_rts)(struct hvc_struct *hp, int raise);
->  };
->  
->  /* Register a vterm and a slot index for use as a console (console_init) */
+> Darn it, s390 calls ftrace_push_return_trace() before
+> ftrace_graph_entry(). They got fancy, as they must have noticed that
+> trace.depth is set by ftrace_push_return_trace() and they just figured
+> to let the ftrace_push_return_trace() do the work.
+> 
+> Hmm, we could add a config to do the check on one side or the other
+> depending on how the arch handles it.
+> 
+> It needs to be well commented though.
 
+I don't remember I why decided to do that more than four years ago, however
+on the other hand I really don't think we need a config for this.
+So I just committed the patch below... it compiles and doesn't crash
+immediately, so must be good.
+It will be merged during the next merge window.
+
+>From 8c539d10400ee2efe000d324497a0661a2143dbf Mon Sep 17 00:00:00 2001
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+Date: Fri, 11 Oct 2013 08:55:57 +0200
+Subject: [PATCH] s390/ftrace: prepare_ftrace_return() function call order
+
+Steven Rostedt noted that s390 is the only architecture which calls
+ftrace_push_return_trace() before ftrace_graph_entry() and therefore has
+the small advantage that trace.depth gets initialized automatically.
+
+However this small advantage isn't worth the difference and possible subtle
+breakage that may result from this.
+So change s390 to have the same function call order like all other
+architectures: first ftrace_graph_entry(), then ftrace_push_return_trace()
+
+Reported-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+---
+ arch/s390/kernel/ftrace.c | 9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
+
+diff --git a/arch/s390/kernel/ftrace.c b/arch/s390/kernel/ftrace.c
+index 1014ad5..224db03 100644
+--- a/arch/s390/kernel/ftrace.c
++++ b/arch/s390/kernel/ftrace.c
+@@ -151,14 +151,13 @@ unsigned long __kprobes prepare_ftrace_return(unsigned long parent,
+ 	if (unlikely(atomic_read(&current->tracing_graph_pause)))
+ 		goto out;
+ 	ip = (ip & PSW_ADDR_INSN) - MCOUNT_INSN_SIZE;
+-	if (ftrace_push_return_trace(parent, ip, &trace.depth, 0) == -EBUSY)
+-		goto out;
+ 	trace.func = ip;
++	trace.depth = current->curr_ret_stack + 1;
+ 	/* Only trace if the calling function expects to. */
+-	if (!ftrace_graph_entry(&trace)) {
+-		current->curr_ret_stack--;
++	if (!ftrace_graph_entry(&trace))
++		goto out;
++	if (ftrace_push_return_trace(parent, ip, &trace.depth, 0) == -EBUSY)
+ 		goto out;
+-	}
+ 	parent = (unsigned long) return_to_handler;
+ out:
+ 	return parent;
+-- 
+1.8.3.4
 
