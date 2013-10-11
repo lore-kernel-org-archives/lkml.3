@@ -1,28 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932951Ab3JKToJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:44:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46584 "EHLO
+	id S1758491Ab3JKToc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:44:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46579 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932869Ab3JKTmY (ORCPT
+	with ESMTP id S932864Ab3JKTmX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:42:24 -0400
+	Fri, 11 Oct 2013 15:42:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "=?UTF-8?q?Anders=20F . =20U . =20Ki=C3=A6r?=" 
-	<ablacksheep@gmail.com>,
+        Stefan Achatz <erazor_de@users.sourceforge.net>,
         Jiri Kosina <jkosina@suse.cz>
-Subject: [ 131/135] HID: add Holtek USB ID 04d9:a081 SHARKOON DarkGlider
-Date: Fri, 11 Oct 2013 12:40:12 -0700
-Message-Id: <20131011193959.506865287@linuxfoundation.org>
+Subject: [ 130/135] HID: roccat: add support for KonePureOptical v2
+Date: Fri, 11 Oct 2013 12:40:11 -0700
+Message-Id: <20131011193959.397581010@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,83 +27,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anders F. U. Kiær <ablacksheep@gmail.com>
+From: Stefan Achatz <erazor_de@users.sourceforge.net>
 
-commit 7da7cbbbeb60e0939fecdf9723b388136c175e5c upstream.
+commit a4be0ed39f2b1ea990804ea54e39bc42d17ed5a5 upstream.
 
-Added id, bindings and comments for Holtek USB ID 04d9:a081 SHARKOON
-DarkGlider Gaming mouse to use the same corrections of the report
-descriptor as Holtek 04d9:a04a. As the mouse exceed HID_MAX_USAGES
-at the same offsets in the reported descriptor.
-Tested on the hardware.
+KonePureOptical is a KonePure with different sensor.
 
-Signed-off-by: Anders F. U. Kiær <ablacksheep@gmail.com>
+Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
 Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/Kconfig            |    1 +
- drivers/hid/hid-core.c         |    1 +
- drivers/hid/hid-holtek-mouse.c |    4 ++++
- drivers/hid/hid-ids.h          |    1 +
- 4 files changed, 7 insertions(+)
+ drivers/hid/hid-core.c            |    1 +
+ drivers/hid/hid-ids.h             |    1 +
+ drivers/hid/hid-roccat-konepure.c |    3 ++-
+ 3 files changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/hid/Kconfig
-+++ b/drivers/hid/Kconfig
-@@ -241,6 +241,7 @@ config HID_HOLTEK
- 	  - Sharkoon Drakonia / Perixx MX-2000 gaming mice
- 	  - Tracer Sniper TRM-503 / NOVA Gaming Slider X200 /
- 	    Zalman ZM-GM1
-+	  - SHARKOON DarkGlider Gaming mouse
- 
- config HOLTEK_FF
- 	bool "Holtek On Line Grip force feedback support"
 --- a/drivers/hid/hid-core.c
 +++ b/drivers/hid/hid-core.c
-@@ -1673,6 +1673,7 @@ static const struct hid_device_id hid_ha
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_HOLTEK_ALT, USB_DEVICE_ID_HOLTEK_ALT_KEYBOARD) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_HOLTEK_ALT, USB_DEVICE_ID_HOLTEK_ALT_MOUSE_A04A) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_HOLTEK_ALT, USB_DEVICE_ID_HOLTEK_ALT_MOUSE_A067) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_HOLTEK_ALT, USB_DEVICE_ID_HOLTEK_ALT_MOUSE_A081) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_HUION, USB_DEVICE_ID_HUION_580) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_JESS2, USB_DEVICE_ID_JESS2_COLOR_RUMBLE_PAD) },
- 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_ION, USB_DEVICE_ID_ICADE) },
---- a/drivers/hid/hid-holtek-mouse.c
-+++ b/drivers/hid/hid-holtek-mouse.c
-@@ -27,6 +27,7 @@
-  * - USB ID 04d9:a067, sold as Sharkoon Drakonia and Perixx MX-2000
-  * - USB ID 04d9:a04a, sold as Tracer Sniper TRM-503, NOVA Gaming Slider X200
-  *   and Zalman ZM-GM1
-+ * - USB ID 04d9:a081, sold as SHARKOON DarkGlider Gaming mouse
-  */
- 
- static __u8 *holtek_mouse_report_fixup(struct hid_device *hdev, __u8 *rdesc,
-@@ -46,6 +47,7 @@ static __u8 *holtek_mouse_report_fixup(s
- 			}
- 			break;
- 		case USB_DEVICE_ID_HOLTEK_ALT_MOUSE_A04A:
-+		case USB_DEVICE_ID_HOLTEK_ALT_MOUSE_A081:
- 			if (*rsize >= 113 && rdesc[106] == 0xff && rdesc[107] == 0x7f
- 					&& rdesc[111] == 0xff && rdesc[112] == 0x7f) {
- 				hid_info(hdev, "Fixing up report descriptor\n");
-@@ -63,6 +65,8 @@ static const struct hid_device_id holtek
- 			USB_DEVICE_ID_HOLTEK_ALT_MOUSE_A067) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_HOLTEK_ALT,
- 			USB_DEVICE_ID_HOLTEK_ALT_MOUSE_A04A) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_HOLTEK_ALT,
-+			USB_DEVICE_ID_HOLTEK_ALT_MOUSE_A081) },
- 	{ }
- };
- MODULE_DEVICE_TABLE(hid, holtek_mouse_devices);
+@@ -1762,6 +1762,7 @@ static const struct hid_device_id hid_ha
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_ISKU) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_KONEPLUS) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_KONEPURE) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_KONEPURE_OPTICAL) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_KOVAPLUS) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_LUA) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_PYRA_WIRED) },
 --- a/drivers/hid/hid-ids.h
 +++ b/drivers/hid/hid-ids.h
-@@ -450,6 +450,7 @@
- #define USB_DEVICE_ID_HOLTEK_ALT_KEYBOARD	0xa055
- #define USB_DEVICE_ID_HOLTEK_ALT_MOUSE_A067	0xa067
- #define USB_DEVICE_ID_HOLTEK_ALT_MOUSE_A04A	0xa04a
-+#define USB_DEVICE_ID_HOLTEK_ALT_MOUSE_A081	0xa081
+@@ -718,6 +718,7 @@
+ #define USB_DEVICE_ID_ROCCAT_KONE	0x2ced
+ #define USB_DEVICE_ID_ROCCAT_KONEPLUS	0x2d51
+ #define USB_DEVICE_ID_ROCCAT_KONEPURE	0x2dbe
++#define USB_DEVICE_ID_ROCCAT_KONEPURE_OPTICAL	0x2db4
+ #define USB_DEVICE_ID_ROCCAT_KONEXTD	0x2e22
+ #define USB_DEVICE_ID_ROCCAT_KOVAPLUS	0x2d50
+ #define USB_DEVICE_ID_ROCCAT_LUA	0x2c2e
+--- a/drivers/hid/hid-roccat-konepure.c
++++ b/drivers/hid/hid-roccat-konepure.c
+@@ -262,6 +262,7 @@ static int konepure_raw_event(struct hid
  
- #define USB_VENDOR_ID_IMATION		0x0718
- #define USB_DEVICE_ID_DISC_STAKKA	0xd000
+ static const struct hid_device_id konepure_devices[] = {
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_KONEPURE) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_KONEPURE_OPTICAL) },
+ 	{ }
+ };
+ 
+@@ -300,5 +301,5 @@ module_init(konepure_init);
+ module_exit(konepure_exit);
+ 
+ MODULE_AUTHOR("Stefan Achatz");
+-MODULE_DESCRIPTION("USB Roccat KonePure driver");
++MODULE_DESCRIPTION("USB Roccat KonePure/Optical driver");
+ MODULE_LICENSE("GPL v2");
 
 
