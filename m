@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757884Ab3JKThF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:37:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45235 "EHLO
+	id S1758232Ab3JKThV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:37:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45339 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757238Ab3JKTg7 (ORCPT
+	with ESMTP id S1758116Ab3JKThR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:36:59 -0400
+	Fri, 11 Oct 2013 15:37:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Claudiu Manoil <claudiu.manoil@freescale.com>,
+        Salam Noureddine <noureddine@aristanetworks.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 03/48] gianfar: Change default HW Tx queue scheduling mode
-Date: Fri, 11 Oct 2013 12:36:10 -0700
-Message-Id: <20131011193637.658080063@linuxfoundation.org>
+Subject: [ 17/48] ipv4 igmp: use in_dev_put in timer handlers instead of __in_dev_put
+Date: Fri, 11 Oct 2013 12:36:24 -0700
+Message-Id: <20131011193639.137687818@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193637.253208688@linuxfoundation.org>
 References: <20131011193637.253208688@linuxfoundation.org>
@@ -27,95 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Claudiu Manoil <claudiu.manoil@freescale.com>
+From: Salam Noureddine <noureddine@aristanetworks.com>
 
-commit b98b8babd6e3370fadb7c6eaacb00eb2f6344a6c upstream.
+[ Upstream commit e2401654dd0f5f3fb7a8d80dad9554d73d7ca394 ]
 
-This is primarily to address transmission timeout occurrences, when
-multiple H/W Tx queues are being used concurrently. Because in
-the priority scheduling mode the controller does not service the
-Tx queues equally (but in ascending index order), Tx timeouts are
-being triggered rightaway for a basic test with multiple simultaneous
-connections like:
-iperf -c <server_ip> -n 100M -P 8
+It is possible for the timer handlers to run after the call to
+ip_mc_down so use in_dev_put instead of __in_dev_put in the handler
+function in order to do proper cleanup when the refcnt reaches 0.
+Otherwise, the refcnt can reach zero without the in_device being
+destroyed and we end up leaking a reference to the net_device and
+see messages like the following,
 
-resulting in kernel trace:
-NETDEV WATCHDOG: eth1 (fsl-gianfar): transmit queue <X> timed out
-------------[ cut here ]------------
-WARNING: at net/sched/sch_generic.c:255
-...
-and controller reset during intense traffic, and possibly further
-complications.
+unregister_netdevice: waiting for eth0 to become free. Usage count = 1
 
-This patch changes the default H/W Tx scheduling setting (TXSCHED)
-for multi-queue devices, from priority scheduling mode to a weighted
-round robin mode with equal weights for all H/W Tx queues, and
-addresses the issue above.
+Tested on linux-3.4.43.
 
-Signed-off-by: Claudiu Manoil <claudiu.manoil@freescale.com>
+Signed-off-by: Salam Noureddine <noureddine@aristanetworks.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/net/ethernet/freescale/gianfar.c |   11 ++++++++++-
- drivers/net/ethernet/freescale/gianfar.h |   11 ++++++++++-
- 2 files changed, 20 insertions(+), 2 deletions(-)
+ net/ipv4/igmp.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/ethernet/freescale/gianfar.c
-+++ b/drivers/net/ethernet/freescale/gianfar.c
-@@ -394,7 +394,13 @@ static void gfar_init_mac(struct net_dev
- 	if (ndev->features & NETIF_F_IP_CSUM)
- 		tctrl |= TCTRL_INIT_CSUM;
+--- a/net/ipv4/igmp.c
++++ b/net/ipv4/igmp.c
+@@ -709,7 +709,7 @@ static void igmp_gq_timer_expire(unsigne
  
--	tctrl |= TCTRL_TXSCHED_PRIO;
-+	if (priv->prio_sched_en)
-+		tctrl |= TCTRL_TXSCHED_PRIO;
-+	else {
-+		tctrl |= TCTRL_TXSCHED_WRRS;
-+		gfar_write(&regs->tr03wt, DEFAULT_WRRS_WEIGHT);
-+		gfar_write(&regs->tr47wt, DEFAULT_WRRS_WEIGHT);
-+	}
+ 	in_dev->mr_gq_running = 0;
+ 	igmpv3_send_report(in_dev, NULL);
+-	__in_dev_put(in_dev);
++	in_dev_put(in_dev);
+ }
  
- 	gfar_write(&regs->tctrl, tctrl);
+ static void igmp_ifc_timer_expire(unsigned long data)
+@@ -721,7 +721,7 @@ static void igmp_ifc_timer_expire(unsign
+ 		in_dev->mr_ifc_count--;
+ 		igmp_ifc_start_timer(in_dev, IGMP_Unsolicited_Report_Interval);
+ 	}
+-	__in_dev_put(in_dev);
++	in_dev_put(in_dev);
+ }
  
-@@ -1153,6 +1159,9 @@ static int gfar_probe(struct platform_de
- 	priv->rx_filer_enable = 1;
- 	/* Enable most messages by default */
- 	priv->msg_enable = (NETIF_MSG_IFUP << 1 ) - 1;
-+	/* use pritority h/w tx queue scheduling for single queue devices */
-+	if (priv->num_tx_queues == 1)
-+		priv->prio_sched_en = 1;
- 
- 	/* Carrier starts down, phylib will bring it up */
- 	netif_carrier_off(dev);
---- a/drivers/net/ethernet/freescale/gianfar.h
-+++ b/drivers/net/ethernet/freescale/gianfar.h
-@@ -301,8 +301,16 @@ extern const char gfar_driver_version[];
- #define TCTRL_TFCPAUSE		0x00000008
- #define TCTRL_TXSCHED_MASK	0x00000006
- #define TCTRL_TXSCHED_INIT	0x00000000
-+/* priority scheduling */
- #define TCTRL_TXSCHED_PRIO	0x00000002
-+/* weighted round-robin scheduling (WRRS) */
- #define TCTRL_TXSCHED_WRRS	0x00000004
-+/* default WRRS weight and policy setting,
-+ * tailored to the tr03wt and tr47wt registers:
-+ * equal weight for all Tx Qs, measured in 64byte units
-+ */
-+#define DEFAULT_WRRS_WEIGHT	0x18181818
-+
- #define TCTRL_INIT_CSUM		(TCTRL_TUCSEN | TCTRL_IPCSEN)
- 
- #define IEVENT_INIT_CLEAR	0xffffffff
-@@ -1098,7 +1106,8 @@ struct gfar_private {
- 		extended_hash:1,
- 		bd_stash_en:1,
- 		rx_filer_enable:1,
--		wol_en:1; /* Wake-on-LAN enabled */
-+		wol_en:1, /* Wake-on-LAN enabled */
-+		prio_sched_en:1; /* Enable priorty based Tx scheduling in Hw */
- 	unsigned short padding;
- 
- 	/* PHY stuff */
+ static void igmp_ifc_event(struct in_device *in_dev)
 
 
