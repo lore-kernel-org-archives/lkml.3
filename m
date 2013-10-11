@@ -1,87 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758301Ab3JKPjz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 11:39:55 -0400
-Received: from exprod8og105.obsmtp.com ([64.18.3.90]:34778 "HELO
-	exprod8og105.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752348Ab3JKPjo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 11:39:44 -0400
-X-Greylist: delayed 1723 seconds by postgrey-1.27 at vger.kernel.org; Fri, 11 Oct 2013 11:39:44 EDT
-From: Howard Cochran <hcochran@lexmark.com>
-To: rostedt@goodmis.org
-Cc: linux-kernel@vger.kernel.org, Howard Cochran <hcochran@lexmark.com>
-Subject: [PATCH] trace-cmd: Handle __print_hex(__get_dynamic_array(fieldname), len)
-Date: Fri, 11 Oct 2013 10:55:49 -0400
-Message-Id: <1381503349-12271-1-git-send-email-hcochran@lexmark.com>
-X-Mailer: git-send-email 1.7.10.2.4.g36f8dc1
-X-LPDEV-MailScanner-Information: Please contact the ISP for more information
-X-MailScanner-ID: 78153BE0081.A280B
-X-LPDEV-MailScanner: Found to be clean
-X-LPDEV-MailScanner-From: hcochran@lpdev.prtdev.lexmark.com
-X-MIMETrack: Itemize by SMTP Server on smtp5b/Lex/Lexmark(Release 6.5.5|November 30, 2005) at
- 10/11/2013 10:56:11,
-	Serialize by Router on smtp5b/Lex/Lexmark(Release 6.5.5|November 30, 2005) at
- 10/11/2013 10:56:12,
-	Serialize complete at 10/11/2013 10:56:12
+	id S1758337Ab3JKPk6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 11:40:58 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:48265 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753206Ab3JKPkz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 11:40:55 -0400
+Date: Fri, 11 Oct 2013 17:40:48 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "Chen, Gong" <gong.chen@linux.intel.com>
+Cc: tony.luck@intel.com, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 4/8] DMI: Parse memory device (type 17) in SMBIOS
+Message-ID: <20131011154048.GH5925@pd.tnic>
+References: <1381473166-29303-1-git-send-email-gong.chen@linux.intel.com>
+ <1381473166-29303-5-git-send-email-gong.chen@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1381473166-29303-5-git-send-email-gong.chen@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The kernel has a few events with a format similar to this excerpt:
-        field:unsigned int len;     offset:12;      size:4; signed:0;
-        field:__data_loc unsigned char[] data_array;  offset:16;      size:4; signed:0;
-print fmt: "%s", __print_hex(__get_dynamic_array(data_array), REC->len)
+On Fri, Oct 11, 2013 at 02:32:42AM -0400, Chen, Gong wrote:
+> This patch adds a new interface to decode memory device (type 17)
+> to help error reporting on DIMMs.
+> 
+> Original-author: Tony Luck <tony.luck@intel.com>
+> Signed-off-by: Chen, Gong <gong.chen@linux.intel.com>
 
-trace-cmd could already parse that arg correctly, but print_str_arg()
-was unable to handle the first parameter being a dynamic array. (It
-just printed a "field not found" warning).
+Reviewed-by: Borislav Petkov <bp@suse.de>
 
-Teach print_str_arg's PRINT_HEX case to handle the nested
-PRINT_DYNAMIC_ARRAY correctly. The output now matches the kernel's own
-formatting for this case.
+Just a question below:
 
-Signed-off-by: Howard Cochran <hcochran@lexmark.com>
----
- event-parse.c |   24 ++++++++++++++++--------
- 1 file changed, 16 insertions(+), 8 deletions(-)
+> ---
+>  arch/ia64/kernel/setup.c    |  1 +
+>  arch/x86/kernel/setup.c     |  1 +
+>  drivers/firmware/dmi_scan.c | 60 +++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/dmi.h         |  5 ++++
+>  4 files changed, 67 insertions(+)
+> 
 
-diff --git a/event-parse.c b/event-parse.c
-index e961553..fdb176e 100644
---- a/event-parse.c
-+++ b/event-parse.c
-@@ -3550,15 +3550,23 @@ static void print_str_arg(struct trace_seq *s, void *data, int size,
- 		}
- 		break;
- 	case PRINT_HEX:
--		field = arg->hex.field->field.field;
--		if (!field) {
--			str = arg->hex.field->field.name;
--			field = pevent_find_any_field(event, str);
--			if (!field)
--				goto out_warning_field;
--			arg->hex.field->field.field = field;
-+		if (PRINT_DYNAMIC_ARRAY == arg->hex.field->type) {
-+			unsigned long offset;
-+			offset = pevent_read_number(pevent,
-+				data + arg->hex.field->dynarray.field->offset,
-+				arg->hex.field->dynarray.field->size);
-+			hex = data + (offset & 0xffff);
-+		} else {
-+			field = arg->hex.field->field.field;
-+			if (!field) {
-+				str = arg->hex.field->field.name;
-+				field = pevent_find_any_field(event, str);
-+				if (!field)
-+					goto out_warning_field;
-+				arg->hex.field->field.field = field;
-+			}
-+			hex = data + field->offset;
- 		}
--		hex = data + field->offset;
- 		len = eval_num_arg(data, size, event, arg->hex.size);
- 		for (i = 0; i < len; i++) {
- 			if (i)
+[ ... ]
+
+> diff --git a/drivers/firmware/dmi_scan.c b/drivers/firmware/dmi_scan.c
+> index fa0affb..ca3619d 100644
+> --- a/drivers/firmware/dmi_scan.c
+> +++ b/drivers/firmware/dmi_scan.c
+> @@ -25,6 +25,13 @@ static int dmi_initialized;
+>  /* DMI system identification string used during boot */
+>  static char dmi_ids_string[128] __initdata;
+>  
+> +static struct dmi_memdev_info {
+> +	const char *device;
+> +	const char *bank;
+> +	u16 handle;
+> +} *dmi_memdev;
+> +static int dmi_memdev_nr;
+> +
+>  static const char * __init dmi_string_nosave(const struct dmi_header *dm, u8 s)
+>  {
+>  	const u8 *bp = ((u8 *) dm) + dm->length;
+> @@ -322,6 +329,42 @@ static void __init dmi_save_extended_devices(const struct dmi_header *dm)
+>  	dmi_save_one_device(*d & 0x7f, dmi_string_nosave(dm, *(d - 1)));
+>  }
+>  
+> +static void __init count_mem_devices(const struct dmi_header *dm, void *v)
+> +{
+> +	if (dm->type != DMI_ENTRY_MEM_DEVICE)
+> +		return;
+> +	dmi_memdev_nr++;
+> +}
+> +
+> +static void __init save_mem_devices(const struct dmi_header *dm, void *v)
+> +{
+> +	const char *d = (const char *)dm;
+> +	static int nr;
+> +
+> +	if (dm->type != DMI_ENTRY_MEM_DEVICE)
+> +		return;
+> +	if (nr >= dmi_memdev_nr) {
+> +		pr_warn_once("Too many DIMM entries in SMBIOS table\n");
+> +		return;
+
+Is this and count_mem_devices() some sort of precaution against insane
+DMI tables?
+
 -- 
-1.7.10.2.4.g36f8dc1
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
