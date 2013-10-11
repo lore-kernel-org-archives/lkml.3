@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758931Ab3JKTkJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:40:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45678 "EHLO
+	id S932831Ab3JKUgZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:36:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45710 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758910Ab3JKTkF (ORCPT
+	with ESMTP id S1758926Ab3JKTkJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:40:05 -0400
+	Fri, 11 Oct 2013 15:40:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Maxim Patlasov <mpatlasov@parallels.com>,
-        Miklos Szeredi <mszeredi@suse.cz>
-Subject: [ 058/110] fuse: fix fallocate vs. ftruncate race
-Date: Fri, 11 Oct 2013 12:38:38 -0700
-Message-Id: <20131011193814.140046702@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Mark Brown <broonie@linaro.org>
+Subject: [ 048/110] ASoC: 88pm860x: array overflow in snd_soc_put_volsw_2r_st()
+Date: Fri, 11 Oct 2013 12:38:28 -0700
+Message-Id: <20131011193813.055185148@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
 References: <20131011193807.584188672@linuxfoundation.org>
@@ -27,62 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maxim Patlasov <MPatlasov@parallels.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 0ab08f576b9e6a6b689fc6b4e632079b978e619b upstream.
+commit d967967e8d1116fb38bad25e58714b5dddd03cca upstream.
 
-A former patch introducing FUSE_I_SIZE_UNSTABLE flag provided detailed
-description of races between ftruncate and anyone who can extend i_size:
+This is called from snd_ctl_elem_write() with user supplied data so we
+need to add some bounds checking.
 
-> 1. As in the previous scenario fuse_dentry_revalidate() discovered that i_size
-> changed (due to our own fuse_do_setattr()) and is going to call
-> truncate_pagecache() for some  'new_size' it believes valid right now. But by
-> the time that particular truncate_pagecache() is called ...
-> 2. fuse_do_setattr() returns (either having called truncate_pagecache() or
-> not -- it doesn't matter).
-> 3. The file is extended either by write(2) or ftruncate(2) or fallocate(2).
-> 4. mmap-ed write makes a page in the extended region dirty.
-
-This patch adds necessary bits to fuse_file_fallocate() to protect from that
-race.
-
-Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/fuse/file.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ sound/soc/codecs/88pm860x-codec.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/fs/fuse/file.c
-+++ b/fs/fuse/file.c
-@@ -2468,6 +2468,7 @@ static long fuse_file_fallocate(struct f
- {
- 	struct fuse_file *ff = file->private_data;
- 	struct inode *inode = file->f_inode;
-+	struct fuse_inode *fi = get_fuse_inode(inode);
- 	struct fuse_conn *fc = ff->fc;
- 	struct fuse_req *req;
- 	struct fuse_fallocate_in inarg = {
-@@ -2496,6 +2497,9 @@ static long fuse_file_fallocate(struct f
- 		}
- 	}
+--- a/sound/soc/codecs/88pm860x-codec.c
++++ b/sound/soc/codecs/88pm860x-codec.c
+@@ -351,6 +351,9 @@ static int snd_soc_put_volsw_2r_st(struc
+ 	val = ucontrol->value.integer.value[0];
+ 	val2 = ucontrol->value.integer.value[1];
  
-+	if (!(mode & FALLOC_FL_KEEP_SIZE))
-+		set_bit(FUSE_I_SIZE_UNSTABLE, &fi->state);
++	if (val >= ARRAY_SIZE(st_table) || val2 >= ARRAY_SIZE(st_table))
++		return -EINVAL;
 +
- 	req = fuse_get_req_nopages(fc);
- 	if (IS_ERR(req)) {
- 		err = PTR_ERR(req);
-@@ -2528,6 +2532,9 @@ static long fuse_file_fallocate(struct f
- 	fuse_invalidate_attr(inode);
- 
- out:
-+	if (!(mode & FALLOC_FL_KEEP_SIZE))
-+		clear_bit(FUSE_I_SIZE_UNSTABLE, &fi->state);
-+
- 	if (lock_inode)
- 		mutex_unlock(&inode->i_mutex);
- 
+ 	err = snd_soc_update_bits(codec, reg, 0x3f, st_table[val].m);
+ 	if (err < 0)
+ 		return err;
 
 
