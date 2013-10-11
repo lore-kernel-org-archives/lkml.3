@@ -1,64 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756928Ab3JKGwG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 02:52:06 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:37340 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753383Ab3JKGwB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 02:52:01 -0400
-MIME-Version: 1.0
-In-Reply-To: <1381440651.5630.31.camel@pasglop>
-References: <1381378788.4330.30.camel@pasglop>
-	<20131010174457.GE13759@kroah.com>
-	<1381435276.5630.6.camel@pasglop>
-	<CAMuHMdW7RXjS3vvLUdTPCafNu_PcgDgbVbzVCHTOEeTsfHK90g@mail.gmail.com>
-	<1381440651.5630.31.camel@pasglop>
-Date: Fri, 11 Oct 2013 08:52:00 +0200
-X-Google-Sender-Auth: KoHmY3c7Zn2Vo0d_8Phfn-8jCJE
-Message-ID: <CAMuHMdU_90EhPng0NYPVmWAwDt2NOowB3thPB+jJarme-A7eew@mail.gmail.com>
-Subject: Re: sysfs for my chips
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Greg KH <gregkh@linuxfoundation.org>, Tejun Heo <tj@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1756782Ab3JKGwZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 02:52:25 -0400
+Received: from mga09.intel.com ([134.134.136.24]:60963 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756906Ab3JKGwF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 02:52:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,1078,1371106800"; 
+   d="scan'208";a="409271592"
+From: tianyu.lan@intel.com
+To: lenb@kernel.org, rjw@sisk.pl, yinghai@kernel.org, bhelgaas@google.com
+Cc: Lan Tianyu <tianyu.lan@intel.com>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/5] ACPI/PCI: Parse PCI root bridge's ACPI resource via ACPI resource functions
+Date: Fri, 11 Oct 2013 14:52:04 +0800
+Message-Id: <1381474332-11328-1-git-send-email-tianyu.lan@intel.com>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 10, 2013 at 11:30 PM, Benjamin Herrenschmidt
-<benh@kernel.crashing.org> wrote:
-> On Thu, 2013-10-10 at 22:26 +0200, Geert Uytterhoeven wrote:
->> > This is not CPUs. CPUs are threads really. Even if they were cores,
->> that
->> > still wouldn't cut it. I'm looking at chips here and not all of them
->> > actually processor chips. The SCOM bus address space is global to a
->> > physical chip and allows to access various resources that are only
->> > remotely related to the cores on it.
->>
->> What about a "bus" for the sideband bus? That allows to decouple it
->> from cores, and allows to support non-processor chips, too?
->
-> Not sure what you mean .... create a linux bus type with devices on
-> it ?
+From: Lan Tianyu <tianyu.lan@intel.com>
 
-Yes, that's what I meant.
+This patchset is to add memory prefecth flag setting and address
+translation support in the ACPI resource function. Convert x86/iad64
+PCI root bridge's ACPI resource to generic resource via ACPI resource
+functions.
 
->From the nodes on that bus you can have symlinks in sysfs to e.g. the CPUs
-in the rest of the sysfs tree.
+PATCH 3 is to add new function acpi_dev_resource_address_space_full()
+to meet requirement that ACPI address space info is still needed after
+being converted to generic resource.
 
-It's a bit like smbus/i2c connecting various peripherals that may also be
-connected in some other way (e.g. media devices).
 
-Gr{oetje,eeting}s,
+Lan Tianyu (5):
+  ACPI/Resource: Add memory prefetch check support
+  ACPI/Resource: Add address translation support
+  ACPI: Add new acpi_dev_resource_address_space_full() function
+  X86/PCI/ACPI: Rework setup_resource() via functions ACPI resource
+    functions
+  IA64/PCI/ACPI: Rework PCI root bridge ACPI resource conversion
 
-                        Geert
+ arch/ia64/pci/pci.c     | 36 ++++++++++++----------
+ arch/x86/pci/acpi.c     | 81 ++++++++-----------------------------------------
+ drivers/acpi/resource.c | 54 ++++++++++++++++++++++++---------
+ include/linux/acpi.h    |  3 ++
+ 4 files changed, 74 insertions(+), 100 deletions(-)
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+-- 
+1.8.2.1
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
