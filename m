@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755991Ab3JKUyg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:54:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45363 "EHLO
+	id S1756034Ab3JKUy5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:54:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45356 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758218Ab3JKThV (ORCPT
+	with ESMTP id S1758035Ab3JKThT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:37:21 -0400
+	Fri, 11 Oct 2013 15:37:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Kirill Tkhai <tkhai@yandex.ru>, David Miller <davem@davemloft.net>
-Subject: [ 32/48] sparc64: Fix not SRAed %o5 in 32-bit traced syscall
-Date: Fri, 11 Oct 2013 12:36:39 -0700
-Message-Id: <20131011193640.717129991@linuxfoundation.org>
+Subject: [ 30/48] sparc64: Remove RWSEM export leftovers
+Date: Fri, 11 Oct 2013 12:36:37 -0700
+Message-Id: <20131011193640.505866407@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193637.253208688@linuxfoundation.org>
 References: <20131011193637.253208688@linuxfoundation.org>
@@ -28,50 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Kirill Tkhai <tkhai@yandex.ru>
 
-[ Upstream commit ab2abda6377723e0d5fbbfe5f5aa16a5523344d1 ]
+[ Upstream commit 61d9b9355b0d427bd1e732bd54628ff9103e496f ]
 
-(From v1 to v2: changed comment)
+The functions
 
-On the way linux_sparc_syscall32->linux_syscall_trace32->goto 2f,
-register %o5 doesn't clear its second 32-bit.
+			__down_read
+			__down_read_trylock
+			__down_write
+			__down_write_trylock
+			__up_read
+			__up_write
+			__downgrade_write
 
-Fix that.
+are implemented inline, so remove corresponding EXPORT_SYMBOLs
+(They lead to compile errors on RT kernel).
 
 Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
 CC: David Miller <davem@davemloft.net>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/kernel/syscalls.S |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ arch/sparc/lib/ksyms.c |    9 ---------
+ 1 file changed, 9 deletions(-)
 
---- a/arch/sparc/kernel/syscalls.S
-+++ b/arch/sparc/kernel/syscalls.S
-@@ -147,7 +147,7 @@ linux_syscall_trace32:
- 	srl	%i4, 0, %o4
- 	srl	%i1, 0, %o1
- 	srl	%i2, 0, %o2
--	ba,pt	%xcc, 2f
-+	ba,pt	%xcc, 5f
- 	 srl	%i3, 0, %o3
+--- a/arch/sparc/lib/ksyms.c
++++ b/arch/sparc/lib/ksyms.c
+@@ -125,15 +125,6 @@ EXPORT_SYMBOL(___copy_from_user);
+ EXPORT_SYMBOL(___copy_in_user);
+ EXPORT_SYMBOL(__clear_user);
  
- linux_syscall_trace:
-@@ -177,13 +177,13 @@ linux_sparc_syscall32:
- 	srl	%i1, 0, %o1				! IEU0	Group
- 	ldx	[%g6 + TI_FLAGS], %l0		! Load
- 
--	srl	%i5, 0, %o5				! IEU1
-+	srl	%i3, 0, %o3				! IEU0
- 	srl	%i2, 0, %o2				! IEU0	Group
- 	andcc	%l0, (_TIF_SYSCALL_TRACE|_TIF_SECCOMP|_TIF_SYSCALL_AUDIT|_TIF_SYSCALL_TRACEPOINT), %g0
- 	bne,pn	%icc, linux_syscall_trace32		! CTI
- 	 mov	%i0, %l5				! IEU1
--	call	%l7					! CTI	Group brk forced
--	 srl	%i3, 0, %o3				! IEU0
-+5:	call	%l7					! CTI	Group brk forced
-+	 srl	%i5, 0, %o5				! IEU1
- 	ba,a,pt	%xcc, 3f
- 
- 	/* Linux native system calls enter here... */
+-/* RW semaphores */
+-EXPORT_SYMBOL(__down_read);
+-EXPORT_SYMBOL(__down_read_trylock);
+-EXPORT_SYMBOL(__down_write);
+-EXPORT_SYMBOL(__down_write_trylock);
+-EXPORT_SYMBOL(__up_read);
+-EXPORT_SYMBOL(__up_write);
+-EXPORT_SYMBOL(__downgrade_write);
+-
+ /* Atomic counter implementation. */
+ EXPORT_SYMBOL(atomic_add);
+ EXPORT_SYMBOL(atomic_add_ret);
 
 
