@@ -1,66 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758010Ab3JKMt7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 08:49:59 -0400
-Received: from 15.mo1.mail-out.ovh.net ([188.165.38.232]:48941 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757733Ab3JKMt5 (ORCPT
+	id S1758029Ab3JKMuW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 08:50:22 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:43079 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756629Ab3JKMuU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 08:49:57 -0400
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Mike Turquette <mturquette@linaro.org>
-Cc: Boris BREZILLON <b.brezillon@overkiz.com>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 5/6] ARM: at91: move sama5d3 SoC to common clk
-Date: Fri, 11 Oct 2013 14:43:35 +0200
-Message-Id: <1381495416-15928-6-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1381495416-15928-1-git-send-email-b.brezillon@overkiz.com>
-References: <1381495416-15928-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 17575579021867710693
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrvdefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrvdefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Fri, 11 Oct 2013 08:50:20 -0400
+Message-ID: <5257F408.9040503@hitachi.com>
+Date: Fri, 11 Oct 2013 21:50:16 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Tom Zanussi <tom.zanussi@linux.intel.com>
+Cc: rostedt@goodmis.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v10 11/12] tracing: fix tracing_snapshot kerneldoc
+References: <cover.1381445299.git.tom.zanussi@linux.intel.com> <af1e1b69b339a85e11f580af9c3ba6dfa28cb20f.1381445299.git.tom.zanussi@linux.intel.com>
+In-Reply-To: <af1e1b69b339a85e11f580af9c3ba6dfa28cb20f.1381445299.git.tom.zanussi@linux.intel.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes the selection of AT91_USE_OLD_CLK when selecting sama5d3
-SoC support. This will enable automatically enable COMMON_CLK_AT91 option
-and add support for at91 common clk implementation.
+(2013/10/11 9:48), Tom Zanussi wrote:
+> The names of the functions are tracing_snapshot_*, not
+> trace_snapshot_* - fix up the kerneldoc to avoid confusion.
+> 
+> Signed-off-by: Tom Zanussi <tom.zanussi@linux.intel.com>
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
- arch/arm/mach-at91/Kconfig |    1 -
- 1 file changed, 1 deletion(-)
+It seems that this is not related this series.
+Please send it as a trivial fix patch :)
 
-diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
-index 97033f7..b4f7d6f 100644
---- a/arch/arm/mach-at91/Kconfig
-+++ b/arch/arm/mach-at91/Kconfig
-@@ -86,7 +86,6 @@ config SOC_SAMA5D3
- 	select SOC_SAMA5
- 	select HAVE_FB_ATMEL
- 	select HAVE_AT91_DBGU1
--	select AT91_USE_OLD_CLK
- 	select HAVE_AT91_UTMI
- 	select HAVE_AT91_SMD
- 	select HAVE_AT91_USB_CLK
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+
+> ---
+>  kernel/trace/trace.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+> index 5aa8f80..81d95bf 100644
+> --- a/kernel/trace/trace.c
+> +++ b/kernel/trace/trace.c
+> @@ -514,7 +514,7 @@ EXPORT_SYMBOL_GPL(__trace_bputs);
+>  
+>  #ifdef CONFIG_TRACER_SNAPSHOT
+>  /**
+> - * trace_snapshot - take a snapshot of the current buffer.
+> + * tracing_snapshot - take a snapshot of the current buffer.
+>   *
+>   * This causes a swap between the snapshot buffer and the current live
+>   * tracing buffer. You can use this to take snapshots of the live
+> @@ -617,9 +617,9 @@ int tracing_alloc_snapshot(void)
+>  EXPORT_SYMBOL_GPL(tracing_alloc_snapshot);
+>  
+>  /**
+> - * trace_snapshot_alloc - allocate and take a snapshot of the current buffer.
+> + * tracing_snapshot_alloc - allocate and take a snapshot of the current buffer.
+>   *
+> - * This is similar to trace_snapshot(), but it will allocate the
+> + * This is similar to tracing_snapshot(), but it will allocate the
+>   * snapshot buffer if it isn't already allocated. Use this only
+>   * where it is safe to sleep, as the allocation may sleep.
+>   *
+> 
+
+
 -- 
-1.7.9.5
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
