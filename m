@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759167Ab3JKTzc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:55:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46386 "EHLO
+	id S1759372Ab3JKTzx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:55:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46377 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932719Ab3JKTlx (ORCPT
+	with ESMTP id S932712Ab3JKTlx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Oct 2013 15:41:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Davidlohr Bueso <davidlohr@hp.com>,
         Manfred Spraul <manfred@colorfullife.com>,
-        Rik van Riel <riel@redhat.com>, Mike Galbraith <efault@gmx.de>,
+        Mike Galbraith <bitbucket@online.de>, Rik van Riel <riel@redhat.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 083/135] ipc,msg: prevent race with rmid in msgsnd,msgrcv
-Date: Fri, 11 Oct 2013 12:39:24 -0700
-Message-Id: <20131011193954.280839217@linuxfoundation.org>
+Subject: [ 082/135] ipc/sem.c: fix race in sem_lock()
+Date: Fri, 11 Oct 2013 12:39:23 -0700
+Message-Id: <20131011193954.175162290@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -30,69 +30,248 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Davidlohr Bueso <davidlohr@hp.com>
+From: Manfred Spraul <manfred@colorfullife.com>
 
-commit 4271b05a227dc6175b66c3d9941aeab09048aeb2 upstream.
+commit 5e9d527591421ccdb16acb8c23662231135d8686 upstream.
 
-This fixes a race in both msgrcv() and msgsnd() between finding the msg
-and actually dealing with the queue, as another thread can delete shmid
-underneath us if we are preempted before acquiring the
-kern_ipc_perm.lock.
+The exclusion of complex operations in sem_lock() is insufficient: after
+acquiring the per-semaphore lock, a simple op must first check that
+sem_perm.lock is not locked and only after that test check
+complex_count.  The current code does it the other way around - and that
+creates a race.  Details are below.
 
-Manfred illustrates this nicely:
+The patch is a complete rewrite of sem_lock(), based in part on the code
+from Mike Galbraith.  It removes all gotos and all loops and thus the
+risk of livelocks.
 
-Assume a preemptible kernel that is preempted just after
+I have tested the patch (together with the next one) on my i3 laptop and
+it didn't cause any problems.
 
-    msq = msq_obtain_object_check(ns, msqid)
+The bug is probably also present in 3.10 and 3.11, but for these kernels
+it might be simpler just to move the test of sma->complex_count after
+the spin_is_locked() test.
 
-in do_msgrcv().  The only lock that is held is rcu_read_lock().
+Details of the bug:
 
-Now the other thread processes IPC_RMID.  When the first task is
-resumed, then it will happily wait for messages on a deleted queue.
+Assume:
+ - sma->complex_count = 0.
+ - Thread 1: semtimedop(complex op that must sleep)
+ - Thread 2: semtimedop(simple op).
 
-Fix this by checking for if the queue has been deleted after taking the
-lock.
+Pseudo-Trace:
 
-Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-Reported-by: Manfred Spraul <manfred@colorfullife.com>
+Thread 1: sem_lock(): acquire sem_perm.lock
+Thread 1: sem_lock(): check for ongoing simple ops
+			Nothing ongoing, thread 2 is still before sem_lock().
+Thread 1: try_atomic_semop()
+	<<< preempted.
+
+Thread 2: sem_lock():
+        static inline int sem_lock(struct sem_array *sma, struct sembuf *sops,
+                                      int nsops)
+        {
+                int locknum;
+         again:
+                if (nsops == 1 && !sma->complex_count) {
+                        struct sem *sem = sma->sem_base + sops->sem_num;
+
+                        /* Lock just the semaphore we are interested in. */
+                        spin_lock(&sem->lock);
+
+                        /*
+                         * If sma->complex_count was set while we were spinning,
+                         * we may need to look at things we did not lock here.
+                         */
+                        if (unlikely(sma->complex_count)) {
+                                spin_unlock(&sem->lock);
+                                goto lock_array;
+                        }
+        <<<<<<<<<
+	<<< complex_count is still 0.
+	<<<
+        <<< Here it is preempted
+        <<<<<<<<<
+
+Thread 1: try_atomic_semop() returns, notices that it must sleep.
+Thread 1: increases sma->complex_count.
+Thread 1: drops sem_perm.lock
+Thread 2:
+                /*
+                 * Another process is holding the global lock on the
+                 * sem_array; we cannot enter our critical section,
+                 * but have to wait for the global lock to be released.
+                 */
+                if (unlikely(spin_is_locked(&sma->sem_perm.lock))) {
+                        spin_unlock(&sem->lock);
+                        spin_unlock_wait(&sma->sem_perm.lock);
+                        goto again;
+                }
+	<<< sem_perm.lock already dropped, thus no "goto again;"
+
+                locknum = sops->sem_num;
+
+Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
+Cc: Mike Galbraith <bitbucket@online.de>
 Cc: Rik van Riel <riel@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
+Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- ipc/msg.c |   13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ ipc/sem.c |  122 +++++++++++++++++++++++++++++++++++++++-----------------------
+ 1 file changed, 78 insertions(+), 44 deletions(-)
 
---- a/ipc/msg.c
-+++ b/ipc/msg.c
-@@ -689,6 +689,12 @@ long do_msgsnd(int msqid, long mtype, vo
- 		if (ipcperms(ns, &msq->q_perm, S_IWUGO))
- 			goto out_unlock0;
+--- a/ipc/sem.c
++++ b/ipc/sem.c
+@@ -244,70 +244,104 @@ static void merge_queues(struct sem_arra
+ }
  
-+		/* raced with RMID? */
-+		if (msq->q_perm.deleted) {
-+			err = -EIDRM;
-+			goto out_unlock0;
-+		}
+ /*
++ * Wait until all currently ongoing simple ops have completed.
++ * Caller must own sem_perm.lock.
++ * New simple ops cannot start, because simple ops first check
++ * that sem_perm.lock is free.
++ */
++static void sem_wait_array(struct sem_array *sma)
++{
++	int i;
++	struct sem *sem;
 +
- 		err = security_msg_queue_msgsnd(msq, msg, msgflg);
- 		if (err)
- 			goto out_unlock0;
-@@ -895,6 +901,13 @@ long do_msgrcv(int msqid, void __user *b
- 			goto out_unlock1;
++	for (i = 0; i < sma->sem_nsems; i++) {
++		sem = sma->sem_base + i;
++		spin_unlock_wait(&sem->lock);
++	}
++}
++
++/*
+  * If the request contains only one semaphore operation, and there are
+  * no complex transactions pending, lock only the semaphore involved.
+  * Otherwise, lock the entire semaphore array, since we either have
+  * multiple semaphores in our own semops, or we need to look at
+  * semaphores from other pending complex operations.
+- *
+- * Carefully guard against sma->complex_count changing between zero
+- * and non-zero while we are spinning for the lock. The value of
+- * sma->complex_count cannot change while we are holding the lock,
+- * so sem_unlock should be fine.
+- *
+- * The global lock path checks that all the local locks have been released,
+- * checking each local lock once. This means that the local lock paths
+- * cannot start their critical sections while the global lock is held.
+  */
+ static inline int sem_lock(struct sem_array *sma, struct sembuf *sops,
+ 			      int nsops)
+ {
+-	int locknum;
+- again:
+-	if (nsops == 1 && !sma->complex_count) {
+-		struct sem *sem = sma->sem_base + sops->sem_num;
++	struct sem *sem;
  
- 		ipc_lock_object(&msq->q_perm);
+-		/* Lock just the semaphore we are interested in. */
+-		spin_lock(&sem->lock);
++	if (nsops != 1) {
++		/* Complex operation - acquire a full lock */
++		ipc_lock_object(&sma->sem_perm);
+ 
+-		/*
+-		 * If sma->complex_count was set while we were spinning,
+-		 * we may need to look at things we did not lock here.
++		/* And wait until all simple ops that are processed
++		 * right now have dropped their locks.
+ 		 */
+-		if (unlikely(sma->complex_count)) {
+-			spin_unlock(&sem->lock);
+-			goto lock_array;
+-		}
++		sem_wait_array(sma);
++		return -1;
++	}
 +
-+		/* raced with RMID? */
-+		if (msq->q_perm.deleted) {
-+			msg = ERR_PTR(-EIDRM);
-+			goto out_unlock0;
-+		}
++	/*
++	 * Only one semaphore affected - try to optimize locking.
++	 * The rules are:
++	 * - optimized locking is possible if no complex operation
++	 *   is either enqueued or processed right now.
++	 * - The test for enqueued complex ops is simple:
++	 *      sma->complex_count != 0
++	 * - Testing for complex ops that are processed right now is
++	 *   a bit more difficult. Complex ops acquire the full lock
++	 *   and first wait that the running simple ops have completed.
++	 *   (see above)
++	 *   Thus: If we own a simple lock and the global lock is free
++	 *	and complex_count is now 0, then it will stay 0 and
++	 *	thus just locking sem->lock is sufficient.
++	 */
++	sem = sma->sem_base + sops->sem_num;
+ 
++	if (sma->complex_count == 0) {
+ 		/*
+-		 * Another process is holding the global lock on the
+-		 * sem_array; we cannot enter our critical section,
+-		 * but have to wait for the global lock to be released.
++		 * It appears that no complex operation is around.
++		 * Acquire the per-semaphore lock.
+ 		 */
+-		if (unlikely(spin_is_locked(&sma->sem_perm.lock))) {
+-			spin_unlock(&sem->lock);
+-			spin_unlock_wait(&sma->sem_perm.lock);
+-			goto again;
++		spin_lock(&sem->lock);
 +
- 		msg = find_msg(msq, &msgtyp, mode);
- 		if (!IS_ERR(msg)) {
- 			/*
++		/* Then check that the global lock is free */
++		if (!spin_is_locked(&sma->sem_perm.lock)) {
++			/* spin_is_locked() is not a memory barrier */
++			smp_mb();
++
++			/* Now repeat the test of complex_count:
++			 * It can't change anymore until we drop sem->lock.
++			 * Thus: if is now 0, then it will stay 0.
++			 */
++			if (sma->complex_count == 0) {
++				/* fast path successful! */
++				return sops->sem_num;
++			}
+ 		}
++		spin_unlock(&sem->lock);
++	}
++
++	/* slow path: acquire the full lock */
++	ipc_lock_object(&sma->sem_perm);
+ 
+-		locknum = sops->sem_num;
++	if (sma->complex_count == 0) {
++		/* False alarm:
++		 * There is no complex operation, thus we can switch
++		 * back to the fast path.
++		 */
++		spin_lock(&sem->lock);
++		ipc_unlock_object(&sma->sem_perm);
++		return sops->sem_num;
+ 	} else {
+-		int i;
+-		/*
+-		 * Lock the semaphore array, and wait for all of the
+-		 * individual semaphore locks to go away.  The code
+-		 * above ensures no new single-lock holders will enter
+-		 * their critical section while the array lock is held.
++		/* Not a false alarm, thus complete the sequence for a
++		 * full lock.
+ 		 */
+- lock_array:
+-		ipc_lock_object(&sma->sem_perm);
+-		for (i = 0; i < sma->sem_nsems; i++) {
+-			struct sem *sem = sma->sem_base + i;
+-			spin_unlock_wait(&sem->lock);
+-		}
+-		locknum = -1;
++		sem_wait_array(sma);
++		return -1;
+ 	}
+-	return locknum;
+ }
+ 
+ static inline void sem_unlock(struct sem_array *sma, int locknum)
 
 
