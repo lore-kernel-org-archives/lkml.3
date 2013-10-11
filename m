@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759492Ab3JKUGm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:06:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46189 "EHLO
+	id S1759507Ab3JKUHF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:07:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46185 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932521Ab3JKTlZ (ORCPT
+	with ESMTP id S932509Ab3JKTlY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:41:25 -0400
+	Fri, 11 Oct 2013 15:41:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Pravin Shelar <pshelar@nicira.com>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
+        Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 046/135] ip_tunnel: Fix a memory corruption in ip_tunnel_xmit
-Date: Fri, 11 Oct 2013 12:38:47 -0700
-Message-Id: <20131011193950.271836427@linuxfoundation.org>
+Subject: [ 045/135] ll_temac: Reset dma descriptors indexes on ndo_open
+Date: Fri, 11 Oct 2013 12:38:46 -0700
+Message-Id: <20131011193950.163462884@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -28,46 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steffen Klassert <steffen.klassert@secunet.com>
+From: Ricardo Ribalda <ricardo.ribalda@gmail.com>
 
-[ Upstream commit 3e08f4a72f689c6296d336c2aab4bddd60c93ae2 ]
+[ Upstream commit 7167cf0e8cd10287b7912b9ffcccd9616f382922 ]
 
-We might extend the used aera of a skb beyond the total
-headroom when we install the ipip header. Fix this by
-calling skb_cow_head() unconditionally.
+The dma descriptors indexes are only initialized on the probe function.
 
-Bug was introduced with commit c544193214
-("GRE: Refactor GRE tunneling code.")
+If a packet is on the buffer when temac_stop is called, the dma
+descriptors indexes can be left on a incorrect state where no other
+package can be sent.
 
-Cc: Pravin Shelar <pshelar@nicira.com>
-Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
+So an interface could be left in an usable state after ifdow/ifup.
+
+This patch makes sure that the descriptors indexes are in a proper
+status when the device is open.
+
+Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/ip_tunnel.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/net/ethernet/xilinx/ll_temac_main.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/net/ipv4/ip_tunnel.c
-+++ b/net/ipv4/ip_tunnel.c
-@@ -645,13 +645,13 @@ void ip_tunnel_xmit(struct sk_buff *skb,
+--- a/drivers/net/ethernet/xilinx/ll_temac_main.c
++++ b/drivers/net/ethernet/xilinx/ll_temac_main.c
+@@ -297,6 +297,12 @@ static int temac_dma_bd_init(struct net_
+ 		       lp->rx_bd_p + (sizeof(*lp->rx_bd_v) * (RX_BD_NUM - 1)));
+ 	lp->dma_out(lp, TX_CURDESC_PTR, lp->tx_bd_p);
  
- 	max_headroom = LL_RESERVED_SPACE(rt->dst.dev) + sizeof(struct iphdr)
- 			+ rt->dst.header_len;
--	if (max_headroom > dev->needed_headroom) {
-+	if (max_headroom > dev->needed_headroom)
- 		dev->needed_headroom = max_headroom;
--		if (skb_cow_head(skb, dev->needed_headroom)) {
--			dev->stats.tx_dropped++;
--			dev_kfree_skb(skb);
--			return;
--		}
++	/* Init descriptor indexes */
++	lp->tx_bd_ci = 0;
++	lp->tx_bd_next = 0;
++	lp->tx_bd_tail = 0;
++	lp->rx_bd_ci = 0;
 +
-+	if (skb_cow_head(skb, dev->needed_headroom)) {
-+		dev->stats.tx_dropped++;
-+		dev_kfree_skb(skb);
-+		return;
- 	}
+ 	return 0;
  
- 	err = iptunnel_xmit(dev_net(dev), rt, skb,
+ out:
 
 
