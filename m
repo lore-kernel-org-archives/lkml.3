@@ -1,208 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932274Ab3JKTkz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:40:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45925 "EHLO
+	id S933243Ab3JKUSM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:18:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46001 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932140Ab3JKTkl (ORCPT
+	with ESMTP id S932266Ab3JKTkz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:40:41 -0400
+	Fri, 11 Oct 2013 15:40:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lv Zheng <lv.zheng@intel.com>, Huang Ying <ying.huang@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Jonghwan Choi <jhbird.choi@samsung.com>
-Subject: [ 097/110] ACPI / IPMI: Fix atomic context requirement of ipmi_msg_handler()
-Date: Fri, 11 Oct 2013 12:39:17 -0700
-Message-Id: <20131011193818.372416278@linuxfoundation.org>
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 006/135] sh_eth: fix napi_{en|dis}able() calls racing against interrupts
+Date: Fri, 11 Oct 2013 12:38:07 -0700
+Message-Id: <20131011193945.890804488@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
-References: <20131011193807.584188672@linuxfoundation.org>
+In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
+References: <20131011193945.181603934@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.11-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Lv Zheng <lv.zheng@intel.com>
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
 
-commit 06a8566bcf5cf7db9843a82cde7a33c7bf3947d9 upstream.
+[ Upstream commit d2779e99468fd83ef1493c34f3803fec9aad8345 ]
 
-This patch fixes the issues indicated by the test results that
-ipmi_msg_handler() is invoked in atomic context.
+While implementing NAPI for the driver, I overlooked the race conditions where
+interrupt  handler might have called napi_schedule_prep() before napi_enable()
+was called or after napi_disable() was called. If RX interrupt happens, this
+would cause the endless interrupts and messages like:
 
-BUG: scheduling while atomic: kipmi0/18933/0x10000100
-Modules linked in: ipmi_si acpi_ipmi ...
-CPU: 3 PID: 18933 Comm: kipmi0 Tainted: G       AW    3.10.0-rc7+ #2
-Hardware name: QCI QSSC-S4R/QSSC-S4R, BIOS QSSC-S4R.QCI.01.00.0027.070120100606 07/01/2010
- ffff8838245eea00 ffff88103fc63c98 ffffffff814c4a1e ffff88103fc63ca8
- ffffffff814bfbab ffff88103fc63d28 ffffffff814c73e0 ffff88103933cbd4
- 0000000000000096 ffff88103fc63ce8 ffff88102f618000 ffff881035c01fd8
-Call Trace:
- <IRQ>  [<ffffffff814c4a1e>] dump_stack+0x19/0x1b
- [<ffffffff814bfbab>] __schedule_bug+0x46/0x54
- [<ffffffff814c73e0>] __schedule+0x83/0x59c
- [<ffffffff81058853>] __cond_resched+0x22/0x2d
- [<ffffffff814c794b>] _cond_resched+0x14/0x1d
- [<ffffffff814c6d82>] mutex_lock+0x11/0x32
- [<ffffffff8101e1e9>] ? __default_send_IPI_dest_field.constprop.0+0x53/0x58
- [<ffffffffa09e3f9c>] ipmi_msg_handler+0x23/0x166 [ipmi_si]
- [<ffffffff812bf6e4>] deliver_response+0x55/0x5a
- [<ffffffff812c0fd4>] handle_new_recv_msgs+0xb67/0xc65
- [<ffffffff81007ad1>] ? read_tsc+0x9/0x19
- [<ffffffff814c8620>] ? _raw_spin_lock_irq+0xa/0xc
- [<ffffffffa09e1128>] ipmi_thread+0x5c/0x146 [ipmi_si]
- ...
+sh-eth eth0: ignoring interrupt, status 0x00040000, mask 0x01ff009f.
 
-Also Tony Camuso says:
+The interrupt wouldn't even be masked by the kernel eventually since the handler
+would return IRQ_HANDLED all the time.
 
- We were getting occasional "Scheduling while atomic" call traces
- during boot on some systems. Problem was first seen on a Cisco C210
- but we were able to reproduce it on a Cisco c220m3. Setting
- CONFIG_LOCKDEP and LOCKDEP_SUPPORT to 'y' exposed a lockdep around
- tx_msg_lock in acpi_ipmi.c struct acpi_ipmi_device.
+As a fix, move napi_enable() call before request_irq() call and napi_disable()
+call after free_irq() call.
 
- =================================
- [ INFO: inconsistent lock state ]
- 2.6.32-415.el6.x86_64-debug-splck #1
- ---------------------------------
- inconsistent {SOFTIRQ-ON-W} -> {IN-SOFTIRQ-W} usage.
- ksoftirqd/3/17 [HC0[0]:SC1[1]:HE1:SE0] takes:
-  (&ipmi_device->tx_msg_lock){+.?...}, at: [<ffffffff81337a27>] ipmi_msg_handler+0x71/0x126
- {SOFTIRQ-ON-W} state was registered at:
-   [<ffffffff810ba11c>] __lock_acquire+0x63c/0x1570
-   [<ffffffff810bb0f4>] lock_acquire+0xa4/0x120
-   [<ffffffff815581cc>] __mutex_lock_common+0x4c/0x400
-   [<ffffffff815586ea>] mutex_lock_nested+0x4a/0x60
-   [<ffffffff8133789d>] acpi_ipmi_space_handler+0x11b/0x234
-   [<ffffffff81321c62>] acpi_ev_address_space_dispatch+0x170/0x1be
-
-The fix implemented by this change has been tested by Tony:
-
- Tested the patch in a boot loop with lockdep debug enabled and never
- saw the problem in over 400 reboots.
-
-Reported-and-tested-by: Tony Camuso <tcamuso@redhat.com>
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-Reviewed-by: Huang Ying <ying.huang@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Cc: Jonghwan Choi <jhbird.choi@samsung.com>
+Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/acpi/acpi_ipmi.c |   24 ++++++++++++++----------
- 1 file changed, 14 insertions(+), 10 deletions(-)
+ drivers/net/ethernet/renesas/sh_eth.c |   12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
---- a/drivers/acpi/acpi_ipmi.c
-+++ b/drivers/acpi/acpi_ipmi.c
-@@ -39,6 +39,7 @@
- #include <linux/ipmi.h>
- #include <linux/device.h>
- #include <linux/pnp.h>
-+#include <linux/spinlock.h>
+--- a/drivers/net/ethernet/renesas/sh_eth.c
++++ b/drivers/net/ethernet/renesas/sh_eth.c
+@@ -1857,11 +1857,13 @@ static int sh_eth_open(struct net_device
  
- MODULE_AUTHOR("Zhao Yakui");
- MODULE_DESCRIPTION("ACPI IPMI Opregion driver");
-@@ -57,7 +58,7 @@ struct acpi_ipmi_device {
- 	struct list_head head;
- 	/* the IPMI request message list */
- 	struct list_head tx_msg_list;
--	struct mutex	tx_msg_lock;
-+	spinlock_t	tx_msg_lock;
- 	acpi_handle handle;
- 	struct pnp_dev *pnp_dev;
- 	ipmi_user_t	user_interface;
-@@ -147,6 +148,7 @@ static void acpi_format_ipmi_msg(struct
- 	struct kernel_ipmi_msg *msg;
- 	struct acpi_ipmi_buffer *buffer;
- 	struct acpi_ipmi_device *device;
-+	unsigned long flags;
+ 	pm_runtime_get_sync(&mdp->pdev->dev);
  
- 	msg = &tx_msg->tx_message;
- 	/*
-@@ -177,10 +179,10 @@ static void acpi_format_ipmi_msg(struct
- 
- 	/* Get the msgid */
- 	device = tx_msg->device;
--	mutex_lock(&device->tx_msg_lock);
-+	spin_lock_irqsave(&device->tx_msg_lock, flags);
- 	device->curr_msgid++;
- 	tx_msg->tx_msgid = device->curr_msgid;
--	mutex_unlock(&device->tx_msg_lock);
-+	spin_unlock_irqrestore(&device->tx_msg_lock, flags);
- }
- 
- static void acpi_format_ipmi_response(struct acpi_ipmi_msg *msg,
-@@ -242,6 +244,7 @@ static void ipmi_msg_handler(struct ipmi
- 	int msg_found = 0;
- 	struct acpi_ipmi_msg *tx_msg;
- 	struct pnp_dev *pnp_dev = ipmi_device->pnp_dev;
-+	unsigned long flags;
- 
- 	if (msg->user != ipmi_device->user_interface) {
- 		dev_warn(&pnp_dev->dev, "Unexpected response is returned. "
-@@ -250,7 +253,7 @@ static void ipmi_msg_handler(struct ipmi
- 		ipmi_free_recv_msg(msg);
- 		return;
- 	}
--	mutex_lock(&ipmi_device->tx_msg_lock);
-+	spin_lock_irqsave(&ipmi_device->tx_msg_lock, flags);
- 	list_for_each_entry(tx_msg, &ipmi_device->tx_msg_list, head) {
- 		if (msg->msgid == tx_msg->tx_msgid) {
- 			msg_found = 1;
-@@ -258,7 +261,7 @@ static void ipmi_msg_handler(struct ipmi
- 		}
++	napi_enable(&mdp->napi);
++
+ 	ret = request_irq(ndev->irq, sh_eth_interrupt,
+ 			  mdp->cd->irq_flags, ndev->name, ndev);
+ 	if (ret) {
+ 		dev_err(&ndev->dev, "Can not assign IRQ number\n");
+-		return ret;
++		goto out_napi_off;
  	}
  
--	mutex_unlock(&ipmi_device->tx_msg_lock);
-+	spin_unlock_irqrestore(&ipmi_device->tx_msg_lock, flags);
- 	if (!msg_found) {
- 		dev_warn(&pnp_dev->dev, "Unexpected response (msg id %ld) is "
- 			"returned.\n", msg->msgid);
-@@ -378,6 +381,7 @@ acpi_ipmi_space_handler(u32 function, ac
- 	struct acpi_ipmi_device *ipmi_device = handler_context;
- 	int err, rem_time;
- 	acpi_status status;
-+	unsigned long flags;
- 	/*
- 	 * IPMI opregion message.
- 	 * IPMI message is firstly written to the BMC and system software
-@@ -395,9 +399,9 @@ acpi_ipmi_space_handler(u32 function, ac
- 		return AE_NO_MEMORY;
+ 	/* Descriptor set */
+@@ -1879,12 +1881,12 @@ static int sh_eth_open(struct net_device
+ 	if (ret)
+ 		goto out_free_irq;
  
- 	acpi_format_ipmi_msg(tx_msg, address, value);
--	mutex_lock(&ipmi_device->tx_msg_lock);
-+	spin_lock_irqsave(&ipmi_device->tx_msg_lock, flags);
- 	list_add_tail(&tx_msg->head, &ipmi_device->tx_msg_list);
--	mutex_unlock(&ipmi_device->tx_msg_lock);
-+	spin_unlock_irqrestore(&ipmi_device->tx_msg_lock, flags);
- 	err = ipmi_request_settime(ipmi_device->user_interface,
- 					&tx_msg->addr,
- 					tx_msg->tx_msgid,
-@@ -413,9 +417,9 @@ acpi_ipmi_space_handler(u32 function, ac
- 	status = AE_OK;
+-	napi_enable(&mdp->napi);
+-
+ 	return ret;
  
- end_label:
--	mutex_lock(&ipmi_device->tx_msg_lock);
-+	spin_lock_irqsave(&ipmi_device->tx_msg_lock, flags);
- 	list_del(&tx_msg->head);
--	mutex_unlock(&ipmi_device->tx_msg_lock);
-+	spin_unlock_irqrestore(&ipmi_device->tx_msg_lock, flags);
- 	kfree(tx_msg);
- 	return status;
+ out_free_irq:
+ 	free_irq(ndev->irq, ndev);
++out_napi_off:
++	napi_disable(&mdp->napi);
+ 	pm_runtime_put_sync(&mdp->pdev->dev);
+ 	return ret;
  }
-@@ -457,7 +461,7 @@ static void acpi_add_ipmi_device(struct
+@@ -1976,8 +1978,6 @@ static int sh_eth_close(struct net_devic
+ {
+ 	struct sh_eth_private *mdp = netdev_priv(ndev);
  
- 	INIT_LIST_HEAD(&ipmi_device->head);
+-	napi_disable(&mdp->napi);
+-
+ 	netif_stop_queue(ndev);
  
--	mutex_init(&ipmi_device->tx_msg_lock);
-+	spin_lock_init(&ipmi_device->tx_msg_lock);
- 	INIT_LIST_HEAD(&ipmi_device->tx_msg_list);
- 	ipmi_install_space_handler(ipmi_device);
+ 	/* Disable interrupts by clearing the interrupt mask. */
+@@ -1995,6 +1995,8 @@ static int sh_eth_close(struct net_devic
+ 
+ 	free_irq(ndev->irq, ndev);
+ 
++	napi_disable(&mdp->napi);
++
+ 	/* Free all the skbuffs in the Rx queue. */
+ 	sh_eth_ring_free(ndev);
  
 
 
