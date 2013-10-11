@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755938Ab3JKUx7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:53:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45392 "EHLO
+	id S1755846Ab3JKUyP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:54:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45388 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758259Ab3JKTh0 (ORCPT
+	with ESMTP id S1758250Ab3JKThZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:37:26 -0400
+	Fri, 11 Oct 2013 15:37:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joerg Kalisch <the_force@gmx.de>,
-        Christian Lamparter <chunkeey@googlemail.com>,
+        Jason Andrews <jasona@cadence.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 39/48] p54usb: add USB ID for Corega WLUSB2GTST USB adapter
-Date: Fri, 11 Oct 2013 12:36:46 -0700
-Message-Id: <20131011193641.487278843@linuxfoundation.org>
+Subject: [ 38/48] rtlwifi: Align private space in rtl_priv struct
+Date: Fri, 11 Oct 2013 12:36:45 -0700
+Message-Id: <20131011193641.378548365@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193637.253208688@linuxfoundation.org>
 References: <20131011193637.253208688@linuxfoundation.org>
@@ -28,30 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian Lamparter <chunkeey@googlemail.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 1e43692cdb7cc445d6347d8a5207d9cef0c71434 upstream.
+commit 60ce314d1750fef843e9db70050e09e49f838b69 upstream.
 
-Added USB ID for Corega WLUSB2GTST USB adapter.
+The private array at the end of the rtl_priv struct is not aligned.
+On ARM architecture, this causes an alignment trap and is fixed by aligning
+that array with __align(sizeof(void *)). That should properly align that
+space according to the requirements of all architectures.
 
-Reported-by: Joerg Kalisch <the_force@gmx.de>
-Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
+Reported-by: Jason Andrews <jasona@cadence.com>
+Tested-by: Jason Andrews <jasona@cadence.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/p54/p54usb.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/wireless/rtlwifi/wifi.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/p54/p54usb.c
-+++ b/drivers/net/wireless/p54/p54usb.c
-@@ -83,6 +83,7 @@ static struct usb_device_id p54u_table[]
- 	{USB_DEVICE(0x06a9, 0x000e)},	/* Westell 802.11g USB (A90-211WG-01) */
- 	{USB_DEVICE(0x06b9, 0x0121)},	/* Thomson SpeedTouch 121g */
- 	{USB_DEVICE(0x0707, 0xee13)},   /* SMC 2862W-G version 2 */
-+	{USB_DEVICE(0x07aa, 0x0020)},	/* Corega WLUSB2GTST USB */
- 	{USB_DEVICE(0x0803, 0x4310)},	/* Zoom 4410a */
- 	{USB_DEVICE(0x083a, 0x4521)},   /* Siemens Gigaset USB Adapter 54 version 2 */
- 	{USB_DEVICE(0x083a, 0x4531)},	/* T-Com Sinus 154 data II */
+--- a/drivers/net/wireless/rtlwifi/wifi.h
++++ b/drivers/net/wireless/rtlwifi/wifi.h
+@@ -1638,7 +1638,7 @@ struct rtl_priv {
+ 	   that it points to the data allocated
+ 	   beyond  this structure like:
+ 	   rtl_pci_priv or rtl_usb_priv */
+-	u8 priv[0];
++	u8 priv[0] __aligned(sizeof(void *));
+ };
+ 
+ #define rtl_priv(hw)		(((struct rtl_priv *)(hw)->priv))
 
 
