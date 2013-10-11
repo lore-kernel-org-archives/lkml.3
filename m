@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932581Ab3JKUDZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:03:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46250 "EHLO
+	id S1759402Ab3JKUD5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:03:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46242 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932558Ab3JKTlc (ORCPT
+	with ESMTP id S932552Ab3JKTlb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:41:32 -0400
+	Fri, 11 Oct 2013 15:41:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Dan Carpenter <dan.carpenter@oracle.com>,
         Mark Brown <broonie@linaro.org>
-Subject: [ 057/135] ASoC: ab8500-codec: info leak in anc_status_control_put()
-Date: Fri, 11 Oct 2013 12:38:58 -0700
-Message-Id: <20131011193951.474213125@linuxfoundation.org>
+Subject: [ 055/135] ASoC: max98095: a couple array underflows
+Date: Fri, 11 Oct 2013 12:38:56 -0700
+Message-Id: <20131011193951.261550365@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -29,41 +29,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit d63733aed90b432e5cc489ddfa28e342f91b4652 upstream.
+commit f8d7b13e14357ed19d2ca2799539600418dc3939 upstream.
 
-If the user passes an invalid value it leads to an info leak when we
-print the error message or it could oops.  This is called with user
-supplied data from snd_ctl_elem_write().
+The ->put() function are called from snd_ctl_elem_write() with user
+supplied data.  The limit checks here could underflow leading to a
+crash.
 
 Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/ab8500-codec.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ sound/soc/codecs/max98095.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/sound/soc/codecs/ab8500-codec.c
-+++ b/sound/soc/codecs/ab8500-codec.c
-@@ -1225,13 +1225,18 @@ static int anc_status_control_put(struct
- 	struct ab8500_codec_drvdata *drvdata = dev_get_drvdata(codec->dev);
- 	struct device *dev = codec->dev;
- 	bool apply_fir, apply_iir;
--	int req, status;
-+	unsigned int req;
-+	int status;
- 
- 	dev_dbg(dev, "%s: Enter.\n", __func__);
- 
- 	mutex_lock(&drvdata->anc_lock);
- 
- 	req = ucontrol->value.integer.value[0];
-+	if (req >= ARRAY_SIZE(enum_anc_state)) {
-+		status = -EINVAL;
-+		goto cleanup;
-+	}
- 	if (req != ANC_APPLY_FIR_IIR && req != ANC_APPLY_FIR &&
- 		req != ANC_APPLY_IIR) {
- 		dev_err(dev, "%s: ERROR: Unsupported status to set '%s'!\n",
+--- a/sound/soc/codecs/max98095.c
++++ b/sound/soc/codecs/max98095.c
+@@ -1863,7 +1863,7 @@ static int max98095_put_eq_enum(struct s
+ 	struct max98095_pdata *pdata = max98095->pdata;
+ 	int channel = max98095_get_eq_channel(kcontrol->id.name);
+ 	struct max98095_cdata *cdata;
+-	int sel = ucontrol->value.integer.value[0];
++	unsigned int sel = ucontrol->value.integer.value[0];
+ 	struct max98095_eq_cfg *coef_set;
+ 	int fs, best, best_val, i;
+ 	int regmask, regsave;
+@@ -2016,7 +2016,7 @@ static int max98095_put_bq_enum(struct s
+ 	struct max98095_pdata *pdata = max98095->pdata;
+ 	int channel = max98095_get_bq_channel(codec, kcontrol->id.name);
+ 	struct max98095_cdata *cdata;
+-	int sel = ucontrol->value.integer.value[0];
++	unsigned int sel = ucontrol->value.integer.value[0];
+ 	struct max98095_biquad_cfg *coef_set;
+ 	int fs, best, best_val, i;
+ 	int regmask, regsave;
 
 
