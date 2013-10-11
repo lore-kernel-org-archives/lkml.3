@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932780Ab3JKUIl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:08:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46161 "EHLO
+	id S932818Ab3JKUI4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:08:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46149 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932482Ab3JKTlV (ORCPT
+	with ESMTP id S932472Ab3JKTlT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:41:21 -0400
+	Fri, 11 Oct 2013 15:41:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joseph Chang <joseph_chang@davicom.com.tw>,
-        Peter Korsgaard <peter@korsgaard.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 040/135] dm9601: fix IFF_ALLMULTI handling
-Date: Fri, 11 Oct 2013 12:38:41 -0700
-Message-Id: <20131011193949.598811197@linuxfoundation.org>
+        Vineet Gupta <vgupta@synopsys.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Brodkin <abrodkin@synopsys.com>, netdev@vger.kernel.org,
+        arc-linux-dev@synopsys.com
+Subject: [ 028/135] ethernet/arc/arc_emac: Fix huge delays in large file copies
+Date: Fri, 11 Oct 2013 12:38:29 -0700
+Message-Id: <20131011193948.290109551@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -28,31 +29,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Korsgaard <peter@korsgaard.com>
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 
-[ Upstream commit bf0ea6380724beb64f27a722dfc4b0edabff816e ]
+[ Upstream commit 27082ee1b92f4d41e78b85fe40f6ab39673fba00 ]
 
-Pass-all-multicast is controlled by bit 3 in RX control, not bit 2
-(pass undersized frames).
+copying large files to a NFS mounted host was taking absurdly large
+time.
 
-Reported-by: Joseph Chang <joseph_chang@davicom.com.tw>
-Signed-off-by: Peter Korsgaard <peter@korsgaard.com>
+Turns out that TX BD reclaim had a sublte bug.
+
+Loop starts off from @txbd_dirty cursor and stops when it hits a BD
+still in use by controller. However when it stops it needs to keep the
+cursor at that very BD to resume scanning in next iteration. However it
+was erroneously incrementing the cursor, causing the next scan(s) to
+fail too, unless the BD chain was completely drained out.
+
+[ARCLinux]$ ls -l -sh /disk/log.txt
+ 17976 -rw-r--r--    1 root     root       17.5M Sep  /disk/log.txt
+
+========== Before =====================
+[ARCLinux]$ time cp /disk/log.txt /mnt/.
+real    31m 7.95s
+user    0m 0.00s
+sys     0m 0.10s
+
+========== After =====================
+[ARCLinux]$ time cp /disk/log.txt /mnt/.
+real    0m 24.33s
+user    0m 0.00s
+sys     0m 0.19s
+
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+Cc: Alexey Brodkin <abrodkin@synopsys.com> (commit_signer:3/4=75%)
+Cc: "David S. Miller" <davem@davemloft.net> (commit_signer:3/4=75%)
+Cc: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: arc-linux-dev@synopsys.com
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/usb/dm9601.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/ethernet/arc/emac_main.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/usb/dm9601.c
-+++ b/drivers/net/usb/dm9601.c
-@@ -303,7 +303,7 @@ static void dm9601_set_multicast(struct
- 		rx_ctl |= 0x02;
- 	} else if (net->flags & IFF_ALLMULTI ||
- 		   netdev_mc_count(net) > DM_MAX_MCAST) {
--		rx_ctl |= 0x04;
-+		rx_ctl |= 0x08;
- 	} else if (!netdev_mc_empty(net)) {
- 		struct netdev_hw_addr *ha;
+--- a/drivers/net/ethernet/arc/emac_main.c
++++ b/drivers/net/ethernet/arc/emac_main.c
+@@ -149,8 +149,6 @@ static void arc_emac_tx_clean(struct net
+ 		struct sk_buff *skb = tx_buff->skb;
+ 		unsigned int info = le32_to_cpu(txbd->info);
  
+-		*txbd_dirty = (*txbd_dirty + 1) % TX_BD_NUM;
+-
+ 		if ((info & FOR_EMAC) || !txbd->data)
+ 			break;
+ 
+@@ -180,6 +178,8 @@ static void arc_emac_tx_clean(struct net
+ 		txbd->data = 0;
+ 		txbd->info = 0;
+ 
++		*txbd_dirty = (*txbd_dirty + 1) % TX_BD_NUM;
++
+ 		if (netif_queue_stopped(ndev))
+ 			netif_wake_queue(ndev);
+ 	}
 
 
