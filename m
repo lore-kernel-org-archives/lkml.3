@@ -1,25 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758854Ab3JKTj4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:39:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45556 "EHLO
+	id S964890Ab3JKUky (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:40:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45616 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758817Ab3JKTju (ORCPT
+	with ESMTP id S1758817Ab3JKTj4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:39:50 -0400
+	Fri, 11 Oct 2013 15:39:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Vrabel <david.vrabel@citrix.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
+        Roger Luethi <rl@hellgate.ch>,
+        =?UTF-8?q?Peter=20Bostr=C3=B6m?= <peter.bostrom@netrounds.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 020/110] xen-netback: count number required slots for an skb more carefully
-Date: Fri, 11 Oct 2013 12:38:00 -0700
-Message-Id: <20131011193809.819430001@linuxfoundation.org>
+Subject: [ 031/110] via-rhine: fix VLAN priority field (PCP, IEEE 802.1p)
+Date: Fri, 11 Oct 2013 12:38:11 -0700
+Message-Id: <20131011193811.126814073@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
 References: <20131011193807.584188672@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,175 +31,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: Roger Luethi <rl@hellgate.ch>
 
-[ Upstream commit 6e43fc04a6bc357d260583b8440882f28069207f ]
+[ Upstream commit 207070f5221e2a901d56a49df9cde47d9b716cd7 ]
 
-When a VM is providing an iSCSI target and the LUN is used by the
-backend domain, the generated skbs for direct I/O writes to the disk
-have large, multi-page skb->data but no frags.
+Outgoing packets sent by via-rhine have their VLAN PCP field off by one
+(when hardware acceleration is enabled). The TX descriptor expects only VID
+and PCP (without a CFI/DEI bit).
 
-With some lengths and starting offsets, xen_netbk_count_skb_slots()
-would be one short because the simple calculation of
-DIV_ROUND_UP(skb_headlen(), PAGE_SIZE) was not accounting for the
-decisions made by start_new_rx_buffer() which does not guarantee
-responses are fully packed.
+Peter Boström noticed and reported the bug.
 
-For example, a skb with length < 2 pages but which spans 3 pages would
-be counted as requiring 2 slots but would actually use 3 slots.
-
-skb->data:
-
-    |        1111|222222222222|3333        |
-
-Fully packed, this would need 2 slots:
-
-    |111122222222|22223333    |
-
-But because the 2nd page wholy fits into a slot it is not split across
-slots and goes into a slot of its own:
-
-    |1111        |222222222222|3333        |
-
-Miscounting the number of slots means netback may push more responses
-than the number of available requests.  This will cause the frontend
-to get very confused and report "Too many frags/slots".  The frontend
-never recovers and will eventually BUG.
-
-Fix this by counting the number of required slots more carefully.  In
-xen_netbk_count_skb_slots(), more closely follow the algorithm used by
-xen_netbk_gop_skb() by introducing xen_netbk_count_frag_slots() which
-is the dry-run equivalent of netbk_gop_frag_copy().
-
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
+Signed-off-by: Roger Luethi <rl@hellgate.ch>
+Cc: Peter Boström <peter.bostrom@netrounds.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/xen-netback/netback.c |   94 +++++++++++++++++++++++++-------------
- 1 file changed, 64 insertions(+), 30 deletions(-)
+ drivers/net/ethernet/via/via-rhine.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
---- a/drivers/net/xen-netback/netback.c
-+++ b/drivers/net/xen-netback/netback.c
-@@ -354,6 +354,49 @@ static bool start_new_rx_buffer(int offs
- 	return false;
- }
+--- a/drivers/net/ethernet/via/via-rhine.c
++++ b/drivers/net/ethernet/via/via-rhine.c
+@@ -32,7 +32,7 @@
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
  
-+struct xenvif_count_slot_state {
-+	unsigned long copy_off;
-+	bool head;
-+};
-+
-+unsigned int xenvif_count_frag_slots(struct xenvif *vif,
-+				     unsigned long offset, unsigned long size,
-+				     struct xenvif_count_slot_state *state)
-+{
-+	unsigned count = 0;
-+
-+	offset &= ~PAGE_MASK;
-+
-+	while (size > 0) {
-+		unsigned long bytes;
-+
-+		bytes = PAGE_SIZE - offset;
-+
-+		if (bytes > size)
-+			bytes = size;
-+
-+		if (start_new_rx_buffer(state->copy_off, bytes, state->head)) {
-+			count++;
-+			state->copy_off = 0;
-+		}
-+
-+		if (state->copy_off + bytes > MAX_BUFFER_OFFSET)
-+			bytes = MAX_BUFFER_OFFSET - state->copy_off;
-+
-+		state->copy_off += bytes;
-+
-+		offset += bytes;
-+		size -= bytes;
-+
-+		if (offset == PAGE_SIZE)
-+			offset = 0;
-+
-+		state->head = false;
-+	}
-+
-+	return count;
-+}
-+
- /*
-  * Figure out how many ring slots we're going to need to send @skb to
-  * the guest. This function is essentially a dry run of
-@@ -361,48 +404,39 @@ static bool start_new_rx_buffer(int offs
-  */
- unsigned int xen_netbk_count_skb_slots(struct xenvif *vif, struct sk_buff *skb)
- {
-+	struct xenvif_count_slot_state state;
- 	unsigned int count;
--	int i, copy_off;
-+	unsigned char *data;
-+	unsigned i;
+ #define DRV_NAME	"via-rhine"
+-#define DRV_VERSION	"1.5.0"
++#define DRV_VERSION	"1.5.1"
+ #define DRV_RELDATE	"2010-10-09"
  
--	count = DIV_ROUND_UP(skb_headlen(skb), PAGE_SIZE);
-+	state.head = true;
-+	state.copy_off = 0;
+ #include <linux/types.h>
+@@ -1694,7 +1694,12 @@ static netdev_tx_t rhine_start_tx(struct
+ 		cpu_to_le32(TXDESC | (skb->len >= ETH_ZLEN ? skb->len : ETH_ZLEN));
  
--	copy_off = skb_headlen(skb) % PAGE_SIZE;
-+	/* Slot for the first (partial) page of data. */
-+	count = 1;
- 
-+	/* Need a slot for the GSO prefix for GSO extra data? */
- 	if (skb_shinfo(skb)->gso_size)
- 		count++;
- 
--	for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
--		unsigned long size = skb_frag_size(&skb_shinfo(skb)->frags[i]);
--		unsigned long offset = skb_shinfo(skb)->frags[i].page_offset;
--		unsigned long bytes;
--
--		offset &= ~PAGE_MASK;
--
--		while (size > 0) {
--			BUG_ON(offset >= PAGE_SIZE);
--			BUG_ON(copy_off > MAX_BUFFER_OFFSET);
-+	data = skb->data;
-+	while (data < skb_tail_pointer(skb)) {
-+		unsigned long offset = offset_in_page(data);
-+		unsigned long size = PAGE_SIZE - offset;
- 
--			bytes = PAGE_SIZE - offset;
-+		if (data + size > skb_tail_pointer(skb))
-+			size = skb_tail_pointer(skb) - data;
- 
--			if (bytes > size)
--				bytes = size;
-+		count += xenvif_count_frag_slots(vif, offset, size, &state);
- 
--			if (start_new_rx_buffer(copy_off, bytes, 0)) {
--				count++;
--				copy_off = 0;
--			}
--
--			if (copy_off + bytes > MAX_BUFFER_OFFSET)
--				bytes = MAX_BUFFER_OFFSET - copy_off;
--
--			copy_off += bytes;
-+		data += size;
-+	}
- 
--			offset += bytes;
--			size -= bytes;
-+	for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
-+		unsigned long size = skb_frag_size(&skb_shinfo(skb)->frags[i]);
-+		unsigned long offset = skb_shinfo(skb)->frags[i].page_offset;
- 
--			if (offset == PAGE_SIZE)
--				offset = 0;
--		}
-+		count += xenvif_count_frag_slots(vif, offset, size, &state);
+ 	if (unlikely(vlan_tx_tag_present(skb))) {
+-		rp->tx_ring[entry].tx_status = cpu_to_le32((vlan_tx_tag_get(skb)) << 16);
++		u16 vid_pcp = vlan_tx_tag_get(skb);
++
++		/* drop CFI/DEI bit, register needs VID and PCP */
++		vid_pcp = (vid_pcp & VLAN_VID_MASK) |
++			  ((vid_pcp & VLAN_PRIO_MASK) >> 1);
++		rp->tx_ring[entry].tx_status = cpu_to_le32((vid_pcp) << 16);
+ 		/* request tagging */
+ 		rp->tx_ring[entry].desc_length |= cpu_to_le32(0x020000);
  	}
- 	return count;
- }
 
 
