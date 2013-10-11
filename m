@@ -1,65 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758451Ab3JKP5B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 11:57:01 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:64322 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758364Ab3JKP46 (ORCPT
+	id S1758539Ab3JKP5y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 11:57:54 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:50920 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757895Ab3JKP5v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 11:56:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <20131011154352.GO29913@atomide.com>
-References: <20131003054104.8941.88857.stgit@localhost>
-	<20131003054221.8941.87801.stgit@localhost>
-	<5256AA7F.8030005@ti.com>
-	<20131010160018.GA29913@atomide.com>
-	<CACRpkdaG-PQA39XSjKUgM9TyeD7srgm_8s+NazrDKJ0gmNLcwg@mail.gmail.com>
-	<20131010162015.GC29913@atomide.com>
-	<CACRpkdYF83ghUf60Wmrti53UJ1bWV30GW_P9GjWnsOcZHbsv+Q@mail.gmail.com>
-	<5257BD3E.5000707@ti.com>
-	<CACRpkdYJNaiAAHhYatd6g5_wVt0QEUxOvsk6nQn9o=_i5zfWrA@mail.gmail.com>
-	<20131011154352.GO29913@atomide.com>
-Date: Fri, 11 Oct 2013 17:56:58 +0200
-Message-ID: <CACRpkdZhbadd5d4P+2B0_DktqK4CHzZPVJC8kPHZYUnp8TaxsA@mail.gmail.com>
-Subject: Re: [PATCH 4/6] pinctrl: single: Add support for wake-up interrupts
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Roger Quadros <rogerq@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Prakash Manjunathappa <prakash.pm@ti.com>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>,
-        =?ISO-8859-1?Q?Beno=EEt_Cousson?= <bcousson@baylibre.com>,
-        Linux-OMAP <linux-omap@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 11 Oct 2013 11:57:51 -0400
+X-AuditID: cbfee61b-b7f776d0000016c8-a4-52581ffd4475
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Eduardo Valentin <eduardo.valentin@ti.com>
+Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>, linux-pm@vger.kernel.org,
+        naveenkrishna.ch@gmail.com, rui.zhang@intel.com,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        amit.daniel@samsung.com, kgene.kim@samsung.com,
+        devicetree@vger.kernel.org, Lukasz Majewski <l.majewski@samsung.com>
+Subject: Re: [PATCH 1/3 v4] thermal: samsung: correct the fall interrupt en,
+ status bit fields
+Date: Fri, 11 Oct 2013 17:57:45 +0200
+Message-id: <1615083.zyGXhBfPcS@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-52-generic-pae; KDE/4.8.5; i686; ; )
+In-reply-to: <525814EE.8060700@ti.com>
+References: <1378268629-2886-3-git-send-email-ch.naveen@samsung.com>
+ <2386580.3V2pzai3k2@amdc1032> <525814EE.8060700@ti.com>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=ISO-8859-1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrALMWRmVeSWpSXmKPExsVy+t9jQd2/8hFBBtuXGlg0XA2xuPv8MKPF
+	/CPnWC3W7P/JZNG74CqbxZuHmxktLu+aw2bxufcIo8WM8/uYLBZt+89s8eRhH5sDt8fOWXfZ
+	PRbvecnk0bdlFaPH8RvbmTw+b5ILYI3isklJzcksSy3St0vgypi/aRJbwTODihXr5jM2MPZr
+	dDFyckgImEhM3vmFFcIWk7hwbz1bFyMXh5DAdEaJs4/Os0M4LUwSXz7eYQKpYhOwkpjYvooR
+	xBYR0JO48eIJE0gRs8A+Jonlb6+CFQkLJEj8ONkDZrMIqErcutAN1sAroCkx4ecMFhBbVMBT
+	4tOkpcwgNqeAmsTvs0/BzhASqJPY2fGeHaJeUOLH5Htg9cwC8hL79k9lhbB1JPa3TmObwCgw
+	C0nZLCRls5CULWBkXsUomlqQXFCclJ5rpFecmFtcmpeul5yfu4kRHA/PpHcwrmqwOMQowMGo
+	xMNrwRAeJMSaWFZcmXuIUYKDWUmEV0QiIkiINyWxsiq1KD++qDQntfgQozQHi5I478FW60Ah
+	gfTEktTs1NSC1CKYLBMHp1QD44QlmQevnWU9dkpFvDA/2DslTvvBwuTmXxuW9X/e7W1iczUj
+	b9fxvSEMHfV558L/36v0Evv3/8wHkR8369aq5K73U2uLvvbQKeWCVP4NpppjGp1KK1/erFy/
+	ZsmkpnUKV8IvJbe7qvSw3vycmZS7oHYG4536w0arTW5GTuHKPZosb8D8vzN6kRJLcUaioRZz
+	UXEiAC14nnaDAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 11, 2013 at 5:43 PM, Tony Lindgren <tony@atomide.com> wrote:
-> * Linus Walleij <linus.walleij@linaro.org> [131011 03:40]:
->> On Fri, Oct 11, 2013 at 10:56 AM, Roger Quadros <rogerq@ti.com> wrote:
->>
->> > The register handling is fine. But how do we deal with resource handling?
->> > e.g. the block that has the deep-core registers might need to be clocked or powered
->> > before the registers can be accessed.
->>
->> Yeah I saw this in the code there.
->>
->> In this case it seems syscon-type regmap access can be used to
->> read/write the registers, so maybe the pin controller also need to
->>  get a handle on some clock etc?
->
-> Uhh, let's not go there.. The resource availability needs to be
-> handled transparently in regmap code and the reg provider hardware
-> module driver using runtime PM.
 
-OK we can surely discuss this with broonie, it makes sense to
-have regmap be able to do its deed transparently.
+Hi,
 
-Yours,
-Linus Walleij
+On Friday, October 11, 2013 11:10:38 AM Eduardo Valentin wrote:
+> Hi Naveen,
+> 
+> On 09-10-2013 10:03, Bartlomiej Zolnierkiewicz wrote:
+> > 
+> > Hi,
+> > 
+> > All patches (#1-#3) look good to me, FWIW you can add:
+> > 
+> > 	Reviewed-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> > 
+> > Please note that (at least) patch #3 conflicts with Lukasz's EXYNOS4412
+> > fixup patchset:
+> > 
+> > 	https://lkml.org/lkml/2013/10/9/35
+> > 
+> > It is up to Eduardo to resolve this but it probably would be better to
+> > merge EXYNOS4412 fixes first and then add EXYNOS5420 support. This would
+> > require you to port patch #3 over Lukasz's patchset though.
+> 
+> My question is if this fix applies also to EXYNOS4412, as it  is not
+> mentioned in the patch description and the change affects all supported
+
+This patch doesn't affect EXYNOS4210 as exynos4210_tmu_registers struct
+uses the default zero value for inten_fall_mask, inten_fall_shift and
+intclr_fall_shift.
+
+> chip version deliberately. Has this change been validated on all
+> supported chip versions?
+> 
+> Amit, I saw you ack, but still, it is not clear how this change behaves
+> across supported hardware.
+
+For EXYNOS4412 and EXYNOS5250 this patch doesn't cause any functionality
+changes because while the patch changes inten_fall_shift usage to
+intclr_fall_shift one in exynos_tmu_initialize() it defines
+EXYNOS_TMU_CLEAR_FALL_INT_SHIFT to 12 (old EXYNOS_TMU_FALL_INT_SHIFT
+value).
+
+This patch only changes driver behavior for EXYNOS5440 on which the
+used shift value changes from 4 to 12.
+
+PS I've only noticed it now but after this patch inten_fall_shift becomes
+unused and can be removed.
+
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
+
+> > 
+> > Best regards,
+> > --
+> > Bartlomiej Zolnierkiewicz
+> > Samsung R&D Institute Poland
+> > Samsung Electronics
+> > 
+> > On Wednesday, October 09, 2013 05:38:27 PM Naveen Krishna Chatradhi wrote:
+> >> The FALL interrupt related en, status bits are available at an offset of
+> >> 16 on INTEN, INTSTAT registers and at an offset of
+> >> 12 on INTCLEAR register.
+> >>
+> >> This patch corrects the same for exyns5250 and exynos5440
+> >>
+> >> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+> >> ---
+> >> Changes since v1:
+> >> Changes since v2:
+> >> Changes since v3:
+> >>   None
+> >>
+> >>  drivers/thermal/samsung/exynos_tmu.c      |    2 +-
+> >>  drivers/thermal/samsung/exynos_tmu.h      |    2 ++
+> >>  drivers/thermal/samsung/exynos_tmu_data.c |    2 ++
+> >>  drivers/thermal/samsung/exynos_tmu_data.h |    3 ++-
+> >>  4 files changed, 7 insertions(+), 2 deletions(-)
+> >>
+> >> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
+> >> index b43afda..af69209 100644
+> >> --- a/drivers/thermal/samsung/exynos_tmu.c
+> >> +++ b/drivers/thermal/samsung/exynos_tmu.c
+> >> @@ -265,7 +265,7 @@ skip_calib_data:
+> >>  				data->base + reg->threshold_th1);
+> >>  
+> >>  		writel((reg->inten_rise_mask << reg->inten_rise_shift) |
+> >> -			(reg->inten_fall_mask << reg->inten_fall_shift),
+> >> +			(reg->inten_fall_mask << reg->intclr_fall_shift),
+> >>  				data->base + reg->tmu_intclear);
+> >>  
+> >>  		/* if last threshold limit is also present */
+> >> diff --git a/drivers/thermal/samsung/exynos_tmu.h b/drivers/thermal/samsung/exynos_tmu.h
+> >> index b364c9e..7c6c34a 100644
+> >> --- a/drivers/thermal/samsung/exynos_tmu.h
+> >> +++ b/drivers/thermal/samsung/exynos_tmu.h
+> >> @@ -134,6 +134,7 @@ enum soc_type {
+> >>   * @inten_fall3_shift: shift bits of falling 3 interrupt bits.
+> >>   * @tmu_intstat: Register containing the interrupt status values.
+> >>   * @tmu_intclear: Register for clearing the raised interrupt status.
+> >> + * @intclr_fall_shift: shift bits for interrupt clear fall 0
+> >>   * @emul_con: TMU emulation controller register.
+> >>   * @emul_temp_shift: shift bits of emulation temperature.
+> >>   * @emul_time_shift: shift bits of emulation time.
+> >> @@ -204,6 +205,7 @@ struct exynos_tmu_registers {
+> >>  	u32	tmu_intstat;
+> >>  
+> >>  	u32	tmu_intclear;
+> >> +	u32	intclr_fall_shift;
+> >>  
+> >>  	u32	emul_con;
+> >>  	u32	emul_temp_shift;
+> >> diff --git a/drivers/thermal/samsung/exynos_tmu_data.c b/drivers/thermal/samsung/exynos_tmu_data.c
+> >> index 9002499..23fea23 100644
+> >> --- a/drivers/thermal/samsung/exynos_tmu_data.c
+> >> +++ b/drivers/thermal/samsung/exynos_tmu_data.c
+> >> @@ -122,6 +122,7 @@ static const struct exynos_tmu_registers exynos5250_tmu_registers = {
+> >>  	.inten_fall0_shift = EXYNOS_TMU_INTEN_FALL0_SHIFT,
+> >>  	.tmu_intstat = EXYNOS_TMU_REG_INTSTAT,
+> >>  	.tmu_intclear = EXYNOS_TMU_REG_INTCLEAR,
+> >> +	.intclr_fall_shift = EXYNOS_TMU_CLEAR_FALL_INT_SHIFT,
+> >>  	.emul_con = EXYNOS_EMUL_CON,
+> >>  	.emul_temp_shift = EXYNOS_EMUL_DATA_SHIFT,
+> >>  	.emul_time_shift = EXYNOS_EMUL_TIME_SHIFT,
+> >> @@ -210,6 +211,7 @@ static const struct exynos_tmu_registers exynos5440_tmu_registers = {
+> >>  	.inten_fall0_shift = EXYNOS5440_TMU_INTEN_FALL0_SHIFT,
+> >>  	.tmu_intstat = EXYNOS5440_TMU_S0_7_IRQ,
+> >>  	.tmu_intclear = EXYNOS5440_TMU_S0_7_IRQ,
+> >> +	.intclr_fall_shift = EXYNOS_TMU_CLEAR_FALL_INT_SHIFT,
+> >>  	.tmu_irqstatus = EXYNOS5440_TMU_IRQ_STATUS,
+> >>  	.emul_con = EXYNOS5440_TMU_S0_7_DEBUG,
+> >>  	.emul_temp_shift = EXYNOS_EMUL_DATA_SHIFT,
+> >> diff --git a/drivers/thermal/samsung/exynos_tmu_data.h b/drivers/thermal/samsung/exynos_tmu_data.h
+> >> index dc7feb5..8788a87 100644
+> >> --- a/drivers/thermal/samsung/exynos_tmu_data.h
+> >> +++ b/drivers/thermal/samsung/exynos_tmu_data.h
+> >> @@ -69,9 +69,10 @@
+> >>  #define EXYNOS_TMU_RISE_INT_MASK	0x111
+> >>  #define EXYNOS_TMU_RISE_INT_SHIFT	0
+> >>  #define EXYNOS_TMU_FALL_INT_MASK	0x111
+> >> -#define EXYNOS_TMU_FALL_INT_SHIFT	12
+> >> +#define EXYNOS_TMU_FALL_INT_SHIFT	16
+> >>  #define EXYNOS_TMU_CLEAR_RISE_INT	0x111
+> >>  #define EXYNOS_TMU_CLEAR_FALL_INT	(0x111 << 12)
+> >> +#define EXYNOS_TMU_CLEAR_FALL_INT_SHIFT	12
+> >>  #define EXYNOS_TMU_TRIP_MODE_SHIFT	13
+> >>  #define EXYNOS_TMU_TRIP_MODE_MASK	0x7
+> >>  #define EXYNOS_TMU_THERM_TRIP_EN_SHIFT	12
+
