@@ -1,52 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757219Ab3JKOyT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 10:54:19 -0400
-Received: from mga03.intel.com ([143.182.124.21]:55269 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755910Ab3JKOyR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 10:54:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1081,1371106800"; 
-   d="scan'208";a="373492635"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Borislav Petkov <bp@alien8.de>, "Chen, Gong" <gong.chen@linux.intel.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Subject: RE: Extended H/W error log driver
-Thread-Topic: Extended H/W error log driver
-Thread-Index: AQHOxk27t0f2crDWuUqLduhuFwbVjpnvmb+A///7urA=
-Date: Fri, 11 Oct 2013 14:54:13 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F31D2B155@ORSMSX106.amr.corp.intel.com>
-References: <1381473166-29303-1-git-send-email-gong.chen@linux.intel.com>
- <20131011080427.GC18719@pd.tnic>
-In-Reply-To: <20131011080427.GC18719@pd.tnic>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="utf-8"
+	id S1754266Ab3JKO7s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 10:59:48 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:54736 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752114Ab3JKO7q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 10:59:46 -0400
 MIME-Version: 1.0
+In-Reply-To: <CACRpkdYxegBSYXR1-98smUNnDXpyRHo_vuYdnr3r7zhawENiUA@mail.gmail.com>
+References: <1380902596-4693-1-git-send-email-sujithkv@ti.com>
+	<1380902596-4693-2-git-send-email-sujithkv@ti.com>
+	<CACRpkdYxegBSYXR1-98smUNnDXpyRHo_vuYdnr3r7zhawENiUA@mail.gmail.com>
+Date: Fri, 11 Oct 2013 20:29:44 +0530
+Message-ID: <CA+V-a8vyPyL0j0nPOZyjxrecusFzXovFPsNBLKYXns5ASWR-wg@mail.gmail.com>
+Subject: Re: [PATCH v3 1/3] gpio: davinci: add OF support
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        LDOC <linux-doc@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Sekhar Nori <nsekhar@ti.com>, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r9BEsOQK030630
 
->> [56005.785981] {3}physical_address: 0x0000000851fe0000
->> [56005.786027] {3}DIMM location: Memriser1 CHANNEL A DIMM 0
+Hi Linus ,
+
+On 10/11/13, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Fri, Oct 4, 2013 at 6:03 PM, Prabhakar Lad
+> <prabhakar.csengg@gmail.com> wrote:
 >
-> Very good guys, I've been waiting for years for this to be possible,
-> good job! :-)
+>> This patch adds OF parser support for davinci gpio
+>> driver and also appropriate documentation in gpio-davinci.txt
+>> located at Documentation/devicetree/bindings/gpio/.
+>>
+>> Signed-off-by: KV Sujith <sujithkv@ti.com>
+>> Signed-off-by: Philip Avinash <avinashphilip@ti.com>
+>> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+>
+> ^Don't trust this guy.
+>
+>> [prabhakar.csengg@gmail.com: simplified the OF code and also
+>>                  the commit message]
+>> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+>> ---
+>>  .../devicetree/bindings/gpio/gpio-davinci.txt      |   34 +++++++++++
+>>  drivers/gpio/gpio-davinci.c                        |   60
+>> +++++++++++++++++++-
+>>  2 files changed, 91 insertions(+), 3 deletions(-)
+>>  create mode 100644
+>> Documentation/devicetree/bindings/gpio/gpio-davinci.txt
+>>
+>> diff --git a/Documentation/devicetree/bindings/gpio/gpio-davinci.txt
+>> b/Documentation/devicetree/bindings/gpio/gpio-davinci.txt
+>> new file mode 100644
+>> index 0000000..87abd3b
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/gpio/gpio-davinci.txt
+>> @@ -0,0 +1,34 @@
+>> +Davinci GPIO controller bindings
+>> +
+>> +Required Properties:
+>> +- compatible: should be "ti,dm6441-gpio"
+>> +
+>> +- reg: Physical base address of the controller and the size of memory
+>> mapped
+>> +       registers.
+>> +
+>> +- gpio-controller : Marks the device node as a gpio controller.
+>> +
+>> +- interrupts: Array of GPIO interrupt number.
+>> +
+>> +- ngpio: The number of GPIO pins supported.
+>> +
+>> +- ti,davinci-gpio-irq-base: Base from where GPIO interrupt numbering
+>> starts.
+>
+> What is this?
+>
+> If I have ever ACKed this I have been drunk. I take it back.
+>
+here is the ACK https://patchwork.kernel.org/patch/2721181/
 
-It's such a simple goal - I can't believe it took this long to get here :-)
+> This "base" is a Linux-specific thing and has no place in the
+> device tree, and shall not be there. You have to find some way to
+> avoid this, what do you think some other OS should do with
+> this value...
+>
+> All IRQs in Linux are assumed to be dynamically assigned numbers
+> nowadays, with a property like this you can never switch on
+> SPARSE_IRQ for the DaVinci.
+>
+Can you point to any alternative solution if you have any ?
 
-> Btw, what's "Memriser1"?
-
-Each memory controller on this machine routes to a plug-in card that has
-a bunch of DIMMs on it.  The silkscreen labels on the motherboard for these
-cards read "Memriser1" "Memriser2" etc.
-
--Tony
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-- 
+Regards,
+--Prabhakar Lad
