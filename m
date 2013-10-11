@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756392Ab3JKByP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 21:54:15 -0400
-Received: from mga01.intel.com ([192.55.52.88]:12181 "EHLO mga01.intel.com"
+	id S1756523Ab3JKByh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 21:54:37 -0400
+Received: from mga03.intel.com ([143.182.124.21]:24789 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755851Ab3JKByL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 21:54:11 -0400
+	id S1756284Ab3JKByJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 21:54:09 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,1076,1371106800"; 
-   d="scan'208";a="415204106"
+   d="scan'208";a="373229442"
 From: tianyu.lan@intel.com
 To: lenb@kernel.org, rjw@sisk.pl
-Cc: Lan Tianyu <tianyu.lan@intel.com>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 5/5] ACPI/Proc: Remove alarm proc file
-Date: Fri, 11 Oct 2013 09:54:11 +0800
-Message-Id: <1381456451-22877-5-git-send-email-tianyu.lan@intel.com>
+Cc: Lan Tianyu <tianyu.lan@intel.com>, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: [PATCH 4/5] ACPI: Remove CONFIG_ACPI_PROCFS_POWER and cm_sbsc.c
+Date: Fri, 11 Oct 2013 09:54:10 +0800
+Message-Id: <1381456451-22877-4-git-send-email-tianyu.lan@intel.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1381456451-22877-1-git-send-email-tianyu.lan@intel.com>
 References: <1381456451-22877-1-git-send-email-tianyu.lan@intel.com>
@@ -25,354 +25,168 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lan Tianyu <tianyu.lan@intel.com>
 
-Alarm proc file provides the info and control of RTC-CMOS alarm and
-RTC CMOS driver provides wakealarm sysfs attribute for the same
-purpose. The alarm file isn't compiled into kernel when RTC CMOS
-driver is selected. The driver is default to be selected for x86
-platform. So alarm file is default not to include. This patch is
-to remove it to prepare remove /proc/acpi directory.
+There is no user of cm_sbs.c and CONFIG_ACPI_PROCFS_POWER. So remove
+them. Prepare for removing /proc/acpi
 
 Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
 ---
- drivers/acpi/proc.c | 305 ----------------------------------------------------
- 1 file changed, 305 deletions(-)
+ drivers/acpi/Kconfig  |  17 --------
+ drivers/acpi/Makefile |   1 -
+ drivers/acpi/cm_sbs.c | 105 --------------------------------------------------
+ 3 files changed, 123 deletions(-)
+ delete mode 100644 drivers/acpi/cm_sbs.c
 
-diff --git a/drivers/acpi/proc.c b/drivers/acpi/proc.c
-index 04a1378..6a5b152 100644
---- a/drivers/acpi/proc.c
-+++ b/drivers/acpi/proc.c
-@@ -8,289 +8,17 @@
- #include <acpi/acpi_bus.h>
- #include <acpi/acpi_drivers.h>
+diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
+index 3278a21..b45671c 100644
+--- a/drivers/acpi/Kconfig
++++ b/drivers/acpi/Kconfig
+@@ -56,23 +56,6 @@ config ACPI_PROCFS
  
--#ifdef CONFIG_X86
--#include <linux/mc146818rtc.h>
--#endif
--
- #include "sleep.h"
+ 	  Say N to delete /proc/acpi/ files that have moved to /sys/
  
- #define _COMPONENT		ACPI_SYSTEM_COMPONENT
- 
- /*
-  * this file provides support for:
-- * /proc/acpi/alarm
-  * /proc/acpi/wakeup
-  */
- 
- ACPI_MODULE_NAME("sleep")
- 
--#if defined(CONFIG_RTC_DRV_CMOS) || defined(CONFIG_RTC_DRV_CMOS_MODULE) || !defined(CONFIG_X86)
--/* use /sys/class/rtc/rtcX/wakealarm instead; it's not ACPI-specific */
--#else
--#define	HAVE_ACPI_LEGACY_ALARM
--#endif
+-config ACPI_PROCFS_POWER
+-	bool "Deprecated power /proc/acpi directories"
+-	depends on PROC_FS
+-	help
+-	  For backwards compatibility, this option allows
+-          deprecated power /proc/acpi/ directories to exist, even when
+-          they have been replaced by functions in /sys.
+-          The deprecated directories (and their replacements) include:
+-	  /proc/acpi/battery/* (/sys/class/power_supply/*)
+-	  /proc/acpi/ac_adapter/* (sys/class/power_supply/*)
+-	  This option has no effect on /proc/acpi/ directories
+-	  and functions, which do not yet exist in /sys
+-	  This option, together with the proc directories, will be
+-	  deleted in 2.6.39.
 -
--#ifdef	HAVE_ACPI_LEGACY_ALARM
+-	  Say N to delete power /proc/acpi/ directories that have moved to /sys/
 -
--static u32 cmos_bcd_read(int offset, int rtc_control);
+ config ACPI_EC_DEBUGFS
+ 	tristate "EC read/write access through /sys/kernel/debug/ec"
+ 	default n
+diff --git a/drivers/acpi/Makefile b/drivers/acpi/Makefile
+index 81dbeb8..1cadbef 100644
+--- a/drivers/acpi/Makefile
++++ b/drivers/acpi/Makefile
+@@ -47,7 +47,6 @@ acpi-y				+= sysfs.o
+ acpi-$(CONFIG_X86)		+= acpi_cmos_rtc.o
+ acpi-$(CONFIG_DEBUG_FS)		+= debugfs.o
+ acpi-$(CONFIG_ACPI_NUMA)	+= numa.o
+-acpi-$(CONFIG_ACPI_PROCFS_POWER) += cm_sbs.o
+ ifdef CONFIG_ACPI_VIDEO
+ acpi-y				+= video_detect.o
+ endif
+diff --git a/drivers/acpi/cm_sbs.c b/drivers/acpi/cm_sbs.c
+deleted file mode 100644
+index 6c9ee68..0000000
+--- a/drivers/acpi/cm_sbs.c
++++ /dev/null
+@@ -1,105 +0,0 @@
+-/*
+- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- *
+- *  This program is free software; you can redistribute it and/or modify
+- *  it under the terms of the GNU General Public License as published by
+- *  the Free Software Foundation; either version 2 of the License, or (at
+- *  your option) any later version.
+- *
+- *  This program is distributed in the hope that it will be useful, but
+- *  WITHOUT ANY WARRANTY; without even the implied warranty of
+- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+- *  General Public License for more details.
+- *
+- *  You should have received a copy of the GNU General Public License along
+- *  with this program; if not, write to the Free Software Foundation, Inc.,
+- *  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
+- *
+- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- */
 -
--static int acpi_system_alarm_seq_show(struct seq_file *seq, void *offset)
+-#include <linux/kernel.h>
+-#include <linux/module.h>
+-#include <linux/init.h>
+-#include <linux/acpi.h>
+-#include <linux/types.h>
+-#include <linux/proc_fs.h>
+-#include <linux/seq_file.h>
+-#include <acpi/acpi_bus.h>
+-#include <acpi/acpi_drivers.h>
+-
+-#define PREFIX "ACPI: "
+-
+-ACPI_MODULE_NAME("cm_sbs");
+-#define ACPI_AC_CLASS		"ac_adapter"
+-#define ACPI_BATTERY_CLASS	"battery"
+-#define _COMPONENT		ACPI_SBS_COMPONENT
+-static struct proc_dir_entry *acpi_ac_dir;
+-static struct proc_dir_entry *acpi_battery_dir;
+-
+-static DEFINE_MUTEX(cm_sbs_mutex);
+-
+-static int lock_ac_dir_cnt;
+-static int lock_battery_dir_cnt;
+-
+-struct proc_dir_entry *acpi_lock_ac_dir(void)
 -{
--	u32 sec, min, hr;
--	u32 day, mo, yr, cent = 0;
--	u32 today = 0;
--	unsigned char rtc_control = 0;
--	unsigned long flags;
--
--	spin_lock_irqsave(&rtc_lock, flags);
--
--	rtc_control = CMOS_READ(RTC_CONTROL);
--	sec = cmos_bcd_read(RTC_SECONDS_ALARM, rtc_control);
--	min = cmos_bcd_read(RTC_MINUTES_ALARM, rtc_control);
--	hr = cmos_bcd_read(RTC_HOURS_ALARM, rtc_control);
--
--	/* If we ever get an FACP with proper values... */
--	if (acpi_gbl_FADT.day_alarm) {
--		/* ACPI spec: only low 6 its should be cared */
--		day = CMOS_READ(acpi_gbl_FADT.day_alarm) & 0x3F;
--		if (!(rtc_control & RTC_DM_BINARY) || RTC_ALWAYS_BCD)
--			day = bcd2bin(day);
--	} else
--		day = cmos_bcd_read(RTC_DAY_OF_MONTH, rtc_control);
--	if (acpi_gbl_FADT.month_alarm)
--		mo = cmos_bcd_read(acpi_gbl_FADT.month_alarm, rtc_control);
--	else {
--		mo = cmos_bcd_read(RTC_MONTH, rtc_control);
--		today = cmos_bcd_read(RTC_DAY_OF_MONTH, rtc_control);
+-	mutex_lock(&cm_sbs_mutex);
+-	if (!acpi_ac_dir)
+-		acpi_ac_dir = proc_mkdir(ACPI_AC_CLASS, acpi_root_dir);
+-	if (acpi_ac_dir) {
+-		lock_ac_dir_cnt++;
+-	} else {
+-		printk(KERN_ERR PREFIX
+-				  "Cannot create %s\n", ACPI_AC_CLASS);
 -	}
--	if (acpi_gbl_FADT.century)
--		cent = cmos_bcd_read(acpi_gbl_FADT.century, rtc_control);
--
--	yr = cmos_bcd_read(RTC_YEAR, rtc_control);
--
--	spin_unlock_irqrestore(&rtc_lock, flags);
--
--	/* we're trusting the FADT (see above) */
--	if (!acpi_gbl_FADT.century)
--		/* If we're not trusting the FADT, we should at least make it
--		 * right for _this_ century... ehm, what is _this_ century?
--		 *
--		 * TBD:
--		 *  ASAP: find piece of code in the kernel, e.g. star tracker driver,
--		 *        which we can trust to determine the century correctly. Atom
--		 *        watch driver would be nice, too...
--		 *
--		 *  if that has not happened, change for first release in 2050:
--		 *        if (yr<50)
--		 *                yr += 2100;
--		 *        else
--		 *                yr += 2000;   // current line of code
--		 *
--		 *  if that has not happened either, please do on 2099/12/31:23:59:59
--		 *        s/2000/2100
--		 *
--		 */
--		yr += 2000;
--	else
--		yr += cent * 100;
--
--	/*
--	 * Show correct dates for alarms up to a month into the future.
--	 * This solves issues for nearly all situations with the common
--	 * 30-day alarm clocks in PC hardware.
--	 */
--	if (day < today) {
--		if (mo < 12) {
--			mo += 1;
--		} else {
--			mo = 1;
--			yr += 1;
--		}
--	}
--
--	seq_printf(seq, "%4.4u-", yr);
--	(mo > 12) ? seq_puts(seq, "**-") : seq_printf(seq, "%2.2u-", mo);
--	(day > 31) ? seq_puts(seq, "** ") : seq_printf(seq, "%2.2u ", day);
--	(hr > 23) ? seq_puts(seq, "**:") : seq_printf(seq, "%2.2u:", hr);
--	(min > 59) ? seq_puts(seq, "**:") : seq_printf(seq, "%2.2u:", min);
--	(sec > 59) ? seq_puts(seq, "**\n") : seq_printf(seq, "%2.2u\n", sec);
--
--	return 0;
+-	mutex_unlock(&cm_sbs_mutex);
+-	return acpi_ac_dir;
 -}
+-EXPORT_SYMBOL(acpi_lock_ac_dir);
 -
--static int acpi_system_alarm_open_fs(struct inode *inode, struct file *file)
+-void acpi_unlock_ac_dir(struct proc_dir_entry *acpi_ac_dir_param)
 -{
--	return single_open(file, acpi_system_alarm_seq_show, PDE_DATA(inode));
+-	mutex_lock(&cm_sbs_mutex);
+-	if (acpi_ac_dir_param)
+-		lock_ac_dir_cnt--;
+-	if (lock_ac_dir_cnt == 0 && acpi_ac_dir_param && acpi_ac_dir) {
+-		remove_proc_entry(ACPI_AC_CLASS, acpi_root_dir);
+-		acpi_ac_dir = NULL;
+-	}
+-	mutex_unlock(&cm_sbs_mutex);
 -}
+-EXPORT_SYMBOL(acpi_unlock_ac_dir);
 -
--static int get_date_field(char **p, u32 * value)
+-struct proc_dir_entry *acpi_lock_battery_dir(void)
 -{
--	char *next = NULL;
--	char *string_end = NULL;
--	int result = -EINVAL;
--
--	/*
--	 * Try to find delimeter, only to insert null.  The end of the
--	 * string won't have one, but is still valid.
--	 */
--	if (*p == NULL)
--		return result;
--
--	next = strpbrk(*p, "- :");
--	if (next)
--		*next++ = '\0';
--
--	*value = simple_strtoul(*p, &string_end, 10);
--
--	/* Signal success if we got a good digit */
--	if (string_end != *p)
--		result = 0;
--
--	if (next)
--		*p = next;
--	else
--		*p = NULL;
--
--	return result;
+-	mutex_lock(&cm_sbs_mutex);
+-	if (!acpi_battery_dir) {
+-		acpi_battery_dir =
+-		    proc_mkdir(ACPI_BATTERY_CLASS, acpi_root_dir);
+-	}
+-	if (acpi_battery_dir) {
+-		lock_battery_dir_cnt++;
+-	} else {
+-		printk(KERN_ERR PREFIX
+-				  "Cannot create %s\n", ACPI_BATTERY_CLASS);
+-	}
+-	mutex_unlock(&cm_sbs_mutex);
+-	return acpi_battery_dir;
 -}
+-EXPORT_SYMBOL(acpi_lock_battery_dir);
 -
--/* Read a possibly BCD register, always return binary */
--static u32 cmos_bcd_read(int offset, int rtc_control)
+-void acpi_unlock_battery_dir(struct proc_dir_entry *acpi_battery_dir_param)
 -{
--	u32 val = CMOS_READ(offset);
--	if (!(rtc_control & RTC_DM_BINARY) || RTC_ALWAYS_BCD)
--		val = bcd2bin(val);
--	return val;
+-	mutex_lock(&cm_sbs_mutex);
+-	if (acpi_battery_dir_param)
+-		lock_battery_dir_cnt--;
+-	if (lock_battery_dir_cnt == 0 && acpi_battery_dir_param
+-	    && acpi_battery_dir) {
+-		remove_proc_entry(ACPI_BATTERY_CLASS, acpi_root_dir);
+-		acpi_battery_dir = NULL;
+-	}
+-	mutex_unlock(&cm_sbs_mutex);
+-	return;
 -}
--
--/* Write binary value into possibly BCD register */
--static void cmos_bcd_write(u32 val, int offset, int rtc_control)
--{
--	if (!(rtc_control & RTC_DM_BINARY) || RTC_ALWAYS_BCD)
--		val = bin2bcd(val);
--	CMOS_WRITE(val, offset);
--}
--
--static ssize_t
--acpi_system_write_alarm(struct file *file,
--			const char __user * buffer, size_t count, loff_t * ppos)
--{
--	int result = 0;
--	char alarm_string[30] = { '\0' };
--	char *p = alarm_string;
--	u32 sec, min, hr, day, mo, yr;
--	int adjust = 0;
--	unsigned char rtc_control = 0;
--
--	if (count > sizeof(alarm_string) - 1)
--		return -EINVAL;
--
--	if (copy_from_user(alarm_string, buffer, count))
--		return -EFAULT;
--
--	alarm_string[count] = '\0';
--
--	/* check for time adjustment */
--	if (alarm_string[0] == '+') {
--		p++;
--		adjust = 1;
--	}
--
--	if ((result = get_date_field(&p, &yr)))
--		goto end;
--	if ((result = get_date_field(&p, &mo)))
--		goto end;
--	if ((result = get_date_field(&p, &day)))
--		goto end;
--	if ((result = get_date_field(&p, &hr)))
--		goto end;
--	if ((result = get_date_field(&p, &min)))
--		goto end;
--	if ((result = get_date_field(&p, &sec)))
--		goto end;
--
--	spin_lock_irq(&rtc_lock);
--
--	rtc_control = CMOS_READ(RTC_CONTROL);
--
--	if (adjust) {
--		yr += cmos_bcd_read(RTC_YEAR, rtc_control);
--		mo += cmos_bcd_read(RTC_MONTH, rtc_control);
--		day += cmos_bcd_read(RTC_DAY_OF_MONTH, rtc_control);
--		hr += cmos_bcd_read(RTC_HOURS, rtc_control);
--		min += cmos_bcd_read(RTC_MINUTES, rtc_control);
--		sec += cmos_bcd_read(RTC_SECONDS, rtc_control);
--	}
--
--	spin_unlock_irq(&rtc_lock);
--
--	if (sec > 59) {
--		min += sec/60;
--		sec = sec%60;
--	}
--	if (min > 59) {
--		hr += min/60;
--		min = min%60;
--	}
--	if (hr > 23) {
--		day += hr/24;
--		hr = hr%24;
--	}
--	if (day > 31) {
--		mo += day/32;
--		day = day%32;
--	}
--	if (mo > 12) {
--		yr += mo/13;
--		mo = mo%13;
--	}
--
--	spin_lock_irq(&rtc_lock);
--	/*
--	 * Disable alarm interrupt before setting alarm timer or else
--	 * when ACPI_EVENT_RTC is enabled, a spurious ACPI interrupt occurs
--	 */
--	rtc_control &= ~RTC_AIE;
--	CMOS_WRITE(rtc_control, RTC_CONTROL);
--	CMOS_READ(RTC_INTR_FLAGS);
--
--	/* write the fields the rtc knows about */
--	cmos_bcd_write(hr, RTC_HOURS_ALARM, rtc_control);
--	cmos_bcd_write(min, RTC_MINUTES_ALARM, rtc_control);
--	cmos_bcd_write(sec, RTC_SECONDS_ALARM, rtc_control);
--
--	/*
--	 * If the system supports an enhanced alarm it will have non-zero
--	 * offsets into the CMOS RAM here -- which for some reason are pointing
--	 * to the RTC area of memory.
--	 */
--	if (acpi_gbl_FADT.day_alarm)
--		cmos_bcd_write(day, acpi_gbl_FADT.day_alarm, rtc_control);
--	if (acpi_gbl_FADT.month_alarm)
--		cmos_bcd_write(mo, acpi_gbl_FADT.month_alarm, rtc_control);
--	if (acpi_gbl_FADT.century) {
--		if (adjust)
--			yr += cmos_bcd_read(acpi_gbl_FADT.century, rtc_control) * 100;
--		cmos_bcd_write(yr / 100, acpi_gbl_FADT.century, rtc_control);
--	}
--	/* enable the rtc alarm interrupt */
--	rtc_control |= RTC_AIE;
--	CMOS_WRITE(rtc_control, RTC_CONTROL);
--	CMOS_READ(RTC_INTR_FLAGS);
--
--	spin_unlock_irq(&rtc_lock);
--
--	acpi_clear_event(ACPI_EVENT_RTC);
--	acpi_enable_event(ACPI_EVENT_RTC, 0);
--
--	*ppos += count;
--
--	result = 0;
--      end:
--	return result ? result : count;
--}
--#endif				/* HAVE_ACPI_LEGACY_ALARM */
--
- static int
- acpi_system_wakeup_device_seq_show(struct seq_file *seq, void *offset)
- {
-@@ -417,41 +145,8 @@ static const struct file_operations acpi_system_wakeup_device_fops = {
- 	.release = single_release,
- };
- 
--#ifdef	HAVE_ACPI_LEGACY_ALARM
--static const struct file_operations acpi_system_alarm_fops = {
--	.owner = THIS_MODULE,
--	.open = acpi_system_alarm_open_fs,
--	.read = seq_read,
--	.write = acpi_system_write_alarm,
--	.llseek = seq_lseek,
--	.release = single_release,
--};
--
--static u32 rtc_handler(void *context)
--{
--	acpi_clear_event(ACPI_EVENT_RTC);
--	acpi_disable_event(ACPI_EVENT_RTC, 0);
--
--	return ACPI_INTERRUPT_HANDLED;
--}
--#endif				/* HAVE_ACPI_LEGACY_ALARM */
--
- int __init acpi_sleep_proc_init(void)
- {
--#ifdef	HAVE_ACPI_LEGACY_ALARM
--	/* 'alarm' [R/W] */
--	proc_create("alarm", S_IFREG | S_IRUGO | S_IWUSR,
--		    acpi_root_dir, &acpi_system_alarm_fops);
--
--	acpi_install_fixed_event_handler(ACPI_EVENT_RTC, rtc_handler, NULL);
--	/*
--	 * Disable the RTC event after installing RTC handler.
--	 * Only when RTC alarm is set will it be enabled.
--	 */
--	acpi_clear_event(ACPI_EVENT_RTC);
--	acpi_disable_event(ACPI_EVENT_RTC, 0);
--#endif				/* HAVE_ACPI_LEGACY_ALARM */
--
- 	/* 'wakeup device' [R/W] */
- 	proc_create("wakeup", S_IFREG | S_IRUGO | S_IWUSR,
- 		    acpi_root_dir, &acpi_system_wakeup_device_fops);
+-EXPORT_SYMBOL(acpi_unlock_battery_dir);
 -- 
 1.8.2.1
 
