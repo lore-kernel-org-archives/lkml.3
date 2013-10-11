@@ -1,134 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757728Ab3JKMUw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 08:20:52 -0400
-Received: from mga14.intel.com ([143.182.124.37]:64997 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757659Ab3JKMUt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 08:20:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1080,1371106800"; 
-   d="scan'208";a="373438134"
-From: tianyu.lan@intel.com
-To: tony.luck@intel.com, bhelgaas@google.com, lenb@kernel.org, rjw@sisk.pl,
-        yinghai@kernel.org
-Cc: Lan Tianyu <tianyu.lan@intel.com>, linux-ia64@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: [Resend PATCH 5/5] IA64/PCI/ACPI: Rework PCI root bridge ACPI resource conversion
-Date: Fri, 11 Oct 2013 20:19:01 +0800
-Message-Id: <1381493941-4650-6-git-send-email-tianyu.lan@intel.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1381493941-4650-1-git-send-email-tianyu.lan@intel.com>
-References: <1381493941-4650-1-git-send-email-tianyu.lan@intel.com>
+	id S1757842Ab3JKMWM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 08:22:12 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:9409 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752338Ab3JKMWL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 08:22:11 -0400
+Date: Fri, 11 Oct 2013 08:22:04 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Namhyung Kim <namhyung@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: Re: [RFC/PATCH] ftrace: add set_graph_notrace filter
+Message-ID: <20131011082204.5c6de75d@gandalf.local.home>
+In-Reply-To: <20131011072156.GC4154@osiris>
+References: <1378184708-31385-1-git-send-email-namhyung@kernel.org>
+	<20131011001717.26b92150@gandalf.local.home>
+	<20131011072156.GC4154@osiris>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lan Tianyu <tianyu.lan@intel.com>
+On Fri, 11 Oct 2013 09:21:56 +0200
+Heiko Carstens <heiko.carstens@de.ibm.com> wrote:
 
-Using ACPI resource functions to convert ACPI resource to generic resource
+> 
+> Steven Rostedt noted that s390 is the only architecture which calls
+> ftrace_push_return_trace() before ftrace_graph_entry() and therefore has
 
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
----
-This patch just passes through compilation test due to no ia64 machine on hand.
+I don't know if s390 is the only arch. I didn't finish reading all the
+arch specific code to make sure.
 
- arch/ia64/pci/pci.c | 38 +++++++++++++++++++++-----------------
- 1 file changed, 21 insertions(+), 17 deletions(-)
+> the small advantage that trace.depth gets initialized automatically.
+> 
+> However this small advantage isn't worth the difference and possible subtle
+> breakage that may result from this.
+> So change s390 to have the same function call order like all other
+> architectures: first ftrace_graph_entry(), then ftrace_push_return_trace()
+> 
+> Reported-by: Steven Rostedt <rostedt@goodmis.org>
+> Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+> ---
+>  arch/s390/kernel/ftrace.c | 9 ++++-----
+>  1 file changed, 4 insertions(+), 5 deletions(-)
+> 
+> diff --git a/arch/s390/kernel/ftrace.c b/arch/s390/kernel/ftrace.c
+> index 1014ad5..224db03 100644
+> --- a/arch/s390/kernel/ftrace.c
+> +++ b/arch/s390/kernel/ftrace.c
+> @@ -151,14 +151,13 @@ unsigned long __kprobes prepare_ftrace_return(unsigned long parent,
+>  	if (unlikely(atomic_read(&current->tracing_graph_pause)))
+>  		goto out;
+>  	ip = (ip & PSW_ADDR_INSN) - MCOUNT_INSN_SIZE;
+> -	if (ftrace_push_return_trace(parent, ip, &trace.depth, 0) == -EBUSY)
+> -		goto out;
+>  	trace.func = ip;
+> +	trace.depth = current->curr_ret_stack + 1;
+>  	/* Only trace if the calling function expects to. */
+> -	if (!ftrace_graph_entry(&trace)) {
+> -		current->curr_ret_stack--;
+> +	if (!ftrace_graph_entry(&trace))
+> +		goto out;
+> +	if (ftrace_push_return_trace(parent, ip, &trace.depth, 0) == -EBUSY)
+>  		goto out;
+> -	}
 
-diff --git a/arch/ia64/pci/pci.c b/arch/ia64/pci/pci.c
-index 2326790..14fa175 100644
---- a/arch/ia64/pci/pci.c
-+++ b/arch/ia64/pci/pci.c
-@@ -232,8 +232,9 @@ out:
- 	return ~0;
- }
- 
--static acpi_status resource_to_window(struct acpi_resource *resource,
--				      struct acpi_resource_address64 *addr)
-+static acpi_status resource_to_window(struct acpi_resource *ares,
-+				      struct acpi_resource_address64 *addr,
-+				      struct resource *res)
- {
- 	acpi_status status;
- 
-@@ -244,7 +245,7 @@ static acpi_status resource_to_window(struct acpi_resource *resource,
- 	 *	- producers, i.e., the address space is routed downstream,
- 	 *	  not consumed by the bridge itself
- 	 */
--	status = acpi_resource_to_address64(resource, addr);
-+	status = acpi_dev_resource_address_space_full(ares, addr, res);
- 	if (ACPI_SUCCESS(status) &&
- 	    (addr->resource_type == ACPI_MEMORY_RANGE ||
- 	     addr->resource_type == ACPI_IO_RANGE) &&
-@@ -255,51 +256,54 @@ static acpi_status resource_to_window(struct acpi_resource *resource,
- 	return AE_ERROR;
- }
- 
--static acpi_status count_window(struct acpi_resource *resource, void *data)
-+static acpi_status count_window(struct acpi_resource *ares, void *data)
- {
- 	unsigned int *windows = (unsigned int *) data;
- 	struct acpi_resource_address64 addr;
-+	struct resource res;
- 	acpi_status status;
- 
--	status = resource_to_window(resource, &addr);
-+	status = resource_to_window(ares, &addr, &res);
- 	if (ACPI_SUCCESS(status))
- 		(*windows)++;
- 
- 	return AE_OK;
- }
- 
--static acpi_status add_window(struct acpi_resource *res, void *data)
-+static acpi_status add_window(struct acpi_resource *ares, void *data)
- {
- 	struct pci_root_info *info = data;
--	struct resource *resource;
-+	struct resource *resource = &info->res[info->res_num];
- 	struct acpi_resource_address64 addr;
- 	acpi_status status;
--	unsigned long flags, offset = 0;
-+	unsigned long offset = 0;
- 	struct resource *root;
- 
- 	/* Return AE_OK for non-window resources to keep scanning for more */
--	status = resource_to_window(res, &addr);
-+	status = resource_to_window(ares, &addr, resource);
- 	if (!ACPI_SUCCESS(status))
- 		return AE_OK;
- 
--	if (addr.resource_type == ACPI_MEMORY_RANGE) {
--		flags = IORESOURCE_MEM;
-+	if (resource->flags & IORESOURCE_MEM) {
- 		root = &iomem_resource;
- 		offset = addr.translation_offset;
--	} else if (addr.resource_type == ACPI_IO_RANGE) {
--		flags = IORESOURCE_IO;
-+	} else if (resource->flags & IORESOURCE_IO) {
- 		root = &ioport_resource;
- 		offset = add_io_space(info, &addr);
- 		if (offset == ~0)
- 			return AE_OK;
-+
-+		/*
-+		 * io space address translation offset depends
-+		 * on the return value of add_io_space(). So
-+		 * Repopulate resource->start and end here.
-+		 */
-+		resource->start = addr.minimum + offset;
-+		resource->end = resource->start + addr.address_length - 1;
- 	} else
- 		return AE_OK;
- 
--	resource = &info->res[info->res_num];
- 	resource->name = info->name;
--	resource->flags = flags;
--	resource->start = addr.minimum + offset;
--	resource->end = resource->start + addr.address_length - 1;
- 	info->res_offset[info->res_num] = offset;
- 
- 	if (insert_resource(root, resource)) {
--- 
-1.8.2.1
+Hmm, if this code is so identical among the archs, I may create a
+generic inline function to do the work. That way any change to the flow
+can be done for all archs in one place.
+
+Thanks!
+
+-- Steve
+
+>  	parent = (unsigned long) return_to_handler;
+>  out:
+>  	return parent;
 
