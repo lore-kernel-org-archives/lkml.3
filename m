@@ -1,73 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758684Ab3JKLHb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 07:07:31 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:49853 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757995Ab3JKLH0 (ORCPT
+	id S932439Ab3JKLHu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 07:07:50 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58437 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757743Ab3JKKms (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 07:07:26 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: tianyu.lan@intel.com
-Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ACPI/Power: Check physical device's runtime pm status before requesting to resume it
-Date: Fri, 11 Oct 2013 13:19:11 +0200
-Message-ID: <1761658.DWcBvZSdOl@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <1381479385-1614-1-git-send-email-tianyu.lan@intel.com>
-References: <1381479385-1614-1-git-send-email-tianyu.lan@intel.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Fri, 11 Oct 2013 06:42:48 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Tejun Heo <tj@kernel.org>, Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 024/100] workqueue: cond_resched() after processing each work item
+Date: Fri, 11 Oct 2013 11:40:54 +0100
+Message-Id: <1381488130-30235-25-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
+References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, October 11, 2013 04:16:25 PM tianyu.lan@intel.com wrote:
-> From: Lan Tianyu <tianyu.lan@intel.com>
-> 
-> Currently, when one power resource is turned on, devices owning it
-> will be requested to resume regardless of their runtime pm status.
-> ACPI power resource maybe turn on in some devices' runtime pm
-> resume callback(E.G, usb port) while turning on the power resource
-> will trigger one new resume request of the device. It causes
-> infinite loop between resume and suspend. This has happened on
-> clearing usb port's PM Qos NO_POWER_OFF flag twice. This patch is
-> to add check of physical device's runtime pm status and request resume
-> if the device is suspended.
-> 
-> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-> ---
->  drivers/acpi/power.c | 6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/acpi/power.c b/drivers/acpi/power.c
-> index 0dbe5cd..228c138 100644
-> --- a/drivers/acpi/power.c
-> +++ b/drivers/acpi/power.c
-> @@ -250,8 +250,10 @@ static void acpi_power_resume_dependent(struct work_struct *work)
->  
->  	mutex_lock(&adev->physical_node_lock);
->  
-> -	list_for_each_entry(pn, &adev->physical_node_list, node)
-> -		pm_request_resume(pn->dev);
-> +	list_for_each_entry(pn, &adev->physical_node_list, node) {
-> +		if (pm_runtime_suspended(pn->dev))
-> +			pm_request_resume(pn->dev);
-> +	}
+3.5.7.23 -stable review patch.  If anyone has any objections, please let me know.
 
-This is racy, because the status may change right after you check it and before
-you call pm_request_resume().
+------------------
 
-Besides, pm_request_resume() checks the status of the device and won't
-try to resume it if it is not suspended.
+From: Tejun Heo <tj@kernel.org>
 
->  
->  	list_for_each_entry(pn, &adev->power_dependent, node)
->  		pm_request_resume(pn->dev);
+commit b22ce2785d97423846206cceec4efee0c4afd980 upstream.
 
-Thanks!
+If !PREEMPT, a kworker running work items back to back can hog CPU.
+This becomes dangerous when a self-requeueing work item which is
+waiting for something to happen races against stop_machine.  Such
+self-requeueing work item would requeue itself indefinitely hogging
+the kworker and CPU it's running on while stop_machine would wait for
+that CPU to enter stop_machine while preventing anything else from
+happening on all other CPUs.  The two would deadlock.
 
+Jamie Liu reports that this deadlock scenario exists around
+scsi_requeue_run_queue() and libata port multiplier support, where one
+port may exclude command processing from other ports.  With the right
+timing, scsi_requeue_run_queue() can end up requeueing itself trying
+to execute an IO which is asked to be retried while another device has
+an exclusive access, which in turn can't make forward progress due to
+stop_machine.
+
+Fix it by invoking cond_resched() after executing each work item.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Jamie Liu <jamieliu@google.com>
+References: http://thread.gmane.org/gmane.linux.kernel/1552567
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ kernel/workqueue.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 0395ca8..89743ae 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -1920,6 +1920,15 @@ __acquires(&gcwq->lock)
+ 		dump_stack();
+ 	}
+ 
++	/*
++	 * The following prevents a kworker from hogging CPU on !PREEMPT
++	 * kernels, where a requeueing work item waiting for something to
++	 * happen could deadlock with stop_machine as such work item could
++	 * indefinitely requeue itself while all other CPUs are trapped in
++	 * stop_machine.
++	 */
++	cond_resched();
++
+ 	spin_lock_irq(&gcwq->lock);
+ 
+ 	/* clear cpu intensive status */
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.8.3.2
+
