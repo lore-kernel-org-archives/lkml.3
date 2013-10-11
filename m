@@ -1,80 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758303Ab3JKLE4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 07:04:56 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58976 "EHLO
+	id S932413Ab3JKLEs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 07:04:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58488 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758149Ab3JKLEx (ORCPT
+	with ESMTP id S1757839Ab3JKKnB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 07:04:53 -0400
+	Fri, 11 Oct 2013 06:43:01 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>,
-        <kernel-team@lists.ubuntu.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [PATCH 092/100] xen/hvc: allow xenboot console to be used again
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Florian Wolter <wolly84@web.de>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Jonghwan Choi <jhbird.choi@samsung.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 032/100] xhci: Fix race between ep halt and URB cancellation
+Date: Fri, 11 Oct 2013 11:41:02 +0100
+Message-Id: <1381488130-30235-33-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
 References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
-	<1381488130-30235-93-git-send-email-luis.henriques@canonical.com>
-	<5257D893.3040105@citrix.com>
-Date: Fri, 11 Oct 2013 12:04:49 +0100
-In-Reply-To: <5257D893.3040105@citrix.com> (David Vrabel's message of "Fri, 11
-	Oct 2013 11:53:07 +0100")
-Message-ID: <877gdkcbla.fsf@canonical.com>
-User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Vrabel <david.vrabel@citrix.com> writes:
+3.5.7.23 -stable review patch.  If anyone has any objections, please let me know.
 
-> On 11/10/13 11:42, Luis Henriques wrote:
->> 3.5.7.23 -stable review patch.  If anyone has any objections, please let me know.
->
-> It's harmless to backport this, but it is only needed in 3.10 and later
-> (unless you've backported d0380e6c).
+------------------
 
-Ups, you're right.  I'll drop this from the 3.5 queue.  Thanks!
+From: Florian Wolter <wolly84@web.de>
 
-Cheers,
+commit 526867c3ca0caa2e3e846cb993b0f961c33c2abb upstream.
+
+The halted state of a endpoint cannot be cleared over CLEAR_HALT from a
+user process, because the stopped_td variable was overwritten in the
+handle_stopped_endpoint() function. So the xhci_endpoint_reset() function will
+refuse the reset and communication with device can not run over this endpoint.
+https://bugzilla.kernel.org/show_bug.cgi?id=60699
+
+Signed-off-by: Florian Wolter <wolly84@web.de>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: Jonghwan Choi <jhbird.choi@samsung.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/usb/host/xhci-ring.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
+index 37cecce..36d1290 100644
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -847,8 +847,12 @@ remove_finished_td:
+ 		/* Otherwise ring the doorbell(s) to restart queued transfers */
+ 		ring_doorbell_for_active_rings(xhci, slot_id, ep_index);
+ 	}
+-	ep->stopped_td = NULL;
+-	ep->stopped_trb = NULL;
++
++	/* Clear stopped_td and stopped_trb if endpoint is not halted */
++	if (!(ep->ep_state & EP_HALTED)) {
++		ep->stopped_td = NULL;
++		ep->stopped_trb = NULL;
++	}
+ 
+ 	/*
+ 	 * Drop the lock and complete the URBs in the cancelled TD list.
 -- 
-Luis
+1.8.3.2
 
-
->
->> From: David Vrabel <david.vrabel@citrix.com>
->> 
->> commit a9fbf4d591da6cd1d3eaab826c7c15f77fc8f6a3 upstream.
->> 
->> Commit d0380e6c3c0f6edb986d8798a23acfaf33d5df23 (early_printk:
->> consolidate random copies of identical code) added in 3.10 introduced
->> a check for con->index == -1 in early_console_register().
->> 
->> Initialize index to -1 for the xenboot console so earlyprintk=xen
->> works again.
->> 
->> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
->> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> Cc: Jiri Slaby <jslaby@suse.cz>
->> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
->> ---
->>  drivers/tty/hvc/hvc_xen.c | 1 +
->>  1 file changed, 1 insertion(+)
->> 
->> diff --git a/drivers/tty/hvc/hvc_xen.c b/drivers/tty/hvc/hvc_xen.c
->> index 944eaeb..78873df 100644
->> --- a/drivers/tty/hvc/hvc_xen.c
->> +++ b/drivers/tty/hvc/hvc_xen.c
->> @@ -634,6 +634,7 @@ struct console xenboot_console = {
->>  	.name		= "xenboot",
->>  	.write		= xenboot_write_console,
->>  	.flags		= CON_PRINTBUFFER | CON_BOOT | CON_ANYTIME,
->> +	.index		= -1,
->>  };
->>  #endif	/* CONFIG_EARLY_PRINTK */
->>  
->
-> David
