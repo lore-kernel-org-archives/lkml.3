@@ -1,72 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755602Ab3JKWH1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 18:07:27 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:53221 "EHLO
+	id S1755569Ab3JKWHZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 18:07:25 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:53230 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755498Ab3JKWHV (ORCPT
+	with ESMTP id S1755505Ab3JKWHX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 18:07:21 -0400
-Date: Fri, 11 Oct 2013 20:33:41 +0200
+	Fri, 11 Oct 2013 18:07:23 -0400
+Date: Fri, 11 Oct 2013 21:15:27 +0200
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Emilio Lopez <emilio@elopez.com.ar>, linux-kernel@vger.kernel.org,
-        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
-        shuge@allwinnertech.com, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/5] clocksource: Add Allwinner SoCs HS timers driver
-Message-ID: <20131011183341.GM3041@lukather>
-References: <1380117790-19390-1-git-send-email-maxime.ripard@free-electrons.com>
- <1380117790-19390-3-git-send-email-maxime.ripard@free-electrons.com>
- <52436EBE.9010002@codeaurora.org>
- <20131010191311.GL3041@lukather>
- <52572E33.2090609@codeaurora.org>
+To: wim@iguana.be
+Cc: linux-arm-kernel@lists.infradead.org, carlo.caione@gmail.com,
+        linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] wdt: sunxi: Fix section mismatch
+Message-ID: <20131011191527.GO3041@lukather>
+References: <1380982817-10234-1-git-send-email-maxime.ripard@free-electrons.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="aiCxlS1GuupXjEh3"
+	protocol="application/pgp-signature"; boundary="6zipuvUKAEymKn2g"
 Content-Disposition: inline
-In-Reply-To: <52572E33.2090609@codeaurora.org>
+In-Reply-To: <1380982817-10234-1-git-send-email-maxime.ripard@free-electrons.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---aiCxlS1GuupXjEh3
+--6zipuvUKAEymKn2g
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Stephen,
+Hi Wim,
 
-On Thu, Oct 10, 2013 at 03:46:11PM -0700, Stephen Boyd wrote:
-> On 10/10/13 12:13, Maxime Ripard wrote:
-> > On Wed, Sep 25, 2013 at 04:16:14PM -0700, Stephen Boyd wrote:
-> >> On 09/25/13 07:03, Maxime Ripard wrote:
-> >>> +	sun5i_clockevent.cpumask =3D cpumask_of(0);
-> >> Can this timer interrupt any CPU or is it hardwired to CPU0? If the
-> >> interrupt can go to any CPU this should be cpu_possible_mask instead.
-> > I've changed the few other things you spotted, but this one making the
-> > timer unusable.
-> >
-> > I think what happens here is that we have the A31 I've tested these
-> > patches on is a quad-core SoC. As such, the device tree has 4 CPUs
-> > declared. However, we don't have any SMP support for it now. So we end
-> > up having 4 cpus set as possible, and only one online (the boot cpu),
-> > which isn't working.
+On Sat, Oct 05, 2013 at 04:20:17PM +0200, Maxime Ripard wrote:
+> This driver has a section mismatch, for probe and remove functions,
+> leading to the following warning during the compilation.
 >=20
-> Can you explain more why it isn't working? Is the timer being rejected
-> in favor of another timer?
+> WARNING: drivers/watchdog/built-in.o(.data+0x24): Section mismatch in
+> reference from the variable sunxi_wdt_driver to the function
+> .init.text:sunxi_wdt_probe()
+> The variable sunxi_wdt_driver references
+> the function __init sunxi_wdt_probe()
+>=20
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 
-Hmm, right, I forgot it, sorry about that.
+It would be great if it could go in 3.12.
 
-The timers actually seem to not be working at all. I get stuck at the
-delay loop calibration.
+Do you want to take it, or can I merge it through my tree, with your
+Acked-by?
 
-I'm away from my hardware right now, so I couldn't debug it further, but
-reverting to using cpumask_of(0) makes the kernel boot flawlessly.
-
+Thanks,
 Maxime
 
 --=20
@@ -74,26 +58,26 @@ Maxime Ripard, Free Electrons
 Embedded Linux, Kernel and Android engineering
 http://free-electrons.com
 
---aiCxlS1GuupXjEh3
+--6zipuvUKAEymKn2g
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJSWESEAAoJEBx+YmzsjxAglcMP/3ftuHaV9NRcSuqas/5hSUkA
-ow6U2n5tZlsS9M9MiRS65jksVyLJfcRbpU2pwDYUX9PkXrHuYy9qS3FUIRvIDMeH
-LtFIAmo28LVrMt9aHGAi7okxANZE8SJ+AAJutRAkEjPj+/aMPQ+kzi6pwg400txL
-spXGtsUA0hA3mB8linRBiKQwIgVi3fZAdSmk9ePgF5YjtvZJiTn/E9fyy81kZXmg
-pchApbg9Xx80KuGrXonWgFJtdrvA1O4LzK3z6DLp4lhYJD/wDj+RWp7STuYyE2qY
-2YwwnIUyp6l0pNjlazFwYhinzTmtsDCKChOyqWZ+j4y3QUVn4i0Ro4meJOGB95mM
-aBCLXxw1f3srcOOPwpaPPsEDjn89tOe/avZ02x8MCVq10t0fpyB2c1Ze2/2ebjpg
-Yy2oql7+HRI3Bf4hmjTJRkLcjBlm/pQ3TNQt5IewnJ/8b1WFBuzxINjGGFgIfPpK
-M3MyyckZ5LC3bD8bhlQBptqOKti9Zxh7kSQPiuu++jkCU9aZ5z313QgTAmAL0C2X
-TZdmWo9vDvAB42bus97Dm78aaiJo35KOlVWg7YNtNjXkRk8L06MAjfa6iv7i4LqG
-d5DmnNe7sHNj5TRl5upr/50RVrD5cxMgsvgmspmKb5bG/MBFls/E6bPpDXHkQdA8
-EstV641ppzHmcbBBq10u
-=Zc6P
+iQIcBAEBAgAGBQJSWE5OAAoJEBx+YmzsjxAg070P/34Lh0wcnhpQopBznTdf88RS
+52Sv7801syi3mEm3MSlrGcYECWGpwam2xgd13gRICCHDSiDqXsKvjWXTy0rluHXV
+JMTdIgG9Jcvv3QbtrIKxlRwwOf5G1gLLONSOEbHIrDauXukopzPFN+SkWGoGRaRw
+gezJg1DFS3LZzJj4NjFR+JBeY7dJsnJrlmiT83qC+4oVeVTODl8RazzfQ2phEmm2
+6vit3OidzcHM0F8Dadz1aM36Cs+cUZRLTpVh99WKRRSe+r36sFqx0SRb/zGeTcRH
+ZDmkLrRZ+FVgdtFtZUn1tNbbkDIQABmJ5DfVNSn3VDL06pNH5HymNc8g4akDYpQU
+KfEnML/WReE7LKRVOMdVMgILxfWx6PqUZWZOLzsAnUFqsEuecdXddlvCAdqLNDSq
+Od8ktf71kFegubxku1OFEVsX1JmtZQTA+3+AR6FbAKmfpnjUbRHak9DO01AnVeOQ
+ZysApcDnOgqRXHfJ5izKCtM46+fQqJtgNaAgO1va8Jwe2nwPM2G4L5ZEWs2GPYOs
+EMyM69BiAYWEfIE1XlhIVR+IOMEACxobr8fLDS/On5ss6AulBPvgUL5JqrwRcP2m
+/3NyIlJ/zt+3mwKe/RQgWq0KegOH4r+bI7izdWRPsJUyW5aEbLYKMnVl3UUfNjXI
+Q6mR6dSlzZ09H4ItgjYh
+=vFcC
 -----END PGP SIGNATURE-----
 
---aiCxlS1GuupXjEh3--
+--6zipuvUKAEymKn2g--
