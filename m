@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759479Ab3JKUGW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:06:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46195 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932378Ab3JKTlZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932525Ab3JKTlZ (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 11 Oct 2013 15:41:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46177 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932378Ab3JKTlX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 15:41:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Pravin Shelar <pshelar@nicira.com>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
+        Salam Noureddine <noureddine@aristanetworks.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 047/135] ip_tunnel_core: Change __skb_push back to skb_push
-Date: Fri, 11 Oct 2013 12:38:48 -0700
-Message-Id: <20131011193950.390905208@linuxfoundation.org>
+Subject: [ 043/135] ipv4 igmp: use in_dev_put in timer handlers instead of __in_dev_put
+Date: Fri, 11 Oct 2013 12:38:44 -0700
+Message-Id: <20131011193949.930858974@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -28,33 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steffen Klassert <steffen.klassert@secunet.com>
+From: Salam Noureddine <noureddine@aristanetworks.com>
 
-[ Upstream commit 78a3694d44a029242dd0830b34ab20ef1704be35 ]
+[ Upstream commit e2401654dd0f5f3fb7a8d80dad9554d73d7ca394 ]
 
-Git commit 0e6fbc5b ("ip_tunnels: extend iptunnel_xmit()")
-moved the IP header installation to iptunnel_xmit() and
-changed skb_push() to __skb_push(). This makes possible
-bugs hard to track down, so change it back to skb_push().
+It is possible for the timer handlers to run after the call to
+ip_mc_down so use in_dev_put instead of __in_dev_put in the handler
+function in order to do proper cleanup when the refcnt reaches 0.
+Otherwise, the refcnt can reach zero without the in_device being
+destroyed and we end up leaking a reference to the net_device and
+see messages like the following,
 
-Cc: Pravin Shelar <pshelar@nicira.com>
-Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
+unregister_netdevice: waiting for eth0 to become free. Usage count = 1
+
+Tested on linux-3.4.43.
+
+Signed-off-by: Salam Noureddine <noureddine@aristanetworks.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/ip_tunnel_core.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ipv4/igmp.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/ipv4/ip_tunnel_core.c
-+++ b/net/ipv4/ip_tunnel_core.c
-@@ -63,7 +63,7 @@ int iptunnel_xmit(struct net *net, struc
- 	memset(IPCB(skb), 0, sizeof(*IPCB(skb)));
+--- a/net/ipv4/igmp.c
++++ b/net/ipv4/igmp.c
+@@ -709,7 +709,7 @@ static void igmp_gq_timer_expire(unsigne
  
- 	/* Push down and install the IP header. */
--	__skb_push(skb, sizeof(struct iphdr));
-+	skb_push(skb, sizeof(struct iphdr));
- 	skb_reset_network_header(skb);
+ 	in_dev->mr_gq_running = 0;
+ 	igmpv3_send_report(in_dev, NULL);
+-	__in_dev_put(in_dev);
++	in_dev_put(in_dev);
+ }
  
- 	iph = ip_hdr(skb);
+ static void igmp_ifc_timer_expire(unsigned long data)
+@@ -721,7 +721,7 @@ static void igmp_ifc_timer_expire(unsign
+ 		in_dev->mr_ifc_count--;
+ 		igmp_ifc_start_timer(in_dev, IGMP_Unsolicited_Report_Interval);
+ 	}
+-	__in_dev_put(in_dev);
++	in_dev_put(in_dev);
+ }
+ 
+ static void igmp_ifc_event(struct in_device *in_dev)
 
 
