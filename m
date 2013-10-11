@@ -1,86 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758136Ab3JKKqy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 06:46:54 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:50885 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756804Ab3JKKqu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 06:46:50 -0400
-Message-ID: <5257D714.9060005@ti.com>
-Date: Fri, 11 Oct 2013 05:46:44 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Rajendra Nayak <rnayak@ti.com>
-CC: Rob Landley <rob@landley.net>, Mark Brown <broonie@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Kishon Vijay Abraham I <kishon@ti.com>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] regulator: dts: Fix bindings description of regulator-boot-on
-References: <1381487207-18298-1-git-send-email-nm@ti.com> <5257D40C.3060501@ti.com>
-In-Reply-To: <5257D40C.3060501@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S932371Ab3JKKoX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 06:44:23 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58791 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757990Ab3JKKoP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 06:44:15 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 087/100] powerpc: Restore registers on error exit from csum_partial_copy_generic()
+Date: Fri, 11 Oct 2013 11:41:57 +0100
+Message-Id: <1381488130-30235-88-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
+References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/11/2013 05:33 AM, Rajendra Nayak wrote:
-> On Friday 11 October 2013 03:56 PM, Nishanth Menon wrote:
->> Since regulator-boot-on property maps back to constraints->boot_on,
->> current description of 'regulator-boot-on' property conflicts with
->> description of 'boot-on' in include/linux/regulator/machine.h and the
->> corresponding implementation in drivers/regulator/core.c.
->>
->> Ensure the description is more inline with the original intent.
->>
->> Cc: Rajendra Nayak <rnayak@ti.com>
->>
->> Reported-by: Kishon Vijay Abraham I <kishon@ti.com>
->> Signed-off-by: Nishanth Menon <nm@ti.com>
->> ---
->>
->> Ref: my confusion in http://marc.info/?t=138140228800004&r=1&w=2
->> Based on v3.12-rc4 tag
->>
->>  .../devicetree/bindings/regulator/regulator.txt    |    4 +++-
->>  1 file changed, 3 insertions(+), 1 deletion(-)
->>
->> diff --git a/Documentation/devicetree/bindings/regulator/regulator.txt b/Documentation/devicetree/bindings/regulator/regulator.txt
->> index 2bd8f09..d999f096 100644
->> --- a/Documentation/devicetree/bindings/regulator/regulator.txt
->> +++ b/Documentation/devicetree/bindings/regulator/regulator.txt
->> @@ -8,7 +8,9 @@ Optional properties:
->>  - regulator-min-microamp: smallest current consumers may set
->>  - regulator-max-microamp: largest current consumers may set
->>  - regulator-always-on: boolean, regulator should never be disabled
->> -- regulator-boot-on: bootloader/firmware enabled regulator
->> +- regulator-boot-on: regulator is enabled when the system is initially started.
->> +  If the regulator is not enabled by the hardware or bootloader then it will be
->> +  enabled when the constraints are applied.
-> 
-> Isn't this specific to how the linux regulator framework implements it?
-> why should it be documented in the generic bindings documentation which has
-> nothing Linux specific but more hardware details?
+3.5.7.23 -stable review patch.  If anyone has any objections, please let me know.
 
-Lets say for the moment that SMPS10 was enabled by hardware
-/bootloader/firmware at boot.
+------------------
 
-By the description of "bootloader/firmware enabled regulator" , I have
-described the dts correctly by adding regulator-boot-on. However,
-translating that to implementation of "Keep the regulator enabled at
-boot even if we dont use it in USB" makes no logical leap for me.
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-In fact, what does "bootloader/firmware enabled regulator" even mean
-to OS? why should it even care if "bootloader/firmware enabled
-regulator"? It cares about regulators that are mandatory to be kept on
-at boot.
+commit 8f21bd0090052e740944f9397e2be5ac7957ded7 upstream.
 
-So, IMHO, either our implementation in regulator core is wrong, or we
-are describing the wrong hardware property. This patch assumes the later.
+The csum_partial_copy_generic() function saves the PowerPC non-volatile
+r14, r15, and r16 registers for the main checksum-and-copy loop.
+Unfortunately, it fails to restore them upon error exit from this loop,
+which results in silent corruption of these registers in the presumably
+rare event of an access exception within that loop.
 
+This commit therefore restores these register on error exit from the loop.
+
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ arch/powerpc/lib/checksum_64.S | 54 +++++++++++++++++++++++++++++++-----------
+ 1 file changed, 40 insertions(+), 14 deletions(-)
+
+diff --git a/arch/powerpc/lib/checksum_64.S b/arch/powerpc/lib/checksum_64.S
+index afa2eba..d0e8390 100644
+--- a/arch/powerpc/lib/checksum_64.S
++++ b/arch/powerpc/lib/checksum_64.S
+@@ -229,19 +229,35 @@ _GLOBAL(csum_partial)
+ 	blr
+ 
+ 
+-	.macro source
++	.macro srcnr
+ 100:
+ 	.section __ex_table,"a"
+ 	.align 3
+-	.llong 100b,.Lsrc_error
++	.llong 100b,.Lsrc_error_nr
+ 	.previous
+ 	.endm
+ 
+-	.macro dest
++	.macro source
++150:
++	.section __ex_table,"a"
++	.align 3
++	.llong 150b,.Lsrc_error
++	.previous
++	.endm
++
++	.macro dstnr
+ 200:
+ 	.section __ex_table,"a"
+ 	.align 3
+-	.llong 200b,.Ldest_error
++	.llong 200b,.Ldest_error_nr
++	.previous
++	.endm
++
++	.macro dest
++250:
++	.section __ex_table,"a"
++	.align 3
++	.llong 250b,.Ldest_error
+ 	.previous
+ 	.endm
+ 
+@@ -277,11 +293,11 @@ _GLOBAL(csum_partial_copy_generic)
+ 	mtctr	r6
+ 
+ 1:
+-source;	lhz	r6,0(r3)		/* align to doubleword */
++srcnr;	lhz	r6,0(r3)		/* align to doubleword */
+ 	subi	r5,r5,2
+ 	addi	r3,r3,2
+ 	adde	r0,r0,r6
+-dest;	sth	r6,0(r4)
++dstnr;	sth	r6,0(r4)
+ 	addi	r4,r4,2
+ 	bdnz	1b
+ 
+@@ -395,10 +411,10 @@ dest;	std	r16,56(r4)
+ 
+ 	mtctr	r6
+ 3:
+-source;	ld	r6,0(r3)
++srcnr;	ld	r6,0(r3)
+ 	addi	r3,r3,8
+ 	adde	r0,r0,r6
+-dest;	std	r6,0(r4)
++dstnr;	std	r6,0(r4)
+ 	addi	r4,r4,8
+ 	bdnz	3b
+ 
+@@ -408,10 +424,10 @@ dest;	std	r6,0(r4)
+ 	srdi.	r6,r5,2
+ 	beq	.Lcopy_tail_halfword
+ 
+-source;	lwz	r6,0(r3)
++srcnr;	lwz	r6,0(r3)
+ 	addi	r3,r3,4
+ 	adde	r0,r0,r6
+-dest;	stw	r6,0(r4)
++dstnr;	stw	r6,0(r4)
+ 	addi	r4,r4,4
+ 	subi	r5,r5,4
+ 
+@@ -419,10 +435,10 @@ dest;	stw	r6,0(r4)
+ 	srdi.	r6,r5,1
+ 	beq	.Lcopy_tail_byte
+ 
+-source;	lhz	r6,0(r3)
++srcnr;	lhz	r6,0(r3)
+ 	addi	r3,r3,2
+ 	adde	r0,r0,r6
+-dest;	sth	r6,0(r4)
++dstnr;	sth	r6,0(r4)
+ 	addi	r4,r4,2
+ 	subi	r5,r5,2
+ 
+@@ -430,10 +446,10 @@ dest;	sth	r6,0(r4)
+ 	andi.	r6,r5,1
+ 	beq	.Lcopy_finish
+ 
+-source;	lbz	r6,0(r3)
++srcnr;	lbz	r6,0(r3)
+ 	sldi	r9,r6,8			/* Pad the byte out to 16 bits */
+ 	adde	r0,r0,r9
+-dest;	stb	r6,0(r4)
++dstnr;	stb	r6,0(r4)
+ 
+ .Lcopy_finish:
+ 	addze	r0,r0			/* add in final carry */
+@@ -443,6 +459,11 @@ dest;	stb	r6,0(r4)
+ 	blr
+ 
+ .Lsrc_error:
++	ld	r14,STK_REG(R14)(r1)
++	ld	r15,STK_REG(R15)(r1)
++	ld	r16,STK_REG(R16)(r1)
++	addi	r1,r1,STACKFRAMESIZE
++.Lsrc_error_nr:
+ 	cmpdi	0,r7,0
+ 	beqlr
+ 	li	r6,-EFAULT
+@@ -450,6 +471,11 @@ dest;	stb	r6,0(r4)
+ 	blr
+ 
+ .Ldest_error:
++	ld	r14,STK_REG(R14)(r1)
++	ld	r15,STK_REG(R15)(r1)
++	ld	r16,STK_REG(R16)(r1)
++	addi	r1,r1,STACKFRAMESIZE
++.Ldest_error_nr:
+ 	cmpdi	0,r8,0
+ 	beqlr
+ 	li	r6,-EFAULT
 -- 
-Regards,
-Nishanth Menon
+1.8.3.2
+
