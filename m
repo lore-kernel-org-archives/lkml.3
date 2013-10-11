@@ -1,89 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753771Ab3JKIoS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 04:44:18 -0400
-Received: from 10.mo1.mail-out.ovh.net ([178.32.96.102]:38714 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753170Ab3JKIoN (ORCPT
+	id S1756021Ab3JKIqM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 04:46:12 -0400
+Received: from demumfd001.nsn-inter.net ([93.183.12.32]:10728 "EHLO
+	demumfd001.nsn-inter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751971Ab3JKIqH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 04:44:13 -0400
-X-Greylist: delayed 3370 seconds by postgrey-1.27 at vger.kernel.org; Fri, 11 Oct 2013 04:44:13 EDT
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Josh Wu <josh.wu@atmel.com>, Richard Genoud <richard.genoud@gmail.com>
-Cc: Boris BREZILLON <b.brezillon@overkiz.com>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org
-Subject: [PATCH v4 04/17] clk: at91: add PMC macro file for dt definitions
-Date: Fri, 11 Oct 2013 10:41:25 +0200
-Message-Id: <1381480885-11994-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1381477081-6041-1-git-send-email-b.brezillon@overkiz.com>
-References: <1381477081-6041-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 13398771842949937376
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrvdefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrvdefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Fri, 11 Oct 2013 04:46:07 -0400
+Message-ID: <5257BAC8.7060505@nsn.com>
+Date: Fri, 11 Oct 2013 10:46:00 +0200
+From: Ionut Nicu <ioan.nicu.ext@nsn.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Alexander Sverdlin <alexander.sverdlin@nsn.com>
+CC: Peter Korsgaard <peter.korsgaard@barco.com>,
+        Wolfram Sang <wsa@the-dreams.de>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] i2c-mux-gpio: eliminate i2c channel order assumptions
+References: <525667CA.3030504@nsn.com> <525682B5.20102@nsn.com>
+In-Reply-To: <525682B5.20102@nsn.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-purgate-type: clean
+X-purgate-Ad: Categorized by eleven eXpurgate (R) http://www.eleven.de
+X-purgate: clean
+X-purgate: This mail is considered clean (visit http://www.eleven.de for further information)
+X-purgate-size: 2952
+X-purgate-ID: 151667::1381481161-00004A43-404708F9/0-0/0-0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a new macro file for PMC macros.
+Hi,
 
-This macro file includes the definitions of SR (status register) bit
-offsets and will be use to reference PMC irqs.
+On 10.10.2013 12:34, Alexander Sverdlin wrote:
+> Hi!
+> 
+> On 10/10/2013 10:39 AM, Ionut Nicu wrote:
+>> The i2c-mux driver uses the chan_id parameter provided
+>> in i2c_add_mux_adapter as a parameter to the select
+>> and deselect callbacks while the i2c-mux-gpio driver
+>> uses the chan_id as an index in the mux->data.values
+>> array.
+>>
+>> A simple example of where this doesn't work is when we
+>> have a device tree like this:
+>>
+>> i2cmux {
+>> 	i2c@1 {
+>> 		reg = <1>;
+>> 		...
+>> 	};
+>>
+>> 	i2c@0 {
+>> 		reg = <0>;
+>> 		...
+>> 	};
+>> };
+>>
+>> The mux->data.values array will be { 1, 0 }, but when
+>> the i2-mux driver will try to select channel 0, the
+>> i2c-mux-gpio driver will actually use values[0], hence 1
+>> as the gpio selection value.
+> 
+> The patch itself is correct, but the description is not precise,
+> I suppose... i2c-mux-gpio is consistent inside itself, it will
+> receive for every child adapter the value it has configured.
+> The problem happens inside i2c-mux.c, i2c_add_mux_adapter():
+> 
+>                	for_each_child_of_node(mux_dev->of_node, child) {
+>                        	ret = of_property_read_u32(child, "reg", &reg);
+>                        	if (ret)
+>                                	continue;
+>                        	if (chan_id == reg) {
+>                                	priv->adap.dev.of_node = child;
+> 
+> Which means, i2c-mux-gpio MUST pass reg, not its logical index inside
+> array. Otherwise node will not be correctly assigned and i2c-mux will
+> have problems selecting right adapter for the multiplexed devices.
+> 
+>> Signed-off-by: Ionut Nicu <ioan.nicu.ext@nsn.com>
+> 
+> So, for the code itself
+> 
+> Acked-by: Alexander Sverdlin <alexander.sverdlin@nsn.com>
+> 
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
----
- include/dt-bindings/clk/at91.h |   22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
- create mode 100644 include/dt-bindings/clk/at91.h
+You are right, the patch description is not so good. I will try to change
+it so it's clearer for everyone what I'm trying to fix here and after that
+I will re-submit the series.
 
-diff --git a/include/dt-bindings/clk/at91.h b/include/dt-bindings/clk/at91.h
-new file mode 100644
-index 0000000..0b4cb99
---- /dev/null
-+++ b/include/dt-bindings/clk/at91.h
-@@ -0,0 +1,22 @@
-+/*
-+ * This header provides constants for AT91 pmc status.
-+ *
-+ * The constants defined in this header are being used in dts.
-+ *
-+ * Licensed under GPLv2 or later.
-+ */
-+
-+#ifndef _DT_BINDINGS_CLK_AT91_H
-+#define _DT_BINDINGS_CLK_AT91_H
-+
-+#define AT91_PMC_MOSCS		0		/* MOSCS Flag */
-+#define AT91_PMC_LOCKA		1		/* PLLA Lock */
-+#define AT91_PMC_LOCKB		2		/* PLLB Lock */
-+#define AT91_PMC_MCKRDY		3		/* Master Clock */
-+#define AT91_PMC_LOCKU		6		/* UPLL Lock */
-+#define AT91_PMC_PCKRDY(id)	(8 + (id))	/* Programmable Clock */
-+#define AT91_PMC_MOSCSELS	16		/* Main Oscillator Selection */
-+#define AT91_PMC_MOSCRCS	17		/* Main On-Chip RC */
-+#define AT91_PMC_CFDEV		18		/* Clock Failure Detector Event */
-+
-+#endif
--- 
-1.7.9.5
+>> ---
+>>  drivers/i2c/muxes/i2c-mux-gpio.c |    4 ++--
+>>  1 files changed, 2 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/i2c/muxes/i2c-mux-gpio.c b/drivers/i2c/muxes/i2c-mux-gpio.c
+>> index b5f17ef..3505d0e 100644
+>> --- a/drivers/i2c/muxes/i2c-mux-gpio.c
+>> +++ b/drivers/i2c/muxes/i2c-mux-gpio.c
+>> @@ -43,7 +43,7 @@ static int i2c_mux_gpio_select(struct i2c_adapter *adap, void *data, u32 chan)
+>>  {
+>>  	struct gpiomux *mux = data;
+>>  
+>> -	i2c_mux_gpio_set(mux, mux->data.values[chan]);
+>> +	i2c_mux_gpio_set(mux, chan);
+>>  
+>>  	return 0;
+>>  }
+>> @@ -233,7 +233,7 @@ static int i2c_mux_gpio_probe(struct platform_device *pdev)
+>>  		unsigned int class = mux->data.classes ? mux->data.classes[i] : 0;
+>>  
+>>  		mux->adap[i] = i2c_add_mux_adapter(parent, &pdev->dev, mux, nr,
+>> -						   i, class,
+>> +						   mux->data.values[i], class,
+>>  						   i2c_mux_gpio_select, deselect);
+>>  		if (!mux->adap[i]) {
+>>  			ret = -ENODEV;
+>>
+> 
 
