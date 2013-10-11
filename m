@@ -1,174 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754965Ab3JJXs2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 19:48:28 -0400
-Received: from mms2.broadcom.com ([216.31.210.18]:1223 "EHLO mms2.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752123Ab3JJXs0 convert rfc822-to-8bit (ORCPT
+	id S1754092Ab3JKABX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 20:01:23 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:54897 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752043Ab3JKABU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 19:48:26 -0400
-X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
-From: "Sherman Yin" <syin@broadcom.com>
-To: "Linus Walleij" <linus.walleij@linaro.org>
-cc: "Rob Herring" <rob.herring@calxeda.com>, "Pawel Moll" <pawel.moll@arm.com>,
-        "Mark Rutland" <mark.rutland@arm.com>,
-        "Stephen Warren" <swarren@wwwdotorg.org>,
-        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
-        "Rob Landley" <rob@landley.net>, "Christian Daudt" <bcm@fixthebug.org>,
-        "Russell King" <linux@arm.linux.org.uk>,
-        "Grant Likely" <grant.likely@linaro.org>,
-        "Matt Porter" <matt.porter@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [PATCH 3/4] ARM: pinctrl: Add Broadcom Capri pinctrl driver
-Thread-Topic: [PATCH 3/4] ARM: pinctrl: Add Broadcom Capri pinctrl
- driver
-Thread-Index: AQHOwJjvlt3ZyknjmUucDC303MwucJnskuoAgAHzuwA=
-Date: Thu, 10 Oct 2013 23:48:15 +0000
-Message-ID: <051069C10411E24D9749790C498526FA1BE027EA@SJEXCHMB12.corp.ad.broadcom.com>
-References: <1380846199-12829-1-git-send-email-syin@broadcom.com>
- <1380846199-12829-4-git-send-email-syin@broadcom.com>
- <CACRpkdZah4fFuJL2Vh5JmbBCgnekg8MKqMWHzeheOx3N1Kzwng@mail.gmail.com>
-In-Reply-To: <CACRpkdZah4fFuJL2Vh5JmbBCgnekg8MKqMWHzeheOx3N1Kzwng@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.16.203.100]
+	Thu, 10 Oct 2013 20:01:20 -0400
+Message-ID: <52573FB5.5020100@gmail.com>
+Date: Fri, 11 Oct 2013 08:00:53 +0800
+From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
 MIME-Version: 1.0
-X-WSS-ID: 7E49E3371R099440978-01-01
-Content-Type: text/plain;
- charset=us-ascii
-Content-Transfer-Encoding: 8BIT
+To: Andrew Morton <akpm@linux-foundation.org>, mingo@elte.hu,
+        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>
+CC: "Rafael J . Wysocki" <rjw@sisk.pl>, lenb@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Toshi Kani <toshi.kani@hp.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Thomas Renninger <trenn@suse.de>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, Mel Gorman <mgorman@suse.de>,
+        mina86@mina86.com, Minchan Kim <minchan@kernel.org>,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, Rik van Riel <riel@redhat.com>,
+        jweiner@redhat.com, prarit@redhat.com,
+        "x86@kernel.org" <x86@kernel.org>, linux-doc@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>, linux-acpi@vger.kernel.org,
+        imtangchen@gmail.com, Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>
+Subject: Re: [PATCH part1 v7 0/6] x86, memblock: Allocate memory near kernel
+ image before SRAT parsed
+References: <52570A6E.2010806@gmail.com>
+In-Reply-To: <52570A6E.2010806@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> +config PINCTRL_CAPRI
->> +       bool "Broadcom Capri pinctrl driver"
->> +       select PINMUX
->> +       select PINCONF
->> +       help
->> +         Say Y here to support Broadcom Capri pinctrl driver, which is used for
->> +         the BCM281xx SoC family, including BCM11130, BCM11140, BCM11351,
->> +         BCM28145, and BCM28155 SoCs.  This driver requires the pinctrl
->> +         framework.  GPIO is provided by a separate GPIO driver.
->
->As mentioned this should be selecting and using GENERIC_PINCONF.
->Basically I want that to happen before we look further at this code.
->
->(But I'll take a quick glance anyway...)
+Hello Andrew,
 
-Sure, working on it.
+Could you take this version now? Since the approach of
+this patchset is suggested by tejun, and thanks him for
+helping us explaining a lot to guys that have the concern
+about the page table location. I've added some note in
+the patch4 description to explain why we could be not worrisome
+about the approach.
 
->> +#define CAPRI_PINCONF_PACK(val, mask)     (((val) << 16) | ((mask) & 0xffff))
->> +#define CAPRI_PINCONF_UNPACK_VAL(conf)    ((conf) >> 16)
->> +#define CAPRI_PINCONF_UNPACK_MASK(conf)   ((conf) & 0xffff)
->
->This custom horror goes away by using the macros from genric pin config
-><linux/pinctrl/pinconf-generic.h> instead.
+Thanks.
 
-Actually these are used differently than the pack/unpack functions in the pinconf-
-generic.h.  These pack the bit value and bit mask to be written to a register,
-whereas the pinconf-generic ones pack the parameter id and value.  But I get what
-you're saying and will try to reuse as much as possible from the pinconf generic
-functions and utils.
+On 10/11/2013 04:13 AM, Zhang Yanfei wrote:
+> Hello, here is the v7 version. Any comments are welcome!
+> 
+> The v7 version is based on linus's tree (3.12-rc4)
+> HEAD is:
+> commit d0e639c9e06d44e713170031fe05fb60ebe680af
+> Author: Linus Torvalds <torvalds@linux-foundation.org>
+> Date:   Sun Oct 6 14:00:20 2013 -0700
+> 
+>     Linux 3.12-rc4
+> 
+> 
+> [Problem]
+> 
+> The current Linux cannot migrate pages used by the kerenl because
+> of the kernel direct mapping. In Linux kernel space, va = pa + PAGE_OFFSET.
+> When the pa is changed, we cannot simply update the pagetable and
+> keep the va unmodified. So the kernel pages are not migratable.
+> 
+> There are also some other issues will cause the kernel pages not migratable.
+> For example, the physical address may be cached somewhere and will be used.
+> It is not to update all the caches.
+> 
+> When doing memory hotplug in Linux, we first migrate all the pages in one
+> memory device somewhere else, and then remove the device. But if pages are
+> used by the kernel, they are not migratable. As a result, memory used by
+> the kernel cannot be hot-removed.
+> 
+> Modifying the kernel direct mapping mechanism is too difficult to do. And
+> it may cause the kernel performance down and unstable. So we use the following
+> way to do memory hotplug.
+> 
+> 
+> [What we are doing]
+> 
+> In Linux, memory in one numa node is divided into several zones. One of the
+> zones is ZONE_MOVABLE, which the kernel won't use.
+> 
+> In order to implement memory hotplug in Linux, we are going to arrange all
+> hotpluggable memory in ZONE_MOVABLE so that the kernel won't use these memory.
+> To do this, we need ACPI's help.
+> 
+> In ACPI, SRAT(System Resource Affinity Table) contains NUMA info. The memory
+> affinities in SRAT record every memory range in the system, and also, flags
+> specifying if the memory range is hotpluggable.
+> (Please refer to ACPI spec 5.0 5.2.16)
+> 
+> With the help of SRAT, we have to do the following two things to achieve our
+> goal:
+> 
+> 1. When doing memory hot-add, allow the users arranging hotpluggable as
+>    ZONE_MOVABLE.
+>    (This has been done by the MOVABLE_NODE functionality in Linux.)
+> 
+> 2. when the system is booting, prevent bootmem allocator from allocating
+>    hotpluggable memory for the kernel before the memory initialization
+>    finishes.
+> 
+> The problem 2 is the key problem we are going to solve. But before solving it,
+> we need some preparation. Please see below.
+> 
+> 
+> [Preparation]
+> 
+> Bootloader has to load the kernel image into memory. And this memory must be 
+> unhotpluggable. We cannot prevent this anyway. So in a memory hotplug system, 
+> we can assume any node the kernel resides in is not hotpluggable.
+> 
+> Before SRAT is parsed, we don't know which memory ranges are hotpluggable. But
+> memblock has already started to work. In the current kernel, memblock allocates 
+> the following memory before SRAT is parsed:
+> 
+> setup_arch()
+>  |->memblock_x86_fill()            /* memblock is ready */
+>  |......
+>  |->early_reserve_e820_mpc_new()   /* allocate memory under 1MB */
+>  |->reserve_real_mode()            /* allocate memory under 1MB */
+>  |->init_mem_mapping()             /* allocate page tables, about 2MB to map 1GB memory */
+>  |->dma_contiguous_reserve()       /* specified by user, should be low */
+>  |->setup_log_buf()                /* specified by user, several mega bytes */
+>  |->relocate_initrd()              /* could be large, but will be freed after boot, should reorder */
+>  |->acpi_initrd_override()         /* several mega bytes */
+>  |->reserve_crashkernel()          /* could be large, should reorder */
+>  |......
+>  |->initmem_init()                 /* Parse SRAT */
+> 
+> According to Tejun's advice, before SRAT is parsed, we should try our best to
+> allocate memory near the kernel image. Since the whole node the kernel resides 
+> in won't be hotpluggable, and for a modern server, a node may have at least 16GB
+> memory, allocating several mega bytes memory around the kernel image won't cross
+> to hotpluggable memory.
+> 
+> 
+> [About this patch-set]
+> 
+> So this patch-set is the preparation for the problem 2 that we want to solve. It
+> does the following:
+> 
+> 1. Make memblock be able to allocate memory bottom up.
+>    1) Keep all the memblock APIs' prototype unmodified.
+>    2) When the direction is bottom up, keep the start address greater than the 
+>       end of kernel image.
+> 
+> 2. Improve init_mem_mapping() to support allocate page tables in bottom up direction.
+> 
+> 3. Introduce "movable_node" boot option to enable and disable this functionality.
+> 
+> Change log v6 -> v7:
+> 1. Add toshi's ack in several patches.
+> 2. Make __pa_symbol() available everywhere by putting a pesudo __pa_symbol define
+>    in include/linux/mm.h. Thanks HPA.
+> 3. Add notes about the page table allocation in bottom-up.
+> 
+> Change log v5 -> v6:
+> 1. Add tejun and toshi's ack in several patches.
+> 2. Change movablenode to movable_node boot option and update the description
+>    for movable_node and CONFIG_MOVABLE_NODE. Thanks Ingo!
+> 3. Fix the __pa_symbol() issue pointed by Andrew Morton.
+> 4. Update some functions' comments and names.
+> 
+> Change log v4 -> v5:
+> 1. Change memblock.current_direction to a boolean memblock.bottom_up. And remove 
+>    the direction enum.
+> 2. Update and add some comments to explain things clearer.
+> 3. Misc fixes, such as removing unnecessary #ifdef
+> 
+> Change log v3 -> v4:
+> 1. Use bottom-up/top-down to unify things. Thanks tj.
+> 2. Factor out of current top-down implementation and then introduce bottom-up mode,
+>    not mixing them in one patch. Thanks tj.
+> 3. Changes function naming: memblock_direction_bottom_up -> memblock_bottom_up
+> 4. Use memblock_set_bottom_up to replace memblock_set_current_direction, which makes
+>    the code simpler. Thanks tj.
+> 5. Define two implementions of function memblock_bottom_up and memblock_set_bottom_up
+>    in order not to use #ifdef in the boot code. Thanks tj.
+> 6. Add comments to explain why retry top-down allocation when bottom_up allocation
+>    failed. Thanks tj and toshi!
+> 
+> Change log v2 -> v3:
+> 1. According to Toshi's suggestion, move the direction checking logic into memblock.
+>    And simply the code more.
+> 
+> Change log v1 -> v2:
+> 1. According to tj's suggestion, implemented a new function memblock_alloc_bottom_up() 
+>    to allocate memory from bottom upwards, whihc can simplify the code.
+> 
+> Tang Chen (6):
+>   memblock: Factor out of top-down allocation
+>   memblock: Introduce bottom-up allocation mode
+>   x86/mm: Factor out of top-down direct mapping setup
+>   x86/mem-hotplug: Support initialize page tables in bottom-up
+>   x86, acpi, crash, kdump: Do reserve_crashkernel() after SRAT is
+>     parsed.
+>   mem-hotplug: Introduce movable_node boot option
+> 
+>  Documentation/kernel-parameters.txt |    3 +
+>  arch/x86/kernel/setup.c             |    9 ++-
+>  arch/x86/mm/init.c                  |  122 ++++++++++++++++++++++++++++------
+>  arch/x86/mm/numa.c                  |   11 +++
+>  include/linux/memblock.h            |   24 +++++++
+>  include/linux/mm.h                  |    4 +
+>  mm/Kconfig                          |   17 +++--
+>  mm/memblock.c                       |  126 +++++++++++++++++++++++++++++++----
+>  mm/memory_hotplug.c                 |   31 +++++++++
+>  9 files changed, 306 insertions(+), 41 deletions(-)
+> 
 
->> +static const struct capri_cfg_param capri_pinconf_params[] = {
->> +       {"brcm,hysteresis",     CAPRI_PINCONF_PARAM_HYST},
->> +       {"brcm,pull",           CAPRI_PINCONF_PARAM_PULL},
->> +       {"brcm,slew",           CAPRI_PINCONF_PARAM_SLEW},
->> +       {"brcm,input_dis",      CAPRI_PINCONF_PARAM_INPUT_DIS},
->> +       {"brcm,drive_str",      CAPRI_PINCONF_PARAM_DRV_STR},
->> +       {"brcm,pull_up_str",    CAPRI_PINCONF_PARAM_PULL_UP_STR},
->> +       {"brcm,mode",           CAPRI_PINCONF_PARAM_MODE},
->> +};
->
->As well as all this stuff...
 
-OK.  Will see if I can find something suitable for "input disable" and "mode"
-
->> +/* Standard pin register */
->
->Add some more elaborate explanation here. I am half-guessing that
->most of the registers are laid out like this and then there are
->two exceptions, then write that right here in the comment.
->
->(BTW: this is a HW/driver detail and should not be written in the
->device tree doc as was done in patch 2)
-
-Yes you guessed correctly.  Most of the pin have bit-field definitions like
-the "standard" or "std" pin register.  There are 12 pins that have the i2c
-definitions, and 2 pins that have the hdmi definitions.  Will add
-explanation to the code.
-
-However, I wanted to explain this in the DT doc as well because, for example,
-setting a slew rate for an hdmi pin would be invalid.
-
->> +/* Macro to update reg with new pin config param */
->> +#define CAPRI_PIN_REG_SET(reg, type, param, val)                       \
->> +       (((reg) & ~CAPRI_ ## type ## _PIN_REG_ ## param ## _MASK)       \
->> +       | (((val) << CAPRI_ ## type ## _PIN_REG_ ## param ## _SHIFT)    \
->> +       & CAPRI_ ## type ## _PIN_REG_ ## param ## _MASK))
->
->No thanks.
->
->Rewrite this into a static inline which has the same effect when
->compiling, but produces *WAY* more readable code than this
->horrid thing. Plus you can type the arguments.
-
-Ok.  The reason I used a macro is to take shortcuts given how the SHIFT
-and MASK #defines follow the format 
-
-CAPRI_<pin type>_PIN_REG_<parameter name>_<mask or shift>
-
-I'll try to simply this.
-
->> +#define _PIN(offset)                   (offset)
->
->This macro isn't exactly useful.
->
->> +/*
->> + * Pin number definition.  The order here must be the same as defined in the
->> + * PADCTRLREG block in the RDB.
->> + */
->> +#define CAPRI_PIN_ADCSYNC              _PIN(0)
->
->If it's just going to be like that, then skip the _PIN() macro.
-
-Removed.  Was following pinctrl-tegra20.c where they have the _GPIO and _PIN
-macros.  I guess it would be useful if we need to change the order of the enums
-in the future, but that's not the case at the moment for capri. 
-
->> +/* Process the pin configuration node */
->> +static int capri_pinctrl_dt_node_to_map(struct pinctrl_dev *pctldev,
->> +                                       struct device_node *pnode,
->> +                                       struct pinctrl_map **map,
->> +                                       unsigned *nmaps)
->> +{
->
->Make use of these from pinctrl-utils.c:
->pinctrl_utils_reserve_map()
->pinctrl_utils_add_map_mux()
->pinctrl_utils_add_map_configs()
->pinctrl_utils_dt_free_map()
->
->Then you get rid of another big chunk of boilerplate code.
->
->After these changes the driver will be much smaller and
->cleaner and we can take a closer look.
-
-Yea actually the generic code is similar to what I have, there are some
-differences in terms of pre-allocating / re-allocating the pinctrl_maps.
-Seems like there are very few users of these functions at the moment.
-Anyway I'll try to make use of them.
-
-Thanks for the review.
-
-Regards,
-Sherman
-
+-- 
+Thanks.
+Zhang Yanfei
