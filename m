@@ -1,68 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758093Ab3JKLEt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 07:04:49 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58493 "EHLO
+	id S1758303Ab3JKLE4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 07:04:56 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58976 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932066Ab3JKKnC (ORCPT
+	with ESMTP id S1758149Ab3JKLEx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 06:43:02 -0400
+	Fri, 11 Oct 2013 07:04:53 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Johan Hovold <jhovold@gmail.com>,
+To: David Vrabel <david.vrabel@citrix.com>
+Cc: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>,
+        <kernel-team@lists.ubuntu.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 034/100] serial: pch_uart: fix tty-kref leak in dma-rx path
-Date: Fri, 11 Oct 2013 11:41:04 +0100
-Message-Id: <1381488130-30235-35-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [PATCH 092/100] xen/hvc: allow xenboot console to be used again
 References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	<1381488130-30235-93-git-send-email-luis.henriques@canonical.com>
+	<5257D893.3040105@citrix.com>
+Date: Fri, 11 Oct 2013 12:04:49 +0100
+In-Reply-To: <5257D893.3040105@citrix.com> (David Vrabel's message of "Fri, 11
+	Oct 2013 11:53:07 +0100")
+Message-ID: <877gdkcbla.fsf@canonical.com>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.23 -stable review patch.  If anyone has any objections, please let me know.
+David Vrabel <david.vrabel@citrix.com> writes:
 
-------------------
+> On 11/10/13 11:42, Luis Henriques wrote:
+>> 3.5.7.23 -stable review patch.  If anyone has any objections, please let me know.
+>
+> It's harmless to backport this, but it is only needed in 3.10 and later
+> (unless you've backported d0380e6c).
 
-From: Johan Hovold <jhovold@gmail.com>
+Ups, you're right.  I'll drop this from the 3.5 queue.  Thanks!
 
-commit 19b85cfb190eb9980eaf416bff96aef4159a430e upstream.
-
-Fix tty_kref leak when tty_buffer_request room fails in dma-rx path.
-
-Note that the tty ref isn't really needed anymore, but as the leak has
-always been there, fixing it before removing should makes it easier to
-backport the fix.
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/tty/serial/pch_uart.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/tty/serial/pch_uart.c b/drivers/tty/serial/pch_uart.c
-index 9e97a39..206c58c 100644
---- a/drivers/tty/serial/pch_uart.c
-+++ b/drivers/tty/serial/pch_uart.c
-@@ -643,11 +643,12 @@ static int dma_push_rx(struct eg20t_port *priv, int size)
- 		dev_warn(port->dev, "Rx overrun: dropping %u bytes\n",
- 			 size - room);
- 	if (!room)
--		return room;
-+		goto out;
- 
- 	tty_insert_flip_string(tty, sg_virt(&priv->sg_rx), size);
- 
- 	port->icount.rx += room;
-+out:
- 	tty_kref_put(tty);
- 
- 	return room;
+Cheers,
 -- 
-1.8.3.2
+Luis
 
+
+>
+>> From: David Vrabel <david.vrabel@citrix.com>
+>> 
+>> commit a9fbf4d591da6cd1d3eaab826c7c15f77fc8f6a3 upstream.
+>> 
+>> Commit d0380e6c3c0f6edb986d8798a23acfaf33d5df23 (early_printk:
+>> consolidate random copies of identical code) added in 3.10 introduced
+>> a check for con->index == -1 in early_console_register().
+>> 
+>> Initialize index to -1 for the xenboot console so earlyprintk=xen
+>> works again.
+>> 
+>> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+>> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> Cc: Jiri Slaby <jslaby@suse.cz>
+>> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+>> ---
+>>  drivers/tty/hvc/hvc_xen.c | 1 +
+>>  1 file changed, 1 insertion(+)
+>> 
+>> diff --git a/drivers/tty/hvc/hvc_xen.c b/drivers/tty/hvc/hvc_xen.c
+>> index 944eaeb..78873df 100644
+>> --- a/drivers/tty/hvc/hvc_xen.c
+>> +++ b/drivers/tty/hvc/hvc_xen.c
+>> @@ -634,6 +634,7 @@ struct console xenboot_console = {
+>>  	.name		= "xenboot",
+>>  	.write		= xenboot_write_console,
+>>  	.flags		= CON_PRINTBUFFER | CON_BOOT | CON_ANYTIME,
+>> +	.index		= -1,
+>>  };
+>>  #endif	/* CONFIG_EARLY_PRINTK */
+>>  
+>
+> David
