@@ -1,204 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756466Ab3JKKJ1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 06:09:27 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:52672 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752713Ab3JKKJ0 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 06:09:26 -0400
-X-IronPort-AV: E=Sophos;i="4.93,474,1378828800"; 
-   d="scan'208";a="8724156"
-Message-ID: <5257CE10.9020800@cn.fujitsu.com>
-Date: Fri, 11 Oct 2013 18:08:16 +0800
-From: chai wen <chaiw.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110812 Thunderbird/6.0
+	id S1756890Ab3JKKJk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 06:09:40 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:33726 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755234Ab3JKKJh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 06:09:37 -0400
+Message-ID: <5257CE55.3090902@ti.com>
+Date: Fri, 11 Oct 2013 13:09:25 +0300
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: linux-kernel@vger.kernel.org, pbonzini@redhat.com, tangchen@cn.fujitsu.com,
-        guz.fnst@cn.fujitsu.com, zhangyanfei@cn.fujitsu.com,
-        guijianfeng@cn.fujitsu.com, chaiwen_0825@hotmail.com
-Subject: Re: [RFC][PATCH] Drop FOLL_GET in GUP when doing async_pf in kvm
-References: <1381411215-23830-1-git-send-email-chaiw.fnst@cn.fujitsu.com> <20131010151539.GD15954@redhat.com>
-In-Reply-To: <20131010151539.GD15954@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/10/11 18:07:14,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/10/11 18:07:14
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+To: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>,
+        Lars-Peter Clausen <lars@metafoo.de>
+CC: Belisko Marek <marek.belisko@gmail.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        <linux-fbdev@vger.kernel.org>
+Subject: Re: [PATCH] omapdss: Add new panel driver for Topolly td028ttec1
+ LCD.
+References: <1381352915-17219-1-git-send-email-marek@goldelico.com> <525662F5.3090600@ti.com> <7FAC77D4-5E1E-4B11-B067-3A8233C69240@goldelico.com> <52568B40.4040802@ti.com> <04AC7291-38E4-421B-979C-BF03D52E94BD@goldelico.com> <525699EF.6090803@ti.com> <52569CE8.5070201@metafoo.de> <A7739B52-2632-4DD8-924D-B657A6BFE3ED@goldelico.com> <5256F8DF.2020801@metafoo.de> <5257815F.5070803@ti.com> <5257A402.5030806@metafoo.de> <5570E6D7-4F66-40BE-A50C-6CCA8074BD83@goldelico.com> <5257B420.10808@ti.com> <CAAfyv36HSb4FOxaYnqcwBusqSuhtVnT0gEAoGgcW_rBkhWhf0A@mail.gmail.com> <5257BFA3.9090202@metafoo.de> <B8F44C8A-362C-4E78-BE91-D9C0783B998B@goldelico.com>
+In-Reply-To: <B8F44C8A-362C-4E78-BE91-D9C0783B998B@goldelico.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="u3ULf2lU2iPNkLxvIBM23uOHliFiIcV4r"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/10/2013 11:15 PM, Gleb Natapov wrote:
-> On Thu, Oct 10, 2013 at 09:20:15PM +0800, chai wen wrote:
->> Hi Gleb
->>
->> Thanks for you explanation about async_pf in kvm.
->> Page pinning is not mandatory in kvm async_pf processing and probably should
->> be dropped later.this patch drops the FOLL_GET flag when doing GUP in async_pf
->> and uses a bool (marking result of GUP) to replace the *page in kvm_async_pf
->> structure to simplify some following async_pf check/clear processing.
-> Thanks, but the patch need to be on top of
-> git://git.kernel.org/pub/scm/virt/kvm/kvm.git queue branch.
->
-> Some more comment bellow.
->
->> Thanks.
->>
->> Suggested-by:  gleb@redhat.com
->> Signed-off-by: chai wen <chaiw.fnst@cn.fujitsu.com>
->> ---
->>  arch/x86/kvm/x86.c       |    5 ++---
->>  include/linux/kvm_host.h |    2 +-
->>  virt/kvm/async_pf.c      |   16 ++++++----------
->>  3 files changed, 9 insertions(+), 14 deletions(-)
->>
->> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
->> index e5ca72a..0ff7d02 100644
->> --- a/arch/x86/kvm/x86.c
->> +++ b/arch/x86/kvm/x86.c
->> @@ -7282,8 +7282,7 @@ void kvm_arch_async_page_ready(struct kvm_vcpu *vcpu, struct kvm_async_pf *work)
->>  {
->>  	int r;
->>  
->> -	if ((vcpu->arch.mmu.direct_map != work->arch.direct_map) ||
->> -	      is_error_page(work->page))
->> +	if ((vcpu->arch.mmu.direct_map != work->arch.direct_map))
->>  		return;
->>  
->>  	r = kvm_mmu_reload(vcpu);
->> @@ -7393,7 +7392,7 @@ void kvm_arch_async_page_present(struct kvm_vcpu *vcpu,
->>  	struct x86_exception fault;
->>  
->>  	trace_kvm_async_pf_ready(work->arch.token, work->gva);
->> -	if (is_error_page(work->page))
->> +	if (!work->got_page)
->>  		work->arch.token = ~0; /* broadcast wakeup */
->>  	else
->>  		kvm_del_async_pf_gfn(vcpu, work->arch.gfn);
->> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
->> index 0fbbc7a..232a7d0 100644
->> --- a/include/linux/kvm_host.h
->> +++ b/include/linux/kvm_host.h
->> @@ -189,7 +189,7 @@ struct kvm_async_pf {
->>  	gva_t gva;
->>  	unsigned long addr;
->>  	struct kvm_arch_async_pf arch;
->> -	struct page *page;
->> +	bool got_page;
-> I would call it wakeup_all.
->
->>  	bool done;
->>  };
->>  
->> diff --git a/virt/kvm/async_pf.c b/virt/kvm/async_pf.c
->> index 8a39dda..0cafdc7 100644
->> --- a/virt/kvm/async_pf.c
->> +++ b/virt/kvm/async_pf.c
->> @@ -56,7 +56,7 @@ void kvm_async_pf_vcpu_init(struct kvm_vcpu *vcpu)
->>  
->>  static void async_pf_execute(struct work_struct *work)
->>  {
->> -	struct page *page = NULL;
->> +	long nrpages = 0;
->>  	struct kvm_async_pf *apf =
->>  		container_of(work, struct kvm_async_pf, work);
->>  	struct mm_struct *mm = apf->mm;
->> @@ -68,13 +68,13 @@ static void async_pf_execute(struct work_struct *work)
->>  
->>  	use_mm(mm);
->>  	down_read(&mm->mmap_sem);
->> -	get_user_pages(current, mm, addr, 1, 1, 0, &page, NULL);
->> +	nrpages = get_user_pages(current, mm, addr, 1, 1, 0, NULL, NULL);
->>  	up_read(&mm->mmap_sem);
->>  	unuse_mm(mm);
->>  
->>  	spin_lock(&vcpu->async_pf.lock);
->>  	list_add_tail(&apf->link, &vcpu->async_pf.done);
->> -	apf->page = page;
->> +	apf->got_page = (1==nrpages);
-> Space before and after ==, but this is not needed at all.  It does
-> not matter if GUP failed or not here. We need to wake up guest process
-> that is waiting on a page, so just set wakeup_all to false in kvm_setup_async_pf().
-Hi Gleb
-Thanks for you reply.
-It does not matter if GUP failed or not here. But in the original logic of
-kvm_arch_async_page_ready and kvm_arch_async_page_present, there is
-is_error_page
-checking in them. I am not sure wheher this ‘logic’ should be dropped.
-And in kvm_async_pf_wakeup_all we used a dummy bad page pointer to generate
-boradcast wakeup before. if wakeup_all(bool) is marking the result of
-gup should it be false in this function ?
+--u3ULf2lU2iPNkLxvIBM23uOHliFiIcV4r
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-thanks
->
->>  	apf->done = true;
->>  	spin_unlock(&vcpu->async_pf.lock);
->>  
->> @@ -114,8 +114,6 @@ void kvm_clear_async_pf_completion_queue(struct kvm_vcpu *vcpu)
->>  			list_entry(vcpu->async_pf.done.next,
->>  				   typeof(*work), link);
->>  		list_del(&work->link);
->> -		if (!is_error_page(work->page))
->> -			kvm_release_page_clean(work->page);
->>  		kmem_cache_free(async_pf_cache, work);
->>  	}
->>  	spin_unlock(&vcpu->async_pf.lock);
->> @@ -135,14 +133,12 @@ void kvm_check_async_pf_completion(struct kvm_vcpu *vcpu)
->>  		list_del(&work->link);
->>  		spin_unlock(&vcpu->async_pf.lock);
->>  
->> -		if (work->page)
->> +		if (work->got_page)
->>  			kvm_arch_async_page_ready(vcpu, work);
->>  		kvm_arch_async_page_present(vcpu, work);
->>  
->>  		list_del(&work->queue);
->>  		vcpu->async_pf.queued--;
->> -		if (!is_error_page(work->page))
->> -			kvm_release_page_clean(work->page);
->>  		kmem_cache_free(async_pf_cache, work);
->>  	}
->>  }
->> @@ -165,7 +161,7 @@ int kvm_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn,
->>  	if (!work)
->>  		return 0;
->>  
->> -	work->page = NULL;
->> +	work->got_page = false;
-> Sp here do:
-> 	work->wakeup_all = false;
->
->>  	work->done = false;
->>  	work->vcpu = vcpu;
->>  	work->gva = gva;
->> @@ -206,7 +202,7 @@ int kvm_async_pf_wakeup_all(struct kvm_vcpu *vcpu)
->>  	if (!work)
->>  		return -ENOMEM;
->>  
->> -	work->page = KVM_ERR_PTR_BAD_PAGE;
->> +	work->got_page = false;
-> And here:
-> 	work->wakeup_all = true;
->>  	INIT_LIST_HEAD(&work->queue); /* for list_del to work */
->>  
->>  	spin_lock(&vcpu->async_pf.lock);
->> -- 
->> 1.7.1
-> --
-> 			Gleb.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+On 11/10/13 12:50, Dr. H. Nikolaus Schaller wrote:
+
+> Hm. Is this a SPI or does it just look like one? Or is it some - otherw=
+ise
+> unknown - "3 wire serial interface". Or is it a "3(+1) GPIO slave devic=
+e"?
+> I am still not sure about this.
+
+Lars-Peter said "Back in the OpenMoko days we used the panel in normal
+4-wire SPI mode with the GPIO bitbang SPI master."
+
+I don't know much about SPI, so I can't answer to that. If the serial
+bus is indeed not any kind of more or less standard SPI version, but
+really a custom bus for this controller, then the case is a bit unclear.
+
+> If we really want to do it correctly, we may have to write a driver for=
+ that
+> special serial protocol as well. If it turns out that we can't mis-use =
+and tweak
+> it into a standard SPI driver with bit-bang backend.
+>=20
+> I simply fear that we get dependencies with the SPI subsystem and have
+> to test, debug and maintain it. Maintaining the GPIO thing we currently=
+ have
+> is easy.
+>=20
+> What would be against taking the GPIO approach first and then upgrade a=
+s soon
+> as someone raises his/her finger that he/she wants to really interface =
+this display
+> differently and is not happy with the 3/4 GPIOs? Either they come up wi=
+th a patch
+> or contact the driver author (=3Dme).
+
+I don't have anything against that as long as we use only platform data.
+
+But DT data is not an in-kernel API, it's an external API. Once we
+define that the DT data for this panel is something, that's it, we
+should stick to it. Of course, we can build compatibility layers for old
+DT data, but I would avoid that if at all possible.
+
+If we now create the DT data with gpios, and the panel as platform
+device, it'd be rather nasty change to make it a child of an spi bus. (I
+presume, I have never made such a change).
+
+And, as the gpios and platform device approach is clearly wrong way to
+describe the hardware, I'm quite against using that description in the
+DT data.
+
+That said, one option is to describe the hardware correctly in the DT
+data, but have a platform device for the panel, with panel driver doing
+the bitbanging. In that case it is possible to update the system to use
+SPI framework if needed, without changing the DT data. However, I'm not
+sure how easy that would be.
+
+ Tomi
 
 
--- 
-Regards
 
-chai wen
+--u3ULf2lU2iPNkLxvIBM23uOHliFiIcV4r
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJSV85VAAoJEPo9qoy8lh71DgAP/AnqVBWIgsAhDTk+S/3r+ReD
+te5oZeuzHKREeVq5aY5MBXgWedUqrAI1bNip/pUox3g7b0v+fHSf2ONR80ijDynF
+YaKeA6MvGAOhmVrpKA3BOP4AK5DEfAK0KQk8tTfjT5Jufe9wk0F92XtqMKEzM50r
+mCy/WQ01IxIu7eqMuVGqwbs7uss13TlWqUSs1As9ri1Yhq3CufZY036QZppvDoG1
+P7Nbp+PovXyyGepUWban7s/z5+h8P0gISGDKMyLrqv3h3CACG4iG9DCcgK8jNiE8
+IFt8XTxk/Nhr/cK6t+QI6/wMsYzdz5tHcFjXMuei16fOgnipAmQGJ4AARRG9I1WG
+EhwKFty6qcbCsJOq2uN+DV9UrUXaW/a0NOj+Fe9Ai100RvJx0/dvyWukSZiPgGZk
+l+cpBGzCC0JkUo3bGXProu72SUZEG+HZnfcyT4rFWQDzJB8Uf0jKwjMw9Z3QOiZB
+LbKmHng2TFSqOQ42UkC1yvrMZEY4EWD2h1R4c70bgga3Z9OcPjHKNj7jVZhB4Ebn
+krP/V7HrAqnLbcWbY0Y70Tgysrd/NXdbmk1hs0rhJsl1m/XQb4knf2Sd5WYWXFQ6
+WeuFQBtuFtUPFKFv+aq8sK/9CZJkKcOO/AvmHAuptsrS8sfecuazplMVLuXAW666
+bV9RuamRmCguHoJYsiW2
+=a7eW
+-----END PGP SIGNATURE-----
+
+--u3ULf2lU2iPNkLxvIBM23uOHliFiIcV4r--
