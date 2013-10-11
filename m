@@ -1,76 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757736Ab3JKJym (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 05:54:42 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:20712 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754238Ab3JKJyk (ORCPT
+	id S1757747Ab3JKJz1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 05:55:27 -0400
+Received: from 10.mo1.mail-out.ovh.net ([178.32.96.102]:39451 "EHLO
+	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756973Ab3JKJzZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 05:54:40 -0400
-X-AuditID: cbfec7f4-b7f0a6d000007b1b-1b-5257cade7096
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Cc: Weijie Yang <weijie.yang.kh@gmail.com>, Bob Liu <bob.liu@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Shaohua Li <shli@fusionio.com>, Minchan Kim <minchan@kernel.org>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH] swap: fix set_blocksize race during swapon/swapoff
-Date: Fri, 11 Oct 2013 11:54:22 +0200
-Message-id: <1381485262-16792-1-git-send-email-k.kozlowski@samsung.com>
+	Fri, 11 Oct 2013 05:55:25 -0400
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@linaro.org>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Josh Wu <josh.wu@atmel.com>, Richard Genoud <richard.genoud@gmail.com>
+Cc: Boris BREZILLON <b.brezillon@overkiz.com>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org
+Subject: [PATCH v4 10/17] clk: at91: add peripheral clk macros for peripheral clk dt bindings
+Date: Fri, 11 Oct 2013 11:53:00 +0200
+Message-Id: <1381485180-13796-1-git-send-email-b.brezillon@overkiz.com>
 X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrMJMWRmVeSWpSXmKPExsVy+t/xq7r3ToUHGaz+ImkxZ/0aNouuU1NZ
-	LF6/MLRYtvgpo8XlXXPYLO6t+c9qsezre3aLU8s5LJ6c+M/iwOnxpOkns8fOWXfZPTat6mTz
-	2PRpErvHiRm/WTw+Pr3F4tG3ZRWjx+dNcgEcUVw2Kak5mWWpRfp2CVwZb8/dZyp4z1nx4sBV
-	5gbGbo4uRk4OCQETiRsXJrBA2GISF+6tZ+ti5OIQEljKKNE78zgzSEJIoI9J4sByRhCbTcBY
-	YvPyJWwgtohAokTjoflgDcwC7xkler5tAUsICzhLbJhyB8jm4GARUJVYd8oIJMwr4C6xfOFz
-	FpCwhICCxJxJNhMYuRcwMqxiFE0tTS4oTkrPNdQrTswtLs1L10vOz93ECAmoLzsYFx+zOsQo
-	wMGoxMNrwRAeJMSaWFZcmXuIUYKDWUmEV/AkUIg3JbGyKrUoP76oNCe1+BAjEwenVAPj3I82
-	3UZaXOvYPZ5vuha8asK5hWyrNd9dZPLQ2OfDZbd8tdXyYL4dogmna3RcNB+q/AqMSDpYZ3dZ
-	0b9zcmX4x6ORE5I4NEpNzBMmrr/0QDVTP9BK3un2UbP1iuIVHu1rMswl3NRPNd946lA15dts
-	7nW1s54obvmz0EVe8sQBh8IXi/5stjilxFKckWioxVxUnAgAcsjGPQYCAAA=
+In-Reply-To: <1381477081-6041-1-git-send-email-b.brezillon@overkiz.com>
+References: <1381477081-6041-1-git-send-email-b.brezillon@overkiz.com>
+X-Ovh-Tracer-Id: 14602077368062343392
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrvdefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrvdefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Swapoff used old_block_size from swap_info which could be overwritten by
-concurrent swapon.
+This patch adds the peripheral divisors macros (for sam9x5 compatible IPs)
+which will be used by peripheral clk dt definitions.
 
-Reported-by: Weijie Yang <weijie.yang.kh@gmail.com>
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
 ---
- mm/swapfile.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ include/dt-bindings/clk/at91.h |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/mm/swapfile.c b/mm/swapfile.c
-index 3963fc2..de7c904 100644
---- a/mm/swapfile.c
-+++ b/mm/swapfile.c
-@@ -1824,6 +1824,7 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
- 	struct filename *pathname;
- 	int i, type, prev;
- 	int err;
-+	unsigned int old_block_size;
+diff --git a/include/dt-bindings/clk/at91.h b/include/dt-bindings/clk/at91.h
+index 0b4cb99..a3b07ca 100644
+--- a/include/dt-bindings/clk/at91.h
++++ b/include/dt-bindings/clk/at91.h
+@@ -19,4 +19,10 @@
+ #define AT91_PMC_MOSCRCS	17		/* Main On-Chip RC */
+ #define AT91_PMC_CFDEV		18		/* Clock Failure Detector Event */
  
- 	if (!capable(CAP_SYS_ADMIN))
- 		return -EPERM;
-@@ -1914,6 +1915,7 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
- 	}
- 
- 	swap_file = p->swap_file;
-+	old_block_size = p->old_block_size;
- 	p->swap_file = NULL;
- 	p->max = 0;
- 	swap_map = p->swap_map;
-@@ -1938,7 +1940,7 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
- 	inode = mapping->host;
- 	if (S_ISBLK(inode->i_mode)) {
- 		struct block_device *bdev = I_BDEV(inode);
--		set_blocksize(bdev, p->old_block_size);
-+		set_blocksize(bdev, old_block_size);
- 		blkdev_put(bdev, FMODE_READ | FMODE_WRITE | FMODE_EXCL);
- 	} else {
- 		mutex_lock(&inode->i_mutex);
++/* sam9x5 peripheral divisors */
++#define AT91SAM9X5_PERIPH_CLK_DIV1	0
++#define AT91SAM9X5_PERIPH_CLK_DIV2	1
++#define AT91SAM9X5_PERIPH_CLK_DIV4	2
++#define AT91SAM9X5_PERIPH_CLK_DIV8	3
++
+ #endif
 -- 
 1.7.9.5
 
