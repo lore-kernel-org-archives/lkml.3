@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932739Ab3JKTlz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:41:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46359 "EHLO
+	id S1757532Ab3JKTmK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:42:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46478 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932690Ab3JKTlu (ORCPT
+	with ESMTP id S932822Ab3JKTmH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:41:50 -0400
+	Fri, 11 Oct 2013 15:42:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kirill Tkhai <tkhai@yandex.ru>, David Miller <davem@davemloft.net>
-Subject: [ 092/135] sparc32: Fix exit flag passed from traced sys_sigreturn
-Date: Fri, 11 Oct 2013 12:39:33 -0700
-Message-Id: <20131011193955.254943718@linuxfoundation.org>
+        Jack Wang <jinpu.wang@profitbricks.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 105/135] ib_srpt: always set response for task management
+Date: Fri, 11 Oct 2013 12:39:46 -0700
+Message-Id: <20131011193956.678776463@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -26,30 +27,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kirill Tkhai <tkhai@yandex.ru>
+From: Jack Wang <jinpu.wang@profitbricks.com>
 
-[ Upstream commit 7a3b0f89e3fea680f93932691ca41a68eee7ab5e ]
+commit c807f64340932e19f0d2ac9b30c8381e1f60663a upstream.
 
-Pass 1 in %o1 to indicate that syscall_trace accounts exit.
+The SRP specification requires:
 
-Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
-CC: David Miller <davem@davemloft.net>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+  "Response data shall be provided in any SRP_RSP response that is sent in
+   response to an SRP_TSK_MGMT request (see 6.7). The information in the
+   RSP_CODE field (see table 24) shall indicate the completion status of
+   the task management function."
+
+So fix this to avoid the SRP initiator interprets task management functions
+that succeeded as failed.
+
+Signed-off-by: Jack Wang <jinpu.wang@profitbricks.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- arch/sparc/kernel/entry.S |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/sparc/kernel/entry.S
-+++ b/arch/sparc/kernel/entry.S
-@@ -839,7 +839,7 @@ sys_sigreturn:
- 	 nop
+---
+ drivers/infiniband/ulp/srpt/ib_srpt.c |   10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
+
+--- a/drivers/infiniband/ulp/srpt/ib_srpt.c
++++ b/drivers/infiniband/ulp/srpt/ib_srpt.c
+@@ -1588,7 +1588,7 @@ static int srpt_build_tskmgmt_rsp(struct
+ 	int resp_data_len;
+ 	int resp_len;
  
- 	call	syscall_trace
--	 nop
-+	 mov	1, %o1
+-	resp_data_len = (rsp_code == SRP_TSK_MGMT_SUCCESS) ? 0 : 4;
++	resp_data_len = 4;
+ 	resp_len = sizeof(*srp_rsp) + resp_data_len;
  
- 1:
- 	/* We don't want to muck with user registers like a
+ 	srp_rsp = ioctx->ioctx.buf;
+@@ -1600,11 +1600,9 @@ static int srpt_build_tskmgmt_rsp(struct
+ 				    + atomic_xchg(&ch->req_lim_delta, 0));
+ 	srp_rsp->tag = tag;
+ 
+-	if (rsp_code != SRP_TSK_MGMT_SUCCESS) {
+-		srp_rsp->flags |= SRP_RSP_FLAG_RSPVALID;
+-		srp_rsp->resp_data_len = cpu_to_be32(resp_data_len);
+-		srp_rsp->data[3] = rsp_code;
+-	}
++	srp_rsp->flags |= SRP_RSP_FLAG_RSPVALID;
++	srp_rsp->resp_data_len = cpu_to_be32(resp_data_len);
++	srp_rsp->data[3] = rsp_code;
+ 
+ 	return resp_len;
+ }
 
 
