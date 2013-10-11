@@ -1,24 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756279Ab3JKUmz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:42:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45582 "EHLO
+	id S1758815Ab3JKTju (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:39:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45549 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758811Ab3JKTjw (ORCPT
+	with ESMTP id S1758787Ab3JKTjr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:39:52 -0400
+	Fri, 11 Oct 2013 15:39:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Salam Noureddine <noureddine@aristanetworks.com>,
+        David R <david@unsolicited.net>,
+        =?UTF-8?q?Fr=C3=A9d=C3=A9ric=20Leroy?= <fredo@starox.org>,
+        Hayes Wang <hayeswang@realtek.com>,
+        Francois Romieu <romieu@fr.zoreil.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 038/110] ipv6 mcast: use in6_dev_put in timer handlers instead of __in6_dev_put
-Date: Fri, 11 Oct 2013 12:38:18 -0700
-Message-Id: <20131011193811.944181810@linuxfoundation.org>
+Subject: [ 015/110] r8169: enforce RX_MULTI_EN for the 8168f.
+Date: Fri, 11 Oct 2013 12:37:55 -0700
+Message-Id: <20131011193809.266946639@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
 References: <20131011193807.584188672@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,47 +33,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Salam Noureddine <noureddine@aristanetworks.com>
+From: Francois Romieu <romieu@fr.zoreil.com>
 
-[ Upstream commit 9260d3e1013701aa814d10c8fc6a9f92bd17d643 ]
+[ Upstream commit 3ced8c955e74d319f3e3997f7169c79d524dfd06 ]
 
-It is possible for the timer handlers to run after the call to
-ipv6_mc_down so use in6_dev_put instead of __in6_dev_put in the
-handler function in order to do proper cleanup when the refcnt
-reaches 0. Otherwise, the refcnt can reach zero without the
-inet6_dev being destroyed and we end up leaking a reference to
-the net_device and see messages like the following,
+Same narrative as eb2dc35d99028b698cdedba4f5522bc43e576bd2 ("r8169: RxConfig
+hack for the 8168evl.") regarding AMD IOMMU errors.
 
-unregister_netdevice: waiting for eth0 to become free. Usage count = 1
+RTL_GIGA_MAC_VER_36 - 8168f as well - has not been reported to behave the
+same.
 
-Tested on linux-3.4.43.
-
-Signed-off-by: Salam Noureddine <noureddine@aristanetworks.com>
+Tested-by: David R <david@unsolicited.net>
+Tested-by: Frédéric Leroy <fredo@starox.org>
+Cc: Hayes Wang <hayeswang@realtek.com>
+Signed-off-by: Francois Romieu <romieu@fr.zoreil.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/mcast.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/realtek/r8169.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/ipv6/mcast.c
-+++ b/net/ipv6/mcast.c
-@@ -2158,7 +2158,7 @@ static void mld_gq_timer_expire(unsigned
- 
- 	idev->mc_gq_running = 0;
- 	mld_send_report(idev, NULL);
--	__in6_dev_put(idev);
-+	in6_dev_put(idev);
- }
- 
- static void mld_ifc_timer_expire(unsigned long data)
-@@ -2171,7 +2171,7 @@ static void mld_ifc_timer_expire(unsigne
- 		if (idev->mc_ifc_count)
- 			mld_ifc_start_timer(idev, idev->mc_maxdelay);
- 	}
--	__in6_dev_put(idev);
-+	in6_dev_put(idev);
- }
- 
- static void mld_ifc_event(struct inet6_dev *idev)
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -4218,6 +4218,7 @@ static void rtl_init_rxcfg(struct rtl816
+ 	case RTL_GIGA_MAC_VER_23:
+ 	case RTL_GIGA_MAC_VER_24:
+ 	case RTL_GIGA_MAC_VER_34:
++	case RTL_GIGA_MAC_VER_35:
+ 		RTL_W32(RxConfig, RX128_INT_EN | RX_MULTI_EN | RX_DMA_BURST);
+ 		break;
+ 	case RTL_GIGA_MAC_VER_40:
 
 
