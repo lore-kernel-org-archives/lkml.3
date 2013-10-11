@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755675Ab3JKUzK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:55:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18966 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752066Ab3JKUzF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 16:55:05 -0400
-Date: Fri, 11 Oct 2013 17:30:17 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Xiao Guangrong <xiaoguangrong.eric@gmail.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        avi.kivity@gmail.com, pbonzini@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v2 12/15] KVM: MMU: allow locklessly access shadow page
- table out of vcpu thread
-Message-ID: <20131011203017.GA29576@amt.cnet>
-References: <20131008012355.GA3588@amt.cnet>
- <CAD6C3B4-DD55-47EB-9BC0-17867937AE2D@gmail.com>
- <20131009015627.GA4816@amt.cnet>
- <525533DB.1060104@gmail.com>
- <20131010014710.GA2198@amt.cnet>
- <20131010120845.GT3574@redhat.com>
- <20131010164222.GB3211@amt.cnet>
- <20131010191646.GE15954@redhat.com>
- <20131010210301.GA7275@amt.cnet>
- <20131011053831.GG15954@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131011053831.GG15954@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751741Ab3JKUy4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:54:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45347 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758195Ab3JKThU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 15:37:20 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Kirill Tkhai <tkhai@yandex.ru>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 31/48] sparc64: Fix off by one in trampoline TLB mapping installation loop.
+Date: Fri, 11 Oct 2013 12:36:38 -0700
+Message-Id: <20131011193640.604469457@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20131011193637.253208688@linuxfoundation.org>
+References: <20131011193637.253208688@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 11, 2013 at 08:38:31AM +0300, Gleb Natapov wrote:
-> > n_max_mmu_pages is not a suitable limit to throttle freeing of pages via
-> > RCU (its too large). If the free memory watermarks are smaller than 
-> > n_max_mmu_pages for all guests, OOM is possible.
-> > 
-> Ah, yes. I am not saying n_max_mmu_pages will throttle RCU, just saying
-> that slab size will be bound, so hopefully shrinker will touch it
-> rarely.
-> 
-> > > > > and, in addition, page released to slab is immediately
-> > > > > available for allocation, no need to wait for grace period. 
-> > > > 
-> > > > See SLAB_DESTROY_BY_RCU comment at include/linux/slab.h.
-> > > > 
-> > > This comment is exactly what I was referring to in the code you quoted. Do
-> > > you see anything problematic in what comment describes?
-> > 
-> > "This delays freeing the SLAB page by a grace period, it does _NOT_
-> > delay object freeing." The page is not available for allocation.
-> By "page" I mean "spt page" which is a slab object. So "spt page"
-> AKA slab object will be available fo allocation immediately.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-The object is reusable within that SLAB cache only, not the 
-entire system (therefore it does not prevent OOM condition).
+------------------
 
-OK, perhaps it is useful to use SLAB_DESTROY_BY_RCU, but throttling 
-is still necessary, as described in the RCU documentation.
+From: "David S. Miller" <davem@davemloft.net>
+
+[ Upstream commit 63d499662aeec1864ec36d042aca8184ea6a938e ]
+
+Reported-by: Kirill Tkhai <tkhai@yandex.ru>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ arch/sparc/kernel/trampoline_64.S |    2 --
+ 1 file changed, 2 deletions(-)
+
+--- a/arch/sparc/kernel/trampoline_64.S
++++ b/arch/sparc/kernel/trampoline_64.S
+@@ -131,7 +131,6 @@ startup_continue:
+ 	clr		%l5
+ 	sethi		%hi(num_kernel_image_mappings), %l6
+ 	lduw		[%l6 + %lo(num_kernel_image_mappings)], %l6
+-	add		%l6, 1, %l6
+ 
+ 	mov		15, %l7
+ 	BRANCH_IF_ANY_CHEETAH(g1,g5,2f)
+@@ -224,7 +223,6 @@ niagara_lock_tlb:
+ 	clr		%l5
+ 	sethi		%hi(num_kernel_image_mappings), %l6
+ 	lduw		[%l6 + %lo(num_kernel_image_mappings)], %l6
+-	add		%l6, 1, %l6
+ 
+ 1:
+ 	mov		HV_FAST_MMU_MAP_PERM_ADDR, %o5
 
 
