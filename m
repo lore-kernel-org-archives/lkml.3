@@ -1,59 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755545Ab3JKI45 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 04:56:57 -0400
-Received: from ip-196-116.sn1.eutelia.it ([62.94.196.116]:27332 "EHLO
-	goldrake.enneenne.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751044Ab3JKI4z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 04:56:55 -0400
-Date: Fri, 11 Oct 2013 10:56:43 +0200
-From: Rodolfo Giometti <giometti@enneenne.com>
-To: Paul Chavent <Paul.Chavent@onera.fr>
-Cc: linux-kernel@vger.kernel.org
-Message-ID: <20131011085643.GP4888@enneenne.com>
-Mail-Followup-To: Paul Chavent <Paul.Chavent@onera.fr>,
-	linux-kernel@vger.kernel.org
-References: <1378282838-2292-1-git-send-email-paul.chavent@onera.fr>
- <20130906065509.GA6627@enneenne.com>
- <5257BA10.2010607@onera.fr>
+	id S1757228Ab3JKI5G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 04:57:06 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:45467 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751044Ab3JKI47 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 04:56:59 -0400
+Message-ID: <5257BD3E.5000707@ti.com>
+Date: Fri, 11 Oct 2013 11:56:30 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5257BA10.2010607@onera.fr>
-Organization: GNU/Linux Device Drivers, Embedded Systems and Courses
-X-PGP-Key: gpg --keyserver keyserver.linux.it --recv-keys D25A5633
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 192.168.32.10
-X-SA-Exim-Mail-From: giometti@enneenne.com
-Subject: Re: [PATCH] pps : add non blocking option to PPS_FETCH ioctl.
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on goldrake.enneenne.com)
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Tony Lindgren <tony@atomide.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Prakash Manjunathappa <prakash.pm@ti.com>,
+        Haojian Zhuang <haojian.zhuang@linaro.org>,
+        =?ISO-8859-1?Q?Beno=EEt_Cousson?= <bcousson@baylibre.com>,
+        Linux-OMAP <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH 4/6] pinctrl: single: Add support for wake-up interrupts
+References: <20131003054104.8941.88857.stgit@localhost> <20131003054221.8941.87801.stgit@localhost> <5256AA7F.8030005@ti.com> <20131010160018.GA29913@atomide.com> <CACRpkdaG-PQA39XSjKUgM9TyeD7srgm_8s+NazrDKJ0gmNLcwg@mail.gmail.com> <20131010162015.GC29913@atomide.com> <CACRpkdYF83ghUf60Wmrti53UJ1bWV30GW_P9GjWnsOcZHbsv+Q@mail.gmail.com>
+In-Reply-To: <CACRpkdYF83ghUf60Wmrti53UJ1bWV30GW_P9GjWnsOcZHbsv+Q@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 11, 2013 at 10:42:56AM +0200, Paul Chavent wrote:
-> Hi.
+On 10/11/2013 11:00 AM, Linus Walleij wrote:
+> On Thu, Oct 10, 2013 at 6:20 PM, Tony Lindgren <tony@atomide.com> wrote:
+>> * Linus Walleij <linus.walleij@linaro.org> [131010 09:19]:
+>>> On Thu, Oct 10, 2013 at 6:00 PM, Tony Lindgren <tony@atomide.com> wrote:
+>>>> * Roger Quadros <rogerq@ti.com> [131010 06:32]:
+>>>>>
+>>>>> I tried testing this with the USB EHCI driver, but I'm not getting wake up interrupts
+>>>>> while the system is still running and only the EHCI controller is runtime suspended.
+>>>>>
+>>>>> It seems we need to somehow call _reconfigure_io_chain() to update the daisy chain
+>>>>> whenever the pad wakeup_enable bit is changed.
+>>>>
+>>>> Sounds like this is on omap3? Have you tried calling pcs_soc->rearm() in the
+>>>> pcs_irq_handle() like the comments there suggest? At least for me that keeps
+>>>> the wake-up interrupts continuously running on omap3 instead of just idle modes.
+>>>
+>>> If the rearm() function is calling this _reconfigure_io_chain my comments
+>>> on the fact that this is something that should be handled by the pin
+>>> control driver still apply I think ....
+>>
+>> Yes, except that the reconfigure_io_chain registers are in the PRM module, not in
+>> the SCM module where the pinctrl registers are.. And that shared PRM interrupt is
+>> used mostly for the internal domain wake-ups, so we should keep that in the PRM
+>> driver.
 > 
-> I haven't had any feedback for weeks. I join a patch with more
-> details in the commit message if needed.
+> That depends.
+> 
+> One-iorange-equals-one-driver is a fallacy, especially given that MFD for
+> memory-mapped things exist for a reason.
 
-If I well remember I already acked this patch. So please add my
-Acked-by line to the patch.
++1
 
-> Do you know someone responsible to apply PPS patches ?
+Another place I faced a similar problem was the OMAP control module, which contains
+registers for a number of different non related peripherals. (e.g. PHY for USB, SATA,
+Display clock, etc)
 
-Andrew Morton
+> 
+> What the pin control driver should do is control the pins. Whether the registers
+> are spread out in the entire IO-memory does not matter. We did have one system
+> which placed the IO-muxing together with each peripheral (!) and I did
+> still want
+> that to be handled by a single pinctrl driver picking out windows to all these
+> IO-ranges.
+> 
+> Things like the PRM which has (my guess) a gazillion registers related to its
+> deep-core SoC stuff should be handled by things like
+> drivers/mfd/syscon.c, which means it is dead simple for some other driver
+> using "just this one register" in that range to get a handle at it and poke it
+> using syscon_node_to_regmap() (just derference an ampersand ref)
+> syscon_regmap_lookup_by_compatible() (use a compatible string)
+> all returning a regmap * that you can use to poke these registers.
 
-Ciao,
+The register handling is fine. But how do we deal with resource handling?
+e.g. the block that has the deep-core registers might need to be clocked or powered
+before the registers can be accessed.
 
-Rodolfo
-
--- 
-
-GNU/Linux Solutions                  e-mail: giometti@enneenne.com
-Linux Device Driver                          giometti@linux.it
-Embedded Systems                     phone:  +39 349 2432127
-UNIX programming                     skype:  rodolfo.giometti
-Freelance ICT Italia - Consulente ICT Italia - www.consulenti-ict.it
+cheers,
+-roger
