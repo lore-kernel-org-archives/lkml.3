@@ -1,54 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933019Ab3JKT7w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:59:52 -0400
-Received: from mail-ye0-f180.google.com ([209.85.213.180]:41287 "EHLO
-	mail-ye0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932627Ab3JKT7t (ORCPT
+	id S1758497Ab3JKUAh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:00:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46301 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932575Ab3JKTll (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:59:49 -0400
-From: "Geyslan G. Bem" <geyslan@gmail.com>
-To: tyhicks@canonical.com
-Cc: ecryptfs@vger.kernel.org, linux-kernel@vger.kernel.org, joe@perches.com,
-        kernel-br@googlegroups.com, "Geyslan G. Bem" <geyslan@gmail.com>
-Subject: [PATCH] ecryptfs: Fix memory leakage in keystore.c
-Date: Fri, 11 Oct 2013 16:49:16 -0300
-Message-Id: <1381520956-20282-1-git-send-email-geyslan@gmail.com>
-X-Mailer: git-send-email 1.8.4
+	Fri, 11 Oct 2013 15:41:41 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Raphael Kubo da Costa <rakuco@FreeBSD.org>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Subject: [ 078/135] Bluetooth: Add support for BCM20702A0 [0b05, 17cb]
+Date: Fri, 11 Oct 2013 12:39:19 -0700
+Message-Id: <20131011193953.746032843@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
+References: <20131011193945.181603934@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In 'decrypt_pki_encrypted_session_key' function:
+3.11-stable review patch.  If anyone has any objections, please let me know.
 
-Initializes 'payload' pointer and releases it on exit.
+------------------
 
-Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
+From: Raphael Kubo da Costa <rakuco@FreeBSD.org>
+
+commit 38a172bef8c93ecbfd69715fd88396988e4073fd upstream.
+
+Yet another vendor specific ID for this chipset; this one for the ASUS
+USB-BT400 Bluetooth 4.0 adapter.
+
+T:  Bus=03 Lev=02 Prnt=02 Port=01 Cnt=01 Dev#=  6 Spd=12  MxCh= 0
+D:  Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=0b05 ProdID=17cb Rev=01.12
+S:  Manufacturer=Broadcom Corp
+S:  Product=BCM20702A0
+S:  SerialNumber=000272C64400
+C:  #Ifs= 4 Cfg#= 1 Atr=a0 MxPwr=100mA
+I:  If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=(none)
+I:  If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=(none)
+I:  If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+I:  If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
+
+Signed-off-by: Raphael Kubo da Costa <rakuco@FreeBSD.org>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- fs/ecryptfs/keystore.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/bluetooth/btusb.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/fs/ecryptfs/keystore.c b/fs/ecryptfs/keystore.c
-index 7d52806..4725a07 100644
---- a/fs/ecryptfs/keystore.c
-+++ b/fs/ecryptfs/keystore.c
-@@ -1149,7 +1149,7 @@ decrypt_pki_encrypted_session_key(struct ecryptfs_auth_tok *auth_tok,
- 	struct ecryptfs_msg_ctx *msg_ctx;
- 	struct ecryptfs_message *msg = NULL;
- 	char *auth_tok_sig;
--	char *payload;
-+	char *payload = NULL;
- 	size_t payload_len = 0;
- 	int rc;
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -102,6 +102,7 @@ static struct usb_device_id btusb_table[
  
-@@ -1203,6 +1203,7 @@ decrypt_pki_encrypted_session_key(struct ecryptfs_auth_tok *auth_tok,
- 	}
- out:
- 	kfree(msg);
-+	kfree(payload);
- 	return rc;
- }
- 
--- 
-1.8.4
+ 	/* Broadcom BCM20702A0 */
+ 	{ USB_DEVICE(0x0b05, 0x17b5) },
++	{ USB_DEVICE(0x0b05, 0x17cb) },
+ 	{ USB_DEVICE(0x04ca, 0x2003) },
+ 	{ USB_DEVICE(0x0489, 0xe042) },
+ 	{ USB_DEVICE(0x413c, 0x8197) },
+
 
