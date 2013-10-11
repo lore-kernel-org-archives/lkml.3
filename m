@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755618Ab3JKTf3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:35:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45045 "EHLO
+	id S1757431Ab3JKVLu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 17:11:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45064 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753247Ab3JKTf0 (ORCPT
+	with ESMTP id S1755519Ab3JKTf3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:35:26 -0400
+	Fri, 11 Oct 2013 15:35:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Joerg Roedel <joro@8bytes.org>,
-        Borislav Petkov <bp@suse.de>
-Subject: [ 01/39] intel-iommu: Fix leaks in pagetable freeing
-Date: Fri, 11 Oct 2013 12:34:45 -0700
-Message-Id: <20131011193211.060964140@linuxfoundation.org>
+        Alan Chester <alan.chester@tekelec.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Vlad Yasevich <vyasevich@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 06/39] net: sctp: fix ipv6 ipsec encryption bug in sctp_v6_xmit
+Date: Fri, 11 Oct 2013 12:34:50 -0700
+Message-Id: <20131011193211.575637942@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193210.843963685@linuxfoundation.org>
 References: <20131011193210.843963685@linuxfoundation.org>
@@ -28,123 +32,190 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Williamson <alex.williamson@redhat.com>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-commit 3269ee0bd6686baf86630300d528500ac5b516d7 upstream.
+[ Upstream commit 95ee62083cb6453e056562d91f597552021e6ae7 ]
 
-At best the current code only seems to free the leaf pagetables and
-the root.  If you're unlucky enough to have a large gap (like any
-QEMU guest with more than 3G of memory), only the first chunk of leaf
-pagetables are freed (plus the root).  This is a massive memory leak.
-This patch re-writes the pagetable freeing function to use a
-recursive algorithm and manages to not only free all the pagetables,
-but does it without any apparent performance loss versus the current
-broken version.
+Alan Chester reported an issue with IPv6 on SCTP that IPsec traffic is not
+being encrypted, whereas on IPv4 it is. Setting up an AH + ESP transport
+does not seem to have the desired effect:
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Cc: stable@vger.kernel.org
-Reviewed-by: Marcelo Tosatti <mtosatti@redhat.com>
-Signed-off-by: Joerg Roedel <joro@8bytes.org>
-Signed-off-by: Borislav Petkov <bp@suse.de>
+SCTP + IPv4:
+
+  22:14:20.809645 IP (tos 0x2,ECT(0), ttl 64, id 0, offset 0, flags [DF], proto AH (51), length 116)
+    192.168.0.2 > 192.168.0.5: AH(spi=0x00000042,sumlen=16,seq=0x1): ESP(spi=0x00000044,seq=0x1), length 72
+  22:14:20.813270 IP (tos 0x2,ECT(0), ttl 64, id 0, offset 0, flags [DF], proto AH (51), length 340)
+    192.168.0.5 > 192.168.0.2: AH(spi=0x00000043,sumlen=16,seq=0x1):
+
+SCTP + IPv6:
+
+  22:31:19.215029 IP6 (class 0x02, hlim 64, next-header SCTP (132) payload length: 364)
+    fe80::222:15ff:fe87:7fc.3333 > fe80::92e6:baff:fe0d:5a54.36767: sctp
+    1) [INIT ACK] [init tag: 747759530] [rwnd: 62464] [OS: 10] [MIS: 10]
+
+Moreover, Alan says:
+
+  This problem was seen with both Racoon and Racoon2. Other people have seen
+  this with OpenSwan. When IPsec is configured to encrypt all upper layer
+  protocols the SCTP connection does not initialize. After using Wireshark to
+  follow packets, this is because the SCTP packet leaves Box A unencrypted and
+  Box B believes all upper layer protocols are to be encrypted so it drops
+  this packet, causing the SCTP connection to fail to initialize. When IPsec
+  is configured to encrypt just SCTP, the SCTP packets are observed unencrypted.
+
+In fact, using `socat sctp6-listen:3333 -` on one end and transferring "plaintext"
+string on the other end, results in cleartext on the wire where SCTP eventually
+does not report any errors, thus in the latter case that Alan reports, the
+non-paranoid user might think he's communicating over an encrypted transport on
+SCTP although he's not (tcpdump ... -X):
+
+  ...
+  0x0030: 5d70 8e1a 0003 001a 177d eb6c 0000 0000  ]p.......}.l....
+  0x0040: 0000 0000 706c 6169 6e74 6578 740a 0000  ....plaintext...
+
+Only in /proc/net/xfrm_stat we can see XfrmInTmplMismatch increasing on the
+receiver side. Initial follow-up analysis from Alan's bug report was done by
+Alexey Dobriyan. Also thanks to Vlad Yasevich for feedback on this.
+
+SCTP has its own implementation of sctp_v6_xmit() not calling inet6_csk_xmit().
+This has the implication that it probably never really got updated along with
+changes in inet6_csk_xmit() and therefore does not seem to invoke xfrm handlers.
+
+SCTP's IPv4 xmit however, properly calls ip_queue_xmit() to do the work. Since
+a call to inet6_csk_xmit() would solve this problem, but result in unecessary
+route lookups, let us just use the cached flowi6 instead that we got through
+sctp_v6_get_dst(). Since all SCTP packets are being sent through sctp_packet_transmit(),
+we do the route lookup / flow caching in sctp_transport_route(), hold it in
+tp->dst and skb_dst_set() right after that. If we would alter fl6->daddr in
+sctp_v6_xmit() to np->opt->srcrt, we possibly could run into the same effect
+of not having xfrm layer pick it up, hence, use fl6_update_dst() in sctp_v6_get_dst()
+instead to get the correct source routed dst entry, which we assign to the skb.
+
+Also source address routing example from 625034113 ("sctp: fix sctp to work with
+ipv6 source address routing") still works with this patch! Nevertheless, in RFC5095
+it is actually 'recommended' to not use that anyway due to traffic amplification [1].
+So it seems we're not supposed to do that anyway in sctp_v6_xmit(). Moreover, if
+we overwrite the flow destination here, the lower IPv6 layer will be unable to
+put the correct destination address into IP header, as routing header is added in
+ipv6_push_nfrag_opts() but then probably with wrong final destination. Things aside,
+result of this patch is that we do not have any XfrmInTmplMismatch increase plus on
+the wire with this patch it now looks like:
+
+SCTP + IPv6:
+
+  08:17:47.074080 IP6 2620:52:0:102f:7a2b:cbff:fe27:1b0a > 2620:52:0:102f:213:72ff:fe32:7eba:
+    AH(spi=0x00005fb4,seq=0x1): ESP(spi=0x00005fb5,seq=0x1), length 72
+  08:17:47.074264 IP6 2620:52:0:102f:213:72ff:fe32:7eba > 2620:52:0:102f:7a2b:cbff:fe27:1b0a:
+    AH(spi=0x00003d54,seq=0x1): ESP(spi=0x00003d55,seq=0x1), length 296
+
+This fixes Kernel Bugzilla 24412. This security issue seems to be present since
+2.6.18 kernels. Lets just hope some big passive adversary in the wild didn't have
+its fun with that. lksctp-tools IPv6 regression test suite passes as well with
+this patch.
+
+ [1] http://www.secdev.org/conf/IPv6_RH_security-csw07.pdf
+
+Reported-by: Alan Chester <alan.chester@tekelec.com>
+Reported-by: Alexey Dobriyan <adobriyan@gmail.com>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Cc: Steffen Klassert <steffen.klassert@secunet.com>
+Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/pci/intel-iommu.c |   74 ++++++++++++++++++++++------------------------
- 1 file changed, 36 insertions(+), 38 deletions(-)
+ net/sctp/ipv6.c |   42 ++++++++++++------------------------------
+ 1 file changed, 12 insertions(+), 30 deletions(-)
 
---- a/drivers/pci/intel-iommu.c
-+++ b/drivers/pci/intel-iommu.c
-@@ -853,56 +853,54 @@ static int dma_pte_clear_range(struct dm
- 	return order;
+--- a/net/sctp/ipv6.c
++++ b/net/sctp/ipv6.c
+@@ -203,45 +203,22 @@ out:
+ 		in6_dev_put(idev);
  }
  
-+static void dma_pte_free_level(struct dmar_domain *domain, int level,
-+			       struct dma_pte *pte, unsigned long pfn,
-+			       unsigned long start_pfn, unsigned long last_pfn)
-+{
-+	pfn = max(start_pfn, pfn);
-+	pte = &pte[pfn_level_offset(pfn, level)];
-+
-+	do {
-+		unsigned long level_pfn;
-+		struct dma_pte *level_pte;
-+
-+		if (!dma_pte_present(pte) || dma_pte_superpage(pte))
-+			goto next;
-+
-+		level_pfn = pfn & level_mask(level - 1);
-+		level_pte = phys_to_virt(dma_pte_addr(pte));
-+
-+		if (level > 2)
-+			dma_pte_free_level(domain, level - 1, level_pte,
-+					   level_pfn, start_pfn, last_pfn);
-+
-+		/* If range covers entire pagetable, free it */
-+		if (!(start_pfn > level_pfn ||
-+		      last_pfn < level_pfn + level_size(level))) {
-+			dma_clear_pte(pte);
-+			domain_flush_cache(domain, pte, sizeof(*pte));
-+			free_pgtable_page(level_pte);
-+		}
-+next:
-+		pfn += level_size(level);
-+	} while (!first_pte_in_page(++pte) && pfn <= last_pfn);
-+}
-+
- /* free page table pages. last level pte should already be cleared */
- static void dma_pte_free_pagetable(struct dmar_domain *domain,
- 				   unsigned long start_pfn,
- 				   unsigned long last_pfn)
+-/* Based on tcp_v6_xmit() in tcp_ipv6.c. */
+ static int sctp_v6_xmit(struct sk_buff *skb, struct sctp_transport *transport)
  {
- 	int addr_width = agaw_to_width(domain->agaw) - VTD_PAGE_SHIFT;
--	struct dma_pte *first_pte, *pte;
--	int total = agaw_to_level(domain->agaw);
--	int level;
--	unsigned long tmp;
--	int large_page = 2;
- 
- 	BUG_ON(addr_width < BITS_PER_LONG && start_pfn >> addr_width);
- 	BUG_ON(addr_width < BITS_PER_LONG && last_pfn >> addr_width);
- 	BUG_ON(start_pfn > last_pfn);
- 
- 	/* We don't need lock here; nobody else touches the iova range */
--	level = 2;
--	while (level <= total) {
--		tmp = align_to_level(start_pfn, level);
+ 	struct sock *sk = skb->sk;
+ 	struct ipv6_pinfo *np = inet6_sk(sk);
+-	struct flowi6 fl6;
 -
--		/* If we can't even clear one PTE at this level, we're done */
--		if (tmp + level_size(level) - 1 > last_pfn)
--			return;
+-	memset(&fl6, 0, sizeof(fl6));
 -
--		do {
--			large_page = level;
--			first_pte = pte = dma_pfn_level_pte(domain, tmp, level, &large_page);
--			if (large_page > level)
--				level = large_page + 1;
--			if (!pte) {
--				tmp = align_to_level(tmp + 1, level + 1);
--				continue;
--			}
--			do {
--				if (dma_pte_present(pte)) {
--					free_pgtable_page(phys_to_virt(dma_pte_addr(pte)));
--					dma_clear_pte(pte);
--				}
--				pte++;
--				tmp += level_size(level);
--			} while (!first_pte_in_page(pte) &&
--				 tmp + level_size(level) - 1 <= last_pfn);
+-	fl6.flowi6_proto = sk->sk_protocol;
 -
--			domain_flush_cache(domain, first_pte,
--					   (void *)pte - (void *)first_pte);
--			
--		} while (tmp && tmp + level_size(level) - 1 <= last_pfn);
--		level++;
+-	/* Fill in the dest address from the route entry passed with the skb
+-	 * and the source address from the transport.
+-	 */
+-	ipv6_addr_copy(&fl6.daddr, &transport->ipaddr.v6.sin6_addr);
+-	ipv6_addr_copy(&fl6.saddr, &transport->saddr.v6.sin6_addr);
+-
+-	fl6.flowlabel = np->flow_label;
+-	IP6_ECN_flow_xmit(sk, fl6.flowlabel);
+-	if (ipv6_addr_type(&fl6.saddr) & IPV6_ADDR_LINKLOCAL)
+-		fl6.flowi6_oif = transport->saddr.v6.sin6_scope_id;
+-	else
+-		fl6.flowi6_oif = sk->sk_bound_dev_if;
+-
+-	if (np->opt && np->opt->srcrt) {
+-		struct rt0_hdr *rt0 = (struct rt0_hdr *) np->opt->srcrt;
+-		ipv6_addr_copy(&fl6.daddr, rt0->addr);
 -	}
-+	dma_pte_free_level(domain, agaw_to_level(domain->agaw),
-+			   domain->pgd, 0, start_pfn, last_pfn);
++	struct flowi6 *fl6 = &transport->fl.u.ip6;
+ 
+ 	SCTP_DEBUG_PRINTK("%s: skb:%p, len:%d, src:%pI6 dst:%pI6\n",
+ 			  __func__, skb, skb->len,
+-			  &fl6.saddr, &fl6.daddr);
+-
+-	SCTP_INC_STATS(SCTP_MIB_OUTSCTPPACKS);
++			  &fl6->saddr, &fl6->daddr);
+ 
+ 	if (!(transport->param_flags & SPP_PMTUD_ENABLE))
+ 		skb->local_df = 1;
+ 
+-	return ip6_xmit(sk, skb, &fl6, np->opt);
++	SCTP_INC_STATS(SCTP_MIB_OUTSCTPPACKS);
 +
- 	/* free pgd */
- 	if (start_pfn == 0 && last_pfn == DOMAIN_MAX_PFN(domain->gaw)) {
- 		free_pgtable_page(domain->pgd);
++	return ip6_xmit(sk, skb, fl6, np->opt);
+ }
+ 
+ /* Returns the dst cache entry for the given source and destination ip
+@@ -254,10 +231,12 @@ static void sctp_v6_get_dst(struct sctp_
+ 	struct dst_entry *dst = NULL;
+ 	struct flowi6 *fl6 = &fl->u.ip6;
+ 	struct sctp_bind_addr *bp;
++	struct ipv6_pinfo *np = inet6_sk(sk);
+ 	struct sctp_sockaddr_entry *laddr;
+ 	union sctp_addr *baddr = NULL;
+ 	union sctp_addr *daddr = &t->ipaddr;
+ 	union sctp_addr dst_saddr;
++	struct in6_addr *final_p, final;
+ 	__u8 matchlen = 0;
+ 	__u8 bmatchlen;
+ 	sctp_scope_t scope;
+@@ -280,7 +259,8 @@ static void sctp_v6_get_dst(struct sctp_
+ 		SCTP_DEBUG_PRINTK("SRC=%pI6 - ", &fl6->saddr);
+ 	}
+ 
+-	dst = ip6_dst_lookup_flow(sk, fl6, NULL, false);
++	final_p = fl6_update_dst(fl6, np->opt, &final);
++	dst = ip6_dst_lookup_flow(sk, fl6, final_p, false);
+ 	if (!asoc || saddr)
+ 		goto out;
+ 
+@@ -331,10 +311,12 @@ static void sctp_v6_get_dst(struct sctp_
+ 		}
+ 	}
+ 	rcu_read_unlock();
++
+ 	if (baddr) {
+ 		ipv6_addr_copy(&fl6->saddr, &baddr->v6.sin6_addr);
+ 		fl6->fl6_sport = baddr->v6.sin6_port;
+-		dst = ip6_dst_lookup_flow(sk, fl6, NULL, false);
++		final_p = fl6_update_dst(fl6, np->opt, &final);
++		dst = ip6_dst_lookup_flow(sk, fl6, final_p, false);
+ 	}
+ 
+ out:
 
 
