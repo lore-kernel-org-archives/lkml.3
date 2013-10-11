@@ -1,60 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754232Ab3JKVqj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 17:46:39 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:12842 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752956Ab3JKVpu (ORCPT
+	id S1754370Ab3JKVqm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 17:46:42 -0400
+Received: from mail-qe0-f41.google.com ([209.85.128.41]:64775 "EHLO
+	mail-qe0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754216Ab3JKVqj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 17:45:50 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 11 Oct 2013 14:45:49 -0700
-From: Alexandre Courbot <acourbot@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Olof Johansson <olof@lixom.net>, Russell King <linux@arm.linux.org.uk>,
-        Tomasz Figa <t.figa@samsung.com>, Dave Martin <Dave.Martin@arm.com>,
-        Arnd Bergmann <arnd@arndb.de>, Kevin Hilman <khilman@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-tegra@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Alexandre Courbot <acourbot@nvidia.com>
-Subject: [PATCH v8 5/5] ARM: tegra: support Trusted Foundations by default
-Date: Fri, 11 Oct 2013 14:45:38 -0700
-Message-ID: <1381527938-22840-6-git-send-email-acourbot@nvidia.com>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1381527938-22840-1-git-send-email-acourbot@nvidia.com>
-References: <1381527938-22840-1-git-send-email-acourbot@nvidia.com>
-X-NVConfidentiality: public
+	Fri, 11 Oct 2013 17:46:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20131011151842.GB27106@quack.suse.cz>
+References: <CAG3eYYSNYHaKB8REe_M16tUGC3iNDjLsHES+KvTQXknnWZSGUg@mail.gmail.com>
+	<20131011151842.GB27106@quack.suse.cz>
+Date: Fri, 11 Oct 2013 23:46:37 +0200
+Message-ID: <CAG3eYYRi=c7-vfkW9zayu4LYv_ty3kXJ8SB4T6pgAyDUXzmcYQ@mail.gmail.com>
+Subject: Re: PROBLEM: udf mount takes forever to fail + proposed solution
+From: =?UTF-8?B?UMOpdGVyIEFuZHLDoXMgRmVsdsOpZ2k=?= <petschy@gmail.com>
+To: Jan Kara <jack@suse.cz>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Support for Trusted Foundations is light and allows the kernel to run on
-a wider range of devices, so enable it by default.
+OK, I'll prepare a new patch with explicit ID checks (BEA01, BOOT2,
+CDROM, CD001, CDW02, NSR02, NSR03, TEA01, that's all I think) and the
+needed changelog in a few days. Do you think that a hard upper limit
+on the sector offset is desirable? The ISO9660 driver looks for the
+first 100 sectors, but I didn't find anything in the specs suggesting
+a max length for the udf volume recognition area.
 
-Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-Reviewed-by: Tomasz Figa <t.figa@samsung.com>
-Reviewed-by: Stephen Warren <swarren@nvidia.com>
----
- arch/arm/configs/tegra_defconfig | 1 +
- 1 file changed, 1 insertion(+)
+Regards, Peter
 
-diff --git a/arch/arm/configs/tegra_defconfig b/arch/arm/configs/tegra_defconfig
-index ea042e8..dddb97b 100644
---- a/arch/arm/configs/tegra_defconfig
-+++ b/arch/arm/configs/tegra_defconfig
-@@ -32,6 +32,7 @@ CONFIG_PCI=y
- CONFIG_PCI_MSI=y
- CONFIG_PCI_TEGRA=y
- CONFIG_PCIEPORTBUS=y
-+CONFIG_TRUSTED_FOUNDATIONS=y
- CONFIG_SMP=y
- CONFIG_PREEMPT=y
- CONFIG_AEABI=y
--- 
-1.8.4
 
+On 11 October 2013 17:18, Jan Kara <jack@suse.cz> wrote:
+>   Hello,
+>
+> On Thu 10-10-13 23:23:11, Péter András Felvégi wrote:
+>> recently I made the mistake trying to mount an unformatted ssd
+>> partition. The mount command 'hang', was unable to kill it. Top showed
+>> the process is in the uninterruptible D state. However, iotop showed
+>> slight activity, about 4M/s read from the disk that noone else used.
+>> This was 100% reproducible. sync froze, too, if was given out after
+>> the mount cmd. When trying to shut down the machine, it didn't stop,
+>> just waited for something to happen.
+>>
+>> I narrowed down the problem to the UDF filesystem driver. In
+>> fs/udf/super.c, udf_check_vsd() reads the sectors in a for loop, with
+>> the following exit conditions:
+>> - NSR02 or NSR03 descriptor is found
+>> - the read fails
+>> - vsd->stdIdent[0] == 0
+>>
+>> Browsed through the UDF 2.6 spec, ECMA 167 and 119. As I understand,
+>> the descriptors should start at offset 32768, forming a contiguous
+>> sequence. In ECMA 167 it is stated that the sequence is terminated by
+>> an invalid descriptor: unrecorded, or blank (all zeros). However, this
+>> presupposes that the filesystem is UDF.
+>>
+>> Since the ssd partition was not formatted, it contained only 0xff
+>> bytes, thus none of the exit conditions were met, and the function
+>> read through the whole, in two passes. The runtime was pathetic, it
+>> took the mount 350 minutes to fail. I have no clue why this was so
+>> slow, reading through the partition with dd gives 482 secs for the
+>> 220G, ~450M/s. Setting the blocksize to 512 or 2048 didn't make much
+>> of a difference.
+>>
+>> I peppered the code with some messages to see what happens:
+>> # time mount -t udf /dev/sdb3 /media/floppy
+>> UDF-fs: check_vsd: sectorsize=2048
+>> UDF-fs: check_vsd: sector offs=32768, s_blocksize=512, s_blocksize_bits=9
+>> UDF-fs: read 107989660 sectors of total size 55290705920 bytes
+>> UDF-fs: warning (device sdb3): udf_load_vrs: No VRS found
+>> UDF-fs: Rescanning with blocksize 2048
+>> UDF-fs: check_vsd: sectorsize=2048
+>> UDF-fs: check_vsd: sector offs=32768, s_blocksize=2048, s_blocksize_bits=11
+>> UDF-fs: read 107989660 sectors of total size 221162823680 bytes
+>> UDF-fs: warning (device sdb3): udf_load_vrs: No VRS found
+>> UDF-fs: warning (device sdb3): udf_fill_super: No partition found (1)
+>> mount: wrong fs type, bad option, bad superblock on /dev/sdb3,
+>>        missing codepage or helper program, or other error
+>>        In some cases useful info is found in syslog - try
+>>        dmesg | tail  or so
+>> real    352m4.740s
+>> user    0m0.000s
+>> sys     27m23.560s
+>>
+>> Tried to mount other partitions, too, formatted to ext3, ext4, btrfs
+>> and ntfs. The mount failed with those sooner, accidentally just
+>> because there were some blocks near to the beginning with a zero byte
+>> just at the right place.
+>>
+>> Then I prepared an 'all 0xff' 4G image, and burnt it to a DVD. The
+>> mount failed, but took only 25 minutes. 'Only', compared to the case
+>> with the ssd. This truely doesn't reflect the throughput of the
+>> devices, hopefully someone with more experience will have a clue.
+>   Thanks for the report and detailed analysis. Frankly, instead of your
+> function checking the identifier, I'd rather follow the standard in detail
+> and add handling (meaning ignore) of the remaining specified descriptors
+> (CDW02, BOOT2) and bail out if anything else is found. If someone complains
+> because some broken medium stops mounting, we can try something more
+> elaborate but for now I'd go with the simple solution.
+>
+> Also please read Documentation/SubmittingPatches - your patch was missing a
+> changelog entry (you can basically take your somewhat shortened email for
+> that) and a Signed-off-by line. Thanks!
+>
+>                                                                 Honza
+> --
+> Jan Kara <jack@suse.cz>
+> SUSE Labs, CR
