@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932933Ab3JKTus (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:50:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46474 "EHLO
+	id S964800Ab3JKTvQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:51:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46470 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932818Ab3JKTmH (ORCPT
+	with ESMTP id S932804Ab3JKTmG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:42:07 -0400
+	Fri, 11 Oct 2013 15:42:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Navin Ahuja <navin.ahuja@saratoga-speed.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 104/135] ib_srpt: Destroy cm_id before destroying QP.
-Date: Fri, 11 Oct 2013 12:39:45 -0700
-Message-Id: <20131011193956.558604331@linuxfoundation.org>
+        David Vrabel <david.vrabel@citrix.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [ 103/135] xen/hvc: allow xenboot console to be used again
+Date: Fri, 11 Oct 2013 12:39:44 -0700
+Message-Id: <20131011193956.446819261@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -27,53 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: David Vrabel <david.vrabel@citrix.com>
 
-commit 0b41d6ca616ddeb3b6c0a80e8770b6f53cd42806 upstream.
+commit a9fbf4d591da6cd1d3eaab826c7c15f77fc8f6a3 upstream.
 
-This patch fixes a bug where ib_destroy_cm_id() was incorrectly being called
-after srpt_destroy_ch_ib() had destroyed the active QP.
+Commit d0380e6c3c0f6edb986d8798a23acfaf33d5df23 (early_printk:
+consolidate random copies of identical code) added in 3.10 introduced
+a check for con->index == -1 in early_console_register().
 
-This would result in the following failed SRP_LOGIN_REQ messages:
+Initialize index to -1 for the xenboot console so earlyprintk=xen
+works again.
 
-Received SRP_LOGIN_REQ with i_port_id 0x0:0x2590ffff1762bd, t_port_id 0x2c903009f8f40:0x2c903009f8f40 and it_iu_len 260 on port 1 (guid=0xfe80000000000000:0x2c903009f8f41)
-Received SRP_LOGIN_REQ with i_port_id 0x0:0x2590ffff1758f9, t_port_id 0x2c903009f8f40:0x2c903009f8f40 and it_iu_len 260 on port 2 (guid=0xfe80000000000000:0x2c903009f8f42)
-Received SRP_LOGIN_REQ with i_port_id 0x0:0x2590ffff175941, t_port_id 0x2c903009f8f40:0x2c903009f8f40 and it_iu_len 260 on port 2 (guid=0xfe80000000000000:0x2c90300a3cfb2)
-Received SRP_LOGIN_REQ with i_port_id 0x0:0x2590ffff176299, t_port_id 0x2c903009f8f40:0x2c903009f8f40 and it_iu_len 260 on port 1 (guid=0xfe80000000000000:0x2c90300a3cfb1)
-mlx4_core 0000:84:00.0: command 0x19 failed: fw status = 0x9
-rejected SRP_LOGIN_REQ because creating a new RDMA channel failed.
-Received SRP_LOGIN_REQ with i_port_id 0x0:0x2590ffff176299, t_port_id 0x2c903009f8f40:0x2c903009f8f40 and it_iu_len 260 on port 1 (guid=0xfe80000000000000:0x2c90300a3cfb1)
-mlx4_core 0000:84:00.0: command 0x19 failed: fw status = 0x9
-rejected SRP_LOGIN_REQ because creating a new RDMA channel failed.
-Received SRP_LOGIN_REQ with i_port_id 0x0:0x2590ffff176299, t_port_id 0x2c903009f8f40:0x2c903009f8f40 and it_iu_len 260 on port 1 (guid=0xfe80000000000000:0x2c90300a3cfb1)
-
-Reported-by: Navin Ahuja <navin.ahuja@saratoga-speed.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Cc: Jiri Slaby <jslaby@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/ulp/srpt/ib_srpt.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/tty/hvc/hvc_xen.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/infiniband/ulp/srpt/ib_srpt.c
-+++ b/drivers/infiniband/ulp/srpt/ib_srpt.c
-@@ -2358,6 +2358,8 @@ static void srpt_release_channel_work(st
- 	transport_deregister_session(se_sess);
- 	ch->sess = NULL;
- 
-+	ib_destroy_cm_id(ch->cm_id);
-+
- 	srpt_destroy_ch_ib(ch);
- 
- 	srpt_free_ioctx_ring((struct srpt_ioctx **)ch->ioctx_ring,
-@@ -2368,8 +2370,6 @@ static void srpt_release_channel_work(st
- 	list_del(&ch->list);
- 	spin_unlock_irq(&sdev->spinlock);
- 
--	ib_destroy_cm_id(ch->cm_id);
--
- 	if (ch->release_done)
- 		complete(ch->release_done);
+--- a/drivers/tty/hvc/hvc_xen.c
++++ b/drivers/tty/hvc/hvc_xen.c
+@@ -636,6 +636,7 @@ struct console xenboot_console = {
+ 	.name		= "xenboot",
+ 	.write		= xenboot_write_console,
+ 	.flags		= CON_PRINTBUFFER | CON_BOOT | CON_ANYTIME,
++	.index		= -1,
+ };
+ #endif	/* CONFIG_EARLY_PRINTK */
  
 
 
