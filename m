@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161130Ab3JKUi1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:38:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45657 "EHLO
+	id S964872Ab3JKUim (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:38:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45652 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758894Ab3JKTkC (ORCPT
+	with ESMTP id S1758891Ab3JKTkB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:40:02 -0400
+	Fri, 11 Oct 2013 15:40:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Prarit Bhargava <prarit@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 053/110] powerpc/vio: Fix modalias_show return values
-Date: Fri, 11 Oct 2013 12:38:33 -0700
-Message-Id: <20131011193813.595823698@linuxfoundation.org>
+        Ansis Atteka <aatteka@nicira.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 028/110] ip: use ip_hdr() in __ip_make_skb() to retrieve IP header
+Date: Fri, 11 Oct 2013 12:38:08 -0700
+Message-Id: <20131011193810.794480815@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
 References: <20131011193807.584188672@linuxfoundation.org>
@@ -27,50 +27,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Prarit Bhargava <prarit@redhat.com>
+From: Ansis Atteka <aatteka@nicira.com>
 
-commit e82b89a6f19bae73fb064d1b3dd91fcefbb478f4 upstream.
+[ Upstream commit 749154aa56b57652a282cbde57a57abc278d1205 ]
 
-modalias_show() should return an empty string on error, not -ENODEV.
+skb->data already points to IP header, but for the sake of
+consistency we can also use ip_hdr() to retrieve it.
 
-This causes the following false and annoying error:
-
-> find /sys/devices -name modalias -print0 | xargs -0 cat >/dev/null
-cat: /sys/devices/vio/4000/modalias: No such device
-cat: /sys/devices/vio/4001/modalias: No such device
-cat: /sys/devices/vio/4002/modalias: No such device
-cat: /sys/devices/vio/4004/modalias: No such device
-cat: /sys/devices/vio/modalias: No such device
-
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Ansis Atteka <aatteka@nicira.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/powerpc/kernel/vio.c |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ net/ipv4/ip_output.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/powerpc/kernel/vio.c
-+++ b/arch/powerpc/kernel/vio.c
-@@ -1529,11 +1529,15 @@ static ssize_t modalias_show(struct devi
- 	const char *cp;
+--- a/net/ipv4/ip_output.c
++++ b/net/ipv4/ip_output.c
+@@ -1324,7 +1324,7 @@ struct sk_buff *__ip_make_skb(struct soc
+ 	else
+ 		ttl = ip_select_ttl(inet, &rt->dst);
  
- 	dn = dev->of_node;
--	if (!dn)
--		return -ENODEV;
-+	if (!dn) {
-+		strcat(buf, "\n");
-+		return strlen(buf);
-+	}
- 	cp = of_get_property(dn, "compatible", NULL);
--	if (!cp)
--		return -ENODEV;
-+	if (!cp) {
-+		strcat(buf, "\n");
-+		return strlen(buf);
-+	}
- 
- 	return sprintf(buf, "vio:T%sS%s\n", vio_dev->type, cp);
- }
+-	iph = (struct iphdr *)skb->data;
++	iph = ip_hdr(skb);
+ 	iph->version = 4;
+ 	iph->ihl = 5;
+ 	iph->tos = inet->tos;
 
 
