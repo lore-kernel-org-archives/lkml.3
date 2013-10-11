@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754412Ab3JKUrK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:47:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45513 "EHLO
+	id S1754497Ab3JKUrb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:47:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45507 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758751Ab3JKTjm (ORCPT
+	with ESMTP id S1758748Ab3JKTjl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:39:42 -0400
+	Fri, 11 Oct 2013 15:39:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Eric Dumazet <edumazet@google.com>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 022/110] bridge: Clamp forward_delay when enabling STP
-Date: Fri, 11 Oct 2013 12:38:02 -0700
-Message-Id: <20131011193810.088075785@linuxfoundation.org>
+Subject: [ 012/110] net: fix multiqueue selection
+Date: Fri, 11 Oct 2013 12:37:52 -0700
+Message-Id: <20131011193808.947634931@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
 References: <20131011193807.584188672@linuxfoundation.org>
@@ -27,106 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Herbert Xu <herbert@gondor.apana.org.au>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit be4f154d5ef0ca147ab6bcd38857a774133f5450 ]
+[ Upstream commit 50d1784ee4683f073c0362ee360bfae7a3333d6c ]
 
-At some point limits were added to forward_delay.  However, the
-limits are only enforced when STP is enabled.  This created a
-scenario where you could have a value outside the allowed range
-while STP is disabled, which then stuck around even after STP
-is enabled.
+commit 416186fbf8c5b4e4465 ("net: Split core bits of netdev_pick_tx
+into __netdev_pick_tx") added a bug that disables caching of queue
+index in the socket.
 
-This patch fixes this by clamping the value when we enable STP.
+This is the source of packet reorders for TCP flows, and
+again this is happening more often when using FQ pacing.
 
-I had to move the locking around a bit to ensure that there is
-no window where someone could insert a value outside the range
-while we're in the middle of enabling STP.
+Old code was doing
 
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+if (queue_index != old_index)
+	sk_tx_queue_set(sk, queue_index);
+
+Alexander renamed the variables but forgot to change sk_tx_queue_set()
+2nd parameter.
+
+if (queue_index != new_index)
+	sk_tx_queue_set(sk, queue_index);
+
+This means we store -1 over and over in sk->sk_tx_queue_mapping
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Alexander Duyck <alexander.h.duyck@intel.com>
+Acked-by: Alexander Duyck <alexander.h.duyck@intel.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/bridge/br_private.h |    1 +
- net/bridge/br_stp.c     |   21 +++++++++++++++------
- net/bridge/br_stp_if.c  |   12 ++++++++++--
- 3 files changed, 26 insertions(+), 8 deletions(-)
+ net/core/flow_dissector.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/bridge/br_private.h
-+++ b/net/bridge/br_private.h
-@@ -714,6 +714,7 @@ extern struct net_bridge_port *br_get_po
- extern void br_init_port(struct net_bridge_port *p);
- extern void br_become_designated_port(struct net_bridge_port *p);
+--- a/net/core/flow_dissector.c
++++ b/net/core/flow_dissector.c
+@@ -347,7 +347,7 @@ u16 __netdev_pick_tx(struct net_device *
  
-+extern void __br_set_forward_delay(struct net_bridge *br, unsigned long t);
- extern int br_set_forward_delay(struct net_bridge *br, unsigned long x);
- extern int br_set_hello_time(struct net_bridge *br, unsigned long x);
- extern int br_set_max_age(struct net_bridge *br, unsigned long x);
---- a/net/bridge/br_stp.c
-+++ b/net/bridge/br_stp.c
-@@ -544,18 +544,27 @@ int br_set_max_age(struct net_bridge *br
+ 		if (queue_index != new_index && sk &&
+ 		    rcu_access_pointer(sk->sk_dst_cache))
+-			sk_tx_queue_set(sk, queue_index);
++			sk_tx_queue_set(sk, new_index);
  
- }
- 
-+void __br_set_forward_delay(struct net_bridge *br, unsigned long t)
-+{
-+	br->bridge_forward_delay = t;
-+	if (br_is_root_bridge(br))
-+		br->forward_delay = br->bridge_forward_delay;
-+}
-+
- int br_set_forward_delay(struct net_bridge *br, unsigned long val)
- {
- 	unsigned long t = clock_t_to_jiffies(val);
-+	int err = -ERANGE;
- 
-+	spin_lock_bh(&br->lock);
- 	if (br->stp_enabled != BR_NO_STP &&
- 	    (t < BR_MIN_FORWARD_DELAY || t > BR_MAX_FORWARD_DELAY))
--		return -ERANGE;
-+		goto unlock;
- 
--	spin_lock_bh(&br->lock);
--	br->bridge_forward_delay = t;
--	if (br_is_root_bridge(br))
--		br->forward_delay = br->bridge_forward_delay;
-+	__br_set_forward_delay(br, t);
-+	err = 0;
-+
-+unlock:
- 	spin_unlock_bh(&br->lock);
--	return 0;
-+	return err;
- }
---- a/net/bridge/br_stp_if.c
-+++ b/net/bridge/br_stp_if.c
-@@ -129,6 +129,14 @@ static void br_stp_start(struct net_brid
- 	char *envp[] = { NULL };
- 
- 	r = call_usermodehelper(BR_STP_PROG, argv, envp, UMH_WAIT_PROC);
-+
-+	spin_lock_bh(&br->lock);
-+
-+	if (br->bridge_forward_delay < BR_MIN_FORWARD_DELAY)
-+		__br_set_forward_delay(br, BR_MIN_FORWARD_DELAY);
-+	else if (br->bridge_forward_delay < BR_MAX_FORWARD_DELAY)
-+		__br_set_forward_delay(br, BR_MAX_FORWARD_DELAY);
-+
- 	if (r == 0) {
- 		br->stp_enabled = BR_USER_STP;
- 		br_debug(br, "userspace STP started\n");
-@@ -137,10 +145,10 @@ static void br_stp_start(struct net_brid
- 		br_debug(br, "using kernel STP\n");
- 
- 		/* To start timers on any ports left in blocking */
--		spin_lock_bh(&br->lock);
- 		br_port_state_selection(br);
--		spin_unlock_bh(&br->lock);
+ 		queue_index = new_index;
  	}
-+
-+	spin_unlock_bh(&br->lock);
- }
- 
- static void br_stp_stop(struct net_bridge *br)
 
 
