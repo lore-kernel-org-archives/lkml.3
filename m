@@ -1,296 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756999Ab3JKJDH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 05:03:07 -0400
-Received: from 20.mo1.mail-out.ovh.net ([188.165.45.168]:38631 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752105Ab3JKJDD (ORCPT
+	id S1757099Ab3JKJFA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 05:05:00 -0400
+Received: from smtp-out-230.synserver.de ([212.40.185.230]:1052 "EHLO
+	smtp-out-230.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752314Ab3JKJE5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 05:03:03 -0400
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Josh Wu <josh.wu@atmel.com>, Richard Genoud <richard.genoud@gmail.com>
-Cc: Boris BREZILLON <b.brezillon@overkiz.com>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org
-Subject: [PATCH v4 05/17] clk: at91: add PMC main clock
-Date: Fri, 11 Oct 2013 10:44:49 +0200
-Message-Id: <1381481090-12037-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1381477081-6041-1-git-send-email-b.brezillon@overkiz.com>
-References: <1381477081-6041-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 13450844712226879712
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrvdefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrvdefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Fri, 11 Oct 2013 05:04:57 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 7517
+Message-ID: <5257BFA3.9090202@metafoo.de>
+Date: Fri, 11 Oct 2013 11:06:43 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130922 Icedove/17.0.9
+MIME-Version: 1.0
+To: Belisko Marek <marek.belisko@gmail.com>
+CC: Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH] omapdss: Add new panel driver for Topolly td028ttec1
+ LCD.
+References: <1381352915-17219-1-git-send-email-marek@goldelico.com> <525662F5.3090600@ti.com> <7FAC77D4-5E1E-4B11-B067-3A8233C69240@goldelico.com> <52568B40.4040802@ti.com> <04AC7291-38E4-421B-979C-BF03D52E94BD@goldelico.com> <525699EF.6090803@ti.com> <52569CE8.5070201@metafoo.de> <A7739B52-2632-4DD8-924D-B657A6BFE3ED@goldelico.com> <5256F8DF.2020801@metafoo.de> <5257815F.5070803@ti.com> <5257A402.5030806@metafoo.de> <5570E6D7-4F66-40BE-A50C-6CCA8074BD83@goldelico.com> <5257B420.10808@ti.com> <CAAfyv36HSb4FOxaYnqcwBusqSuhtVnT0gEAoGgcW_rBkhWhf0A@mail.gmail.com>
+In-Reply-To: <CAAfyv36HSb4FOxaYnqcwBusqSuhtVnT0gEAoGgcW_rBkhWhf0A@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds new at91 main oscillator clock implementation using common
-clk framework.
+On 10/11/2013 10:59 AM, Belisko Marek wrote:
+> Hi Tomi,
+> 
+> On Fri, Oct 11, 2013 at 10:17 AM, Tomi Valkeinen <tomi.valkeinen@ti.com> wrote:
+>> On 11/10/13 10:42, Dr. H. Nikolaus Schaller wrote:
+>>
+>>> I am not sure if there is a SPI driver for a McBSP port [1]? And to make that
+>>> work (reliably) and tested it might need a lot of work for us. At least I think
+>>> such a change (e.g. setting up clock polarity etc.) is not done in some minutes.
+>>> And the only feedback we have from the panel is "does not work"/"works". I.e.
+>>> if we are not lucky that it works immediately we have no real means to debug.
+>>>
+>>> IMHO it also gives more flexibility to board designers to choose GPIOs instead
+>>> of enforcing some SPI interface by the driver (and encapsulate this arguable
+>>> protocol in the driver). Maybe some board has 3 spare GPIOs but neither
+>>> McBSPs nor McSPIs available.
+>>
+>> This has been an interesting thread, I've learnt a lot =).
+>>
+>> I still think the panel driver should not handle this, but there should
+>> be a separate spi bitbang driver for it.
+>>
+>> I understand you're not enthusiastic going that way, as the current
+>> version works for you. However, when using DT, we need to think how to
+>> represent the hardware in the device tree data, and it has to be right
+>> from the beginning.
+>>
+>> That's why I won't allow representing this panel as having 4 gpios in
+>> the DT data, because that is not correct. The panel has 3 pins. But
+>> then, the panel does allow reading, which could be implemented using 4
+>> gpios as you have done. This data should be in the spi-bitbang data, and
+>> the panel should just use the standard SPI framework.
+> I disagree. There are different drivers which pass in platform data
+> gpios (encoder-tfp410.c or encoder-tpd12s015.c)
+> and those must be covered by DT then. I cannot see problem why to have
+> for td028 panel 3 or 4 gpios defined in DT.
 
-If rate is not provided during clock registration it is calculated using
-the slow clock (main clk parent in this case) rate and MCFR register.
+The problem is not representing it in the devicetree, but representing it
+correctly. This is a SPI slave device, hence it should be presented in the
+devicetree as a SPI slave device and not as a platform device with 4 GPIOs.
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
----
- drivers/clk/at91/Makefile   |    1 +
- drivers/clk/at91/clk-main.c |  189 +++++++++++++++++++++++++++++++++++++++++++
- drivers/clk/at91/pmc.c      |    5 ++
- drivers/clk/at91/pmc.h      |    3 +
- 4 files changed, 198 insertions(+)
- create mode 100644 drivers/clk/at91/clk-main.c
-
-diff --git a/drivers/clk/at91/Makefile b/drivers/clk/at91/Makefile
-index 1d4fb21..44105bd 100644
---- a/drivers/clk/at91/Makefile
-+++ b/drivers/clk/at91/Makefile
-@@ -3,3 +3,4 @@
- #
- 
- obj-y += pmc.o
-+obj-y += clk-main.o
-diff --git a/drivers/clk/at91/clk-main.c b/drivers/clk/at91/clk-main.c
-new file mode 100644
-index 0000000..905ceff
---- /dev/null
-+++ b/drivers/clk/at91/clk-main.c
-@@ -0,0 +1,189 @@
-+/*
-+ * drivers/clk/at91/clk-main.c
-+ *
-+ *  Copyright (C) 2013 Boris BREZILLON <b.brezillon@overkiz.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ */
-+
-+#include <linux/clk-provider.h>
-+#include <linux/clkdev.h>
-+#include <linux/clk/at91_pmc.h>
-+#include <linux/delay.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/of_irq.h>
-+#include <linux/io.h>
-+#include <linux/interrupt.h>
-+#include <linux/irq.h>
-+#include <linux/sched.h>
-+#include <linux/wait.h>
-+
-+#include "pmc.h"
-+
-+#define SLOW_CLOCK_FREQ		32768
-+#define MAINF_DIV		16
-+#define MAINFRDY_TIMEOUT	(((MAINF_DIV + 1) * USEC_PER_SEC) / \
-+				 SLOW_CLOCK_FREQ)
-+#define MAINF_LOOP_MIN_WAIT	(USEC_PER_SEC / SLOW_CLOCK_FREQ)
-+#define MAINF_LOOP_MAX_WAIT	MAINFRDY_TIMEOUT
-+
-+struct clk_main {
-+	struct clk_hw hw;
-+	struct at91_pmc *pmc;
-+	unsigned long rate;
-+	unsigned int irq;
-+	wait_queue_head_t wait;
-+};
-+
-+#define to_clk_main(hw) container_of(hw, struct clk_main, hw)
-+
-+static irqreturn_t clk_main_irq_handler(int irq, void *dev_id)
-+{
-+	struct clk_main *clkmain = (struct clk_main *)dev_id;
-+
-+	wake_up(&clkmain->wait);
-+	disable_irq_nosync(clkmain->irq);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static int clk_main_prepare(struct clk_hw *hw)
-+{
-+	struct clk_main *clkmain = to_clk_main(hw);
-+	struct at91_pmc *pmc = clkmain->pmc;
-+	unsigned long halt_time, timeout;
-+	u32 tmp;
-+
-+	while (!(pmc_read(pmc, AT91_PMC_SR) & AT91_PMC_MOSCS)) {
-+		enable_irq(clkmain->irq);
-+		wait_event(clkmain->wait,
-+			   pmc_read(pmc, AT91_PMC_SR) & AT91_PMC_MOSCS);
-+	}
-+
-+	if (clkmain->rate)
-+		return 0;
-+
-+	timeout = jiffies + usecs_to_jiffies(MAINFRDY_TIMEOUT);
-+	do {
-+		halt_time = jiffies;
-+		tmp = pmc_read(pmc, AT91_CKGR_MCFR);
-+		if (tmp & AT91_PMC_MAINRDY)
-+			return 0;
-+		usleep_range(MAINF_LOOP_MIN_WAIT, MAINF_LOOP_MAX_WAIT);
-+	} while (time_before(halt_time, timeout));
-+
-+	return 0;
-+}
-+
-+static int clk_main_is_prepared(struct clk_hw *hw)
-+{
-+	struct clk_main *clkmain = to_clk_main(hw);
-+
-+	return !!(pmc_read(clkmain->pmc, AT91_PMC_SR) & AT91_PMC_MOSCS);
-+}
-+
-+static unsigned long clk_main_recalc_rate(struct clk_hw *hw,
-+					  unsigned long parent_rate)
-+{
-+	u32 tmp;
-+	struct clk_main *clkmain = to_clk_main(hw);
-+	struct at91_pmc *pmc = clkmain->pmc;
-+
-+	if (clkmain->rate)
-+		return clkmain->rate;
-+
-+	tmp = pmc_read(pmc, AT91_CKGR_MCFR) & AT91_PMC_MAINF;
-+	clkmain->rate = (tmp * parent_rate) / MAINF_DIV;
-+
-+	return clkmain->rate;
-+}
-+
-+static const struct clk_ops main_ops = {
-+	.prepare = clk_main_prepare,
-+	.is_prepared = clk_main_is_prepared,
-+	.recalc_rate = clk_main_recalc_rate,
-+};
-+
-+static struct clk * __init
-+at91_clk_register_main(struct at91_pmc *pmc,
-+		       unsigned int irq,
-+		       const char *name,
-+		       const char *parent_name,
-+		       unsigned long rate)
-+{
-+	int ret;
-+	struct clk_main *clkmain;
-+	struct clk *clk = NULL;
-+	struct clk_init_data init;
-+
-+	if (!pmc || !irq || !name)
-+		return ERR_PTR(-EINVAL);
-+
-+	if (!rate && !parent_name)
-+		return ERR_PTR(-EINVAL);
-+
-+	clkmain = kzalloc(sizeof(*clkmain), GFP_KERNEL);
-+	if (!clkmain)
-+		return ERR_PTR(-ENOMEM);
-+
-+	init.name = name;
-+	init.ops = &main_ops;
-+	init.parent_names = parent_name ? &parent_name : NULL;
-+	init.num_parents = parent_name ? 1 : 0;
-+	init.flags = parent_name ? 0 : CLK_IS_ROOT;
-+
-+	clkmain->hw.init = &init;
-+	clkmain->rate = rate;
-+	clkmain->pmc = pmc;
-+	clkmain->irq = irq;
-+	init_waitqueue_head(&clkmain->wait);
-+	irq_set_status_flags(clkmain->irq, IRQ_NOAUTOEN);
-+	ret = request_irq(clkmain->irq, clk_main_irq_handler,
-+			  IRQF_TRIGGER_HIGH, "clk-main", clkmain);
-+	if (ret)
-+		return ERR_PTR(ret);
-+
-+	clk = clk_register(NULL, &clkmain->hw);
-+	if (IS_ERR(clk)) {
-+		free_irq(clkmain->irq, clkmain);
-+		kfree(clkmain);
-+	}
-+
-+	return clk;
-+}
-+
-+
-+
-+static void __init
-+of_at91_clk_main_setup(struct device_node *np, struct at91_pmc *pmc)
-+{
-+	struct clk *clk;
-+	unsigned int irq;
-+	const char *parent_name;
-+	const char *name = np->name;
-+	u32 rate = 0;
-+
-+	parent_name = of_clk_get_parent_name(np, 0);
-+	of_property_read_string(np, "clock-output-names", &name);
-+	of_property_read_u32(np, "clock-frequency", &rate);
-+	irq = irq_of_parse_and_map(np, 0);
-+	if (!irq)
-+		return;
-+
-+	clk = at91_clk_register_main(pmc, irq, name, parent_name, rate);
-+	if (IS_ERR(clk))
-+		return;
-+
-+	of_clk_add_provider(np, of_clk_src_simple_get, clk);
-+}
-+
-+void __init of_at91rm9200_clk_main_setup(struct device_node *np,
-+					 struct at91_pmc *pmc)
-+{
-+	of_at91_clk_main_setup(np, pmc);
-+}
-diff --git a/drivers/clk/at91/pmc.c b/drivers/clk/at91/pmc.c
-index d92e46c..ccfe506 100644
---- a/drivers/clk/at91/pmc.c
-+++ b/drivers/clk/at91/pmc.c
-@@ -208,6 +208,11 @@ out_free_pmc:
- }
- 
- static const struct of_device_id pmc_clk_ids[] __initdata = {
-+	/* Main clock */
-+	{
-+		.compatible = "atmel,at91rm9200-clk-main",
-+		.data = of_at91rm9200_clk_main_setup
-+	},
- 	{ /*sentinel*/ }
- };
- 
-diff --git a/drivers/clk/at91/pmc.h b/drivers/clk/at91/pmc.h
-index b7e8397..294e230 100644
---- a/drivers/clk/at91/pmc.h
-+++ b/drivers/clk/at91/pmc.h
-@@ -55,4 +55,7 @@ static inline void pmc_write(struct at91_pmc *pmc, int offset, u32 value)
- 	return writel_relaxed(value, pmc->regbase + offset);
- }
- 
-+extern void __init of_at91rm9200_clk_main_setup(struct device_node *np,
-+						struct at91_pmc *pmc);
-+
- #endif /* __PMC_H_ */
--- 
-1.7.9.5
+- Lars
 
