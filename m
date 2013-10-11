@@ -1,65 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758434Ab3JKPoI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 11:44:08 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:42975 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758405Ab3JKPoE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 11:44:04 -0400
-Message-ID: <52581CA7.20606@ti.com>
-Date: Fri, 11 Oct 2013 21:13:35 +0530
-From: Balaji T K <balajitk@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	id S1758460Ab3JKPoS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 11:44:18 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:33276 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758439Ab3JKPoO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 11:44:14 -0400
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: Roger Quadros <rogerq@ti.com>, Linus Walleij <linus.walleij@linaro.org>,
+In-Reply-To: <1381503190-5733-1-git-send-email-jonas.jensen@gmail.com>
+References: <1375103161-12460-1-git-send-email-jonas.jensen@gmail.com>
+	<1381503190-5733-1-git-send-email-jonas.jensen@gmail.com>
+Date: Fri, 11 Oct 2013 17:44:13 +0200
+Message-ID: <CACRpkda23nUF8i03RWePj+dGa9Wj6E1L8vfPMfxvnGkazfKS5w@mail.gmail.com>
+Subject: Re: [PATCH v5] gpio: Add MOXA ART GPIO driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Jonas Jensen <jonas.jensen@gmail.com>
+Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>,
-        =?ISO-8859-1?Q?Beno=EEt_Co?= =?ISO-8859-1?Q?usson?= 
-	<bcousson@baylibre.com>,
-        Linux-OMAP <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH 4/6] pinctrl: single: Add support for wake-up interrupts
-References: <20131003054104.8941.88857.stgit@localhost> <20131003054221.8941.87801.stgit@localhost> <5256AA7F.8030005@ti.com> <20131010160018.GA29913@atomide.com> <CACRpkdaG-PQA39XSjKUgM9TyeD7srgm_8s+NazrDKJ0gmNLcwg@mail.gmail.com> <20131010162015.GC29913@atomide.com> <CACRpkdYF83ghUf60Wmrti53UJ1bWV30GW_P9GjWnsOcZHbsv+Q@mail.gmail.com> <5257BD3E.5000707@ti.com> <20131011153654.GN29913@atomide.com>
-In-Reply-To: <20131011153654.GN29913@atomide.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+        "arm@kernel.org" <arm@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 11 October 2013 09:06 PM, Tony Lindgren wrote:
->>> What the pin control driver should do is control the pins. Whether the registers
->>> are spread out in the entire IO-memory does not matter. We did have one system
->>> which placed the IO-muxing together with each peripheral (!) and I did
->>> still want
->>> that to be handled by a single pinctrl driver picking out windows to all these
->>> IO-ranges.
->>>
->>> Things like the PRM which has (my guess) a gazillion registers related to its
->>> deep-core SoC stuff should be handled by things like
->>> drivers/mfd/syscon.c, which means it is dead simple for some other driver
->>> using "just this one register" in that range to get a handle at it and poke it
->>> using syscon_node_to_regmap() (just derference an ampersand ref)
->>> syscon_regmap_lookup_by_compatible() (use a compatible string)
->>> all returning a regmap * that you can use to poke these registers.
->>
->> The register handling is fine. But how do we deal with resource handling?
->> e.g. the block that has the deep-core registers might need to be clocked or powered
->> before the registers can be accessed.
->
-> Right, that's the key issue here. The register access would have to be conditional
-> based on the hardware modules PM state. Otherwise we'll have hard to trace hangs
-> and oopses.
->
-Hi Tony,
+On Fri, Oct 11, 2013 at 4:53 PM, Jonas Jensen <jonas.jensen@gmail.com> wrote:
 
-How are the clocks/power state currently handled in case of omap4_pmx_core,
-omap4_pmx_wkup register access via pinctrl-single ?
+>     I agree it is a bit strange GPIO control is divided in two
+>     separate registers. Unfortunately I can't offer an explanation
+>     because the documentation is not publicly available.
+>
+>     The register responsible for doing enable/disable is located
+>     at <0x98100100 0x4>, the clock register is very close at
+>     <0x98100000 0x34>.
 
-Thanks and Regards,
-Balaji T K
+If we don't know we have to guess.
+
+This layout makes me think that the IO-window at 0x98100000 is
+a power-clock-and-reset controller. It contains some register
+to latch the pins enable/disable them, or if this is even a clock
+gate? Are you sure about this? Is it now a gated clock, simply,
+so that this bit should be handled in the clock driver, i.e.
+this bit gets set by clk_enable() from the GPIO driver?
+
+I am very suspicious about this especially since the GPIO
+driver is lacking clk_get() and friends.
+
+If it's not a clock gate, and you are convinced that you must still
+reach out into this range I think you want something like this:
+
+syscon: syscon@98100000 {
+                compatible = "syscon";
+                reg = <0x98100000 0x1000>;
+};
+
+gpio: gpio@98700000 {
+               gpio-controller;
+               #gpio-cells = <2>;
+               syscon = <&syscon>;
+               compatible = "moxa,moxart-gpio";
+               reg =   <0x98700000 0xC>,
+                       <0x98100100 0x4>;
+};
+
+Then the driver can use something like:
+
+        struct device_node *np = pdev->dev.of_node;
+        struct device_node *syscon_np;
+        struct regmap *regmap;
+        int err;
+
+        syscon_np = of_parse_phandle(np, "syscon", 0);
+        if (!syscon_np) {
+                pr_crit("no syscon node\n");
+                return -ENODEV;
+        }
+        regmap = syscon_node_to_regmap(syscon_np);
+        if (!regmap) {
+                pr_crit("could not locate syscon regmap\n");
+                return -ENODEV;
+        }
+
+Then update the registers using regmap_update_bits() and
+friends.
+
+>     I don't think gpio_poweroff driver is right for this hardware
+>     because the pin is not connected to anything that can do reset.
+>     The old 2.6.9 kernel driver uses timer poll with eventual call
+>     to userspace.
+>
+>     To test that it works, I added gpio_poweroff anyway, modified
+>     with gpio_export() the pin can then be seen switching between
+>     0 and 1 (on "cat /sys/class/gpio/gpio25/value").
+
+Hmmmm not quite following this...
+
+> +Required properties:
+> +
+> +- #gpio-cells : Should be 2, The first cell is the pin number and
+> +               the second cell is used to specify polarity:
+> +                       0 = active high
+> +                       1 = active low
+
+Could reference <dt-bindings/gpio/gpio.h> I guess?
+
+Oh well, no big deal.
+
+The driver as such is looking nice but now I strongly suspect
+it should clk_get/clk_prepare/clk_enable ... etc.
+
+Yours,
+Linus Walleij
