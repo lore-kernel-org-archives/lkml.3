@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932525Ab3JKTlZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:41:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46177 "EHLO
+	id S1759492Ab3JKUGm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:06:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46189 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932378Ab3JKTlX (ORCPT
+	with ESMTP id S932521Ab3JKTlZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:41:23 -0400
+	Fri, 11 Oct 2013 15:41:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Salam Noureddine <noureddine@aristanetworks.com>,
+        Pravin Shelar <pshelar@nicira.com>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 043/135] ipv4 igmp: use in_dev_put in timer handlers instead of __in_dev_put
-Date: Fri, 11 Oct 2013 12:38:44 -0700
-Message-Id: <20131011193949.930858974@linuxfoundation.org>
+Subject: [ 046/135] ip_tunnel: Fix a memory corruption in ip_tunnel_xmit
+Date: Fri, 11 Oct 2013 12:38:47 -0700
+Message-Id: <20131011193950.271836427@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -27,47 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Salam Noureddine <noureddine@aristanetworks.com>
+From: Steffen Klassert <steffen.klassert@secunet.com>
 
-[ Upstream commit e2401654dd0f5f3fb7a8d80dad9554d73d7ca394 ]
+[ Upstream commit 3e08f4a72f689c6296d336c2aab4bddd60c93ae2 ]
 
-It is possible for the timer handlers to run after the call to
-ip_mc_down so use in_dev_put instead of __in_dev_put in the handler
-function in order to do proper cleanup when the refcnt reaches 0.
-Otherwise, the refcnt can reach zero without the in_device being
-destroyed and we end up leaking a reference to the net_device and
-see messages like the following,
+We might extend the used aera of a skb beyond the total
+headroom when we install the ipip header. Fix this by
+calling skb_cow_head() unconditionally.
 
-unregister_netdevice: waiting for eth0 to become free. Usage count = 1
+Bug was introduced with commit c544193214
+("GRE: Refactor GRE tunneling code.")
 
-Tested on linux-3.4.43.
-
-Signed-off-by: Salam Noureddine <noureddine@aristanetworks.com>
+Cc: Pravin Shelar <pshelar@nicira.com>
+Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/igmp.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/ipv4/ip_tunnel.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
---- a/net/ipv4/igmp.c
-+++ b/net/ipv4/igmp.c
-@@ -709,7 +709,7 @@ static void igmp_gq_timer_expire(unsigne
+--- a/net/ipv4/ip_tunnel.c
++++ b/net/ipv4/ip_tunnel.c
+@@ -645,13 +645,13 @@ void ip_tunnel_xmit(struct sk_buff *skb,
  
- 	in_dev->mr_gq_running = 0;
- 	igmpv3_send_report(in_dev, NULL);
--	__in_dev_put(in_dev);
-+	in_dev_put(in_dev);
- }
- 
- static void igmp_ifc_timer_expire(unsigned long data)
-@@ -721,7 +721,7 @@ static void igmp_ifc_timer_expire(unsign
- 		in_dev->mr_ifc_count--;
- 		igmp_ifc_start_timer(in_dev, IGMP_Unsolicited_Report_Interval);
+ 	max_headroom = LL_RESERVED_SPACE(rt->dst.dev) + sizeof(struct iphdr)
+ 			+ rt->dst.header_len;
+-	if (max_headroom > dev->needed_headroom) {
++	if (max_headroom > dev->needed_headroom)
+ 		dev->needed_headroom = max_headroom;
+-		if (skb_cow_head(skb, dev->needed_headroom)) {
+-			dev->stats.tx_dropped++;
+-			dev_kfree_skb(skb);
+-			return;
+-		}
++
++	if (skb_cow_head(skb, dev->needed_headroom)) {
++		dev->stats.tx_dropped++;
++		dev_kfree_skb(skb);
++		return;
  	}
--	__in_dev_put(in_dev);
-+	in_dev_put(in_dev);
- }
  
- static void igmp_ifc_event(struct in_device *in_dev)
+ 	err = iptunnel_xmit(dev_net(dev), rt, skb,
 
 
