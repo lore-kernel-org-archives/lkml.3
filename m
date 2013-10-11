@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758703Ab3JKLI4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 07:08:56 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58415 "EHLO
+	id S1758727Ab3JKLJQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 07:09:16 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58406 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757692Ab3JKKmm (ORCPT
+	with ESMTP id S1757683Ab3JKKml (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 06:42:42 -0400
+	Fri, 11 Oct 2013 06:42:41 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jan Kara <jack@suse.cz>, Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 020/100] isofs: Refuse RW mount of the filesystem instead of making it RO
-Date: Fri, 11 Oct 2013 11:40:50 +0100
-Message-Id: <1381488130-30235-21-git-send-email-luis.henriques@canonical.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Li Zefan <lizefan@huawei.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 016/100] perf: Clarify perf_cpu_context::active_pmu usage by renaming it to ::unique_pmu
+Date: Fri, 11 Oct 2013 11:40:46 +0100
+Message-Id: <1381488130-30235-17-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
 References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
@@ -26,70 +28,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-commit 17b7f7cf58926844e1dd40f5eb5348d481deca6a upstream.
+commit 3f1f33206c16c7b3839d71372bc2ac3f305aa802 upstream.
 
-Refuse RW mount of isofs filesystem. So far we just silently changed it
-to RO mount but when the media is writeable, block layer won't notice
-this change and thus will think device is used RW and will block eject
-button of the drive. That is unexpected by users because for
-non-writeable media eject button works just fine.
+Stephane thought the perf_cpu_context::active_pmu name confusing and
+suggested using 'unique_pmu' instead.
 
-Userspace mount(8) command handles this just fine and retries mounting
-with MS_RDONLY set so userspace shouldn't see any regression.  Plus any
-tool mounting isofs is likely confronted with the case of read-only
-media where block layer already refuses to mount the filesystem without
-MS_RDONLY set so our behavior shouldn't be anything new for it.
+This pointer is a pointer to a 'random' pmu sharing the cpuctx
+instance, therefore limiting a for_each_pmu loop to those where
+cpuctx->unique_pmu matches the pmu we get a loop over unique cpuctx
+instances.
 
-Reported-by: Hui Wang <hui.wang@canonical.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
+Suggested-by: Stephane Eranian <eranian@google.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/n/tip-kxyjqpfj2fn9gt7kwu5ag9ks@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Cc: Li Zefan <lizefan@huawei.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/isofs/inode.c | 16 +++++-----------
- 1 file changed, 5 insertions(+), 11 deletions(-)
+ include/linux/perf_event.h |  2 +-
+ kernel/events/core.c       | 12 ++++++------
+ 2 files changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/fs/isofs/inode.c b/fs/isofs/inode.c
-index 29037c3..e92a342 100644
---- a/fs/isofs/inode.c
-+++ b/fs/isofs/inode.c
-@@ -119,8 +119,8 @@ static void destroy_inodecache(void)
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index c65c7d1..3faf0d4 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -1065,7 +1065,7 @@ struct perf_cpu_context {
+ 	int				exclusive;
+ 	struct list_head		rotation_list;
+ 	int				jiffies_interval;
+-	struct pmu			*active_pmu;
++	struct pmu			*unique_pmu;
+ 	struct perf_cgroup		*cgrp;
+ };
  
- static int isofs_remount(struct super_block *sb, int *flags, char *data)
- {
--	/* we probably want a lot more here */
--	*flags |= MS_RDONLY;
-+	if (!(*flags & MS_RDONLY))
-+		return -EROFS;
- 	return 0;
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index dd815c3..b3a6de5 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -4331,7 +4331,7 @@ static void perf_event_task_event(struct perf_task_event *task_event)
+ 	rcu_read_lock();
+ 	list_for_each_entry_rcu(pmu, &pmus, entry) {
+ 		cpuctx = get_cpu_ptr(pmu->pmu_cpu_context);
+-		if (cpuctx->active_pmu != pmu)
++		if (cpuctx->unique_pmu != pmu)
+ 			goto next;
+ 		perf_event_task_ctx(&cpuctx->ctx, task_event);
+ 
+@@ -4477,7 +4477,7 @@ static void perf_event_comm_event(struct perf_comm_event *comm_event)
+ 	rcu_read_lock();
+ 	list_for_each_entry_rcu(pmu, &pmus, entry) {
+ 		cpuctx = get_cpu_ptr(pmu->pmu_cpu_context);
+-		if (cpuctx->active_pmu != pmu)
++		if (cpuctx->unique_pmu != pmu)
+ 			goto next;
+ 		perf_event_comm_ctx(&cpuctx->ctx, comm_event);
+ 
+@@ -4673,7 +4673,7 @@ got_name:
+ 	rcu_read_lock();
+ 	list_for_each_entry_rcu(pmu, &pmus, entry) {
+ 		cpuctx = get_cpu_ptr(pmu->pmu_cpu_context);
+-		if (cpuctx->active_pmu != pmu)
++		if (cpuctx->unique_pmu != pmu)
+ 			goto next;
+ 		perf_event_mmap_ctx(&cpuctx->ctx, mmap_event,
+ 					vma->vm_flags & VM_EXEC);
+@@ -5748,8 +5748,8 @@ static void update_pmu_context(struct pmu *pmu, struct pmu *old_pmu)
+ 
+ 		cpuctx = per_cpu_ptr(pmu->pmu_cpu_context, cpu);
+ 
+-		if (cpuctx->active_pmu == old_pmu)
+-			cpuctx->active_pmu = pmu;
++		if (cpuctx->unique_pmu == old_pmu)
++			cpuctx->unique_pmu = pmu;
+ 	}
  }
  
-@@ -769,15 +769,6 @@ root_found:
- 	 */
- 	s->s_maxbytes = 0x80000000000LL;
+@@ -5885,7 +5885,7 @@ skip_type:
+ 		cpuctx->ctx.pmu = pmu;
+ 		cpuctx->jiffies_interval = 1;
+ 		INIT_LIST_HEAD(&cpuctx->rotation_list);
+-		cpuctx->active_pmu = pmu;
++		cpuctx->unique_pmu = pmu;
+ 	}
  
--	/*
--	 * The CDROM is read-only, has no nodes (devices) on it, and since
--	 * all of the files appear to be owned by root, we really do not want
--	 * to allow suid.  (suid or devices will not show up unless we have
--	 * Rock Ridge extensions)
--	 */
--
--	s->s_flags |= MS_RDONLY /* | MS_NODEV | MS_NOSUID */;
--
- 	/* Set this for reference. Its not currently used except on write
- 	   which we don't have .. */
- 
-@@ -1536,6 +1527,9 @@ struct inode *isofs_iget(struct super_block *sb,
- static struct dentry *isofs_mount(struct file_system_type *fs_type,
- 	int flags, const char *dev_name, void *data)
- {
-+	/* We don't support read-write mounts */
-+	if (!(flags & MS_RDONLY))
-+		return ERR_PTR(-EACCES);
- 	return mount_bdev(fs_type, flags, dev_name, data, isofs_fill_super);
- }
- 
+ got_cpu_context:
 -- 
 1.8.3.2
 
