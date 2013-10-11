@@ -1,105 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933003Ab3JKT7q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:59:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46304 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932627Ab3JKTll (ORCPT
+	id S933019Ab3JKT7w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:59:52 -0400
+Received: from mail-ye0-f180.google.com ([209.85.213.180]:41287 "EHLO
+	mail-ye0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932627Ab3JKT7t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:41:41 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nathan Fontenot <nfont@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 069/135] powerpc: Fix memory hotplug with sparse vmemmap
-Date: Fri, 11 Oct 2013 12:39:10 -0700
-Message-Id: <20131011193952.786691435@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
-References: <20131011193945.181603934@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Fri, 11 Oct 2013 15:59:49 -0400
+From: "Geyslan G. Bem" <geyslan@gmail.com>
+To: tyhicks@canonical.com
+Cc: ecryptfs@vger.kernel.org, linux-kernel@vger.kernel.org, joe@perches.com,
+        kernel-br@googlegroups.com, "Geyslan G. Bem" <geyslan@gmail.com>
+Subject: [PATCH] ecryptfs: Fix memory leakage in keystore.c
+Date: Fri, 11 Oct 2013 16:49:16 -0300
+Message-Id: <1381520956-20282-1-git-send-email-geyslan@gmail.com>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11-stable review patch.  If anyone has any objections, please let me know.
+In 'decrypt_pki_encrypted_session_key' function:
 
-------------------
+Initializes 'payload' pointer and releases it on exit.
 
-From: Nathan Fontenot <nfont@linux.vnet.ibm.com>
-
-commit f7e3334a6bcb42e7295a9bd9cb36ca4e6e4e66b4 upstream.
-
-Previous commit 46723bfa540... introduced a new config option
-HAVE_BOOTMEM_INFO_NODE that ended up breaking memory hot-remove for ppc
-when sparse vmemmap is not defined.
-
-This patch defines HAVE_BOOTMEM_INFO_NODE for ppc and adds the call to
-register_page_bootmem_info_node. Without this we get a BUG_ON for memory
-hot remove in put_page_bootmem().
-
-This also adds a stub for register_page_bootmem_memmap to allow ppc to build
-with sparse vmemmap defined. Leaving this as a stub is fine since the same
-vmemmap addresses are also handled in vmemmap_populate and as such are
-properly mapped.
-
-Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
 ---
- arch/powerpc/mm/init_64.c |    4 ++++
- arch/powerpc/mm/mem.c     |    9 +++++++++
- mm/Kconfig                |    2 +-
- 3 files changed, 14 insertions(+), 1 deletion(-)
+ fs/ecryptfs/keystore.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/arch/powerpc/mm/init_64.c
-+++ b/arch/powerpc/mm/init_64.c
-@@ -300,5 +300,9 @@ void vmemmap_free(unsigned long start, u
- {
+diff --git a/fs/ecryptfs/keystore.c b/fs/ecryptfs/keystore.c
+index 7d52806..4725a07 100644
+--- a/fs/ecryptfs/keystore.c
++++ b/fs/ecryptfs/keystore.c
+@@ -1149,7 +1149,7 @@ decrypt_pki_encrypted_session_key(struct ecryptfs_auth_tok *auth_tok,
+ 	struct ecryptfs_msg_ctx *msg_ctx;
+ 	struct ecryptfs_message *msg = NULL;
+ 	char *auth_tok_sig;
+-	char *payload;
++	char *payload = NULL;
+ 	size_t payload_len = 0;
+ 	int rc;
+ 
+@@ -1203,6 +1203,7 @@ decrypt_pki_encrypted_session_key(struct ecryptfs_auth_tok *auth_tok,
+ 	}
+ out:
+ 	kfree(msg);
++	kfree(payload);
+ 	return rc;
  }
  
-+void register_page_bootmem_memmap(unsigned long section_nr,
-+				  struct page *start_page, unsigned long size)
-+{
-+}
- #endif /* CONFIG_SPARSEMEM_VMEMMAP */
- 
---- a/arch/powerpc/mm/mem.c
-+++ b/arch/powerpc/mm/mem.c
-@@ -297,12 +297,21 @@ void __init paging_init(void)
- }
- #endif /* ! CONFIG_NEED_MULTIPLE_NODES */
- 
-+static void __init register_page_bootmem_info(void)
-+{
-+	int i;
-+
-+	for_each_online_node(i)
-+		register_page_bootmem_info_node(NODE_DATA(i));
-+}
-+
- void __init mem_init(void)
- {
- #ifdef CONFIG_SWIOTLB
- 	swiotlb_init(0);
- #endif
- 
-+	register_page_bootmem_info();
- 	high_memory = (void *) __va(max_low_pfn * PAGE_SIZE);
- 	set_max_mapnr(max_pfn);
- 	free_all_bootmem();
---- a/mm/Kconfig
-+++ b/mm/Kconfig
-@@ -183,7 +183,7 @@ config MEMORY_HOTPLUG_SPARSE
- config MEMORY_HOTREMOVE
- 	bool "Allow for memory hot remove"
- 	select MEMORY_ISOLATION
--	select HAVE_BOOTMEM_INFO_NODE if X86_64
-+	select HAVE_BOOTMEM_INFO_NODE if (X86_64 || PPC64)
- 	depends on MEMORY_HOTPLUG && ARCH_ENABLE_MEMORY_HOTREMOVE
- 	depends on MIGRATION
- 
-
+-- 
+1.8.4
 
