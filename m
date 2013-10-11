@@ -1,52 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933396Ab3JKUWJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:22:09 -0400
-Received: from mail-yh0-f50.google.com ([209.85.213.50]:33587 "EHLO
-	mail-yh0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932190Ab3JKUWH (ORCPT
+	id S933369Ab3JKUV5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:21:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45947 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932137Ab3JKTkq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 16:22:07 -0400
-From: "Geyslan G. Bem" <geyslan@gmail.com>
-To: Trond.Myklebust@netapp.com
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, joe@perches.com,
-        kernel-br@googlegroups.com, "Geyslan G. Bem" <geyslan@gmail.com>
-Subject: [PATCH] nfs: Remove useless 'error' assignment
-Date: Fri, 11 Oct 2013 17:15:54 -0300
-Message-Id: <1381522554-22243-1-git-send-email-geyslan@gmail.com>
-X-Mailer: git-send-email 1.8.4
+	Fri, 11 Oct 2013 15:40:46 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Josef Bacik <jbacik@fusionio.com>,
+        Chris Mason <chris.mason@fusionio.com>
+Subject: [ 105/110] Btrfs: remove ourselves from the cluster list under lock
+Date: Fri, 11 Oct 2013 12:39:25 -0700
+Message-Id: <20131011193819.226687921@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
+References: <20131011193807.584188672@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-the 'error' variable was been assigned twice in vain.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
+------------------
+
+From: Josef Bacik <jbacik@fusionio.com>
+
+commit b8d0c69b9469ffd33df30fee3e990f2d4aa68a09 upstream.
+
+A user was reporting weird warnings from btrfs_put_delayed_ref() and I noticed
+that we were doing this list_del_init() on our head ref outside of
+delayed_refs->lock.  This is a problem if we have people still on the list, we
+could end up modifying old pointers and such.  Fix this by removing us from the
+list before we do our run_delayed_ref on our head ref.  Thanks,
+
+Signed-off-by: Josef Bacik <jbacik@fusionio.com>
+Signed-off-by: Chris Mason <chris.mason@fusionio.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- fs/nfs/unlink.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ fs/btrfs/extent-tree.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/fs/nfs/unlink.c b/fs/nfs/unlink.c
-index bb939ed..0c29b1b 100644
---- a/fs/nfs/unlink.c
-+++ b/fs/nfs/unlink.c
-@@ -493,7 +493,7 @@ nfs_sillyrename(struct inode *dir, struct dentry *dentry)
- 	unsigned long long fileid;
- 	struct dentry *sdentry;
- 	struct rpc_task *task;
--	int            error = -EIO;
-+	int            error = -EBUSY;
+--- a/fs/btrfs/extent-tree.c
++++ b/fs/btrfs/extent-tree.c
+@@ -2402,6 +2402,8 @@ static noinline int run_clustered_refs(s
+ 			default:
+ 				WARN_ON(1);
+ 			}
++		} else {
++			list_del_init(&locked_ref->cluster);
+ 		}
+ 		spin_unlock(&delayed_refs->lock);
  
- 	dfprintk(VFS, "NFS: silly-rename(%s/%s, ct=%d)\n",
- 		dentry->d_parent->d_name.name, dentry->d_name.name,
-@@ -503,7 +503,6 @@ nfs_sillyrename(struct inode *dir, struct dentry *dentry)
- 	/*
- 	 * We don't allow a dentry to be silly-renamed twice.
- 	 */
--	error = -EBUSY;
- 	if (dentry->d_flags & DCACHE_NFSFS_RENAMED)
- 		goto out;
- 
--- 
-1.8.4
+@@ -2424,7 +2426,6 @@ static noinline int run_clustered_refs(s
+ 		 * list before we release it.
+ 		 */
+ 		if (btrfs_delayed_ref_is_head(ref)) {
+-			list_del_init(&locked_ref->cluster);
+ 			btrfs_delayed_ref_unlock(locked_ref);
+ 			locked_ref = NULL;
+ 		}
+
 
