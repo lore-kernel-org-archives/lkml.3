@@ -1,104 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932552Ab3JKUIA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:08:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46165 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932488Ab3JKTlV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:41:21 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mark Wu <wudxw@linux.vnet.ibm.com>, Jay Vosburgh <fubar@us.ibm.com>,
-        Andy Gospodarek <andy@greyhouse.net>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 041/135] bonding: Fix broken promiscuity reference counting issue
-Date: Fri, 11 Oct 2013 12:38:42 -0700
-Message-Id: <20131011193949.708029176@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
-References: <20131011193945.181603934@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	id S1759533Ab3JKUH7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:07:59 -0400
+Received: from fieldses.org ([174.143.236.118]:38914 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758810Ab3JKUH5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 16:07:57 -0400
+Date: Fri, 11 Oct 2013 16:07:56 -0400
+To: Jeff Layton <jlayton@redhat.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        nfs-ganesha-devel@lists.sourceforge.net,
+        samba-technical@lists.samba.org
+Subject: Re: [RFC PATCH 0/5] locks: implement "filp-private" (aka UNPOSIX)
+ locks
+Message-ID: <20131011200756.GB22160@fieldses.org>
+References: <1381494322-2426-1-git-send-email-jlayton@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1381494322-2426-1-git-send-email-jlayton@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11-stable review patch.  If anyone has any objections, please let me know.
+On Fri, Oct 11, 2013 at 08:25:17AM -0400, Jeff Layton wrote:
+> At LSF this year, there was a discussion about the "wishlist" for
+> userland file servers. One of the things brought up was the goofy and
+> problematic behavior of POSIX locks when a file is closed. Boaz started
+> a thread on it here:
+> 
+>     http://permalink.gmane.org/gmane.linux.file-systems/73364
+> 
+> Userland fileservers often need to maintain more than one open file
+> descriptor on a file. The POSIX spec says:
+> 
+> "All locks associated with a file for a given process shall be removed
+>  when a file descriptor for that file is closed by that process or the
+>  process holding that file descriptor terminates."
+> 
+> This is problematic since you can't close any file descriptor without
+> dropping all your POSIX locks. Most userland file servers therefore
+> end up opening the file with more access than is really necessary, and
+> keeping fd's open for longer than is necessary to work around this.
+> 
+> This patchset is a first stab at an approach to address this problem by
+> adding two new l_type values -- F_RDLCKP and F_WRLCKP (the 'P' is short
+> for "private" -- I'm open to changing that if you have a better
+> mnemonic).
+> 
+> For all intents and purposes these lock types act just like their
+> "non-P" counterpart. The difference is that they are only implicitly
+> released when the fd against which they were acquired is closed. As a
+> side effect, these locks cannot be merged with "non-P" locks since they
+> have different semantics on close.
 
-------------------
+They also can't be merged with "private" locks belonging to other file
+descriptors.  (If you merge lock A, then lock B into a single lock C,
+what do you do when B's owner goes away?)
 
-From: Neil Horman <nhorman@tuxdriver.com>
+But based on other discussion in the thread it sounds like we'll
+actually want to go farther and make them conflict, so, fine.
 
-[ Upstream commit 5a0068deb611109c5ba77358be533f763f395ee4 ]
+Seems like a good thing to have, anyway.
 
-Recently grabbed this report:
-https://bugzilla.redhat.com/show_bug.cgi?id=1005567
+--b.
 
-Of an issue in which the bonding driver, with an attached vlan encountered the
-following errors when bond0 was taken down and back up:
-
-dummy1: promiscuity touches roof, set promiscuity failed. promiscuity feature of
-device might be broken.
-
-The error occurs because, during __bond_release_one, if we release our last
-slave, we take on a random mac address and issue a NETDEV_CHANGEADDR
-notification.  With an attached vlan, the vlan may see that the vlan and bond
-mac address were in sync, but no longer are.  This triggers a call to dev_uc_add
-and dev_set_rx_mode, which enables IFF_PROMISC on the bond device.  Then, when
-we complete __bond_release_one, we use the current state of the bond flags to
-determine if we should decrement the promiscuity of the releasing slave.  But
-since the bond changed promiscuity state during the release operation, we
-incorrectly decrement the slave promisc count when it wasn't in promiscuous mode
-to begin with, causing the above error
-
-Fix is pretty simple, just cache the bonding flags at the start of the function
-and use those when determining the need to set promiscuity.
-
-This is also needed for the ALLMULTI flag
-
-Reported-by: Mark Wu <wudxw@linux.vnet.ibm.com>
-CC: Jay Vosburgh <fubar@us.ibm.com>
-CC: Andy Gospodarek <andy@greyhouse.net>
-CC: Mark Wu <wudxw@linux.vnet.ibm.com>
-CC: "David S. Miller" <davem@davemloft.net>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/bonding/bond_main.c |   13 ++++++++++---
- 1 file changed, 10 insertions(+), 3 deletions(-)
-
---- a/drivers/net/bonding/bond_main.c
-+++ b/drivers/net/bonding/bond_main.c
-@@ -1947,6 +1947,7 @@ static int __bond_release_one(struct net
- 	struct bonding *bond = netdev_priv(bond_dev);
- 	struct slave *slave, *oldcurrent;
- 	struct sockaddr addr;
-+	int old_flags = bond_dev->flags;
- 	netdev_features_t old_features = bond_dev->features;
- 
- 	/* slave is not a slave or master is not master of this slave */
-@@ -2077,12 +2078,18 @@ static int __bond_release_one(struct net
- 	 * bond_change_active_slave(..., NULL)
- 	 */
- 	if (!USES_PRIMARY(bond->params.mode)) {
--		/* unset promiscuity level from slave */
--		if (bond_dev->flags & IFF_PROMISC)
-+		/* unset promiscuity level from slave
-+		 * NOTE: The NETDEV_CHANGEADDR call above may change the value
-+		 * of the IFF_PROMISC flag in the bond_dev, but we need the
-+		 * value of that flag before that change, as that was the value
-+		 * when this slave was attached, so we cache at the start of the
-+		 * function and use it here. Same goes for ALLMULTI below
-+		 */
-+		if (old_flags & IFF_PROMISC)
- 			dev_set_promiscuity(slave_dev, -1);
- 
- 		/* unset allmulti level from slave */
--		if (bond_dev->flags & IFF_ALLMULTI)
-+		if (old_flags & IFF_ALLMULTI)
- 			dev_set_allmulti(slave_dev, -1);
- 
- 		bond_hw_addr_flush(bond_dev, slave_dev);
-
-
+> I've given this patchset some very basic smoke testing and it seems to
+> do the right thing, but it is still pretty rough.  If this looks
+> reasonable I'll plan to do some documentation updates and will take a
+> stab at trying to get these new lock types added to the POSIX spec (as
+> HCH recommended).
+> 
+> At this point, my main questions are:
+> 
+> 1) does this look useful, particularly for fileserver implementors?
+> 
+> 2) does this look OK API-wise? We could consider different "cmd" values
+>    or even different syscalls, but I figured this makes it clearer that
+>    "P" and "non-P" locks will still conflict with one another.
+> 
+> Jeff Layton (5):
+>   locks: consolidate checks for compatible filp->f_mode values in setlk
+>     handlers
+>   locks: add definitions for F_RDLCKP and F_WRLCKP
+>   locks: skip FL_FILP_PRIVATE locks on close unless we're closing the
+>     correct filp
+>   locks: handle merging of locks when FL_FILP_PRIVATE is set
+>   locks: show private lock types in /proc/locks
+> 
+>  fs/locks.c                       | 121 ++++++++++++++++++++++++++-------------
+>  include/linux/fs.h               |   1 +
+>  include/uapi/asm-generic/fcntl.h |   9 +++
+>  3 files changed, 91 insertions(+), 40 deletions(-)
+> 
+> -- 
+> 1.8.3.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
