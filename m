@@ -1,391 +1,413 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756816Ab3JKLlU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 07:41:20 -0400
-Received: from 9.mo1.mail-out.ovh.net ([178.32.108.172]:54452 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755937Ab3JKLlR (ORCPT
+	id S1757269Ab3JKLnb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 07:43:31 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:46218 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753264Ab3JKLn3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 07:41:17 -0400
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Josh Wu <josh.wu@atmel.com>, Richard Genoud <richard.genoud@gmail.com>
-Cc: Boris BREZILLON <b.brezillon@overkiz.com>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org
-Subject: [PATCH v4 15/17] clk: at91: add PMC clk device tree binding doc.
-Date: Fri, 11 Oct 2013 13:38:52 +0200
-Message-Id: <1381491532-14738-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1381477081-6041-1-git-send-email-b.brezillon@overkiz.com>
-References: <1381477081-6041-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 16390569369194166496
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrvdefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrvdefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Fri, 11 Oct 2013 07:43:29 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130908170355.GA3154@katana>
+References: <1354021236-28596-2-git-send-email-ch.naveen@samsung.com>
+ <1377077077-20896-1-git-send-email-ch.naveen@samsung.com> <20130908170355.GA3154@katana>
+From: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
+Date: Fri, 11 Oct 2013 17:13:08 +0530
+Message-ID: <CAHfPSqBP66wj3Z1YktGsJTsbT_C9YmkGQW6r4iG649uE+0TjbQ@mail.gmail.com>
+Subject: Re: [PATCH] i2c: exynos5: add High Speed I2C controller driver
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        w.sang@pengutronix.de, t.figa@samsung.com,
+        Ben Dooks <ben-linux@fluff.org>, grant.likely@secretlab.ca,
+        devicetree-discuss@lists.ozlabs.org, sjg@chromium.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds new at91 clks dt bindings documentation.
+On 8 September 2013 22:33, Wolfram Sang <wsa@the-dreams.de> wrote:
+>
+> On Wed, Aug 21, 2013 at 02:54:37PM +0530, Naveen Krishna Ch wrote:
+>> Adds support for High Speed I2C driver found in Exynos5 and
+>> later SoCs from Samsung.
+>>
+>> Highspeed mode is a minor change in the i2c protocol.
+>> Starts with
+>> 1. start condition,
+>> 2. 8-bit master ID code (00001xxx)
+>> 3. followed by a NACK bit
+>> Once the above conditions are met, the bus is now operates in highspeed mode.
+>> The rest of the I2C protocol applies the same.
+>
+> The description is correct, but it is not a change in the protocol. This
+> is fully specified in the I2C specs.
+Understood
+>
+>> Driver only supports Device Tree method.
+>>
+>> Changes since v1:
+>> 1. Added FIFO functionality
+>> 2. Added High speed mode functionality
+>> 3. Remove SMBUS_QUICK
+>> 4. Remove the debugfs functionality
+>> 5. Use devm_* functions where ever possible
+>> 6. Driver is free from GPIO configs
+>> 7. Use OF data string "clock-frequency" to get the bus operating frequencies
+>> 8. Split the clock divisor calculation function
+>> 9. Add resets for the failed transacton cases
+>> 10. Removed retries as core does retries if -EAGAIN is returned
+>> 11. Removed mode from device tree info (use speed to distinguish
+>>     the mode of operation)
+>> 12. Use wait_for_completion_timeout as the interruptible case is not tested well
+>> 13. few other bug fixes and cosmetic changes
+>> 14. Removed the untested runtime_pm code
+>> 15. Removed the retries as core does that
+>> 16. Use adap.nr instead of alias
+>> 17. Added spinlocks around the irq code
+>> 18. Use i2c_add_numbered_adapter() instead of using aliases
+>
+> Changes since v1 are irrelevant for the patch description.
+Will remove
+>
+>>
+>> Signed-off-by: Taekgyun Ko <taeggyun.ko@samsung.com>
+>> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+>> Reviewed-by: Simon Glass <sjg@google.com>
+>> Tested-by: Andrew Bresticker <abrestic@google.com>
+>> Signed-off-by: Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>
+>> Signed-off-by: Andrew Bresticker <abrestic@google.com>
+>>
+>> ---
+>> Wolfram and Thomas Figa thanks for reviewing the code.
+>>
+>> Changes since v10:
+>> 1. Remove the incomplete runtime_pm code
+>> 2. Correct the error checks as suggested by Thomas
+>> 3. Use i2c_add_numbered_adapter() as suggested
+>> 4. Modified the irq routine to handle the specific interrupts
+>> 5. Added spinlocks around the irq code
+>> 6. Remove the "mode" of operation field from device tree node and use the
+>>    clock-frequency to decide the mode.
+>>
+>>  .../devicetree/bindings/i2c/i2c-exynos5.txt        |   44 ++
+>>  drivers/i2c/busses/Kconfig                         |    7 +
+>>  drivers/i2c/busses/Makefile                        |    1 +
+>>  drivers/i2c/busses/i2c-exynos5.c                   |  799 ++++++++++++++++++++
+>>  4 files changed, 851 insertions(+)
+>>  create mode 100644 Documentation/devicetree/bindings/i2c/i2c-exynos5.txt
+>>  create mode 100644 drivers/i2c/busses/i2c-exynos5.c
+>>
+>> diff --git a/Documentation/devicetree/bindings/i2c/i2c-exynos5.txt b/Documentation/devicetree/bindings/i2c/i2c-exynos5.txt
+>> new file mode 100644
+>> index 0000000..805e018
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/i2c/i2c-exynos5.txt
+>> @@ -0,0 +1,44 @@
+>> +* Samsung's High Speed I2C controller
+>> +
+>> +The Samsung's High Speed I2C controller is used to interface with I2C devices
+>> +at various speeds ranging from 100khz to 3.4Mhz.
+>> +
+>> +Required properties:
+>> +  - compatible: value should be.
+>> +      -> "samsung,exynos5-hsi2c", for i2c compatible with exynos5 hsi2c.
+>> +  - reg: physical base address of the controller and length of memory mapped
+>> +    region.
+>> +  - interrupts: interrupt number to the cpu.
+>> +  - #address-cells: always 1 (for i2c addresses)
+>> +  - #size-cells: always 0
+>> +
+>> +  - Pinctrl:
+>> +    - pinctrl-0: Pin control group to be used for this controller.
+>> +    - pinctrl-names: Should contain only one value - "default".
+>> +
+>> +Optional properties:
+>> +  - clock-frequency: Desired operating frequency in Hz of the bus.
+>> +    -> If not specified, the default value is 100khz in fast-speed mode and
+>> +       1Mhz in high-speed mode.
+>
+> Description doesn't match the current code.
+Will correct
+>
+>> +    -> If specified, The bus operates in high-speed mode only if the
+>> +       clock-frequency is >= 1Mhz.
+>
+> s/The/the/
+Will correct
+>
+> ...
+>
+>> +/*
+>> + * exynos5_i2c_init: configures the controller for I2C functionality
+>> + * Programs I2C controller for Master mode operation
+>> + */
+>> +static void exynos5_i2c_init(struct exynos5_i2c *i2c)
+>> +{
+>> +     u32 i2c_conf = readl(i2c->regs + HSI2C_CONF);
+>> +     u32 i2c_timeout = readl(i2c->regs + HSI2C_TIMEOUT);
+>> +
+>> +     /* Disable timeout */
+>> +     i2c_timeout &= ~HSI2C_TIMEOUT_EN;
+>> +     writel(i2c_timeout, i2c->regs + HSI2C_TIMEOUT);
+>
+> Just curious: Can't you use HSI2C_TIMEOUT and wait_for_completion
+> instead of wait_for_completion_timeout? If so, it might save you a
+> little bit of overhead.
+With timeout enabled, few transactions were timing out.
+wait_for_completion_timeout seems to be very stable.
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
----
- .../devicetree/bindings/clock/at91-clock.txt       |  328 ++++++++++++++++++++
- 1 file changed, 328 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/clock/at91-clock.txt
+>
+>> +
+>> +     writel((HSI2C_FUNC_MODE_I2C | HSI2C_MASTER),
+>> +                                     i2c->regs + HSI2C_CTL);
+>> +     writel(HSI2C_TRAILING_COUNT, i2c->regs + HSI2C_TRAILIG_CTL);
+>> +
+>> +     if (i2c->speed_mode == HSI2C_HIGH_SPD) {
+>> +             writel(HSI2C_MASTER_ID(MASTER_ID(i2c->adap.nr)),
+>> +                                     i2c->regs + HSI2C_ADDR);
+>> +             i2c_conf |= HSI2C_HS_MODE;
+>> +     }
+>> +
+>> +     writel(i2c_conf | HSI2C_AUTO_MODE, i2c->regs + HSI2C_CONF);
+>> +}
+>> +
+>> +
+>> +     if ((i2c->msg->flags & I2C_M_RD) && (int_status &
+>> +                     (HSI2C_INT_TRAILING | HSI2C_INT_RX_ALMOSTFULL))) {
+>> +             fifo_status = readl(i2c->regs + HSI2C_FIFO_STATUS);
+>> +             fifo_level = HSI2C_RX_FIFO_LVL(fifo_status);
+>> +             len = min(fifo_level, i2c->msg->len - i2c->msg_ptr);
+>> +
+>> +             while (len > 0) {
+>> +                     byte = (unsigned char)
+>> +                             readl(i2c->regs + HSI2C_RX_DATA);
+>> +                     i2c->msg->buf[i2c->msg_ptr++] = byte;
+>> +                     len--;
+>> +             }
+>
+> With all this copying going on, this should be threaded irq probably.
+HSI2C driver is heavily dependent on irqs and trans_status register bits.
+modifying the code to work with threaded_irq was not successful.
 
-diff --git a/Documentation/devicetree/bindings/clock/at91-clock.txt b/Documentation/devicetree/bindings/clock/at91-clock.txt
-new file mode 100644
-index 0000000..360d8fe
---- /dev/null
-+++ b/Documentation/devicetree/bindings/clock/at91-clock.txt
-@@ -0,0 +1,328 @@
-+Device Tree Clock bindings for arch-at91
-+
-+This binding uses the common clock binding[1].
-+
-+[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
-+
-+Required properties:
-+- compatible : shall be one of the following:
-+	"atmel,at91rm9200-pmc" or
-+	"atmel,at91sam9g45-pmc" or
-+	"atmel,at91sam9n12-pmc" or
-+	"atmel,at91sam9x5-pmc" or
-+	"atmel,sama5d3-pmc":
-+		at91 PMC (Power Management Controller)
-+		All at91 specific clocks (clocks defined below) must be child
-+		node of the PMC node.
-+
-+	"atmel,at91rm9200-clk-main":
-+		at91 main oscillator
-+
-+	"atmel,at91rm9200-clk-master" or
-+	"atmel,at91sam9x5-clk-master":
-+		at91 master clock
-+
-+	"atmel,at91sam9x5-clk-peripheral" or
-+	"atmel,at91rm9200-clk-peripheral":
-+		at91 peripheral clocks
-+
-+	"atmel,at91rm9200-clk-pll" or
-+	"atmel,at91sam9g45-clk-pll" or
-+	"atmel,at91sam9g20-clk-pllb" or
-+	"atmel,sama5d3-clk-pll":
-+		at91 pll clocks
-+
-+	"atmel,at91sam9x5-clk-plldiv":
-+		at91 plla divisor
-+
-+	"atmel,at91rm9200-clk-programmable" or
-+	"atmel,at91sam9g45-clk-programmable" or
-+	"atmel,at91sam9x5-clk-programmable":
-+		at91 programmable clocks
-+
-+	"atmel,at91sam9x5-clk-smd":
-+		at91 SMD (Soft Modem) clock
-+
-+	"atmel,at91rm9200-clk-system":
-+		at91 system clocks
-+
-+	"atmel,at91rm9200-clk-usb" or
-+	"atmel,at91sam9x5-clk-usb" or
-+	"atmel,at91sam9n12-clk-usb":
-+		at91 usb clock
-+
-+	"atmel,at91sam9x5-clk-utmi":
-+		at91 utmi clock
-+
-+Required properties for PMC node:
-+- reg : defines the IO memory reserved for the PMC.
-+- interrupts : shall be set to PMC interrupt line.
-+- interrupt-controller : tell that the PMC is an interrupt controller.
-+- #interrupt-cells : must be set to 1. The first cell encodes the interrupt id,
-+	and reflect the bit position in the PMC_ER/DR/SR registers.
-+	You can use the dt macros defined in dt-bindings/clk/at91.h.
-+	0 (AT91_PMC_MOSCS) -> main oscillator ready
-+	1 (AT91_PMC_LOCKA) -> PLL A ready
-+	2 (AT91_PMC_LOCKB) -> PLL B ready
-+	3 (AT91_PMC_MCKRDY) -> master clock ready
-+	6 (AT91_PMC_LOCKU) -> UTMI PLL clock ready
-+	8 .. 15 (AT91_PMC_PCKRDY(id)) -> programmable clock ready
-+	16 (AT91_PMC_MOSCSELS) -> main oscillator selected
-+	17 (AT91_PMC_MOSCRCS) -> RC main oscillator stabilized
-+	18 (AT91_PMC_CFDEV) -> clock failure detected
-+
-+For example:
-+ 	pmc: pmc@fffffc00 {
-+		compatible = "atmel,sama5d3-pmc";
-+		interrupts = <1 4 7>;
-+		interrupt-controller;
-+		#interrupt-cells = <2>;
-+
-+		/* put at91 clocks here */
-+	};
-+
-+Required properties for main clock:
-+- interrupt-parent : must reference the PMC node.
-+- interrupts : shall be set to "<0>".
-+- #clock-cells : from common clock binding; shall be set to 0.
-+- clocks (optional if clock-frequency is provided) : shall be the slow clock
-+	phandle. This clock is used to calculate the main clock rate if
-+	"clock-frequency" is not provided.
-+- clock-frequency : the main oscillator frequency.Prefer the use of
-+	"clock-frequency" over automatic clock rate calculation.
-+
-+For example:
-+	main: mainck {
-+		compatible = "atmel,at91rm9200-clk-main";
-+		interrupt-parent = <&pmc>;
-+		interrupts = <0>;
-+		#clock-cells = <0>;
-+		clocks = <&ck32k>;
-+		clock-frequency = <18432000>;
-+	};
-+
-+Required properties for master clock:
-+- interrupt-parent : must reference the PMC node.
-+- interrupts : shall be set to "<3>".
-+- #clock-cells : from common clock binding; shall be set to 0.
-+- clocks : shall be the master clock sources (see atmel datasheet) phandles.
-+	e.g. "<&ck32k>, <&main>, <&plla>, <&pllb>".
-+- atmel,clk-output-range : minimum and maximum clock frequency (two u32
-+			   fields).
-+	   e.g. output = <0 133000000>; <=> 0 to 133MHz.
-+- atmel,clk-divisors : master clock divisors table (four u32 fields).
-+		0 <=> reserved value.
-+		e.g. divisors = <1 2 4 6>;
-+- atmel,master-clk-have-div3-pres : some SoC use the reserved value 7 in the
-+				    PRES field as CLOCK_DIV3 (e.g sam9x5).
-+
-+For example:
-+	mck: mck {
-+		compatible = "atmel,at91rm9200-clk-master";
-+		interrupt-parent = <&pmc>;
-+		interrupts = <3>;
-+		#clock-cells = <0>;
-+		atmel,clk-output-range = <0 133000000>;
-+		atmel,clk-divisors = <1 2 4 0>;
-+	};
-+
-+Required properties for peripheral clocks:
-+- #clock-cells : from common clock binding; shall be set to 1. The second cell
-+	is used to encode the peripheral id. Peripheral ids are defined in
-+	atmel's SoC datasheets.
-+- clocks : shall be the master clock phandle.
-+	e.g. clocks = <&mck>;
-+- name: device tree node describing a specific system clock.
-+	* atmel,clk-id: peripheral id. See Atmel's datasheets to get a full
-+	  list of peripheral ids.
-+	* atmel,clk-default-divisor (optional, only available for
-+	  "atmel,at91sam9x5-clk-peripheral"): sam9x5 and sama5d3 SoC provides
-+	  configurable peripheral clock divisor. If you define this property
-+	  (u32), the default divisor will be applied when enabling
-+	  peripheral clock. If not provided the peripheral clock is not
-+	  divided.
-+
-+For example:
-+	periph: periphck {
-+		compatible = "atmel,at91sam9x5-clk-peripheral";
-+		#clock-cells = <1>;
-+		clocks = <&mck>;
-+
-+		pioAB_clk {
-+			atmel,clk-id = <2>;
-+			atmel,clk-default-divisor = <1>;
-+		};
-+
-+		pioCD_clk {
-+			atmel,clk-id = <3>;
-+			atmel,clk-default-divisor = <2>;
-+		};
-+	};
-+
-+
-+Required properties for pll clocks:
-+- interrupt-parent : must reference the PMC node.
-+- interrupts : shall be set to "<1>".
-+- #clock-cells : from common clock binding; shall be set to 0.
-+- clocks : shall be the main clock phandle.
-+- atmel,clk-id : pll id.
-+	0 -> PLL A
-+	1 -> PLL B
-+- atmel,clk-input-range : minimum and maximum source clock frequency (two u32
-+			  fields).
-+	  e.g. input = <1 32000000>; <=> 1 to 32MHz.
-+- #atmel,pll-clk-output-range-cells : number of cells reserved for pll output
-+				      range description. Sould be set to 2, 3
-+				      or 4.
-+	* 1st and 2nd cells represent the frequency range (min-max).
-+	* 3rd cell is optional and represents the OUT field value for the given
-+	  range.
-+	* 4th cell is optional and represents the ICPLL field (PLLICPR
-+	  register)
-+- atmel,pll-clk-output-ranges : pll output frequency ranges + optional parameter
-+				depending on #atmel,pll-output-range-cells
-+				property value.
-+
-+For example:
-+	plla: pllack {
-+		compatible = "atmel,at91sam9g45-clk-pll";
-+		interrupt-parent = <&pmc>;
-+		interrupts = <1>;
-+		#clock-cells = <0>;
-+		clocks = <&main>;
-+		atmel,clk-id = <0>;
-+		atmel,clk-input-range = <2000000 32000000>;
-+		#atmel,pll-clk-output-range-cells = <4>;
-+		atmel,pll-clk-output-ranges = <74500000 800000000 0 0
-+					       69500000 750000000 1 0
-+					       64500000 700000000 2 0
-+					       59500000 650000000 3 0
-+					       54500000 600000000 0 1
-+					       49500000 550000000 1 1
-+					       44500000 500000000 2 1
-+					       40000000 450000000 3 1>;
-+	};
-+
-+Required properties for plldiv clocks (plldiv = pll / 2):
-+- #clock-cells : from common clock binding; shall be set to 0.
-+- clocks : shall be the plla clock phandle.
-+
-+The pll divisor is equal to 2 and cannot be changed.
-+
-+For example:
-+	plladiv: plladivck {
-+		compatible = "atmel,at91sam9x5-clk-plldiv";
-+		#clock-cells = <0>;
-+		clocks = <&plla>;
-+	};
-+
-+Required properties for programmable clocks:
-+- interrupt-parent : must reference the PMC node.
-+- #clock-cells : from common clock binding; shall be set to 1. The second cell
-+	is used to encode the programmable clock id.
-+	Peripheral ids are in atmel's SoC
-+	datasheets.
-+- clocks : shall be the programmable clock source phandles.
-+	e.g. clocks = <&clk32k>, <&main>, <&plla>, <&pllb>;
-+- name: device tree node describing a specific prog clock.
-+	* atmel,clk-id : programmable clock id (register offset from  PCKx
-+			 register).
-+	* interrupts : shall be set to "<(8 + id)>".
-+
-+For example:
-+	prog: progck {
-+		compatible = "atmel,at91sam9g45-clk-programmable";
-+		interrupt-parent = <&pmc>;
-+		#clock-cells = <1>;
-+		clocks = <&clk32k>, <&main>, <&plladiv>, <&utmi>, <&mck>;
-+
-+		prog0 {
-+			atmel,clk-id = <0>;
-+			interrupts = <8>;
-+		};
-+
-+		prog1 {
-+			atmel,clk-id = <1>;
-+			interrupts = <9>;
-+		};
-+	};
-+
-+
-+Required properties for smd clock:
-+- #clock-cells : from common clock binding; shall be set to 0.
-+- clocks : shall be the smd clock source phandles.
-+	e.g. clocks = <&plladiv>, <&utmi>;
-+
-+For example:
-+	smd: smdck {
-+		compatible = "atmel,at91sam9x5-clk-smd";
-+		#clock-cells = <0>;
-+		clocks = <&plladiv>, <&utmi>;
-+	};
-+
-+Required properties for system clocks:
-+- #clock-cells : from common clock binding; shall be set to 1. The second cell
-+	is used to encode the system clock id (bit used in SCER/SCDR register).
-+- name: device tree node describing a specific system clock.
-+	* id: system clock id (bit position in SCER/SCDR/SCSR registers).
-+	      See Atmel's datasheet to get a full list of system clock ids.
-+
-+For example:
-+	system: systemck {
-+		compatible = "atmel,at91rm9200-clk-system";
-+		#clock-cells = <1>;
-+
-+		ddrck {
-+			atmel,clk-id = <2>;
-+			clocks = <&mck>;
-+		};
-+
-+		uhpck {
-+			atmel,clk-id = <6>;
-+			clocks = <&usb>;
-+		};
-+
-+		udpck {
-+			atmel,clk-id = <7>;
-+			clocks = <&usb>;
-+		};
-+	};
-+
-+
-+Required properties for usb clock:
-+- #clock-cells : from common clock binding; shall be set to 0.
-+- clocks : shall be the smd clock source phandles.
-+	e.g. clocks = <&pllb>;
-+- atmel,clk-divisors (only available for "atmel,at91rm9200-clk-usb"):
-+	usb clock divisor table.
-+	e.g. divisors = <1 2 4 0>;
-+
-+For example:
-+	usb: usbck {
-+		compatible = "atmel,at91sam9x5-clk-usb";
-+		#clock-cells = <0>;
-+		clocks = <&plladiv>, <&utmi>;
-+	};
-+
-+	usb: usbck {
-+		compatible = "atmel,at91rm9200-clk-usb";
-+		#clock-cells = <0>;
-+		clocks = <&pllb>;
-+		atmel,clk-divisors = <1 2 4 0>;
-+	};
-+
-+
-+Required properties for utmi clock:
-+- interrupt-parent : must reference the PMC node.
-+- interrupts : shall be set to "<AT91_PMC_LOCKU IRQ_TYPE_LEVEL_HIGH>".
-+- #clock-cells : from common clock binding; shall be set to 0.
-+- clocks : shall be the main clock source phandle.
-+
-+For example:
-+	utmi: utmick {
-+		compatible = "atmel,at91sam9x5-clk-utmi";
-+		interrupt-parent = <&pmc>;
-+		interrupts = <AT91_PMC_LOCKU IRQ_TYPE_LEVEL_HIGH>;
-+		#clock-cells = <0>;
-+		clocks = <&main>;
-+	};
+>
+>> +             i2c->state = 0;
+>> +     } else if (int_status & HSI2C_INT_TX_ALMOSTEMPTY) {
+>> +             fifo_status = readl(i2c->regs + HSI2C_FIFO_STATUS);
+>> +             fifo_level = HSI2C_TX_FIFO_LVL(fifo_status);
+>> +
+>> +             len = HSI2C_FIFO_MAX - fifo_level;
+>> +             if (len > (i2c->msg->len - i2c->msg_ptr))
+>> +                     len = i2c->msg->len - i2c->msg_ptr;
+>> +
+>> +             while (len > 0) {
+>> +                     byte = i2c->msg->buf[i2c->msg_ptr++];
+>> +                     writel(byte, i2c->regs + HSI2C_TX_DATA);
+>> +                     len--;
+>> +             }
+>> +             i2c->state = 0;
+>> +     }
+>> +
+>> + stop:
+>> +     if ((i2c->msg_ptr == i2c->msg->len) || (i2c->state < 0)) {
+>> +             writel(0, i2c->regs + HSI2C_INT_ENABLE);
+>> +             exynos5_i2c_clr_pend_irq(i2c);
+>> +             complete(&i2c->msg_complete);
+>> +     } else {
+>> +             exynos5_i2c_clr_pend_irq(i2c);
+>> +     }
+>> +
+>> +     spin_unlock_irqrestore(&i2c->lock, flags);
+>> +
+>> +     return IRQ_HANDLED;
+>> +}
+>> +
+>
+> ...
+>
+>> +static int exynos5_i2c_xfer_msg(struct exynos5_i2c *i2c,
+>> +                           struct i2c_msg *msgs, int stop)
+>> +{
+>> +     unsigned long timeout;
+>> +     int ret;
+>> +
+>> +     INIT_COMPLETION(i2c->msg_complete);
+>> +
+>> +     spin_lock_irq(&i2c->lock);
+>> +     i2c->msg = msgs;
+>> +     i2c->msg_ptr = 0;
+>> +     i2c->trans_done = 0;
+>> +
+>> +     exynos5_i2c_message_start(i2c, stop);
+>> +
+>> +     spin_unlock_irq(&i2c->lock);
+>> +     timeout = wait_for_completion_timeout(&i2c->msg_complete,
+>> +                                           EXYNOS5_I2C_TIMEOUT);
+>> +     if (timeout == 0)
+>> +             ret = -ETIMEDOUT;
+>> +     else
+>> +             ret = i2c->state;
+>> +
+>> +     if (ret < 0) {
+>> +             exynos5_i2c_reset(i2c);
+>
+> Do you really need to reset the core after a failed transaction?
+Not needed for every transaction failed. intention is to do it for timeout cases
+where the master_busy bit in TRANS_STATUS register won't get cleared.
+>
+>> +             if (ret == -ETIMEDOUT) {
+>> +                     dev_warn(i2c->dev, "%s timeout\n",
+>> +                              (msgs->flags & I2C_M_RD) ? "rx" : "tx");
+>> +                     return ret;
+>> +             } else if (ret == -EAGAIN) {
+>> +                     return ret;
+>> +             }
+>> +     }
+>> +
+>> +     /*
+>> +      * If this is the last message to be transfered (stop == 1)
+>> +      * Then check if the bus can be brought back to idle.
+>> +      *
+>> +      * Return -EBUSY if the bus still busy.
+>> +      */
+>> +     if (exynos5_i2c_wait_bus_idle(i2c, stop))
+>> +             return -EBUSY;
+>
+> Why do you need this after the transaction?
+Spec says we should wait for the master_busy bit be cleared as the
+proper transaction complete condition.
+Thus, we wait for bus idle. Also, we also do a check for the missed
+out trans_done bit.
+>
+>> +
+>> +     /* Return the state as in interrupt routine */
+>> +     return ret;
+>> +}
+>> +
+>> +static int exynos5_i2c_xfer(struct i2c_adapter *adap,
+>> +                     struct i2c_msg *msgs, int num)
+>> +{
+>> +     struct exynos5_i2c *i2c = (struct exynos5_i2c *)adap->algo_data;
+>> +     int i = 0, ret = 0, stop = 0;
+>> +
+>> +     if (i2c->suspended) {
+>> +             dev_err(i2c->dev, "HS-I2C is not initialzed.\n");
+>> +             return -EIO;
+>> +     }
+>> +
+>> +     clk_prepare_enable(i2c->clk);
+>> +
+>> +     for (i = 0; i < num; i++) {
+>> +             stop = (i == num - 1);
+>> +
+>> +             if (msgs->len == 0) {
+>
+> Did you need that? It shouldn't happen since you are not advertising
+> SMBUS_QUICK.
+Will remove this
+>
+>> +                     msgs++;
+>> +                     continue;
+>> +             }
+>> +
+>> +             ret = exynos5_i2c_xfer_msg(i2c, msgs, stop);
+>> +             if (!stop)
+>> +                     msgs++;
+>
+> Probably better put in the for-body (i.e. i++, msgs++).
+thanks
+>
+>> +
+>> +             if (ret < 0)
+>> +                     goto out;
+>> +     }
+>> +
+>> +     if (i == num) {
+>> +             ret = num;
+>> +     } else {
+>> +             /* Only one message, cannot access the device */
+>> +             if (i == 1)
+>> +                     ret = -EREMOTEIO;
+>> +             else
+>> +                     ret = i;
+>> +
+>> +             dev_warn(i2c->dev, "xfer message failed\n");
+>> +     }
+>> +
+>> + out:
+>> +     clk_disable_unprepare(i2c->clk);
+>> +     return ret;
+>> +}
+>> +
+>> +static u32 exynos5_i2c_func(struct i2c_adapter *adap)
+>> +{
+>> +     return I2C_FUNC_I2C | (I2C_FUNC_SMBUS_EMUL & ~I2C_FUNC_SMBUS_QUICK);
+>> +}
+>> +
+>> +static const struct i2c_algorithm exynos5_i2c_algorithm = {
+>> +     .master_xfer            = exynos5_i2c_xfer,
+>> +     .functionality          = exynos5_i2c_func,
+>> +};
+>> +
+>> +static int exynos5_i2c_probe(struct platform_device *pdev)
+>> +{
+>> +     struct device_node *np = pdev->dev.of_node;
+>> +     struct exynos5_i2c *i2c;
+>> +     struct resource *mem;
+>> +     unsigned int op_clock;
+>> +     int ret;
+>> +
+>> +     if (!np) {
+>> +             dev_err(&pdev->dev, "no device node\n");
+>> +             return -ENOENT;
+>> +     }
+>
+> How should this happen?
+Taken from legacy code, will remove.
+>
+>> +
+>> +     i2c = devm_kzalloc(&pdev->dev, sizeof(struct exynos5_i2c), GFP_KERNEL);
+>> +     if (!i2c) {
+>> +             dev_err(&pdev->dev, "no memory for state\n");
+>> +             return -ENOMEM;
+>> +     }
+>> +
+>
+> ...
+>
+>> +     i2c->adap.nr = -1;
+>> +     ret = i2c_add_numbered_adapter(&i2c->adap);
+>
+> Just use i2c_add_adapter and skip setting nr to -1.
+Will do.
+>
+> ...
+>
+>> +static const struct dev_pm_ops exynos5_i2c_dev_pm_ops = {
+>> +     .suspend_noirq = exynos5_i2c_suspend_noirq,
+>> +     .resume_noirq   = exynos5_i2c_resume_noirq,
+>> +};
+>> +
+>> +#define EXYNOS5_DEV_PM_OPS (&exynos5_i2c_dev_pm_ops)
+>> +#else
+>> +#define EXYNOS5_DEV_PM_OPS NULL
+>> +#endif
+>
+> Isn't there a macro for this? SIMPLE_DEV_PM_OPS*? Not sure, I always mix
+> them up...
+You are right, will modify.
+>
+> Regards,
+>
+>    Wolfram
+>
+Sorry for the very delayed response.
+Will submit the next version.
+Thanks for your review and time.
+
 -- 
-1.7.9.5
-
+Shine bright,
+(: Nav :)
