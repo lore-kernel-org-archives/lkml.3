@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932987Ab3JKT73 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:59:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46308 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932577Ab3JKTlm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932631Ab3JKTlm (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 11 Oct 2013 15:41:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46271 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932577Ab3JKTlg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 15:41:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Madhavan Srinivasan <maddy@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 070/135] powerpc/sysfs: Disable writing to PURR in guest mode
-Date: Fri, 11 Oct 2013 12:39:11 -0700
-Message-Id: <20131011193952.898773100@linuxfoundation.org>
+        Will Deacon <will.deacon@arm.com>
+Subject: [ 062/135] iommu/arm-smmu: dont enable SMMU device until probing has completed
+Date: Fri, 11 Oct 2013 12:39:03 -0700
+Message-Id: <20131011193952.026756189@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -27,71 +26,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
+From: Will Deacon <will.deacon@arm.com>
 
-commit d1211af3049f4c9c1d8d4eb8f8098cc4f4f0d0c7 upstream.
+commit fd90cecbde065eac6ecc3ef38abace725ad27010 upstream.
 
-arch/powerpc/kernel/sysfs.c exports PURR with write permission.
-This may be valid for kernel in phyp mode. But writing to
-the file in guest mode causes crash due to a priviledge violation
+We currently reset and enable the SMMU before the device has finished
+being probed, so if we fail later on (for example, because we couldn't
+request a global irq successfully) then we will leave the device in an
+active state.
 
-Signed-off-by: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+This patch delays the reset and enabling of the SMMU hardware until
+probing has completed.
+
+Signed-off-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/sysfs.c |   18 ++++++++++++++++--
- 1 file changed, 16 insertions(+), 2 deletions(-)
+ drivers/iommu/arm-smmu.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/powerpc/kernel/sysfs.c
-+++ b/arch/powerpc/kernel/sysfs.c
-@@ -17,6 +17,7 @@
- #include <asm/machdep.h>
- #include <asm/smp.h>
- #include <asm/pmc.h>
-+#include <asm/firmware.h>
+--- a/drivers/iommu/arm-smmu.c
++++ b/drivers/iommu/arm-smmu.c
+@@ -1839,8 +1839,6 @@ static int arm_smmu_device_dt_probe(stru
+ 		goto out_put_parent;
+ 	}
  
- #include "cacheinfo.h"
- 
-@@ -179,15 +180,25 @@ SYSFS_PMCSETUP(spurr, SPRN_SPURR);
- SYSFS_PMCSETUP(dscr, SPRN_DSCR);
- SYSFS_PMCSETUP(pir, SPRN_PIR);
- 
-+/*
-+  Lets only enable read for phyp resources and
-+  enable write when needed with a separate function.
-+  Lets be conservative and default to pseries.
-+*/
- static DEVICE_ATTR(mmcra, 0600, show_mmcra, store_mmcra);
- static DEVICE_ATTR(spurr, 0400, show_spurr, NULL);
- static DEVICE_ATTR(dscr, 0600, show_dscr, store_dscr);
--static DEVICE_ATTR(purr, 0600, show_purr, store_purr);
-+static DEVICE_ATTR(purr, 0400, show_purr, store_purr);
- static DEVICE_ATTR(pir, 0400, show_pir, NULL);
- 
- unsigned long dscr_default = 0;
- EXPORT_SYMBOL(dscr_default);
- 
-+static void add_write_permission_dev_attr(struct device_attribute *attr)
-+{
-+	attr->attr.mode |= 0200;
-+}
+-	arm_smmu_device_reset(smmu);
+-
+ 	for (i = 0; i < smmu->num_global_irqs; ++i) {
+ 		err = request_irq(smmu->irqs[i],
+ 				  arm_smmu_global_fault,
+@@ -1858,6 +1856,8 @@ static int arm_smmu_device_dt_probe(stru
+ 	spin_lock(&arm_smmu_devices_lock);
+ 	list_add(&smmu->list, &arm_smmu_devices);
+ 	spin_unlock(&arm_smmu_devices_lock);
 +
- static ssize_t show_dscr_default(struct device *dev,
- 		struct device_attribute *attr, char *buf)
- {
-@@ -394,8 +405,11 @@ static void register_cpu_online(unsigned
- 	if (cpu_has_feature(CPU_FTR_MMCRA))
- 		device_create_file(s, &dev_attr_mmcra);
++	arm_smmu_device_reset(smmu);
+ 	return 0;
  
--	if (cpu_has_feature(CPU_FTR_PURR))
-+	if (cpu_has_feature(CPU_FTR_PURR)) {
-+		if (!firmware_has_feature(FW_FEATURE_LPAR))
-+			add_write_permission_dev_attr(&dev_attr_purr);
- 		device_create_file(s, &dev_attr_purr);
-+	}
- 
- 	if (cpu_has_feature(CPU_FTR_SPURR))
- 		device_create_file(s, &dev_attr_spurr);
+ out_free_irqs:
 
 
