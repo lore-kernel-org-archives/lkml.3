@@ -1,124 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754741Ab3JKUtS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:49:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47187 "EHLO
+	id S1758700Ab3JKTjf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:39:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45424 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754689Ab3JKUtF (ORCPT
+	with ESMTP id S1758344Ab3JKTha (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 16:49:05 -0400
-Date: Fri, 11 Oct 2013 13:49:04 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Tejun Heo <tj@kernel.org>, Kay Sievers <kay@vrfy.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: [PATCHSET v2] sysfs: use seq_file and unify regular and bin file
- handling
-Message-ID: <20131011204904.GA1308@kroah.com>
-References: <1380663729-18243-1-git-send-email-tj@kernel.org>
- <20131006004032.GA3601@kroah.com>
- <20131007170005.GB2481@htj.dyndns.org>
- <20131007231136.GB27270@kroah.com>
- <CAE9FiQV-bs0hiTDSzOR0GREMf=whichBocLPBF_uV09=LjTCtw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAE9FiQV-bs0hiTDSzOR0GREMf=whichBocLPBF_uV09=LjTCtw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 11 Oct 2013 15:37:30 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Lv Zheng <lv.zheng@intel.com>, Huang Ying <ying.huang@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Jonghwan Choi <jhbird.choi@samsung.com>
+Subject: [ 45/48] ACPI / IPMI: Fix atomic context requirement of ipmi_msg_handler()
+Date: Fri, 11 Oct 2013 12:36:52 -0700
+Message-Id: <20131011193642.127289127@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20131011193637.253208688@linuxfoundation.org>
+References: <20131011193637.253208688@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 11, 2013 at 12:11:18PM -0700, Yinghai Lu wrote:
-> On Mon, Oct 7, 2013 at 4:11 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Mon, Oct 07, 2013 at 01:00:05PM -0400, Tejun Heo wrote:
-> >> > How are you going to use sysfs from another kernel subsystem?  Is this
-> >> > for another filesystem, or do you want to use kobjects for some other
-> >> > subsystem that doesn't export them using sysfs?
-> >>
-> >> I was at first trying to convert sysfs interface to not use kobject
-> >> but that caused too much disruption and I'm now trying to separate out
-> >> the core functionality into a separate filesystem - currently named
-> >> kernfs, so sysfs will be a consumer of kernfs translating between
-> >> kobject and kernfs interface, and cgroup will be the second user which
-> >> replaces its own pseudo filesystem implementation with kernfs.
-> >
-> > Ah, that would be nice, if it works out well, I might have to move
-> > debugfs over to it also, as the current implementation of it has some
-> > major issues.
-> >
-> got warning from drivers core next.
-> 
-> 
-> [  448.189960] ------------[ cut here ]------------
-> [  448.195214] WARNING: CPU: 6 PID: 69219 at fs/sysfs/file.c:79
-> sysfs_file_ops+0x59/0x70()
-> [  448.204188] Modules linked in:
-> [  448.207630] CPU: 6 PID: 69219 Comm: hald Not tainted
-> 3.12.0-rc4-yh-01397-gaac2c70 #1976
-> [  448.216608] Hardware name:
-> [  448.226753]  0000000000000009 ffff8ddee8731b88 ffffffff820f6b7e
-> 0000000000000046
-> [  448.235143]  0000000000000000 ffff8ddee8731bc8 ffffffff8109758c
-> 0000000000000246
-> [  448.243540]  ffff8ddf424c6098 ffff8ddf31c84480 ffff8ddf424c6098
-> ffff8ddee8731f24
-> [  448.251937] Call Trace:
-> [  448.254711]  [<ffffffff820f6b7e>] dump_stack+0x46/0x58
-> [  448.260496]  [<ffffffff8109758c>] warn_slowpath_common+0x8c/0xc0
-> [  448.267249]  [<ffffffff810975da>] warn_slowpath_null+0x1a/0x20
-> [  448.273805]  [<ffffffff81248bd9>] sysfs_file_ops+0x59/0x70
-> [  448.279973]  [<ffffffff81249628>] sysfs_open_file+0x88/0x330
-> [  448.286334]  [<ffffffff812495a0>] ? sysfs_release+0x70/0x70
-> [  448.292606]  [<ffffffff811d3a49>] do_dentry_open.isra.15+0x1d9/0x2b0
-> [  448.299745]  [<ffffffff811d3b4c>] finish_open+0x2c/0x40
-> [  448.305621]  [<ffffffff811e5657>] do_last.isra.47+0xa37/0xc50
-> [  448.312089]  [<ffffffff811e1bcd>] ? inode_permission+0x4d/0x50
-> [  448.318655]  [<ffffffff811e5ac2>] path_openat+0x252/0x660
-> [  448.324734]  [<ffffffff81100078>] ? trace_hardirqs_off_caller+0x28/0x160
-> [  448.332264]  [<ffffffff811e62d3>] do_filp_open+0x43/0xb0
-> [  448.338240]  [<ffffffff811f38e1>] ? __alloc_fd+0x121/0x140
-> [  448.344409]  [<ffffffff811d4ea0>] do_sys_open+0x170/0x210
-> [  448.350476]  [<ffffffff811d4f62>] SyS_open+0x22/0x30
-> [  448.356057]  [<ffffffff82113d6a>] tracesys+0xd4/0xd9
-> [  448.361629] ---[ end trace d1986b41b84640de ]---
-> [  448.366842] ------------[ cut here ]------------
-> [  448.372030] WARNING: CPU: 6 PID: 69219 at fs/sysfs/file.c:79
-> sysfs_file_ops+0x59/0x70()
-> [  448.381002] Modules linked in:
-> [  448.384459] CPU: 6 PID: 69219 Comm: hald Tainted: G        W
-> 3.12.0-rc4-yh-01397-gaac2c70 #1976
-> [  448.394497] Hardware name:
-> [  448.404630]  0000000000000009 ffff8ddee8731db8 ffffffff820f6b7e
-> 0000000000004480
-> [  448.413020]  0000000000000000 ffff8ddee8731df8 ffffffff8109758c
-> 0000000000000246
-> [  448.421418]  ffff8ddf424c6098 ffff8ddf30fb4e00 ffff8ddf424c6098
-> ffff8ddf4668d000
-> [  448.429805] Call Trace:
-> [  448.432575]  [<ffffffff820f6b7e>] dump_stack+0x46/0x58
-> [  448.438354]  [<ffffffff8109758c>] warn_slowpath_common+0x8c/0xc0
-> [  448.445102]  [<ffffffff810975da>] warn_slowpath_null+0x1a/0x20
-> [  448.451640]  [<ffffffff81248bd9>] sysfs_file_ops+0x59/0x70
-> [  448.457806]  [<ffffffff81248cbb>] sysfs_seq_show+0xcb/0x180
-> [  448.464069]  [<ffffffff811f99ec>] seq_read+0x19c/0x3a0
-> [  448.469847]  [<ffffffff811d624d>] vfs_read+0xbd/0x170
-> [  448.475517]  [<ffffffff811d6495>] SyS_read+0x55/0xb0
-> [  448.481104]  [<ffffffff82113d6a>] tracesys+0xd4/0xd9
-> [  448.486678] ---[ end trace d1986b41b84640df ]---
-> [  448.662721]  [<ffffffff81100078>] ? trace_hardirqs_off_caller+0x28/0x160
-> [  448.662730]  [<ffffffff811e62d3>] do_filp_open+0x43/0xb0
-> [  448.662738]  [<ffffffff811f38e1>] ? __alloc_fd+0x121/0x140
-> [  448.662747]  [<ffffffff811d4ea0>] do_sys_open+0x170/0x210
-> [  448.662755]  [<ffffffff811d4f62>] SyS_open+0x22/0x30
-> [  448.662763]  [<ffffffff82113d6a>] tracesys+0xd4/0xd9
-> [  448.662766] ---[ end trace d1986b41b84640ea ]---
-> [  448.662786] ------------[ cut here ]------------
-> ....
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
+------------------
 
-Ick.  Tejun, any ideas?
+From: Lv Zheng <lv.zheng@intel.com>
+
+commit 06a8566bcf5cf7db9843a82cde7a33c7bf3947d9 upstream.
+
+This patch fixes the issues indicated by the test results that
+ipmi_msg_handler() is invoked in atomic context.
+
+BUG: scheduling while atomic: kipmi0/18933/0x10000100
+Modules linked in: ipmi_si acpi_ipmi ...
+CPU: 3 PID: 18933 Comm: kipmi0 Tainted: G       AW    3.10.0-rc7+ #2
+Hardware name: QCI QSSC-S4R/QSSC-S4R, BIOS QSSC-S4R.QCI.01.00.0027.070120100606 07/01/2010
+ ffff8838245eea00 ffff88103fc63c98 ffffffff814c4a1e ffff88103fc63ca8
+ ffffffff814bfbab ffff88103fc63d28 ffffffff814c73e0 ffff88103933cbd4
+ 0000000000000096 ffff88103fc63ce8 ffff88102f618000 ffff881035c01fd8
+Call Trace:
+ <IRQ>  [<ffffffff814c4a1e>] dump_stack+0x19/0x1b
+ [<ffffffff814bfbab>] __schedule_bug+0x46/0x54
+ [<ffffffff814c73e0>] __schedule+0x83/0x59c
+ [<ffffffff81058853>] __cond_resched+0x22/0x2d
+ [<ffffffff814c794b>] _cond_resched+0x14/0x1d
+ [<ffffffff814c6d82>] mutex_lock+0x11/0x32
+ [<ffffffff8101e1e9>] ? __default_send_IPI_dest_field.constprop.0+0x53/0x58
+ [<ffffffffa09e3f9c>] ipmi_msg_handler+0x23/0x166 [ipmi_si]
+ [<ffffffff812bf6e4>] deliver_response+0x55/0x5a
+ [<ffffffff812c0fd4>] handle_new_recv_msgs+0xb67/0xc65
+ [<ffffffff81007ad1>] ? read_tsc+0x9/0x19
+ [<ffffffff814c8620>] ? _raw_spin_lock_irq+0xa/0xc
+ [<ffffffffa09e1128>] ipmi_thread+0x5c/0x146 [ipmi_si]
+ ...
+
+Also Tony Camuso says:
+
+ We were getting occasional "Scheduling while atomic" call traces
+ during boot on some systems. Problem was first seen on a Cisco C210
+ but we were able to reproduce it on a Cisco c220m3. Setting
+ CONFIG_LOCKDEP and LOCKDEP_SUPPORT to 'y' exposed a lockdep around
+ tx_msg_lock in acpi_ipmi.c struct acpi_ipmi_device.
+
+ =================================
+ [ INFO: inconsistent lock state ]
+ 2.6.32-415.el6.x86_64-debug-splck #1
+ ---------------------------------
+ inconsistent {SOFTIRQ-ON-W} -> {IN-SOFTIRQ-W} usage.
+ ksoftirqd/3/17 [HC0[0]:SC1[1]:HE1:SE0] takes:
+  (&ipmi_device->tx_msg_lock){+.?...}, at: [<ffffffff81337a27>] ipmi_msg_handler+0x71/0x126
+ {SOFTIRQ-ON-W} state was registered at:
+   [<ffffffff810ba11c>] __lock_acquire+0x63c/0x1570
+   [<ffffffff810bb0f4>] lock_acquire+0xa4/0x120
+   [<ffffffff815581cc>] __mutex_lock_common+0x4c/0x400
+   [<ffffffff815586ea>] mutex_lock_nested+0x4a/0x60
+   [<ffffffff8133789d>] acpi_ipmi_space_handler+0x11b/0x234
+   [<ffffffff81321c62>] acpi_ev_address_space_dispatch+0x170/0x1be
+
+The fix implemented by this change has been tested by Tony:
+
+ Tested the patch in a boot loop with lockdep debug enabled and never
+ saw the problem in over 400 reboots.
+
+Reported-and-tested-by: Tony Camuso <tcamuso@redhat.com>
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+Reviewed-by: Huang Ying <ying.huang@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Cc: Jonghwan Choi <jhbird.choi@samsung.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/acpi/acpi_ipmi.c |   24 ++++++++++++++----------
+ 1 file changed, 14 insertions(+), 10 deletions(-)
+
+--- a/drivers/acpi/acpi_ipmi.c
++++ b/drivers/acpi/acpi_ipmi.c
+@@ -39,6 +39,7 @@
+ #include <linux/ipmi.h>
+ #include <linux/device.h>
+ #include <linux/pnp.h>
++#include <linux/spinlock.h>
+ 
+ MODULE_AUTHOR("Zhao Yakui");
+ MODULE_DESCRIPTION("ACPI IPMI Opregion driver");
+@@ -57,7 +58,7 @@ struct acpi_ipmi_device {
+ 	struct list_head head;
+ 	/* the IPMI request message list */
+ 	struct list_head tx_msg_list;
+-	struct mutex	tx_msg_lock;
++	spinlock_t	tx_msg_lock;
+ 	acpi_handle handle;
+ 	struct pnp_dev *pnp_dev;
+ 	ipmi_user_t	user_interface;
+@@ -147,6 +148,7 @@ static void acpi_format_ipmi_msg(struct
+ 	struct kernel_ipmi_msg *msg;
+ 	struct acpi_ipmi_buffer *buffer;
+ 	struct acpi_ipmi_device *device;
++	unsigned long flags;
+ 
+ 	msg = &tx_msg->tx_message;
+ 	/*
+@@ -177,10 +179,10 @@ static void acpi_format_ipmi_msg(struct
+ 
+ 	/* Get the msgid */
+ 	device = tx_msg->device;
+-	mutex_lock(&device->tx_msg_lock);
++	spin_lock_irqsave(&device->tx_msg_lock, flags);
+ 	device->curr_msgid++;
+ 	tx_msg->tx_msgid = device->curr_msgid;
+-	mutex_unlock(&device->tx_msg_lock);
++	spin_unlock_irqrestore(&device->tx_msg_lock, flags);
+ }
+ 
+ static void acpi_format_ipmi_response(struct acpi_ipmi_msg *msg,
+@@ -242,6 +244,7 @@ static void ipmi_msg_handler(struct ipmi
+ 	int msg_found = 0;
+ 	struct acpi_ipmi_msg *tx_msg;
+ 	struct pnp_dev *pnp_dev = ipmi_device->pnp_dev;
++	unsigned long flags;
+ 
+ 	if (msg->user != ipmi_device->user_interface) {
+ 		dev_warn(&pnp_dev->dev, "Unexpected response is returned. "
+@@ -250,7 +253,7 @@ static void ipmi_msg_handler(struct ipmi
+ 		ipmi_free_recv_msg(msg);
+ 		return;
+ 	}
+-	mutex_lock(&ipmi_device->tx_msg_lock);
++	spin_lock_irqsave(&ipmi_device->tx_msg_lock, flags);
+ 	list_for_each_entry(tx_msg, &ipmi_device->tx_msg_list, head) {
+ 		if (msg->msgid == tx_msg->tx_msgid) {
+ 			msg_found = 1;
+@@ -258,7 +261,7 @@ static void ipmi_msg_handler(struct ipmi
+ 		}
+ 	}
+ 
+-	mutex_unlock(&ipmi_device->tx_msg_lock);
++	spin_unlock_irqrestore(&ipmi_device->tx_msg_lock, flags);
+ 	if (!msg_found) {
+ 		dev_warn(&pnp_dev->dev, "Unexpected response (msg id %ld) is "
+ 			"returned.\n", msg->msgid);
+@@ -378,6 +381,7 @@ acpi_ipmi_space_handler(u32 function, ac
+ 	struct acpi_ipmi_device *ipmi_device = handler_context;
+ 	int err, rem_time;
+ 	acpi_status status;
++	unsigned long flags;
+ 	/*
+ 	 * IPMI opregion message.
+ 	 * IPMI message is firstly written to the BMC and system software
+@@ -395,9 +399,9 @@ acpi_ipmi_space_handler(u32 function, ac
+ 		return AE_NO_MEMORY;
+ 
+ 	acpi_format_ipmi_msg(tx_msg, address, value);
+-	mutex_lock(&ipmi_device->tx_msg_lock);
++	spin_lock_irqsave(&ipmi_device->tx_msg_lock, flags);
+ 	list_add_tail(&tx_msg->head, &ipmi_device->tx_msg_list);
+-	mutex_unlock(&ipmi_device->tx_msg_lock);
++	spin_unlock_irqrestore(&ipmi_device->tx_msg_lock, flags);
+ 	err = ipmi_request_settime(ipmi_device->user_interface,
+ 					&tx_msg->addr,
+ 					tx_msg->tx_msgid,
+@@ -413,9 +417,9 @@ acpi_ipmi_space_handler(u32 function, ac
+ 	status = AE_OK;
+ 
+ end_label:
+-	mutex_lock(&ipmi_device->tx_msg_lock);
++	spin_lock_irqsave(&ipmi_device->tx_msg_lock, flags);
+ 	list_del(&tx_msg->head);
+-	mutex_unlock(&ipmi_device->tx_msg_lock);
++	spin_unlock_irqrestore(&ipmi_device->tx_msg_lock, flags);
+ 	kfree(tx_msg);
+ 	return status;
+ }
+@@ -457,7 +461,7 @@ static void acpi_add_ipmi_device(struct
+ 
+ 	INIT_LIST_HEAD(&ipmi_device->head);
+ 
+-	mutex_init(&ipmi_device->tx_msg_lock);
++	spin_lock_init(&ipmi_device->tx_msg_lock);
+ 	INIT_LIST_HEAD(&ipmi_device->tx_msg_list);
+ 	ipmi_install_space_handler(ipmi_device);
+ 
 
 
