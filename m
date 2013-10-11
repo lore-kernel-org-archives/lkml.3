@@ -1,86 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932434Ab3JKLFq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 07:05:46 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:34017 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758240Ab3JKLFo (ORCPT
+	id S1758407Ab3JKLGN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 07:06:13 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58463 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757821Ab3JKKmz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 07:05:44 -0400
-Date: Fri, 11 Oct 2013 13:04:55 +0200
-From: Daniel Kiper <daniel.kiper@oracle.com>
-To: ebiederm@xmission.com
-Cc: hbabu@us.ibm.com, hpa@linux.intel.com, keescook@chromium.org,
-        vgoyal@redhat.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, david.vrabel@citrix.com,
-        jbeulich@suse.com, keir@xen.org, xen-devel@lists.xen.org
-Subject: Re: kexec: Clearing registers just before jumping into purgatory
-Message-ID: <20131011110455.GA3626@debian70-amd64.local.net-space.pl>
-References: <20131011092837.GZ3626@debian70-amd64.local.net-space.pl>
- <877gdkce6s.fsf@tw-ebiederman.twitter.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <877gdkce6s.fsf@tw-ebiederman.twitter.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Fri, 11 Oct 2013 06:42:55 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 029/100] cpqarray: fix info leak in ida_locked_ioctl()
+Date: Fri, 11 Oct 2013 11:40:59 +0100
+Message-Id: <1381488130-30235-30-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
+References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 11, 2013 at 03:08:43AM -0700, ebiederm@xmission.com wrote:
-> Daniel Kiper <daniel.kiper@oracle.com> writes:
->
-> > Hi,
-> >
-> > Could you explain why do you clear all registers just before jumping
-> > into purgatory (please look into arch/x86/kernel/relocate_kernel_64.S
-> > for more details)? There is no any single word about that. I do not
-> > count comment which states what is going on. purgatory on entry does
-> > not assume any value in registers. Are you going to use that feature
-> > for something in the future (e.g. to differentiate between callers
-> > and/or Linux versions if it be needed)?
->
-> It has been a long time now, but as I recall the reason was to just
-> have things well defined and to make certain that we were not
-> accidentially exporting anything except the stack pointer for
-> applications to depend upon.
->
-> 0/NULL is a good choice because if you are expecting pointer for some
-> strange reason interesting things happen.
+3.5.7.23 -stable review patch.  If anyone has any objections, please let me know.
 
-This covers more or less with my expectations.
+------------------
 
-> purgatory is definitely not the only target and the C version of
-> purgatory was actually written well after kexec came into existence.
->
-> Is there any particular reason why you are asking?
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-Yes, we (Xen guys) are discussing is it worth to do it or not in our
-kexec implementation. I think that yes because we used Linux Kernel
-kexec implementation as a base for our work and we use kexec-tools too.
-So we should be aligined to what currently is in the wild. David do not
-agree with me. You could find more here:
+commit 627aad1c01da6f881e7f98d71fd928ca0c316b1a upstream.
 
-http://lists.xen.org/archives/html/xen-devel/2013-10/msg00710.html
-http://lists.xen.org/archives/html/xen-devel/2013-10/msg00296.html
+The pciinfo struct has a two byte hole after ->dev_fn so stack
+information could be leaked to the user.
 
-What is your opinion in that case?
+This was assigned CVE-2013-2147.
 
-> > By the way, interestingly it is not done if preserve_context is in
-> > force.
->
-> Something different is done, and all of the registers should be
-> preserved from the when the return to Linux.
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Mike Miller <mike.miller@hp.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/block/cpqarray.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-I expected that but purgatory does nothing with them.
-However, maybe I missed something.
+diff --git a/drivers/block/cpqarray.c b/drivers/block/cpqarray.c
+index 9125bbe..504bc16 100644
+--- a/drivers/block/cpqarray.c
++++ b/drivers/block/cpqarray.c
+@@ -1195,6 +1195,7 @@ out_passthru:
+ 		ida_pci_info_struct pciinfo;
+ 
+ 		if (!arg) return -EINVAL;
++		memset(&pciinfo, 0, sizeof(pciinfo));
+ 		pciinfo.bus = host->pci_dev->bus->number;
+ 		pciinfo.dev_fn = host->pci_dev->devfn;
+ 		pciinfo.board_id = host->board_id;
+-- 
+1.8.3.2
 
-> In theory you can swap between to kernels with the preserve_context
-> case.  Technically I like the ability but I don't know that it has ever
-> achieved much uptake.
-
-I think that this is nice idea too. However, I have not seen its usage in real.
-Even once there was an idea to remove that stuff from Linux Kernel.
-
-Daniel
