@@ -1,157 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757057Ab3JKGxQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 02:53:16 -0400
-Received: from mga01.intel.com ([192.55.52.88]:11367 "EHLO mga01.intel.com"
+	id S1757115Ab3JKGxz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 02:53:55 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:40500 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757016Ab3JKGxL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 02:53:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1078,1371106800"; 
-   d="scan'208";a="415286009"
-From: tianyu.lan@intel.com
-To: lenb@kernel.org, rjw@sisk.pl, yinghai@kernel.org, bhelgaas@google.com
-Cc: Lan Tianyu <tianyu.lan@intel.com>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 3/5] ACPI: Add new acpi_dev_resource_address_space_full() function
-Date: Fri, 11 Oct 2013 14:52:07 +0800
-Message-Id: <1381474332-11328-4-git-send-email-tianyu.lan@intel.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1381474332-11328-1-git-send-email-tianyu.lan@intel.com>
-References: <1381474332-11328-1-git-send-email-tianyu.lan@intel.com>
+	id S1752617Ab3JKGxx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 02:53:53 -0400
+Message-ID: <5257A05B.2070906@ti.com>
+Date: Fri, 11 Oct 2013 12:23:15 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Nishanth Menon <nm@ti.com>
+CC: Mark Rutland <mark.rutland@arm.com>, dt list <devicetree@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Pawel Moll <pawel.moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Tony Lindgren <tony@atomide.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Benoit Cousson <bcousson@baylibre.com>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/2] ARM: dts: omap5-uevm: remove always_on, boot_on from
+ smps10_out1
+References: <1381402195-29257-1-git-send-email-kishon@ti.com> <20131010141949.GA13277@kahuna> <52579723.6080209@ti.com> <CAGo_u6odWJ9UKwgaVu2YZzZKuYbveBoGDf99L=rJoK1-9KJ0SA@mail.gmail.com>
+In-Reply-To: <CAGo_u6odWJ9UKwgaVu2YZzZKuYbveBoGDf99L=rJoK1-9KJ0SA@mail.gmail.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lan Tianyu <tianyu.lan@intel.com>
+Hi,
 
-Make acpi_dev_resource_address_space() to accept struct
-acpi_resource_address64 as param and rename it to *_full.
+On Friday 11 October 2013 12:00 PM, Nishanth Menon wrote:
+> On Fri, Oct 11, 2013 at 1:13 AM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+>>
+>>> regulator-boot-on indicates that PMIC enables it by default as part of
+>>> OTP or some internal behavior -> Looking at the measurements done on
+>>> uEVM and OTP information -> regulator-boot-on should be kept here.
+>>
+>> No. Actually I don’t want PMIC to enable it by default. I want the palmas-usb
+>> driver to handle it.
+>> Enabling it by default makes palmas-usb to detect VBUS interrupt. This should
+>> ideally be detected only when you connect a host cable.
+>> Btw I didn't exactly get why you want regulator-boot-on should be kept here.
+> 
+> binding description states:
+> - regulator-boot-on: bootloader/firmware enabled regulator
+> Further info: include/linux/regulator/machine.h
+> * @boot_on: Set if the regulator is enabled when the system is initially
+> *           started.  If the regulator is not enabled by the hardware or
+> *           bootloader then it will be enabled when the constraints are
+> *           applied.
+> 
+> What that means is that it is enabled by firmware/bootloader (in our
+> case One Time Program {OTP} inside Palmas) when the system switches on
+> even before the kernel starts. and we know SMPS10 is autoenabled by
+> Palmas OTP configuration even before first instruction in A15
+> executes.
 
-This is for some cases that acpi address info is also needed
-after convert from acpi resouce to generic resource.
+Not sure about that. Please note SMPS10 has two outputs OUT1 and OUT2 and I
+tend to think that it might be OUT2 that's getting enabled by the OTP.
+> 
+> I think you misunderstand this to mean that you'd like the regulator
+> to be *switched on* automatically at kernel boot by regulator
+> framework - there is no reasoning why we'd want such a binding since
+> we'd expect drivers to do their job of requesting and enabling
+> regulators on need..
 
-Add acpi_dev_resource_addres_space() again as a wrapper of new
-function for original users.
+The comment you just quoted tells it enables the regulator if its not enabled
+by hardware. "If the regulator is not enabled by the hardware or bootloader
+then it will be enabled when the constraints are applied." At-least that's what
+I understood from that comment.
 
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
----
- drivers/acpi/resource.c | 53 ++++++++++++++++++++++++++++++++++---------------
- include/linux/acpi.h    |  3 +++
- 2 files changed, 40 insertions(+), 16 deletions(-)
+Also from our experiments it doesn't look like SMPS10_OUT1 is enabled by the
+OTP and it gets enabled when we have *regulator-boot-on* constraints.
 
-diff --git a/drivers/acpi/resource.c b/drivers/acpi/resource.c
-index 84bc3db..2e395ba 100644
---- a/drivers/acpi/resource.c
-+++ b/drivers/acpi/resource.c
-@@ -162,19 +162,21 @@ bool acpi_dev_resource_io(struct acpi_resource *ares, struct resource *res)
- EXPORT_SYMBOL_GPL(acpi_dev_resource_io);
- 
- /**
-- * acpi_dev_resource_address_space - Extract ACPI address space information.
-+ * acpi_dev_resource_address_space_full - Extract ACPI address space information.
-  * @ares: Input ACPI resource object.
-+ * @addr: Output ACPI resource address64 space object.
-  * @res: Output generic resource object.
-  *
-  * Check if the given ACPI resource object represents an address space resource
-- * and if that's the case, use the information in it to populate the generic
-- * resource object pointed to by @res.
-+ * and if that's the case, convert it to ACPI resource address64 space object
-+ * pointed to by @addr and use the information to populate the generic resource
-+ * object pointed to by @re.
-  */
--bool acpi_dev_resource_address_space(struct acpi_resource *ares,
-+bool acpi_dev_resource_address_space_full(struct acpi_resource *ares,
-+				     struct acpi_resource_address64 *addr,
- 				     struct resource *res)
- {
- 	acpi_status status;
--	struct acpi_resource_address64 addr;
- 	bool window;
- 	u64 len;
- 	u8 io_decode;
-@@ -188,29 +190,29 @@ bool acpi_dev_resource_address_space(struct acpi_resource *ares,
- 		return false;
- 	}
- 
--	status = acpi_resource_to_address64(ares, &addr);
-+	status = acpi_resource_to_address64(ares, addr);
- 	if (ACPI_FAILURE(status))
- 		return true;
- 
--	res->start = addr.minimum + addr.translation_offset;
--	res->end = addr.maximum + addr.translation_offset;
--	window = addr.producer_consumer == ACPI_PRODUCER;
-+	res->start = addr->minimum + addr->translation_offset;
-+	res->end = addr->maximum + addr->translation_offset;
-+	window = addr->producer_consumer == ACPI_PRODUCER;
- 
--	switch(addr.resource_type) {
-+	switch (addr->resource_type) {
- 	case ACPI_MEMORY_RANGE:
--		len = addr.maximum - addr.minimum + 1;
-+		len = addr->maximum - addr->minimum + 1;
- 		res->flags = acpi_dev_memresource_flags(len,
--						addr.info.mem.write_protect,
-+						addr->info.mem.write_protect,
- 						window);
- 
--		if (addr.info.mem.caching == ACPI_PREFETCHABLE_MEMORY)
-+		if (addr->info.mem.caching == ACPI_PREFETCHABLE_MEMORY)
- 			res->flags |= IORESOURCE_PREFETCH;
- 		break;
- 	case ACPI_IO_RANGE:
--		io_decode = addr.granularity == 0xfff ?
-+		io_decode = addr->granularity == 0xfff ?
- 				ACPI_DECODE_10 : ACPI_DECODE_16;
--		res->flags = acpi_dev_ioresource_flags(addr.minimum,
--						       addr.maximum,
-+		res->flags = acpi_dev_ioresource_flags(addr->minimum,
-+						       addr->maximum,
- 						       io_decode, window);
- 		break;
- 	case ACPI_BUS_NUMBER_RANGE:
-@@ -222,6 +224,25 @@ bool acpi_dev_resource_address_space(struct acpi_resource *ares,
- 
- 	return true;
- }
-+EXPORT_SYMBOL_GPL(acpi_dev_resource_address_space_full);
-+
-+/**
-+ * acpi_dev_resource_address_space - Extract ACPI address space information.
-+ * @ares: Input ACPI resource object.
-+ * @res: Output generic resource object.
-+ *
-+ * Check if the given ACPI resource object represents an address space resource
-+ * and if that's the case, use the information in it to populate the generic
-+ * resource object pointed to by @res.
-+ */
-+bool acpi_dev_resource_address_space(struct acpi_resource *ares,
-+				     struct resource *res)
-+{
-+	struct acpi_resource_address64 addr;
-+
-+	return acpi_dev_resource_address_space_full(ares, &addr,
-+							 res);
-+}
- EXPORT_SYMBOL_GPL(acpi_dev_resource_address_space);
- 
- /**
-diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-index a5db4ae..1f6701e 100644
---- a/include/linux/acpi.h
-+++ b/include/linux/acpi.h
-@@ -260,6 +260,9 @@ bool acpi_dev_resource_memory(struct acpi_resource *ares, struct resource *res);
- bool acpi_dev_resource_io(struct acpi_resource *ares, struct resource *res);
- bool acpi_dev_resource_address_space(struct acpi_resource *ares,
- 				     struct resource *res);
-+bool acpi_dev_resource_address_space_full(struct acpi_resource *ares,
-+				struct acpi_resource_address64 *addr,
-+				struct resource *res);
- bool acpi_dev_resource_ext_address_space(struct acpi_resource *ares,
- 					 struct resource *res);
- unsigned long acpi_dev_irq_flags(u8 triggering, u8 polarity, u8 shareable);
--- 
-1.8.2.1
-
+Thanks
+Kishon
