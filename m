@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932121Ab3JKJHG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 05:07:06 -0400
-Received: from gate.crashing.org ([63.228.1.57]:44025 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752110Ab3JKJHE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 05:07:04 -0400
-Message-ID: <1381482400.5630.79.camel@pasglop>
-Subject: Re: sysfs for my chips
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Greg KH <gregkh@linuxfoundation.org>, Tejun Heo <tj@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Date: Fri, 11 Oct 2013 20:06:40 +1100
-In-Reply-To: <CAMuHMdU_90EhPng0NYPVmWAwDt2NOowB3thPB+jJarme-A7eew@mail.gmail.com>
-References: <1381378788.4330.30.camel@pasglop>
-	 <20131010174457.GE13759@kroah.com> <1381435276.5630.6.camel@pasglop>
-	 <CAMuHMdW7RXjS3vvLUdTPCafNu_PcgDgbVbzVCHTOEeTsfHK90g@mail.gmail.com>
-	 <1381440651.5630.31.camel@pasglop>
-	 <CAMuHMdU_90EhPng0NYPVmWAwDt2NOowB3thPB+jJarme-A7eew@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752886Ab3JKJPq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 05:15:46 -0400
+Received: from fw.wantstofly.org ([80.101.37.227]:63806 "EHLO
+	mail.wantstofly.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751044Ab3JKJPn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 05:15:43 -0400
+X-Greylist: delayed 607 seconds by postgrey-1.27 at vger.kernel.org; Fri, 11 Oct 2013 05:15:43 EDT
+Date: Fri, 11 Oct 2013 11:05:32 +0200
+From: Lennert Buytenhek <buytenh@wantstofly.org>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Mark Rutland <mark.rutland@arm.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jisheng Zhang <jszhang@marvell.com>
+Subject: Re: [PATCH 3/8] ARM: l2x0: add Marvell Tauros3 compatible
+Message-ID: <20131011090532.GU633@wantstofly.org>
+References: <1381235073-17134-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1381235073-17134-4-git-send-email-sebastian.hesselbarth@gmail.com>
+ <20131008134100.GD1412@e106331-lin.cambridge.arm.com>
+ <52542D64.5010800@gmail.com>
+ <525433D3.2090906@free-electrons.com>
+ <20131009085026.GD4981@e106331-lin.cambridge.arm.com>
+ <5255AE12.2000205@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5255AE12.2000205@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-10-11 at 08:52 +0200, Geert Uytterhoeven wrote:
-> > Not sure what you mean .... create a linux bus type with devices on
-> > it ?
+On Wed, Oct 09, 2013 at 09:27:14PM +0200, Sebastian Hesselbarth wrote:
+
+> >>>>>This add a compatible for the Marvell Tauros3 cache controller which
+> >>>>>is compatible with l2x0 cache controllers. While updating the binding
+> >>>>>documentation, clean up the list of possible compatibles.
+> >>>>>
+> >>>>>Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> >>>>>---
 > 
-> Yes, that's what I meant.
+> Added Jisheng and Lennert to Cc.
 > 
-> >From the nodes on that bus you can have symlinks in sysfs to e.g. the CPUs
-> in the rest of the sysfs tree.
-> 
-> It's a bit like smbus/i2c connecting various peripherals that may also be
-> connected in some other way (e.g. media devices).
+> Lennert, while looking for differences between ARM PL310 and
+> Marvell Tauros3 cache controller in a GPL'ed 2.6 kernel source
+> from Asus, I found arch/arm/mm/cache-tauros3.c which states you
+> as the original author. If that is wrong, please ignore this.
 
-It's fairly overkill though ... we don't really plan to expose much of
-these things to Linux anyway, it's mostly buried in firmware, I just
-want scom access to userspace for debug/diagnostics.
-
-I don't want it in debugfs however because we might want some "health
-monitoring" daemon running in userspace that uses it to check some of
-the built-in CE statistics etc... in the various chips and handle some
-of the repair work. I prefer having that stuff in userspace (it's fairly
-complex) than in firmware but it will get all the data it needs from the
-device-tree, there's no point trying to reproduce the whole chip
-hierarchy and sub hierarchy in Linux.
-
-Cheers,
-Ben.
-
-
+I'm the original author of cache-tauros2.c, but I've never heard of
+Tauros3, and my name probably ended up in there via cp(1).
