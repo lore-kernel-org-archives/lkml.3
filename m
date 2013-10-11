@@ -1,57 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755763Ab3JKBmi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 21:42:38 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:48732 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752034Ab3JKBmg (ORCPT
+	id S1756170Ab3JKBnA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 21:43:00 -0400
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:62995 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754904Ab3JKBm6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 21:42:36 -0400
-X-Spam-Score: -100.8
-Message-ID: <5257574D.1040604@asianux.com>
-Date: Fri, 11 Oct 2013 09:41:33 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Thu, 10 Oct 2013 21:42:58 -0400
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] include/asm-generic/atomic.h: use 'unsigned int' instead
- of 'unsigned long' for atomic_clear_mask()
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <18685640.N2BnVjDmHD@vostro.rjw.lan>
+References: <20131010165905.7815defa@gandalf.local.home>
+	<CA+55aFwA8WZ+ARtNFFY+z4d8kS5AUBLg32iu7Jkk3rsz_i1OZw@mail.gmail.com>
+	<2679976.SxBsymIdoJ@vostro.rjw.lan>
+	<18685640.N2BnVjDmHD@vostro.rjw.lan>
+Date: Thu, 10 Oct 2013 18:42:56 -0700
+X-Google-Sender-Auth: R31rjfUaDK8kYVxo0B5jAGs7WhU
+Message-ID: <CA+55aFwqf7kkh0dy6AhCvB87XYkQ03YUpsYEDJmnkiRe8GQfMQ@mail.gmail.com>
+Subject: Re: [BUG] WARN_ON(!context) in drivers/pci/hotplug/acpiphp_glue.c
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For atomic_clear_mask(), 'v->counter' is 'int', so it is better to use
-'unsigned int' instead of 'unsigned long' for parameter 'mask' to make
-atomic_clear_mask() itself consistency.
+On Thu, Oct 10, 2013 at 6:45 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+>
+>         /* Register slots for ejectable funtions only. */
+> -       if (acpi_pci_check_ejectable(pbus, handle)  || is_dock_device(handle)) {
+> +       if ((acpi_pci_check_ejectable(pbus, handle) || is_dock_device(handle))
+> +           && !(pdev && device_is_managed_by_native_pciehp(pdev))) {
+>                 unsigned long long sun;
+>                 int retval;
 
-And atomic_[set/clear]_mask() are pairs, the modification can also let
-them consistent with each other.
+I can't even begin to say whether this is a good solution or not,
+because that if-conditional makes me want to go out and kill some
+homeless people to let my aggressions out.
 
-Although the original implementation can not cause bugs, it is still
-better to let it improved.
+Can we please agree to *never* write code like this? Ever?
 
+Use a well-named inline helper function where the name describes what
+the f*ck the code is trying to do, and then comment the separate
+issues. Because none of the above line noise makes me go "Ahh, it's
+the test for an ejectable function".
 
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- include/asm-generic/atomic.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+What the heck _is_ an "ejectable function" anyway? The only comment
+there just makes the code even less sensible.
 
-diff --git a/include/asm-generic/atomic.h b/include/asm-generic/atomic.h
-index 33bd2de..f31bff97 100644
---- a/include/asm-generic/atomic.h
-+++ b/include/asm-generic/atomic.h
-@@ -153,7 +153,7 @@ static inline int __atomic_add_unless(atomic_t *v, int a, int u)
-  * Atomically clears the bits set in @mask from @v
-  */
- #ifndef atomic_clear_mask
--static inline void atomic_clear_mask(unsigned long mask, atomic_t *v)
-+static inline void atomic_clear_mask(unsigned int mask, atomic_t *v)
- {
- 	unsigned long flags;
- 
--- 
-1.7.7.6
+Please?
+
+                Linus
