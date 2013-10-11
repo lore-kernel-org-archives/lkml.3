@@ -1,88 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754944Ab3JKL5n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 07:57:43 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49918 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753206Ab3JKL5m (ORCPT
+	id S1757498Ab3JKL7M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 07:59:12 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:61400 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755658Ab3JKL7J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 07:57:42 -0400
-Date: Fri, 11 Oct 2013 12:57:32 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Benjamin LaHaise <bcrl@kvack.org>
-Cc: Kent Overstreet <kmo@daterainc.com>,
-        "linux-aio@kvack.org" <linux-aio@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>
-Subject: Re: Kernel warning triggered with trinity on 3.12-rc4
-Message-ID: <20131011115732.GJ14732@mudshark.cambridge.arm.com>
-References: <20131008145217.GB21189@mudshark.cambridge.arm.com>
- <20131009133741.GA16003@kvack.org>
+	Fri, 11 Oct 2013 07:59:09 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Lukasz Majewski <l.majewski@samsung.com>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
+        Tomasz Figa <t.figa@samsung.com>
+Subject: Re: [PATCH v2 0/2] cpufreq: exynos: Fixes for v3.12
+Date: Fri, 11 Oct 2013 14:10:53 +0200
+Message-ID: <2822925.9aRTDAMrLp@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <1457107.oQjJi4YKRz@vostro.rjw.lan>
+References: <1380108138-30402-1-git-send-email-l.majewski@samsung.com> <1381320523-28183-1-git-send-email-l.majewski@samsung.com> <1457107.oQjJi4YKRz@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131009133741.GA16003@kvack.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 09, 2013 at 02:37:41PM +0100, Benjamin LaHaise wrote:
-> On Tue, Oct 08, 2013 at 03:52:17PM +0100, Will Deacon wrote:
-> > Hi guys,
+On Friday, October 11, 2013 01:22:57 PM Rafael J. Wysocki wrote:
+> On Wednesday, October 09, 2013 02:08:41 PM Lukasz Majewski wrote:
+> > Attached commits provide cpufreq regression fixes for Trats and Trats2
+> > Exynos4 boards.
+> > Since v3.12 Exynos4 uses common clock framework for clock manipulation.
+> > Those patches restore correct output for cpuinfo_cur_freq [1] sysfs
+> > attribute.
+> > Without them, the [1] provides default frequency (800 MHz) set at driver
+> > initialization.
 > > 
-> > I've been running trinity on my ARMv7 Cortex-A15 system and managed to
-> > trigger the following kernel warning:
+> > 
+> > Lukasz Majewski (2):
+> >   cpufreq: exynos4x12: Use the common clock framework to set APLL clock
+> >     rate
+> >   cpufreq: exynos4210: Use the common clock framework to set APLL clock
+> >     rate
+> > 
+> >  drivers/cpufreq/exynos4210-cpufreq.c |   67 ++++-----------------------------
+> >  drivers/cpufreq/exynos4x12-cpufreq.c |   69 ++++------------------------------
+> >  2 files changed, 16 insertions(+), 120 deletions(-)
 > 
-> Adding Kent to the list of recipients since this is in code he wrote.  I'd 
-> like to try to track down a test case to add to the libaio tests if we can 
-> figure it out.
+> Can you please resend [1/2], it got lost somewhere (at least I can't see it
+> now)?
 
+Scratch this, it's there in patchwork.
 
-FWIW, I just saw this issue again on a different board running a separate
-instance of trinity:
-
-[183036.699436] WARNING: CPU: 1 PID: 7279 at fs/aio.c:474 free_ioctx+0x13b/0x154()
-[183036.700450] Modules linked in:
-[183036.701028] CPU: 1 PID: 7279 Comm: kworker/1:1 Not tainted 3.12.0-rc4+ #1844
-[183036.703447] Workqueue: events free_ioctx
-[183036.704863] [<c001ca11>] (unwind_backtrace+0x1/0x9c) from [<c001a575>] (show_stack+0x11/0x14)
-[183036.710360] [<c001a575>] (show_stack+0x11/0x14) from [<c02dbe8d>] (dump_stack+0x55/0x88)
-[183036.713109] [<c02dbe8d>] (dump_stack+0x55/0x88) from [<c0025275>] (warn_slowpath_common+0x51/0x70)
-[183036.714885] [<c0025275>] (warn_slowpath_common+0x51/0x70) from [<c00252ab>] (warn_slowpath_null+0x17/0x1c)
-[183036.715896] [<c00252ab>] (warn_slowpath_null+0x17/0x1c) from [<c00de2f7>] (free_ioctx+0x13b/0x154)
-[183036.716816] [<c00de2f7>] (free_ioctx+0x13b/0x154) from [<c0035b8f>] (process_one_work+0xd3/0x2dc)
-[183036.717752] [<c0035b8f>] (process_one_work+0xd3/0x2dc) from [<c003606f>] (worker_thread+0xe7/0x270)
-[183036.718662] [<c003606f>] (worker_thread+0xe7/0x270) from [<c0039d5d>] (kthread+0x71/0x7c)
-[183036.719446] [<c0039d5d>] (kthread+0x71/0x7c) from [<c0017c3d>] (ret_from_fork+0x11/0x20)
-[183036.724930] ---[ end trace 7524c2e7acad0b28 ]---
-
-Will
-
-> > [15333.257972] ------------[ cut here ]------------
-> > [15333.259328] WARNING: CPU: 1 PID: 18717 at fs/aio.c:474 free_ioctx+0x1d0/0x1d4()
-> > [15333.259894] Modules linked in:
-> > [15333.260643] CPU: 1 PID: 18717 Comm: kworker/1:0 Not tainted 3.12.0-rc4 #3
-> > [15333.261580] Workqueue: events free_ioctx
-> > [15333.261978] [<c00213f8>] (unwind_backtrace+0x0/0xf4) from [<c001e034>] (show_stack+0x10/0x14)
-> > [15333.263231] [<c001e034>] (show_stack+0x10/0x14) from [<c03c350c>] (dump_stack+0x98/0xd4)
-> > [15333.264106] [<c03c350c>] (dump_stack+0x98/0xd4) from [<c002c5ac>] (warn_slowpath_common+0x6c/0x88)
-> > [15333.265132] [<c002c5ac>] (warn_slowpath_common+0x6c/0x88) from [<c002c664>] (warn_slowpath_null+0x1c/0x24)
-> > [15333.266053] [<c002c664>] (warn_slowpath_null+0x1c/0x24) from [<c01269a0>] (free_ioctx+0x1d0/0x1d4)
-> > [15333.267097] [<c01269a0>] (free_ioctx+0x1d0/0x1d4) from [<c0041c30>] (process_one_work+0xf4/0x35c)
-> > [15333.267822] [<c0041c30>] (process_one_work+0xf4/0x35c) from [<c004288c>] (worker_thread+0x138/0x3d4)
-> > [15333.268766] [<c004288c>] (worker_thread+0x138/0x3d4) from [<c0048058>] (kthread+0xb4/0xb8)
-> > [15333.269746] [<c0048058>] (kthread+0xb4/0xb8) from [<c001ae78>] (ret_from_fork+0x14/0x3c)
-> > [15333.270455] ---[ end trace d2466d8d496fd5c9 ]---
-> > 
-> > --->8
-> > 
-> > So this looks like either somebody else is messing with ctx->reqs_available
-> > on the ctx freeing path, or we're inadvertently incrementing the
-> > reqs_available count beyond the queue size. I'm really not familiar with
-> > this code, but the conditional assignment to avail looks pretty scary given
-> > that I don't think we hold the ctx->completion_lock and potentially read the
-> > tail pointer more than once.
-> > 
-> > Any ideas? I've not been able to reproduce the problem again with further
-> > fuzzing (yet).
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
