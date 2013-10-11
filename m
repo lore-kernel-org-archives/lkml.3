@@ -1,82 +1,296 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757314Ab3JKI7t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 04:59:49 -0400
-Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:48134 "EHLO
-	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752608Ab3JKI7c (ORCPT
+	id S1756999Ab3JKJDH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 05:03:07 -0400
+Received: from 20.mo1.mail-out.ovh.net ([188.165.45.168]:38631 "EHLO
+	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752105Ab3JKJDD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 04:59:32 -0400
-Date: Fri, 11 Oct 2013 10:58:09 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: Re: [RFC/PATCH] ftrace: add set_graph_notrace filter
-Message-ID: <20131011085809.GD4154@osiris>
-References: <1378184708-31385-1-git-send-email-namhyung@kernel.org>
- <20131011001717.26b92150@gandalf.local.home>
- <20131011072156.GC4154@osiris>
- <871u3scik4.fsf@sejong.aot.lge.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <871u3scik4.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13101108-4966-0000-0000-000007289608
+	Fri, 11 Oct 2013 05:03:03 -0400
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@linaro.org>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Josh Wu <josh.wu@atmel.com>, Richard Genoud <richard.genoud@gmail.com>
+Cc: Boris BREZILLON <b.brezillon@overkiz.com>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org
+Subject: [PATCH v4 05/17] clk: at91: add PMC main clock
+Date: Fri, 11 Oct 2013 10:44:49 +0200
+Message-Id: <1381481090-12037-1-git-send-email-b.brezillon@overkiz.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1381477081-6041-1-git-send-email-b.brezillon@overkiz.com>
+References: <1381477081-6041-1-git-send-email-b.brezillon@overkiz.com>
+X-Ovh-Tracer-Id: 13450844712226879712
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrvdefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrvdefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 11, 2013 at 05:34:19PM +0900, Namhyung Kim wrote:
-> Hi Heiko,
-> 
-> On Fri, 11 Oct 2013 09:21:56 +0200, Heiko Carstens wrote:
-> > On Fri, Oct 11, 2013 at 12:17:17AM -0400, Steven Rostedt wrote:
-> >> Isn't there a way we could pass the state? Hmm, I think we could use
-> >> depth to do that. As depth is a pointer to trace.depth and not used
-> >> before then. We could make it negative and then check that.
-> >> 
-> >> /me looks at other archs.
-> >> 
-> >> Darn it, s390 calls ftrace_push_return_trace() before
-> >> ftrace_graph_entry(). They got fancy, as they must have noticed that
-> >> trace.depth is set by ftrace_push_return_trace() and they just figured
-> >> to let the ftrace_push_return_trace() do the work.
-> >> 
-> >> Hmm, we could add a config to do the check on one side or the other
-> >> depending on how the arch handles it.
-> >> 
-> >> It needs to be well commented though.
-> >
-> > I don't remember I why decided to do that more than four years ago, however
-> > on the other hand I really don't think we need a config for this.
-> > So I just committed the patch below... it compiles and doesn't crash
-> > immediately, so must be good.
-> > It will be merged during the next merge window.
-> 
-> Nice!
-> 
-> >
-> > From 8c539d10400ee2efe000d324497a0661a2143dbf Mon Sep 17 00:00:00 2001
-> > From: Heiko Carstens <heiko.carstens@de.ibm.com>
-> > Date: Fri, 11 Oct 2013 08:55:57 +0200
-> > Subject: [PATCH] s390/ftrace: prepare_ftrace_return() function call order
-> >
-> > Steven Rostedt noted that s390 is the only architecture which calls
-> > ftrace_push_return_trace() before ftrace_graph_entry() and therefore has
-> > the small advantage that trace.depth gets initialized automatically.
-> 
-> Well, this is not true.  AFAICS arm, x86 and powerpc have same order, and
-> other archs have different (inverted) order.  And it'd really great if
-> all archs agreed on a single ordering.
+This patch adds new at91 main oscillator clock implementation using common
+clk framework.
 
-Ooops. Anyway.. I just realized that we also have an out-of-tree patch
-that relies on the now new order on s390. So that patch got a bit smaller
-as an added bonus ;)
+If rate is not provided during clock registration it is calculated using
+the slow clock (main clk parent in this case) rate and MCFR register.
+
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+---
+ drivers/clk/at91/Makefile   |    1 +
+ drivers/clk/at91/clk-main.c |  189 +++++++++++++++++++++++++++++++++++++++++++
+ drivers/clk/at91/pmc.c      |    5 ++
+ drivers/clk/at91/pmc.h      |    3 +
+ 4 files changed, 198 insertions(+)
+ create mode 100644 drivers/clk/at91/clk-main.c
+
+diff --git a/drivers/clk/at91/Makefile b/drivers/clk/at91/Makefile
+index 1d4fb21..44105bd 100644
+--- a/drivers/clk/at91/Makefile
++++ b/drivers/clk/at91/Makefile
+@@ -3,3 +3,4 @@
+ #
+ 
+ obj-y += pmc.o
++obj-y += clk-main.o
+diff --git a/drivers/clk/at91/clk-main.c b/drivers/clk/at91/clk-main.c
+new file mode 100644
+index 0000000..905ceff
+--- /dev/null
++++ b/drivers/clk/at91/clk-main.c
+@@ -0,0 +1,189 @@
++/*
++ * drivers/clk/at91/clk-main.c
++ *
++ *  Copyright (C) 2013 Boris BREZILLON <b.brezillon@overkiz.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ */
++
++#include <linux/clk-provider.h>
++#include <linux/clkdev.h>
++#include <linux/clk/at91_pmc.h>
++#include <linux/delay.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/of_irq.h>
++#include <linux/io.h>
++#include <linux/interrupt.h>
++#include <linux/irq.h>
++#include <linux/sched.h>
++#include <linux/wait.h>
++
++#include "pmc.h"
++
++#define SLOW_CLOCK_FREQ		32768
++#define MAINF_DIV		16
++#define MAINFRDY_TIMEOUT	(((MAINF_DIV + 1) * USEC_PER_SEC) / \
++				 SLOW_CLOCK_FREQ)
++#define MAINF_LOOP_MIN_WAIT	(USEC_PER_SEC / SLOW_CLOCK_FREQ)
++#define MAINF_LOOP_MAX_WAIT	MAINFRDY_TIMEOUT
++
++struct clk_main {
++	struct clk_hw hw;
++	struct at91_pmc *pmc;
++	unsigned long rate;
++	unsigned int irq;
++	wait_queue_head_t wait;
++};
++
++#define to_clk_main(hw) container_of(hw, struct clk_main, hw)
++
++static irqreturn_t clk_main_irq_handler(int irq, void *dev_id)
++{
++	struct clk_main *clkmain = (struct clk_main *)dev_id;
++
++	wake_up(&clkmain->wait);
++	disable_irq_nosync(clkmain->irq);
++
++	return IRQ_HANDLED;
++}
++
++static int clk_main_prepare(struct clk_hw *hw)
++{
++	struct clk_main *clkmain = to_clk_main(hw);
++	struct at91_pmc *pmc = clkmain->pmc;
++	unsigned long halt_time, timeout;
++	u32 tmp;
++
++	while (!(pmc_read(pmc, AT91_PMC_SR) & AT91_PMC_MOSCS)) {
++		enable_irq(clkmain->irq);
++		wait_event(clkmain->wait,
++			   pmc_read(pmc, AT91_PMC_SR) & AT91_PMC_MOSCS);
++	}
++
++	if (clkmain->rate)
++		return 0;
++
++	timeout = jiffies + usecs_to_jiffies(MAINFRDY_TIMEOUT);
++	do {
++		halt_time = jiffies;
++		tmp = pmc_read(pmc, AT91_CKGR_MCFR);
++		if (tmp & AT91_PMC_MAINRDY)
++			return 0;
++		usleep_range(MAINF_LOOP_MIN_WAIT, MAINF_LOOP_MAX_WAIT);
++	} while (time_before(halt_time, timeout));
++
++	return 0;
++}
++
++static int clk_main_is_prepared(struct clk_hw *hw)
++{
++	struct clk_main *clkmain = to_clk_main(hw);
++
++	return !!(pmc_read(clkmain->pmc, AT91_PMC_SR) & AT91_PMC_MOSCS);
++}
++
++static unsigned long clk_main_recalc_rate(struct clk_hw *hw,
++					  unsigned long parent_rate)
++{
++	u32 tmp;
++	struct clk_main *clkmain = to_clk_main(hw);
++	struct at91_pmc *pmc = clkmain->pmc;
++
++	if (clkmain->rate)
++		return clkmain->rate;
++
++	tmp = pmc_read(pmc, AT91_CKGR_MCFR) & AT91_PMC_MAINF;
++	clkmain->rate = (tmp * parent_rate) / MAINF_DIV;
++
++	return clkmain->rate;
++}
++
++static const struct clk_ops main_ops = {
++	.prepare = clk_main_prepare,
++	.is_prepared = clk_main_is_prepared,
++	.recalc_rate = clk_main_recalc_rate,
++};
++
++static struct clk * __init
++at91_clk_register_main(struct at91_pmc *pmc,
++		       unsigned int irq,
++		       const char *name,
++		       const char *parent_name,
++		       unsigned long rate)
++{
++	int ret;
++	struct clk_main *clkmain;
++	struct clk *clk = NULL;
++	struct clk_init_data init;
++
++	if (!pmc || !irq || !name)
++		return ERR_PTR(-EINVAL);
++
++	if (!rate && !parent_name)
++		return ERR_PTR(-EINVAL);
++
++	clkmain = kzalloc(sizeof(*clkmain), GFP_KERNEL);
++	if (!clkmain)
++		return ERR_PTR(-ENOMEM);
++
++	init.name = name;
++	init.ops = &main_ops;
++	init.parent_names = parent_name ? &parent_name : NULL;
++	init.num_parents = parent_name ? 1 : 0;
++	init.flags = parent_name ? 0 : CLK_IS_ROOT;
++
++	clkmain->hw.init = &init;
++	clkmain->rate = rate;
++	clkmain->pmc = pmc;
++	clkmain->irq = irq;
++	init_waitqueue_head(&clkmain->wait);
++	irq_set_status_flags(clkmain->irq, IRQ_NOAUTOEN);
++	ret = request_irq(clkmain->irq, clk_main_irq_handler,
++			  IRQF_TRIGGER_HIGH, "clk-main", clkmain);
++	if (ret)
++		return ERR_PTR(ret);
++
++	clk = clk_register(NULL, &clkmain->hw);
++	if (IS_ERR(clk)) {
++		free_irq(clkmain->irq, clkmain);
++		kfree(clkmain);
++	}
++
++	return clk;
++}
++
++
++
++static void __init
++of_at91_clk_main_setup(struct device_node *np, struct at91_pmc *pmc)
++{
++	struct clk *clk;
++	unsigned int irq;
++	const char *parent_name;
++	const char *name = np->name;
++	u32 rate = 0;
++
++	parent_name = of_clk_get_parent_name(np, 0);
++	of_property_read_string(np, "clock-output-names", &name);
++	of_property_read_u32(np, "clock-frequency", &rate);
++	irq = irq_of_parse_and_map(np, 0);
++	if (!irq)
++		return;
++
++	clk = at91_clk_register_main(pmc, irq, name, parent_name, rate);
++	if (IS_ERR(clk))
++		return;
++
++	of_clk_add_provider(np, of_clk_src_simple_get, clk);
++}
++
++void __init of_at91rm9200_clk_main_setup(struct device_node *np,
++					 struct at91_pmc *pmc)
++{
++	of_at91_clk_main_setup(np, pmc);
++}
+diff --git a/drivers/clk/at91/pmc.c b/drivers/clk/at91/pmc.c
+index d92e46c..ccfe506 100644
+--- a/drivers/clk/at91/pmc.c
++++ b/drivers/clk/at91/pmc.c
+@@ -208,6 +208,11 @@ out_free_pmc:
+ }
+ 
+ static const struct of_device_id pmc_clk_ids[] __initdata = {
++	/* Main clock */
++	{
++		.compatible = "atmel,at91rm9200-clk-main",
++		.data = of_at91rm9200_clk_main_setup
++	},
+ 	{ /*sentinel*/ }
+ };
+ 
+diff --git a/drivers/clk/at91/pmc.h b/drivers/clk/at91/pmc.h
+index b7e8397..294e230 100644
+--- a/drivers/clk/at91/pmc.h
++++ b/drivers/clk/at91/pmc.h
+@@ -55,4 +55,7 @@ static inline void pmc_write(struct at91_pmc *pmc, int offset, u32 value)
+ 	return writel_relaxed(value, pmc->regbase + offset);
+ }
+ 
++extern void __init of_at91rm9200_clk_main_setup(struct device_node *np,
++						struct at91_pmc *pmc);
++
+ #endif /* __PMC_H_ */
+-- 
+1.7.9.5
 
