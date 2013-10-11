@@ -1,74 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756870Ab3JKGa4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 02:30:56 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:54295 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752570Ab3JKGay convert rfc822-to-8bit (ORCPT
+	id S1756207Ab3JKGfb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 02:35:31 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:44558 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751762Ab3JKGf3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 02:30:54 -0400
+	Fri, 11 Oct 2013 02:35:29 -0400
+Message-ID: <52579BD6.40802@huawei.com>
+Date: Fri, 11 Oct 2013 14:33:58 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <52579723.6080209@ti.com>
-References: <1381402195-29257-1-git-send-email-kishon@ti.com>
-	<20131010141949.GA13277@kahuna>
-	<52579723.6080209@ti.com>
-Date: Fri, 11 Oct 2013 01:30:52 -0500
-X-Google-Sender-Auth: 3KwZ96kObU_v2KH96_ybkuHJ1o0
-Message-ID: <CAGo_u6odWJ9UKwgaVu2YZzZKuYbveBoGDf99L=rJoK1-9KJ0SA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] ARM: dts: omap5-uevm: remove always_on, boot_on from smps10_out1
-From: Nishanth Menon <nm@ti.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: Mark Rutland <mark.rutland@arm.com>, dt list <devicetree@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Pawel Moll <pawel.moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        Tony Lindgren <tony@atomide.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+To: Gavin Shan <shangw@linux.vnet.ibm.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>,
+        Hanjun Guo <guohanjun@huawei.com>, Paul Mackerras <paulus@samba.org>,
+        <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: [PATCH v2 3/6] powerpc/pci: use pci_is_pcie() to simplify code
+References: <1378367730-25996-1-git-send-email-wangyijing@huawei.com> <1378367730-25996-3-git-send-email-wangyijing@huawei.com> <20130906203035.GA27940@google.com> <1381470596.5630.61.camel@pasglop> <20131011061654.GA561@shangw.(null)>
+In-Reply-To: <20131011061654.GA561@shangw.(null)>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 11, 2013 at 1:13 AM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
->
->> regulator-boot-on indicates that PMIC enables it by default as part of
->> OTP or some internal behavior -> Looking at the measurements done on
->> uEVM and OTP information -> regulator-boot-on should be kept here.
->
-> No. Actually I don’t want PMIC to enable it by default. I want the palmas-usb
-> driver to handle it.
-> Enabling it by default makes palmas-usb to detect VBUS interrupt. This should
-> ideally be detected only when you connect a host cable.
-> Btw I didn't exactly get why you want regulator-boot-on should be kept here.
+On 2013/10/11 14:16, Gavin Shan wrote:
+> On Fri, Oct 11, 2013 at 04:49:56PM +1100, Benjamin Herrenschmidt wrote:
+>> On Fri, 2013-09-06 at 14:30 -0600, Bjorn Helgaas wrote:
+>>> On Thu, Sep 05, 2013 at 03:55:27PM +0800, Yijing Wang wrote:
+>>>> Use pci_is_pcie() to simplify code.
+>>>>
+>>>> Acked-by: Kumar Gala <galak@kernel.crashing.org>
+>>>> Reviewed-by: Gavin Shan <shangw@linux.vnet.ibm.com>
+>>>> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+>>>> Cc: Gavin Shan <shangw@linux.vnet.ibm.com>
+>>>> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+>>>> Cc: Paul Mackerras <paulus@samba.org>
+>>>> Cc: linuxppc-dev@lists.ozlabs.org
+>>>> Cc: linux-kernel@vger.kernel.org
+>>>> ---
+>>>>  arch/powerpc/kernel/eeh.c     |    3 +--
+>>>>  arch/powerpc/sysdev/fsl_pci.c |    2 +-
+>>>>  2 files changed, 2 insertions(+), 3 deletions(-)
+>>>
+>>> Ben, Paul, this has no dependencies on anything new to PCI or any
+>>> other patches in this series, so you can take it through the POWERPC
+>>> tree.  If you don't want to do that, let me know and I can take it.
+>>>
+>>> If you want it:
+>>>
+>>> Acked-by: Bjorn Helgaas <bhelgaas@google.com>
+>>
+>> It's also quite broken :-)
+>>
+>> See below:
+>>
+>>>> diff --git a/arch/powerpc/kernel/eeh.c b/arch/powerpc/kernel/eeh.c
+>>>> index 55593ee..6ebbe54 100644
+>>>> --- a/arch/powerpc/kernel/eeh.c
+>>>> +++ b/arch/powerpc/kernel/eeh.c
+>>>> @@ -189,8 +189,7 @@ static size_t eeh_gather_pci_data(struct eeh_dev *edev, char * buf, size_t len)
+>>>>  	}
+>>>>  
+>>>>  	/* If PCI-E capable, dump PCI-E cap 10, and the AER */
+>>>> -	cap = pci_find_capability(dev, PCI_CAP_ID_EXP);
+>>>> -	if (cap) {
+>>>> +	if (pci_is_pcie(dev)) {
+>>>>  		n += scnprintf(buf+n, len-n, "pci-e cap10:\n");
+>>>>  		printk(KERN_WARNING
+>>>>  		       "EEH: PCI-E capabilities and status follow:\n");
+>>
+>> So we remove reading of "cap", but slightly further down the code does:
+>>
+>> 		for (i=0; i<=8; i++) {
+>> 			eeh_ops->read_config(dn, cap+4*i, 4, &cfg);
+>> 			n += scnprintf(buf+n, len-n, "%02x:%x\n", 4*i, cfg);
+>> 			printk(KERN_WARNING "EEH: PCI-E %02x: %08x\n", i, cfg);
+>> 		}
+>>
+>> Which actually *uses* the value of "cap" ... oops :-)
+>>
+> 
+> It's my fault and I should have looked into the changes more closely.
+> How about changing it like this:
+> 
+> 	cap = pci_is_pcie(dev) ? pci_pcie_cap(dev) :
+> 	      pci_find_capability(dev, PCI_CAP_ID_EXP);
+> 	if (cap) {
+> 		...
+> 	}
+> 
+> It would save some PCI-CFG access cycles for most cases :-)
 
-binding description states:
-- regulator-boot-on: bootloader/firmware enabled regulator
-Further info: include/linux/regulator/machine.h
-* @boot_on: Set if the regulator is enabled when the system is initially
-*           started.  If the regulator is not enabled by the hardware or
-*           bootloader then it will be enabled when the constraints are
-*           applied.
+Hi Gavin,  it's not your fault, it's my fault. :)
 
-What that means is that it is enabled by firmware/bootloader (in our
-case One Time Program {OTP} inside Palmas) when the system switches on
-even before the kernel starts. and we know SMPS10 is autoenabled by
-Palmas OTP configuration even before first instruction in A15
-executes.
+Because pci_pcie_cap(dev) == dev->pcie_cap == pci_find_capability(dev, PCI_CAP_ID_EXP);
 
-I think you misunderstand this to mean that you'd like the regulator
-to be *switched on* automatically at kernel boot by regulator
-framework - there is no reasoning why we'd want such a binding since
-we'd expect drivers to do their job of requesting and enabling
-regulators on need..
+so I think it's ok to use dev->pcie_cap instead of stale "cap".
 
-Hope this helps. Let me know if I misunderstood something here.
+I have updated this patch.
 
-Regards,
-Nishanth Menon
+Thanks for your review and comments!
+
+Thanks!
+Yijing.
+
+
+> 
+>>>> diff --git a/arch/powerpc/sysdev/fsl_pci.c b/arch/powerpc/sysdev/fsl_pci.c
+>>>> index 46ac1dd..5402a1d 100644
+>>>> --- a/arch/powerpc/sysdev/fsl_pci.c
+>>>> +++ b/arch/powerpc/sysdev/fsl_pci.c
+>>>> @@ -41,7 +41,7 @@ static void quirk_fsl_pcie_header(struct pci_dev *dev)
+>>>>  	u8 hdr_type;
+>>>>  
+>>>>  	/* if we aren't a PCIe don't bother */
+>>>> -	if (!pci_find_capability(dev, PCI_CAP_ID_EXP))
+>>>> +	if (!pci_is_pcie(dev))
+>>>>  		return;
+>>>>  
+>>>>  	/* if we aren't in host mode don't bother */
+> 
+> Thanks,
+> Gavin
+> 
+> 
+> .
+> 
+
+
+-- 
+Thanks!
+Yijing
+
