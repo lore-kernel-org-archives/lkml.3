@@ -1,63 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758674Ab3JKLG7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 07:06:59 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58453 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757790Ab3JKKmx (ORCPT
+	id S1758684Ab3JKLHb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 07:07:31 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:49853 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757995Ab3JKLH0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 06:42:53 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Nithin Nayak Sujir <nsujir@broadcom.com>,
-        Michael Chan <mchan@broadcom.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 027/100] tg3: Expand led off fix to include 5720
-Date: Fri, 11 Oct 2013 11:40:57 +0100
-Message-Id: <1381488130-30235-28-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
-References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Fri, 11 Oct 2013 07:07:26 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: tianyu.lan@intel.com
+Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ACPI/Power: Check physical device's runtime pm status before requesting to resume it
+Date: Fri, 11 Oct 2013 13:19:11 +0200
+Message-ID: <1761658.DWcBvZSdOl@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <1381479385-1614-1-git-send-email-tianyu.lan@intel.com>
+References: <1381479385-1614-1-git-send-email-tianyu.lan@intel.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.23 -stable review patch.  If anyone has any objections, please let me know.
+On Friday, October 11, 2013 04:16:25 PM tianyu.lan@intel.com wrote:
+> From: Lan Tianyu <tianyu.lan@intel.com>
+> 
+> Currently, when one power resource is turned on, devices owning it
+> will be requested to resume regardless of their runtime pm status.
+> ACPI power resource maybe turn on in some devices' runtime pm
+> resume callback(E.G, usb port) while turning on the power resource
+> will trigger one new resume request of the device. It causes
+> infinite loop between resume and suspend. This has happened on
+> clearing usb port's PM Qos NO_POWER_OFF flag twice. This patch is
+> to add check of physical device's runtime pm status and request resume
+> if the device is suspended.
+> 
+> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+> ---
+>  drivers/acpi/power.c | 6 ++++--
+>  1 file changed, 4 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/acpi/power.c b/drivers/acpi/power.c
+> index 0dbe5cd..228c138 100644
+> --- a/drivers/acpi/power.c
+> +++ b/drivers/acpi/power.c
+> @@ -250,8 +250,10 @@ static void acpi_power_resume_dependent(struct work_struct *work)
+>  
+>  	mutex_lock(&adev->physical_node_lock);
+>  
+> -	list_for_each_entry(pn, &adev->physical_node_list, node)
+> -		pm_request_resume(pn->dev);
+> +	list_for_each_entry(pn, &adev->physical_node_list, node) {
+> +		if (pm_runtime_suspended(pn->dev))
+> +			pm_request_resume(pn->dev);
+> +	}
 
-------------------
+This is racy, because the status may change right after you check it and before
+you call pm_request_resume().
 
-From: Nithin Sujir <nsujir@broadcom.com>
+Besides, pm_request_resume() checks the status of the device and won't
+try to resume it if it is not suspended.
 
-commit 300cf9b93f74c3d969a0ad50bdac65416107c44c upstream.
+>  
+>  	list_for_each_entry(pn, &adev->power_dependent, node)
+>  		pm_request_resume(pn->dev);
 
-Commit 989038e217e94161862a959e82f9a1ecf8dda152 ("tg3: Don't turn off
-led on 5719 serdes port 0") added code to skip turning led off on port
-0 of the 5719 since it powered down other ports. This workaround needs
-to be enabled on the 5720 as well.
+Thanks!
 
-Signed-off-by: Nithin Nayak Sujir <nsujir@broadcom.com>
-Signed-off-by: Michael Chan <mchan@broadcom.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/net/ethernet/broadcom/tg3.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
-index 5e01182..18657a9 100644
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -2787,6 +2787,7 @@ static bool tg3_phy_led_bug(struct tg3 *tp)
- {
- 	switch (GET_ASIC_REV(tp->pci_chip_rev_id)) {
- 	case ASIC_REV_5719:
-+	case ASIC_REV_5720:
- 		if ((tp->phy_flags & TG3_PHYFLG_MII_SERDES) &&
- 		    !tp->pci_fn)
- 			return true;
 -- 
-1.8.3.2
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
