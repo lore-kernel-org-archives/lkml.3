@@ -1,197 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754717Ab3JKR26 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 13:28:58 -0400
-Received: from mga09.intel.com ([134.134.136.24]:25592 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752310Ab3JKR24 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 13:28:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1082,1371106800"; 
-   d="scan'208";a="391726592"
-Date: Fri, 11 Oct 2013 10:28:26 -0700
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: xiao jin <jin.xiao@intel.com>
-Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Mathias Nyman <mathias.nyman@linux.intel.com>, stable@vger.kernel.org
-Subject: Re: [PATCH] xhci: Ensure a command structure points to the correct
- trb on the command ring
-Message-ID: <20131011172826.GA7094@xanatos>
-References: <1381452474-32613-1-git-send-email-jin.xiao@intel.com>
- <20131011172523.GA6862@xanatos>
+	id S1754167Ab3JKRyK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 13:54:10 -0400
+Received: from emea01-db3-ndr.ptr.protection.outlook.com ([157.56.120.104]:21424
+	"EHLO emea01-db3-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753436Ab3JKRyJ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 13:54:09 -0400
+Content-Type: text/plain; charset=US-ASCII
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131011172523.GA6862@xanatos>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: I am expecting your urgent response
+To: Recipients <info@notiffication740.onmicrosoft.com>
+From: "Dr. Mack Nellie" <info@notiffication740.onmicrosoft.com>
+Date: Fri, 11 Oct 2013 23:23:46 +0530
+Reply-To: <dr.macknellie@barid.com>
+Message-ID: <f80bbb76-9ec1-42b1-8e2c-89a298fcbe18@HKNPR02MB114.apcprd02.prod.outlook.com>
+X-Originating-IP: [115.244.11.195]
+X-ClientProxiedBy: HKNPR04CA004.apcprd04.prod.outlook.com (10.242.116.34) To
+ HKNPR02MB114.apcprd02.prod.outlook.com (10.141.18.153)
+X-Forefront-PRVS: 0996D1900D
+X-Forefront-Antispam-Report: SFV:SPM;SFS:(189002)(199002)(31686002)(218543002)(81816001)(74366001)(83072001)(4396001)(74316001)(554214002)(42186004)(81342001)(50986001)(47976001)(51856001)(74876001)(81542001)(54356001)(76576001)(79102001)(555944003)(76796001)(76786001)(50466002)(561944002)(76176001)(47446002)(74502001)(74662001)(80976001)(19580405001)(69226001)(65816001)(23756003)(46102001)(49866001)(53256004)(33646001)(81686001)(54316002)(76482001)(43066001)(47736001)(83322001)(63696002)(47776003)(85306002)(19580395003)(77982001)(35302001)(56816003)(59766001)(74706001)(56776001)(80022001)(66066001)(77096001)(556364005);DIR:OUT;SFP:1501;SCL:5;SRVR:HKNPR02MB114;H:[115.244.11.195];CLIP:115.244.11.195;FPR:;RD:InfoNoRecords;MX:1;A:0;LANG:en;
+X-OriginatorOrg: notiffication740.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 11, 2013 at 10:25:23AM -0700, Sarah Sharp wrote:
-> Hi Xiao,
-> 
-> I think you did something odd when you tried to send me the latest
-> revision of your patch "xhci: correct the usage of
-> USB_CTRL_SET_TIMEOUT".  You sent this patch instead.  On the plus side,
-> it looks like git-send-email works.
-> 
-> Can you try again?
 
-Ah, nevermind, I saw the v2 patch you sent later.
+ Compliment of the day.
+ 
+I am Dr. Mack Nellie. I am looking for a reliable Indian partner that understands the India local language and English as well; I have a business proposal that will benefit both of us outside our individual professions.
+Kindly contact me for the supply details on my personal email address;  dr.macknellie@barid.com  I will furnish you with more details as soon as I receive your mail.
+I am expecting your urgent response   
 
-Sarah
-
-> On Fri, Oct 11, 2013 at 08:47:54AM +0800, xiao jin wrote:
-> > From: Mathias Nyman <mathias.nyman@linux.intel.com>
-> > 
-> > If a command on the command ring needs to be cancelled before it is handled
-> > it can be turned to a no-op operation when the ring is stopped.
-> > We want to store the command ring enqueue pointer in the command structure
-> > when the command in enqueued for the cancellation case.
-> > 
-> > Some commands used to store the command ring dequeue pointers instead of enqueue
-> > (these often worked because enqueue happends to equal dequeue quite often)
-> > 
-> > Other commands correctly used the enqueue pointer but did not check if it pointed
-> > to a valid trb or a link trb, this caused for example stop endpoint command to timeout in
-> > xhci_stop_device() in about 2% of suspend/resume cases.
-> > 
-> > This should also solve some weird behavior happening in command cancellation cases.
-> > 
-> > This patch is based on a patch submitted by Sarah Sharp to linux-usb, but
-> > then forgotten:
-> >     http://marc.info/?l=linux-usb&m=136269803207465&w=2
-> > 
-> > This patch should be backported to kernels as old as 3.7, that contain
-> > the commit b92cc66c047ff7cf587b318fe377061a353c120f "xHCI: add aborting
-> > command ring function"
-> > 
-> > Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
-> > Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-> > Cc: stable@vger.kernel.org
-> > ---
-> >  drivers/usb/host/xhci-hub.c  |    2 +-
-> >  drivers/usb/host/xhci-ring.c |   10 ++++++++++
-> >  drivers/usb/host/xhci.c      |   25 +++++--------------------
-> >  drivers/usb/host/xhci.h      |    1 +
-> >  4 files changed, 17 insertions(+), 21 deletions(-)
-> > 
-> > diff --git a/drivers/usb/host/xhci-hub.c b/drivers/usb/host/xhci-hub.c
-> > index fae697e..ccf0a06 100644
-> > --- a/drivers/usb/host/xhci-hub.c
-> > +++ b/drivers/usb/host/xhci-hub.c
-> > @@ -287,7 +287,7 @@ static int xhci_stop_device(struct xhci_hcd *xhci, int slot_id, int suspend)
-> >  		if (virt_dev->eps[i].ring && virt_dev->eps[i].ring->dequeue)
-> >  			xhci_queue_stop_endpoint(xhci, slot_id, i, suspend);
-> >  	}
-> > -	cmd->command_trb = xhci->cmd_ring->enqueue;
-> > +	cmd->command_trb = xhci_find_next_enqueue(xhci->cmd_ring);
-> >  	list_add_tail(&cmd->cmd_list, &virt_dev->cmd_list);
-> >  	xhci_queue_stop_endpoint(xhci, slot_id, 0, suspend);
-> >  	xhci_ring_cmd_db(xhci);
-> > diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
-> > index aaa2906..9ac9672 100644
-> > --- a/drivers/usb/host/xhci-ring.c
-> > +++ b/drivers/usb/host/xhci-ring.c
-> > @@ -123,6 +123,16 @@ static int enqueue_is_link_trb(struct xhci_ring *ring)
-> >  	return TRB_TYPE_LINK_LE32(link->control);
-> >  }
-> >  
-> > +union xhci_trb *xhci_find_next_enqueue(struct xhci_ring *ring)
-> > +{
-> > +	/* Enqueue pointer can be left pointing to the link TRB,
-> > +	 * we must handle that
-> > +	 */
-> > +	if (TRB_TYPE_LINK_LE32(ring->enqueue->link.control))
-> > +		return ring->enq_seg->next->trbs;
-> > +	return ring->enqueue;
-> > +}
-> > +
-> >  /* Updates trb to point to the next TRB in the ring, and updates seg if the next
-> >   * TRB is in a new segment.  This does not skip over link TRBs, and it does not
-> >   * effect the ring dequeue or enqueue pointers.
-> > diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-> > index 49b6edb..1e36dbb 100644
-> > --- a/drivers/usb/host/xhci.c
-> > +++ b/drivers/usb/host/xhci.c
-> > @@ -2598,15 +2598,7 @@ static int xhci_configure_endpoint(struct xhci_hcd *xhci,
-> >  	if (command) {
-> >  		cmd_completion = command->completion;
-> >  		cmd_status = &command->status;
-> > -		command->command_trb = xhci->cmd_ring->enqueue;
-> > -
-> > -		/* Enqueue pointer can be left pointing to the link TRB,
-> > -		 * we must handle that
-> > -		 */
-> > -		if (TRB_TYPE_LINK_LE32(command->command_trb->link.control))
-> > -			command->command_trb =
-> > -				xhci->cmd_ring->enq_seg->next->trbs;
-> > -
-> > +		command->command_trb = xhci_find_next_enqueue(xhci->cmd_ring);
-> >  		list_add_tail(&command->cmd_list, &virt_dev->cmd_list);
-> >  	} else {
-> >  		cmd_completion = &virt_dev->cmd_completion;
-> > @@ -2614,7 +2606,7 @@ static int xhci_configure_endpoint(struct xhci_hcd *xhci,
-> >  	}
-> >  	init_completion(cmd_completion);
-> >  
-> > -	cmd_trb = xhci->cmd_ring->dequeue;
-> > +	cmd_trb = xhci_find_next_enqueue(xhci->cmd_ring);
-> >  	if (!ctx_change)
-> >  		ret = xhci_queue_configure_endpoint(xhci, in_ctx->dma,
-> >  				udev->slot_id, must_succeed);
-> > @@ -3439,14 +3431,7 @@ int xhci_discover_or_reset_device(struct usb_hcd *hcd, struct usb_device *udev)
-> >  
-> >  	/* Attempt to submit the Reset Device command to the command ring */
-> >  	spin_lock_irqsave(&xhci->lock, flags);
-> > -	reset_device_cmd->command_trb = xhci->cmd_ring->enqueue;
-> > -
-> > -	/* Enqueue pointer can be left pointing to the link TRB,
-> > -	 * we must handle that
-> > -	 */
-> > -	if (TRB_TYPE_LINK_LE32(reset_device_cmd->command_trb->link.control))
-> > -		reset_device_cmd->command_trb =
-> > -			xhci->cmd_ring->enq_seg->next->trbs;
-> > +	reset_device_cmd->command_trb = xhci_find_next_enqueue(xhci->cmd_ring);
-> >  
-> >  	list_add_tail(&reset_device_cmd->cmd_list, &virt_dev->cmd_list);
-> >  	ret = xhci_queue_reset_device(xhci, slot_id);
-> > @@ -3650,7 +3635,7 @@ int xhci_alloc_dev(struct usb_hcd *hcd, struct usb_device *udev)
-> >  	union xhci_trb *cmd_trb;
-> >  
-> >  	spin_lock_irqsave(&xhci->lock, flags);
-> > -	cmd_trb = xhci->cmd_ring->dequeue;
-> > +	cmd_trb = xhci_find_next_enqueue(xhci->cmd_ring);
-> >  	ret = xhci_queue_slot_control(xhci, TRB_ENABLE_SLOT, 0);
-> >  	if (ret) {
-> >  		spin_unlock_irqrestore(&xhci->lock, flags);
-> > @@ -3785,7 +3770,7 @@ int xhci_address_device(struct usb_hcd *hcd, struct usb_device *udev)
-> >  				slot_ctx->dev_info >> 27);
-> >  
-> >  	spin_lock_irqsave(&xhci->lock, flags);
-> > -	cmd_trb = xhci->cmd_ring->dequeue;
-> > +	cmd_trb = xhci_find_next_enqueue(xhci->cmd_ring);
-> >  	ret = xhci_queue_address_device(xhci, virt_dev->in_ctx->dma,
-> >  					udev->slot_id);
-> >  	if (ret) {
-> > diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
-> > index 46aa148..f3e1020 100644
-> > --- a/drivers/usb/host/xhci.h
-> > +++ b/drivers/usb/host/xhci.h
-> > @@ -1840,6 +1840,7 @@ int xhci_cancel_cmd(struct xhci_hcd *xhci, struct xhci_command *command,
-> >  		union xhci_trb *cmd_trb);
-> >  void xhci_ring_ep_doorbell(struct xhci_hcd *xhci, unsigned int slot_id,
-> >  		unsigned int ep_index, unsigned int stream_id);
-> > +union xhci_trb *xhci_find_next_enqueue(struct xhci_ring *ring);
-> >  
-> >  /* xHCI roothub code */
-> >  void xhci_set_link_state(struct xhci_hcd *xhci, __le32 __iomem **port_array,
-> > -- 
-> > 1.7.1
-> > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Regards 
+Dr. Mack Nellie
+Tel: +447014245023 
+E-Mail(dr.macknellie@barid.com)
