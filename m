@@ -1,49 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758602Ab3JKQd1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 12:33:27 -0400
-Received: from mail-vb0-f42.google.com ([209.85.212.42]:53973 "EHLO
-	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757385Ab3JKQd0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 12:33:26 -0400
-MIME-Version: 1.0
-In-Reply-To: <20131011154805.GB30181@srcf.ucam.org>
-References: <20131011092837.GZ3626@debian70-amd64.local.net-space.pl>
-	<877gdkce6s.fsf@tw-ebiederman.twitter.com>
-	<20131011110455.GA3626@debian70-amd64.local.net-space.pl>
-	<20131011125206.GA2772@redhat.com>
-	<20131011153727.GA30181@srcf.ucam.org>
-	<20131011154450.GB2772@redhat.com>
-	<20131011154805.GB30181@srcf.ucam.org>
-Date: Fri, 11 Oct 2013 18:33:23 +0200
-Message-ID: <CAFLxGvzf1sQy-d03JAnK7eDQdBXrd-zRjcKEbv_x53st5bYELg@mail.gmail.com>
-Subject: Re: kexec: Clearing registers just before jumping into purgatory
-From: Richard Weinberger <richard.weinberger@gmail.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Daniel Kiper <daniel.kiper@oracle.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, hbabu@us.ibm.com,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Kees Cook <keescook@chromium.org>, kexec@lists.infradead.org,
-        LKML <linux-kernel@vger.kernel.org>, david.vrabel@citrix.com,
-        jbeulich@suse.com, keir@xen.org, xen-devel@lists.xen.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1758641Ab3JKQeX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 12:34:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10835 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757893Ab3JKQeW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 12:34:22 -0400
+Date: Fri, 11 Oct 2013 11:50:06 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: "Frank Filz" <ffilzlnx@mindspring.com>
+Cc: <linux-fsdevel@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <nfs-ganesha-devel@lists.sourceforge.net>,
+        <samba-technical@lists.samba.org>
+Subject: Re: [RFC PATCH 0/5] locks: implement "filp-private" (aka UNPOSIX)
+ locks
+Message-ID: <20131011115006.697d6bd7@tlielax.poochiereds.net>
+In-Reply-To: <01f801cec695$7e5d17e0$7b1747a0$@mindspring.com>
+References: <1381494322-2426-1-git-send-email-jlayton@redhat.com>
+	<20131011093510.7ed9871a@tlielax.poochiereds.net>
+	<01f801cec695$7e5d17e0$7b1747a0$@mindspring.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 11, 2013 at 5:48 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-> On Fri, Oct 11, 2013 at 11:44:50AM -0400, Vivek Goyal wrote:
->
->> Just Curious. How is it useful. IOW, what's your use case of booting a new
->> kernel and then jumping back.
->
-> I'm kexecing into a kernel with a modified /dev/mem, modifying the
-> original kernel and then jumping back into it.
+On Fri, 11 Oct 2013 08:20:59 -0700
+"Frank Filz" <ffilzlnx@mindspring.com> wrote:
 
-How do you update the original kernel?
-Sounds interesting.
+> > > At LSF this year, there was a discussion about the "wishlist" for
+> > > userland file servers. One of the things brought up was the goofy and
+> > > problematic behavior of POSIX locks when a file is closed. Boaz
+> > > started a thread on it here:
+> > >
+> > >     http://permalink.gmane.org/gmane.linux.file-systems/73364
+> > >
+> > > Userland fileservers often need to maintain more than one open file
+> > > descriptor on a file. The POSIX spec says:
+> > >
+> > > "All locks associated with a file for a given process shall be removed
+> > > when a file descriptor for that file is closed by that process or the
+> > > process holding that file descriptor terminates."
+> > >
+> > > This is problematic since you can't close any file descriptor without
+> > > dropping all your POSIX locks. Most userland file servers therefore
+> > > end up opening the file with more access than is really necessary, and
+> > > keeping fd's open for longer than is necessary to work around this.
+> > >
+> > > This patchset is a first stab at an approach to address this problem
+> > > by adding two new l_type values -- F_RDLCKP and F_WRLCKP (the 'P' is
+> > > short for "private" -- I'm open to changing that if you have a better
+> > > mnemonic).
+> > >
+> > > For all intents and purposes these lock types act just like their
+> > > "non-P" counterpart. The difference is that they are only implicitly
+> > > released when the fd against which they were acquired is closed. As a
+> > > side effect, these locks cannot be merged with "non-P" locks since
+> > > they have different semantics on close.
+> > >
+> > > I've given this patchset some very basic smoke testing and it seems to
+> > > do the right thing, but it is still pretty rough. If this looks
+> > > reasonable I'll plan to do some documentation updates and will take a
+> > > stab at trying to get these new lock types added to the POSIX spec (as
+> > > HCH recommended).
+> > >
+> > > At this point, my main questions are:
+> > >
+> > > 1) does this look useful, particularly for fileserver implementors?
+> > >
+> > > 2) does this look OK API-wise? We could consider different "cmd" values
+> > >    or even different syscalls, but I figured this makes it clearer that
+> > >    "P" and "non-P" locks will still conflict with one another.
+> 
+> This is a good start.
+> 
+> I'd prefer a model where the private locks are maintained even if all file
+> descriptors are closed and released on garbage collection when the process
+> terminates. The model presented would require a server to potentially have
+> at least two file descriptors open (the descriptor originally used for the
+> locks, and a descriptor used for current access mode needed for some I/O
+> operation). The server will also need to "remember" to do all locks using
+> the first file descriptor.
+> 
+
+That's sort of a non-starter, I think at least in Linux. If you have no
+open file descriptor then you have nothing to hang the lock off of.
+That sort of interface sounds error-prone and "leaky" too. A long
+running process could easily end up leaking POSIX locks over time if
+you forget to explicitly unlock them.
+
+> Another thing that would be very useful for servers is to be able to specify
+> an arbitrary lock owner. Currently, Ganesha has to manage a union of all
+> locks held on a file and carefully pick it apart when a client does an
+> unlock. Allowing a process specified owner would allow Ganesha (or other
+> servers) to have separate locks for each client lock owner.
+> 
+
+The trivial answer there would be to give each lockowner its own file
+descriptor, right?
 
 -- 
-Thanks,
-//richard
+Jeff Layton <jlayton@redhat.com>
