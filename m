@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932914Ab3JKTmc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:42:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46608 "EHLO
+	id S932928Ab3JKTm4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:42:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46602 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932897Ab3JKTm1 (ORCPT
+	with ESMTP id S932886Ab3JKTm1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Oct 2013 15:42:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Josef Bacik <jbacik@fusionio.com>,
-        Chris Mason <chris.mason@fusionio.com>
-Subject: [ 127/135] Btrfs: change how we queue blocks for backref checking
-Date: Fri, 11 Oct 2013 12:40:08 -0700
-Message-Id: <20131011193959.066090025@linuxfoundation.org>
+        Kent Overstreet <kmo@daterainc.com>,
+        Gabriel de Perthuis <g2p.code@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 135/135] bcache: Fix a null ptr deref regression
+Date: Fri, 11 Oct 2013 12:40:16 -0700
+Message-Id: <20131011193959.937080790@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -27,68 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josef Bacik <jbacik@fusionio.com>
+From: Kent Overstreet <kmo@daterainc.com>
 
-commit b6c60c8018c4e9beb2f83fc82c09f9d033766571 upstream.
+commit 2fe80d3bbf1c8bd9efc5b8154207c8dd104e7306 upstream.
 
-Previously we only added blocks to the list to have their backrefs checked if
-the level of the block is right above the one we are searching for.  This is
-because we want to make sure we don't add the entire path up to the root to the
-lists to make sure we process things one at a time.  This assumes that if any
-blocks in the path to the root are going to be not checked (shared in other
-words) then they will be in the level right above the current block on up.  This
-isn't quite right though since we can have blocks higher up the list that are
-shared because they are attached to a reloc root.  But we won't add this block
-to be checked and then later on we will BUG_ON(!upper->checked).  So instead
-keep track of wether or not we've queued a block to be checked in this current
-search, and if we haven't go ahead and queue it to be checked.  This patch fixed
-the panic I was seeing where we BUG_ON(!upper->checked).  Thanks,
+Commit c0f04d88e46d ("bcache: Fix flushes in writeback mode") was fixing
+a reported data corruption bug, but it seems some last minute
+refactoring or rebasing introduced a null pointer deref.
 
-Signed-off-by: Josef Bacik <jbacik@fusionio.com>
-Signed-off-by: Chris Mason <chris.mason@fusionio.com>
+Signed-off-by: Kent Overstreet <kmo@daterainc.com>
+Reported-by: Gabriel de Perthuis <g2p.code@gmail.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/relocation.c |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ drivers/md/bcache/request.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/fs/btrfs/relocation.c
-+++ b/fs/btrfs/relocation.c
-@@ -691,6 +691,7 @@ struct backref_node *build_backref_tree(
- 	int cowonly;
- 	int ret;
- 	int err = 0;
-+	bool need_check = true;
+--- a/drivers/md/bcache/request.c
++++ b/drivers/md/bcache/request.c
+@@ -996,6 +996,7 @@ static void request_write(struct cached_
+ 		closure_bio_submit(bio, cl, s->d);
+ 	} else {
+ 		bch_writeback_add(dc);
++		s->op.cache_bio = bio;
  
- 	path1 = btrfs_alloc_path();
- 	path2 = btrfs_alloc_path();
-@@ -914,6 +915,7 @@ again:
- 			cur->bytenr);
+ 		if (bio->bi_rw & REQ_FLUSH) {
+ 			/* Also need to send a flush to the backing device */
+@@ -1008,8 +1009,6 @@ static void request_write(struct cached_
+ 			flush->bi_private = cl;
  
- 		lower = cur;
-+		need_check = true;
- 		for (; level < BTRFS_MAX_LEVEL; level++) {
- 			if (!path2->nodes[level]) {
- 				BUG_ON(btrfs_root_bytenr(&root->root_item) !=
-@@ -957,14 +959,12 @@ again:
- 
- 				/*
- 				 * add the block to pending list if we
--				 * need check its backrefs. only block
--				 * at 'cur->level + 1' is added to the
--				 * tail of pending list. this guarantees
--				 * we check backrefs from lower level
--				 * blocks to upper level blocks.
-+				 * need check its backrefs, we only do this once
-+				 * while walking up a tree as we will catch
-+				 * anything else later on.
- 				 */
--				if (!upper->checked &&
--				    level == cur->level + 1) {
-+				if (!upper->checked && need_check) {
-+					need_check = false;
- 					list_add_tail(&edge->list[UPPER],
- 						      &list);
- 				} else
+ 			closure_bio_submit(flush, cl, s->d);
+-		} else {
+-			s->op.cache_bio = bio;
+ 		}
+ 	}
+ out:
 
 
