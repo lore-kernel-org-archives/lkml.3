@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759217Ab3JKUBx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:01:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46285 "EHLO
+	id S1759241Ab3JKUCX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:02:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46280 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932592Ab3JKTli (ORCPT
+	with ESMTP id S932581Ab3JKTlh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:41:38 -0400
+	Fri, 11 Oct 2013 15:41:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Neuling <mikey@neuling.org>,
+        Sooraj Ravindran Nair <soonair3@in.ibm.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 065/135] powerpc/tm: Switch out userspace PPR and DSCR sooner
-Date: Fri, 11 Oct 2013 12:39:06 -0700
-Message-Id: <20131011193952.349521991@linuxfoundation.org>
+Subject: [ 064/135] powerpc/perf: Fix handling of FAB events
+Date: Fri, 11 Oct 2013 12:39:05 -0700
+Message-Id: <20131011193952.241701109@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -27,212 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Neuling <mikey@neuling.org>
+From: Michael Ellerman <michael@ellerman.id.au>
 
-commit e9bdc3d6143d1c4b8d8ce5231fc958268331f983 upstream.
+commit a53b27b3abeef406de92a2bb0ceb6fb4c3fb8fc4 upstream.
 
-When we do a treclaim or trecheckpoint we end up running with userspace
-PPR and DSCR values.  Currently we don't do anything special to avoid
-running with user values which could cause a severe performance
-degradation.
+Commit 4df4899 "Add power8 EBB support" included a bug in the handling
+of the FAB_CRESP_MATCH and FAB_TYPE_MATCH fields.
 
-This patch moves the PPR and DSCR save and restore around treclaim and
-trecheckpoint so that we run with user values for a much shorter period.
-More care is taken with the PPR as it's impact is greater than the DSCR.
+These values are pulled out of the event code using EVENT_THR_CTL_SHIFT,
+however we were then or'ing that value directly into MMCR1.
 
-This is similar to user exceptions, where we run HTM_MEDIUM early to
-ensure that we don't run with a userspace PPR values in the kernel.
+This meant we were failing to set the FAB fields correctly, and also
+potentially corrupting the value for PMC4SEL. Leading to no counts for
+the FAB events and incorrect counts for PMC4.
 
-Signed-off-by: Michael Neuling <mikey@neuling.org>
+The fix is simply to shift left the FAB value correctly before or'ing it
+with MMCR1.
+
+Reported-by: Sooraj Ravindran Nair <soonair3@in.ibm.com>
+Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/tm.S |   94 +++++++++++++++++++++++++++++++----------------
- 1 file changed, 63 insertions(+), 31 deletions(-)
+ arch/powerpc/perf/power8-pmu.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/arch/powerpc/kernel/tm.S
-+++ b/arch/powerpc/kernel/tm.S
-@@ -79,6 +79,11 @@ _GLOBAL(tm_abort)
- 	TABORT(R3)
- 	blr
+--- a/arch/powerpc/perf/power8-pmu.c
++++ b/arch/powerpc/perf/power8-pmu.c
+@@ -199,6 +199,7 @@
+ #define MMCR1_UNIT_SHIFT(pmc)		(60 - (4 * ((pmc) - 1)))
+ #define MMCR1_COMBINE_SHIFT(pmc)	(35 - ((pmc) - 1))
+ #define MMCR1_PMCSEL_SHIFT(pmc)		(24 - (((pmc) - 1)) * 8)
++#define MMCR1_FAB_SHIFT			36
+ #define MMCR1_DC_QUAL_SHIFT		47
+ #define MMCR1_IC_QUAL_SHIFT		46
  
-+	.section	".toc","aw"
-+DSCR_DEFAULT:
-+	.tc dscr_default[TC],dscr_default
-+
-+	.section	".text"
- 
- /* void tm_reclaim(struct thread_struct *thread,
-  *                 unsigned long orig_msr,
-@@ -187,11 +192,18 @@ dont_backup_fp:
- 	std	r1, PACATMSCRATCH(r13)
- 	ld	r1, PACAR1(r13)
- 
-+	/* Store the PPR in r11 and reset to decent value */
-+	std	r11, GPR11(r1)			/* Temporary stash */
-+	mfspr	r11, SPRN_PPR
-+	HMT_MEDIUM
-+
- 	/* Now get some more GPRS free */
- 	std	r7, GPR7(r1)			/* Temporary stash */
- 	std	r12, GPR12(r1)			/* ''   ''    ''   */
- 	ld	r12, STACK_PARAM(0)(r1)		/* Param 0, thread_struct * */
- 
-+	std	r11, THREAD_TM_PPR(r12)		/* Store PPR and free r11 */
-+
- 	addi	r7, r12, PT_CKPT_REGS		/* Thread's ckpt_regs */
- 
- 	/* Make r7 look like an exception frame so that we
-@@ -203,15 +215,19 @@ dont_backup_fp:
- 	SAVE_GPR(0, r7)				/* user r0 */
- 	SAVE_GPR(2, r7)			/* user r2 */
- 	SAVE_4GPRS(3, r7)			/* user r3-r6 */
--	SAVE_4GPRS(8, r7)			/* user r8-r11 */
-+	SAVE_GPR(8, r7)				/* user r8 */
-+	SAVE_GPR(9, r7)				/* user r9 */
-+	SAVE_GPR(10, r7)			/* user r10 */
- 	ld	r3, PACATMSCRATCH(r13)		/* user r1 */
- 	ld	r4, GPR7(r1)			/* user r7 */
--	ld	r5, GPR12(r1)			/* user r12 */
--	GET_SCRATCH0(6)				/* user r13 */
-+	ld	r5, GPR11(r1)			/* user r11 */
-+	ld	r6, GPR12(r1)			/* user r12 */
-+	GET_SCRATCH0(8)				/* user r13 */
- 	std	r3, GPR1(r7)
- 	std	r4, GPR7(r7)
--	std	r5, GPR12(r7)
--	std	r6, GPR13(r7)
-+	std	r5, GPR11(r7)
-+	std	r6, GPR12(r7)
-+	std	r8, GPR13(r7)
- 
- 	SAVE_NVGPRS(r7)				/* user r14-r31 */
- 
-@@ -234,14 +250,12 @@ dont_backup_fp:
- 	std	r6, _XER(r7)
- 
- 
--	/* ******************** TAR, PPR, DSCR ********** */
-+	/* ******************** TAR, DSCR ********** */
- 	mfspr	r3, SPRN_TAR
--	mfspr	r4, SPRN_PPR
--	mfspr	r5, SPRN_DSCR
-+	mfspr	r4, SPRN_DSCR
- 
- 	std	r3, THREAD_TM_TAR(r12)
--	std	r4, THREAD_TM_PPR(r12)
--	std	r5, THREAD_TM_DSCR(r12)
-+	std	r4, THREAD_TM_DSCR(r12)
- 
- 	/* MSR and flags:  We don't change CRs, and we don't need to alter
- 	 * MSR.
-@@ -258,7 +272,7 @@ dont_backup_fp:
- 	std	r3, THREAD_TM_TFHAR(r12)
- 	std	r4, THREAD_TM_TFIAR(r12)
- 
--	/* AMR and PPR are checkpointed too, but are unsupported by Linux. */
-+	/* AMR is checkpointed too, but is unsupported by Linux. */
- 
- 	/* Restore original MSR/IRQ state & clear TM mode */
- 	ld	r14, TM_FRAME_L0(r1)		/* Orig MSR */
-@@ -274,6 +288,12 @@ dont_backup_fp:
- 	mtcr	r4
- 	mtlr	r0
- 	ld	r2, 40(r1)
-+
-+	/* Load system default DSCR */
-+	ld	r4, DSCR_DEFAULT@toc(r2)
-+	ld	r0, 0(r4)
-+	mtspr	SPRN_DSCR, r0
-+
- 	blr
- 
- 
-@@ -358,25 +378,24 @@ dont_restore_fp:
- 
- restore_gprs:
- 
--	/* ******************** TAR, PPR, DSCR ********** */
--	ld	r4, THREAD_TM_TAR(r3)
--	ld	r5, THREAD_TM_PPR(r3)
--	ld	r6, THREAD_TM_DSCR(r3)
-+	/* ******************** CR,LR,CCR,MSR ********** */
-+	ld	r4, _CTR(r7)
-+	ld	r5, _LINK(r7)
-+	ld	r6, _CCR(r7)
-+	ld	r8, _XER(r7)
-+
-+	mtctr	r4
-+	mtlr	r5
-+	mtcr	r6
-+	mtxer	r8
- 
-+	/* ******************** TAR ******************** */
-+	ld	r4, THREAD_TM_TAR(r3)
- 	mtspr	SPRN_TAR,	r4
--	mtspr	SPRN_PPR,	r5
--	mtspr	SPRN_DSCR,	r6
- 
--	/* ******************** CR,LR,CCR,MSR ********** */
--	ld	r3, _CTR(r7)
--	ld	r4, _LINK(r7)
--	ld	r5, _CCR(r7)
--	ld	r6, _XER(r7)
--
--	mtctr	r3
--	mtlr	r4
--	mtcr	r5
--	mtxer	r6
-+	/* Load up the PPR and DSCR in GPRs only at this stage */
-+	ld	r5, THREAD_TM_DSCR(r3)
-+	ld	r6, THREAD_TM_PPR(r3)
- 
- 	/* Clear the MSR RI since we are about to change R1.  EE is already off
- 	 */
-@@ -384,19 +403,26 @@ restore_gprs:
- 	mtmsrd	r4, 1
- 
- 	REST_4GPRS(0, r7)			/* GPR0-3 */
--	REST_GPR(4, r7)				/* GPR4-6 */
--	REST_GPR(5, r7)
--	REST_GPR(6, r7)
-+	REST_GPR(4, r7)				/* GPR4 */
- 	REST_4GPRS(8, r7)			/* GPR8-11 */
- 	REST_2GPRS(12, r7)			/* GPR12-13 */
- 
- 	REST_NVGPRS(r7)				/* GPR14-31 */
- 
--	ld	r7, GPR7(r7)			/* GPR7 */
-+	/* Load up PPR and DSCR here so we don't run with user values for long
-+	 */
-+	mtspr	SPRN_DSCR, r5
-+	mtspr	SPRN_PPR, r6
-+
-+	REST_GPR(5, r7)				/* GPR5-7 */
-+	REST_GPR(6, r7)
-+	ld	r7, GPR7(r7)
- 
- 	/* Commit register state as checkpointed state: */
- 	TRECHKPT
- 
-+	HMT_MEDIUM
-+
- 	/* Our transactional state has now changed.
- 	 *
- 	 * Now just get out of here.  Transactional (current) state will be
-@@ -419,6 +445,12 @@ restore_gprs:
- 	mtcr	r4
- 	mtlr	r0
- 	ld	r2, 40(r1)
-+
-+	/* Load system default DSCR */
-+	ld	r4, DSCR_DEFAULT@toc(r2)
-+	ld	r0, 0(r4)
-+	mtspr	SPRN_DSCR, r0
-+
- 	blr
- 
- 	/* ****************************************************************** */
+@@ -388,8 +389,8 @@ static int power8_compute_mmcr(u64 event
+ 		 * the threshold bits are used for the match value.
+ 		 */
+ 		if (event_is_fab_match(event[i])) {
+-			mmcr1 |= (event[i] >> EVENT_THR_CTL_SHIFT) &
+-				  EVENT_THR_CTL_MASK;
++			mmcr1 |= ((event[i] >> EVENT_THR_CTL_SHIFT) &
++				  EVENT_THR_CTL_MASK) << MMCR1_FAB_SHIFT;
+ 		} else {
+ 			val = (event[i] >> EVENT_THR_CTL_SHIFT) & EVENT_THR_CTL_MASK;
+ 			mmcra |= val << MMCRA_THR_CTL_SHIFT;
 
 
