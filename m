@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933088Ab3JKUMX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:12:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46116 "EHLO
+	id S933073Ab3JKUMW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:12:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46113 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932324Ab3JKTlL (ORCPT
+	with ESMTP id S932399Ab3JKTlK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:41:11 -0400
+	Fri, 11 Oct 2013 15:41:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sridhar Samudrala <sri@us.ibm.com>,
+        Wannes Rombouts <wannes.rombouts@epitech.eu>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Jason Wang <jasowang@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 029/135] vxlan: Avoid creating fdb entry with NULL destination
-Date: Fri, 11 Oct 2013 12:38:30 -0700
-Message-Id: <20131011193948.399277401@linuxfoundation.org>
+Subject: [ 019/135] tuntap: correctly handle error in tun_set_iff()
+Date: Fri, 11 Oct 2013 12:38:20 -0700
+Message-Id: <20131011193947.318056163@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -27,57 +29,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sridhar Samudrala <sri@us.ibm.com>
+From: Jason Wang <jasowang@redhat.com>
 
-[ Upstream commit 2936b6ab455433a5ad14c7a1d2473afe1fa3faa7 ]
+[ Upstream commit 662ca437e714caaab855b12415d6ffd815985bc0 ]
 
-Commit afbd8bae9c798c5cdbe4439d3a50536b5438247c
-   vxlan: add implicit fdb entry for default destination
-creates an implicit fdb entry for default destination. This results
-in an invalid fdb entry if default destination is not specified.
-For ex:
-  ip link add vxlan1 type vxlan id 100
-creates the following fdb entry
-  00:00:00:00:00:00 dev vxlan1 dst 0.0.0.0 self permanent
+Commit c8d68e6be1c3b242f1c598595830890b65cea64a
+(tuntap: multiqueue support) only call free_netdev() on error in
+tun_set_iff(). This causes several issues:
 
-This patch fixes this issue by creating an fdb entry only if a
-valid default destination is specified.
+- memory of tun security were leaked
+- use after free since the flow gc timer was not deleted and the tfile
+  were not detached
 
-Signed-off-by: Sridhar Samudrala <sri@us.ibm.com>
+This patch solves the above issues.
+
+Reported-by: Wannes Rombouts <wannes.rombouts@epitech.eu>
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/vxlan.c |   20 +++++++++++---------
- 1 file changed, 11 insertions(+), 9 deletions(-)
+ drivers/net/tun.c |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
---- a/drivers/net/vxlan.c
-+++ b/drivers/net/vxlan.c
-@@ -1767,15 +1767,17 @@ static int vxlan_newlink(struct net *net
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -1691,11 +1691,11 @@ static int tun_set_iff(struct net *net,
+ 		INIT_LIST_HEAD(&tun->disabled);
+ 		err = tun_attach(tun, file);
+ 		if (err < 0)
+-			goto err_free_dev;
++			goto err_free_flow;
  
- 	SET_ETHTOOL_OPS(dev, &vxlan_ethtool_ops);
+ 		err = register_netdevice(tun->dev);
+ 		if (err < 0)
+-			goto err_free_dev;
++			goto err_detach;
  
--	/* create an fdb entry for default destination */
--	err = vxlan_fdb_create(vxlan, all_zeros_mac,
--			       vxlan->default_dst.remote_ip,
--			       NUD_REACHABLE|NUD_PERMANENT,
--			       NLM_F_EXCL|NLM_F_CREATE,
--			       vxlan->dst_port, vxlan->default_dst.remote_vni,
--			       vxlan->default_dst.remote_ifindex, NTF_SELF);
--	if (err)
--		return err;
-+	/* create an fdb entry for a valid default destination */
-+	if (vxlan->default_dst.remote_ip != htonl(INADDR_ANY)) {
-+		err = vxlan_fdb_create(vxlan, all_zeros_mac,
-+				       vxlan->default_dst.remote_ip,
-+				       NUD_REACHABLE|NUD_PERMANENT,
-+				       NLM_F_EXCL|NLM_F_CREATE,
-+				       vxlan->dst_port, vxlan->default_dst.remote_vni,
-+				       vxlan->default_dst.remote_ifindex, NTF_SELF);
-+		if (err)
-+			return err;
-+	}
+ 		if (device_create_file(&tun->dev->dev, &dev_attr_tun_flags) ||
+ 		    device_create_file(&tun->dev->dev, &dev_attr_owner) ||
+@@ -1739,7 +1739,12 @@ static int tun_set_iff(struct net *net,
+ 	strcpy(ifr->ifr_name, tun->dev->name);
+ 	return 0;
  
- 	err = register_netdevice(dev);
- 	if (err) {
+- err_free_dev:
++err_detach:
++	tun_detach_all(dev);
++err_free_flow:
++	tun_flow_uninit(tun);
++	security_tun_dev_free_security(tun->security);
++err_free_dev:
+ 	free_netdev(dev);
+ 	return err;
+ }
 
 
