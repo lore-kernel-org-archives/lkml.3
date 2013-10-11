@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756743Ab3JKTfk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:35:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45085 "EHLO
+	id S1757273Ab3JKVIn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 17:08:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45122 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752851Ab3JKTff (ORCPT
+	with ESMTP id S1752851Ab3JKTfl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:35:35 -0400
+	Fri, 11 Oct 2013 15:35:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Salam Noureddine <noureddine@aristanetworks.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 10/39] ipv6 mcast: use in6_dev_put in timer handlers instead of __in6_dev_put
-Date: Fri, 11 Oct 2013 12:34:54 -0700
-Message-Id: <20131011193212.001316820@linuxfoundation.org>
+        Nishanth Aravamudan <nacc@us.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 19/39] powerpc/iommu: Use GFP_KERNEL instead of GFP_ATOMIC in iommu_init_table()
+Date: Fri, 11 Oct 2013 12:35:03 -0700
+Message-Id: <20131011193212.974868888@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193210.843963685@linuxfoundation.org>
 References: <20131011193210.843963685@linuxfoundation.org>
@@ -27,47 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Salam Noureddine <noureddine@aristanetworks.com>
+From: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
 
-[ Upstream commit 9260d3e1013701aa814d10c8fc6a9f92bd17d643 ]
+commit 1cf389df090194a0976dc867b7fffe99d9d490cb upstream.
 
-It is possible for the timer handlers to run after the call to
-ipv6_mc_down so use in6_dev_put instead of __in6_dev_put in the
-handler function in order to do proper cleanup when the refcnt
-reaches 0. Otherwise, the refcnt can reach zero without the
-inet6_dev being destroyed and we end up leaking a reference to
-the net_device and see messages like the following,
+Under heavy (DLPAR?) stress, we tripped this panic() in
+arch/powerpc/kernel/iommu.c::iommu_init_table():
 
-unregister_netdevice: waiting for eth0 to become free. Usage count = 1
+	page = alloc_pages_node(nid, GFP_ATOMIC, get_order(sz));
+	if (!page)
+		panic("iommu_init_table: Can't allocate %ld bytes\n", sz);
 
-Tested on linux-3.4.43.
+Before the panic() we got a page allocation failure for an order-2
+allocation. There appears to be memory free, but perhaps not in the
+ATOMIC context. I looked through all the call-sites of
+iommu_init_table() and didn't see any obvious reason to need an ATOMIC
+allocation. Most call-sites in fact have an explicit GFP_KERNEL
+allocation shortly before the call to iommu_init_table(), indicating we
+are not in an atomic context. There is some indirection for some paths,
+but I didn't see any locks indicating that GFP_KERNEL is inappropriate.
 
-Signed-off-by: Salam Noureddine <noureddine@aristanetworks.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+With this change under the same conditions, we have not been able to
+reproduce the panic.
+
+Signed-off-by: Nishanth Aravamudan <nacc@us.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv6/mcast.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/ipv6/mcast.c
-+++ b/net/ipv6/mcast.c
-@@ -2159,7 +2159,7 @@ static void mld_gq_timer_expire(unsigned
+---
+ arch/powerpc/kernel/iommu.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/arch/powerpc/kernel/iommu.c
++++ b/arch/powerpc/kernel/iommu.c
+@@ -495,7 +495,7 @@ struct iommu_table *iommu_init_table(str
+ 	/* number of bytes needed for the bitmap */
+ 	sz = (tbl->it_size + 7) >> 3;
  
- 	idev->mc_gq_running = 0;
- 	mld_send_report(idev, NULL);
--	__in6_dev_put(idev);
-+	in6_dev_put(idev);
- }
- 
- static void mld_ifc_timer_expire(unsigned long data)
-@@ -2172,7 +2172,7 @@ static void mld_ifc_timer_expire(unsigne
- 		if (idev->mc_ifc_count)
- 			mld_ifc_start_timer(idev, idev->mc_maxdelay);
- 	}
--	__in6_dev_put(idev);
-+	in6_dev_put(idev);
- }
- 
- static void mld_ifc_event(struct inet6_dev *idev)
+-	page = alloc_pages_node(nid, GFP_ATOMIC, get_order(sz));
++	page = alloc_pages_node(nid, GFP_KERNEL, get_order(sz));
+ 	if (!page)
+ 		panic("iommu_init_table: Can't allocate %ld bytes\n", sz);
+ 	tbl->it_map = page_address(page);
 
 
