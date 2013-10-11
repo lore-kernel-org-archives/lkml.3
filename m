@@ -1,208 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756693Ab3JKVEY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 17:04:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45185 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756805Ab3JKTfv (ORCPT
+	id S1756742Ab3JKVEo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 17:04:44 -0400
+Received: from www.linutronix.de ([62.245.132.108]:35915 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756708Ab3JKVEl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:35:51 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lv Zheng <lv.zheng@intel.com>, Huang Ying <ying.huang@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Jonghwan Choi <jhbird.choi@samsung.com>
-Subject: [ 34/39] ACPI / IPMI: Fix atomic context requirement of ipmi_msg_handler()
-Date: Fri, 11 Oct 2013 12:35:18 -0700
-Message-Id: <20131011193214.576008632@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20131011193210.843963685@linuxfoundation.org>
-References: <20131011193210.843963685@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Fri, 11 Oct 2013 17:04:41 -0400
+Date: Fri, 11 Oct 2013 23:04:39 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        rostedt@goodmis.org, John Kacur <jkacur@redhat.com>
+Subject: [ANNOUNCE] 3.10.15-rt11
+Message-ID: <20131011210439.GA30137@linutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+Dear RT folks!
 
-------------------
+I'm pleased to announce the v3.10.15-rt11 patch set.
 
-From: Lv Zheng <lv.zheng@intel.com>
+Changes since v3.10.15-rt10
+- two genirq patches: one was already in v3.8-rt ("genirq: Set irq
+  thread to RT priority on creation"). The second ("genirq: Set the irq
+  thread policy without checking CAP_SYS_NICE") ensures that the
+  priority is also assigned if the irq is requested in user contex. Patch
+  by Thomas Pfaff.
+- A patch from Paul Gortmaker to compile PowerPC without RT
+- Four patches from Paul Gortmaker to compile with SLAB while RT is
+  disabled.
+- A fix for "sleeping from invalid context" in tty_ldisc. Reported by
+  Luis Claudio R. Goncalves.
+- A fix for "sleeping from invalid context" in the drm layer triggered
+  by the i915 driver. Reported by Luis Claudio R. Goncalves.
 
-commit 06a8566bcf5cf7db9843a82cde7a33c7bf3947d9 upstream.
+Known issues:
 
-This patch fixes the issues indicated by the test results that
-ipmi_msg_handler() is invoked in atomic context.
+      - SLAB support not working
 
-BUG: scheduling while atomic: kipmi0/18933/0x10000100
-Modules linked in: ipmi_si acpi_ipmi ...
-CPU: 3 PID: 18933 Comm: kipmi0 Tainted: G       AW    3.10.0-rc7+ #2
-Hardware name: QCI QSSC-S4R/QSSC-S4R, BIOS QSSC-S4R.QCI.01.00.0027.070120100606 07/01/2010
- ffff8838245eea00 ffff88103fc63c98 ffffffff814c4a1e ffff88103fc63ca8
- ffffffff814bfbab ffff88103fc63d28 ffffffff814c73e0 ffff88103933cbd4
- 0000000000000096 ffff88103fc63ce8 ffff88102f618000 ffff881035c01fd8
-Call Trace:
- <IRQ>  [<ffffffff814c4a1e>] dump_stack+0x19/0x1b
- [<ffffffff814bfbab>] __schedule_bug+0x46/0x54
- [<ffffffff814c73e0>] __schedule+0x83/0x59c
- [<ffffffff81058853>] __cond_resched+0x22/0x2d
- [<ffffffff814c794b>] _cond_resched+0x14/0x1d
- [<ffffffff814c6d82>] mutex_lock+0x11/0x32
- [<ffffffff8101e1e9>] ? __default_send_IPI_dest_field.constprop.0+0x53/0x58
- [<ffffffffa09e3f9c>] ipmi_msg_handler+0x23/0x166 [ipmi_si]
- [<ffffffff812bf6e4>] deliver_response+0x55/0x5a
- [<ffffffff812c0fd4>] handle_new_recv_msgs+0xb67/0xc65
- [<ffffffff81007ad1>] ? read_tsc+0x9/0x19
- [<ffffffff814c8620>] ? _raw_spin_lock_irq+0xa/0xc
- [<ffffffffa09e1128>] ipmi_thread+0x5c/0x146 [ipmi_si]
- ...
+      - The cpsw network driver shows some issues.
 
-Also Tony Camuso says:
+      - bcache is disabled.
 
- We were getting occasional "Scheduling while atomic" call traces
- during boot on some systems. Problem was first seen on a Cisco C210
- but we were able to reproduce it on a Cisco c220m3. Setting
- CONFIG_LOCKDEP and LOCKDEP_SUPPORT to 'y' exposed a lockdep around
- tx_msg_lock in acpi_ipmi.c struct acpi_ipmi_device.
+      - an ancient race (since we got sleeping spinlocks) where the
+        TASK_TRACED state is temporary replaced while waiting on a rw
+        lock and the task can't be traced.
 
- =================================
- [ INFO: inconsistent lock state ]
- 2.6.32-415.el6.x86_64-debug-splck #1
- ---------------------------------
- inconsistent {SOFTIRQ-ON-W} -> {IN-SOFTIRQ-W} usage.
- ksoftirqd/3/17 [HC0[0]:SC1[1]:HE1:SE0] takes:
-  (&ipmi_device->tx_msg_lock){+.?...}, at: [<ffffffff81337a27>] ipmi_msg_handler+0x71/0x126
- {SOFTIRQ-ON-W} state was registered at:
-   [<ffffffff810ba11c>] __lock_acquire+0x63c/0x1570
-   [<ffffffff810bb0f4>] lock_acquire+0xa4/0x120
-   [<ffffffff815581cc>] __mutex_lock_common+0x4c/0x400
-   [<ffffffff815586ea>] mutex_lock_nested+0x4a/0x60
-   [<ffffffff8133789d>] acpi_ipmi_space_handler+0x11b/0x234
-   [<ffffffff81321c62>] acpi_ev_address_space_dispatch+0x170/0x1be
+      - livelock in sem_lock(). A race fix queued for 3.10+ fixes
+        the livelock issue as well, but it's not yet in 3.10.15.
+        Should someone trigger, please look at 5e9d5275 ("ipc/sem.c:
+        fix race in sem_lock()") or wait till it hits the stable queue.
 
-The fix implemented by this change has been tested by Tony:
+The delta patch against v3.10.15-rt10 is appended below and can be found
+here:
+   https://www.kernel.org/pub/linux/kernel/projects/rt/3.10/incr/patch-3.10.15-rt10-rt11.patch.xz
 
- Tested the patch in a boot loop with lockdep debug enabled and never
- saw the problem in over 400 reboots.
+The RT patch against 3.10.15 can be found here:
 
-Reported-and-tested-by: Tony Camuso <tcamuso@redhat.com>
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-Reviewed-by: Huang Ying <ying.huang@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Cc: Jonghwan Choi <jhbird.choi@samsung.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+   https://www.kernel.org/pub/linux/kernel/projects/rt/3.10/patch-3.10.15-rt11.patch.xz
 
----
- drivers/acpi/acpi_ipmi.c |   24 ++++++++++++++----------
- 1 file changed, 14 insertions(+), 10 deletions(-)
+The split quilt queue is available at:
 
---- a/drivers/acpi/acpi_ipmi.c
-+++ b/drivers/acpi/acpi_ipmi.c
-@@ -39,6 +39,7 @@
- #include <linux/ipmi.h>
- #include <linux/device.h>
- #include <linux/pnp.h>
-+#include <linux/spinlock.h>
+   https://www.kernel.org/pub/linux/kernel/projects/rt/3.10/patches-3.10.15-rt11.tar.xz
+
+Sebastian
+
+diff --git a/arch/powerpc/mm/fault.c b/arch/powerpc/mm/fault.c
+index a47400d..87f730e 100644
+--- a/arch/powerpc/mm/fault.c
++++ b/arch/powerpc/mm/fault.c
+@@ -264,7 +264,7 @@ int __kprobes do_page_fault(struct pt_regs *regs, unsigned long address,
+ 	if (!arch_irq_disabled_regs(regs))
+ 		local_irq_enable();
  
- MODULE_AUTHOR("Zhao Yakui");
- MODULE_DESCRIPTION("ACPI IPMI Opregion driver");
-@@ -57,7 +58,7 @@ struct acpi_ipmi_device {
- 	struct list_head head;
- 	/* the IPMI request message list */
- 	struct list_head tx_msg_list;
--	struct mutex	tx_msg_lock;
-+	spinlock_t	tx_msg_lock;
- 	acpi_handle handle;
- 	struct pnp_dev *pnp_dev;
- 	ipmi_user_t	user_interface;
-@@ -147,6 +148,7 @@ static void acpi_format_ipmi_msg(struct
- 	struct kernel_ipmi_msg *msg;
- 	struct acpi_ipmi_buffer *buffer;
- 	struct acpi_ipmi_device *device;
-+	unsigned long flags;
+-	if (in_atomic() || mm == NULL || current->pagefault_disabled) {
++	if (in_atomic() || mm == NULL || pagefault_disabled()) {
+ 		if (!user_mode(regs)) {
+ 			rc = SIGSEGV;
+ 			goto bail;
+diff --git a/drivers/gpu/drm/drm_irq.c b/drivers/gpu/drm/drm_irq.c
+index f92da0a..434ea84 100644
+--- a/drivers/gpu/drm/drm_irq.c
++++ b/drivers/gpu/drm/drm_irq.c
+@@ -628,11 +628,6 @@ int drm_calc_vbltimestamp_from_scanoutpos(struct drm_device *dev, int crtc,
+ 	 * code gets preempted or delayed for some reason.
+ 	 */
+ 	for (i = 0; i < DRM_TIMESTAMP_MAXRETRIES; i++) {
+-		/* Disable preemption to make it very likely to
+-		 * succeed in the first iteration even on PREEMPT_RT kernel.
+-		 */
+-		preempt_disable();
+-
+ 		/* Get system timestamp before query. */
+ 		stime = ktime_get();
  
- 	msg = &tx_msg->tx_message;
- 	/*
-@@ -177,10 +179,10 @@ static void acpi_format_ipmi_msg(struct
+@@ -644,8 +639,6 @@ int drm_calc_vbltimestamp_from_scanoutpos(struct drm_device *dev, int crtc,
+ 		if (!drm_timestamp_monotonic)
+ 			mono_time_offset = ktime_get_monotonic_offset();
  
- 	/* Get the msgid */
- 	device = tx_msg->device;
--	mutex_lock(&device->tx_msg_lock);
-+	spin_lock_irqsave(&device->tx_msg_lock, flags);
- 	device->curr_msgid++;
- 	tx_msg->tx_msgid = device->curr_msgid;
--	mutex_unlock(&device->tx_msg_lock);
-+	spin_unlock_irqrestore(&device->tx_msg_lock, flags);
+-		preempt_enable();
+-
+ 		/* Return as no-op if scanout query unsupported or failed. */
+ 		if (!(vbl_status & DRM_SCANOUTPOS_VALID)) {
+ 			DRM_DEBUG("crtc %d : scanoutpos query failed [%d].\n",
+diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
+index 1afe192..bc4ffe4 100644
+--- a/drivers/tty/tty_ldisc.c
++++ b/drivers/tty/tty_ldisc.c
+@@ -197,9 +197,10 @@ static inline void tty_ldisc_put(struct tty_ldisc *ld)
+ 	WARN_ON(!atomic_dec_and_test(&ld->users));
+ 
+ 	ld->ops->refcount--;
++	raw_spin_unlock_irqrestore(&tty_ldisc_lock, flags);
++
+ 	module_put(ld->ops->owner);
+ 	kfree(ld);
+-	raw_spin_unlock_irqrestore(&tty_ldisc_lock, flags);
  }
  
- static void acpi_format_ipmi_response(struct acpi_ipmi_msg *msg,
-@@ -242,6 +244,7 @@ static void ipmi_msg_handler(struct ipmi
- 	int msg_found = 0;
- 	struct acpi_ipmi_msg *tx_msg;
- 	struct pnp_dev *pnp_dev = ipmi_device->pnp_dev;
-+	unsigned long flags;
+ static void *tty_ldiscs_seq_start(struct seq_file *m, loff_t *pos)
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index c5c19ec..7d59fb1f9 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -923,9 +923,6 @@ static void irq_thread_dtor(struct callback_head *unused)
+ static int irq_thread(void *data)
+ {
+ 	struct callback_head on_exit_work;
+-	static const struct sched_param param = {
+-		.sched_priority = MAX_USER_RT_PRIO/2,
+-	};
+ 	struct irqaction *action = data;
+ 	struct irq_desc *desc = irq_to_desc(action->irq);
+ 	irqreturn_t (*handler_fn)(struct irq_desc *desc,
+@@ -937,8 +934,6 @@ static int irq_thread(void *data)
+ 	else
+ 		handler_fn = irq_thread_fn;
  
- 	if (msg->user != ipmi_device->user_interface) {
- 		dev_warn(&pnp_dev->dev, "Unexpected response is returned. "
-@@ -250,7 +253,7 @@ static void ipmi_msg_handler(struct ipmi
- 		ipmi_free_recv_msg(msg);
- 		return;
- 	}
--	mutex_lock(&ipmi_device->tx_msg_lock);
-+	spin_lock_irqsave(&ipmi_device->tx_msg_lock, flags);
- 	list_for_each_entry(tx_msg, &ipmi_device->tx_msg_list, head) {
- 		if (msg->msgid == tx_msg->tx_msgid) {
- 			msg_found = 1;
-@@ -258,7 +261,7 @@ static void ipmi_msg_handler(struct ipmi
+-	sched_setscheduler(current, SCHED_FIFO, &param);
+-
+ 	init_task_work(&on_exit_work, irq_thread_dtor);
+ 	task_work_add(current, &on_exit_work, false);
+ 
+@@ -1039,6 +1034,9 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
+ 	 */
+ 	if (new->thread_fn && !nested) {
+ 		struct task_struct *t;
++		static const struct sched_param param = {
++			.sched_priority = MAX_USER_RT_PRIO/2,
++		};
+ 
+ 		t = kthread_create(irq_thread, new, "irq/%d-%s", irq,
+ 				   new->name);
+@@ -1046,6 +1044,9 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
+ 			ret = PTR_ERR(t);
+ 			goto out_mput;
  		}
- 	}
- 
--	mutex_unlock(&ipmi_device->tx_msg_lock);
-+	spin_unlock_irqrestore(&ipmi_device->tx_msg_lock, flags);
- 	if (!msg_found) {
- 		dev_warn(&pnp_dev->dev, "Unexpected response (msg id %ld) is "
- 			"returned.\n", msg->msgid);
-@@ -378,6 +381,7 @@ acpi_ipmi_space_handler(u32 function, ac
- 	struct acpi_ipmi_device *ipmi_device = handler_context;
- 	int err, rem_time;
- 	acpi_status status;
-+	unsigned long flags;
- 	/*
- 	 * IPMI opregion message.
- 	 * IPMI message is firstly written to the BMC and system software
-@@ -395,9 +399,9 @@ acpi_ipmi_space_handler(u32 function, ac
- 		return AE_NO_MEMORY;
- 
- 	acpi_format_ipmi_msg(tx_msg, address, value);
--	mutex_lock(&ipmi_device->tx_msg_lock);
-+	spin_lock_irqsave(&ipmi_device->tx_msg_lock, flags);
- 	list_add_tail(&tx_msg->head, &ipmi_device->tx_msg_list);
--	mutex_unlock(&ipmi_device->tx_msg_lock);
-+	spin_unlock_irqrestore(&ipmi_device->tx_msg_lock, flags);
- 	err = ipmi_request_settime(ipmi_device->user_interface,
- 					&tx_msg->addr,
- 					tx_msg->tx_msgid,
-@@ -413,9 +417,9 @@ acpi_ipmi_space_handler(u32 function, ac
- 	status = AE_OK;
- 
- end_label:
--	mutex_lock(&ipmi_device->tx_msg_lock);
-+	spin_lock_irqsave(&ipmi_device->tx_msg_lock, flags);
- 	list_del(&tx_msg->head);
--	mutex_unlock(&ipmi_device->tx_msg_lock);
-+	spin_unlock_irqrestore(&ipmi_device->tx_msg_lock, flags);
- 	kfree(tx_msg);
- 	return status;
++
++		sched_setscheduler_nocheck(t, SCHED_FIFO, &param);
++
+ 		/*
+ 		 * We keep the reference to the task struct even if
+ 		 * the thread dies to avoid that the interrupt code
+diff --git a/localversion-rt b/localversion-rt
+index d79dde6..05c35cb 100644
+--- a/localversion-rt
++++ b/localversion-rt
+@@ -1 +1 @@
+--rt10
++-rt11
+diff --git a/mm/slab.c b/mm/slab.c
+index 0a3d6d3..1e9330f 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -700,6 +700,12 @@ static inline struct array_cache *cpu_cache_get(struct kmem_cache *cachep)
+ 	return cachep->array[smp_processor_id()];
  }
-@@ -457,7 +461,7 @@ static void acpi_add_ipmi_device(struct
  
- 	INIT_LIST_HEAD(&ipmi_device->head);
++static inline struct array_cache *cpu_cache_get_on_cpu(struct kmem_cache *cachep,
++						       int cpu)
++{
++	return cachep->array[cpu];
++}
++
+ static size_t slab_mgmt_size(size_t nr_objs, size_t align)
+ {
+ 	return ALIGN(sizeof(struct slab)+nr_objs*sizeof(kmem_bufctl_t), align);
+@@ -1233,11 +1239,11 @@ static int init_cache_node_node(int node)
+ 			cachep->node[node] = n;
+ 		}
  
--	mutex_init(&ipmi_device->tx_msg_lock);
-+	spin_lock_init(&ipmi_device->tx_msg_lock);
- 	INIT_LIST_HEAD(&ipmi_device->tx_msg_list);
- 	ipmi_install_space_handler(ipmi_device);
+-		local_spin_lock_irq(slab_lock, &cachep->nodelists[node]->list_lock);
++		local_spin_lock_irq(slab_lock, &cachep->node[node]->list_lock);
+ 		cachep->node[node]->free_limit =
+ 			(1 + nr_cpus_node(node)) *
+ 			cachep->batchcount + cachep->num;
+-		local_spin_unlock_irq(slab_lock, &cachep->nodelists[node]->list_lock);
++		local_spin_unlock_irq(slab_lock, &cachep->node[node]->list_lock);
+ 	}
+ 	return 0;
+ }
+@@ -2517,7 +2523,7 @@ static void drain_array(struct kmem_cache *cachep, struct kmem_cache_node *n,
+ 			struct array_cache *ac,
+ 			int force, int node);
  
-
-
+-static void __do_drain(void *arg, unsigned int cpu)+static void __do_drain(void *arg, unsigned int cpu)
++static void __do_drain(void *arg, unsigned int cpu)
+ {
+ 	struct kmem_cache *cachep = arg;
+ 	struct array_cache *ac;
+@@ -4058,7 +4064,7 @@ static int __do_tune_cpucache(struct kmem_cache *cachep, int limit,
+ 				    &cachep->node[cpu_to_mem(i)]->list_lock);
+ 		free_block(cachep, ccold->entry, ccold->avail, cpu_to_mem(i));
+ 
+-		unlock_l3_and_free_delayed(&cachep->nodelists[cpu_to_mem(i)]->list_lock);
++		unlock_l3_and_free_delayed(&cachep->node[cpu_to_mem(i)]->list_lock);
+ 		kfree(ccold);
+ 	}
+ 	kfree(new);
+diff --git a/mm/slab.h b/mm/slab.h
+index 2e6c8b7..fc3c097 100644
+--- a/mm/slab.h
++++ b/mm/slab.h
+@@ -247,7 +247,11 @@ static inline struct kmem_cache *cache_from_obj(struct kmem_cache *s, void *x)
+  * The slab lists for all objects.
+  */
+ struct kmem_cache_node {
++#ifdef CONFIG_SLAB
++	spinlock_t list_lock;
++#else
+ 	raw_spinlock_t list_lock;
++#endif
+ 
+ #ifdef CONFIG_SLAB
+ 	struct list_head slabs_partial;	/* partial list first, better asm code */
