@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964784Ab3JKTos (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:44:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46576 "EHLO
+	id S964795Ab3JKTpM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:45:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46572 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932860Ab3JKTmX (ORCPT
+	with ESMTP id S932852Ab3JKTmW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:42:23 -0400
+	Fri, 11 Oct 2013 15:42:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Josef Bacik <jbacik@fusionio.com>,
+        Emil Karlson <jekarlson@gmail.com>, Josef Bacik <jbacik@fusionio.com>,
         Chris Mason <chris.mason@fusionio.com>
-Subject: [ 129/135] Btrfs: remove ourselves from the cluster list under lock
-Date: Fri, 11 Oct 2013 12:40:10 -0700
-Message-Id: <20131011193959.290585404@linuxfoundation.org>
+Subject: [ 128/135] Btrfs: skip subvol entries when checking if weve created a dir already
+Date: Fri, 11 Oct 2013 12:40:09 -0700
+Message-Id: <20131011193959.174784517@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -29,40 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Josef Bacik <jbacik@fusionio.com>
 
-commit b8d0c69b9469ffd33df30fee3e990f2d4aa68a09 upstream.
+commit a05254143cd183b18002cbba7759a1e4629aa762 upstream.
 
-A user was reporting weird warnings from btrfs_put_delayed_ref() and I noticed
-that we were doing this list_del_init() on our head ref outside of
-delayed_refs->lock.  This is a problem if we have people still on the list, we
-could end up modifying old pointers and such.  Fix this by removing us from the
-list before we do our run_delayed_ref on our head ref.  Thanks,
+We have logic to see if we've already created a parent directory by check to see
+if an inode inside of that directory has a lower inode number than the one we
+are currently processing.  The logic is that if there is a lower inode number
+then we would have had to made sure the directory was created at that previous
+point.  The problem is that subvols inode numbers count from the lowest objectid
+in the root tree, which may be less than our current progress.  So just skip if
+our dir item key is a root item.  This fixes the original test and the xfstest
+version I made that added an extra subvol create.  Thanks,
 
+Reported-by: Emil Karlson <jekarlson@gmail.com>
 Signed-off-by: Josef Bacik <jbacik@fusionio.com>
 Signed-off-by: Chris Mason <chris.mason@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/extent-tree.c |    3 ++-
+ fs/btrfs/send.c |    3 ++-
  1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/fs/btrfs/extent-tree.c
-+++ b/fs/btrfs/extent-tree.c
-@@ -2403,6 +2403,8 @@ static noinline int run_clustered_refs(s
- 			default:
- 				WARN_ON(1);
- 			}
-+		} else {
-+			list_del_init(&locked_ref->cluster);
- 		}
- 		spin_unlock(&delayed_refs->lock);
+--- a/fs/btrfs/send.c
++++ b/fs/btrfs/send.c
+@@ -2519,7 +2519,8 @@ static int did_create_dir(struct send_ct
+ 		di = btrfs_item_ptr(eb, slot, struct btrfs_dir_item);
+ 		btrfs_dir_item_key_to_cpu(eb, di, &di_key);
  
-@@ -2425,7 +2427,6 @@ static noinline int run_clustered_refs(s
- 		 * list before we release it.
- 		 */
- 		if (btrfs_delayed_ref_is_head(ref)) {
--			list_del_init(&locked_ref->cluster);
- 			btrfs_delayed_ref_unlock(locked_ref);
- 			locked_ref = NULL;
+-		if (di_key.objectid < sctx->send_progress) {
++		if (di_key.type != BTRFS_ROOT_ITEM_KEY &&
++		    di_key.objectid < sctx->send_progress) {
+ 			ret = 1;
+ 			goto out;
  		}
 
 
