@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755150Ab3JKVJ1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 17:09:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45112 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752654Ab3JKTfj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756652Ab3JKTfj (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 11 Oct 2013 15:35:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45077 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752654Ab3JKTfd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 15:35:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Mark Brown <broonie@linaro.org>
-Subject: [ 17/39] ASoC: max98095: a couple array underflows
-Date: Fri, 11 Oct 2013 12:35:01 -0700
-Message-Id: <20131011193212.757480372@linuxfoundation.org>
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 08/39] bridge: Clamp forward_delay when enabling STP
+Date: Fri, 11 Oct 2013 12:34:52 -0700
+Message-Id: <20131011193211.794611121@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193210.843963685@linuxfoundation.org>
 References: <20131011193210.843963685@linuxfoundation.org>
@@ -27,41 +27,106 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Herbert Xu <herbert@gondor.apana.org.au>
 
-commit f8d7b13e14357ed19d2ca2799539600418dc3939 upstream.
+[ Upstream commit be4f154d5ef0ca147ab6bcd38857a774133f5450 ]
 
-The ->put() function are called from snd_ctl_elem_write() with user
-supplied data.  The limit checks here could underflow leading to a
-crash.
+At some point limits were added to forward_delay.  However, the
+limits are only enforced when STP is enabled.  This created a
+scenario where you could have a value outside the allowed range
+while STP is disabled, which then stuck around even after STP
+is enabled.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+This patch fixes this by clamping the value when we enable STP.
+
+I had to move the locking around a bit to ensure that there is
+no window where someone could insert a value outside the range
+while we're in the middle of enabling STP.
+
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- sound/soc/codecs/max98095.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/bridge/br_private.h |    1 +
+ net/bridge/br_stp.c     |   21 +++++++++++++++------
+ net/bridge/br_stp_if.c  |   12 ++++++++++--
+ 3 files changed, 26 insertions(+), 8 deletions(-)
 
---- a/sound/soc/codecs/max98095.c
-+++ b/sound/soc/codecs/max98095.c
-@@ -1865,7 +1865,7 @@ static int max98095_put_eq_enum(struct s
- 	struct max98095_pdata *pdata = max98095->pdata;
- 	int channel = max98095_get_eq_channel(kcontrol->id.name);
- 	struct max98095_cdata *cdata;
--	int sel = ucontrol->value.integer.value[0];
-+	unsigned int sel = ucontrol->value.integer.value[0];
- 	struct max98095_eq_cfg *coef_set;
- 	int fs, best, best_val, i;
- 	int regmask, regsave;
-@@ -2011,7 +2011,7 @@ static int max98095_put_bq_enum(struct s
- 	struct max98095_pdata *pdata = max98095->pdata;
- 	int channel = max98095_get_bq_channel(kcontrol->id.name);
- 	struct max98095_cdata *cdata;
--	int sel = ucontrol->value.integer.value[0];
-+	unsigned int sel = ucontrol->value.integer.value[0];
- 	struct max98095_biquad_cfg *coef_set;
- 	int fs, best, best_val, i;
- 	int regmask, regsave;
+--- a/net/bridge/br_private.h
++++ b/net/bridge/br_private.h
+@@ -492,6 +492,7 @@ extern struct net_bridge_port *br_get_po
+ extern void br_init_port(struct net_bridge_port *p);
+ extern void br_become_designated_port(struct net_bridge_port *p);
+ 
++extern void __br_set_forward_delay(struct net_bridge *br, unsigned long t);
+ extern int br_set_forward_delay(struct net_bridge *br, unsigned long x);
+ extern int br_set_hello_time(struct net_bridge *br, unsigned long x);
+ extern int br_set_max_age(struct net_bridge *br, unsigned long x);
+--- a/net/bridge/br_stp.c
++++ b/net/bridge/br_stp.c
+@@ -517,18 +517,27 @@ int br_set_max_age(struct net_bridge *br
+ 
+ }
+ 
++void __br_set_forward_delay(struct net_bridge *br, unsigned long t)
++{
++	br->bridge_forward_delay = t;
++	if (br_is_root_bridge(br))
++		br->forward_delay = br->bridge_forward_delay;
++}
++
+ int br_set_forward_delay(struct net_bridge *br, unsigned long val)
+ {
+ 	unsigned long t = clock_t_to_jiffies(val);
++	int err = -ERANGE;
+ 
++	spin_lock_bh(&br->lock);
+ 	if (br->stp_enabled != BR_NO_STP &&
+ 	    (t < BR_MIN_FORWARD_DELAY || t > BR_MAX_FORWARD_DELAY))
+-		return -ERANGE;
++		goto unlock;
+ 
+-	spin_lock_bh(&br->lock);
+-	br->bridge_forward_delay = t;
+-	if (br_is_root_bridge(br))
+-		br->forward_delay = br->bridge_forward_delay;
++	__br_set_forward_delay(br, t);
++	err = 0;
++
++unlock:
+ 	spin_unlock_bh(&br->lock);
+-	return 0;
++	return err;
+ }
+--- a/net/bridge/br_stp_if.c
++++ b/net/bridge/br_stp_if.c
+@@ -126,6 +126,14 @@ static void br_stp_start(struct net_brid
+ 	char *envp[] = { NULL };
+ 
+ 	r = call_usermodehelper(BR_STP_PROG, argv, envp, UMH_WAIT_PROC);
++
++	spin_lock_bh(&br->lock);
++
++	if (br->bridge_forward_delay < BR_MIN_FORWARD_DELAY)
++		__br_set_forward_delay(br, BR_MIN_FORWARD_DELAY);
++	else if (br->bridge_forward_delay < BR_MAX_FORWARD_DELAY)
++		__br_set_forward_delay(br, BR_MAX_FORWARD_DELAY);
++
+ 	if (r == 0) {
+ 		br->stp_enabled = BR_USER_STP;
+ 		br_debug(br, "userspace STP started\n");
+@@ -134,10 +142,10 @@ static void br_stp_start(struct net_brid
+ 		br_debug(br, "using kernel STP\n");
+ 
+ 		/* To start timers on any ports left in blocking */
+-		spin_lock_bh(&br->lock);
+ 		br_port_state_selection(br);
+-		spin_unlock_bh(&br->lock);
+ 	}
++
++	spin_unlock_bh(&br->lock);
+ }
+ 
+ static void br_stp_stop(struct net_bridge *br)
 
 
