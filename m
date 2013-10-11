@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756659Ab3JKUog (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:44:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45553 "EHLO
+	id S1758777Ab3JKTjp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:39:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45505 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758793Ab3JKTjr (ORCPT
+	with ESMTP id S1755431Ab3JKTjk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:39:47 -0400
+	Fri, 11 Oct 2013 15:39:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sonic Zhang <sonic.zhang@analog.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Nikolay Aleksandrov <nikolay@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 016/110] netpoll: Should handle ETH_P_ARP other than ETH_P_IP in netpoll_neigh_reply
-Date: Fri, 11 Oct 2013 12:37:56 -0700
-Message-Id: <20131011193809.379513664@linuxfoundation.org>
+Subject: [ 013/110] net: flow_dissector: fix thoff for IPPROTO_AH
+Date: Fri, 11 Oct 2013 12:37:53 -0700
+Message-Id: <20131011193809.058127505@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
 References: <20131011193807.584188672@linuxfoundation.org>
@@ -27,32 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sonic Zhang <sonic.zhang@analog.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit b0dd663b60944a3ce86430fa35549fb37968bda0 ]
+[ Upstream commit b86783587b3d1d552326d955acee37eac48800f1 ]
 
-The received ARP request type in the Ethernet packet head is ETH_P_ARP other than ETH_P_IP.
+In commit 8ed781668dd49 ("flow_keys: include thoff into flow_keys for
+later usage"), we missed that existing code was using nhoff as a
+temporary variable that could not always contain transport header
+offset.
 
-[ Bug introduced by commit b7394d2429c198b1da3d46ac39192e891029ec0f
-  ("netpoll: prepare for ipv6") ]
+This is not a problem for TCP/UDP because port offset (@poff)
+is 0 for these protocols.
 
-Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Daniel Borkmann <dborkman@redhat.com>
+Cc: Nikolay Aleksandrov <nikolay@redhat.com>
+Acked-by: Nikolay Aleksandrov <nikolay@redhat.com>
+Acked-by: Daniel Borkmann <dborkman@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/netpoll.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/core/flow_dissector.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/core/netpoll.c
-+++ b/net/core/netpoll.c
-@@ -550,7 +550,7 @@ static void netpoll_neigh_reply(struct s
- 		return;
+--- a/net/core/flow_dissector.c
++++ b/net/core/flow_dissector.c
+@@ -149,8 +149,8 @@ ipv6:
+ 	if (poff >= 0) {
+ 		__be32 *ports, _ports;
  
- 	proto = ntohs(eth_hdr(skb)->h_proto);
--	if (proto == ETH_P_IP) {
-+	if (proto == ETH_P_ARP) {
- 		struct arphdr *arp;
- 		unsigned char *arp_ptr;
- 		/* No arp on this interface */
+-		nhoff += poff;
+-		ports = skb_header_pointer(skb, nhoff, sizeof(_ports), &_ports);
++		ports = skb_header_pointer(skb, nhoff + poff,
++					   sizeof(_ports), &_ports);
+ 		if (ports)
+ 			flow->ports = *ports;
+ 	}
 
 
