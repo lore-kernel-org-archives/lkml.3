@@ -1,140 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755575Ab3JKPJE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 11:09:04 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:48197 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751921Ab3JKPJC (ORCPT
+	id S1757921Ab3JKPKR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 11:10:17 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:50160 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752208Ab3JKPKO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 11:09:02 -0400
+	Fri, 11 Oct 2013 11:10:14 -0400
+Message-ID: <525814A9.7060106@ti.com>
+Date: Fri, 11 Oct 2013 18:09:29 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-In-Reply-To: <20131011090153.7760db6b@gandalf.local.home>
-References: <20131010165905.7815defa@gandalf.local.home> <18685640.N2BnVjDmHD@vostro.rjw.lan>
- <CA+55aFwqf7kkh0dy6AhCvB87XYkQ03YUpsYEDJmnkiRe8GQfMQ@mail.gmail.com>
- <2096980.ZtIelfoX39@vostro.rjw.lan> <20131011090153.7760db6b@gandalf.local.home>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 11 Oct 2013 09:08:40 -0600
-Message-ID: <CAErSpo7MWaJpY3pw1Db0J6vLZd22LcxReRxs3i2CUZb6qMexXw@mail.gmail.com>
-Subject: Re: [BUG] WARN_ON(!context) in drivers/pci/hotplug/acpiphp_glue.c
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Kishon Vijay Abraham I <kishon@ti.com>
+CC: <balbi@ti.com>, <bcousson@baylibre.com>, <tony@atomide.com>,
+        <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <linux@arm.linux.org.uk>,
+        <grant.likely@linaro.org>, <s.nawrocki@samsung.com>,
+        <galak@codeaurora.org>, <swarren@wwwdotorg.org>,
+        <ian.campbell@citrix.com>, <rob@landley.net>, <george.cherian@ti.com>,
+        <gregkh@linuxfoundation.org>, <linux-doc@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/7] usb: dwc3: adapt dwc3 core to use Generic PHY Framework
+References: <1378136591-7463-1-git-send-email-kishon@ti.com> <1378136591-7463-3-git-send-email-kishon@ti.com>
+In-Reply-To: <1378136591-7463-3-git-send-email-kishon@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 11, 2013 at 7:01 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Fri, 11 Oct 2013 13:13:47 +0200
-> "Rafael J. Wysocki" <rjw@rjwysocki.net> wrote:
->>
->> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->> Subject: ACPI / hotplug / PCI: Accept coexistence with native PCIe hotplug
->>
->> Allow ACPIPHP (ACPI-based PCI hotplug) to handle event signaling for
->> devices that have already been claimed by the native PCIe hotplug
->> (pciehp).
->>
->> The ACPI hotplug events are essentially re-scan, remove and eject
->> requests.  Re-scan and remove should work regardless, because they
->> may be triggered by user space via sysfs and the ACPI eject (_EJ0)
->> should work if the BIOS wants us to use it.  There may be an issue
->> if the BIOS signals ACPI eject and wants us to use the native eject,
->> but that doesn't work without this change anyway.
->>
->> This change prevents the WARN_ON() in acpiphp_enumerate_slots() from
->> triggering unnecessarily for bridges whose parents are managed by
->> pciehp.
->>
->
-> Reported-by: Steven Rostedt <rostedt@goodmis.org>
-> Tested-by: Steven Rostedt <rostedt@goodmis.org>
+Hi,
 
-I opened https://bugzilla.kernel.org/show_bug.cgi?id=62831 for this
-issue because I don't think this question of how to coordinate acpiphp
-and pciehp is completely resolved, and I think it might be interesting
-to have the complete dmesg, acpidump, and "lspci -vv" output attached
-there for future reference.
+On 09/02/2013 06:43 PM, Kishon Vijay Abraham I wrote:
+> Adapted dwc3 core to use the Generic PHY Framework. So for init, exit,
+> power_on and power_off the following APIs are used phy_init(), phy_exit(),
+> phy_power_on() and phy_power_off().
+> 
+> However using the old USB phy library wont be removed till the PHYs of all
+> other SoC's using dwc3 core is adapted to the Generic PHY Framework.
+> 
+> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+> ---
+>  Documentation/devicetree/bindings/usb/dwc3.txt |    6 ++-
+>  drivers/usb/dwc3/Kconfig                       |    1 +
+>  drivers/usb/dwc3/core.c                        |   49 ++++++++++++++++++++++++
+>  drivers/usb/dwc3/core.h                        |    7 ++++
+>  4 files changed, 61 insertions(+), 2 deletions(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/usb/dwc3.txt b/Documentation/devicetree/bindings/usb/dwc3.txt
+> index e807635..471366d 100644
+> --- a/Documentation/devicetree/bindings/usb/dwc3.txt
+> +++ b/Documentation/devicetree/bindings/usb/dwc3.txt
+> @@ -6,11 +6,13 @@ Required properties:
+>   - compatible: must be "snps,dwc3"
+>   - reg : Address and length of the register set for the device
+>   - interrupts: Interrupts used by the dwc3 controller.
+> +
+> +Optional properties:
+>   - usb-phy : array of phandle for the PHY device.  The first element
+>     in the array is expected to be a handle to the USB2/HS PHY and
+>     the second element is expected to be a handle to the USB3/SS PHY
+> -
+> -Optional properties:
+> + - phys: from the *Generic PHY* bindings
+> + - phy-names: from the *Generic PHY* bindings
+>   - tx-fifo-resize: determines if the FIFO *has* to be reallocated.
+>  
+>  This is usually a subnode to DWC3 glue to which it is connected.
+> diff --git a/drivers/usb/dwc3/Kconfig b/drivers/usb/dwc3/Kconfig
+> index cfc16dd..ad7ce83 100644
+> --- a/drivers/usb/dwc3/Kconfig
+> +++ b/drivers/usb/dwc3/Kconfig
+> @@ -3,6 +3,7 @@ config USB_DWC3
+>  	depends on (USB || USB_GADGET) && GENERIC_HARDIRQS && HAS_DMA
+>  	depends on EXTCON
+>  	select USB_PHY
+> +	select GENERIC_PHY
+>  	select USB_XHCI_PLATFORM if USB_SUPPORT && USB_XHCI_HCD
+>  	help
+>  	  Say Y or M here if your system has a Dual Role SuperSpeed
+> diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
+> index 428c29e..485d365 100644
+> --- a/drivers/usb/dwc3/core.c
+> +++ b/drivers/usb/dwc3/core.c
+> @@ -82,6 +82,12 @@ static void dwc3_core_soft_reset(struct dwc3 *dwc)
+>  
+>  	usb_phy_init(dwc->usb2_phy);
+>  	usb_phy_init(dwc->usb3_phy);
 
-Steve, I tried to attach the dmesg you mentioned yesterday in IRC, but
-the link didn't work for me.  Would you mind attaching this info?
+How about adding
++	if (dwc->usb2_phy)
++		usb_phy_init(dwc->usb2_phy);
++	if (dwc->usb3_phy)
++		usb_phy_init(dwc->usb3_phy);
 
-Rafael, I assume you'll probably merge this through your tree.  Would
-you mind adding a reference to this bugzilla in the changelog?  I do
-have a "convert to dynamic debug" acpiphp patch in my "next" branch
-(bd950799), but I suspect you have several more interesting ones in
-your tree.
+both usb phy and generic phy shouldn't be present together.
 
-Bjorn
+> +
+> +	if (dwc->usb2_generic_phy)
+> +		phy_init(dwc->usb2_generic_phy);
+> +	if (dwc->usb3_generic_phy)
+> +		phy_init(dwc->usb3_generic_phy);
+> +
+>  	mdelay(100);
+>  
+>  	/* Clear USB3 PHY reset */
+> @@ -343,6 +349,11 @@ static void dwc3_core_exit(struct dwc3 *dwc)
+>  {
+>  	usb_phy_shutdown(dwc->usb2_phy);
+>  	usb_phy_shutdown(dwc->usb3_phy);
 
->> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->> ---
->>  drivers/pci/hotplug/acpiphp_glue.c |   32 ++++++++++++++++++++++++++------
->>  1 file changed, 26 insertions(+), 6 deletions(-)
->>
->> Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
->> ===================================================================
->> --- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
->> +++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
->> @@ -259,6 +259,31 @@ static void acpiphp_dock_release(void *d
->>       put_bridge(context->func.parent);
->>  }
->>
->> +/**
->> + * slot_should_be_exposed - Check whether or not to expose a slot to userland.
->> + * @bridge: ACPIPHP bridge the slot belongs to.
->> + * @handle: ACPI handle of a device in the slot.
->> + */
->> +static inline bool slot_should_be_exposed(struct acpiphp_bridge *bridge,
->> +                                       acpi_handle handle)
->> +{
->> +     struct pci_bus *pbus = bridge->pci_bus;
->> +     struct pci_dev *pdev = bridge->pci_dev;
->> +
->> +     /*
->> +      * Do not expose slots whose bridges are managed by pciehp, because they
->> +      * will be exposed to user space by the pciehp driver.
->> +      */
->> +     if (pdev && device_is_managed_by_native_pciehp(pdev))
->> +             return false;
->> +
->> +     /*
->> +      * Expose slots for devices with either _EJ0 or _RMV and for devices
->> +      * on docking stations.
->> +      */
->> +     return acpi_pci_check_ejectable(pbus, handle) || is_dock_device(handle);
->> +}
->> +
->>  /* callback routine to register each ACPI PCI slot object */
->>  static acpi_status register_slot(acpi_handle handle, u32 lvl, void *data,
->>                                void **rv)
->> @@ -271,12 +296,8 @@ static acpi_status register_slot(acpi_ha
->>       unsigned long long adr;
->>       int device, function;
->>       struct pci_bus *pbus = bridge->pci_bus;
->> -     struct pci_dev *pdev = bridge->pci_dev;
->>       u32 val;
->>
->> -     if (pdev && device_is_managed_by_native_pciehp(pdev))
->> -             return AE_OK;
->> -
->>       status = acpi_evaluate_integer(handle, "_ADR", NULL, &adr);
->>       if (ACPI_FAILURE(status)) {
->>               acpi_handle_warn(handle, "can't evaluate _ADR (%#x)\n", status);
->> @@ -325,8 +346,7 @@ static acpi_status register_slot(acpi_ha
->>
->>       list_add_tail(&slot->node, &bridge->slots);
->>
->> -     /* Register slots for ejectable funtions only. */
->> -     if (acpi_pci_check_ejectable(pbus, handle)  || is_dock_device(handle)) {
->> +     if (slot_should_be_exposed(bridge, handle)) {
->>               unsigned long long sun;
->>               int retval;
->>
->
+here as well
+
+> +
+> +	if (dwc->usb2_generic_phy)
+> +		phy_power_off(dwc->usb2_generic_phy);
+> +	if (dwc->usb3_generic_phy)
+> +		phy_power_off(dwc->usb3_generic_phy);
+>  }
+>  
+>  #define DWC3_ALIGN_MASK		(16 - 1)
+> @@ -427,6 +438,23 @@ static int dwc3_probe(struct platform_device *pdev)
+>  		dwc->usb3_phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB3);
+>  	}
+>  
+> +	if (of_property_read_bool(node, "phys") || pdata->has_phy) {
+> +		dwc->usb2_generic_phy = devm_phy_get(dev, "usb2-phy");
+> +		if (IS_ERR(dwc->usb2_generic_phy)) {
+> +			dev_err(dev, "no usb2 phy configured yet");
+> +			return PTR_ERR(dwc->usb2_generic_phy);
+> +		}
+> +
+> +		dwc->usb3_generic_phy = devm_phy_get(dev, "usb3-phy");
+> +		if (IS_ERR(dwc->usb3_generic_phy)) {
+> +			dev_err(dev, "no usb3 phy configured yet");
+> +			return PTR_ERR(dwc->usb3_generic_phy);
+> +		}
+
+better to add
++		/* Don't use USB PHY if generic PHY was found */
++		dwc->usb2_phy = dwc->usb3_phy = NULL;
+
+> +	} else {
+
+not required as we've used kzalloc for dwc.
+
+> +		dwc->usb2_generic_phy = NULL;
+> +		dwc->usb3_generic_phy = NULL;
+> +	}
+> +
+>  	/* default to superspeed if no maximum_speed passed */
+>  	if (dwc->maximum_speed == USB_SPEED_UNKNOWN)
+>  		dwc->maximum_speed = USB_SPEED_SUPER;
+> @@ -450,6 +478,11 @@ static int dwc3_probe(struct platform_device *pdev)
+
+if (dwc->usb2_phy)
+
+>  	usb_phy_set_suspend(dwc->usb2_phy, 0);
+
+if (dwc->usb3_phy)
+
+>  	usb_phy_set_suspend(dwc->usb3_phy, 0);
+>  
+> +	if (dwc->usb2_generic_phy)
+> +		phy_power_on(dwc->usb2_generic_phy);
+> +	if (dwc->usb3_generic_phy)
+> +		phy_power_on(dwc->usb3_generic_phy);
+> +
+>  	spin_lock_init(&dwc->lock);
+>  	platform_set_drvdata(pdev, dwc);
+>  
+> @@ -576,6 +609,11 @@ static int dwc3_remove(struct platform_device *pdev)
+
+if (dwc->usb2_phy)
+>  	usb_phy_set_suspend(dwc->usb2_phy, 1);
+
+if (dwc->usb3_phy)
+>  	usb_phy_set_suspend(dwc->usb3_phy, 1);
+>  
+> +	if (dwc->usb2_generic_phy)
+> +		phy_power_off(dwc->usb2_generic_phy);
+> +	if (dwc->usb3_generic_phy)
+> +		phy_power_off(dwc->usb3_generic_phy);
+> +
+>  	pm_runtime_put(&pdev->dev);
+>  	pm_runtime_disable(&pdev->dev);
+>  
+> @@ -673,6 +711,11 @@ static int dwc3_suspend(struct device *dev)
+
+if (dwc->usb3_phy)
+>  	usb_phy_shutdown(dwc->usb3_phy);
+
+if (dwc->usb2_phy)
+>  	usb_phy_shutdown(dwc->usb2_phy);
+>  
+> +	if (dwc->usb2_generic_phy)
+> +		phy_exit(dwc->usb2_generic_phy);
+> +	if (dwc->usb3_generic_phy)
+> +		phy_exit(dwc->usb3_generic_phy);
+> +
+>  	return 0;
+>  }
+>  
+> @@ -683,6 +726,12 @@ static int dwc3_resume(struct device *dev)
+>  
+
+if (dwc->usb3_phy)
+>  	usb_phy_init(dwc->usb3_phy);
+
+if (dwc->usb2_phy)
+>  	usb_phy_init(dwc->usb2_phy);
+> +
+> +	if (dwc->usb2_generic_phy)
+> +		phy_init(dwc->usb2_generic_phy);
+> +	if (dwc->usb3_generic_phy)
+> +		phy_init(dwc->usb3_generic_phy);
+> +
+>  	msleep(100);
+>  
+>  	spin_lock_irqsave(&dwc->lock, flags);
+> diff --git a/drivers/usb/dwc3/core.h b/drivers/usb/dwc3/core.h
+> index f8af8d4..01ec7d7 100644
+> --- a/drivers/usb/dwc3/core.h
+> +++ b/drivers/usb/dwc3/core.h
+> @@ -31,6 +31,8 @@
+>  #include <linux/usb/gadget.h>
+>  #include <linux/usb/otg.h>
+>  
+> +#include <linux/phy/phy.h>
+> +
+>  /* Global constants */
+>  #define DWC3_EP0_BOUNCE_SIZE	512
+>  #define DWC3_ENDPOINTS_NUM	32
+> @@ -613,6 +615,8 @@ struct dwc3_scratchpad_array {
+>   * @dr_mode: requested mode of operation
+>   * @usb2_phy: pointer to USB2 PHY
+>   * @usb3_phy: pointer to USB3 PHY
+> + * @usb2_generic_phy: pointer to USB2 PHY
+> + * @usb3_generic_phy: pointer to USB3 PHY
+>   * @dcfg: saved contents of DCFG register
+>   * @gctl: saved contents of GCTL register
+>   * @is_selfpowered: true when we are selfpowered
+> @@ -665,6 +669,9 @@ struct dwc3 {
+>  	struct usb_phy		*usb2_phy;
+>  	struct usb_phy		*usb3_phy;
+>  
+> +	struct phy		*usb2_generic_phy;
+> +	struct phy		*usb3_generic_phy;
+> +
+>  	void __iomem		*regs;
+>  	size_t			regs_size;
+>  
+> 
+
+cheers,
+-roger
