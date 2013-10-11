@@ -1,178 +1,376 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757202Ab3JKISN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 04:18:13 -0400
-Received: from 16.mo1.mail-out.ovh.net ([178.33.104.224]:50646 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757102Ab3JKISE (ORCPT
+	id S1757251Ab3JKITy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 04:19:54 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:48982 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753710Ab3JKITt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 04:18:04 -0400
-X-Greylist: delayed 1199 seconds by postgrey-1.27 at vger.kernel.org; Fri, 11 Oct 2013 04:18:03 EDT
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Josh Wu <josh.wu@atmel.com>, Richard Genoud <richard.genoud@gmail.com>
-Cc: Boris BREZILLON <b.brezillon@overkiz.com>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org
-Subject: [PATCH v4 00/17] ARM: at91: move to common clk framework
-Date: Fri, 11 Oct 2013 09:37:44 +0200
-Message-Id: <1381477081-6041-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Ovh-Tracer-Id: 12330292831860783328
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrvdefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrvdefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Fri, 11 Oct 2013 04:19:49 -0400
+X-AuditID: 9c93017d-b7b96ae000006e96-9d-5257b4a35b3f
+From: Namhyung Kim <namhyung@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: Re: [RFC/PATCH] ftrace: add set_graph_notrace filter
+References: <1378184708-31385-1-git-send-email-namhyung@kernel.org>
+	<20131011001717.26b92150@gandalf.local.home>
+Date: Fri, 11 Oct 2013 17:19:46 +0900
+In-Reply-To: <20131011001717.26b92150@gandalf.local.home> (Steven Rostedt's
+	message of "Fri, 11 Oct 2013 00:17:17 -0400")
+Message-ID: <87a9igcj8d.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi Steve,
 
-This patch series is the 4th version of the new at91 clock implementation
-(using common clk framework).
+On Fri, 11 Oct 2013 00:17:17 -0400, Steven Rostedt wrote:
+> Sorry for the very late reply, finally got some time to look at other
+> peoples code.
 
-Most of the clock provided by the PMC (Power Management Controller) are
-implemented :
-- main clock (main oscillator)
-- pll clocks
-- master clock
-- programmable clocks
-- utmi clock
-- peripheral clocks
-- system clocks
+Thank you for taking your time to review this carefully. :)
 
-This implementation is only compatible with device tree definition.
-The goal is to define the whole clock tree in the device tree.
+>
+> On Tue,  3 Sep 2013 14:05:08 +0900
+> Namhyung Kim <namhyung@kernel.org> wrote:
+>
+>> From: Namhyung Kim <namhyung.kim@lge.com>
+>> 
+>> The set_graph_notrace filter is analogous to set_ftrace_notrace and
+>> can be used for eliminating uninteresting part of function graph trace
+>> output.  It also works with set_graph_function nicely.
+>> 
+>>   # cd /sys/kernel/debug/tracing/
+>>   # echo do_page_fault > set_graph_function
+>>   # perf ftrace live true
+>>    2)               |  do_page_fault() {
+>>    2)               |    __do_page_fault() {
+>>    2)   0.381 us    |      down_read_trylock();
+>>    2)   0.055 us    |      __might_sleep();
+>>    2)   0.696 us    |      find_vma();
+>>    2)               |      handle_mm_fault() {
+>>    2)               |        handle_pte_fault() {
+>>    2)               |          __do_fault() {
+>>    2)               |            filemap_fault() {
+>>    2)               |              find_get_page() {
+>>    2)   0.033 us    |                __rcu_read_lock();
+>>    2)   0.035 us    |                __rcu_read_unlock();
+>>    2)   1.696 us    |              }
+>>    2)   0.031 us    |              __might_sleep();
+>>    2)   2.831 us    |            }
+>>    2)               |            _raw_spin_lock() {
+>>    2)   0.046 us    |              add_preempt_count();
+>>    2)   0.841 us    |            }
+>>    2)   0.033 us    |            page_add_file_rmap();
+>>    2)               |            _raw_spin_unlock() {
+>>    2)   0.057 us    |              sub_preempt_count();
+>>    2)   0.568 us    |            }
+>>    2)               |            unlock_page() {
+>>    2)   0.084 us    |              page_waitqueue();
+>>    2)   0.126 us    |              __wake_up_bit();
+>>    2)   1.117 us    |            }
+>>    2)   7.729 us    |          }
+>>    2)   8.397 us    |        }
+>>    2)   8.956 us    |      }
+>>    2)   0.085 us    |      up_read();
+>>    2) + 12.745 us   |    }
+>>    2) + 13.401 us   |  }
+>>   ...
+>> 
+>>   # echo handle_mm_fault > set_graph_notrace
+>>   # perf ftrace live true
+>>    1)               |  do_page_fault() {
+>>    1)               |    __do_page_fault() {
+>>    1)   0.205 us    |      down_read_trylock();
+>>    1)   0.041 us    |      __might_sleep();
+>>    1)   0.344 us    |      find_vma();
+>>    1)   0.069 us    |      up_read();
+>>    1)   4.692 us    |    }
+>>    1)   5.311 us    |  }
+>>   ...
+>
+> Concept looks good.
 
-Could a dt maintainer take a look at these dt bindinds.
+hehe, thanks.
 
-This patch series is based on linus tree (but should apply correctly on
-linux-next) and has been tested on sama5d31ek.
+[SNIP]
+>
+>> @@ -3910,8 +3971,6 @@ out:
+>>  	if (fail)
+>>  		return -EINVAL;
+>>  
+>> -	ftrace_graph_filter_enabled = !!(*idx);
+>> -
+>>  	return 0;
+>>  }
+>>  
+>> @@ -3946,6 +4005,50 @@ ftrace_graph_write(struct file *file, const char __user *ubuf,
+>>  
+>>  	ret = read;
+>>  
+>> +	ftrace_graph_filter_enabled = ftrace_graph_count > 0;
+>
+> You modified the ftrace_graph_filter code without mentioning this in
+> the change log. Actually, this should be a separate patch (clean up)
+> and not just included with the ftrace_graph_notrace code, as it is a
+> separate change.
 
-Best Regards,
-Boris
+Okay, I'll make it a separate patch.  And I think we can get rid of
+ftrace_graph_{filter,notrace}_enabled altogether and just use _count
+variable instead.
 
-Changes since v3:
- - simplify master clk implementation (drop set_rate/parent support)
- - fix bug in set_rate function of pll driver
- - fix coding style issues
- - define macros and constants where needed
- - remove peripheral id macro references
- - remove sam9g35 specific handling (sam9g35 = sam9x5)
- - rework main clk prepare function to handle automatic rate calculation
+>
+>> +
+>> +out_free:
+>> +	trace_parser_put(&parser);
+>> +out_unlock:
+>> +	mutex_unlock(&graph_lock);
+>> +
+>> +	return ret;
+>> +}
+>> +
+>> +static ssize_t
+>> +ftrace_graph_notrace_write(struct file *file, const char __user *ubuf,
+>> +			   size_t cnt, loff_t *ppos)
+>> +{
+>> +	struct trace_parser parser;
+>> +	ssize_t read, ret;
+>> +
+>> +	if (!cnt)
+>> +		return 0;
+>> +
+>> +	mutex_lock(&graph_lock);
+>> +
+>> +	if (trace_parser_get_init(&parser, FTRACE_BUFF_MAX)) {
+>> +		ret = -ENOMEM;
+>> +		goto out_unlock;
+>> +	}
+>> +
+>> +	read = trace_get_user(&parser, ubuf, cnt, ppos);
+>> +
+>> +	if (read >= 0 && trace_parser_loaded((&parser))) {
+>> +		parser.buffer[parser.idx] = 0;
+>> +
+>> +		/* we allow only one expression at a time */
+>> +		ret = ftrace_set_func(ftrace_graph_notrace_funcs,
+>> +				      &ftrace_graph_notrace_count,
+>> +				      parser.buffer);
+>> +		if (ret)
+>> +			goto out_free;
+>> +	}
+>> +
+>> +	ret = read;
+>> +
+>> +	ftrace_graph_notrace_enabled = ftrace_graph_notrace_count > 0;
+>> +
+>
+> ftrace_graph_notrace_write() and ftrace_graph_write() are basically
+> identical. Please make a helper function that does the work and passes
+> in the different variables. That is:
+>
+> static ssize_t
+> ftrace_graph_notrace_write(struct file *file, const char __user *ubuf,
+> 		size_t cnt, loff_t *ppos)
+> {
+> 	return __ftrace_graph_write(file, ubuf, cnt, ppos,
+> 				ftrace_graph_notrace_funcs,
+> 				&ftrace_graph_notrace_count)
+> }
+>
+> and do the same with ftrace_graph_write(). This way if we find a bug,
+> or update the code, it gets done to both and not just one.
 
-Changes since v2:
- - fix several bugs in clk implementations
- - drop non-dt boards support
- - split the series to ease review and tests:
-   * 1 patch series for new clk implementations (this series)
-   * 1 patch series to move each at91 SoC to common clk framework (coming soon)
- - modify dt-bindings (add atmel,clk- prefix to atmel specific properties)
- - add clk macros for dt-bindings
- - add pmc framework (helper function to access pmc registers)
- - add interrupt support to enable passive wait in clk_prepare functions
+Agreed, will do that.
 
-Changes since v1:
- - fix bugs in pll, programmable and system clock implementations
-   (wrong bit position).
- - add usb clock configuration support (ohci and udc drivers +
-   clk_lookup for non dt boards)
- - rework of the system clock interfaces (no need to define a parent clock,
-   system clock is a gate with no rate info)
- - change system, peripheral and programmable clk dt bindings (1 master node
-   and multiple child nodes each defining a system/peripheral or prog clock)
- - fix bugs in sama5 dt definition
+[SNIP]
+>
+>> diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
+>> index b5c09242683d..3ba240daa5e0 100644
+>> --- a/kernel/trace/trace_functions_graph.c
+>> +++ b/kernel/trace/trace_functions_graph.c
+>> @@ -114,16 +114,22 @@ ftrace_push_return_trace(unsigned long ret, unsigned long func, int *depth,
+>>  		return -EBUSY;
+>>  	}
+>>  
+>> +	/* The function was filtered out */
+>> +	if (current->curr_ret_stack < -1)
+>> +		return -EBUSY;
+>
+> I would be a bit more specific in your comment. Explain that
+> curr_ret_stack is negative when we hit a function in the
+> set_graph_notrace file.
 
-Boris BREZILLON (17):
-  ARM: at91: move at91_pmc.h to include/linux/clk/at91_pmc.h
-  ARM: at91: add Kconfig options for common clk support
-  clk: at91: add PMC base support
-  clk: at91: add PMC macro file for dt definitions
-  clk: at91: add PMC main clock
-  clk: at91: add PMC pll clocks
-  clk: at91: add PMC master clock
-  clk: at91: add PMC system clocks
-  clk: at91: add PMC peripheral clocks
-  clk: at91: add peripheral clk macros for peripheral clk dt bindings
-  clk: at91: add PMC programmable clocks
-  clk: at91: add PMC utmi clock
-  clk: at91: add PMC usb clock
-  clk: at91: add PMC smd clock
-  clk: at91: add PMC clk device tree binding doc.
-  ARM: at91: move pit timer to common clk framework
-  ARM: at91: add new compatible strings for pmc driver
+How about this:
 
- .../devicetree/bindings/clock/at91-clock.txt       |  328 ++++++++++++
- arch/arm/mach-at91/Kconfig                         |   44 ++
- arch/arm/mach-at91/Kconfig.non_dt                  |    6 +
- arch/arm/mach-at91/Makefile                        |    2 +-
- arch/arm/mach-at91/at91rm9200.c                    |    2 +-
- arch/arm/mach-at91/at91sam9260.c                   |    2 +-
- arch/arm/mach-at91/at91sam9261.c                   |    2 +-
- arch/arm/mach-at91/at91sam9263.c                   |    2 +-
- arch/arm/mach-at91/at91sam926x_time.c              |   14 +-
- arch/arm/mach-at91/at91sam9g45.c                   |    2 +-
- arch/arm/mach-at91/at91sam9n12.c                   |    2 +-
- arch/arm/mach-at91/at91sam9rl.c                    |    2 +-
- arch/arm/mach-at91/at91sam9x5.c                    |    2 +-
- arch/arm/mach-at91/clock.c                         |    7 +-
- arch/arm/mach-at91/generic.h                       |    3 +-
- arch/arm/mach-at91/pm.c                            |    2 +-
- arch/arm/mach-at91/pm_slowclock.S                  |    2 +-
- arch/arm/mach-at91/sama5d3.c                       |    2 +-
- arch/arm/mach-at91/setup.c                         |    8 +-
- drivers/clk/Makefile                               |    1 +
- drivers/clk/at91/Makefile                          |   12 +
- drivers/clk/at91/clk-main.c                        |  189 +++++++
- drivers/clk/at91/clk-master.c                      |  278 ++++++++++
- drivers/clk/at91/clk-peripheral.c                  |  407 +++++++++++++++
- drivers/clk/at91/clk-pll.c                         |  539 ++++++++++++++++++++
- drivers/clk/at91/clk-plldiv.c                      |  137 +++++
- drivers/clk/at91/clk-programmable.c                |  423 +++++++++++++++
- drivers/clk/at91/clk-smd.c                         |  173 +++++++
- drivers/clk/at91/clk-system.c                      |  193 +++++++
- drivers/clk/at91/clk-usb.c                         |  400 +++++++++++++++
- drivers/clk/at91/clk-utmi.c                        |  162 ++++++
- drivers/clk/at91/pmc.c                             |  372 ++++++++++++++
- drivers/clk/at91/pmc.h                             |  113 ++++
- drivers/usb/gadget/atmel_usba_udc.c                |    2 +-
- include/dt-bindings/clk/at91.h                     |   28 +
- .../include/mach => include/linux/clk}/at91_pmc.h  |    4 +-
- 36 files changed, 3847 insertions(+), 20 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/clock/at91-clock.txt
- create mode 100644 drivers/clk/at91/Makefile
- create mode 100644 drivers/clk/at91/clk-main.c
- create mode 100644 drivers/clk/at91/clk-master.c
- create mode 100644 drivers/clk/at91/clk-peripheral.c
- create mode 100644 drivers/clk/at91/clk-pll.c
- create mode 100644 drivers/clk/at91/clk-plldiv.c
- create mode 100644 drivers/clk/at91/clk-programmable.c
- create mode 100644 drivers/clk/at91/clk-smd.c
- create mode 100644 drivers/clk/at91/clk-system.c
- create mode 100644 drivers/clk/at91/clk-usb.c
- create mode 100644 drivers/clk/at91/clk-utmi.c
- create mode 100644 drivers/clk/at91/pmc.c
- create mode 100644 drivers/clk/at91/pmc.h
- create mode 100644 include/dt-bindings/clk/at91.h
- rename {arch/arm/mach-at91/include/mach => include/linux/clk}/at91_pmc.h (98%)
+	/*
+	 * curr_ret_stack is initialized to -1 and gets increased in
+	 * this function.  So it can be less than -1 only if it was
+	 * filtered out via ftrace_graph_notrace_addr() which can be
+	 * set from set_graph_notrace file in debugfs by user.
+	 */
 
--- 
-1.7.9.5
+>
+>> +
+>>  	calltime = trace_clock_local();
+>>  
+>>  	index = ++current->curr_ret_stack;
+>> +	if (ftrace_graph_notrace_addr(func))
+>> +		current->curr_ret_stack -= FTRACE_NOTRACE_DEPTH;
+>
+> I really hate this double call to ftrace_graph_notrace_addr(). The
+> first one in trace_graph_entry(), and then here too.
+>
+> Isn't there a way we could pass the state? Hmm, I think we could use
+> depth to do that. As depth is a pointer to trace.depth and not used
+> before then. We could make it negative and then check that.
+>
+> /me looks at other archs.
+>
+> Darn it, s390 calls ftrace_push_return_trace() before
+> ftrace_graph_entry(). They got fancy, as they must have noticed that
+> trace.depth is set by ftrace_push_return_trace() and they just figured
+> to let the ftrace_push_return_trace() do the work.
 
+Yes, I thought about it before but as you can see other archs go to the
+other way around so I just ended up to call it twice.
+
+>
+> Hmm, we could add a config to do the check on one side or the other
+> depending on how the arch handles it.
+>
+> It needs to be well commented though.
+
+Hmm.. maybe.  But it'd better if this function call order is fixed
+IMHO.  Anyway, I'll add comments.
+
+>
+>
+>
+>>  	barrier();
+>>  	current->ret_stack[index].ret = ret;
+>>  	current->ret_stack[index].func = func;
+>>  	current->ret_stack[index].calltime = calltime;
+>>  	current->ret_stack[index].subtime = 0;
+>>  	current->ret_stack[index].fp = frame_pointer;
+>> -	*depth = index;
+>> +	*depth = current->curr_ret_stack;
+>>  
+>>  	return 0;
+>>  }
+>> @@ -137,6 +143,9 @@ ftrace_pop_return_trace(struct ftrace_graph_ret *trace, unsigned long *ret,
+>>  
+>>  	index = current->curr_ret_stack;
+>>  
+>> +	if (index < 0)
+>> +		index += FTRACE_NOTRACE_DEPTH;
+>
+> Speaking of comments. This needs to be commented, and not only that,
+> perhaps this is where another ftrace_graph_notrace_addr() belongs.
+>
+> 	bool check = false;
+>
+> 	if (index < 0) {
+> 		index += FTRACE_NOTRACE_DEPTH;
+> 		check = true;
+> 	}
+>
+> 	[...]
+>
+> 	if (check && !ftrace_graph_notrace_addr(trace->func))
+> 		[ do the same bug as index < 0 ]
+>
+> 		
+>
+> Otherwise if the stack does get corrupted, this will just think we are
+> in a notrace and fail someplace else, making it much harder to debug
+> what went wrong.
+>
+> Hmm, this may be racy, as the user could change the notrace file and
+> this could happen after that, causing a false positive.
+>
+> Well, we could do other tricks, like adding a flag in
+> current->ret_stack[index].func (LSB set).
+>
+> But for now, just comment this better. We can come up with a proper
+> check later. (/me is rambling as I've been on and off reviewing this
+> patch all day, and it's now past my bedtime).
+
+Sorry for interrupting your bedtime. :)
+
+Hmm.. never thought about the corruption.  And yes, simply checking it
+again here might cause a trouble, I guess.  I'll add a comment for this.
+
+	/*
+	 * A negative index here means that it's just returned from a
+	 * notrace'd function.  Recover index to get an original return
+	 * address.  See ftrace_push_return_trace().
+	 *
+	 * TODO: Need to check whether the stack gets corrupted.
+	 */
+
+>
+>
+>> +
+>>  	if (unlikely(index < 0)) {
+>>  		ftrace_graph_stop();
+>>  		WARN_ON(1);
+>> @@ -193,6 +202,10 @@ unsigned long ftrace_return_to_handler(unsigned long frame_pointer)
+>>  	trace.rettime = trace_clock_local();
+>>  	barrier();
+>>  	current->curr_ret_stack--;
+>> +	if (current->curr_ret_stack < -1) {
+>> +		current->curr_ret_stack += FTRACE_NOTRACE_DEPTH;
+>> +		return ret;
+>> +	}
+>>  
+>>  	/*
+>>  	 * The trace should run after decrementing the ret counter
+>> @@ -259,10 +272,14 @@ int trace_graph_entry(struct ftrace_graph_ent *trace)
+>>  
+>>  	/* trace it when it is-nested-in or is a function enabled. */
+>>  	if ((!(trace->depth || ftrace_graph_addr(trace->func)) ||
+>> -	     ftrace_graph_ignore_irqs()) ||
+>> +	     ftrace_graph_ignore_irqs()) || (trace->depth < 0) ||
+>>  	    (max_depth && trace->depth >= max_depth))
+>>  		return 0;
+>>  
+>> +	/* need to reserve a ret_stack entry to recover the depth */
+>> +	if (ftrace_graph_notrace_addr(trace->func))
+>> +		return 1;
+>> +
+>
+> Also, I understand what you are doing here, with making curr_ret_stack
+> negative to denote we are in a state to not do tracing. But it's more
+> of a hack (not a bad one), and really needs to be documented somewhere.
+> That is, the design should be in the comments where it's used, and 5
+> years from now, nobody will understand how the notrace works without
+> spending days trying to figure it out. Let's be nice to that poor soul,
+> and write up what is going on so they don't need to pray to the holy
+> tuna hoping to get a fish of enlightenment on how turning
+> curr_ret_stack negative magically makes the function graph tracing not
+> trace down functions, and magically starts tracing again when it comes
+> back up.
+
+Fully agreed.  How about this:
+
+/*
+ * The curr_ret_stack is an index to ftrace return stack of current
+ * task.  Its value should be in [0, FTRACE_RETFUNC_DEPTH) when the
+ * function graph tracer is used.  To support filtering out specific
+ * functions, it makes the index negative by subtracting huge value
+ * (FTRACE_NOTRACE_DEPTH) so when it sees a negative index the ftrace
+ * will ignore the record.  And the index gets recovered when returning
+ * from the filtered function by adding the FTRACE_NOTRACE_DEPTH and
+ * then it will continue to record functions normally.
+ */
+
+Thanks,
+Namhyung
