@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932814Ab3JKUD3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:03:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46246 "EHLO
+	id S932581Ab3JKUDZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:03:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46250 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932555Ab3JKTlc (ORCPT
+	with ESMTP id S932558Ab3JKTlc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Oct 2013 15:41:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -12,9 +12,9 @@ To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Dan Carpenter <dan.carpenter@oracle.com>,
         Mark Brown <broonie@linaro.org>
-Subject: [ 056/135] ASoC: 88pm860x: array overflow in snd_soc_put_volsw_2r_st()
-Date: Fri, 11 Oct 2013 12:38:57 -0700
-Message-Id: <20131011193951.364655574@linuxfoundation.org>
+Subject: [ 057/135] ASoC: ab8500-codec: info leak in anc_status_control_put()
+Date: Fri, 11 Oct 2013 12:38:58 -0700
+Message-Id: <20131011193951.474213125@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -29,30 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit d967967e8d1116fb38bad25e58714b5dddd03cca upstream.
+commit d63733aed90b432e5cc489ddfa28e342f91b4652 upstream.
 
-This is called from snd_ctl_elem_write() with user supplied data so we
-need to add some bounds checking.
+If the user passes an invalid value it leads to an info leak when we
+print the error message or it could oops.  This is called with user
+supplied data from snd_ctl_elem_write().
 
 Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/88pm860x-codec.c |    3 +++
- 1 file changed, 3 insertions(+)
+ sound/soc/codecs/ab8500-codec.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/sound/soc/codecs/88pm860x-codec.c
-+++ b/sound/soc/codecs/88pm860x-codec.c
-@@ -349,6 +349,9 @@ static int snd_soc_put_volsw_2r_st(struc
- 	val = ucontrol->value.integer.value[0];
- 	val2 = ucontrol->value.integer.value[1];
+--- a/sound/soc/codecs/ab8500-codec.c
++++ b/sound/soc/codecs/ab8500-codec.c
+@@ -1225,13 +1225,18 @@ static int anc_status_control_put(struct
+ 	struct ab8500_codec_drvdata *drvdata = dev_get_drvdata(codec->dev);
+ 	struct device *dev = codec->dev;
+ 	bool apply_fir, apply_iir;
+-	int req, status;
++	unsigned int req;
++	int status;
  
-+	if (val >= ARRAY_SIZE(st_table) || val2 >= ARRAY_SIZE(st_table))
-+		return -EINVAL;
-+
- 	err = snd_soc_update_bits(codec, reg, 0x3f, st_table[val].m);
- 	if (err < 0)
- 		return err;
+ 	dev_dbg(dev, "%s: Enter.\n", __func__);
+ 
+ 	mutex_lock(&drvdata->anc_lock);
+ 
+ 	req = ucontrol->value.integer.value[0];
++	if (req >= ARRAY_SIZE(enum_anc_state)) {
++		status = -EINVAL;
++		goto cleanup;
++	}
+ 	if (req != ANC_APPLY_FIR_IIR && req != ANC_APPLY_FIR &&
+ 		req != ANC_APPLY_IIR) {
+ 		dev_err(dev, "%s: ERROR: Unsupported status to set '%s'!\n",
 
 
