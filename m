@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932071Ab3JKTke (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:40:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45818 "EHLO
+	id S932129Ab3JKTki (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:40:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45864 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759028Ab3JKTkZ (ORCPT
+	with ESMTP id S932076Ab3JKTke (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:40:25 -0400
+	Fri, 11 Oct 2013 15:40:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 077/110] kernel/kmod.c: check for NULL in call_usermodehelper_exec()
-Date: Fri, 11 Oct 2013 12:38:57 -0700
-Message-Id: <20131011193816.228955398@linuxfoundation.org>
+        Joerg Kalisch <the_force@gmx.de>,
+        Christian Lamparter <chunkeey@googlemail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 088/110] p54usb: add USB ID for Corega WLUSB2GTST USB adapter
+Date: Fri, 11 Oct 2013 12:39:08 -0700
+Message-Id: <20131011193817.386923422@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
 References: <20131011193807.584188672@linuxfoundation.org>
@@ -29,45 +28,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+From: Christian Lamparter <chunkeey@googlemail.com>
 
-commit 4c1c7be95c345cf2ad537a0c48e9aeadc7304527 upstream.
+commit 1e43692cdb7cc445d6347d8a5207d9cef0c71434 upstream.
 
-If /proc/sys/kernel/core_pattern contains only "|", a NULL pointer
-dereference happens upon core dump because argv_split("") returns
-argv[0] == NULL.
+Added USB ID for Corega WLUSB2GTST USB adapter.
 
-This bug was once fixed by commit 264b83c07a84 ("usermodehelper: check
-subprocess_info->path != NULL") but was by error reintroduced by commit
-7f57cfa4e2aa ("usermodehelper: kill the sub_info->path[0] check").
-
-This bug seems to exist since 2.6.19 (the version which core dump to
-pipe was added).  Depending on kernel version and config, some side
-effect might happen immediately after this oops (e.g.  kernel panic with
-2.6.32-358.18.1.el6).
-
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Acked-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Joerg Kalisch <the_force@gmx.de>
+Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/kmod.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/net/wireless/p54/p54usb.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/kernel/kmod.c
-+++ b/kernel/kmod.c
-@@ -568,6 +568,10 @@ int call_usermodehelper_exec(struct subp
- 	DECLARE_COMPLETION_ONSTACK(done);
- 	int retval = 0;
- 
-+	if (!sub_info->path) {
-+		call_usermodehelper_freeinfo(sub_info);
-+		return -EINVAL;
-+	}
- 	helper_lock();
- 	if (!sub_info->path) {
- 		retval = -EINVAL;
+--- a/drivers/net/wireless/p54/p54usb.c
++++ b/drivers/net/wireless/p54/p54usb.c
+@@ -83,6 +83,7 @@ static struct usb_device_id p54u_table[]
+ 	{USB_DEVICE(0x06a9, 0x000e)},	/* Westell 802.11g USB (A90-211WG-01) */
+ 	{USB_DEVICE(0x06b9, 0x0121)},	/* Thomson SpeedTouch 121g */
+ 	{USB_DEVICE(0x0707, 0xee13)},   /* SMC 2862W-G version 2 */
++	{USB_DEVICE(0x07aa, 0x0020)},	/* Corega WLUSB2GTST USB */
+ 	{USB_DEVICE(0x0803, 0x4310)},	/* Zoom 4410a */
+ 	{USB_DEVICE(0x083a, 0x4521)},   /* Siemens Gigaset USB Adapter 54 version 2 */
+ 	{USB_DEVICE(0x083a, 0x4531)},	/* T-Com Sinus 154 data II */
 
 
