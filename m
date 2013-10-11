@@ -1,270 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932877Ab3JKUhD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:37:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45682 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758912Ab3JKTkH (ORCPT
+	id S1161134Ab3JKUhJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:37:09 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:39624 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932878Ab3JKUhE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:40:07 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>,
-        George Cherian <george.cherian@ti.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Lars Poeschel <poeschel@lemonage.de>,
-        Kevin Hilman <khilman@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [ 046/110] gpio/omap: auto-setup a GPIO when used as an IRQ
-Date: Fri, 11 Oct 2013 12:38:26 -0700
-Message-Id: <20131011193812.834566168@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
-References: <20131011193807.584188672@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Fri, 11 Oct 2013 16:37:04 -0400
+Date: Fri, 11 Oct 2013 13:37:01 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Stanimir Varbanov <svarbanov@mm-sol.com>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Matt Mackall <mpm@selenic.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH v2 2/2] hwrng: msm: Add PRNG support for MSM SoC's
+Message-ID: <20131011203701.GC13139@codeaurora.org>
+References: <1381504601-23773-1-git-send-email-svarbanov@mm-sol.com>
+ <1381504601-23773-3-git-send-email-svarbanov@mm-sol.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1381504601-23773-3-git-send-email-svarbanov@mm-sol.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On 10/11, Stanimir Varbanov wrote:
+> This adds a driver for hardware random number generator present
+> on Qualcomm MSM SoC's.
+> 
+> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
+> ---
 
-------------------
+Just nitpicks.
 
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+> diff --git a/drivers/char/hw_random/Kconfig b/drivers/char/hw_random/Kconfig
+> index 0aa9d91daef5..d902330cef43 100644
+> --- a/drivers/char/hw_random/Kconfig
+> +++ b/drivers/char/hw_random/Kconfig
+> @@ -314,3 +314,15 @@ config HW_RANDOM_TPM
+>  	  module will be called tpm-rng.
+>  
+>  	  If unsure, say Y.
+> +
+> +config HW_RANDOM_MSM
+> +        tristate "Qualcomm MSM Random Number Generator support"
+> +        depends on HW_RANDOM && ARCH_MSM && HAVE_CLK
 
-commit fac7fa162a19100298d5d91359960037dc5bfca9 upstream.
+It should be fine to drop HAVE_CLK here because ARCH_MSM always
+selects COMMON_CLK which indirectly selects HAVE_CLK.
 
-The OMAP GPIO controller HW requires a pin to be configured in GPIO
-input mode in order to operate as an interrupt input. Since drivers
-should not be aware of whether an interrupt pin is also a GPIO or not,
-the HW should be fully configured/enabled as an IRQ if a driver solely
-uses IRQ APIs such as request_irq(), and never calls any GPIO-related
-APIs. As such, add the missing HW setup to the OMAP GPIO controller's
-irq_chip driver.
+> +        ---help---
+> +          This driver provides kernel-side support for the Random Number
+> +          Generator hardware found on Qualcomm MSM SoCs.
+> +
+> +          To compile this driver as a module, choose M here. the
+> +          module will be called msm-rng.
+> +
+> +          If unsure, say Y.
+> diff --git a/drivers/char/hw_random/msm-rng.c b/drivers/char/hw_random/msm-rng.c
+> new file mode 100644
+> index 000000000000..e219e94d02c1
+> --- /dev/null
+> +++ b/drivers/char/hw_random/msm-rng.c
+> @@ -0,0 +1,195 @@
+> +#include <linux/clk.h>
+> +#include <linux/hw_random.h>
+> +#include <linux/io.h>
+> +#include <linux/module.h>
+> +#include <linux/of.h>
+> +#include <linux/platform_device.h>
 
-Since this bypasses the GPIO subsystem we have to ensure that another
-driver won't be able to request the same GPIO pin that is used as an
-IRQ and set its direction as output. Requesting the GPIO and setting
-its direction as input is allowed though.
++#include <linux/err.h> for -ENOMEM usage.
 
-This fixes smsc911x ethernet support for tobi and igep OMAP3 boards
-and OMAP4 SDP SPI based ethernet that use a GPIO as an interrupt line.
+> +
+> +/* Device specific register offsets */
+> +#define PRNG_DATA_OUT		0x0000
+> +#define PRNG_STATUS		0x0004
+> +#define PRNG_LFSR_CFG		0x0100
+> +#define PRNG_CONFIG		0x0104
+> +
+[snip]
+> +
+> +MODULE_AUTHOR("The Linux Foundation");
+> +MODULE_DESCRIPTION("Qualcomm MSM random number generator driver");
+> +MODULE_LICENSE("GPL v2");
 
-Acked-by: Stephen Warren <swarren@nvidia.com>
-Tested-by: George Cherian <george.cherian@ti.com>
-Tested-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-Tested-by: Lars Poeschel <poeschel@lemonage.de>
-Reviewed-by: Kevin Hilman <khilman@linaro.org>
-Tested-by: Kevin Hilman <khilman@linaro.org>
-Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Acked-by: Tony Lindgren <tony@atomide.com>
-Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+MODULE_ALIAS perhaps?
 
----
- drivers/gpio/gpio-omap.c |  129 ++++++++++++++++++++++++++++++-----------------
- 1 file changed, 83 insertions(+), 46 deletions(-)
-
---- a/drivers/gpio/gpio-omap.c
-+++ b/drivers/gpio/gpio-omap.c
-@@ -424,6 +424,52 @@ static int _set_gpio_triggering(struct g
- 	return 0;
- }
- 
-+static void _enable_gpio_module(struct gpio_bank *bank, unsigned offset)
-+{
-+	if (bank->regs->pinctrl) {
-+		void __iomem *reg = bank->base + bank->regs->pinctrl;
-+
-+		/* Claim the pin for MPU */
-+		__raw_writel(__raw_readl(reg) | (1 << offset), reg);
-+	}
-+
-+	if (bank->regs->ctrl && !BANK_USED(bank)) {
-+		void __iomem *reg = bank->base + bank->regs->ctrl;
-+		u32 ctrl;
-+
-+		ctrl = __raw_readl(reg);
-+		/* Module is enabled, clocks are not gated */
-+		ctrl &= ~GPIO_MOD_CTRL_BIT;
-+		__raw_writel(ctrl, reg);
-+		bank->context.ctrl = ctrl;
-+	}
-+}
-+
-+static void _disable_gpio_module(struct gpio_bank *bank, unsigned offset)
-+{
-+	void __iomem *base = bank->base;
-+
-+	if (bank->regs->wkup_en &&
-+	    !LINE_USED(bank->mod_usage, offset) &&
-+	    !LINE_USED(bank->irq_usage, offset)) {
-+		/* Disable wake-up during idle for dynamic tick */
-+		_gpio_rmw(base, bank->regs->wkup_en, 1 << offset, 0);
-+		bank->context.wake_en =
-+			__raw_readl(bank->base + bank->regs->wkup_en);
-+	}
-+
-+	if (bank->regs->ctrl && !BANK_USED(bank)) {
-+		void __iomem *reg = bank->base + bank->regs->ctrl;
-+		u32 ctrl;
-+
-+		ctrl = __raw_readl(reg);
-+		/* Module is disabled, clocks are gated */
-+		ctrl |= GPIO_MOD_CTRL_BIT;
-+		__raw_writel(ctrl, reg);
-+		bank->context.ctrl = ctrl;
-+	}
-+}
-+
- static int gpio_is_input(struct gpio_bank *bank, int mask)
- {
- 	void __iomem *reg = bank->base + bank->regs->direction;
-@@ -437,9 +483,10 @@ static int gpio_irq_type(struct irq_data
- 	unsigned gpio = 0;
- 	int retval;
- 	unsigned long flags;
-+	unsigned offset;
- 
--	if (WARN_ON(!BANK_USED(bank)))
--		return -EINVAL;
-+	if (!BANK_USED(bank))
-+		pm_runtime_get_sync(bank->dev);
- 
- #ifdef CONFIG_ARCH_OMAP1
- 	if (d->irq > IH_MPUIO_BASE)
-@@ -457,7 +504,16 @@ static int gpio_irq_type(struct irq_data
- 		return -EINVAL;
- 
- 	spin_lock_irqsave(&bank->lock, flags);
--	retval = _set_gpio_triggering(bank, GPIO_INDEX(bank, gpio), type);
-+	offset = GPIO_INDEX(bank, gpio);
-+	retval = _set_gpio_triggering(bank, offset, type);
-+	if (!LINE_USED(bank->mod_usage, offset)) {
-+		_enable_gpio_module(bank, offset);
-+		_set_gpio_direction(bank, offset, 1);
-+	} else if (!gpio_is_input(bank, 1 << offset)) {
-+		spin_unlock_irqrestore(&bank->lock, flags);
-+		return -EINVAL;
-+	}
-+
- 	bank->irq_usage |= 1 << GPIO_INDEX(bank, gpio);
- 	spin_unlock_irqrestore(&bank->lock, flags);
- 
-@@ -620,30 +676,14 @@ static int omap_gpio_request(struct gpio
- 
- 	spin_lock_irqsave(&bank->lock, flags);
- 	/* Set trigger to none. You need to enable the desired trigger with
--	 * request_irq() or set_irq_type().
-+	 * request_irq() or set_irq_type(). Only do this if the IRQ line has
-+	 * not already been requested.
- 	 */
--	_set_gpio_triggering(bank, offset, IRQ_TYPE_NONE);
--
--	if (bank->regs->pinctrl) {
--		void __iomem *reg = bank->base + bank->regs->pinctrl;
--
--		/* Claim the pin for MPU */
--		__raw_writel(__raw_readl(reg) | (1 << offset), reg);
-+	if (!LINE_USED(bank->irq_usage, offset)) {
-+		_set_gpio_triggering(bank, offset, IRQ_TYPE_NONE);
-+		_enable_gpio_module(bank, offset);
- 	}
--
--	if (bank->regs->ctrl && !BANK_USED(bank)) {
--		void __iomem *reg = bank->base + bank->regs->ctrl;
--		u32 ctrl;
--
--		ctrl = __raw_readl(reg);
--		/* Module is enabled, clocks are not gated */
--		ctrl &= ~GPIO_MOD_CTRL_BIT;
--		__raw_writel(ctrl, reg);
--		bank->context.ctrl = ctrl;
--	}
--
- 	bank->mod_usage |= 1 << offset;
--
- 	spin_unlock_irqrestore(&bank->lock, flags);
- 
- 	return 0;
-@@ -652,31 +692,11 @@ static int omap_gpio_request(struct gpio
- static void omap_gpio_free(struct gpio_chip *chip, unsigned offset)
- {
- 	struct gpio_bank *bank = container_of(chip, struct gpio_bank, chip);
--	void __iomem *base = bank->base;
- 	unsigned long flags;
- 
- 	spin_lock_irqsave(&bank->lock, flags);
--
--	if (bank->regs->wkup_en) {
--		/* Disable wake-up during idle for dynamic tick */
--		_gpio_rmw(base, bank->regs->wkup_en, 1 << offset, 0);
--		bank->context.wake_en =
--			__raw_readl(bank->base + bank->regs->wkup_en);
--	}
--
- 	bank->mod_usage &= ~(1 << offset);
--
--	if (bank->regs->ctrl && !BANK_USED(bank)) {
--		void __iomem *reg = bank->base + bank->regs->ctrl;
--		u32 ctrl;
--
--		ctrl = __raw_readl(reg);
--		/* Module is disabled, clocks are gated */
--		ctrl |= GPIO_MOD_CTRL_BIT;
--		__raw_writel(ctrl, reg);
--		bank->context.ctrl = ctrl;
--	}
--
-+	_disable_gpio_module(bank, offset);
- 	_reset_gpio(bank, bank->chip.base + offset);
- 	spin_unlock_irqrestore(&bank->lock, flags);
- 
-@@ -778,8 +798,16 @@ static void gpio_irq_shutdown(struct irq
- 
- 	spin_lock_irqsave(&bank->lock, flags);
- 	bank->irq_usage &= ~(1 << offset);
-+	_disable_gpio_module(bank, offset);
- 	_reset_gpio(bank, gpio);
- 	spin_unlock_irqrestore(&bank->lock, flags);
-+
-+	/*
-+	 * If this is the last IRQ to be freed in the bank,
-+	 * disable the bank module.
-+	 */
-+	if (!BANK_USED(bank))
-+		pm_runtime_put(bank->dev);
- }
- 
- static void gpio_ack_irq(struct irq_data *d)
-@@ -929,13 +957,22 @@ static int gpio_output(struct gpio_chip
- {
- 	struct gpio_bank *bank;
- 	unsigned long flags;
-+	int retval = 0;
- 
- 	bank = container_of(chip, struct gpio_bank, chip);
- 	spin_lock_irqsave(&bank->lock, flags);
-+
-+	if (LINE_USED(bank->irq_usage, offset)) {
-+			retval = -EINVAL;
-+			goto exit;
-+	}
-+
- 	bank->set_dataout(bank, offset, value);
- 	_set_gpio_direction(bank, offset, 0);
-+
-+exit:
- 	spin_unlock_irqrestore(&bank->lock, flags);
--	return 0;
-+	return retval;
- }
- 
- static int gpio_debounce(struct gpio_chip *chip, unsigned offset,
-
-
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
