@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759296Ab3JKTvw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:51:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46455 "EHLO
+	id S964812Ab3JKTwK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:52:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46448 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932790Ab3JKTmD (ORCPT
+	with ESMTP id S932788Ab3JKTmC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:42:03 -0400
+	Fri, 11 Oct 2013 15:42:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dmitry Khromov <icechrome@gmail.com>,
-        Amitkumar Karwar <akarwar@marvell.com>, Bing Zhao <bzhao@marvell.com>,
+        Dmitry Khromov <icechrome@gmail.com>, Bing Zhao <bzhao@marvell.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 099/135] mwifiex: fix hang issue for USB chipsets
-Date: Fri, 11 Oct 2013 12:39:40 -0700
-Message-Id: <20131011193956.017771713@linuxfoundation.org>
+Subject: [ 098/135] mwifiex: fix NULL pointer dereference in usb suspend handler
+Date: Fri, 11 Oct 2013 12:39:39 -0700
+Message-Id: <20131011193955.906605137@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -28,75 +27,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Amitkumar Karwar <akarwar@marvell.com>
+From: Bing Zhao <bzhao@marvell.com>
 
-commit bd1c6142edce787b8ac1be15635f845aa9905333 upstream.
+commit 346ece0b7ba2730b4d633b9e371fe55488803102 upstream.
 
 Bug 60815 - Interface hangs in mwifiex_usb
 https://bugzilla.kernel.org/show_bug.cgi?id=60815
 
-We have 4 bytes of interface header for packets delivered to SDIO
-and PCIe, but not for USB interface.
+[ 2.883807] BUG: unable to handle kernel NULL pointer dereference
+            at 0000000000000048
+[ 2.883813] IP: [<ffffffff815a65e0>] pfifo_fast_enqueue+0x90/0x90
 
-In Tx AMSDU case, currently 4 bytes of garbage data is unnecessarily
-appended for USB packets. This sometimes leads to a firmware hang,
-because it may not interpret the data packet correctly.
+[ 2.883834] CPU: 1 PID: 3220 Comm: kworker/u8:90 Not tainted
+            3.11.1-monotone-l0 #6
+[ 2.883834] Hardware name: Microsoft Corporation Surface with
+            Windows 8 Pro/Surface with Windows 8 Pro,
+            BIOS 1.03.0450 03/29/2013
 
-Problem is fixed by removing this redundant headroom for USB.
+On Surface Pro, suspend to ram gives a NULL pointer dereference in
+pfifo_fast_enqueue(). The stack trace reveals that the offending
+call is clearing carrier in mwifiex_usb suspend handler.
+
+Since commit 1499d9f "mwifiex: don't drop carrier flag over suspend"
+has removed the carrier flag handling over suspend/resume in SDIO
+and PCIe drivers, I'm removing it in USB driver too. This also fixes
+the bug for Surface Pro.
 
 Tested-by: Dmitry Khromov <icechrome@gmail.com>
-Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
 Signed-off-by: Bing Zhao <bzhao@marvell.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/mwifiex/11n_aggr.c |    3 ++-
- drivers/net/wireless/mwifiex/11n_aggr.h |    2 +-
- drivers/net/wireless/mwifiex/wmm.c      |    3 +--
- 3 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/net/wireless/mwifiex/usb.c |    7 -------
+ 1 file changed, 7 deletions(-)
 
---- a/drivers/net/wireless/mwifiex/11n_aggr.c
-+++ b/drivers/net/wireless/mwifiex/11n_aggr.c
-@@ -149,7 +149,7 @@ mwifiex_11n_form_amsdu_txpd(struct mwifi
-  */
- int
- mwifiex_11n_aggregate_pkt(struct mwifiex_private *priv,
--			  struct mwifiex_ra_list_tbl *pra_list, int headroom,
-+			  struct mwifiex_ra_list_tbl *pra_list,
- 			  int ptrindex, unsigned long ra_list_flags)
- 			  __releases(&priv->wmm.ra_list_spinlock)
- {
-@@ -159,6 +159,7 @@ mwifiex_11n_aggregate_pkt(struct mwifiex
- 	int pad = 0, ret;
- 	struct mwifiex_tx_param tx_param;
- 	struct txpd *ptx_pd = NULL;
-+	int headroom = adapter->iface_type == MWIFIEX_USB ? 0 : INTF_HEADER_LEN;
+--- a/drivers/net/wireless/mwifiex/usb.c
++++ b/drivers/net/wireless/mwifiex/usb.c
+@@ -446,9 +446,6 @@ static int mwifiex_usb_suspend(struct us
+ 	 */
+ 	adapter->is_suspended = true;
  
- 	skb_src = skb_peek(&pra_list->skb_head);
- 	if (!skb_src) {
---- a/drivers/net/wireless/mwifiex/11n_aggr.h
-+++ b/drivers/net/wireless/mwifiex/11n_aggr.h
-@@ -26,7 +26,7 @@
- int mwifiex_11n_deaggregate_pkt(struct mwifiex_private *priv,
- 				struct sk_buff *skb);
- int mwifiex_11n_aggregate_pkt(struct mwifiex_private *priv,
--			      struct mwifiex_ra_list_tbl *ptr, int headroom,
-+			      struct mwifiex_ra_list_tbl *ptr,
- 			      int ptr_index, unsigned long flags)
- 			      __releases(&priv->wmm.ra_list_spinlock);
+-	for (i = 0; i < adapter->priv_num; i++)
+-		netif_carrier_off(adapter->priv[i]->netdev);
+-
+ 	if (atomic_read(&card->rx_cmd_urb_pending) && card->rx_cmd.urb)
+ 		usb_kill_urb(card->rx_cmd.urb);
  
---- a/drivers/net/wireless/mwifiex/wmm.c
-+++ b/drivers/net/wireless/mwifiex/wmm.c
-@@ -1239,8 +1239,7 @@ mwifiex_dequeue_tx_packet(struct mwifiex
- 		if (enable_tx_amsdu && mwifiex_is_amsdu_allowed(priv, tid) &&
- 		    mwifiex_is_11n_aggragation_possible(priv, ptr,
- 							adapter->tx_buf_size))
--			mwifiex_11n_aggregate_pkt(priv, ptr, INTF_HEADER_LEN,
--						  ptr_index, flags);
-+			mwifiex_11n_aggregate_pkt(priv, ptr, ptr_index, flags);
- 			/* ra_list_spinlock has been freed in
- 			   mwifiex_11n_aggregate_pkt() */
- 		else
+@@ -508,10 +505,6 @@ static int mwifiex_usb_resume(struct usb
+ 						  MWIFIEX_RX_CMD_BUF_SIZE);
+ 	}
+ 
+-	for (i = 0; i < adapter->priv_num; i++)
+-		if (adapter->priv[i]->media_connected)
+-			netif_carrier_on(adapter->priv[i]->netdev);
+-
+ 	/* Disable Host Sleep */
+ 	if (adapter->hs_activated)
+ 		mwifiex_cancel_hs(mwifiex_get_priv(adapter,
 
 
