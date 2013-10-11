@@ -1,34 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752956Ab3JKWgU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 18:36:20 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:65389 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751712Ab3JKWgS (ORCPT
+	id S1753807Ab3JKWh6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 18:37:58 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:45029 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753663Ab3JKWh4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 18:36:18 -0400
-X-Nat-Received: from [202.181.97.72]:51606 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1381530969.11955
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-Cc: stable@vger.kernel.org, oleg@redhat.com, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org
-Subject: Re: [ 077/110] kernel/kmod.c: check for NULL in call_usermodehelper_exec()
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <20131011193807.584188672@linuxfoundation.org><20131011193816.228955398@linuxfoundation.org>
-In-Reply-To: <20131011193816.228955398@linuxfoundation.org>
-Message-Id: <201310120731.DFF35451.FOVQFFSHtOMJOL@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Sat, 12 Oct 2013 07:36:06 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 11102013 #11204819, status: clean
+	Fri, 11 Oct 2013 18:37:56 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Ryan Mallon <rmallon@gmail.com>
+Cc: George Spelvin <linux@horizon.com>, joe@perches.com,
+        akpm@linux-foundation.org, dan.j.rosenberg@gmail.com,
+        eldad@fogrefinery.com, jgunthorpe@obsidianresearch.com,
+        jkosina@suse.cz, keescook@chromium.org,
+        kernel-hardening@lists.openwall.com, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, rusty@rustcorp.com.au
+References: <20131011044232.11545.qmail@science.horizon.com>
+	<525875DB.9030300@gmail.com>
+Date: Fri, 11 Oct 2013 15:37:32 -0700
+In-Reply-To: <525875DB.9030300@gmail.com> (Ryan Mallon's message of "Sat, 12
+	Oct 2013 09:04:11 +1100")
+Message-ID: <87d2nba0yb.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX19/zSaKNXANGj8DL24U5AYRd/Iq5AcyWLw=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0008]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Ryan Mallon <rmallon@gmail.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH v3a] vsprintf: Check real user/group id for %pK
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg Kroah-Hartman wrote:
-> 3.10-stable review patch.  If anyone has any objections, please let me know.
+Ryan Mallon <rmallon@gmail.com> writes:
 
-3.10-stable doesn't need this patch because commit 264b83c07a84
-("usermodehelper: check subprocess_info->path != NULL") already fixed it.
+> The only remaining problem is kernel/module.c:module_sect_show() which
+> is used to write the sysfs files in /sys/module/<modname>/sections/.
+> Those files are actually are really good target for leaking %pK values
+> via setuid binaries. The problem is that the module_sect_show() function
+> isn't passed information about who opened the sysfs file. I don't think
+> this information is available in general for sysfs files either. Also,
+> I can't actually see how module_sect_show() gets called?
+>
+> I'm a bit stuck on how to solve this. Any ideas?
+
+I haven't yet had a chance to review the patches but there are patches
+to make sysfs files seq files in Greg's driver core tree.
+
+Eric
