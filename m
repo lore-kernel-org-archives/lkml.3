@@ -1,83 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757608Ab3JKTgo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:36:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45206 "EHLO
+	id S1757884Ab3JKThF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:37:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45235 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756999Ab3JKTfy (ORCPT
+	with ESMTP id S1757238Ab3JKTg7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:35:54 -0400
+	Fri, 11 Oct 2013 15:36:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>,
-        Oded Horovitz <oded@privatecore.com>,
-        Brad Spengler <spender@grsecurity.net>,
-        Matt Carlson <mcarlson@broadcom.com>,
-        "David S. Miller" <davem@davemloft.net>, Jeff Mahoney <jeffm@suse.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [ 38/39] tg3: fix length overflow in VPD firmware parsing
-Date: Fri, 11 Oct 2013 12:35:22 -0700
-Message-Id: <20131011193215.005574788@linuxfoundation.org>
+        Claudiu Manoil <claudiu.manoil@freescale.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 03/48] gianfar: Change default HW Tx queue scheduling mode
+Date: Fri, 11 Oct 2013 12:36:10 -0700
+Message-Id: <20131011193637.658080063@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20131011193210.843963685@linuxfoundation.org>
-References: <20131011193210.843963685@linuxfoundation.org>
+In-Reply-To: <20131011193637.253208688@linuxfoundation.org>
+References: <20131011193637.253208688@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Claudiu Manoil <claudiu.manoil@freescale.com>
 
-commit 715230a44310a8cf66fbfb5a46f9a62a9b2de424 upstream.
+commit b98b8babd6e3370fadb7c6eaacb00eb2f6344a6c upstream.
 
-Commit 184b89044fb6e2a74611dafa69b1dce0d98612c6 ("tg3: Use VPD fw version
-when present") introduced VPD parsing that contained a potential length
-overflow.
+This is primarily to address transmission timeout occurrences, when
+multiple H/W Tx queues are being used concurrently. Because in
+the priority scheduling mode the controller does not service the
+Tx queues equally (but in ascending index order), Tx timeouts are
+being triggered rightaway for a basic test with multiple simultaneous
+connections like:
+iperf -c <server_ip> -n 100M -P 8
 
-Limit the hardware's reported firmware string length (max 255 bytes) to
-stay inside the driver's firmware string length (32 bytes). On overflow,
-truncate the formatted firmware string instead of potentially overwriting
-portions of the tg3 struct.
+resulting in kernel trace:
+NETDEV WATCHDOG: eth1 (fsl-gianfar): transmit queue <X> timed out
+------------[ cut here ]------------
+WARNING: at net/sched/sch_generic.c:255
+...
+and controller reset during intense traffic, and possibly further
+complications.
 
-http://cansecwest.com/slides/2013/PrivateCore%20CSW%202013.pdf
+This patch changes the default H/W Tx scheduling setting (TXSCHED)
+for multi-queue devices, from priority scheduling mode to a weighted
+round robin mode with equal weights for all H/W Tx queues, and
+addresses the issue above.
 
--js: This fixes CVE-2013-1929.
-
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Reported-by: Oded Horovitz <oded@privatecore.com>
-Reported-by: Brad Spengler <spender@grsecurity.net>
-Cc: stable@vger.kernel.org
-Cc: Matt Carlson <mcarlson@broadcom.com>
+Signed-off-by: Claudiu Manoil <claudiu.manoil@freescale.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
-Acked-by: Jeff Mahoney <jeffm@suse.com>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- drivers/net/tg3.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/freescale/gianfar.c |   11 ++++++++++-
+ drivers/net/ethernet/freescale/gianfar.h |   11 ++++++++++-
+ 2 files changed, 20 insertions(+), 2 deletions(-)
 
---- a/drivers/net/tg3.c
-+++ b/drivers/net/tg3.c
-@@ -13067,8 +13067,11 @@ static void __devinit tg3_read_vpd(struc
- 		if (j + len > block_end)
- 			goto partno;
+--- a/drivers/net/ethernet/freescale/gianfar.c
++++ b/drivers/net/ethernet/freescale/gianfar.c
+@@ -394,7 +394,13 @@ static void gfar_init_mac(struct net_dev
+ 	if (ndev->features & NETIF_F_IP_CSUM)
+ 		tctrl |= TCTRL_INIT_CSUM;
  
--		memcpy(tp->fw_ver, &vpd_data[j], len);
--		strncat(tp->fw_ver, " bc ", TG3_NVM_VPD_LEN - len - 1);
-+		if (len >= sizeof(tp->fw_ver))
-+			len = sizeof(tp->fw_ver) - 1;
-+		memset(tp->fw_ver, 0, sizeof(tp->fw_ver));
-+		snprintf(tp->fw_ver, sizeof(tp->fw_ver), "%.*s bc ", len,
-+			 &vpd_data[j]);
- 	}
+-	tctrl |= TCTRL_TXSCHED_PRIO;
++	if (priv->prio_sched_en)
++		tctrl |= TCTRL_TXSCHED_PRIO;
++	else {
++		tctrl |= TCTRL_TXSCHED_WRRS;
++		gfar_write(&regs->tr03wt, DEFAULT_WRRS_WEIGHT);
++		gfar_write(&regs->tr47wt, DEFAULT_WRRS_WEIGHT);
++	}
  
- partno:
+ 	gfar_write(&regs->tctrl, tctrl);
+ 
+@@ -1153,6 +1159,9 @@ static int gfar_probe(struct platform_de
+ 	priv->rx_filer_enable = 1;
+ 	/* Enable most messages by default */
+ 	priv->msg_enable = (NETIF_MSG_IFUP << 1 ) - 1;
++	/* use pritority h/w tx queue scheduling for single queue devices */
++	if (priv->num_tx_queues == 1)
++		priv->prio_sched_en = 1;
+ 
+ 	/* Carrier starts down, phylib will bring it up */
+ 	netif_carrier_off(dev);
+--- a/drivers/net/ethernet/freescale/gianfar.h
++++ b/drivers/net/ethernet/freescale/gianfar.h
+@@ -301,8 +301,16 @@ extern const char gfar_driver_version[];
+ #define TCTRL_TFCPAUSE		0x00000008
+ #define TCTRL_TXSCHED_MASK	0x00000006
+ #define TCTRL_TXSCHED_INIT	0x00000000
++/* priority scheduling */
+ #define TCTRL_TXSCHED_PRIO	0x00000002
++/* weighted round-robin scheduling (WRRS) */
+ #define TCTRL_TXSCHED_WRRS	0x00000004
++/* default WRRS weight and policy setting,
++ * tailored to the tr03wt and tr47wt registers:
++ * equal weight for all Tx Qs, measured in 64byte units
++ */
++#define DEFAULT_WRRS_WEIGHT	0x18181818
++
+ #define TCTRL_INIT_CSUM		(TCTRL_TUCSEN | TCTRL_IPCSEN)
+ 
+ #define IEVENT_INIT_CLEAR	0xffffffff
+@@ -1098,7 +1106,8 @@ struct gfar_private {
+ 		extended_hash:1,
+ 		bd_stash_en:1,
+ 		rx_filer_enable:1,
+-		wol_en:1; /* Wake-on-LAN enabled */
++		wol_en:1, /* Wake-on-LAN enabled */
++		prio_sched_en:1; /* Enable priorty based Tx scheduling in Hw */
+ 	unsigned short padding;
+ 
+ 	/* PHY stuff */
 
 
