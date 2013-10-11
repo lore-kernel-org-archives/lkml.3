@@ -1,86 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757332Ab3JKID6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 04:03:58 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:65140 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756197Ab3JKID1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 04:03:27 -0400
-X-AuditID: 9c930179-b7c78ae000003065-42-5257b0ceaf77
-Date: Fri, 11 Oct 2013 17:03:29 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Phillip Lougher <phillip@squashfs.org.uk>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] Squashfs: Directly decompress into the page cache
- for file data
-Message-ID: <20131011080329.GE6847@bbox>
-References: <1381472381-3825-1-git-send-email-phillip@squashfs.org.uk>
+	id S1757363Ab3JKIEi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 04:04:38 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:44005 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756815Ab3JKIEe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 04:04:34 -0400
+Date: Fri, 11 Oct 2013 10:04:27 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "Chen, Gong" <gong.chen@linux.intel.com>
+Cc: tony.luck@intel.com, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: Extended H/W error log driver
+Message-ID: <20131011080427.GC18719@pd.tnic>
+References: <1381473166-29303-1-git-send-email-gong.chen@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1381472381-3825-1-git-send-email-phillip@squashfs.org.uk>
+In-Reply-To: <1381473166-29303-1-git-send-email-gong.chen@linux.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Phillip,
+On Fri, Oct 11, 2013 at 02:32:38AM -0400, Chen, Gong wrote:
+> [56005.785917] {3}Hardware error detected on CPU0
+> [56005.785959] {3}event severity: corrected
+> [56005.785975] {3}sub_event[0], severity: corrected
+> [56005.785977] {3}section_type: memory error
+> [56005.785981] {3}physical_address: 0x0000000851fe0000
+> [56005.786027] {3}DIMM location: Memriser1 CHANNEL A DIMM 0
 
-I looked at the patchset roughly and I feel it's really awesome
-so I have to rebase decompressor_multi.c on it. 
-But before that, could you review it?
-I think you may have some stuff to hate like naming and even more.
+Very good guys, I've been waiting for years for this to be possible,
+good job! :-)
+
+Btw, what's "Memriser1"?
+
+> [56005.786154] {4}Hardware error detected on CPU0
+> [56005.786159] {4}event severity: corrected
+> [56005.786162] {4}sub_event[0], severity: corrected
+
+This sub_event[0] could use better decoding though.
+
+> [56005.786166] {4}section_type: memory error
+> 
+> 
+> trace output:
+> 
+> # tracer: nop
+> #
+> # entries-in-buffer/entries-written: 4/4   #P:120
+> #
+> #                              _-----=> irqs-off
+> #                             / _----=> need-resched
+> #                            | / _---=> hardirq/softirq
+> #                            || / _--=> preempt-depth
+> #                            ||| /     delay
+> #           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
+> #              | |       |   ||||       |         |
+> ...
+> ...
+>           <idle>-0     [000] d.h. 56068.488759: extlog_mem_event: 3 corrected errors:unknown
+
+That "unknown" thing needs a " " in front of it and comes from
+cper_mem_err_type_str, AFAICT. I'm guessing the value is 0 and
+uninitialized or so?
+
+> on Memriser1 CHANNEL A DIMM 0(FRU:
+
+Also another " " missing here.
+
+> 00000000-0000-0000-0000-000000000000  physical addr: 0x0000000851fe0000 node: 0 card: 0 module: 0 rank: 0 bank: 0 row: 28927 column: 1296)
+>           <idle>-0     [000] d.h. 56068.488834: extlog_mem_event: 4 corrected errors:unknown
+> ...
+> ...
+> 
+> dmesg output are shrank to only keep the most important data. The trace
+> output will contain most of data. Not sure if all fields are meaningful
+> to users. Some fields like FRU ID/FRU TEXT depends on BIOS manufactor.
+> So welcome to add comments for what is needed or not.
+
+Yeah, I guess we again depend on BIOS people to fill those in. I'd
+expect serious server manifacturers who care about RAS to do so...
 
 Thanks.
 
-On Fri, Oct 11, 2013 at 07:19:37AM +0100, Phillip Lougher wrote:
-> This patch-set introduces an implementation of
-> squashfs_readpage() that directly decompresses into the
-> page cache.
-> 
-> It first generalises the decompressors by adding a page handler
-> abstraction.  This adds helpers to allow the decompressors
-> to access and process the output buffers in an implementation
-> independant manner.
-> 
-> It then adds a read_page() implementation for file data that
-> uses the page handler abstraction to push down the necessary
-> kmap_atomic/kunmap_atomic operations on the page cache buffers into
-> the decompressors.  This enables direct copying into the page cache
-> without using the slow kmap/kunmap calls.
-> 
-> The code detects when multiple threads are racing in
-> squashfs_readpage() to decompress the same block, and avoids
-> this regression by falling back to using an intermediate
-> buffer.
-> 
-> This patch enhances the performance of Squashfs significantly
-> when multiple processes are accessing the filesystem simultaneously
-> because it not only reduces memcopying, but it more importantly
-> eliminates the lock contention on the intermediate buffer.
-> 
-> Using single-threaded decompression.
-> 
->         dd if=file1 of=/dev/null bs=4096 &
->         dd if=file2 of=/dev/null bs=4096 &
->         dd if=file3 of=/dev/null bs=4096 &
->         dd if=file4 of=/dev/null bs=4096
-> 
-> Before:
-> 
-> 629145600 bytes (629 MB) copied, 45.8046 s, 13.7 MB/s
-> 
-> After:
-> 
-> 629145600 bytes (629 MB) copied, 9.29414 s, 67.7 MB/s
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
 -- 
-Kind regards,
-Minchan Kim
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
