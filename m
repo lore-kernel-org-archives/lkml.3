@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758472Ab3JKLGe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 07:06:34 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58458 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757809Ab3JKKmy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757814Ab3JKKmy (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 11 Oct 2013 06:42:54 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58451 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757785Ab3JKKmw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 06:42:52 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Nithin Nayak Sujir <nsujir@broadcom.com>,
+        Michael Chan <mchan@broadcom.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 028/100] cciss: fix info leak in cciss_ioctl32_passthru()
-Date: Fri, 11 Oct 2013 11:40:58 +0100
-Message-Id: <1381488130-30235-29-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 026/100] tg3: Don't turn off led on 5719 serdes port 0
+Date: Fri, 11 Oct 2013 11:40:56 +0100
+Message-Id: <1381488130-30235-27-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
 References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
@@ -29,37 +29,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Nithin Sujir <nsujir@broadcom.com>
 
-commit 58f09e00ae095e46ef9edfcf3a5fd9ccdfad065e upstream.
+commit 989038e217e94161862a959e82f9a1ecf8dda152 upstream.
 
-The arg64 struct has a hole after ->buf_size which isn't cleared.  Or if
-any of the calls to copy_from_user() fail then that would cause an
-information leak as well.
+Turning off led on port 0 of the 5719 serdes causes all other ports to
+lose power and stop functioning. Add tg3_phy_led_bug() function to check
+for this condition. We use a switch() in tg3_phy_led_bug() for
+consistency with the tg3_phy_power_bug() function.
 
-This was assigned CVE-2013-2147.
-
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Mike Miller <mike.miller@hp.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Nithin Nayak Sujir <nsujir@broadcom.com>
+Signed-off-by: Michael Chan <mchan@broadcom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[ luis: backported to 3.5:
+  - use GET_ASIC_REV() macro instead of tg3_asic_rev() ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/block/cciss.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/ethernet/broadcom/tg3.c | 18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
-index d3446f6..d7ad865 100644
---- a/drivers/block/cciss.c
-+++ b/drivers/block/cciss.c
-@@ -1186,6 +1186,7 @@ static int cciss_ioctl32_passthru(struct block_device *bdev, fmode_t mode,
- 	int err;
- 	u32 cp;
+diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
+index 504b4f0..5e01182 100644
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -2783,6 +2783,19 @@ static bool tg3_phy_power_bug(struct tg3 *tp)
+ 	return false;
+ }
  
-+	memset(&arg64, 0, sizeof(arg64));
- 	err = 0;
- 	err |=
- 	    copy_from_user(&arg64.LUN_info, &arg32->LUN_info,
++static bool tg3_phy_led_bug(struct tg3 *tp)
++{
++	switch (GET_ASIC_REV(tp->pci_chip_rev_id)) {
++	case ASIC_REV_5719:
++		if ((tp->phy_flags & TG3_PHYFLG_MII_SERDES) &&
++		    !tp->pci_fn)
++			return true;
++		return false;
++	}
++
++	return false;
++}
++
+ static void tg3_power_down_phy(struct tg3 *tp, bool do_low_power)
+ {
+ 	u32 val;
+@@ -2827,8 +2840,9 @@ static void tg3_power_down_phy(struct tg3 *tp, bool do_low_power)
+ 		}
+ 		return;
+ 	} else if (do_low_power) {
+-		tg3_writephy(tp, MII_TG3_EXT_CTRL,
+-			     MII_TG3_EXT_CTRL_FORCE_LED_OFF);
++		if (!tg3_phy_led_bug(tp))
++			tg3_writephy(tp, MII_TG3_EXT_CTRL,
++				     MII_TG3_EXT_CTRL_FORCE_LED_OFF);
+ 
+ 		val = MII_TG3_AUXCTL_PCTL_100TX_LPWR |
+ 		      MII_TG3_AUXCTL_PCTL_SPR_ISOLATE |
 -- 
 1.8.3.2
 
