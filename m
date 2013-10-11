@@ -1,78 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755793Ab3JKPNT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 11:13:19 -0400
-Received: from gw1.transmode.se ([195.58.98.146]:53856 "EHLO gw1.transmode.se"
+	id S1756175Ab3JKPSd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 11:18:33 -0400
+Received: from ns.mm-sol.com ([212.124.72.66]:44166 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751850Ab3JKPNS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 11:13:18 -0400
-In-Reply-To: <201310111256.r9BCuepM006243@localhost.localdomain>
-References: <201310111256.r9BCuepM006243@localhost.localdomain>
-To: Christophe Leroy <christophe.leroy@c-s.fr>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        Paul Mackerras <paulus@samba.org>
-MIME-Version: 1.0
-Subject: Re: [PATCH] powerpc 8xx: Fixing memory init issue with CONFIG_PIN_TLB
-X-KeepSent: F3401910:4A8AA6D0-C1257C01:0052FC82;
- type=4; name=$KeepSent
-X-Mailer: Lotus Notes Release 8.5.3 September 15, 2011
-From: Joakim Tjernlund <joakim.tjernlund@transmode.se>
-Message-ID: <OFF3401910.4A8AA6D0-ONC1257C01.0052FC82-C1257C01.00539C55@transmode.se>
-Date: Fri, 11 Oct 2013 17:13:15 +0200
-X-MIMETrack: Serialize by Router on mail1/Transmode(Release 8.5.3FP1|March 07, 2012) at
- 11/10/2013 17:13:15,
-	Serialize complete at 11/10/2013 17:13:15
-Content-Type: text/plain; charset="US-ASCII"
+	id S1751932Ab3JKPSb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 11:18:31 -0400
+From: Stanimir Varbanov <svarbanov@mm-sol.com>
+To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Matt Mackall <mpm@selenic.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-arm-msm@vger.kernel.org,
+        Stanimir Varbanov <svarbanov@mm-sol.com>
+Subject: [PATCH v2 0/2] Add support for Qualcomm's PRNG
+Date: Fri, 11 Oct 2013 18:16:39 +0300
+Message-Id: <1381504601-23773-1-git-send-email-svarbanov@mm-sol.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Linuxppc-dev" 
-<linuxppc-dev-bounces+joakim.tjernlund=transmode.se@lists.ozlabs.org> 
-wrote on 2013/10/11 14:56:40:
-> 
-> Activating CONFIG_PIN_TLB allows access to the 24 first Mbytes of memory 
-at
-> bootup instead of 8. It is needed for "big" kernels for instance when 
-activating
-> CONFIG_LOCKDEP_SUPPORT. This needs to be taken into account in init_32 
-too,
-> otherwise memory allocation soon fails after startup.
-> 
-> Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
-> 
-> diff -ur linux-3.11.org/arch/powerpc/kernel/head_8xx.S 
-linux-3.11/arch/powerpc/kernel/head_8xx.S
-> --- linux-3.11.org/arch/powerpc/mm/init_32.c   2013-09-02 
-22:46:10.000000000 +0200
-> +++ linux-3.11/arch/powerpc/mm/init_32.c   2013-09-09 11:28:54.000000000 
-+0200
-> @@ -213,7 +213,12 @@
->      */
->     BUG_ON(first_memblock_base != 0);
-> 
-> +#ifdef CONFIG_PIN_TLB
-> +   /* 8xx can only access 24MB at the moment */
-> +   memblock_set_current_limit(min_t(u64, first_memblock_size, 
-0x01800000));
-> +#else
->     /* 8xx can only access 8MB at the moment */
->     memblock_set_current_limit(min_t(u64, first_memblock_size, 
-0x00800000));
-> +#endif
->  }
->  #endif /* CONFIG_8xx */
+Here is the second version of RNG driver for MSM SoC's.
 
-hmm, I think you should always map 24 MB (or less if RAM < 24 MB) and do 
-the same
-in head_8xx.S.
+During the time since first version I've made some tests using
+rng tools this is the result:
 
-Or to keep it simple, just always map at least 16 MB here and in 
-head_8xx.S, assuming 
-that 16 MB is min RAM for any 8xx system running 3.x kernels.
+# cat /dev/hw_random | rngtest -c 100000
 
-Much of the need for pinning would go away if you adopted my 8MB pages 
-from 2.4 to 3.x 
+Copyright (c) 2004 by Henrique de Moraes Holschuh
+This is free software; see the source for copying conditions.  There is
+NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR
+PURPOSE.
 
-   Jocke
+rngtest: starting FIPS tests...
+rngtest: bits received from input: 2000000032
+rngtest: FIPS 140-2 successes: 99925
+rngtest: FIPS 140-2 failures: 75
+rngtest: FIPS 140-2(2001-10-10) Monobit: 10
+rngtest: FIPS 140-2(2001-10-10) Poker: 9
+rngtest: FIPS 140-2(2001-10-10) Runs: 20
+rngtest: FIPS 140-2(2001-10-10) Long run: 38
+rngtest: FIPS 140-2(2001-10-10) Continuous run: 0
+rngtest: input channel speed: (min=1.267; avg=53.222; max=2384.186)Mibits/s
+rngtest: FIPS tests speed: (min=3.016; avg=48.847; max=49.931)Mibits/s
+rngtest: Program run time: 75191914 microseconds
+
+Changes since v1:
+
+  * I took into account Stephen Boyd's comments about define duplication
+and added a call to platform_get_resource.
+  * The 'struct hwrng' is now embedded into msm_rng private structure to
+avoid global variables and allow more than one instances of the driver.
+
+===================================================================
+This patch set adds hardware RNG driver wich is used to control the
+Qualcomm's PRNG hardware block.
+The first patch document the DT bindings needed to sucessfuly probe
+the driver and the second patch adds the driver.
+
+Comments are welecome!
+
+Stanimir Varbanov (2):
+  ARM: DT: msm: Add Qualcomm's PRNG driver binding document
+  hwrng: msm: Add PRNG support for MSM SoC's
+
+ .../devicetree/bindings/rng/qcom,prng.txt          |  17 ++
+ drivers/char/hw_random/Kconfig                     |  12 ++
+ drivers/char/hw_random/Makefile                    |   1 +
+ drivers/char/hw_random/msm-rng.c                   | 195 +++++++++++++++++++++
+ 4 files changed, 225 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/rng/qcom,prng.txt
+ create mode 100644 drivers/char/hw_random/msm-rng.c
+
+-- 
+1.8.3.1
+
