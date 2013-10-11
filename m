@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758585Ab3JKTtx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:49:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46485 "EHLO
+	id S1759284Ab3JKTuQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:50:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46481 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753834Ab3JKTmJ (ORCPT
+	with ESMTP id S932831Ab3JKTmI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:42:09 -0400
+	Fri, 11 Oct 2013 15:42:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 109/135] iscsi-target: Only perform wait_for_tasks when performing shutdown
-Date: Fri, 11 Oct 2013 12:39:50 -0700
-Message-Id: <20131011193957.122055930@linuxfoundation.org>
+        Ian Abbott <abbotti@mev.co.uk>
+Subject: [ 096/135] staging: comedi: ni_65xx: (bug fix) confine insn_bits to one subdevice
+Date: Fri, 11 Oct 2013 12:39:37 -0700
+Message-Id: <20131011193955.696735679@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -26,43 +26,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Ian Abbott <abbotti@mev.co.uk>
 
-commit e255a28598e8e63070322fc89bd34189dd660a89 upstream.
+commit 677a31565692d596ef42ea589b53ba289abf4713 upstream.
 
-This patch changes transport_generic_free_cmd() to only wait_for_tasks
-when shutdown=true is passed to iscsit_free_cmd().
+The `insn_bits` handler `ni_65xx_dio_insn_bits()` has a `for` loop that
+currently writes (optionally) and reads back up to 5 "ports" consisting
+of 8 channels each.  It reads up to 32 1-bit channels but can only read
+and write a whole port at once - it needs to handle up to 5 ports as the
+first channel it reads might not be aligned on a port boundary.  It
+breaks out of the loop early if the next port it handles is beyond the
+final port on the card.  It also breaks out early on the 5th port in the
+loop if the first channel was aligned.  Unfortunately, it doesn't check
+that the current port it is dealing with belongs to the comedi subdevice
+the `insn_bits` handler is acting on.  That's a bug.
 
-With the advent of >= v3.10 iscsi-target code using se_cmd->cmd_kref,
-the extra wait_for_tasks with shutdown=false is unnecessary, and may
-end up causing an extra context switch when releasing WRITEs.
+Redo the `for` loop to terminate after the final port belonging to the
+subdevice, changing the loop variable in the process to simplify things
+a bit.  The `for` loop could now try and handle more than 5 ports if the
+subdevice has more than 40 channels, but the test `if (bitshift >= 32)`
+ensures it will break out early after 4 or 5 ports (depending on whether
+the first channel is aligned on a port boundary).  (`bitshift` will be
+between -7 and 7 inclusive on the first iteration, increasing by 8 for
+each subsequent operation.)
 
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/iscsi/iscsi_target_util.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/staging/comedi/drivers/ni_65xx.c |   25 ++++++++++---------------
+ 1 file changed, 10 insertions(+), 15 deletions(-)
 
---- a/drivers/target/iscsi/iscsi_target_util.c
-+++ b/drivers/target/iscsi/iscsi_target_util.c
-@@ -735,7 +735,7 @@ void iscsit_free_cmd(struct iscsi_cmd *c
- 		 * Fallthrough
- 		 */
- 	case ISCSI_OP_SCSI_TMFUNC:
--		rc = transport_generic_free_cmd(&cmd->se_cmd, 1);
-+		rc = transport_generic_free_cmd(&cmd->se_cmd, shutdown);
- 		if (!rc && shutdown && se_cmd && se_cmd->se_sess) {
- 			__iscsit_free_cmd(cmd, true, shutdown);
- 			target_put_sess_cmd(se_cmd->se_sess, se_cmd);
-@@ -751,7 +751,7 @@ void iscsit_free_cmd(struct iscsi_cmd *c
- 			se_cmd = &cmd->se_cmd;
- 			__iscsit_free_cmd(cmd, true, shutdown);
+--- a/drivers/staging/comedi/drivers/ni_65xx.c
++++ b/drivers/staging/comedi/drivers/ni_65xx.c
+@@ -369,28 +369,23 @@ static int ni_65xx_dio_insn_bits(struct
+ {
+ 	const struct ni_65xx_board *board = comedi_board(dev);
+ 	struct ni_65xx_private *devpriv = dev->private;
+-	unsigned base_bitfield_channel;
+-	const unsigned max_ports_per_bitfield = 5;
++	int base_bitfield_channel;
+ 	unsigned read_bits = 0;
+-	unsigned j;
++	int last_port_offset = ni_65xx_port_by_channel(s->n_chan - 1);
++	int port_offset;
  
--			rc = transport_generic_free_cmd(&cmd->se_cmd, 1);
-+			rc = transport_generic_free_cmd(&cmd->se_cmd, shutdown);
- 			if (!rc && shutdown && se_cmd->se_sess) {
- 				__iscsit_free_cmd(cmd, true, shutdown);
- 				target_put_sess_cmd(se_cmd->se_sess, se_cmd);
+ 	base_bitfield_channel = CR_CHAN(insn->chanspec);
+-	for (j = 0; j < max_ports_per_bitfield; ++j) {
+-		const unsigned port_offset =
+-			ni_65xx_port_by_channel(base_bitfield_channel) + j;
+-		const unsigned port =
+-			sprivate(s)->base_port + port_offset;
+-		unsigned base_port_channel;
++	for (port_offset = ni_65xx_port_by_channel(base_bitfield_channel);
++	     port_offset <= last_port_offset; port_offset++) {
++		unsigned port = sprivate(s)->base_port + port_offset;
++		int base_port_channel = port_offset * ni_65xx_channels_per_port;
+ 		unsigned port_mask, port_data, port_read_bits;
+-		int bitshift;
+-		if (port >= ni_65xx_total_num_ports(board))
++		int bitshift = base_port_channel - base_bitfield_channel;
++
++		if (bitshift >= 32)
+ 			break;
+-		base_port_channel = port_offset * ni_65xx_channels_per_port;
+ 		port_mask = data[0];
+ 		port_data = data[1];
+-		bitshift = base_port_channel - base_bitfield_channel;
+-		if (bitshift >= 32 || bitshift <= -32)
+-			break;
+ 		if (bitshift > 0) {
+ 			port_mask >>= bitshift;
+ 			port_data >>= bitshift;
 
 
