@@ -1,69 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756194Ab3JKGJu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 02:09:50 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:57510 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752151Ab3JKGJs (ORCPT
+	id S1756288Ab3JKGKi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 02:10:38 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:55699 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753160Ab3JKGKh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 02:09:48 -0400
-Date: Fri, 11 Oct 2013 08:09:44 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/6] Optimize the cpu hotplug locking -v2
-Message-ID: <20131011060944.GB4975@gmail.com>
-References: <20131010090044.7f12ddaf.akpm@linux-foundation.org>
- <20131010123631.1be60315@gandalf.local.home>
- <20131010094355.6f75e5a2.akpm@linux-foundation.org>
- <20131010165337.GT3081@twins.programming.kicks-ass.net>
- <20131010131305.58558079@gandalf.local.home>
- <20131010104856.8f042977112d5ac2693973ae@linux-foundation.org>
- <20131010183409.GP13848@laptop.programming.kicks-ass.net>
- <CA+55aFyoP5KFUg44Xenp_Jz0_5ssosn-KF6LDsa0qsmCjyJ56g@mail.gmail.com>
- <20131010150444.51f9c929@gandalf.local.home>
- <CA+55aFw+gXxp-S0XxVGH=9TfudNSDRnFmntT6mK9B1Wbp2mDOg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFw+gXxp-S0XxVGH=9TfudNSDRnFmntT6mK9B1Wbp2mDOg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 11 Oct 2013 02:10:37 -0400
+From: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingn@redhat.com
+Subject: [PATCH TRIVIAL] sched/fair: Remove description of balance from update_sd_lb_stats()
+Date: Fri, 11 Oct 2013 11:40:31 +0530
+Message-Id: <1381471831-17484-1-git-send-email-kamalesh@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.4.474.g128a96c
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13101106-5564-0000-0000-00000A1D2E45
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+With 23f0d2093c789 (sched: Factor out code to should_we_balance()),
+we no longer pass balance as argument to update_sd_lb_stats().
+So remove it's description.
 
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+Signed-off-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+---
+ kernel/sched/fair.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-> On Thu, Oct 10, 2013 at 12:04 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> >
-> > I'm wondering if we can have a for_each_cpu() that only disables 
-> > preemption in the loop.
-> 
-> I think we'd generally want to have it be something the loop asks for.
-> 
-> If the loop is just some kind of "gather statistics" thing, I don't 
-> think it's required. The cost per loop is so low (usually adding up a 
-> couple of words) that the downside drowns the upside.
-> 
-> And we could easily look at MAXSMP (or NR_CPUS) at compile-time, and not 
-> do it for common small values (although it looks like Fedora defaults to 
-> 128 CPU's for their distro kernels, which seems a bit excessive - too 
-> many by far for normal people, too few for the crazy big ones).
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 803e343d7c89..82746796578d 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -5586,7 +5586,6 @@ static inline enum fbq_type fbq_classify_rq(struct rq *rq)
+ /**
+  * update_sd_lb_stats - Update sched_domain's statistics for load balancing.
+  * @env: The load balancing environment.
+- * @balance: Should we balance.
+  * @sds: variable to hold the statistics for this sched_domain.
+  */
+ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sds)
+-- 
+1.8.3.1
 
-Ubuntu has it at 256, so I guess Fedora is even a bit conservative ;-)
-
-Thanks,
-
-	Ingo
