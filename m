@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964793Ab3JKTw6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:52:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46435 "EHLO
+	id S932942Ab3JKTxk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:53:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46423 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932690Ab3JKTmA (ORCPT
+	with ESMTP id S932765Ab3JKTl7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:42:00 -0400
+	Fri, 11 Oct 2013 15:41:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jason Andrews <jasona@cadence.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 106/135] rtlwifi: Align private space in rtl_priv struct
-Date: Fri, 11 Oct 2013 12:39:47 -0700
-Message-Id: <20131011193956.805695702@linuxfoundation.org>
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 095/135] kernel/kmod.c: check for NULL in call_usermodehelper_exec()
+Date: Fri, 11 Oct 2013 12:39:36 -0700
+Message-Id: <20131011193955.587009797@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -28,35 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
 
-commit 60ce314d1750fef843e9db70050e09e49f838b69 upstream.
+commit 4c1c7be95c345cf2ad537a0c48e9aeadc7304527 upstream.
 
-The private array at the end of the rtl_priv struct is not aligned.
-On ARM architecture, this causes an alignment trap and is fixed by aligning
-that array with __align(sizeof(void *)). That should properly align that
-space according to the requirements of all architectures.
+If /proc/sys/kernel/core_pattern contains only "|", a NULL pointer
+dereference happens upon core dump because argv_split("") returns
+argv[0] == NULL.
 
-Reported-by: Jason Andrews <jasona@cadence.com>
-Tested-by: Jason Andrews <jasona@cadence.com>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+This bug was once fixed by commit 264b83c07a84 ("usermodehelper: check
+subprocess_info->path != NULL") but was by error reintroduced by commit
+7f57cfa4e2aa ("usermodehelper: kill the sub_info->path[0] check").
+
+This bug seems to exist since 2.6.19 (the version which core dump to
+pipe was added).  Depending on kernel version and config, some side
+effect might happen immediately after this oops (e.g.  kernel panic with
+2.6.32-358.18.1.el6).
+
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Acked-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/wifi.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/kmod.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/net/wireless/rtlwifi/wifi.h
-+++ b/drivers/net/wireless/rtlwifi/wifi.h
-@@ -2057,7 +2057,7 @@ struct rtl_priv {
- 	   that it points to the data allocated
- 	   beyond  this structure like:
- 	   rtl_pci_priv or rtl_usb_priv */
--	u8 priv[0];
-+	u8 priv[0] __aligned(sizeof(void *));
- };
+--- a/kernel/kmod.c
++++ b/kernel/kmod.c
+@@ -571,6 +571,10 @@ int call_usermodehelper_exec(struct subp
+ 	DECLARE_COMPLETION_ONSTACK(done);
+ 	int retval = 0;
  
- #define rtl_priv(hw)		(((struct rtl_priv *)(hw)->priv))
++	if (!sub_info->path) {
++		call_usermodehelper_freeinfo(sub_info);
++		return -EINVAL;
++	}
+ 	helper_lock();
+ 	if (!khelper_wq || usermodehelper_disabled) {
+ 		retval = -EBUSY;
 
 
