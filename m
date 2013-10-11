@@ -1,116 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757650Ab3JKLsK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 07:48:10 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:28689 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757581Ab3JKLsI (ORCPT
+	id S1757767Ab3JKLs5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 07:48:57 -0400
+Received: from 5.mo1.mail-out.ovh.net ([178.33.45.107]:59727 "EHLO
+	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757713Ab3JKLsz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 07:48:08 -0400
-X-Spam-Score: -100.7
-Message-ID: <5257E539.9080902@asianux.com>
-Date: Fri, 11 Oct 2013 19:47:05 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux390@de.ibm.com" <linux390@de.ibm.com>,
-        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] arm/arm64: remove atomic_clear_mask() in "include/asm/atomic.h"
-References: <52561137.3070608@asianux.com> <5256117A.4000009@asianux.com> <5256121A.9030504@asianux.com> <52561269.60900@asianux.com> <20131010100733.GH3817@mudshark.cambridge.arm.com> <52568998.2080108@asianux.com> <20131010142305.GG6199@mudshark.cambridge.arm.com> <525751E2.3020207@asianux.com> <20131011104419.GE14732@mudshark.cambridge.arm.com> <5257E033.3090607@asianux.com>
-In-Reply-To: <5257E033.3090607@asianux.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 11 Oct 2013 07:48:55 -0400
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@linaro.org>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Josh Wu <josh.wu@atmel.com>, Richard Genoud <richard.genoud@gmail.com>
+Cc: Boris BREZILLON <b.brezillon@overkiz.com>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org
+Subject: [PATCH v4 16/17] ARM: at91: move pit timer to common clk framework
+Date: Fri, 11 Oct 2013 13:46:28 +0200
+Message-Id: <1381491988-14798-1-git-send-email-b.brezillon@overkiz.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1381477081-6041-1-git-send-email-b.brezillon@overkiz.com>
+References: <1381477081-6041-1-git-send-email-b.brezillon@overkiz.com>
+X-Ovh-Tracer-Id: 16518640484895914208
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrvdefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrvdefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In current kernel wide source code, except other architectures, only
-s390 scsi drivers use atomic_clear_mask(), and arm/arm64 need not
-support s390 drivers.
+Use device tree to get the source clock of the PIT (Periodic Interval Timer).
+If the clock is not found in device tree (or dt is not enabled) we'll try to
+get it using clk_lookup definitions.
 
-So remove atomic_clear_mask() from "arm[64]/include/asm/atomic.h".
-
-
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 ---
- arch/arm/include/asm/atomic.h   |   24 ------------------------
- arch/arm64/include/asm/atomic.h |   14 --------------
- 2 files changed, 0 insertions(+), 38 deletions(-)
+ arch/arm/mach-at91/at91sam926x_time.c |   14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/include/asm/atomic.h b/arch/arm/include/asm/atomic.h
-index da1c77d..3b3ae49fa 100644
---- a/arch/arm/include/asm/atomic.h
-+++ b/arch/arm/include/asm/atomic.h
-@@ -134,21 +134,6 @@ static inline int atomic_cmpxchg(atomic_t *ptr, int old, int new)
- 	return oldval;
- }
+diff --git a/arch/arm/mach-at91/at91sam926x_time.c b/arch/arm/mach-at91/at91sam926x_time.c
+index bb39232..0f04ffe 100644
+--- a/arch/arm/mach-at91/at91sam926x_time.c
++++ b/arch/arm/mach-at91/at91sam926x_time.c
+@@ -39,6 +39,7 @@
+ static u32 pit_cycle;		/* write-once */
+ static u32 pit_cnt;		/* access only w/system irq blocked */
+ static void __iomem *pit_base_addr __read_mostly;
++static struct clk *mck;
  
--static inline void atomic_clear_mask(unsigned long mask, unsigned long *addr)
--{
--	unsigned long tmp, tmp2;
--
--	__asm__ __volatile__("@ atomic_clear_mask\n"
--"1:	ldrex	%0, [%3]\n"
--"	bic	%0, %0, %4\n"
--"	strex	%1, %0, [%3]\n"
--"	teq	%1, #0\n"
--"	bne	1b"
--	: "=&r" (tmp), "=&r" (tmp2), "+Qo" (*addr)
--	: "r" (addr), "Ir" (mask)
--	: "cc");
--}
--
- #else /* ARM_ARCH_6 */
+ static inline unsigned int pit_read(unsigned int reg_offset)
+ {
+@@ -195,10 +196,14 @@ static int __init of_at91sam926x_pit_init(void)
+ 	if (!pit_base_addr)
+ 		goto node_err;
  
- #ifdef CONFIG_SMP
-@@ -197,15 +182,6 @@ static inline int atomic_cmpxchg(atomic_t *v, int old, int new)
- 	return ret;
- }
++	mck = of_clk_get(np, 0);
++
+ 	/* Get the interrupts property */
+ 	ret = irq_of_parse_and_map(np, 0);
+ 	if (!ret) {
+ 		pr_crit("AT91: PIT: Unable to get IRQ from DT\n");
++		if (!IS_ERR(mck))
++			clk_put(mck);
+ 		goto ioremap_err;
+ 	}
+ 	at91sam926x_pit_irq.irq = ret;
+@@ -230,6 +235,8 @@ void __init at91sam926x_pit_init(void)
+ 	unsigned	bits;
+ 	int		ret;
  
--static inline void atomic_clear_mask(unsigned long mask, unsigned long *addr)
--{
--	unsigned long flags;
--
--	raw_local_irq_save(flags);
--	*addr &= ~mask;
--	raw_local_irq_restore(flags);
--}
--
- #endif /* __LINUX_ARM_ARCH__ */
++	mck = ERR_PTR(-ENOENT);
++
+ 	/* For device tree enabled device: initialize here */
+ 	of_at91sam926x_pit_init();
  
- #define atomic_xchg(v, new) (xchg(&((v)->counter), new))
-diff --git a/arch/arm64/include/asm/atomic.h b/arch/arm64/include/asm/atomic.h
-index 8363644..01de5aa 100644
---- a/arch/arm64/include/asm/atomic.h
-+++ b/arch/arm64/include/asm/atomic.h
-@@ -126,20 +126,6 @@ static inline int atomic_cmpxchg(atomic_t *ptr, int old, int new)
- 	return oldval;
- }
+@@ -237,7 +244,12 @@ void __init at91sam926x_pit_init(void)
+ 	 * Use our actual MCK to figure out how many MCK/16 ticks per
+ 	 * 1/HZ period (instead of a compile-time constant LATCH).
+ 	 */
+-	pit_rate = clk_get_rate(clk_get(NULL, "mck")) / 16;
++	if (IS_ERR(mck))
++		mck = clk_get(NULL, "mck");
++
++	if (IS_ERR(mck))
++		panic("AT91: PIT: Unable to get mck clk\n");
++	pit_rate = clk_get_rate(mck) / 16;
+ 	pit_cycle = (pit_rate + HZ/2) / HZ;
+ 	WARN_ON(((pit_cycle - 1) & ~AT91_PIT_PIV) != 0);
  
--static inline void atomic_clear_mask(unsigned long mask, unsigned long *addr)
--{
--	unsigned long tmp, tmp2;
--
--	asm volatile("// atomic_clear_mask\n"
--"1:	ldxr	%0, %2\n"
--"	bic	%0, %0, %3\n"
--"	stxr	%w1, %0, %2\n"
--"	cbnz	%w1, 1b"
--	: "=&r" (tmp), "=&r" (tmp2), "+Q" (*addr)
--	: "Ir" (mask)
--	: "cc");
--}
--
- #define atomic_xchg(v, new) (xchg(&((v)->counter), new))
- 
- static inline int __atomic_add_unless(atomic_t *v, int a, int u)
 -- 
-1.7.7.6
+1.7.9.5
+
