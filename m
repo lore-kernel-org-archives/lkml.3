@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757278Ab3JKJt5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 05:49:57 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:20475 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752551Ab3JKJtz (ORCPT
+	id S1757399Ab3JKJuL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 05:50:11 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:43401 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752551Ab3JKJuJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 05:49:55 -0400
-Message-ID: <5257C9BC.8000509@huawei.com>
-Date: Fri, 11 Oct 2013 17:49:48 +0800
+	Fri, 11 Oct 2013 05:50:09 -0400
+Message-ID: <5257C9A1.1030404@huawei.com>
+Date: Fri, 11 Oct 2013 17:49:21 +0800
 From: Li Zefan <lizefan@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
 To: Tejun Heo <tj@kernel.org>
 CC: LKML <linux-kernel@vger.kernel.org>, cgroups <cgroups@vger.kernel.org>
-Subject: [PATCH v2 02/12] cpuset: update cpuset->effective_{cpus,mems} at
- hotplug
-References: <5257C9A1.1030404@huawei.com>
-In-Reply-To: <5257C9A1.1030404@huawei.com>
+Subject: [PATCH v2 00/12] cpuset: separate configured masks and effective
+ masks
 Content-Type: text/plain; charset="GB2312"
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [10.135.68.215]
@@ -26,72 +24,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We're going to have separate user-configured masks and effective ones.
+This patcheset introduces behavior changes, but only if you mount cgroupfs
+with sane_behavior option:
 
-Eventually configured masks can only be changed by writing cpuset.cpus
-and cpuset.mems, and they won't be restricted by parent cpuset. While
-effective masks reflect cpu/memory hotplug and hierachical restriction,
-and these are the real masks that apply to the tasks in the cpuset.
+- We introduce new interfaces cpuset.effective_cpus and cpuset.effective_mems,
+  while cpuset.cpus and cpuset.mems will be configured masks.
 
-We calculate effective mask this way:
-  - top cpuset's effective_mask == online_mask, otherwise
-  - cpuset's effective_mask == configured_mask & parent effective_mask,
-    if the result is empty, it inherits parent effective mask.
+- The configured masks can be changed by writing cpuset.cpus/mems only. They
+  won't be changed when hotplug happens.
 
-Those behavior changes are for sane_behavior only. For !sane_behavior
-effective_mask and configured_mask are the same, so we won't break old
-interfaces.
+- Users can config cpus and mems without restrictions from the parent cpuset.
+  effective masks will enforce the hierarchical behavior.
 
-To make cs->effective_{cpus,mems} to be effective masks, we need to
-  - change the effective masks at hotplug
-  - change the effective masks at config change
-  - take on ancestor's mask when the effective mask is empty
+- Users can also config cpus and mems to have already offlined CPU/nodes.
 
-The first item is done here.
+- When a CPU/node is onlined, it will be brought back to the effective masks
+  if it's in the configured masks.
 
-This won't introduce behavior change.
+- We build sched domains based on effective cpumask but not configured cpumask.
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
----
- kernel/cpuset.c | 4 ++++
- 1 file changed, 4 insertions(+)
 
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index e13fc2a..d0ccde2 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -2186,6 +2186,7 @@ retry:
- 
- 	mutex_lock(&callback_mutex);
- 	cpumask_andnot(cs->cpus_allowed, cs->cpus_allowed, &off_cpus);
-+	cpumask_andnot(cs->effective_cpus, cs->effective_cpus, &off_cpus);
- 	mutex_unlock(&callback_mutex);
- 
- 	/*
-@@ -2200,6 +2201,7 @@ retry:
- 
- 	mutex_lock(&callback_mutex);
- 	nodes_andnot(cs->mems_allowed, cs->mems_allowed, off_mems);
-+	nodes_andnot(cs->effective_mems, cs->effective_mems, off_mems);
- 	mutex_unlock(&callback_mutex);
- 
- 	/*
-@@ -2263,6 +2265,7 @@ static void cpuset_hotplug_workfn(struct work_struct *work)
- 	if (cpus_updated) {
- 		mutex_lock(&callback_mutex);
- 		cpumask_copy(top_cpuset.cpus_allowed, &new_cpus);
-+		cpumask_copy(top_cpuset.effective_cpus, &new_cpus);
- 		mutex_unlock(&callback_mutex);
- 		/* we don't mess with cpumasks of tasks in top_cpuset */
- 	}
-@@ -2271,6 +2274,7 @@ static void cpuset_hotplug_workfn(struct work_struct *work)
- 	if (mems_updated) {
- 		mutex_lock(&callback_mutex);
- 		top_cpuset.mems_allowed = new_mems;
-+		top_cpuset.effective_mems = new_mems;
- 		mutex_unlock(&callback_mutex);
- 		update_tasks_nodemask(&top_cpuset, NULL);
- 	}
+v2:
+- fixed two bugs
+- made changelogs more verbose
+- added more comments
+- changed cs->real_{mems,cpus}_allowed to cs->effective_{mems, cpus}
+- splitted "cpuset: enable onlined cpu/node in effective masks" into 2 patches
+- exported cpuset.effective_{cpus,mems} unconditionally
+
+
+Li Zefan (12):
+  cpuset: add cs->effective_cpus and cs->effective_mems
+  cpuset: update cpuset->effective_{cpus,mems} at hotplug
+  cpuset: update cs->effective_{cpus,mems} when config changes
+  cpuset: inherit ancestor's masks if effective_{cpus,mems} becomes empty
+  cpuset: use effective cpumask to build sched domains
+  cpuset: initialize top_cpuset's configured masks at mount
+  cpuset: apply cs->effective_{cpus,mems}
+  cpuset: make cs->{cpus,mems}_allowed as user-configured masks
+  cpuset: refactor cpuset_hotplug_update_tasks()
+  cpuset: enable onlined cpu/node in effective masks
+  cpuset: allow writing offlined masks to cpuset.cpus/mems
+  cpuset: export effective masks to userspace
+
+ kernel/cpuset.c | 513 ++++++++++++++++++++++++++++++++++----------------------
+ 1 file changed, 316 insertions(+), 197 deletions(-)
+
 -- 
 1.8.0.2
-
