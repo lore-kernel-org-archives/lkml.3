@@ -1,104 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758641Ab3JKQeX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 12:34:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10835 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757893Ab3JKQeW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 12:34:22 -0400
-Date: Fri, 11 Oct 2013 11:50:06 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: "Frank Filz" <ffilzlnx@mindspring.com>
-Cc: <linux-fsdevel@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <nfs-ganesha-devel@lists.sourceforge.net>,
-        <samba-technical@lists.samba.org>
-Subject: Re: [RFC PATCH 0/5] locks: implement "filp-private" (aka UNPOSIX)
- locks
-Message-ID: <20131011115006.697d6bd7@tlielax.poochiereds.net>
-In-Reply-To: <01f801cec695$7e5d17e0$7b1747a0$@mindspring.com>
-References: <1381494322-2426-1-git-send-email-jlayton@redhat.com>
-	<20131011093510.7ed9871a@tlielax.poochiereds.net>
-	<01f801cec695$7e5d17e0$7b1747a0$@mindspring.com>
+	id S1758662Ab3JKQfA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 12:35:00 -0400
+Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:4896 "EHLO
+	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758312Ab3JKQe7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 12:34:59 -0400
+Message-ID: <1381509080.26234.32.camel@misato.fc.hp.com>
+Subject: Re: [PATCH] Release device_hotplug_lock when store_mem_state
+ returns EINVAL
+From: Toshi Kani <toshi.kani@hp.com>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        sjenning@linux.vnet.ibm.com, gregkh@linuxfoundation.org
+Date: Fri, 11 Oct 2013 10:31:20 -0600
+In-Reply-To: <52579C69.1080304@jp.fujitsu.com>
+References: <52579C69.1080304@jp.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Oct 2013 08:20:59 -0700
-"Frank Filz" <ffilzlnx@mindspring.com> wrote:
-
-> > > At LSF this year, there was a discussion about the "wishlist" for
-> > > userland file servers. One of the things brought up was the goofy and
-> > > problematic behavior of POSIX locks when a file is closed. Boaz
-> > > started a thread on it here:
-> > >
-> > >     http://permalink.gmane.org/gmane.linux.file-systems/73364
-> > >
-> > > Userland fileservers often need to maintain more than one open file
-> > > descriptor on a file. The POSIX spec says:
-> > >
-> > > "All locks associated with a file for a given process shall be removed
-> > > when a file descriptor for that file is closed by that process or the
-> > > process holding that file descriptor terminates."
-> > >
-> > > This is problematic since you can't close any file descriptor without
-> > > dropping all your POSIX locks. Most userland file servers therefore
-> > > end up opening the file with more access than is really necessary, and
-> > > keeping fd's open for longer than is necessary to work around this.
-> > >
-> > > This patchset is a first stab at an approach to address this problem
-> > > by adding two new l_type values -- F_RDLCKP and F_WRLCKP (the 'P' is
-> > > short for "private" -- I'm open to changing that if you have a better
-> > > mnemonic).
-> > >
-> > > For all intents and purposes these lock types act just like their
-> > > "non-P" counterpart. The difference is that they are only implicitly
-> > > released when the fd against which they were acquired is closed. As a
-> > > side effect, these locks cannot be merged with "non-P" locks since
-> > > they have different semantics on close.
-> > >
-> > > I've given this patchset some very basic smoke testing and it seems to
-> > > do the right thing, but it is still pretty rough. If this looks
-> > > reasonable I'll plan to do some documentation updates and will take a
-> > > stab at trying to get these new lock types added to the POSIX spec (as
-> > > HCH recommended).
-> > >
-> > > At this point, my main questions are:
-> > >
-> > > 1) does this look useful, particularly for fileserver implementors?
-> > >
-> > > 2) does this look OK API-wise? We could consider different "cmd" values
-> > >    or even different syscalls, but I figured this makes it clearer that
-> > >    "P" and "non-P" locks will still conflict with one another.
+On Fri, 2013-10-11 at 15:36 +0900, Yasuaki Ishimatsu wrote:
+> When inserting a wrong value to /sys/devices/system/memory/memoryX/state file,
+> following messages are shown. And device_hotplug_lock is never released.
 > 
-> This is a good start.
+> ================================================
+> [ BUG: lock held when returning to user space! ]
+> 3.12.0-rc4-debug+ #3 Tainted: G        W
+> ------------------------------------------------
+> bash/6442 is leaving the kernel with locks still held!
+> 1 lock held by bash/6442:
+>  #0:  (device_hotplug_lock){+.+.+.}, at: [<ffffffff8146cbb5>] lock_device_hotplug_sysfs+0x15/0x50
 > 
-> I'd prefer a model where the private locks are maintained even if all file
-> descriptors are closed and released on garbage collection when the process
-> terminates. The model presented would require a server to potentially have
-> at least two file descriptors open (the descriptor originally used for the
-> locks, and a descriptor used for current access mode needed for some I/O
-> operation). The server will also need to "remember" to do all locks using
-> the first file descriptor.
+> This issue was introdued by commit fa2be40 (drivers: base: use standard
+> device online/offline for state change).
 > 
-
-That's sort of a non-starter, I think at least in Linux. If you have no
-open file descriptor then you have nothing to hang the lock off of.
-That sort of interface sounds error-prone and "leaky" too. A long
-running process could easily end up leaking POSIX locks over time if
-you forget to explicitly unlock them.
-
-> Another thing that would be very useful for servers is to be able to specify
-> an arbitrary lock owner. Currently, Ganesha has to manage a union of all
-> locks held on a file and carefully pick it apart when a client does an
-> unlock. Allowing a process specified owner would allow Ganesha (or other
-> servers) to have separate locks for each client lock owner.
+> This patch releases device_hotplug_lcok when store_mem_state returns EINVAL.
 > 
+> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> CC: Toshi Kani <toshi.kani@hp.com>
+> CC: Seth Jennings <sjenning@linux.vnet.ibm.com>
+> CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-The trivial answer there would be to give each lockowner its own file
-descriptor, right?
+Good catch!
 
--- 
-Jeff Layton <jlayton@redhat.com>
+Reviewed-by: Toshi Kani <toshi.kani@hp.com>
+
+Thanks,
+-Toshi
+
