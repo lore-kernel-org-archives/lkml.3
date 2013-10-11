@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754679Ab3JKXRs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 19:17:48 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:53924 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754244Ab3JKXRm (ORCPT
+	id S1754739Ab3JKXRu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 19:17:50 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:34410 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754223Ab3JKXRm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Oct 2013 19:17:42 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
@@ -14,77 +14,76 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH v3 tip/core/rcu 14/14] rcu: Make rcu_assign_pointer's assignment volatile and type-safe
-Date: Fri, 11 Oct 2013 16:17:31 -0700
-Message-Id: <1381533451-29018-14-git-send-email-paulmck@linux.vnet.ibm.com>
+        sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>, Thomas Graf <tgraf@suug.ch>,
+        Gao feng <gaofeng@cn.fujitsu.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        linux-decnet-user@lists.sourceforge.net, netdev@vger.kernel.org
+Subject: [PATCH v3 tip/core/rcu 05/14] decnet: Apply ACCESS_ONCE() to avoid sparse false positive
+Date: Fri, 11 Oct 2013 16:17:22 -0700
+Message-Id: <1381533451-29018-5-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1381533451-29018-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20131011231659.GA28062@linux.vnet.ibm.com>
  <1381533451-29018-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13101123-1542-0000-0000-00000237472A
+x-cbid: 13101123-8236-0000-0000-000002A0854B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Josh Triplett <josh@joshtriplett.org>
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-rcu_assign_pointer needs to use ACCESS_ONCE to make the assignment to
-the destination pointer volatile, to protect against compilers too
-clever for their own good.
+The sparse checking for rcu_assign_pointer() was recently upgraded
+to reject non-__kernel address spaces.  This also rejects __rcu,
+which is almost always the right thing to do.  However, the use in
+dn_insert_route() is legitimate: It is assigning a pointer to an element
+from an RCU-protected list, and all elements of this list are already
+visible to caller.
 
-In addition, since rcu_assign_pointer force-casts the source pointer to
-add the __rcu address space (overriding any existing address space), add
-an explicit check that the source pointer has the __kernel address space
-to start with.
+This commit therefore silences this false positive by laundering the
+pointer using ACCESS_ONCE() as suggested by Eric Dumazet and Josh
+Triplett.
 
-This new check produces warnings like this, when attempting to assign
-from a __user pointer:
-
-test.c:25:9: warning: incorrect type in argument 2 (different address spaces)
-test.c:25:9:    expected struct foo *<noident>
-test.c:25:9:    got struct foo [noderef] <asn:1>*badsrc
-
-Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+Reported-by: kbuild test robot <fengguang.wu@intel.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Thomas Graf <tgraf@suug.ch>
+Cc: Gao feng <gaofeng@cn.fujitsu.com>
+Cc: Stephen Hemminger <shemminger@vyatta.com>
+Cc: linux-decnet-user@lists.sourceforge.net
+Cc: netdev@vger.kernel.org
 ---
- include/linux/rcupdate.h | 12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ net/decnet/dn_route.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index f4da2175cde0..24206a8b8a42 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -506,8 +506,17 @@ static inline void rcu_preempt_sleep_check(void)
- #ifdef __CHECKER__
- #define rcu_dereference_sparse(p, space) \
- 	((void)(((typeof(*p) space *)p) == p))
-+/* The dummy first argument in __rcu_assign_pointer_typecheck makes the
-+ * typechecked pointer the second argument, matching rcu_assign_pointer itself;
-+ * this avoids confusion about argument numbers in warning messages. */
-+#define __rcu_assign_pointer_check_kernel(v) \
-+	do { \
-+		extern void __rcu_assign_pointer_typecheck(int, typeof(*(v)) __kernel *); \
-+		__rcu_assign_pointer_typecheck(0, v); \
-+	} while (0)
- #else /* #ifdef __CHECKER__ */
- #define rcu_dereference_sparse(p, space)
-+#define __rcu_assign_pointer_check_kernel(v) do { } while (0)
- #endif /* #else #ifdef __CHECKER__ */
+diff --git a/net/decnet/dn_route.c b/net/decnet/dn_route.c
+index fe32388ea24f..a6ef8b025035 100644
+--- a/net/decnet/dn_route.c
++++ b/net/decnet/dn_route.c
+@@ -344,8 +344,9 @@ static int dn_insert_route(struct dn_route *rt, unsigned int hash, struct dn_rou
+ 		if (compare_keys(&rth->fld, &rt->fld)) {
+ 			/* Put it first */
+ 			*rthp = rth->dst.dn_next;
+-			rcu_assign_pointer(rth->dst.dn_next,
+-					   dn_rt_hash_table[hash].chain);
++			/* Both --rcu and visible, so ACCESS_ONCE() is OK. */
++			ACCESS_ONCE(rth->dst.dn_next) =
++					   dn_rt_hash_table[hash].chain;
+ 			rcu_assign_pointer(dn_rt_hash_table[hash].chain, rth);
  
- #define __rcu_access_pointer(p, space) \
-@@ -551,7 +560,8 @@ static inline void rcu_preempt_sleep_check(void)
- #define __rcu_assign_pointer(p, v, space) \
- 	do { \
- 		smp_wmb(); \
--		(p) = (typeof(*v) __force space *)(v); \
-+		__rcu_assign_pointer_check_kernel(v); \
-+		ACCESS_ONCE(p) = (typeof(*(v)) __force space *)(v); \
- 	} while (0)
+ 			dst_use(&rth->dst, now);
+@@ -358,7 +359,8 @@ static int dn_insert_route(struct dn_route *rt, unsigned int hash, struct dn_rou
+ 		rthp = &rth->dst.dn_next;
+ 	}
  
+-	rcu_assign_pointer(rt->dst.dn_next, dn_rt_hash_table[hash].chain);
++	/* Both --rcu and visible, so ACCESS_ONCE() is OK. */
++	ACCESS_ONCE(rt->dst.dn_next) = dn_rt_hash_table[hash].chain;
+ 	rcu_assign_pointer(dn_rt_hash_table[hash].chain, rt);
  
+ 	dst_use(&rt->dst, now);
 -- 
 1.8.1.5
 
