@@ -1,64 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756547Ab3JKIOe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 04:14:34 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:61404 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752314Ab3JKIOa (ORCPT
+	id S1756886Ab3JKIQz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 04:16:55 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:59898 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754239Ab3JKIQu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 04:14:30 -0400
+	Fri, 11 Oct 2013 04:16:50 -0400
 MIME-Version: 1.0
-In-Reply-To: <051069C10411E24D9749790C498526FA1BE027EA@SJEXCHMB12.corp.ad.broadcom.com>
-References: <1380846199-12829-1-git-send-email-syin@broadcom.com>
-	<1380846199-12829-4-git-send-email-syin@broadcom.com>
-	<CACRpkdZah4fFuJL2Vh5JmbBCgnekg8MKqMWHzeheOx3N1Kzwng@mail.gmail.com>
-	<051069C10411E24D9749790C498526FA1BE027EA@SJEXCHMB12.corp.ad.broadcom.com>
-Date: Fri, 11 Oct 2013 10:14:29 +0200
-Message-ID: <CACRpkdarPC+LxAAezT2LRiz=Y2RduUsb75YYHUgq7HqePzkD3Q@mail.gmail.com>
-Subject: Re: [PATCH 3/4] ARM: pinctrl: Add Broadcom Capri pinctrl driver
+In-Reply-To: <5241C4DB.9090200@wwwdotorg.org>
+References: <1377526030-32024-1-git-send-email-larsi@wh2.tu-dresden.de>
+	<522FBED9.9000305@collabora.co.uk>
+	<5230C7F6.3080803@wwwdotorg.org>
+	<3653629.tapNZSuWhS@lem-wkst-02>
+	<52373B34.4060709@wwwdotorg.org>
+	<CACRpkdY=cgtf6_eypfAAv-fvmiNgAYyz4StTgDie5THsbrcumg@mail.gmail.com>
+	<5240A2D3.20105@wwwdotorg.org>
+	<CACRpkdZ7E7MGppbkTiObvTDHdmphnbysMKVc1OZjsPXKVuKttQ@mail.gmail.com>
+	<5241C4DB.9090200@wwwdotorg.org>
+Date: Fri, 11 Oct 2013 10:16:49 +0200
+Message-ID: <CACRpkdb5UTtUsbVOnN_K-qfj8uBwn5tr94XfV5J__zTfxca4Mw@mail.gmail.com>
+Subject: Re: [PATCH v3] gpio: interrupt consistency check for OF GPIO IRQs
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Sherman Yin <syin@broadcom.com>
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Christian Daudt <bcm@fixthebug.org>,
-        Russell King <linux@arm.linux.org.uk>,
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Lars Poeschel <poeschel@lemonage.de>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Mark Brown <broonie@kernel.org>,
+        Lars Poeschel <larsi@wh2.tu-dresden.de>,
         Grant Likely <grant.likely@linaro.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Kumar Gala <galak@codeaurora.org>, Pawel Moll <pawel.moll@arm.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Enric Balletbo i Serra <eballetbo@gmail.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>,
+        joelf@ti.com,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 11, 2013 at 1:48 AM, Sherman Yin <syin@broadcom.com> wrote:
-
->>> +static const struct capri_cfg_param capri_pinconf_params[] = {
->>> +       {"brcm,hysteresis",     CAPRI_PINCONF_PARAM_HYST},
->>> +       {"brcm,pull",           CAPRI_PINCONF_PARAM_PULL},
->>> +       {"brcm,slew",           CAPRI_PINCONF_PARAM_SLEW},
->>> +       {"brcm,input_dis",      CAPRI_PINCONF_PARAM_INPUT_DIS},
->>> +       {"brcm,drive_str",      CAPRI_PINCONF_PARAM_DRV_STR},
->>> +       {"brcm,pull_up_str",    CAPRI_PINCONF_PARAM_PULL_UP_STR},
->>> +       {"brcm,mode",           CAPRI_PINCONF_PARAM_MODE},
->>> +};
+On Tue, Sep 24, 2013 at 6:59 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 09/24/2013 02:31 AM, Linus Walleij wrote:
+>> On Mon, Sep 23, 2013 at 10:21 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> ...
+>>> Perhaps rather than having the gpio_chip/irq_chip drivers physically
+>>> implement a function which calls this common code, they could set some
+>>> flags/data/... in the struct gpio_chip/irq_chip indicating that they
+>>> desire the core code that implements the error-checking to be enabled.
 >>
->>As well as all this stuff...
+>> I think it should more be like a function they can call to flag
+>> a GPIO as used for IRQ.
 >
-> OK.  Will see if I can find something suitable for "input disable" and "mode"
+> For the record, that's pretty much exactly what I meant by implementing
+> it in the drivers. The irq_chip driver knows when the IRQ has been
+> requested, and calls some gpiolib function to mark the GPIO as
+> in-use-as-an-IRQ.
 
-Let's discuss this. What exactly does "input disable" and "mode"
-mean, in electrical terms?
-
-When you come down to what actually happens it may turn out that
-"input disable" is PIN_CONFIG_OUTPUT, which implicitly turns
-off input does it not?
+Ah OK we're on the same page, this is progressing :-)
 
 Yours,
 Linus Walleij
