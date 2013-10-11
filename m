@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756438Ab3JKVCK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 17:02:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45256 "EHLO
+	id S1756527Ab3JKVCc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 17:02:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45251 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757825Ab3JKThC (ORCPT
+	with ESMTP id S1757781Ab3JKThB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:37:02 -0400
+	Fri, 11 Oct 2013 15:37:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Eric Dumazet <edumazet@google.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
         Nikolay Aleksandrov <nikolay@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 07/48] netpoll: fix NULL pointer dereference in netpoll_cleanup
-Date: Fri, 11 Oct 2013 12:36:14 -0700
-Message-Id: <20131011193638.078000526@linuxfoundation.org>
+Subject: [ 06/48] net: flow_dissector: fix thoff for IPPROTO_AH
+Date: Fri, 11 Oct 2013 12:36:13 -0700
+Message-Id: <20131011193637.968301431@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193637.253208688@linuxfoundation.org>
 References: <20131011193637.253208688@linuxfoundation.org>
@@ -27,53 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nikolay Aleksandrov <nikolay@redhat.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit d0fe8c888b1fd1a2f84b9962cabcb98a70988aec ]
+[ Upstream commit b86783587b3d1d552326d955acee37eac48800f1 ]
 
-I've been hitting a NULL ptr deref while using netconsole because the
-np->dev check and the pointer manipulation in netpoll_cleanup are done
-without rtnl and the following sequence happens when having a netconsole
-over a vlan and we remove the vlan while disabling the netconsole:
-	CPU 1					CPU2
-					removes vlan and calls the notifier
-enters store_enabled(), calls
-netdev_cleanup which checks np->dev
-and then waits for rtnl
-					executes the netconsole netdev
-					release notifier making np->dev
-					== NULL and releases rtnl
-continues to dereference a member of
-np->dev which at this point is == NULL
+In commit 8ed781668dd49 ("flow_keys: include thoff into flow_keys for
+later usage"), we missed that existing code was using nhoff as a
+temporary variable that could not always contain transport header
+offset.
 
-Signed-off-by: Nikolay Aleksandrov <nikolay@redhat.com>
+This is not a problem for TCP/UDP because port offset (@poff)
+is 0 for these protocols.
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Daniel Borkmann <dborkman@redhat.com>
+Cc: Nikolay Aleksandrov <nikolay@redhat.com>
+Acked-by: Nikolay Aleksandrov <nikolay@redhat.com>
+Acked-by: Daniel Borkmann <dborkman@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/netpoll.c |    9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+ net/core/flow_dissector.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/core/netpoll.c
-+++ b/net/core/netpoll.c
-@@ -920,15 +920,14 @@ EXPORT_SYMBOL_GPL(__netpoll_cleanup);
+--- a/net/core/flow_dissector.c
++++ b/net/core/flow_dissector.c
+@@ -133,8 +133,8 @@ ipv6:
+ 	if (poff >= 0) {
+ 		__be32 *ports, _ports;
  
- void netpoll_cleanup(struct netpoll *np)
- {
--	if (!np->dev)
--		return;
--
- 	rtnl_lock();
-+	if (!np->dev)
-+		goto out;
- 	__netpoll_cleanup(np);
--	rtnl_unlock();
--
- 	dev_put(np->dev);
- 	np->dev = NULL;
-+out:
-+	rtnl_unlock();
- }
- EXPORT_SYMBOL(netpoll_cleanup);
- 
+-		nhoff += poff;
+-		ports = skb_header_pointer(skb, nhoff, sizeof(_ports), &_ports);
++		ports = skb_header_pointer(skb, nhoff + poff,
++					   sizeof(_ports), &_ports);
+ 		if (ports)
+ 			flow->ports = *ports;
+ 	}
 
 
