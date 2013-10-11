@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758474Ab3JKLMt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 07:12:49 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58351 "EHLO
+	id S1758568Ab3JKLNP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 07:13:15 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58340 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757262Ab3JKKmZ (ORCPT
+	with ESMTP id S1756960Ab3JKKmW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 06:42:25 -0400
+	Fri, 11 Oct 2013 06:42:22 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>,
+Cc: Kees Cook <keescook@chromium.org>, Jiri Kosina <jkosina@suse.cz>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 007/100] HID: add usage_index in struct hid_usage.
-Date: Fri, 11 Oct 2013 11:40:37 +0100
-Message-Id: <1381488130-30235-8-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 005/100] HID: zeroplus: validate output report details
+Date: Fri, 11 Oct 2013 11:40:35 +0100
+Message-Id: <1381488130-30235-6-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
 References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
@@ -28,61 +27,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+From: Kees Cook <keescook@chromium.org>
 
-commit f262d1fa2c651a5e2f92b6aee8779597631cd5d4 upstream.
+commit 78214e81a1bf43740ce89bb5efda78eac2f8ef83 upstream.
 
-Currently, there is no way to know the index of the current field
-in the .input_mapping and .event callbacks  when this field is inside
-an array of HID fields.
-This patch adds this index to the struct hid_usage so that this
-information is available to input_mapping and event callbacks.
+The zeroplus HID driver was not checking the size of allocated values
+in fields it used. A HID device could send a malicious output report
+that would cause the driver to write beyond the output report allocation
+during initialization, causing a heap overflow:
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Acked-by: Jiri Kosina <jkosina@suse.cz>
+[ 1442.728680] usb 1-1: New USB device found, idVendor=0c12, idProduct=0005
+...
+[ 1466.243173] BUG kmalloc-192 (Tainted: G        W   ): Redzone overwritten
+
+CVE-2013-2889
+
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-[ luis: 3.5.y prereq for:
-  cc6b54a HID: validate feature and input report details ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/hid/hid-core.c | 4 ++++
- include/linux/hid.h    | 1 +
- 2 files changed, 5 insertions(+)
+ drivers/hid/hid-zpff.c | 18 +++++-------------
+ 1 file changed, 5 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index d4111de..4043d73 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -94,6 +94,7 @@ EXPORT_SYMBOL_GPL(hid_register_report);
- static struct hid_field *hid_register_field(struct hid_report *report, unsigned usages, unsigned values)
- {
- 	struct hid_field *field;
-+	int i;
+diff --git a/drivers/hid/hid-zpff.c b/drivers/hid/hid-zpff.c
+index f6ba81d..f348f7f 100644
+--- a/drivers/hid/hid-zpff.c
++++ b/drivers/hid/hid-zpff.c
+@@ -70,21 +70,13 @@ static int zpff_init(struct hid_device *hid)
+ 	struct hid_report *report;
+ 	struct hid_input *hidinput = list_entry(hid->inputs.next,
+ 						struct hid_input, list);
+-	struct list_head *report_list =
+-			&hid->report_enum[HID_OUTPUT_REPORT].report_list;
+ 	struct input_dev *dev = hidinput->input;
+-	int error;
++	int i, error;
  
- 	if (report->maxfield == HID_MAX_FIELDS) {
- 		hid_err(report->device, "too many fields in report\n");
-@@ -112,6 +113,9 @@ static struct hid_field *hid_register_field(struct hid_report *report, unsigned
- 	field->value = (s32 *)(field->usage + usages);
- 	field->report = report;
+-	if (list_empty(report_list)) {
+-		hid_err(hid, "no output report found\n");
+-		return -ENODEV;
+-	}
+-
+-	report = list_entry(report_list->next, struct hid_report, list);
+-
+-	if (report->maxfield < 4) {
+-		hid_err(hid, "not enough fields in report\n");
+-		return -ENODEV;
++	for (i = 0; i < 4; i++) {
++		report = hid_validate_values(hid, HID_OUTPUT_REPORT, 0, i, 1);
++		if (!report)
++			return -ENODEV;
+ 	}
  
-+	for (i = 0; i < usages; i++)
-+		field->usage[i].usage_index = i;
-+
- 	return field;
- }
- 
-diff --git a/include/linux/hid.h b/include/linux/hid.h
-index cdf6171..be1afbc 100644
---- a/include/linux/hid.h
-+++ b/include/linux/hid.h
-@@ -378,6 +378,7 @@ struct hid_collection {
- struct hid_usage {
- 	unsigned  hid;			/* hid usage code */
- 	unsigned  collection_index;	/* index into collection array */
-+	unsigned  usage_index;		/* index into usage array */
- 	/* hidinput data */
- 	__u16     code;			/* input driver code */
- 	__u8      type;			/* input driver type */
+ 	zpff = kzalloc(sizeof(struct zpff_device), GFP_KERNEL);
 -- 
 1.8.3.2
 
