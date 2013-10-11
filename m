@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759392Ab3JKUdj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:33:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45748 "EHLO
+	id S1758953Ab3JKTkN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:40:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45671 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758960Ab3JKTkP (ORCPT
+	with ESMTP id S1758909Ab3JKTkF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:40:15 -0400
+	Fri, 11 Oct 2013 15:40:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andre Guedes <andre.guedes@openbossa.org>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Subject: [ 060/110] Bluetooth: Fix security level for peripheral role
-Date: Fri, 11 Oct 2013 12:38:40 -0700
-Message-Id: <20131011193814.372802437@linuxfoundation.org>
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 056/110] powerpc: Restore registers on error exit from csum_partial_copy_generic()
+Date: Fri, 11 Oct 2013 12:38:36 -0700
+Message-Id: <20131011193813.910392120@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
 References: <20131011193807.584188672@linuxfoundation.org>
@@ -27,43 +28,158 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andre Guedes <andre.guedes@openbossa.org>
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-commit f8776218e8546397be64ad2bc0ebf4748522d6e3 upstream.
+commit 8f21bd0090052e740944f9397e2be5ac7957ded7 upstream.
 
-While playing the peripheral role, the host gets a LE Long Term Key
-Request Event from the controller when a connection is established
-with a bonded device. The host then informs the LTK which should be
-used for the connection. Once the link is encrypted, the host gets
-an Encryption Change Event.
+The csum_partial_copy_generic() function saves the PowerPC non-volatile
+r14, r15, and r16 registers for the main checksum-and-copy loop.
+Unfortunately, it fails to restore them upon error exit from this loop,
+which results in silent corruption of these registers in the presumably
+rare event of an access exception within that loop.
 
-Therefore we should set conn->pending_sec_level instead of conn->
-sec_level in hci_le_ltk_request_evt. This way, conn->sec_level is
-properly updated in hci_encrypt_change_evt.
+This commit therefore restores these register on error exit from the loop.
 
-Moreover, since we have a LTK associated to the device, we have at
-least BT_SECURITY_MEDIUM security level.
-
-Signed-off-by: Andre Guedes <andre.guedes@openbossa.org>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/bluetooth/hci_event.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ arch/powerpc/lib/checksum_64.S |   54 ++++++++++++++++++++++++++++++-----------
+ 1 file changed, 40 insertions(+), 14 deletions(-)
 
---- a/net/bluetooth/hci_event.c
-+++ b/net/bluetooth/hci_event.c
-@@ -3611,7 +3611,9 @@ static void hci_le_ltk_request_evt(struc
- 	cp.handle = cpu_to_le16(conn->handle);
+--- a/arch/powerpc/lib/checksum_64.S
++++ b/arch/powerpc/lib/checksum_64.S
+@@ -226,19 +226,35 @@ _GLOBAL(csum_partial)
+ 	blr
  
- 	if (ltk->authenticated)
--		conn->sec_level = BT_SECURITY_HIGH;
-+		conn->pending_sec_level = BT_SECURITY_HIGH;
-+	else
-+		conn->pending_sec_level = BT_SECURITY_MEDIUM;
  
- 	hci_send_cmd(hdev, HCI_OP_LE_LTK_REPLY, sizeof(cp), &cp);
+-	.macro source
++	.macro srcnr
+ 100:
+ 	.section __ex_table,"a"
+ 	.align 3
+-	.llong 100b,.Lsrc_error
++	.llong 100b,.Lsrc_error_nr
+ 	.previous
+ 	.endm
  
+-	.macro dest
++	.macro source
++150:
++	.section __ex_table,"a"
++	.align 3
++	.llong 150b,.Lsrc_error
++	.previous
++	.endm
++
++	.macro dstnr
+ 200:
+ 	.section __ex_table,"a"
+ 	.align 3
+-	.llong 200b,.Ldest_error
++	.llong 200b,.Ldest_error_nr
++	.previous
++	.endm
++
++	.macro dest
++250:
++	.section __ex_table,"a"
++	.align 3
++	.llong 250b,.Ldest_error
+ 	.previous
+ 	.endm
+ 
+@@ -274,11 +290,11 @@ _GLOBAL(csum_partial_copy_generic)
+ 	mtctr	r6
+ 
+ 1:
+-source;	lhz	r6,0(r3)		/* align to doubleword */
++srcnr;	lhz	r6,0(r3)		/* align to doubleword */
+ 	subi	r5,r5,2
+ 	addi	r3,r3,2
+ 	adde	r0,r0,r6
+-dest;	sth	r6,0(r4)
++dstnr;	sth	r6,0(r4)
+ 	addi	r4,r4,2
+ 	bdnz	1b
+ 
+@@ -392,10 +408,10 @@ dest;	std	r16,56(r4)
+ 
+ 	mtctr	r6
+ 3:
+-source;	ld	r6,0(r3)
++srcnr;	ld	r6,0(r3)
+ 	addi	r3,r3,8
+ 	adde	r0,r0,r6
+-dest;	std	r6,0(r4)
++dstnr;	std	r6,0(r4)
+ 	addi	r4,r4,8
+ 	bdnz	3b
+ 
+@@ -405,10 +421,10 @@ dest;	std	r6,0(r4)
+ 	srdi.	r6,r5,2
+ 	beq	.Lcopy_tail_halfword
+ 
+-source;	lwz	r6,0(r3)
++srcnr;	lwz	r6,0(r3)
+ 	addi	r3,r3,4
+ 	adde	r0,r0,r6
+-dest;	stw	r6,0(r4)
++dstnr;	stw	r6,0(r4)
+ 	addi	r4,r4,4
+ 	subi	r5,r5,4
+ 
+@@ -416,10 +432,10 @@ dest;	stw	r6,0(r4)
+ 	srdi.	r6,r5,1
+ 	beq	.Lcopy_tail_byte
+ 
+-source;	lhz	r6,0(r3)
++srcnr;	lhz	r6,0(r3)
+ 	addi	r3,r3,2
+ 	adde	r0,r0,r6
+-dest;	sth	r6,0(r4)
++dstnr;	sth	r6,0(r4)
+ 	addi	r4,r4,2
+ 	subi	r5,r5,2
+ 
+@@ -427,10 +443,10 @@ dest;	sth	r6,0(r4)
+ 	andi.	r6,r5,1
+ 	beq	.Lcopy_finish
+ 
+-source;	lbz	r6,0(r3)
++srcnr;	lbz	r6,0(r3)
+ 	sldi	r9,r6,8			/* Pad the byte out to 16 bits */
+ 	adde	r0,r0,r9
+-dest;	stb	r6,0(r4)
++dstnr;	stb	r6,0(r4)
+ 
+ .Lcopy_finish:
+ 	addze	r0,r0			/* add in final carry */
+@@ -440,6 +456,11 @@ dest;	stb	r6,0(r4)
+ 	blr
+ 
+ .Lsrc_error:
++	ld	r14,STK_REG(R14)(r1)
++	ld	r15,STK_REG(R15)(r1)
++	ld	r16,STK_REG(R16)(r1)
++	addi	r1,r1,STACKFRAMESIZE
++.Lsrc_error_nr:
+ 	cmpdi	0,r7,0
+ 	beqlr
+ 	li	r6,-EFAULT
+@@ -447,6 +468,11 @@ dest;	stb	r6,0(r4)
+ 	blr
+ 
+ .Ldest_error:
++	ld	r14,STK_REG(R14)(r1)
++	ld	r15,STK_REG(R15)(r1)
++	ld	r16,STK_REG(R16)(r1)
++	addi	r1,r1,STACKFRAMESIZE
++.Ldest_error_nr:
+ 	cmpdi	0,r8,0
+ 	beqlr
+ 	li	r6,-EFAULT
 
 
