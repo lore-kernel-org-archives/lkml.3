@@ -1,382 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755553Ab3JKS3t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 14:29:49 -0400
-Received: from usindpps04.hds.com ([207.126.252.17]:56097 "EHLO
-	usindpps04.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753042Ab3JKS3r (ORCPT
+	id S1756127Ab3JKSbB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 14:31:01 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:33253 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753438Ab3JKSbA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 14:29:47 -0400
-Message-ID: <52584373.3010202@hds.com>
-Date: Fri, 11 Oct 2013 14:29:07 -0400
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Fri, 11 Oct 2013 14:31:00 -0400
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
-        matt.fleming@intel.com, tony.luck@intel.com
-CC: tomoki.sekiyama@hds.com, dle-develop@lists.sourceforge.net
-Subject: [PATCH v3] efivars,efi-pstore: Hold off deletion of sysfs entry until,
- the scan is completed
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Proofpoint-SPF-Result: pass
-X-Proofpoint-SPF-Record: v=spf1 mx ip4:207.126.244.0/26 ip4:207.126.252.0/25 include:mktomail.com
- include:cloud.hds.com ~all
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
- definitions=2013-10-11_07:2013-10-11,2013-10-11,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=outbound_policy score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1310110079
+In-Reply-To: <1381493941-4650-5-git-send-email-tianyu.lan@intel.com>
+References: <1381493941-4650-1-git-send-email-tianyu.lan@intel.com>
+	<1381493941-4650-5-git-send-email-tianyu.lan@intel.com>
+Date: Fri, 11 Oct 2013 11:30:58 -0700
+X-Google-Sender-Auth: UBofDvr0uphR-cZH9ajXeAN2lDE
+Message-ID: <CAE9FiQWysaOj7+-NDcroGgJnVPZOi+kA6S7SXrosZhQuS_Z8_A@mail.gmail.com>
+Subject: Re: [Resend PATCH 4/5] X86/PCI/ACPI: Rework setup_resource() via
+ functions ACPI resource functions
+From: Yinghai Lu <yinghai@kernel.org>
+To: Lan Tianyu <tianyu.lan@intel.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change from v2:
-- Move dynamic memory allocation to efi_pstore_read() before holding
-  efivars->lock to protect entry->var.Data.
-- Access to entry->scanning while holding efivars->lock.
-- Move a comment about a returned value from efi_pstore_read_func() to
-  efi_pstore_read() because "size < 0" case may happen in efi_pstore_read().
+On Fri, Oct 11, 2013 at 5:19 AM,  <tianyu.lan@intel.com> wrote:
+> From: Lan Tianyu <tianyu.lan@intel.com>
+>
+> Using ACPI resource functions to convert ACPI resource to generic resource
+> instead of resource_to_addr(). Remove resource_to_addr().
+>
+> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
 
-Currently, when mounting pstore file system, a read callback of efi_pstore
-driver runs mutiple times as below.
+for 1-4
 
-- In the first read callback, scan efivar_sysfs_list from head and pass
-  a kmsg buffer of a entry to an upper pstore layer.
-- In the second read callback, rescan efivar_sysfs_list from the entry and pass
-  another kmsg buffer to it.
-- Repeat the scan and pass until the end of efivar_sysfs_list.
+Acked-by: Yinghai Lu <yinghai@kernel.org>
 
-In this process, an entry is read across the multiple read function calls.
-To avoid race between the read and erasion, the whole process above is
-protected by a spinlock, holding in open() and releasing in close().
-
-At the same time, kmemdup() is called to pass the buffer to pstore filesystem
-during it.
-And then, it causes a following lockdep warning.
-
-To make the dynamic memory allocation runnable without taking spinlock,
-holding off a deletion of sysfs entry if it happens while scanning it
-via efi_pstore, and deleting it after the scan is completed.
-
-To implement it, this patch introduces two flags, scanning and deleting,
-to efivar_entry.
-
-[    1.143710] ------------[ cut here ]------------
-[    1.144058] WARNING: CPU: 1 PID: 1 at kernel/lockdep.c:2740
-lockdep_trace_alloc+0x104/0x110()
-[    1.144058] DEBUG_LOCKS_WARN_ON(irqs_disabled_flags(flags))
-[    1.144058] Modules linked in:
-
-[    1.144058] CPU: 1 PID: 1 Comm: systemd Not tainted 3.11.0-rc5 #2
-[    1.144058]  0000000000000009 ffff8800797e9ae0 ffffffff816614a5
-ffff8800797e9b28
-[    1.144058]  ffff8800797e9b18 ffffffff8105510d 0000000000000080
-0000000000000046
-[    1.144058]  00000000000000d0 00000000000003af ffffffff81ccd0c0
-ffff8800797e9b78
-[    1.144058] Call Trace:
-[    1.144058]  [<ffffffff816614a5>] dump_stack+0x54/0x74
-[    1.144058]  [<ffffffff8105510d>] warn_slowpath_common+0x7d/0xa0
-[    1.144058]  [<ffffffff8105517c>] warn_slowpath_fmt+0x4c/0x50
-[    1.144058]  [<ffffffff8131290f>] ? vsscanf+0x57f/0x7b0
-[    1.144058]  [<ffffffff810bbd74>] lockdep_trace_alloc+0x104/0x110
-[    1.144058]  [<ffffffff81192da0>] __kmalloc_track_caller+0x50/0x280
-[    1.144058]  [<ffffffff815147bb>] ?
-efi_pstore_read_func.part.1+0x12b/0x170
-[    1.144058]  [<ffffffff8115b260>] kmemdup+0x20/0x50
-[    1.144058]  [<ffffffff815147bb>] efi_pstore_read_func.part.1+0x12b/0x170
-[    1.144058]  [<ffffffff81514800>] ?
-efi_pstore_read_func.part.1+0x170/0x170
-[    1.144058]  [<ffffffff815148b4>] efi_pstore_read_func+0xb4/0xe0
-[    1.144058]  [<ffffffff81512b7b>] __efivar_entry_iter+0xfb/0x120
-[    1.144058]  [<ffffffff8151428f>] efi_pstore_read+0x3f/0x50
-[    1.144058]  [<ffffffff8128d7ba>] pstore_get_records+0x9a/0x150
-[    1.158207]  [<ffffffff812af25c>] ? selinux_d_instantiate+0x1c/0x20
-[    1.158207]  [<ffffffff8128ce30>] ? parse_options+0x80/0x80
-[    1.158207]  [<ffffffff8128ced5>] pstore_fill_super+0xa5/0xc0
-[    1.158207]  [<ffffffff811ae7d2>] mount_single+0xa2/0xd0
-[    1.158207]  [<ffffffff8128ccf8>] pstore_mount+0x18/0x20
-[    1.158207]  [<ffffffff811ae8b9>] mount_fs+0x39/0x1b0
-[    1.158207]  [<ffffffff81160550>] ? __alloc_percpu+0x10/0x20
-[    1.158207]  [<ffffffff811c9493>] vfs_kern_mount+0x63/0xf0
-[    1.158207]  [<ffffffff811cbb0e>] do_mount+0x23e/0xa20
-[    1.158207]  [<ffffffff8115b51b>] ? strndup_user+0x4b/0xf0
-[    1.158207]  [<ffffffff811cc373>] SyS_mount+0x83/0xc0
-[    1.158207]  [<ffffffff81673cc2>] system_call_fastpath+0x16/0x1b
-[    1.158207] ---[ end trace 61981bc62de9f6f4 ]---
-
-Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
----
- drivers/firmware/efi/efi-pstore.c | 143 +++++++++++++++++++++++++++++++++++---
- drivers/firmware/efi/efivars.c    |  12 ++--
- drivers/firmware/efi/vars.c       |  12 +++-
- include/linux/efi.h               |   2 +
- 4 files changed, 153 insertions(+), 16 deletions(-)
-
-diff --git a/drivers/firmware/efi/efi-pstore.c b/drivers/firmware/efi/efi-pstore.c
-index 5002d50..ebd5dbc 100644
---- a/drivers/firmware/efi/efi-pstore.c
-+++ b/drivers/firmware/efi/efi-pstore.c
-@@ -18,14 +18,12 @@ module_param_named(pstore_disable, efivars_pstore_disable, bool, 0644);
- 
- static int efi_pstore_open(struct pstore_info *psi)
- {
--	efivar_entry_iter_begin();
- 	psi->data = NULL;
- 	return 0;
- }
- 
- static int efi_pstore_close(struct pstore_info *psi)
- {
--	efivar_entry_iter_end();
- 	psi->data = NULL;
- 	return 0;
- }
-@@ -91,19 +89,125 @@ static int efi_pstore_read_func(struct efivar_entry *entry, void *data)
- 	__efivar_entry_get(entry, &entry->var.Attributes,
- 			   &entry->var.DataSize, entry->var.Data);
- 	size = entry->var.DataSize;
-+	memcpy(*cb_data->buf, entry->var.Data, (size_t)min_t(unsigned long,
-+							     1024, size));
- 
--	*cb_data->buf = kmemdup(entry->var.Data, size, GFP_KERNEL);
--	if (*cb_data->buf == NULL)
--		return -ENOMEM;
- 	return size;
- }
- 
-+/**
-+ * efi_pstore_scan_sysfs_enter
-+ * @entry: scanning entry
-+ * @next: next entry
-+ * @head: list head
-+ */
-+static void efi_pstore_scan_sysfs_enter(struct efivar_entry *pos,
-+					struct efivar_entry *next,
-+					struct list_head *head)
-+{
-+	pos->scanning = true;
-+	if (&next->list != head)
-+		next->scanning = true;
-+}
-+
-+/**
-+ * __efi_pstore_scan_sysfs_exit
-+ * @entry: deleting entry
-+ * @turn_off_scanning: Check if a scanning flag should be turned off
-+ */
-+static inline void __efi_pstore_scan_sysfs_exit(struct efivar_entry *entry,
-+						bool turn_off_scanning)
-+{
-+	if (entry->deleting) {
-+		list_del(&entry->list);
-+		efivar_entry_iter_end();
-+		efivar_unregister(entry);
-+		efivar_entry_iter_begin();
-+	} else if (turn_off_scanning)
-+		entry->scanning = false;
-+}
-+
-+/**
-+ * efi_pstore_scan_sysfs_exit
-+ * @pos: scanning entry
-+ * @next: next entry
-+ * @head: list head
-+ * @stop: a flag checking if scanning will stop
-+ */
-+static void efi_pstore_scan_sysfs_exit(struct efivar_entry *pos,
-+				       struct efivar_entry *next,
-+				       struct list_head *head, bool stop)
-+{
-+	__efi_pstore_scan_sysfs_exit(pos, true);
-+	if (stop)
-+		__efi_pstore_scan_sysfs_exit(next, &next->list != head);
-+}
-+
-+/**
-+ * efi_pstore_sysfs_entry_iter
-+ *
-+ * @data: function-specific data to pass to callback
-+ * @pos: entry to begin iterating from
-+ *
-+ * You MUST call efivar_enter_iter_begin() before this function, and
-+ * efivar_entry_iter_end() afterwards.
-+ *
-+ * It is possible to begin iteration from an arbitrary entry within
-+ * the list by passing @pos. @pos is updated on return to point to
-+ * the next entry of the last one passed to efi_pstore_read_func().
-+ * To begin iterating from the beginning of the list @pos must be %NULL.
-+ */
-+static int efi_pstore_sysfs_entry_iter(void *data, struct efivar_entry **pos)
-+{
-+	struct efivar_entry *entry, *n;
-+	struct list_head *head = &efivar_sysfs_list;
-+	int size = 0;
-+
-+	if (!*pos) {
-+		list_for_each_entry_safe(entry, n, head, list) {
-+			efi_pstore_scan_sysfs_enter(entry, n, head);
-+
-+			size = efi_pstore_read_func(entry, data);
-+			efi_pstore_scan_sysfs_exit(entry, n, head, size < 0);
-+			if (size)
-+				break;
-+		}
-+		*pos = n;
-+		return size;
-+	}
-+
-+	list_for_each_entry_safe_from((*pos), n, head, list) {
-+		efi_pstore_scan_sysfs_enter((*pos), n, head);
-+
-+		size = efi_pstore_read_func((*pos), data);
-+		efi_pstore_scan_sysfs_exit((*pos), n, head, size < 0);
-+		if (size)
-+			break;
-+	}
-+	*pos = n;
-+	return size;
-+}
-+
-+/**
-+ * efi_pstore_read
-+ *
-+ * This function returns a size of NVRAM entry logged via efi_pstore_write().
-+ * The meaning and behavior of efi_pstore/pstore are as below.
-+ *
-+ * size > 0: Got data of an entry logged via efi_pstore_write() successfully,
-+ *           and pstore filesystem will continue reading subsequent entries.
-+ * size == 0: Entry was not logged via efi_pstore_write(),
-+ *            and efi_pstore driver will continue reading subsequent entries.
-+ * size < 0: Failed to get data of entry logging via efi_pstore_write(),
-+ *           and pstore will stop reading entry.
-+ */
- static ssize_t efi_pstore_read(u64 *id, enum pstore_type_id *type,
- 			       int *count, struct timespec *timespec,
- 			       char **buf, bool *compressed,
- 			       struct pstore_info *psi)
- {
- 	struct pstore_read_data data;
-+	ssize_t size;
- 
- 	data.id = id;
- 	data.type = type;
-@@ -112,8 +216,17 @@ static ssize_t efi_pstore_read(u64 *id, enum pstore_type_id *type,
- 	data.compressed = compressed;
- 	data.buf = buf;
- 
--	return __efivar_entry_iter(efi_pstore_read_func, &efivar_sysfs_list, &data,
--				   (struct efivar_entry **)&psi->data);
-+	*data.buf = kzalloc(1024, GFP_KERNEL);
-+	if (!*data.buf)
-+		return -ENOMEM;
-+
-+	efivar_entry_iter_begin();
-+	size = efi_pstore_sysfs_entry_iter(&data,
-+					   (struct efivar_entry **)&psi->data);
-+	efivar_entry_iter_end();
-+	if (size <= 0)
-+		kfree(*data.buf);
-+	return size;
- }
- 
- static int efi_pstore_write(enum pstore_type_id type,
-@@ -184,9 +297,17 @@ static int efi_pstore_erase_func(struct efivar_entry *entry, void *data)
- 			return 0;
- 	}
- 
-+	if (entry->scanning) {
-+		/*
-+		 * Skip deletion because this entry will be deleted
-+		 * after scanning is completed.
-+		 */
-+		entry->deleting = true;
-+	} else
-+		list_del(&entry->list);
-+
- 	/* found */
- 	__efivar_entry_delete(entry);
--	list_del(&entry->list);
- 
- 	return 1;
- }
-@@ -214,10 +335,12 @@ static int efi_pstore_erase(enum pstore_type_id type, u64 id, int count,
- 
- 	efivar_entry_iter_begin();
- 	found = __efivar_entry_iter(efi_pstore_erase_func, &efivar_sysfs_list, &edata, &entry);
--	efivar_entry_iter_end();
- 
--	if (found)
-+	if (found && !entry->scanning) {
-+		efivar_entry_iter_end();
- 		efivar_unregister(entry);
-+	} else
-+		efivar_entry_iter_end();
- 
- 	return 0;
- }
-diff --git a/drivers/firmware/efi/efivars.c b/drivers/firmware/efi/efivars.c
-index 8a7432a..8c5a61a 100644
---- a/drivers/firmware/efi/efivars.c
-+++ b/drivers/firmware/efi/efivars.c
-@@ -383,12 +383,16 @@ static ssize_t efivar_delete(struct file *filp, struct kobject *kobj,
- 	else if (__efivar_entry_delete(entry))
- 		err = -EIO;
- 
--	efivar_entry_iter_end();
--
--	if (err)
-+	if (err) {
-+		efivar_entry_iter_end();
- 		return err;
-+	}
- 
--	efivar_unregister(entry);
-+	if (!entry->scanning) {
-+		efivar_entry_iter_end();
-+		efivar_unregister(entry);
-+	} else
-+		efivar_entry_iter_end();
- 
- 	/* It's dead Jim.... */
- 	return count;
-diff --git a/drivers/firmware/efi/vars.c b/drivers/firmware/efi/vars.c
-index 391c67b..b22659c 100644
---- a/drivers/firmware/efi/vars.c
-+++ b/drivers/firmware/efi/vars.c
-@@ -683,8 +683,16 @@ struct efivar_entry *efivar_entry_find(efi_char16_t *name, efi_guid_t guid,
- 	if (!found)
- 		return NULL;
- 
--	if (remove)
--		list_del(&entry->list);
-+	if (remove) {
-+		if (entry->scanning) {
-+			/*
-+			 * The entry will be deleted
-+			 * after scanning is completed.
-+			 */
-+			entry->deleting = true;
-+		} else
-+			list_del(&entry->list);
-+	}
- 
- 	return entry;
- }
-diff --git a/include/linux/efi.h b/include/linux/efi.h
-index 5f8f176..04088fb 100644
---- a/include/linux/efi.h
-+++ b/include/linux/efi.h
-@@ -782,6 +782,8 @@ struct efivar_entry {
- 	struct efi_variable var;
- 	struct list_head list;
- 	struct kobject kobj;
-+	bool scanning;
-+	bool deleting;
- };
- 
- extern struct list_head efivar_sysfs_list;
--- 
-1.8.2.1
-
+> ---
+>  arch/x86/pci/acpi.c | 81 ++++++++---------------------------------------------
+>  1 file changed, 12 insertions(+), 69 deletions(-)
+>
+> diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
+> index d641897..f4290a1 100644
+> --- a/arch/x86/pci/acpi.c
+> +++ b/arch/x86/pci/acpi.c
+> @@ -219,62 +219,15 @@ static void teardown_mcfg_map(struct pci_root_info *info)
+>  #endif
+>
+>  static acpi_status
+> -resource_to_addr(struct acpi_resource *resource,
+> -                       struct acpi_resource_address64 *addr)
+> -{
+> -       acpi_status status;
+> -       struct acpi_resource_memory24 *memory24;
+> -       struct acpi_resource_memory32 *memory32;
+> -       struct acpi_resource_fixed_memory32 *fixed_memory32;
+> -
+> -       memset(addr, 0, sizeof(*addr));
+> -       switch (resource->type) {
+> -       case ACPI_RESOURCE_TYPE_MEMORY24:
+> -               memory24 = &resource->data.memory24;
+> -               addr->resource_type = ACPI_MEMORY_RANGE;
+> -               addr->minimum = memory24->minimum;
+> -               addr->address_length = memory24->address_length;
+> -               addr->maximum = addr->minimum + addr->address_length - 1;
+> -               return AE_OK;
+> -       case ACPI_RESOURCE_TYPE_MEMORY32:
+> -               memory32 = &resource->data.memory32;
+> -               addr->resource_type = ACPI_MEMORY_RANGE;
+> -               addr->minimum = memory32->minimum;
+> -               addr->address_length = memory32->address_length;
+> -               addr->maximum = addr->minimum + addr->address_length - 1;
+> -               return AE_OK;
+> -       case ACPI_RESOURCE_TYPE_FIXED_MEMORY32:
+> -               fixed_memory32 = &resource->data.fixed_memory32;
+> -               addr->resource_type = ACPI_MEMORY_RANGE;
+> -               addr->minimum = fixed_memory32->address;
+> -               addr->address_length = fixed_memory32->address_length;
+> -               addr->maximum = addr->minimum + addr->address_length - 1;
+> -               return AE_OK;
+> -       case ACPI_RESOURCE_TYPE_ADDRESS16:
+> -       case ACPI_RESOURCE_TYPE_ADDRESS32:
+> -       case ACPI_RESOURCE_TYPE_ADDRESS64:
+> -               status = acpi_resource_to_address64(resource, addr);
+> -               if (ACPI_SUCCESS(status) &&
+> -                   (addr->resource_type == ACPI_MEMORY_RANGE ||
+> -                   addr->resource_type == ACPI_IO_RANGE) &&
+> -                   addr->address_length > 0) {
+> -                       return AE_OK;
+> -               }
+> -               break;
+> -       }
+> -       return AE_ERROR;
+> -}
+> -
+> -static acpi_status
+>  count_resource(struct acpi_resource *acpi_res, void *data)
+>  {
+>         struct pci_root_info *info = data;
+> -       struct acpi_resource_address64 addr;
+> -       acpi_status status;
+> +       struct resource res;
+>
+> -       status = resource_to_addr(acpi_res, &addr);
+> -       if (ACPI_SUCCESS(status))
+> +       if (acpi_dev_resource_address_space(acpi_res, &res)
+> +           || acpi_dev_resource_memory(acpi_res, &res))
+>                 info->res_num++;
+> +
+>         return AE_OK;
+>  }
+>
+> @@ -282,27 +235,18 @@ static acpi_status
+>  setup_resource(struct acpi_resource *acpi_res, void *data)
+>  {
+>         struct pci_root_info *info = data;
+> -       struct resource *res;
+> +       struct resource *res = &info->res[info->res_num];
+>         struct acpi_resource_address64 addr;
+> -       acpi_status status;
+> -       unsigned long flags;
+>         u64 start, orig_end, end;
+>
+> -       status = resource_to_addr(acpi_res, &addr);
+> -       if (!ACPI_SUCCESS(status))
+> -               return AE_OK;
+> +       memset(&addr, 0x00, sizeof(addr));
+>
+> -       if (addr.resource_type == ACPI_MEMORY_RANGE) {
+> -               flags = IORESOURCE_MEM;
+> -               if (addr.info.mem.caching == ACPI_PREFETCHABLE_MEMORY)
+> -                       flags |= IORESOURCE_PREFETCH;
+> -       } else if (addr.resource_type == ACPI_IO_RANGE) {
+> -               flags = IORESOURCE_IO;
+> -       } else
+> +       if (!(acpi_dev_resource_address_space_full(acpi_res, &addr, res)
+> +           || acpi_dev_resource_memory(acpi_res, res)))
+>                 return AE_OK;
+>
+> -       start = addr.minimum + addr.translation_offset;
+> -       orig_end = end = addr.maximum + addr.translation_offset;
+> +       start = res->start;
+> +       orig_end = end = res->end;
+>
+>         /* Exclude non-addressable range or non-addressable portion of range */
+>         end = min(end, (u64)iomem_resource.end);
+> @@ -310,6 +254,7 @@ setup_resource(struct acpi_resource *acpi_res, void *data)
+>                 dev_info(&info->bridge->dev,
+>                         "host bridge window [%#llx-%#llx] "
+>                         "(ignored, not CPU addressable)\n", start, orig_end);
+> +               memset(&info->res[info->res_num], 0x00, sizeof(*res));
+>                 return AE_OK;
+>         } else if (orig_end != end) {
+>                 dev_info(&info->bridge->dev,
+> @@ -318,11 +263,9 @@ setup_resource(struct acpi_resource *acpi_res, void *data)
+>                         start, orig_end, end + 1, orig_end);
+>         }
+>
+> -       res = &info->res[info->res_num];
+>         res->name = info->name;
+> -       res->flags = flags;
+> -       res->start = start;
+>         res->end = end;
+> +
+>         info->res_offset[info->res_num] = addr.translation_offset;
+>         info->res_num++;
+>
+> --
+> 1.8.2.1
+>
