@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757457Ab3JKTf7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:35:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45217 "EHLO
+	id S1757552Ab3JKTgZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:36:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45211 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757368Ab3JKTfz (ORCPT
+	with ESMTP id S1757313Ab3JKTfy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:35:55 -0400
+	Fri, 11 Oct 2013 15:35:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Olaf Hering <olaf@aepfle.de>, Marcus Meissner <meissner@suse.de>,
-        Sebastian Krahmer <krahmer@suse.de>,
-        "K. Y. Srinivasan" <kys@microsoft.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [ 39/39] Tools: hv: verify origin of netlink connector message
-Date: Fri, 11 Oct 2013 12:35:23 -0700
-Message-Id: <20131011193215.108157669@linuxfoundation.org>
+        Jason Andrews <jasona@cadence.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 31/39] rtlwifi: Align private space in rtl_priv struct
+Date: Fri, 11 Oct 2013 12:35:15 -0700
+Message-Id: <20131011193214.265338622@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193210.843963685@linuxfoundation.org>
 References: <20131011193210.843963685@linuxfoundation.org>
@@ -28,49 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Olaf Hering <olaf@aepfle.de>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit bcc2c9c3fff859e0eb019fe6fec26f9b8eba795c upstream.
+commit 60ce314d1750fef843e9db70050e09e49f838b69 upstream.
 
-The SuSE security team suggested to use recvfrom instead of recv to be
-certain that the connector message is originated from kernel.
+The private array at the end of the rtl_priv struct is not aligned.
+On ARM architecture, this causes an alignment trap and is fixed by aligning
+that array with __align(sizeof(void *)). That should properly align that
+space according to the requirements of all architectures.
 
-CVE-2012-2669
-
-Signed-off-by: Olaf Hering <olaf@aepfle.de>
-Signed-off-by: Marcus Meissner <meissner@suse.de>
-Signed-off-by: Sebastian Krahmer <krahmer@suse.de>
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Reported-by: Jason Andrews <jasona@cadence.com>
+Tested-by: Jason Andrews <jasona@cadence.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 
 ---
- drivers/staging/hv/tools/hv_kvp_daemon.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ drivers/net/wireless/rtlwifi/wifi.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/staging/hv/tools/hv_kvp_daemon.c
-+++ b/drivers/staging/hv/tools/hv_kvp_daemon.c
-@@ -378,14 +378,18 @@ int main(void)
- 	pfd.fd = fd;
+--- a/drivers/net/wireless/rtlwifi/wifi.h
++++ b/drivers/net/wireless/rtlwifi/wifi.h
+@@ -1587,7 +1587,7 @@ struct rtl_priv {
+ 	   that it points to the data allocated
+ 	   beyond  this structure like:
+ 	   rtl_pci_priv or rtl_usb_priv */
+-	u8 priv[0];
++	u8 priv[0] __aligned(sizeof(void *));
+ };
  
- 	while (1) {
-+		struct sockaddr *addr_p = (struct sockaddr *) &addr;
-+		socklen_t addr_l = sizeof(addr);
- 		pfd.events = POLLIN;
- 		pfd.revents = 0;
- 		poll(&pfd, 1, -1);
- 
--		len = recv(fd, kvp_recv_buffer, sizeof(kvp_recv_buffer), 0);
-+		len = recvfrom(fd, kvp_recv_buffer, sizeof(kvp_recv_buffer), 0,
-+				addr_p, &addr_l);
- 
--		if (len < 0) {
--			syslog(LOG_ERR, "recv failed; error:%d", len);
-+		if (len < 0 || addr.nl_pid) {
-+			syslog(LOG_ERR, "recvfrom failed; pid:%u error:%d %s",
-+					addr.nl_pid, errno, strerror(errno));
- 			close(fd);
- 			return -1;
- 		}
+ #define rtl_priv(hw)		(((struct rtl_priv *)(hw)->priv))
 
 
