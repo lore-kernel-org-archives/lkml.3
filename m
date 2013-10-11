@@ -1,81 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757317Ab3JKIXp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 04:23:45 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:3166 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756563Ab3JKIXm (ORCPT
+	id S1757355Ab3JKIYK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 04:24:10 -0400
+Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:47691 "EHLO
+	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757353Ab3JKIYG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 04:23:42 -0400
-Message-ID: <5257B541.9050400@huawei.com>
-Date: Fri, 11 Oct 2013 16:22:25 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Fri, 11 Oct 2013 04:24:06 -0400
+From: Neil Zhang <zhangwm@marvell.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <haojian.zhuang@gmail.com>, <tglx@linutronix.de>,
+        Neil Zhang <zhangwm@marvell.com>
+Subject: [PATCH 0/2 v2] add wakeup dt support for irq mmp
+Date: Fri, 11 Oct 2013 16:23:56 +0800
+Message-ID: <1381479838-7794-1-git-send-email-zhangwm@marvell.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: Gavin Shan <shangw@linux.vnet.ibm.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        Hanjun Guo <guohanjun@huawei.com>, Paul Mackerras <paulus@samba.org>,
-        <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: [PATCH v2 3/6] powerpc/pci: use pci_is_pcie() to simplify code
-References: <1378367730-25996-1-git-send-email-wangyijing@huawei.com> <1378367730-25996-3-git-send-email-wangyijing@huawei.com> <20130906203035.GA27940@google.com> <1381470596.5630.61.camel@pasglop> <20131011061654.GA561@shangw.(null)> <52579BD6.40802@huawei.com> <20131011065329.GA5013@shangw.(null)> <5257A882.1070809@huawei.com> <20131011075642.GA20443@shangw.(null)>
-In-Reply-To: <20131011075642.GA20443@shangw.(null)>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.76.69]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
+ definitions=2013-10-11_01:2013-10-11,2013-10-10,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=1
+ phishscore=0 adultscore=1 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1310110006
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> In my idea, dev->pcie_cap(here is pci_dev->pcie_cap) will update in set_pcie_port_type() function,
->> and this function always be called after allocate pci device. We get pci_dev by eeh_dev_to_pci_dev(),
->> I think pci_dev has been initialized completely.
->>
->>> This function has possibility to be invoked before that. However,
->>> we don't have the binding (eeh device <-> PCI device) for the case.
->>> So the piece of code shouldn't be running
->>
->> In PCI core, I knew
->>
->> pci_scan_device()
->>   pci_setup_device()
->>       set_pcie_port_type()
->>            pci_dev->pcie_cap = pci_find_capability(pdev, PCI_CAP_ID_EXP);
->>
->> In powerpc, I also found
->>
->> of_scan_pci_dev()
->>   of_create_pci_dev()
->>       set_pcie_port_type()
->> 	    pci_dev->pcie_cap = pci_find_capability(pdev, PCI_CAP_ID_EXP);
->>>
->>> However, it's a bit safer to have pci_find_capability(dev, PCI_CAP_ID_EXP)
->>> as well even though we needn't it for 99.9% cases if you agree :-)
->>
->> I agree, this function is not the performance bottleneck,
->> safety is more important. :)
->> So if Bjorn and Benjamin think it's not safe, it's ok to drop it. :)
->>
-> 
-> No, it's not what I mean. Anyway, "v3" looks good to me.
-> At least, it can save PCI-CFG access cycles find locate
-> the PCIe capability position :-)
+changelog:
+V2:
+    add the missing head file.
 
-Thanks! :)
+Neil Zhang (2):
+  irqchip: mmp: avoid use head file in a specific arch
+  irqchip: mmp: add dt support for wakeup
 
-> 
-> Thanks,
-> Gavin
-> 
-> 
-> .
-> 
-
+ .../devicetree/bindings/arm/mrvl/intc.txt          |   14 ++-
+ drivers/irqchip/irq-mmp.c                          |  126 +++++++++++++++++++-
+ include/linux/irqchip/mmp.h                        |   13 ++
+ 3 files changed, 151 insertions(+), 2 deletions(-)
 
 -- 
-Thanks!
-Yijing
+1.7.9.5
 
