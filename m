@@ -1,103 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757616Ab3JKMpa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 08:45:30 -0400
-Received: from 6.mo1.mail-out.ovh.net ([46.105.43.205]:57161 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754287Ab3JKMp3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 08:45:29 -0400
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Mike Turquette <mturquette@linaro.org>
-Cc: Boris BREZILLON <b.brezillon@overkiz.com>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/6] ARM: at91: prepare sama5 dt boards transition to common clk
-Date: Fri, 11 Oct 2013 14:43:31 +0200
-Message-Id: <1381495416-15928-2-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1381495416-15928-1-git-send-email-b.brezillon@overkiz.com>
-References: <1381495416-15928-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 17499862253132544225
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrvdefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrvdefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	id S1757752Ab3JKMqE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 08:46:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8995 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755359Ab3JKMqC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 08:46:02 -0400
+Date: Fri, 11 Oct 2013 08:45:51 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: Dominik Brodowski <linux@dominikbrodowski.net>,
+        Thomas Renninger <trenn@suse.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] cpupower: Fix segfault due to incorrect getopt_long arugments
+Message-ID: <20131011124551.GF2917@hansolo.jdub.homelinux.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch prepare the transition to common clk for sama5 dt boards by
-replacing the timer init callback.
+If a user calls 'cpupower set --perf-bias 15', the process will end with a
+SIGSEGV in libc because cpupower-set passes a NULL optarg to the atoi call.
+This is because the getopt_long structure currently has all of the options
+as having an optional_argument when they really have a required argument.
+We change the structure to use required_argument to match the short options
+and it resolves the issue.
 
-Clocks registration cannot be done in early init callback (as formerly done
-by the old clk implementation) because it requires dynamic allocation
-which is not ready yet during early init.
+This fixes https://bugzilla.redhat.com/show_bug.cgi?id=1000439
 
-In the other hand, at91 clocks must be registered before
-at91sam926x_pit_init is called because PIT (Periodic Interval Timer) driver
-request the master clk (mck).
-
-A new function (at91sama5_dt_timer_init) is created to fullfil these needs.
-This function registers all at91 clks using the dt definition before
-calling the PIT init function.
-The device tree clock registration is enabled only if common clk is
-selected. Else the old clk registration is been done during
-at91_dt_initialize call.
-
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: stable@vger.kernel.org
+Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
 ---
- arch/arm/mach-at91/board-dt-sama5.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ tools/power/cpupower/utils/cpupower-set.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm/mach-at91/board-dt-sama5.c b/arch/arm/mach-at91/board-dt-sama5.c
-index bf00d15..075ec05 100644
---- a/arch/arm/mach-at91/board-dt-sama5.c
-+++ b/arch/arm/mach-at91/board-dt-sama5.c
-@@ -16,6 +16,7 @@
- #include <linux/of_irq.h>
- #include <linux/of_platform.h>
- #include <linux/phy.h>
-+#include <linux/clk-provider.h>
+diff --git a/tools/power/cpupower/utils/cpupower-set.c b/tools/power/cpupower/utils/cpupower-set.c
+index dc4de37..bcf1d2f 100644
+--- a/tools/power/cpupower/utils/cpupower-set.c
++++ b/tools/power/cpupower/utils/cpupower-set.c
+@@ -18,9 +18,9 @@
+ #include "helpers/bitmask.h"
  
- #include <asm/setup.h>
- #include <asm/irq.h>
-@@ -26,6 +27,13 @@
- #include "at91_aic.h"
- #include "generic.h"
+ static struct option set_opts[] = {
+-	{ .name = "perf-bias",	.has_arg = optional_argument,	.flag = NULL,	.val = 'b'},
+-	{ .name = "sched-mc",	.has_arg = optional_argument,	.flag = NULL,	.val = 'm'},
+-	{ .name = "sched-smt",	.has_arg = optional_argument,	.flag = NULL,	.val = 's'},
++	{ .name = "perf-bias",	.has_arg = required_argument,	.flag = NULL,	.val = 'b'},
++	{ .name = "sched-mc",	.has_arg = required_argument,	.flag = NULL,	.val = 'm'},
++	{ .name = "sched-smt",	.has_arg = required_argument,	.flag = NULL,	.val = 's'},
+ 	{ },
+ };
  
-+static void __init sama5_dt_timer_init(void)
-+{
-+#if defined(CONFIG_COMMON_CLK)
-+	of_clk_init(NULL);
-+#endif
-+	at91sam926x_pit_init();
-+}
- 
- static const struct of_device_id irq_of_match[] __initconst = {
- 
-@@ -72,7 +80,7 @@ static const char *sama5_dt_board_compat[] __initdata = {
- 
- DT_MACHINE_START(sama5_dt, "Atmel SAMA5 (Device Tree)")
- 	/* Maintainer: Atmel */
--	.init_time	= at91sam926x_pit_init,
-+	.init_time	= sama5_dt_timer_init,
- 	.map_io		= at91_map_io,
- 	.handle_irq	= at91_aic5_handle_irq,
- 	.init_early	= at91_dt_initialize,
 -- 
-1.7.9.5
+1.8.3.1
 
