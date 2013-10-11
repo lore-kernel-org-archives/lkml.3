@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933126Ab3JKUNv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:13:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46093 "EHLO
+	id S933139Ab3JKUON (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:14:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46088 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932375Ab3JKTlH (ORCPT
+	with ESMTP id S932360Ab3JKTlG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:41:07 -0400
+	Fri, 11 Oct 2013 15:41:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Chris Healy <cphealy@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 023/135] bridge: Clamp forward_delay when enabling STP
-Date: Fri, 11 Oct 2013 12:38:24 -0700
-Message-Id: <20131011193947.736970650@linuxfoundation.org>
+Subject: [ 022/135] resubmit bridge: fix message_age_timer calculation
+Date: Fri, 11 Oct 2013 12:38:23 -0700
+Message-Id: <20131011193947.625309957@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -27,108 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Herbert Xu <herbert@gondor.apana.org.au>
+From: Chris Healy <cphealy@gmail.com>
 
-[ Upstream commit be4f154d5ef0ca147ab6bcd38857a774133f5450 ]
+[ Upstream commit 9a0620133ccce9dd35c00a96405c8d80938c2cc0 ]
 
-At some point limits were added to forward_delay.  However, the
-limits are only enforced when STP is enabled.  This created a
-scenario where you could have a value outside the allowed range
-while STP is disabled, which then stuck around even after STP
-is enabled.
+This changes the message_age_timer calculation to use the BPDU's max age as
+opposed to the local bridge's max age.  This is in accordance with section
+8.6.2.3.2 Step 2 of the 802.1D-1998 sprecification.
 
-This patch fixes this by clamping the value when we enable STP.
+With the current implementation, when running with very large bridge
+diameters, convergance will not always occur even if a root bridge is
+configured to have a longer max age.
 
-I had to move the locking around a bit to ensure that there is
-no window where someone could insert a value outside the range
-while we're in the middle of enabling STP.
+Tested successfully on bridge diameters of ~200.
 
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
-
-Cheers,
+Signed-off-by: Chris Healy <cphealy@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/bridge/br_private.h |    1 +
- net/bridge/br_stp.c     |   21 +++++++++++++++------
- net/bridge/br_stp_if.c  |   12 ++++++++++--
- 3 files changed, 26 insertions(+), 8 deletions(-)
+ net/bridge/br_stp.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/bridge/br_private.h
-+++ b/net/bridge/br_private.h
-@@ -766,6 +766,7 @@ extern struct net_bridge_port *br_get_po
- extern void br_init_port(struct net_bridge_port *p);
- extern void br_become_designated_port(struct net_bridge_port *p);
- 
-+extern void __br_set_forward_delay(struct net_bridge *br, unsigned long t);
- extern int br_set_forward_delay(struct net_bridge *br, unsigned long x);
- extern int br_set_hello_time(struct net_bridge *br, unsigned long x);
- extern int br_set_max_age(struct net_bridge *br, unsigned long x);
 --- a/net/bridge/br_stp.c
 +++ b/net/bridge/br_stp.c
-@@ -544,18 +544,27 @@ int br_set_max_age(struct net_bridge *br
+@@ -209,7 +209,7 @@ static void br_record_config_information
+ 	p->designated_age = jiffies - bpdu->message_age;
  
+ 	mod_timer(&p->message_age_timer, jiffies
+-		  + (p->br->max_age - bpdu->message_age));
++		  + (bpdu->max_age - bpdu->message_age));
  }
  
-+void __br_set_forward_delay(struct net_bridge *br, unsigned long t)
-+{
-+	br->bridge_forward_delay = t;
-+	if (br_is_root_bridge(br))
-+		br->forward_delay = br->bridge_forward_delay;
-+}
-+
- int br_set_forward_delay(struct net_bridge *br, unsigned long val)
- {
- 	unsigned long t = clock_t_to_jiffies(val);
-+	int err = -ERANGE;
- 
-+	spin_lock_bh(&br->lock);
- 	if (br->stp_enabled != BR_NO_STP &&
- 	    (t < BR_MIN_FORWARD_DELAY || t > BR_MAX_FORWARD_DELAY))
--		return -ERANGE;
-+		goto unlock;
- 
--	spin_lock_bh(&br->lock);
--	br->bridge_forward_delay = t;
--	if (br_is_root_bridge(br))
--		br->forward_delay = br->bridge_forward_delay;
-+	__br_set_forward_delay(br, t);
-+	err = 0;
-+
-+unlock:
- 	spin_unlock_bh(&br->lock);
--	return 0;
-+	return err;
- }
---- a/net/bridge/br_stp_if.c
-+++ b/net/bridge/br_stp_if.c
-@@ -129,6 +129,14 @@ static void br_stp_start(struct net_brid
- 	char *envp[] = { NULL };
- 
- 	r = call_usermodehelper(BR_STP_PROG, argv, envp, UMH_WAIT_PROC);
-+
-+	spin_lock_bh(&br->lock);
-+
-+	if (br->bridge_forward_delay < BR_MIN_FORWARD_DELAY)
-+		__br_set_forward_delay(br, BR_MIN_FORWARD_DELAY);
-+	else if (br->bridge_forward_delay < BR_MAX_FORWARD_DELAY)
-+		__br_set_forward_delay(br, BR_MAX_FORWARD_DELAY);
-+
- 	if (r == 0) {
- 		br->stp_enabled = BR_USER_STP;
- 		br_debug(br, "userspace STP started\n");
-@@ -137,10 +145,10 @@ static void br_stp_start(struct net_brid
- 		br_debug(br, "using kernel STP\n");
- 
- 		/* To start timers on any ports left in blocking */
--		spin_lock_bh(&br->lock);
- 		br_port_state_selection(br);
--		spin_unlock_bh(&br->lock);
- 	}
-+
-+	spin_unlock_bh(&br->lock);
- }
- 
- static void br_stp_stop(struct net_bridge *br)
+ /* called under bridge lock */
 
 
