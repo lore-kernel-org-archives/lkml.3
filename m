@@ -1,235 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933052Ab3JKULm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:11:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46853 "EHLO
+	id S933062Ab3JKUMD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:12:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46118 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932134Ab3JKULk (ORCPT
+	with ESMTP id S932403Ab3JKTlL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 16:11:40 -0400
-Date: Fri, 11 Oct 2013 13:11:38 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Joe Perches <joe@perches.com>
-Cc: Tejun Heo <tj@kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Sangjung Woo <sangjung.woo@samsung.com>
-Subject: Re: [RFC PATCH] device: Add kernel standard devm_k.alloc functions
-Message-Id: <20131011131138.3bc5b2acf60df3a5d79d0d24@linux-foundation.org>
-In-Reply-To: <1381296747.2040.17.camel@joe-AO722>
-References: <1381296747.2040.17.camel@joe-AO722>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 11 Oct 2013 15:41:11 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Antonio Quartulli <antonio@open-mesh.org>,
+        Simon Wunderlich <siwu@hrz.tu-chemnitz.de>,
+        Marek Lindner <mareklindner@neomailbox.ch>
+Subject: [ 030/135] batman-adv: set the TAG flag for the vid passed to BLA
+Date: Fri, 11 Oct 2013 12:38:31 -0700
+Message-Id: <20131011193948.500218367@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
+References: <20131011193945.181603934@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 08 Oct 2013 22:32:27 -0700 Joe Perches <joe@perches.com> wrote:
+3.11-stable review patch.  If anyone has any objections, please let me know.
 
-> Currently, devm_ managed memory only supports kzalloc.
-> 
-> Convert the devm_kzalloc implementation to devm_kmalloc
-> and remove the complete memset to 0 but still set the
-> initial struct devres header and whatever padding before
-> data to 0.
-> 
-> Add the other normal alloc variants as static inlines with
-> __GFP_ZERO added to the gfp flag where appropriate:
-> 
-> 	devm_kzalloc
-> 	devm_kcalloc
-> 	devm_kmalloc_array
-> 
-> Add gfp.h to device.h for the newly added static inlines.
-> 
-> ...
->
-> --- a/drivers/base/devres.c
-> +++ b/drivers/base/devres.c
-> @@ -91,7 +91,8 @@ static __always_inline struct devres * alloc_dr(dr_release_t release,
->  	if (unlikely(!dr))
->  		return NULL;
->  
-> -	memset(dr, 0, tot_size);
-> +	memset(dr, 0, offsetof(struct devres, data));
+------------------
 
-Well, this does make some assumptions about devres layout.  It would
-have been cleaner to do
+From: Antonio Quartulli <antonio@open-mesh.com>
 
-	memset(&dr.node, 0, sizeof(dr.node));
+[ Upstream commit 4c18c425b2d228415b635e97a64737d7f27c5536 ]
 
-but whatever.
+When receiving or sending a packet a packet on a VLAN, the
+vid has to be marked with the TAG flag in order to make any
+component in batman-adv understand that the packet is coming
+from a really tagged network.
 
-I made some changelog changes.
+This fix the Bridge Loop Avoidance behaviour which was not
+able to send announces over VLAN interfaces.
 
-I agree that including devm_kmalloc_array() might be going a bit far
-(it's the lack of devm_kmalloc which matters most).  But
-devm_kmalloc_array() is inlined and is hence basically cost-free until
-someone actually uses it.
+Introduced by 0b1da1765fdb00ca5d53bc95c9abc70dfc9aae5b
+("batman-adv: change VID semantic in the BLA code")
 
-
-
-
-From: Joe Perches <joe@perches.com>
-Subject: devres: add kernel standard devm_k.alloc functions
-
-Currently, devm_ managed memory only supports kzalloc.
-
-Convert the devm_kzalloc implementation to devm_kmalloc and remove the
-complete memset to 0 but still set the initial struct devres header and
-whatever padding before data to 0.
-
-Add the other normal alloc variants as static inlines with __GFP_ZERO
-added to the gfp flag where appropriate:
-
-	devm_kzalloc
-	devm_kcalloc
-	devm_kmalloc_array
-
-Add gfp.h to device.h for the newly added static inlines.
-
-akpm: the current API forces us to replace kmalloc() with kzalloc() when
-performing devm_ conversions.  This adds a relatively minor overhead. 
-More significantly, it will defeat kmemcheck used-uninitialized checking,
-and for a particular driver, losing used-uninitialised checking for their
-core controlling data structures will significantly degrade kmemcheck
-usefulness.
-
-Signed-off-by: Joe Perches <joe@perches.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Greg KH <gregkh@linuxfoundation.org>
-Cc: Sangjung Woo <sangjung.woo@samsung.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Antonio Quartulli <antonio@open-mesh.org>
+Acked-by: Simon Wunderlich <siwu@hrz.tu-chemnitz.de>
+Signed-off-by: Marek Lindner <mareklindner@neomailbox.ch>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
+ net/batman-adv/soft-interface.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
- drivers/base/devres.c  |   27 ++++++++++++++++-----------
- include/linux/device.h |   21 +++++++++++++++++++--
- 2 files changed, 35 insertions(+), 13 deletions(-)
+--- a/net/batman-adv/soft-interface.c
++++ b/net/batman-adv/soft-interface.c
+@@ -168,6 +168,7 @@ static int batadv_interface_tx(struct sk
+ 	case ETH_P_8021Q:
+ 		vhdr = (struct vlan_ethhdr *)skb->data;
+ 		vid = ntohs(vhdr->h_vlan_TCI) & VLAN_VID_MASK;
++		vid |= BATADV_VLAN_HAS_TAG;
+ 
+ 		if (vhdr->h_vlan_encapsulated_proto != ethertype)
+ 			break;
+@@ -329,6 +330,7 @@ void batadv_interface_rx(struct net_devi
+ 	case ETH_P_8021Q:
+ 		vhdr = (struct vlan_ethhdr *)skb->data;
+ 		vid = ntohs(vhdr->h_vlan_TCI) & VLAN_VID_MASK;
++		vid |= BATADV_VLAN_HAS_TAG;
+ 
+ 		if (vhdr->h_vlan_encapsulated_proto != ethertype)
+ 			break;
 
-diff -puN drivers/base/devres.c~device-add-kernel-standard-devm_kalloc-functions drivers/base/devres.c
---- a/drivers/base/devres.c~device-add-kernel-standard-devm_kalloc-functions
-+++ a/drivers/base/devres.c
-@@ -91,7 +91,8 @@ static __always_inline struct devres * a
- 	if (unlikely(!dr))
- 		return NULL;
- 
--	memset(dr, 0, tot_size);
-+	memset(dr, 0, offsetof(struct devres, data));
-+
- 	INIT_LIST_HEAD(&dr->node.entry);
- 	dr->node.release = release;
- 	return dr;
-@@ -745,58 +746,62 @@ void devm_remove_action(struct device *d
- EXPORT_SYMBOL_GPL(devm_remove_action);
- 
- /*
-- * Managed kzalloc/kfree
-+ * Managed kmalloc/kfree
-  */
--static void devm_kzalloc_release(struct device *dev, void *res)
-+static void devm_kmalloc_release(struct device *dev, void *res)
- {
- 	/* noop */
- }
- 
--static int devm_kzalloc_match(struct device *dev, void *res, void *data)
-+static int devm_kmalloc_match(struct device *dev, void *res, void *data)
- {
- 	return res == data;
- }
- 
- /**
-- * devm_kzalloc - Resource-managed kzalloc
-+ * devm_kmalloc - Resource-managed kmalloc
-  * @dev: Device to allocate memory for
-  * @size: Allocation size
-  * @gfp: Allocation gfp flags
-  *
-- * Managed kzalloc.  Memory allocated with this function is
-+ * Managed kmalloc.  Memory allocated with this function is
-  * automatically freed on driver detach.  Like all other devres
-  * resources, guaranteed alignment is unsigned long long.
-  *
-  * RETURNS:
-  * Pointer to allocated memory on success, NULL on failure.
-  */
--void * devm_kzalloc(struct device *dev, size_t size, gfp_t gfp)
-+void * devm_kmalloc(struct device *dev, size_t size, gfp_t gfp)
- {
- 	struct devres *dr;
- 
- 	/* use raw alloc_dr for kmalloc caller tracing */
--	dr = alloc_dr(devm_kzalloc_release, size, gfp);
-+	dr = alloc_dr(devm_kmalloc_release, size, gfp);
- 	if (unlikely(!dr))
- 		return NULL;
- 
-+	/*
-+	 * This is named devm_kzalloc_release for historical reasons
-+	 * The initial implementation did not support kmalloc, only kzalloc
-+	 */
- 	set_node_dbginfo(&dr->node, "devm_kzalloc_release", size);
- 	devres_add(dev, dr->data);
- 	return dr->data;
- }
--EXPORT_SYMBOL_GPL(devm_kzalloc);
-+EXPORT_SYMBOL_GPL(devm_kmalloc);
- 
- /**
-  * devm_kfree - Resource-managed kfree
-  * @dev: Device this memory belongs to
-  * @p: Memory to free
-  *
-- * Free memory allocated with devm_kzalloc().
-+ * Free memory allocated with devm_kmalloc().
-  */
- void devm_kfree(struct device *dev, void *p)
- {
- 	int rc;
- 
--	rc = devres_destroy(dev, devm_kzalloc_release, devm_kzalloc_match, p);
-+	rc = devres_destroy(dev, devm_kmalloc_release, devm_kmalloc_match, p);
- 	WARN_ON(rc);
- }
- EXPORT_SYMBOL_GPL(devm_kfree);
-diff -puN include/linux/device.h~device-add-kernel-standard-devm_kalloc-functions include/linux/device.h
---- a/include/linux/device.h~device-add-kernel-standard-devm_kalloc-functions
-+++ a/include/linux/device.h
-@@ -26,6 +26,7 @@
- #include <linux/atomic.h>
- #include <linux/ratelimit.h>
- #include <linux/uidgid.h>
-+#include <linux/gfp.h>
- #include <asm/device.h>
- 
- struct device;
-@@ -602,8 +603,24 @@ extern void devres_close_group(struct de
- extern void devres_remove_group(struct device *dev, void *id);
- extern int devres_release_group(struct device *dev, void *id);
- 
--/* managed kzalloc/kfree for device drivers, no kmalloc, always use kzalloc */
--extern void *devm_kzalloc(struct device *dev, size_t size, gfp_t gfp);
-+/* managed devm_k.alloc/kfree for device drivers */
-+extern void *devm_kmalloc(struct device *dev, size_t size, gfp_t gfp);
-+static inline void *devm_kzalloc(struct device *dev, size_t size, gfp_t gfp)
-+{
-+	return devm_kmalloc(dev, size, gfp | __GFP_ZERO);
-+}
-+static inline void *devm_kmalloc_array(struct device *dev,
-+				       size_t n, size_t size, gfp_t flags)
-+{
-+	if (size != 0 && n > SIZE_MAX / size)
-+		return NULL;
-+	return devm_kmalloc(dev, n * size, flags);
-+}
-+static inline void *devm_kcalloc(struct device *dev,
-+				 size_t n, size_t size, gfp_t flags)
-+{
-+	return devm_kmalloc_array(dev, n, size, flags | __GFP_ZERO);
-+}
- extern void devm_kfree(struct device *dev, void *p);
- 
- void __iomem *devm_ioremap_resource(struct device *dev, struct resource *res);
-_
 
