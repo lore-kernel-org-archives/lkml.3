@@ -1,101 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161134Ab3JKUhJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:37:09 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:39624 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932878Ab3JKUhE (ORCPT
+	id S964837Ab3JKUht (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:37:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45665 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758903Ab3JKTkD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 16:37:04 -0400
-Date: Fri, 11 Oct 2013 13:37:01 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Stanimir Varbanov <svarbanov@mm-sol.com>
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Matt Mackall <mpm@selenic.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] hwrng: msm: Add PRNG support for MSM SoC's
-Message-ID: <20131011203701.GC13139@codeaurora.org>
-References: <1381504601-23773-1-git-send-email-svarbanov@mm-sol.com>
- <1381504601-23773-3-git-send-email-svarbanov@mm-sol.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1381504601-23773-3-git-send-email-svarbanov@mm-sol.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 11 Oct 2013 15:40:03 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Madhavan Srinivasan <maddy@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 055/110] powerpc/sysfs: Disable writing to PURR in guest mode
+Date: Fri, 11 Oct 2013 12:38:35 -0700
+Message-Id: <20131011193813.797497240@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
+References: <20131011193807.584188672@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/11, Stanimir Varbanov wrote:
-> This adds a driver for hardware random number generator present
-> on Qualcomm MSM SoC's.
-> 
-> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
-> ---
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Just nitpicks.
+------------------
 
-> diff --git a/drivers/char/hw_random/Kconfig b/drivers/char/hw_random/Kconfig
-> index 0aa9d91daef5..d902330cef43 100644
-> --- a/drivers/char/hw_random/Kconfig
-> +++ b/drivers/char/hw_random/Kconfig
-> @@ -314,3 +314,15 @@ config HW_RANDOM_TPM
->  	  module will be called tpm-rng.
->  
->  	  If unsure, say Y.
-> +
-> +config HW_RANDOM_MSM
-> +        tristate "Qualcomm MSM Random Number Generator support"
-> +        depends on HW_RANDOM && ARCH_MSM && HAVE_CLK
+From: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
 
-It should be fine to drop HAVE_CLK here because ARCH_MSM always
-selects COMMON_CLK which indirectly selects HAVE_CLK.
+commit d1211af3049f4c9c1d8d4eb8f8098cc4f4f0d0c7 upstream.
 
-> +        ---help---
-> +          This driver provides kernel-side support for the Random Number
-> +          Generator hardware found on Qualcomm MSM SoCs.
-> +
-> +          To compile this driver as a module, choose M here. the
-> +          module will be called msm-rng.
-> +
-> +          If unsure, say Y.
-> diff --git a/drivers/char/hw_random/msm-rng.c b/drivers/char/hw_random/msm-rng.c
-> new file mode 100644
-> index 000000000000..e219e94d02c1
-> --- /dev/null
-> +++ b/drivers/char/hw_random/msm-rng.c
-> @@ -0,0 +1,195 @@
-> +#include <linux/clk.h>
-> +#include <linux/hw_random.h>
-> +#include <linux/io.h>
-> +#include <linux/module.h>
-> +#include <linux/of.h>
-> +#include <linux/platform_device.h>
+arch/powerpc/kernel/sysfs.c exports PURR with write permission.
+This may be valid for kernel in phyp mode. But writing to
+the file in guest mode causes crash due to a priviledge violation
 
-+#include <linux/err.h> for -ENOMEM usage.
+Signed-off-by: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-> +
-> +/* Device specific register offsets */
-> +#define PRNG_DATA_OUT		0x0000
-> +#define PRNG_STATUS		0x0004
-> +#define PRNG_LFSR_CFG		0x0100
-> +#define PRNG_CONFIG		0x0104
-> +
-[snip]
-> +
-> +MODULE_AUTHOR("The Linux Foundation");
-> +MODULE_DESCRIPTION("Qualcomm MSM random number generator driver");
-> +MODULE_LICENSE("GPL v2");
+---
+ arch/powerpc/kernel/sysfs.c |   18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
 
-MODULE_ALIAS perhaps?
+--- a/arch/powerpc/kernel/sysfs.c
++++ b/arch/powerpc/kernel/sysfs.c
+@@ -17,6 +17,7 @@
+ #include <asm/machdep.h>
+ #include <asm/smp.h>
+ #include <asm/pmc.h>
++#include <asm/firmware.h>
+ 
+ #include "cacheinfo.h"
+ 
+@@ -179,15 +180,25 @@ SYSFS_PMCSETUP(spurr, SPRN_SPURR);
+ SYSFS_PMCSETUP(dscr, SPRN_DSCR);
+ SYSFS_PMCSETUP(pir, SPRN_PIR);
+ 
++/*
++  Lets only enable read for phyp resources and
++  enable write when needed with a separate function.
++  Lets be conservative and default to pseries.
++*/
+ static DEVICE_ATTR(mmcra, 0600, show_mmcra, store_mmcra);
+ static DEVICE_ATTR(spurr, 0400, show_spurr, NULL);
+ static DEVICE_ATTR(dscr, 0600, show_dscr, store_dscr);
+-static DEVICE_ATTR(purr, 0600, show_purr, store_purr);
++static DEVICE_ATTR(purr, 0400, show_purr, store_purr);
+ static DEVICE_ATTR(pir, 0400, show_pir, NULL);
+ 
+ unsigned long dscr_default = 0;
+ EXPORT_SYMBOL(dscr_default);
+ 
++static void add_write_permission_dev_attr(struct device_attribute *attr)
++{
++	attr->attr.mode |= 0200;
++}
++
+ static ssize_t show_dscr_default(struct device *dev,
+ 		struct device_attribute *attr, char *buf)
+ {
+@@ -394,8 +405,11 @@ static void __cpuinit register_cpu_onlin
+ 	if (cpu_has_feature(CPU_FTR_MMCRA))
+ 		device_create_file(s, &dev_attr_mmcra);
+ 
+-	if (cpu_has_feature(CPU_FTR_PURR))
++	if (cpu_has_feature(CPU_FTR_PURR)) {
++		if (!firmware_has_feature(FW_FEATURE_LPAR))
++			add_write_permission_dev_attr(&dev_attr_purr);
+ 		device_create_file(s, &dev_attr_purr);
++	}
+ 
+ 	if (cpu_has_feature(CPU_FTR_SPURR))
+ 		device_create_file(s, &dev_attr_spurr);
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+
