@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756411Ab3JKGP7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 02:15:59 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:54035 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751718Ab3JKGP5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 02:15:57 -0400
-Message-ID: <5257977C.1030108@ti.com>
-Date: Fri, 11 Oct 2013 11:45:24 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1753849Ab3JKGUI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 02:20:08 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:46945 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751762Ab3JKGUG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 02:20:06 -0400
+Date: Fri, 11 Oct 2013 08:20:02 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: RFD: Does CONFIG_X86_LOCAL_APIC still make sense?
+Message-ID: <20131011062002.GC4975@gmail.com>
+References: <52573279.9020404@zytor.com>
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>,
-        "cw00.choi@samsung.com" <cw00.choi@samsung.com>
-CC: "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "rob@landley.net" <rob@landley.net>,
-        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH v6] extcon: palmas: Added a new compatible type *ti,palmas-usb-vid*
-References: <1381408647-24653-1-git-send-email-kishon@ti.com> <5256A773.6060807@nvidia.com>
-In-Reply-To: <5256A773.6060807@nvidia.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52573279.9020404@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 10 October 2013 06:41 PM, Laxman Dewangan wrote:
-> On Thursday 10 October 2013 06:07 PM, Kishon Vijay Abraham I wrote:
->> The Palmas device contains only a USB VBUS-ID detector, so added a
->> compatible type *ti,palmas-usb-vid*. Didn't remove the existing compatible
->> types for backward compatibility.
->>
-> I dont have much issue on this nomenclature but just second thought:
+
+* H. Peter Anvin <hpa@zytor.com> wrote:
+
+> I'm trying to wrap my head around if there are use cases where disabling 
+> either CONFIG_X86_UP_APIC or CONFIG_X86_LOCAL_APIC would ever make sense 
+> anymore.
 > 
-> The Palmas USB module is capable of detection VBUS, ID-GND, ID-RA, ID-RB, ID-RC
-> and ID-FLOAT as per BC1.2.
-> This sub-module only detect the cable, does nothing more than this.
-> In this case, should we say "ti,palmas-usb-extcon"?
-> Again extcon is linux specific terminology and this can be defer.
+> I am guessing there are probably some small number of embedded systems 
+> which still don't have LAPICs, but is it a significant number and does 
+> anyone care for new kernels?  We are not talking about discontinuing 
+> support for non-APIC configurations, just the configuration option.
 
-I don't mind either way. Chanwoo?
+I guess it depends on the kernel size difference. If it's more than just a 
+few K then a patch will creep back via some CONFIG_EXPERT "reduce kernel 
+bloat" route.
 
--Kishon
+The thing is, if we allow non-apic configurations then we have paid most 
+of the modularization, #ifdef and general maintenance price already. 
+Adding a Kconfig just makes it more testable and breakages more apparent.
+
+Unless I missed some aspects of this that would allow us to simplify code 
+significantly that is.
+
+Thanks,
+
+	Ingo
