@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756648Ab3JKVJx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 17:09:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45108 "EHLO
+	id S1757327Ab3JKVKQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 17:10:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45103 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756576Ab3JKTfi (ORCPT
+	with ESMTP id S1756547Ab3JKTfh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:35:38 -0400
+	Fri, 11 Oct 2013 15:35:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>,
+        Mark Wu <wudxw@linux.vnet.ibm.com>, Jay Vosburgh <fubar@us.ibm.com>,
+        Andy Gospodarek <andy@greyhouse.net>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 16/39] ll_temac: Reset dma descriptors indexes on ndo_open
-Date: Fri, 11 Oct 2013 12:35:00 -0700
-Message-Id: <20131011193212.646072174@linuxfoundation.org>
+Subject: [ 15/39] bonding: Fix broken promiscuity reference counting issue
+Date: Fri, 11 Oct 2013 12:34:59 -0700
+Message-Id: <20131011193212.546763695@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193210.843963685@linuxfoundation.org>
 References: <20131011193210.843963685@linuxfoundation.org>
@@ -27,42 +28,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ricardo Ribalda <ricardo.ribalda@gmail.com>
+From: Neil Horman <nhorman@tuxdriver.com>
 
-[ Upstream commit 7167cf0e8cd10287b7912b9ffcccd9616f382922 ]
+[ Upstream commit 5a0068deb611109c5ba77358be533f763f395ee4 ]
 
-The dma descriptors indexes are only initialized on the probe function.
+Recently grabbed this report:
+https://bugzilla.redhat.com/show_bug.cgi?id=1005567
 
-If a packet is on the buffer when temac_stop is called, the dma
-descriptors indexes can be left on a incorrect state where no other
-package can be sent.
+Of an issue in which the bonding driver, with an attached vlan encountered the
+following errors when bond0 was taken down and back up:
 
-So an interface could be left in an usable state after ifdow/ifup.
+dummy1: promiscuity touches roof, set promiscuity failed. promiscuity feature of
+device might be broken.
 
-This patch makes sure that the descriptors indexes are in a proper
-status when the device is open.
+The error occurs because, during __bond_release_one, if we release our last
+slave, we take on a random mac address and issue a NETDEV_CHANGEADDR
+notification.  With an attached vlan, the vlan may see that the vlan and bond
+mac address were in sync, but no longer are.  This triggers a call to dev_uc_add
+and dev_set_rx_mode, which enables IFF_PROMISC on the bond device.  Then, when
+we complete __bond_release_one, we use the current state of the bond flags to
+determine if we should decrement the promiscuity of the releasing slave.  But
+since the bond changed promiscuity state during the release operation, we
+incorrectly decrement the slave promisc count when it wasn't in promiscuous mode
+to begin with, causing the above error
 
-Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Fix is pretty simple, just cache the bonding flags at the start of the function
+and use those when determining the need to set promiscuity.
+
+This is also needed for the ALLMULTI flag
+
+Reported-by: Mark Wu <wudxw@linux.vnet.ibm.com>
+CC: Jay Vosburgh <fubar@us.ibm.com>
+CC: Andy Gospodarek <andy@greyhouse.net>
+CC: Mark Wu <wudxw@linux.vnet.ibm.com>
+CC: "David S. Miller" <davem@davemloft.net>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ll_temac_main.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/net/bonding/bond_main.c |   13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
 
---- a/drivers/net/ll_temac_main.c
-+++ b/drivers/net/ll_temac_main.c
-@@ -302,6 +302,12 @@ static int temac_dma_bd_init(struct net_
- 		       lp->rx_bd_p + (sizeof(*lp->rx_bd_v) * (RX_BD_NUM - 1)));
- 	lp->dma_out(lp, TX_CURDESC_PTR, lp->tx_bd_p);
+--- a/drivers/net/bonding/bond_main.c
++++ b/drivers/net/bonding/bond_main.c
+@@ -1994,6 +1994,7 @@ int bond_release(struct net_device *bond
+ 	struct bonding *bond = netdev_priv(bond_dev);
+ 	struct slave *slave, *oldcurrent;
+ 	struct sockaddr addr;
++	int old_flags = bond_dev->flags;
+ 	u32 old_features = bond_dev->features;
  
-+	/* Init descriptor indexes */
-+	lp->tx_bd_ci = 0;
-+	lp->tx_bd_next = 0;
-+	lp->tx_bd_tail = 0;
-+	lp->rx_bd_ci = 0;
-+
- 	return 0;
+ 	/* slave is not a slave or master is not master of this slave */
+@@ -2124,12 +2125,18 @@ int bond_release(struct net_device *bond
+ 	 * already taken care of above when we detached the slave
+ 	 */
+ 	if (!USES_PRIMARY(bond->params.mode)) {
+-		/* unset promiscuity level from slave */
+-		if (bond_dev->flags & IFF_PROMISC)
++		/* unset promiscuity level from slave
++		 * NOTE: The NETDEV_CHANGEADDR call above may change the value
++		 * of the IFF_PROMISC flag in the bond_dev, but we need the
++		 * value of that flag before that change, as that was the value
++		 * when this slave was attached, so we cache at the start of the
++		 * function and use it here. Same goes for ALLMULTI below
++		 */
++		if (old_flags & IFF_PROMISC)
+ 			dev_set_promiscuity(slave_dev, -1);
  
- out:
+ 		/* unset allmulti level from slave */
+-		if (bond_dev->flags & IFF_ALLMULTI)
++		if (old_flags & IFF_ALLMULTI)
+ 			dev_set_allmulti(slave_dev, -1);
+ 
+ 		/* flush master's mc_list from slave */
 
 
