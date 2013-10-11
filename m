@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933448Ab3JKUYU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:24:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45885 "EHLO
+	id S1758550Ab3JKUYi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:24:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45881 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932109Ab3JKTkh (ORCPT
+	with ESMTP id S932095Ab3JKTkg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:40:37 -0400
+	Fri, 11 Oct 2013 15:40:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Sandeen <sandeen@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 091/110] net: Update the sysctl permissions handler to test effective uid/gid
-Date: Fri, 11 Oct 2013 12:39:11 -0700
-Message-Id: <20131011193817.717163088@linuxfoundation.org>
+        Christopher <DIDI2002@web.de>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 100/110] ALSA: hda - Fix GPIO for Acer Aspire 3830TG
+Date: Fri, 11 Oct 2013 12:39:20 -0700
+Message-Id: <20131011193818.689003764@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
 References: <20131011193807.584188672@linuxfoundation.org>
@@ -28,39 +26,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 2433c8f094a008895e66f25bd1773cdb01c91d01 upstream.
+commit 4a4370442c996be0fd08234a167c8a127c2488bb upstream.
 
-Modify the code to use current_euid(), and in_egroup_p, as in done
-in fs/proc/proc_sysctl.c:test_perm()
+Acer Aspire 3830TG seems requiring GPIO bit 0 as the primary mute
+control.  When a machine is booted after Windows 8, the GPIO pin is
+turned off and it results in the silent output.
 
-Reviewed-by: Eric Sandeen <sandeen@redhat.com>
-Reported-by: Eric Sandeen <sandeen@redhat.com>
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+This patch adds the manual fixup of GPIO bit 0 for this model.
+
+Reported-by: Christopher <DIDI2002@web.de>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- net/sysctl_net.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/sysctl_net.c
-+++ b/net/sysctl_net.c
-@@ -47,12 +47,12 @@ static int net_ctl_permissions(struct ct
+---
+ sound/pci/hda/patch_conexant.c |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+--- a/sound/pci/hda/patch_conexant.c
++++ b/sound/pci/hda/patch_conexant.c
+@@ -3225,6 +3225,7 @@ enum {
+ 	CXT_PINCFG_LEMOTE_A1205,
+ 	CXT_FIXUP_STEREO_DMIC,
+ 	CXT_FIXUP_INC_MIC_BOOST,
++	CXT_FIXUP_GPIO1,
+ };
  
- 	/* Allow network administrator to have same access as root. */
- 	if (ns_capable(net->user_ns, CAP_NET_ADMIN) ||
--	    uid_eq(root_uid, current_uid())) {
-+	    uid_eq(root_uid, current_euid())) {
- 		int mode = (table->mode >> 6) & 7;
- 		return (mode << 6) | (mode << 3) | mode;
- 	}
- 	/* Allow netns root group to have the same access as the root group */
--	if (gid_eq(root_gid, current_gid())) {
-+	if (in_egroup_p(root_gid)) {
- 		int mode = (table->mode >> 3) & 7;
- 		return (mode << 3) | mode;
- 	}
+ static void cxt_fixup_stereo_dmic(struct hda_codec *codec,
+@@ -3303,6 +3304,15 @@ static const struct hda_fixup cxt_fixups
+ 		.type = HDA_FIXUP_FUNC,
+ 		.v.func = cxt5066_increase_mic_boost,
+ 	},
++	[CXT_FIXUP_GPIO1] = {
++		.type = HDA_FIXUP_VERBS,
++		.v.verbs = (const struct hda_verb[]) {
++			{ 0x01, AC_VERB_SET_GPIO_MASK, 0x01 },
++			{ 0x01, AC_VERB_SET_GPIO_DIRECTION, 0x01 },
++			{ 0x01, AC_VERB_SET_GPIO_DATA, 0x01 },
++			{ }
++		},
++	},
+ };
+ 
+ static const struct snd_pci_quirk cxt5051_fixups[] = {
+@@ -3312,6 +3322,7 @@ static const struct snd_pci_quirk cxt505
+ 
+ static const struct snd_pci_quirk cxt5066_fixups[] = {
+ 	SND_PCI_QUIRK(0x1025, 0x0543, "Acer Aspire One 522", CXT_FIXUP_STEREO_DMIC),
++	SND_PCI_QUIRK(0x1025, 0x054c, "Acer Aspire 3830TG", CXT_FIXUP_GPIO1),
+ 	SND_PCI_QUIRK(0x17aa, 0x20f2, "Lenovo T400", CXT_PINCFG_LENOVO_TP410),
+ 	SND_PCI_QUIRK(0x17aa, 0x215e, "Lenovo T410", CXT_PINCFG_LENOVO_TP410),
+ 	SND_PCI_QUIRK(0x17aa, 0x215f, "Lenovo T510", CXT_PINCFG_LENOVO_TP410),
 
 
