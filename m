@@ -1,88 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758486Ab3JKQGf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 12:06:35 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:54319 "EHLO arroyo.ext.ti.com"
+	id S1758562Ab3JKQHJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 12:07:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37262 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756014Ab3JKQGd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 12:06:33 -0400
-Date: Fri, 11 Oct 2013 11:05:28 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Boris BREZILLON <b.brezillon@overkiz.com>
-CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Josh Wu <josh.wu@atmel.com>, Richard Genoud <richard.genoud@gmail.com>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH v4 01/17] ARM: at91: move at91_pmc.h to
- include/linux/clk/at91_pmc.h
-Message-ID: <20131011160528.GV25706@radagast>
-Reply-To: <balbi@ti.com>
-References: <1381477081-6041-1-git-send-email-b.brezillon@overkiz.com>
- <1381477081-6041-2-git-send-email-b.brezillon@overkiz.com>
+	id S1757076Ab3JKQHH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 12:07:07 -0400
+Date: Fri, 11 Oct 2013 18:00:04 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Li Zefan <lizefan@huawei.com>
+Cc: Tejun Heo <tj@kernel.org>, anjana vk <anjanvk12@gmail.com>,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        eunki_kim@samsung.com
+Subject: Re: cgroup_attach_task && while_each_thread (Was: cgroup attach
+	task - slogging cpu)
+Message-ID: <20131011160004.GA26416@redhat.com>
+References: <CALPf4Tz+Gf_Q7wKKBufCc1mtV1qVPVrOW0S1qhHxfOv6pJa2Kg@mail.gmail.com> <20131004130207.GA9338@redhat.com> <20131007184507.GD27396@htj.dyndns.org> <20131008145833.GA15600@redhat.com> <5254EB2A.7090803@huawei.com> <20131009133047.GA12414@redhat.com> <20131009140551.GA15849@redhat.com> <20131009165448.GA22437@redhat.com> <5257F9E3.5030708@huawei.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="pEAjBjStGYT6H+Py"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1381477081-6041-2-git-send-email-b.brezillon@overkiz.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5257F9E3.5030708@huawei.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---pEAjBjStGYT6H+Py
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 10/11, Li Zefan wrote:
+>
+> On 2013/10/10 0:54, Oleg Nesterov wrote:
+>
+> > And I am starting to think that this change should also fix the
+> > while_each_thread() problems in this particular case.
 
-On Fri, Oct 11, 2013 at 09:37:45AM +0200, Boris BREZILLON wrote:
-> This patch moves at91_pmc.h header from machine specific directory
-> (arch/arm/mach-at91/include/mach/at91_pmc.h) to clk include directory
-> (include/linux/clk/at91_pmc.h).
-> We need this to avoid reference to machine specific headers in clk
-> drivers.
->=20
-> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+Please see below,
 
-for drivers/usb/gadget:
+> > In generak the code like
+> >
+> > 	rcu_read_lock();
+> > 	task = find_get_task(...);
+> > 	rcu_read_unlock();
+> >
+> > 	rcu_read_lock();
+> > 	t = task;
+> > 	do {
+> > 		...
+> > 	} while_each_thread (task, t);
+> > 	rcu_read_unlock();
+> >
+> > is wrong even if while_each_thread() was correct (and we have a lot
+> > of examples of this pattern). A GP can pass before the 2nd rcu-lock,
+> > and we simply can't trust ->thread_group.next.
+> >
+> > But I didn't notice that cgroup_attach_task(tsk, threadgroup) can only
+> > be called with threadgroup == T when a) tsk is ->group_leader and b)
+> > we hold threadgroup_lock() which blocks de_thread(). IOW, in this case
+> > "tsk" can't be removed from ->thread_group list before other threads.
+> >
+> > If next_thread() sees thread_group.next != leader, we know that the
+> > that .next thread didn't do __unhash_process() yet, and since we
+> > know that in this case "leader" didn't do this too we are safe.
+> >
+> > In short: __unhash_process(leader) (in this) case can never change
+> > ->thread_group.next of another thread, because leader->thread_group
+> > should be already list_empty().
+> >
+>
+> If threadgroup == false, and if the tsk is existing or is already in
+> the targeted cgroup, we won't break the loop due to the bug but do
+> this:
+>
+>   while_each_thread(task, t)
+>
+> If @task isn't the leader, we might got stuck in the loop?
 
-Acked-by: Felipe Balbi <balbi@ti.com>
+Yes, yes, sure. We need to fix the wrong "continue" logic, hopefully
 
+I tried to say (see above) that after we do this while_each_thread()
+should be fine in this particular case.
 
---=20
-balbi
+Oleg.
 
---pEAjBjStGYT6H+Py
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSWCHIAAoJEIaOsuA1yqREYTUP/jo1tAeSsGLgW8wPWSHBtM2U
-3NoEP4BFgO5zen+YQpD39m5yR/LSfMNsUG0l45q4ewRmPAziTOvVTAHBGRmsdLZL
-33QAoy56TJj2a3tbweEKKhl6uVaL+phLA3r5MiRClxudGDakqxlTbTSKmNtbvgQV
-SlOZQY/n5uR70eYsUmACMn1ss+0lurxQXfaArqi0VXvxjxD7sxGzV2g5l4dC7ERC
-elPyT0bbCNCdZChFbd02E0cpe2rBa87xIDyq88qzJiOkLtrtTI0nVwIE6U9FHG9/
-IL7cvo8nUq9/j3P/lvw4V13V/FR9GKsLZpK+UM1UyCQuYbTsvyt6DdmQGAVwQjmR
-lgTKUuw/MBiZlCz4PDsgtxXjFbRQVguSUSFXC4NATVId9gUU/v75fKrEIOCzTqDD
-fYAV1H6qT4A6HouCJz4qaMyspyneIN+52hwKZytZa9EfA2WZSoWGT1RiCm030+XS
-IZiasUBKklcxUGz9KdD1a8POJdgjti/BWbG8So5lgSZA6/1D57bYfi0SBCEghLms
-kq8ghrkUcx2a0rZrpmPGc3wup6nIKuzniW7ONExQrhAoxqZXq1chb18fT5uTi3oe
-zjrsUwUyKuKdErPmhF2rYUcNYb+FFDC4YYMmbVoHvWNmPBaFio3VQ0/28A2MV6Bk
-TPeLe4J+AXnU/hvNe2bP
-=Q8gr
------END PGP SIGNATURE-----
-
---pEAjBjStGYT6H+Py--
