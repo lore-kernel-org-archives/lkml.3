@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932140Ab3JKKnF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 06:43:05 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58486 "EHLO
+	id S932364Ab3JKLED (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 07:04:03 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58500 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757834Ab3JKKnA (ORCPT
+	with ESMTP id S932119Ab3JKKnE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 06:43:00 -0400
+	Fri, 11 Oct 2013 06:43:04 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Liam Girdwood <liam.r.girdwood@linux.intel.com>,
+        Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 033/100] serial: pch_uart: fix tty-kref leak in rx-error path
-Date: Fri, 11 Oct 2013 11:41:03 +0100
-Message-Id: <1381488130-30235-34-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 036/100] ALSA: compress: Fix compress device unregister.
+Date: Fri, 11 Oct 2013 11:41:06 +0100
+Message-Id: <1381488130-30235-37-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
 References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
@@ -28,31 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Liam Girdwood <liam.r.girdwood@linux.intel.com>
 
-commit fc0919c68cb2f75bb1af759315f9d7e2a9443c28 upstream.
+commit 4028b6c4c03f213260e9290ff3a6b5439aad07ce upstream.
 
-Fix tty-kref leak introduced by commit 384e301e ("pch_uart: fix a
-deadlock when pch_uart as console") which never put its tty reference.
+snd_unregister_device() should return the device type and not stream
+direction.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Liam Girdwood <liam.r.girdwood@linux.intel.com>
+Acked-by: Vinod Koul <vinod.koul@intel.com>
+Tested-by: Vinod Koul <vinod.koul@intel.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/tty/serial/pch_uart.c | 2 ++
- 1 file changed, 2 insertions(+)
+ sound/core/compress_offload.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/tty/serial/pch_uart.c b/drivers/tty/serial/pch_uart.c
-index 4798e94..9e97a39 100644
---- a/drivers/tty/serial/pch_uart.c
-+++ b/drivers/tty/serial/pch_uart.c
-@@ -1064,6 +1064,8 @@ static void pch_uart_err_ir(struct eg20t_port *priv, unsigned int lsr)
- 	if (tty == NULL) {
- 		for (i = 0; error_msg[i] != NULL; i++)
- 			dev_err(&priv->pdev->dev, error_msg[i]);
-+	} else {
-+		tty_kref_put(tty);
- 	}
+diff --git a/sound/core/compress_offload.c b/sound/core/compress_offload.c
+index 956c75d..794f37a 100644
+--- a/sound/core/compress_offload.c
++++ b/sound/core/compress_offload.c
+@@ -665,7 +665,8 @@ static int snd_compress_dev_disconnect(struct snd_device *device)
+ 	struct snd_compr *compr;
+ 
+ 	compr = device->device_data;
+-	snd_unregister_device(compr->direction, compr->card, compr->device);
++	snd_unregister_device(SNDRV_DEVICE_TYPE_COMPRESS, compr->card,
++		compr->device);
+ 	return 0;
  }
  
 -- 
