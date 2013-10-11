@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932687Ab3JKTlt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:41:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46323 "EHLO
+	id S1759176Ab3JKT4l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:56:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46363 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932648Ab3JKTlo (ORCPT
+	with ESMTP id S932699Ab3JKTlv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:41:44 -0400
+	Fri, 11 Oct 2013 15:41:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Maxim Patlasov <mpatlasov@parallels.com>,
-        Miklos Szeredi <mszeredi@suse.cz>
-Subject: [ 073/135] fuse: fix fallocate vs. ftruncate race
-Date: Fri, 11 Oct 2013 12:39:14 -0700
-Message-Id: <20131011193953.216505146@linuxfoundation.org>
+        Johan Hedberg <johan.hedberg@intel.com>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Subject: [ 080/135] Bluetooth: Fix rfkill functionality during the HCI setup stage
+Date: Fri, 11 Oct 2013 12:39:21 -0700
+Message-Id: <20131011193953.964322134@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -27,62 +28,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maxim Patlasov <MPatlasov@parallels.com>
+From: Johan Hedberg <johan.hedberg@intel.com>
 
-commit 0ab08f576b9e6a6b689fc6b4e632079b978e619b upstream.
+commit bf5430360ebe4b2d0c51d91f782e649107b502eb upstream.
 
-A former patch introducing FUSE_I_SIZE_UNSTABLE flag provided detailed
-description of races between ftruncate and anyone who can extend i_size:
+We need to let the setup stage complete cleanly even when the HCI device
+is rfkilled. Otherwise the HCI device will stay in an undefined state
+and never get notified to user space through mgmt (even when it gets
+unblocked through rfkill).
 
-> 1. As in the previous scenario fuse_dentry_revalidate() discovered that i_size
-> changed (due to our own fuse_do_setattr()) and is going to call
-> truncate_pagecache() for some  'new_size' it believes valid right now. But by
-> the time that particular truncate_pagecache() is called ...
-> 2. fuse_do_setattr() returns (either having called truncate_pagecache() or
-> not -- it doesn't matter).
-> 3. The file is extended either by write(2) or ftruncate(2) or fallocate(2).
-> 4. mmap-ed write makes a page in the extended region dirty.
+This patch makes sure that hci_dev_open() can be called in the HCI_SETUP
+stage, that blocking the device doesn't abort the setup stage, and that
+the device gets proper powered down as soon as the setup stage completes
+in case it was blocked meanwhile.
 
-This patch adds necessary bits to fuse_file_fallocate() to protect from that
-race.
+The bug that this patch fixed can be very easily reproduced using e.g.
+the rfkill command line too. By running "rfkill block all" before
+inserting a Bluetooth dongle the resulting HCI device goes into a state
+where it is never announced over mgmt, not even when "rfkill unblock all"
+is run.
 
-Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+Acked-by: Marcel Holtmann <marcel@holtmann.org>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/fuse/file.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ net/bluetooth/hci_core.c |   15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
 
---- a/fs/fuse/file.c
-+++ b/fs/fuse/file.c
-@@ -2467,6 +2467,7 @@ static long fuse_file_fallocate(struct f
- {
- 	struct fuse_file *ff = file->private_data;
- 	struct inode *inode = file->f_inode;
-+	struct fuse_inode *fi = get_fuse_inode(inode);
- 	struct fuse_conn *fc = ff->fc;
- 	struct fuse_req *req;
- 	struct fuse_fallocate_in inarg = {
-@@ -2495,6 +2496,9 @@ static long fuse_file_fallocate(struct f
- 		}
+--- a/net/bluetooth/hci_core.c
++++ b/net/bluetooth/hci_core.c
+@@ -1134,7 +1134,11 @@ int hci_dev_open(__u16 dev)
+ 		goto done;
  	}
  
-+	if (!(mode & FALLOC_FL_KEEP_SIZE))
-+		set_bit(FUSE_I_SIZE_UNSTABLE, &fi->state);
-+
- 	req = fuse_get_req_nopages(fc);
- 	if (IS_ERR(req)) {
- 		err = PTR_ERR(req);
-@@ -2527,6 +2531,9 @@ static long fuse_file_fallocate(struct f
- 	fuse_invalidate_attr(inode);
+-	if (test_bit(HCI_RFKILLED, &hdev->dev_flags)) {
++	/* Check for rfkill but allow the HCI setup stage to proceed
++	 * (which in itself doesn't cause any RF activity).
++	 */
++	if (test_bit(HCI_RFKILLED, &hdev->dev_flags) &&
++	    !test_bit(HCI_SETUP, &hdev->dev_flags)) {
+ 		ret = -ERFKILL;
+ 		goto done;
+ 	}
+@@ -1556,7 +1560,8 @@ static int hci_rfkill_set_block(void *da
  
- out:
-+	if (!(mode & FALLOC_FL_KEEP_SIZE))
-+		clear_bit(FUSE_I_SIZE_UNSTABLE, &fi->state);
-+
- 	if (lock_inode)
- 		mutex_unlock(&inode->i_mutex);
+ 	if (blocked) {
+ 		set_bit(HCI_RFKILLED, &hdev->dev_flags);
+-		hci_dev_do_close(hdev);
++		if (!test_bit(HCI_SETUP, &hdev->dev_flags))
++			hci_dev_do_close(hdev);
+ 	} else {
+ 		clear_bit(HCI_RFKILLED, &hdev->dev_flags);
+ }
+@@ -1581,9 +1586,13 @@ static void hci_power_on(struct work_str
+ 		return;
+ 	}
  
+-	if (test_bit(HCI_AUTO_OFF, &hdev->dev_flags))
++	if (test_bit(HCI_RFKILLED, &hdev->dev_flags)) {
++		clear_bit(HCI_AUTO_OFF, &hdev->dev_flags);
++		hci_dev_do_close(hdev);
++	} else if (test_bit(HCI_AUTO_OFF, &hdev->dev_flags)) {
+ 		queue_delayed_work(hdev->req_workqueue, &hdev->power_off,
+ 				   HCI_AUTO_OFF_TIMEOUT);
++	}
+ 
+ 	if (test_and_clear_bit(HCI_SETUP, &hdev->dev_flags))
+ 		mgmt_index_added(hdev);
 
 
