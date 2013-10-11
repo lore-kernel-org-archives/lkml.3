@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933477Ab3JKU0A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:26:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45856 "EHLO
+	id S933506Ab3JKU0W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:26:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45847 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759072Ab3JKTkd (ORCPT
+	with ESMTP id S1758975Ab3JKTkb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:40:33 -0400
+	Fri, 11 Oct 2013 15:40:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jack Wang <jinpu.wang@profitbricks.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 086/110] ib_srpt: always set response for task management
-Date: Fri, 11 Oct 2013 12:39:06 -0700
-Message-Id: <20131011193817.168191368@linuxfoundation.org>
+        David Vrabel <david.vrabel@citrix.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [ 084/110] xen/hvc: allow xenboot console to be used again
+Date: Fri, 11 Oct 2013 12:39:04 -0700
+Message-Id: <20131011193816.963249772@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
 References: <20131011193807.584188672@linuxfoundation.org>
@@ -27,53 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jack Wang <jinpu.wang@profitbricks.com>
+From: David Vrabel <david.vrabel@citrix.com>
 
-commit c807f64340932e19f0d2ac9b30c8381e1f60663a upstream.
+commit a9fbf4d591da6cd1d3eaab826c7c15f77fc8f6a3 upstream.
 
-The SRP specification requires:
+Commit d0380e6c3c0f6edb986d8798a23acfaf33d5df23 (early_printk:
+consolidate random copies of identical code) added in 3.10 introduced
+a check for con->index == -1 in early_console_register().
 
-  "Response data shall be provided in any SRP_RSP response that is sent in
-   response to an SRP_TSK_MGMT request (see 6.7). The information in the
-   RSP_CODE field (see table 24) shall indicate the completion status of
-   the task management function."
+Initialize index to -1 for the xenboot console so earlyprintk=xen
+works again.
 
-So fix this to avoid the SRP initiator interprets task management functions
-that succeeded as failed.
-
-Signed-off-by: Jack Wang <jinpu.wang@profitbricks.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Cc: Jiri Slaby <jslaby@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/ulp/srpt/ib_srpt.c |   10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
+ drivers/tty/hvc/hvc_xen.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/infiniband/ulp/srpt/ib_srpt.c
-+++ b/drivers/infiniband/ulp/srpt/ib_srpt.c
-@@ -1588,7 +1588,7 @@ static int srpt_build_tskmgmt_rsp(struct
- 	int resp_data_len;
- 	int resp_len;
+--- a/drivers/tty/hvc/hvc_xen.c
++++ b/drivers/tty/hvc/hvc_xen.c
+@@ -636,6 +636,7 @@ struct console xenboot_console = {
+ 	.name		= "xenboot",
+ 	.write		= xenboot_write_console,
+ 	.flags		= CON_PRINTBUFFER | CON_BOOT | CON_ANYTIME,
++	.index		= -1,
+ };
+ #endif	/* CONFIG_EARLY_PRINTK */
  
--	resp_data_len = (rsp_code == SRP_TSK_MGMT_SUCCESS) ? 0 : 4;
-+	resp_data_len = 4;
- 	resp_len = sizeof(*srp_rsp) + resp_data_len;
- 
- 	srp_rsp = ioctx->ioctx.buf;
-@@ -1600,11 +1600,9 @@ static int srpt_build_tskmgmt_rsp(struct
- 				    + atomic_xchg(&ch->req_lim_delta, 0));
- 	srp_rsp->tag = tag;
- 
--	if (rsp_code != SRP_TSK_MGMT_SUCCESS) {
--		srp_rsp->flags |= SRP_RSP_FLAG_RSPVALID;
--		srp_rsp->resp_data_len = cpu_to_be32(resp_data_len);
--		srp_rsp->data[3] = rsp_code;
--	}
-+	srp_rsp->flags |= SRP_RSP_FLAG_RSPVALID;
-+	srp_rsp->resp_data_len = cpu_to_be32(resp_data_len);
-+	srp_rsp->data[3] = rsp_code;
- 
- 	return resp_len;
- }
 
 
