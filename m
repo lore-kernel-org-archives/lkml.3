@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759174Ab3JKU2w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:28:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45811 "EHLO
+	id S932569Ab3JKU3Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:29:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45806 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759021Ab3JKTkY (ORCPT
+	with ESMTP id S1759015Ab3JKTkY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Oct 2013 15:40:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mel Gorman <mgorman@suse.de>,
-        "Darrick J. Wong" <darrick.wong@oracle.com>,
-        Kent Overstreet <koverstreet@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 076/110] mm/bounce.c: fix a regression where MS_SNAP_STABLE (stable pages snapshotting) was ignored
-Date: Fri, 11 Oct 2013 12:38:56 -0700
-Message-Id: <20131011193816.121073014@linuxfoundation.org>
+        Gurudas Pai <gurudas.pai@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        David Rientjes <rientjes@google.com>
+Subject: [ 075/110] mm: Fix generic hugetlb pte check return type.
+Date: Fri, 11 Oct 2013 12:38:55 -0700
+Message-Id: <20131011193816.012772119@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
 References: <20131011193807.584188672@linuxfoundation.org>
@@ -30,39 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
+From: David Miller <davem@davemloft.net>
 
-commit 83b2944fd2532b92db099cb3ada12df32a05b368 upstream.
+[ Upstream commit 26794942461f438a6bc725ec7294b08a6bd782c4 ]
 
-The "force" parameter in __blk_queue_bounce was being ignored, which
-means that stable page snapshots are not always happening (on ext3).
-This of course leads to DIF disks reporting checksum errors, so fix this
-regression.
+The include/asm-generic/hugetlb.h stubs that just vector huge_pte_*()
+calls to the pte_*() implementations won't work in certain situations.
 
-The regression was introduced in commit 6bc454d15004 ("bounce: Refactor
-__blk_queue_bounce to not use bi_io_vec")
+x86 and sparc, for example, return "unsigned long" from the bit
+checks, and just go "return pte_val(pte) & PTE_BIT_FOO;"
 
-Reported-by: Mel Gorman <mgorman@suse.de>
-Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
-Cc: Kent Overstreet <koverstreet@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+But since huge_pte_*() returns 'int', if any high bits on 64-bit are
+relevant, they get chopped off.
+
+The net effect is that we can loop forever trying to COW a huge page,
+because the huge_pte_write() check signals false all the time.
+
+Reported-by: Gurudas Pai <gurudas.pai@oracle.com>
+Tested-by: Gurudas Pai <gurudas.pai@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Acked-by: David Rientjes <rientjes@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- mm/bounce.c |    2 ++
- 1 file changed, 2 insertions(+)
+ include/asm-generic/hugetlb.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/mm/bounce.c
-+++ b/mm/bounce.c
-@@ -204,6 +204,8 @@ static void __blk_queue_bounce(struct re
- 	struct bio_vec *to, *from;
- 	unsigned i;
+--- a/include/asm-generic/hugetlb.h
++++ b/include/asm-generic/hugetlb.h
+@@ -6,12 +6,12 @@ static inline pte_t mk_huge_pte(struct p
+ 	return mk_pte(page, pgprot);
+ }
  
-+	if (force)
-+		goto bounce;
- 	bio_for_each_segment(from, *bio_orig, i)
- 		if (page_to_pfn(from->bv_page) > queue_bounce_pfn(q))
- 			goto bounce;
+-static inline int huge_pte_write(pte_t pte)
++static inline unsigned long huge_pte_write(pte_t pte)
+ {
+ 	return pte_write(pte);
+ }
+ 
+-static inline int huge_pte_dirty(pte_t pte)
++static inline unsigned long huge_pte_dirty(pte_t pte)
+ {
+ 	return pte_dirty(pte);
+ }
 
 
