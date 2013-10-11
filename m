@@ -1,175 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756127Ab3JKSbB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 14:31:01 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:33253 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753438Ab3JKSbA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 14:31:00 -0400
+	id S1756175Ab3JKSc2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 14:32:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39435 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752780Ab3JKSc1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 14:32:27 -0400
+Date: Fri, 11 Oct 2013 20:25:07 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/6] Optimize the cpu hotplug locking -v2
+Message-ID: <20131011182507.GA31625@redhat.com>
+References: <20131010152612.GA13375@redhat.com> <20131010090044.7f12ddaf.akpm@linux-foundation.org> <20131010123631.1be60315@gandalf.local.home> <20131010094355.6f75e5a2.akpm@linux-foundation.org> <20131010165337.GT3081@twins.programming.kicks-ass.net> <20131010131305.58558079@gandalf.local.home> <20131010104856.8f042977112d5ac2693973ae@linux-foundation.org> <20131010183409.GP13848@laptop.programming.kicks-ass.net> <CA+55aFyoP5KFUg44Xenp_Jz0_5ssosn-KF6LDsa0qsmCjyJ56g@mail.gmail.com> <20131011123820.GV3081@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-In-Reply-To: <1381493941-4650-5-git-send-email-tianyu.lan@intel.com>
-References: <1381493941-4650-1-git-send-email-tianyu.lan@intel.com>
-	<1381493941-4650-5-git-send-email-tianyu.lan@intel.com>
-Date: Fri, 11 Oct 2013 11:30:58 -0700
-X-Google-Sender-Auth: UBofDvr0uphR-cZH9ajXeAN2lDE
-Message-ID: <CAE9FiQWysaOj7+-NDcroGgJnVPZOi+kA6S7SXrosZhQuS_Z8_A@mail.gmail.com>
-Subject: Re: [Resend PATCH 4/5] X86/PCI/ACPI: Rework setup_resource() via
- functions ACPI resource functions
-From: Yinghai Lu <yinghai@kernel.org>
-To: Lan Tianyu <tianyu.lan@intel.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131011123820.GV3081@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 11, 2013 at 5:19 AM,  <tianyu.lan@intel.com> wrote:
-> From: Lan Tianyu <tianyu.lan@intel.com>
+On 10/11, Peter Zijlstra wrote:
 >
-> Using ACPI resource functions to convert ACPI resource to generic resource
-> instead of resource_to_addr(). Remove resource_to_addr().
->
-> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+> As a penance I'll start by removing all get_online_cpus() usage from the
+> scheduler.
 
-for 1-4
+I only looked at the change in setaffinity,
 
-Acked-by: Yinghai Lu <yinghai@kernel.org>
+> @@ -3706,7 +3707,6 @@ long sched_setaffinity(pid_t pid, const struct cpumask *in_mask)
+>  	struct task_struct *p;
+>  	int retval;
+>
+> -	get_online_cpus();
+>  	rcu_read_lock();
 
-> ---
->  arch/x86/pci/acpi.c | 81 ++++++++---------------------------------------------
->  1 file changed, 12 insertions(+), 69 deletions(-)
+Hmm. In theory task_rq_lock() doesn't imply rcu-lock, so
+set_cpus_allowed_ptr() can miss the change in cpu_active_mask. But this
+is probably fine, CPU_DYING does __migrate_task().
+
+However. This means that sched_setaffinity() can fail if it races with
+the failing cpu_down() (say, __cpu_notify(CPU_DOWN_PREPARE) fails).
+Probably we do not really care, just this looks a bit confusing.
+
+> @@ -3814,7 +3813,6 @@ long sched_getaffinity(pid_t pid, struct cpumask *mask)
+>  	unsigned long flags;
+>  	int retval;
 >
-> diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
-> index d641897..f4290a1 100644
-> --- a/arch/x86/pci/acpi.c
-> +++ b/arch/x86/pci/acpi.c
-> @@ -219,62 +219,15 @@ static void teardown_mcfg_map(struct pci_root_info *info)
->  #endif
+> -	get_online_cpus();
+
+This change is probably fine in any case?
+
+>  	rcu_read_lock();
 >
->  static acpi_status
-> -resource_to_addr(struct acpi_resource *resource,
-> -                       struct acpi_resource_address64 *addr)
-> -{
-> -       acpi_status status;
-> -       struct acpi_resource_memory24 *memory24;
-> -       struct acpi_resource_memory32 *memory32;
-> -       struct acpi_resource_fixed_memory32 *fixed_memory32;
-> -
-> -       memset(addr, 0, sizeof(*addr));
-> -       switch (resource->type) {
-> -       case ACPI_RESOURCE_TYPE_MEMORY24:
-> -               memory24 = &resource->data.memory24;
-> -               addr->resource_type = ACPI_MEMORY_RANGE;
-> -               addr->minimum = memory24->minimum;
-> -               addr->address_length = memory24->address_length;
-> -               addr->maximum = addr->minimum + addr->address_length - 1;
-> -               return AE_OK;
-> -       case ACPI_RESOURCE_TYPE_MEMORY32:
-> -               memory32 = &resource->data.memory32;
-> -               addr->resource_type = ACPI_MEMORY_RANGE;
-> -               addr->minimum = memory32->minimum;
-> -               addr->address_length = memory32->address_length;
-> -               addr->maximum = addr->minimum + addr->address_length - 1;
-> -               return AE_OK;
-> -       case ACPI_RESOURCE_TYPE_FIXED_MEMORY32:
-> -               fixed_memory32 = &resource->data.fixed_memory32;
-> -               addr->resource_type = ACPI_MEMORY_RANGE;
-> -               addr->minimum = fixed_memory32->address;
-> -               addr->address_length = fixed_memory32->address_length;
-> -               addr->maximum = addr->minimum + addr->address_length - 1;
-> -               return AE_OK;
-> -       case ACPI_RESOURCE_TYPE_ADDRESS16:
-> -       case ACPI_RESOURCE_TYPE_ADDRESS32:
-> -       case ACPI_RESOURCE_TYPE_ADDRESS64:
-> -               status = acpi_resource_to_address64(resource, addr);
-> -               if (ACPI_SUCCESS(status) &&
-> -                   (addr->resource_type == ACPI_MEMORY_RANGE ||
-> -                   addr->resource_type == ACPI_IO_RANGE) &&
-> -                   addr->address_length > 0) {
-> -                       return AE_OK;
-> -               }
-> -               break;
-> -       }
-> -       return AE_ERROR;
-> -}
-> -
-> -static acpi_status
->  count_resource(struct acpi_resource *acpi_res, void *data)
->  {
->         struct pci_root_info *info = data;
-> -       struct acpi_resource_address64 addr;
-> -       acpi_status status;
-> +       struct resource res;
+>  	retval = -ESRCH;
+> @@ -3827,12 +3825,11 @@ long sched_getaffinity(pid_t pid, struct cpumask *mask)
+>  		goto out_unlock;
 >
-> -       status = resource_to_addr(acpi_res, &addr);
-> -       if (ACPI_SUCCESS(status))
-> +       if (acpi_dev_resource_address_space(acpi_res, &res)
-> +           || acpi_dev_resource_memory(acpi_res, &res))
->                 info->res_num++;
-> +
->         return AE_OK;
->  }
->
-> @@ -282,27 +235,18 @@ static acpi_status
->  setup_resource(struct acpi_resource *acpi_res, void *data)
->  {
->         struct pci_root_info *info = data;
-> -       struct resource *res;
-> +       struct resource *res = &info->res[info->res_num];
->         struct acpi_resource_address64 addr;
-> -       acpi_status status;
-> -       unsigned long flags;
->         u64 start, orig_end, end;
->
-> -       status = resource_to_addr(acpi_res, &addr);
-> -       if (!ACPI_SUCCESS(status))
-> -               return AE_OK;
-> +       memset(&addr, 0x00, sizeof(addr));
->
-> -       if (addr.resource_type == ACPI_MEMORY_RANGE) {
-> -               flags = IORESOURCE_MEM;
-> -               if (addr.info.mem.caching == ACPI_PREFETCHABLE_MEMORY)
-> -                       flags |= IORESOURCE_PREFETCH;
-> -       } else if (addr.resource_type == ACPI_IO_RANGE) {
-> -               flags = IORESOURCE_IO;
-> -       } else
-> +       if (!(acpi_dev_resource_address_space_full(acpi_res, &addr, res)
-> +           || acpi_dev_resource_memory(acpi_res, res)))
->                 return AE_OK;
->
-> -       start = addr.minimum + addr.translation_offset;
-> -       orig_end = end = addr.maximum + addr.translation_offset;
-> +       start = res->start;
-> +       orig_end = end = res->end;
->
->         /* Exclude non-addressable range or non-addressable portion of range */
->         end = min(end, (u64)iomem_resource.end);
-> @@ -310,6 +254,7 @@ setup_resource(struct acpi_resource *acpi_res, void *data)
->                 dev_info(&info->bridge->dev,
->                         "host bridge window [%#llx-%#llx] "
->                         "(ignored, not CPU addressable)\n", start, orig_end);
-> +               memset(&info->res[info->res_num], 0x00, sizeof(*res));
->                 return AE_OK;
->         } else if (orig_end != end) {
->                 dev_info(&info->bridge->dev,
-> @@ -318,11 +263,9 @@ setup_resource(struct acpi_resource *acpi_res, void *data)
->                         start, orig_end, end + 1, orig_end);
->         }
->
-> -       res = &info->res[info->res_num];
->         res->name = info->name;
-> -       res->flags = flags;
-> -       res->start = start;
->         res->end = end;
-> +
->         info->res_offset[info->res_num] = addr.translation_offset;
->         info->res_num++;
->
-> --
-> 1.8.2.1
->
+>  	raw_spin_lock_irqsave(&p->pi_lock, flags);
+> -	cpumask_and(mask, &p->cpus_allowed, cpu_online_mask);
+> +	cpumask_and(mask, &p->cpus_allowed, cpu_active_mask);
+
+But I am just curious, is this change is strictly needed?
+
+Afaics we do not care if we race with set_cpu_online(true/false).
+
+Oleg.
+
