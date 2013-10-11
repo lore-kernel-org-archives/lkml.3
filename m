@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161025Ab3JKU1R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:27:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45839 "EHLO
+	id S1161039Ab3JKU1e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:27:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45835 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759054Ab3JKTka (ORCPT
+	with ESMTP id S1759051Ab3JKTk3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:40:30 -0400
+	Fri, 11 Oct 2013 15:40:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bing Zhao <bzhao@marvell.com>, Amitkumar Karwar <akarwar@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 082/110] mwifiex: fix PCIe hs_cfg cancel cmd timeout
-Date: Fri, 11 Oct 2013 12:39:02 -0700
-Message-Id: <20131011193816.757131687@linuxfoundation.org>
+        Kirill Tkhai <tkhai@yandex.ru>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 072/110] sparc64: Fix off by one in trampoline TLB mapping installation loop.
+Date: Fri, 11 Oct 2013 12:38:52 -0700
+Message-Id: <20131011193815.688452744@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
 References: <20131011193807.584188672@linuxfoundation.org>
@@ -27,47 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bing Zhao <bzhao@marvell.com>
+From: "David S. Miller" <davem@davemloft.net>
 
-commit b7be1522def9a9988b67afd0be999c50a96394b5 upstream.
+[ Upstream commit 63d499662aeec1864ec36d042aca8184ea6a938e ]
 
-For pcie8897, the hs_cfg cancel command (0xe5) times out when host
-comes out of suspend. This is caused by an incompleted host sleep
-handshake between driver and firmware.
-
-Like SDIO interface, PCIe also needs to go through firmware power
-save events to complete the handshake for host sleep configuration.
-Only USB interface doesn't require power save events for hs_cfg.
-
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Reported-by: Kirill Tkhai <tkhai@yandex.ru>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/net/wireless/mwifiex/cmdevt.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ arch/sparc/kernel/trampoline_64.S |    2 --
+ 1 file changed, 2 deletions(-)
 
---- a/drivers/net/wireless/mwifiex/cmdevt.c
-+++ b/drivers/net/wireless/mwifiex/cmdevt.c
-@@ -1154,7 +1154,7 @@ int mwifiex_ret_802_11_hs_cfg(struct mwi
- 	uint32_t conditions = le32_to_cpu(phs_cfg->params.hs_config.conditions);
+--- a/arch/sparc/kernel/trampoline_64.S
++++ b/arch/sparc/kernel/trampoline_64.S
+@@ -131,7 +131,6 @@ startup_continue:
+ 	clr		%l5
+ 	sethi		%hi(num_kernel_image_mappings), %l6
+ 	lduw		[%l6 + %lo(num_kernel_image_mappings)], %l6
+-	add		%l6, 1, %l6
  
- 	if (phs_cfg->action == cpu_to_le16(HS_ACTIVATE) &&
--	    adapter->iface_type == MWIFIEX_SDIO) {
-+	    adapter->iface_type != MWIFIEX_USB) {
- 		mwifiex_hs_activated_event(priv, true);
- 		return 0;
- 	} else {
-@@ -1166,8 +1166,7 @@ int mwifiex_ret_802_11_hs_cfg(struct mwi
- 	}
- 	if (conditions != HS_CFG_CANCEL) {
- 		adapter->is_hs_configured = true;
--		if (adapter->iface_type == MWIFIEX_USB ||
--		    adapter->iface_type == MWIFIEX_PCIE)
-+		if (adapter->iface_type == MWIFIEX_USB)
- 			mwifiex_hs_activated_event(priv, true);
- 	} else {
- 		adapter->is_hs_configured = false;
+ 	mov		15, %l7
+ 	BRANCH_IF_ANY_CHEETAH(g1,g5,2f)
+@@ -224,7 +223,6 @@ niagara_lock_tlb:
+ 	clr		%l5
+ 	sethi		%hi(num_kernel_image_mappings), %l6
+ 	lduw		[%l6 + %lo(num_kernel_image_mappings)], %l6
+-	add		%l6, 1, %l6
+ 
+ 1:
+ 	mov		HV_FAST_MMU_MAP_PERM_ADDR, %o5
 
 
