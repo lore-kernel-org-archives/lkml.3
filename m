@@ -1,30 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932401Ab3JKTlK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:41:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46058 "EHLO
+	id S932477Ab3JKTlT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:41:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46147 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932324Ab3JKTlB (ORCPT
+	with ESMTP id S932378Ab3JKTlQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:41:01 -0400
+	Fri, 11 Oct 2013 15:41:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David R <david@unsolicited.net>,
-        =?UTF-8?q?Fr=C3=A9d=C3=A9ric=20Leroy?= <fredo@starox.org>,
-        Hayes Wang <hayeswang@realtek.com>,
-        Francois Romieu <romieu@fr.zoreil.com>,
+        "Catalin(ux) M. BOIE" <catab@embedromix.ro>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 016/135] r8169: enforce RX_MULTI_EN for the 8168f.
-Date: Fri, 11 Oct 2013 12:38:17 -0700
-Message-Id: <20131011193947.004916948@linuxfoundation.org>
+Subject: [ 037/135] IPv6 NAT: Do not drop DNATed 6to4/6rd packets
+Date: Fri, 11 Oct 2013 12:38:38 -0700
+Message-Id: <20131011193949.271450272@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,35 +28,190 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Francois Romieu <romieu@fr.zoreil.com>
+From: "Catalin(ux) M. BOIE" <catab@embedromix.ro>
 
-[ Upstream commit 3ced8c955e74d319f3e3997f7169c79d524dfd06 ]
+[ Upstream commit 7df37ff33dc122f7bd0614d707939fe84322d264 ]
 
-Same narrative as eb2dc35d99028b698cdedba4f5522bc43e576bd2 ("r8169: RxConfig
-hack for the 8168evl.") regarding AMD IOMMU errors.
+When a router is doing DNAT for 6to4/6rd packets the latest
+anti-spoofing commit 218774dc ("ipv6: add anti-spoofing checks for
+6to4 and 6rd") will drop them because the IPv6 address embedded does
+not match the IPv4 destination. This patch will allow them to pass by
+testing if we have an address that matches on 6to4/6rd interface.  I
+have been hit by this problem using Fedora and IPV6TO4_IPV4ADDR.
+Also, log the dropped packets (with rate limit).
 
-RTL_GIGA_MAC_VER_36 - 8168f as well - has not been reported to behave the
-same.
-
-Tested-by: David R <david@unsolicited.net>
-Tested-by: Frédéric Leroy <fredo@starox.org>
-Cc: Hayes Wang <hayeswang@realtek.com>
-Signed-off-by: Francois Romieu <romieu@fr.zoreil.com>
+Signed-off-by: Catalin(ux) M. BOIE <catab@embedromix.ro>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/realtek/r8169.c |    1 +
- 1 file changed, 1 insertion(+)
+ include/net/addrconf.h |    4 ++
+ net/ipv6/addrconf.c    |   27 +++++++++++++++
+ net/ipv6/sit.c         |   84 ++++++++++++++++++++++++++++++++++++++++---------
+ 3 files changed, 100 insertions(+), 15 deletions(-)
 
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -4230,6 +4230,7 @@ static void rtl_init_rxcfg(struct rtl816
- 	case RTL_GIGA_MAC_VER_23:
- 	case RTL_GIGA_MAC_VER_24:
- 	case RTL_GIGA_MAC_VER_34:
-+	case RTL_GIGA_MAC_VER_35:
- 		RTL_W32(RxConfig, RX128_INT_EN | RX_MULTI_EN | RX_DMA_BURST);
- 		break;
- 	case RTL_GIGA_MAC_VER_40:
+--- a/include/net/addrconf.h
++++ b/include/net/addrconf.h
+@@ -73,6 +73,10 @@ extern int			ipv6_chk_home_addr(struct n
+ 						   const struct in6_addr *addr);
+ #endif
+ 
++bool ipv6_chk_custom_prefix(const struct in6_addr *addr,
++				   const unsigned int prefix_len,
++				   struct net_device *dev);
++
+ extern int			ipv6_chk_prefix(const struct in6_addr *addr,
+ 						struct net_device *dev);
+ 
+--- a/net/ipv6/addrconf.c
++++ b/net/ipv6/addrconf.c
+@@ -1533,6 +1533,33 @@ static bool ipv6_chk_same_addr(struct ne
+ 	return false;
+ }
+ 
++/* Compares an address/prefix_len with addresses on device @dev.
++ * If one is found it returns true.
++ */
++bool ipv6_chk_custom_prefix(const struct in6_addr *addr,
++	const unsigned int prefix_len, struct net_device *dev)
++{
++	struct inet6_dev *idev;
++	struct inet6_ifaddr *ifa;
++	bool ret = false;
++
++	rcu_read_lock();
++	idev = __in6_dev_get(dev);
++	if (idev) {
++		read_lock_bh(&idev->lock);
++		list_for_each_entry(ifa, &idev->addr_list, if_list) {
++			ret = ipv6_prefix_equal(addr, &ifa->addr, prefix_len);
++			if (ret)
++				break;
++		}
++		read_unlock_bh(&idev->lock);
++	}
++	rcu_read_unlock();
++
++	return ret;
++}
++EXPORT_SYMBOL(ipv6_chk_custom_prefix);
++
+ int ipv6_chk_prefix(const struct in6_addr *addr, struct net_device *dev)
+ {
+ 	struct inet6_dev *idev;
+--- a/net/ipv6/sit.c
++++ b/net/ipv6/sit.c
+@@ -566,6 +566,70 @@ static inline bool is_spoofed_6rd(struct
+ 	return false;
+ }
+ 
++/* Checks if an address matches an address on the tunnel interface.
++ * Used to detect the NAT of proto 41 packets and let them pass spoofing test.
++ * Long story:
++ * This function is called after we considered the packet as spoofed
++ * in is_spoofed_6rd.
++ * We may have a router that is doing NAT for proto 41 packets
++ * for an internal station. Destination a.a.a.a/PREFIX:bbbb:bbbb
++ * will be translated to n.n.n.n/PREFIX:bbbb:bbbb. And is_spoofed_6rd
++ * function will return true, dropping the packet.
++ * But, we can still check if is spoofed against the IP
++ * addresses associated with the interface.
++ */
++static bool only_dnatted(const struct ip_tunnel *tunnel,
++	const struct in6_addr *v6dst)
++{
++	int prefix_len;
++
++#ifdef CONFIG_IPV6_SIT_6RD
++	prefix_len = tunnel->ip6rd.prefixlen + 32
++		- tunnel->ip6rd.relay_prefixlen;
++#else
++	prefix_len = 48;
++#endif
++	return ipv6_chk_custom_prefix(v6dst, prefix_len, tunnel->dev);
++}
++
++/* Returns true if a packet is spoofed */
++static bool packet_is_spoofed(struct sk_buff *skb,
++			      const struct iphdr *iph,
++			      struct ip_tunnel *tunnel)
++{
++	const struct ipv6hdr *ipv6h;
++
++	if (tunnel->dev->priv_flags & IFF_ISATAP) {
++		if (!isatap_chksrc(skb, iph, tunnel))
++			return true;
++
++		return false;
++	}
++
++	if (tunnel->dev->flags & IFF_POINTOPOINT)
++		return false;
++
++	ipv6h = ipv6_hdr(skb);
++
++	if (unlikely(is_spoofed_6rd(tunnel, iph->saddr, &ipv6h->saddr))) {
++		net_warn_ratelimited("Src spoofed %pI4/%pI6c -> %pI4/%pI6c\n",
++				     &iph->saddr, &ipv6h->saddr,
++				     &iph->daddr, &ipv6h->daddr);
++		return true;
++	}
++
++	if (likely(!is_spoofed_6rd(tunnel, iph->daddr, &ipv6h->daddr)))
++		return false;
++
++	if (only_dnatted(tunnel, &ipv6h->daddr))
++		return false;
++
++	net_warn_ratelimited("Dst spoofed %pI4/%pI6c -> %pI4/%pI6c\n",
++			     &iph->saddr, &ipv6h->saddr,
++			     &iph->daddr, &ipv6h->daddr);
++	return true;
++}
++
+ static int ipip6_rcv(struct sk_buff *skb)
+ {
+ 	const struct iphdr *iph = ip_hdr(skb);
+@@ -588,19 +652,9 @@ static int ipip6_rcv(struct sk_buff *skb
+ 		skb->protocol = htons(ETH_P_IPV6);
+ 		skb->pkt_type = PACKET_HOST;
+ 
+-		if (tunnel->dev->priv_flags & IFF_ISATAP) {
+-			if (!isatap_chksrc(skb, iph, tunnel)) {
+-				tunnel->dev->stats.rx_errors++;
+-				goto out;
+-			}
+-		} else if (!(tunnel->dev->flags&IFF_POINTOPOINT)) {
+-			if (is_spoofed_6rd(tunnel, iph->saddr,
+-					   &ipv6_hdr(skb)->saddr) ||
+-			    is_spoofed_6rd(tunnel, iph->daddr,
+-					   &ipv6_hdr(skb)->daddr)) {
+-				tunnel->dev->stats.rx_errors++;
+-				goto out;
+-			}
++		if (packet_is_spoofed(skb, iph, tunnel)) {
++			tunnel->dev->stats.rx_errors++;
++			goto out;
+ 		}
+ 
+ 		__skb_tunnel_rx(skb, tunnel->dev);
+@@ -752,7 +806,7 @@ static netdev_tx_t ipip6_tunnel_xmit(str
+ 			neigh = dst_neigh_lookup(skb_dst(skb), &iph6->daddr);
+ 
+ 		if (neigh == NULL) {
+-			net_dbg_ratelimited("sit: nexthop == NULL\n");
++			net_dbg_ratelimited("nexthop == NULL\n");
+ 			goto tx_error;
+ 		}
+ 
+@@ -781,7 +835,7 @@ static netdev_tx_t ipip6_tunnel_xmit(str
+ 			neigh = dst_neigh_lookup(skb_dst(skb), &iph6->daddr);
+ 
+ 		if (neigh == NULL) {
+-			net_dbg_ratelimited("sit: nexthop == NULL\n");
++			net_dbg_ratelimited("nexthop == NULL\n");
+ 			goto tx_error;
+ 		}
+ 
 
 
