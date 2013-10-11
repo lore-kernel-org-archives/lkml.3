@@ -1,49 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758065Ab3JKMy1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 08:54:27 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:51117 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753445Ab3JKMyZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 08:54:25 -0400
-MIME-Version: 1.0
-In-Reply-To: <5257E3C6.3050507@gmail.com>
-References: <1380635719-31171-1-git-send-email-zonque@gmail.com>
-	<CACRpkdYhQ+-d1COcvmg_hEJ==cTFpKLNDnvF8kdK4QgXzHenEA@mail.gmail.com>
-	<5257E3C6.3050507@gmail.com>
-Date: Fri, 11 Oct 2013 14:54:24 +0200
-Message-ID: <CACRpkdZWPP+8qJJM60rJvLR7xQvfaHcs-XkabD9zvubTEHFWyA@mail.gmail.com>
-Subject: Re: [PATCH] drivers: misc: add gpio wakeup driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Daniel Mack <zonque@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Greg KH <gregkh@linuxfoundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Mark Brown <broonie@kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757407Ab3JKM4q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 08:56:46 -0400
+Received: from pegase1.c-s.fr ([93.17.236.30]:35036 "EHLO mailhub1.si.c-s.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751751Ab3JKM4o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 08:56:44 -0400
+Date: Fri, 11 Oct 2013 14:56:40 +0200
+Message-Id: <201310111256.r9BCuepM006243@localhost.localdomain>
+From: Christophe Leroy <christophe.leroy@c-s.fr>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>
+CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
+Subject: [PATCH] powerpc 8xx: Fixing memory init issue with CONFIG_PIN_TLB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 11, 2013 at 1:40 PM, Daniel Mack <zonque@gmail.com> wrote:
+Activating CONFIG_PIN_TLB allows access to the 24 first Mbytes of memory at
+bootup instead of 8. It is needed for "big" kernels for instance when activating
+CONFIG_LOCKDEP_SUPPORT. This needs to be taken into account in init_32 too,
+otherwise memory allocation soon fails after startup.
 
->> Since what the driver will then eventually provide is to
->> flag an IRQ line as wakeup, I wonder if this should not just
->> simply go into the interrupt core, or atleast of/irq.c.
->
-> But for that, the IRQ line must be requested exclusively and handled as
-> well, no? If not, how would you handle cases where an interrupt is
-> marked as wakeup source by the core, but used by another driver which
-> calls disable_irq_wake() on it for whatever reason?
+Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
 
-Does this driver handle that?
-
-It rather looks like it hogs both the GPIO and IRQ from anyone
-else who want it...
-
-Yours,
-Linus Walleij
+diff -ur linux-3.11.org/arch/powerpc/kernel/head_8xx.S linux-3.11/arch/powerpc/kernel/head_8xx.S
+--- linux-3.11.org/arch/powerpc/mm/init_32.c	2013-09-02 22:46:10.000000000 +0200
++++ linux-3.11/arch/powerpc/mm/init_32.c	2013-09-09 11:28:54.000000000 +0200
+@@ -213,7 +213,12 @@
+ 	 */
+ 	BUG_ON(first_memblock_base != 0);
+ 
++#ifdef CONFIG_PIN_TLB
++	/* 8xx can only access 24MB at the moment */
++	memblock_set_current_limit(min_t(u64, first_memblock_size, 0x01800000));
++#else
+ 	/* 8xx can only access 8MB at the moment */
+ 	memblock_set_current_limit(min_t(u64, first_memblock_size, 0x00800000));
++#endif
+ }
+ #endif /* CONFIG_8xx */
