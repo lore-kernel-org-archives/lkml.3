@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758422Ab3JKKyA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 06:54:00 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58697 "EHLO
+	id S1758443Ab3JKKya (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 06:54:30 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58683 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932244Ab3JKKnu (ORCPT
+	with ESMTP id S1758008Ab3JKKnq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 06:43:50 -0400
+	Fri, 11 Oct 2013 06:43:46 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Kirill Tkhai <tkhai@yandex.ru>, David Miller <davem@davemloft.net>,
+Cc: Claudiu Manoil <claudiu.manoil@freescale.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Christian Engelmayer <christian.engelmayer@frequentis.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 069/100] sparc64: Fix not SRA'ed %o5 in 32-bit traced syscall
-Date: Fri, 11 Oct 2013 11:41:39 +0100
-Message-Id: <1381488130-30235-70-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 066/100] gianfar: Change default HW Tx queue scheduling mode
+Date: Fri, 11 Oct 2013 11:41:36 +0100
+Message-Id: <1381488130-30235-67-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
 References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
@@ -27,55 +29,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kirill Tkhai <tkhai@yandex.ru>
+From: Claudiu Manoil <claudiu.manoil@freescale.com>
 
-commit ab2abda6377723e0d5fbbfe5f5aa16a5523344d1 upstream.
+commit b98b8babd6e3370fadb7c6eaacb00eb2f6344a6c upstream.
 
-(From v1 to v2: changed comment)
+This is primarily to address transmission timeout occurrences, when
+multiple H/W Tx queues are being used concurrently. Because in
+the priority scheduling mode the controller does not service the
+Tx queues equally (but in ascending index order), Tx timeouts are
+being triggered rightaway for a basic test with multiple simultaneous
+connections like:
+iperf -c <server_ip> -n 100M -P 8
 
-On the way linux_sparc_syscall32->linux_syscall_trace32->goto 2f,
-register %o5 doesn't clear its second 32-bit.
+resulting in kernel trace:
+NETDEV WATCHDOG: eth1 (fsl-gianfar): transmit queue <X> timed out
+------------[ cut here ]------------
+WARNING: at net/sched/sch_generic.c:255
+...
+and controller reset during intense traffic, and possibly further
+complications.
 
-Fix that.
+This patch changes the default H/W Tx scheduling setting (TXSCHED)
+for multi-queue devices, from priority scheduling mode to a weighted
+round robin mode with equal weights for all H/W Tx queues, and
+addresses the issue above.
 
-Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
-CC: David Miller <davem@davemloft.net>
+Signed-off-by: Claudiu Manoil <claudiu.manoil@freescale.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: Christian Engelmayer <christian.engelmayer@frequentis.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/sparc/kernel/syscalls.S | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/net/ethernet/freescale/gianfar.c | 11 ++++++++++-
+ drivers/net/ethernet/freescale/gianfar.h | 11 ++++++++++-
+ 2 files changed, 20 insertions(+), 2 deletions(-)
 
-diff --git a/arch/sparc/kernel/syscalls.S b/arch/sparc/kernel/syscalls.S
-index 7f5f65d..817187d 100644
---- a/arch/sparc/kernel/syscalls.S
-+++ b/arch/sparc/kernel/syscalls.S
-@@ -147,7 +147,7 @@ linux_syscall_trace32:
- 	srl	%i4, 0, %o4
- 	srl	%i1, 0, %o1
- 	srl	%i2, 0, %o2
--	ba,pt	%xcc, 2f
-+	ba,pt	%xcc, 5f
- 	 srl	%i3, 0, %o3
+diff --git a/drivers/net/ethernet/freescale/gianfar.c b/drivers/net/ethernet/freescale/gianfar.c
+index ccc2b3b..285049f 100644
+--- a/drivers/net/ethernet/freescale/gianfar.c
++++ b/drivers/net/ethernet/freescale/gianfar.c
+@@ -394,7 +394,13 @@ static void gfar_init_mac(struct net_device *ndev)
+ 	if (ndev->features & NETIF_F_IP_CSUM)
+ 		tctrl |= TCTRL_INIT_CSUM;
  
- linux_syscall_trace:
-@@ -177,13 +177,13 @@ linux_sparc_syscall32:
- 	srl	%i1, 0, %o1				! IEU0	Group
- 	ldx	[%g6 + TI_FLAGS], %l0		! Load
+-	tctrl |= TCTRL_TXSCHED_PRIO;
++	if (priv->prio_sched_en)
++		tctrl |= TCTRL_TXSCHED_PRIO;
++	else {
++		tctrl |= TCTRL_TXSCHED_WRRS;
++		gfar_write(&regs->tr03wt, DEFAULT_WRRS_WEIGHT);
++		gfar_write(&regs->tr47wt, DEFAULT_WRRS_WEIGHT);
++	}
  
--	srl	%i5, 0, %o5				! IEU1
-+	srl	%i3, 0, %o3				! IEU0
- 	srl	%i2, 0, %o2				! IEU0	Group
- 	andcc	%l0, (_TIF_SYSCALL_TRACE|_TIF_SECCOMP|_TIF_SYSCALL_AUDIT|_TIF_SYSCALL_TRACEPOINT), %g0
- 	bne,pn	%icc, linux_syscall_trace32		! CTI
- 	 mov	%i0, %l5				! IEU1
--	call	%l7					! CTI	Group brk forced
--	 srl	%i3, 0, %o3				! IEU0
-+5:	call	%l7					! CTI	Group brk forced
-+	 srl	%i5, 0, %o5				! IEU1
- 	ba,a,pt	%xcc, 3f
+ 	gfar_write(&regs->tctrl, tctrl);
  
- 	/* Linux native system calls enter here... */
+@@ -1153,6 +1159,9 @@ static int gfar_probe(struct platform_device *ofdev)
+ 	priv->rx_filer_enable = 1;
+ 	/* Enable most messages by default */
+ 	priv->msg_enable = (NETIF_MSG_IFUP << 1 ) - 1;
++	/* use pritority h/w tx queue scheduling for single queue devices */
++	if (priv->num_tx_queues == 1)
++		priv->prio_sched_en = 1;
+ 
+ 	/* Carrier starts down, phylib will bring it up */
+ 	netif_carrier_off(dev);
+diff --git a/drivers/net/ethernet/freescale/gianfar.h b/drivers/net/ethernet/freescale/gianfar.h
+index 27d8aeb..22eabc1 100644
+--- a/drivers/net/ethernet/freescale/gianfar.h
++++ b/drivers/net/ethernet/freescale/gianfar.h
+@@ -301,8 +301,16 @@ extern const char gfar_driver_version[];
+ #define TCTRL_TFCPAUSE		0x00000008
+ #define TCTRL_TXSCHED_MASK	0x00000006
+ #define TCTRL_TXSCHED_INIT	0x00000000
++/* priority scheduling */
+ #define TCTRL_TXSCHED_PRIO	0x00000002
++/* weighted round-robin scheduling (WRRS) */
+ #define TCTRL_TXSCHED_WRRS	0x00000004
++/* default WRRS weight and policy setting,
++ * tailored to the tr03wt and tr47wt registers:
++ * equal weight for all Tx Qs, measured in 64byte units
++ */
++#define DEFAULT_WRRS_WEIGHT	0x18181818
++
+ #define TCTRL_INIT_CSUM		(TCTRL_TUCSEN | TCTRL_IPCSEN)
+ 
+ #define IEVENT_INIT_CLEAR	0xffffffff
+@@ -1096,7 +1104,8 @@ struct gfar_private {
+ 		extended_hash:1,
+ 		bd_stash_en:1,
+ 		rx_filer_enable:1,
+-		wol_en:1; /* Wake-on-LAN enabled */
++		wol_en:1, /* Wake-on-LAN enabled */
++		prio_sched_en:1; /* Enable priorty based Tx scheduling in Hw */
+ 	unsigned short padding;
+ 
+ 	/* PHY stuff */
 -- 
 1.8.3.2
 
