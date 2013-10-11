@@ -1,55 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757375Ab3JKKCQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 06:02:16 -0400
-Received: from mga03.intel.com ([143.182.124.21]:27737 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756587Ab3JKKCN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 06:02:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1079,1371106800"; 
-   d="scan'208";a="373396940"
-From: Youquan Song <youquan.song@intel.com>
-To: dan.j.williams@intel.com, vinod.koul@intel.com, gregkh@linuxfoundation.org
-Cc: andriy.shevchenko@intel.com, mika.westerberg@intel.com,
-        linux-kernel@vger.kernel.org,
-        Youquan Song <youquan.song@linux.intel.com>,
-        Youquan Song <youquan.song@intel.com>
-Subject: [PATCH 2/2] dma: calculate the data tranferred by 8250
-Date: Fri, 11 Oct 2013 17:42:18 -0400
-Message-Id: <1381527738-9339-3-git-send-email-youquan.song@intel.com>
-X-Mailer: git-send-email 1.6.4.2
-In-Reply-To: <1381527738-9339-2-git-send-email-youquan.song@intel.com>
-References: <1381527738-9339-1-git-send-email-youquan.song@intel.com>
- <1381527738-9339-2-git-send-email-youquan.song@intel.com>
+	id S1757236Ab3JKKEX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 06:04:23 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:56864 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752191Ab3JKKEW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 06:04:22 -0400
+From: Nishanth Menon <nm@ti.com>
+To: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, Nishanth Menon <nm@ti.com>
+Subject: [PATCH] regulator: ti-abb: Fix operator precedence typo
+Date: Fri, 11 Oct 2013 05:04:12 -0500
+Message-ID: <1381485852-18085-1-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When using UART transfers data by DMA mode, but it always shows 0 at 
-/sys/class/dma/dma0chan*/bytes_transferred.
+commit 40b1936e (regulator: Introduce TI Adaptive Body Bias(ABB) on-chip
+LDO driver) missed a pair of brackets which cause the wrong vset data to be
+picked up from efuse, resulting in bad VBB voltage values.
 
-Call the new function to calculate how many the data has been transferred
- after doing it by DMA mode. 
-
-Signed-off-by: Youquan Song <youquan.song@intel.com>
+Signed-off-by: Nishanth Menon <nm@ti.com>
 ---
- drivers/tty/serial/8250/8250_dma.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/regulator/ti-abb-regulator.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/tty/serial/8250/8250_dma.c b/drivers/tty/serial/8250/8250_dma.c
-index 7046769..b22ef80 100644
---- a/drivers/tty/serial/8250/8250_dma.c
-+++ b/drivers/tty/serial/8250/8250_dma.c
-@@ -83,7 +83,7 @@ int serial8250_tx_dma(struct uart_8250_port *p)
- 	desc->callback = __dma_tx_complete;
- 	desc->callback_param = p;
- 
--	dma->tx_cookie = dmaengine_submit(desc);
-+	dma->tx_cookie = dma_tx_submit_cal(desc, dma->txchan, dma->tx_size);
- 
- 	dma_sync_single_for_device(dma->txchan->device->dev, dma->tx_addr,
- 				   UART_XMIT_SIZE, DMA_TO_DEVICE);
+diff --git a/drivers/regulator/ti-abb-regulator.c b/drivers/regulator/ti-abb-regulator.c
+index 20c271d..b993ec5 100644
+--- a/drivers/regulator/ti-abb-regulator.c
++++ b/drivers/regulator/ti-abb-regulator.c
+@@ -615,7 +615,7 @@ static int ti_abb_init_table(struct device *dev, struct ti_abb *abb,
+ 					pname, *volt_table, vset_mask);
+ 			continue;
+ 		}
+-		info->vset = efuse_val & vset_mask >> __ffs(vset_mask);
++		info->vset = (efuse_val & vset_mask) >> __ffs(vset_mask);
+ 		dev_dbg(dev, "[%d]v=%d vset=%x\n", i, *volt_table, info->vset);
+ check_abb:
+ 		switch (info->opp_sel) {
 -- 
-1.7.7.4
+1.7.9.5
 
