@@ -1,113 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758116Ab3JKKqk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 06:46:40 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58824 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932376Ab3JKKoY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 06:44:24 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Ian Abbott <abbotti@mev.co.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 094/100] staging: comedi: ni_65xx: (bug fix) confine insn_bits to one subdevice
-Date: Fri, 11 Oct 2013 11:42:04 +0100
-Message-Id: <1381488130-30235-95-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
-References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	id S1758136Ab3JKKqy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 06:46:54 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:50885 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756804Ab3JKKqu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 06:46:50 -0400
+Message-ID: <5257D714.9060005@ti.com>
+Date: Fri, 11 Oct 2013 05:46:44 -0500
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Rajendra Nayak <rnayak@ti.com>
+CC: Rob Landley <rob@landley.net>, Mark Brown <broonie@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Kishon Vijay Abraham I <kishon@ti.com>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] regulator: dts: Fix bindings description of regulator-boot-on
+References: <1381487207-18298-1-git-send-email-nm@ti.com> <5257D40C.3060501@ti.com>
+In-Reply-To: <5257D40C.3060501@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.23 -stable review patch.  If anyone has any objections, please let me know.
+On 10/11/2013 05:33 AM, Rajendra Nayak wrote:
+> On Friday 11 October 2013 03:56 PM, Nishanth Menon wrote:
+>> Since regulator-boot-on property maps back to constraints->boot_on,
+>> current description of 'regulator-boot-on' property conflicts with
+>> description of 'boot-on' in include/linux/regulator/machine.h and the
+>> corresponding implementation in drivers/regulator/core.c.
+>>
+>> Ensure the description is more inline with the original intent.
+>>
+>> Cc: Rajendra Nayak <rnayak@ti.com>
+>>
+>> Reported-by: Kishon Vijay Abraham I <kishon@ti.com>
+>> Signed-off-by: Nishanth Menon <nm@ti.com>
+>> ---
+>>
+>> Ref: my confusion in http://marc.info/?t=138140228800004&r=1&w=2
+>> Based on v3.12-rc4 tag
+>>
+>>  .../devicetree/bindings/regulator/regulator.txt    |    4 +++-
+>>  1 file changed, 3 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/Documentation/devicetree/bindings/regulator/regulator.txt b/Documentation/devicetree/bindings/regulator/regulator.txt
+>> index 2bd8f09..d999f096 100644
+>> --- a/Documentation/devicetree/bindings/regulator/regulator.txt
+>> +++ b/Documentation/devicetree/bindings/regulator/regulator.txt
+>> @@ -8,7 +8,9 @@ Optional properties:
+>>  - regulator-min-microamp: smallest current consumers may set
+>>  - regulator-max-microamp: largest current consumers may set
+>>  - regulator-always-on: boolean, regulator should never be disabled
+>> -- regulator-boot-on: bootloader/firmware enabled regulator
+>> +- regulator-boot-on: regulator is enabled when the system is initially started.
+>> +  If the regulator is not enabled by the hardware or bootloader then it will be
+>> +  enabled when the constraints are applied.
+> 
+> Isn't this specific to how the linux regulator framework implements it?
+> why should it be documented in the generic bindings documentation which has
+> nothing Linux specific but more hardware details?
 
-------------------
+Lets say for the moment that SMPS10 was enabled by hardware
+/bootloader/firmware at boot.
 
-From: Ian Abbott <abbotti@mev.co.uk>
+By the description of "bootloader/firmware enabled regulator" , I have
+described the dts correctly by adding regulator-boot-on. However,
+translating that to implementation of "Keep the regulator enabled at
+boot even if we dont use it in USB" makes no logical leap for me.
 
-commit 677a31565692d596ef42ea589b53ba289abf4713 upstream.
+In fact, what does "bootloader/firmware enabled regulator" even mean
+to OS? why should it even care if "bootloader/firmware enabled
+regulator"? It cares about regulators that are mandatory to be kept on
+at boot.
 
-The `insn_bits` handler `ni_65xx_dio_insn_bits()` has a `for` loop that
-currently writes (optionally) and reads back up to 5 "ports" consisting
-of 8 channels each.  It reads up to 32 1-bit channels but can only read
-and write a whole port at once - it needs to handle up to 5 ports as the
-first channel it reads might not be aligned on a port boundary.  It
-breaks out of the loop early if the next port it handles is beyond the
-final port on the card.  It also breaks out early on the 5th port in the
-loop if the first channel was aligned.  Unfortunately, it doesn't check
-that the current port it is dealing with belongs to the comedi subdevice
-the `insn_bits` handler is acting on.  That's a bug.
+So, IMHO, either our implementation in regulator core is wrong, or we
+are describing the wrong hardware property. This patch assumes the later.
 
-Redo the `for` loop to terminate after the final port belonging to the
-subdevice, changing the loop variable in the process to simplify things
-a bit.  The `for` loop could now try and handle more than 5 ports if the
-subdevice has more than 40 channels, but the test `if (bitshift >= 32)`
-ensures it will break out early after 4 or 5 ports (depending on whether
-the first channel is aligned on a port boundary).  (`bitshift` will be
-between -7 and 7 inclusive on the first iteration, increasing by 8 for
-each subsequent operation.)
-
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[ Ian: This patch applies to kernels 2.6.34.y through to 3.5.y inclusive.
-  Similar patch already queued for 3.10.y and 3.11.y by Greg-KH.
-  I can post similar patches for kernels 3.6.y to 3.9.y on request.
-  Similar patch for 2.6.32.y ]
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/staging/comedi/drivers/ni_65xx.c | 26 +++++++++++---------------
- 1 file changed, 11 insertions(+), 15 deletions(-)
-
-diff --git a/drivers/staging/comedi/drivers/ni_65xx.c b/drivers/staging/comedi/drivers/ni_65xx.c
-index 0d27a93..c36efe0 100644
---- a/drivers/staging/comedi/drivers/ni_65xx.c
-+++ b/drivers/staging/comedi/drivers/ni_65xx.c
-@@ -411,29 +411,25 @@ static int ni_65xx_dio_insn_bits(struct comedi_device *dev,
- 				 struct comedi_subdevice *s,
- 				 struct comedi_insn *insn, unsigned int *data)
- {
--	unsigned base_bitfield_channel;
--	const unsigned max_ports_per_bitfield = 5;
-+	int base_bitfield_channel;
- 	unsigned read_bits = 0;
--	unsigned j;
-+	int last_port_offset = ni_65xx_port_by_channel(s->n_chan - 1);
-+	int port_offset;
-+
- 	if (insn->n != 2)
- 		return -EINVAL;
- 	base_bitfield_channel = CR_CHAN(insn->chanspec);
--	for (j = 0; j < max_ports_per_bitfield; ++j) {
--		const unsigned port_offset =
--			ni_65xx_port_by_channel(base_bitfield_channel) + j;
--		const unsigned port =
--			sprivate(s)->base_port + port_offset;
--		unsigned base_port_channel;
-+	for (port_offset = ni_65xx_port_by_channel(base_bitfield_channel);
-+	     port_offset <= last_port_offset; port_offset++) {
-+		unsigned port = sprivate(s)->base_port + port_offset;
-+		int base_port_channel = port_offset * ni_65xx_channels_per_port;
- 		unsigned port_mask, port_data, port_read_bits;
--		int bitshift;
--		if (port >= ni_65xx_total_num_ports(board(dev)))
-+		int bitshift = base_port_channel - base_bitfield_channel;
-+
-+		if (bitshift >= 32)
- 			break;
--		base_port_channel = port_offset * ni_65xx_channels_per_port;
- 		port_mask = data[0];
- 		port_data = data[1];
--		bitshift = base_port_channel - base_bitfield_channel;
--		if (bitshift >= 32 || bitshift <= -32)
--			break;
- 		if (bitshift > 0) {
- 			port_mask >>= bitshift;
- 			port_data >>= bitshift;
 -- 
-1.8.3.2
-
+Regards,
+Nishanth Menon
