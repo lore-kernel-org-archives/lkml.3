@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161010Ab3JKU0z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:26:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45843 "EHLO
+	id S1161025Ab3JKU1R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:27:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45839 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759058Ab3JKTkb (ORCPT
+	with ESMTP id S1759054Ab3JKTka (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:40:31 -0400
+	Fri, 11 Oct 2013 15:40:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@prifuk.cz>,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
-Subject: [ 083/110] USB: serial: option: Ignore card reader interface on Huawei E1750
-Date: Fri, 11 Oct 2013 12:39:03 -0700
-Message-Id: <20131011193816.858584504@linuxfoundation.org>
+        Bing Zhao <bzhao@marvell.com>, Amitkumar Karwar <akarwar@marvell.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 082/110] mwifiex: fix PCIe hs_cfg cancel cmd timeout
+Date: Fri, 11 Oct 2013 12:39:02 -0700
+Message-Id: <20131011193816.757131687@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
 References: <20131011193807.584188672@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,45 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Malý <madcatxster@prifuk.cz>
+From: Bing Zhao <bzhao@marvell.com>
 
-commit eb2addd4044b4b2ce77693bde5bc810536dd96ee upstream.
+commit b7be1522def9a9988b67afd0be999c50a96394b5 upstream.
 
-Hi,
+For pcie8897, the hs_cfg cancel command (0xe5) times out when host
+comes out of suspend. This is caused by an incompleted host sleep
+handshake between driver and firmware.
 
-my Huawei 3G modem has an embedded Smart Card reader which causes
-trouble when the modem is being detected (a bunch of "<warn>  (ttyUSBx):
-open blocked by driver for more than 7 seconds!" in messages.log). This
-trivial patch corrects the problem for me. The modem identifies itself
-as "12d1:1406 Huawei Technologies Co., Ltd. E1750" in lsusb although the
-description on the body says "Model E173u-1"
+Like SDIO interface, PCIe also needs to go through firmware power
+save events to complete the handshake for host sleep configuration.
+Only USB interface doesn't require power save events for hs_cfg.
 
-Signed-off-by: Michal Malý <madcatxster@prifuk.cz>
-Cc: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/net/wireless/mwifiex/cmdevt.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -81,6 +81,7 @@ static void option_instat_callback(struc
+--- a/drivers/net/wireless/mwifiex/cmdevt.c
++++ b/drivers/net/wireless/mwifiex/cmdevt.c
+@@ -1154,7 +1154,7 @@ int mwifiex_ret_802_11_hs_cfg(struct mwi
+ 	uint32_t conditions = le32_to_cpu(phs_cfg->params.hs_config.conditions);
  
- #define HUAWEI_VENDOR_ID			0x12D1
- #define HUAWEI_PRODUCT_E173			0x140C
-+#define HUAWEI_PRODUCT_E1750			0x1406
- #define HUAWEI_PRODUCT_K4505			0x1464
- #define HUAWEI_PRODUCT_K3765			0x1465
- #define HUAWEI_PRODUCT_K4605			0x14C6
-@@ -567,6 +568,8 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1c23, USB_CLASS_COMM, 0x02, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E173, 0xff, 0xff, 0xff),
- 		.driver_info = (kernel_ulong_t) &net_intf1_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E1750, 0xff, 0xff, 0xff),
-+		.driver_info = (kernel_ulong_t) &net_intf2_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1441, USB_CLASS_COMM, 0x02, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1442, USB_CLASS_COMM, 0x02, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4505, 0xff, 0xff, 0xff),
+ 	if (phs_cfg->action == cpu_to_le16(HS_ACTIVATE) &&
+-	    adapter->iface_type == MWIFIEX_SDIO) {
++	    adapter->iface_type != MWIFIEX_USB) {
+ 		mwifiex_hs_activated_event(priv, true);
+ 		return 0;
+ 	} else {
+@@ -1166,8 +1166,7 @@ int mwifiex_ret_802_11_hs_cfg(struct mwi
+ 	}
+ 	if (conditions != HS_CFG_CANCEL) {
+ 		adapter->is_hs_configured = true;
+-		if (adapter->iface_type == MWIFIEX_USB ||
+-		    adapter->iface_type == MWIFIEX_PCIE)
++		if (adapter->iface_type == MWIFIEX_USB)
+ 			mwifiex_hs_activated_event(priv, true);
+ 	} else {
+ 		adapter->is_hs_configured = false;
 
 
