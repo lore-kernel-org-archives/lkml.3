@@ -1,62 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753807Ab3JKWh6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 18:37:58 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:45029 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753663Ab3JKWh4 (ORCPT
+	id S1752818Ab3JKWrn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 18:47:43 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:47842 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752273Ab3JKWrm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 18:37:56 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Ryan Mallon <rmallon@gmail.com>
-Cc: George Spelvin <linux@horizon.com>, joe@perches.com,
-        akpm@linux-foundation.org, dan.j.rosenberg@gmail.com,
-        eldad@fogrefinery.com, jgunthorpe@obsidianresearch.com,
-        jkosina@suse.cz, keescook@chromium.org,
-        kernel-hardening@lists.openwall.com, linux-kernel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, rusty@rustcorp.com.au
-References: <20131011044232.11545.qmail@science.horizon.com>
-	<525875DB.9030300@gmail.com>
-Date: Fri, 11 Oct 2013 15:37:32 -0700
-In-Reply-To: <525875DB.9030300@gmail.com> (Ryan Mallon's message of "Sat, 12
-	Oct 2013 09:04:11 +1100")
-Message-ID: <87d2nba0yb.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Fri, 11 Oct 2013 18:47:42 -0400
+Message-ID: <52588005.4030806@hurleysoftware.com>
+Date: Fri, 11 Oct 2013 18:47:33 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX19/zSaKNXANGj8DL24U5AYRd/Iq5AcyWLw=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0008]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Ryan Mallon <rmallon@gmail.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH v3a] vsprintf: Check real user/group id for %pK
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+To: Roel Kluin <roel.kluin@gmail.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org
+Subject: Re: tty: incorrect test of echo_buf() result for ECHO_OP_START
+References: <alpine.DEB.2.02.1310112126001.11060@Z>
+In-Reply-To: <alpine.DEB.2.02.1310112126001.11060@Z>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ryan Mallon <rmallon@gmail.com> writes:
+On 10/11/2013 04:08 PM, Roel Kluin wrote:
+> Untested, but this looks like a bug to me
 
-> The only remaining problem is kernel/module.c:module_sect_show() which
-> is used to write the sysfs files in /sys/module/<modname>/sections/.
-> Those files are actually are really good target for leaking %pK values
-> via setuid binaries. The problem is that the module_sect_show() function
-> isn't passed information about who opened the sysfs file. I don't think
-> this information is available in general for sysfs files either. Also,
-> I can't actually see how module_sect_show() gets called?
+Careless error on my part. Fix looks good; thanks for catching this.
+
+Regards,
+Peter Hurley
+
+> -----------
+> test echo_buf() result for ECHO_OP_START
 >
-> I'm a bit stuck on how to solve this. Any ideas?
+> Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
+> ---
+> diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+> index 7a744b6..42b6cca 100644
+> --- a/drivers/tty/n_tty.c
+> +++ b/drivers/tty/n_tty.c
+> @@ -767,7 +767,7 @@ static size_t __process_echoes(struct tty_struct *tty)
+>   	 * of echo overrun before the next commit), then discard enough
+>   	 * data at the tail to prevent a subsequent overrun */
+>   	while (ldata->echo_commit - tail >= ECHO_DISCARD_WATERMARK) {
+> -		if (echo_buf(ldata, tail == ECHO_OP_START)) {
+> +		if (echo_buf(ldata, tail) == ECHO_OP_START) {
+>   			if (echo_buf(ldata, tail) == ECHO_OP_ERASE_TAB)
+>   				tail += 3;
+>   			else
 
-I haven't yet had a chance to review the patches but there are patches
-to make sysfs files seq files in Greg's driver core tree.
-
-Eric
