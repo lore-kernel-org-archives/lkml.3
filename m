@@ -1,185 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755715Ab3JKU5E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:57:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45334 "EHLO
+	id S1755893Ab3JKU5J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:57:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47245 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757889Ab3JKThQ (ORCPT
+	with ESMTP id S1755718Ab3JKU5G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:37:16 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 25/48] powerpc: Restore registers on error exit from csum_partial_copy_generic()
-Date: Fri, 11 Oct 2013 12:36:32 -0700
-Message-Id: <20131011193639.973241152@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20131011193637.253208688@linuxfoundation.org>
-References: <20131011193637.253208688@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Fri, 11 Oct 2013 16:57:06 -0400
+Date: Fri, 11 Oct 2013 13:57:04 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Roel Kluin <roel.kluin@gmail.com>
+Cc: Andrew Jones <drjones@redhat.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] jump_label: unlikely(x) > 0
+Message-Id: <20131011135704.6fd455e2387a37f1972a4e0f@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.02.1310112241220.11060@Z>
+References: <alpine.DEB.2.02.1310112241220.11060@Z>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Fri, 11 Oct 2013 22:50:50 +0200 (CEST) Roel Kluin <roel.kluin@gmail.com> wrote:
 
-------------------
+> untested, but wasn't this intended instead?
+> --------------
+> if (unlikely(x) > 0) doesn't seem to help branch prediction
+> 
+> ...
+>
+> --- a/include/linux/jump_label.h
+> +++ b/include/linux/jump_label.h
+> @@ -132,14 +132,14 @@ static __always_inline void jump_label_init(void)
+>  
+>  static __always_inline bool static_key_false(struct static_key *key)
+>  {
+> -	if (unlikely(atomic_read(&key->enabled)) > 0)
+> +	if (unlikely(atomic_read(&key->enabled) > 0))
+>  		return true;
+>  	return false;
+>  }
+>  
+>  static __always_inline bool static_key_true(struct static_key *key)
+>  {
+> -	if (likely(atomic_read(&key->enabled)) > 0)
+> +	if (likely(atomic_read(&key->enabled) > 0))
+>  		return true;
+>  	return false;
+>  }
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-
-commit 8f21bd0090052e740944f9397e2be5ac7957ded7 upstream.
-
-The csum_partial_copy_generic() function saves the PowerPC non-volatile
-r14, r15, and r16 registers for the main checksum-and-copy loop.
-Unfortunately, it fails to restore them upon error exit from this loop,
-which results in silent corruption of these registers in the presumably
-rare event of an access exception within that loop.
-
-This commit therefore restores these register on error exit from the loop.
-
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/powerpc/lib/checksum_64.S |   54 ++++++++++++++++++++++++++++++-----------
- 1 file changed, 40 insertions(+), 14 deletions(-)
-
---- a/arch/powerpc/lib/checksum_64.S
-+++ b/arch/powerpc/lib/checksum_64.S
-@@ -229,19 +229,35 @@ _GLOBAL(csum_partial)
- 	blr
- 
- 
--	.macro source
-+	.macro srcnr
- 100:
- 	.section __ex_table,"a"
- 	.align 3
--	.llong 100b,.Lsrc_error
-+	.llong 100b,.Lsrc_error_nr
- 	.previous
- 	.endm
- 
--	.macro dest
-+	.macro source
-+150:
-+	.section __ex_table,"a"
-+	.align 3
-+	.llong 150b,.Lsrc_error
-+	.previous
-+	.endm
-+
-+	.macro dstnr
- 200:
- 	.section __ex_table,"a"
- 	.align 3
--	.llong 200b,.Ldest_error
-+	.llong 200b,.Ldest_error_nr
-+	.previous
-+	.endm
-+
-+	.macro dest
-+250:
-+	.section __ex_table,"a"
-+	.align 3
-+	.llong 250b,.Ldest_error
- 	.previous
- 	.endm
- 
-@@ -277,11 +293,11 @@ _GLOBAL(csum_partial_copy_generic)
- 	mtctr	r6
- 
- 1:
--source;	lhz	r6,0(r3)		/* align to doubleword */
-+srcnr;	lhz	r6,0(r3)		/* align to doubleword */
- 	subi	r5,r5,2
- 	addi	r3,r3,2
- 	adde	r0,r0,r6
--dest;	sth	r6,0(r4)
-+dstnr;	sth	r6,0(r4)
- 	addi	r4,r4,2
- 	bdnz	1b
- 
-@@ -395,10 +411,10 @@ dest;	std	r16,56(r4)
- 
- 	mtctr	r6
- 3:
--source;	ld	r6,0(r3)
-+srcnr;	ld	r6,0(r3)
- 	addi	r3,r3,8
- 	adde	r0,r0,r6
--dest;	std	r6,0(r4)
-+dstnr;	std	r6,0(r4)
- 	addi	r4,r4,8
- 	bdnz	3b
- 
-@@ -408,10 +424,10 @@ dest;	std	r6,0(r4)
- 	srdi.	r6,r5,2
- 	beq	.Lcopy_tail_halfword
- 
--source;	lwz	r6,0(r3)
-+srcnr;	lwz	r6,0(r3)
- 	addi	r3,r3,4
- 	adde	r0,r0,r6
--dest;	stw	r6,0(r4)
-+dstnr;	stw	r6,0(r4)
- 	addi	r4,r4,4
- 	subi	r5,r5,4
- 
-@@ -419,10 +435,10 @@ dest;	stw	r6,0(r4)
- 	srdi.	r6,r5,1
- 	beq	.Lcopy_tail_byte
- 
--source;	lhz	r6,0(r3)
-+srcnr;	lhz	r6,0(r3)
- 	addi	r3,r3,2
- 	adde	r0,r0,r6
--dest;	sth	r6,0(r4)
-+dstnr;	sth	r6,0(r4)
- 	addi	r4,r4,2
- 	subi	r5,r5,2
- 
-@@ -430,10 +446,10 @@ dest;	sth	r6,0(r4)
- 	andi.	r6,r5,1
- 	beq	.Lcopy_finish
- 
--source;	lbz	r6,0(r3)
-+srcnr;	lbz	r6,0(r3)
- 	sldi	r9,r6,8			/* Pad the byte out to 16 bits */
- 	adde	r0,r0,r9
--dest;	stb	r6,0(r4)
-+dstnr;	stb	r6,0(r4)
- 
- .Lcopy_finish:
- 	addze	r0,r0			/* add in final carry */
-@@ -443,6 +459,11 @@ dest;	stb	r6,0(r4)
- 	blr
- 
- .Lsrc_error:
-+	ld	r14,STK_REG(R14)(r1)
-+	ld	r15,STK_REG(R15)(r1)
-+	ld	r16,STK_REG(R16)(r1)
-+	addi	r1,r1,STACKFRAMESIZE
-+.Lsrc_error_nr:
- 	cmpdi	0,r7,0
- 	beqlr
- 	li	r6,-EFAULT
-@@ -450,6 +471,11 @@ dest;	stb	r6,0(r4)
- 	blr
- 
- .Ldest_error:
-+	ld	r14,STK_REG(R14)(r1)
-+	ld	r15,STK_REG(R15)(r1)
-+	ld	r16,STK_REG(R16)(r1)
-+	addi	r1,r1,STACKFRAMESIZE
-+.Ldest_error_nr:
- 	cmpdi	0,r8,0
- 	beqlr
- 	li	r6,-EFAULT
-
+I'm sure this was intended instead ;) The patch doesn't seem to make
+any difference in code generation with my gcc.
 
