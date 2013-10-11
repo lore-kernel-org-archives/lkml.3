@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758628Ab3JKLBi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 07:01:38 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58545 "EHLO
+	id S1758634Ab3JKLB4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 07:01:56 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58531 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757859Ab3JKKnP (ORCPT
+	with ESMTP id S1757861Ab3JKKnM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 06:43:15 -0400
+	Fri, 11 Oct 2013 06:43:12 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Malcolm Priestley <tvboxspy@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 044/100] staging: vt6656: [BUG] main_usb.c oops on device_close move flag earlier.
-Date: Fri, 11 Oct 2013 11:41:14 +0100
-Message-Id: <1381488130-30235-45-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 042/100] xhci: Ensure a command structure points to the correct trb on the command ring
+Date: Fri, 11 Oct 2013 11:41:12 +0100
+Message-Id: <1381488130-30235-43-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
 References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
@@ -28,48 +28,152 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Malcolm Priestley <tvboxspy@gmail.com>
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
 
-commit e3eb270fab7734427dd8171a93e4946fe28674bc upstream.
+commit ec7e43e2d98173483866fe2e4e690143626b659c upstream.
 
-The vt6656 is prone to resetting on the usb bus.
+If a command on the command ring needs to be cancelled before it is handled
+it can be turned to a no-op operation when the ring is stopped.
+We want to store the command ring enqueue pointer in the command structure
+when the command in enqueued for the cancellation case.
 
-It seems there is a race condition and wpa supplicant is
-trying to open the device via iw_handlers before its actually
-closed at a stage that the buffers are being removed.
+Some commands used to store the command ring dequeue pointers instead of enqueue
+(these often worked because enqueue happends to equal dequeue quite often)
 
-The device is longer considered open when the
-buffers are being removed. So move ~DEVICE_FLAGS_OPENED
-flag to before freeing the device buffers.
+Other commands correctly used the enqueue pointer but did not check if it pointed
+to a valid trb or a link trb, this caused for example stop endpoint command to timeout in
+xhci_stop_device() in about 2% of suspend/resume cases.
 
-Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+This should also solve some weird behavior happening in command cancellation cases.
+
+This patch is based on a patch submitted by Sarah Sharp to linux-usb, but
+then forgotten:
+    http://marc.info/?l=linux-usb&m=136269803207465&w=2
+
+This patch should be backported to kernels as old as 3.7, that contain
+the commit b92cc66c047ff7cf587b318fe377061a353c120f "xHCI: add aborting
+command ring function"
+
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/staging/vt6656/main_usb.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/usb/host/xhci-hub.c  |  2 +-
+ drivers/usb/host/xhci-ring.c | 10 ++++++++++
+ drivers/usb/host/xhci.c      | 25 +++++--------------------
+ drivers/usb/host/xhci.h      |  1 +
+ 4 files changed, 17 insertions(+), 21 deletions(-)
 
-diff --git a/drivers/staging/vt6656/main_usb.c b/drivers/staging/vt6656/main_usb.c
-index fa6dbe0..c829863 100644
---- a/drivers/staging/vt6656/main_usb.c
-+++ b/drivers/staging/vt6656/main_usb.c
-@@ -1220,6 +1220,8 @@ device_release_WPADEV(pDevice);
-     memset(pMgmt->abyCurrBSSID, 0, 6);
-     pMgmt->eCurrState = WMAC_STATE_IDLE;
+diff --git a/drivers/usb/host/xhci-hub.c b/drivers/usb/host/xhci-hub.c
+index 7534bb4..b83a7b8 100644
+--- a/drivers/usb/host/xhci-hub.c
++++ b/drivers/usb/host/xhci-hub.c
+@@ -287,7 +287,7 @@ static int xhci_stop_device(struct xhci_hcd *xhci, int slot_id, int suspend)
+ 		if (virt_dev->eps[i].ring && virt_dev->eps[i].ring->dequeue)
+ 			xhci_queue_stop_endpoint(xhci, slot_id, i, suspend);
+ 	}
+-	cmd->command_trb = xhci->cmd_ring->enqueue;
++	cmd->command_trb = xhci_find_next_enqueue(xhci->cmd_ring);
+ 	list_add_tail(&cmd->cmd_list, &virt_dev->cmd_list);
+ 	xhci_queue_stop_endpoint(xhci, slot_id, 0, suspend);
+ 	xhci_ring_cmd_db(xhci);
+diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
+index 2c4df52..fde2282 100644
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -122,6 +122,16 @@ static int enqueue_is_link_trb(struct xhci_ring *ring)
+ 	return TRB_TYPE_LINK_LE32(link->control);
+ }
  
-+	pDevice->flags &= ~DEVICE_FLAGS_OPENED;
++union xhci_trb *xhci_find_next_enqueue(struct xhci_ring *ring)
++{
++	/* Enqueue pointer can be left pointing to the link TRB,
++	 * we must handle that
++	 */
++	if (TRB_TYPE_LINK_LE32(ring->enqueue->link.control))
++		return ring->enq_seg->next->trbs;
++	return ring->enqueue;
++}
 +
-     device_free_tx_bufs(pDevice);
-     device_free_rx_bufs(pDevice);
-     device_free_int_bufs(pDevice);
-@@ -1231,7 +1233,6 @@ device_release_WPADEV(pDevice);
-     usb_free_urb(pDevice->pInterruptURB);
+ /* Updates trb to point to the next TRB in the ring, and updates seg if the next
+  * TRB is in a new segment.  This does not skip over link TRBs, and it does not
+  * effect the ring dequeue or enqueue pointers.
+diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+index 2acae4d..eb31daa 100644
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -2582,15 +2582,7 @@ static int xhci_configure_endpoint(struct xhci_hcd *xhci,
+ 	if (command) {
+ 		cmd_completion = command->completion;
+ 		cmd_status = &command->status;
+-		command->command_trb = xhci->cmd_ring->enqueue;
+-
+-		/* Enqueue pointer can be left pointing to the link TRB,
+-		 * we must handle that
+-		 */
+-		if (TRB_TYPE_LINK_LE32(command->command_trb->link.control))
+-			command->command_trb =
+-				xhci->cmd_ring->enq_seg->next->trbs;
+-
++		command->command_trb = xhci_find_next_enqueue(xhci->cmd_ring);
+ 		list_add_tail(&command->cmd_list, &virt_dev->cmd_list);
+ 	} else {
+ 		cmd_completion = &virt_dev->cmd_completion;
+@@ -2598,7 +2590,7 @@ static int xhci_configure_endpoint(struct xhci_hcd *xhci,
+ 	}
+ 	init_completion(cmd_completion);
  
-     BSSvClearNodeDBTable(pDevice, 0);
--    pDevice->flags &=(~DEVICE_FLAGS_OPENED);
+-	cmd_trb = xhci->cmd_ring->dequeue;
++	cmd_trb = xhci_find_next_enqueue(xhci->cmd_ring);
+ 	if (!ctx_change)
+ 		ret = xhci_queue_configure_endpoint(xhci, in_ctx->dma,
+ 				udev->slot_id, must_succeed);
+@@ -3383,14 +3375,7 @@ int xhci_discover_or_reset_device(struct usb_hcd *hcd, struct usb_device *udev)
  
-     DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "device_close2 \n");
+ 	/* Attempt to submit the Reset Device command to the command ring */
+ 	spin_lock_irqsave(&xhci->lock, flags);
+-	reset_device_cmd->command_trb = xhci->cmd_ring->enqueue;
+-
+-	/* Enqueue pointer can be left pointing to the link TRB,
+-	 * we must handle that
+-	 */
+-	if (TRB_TYPE_LINK_LE32(reset_device_cmd->command_trb->link.control))
+-		reset_device_cmd->command_trb =
+-			xhci->cmd_ring->enq_seg->next->trbs;
++	reset_device_cmd->command_trb = xhci_find_next_enqueue(xhci->cmd_ring);
  
+ 	list_add_tail(&reset_device_cmd->cmd_list, &virt_dev->cmd_list);
+ 	ret = xhci_queue_reset_device(xhci, slot_id);
+@@ -3594,7 +3579,7 @@ int xhci_alloc_dev(struct usb_hcd *hcd, struct usb_device *udev)
+ 	union xhci_trb *cmd_trb;
+ 
+ 	spin_lock_irqsave(&xhci->lock, flags);
+-	cmd_trb = xhci->cmd_ring->dequeue;
++	cmd_trb = xhci_find_next_enqueue(xhci->cmd_ring);
+ 	ret = xhci_queue_slot_control(xhci, TRB_ENABLE_SLOT, 0);
+ 	if (ret) {
+ 		spin_unlock_irqrestore(&xhci->lock, flags);
+@@ -3721,7 +3706,7 @@ int xhci_address_device(struct usb_hcd *hcd, struct usb_device *udev)
+ 	xhci_dbg_ctx(xhci, virt_dev->in_ctx, 2);
+ 
+ 	spin_lock_irqsave(&xhci->lock, flags);
+-	cmd_trb = xhci->cmd_ring->dequeue;
++	cmd_trb = xhci_find_next_enqueue(xhci->cmd_ring);
+ 	ret = xhci_queue_address_device(xhci, virt_dev->in_ctx->dma,
+ 					udev->slot_id);
+ 	if (ret) {
+diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
+index 30c3a1d..9a97918 100644
+--- a/drivers/usb/host/xhci.h
++++ b/drivers/usb/host/xhci.h
+@@ -1819,6 +1819,7 @@ int xhci_cancel_cmd(struct xhci_hcd *xhci, struct xhci_command *command,
+ 		union xhci_trb *cmd_trb);
+ void xhci_ring_ep_doorbell(struct xhci_hcd *xhci, unsigned int slot_id,
+ 		unsigned int ep_index, unsigned int stream_id);
++union xhci_trb *xhci_find_next_enqueue(struct xhci_ring *ring);
+ 
+ /* xHCI roothub code */
+ void xhci_set_link_state(struct xhci_hcd *xhci, __le32 __iomem **port_array,
 -- 
 1.8.3.2
 
