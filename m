@@ -1,183 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756130Ab3JKNTn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 09:19:43 -0400
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:39522 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752905Ab3JKNTm (ORCPT
+	id S1757697Ab3JKNZF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 09:25:05 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:46567 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754338Ab3JKNZD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 09:19:42 -0400
-MIME-Version: 1.0
-In-Reply-To: <5257F687.6020802@giantdisaster.de>
-References: <1381443082-7670-1-git-send-email-geyslan@gmail.com>
-	<5257F687.6020802@giantdisaster.de>
-Date: Fri, 11 Oct 2013 10:19:40 -0300
-Message-ID: <CAGG-pURd2cm=2rYGPedeyC+r--sgMuQTvZ1_vOYho=vZbb21hg@mail.gmail.com>
-Subject: Re: [PATCH v5] btrfs: Fix memory leakage in the tree-log.c
-From: =?UTF-8?Q?Geyslan_Greg=C3=B3rio_Bem?= <geyslan@gmail.com>
-To: Stefan Behrens <sbehrens@giantdisaster.de>
-Cc: chris.mason@fusionio.com, linux-btrfs@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Josef Bacik <jbacik@fusionio.com>,
-        Joe Perches <joe@perches.com>, kernel-br <kernel-br@googlegroups.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 11 Oct 2013 09:25:03 -0400
+From: Antonios Motakis <a.motakis@virtualopensystems.com>
+To: Will Deacon <will.deacon@arm.com>, Joerg Roedel <joro@8bytes.org>,
+        linux-arm-kernel@lists.infradead.org (moderated list:ARM SMMU DRIVER),
+        iommu@lists.linux-foundation.org (open list:IOMMU DRIVERS),
+        linux-kernel@vger.kernel.org (open list)
+Cc: kvmarm@lists.cs.columbia.edu, iommu@lists.linux-foundation.org,
+        tech@virtualopensystems.com, agraf@suse.de, B08248@freescale.com,
+        Antonios Motakis <a.motakis@virtualopensystems.com>
+Subject: [PATCH 1/2] ARM: SMMU: add devices attached to the SMMU to an IOMMU group
+Date: Fri, 11 Oct 2013 15:24:46 +0200
+Message-Id: <1381497887-14586-1-git-send-email-a.motakis@virtualopensystems.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/10/11 Stefan Behrens <sbehrens@giantdisaster.de>:
-> On Thu, 10 Oct 2013 19:11:22 -0300, Geyslan G. Bem wrote:
->> In add_inode_ref() function:
->>
->> Initializes local pointers.
->>
->> Reduces the logical condition with the __add_inode_ref() return
->> value by using only one 'goto out'.
->>
->> Centralizes the exiting, ensuring the freeing of all used memory.
->>
->> Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
->
-> The patch looks correct to me, but there are some nitpicking style issues.
->
->
->> ---
->>  fs/btrfs/tree-log.c | 36 ++++++++++++++++++++++--------------
->>  1 file changed, 22 insertions(+), 14 deletions(-)
->>
->> diff --git a/fs/btrfs/tree-log.c b/fs/btrfs/tree-log.c
->> index 79f057c..beb41b0 100644
->> --- a/fs/btrfs/tree-log.c
->> +++ b/fs/btrfs/tree-log.c
->> @@ -1113,11 +1113,11 @@ static noinline int add_inode_ref(struct btrfs_trans_handle *trans,
->>                                 struct extent_buffer *eb, int slot,
->>                                 struct btrfs_key *key)
->>  {
->> -     struct inode *dir;
->> -     struct inode *inode;
->> +     struct inode *dir = NULL;
->> +     struct inode *inode = NULL;
->>       unsigned long ref_ptr;
->>       unsigned long ref_end;
->> -     char *name;
->> +     char *name = NULL;
->>       int namelen;
->>       int ret;
->>       int search_done = 0;
->> @@ -1150,13 +1150,15 @@ static noinline int add_inode_ref(struct btrfs_trans_handle *trans,
->>        * care of the rest
->>        */
->>       dir = read_one_inode(root, parent_objectid);
->> -     if (!dir)
->> -             return -ENOENT;
->> +     if (!dir) {
->> +             ret = -ENOENT;
->> +             goto out;
->> +     }
->>
->>       inode = read_one_inode(root, inode_objectid);
->>       if (!inode) {
->> -             iput(dir);
->> -             return -EIO;
->> +             ret = -EIO;
->> +             goto out;
->>       }
->>
->>       while (ref_ptr < ref_end) {
->> @@ -1169,14 +1171,17 @@ static noinline int add_inode_ref(struct btrfs_trans_handle *trans,
->>                        */
->>                       if (!dir)
->>                               dir = read_one_inode(root, parent_objectid);
->> -                     if (!dir)
->> -                             return -ENOENT;
->> +                     if (!dir) {
->> +                             ret = -ENOENT;
->> +                             goto out;
->> +                     }
->>               } else {
->>                       ret = ref_get_fields(eb, ref_ptr, &namelen, &name,
->>                                            &ref_index);
->>               }
->>               if (ret)
->> -                     return ret;
->> +                     goto out;
->> +
->
-> This additional empty line is not required, we would have two empty
-> lines in a row.
+IOMMU groups are expected by certain users of the IOMMU API,
+e.g. VFIO. Add new devices found by the SMMU driver to an IOMMU
+group to satisfy those users.
 
-Ok, I'll remove it.
+Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
+---
+ drivers/iommu/arm-smmu.c | 18 +++++++++++++++++-
+ 1 file changed, 17 insertions(+), 1 deletion(-)
 
->
->
->>
->>               /* if we already have a perfect match, we're done */
->>               if (!inode_in_dir(root, path, btrfs_ino(dir), btrfs_ino(inode),
->> @@ -1196,12 +1201,12 @@ static noinline int add_inode_ref(struct btrfs_trans_handle *trans,
->>                                                     parent_objectid,
->>                                                     ref_index, name, namelen,
->>                                                     &search_done);
->> -                             if (ret == 1) {
->> -                                     ret = 0;
->> +
->
-> This empty line is also not required. You know, this hurts on regular
-> 80x24 terminals. Do you get more than 24 lines on your display?
-> I thought there was a rule for this in Documentation/CodingStyle, but
-> there isn't. Therefore it's up to you. But the two empty lines above are
-> definitely not wanted.
->
+diff --git a/drivers/iommu/arm-smmu.c b/drivers/iommu/arm-smmu.c
+index 0f45a48..8b71332 100644
+--- a/drivers/iommu/arm-smmu.c
++++ b/drivers/iommu/arm-smmu.c
+@@ -1502,6 +1502,8 @@ static int arm_smmu_add_device(struct device *dev)
+ {
+ 	struct arm_smmu_device *child, *parent, *smmu;
+ 	struct arm_smmu_master *master = NULL;
++	struct iommu_group *group;
++	int ret;
+ 
+ 	spin_lock(&arm_smmu_devices_lock);
+ 	list_for_each_entry(parent, &arm_smmu_devices, list) {
+@@ -1534,13 +1536,27 @@ static int arm_smmu_add_device(struct device *dev)
+ 	if (!master)
+ 		return -ENODEV;
+ 
++	group = iommu_group_get(dev);
++
++	if (!group) {
++		group = iommu_group_alloc();
++		if (IS_ERR(group)) {
++			dev_err(dev, "Failed to allocate IOMMU group\n");
++			return PTR_ERR(group);
++		}
++	}
++
++	ret = iommu_group_add_device(group, dev);
++	iommu_group_put(group);
+ 	dev->archdata.iommu = smmu;
+-	return 0;
++
++	return ret;
+ }
+ 
+ static void arm_smmu_remove_device(struct device *dev)
+ {
+ 	dev->archdata.iommu = NULL;
++	iommu_group_remove_device(dev);
+ }
+ 
+ static struct iommu_ops arm_smmu_ops = {
+-- 
+1.8.1.2
 
-Yes, I get more than 24 lines. But no problem, I know about the Coding Style.
-This issue will be fixed.
-
->
->> +                             if (ret) {
->> +                                     if (ret == 1)
->> +                                             ret--;
->
-> I don't see a reason to change the "ret = 0" to a "ret--", this is not
-> an optimization and makes the code less readable.
->
-
-Really. Using -O2 the code is equal. I'll redo to "ret = 0;" with the
-new conditional scope.
-
->
->>                                       goto out;
->>                               }
->> -                             if (ret)
->> -                                     goto out;
->>                       }
->>
->>                       /* insert our name */
->> @@ -1215,6 +1220,8 @@ static noinline int add_inode_ref(struct btrfs_trans_handle *trans,
->>
->>               ref_ptr = (unsigned long)(ref_ptr + ref_struct_size) + namelen;
->>               kfree(name);
->> +             name = NULL;
->> +
->
-> Another empty line which is not required for the purpose of this patch.
-
-Ok, it'll be removed.
-
->
->
->>               if (log_ref_ver) {
->>                       iput(dir);
->>                       dir = NULL;
->> @@ -1225,6 +1232,7 @@ static noinline int add_inode_ref(struct btrfs_trans_handle *trans,
->>       ret = overwrite_item(trans, root, path, eb, slot, key);
->>  out:
->>       btrfs_release_path(path);
->> +     kfree(name);
->>       iput(dir);
->>       iput(inode);
->>       return ret;
->>
->
->
-
-Thank you again.
-
-Geyslan G. Bem
