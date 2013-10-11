@@ -1,206 +1,232 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757859Ab3JKLaw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 07:30:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9683 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757594Ab3JKLau convert rfc822-to-8bit (ORCPT
+	id S1754187Ab3JKLj4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 07:39:56 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:13103 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751266Ab3JKLjz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 07:30:50 -0400
-Date: Fri, 11 Oct 2013 14:30:43 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: chai wen <chaiw.fnst@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, pbonzini@redhat.com, tangchen@cn.fujitsu.com,
-        guz.fnst@cn.fujitsu.com, zhangyanfei@cn.fujitsu.com,
-        guijianfeng@cn.fujitsu.com, chaiwen_0825@hotmail.com
-Subject: Re: [RFC][PATCH] Drop FOLL_GET in GUP when doing async_pf in kvm
-Message-ID: <20131011113043.GA14789@redhat.com>
-References: <1381411215-23830-1-git-send-email-chaiw.fnst@cn.fujitsu.com>
- <20131010151539.GD15954@redhat.com>
- <5257CE10.9020800@cn.fujitsu.com>
+	Fri, 11 Oct 2013 07:39:55 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Fri, 11 Oct 2013 04:39:54 -0700
+Message-ID: <5257E29C.6090608@nvidia.com>
+Date: Fri, 11 Oct 2013 14:35:56 +0300
+From: Arto Merilainen <amerilainen@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=cp1255
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <5257CE10.9020800@cn.fujitsu.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: Terje Bergstrom <tbergstrom@nvidia.com>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] gpu: host1x: Add syncpoint base support
+References: <1381319650-9799-1-git-send-email-amerilainen@nvidia.com> <1381319650-9799-2-git-send-email-amerilainen@nvidia.com> <20131011093905.GA8659@ulmo.nvidia.com>
+In-Reply-To: <20131011093905.GA8659@ulmo.nvidia.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 11, 2013 at 06:08:16PM +0800, chai wen wrote:
-> On 10/10/2013 11:15 PM, Gleb Natapov wrote:
-> > On Thu, Oct 10, 2013 at 09:20:15PM +0800, chai wen wrote:
-> >> Hi Gleb
-> >>
-> >> Thanks for you explanation about async_pf in kvm.
-> >> Page pinning is not mandatory in kvm async_pf processing and probably should
-> >> be dropped later.this patch drops the FOLL_GET flag when doing GUP in async_pf
-> >> and uses a bool (marking result of GUP) to replace the *page in kvm_async_pf
-> >> structure to simplify some following async_pf check/clear processing.
-> > Thanks, but the patch need to be on top of
-> > git://git.kernel.org/pub/scm/virt/kvm/kvm.git queue branch.
-> >
-> > Some more comment bellow.
-> >
-> >> Thanks.
-> >>
-> >> Suggested-by:  gleb@redhat.com
-> >> Signed-off-by: chai wen <chaiw.fnst@cn.fujitsu.com>
-> >> ---
-> >>  arch/x86/kvm/x86.c       |    5 ++---
-> >>  include/linux/kvm_host.h |    2 +-
-> >>  virt/kvm/async_pf.c      |   16 ++++++----------
-> >>  3 files changed, 9 insertions(+), 14 deletions(-)
-> >>
-> >> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> >> index e5ca72a..0ff7d02 100644
-> >> --- a/arch/x86/kvm/x86.c
-> >> +++ b/arch/x86/kvm/x86.c
-> >> @@ -7282,8 +7282,7 @@ void kvm_arch_async_page_ready(struct kvm_vcpu *vcpu, struct kvm_async_pf *work)
-> >>  {
-> >>  	int r;
-> >>  
-> >> -	if ((vcpu->arch.mmu.direct_map != work->arch.direct_map) ||
-> >> -	      is_error_page(work->page))
-> >> +	if ((vcpu->arch.mmu.direct_map != work->arch.direct_map))
-> >>  		return;
-> >>  
-> >>  	r = kvm_mmu_reload(vcpu);
-> >> @@ -7393,7 +7392,7 @@ void kvm_arch_async_page_present(struct kvm_vcpu *vcpu,
-> >>  	struct x86_exception fault;
-> >>  
-> >>  	trace_kvm_async_pf_ready(work->arch.token, work->gva);
-> >> -	if (is_error_page(work->page))
-> >> +	if (!work->got_page)
-> >>  		work->arch.token = ~0; /* broadcast wakeup */
-> >>  	else
-> >>  		kvm_del_async_pf_gfn(vcpu, work->arch.gfn);
-> >> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-> >> index 0fbbc7a..232a7d0 100644
-> >> --- a/include/linux/kvm_host.h
-> >> +++ b/include/linux/kvm_host.h
-> >> @@ -189,7 +189,7 @@ struct kvm_async_pf {
-> >>  	gva_t gva;
-> >>  	unsigned long addr;
-> >>  	struct kvm_arch_async_pf arch;
-> >> -	struct page *page;
-> >> +	bool got_page;
-> > I would call it wakeup_all.
-> >
-> >>  	bool done;
-> >>  };
-> >>  
-> >> diff --git a/virt/kvm/async_pf.c b/virt/kvm/async_pf.c
-> >> index 8a39dda..0cafdc7 100644
-> >> --- a/virt/kvm/async_pf.c
-> >> +++ b/virt/kvm/async_pf.c
-> >> @@ -56,7 +56,7 @@ void kvm_async_pf_vcpu_init(struct kvm_vcpu *vcpu)
-> >>  
-> >>  static void async_pf_execute(struct work_struct *work)
-> >>  {
-> >> -	struct page *page = NULL;
-> >> +	long nrpages = 0;
-> >>  	struct kvm_async_pf *apf =
-> >>  		container_of(work, struct kvm_async_pf, work);
-> >>  	struct mm_struct *mm = apf->mm;
-> >> @@ -68,13 +68,13 @@ static void async_pf_execute(struct work_struct *work)
-> >>  
-> >>  	use_mm(mm);
-> >>  	down_read(&mm->mmap_sem);
-> >> -	get_user_pages(current, mm, addr, 1, 1, 0, &page, NULL);
-> >> +	nrpages = get_user_pages(current, mm, addr, 1, 1, 0, NULL, NULL);
-> >>  	up_read(&mm->mmap_sem);
-> >>  	unuse_mm(mm);
-> >>  
-> >>  	spin_lock(&vcpu->async_pf.lock);
-> >>  	list_add_tail(&apf->link, &vcpu->async_pf.done);
-> >> -	apf->page = page;
-> >> +	apf->got_page = (1==nrpages);
-> > Space before and after ==, but this is not needed at all.  It does
-> > not matter if GUP failed or not here. We need to wake up guest process
-> > that is waiting on a page, so just set wakeup_all to false in kvm_setup_async_pf().
-> Hi Gleb
-> Thanks for you reply.
-> It does not matter if GUP failed or not here. But in the original logic of
-> kvm_arch_async_page_ready and kvm_arch_async_page_present, there is
-> is_error_page
-> checking in them. I am not sure wheher this ‘logic’ should be dropped.
-> And in kvm_async_pf_wakeup_all we used a dummy bad page pointer to generate
-> boradcast wakeup before. if wakeup_all(bool) is marking the result of
-> gup should it be false in this function ?
-> 
-is_error_page() does not consider NULL as error value.
+On 10/11/2013 12:39 PM, Thierry Reding wrote:
+> * PGP Signed by an unknown key
+>
+> On Wed, Oct 09, 2013 at 02:54:08PM +0300, Arto Merilainen wrote:
+>> This patch adds support for hardware syncpoint bases. This creates
+>> a simple mechanism for waiting an operation to complete in the middle
+>> of the command buffer.
+>
+> Perhaps "... simple mechanism to stall the command FIFO until an
+> operation is completed." That's what the TRM contains and more
+> accurately describes the hardware functionality.
+>
+>> diff --git a/drivers/gpu/host1x/dev.h b/drivers/gpu/host1x/dev.h
+> [...]
+>> @@ -26,6 +26,7 @@
+>>   #include "cdma.h"
+>>   #include "job.h"
+>>
+>> +struct host1x_base;
+>
+> host1x_syncpt_base is more explicit, host1x_base sounds very generic.
 
-> thanks
-> >
-> >>  	apf->done = true;
-> >>  	spin_unlock(&vcpu->async_pf.lock);
-> >>  
-> >> @@ -114,8 +114,6 @@ void kvm_clear_async_pf_completion_queue(struct kvm_vcpu *vcpu)
-> >>  			list_entry(vcpu->async_pf.done.next,
-> >>  				   typeof(*work), link);
-> >>  		list_del(&work->link);
-> >> -		if (!is_error_page(work->page))
-> >> -			kvm_release_page_clean(work->page);
-> >>  		kmem_cache_free(async_pf_cache, work);
-> >>  	}
-> >>  	spin_unlock(&vcpu->async_pf.lock);
-> >> @@ -135,14 +133,12 @@ void kvm_check_async_pf_completion(struct kvm_vcpu *vcpu)
-> >>  		list_del(&work->link);
-> >>  		spin_unlock(&vcpu->async_pf.lock);
-> >>  
-> >> -		if (work->page)
-> >> +		if (work->got_page)
-> >>  			kvm_arch_async_page_ready(vcpu, work);
-> >>  		kvm_arch_async_page_present(vcpu, work);
-> >>  
-> >>  		list_del(&work->queue);
-> >>  		vcpu->async_pf.queued--;
-> >> -		if (!is_error_page(work->page))
-> >> -			kvm_release_page_clean(work->page);
-> >>  		kmem_cache_free(async_pf_cache, work);
-> >>  	}
-> >>  }
-> >> @@ -165,7 +161,7 @@ int kvm_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn,
-> >>  	if (!work)
-> >>  		return 0;
-> >>  
-> >> -	work->page = NULL;
-> >> +	work->got_page = false;
-> > Sp here do:
-> > 	work->wakeup_all = false;
-> >
-> >>  	work->done = false;
-> >>  	work->vcpu = vcpu;
-> >>  	work->gva = gva;
-> >> @@ -206,7 +202,7 @@ int kvm_async_pf_wakeup_all(struct kvm_vcpu *vcpu)
-> >>  	if (!work)
-> >>  		return -ENOMEM;
-> >>  
-> >> -	work->page = KVM_ERR_PTR_BAD_PAGE;
-> >> +	work->got_page = false;
-> > And here:
-> > 	work->wakeup_all = true;
-> >>  	INIT_LIST_HEAD(&work->queue); /* for list_del to work */
-> >>  
-> >>  	spin_lock(&vcpu->async_pf.lock);
-> >> -- 
-> >> 1.7.1
-> > --
-> > 			Gleb.
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> >
-> 
-> 
-> -- 
-> Regards
-> 
-> chai wen
-> 
+I agree.
 
---
-			Gleb.
+>
+>> diff --git a/drivers/gpu/host1x/hw/channel_hw.c b/drivers/gpu/host1x/hw/channel_hw.c
+>> index ee19962..5f9f735 100644
+>> --- a/drivers/gpu/host1x/hw/channel_hw.c
+>> +++ b/drivers/gpu/host1x/hw/channel_hw.c
+>> @@ -67,6 +67,21 @@ static void submit_gathers(struct host1x_job *job)
+>>   	}
+>>   }
+>>
+>> +static inline void synchronize_syncpt_base(struct host1x_job *job)
+>> +{
+>> +	struct host1x_channel *ch = job->channel;
+>> +	struct host1x *host = dev_get_drvdata(ch->dev->parent);
+>> +	struct host1x_syncpt *sp = host->syncpt + job->syncpt_id;
+>> +	u32 base_id = sp->base->id;
+>> +	u32 base_val = host1x_syncpt_read_max(sp);
+>> +
+>> +	host1x_cdma_push(&ch->cdma,
+>> +			 host1x_opcode_setclass(HOST1X_CLASS_HOST1X,
+>> +				host1x_uclass_load_syncpt_base_r(), 1),
+>> +			 host1x_uclass_load_syncpt_base_base_indx_f(base_id) |
+>> +			 host1x_uclass_load_syncpt_base_value_f(base_val));
+>
+> Please use the all-caps version of the register definitions. The
+> lowercase variants were only introduced to allow profiling and coverage
+> testing, which I think nobody's been doing and I'm in fact thinking
+> about removing them.
+
+Will fix.
+
+>
+>> diff --git a/drivers/gpu/host1x/syncpt.c b/drivers/gpu/host1x/syncpt.c
+> [...]
+>> +static struct host1x_base *host1x_base_alloc(struct host1x *host)
+>> +{
+>> +	struct host1x_base *base = host->bases;
+>> +	int i;
+>
+> unsigned int
+
+Ops. Will fix.
+
+>
+>> +
+>> +	for (i = 0; i < host->info->nb_bases && base->reserved; i++, base++)
+>> +		;
+>
+> I'd like to see this rewritten as:
+>
+> 	for (i = 0; i < host->info->nb_bases; i++) {
+> 		if (!host->bases[i].reserved)
+> 			break;
+> 	}
+
+I agree, that looks less obfuscated.
+
+>
+>> +static void host1x_base_free(struct host1x_base *base)
+>> +{
+>> +	if (!base)
+>> +		return;
+>> +	base->reserved = false;
+>> +}
+>
+> The following would be somewhat shorter:
+>
+> 	if (base)
+> 		base->reserved = false;
+>
+>>   static struct host1x_syncpt *_host1x_syncpt_alloc(struct host1x *host,
+>>   						  struct device *dev,
+>> -						  bool client_managed)
+>> +						  bool client_managed,
+>> +						  bool support_base)
+>
+> I think at this point we probably want to introduce a flags argument
+> instead of adding all those boolean parameters. Something like:
+>
+> 	#define HOST1X_SYNCPT_CLIENT_MANAGED	(1 << 0)
+> 	#define HOST1X_SYNCPT_HAS_BASE		(1 << 1)
+>
+> 	struct host1x_syncpt *host1x_syncpt_alloc(struct host1x *host,
+> 						  struct device *dev,
+> 						  unsigned long flags);
+>
+
+This is not a bad idea... I will write a patch for that.
+
+>>   int host1x_syncpt_init(struct host1x *host)
+>>   {
+>>   	struct host1x_syncpt *syncpt;
+>> +	struct host1x_base *bases;
+>>   	int i;
+>>
+>> +	bases = devm_kzalloc(host->dev, sizeof(*bases) * host->info->nb_bases,
+>> +		GFP_KERNEL);
+>>   	syncpt = devm_kzalloc(host->dev, sizeof(*syncpt) * host->info->nb_pts,
+>>   		GFP_KERNEL);
+>
+> I'd prefer these to be checked separately. Also the argument alignment
+> is wrong here. Align with the first function argument. And for
+> consistency, allocate bases after syncpoints...
+
+Oh. Will fix.
+
+>
+>> -	if (!syncpt)
+>> +	if (!syncpt || !bases)
+>>   		return -ENOMEM;
+>>
+>> -	for (i = 0; i < host->info->nb_pts; ++i) {
+>> +	for (i = 0; i < host->info->nb_bases; i++)
+>> +		bases[i].id = i;
+>> +
+>> +	for (i = 0; i < host->info->nb_pts; i++) {
+>>   		syncpt[i].id = i;
+>>   		syncpt[i].host = host;
+>>   	}
+>
+> ... and initialize them after the syncpoints...
+>
+>>
+>>   	host->syncpt = syncpt;
+>> +	host->bases = bases;
+>
+> ... to match the assignment order.
+>
+
+Will fix.
+
+>> @@ -332,7 +368,14 @@ struct host1x_syncpt *host1x_syncpt_request(struct device *dev,
+>>   					    bool client_managed)
+>>   {
+>>   	struct host1x *host = dev_get_drvdata(dev->parent);
+>> -	return _host1x_syncpt_alloc(host, dev, client_managed);
+>> +	return _host1x_syncpt_alloc(host, dev, client_managed, false);
+>> +}
+>> +
+>> +struct host1x_syncpt *host1x_syncpt_request_based(struct device *dev,
+>> +						  bool client_managed)
+>> +{
+>> +	struct host1x *host = dev_get_drvdata(dev->parent);
+>> +	return _host1x_syncpt_alloc(host, dev, client_managed, true);
+>>   }
+>
+> If we add a flags parameter to host1x_syncpt_request() (and
+> host1x_syncpt_alloc()) then we don't need the separate function.
+>
+
+Will fix. (my original idea was to avoid changes in the interface but it 
+is likely just a minor inconvenience..)
+
+>> diff --git a/drivers/gpu/host1x/syncpt.h b/drivers/gpu/host1x/syncpt.h
+>> index 267c0b9..852dc76 100644
+>> --- a/drivers/gpu/host1x/syncpt.h
+>> +++ b/drivers/gpu/host1x/syncpt.h
+>> @@ -30,6 +30,11 @@ struct host1x;
+>>   /* Reserved for replacing an expired wait with a NOP */
+>>   #define HOST1X_SYNCPT_RESERVED			0
+>>
+>> +struct host1x_base {
+>> +	u8 id;
+>> +	bool reserved;
+>
+> Perhaps name this to something like "requested". "reserved" makes it
+> sound like it's reserved for some special use.
+
+Sounds good.
+
+- Arto
+
+>
+> Thierry
+>
+> * Unknown Key
+> * 0x7F3EB3A1
+>
+
