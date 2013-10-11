@@ -1,99 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932100Ab3JKI5a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 04:57:30 -0400
-Received: from mga14.intel.com ([143.182.124.37]:56379 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757383Ab3JKI50 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 04:57:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1079,1371106800"; 
-   d="scan'208";a="409317802"
-Date: Fri, 11 Oct 2013 16:57:01 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Toralf =?utf-8?Q?F=C3=B6rster?= <toralf.foerster@gmx.de>
-Cc: Richard Weinberger <richard@nod.at>, Jan Kara <jack@suse.cz>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        UML devel <user-mode-linux-devel@lists.sourceforge.net>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        hannes@cmpxchg.org, darrick.wong@oracle.com,
-        Michal Hocko <mhocko@suse.cz>
-Subject: Re: [uml-devel] BUG: soft lockup for a user mode linux image
-Message-ID: <20131011085701.GA27382@localhost>
-References: <CAMuHMdUo8dSd4s3089ZDEc485wL1sFxBKLeaExJuqNiQY+S-Lw@mail.gmail.com>
- <5251CF94.5040101@gmx.de>
- <CAMuHMdWs6Y7y12STJ+YXKJjxRF0k5yU9C9+0fiPPmq-GgeW-6Q@mail.gmail.com>
- <525591AD.4060401@gmx.de>
- <5255A3E6.6020100@nod.at>
- <20131009214733.GB25608@quack.suse.cz>
- <5255D9A6.3010208@nod.at>
- <5256DA9A.5060904@gmx.de>
- <20131011011649.GA11191@localhost>
- <5257B9EB.7080503@gmx.de>
+	id S1756956Ab3JKI7e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 04:59:34 -0400
+Received: from mail-qe0-f52.google.com ([209.85.128.52]:36308 "EHLO
+	mail-qe0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751980Ab3JKI7a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 04:59:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5257B9EB.7080503@gmx.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5257B420.10808@ti.com>
+References: <1381352915-17219-1-git-send-email-marek@goldelico.com>
+	<525662F5.3090600@ti.com>
+	<7FAC77D4-5E1E-4B11-B067-3A8233C69240@goldelico.com>
+	<52568B40.4040802@ti.com>
+	<04AC7291-38E4-421B-979C-BF03D52E94BD@goldelico.com>
+	<525699EF.6090803@ti.com>
+	<52569CE8.5070201@metafoo.de>
+	<A7739B52-2632-4DD8-924D-B657A6BFE3ED@goldelico.com>
+	<5256F8DF.2020801@metafoo.de>
+	<5257815F.5070803@ti.com>
+	<5257A402.5030806@metafoo.de>
+	<5570E6D7-4F66-40BE-A50C-6CCA8074BD83@goldelico.com>
+	<5257B420.10808@ti.com>
+Date: Fri, 11 Oct 2013 10:59:29 +0200
+Message-ID: <CAAfyv36HSb4FOxaYnqcwBusqSuhtVnT0gEAoGgcW_rBkhWhf0A@mail.gmail.com>
+Subject: Re: [PATCH] omapdss: Add new panel driver for Topolly td028ttec1 LCD.
+From: Belisko Marek <marek.belisko@gmail.com>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        linux-fbdev@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 11, 2013 at 10:42:19AM +0200, Toralf Förster wrote:
-> yeah, now the picture becomes more clear
-> ...
-> net.core.warnings = 0                                                                         [ ok ]
-> ick: pause : -717
->                  ick : min_pause : -177
->                                    ick : max_pause : -717
->                                                      ick: pages_dirtied : 14
->                                                                             ick: task_ratelimit: 0
+Hi Tomi,
 
-Great and thanks! So it's the max pause calculation went wrong.
-Would help you try the below patch?
+On Fri, Oct 11, 2013 at 10:17 AM, Tomi Valkeinen <tomi.valkeinen@ti.com> wrote:
+> On 11/10/13 10:42, Dr. H. Nikolaus Schaller wrote:
+>
+>> I am not sure if there is a SPI driver for a McBSP port [1]? And to make that
+>> work (reliably) and tested it might need a lot of work for us. At least I think
+>> such a change (e.g. setting up clock polarity etc.) is not done in some minutes.
+>> And the only feedback we have from the panel is "does not work"/"works". I.e.
+>> if we are not lucky that it works immediately we have no real means to debug.
+>>
+>> IMHO it also gives more flexibility to board designers to choose GPIOs instead
+>> of enforcing some SPI interface by the driver (and encapsulate this arguable
+>> protocol in the driver). Maybe some board has 3 spare GPIOs but neither
+>> McBSPs nor McSPIs available.
+>
+> This has been an interesting thread, I've learnt a lot =).
+>
+> I still think the panel driver should not handle this, but there should
+> be a separate spi bitbang driver for it.
+>
+> I understand you're not enthusiastic going that way, as the current
+> version works for you. However, when using DT, we need to think how to
+> represent the hardware in the device tree data, and it has to be right
+> from the beginning.
+>
+> That's why I won't allow representing this panel as having 4 gpios in
+> the DT data, because that is not correct. The panel has 3 pins. But
+> then, the panel does allow reading, which could be implemented using 4
+> gpios as you have done. This data should be in the spi-bitbang data, and
+> the panel should just use the standard SPI framework.
+I disagree. There are different drivers which pass in platform data
+gpios (encoder-tfp410.c or encoder-tpd12s015.c)
+and those must be covered by DT then. I cannot see problem why to have
+for td028 panel 3 or 4 gpios defined in DT.
+>
+> Using SPI framework does not mean you should use McBSP or McSPI. It's up
+> to you how the 3-wire SPI is implemented on the SoC side, the panel
+> would just work in all the cases.
+>
+>  Tomi
+>
+>
 
->From 5420b9bbe42dd0a366d7615e9f3d3724cee725c4 Mon Sep 17 00:00:00 2001
-From: Fengguang Wu <fengguang.wu@intel.com>
-Date: Fri, 11 Oct 2013 16:53:26 +0800
-Subject: [PATCH] fix bdi max pause calculation
+BR,
 
-Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
----
- mm/page-writeback.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+marek
 
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index 3f0c895..241a746 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -1104,11 +1104,11 @@ static unsigned long dirty_poll_interval(unsigned long dirty,
- 	return 1;
- }
- 
--static long bdi_max_pause(struct backing_dev_info *bdi,
--			  unsigned long bdi_dirty)
-+static unsigned long bdi_max_pause(struct backing_dev_info *bdi,
-+				   unsigned long bdi_dirty)
- {
--	long bw = bdi->avg_write_bandwidth;
--	long t;
-+	unsigned long bw = bdi->avg_write_bandwidth;
-+	unsigned long t;
- 
- 	/*
- 	 * Limit pause time for small memory systems. If sleeping for too long
-@@ -1120,7 +1120,7 @@ static long bdi_max_pause(struct backing_dev_info *bdi,
- 	t = bdi_dirty / (1 + bw / roundup_pow_of_two(1 + HZ / 8));
- 	t++;
- 
--	return min_t(long, t, MAX_PAUSE);
-+	return min_t(unsigned long, t, MAX_PAUSE);
- }
- 
- static long bdi_min_pause(struct backing_dev_info *bdi,
 -- 
-1.7.10.4
+as simple and primitive as possible
+-------------------------------------------------
+Marek Belisko - OPEN-NANDRA
+Freelance Developer
 
+Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
+Tel: +421 915 052 184
+skype: marekwhite
+twitter: #opennandra
+web: http://open-nandra.com
