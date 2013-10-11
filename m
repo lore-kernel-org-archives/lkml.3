@@ -1,112 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754370Ab3JKVqm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 17:46:42 -0400
-Received: from mail-qe0-f41.google.com ([209.85.128.41]:64775 "EHLO
-	mail-qe0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754216Ab3JKVqj convert rfc822-to-8bit (ORCPT
+	id S1754764Ab3JKVrH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 17:47:07 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:63009 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754599Ab3JKVrE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 17:46:39 -0400
+	Fri, 11 Oct 2013 17:47:04 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Subject: Re: [BUG] WARN_ON(!context) in drivers/pci/hotplug/acpiphp_glue.c
+Date: Fri, 11 Oct 2013 23:58:48 +0200
+Message-ID: <4905498.aEGIofg2fM@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <CA+55aFyJL5gLGtg8-z1t1xSY1ih9MAzsDzMZaxrEYZOFZ7rRBw@mail.gmail.com>
+References: <20131010165905.7815defa@gandalf.local.home> <2096980.ZtIelfoX39@vostro.rjw.lan> <CA+55aFyJL5gLGtg8-z1t1xSY1ih9MAzsDzMZaxrEYZOFZ7rRBw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20131011151842.GB27106@quack.suse.cz>
-References: <CAG3eYYSNYHaKB8REe_M16tUGC3iNDjLsHES+KvTQXknnWZSGUg@mail.gmail.com>
-	<20131011151842.GB27106@quack.suse.cz>
-Date: Fri, 11 Oct 2013 23:46:37 +0200
-Message-ID: <CAG3eYYRi=c7-vfkW9zayu4LYv_ty3kXJ8SB4T6pgAyDUXzmcYQ@mail.gmail.com>
-Subject: Re: PROBLEM: udf mount takes forever to fail + proposed solution
-From: =?UTF-8?B?UMOpdGVyIEFuZHLDoXMgRmVsdsOpZ2k=?= <petschy@gmail.com>
-To: Jan Kara <jack@suse.cz>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OK, I'll prepare a new patch with explicit ID checks (BEA01, BOOT2,
-CDROM, CD001, CDW02, NSR02, NSR03, TEA01, that's all I think) and the
-needed changelog in a few days. Do you think that a hard upper limit
-on the sector offset is desirable? The ISO9660 driver looks for the
-first 100 sectors, but I didn't find anything in the specs suggesting
-a max length for the udf volume recognition area.
-
-Regards, Peter
-
-
-On 11 October 2013 17:18, Jan Kara <jack@suse.cz> wrote:
->   Hello,
+On Friday, October 11, 2013 10:21:35 AM Linus Torvalds wrote:
+> On Fri, Oct 11, 2013 at 4:13 AM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> > +/**
+> > + * slot_should_be_exposed - Check whether or not to expose a slot to userland.
+> > + * @bridge: ACPIPHP bridge the slot belongs to.
+> > + * @handle: ACPI handle of a device in the slot.
+> > + */
+> > +static inline bool slot_should_be_exposed(struct acpiphp_bridge *bridge,
+> > +                                         acpi_handle handle)
+> 
+> Thanks, that looks much better.
+> 
+> I do worry that we now seem to add the slot to all the acpiphp lists
+> even if it is managed by pciehp. That gets rid of the warning Steven
+> saw (because now it always has that context), but I'm left wondering
+> how much pcihp and aciphp will fight over the slot.
 >
-> On Thu 10-10-13 23:23:11, Péter András Felvégi wrote:
->> recently I made the mistake trying to mount an unformatted ssd
->> partition. The mount command 'hang', was unable to kill it. Top showed
->> the process is in the uninterruptible D state. However, iotop showed
->> slight activity, about 4M/s read from the disk that noone else used.
->> This was 100% reproducible. sync froze, too, if was given out after
->> the mount cmd. When trying to shut down the machine, it didn't stop,
->> just waited for something to happen.
->>
->> I narrowed down the problem to the UDF filesystem driver. In
->> fs/udf/super.c, udf_check_vsd() reads the sectors in a for loop, with
->> the following exit conditions:
->> - NSR02 or NSR03 descriptor is found
->> - the read fails
->> - vsd->stdIdent[0] == 0
->>
->> Browsed through the UDF 2.6 spec, ECMA 167 and 119. As I understand,
->> the descriptors should start at offset 32768, forming a contiguous
->> sequence. In ECMA 167 it is stated that the sequence is terminated by
->> an invalid descriptor: unrecorded, or blank (all zeros). However, this
->> presupposes that the filesystem is UDF.
->>
->> Since the ssd partition was not formatted, it contained only 0xff
->> bytes, thus none of the exit conditions were met, and the function
->> read through the whole, in two passes. The runtime was pathetic, it
->> took the mount 350 minutes to fail. I have no clue why this was so
->> slow, reading through the partition with dd gives 482 secs for the
->> 220G, ~450M/s. Setting the blocksize to 512 or 2048 didn't make much
->> of a difference.
->>
->> I peppered the code with some messages to see what happens:
->> # time mount -t udf /dev/sdb3 /media/floppy
->> UDF-fs: check_vsd: sectorsize=2048
->> UDF-fs: check_vsd: sector offs=32768, s_blocksize=512, s_blocksize_bits=9
->> UDF-fs: read 107989660 sectors of total size 55290705920 bytes
->> UDF-fs: warning (device sdb3): udf_load_vrs: No VRS found
->> UDF-fs: Rescanning with blocksize 2048
->> UDF-fs: check_vsd: sectorsize=2048
->> UDF-fs: check_vsd: sector offs=32768, s_blocksize=2048, s_blocksize_bits=11
->> UDF-fs: read 107989660 sectors of total size 221162823680 bytes
->> UDF-fs: warning (device sdb3): udf_load_vrs: No VRS found
->> UDF-fs: warning (device sdb3): udf_fill_super: No partition found (1)
->> mount: wrong fs type, bad option, bad superblock on /dev/sdb3,
->>        missing codepage or helper program, or other error
->>        In some cases useful info is found in syslog - try
->>        dmesg | tail  or so
->> real    352m4.740s
->> user    0m0.000s
->> sys     27m23.560s
->>
->> Tried to mount other partitions, too, formatted to ext3, ext4, btrfs
->> and ntfs. The mount failed with those sooner, accidentally just
->> because there were some blocks near to the beginning with a zero byte
->> just at the right place.
->>
->> Then I prepared an 'all 0xff' 4G image, and burnt it to a DVD. The
->> mount failed, but took only 25 minutes. 'Only', compared to the case
->> with the ssd. This truely doesn't reflect the throughput of the
->> devices, hopefully someone with more experience will have a clue.
->   Thanks for the report and detailed analysis. Frankly, instead of your
-> function checking the identifier, I'd rather follow the standard in detail
-> and add handling (meaning ignore) of the remaining specified descriptors
-> (CDW02, BOOT2) and bail out if anything else is found. If someone complains
-> because some broken medium stops mounting, we can try something more
-> elaborate but for now I'd go with the simple solution.
->
-> Also please read Documentation/SubmittingPatches - your patch was missing a
-> changelog entry (you can basically take your somewhat shortened email for
-> that) and a Signed-off-by line. Thanks!
->
->                                                                 Honza
-> --
-> Jan Kara <jack@suse.cz>
-> SUSE Labs, CR
+> Yes, the acpiphp_register_hotplug_slot() doesn't get called, but we
+> still do register_hotplug_dock_device(), for example. How does that
+> interact with pcihp that thinks it owns the slot?
+
+Well, owning the slot doesn't really mean much here, because the "rescan"
+and "remove" things may always be triggered by user space via sysfs from
+under the PCI device in question (regardless of whether or not pciehp
+thinks that it "owns" that device).  So if they are triggered by an ACPI
+notify instead, that should still be fine.
+
+Ejects are more of a gray area, but they do the "remove" first and only
+then they go for an actual "eject".  Question is if we should execute
+_EJ0 provided that it's actually present for the pciehp slots (which we will
+do with the patch applied).  It might be safer to trigger the native eject
+then, but again I'd be surprised if _EJ0 didn't work anyway (if there is a
+system in which _EJ0 is available for a device handled by pciehp in the first
+place).
+
+As far as docking stations go, the undock is done by ACPI anyway and it will
+carry out "remove" for all devices under the dock, so the patch doesn't change
+this particular case as far as I can say.
+
+> Or am I misreading the code? It's more readable, and no longer makes
+> me homicidal, but I don't actually know the code itself.
+
+I think you're reading it correctly, it really makes acpiphp see all slots
+even if pciehp sees them too.  So the change is somewhat risky.
+
+That said the risk doesn't seem to be huge and there seem to be cases in
+which it actually would be useful to have both acpiphp and pciehp signaling
+available for the same device.  For example, even if the BIOS told us that
+we could use the native mechanism (pciehp), it may not actually work.  That is,
+we may not get any hotplug interrupts from PCIe ports due to platform bugs of
+some sort and we may get ACPI notifications instead (because the platform
+designer knew about those bugs and thought it would be smart to use ACPI to
+work around them).
+
+There are bug reports indicating thinks like that, so we were going to allow
+acpiphp and pciehp to handle the same devices anyway at one point.  I thought
+we might as well try to do it now and see how it goes.  Still, if you think
+it's too risky for this stage of the cycle, I'll just send a patch removing
+the WARN_ON() and we'll revisit that thing in 3.13.
+
+Rafael
+
