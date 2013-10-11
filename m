@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933284Ab3JKUTf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:19:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45981 "EHLO
+	id S933295Ab3JKUTt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:19:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45979 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932238Ab3JKTkw (ORCPT
+	with ESMTP id S932232Ab3JKTkv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:40:52 -0400
+	Fri, 11 Oct 2013 15:40:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Mike Miller <mike.miller@hp.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 002/135] cpqarray: fix info leak in ida_locked_ioctl()
-Date: Fri, 11 Oct 2013 12:38:03 -0700
-Message-Id: <20131011193945.476933497@linuxfoundation.org>
+        =?UTF-8?q?Toralf=20F=C3=B6rster?= <toralf.foerster@gmx.de>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [ 001/135] nfsd4: fix leak of inode reference on delegation failure
+Date: Fri, 11 Oct 2013 12:38:02 -0700
+Message-Id: <20131011193945.369483735@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,34 +30,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit 627aad1c01da6f881e7f98d71fd928ca0c316b1a upstream.
+commit bf7bd3e98be5c74813bee6ad496139fb0a011b3b upstream.
 
-The pciinfo struct has a two byte hole after ->dev_fn so stack
-information could be leaked to the user.
+This fixes a regression from 68a3396178e6688ad7367202cdf0af8ed03c8727
+"nfsd4: shut down more of delegation earlier".
 
-This was assigned CVE-2013-2147.
+After that commit, nfs4_set_delegation() failures result in
+nfs4_put_delegation being called, but nfs4_put_delegation doesn't free
+the nfs4_file that has already been set by alloc_init_deleg().
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Mike Miller <mike.miller@hp.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+This can result in an oops on later unmounting the exported filesystem.
+
+Note also delaying the fi_had_conflict check we're able to return a
+better error (hence give 4.1 clients a better idea why the delegation
+failed; though note CONFLICT isn't an exact match here, as that's
+supposed to indicate a current conflict, but all we know here is that
+there was one recently).
+
+Reported-by: Toralf Förster <toralf.foerster@gmx.de>
+Tested-by: Toralf Förster <toralf.foerster@gmx.de>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/cpqarray.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/nfsd/nfs4state.c |   31 ++++++++++++++++++++-----------
+ 1 file changed, 20 insertions(+), 11 deletions(-)
 
---- a/drivers/block/cpqarray.c
-+++ b/drivers/block/cpqarray.c
-@@ -1193,6 +1193,7 @@ out_passthru:
- 		ida_pci_info_struct pciinfo;
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -368,11 +368,8 @@ static struct nfs4_delegation *
+ alloc_init_deleg(struct nfs4_client *clp, struct nfs4_ol_stateid *stp, struct svc_fh *current_fh)
+ {
+ 	struct nfs4_delegation *dp;
+-	struct nfs4_file *fp = stp->st_file;
  
- 		if (!arg) return -EINVAL;
-+		memset(&pciinfo, 0, sizeof(pciinfo));
- 		pciinfo.bus = host->pci_dev->bus->number;
- 		pciinfo.dev_fn = host->pci_dev->devfn;
- 		pciinfo.board_id = host->board_id;
+ 	dprintk("NFSD alloc_init_deleg\n");
+-	if (fp->fi_had_conflict)
+-		return NULL;
+ 	if (num_delegations > max_delegations)
+ 		return NULL;
+ 	dp = delegstateid(nfs4_alloc_stid(clp, deleg_slab));
+@@ -389,8 +386,7 @@ alloc_init_deleg(struct nfs4_client *clp
+ 	INIT_LIST_HEAD(&dp->dl_perfile);
+ 	INIT_LIST_HEAD(&dp->dl_perclnt);
+ 	INIT_LIST_HEAD(&dp->dl_recall_lru);
+-	get_nfs4_file(fp);
+-	dp->dl_file = fp;
++	dp->dl_file = NULL;
+ 	dp->dl_type = NFS4_OPEN_DELEGATE_READ;
+ 	fh_copy_shallow(&dp->dl_fh, &current_fh->fh_handle);
+ 	dp->dl_time = 0;
+@@ -3044,22 +3040,35 @@ static int nfs4_setlease(struct nfs4_del
+ 	return 0;
+ }
+ 
+-static int nfs4_set_delegation(struct nfs4_delegation *dp)
++static int nfs4_set_delegation(struct nfs4_delegation *dp, struct nfs4_file *fp)
+ {
+-	struct nfs4_file *fp = dp->dl_file;
++	int status;
+ 
+-	if (!fp->fi_lease)
+-		return nfs4_setlease(dp);
++	if (fp->fi_had_conflict)
++		return -EAGAIN;
++	get_nfs4_file(fp);
++	dp->dl_file = fp;
++	if (!fp->fi_lease) {
++		status = nfs4_setlease(dp);
++		if (status)
++			goto out_free;
++		return 0;
++	}
+ 	spin_lock(&recall_lock);
+ 	if (fp->fi_had_conflict) {
+ 		spin_unlock(&recall_lock);
+-		return -EAGAIN;
++		status = -EAGAIN;
++		goto out_free;
+ 	}
+ 	atomic_inc(&fp->fi_delegees);
+ 	list_add(&dp->dl_perfile, &fp->fi_delegations);
+ 	spin_unlock(&recall_lock);
+ 	list_add(&dp->dl_perclnt, &dp->dl_stid.sc_client->cl_delegations);
+ 	return 0;
++out_free:
++	put_nfs4_file(fp);
++	dp->dl_file = fp;
++	return status;
+ }
+ 
+ static void nfsd4_open_deleg_none_ext(struct nfsd4_open *open, int status)
+@@ -3134,7 +3143,7 @@ nfs4_open_delegation(struct net *net, st
+ 	dp = alloc_init_deleg(oo->oo_owner.so_client, stp, fh);
+ 	if (dp == NULL)
+ 		goto out_no_deleg;
+-	status = nfs4_set_delegation(dp);
++	status = nfs4_set_delegation(dp, stp->st_file);
+ 	if (status)
+ 		goto out_free;
+ 
 
 
