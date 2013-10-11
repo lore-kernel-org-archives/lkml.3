@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759224Ab3JKTrq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:47:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46543 "EHLO
+	id S1759243Ab3JKTsJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:48:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46539 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759102Ab3JKTmQ (ORCPT
+	with ESMTP id S1759095Ab3JKTmQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Oct 2013 15:42:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Skeggs <bskeggs@redhat.com>
-Subject: [ 118/135] drm/nouveau/bios/init: stub opcode 0xaa
-Date: Fri, 11 Oct 2013 12:39:59 -0700
-Message-Id: <20131011193958.107933140@linuxfoundation.org>
+        Mark Tinguely <tinguely@sgi.com>, Ben Myers <bpm@sgi.com>
+Subject: [ 117/135] xfs: fix node forward in xfs_node_toosmall
+Date: Fri, 11 Oct 2013 12:39:58 -0700
+Message-Id: <20131011193957.998519841@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -26,51 +26,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Skeggs <bskeggs@redhat.com>
+From: Mark Tinguely <tinguely@sgi.com>
 
-commit 5495e39fb3695182b9f2a72fe4169056cada37a1 upstream.
+commit 997def25e4b9cee3b01609e18a52f926bca8bd2b upstream.
 
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+Commit f5ea1100 cleans up the disk to host conversions for
+node directory entries, but because a variable is reused in
+xfs_node_toosmall() the next node is not correctly found.
+If the original node is small enough (<= 3/8 of the node size),
+this change may incorrectly cause a node collapse when it should
+not. That will cause an assert in xfstest generic/319:
+
+   Assertion failed: first <= last && last < BBTOB(bp->b_length),
+   file: /root/newest/xfs/fs/xfs/xfs_trans_buf.c, line: 569
+
+Keep the original node header to get the correct forward node.
+
+(When a node is considered for a merge with a sibling, it overwrites the
+ sibling pointers of the original incore nodehdr with the sibling's
+ pointers.  This leads to loop considering the original node as a merge
+ candidate with itself in the second pass, and so it incorrectly
+ determines a merge should occur.)
+
+[v3: added Dave Chinner's (slightly modified) suggestion to the commit header,
+	cleaned up whitespace.  -bpm]
+
+Signed-off-by: Mark Tinguely <tinguely@sgi.com>
+Reviewed-by: Ben Myers <bpm@sgi.com>
+Signed-off-by: Ben Myers <bpm@sgi.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- drivers/gpu/drm/nouveau/core/subdev/bios/init.c |   19 +++++++++++++++++--
- 1 file changed, 17 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/nouveau/core/subdev/bios/init.c
-+++ b/drivers/gpu/drm/nouveau/core/subdev/bios/init.c
-@@ -579,8 +579,22 @@ static void
- init_reserved(struct nvbios_init *init)
- {
- 	u8 opcode = nv_ro08(init->bios, init->offset);
--	trace("RESERVED\t0x%02x\n", opcode);
--	init->offset += 1;
-+	u8 length, i;
-+
-+	switch (opcode) {
-+	case 0xaa:
-+		length = 4;
-+		break;
-+	default:
-+		length = 1;
-+		break;
-+	}
-+
-+	trace("RESERVED 0x%02x\t", opcode);
-+	for (i = 1; i < length; i++)
-+		cont(" 0x%02x", nv_ro08(init->bios, init->offset + i));
-+	cont("\n");
-+	init->offset += length;
- }
+---
+ fs/xfs/xfs_da_btree.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+--- a/fs/xfs/xfs_da_btree.c
++++ b/fs/xfs/xfs_da_btree.c
+@@ -1223,6 +1223,7 @@ xfs_da3_node_toosmall(
+ 	/* start with smaller blk num */
+ 	forward = nodehdr.forw < nodehdr.back;
+ 	for (i = 0; i < 2; forward = !forward, i++) {
++		struct xfs_da3_icnode_hdr thdr;
+ 		if (forward)
+ 			blkno = nodehdr.forw;
+ 		else
+@@ -1235,10 +1236,10 @@ xfs_da3_node_toosmall(
+ 			return(error);
  
- /**
-@@ -2135,6 +2149,7 @@ static struct nvbios_init_opcode {
- 	[0x99] = { init_zm_auxch },
- 	[0x9a] = { init_i2c_long_if },
- 	[0xa9] = { init_gpio_ne },
-+	[0xaa] = { init_reserved },
- };
+ 		node = bp->b_addr;
+-		xfs_da3_node_hdr_from_disk(&nodehdr, node);
++		xfs_da3_node_hdr_from_disk(&thdr, node);
+ 		xfs_trans_brelse(state->args->trans, bp);
  
- #define init_opcode_nr (sizeof(init_opcode) / sizeof(init_opcode[0]))
+-		if (count - nodehdr.count >= 0)
++		if (count - thdr.count >= 0)
+ 			break;	/* fits with at least 25% to spare */
+ 	}
+ 	if (i >= 2) {
 
 
