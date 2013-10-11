@@ -1,73 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753631Ab3JKN7v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 09:59:51 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:36115 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751845Ab3JKN7u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 09:59:50 -0400
-Message-ID: <52580438.4040002@ti.com>
-Date: Fri, 11 Oct 2013 16:59:20 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1754521Ab3JKOAr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 10:00:47 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:34494 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752739Ab3JKOAp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 10:00:45 -0400
+Date: Fri, 11 Oct 2013 15:00:39 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Matt Fleming <matt.fleming@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Jones <pjones@redhat.com>
+Subject: Re: [PATCH] x86/efi: Add EFI framebuffer earlyprintk support
+Message-ID: <20131011140039.GF12321@console-pimps.org>
+References: <1381423261-30566-1-git-send-email-matt@console-pimps.org>
+ <20131010172844.GA26430@gmail.com>
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        <linux-kernel@vger.kernel.org>, Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Prakash Manjunathappa <prakash.pm@ti.com>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>,
-        =?ISO-8859-1?Q?Beno=EEt_Cousson?= <bcousson@baylibre.com>,
-        <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH 4/6] pinctrl: single: Add support for wake-up interrupts
-References: <20131003054104.8941.88857.stgit@localhost> <20131003054221.8941.87801.stgit@localhost> <5256AA7F.8030005@ti.com> <20131010160018.GA29913@atomide.com> <5257BB8C.5080001@ti.com>
-In-Reply-To: <5257BB8C.5080001@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131010172844.GA26430@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/11/2013 11:49 AM, Roger Quadros wrote:
-> On 10/10/2013 07:00 PM, Tony Lindgren wrote:
->> * Roger Quadros <rogerq@ti.com> [131010 06:32]:
->>>
->>> I tried testing this with the USB EHCI driver, but I'm not getting wake up interrupts
->>> while the system is still running and only the EHCI controller is runtime suspended.
->>>
->>> It seems we need to somehow call _reconfigure_io_chain() to update the daisy chain
->>> whenever the pad wakeup_enable bit is changed.
->>
->> Sounds like this is on omap3? Have you tried calling pcs_soc->rearm() in the
->> pcs_irq_handle() like the comments there suggest? At least for me that keeps
->> the wake-up interrupts continuously running on omap3 instead of just idle modes.
+On Thu, 10 Oct, at 07:28:44PM, Ingo Molnar wrote:
+> Btw., could we perhaps remap the whole framebuffer at init time, or is it 
+> too large? If early_ioremap() fails for whatever reason then that will 
+> emit a WARN_ON(), which will recurse in a fairly nasty way ...
+ 
+The framebuffer memory will be quite large, so I don't think it makes
+sense to map it all this early, because it's likely we'll run out of
+fixmap entries.
+
+> > +	if (!dst)
+> > +		return;
+> > +
+> > +	memset(dst, 0, len);
+> > +	early_iounmap(dst, len);
+> > +}
+> > +
+> > +static __init void early_efi_clear_screen(void)
+> > +{
+> > +	struct screen_info *si;
+> > +	int y;
+> > +
+> > +	si = &boot_params.screen_info;
+> > +	for (y = 0; y < si->lfb_height; y++)
+> > +		early_efi_clear_line(y);
 > 
-> Yes it is on OMAP3. I haven't tried with pcs_soc->rearm(). I will give it a try and
-> let you know.
->>
->> Now on omap4, I've noticed the wake up interrupts are on all the time based on tests
->> with the serial driver.
->>  
->>> I think pcs_irq_set_wake() is where need to control system wakeup behaviour for the irq.
->>> This is where we should be able to change WAKEUP_EN bit of the pad
->>> to enable/disable system wakeup for that pad and also call _reconfigure_io_chain().
->>
->> Well the irq_set_wake() should only be needed for suspend and resume. For runtime PM
->> the wake-events should be always enabled by default as pointed out by Alan Stern
->> a while back.
+> Looks a bit superfluous to introduce 'si' just for that single use?
+ 
+I did this to reduce the length of the "for (y = 0..." line.
+
+> > +}
+> > +
+> > +static void early_efi_write_char(void *dst, char c, int h)
+> > +{
+> > +	const u8 *src;
+> > +	u32 fgcolor = 0xaaaaaa;
 > 
-> Right, but we need to update the WAKEUP_EN bit in the pad control register for that
-> to work, no?. This is something we are not doing in the driver.
+> That's RGB grey, right? Why not 0xffffff for a very visible white?
+ 
+The VGA earlyprintk code uses the equivalent grey, AFAIK, which is why I
+picked this value.
 
-OK sorry, just figured out that we are doing it indeed in pcs_irq_set().
-Wasn't able to test it yet with USB. But I don't see any issues except that
-pcs_soc->rearm() needs to be called from pcs_irq_set() instead of from pcs_irq_unmask().
+> > +	u8 s8;
+> > +	int m;
+> > +
+> > +	src = font->data + (c * font->height);
+> 
+> here too the multiplication does not need parantheses.
+> 
+> > +	s8 = *(src + h);
+> 
+> We normally only care about the ASCII range, but doesn't 'c' want to be 
+> 'unsigned char', to make sure we do the right thing, should anyone use 
+> above 0x7f characters in printk, accidentally or intentionally?
+ 
+Yeah, this should be unsigned.
 
-After that you can add my
+> > +
+> > +	for (m = 0; m < 8; m++) {
+> > +		u32 val, mask = 0;
+> > +
+> > +		if ((s8 >> (7 - m)) & 1)
+> > +			mask = 0xffffffff;
+> > +
+> > +		val = mask & fgcolor;
+> 
+> Hm, because this is really about 32-bit pixel framebuffer, is that mask 
+> code a _really_ roundabout way of saying:
+> 
+> 	const u32 color_grey  = 0x00aaaaaa;
+> 	const u32 color_black = 0x00000000;
+> 	...
+> 
+> 		if ((s8 >> (7 - m)) & 1)
+> 			pixel = color_grey;
+> 		else
+> 			pixel = color_black;
+> 
+> 		*dst = pixel;
+> 
+> ?
+> 
+> > +		memcpy(dst, &val, 4);
+> 
+> Also, why not pass in dst as 'u32 *' and replace the memcpy with:
+> 
+> 		*dst = val;
+> 
+> ?
+> 
+> > +		dst += 4;
+> 
+> and this with:
+> 
+> 		dst++;
+> 
+> ?
+ 
 
-Reviewed-by: Roger Quadros <rogerq@ti.com>
+Yeah, that's a nice cleanup.
 
-cheers,
--roger
+ 
+> > +			}
+> > +
+> > +			early_iounmap(dst, len);
+> > +		}
+> > +
+> > +		num -= count;
+> > +		efi_x += count * font->width;
+> > +		str += count;
+> > +
+> > +		if (num > 0 && *s == '\n') {
+> > +			efi_x = 0;
+> > +			efi_y += font->height;
+> 
+> btw., it's a fixed-width, fixed-height font, right?
+ 
+Correct.
 
+> > +			str++;
+> > +			num--;
+> > +		}
+> > +
+> > +		if (efi_x >= si->lfb_width) {
+> > +			efi_x = 0;
+> > +			efi_y += font->height;
+> > +		}
+> > +
+> > +		if (efi_y + font->height >= si->lfb_height) {
+> > +			early_efi_clear_screen();
+> > +			efi_y = 0;
+> 
+> So, if I understand it correctly this clears the screen and starts at the 
+> top when we scroll off the bottom, right?
+> 
+> That might make the recovery of oopses hard when the number of log lines 
+> is unlucky.
+> 
+> Would scrolling a few lines up instead, via a well-calculated memcpy and 
+> memset be doable?
+ 
+Yeah we can do that. I thought about this originally but decided against
+it because I figured it would complicate the code unnecessarily. But it
+turned out to be fairly trivial.
+ 
+> > +	if (!font)
+> > +		return -ENODEV;
+> > +
+> > +	early_efi_clear_screen();
+> 
+> Assuming we implement scrolling above, here too it might make sense to 
+> scroll up the framebuffer - if the crash is early enough then some 
+> firmware and boot stub info might still be present in the framebuffer?
+
+It's possible that some info will be in the framebuffer, but we can't
+begin writing immediately after the boot stub info because we don't know
+the last xy coordinates the firmware wrote to.
+
+But yeah, leaving it intact and beginning our output from the last line
+of the framebuffer makes more sense than clearing the screen entirely.
+
+-- 
+Matt Fleming, Intel Open Source Technology Center
