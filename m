@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759284Ab3JKTuQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:50:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46481 "EHLO
+	id S932816Ab3JKTmG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:42:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46460 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932831Ab3JKTmI (ORCPT
+	with ESMTP id S932798Ab3JKTmE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:42:08 -0400
+	Fri, 11 Oct 2013 15:42:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ian Abbott <abbotti@mev.co.uk>
-Subject: [ 096/135] staging: comedi: ni_65xx: (bug fix) confine insn_bits to one subdevice
-Date: Fri, 11 Oct 2013 12:39:37 -0700
-Message-Id: <20131011193955.696735679@linuxfoundation.org>
+        Bing Zhao <bzhao@marvell.com>, Amitkumar Karwar <akarwar@marvell.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 100/135] mwifiex: fix PCIe hs_cfg cancel cmd timeout
+Date: Fri, 11 Oct 2013 12:39:41 -0700
+Message-Id: <20131011193956.122547870@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -26,77 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Bing Zhao <bzhao@marvell.com>
 
-commit 677a31565692d596ef42ea589b53ba289abf4713 upstream.
+commit b7be1522def9a9988b67afd0be999c50a96394b5 upstream.
 
-The `insn_bits` handler `ni_65xx_dio_insn_bits()` has a `for` loop that
-currently writes (optionally) and reads back up to 5 "ports" consisting
-of 8 channels each.  It reads up to 32 1-bit channels but can only read
-and write a whole port at once - it needs to handle up to 5 ports as the
-first channel it reads might not be aligned on a port boundary.  It
-breaks out of the loop early if the next port it handles is beyond the
-final port on the card.  It also breaks out early on the 5th port in the
-loop if the first channel was aligned.  Unfortunately, it doesn't check
-that the current port it is dealing with belongs to the comedi subdevice
-the `insn_bits` handler is acting on.  That's a bug.
+For pcie8897, the hs_cfg cancel command (0xe5) times out when host
+comes out of suspend. This is caused by an incompleted host sleep
+handshake between driver and firmware.
 
-Redo the `for` loop to terminate after the final port belonging to the
-subdevice, changing the loop variable in the process to simplify things
-a bit.  The `for` loop could now try and handle more than 5 ports if the
-subdevice has more than 40 channels, but the test `if (bitshift >= 32)`
-ensures it will break out early after 4 or 5 ports (depending on whether
-the first channel is aligned on a port boundary).  (`bitshift` will be
-between -7 and 7 inclusive on the first iteration, increasing by 8 for
-each subsequent operation.)
+Like SDIO interface, PCIe also needs to go through firmware power
+save events to complete the handshake for host sleep configuration.
+Only USB interface doesn't require power save events for hs_cfg.
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/comedi/drivers/ni_65xx.c |   25 ++++++++++---------------
- 1 file changed, 10 insertions(+), 15 deletions(-)
+ drivers/net/wireless/mwifiex/cmdevt.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
---- a/drivers/staging/comedi/drivers/ni_65xx.c
-+++ b/drivers/staging/comedi/drivers/ni_65xx.c
-@@ -369,28 +369,23 @@ static int ni_65xx_dio_insn_bits(struct
- {
- 	const struct ni_65xx_board *board = comedi_board(dev);
- 	struct ni_65xx_private *devpriv = dev->private;
--	unsigned base_bitfield_channel;
--	const unsigned max_ports_per_bitfield = 5;
-+	int base_bitfield_channel;
- 	unsigned read_bits = 0;
--	unsigned j;
-+	int last_port_offset = ni_65xx_port_by_channel(s->n_chan - 1);
-+	int port_offset;
+--- a/drivers/net/wireless/mwifiex/cmdevt.c
++++ b/drivers/net/wireless/mwifiex/cmdevt.c
+@@ -1155,7 +1155,7 @@ int mwifiex_ret_802_11_hs_cfg(struct mwi
+ 	uint32_t conditions = le32_to_cpu(phs_cfg->params.hs_config.conditions);
  
- 	base_bitfield_channel = CR_CHAN(insn->chanspec);
--	for (j = 0; j < max_ports_per_bitfield; ++j) {
--		const unsigned port_offset =
--			ni_65xx_port_by_channel(base_bitfield_channel) + j;
--		const unsigned port =
--			sprivate(s)->base_port + port_offset;
--		unsigned base_port_channel;
-+	for (port_offset = ni_65xx_port_by_channel(base_bitfield_channel);
-+	     port_offset <= last_port_offset; port_offset++) {
-+		unsigned port = sprivate(s)->base_port + port_offset;
-+		int base_port_channel = port_offset * ni_65xx_channels_per_port;
- 		unsigned port_mask, port_data, port_read_bits;
--		int bitshift;
--		if (port >= ni_65xx_total_num_ports(board))
-+		int bitshift = base_port_channel - base_bitfield_channel;
-+
-+		if (bitshift >= 32)
- 			break;
--		base_port_channel = port_offset * ni_65xx_channels_per_port;
- 		port_mask = data[0];
- 		port_data = data[1];
--		bitshift = base_port_channel - base_bitfield_channel;
--		if (bitshift >= 32 || bitshift <= -32)
--			break;
- 		if (bitshift > 0) {
- 			port_mask >>= bitshift;
- 			port_data >>= bitshift;
+ 	if (phs_cfg->action == cpu_to_le16(HS_ACTIVATE) &&
+-	    adapter->iface_type == MWIFIEX_SDIO) {
++	    adapter->iface_type != MWIFIEX_USB) {
+ 		mwifiex_hs_activated_event(priv, true);
+ 		return 0;
+ 	} else {
+@@ -1167,8 +1167,7 @@ int mwifiex_ret_802_11_hs_cfg(struct mwi
+ 	}
+ 	if (conditions != HS_CFG_CANCEL) {
+ 		adapter->is_hs_configured = true;
+-		if (adapter->iface_type == MWIFIEX_USB ||
+-		    adapter->iface_type == MWIFIEX_PCIE)
++		if (adapter->iface_type == MWIFIEX_USB)
+ 			mwifiex_hs_activated_event(priv, true);
+ 	} else {
+ 		adapter->is_hs_configured = false;
 
 
