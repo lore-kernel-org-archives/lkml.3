@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754481Ab3JKVCt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 17:02:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45243 "EHLO
+	id S1756018Ab3JKVDI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 17:03:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45229 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757760Ab3JKThA (ORCPT
+	with ESMTP id S1757723Ab3JKTg6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:37:00 -0400
+	Fri, 11 Oct 2013 15:36:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Dan Carpenter <dan.carpenter@oracle.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Michio Honda <micchie@sfc.wide.ad.jp>,
-        Vlad Yasevich <vyasevich@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 05/48] net: sctp: fix smatch warning in sctp_send_asconf_del_ip
-Date: Fri, 11 Oct 2013 12:36:12 -0700
-Message-Id: <20131011193637.867995112@linuxfoundation.org>
+        Mike Miller <mike.miller@hp.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 02/48] cciss: fix info leak in cciss_ioctl32_passthru()
+Date: Fri, 11 Oct 2013 12:36:09 -0700
+Message-Id: <20131011193637.547109380@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193637.253208688@linuxfoundation.org>
 References: <20131011193637.253208688@linuxfoundation.org>
@@ -31,60 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-[ Upstream commit 88362ad8f9a6cea787420b57cc27ccacef000dbe ]
+commit 58f09e00ae095e46ef9edfcf3a5fd9ccdfad065e upstream.
 
-This was originally reported in [1] and posted by Neil Horman [2], he said:
+The arg64 struct has a hole after ->buf_size which isn't cleared.  Or if
+any of the calls to copy_from_user() fail then that would cause an
+information leak as well.
 
-  Fix up a missed null pointer check in the asconf code. If we don't find
-  a local address, but we pass in an address length of more than 1, we may
-  dereference a NULL laddr pointer. Currently this can't happen, as the only
-  users of the function pass in the value 1 as the addrcnt parameter, but
-  its not hot path, and it doesn't hurt to check for NULL should that ever
-  be the case.
+This was assigned CVE-2013-2147.
 
-The callpath from sctp_asconf_mgmt() looks okay. But this could be triggered
-from sctp_setsockopt_bindx() call with SCTP_BINDX_REM_ADDR and addrcnt > 1
-while passing all possible addresses from the bind list to SCTP_BINDX_REM_ADDR
-so that we do *not* find a single address in the association's bind address
-list that is not in the packed array of addresses. If this happens when we
-have an established association with ASCONF-capable peers, then we could get
-a NULL pointer dereference as we only check for laddr == NULL && addrcnt == 1
-and call later sctp_make_asconf_update_ip() with NULL laddr.
-
-BUT: this actually won't happen as sctp_bindx_rem() will catch such a case
-and return with an error earlier. As this is incredably unintuitive and error
-prone, add a check to catch at least future bugs here. As Neil says, its not
-hot path. Introduced by 8a07eb0a5 ("sctp: Add ASCONF operation on the
-single-homed host").
-
- [1] http://www.spinics.net/lists/linux-sctp/msg02132.html
- [2] http://www.spinics.net/lists/linux-sctp/msg02133.html
-
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Cc: Michio Honda <micchie@sfc.wide.ad.jp>
-Acked-By: Neil Horman <nhorman@tuxdriver.com>
-Acked-by: Vlad Yasevich <vyasevich@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Mike Miller <mike.miller@hp.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/sctp/socket.c |    3 +++
- 1 file changed, 3 insertions(+)
 
---- a/net/sctp/socket.c
-+++ b/net/sctp/socket.c
-@@ -814,6 +814,9 @@ static int sctp_send_asconf_del_ip(struc
- 			goto skip_mkasconf;
- 		}
+---
+ drivers/block/cciss.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/drivers/block/cciss.c
++++ b/drivers/block/cciss.c
+@@ -1186,6 +1186,7 @@ static int cciss_ioctl32_passthru(struct
+ 	int err;
+ 	u32 cp;
  
-+		if (laddr == NULL)
-+			return -EINVAL;
-+
- 		/* We do not need RCU protection throughout this loop
- 		 * because this is done under a socket lock from the
- 		 * setsockopt call.
++	memset(&arg64, 0, sizeof(arg64));
+ 	err = 0;
+ 	err |=
+ 	    copy_from_user(&arg64.LUN_info, &arg32->LUN_info,
 
 
