@@ -1,212 +1,270 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932253Ab3JKTkx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:40:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45909 "EHLO
+	id S933260Ab3JKUSt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:18:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45992 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932134Ab3JKTkj (ORCPT
+	with ESMTP id S932257Ab3JKTkx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:40:39 -0400
+	Fri, 11 Oct 2013 15:40:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Grzeschik <m.grzeschik@pengutronix.de>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Jonghwan Choi <jhbird.choi@samsung.com>
-Subject: [ 094/110] dmaengine: imx-dma: fix lockdep issue between irqhandler and tasklet
-Date: Fri, 11 Oct 2013 12:39:14 -0700
-Message-Id: <20131011193818.055966464@linuxfoundation.org>
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [ 004/135] HID: fix data access in implement()
+Date: Fri, 11 Oct 2013 12:38:05 -0700
+Message-Id: <20131011193945.680574109@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
-References: <20131011193807.584188672@linuxfoundation.org>
+In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
+References: <20131011193945.181603934@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.11-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Michael Grzeschik <m.grzeschik@pengutronix.de>
+From: Jiri Kosina <jkosina@suse.cz>
 
-commit 5a276fa6bdf82fd442046969603968c83626ce0b upstream.
+commit 27ce405039bfe6d3f4143415c638f56a3df77dca upstream.
 
-The tasklet and irqhandler are using spin_lock while other routines are
-using spin_lock_irqsave/restore. This leads to lockdep issues as
-described bellow. This patch is changing the code to use
-spinlock_irq_save/restore in both code pathes.
+implement() is setting bytes in LE data stream. In case the data is not
+aligned to 64bits, it reads past the allocated buffer. It doesn't really
+change any value there (it's properly bitmasked), but in case that this
+read past the boundary hits a page boundary, pagefault happens when
+accessing 64bits of 'x' in implement(), and kernel oopses.
 
-As imxdma_xfer_desc always gets called with spin_lock_irqsave lock held,
-this patch also removes the spare call inside the routine to avoid
-double locking.
+This happens much more often when numbered reports are in use, as the
+initial 8bit skip in the buffer makes the whole process work on values
+which are not aligned to 64bits.
 
-[  403.358162] =================================
-[  403.362549] [ INFO: inconsistent lock state ]
-[  403.366945] 3.10.0-20130823+ #904 Not tainted
-[  403.371331] ---------------------------------
-[  403.375721] inconsistent {IN-HARDIRQ-W} -> {HARDIRQ-ON-W} usage.
-[  403.381769] swapper/0 [HC0[0]:SC1[1]:HE1:SE0] takes:
-[  403.386762]  (&(&imxdma->lock)->rlock){?.-...}, at: [<c019d77c>] imxdma_tasklet+0x20/0x134
-[  403.395201] {IN-HARDIRQ-W} state was registered at:
-[  403.400108]   [<c004b264>] mark_lock+0x2a0/0x6b4
-[  403.404798]   [<c004d7c8>] __lock_acquire+0x650/0x1a64
-[  403.410004]   [<c004f15c>] lock_acquire+0x94/0xa8
-[  403.414773]   [<c02f74e4>] _raw_spin_lock+0x54/0x8c
-[  403.419720]   [<c019d094>] dma_irq_handler+0x78/0x254
-[  403.424845]   [<c0061124>] handle_irq_event_percpu+0x38/0x1b4
-[  403.430670]   [<c00612e4>] handle_irq_event+0x44/0x64
-[  403.435789]   [<c0063a70>] handle_level_irq+0xd8/0xf0
-[  403.440903]   [<c0060a20>] generic_handle_irq+0x28/0x38
-[  403.446194]   [<c0009cc4>] handle_IRQ+0x68/0x8c
-[  403.450789]   [<c0008714>] avic_handle_irq+0x3c/0x48
-[  403.455811]   [<c0008f84>] __irq_svc+0x44/0x74
-[  403.460314]   [<c0040b04>] cpu_startup_entry+0x88/0xf4
-[  403.465525]   [<c02f00d0>] rest_init+0xb8/0xe0
-[  403.470045]   [<c03e07dc>] start_kernel+0x28c/0x2d4
-[  403.474986]   [<a0008040>] 0xa0008040
-[  403.478709] irq event stamp: 50854
-[  403.482140] hardirqs last  enabled at (50854): [<c001c6b8>] tasklet_action+0x38/0xdc
-[  403.489954] hardirqs last disabled at (50853): [<c001c6a0>] tasklet_action+0x20/0xdc
-[  403.497761] softirqs last  enabled at (50850): [<c001bc64>] _local_bh_enable+0x14/0x18
-[  403.505741] softirqs last disabled at (50851): [<c001c268>] irq_exit+0x88/0xdc
-[  403.513026]
-[  403.513026] other info that might help us debug this:
-[  403.519593]  Possible unsafe locking scenario:
-[  403.519593]
-[  403.525548]        CPU0
-[  403.528020]        ----
-[  403.530491]   lock(&(&imxdma->lock)->rlock);
-[  403.534828]   <Interrupt>
-[  403.537474]     lock(&(&imxdma->lock)->rlock);
-[  403.541983]
-[  403.541983]  *** DEADLOCK ***
-[  403.541983]
-[  403.547951] no locks held by swapper/0.
-[  403.551813]
-[  403.551813] stack backtrace:
-[  403.556222] CPU: 0 PID: 0 Comm: swapper Not tainted 3.10.0-20130823+ #904
-[  403.563039] Backtrace:
-[  403.565581] [<c000b98c>] (dump_backtrace+0x0/0x10c) from [<c000bb28>] (show_stack+0x18/0x1c)
-[  403.574054]  r6:00000000 r5:c05c51d8 r4:c040bd58 r3:00200000
-[  403.579872] [<c000bb10>] (show_stack+0x0/0x1c) from [<c02f398c>] (dump_stack+0x20/0x28)
-[  403.587955] [<c02f396c>] (dump_stack+0x0/0x28) from [<c02f29c8>] (print_usage_bug.part.28+0x224/0x28c)
-[  403.597340] [<c02f27a4>] (print_usage_bug.part.28+0x0/0x28c) from [<c004b404>] (mark_lock+0x440/0x6b4)
-[  403.606682]  r8:c004a41c r7:00000000 r6:c040bd58 r5:c040c040 r4:00000002
-[  403.613566] [<c004afc4>] (mark_lock+0x0/0x6b4) from [<c004d844>] (__lock_acquire+0x6cc/0x1a64)
-[  403.622244] [<c004d178>] (__lock_acquire+0x0/0x1a64) from [<c004f15c>] (lock_acquire+0x94/0xa8)
-[  403.631010] [<c004f0c8>] (lock_acquire+0x0/0xa8) from [<c02f74e4>] (_raw_spin_lock+0x54/0x8c)
-[  403.639614] [<c02f7490>] (_raw_spin_lock+0x0/0x8c) from [<c019d77c>] (imxdma_tasklet+0x20/0x134)
-[  403.648434]  r6:c3847010 r5:c040e890 r4:c38470d4
-[  403.653194] [<c019d75c>] (imxdma_tasklet+0x0/0x134) from [<c001c70c>] (tasklet_action+0x8c/0xdc)
-[  403.662013]  r8:c0599160 r7:00000000 r6:00000000 r5:c040e890 r4:c3847114 r3:c019d75c
-[  403.670042] [<c001c680>] (tasklet_action+0x0/0xdc) from [<c001bd4c>] (__do_softirq+0xe4/0x1f0)
-[  403.678687]  r7:00000101 r6:c0402000 r5:c059919c r4:00000001
-[  403.684498] [<c001bc68>] (__do_softirq+0x0/0x1f0) from [<c001c268>] (irq_exit+0x88/0xdc)
-[  403.692652] [<c001c1e0>] (irq_exit+0x0/0xdc) from [<c0009cc8>] (handle_IRQ+0x6c/0x8c)
-[  403.700514]  r4:00000030 r3:00000110
-[  403.704192] [<c0009c5c>] (handle_IRQ+0x0/0x8c) from [<c0008714>] (avic_handle_irq+0x3c/0x48)
-[  403.712664]  r5:c0403f28 r4:c0593ebc
-[  403.716343] [<c00086d8>] (avic_handle_irq+0x0/0x48) from [<c0008f84>] (__irq_svc+0x44/0x74)
-[  403.724733] Exception stack(0xc0403f28 to 0xc0403f70)
-[  403.729841] 3f20:                   00000001 00000004 00000000 20000013 c0402000 c04104a8
-[  403.738078] 3f40: 00000002 c0b69620 a0004000 41069264 a03fb5f4 c0403f7c c0403f40 c0403f70
-[  403.746301] 3f60: c004b92c c0009e74 20000013 ffffffff
-[  403.751383]  r6:ffffffff r5:20000013 r4:c0009e74 r3:c004b92c
-[  403.757210] [<c0009e30>] (arch_cpu_idle+0x0/0x4c) from [<c0040b04>] (cpu_startup_entry+0x88/0xf4)
-[  403.766161] [<c0040a7c>] (cpu_startup_entry+0x0/0xf4) from [<c02f00d0>] (rest_init+0xb8/0xe0)
-[  403.774753] [<c02f0018>] (rest_init+0x0/0xe0) from [<c03e07dc>] (start_kernel+0x28c/0x2d4)
-[  403.783051]  r6:c03fc484 r5:ffffffff r4:c040a0e0
-[  403.787797] [<c03e0550>] (start_kernel+0x0/0x2d4) from [<a0008040>] (0xa0008040)
+This problem dates back to attempts in 2005 and 2006 to make implement()
+and extract() as generic as possible, and even back then the problem
+was realized by Adam Kroperlin, but falsely assumed to be impossible
+to cause any harm:
 
-Signed-off-by: Michael Grzeschik <m.grzeschik@pengutronix.de>
-Signed-off-by: Vinod Koul <vinod.koul@intel.com>
-Cc: Jonghwan Choi <jhbird.choi@samsung.com>
+  http://www.mail-archive.com/linux-usb-devel@lists.sourceforge.net/msg47690.html
+
+I have made several attempts at fixing it "on the spot" directly in
+implement(), but the results were horrible; the special casing for processing
+last 64bit chunk and switching to different math makes it unreadable mess.
+
+I therefore took a path to allocate a few bytes more which will never make
+it into final report, but are there as a cushion for all the 64bit math
+operations happening in implement() and extract().
+
+All callers of hid_output_report() are converted at the same time to allocate
+the buffer by newly introduced hid_alloc_report_buf() helper.
+
+Bruno noticed that the whole raw_size test can be dropped as well, as
+hid_alloc_report_buf() makes sure that the buffer is always of a proper
+size.
+
+Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Acked-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/dma/imx-dma.c |   19 ++++++++-----------
- 1 file changed, 8 insertions(+), 11 deletions(-)
+ drivers/hid/hid-core.c            |   19 ++++++++++++++++++-
+ drivers/hid/hid-logitech-dj.c     |   12 ++++++++++--
+ drivers/hid/hid-picolcd_debugfs.c |   23 ++++++++++++-----------
+ drivers/hid/usbhid/hid-core.c     |    5 ++---
+ include/linux/hid.h               |    1 +
+ net/bluetooth/hidp/core.c         |   14 +++++++++-----
+ 6 files changed, 52 insertions(+), 22 deletions(-)
 
---- a/drivers/dma/imx-dma.c
-+++ b/drivers/dma/imx-dma.c
-@@ -414,17 +414,18 @@ static void dma_irq_handle_channel(struc
- 	struct imxdma_engine *imxdma = imxdmac->imxdma;
- 	int chno = imxdmac->channel;
- 	struct imxdma_desc *desc;
-+	unsigned long flags;
- 
--	spin_lock(&imxdma->lock);
-+	spin_lock_irqsave(&imxdma->lock, flags);
- 	if (list_empty(&imxdmac->ld_active)) {
--		spin_unlock(&imxdma->lock);
-+		spin_unlock_irqrestore(&imxdma->lock, flags);
- 		goto out;
- 	}
- 
- 	desc = list_first_entry(&imxdmac->ld_active,
- 				struct imxdma_desc,
- 				node);
--	spin_unlock(&imxdma->lock);
-+	spin_unlock_irqrestore(&imxdma->lock, flags);
- 
- 	if (desc->sg) {
- 		u32 tmp;
-@@ -496,7 +497,6 @@ static int imxdma_xfer_desc(struct imxdm
- {
- 	struct imxdma_channel *imxdmac = to_imxdma_chan(d->desc.chan);
- 	struct imxdma_engine *imxdma = imxdmac->imxdma;
--	unsigned long flags;
- 	int slot = -1;
- 	int i;
- 
-@@ -504,7 +504,6 @@ static int imxdma_xfer_desc(struct imxdm
- 	switch (d->type) {
- 	case IMXDMA_DESC_INTERLEAVED:
- 		/* Try to get a free 2D slot */
--		spin_lock_irqsave(&imxdma->lock, flags);
- 		for (i = 0; i < IMX_DMA_2D_SLOTS; i++) {
- 			if ((imxdma->slots_2d[i].count > 0) &&
- 			((imxdma->slots_2d[i].xsr != d->x) ||
-@@ -514,10 +513,8 @@ static int imxdma_xfer_desc(struct imxdm
- 			slot = i;
- 			break;
- 		}
--		if (slot < 0) {
--			spin_unlock_irqrestore(&imxdma->lock, flags);
-+		if (slot < 0)
- 			return -EBUSY;
--		}
- 
- 		imxdma->slots_2d[slot].xsr = d->x;
- 		imxdma->slots_2d[slot].ysr = d->y;
-@@ -526,7 +523,6 @@ static int imxdma_xfer_desc(struct imxdm
- 
- 		imxdmac->slot_2d = slot;
- 		imxdmac->enabled_2d = true;
--		spin_unlock_irqrestore(&imxdma->lock, flags);
- 
- 		if (slot == IMX_DMA_2D_SLOT_A) {
- 			d->config_mem &= ~CCR_MSEL_B;
-@@ -602,8 +598,9 @@ static void imxdma_tasklet(unsigned long
- 	struct imxdma_channel *imxdmac = (void *)data;
- 	struct imxdma_engine *imxdma = imxdmac->imxdma;
- 	struct imxdma_desc *desc;
-+	unsigned long flags;
- 
--	spin_lock(&imxdma->lock);
-+	spin_lock_irqsave(&imxdma->lock, flags);
- 
- 	if (list_empty(&imxdmac->ld_active)) {
- 		/* Someone might have called terminate all */
-@@ -640,7 +637,7 @@ static void imxdma_tasklet(unsigned long
- 				 __func__, imxdmac->channel);
- 	}
- out:
--	spin_unlock(&imxdma->lock);
-+	spin_unlock_irqrestore(&imxdma->lock, flags);
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1188,7 +1188,8 @@ static void hid_output_field(const struc
  }
  
- static int imxdma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+ /*
+- * Create a report.
++ * Create a report. 'data' has to be allocated using
++ * hid_alloc_report_buf() so that it has proper size.
+  */
+ 
+ void hid_output_report(struct hid_report *report, __u8 *data)
+@@ -1205,6 +1206,22 @@ void hid_output_report(struct hid_report
+ EXPORT_SYMBOL_GPL(hid_output_report);
+ 
+ /*
++ * Allocator for buffer that is going to be passed to hid_output_report()
++ */
++u8 *hid_alloc_report_buf(struct hid_report *report, gfp_t flags)
++{
++	/*
++	 * 7 extra bytes are necessary to achieve proper functionality
++	 * of implement() working on 8 byte chunks
++	 */
++
++	int len = ((report->size - 1) >> 3) + 1 + (report->id > 0) + 7;
++
++	return kmalloc(len, flags);
++}
++EXPORT_SYMBOL_GPL(hid_alloc_report_buf);
++
++/*
+  * Set a field value. The report this field belongs to has to be
+  * created and transferred to the device, to set this value in the
+  * device.
+--- a/drivers/hid/hid-logitech-dj.c
++++ b/drivers/hid/hid-logitech-dj.c
+@@ -619,7 +619,7 @@ static int logi_dj_ll_input_event(struct
+ 
+ 	struct hid_field *field;
+ 	struct hid_report *report;
+-	unsigned char data[8];
++	unsigned char *data;
+ 	int offset;
+ 
+ 	dbg_hid("%s: %s, type:%d | code:%d | value:%d\n",
+@@ -635,6 +635,13 @@ static int logi_dj_ll_input_event(struct
+ 		return -1;
+ 	}
+ 	hid_set_field(field, offset, value);
++
++	data = hid_alloc_report_buf(field->report, GFP_KERNEL);
++	if (!data) {
++		dev_warn(&dev->dev, "failed to allocate report buf memory\n");
++		return -1;
++	}
++
+ 	hid_output_report(field->report, &data[0]);
+ 
+ 	output_report_enum = &dj_rcv_hiddev->report_enum[HID_OUTPUT_REPORT];
+@@ -645,8 +652,9 @@ static int logi_dj_ll_input_event(struct
+ 
+ 	hid_hw_request(dj_rcv_hiddev, report, HID_REQ_SET_REPORT);
+ 
+-	return 0;
++	kfree(data);
+ 
++	return 0;
+ }
+ 
+ static int logi_dj_ll_start(struct hid_device *hid)
+--- a/drivers/hid/hid-picolcd_debugfs.c
++++ b/drivers/hid/hid-picolcd_debugfs.c
+@@ -394,7 +394,7 @@ static void dump_buff_as_hex(char *dst,
+ void picolcd_debug_out_report(struct picolcd_data *data,
+ 		struct hid_device *hdev, struct hid_report *report)
+ {
+-	u8 raw_data[70];
++	u8 *raw_data;
+ 	int raw_size = (report->size >> 3) + 1;
+ 	char *buff;
+ #define BUFF_SZ 256
+@@ -407,20 +407,20 @@ void picolcd_debug_out_report(struct pic
+ 	if (!buff)
+ 		return;
+ 
+-	snprintf(buff, BUFF_SZ, "\nout report %d (size %d) =  ",
+-			report->id, raw_size);
+-	hid_debug_event(hdev, buff);
+-	if (raw_size + 5 > sizeof(raw_data)) {
++	raw_data = hid_alloc_report_buf(report, GFP_ATOMIC);
++	if (!raw_data) {
+ 		kfree(buff);
+-		hid_debug_event(hdev, " TOO BIG\n");
+ 		return;
+-	} else {
+-		raw_data[0] = report->id;
+-		hid_output_report(report, raw_data);
+-		dump_buff_as_hex(buff, BUFF_SZ, raw_data, raw_size);
+-		hid_debug_event(hdev, buff);
+ 	}
+ 
++	snprintf(buff, BUFF_SZ, "\nout report %d (size %d) =  ",
++			report->id, raw_size);
++	hid_debug_event(hdev, buff);
++	raw_data[0] = report->id;
++	hid_output_report(report, raw_data);
++	dump_buff_as_hex(buff, BUFF_SZ, raw_data, raw_size);
++	hid_debug_event(hdev, buff);
++
+ 	switch (report->id) {
+ 	case REPORT_LED_STATE:
+ 		/* 1 data byte with GPO state */
+@@ -644,6 +644,7 @@ void picolcd_debug_out_report(struct pic
+ 		break;
+ 	}
+ 	wake_up_interruptible(&hdev->debug_wait);
++	kfree(raw_data);
+ 	kfree(buff);
+ }
+ 
+--- a/drivers/hid/usbhid/hid-core.c
++++ b/drivers/hid/usbhid/hid-core.c
+@@ -535,7 +535,6 @@ static void __usbhid_submit_report(struc
+ {
+ 	int head;
+ 	struct usbhid_device *usbhid = hid->driver_data;
+-	int len = ((report->size - 1) >> 3) + 1 + (report->id > 0);
+ 
+ 	if ((hid->quirks & HID_QUIRK_NOGET) && dir == USB_DIR_IN)
+ 		return;
+@@ -546,7 +545,7 @@ static void __usbhid_submit_report(struc
+ 			return;
+ 		}
+ 
+-		usbhid->out[usbhid->outhead].raw_report = kmalloc(len, GFP_ATOMIC);
++		usbhid->out[usbhid->outhead].raw_report = hid_alloc_report_buf(report, GFP_ATOMIC);
+ 		if (!usbhid->out[usbhid->outhead].raw_report) {
+ 			hid_warn(hid, "output queueing failed\n");
+ 			return;
+@@ -595,7 +594,7 @@ static void __usbhid_submit_report(struc
+ 	}
+ 
+ 	if (dir == USB_DIR_OUT) {
+-		usbhid->ctrl[usbhid->ctrlhead].raw_report = kmalloc(len, GFP_ATOMIC);
++		usbhid->ctrl[usbhid->ctrlhead].raw_report = hid_alloc_report_buf(report, GFP_ATOMIC);
+ 		if (!usbhid->ctrl[usbhid->ctrlhead].raw_report) {
+ 			hid_warn(hid, "control queueing failed\n");
+ 			return;
+--- a/include/linux/hid.h
++++ b/include/linux/hid.h
+@@ -746,6 +746,7 @@ struct hid_field *hidinput_get_led_field
+ unsigned int hidinput_count_leds(struct hid_device *hid);
+ __s32 hidinput_calc_abs_res(const struct hid_field *field, __u16 code);
+ void hid_output_report(struct hid_report *report, __u8 *data);
++u8 *hid_alloc_report_buf(struct hid_report *report, gfp_t flags);
+ struct hid_device *hid_allocate_device(void);
+ struct hid_report *hid_register_report(struct hid_device *device, unsigned type, unsigned id);
+ int hid_parse_report(struct hid_device *hid, __u8 *start, unsigned size);
+--- a/net/bluetooth/hidp/core.c
++++ b/net/bluetooth/hidp/core.c
+@@ -225,17 +225,21 @@ static void hidp_input_report(struct hid
+ 
+ static int hidp_send_report(struct hidp_session *session, struct hid_report *report)
+ {
+-	unsigned char buf[32], hdr;
+-	int rsize;
++	unsigned char hdr;
++	u8 *buf;
++	int rsize, ret;
+ 
+-	rsize = ((report->size - 1) >> 3) + 1 + (report->id > 0);
+-	if (rsize > sizeof(buf))
++	buf = hid_alloc_report_buf(report, GFP_ATOMIC);
++	if (!buf)
+ 		return -EIO;
+ 
+ 	hid_output_report(report, buf);
+ 	hdr = HIDP_TRANS_DATA | HIDP_DATA_RTYPE_OUPUT;
+ 
+-	return hidp_send_intr_message(session, hdr, buf, rsize);
++	ret = hidp_send_intr_message(session, hdr, buf, rsize);
++
++	kfree(buf);
++	return ret;
+ }
+ 
+ static int hidp_get_raw_report(struct hid_device *hid,
 
 
