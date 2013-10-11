@@ -1,58 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758254Ab3JKKta (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 06:49:30 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:9717 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757784Ab3JKKt1 (ORCPT
+	id S1756255Ab3JKKtz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 06:49:55 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58773 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758038Ab3JKKoL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 06:49:27 -0400
-X-AuditID: cbfee61b-b7f776d0000016c8-a8-5257d7b50e15
-From: Robert Baldyga <r.baldyga@samsung.com>
-To: balbi@ti.com
-Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, b.zolnierkie@samsung.com,
-        m.szyprowski@samsung.com, andrzej.p@samsung.com,
-        Robert Baldyga <r.baldyga@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: [PATCH] USB: gadget: s3c-hsotg: remove unused label
-Date: Fri, 11 Oct 2013 12:48:51 +0200
-Message-id: <1381488531-29638-1-git-send-email-r.baldyga@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgluLIzCtJLcpLzFFi42I5/e+xoO7W6+FBBiteWlvMetnOYrFxxnpW
-	i4P36y2aF69nszjb9Ibd4vKuOWwWi5a1MlusPXKX3eLB4Z3sDpwe++euYffo27KK0eP4je1M
-	Hp83yQWwRHHZpKTmZJalFunbJXBldM/4xV4wj7Xi1dLlzA2M21i6GDk5JARMJFqvX2GFsMUk
-	Ltxbz9bFyMUhJDCdUWLvURinnUniwOUHbCBVbAI6Elu+T2AEsUUEBCTWv7jEDlLELPCXUeL2
-	w06wImEBG4lDDX1gK1gEVCU+7nrEBGLzCrhKPFnSwNzFyAG0TkFiziSbCYzcCxgZVjGKphYk
-	FxQnpeca6RUn5haX5qXrJefnbmIEh8sz6R2MqxosDjEKcDAq8fBaMIQHCbEmlhVX5h5ilOBg
-	VhLhFTwJFOJNSaysSi3Kjy8qzUktPsQozcGiJM57sNU6UEggPbEkNTs1tSC1CCbLxMEp1cC4
-	dkIug8e6rEs2M//J2vYutLjJ93Z+rHH4i8UvlBQUPizS2a8SeeGs49qD6VmK8efsWIv82uSf
-	bj0atit6V1etwNbvCzcs3/3IZk4pq3x75d59Zaos53x2Hw955fqt5YPv71knb3GzHfDbxFoj
-	JW+f0fN7SvPqj92rf99N2+4RJVCR8u+qQsZ7JZbijERDLeai4kQAAZMZnBMCAAA=
+	Fri, 11 Oct 2013 06:44:11 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Nicholas Bellinger <nab@linux-iscsi.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 085/100] ib_srpt: Destroy cm_id before destroying QP.
+Date: Fri, 11 Oct 2013 11:41:55 +0100
+Message-Id: <1381488130-30235-86-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
+References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes unused label.
+3.5.7.23 -stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+------------------
+
+From: Nicholas Bellinger <nab@linux-iscsi.org>
+
+commit 0b41d6ca616ddeb3b6c0a80e8770b6f53cd42806 upstream.
+
+This patch fixes a bug where ib_destroy_cm_id() was incorrectly being called
+after srpt_destroy_ch_ib() had destroyed the active QP.
+
+This would result in the following failed SRP_LOGIN_REQ messages:
+
+Received SRP_LOGIN_REQ with i_port_id 0x0:0x2590ffff1762bd, t_port_id 0x2c903009f8f40:0x2c903009f8f40 and it_iu_len 260 on port 1 (guid=0xfe80000000000000:0x2c903009f8f41)
+Received SRP_LOGIN_REQ with i_port_id 0x0:0x2590ffff1758f9, t_port_id 0x2c903009f8f40:0x2c903009f8f40 and it_iu_len 260 on port 2 (guid=0xfe80000000000000:0x2c903009f8f42)
+Received SRP_LOGIN_REQ with i_port_id 0x0:0x2590ffff175941, t_port_id 0x2c903009f8f40:0x2c903009f8f40 and it_iu_len 260 on port 2 (guid=0xfe80000000000000:0x2c90300a3cfb2)
+Received SRP_LOGIN_REQ with i_port_id 0x0:0x2590ffff176299, t_port_id 0x2c903009f8f40:0x2c903009f8f40 and it_iu_len 260 on port 1 (guid=0xfe80000000000000:0x2c90300a3cfb1)
+mlx4_core 0000:84:00.0: command 0x19 failed: fw status = 0x9
+rejected SRP_LOGIN_REQ because creating a new RDMA channel failed.
+Received SRP_LOGIN_REQ with i_port_id 0x0:0x2590ffff176299, t_port_id 0x2c903009f8f40:0x2c903009f8f40 and it_iu_len 260 on port 1 (guid=0xfe80000000000000:0x2c90300a3cfb1)
+mlx4_core 0000:84:00.0: command 0x19 failed: fw status = 0x9
+rejected SRP_LOGIN_REQ because creating a new RDMA channel failed.
+Received SRP_LOGIN_REQ with i_port_id 0x0:0x2590ffff176299, t_port_id 0x2c903009f8f40:0x2c903009f8f40 and it_iu_len 260 on port 1 (guid=0xfe80000000000000:0x2c90300a3cfb1)
+
+Reported-by: Navin Ahuja <navin.ahuja@saratoga-speed.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/gadget/s3c-hsotg.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/infiniband/ulp/srpt/ib_srpt.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsotg.c
-index a955e6e..0646587 100644
---- a/drivers/usb/gadget/s3c-hsotg.c
-+++ b/drivers/usb/gadget/s3c-hsotg.c
-@@ -2712,7 +2712,6 @@ static int s3c_hsotg_ep_enable(struct usb_ep *ep,
- 	/* enable the endpoint interrupt */
- 	s3c_hsotg_ctrl_epint(hsotg, index, dir_in, 1);
+diff --git a/drivers/infiniband/ulp/srpt/ib_srpt.c b/drivers/infiniband/ulp/srpt/ib_srpt.c
+index 5f6b7f6..0ff33b0 100644
+--- a/drivers/infiniband/ulp/srpt/ib_srpt.c
++++ b/drivers/infiniband/ulp/srpt/ib_srpt.c
+@@ -2372,6 +2372,8 @@ static void srpt_release_channel_work(struct work_struct *w)
+ 	transport_deregister_session(ch->sess);
+ 	ch->sess = NULL;
  
--out:
- 	spin_unlock_irqrestore(&hsotg->lock, flags);
- 	return ret;
- }
++	ib_destroy_cm_id(ch->cm_id);
++
+ 	srpt_destroy_ch_ib(ch);
+ 
+ 	srpt_free_ioctx_ring((struct srpt_ioctx **)ch->ioctx_ring,
+@@ -2382,8 +2384,6 @@ static void srpt_release_channel_work(struct work_struct *w)
+ 	list_del(&ch->list);
+ 	spin_unlock_irq(&sdev->spinlock);
+ 
+-	ib_destroy_cm_id(ch->cm_id);
+-
+ 	if (ch->release_done)
+ 		complete(ch->release_done);
+ 
 -- 
-1.7.9.5
+1.8.3.2
 
