@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759149Ab3JKTqg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:46:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46549 "EHLO
+	id S1759136Ab3JKTqf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:46:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46552 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757594Ab3JKTmS (ORCPT
+	with ESMTP id S1759118Ab3JKTmS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Oct 2013 15:42:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christopher <DIDI2002@web.de>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 120/135] ALSA: hda - Fix GPIO for Acer Aspire 3830TG
-Date: Fri, 11 Oct 2013 12:40:01 -0700
-Message-Id: <20131011193958.310203103@linuxfoundation.org>
+        Olof Johansson <olof@lixom.net>, Kevin Hilman <khilman@linaro.org>
+Subject: [ 121/135] ARM: multi_v7_defconfig: enable ARM_ATAG_DTB_COMPAT
+Date: Fri, 11 Oct 2013 12:40:02 -0700
+Message-Id: <20131011193958.417946138@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -26,58 +26,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Olof Johansson <olof@lixom.net>
 
-commit 4a4370442c996be0fd08234a167c8a127c2488bb upstream.
+commit a0396b9bd5a4a7baf598b60d2ca53c605c440a42 upstream.
 
-Acer Aspire 3830TG seems requiring GPIO bit 0 as the primary mute
-control.  When a machine is booted after Windows 8, the GPIO pin is
-turned off and it results in the silent output.
+Without this, legacy platforms that can boot with a multiplatform
+kernel but that need the DTB to be appended, won't have a way to pass
+firmware-set bootargs to the kernel.
 
-This patch adds the manual fixup of GPIO bit 0 for this model.
+This is needed to boot multi_v7_defconfig on snowball, for instance.
 
-Reported-by: Christopher <DIDI2002@web.de>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Olof Johansson <olof@lixom.net>
+Cc: Kevin Hilman <khilman@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- sound/pci/hda/patch_conexant.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+ arch/arm/configs/multi_v7_defconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/sound/pci/hda/patch_conexant.c
-+++ b/sound/pci/hda/patch_conexant.c
-@@ -3224,6 +3224,7 @@ enum {
- 	CXT_PINCFG_LEMOTE_A1205,
- 	CXT_FIXUP_STEREO_DMIC,
- 	CXT_FIXUP_INC_MIC_BOOST,
-+	CXT_FIXUP_GPIO1,
- };
- 
- static void cxt_fixup_stereo_dmic(struct hda_codec *codec,
-@@ -3302,6 +3303,15 @@ static const struct hda_fixup cxt_fixups
- 		.type = HDA_FIXUP_FUNC,
- 		.v.func = cxt5066_increase_mic_boost,
- 	},
-+	[CXT_FIXUP_GPIO1] = {
-+		.type = HDA_FIXUP_VERBS,
-+		.v.verbs = (const struct hda_verb[]) {
-+			{ 0x01, AC_VERB_SET_GPIO_MASK, 0x01 },
-+			{ 0x01, AC_VERB_SET_GPIO_DIRECTION, 0x01 },
-+			{ 0x01, AC_VERB_SET_GPIO_DATA, 0x01 },
-+			{ }
-+		},
-+	},
- };
- 
- static const struct snd_pci_quirk cxt5051_fixups[] = {
-@@ -3311,6 +3321,7 @@ static const struct snd_pci_quirk cxt505
- 
- static const struct snd_pci_quirk cxt5066_fixups[] = {
- 	SND_PCI_QUIRK(0x1025, 0x0543, "Acer Aspire One 522", CXT_FIXUP_STEREO_DMIC),
-+	SND_PCI_QUIRK(0x1025, 0x054c, "Acer Aspire 3830TG", CXT_FIXUP_GPIO1),
- 	SND_PCI_QUIRK(0x17aa, 0x20f2, "Lenovo T400", CXT_PINCFG_LENOVO_TP410),
- 	SND_PCI_QUIRK(0x17aa, 0x215e, "Lenovo T410", CXT_PINCFG_LENOVO_TP410),
- 	SND_PCI_QUIRK(0x17aa, 0x215f, "Lenovo T510", CXT_PINCFG_LENOVO_TP410),
+--- a/arch/arm/configs/multi_v7_defconfig
++++ b/arch/arm/configs/multi_v7_defconfig
+@@ -46,6 +46,7 @@ CONFIG_ARCH_ZYNQ=y
+ CONFIG_SMP=y
+ CONFIG_HIGHPTE=y
+ CONFIG_ARM_APPENDED_DTB=y
++CONFIG_ARM_ATAG_DTB_COMPAT=y
+ CONFIG_NET=y
+ CONFIG_UNIX=y
+ CONFIG_INET=y
 
 
