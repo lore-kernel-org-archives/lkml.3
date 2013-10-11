@@ -1,133 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757166Ab3JKHai (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 03:30:38 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:17227 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755677Ab3JKHah (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 03:30:37 -0400
-Message-ID: <5257A882.1070809@huawei.com>
-Date: Fri, 11 Oct 2013 15:28:02 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1756743Ab3JKHfJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 03:35:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50203 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754926Ab3JKHfI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 03:35:08 -0400
+Date: Fri, 11 Oct 2013 09:34:48 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCHSET 0/8] perf tools: Fix scalability problem on callchain
+ merging (v5)
+Message-ID: <20131011073448.GA11064@krava.redhat.com>
+References: <1381468543-25334-1-git-send-email-namhyung@kernel.org>
+ <20131011055829.GA4975@gmail.com>
 MIME-Version: 1.0
-To: Gavin Shan <shangw@linux.vnet.ibm.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        Hanjun Guo <guohanjun@huawei.com>, Paul Mackerras <paulus@samba.org>,
-        <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: [PATCH v2 3/6] powerpc/pci: use pci_is_pcie() to simplify code
-References: <1378367730-25996-1-git-send-email-wangyijing@huawei.com> <1378367730-25996-3-git-send-email-wangyijing@huawei.com> <20130906203035.GA27940@google.com> <1381470596.5630.61.camel@pasglop> <20131011061654.GA561@shangw.(null)> <52579BD6.40802@huawei.com> <20131011065329.GA5013@shangw.(null)>
-In-Reply-To: <20131011065329.GA5013@shangw.(null)>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.76.69]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131011055829.GA4975@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/10/11 14:53, Gavin Shan wrote:
-> On Fri, Oct 11, 2013 at 02:33:58PM +0800, Yijing Wang wrote:
->> On 2013/10/11 14:16, Gavin Shan wrote:
->>> On Fri, Oct 11, 2013 at 04:49:56PM +1100, Benjamin Herrenschmidt wrote:
->>>> On Fri, 2013-09-06 at 14:30 -0600, Bjorn Helgaas wrote:
->>>>> On Thu, Sep 05, 2013 at 03:55:27PM +0800, Yijing Wang wrote:
+On Fri, Oct 11, 2013 at 07:58:29AM +0200, Ingo Molnar wrote:
 > 
-> .../...
+> * Namhyung Kim <namhyung@kernel.org> wrote:
 > 
->>>>>> Use pci_is_pcie() to simplify code.
->>>>>> diff --git a/arch/powerpc/kernel/eeh.c b/arch/powerpc/kernel/eeh.c
->>>>>> index 55593ee..6ebbe54 100644
->>>>>> --- a/arch/powerpc/kernel/eeh.c
->>>>>> +++ b/arch/powerpc/kernel/eeh.c
->>>>>> @@ -189,8 +189,7 @@ static size_t eeh_gather_pci_data(struct eeh_dev *edev, char * buf, size_t len)
->>>>>>  	}
->>>>>>  
->>>>>>  	/* If PCI-E capable, dump PCI-E cap 10, and the AER */
->>>>>> -	cap = pci_find_capability(dev, PCI_CAP_ID_EXP);
->>>>>> -	if (cap) {
->>>>>> +	if (pci_is_pcie(dev)) {
->>>>>>  		n += scnprintf(buf+n, len-n, "pci-e cap10:\n");
->>>>>>  		printk(KERN_WARNING
->>>>>>  		       "EEH: PCI-E capabilities and status follow:\n");
->>>>
->>>> So we remove reading of "cap", but slightly further down the code does:
->>>>
->>>> 		for (i=0; i<=8; i++) {
->>>> 			eeh_ops->read_config(dn, cap+4*i, 4, &cfg);
->>>> 			n += scnprintf(buf+n, len-n, "%02x:%x\n", 4*i, cfg);
->>>> 			printk(KERN_WARNING "EEH: PCI-E %02x: %08x\n", i, cfg);
->>>> 		}
->>>>
->>>> Which actually *uses* the value of "cap" ... oops :-)
->>>>
->>>
->>> It's my fault and I should have looked into the changes more closely.
->>> How about changing it like this:
->>>
->>> 	cap = pci_is_pcie(dev) ? pci_pcie_cap(dev) :
->>> 	      pci_find_capability(dev, PCI_CAP_ID_EXP);
->>> 	if (cap) {
->>> 		...
->>> 	}
->>>
->>> It would save some PCI-CFG access cycles for most cases :-)
->>
->> Hi Gavin,  it's not your fault, it's my fault. :)
->>
->> Because pci_pcie_cap(dev) == dev->pcie_cap == pci_find_capability(dev, PCI_CAP_ID_EXP);
->>
->> so I think it's ok to use dev->pcie_cap instead of stale "cap".
->>
+> > Hello,
+> > 
+> > This is a new version of callchain improvement patchset.  Basically
+> > it's almost same as v4 but rebased on current acme/perf/core and some
+> > functions are renamed as Frederic requested.
+> > 
+> > Now I'm hunting down a bug in 'perf report -s sym' which was found
+> > during the test, but I think it's not related to this change as it can
+> > be reproduced in earlier versions too.
+> > 
+> > I put this series on 'perf/callchain-v5' branch in my tree
+> > 
+> >   git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
+> > 
+> > Any comments are welcome, thanks.
 > 
-> Yijing, There has one exception: dev->pcie_cap isn't updated yet.
-
-In my idea, dev->pcie_cap(here is pci_dev->pcie_cap) will update in set_pcie_port_type() function,
-and this function always be called after allocate pci device. We get pci_dev by eeh_dev_to_pci_dev(),
-I think pci_dev has been initialized completely.
-
-> This function has possibility to be invoked before that. However,
-> we don't have the binding (eeh device <-> PCI device) for the case.
-> So the piece of code shouldn't be running
-
-In PCI core, I knew
-
-pci_scan_device()
-   pci_setup_device()
-       set_pcie_port_type()
-            pci_dev->pcie_cap = pci_find_capability(pdev, PCI_CAP_ID_EXP);
-
-In powerpc, I also found
-
-of_scan_pci_dev()
-   of_create_pci_dev()
-       set_pcie_port_type()
-	    pci_dev->pcie_cap = pci_find_capability(pdev, PCI_CAP_ID_EXP);
+> One thing I noticed about call-graph profiling:
 > 
-> However, it's a bit safer to have pci_find_capability(dev, PCI_CAP_ID_EXP)
-> as well even though we needn't it for 99.9% cases if you agree :-)
-
-I agree, this function is not the performance bottleneck,
-safety is more important. :)
-So if Bjorn and Benjamin think it's not safe, it's ok to drop it. :)
-
-Thanks!
-Yijing.
-
+>   comet:~/tip/tools/perf> ./perf record -g ~/hackbench 10
+>   callchain: Unknown -g option value: /home/mingo/hackbench
 > 
-> Thanks,
-> Gavin
+> I think a naked -g used to work just fine in the past. Even if such an 
+> error is displayed the output is very unhelpful, it does does a full 
+> perf-record options dump (unnecessary), the bit that is helpful is hidden 
+> amongst many other options:
 > 
+>     -g, --call-graph <mode[,dump_size]>
+>                           do call-graph (stack chain/backtrace) recording: [fp] dwarf
 > 
-> .
-> 
+> and it took me two reads to see that I should specify 'fp'. The '[fp]' 
+> indicates that fp is the default - but that does not appear to be working.
 
+'-g' takes optional parameter, so having it in front of
+non option string is causing the error, you could use:
 
--- 
-Thanks!
-Yijing
+./perf record -g -- ~/hackbench 10
 
+maybe we could display just only help string of the option
+we failed to process in this case
+
+jirka
