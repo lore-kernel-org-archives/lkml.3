@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758136Ab3JKThR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:37:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45266 "EHLO
+	id S1755715Ab3JKU5E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:57:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45334 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757238Ab3JKThG (ORCPT
+	with ESMTP id S1757889Ab3JKThQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:37:06 -0400
+	Fri, 11 Oct 2013 15:37:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Healy <cphealy@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 09/48] resubmit bridge: fix message_age_timer calculation
-Date: Fri, 11 Oct 2013 12:36:16 -0700
-Message-Id: <20131011193638.277194769@linuxfoundation.org>
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 25/48] powerpc: Restore registers on error exit from csum_partial_copy_generic()
+Date: Fri, 11 Oct 2013 12:36:32 -0700
+Message-Id: <20131011193639.973241152@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193637.253208688@linuxfoundation.org>
 References: <20131011193637.253208688@linuxfoundation.org>
@@ -27,37 +28,158 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Healy <cphealy@gmail.com>
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-[ Upstream commit 9a0620133ccce9dd35c00a96405c8d80938c2cc0 ]
+commit 8f21bd0090052e740944f9397e2be5ac7957ded7 upstream.
 
-This changes the message_age_timer calculation to use the BPDU's max age as
-opposed to the local bridge's max age.  This is in accordance with section
-8.6.2.3.2 Step 2 of the 802.1D-1998 sprecification.
+The csum_partial_copy_generic() function saves the PowerPC non-volatile
+r14, r15, and r16 registers for the main checksum-and-copy loop.
+Unfortunately, it fails to restore them upon error exit from this loop,
+which results in silent corruption of these registers in the presumably
+rare event of an access exception within that loop.
 
-With the current implementation, when running with very large bridge
-diameters, convergance will not always occur even if a root bridge is
-configured to have a longer max age.
+This commit therefore restores these register on error exit from the loop.
 
-Tested successfully on bridge diameters of ~200.
-
-Signed-off-by: Chris Healy <cphealy@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/bridge/br_stp.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/bridge/br_stp.c
-+++ b/net/bridge/br_stp.c
-@@ -189,7 +189,7 @@ static void br_record_config_information
- 	p->designated_age = jiffies - bpdu->message_age;
+---
+ arch/powerpc/lib/checksum_64.S |   54 ++++++++++++++++++++++++++++++-----------
+ 1 file changed, 40 insertions(+), 14 deletions(-)
+
+--- a/arch/powerpc/lib/checksum_64.S
++++ b/arch/powerpc/lib/checksum_64.S
+@@ -229,19 +229,35 @@ _GLOBAL(csum_partial)
+ 	blr
  
- 	mod_timer(&p->message_age_timer, jiffies
--		  + (p->br->max_age - bpdu->message_age));
-+		  + (bpdu->max_age - bpdu->message_age));
- }
  
- /* called under bridge lock */
+-	.macro source
++	.macro srcnr
+ 100:
+ 	.section __ex_table,"a"
+ 	.align 3
+-	.llong 100b,.Lsrc_error
++	.llong 100b,.Lsrc_error_nr
+ 	.previous
+ 	.endm
+ 
+-	.macro dest
++	.macro source
++150:
++	.section __ex_table,"a"
++	.align 3
++	.llong 150b,.Lsrc_error
++	.previous
++	.endm
++
++	.macro dstnr
+ 200:
+ 	.section __ex_table,"a"
+ 	.align 3
+-	.llong 200b,.Ldest_error
++	.llong 200b,.Ldest_error_nr
++	.previous
++	.endm
++
++	.macro dest
++250:
++	.section __ex_table,"a"
++	.align 3
++	.llong 250b,.Ldest_error
+ 	.previous
+ 	.endm
+ 
+@@ -277,11 +293,11 @@ _GLOBAL(csum_partial_copy_generic)
+ 	mtctr	r6
+ 
+ 1:
+-source;	lhz	r6,0(r3)		/* align to doubleword */
++srcnr;	lhz	r6,0(r3)		/* align to doubleword */
+ 	subi	r5,r5,2
+ 	addi	r3,r3,2
+ 	adde	r0,r0,r6
+-dest;	sth	r6,0(r4)
++dstnr;	sth	r6,0(r4)
+ 	addi	r4,r4,2
+ 	bdnz	1b
+ 
+@@ -395,10 +411,10 @@ dest;	std	r16,56(r4)
+ 
+ 	mtctr	r6
+ 3:
+-source;	ld	r6,0(r3)
++srcnr;	ld	r6,0(r3)
+ 	addi	r3,r3,8
+ 	adde	r0,r0,r6
+-dest;	std	r6,0(r4)
++dstnr;	std	r6,0(r4)
+ 	addi	r4,r4,8
+ 	bdnz	3b
+ 
+@@ -408,10 +424,10 @@ dest;	std	r6,0(r4)
+ 	srdi.	r6,r5,2
+ 	beq	.Lcopy_tail_halfword
+ 
+-source;	lwz	r6,0(r3)
++srcnr;	lwz	r6,0(r3)
+ 	addi	r3,r3,4
+ 	adde	r0,r0,r6
+-dest;	stw	r6,0(r4)
++dstnr;	stw	r6,0(r4)
+ 	addi	r4,r4,4
+ 	subi	r5,r5,4
+ 
+@@ -419,10 +435,10 @@ dest;	stw	r6,0(r4)
+ 	srdi.	r6,r5,1
+ 	beq	.Lcopy_tail_byte
+ 
+-source;	lhz	r6,0(r3)
++srcnr;	lhz	r6,0(r3)
+ 	addi	r3,r3,2
+ 	adde	r0,r0,r6
+-dest;	sth	r6,0(r4)
++dstnr;	sth	r6,0(r4)
+ 	addi	r4,r4,2
+ 	subi	r5,r5,2
+ 
+@@ -430,10 +446,10 @@ dest;	sth	r6,0(r4)
+ 	andi.	r6,r5,1
+ 	beq	.Lcopy_finish
+ 
+-source;	lbz	r6,0(r3)
++srcnr;	lbz	r6,0(r3)
+ 	sldi	r9,r6,8			/* Pad the byte out to 16 bits */
+ 	adde	r0,r0,r9
+-dest;	stb	r6,0(r4)
++dstnr;	stb	r6,0(r4)
+ 
+ .Lcopy_finish:
+ 	addze	r0,r0			/* add in final carry */
+@@ -443,6 +459,11 @@ dest;	stb	r6,0(r4)
+ 	blr
+ 
+ .Lsrc_error:
++	ld	r14,STK_REG(R14)(r1)
++	ld	r15,STK_REG(R15)(r1)
++	ld	r16,STK_REG(R16)(r1)
++	addi	r1,r1,STACKFRAMESIZE
++.Lsrc_error_nr:
+ 	cmpdi	0,r7,0
+ 	beqlr
+ 	li	r6,-EFAULT
+@@ -450,6 +471,11 @@ dest;	stb	r6,0(r4)
+ 	blr
+ 
+ .Ldest_error:
++	ld	r14,STK_REG(R14)(r1)
++	ld	r15,STK_REG(R15)(r1)
++	ld	r16,STK_REG(R16)(r1)
++	addi	r1,r1,STACKFRAMESIZE
++.Ldest_error_nr:
+ 	cmpdi	0,r8,0
+ 	beqlr
+ 	li	r6,-EFAULT
 
 
