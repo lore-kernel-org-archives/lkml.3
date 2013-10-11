@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161180Ab3JKUli (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:41:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45601 "EHLO
+	id S1161165Ab3JKUlh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:41:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45605 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758841Ab3JKTjy (ORCPT
+	with ESMTP id S1758842Ab3JKTjz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:39:54 -0400
+	Fri, 11 Oct 2013 15:39:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        Ansis Atteka <aatteka@nicira.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 042/110] ip6tnl: allow to use rtnl ops on fb tunnel
-Date: Fri, 11 Oct 2013 12:38:22 -0700
-Message-Id: <20131011193812.399776962@linuxfoundation.org>
+Subject: [ 029/110] ip: generate unique IP identificator if local fragmentation is allowed
+Date: Fri, 11 Oct 2013 12:38:09 -0700
+Message-Id: <20131011193810.913956248@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
 References: <20131011193807.584188672@linuxfoundation.org>
@@ -27,34 +27,195 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+From: Ansis Atteka <aatteka@nicira.com>
 
-[ Upstream commit bb8140947a247b9aa15652cc24dc555ebb0b64b0 ]
+[ Upstream commit 703133de331a7a7df47f31fb9de51dc6f68a9de8 ]
 
-rtnl ops where introduced by c075b13098b3 ("ip6tnl: advertise tunnel param via
-rtnl"), but I forget to assign rtnl ops to fb tunnels.
+If local fragmentation is allowed, then ip_select_ident() and
+ip_select_ident_more() need to generate unique IDs to ensure
+correct defragmentation on the peer.
 
-Now that it is done, we must remove the explicit call to
-unregister_netdevice_queue(), because  the fallback tunnel is added to the queue
-in ip6_tnl_destroy_tunnels() when checking rtnl_link_ops of all netdevices (this
-is valid since commit 0bd8762824e7 ("ip6tnl: add x-netns support")).
+For example, if IPsec (tunnel mode) has to encrypt large skbs
+that have local_df bit set, then all IP fragments that belonged
+to different ESP datagrams would have used the same identificator.
+If one of these IP fragments would get lost or reordered, then
+peer could possibly stitch together wrong IP fragments that did
+not belong to the same datagram. This would lead to a packet loss
+or data corruption.
 
-Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Signed-off-by: Ansis Atteka <aatteka@nicira.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/ip6_tunnel.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/ppp/pptp.c          |    2 +-
+ include/net/ip.h                |   12 ++++++++----
+ net/ipv4/igmp.c                 |    4 ++--
+ net/ipv4/inetpeer.c             |    4 ++--
+ net/ipv4/ip_output.c            |    6 +++---
+ net/ipv4/ipmr.c                 |    2 +-
+ net/ipv4/raw.c                  |    2 +-
+ net/ipv4/xfrm4_mode_tunnel.c    |    2 +-
+ net/ipv6/sit.c                  |    2 +-
+ net/netfilter/ipvs/ip_vs_xmit.c |    2 +-
+ 10 files changed, 21 insertions(+), 17 deletions(-)
 
---- a/net/ipv6/ip6_tunnel.c
-+++ b/net/ipv6/ip6_tunnel.c
-@@ -1732,6 +1732,7 @@ static int __net_init ip6_tnl_init_net(s
- 	if (!ip6n->fb_tnl_dev)
- 		goto err_alloc_dev;
- 	dev_net_set(ip6n->fb_tnl_dev, net);
-+	ip6n->fb_tnl_dev->rtnl_link_ops = &ip6_link_ops;
+--- a/drivers/net/ppp/pptp.c
++++ b/drivers/net/ppp/pptp.c
+@@ -281,7 +281,7 @@ static int pptp_xmit(struct ppp_channel
+ 	nf_reset(skb);
  
- 	err = ip6_fb_tnl_dev_init(ip6n->fb_tnl_dev);
- 	if (err < 0)
+ 	skb->ip_summed = CHECKSUM_NONE;
+-	ip_select_ident(iph, &rt->dst, NULL);
++	ip_select_ident(skb, &rt->dst, NULL);
+ 	ip_send_check(iph);
+ 
+ 	ip_local_out(skb);
+--- a/include/net/ip.h
++++ b/include/net/ip.h
+@@ -254,9 +254,11 @@ int ip_dont_fragment(struct sock *sk, st
+ 
+ extern void __ip_select_ident(struct iphdr *iph, struct dst_entry *dst, int more);
+ 
+-static inline void ip_select_ident(struct iphdr *iph, struct dst_entry *dst, struct sock *sk)
++static inline void ip_select_ident(struct sk_buff *skb, struct dst_entry *dst, struct sock *sk)
+ {
+-	if (iph->frag_off & htons(IP_DF)) {
++	struct iphdr *iph = ip_hdr(skb);
++
++	if ((iph->frag_off & htons(IP_DF)) && !skb->local_df) {
+ 		/* This is only to work around buggy Windows95/2000
+ 		 * VJ compression implementations.  If the ID field
+ 		 * does not change, they drop every other packet in
+@@ -268,9 +270,11 @@ static inline void ip_select_ident(struc
+ 		__ip_select_ident(iph, dst, 0);
+ }
+ 
+-static inline void ip_select_ident_more(struct iphdr *iph, struct dst_entry *dst, struct sock *sk, int more)
++static inline void ip_select_ident_more(struct sk_buff *skb, struct dst_entry *dst, struct sock *sk, int more)
+ {
+-	if (iph->frag_off & htons(IP_DF)) {
++	struct iphdr *iph = ip_hdr(skb);
++
++	if ((iph->frag_off & htons(IP_DF)) && !skb->local_df) {
+ 		if (sk && inet_sk(sk)->inet_daddr) {
+ 			iph->id = htons(inet_sk(sk)->inet_id);
+ 			inet_sk(sk)->inet_id += 1 + more;
+--- a/net/ipv4/igmp.c
++++ b/net/ipv4/igmp.c
+@@ -343,7 +343,7 @@ static struct sk_buff *igmpv3_newpack(st
+ 	pip->saddr    = fl4.saddr;
+ 	pip->protocol = IPPROTO_IGMP;
+ 	pip->tot_len  = 0;	/* filled in later */
+-	ip_select_ident(pip, &rt->dst, NULL);
++	ip_select_ident(skb, &rt->dst, NULL);
+ 	((u8 *)&pip[1])[0] = IPOPT_RA;
+ 	((u8 *)&pip[1])[1] = 4;
+ 	((u8 *)&pip[1])[2] = 0;
+@@ -687,7 +687,7 @@ static int igmp_send_report(struct in_de
+ 	iph->daddr    = dst;
+ 	iph->saddr    = fl4.saddr;
+ 	iph->protocol = IPPROTO_IGMP;
+-	ip_select_ident(iph, &rt->dst, NULL);
++	ip_select_ident(skb, &rt->dst, NULL);
+ 	((u8 *)&iph[1])[0] = IPOPT_RA;
+ 	((u8 *)&iph[1])[1] = 4;
+ 	((u8 *)&iph[1])[2] = 0;
+--- a/net/ipv4/inetpeer.c
++++ b/net/ipv4/inetpeer.c
+@@ -32,8 +32,8 @@
+  *  At the moment of writing this notes identifier of IP packets is generated
+  *  to be unpredictable using this code only for packets subjected
+  *  (actually or potentially) to defragmentation.  I.e. DF packets less than
+- *  PMTU in size uses a constant ID and do not use this code (see
+- *  ip_select_ident() in include/net/ip.h).
++ *  PMTU in size when local fragmentation is disabled use a constant ID and do
++ *  not use this code (see ip_select_ident() in include/net/ip.h).
+  *
+  *  Route cache entries hold references to our nodes.
+  *  New cache entries get references via lookup by destination IP address in
+--- a/net/ipv4/ip_output.c
++++ b/net/ipv4/ip_output.c
+@@ -148,7 +148,7 @@ int ip_build_and_send_pkt(struct sk_buff
+ 	iph->daddr    = (opt && opt->opt.srr ? opt->opt.faddr : daddr);
+ 	iph->saddr    = saddr;
+ 	iph->protocol = sk->sk_protocol;
+-	ip_select_ident(iph, &rt->dst, sk);
++	ip_select_ident(skb, &rt->dst, sk);
+ 
+ 	if (opt && opt->opt.optlen) {
+ 		iph->ihl += opt->opt.optlen>>2;
+@@ -394,7 +394,7 @@ packet_routed:
+ 		ip_options_build(skb, &inet_opt->opt, inet->inet_daddr, rt, 0);
+ 	}
+ 
+-	ip_select_ident_more(iph, &rt->dst, sk,
++	ip_select_ident_more(skb, &rt->dst, sk,
+ 			     (skb_shinfo(skb)->gso_segs ?: 1) - 1);
+ 
+ 	skb->priority = sk->sk_priority;
+@@ -1332,7 +1332,7 @@ struct sk_buff *__ip_make_skb(struct soc
+ 	iph->ttl = ttl;
+ 	iph->protocol = sk->sk_protocol;
+ 	ip_copy_addrs(iph, fl4);
+-	ip_select_ident(iph, &rt->dst, sk);
++	ip_select_ident(skb, &rt->dst, sk);
+ 
+ 	if (opt) {
+ 		iph->ihl += opt->optlen>>2;
+--- a/net/ipv4/ipmr.c
++++ b/net/ipv4/ipmr.c
+@@ -1658,7 +1658,7 @@ static void ip_encap(struct sk_buff *skb
+ 	iph->protocol	=	IPPROTO_IPIP;
+ 	iph->ihl	=	5;
+ 	iph->tot_len	=	htons(skb->len);
+-	ip_select_ident(iph, skb_dst(skb), NULL);
++	ip_select_ident(skb, skb_dst(skb), NULL);
+ 	ip_send_check(iph);
+ 
+ 	memset(&(IPCB(skb)->opt), 0, sizeof(IPCB(skb)->opt));
+--- a/net/ipv4/raw.c
++++ b/net/ipv4/raw.c
+@@ -387,7 +387,7 @@ static int raw_send_hdrinc(struct sock *
+ 		iph->check   = 0;
+ 		iph->tot_len = htons(length);
+ 		if (!iph->id)
+-			ip_select_ident(iph, &rt->dst, NULL);
++			ip_select_ident(skb, &rt->dst, NULL);
+ 
+ 		iph->check = ip_fast_csum((unsigned char *)iph, iph->ihl);
+ 	}
+--- a/net/ipv4/xfrm4_mode_tunnel.c
++++ b/net/ipv4/xfrm4_mode_tunnel.c
+@@ -117,7 +117,7 @@ static int xfrm4_mode_tunnel_output(stru
+ 
+ 	top_iph->frag_off = (flags & XFRM_STATE_NOPMTUDISC) ?
+ 		0 : (XFRM_MODE_SKB_CB(skb)->frag_off & htons(IP_DF));
+-	ip_select_ident(top_iph, dst->child, NULL);
++	ip_select_ident(skb, dst->child, NULL);
+ 
+ 	top_iph->ttl = ip4_dst_hoplimit(dst->child);
+ 
+--- a/net/ipv6/sit.c
++++ b/net/ipv6/sit.c
+@@ -865,7 +865,7 @@ static netdev_tx_t ipip6_tunnel_xmit(str
+ 		iph->ttl	=	iph6->hop_limit;
+ 
+ 	skb->ip_summed = CHECKSUM_NONE;
+-	ip_select_ident(iph, skb_dst(skb), NULL);
++	ip_select_ident(skb, skb_dst(skb), NULL);
+ 	iptunnel_xmit(skb, dev);
+ 	return NETDEV_TX_OK;
+ 
+--- a/net/netfilter/ipvs/ip_vs_xmit.c
++++ b/net/netfilter/ipvs/ip_vs_xmit.c
+@@ -883,7 +883,7 @@ ip_vs_tunnel_xmit(struct sk_buff *skb, s
+ 	iph->daddr		=	cp->daddr.ip;
+ 	iph->saddr		=	saddr;
+ 	iph->ttl		=	old_iph->ttl;
+-	ip_select_ident(iph, &rt->dst, NULL);
++	ip_select_ident(skb, &rt->dst, NULL);
+ 
+ 	/* Another hack: avoid icmp_send in ip_fragment */
+ 	skb->local_df = 1;
 
 
