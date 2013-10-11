@@ -1,74 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755340Ab3JKVvl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 17:51:41 -0400
-Received: from mga03.intel.com ([143.182.124.21]:16487 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751828Ab3JKVvj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 17:51:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,478,1378882800"; 
-   d="scan'208";a="306780952"
-From: Andi Kleen <andi@firstfloor.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCHSET 0/8] perf tools: Fix scalability problem on callchain merging (v5)
-References: <1381468543-25334-1-git-send-email-namhyung@kernel.org>
-	<20131011055829.GA4975@gmail.com>
-	<20131011073448.GA11064@krava.redhat.com> <52581511.2010909@gmail.com>
-	<52581737.8090309@gmail.com>
-Date: Fri, 11 Oct 2013 14:51:35 -0700
-In-Reply-To: <52581737.8090309@gmail.com> (David Ahern's message of "Fri, 11
-	Oct 2013 09:20:23 -0600")
-Message-ID: <87wqljxyqg.fsf@tassilo.jf.intel.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1754321Ab3JKVxq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 17:53:46 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:39226 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751640Ab3JKVxo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 17:53:44 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, arnd@arndb.de,
+        Alexander Shiyan <shc_work@mail.ru>
+Subject: Re: [PATCH 1/2] ARM: clps711x: Use linux/sched_clock.h
+References: <1380829783-876-1-git-send-email-sboyd@codeaurora.org>
+Date: Fri, 11 Oct 2013 14:53:41 -0700
+In-Reply-To: <1380829783-876-1-git-send-email-sboyd@codeaurora.org> (Stephen
+	Boyd's message of "Thu, 3 Oct 2013 12:49:42 -0700")
+Message-ID: <87bo2v8oey.fsf@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Ahern <dsahern@gmail.com> writes:
+Hi Stephen,
 
-> On 10/11/13 9:11 AM, David Ahern wrote:
->> It would be nice to fix the callchain arg handler to not attempt to
->> process the next argument if it is not fp or dwarf.
+Stephen Boyd <sboyd@codeaurora.org> writes:
+
+> The sched_clock.h include is under include/linux now.
 >
-> Specifically, something like this which maintains syntax and default
-> fp option:
+> Cc: Alexander Shiyan <shc_work@mail.ru>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 
-Yes please! This happens to me all the time too
+I applied both of these to next/cleanup.
 
-(usually I train myself to use -g --, but i still sometimes forget)
+Thanks,
 
-It still wouldn't handle -ga, but naked -g seems to be the common case.
-
--Andi
-
->
-> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-> index 92ca541..23d782c 100644
-> --- a/tools/perf/builtin-record.c
-> +++ b/tools/perf/builtin-record.c
-> @@ -766,8 +766,8 @@ int record_parse_callchain_opt(const struct option *opt,
->                      opts->stack_dump_size);
->  #endif /* HAVE_LIBUNWIND_SUPPORT */
->         } else {
-> -           pr_err("callchain: Unknown -g option "
-> -                  "value: %s\n", arg);
-> +           opts->call_graph = CALLCHAIN_FP;
-> +           ret = 0;
->             break;
->         }
->
->
-
--- 
-ak@linux.intel.com -- Speaking for myself only
+Kevin
