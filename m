@@ -1,92 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757447Ab3JKIZF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 04:25:05 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:46658 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753650Ab3JKIZB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 04:25:01 -0400
-X-AuditID: 9c930179-b7c78ae000003065-57-5257b5dbc4c2
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCHSET 0/8] perf tools: Fix scalability problem on callchain merging (v5)
-References: <1381468543-25334-1-git-send-email-namhyung@kernel.org>
-	<20131011055829.GA4975@gmail.com>
-	<20131011073448.GA11064@krava.redhat.com>
-Date: Fri, 11 Oct 2013 17:24:59 +0900
-In-Reply-To: <20131011073448.GA11064@krava.redhat.com> (Jiri Olsa's message of
-	"Fri, 11 Oct 2013 09:34:48 +0200")
-Message-ID: <8761t4cizo.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S932084Ab3JKI0O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 04:26:14 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:57153 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756560Ab3JKI0L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 04:26:11 -0400
+Message-ID: <5257B605.2000608@ti.com>
+Date: Fri, 11 Oct 2013 13:55:41 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: Chanwoo Choi <cw00.choi@samsung.com>
+CC: Laxman Dewangan <ldewangan@nvidia.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "rob@landley.net" <rob@landley.net>,
+        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH v6] extcon: palmas: Added a new compatible type *ti,palmas-usb-vid*
+References: <1381408647-24653-1-git-send-email-kishon@ti.com> <5256A773.6060807@nvidia.com> <5257977C.1030108@ti.com> <5257A36D.80902@samsung.com> <5257AE43.4020902@ti.com> <5257B576.3060800@samsung.com>
+In-Reply-To: <5257B576.3060800@samsung.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
+On Friday 11 October 2013 01:53 PM, Chanwoo Choi wrote:
+> On 10/11/2013 04:52 PM, Kishon Vijay Abraham I wrote:
+>> Hi Chanwoo,
+>>
+>> On Friday 11 October 2013 12:36 PM, Chanwoo Choi wrote:
+>>> On 10/11/2013 03:15 PM, Kishon Vijay Abraham I wrote:
+>>>> On Thursday 10 October 2013 06:41 PM, Laxman Dewangan wrote:
+>>>>> On Thursday 10 October 2013 06:07 PM, Kishon Vijay Abraham I wrote:
+>>>>>> The Palmas device contains only a USB VBUS-ID detector, so added a
+>>>>>> compatible type *ti,palmas-usb-vid*. Didn't remove the existing compatible
+>>>>>> types for backward compatibility.
+>>>>>>
+>>>>> I dont have much issue on this nomenclature but just second thought:
+>>>>>
+>>>>> The Palmas USB module is capable of detection VBUS, ID-GND, ID-RA, ID-RB, ID-RC
+>>>>> and ID-FLOAT as per BC1.2.
+>>>>> This sub-module only detect the cable, does nothing more than this.
+>>>>> In this case, should we say "ti,palmas-usb-extcon"?
+>>>>> Again extcon is linux specific terminology and this can be defer.
+>>>>
+>>>> I don't mind either way. Chanwoo?
+>>>
+>>> The EXTCON is subsystem name. I don't prefer to use 'extcon' word on device name.
+>>> I agree Kishon opinion.
+>>
+>> Cool.. can you this patch as-is?
+>>
+> 
+> OK, applied it.
 
-On Fri, 11 Oct 2013 09:34:48 +0200, Jiri Olsa wrote:
-> On Fri, Oct 11, 2013 at 07:58:29AM +0200, Ingo Molnar wrote:
->> 
->> * Namhyung Kim <namhyung@kernel.org> wrote:
->> 
->> > Hello,
->> > 
->> > This is a new version of callchain improvement patchset.  Basically
->> > it's almost same as v4 but rebased on current acme/perf/core and some
->> > functions are renamed as Frederic requested.
->> > 
->> > Now I'm hunting down a bug in 'perf report -s sym' which was found
->> > during the test, but I think it's not related to this change as it can
->> > be reproduced in earlier versions too.
->> > 
->> > I put this series on 'perf/callchain-v5' branch in my tree
->> > 
->> >   git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
->> > 
->> > Any comments are welcome, thanks.
->> 
->> One thing I noticed about call-graph profiling:
->> 
->>   comet:~/tip/tools/perf> ./perf record -g ~/hackbench 10
->>   callchain: Unknown -g option value: /home/mingo/hackbench
->> 
->> I think a naked -g used to work just fine in the past. Even if such an 
->> error is displayed the output is very unhelpful, it does does a full 
->> perf-record options dump (unnecessary), the bit that is helpful is hidden 
->> amongst many other options:
->> 
->>     -g, --call-graph <mode[,dump_size]>
->>                           do call-graph (stack chain/backtrace) recording: [fp] dwarf
->> 
->> and it took me two reads to see that I should specify 'fp'. The '[fp]' 
->> indicates that fp is the default - but that does not appear to be working.
->
-> '-g' takes optional parameter, so having it in front of
-> non option string is causing the error, you could use:
->
-> ./perf record -g -- ~/hackbench 10
+Thanks :-)
 
-Yes, I think this is an unfortunate change to break some user's
-scripts.  It'd be great if it detect whether the next argument belongs
-to the option, or if not, pass it to next normally - but it seems to be
-not so simple IMHO.
-
->
-> maybe we could display just only help string of the option
-> we failed to process in this case
-
-Right, I think it's more helpful in most cases.
-
-Thanks,
-Namhyung
+-Kishon
