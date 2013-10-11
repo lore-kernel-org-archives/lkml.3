@@ -1,63 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932364Ab3JKLED (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 07:04:03 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58500 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932119Ab3JKKnE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 06:43:04 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Liam Girdwood <liam.r.girdwood@linux.intel.com>,
-        Takashi Iwai <tiwai@suse.de>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 036/100] ALSA: compress: Fix compress device unregister.
-Date: Fri, 11 Oct 2013 11:41:06 +0100
-Message-Id: <1381488130-30235-37-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
-References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	id S932390Ab3JKLER (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 07:04:17 -0400
+Received: from mga09.intel.com ([134.134.136.24]:58660 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932119Ab3JKLEN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 07:04:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,1079,1371106800"; 
+   d="scan'208";a="417690706"
+Date: Fri, 11 Oct 2013 14:09:40 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] gpio/lynxpoint: check if the interrupt is enabled in IRQ
+ handler
+Message-ID: <20131011110940.GO3521@intel.com>
+References: <1380638143-20040-1-git-send-email-mika.westerberg@linux.intel.com>
+ <CACRpkda=C3+pkVsVbZAkasxyWGedNsb7oAKTt4ApnJ4Q+k9BCw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkda=C3+pkVsVbZAkasxyWGedNsb7oAKTt4ApnJ4Q+k9BCw@mail.gmail.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.23 -stable review patch.  If anyone has any objections, please let me know.
+On Fri, Oct 11, 2013 at 12:57:37PM +0200, Linus Walleij wrote:
+> On Tue, Oct 1, 2013 at 4:35 PM, Mika Westerberg
+> <mika.westerberg@linux.intel.com> wrote:
+> 
+> > Checking LP_INT_STAT is not enough in the interrupt handler because its
+> > contents get updated regardless of whether the pin has interrupt enabled or
+> > not. This causes the driver to loop forever for GPIOs that are pulled up.
+> >
+> > Fix this by checking the interrupt enable bit for the pin as well.
+> >
+> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> 
+> Patch applied for fixes with Mathias ACK.
 
-------------------
+Thanks!
 
-From: Liam Girdwood <liam.r.girdwood@linux.intel.com>
+> Should this be tagged for -stable as well?
 
-commit 4028b6c4c03f213260e9290ff3a6b5439aad07ce upstream.
-
-snd_unregister_device() should return the device type and not stream
-direction.
-
-Signed-off-by: Liam Girdwood <liam.r.girdwood@linux.intel.com>
-Acked-by: Vinod Koul <vinod.koul@intel.com>
-Tested-by: Vinod Koul <vinod.koul@intel.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- sound/core/compress_offload.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/sound/core/compress_offload.c b/sound/core/compress_offload.c
-index 956c75d..794f37a 100644
---- a/sound/core/compress_offload.c
-+++ b/sound/core/compress_offload.c
-@@ -665,7 +665,8 @@ static int snd_compress_dev_disconnect(struct snd_device *device)
- 	struct snd_compr *compr;
- 
- 	compr = device->device_data;
--	snd_unregister_device(compr->direction, compr->card, compr->device);
-+	snd_unregister_device(SNDRV_DEVICE_TYPE_COMPRESS, compr->card,
-+		compr->device);
- 	return 0;
- }
- 
--- 
-1.8.3.2
-
+Yes, please. I think starting from 3.9 when this driver was merged.
