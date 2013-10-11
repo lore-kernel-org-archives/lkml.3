@@ -1,66 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754220Ab3JKKct (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 06:32:49 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:60923 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752182Ab3JKKcq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 06:32:46 -0400
+	id S1756132Ab3JKKeC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 06:34:02 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:50260 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752182Ab3JKKd7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 06:33:59 -0400
+Message-ID: <5257D40C.3060501@ti.com>
+Date: Fri, 11 Oct 2013 16:03:48 +0530
+From: Rajendra Nayak <rnayak@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-In-Reply-To: <5257BD3E.5000707@ti.com>
-References: <20131003054104.8941.88857.stgit@localhost>
-	<20131003054221.8941.87801.stgit@localhost>
-	<5256AA7F.8030005@ti.com>
-	<20131010160018.GA29913@atomide.com>
-	<CACRpkdaG-PQA39XSjKUgM9TyeD7srgm_8s+NazrDKJ0gmNLcwg@mail.gmail.com>
-	<20131010162015.GC29913@atomide.com>
-	<CACRpkdYF83ghUf60Wmrti53UJ1bWV30GW_P9GjWnsOcZHbsv+Q@mail.gmail.com>
-	<5257BD3E.5000707@ti.com>
-Date: Fri, 11 Oct 2013 12:32:45 +0200
-Message-ID: <CACRpkdYJNaiAAHhYatd6g5_wVt0QEUxOvsk6nQn9o=_i5zfWrA@mail.gmail.com>
-Subject: Re: [PATCH 4/6] pinctrl: single: Add support for wake-up interrupts
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Roger Quadros <rogerq@ti.com>
-Cc: Tony Lindgren <tony@atomide.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Prakash Manjunathappa <prakash.pm@ti.com>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>,
-        =?ISO-8859-1?Q?Beno=EEt_Cousson?= <bcousson@baylibre.com>,
-        Linux-OMAP <linux-omap@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Nishanth Menon <nm@ti.com>
+CC: Rob Landley <rob@landley.net>, Mark Brown <broonie@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Kishon Vijay Abraham I <kishon@ti.com>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] regulator: dts: Fix bindings description of regulator-boot-on
+References: <1381487207-18298-1-git-send-email-nm@ti.com>
+In-Reply-To: <1381487207-18298-1-git-send-email-nm@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 11, 2013 at 10:56 AM, Roger Quadros <rogerq@ti.com> wrote:
+On Friday 11 October 2013 03:56 PM, Nishanth Menon wrote:
+> Since regulator-boot-on property maps back to constraints->boot_on,
+> current description of 'regulator-boot-on' property conflicts with
+> description of 'boot-on' in include/linux/regulator/machine.h and the
+> corresponding implementation in drivers/regulator/core.c.
+> 
+> Ensure the description is more inline with the original intent.
+> 
+> Cc: Rajendra Nayak <rnayak@ti.com>
+> 
+> Reported-by: Kishon Vijay Abraham I <kishon@ti.com>
+> Signed-off-by: Nishanth Menon <nm@ti.com>
+> ---
+> 
+> Ref: my confusion in http://marc.info/?t=138140228800004&r=1&w=2
+> Based on v3.12-rc4 tag
+> 
+>  .../devicetree/bindings/regulator/regulator.txt    |    4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/regulator/regulator.txt b/Documentation/devicetree/bindings/regulator/regulator.txt
+> index 2bd8f09..d999f096 100644
+> --- a/Documentation/devicetree/bindings/regulator/regulator.txt
+> +++ b/Documentation/devicetree/bindings/regulator/regulator.txt
+> @@ -8,7 +8,9 @@ Optional properties:
+>  - regulator-min-microamp: smallest current consumers may set
+>  - regulator-max-microamp: largest current consumers may set
+>  - regulator-always-on: boolean, regulator should never be disabled
+> -- regulator-boot-on: bootloader/firmware enabled regulator
+> +- regulator-boot-on: regulator is enabled when the system is initially started.
+> +  If the regulator is not enabled by the hardware or bootloader then it will be
+> +  enabled when the constraints are applied.
 
-> The register handling is fine. But how do we deal with resource handling?
-> e.g. the block that has the deep-core registers might need to be clocked or powered
-> before the registers can be accessed.
+Isn't this specific to how the linux regulator framework implements it?
+why should it be documented in the generic bindings documentation which has
+nothing Linux specific but more hardware details?
 
-Yeah I saw this in the code there.
+>  - regulator-allow-bypass: allow the regulator to go into bypass mode
+>  - <name>-supply: phandle to the parent supply/regulator node
+>  - regulator-ramp-delay: ramp delay for regulator(in uV/uS)
+> 
 
-In this case it seems syscon-type regmap access can be used to
-read/write the registers, so maybe the pin controller also need to
-get a handle on some clock etc?
-
-The general idea is however that large monolitic "drivers" for a
-certain IO-range such as arch/arm/mach-omap2/prm3xxx.c
-doesn't scale - we saw this with the Ux500 PRCMU driver in
-mfd/* to the point that our patches to extend it were NACK:ed
-until we refactor it. This stuff in mach-omap2 is in the same bad
-design pattern, and need to get out of it.
-
-The approach chosen for the Ux500 PRCMU was to distribute
-out the driver into the places where it's actually used, like the
-clock driver etc. The accessor functions to do some stuff over
-in the PRCMU was just adding a layer of cruft.
-
-Yours,
-Linus Walleij
