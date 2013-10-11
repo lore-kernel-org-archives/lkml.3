@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759176Ab3JKT4l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:56:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46363 "EHLO
+	id S964829Ab3JKT5J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:57:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46350 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932699Ab3JKTlv (ORCPT
+	with ESMTP id S932680Ab3JKTlt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:41:51 -0400
+	Fri, 11 Oct 2013 15:41:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hedberg <johan.hedberg@intel.com>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Subject: [ 080/135] Bluetooth: Fix rfkill functionality during the HCI setup stage
-Date: Fri, 11 Oct 2013 12:39:21 -0700
-Message-Id: <20131011193953.964322134@linuxfoundation.org>
+        Kirill Tkhai <tkhai@yandex.ru>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 090/135] sparc64: Fix off by one in trampoline TLB mapping installation loop.
+Date: Fri, 11 Oct 2013 12:39:31 -0700
+Message-Id: <20131011193955.027133144@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -28,74 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hedberg <johan.hedberg@intel.com>
+From: "David S. Miller" <davem@davemloft.net>
 
-commit bf5430360ebe4b2d0c51d91f782e649107b502eb upstream.
+[ Upstream commit 63d499662aeec1864ec36d042aca8184ea6a938e ]
 
-We need to let the setup stage complete cleanly even when the HCI device
-is rfkilled. Otherwise the HCI device will stay in an undefined state
-and never get notified to user space through mgmt (even when it gets
-unblocked through rfkill).
-
-This patch makes sure that hci_dev_open() can be called in the HCI_SETUP
-stage, that blocking the device doesn't abort the setup stage, and that
-the device gets proper powered down as soon as the setup stage completes
-in case it was blocked meanwhile.
-
-The bug that this patch fixed can be very easily reproduced using e.g.
-the rfkill command line too. By running "rfkill block all" before
-inserting a Bluetooth dongle the resulting HCI device goes into a state
-where it is never announced over mgmt, not even when "rfkill unblock all"
-is run.
-
-Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
-Acked-by: Marcel Holtmann <marcel@holtmann.org>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Reported-by: Kirill Tkhai <tkhai@yandex.ru>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- net/bluetooth/hci_core.c |   15 ++++++++++++---
- 1 file changed, 12 insertions(+), 3 deletions(-)
+ arch/sparc/kernel/trampoline_64.S |    2 --
+ 1 file changed, 2 deletions(-)
 
---- a/net/bluetooth/hci_core.c
-+++ b/net/bluetooth/hci_core.c
-@@ -1134,7 +1134,11 @@ int hci_dev_open(__u16 dev)
- 		goto done;
- 	}
+--- a/arch/sparc/kernel/trampoline_64.S
++++ b/arch/sparc/kernel/trampoline_64.S
+@@ -129,7 +129,6 @@ startup_continue:
+ 	clr		%l5
+ 	sethi		%hi(num_kernel_image_mappings), %l6
+ 	lduw		[%l6 + %lo(num_kernel_image_mappings)], %l6
+-	add		%l6, 1, %l6
  
--	if (test_bit(HCI_RFKILLED, &hdev->dev_flags)) {
-+	/* Check for rfkill but allow the HCI setup stage to proceed
-+	 * (which in itself doesn't cause any RF activity).
-+	 */
-+	if (test_bit(HCI_RFKILLED, &hdev->dev_flags) &&
-+	    !test_bit(HCI_SETUP, &hdev->dev_flags)) {
- 		ret = -ERFKILL;
- 		goto done;
- 	}
-@@ -1556,7 +1560,8 @@ static int hci_rfkill_set_block(void *da
+ 	mov		15, %l7
+ 	BRANCH_IF_ANY_CHEETAH(g1,g5,2f)
+@@ -222,7 +221,6 @@ niagara_lock_tlb:
+ 	clr		%l5
+ 	sethi		%hi(num_kernel_image_mappings), %l6
+ 	lduw		[%l6 + %lo(num_kernel_image_mappings)], %l6
+-	add		%l6, 1, %l6
  
- 	if (blocked) {
- 		set_bit(HCI_RFKILLED, &hdev->dev_flags);
--		hci_dev_do_close(hdev);
-+		if (!test_bit(HCI_SETUP, &hdev->dev_flags))
-+			hci_dev_do_close(hdev);
- 	} else {
- 		clear_bit(HCI_RFKILLED, &hdev->dev_flags);
- }
-@@ -1581,9 +1586,13 @@ static void hci_power_on(struct work_str
- 		return;
- 	}
- 
--	if (test_bit(HCI_AUTO_OFF, &hdev->dev_flags))
-+	if (test_bit(HCI_RFKILLED, &hdev->dev_flags)) {
-+		clear_bit(HCI_AUTO_OFF, &hdev->dev_flags);
-+		hci_dev_do_close(hdev);
-+	} else if (test_bit(HCI_AUTO_OFF, &hdev->dev_flags)) {
- 		queue_delayed_work(hdev->req_workqueue, &hdev->power_off,
- 				   HCI_AUTO_OFF_TIMEOUT);
-+	}
- 
- 	if (test_and_clear_bit(HCI_SETUP, &hdev->dev_flags))
- 		mgmt_index_added(hdev);
+ 1:
+ 	mov		HV_FAST_MMU_MAP_PERM_ADDR, %o5
 
 
