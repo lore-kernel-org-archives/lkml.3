@@ -1,118 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758460Ab3JKPoS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 11:44:18 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:33276 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758439Ab3JKPoO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 11:44:14 -0400
+	id S1758238Ab3JKPqg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 11:46:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37479 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753206Ab3JKPqf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 11:46:35 -0400
+Date: Fri, 11 Oct 2013 11:44:50 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Daniel Kiper <daniel.kiper@oracle.com>, ebiederm@xmission.com,
+        hbabu@us.ibm.com, hpa@linux.intel.com, keescook@chromium.org,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        david.vrabel@citrix.com, jbeulich@suse.com, keir@xen.org,
+        xen-devel@lists.xen.org
+Subject: Re: kexec: Clearing registers just before jumping into purgatory
+Message-ID: <20131011154450.GB2772@redhat.com>
+References: <20131011092837.GZ3626@debian70-amd64.local.net-space.pl>
+ <877gdkce6s.fsf@tw-ebiederman.twitter.com>
+ <20131011110455.GA3626@debian70-amd64.local.net-space.pl>
+ <20131011125206.GA2772@redhat.com>
+ <20131011153727.GA30181@srcf.ucam.org>
 MIME-Version: 1.0
-In-Reply-To: <1381503190-5733-1-git-send-email-jonas.jensen@gmail.com>
-References: <1375103161-12460-1-git-send-email-jonas.jensen@gmail.com>
-	<1381503190-5733-1-git-send-email-jonas.jensen@gmail.com>
-Date: Fri, 11 Oct 2013 17:44:13 +0200
-Message-ID: <CACRpkda23nUF8i03RWePj+dGa9Wj6E1L8vfPMfxvnGkazfKS5w@mail.gmail.com>
-Subject: Re: [PATCH v5] gpio: Add MOXA ART GPIO driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Jonas Jensen <jonas.jensen@gmail.com>
-Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arm@kernel.org" <arm@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131011153727.GA30181@srcf.ucam.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 11, 2013 at 4:53 PM, Jonas Jensen <jonas.jensen@gmail.com> wrote:
+On Fri, Oct 11, 2013 at 04:37:27PM +0100, Matthew Garrett wrote:
+> On Fri, Oct 11, 2013 at 08:52:06AM -0400, Vivek Goyal wrote:
+> > On Fri, Oct 11, 2013 at 01:04:55PM +0200, Daniel Kiper wrote:
+> > 
+> > [..]
+> > > > In theory you can swap between to kernels with the preserve_context
+> > > > case.  Technically I like the ability but I don't know that it has ever
+> > > > achieved much uptake.
+> > > 
+> > > I think that this is nice idea too. However, I have not seen its usage in real.
+> > > Even once there was an idea to remove that stuff from Linux Kernel.
+> > 
+> > I have not seen anybody using it. I don't even know if it works or not.
+> 
+> It works. I'm using it.
 
->     I agree it is a bit strange GPIO control is divided in two
->     separate registers. Unfortunately I can't offer an explanation
->     because the documentation is not publicly available.
->
->     The register responsible for doing enable/disable is located
->     at <0x98100100 0x4>, the clock register is very close at
->     <0x98100000 0x34>.
+Hi Matthew,
 
-If we don't know we have to guess.
+Just Curious. How is it useful. IOW, what's your use case of booting a new
+kernel and then jumping back.
 
-This layout makes me think that the IO-window at 0x98100000 is
-a power-clock-and-reset controller. It contains some register
-to latch the pins enable/disable them, or if this is even a clock
-gate? Are you sure about this? Is it now a gated clock, simply,
-so that this bit should be handled in the clock driver, i.e.
-this bit gets set by clk_enable() from the GPIO driver?
-
-I am very suspicious about this especially since the GPIO
-driver is lacking clk_get() and friends.
-
-If it's not a clock gate, and you are convinced that you must still
-reach out into this range I think you want something like this:
-
-syscon: syscon@98100000 {
-                compatible = "syscon";
-                reg = <0x98100000 0x1000>;
-};
-
-gpio: gpio@98700000 {
-               gpio-controller;
-               #gpio-cells = <2>;
-               syscon = <&syscon>;
-               compatible = "moxa,moxart-gpio";
-               reg =   <0x98700000 0xC>,
-                       <0x98100100 0x4>;
-};
-
-Then the driver can use something like:
-
-        struct device_node *np = pdev->dev.of_node;
-        struct device_node *syscon_np;
-        struct regmap *regmap;
-        int err;
-
-        syscon_np = of_parse_phandle(np, "syscon", 0);
-        if (!syscon_np) {
-                pr_crit("no syscon node\n");
-                return -ENODEV;
-        }
-        regmap = syscon_node_to_regmap(syscon_np);
-        if (!regmap) {
-                pr_crit("could not locate syscon regmap\n");
-                return -ENODEV;
-        }
-
-Then update the registers using regmap_update_bits() and
-friends.
-
->     I don't think gpio_poweroff driver is right for this hardware
->     because the pin is not connected to anything that can do reset.
->     The old 2.6.9 kernel driver uses timer poll with eventual call
->     to userspace.
->
->     To test that it works, I added gpio_poweroff anyway, modified
->     with gpio_export() the pin can then be seen switching between
->     0 and 1 (on "cat /sys/class/gpio/gpio25/value").
-
-Hmmmm not quite following this...
-
-> +Required properties:
-> +
-> +- #gpio-cells : Should be 2, The first cell is the pin number and
-> +               the second cell is used to specify polarity:
-> +                       0 = active high
-> +                       1 = active low
-
-Could reference <dt-bindings/gpio/gpio.h> I guess?
-
-Oh well, no big deal.
-
-The driver as such is looking nice but now I strongly suspect
-it should clk_get/clk_prepare/clk_enable ... etc.
-
-Yours,
-Linus Walleij
+Thanks
+Vivek
