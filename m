@@ -1,125 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756762Ab3JKH3N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 03:29:13 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.160]:50766 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753438Ab3JKH3L (ORCPT
+	id S1757166Ab3JKHai (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 03:30:38 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:17227 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755677Ab3JKHah (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 03:29:11 -0400
-X-RZG-AUTH: :JGIXVUS7cutRB/49FwqZ7WcKdUCnXG6JabOfSXKWrat+g9Pvwo0=
-X-RZG-CLASS-ID: mo00
-Subject: Re: [PATCH] omapdss: Add new panel driver for Topolly td028ttec1 LCD.
-Mime-Version: 1.0 (Apple Message framework v1085)
-Content-Type: text/plain; charset=us-ascii
-From: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
-In-Reply-To: <5257815F.5070803@ti.com>
-Date: Fri, 11 Oct 2013 09:29:07 +0200
-Cc: Lars-Peter Clausen <lars@metafoo.de>, Marek Belisko <marek@goldelico.com>,
-        <plagnioj@jcrosoft.com>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-fbdev@vger.kernel.org>
+	Fri, 11 Oct 2013 03:30:37 -0400
+Message-ID: <5257A882.1070809@huawei.com>
+Date: Fri, 11 Oct 2013 15:28:02 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Gavin Shan <shangw@linux.vnet.ibm.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>,
+        Hanjun Guo <guohanjun@huawei.com>, Paul Mackerras <paulus@samba.org>,
+        <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: [PATCH v2 3/6] powerpc/pci: use pci_is_pcie() to simplify code
+References: <1378367730-25996-1-git-send-email-wangyijing@huawei.com> <1378367730-25996-3-git-send-email-wangyijing@huawei.com> <20130906203035.GA27940@google.com> <1381470596.5630.61.camel@pasglop> <20131011061654.GA561@shangw.(null)> <52579BD6.40802@huawei.com> <20131011065329.GA5013@shangw.(null)>
+In-Reply-To: <20131011065329.GA5013@shangw.(null)>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <1EA899F5-EAFE-40DE-A233-E6B8AEF893B1@goldelico.com>
-References: <1381352915-17219-1-git-send-email-marek@goldelico.com> <525662F5.3090600@ti.com> <7FAC77D4-5E1E-4B11-B067-3A8233C69240@goldelico.com> <52568B40.4040802@ti.com> <04AC7291-38E4-421B-979C-BF03D52E94BD@goldelico.com> <525699EF.6090803@ti.com> <52569CE8.5070201@metafoo.de> <A7739B52-2632-4DD8-924D-B657A6BFE3ED@goldelico.com> <5256F8DF.2020801@metafoo.de> <5257815F.5070803@ti.com>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-X-Mailer: Apple Mail (2.1085)
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-
-Am 11.10.2013 um 06:41 schrieb Tomi Valkeinen:
-
-> On 10/10/13 21:58, Lars-Peter Clausen wrote:
+On 2013/10/11 14:53, Gavin Shan wrote:
+> On Fri, Oct 11, 2013 at 02:33:58PM +0800, Yijing Wang wrote:
+>> On 2013/10/11 14:16, Gavin Shan wrote:
+>>> On Fri, Oct 11, 2013 at 04:49:56PM +1100, Benjamin Herrenschmidt wrote:
+>>>> On Fri, 2013-09-06 at 14:30 -0600, Bjorn Helgaas wrote:
+>>>>> On Thu, Sep 05, 2013 at 03:55:27PM +0800, Yijing Wang wrote:
 > 
->> According to the datasheet the the panel as a dedicated dout pin. Maybe
->> you did not connect it in your design, which means you won't be able to
->> read any data from the panel at all.
+> .../...
 > 
-> I don't see a dedicated dout in the datasheet...
-> http://dl.wolfgang-draxinger.net/openmoko/doc/TD028TTEC1.pdf
+>>>>>> Use pci_is_pcie() to simplify code.
+>>>>>> diff --git a/arch/powerpc/kernel/eeh.c b/arch/powerpc/kernel/eeh.c
+>>>>>> index 55593ee..6ebbe54 100644
+>>>>>> --- a/arch/powerpc/kernel/eeh.c
+>>>>>> +++ b/arch/powerpc/kernel/eeh.c
+>>>>>> @@ -189,8 +189,7 @@ static size_t eeh_gather_pci_data(struct eeh_dev *edev, char * buf, size_t len)
+>>>>>>  	}
+>>>>>>  
+>>>>>>  	/* If PCI-E capable, dump PCI-E cap 10, and the AER */
+>>>>>> -	cap = pci_find_capability(dev, PCI_CAP_ID_EXP);
+>>>>>> -	if (cap) {
+>>>>>> +	if (pci_is_pcie(dev)) {
+>>>>>>  		n += scnprintf(buf+n, len-n, "pci-e cap10:\n");
+>>>>>>  		printk(KERN_WARNING
+>>>>>>  		       "EEH: PCI-E capabilities and status follow:\n");
+>>>>
+>>>> So we remove reading of "cap", but slightly further down the code does:
+>>>>
+>>>> 		for (i=0; i<=8; i++) {
+>>>> 			eeh_ops->read_config(dn, cap+4*i, 4, &cfg);
+>>>> 			n += scnprintf(buf+n, len-n, "%02x:%x\n", 4*i, cfg);
+>>>> 			printk(KERN_WARNING "EEH: PCI-E %02x: %08x\n", i, cfg);
+>>>> 		}
+>>>>
+>>>> Which actually *uses* the value of "cap" ... oops :-)
+>>>>
+>>>
+>>> It's my fault and I should have looked into the changes more closely.
+>>> How about changing it like this:
+>>>
+>>> 	cap = pci_is_pcie(dev) ? pci_pcie_cap(dev) :
+>>> 	      pci_find_capability(dev, PCI_CAP_ID_EXP);
+>>> 	if (cap) {
+>>> 		...
+>>> 	}
+>>>
+>>> It would save some PCI-CFG access cycles for most cases :-)
+>>
+>> Hi Gavin,  it's not your fault, it's my fault. :)
+>>
+>> Because pci_pcie_cap(dev) == dev->pcie_cap == pci_find_capability(dev, PCI_CAP_ID_EXP);
+>>
+>> so I think it's ok to use dev->pcie_cap instead of stale "cap".
+>>
 > 
->> Also your custom bitbang code looks a bit strange:
->> 
->>    gpio_set_value(data->dout_gpio, 1);
->>    if (gpio_get_value(data->din_gpio) == 0)
->>        return 1;
->> 
->> You set the state on the dout pin and then read the din pin, if both do
->> not match you abort with an error. This suggest that, for whatever
->> reason,
+> Yijing, There has one exception: dev->pcie_cap isn't updated yet.
 
-Detecting hardware failure.
+In my idea, dev->pcie_cap(here is pci_dev->pcie_cap) will update in set_pcie_port_type() function,
+and this function always be called after allocate pci device. We get pci_dev by eeh_dev_to_pci_dev(),
+I think pci_dev has been initialized completely.
 
-If the panel is not connected or broken (short circuit) reading back
-may fail and this can help to detect a hardware failure.
+> This function has possibility to be invoked before that. However,
+> we don't have the binding (eeh device <-> PCI device) for the case.
+> So the piece of code shouldn't be running
 
->> you feed the dout pin back into the din pin in your design. Btw.
->> this is also the only place where din is used in your driver.
+In PCI core, I knew
 
-Ok, I see the issue with that. It assumes this type of feedback which does
-not necessarily exist. I.e. if someone else doesn't have this feedback
-line the driver will not work.
+pci_scan_device()
+   pci_setup_device()
+       set_pcie_port_type()
+            pci_dev->pcie_cap = pci_find_capability(pdev, PCI_CAP_ID_EXP);
 
-So a more general solution should work with any setup, even if no
-din gpio has been defined. I.e. do this test only if the din_gpio exists.
+In powerpc, I also found
 
-The main reason that we don't use din_gpio elsewhere is that we have
-no jbt_read() function because we lack information what we can
-read from the panel controller chip - and have not seen a use-case
-for that.
+of_scan_pci_dev()
+   of_create_pci_dev()
+       set_pcie_port_type()
+	    pci_dev->pcie_cap = pci_find_capability(pdev, PCI_CAP_ID_EXP);
+> 
+> However, it's a bit safer to have pci_find_capability(dev, PCI_CAP_ID_EXP)
+> as well even though we needn't it for 99.9% cases if you agree :-)
 
-And thanks to your hint, I think either returning 1 is wrong (should be
-some -EIO or similar). Or the return r; at the end of td028ttec1_panel_enable
-is wrong (should be return rc ? -EIO : 0; ).
+I agree, this function is not the performance bottleneck,
+safety is more important. :)
+So if Bjorn and Benjamin think it's not safe, it's ok to drop it. :)
 
-We will check that.
+Thanks!
+Yijing.
 
-> Yes, he said the single "Serial interface data input/output" pin is
-> connected to both din and dout on the SoC.
-
-I have found two public links which may describe what we do:
-
-The panel data sheet [1], Section 9 describes the interface as
-"3 wire serial interface".
-
-It sometimes calls the data lines DIN and DOUT and describes them
-separately, i.e. like a 4 wire interface.
-
-So I guess the jbt6k chip has indeed 4 wires, but (as you said),
-
-din/dout are lines are tied together on the panel side to save
-(share) one wire in the flex cable.
- 
-[2] shows in figure 2 an example how to connect a 3-wire interface
-to a 4-wire SPI SoC. This is the way we have done it.
+> 
+> Thanks,
+> Gavin
+> 
+> 
+> .
+> 
 
 
->  I guess the purpose of that
-> gpio_get_value() is to ensure that the panel is not pulling the line
-> when the SoC is writing to it. Not that I really understand how that can
-> work, but I'm not a HW guy =).
-
-Finally, I have checked one detail which rules out to use a standard
-SPI driver for OMAP on our board. The reason is that we have a McBSP
-port of the OMAP3 and not a McSPI. So we have to run this "3 wire
-serial interface protocol" by bitbanging.
-
-IMHO, the most flexible way to hook up the panel (and driver) to arbitrary
-hardware is by using GPIOs and not having the panel driver restrict to a
-SPI interface.
-
-And having the bitbanging encapsulated in the driver itself (instead on
-relying on some spi-bitbang) makes it less dependent on changes
-somewhere else. I.e. the driver module is indeed a module.
-
-Marek is preparing an updated patch for further discussion.
-
-BR,
-Nikolaus
-
-
-[1]: http://dl.wolfgang-draxinger.net/openmoko/doc/TD028TTEC1.pdf
-[2]: http://www.totalphase.com/support/kb/10059/
+-- 
+Thanks!
+Yijing
 
