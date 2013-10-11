@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757413Ab3JKVLg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 17:11:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45072 "EHLO
+	id S1755618Ab3JKTf3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:35:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45045 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755674Ab3JKTfa (ORCPT
+	with ESMTP id S1753247Ab3JKTf0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:35:30 -0400
+	Fri, 11 Oct 2013 15:35:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Mike Miller <mike.miller@hp.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 03/39] cciss: fix info leak in cciss_ioctl32_passthru()
-Date: Fri, 11 Oct 2013 12:34:47 -0700
-Message-Id: <20131011193211.262741792@linuxfoundation.org>
+        Alex Williamson <alex.williamson@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Joerg Roedel <joro@8bytes.org>,
+        Borislav Petkov <bp@suse.de>
+Subject: [ 01/39] intel-iommu: Fix leaks in pagetable freeing
+Date: Fri, 11 Oct 2013 12:34:45 -0700
+Message-Id: <20131011193211.060964140@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193210.843963685@linuxfoundation.org>
 References: <20131011193210.843963685@linuxfoundation.org>
@@ -29,35 +28,123 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Alex Williamson <alex.williamson@redhat.com>
 
-commit 58f09e00ae095e46ef9edfcf3a5fd9ccdfad065e upstream.
+commit 3269ee0bd6686baf86630300d528500ac5b516d7 upstream.
 
-The arg64 struct has a hole after ->buf_size which isn't cleared.  Or if
-any of the calls to copy_from_user() fail then that would cause an
-information leak as well.
+At best the current code only seems to free the leaf pagetables and
+the root.  If you're unlucky enough to have a large gap (like any
+QEMU guest with more than 3G of memory), only the first chunk of leaf
+pagetables are freed (plus the root).  This is a massive memory leak.
+This patch re-writes the pagetable freeing function to use a
+recursive algorithm and manages to not only free all the pagetables,
+but does it without any apparent performance loss versus the current
+broken version.
 
-This was assigned CVE-2013-2147.
-
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Mike Miller <mike.miller@hp.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Cc: stable@vger.kernel.org
+Reviewed-by: Marcelo Tosatti <mtosatti@redhat.com>
+Signed-off-by: Joerg Roedel <joro@8bytes.org>
+Signed-off-by: Borislav Petkov <bp@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/block/cciss.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/pci/intel-iommu.c |   74 ++++++++++++++++++++++------------------------
+ 1 file changed, 36 insertions(+), 38 deletions(-)
 
---- a/drivers/block/cciss.c
-+++ b/drivers/block/cciss.c
-@@ -1179,6 +1179,7 @@ static int cciss_ioctl32_passthru(struct
- 	int err;
- 	u32 cp;
+--- a/drivers/pci/intel-iommu.c
++++ b/drivers/pci/intel-iommu.c
+@@ -853,56 +853,54 @@ static int dma_pte_clear_range(struct dm
+ 	return order;
+ }
  
-+	memset(&arg64, 0, sizeof(arg64));
- 	err = 0;
- 	err |=
- 	    copy_from_user(&arg64.LUN_info, &arg32->LUN_info,
++static void dma_pte_free_level(struct dmar_domain *domain, int level,
++			       struct dma_pte *pte, unsigned long pfn,
++			       unsigned long start_pfn, unsigned long last_pfn)
++{
++	pfn = max(start_pfn, pfn);
++	pte = &pte[pfn_level_offset(pfn, level)];
++
++	do {
++		unsigned long level_pfn;
++		struct dma_pte *level_pte;
++
++		if (!dma_pte_present(pte) || dma_pte_superpage(pte))
++			goto next;
++
++		level_pfn = pfn & level_mask(level - 1);
++		level_pte = phys_to_virt(dma_pte_addr(pte));
++
++		if (level > 2)
++			dma_pte_free_level(domain, level - 1, level_pte,
++					   level_pfn, start_pfn, last_pfn);
++
++		/* If range covers entire pagetable, free it */
++		if (!(start_pfn > level_pfn ||
++		      last_pfn < level_pfn + level_size(level))) {
++			dma_clear_pte(pte);
++			domain_flush_cache(domain, pte, sizeof(*pte));
++			free_pgtable_page(level_pte);
++		}
++next:
++		pfn += level_size(level);
++	} while (!first_pte_in_page(++pte) && pfn <= last_pfn);
++}
++
+ /* free page table pages. last level pte should already be cleared */
+ static void dma_pte_free_pagetable(struct dmar_domain *domain,
+ 				   unsigned long start_pfn,
+ 				   unsigned long last_pfn)
+ {
+ 	int addr_width = agaw_to_width(domain->agaw) - VTD_PAGE_SHIFT;
+-	struct dma_pte *first_pte, *pte;
+-	int total = agaw_to_level(domain->agaw);
+-	int level;
+-	unsigned long tmp;
+-	int large_page = 2;
+ 
+ 	BUG_ON(addr_width < BITS_PER_LONG && start_pfn >> addr_width);
+ 	BUG_ON(addr_width < BITS_PER_LONG && last_pfn >> addr_width);
+ 	BUG_ON(start_pfn > last_pfn);
+ 
+ 	/* We don't need lock here; nobody else touches the iova range */
+-	level = 2;
+-	while (level <= total) {
+-		tmp = align_to_level(start_pfn, level);
+-
+-		/* If we can't even clear one PTE at this level, we're done */
+-		if (tmp + level_size(level) - 1 > last_pfn)
+-			return;
+-
+-		do {
+-			large_page = level;
+-			first_pte = pte = dma_pfn_level_pte(domain, tmp, level, &large_page);
+-			if (large_page > level)
+-				level = large_page + 1;
+-			if (!pte) {
+-				tmp = align_to_level(tmp + 1, level + 1);
+-				continue;
+-			}
+-			do {
+-				if (dma_pte_present(pte)) {
+-					free_pgtable_page(phys_to_virt(dma_pte_addr(pte)));
+-					dma_clear_pte(pte);
+-				}
+-				pte++;
+-				tmp += level_size(level);
+-			} while (!first_pte_in_page(pte) &&
+-				 tmp + level_size(level) - 1 <= last_pfn);
+-
+-			domain_flush_cache(domain, first_pte,
+-					   (void *)pte - (void *)first_pte);
+-			
+-		} while (tmp && tmp + level_size(level) - 1 <= last_pfn);
+-		level++;
+-	}
++	dma_pte_free_level(domain, agaw_to_level(domain->agaw),
++			   domain->pgd, 0, start_pfn, last_pfn);
++
+ 	/* free pgd */
+ 	if (start_pfn == 0 && last_pfn == DOMAIN_MAX_PFN(domain->gaw)) {
+ 		free_pgtable_page(domain->pgd);
 
 
