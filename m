@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932757Ab3JKTl5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:41:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46399 "EHLO
+	id S1759332Ab3JKTx5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:53:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46417 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932690Ab3JKTlz (ORCPT
+	with ESMTP id S932759Ab3JKTl6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:41:55 -0400
+	Fri, 11 Oct 2013 15:41:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Brad Spengler <spender@grsecurity.net>,
-        Kees Cook <keescook@chromium.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 086/135] sparc: fix ldom_reboot buffer overflow harder
-Date: Fri, 11 Oct 2013 12:39:27 -0700
-Message-Id: <20131011193954.604087274@linuxfoundation.org>
+        Mel Gorman <mgorman@suse.de>,
+        "Darrick J. Wong" <darrick.wong@oracle.com>,
+        Kent Overstreet <koverstreet@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 094/135] mm/bounce.c: fix a regression where MS_SNAP_STABLE (stable pages snapshotting) was ignored
+Date: Fri, 11 Oct 2013 12:39:35 -0700
+Message-Id: <20131011193955.477373785@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -28,34 +30,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: "Darrick J. Wong" <darrick.wong@oracle.com>
 
-[ Upstream commit 20928bd3f08afb036c096d9559d581926b895918 ]
+commit 83b2944fd2532b92db099cb3ada12df32a05b368 upstream.
 
-The length argument to strlcpy was still wrong. It could overflow the end of
-full_boot_str by 5 bytes. Instead of strcat and strlcpy, just use snprint.
+The "force" parameter in __blk_queue_bounce was being ignored, which
+means that stable page snapshots are not always happening (on ext3).
+This of course leads to DIF disks reporting checksum errors, so fix this
+regression.
 
-Reported-by: Brad Spengler <spender@grsecurity.net>
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+The regression was introduced in commit 6bc454d15004 ("bounce: Refactor
+__blk_queue_bounce to not use bi_io_vec")
+
+Reported-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
+Cc: Kent Overstreet <koverstreet@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- arch/sparc/kernel/ds.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
 
---- a/arch/sparc/kernel/ds.c
-+++ b/arch/sparc/kernel/ds.c
-@@ -849,9 +849,8 @@ void ldom_reboot(const char *boot_comman
- 	if (boot_command && strlen(boot_command)) {
- 		unsigned long len;
+---
+ mm/bounce.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/mm/bounce.c
++++ b/mm/bounce.c
+@@ -204,6 +204,8 @@ static void __blk_queue_bounce(struct re
+ 	struct bio_vec *to, *from;
+ 	unsigned i;
  
--		strcpy(full_boot_str, "boot ");
--		strlcpy(full_boot_str + strlen("boot "), boot_command,
--			sizeof(full_boot_str));
-+		snprintf(full_boot_str, sizeof(full_boot_str), "boot %s",
-+			 boot_command);
- 		len = strlen(full_boot_str);
- 
- 		if (reboot_data_supported) {
++	if (force)
++		goto bounce;
+ 	bio_for_each_segment(from, *bio_orig, i)
+ 		if (page_to_pfn(from->bv_page) > queue_bounce_pfn(q))
+ 			goto bounce;
 
 
