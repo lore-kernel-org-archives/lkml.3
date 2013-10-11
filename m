@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758836Ab3JKTjx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:39:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45576 "EHLO
+	id S1759558Ab3JKUmN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:42:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45595 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758787Ab3JKTjv (ORCPT
+	with ESMTP id S1758787Ab3JKTjy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:39:51 -0400
+	Fri, 11 Oct 2013 15:39:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Healy <cphealy@gmail.com>,
+        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 021/110] resubmit bridge: fix message_age_timer calculation
-Date: Fri, 11 Oct 2013 12:38:01 -0700
-Message-Id: <20131011193809.943356154@linuxfoundation.org>
+Subject: [ 041/110] sit: allow to use rtnl ops on fb tunnel
+Date: Fri, 11 Oct 2013 12:38:21 -0700
+Message-Id: <20131011193812.293601760@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
 References: <20131011193807.584188672@linuxfoundation.org>
@@ -27,37 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Healy <cphealy@gmail.com>
+From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
 
-[ Upstream commit 9a0620133ccce9dd35c00a96405c8d80938c2cc0 ]
+[ Upstream commit 205983c43700ac3a81e7625273a3fa83cd2759b5 ]
 
-This changes the message_age_timer calculation to use the BPDU's max age as
-opposed to the local bridge's max age.  This is in accordance with section
-8.6.2.3.2 Step 2 of the 802.1D-1998 sprecification.
+rtnl ops where introduced by ba3e3f50a0e5 ("sit: advertise tunnel param via
+rtnl"), but I forget to assign rtnl ops to fb tunnels.
 
-With the current implementation, when running with very large bridge
-diameters, convergance will not always occur even if a root bridge is
-configured to have a longer max age.
+Now that it is done, we must remove the explicit call to
+unregister_netdevice_queue(), because  the fallback tunnel is added to the queue
+in sit_destroy_tunnels() when checking rtnl_link_ops of all netdevices (this
+is valid since commit 5e6700b3bf98 ("sit: add support of x-netns")).
 
-Tested successfully on bridge diameters of ~200.
-
-Signed-off-by: Chris Healy <cphealy@gmail.com>
+Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/bridge/br_stp.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ipv6/sit.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/bridge/br_stp.c
-+++ b/net/bridge/br_stp.c
-@@ -209,7 +209,7 @@ static void br_record_config_information
- 	p->designated_age = jiffies - bpdu->message_age;
+--- a/net/ipv6/sit.c
++++ b/net/ipv6/sit.c
+@@ -1561,6 +1561,7 @@ static int __net_init sit_init_net(struc
+ 		goto err_alloc_dev;
+ 	}
+ 	dev_net_set(sitn->fb_tunnel_dev, net);
++	sitn->fb_tunnel_dev->rtnl_link_ops = &sit_link_ops;
  
- 	mod_timer(&p->message_age_timer, jiffies
--		  + (p->br->max_age - bpdu->message_age));
-+		  + (bpdu->max_age - bpdu->message_age));
- }
- 
- /* called under bridge lock */
+ 	err = ipip6_fb_tunnel_init(sitn->fb_tunnel_dev);
+ 	if (err)
 
 
