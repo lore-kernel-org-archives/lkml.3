@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758886Ab3JKTj7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:39:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45591 "EHLO
+	id S1758907Ab3JKTkE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:40:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45644 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758834Ab3JKTjx (ORCPT
+	with ESMTP id S1758834Ab3JKTkA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:39:53 -0400
+	Fri, 11 Oct 2013 15:40:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Pravin Shelar <pshelar@nicira.com>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
+        Dmitry Kozlov <xeb@mail.ru>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 040/110] ip_tunnel: Fix a memory corruption in ip_tunnel_xmit
-Date: Fri, 11 Oct 2013 12:38:20 -0700
-Message-Id: <20131011193812.178052543@linuxfoundation.org>
+Subject: [ 036/110] ipv6: gre: correct calculation of max_headroom
+Date: Fri, 11 Oct 2013 12:38:16 -0700
+Message-Id: <20131011193811.726557710@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
 References: <20131011193807.584188672@linuxfoundation.org>
@@ -28,46 +29,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steffen Klassert <steffen.klassert@secunet.com>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-[ Upstream commit 3e08f4a72f689c6296d336c2aab4bddd60c93ae2 ]
+[ Upstream commit 3da812d860755925da890e8c713f2d2e2d7b1bae ]
 
-We might extend the used aera of a skb beyond the total
-headroom when we install the ipip header. Fix this by
-calling skb_cow_head() unconditionally.
+gre_hlen already accounts for sizeof(struct ipv6_hdr) + gre header,
+so initialize max_headroom to zero. Otherwise the
 
-Bug was introduced with commit c544193214
-("GRE: Refactor GRE tunneling code.")
+	if (encap_limit >= 0) {
+		max_headroom += 8;
+		mtu -= 8;
+	}
 
-Cc: Pravin Shelar <pshelar@nicira.com>
-Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
+increments an uninitialized variable before max_headroom was reset.
+
+Found with coverity: 728539
+
+Cc: Dmitry Kozlov <xeb@mail.ru>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Acked-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/ip_tunnel.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ net/ipv6/ip6_gre.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/ipv4/ip_tunnel.c
-+++ b/net/ipv4/ip_tunnel.c
-@@ -659,13 +659,13 @@ void ip_tunnel_xmit(struct sk_buff *skb,
- 
- 	max_headroom = LL_RESERVED_SPACE(tdev) + sizeof(struct iphdr)
- 					       + rt->dst.header_len;
--	if (max_headroom > dev->needed_headroom) {
-+	if (max_headroom > dev->needed_headroom)
- 		dev->needed_headroom = max_headroom;
--		if (skb_cow_head(skb, dev->needed_headroom)) {
--			dev->stats.tx_dropped++;
--			dev_kfree_skb(skb);
--			return;
--		}
-+
-+	if (skb_cow_head(skb, dev->needed_headroom)) {
-+		dev->stats.tx_dropped++;
-+		dev_kfree_skb(skb);
-+		return;
+--- a/net/ipv6/ip6_gre.c
++++ b/net/ipv6/ip6_gre.c
+@@ -620,7 +620,7 @@ static netdev_tx_t ip6gre_xmit2(struct s
+ 	struct ip6_tnl *tunnel = netdev_priv(dev);
+ 	struct net_device *tdev;    /* Device to other host */
+ 	struct ipv6hdr  *ipv6h;     /* Our new IP header */
+-	unsigned int max_headroom;  /* The extra header space needed */
++	unsigned int max_headroom = 0; /* The extra header space needed */
+ 	int    gre_hlen;
+ 	struct ipv6_tel_txoption opt;
+ 	int    mtu;
+@@ -693,7 +693,7 @@ static netdev_tx_t ip6gre_xmit2(struct s
+ 			tunnel->err_count = 0;
  	}
  
- 	skb_dst_drop(skb);
+-	max_headroom = LL_RESERVED_SPACE(tdev) + gre_hlen + dst->header_len;
++	max_headroom += LL_RESERVED_SPACE(tdev) + gre_hlen + dst->header_len;
+ 
+ 	if (skb_headroom(skb) < max_headroom || skb_shared(skb) ||
+ 	    (skb_cloned(skb) && !skb_clone_writable(skb, 0))) {
 
 
