@@ -1,66 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933546Ab3JKUap (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:30:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45789 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758834Ab3JKTkV (ORCPT
+	id S932771Ab3JKUbt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:31:49 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:57997 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757353Ab3JKUbq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:40:21 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kirill Tkhai <tkhai@yandex.ru>, David Miller <davem@davemloft.net>
-Subject: [ 068/110] sparc64: Fix ITLB handler of null page
-Date: Fri, 11 Oct 2013 12:38:48 -0700
-Message-Id: <20131011193815.249459050@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
-References: <20131011193807.584188672@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Fri, 11 Oct 2013 16:31:46 -0400
+Date: Fri, 11 Oct 2013 13:31:52 -0700
+From: Kent Overstreet <kmo@daterainc.com>
+To: Shaohua Li <shli@kernel.org>
+Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk
+Subject: Re: [patch 1/4] percpu_ida: make percpu_ida percpu size/batch
+ configurable
+Message-ID: <20131011203152.GH28572@kmo>
+References: <20131011071802.148101321@kernel.org>
+ <20131011072300.494245221@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131011072300.494245221@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Fri, Oct 11, 2013 at 03:18:03PM +0800, Shaohua Li wrote:
+> Make percpu_ida percpu size/batch configurable. The block-mq-tag will use it.
 
-------------------
+Can you explain the justification for this? Performance...?
 
-From: Kirill Tkhai <tkhai@yandex.ru>
-
-[ Upstream commit 1c2696cdaad84580545a2e9c0879ff597880b1a9 ]
-
-1)Use kvmap_itlb_longpath instead of kvmap_dtlb_longpath.
-
-2)Handle page #0 only, don't handle page #1: bleu -> blu
-
- (KERNBASE is 0x400000, so #1 does not exist too. But everything
-  is possible in the future. Fix to not to have problems later.)
-
-3)Remove unused kvmap_itlb_nonlinear.
-
-Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
-CC: David Miller <davem@davemloft.net>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- arch/sparc/kernel/ktlb.S |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
---- a/arch/sparc/kernel/ktlb.S
-+++ b/arch/sparc/kernel/ktlb.S
-@@ -25,11 +25,10 @@ kvmap_itlb:
- 	 */
- kvmap_itlb_4v:
- 
--kvmap_itlb_nonlinear:
- 	/* Catch kernel NULL pointer calls.  */
- 	sethi		%hi(PAGE_SIZE), %g5
- 	cmp		%g4, %g5
--	bleu,pn		%xcc, kvmap_dtlb_longpath
-+	blu,pn		%xcc, kvmap_itlb_longpath
- 	 nop
- 
- 	KERN_TSB_LOOKUP_TL1(%g4, %g6, %g5, %g1, %g2, %g3, kvmap_itlb_load)
-
-
+> Signed-off-by: Shaohua Li <shli@fusionio.com>
+> ---
+>  include/linux/percpu_ida.h |   18 +++++++++++++++++-
+>  lib/percpu_ida.c           |   28 +++++++++++-----------------
+>  2 files changed, 28 insertions(+), 18 deletions(-)
+> 
+> Index: master/include/linux/percpu_ida.h
+> ===================================================================
+> --- master.orig/include/linux/percpu_ida.h	2013-10-11 12:14:44.472699999 +0800
+> +++ master/include/linux/percpu_ida.h	2013-10-11 12:14:44.472699999 +0800
+> @@ -16,6 +16,8 @@ struct percpu_ida {
+>  	 * percpu_ida_init()
+>  	 */
+>  	unsigned			nr_tags;
+> +	unsigned			percpu_max_size;
+> +	unsigned			percpu_batch_size;
+>  
+>  	struct percpu_ida_cpu __percpu	*tag_cpu;
+>  
+> @@ -51,10 +53,24 @@ struct percpu_ida {
+>  	} ____cacheline_aligned_in_smp;
+>  };
+>  
+> +/*
+> + * Number of tags we move between the percpu freelist and the global freelist at
+> + * a time
+> + */
+> +#define IDA_DEFAULT_PCPU_BATCH_MOVE	32U
+> +/* Max size of percpu freelist, */
+> +#define IDA_DEFAULT_PCPU_SIZE	((IDA_DEFAULT_PCPU_BATCH_MOVE * 3) / 2)
+> +
+>  int percpu_ida_alloc(struct percpu_ida *pool, gfp_t gfp);
+>  void percpu_ida_free(struct percpu_ida *pool, unsigned tag);
+>  
+>  void percpu_ida_destroy(struct percpu_ida *pool);
+> -int percpu_ida_init(struct percpu_ida *pool, unsigned long nr_tags);
+> +int __percpu_ida_init(struct percpu_ida *pool, unsigned long nr_tags,
+> +	unsigned long max_size, unsigned long batch_size);
+> +static inline int percpu_ida_init(struct percpu_ida *pool, unsigned long nr_tags)
+> +{
+> +	return __percpu_ida_init(pool, nr_tags, IDA_DEFAULT_PCPU_SIZE,
+> +		IDA_DEFAULT_PCPU_BATCH_MOVE);
+> +}
+>  
+>  #endif /* __PERCPU_IDA_H__ */
+> Index: master/lib/percpu_ida.c
+> ===================================================================
+> --- master.orig/lib/percpu_ida.c	2013-10-11 12:14:44.472699999 +0800
+> +++ master/lib/percpu_ida.c	2013-10-11 12:14:44.472699999 +0800
+> @@ -30,15 +30,6 @@
+>  #include <linux/spinlock.h>
+>  #include <linux/percpu_ida.h>
+>  
+> -/*
+> - * Number of tags we move between the percpu freelist and the global freelist at
+> - * a time
+> - */
+> -#define IDA_PCPU_BATCH_MOVE	32U
+> -
+> -/* Max size of percpu freelist, */
+> -#define IDA_PCPU_SIZE		((IDA_PCPU_BATCH_MOVE * 3) / 2)
+> -
+>  struct percpu_ida_cpu {
+>  	/*
+>  	 * Even though this is percpu, we need a lock for tag stealing by remote
+> @@ -78,7 +69,7 @@ static inline void steal_tags(struct per
+>  	struct percpu_ida_cpu *remote;
+>  
+>  	for (cpus_have_tags = cpumask_weight(&pool->cpus_have_tags);
+> -	     cpus_have_tags * IDA_PCPU_SIZE > pool->nr_tags / 2;
+> +	     cpus_have_tags * pool->percpu_max_size > pool->nr_tags / 2;
+>  	     cpus_have_tags--) {
+>  		cpu = cpumask_next(cpu, &pool->cpus_have_tags);
+>  
+> @@ -123,7 +114,7 @@ static inline void alloc_global_tags(str
+>  {
+>  	move_tags(tags->freelist, &tags->nr_free,
+>  		  pool->freelist, &pool->nr_free,
+> -		  min(pool->nr_free, IDA_PCPU_BATCH_MOVE));
+> +		  min(pool->nr_free, pool->percpu_batch_size));
+>  }
+>  
+>  static inline unsigned alloc_local_tag(struct percpu_ida *pool,
+> @@ -245,17 +236,17 @@ void percpu_ida_free(struct percpu_ida *
+>  		wake_up(&pool->wait);
+>  	}
+>  
+> -	if (nr_free == IDA_PCPU_SIZE) {
+> +	if (nr_free == pool->percpu_max_size) {
+>  		spin_lock(&pool->lock);
+>  
+>  		/*
+>  		 * Global lock held and irqs disabled, don't need percpu
+>  		 * lock
+>  		 */
+> -		if (tags->nr_free == IDA_PCPU_SIZE) {
+> +		if (tags->nr_free == pool->percpu_max_size) {
+>  			move_tags(pool->freelist, &pool->nr_free,
+>  				  tags->freelist, &tags->nr_free,
+> -				  IDA_PCPU_BATCH_MOVE);
+> +				  pool->percpu_batch_size);
+>  
+>  			wake_up(&pool->wait);
+>  		}
+> @@ -292,7 +283,8 @@ EXPORT_SYMBOL_GPL(percpu_ida_destroy);
+>   * Allocation is percpu, but sharding is limited by nr_tags - for best
+>   * performance, the workload should not span more cpus than nr_tags / 128.
+>   */
+> -int percpu_ida_init(struct percpu_ida *pool, unsigned long nr_tags)
+> +int __percpu_ida_init(struct percpu_ida *pool, unsigned long nr_tags,
+> +	unsigned long max_size, unsigned long batch_size)
+>  {
+>  	unsigned i, cpu, order;
+>  
+> @@ -301,6 +293,8 @@ int percpu_ida_init(struct percpu_ida *p
+>  	init_waitqueue_head(&pool->wait);
+>  	spin_lock_init(&pool->lock);
+>  	pool->nr_tags = nr_tags;
+> +	pool->percpu_max_size = max_size;
+> +	pool->percpu_batch_size = batch_size;
+>  
+>  	/* Guard against overflow */
+>  	if (nr_tags > (unsigned) INT_MAX + 1) {
+> @@ -319,7 +313,7 @@ int percpu_ida_init(struct percpu_ida *p
+>  	pool->nr_free = nr_tags;
+>  
+>  	pool->tag_cpu = __alloc_percpu(sizeof(struct percpu_ida_cpu) +
+> -				       IDA_PCPU_SIZE * sizeof(unsigned),
+> +				       pool->percpu_max_size * sizeof(unsigned),
+>  				       sizeof(unsigned));
+>  	if (!pool->tag_cpu)
+>  		goto err;
+> @@ -332,4 +326,4 @@ err:
+>  	percpu_ida_destroy(pool);
+>  	return -ENOMEM;
+>  }
+> -EXPORT_SYMBOL_GPL(percpu_ida_init);
+> +EXPORT_SYMBOL_GPL(__percpu_ida_init);
+> 
