@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933465Ab3JKUZo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:25:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45860 "EHLO
+	id S933477Ab3JKU0A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:26:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45856 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759075Ab3JKTkd (ORCPT
+	with ESMTP id S1759072Ab3JKTkd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Oct 2013 15:40:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jason Andrews <jasona@cadence.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 087/110] rtlwifi: Align private space in rtl_priv struct
-Date: Fri, 11 Oct 2013 12:39:07 -0700
-Message-Id: <20131011193817.278895651@linuxfoundation.org>
+        Jack Wang <jinpu.wang@profitbricks.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 086/110] ib_srpt: always set response for task management
+Date: Fri, 11 Oct 2013 12:39:06 -0700
+Message-Id: <20131011193817.168191368@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
 References: <20131011193807.584188672@linuxfoundation.org>
@@ -28,35 +27,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Jack Wang <jinpu.wang@profitbricks.com>
 
-commit 60ce314d1750fef843e9db70050e09e49f838b69 upstream.
+commit c807f64340932e19f0d2ac9b30c8381e1f60663a upstream.
 
-The private array at the end of the rtl_priv struct is not aligned.
-On ARM architecture, this causes an alignment trap and is fixed by aligning
-that array with __align(sizeof(void *)). That should properly align that
-space according to the requirements of all architectures.
+The SRP specification requires:
 
-Reported-by: Jason Andrews <jasona@cadence.com>
-Tested-by: Jason Andrews <jasona@cadence.com>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+  "Response data shall be provided in any SRP_RSP response that is sent in
+   response to an SRP_TSK_MGMT request (see 6.7). The information in the
+   RSP_CODE field (see table 24) shall indicate the completion status of
+   the task management function."
+
+So fix this to avoid the SRP initiator interprets task management functions
+that succeeded as failed.
+
+Signed-off-by: Jack Wang <jinpu.wang@profitbricks.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/wifi.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/infiniband/ulp/srpt/ib_srpt.c |   10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
 
---- a/drivers/net/wireless/rtlwifi/wifi.h
-+++ b/drivers/net/wireless/rtlwifi/wifi.h
-@@ -2057,7 +2057,7 @@ struct rtl_priv {
- 	   that it points to the data allocated
- 	   beyond  this structure like:
- 	   rtl_pci_priv or rtl_usb_priv */
--	u8 priv[0];
-+	u8 priv[0] __aligned(sizeof(void *));
- };
+--- a/drivers/infiniband/ulp/srpt/ib_srpt.c
++++ b/drivers/infiniband/ulp/srpt/ib_srpt.c
+@@ -1588,7 +1588,7 @@ static int srpt_build_tskmgmt_rsp(struct
+ 	int resp_data_len;
+ 	int resp_len;
  
- #define rtl_priv(hw)		(((struct rtl_priv *)(hw)->priv))
+-	resp_data_len = (rsp_code == SRP_TSK_MGMT_SUCCESS) ? 0 : 4;
++	resp_data_len = 4;
+ 	resp_len = sizeof(*srp_rsp) + resp_data_len;
+ 
+ 	srp_rsp = ioctx->ioctx.buf;
+@@ -1600,11 +1600,9 @@ static int srpt_build_tskmgmt_rsp(struct
+ 				    + atomic_xchg(&ch->req_lim_delta, 0));
+ 	srp_rsp->tag = tag;
+ 
+-	if (rsp_code != SRP_TSK_MGMT_SUCCESS) {
+-		srp_rsp->flags |= SRP_RSP_FLAG_RSPVALID;
+-		srp_rsp->resp_data_len = cpu_to_be32(resp_data_len);
+-		srp_rsp->data[3] = rsp_code;
+-	}
++	srp_rsp->flags |= SRP_RSP_FLAG_RSPVALID;
++	srp_rsp->resp_data_len = cpu_to_be32(resp_data_len);
++	srp_rsp->data[3] = rsp_code;
+ 
+ 	return resp_len;
+ }
 
 
