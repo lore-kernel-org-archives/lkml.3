@@ -1,72 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758348Ab3JKKxM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 06:53:12 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:38140 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758241Ab3JKKxK (ORCPT
+	id S932255Ab3JKKnv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 06:43:51 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58685 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758012Ab3JKKnr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 06:53:10 -0400
-X-IronPort-AV: E=Sophos;i="4.90,1079,1371081600"; 
-   d="scan'208";a="60017737"
-Message-ID: <5257D893.3040105@citrix.com>
-Date: Fri, 11 Oct 2013 11:53:07 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
-MIME-Version: 1.0
-To: Luis Henriques <luis.henriques@canonical.com>
-CC: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>,
-        <kernel-team@lists.ubuntu.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [PATCH 092/100] xen/hvc: allow xenboot console to be used again
-References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com> <1381488130-30235-93-git-send-email-luis.henriques@canonical.com>
-In-Reply-To: <1381488130-30235-93-git-send-email-luis.henriques@canonical.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA1
+	Fri, 11 Oct 2013 06:43:47 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Lino Sanfilippo <LinoSanfilipp@gmx.de>, Eric Paris <eparis@redhat.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 067/100] fanotify: dont merge permission events
+Date: Fri, 11 Oct 2013 11:41:37 +0100
+Message-Id: <1381488130-30235-68-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
+References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/10/13 11:42, Luis Henriques wrote:
-> 3.5.7.23 -stable review patch.  If anyone has any objections, please let me know.
+3.5.7.23 -stable review patch.  If anyone has any objections, please let me know.
 
-It's harmless to backport this, but it is only needed in 3.10 and later
-(unless you've backported d0380e6c).
+------------------
 
-> From: David Vrabel <david.vrabel@citrix.com>
-> 
-> commit a9fbf4d591da6cd1d3eaab826c7c15f77fc8f6a3 upstream.
-> 
-> Commit d0380e6c3c0f6edb986d8798a23acfaf33d5df23 (early_printk:
-> consolidate random copies of identical code) added in 3.10 introduced
-> a check for con->index == -1 in early_console_register().
-> 
-> Initialize index to -1 for the xenboot console so earlyprintk=xen
-> works again.
-> 
-> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Jiri Slaby <jslaby@suse.cz>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
-> ---
->  drivers/tty/hvc/hvc_xen.c | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/drivers/tty/hvc/hvc_xen.c b/drivers/tty/hvc/hvc_xen.c
-> index 944eaeb..78873df 100644
-> --- a/drivers/tty/hvc/hvc_xen.c
-> +++ b/drivers/tty/hvc/hvc_xen.c
-> @@ -634,6 +634,7 @@ struct console xenboot_console = {
->  	.name		= "xenboot",
->  	.write		= xenboot_write_console,
->  	.flags		= CON_PRINTBUFFER | CON_BOOT | CON_ANYTIME,
-> +	.index		= -1,
->  };
->  #endif	/* CONFIG_EARLY_PRINTK */
->  
+From: Lino Sanfilippo <LinoSanfilippo@gmx.de>
 
-David
+commit 03a1cec1f17ac1a6041996b3e40f96b5a2f90e1b upstream.
+
+Boyd Yang reported a problem for the case that multiple threads of the same
+thread group are waiting for a reponse for a permission event.
+In this case it is possible that some of the threads are never woken up, even
+if the response for the event has been received
+(see http://marc.info/?l=linux-kernel&m=131822913806350&w=2).
+
+The reason is that we are currently merging permission events if they belong to
+the same thread group. But we are not prepared to wake up more than one waiter
+for each event. We do
+
+wait_event(group->fanotify_data.access_waitq, event->response ||
+			atomic_read(&group->fanotify_data.bypass_perm));
+and after that
+  event->response = 0;
+
+which is the reason that even if we woke up all waiters for the same event
+some of them may see event->response being already set 0 again, then go back to
+sleep and block forever.
+
+With this patch we avoid that more than one thread is waiting for a response
+by not merging permission events for the same thread group any more.
+
+Reported-by: Boyd Yang <boyd.yang@gmail.com>
+Signed-off-by: Lino Sanfilippo <LinoSanfilipp@gmx.de>
+Signed-off-by: Eric Paris <eparis@redhat.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ fs/notify/fanotify/fanotify.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/fs/notify/fanotify/fanotify.c b/fs/notify/fanotify/fanotify.c
+index a506360..0c2f912 100644
+--- a/fs/notify/fanotify/fanotify.c
++++ b/fs/notify/fanotify/fanotify.c
+@@ -18,6 +18,12 @@ static bool should_merge(struct fsnotify_event *old, struct fsnotify_event *new)
+ 	    old->tgid == new->tgid) {
+ 		switch (old->data_type) {
+ 		case (FSNOTIFY_EVENT_PATH):
++#ifdef CONFIG_FANOTIFY_ACCESS_PERMISSIONS
++			/* dont merge two permission events */
++			if ((old->mask & FAN_ALL_PERM_EVENTS) &&
++			    (new->mask & FAN_ALL_PERM_EVENTS))
++				return false;
++#endif
+ 			if ((old->path.mnt == new->path.mnt) &&
+ 			    (old->path.dentry == new->path.dentry))
+ 				return true;
+-- 
+1.8.3.2
+
