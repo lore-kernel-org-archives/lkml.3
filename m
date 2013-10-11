@@ -1,97 +1,251 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757557Ab3JKJvE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 05:51:04 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.162]:50927 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752683Ab3JKJvA convert rfc822-to-8bit (ORCPT
+	id S1757576Ab3JKJvP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 05:51:15 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:42552 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752608Ab3JKJvM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 05:51:00 -0400
-X-RZG-AUTH: :JGIXVUS7cutRB/49FwqZ7WcKdUCnXG6JabOfSXKWrat+g9Pvwo0=
-X-RZG-CLASS-ID: mo00
-Subject: Re: [PATCH] omapdss: Add new panel driver for Topolly td028ttec1 LCD.
-Mime-Version: 1.0 (Apple Message framework v1085)
-Content-Type: text/plain; charset=us-ascii
-From: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
-In-Reply-To: <5257BFA3.9090202@metafoo.de>
-Date: Fri, 11 Oct 2013 11:50:55 +0200
-Cc: Belisko Marek <marek.belisko@gmail.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        linux-fbdev@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <B8F44C8A-362C-4E78-BE91-D9C0783B998B@goldelico.com>
-References: <1381352915-17219-1-git-send-email-marek@goldelico.com> <525662F5.3090600@ti.com> <7FAC77D4-5E1E-4B11-B067-3A8233C69240@goldelico.com> <52568B40.4040802@ti.com> <04AC7291-38E4-421B-979C-BF03D52E94BD@goldelico.com> <525699EF.6090803@ti.com> <52569CE8.5070201@metafoo.de> <A7739B52-2632-4DD8-924D-B657A6BFE3ED@goldelico.com> <5256F8DF.2020801@metafoo.de> <5257815F.5070803@ti.com> <5257A402.5030806@metafoo.de> <5570E6D7-4F66-40BE-A50C-6CCA8074BD83@goldelico.com> <5257B420.10808@ti.com> <CAAfyv36HSb4FOxaYnqcwBusqSuhtVnT0gEAoGgcW_rBkhWhf0A@mail.gmail.com> <5257BFA3.9090202@metafoo.de>
-To: Lars-Peter Clausen <lars@metafoo.de>
-X-Mailer: Apple Mail (2.1085)
+	Fri, 11 Oct 2013 05:51:12 -0400
+Message-ID: <5257CA09.3050108@huawei.com>
+Date: Fri, 11 Oct 2013 17:51:05 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, cgroups <cgroups@vger.kernel.org>
+Subject: [PATCH v2 07/12] cpuset: apply cs->effective_{cpus,mems}
+References: <5257C9A1.1030404@huawei.com>
+In-Reply-To: <5257C9A1.1030404@huawei.com>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Now we can use cs->effective_{cpus,mems} as effective masks. It's
+used whenever:
 
-Am 11.10.2013 um 11:06 schrieb Lars-Peter Clausen:
+- we update tasks' cpus_allowed/mems_allowed,
+- we want to retrieve tasks_cs(tsk)'s cpus_allowed/mems_allowed.
 
-> On 10/11/2013 10:59 AM, Belisko Marek wrote:
->> Hi Tomi,
->> 
->> On Fri, Oct 11, 2013 at 10:17 AM, Tomi Valkeinen <tomi.valkeinen@ti.com> wrote:
->>> On 11/10/13 10:42, Dr. H. Nikolaus Schaller wrote:
->>> 
->>>> I am not sure if there is a SPI driver for a McBSP port [1]? And to make that
->>>> work (reliably) and tested it might need a lot of work for us. At least I think
->>>> such a change (e.g. setting up clock polarity etc.) is not done in some minutes.
->>>> And the only feedback we have from the panel is "does not work"/"works". I.e.
->>>> if we are not lucky that it works immediately we have no real means to debug.
->>>> 
->>>> IMHO it also gives more flexibility to board designers to choose GPIOs instead
->>>> of enforcing some SPI interface by the driver (and encapsulate this arguable
->>>> protocol in the driver). Maybe some board has 3 spare GPIOs but neither
->>>> McBSPs nor McSPIs available.
->>> 
->>> This has been an interesting thread, I've learnt a lot =).
->>> 
->>> I still think the panel driver should not handle this, but there should
->>> be a separate spi bitbang driver for it.
->>> 
->>> I understand you're not enthusiastic going that way, as the current
->>> version works for you. However, when using DT, we need to think how to
->>> represent the hardware in the device tree data, and it has to be right
->>> from the beginning.
->>> 
->>> That's why I won't allow representing this panel as having 4 gpios in
->>> the DT data, because that is not correct. The panel has 3 pins. But
->>> then, the panel does allow reading, which could be implemented using 4
->>> gpios as you have done. This data should be in the spi-bitbang data, and
->>> the panel should just use the standard SPI framework.
->> I disagree. There are different drivers which pass in platform data
->> gpios (encoder-tfp410.c or encoder-tpd12s015.c)
->> and those must be covered by DT then. I cannot see problem why to have
->> for td028 panel 3 or 4 gpios defined in DT.
-> 
-> The problem is not representing it in the devicetree, but representing it
-> correctly. This is a SPI slave device, hence it should be presented in the
-> devicetree as a SPI slave device and not as a platform device with 4 GPIOs.
+They actually replace effective_{cpu,node}mask_cpuset().
 
-Hm. Is this a SPI or does it just look like one? Or is it some - otherwise
-unknown - "3 wire serial interface". Or is it a "3(+1) GPIO slave device"?
-I am still not sure about this.
+effective_mask == configured_mask & parent effective_mask except when
+the reault is empty, in which case it inherits parent effective_mask.
+The result equals the mask computed from effective_{cpu,node}mask_cpuset().
 
-If we really want to do it correctly, we may have to write a driver for that
-special serial protocol as well. If it turns out that we can't mis-use and tweak
-it into a standard SPI driver with bit-bang backend.
+This won't affect the original !sane_bevior, because in this case we
+make sure the effective masks are always the same with user-configured
+masks.
 
-I simply fear that we get dependencies with the SPI subsystem and have
-to test, debug and maintain it. Maintaining the GPIO thing we currently have
-is easy.
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+---
+ kernel/cpuset.c | 83 ++++++++++-----------------------------------------------
+ 1 file changed, 14 insertions(+), 69 deletions(-)
 
-What would be against taking the GPIO approach first and then upgrade as soon
-as someone raises his/her finger that he/she wants to really interface this display
-differently and is not happy with the 3/4 GPIOs? Either they come up with a patch
-or contact the driver author (=me).
-
-BR,
-Nikolaus
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index 5c53ba5..040ec59 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -318,9 +318,9 @@ static struct file_system_type cpuset_fs_type = {
+  */
+ static void guarantee_online_cpus(struct cpuset *cs, struct cpumask *pmask)
+ {
+-	while (!cpumask_intersects(cs->cpus_allowed, cpu_online_mask))
++	while (!cpumask_intersects(cs->effective_cpus, cpu_online_mask))
+ 		cs = parent_cs(cs);
+-	cpumask_and(pmask, cs->cpus_allowed, cpu_online_mask);
++	cpumask_and(pmask, cs->effective_cpus, cpu_online_mask);
+ }
+ 
+ /*
+@@ -336,9 +336,9 @@ static void guarantee_online_cpus(struct cpuset *cs, struct cpumask *pmask)
+  */
+ static void guarantee_online_mems(struct cpuset *cs, nodemask_t *pmask)
+ {
+-	while (!nodes_intersects(cs->mems_allowed, node_states[N_MEMORY]))
++	while (!nodes_intersects(cs->effective_mems, node_states[N_MEMORY]))
+ 		cs = parent_cs(cs);
+-	nodes_and(*pmask, cs->mems_allowed, node_states[N_MEMORY]);
++	nodes_and(*pmask, cs->effective_mems, node_states[N_MEMORY]);
+ }
+ 
+ /*
+@@ -803,45 +803,6 @@ void rebuild_sched_domains(void)
+ 	mutex_unlock(&cpuset_mutex);
+ }
+ 
+-/*
+- * effective_cpumask_cpuset - return nearest ancestor with non-empty cpus
+- * @cs: the cpuset in interest
+- *
+- * A cpuset's effective cpumask is the cpumask of the nearest ancestor
+- * with non-empty cpus. We use effective cpumask whenever:
+- * - we update tasks' cpus_allowed. (they take on the ancestor's cpumask
+- *   if the cpuset they reside in has no cpus)
+- * - we want to retrieve task_cs(tsk)'s cpus_allowed.
+- *
+- * Called with cpuset_mutex held. cpuset_cpus_allowed_fallback() is an
+- * exception. See comments there.
+- */
+-static struct cpuset *effective_cpumask_cpuset(struct cpuset *cs)
+-{
+-	while (cpumask_empty(cs->cpus_allowed))
+-		cs = parent_cs(cs);
+-	return cs;
+-}
+-
+-/*
+- * effective_nodemask_cpuset - return nearest ancestor with non-empty mems
+- * @cs: the cpuset in interest
+- *
+- * A cpuset's effective nodemask is the nodemask of the nearest ancestor
+- * with non-empty memss. We use effective nodemask whenever:
+- * - we update tasks' mems_allowed. (they take on the ancestor's nodemask
+- *   if the cpuset they reside in has no mems)
+- * - we want to retrieve task_cs(tsk)'s mems_allowed.
+- *
+- * Called with cpuset_mutex held.
+- */
+-static struct cpuset *effective_nodemask_cpuset(struct cpuset *cs)
+-{
+-	while (nodes_empty(cs->mems_allowed))
+-		cs = parent_cs(cs);
+-	return cs;
+-}
+-
+ /**
+  * cpuset_change_cpumask - make a task's cpus_allowed the same as its cpuset's
+  * @tsk: task to test
+@@ -856,9 +817,8 @@ static struct cpuset *effective_nodemask_cpuset(struct cpuset *cs)
+ static void cpuset_change_cpumask(struct task_struct *tsk, void *data)
+ {
+ 	struct cpuset *cs = data;
+-	struct cpuset *cpus_cs = effective_cpumask_cpuset(cs);
+ 
+-	set_cpus_allowed_ptr(tsk, cpus_cs->cpus_allowed);
++	set_cpus_allowed_ptr(tsk, cs->effective_cpus);
+ }
+ 
+ /**
+@@ -1026,14 +986,12 @@ static void cpuset_migrate_mm(struct mm_struct *mm, const nodemask_t *from,
+ 							const nodemask_t *to)
+ {
+ 	struct task_struct *tsk = current;
+-	struct cpuset *mems_cs;
+ 
+ 	tsk->mems_allowed = *to;
+ 
+ 	do_migrate_pages(mm, from, to, MPOL_MF_MOVE_ALL);
+ 
+-	mems_cs = effective_nodemask_cpuset(task_cs(tsk));
+-	guarantee_online_mems(mems_cs, &tsk->mems_allowed);
++	guarantee_online_mems(task_cs(tsk), &tsk->mems_allowed);
+ }
+ 
+ /*
+@@ -1128,13 +1086,12 @@ static void *cpuset_being_rebound;
+ static void update_tasks_nodemask(struct cpuset *cs, struct ptr_heap *heap)
+ {
+ 	static nodemask_t newmems;	/* protected by cpuset_mutex */
+-	struct cpuset *mems_cs = effective_nodemask_cpuset(cs);
+ 	struct cpuset_change_nodemask_arg arg = { .cs = cs,
+ 						  .newmems = &newmems };
+ 
+ 	cpuset_being_rebound = cs;		/* causes mpol_dup() rebind */
+ 
+-	guarantee_online_mems(mems_cs, &newmems);
++	guarantee_online_mems(cs, &newmems);
+ 
+ 	/*
+ 	 * The mpol_rebind_mm() call takes mmap_sem, which we couldn't
+@@ -1572,8 +1529,6 @@ static void cpuset_attach(struct cgroup_subsys_state *css,
+ 							cpuset_subsys_id);
+ 	struct cpuset *cs = css_cs(css);
+ 	struct cpuset *oldcs = css_cs(oldcss);
+-	struct cpuset *cpus_cs = effective_cpumask_cpuset(cs);
+-	struct cpuset *mems_cs = effective_nodemask_cpuset(cs);
+ 
+ 	mutex_lock(&cpuset_mutex);
+ 
+@@ -1581,9 +1536,9 @@ static void cpuset_attach(struct cgroup_subsys_state *css,
+ 	if (cs == &top_cpuset)
+ 		cpumask_copy(cpus_attach, cpu_possible_mask);
+ 	else
+-		guarantee_online_cpus(cpus_cs, cpus_attach);
++		guarantee_online_cpus(cs, cpus_attach);
+ 
+-	guarantee_online_mems(mems_cs, &cpuset_attach_nodemask_to);
++	guarantee_online_mems(cs, &cpuset_attach_nodemask_to);
+ 
+ 	cgroup_taskset_for_each(task, css, tset) {
+ 		/*
+@@ -1600,11 +1555,9 @@ static void cpuset_attach(struct cgroup_subsys_state *css,
+ 	 * Change mm, possibly for multiple threads in a threadgroup. This is
+ 	 * expensive and may sleep.
+ 	 */
+-	cpuset_attach_nodemask_to = cs->mems_allowed;
++	cpuset_attach_nodemask_to = cs->effective_mems;
+ 	mm = get_task_mm(leader);
+ 	if (mm) {
+-		struct cpuset *mems_oldcs = effective_nodemask_cpuset(oldcs);
+-
+ 		mpol_rebind_mm(mm, &cpuset_attach_nodemask_to);
+ 
+ 		/*
+@@ -1615,7 +1568,7 @@ static void cpuset_attach(struct cgroup_subsys_state *css,
+ 		 * mm from.
+ 		 */
+ 		if (is_memory_migrate(cs)) {
+-			cpuset_migrate_mm(mm, &mems_oldcs->old_mems_allowed,
++			cpuset_migrate_mm(mm, &oldcs->old_mems_allowed,
+ 					  &cpuset_attach_nodemask_to);
+ 		}
+ 		mmput(mm);
+@@ -2433,23 +2386,17 @@ void __init cpuset_init_smp(void)
+ 
+ void cpuset_cpus_allowed(struct task_struct *tsk, struct cpumask *pmask)
+ {
+-	struct cpuset *cpus_cs;
+-
+ 	mutex_lock(&callback_mutex);
+ 	task_lock(tsk);
+-	cpus_cs = effective_cpumask_cpuset(task_cs(tsk));
+-	guarantee_online_cpus(cpus_cs, pmask);
++	guarantee_online_cpus(task_cs(tsk), pmask);
+ 	task_unlock(tsk);
+ 	mutex_unlock(&callback_mutex);
+ }
+ 
+ void cpuset_cpus_allowed_fallback(struct task_struct *tsk)
+ {
+-	struct cpuset *cpus_cs;
+-
+ 	rcu_read_lock();
+-	cpus_cs = effective_cpumask_cpuset(task_cs(tsk));
+-	do_set_cpus_allowed(tsk, cpus_cs->cpus_allowed);
++	do_set_cpus_allowed(tsk, task_cs(tsk)->effective_cpus);
+ 	rcu_read_unlock();
+ 
+ 	/*
+@@ -2488,13 +2435,11 @@ void cpuset_init_current_mems_allowed(void)
+ 
+ nodemask_t cpuset_mems_allowed(struct task_struct *tsk)
+ {
+-	struct cpuset *mems_cs;
+ 	nodemask_t mask;
+ 
+ 	mutex_lock(&callback_mutex);
+ 	task_lock(tsk);
+-	mems_cs = effective_nodemask_cpuset(task_cs(tsk));
+-	guarantee_online_mems(mems_cs, &mask);
++	guarantee_online_mems(task_cs(tsk), &mask);
+ 	task_unlock(tsk);
+ 	mutex_unlock(&callback_mutex);
+ 
+-- 
+1.8.0.2
 
