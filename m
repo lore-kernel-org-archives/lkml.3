@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932973Ab3JKT6t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:58:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46318 "EHLO
+	id S964897Ab3JKT7J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:59:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46314 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932643Ab3JKTlo (ORCPT
+	with ESMTP id S932634Ab3JKTln (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:41:44 -0400
+	Fri, 11 Oct 2013 15:41:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Maxim Patlasov <mpatlasov@parallels.com>,
-        Miklos Szeredi <mszeredi@suse.cz>
-Subject: [ 072/135] fuse: wait for writeback in fuse_file_fallocate()
-Date: Fri, 11 Oct 2013 12:39:13 -0700
-Message-Id: <20131011193953.107582886@linuxfoundation.org>
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 071/135] powerpc: Restore registers on error exit from csum_partial_copy_generic()
+Date: Fri, 11 Oct 2013 12:39:12 -0700
+Message-Id: <20131011193952.999608898@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -27,73 +28,158 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maxim Patlasov <MPatlasov@parallels.com>
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-commit bde52788bdb755b9e4b75db6c434f30e32a0ca0b upstream.
+commit 8f21bd0090052e740944f9397e2be5ac7957ded7 upstream.
 
-The patch fixes a race between mmap-ed write and fallocate(PUNCH_HOLE):
+The csum_partial_copy_generic() function saves the PowerPC non-volatile
+r14, r15, and r16 registers for the main checksum-and-copy loop.
+Unfortunately, it fails to restore them upon error exit from this loop,
+which results in silent corruption of these registers in the presumably
+rare event of an access exception within that loop.
 
-1) An user makes a page dirty via mmap-ed write.
-2) The user performs fallocate(2) with mode == PUNCH_HOLE|KEEP_SIZE
-   and <offset, size> covering the page.
-3) Before truncate_pagecache_range call from fuse_file_fallocate,
-   the page goes to write-back. The page is fully processed by fuse_writepage
-   (including end_page_writeback on the page), but fuse_flush_writepages did
-   nothing because fi->writectr < 0.
-4) truncate_pagecache_range is called and fuse_file_fallocate is finishing
-   by calling fuse_release_nowrite. The latter triggers processing queued
-   write-back request which will write stale data to the hole soon.
+This commit therefore restores these register on error exit from the loop.
 
-Changed in v2 (thanks to Brian for suggestion):
- - Do not truncate page cache until FUSE_FALLOCATE succeeded. Otherwise,
-   we can end up in returning -ENOTSUPP while user data is already punched
-   from page cache. Use filemap_write_and_wait_range() instead.
-Changed in v3 (thanks to Miklos for suggestion):
- - fuse_wait_on_writeback() is prone to livelocks; use fuse_set_nowrite()
-   instead. So far as we need a dirty-page barrier only, fuse_sync_writes()
-   should be enough.
- - rebased to for-linus branch of fuse.git
-
-Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/fuse/file.c |   16 ++++++++++------
- 1 file changed, 10 insertions(+), 6 deletions(-)
+ arch/powerpc/lib/checksum_64.S |   54 ++++++++++++++++++++++++++++++-----------
+ 1 file changed, 40 insertions(+), 14 deletions(-)
 
---- a/fs/fuse/file.c
-+++ b/fs/fuse/file.c
-@@ -2484,8 +2484,15 @@ static long fuse_file_fallocate(struct f
+--- a/arch/powerpc/lib/checksum_64.S
++++ b/arch/powerpc/lib/checksum_64.S
+@@ -226,19 +226,35 @@ _GLOBAL(csum_partial)
+ 	blr
  
- 	if (lock_inode) {
- 		mutex_lock(&inode->i_mutex);
--		if (mode & FALLOC_FL_PUNCH_HOLE)
--			fuse_set_nowrite(inode);
-+		if (mode & FALLOC_FL_PUNCH_HOLE) {
-+			loff_t endbyte = offset + length - 1;
-+			err = filemap_write_and_wait_range(inode->i_mapping,
-+							   offset, endbyte);
-+			if (err)
-+				goto out;
+ 
+-	.macro source
++	.macro srcnr
+ 100:
+ 	.section __ex_table,"a"
+ 	.align 3
+-	.llong 100b,.Lsrc_error
++	.llong 100b,.Lsrc_error_nr
+ 	.previous
+ 	.endm
+ 
+-	.macro dest
++	.macro source
++150:
++	.section __ex_table,"a"
++	.align 3
++	.llong 150b,.Lsrc_error
++	.previous
++	.endm
 +
-+			fuse_sync_writes(inode);
-+		}
- 	}
++	.macro dstnr
+ 200:
+ 	.section __ex_table,"a"
+ 	.align 3
+-	.llong 200b,.Ldest_error
++	.llong 200b,.Ldest_error_nr
++	.previous
++	.endm
++
++	.macro dest
++250:
++	.section __ex_table,"a"
++	.align 3
++	.llong 250b,.Ldest_error
+ 	.previous
+ 	.endm
  
- 	req = fuse_get_req_nopages(fc);
-@@ -2520,11 +2527,8 @@ static long fuse_file_fallocate(struct f
- 	fuse_invalidate_attr(inode);
+@@ -274,11 +290,11 @@ _GLOBAL(csum_partial_copy_generic)
+ 	mtctr	r6
  
- out:
--	if (lock_inode) {
--		if (mode & FALLOC_FL_PUNCH_HOLE)
--			fuse_release_nowrite(inode);
-+	if (lock_inode)
- 		mutex_unlock(&inode->i_mutex);
--	}
+ 1:
+-source;	lhz	r6,0(r3)		/* align to doubleword */
++srcnr;	lhz	r6,0(r3)		/* align to doubleword */
+ 	subi	r5,r5,2
+ 	addi	r3,r3,2
+ 	adde	r0,r0,r6
+-dest;	sth	r6,0(r4)
++dstnr;	sth	r6,0(r4)
+ 	addi	r4,r4,2
+ 	bdnz	1b
  
- 	return err;
- }
+@@ -392,10 +408,10 @@ dest;	std	r16,56(r4)
+ 
+ 	mtctr	r6
+ 3:
+-source;	ld	r6,0(r3)
++srcnr;	ld	r6,0(r3)
+ 	addi	r3,r3,8
+ 	adde	r0,r0,r6
+-dest;	std	r6,0(r4)
++dstnr;	std	r6,0(r4)
+ 	addi	r4,r4,8
+ 	bdnz	3b
+ 
+@@ -405,10 +421,10 @@ dest;	std	r6,0(r4)
+ 	srdi.	r6,r5,2
+ 	beq	.Lcopy_tail_halfword
+ 
+-source;	lwz	r6,0(r3)
++srcnr;	lwz	r6,0(r3)
+ 	addi	r3,r3,4
+ 	adde	r0,r0,r6
+-dest;	stw	r6,0(r4)
++dstnr;	stw	r6,0(r4)
+ 	addi	r4,r4,4
+ 	subi	r5,r5,4
+ 
+@@ -416,10 +432,10 @@ dest;	stw	r6,0(r4)
+ 	srdi.	r6,r5,1
+ 	beq	.Lcopy_tail_byte
+ 
+-source;	lhz	r6,0(r3)
++srcnr;	lhz	r6,0(r3)
+ 	addi	r3,r3,2
+ 	adde	r0,r0,r6
+-dest;	sth	r6,0(r4)
++dstnr;	sth	r6,0(r4)
+ 	addi	r4,r4,2
+ 	subi	r5,r5,2
+ 
+@@ -427,10 +443,10 @@ dest;	sth	r6,0(r4)
+ 	andi.	r6,r5,1
+ 	beq	.Lcopy_finish
+ 
+-source;	lbz	r6,0(r3)
++srcnr;	lbz	r6,0(r3)
+ 	sldi	r9,r6,8			/* Pad the byte out to 16 bits */
+ 	adde	r0,r0,r9
+-dest;	stb	r6,0(r4)
++dstnr;	stb	r6,0(r4)
+ 
+ .Lcopy_finish:
+ 	addze	r0,r0			/* add in final carry */
+@@ -440,6 +456,11 @@ dest;	stb	r6,0(r4)
+ 	blr
+ 
+ .Lsrc_error:
++	ld	r14,STK_REG(R14)(r1)
++	ld	r15,STK_REG(R15)(r1)
++	ld	r16,STK_REG(R16)(r1)
++	addi	r1,r1,STACKFRAMESIZE
++.Lsrc_error_nr:
+ 	cmpdi	0,r7,0
+ 	beqlr
+ 	li	r6,-EFAULT
+@@ -447,6 +468,11 @@ dest;	stb	r6,0(r4)
+ 	blr
+ 
+ .Ldest_error:
++	ld	r14,STK_REG(R14)(r1)
++	ld	r15,STK_REG(R15)(r1)
++	ld	r16,STK_REG(R16)(r1)
++	addi	r1,r1,STACKFRAMESIZE
++.Ldest_error_nr:
+ 	cmpdi	0,r8,0
+ 	beqlr
+ 	li	r6,-EFAULT
 
 
