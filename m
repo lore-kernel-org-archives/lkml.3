@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758840Ab3JKUAv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:00:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46296 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932614Ab3JKTlk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932615Ab3JKTlk (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 11 Oct 2013 15:41:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46265 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932575Ab3JKTlf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 15:41:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Olof Johansson <olof@lixom.net>,
-        Christoffer Dall <christoffer.dall@linaro.org>
-Subject: [ 058/135] ARM: kvm: rename cpu_reset to avoid name clash
-Date: Fri, 11 Oct 2013 12:38:59 -0700
-Message-Id: <20131011193951.578997401@linuxfoundation.org>
+        Will Deacon <will.deacon@arm.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Subject: [ 060/135] iommu/arm-smmu: fix a signedness bug
+Date: Fri, 11 Oct 2013 12:39:01 -0700
+Message-Id: <20131011193951.797268197@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -27,48 +27,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Olof Johansson <olof@lixom.net>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit ac570e0493815e0b41681c89cb50d66421429d27 upstream.
+commit faea13b72dbdb77e4d6ad83344596486611708b0 upstream.
 
-cpu_reset is already #defined in <asm/proc-fns.h> as processor.reset,
-so it expands here and causes problems.
+Unsigned char is never equal to -1.
 
-Signed-off-by: Olof Johansson <olof@lixom.net>
-Signed-off-by: Christoffer Dall <christoffer.dall@linaro.org>
+Tested-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/kvm/reset.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/iommu/arm-smmu.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/arch/arm/kvm/reset.c
-+++ b/arch/arm/kvm/reset.c
-@@ -58,14 +58,14 @@ static const struct kvm_irq_level a15_vt
-  */
- int kvm_reset_vcpu(struct kvm_vcpu *vcpu)
- {
--	struct kvm_regs *cpu_reset;
-+	struct kvm_regs *reset_regs;
- 	const struct kvm_irq_level *cpu_vtimer_irq;
+--- a/drivers/iommu/arm-smmu.c
++++ b/drivers/iommu/arm-smmu.c
+@@ -379,6 +379,7 @@ struct arm_smmu_cfg {
+ 	u32				cbar;
+ 	pgd_t				*pgd;
+ };
++#define INVALID_IRPTNDX			0xff
  
- 	switch (vcpu->arch.target) {
- 	case KVM_ARM_TARGET_CORTEX_A15:
- 		if (vcpu->vcpu_id > a15_max_cpu_idx)
- 			return -EINVAL;
--		cpu_reset = &a15_regs_reset;
-+		reset_regs = &a15_regs_reset;
- 		vcpu->arch.midr = read_cpuid_id();
- 		cpu_vtimer_irq = &a15_vtimer_irq;
- 		break;
-@@ -74,7 +74,7 @@ int kvm_reset_vcpu(struct kvm_vcpu *vcpu
+ struct arm_smmu_domain {
+ 	/*
+@@ -830,7 +831,7 @@ static int arm_smmu_init_domain_context(
+ 	if (IS_ERR_VALUE(ret)) {
+ 		dev_err(smmu->dev, "failed to request context IRQ %d (%u)\n",
+ 			root_cfg->irptndx, irq);
+-		root_cfg->irptndx = -1;
++		root_cfg->irptndx = INVALID_IRPTNDX;
+ 		goto out_free_context;
  	}
  
- 	/* Reset core registers */
--	memcpy(&vcpu->arch.regs, cpu_reset, sizeof(vcpu->arch.regs));
-+	memcpy(&vcpu->arch.regs, reset_regs, sizeof(vcpu->arch.regs));
+@@ -855,7 +856,7 @@ static void arm_smmu_destroy_domain_cont
+ 	if (!smmu)
+ 		return;
  
- 	/* Reset CP15 registers */
- 	kvm_reset_coprocs(vcpu);
+-	if (root_cfg->irptndx != -1) {
++	if (root_cfg->irptndx != INVALID_IRPTNDX) {
+ 		irq = smmu->irqs[smmu->num_global_irqs + root_cfg->irptndx];
+ 		free_irq(irq, domain);
+ 	}
 
 
