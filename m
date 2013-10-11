@@ -1,55 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758238Ab3JKPqg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 11:46:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37479 "EHLO mx1.redhat.com"
+	id S1758366Ab3JKPsJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 11:48:09 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:56633 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753206Ab3JKPqf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 11:46:35 -0400
-Date: Fri, 11 Oct 2013 11:44:50 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Daniel Kiper <daniel.kiper@oracle.com>, ebiederm@xmission.com,
-        hbabu@us.ibm.com, hpa@linux.intel.com, keescook@chromium.org,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        david.vrabel@citrix.com, jbeulich@suse.com, keir@xen.org,
-        xen-devel@lists.xen.org
-Subject: Re: kexec: Clearing registers just before jumping into purgatory
-Message-ID: <20131011154450.GB2772@redhat.com>
-References: <20131011092837.GZ3626@debian70-amd64.local.net-space.pl>
- <877gdkce6s.fsf@tw-ebiederman.twitter.com>
- <20131011110455.GA3626@debian70-amd64.local.net-space.pl>
- <20131011125206.GA2772@redhat.com>
- <20131011153727.GA30181@srcf.ucam.org>
+	id S1754807Ab3JKPsG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 11:48:06 -0400
+Date: Fri, 11 Oct 2013 17:47:59 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "Chen, Gong" <gong.chen@linux.intel.com>
+Cc: tony.luck@intel.com, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 2/8] ACPI, CPER: Update cper info
+Message-ID: <20131011154759.GJ5925@pd.tnic>
+References: <1381473166-29303-1-git-send-email-gong.chen@linux.intel.com>
+ <1381473166-29303-3-git-send-email-gong.chen@linux.intel.com>
+ <20131011090630.GB5925@pd.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20131011153727.GA30181@srcf.ucam.org>
+In-Reply-To: <20131011090630.GB5925@pd.tnic>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 11, 2013 at 04:37:27PM +0100, Matthew Garrett wrote:
-> On Fri, Oct 11, 2013 at 08:52:06AM -0400, Vivek Goyal wrote:
-> > On Fri, Oct 11, 2013 at 01:04:55PM +0200, Daniel Kiper wrote:
-> > 
-> > [..]
-> > > > In theory you can swap between to kernels with the preserve_context
-> > > > case.  Technically I like the ability but I don't know that it has ever
-> > > > achieved much uptake.
-> > > 
-> > > I think that this is nice idea too. However, I have not seen its usage in real.
-> > > Even once there was an idea to remove that stuff from Linux Kernel.
-> > 
-> > I have not seen anybody using it. I don't even know if it works or not.
+On Fri, Oct 11, 2013 at 11:06:30AM +0200, Borislav Petkov wrote:
+> > -	printk("%s""APEI generic hardware error status\n", pfx);
+> > +	printk("%s""Generic Hardware Error Status\n", pfx);
 > 
-> It works. I'm using it.
+> Btw, what's the story with printk not using KERN_x levels in this file?
+> Why are we falling back to default printk levels for all printks here
+> and shouldn't we rather prioritize them by urgency into, say, KERN_ERR,
+> KERN_INFO, etc?
 
-Hi Matthew,
+Ignore that - checkpatch complained about it but I kinda missed that
+we're handing down the prefix.
 
-Just Curious. How is it useful. IOW, what's your use case of booting a new
-kernel and then jumping back.
+-- 
+Regards/Gruss,
+    Boris.
 
-Thanks
-Vivek
+Sent from a fat crate under my desk. Formatting is fine.
+--
