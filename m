@@ -1,19 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757742Ab3JKTg6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:36:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45190 "EHLO
+	id S1757608Ab3JKTgo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:36:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45206 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757238Ab3JKTfw (ORCPT
+	with ESMTP id S1756999Ab3JKTfy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:35:52 -0400
+	Fri, 11 Oct 2013 15:35:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Metcalf <cmetcalf@tilera.com>
-Subject: [ 35/39] tile: use a more conservative __my_cpu_offset in CONFIG_PREEMPT
-Date: Fri, 11 Oct 2013 12:35:19 -0700
-Message-Id: <20131011193214.688665969@linuxfoundation.org>
+        Kees Cook <keescook@chromium.org>,
+        Oded Horovitz <oded@privatecore.com>,
+        Brad Spengler <spender@grsecurity.net>,
+        Matt Carlson <mcarlson@broadcom.com>,
+        "David S. Miller" <davem@davemloft.net>, Jeff Mahoney <jeffm@suse.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [ 38/39] tg3: fix length overflow in VPD firmware parsing
+Date: Fri, 11 Oct 2013 12:35:22 -0700
+Message-Id: <20131011193215.005574788@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193210.843963685@linuxfoundation.org>
 References: <20131011193210.843963685@linuxfoundation.org>
@@ -26,71 +31,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Metcalf <cmetcalf@tilera.com>
+From: Kees Cook <keescook@chromium.org>
 
-commit f862eefec0b68e099a9fa58d3761ffb10bad97e1 upstream.
+commit 715230a44310a8cf66fbfb5a46f9a62a9b2de424 upstream.
 
-It turns out the kernel relies on barrier() to force a reload of the
-percpu offset value.  Since we can't easily modify the definition of
-barrier() to include "tp" as an output register, we instead provide a
-definition of __my_cpu_offset as extended assembly that includes a fake
-stack read to hazard against barrier(), forcing gcc to know that it
-must reread "tp" and recompute anything based on "tp" after a barrier.
+Commit 184b89044fb6e2a74611dafa69b1dce0d98612c6 ("tg3: Use VPD fw version
+when present") introduced VPD parsing that contained a potential length
+overflow.
 
-This fixes observed hangs in the slub allocator when we are looping
-on a percpu cmpxchg_double.
+Limit the hardware's reported firmware string length (max 255 bytes) to
+stay inside the driver's firmware string length (32 bytes). On overflow,
+truncate the formatted firmware string instead of potentially overwriting
+portions of the tg3 struct.
 
-A similar fix for ARMv7 was made in June in change 509eb76ebf97.
+http://cansecwest.com/slides/2013/PrivateCore%20CSW%202013.pdf
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+-js: This fixes CVE-2013-1929.
+
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Reported-by: Oded Horovitz <oded@privatecore.com>
+Reported-by: Brad Spengler <spender@grsecurity.net>
+Cc: stable@vger.kernel.org
+Cc: Matt Carlson <mcarlson@broadcom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Acked-by: Jeff Mahoney <jeffm@suse.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- arch/tile/include/asm/percpu.h |   34 +++++++++++++++++++++++++++++++---
- 1 file changed, 31 insertions(+), 3 deletions(-)
 
---- a/arch/tile/include/asm/percpu.h
-+++ b/arch/tile/include/asm/percpu.h
-@@ -15,9 +15,37 @@
- #ifndef _ASM_TILE_PERCPU_H
- #define _ASM_TILE_PERCPU_H
+---
+ drivers/net/tg3.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+--- a/drivers/net/tg3.c
++++ b/drivers/net/tg3.c
+@@ -13067,8 +13067,11 @@ static void __devinit tg3_read_vpd(struc
+ 		if (j + len > block_end)
+ 			goto partno;
  
--register unsigned long __my_cpu_offset __asm__("tp");
--#define __my_cpu_offset __my_cpu_offset
--#define set_my_cpu_offset(tp) (__my_cpu_offset = (tp))
-+register unsigned long my_cpu_offset_reg asm("tp");
-+
-+#ifdef CONFIG_PREEMPT
-+/*
-+ * For full preemption, we can't just use the register variable
-+ * directly, since we need barrier() to hazard against it, causing the
-+ * compiler to reload anything computed from a previous "tp" value.
-+ * But we also don't want to use volatile asm, since we'd like the
-+ * compiler to be able to cache the value across multiple percpu reads.
-+ * So we use a fake stack read as a hazard against barrier().
-+ * The 'U' constraint is like 'm' but disallows postincrement.
-+ */
-+static inline unsigned long __my_cpu_offset(void)
-+{
-+	unsigned long tp;
-+	register unsigned long *sp asm("sp");
-+	asm("move %0, tp" : "=r" (tp) : "U" (*sp));
-+	return tp;
-+}
-+#define __my_cpu_offset __my_cpu_offset()
-+#else
-+/*
-+ * We don't need to hazard against barrier() since "tp" doesn't ever
-+ * change with PREEMPT_NONE, and with PREEMPT_VOLUNTARY it only
-+ * changes at function call points, at which we are already re-reading
-+ * the value of "tp" due to "my_cpu_offset_reg" being a global variable.
-+ */
-+#define __my_cpu_offset my_cpu_offset_reg
-+#endif
-+
-+#define set_my_cpu_offset(tp) (my_cpu_offset_reg = (tp))
+-		memcpy(tp->fw_ver, &vpd_data[j], len);
+-		strncat(tp->fw_ver, " bc ", TG3_NVM_VPD_LEN - len - 1);
++		if (len >= sizeof(tp->fw_ver))
++			len = sizeof(tp->fw_ver) - 1;
++		memset(tp->fw_ver, 0, sizeof(tp->fw_ver));
++		snprintf(tp->fw_ver, sizeof(tp->fw_ver), "%.*s bc ", len,
++			 &vpd_data[j]);
+ 	}
  
- #include <asm-generic/percpu.h>
- 
+ partno:
 
 
