@@ -1,208 +1,270 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758700Ab3JKTjf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:39:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45424 "EHLO
+	id S1754794Ab3JKUtn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:49:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45474 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758344Ab3JKTha (ORCPT
+	with ESMTP id S1758344Ab3JKTjg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:37:30 -0400
+	Fri, 11 Oct 2013 15:39:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lv Zheng <lv.zheng@intel.com>, Huang Ying <ying.huang@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Jonghwan Choi <jhbird.choi@samsung.com>
-Subject: [ 45/48] ACPI / IPMI: Fix atomic context requirement of ipmi_msg_handler()
-Date: Fri, 11 Oct 2013 12:36:52 -0700
-Message-Id: <20131011193642.127289127@linuxfoundation.org>
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [ 004/110] HID: fix data access in implement()
+Date: Fri, 11 Oct 2013 12:37:44 -0700
+Message-Id: <20131011193808.079043170@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20131011193637.253208688@linuxfoundation.org>
-References: <20131011193637.253208688@linuxfoundation.org>
+In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
+References: <20131011193807.584188672@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Lv Zheng <lv.zheng@intel.com>
+From: Jiri Kosina <jkosina@suse.cz>
 
-commit 06a8566bcf5cf7db9843a82cde7a33c7bf3947d9 upstream.
+commit 27ce405039bfe6d3f4143415c638f56a3df77dca upstream.
 
-This patch fixes the issues indicated by the test results that
-ipmi_msg_handler() is invoked in atomic context.
+implement() is setting bytes in LE data stream. In case the data is not
+aligned to 64bits, it reads past the allocated buffer. It doesn't really
+change any value there (it's properly bitmasked), but in case that this
+read past the boundary hits a page boundary, pagefault happens when
+accessing 64bits of 'x' in implement(), and kernel oopses.
 
-BUG: scheduling while atomic: kipmi0/18933/0x10000100
-Modules linked in: ipmi_si acpi_ipmi ...
-CPU: 3 PID: 18933 Comm: kipmi0 Tainted: G       AW    3.10.0-rc7+ #2
-Hardware name: QCI QSSC-S4R/QSSC-S4R, BIOS QSSC-S4R.QCI.01.00.0027.070120100606 07/01/2010
- ffff8838245eea00 ffff88103fc63c98 ffffffff814c4a1e ffff88103fc63ca8
- ffffffff814bfbab ffff88103fc63d28 ffffffff814c73e0 ffff88103933cbd4
- 0000000000000096 ffff88103fc63ce8 ffff88102f618000 ffff881035c01fd8
-Call Trace:
- <IRQ>  [<ffffffff814c4a1e>] dump_stack+0x19/0x1b
- [<ffffffff814bfbab>] __schedule_bug+0x46/0x54
- [<ffffffff814c73e0>] __schedule+0x83/0x59c
- [<ffffffff81058853>] __cond_resched+0x22/0x2d
- [<ffffffff814c794b>] _cond_resched+0x14/0x1d
- [<ffffffff814c6d82>] mutex_lock+0x11/0x32
- [<ffffffff8101e1e9>] ? __default_send_IPI_dest_field.constprop.0+0x53/0x58
- [<ffffffffa09e3f9c>] ipmi_msg_handler+0x23/0x166 [ipmi_si]
- [<ffffffff812bf6e4>] deliver_response+0x55/0x5a
- [<ffffffff812c0fd4>] handle_new_recv_msgs+0xb67/0xc65
- [<ffffffff81007ad1>] ? read_tsc+0x9/0x19
- [<ffffffff814c8620>] ? _raw_spin_lock_irq+0xa/0xc
- [<ffffffffa09e1128>] ipmi_thread+0x5c/0x146 [ipmi_si]
- ...
+This happens much more often when numbered reports are in use, as the
+initial 8bit skip in the buffer makes the whole process work on values
+which are not aligned to 64bits.
 
-Also Tony Camuso says:
+This problem dates back to attempts in 2005 and 2006 to make implement()
+and extract() as generic as possible, and even back then the problem
+was realized by Adam Kroperlin, but falsely assumed to be impossible
+to cause any harm:
 
- We were getting occasional "Scheduling while atomic" call traces
- during boot on some systems. Problem was first seen on a Cisco C210
- but we were able to reproduce it on a Cisco c220m3. Setting
- CONFIG_LOCKDEP and LOCKDEP_SUPPORT to 'y' exposed a lockdep around
- tx_msg_lock in acpi_ipmi.c struct acpi_ipmi_device.
+  http://www.mail-archive.com/linux-usb-devel@lists.sourceforge.net/msg47690.html
 
- =================================
- [ INFO: inconsistent lock state ]
- 2.6.32-415.el6.x86_64-debug-splck #1
- ---------------------------------
- inconsistent {SOFTIRQ-ON-W} -> {IN-SOFTIRQ-W} usage.
- ksoftirqd/3/17 [HC0[0]:SC1[1]:HE1:SE0] takes:
-  (&ipmi_device->tx_msg_lock){+.?...}, at: [<ffffffff81337a27>] ipmi_msg_handler+0x71/0x126
- {SOFTIRQ-ON-W} state was registered at:
-   [<ffffffff810ba11c>] __lock_acquire+0x63c/0x1570
-   [<ffffffff810bb0f4>] lock_acquire+0xa4/0x120
-   [<ffffffff815581cc>] __mutex_lock_common+0x4c/0x400
-   [<ffffffff815586ea>] mutex_lock_nested+0x4a/0x60
-   [<ffffffff8133789d>] acpi_ipmi_space_handler+0x11b/0x234
-   [<ffffffff81321c62>] acpi_ev_address_space_dispatch+0x170/0x1be
+I have made several attempts at fixing it "on the spot" directly in
+implement(), but the results were horrible; the special casing for processing
+last 64bit chunk and switching to different math makes it unreadable mess.
 
-The fix implemented by this change has been tested by Tony:
+I therefore took a path to allocate a few bytes more which will never make
+it into final report, but are there as a cushion for all the 64bit math
+operations happening in implement() and extract().
 
- Tested the patch in a boot loop with lockdep debug enabled and never
- saw the problem in over 400 reboots.
+All callers of hid_output_report() are converted at the same time to allocate
+the buffer by newly introduced hid_alloc_report_buf() helper.
 
-Reported-and-tested-by: Tony Camuso <tcamuso@redhat.com>
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-Reviewed-by: Huang Ying <ying.huang@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Cc: Jonghwan Choi <jhbird.choi@samsung.com>
+Bruno noticed that the whole raw_size test can be dropped as well, as
+hid_alloc_report_buf() makes sure that the buffer is always of a proper
+size.
+
+Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Acked-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/acpi_ipmi.c |   24 ++++++++++++++----------
- 1 file changed, 14 insertions(+), 10 deletions(-)
+ drivers/hid/hid-core.c            |   19 ++++++++++++++++++-
+ drivers/hid/hid-logitech-dj.c     |   12 ++++++++++--
+ drivers/hid/hid-picolcd_debugfs.c |   23 ++++++++++++-----------
+ drivers/hid/usbhid/hid-core.c     |    5 ++---
+ include/linux/hid.h               |    1 +
+ net/bluetooth/hidp/core.c         |   14 +++++++++-----
+ 6 files changed, 52 insertions(+), 22 deletions(-)
 
---- a/drivers/acpi/acpi_ipmi.c
-+++ b/drivers/acpi/acpi_ipmi.c
-@@ -39,6 +39,7 @@
- #include <linux/ipmi.h>
- #include <linux/device.h>
- #include <linux/pnp.h>
-+#include <linux/spinlock.h>
- 
- MODULE_AUTHOR("Zhao Yakui");
- MODULE_DESCRIPTION("ACPI IPMI Opregion driver");
-@@ -57,7 +58,7 @@ struct acpi_ipmi_device {
- 	struct list_head head;
- 	/* the IPMI request message list */
- 	struct list_head tx_msg_list;
--	struct mutex	tx_msg_lock;
-+	spinlock_t	tx_msg_lock;
- 	acpi_handle handle;
- 	struct pnp_dev *pnp_dev;
- 	ipmi_user_t	user_interface;
-@@ -147,6 +148,7 @@ static void acpi_format_ipmi_msg(struct
- 	struct kernel_ipmi_msg *msg;
- 	struct acpi_ipmi_buffer *buffer;
- 	struct acpi_ipmi_device *device;
-+	unsigned long flags;
- 
- 	msg = &tx_msg->tx_message;
- 	/*
-@@ -177,10 +179,10 @@ static void acpi_format_ipmi_msg(struct
- 
- 	/* Get the msgid */
- 	device = tx_msg->device;
--	mutex_lock(&device->tx_msg_lock);
-+	spin_lock_irqsave(&device->tx_msg_lock, flags);
- 	device->curr_msgid++;
- 	tx_msg->tx_msgid = device->curr_msgid;
--	mutex_unlock(&device->tx_msg_lock);
-+	spin_unlock_irqrestore(&device->tx_msg_lock, flags);
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1188,7 +1188,8 @@ static void hid_output_field(const struc
  }
  
- static void acpi_format_ipmi_response(struct acpi_ipmi_msg *msg,
-@@ -242,6 +244,7 @@ static void ipmi_msg_handler(struct ipmi
- 	int msg_found = 0;
- 	struct acpi_ipmi_msg *tx_msg;
- 	struct pnp_dev *pnp_dev = ipmi_device->pnp_dev;
-+	unsigned long flags;
+ /*
+- * Create a report.
++ * Create a report. 'data' has to be allocated using
++ * hid_alloc_report_buf() so that it has proper size.
+  */
  
- 	if (msg->user != ipmi_device->user_interface) {
- 		dev_warn(&pnp_dev->dev, "Unexpected response is returned. "
-@@ -250,7 +253,7 @@ static void ipmi_msg_handler(struct ipmi
- 		ipmi_free_recv_msg(msg);
+ void hid_output_report(struct hid_report *report, __u8 *data)
+@@ -1205,6 +1206,22 @@ void hid_output_report(struct hid_report
+ EXPORT_SYMBOL_GPL(hid_output_report);
+ 
+ /*
++ * Allocator for buffer that is going to be passed to hid_output_report()
++ */
++u8 *hid_alloc_report_buf(struct hid_report *report, gfp_t flags)
++{
++	/*
++	 * 7 extra bytes are necessary to achieve proper functionality
++	 * of implement() working on 8 byte chunks
++	 */
++
++	int len = ((report->size - 1) >> 3) + 1 + (report->id > 0) + 7;
++
++	return kmalloc(len, flags);
++}
++EXPORT_SYMBOL_GPL(hid_alloc_report_buf);
++
++/*
+  * Set a field value. The report this field belongs to has to be
+  * created and transferred to the device, to set this value in the
+  * device.
+--- a/drivers/hid/hid-logitech-dj.c
++++ b/drivers/hid/hid-logitech-dj.c
+@@ -574,7 +574,7 @@ static int logi_dj_ll_input_event(struct
+ 
+ 	struct hid_field *field;
+ 	struct hid_report *report;
+-	unsigned char data[8];
++	unsigned char *data;
+ 	int offset;
+ 
+ 	dbg_hid("%s: %s, type:%d | code:%d | value:%d\n",
+@@ -590,6 +590,13 @@ static int logi_dj_ll_input_event(struct
+ 		return -1;
+ 	}
+ 	hid_set_field(field, offset, value);
++
++	data = hid_alloc_report_buf(field->report, GFP_KERNEL);
++	if (!data) {
++		dev_warn(&dev->dev, "failed to allocate report buf memory\n");
++		return -1;
++	}
++
+ 	hid_output_report(field->report, &data[0]);
+ 
+ 	output_report_enum = &dj_rcv_hiddev->report_enum[HID_OUTPUT_REPORT];
+@@ -600,8 +607,9 @@ static int logi_dj_ll_input_event(struct
+ 
+ 	hid_hw_request(dj_rcv_hiddev, report, HID_REQ_SET_REPORT);
+ 
+-	return 0;
++	kfree(data);
+ 
++	return 0;
+ }
+ 
+ static int logi_dj_ll_start(struct hid_device *hid)
+--- a/drivers/hid/hid-picolcd_debugfs.c
++++ b/drivers/hid/hid-picolcd_debugfs.c
+@@ -394,7 +394,7 @@ static void dump_buff_as_hex(char *dst,
+ void picolcd_debug_out_report(struct picolcd_data *data,
+ 		struct hid_device *hdev, struct hid_report *report)
+ {
+-	u8 raw_data[70];
++	u8 *raw_data;
+ 	int raw_size = (report->size >> 3) + 1;
+ 	char *buff;
+ #define BUFF_SZ 256
+@@ -407,20 +407,20 @@ void picolcd_debug_out_report(struct pic
+ 	if (!buff)
  		return;
+ 
+-	snprintf(buff, BUFF_SZ, "\nout report %d (size %d) =  ",
+-			report->id, raw_size);
+-	hid_debug_event(hdev, buff);
+-	if (raw_size + 5 > sizeof(raw_data)) {
++	raw_data = hid_alloc_report_buf(report, GFP_ATOMIC);
++	if (!raw_data) {
+ 		kfree(buff);
+-		hid_debug_event(hdev, " TOO BIG\n");
+ 		return;
+-	} else {
+-		raw_data[0] = report->id;
+-		hid_output_report(report, raw_data);
+-		dump_buff_as_hex(buff, BUFF_SZ, raw_data, raw_size);
+-		hid_debug_event(hdev, buff);
  	}
--	mutex_lock(&ipmi_device->tx_msg_lock);
-+	spin_lock_irqsave(&ipmi_device->tx_msg_lock, flags);
- 	list_for_each_entry(tx_msg, &ipmi_device->tx_msg_list, head) {
- 		if (msg->msgid == tx_msg->tx_msgid) {
- 			msg_found = 1;
-@@ -258,7 +261,7 @@ static void ipmi_msg_handler(struct ipmi
- 		}
+ 
++	snprintf(buff, BUFF_SZ, "\nout report %d (size %d) =  ",
++			report->id, raw_size);
++	hid_debug_event(hdev, buff);
++	raw_data[0] = report->id;
++	hid_output_report(report, raw_data);
++	dump_buff_as_hex(buff, BUFF_SZ, raw_data, raw_size);
++	hid_debug_event(hdev, buff);
++
+ 	switch (report->id) {
+ 	case REPORT_LED_STATE:
+ 		/* 1 data byte with GPO state */
+@@ -644,6 +644,7 @@ void picolcd_debug_out_report(struct pic
+ 		break;
  	}
- 
--	mutex_unlock(&ipmi_device->tx_msg_lock);
-+	spin_unlock_irqrestore(&ipmi_device->tx_msg_lock, flags);
- 	if (!msg_found) {
- 		dev_warn(&pnp_dev->dev, "Unexpected response (msg id %ld) is "
- 			"returned.\n", msg->msgid);
-@@ -378,6 +381,7 @@ acpi_ipmi_space_handler(u32 function, ac
- 	struct acpi_ipmi_device *ipmi_device = handler_context;
- 	int err, rem_time;
- 	acpi_status status;
-+	unsigned long flags;
- 	/*
- 	 * IPMI opregion message.
- 	 * IPMI message is firstly written to the BMC and system software
-@@ -395,9 +399,9 @@ acpi_ipmi_space_handler(u32 function, ac
- 		return AE_NO_MEMORY;
- 
- 	acpi_format_ipmi_msg(tx_msg, address, value);
--	mutex_lock(&ipmi_device->tx_msg_lock);
-+	spin_lock_irqsave(&ipmi_device->tx_msg_lock, flags);
- 	list_add_tail(&tx_msg->head, &ipmi_device->tx_msg_list);
--	mutex_unlock(&ipmi_device->tx_msg_lock);
-+	spin_unlock_irqrestore(&ipmi_device->tx_msg_lock, flags);
- 	err = ipmi_request_settime(ipmi_device->user_interface,
- 					&tx_msg->addr,
- 					tx_msg->tx_msgid,
-@@ -413,9 +417,9 @@ acpi_ipmi_space_handler(u32 function, ac
- 	status = AE_OK;
- 
- end_label:
--	mutex_lock(&ipmi_device->tx_msg_lock);
-+	spin_lock_irqsave(&ipmi_device->tx_msg_lock, flags);
- 	list_del(&tx_msg->head);
--	mutex_unlock(&ipmi_device->tx_msg_lock);
-+	spin_unlock_irqrestore(&ipmi_device->tx_msg_lock, flags);
- 	kfree(tx_msg);
- 	return status;
+ 	wake_up_interruptible(&hdev->debug_wait);
++	kfree(raw_data);
+ 	kfree(buff);
  }
-@@ -457,7 +461,7 @@ static void acpi_add_ipmi_device(struct
  
- 	INIT_LIST_HEAD(&ipmi_device->head);
+--- a/drivers/hid/usbhid/hid-core.c
++++ b/drivers/hid/usbhid/hid-core.c
+@@ -535,7 +535,6 @@ static void __usbhid_submit_report(struc
+ {
+ 	int head;
+ 	struct usbhid_device *usbhid = hid->driver_data;
+-	int len = ((report->size - 1) >> 3) + 1 + (report->id > 0);
  
--	mutex_init(&ipmi_device->tx_msg_lock);
-+	spin_lock_init(&ipmi_device->tx_msg_lock);
- 	INIT_LIST_HEAD(&ipmi_device->tx_msg_list);
- 	ipmi_install_space_handler(ipmi_device);
+ 	if ((hid->quirks & HID_QUIRK_NOGET) && dir == USB_DIR_IN)
+ 		return;
+@@ -546,7 +545,7 @@ static void __usbhid_submit_report(struc
+ 			return;
+ 		}
  
+-		usbhid->out[usbhid->outhead].raw_report = kmalloc(len, GFP_ATOMIC);
++		usbhid->out[usbhid->outhead].raw_report = hid_alloc_report_buf(report, GFP_ATOMIC);
+ 		if (!usbhid->out[usbhid->outhead].raw_report) {
+ 			hid_warn(hid, "output queueing failed\n");
+ 			return;
+@@ -595,7 +594,7 @@ static void __usbhid_submit_report(struc
+ 	}
+ 
+ 	if (dir == USB_DIR_OUT) {
+-		usbhid->ctrl[usbhid->ctrlhead].raw_report = kmalloc(len, GFP_ATOMIC);
++		usbhid->ctrl[usbhid->ctrlhead].raw_report = hid_alloc_report_buf(report, GFP_ATOMIC);
+ 		if (!usbhid->ctrl[usbhid->ctrlhead].raw_report) {
+ 			hid_warn(hid, "control queueing failed\n");
+ 			return;
+--- a/include/linux/hid.h
++++ b/include/linux/hid.h
+@@ -746,6 +746,7 @@ struct hid_field *hidinput_get_led_field
+ unsigned int hidinput_count_leds(struct hid_device *hid);
+ __s32 hidinput_calc_abs_res(const struct hid_field *field, __u16 code);
+ void hid_output_report(struct hid_report *report, __u8 *data);
++u8 *hid_alloc_report_buf(struct hid_report *report, gfp_t flags);
+ struct hid_device *hid_allocate_device(void);
+ struct hid_report *hid_register_report(struct hid_device *device, unsigned type, unsigned id);
+ int hid_parse_report(struct hid_device *hid, __u8 *start, unsigned size);
+--- a/net/bluetooth/hidp/core.c
++++ b/net/bluetooth/hidp/core.c
+@@ -231,17 +231,21 @@ static void hidp_input_report(struct hid
+ 
+ static int hidp_send_report(struct hidp_session *session, struct hid_report *report)
+ {
+-	unsigned char buf[32], hdr;
+-	int rsize;
++	unsigned char hdr;
++	u8 *buf;
++	int rsize, ret;
+ 
+-	rsize = ((report->size - 1) >> 3) + 1 + (report->id > 0);
+-	if (rsize > sizeof(buf))
++	buf = hid_alloc_report_buf(report, GFP_ATOMIC);
++	if (!buf)
+ 		return -EIO;
+ 
+ 	hid_output_report(report, buf);
+ 	hdr = HIDP_TRANS_DATA | HIDP_DATA_RTYPE_OUPUT;
+ 
+-	return hidp_send_intr_message(session, hdr, buf, rsize);
++	ret = hidp_send_intr_message(session, hdr, buf, rsize);
++
++	kfree(buf);
++	return ret;
+ }
+ 
+ static int hidp_get_raw_report(struct hid_device *hid,
 
 
