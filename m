@@ -1,105 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757132Ab3JKISD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 04:18:03 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:52084 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756959Ab3JKIR7 (ORCPT
+	id S1757202Ab3JKISN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 04:18:13 -0400
+Received: from 16.mo1.mail-out.ovh.net ([178.33.104.224]:50646 "EHLO
+	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757102Ab3JKISE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 04:17:59 -0400
-Message-ID: <5257B420.10808@ti.com>
-Date: Fri, 11 Oct 2013 11:17:36 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>,
-        Lars-Peter Clausen <lars@metafoo.de>
-CC: Marek Belisko <marek@goldelico.com>, <plagnioj@jcrosoft.com>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-fbdev@vger.kernel.org>
-Subject: Re: [PATCH] omapdss: Add new panel driver for Topolly td028ttec1
- LCD.
-References: <1381352915-17219-1-git-send-email-marek@goldelico.com> <525662F5.3090600@ti.com> <7FAC77D4-5E1E-4B11-B067-3A8233C69240@goldelico.com> <52568B40.4040802@ti.com> <04AC7291-38E4-421B-979C-BF03D52E94BD@goldelico.com> <525699EF.6090803@ti.com> <52569CE8.5070201@metafoo.de> <A7739B52-2632-4DD8-924D-B657A6BFE3ED@goldelico.com> <5256F8DF.2020801@metafoo.de> <5257815F.5070803@ti.com> <5257A402.5030806@metafoo.de> <5570E6D7-4F66-40BE-A50C-6CCA8074BD83@goldelico.com>
-In-Reply-To: <5570E6D7-4F66-40BE-A50C-6CCA8074BD83@goldelico.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="3iHUkkh7XsED0U0cL1BRWplQIvKg3E0Wm"
+	Fri, 11 Oct 2013 04:18:04 -0400
+X-Greylist: delayed 1199 seconds by postgrey-1.27 at vger.kernel.org; Fri, 11 Oct 2013 04:18:03 EDT
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@linaro.org>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Josh Wu <josh.wu@atmel.com>, Richard Genoud <richard.genoud@gmail.com>
+Cc: Boris BREZILLON <b.brezillon@overkiz.com>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org
+Subject: [PATCH v4 00/17] ARM: at91: move to common clk framework
+Date: Fri, 11 Oct 2013 09:37:44 +0200
+Message-Id: <1381477081-6041-1-git-send-email-b.brezillon@overkiz.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Ovh-Tracer-Id: 12330292831860783328
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrvdefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrvdefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---3iHUkkh7XsED0U0cL1BRWplQIvKg3E0Wm
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Hello,
 
-On 11/10/13 10:42, Dr. H. Nikolaus Schaller wrote:
+This patch series is the 4th version of the new at91 clock implementation
+(using common clk framework).
 
-> I am not sure if there is a SPI driver for a McBSP port [1]? And to mak=
-e that
-> work (reliably) and tested it might need a lot of work for us. At least=
- I think
-> such a change (e.g. setting up clock polarity etc.) is not done in some=
- minutes.
-> And the only feedback we have from the panel is "does not work"/"works"=
-=2E I.e.
-> if we are not lucky that it works immediately we have no real means to =
-debug.
->=20
-> IMHO it also gives more flexibility to board designers to choose GPIOs =
-instead
-> of enforcing some SPI interface by the driver (and encapsulate this arg=
-uable
-> protocol in the driver). Maybe some board has 3 spare GPIOs but neither=
+Most of the clock provided by the PMC (Power Management Controller) are
+implemented :
+- main clock (main oscillator)
+- pll clocks
+- master clock
+- programmable clocks
+- utmi clock
+- peripheral clocks
+- system clocks
 
-> McBSPs nor McSPIs available.
+This implementation is only compatible with device tree definition.
+The goal is to define the whole clock tree in the device tree.
 
-This has been an interesting thread, I've learnt a lot =3D).
+Could a dt maintainer take a look at these dt bindinds.
 
-I still think the panel driver should not handle this, but there should
-be a separate spi bitbang driver for it.
+This patch series is based on linus tree (but should apply correctly on
+linux-next) and has been tested on sama5d31ek.
 
-I understand you're not enthusiastic going that way, as the current
-version works for you. However, when using DT, we need to think how to
-represent the hardware in the device tree data, and it has to be right
-from the beginning.
+Best Regards,
+Boris
 
-That's why I won't allow representing this panel as having 4 gpios in
-the DT data, because that is not correct. The panel has 3 pins. But
-then, the panel does allow reading, which could be implemented using 4
-gpios as you have done. This data should be in the spi-bitbang data, and
-the panel should just use the standard SPI framework.
+Changes since v3:
+ - simplify master clk implementation (drop set_rate/parent support)
+ - fix bug in set_rate function of pll driver
+ - fix coding style issues
+ - define macros and constants where needed
+ - remove peripheral id macro references
+ - remove sam9g35 specific handling (sam9g35 = sam9x5)
+ - rework main clk prepare function to handle automatic rate calculation
 
-Using SPI framework does not mean you should use McBSP or McSPI. It's up
-to you how the 3-wire SPI is implemented on the SoC side, the panel
-would just work in all the cases.
+Changes since v2:
+ - fix several bugs in clk implementations
+ - drop non-dt boards support
+ - split the series to ease review and tests:
+   * 1 patch series for new clk implementations (this series)
+   * 1 patch series to move each at91 SoC to common clk framework (coming soon)
+ - modify dt-bindings (add atmel,clk- prefix to atmel specific properties)
+ - add clk macros for dt-bindings
+ - add pmc framework (helper function to access pmc registers)
+ - add interrupt support to enable passive wait in clk_prepare functions
 
- Tomi
+Changes since v1:
+ - fix bugs in pll, programmable and system clock implementations
+   (wrong bit position).
+ - add usb clock configuration support (ohci and udc drivers +
+   clk_lookup for non dt boards)
+ - rework of the system clock interfaces (no need to define a parent clock,
+   system clock is a gate with no rate info)
+ - change system, peripheral and programmable clk dt bindings (1 master node
+   and multiple child nodes each defining a system/peripheral or prog clock)
+ - fix bugs in sama5 dt definition
 
+Boris BREZILLON (17):
+  ARM: at91: move at91_pmc.h to include/linux/clk/at91_pmc.h
+  ARM: at91: add Kconfig options for common clk support
+  clk: at91: add PMC base support
+  clk: at91: add PMC macro file for dt definitions
+  clk: at91: add PMC main clock
+  clk: at91: add PMC pll clocks
+  clk: at91: add PMC master clock
+  clk: at91: add PMC system clocks
+  clk: at91: add PMC peripheral clocks
+  clk: at91: add peripheral clk macros for peripheral clk dt bindings
+  clk: at91: add PMC programmable clocks
+  clk: at91: add PMC utmi clock
+  clk: at91: add PMC usb clock
+  clk: at91: add PMC smd clock
+  clk: at91: add PMC clk device tree binding doc.
+  ARM: at91: move pit timer to common clk framework
+  ARM: at91: add new compatible strings for pmc driver
 
+ .../devicetree/bindings/clock/at91-clock.txt       |  328 ++++++++++++
+ arch/arm/mach-at91/Kconfig                         |   44 ++
+ arch/arm/mach-at91/Kconfig.non_dt                  |    6 +
+ arch/arm/mach-at91/Makefile                        |    2 +-
+ arch/arm/mach-at91/at91rm9200.c                    |    2 +-
+ arch/arm/mach-at91/at91sam9260.c                   |    2 +-
+ arch/arm/mach-at91/at91sam9261.c                   |    2 +-
+ arch/arm/mach-at91/at91sam9263.c                   |    2 +-
+ arch/arm/mach-at91/at91sam926x_time.c              |   14 +-
+ arch/arm/mach-at91/at91sam9g45.c                   |    2 +-
+ arch/arm/mach-at91/at91sam9n12.c                   |    2 +-
+ arch/arm/mach-at91/at91sam9rl.c                    |    2 +-
+ arch/arm/mach-at91/at91sam9x5.c                    |    2 +-
+ arch/arm/mach-at91/clock.c                         |    7 +-
+ arch/arm/mach-at91/generic.h                       |    3 +-
+ arch/arm/mach-at91/pm.c                            |    2 +-
+ arch/arm/mach-at91/pm_slowclock.S                  |    2 +-
+ arch/arm/mach-at91/sama5d3.c                       |    2 +-
+ arch/arm/mach-at91/setup.c                         |    8 +-
+ drivers/clk/Makefile                               |    1 +
+ drivers/clk/at91/Makefile                          |   12 +
+ drivers/clk/at91/clk-main.c                        |  189 +++++++
+ drivers/clk/at91/clk-master.c                      |  278 ++++++++++
+ drivers/clk/at91/clk-peripheral.c                  |  407 +++++++++++++++
+ drivers/clk/at91/clk-pll.c                         |  539 ++++++++++++++++++++
+ drivers/clk/at91/clk-plldiv.c                      |  137 +++++
+ drivers/clk/at91/clk-programmable.c                |  423 +++++++++++++++
+ drivers/clk/at91/clk-smd.c                         |  173 +++++++
+ drivers/clk/at91/clk-system.c                      |  193 +++++++
+ drivers/clk/at91/clk-usb.c                         |  400 +++++++++++++++
+ drivers/clk/at91/clk-utmi.c                        |  162 ++++++
+ drivers/clk/at91/pmc.c                             |  372 ++++++++++++++
+ drivers/clk/at91/pmc.h                             |  113 ++++
+ drivers/usb/gadget/atmel_usba_udc.c                |    2 +-
+ include/dt-bindings/clk/at91.h                     |   28 +
+ .../include/mach => include/linux/clk}/at91_pmc.h  |    4 +-
+ 36 files changed, 3847 insertions(+), 20 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/clock/at91-clock.txt
+ create mode 100644 drivers/clk/at91/Makefile
+ create mode 100644 drivers/clk/at91/clk-main.c
+ create mode 100644 drivers/clk/at91/clk-master.c
+ create mode 100644 drivers/clk/at91/clk-peripheral.c
+ create mode 100644 drivers/clk/at91/clk-pll.c
+ create mode 100644 drivers/clk/at91/clk-plldiv.c
+ create mode 100644 drivers/clk/at91/clk-programmable.c
+ create mode 100644 drivers/clk/at91/clk-smd.c
+ create mode 100644 drivers/clk/at91/clk-system.c
+ create mode 100644 drivers/clk/at91/clk-usb.c
+ create mode 100644 drivers/clk/at91/clk-utmi.c
+ create mode 100644 drivers/clk/at91/pmc.c
+ create mode 100644 drivers/clk/at91/pmc.h
+ create mode 100644 include/dt-bindings/clk/at91.h
+ rename {arch/arm/mach-at91/include/mach => include/linux/clk}/at91_pmc.h (98%)
 
---3iHUkkh7XsED0U0cL1BRWplQIvKg3E0Wm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+-- 
+1.7.9.5
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJSV7QgAAoJEPo9qoy8lh71aBQP/Rk3tQ+GsVBciDg+c3R6nkPf
-5NR+rWAkYxOM8I9fi1FjThjeoQ4OQ/Av1xEApQR5+CgQx2GzlF6c4LFxwXsV97yN
-Rag9DqD/F+0esbRqQ7g0ZbEj3V12DKCT7X3Zoidch3p94XSYzzZGJr+ekQmff4L7
-xUABb+SrfIdvS+DIjJ7ZmIUEoFulCkz0rU8av8Mu0WLkwCZorgpn2Tw7dh/p/YTw
-knKg5zg5EOvt7dA7jSXqZIWqniQxT0+NPWFdXfe1VCL+ypvFIotijTqG0MKo89vr
-C2nGnmTsMQCn9bI3+vS7f6csdT0ir0XgNRVTi6d/i1mr41eU4HCiMzj5H8Y4TTge
-uwG25nRFGRosOW3phfYx3v35bUvpenthhSBYibQO1PgIVemrioJwUWFCdeZ/ycpU
-unzARlR7r54MwVwq9SS+pSAYj7BcfXWGpuGj0Way0Sj/6Z21tMVhLtJ/+0Qb8Uz9
-DjMKfWj3gR9wuA68skBm6pi4xb7lX+3R7s/UsIo3bIvOldmAFqX6Zk7UZVAY+ONm
-SgfmPNzAsKguymFmQ7FBPgv0YLd9VNVU4E8vTWw4mHlTvx7NwutzQ5uDSobPN+jM
-kBJo2Ck+E+eAv6flHkYD1xEmrxzYdVuq38r3ScYOrTFUH3JelxEkrgya4Q1gUwmj
-QIDcxOZivYX3P/L2vHP2
-=w+kN
------END PGP SIGNATURE-----
-
---3iHUkkh7XsED0U0cL1BRWplQIvKg3E0Wm--
