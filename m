@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756255Ab3JKKtz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 06:49:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58773 "EHLO
+	id S1758047Ab3JKKuQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 06:50:16 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58769 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758038Ab3JKKoL (ORCPT
+	with ESMTP id S1753245Ab3JKKoK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 06:44:11 -0400
+	Fri, 11 Oct 2013 06:44:10 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Nicholas Bellinger <nab@linux-iscsi.org>,
+Cc: Amitkumar Karwar <akarwar@marvell.com>, Bing Zhao <bzhao@marvell.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 085/100] ib_srpt: Destroy cm_id before destroying QP.
-Date: Fri, 11 Oct 2013 11:41:55 +0100
-Message-Id: <1381488130-30235-86-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 082/100] mwifiex: fix hang issue for USB chipsets
+Date: Fri, 11 Oct 2013 11:41:52 +0100
+Message-Id: <1381488130-30235-83-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
 References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
@@ -27,55 +28,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Amitkumar Karwar <akarwar@marvell.com>
 
-commit 0b41d6ca616ddeb3b6c0a80e8770b6f53cd42806 upstream.
+commit bd1c6142edce787b8ac1be15635f845aa9905333 upstream.
 
-This patch fixes a bug where ib_destroy_cm_id() was incorrectly being called
-after srpt_destroy_ch_ib() had destroyed the active QP.
+Bug 60815 - Interface hangs in mwifiex_usb
+https://bugzilla.kernel.org/show_bug.cgi?id=60815
 
-This would result in the following failed SRP_LOGIN_REQ messages:
+We have 4 bytes of interface header for packets delivered to SDIO
+and PCIe, but not for USB interface.
 
-Received SRP_LOGIN_REQ with i_port_id 0x0:0x2590ffff1762bd, t_port_id 0x2c903009f8f40:0x2c903009f8f40 and it_iu_len 260 on port 1 (guid=0xfe80000000000000:0x2c903009f8f41)
-Received SRP_LOGIN_REQ with i_port_id 0x0:0x2590ffff1758f9, t_port_id 0x2c903009f8f40:0x2c903009f8f40 and it_iu_len 260 on port 2 (guid=0xfe80000000000000:0x2c903009f8f42)
-Received SRP_LOGIN_REQ with i_port_id 0x0:0x2590ffff175941, t_port_id 0x2c903009f8f40:0x2c903009f8f40 and it_iu_len 260 on port 2 (guid=0xfe80000000000000:0x2c90300a3cfb2)
-Received SRP_LOGIN_REQ with i_port_id 0x0:0x2590ffff176299, t_port_id 0x2c903009f8f40:0x2c903009f8f40 and it_iu_len 260 on port 1 (guid=0xfe80000000000000:0x2c90300a3cfb1)
-mlx4_core 0000:84:00.0: command 0x19 failed: fw status = 0x9
-rejected SRP_LOGIN_REQ because creating a new RDMA channel failed.
-Received SRP_LOGIN_REQ with i_port_id 0x0:0x2590ffff176299, t_port_id 0x2c903009f8f40:0x2c903009f8f40 and it_iu_len 260 on port 1 (guid=0xfe80000000000000:0x2c90300a3cfb1)
-mlx4_core 0000:84:00.0: command 0x19 failed: fw status = 0x9
-rejected SRP_LOGIN_REQ because creating a new RDMA channel failed.
-Received SRP_LOGIN_REQ with i_port_id 0x0:0x2590ffff176299, t_port_id 0x2c903009f8f40:0x2c903009f8f40 and it_iu_len 260 on port 1 (guid=0xfe80000000000000:0x2c90300a3cfb1)
+In Tx AMSDU case, currently 4 bytes of garbage data is unnecessarily
+appended for USB packets. This sometimes leads to a firmware hang,
+because it may not interpret the data packet correctly.
 
-Reported-by: Navin Ahuja <navin.ahuja@saratoga-speed.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Problem is fixed by removing this redundant headroom for USB.
+
+Tested-by: Dmitry Khromov <icechrome@gmail.com>
+Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/infiniband/ulp/srpt/ib_srpt.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/wireless/mwifiex/11n_aggr.c | 3 ++-
+ drivers/net/wireless/mwifiex/11n_aggr.h | 2 +-
+ drivers/net/wireless/mwifiex/wmm.c      | 3 +--
+ 3 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/infiniband/ulp/srpt/ib_srpt.c b/drivers/infiniband/ulp/srpt/ib_srpt.c
-index 5f6b7f6..0ff33b0 100644
---- a/drivers/infiniband/ulp/srpt/ib_srpt.c
-+++ b/drivers/infiniband/ulp/srpt/ib_srpt.c
-@@ -2372,6 +2372,8 @@ static void srpt_release_channel_work(struct work_struct *w)
- 	transport_deregister_session(ch->sess);
- 	ch->sess = NULL;
+diff --git a/drivers/net/wireless/mwifiex/11n_aggr.c b/drivers/net/wireless/mwifiex/11n_aggr.c
+index ab84eb9..8a0667c 100644
+--- a/drivers/net/wireless/mwifiex/11n_aggr.c
++++ b/drivers/net/wireless/mwifiex/11n_aggr.c
+@@ -153,7 +153,7 @@ mwifiex_11n_form_amsdu_txpd(struct mwifiex_private *priv,
+  */
+ int
+ mwifiex_11n_aggregate_pkt(struct mwifiex_private *priv,
+-			  struct mwifiex_ra_list_tbl *pra_list, int headroom,
++			  struct mwifiex_ra_list_tbl *pra_list,
+ 			  int ptrindex, unsigned long ra_list_flags)
+ 			  __releases(&priv->wmm.ra_list_spinlock)
+ {
+@@ -163,6 +163,7 @@ mwifiex_11n_aggregate_pkt(struct mwifiex_private *priv,
+ 	int pad = 0, ret;
+ 	struct mwifiex_tx_param tx_param;
+ 	struct txpd *ptx_pd = NULL;
++	int headroom = adapter->iface_type == MWIFIEX_USB ? 0 : INTF_HEADER_LEN;
  
-+	ib_destroy_cm_id(ch->cm_id);
-+
- 	srpt_destroy_ch_ib(ch);
+ 	skb_src = skb_peek(&pra_list->skb_head);
+ 	if (!skb_src) {
+diff --git a/drivers/net/wireless/mwifiex/11n_aggr.h b/drivers/net/wireless/mwifiex/11n_aggr.h
+index 900e1c6..892098d 100644
+--- a/drivers/net/wireless/mwifiex/11n_aggr.h
++++ b/drivers/net/wireless/mwifiex/11n_aggr.h
+@@ -26,7 +26,7 @@
+ int mwifiex_11n_deaggregate_pkt(struct mwifiex_private *priv,
+ 				struct sk_buff *skb);
+ int mwifiex_11n_aggregate_pkt(struct mwifiex_private *priv,
+-			      struct mwifiex_ra_list_tbl *ptr, int headroom,
++			      struct mwifiex_ra_list_tbl *ptr,
+ 			      int ptr_index, unsigned long flags)
+ 			      __releases(&priv->wmm.ra_list_spinlock);
  
- 	srpt_free_ioctx_ring((struct srpt_ioctx **)ch->ioctx_ring,
-@@ -2382,8 +2384,6 @@ static void srpt_release_channel_work(struct work_struct *w)
- 	list_del(&ch->list);
- 	spin_unlock_irq(&sdev->spinlock);
- 
--	ib_destroy_cm_id(ch->cm_id);
--
- 	if (ch->release_done)
- 		complete(ch->release_done);
- 
+diff --git a/drivers/net/wireless/mwifiex/wmm.c b/drivers/net/wireless/mwifiex/wmm.c
+index 3fa4d41..8ac61da 100644
+--- a/drivers/net/wireless/mwifiex/wmm.c
++++ b/drivers/net/wireless/mwifiex/wmm.c
+@@ -1246,8 +1246,7 @@ mwifiex_dequeue_tx_packet(struct mwifiex_adapter *adapter)
+ 		if (mwifiex_is_amsdu_allowed(priv, tid) &&
+ 		    mwifiex_is_11n_aggragation_possible(priv, ptr,
+ 							adapter->tx_buf_size))
+-			mwifiex_11n_aggregate_pkt(priv, ptr, INTF_HEADER_LEN,
+-						  ptr_index, flags);
++			mwifiex_11n_aggregate_pkt(priv, ptr, ptr_index, flags);
+ 			/* ra_list_spinlock has been freed in
+ 			   mwifiex_11n_aggregate_pkt() */
+ 		else
 -- 
 1.8.3.2
 
