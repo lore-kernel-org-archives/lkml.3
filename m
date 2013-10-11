@@ -1,76 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755783Ab3JKA2o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 20:28:44 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:37926 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755660Ab3JKA2l (ORCPT
+	id S1755844Ab3JKAbf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 20:31:35 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:38249 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752329Ab3JKAbe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 20:28:41 -0400
-From: Chenggang Qin <chenggang.qin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Chenggang Qin <chenggang.qcg@taobao.com>, David Ahern <dsahern@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Namhyung Kim <namhyung@gmail.com>,
-        Yanmin Zhang <yanmin.zhang@intel.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Mike Galbraith <efault@gmx.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 3/3] perf core: Fix a memory leak bug because symbol__delete is ignored
-Date: Fri, 11 Oct 2013 08:27:59 +0800
-Message-Id: <1381451279-4109-3-git-send-email-chenggang.qin@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1381451279-4109-1-git-send-email-chenggang.qin@gmail.com>
-References: <1381451279-4109-1-git-send-email-chenggang.qin@gmail.com>
+	Thu, 10 Oct 2013 20:31:34 -0400
+Message-ID: <1381451492.2367.63.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH] partitions/efi: treat size mismatch as a warning, not
+ an error
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Doug Anderson <dianders@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, Karel Zak <kzak@redhat.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Sean Paul <seanpaul@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Bill Richardson <wfrichar@chromium.org>,
+        Josh Triplett <josh@joshtriplett.org>
+Date: Thu, 10 Oct 2013 17:31:32 -0700
+In-Reply-To: <1381447702-6240-1-git-send-email-dianders@chromium.org>
+References: <20131009232642.GA12776@jtriplet-mobl1>
+	 <1381447702-6240-1-git-send-email-dianders@chromium.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chenggang Qin <chenggang.qcg@taobao.com>
+On Thu, 2013-10-10 at 16:28 -0700, Doug Anderson wrote:
+> In (27a7c64 partitions/efi: account for pmbr size in lba) we started
+> treating bad sizes in lba field of the partition that has the 0xEE
+> (GPT protective) as errors.  However, we may run into these "bad
+> sizes" in the real world if someone uses dd to copy an image from a
+> smaller disk to a bigger disk.  Since this case used to work (even
+> without using force_gpt), keep it working and treat the size mismatch
+> as a warning instead of an error.
+> 
+> Reported-by: Josh Triplett <josh@joshtriplett.org>
+> Reported-by: Sean Paul <seanpaul@chromium.org>
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> ---
+>  block/partitions/efi.c | 6 +++++-
+>  1 file changed, 5 insertions(+), 1 deletion(-)
+> 
+> diff --git a/block/partitions/efi.c b/block/partitions/efi.c
+> index 1eb09ee..ac23dc1 100644
+> --- a/block/partitions/efi.c
+> +++ b/block/partitions/efi.c
+> @@ -222,11 +222,15 @@ check_hybrid:
+>  	 * the disk size.
+>  	 *
+>  	 * Hybrid MBRs do not necessarily comply with this.
+> +	 *
+> +	 * Consider a bad value here to be a warning to support dd-ing
 
-In function symbols__fixup_duplicate(), while the duplicated symbols are found,
-only the rb_node are deleted. The symbol structures themself are ignored.
-Then, these memory areas are lost.
-This patch fixed the bug. 
-Thanks.
+dd'ing instead?
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Yanmin Zhang <yanmin.zhang@intel.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Chenggang Qin <chenggang.qcg@taobao.com>
-Acked-by: Namhyung Kim <namhyung@kernel.org>
+> +	 * an image from a smaller disk to a bigger disk.
 
----
- tools/perf/util/symbol.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+'larger' disk sounds better.
 
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 9675866..3c9aa6f 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -148,10 +148,12 @@ again:
- 
- 		if (choose_best_symbol(curr, next) == SYMBOL_A) {
- 			rb_erase(&next->rb_node, symbols);
-+			symbol__delete(next);
- 			goto again;
- 		} else {
- 			nd = rb_next(&curr->rb_node);
- 			rb_erase(&curr->rb_node, symbols);
-+			symbol__delete(curr);
- 		}
- 	}
- }
--- 
-1.7.8.rc2.5.g815b
+>  	 */
+>  	if (ret == GPT_MBR_PROTECTIVE) {
+>  		sz = le32_to_cpu(mbr->partition_record[part].size_in_lba);
+>  		if (sz != (uint32_t) total_sectors - 1 && sz != 0xFFFFFFFF)
+> -			ret = 0;
+> +			pr_warn("%s: mbr size mismatch (%u != %u)\n", __func__,
+> +				sz, (uint32_t)((uint32_t) total_sectors - 1));
+
+How about this instead?
+pr_debug("GPT: mbr size in lba (%d) different than whole disk (%d).\n", sz, min(total_sectors -1, 0xFFFFFFFF));
+
+>  	}
+>  done:
+>  	return ret;
+
+Thanks,
+Davidlohr
 
