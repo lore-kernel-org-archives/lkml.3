@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756205Ab3JKU7d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:59:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45309 "EHLO
+	id S1756231Ab3JKU7y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:59:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45305 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758010Ab3JKThM (ORCPT
+	with ESMTP id S1757895Ab3JKThL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:37:12 -0400
+	Fri, 11 Oct 2013 15:37:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>,
+        Salam Noureddine <noureddine@aristanetworks.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 19/48] ll_temac: Reset dma descriptors indexes on ndo_open
-Date: Fri, 11 Oct 2013 12:36:26 -0700
-Message-Id: <20131011193639.342222623@linuxfoundation.org>
+Subject: [ 18/48] ipv6 mcast: use in6_dev_put in timer handlers instead of __in6_dev_put
+Date: Fri, 11 Oct 2013 12:36:25 -0700
+Message-Id: <20131011193639.238332626@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193637.253208688@linuxfoundation.org>
 References: <20131011193637.253208688@linuxfoundation.org>
@@ -27,42 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ricardo Ribalda <ricardo.ribalda@gmail.com>
+From: Salam Noureddine <noureddine@aristanetworks.com>
 
-[ Upstream commit 7167cf0e8cd10287b7912b9ffcccd9616f382922 ]
+[ Upstream commit 9260d3e1013701aa814d10c8fc6a9f92bd17d643 ]
 
-The dma descriptors indexes are only initialized on the probe function.
+It is possible for the timer handlers to run after the call to
+ipv6_mc_down so use in6_dev_put instead of __in6_dev_put in the
+handler function in order to do proper cleanup when the refcnt
+reaches 0. Otherwise, the refcnt can reach zero without the
+inet6_dev being destroyed and we end up leaking a reference to
+the net_device and see messages like the following,
 
-If a packet is on the buffer when temac_stop is called, the dma
-descriptors indexes can be left on a incorrect state where no other
-package can be sent.
+unregister_netdevice: waiting for eth0 to become free. Usage count = 1
 
-So an interface could be left in an usable state after ifdow/ifup.
+Tested on linux-3.4.43.
 
-This patch makes sure that the descriptors indexes are in a proper
-status when the device is open.
-
-Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Signed-off-by: Salam Noureddine <noureddine@aristanetworks.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/xilinx/ll_temac_main.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ net/ipv6/mcast.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/ethernet/xilinx/ll_temac_main.c
-+++ b/drivers/net/ethernet/xilinx/ll_temac_main.c
-@@ -308,6 +308,12 @@ static int temac_dma_bd_init(struct net_
- 		       lp->rx_bd_p + (sizeof(*lp->rx_bd_v) * (RX_BD_NUM - 1)));
- 	lp->dma_out(lp, TX_CURDESC_PTR, lp->tx_bd_p);
+--- a/net/ipv6/mcast.c
++++ b/net/ipv6/mcast.c
+@@ -2149,7 +2149,7 @@ static void mld_gq_timer_expire(unsigned
  
-+	/* Init descriptor indexes */
-+	lp->tx_bd_ci = 0;
-+	lp->tx_bd_next = 0;
-+	lp->tx_bd_tail = 0;
-+	lp->rx_bd_ci = 0;
-+
- 	return 0;
+ 	idev->mc_gq_running = 0;
+ 	mld_send_report(idev, NULL);
+-	__in6_dev_put(idev);
++	in6_dev_put(idev);
+ }
  
- out:
+ static void mld_ifc_timer_expire(unsigned long data)
+@@ -2162,7 +2162,7 @@ static void mld_ifc_timer_expire(unsigne
+ 		if (idev->mc_ifc_count)
+ 			mld_ifc_start_timer(idev, idev->mc_maxdelay);
+ 	}
+-	__in6_dev_put(idev);
++	in6_dev_put(idev);
+ }
+ 
+ static void mld_ifc_event(struct inet6_dev *idev)
 
 
