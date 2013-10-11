@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754449Ab3JKUs0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:48:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45492 "EHLO
+	id S1758721Ab3JKTjh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:39:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45469 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758727Ab3JKTjj (ORCPT
+	with ESMTP id S1755431Ab3JKTjf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:39:39 -0400
+	Fri, 11 Oct 2013 15:39:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiri Pirko <jiri@resnulli.us>, "David S. Miller" <davem@davemloft.net>
-Subject: [ 008/110] ipv6/exthdrs: accept tlv which includes only padding
-Date: Fri, 11 Oct 2013 12:37:48 -0700
-Message-Id: <20131011193808.514241863@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Mike Miller <mike.miller@hp.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 003/110] cciss: fix info leak in cciss_ioctl32_passthru()
+Date: Fri, 11 Oct 2013 12:37:43 -0700
+Message-Id: <20131011193807.972672488@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
 References: <20131011193807.584188672@linuxfoundation.org>
@@ -26,39 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Pirko <jiri@resnulli.us>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-[ Upstream commit 8112b1fe071be01a28a774ed55909e6f4b29712d ]
+commit 58f09e00ae095e46ef9edfcf3a5fd9ccdfad065e upstream.
 
-In rfc4942 and rfc2460 I cannot find anything which would implicate to
-drop packets which have only padding in tlv.
+The arg64 struct has a hole after ->buf_size which isn't cleared.  Or if
+any of the calls to copy_from_user() fail then that would cause an
+information leak as well.
 
-Current behaviour breaks TAHI Test v6LC.1.2.6.
+This was assigned CVE-2013-2147.
 
-Problem was intruduced in:
-9b905fe6843 "ipv6/exthdrs: strict Pad1 and PadN check"
-
-Signed-off-by: Jiri Pirko <jiri@resnulli.us>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Mike Miller <mike.miller@hp.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv6/exthdrs.c |    6 ------
- 1 file changed, 6 deletions(-)
 
---- a/net/ipv6/exthdrs.c
-+++ b/net/ipv6/exthdrs.c
-@@ -162,12 +162,6 @@ static bool ip6_parse_tlv(const struct t
- 		off += optlen;
- 		len -= optlen;
- 	}
--	/* This case will not be caught by above check since its padding
--	 * length is smaller than 7:
--	 * 1 byte NH + 1 byte Length + 6 bytes Padding
--	 */
--	if ((padlen == 6) && ((off - skb_network_header_len(skb)) == 8))
--		goto bad;
+---
+ drivers/block/cciss.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/drivers/block/cciss.c
++++ b/drivers/block/cciss.c
+@@ -1189,6 +1189,7 @@ static int cciss_ioctl32_passthru(struct
+ 	int err;
+ 	u32 cp;
  
- 	if (len == 0)
- 		return true;
++	memset(&arg64, 0, sizeof(arg64));
+ 	err = 0;
+ 	err |=
+ 	    copy_from_user(&arg64.LUN_info, &arg32->LUN_info,
 
 
