@@ -1,82 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755387Ab3JKXVG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 19:21:06 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:45796 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754266Ab3JKXRn (ORCPT
+	id S1752846Ab3JKX2o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 19:28:44 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:53714 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752471Ab3JKX2m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 19:17:43 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        bridge@lists.linux-foundation.org, netdev@vger.kernel.org
-Subject: [PATCH v3 tip/core/rcu 03/14] bridge: Apply ACCESS_ONCE() to avoid sparse false positive
-Date: Fri, 11 Oct 2013 16:17:20 -0700
-Message-Id: <1381533451-29018-3-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1381533451-29018-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20131011231659.GA28062@linux.vnet.ibm.com>
- <1381533451-29018-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13101123-0928-0000-0000-00000277C7EE
+	Fri, 11 Oct 2013 19:28:42 -0400
+Date: Fri, 11 Oct 2013 16:28:39 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: KY Srinivasan <kys@microsoft.com>
+cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Olaf Hering <olaf@aepfle.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Subject: RE: [patch x86/hyperv] x86, hyperv: Fix build error
+In-Reply-To: <86627d477ccc42aea289f62ad96d0e4b@SN2PR03MB061.namprd03.prod.outlook.com>
+Message-ID: <alpine.DEB.2.02.1310111619470.31170@chino.kir.corp.google.com>
+References: <1380554932-9888-1-git-send-email-olaf@aepfle.de> <tip-9e7827b5ea4ca93b4d864bc07c0fafb838d496b1@git.kernel.org> <alpine.DEB.2.02.1310111604160.31170@chino.kir.corp.google.com>
+ <86627d477ccc42aea289f62ad96d0e4b@SN2PR03MB061.namprd03.prod.outlook.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+On Fri, 11 Oct 2013, KY Srinivasan wrote:
 
-The sparse checking for rcu_assign_pointer() was recently upgraded
-to reject non-__kernel address spaces.  This also rejects __rcu,
-which is almost always the right thing to do.  However, the uses in
-br_multicast_del_pg() and br_multicast_new_port_group() are legitimate:
-They are assigning a pointer to an element from an RCU-protected list,
-and all elements of this list are already visible to caller.
+> > From: David Rientjes [mailto:rientjes@google.com]
+> > Sent: Friday, October 11, 2013 4:08 PM
+> > To: Ingo Molnar; H. Peter Anvin; tglx@linutronix.de; H. Peter Anvin
+> > Cc: KY Srinivasan; Olaf Hering; linux-kernel@vger.kernel.org; linux-tip-
+> > commits@vger.kernel.org
+> > Subject: [patch x86/hyperv] x86, hyperv: Fix build error
+> > 
+> > 9e7827b5ea4c ("x86, hyperv: Get the local APIC timer frequency from the
+> > hypervisor") breaks the build with some configs because apic.h isn't
+> > directly included:
+> > 
+> > arch/x86/kernel/cpu/mshyperv.c: In function 'ms_hyperv_init_platform':
+> > arch/x86/kernel/cpu/mshyperv.c:90:3: error: 'lapic_timer_frequency' undeclared
+> > (first use in this function)
+> > arch/x86/kernel/cpu/mshyperv.c:90:3: note: each undeclared identifier is
+> > reported only once for each function it appears in
+> > 
+> > Fix it by including asm/apic.h.
+> 
+> Thank you. The issue was configuration related - local APIC was not configured. This has already been fixed.
+> 
 
-This commit therefore silences these false positives by laundering
-the pointers using ACCESS_ONCE() as suggested by Eric Dumazet and Josh
-Triplett.
+Yeah, it's config related as stated in the changelog.  If you're referring 
+to 90ab9d551093 ("x86, hyperv: Correctly guard the local APIC calibration 
+code ")as "fixing" it, it does not.  (I'm left to wonder what you mean by 
+it being fixed since you didn't elaborate.)  You can trigger this build 
+breakage even with CONFIG_X86_LOCAL_APIC=y.
 
-Reported-by: kbuild test robot <fengguang.wu@intel.com>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Stephen Hemminger <stephen@networkplumber.org>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: bridge@lists.linux-foundation.org
-Cc: netdev@vger.kernel.org
----
- net/bridge/br_multicast.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Let me be explicit: this file includes desc.h, which includes linux/smp.h, 
+which includes asm/smp.h iff CONFIG_SMP is enabled.  That's what you're 
+relying upon to get asm/apic.h when CONFIG_X86_LOCAL_APIC is enabled.  It 
+will break when CONFIG_SMP is disabled.
 
-diff --git a/net/bridge/br_multicast.c b/net/bridge/br_multicast.c
-index d1c578630678..bcc4bbc16498 100644
---- a/net/bridge/br_multicast.c
-+++ b/net/bridge/br_multicast.c
-@@ -267,7 +267,7 @@ static void br_multicast_del_pg(struct net_bridge *br,
- 		if (p != pg)
- 			continue;
- 
--		rcu_assign_pointer(*pp, p->next);
-+		ACCESS_ONCE(*pp) = p->next; /* OK: Both --rcu and visible. */
- 		hlist_del_init(&p->mglist);
- 		del_timer(&p->timer);
- 		call_rcu_bh(&p->rcu, br_multicast_free_pg);
-@@ -646,7 +646,7 @@ struct net_bridge_port_group *br_multicast_new_port_group(
- 	p->addr = *group;
- 	p->port = port;
- 	p->state = state;
--	rcu_assign_pointer(p->next, next);
-+	ACCESS_ONCE(p->next) = next; /* OK: Both --rcu and visible. */
- 	hlist_add_head(&p->mglist, &port->mglist);
- 	setup_timer(&p->timer, br_multicast_port_group_expired,
- 		    (unsigned long)p);
--- 
-1.8.1.5
-
+So you need to include asm/apic.h directly for such a configuration.
