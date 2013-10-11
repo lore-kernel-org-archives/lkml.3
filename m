@@ -1,64 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756567Ab3JKFTR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 01:19:17 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:45442 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756529Ab3JKFTQ (ORCPT
+	id S1752684Ab3JKFZq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 01:25:46 -0400
+Received: from smtprelay0236.hostedemail.com ([216.40.44.236]:43430 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751862Ab3JKFZo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 01:19:16 -0400
-Message-ID: <52578A4D.2000300@gmail.com>
-Date: Fri, 11 Oct 2013 16:19:09 +1100
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: George Spelvin <linux@horizon.com>, ebiederm@xmission.com, joe@perches.com
-CC: akpm@linux-foundation.org, dan.j.rosenberg@gmail.com,
-        eldad@fogrefinery.com, jgunthorpe@obsidianresearch.com,
-        jkosina@suse.cz, keescook@chromium.org,
-        kernel-hardening@lists.openwall.com, linux-kernel@vger.kernel.org,
-        viro@zeniv.linux.org.uk
-Subject: Re: [PATCH v3a] vsprintf: Check real user/group id for %pK
-References: <20131011044232.11545.qmail@science.horizon.com>
-In-Reply-To: <20131011044232.11545.qmail@science.horizon.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 11 Oct 2013 01:25:44 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:69:355:379:421:541:800:960:973:988:989:1260:1345:1437:1534:1544:1605:1711:1730:1747:1777:1792:2393:2553:2559:2562:2693:2904:3138:3139:3140:3141:3142:3865:3866:3867:3868:3870:3871:4250:4321:4605:5007:6119:6261:7875:8603:10004:10026:10848:11026:11232:11658:11914:12043:12291:12296:12438:12517:12519:12555:12683:13200:13229,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: fork53_14bb991de052d
+X-Filterd-Recvd-Size: 4863
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Ryan Mallon <rmallon@gmail.com>, Dan Rosenberg <dan.j.rosenberg@gmail.com>,
+        Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] vsprintf/sysctl: Bugfix, neaten and document %pK usages
+Date: Thu, 10 Oct 2013 22:25:39 -0700
+Message-Id: <0aef7497929fd764a88ca7b3c22f082a5c2fe909.1381468961.git.joe@perches.com>
+X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/10/13 15:42, George Spelvin wrote:
-> ebiederm@xmission.com (Eric W. Biederman) wrote:
->> Sigh.  This is all wrong.  The only correct thing to test is
->> file->f_cred.  Aka the capabilities of the program that opened the
->> file.
->>
->> Which means that the interface to %pK in the case of kptr_restrict is
->> broken as it has no way to be passed the information it needs to make
->> a sensible decision.
-> 
-> I looked at the code, and pretty painful.  Certainly it's possible to
-> include a reference to the file (I was thinking of just the credentials,
-> actually) in the seq_file.  But getting that to the vsprintf.c code
-> (specifically, the pointer() function) is a PITA.
-> 
-> I'm willing to accept the currently proposed kludge as a "good enough"
-> approximation, as long as we're all agreed that using the credentials
-> at open() time would be The Right Thing, and hopefully someone will find
-> the round tuitts to implement that in future.
-> 
-> But in the meantime, "the perfect is the enemey of the good" is worth
-> remembering.
-> 
-> (An alternate implementation I've been thinking about would be to do
-> away with %pK, and instead have a "secret_ptr(p, seq->cred)" helper that
-> returned p or 0 depending on the credential.)
+Printing kernel pointers via %pK has a minor defect when
+kptr_restrict is set to 2:  the pointer may be emitted
+as "pK-error" instead of all 0's when in an interrupt.
 
-Yeah, that is probably the best solution. I'll try to put together a
-patch series doing this. It will obviously be more involved though, so I
-think it is still worth merging the original patch in the interm.
+Fix this defect, neaten the code, and correct the sysctl
+documentation.
 
-~Ryan
+Add missing documentation for 2 other uses: %pNF and %pV.
 
+Trivially reduces vsprintf.o object size:
 
+$ size lib/vsprintf.o*
+   text	   data	    bss	    dec	    hex	filename
+  14536	      6	      0	  14542	   38ce	lib/vsprintf.o.new
+  14568	      6	      0	  14574	   38ee	lib/vsprintf.o.old
+
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ Documentation/sysctl/kernel.txt | 17 +++++++++--------
+ lib/vsprintf.c                  | 38 ++++++++++++++++++++++++--------------
+ 2 files changed, 33 insertions(+), 22 deletions(-)
+
+diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
+index 9d4c1d1..c17d5ca 100644
+--- a/Documentation/sysctl/kernel.txt
++++ b/Documentation/sysctl/kernel.txt
+@@ -289,14 +289,15 @@ Default value is "/sbin/hotplug".
+ 
+ kptr_restrict:
+ 
+-This toggle indicates whether restrictions are placed on
+-exposing kernel addresses via /proc and other interfaces.  When
+-kptr_restrict is set to (0), there are no restrictions.  When
+-kptr_restrict is set to (1), the default, kernel pointers
+-printed using the %pK format specifier will be replaced with 0's
+-unless the user has CAP_SYSLOG.  When kptr_restrict is set to
+-(2), kernel pointers printed using %pK will be replaced with 0's
+-regardless of privileges.
++This toggle indicates whether restrictions are placed on exposing kernel
++addresses via /proc and other interfaces.
++
++When kptr_restrict is set to (0), the default, there are no restrictions.
++When kptr_restrict is set to (1), kernel pointers printed using the %pK
++format specifier will be replaced with 0's unless the user has CAP_SYSLOG
++and effective user and group ids are equal to the real ids.
++When kptr_restrict is set to (2), kernel pointers printed using %pK will
++be replaced with 0's regardless of privileges.
+ 
+ ==============================================================
+ 
+diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+index 26559bd..ce55f52 100644
+--- a/lib/vsprintf.c
++++ b/lib/vsprintf.c
+@@ -1301,21 +1301,28 @@ char *pointer(const char *fmt, char *buf, char *end, void *ptr,
+ 			va_end(va);
+ 			return buf;
+ 		}
+-	case 'K':
+-		/*
+-		 * %pK cannot be used in IRQ context because its test
+-		 * for CAP_SYSLOG would be meaningless.
+-		 */
+-		if (kptr_restrict && (in_irq() || in_serving_softirq() ||
+-				      in_nmi())) {
+-			if (spec.field_width == -1)
+-				spec.field_width = default_width;
+-			return string(buf, end, "pK-error", spec);
+-		}
+-		if (!((kptr_restrict == 0) ||
+-		      (kptr_restrict == 1 &&
+-		       has_capability_noaudit(current, CAP_SYSLOG))))
++	case 'K':		/* see: Documentation/sysctl/kernel.txt */
++		switch (kptr_restrict) {
++		case 0:			/* None (default) */
++			break;
++		case 1:			/* Restricted */
++			if (in_irq() || in_serving_softirq() || in_nmi()) {
++				/*
++				 * This cannot be used in IRQ context because
++				 * the test for CAP_SYSLOG would be meaningless
++				 */
++				if (spec.field_width == -1)
++					spec.field_width = default_width;
++				return string(buf, end, "pK-error", spec);
++			}
++			if (!has_capability_noaudit(current, CAP_SYSLOG))
++				ptr = NULL;
++			break;
++		case 2:			/* Never - Always emit 0 */
++		default:
+ 			ptr = NULL;
++			break;
++		}
+ 		break;
+ 	case 'N':
+ 		switch (fmt[1]) {
+@@ -1574,6 +1581,9 @@ qualifier:
+  * %piS depending on sa_family of 'struct sockaddr *' print IPv4/IPv6 address
+  * %pU[bBlL] print a UUID/GUID in big or little endian using lower or upper
+  *   case.
++ * %pV recurse and output a struct va_format (const char *fmt, va_list *)
++ * %pK output a kernel address or 0 depending on sysctl kptr_restrict
++ * %NF output a netdev_features_t
+  * %*ph[CDN] a variable-length hex string with a separator (supports up to 64
+  *           bytes of the input)
+  * %n is ignored
+-- 
+1.8.1.2.459.gbcd45b4.dirty
 
