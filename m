@@ -1,28 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933320Ab3JKUUl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:20:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45965 "EHLO
+	id S933328Ab3JKUU7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:20:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45959 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932213Ab3JKTkt (ORCPT
+	with ESMTP id S932135Ab3JKTks (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:40:49 -0400
+	Fri, 11 Oct 2013 15:40:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?=E7=8E=8B=E5=BA=B7?= <scateu@gmail.com>,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 109/110] net: qmi_wwan: add new Qualcomm devices
-Date: Fri, 11 Oct 2013 12:39:29 -0700
-Message-Id: <20131011193819.665351884@linuxfoundation.org>
+        Tom Gundersen <teg@jklm.no>, David Herrmann <dh.herrmann@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [ 108/110] HID: uhid: allocate static minor
+Date: Fri, 11 Oct 2013 12:39:28 -0700
+Message-Id: <20131011193819.542445649@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
 References: <20131011193807.584188672@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,179 +27,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
+From: David Herrmann <dh.herrmann@gmail.com>
 
-commit 0470667caa8261beb8a9141102b04a5357dd45b5 upstream.
+commit 19872d20c890073c5207d9e02bb8f14d451a11eb upstream.
 
-Adding the device list from the Windows driver description files
-included with a new Qualcomm MDM9615 based device, "Alcatel-sbell
-ASB TL131 TDD LTE", from China Mobile.  This device is tested
-and verified to work.  The others are assumed to work based on
-using the same Windows driver.
+udev has this nice feature of creating "dead" /dev/<node> device-nodes if
+it finds a devnode:<node> modalias. Once the node is accessed, the kernel
+automatically loads the module that provides the node. However, this
+requires udev to know the major:minor code to use for the node. This
+feature was introduced by:
 
-Many of these devices support multiple QMI/wwan ports, requiring
-multiple interface matching entries.  All devices are composite,
-providing a mix of one or more serial, storage or Android Debug
-Brigde functions in addition to the wwan function.
+  commit 578454ff7eab61d13a26b568f99a89a2c9edc881
+  Author: Kay Sievers <kay.sievers@vrfy.org>
+  Date:   Thu May 20 18:07:20 2010 +0200
 
-This device list included an update of one previously known device,
-which was incorrectly assumed to have a Gobi 2K layout.  This is
-corrected.
+      driver core: add devname module aliases to allow module on-demand auto-loading
 
-Reported-by: 王康 <scateu@gmail.com>
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+However, uhid uses dynamic minor numbers so this doesn't actually work. We
+need to load uhid to know which minor it's going to use.
+
+Hence, allocate a static minor (just like uinput does) and we're good
+to go.
+
+Reported-by: Tom Gundersen <teg@jklm.no>
+Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/usb/qmi_wwan.c |  130 ++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 129 insertions(+), 1 deletion(-)
+ drivers/hid/uhid.c         |    3 ++-
+ include/linux/miscdevice.h |    1 +
+ 2 files changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/net/usb/qmi_wwan.c
-+++ b/drivers/net/usb/qmi_wwan.c
-@@ -518,6 +518,135 @@ static const struct usb_device_id produc
+--- a/drivers/hid/uhid.c
++++ b/drivers/hid/uhid.c
+@@ -640,7 +640,7 @@ static const struct file_operations uhid
  
- 	/* 3. Combined interface devices matching on interface number */
- 	{QMI_FIXED_INTF(0x0408, 0xea42, 4)},	/* Yota / Megafon M100-1 */
-+	{QMI_FIXED_INTF(0x05c6, 0x7000, 0)},
-+	{QMI_FIXED_INTF(0x05c6, 0x7001, 1)},
-+	{QMI_FIXED_INTF(0x05c6, 0x7002, 1)},
-+	{QMI_FIXED_INTF(0x05c6, 0x7101, 1)},
-+	{QMI_FIXED_INTF(0x05c6, 0x7101, 2)},
-+	{QMI_FIXED_INTF(0x05c6, 0x7101, 3)},
-+	{QMI_FIXED_INTF(0x05c6, 0x7102, 1)},
-+	{QMI_FIXED_INTF(0x05c6, 0x7102, 2)},
-+	{QMI_FIXED_INTF(0x05c6, 0x7102, 3)},
-+	{QMI_FIXED_INTF(0x05c6, 0x8000, 7)},
-+	{QMI_FIXED_INTF(0x05c6, 0x8001, 6)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9000, 4)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9003, 4)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9005, 2)},
-+	{QMI_FIXED_INTF(0x05c6, 0x900a, 4)},
-+	{QMI_FIXED_INTF(0x05c6, 0x900b, 2)},
-+	{QMI_FIXED_INTF(0x05c6, 0x900c, 4)},
-+	{QMI_FIXED_INTF(0x05c6, 0x900c, 5)},
-+	{QMI_FIXED_INTF(0x05c6, 0x900c, 6)},
-+	{QMI_FIXED_INTF(0x05c6, 0x900d, 5)},
-+	{QMI_FIXED_INTF(0x05c6, 0x900f, 3)},
-+	{QMI_FIXED_INTF(0x05c6, 0x900f, 4)},
-+	{QMI_FIXED_INTF(0x05c6, 0x900f, 5)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9010, 4)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9010, 5)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9011, 3)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9011, 4)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9021, 1)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9022, 2)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9025, 4)},	/* Alcatel-sbell ASB TL131 TDD LTE  (China Mobile) */
-+	{QMI_FIXED_INTF(0x05c6, 0x9026, 3)},
-+	{QMI_FIXED_INTF(0x05c6, 0x902e, 5)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9031, 5)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9032, 4)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9033, 3)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9033, 4)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9033, 5)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9033, 6)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9034, 3)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9034, 4)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9034, 5)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9034, 6)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9034, 7)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9035, 4)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9036, 3)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9037, 5)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9038, 4)},
-+	{QMI_FIXED_INTF(0x05c6, 0x903b, 7)},
-+	{QMI_FIXED_INTF(0x05c6, 0x903c, 6)},
-+	{QMI_FIXED_INTF(0x05c6, 0x903d, 6)},
-+	{QMI_FIXED_INTF(0x05c6, 0x903e, 5)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9043, 3)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9046, 3)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9046, 4)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9046, 5)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9047, 2)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9047, 3)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9047, 4)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9048, 4)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9048, 5)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9048, 6)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9048, 7)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9048, 8)},
-+	{QMI_FIXED_INTF(0x05c6, 0x904c, 5)},
-+	{QMI_FIXED_INTF(0x05c6, 0x904c, 6)},
-+	{QMI_FIXED_INTF(0x05c6, 0x904c, 7)},
-+	{QMI_FIXED_INTF(0x05c6, 0x904c, 8)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9050, 3)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9052, 4)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9053, 6)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9053, 7)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9054, 5)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9054, 6)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9055, 3)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9055, 4)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9055, 5)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9055, 6)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9055, 7)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9056, 3)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9062, 2)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9062, 3)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9062, 4)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9062, 5)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9062, 6)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9062, 7)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9062, 8)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9062, 9)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9064, 3)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9065, 6)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9065, 7)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9066, 5)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9066, 6)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9067, 1)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9068, 2)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9068, 3)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9068, 4)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9068, 5)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9068, 6)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9068, 7)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9069, 5)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9069, 6)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9069, 7)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9069, 8)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9070, 4)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9070, 5)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9075, 5)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9076, 4)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9076, 5)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9076, 6)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9076, 7)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9076, 8)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9077, 3)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9077, 4)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9077, 5)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9077, 6)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9078, 3)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9079, 4)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9079, 5)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9079, 6)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9079, 7)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9079, 8)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9080, 5)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9080, 6)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9080, 7)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9080, 8)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9083, 3)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9084, 4)},
-+	{QMI_FIXED_INTF(0x05c6, 0x920d, 0)},
-+	{QMI_FIXED_INTF(0x05c6, 0x920d, 5)},
- 	{QMI_FIXED_INTF(0x12d1, 0x140c, 1)},	/* Huawei E173 */
- 	{QMI_FIXED_INTF(0x12d1, 0x14ac, 1)},	/* Huawei E1820 */
- 	{QMI_FIXED_INTF(0x19d2, 0x0002, 1)},
-@@ -610,7 +739,6 @@ static const struct usb_device_id produc
- 	{QMI_GOBI_DEVICE(0x413c, 0x8186)},	/* Dell Gobi 2000 Modem device (N0218, VU936) */
- 	{QMI_GOBI_DEVICE(0x413c, 0x8194)},	/* Dell Gobi 3000 Composite */
- 	{QMI_GOBI_DEVICE(0x05c6, 0x920b)},	/* Generic Gobi 2000 Modem device */
--	{QMI_GOBI_DEVICE(0x05c6, 0x920d)},	/* Gobi 3000 Composite */
- 	{QMI_GOBI_DEVICE(0x05c6, 0x9225)},	/* Sony Gobi 2000 Modem device (N0279, VU730) */
- 	{QMI_GOBI_DEVICE(0x05c6, 0x9245)},	/* Samsung Gobi 2000 Modem device (VL176) */
- 	{QMI_GOBI_DEVICE(0x03f0, 0x251d)},	/* HP Gobi 2000 Modem device (VP412) */
+ static struct miscdevice uhid_misc = {
+ 	.fops		= &uhid_fops,
+-	.minor		= MISC_DYNAMIC_MINOR,
++	.minor		= UHID_MINOR,
+ 	.name		= UHID_NAME,
+ };
+ 
+@@ -659,4 +659,5 @@ module_exit(uhid_exit);
+ MODULE_LICENSE("GPL");
+ MODULE_AUTHOR("David Herrmann <dh.herrmann@gmail.com>");
+ MODULE_DESCRIPTION("User-space I/O driver support for HID subsystem");
++MODULE_ALIAS_MISCDEV(UHID_MINOR);
+ MODULE_ALIAS("devname:" UHID_NAME);
+--- a/include/linux/miscdevice.h
++++ b/include/linux/miscdevice.h
+@@ -45,6 +45,7 @@
+ #define MAPPER_CTRL_MINOR	236
+ #define LOOP_CTRL_MINOR		237
+ #define VHOST_NET_MINOR		238
++#define UHID_MINOR		239
+ #define MISC_DYNAMIC_MINOR	255
+ 
+ struct device;
 
 
