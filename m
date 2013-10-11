@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757273Ab3JKVIn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 17:08:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45122 "EHLO
+	id S1757294Ab3JKVJC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 17:09:02 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45118 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752851Ab3JKTfl (ORCPT
+	with ESMTP id S1756710Ab3JKTfk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:35:41 -0400
+	Fri, 11 Oct 2013 15:35:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nishanth Aravamudan <nacc@us.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 19/39] powerpc/iommu: Use GFP_KERNEL instead of GFP_ATOMIC in iommu_init_table()
-Date: Fri, 11 Oct 2013 12:35:03 -0700
-Message-Id: <20131011193212.974868888@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Mark Brown <broonie@linaro.org>
+Subject: [ 18/39] ASoC: 88pm860x: array overflow in snd_soc_put_volsw_2r_st()
+Date: Fri, 11 Oct 2013 12:35:02 -0700
+Message-Id: <20131011193212.868470649@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193210.843963685@linuxfoundation.org>
 References: <20131011193210.843963685@linuxfoundation.org>
@@ -27,47 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 1cf389df090194a0976dc867b7fffe99d9d490cb upstream.
+commit d967967e8d1116fb38bad25e58714b5dddd03cca upstream.
 
-Under heavy (DLPAR?) stress, we tripped this panic() in
-arch/powerpc/kernel/iommu.c::iommu_init_table():
+This is called from snd_ctl_elem_write() with user supplied data so we
+need to add some bounds checking.
 
-	page = alloc_pages_node(nid, GFP_ATOMIC, get_order(sz));
-	if (!page)
-		panic("iommu_init_table: Can't allocate %ld bytes\n", sz);
-
-Before the panic() we got a page allocation failure for an order-2
-allocation. There appears to be memory free, but perhaps not in the
-ATOMIC context. I looked through all the call-sites of
-iommu_init_table() and didn't see any obvious reason to need an ATOMIC
-allocation. Most call-sites in fact have an explicit GFP_KERNEL
-allocation shortly before the call to iommu_init_table(), indicating we
-are not in an atomic context. There is some indirection for some paths,
-but I didn't see any locks indicating that GFP_KERNEL is inappropriate.
-
-With this change under the same conditions, we have not been able to
-reproduce the panic.
-
-Signed-off-by: Nishanth Aravamudan <nacc@us.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/iommu.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/soc/codecs/88pm860x-codec.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/arch/powerpc/kernel/iommu.c
-+++ b/arch/powerpc/kernel/iommu.c
-@@ -495,7 +495,7 @@ struct iommu_table *iommu_init_table(str
- 	/* number of bytes needed for the bitmap */
- 	sz = (tbl->it_size + 7) >> 3;
+--- a/sound/soc/codecs/88pm860x-codec.c
++++ b/sound/soc/codecs/88pm860x-codec.c
+@@ -350,6 +350,9 @@ static int snd_soc_put_volsw_2r_st(struc
+ 	val = ucontrol->value.integer.value[0];
+ 	val2 = ucontrol->value.integer.value[1];
  
--	page = alloc_pages_node(nid, GFP_ATOMIC, get_order(sz));
-+	page = alloc_pages_node(nid, GFP_KERNEL, get_order(sz));
- 	if (!page)
- 		panic("iommu_init_table: Can't allocate %ld bytes\n", sz);
- 	tbl->it_map = page_address(page);
++	if (val >= ARRAY_SIZE(st_table) || val2 >= ARRAY_SIZE(st_table))
++		return -EINVAL;
++
+ 	err = snd_soc_update_bits(codec, reg, 0x3f, st_table[val].m);
+ 	if (err < 0)
+ 		return err;
 
 
