@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758095Ab3JKLIU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 07:08:20 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58433 "EHLO
+	id S1758491Ab3JKLIh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 07:08:37 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58428 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757725Ab3JKKmr (ORCPT
+	with ESMTP id S1757715Ab3JKKmp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 06:42:47 -0400
+	Fri, 11 Oct 2013 06:42:45 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: David Miller <davem@redhat.com>, Michal Kubecek <mkubecek@suse.cz>,
+Cc: Vasily Titskiy <qehgt0@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 023/100] Revert "sctp: fix call to SCTP_CMD_PROCESS_SACK in sctp_cmd_interpreter()"
-Date: Fri, 11 Oct 2013 11:40:53 +0100
-Message-Id: <1381488130-30235-24-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 022/100] HID: usbhid: quirk for N-Trig DuoSense Touch Screen
+Date: Fri, 11 Oct 2013 11:40:52 +0100
+Message-Id: <1381488130-30235-23-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
 References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
@@ -27,54 +27,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Luis Henriques <luis.henriques@canonical.com>
+From: Vasily Titskiy <qehgt0@gmail.com>
 
-This reverts commit 01ee5a524eaa7928e8ee1ae4a0051084cfcaf904 which is
-commit f6e80abeab928b7c47cc1fbf53df13b4398a2bec upstream.
+commit 9e0bf92c223dabe0789714f8f85f6e26f8f9cda4 upstream.
 
-Michal Kubecek reported:
+The DuoSense touchscreen device causes a 10 second timeout. This fix
+removes the delay.
 
-Please revert backports of mainline commit
-
-   f6e80abe  sctp: fix call to SCTP_CMD_PROCESS_SACK in sctp_cmd_interpreter()
-
- in stable branches before 3.7, in particular
-
-   stable-3.0.y  b23270416da409bd4e637a5acbe31a1126235fb6  (v3.0.52)
-   stable-3.4.y  c2f5b7507ac5d808f29287d77ee6148358d7fbfe  (v3.4.19)
-
- Mainline commit f6e80abe was introduced in v3.7-rc2 as a follow-up fix
- to commit
-
-   edfee033  sctp: check src addr when processing SACK to update transport state
-
- (from v3.7-rc1) which changed the interpretation of third argument to
- sctp_cmd_process_sack() and sctp_outq_sack(). But as commit edfee033 has
- never been backported to stable branches, backport of commit f6e80abe
- actually breaks the code rather than fixing it.
-
-Cc: David Miller <davem@redhat.com>
-Cc: Michal Kubecek <mkubecek@suse.cz>
+Signed-off-by: Vasily Titskiy <qehgt0@gmail.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/sctp/sm_sideeffect.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/hid/hid-ids.h           | 1 +
+ drivers/hid/usbhid/hid-quirks.c | 2 ++
+ 2 files changed, 3 insertions(+)
 
-diff --git a/net/sctp/sm_sideeffect.c b/net/sctp/sm_sideeffect.c
-index c461b1c..8716da1 100644
---- a/net/sctp/sm_sideeffect.c
-+++ b/net/sctp/sm_sideeffect.c
-@@ -1609,9 +1609,8 @@ static int sctp_cmd_interpreter(sctp_event_t event_type,
- 					asoc->outqueue.outstanding_bytes;
- 			sackh.num_gap_ack_blocks = 0;
- 			sackh.num_dup_tsns = 0;
--			chunk->subh.sack_hdr = &sackh;
- 			sctp_add_cmd_sf(commands, SCTP_CMD_PROCESS_SACK,
--					SCTP_CHUNK(chunk));
-+					SCTP_SACKH(&sackh));
- 			break;
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index 7561d73..16641fd 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -610,6 +610,7 @@
+ #define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_16   0x0012
+ #define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_17   0x0013
+ #define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_18   0x0014
++#define USB_DEVICE_ID_NTRIG_DUOSENSE 0x1500
  
- 		case SCTP_CMD_DISCARD_PACKET:
+ #define USB_VENDOR_ID_ONTRAK		0x0a07
+ #define USB_DEVICE_ID_ONTRAK_ADU100	0x0064
+diff --git a/drivers/hid/usbhid/hid-quirks.c b/drivers/hid/usbhid/hid-quirks.c
+index 0401e3f..4c37560 100644
+--- a/drivers/hid/usbhid/hid-quirks.c
++++ b/drivers/hid/usbhid/hid-quirks.c
+@@ -106,6 +106,8 @@ static const struct hid_blacklist {
+ 	{ USB_VENDOR_ID_SIGMA_MICRO, USB_DEVICE_ID_SIGMA_MICRO_KEYBOARD, HID_QUIRK_NO_INIT_REPORTS },
+ 	{ USB_VENDOR_ID_KYE, USB_DEVICE_ID_KYE_MOUSEPEN_I608X, HID_QUIRK_MULTI_INPUT },
+ 	{ USB_VENDOR_ID_KYE, USB_DEVICE_ID_KYE_EASYPEN_M610X, HID_QUIRK_MULTI_INPUT },
++	{ USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_DUOSENSE, HID_QUIRK_NO_INIT_REPORTS },
++
+ 	{ 0, 0 }
+ };
+ 
 -- 
 1.8.3.2
 
