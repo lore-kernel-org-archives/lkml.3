@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758195Ab3JKKs2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 06:48:28 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58798 "EHLO
+	id S1758243Ab3JKKsr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 06:48:47 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58764 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932336Ab3JKKoR (ORCPT
+	with ESMTP id S932321Ab3JKKoM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 06:44:17 -0400
+	Fri, 11 Oct 2013 06:44:12 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Nishanth Aravamudan <nacc@us.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: Bing Zhao <bzhao@marvell.com>, "John W. Linville" <linville@tuxdriver.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 089/100] powerpc/iommu: Use GFP_KERNEL instead of GFP_ATOMIC in iommu_init_table()
-Date: Fri, 11 Oct 2013 11:41:59 +0100
-Message-Id: <1381488130-30235-90-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 083/100] mwifiex: fix NULL pointer dereference in usb suspend handler
+Date: Fri, 11 Oct 2013 11:41:53 +0100
+Message-Id: <1381488130-30235-84-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
 References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
@@ -28,49 +27,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
+From: Bing Zhao <bzhao@marvell.com>
 
-commit 1cf389df090194a0976dc867b7fffe99d9d490cb upstream.
+commit 346ece0b7ba2730b4d633b9e371fe55488803102 upstream.
 
-Under heavy (DLPAR?) stress, we tripped this panic() in
-arch/powerpc/kernel/iommu.c::iommu_init_table():
+Bug 60815 - Interface hangs in mwifiex_usb
+https://bugzilla.kernel.org/show_bug.cgi?id=60815
 
-	page = alloc_pages_node(nid, GFP_ATOMIC, get_order(sz));
-	if (!page)
-		panic("iommu_init_table: Can't allocate %ld bytes\n", sz);
+[ 2.883807] BUG: unable to handle kernel NULL pointer dereference
+            at 0000000000000048
+[ 2.883813] IP: [<ffffffff815a65e0>] pfifo_fast_enqueue+0x90/0x90
 
-Before the panic() we got a page allocation failure for an order-2
-allocation. There appears to be memory free, but perhaps not in the
-ATOMIC context. I looked through all the call-sites of
-iommu_init_table() and didn't see any obvious reason to need an ATOMIC
-allocation. Most call-sites in fact have an explicit GFP_KERNEL
-allocation shortly before the call to iommu_init_table(), indicating we
-are not in an atomic context. There is some indirection for some paths,
-but I didn't see any locks indicating that GFP_KERNEL is inappropriate.
+[ 2.883834] CPU: 1 PID: 3220 Comm: kworker/u8:90 Not tainted
+            3.11.1-monotone-l0 #6
+[ 2.883834] Hardware name: Microsoft Corporation Surface with
+            Windows 8 Pro/Surface with Windows 8 Pro,
+            BIOS 1.03.0450 03/29/2013
 
-With this change under the same conditions, we have not been able to
-reproduce the panic.
+On Surface Pro, suspend to ram gives a NULL pointer dereference in
+pfifo_fast_enqueue(). The stack trace reveals that the offending
+call is clearing carrier in mwifiex_usb suspend handler.
 
-Signed-off-by: Nishanth Aravamudan <nacc@us.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Since commit 1499d9f "mwifiex: don't drop carrier flag over suspend"
+has removed the carrier flag handling over suspend/resume in SDIO
+and PCIe drivers, I'm removing it in USB driver too. This also fixes
+the bug for Surface Pro.
+
+Tested-by: Dmitry Khromov <icechrome@gmail.com>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/powerpc/kernel/iommu.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/mwifiex/usb.c | 7 -------
+ 1 file changed, 7 deletions(-)
 
-diff --git a/arch/powerpc/kernel/iommu.c b/arch/powerpc/kernel/iommu.c
-index 359f078..b2f4a8ed 100644
---- a/arch/powerpc/kernel/iommu.c
-+++ b/arch/powerpc/kernel/iommu.c
-@@ -501,7 +501,7 @@ struct iommu_table *iommu_init_table(struct iommu_table *tbl, int nid)
- 	/* number of bytes needed for the bitmap */
- 	sz = (tbl->it_size + 7) >> 3;
+diff --git a/drivers/net/wireless/mwifiex/usb.c b/drivers/net/wireless/mwifiex/usb.c
+index 22a5916..7fda0ab 100644
+--- a/drivers/net/wireless/mwifiex/usb.c
++++ b/drivers/net/wireless/mwifiex/usb.c
+@@ -446,9 +446,6 @@ static int mwifiex_usb_suspend(struct usb_interface *intf, pm_message_t message)
+ 	 */
+ 	adapter->is_suspended = true;
  
--	page = alloc_pages_node(nid, GFP_ATOMIC, get_order(sz));
-+	page = alloc_pages_node(nid, GFP_KERNEL, get_order(sz));
- 	if (!page)
- 		panic("iommu_init_table: Can't allocate %ld bytes\n", sz);
- 	tbl->it_map = page_address(page);
+-	for (i = 0; i < adapter->priv_num; i++)
+-		netif_carrier_off(adapter->priv[i]->netdev);
+-
+ 	if (atomic_read(&card->rx_cmd_urb_pending) && card->rx_cmd.urb)
+ 		usb_kill_urb(card->rx_cmd.urb);
+ 
+@@ -508,10 +505,6 @@ static int mwifiex_usb_resume(struct usb_interface *intf)
+ 						  MWIFIEX_RX_CMD_BUF_SIZE);
+ 	}
+ 
+-	for (i = 0; i < adapter->priv_num; i++)
+-		if (adapter->priv[i]->media_connected)
+-			netif_carrier_on(adapter->priv[i]->netdev);
+-
+ 	/* Disable Host Sleep */
+ 	if (adapter->hs_activated)
+ 		mwifiex_cancel_hs(mwifiex_get_priv(adapter,
 -- 
 1.8.3.2
 
