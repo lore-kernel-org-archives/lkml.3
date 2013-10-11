@@ -1,42 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757323Ab3JKIuz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 04:50:55 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:54873 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757230Ab3JKIuu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 04:50:50 -0400
-Date: Fri, 11 Oct 2013 10:50:43 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Chen, Gong" <gong.chen@linux.intel.com>
-Cc: tony.luck@intel.com, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 1/8] ACPI, APEI, CPER: Fix status check during error
- printing
-Message-ID: <20131011085043.GA5925@pd.tnic>
-References: <1381473166-29303-1-git-send-email-gong.chen@linux.intel.com>
- <1381473166-29303-2-git-send-email-gong.chen@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1381473166-29303-2-git-send-email-gong.chen@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756950Ab3JKIuH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 04:50:07 -0400
+Received: from mail-bk0-f41.google.com ([209.85.214.41]:44175 "EHLO
+	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756789Ab3JKIuE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 04:50:04 -0400
+From: Matias Bjorling <m@bjorling.me>
+To: willy@linux.intel.com
+Cc: linux-kernel@vger.kernel.org, linux-nvme@lists.infradead.org,
+        Matias Bjorling <m@bjorling.me>
+Subject: [PATCH 2/2] NVMe: Extract admin queue size
+Date: Fri, 11 Oct 2013 10:48:53 +0200
+Message-Id: <1381481333-23888-3-git-send-email-m@bjorling.me>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1381481333-23888-1-git-send-email-m@bjorling.me>
+References: <1381481333-23888-1-git-send-email-m@bjorling.me>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 11, 2013 at 02:32:39AM -0400, Chen, Gong wrote:
-> Commit aaf9d93 only catches condition check before print,
-> but the similar check is needed during printing CPER error
-> sections.
-> 
-> Signed-off-by: Chen, Gong <gong.chen@linux.intel.com>
+The queue size of the admin queue should be defined as a constant for use in
+multiple places.
 
-Reviewed-by: Borislav Petkov <bp@suse.de>
+Signed-off-by: Matias Bjorling <m@bjorling.me>
+---
+ drivers/block/nvme-core.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
+diff --git a/drivers/block/nvme-core.c b/drivers/block/nvme-core.c
+index 1e940e8..d4f01d4 100644
+--- a/drivers/block/nvme-core.c
++++ b/drivers/block/nvme-core.c
+@@ -44,6 +44,7 @@
+ #include <asm-generic/io-64-nonatomic-lo-hi.h>
+ 
+ #define NVME_Q_DEPTH 1024
++#define NVME_ADMIN_Q_DEPTH 64
+ #define SQ_SIZE(depth)		(depth * sizeof(struct nvme_command))
+ #define CQ_SIZE(depth)		(depth * sizeof(struct nvme_completion))
+ #define NVME_MINORS 64
+@@ -1261,7 +1262,7 @@ static int nvme_configure_admin_queue(struct nvme_dev *dev)
+ 
+ 	nvmeq = dev->queues[0];
+ 	if (!nvmeq) {
+-		nvmeq = nvme_alloc_queue(dev, 0, 64, 0);
++		nvmeq = nvme_alloc_queue(dev, 0, NVME_ADMIN_Q_DEPTH, 0);
+ 		if (!nvmeq)
+ 			return -ENOMEM;
+ 		dev->queues[0] = nvmeq;
 -- 
-Regards/Gruss,
-    Boris.
+1.8.1.2
 
-Sent from a fat crate under my desk. Formatting is fine.
---
