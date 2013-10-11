@@ -1,45 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754331Ab3JKSYm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 14:24:42 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:42220 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752302Ab3JKSYl (ORCPT
+	id S1755013Ab3JKSZc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 14:25:32 -0400
+Received: from mms1.broadcom.com ([216.31.210.17]:1525 "EHLO mms1.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754490Ab3JKSZa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 14:24:41 -0400
+	Fri, 11 Oct 2013 14:25:30 -0400
+X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
+From: "Sherman Yin" <syin@broadcom.com>
+To: "Linus Walleij" <linus.walleij@linaro.org>
+cc: "Rob Herring" <rob.herring@calxeda.com>, "Pawel Moll" <pawel.moll@arm.com>,
+        "Mark Rutland" <mark.rutland@arm.com>,
+        "Stephen Warren" <swarren@wwwdotorg.org>,
+        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
+        "Rob Landley" <rob@landley.net>, "Christian Daudt" <bcm@fixthebug.org>,
+        "Russell King" <linux@arm.linux.org.uk>,
+        "Grant Likely" <grant.likely@linaro.org>,
+        "Matt Porter" <matt.porter@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: [PATCH 3/4] ARM: pinctrl: Add Broadcom Capri pinctrl driver
+Thread-Topic: [PATCH 3/4] ARM: pinctrl: Add Broadcom Capri pinctrl
+ driver
+Thread-Index: AQHOwJjvlt3ZyknjmUucDC303MwucJnskuoAgAHzuwCAASFSgIAANMjQ
+Date: Fri, 11 Oct 2013 18:25:16 +0000
+Message-ID: <051069C10411E24D9749790C498526FA1BE03D43@SJEXCHMB12.corp.ad.broadcom.com>
+References: <1380846199-12829-1-git-send-email-syin@broadcom.com>
+ <1380846199-12829-4-git-send-email-syin@broadcom.com>
+ <CACRpkdZah4fFuJL2Vh5JmbBCgnekg8MKqMWHzeheOx3N1Kzwng@mail.gmail.com>
+ <051069C10411E24D9749790C498526FA1BE027EA@SJEXCHMB12.corp.ad.broadcom.com>
+ <CACRpkdarPC+LxAAezT2LRiz=Y2RduUsb75YYHUgq7HqePzkD3Q@mail.gmail.com>
+In-Reply-To: <CACRpkdarPC+LxAAezT2LRiz=Y2RduUsb75YYHUgq7HqePzkD3Q@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.16.203.100]
 MIME-Version: 1.0
-In-Reply-To: <525799AC.4090201@synopsys.com>
-References: <525799AC.4090201@synopsys.com>
-Date: Fri, 11 Oct 2013 11:24:39 -0700
-X-Google-Sender-Auth: saSHQLRSJ0vJY6S7D1Eoy9HDFSg
-Message-ID: <CA+55aFyKrTi96duyjE5dhQLJBOrVUPEvPkQhwrfa=si+ez9bMQ@mail.gmail.com>
-Subject: Re: [GIT PULL] ARC fix for 3.12.-rc5
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        anton Kolesov <Anton.Kolesov@synopsys.com>
-Content-Type: text/plain; charset=UTF-8
+X-WSS-ID: 7E469D064FK832536-02-01
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 10, 2013 at 11:24 PM, Vineet Gupta
-<Vineet.Gupta1@synopsys.com> wrote:
-> The following changes since commit d0e639c9e06d44e713170031fe05fb60ebe680af:
+>>>> +static const struct capri_cfg_param capri_pinconf_params[] = {
+>>>> +       {"brcm,hysteresis",     CAPRI_PINCONF_PARAM_HYST},
+>>>> +       {"brcm,pull",           CAPRI_PINCONF_PARAM_PULL},
+>>>> +       {"brcm,slew",           CAPRI_PINCONF_PARAM_SLEW},
+>>>> +       {"brcm,input_dis",      CAPRI_PINCONF_PARAM_INPUT_DIS},
+>>>> +       {"brcm,drive_str",      CAPRI_PINCONF_PARAM_DRV_STR},
+>>>> +       {"brcm,pull_up_str",    CAPRI_PINCONF_PARAM_PULL_UP_STR},
+>>>> +       {"brcm,mode",           CAPRI_PINCONF_PARAM_MODE},
+>>>> +};
+>>>
+>>>As well as all this stuff...
+>>
+>> OK.  Will see if I can find something suitable for "input disable" and "mode"
 >
->   Linux 3.12-rc4 (2013-10-06 14:00:20 -0700)
+>Let's discuss this. What exactly does "input disable" and "mode"
+>mean, in electrical terms?
 >
-> are available in the git repository at:
->
->   git://git.kernel.org/pub/scm/linux/kernel/git/vgupta/arc.git/
+>When you come down to what actually happens it may turn out that
+>"input disable" is PIN_CONFIG_OUTPUT, which implicitly turns
+>off input does it not?
 
-Nothing there.
+I'm going to verify the details with our hardware team first, and will let you
+know if we think we can use one of the existing generic parameters or if we
+need a new one.
 
-I'm *assuming* that you meant to point me at the "for-curr" branch,
-which does indeed contain the commit you talk about, but I want these
-things to be explicit rather than have to guess from your pull request
-and doing "git ls-remote".
+Regards,
+Sherman
 
-Please fix your script.
-
-           Linus
