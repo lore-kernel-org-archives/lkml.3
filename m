@@ -1,76 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932786Ab3JKUft (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:35:49 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:42631 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759461Ab3JKUf3 (ORCPT
+	id S1758931Ab3JKTkJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:40:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45678 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758910Ab3JKTkF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 16:35:29 -0400
-Date: Fri, 11 Oct 2013 13:35:36 -0700
-From: Kent Overstreet <kmo@daterainc.com>
-To: Shaohua Li <shli@kernel.org>
-Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk
-Subject: Re: [patch 3/4] percpu_ida: add an API to return free tags
-Message-ID: <20131011203536.GJ28572@kmo>
-References: <20131011071802.148101321@kernel.org>
- <20131011072341.346343362@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131011072341.346343362@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 11 Oct 2013 15:40:05 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Maxim Patlasov <mpatlasov@parallels.com>,
+        Miklos Szeredi <mszeredi@suse.cz>
+Subject: [ 058/110] fuse: fix fallocate vs. ftruncate race
+Date: Fri, 11 Oct 2013 12:38:38 -0700
+Message-Id: <20131011193814.140046702@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
+References: <20131011193807.584188672@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 11, 2013 at 03:18:05PM +0800, Shaohua Li wrote:
-> add an API to return free tags, blk-mq-tag will use it
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Can you explain how this is going to be used? Seems like something that
-could be prone to misuse, try and convince me there isn't a better way
-to do what it's for.
+------------------
 
-> 
-> Signed-off-by: Shaohua Li <shli@fusionio.com>
-> ---
->  include/linux/percpu_ida.h |    1 +
->  lib/percpu_ida.c           |   17 +++++++++++++++++
->  2 files changed, 18 insertions(+)
-> 
-> Index: master/include/linux/percpu_ida.h
-> ===================================================================
-> --- master.orig/include/linux/percpu_ida.h	2013-10-11 12:15:06.996416710 +0800
-> +++ master/include/linux/percpu_ida.h	2013-10-11 12:15:06.992416749 +0800
-> @@ -76,4 +76,5 @@ static inline int percpu_ida_init(struct
->  int percpu_ida_for_each_free(struct percpu_ida *pool,
->  	int (*fn)(int id, void *data), void *data);
->  
-> +unsigned percpu_ida_free_tags(struct percpu_ida *pool, int cpu);
->  #endif /* __PERCPU_IDA_H__ */
-> Index: master/lib/percpu_ida.c
-> ===================================================================
-> --- master.orig/lib/percpu_ida.c	2013-10-11 12:15:06.996416710 +0800
-> +++ master/lib/percpu_ida.c	2013-10-11 12:15:06.992416749 +0800
-> @@ -371,3 +371,20 @@ out:
->  	return err;
->  }
->  EXPORT_SYMBOL_GPL(percpu_ida_for_each_free);
-> +
-> +/**
-> + * percpu_ida_free_tags - return free tags number of a specific cpu or global pool
-> + * @pool: pool related
-> + * @cpu: specific cpu or global pool if @cpu == nr_cpu_ids
-> + *
-> + * Note: this just returns a snapshot of free tags number.
-> + */
-> +unsigned percpu_ida_free_tags(struct percpu_ida *pool, int cpu)
-> +{
-> +	struct percpu_ida_cpu *remote;
-> +	if (cpu == nr_cpu_ids)
-> +		return pool->nr_free;
-> +	remote = per_cpu_ptr(pool->tag_cpu, cpu);
-> +	return remote->nr_free;
-> +}
-> +EXPORT_SYMBOL_GPL(percpu_ida_free_tags);
-> 
+From: Maxim Patlasov <MPatlasov@parallels.com>
+
+commit 0ab08f576b9e6a6b689fc6b4e632079b978e619b upstream.
+
+A former patch introducing FUSE_I_SIZE_UNSTABLE flag provided detailed
+description of races between ftruncate and anyone who can extend i_size:
+
+> 1. As in the previous scenario fuse_dentry_revalidate() discovered that i_size
+> changed (due to our own fuse_do_setattr()) and is going to call
+> truncate_pagecache() for some  'new_size' it believes valid right now. But by
+> the time that particular truncate_pagecache() is called ...
+> 2. fuse_do_setattr() returns (either having called truncate_pagecache() or
+> not -- it doesn't matter).
+> 3. The file is extended either by write(2) or ftruncate(2) or fallocate(2).
+> 4. mmap-ed write makes a page in the extended region dirty.
+
+This patch adds necessary bits to fuse_file_fallocate() to protect from that
+race.
+
+Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/fuse/file.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
+
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -2468,6 +2468,7 @@ static long fuse_file_fallocate(struct f
+ {
+ 	struct fuse_file *ff = file->private_data;
+ 	struct inode *inode = file->f_inode;
++	struct fuse_inode *fi = get_fuse_inode(inode);
+ 	struct fuse_conn *fc = ff->fc;
+ 	struct fuse_req *req;
+ 	struct fuse_fallocate_in inarg = {
+@@ -2496,6 +2497,9 @@ static long fuse_file_fallocate(struct f
+ 		}
+ 	}
+ 
++	if (!(mode & FALLOC_FL_KEEP_SIZE))
++		set_bit(FUSE_I_SIZE_UNSTABLE, &fi->state);
++
+ 	req = fuse_get_req_nopages(fc);
+ 	if (IS_ERR(req)) {
+ 		err = PTR_ERR(req);
+@@ -2528,6 +2532,9 @@ static long fuse_file_fallocate(struct f
+ 	fuse_invalidate_attr(inode);
+ 
+ out:
++	if (!(mode & FALLOC_FL_KEEP_SIZE))
++		clear_bit(FUSE_I_SIZE_UNSTABLE, &fi->state);
++
+ 	if (lock_inode)
+ 		mutex_unlock(&inode->i_mutex);
+ 
+
+
