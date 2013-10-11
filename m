@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758796Ab3JKTjs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:39:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45533 "EHLO
+	id S1756659Ab3JKUog (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:44:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45553 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758778Ab3JKTjp (ORCPT
+	with ESMTP id S1758793Ab3JKTjr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:39:45 -0400
+	Fri, 11 Oct 2013 15:39:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Duan Jiong <duanj.fnst@cn.fujitsu.com>,
+        Sonic Zhang <sonic.zhang@analog.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 027/110] net:dccp: do not report ICMP redirects to user space
-Date: Fri, 11 Oct 2013 12:38:07 -0700
-Message-Id: <20131011193810.679036585@linuxfoundation.org>
+Subject: [ 016/110] netpoll: Should handle ETH_P_ARP other than ETH_P_IP in netpoll_neigh_reply
+Date: Fri, 11 Oct 2013 12:37:56 -0700
+Message-Id: <20131011193809.379513664@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
 References: <20131011193807.584188672@linuxfoundation.org>
@@ -27,31 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Duan Jiong <duanj.fnst@cn.fujitsu.com>
+From: Sonic Zhang <sonic.zhang@analog.com>
 
-[ Upstream commit bd784a140712fd06674f2240eecfc4ccae421129 ]
+[ Upstream commit b0dd663b60944a3ce86430fa35549fb37968bda0 ]
 
-DCCP shouldn't be setting sk_err on redirects as it
-isn't an error condition. it should be doing exactly
-what tcp is doing and leaving the error handler without
-touching the socket.
+The received ARP request type in the Ethernet packet head is ETH_P_ARP other than ETH_P_IP.
 
-Signed-off-by: Duan Jiong <duanj.fnst@cn.fujitsu.com>
+[ Bug introduced by commit b7394d2429c198b1da3d46ac39192e891029ec0f
+  ("netpoll: prepare for ipv6") ]
+
+Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/dccp/ipv6.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/core/netpoll.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/dccp/ipv6.c
-+++ b/net/dccp/ipv6.c
-@@ -135,6 +135,7 @@ static void dccp_v6_err(struct sk_buff *
+--- a/net/core/netpoll.c
++++ b/net/core/netpoll.c
+@@ -550,7 +550,7 @@ static void netpoll_neigh_reply(struct s
+ 		return;
  
- 		if (dst)
- 			dst->ops->redirect(dst, sk, skb);
-+		goto out;
- 	}
- 
- 	if (type == ICMPV6_PKT_TOOBIG) {
+ 	proto = ntohs(eth_hdr(skb)->h_proto);
+-	if (proto == ETH_P_IP) {
++	if (proto == ETH_P_ARP) {
+ 		struct arphdr *arp;
+ 		unsigned char *arp_ptr;
+ 		/* No arp on this interface */
 
 
