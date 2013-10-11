@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933097Ab3JKUMx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:12:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46109 "EHLO
+	id S933105Ab3JKUNR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:13:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46103 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932396Ab3JKTlJ (ORCPT
+	with ESMTP id S932383Ab3JKTlI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:41:09 -0400
+	Fri, 11 Oct 2013 15:41:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Duan Jiong <duanj.fnst@cn.fujitsu.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Vlad Yasevich <vyasevich@gmail.com>,
-        Daniel Borkmann <dborkman@redhat.com>,
+        Ding Zhi <zhi.ding@6wind.com>,
+        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 027/135] net: sctp: rfc4443: do not report ICMP redirects to user space
-Date: Fri, 11 Oct 2013 12:38:28 -0700
-Message-Id: <20131011193948.185120014@linuxfoundation.org>
+Subject: [ 026/135] ip6_tunnels: raddr and laddr are inverted in nl msg
+Date: Fri, 11 Oct 2013 12:38:27 -0700
+Message-Id: <20131011193948.078933669@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -30,59 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Ding Zhi <zhi.ding@6wind.com>
 
-[ Upstream commit 3f96a532113131d5a65ac9e00fc83cfa31b0295f ]
+[ Upstream commit 0d2ede929f61783aebfb9228e4d32a0546ee4d23 ]
 
-Adapt the same behaviour for SCTP as present in TCP for ICMP redirect
-messages. For IPv6, RFC4443, section 2.4. says:
+IFLA_IPTUN_LOCAL and IFLA_IPTUN_REMOTE were inverted.
 
-  ...
-  (e) An ICMPv6 error message MUST NOT be originated as a result of
-      receiving the following:
-  ...
-       (e.2) An ICMPv6 redirect message [IPv6-DISC].
-  ...
+Introduced by c075b13098b3 (ip6tnl: advertise tunnel param via rtnl).
 
-Therefore, do not report an error to user space, just invoke dst's redirect
-callback and leave, same for IPv4 as done in TCP as well. The implication
-w/o having this patch could be that the reception of such packets would
-generate a poll notification and in worst case it could even tear down the
-whole connection. Therefore, stop updating sk_err on redirects.
-
-Reported-by: Duan Jiong <duanj.fnst@cn.fujitsu.com>
-Reported-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Suggested-by: Vlad Yasevich <vyasevich@gmail.com>
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Signed-off-by: Ding Zhi <zhi.ding@6wind.com>
+Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/sctp/input.c |    3 +--
- net/sctp/ipv6.c  |    2 +-
- 2 files changed, 2 insertions(+), 3 deletions(-)
+ net/ipv6/ip6_tunnel.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/sctp/input.c
-+++ b/net/sctp/input.c
-@@ -648,8 +648,7 @@ void sctp_v4_err(struct sk_buff *skb, __
- 		break;
- 	case ICMP_REDIRECT:
- 		sctp_icmp_redirect(sk, transport, skb);
--		err = 0;
--		break;
-+		/* Fall through to out_unlock. */
- 	default:
- 		goto out_unlock;
- 	}
---- a/net/sctp/ipv6.c
-+++ b/net/sctp/ipv6.c
-@@ -189,7 +189,7 @@ static void sctp_v6_err(struct sk_buff *
- 		break;
- 	case NDISC_REDIRECT:
- 		sctp_icmp_redirect(sk, transport, skb);
--		break;
-+		goto out_unlock;
- 	default:
- 		break;
- 	}
+--- a/net/ipv6/ip6_tunnel.c
++++ b/net/ipv6/ip6_tunnel.c
+@@ -1652,9 +1652,9 @@ static int ip6_tnl_fill_info(struct sk_b
+ 
+ 	if (nla_put_u32(skb, IFLA_IPTUN_LINK, parm->link) ||
+ 	    nla_put(skb, IFLA_IPTUN_LOCAL, sizeof(struct in6_addr),
+-		    &parm->raddr) ||
+-	    nla_put(skb, IFLA_IPTUN_REMOTE, sizeof(struct in6_addr),
+ 		    &parm->laddr) ||
++	    nla_put(skb, IFLA_IPTUN_REMOTE, sizeof(struct in6_addr),
++		    &parm->raddr) ||
+ 	    nla_put_u8(skb, IFLA_IPTUN_TTL, parm->hop_limit) ||
+ 	    nla_put_u8(skb, IFLA_IPTUN_ENCAP_LIMIT, parm->encap_limit) ||
+ 	    nla_put_be32(skb, IFLA_IPTUN_FLOWINFO, parm->flowinfo) ||
 
 
