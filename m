@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757873Ab3JKNE6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 09:04:58 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:37548 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754531Ab3JKNE4 (ORCPT
+	id S1755642Ab3JKNNq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 09:13:46 -0400
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:46602 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751890Ab3JKNNo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 09:04:56 -0400
-Date: Fri, 11 Oct 2013 15:04:41 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCHSET 0/8] perf tools: Fix scalability problem on callchain
- merging (v5)
-Message-ID: <20131011130441.GC28601@twins.programming.kicks-ass.net>
-References: <1381468543-25334-1-git-send-email-namhyung@kernel.org>
- <20131011055829.GA4975@gmail.com>
- <20131011073448.GA11064@krava.redhat.com>
- <8761t4cizo.fsf@sejong.aot.lge.com>
- <20131011125935.GA10634@gmail.com>
+	Fri, 11 Oct 2013 09:13:44 -0400
+Message-ID: <5257F983.9060904@gmail.com>
+Date: Fri, 11 Oct 2013 15:13:39 +0200
+From: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131011125935.GA10634@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Tomasz Figa <tomasz.figa@gmail.com>
+CC: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
+        linux-media@vger.kernel.org, alsa-devel@alsa-project.org,
+        Kukjin Kim <kgene.kim@samsung.com>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Ben Dooks <ben-linux@fluff.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Sangbeom Kim <sbkim73@samsung.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: Re: [PATCH 3/5] [media] s3c-camif: Use CONFIG_ARCH_S3C64XX to check
+ for S3C64xx support
+References: <1380392497-27406-1-git-send-email-tomasz.figa@gmail.com> <1380392497-27406-3-git-send-email-tomasz.figa@gmail.com>
+In-Reply-To: <1380392497-27406-3-git-send-email-tomasz.figa@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 11, 2013 at 02:59:35PM +0200, Ingo Molnar wrote:
-> So, why not keep -g as a shortcut to whatever default call-graph profiling 
-> we want to provide (note, this does not mean it always has to be 'fp'), 
-> and use --call-graph for more specific variants?
-> 
-> a .perfconfig value could even set the default for '-g', so that you don't 
-> have to type '--call-graph dwarf' all the time.
+On 09/28/2013 08:21 PM, Tomasz Figa wrote:
+> Since CONFIG_PLAT_S3C64XX is going to be removed, this patch modifies
+> the Kconfig entry of s3c-camif driver to use the proper way of checking
+> for S3C64xx support - CONFIG_ARCH_S3C64XX.
+>
+> Signed-off-by: Tomasz Figa<tomasz.figa@gmail.com>
 
-
-Another, slightly related annoyance I have is with -B, we default to
---big-num so -B is utterly useless, and the only remaining option is
---no-big-num.
-
+Acked-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
