@@ -1,225 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755999Ab3JKCBW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 22:01:22 -0400
-Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:35592
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755334Ab3JKCBQ (ORCPT
+	id S1754871Ab3JKCGp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 22:06:45 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:52744 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752048Ab3JKCGn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 22:01:16 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 4
-X-BigFish: VS4(z551bizc8kzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275bhz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h1155h)
-From: Jingchang Lu <b35083@freescale.com>
-To: <vinod.koul@intel.com>
-CC: <shawn.guo@linaro.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        Jingchang Lu <b35083@freescale.com>
-Subject: [PATCH RESEND 2/3] ARM: dts: vf610: Add eDMA node
-Date: Fri, 11 Oct 2013 09:53:41 +0800
-Message-ID: <1381456421-7620-2-git-send-email-b35083@freescale.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1381456421-7620-1-git-send-email-b35083@freescale.com>
-References: <1381456421-7620-1-git-send-email-b35083@freescale.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	Thu, 10 Oct 2013 22:06:43 -0400
+X-Sasl-enc: k9+uw28CLEEaqwHPStUFEmZrXN1Viwh3bLJwLFxxtQJm 1381457201
+Message-ID: <1381457199.2631.3.camel@perseus.fritz.box>
+Subject: Re: NULL pointer dereference in autofs4_expire_wait
+From: Ian Kent <raven@themaw.net>
+To: David Ahern <dsahern@gmail.com>
+Cc: autofs@vger.kernel.org, viro@ZenIV.linux.org.uk,
+        linux-kernel@vger.kernel.org
+Date: Fri, 11 Oct 2013 10:06:39 +0800
+In-Reply-To: <525736C7.9080400@gmail.com>
+References: <525736C7.9080400@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Jingchang Lu <b35083@freescale.com>
----
- arch/arm/boot/dts/vf610.dtsi         |  49 +++++++++++++++++
- include/dt-bindings/dma/vf610-edma.h | 103 +++++++++++++++++++++++++++++++++++
- 2 files changed, 152 insertions(+)
- create mode 100644 include/dt-bindings/dma/vf610-edma.h
+On Thu, 2013-10-10 at 17:22 -0600, David Ahern wrote:
+> Running 3.12-rc3 just hit BUG in autofs4_expire_wait
 
-diff --git a/arch/arm/boot/dts/vf610.dtsi b/arch/arm/boot/dts/vf610.dtsi
-index d31ce1b..365e0fa 100644
---- a/arch/arm/boot/dts/vf610.dtsi
-+++ b/arch/arm/boot/dts/vf610.dtsi
-@@ -10,6 +10,7 @@
- #include "skeleton.dtsi"
- #include "vf610-pinfunc.h"
- #include <dt-bindings/clock/vf610-clock.h>
-+#include <dt-bindings/dma/vf610-edma.h>
- 
- / {
- 	aliases {
-@@ -87,6 +88,30 @@
- 				arm,tag-latency = <2 2 2>;
- 			};
- 
-+			edma0: dma-controller@40018000 {
-+				#dma-cells = <2>;
-+				compatible = "fsl,vf610-edma";
-+				reg = <0x40018000 0x2000>;
-+				interrupts = <0 8 0x04>, <0 9 0x04>;
-+				interrupt-names = "edma-tx", "edma-err";
-+				dma-channels = <32>;
-+				fsl,dma-mux = <&dmamux0>, <&dmamux1>;
-+			};
-+
-+			dmamux0: dmamux@40024000 {
-+				reg = <0x40024000 0x1000>;
-+				fsl,dmamux-id = <0>;
-+				clocks = <&clks VF610_CLK_DMAMUX0>;
-+				clock-names = "dmamux";
-+			};
-+
-+			dmamux1: dmamux@40025000 {
-+				reg = <0x40025000 0x1000>;
-+				fsl,dmamux-id = <1>;
-+				clocks = <&clks VF610_CLK_DMAMUX1>;
-+				clock-names = "dmamux";
-+			};
-+
- 			uart0: serial@40027000 {
- 				compatible = "fsl,vf610-lpuart";
- 				reg = <0x40027000 0x1000>;
-@@ -432,6 +457,30 @@
- 			reg = <0x40080000 0x80000>;
- 			ranges;
- 
-+			edma1: dma-controller@40098000 {
-+				#dma-cells = <2>;
-+				compatible = "fsl,vf610-edma";
-+				reg = <0x40098000 0x2000>;
-+				interrupts = <0 10 0x04>, <0 11 0x04>;
-+				interrupt-names = "edma-tx", "edma-err";
-+				dma-channels = <32>;
-+				fsl,dma-mux = <&dmamux2>, <&dmamux3>;
-+			};
-+
-+			dmamux2: dmamux@400a1000 {
-+				reg = <0x400a1000 0x1000>;
-+				fsl,dmamux-id = <1>;
-+				clocks = <&clks VF610_CLK_DMAMUX2>;
-+				clock-names = "dmamux";
-+			};
-+
-+			dmamux3: dmamux@400a2000 {
-+				reg = <0x400a2000 0x1000>;
-+				fsl,dmamux-id = <0>;
-+				clocks = <&clks VF610_CLK_DMAMUX3>;
-+				clock-names = "dmamux";
-+			};
-+
- 			uart4: serial@400a9000 {
- 				compatible = "fsl,vf610-lpuart";
- 				reg = <0x400a9000 0x1000>;
-diff --git a/include/dt-bindings/dma/vf610-edma.h b/include/dt-bindings/dma/vf610-edma.h
-new file mode 100644
-index 0000000..dbe1db2
---- /dev/null
-+++ b/include/dt-bindings/dma/vf610-edma.h
-@@ -0,0 +1,103 @@
-+/*
-+ * Copyright 2013 Freescale Semiconductor, Inc.
-+ *
-+ * This program is free software; you can redistribute  it and/or modify it
-+ * under  the terms of  the GNU General  Public License as published by the
-+ * Free Software Foundation;  either version 2 of the  License, or (at your
-+ * option) any later version.
-+ *
-+ */
-+
-+#ifndef __DT_BINDINGS_VF610_EDMA_H__
-+#define __DT_BINDINGS_VF610_EDMA_H__
-+
-+/* DMAMUX0,3 reqeust source(slot) number */
-+#define VF610_EDMA_MUXID0_UART0_RX	2
-+#define VF610_EDMA_MUXID0_UART0_TX	3
-+#define VF610_EDMA_MUXID0_UART1_RX	4
-+#define VF610_EDMA_MUXID0_UART1_TX	5
-+#define VF610_EDMA_MUXID0_UART2_RX	6
-+#define VF610_EDMA_MUXID0_UART2_TX	7
-+#define VF610_EDMA_MUXID0_UART3_RX	8
-+#define VF610_EDMA_MUXID0_UART3_TX	9
-+#define VF610_EDMA_MUXID0_DSPI0_RX	12
-+#define VF610_EDMA_MUXID0_DSPI0_TX	13
-+#define VF610_EDMA_MUXID0_DSPI1_RX	14
-+#define VF610_EDMA_MUXID0_DSPI1_TX	15
-+#define VF610_EDMA_MUXID0_SAI0_RX	16
-+#define VF610_EDMA_MUXID0_SAI0_TX	17
-+#define VF610_EDMA_MUXID0_SAI1_RX	18
-+#define VF610_EDMA_MUXID0_SAI1_TX	19
-+#define VF610_EDMA_MUXID0_SAI2_RX	20
-+#define VF610_EDMA_MUXID0_SAI2_TX	21
-+#define VF610_EDMA_MUXID0_PDB		22
-+#define VF610_EDMA_MUXID0_FTM0_CH0	24
-+#define VF610_EDMA_MUXID0_FTM0_CH1	25
-+#define VF610_EDMA_MUXID0_FTM0_CH2	26
-+#define VF610_EDMA_MUXID0_FTM0_CH3	27
-+#define VF610_EDMA_MUXID0_FTM0_CH4	28
-+#define VF610_EDMA_MUXID0_FTM0_CH5	29
-+#define VF610_EDMA_MUXID0_FTM0_CH6	30
-+#define VF610_EDMA_MUXID0_FTM0_CH7	31
-+#define VF610_EDMA_MUXID0_FTM1_CH0	32
-+#define VF610_EDMA_MUXID0_FTM1_CH1	33
-+#define VF610_EDMA_MUXID0_ADC0		34
-+#define VF610_EDMA_MUXID0_QUADSPI0	36
-+#define VF610_EDMA_MUXID0_GPIOA		38
-+#define VF610_EDMA_MUXID0_GPIOB		39
-+#define VF610_EDMA_MUXID0_GPIOC		40
-+#define VF610_EDMA_MUXID0_GPIOD		41
-+#define VF610_EDMA_MUXID0_GPIOE		42
-+#define VF610_EDMA_MUXID0_RLE_RX	45
-+#define VF610_EDMA_MUXID0_RLE_TX	46
-+#define VF610_EDMA_MUXID0_SPDIF_RX	47
-+#define VF610_EDMA_MUXID0_SPDIF_TX	48
-+#define VF610_EDMA_MUXID0_I2C0_RX	50
-+#define VF610_EDMA_MUXID0_I2C0_TX	51
-+#define VF610_EDMA_MUXID0_I2C1_RX	52
-+#define VF610_EDMA_MUXID0_I2C1_TX	53
-+
-+/* DMA MUX1,2 request source(slot) number */
-+#define VF610_EDMA_MUXID1_UART4_RX	2
-+#define VF610_EDMA_MUXID1_UART4_TX	3
-+#define VF610_EDMA_MUXID1_UART5_RX	4
-+#define VF610_EDMA_MUXID1_UART5_TX	5
-+#define VF610_EDMA_MUXID1_SAI3_RX	8
-+#define VF610_EDMA_MUXID1_SAI3_TX	9
-+#define VF610_EDMA_MUXID1_DSPI2_RX	10
-+#define VF610_EDMA_MUXID1_DSPI2_TX	11
-+#define VF610_EDMA_MUXID1_DSPI3_RX	12
-+#define VF610_EDMA_MUXID1_DSPI3_TX	13
-+#define VF610_EDMA_MUXID1_FTM2_CH0	16
-+#define VF610_EDMA_MUXID1_FTM2_CH1	17
-+#define VF610_EDMA_MUXID1_FTM3_CH0	18
-+#define VF610_EDMA_MUXID1_FTM3_CH1	19
-+#define VF610_EDMA_MUXID1_FTM3_CH2	20
-+#define VF610_EDMA_MUXID1_FTM3_CH3	21
-+#define VF610_EDMA_MUXID1_FTM3_CH4	22
-+#define VF610_EDMA_MUXID1_FTM3_CH5	24
-+#define VF610_EDMA_MUXID1_FTM3_CH6	25
-+#define VF610_EDMA_MUXID1_FTM3_CH7	26
-+#define VF610_EDMA_MUXID1_QUADSPI1	27
-+#define VF610_EDMA_MUXID1_DAC0		32
-+#define VF610_EDMA_MUXID1_DAC1		33
-+#define VF610_EDMA_MUXID1_ESAI_BIFIFO_TX	34
-+#define VF610_EDMA_MUXID1_ESAI_BIFIFO_RX	35
-+#define VF610_EDMA_MUXID1_I2C2_RX	36
-+#define VF610_EDMA_MUXID1_I2C2_TX	37
-+#define VF610_EDMA_MUXID1_I2C3_RX	38
-+#define VF610_EDMA_MUXID1_I2C3_TX	39
-+#define VF610_EDMA_MUXID1_ASRC0_TX	40
-+#define VF610_EDMA_MUXID1_ASRC0_RX	41
-+#define VF610_EDMA_MUXID1_ASRC1_TX	42
-+#define VF610_EDMA_MUXID1_ASRC1_RX	43
-+#define VF610_EDMA_MUXID1_TIMER0	44
-+#define VF610_EDMA_MUXID1_TIMER1	45
-+#define VF610_EDMA_MUXID1_TIMER2	46
-+#define VF610_EDMA_MUXID1_TIMER3	47
-+#define VF610_EDMA_MUXID1_TIMER4	48
-+#define VF610_EDMA_MUXID1_TIMER5	49
-+#define VF610_EDMA_MUXID1_TIMER6	50
-+#define VF610_EDMA_MUXID1_TIMER7	51
-+
-+#endif
--- 
-1.8.0
+It doesn't look like this could be due to Al's change to the locking in
+autos4_wait() and that the only change to autofs that I'm aware of.
+
+Could you do a bisect please?
+
+> 
+> [787422.065405] BUG: unable to handle kernel NULL pointer dereference at 
+> 0000000000000010
+> [787422.065567] IP: [<ffffffff812722d8>] autofs4_expire_wait+0x38/0x120
+> [787422.065659] PGD 163bdb067 PUD 163bbc067 PMD 0
+> [787422.065744] Oops: 0000 [#1] SMP
+> [787422.065825] Modules linked in: binfmt_misc nfsv3 rpcsec_gss_krb5 
+> nfsv4 dns_resolver nfs fscache bridge stp llc ipt_MASQUERADE xt_nat 
+> iptable_nat nf_nat_ipv4 nf_nat xt_physdev nf_conntrack_ipv4 
+> nf_defrag_ipv4 xt_state nf_conntrack xt_multiport nfsd lockd nfs_acl 
+> auth_rpcgss sunrpc ipmi_si ipmi_msghandler vhost_net iTCO_wdt macvtap 
+> macvlan vhost iTCO_vendor_support pcspkr i7core_edac lpc_ich mfd_core 
+> tun edac_core bnx2 hpwdt microcode acpi_power_meter oid_registry 
+> kvm_intel kvm usb_storage hpsa ttm drm_kms_helper drm i2c_algo_bit i2c_core
+> [787422.066557] CPU: 10 PID: 20498 Comm: sed Not tainted 3.12.0-rc3+ #8
+> [787422.066640] Hardware name: HP ProLiant DL380 G6, BIOS P62 05/05/2011
+> [787422.066722] task: ffff88030e941790 ti: ffff880182a16000 task.ti: 
+> ffff880182a16000
+> [787422.066872] RIP: 0010:[<ffffffff812722d8>]  [<ffffffff812722d8>] 
+> autofs4_expire_wait+0x38/0x120
+> [787422.067029] RSP: 0000:ffff880182a17aa8  EFLAGS: 00010246
+> [787422.067121] RAX: 00000000b1acb1ac RBX: ffff8802e1056a80 RCX: 
+> 0000000000000010
+> [787422.067270] RDX: 000000000000b1ac RSI: ffffffff81c3e3e0 RDI: 
+> ffff88060e187d98
+> [787422.067457] RBP: ffff880182a17ad8 R08: 0000000000000000 R09: 
+> ffffffff811a5748
+> [787422.067607] R10: ff030306ff030001 R11: ffffffffffffffff R12: 
+> ffff88060e187d00
+> [787422.067758] R13: 0000000000000000 R14: 0000000000637461 R15: 
+> ffff8802e1056a80
+> [787422.067909] FS:  0000000000000000(0000) GS:ffff880313ca0000(0000) 
+> knlGS:0000000000000000
+> [787422.068061] CS:  0010 DS: 002b ES: 002b CR0: 000000008005003b
+> [787422.068141] CR2: 0000000000000010 CR3: 000000010f106000 CR4: 
+> 00000000000027e0
+> [787422.068302] Stack:
+> [787422.068414]  ffff880182a17af8 ffffffff810768fe 0000000000000100 
+> ffff8802e1056a80
+> [787422.068575]  ffff88060e187dc0 ffff88060e187dc0 ffff880182a17b48 
+> ffffffff8126f5fc
+> [787422.068736]  0000000000000000 ffff880192afb890 ffff8802e1056ab8 
+> 0000000392afb890
+> [787422.068896] Call Trace:
+> [787422.068976]  [<ffffffff810768fe>] ? prepare_to_wait+0x5e/0x90
+> [787422.069060]  [<ffffffff8126f5fc>] do_expire_wait+0x17c/0x190
+> [787422.069142]  [<ffffffff8126f9a4>] autofs4_d_manage+0xb4/0x170
+> [787422.069227]  [<ffffffff8119af4d>] follow_managed+0xcd/0x2c0
+> [787422.069323]  [<ffffffff8162a3f3>] lookup_slow+0x7b/0xaa
+> [787422.069441]  [<ffffffff8119c4fa>] link_path_walk+0x34a/0x8d0
+> [787422.069524]  [<ffffffff811a67d1>] ? dput+0x31/0x1f0
+> [787422.069606]  [<ffffffff811aeac9>] ? mntput_no_expire+0x49/0x140
+> [787422.069690]  [<ffffffff8119c0bc>] ? path_init+0x30c/0x400
+> [787422.069772]  [<ffffffff8119cad8>] path_lookupat+0x58/0x740
+> [787422.069856]  [<ffffffff8117a153>] ? kmem_cache_alloc+0x1c3/0x200
+> [787422.069939]  [<ffffffff8117a12d>] ? kmem_cache_alloc+0x19d/0x200
+> [787422.071815]  [<ffffffff8119d1f4>] filename_lookup+0x34/0xc0
+> [787422.071898]  [<ffffffff811a0a59>] user_path_at_empty+0x59/0xa0
+> [787422.071981]  [<ffffffff811a0b73>] ? do_filp_open+0x43/0xa0
+> [787422.072064]  [<ffffffff811a0ab1>] user_path_at+0x11/0x20
+> [787422.072146]  [<ffffffff81195761>] vfs_fstatat+0x51/0xb0
+> [787422.072228]  [<ffffffff8119588b>] vfs_stat+0x1b/0x20
+> [787422.072311]  [<ffffffff8104d6ca>] sys32_stat64+0x1a/0x40
+> [787422.072453]  [<ffffffff8118f74a>] ? do_sys_open+0x1aa/0x220
+> [787422.072539]  [<ffffffff8163cf49>] ia32_do_call+0x13/0x13
+> [787422.072619] Code: 48 89 5d e8 4c 89 65 f0 48 89 fb 4c 89 6d f8 48 8b 
+> 47 68 4c 8b 6f 78 4c 8b a0 00 03 00 00 49 8d bc 24 98 00 00 00 e8 78 0d 
+> 3c 00 <41> f6 45 10 01 74 61 66 41 83 84 24 98 00 00 00 01 f6 05 52 4a
+> [787422.073004] RIP  [<ffffffff812722d8>] autofs4_expire_wait+0x38/0x120
+> [787422.073089]  RSP <ffff880182a17aa8>
+> [787422.073164] CR2: 0000000000000010
+> [787422.073595] ---[ end trace c75e278f6383bf9a ]---
 
 
