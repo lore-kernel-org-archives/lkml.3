@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755816Ab3JKAT0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 20:19:26 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:38717 "EHLO smtp.outflux.net"
+	id S1755715Ab3JKATY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 20:19:24 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:53321 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752020Ab3JKASv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 20:18:51 -0400
+	id S1754968Ab3JKASw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 20:18:52 -0400
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
 Cc: x86@kernel.org, kernel-hardening@lists.openwall.com, adurbin@google.com,
@@ -13,9 +13,9 @@ Cc: x86@kernel.org, kernel-hardening@lists.openwall.com, adurbin@google.com,
         Mathias Krause <minipli@googlemail.com>,
         Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
         "H. Peter Anvin" <hpa@zytor.com>, keescook@chromium.org
-Subject: [PATCH v8 3/6] x86, kaslr: provide randomness functions
-Date: Thu, 10 Oct 2013 17:18:15 -0700
-Message-Id: <1381450698-28710-4-git-send-email-keescook@chromium.org>
+Subject: [PATCH v8 2/6] x86, kaslr: return location from decompress_kernel
+Date: Thu, 10 Oct 2013 17:18:14 -0700
+Message-Id: <1381450698-28710-3-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1381450698-28710-1-git-send-email-keescook@chromium.org>
 References: <1381450698-28710-1-git-send-email-keescook@chromium.org>
@@ -24,168 +24,321 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds potential sources of randomness: RDRAND, RDTSC, or the i8254.
+This allows decompress_kernel to return a new location for the kernel to
+be relocated to. Additionally, enforces CONFIG_PHYSICAL_START as the
+minimum relocation position when building with CONFIG_RELOCATABLE.
 
-This moves the pre-alternatives inline rdrand function into the header so
-both pieces of code can use it. Availability of RDRAND is then controlled
-by CONFIG_ARCH_RANDOM, if someone wants to disable it even for kASLR.
+With CONFIG_RANDOMIZE_BASE set, the choose_kernel_location routine
+will select a new location to decompress the kernel, though here it is
+presently a no-op. The kernel command line option "nokaslr" is introduced
+to bypass these routines.
 
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
-v7:
- - move rdrand_long into header to avoid code duplication; HPA.
 v3:
- - fall back to reading the i8254 when no TSC; HPA.
+ - treat LOAD_PHYSICAL_ADDR as minimum.
 v2:
- - use rdtscl from msr.h; Mathias Krause.
+ - renamed "noaslr" to "nokaslr"; HPA.
 ---
- arch/x86/boot/compressed/aslr.c   |   53 +++++++++++++++++++++++++++++++++++++
- arch/x86/boot/compressed/misc.h   |    2 ++
- arch/x86/include/asm/archrandom.h |   21 +++++++++++++++
- arch/x86/kernel/cpu/rdrand.c      |   14 ----------
- 4 files changed, 76 insertions(+), 14 deletions(-)
+ Documentation/kernel-parameters.txt |    4 ++++
+ arch/x86/Kconfig                    |   38 +++++++++++++++++++++++++++++++----
+ arch/x86/boot/compressed/Makefile   |    2 +-
+ arch/x86/boot/compressed/aslr.c     |   23 +++++++++++++++++++++
+ arch/x86/boot/compressed/cmdline.c  |    2 +-
+ arch/x86/boot/compressed/head_32.S  |   10 +++++----
+ arch/x86/boot/compressed/head_64.S  |   16 +++++++++------
+ arch/x86/boot/compressed/misc.c     |    8 ++++++--
+ arch/x86/boot/compressed/misc.h     |   27 +++++++++++++++++++------
+ 9 files changed, 106 insertions(+), 24 deletions(-)
+ create mode 100644 arch/x86/boot/compressed/aslr.c
 
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index fcbb736..773fc4c 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -1975,6 +1975,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 	noapic		[SMP,APIC] Tells the kernel to not make use of any
+ 			IOAPICs that may be present in the system.
+ 
++	nokaslr		[X86]
++			Disable kernel base offset ASLR (Address Space
++			Layout Randomization) if built into the kernel.
++
+ 	noautogroup	Disable scheduler automatic task group creation.
+ 
+ 	nobats		[PPC] Do not use BATs for mapping kernel lowmem
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index ee2fb9d..992701d 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1722,16 +1722,46 @@ config RELOCATABLE
+ 
+ 	  Note: If CONFIG_RELOCATABLE=y, then the kernel runs from the address
+ 	  it has been loaded at and the compile time physical address
+-	  (CONFIG_PHYSICAL_START) is ignored.
++	  (CONFIG_PHYSICAL_START) is used as the minimum location.
+ 
+-# Relocation on x86-32 needs some additional build support
++config RANDOMIZE_BASE
++	bool "Randomize the address of the kernel image"
++	depends on RELOCATABLE
++	depends on !HIBERNATION
++	default n
++	---help---
++	   Randomizes the physical and virtual address at which the
++	   kernel image is decompressed, as a security feature that
++	   deters exploit attempts relying on knowledge of the location
++	   of kernel internals.
++
++	   Entropy is generated using the RDRAND instruction if it
++	   is supported.  If not, then RDTSC is used, if supported. If
++	   neither RDRAND nor RDTSC are supported, then no randomness
++	   is introduced.
++
++	   The kernel will be offset by up to RANDOMIZE_BASE_MAX_OFFSET,
++	   and aligned according to PHYSICAL_ALIGN.
++
++config RANDOMIZE_BASE_MAX_OFFSET
++	hex "Maximum ASLR offset allowed"
++	depends on RANDOMIZE_BASE
++	default "0x10000000"
++	range 0x0 0x10000000
++	---help---
++	 Determines the maximal offset in bytes that will be applied to the
++	 kernel when Address Space Layout Randomization (ASLR) is active.
++	 Must be less than or equal to the actual physical memory on the
++	 system. This must be a power of two.
++
++# Relocation on x86 needs some additional build support
+ config X86_NEED_RELOCS
+ 	def_bool y
+-	depends on X86_32 && RELOCATABLE
++	depends on RANDOMIZE_BASE || (X86_32 && RELOCATABLE)
+ 
+ config PHYSICAL_ALIGN
+ 	hex "Alignment value to which kernel should be aligned"
+-	default "0x1000000"
++	default "0x200000"
+ 	range 0x2000 0x1000000 if X86_32
+ 	range 0x200000 0x1000000 if X86_64
+ 	---help---
+diff --git a/arch/x86/boot/compressed/Makefile b/arch/x86/boot/compressed/Makefile
+index 3312f1b..ae8b5db 100644
+--- a/arch/x86/boot/compressed/Makefile
++++ b/arch/x86/boot/compressed/Makefile
+@@ -27,7 +27,7 @@ HOST_EXTRACFLAGS += -I$(srctree)/tools/include
+ 
+ VMLINUX_OBJS = $(obj)/vmlinux.lds $(obj)/head_$(BITS).o $(obj)/misc.o \
+ 	$(obj)/string.o $(obj)/cmdline.o $(obj)/early_serial_console.o \
+-	$(obj)/piggy.o $(obj)/cpuflags.o
++	$(obj)/piggy.o $(obj)/cpuflags.o $(obj)/aslr.o
+ 
+ $(obj)/eboot.o: KBUILD_CFLAGS += -fshort-wchar -mno-red-zone
+ 
 diff --git a/arch/x86/boot/compressed/aslr.c b/arch/x86/boot/compressed/aslr.c
-index b73cc66..14b24e0 100644
---- a/arch/x86/boot/compressed/aslr.c
+new file mode 100644
+index 0000000..b73cc66
+--- /dev/null
 +++ b/arch/x86/boot/compressed/aslr.c
-@@ -1,6 +1,59 @@
+@@ -0,0 +1,23 @@
++#include "misc.h"
++
++#ifdef CONFIG_RANDOMIZE_BASE
++
++unsigned char *choose_kernel_location(unsigned char *input,
++				      unsigned long input_size,
++				      unsigned char *output,
++				      unsigned long output_size)
++{
++	unsigned long choice = (unsigned long)output;
++
++	if (cmdline_find_option_bool("nokaslr")) {
++		debug_putstr("KASLR disabled...\n");
++		goto out;
++	}
++
++	/* XXX: choose random location. */
++
++out:
++	return (unsigned char *)choice;
++}
++
++#endif /* CONFIG_RANDOMIZE_BASE */
+diff --git a/arch/x86/boot/compressed/cmdline.c b/arch/x86/boot/compressed/cmdline.c
+index bffd73b..b68e303 100644
+--- a/arch/x86/boot/compressed/cmdline.c
++++ b/arch/x86/boot/compressed/cmdline.c
+@@ -1,6 +1,6 @@
  #include "misc.h"
  
- #ifdef CONFIG_RANDOMIZE_BASE
-+#include <asm/msr.h>
-+#include <asm/archrandom.h>
-+
-+#define I8254_PORT_CONTROL	0x43
-+#define I8254_PORT_COUNTER0	0x40
-+#define I8254_CMD_READBACK	0xC0
-+#define I8254_SELECT_COUNTER0	0x02
-+#define I8254_STATUS_NOTREADY	0x40
-+static inline u16 i8254(void)
-+{
-+	u16 status, timer;
-+
-+	do {
-+		outb(I8254_PORT_CONTROL,
-+		     I8254_CMD_READBACK | I8254_SELECT_COUNTER0);
-+		status = inb(I8254_PORT_COUNTER0);
-+		timer  = inb(I8254_PORT_COUNTER0);
-+		timer |= inb(I8254_PORT_COUNTER0) << 8;
-+	} while (status & I8254_STATUS_NOTREADY);
-+
-+	return timer;
-+}
-+
-+static unsigned long get_random_long(void)
-+{
-+	unsigned long random;
-+
-+	if (has_cpuflag(X86_FEATURE_RDRAND)) {
-+		debug_putstr("KASLR using RDRAND...\n");
-+		if (rdrand_long(&random))
-+			return random;
-+	}
-+
-+	if (has_cpuflag(X86_FEATURE_TSC)) {
-+		uint32_t raw;
-+
-+		debug_putstr("KASLR using RDTSC...\n");
-+		rdtscl(raw);
-+
-+		/* Only use the low bits of rdtsc. */
-+		random = raw & 0xffff;
-+	} else {
-+		debug_putstr("KASLR using i8254...\n");
-+		random = i8254();
-+	}
-+
-+	/* Extend timer bits poorly... */
-+	random |= (random << 16);
-+#ifdef CONFIG_X86_64
-+	random |= (random << 32);
-+#endif
-+	return random;
-+}
+-#ifdef CONFIG_EARLY_PRINTK
++#if CONFIG_EARLY_PRINTK || CONFIG_RANDOMIZE_BASE
  
- unsigned char *choose_kernel_location(unsigned char *input,
- 				      unsigned long input_size,
+ static unsigned long fs;
+ static inline void set_fs(unsigned long seg)
+diff --git a/arch/x86/boot/compressed/head_32.S b/arch/x86/boot/compressed/head_32.S
+index 5d6f689..9116aac 100644
+--- a/arch/x86/boot/compressed/head_32.S
++++ b/arch/x86/boot/compressed/head_32.S
+@@ -117,9 +117,11 @@ preferred_addr:
+ 	addl    %eax, %ebx
+ 	notl	%eax
+ 	andl    %eax, %ebx
+-#else
+-	movl	$LOAD_PHYSICAL_ADDR, %ebx
++	cmpl	$LOAD_PHYSICAL_ADDR, %ebx
++	jge	1f
+ #endif
++	movl	$LOAD_PHYSICAL_ADDR, %ebx
++1:
+ 
+ 	/* Target address to relocate to for decompression */
+ 	addl	$z_extract_offset, %ebx
+@@ -191,14 +193,14 @@ relocated:
+ 	leal	boot_heap(%ebx), %eax
+ 	pushl	%eax		/* heap area */
+ 	pushl	%esi		/* real mode pointer */
+-	call	decompress_kernel
++	call	decompress_kernel /* returns kernel location in %eax */
+ 	addl	$24, %esp
+ 
+ /*
+  * Jump to the decompressed kernel.
+  */
+ 	xorl	%ebx, %ebx
+-	jmp	*%ebp
++	jmp	*%eax
+ 
+ /*
+  * Stack and heap for uncompression
+diff --git a/arch/x86/boot/compressed/head_64.S b/arch/x86/boot/compressed/head_64.S
+index c337422..c5c1ae0 100644
+--- a/arch/x86/boot/compressed/head_64.S
++++ b/arch/x86/boot/compressed/head_64.S
+@@ -94,9 +94,11 @@ ENTRY(startup_32)
+ 	addl	%eax, %ebx
+ 	notl	%eax
+ 	andl	%eax, %ebx
+-#else
+-	movl	$LOAD_PHYSICAL_ADDR, %ebx
++	cmpl	$LOAD_PHYSICAL_ADDR, %ebx
++	jge	1f
+ #endif
++	movl	$LOAD_PHYSICAL_ADDR, %ebx
++1:
+ 
+ 	/* Target address to relocate to for decompression */
+ 	addl	$z_extract_offset, %ebx
+@@ -269,9 +271,11 @@ preferred_addr:
+ 	addq	%rax, %rbp
+ 	notq	%rax
+ 	andq	%rax, %rbp
+-#else
+-	movq	$LOAD_PHYSICAL_ADDR, %rbp
++	cmpq	$LOAD_PHYSICAL_ADDR, %rbp
++	jge	1f
+ #endif
++	movq	$LOAD_PHYSICAL_ADDR, %rbp
++1:
+ 
+ 	/* Target address to relocate to for decompression */
+ 	leaq	z_extract_offset(%rbp), %rbx
+@@ -339,13 +343,13 @@ relocated:
+ 	movl	$z_input_len, %ecx	/* input_len */
+ 	movq	%rbp, %r8		/* output target address */
+ 	movq	$z_output_len, %r9	/* decompressed length */
+-	call	decompress_kernel
++	call	decompress_kernel	/* returns kernel location in %rax */
+ 	popq	%rsi
+ 
+ /*
+  * Jump to the decompressed kernel.
+  */
+-	jmp	*%rbp
++	jmp	*%rax
+ 
+ 	.code32
+ no_longmode:
+diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
+index 434f077..7138768 100644
+--- a/arch/x86/boot/compressed/misc.c
++++ b/arch/x86/boot/compressed/misc.c
+@@ -395,7 +395,7 @@ static void parse_elf(void *output)
+ 	free(phdrs);
+ }
+ 
+-asmlinkage void decompress_kernel(void *rmode, memptr heap,
++asmlinkage void *decompress_kernel(void *rmode, memptr heap,
+ 				  unsigned char *input_data,
+ 				  unsigned long input_len,
+ 				  unsigned char *output,
+@@ -422,6 +422,10 @@ asmlinkage void decompress_kernel(void *rmode, memptr heap,
+ 	free_mem_ptr     = heap;	/* Heap */
+ 	free_mem_end_ptr = heap + BOOT_HEAP_SIZE;
+ 
++	output = choose_kernel_location(input_data, input_len,
++					output, output_len);
++
++	/* Validate memory location choices. */
+ 	if ((unsigned long)output & (MIN_KERNEL_ALIGN - 1))
+ 		error("Destination address inappropriately aligned");
+ #ifdef CONFIG_X86_64
+@@ -441,5 +445,5 @@ asmlinkage void decompress_kernel(void *rmode, memptr heap,
+ 	parse_elf(output);
+ 	handle_relocations(output, output_len);
+ 	debug_putstr("done.\nBooting the kernel.\n");
+-	return;
++	return output;
+ }
 diff --git a/arch/x86/boot/compressed/misc.h b/arch/x86/boot/compressed/misc.h
-index 9077af7..0782eb0 100644
+index 674019d..9077af7 100644
 --- a/arch/x86/boot/compressed/misc.h
 +++ b/arch/x86/boot/compressed/misc.h
-@@ -52,6 +52,8 @@ unsigned char *choose_kernel_location(unsigned char *input,
- 				      unsigned long input_size,
- 				      unsigned char *output,
- 				      unsigned long output_size);
-+/* cpuflags.c */
-+bool has_cpuflag(int flag);
- #else
- static inline
- unsigned char *choose_kernel_location(unsigned char *input,
-diff --git a/arch/x86/include/asm/archrandom.h b/arch/x86/include/asm/archrandom.h
-index 0d9ec77..e6a9245 100644
---- a/arch/x86/include/asm/archrandom.h
-+++ b/arch/x86/include/asm/archrandom.h
-@@ -39,6 +39,20 @@
+@@ -39,23 +39,38 @@ static inline void debug_putstr(const char *s)
  
- #ifdef CONFIG_ARCH_RANDOM
+ #endif
  
-+/* Instead of arch_get_random_long() when alternatives haven't run. */
-+static inline int rdrand_long(unsigned long *v)
-+{
-+	int ok;
-+	asm volatile("1: " RDRAND_LONG "\n\t"
-+		     "jc 2f\n\t"
-+		     "decl %0\n\t"
-+		     "jnz 1b\n\t"
-+		     "2:"
-+		     : "=r" (ok), "=a" (*v)
-+		     : "0" (RDRAND_RETRY_LOOPS));
-+	return ok;
-+}
-+
- #define GET_RANDOM(name, type, rdrand, nop)			\
- static inline int name(type *v)					\
- {								\
-@@ -68,6 +82,13 @@ GET_RANDOM(arch_get_random_int, unsigned int, RDRAND_INT, ASM_NOP3);
- 
- #endif /* CONFIG_X86_64 */
- 
-+#else
-+
-+static inline int rdrand_long(unsigned long *v)
-+{
-+	return 0;
-+}
-+
- #endif  /* CONFIG_ARCH_RANDOM */
- 
- extern void x86_init_rdrand(struct cpuinfo_x86 *c);
-diff --git a/arch/x86/kernel/cpu/rdrand.c b/arch/x86/kernel/cpu/rdrand.c
-index 88db010..384df51 100644
---- a/arch/x86/kernel/cpu/rdrand.c
-+++ b/arch/x86/kernel/cpu/rdrand.c
-@@ -31,20 +31,6 @@ static int __init x86_rdrand_setup(char *s)
- }
- __setup("nordrand", x86_rdrand_setup);
- 
--/* We can't use arch_get_random_long() here since alternatives haven't run */
--static inline int rdrand_long(unsigned long *v)
--{
--	int ok;
--	asm volatile("1: " RDRAND_LONG "\n\t"
--		     "jc 2f\n\t"
--		     "decl %0\n\t"
--		     "jnz 1b\n\t"
--		     "2:"
--		     : "=r" (ok), "=a" (*v)
--		     : "0" (RDRAND_RETRY_LOOPS));
--	return ok;
--}
+-#ifdef CONFIG_EARLY_PRINTK
 -
- /*
-  * Force a reseed cycle; we are architecturally guaranteed a reseed
-  * after no more than 512 128-bit chunks of random data.  This also
++#if CONFIG_EARLY_PRINTK || CONFIG_RANDOMIZE_BASE
+ /* cmdline.c */
+ int cmdline_find_option(const char *option, char *buffer, int bufsize);
+ int cmdline_find_option_bool(const char *option);
++#endif
+ 
+-/* early_serial_console.c */
+-extern int early_serial_base;
+-void console_init(void);
+ 
++#if CONFIG_RANDOMIZE_BASE
++/* aslr.c */
++unsigned char *choose_kernel_location(unsigned char *input,
++				      unsigned long input_size,
++				      unsigned char *output,
++				      unsigned long output_size);
+ #else
++static inline
++unsigned char *choose_kernel_location(unsigned char *input,
++				      unsigned long input_size,
++				      unsigned char *output,
++				      unsigned long output_size)
++{
++	return output;
++}
++#endif
+ 
++#ifdef CONFIG_EARLY_PRINTK
+ /* early_serial_console.c */
++extern int early_serial_base;
++void console_init(void);
++#else
+ static const int early_serial_base;
+ static inline void console_init(void)
+ { }
+-
+ #endif
+ 
+ #endif
 -- 
 1.7.9.5
 
