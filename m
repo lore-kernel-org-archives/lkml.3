@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758637Ab3JKTpl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:45:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46564 "EHLO
+	id S1758873Ab3JKTqO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:46:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46557 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932844Ab3JKTmU (ORCPT
+	with ESMTP id S932822Ab3JKTmT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:42:20 -0400
+	Fri, 11 Oct 2013 15:42:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Metcalf <cmetcalf@tilera.com>
-Subject: [ 124/135] tile: use a more conservative __my_cpu_offset in CONFIG_PREEMPT
-Date: Fri, 11 Oct 2013 12:40:05 -0700
-Message-Id: <20131011193958.741808986@linuxfoundation.org>
+        David Herrmann <dh.herrmann@gmail.com>, Jiri Kosina <jkosina@suse.cz>
+Subject: [ 122/135] HID: wiimote: fix FF deadlock
+Date: Fri, 11 Oct 2013 12:40:03 -0700
+Message-Id: <20131011193958.523283082@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -26,71 +26,168 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Metcalf <cmetcalf@tilera.com>
+From: David Herrmann <dh.herrmann@gmail.com>
 
-commit f862eefec0b68e099a9fa58d3761ffb10bad97e1 upstream.
+commit f50f9aabf32db7414551ffdfdccc71be5f3d6e7d upstream.
 
-It turns out the kernel relies on barrier() to force a reload of the
-percpu offset value.  Since we can't easily modify the definition of
-barrier() to include "tp" as an output register, we instead provide a
-definition of __my_cpu_offset as extended assembly that includes a fake
-stack read to hazard against barrier(), forcing gcc to know that it
-must reread "tp" and recompute anything based on "tp" after a barrier.
+The input core has an internal spinlock that is acquired during event
+injection via input_event() and friends but also held during FF callbacks.
+That means, there is no way to share a lock between event-injection and FF
+handling. Unfortunately, this is what is required for wiimote state
+tracking and what we do with state.lock and input->lock.
 
-This fixes observed hangs in the slub allocator when we are looping
-on a percpu cmpxchg_double.
+This deadlock can be triggered when using continuous data reporting and FF
+on a wiimote device at the same time. I takes me at least 30m of
+stress-testing to trigger it but users reported considerably shorter
+times (http://bpaste.net/show/132504/) when using some gaming-console
+emulators.
 
-A similar fix for ARMv7 was made in June in change 509eb76ebf97.
+The real problem is that we have two copies of internal state, one in the
+wiimote objects and the other in the input device. As the input-lock is
+not supposed to be accessed from outside of input-core, we have no other
+chance than offloading FF handling into a worker. This actually works
+pretty nice and also allows to implictly merge fast rumble changes into a
+single request.
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+Due to the 3-layered workers (rumble+queue+l2cap) this might reduce FF
+responsiveness. Initial tests were fine so lets fix the race first and if
+it turns out to be too slow we can always handle FF out-of-band and skip
+the queue-worker.
+
+Reported-by: Thomas Schneider
+Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/tile/include/asm/percpu.h |   34 +++++++++++++++++++++++++++++++---
- 1 file changed, 31 insertions(+), 3 deletions(-)
+ drivers/hid/hid-wiimote-modules.c |   40 +++++++++++++++++++++++++++-----------
+ drivers/hid/hid-wiimote.h         |    4 ++-
+ 2 files changed, 32 insertions(+), 12 deletions(-)
 
---- a/arch/tile/include/asm/percpu.h
-+++ b/arch/tile/include/asm/percpu.h
-@@ -15,9 +15,37 @@
- #ifndef _ASM_TILE_PERCPU_H
- #define _ASM_TILE_PERCPU_H
+--- a/drivers/hid/hid-wiimote-modules.c
++++ b/drivers/hid/hid-wiimote-modules.c
+@@ -119,12 +119,22 @@ static const struct wiimod_ops wiimod_ke
+  * the rumble motor, this flag shouldn't be set.
+  */
  
--register unsigned long __my_cpu_offset __asm__("tp");
--#define __my_cpu_offset __my_cpu_offset
--#define set_my_cpu_offset(tp) (__my_cpu_offset = (tp))
-+register unsigned long my_cpu_offset_reg asm("tp");
-+
-+#ifdef CONFIG_PREEMPT
-+/*
-+ * For full preemption, we can't just use the register variable
-+ * directly, since we need barrier() to hazard against it, causing the
-+ * compiler to reload anything computed from a previous "tp" value.
-+ * But we also don't want to use volatile asm, since we'd like the
-+ * compiler to be able to cache the value across multiple percpu reads.
-+ * So we use a fake stack read as a hazard against barrier().
-+ * The 'U' constraint is like 'm' but disallows postincrement.
-+ */
-+static inline unsigned long __my_cpu_offset(void)
++/* used by wiimod_rumble and wiipro_rumble */
++static void wiimod_rumble_worker(struct work_struct *work)
 +{
-+	unsigned long tp;
-+	register unsigned long *sp asm("sp");
-+	asm("move %0, tp" : "=r" (tp) : "U" (*sp));
-+	return tp;
-+}
-+#define __my_cpu_offset __my_cpu_offset()
-+#else
-+/*
-+ * We don't need to hazard against barrier() since "tp" doesn't ever
-+ * change with PREEMPT_NONE, and with PREEMPT_VOLUNTARY it only
-+ * changes at function call points, at which we are already re-reading
-+ * the value of "tp" due to "my_cpu_offset_reg" being a global variable.
-+ */
-+#define __my_cpu_offset my_cpu_offset_reg
-+#endif
++	struct wiimote_data *wdata = container_of(work, struct wiimote_data,
++						  rumble_worker);
 +
-+#define set_my_cpu_offset(tp) (my_cpu_offset_reg = (tp))
++	spin_lock_irq(&wdata->state.lock);
++	wiiproto_req_rumble(wdata, wdata->state.cache_rumble);
++	spin_unlock_irq(&wdata->state.lock);
++}
++
+ static int wiimod_rumble_play(struct input_dev *dev, void *data,
+ 			      struct ff_effect *eff)
+ {
+ 	struct wiimote_data *wdata = input_get_drvdata(dev);
+ 	__u8 value;
+-	unsigned long flags;
  
- #include <asm-generic/percpu.h>
+ 	/*
+ 	 * The wiimote supports only a single rumble motor so if any magnitude
+@@ -137,9 +147,10 @@ static int wiimod_rumble_play(struct inp
+ 	else
+ 		value = 0;
  
+-	spin_lock_irqsave(&wdata->state.lock, flags);
+-	wiiproto_req_rumble(wdata, value);
+-	spin_unlock_irqrestore(&wdata->state.lock, flags);
++	/* Locking state.lock here might deadlock with input_event() calls.
++	 * schedule_work acts as barrier. Merging multiple changes is fine. */
++	wdata->state.cache_rumble = value;
++	schedule_work(&wdata->rumble_worker);
+ 
+ 	return 0;
+ }
+@@ -147,6 +158,8 @@ static int wiimod_rumble_play(struct inp
+ static int wiimod_rumble_probe(const struct wiimod_ops *ops,
+ 			       struct wiimote_data *wdata)
+ {
++	INIT_WORK(&wdata->rumble_worker, wiimod_rumble_worker);
++
+ 	set_bit(FF_RUMBLE, wdata->input->ffbit);
+ 	if (input_ff_create_memless(wdata->input, NULL, wiimod_rumble_play))
+ 		return -ENOMEM;
+@@ -159,6 +172,8 @@ static void wiimod_rumble_remove(const s
+ {
+ 	unsigned long flags;
+ 
++	cancel_work_sync(&wdata->rumble_worker);
++
+ 	spin_lock_irqsave(&wdata->state.lock, flags);
+ 	wiiproto_req_rumble(wdata, 0);
+ 	spin_unlock_irqrestore(&wdata->state.lock, flags);
+@@ -1731,7 +1746,6 @@ static int wiimod_pro_play(struct input_
+ {
+ 	struct wiimote_data *wdata = input_get_drvdata(dev);
+ 	__u8 value;
+-	unsigned long flags;
+ 
+ 	/*
+ 	 * The wiimote supports only a single rumble motor so if any magnitude
+@@ -1744,9 +1758,10 @@ static int wiimod_pro_play(struct input_
+ 	else
+ 		value = 0;
+ 
+-	spin_lock_irqsave(&wdata->state.lock, flags);
+-	wiiproto_req_rumble(wdata, value);
+-	spin_unlock_irqrestore(&wdata->state.lock, flags);
++	/* Locking state.lock here might deadlock with input_event() calls.
++	 * schedule_work acts as barrier. Merging multiple changes is fine. */
++	wdata->state.cache_rumble = value;
++	schedule_work(&wdata->rumble_worker);
+ 
+ 	return 0;
+ }
+@@ -1756,6 +1771,8 @@ static int wiimod_pro_probe(const struct
+ {
+ 	int ret, i;
+ 
++	INIT_WORK(&wdata->rumble_worker, wiimod_rumble_worker);
++
+ 	wdata->extension.input = input_allocate_device();
+ 	if (!wdata->extension.input)
+ 		return -ENOMEM;
+@@ -1817,12 +1834,13 @@ static void wiimod_pro_remove(const stru
+ 	if (!wdata->extension.input)
+ 		return;
+ 
++	input_unregister_device(wdata->extension.input);
++	wdata->extension.input = NULL;
++	cancel_work_sync(&wdata->rumble_worker);
++
+ 	spin_lock_irqsave(&wdata->state.lock, flags);
+ 	wiiproto_req_rumble(wdata, 0);
+ 	spin_unlock_irqrestore(&wdata->state.lock, flags);
+-
+-	input_unregister_device(wdata->extension.input);
+-	wdata->extension.input = NULL;
+ }
+ 
+ static const struct wiimod_ops wiimod_pro = {
+--- a/drivers/hid/hid-wiimote.h
++++ b/drivers/hid/hid-wiimote.h
+@@ -133,13 +133,15 @@ struct wiimote_state {
+ 	__u8 *cmd_read_buf;
+ 	__u8 cmd_read_size;
+ 
+-	/* calibration data */
++	/* calibration/cache data */
+ 	__u16 calib_bboard[4][3];
++	__u8 cache_rumble;
+ };
+ 
+ struct wiimote_data {
+ 	struct hid_device *hdev;
+ 	struct input_dev *input;
++	struct work_struct rumble_worker;
+ 	struct led_classdev *leds[4];
+ 	struct input_dev *accel;
+ 	struct input_dev *ir;
 
 
