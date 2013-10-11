@@ -1,37 +1,31 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755023Ab3JIU23 (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Wed, 9 Oct 2013 16:28:29 -0400
-Received: from outrelay03.libero.it ([212.52.84.103]:49366 "EHLO
-	outrelay03.libero.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751458Ab3JIU22 (ORCPT
+	id S1753491Ab3JKOcl (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Fri, 11 Oct 2013 10:32:41 -0400
+Received: from lehua.boldfocus.com ([208.194.225.20]:6240 "EHLO
+	lehua.boldfocus.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751808Ab3JKOck (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Oct 2013 16:28:28 -0400
-X-CTCH-Spam: Unknown
-X-CTCH-RefID: str=0001.0A0C0201.5255BB7A.0078,ss=1,re=0.000,fgs=0
-X-libjamoibt: 1587
-Message-ID: <4008015.11711381350266288.JavaMail.defaultUser@defaultHost>
-Date: Wed, 9 Oct 2013 22:24:26 +0200 (CEST)
-From: olukk <olukk@libero.it>
-Reply-To: hassana1919@gmx.com
-Subject: Hello
+	Fri, 11 Oct 2013 10:32:40 -0400
+X-Greylist: delayed 663 seconds by postgrey-1.27 at vger.kernel.org; Fri, 11 Oct 2013 10:32:40 EDT
+Message-ID: <21B70323B76E4AE19F44C37EBB29D992@emwulgv>
+Reply-To: "kitana_25" <ityrychkina@anturiodourado.com.br>
+From: "kitana_25" <jim@boldfocus.com>
+To: <boris@vetomin.ru>, <delta@vlad.ru>, <info@mymunami.rugestour>,
+        <belinda@etudes.freeserve.co.uk>, <linux-kernel@vger.kernel.org>
+Subject: =?koi8-r?B?3MvT1NLBy9Qgws/Cz9cg+sXMxc7Px88gy8/GxSDXzMHE?=
+	=?koi8-r?B?xcXUIM/Tzs/XwdTFzNjO2c0g1snSz9PWycfBwN3JzSDE?=
+	=?koi8-r?B?xcrT1NfPzQ==?=
+Date: Fri, 11 Oct 2013 16:13:35 +0200
 MIME-Version: 1.0
-Content-Type: text/plain;charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-SenderIP: 41.82.110.120
-X-libjamv: 9KZyFl1BLbY=
-X-libjamsun: xXgqQzDb9hMlNfSnfgMFzyKSOoV1n2Tz
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain;
+	charset="koi8-r";
+X-Priority: 3
+X-OriginalArrivalTime: 11 Oct 2013 14:13:31.0518 (UTC) FILETIME=[1084C1E0:01CEC68C]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by spinics.net id r9BEWoeo019900
 
-Hello,
-How
-are you? hope fine, I Want to
-introduce my self to you before I go
-further, My Name is Hassana. I will like to have a good
-relationship with you, if you wouldn't mind, I will like to hear from
-you soon I
-have something very important I will like to tell you. Thanks and God
-bless you,
-Miss Hassana,
+ÕÓÉÌÑÅÔ ÏÂÍÅÎ ×ÅİÅÓÔ× http://tiny.pl/qxwzs
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
