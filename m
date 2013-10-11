@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753327Ab3JKFPx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 01:15:53 -0400
+	id S1753816Ab3JKFQN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 01:16:13 -0400
 Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:56694 "EHLO
 	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751862Ab3JKFPr (ORCPT
+	with ESMTP id S1751527Ab3JKFPw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 01:15:47 -0400
-X-AuditID: 9c93016f-b7c63ae00000696f-1c-525789813754
+	Fri, 11 Oct 2013 01:15:52 -0400
+X-AuditID: 9c93016f-b7c63ae00000696f-2b-52578983f7a2
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
         LKML <linux-kernel@vger.kernel.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 2/8] perf ui/progress: Add new helper functions for progress bar
-Date: Fri, 11 Oct 2013 14:15:37 +0900
-Message-Id: <1381468543-25334-3-git-send-email-namhyung@kernel.org>
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 8/8] perf tools: Get current comm instead of last one
+Date: Fri, 11 Oct 2013 14:15:43 +0900
+Message-Id: <1381468543-25334-9-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1381468543-25334-1-git-send-email-namhyung@kernel.org>
 References: <1381468543-25334-1-git-send-email-namhyung@kernel.org>
@@ -28,147 +29,186 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-Introduce ui_progress_setup() and ui_progress__advance() to separate
-out from the session logic.  It'll be used by other places in the
-upcoming patch.
+At insert time, a hist entry should reference comm at the time
+otherwise it'll get the last comm anyway.
 
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Link: http://lkml.kernel.org/n/tip-n6pykiiymtgmcjs834go2t8x@git.kernel.org
+[ Fixed up const pointer issues ]
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/ui/progress.c  | 18 ++++++++++++++++++
- tools/perf/ui/progress.h  | 10 ++++++++++
- tools/perf/util/session.c | 24 ++++++++++++------------
- 3 files changed, 40 insertions(+), 12 deletions(-)
+ tools/perf/util/comm.c   | 15 +++++++++++++++
+ tools/perf/util/comm.h   |  1 +
+ tools/perf/util/hist.c   |  3 +++
+ tools/perf/util/sort.c   | 14 +++++---------
+ tools/perf/util/sort.h   |  1 +
+ tools/perf/util/thread.c |  6 +++---
+ tools/perf/util/thread.h |  2 ++
+ 7 files changed, 30 insertions(+), 12 deletions(-)
 
-diff --git a/tools/perf/ui/progress.c b/tools/perf/ui/progress.c
-index 3ec695607a4d..b5c22c6b1d93 100644
---- a/tools/perf/ui/progress.c
-+++ b/tools/perf/ui/progress.c
-@@ -19,6 +19,24 @@ void ui_progress__update(u64 curr, u64 total, const char *title)
- 	return progress_fns->update(curr, total, title);
+diff --git a/tools/perf/util/comm.c b/tools/perf/util/comm.c
+index 0cfb55202537..ecd3c9938d3e 100644
+--- a/tools/perf/util/comm.c
++++ b/tools/perf/util/comm.c
+@@ -94,6 +94,21 @@ struct comm *comm__new(const char *str, u64 timestamp)
+ 	return comm;
  }
  
-+void ui_progress__setup(struct perf_progress *p, u64 total)
++void comm__override(struct comm *comm, const char *str, u64 timestamp)
 +{
-+	p->curr = 0;
-+	p->next = p->unit = total / 16;
-+	p->total = total;
++	struct comm_str *old = comm->comm_str;
 +
-+}
-+
-+void ui_progress__advance(struct perf_progress *p, u64 adv, const char *title)
-+{
-+	p->curr += adv;
-+
-+	if (p->curr >= p->next) {
-+		p->next += p->unit;
-+		ui_progress__update(p->curr, p->total, title);
++	comm->comm_str = comm_str_findnew(str, &comm_str_root);
++	if (!comm->comm_str) {
++		comm->comm_str = old;
++		return;
 +	}
++
++	comm->start = timestamp;
++	comm_str_get(comm->comm_str);
++	comm_str_put(old);
 +}
 +
- void ui_progress__finish(void)
+ void comm__free(struct comm *comm)
  {
- 	if (progress_fns->finish)
-diff --git a/tools/perf/ui/progress.h b/tools/perf/ui/progress.h
-index 257cc224f9cf..3bd23e825953 100644
---- a/tools/perf/ui/progress.h
-+++ b/tools/perf/ui/progress.h
-@@ -8,10 +8,20 @@ struct ui_progress {
- 	void (*finish)(void);
- };
+ 	comm_str_put(comm->comm_str);
+diff --git a/tools/perf/util/comm.h b/tools/perf/util/comm.h
+index f62d215bede2..b2c364b37468 100644
+--- a/tools/perf/util/comm.h
++++ b/tools/perf/util/comm.h
+@@ -16,5 +16,6 @@ struct comm {
+ void comm__free(struct comm *comm);
+ struct comm *comm__new(const char *str, u64 timestamp);
+ const char *comm__str(const struct comm *comm);
++void comm__override(struct comm *self, const char *str, u64 timestamp);
  
-+struct perf_progress {
-+	u64 curr;
-+	u64 next;
-+	u64 unit;
-+	u64 total;
-+};
-+
- extern struct ui_progress *progress_fns;
+ #endif  /* __PERF_COMM_H */
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 8b2d96c56d17..e86d18a674b2 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -412,6 +412,7 @@ struct hist_entry *__hists__add_mem_entry(struct hists *self,
+ {
+ 	struct hist_entry entry = {
+ 		.thread	= al->thread,
++		.comm = thread__comm(al->thread),
+ 		.ms = {
+ 			.map	= al->map,
+ 			.sym	= al->sym,
+@@ -442,6 +443,7 @@ struct hist_entry *__hists__add_branch_entry(struct hists *self,
+ {
+ 	struct hist_entry entry = {
+ 		.thread	= al->thread,
++		.comm = thread__comm(al->thread),
+ 		.ms = {
+ 			.map	= bi->to.map,
+ 			.sym	= bi->to.sym,
+@@ -471,6 +473,7 @@ struct hist_entry *__hists__add_entry(struct hists *self,
+ {
+ 	struct hist_entry entry = {
+ 		.thread	= al->thread,
++		.comm = thread__comm(al->thread),
+ 		.ms = {
+ 			.map	= al->map,
+ 			.sym	= al->sym,
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index e68833f3932d..b4cf0cf077ca 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -1,5 +1,6 @@
+ #include "sort.h"
+ #include "hist.h"
++#include "comm.h"
+ #include "symbol.h"
  
- void ui_progress__init(void);
+ regex_t		parent_regex;
+@@ -80,25 +81,20 @@ static int64_t
+ sort__comm_cmp(struct hist_entry *left, struct hist_entry *right)
+ {
+ 	/* Compare the addr that should be unique among comm */
+-	return thread__comm_str(right->thread) - thread__comm_str(left->thread);
++	return comm__str(right->comm) - comm__str(left->comm);
+ }
  
-+void ui_progress__setup(struct perf_progress *p, u64 total);
-+void ui_progress__advance(struct perf_progress *p, u64 adv, const char *title);
-+
- void ui_progress__update(u64 curr, u64 total, const char *title);
- void ui_progress__finish(void);
+ static int64_t
+ sort__comm_collapse(struct hist_entry *left, struct hist_entry *right)
+ {
+-	const char *comm_l = thread__comm_str(left->thread);
+-	const char *comm_r = thread__comm_str(right->thread);
+-
+-	if (!comm_l || !comm_r)
+-		return cmp_null(comm_l, comm_r);
+-
+-	return strcmp(comm_l, comm_r);
++	/* Compare the addr that should be unique among comm */
++	return comm__str(right->comm) - comm__str(left->comm);
+ }
  
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 6c1d4447c5b4..9f62be8bc167 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -538,13 +538,16 @@ static int flush_sample_queue(struct perf_session *s,
- 	struct perf_sample sample;
- 	u64 limit = os->next_flush;
- 	u64 last_ts = os->last_sample ? os->last_sample->timestamp : 0ULL;
--	unsigned idx = 0, progress_next = os->nr_samples / 16;
- 	bool show_progress = limit == ULLONG_MAX;
-+	struct perf_progress prog;
- 	int ret;
+ static int hist_entry__comm_snprintf(struct hist_entry *self, char *bf,
+ 				     size_t size, unsigned int width)
+ {
+-	return repsep_snprintf(bf, size, "%*s", width, thread__comm_str(self->thread));
++	return repsep_snprintf(bf, size, "%*s", width, comm__str(self->comm));
+ }
  
- 	if (!tool->ordered_samples || !limit)
- 		return 0;
+ struct sort_entry sort_comm = {
+diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
+index 4e80dbd271e7..4d0153f83e3c 100644
+--- a/tools/perf/util/sort.h
++++ b/tools/perf/util/sort.h
+@@ -84,6 +84,7 @@ struct hist_entry {
+ 	struct he_stat		stat;
+ 	struct map_symbol	ms;
+ 	struct thread		*thread;
++	struct comm		*comm;
+ 	u64			ip;
+ 	s32			cpu;
  
-+	if (show_progress)
-+		ui_progress__setup(&prog, os->nr_samples);
-+
- 	list_for_each_entry_safe(iter, tmp, head, list) {
- 		if (iter->timestamp > limit)
- 			break;
-@@ -562,10 +565,10 @@ static int flush_sample_queue(struct perf_session *s,
- 		os->last_flush = iter->timestamp;
- 		list_del(&iter->list);
- 		list_add(&iter->list, &os->sample_cache);
--		if (show_progress && (++idx >= progress_next)) {
--			progress_next += os->nr_samples / 16;
--			ui_progress__update(idx, os->nr_samples,
--					    "Processing time ordered events...");
-+
-+		if (show_progress) {
-+			ui_progress__advance(&prog, 1,
-+					     "Processing time ordered events...");
- 		}
+diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
+index 095b725d0cd4..cddbde8672b2 100644
+--- a/tools/perf/util/thread.c
++++ b/tools/perf/util/thread.c
+@@ -54,7 +54,7 @@ void thread__delete(struct thread *self)
+ 	free(self);
+ }
+ 
+-static struct comm *thread__comm(const struct thread *thread)
++struct comm *thread__comm(const struct thread *thread)
+ {
+ 	if (list_empty(&thread->comm_list))
+ 		return NULL;
+@@ -69,8 +69,8 @@ int thread__set_comm(struct thread *thread, const char *str, u64 timestamp)
+ 
+ 	/* Override latest entry if it had no specific time coverage */
+ 	if (!curr->start) {
+-		list_del(&curr->list);
+-		comm__free(curr);
++		comm__override(curr, str, timestamp);
++		return 0;
  	}
  
-@@ -1310,12 +1313,13 @@ int __perf_session__process_events(struct perf_session *session,
- 				   u64 data_offset, u64 data_size,
- 				   u64 file_size, struct perf_tool *tool)
- {
--	u64 head, page_offset, file_offset, file_pos, progress_next;
-+	u64 head, page_offset, file_offset, file_pos;
- 	int err, mmap_prot, mmap_flags, map_idx = 0;
- 	size_t	mmap_size;
- 	char *buf, *mmaps[NUM_MMAPS];
- 	union perf_event *event;
- 	uint32_t size;
-+	struct perf_progress prog;
+ 	new = comm__new(str, timestamp);
+diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
+index 307d2ec60123..eaf3e46148b5 100644
+--- a/tools/perf/util/thread.h
++++ b/tools/perf/util/thread.h
+@@ -26,6 +26,7 @@ struct thread {
+ };
  
- 	perf_tool__fill_defaults(tool);
+ struct machine;
++struct comm;
  
-@@ -1326,7 +1330,7 @@ int __perf_session__process_events(struct perf_session *session,
- 	if (data_offset + data_size < file_size)
- 		file_size = data_offset + data_size;
+ struct thread *thread__new(pid_t pid, pid_t tid);
+ void thread__delete(struct thread *self);
+@@ -36,6 +37,7 @@ static inline void thread__exited(struct thread *thread)
  
--	progress_next = file_size / 16;
-+	ui_progress__setup(&prog, file_size);
- 
- 	mmap_size = MMAP_SIZE;
- 	if (mmap_size > file_size)
-@@ -1381,11 +1385,7 @@ more:
- 	head += size;
- 	file_pos += size;
- 
--	if (file_pos >= progress_next) {
--		progress_next += file_size / 16;
--		ui_progress__update(file_pos, file_size,
--				    "Processing events...");
--	}
-+	ui_progress__advance(&prog, size, "Processing events...");
- 
- 	if (file_pos < file_size)
- 		goto more;
+ int thread__set_comm(struct thread *self, const char *comm, u64 timestamp);
+ int thread__comm_len(struct thread *self);
++struct comm *thread__comm(const struct thread *self);
+ const char *thread__comm_str(const struct thread *thread);
+ void thread__insert_map(struct thread *self, struct map *map);
+ int thread__fork(struct thread *self, struct thread *parent, u64 timestamp);
 -- 
 1.7.11.7
 
