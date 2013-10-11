@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758092Ab3JKThP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:37:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45270 "EHLO
+	id S1756009Ab3JKU5l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:57:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45330 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757889Ab3JKThG (ORCPT
+	with ESMTP id S1758095Ab3JKThP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:37:06 -0400
+	Fri, 11 Oct 2013 15:37:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 10/48] bridge: Clamp forward_delay when enabling STP
-Date: Fri, 11 Oct 2013 12:36:17 -0700
-Message-Id: <20131011193638.382523328@linuxfoundation.org>
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 24/48] powerpc: Fix parameter clobber in csum_partial_copy_generic()
+Date: Fri, 11 Oct 2013 12:36:31 -0700
+Message-Id: <20131011193639.867131713@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193637.253208688@linuxfoundation.org>
 References: <20131011193637.253208688@linuxfoundation.org>
@@ -27,106 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Herbert Xu <herbert@gondor.apana.org.au>
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-[ Upstream commit be4f154d5ef0ca147ab6bcd38857a774133f5450 ]
+commit d9813c3681a36774b254c0cdc9cce53c9e22c756 upstream.
 
-At some point limits were added to forward_delay.  However, the
-limits are only enforced when STP is enabled.  This created a
-scenario where you could have a value outside the allowed range
-while STP is disabled, which then stuck around even after STP
-is enabled.
+The csum_partial_copy_generic() uses register r7 to adjust the remaining
+bytes to process.  Unfortunately, r7 also holds a parameter, namely the
+address of the flag to set in case of access exceptions while reading
+the source buffer.  Lacking a quantum implementation of PowerPC, this
+commit instead uses register r9 to do the adjusting, leaving r7's
+pointer uncorrupted.
 
-This patch fixes this by clamping the value when we enable STP.
-
-I had to move the locking around a bit to ensure that there is
-no window where someone could insert a value outside the range
-while we're in the middle of enabling STP.
-
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/bridge/br_private.h |    1 +
- net/bridge/br_stp.c     |   21 +++++++++++++++------
- net/bridge/br_stp_if.c  |   12 ++++++++++--
- 3 files changed, 26 insertions(+), 8 deletions(-)
 
---- a/net/bridge/br_private.h
-+++ b/net/bridge/br_private.h
-@@ -501,6 +501,7 @@ extern struct net_bridge_port *br_get_po
- extern void br_init_port(struct net_bridge_port *p);
- extern void br_become_designated_port(struct net_bridge_port *p);
+---
+ arch/powerpc/lib/checksum_64.S |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/arch/powerpc/lib/checksum_64.S
++++ b/arch/powerpc/lib/checksum_64.S
+@@ -272,8 +272,8 @@ _GLOBAL(csum_partial_copy_generic)
+ 	rldicl. r6,r3,64-1,64-2		/* r6 = (r3 & 0x3) >> 1 */
+ 	beq	.Lcopy_aligned
  
-+extern void __br_set_forward_delay(struct net_bridge *br, unsigned long t);
- extern int br_set_forward_delay(struct net_bridge *br, unsigned long x);
- extern int br_set_hello_time(struct net_bridge *br, unsigned long x);
- extern int br_set_max_age(struct net_bridge *br, unsigned long x);
---- a/net/bridge/br_stp.c
-+++ b/net/bridge/br_stp.c
-@@ -517,18 +517,27 @@ int br_set_max_age(struct net_bridge *br
+-	li	r7,4
+-	sub	r6,r7,r6
++	li	r9,4
++	sub	r6,r9,r6
+ 	mtctr	r6
  
- }
- 
-+void __br_set_forward_delay(struct net_bridge *br, unsigned long t)
-+{
-+	br->bridge_forward_delay = t;
-+	if (br_is_root_bridge(br))
-+		br->forward_delay = br->bridge_forward_delay;
-+}
-+
- int br_set_forward_delay(struct net_bridge *br, unsigned long val)
- {
- 	unsigned long t = clock_t_to_jiffies(val);
-+	int err = -ERANGE;
- 
-+	spin_lock_bh(&br->lock);
- 	if (br->stp_enabled != BR_NO_STP &&
- 	    (t < BR_MIN_FORWARD_DELAY || t > BR_MAX_FORWARD_DELAY))
--		return -ERANGE;
-+		goto unlock;
- 
--	spin_lock_bh(&br->lock);
--	br->bridge_forward_delay = t;
--	if (br_is_root_bridge(br))
--		br->forward_delay = br->bridge_forward_delay;
-+	__br_set_forward_delay(br, t);
-+	err = 0;
-+
-+unlock:
- 	spin_unlock_bh(&br->lock);
--	return 0;
-+	return err;
- }
---- a/net/bridge/br_stp_if.c
-+++ b/net/bridge/br_stp_if.c
-@@ -129,6 +129,14 @@ static void br_stp_start(struct net_brid
- 	char *envp[] = { NULL };
- 
- 	r = call_usermodehelper(BR_STP_PROG, argv, envp, UMH_WAIT_PROC);
-+
-+	spin_lock_bh(&br->lock);
-+
-+	if (br->bridge_forward_delay < BR_MIN_FORWARD_DELAY)
-+		__br_set_forward_delay(br, BR_MIN_FORWARD_DELAY);
-+	else if (br->bridge_forward_delay < BR_MAX_FORWARD_DELAY)
-+		__br_set_forward_delay(br, BR_MAX_FORWARD_DELAY);
-+
- 	if (r == 0) {
- 		br->stp_enabled = BR_USER_STP;
- 		br_debug(br, "userspace STP started\n");
-@@ -137,10 +145,10 @@ static void br_stp_start(struct net_brid
- 		br_debug(br, "using kernel STP\n");
- 
- 		/* To start timers on any ports left in blocking */
--		spin_lock_bh(&br->lock);
- 		br_port_state_selection(br);
--		spin_unlock_bh(&br->lock);
- 	}
-+
-+	spin_unlock_bh(&br->lock);
- }
- 
- static void br_stp_stop(struct net_bridge *br)
+ 1:
 
 
