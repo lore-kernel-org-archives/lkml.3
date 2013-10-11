@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756441Ab3JKUnP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:43:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45563 "EHLO
+	id S1756772Ab3JKUnm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:43:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45556 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758800Ab3JKTjt (ORCPT
+	with ESMTP id S1758798Ab3JKTjs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:39:49 -0400
+	Fri, 11 Oct 2013 15:39:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wannes Rombouts <wannes.rombouts@epitech.eu>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Jason Wang <jasowang@redhat.com>,
+        Nikolay Aleksandrov <nikolay@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 018/110] tuntap: correctly handle error in tun_set_iff()
-Date: Fri, 11 Oct 2013 12:37:58 -0700
-Message-Id: <20131011193809.587743984@linuxfoundation.org>
+Subject: [ 017/110] netpoll: fix NULL pointer dereference in netpoll_cleanup
+Date: Fri, 11 Oct 2013 12:37:57 -0700
+Message-Id: <20131011193809.480665439@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
 References: <20131011193807.584188672@linuxfoundation.org>
@@ -29,59 +27,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Wang <jasowang@redhat.com>
+From: Nikolay Aleksandrov <nikolay@redhat.com>
 
-[ Upstream commit 662ca437e714caaab855b12415d6ffd815985bc0 ]
+[ Upstream commit d0fe8c888b1fd1a2f84b9962cabcb98a70988aec ]
 
-Commit c8d68e6be1c3b242f1c598595830890b65cea64a
-(tuntap: multiqueue support) only call free_netdev() on error in
-tun_set_iff(). This causes several issues:
+I've been hitting a NULL ptr deref while using netconsole because the
+np->dev check and the pointer manipulation in netpoll_cleanup are done
+without rtnl and the following sequence happens when having a netconsole
+over a vlan and we remove the vlan while disabling the netconsole:
+	CPU 1					CPU2
+					removes vlan and calls the notifier
+enters store_enabled(), calls
+netdev_cleanup which checks np->dev
+and then waits for rtnl
+					executes the netconsole netdev
+					release notifier making np->dev
+					== NULL and releases rtnl
+continues to dereference a member of
+np->dev which at this point is == NULL
 
-- memory of tun security were leaked
-- use after free since the flow gc timer was not deleted and the tfile
-  were not detached
-
-This patch solves the above issues.
-
-Reported-by: Wannes Rombouts <wannes.rombouts@epitech.eu>
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Nikolay Aleksandrov <nikolay@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/tun.c |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ net/core/netpoll.c |    9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
 
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -1693,11 +1693,11 @@ static int tun_set_iff(struct net *net,
- 		INIT_LIST_HEAD(&tun->disabled);
- 		err = tun_attach(tun, file);
- 		if (err < 0)
--			goto err_free_dev;
-+			goto err_free_flow;
+--- a/net/core/netpoll.c
++++ b/net/core/netpoll.c
+@@ -1289,15 +1289,14 @@ EXPORT_SYMBOL_GPL(__netpoll_free_async);
  
- 		err = register_netdevice(tun->dev);
- 		if (err < 0)
--			goto err_free_dev;
-+			goto err_detach;
- 
- 		if (device_create_file(&tun->dev->dev, &dev_attr_tun_flags) ||
- 		    device_create_file(&tun->dev->dev, &dev_attr_owner) ||
-@@ -1741,7 +1741,12 @@ static int tun_set_iff(struct net *net,
- 	strcpy(ifr->ifr_name, tun->dev->name);
- 	return 0;
- 
-- err_free_dev:
-+err_detach:
-+	tun_detach_all(dev);
-+err_free_flow:
-+	tun_flow_uninit(tun);
-+	security_tun_dev_free_security(tun->security);
-+err_free_dev:
- 	free_netdev(dev);
- 	return err;
+ void netpoll_cleanup(struct netpoll *np)
+ {
+-	if (!np->dev)
+-		return;
+-
+ 	rtnl_lock();
++	if (!np->dev)
++		goto out;
+ 	__netpoll_cleanup(np);
+-	rtnl_unlock();
+-
+ 	dev_put(np->dev);
+ 	np->dev = NULL;
++out:
++	rtnl_unlock();
  }
+ EXPORT_SYMBOL(netpoll_cleanup);
+ 
 
 
