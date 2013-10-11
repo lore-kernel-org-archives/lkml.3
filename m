@@ -1,83 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757742Ab3JKL0r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 07:26:47 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:64423 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753629Ab3JKL0q (ORCPT
+	id S1757849Ab3JKL1G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 07:27:06 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:57168 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757789Ab3JKL1D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 07:26:46 -0400
-X-Spam-Score: -100.8
-Message-ID: <5257E033.3090607@asianux.com>
-Date: Fri, 11 Oct 2013 19:25:39 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Fri, 11 Oct 2013 07:27:03 -0400
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux390@de.ibm.com" <linux390@de.ibm.com>,
-        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] arm64: include: asm: atomic.h: use 'unsigned int'
- and 'atomic_t' instead of 'unsigned long' for atomic_clear_mask()
-References: <52561137.3070608@asianux.com> <5256117A.4000009@asianux.com> <5256121A.9030504@asianux.com> <52561269.60900@asianux.com> <20131010100733.GH3817@mudshark.cambridge.arm.com> <52568998.2080108@asianux.com> <20131010142305.GG6199@mudshark.cambridge.arm.com> <525751E2.3020207@asianux.com> <20131011104419.GE14732@mudshark.cambridge.arm.com>
-In-Reply-To: <20131011104419.GE14732@mudshark.cambridge.arm.com>
+In-Reply-To: <524EC83C.9050309@nod.at>
+References: <20131003163411.GA17101@www.outflux.net> <20131003175824.GH13318@ZenIV.linux.org.uk>
+ <CAGXu5j+8sxc8vc4bwv14nGNiOhq-ey2nxAK99LgMKO+Qmh1L6A@mail.gmail.com>
+ <20131003182311.GI13318@ZenIV.linux.org.uk> <CAGXu5j+4NUKfgKiAK+w2MrsqRxHiYc62LBMx4UsfxUBSxNwNJA@mail.gmail.com>
+ <20131003205706.GM13318@ZenIV.linux.org.uk> <CACT4Y+Z_hxVOqUeVtvOH-eCkTLveW3vsPtcXN-jhs7=cbd21Zw@mail.gmail.com>
+ <CAFLxGvxo8bvg0Pn8z3qUENFNOUmNdfp5Cz_WP=H5G8kXubdR3A@mail.gmail.com>
+ <CACT4Y+aYuVfe7-xjLC97SKpyFeO_6XeO1OjLMda58TfqxR_MMw@mail.gmail.com> <524EC83C.9050309@nod.at>
+From: Dmitry Vyukov <dvyukov@google.com>
+Date: Fri, 11 Oct 2013 15:26:41 +0400
+Message-ID: <CACT4Y+bbEUxyhVqJjZcSGkOCWmwWAVWHjhicy1H8yhtLifT6CA@mail.gmail.com>
+Subject: Re: [PATCH] fs: make sure we do not read beyond allocation
+To: Richard Weinberger <richard@nod.at>
+Cc: Richard Weinberger <richard.weinberger@gmail.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Kees Cook <keescook@chromium.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/11/2013 06:44 PM, Will Deacon wrote:
-> On Fri, Oct 11, 2013 at 02:18:26AM +0100, Chen Gang wrote:
->> On 10/10/2013 10:23 PM, Will Deacon wrote:
->>> On Thu, Oct 10, 2013 at 12:03:52PM +0100, Chen Gang wrote:
->>>> BTW: do arm64 need atomic_clear_mask()?
+On Fri, Oct 4, 2013 at 5:53 PM, Richard Weinberger <richard@nod.at> wrote:
+> Am 04.10.2013 12:53, schrieb Dmitry Vyukov:
+>> On Fri, Oct 4, 2013 at 2:38 PM, Richard Weinberger
+>> <richard.weinberger@gmail.com> wrote:
+>>>>>>> ...
+>>>>>>> [1] yes, yes, I know - the mere mention of security should've prevented such
+>>>>>>> arrogant requests.  It's an imperfect universe.
+>>>>>>
+>>>>>> I want to attempt to disassemble what you've communicating here:
+>>>>>>
+>>>>>> a) I'm not thinking.
+>>>>>> b) Requesting that someone think when they mention security is arrogant.
+>>>>>
+>>>>> Not really.
+>>>>>
+>>>>> It's just that all too often completely pointless changes are touted
+>>>>> as security hardening.  With replies along the lines of "it doesn't
+>>>>> really buy you anything" countered with indignant "but what if
+>>>>> <impossible situation>" and/or references to "defense in depth" (used
+>>>>> as a magical incantation), etc.
+>>>>>
+>>>>> You've posted a provably pointless patch.  Happens to all of us.  And in
+>>>>> reply to "it's pointless for the following reasons" (with moderate
+>>>>> level of sarcasm) you responded pretty much with "but what if allocator
+>>>>> changes?  It's more robust that way".  OK, but if you go for that
+>>>>> kind of arguments (and they can be valid), you'd better be correct.
+>>>>> You were not, and for very obvious reasons.  Let me repeat, this
+>>>>> time with sarcasm level down to zero:
+>>>>>
+>>>>> Let n be some integer between 32 and 4096 and N be equal to n rounded up
+>>>>> to word size.  If kmalloc(n) returns a pointer such that fetch from
+>>>>> (char *)p[N - 1] triggers an exception, we have a badly broken kernel.
+>>>>> It can happen only if there is a page boundary between p[n-1] and p[N-1],
+>>>>> which means that p is not word-aligned.
+>>>>> Consider the following code:
+>>>>>         struct foo {
+>>>>>                 unsigned long n;
+>>>>>                 char a[];
+>>>>>         } *p = kmalloc(offsetof(struct foo, a) + 33);
+>>>>>         if (p)
+>>>>>                 p->n = 1;
+>>>>> and note that it will result in an exception on any architecture that prohibits
+>>>>> unaligned accesses in the kernel.  Even on architectures where those are
+>>>>> allowed, misaligned structures mean serious correctness problems (atomicity of
+>>>>> stores, etc.)
+>>>>>
+>>>>> In other words, kmalloc() (or, indeed, userland malloc()) demonstrating
+>>>>> such behaviour would need immediate fixing.  The only exception I can
+>>>>> think of is something with byte granularity of memory protection; in such
+>>>>> case we can have that without unaligned return values returned by allocator.
+>>>>> Which would require a lot of changes in mm/*, at the very least, and probably
+>>>>> would violate a lot of assumptions elsewhere in the kernel (starting with
+>>>>> sizeof(void *) == sizeof(unsigned long)).
+>>>>>
+>>>>>> What the patch does help with, though, is dynamic analysis tools that
+>>>>>> are looking for out-of-bound reads, which this clearly is. It should
+>>>>>> be considered a violation of the API to attempt to access a range
+>>>>>> beyond what was requested for the allocation. Fixing this means lots
+>>>>>> of noise vanishes from such analysis of the allocation API, letting
+>>>>>> other tools besides just KASAN do work to find other more serious
+>>>>>> problems in heap usage.
+>>>>>>
+>>>>>> Does fixing this to help dynamic analysis tools somehow make the
+>>>>>> kernel worse? I think that fixing this makes it easier to find further
+>>>>>> bugs that might be much more serious.
+>>>>>
+>>>>> Possibly true.  But then I'd suggest wrapping that into a different ifdef;
+>>>>> grep for ifdef __CHECKER__, with comment along the lines of "to simplify
+>>>>> analysis of potential out-of-bounds accesses".
+>>>>
+>>>>
+>>>> Hi,
+>>>>
+>>>> Any single reason to not just fix the code?
+>>>>
+>>>> With this patch:
+>>>> + sticks with "do not access beyond request size", which is a good
+>>>> thing all others equal
+>>>> + makes static and dynamic verification tools happy
+>>>> - ???
 >>>
->>> No. Neither ARM nor arm64 need this function.
+>>> - It does not fix anything, it only shuts up the checker
+>>> - It adds another ifdef where it is not obvious why it's needed
+>>>
+>>> Therefore it makes more sense to add a ifdef __CHECKER__ such that
+>>> everyone immediately knows that the issue is only false positive.
 >>
->> OK, thank you for your confirmation.
 >>
->> Hmm... can we remove atomic_clear_mask() from ARM and arm64? (in my
->> opinion, if not need, better to remove it).
-> 
-> Yes!
-> 
+>> OK, is it explicitly documented somewhere that it's legal to access
+>> memory blocks beyond requested size? Is it a deliberate decision made
+>> by community? Or just an ad-hoc argument based on details of current
+>> implementation?
+>
+> Al explained already why it is legal.
+>
+>> If it's the former then we will need to teach the tools to understand
+>> it. But IMVHO it's a very unfortunate decision, because it will hide
+>> real harmful bugs. And this is the only place where I observed such
+>> out-of-bounds access after months of stress testing, so we are not
+>> talking about hundreds and thousands of precedents. We are talking
+>> about this particular case vs ability of tools to catch harmful
+>> off-by-one accesses to variable-length strings and buffers.
+>
+> Have you ever used valgrind (or any other checkers in userspace)?
+> They all suffer from such issues.
+> If a checker reports a violation it is not always a real one and
+> you have to review it carefully.
 
-OK, thanks.
-
-> I mentioned this a few times already...
-> 
-
-Hmm... firstly, you mentioned "except architectures, this is only used
-under s390" (so I reply we need follow s390), and then you mentioned
-"they are useless for arm/arm64" (so I ask whether it can be removed).
-
-Excuse me, as a 'programmer' (at least, I am a 'programmer'), when
-programming (assume our discussing belongs to programming), I have to
-consider precisely (especially for confirmation words).  ;-)
-
-I will send one patch for removing it from arm and arm64.
-
-Thanks.
-
-> Will
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
-
-Thanks.
--- 
-Chen Gang
-
--- 
-Chen Gang
+I am not sure why you call it not a real one. Both C and C++ standards
+are pretty clear on this: it is undefined behavior.
+That said, Valgrind/memcheck indeed has other false positives, because
+it tries to reason about source code looking only at the binary. This
+can not possibly work.
+AddressSanitizer
+(https://sites.google.com/a/google.com/dynamic-tools/addresssanitizer)
+does not have known false positives.
