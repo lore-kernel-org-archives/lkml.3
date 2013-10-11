@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757656Ab3JKMUq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 08:20:46 -0400
-Received: from mga11.intel.com ([192.55.52.93]:23641 "EHLO mga11.intel.com"
+	id S1757728Ab3JKMUw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 08:20:52 -0400
+Received: from mga14.intel.com ([143.182.124.37]:64997 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757582Ab3JKMUm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 08:20:42 -0400
+	id S1757659Ab3JKMUt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 08:20:49 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,1080,1371106800"; 
-   d="scan'208";a="415446195"
+   d="scan'208";a="373438134"
 From: tianyu.lan@intel.com
-To: bhelgaas@google.com, lenb@kernel.org, rjw@sisk.pl, yinghai@kernel.org
-Cc: Lan Tianyu <tianyu.lan@intel.com>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, x86@kernel.org
-Subject: [Resend PATCH 4/5] X86/PCI/ACPI: Rework setup_resource() via functions ACPI resource functions
-Date: Fri, 11 Oct 2013 20:19:00 +0800
-Message-Id: <1381493941-4650-5-git-send-email-tianyu.lan@intel.com>
+To: tony.luck@intel.com, bhelgaas@google.com, lenb@kernel.org, rjw@sisk.pl,
+        yinghai@kernel.org
+Cc: Lan Tianyu <tianyu.lan@intel.com>, linux-ia64@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: [Resend PATCH 5/5] IA64/PCI/ACPI: Rework PCI root bridge ACPI resource conversion
+Date: Fri, 11 Oct 2013 20:19:01 +0800
+Message-Id: <1381493941-4650-6-git-send-email-tianyu.lan@intel.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1381493941-4650-1-git-send-email-tianyu.lan@intel.com>
 References: <1381493941-4650-1-git-send-email-tianyu.lan@intel.com>
@@ -26,139 +27,108 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 From: Lan Tianyu <tianyu.lan@intel.com>
 
 Using ACPI resource functions to convert ACPI resource to generic resource
-instead of resource_to_addr(). Remove resource_to_addr().
 
 Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
 ---
- arch/x86/pci/acpi.c | 81 ++++++++---------------------------------------------
- 1 file changed, 12 insertions(+), 69 deletions(-)
+This patch just passes through compilation test due to no ia64 machine on hand.
 
-diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
-index d641897..f4290a1 100644
---- a/arch/x86/pci/acpi.c
-+++ b/arch/x86/pci/acpi.c
-@@ -219,62 +219,15 @@ static void teardown_mcfg_map(struct pci_root_info *info)
- #endif
+ arch/ia64/pci/pci.c | 38 +++++++++++++++++++++-----------------
+ 1 file changed, 21 insertions(+), 17 deletions(-)
+
+diff --git a/arch/ia64/pci/pci.c b/arch/ia64/pci/pci.c
+index 2326790..14fa175 100644
+--- a/arch/ia64/pci/pci.c
++++ b/arch/ia64/pci/pci.c
+@@ -232,8 +232,9 @@ out:
+ 	return ~0;
+ }
  
- static acpi_status
--resource_to_addr(struct acpi_resource *resource,
--			struct acpi_resource_address64 *addr)
--{
--	acpi_status status;
--	struct acpi_resource_memory24 *memory24;
--	struct acpi_resource_memory32 *memory32;
--	struct acpi_resource_fixed_memory32 *fixed_memory32;
--
--	memset(addr, 0, sizeof(*addr));
--	switch (resource->type) {
--	case ACPI_RESOURCE_TYPE_MEMORY24:
--		memory24 = &resource->data.memory24;
--		addr->resource_type = ACPI_MEMORY_RANGE;
--		addr->minimum = memory24->minimum;
--		addr->address_length = memory24->address_length;
--		addr->maximum = addr->minimum + addr->address_length - 1;
--		return AE_OK;
--	case ACPI_RESOURCE_TYPE_MEMORY32:
--		memory32 = &resource->data.memory32;
--		addr->resource_type = ACPI_MEMORY_RANGE;
--		addr->minimum = memory32->minimum;
--		addr->address_length = memory32->address_length;
--		addr->maximum = addr->minimum + addr->address_length - 1;
--		return AE_OK;
--	case ACPI_RESOURCE_TYPE_FIXED_MEMORY32:
--		fixed_memory32 = &resource->data.fixed_memory32;
--		addr->resource_type = ACPI_MEMORY_RANGE;
--		addr->minimum = fixed_memory32->address;
--		addr->address_length = fixed_memory32->address_length;
--		addr->maximum = addr->minimum + addr->address_length - 1;
--		return AE_OK;
--	case ACPI_RESOURCE_TYPE_ADDRESS16:
--	case ACPI_RESOURCE_TYPE_ADDRESS32:
--	case ACPI_RESOURCE_TYPE_ADDRESS64:
--		status = acpi_resource_to_address64(resource, addr);
--		if (ACPI_SUCCESS(status) &&
--		    (addr->resource_type == ACPI_MEMORY_RANGE ||
--		    addr->resource_type == ACPI_IO_RANGE) &&
--		    addr->address_length > 0) {
--			return AE_OK;
--		}
--		break;
--	}
--	return AE_ERROR;
--}
--
--static acpi_status
- count_resource(struct acpi_resource *acpi_res, void *data)
+-static acpi_status resource_to_window(struct acpi_resource *resource,
+-				      struct acpi_resource_address64 *addr)
++static acpi_status resource_to_window(struct acpi_resource *ares,
++				      struct acpi_resource_address64 *addr,
++				      struct resource *res)
  {
- 	struct pci_root_info *info = data;
--	struct acpi_resource_address64 addr;
--	acpi_status status;
-+	struct resource res;
+ 	acpi_status status;
  
--	status = resource_to_addr(acpi_res, &addr);
--	if (ACPI_SUCCESS(status))
-+	if (acpi_dev_resource_address_space(acpi_res, &res)
-+	    || acpi_dev_resource_memory(acpi_res, &res))
- 		info->res_num++;
-+
+@@ -244,7 +245,7 @@ static acpi_status resource_to_window(struct acpi_resource *resource,
+ 	 *	- producers, i.e., the address space is routed downstream,
+ 	 *	  not consumed by the bridge itself
+ 	 */
+-	status = acpi_resource_to_address64(resource, addr);
++	status = acpi_dev_resource_address_space_full(ares, addr, res);
+ 	if (ACPI_SUCCESS(status) &&
+ 	    (addr->resource_type == ACPI_MEMORY_RANGE ||
+ 	     addr->resource_type == ACPI_IO_RANGE) &&
+@@ -255,51 +256,54 @@ static acpi_status resource_to_window(struct acpi_resource *resource,
+ 	return AE_ERROR;
+ }
+ 
+-static acpi_status count_window(struct acpi_resource *resource, void *data)
++static acpi_status count_window(struct acpi_resource *ares, void *data)
+ {
+ 	unsigned int *windows = (unsigned int *) data;
+ 	struct acpi_resource_address64 addr;
++	struct resource res;
+ 	acpi_status status;
+ 
+-	status = resource_to_window(resource, &addr);
++	status = resource_to_window(ares, &addr, &res);
+ 	if (ACPI_SUCCESS(status))
+ 		(*windows)++;
+ 
  	return AE_OK;
  }
  
-@@ -282,27 +235,18 @@ static acpi_status
- setup_resource(struct acpi_resource *acpi_res, void *data)
+-static acpi_status add_window(struct acpi_resource *res, void *data)
++static acpi_status add_window(struct acpi_resource *ares, void *data)
  {
  	struct pci_root_info *info = data;
--	struct resource *res;
-+	struct resource *res = &info->res[info->res_num];
+-	struct resource *resource;
++	struct resource *resource = &info->res[info->res_num];
  	struct acpi_resource_address64 addr;
--	acpi_status status;
--	unsigned long flags;
- 	u64 start, orig_end, end;
+ 	acpi_status status;
+-	unsigned long flags, offset = 0;
++	unsigned long offset = 0;
+ 	struct resource *root;
  
--	status = resource_to_addr(acpi_res, &addr);
--	if (!ACPI_SUCCESS(status))
--		return AE_OK;
-+	memset(&addr, 0x00, sizeof(addr));
+ 	/* Return AE_OK for non-window resources to keep scanning for more */
+-	status = resource_to_window(res, &addr);
++	status = resource_to_window(ares, &addr, resource);
+ 	if (!ACPI_SUCCESS(status))
+ 		return AE_OK;
  
 -	if (addr.resource_type == ACPI_MEMORY_RANGE) {
 -		flags = IORESOURCE_MEM;
--		if (addr.info.mem.caching == ACPI_PREFETCHABLE_MEMORY)
--			flags |= IORESOURCE_PREFETCH;
++	if (resource->flags & IORESOURCE_MEM) {
+ 		root = &iomem_resource;
+ 		offset = addr.translation_offset;
 -	} else if (addr.resource_type == ACPI_IO_RANGE) {
 -		flags = IORESOURCE_IO;
--	} else
-+	if (!(acpi_dev_resource_address_space_full(acpi_res, &addr, res)
-+	    || acpi_dev_resource_memory(acpi_res, res)))
- 		return AE_OK;
- 
--	start = addr.minimum + addr.translation_offset;
--	orig_end = end = addr.maximum + addr.translation_offset;
-+	start = res->start;
-+	orig_end = end = res->end;
- 
- 	/* Exclude non-addressable range or non-addressable portion of range */
- 	end = min(end, (u64)iomem_resource.end);
-@@ -310,6 +254,7 @@ setup_resource(struct acpi_resource *acpi_res, void *data)
- 		dev_info(&info->bridge->dev,
- 			"host bridge window [%#llx-%#llx] "
- 			"(ignored, not CPU addressable)\n", start, orig_end);
-+		memset(&info->res[info->res_num], 0x00, sizeof(*res));
- 		return AE_OK;
- 	} else if (orig_end != end) {
- 		dev_info(&info->bridge->dev,
-@@ -318,11 +263,9 @@ setup_resource(struct acpi_resource *acpi_res, void *data)
- 			start, orig_end, end + 1, orig_end);
- 	}
- 
--	res = &info->res[info->res_num];
- 	res->name = info->name;
--	res->flags = flags;
--	res->start = start;
- 	res->end = end;
++	} else if (resource->flags & IORESOURCE_IO) {
+ 		root = &ioport_resource;
+ 		offset = add_io_space(info, &addr);
+ 		if (offset == ~0)
+ 			return AE_OK;
 +
- 	info->res_offset[info->res_num] = addr.translation_offset;
- 	info->res_num++;
++		/*
++		 * io space address translation offset depends
++		 * on the return value of add_io_space(). So
++		 * Repopulate resource->start and end here.
++		 */
++		resource->start = addr.minimum + offset;
++		resource->end = resource->start + addr.address_length - 1;
+ 	} else
+ 		return AE_OK;
  
+-	resource = &info->res[info->res_num];
+ 	resource->name = info->name;
+-	resource->flags = flags;
+-	resource->start = addr.minimum + offset;
+-	resource->end = resource->start + addr.address_length - 1;
+ 	info->res_offset[info->res_num] = offset;
+ 
+ 	if (insert_resource(root, resource)) {
 -- 
 1.8.2.1
 
