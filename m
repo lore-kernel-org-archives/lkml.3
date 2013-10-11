@@ -1,41 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754167Ab3JKRyK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 13:54:10 -0400
-Received: from emea01-db3-ndr.ptr.protection.outlook.com ([157.56.120.104]:21424
-	"EHLO emea01-db3-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753436Ab3JKRyJ convert rfc822-to-8bit (ORCPT
+	id S1755763Ab3JKRyo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 13:54:44 -0400
+Received: from b232-131.smtp-out.amazonses.com ([199.127.232.131]:53936 "EHLO
+	b232-131.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754708Ab3JKRyk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 13:54:09 -0400
-Content-Type: text/plain; charset=US-ASCII
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: I am expecting your urgent response
-To: Recipients <info@notiffication740.onmicrosoft.com>
-From: "Dr. Mack Nellie" <info@notiffication740.onmicrosoft.com>
-Date: Fri, 11 Oct 2013 23:23:46 +0530
-Reply-To: <dr.macknellie@barid.com>
-Message-ID: <f80bbb76-9ec1-42b1-8e2c-89a298fcbe18@HKNPR02MB114.apcprd02.prod.outlook.com>
-X-Originating-IP: [115.244.11.195]
-X-ClientProxiedBy: HKNPR04CA004.apcprd04.prod.outlook.com (10.242.116.34) To
- HKNPR02MB114.apcprd02.prod.outlook.com (10.141.18.153)
-X-Forefront-PRVS: 0996D1900D
-X-Forefront-Antispam-Report: SFV:SPM;SFS:(189002)(199002)(31686002)(218543002)(81816001)(74366001)(83072001)(4396001)(74316001)(554214002)(42186004)(81342001)(50986001)(47976001)(51856001)(74876001)(81542001)(54356001)(76576001)(79102001)(555944003)(76796001)(76786001)(50466002)(561944002)(76176001)(47446002)(74502001)(74662001)(80976001)(19580405001)(69226001)(65816001)(23756003)(46102001)(49866001)(53256004)(33646001)(81686001)(54316002)(76482001)(43066001)(47736001)(83322001)(63696002)(47776003)(85306002)(19580395003)(77982001)(35302001)(56816003)(59766001)(74706001)(56776001)(80022001)(66066001)(77096001)(556364005);DIR:OUT;SFP:1501;SCL:5;SRVR:HKNPR02MB114;H:[115.244.11.195];CLIP:115.244.11.195;FPR:;RD:InfoNoRecords;MX:1;A:0;LANG:en;
-X-OriginatorOrg: notiffication740.onmicrosoft.com
+	Fri, 11 Oct 2013 13:54:40 -0400
+Message-Id: <00000141a8a7ecfe-16f29a32-36eb-4588-a87e-6ba8e0b3a91c-000000@email.amazonses.com>
+User-Agent: quilt/0.60-1
+Date: Fri, 11 Oct 2013 17:54:39 +0000
+From: Christoph Lameter <cl@linux.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: akpm@linuxfoundation.org
+Cc: Steven Rostedt <srostedt@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 2/6] percpu: Add raw_cpu_ops
+References: <20131011175518.634285474@linux.com>
+X-SES-Outgoing: 199.127.232.131
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The following patches will add preemption checks to __this_cpu ops so we
+need to have an alternative way to use this cpu operations without
+preemption checks.
 
- Compliment of the day.
+raw_cpu ops rely on the __this_cpu_xxx_1/2/4/8 operations having no
+preemption checks. We therefore do not have to duplicate these functions
+but can affort to only duplicate the higher level macros.
+
+Also add raw_cpu_ptr for symmetries sake.
+
+Signed-off-by: Christoph Lameter <cl@linux.com>
+
+Index: linux/include/linux/percpu.h
+===================================================================
+--- linux.orig/include/linux/percpu.h	2013-09-23 10:20:05.050535801 -0500
++++ linux/include/linux/percpu.h	2013-09-23 10:20:05.050535801 -0500
+@@ -139,6 +139,9 @@ extern int __init pcpu_page_first_chunk(
+ 				pcpu_fc_populate_pte_fn_t populate_pte_fn);
+ #endif
  
-I am Dr. Mack Nellie. I am looking for a reliable Indian partner that understands the India local language and English as well; I have a business proposal that will benefit both of us outside our individual professions.
-Kindly contact me for the supply details on my personal email address;  dr.macknellie@barid.com  I will furnish you with more details as soon as I receive your mail.
-I am expecting your urgent response   
++/* For symmetries sake. */
++#define raw_cpu_ptr __this_cpu_ptr
++
+ /*
+  * Use this to get to a cpu's version of the per-cpu object
+  * dynamically allocated. Non-atomic access to the current CPU's
+@@ -520,17 +523,7 @@ do {									\
+ 
+ /*
+  * Generic percpu operations for context that are safe from preemption/interrupts.
+- * Either we do not care about races or the caller has the
+- * responsibility of handling preemption/interrupt issues. Arch code can still
+- * override these instructions since the arch per cpu code may be more
+- * efficient and may actually get race freeness for free (that is the
+- * case for x86 for example).
+- *
+- * If there is no other protection through preempt disable and/or
+- * disabling interupts then one of these RMW operations can show unexpected
+- * behavior because the execution thread was rescheduled on another processor
+- * or an interrupt occurred and the same percpu variable was modified from
+- * the interrupt context.
++ * These functions verify that preemption has been disabled.
+  */
+ #ifndef __this_cpu_read
+ # ifndef __this_cpu_read_1
+@@ -755,4 +748,74 @@ do {									\
+ 	__pcpu_double_call_return_bool(__this_cpu_cmpxchg_double_, (pcp1), (pcp2), (oval1), (oval2), (nval1), (nval2))
+ #endif
+ 
++/*
++ * Generic percpu operations for context where we do not want to do
++ * any checks for preemptiosn.
++ *
++ * If there is no other protection through preempt disable and/or
++ * disabling interupts then one of these RMW operations can show unexpected
++ * behavior because the execution thread was rescheduled on another processor
++ * or an interrupt occurred and the same percpu variable was modified from
++ * the interrupt context.
++ */
++#ifndef raw_cpu_read
++# define raw_cpu_read(pcp)	__pcpu_size_call_return(__this_cpu_read_, (pcp))
++#endif
++
++#ifndef raw_cpu_write
++# define raw_cpu_write(pcp, val)	__pcpu_size_call(__this_cpu_write_, (pcp), (val))
++#endif
++
++#ifndef raw_cpu_add
++# define raw_cpu_add(pcp, val)	__pcpu_size_call(__this_cpu_add_, (pcp), (val))
++#endif
++
++#ifndef raw_cpu_sub
++# define raw_cpu_sub(pcp, val)	raw_cpu_add((pcp), -(val))
++#endif
++
++#ifndef raw_cpu_inc
++# define raw_cpu_inc(pcp)		raw_cpu_add((pcp), 1)
++#endif
++
++#ifndef raw_cpu_dec
++# define raw_cpu_dec(pcp)		raw_cpu_sub((pcp), 1)
++#endif
++
++#ifndef raw_cpu_and
++# define raw_cpu_and(pcp, val)	__pcpu_size_call(__this_cpu_and_, (pcp), (val))
++#endif
++
++#ifndef raw_cpu_or
++# define raw_cpu_or(pcp, val)	__pcpu_size_call(__this_cpu_or_, (pcp), (val))
++#endif
++
++#ifndef raw_cpu_xor
++# define raw_cpu_xor(pcp, val)	__pcpu_size_call(__this_cpu_xor_, (pcp), (val))
++#endif
++
++#ifndef raw_cpu_add_return
++# define raw_cpu_add_return(pcp, val)	\
++	__pcpu_size_call_return2(__this_cpu_add_return_, pcp, val)
++#endif
++
++#define raw_cpu_sub_return(pcp, val)	raw_cpu_add_return(pcp, -(val))
++#define raw_cpu_inc_return(pcp)	raw_cpu_add_return(pcp, 1)
++#define raw_cpu_dec_return(pcp)	raw_cpu_add_return(pcp, -1)
++
++#ifndef raw_cpu_xchg
++# define raw_cpu_xchg(pcp, nval)	\
++	__pcpu_size_call_return2(__this_cpu_xchg_, (pcp), nval)
++#endif
++
++#ifndef raw_cpu_cmpxchg
++# define raw_cpu_cmpxchg(pcp, oval, nval)	\
++	__pcpu_size_call_return2(__this_cpu_cmpxchg_, pcp, oval, nval)
++#endif
++
++#ifndef raw_cpu_cmpxchg_double
++# define raw_cpu_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
++	__pcpu_double_call_return_bool(__this_cpu_cmpxchg_double_, (pcp1), (pcp2), (oval1), (oval2), (nval1), (nval2))
++#endif
++
+ #endif /* __LINUX_PERCPU_H */
 
-Regards 
-Dr. Mack Nellie
-Tel: +447014245023 
-E-Mail(dr.macknellie@barid.com)
