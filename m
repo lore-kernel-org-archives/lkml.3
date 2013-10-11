@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932949Ab3JKTys (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:54:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46391 "EHLO
+	id S1759355Ab3JKTyr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:54:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46386 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932716Ab3JKTly (ORCPT
+	with ESMTP id S932730Ab3JKTly (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Oct 2013 15:41:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Davidlohr Bueso <davidlohr@hp.com>,
-        Manfred Spraul <manfred@colorfullife.com>
-Subject: [ 084/135] ipc: fix race with LSMs
-Date: Fri, 11 Oct 2013 12:39:25 -0700
-Message-Id: <20131011193954.392634370@linuxfoundation.org>
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 085/135] sparc64: Fix buggy strlcpy() conversion in ldom_reboot().
+Date: Fri, 11 Oct 2013 12:39:26 -0700
+Message-Id: <20131011193954.498446145@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -28,346 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Davidlohr Bueso <davidlohr@hp.com>
+From: "David S. Miller" <davem@davemloft.net>
 
-commit 53dad6d3a8e5ac1af8bacc6ac2134ae1a8b085f1 upstream.
+[ Upstream commit 2bd161a605f1f84a5fc8a4fe8410113a94f79355 ]
 
-Currently, IPC mechanisms do security and auditing related checks under
-RCU.  However, since security modules can free the security structure,
-for example, through selinux_[sem,msg_queue,shm]_free_security(), we can
-race if the structure is freed before other tasks are done with it,
-creating a use-after-free condition.  Manfred illustrates this nicely,
-for instance with shared mem and selinux:
+Commit 117a0c5fc9c2d06045bd217385b2b39ea426b5a6 ("sparc: kernel: using
+strlcpy() instead of strcpy()") added a bug to ldom_reboot in
+arch/sparc/kernel/ds.c
 
- -> do_shmat calls rcu_read_lock()
- -> do_shmat calls shm_object_check().
-     Checks that the object is still valid - but doesn't acquire any locks.
-     Then it returns.
- -> do_shmat calls security_shm_shmat (e.g. selinux_shm_shmat)
- -> selinux_shm_shmat calls ipc_has_perm()
- -> ipc_has_perm accesses ipc_perms->security
+-		strcpy(full_boot_str + strlen("boot "), boot_command);
++				     strlcpy(full_boot_str + strlen("boot "), boot_command,
++				     			     sizeof(full_boot_str + strlen("boot ")));
 
-shm_close()
- -> shm_close acquires rw_mutex & shm_lock
- -> shm_close calls shm_destroy
- -> shm_destroy calls security_shm_free (e.g. selinux_shm_free_security)
- -> selinux_shm_free_security calls ipc_free_security(&shp->shm_perm)
- -> ipc_free_security calls kfree(ipc_perms->security)
+That last sizeof() expression evaluates to sizeof(size_t) which is
+not what was intended.
 
-This patch delays the freeing of the security structures after all RCU
-readers are done.  Furthermore it aligns the security life cycle with
-that of the rest of IPC - freeing them based on the reference counter.
-For situations where we need not free security, the current behavior is
-kept.  Linus states:
+Also even the corrected:
 
- "... the old behavior was suspect for another reason too: having the
-  security blob go away from under a user sounds like it could cause
-  various other problems anyway, so I think the old code was at least
-  _prone_ to bugs even if it didn't have catastrophic behavior."
+     sizeof(full_boot_str) + strlen("boot ")
 
-I have tested this patch with IPC testcases from LTP on both my
-quad-core laptop and on a 64 core NUMA server.  In both cases selinux is
-enabled, and tests pass for both voluntary and forced preemption models.
-While the mentioned races are theoretical (at least no one as reported
-them), I wanted to make sure that this new logic doesn't break anything
-we weren't aware of.
+is not right as the destination buffer length is just plain
+"sizeof(full_boot_str)" and that's what the final argument
+should be.
 
-Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-Acked-by: Manfred Spraul <manfred@colorfullife.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- ipc/msg.c  |   19 +++++++++++++------
- ipc/sem.c  |   34 ++++++++++++++++++----------------
- ipc/shm.c  |   17 ++++++++++++-----
- ipc/util.c |   32 ++++++++++++--------------------
- ipc/util.h |   10 +++++++++-
- 5 files changed, 64 insertions(+), 48 deletions(-)
+ arch/sparc/kernel/ds.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/ipc/msg.c
-+++ b/ipc/msg.c
-@@ -167,6 +167,15 @@ static inline void msg_rmid(struct ipc_n
- 	ipc_rmid(&msg_ids(ns), &s->q_perm);
- }
+--- a/arch/sparc/kernel/ds.c
++++ b/arch/sparc/kernel/ds.c
+@@ -851,7 +851,7 @@ void ldom_reboot(const char *boot_comman
  
-+static void msg_rcu_free(struct rcu_head *head)
-+{
-+	struct ipc_rcu *p = container_of(head, struct ipc_rcu, rcu);
-+	struct msg_queue *msq = ipc_rcu_to_struct(p);
-+
-+	security_msg_queue_free(msq);
-+	ipc_rcu_free(head);
-+}
-+
- /**
-  * newque - Create a new msg queue
-  * @ns: namespace
-@@ -191,15 +200,14 @@ static int newque(struct ipc_namespace *
- 	msq->q_perm.security = NULL;
- 	retval = security_msg_queue_alloc(msq);
- 	if (retval) {
--		ipc_rcu_putref(msq);
-+		ipc_rcu_putref(msq, ipc_rcu_free);
- 		return retval;
- 	}
+ 		strcpy(full_boot_str, "boot ");
+ 		strlcpy(full_boot_str + strlen("boot "), boot_command,
+-			sizeof(full_boot_str + strlen("boot ")));
++			sizeof(full_boot_str));
+ 		len = strlen(full_boot_str);
  
- 	/* ipc_addid() locks msq upon success. */
- 	id = ipc_addid(&msg_ids(ns), &msq->q_perm, ns->msg_ctlmni);
- 	if (id < 0) {
--		security_msg_queue_free(msq);
--		ipc_rcu_putref(msq);
-+		ipc_rcu_putref(msq, msg_rcu_free);
- 		return id;
- 	}
- 
-@@ -277,8 +285,7 @@ static void freeque(struct ipc_namespace
- 		free_msg(msg);
- 	}
- 	atomic_sub(msq->q_cbytes, &ns->msg_bytes);
--	security_msg_queue_free(msq);
--	ipc_rcu_putref(msq);
-+	ipc_rcu_putref(msq, msg_rcu_free);
- }
- 
- /*
-@@ -724,7 +731,7 @@ long do_msgsnd(int msqid, long mtype, vo
- 		rcu_read_lock();
- 		ipc_lock_object(&msq->q_perm);
- 
--		ipc_rcu_putref(msq);
-+		ipc_rcu_putref(msq, ipc_rcu_free);
- 		if (msq->q_perm.deleted) {
- 			err = -EIDRM;
- 			goto out_unlock0;
---- a/ipc/sem.c
-+++ b/ipc/sem.c
-@@ -260,6 +260,15 @@ static void sem_wait_array(struct sem_ar
- 	}
- }
- 
-+static void sem_rcu_free(struct rcu_head *head)
-+{
-+	struct ipc_rcu *p = container_of(head, struct ipc_rcu, rcu);
-+	struct sem_array *sma = ipc_rcu_to_struct(p);
-+
-+	security_sem_free(sma);
-+	ipc_rcu_free(head);
-+}
-+
- /*
-  * If the request contains only one semaphore operation, and there are
-  * no complex transactions pending, lock only the semaphore involved.
-@@ -408,12 +417,7 @@ static inline struct sem_array *sem_obta
- static inline void sem_lock_and_putref(struct sem_array *sma)
- {
- 	sem_lock(sma, NULL, -1);
--	ipc_rcu_putref(sma);
--}
--
--static inline void sem_putref(struct sem_array *sma)
--{
--	ipc_rcu_putref(sma);
-+	ipc_rcu_putref(sma, ipc_rcu_free);
- }
- 
- static inline void sem_rmid(struct ipc_namespace *ns, struct sem_array *s)
-@@ -492,14 +496,13 @@ static int newary(struct ipc_namespace *
- 	sma->sem_perm.security = NULL;
- 	retval = security_sem_alloc(sma);
- 	if (retval) {
--		ipc_rcu_putref(sma);
-+		ipc_rcu_putref(sma, ipc_rcu_free);
- 		return retval;
- 	}
- 
- 	id = ipc_addid(&sem_ids(ns), &sma->sem_perm, ns->sc_semmni);
- 	if (id < 0) {
--		security_sem_free(sma);
--		ipc_rcu_putref(sma);
-+		ipc_rcu_putref(sma, sem_rcu_free);
- 		return id;
- 	}
- 	ns->used_sems += nsems;
-@@ -1081,8 +1084,7 @@ static void freeary(struct ipc_namespace
- 
- 	wake_up_sem_queue_do(&tasks);
- 	ns->used_sems -= sma->sem_nsems;
--	security_sem_free(sma);
--	ipc_rcu_putref(sma);
-+	ipc_rcu_putref(sma, sem_rcu_free);
- }
- 
- static unsigned long copy_semid_to_user(void __user *buf, struct semid64_ds *in, int version)
-@@ -1326,7 +1328,7 @@ static int semctl_main(struct ipc_namesp
- 			rcu_read_unlock();
- 			sem_io = ipc_alloc(sizeof(ushort)*nsems);
- 			if(sem_io == NULL) {
--				sem_putref(sma);
-+				ipc_rcu_putref(sma, ipc_rcu_free);
- 				return -ENOMEM;
- 			}
- 
-@@ -1362,20 +1364,20 @@ static int semctl_main(struct ipc_namesp
- 		if(nsems > SEMMSL_FAST) {
- 			sem_io = ipc_alloc(sizeof(ushort)*nsems);
- 			if(sem_io == NULL) {
--				sem_putref(sma);
-+				ipc_rcu_putref(sma, ipc_rcu_free);
- 				return -ENOMEM;
- 			}
- 		}
- 
- 		if (copy_from_user (sem_io, p, nsems*sizeof(ushort))) {
--			sem_putref(sma);
-+			ipc_rcu_putref(sma, ipc_rcu_free);
- 			err = -EFAULT;
- 			goto out_free;
- 		}
- 
- 		for (i = 0; i < nsems; i++) {
- 			if (sem_io[i] > SEMVMX) {
--				sem_putref(sma);
-+				ipc_rcu_putref(sma, ipc_rcu_free);
- 				err = -ERANGE;
- 				goto out_free;
- 			}
-@@ -1663,7 +1665,7 @@ static struct sem_undo *find_alloc_undo(
- 	/* step 2: allocate new undo structure */
- 	new = kzalloc(sizeof(struct sem_undo) + sizeof(short)*nsems, GFP_KERNEL);
- 	if (!new) {
--		sem_putref(sma);
-+		ipc_rcu_putref(sma, ipc_rcu_free);
- 		return ERR_PTR(-ENOMEM);
- 	}
- 
---- a/ipc/shm.c
-+++ b/ipc/shm.c
-@@ -155,6 +155,15 @@ static inline struct shmid_kernel *shm_l
- 	return container_of(ipcp, struct shmid_kernel, shm_perm);
- }
- 
-+static void shm_rcu_free(struct rcu_head *head)
-+{
-+	struct ipc_rcu *p = container_of(head, struct ipc_rcu, rcu);
-+	struct shmid_kernel *shp = ipc_rcu_to_struct(p);
-+
-+	security_shm_free(shp);
-+	ipc_rcu_free(head);
-+}
-+
- static inline void shm_rmid(struct ipc_namespace *ns, struct shmid_kernel *s)
- {
- 	ipc_rmid(&shm_ids(ns), &s->shm_perm);
-@@ -196,8 +205,7 @@ static void shm_destroy(struct ipc_names
- 		user_shm_unlock(file_inode(shp->shm_file)->i_size,
- 						shp->mlock_user);
- 	fput (shp->shm_file);
--	security_shm_free(shp);
--	ipc_rcu_putref(shp);
-+	ipc_rcu_putref(shp, shm_rcu_free);
- }
- 
- /*
-@@ -485,7 +493,7 @@ static int newseg(struct ipc_namespace *
- 	shp->shm_perm.security = NULL;
- 	error = security_shm_alloc(shp);
- 	if (error) {
--		ipc_rcu_putref(shp);
-+		ipc_rcu_putref(shp, ipc_rcu_free);
- 		return error;
- 	}
- 
-@@ -554,8 +562,7 @@ no_id:
- 		user_shm_unlock(size, shp->mlock_user);
- 	fput(file);
- no_file:
--	security_shm_free(shp);
--	ipc_rcu_putref(shp);
-+	ipc_rcu_putref(shp, shm_rcu_free);
- 	return error;
- }
- 
---- a/ipc/util.c
-+++ b/ipc/util.c
-@@ -465,11 +465,6 @@ void ipc_free(void* ptr, int size)
- 		kfree(ptr);
- }
- 
--struct ipc_rcu {
--	struct rcu_head rcu;
--	atomic_t refcount;
--} ____cacheline_aligned_in_smp;
--
- /**
-  *	ipc_rcu_alloc	-	allocate ipc and rcu space 
-  *	@size: size desired
-@@ -496,27 +491,24 @@ int ipc_rcu_getref(void *ptr)
- 	return atomic_inc_not_zero(&p->refcount);
- }
- 
--/**
-- * ipc_schedule_free - free ipc + rcu space
-- * @head: RCU callback structure for queued work
-- */
--static void ipc_schedule_free(struct rcu_head *head)
--{
--	vfree(container_of(head, struct ipc_rcu, rcu));
--}
--
--void ipc_rcu_putref(void *ptr)
-+void ipc_rcu_putref(void *ptr, void (*func)(struct rcu_head *head))
- {
- 	struct ipc_rcu *p = ((struct ipc_rcu *)ptr) - 1;
- 
- 	if (!atomic_dec_and_test(&p->refcount))
- 		return;
- 
--	if (is_vmalloc_addr(ptr)) {
--		call_rcu(&p->rcu, ipc_schedule_free);
--	} else {
--		kfree_rcu(p, rcu);
--	}
-+	call_rcu(&p->rcu, func);
-+}
-+
-+void ipc_rcu_free(struct rcu_head *head)
-+{
-+	struct ipc_rcu *p = container_of(head, struct ipc_rcu, rcu);
-+
-+	if (is_vmalloc_addr(p))
-+		vfree(p);
-+	else
-+		kfree(p);
- }
- 
- /**
---- a/ipc/util.h
-+++ b/ipc/util.h
-@@ -47,6 +47,13 @@ static inline void msg_exit_ns(struct ip
- static inline void shm_exit_ns(struct ipc_namespace *ns) { }
- #endif
- 
-+struct ipc_rcu {
-+	struct rcu_head rcu;
-+	atomic_t refcount;
-+} ____cacheline_aligned_in_smp;
-+
-+#define ipc_rcu_to_struct(p)  ((void *)(p+1))
-+
- /*
-  * Structure that holds the parameters needed by the ipc operations
-  * (see after)
-@@ -120,7 +127,8 @@ void ipc_free(void* ptr, int size);
-  */
- void* ipc_rcu_alloc(int size);
- int ipc_rcu_getref(void *ptr);
--void ipc_rcu_putref(void *ptr);
-+void ipc_rcu_putref(void *ptr, void (*func)(struct rcu_head *head));
-+void ipc_rcu_free(struct rcu_head *head);
- 
- struct kern_ipc_perm *ipc_lock(struct ipc_ids *, int);
- struct kern_ipc_perm *ipc_obtain_object(struct ipc_ids *ids, int id);
+ 		if (reboot_data_supported) {
 
 
