@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964809Ab3JKTve (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:51:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46465 "EHLO
+	id S1759296Ab3JKTvw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:51:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46455 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932799Ab3JKTmF (ORCPT
+	with ESMTP id S932790Ab3JKTmD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:42:05 -0400
+	Fri, 11 Oct 2013 15:42:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@prifuk.cz>,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
-Subject: [ 102/135] USB: serial: option: Ignore card reader interface on Huawei E1750
-Date: Fri, 11 Oct 2013 12:39:43 -0700
-Message-Id: <20131011193956.338800036@linuxfoundation.org>
+        Dmitry Khromov <icechrome@gmail.com>,
+        Amitkumar Karwar <akarwar@marvell.com>, Bing Zhao <bzhao@marvell.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 099/135] mwifiex: fix hang issue for USB chipsets
+Date: Fri, 11 Oct 2013 12:39:40 -0700
+Message-Id: <20131011193956.017771713@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,45 +28,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Malý <madcatxster@prifuk.cz>
+From: Amitkumar Karwar <akarwar@marvell.com>
 
-commit eb2addd4044b4b2ce77693bde5bc810536dd96ee upstream.
+commit bd1c6142edce787b8ac1be15635f845aa9905333 upstream.
 
-Hi,
+Bug 60815 - Interface hangs in mwifiex_usb
+https://bugzilla.kernel.org/show_bug.cgi?id=60815
 
-my Huawei 3G modem has an embedded Smart Card reader which causes
-trouble when the modem is being detected (a bunch of "<warn>  (ttyUSBx):
-open blocked by driver for more than 7 seconds!" in messages.log). This
-trivial patch corrects the problem for me. The modem identifies itself
-as "12d1:1406 Huawei Technologies Co., Ltd. E1750" in lsusb although the
-description on the body says "Model E173u-1"
+We have 4 bytes of interface header for packets delivered to SDIO
+and PCIe, but not for USB interface.
 
-Signed-off-by: Michal Malý <madcatxster@prifuk.cz>
-Cc: Bjørn Mork <bjorn@mork.no>
+In Tx AMSDU case, currently 4 bytes of garbage data is unnecessarily
+appended for USB packets. This sometimes leads to a firmware hang,
+because it may not interpret the data packet correctly.
+
+Problem is fixed by removing this redundant headroom for USB.
+
+Tested-by: Dmitry Khromov <icechrome@gmail.com>
+Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/net/wireless/mwifiex/11n_aggr.c |    3 ++-
+ drivers/net/wireless/mwifiex/11n_aggr.h |    2 +-
+ drivers/net/wireless/mwifiex/wmm.c      |    3 +--
+ 3 files changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -81,6 +81,7 @@ static void option_instat_callback(struc
+--- a/drivers/net/wireless/mwifiex/11n_aggr.c
++++ b/drivers/net/wireless/mwifiex/11n_aggr.c
+@@ -149,7 +149,7 @@ mwifiex_11n_form_amsdu_txpd(struct mwifi
+  */
+ int
+ mwifiex_11n_aggregate_pkt(struct mwifiex_private *priv,
+-			  struct mwifiex_ra_list_tbl *pra_list, int headroom,
++			  struct mwifiex_ra_list_tbl *pra_list,
+ 			  int ptrindex, unsigned long ra_list_flags)
+ 			  __releases(&priv->wmm.ra_list_spinlock)
+ {
+@@ -159,6 +159,7 @@ mwifiex_11n_aggregate_pkt(struct mwifiex
+ 	int pad = 0, ret;
+ 	struct mwifiex_tx_param tx_param;
+ 	struct txpd *ptx_pd = NULL;
++	int headroom = adapter->iface_type == MWIFIEX_USB ? 0 : INTF_HEADER_LEN;
  
- #define HUAWEI_VENDOR_ID			0x12D1
- #define HUAWEI_PRODUCT_E173			0x140C
-+#define HUAWEI_PRODUCT_E1750			0x1406
- #define HUAWEI_PRODUCT_K4505			0x1464
- #define HUAWEI_PRODUCT_K3765			0x1465
- #define HUAWEI_PRODUCT_K4605			0x14C6
-@@ -567,6 +568,8 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1c23, USB_CLASS_COMM, 0x02, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E173, 0xff, 0xff, 0xff),
- 		.driver_info = (kernel_ulong_t) &net_intf1_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E1750, 0xff, 0xff, 0xff),
-+		.driver_info = (kernel_ulong_t) &net_intf2_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1441, USB_CLASS_COMM, 0x02, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1442, USB_CLASS_COMM, 0x02, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4505, 0xff, 0xff, 0xff),
+ 	skb_src = skb_peek(&pra_list->skb_head);
+ 	if (!skb_src) {
+--- a/drivers/net/wireless/mwifiex/11n_aggr.h
++++ b/drivers/net/wireless/mwifiex/11n_aggr.h
+@@ -26,7 +26,7 @@
+ int mwifiex_11n_deaggregate_pkt(struct mwifiex_private *priv,
+ 				struct sk_buff *skb);
+ int mwifiex_11n_aggregate_pkt(struct mwifiex_private *priv,
+-			      struct mwifiex_ra_list_tbl *ptr, int headroom,
++			      struct mwifiex_ra_list_tbl *ptr,
+ 			      int ptr_index, unsigned long flags)
+ 			      __releases(&priv->wmm.ra_list_spinlock);
+ 
+--- a/drivers/net/wireless/mwifiex/wmm.c
++++ b/drivers/net/wireless/mwifiex/wmm.c
+@@ -1239,8 +1239,7 @@ mwifiex_dequeue_tx_packet(struct mwifiex
+ 		if (enable_tx_amsdu && mwifiex_is_amsdu_allowed(priv, tid) &&
+ 		    mwifiex_is_11n_aggragation_possible(priv, ptr,
+ 							adapter->tx_buf_size))
+-			mwifiex_11n_aggregate_pkt(priv, ptr, INTF_HEADER_LEN,
+-						  ptr_index, flags);
++			mwifiex_11n_aggregate_pkt(priv, ptr, ptr_index, flags);
+ 			/* ra_list_spinlock has been freed in
+ 			   mwifiex_11n_aggregate_pkt() */
+ 		else
 
 
