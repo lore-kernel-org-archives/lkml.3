@@ -1,49 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756113Ab3JKRzD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 13:55:03 -0400
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:60747 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754774Ab3JKRy7 (ORCPT
+	id S1756194Ab3JKRzS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 13:55:18 -0400
+Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:1536 "EHLO
+	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752105Ab3JKRzO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 13:54:59 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1310110622460.14758@skynet.skynet.ie>
-References: <alpine.DEB.2.00.1310110622460.14758@skynet.skynet.ie>
-Date: Fri, 11 Oct 2013 10:54:58 -0700
-X-Google-Sender-Auth: 6yHuBahiNB8ArwyR5_ldq16Ywvo
-Message-ID: <CA+55aFwAbcQY3RDw0L4RQgX7M98=5ZiWfQc4r-Q+WUhcJ3kSfA@mail.gmail.com>
-Subject: Re: [git pull] drm fixes
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dave Airlie <airlied@linux.ie>
-Cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 11 Oct 2013 13:55:14 -0400
+Message-Id: <00000141a8a87077-a9a7e172-13c4-4c7c-9fc7-1f054ae0a5c7-000000@email.amazonses.com>
+User-Agent: quilt/0.60-1
+Date: Fri, 11 Oct 2013 17:55:13 +0000
+From: Christoph Lameter <cl@linux.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: akpm@linuxfoundation.org, Rusty Russell <rusty@rustcorp.com.au>
+Cc: Steven Rostedt <srostedt@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 4/6] Use raw_cpu_write for initialization of per cpu refcount.
+References: <20131011175518.634285474@linux.com>
+X-SES-Outgoing: 199.255.193.30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 10, 2013 at 10:28 PM, Dave Airlie <airlied@linux.ie> wrote:
->
-> and one pain in the ass revert, so we have VGA arbitration that when
-> implemented 4-5 years ago really hoped that GPUs could remove themselves
-> from arbitration completely once they had a kernel driver, it seems Intel
-> hw designers decided that was too nice a facility to allow us to have so
-> they removed it when they went on-die (so since Ironlake at least), now
-> Alex Williamson added support for VGA arbitration for newer GPUs however
-> this now exposes itself to userspace as requireing arbitration of GPU VGA
-> regions and the X server gets involved and disables things that it can't
-> handle when VGA access is possibly required around every operation, so in
-> order to break userspace we just reverted things back to the old known
-> broken status so maybe we can try and design out way out. Ville also had a
-> patch to use stop machine for the two times Intel needs to access VGA
-> space, that might be acceptable with some rework, but for now myself and
-> Daniel agreed to just go back.
+The initialization of a structure is not subject to synchronization.
+The use of __this_cpu would trigger a false positive with the
+additional preemption checks for __this_cpu ops.
 
-Your explanation messages tend to channel James Joyce. They may be
-literary works of art, but it _does_ occasionally make them somewhat
-hard to read.
+So simply disable the check through the use of raw_cpu ops.
 
-I have tried to turn them into slightly less stream-of-consciousness.
+Trace:
 
-             Linus
+[    0.668066] __this_cpu_write operation in preemptible [00000000] code: modprobe/286
+[    0.668108] caller is __this_cpu_preempt_check+0x38/0x60
+[    0.668111] CPU: 3 PID: 286 Comm: modprobe Tainted: GF            3.12.0-rc4+ #187
+[    0.668112] Hardware name: FUJITSU CELSIUS W530 Power/D3227-A1, BIOS V4.6.5.4 R1.10.0 for D3227-A1x 09/16/2013
+[    0.668113]  0000000000000003 ffff8807edda1d18 ffffffff816d5a57 ffff8807edda1fd8
+[    0.668117]  ffff8807edda1d48 ffffffff8137359c ffff8807edda1ef8 ffffffffa0002178
+[    0.668121]  ffffc90000067730 ffff8807edda1e48 ffff8807edda1d88 ffffffff813735f8
+[    0.668124] Call Trace:
+[    0.668129]  [<ffffffff816d5a57>] dump_stack+0x4e/0x82
+[    0.668132]  [<ffffffff8137359c>] check_preemption_disabled+0xec/0x110
+[    0.668135]  [<ffffffff813735f8>] __this_cpu_preempt_check+0x38/0x60
+[    0.668139]  [<ffffffff810c24fd>] load_module+0xcfd/0x2650
+[    0.668143]  [<ffffffff816dd922>] ? page_fault+0x22/0x30
+[    0.668146]  [<ffffffff810c3ef6>] SyS_init_module+0xa6/0xd0
+[    0.668150]  [<ffffffff816e4fd3>] tracesys+0xe1/0xe6
+
+
+
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Christoph Lameter <cl@linux.com>
+
+Index: linux/kernel/module.c
+===================================================================
+--- linux.orig/kernel/module.c	2013-09-05 13:43:30.557687773 -0500
++++ linux/kernel/module.c	2013-10-07 12:33:43.732059759 -0500
+@@ -643,7 +643,7 @@ static int module_unload_init(struct mod
+ 	INIT_LIST_HEAD(&mod->target_list);
+ 
+ 	/* Hold reference count during initialization. */
+-	__this_cpu_write(mod->refptr->incs, 1);
++	raw_cpu_write(mod->refptr->incs, 1);
+ 	/* Backwards compatibility macros put refcount during init. */
+ 	mod->waiter = current;
+ 
+
