@@ -1,38 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756127Ab3JKCXS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 22:23:18 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:54449 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751902Ab3JKCXQ (ORCPT
+	id S1756210Ab3JKCXa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 22:23:30 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:47070 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756150Ab3JKCX3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 22:23:16 -0400
-Date: Thu, 10 Oct 2013 20:23:13 -0600
-From: Jens Axboe <axboe@kernel.dk>
-To: Kent Overstreet <kmo@daterainc.com>
-Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-bcache@vger.kernel.org
-Subject: Re: [PATCH] Fix for bcache regression
-Message-ID: <20131011022313.GA31029@kernel.dk>
-References: <1381451475-24551-1-git-send-email-kmo@daterainc.com>
+	Thu, 10 Oct 2013 22:23:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1381451475-24551-1-git-send-email-kmo@daterainc.com>
+In-Reply-To: <20131010022627.GA8535@variantweb.net>
+References: <1381159541-13981-1-git-send-email-k.kozlowski@samsung.com>
+	<20131007150338.1fdee18b536bb1d9fe41a07b@linux-foundation.org>
+	<1381220000.16135.10.camel@AMDC1943>
+	<20131008130853.96139b79a0a4d3aaacc79ed2@linux-foundation.org>
+	<20131009144045.GA5406@variantweb.net>
+	<525602E3.3080501@oracle.com>
+	<20131010022627.GA8535@variantweb.net>
+Date: Fri, 11 Oct 2013 10:23:28 +0800
+Message-ID: <CAL1ERfOnb7DZXH87cq2ZWhRiDuU9btmmRbOURLA5SV7zsho1VA@mail.gmail.com>
+Subject: Re: [PATCH] frontswap: enable call to invalidate area on swapoff
+From: Weijie Yang <weijie.yang.kh@gmail.com>
+To: Seth Jennings <sjennings@variantweb.net>
+Cc: Bob Liu <bob.liu@oracle.com>, Seth Jennings <spartacus06@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>, linux-mm@kvack.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org, Shaohua Li <shli@fusionio.com>,
+        Minchan Kim <minchan@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 10 2013, Kent Overstreet wrote:
-> Linus, please apply - the last fix in the bugfix series I sent you had an
-> embarassing screwup...
-> 
-> For 3.13, shall I start sending you pull requests directly?
+Thanks, Seth
 
-Sorry I dropped the ball on that one, it's the first time ever I've
-missed a deadline. It's being ramped up again, kernel time will be
-plenty again shortly.
+On Thu, Oct 10, 2013 at 10:26 AM, Seth Jennings
+<sjennings@variantweb.net> wrote:
+> On Thu, Oct 10, 2013 at 09:29:07AM +0800, Bob Liu wrote:
+>> On 10/09/2013 10:40 PM, Seth Jennings wrote:
+>> >
+>> > The reason we never noticed this for zswap is that zswap has no
+>> > dynamically allocated per-type resources.  In the expected case,
+>> > where all of the pages have been drained from zswap,
+>> > zswap_frontswap_invalidate_area() is a no-op.
+>> >
+>>
+>> Not exactly, see the bug fix "mm/zswap: bugfix: memory leak when
+>> re-swapon" from Weijie.
+>> Zswap needs invalidate_area() also.
+>
+> I remembered this patch as soon as I sent out this note.  What I said
+> about zswap_frontswap_invalidate_area() being a no-op in the expected
+> case is true as of v3.12-rc4, but it shouldn't be :)
+>
+> I sent a note to Andrew reminding him to pull in that patch.
+>
+> Thanks,
+> Seth
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
--- 
-Jens Axboe
+I am sorry to interrupt this topic, but I found an tiny issue near that:
 
+we can not "set_blocksize(bdev, p->old_block_size);" at the end of swapoff()
+because swap_info p may be reused by concurrent swapon called
+I think we need to  save the p->old_block_size in a local var and use it instead
+
+to Krzysztof : would you please add this in your patch?
+Thanks
