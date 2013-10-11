@@ -1,93 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754764Ab3JKVrH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 17:47:07 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:63009 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754599Ab3JKVrE (ORCPT
+	id S1755035Ab3JKVre (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 17:47:34 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:10182 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752818Ab3JKVpt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 17:47:04 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Subject: Re: [BUG] WARN_ON(!context) in drivers/pci/hotplug/acpiphp_glue.c
-Date: Fri, 11 Oct 2013 23:58:48 +0200
-Message-ID: <4905498.aEGIofg2fM@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <CA+55aFyJL5gLGtg8-z1t1xSY1ih9MAzsDzMZaxrEYZOFZ7rRBw@mail.gmail.com>
-References: <20131010165905.7815defa@gandalf.local.home> <2096980.ZtIelfoX39@vostro.rjw.lan> <CA+55aFyJL5gLGtg8-z1t1xSY1ih9MAzsDzMZaxrEYZOFZ7rRBw@mail.gmail.com>
+	Fri, 11 Oct 2013 17:45:49 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Fri, 11 Oct 2013 14:45:48 -0700
+From: Alexandre Courbot <acourbot@nvidia.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Olof Johansson <olof@lixom.net>, Russell King <linux@arm.linux.org.uk>,
+        Tomasz Figa <t.figa@samsung.com>, Dave Martin <Dave.Martin@arm.com>,
+        Arnd Bergmann <arnd@arndb.de>, Kevin Hilman <khilman@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-tegra@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Alexandre Courbot <acourbot@nvidia.com>
+Subject: [PATCH v8 3/5] ARM: tegra: split setting of CPU reset handler
+Date: Fri, 11 Oct 2013 14:45:36 -0700
+Message-ID: <1381527938-22840-4-git-send-email-acourbot@nvidia.com>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1381527938-22840-1-git-send-email-acourbot@nvidia.com>
+References: <1381527938-22840-1-git-send-email-acourbot@nvidia.com>
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, October 11, 2013 10:21:35 AM Linus Torvalds wrote:
-> On Fri, Oct 11, 2013 at 4:13 AM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> > +/**
-> > + * slot_should_be_exposed - Check whether or not to expose a slot to userland.
-> > + * @bridge: ACPIPHP bridge the slot belongs to.
-> > + * @handle: ACPI handle of a device in the slot.
-> > + */
-> > +static inline bool slot_should_be_exposed(struct acpiphp_bridge *bridge,
-> > +                                         acpi_handle handle)
-> 
-> Thanks, that looks much better.
-> 
-> I do worry that we now seem to add the slot to all the acpiphp lists
-> even if it is managed by pciehp. That gets rid of the warning Steven
-> saw (because now it always has that context), but I'm left wondering
-> how much pcihp and aciphp will fight over the slot.
->
-> Yes, the acpiphp_register_hotplug_slot() doesn't get called, but we
-> still do register_hotplug_dock_device(), for example. How does that
-> interact with pcihp that thinks it owns the slot?
+Not all Tegra devices can set the CPU reset handler in the same way.
+In particular, devices using a TrustZone secure monitor cannot set the
+reset handler directly and need to do it through a firmware operation.
 
-Well, owning the slot doesn't really mean much here, because the "rescan"
-and "remove" things may always be triggered by user space via sysfs from
-under the PCI device in question (regardless of whether or not pciehp
-thinks that it "owns" that device).  So if they are triggered by an ACPI
-notify instead, that should still be fine.
+This patch separates the act of setting the reset handler from its
+preparation, so the former can be implemented in a different way.
 
-Ejects are more of a gray area, but they do the "remove" first and only
-then they go for an actual "eject".  Question is if we should execute
-_EJ0 provided that it's actually present for the pciehp slots (which we will
-do with the patch applied).  It might be safer to trigger the native eject
-then, but again I'd be surprised if _EJ0 didn't work anyway (if there is a
-system in which _EJ0 is available for a device handled by pciehp in the first
-place).
+Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+Reviewed-by: Stephen Warren <swarren@nvidia.com>
+---
+ arch/arm/mach-tegra/reset.c | 27 +++++++++++++++++----------
+ 1 file changed, 17 insertions(+), 10 deletions(-)
 
-As far as docking stations go, the undock is done by ACPI anyway and it will
-carry out "remove" for all devices under the dock, so the patch doesn't change
-this particular case as far as I can say.
-
-> Or am I misreading the code? It's more readable, and no longer makes
-> me homicidal, but I don't actually know the code itself.
-
-I think you're reading it correctly, it really makes acpiphp see all slots
-even if pciehp sees them too.  So the change is somewhat risky.
-
-That said the risk doesn't seem to be huge and there seem to be cases in
-which it actually would be useful to have both acpiphp and pciehp signaling
-available for the same device.  For example, even if the BIOS told us that
-we could use the native mechanism (pciehp), it may not actually work.  That is,
-we may not get any hotplug interrupts from PCIe ports due to platform bugs of
-some sort and we may get ACPI notifications instead (because the platform
-designer knew about those bugs and thought it would be smart to use ACPI to
-work around them).
-
-There are bug reports indicating thinks like that, so we were going to allow
-acpiphp and pciehp to handle the same devices anyway at one point.  I thought
-we might as well try to do it now and see how it goes.  Still, if you think
-it's too risky for this stage of the cycle, I'll just send a patch removing
-the WARN_ON() and we'll revisit that thing in 3.13.
-
-Rafael
+diff --git a/arch/arm/mach-tegra/reset.c b/arch/arm/mach-tegra/reset.c
+index fd0bbf8..e282395 100644
+--- a/arch/arm/mach-tegra/reset.c
++++ b/arch/arm/mach-tegra/reset.c
+@@ -33,26 +33,18 @@
+ 
+ static bool is_enabled;
+ 
+-static void __init tegra_cpu_reset_handler_enable(void)
++static void __init tegra_cpu_reset_handler_set(const u32 reset_address)
+ {
+-	void __iomem *iram_base = IO_ADDRESS(TEGRA_IRAM_RESET_BASE);
+ 	void __iomem *evp_cpu_reset =
+ 		IO_ADDRESS(TEGRA_EXCEPTION_VECTORS_BASE + 0x100);
+ 	void __iomem *sb_ctrl = IO_ADDRESS(TEGRA_SB_BASE);
+ 	u32 reg;
+ 
+-	BUG_ON(is_enabled);
+-	BUG_ON(tegra_cpu_reset_handler_size > TEGRA_IRAM_RESET_HANDLER_SIZE);
+-
+-	memcpy(iram_base, (void *)__tegra_cpu_reset_handler_start,
+-			tegra_cpu_reset_handler_size);
+-
+ 	/*
+ 	 * NOTE: This must be the one and only write to the EVP CPU reset
+ 	 *       vector in the entire system.
+ 	 */
+-	writel(TEGRA_IRAM_RESET_BASE + tegra_cpu_reset_handler_offset,
+-			evp_cpu_reset);
++	writel(reset_address, evp_cpu_reset);
+ 	wmb();
+ 	reg = readl(evp_cpu_reset);
+ 
+@@ -66,6 +58,21 @@ static void __init tegra_cpu_reset_handler_enable(void)
+ 		writel(reg, sb_ctrl);
+ 		wmb();
+ 	}
++}
++
++static void __init tegra_cpu_reset_handler_enable(void)
++{
++	void __iomem *iram_base = IO_ADDRESS(TEGRA_IRAM_RESET_BASE);
++	const u32 reset_address = TEGRA_IRAM_RESET_BASE +
++						tegra_cpu_reset_handler_offset;
++
++	BUG_ON(is_enabled);
++	BUG_ON(tegra_cpu_reset_handler_size > TEGRA_IRAM_RESET_HANDLER_SIZE);
++
++	memcpy(iram_base, (void *)__tegra_cpu_reset_handler_start,
++			tegra_cpu_reset_handler_size);
++
++	tegra_cpu_reset_handler_set(reset_address);
+ 
+ 	is_enabled = true;
+ }
+-- 
+1.8.4
 
