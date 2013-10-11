@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757485Ab3JKVMk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 17:12:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45053 "EHLO
+	id S1757505Ab3JKVM5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 17:12:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45051 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754830Ab3JKTf1 (ORCPT
+	with ESMTP id S1754047Ab3JKTf1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Oct 2013 15:35:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Jones <davej@fedoraproject.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 04/39] caif: Add missing braces to multiline if in cfctrl_linkup_request
-Date: Fri, 11 Oct 2013 12:34:48 -0700
-Message-Id: <20131011193211.370642866@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Mike Miller <mike.miller@hp.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 02/39] cpqarray: fix info leak in ida_locked_ioctl()
+Date: Fri, 11 Oct 2013 12:34:46 -0700
+Message-Id: <20131011193211.161949711@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193210.843963685@linuxfoundation.org>
 References: <20131011193210.843963685@linuxfoundation.org>
@@ -27,35 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Jones <davej@redhat.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-[ Upstream commit 0c1db731bfcf3a9fd6c58132134f8b0f423552f0 ]
+commit 627aad1c01da6f881e7f98d71fd928ca0c316b1a upstream.
 
-The indentation here implies this was meant to be a multi-line if.
+The pciinfo struct has a two byte hole after ->dev_fn so stack
+information could be leaked to the user.
 
-Introduced several years back in commit c85c2951d4da1236e32f1858db418221e624aba5
-("caif: Handle dev_queue_xmit errors.")
+This was assigned CVE-2013-2147.
 
-Signed-off-by: Dave Jones <davej@fedoraproject.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Mike Miller <mike.miller@hp.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/caif/cfctrl.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/net/caif/cfctrl.c
-+++ b/net/caif/cfctrl.c
-@@ -297,9 +297,10 @@ int cfctrl_linkup_request(struct cflayer
+---
+ drivers/block/cpqarray.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/drivers/block/cpqarray.c
++++ b/drivers/block/cpqarray.c
+@@ -1195,6 +1195,7 @@ out_passthru:
+ 		ida_pci_info_struct pciinfo;
  
- 		count = cfctrl_cancel_req(&cfctrl->serv.layer,
- 						user_layer);
--		if (count != 1)
-+		if (count != 1) {
- 			pr_err("Could not remove request (%d)", count);
- 			return -ENODEV;
-+		}
- 	}
- 	return 0;
- }
+ 		if (!arg) return -EINVAL;
++		memset(&pciinfo, 0, sizeof(pciinfo));
+ 		pciinfo.bus = host->pci_dev->bus->number;
+ 		pciinfo.dev_fn = host->pci_dev->devfn;
+ 		pciinfo.board_id = host->board_id;
 
 
