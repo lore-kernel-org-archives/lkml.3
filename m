@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932388Ab3JKKoZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 06:44:25 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58815 "EHLO
+	id S1758099Ab3JKKqQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 06:46:16 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58835 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932361Ab3JKKoW (ORCPT
+	with ESMTP id S932361Ab3JKKo0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 06:44:22 -0400
+	Fri, 11 Oct 2013 06:44:26 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: David Vrabel <david.vrabel@citrix.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Jan Kara <jack@suse.cz>,
         Jiri Slaby <jslaby@suse.cz>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 092/100] xen/hvc: allow xenboot console to be used again
-Date: Fri, 11 Oct 2013 11:42:02 +0100
-Message-Id: <1381488130-30235-93-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 096/100] ext4: avoid hang when mounting non-journal filesystems with orphan list
+Date: Fri, 11 Oct 2013 11:42:06 +0100
+Message-Id: <1381488130-30235-97-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
 References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
@@ -29,38 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit a9fbf4d591da6cd1d3eaab826c7c15f77fc8f6a3 upstream.
+commit 0e9a9a1ad619e7e987815d20262d36a2f95717ca upstream.
 
-Commit d0380e6c3c0f6edb986d8798a23acfaf33d5df23 (early_printk:
-consolidate random copies of identical code) added in 3.10 introduced
-a check for con->index == -1 in early_console_register().
+When trying to mount a file system which does not contain a journal,
+but which does have a orphan list containing an inode which needs to
+be truncated, the mount call with hang forever in
+ext4_orphan_cleanup() because ext4_orphan_del() will return
+immediately without removing the inode from the orphan list, leading
+to an uninterruptible loop in kernel code which will busy out one of
+the CPU's on the system.
 
-Initialize index to -1 for the xenboot console so earlyprintk=xen
-works again.
+This can be trivially reproduced by trying to mount the file system
+found in tests/f_orphan_extents_inode/image.gz from the e2fsprogs
+source tree.  If a malicious user were to put this on a USB stick, and
+mount it on a Linux desktop which has automatic mounts enabled, this
+could be considered a potential denial of service attack.  (Not a big
+deal in practice, but professional paranoids worry about such things,
+and have even been known to allocate CVE numbers for such problems.)
 
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Reviewed-by: Zheng Liu <wenqing.lz@taobao.com>
+Cc: Jan Kara <jack@suse.cz>
+[ js: This is a fix for CVE-2013-2015. ]
 Cc: Jiri Slaby <jslaby@suse.cz>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/tty/hvc/hvc_xen.c | 1 +
- 1 file changed, 1 insertion(+)
+ fs/ext4/namei.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/tty/hvc/hvc_xen.c b/drivers/tty/hvc/hvc_xen.c
-index 944eaeb..78873df 100644
---- a/drivers/tty/hvc/hvc_xen.c
-+++ b/drivers/tty/hvc/hvc_xen.c
-@@ -634,6 +634,7 @@ struct console xenboot_console = {
- 	.name		= "xenboot",
- 	.write		= xenboot_write_console,
- 	.flags		= CON_PRINTBUFFER | CON_BOOT | CON_ANYTIME,
-+	.index		= -1,
- };
- #endif	/* CONFIG_EARLY_PRINTK */
+diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
+index 43a35db..27a99f7 100644
+--- a/fs/ext4/namei.c
++++ b/fs/ext4/namei.c
+@@ -2432,7 +2432,8 @@ int ext4_orphan_del(handle_t *handle, struct inode *inode)
+ 	int err = 0;
  
+ 	/* ext4_handle_valid() assumes a valid handle_t pointer */
+-	if (handle && !ext4_handle_valid(handle))
++	if (handle && !ext4_handle_valid(handle) &&
++	    !(EXT4_SB(inode->i_sb)->s_mount_state & EXT4_ORPHAN_FS))
+ 		return 0;
+ 
+ 	mutex_lock(&EXT4_SB(inode->i_sb)->s_orphan_lock);
 -- 
 1.8.3.2
 
