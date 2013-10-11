@@ -1,75 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753697Ab3JKXQI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 19:16:08 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:54841 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751946Ab3JKXQF (ORCPT
+	id S1753965Ab3JKXQY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 19:16:24 -0400
+Received: from mail-bn1lp0149.outbound.protection.outlook.com ([207.46.163.149]:51563
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753801Ab3JKXQM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 19:16:05 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAErSpo4BKuuo=kz9RLpZNwrM=HnV3Zt7qLeoUCywV6ESoO+=wQ@mail.gmail.com>
-References: <bug-60555-41252@https.bugzilla.kernel.org/> <CAErSpo4BKuuo=kz9RLpZNwrM=HnV3Zt7qLeoUCywV6ESoO+=wQ@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 11 Oct 2013 17:15:40 -0600
-Message-ID: <CAErSpo7nyyfZ8n97hyjkmzfCcPBVFTid0BrVXLwiBA0YhkdREA@mail.gmail.com>
-Subject: Re: [Bug 60555] New: Some amount of ifconfig cause load average
- increase and system freeze
-To: Yaroslav Molochko <onorua@gmail.com>
-Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+	Fri, 11 Oct 2013 19:16:12 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+CC: Olaf Hering <olaf@aepfle.de>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Subject: RE: [patch x86/hyperv] x86, hyperv: Fix build error
+Thread-Topic: [patch x86/hyperv] x86, hyperv: Fix build error
+Thread-Index: AQHOxta5P1yA7RPLC0+Qc4gHG+R3tJnwIZhQ
+Date: Fri, 11 Oct 2013 23:16:09 +0000
+Message-ID: <86627d477ccc42aea289f62ad96d0e4b@SN2PR03MB061.namprd03.prod.outlook.com>
+References: <1380554932-9888-1-git-send-email-olaf@aepfle.de>
+ <tip-9e7827b5ea4ca93b4d864bc07c0fafb838d496b1@git.kernel.org>
+ <alpine.DEB.2.02.1310111604160.31170@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1310111604160.31170@chino.kir.corp.google.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [2001:4898:80e8:ed31::3]
+x-forefront-prvs: 0996D1900D
+x-forefront-antispam-report: SFV:NSPM;SFS:(189002)(199002)(377454003)(13464003)(51704005)(74706001)(76482001)(56776001)(50986001)(49866001)(63696002)(53806001)(4396001)(33646001)(47976001)(79102001)(74366001)(85306002)(47736001)(54356001)(46102001)(65816001)(54316002)(83072001)(80022001)(80976001)(81686001)(59766001)(77982001)(19580405001)(69226001)(83322001)(76576001)(76796001)(74502001)(74662001)(47446002)(19580395003)(77096001)(31966008)(56816003)(81542001)(81816001)(81342001)(51856001)(74876001)(76786001)(74316001)(3826001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:SN2PR03MB062;H:SN2PR03MB061.namprd03.prod.outlook.com;CLIP:2001:4898:80e8:ed31::3;FPR:;RD:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: DuplicateDomain-a84fc36a-4ed7-4e57-ab1c-3e967bcbad48.microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 10, 2013 at 3:04 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> [+cc Thomas, e1000e driver folks, linux-pci, lkml]
->
-> On Mon, Jul 15, 2013 at 2:31 AM,  <bugzilla-daemon@bugzilla.kernel.org> wrote:
->> https://bugzilla.kernel.org/show_bug.cgi?id=60555
->>
->>             Bug ID: 60555
->>            Summary: Some amount of ifconfig cause load average increase
->>                     and system freeze
->>            Product: Drivers
->>            Version: 2.5
->>     Kernel Version: 3.10.0
->>           Hardware: All
->>                 OS: Linux
->>               Tree: Mainline
->>             Status: NEW
->>           Severity: normal
->>           Priority: P1
->>          Component: PCI
->>           Assignee: drivers_pci@kernel-bugs.osdl.org
->>           Reporter: onorua@gmail.com
->>         Regression: No
->>
->> I've faced with the situation when system stopped to process any request.
->> Further analysis showed that the load average was around 20, and was constantly
->> increasing (the normal LA for this system is 0.3-1).
->
-> Thanks for the report; sorry it fell through the cracks.
->
-> Is this problem reproducible?  If so, can you try to reproduce it on
-> v3.11?  Can you please attach a complete dmesg log and "lspci -vv" (as
-> root) output to the bugzilla?
->
-> The BUG_ON you're hitting is here, but I don't know what it means:
->
->     #ifdef CONFIG_GENERIC_HARDIRQS
->                 for (i = 0; i < nvec; i++)
->                         BUG_ON(irq_has_action(entry->irq + i));
->     #endif
 
-What's the status of this?  Is it still a problem?  Should we just
-close the bug as unreproducible?
 
-Bjorn
+> -----Original Message-----
+> From: David Rientjes [mailto:rientjes@google.com]
+> Sent: Friday, October 11, 2013 4:08 PM
+> To: Ingo Molnar; H. Peter Anvin; tglx@linutronix.de; H. Peter Anvin
+> Cc: KY Srinivasan; Olaf Hering; linux-kernel@vger.kernel.org; linux-tip-
+> commits@vger.kernel.org
+> Subject: [patch x86/hyperv] x86, hyperv: Fix build error
+> 
+> 9e7827b5ea4c ("x86, hyperv: Get the local APIC timer frequency from the
+> hypervisor") breaks the build with some configs because apic.h isn't
+> directly included:
+> 
+> arch/x86/kernel/cpu/mshyperv.c: In function 'ms_hyperv_init_platform':
+> arch/x86/kernel/cpu/mshyperv.c:90:3: error: 'lapic_timer_frequency' undeclared
+> (first use in this function)
+> arch/x86/kernel/cpu/mshyperv.c:90:3: note: each undeclared identifier is
+> reported only once for each function it appears in
+> 
+> Fix it by including asm/apic.h.
+
+Thank you. The issue was configuration related - local APIC was not configured. This has already been fixed.
+
+Regards.
+
+K. Y
+> 
+> Signed-off-by: David Rientjes <rientjes@google.com>
+> ---
+>  arch/x86/kernel/cpu/mshyperv.c | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/arch/x86/kernel/cpu/mshyperv.c b/arch/x86/kernel/cpu/mshyperv.c
+> --- a/arch/x86/kernel/cpu/mshyperv.c
+> +++ b/arch/x86/kernel/cpu/mshyperv.c
+> @@ -25,6 +25,7 @@
+>  #include <asm/idle.h>
+>  #include <asm/irq_regs.h>
+>  #include <asm/i8259.h>
+> +#include <asm/apic.h>
+> 
+>  struct ms_hyperv_info ms_hyperv;
+>  EXPORT_SYMBOL_GPL(ms_hyperv);
