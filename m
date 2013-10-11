@@ -1,42 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754092Ab3JKOSI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 10:18:08 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:48938 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751808Ab3JKOSG (ORCPT
+	id S1755570Ab3JKOTu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 10:19:50 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:22561 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751735Ab3JKOTt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 10:18:06 -0400
+	Fri, 11 Oct 2013 10:19:49 -0400
+From: Chuck Lever <chuck.lever@oracle.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-nfs@vger.kernel.org
+Subject: [PATCH] register_shrinker: shrinker->nr_deferred is never freed
+Date: Fri, 11 Oct 2013 10:19:47 -0400
+Message-Id: <20131011141946.17927.42942.stgit@nfsvm18.us.oracle.com>
+X-Mailer: git-send-email 1.8.3.1
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-In-Reply-To: <1380916902-23791-3-git-send-email-david.a.cohen@linux.intel.com>
-References: <1380916902-23791-1-git-send-email-david.a.cohen@linux.intel.com>
-	<1380916902-23791-3-git-send-email-david.a.cohen@linux.intel.com>
-Date: Fri, 11 Oct 2013 16:18:05 +0200
-Message-ID: <CACRpkdZw29XE4z7iw2=JQbLMvWfpoWYm+-cgLB-oM8GzwK7xxg@mail.gmail.com>
-Subject: Re: [PATCH 2/3] gpio: rename gpio-langwell to gpio-intel-mid
-From: Linus Walleij <linus.walleij@linaro.org>
-To: David Cohen <david.a.cohen@linux.intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 4, 2013 at 10:01 PM, David Cohen
-<david.a.cohen@linux.intel.com> wrote:
+kmemleak reports a leak after every mount-umount cycle:
 
-> gpio-langwell is a deprecated name. Despite the driver was made
-> initially for Langwell, it supports now other Intel Mid SoC's.
->
-> This patch does no change beside the file renaming with Kconfig/Makefile
-> update.
->
-> Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+unreferenced object 0xffff88006b339150 (size 8):
+  comm "mount.nfs", pid 752, jiffies 4294802777 (age 1515.620s)
+  hex dump (first 8 bytes):
+    00 00 00 00 00 00 00 00                          ........
+  backtrace:
+    [<ffffffff816a9509>] kmemleak_alloc+0x79/0xb0
+    [<ffffffff811a9031>] __kmalloc+0x1e1/0x380
+    [<ffffffff81164110>] register_shrinker+0x40/0x90
+    [<ffffffff811c8f10>] sget+0x680/0x6a0
+    [<ffffffffa026a71c>] nfs_fs_mount_common+0x7c/0x180 [nfs]
+    [<ffffffffa026a8e1>] nfs_xdev_mount+0xc1/0x100 [nfs]
+    [<ffffffff811c9c1b>] mount_fs+0x7b/0x1a0
+    [<ffffffff811e7b0a>] vfs_kern_mount+0x6a/0xf0
+    [<ffffffffa0275735>] nfs_do_submount+0xe5/0x140 [nfs]
+    [<ffffffffa02db6a6>] nfs4_submount+0x806/0x890 [nfsv4]
+    [<ffffffffa02758d2>] nfs_d_automount+0xb2/0x1b0 [nfs]
+    [<ffffffff811d0154>] follow_managed+0x1a4/0x300
+    [<ffffffff816b0533>] lookup_slow+0x7a/0xa9
+    [<ffffffff811d2373>] link_path_walk+0x243/0x8b0
+    [<ffffffff811d2a3b>] path_lookupat+0x5b/0x7c0
+    [<ffffffff811d31cb>] filename_lookup+0x2b/0xc0
 
-Are you aware of the git format-patch -M switch?
+Commit 1d3d4437 adds logic to kmalloc an array (nr_deferred) in
+register_shrinker(), but this array is not freed when the shrinker
+is released.
 
-Anyway, good idea, so patch applied.
+Signed-off-by: Chuck Lever <chuck.lever@oracle.com>
+---
+ mm/vmscan.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-Yours,
-Linus Walleij
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 53f2f82..eea668d 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -211,6 +211,7 @@ void unregister_shrinker(struct shrinker *shrinker)
+ 	down_write(&shrinker_rwsem);
+ 	list_del(&shrinker->list);
+ 	up_write(&shrinker_rwsem);
++	kfree(shrinker->nr_deferred);
+ }
+ EXPORT_SYMBOL(unregister_shrinker);
+ 
+
