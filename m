@@ -1,49 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757257Ab3JKIVn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 04:21:43 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:40384 "EHLO
+	id S1757296Ab3JKIXS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 04:23:18 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:40770 "EHLO
 	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752314Ab3JKIVj (ORCPT
+	with ESMTP id S1756328Ab3JKIXN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 04:21:39 -0400
-X-AuditID: cbfee691-b7f4a6d0000074fc-9d-5257b5075127
-From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-To: linux-iio@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        dianders@chromium.org, gregkh@linuxfoundation.org,
-        naveenkrishna.ch@gmail.com, lars@metafoo.de, tomasz.figa@gmail.com
-Subject: [PATCH v3] iio: exynos_adc: use wait_for_completion_timeout instead of
- interruptible
-Date: Fri, 11 Oct 2013 13:53:41 +0530
-Message-id: <1381479821-17276-1-git-send-email-ch.naveen@samsung.com>
-X-Mailer: git-send-email 1.7.10.4
-In-reply-to: <1365048389-6364-1-git-send-email-naveenkrishna.ch@gmail.com>
-References: <1365048389-6364-1-git-send-email-naveenkrishna.ch@gmail.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrJLMWRmVeSWpSXmKPExsWyRsSkSpd9a3iQwcxWLouzyw6yWTQvXs9m
-	sWTyfFaLeUfesVhc3jWHzWLG+X1MFou2/We2WLXrD6MDh8fshossHjtn3WX32D93DbvHkjeH
-	WD0+b5ILYI3isklJzcksSy3St0vgyji+ej9TwWSFirnbjrI0MK6T6mLk5JAQMJE4emcBE4Qt
-	JnHh3nq2LkYuDiGBpYwSDRPusMIUfWjoZQSxhQSmM0pcvs8OUdTDJPHgzhewBJuAmcTBRauB
-	EhwcIgKyEjO79UBqmAX2MUpM2biVBaRGWCBeYs/G1cwgNouAqsSvdztYQOp5BVwldr4LhNil
-	KNH9bAIbiM0p4CVx/N80qL2eEiebLrND1CxjlzhyVwRijIDEt8mHwMZIAK3ddIAZokRS4uCK
-	GywTGIUXMDKsYhRNLUguKE5KLzLVK07MLS7NS9dLzs/dxAgM9tP/nk3cwXj/gPUhxmSgcROZ
-	pUST84HRklcSb2hsZmRhamJqbGRuaUaasJI4r3qLdaCQQHpiSWp2ampBalF8UWlOavEhRiYO
-	TqkGxl22xzkjU/eWTBGQOKvoNSNMpif1AW9wwb8YsQO/Xm+3yBLLdnmZbu43Y+P3W+sL/1ek
-	fHb+yvor1jFT0uJafWJYqFp64fXey+27DKUN4pyWeRuUs/IsMD2wUNcvx9Xr7xc7rquu+05w
-	zFBdn/zx406Jsxa/Hx87o259dHPDnJyEHc7n6/+vUWIpzkg01GIuKk4EAG8RK/WMAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGIsWRmVeSWpSXmKPExsVy+t9jQV32reFBBu1lFmeXHWSzaF68ns1i
-	yeT5rBbzjrxjsbi8aw6bxYzz+5gsFm37z2yxatcfRgcOj9kNF1k8ds66y+6xf+4ado8lbw6x
-	enzeJBfAGtXAaJORmpiSWqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6Dr
-	lpkDdIuSQlliTilQKCCxuFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCGMeP46v1MBZMVKuZu
-	O8rSwLhOqouRk0NCwETiQ0MvI4QtJnHh3no2EFtIYDqjxOX77F2MXEB2D5PEgztfwIrYBMwk
-	Di5aDZTg4BARkJWY2a0HUsMssI9RYsrGrSwgNcIC8RJ7Nq5mBrFZBFQlfr3bwQJSzyvgKrHz
-	XSDELkWJ7mcTwHZxCnhJHP83jRFir6fEyabL7BMYeRcwMqxiFE0tSC4oTkrPNdQrTswtLs1L
-	10vOz93ECI6lZ1I7GFc2WBxiFOBgVOLhffA3LEiINbGsuDL3EKMEB7OSCO+++eFBQrwpiZVV
-	qUX58UWlOanFhxiTgY6ayCwlmpwPjPO8knhDYxNzU2NTSxMLEzNL0oSVxHkPtFoHCgmkJ5ak
-	ZqemFqQWwWxh4uCUamBUujhj8Xa12mcX32lctJylFnioiy0rp0U5qMk1d2Z9T+GZOVMu1e+s
-	TJo828ryx6/4W5mORxdYRU1+tFv4tJKWqNLk+dwa1z5rbz7jt/xewT/XvColh9u7t7VXnohU
-	KBPpDo8RU9Zs+XZx1izf6btvdPI+vr5BYvOHLaEBBZrXzz3+vmqxXnaWEktxRqKhFnNRcSIA
-	pU8Y1+kCAAA=
+	Fri, 11 Oct 2013 04:23:13 -0400
+X-AuditID: cbfee68d-b7fe86d0000077a5-3c-5257b5709616
+Message-id: <5257B576.3060800@samsung.com>
+Date: Fri, 11 Oct 2013 17:23:18 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: Laxman Dewangan <ldewangan@nvidia.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "rob@landley.net" <rob@landley.net>,
+        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH v6] extcon: palmas: Added a new compatible type
+ *ti,palmas-usb-vid*
+References: <1381408647-24653-1-git-send-email-kishon@ti.com>
+ <5256A773.6060807@nvidia.com> <5257977C.1030108@ti.com>
+ <5257A36D.80902@samsung.com> <5257AE43.4020902@ti.com>
+In-reply-to: <5257AE43.4020902@ti.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrFIsWRmVeSWpSXmKPExsWyRsSkULdga3iQwbX3mhbzj5xjtejf4mJx
+	7tVKRosLT3vYLJbuW81isbBtCYvF5V1zgNzrF5ksbjeuYLOYMH0ti8XhFQeYLNa9nM5icWN6
+	C6vFq4NtLA58HmvmrWH0WPD5CrvHyuVf2DxerZ7J6tHb/I7No2/LKkaPqVP+Mnocv7GdyePz
+	JjmPjXNDA7iiuGxSUnMyy1KL9O0SuDLO/JvDVLCcs6L3zFfWBsY97F2MnBwSAiYSMz8uZ4aw
+	xSQu3FvP1sXIxSEksJRRYuuDtYwwRe0H5rFCJKYzSsy6v5AFwnnFKPH99DoWkCpeAS2JVQ8e
+	soHYLAKqElt/9oDZbEDx/S9ugNmiAmESK6dfgaoXlPgx+R6YLQJUc3rnD2aQocwCi1gl9n6f
+	DXaTsECkxOR9M9khtm1glPjz+yZQBwcHp4CaxLMVQiA1zAI6Evtbp7FB2PISm9e8BRskIbCU
+	Q2LRnfnMEBcJSHybfAisV0JAVmLTAaifJSUOrrjBMoFRbBaSm2YhGTsLydgFjMyrGEVTC5IL
+	ipPSiwz1ihNzi0vz0vWS83M3MQLj/fS/Z707GG8fsD7EmAy0ciKzlGhyPjBd5JXEGxqbGVmY
+	mpgaG5lbmpEmrCTOq9ZiHSgkkJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qB8R6voPiet1tPtHXc
+	WJS1mPHwtABZ5Y+FFcc2u7iyFcgVTVzw79a8ZVeS3DufijhwTeO6cKX9W+8ZtkdJdqGP4oql
+	FYK4xH52+lSIqey673/j6QXP+D3eF6TrfOK21e64UOKkKD7FaMH90NDJG2drTf/Tls7kqfzX
+	9+0xoYaMw8wHp9deYAtwUWIpzkg01GIuKk4EAARR3M4NAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOKsWRmVeSWpSXmKPExsVy+t9jQd2CreFBBgcXKVrMP3KO1aJ/i4vF
+	uVcrGS0uPO1hs1i6bzWLxcK2JSwWl3fNAXKvX2SyuN24gs1iwvS1LBaHVxxgslj3cjqLxY3p
+	LawWrw62sTjweayZt4bRY8HnK+weK5d/YfN4tXomq0dv8zs2j74tqxg9pk75y+hx/MZ2Jo/P
+	m+Q8Ns4NDeCKamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ
+	0HXLzAH6QEmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMOYcebfHKaC5ZwV
+	vWe+sjYw7mHvYuTkkBAwkWg/MI8VwhaTuHBvPVsXIxeHkMB0RolZ9xeyQDivGCW+n17HAlLF
+	K6AlserBQzYQm0VAVWLrzx4wmw0ovv/FDTBbVCBMYuX0K1D1ghI/Jt8Ds0WAak7v/MEMMpRZ
+	YBGrxN7vs5lBEsICkRKT981kh9i2gVHiz++bQB0cHJwCahLPVgiB1DAL6Ejsb53GBmHLS2xe
+	85Z5AqPALCQ7ZiEpm4WkbAEj8ypG0dSC5ILipPRcI73ixNzi0rx0veT83E2M4GTyTHoH46oG
+	i0OMAhyMSjy8FgzhQUKsiWXFlbmHGCU4mJVEePfNBwrxpiRWVqUW5ccXleakFh9iTAYGwURm
+	KdHkfGCiyyuJNzQ2MTOyNDI3tDAyNidNWEmc92CrdaCQQHpiSWp2ampBahHMFiYOTqkGRq7I
+	3s+FLjtmzri8di+zpunT0E3Jn18+3ng9+t0+/qkZz37/b73EenK6T3H3uo4sTb78KW9v+IS+
+	M/i1N6X6TUK24t7fT+Lvz/DUZ23WMNdj3Se8/9C85yfETv2Xvl+5rbfi8NXDGmsOmWhZbfpd
+	svn0Z009r43WH4wUH2o4pN3gnyo17WGNdqcSS3FGoqEWc1FxIgBFHOyeagMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -51,146 +70,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch does the following
-1. use wait_for_completion_timeout instead of
-   wait_for_completion_interruptible_timeout
-2. Reset software if a timeout happens.
-3. Also reduce the timeout to 100milli secs
+On 10/11/2013 04:52 PM, Kishon Vijay Abraham I wrote:
+> Hi Chanwoo,
+> 
+> On Friday 11 October 2013 12:36 PM, Chanwoo Choi wrote:
+>> On 10/11/2013 03:15 PM, Kishon Vijay Abraham I wrote:
+>>> On Thursday 10 October 2013 06:41 PM, Laxman Dewangan wrote:
+>>>> On Thursday 10 October 2013 06:07 PM, Kishon Vijay Abraham I wrote:
+>>>>> The Palmas device contains only a USB VBUS-ID detector, so added a
+>>>>> compatible type *ti,palmas-usb-vid*. Didn't remove the existing compatible
+>>>>> types for backward compatibility.
+>>>>>
+>>>> I dont have much issue on this nomenclature but just second thought:
+>>>>
+>>>> The Palmas USB module is capable of detection VBUS, ID-GND, ID-RA, ID-RB, ID-RC
+>>>> and ID-FLOAT as per BC1.2.
+>>>> This sub-module only detect the cable, does nothing more than this.
+>>>> In this case, should we say "ti,palmas-usb-extcon"?
+>>>> Again extcon is linux specific terminology and this can be defer.
+>>>
+>>> I don't mind either way. Chanwoo?
+>>
+>> The EXTCON is subsystem name. I don't prefer to use 'extcon' word on device name.
+>> I agree Kishon opinion.
+> 
+> Cool.. can you this patch as-is?
+> 
 
-Note: submitted for review at https://patchwork.kernel.org/patch/2279591/
+OK, applied it.
 
-Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-Cc: Doug Anderson <dianders@chromium.org>
-Cc: Lars-Peter Clausen <lars@metafoo.de>
----
-Changes since v1:
-As per discussion at
-http://marc.info/?l=linux-kernel&m=136517637228869&w=3
-
-This patch does the following
-1. use wait_for_completion_timeout instead of
-   wait_for_completion_interruptible_timeout
-2. Reset software if a timeout happens.
-3. Also reduce the timeout to 100milli secs
-
-Changes since v2:
-None.
-Rebased and reposting.
-
----
- drivers/iio/adc/exynos_adc.c |   66 +++++++++++++++++++++++-------------------
- 1 file changed, 36 insertions(+), 30 deletions(-)
-
-diff --git a/drivers/iio/adc/exynos_adc.c b/drivers/iio/adc/exynos_adc.c
-index d25b262..f18ed7e 100644
---- a/drivers/iio/adc/exynos_adc.c
-+++ b/drivers/iio/adc/exynos_adc.c
-@@ -82,7 +82,7 @@ enum adc_version {
- #define ADC_CON_EN_START	(1u << 0)
- #define ADC_DATX_MASK		0xFFF
- 
--#define EXYNOS_ADC_TIMEOUT	(msecs_to_jiffies(1000))
-+#define EXYNOS_ADC_TIMEOUT	(msecs_to_jiffies(100))
- 
- struct exynos_adc {
- 	void __iomem		*regs;
-@@ -112,6 +112,30 @@ static inline unsigned int exynos_adc_get_version(struct platform_device *pdev)
- 	return (unsigned int)match->data;
- }
- 
-+static void exynos_adc_hw_init(struct exynos_adc *info)
-+{
-+	u32 con1, con2;
-+
-+	if (info->version == ADC_V2) {
-+		con1 = ADC_V2_CON1_SOFT_RESET;
-+		writel(con1, ADC_V2_CON1(info->regs));
-+
-+		con2 = ADC_V2_CON2_OSEL | ADC_V2_CON2_ESEL |
-+			ADC_V2_CON2_HIGHF | ADC_V2_CON2_C_TIME(0);
-+		writel(con2, ADC_V2_CON2(info->regs));
-+
-+		/* Enable interrupts */
-+		writel(1, ADC_V2_INT_EN(info->regs));
-+	} else {
-+		/* set default prescaler values and Enable prescaler */
-+		con1 =  ADC_V1_CON_PRSCLV(49) | ADC_V1_CON_PRSCEN;
-+
-+		/* Enable 12-bit ADC resolution */
-+		con1 |= ADC_V1_CON_RES;
-+		writel(con1, ADC_V1_CON(info->regs));
-+	}
-+}
-+
- static int exynos_read_raw(struct iio_dev *indio_dev,
- 				struct iio_chan_spec const *chan,
- 				int *val,
-@@ -121,6 +145,7 @@ static int exynos_read_raw(struct iio_dev *indio_dev,
- 	struct exynos_adc *info = iio_priv(indio_dev);
- 	unsigned long timeout;
- 	u32 con1, con2;
-+	int ret;
- 
- 	if (mask != IIO_CHAN_INFO_RAW)
- 		return -EINVAL;
-@@ -145,16 +170,21 @@ static int exynos_read_raw(struct iio_dev *indio_dev,
- 				ADC_V1_CON(info->regs));
- 	}
- 
--	timeout = wait_for_completion_interruptible_timeout
-+	timeout = wait_for_completion_timeout
- 			(&info->completion, EXYNOS_ADC_TIMEOUT);
-+	if (timeout == 0) {
-+		dev_warn(&indio_dev->dev, "Conversion timed out reseting\n");
-+		exynos_adc_hw_init(info);
-+		ret = -ETIMEDOUT;
-+	} else {
-+		*val = info->value;
-+		ret = IIO_VAL_INT;
-+	}
- 	*val = info->value;
- 
- 	mutex_unlock(&indio_dev->mlock);
- 
--	if (timeout == 0)
--		return -ETIMEDOUT;
--
--	return IIO_VAL_INT;
-+	return ret;
- }
- 
- static irqreturn_t exynos_adc_isr(int irq, void *dev_id)
-@@ -226,30 +256,6 @@ static int exynos_adc_remove_devices(struct device *dev, void *c)
- 	return 0;
- }
- 
--static void exynos_adc_hw_init(struct exynos_adc *info)
--{
--	u32 con1, con2;
--
--	if (info->version == ADC_V2) {
--		con1 = ADC_V2_CON1_SOFT_RESET;
--		writel(con1, ADC_V2_CON1(info->regs));
--
--		con2 = ADC_V2_CON2_OSEL | ADC_V2_CON2_ESEL |
--			ADC_V2_CON2_HIGHF | ADC_V2_CON2_C_TIME(0);
--		writel(con2, ADC_V2_CON2(info->regs));
--
--		/* Enable interrupts */
--		writel(1, ADC_V2_INT_EN(info->regs));
--	} else {
--		/* set default prescaler values and Enable prescaler */
--		con1 =  ADC_V1_CON_PRSCLV(49) | ADC_V1_CON_PRSCEN;
--
--		/* Enable 12-bit ADC resolution */
--		con1 |= ADC_V1_CON_RES;
--		writel(con1, ADC_V1_CON(info->regs));
--	}
--}
--
- static int exynos_adc_probe(struct platform_device *pdev)
- {
- 	struct exynos_adc *info = NULL;
--- 
-1.7.10.4
+Thanks,
+Chanwoo Choi
 
