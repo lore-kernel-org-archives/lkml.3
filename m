@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757202Ab3JKTfu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:35:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45157 "EHLO
+	id S1756783Ab3JKVFC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 17:05:02 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45183 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756805Ab3JKTfq (ORCPT
+	with ESMTP id S1757193Ab3JKTfu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:35:46 -0400
+	Fri, 11 Oct 2013 15:35:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kirill Tkhai <tkhai@yandex.ru>, David Miller <davem@davemloft.net>
-Subject: [ 27/39] sparc64: Fix not SRAed %o5 in 32-bit traced syscall
-Date: Fri, 11 Oct 2013 12:35:11 -0700
-Message-Id: <20131011193213.822214528@linuxfoundation.org>
+        Ian Abbott <abbotti@mev.co.uk>
+Subject: [ 33/39] staging: comedi: ni_65xx: (bug fix) confine insn_bits to one subdevice
+Date: Fri, 11 Oct 2013 12:35:17 -0700
+Message-Id: <20131011193214.476449348@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193210.843963685@linuxfoundation.org>
 References: <20131011193210.843963685@linuxfoundation.org>
@@ -26,52 +26,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kirill Tkhai <tkhai@yandex.ru>
+From: Ian Abbott <abbotti@mev.co.uk>
 
-[ Upstream commit ab2abda6377723e0d5fbbfe5f5aa16a5523344d1 ]
+commit 677a31565692d596ef42ea589b53ba289abf4713 upstream.
 
-(From v1 to v2: changed comment)
+The `insn_bits` handler `ni_65xx_dio_insn_bits()` has a `for` loop that
+currently writes (optionally) and reads back up to 5 "ports" consisting
+of 8 channels each.  It reads up to 32 1-bit channels but can only read
+and write a whole port at once - it needs to handle up to 5 ports as the
+first channel it reads might not be aligned on a port boundary.  It
+breaks out of the loop early if the next port it handles is beyond the
+final port on the card.  It also breaks out early on the 5th port in the
+loop if the first channel was aligned.  Unfortunately, it doesn't check
+that the current port it is dealing with belongs to the comedi subdevice
+the `insn_bits` handler is acting on.  That's a bug.
 
-On the way linux_sparc_syscall32->linux_syscall_trace32->goto 2f,
-register %o5 doesn't clear its second 32-bit.
+Redo the `for` loop to terminate after the final port belonging to the
+subdevice, changing the loop variable in the process to simplify things
+a bit.  The `for` loop could now try and handle more than 5 ports if the
+subdevice has more than 40 channels, but the test `if (bitshift >= 32)`
+ensures it will break out early after 4 or 5 ports (depending on whether
+the first channel is aligned on a port boundary).  (`bitshift` will be
+between -7 and 7 inclusive on the first iteration, increasing by 8 for
+each subsequent operation.)
 
-Fix that.
-
-Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
-CC: David Miller <davem@davemloft.net>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- arch/sparc/kernel/syscalls.S |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/arch/sparc/kernel/syscalls.S
-+++ b/arch/sparc/kernel/syscalls.S
-@@ -147,7 +147,7 @@ linux_syscall_trace32:
- 	srl	%i4, 0, %o4
- 	srl	%i1, 0, %o1
- 	srl	%i2, 0, %o2
--	ba,pt	%xcc, 2f
-+	ba,pt	%xcc, 5f
- 	 srl	%i3, 0, %o3
- 
- linux_syscall_trace:
-@@ -177,13 +177,13 @@ linux_sparc_syscall32:
- 	srl	%i1, 0, %o1				! IEU0	Group
- 	ldx	[%g6 + TI_FLAGS], %l0		! Load
- 
--	srl	%i5, 0, %o5				! IEU1
-+	srl	%i3, 0, %o3				! IEU0
- 	srl	%i2, 0, %o2				! IEU0	Group
- 	andcc	%l0, (_TIF_SYSCALL_TRACE|_TIF_SECCOMP|_TIF_SYSCALL_AUDIT|_TIF_SYSCALL_TRACEPOINT), %g0
- 	bne,pn	%icc, linux_syscall_trace32		! CTI
- 	 mov	%i0, %l5				! IEU1
--	call	%l7					! CTI	Group brk forced
--	 srl	%i3, 0, %o3				! IEU0
-+5:	call	%l7					! CTI	Group brk forced
-+	 srl	%i5, 0, %o5				! IEU1
- 	ba,a,pt	%xcc, 3f
- 
- 	/* Linux native system calls enter here... */
+---
+ drivers/staging/comedi/drivers/ni_65xx.c |   26 +++++++++++---------------
+ 1 file changed, 11 insertions(+), 15 deletions(-)
+
+--- a/drivers/staging/comedi/drivers/ni_65xx.c
++++ b/drivers/staging/comedi/drivers/ni_65xx.c
+@@ -411,29 +411,25 @@ static int ni_65xx_dio_insn_bits(struct
+ 				 struct comedi_subdevice *s,
+ 				 struct comedi_insn *insn, unsigned int *data)
+ {
+-	unsigned base_bitfield_channel;
+-	const unsigned max_ports_per_bitfield = 5;
++	int base_bitfield_channel;
+ 	unsigned read_bits = 0;
+-	unsigned j;
++	int last_port_offset = ni_65xx_port_by_channel(s->n_chan - 1);
++	int port_offset;
++
+ 	if (insn->n != 2)
+ 		return -EINVAL;
+ 	base_bitfield_channel = CR_CHAN(insn->chanspec);
+-	for (j = 0; j < max_ports_per_bitfield; ++j) {
+-		const unsigned port_offset =
+-			ni_65xx_port_by_channel(base_bitfield_channel) + j;
+-		const unsigned port =
+-			sprivate(s)->base_port + port_offset;
+-		unsigned base_port_channel;
++	for (port_offset = ni_65xx_port_by_channel(base_bitfield_channel);
++	     port_offset <= last_port_offset; port_offset++) {
++		unsigned port = sprivate(s)->base_port + port_offset;
++		int base_port_channel = port_offset * ni_65xx_channels_per_port;
+ 		unsigned port_mask, port_data, port_read_bits;
+-		int bitshift;
+-		if (port >= ni_65xx_total_num_ports(board(dev)))
++		int bitshift = base_port_channel - base_bitfield_channel;
++
++		if (bitshift >= 32)
+ 			break;
+-		base_port_channel = port_offset * ni_65xx_channels_per_port;
+ 		port_mask = data[0];
+ 		port_data = data[1];
+-		bitshift = base_port_channel - base_bitfield_channel;
+-		if (bitshift >= 32 || bitshift <= -32)
+-			break;
+ 		if (bitshift > 0) {
+ 			port_mask >>= bitshift;
+ 			port_data >>= bitshift;
 
 
