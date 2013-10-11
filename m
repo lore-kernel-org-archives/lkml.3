@@ -1,220 +1,281 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754904Ab3JKCUS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 22:20:18 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:44193 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752134Ab3JKCUQ (ORCPT
+	id S1755804Ab3JKCVc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 22:21:32 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:28481 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752044Ab3JKCVa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 22:20:16 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Joe Perches <joe@perches.com>
-Cc: Ryan Mallon <rmallon@gmail.com>, Andrew Morton <akpm@linux-foundation.org>,
-        eldad@fogrefinery.com, Jiri Kosina <jkosina@suse.cz>,
-        jgunthorpe@obsidianresearch.com,
-        Dan Rosenberg <dan.j.rosenberg@gmail.com>,
-        Kees Cook <keescook@chromium.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        George Spelvin <linux@horizon.com>,
-        "kernel-hardening\@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <5255D023.2030907@gmail.com> <1381356014.2050.28.camel@joe-AO722>
-	<5255D2FD.6050705@gmail.com> <1381356861.2050.33.camel@joe-AO722>
-	<5255D7D4.8050204@gmail.com> <1381358030.2050.36.camel@joe-AO722>
-	<5255DBD8.30005@gmail.com> <1381360187.2050.44.camel@joe-AO722>
-Date: Thu, 10 Oct 2013 19:20:00 -0700
-In-Reply-To: <1381360187.2050.44.camel@joe-AO722> (Joe Perches's message of
-	"Wed, 09 Oct 2013 16:09:47 -0700")
-Message-ID: <87pprck0q7.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Thu, 10 Oct 2013 22:21:30 -0400
+X-IronPort-AV: E=Sophos;i="4.93,471,1378828800"; 
+   d="scan'208";a="8719501"
+Message-ID: <52575F65.4050904@cn.fujitsu.com>
+Date: Fri, 11 Oct 2013 10:16:05 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1+1pRU8ff6TeGoXSIS4qaqWb9USqfG4SIQ=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
-	*      [score: 0.0848]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.5 XM_Body_Dirty_Words Contains a dirty word
-X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Joe Perches <joe@perches.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH v3a] vsprintf: Check real user/group id for %pK
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+To: Jin Xu <jinuxstyle@live.com>
+CC: "yuan.mark.zhong@samsung.com" <yuan.mark.zhong@samsung.com>,
+        Jaegeuk Kim <jaegeuk.kim@samsung.com>,
+        "linux-f2fs-devel@lists.sourceforge.net" 
+	<linux-f2fs-devel@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        shu tan <shu.tan@samsung.com>
+Subject: Re: [f2fs-dev] [PATCH v2] f2fs: avoid congestion_wait when do_checkpoint
+ for better performance
+References: <30722427.272521381231813403.JavaMail.weblogic@epml26>,<5254D5B9.1040803@cn.fujitsu.com> <BLU175-W48D340F1A4D0966D8895D0B41E0@phx.gbl>,<52566149.1030702@cn.fujitsu.com> <BLU175-W378B020AC54C62046132AAB41E0@phx.gbl>
+In-Reply-To: <BLU175-W378B020AC54C62046132AAB41E0@phx.gbl>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/10/11 10:19:17,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/10/11 10:19:18
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joe Perches <joe@perches.com> writes:
+Hi Jin,
+On 10/11/2013 07:54 AM, Jin Xu wrote:
 
-> Some setuid binaries will allow reading of files which have read
-> permission by the real user id. This is problematic with files which
-> use %pK because the file access permission is checked at open() time,
-> but the kptr_restrict setting is checked at read() time. If a setuid
-> binary opens a %pK file as an unprivileged user, and then elevates
-> permissions before reading the file, then kernel pointer values may be
-> leaked.
->
-> This happens for example with the setuid pppd application on Ubuntu
-> 12.04:
->
->   $ head -1 /proc/kallsyms
->   00000000 T startup_32
->
->   $ pppd file /proc/kallsyms
->   pppd: In file /proc/kallsyms: unrecognized option 'c1000000'
->
-> This will only leak the pointer value from the first line, but other
-> setuid binaries may leak more information.
->
-> Fix this by adding a check that in addition to the current process
-> having CAP_SYSLOG, that effective user and group ids are equal to the
-> real ids. If a setuid binary reads the contents of a file which uses
-> %pK then the pointer values will be printed as NULL if the real user
-> is unprivileged.
->
-> Update the sysctl documentation to reflect the changes, and also
-> correct the documentation to state the kptr_restrict=0 is the default.
+>> Date: Thu, 10 Oct 2013 16:11:53 +0800
+>> From: guz.fnst@cn.fujitsu.com
+>> To: jinuxstyle@live.com
+>> CC: yuan.mark.zhong@samsung.com; jaegeuk.kim@samsung.com; linux-f2fs-devel@lists.sourceforge.net; linux-kernel@vger.kernel.org; linux-fsdevel@vger.kernel.org; shu.tan@samsung.com
+>> Subject: Re: [f2fs-dev] [PATCH v2] f2fs: avoid congestion_wait when do_checkpoint for better performance
+>>
+>> Hi Jin,
+>>
+>> On 10/10/2013 04:09 PM, Jin Xu wrote:
+>>
+>> > Hi Gu,
+>> >
+>> > I have a comment below.
+>> >
+>> >> Date: Wed, 9 Oct 2013 12:04:09 +0800
+>> >> From: guz.fnst@cn.fujitsu.com
+>> >> To: yuan.mark.zhong@samsung.com
+>> >> CC: jaegeuk.kim@samsung.com; linux-f2fs-devel@lists.sourceforge.net; linux-kernel@vger.kernel.org; linux-fsdevel@vger.kernel.org; shu.tan@samsung.com
+>> >> Subject: Re: [f2fs-dev] [PATCH v2] f2fs: avoid congestion_wait when do_checkpoint for better performance
+>> >>
+>> >> Hi Yuan,
+>> >> On 10/08/2013 07:30 PM, Yuan Zhong wrote:
+>> >>
+>> > ...
+>> >>
+>> >> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+>> >> ---
+>> >> fs/f2fs/checkpoint.c | 11 +++++++++--
+>> >> fs/f2fs/f2fs.h | 1 +
+>> >> fs/f2fs/segment.c | 4 ++++
+>> >> 3 files changed, 14 insertions(+), 2 deletions(-)
+>> >>
+>> >> diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
+>> >> index d808827..2a5999d 100644
+>> >> --- a/fs/f2fs/checkpoint.c
+>> >> +++ b/fs/f2fs/checkpoint.c
+>> >> @@ -757,8 +757,15 @@ static void do_checkpoint(struct f2fs_sb_info *sbi, bool is_umount)
+>> >> f2fs_put_page(cp_page, 1);
+>> >>
+>> >> /* wait for previous submitted node/meta pages writeback */
+>> >> - while (get_pages(sbi, F2FS_WRITEBACK))
+>> >> - congestion_wait(BLK_RW_ASYNC, HZ / 50);
+>> >> + sbi->cp_task = current;
+>> >> + while (get_pages(sbi, F2FS_WRITEBACK)) {
+>> >> + set_current_state(TASK_UNINTERRUPTIBLE);
+>> >> + if (!get_pages(sbi, F2FS_WRITEBACK))
+>> >> + break;
+>> >> + io_schedule();
+>> >> + }
+>> >> + __set_current_state(TASK_RUNNING);
+>> >> + sbi->cp_task = NULL;
+>> >>
+>> >> filemap_fdatawait_range(sbi->node_inode->i_mapping, 0, LONG_MAX);
+>> >> filemap_fdatawait_range(sbi->meta_inode->i_mapping, 0, LONG_MAX);
+>> >> diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+>> >> index a955a59..408ace7 100644
+>> >> --- a/fs/f2fs/f2fs.h
+>> >> +++ b/fs/f2fs/f2fs.h
+>> >> @@ -365,6 +365,7 @@ struct f2fs_sb_info {
+>> >> struct mutex writepages; /* mutex for writepages() */
+>> >> int por_doing; /* recovery is doing or not */
+>> >> int on_build_free_nids; /* build_free_nids is doing */
+>> >> + struct task_struct *cp_task; /* checkpoint task */
+>> >>
+>> >> /* for orphan inode management */
+>> >> struct list_head orphan_inode_list; /* orphan inode list */
+>> >> diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+>> >> index bd79bbe..3b20359 100644
+>> >> --- a/fs/f2fs/segment.c
+>> >> +++ b/fs/f2fs/segment.c
+>> >> @@ -597,6 +597,10 @@ static void f2fs_end_io_write(struct bio *bio, int err)
+>> >>
+>> >> if (p->is_sync)
+>> >> complete(p->wait);
+>> >> +
+>> >> + if (!get_pages(p->sbi, F2FS_WRITEBACK) && p->sbi->cp_task)
+>> >> + wake_up_process(p->sbi->cp_task);
+>> >
+>> > There is a risk of dereferencing a NULL pointer because here simply comparing the
+>> > cp_task against NULL is not enough to avoid race in multi-thread environment.
+>> > Another thread could have assigned it to NULL in the window between the comparison
+>> > and waking up.
+>>
+>> Can not be that, checkpoint routine is always singleton and protected by cp_mutex and cp_rwsem.
+>> 
+> 
+> The race could happen like this for example:
+> On a SMP environment, thread 1 wakes up the checkpoint thread, then
+> thread 2 comes to the f2fs_end_io_write, compared the cp_task as not NULL,
+> but at the same time, the checkpoint thread just assigned the cp_task to NULL.
+> When thread 2 gets to the wake_up_process, dereferencing to NULL pointer
+> happens.
 
-Sigh.  This is all wrong.  The only correct thing to test is
-file->f_cred.  Aka the capabilities of the program that opened the
-file.
+The case means that two or more IO are going on. If thread 1 wake up checkpoint, it'll check
+get_pages(p->sbi, F2FS_WRITEBACK) before going down to assign the cp_task to NULL, so when
+thread 2 gets to the wake_up_process the cp_task is still valid. 
+The "while (get_pages(sbi, F2FS_WRITEBACK))" loop is used to avoid this issue.
 
-Which means that the interface to %pK in the case of kptr_restrict is
-broken as it has no way to be passed the information it needs to make
-a sensible decision.
+Thanks,
+Gu
 
-So if you all are going to make a great big fuss and clutter up my inbox
-can you please figure out how to implement kptr_restrict in a non-buggy
-way?
+> 
+> Jin
+> 
+>> Thanks,
+>> Gu 
+>>
+>> >
+>> > Regards,
+>> > Jin
+>> >> +
+>> >> kfree(p);
+>> >> bio_put(bio);
+>> >> }
+>> >> --
+>> >> 1.7.7
+>> >>
+>> >> Regards,
+>> >> Gu
+>> >>
+>> >> >
+>> >> >
+>> >> >>> This is a problem here, especially, when sync a large number of small files or dirs.
+>> >> >>> In order to avoid this, a wait_list is introduced,
+>> >> >>> the checkpoint thread will be dropped into the wait_list if the pages have not been written back,
+>> >> >>> and will be waked up by contrast.
+>> >> >
+>> >> >> Please pay some attention to the mail form, this mail is out of format in my mail client.
+>> >> >
+>> >> >> Regards,
+>> >> >> Gu
+>> >> >
+>> >> > Regards,
+>> >> > Yuan
+>> >> >
+>> >> >>>
+>> >> >>> Signed-off-by: Yuan Zhong <yuan.mark.zhong@samsung.com>
+>> >> >>> ---
+>> >> >>> fs/f2fs/checkpoint.c | 3 +--
+>> >> >>> fs/f2fs/f2fs.h | 19 +++++++++++++++++++
+>> >> >>> fs/f2fs/segment.c | 1 +
+>> >> >>> fs/f2fs/super.c | 1 +
+>> >> >>> 4 files changed, 22 insertions(+), 2 deletions(-)
+>> >> >>>
+>> >> >>> diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
+>> >> >>> index ca39442..5d69ae0 100644
+>> >> >>> --- a/fs/f2fs/checkpoint.c
+>> >> >>> +++ b/fs/f2fs/checkpoint.c
+>> >> >>> @@ -758,8 +758,7 @@ static void do_checkpoint(struct f2fs_sb_info *sbi, bool is_umount)
+>> >> >>> f2fs_put_page(cp_page, 1);
+>> >> >>>
+>> >> >>> /* wait for previous submitted node/meta pages writeback */
+>> >> >>> - while (get_pages(sbi, F2FS_WRITEBACK))
+>> >> >>> - congestion_wait(BLK_RW_ASYNC, HZ / 50);
+>> >> >>> + f2fs_writeback_wait(sbi);
+>> >> >>>
+>> >> >>> filemap_fdatawait_range(sbi->node_inode->i_mapping, 0, LONG_MAX);
+>> >> >>> filemap_fdatawait_range(sbi->meta_inode->i_mapping, 0, LONG_MAX);
+>> >> >>> diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+>> >> >>> index 7fd99d8..4b0d70e 100644
+>> >> >>> --- a/fs/f2fs/f2fs.h
+>> >> >>> +++ b/fs/f2fs/f2fs.h
+>> >> >>> @@ -18,6 +18,8 @@
+>> >> >>> #include <linux/crc32.h>
+>> >> >>> #include <linux/magic.h>
+>> >> >>> #include <linux/kobject.h>
+>> >> >>> +#include <linux/wait.h>
+>> >> >>> +#include <linux/sched.h>
+>> >> >>>
+>> >> >>> /*
+>> >> >>> * For mount options
+>> >> >>> @@ -368,6 +370,7 @@ struct f2fs_sb_info {
+>> >> >>> struct mutex fs_lock[NR_GLOBAL_LOCKS]; /* blocking FS operations */
+>> >> >>> struct mutex node_write; /* locking node writes */
+>> >> >>> struct mutex writepages; /* mutex for writepages() */
+>> >> >>> + wait_queue_head_t writeback_wqh; /* wait_queue for writeback */
+>> >> >>> unsigned char next_lock_num; /* round-robin global locks */
+>> >> >>> int por_doing; /* recovery is doing or not */
+>> >> >>> int on_build_free_nids; /* build_free_nids is doing */
+>> >> >>> @@ -961,6 +964,22 @@ static inline int f2fs_readonly(struct super_block *sb)
+>> >> >>> return sb->s_flags & MS_RDONLY;
+>> >> >>> }
+>> >> >>>
+>> >> >>> +static inline void f2fs_writeback_wait(struct f2fs_sb_info *sbi)
+>> >> >>> +{
+>> >> >>> + DEFINE_WAIT(wait);
+>> >> >>> +
+>> >> >>> + prepare_to_wait(&sbi->writeback_wqh, &wait, TASK_UNINTERRUPTIBLE);
+>> >> >>> + if (get_pages(sbi, F2FS_WRITEBACK))
+>> >> >>> + io_schedule();
+>> >> >>> + finish_wait(&sbi->writeback_wqh, &wait);
+>> >> >>> +}
+>> >> >>> +
+>> >> >>> +static inline void f2fs_writeback_wake(struct f2fs_sb_info *sbi)
+>> >> >>> +{
+>> >> >>> + if (!get_pages(sbi, F2FS_WRITEBACK))
+>> >> >>> + wake_up_all(&sbi->writeback_wqh);
+>> >> >>> +}
+>> >> >>> +
+>> >> >>> /*
+>> >> >>> * file.c
+>> >> >>> */
+>> >> >>> diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+>> >> >>> index bd79bbe..0708aa9 100644
+>> >> >>> --- a/fs/f2fs/segment.c
+>> >> >>> +++ b/fs/f2fs/segment.c
+>> >> >>> @@ -597,6 +597,7 @@ static void f2fs_end_io_write(struct bio *bio, int err)
+>> >> >>>
+>> >> >>> if (p->is_sync)
+>> >> >>> complete(p->wait);
+>> >> >>> + f2fs_writeback_wake(p->sbi);
+>> >> >>> kfree(p);
+>> >> >>> bio_put(bio);
+>> >> >>> }
+>> >> >>> diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
+>> >> >>> index 094ccc6..3ac6d85 100644
+>> >> >>> --- a/fs/f2fs/super.c
+>> >> >>> +++ b/fs/f2fs/super.c
+>> >> >>> @@ -835,6 +835,7 @@ static int f2fs_fill_super(struct super_block *sb, void *data, int silent)
+>> >> >>> mutex_init(&sbi->gc_mutex);
+>> >> >>> mutex_init(&sbi->writepages);
+>> >> >>> mutex_init(&sbi->cp_mutex);
+>> >> >>> + init_waitqueue_head(&sbi->writeback_wqh);
+>> >> >>> for (i = 0; i < NR_GLOBAL_LOCKS; i++)
+>> >> >>> mutex_init(&sbi->fs_lock[i]);
+>> >> >>> mutex_init(&sbi->node_write);N‹§²æìr¸›yúèšØb²X¬¶Ç§vØ^–)Þº{.nÇ+‰·¥Š{±‘êçzX§¶›¡Ü¨}©ž²Æ zÚ&j:+v‰¨¾«‘êçzZ+€Ê+zf£¢·hšˆ§~†­†Ûiÿûàz¹®w¥¢¸?™¨è­Ú&¢)ß¢f”ù^jÇ«y§m…á@A«a¶Úÿ0¶ìh®å’i
+>> >>
+>> >>
+>> >> --
+>> >> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+>> >> the body of a message to majordomo@vger.kernel.org
+>> >> More majordomo info at http://vger.kernel.org/majordomo-info.html
+>>
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at http://vger.kernel.org/majordomo-info.html
 
-Thank you.
 
-Eric
-
-
-
-> Original-patch-by: Ryan Mallon <rmallon@gmail.com>
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
-> On Thu, 2013-10-10 at 09:42 +1100, Ryan Mallon wrote:
->> If it was noisy, it would indicate a bunch of broken kernel code which
->> needs fixing :-).
->
-> Or maybe a single kernel source line but
-> you'd still have a filled up log file.
->
-> Changes in V3a:
->
-> Do the in_irq tests only when kptr_restrict is 1.
-> Document the %pK mechanism in vsnprintf
-> Add missing documentation for %pV and %pNF too
->
->  Documentation/sysctl/kernel.txt | 17 ++++++++--------
->  lib/vsprintf.c                  | 43 ++++++++++++++++++++++++++++-------------
->  2 files changed, 39 insertions(+), 21 deletions(-)
->
-> diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
-> index 9d4c1d1..c17d5ca 100644
-> --- a/Documentation/sysctl/kernel.txt
-> +++ b/Documentation/sysctl/kernel.txt
-> @@ -289,14 +289,15 @@ Default value is "/sbin/hotplug".
->  
->  kptr_restrict:
->  
-> -This toggle indicates whether restrictions are placed on
-> -exposing kernel addresses via /proc and other interfaces.  When
-> -kptr_restrict is set to (0), there are no restrictions.  When
-> -kptr_restrict is set to (1), the default, kernel pointers
-> -printed using the %pK format specifier will be replaced with 0's
-> -unless the user has CAP_SYSLOG.  When kptr_restrict is set to
-> -(2), kernel pointers printed using %pK will be replaced with 0's
-> -regardless of privileges.
-> +This toggle indicates whether restrictions are placed on exposing kernel
-> +addresses via /proc and other interfaces.
-> +
-> +When kptr_restrict is set to (0), the default, there are no restrictions.
-> +When kptr_restrict is set to (1), kernel pointers printed using the %pK
-> +format specifier will be replaced with 0's unless the user has CAP_SYSLOG
-> +and effective user and group ids are equal to the real ids.
-> +When kptr_restrict is set to (2), kernel pointers printed using %pK will
-> +be replaced with 0's regardless of privileges.
->  
->  ==============================================================
->  
-> diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-> index 26559bd..3efcf29 100644
-> --- a/lib/vsprintf.c
-> +++ b/lib/vsprintf.c
-> @@ -27,6 +27,7 @@
->  #include <linux/uaccess.h>
->  #include <linux/ioport.h>
->  #include <linux/dcache.h>
-> +#include <linux/cred.h>
->  #include <net/addrconf.h>
->  
->  #include <asm/page.h>		/* for PAGE_SIZE */
-> @@ -1301,21 +1302,34 @@ char *pointer(const char *fmt, char *buf, char *end, void *ptr,
->  			va_end(va);
->  			return buf;
->  		}
-> -	case 'K':
-> -		/*
-> -		 * %pK cannot be used in IRQ context because its test
-> -		 * for CAP_SYSLOG would be meaningless.
-> -		 */
-> -		if (kptr_restrict && (in_irq() || in_serving_softirq() ||
-> -				      in_nmi())) {
-> -			if (spec.field_width == -1)
-> -				spec.field_width = default_width;
-> -			return string(buf, end, "pK-error", spec);
-> +	case 'K':		/* see: Documentation/sysctl/kernel.txt */
-> +		switch (kptr_restrict) {
-> +		case 0:			/* None (default) */
-> +			break;
-> +		case 1: {		/* Restricted */
-> +			const struct cred *cred;
-> +
-> +			if (in_irq() || in_serving_softirq() || in_nmi()) {
-> +				/*
-> +				 * This cannot be used in IRQ context because
-> +				 * the test for CAP_SYSLOG would be meaningless
-> +				 */
-> +				if (spec.field_width == -1)
-> +					spec.field_width = default_width;
-> +				return string(buf, end, "pK-error", spec);
-> +			}
-> +			cred = current_cred();
-> +			if (!has_capability_noaudit(current, CAP_SYSLOG) ||
-> +			    !uid_eq(cred->euid, cred->uid) ||
-> +			    !gid_eq(cred->egid, cred->gid))
-> +				ptr = NULL;
-> +			break;
->  		}
-> -		if (!((kptr_restrict == 0) ||
-> -		      (kptr_restrict == 1 &&
-> -		       has_capability_noaudit(current, CAP_SYSLOG))))
-> +		case 2:			/* Never - Always emit 0 */
-> +		default:
->  			ptr = NULL;
-> +			break;
-> +		}
->  		break;
->  	case 'N':
->  		switch (fmt[1]) {
-> @@ -1574,6 +1588,9 @@ qualifier:
->   * %piS depending on sa_family of 'struct sockaddr *' print IPv4/IPv6 address
->   * %pU[bBlL] print a UUID/GUID in big or little endian using lower or upper
->   *   case.
-> + * %pV recurse and output a struct va_format (const char *fmt, va_list *)
-> + * %pK output a kernel address or 0 depending on sysctl kptr_restrict
-> + * %pNF output a netdev_features_t
->   * %*ph[CDN] a variable-length hex string with a separator (supports up to 64
->   *           bytes of the input)
->   * %n is ignored
