@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758713Ab3JKLJP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 07:09:15 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58411 "EHLO
+	id S932455Ab3JKLKG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 07:10:06 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58387 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757687Ab3JKKmm (ORCPT
+	with ESMTP id S1757608Ab3JKKme (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 06:42:42 -0400
+	Fri, 11 Oct 2013 06:42:34 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Li Zefan <lizefan@huawei.com>,
+Cc: Ben Skeggs <bskeggs@redhat.com>, Jerome Glisse <jglisse@redhat.com>,
+        Dave Airlie <airlied@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 017/100] perf: Fix perf_cgroup_switch for sw-events
-Date: Fri, 11 Oct 2013 11:40:47 +0100
-Message-Id: <1381488130-30235-18-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 014/100] drm/ttm: fix the tt_populated check in ttm_tt_destroy()
+Date: Fri, 11 Oct 2013 11:40:44 +0100
+Message-Id: <1381488130-30235-15-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
 References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
@@ -28,54 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+From: Ben Skeggs <bskeggs@redhat.com>
 
-commit 95cf59ea72331d0093010543b8951bb43f262cac upstream.
+commit 182b17c8dc4e83aab000ce86587b6810e515da87 upstream.
 
-Jiri reported that he could trigger the WARN_ON_ONCE() in
-perf_cgroup_switch() using sw-events. This is because sw-events share
-a cpuctx with multiple PMUs.
+After a vmalloc failure in ttm_dma_tt_alloc_page_directory(),
+ttm_dma_tt_init() will call ttm_tt_destroy() to cleanup, and end up
+inside the driver's unpopulate() hook when populate() has never yet
+been called.
 
-Use the ->unique_pmu pointer to limit the pmu iteration to unique
-cpuctx instances.
+On nouveau, the first issue to be hit because of this is that
+dma_address[] may be a NULL pointer.  After working around this,
+ttm_pool_unpopulate() may potentially hit the same issue with
+the pages[] array.
 
-Reported-and-Tested-by: Jiri Olsa <jolsa@redhat.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-so7wi2zf3jjzrwcutm2mkz0j@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>
+It seems to make more sense to avoid calling unpopulate on already
+unpopulated TTMs than to add checks to all the implementations.
+
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+Reviewed-by: Thomas Hellstrom <thellstrom@vmware.com>
+Cc: Jerome Glisse <jglisse@redhat.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/events/core.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/ttm/ttm_tt.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index b3a6de5..3ea14c1 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -368,6 +368,8 @@ void perf_cgroup_switch(struct task_struct *task, int mode)
+diff --git a/drivers/gpu/drm/ttm/ttm_tt.c b/drivers/gpu/drm/ttm/ttm_tt.c
+index fa09daf..ea10bbe 100644
+--- a/drivers/gpu/drm/ttm/ttm_tt.c
++++ b/drivers/gpu/drm/ttm/ttm_tt.c
+@@ -170,7 +170,7 @@ void ttm_tt_destroy(struct ttm_tt *ttm)
+ 		ttm_tt_unbind(ttm);
+ 	}
  
- 	list_for_each_entry_rcu(pmu, &pmus, entry) {
- 		cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
-+		if (cpuctx->unique_pmu != pmu)
-+			continue; /* ensure we process each cpuctx once */
+-	if (likely(ttm->pages != NULL)) {
++	if (ttm->state == tt_unbound) {
+ 		ttm->bdev->driver->ttm_tt_unpopulate(ttm);
+ 	}
  
- 		/*
- 		 * perf_cgroup_events says at least one
-@@ -391,9 +393,10 @@ void perf_cgroup_switch(struct task_struct *task, int mode)
- 
- 			if (mode & PERF_CGROUP_SWIN) {
- 				WARN_ON_ONCE(cpuctx->cgrp);
--				/* set cgrp before ctxsw in to
--				 * allow event_filter_match() to not
--				 * have to pass task around
-+				/*
-+				 * set cgrp before ctxsw in to allow
-+				 * event_filter_match() to not have to pass
-+				 * task around
- 				 */
- 				cpuctx->cgrp = perf_cgroup_from_task(task);
- 				cpu_ctx_sched_in(cpuctx, EVENT_ALL, task);
 -- 
 1.8.3.2
 
