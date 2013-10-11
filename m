@@ -1,194 +1,251 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756083Ab3JKBJU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 21:09:20 -0400
-Received: from mga09.intel.com ([134.134.136.24]:8294 "EHLO mga09.intel.com"
+	id S1752476Ab3JKBQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 21:16:57 -0400
+Received: from mga11.intel.com ([192.55.52.93]:64012 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752476Ab3JKBJQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 21:09:16 -0400
+	id S1752145Ab3JKBQz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 21:16:55 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1075,1371106800"; 
-   d="scan'208";a="417494291"
-Message-ID: <52574FDA.20201@intel.com>
-Date: Fri, 11 Oct 2013 09:09:46 +0800
-From: Aaron Lu <aaron.lu@intel.com>
+X-IronPort-AV: E=Sophos;i="4.90,1076,1371106800"; 
+   d="scan'208";a="409162464"
+Date: Fri, 11 Oct 2013 09:16:49 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Toralf =?utf-8?Q?F=C3=B6rster?= <toralf.foerster@gmx.de>
+Cc: Richard Weinberger <richard@nod.at>, Jan Kara <jack@suse.cz>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        UML devel <user-mode-linux-devel@lists.sourceforge.net>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        hannes@cmpxchg.org, darrick.wong@oracle.com,
+        Michal Hocko <mhocko@suse.cz>
+Subject: Re: [uml-devel] BUG: soft lockup for a user mode linux image
+Message-ID: <20131011011649.GA11191@localhost>
+References: <CAMuHMdXrU0e_6AxvdboMkDs+N+tSWD+b8ou92j28c0vsq2eQQA@mail.gmail.com>
+ <5251C334.3010604@gmx.de>
+ <CAMuHMdUo8dSd4s3089ZDEc485wL1sFxBKLeaExJuqNiQY+S-Lw@mail.gmail.com>
+ <5251CF94.5040101@gmx.de>
+ <CAMuHMdWs6Y7y12STJ+YXKJjxRF0k5yU9C9+0fiPPmq-GgeW-6Q@mail.gmail.com>
+ <525591AD.4060401@gmx.de>
+ <5255A3E6.6020100@nod.at>
+ <20131009214733.GB25608@quack.suse.cz>
+ <5255D9A6.3010208@nod.at>
+ <5256DA9A.5060904@gmx.de>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: linux-acpi@vger.kernel.org, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Daniel Vetter <daniel@ffwll.ch>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Lee Chun-Yi <joeyli.kernel@gmail.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Igor Gnatenko <i.gnatenko.brain@gmail.com>,
-        Yves-Alexis Perez <corsac@debian.org>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        Ben Jencks <ben@bjencks.net>, Steven Newbury <steve@snewbury.org.uk>,
-        James Hogan <james@albanarts.com>, Kamal Mostafa <kamal@canonical.com>,
-        Joerg Platte <jplatte@naasa.net>, Kalle Valo <kvalo@adurom.com>,
-        Martin Steigerwald <Martin@lichtvoll.de>,
-        =?UTF-8?B?SsO2cmcgT3R0ZQ==?= <jrg.otte@gmail.com>,
-        Mike Galbraith <bitbucket@online.de>,
-        platform-driver-x86@vger.kernel.org,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Subject: Re: [PATCH v4 3/4] ACPI / video: Do not register backlight if win8
- and native interface exists
-References: <1381214401-24672-1-git-send-email-aaron.lu@intel.com> <9897358.0Z0t2PgJOe@vostro.rjw.lan> <5255FCBF.6090708@intel.com> <2800253.nfx2dehBQN@vostro.rjw.lan>
-In-Reply-To: <2800253.nfx2dehBQN@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5256DA9A.5060904@gmx.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/10/2013 08:59 PM, Rafael J. Wysocki wrote:
-> On Thursday, October 10, 2013 09:02:55 AM Aaron Lu wrote:
->> On 10/10/2013 08:29 AM, Rafael J. Wysocki wrote:
->>> On Tuesday, October 08, 2013 02:40:00 PM Aaron Lu wrote:
->>>> According to Matthew Garrett, "Windows 8 leaves backlight control up
->>>> to individual graphics drivers rather than making ACPI calls itself.
->>>> There's plenty of evidence to suggest that the Intel driver for
->>>> Windows [8] doesn't use the ACPI interface, including the fact that
->>>> it's broken on a bunch of machines when the OS claims to support
->>>> Windows 8.  The simplest thing to do appears to be to disable the
->>>> ACPI backlight interface on these systems".
->>>>
->>>> So for Win8 systems, if there is native backlight control interface
->>>> registered by GPU driver, ACPI video will not register its own. For
->>>> users who prefer to keep ACPI video's backlight interface, the existing
->>>> kernel cmdline option acpi_backlight=video can be used.
->>>>
->>>> Signed-off-by: Aaron Lu <aaron.lu@intel.com>
->>>> Tested-by: Igor Gnatenko <i.gnatenko.brain@gmail.com>
->>>> Tested-by: Yves-Alexis Perez <corsac@debian.org>
->>>> Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
->>>> ---
->>>>  drivers/acpi/internal.h     |  5 ++---
->>>>  drivers/acpi/video.c        | 10 +++++-----
->>>>  drivers/acpi/video_detect.c | 14 ++++++++++++--
->>>>  3 files changed, 19 insertions(+), 10 deletions(-)
->>>>
->>>> diff --git a/drivers/acpi/internal.h b/drivers/acpi/internal.h
->>>> index 20f4233..453ae8d 100644
->>>> --- a/drivers/acpi/internal.h
->>>> +++ b/drivers/acpi/internal.h
->>>> @@ -169,9 +169,8 @@ int acpi_create_platform_device(struct acpi_device *adev,
->>>>  					Video
->>>>    -------------------------------------------------------------------------- */
->>>>  #if defined(CONFIG_ACPI_VIDEO) || defined(CONFIG_ACPI_VIDEO_MODULE)
->>>> -bool acpi_video_backlight_quirks(void);
->>>> -#else
->>>> -static inline bool acpi_video_backlight_quirks(void) { return false; }
->>>> +bool acpi_osi_is_win8(void);
->>>> +bool acpi_video_verify_backlight_support(void);
->>>>  #endif
->>>>  
->>>>  #endif /* _ACPI_INTERNAL_H_ */
->>>> diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
->>>> index 3bd1eaa..343db59 100644
->>>> --- a/drivers/acpi/video.c
->>>> +++ b/drivers/acpi/video.c
->>>> @@ -1256,8 +1256,8 @@ acpi_video_switch_brightness(struct acpi_video_device *device, int event)
->>>>  	unsigned long long level_current, level_next;
->>>>  	int result = -EINVAL;
->>>>  
->>>> -	/* no warning message if acpi_backlight=vendor is used */
->>>> -	if (!acpi_video_backlight_support())
->>>> +	/* no warning message if acpi_backlight=vendor or a quirk is used */
->>>> +	if (!acpi_video_verify_backlight_support())
->>>>  		return 0;
->>>>  
->>>>  	if (!device->brightness)
->>>> @@ -1386,13 +1386,13 @@ acpi_video_bus_get_devices(struct acpi_video_bus *video,
->>>>  static int acpi_video_bus_start_devices(struct acpi_video_bus *video)
->>>>  {
->>>>  	return acpi_video_bus_DOS(video, 0,
->>>> -				  acpi_video_backlight_quirks() ? 1 : 0);
->>>> +				  acpi_osi_is_win8() ? 1 : 0);
->>>>  }
->>>>  
->>>>  static int acpi_video_bus_stop_devices(struct acpi_video_bus *video)
->>>>  {
->>>>  	return acpi_video_bus_DOS(video, 0,
->>>> -				  acpi_video_backlight_quirks() ? 0 : 1);
->>>> +				  acpi_osi_is_win8() ? 0 : 1);
->>>>  }
->>>>  
->>>>  static void acpi_video_bus_notify(struct acpi_device *device, u32 event)
->>>> @@ -1558,7 +1558,7 @@ acpi_video_bus_match(acpi_handle handle, u32 level, void *context,
->>>>  
->>>>  static void acpi_video_dev_register_backlight(struct acpi_video_device *device)
->>>>  {
->>>> -	if (acpi_video_backlight_support()) {
->>>> +	if (acpi_video_verify_backlight_support()) {
->>>>  		struct backlight_properties props;
->>>>  		struct pci_dev *pdev;
->>>>  		acpi_handle acpi_parent;
->>>> diff --git a/drivers/acpi/video_detect.c b/drivers/acpi/video_detect.c
->>>> index 940edbf..23d7d26 100644
->>>> --- a/drivers/acpi/video_detect.c
->>>> +++ b/drivers/acpi/video_detect.c
->>>> @@ -37,6 +37,7 @@
->>>>  #include <linux/acpi.h>
->>>>  #include <linux/dmi.h>
->>>>  #include <linux/pci.h>
->>>> +#include <linux/backlight.h>
->>>>  
->>>>  #include "internal.h"
->>>>  
->>>> @@ -233,11 +234,11 @@ static void acpi_video_caps_check(void)
->>>>  		acpi_video_get_capabilities(NULL);
->>>>  }
->>>>  
->>>> -bool acpi_video_backlight_quirks(void)
->>>> +bool acpi_osi_is_win8(void)
->>>>  {
->>>>  	return acpi_gbl_osi_data >= ACPI_OSI_WIN_8;
->>>>  }
->>>> -EXPORT_SYMBOL(acpi_video_backlight_quirks);
->>>> +EXPORT_SYMBOL(acpi_osi_is_win8);
->>>>  
->>>>  /* Promote the vendor interface instead of the generic video module.
->>>>   * This function allow DMI blacklists to be implemented by externals
->>>> @@ -283,6 +284,15 @@ int acpi_video_backlight_support(void)
->>>>  }
->>>>  EXPORT_SYMBOL(acpi_video_backlight_support);
->>>>  
->>>> +bool acpi_video_verify_backlight_support(void)
->>>> +{
->>>> +	if (!(acpi_video_support & ACPI_VIDEO_BACKLIGHT_FORCE_VIDEO) &&
->>>> +	    acpi_osi_is_win8() && backlight_device_registered(BACKLIGHT_RAW))
->>>> +		return false;
->>>
->>> If I'm not mistaken, this will introduce a regression for the people who have
->>> problems with the native i915 backlight on Win8-compatible systems.  I'd prefer
->>> to avoid that at this point.
->>>
->>
->> OK, I see.
->>
->> Then I'm afraid a new kernel command line option is needed, something
->> like video.use_native_backlight and set it to false by default, then
->> for people who need to avoid the ACPI video backlight interface, they
->> can add video.use_native_backlight=true to kernel cmdline.
->>
->> One thing I need to mention is, with the new cmdline option, users will
->> need to manually add a kernel cmdline option to make backlight work on
->> their systems, while they can already make backlight work by modifying
->> xorg.conf to specify using intel_backlight interface, so it doesn't seem
->> this patchset will be very useful then...
+On Thu, Oct 10, 2013 at 06:49:30PM +0200, Toralf Förster wrote:
+> On 10/10/2013 12:33 AM, Richard Weinberger wrote:
+> > Am 09.10.2013 23:47, schrieb Jan Kara:
+> >> On Wed 09-10-13 20:43:50, Richard Weinberger wrote:
+> >>> CC'ing mm folks.
+> >>> Please see below.
+> >>   Added Fenguang to CC since he is the author of this code.
+> > 
+> > Thx, get_maintainer.pl didn't list him.
+> > 
+> >>> Am 09.10.2013 19:26, schrieb Toralf Förster:
+> >>>> On 10/08/2013 10:07 PM, Geert Uytterhoeven wrote:
+> >>>>> On Sun, Oct 6, 2013 at 11:01 PM, Toralf Förster <toralf.foerster@gmx.de> wrote:
+> >>>>>>> Hmm, now pages_dirtied is zero, according to the backtrace, but the BUG_ON()
+> >>>>>>> asserts its strict positive?!?
+> >>>>>>>
+> >>>>>>> Can you please try the following instead of the BUG_ON():
+> >>>>>>>
+> >>>>>>> if (pause < 0) {
+> >>>>>>>         printk("pages_dirtied = %lu\n", pages_dirtied);
+> >>>>>>>         printk("task_ratelimit = %lu\n", task_ratelimit);
+> >>>>>>>         printk("pause = %ld\n", pause);
+> >>>>>>> }
+> >>>>>>>
+> >>>>>>> Gr{oetje,eeting}s,
+> >>>>>>>
+> >>>>>>>                         Geert
+> >>>>>> I tried it in different ways already - I'm completely unsuccessful in getting any printk output.
+> >>>>>> As soon as the issue happens I do have a
+> >>>>>>
+> >>>>>> BUG: soft lockup - CPU#0 stuck for 22s! [trinity-child0:1521]
+> >>>>>>
+> >>>>>> at stderr of the UML and then no further input is accepted. With uml_mconsole I'm however able
+> >>>>>> to run very basic commands like a crash dump, sysrq ond so on.
+> >>>>>
+> >>>>> You may get an idea of the magnitude of pages_dirtied by using a chain of
+> >>>>> BUG_ON()s, like:
+> >>>>>
+> >>>>> BUG_ON(pages_dirtied > 2000000000);
+> >>>>> BUG_ON(pages_dirtied > 1000000000);
+> >>>>> BUG_ON(pages_dirtied > 100000000);
+> >>>>> BUG_ON(pages_dirtied > 10000000);
+> >>>>> BUG_ON(pages_dirtied > 1000000);
+> >>>>>
+> >>>>> Probably 1 million is already too much for normal operation?
+> >>>>>
+> >>>> period = HZ * pages_dirtied / task_ratelimit;
+> >>>> 		BUG_ON(pages_dirtied > 2000000000);
+> >>>> 		BUG_ON(pages_dirtied > 1000000000);      <-------------- this is line 1467
+> >>>
+> >>> Summary for mm people:
+> >>>
+> >>> Toralf runs trinty on UML/i386.
+> >>> After some time pages_dirtied becomes very large.
+> >>> More than 1000000000 pages in this case.
+> >>   Huh, this is really strange. pages_dirtied is passed into
+> >> balance_dirty_pages() from current->nr_dirtied. So I wonder how a value
+> >> over 10^9 can get there. After all that is over 4TB so I somewhat doubt the
+> >> task was ever able to dirty that much during its lifetime (but correct me
+> >> if I'm wrong here, with UML and memory backed disks it is not totally
+> >> impossible)... I went through the logic of handling ->nr_dirtied but
+> >> I didn't find any obvious problem there. Hum, maybe one thing - what
+> >> 'task_ratelimit' values do you see in balance_dirty_pages? If that one was
+> >> huge, we could possibly accumulate huge current->nr_dirtied.
+> > 
+> > Toralf, you can try a snipplet like this one to get the values printed out:
+> > diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+> > index f5236f8..a80e520 100644
+> > --- a/mm/page-writeback.c
+> > +++ b/mm/page-writeback.c
+> > @@ -1463,6 +1463,12 @@ static void balance_dirty_pages(struct address_space *mapping,
+> >                         goto pause;
+> >                 }
+> >                 period = HZ * pages_dirtied / task_ratelimit;
+> > +
+> > +               {
+> > +                       extern int printf(char *, ...);
+> > +                       printf("---> task_ratelimit: %lu\n", task_ratelimit);
+> > +               }
+> > +
+> >                 pause = period;
+> >                 if (current->dirty_paused_when)
+> >                         pause -= now - current->dirty_paused_when;
+> > 
+> > 
+> > Yes, printf(), not printk().
+> > Using this hack we print directly to host's stdout. :)
+> > 
+> *head smack* ofc - works fine.
+> So given this diff :
 > 
-> Except if we add a (black)list of systems where that option will be 'true'
-> by default instead of the _OSI blacklist we have today.
+> iff --git a/mm/page-writeback.c b/mm/page-writeback.c
+> index f5236f8..5a2c337 100644
+> --- a/mm/page-writeback.c
+> +++ b/mm/page-writeback.c
+> @@ -1464,6 +1464,13 @@ static void balance_dirty_pages(struct address_space *mapping,
+>                 }
+>                 period = HZ * pages_dirtied / task_ratelimit;
+>                 pause = period;
+> +               if (pause < 0)  {
+> +                       extern int printf(char *, ...);
+> +                       printf("overflow : pause : %li\n", pause);
+> +                       printf("overflow : pages_dirtied : %lu\n", pages_dirtied);
+> +                       printf("overflow :  task_ratelimit: %lu\n", task_ratelimit);
+> +                       BUG_ON(1);
+> +               }
+>                 if (current->dirty_paused_when)
+>                         pause -= now - current->dirty_paused_when;
+>                 /*
+> @@ -1503,6 +1510,13 @@ static void balance_dirty_pages(struct address_space *mapping,
+>                 }
 > 
-> Also we can switch the default during development cycles to get an idea
-> about how many systems are affected and maybe we can find a way to fix them,
-> in which case we can simply drop the option.
+>  pause:
+> +               if (pause < 0)  {
 
-Sounds good, I'll update in next revision, thanks for the suggestion!
+Oops, we got 
 
--Aaron
+        ick : pause : -984
 
+here! Since pause is bounded by [min_pause, max_pause], it means
+something goes wrong with the bounds. Would you help print min_pause
+and max_pause as well?
+
+It seems there are "long <=> unsigned long" conversion problems in
+bdi_max_pause(), which might make max_pause a negative number. And the
+min_pause calculation is based on max_pause to some degree..
+
+Thanks,
+Fengguang
+
+> +                       extern int printf(char *, ...);
+> +                       printf("ick : pause : %li\n", pause);
+> +                       printf("ick: pages_dirtied : %lu\n", pages_dirtied);
+> +                       printf("ick: task_ratelimit: %lu\n", task_ratelimit);
+> +                       BUG_ON(1);
+> +               }
+>                 trace_balance_dirty_pages(bdi,
+>                                           dirty_thresh,
+>                                           background_thresh,
+> 
+> 
+> I got this :
+> 
+> 
+> 
+> 
+>  * Starting local
+> net.core.warnings = 0                                                                                                                            [ ok ]
+> ick : pause : -984
+>                   ick: pages_dirtied : 0
+>                                         ick: task_ratelimit: 0
+>                                                               Kernel panic - not syncing: BUG!
+> CPU: 0 PID: 1434 Comm: trinity-child2 Not tainted 3.12.0-rc4-00029-g0e7a3ed-dirty #12
+> 47397c84 47397cb0 0841b5a0 084c30e8 085f76e0 084b4745 47397cbc 00000000 
+>        fffffc28 01fff278 085cb4a0 47397d2c 0841c5a0 084b4745 084c5398 000005ee 
+>        08432cf0 43e47600 471757f8 47397cf0 ffffff0c 47397cdc 5256d8b9 3417ec18 47397c5c:  [<08060b2c>] show_stack+0x7c/0xd0
+> 47397c7c:  [<0841e34d>] dump_stack+0x26/0x28
+> 47397c8c:  [<0841b5a0>] panic+0x7a/0x180
+> 47397cb4:  [<0841c5a0>] balance_dirty_pages.isra.32+0x4e3/0x5ad
+> 47397d30:  [<080d3595>] balance_dirty_pages_ratelimited+0xf5/0x100
+> 47397d44:  [<080e4a3f>] __do_fault+0x3cf/0x440
+> 47397d9c:  [<080e6e0f>] handle_mm_fault+0xef/0x7c0
+> 47397dec:  [<080e7817>] __get_user_pages+0x227/0x420
+> 47397e24:  [<080e7ae3>] get_user_pages+0x63/0x70
+> 47397e4c:  [<08143dc6>] SyS_io_setup+0x3c6/0x760
+> 47397eb0:  [<08062984>] handle_syscall+0x64/0x80
+> 47397ef0:  [<08074fb5>] userspace+0x475/0x5f0
+> 47397fec:  [<0805f750>] fork_handler+0x60/0x70
+> 47397ffc:  [<00000000>] 0x0
+> 
+> 
+> EIP: 0073:[<40001282>] CPU: 0 Not tainted ESP: 007b:bfb348f8 EFLAGS: 00000246
+>     Not tainted
+> EAX: ffffffda EBX: 00001000 ECX: 080d0000 EDX: 80000048
+> ESI: 80fbff1f EDI: ffe02f77 EBP: 90f6e2a3 DS: 007b ES: 007b
+> 47397c0c:  [<0807947f>] show_regs+0x10f/0x120
+> 47397c28:  [<080623a9>] panic_exit+0x29/0x50
+> 47397c38:  [<0809ba86>] notifier_call_chain+0x36/0x60
+> 47397c60:  [<0809bba1>] __atomic_notifier_call_chain+0x21/0x30
+> 47397c70:  [<0809bbdf>] atomic_notifier_call_chain+0x2f/0x40
+> 47397c8c:  [<0841b5bc>] panic+0x96/0x180
+> 47397cb4:  [<0841c5a0>] balance_dirty_pages.isra.32+0x4e3/0x5ad
+> 47397d30:  [<080d3595>] balance_dirty_pages_ratelimited+0xf5/0x100
+> 47397d44:  [<080e4a3f>] __do_fault+0x3cf/0x440
+> 47397d9c:  [<080e6e0f>] handle_mm_fault+0xef/0x7c0
+> 47397dec:  [<080e7817>] __get_user_pages+0x227/0x420
+> 47397e24:  [<080e7ae3>] get_user_pages+0x63/0x70
+> 47397e4c:  [<08143dc6>] SyS_io_setup+0x3c6/0x760
+> 47397eb0:  [<08062984>] handle_syscall+0x64/0x80
+> 47397ef0:  [<08074fb5>] userspace+0x475/0x5f0
+> 47397fec:  [<0805f750>] fork_handler+0x60/0x70
+> 47397ffc:  [<00000000>] 0x0
+> 
+> /home/tfoerste/workspace/bin/start_uml.sh: line 115: 18718 Aborted                 (core dumped) $LINUX earlyprintk ubda=$ROOTFS ubdb=$SWAP eth0=$NET mem=$MEM $TTY umid=uml_$NAME rootfstype=ext4 "$ARGS"
+> 
+> 
+> >From what I see there are 2 different types of issues - and this is an example of the other of both 
+> 
+> > Thanks,
+> > //richard
+> > 
+> 
+> 
+> -- 
+> MfG/Sincerely
+> Toralf Förster
+> pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
