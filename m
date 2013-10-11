@@ -1,100 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932428Ab3JKKog (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 06:44:36 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58844 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932390Ab3JKKoa (ORCPT
+	id S1758077Ab3JKKpA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 06:45:00 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48311 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758056Ab3JKKo4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 06:44:30 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Michael Grzeschik <m.grzeschik@pengutronix.de>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Jonghwan Choi <jhbird.choi@samsung.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 097/100] dmaengine: imx-dma: fix slow path issue in prep_dma_cyclic
-Date: Fri, 11 Oct 2013 11:42:07 +0100
-Message-Id: <1381488130-30235-98-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
-References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Fri, 11 Oct 2013 06:44:56 -0400
+Date: Fri, 11 Oct 2013 11:44:20 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux390@de.ibm.com" <linux390@de.ibm.com>,
+        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] arm64: include: asm: atomic.h: use 'unsigned int'
+ and 'atomic_t' instead of 'unsigned long' for atomic_clear_mask()
+Message-ID: <20131011104419.GE14732@mudshark.cambridge.arm.com>
+References: <52561137.3070608@asianux.com>
+ <5256117A.4000009@asianux.com>
+ <5256121A.9030504@asianux.com>
+ <52561269.60900@asianux.com>
+ <20131010100733.GH3817@mudshark.cambridge.arm.com>
+ <52568998.2080108@asianux.com>
+ <20131010142305.GG6199@mudshark.cambridge.arm.com>
+ <525751E2.3020207@asianux.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <525751E2.3020207@asianux.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.23 -stable review patch.  If anyone has any objections, please let me know.
+On Fri, Oct 11, 2013 at 02:18:26AM +0100, Chen Gang wrote:
+> On 10/10/2013 10:23 PM, Will Deacon wrote:
+> > On Thu, Oct 10, 2013 at 12:03:52PM +0100, Chen Gang wrote:
+> >> BTW: do arm64 need atomic_clear_mask()?
+> > 
+> > No. Neither ARM nor arm64 need this function.
+> 
+> OK, thank you for your confirmation.
+> 
+> Hmm... can we remove atomic_clear_mask() from ARM and arm64? (in my
+> opinion, if not need, better to remove it).
 
-------------------
+Yes!
 
-From: Michael Grzeschik <m.grzeschik@pengutronix.de>
+I mentioned this a few times already...
 
-commit edc530fe7ee5a562680615d2e7cd205879c751a7 upstream.
-
-When perparing cyclic_dma buffers by the sound layer, it will dump the
-following lockdep trace. The leading snd_pcm_action_single get called
-with read_lock_irq called. To fix this, we change the kcalloc call from
-GFP_KERNEL to GFP_ATOMIC.
-
-WARNING: at kernel/lockdep.c:2740 lockdep_trace_alloc+0xcc/0x114()
-DEBUG_LOCKS_WARN_ON(irqs_disabled_flags(flags))
-Modules linked in:
-CPU: 0 PID: 832 Comm: aplay Not tainted 3.11.0-20130823+ #903
-Backtrace:
-[<c000b98c>] (dump_backtrace+0x0/0x10c) from [<c000bb28>] (show_stack+0x18/0x1c)
- r6:c004c090 r5:00000009 r4:c2e0bd18 r3:00404000
-[<c000bb10>] (show_stack+0x0/0x1c) from [<c02f397c>] (dump_stack+0x20/0x28)
-[<c02f395c>] (dump_stack+0x0/0x28) from [<c001531c>] (warn_slowpath_common+0x54/0x70)
-[<c00152c8>] (warn_slowpath_common+0x0/0x70) from [<c00153dc>] (warn_slowpath_fmt+0x38/0x40)
- r8:00004000 r7:a3b90000 r6:000080d0 r5:60000093 r4:c2e0a000 r3:00000009
-[<c00153a4>] (warn_slowpath_fmt+0x0/0x40) from [<c004c090>] (lockdep_trace_alloc+0xcc/0x114)
- r3:c03955d8 r2:c03907db
-[<c004bfc4>] (lockdep_trace_alloc+0x0/0x114) from [<c008f16c>] (__kmalloc+0x34/0x118)
- r6:000080d0 r5:c3800120 r4:000080d0 r3:c040a0f8
-[<c008f138>] (__kmalloc+0x0/0x118) from [<c019c95c>] (imxdma_prep_dma_cyclic+0x64/0x168)
- r7:a3b90000 r6:00000004 r5:c39d8420 r4:c3847150
-[<c019c8f8>] (imxdma_prep_dma_cyclic+0x0/0x168) from [<c024618c>] (snd_dmaengine_pcm_trigger+0xa8/0x160)
-[<c02460e4>] (snd_dmaengine_pcm_trigger+0x0/0x160) from [<c0241fa8>] (soc_pcm_trigger+0x90/0xb4)
- r8:c058c7b0 r7:c3b8140c r6:c39da560 r5:00000001 r4:c3b81000
-[<c0241f18>] (soc_pcm_trigger+0x0/0xb4) from [<c022ece4>] (snd_pcm_do_start+0x2c/0x38)
- r7:00000000 r6:00000003 r5:c058c7b0 r4:c3b81000
-[<c022ecb8>] (snd_pcm_do_start+0x0/0x38) from [<c022e958>] (snd_pcm_action_single+0x40/0x6c)
-[<c022e918>] (snd_pcm_action_single+0x0/0x6c) from [<c022ea64>] (snd_pcm_action_lock_irq+0x7c/0x9c)
- r7:00000003 r6:c3b810f0 r5:c3b810f0 r4:c3b81000
-[<c022e9e8>] (snd_pcm_action_lock_irq+0x0/0x9c) from [<c023009c>] (snd_pcm_common_ioctl1+0x7f8/0xfd0)
- r8:c3b7f888 r7:005407b8 r6:c2c991c0 r5:c3b81000 r4:c3b81000 r3:00004142
-[<c022f8a4>] (snd_pcm_common_ioctl1+0x0/0xfd0) from [<c023117c>] (snd_pcm_playback_ioctl1+0x464/0x488)
-[<c0230d18>] (snd_pcm_playback_ioctl1+0x0/0x488) from [<c02311d4>] (snd_pcm_playback_ioctl+0x34/0x40)
- r8:c3b7f888 r7:00004142 r6:00000004 r5:c2c991c0 r4:005407b8
-[<c02311a0>] (snd_pcm_playback_ioctl+0x0/0x40) from [<c00a14a4>] (vfs_ioctl+0x30/0x44)
-[<c00a1474>] (vfs_ioctl+0x0/0x44) from [<c00a1fe8>] (do_vfs_ioctl+0x55c/0x5c0)
-[<c00a1a8c>] (do_vfs_ioctl+0x0/0x5c0) from [<c00a208c>] (SyS_ioctl+0x40/0x68)
-[<c00a204c>] (SyS_ioctl+0x0/0x68) from [<c0009380>] (ret_fast_syscall+0x0/0x44)
- r8:c0009544 r7:00000036 r6:bedeaa58 r5:00000000 r4:000000c0
-
-Signed-off-by: Michael Grzeschik <m.grzeschik@pengutronix.de>
-Signed-off-by: Vinod Koul <vinod.koul@intel.com>
-Cc: Jonghwan Choi <jhbird.choi@samsung.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/dma/imx-dma.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
-index 8aa9113..332f28d 100644
---- a/drivers/dma/imx-dma.c
-+++ b/drivers/dma/imx-dma.c
-@@ -824,7 +824,7 @@ static struct dma_async_tx_descriptor *imxdma_prep_dma_cyclic(
- 		kfree(imxdmac->sg_list);
- 
- 	imxdmac->sg_list = kcalloc(periods + 1,
--			sizeof(struct scatterlist), GFP_KERNEL);
-+			sizeof(struct scatterlist), GFP_ATOMIC);
- 	if (!imxdmac->sg_list)
- 		return NULL;
- 
--- 
-1.8.3.2
-
+Will
