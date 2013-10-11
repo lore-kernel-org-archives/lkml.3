@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964812Ab3JKTwK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:52:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46448 "EHLO
+	id S1759327Ab3JKTwa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:52:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46440 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932788Ab3JKTmC (ORCPT
+	with ESMTP id S932781Ab3JKTmB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:42:02 -0400
+	Fri, 11 Oct 2013 15:42:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dmitry Khromov <icechrome@gmail.com>, Bing Zhao <bzhao@marvell.com>,
+        Joerg Kalisch <the_force@gmx.de>,
+        Christian Lamparter <chunkeey@googlemail.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 098/135] mwifiex: fix NULL pointer dereference in usb suspend handler
-Date: Fri, 11 Oct 2013 12:39:39 -0700
-Message-Id: <20131011193955.906605137@linuxfoundation.org>
+Subject: [ 107/135] p54usb: add USB ID for Corega WLUSB2GTST USB adapter
+Date: Fri, 11 Oct 2013 12:39:48 -0700
+Message-Id: <20131011193956.912335441@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -27,63 +28,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bing Zhao <bzhao@marvell.com>
+From: Christian Lamparter <chunkeey@googlemail.com>
 
-commit 346ece0b7ba2730b4d633b9e371fe55488803102 upstream.
+commit 1e43692cdb7cc445d6347d8a5207d9cef0c71434 upstream.
 
-Bug 60815 - Interface hangs in mwifiex_usb
-https://bugzilla.kernel.org/show_bug.cgi?id=60815
+Added USB ID for Corega WLUSB2GTST USB adapter.
 
-[ 2.883807] BUG: unable to handle kernel NULL pointer dereference
-            at 0000000000000048
-[ 2.883813] IP: [<ffffffff815a65e0>] pfifo_fast_enqueue+0x90/0x90
-
-[ 2.883834] CPU: 1 PID: 3220 Comm: kworker/u8:90 Not tainted
-            3.11.1-monotone-l0 #6
-[ 2.883834] Hardware name: Microsoft Corporation Surface with
-            Windows 8 Pro/Surface with Windows 8 Pro,
-            BIOS 1.03.0450 03/29/2013
-
-On Surface Pro, suspend to ram gives a NULL pointer dereference in
-pfifo_fast_enqueue(). The stack trace reveals that the offending
-call is clearing carrier in mwifiex_usb suspend handler.
-
-Since commit 1499d9f "mwifiex: don't drop carrier flag over suspend"
-has removed the carrier flag handling over suspend/resume in SDIO
-and PCIe drivers, I'm removing it in USB driver too. This also fixes
-the bug for Surface Pro.
-
-Tested-by: Dmitry Khromov <icechrome@gmail.com>
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Reported-by: Joerg Kalisch <the_force@gmx.de>
+Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/mwifiex/usb.c |    7 -------
- 1 file changed, 7 deletions(-)
+ drivers/net/wireless/p54/p54usb.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/net/wireless/mwifiex/usb.c
-+++ b/drivers/net/wireless/mwifiex/usb.c
-@@ -446,9 +446,6 @@ static int mwifiex_usb_suspend(struct us
- 	 */
- 	adapter->is_suspended = true;
- 
--	for (i = 0; i < adapter->priv_num; i++)
--		netif_carrier_off(adapter->priv[i]->netdev);
--
- 	if (atomic_read(&card->rx_cmd_urb_pending) && card->rx_cmd.urb)
- 		usb_kill_urb(card->rx_cmd.urb);
- 
-@@ -508,10 +505,6 @@ static int mwifiex_usb_resume(struct usb
- 						  MWIFIEX_RX_CMD_BUF_SIZE);
- 	}
- 
--	for (i = 0; i < adapter->priv_num; i++)
--		if (adapter->priv[i]->media_connected)
--			netif_carrier_on(adapter->priv[i]->netdev);
--
- 	/* Disable Host Sleep */
- 	if (adapter->hs_activated)
- 		mwifiex_cancel_hs(mwifiex_get_priv(adapter,
+--- a/drivers/net/wireless/p54/p54usb.c
++++ b/drivers/net/wireless/p54/p54usb.c
+@@ -83,6 +83,7 @@ static struct usb_device_id p54u_table[]
+ 	{USB_DEVICE(0x06a9, 0x000e)},	/* Westell 802.11g USB (A90-211WG-01) */
+ 	{USB_DEVICE(0x06b9, 0x0121)},	/* Thomson SpeedTouch 121g */
+ 	{USB_DEVICE(0x0707, 0xee13)},   /* SMC 2862W-G version 2 */
++	{USB_DEVICE(0x07aa, 0x0020)},	/* Corega WLUSB2GTST USB */
+ 	{USB_DEVICE(0x0803, 0x4310)},	/* Zoom 4410a */
+ 	{USB_DEVICE(0x083a, 0x4521)},   /* Siemens Gigaset USB Adapter 54 version 2 */
+ 	{USB_DEVICE(0x083a, 0x4531)},	/* T-Com Sinus 154 data II */
 
 
