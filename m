@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932198Ab3JKKnX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 06:43:23 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58557 "EHLO
+	id S1758580Ab3JKK7K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 06:59:10 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58587 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757903Ab3JKKnR (ORCPT
+	with ESMTP id S932201Ab3JKKnY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 06:43:17 -0400
+	Fri, 11 Oct 2013 06:43:24 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Masoud Sharbiani <msharbiani@twitter.com>, Vinson Lee <vlee@twitter.com>,
-        Robin Holt <holt@sgi.com>, Russell King <rmk+kernel@arm.linux.org.uk>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>, Ingo Molnar <mingo@kernel.org>,
+Cc: Dave Jones <davej@fedoraproject.org>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 039/100] x86/reboot: Add quirk to make Dell C6100 use reboot=pci automatically
-Date: Fri, 11 Oct 2013 11:41:09 +0100
-Message-Id: <1381488130-30235-40-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 050/100] caif: Add missing braces to multiline if in cfctrl_linkup_request
+Date: Fri, 11 Oct 2013 11:41:20 +0100
+Message-Id: <1381488130-30235-51-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
 References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
@@ -29,51 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Masoud Sharbiani <msharbiani@twitter.com>
+From: Dave Jones <davej@redhat.com>
 
-commit 4f0acd31c31f03ba42494c8baf6c0465150e2621 upstream.
+commit 0c1db731bfcf3a9fd6c58132134f8b0f423552f0 upstream.
 
-Dell PowerEdge C6100 machines fail to completely reboot about 20% of the time.
+The indentation here implies this was meant to be a multi-line if.
 
-Signed-off-by: Masoud Sharbiani <msharbiani@twitter.com>
-Signed-off-by: Vinson Lee <vlee@twitter.com>
-Cc: Robin Holt <holt@sgi.com>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
-Link: http://lkml.kernel.org/r/1379717947-18042-1-git-send-email-vlee@freedesktop.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Introduced several years back in commit c85c2951d4da1236e32f1858db418221e624aba5
+("caif: Handle dev_queue_xmit errors.")
+
+Signed-off-by: Dave Jones <davej@fedoraproject.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/kernel/reboot.c | 16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+ net/caif/cfctrl.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
-index 2a29384..d1ef8a7 100644
---- a/arch/x86/kernel/reboot.c
-+++ b/arch/x86/kernel/reboot.c
-@@ -459,6 +459,22 @@ static struct dmi_system_id __initdata reboot_dmi_table[] = {
- 			DMI_MATCH(DMI_PRODUCT_NAME, "Precision M6600"),
- 		},
- 	},
-+	{	/* Handle problems with rebooting on the Dell PowerEdge C6100. */
-+		.callback = set_pci_reboot,
-+		.ident = "Dell PowerEdge C6100",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "C6100"),
-+		},
-+	},
-+	{	/* Some C6100 machines were shipped with vendor being 'Dell'. */
-+		.callback = set_pci_reboot,
-+		.ident = "Dell PowerEdge C6100",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Dell"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "C6100"),
-+		},
-+	},
- 	{ }
- };
+diff --git a/net/caif/cfctrl.c b/net/caif/cfctrl.c
+index 047cd0e..61fe8d2 100644
+--- a/net/caif/cfctrl.c
++++ b/net/caif/cfctrl.c
+@@ -291,9 +291,10 @@ int cfctrl_linkup_request(struct cflayer *layer,
  
+ 		count = cfctrl_cancel_req(&cfctrl->serv.layer,
+ 						user_layer);
+-		if (count != 1)
++		if (count != 1) {
+ 			pr_err("Could not remove request (%d)", count);
+ 			return -ENODEV;
++		}
+ 	}
+ 	return 0;
+ }
 -- 
 1.8.3.2
 
