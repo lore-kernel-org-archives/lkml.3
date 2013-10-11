@@ -1,82 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758622Ab3JKPtq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 11:49:46 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:55060 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754926Ab3JKPtp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 11:49:45 -0400
-Date: Fri, 11 Oct 2013 17:49:38 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Chen, Gong" <gong.chen@linux.intel.com>
-Cc: tony.luck@intel.com, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 6/8] ACPI, APEI, CPER: Enhance memory reporting capability
-Message-ID: <20131011154938.GK5925@pd.tnic>
-References: <1381473166-29303-1-git-send-email-gong.chen@linux.intel.com>
- <1381473166-29303-7-git-send-email-gong.chen@linux.intel.com>
+	id S1756602Ab3JKPx7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 11:53:59 -0400
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:58813 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752244Ab3JKPx6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 11:53:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1381473166-29303-7-git-send-email-gong.chen@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131011095139.GA24613@x2.net.home>
+References: <20131009232642.GA12776@jtriplet-mobl1>
+	<1381447702-6240-1-git-send-email-dianders@chromium.org>
+	<20131011095139.GA24613@x2.net.home>
+Date: Fri, 11 Oct 2013 08:53:57 -0700
+X-Google-Sender-Auth: J2NEcNW47UgGoIBzx_cwXWCE3Hk
+Message-ID: <CAD=FV=WKp-QYZf+t8fk_iYw3rDtZz7=Neg=S8pwPw_=e-4AnKQ@mail.gmail.com>
+Subject: Re: [PATCH] partitions/efi: treat size mismatch as a warning, not an error
+From: Doug Anderson <dianders@chromium.org>
+To: Karel Zak <kzak@redhat.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, Matt Fleming <matt.fleming@intel.com>,
+        Sean Paul <seanpaul@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Bill Richardson <wfrichar@chromium.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Davidlohr Bueso <davidlohr@hp.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 11, 2013 at 02:32:44AM -0400, Chen, Gong wrote:
-> After H/W error happens under FFM enabled mode, lots of information
-> are shown but some important parts like DIMM location missed. This
-> patch is used to show these extra fileds.
-> 
-> Original-author: Tony Luck <tony.luck@intel.com>
-> Signed-off-by: Chen, Gong <gong.chen@linux.intel.com>
-> ---
->  drivers/acpi/apei/cper.c | 12 ++++++++++++
->  1 file changed, 12 insertions(+)
-> 
-> diff --git a/drivers/acpi/apei/cper.c b/drivers/acpi/apei/cper.c
-> index 680230c..2a4389f 100644
-> --- a/drivers/acpi/apei/cper.c
-> +++ b/drivers/acpi/apei/cper.c
-> @@ -28,6 +28,7 @@
->  #include <linux/module.h>
->  #include <linux/time.h>
->  #include <linux/cper.h>
-> +#include <linux/dmi.h>
->  #include <linux/acpi.h>
->  #include <linux/pci.h>
->  #include <linux/aer.h>
-> @@ -210,6 +211,8 @@ static void cper_print_mem(const char *pfx, const struct cper_sec_mem_err *mem)
->  		printk("%s""card: %d\n", pfx, mem->card);
->  	if (mem->validation_bits & CPER_MEM_VALID_MODULE)
->  		printk("%s""module: %d\n", pfx, mem->module);
-> +	if (mem->validation_bits & CPER_MEM_VALID_RANK_NUMBER)
-> +		printk("%s""rank: %d\n", pfx, mem->rank);
->  	if (mem->validation_bits & CPER_MEM_VALID_BANK)
->  		printk("%s""bank: %d\n", pfx, mem->bank);
->  	if (mem->validation_bits & CPER_MEM_VALID_DEVICE)
-> @@ -232,6 +235,15 @@ static void cper_print_mem(const char *pfx, const struct cper_sec_mem_err *mem)
->  		       etype < ARRAY_SIZE(cper_mem_err_type_strs) ?
->  		       cper_mem_err_type_strs[etype] : "unknown");
->  	}
-> +	if (mem->validation_bits & CPER_MEM_VALID_MODULE_HANDLE) {
-> +		const char *bank = NULL, *device = NULL;
-> +		dmi_memdev_name(mem->mem_dev_handle, &bank, &device);
-> +		if (bank != NULL && device != NULL)
-> +			printk("%s""DIMM location: %s %s", pfx, bank, device);
-> +		else
-> +			printk("%s""DIMM DMI handle: 0x%.4x", pfx,
-> +					mem->mem_dev_handle);
+Karel,
 
-Just a nitpick: maybe better arg alignment:
+On Fri, Oct 11, 2013 at 2:51 AM, Karel Zak <kzak@redhat.com> wrote:
+> On Thu, Oct 10, 2013 at 04:28:22PM -0700, Doug Anderson wrote:
+>> +      *
+>> +      * Consider a bad value here to be a warning to support dd-ing
+>> +      * an image from a smaller disk to a bigger disk.
+>>        */
+>>       if (ret == GPT_MBR_PROTECTIVE) {
+>>               sz = le32_to_cpu(mbr->partition_record[part].size_in_lba);
+>>               if (sz != (uint32_t) total_sectors - 1 && sz != 0xFFFFFFFF)
+>> -                     ret = 0;
+>> +                     pr_warn("%s: mbr size mismatch (%u != %u)\n", __func__,
+>> +                             sz, (uint32_t)((uint32_t) total_sectors - 1));
+>>       }
+>
+>  I did the same change to util-linux v2.24 fdisk, so you can use the fdisk
+>  to update your protective MBR and boot without warnings.
 
-			printk("%s""DIMM DMI handle: 0x%.4x",
-			       pfx, mem->mem_dev_handle);
+Yup, I think we've come up with a number of ways that we can update
+the partition table to avoid the problems.  :)  ...but the "feature"
+that used to work was being able to dd an image from a smaller disk
+onto a larger disk and have it "just boot" (though perhaps with some
+warning messages).  This feature was used in the Chrome OS workflow to
+create bootable USB sticks / SD cards.  We certainly could say that
+what the Chrome OS workflow is doing is illegal / bad / unethical, but
+it has been working for years and it would be nice for it to keep
+working if possible.  :)
 
--- 
-Regards/Gruss,
-    Boris.
+http://xkcd.com/1172/
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+-Doug
