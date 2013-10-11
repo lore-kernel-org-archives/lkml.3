@@ -1,91 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756237Ab3JKRzw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 13:55:52 -0400
-Received: from a9-70.smtp-out.amazonses.com ([54.240.9.70]:41831 "EHLO
-	a9-70.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755388Ab3JKRyn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755485Ab3JKRyn (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 11 Oct 2013 13:54:43 -0400
-Message-ID: <00000141a8a7f4e7-87c0ecc5-b435-4ee6-b215-49367ee8720b-000000@email.amazonses.com>
+Received: from a9-46.smtp-out.amazonses.com ([54.240.9.46]:44514 "EHLO
+	a9-46.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754774Ab3JKRyk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 13:54:40 -0400
+Message-ID: <00000141a8a7ea27-4ab5f822-e15f-4789-a5cf-f313c402a901-000000@email.amazonses.com>
 User-Agent: quilt/0.60-1
-Date: Fri, 11 Oct 2013 17:54:41 +0000
+Date: Fri, 11 Oct 2013 17:54:38 +0000
 From: Christoph Lameter <cl@linux.com>
 To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linuxfoundation.org, Eric Dumazet <edumazet@google.com>
+Cc: akpm@linuxfoundation.org
 Cc: Steven Rostedt <srostedt@redhat.com>
 Cc: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 5/6] net: __this_cpu_inc in route.c
-References: <20131011175518.634285474@linux.com>
-X-SES-Outgoing: 2013.10.11-54.240.9.70
+Subject: [PATCH 0/6] percpu: Implement Preemption checks for __this_cpu operations V4
+X-SES-Outgoing: 2013.10.11-54.240.9.46
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The RT_CACHE_STAT_INC macro triggers the new preemption checks
-for __this_cpu ops
+This patchset introduces preemption checks for __this_cpu operations.
 
-I do not see any other synchronization that would allow the use
-of a __this_cpu operation here however in commit
-dbd2915ce87e811165da0717f8e159276ebb803e Andrew justifies
-the use of raw_smp_processor_id() here because "we do not care"
-about races.
+First we add new raw_cpu operations that perform this cpu operations
+without preempt checks in the future.
 
-So lets use raw_cpu ops here and hope for the best. The use of
-__this_cpu op improves the situation already from what commit
-dbd2915ce87e811165da0717f8e159276ebb803e did since the single instruction
-emitted on x86 does not allow the race to occur anymore. However,
-non x86 platforms could still experience a race here.
+Then those raw_cpu operations are used in a number of locations to avoid
+false positives.
 
-Trace:
+The last patch then adds the preemption checks by modifying the
+__this_cpu macros in include/linux/percpu.h
 
-[ 1277.189084] __this_cpu_add operation in preemptible [00000000] code: avahi-daemon/1193
-[ 1277.189085] caller is __this_cpu_preempt_check+0x38/0x60
-[ 1277.189086] CPU: 1 PID: 1193 Comm: avahi-daemon Tainted: GF            3.12.0-rc4+ #187
-[ 1277.189087] Hardware name: FUJITSU CELSIUS W530 Power/D3227-A1, BIOS V4.6.5.4 R1.10.0 for D3227-A1x 09/16/2013
-[ 1277.189088]  0000000000000001 ffff8807ef78fa00 ffffffff816d5a57 ffff8807ef78ffd8
-[ 1277.189089]  ffff8807ef78fa30 ffffffff8137359c ffff8807ef78fba0 ffff88079f822b40
-[ 1277.189091]  0000000020000000 ffff8807ee32c800 ffff8807ef78fa70 ffffffff813735f8
-[ 1277.189093] Call Trace:
-[ 1277.189094]  [<ffffffff816d5a57>] dump_stack+0x4e/0x82
-[ 1277.189096]  [<ffffffff8137359c>] check_preemption_disabled+0xec/0x110
-[ 1277.189097]  [<ffffffff813735f8>] __this_cpu_preempt_check+0x38/0x60
-[ 1277.189098]  [<ffffffff81610d65>] __ip_route_output_key+0x575/0x8c0
-[ 1277.189100]  [<ffffffff816110d7>] ip_route_output_flow+0x27/0x70
-[ 1277.189101]  [<ffffffff81616c80>] ? ip_copy_metadata+0x1a0/0x1a0
-[ 1277.189102]  [<ffffffff81640b15>] udp_sendmsg+0x825/0xa20
-[ 1277.189104]  [<ffffffff811b4aa9>] ? do_sys_poll+0x449/0x5d0
-[ 1277.189105]  [<ffffffff8164c695>] inet_sendmsg+0x85/0xc0
-[ 1277.189106]  [<ffffffff815c6e3c>] sock_sendmsg+0x9c/0xd0
-[ 1277.189108]  [<ffffffff813735f8>] ? __this_cpu_preempt_check+0x38/0x60
-[ 1277.189109]  [<ffffffff815c7550>] ? move_addr_to_kernel+0x40/0xa0
-[ 1277.189111]  [<ffffffff815c71ec>] ___sys_sendmsg+0x37c/0x390
-[ 1277.189112]  [<ffffffff8136613a>] ? string.isra.3+0x3a/0xd0
-[ 1277.189113]  [<ffffffff8136613a>] ? string.isra.3+0x3a/0xd0
-[ 1277.189115]  [<ffffffff81367b54>] ? vsnprintf+0x364/0x650
-[ 1277.189116]  [<ffffffff81367ee9>] ? snprintf+0x39/0x40
-[ 1277.189118]  [<ffffffff813735f8>] ? __this_cpu_preempt_check+0x38/0x60
-[ 1277.189119]  [<ffffffff815c7ff9>] __sys_sendmsg+0x49/0x90
-[ 1277.189121]  [<ffffffff815c8052>] SyS_sendmsg+0x12/0x20
-[ 1277.189122]  [<ffffffff816e4fd3>] tracesys+0xe1/0xe6
+V3->v4:
+	- Drop CONFIG_DEBUG_THIS_CPU_OPERATIONS
+	- Detail operation triggering the log entry.
+	- Use quilt 0.60/ [PATCH] prefix.
+	- Clean up subject lines.
+	- Include raw_cpu_ops conversion/fixes that were tested on
+	  a Ubuntu 13.04 desktop.
+	- Traces
 
-Cc: Eric Dumazet <edumazet@google.com>
-Signed-off-by: Christoph Lameter <cl@linux.com>
+V2->V3:
+	- Subject line in the raw_cpu_ops patch had ; instead of :.
+	  Guess I am getting old.
+	- Improve descriptions and variable names.
+	- Run tests again with kvm to verify that it still works.
+		A) No warnings with just the patches applied
+		B) Lots of warnings with CONFIG_DEBUG_THIS_CPU_OPERATIONS enabled
+		C) No warnings with 3 core patches applied that simply convert
+			__this_cpu operations to raw_cpu_ops.
 
-Index: linux/net/ipv4/route.c
-===================================================================
---- linux.orig/net/ipv4/route.c	2013-10-07 10:27:25.000000000 -0500
-+++ linux/net/ipv4/route.c	2013-10-07 12:41:23.993823743 -0500
-@@ -197,7 +197,7 @@ const __u8 ip_tos2prio[16] = {
- EXPORT_SYMBOL(ip_tos2prio);
- 
- static DEFINE_PER_CPU(struct rt_cache_stat, rt_cache_stat);
--#define RT_CACHE_STAT_INC(field) __this_cpu_inc(rt_cache_stat.field)
-+#define RT_CACHE_STAT_INC(field) raw_cpu_inc(rt_cache_stat.field)
- 
- #ifdef CONFIG_PROC_FS
- static void *rt_cache_seq_start(struct seq_file *seq, loff_t *pos)
+V1->V2:
+	- Reuse preemption check logic in lib/smp_processor_id.c
+	- Add CONFIG_DEBUG_THIS_CPU_OPERATIONS
+	- Remove conversions to the use of raw_cpu_ops since
+	  these may require some discussion first.
 
