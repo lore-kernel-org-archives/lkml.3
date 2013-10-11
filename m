@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932543Ab3JKTl1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:41:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46181 "EHLO
+	id S1759440Ab3JKUEx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:04:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46220 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932504Ab3JKTlX (ORCPT
+	with ESMTP id S1757343Ab3JKTl3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:41:23 -0400
+	Fri, 11 Oct 2013 15:41:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Salam Noureddine <noureddine@aristanetworks.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 044/135] ipv6 mcast: use in6_dev_put in timer handlers instead of __in6_dev_put
-Date: Fri, 11 Oct 2013 12:38:45 -0700
-Message-Id: <20131011193950.047395991@linuxfoundation.org>
+        Dan Aloni <alonid@stratoscale.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Denys Vlasenko <vda.linux@googlemail.com>,
+        Martin MOKREJS <mmokrejs@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 052/135] fs/binfmt_elf.c: prevent a coredump with a large vm_map_count from Oopsing
+Date: Fri, 11 Oct 2013 12:38:53 -0700
+Message-Id: <20131011193950.942422106@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -27,56 +30,140 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Salam Noureddine <noureddine@aristanetworks.com>
+From: Dan Aloni <alonid@stratoscale.com>
 
-[ Upstream commit 9260d3e1013701aa814d10c8fc6a9f92bd17d643 ]
+commit 72023656961b8c81a168a7a6762d589339d0d7ec upstream.
 
-It is possible for the timer handlers to run after the call to
-ipv6_mc_down so use in6_dev_put instead of __in6_dev_put in the
-handler function in order to do proper cleanup when the refcnt
-reaches 0. Otherwise, the refcnt can reach zero without the
-inet6_dev being destroyed and we end up leaking a reference to
-the net_device and see messages like the following,
+A high setting of max_map_count, and a process core-dumping with a large
+enough vm_map_count could result in an NT_FILE note not being written,
+and the kernel crashing immediately later because it has assumed
+otherwise.
 
-unregister_netdevice: waiting for eth0 to become free. Usage count = 1
+Reproduction of the oops-causing bug described here:
 
-Tested on linux-3.4.43.
+    https://lkml.org/lkml/2013/8/30/50
 
-Signed-off-by: Salam Noureddine <noureddine@aristanetworks.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Rge ussue originated in commit 2aa362c49c31 ("coredump: extend core dump
+note section to contain file names of mapped file") from Oct 4, 2012.
+
+This patch make that section optional in that case.  fill_files_note()
+should signify the error, and also let the info struct in
+elf_core_dump() be zero-initialized so that we can check for the
+optionally written note.
+
+[akpm@linux-foundation.org: avoid abusing E2BIG, remove a couple of not-really-needed local variables]
+[akpm@linux-foundation.org: fix sparse warning]
+Signed-off-by: Dan Aloni <alonid@stratoscale.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Denys Vlasenko <vda.linux@googlemail.com>
+Reported-by: Martin MOKREJS <mmokrejs@gmail.com>
+Tested-by: Martin MOKREJS <mmokrejs@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv6/mcast.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/net/ipv6/mcast.c
-+++ b/net/ipv6/mcast.c
-@@ -1862,7 +1862,7 @@ static void mld_dad_timer_expire(unsigne
- 		if (idev->mc_dad_count)
- 			mld_dad_start_timer(idev, idev->mc_maxdelay);
+---
+ fs/binfmt_elf.c |   30 ++++++++++++++++++------------
+ 1 file changed, 18 insertions(+), 12 deletions(-)
+
+--- a/fs/binfmt_elf.c
++++ b/fs/binfmt_elf.c
+@@ -1413,7 +1413,7 @@ static void fill_siginfo_note(struct mem
+  *   long file_ofs
+  * followed by COUNT filenames in ASCII: "FILE1" NUL "FILE2" NUL...
+  */
+-static void fill_files_note(struct memelfnote *note)
++static int fill_files_note(struct memelfnote *note)
+ {
+ 	struct vm_area_struct *vma;
+ 	unsigned count, size, names_ofs, remaining, n;
+@@ -1428,11 +1428,11 @@ static void fill_files_note(struct memel
+ 	names_ofs = (2 + 3 * count) * sizeof(data[0]);
+  alloc:
+ 	if (size >= MAX_FILE_NOTE_SIZE) /* paranoia check */
+-		goto err;
++		return -EINVAL;
+ 	size = round_up(size, PAGE_SIZE);
+ 	data = vmalloc(size);
+ 	if (!data)
+-		goto err;
++		return -ENOMEM;
+ 
+ 	start_end_ofs = data + 2;
+ 	name_base = name_curpos = ((char *)data) + names_ofs;
+@@ -1485,7 +1485,7 @@ static void fill_files_note(struct memel
+ 
+ 	size = name_curpos - (char *)data;
+ 	fill_note(note, "CORE", NT_FILE, size, data);
+- err: ;
++	return 0;
+ }
+ 
+ #ifdef CORE_DUMP_USE_REGSET
+@@ -1686,8 +1686,8 @@ static int fill_note_info(struct elfhdr
+ 	fill_auxv_note(&info->auxv, current->mm);
+ 	info->size += notesize(&info->auxv);
+ 
+-	fill_files_note(&info->files);
+-	info->size += notesize(&info->files);
++	if (fill_files_note(&info->files) == 0)
++		info->size += notesize(&info->files);
+ 
+ 	return 1;
+ }
+@@ -1719,7 +1719,8 @@ static int write_note_info(struct elf_no
+ 			return 0;
+ 		if (first && !writenote(&info->auxv, file, foffset))
+ 			return 0;
+-		if (first && !writenote(&info->files, file, foffset))
++		if (first && info->files.data &&
++				!writenote(&info->files, file, foffset))
+ 			return 0;
+ 
+ 		for (i = 1; i < info->thread_notes; ++i)
+@@ -1806,6 +1807,7 @@ static int elf_dump_thread_status(long s
+ 
+ struct elf_note_info {
+ 	struct memelfnote *notes;
++	struct memelfnote *notes_files;
+ 	struct elf_prstatus *prstatus;	/* NT_PRSTATUS */
+ 	struct elf_prpsinfo *psinfo;	/* NT_PRPSINFO */
+ 	struct list_head thread_list;
+@@ -1896,9 +1898,12 @@ static int fill_note_info(struct elfhdr
+ 
+ 	fill_siginfo_note(info->notes + 2, &info->csigdata, siginfo);
+ 	fill_auxv_note(info->notes + 3, current->mm);
+-	fill_files_note(info->notes + 4);
++	info->numnote = 4;
+ 
+-	info->numnote = 5;
++	if (fill_files_note(info->notes + info->numnote) == 0) {
++		info->notes_files = info->notes + info->numnote;
++		info->numnote++;
++	}
+ 
+ 	/* Try to dump the FPU. */
+ 	info->prstatus->pr_fpvalid = elf_core_copy_task_fpregs(current, regs,
+@@ -1960,8 +1965,9 @@ static void free_note_info(struct elf_no
+ 		kfree(list_entry(tmp, struct elf_thread_status, list));
  	}
--	__in6_dev_put(idev);
-+	in6_dev_put(idev);
- }
  
- static int ip6_mc_del1_src(struct ifmcaddr6 *pmc, int sfmode,
-@@ -2207,7 +2207,7 @@ static void mld_gq_timer_expire(unsigned
+-	/* Free data allocated by fill_files_note(): */
+-	vfree(info->notes[4].data);
++	/* Free data possibly allocated by fill_files_note(): */
++	if (info->notes_files)
++		vfree(info->notes_files->data);
  
- 	idev->mc_gq_running = 0;
- 	mld_send_report(idev, NULL);
--	__in6_dev_put(idev);
-+	in6_dev_put(idev);
- }
- 
- static void mld_ifc_timer_expire(unsigned long data)
-@@ -2220,7 +2220,7 @@ static void mld_ifc_timer_expire(unsigne
- 		if (idev->mc_ifc_count)
- 			mld_ifc_start_timer(idev, idev->mc_maxdelay);
- 	}
--	__in6_dev_put(idev);
-+	in6_dev_put(idev);
- }
- 
- static void mld_ifc_event(struct inet6_dev *idev)
+ 	kfree(info->prstatus);
+ 	kfree(info->psinfo);
+@@ -2044,7 +2050,7 @@ static int elf_core_dump(struct coredump
+ 	struct vm_area_struct *vma, *gate_vma;
+ 	struct elfhdr *elf = NULL;
+ 	loff_t offset = 0, dataoff, foffset;
+-	struct elf_note_info info;
++	struct elf_note_info info = { };
+ 	struct elf_phdr *phdr4note = NULL;
+ 	struct elf_shdr *shdr4extnum = NULL;
+ 	Elf_Half e_phnum;
 
 
