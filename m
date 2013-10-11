@@ -1,281 +1,303 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755804Ab3JKCVc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 22:21:32 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:28481 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752044Ab3JKCVa convert rfc822-to-8bit (ORCPT
+	id S1756092Ab3JKCWH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 22:22:07 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:51915 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751902Ab3JKCWE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 22:21:30 -0400
-X-IronPort-AV: E=Sophos;i="4.93,471,1378828800"; 
-   d="scan'208";a="8719501"
-Message-ID: <52575F65.4050904@cn.fujitsu.com>
-Date: Fri, 11 Oct 2013 10:16:05 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Jin Xu <jinuxstyle@live.com>
-CC: "yuan.mark.zhong@samsung.com" <yuan.mark.zhong@samsung.com>,
-        Jaegeuk Kim <jaegeuk.kim@samsung.com>,
-        "linux-f2fs-devel@lists.sourceforge.net" 
-	<linux-f2fs-devel@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        shu tan <shu.tan@samsung.com>
-Subject: Re: [f2fs-dev] [PATCH v2] f2fs: avoid congestion_wait when do_checkpoint
- for better performance
-References: <30722427.272521381231813403.JavaMail.weblogic@epml26>,<5254D5B9.1040803@cn.fujitsu.com> <BLU175-W48D340F1A4D0966D8895D0B41E0@phx.gbl>,<52566149.1030702@cn.fujitsu.com> <BLU175-W378B020AC54C62046132AAB41E0@phx.gbl>
-In-Reply-To: <BLU175-W378B020AC54C62046132AAB41E0@phx.gbl>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/10/11 10:19:17,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/10/11 10:19:18
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+	Thu, 10 Oct 2013 22:22:04 -0400
+X-AuditID: cbfee691-b7f4a6d0000074fc-4a-525760c9f1cb
+From: "hyunhee.kim" <hyunhee.kim@samsung.com>
+To: dmitry.torokhov@gmail.com, broonie@opensource.wolfsonmicro.com,
+        peter.ujfalusi@ti.com, wfp5p@virginia.edu, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Subject: [PATCH] Input: add regulator haptic driver
+Date: Fri, 11 Oct 2013 11:22:00 +0900
+Message-id: <000101cec628$aaff69a0$00fe3ce0$%kim@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac7GKKrI57bcuzTzQ/awZVOqlzVd0A==
+Content-language: ko
+X-OriginalArrivalTime: 11 Oct 2013 02:22:01.0155 (UTC)
+ FILETIME=[AB145130:01CEC628]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrGIsWRmVeSWpSXmKPExsVy+t8zPd1TCeFBBpuFLG5++sZqcXnXHDYH
+	Jo/Pm+QCGKO4bFJSczLLUov07RK4Mia0XGcs6DKvWPJwLksDY7NeFyMnh4SAicTH3m8sELaY
+	xIV769m6GLk4hASWMUrM+7aGCaZo59x3UIlFjBJ/2v4xQTjzmCS2rlwHlVnBKLHw8jSwWWwC
+	uhLHf/9lBEmICBxnlJi9uZcNJCEsYCyx5OlEZhCbRUBVYua7z2A2r4CtxLm3HVC2oMSPyffA
+	BjELaEms33mcCcKWl9i85i1QDQfQTeoSj/7qgoRFBPQkHvYthSoRkdj34h0jiC0koCbx4elH
+	qN9CJebOXQt2qITAMnaJF5O+s0LcICDxbfIhFoiZshKbDjBD1EtKHFxxg2UCo8QsJBfNQnLR
+	LCQXzUKyegEjyypG0dSC5ILipPQiU73ixNzi0rx0veT83E2MkDibuIPx/gHrQ4zJQOsnMkuJ
+	JucD4zSvJN7Q2MzIwtTE1NjI3NKMNGElcV71FutAIYH0xJLU7NTUgtSi+KLSnNTiQ4xMHJxS
+	DYyHnm2I2eb+yUojOL6yWE+pqSbzXdZ3n3azdPEdHe7ORd73X/C0/7bP6jh4JID7o4vUsQw2
+	Pu7p25efUcx+WFYfd7FbQpn7T8T/isw7chUsi3R7/1hLmf3RSoiZNFv8w+5pClbXdA+4bMtV
+	0Dvo3rWhZiqPftJhmQXuOVnXntoIKJ+8Fbh0tRJLcUaioRZzUXEiABTaIRnJAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprCKsWRmVeSWpSXmKPExsVy+t9jAd2TCeFBBstfWFjc/PSN1eLyrjls
+	DkwenzfJBTBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE
+	6Lpl5gCNVlIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jFmTGi5zljQZV6x
+	5OFclgbGZr0uRk4OCQETiZ1z37FB2GISF+6tB7K5OIQEFjFK/Gn7xwThzGOS2LpyHVRmBaPE
+	wsvTWEBa2AR0JY7//ssIkhAROM4oMXtzL9gsYQFjiSVPJzKD2CwCqhIz330Gs3kFbCXOve2A
+	sgUlfky+BzaIWUBLYv3O40wQtrzE5jVvgWo4gG5Sl3j0VxckLCKgJ/GwbylUiYjEvhfvGEFs
+	IQE1iQ9PP7JAvBAqMXfuWrYJjEKzkGyYhWTDLCQbZiEZtYCRZRWjaGpBckFxUnqukV5xYm5x
+	aV66XnJ+7iZGcBw/k97BuKrB4hCjAAejEg+vBUN4kBBrYllxZe4hRgkOZiURXns9oBBvSmJl
+	VWpRfnxRaU5q8SHGZGAATGSWEk3OB6aYvJJ4Q2MTMyNLIzNjE3NjY9KElcR5D7ZaBwoJpCeW
+	pGanphakFsFsYeLglGpgXGShF7/Utrmtk/nPnsy7bYaXqlsD1hn9a/HhW3O9zq72te376Xyr
+	iyadvN4Tpsw99dC2HLYz+gb75bxv3Jz/mnHjVo7g3NVHEif/PpF80ODOA/HC2c6zBPxFbSpz
+	J9skbRF/EvhoxdaTu85k/jevPL9A3n/6irMKBwqncR3zLH5++FZOVrr2QiWW4oxEQy3mouJE
+	ANSJyIUnAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jin,
-On 10/11/2013 07:54 AM, Jin Xu wrote:
+From: Hyunhee Kim <hyunhee.kim@samsung.com>
+Date: Wed, 9 Oct 2013 16:21:36 +0900
+Subject: [PATCH] Input: add regulator haptic driver
 
->> Date: Thu, 10 Oct 2013 16:11:53 +0800
->> From: guz.fnst@cn.fujitsu.com
->> To: jinuxstyle@live.com
->> CC: yuan.mark.zhong@samsung.com; jaegeuk.kim@samsung.com; linux-f2fs-devel@lists.sourceforge.net; linux-kernel@vger.kernel.org; linux-fsdevel@vger.kernel.org; shu.tan@samsung.com
->> Subject: Re: [f2fs-dev] [PATCH v2] f2fs: avoid congestion_wait when do_checkpoint for better performance
->>
->> Hi Jin,
->>
->> On 10/10/2013 04:09 PM, Jin Xu wrote:
->>
->> > Hi Gu,
->> >
->> > I have a comment below.
->> >
->> >> Date: Wed, 9 Oct 2013 12:04:09 +0800
->> >> From: guz.fnst@cn.fujitsu.com
->> >> To: yuan.mark.zhong@samsung.com
->> >> CC: jaegeuk.kim@samsung.com; linux-f2fs-devel@lists.sourceforge.net; linux-kernel@vger.kernel.org; linux-fsdevel@vger.kernel.org; shu.tan@samsung.com
->> >> Subject: Re: [f2fs-dev] [PATCH v2] f2fs: avoid congestion_wait when do_checkpoint for better performance
->> >>
->> >> Hi Yuan,
->> >> On 10/08/2013 07:30 PM, Yuan Zhong wrote:
->> >>
->> > ...
->> >>
->> >> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
->> >> ---
->> >> fs/f2fs/checkpoint.c | 11 +++++++++--
->> >> fs/f2fs/f2fs.h | 1 +
->> >> fs/f2fs/segment.c | 4 ++++
->> >> 3 files changed, 14 insertions(+), 2 deletions(-)
->> >>
->> >> diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
->> >> index d808827..2a5999d 100644
->> >> --- a/fs/f2fs/checkpoint.c
->> >> +++ b/fs/f2fs/checkpoint.c
->> >> @@ -757,8 +757,15 @@ static void do_checkpoint(struct f2fs_sb_info *sbi, bool is_umount)
->> >> f2fs_put_page(cp_page, 1);
->> >>
->> >> /* wait for previous submitted node/meta pages writeback */
->> >> - while (get_pages(sbi, F2FS_WRITEBACK))
->> >> - congestion_wait(BLK_RW_ASYNC, HZ / 50);
->> >> + sbi->cp_task = current;
->> >> + while (get_pages(sbi, F2FS_WRITEBACK)) {
->> >> + set_current_state(TASK_UNINTERRUPTIBLE);
->> >> + if (!get_pages(sbi, F2FS_WRITEBACK))
->> >> + break;
->> >> + io_schedule();
->> >> + }
->> >> + __set_current_state(TASK_RUNNING);
->> >> + sbi->cp_task = NULL;
->> >>
->> >> filemap_fdatawait_range(sbi->node_inode->i_mapping, 0, LONG_MAX);
->> >> filemap_fdatawait_range(sbi->meta_inode->i_mapping, 0, LONG_MAX);
->> >> diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
->> >> index a955a59..408ace7 100644
->> >> --- a/fs/f2fs/f2fs.h
->> >> +++ b/fs/f2fs/f2fs.h
->> >> @@ -365,6 +365,7 @@ struct f2fs_sb_info {
->> >> struct mutex writepages; /* mutex for writepages() */
->> >> int por_doing; /* recovery is doing or not */
->> >> int on_build_free_nids; /* build_free_nids is doing */
->> >> + struct task_struct *cp_task; /* checkpoint task */
->> >>
->> >> /* for orphan inode management */
->> >> struct list_head orphan_inode_list; /* orphan inode list */
->> >> diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
->> >> index bd79bbe..3b20359 100644
->> >> --- a/fs/f2fs/segment.c
->> >> +++ b/fs/f2fs/segment.c
->> >> @@ -597,6 +597,10 @@ static void f2fs_end_io_write(struct bio *bio, int err)
->> >>
->> >> if (p->is_sync)
->> >> complete(p->wait);
->> >> +
->> >> + if (!get_pages(p->sbi, F2FS_WRITEBACK) && p->sbi->cp_task)
->> >> + wake_up_process(p->sbi->cp_task);
->> >
->> > There is a risk of dereferencing a NULL pointer because here simply comparing the
->> > cp_task against NULL is not enough to avoid race in multi-thread environment.
->> > Another thread could have assigned it to NULL in the window between the comparison
->> > and waking up.
->>
->> Can not be that, checkpoint routine is always singleton and protected by cp_mutex and cp_rwsem.
->> 
-> 
-> The race could happen like this for example:
-> On a SMP environment, thread 1 wakes up the checkpoint thread, then
-> thread 2 comes to the f2fs_end_io_write, compared the cp_task as not NULL,
-> but at the same time, the checkpoint thread just assigned the cp_task to NULL.
-> When thread 2 gets to the wake_up_process, dereferencing to NULL pointer
-> happens.
+The regulator haptic driver function can be used to control motor by on/off
+regulator.
+User can control the haptic driver by using force feedback framework.
 
-The case means that two or more IO are going on. If thread 1 wake up checkpoint, it'll check
-get_pages(p->sbi, F2FS_WRITEBACK) before going down to assign the cp_task to NULL, so when
-thread 2 gets to the wake_up_process the cp_task is still valid. 
-The "while (get_pages(sbi, F2FS_WRITEBACK))" loop is used to avoid this issue.
+Signed-off-by: Hyunhee Kim <hyunhee.kim@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ drivers/input/misc/Kconfig            |    6 ++
+ drivers/input/misc/Makefile           |    1 +
+ drivers/input/misc/regulator-haptic.c |  185
++++++++++++++++++++++++++++++++++
+ 3 files changed, 192 insertions(+)
+ create mode 100644 drivers/input/misc/regulator-haptic.c
 
-Thanks,
-Gu
-
-> 
-> Jin
-> 
->> Thanks,
->> Gu 
->>
->> >
->> > Regards,
->> > Jin
->> >> +
->> >> kfree(p);
->> >> bio_put(bio);
->> >> }
->> >> --
->> >> 1.7.7
->> >>
->> >> Regards,
->> >> Gu
->> >>
->> >> >
->> >> >
->> >> >>> This is a problem here, especially, when sync a large number of small files or dirs.
->> >> >>> In order to avoid this, a wait_list is introduced,
->> >> >>> the checkpoint thread will be dropped into the wait_list if the pages have not been written back,
->> >> >>> and will be waked up by contrast.
->> >> >
->> >> >> Please pay some attention to the mail form, this mail is out of format in my mail client.
->> >> >
->> >> >> Regards,
->> >> >> Gu
->> >> >
->> >> > Regards,
->> >> > Yuan
->> >> >
->> >> >>>
->> >> >>> Signed-off-by: Yuan Zhong <yuan.mark.zhong@samsung.com>
->> >> >>> ---
->> >> >>> fs/f2fs/checkpoint.c | 3 +--
->> >> >>> fs/f2fs/f2fs.h | 19 +++++++++++++++++++
->> >> >>> fs/f2fs/segment.c | 1 +
->> >> >>> fs/f2fs/super.c | 1 +
->> >> >>> 4 files changed, 22 insertions(+), 2 deletions(-)
->> >> >>>
->> >> >>> diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
->> >> >>> index ca39442..5d69ae0 100644
->> >> >>> --- a/fs/f2fs/checkpoint.c
->> >> >>> +++ b/fs/f2fs/checkpoint.c
->> >> >>> @@ -758,8 +758,7 @@ static void do_checkpoint(struct f2fs_sb_info *sbi, bool is_umount)
->> >> >>> f2fs_put_page(cp_page, 1);
->> >> >>>
->> >> >>> /* wait for previous submitted node/meta pages writeback */
->> >> >>> - while (get_pages(sbi, F2FS_WRITEBACK))
->> >> >>> - congestion_wait(BLK_RW_ASYNC, HZ / 50);
->> >> >>> + f2fs_writeback_wait(sbi);
->> >> >>>
->> >> >>> filemap_fdatawait_range(sbi->node_inode->i_mapping, 0, LONG_MAX);
->> >> >>> filemap_fdatawait_range(sbi->meta_inode->i_mapping, 0, LONG_MAX);
->> >> >>> diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
->> >> >>> index 7fd99d8..4b0d70e 100644
->> >> >>> --- a/fs/f2fs/f2fs.h
->> >> >>> +++ b/fs/f2fs/f2fs.h
->> >> >>> @@ -18,6 +18,8 @@
->> >> >>> #include <linux/crc32.h>
->> >> >>> #include <linux/magic.h>
->> >> >>> #include <linux/kobject.h>
->> >> >>> +#include <linux/wait.h>
->> >> >>> +#include <linux/sched.h>
->> >> >>>
->> >> >>> /*
->> >> >>> * For mount options
->> >> >>> @@ -368,6 +370,7 @@ struct f2fs_sb_info {
->> >> >>> struct mutex fs_lock[NR_GLOBAL_LOCKS]; /* blocking FS operations */
->> >> >>> struct mutex node_write; /* locking node writes */
->> >> >>> struct mutex writepages; /* mutex for writepages() */
->> >> >>> + wait_queue_head_t writeback_wqh; /* wait_queue for writeback */
->> >> >>> unsigned char next_lock_num; /* round-robin global locks */
->> >> >>> int por_doing; /* recovery is doing or not */
->> >> >>> int on_build_free_nids; /* build_free_nids is doing */
->> >> >>> @@ -961,6 +964,22 @@ static inline int f2fs_readonly(struct super_block *sb)
->> >> >>> return sb->s_flags & MS_RDONLY;
->> >> >>> }
->> >> >>>
->> >> >>> +static inline void f2fs_writeback_wait(struct f2fs_sb_info *sbi)
->> >> >>> +{
->> >> >>> + DEFINE_WAIT(wait);
->> >> >>> +
->> >> >>> + prepare_to_wait(&sbi->writeback_wqh, &wait, TASK_UNINTERRUPTIBLE);
->> >> >>> + if (get_pages(sbi, F2FS_WRITEBACK))
->> >> >>> + io_schedule();
->> >> >>> + finish_wait(&sbi->writeback_wqh, &wait);
->> >> >>> +}
->> >> >>> +
->> >> >>> +static inline void f2fs_writeback_wake(struct f2fs_sb_info *sbi)
->> >> >>> +{
->> >> >>> + if (!get_pages(sbi, F2FS_WRITEBACK))
->> >> >>> + wake_up_all(&sbi->writeback_wqh);
->> >> >>> +}
->> >> >>> +
->> >> >>> /*
->> >> >>> * file.c
->> >> >>> */
->> >> >>> diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
->> >> >>> index bd79bbe..0708aa9 100644
->> >> >>> --- a/fs/f2fs/segment.c
->> >> >>> +++ b/fs/f2fs/segment.c
->> >> >>> @@ -597,6 +597,7 @@ static void f2fs_end_io_write(struct bio *bio, int err)
->> >> >>>
->> >> >>> if (p->is_sync)
->> >> >>> complete(p->wait);
->> >> >>> + f2fs_writeback_wake(p->sbi);
->> >> >>> kfree(p);
->> >> >>> bio_put(bio);
->> >> >>> }
->> >> >>> diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
->> >> >>> index 094ccc6..3ac6d85 100644
->> >> >>> --- a/fs/f2fs/super.c
->> >> >>> +++ b/fs/f2fs/super.c
->> >> >>> @@ -835,6 +835,7 @@ static int f2fs_fill_super(struct super_block *sb, void *data, int silent)
->> >> >>> mutex_init(&sbi->gc_mutex);
->> >> >>> mutex_init(&sbi->writepages);
->> >> >>> mutex_init(&sbi->cp_mutex);
->> >> >>> + init_waitqueue_head(&sbi->writeback_wqh);
->> >> >>> for (i = 0; i < NR_GLOBAL_LOCKS; i++)
->> >> >>> mutex_init(&sbi->fs_lock[i]);
->> >> >>> mutex_init(&sbi->node_write);N‹§²æìr¸›yúèšØb²X¬¶Ç§vØ^–)Þº{.nÇ+‰·¥Š{±‘êçzX§¶›¡Ü¨}©ž²Æ zÚ&j:+v‰¨¾«‘êçzZ+€Ê+zf£¢·hšˆ§~†­†Ûiÿûàz¹®w¥¢¸?™¨è­Ú&¢)ß¢f”ù^jÇ«y§m…á@A«a¶Úÿ0¶ìh®å’i
->> >>
->> >>
->> >> --
->> >> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
->> >> the body of a message to majordomo@vger.kernel.org
->> >> More majordomo info at http://vger.kernel.org/majordomo-info.html
->>
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at http://vger.kernel.org/majordomo-info.html
+diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
+index bb698e1..f391cd7 100644
+--- a/drivers/input/misc/Kconfig
++++ b/drivers/input/misc/Kconfig
+@@ -82,6 +82,12 @@ config INPUT_ARIZONA_HAPTICS
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called arizona-haptics.
+ 
++config INPUT_REGULATOR_HAPTIC
++	tristate "regulator haptics support"
++	select INPUT_FF_MEMLESS
++	help
++	  Say Y to enable support for the haptics module for regulator.
++
+ config INPUT_BMA150
+ 	tristate "BMA150/SMB380 acceleration sensor support"
+ 	depends on I2C
+diff --git a/drivers/input/misc/Makefile b/drivers/input/misc/Makefile
+index d7fc17f..106f0bc 100644
+--- a/drivers/input/misc/Makefile
++++ b/drivers/input/misc/Makefile
+@@ -15,6 +15,7 @@ obj-$(CONFIG_INPUT_ADXL34X_I2C)		+=
+adxl34x-i2c.o
+ obj-$(CONFIG_INPUT_ADXL34X_SPI)		+= adxl34x-spi.o
+ obj-$(CONFIG_INPUT_APANEL)		+= apanel.o
+ obj-$(CONFIG_INPUT_ARIZONA_HAPTICS)	+= arizona-haptics.o
++obj-$(CONFIG_INPUT_REGULATOR_HAPTIC)	+= regulator-haptic.o
+ obj-$(CONFIG_INPUT_ATI_REMOTE2)		+= ati_remote2.o
+ obj-$(CONFIG_INPUT_ATLAS_BTNS)		+= atlas_btns.o
+ obj-$(CONFIG_INPUT_BFIN_ROTARY)		+= bfin_rotary.o
+diff --git a/drivers/input/misc/regulator-haptic.c
+b/drivers/input/misc/regulator-haptic.c
+new file mode 100644
+index 0000000..29f57ea
+--- /dev/null
++++ b/drivers/input/misc/regulator-haptic.c
+@@ -0,0 +1,185 @@
++/*
++ * Regulator haptic driver
++ *
++ * Copyright (c) 2013 Samsung Electronics Co., Ltd.
++ *
++ * Author: Hyunhee Kim <hyunhee.kim@samsung.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/input.h>
++#include <linux/slab.h>
++#include <linux/regulator/driver.h>
++
++struct regulator_haptic {
++	struct device *dev;
++	struct input_dev *input_dev;
++	struct work_struct work;
++	bool enabled;
++	struct regulator *regulator;
++	struct mutex mutex;
++	int level;
++};
++
++static void regulator_haptic_enable(struct regulator_haptic *haptic, bool
+enable)
++{
++	int ret;
++
++	mutex_lock(&haptic->mutex);
++	if (enable && !haptic->enabled) {
++		haptic->enabled = true;
++		ret = regulator_enable(haptic->regulator);
++		if (ret)
++			pr_err("haptic: %s failed to enable regulator\n",
++				__func__);
++	} else if (!enable && haptic->enabled) {
++		haptic->enabled = false;
++		ret = regulator_disable(haptic->regulator);
++		if (ret)
++			pr_err("haptic: %s failed to disable regulator\n",
++				__func__);
++	}
++	mutex_unlock(&haptic->mutex);
++}
++
++static void regulator_haptic_work(struct work_struct *work)
++{
++	struct regulator_haptic *haptic = container_of(work,
++						       struct
+regulator_haptic,
++						       work);
++	if (haptic->level)
++		regulator_haptic_enable(haptic, true);
++	else
++		regulator_haptic_enable(haptic, false);
++
++}
++
++static int regulator_haptic_play(struct input_dev *input, void *data,
++				struct ff_effect *effect)
++{
++	struct regulator_haptic *haptic = input_get_drvdata(input);
++
++	haptic->level = effect->u.rumble.strong_magnitude;
++	if (!haptic->level)
++		haptic->level = effect->u.rumble.weak_magnitude;
++	schedule_work(&haptic->work);
++
++	return 0;
++}
++
++static void regulator_haptic_close(struct input_dev *input)
++{
++	struct regulator_haptic *haptic = input_get_drvdata(input);
++
++	cancel_work_sync(&haptic->work);
++	regulator_haptic_enable(haptic, false);
++}
++
++static int regulator_haptic_probe(struct platform_device *pdev)
++{
++	struct regulator_haptic *haptic;
++	struct input_dev *input_dev;
++	int error;
++
++	haptic = kzalloc(sizeof(*haptic), GFP_KERNEL);
++	if (!haptic) {
++		dev_err(&pdev->dev, "unable to allocate memory for
+haptic\n");
++		return -ENOMEM;
++	}
++
++	input_dev = input_allocate_device();
++
++	if (!input_dev) {
++		dev_err(&pdev->dev, "unable to allocate memory\n");
++		error =  -ENOMEM;
++		goto err_kfree_mem;
++	}
++
++	INIT_WORK(&haptic->work, regulator_haptic_work);
++	mutex_init(&haptic->mutex);
++	haptic->input_dev = input_dev;
++	haptic->dev = &pdev->dev;
++	haptic->regulator = regulator_get(&pdev->dev, "haptic");
++
++	if (IS_ERR(haptic->regulator)) {
++		error = PTR_ERR(haptic->regulator);
++		dev_err(&pdev->dev, "unable to get regulator, err: %d\n",
++			error);
++		goto err_ifree_mem;
++	}
++
++	haptic->input_dev->name = "regulator:haptic";
++	haptic->input_dev->dev.parent = &pdev->dev;
++	haptic->input_dev->close = regulator_haptic_close;
++	haptic->enabled = false;
++	input_set_drvdata(haptic->input_dev, haptic);
++	input_set_capability(haptic->input_dev, EV_FF, FF_RUMBLE);
++
++	error = input_ff_create_memless(input_dev, NULL,
++				      regulator_haptic_play);
++	if (error) {
++		dev_err(&pdev->dev,
++			"input_ff_create_memless() failed: %d\n",
++			error);
++		goto err_put_regulator;
++	}
++
++	error = input_register_device(haptic->input_dev);
++	if (error) {
++		dev_err(&pdev->dev,
++			"couldn't register input device: %d\n",
++			error);
++		goto err_destroy_ff;
++	}
++
++	platform_set_drvdata(pdev, haptic);
++
++	return 0;
++
++err_destroy_ff:
++	input_ff_destroy(haptic->input_dev);
++err_put_regulator:
++	regulator_put(haptic->regulator);
++err_ifree_mem:
++	input_free_device(haptic->input_dev);
++err_kfree_mem:
++	kfree(haptic);
++
++	return error;
++}
++
++static int regulator_haptic_remove(struct platform_device *pdev)
++{
++	struct regulator_haptic *haptic = platform_get_drvdata(pdev);
++
++	input_unregister_device(haptic->input_dev);
++
++	return 0;
++}
++
++static struct of_device_id regulator_haptic_dt_match[] = {
++	{ .compatible = "linux,regulator-haptic" },
++	{},
++};
++
++static struct platform_driver regulator_haptic_driver = {
++	.driver		= {
++		.name	= "regulator-haptic",
++		.owner	= THIS_MODULE,
++		.of_match_table = regulator_haptic_dt_match,
++	},
++
++	.probe		= regulator_haptic_probe,
++	.remove		= regulator_haptic_remove,
++};
++module_platform_driver(regulator_haptic_driver);
++
++MODULE_ALIAS("platform:regulator-haptic");
++MODULE_DESCRIPTION("Regulator haptic driver");
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("Hyunhee Kim <hyunhee.kim@samsung.com>");
+-- 
+1.7.9.5
 
 
