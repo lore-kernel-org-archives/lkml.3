@@ -1,362 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756896Ab3JKOeQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 10:34:16 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:47758 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755126Ab3JKOeO (ORCPT
+	id S1757725Ab3JKOiU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 10:38:20 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:14749 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751751Ab3JKOiT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 10:34:14 -0400
-From: Matt Fleming <matt@console-pimps.org>
-To: linux-efi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Peter Jones <pjones@redhat.com>
-Subject: [PATCH v2 2/2] x86/efi: Add EFI framebuffer earlyprintk support
-Date: Fri, 11 Oct 2013 15:33:57 +0100
-Message-Id: <1381502037-22225-3-git-send-email-matt@console-pimps.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1381502037-22225-1-git-send-email-matt@console-pimps.org>
-References: <1381502037-22225-1-git-send-email-matt@console-pimps.org>
+	Fri, 11 Oct 2013 10:38:19 -0400
+Date: Fri, 11 Oct 2013 10:38:14 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Mario Kleiner <mario.kleiner.de@gmail.com>,
+        Mario Kleiner <mario.kleiner@tuebingen.mpg.de>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Clark Williams <williams@redhat.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Dave Airlie <airlied@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Ville =?UTF-8?B?U3lyasOkbMOk?= <ville.syrjala@linux.intel.com>
+Subject: Re: [Intel-gfx] BUG: sleeping function called from invalid context
+ on 3.10.10-rt7
+Message-ID: <20131011103814.385a16a0@gandalf.local.home>
+In-Reply-To: <5257FD6E.6070809@linutronix.de>
+References: <5230895B.5070400@hurleysoftware.com>
+	<20130911113845.6d56a556@gandalf.local.home>
+	<5230C52E.3050801@hurleysoftware.com>
+	<5238B288.3000704@hurleysoftware.com>
+	<CAKMK7uG9s8W6yebkmuJe0XHGsoru4_9FzGqfmKWtMFyCAfQZqA@mail.gmail.com>
+	<523CC728.4040302@tuebingen.mpg.de>
+	<20130923083841.GT4531@intel.com>
+	<5242674A.8020100@tuebingen.mpg.de>
+	<20130925101301.6cbe5d0f@gandalf.local.home>
+	<52445DEF.1060007@gmail.com>
+	<20131011101800.GE6983@linutronix.de>
+	<20131011083757.7d3db58c@gandalf.local.home>
+	<5257FD6E.6070809@linutronix.de>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matt Fleming <matt.fleming@intel.com>
+On Fri, 11 Oct 2013 15:30:22 +0200
+Sebastian Andrzej Siewior <bigeasy@linutronix.de> wrote:
 
-It's incredibly difficult to diagnose early EFI boot issues without
-special hardware because earlyprintk=vga doesn't work on EFI systems.
+> On 10/11/2013 02:37 PM, Steven Rostedt wrote:
+> > On Fri, 11 Oct 2013 12:18:00 +0200
+> > Sebastian Andrzej Siewior <bigeasy@linutronix.de> wrote:
+> > 
+> >> * Mario Kleiner | 2013-09-26 18:16:47 [+0200]:
+> >>
+> >>> Good! I will do that. Thanks for clarifying the irq and constraints
+> >>> on raw locks in the other thread.
+> >>
+> >> Are there any suggestions for "now"?  preempt_disable_nort() like Luis
+> >> suggesed?
+> >>
+> > 
+> > The preempt_disable_nort() is rather pointless, because the
+> > preempt_disable() was added specifically for -rt. When PREEMPT_RT is
+> > not enabled, preemption is disabled there already by the previous calls
+> > to spin_lock().
+> 
+> Either way. Then I remove the preempt_enable/disable call. Any
+> objections?
+> 
 
-Add support for writing to the EFI framebuffer, via earlyprintk=efi,
-which will actually give users a chance of providing debug output.
+I have no issues with it, but it may cause issues with timings for the
+device. But I see Mario is looking into that :-)
 
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Jones <pjones@redhat.com>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
----
-
-Changes in v2:
-
- - add asm/efi.h to efi/early_printk.c for console prototype
- - Kconfig.debug: clear up grammar
- - remove uneeded paranthesis, due to precedence
- - delete spaces around multiplication
- - pass unsigned char to early_efi_write_char()
- - make 'dst' u32 * and get rid of memcpy()
- - delete mask code and write color directly
- - move efi_x, efi_y to top of file
- - standardize on unsigned int over int
- - s++ on separate line
- - switch ~(u32)0 for -1
- - scroll instead of clearing screen
- - rename early_efi_clear_line() early_efi_clear_scanline()
-
- Documentation/kernel-parameters.txt  |   8 +-
- arch/x86/Kconfig.debug               |   9 ++
- arch/x86/include/asm/efi.h           |   2 +
- arch/x86/kernel/early_printk.c       |   6 ++
- arch/x86/platform/efi/Makefile       |   1 +
- arch/x86/platform/efi/early_printk.c | 191 +++++++++++++++++++++++++++++++++++
- 6 files changed, 214 insertions(+), 3 deletions(-)
- create mode 100644 arch/x86/platform/efi/early_printk.c
-
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index fcbb736..c07cb09 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -847,6 +847,7 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 
- 	earlyprintk=	[X86,SH,BLACKFIN,ARM]
- 			earlyprintk=vga
-+			earlyprintk=efi
- 			earlyprintk=xen
- 			earlyprintk=serial[,ttySn[,baudrate]]
- 			earlyprintk=serial[,0x...[,baudrate]]
-@@ -860,7 +861,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			Append ",keep" to not disable it when the real console
- 			takes over.
- 
--			Only vga or serial or usb debug port at a time.
-+			Only one of vga, efi, serial, or usb debug port can
-+			be used at a time.
- 
- 			Currently only ttyS0 and ttyS1 may be specified by
- 			name.  Other I/O ports may be explicitly specified
-@@ -874,8 +876,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			Interaction with the standard serial driver is not
- 			very good.
- 
--			The VGA output is eventually overwritten by the real
--			console.
-+			The VGA and EFI output is eventually overwritten by
-+			the real console.
- 
- 			The xen output can only be used by Xen PV guests.
- 
-diff --git a/arch/x86/Kconfig.debug b/arch/x86/Kconfig.debug
-index 78d91af..b6fe388 100644
---- a/arch/x86/Kconfig.debug
-+++ b/arch/x86/Kconfig.debug
-@@ -59,6 +59,15 @@ config EARLY_PRINTK_DBGP
- 	  with klogd/syslogd or the X server. You should normally N here,
- 	  unless you want to debug such a crash. You need usb debug device.
- 
-+config EARLY_PRINTK_EFI
-+	bool "Early printk via the EFI framebuffer"
-+	depends on EFI && EARLY_PRINTK && FONT_SUPPORT
-+	---help---
-+	  Write kernel log output directly into the EFI framebuffer.
-+
-+	  This is useful for kernel debugging when your machine crashes very
-+	  early before the console code is initialized.
-+
- config X86_PTDUMP
- 	bool "Export kernel pagetable layout to userspace via debugfs"
- 	depends on DEBUG_KERNEL
-diff --git a/arch/x86/include/asm/efi.h b/arch/x86/include/asm/efi.h
-index b10ea9e..6b65df0 100644
---- a/arch/x86/include/asm/efi.h
-+++ b/arch/x86/include/asm/efi.h
-@@ -111,6 +111,8 @@ static inline bool efi_is_native(void)
- 	return IS_ENABLED(CONFIG_X86_64) == efi_enabled(EFI_64BIT);
- }
- 
-+extern struct console early_efi_console;
-+
- #else
- /*
-  * IF EFI is not configured, have the EFI calls return -ENOSYS.
-diff --git a/arch/x86/kernel/early_printk.c b/arch/x86/kernel/early_printk.c
-index d15f575..66f9d93 100644
---- a/arch/x86/kernel/early_printk.c
-+++ b/arch/x86/kernel/early_printk.c
-@@ -17,6 +17,7 @@
- #include <asm/mrst.h>
- #include <asm/pgtable.h>
- #include <linux/usb/ehci_def.h>
-+#include <asm/efi.h>
- 
- /* Simple VGA output */
- #define VGABASE		(__ISA_IO_base + 0xb8000)
-@@ -234,6 +235,11 @@ static int __init setup_early_printk(char *buf)
- 			early_console_register(&early_hsu_console, keep);
- 		}
- #endif
-+#ifdef CONFIG_EARLY_PRINTK_EFI
-+		if (!strncmp(buf, "efi", 3))
-+			early_console_register(&early_efi_console, keep);
-+#endif
-+
- 		buf++;
- 	}
- 	return 0;
-diff --git a/arch/x86/platform/efi/Makefile b/arch/x86/platform/efi/Makefile
-index 6db1cc4..b7b0b35 100644
---- a/arch/x86/platform/efi/Makefile
-+++ b/arch/x86/platform/efi/Makefile
-@@ -1,2 +1,3 @@
- obj-$(CONFIG_EFI) 		+= efi.o efi_$(BITS).o efi_stub_$(BITS).o
- obj-$(CONFIG_ACPI_BGRT) += efi-bgrt.o
-+obj-$(CONFIG_EARLY_PRINTK_EFI)	+= early_printk.o
-diff --git a/arch/x86/platform/efi/early_printk.c b/arch/x86/platform/efi/early_printk.c
-new file mode 100644
-index 0000000..b10c009
---- /dev/null
-+++ b/arch/x86/platform/efi/early_printk.c
-@@ -0,0 +1,191 @@
-+/*
-+ * Copyright (C) 2013 Intel Corporation; author Matt Fleming
-+ *
-+ *  This file is part of the Linux kernel, and is made available under
-+ *  the terms of the GNU General Public License version 2.
-+ */
-+
-+#include <linux/console.h>
-+#include <linux/font.h>
-+#include <linux/io.h>
-+#include <linux/kernel.h>
-+#include <asm/efi.h>
-+#include <asm/setup.h>
-+
-+static const struct font_desc *font;
-+static u32 efi_x, efi_y;
-+
-+static __init void early_efi_clear_scanline(unsigned int y)
-+{
-+	unsigned long base, *dst;
-+	u16 len;
-+
-+	base = boot_params.screen_info.lfb_base;
-+	len = boot_params.screen_info.lfb_linelength;
-+
-+	dst = early_ioremap(base + y*len, len);
-+	if (!dst)
-+		return;
-+
-+	memset(dst, 0, len);
-+	early_iounmap(dst, len);
-+}
-+
-+static __init void early_efi_scroll_up(void)
-+{
-+	unsigned long base, *dst, *src;
-+	u16 len;
-+	u32 i, height;
-+
-+	base = boot_params.screen_info.lfb_base;
-+	len = boot_params.screen_info.lfb_linelength;
-+	height = boot_params.screen_info.lfb_height;
-+
-+	for (i = 0; i < height - font->height; i++) {
-+		dst = early_ioremap(base + i*len, len);
-+		if (!dst)
-+			return;
-+
-+		src = early_ioremap(base + (i + font->height) * len, len);
-+		if (!src) {
-+			early_iounmap(dst, len);
-+			return;
-+		}
-+
-+		memmove(dst, src, len);
-+
-+		early_iounmap(src, len);
-+		early_iounmap(dst, len);
-+	}
-+}
-+
-+static void early_efi_write_char(u32 *dst, unsigned char c, unsigned int h)
-+{
-+	const u32 color_black = 0x00000000;
-+	const u32 color_grey = 0x00aaaaaa;
-+	const u8 *src;
-+	u8 s8;
-+	int m;
-+
-+	src = font->data + c * font->height;
-+	s8 = *(src + h);
-+
-+	for (m = 0; m < 8; m++) {
-+		if ((s8 >> (7 - m)) & 1)
-+			*dst = color_grey;
-+		else
-+			*dst = color_black;
-+		dst++;
-+	}
-+}
-+
-+static __init void
-+early_efi_write(struct console *con, const char *str, unsigned int num)
-+{
-+	struct screen_info *si;
-+	unsigned long base;
-+	unsigned int len;
-+	const char *s;
-+	void *dst;
-+
-+	base = boot_params.screen_info.lfb_base;
-+	si = &boot_params.screen_info;
-+	len = si->lfb_linelength;
-+
-+	while (num) {
-+		unsigned int linemax;
-+		unsigned int h, count = 0;
-+
-+		for (s = str; *s && *s != '\n'; s++) {
-+			if (count == num)
-+				break;
-+			count++;
-+		}
-+
-+		linemax = (si->lfb_width - efi_x) / font->width;
-+		if (count > linemax)
-+			count = linemax;
-+
-+		for (h = 0; h < font->height; h++) {
-+			unsigned int n, x;
-+
-+			dst = early_ioremap(base + (efi_y + h) * len, len);
-+			if (!dst)
-+				return;
-+
-+			s = str;
-+			n = count;
-+			x = efi_x;
-+
-+			while (n-- > 0) {
-+				early_efi_write_char(dst + x*4, *s, h);
-+				x += font->width;
-+				s++;
-+			}
-+
-+			early_iounmap(dst, len);
-+		}
-+
-+		num -= count;
-+		efi_x += count * font->width;
-+		str += count;
-+
-+		if (num > 0 && *s == '\n') {
-+			efi_x = 0;
-+			efi_y += font->height;
-+			str++;
-+			num--;
-+		}
-+
-+		if (efi_x >= si->lfb_width) {
-+			efi_x = 0;
-+			efi_y += font->height;
-+		}
-+
-+		if (efi_y + font->height >= si->lfb_height) {
-+			u32 i;
-+
-+			efi_y -= font->height;
-+			early_efi_scroll_up();
-+
-+			for (i = 0; i < font->height; i++)
-+				early_efi_clear_scanline(efi_y + i);
-+		}
-+	}
-+}
-+
-+static __init int early_efi_setup(struct console *con, char *options)
-+{
-+	struct screen_info *si;
-+	u16 xres, yres;
-+	u32 i;
-+
-+	si = &boot_params.screen_info;
-+	xres = si->lfb_width;
-+	yres = si->lfb_height;
-+
-+	/*
-+	 * early_efi_write_char() implicitly assumes a framebuffer with
-+	 * 32-bits per pixel.
-+	 */
-+	if (si->lfb_depth != 32)
-+		return -ENODEV;
-+
-+	font = get_default_font(xres, yres, -1, -1);
-+	if (!font)
-+		return -ENODEV;
-+
-+	efi_y = rounddown(yres, font->height) - font->height;
-+	for (i = 0; i < (yres - efi_y) / font->height; i++)
-+		early_efi_scroll_up();
-+
-+	return 0;
-+}
-+
-+struct console early_efi_console = {
-+	.name =		"earlyefi",
-+	.write =	early_efi_write,
-+	.setup =	early_efi_setup,
-+	.flags =	CON_PRINTBUFFER,
-+	.index =	-1,
-+};
--- 
-1.8.1.4
-
+-- Steve
