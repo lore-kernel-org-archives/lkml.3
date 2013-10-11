@@ -1,286 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756849Ab3JKHst (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 03:48:49 -0400
-Received: from 15.mo1.mail-out.ovh.net ([188.165.38.232]:34345 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756741Ab3JKHsq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 03:48:46 -0400
-X-Greylist: delayed 472 seconds by postgrey-1.27 at vger.kernel.org; Fri, 11 Oct 2013 03:48:46 EDT
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Josh Wu <josh.wu@atmel.com>, Richard Genoud <richard.genoud@gmail.com>
-Cc: Boris BREZILLON <b.brezillon@overkiz.com>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org
-Subject: [PATCH v4 02/17] ARM: at91: add Kconfig options for common clk support
-Date: Fri, 11 Oct 2013 09:37:46 +0200
-Message-Id: <1381477081-6041-3-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1381477081-6041-1-git-send-email-b.brezillon@overkiz.com>
-References: <1381477081-6041-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 12463430495844923618
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrvdefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrvdefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	id S1756909Ab3JKHwL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 03:52:11 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:42539 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752314Ab3JKHwJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 03:52:09 -0400
+Date: Fri, 11 Oct 2013 09:52:02 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "Chen, Gong" <gong.chen@linux.intel.com>
+Cc: tony.luck@intel.com, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 8/8] ACPI / trace: Add trace interface for eMCA driver
+Message-ID: <20131011075202.GB18719@pd.tnic>
+References: <1381473166-29303-1-git-send-email-gong.chen@linux.intel.com>
+ <1381473166-29303-9-git-send-email-gong.chen@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1381473166-29303-9-git-send-email-gong.chen@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the following Kconfig options to prepare the transition to
-common clk framework:
+On Fri, Oct 11, 2013 at 02:32:46AM -0400, Chen, Gong wrote:
+> diff --git a/drivers/acpi/extlog_trace.h b/drivers/acpi/extlog_trace.h
+> new file mode 100644
+> index 0000000..21f0887
+> --- /dev/null
+> +++ b/drivers/acpi/extlog_trace.h
+> @@ -0,0 +1,77 @@
+> +#if !defined(_TRACE_EXTLOG_H) || defined(TRACE_HEADER_MULTI_READ)
+> +#define _TRACE_EXTLOG_H
+> +
+> +#include <linux/tracepoint.h>
+> +#include <linux/cper.h>
+> +
+> +#undef TRACE_SYSTEM
+> +#define TRACE_SYSTEM extlog
+> +
+> +/*
+> + * MCE Extended Error Log Trace event
 
-- AT91_USE_OLD_CLK: this option is selected by every SoC which does not
-  support new at91 clks based on common clk framework (SoC which does not
-  define the clock tree in its device tree).
-  This options is also selected when the user choose non dt boards support
-  (new at91 clks can only be registered from a device tree definition).
+Right, we have a perfectly good header for ras TPs:
 
-- COMMON_CLK_AT91: this option cannot be selected directly. Instead it is
-  enabled if these 3 conditions are met:
-   * at least one of the selected SoCs have a PMC (Power Management
-     Controller) Unit
-   * device tree support is enabled
-   * the old at91 clk implementation is disabled (every selected SoC define
-     its clks in its device tree and non dt boards support is disabled)
+include/ras/ras_event.h
 
-- OLD_CLK_AT91: this option cannot be selected directly. Instead it is
-  enabled if these 2 conditions are met:
-   * at least one of the selected SoCs have a PMC (Power Management
-     Controller) Unit
-   * at least one of the selected SoCs does not define its clks in its
-     device tree or non dt-boards support is enabled
+Mind adding this TP there please?
 
-This patch selects AT91_USE_OLD_CLK in all currently supported SoCs. These
-selects will be removed after clk definitions are properly added in each
-soc's device tree.
-It also selects AT91_USE_OLD_CLK in all non-dt boards support.
+> + *
+> + * These events are generated when hardware detects a corrected or
+> + * uncorrected event.
+> + *
+> + */
+> +
+> +/* memory trace event */
+> +
+> +#define LOC_LEN		512
+> +#define MSG_LEN		((LOC_LEN) * 2)
+> +
+> +TRACE_EVENT(extlog_mem_event,
+> +	TP_PROTO(u32 etype,
+> +		char *dimm_loc,
+> +		const uuid_le *fru_id,
+> +		char *fru_text,
+> +		u64 error_count,
+> +		u32 severity,
+> +		u64 phy_addr,
+> +		char *mem_loc),
+> +
+> +	TP_ARGS(etype, dimm_loc, fru_id, fru_text, error_count, severity,
+> +		phy_addr, mem_loc),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(u32, etype)
+> +		__dynamic_array(char, dimm_info, LOC_LEN)
+> +		__field(u64, error_count)
+> +		__field(u32, severity)
+> +		__dynamic_array(char, msg, MSG_LEN)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->error_count = error_count;
+> +		__entry->severity = severity;
+> +		__entry->etype = etype;
+> +		if (dimm_loc[0] != '\0')
+> +			snprintf(__get_dynamic_array(dimm_info), LOC_LEN - 1,
+> +				"on %s", dimm_loc);
+> +		else
+> +			__assign_str(dimm_info, "");
+> +		if (phy_addr != 0)
+> +			snprintf(__get_dynamic_array(msg), MSG_LEN - 1,
+> +				"(FRU: %pUl %.20s physical addr: 0x%016llx%s)",
+> +				fru_id, fru_text, phy_addr, mem_loc);
+> +		else
+> +			__assign_str(msg, "");
+> +	),
+> +
+> +	TP_printk("%llu %s error%s:%s %s%s",
+> +			__entry->error_count,
+> +			cper_severity_str(__entry->severity),
+> +			__entry->error_count > 1 ? "s" : "",
+> +			cper_mem_err_type_str(__entry->etype),
+> +			__get_str(dimm_info),
+> +			__get_str(msg))
+> +);
+> +
+> +#endif /* _TRACE_EXTLOG_H */
+> +
+> +/* This part must be outside protection */
+> +#undef TRACE_INCLUDE_PATH
+> +#define TRACE_INCLUDE_PATH .
+> +#undef TRACE_INCLUDE_FILE
+> +#define TRACE_INCLUDE_FILE extlog_trace
+> +#include <trace/define_trace.h>
+> diff --git a/include/linux/cper.h b/include/linux/cper.h
+> index bd01c9a..c00eb55 100644
+> --- a/include/linux/cper.h
+> +++ b/include/linux/cper.h
+> @@ -395,6 +395,8 @@ struct cper_sec_pcie {
+>  #pragma pack()
+>  
+>  u64 cper_next_record_id(void);
+> +const char *cper_severity_str(unsigned int);
+> +const char *cper_mem_err_type_str(unsigned int);
+>  void cper_print_bits(const char *prefix, unsigned int bits,
+>  		     const char *strs[], unsigned int strs_size);
+>  
+> -- 
+> 1.8.4.rc3
+> 
+> 
 
-AT91_PMC_UNIT references are replaced by OLD_CLK_AT91, because PMC Unit is
-enabled for both old and common clk implementations, and old clk
-implementation should not be compiled if COMMON_CLK is enabled.
-
-To avoid future link errors, a new stub is created for at91_dt_clock_init
-function if OLD_CLK_AT91 is disabled.
-
-A new check is added in dt init functions (setup.c) to prepare for SoCs
-supporting new clk implementation. These SoCs won't setup the
-register_clocks callback (clk registration is done using of_clk_init).
-
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
----
- arch/arm/mach-at91/Kconfig        |   21 +++++++++++++++++++++
- arch/arm/mach-at91/Kconfig.non_dt |    6 ++++++
- arch/arm/mach-at91/Makefile       |    2 +-
- arch/arm/mach-at91/generic.h      |    3 ++-
- arch/arm/mach-at91/setup.c        |    6 ++++--
- 5 files changed, 34 insertions(+), 4 deletions(-)
-
-diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
-index 699b71e..85b53a4 100644
---- a/arch/arm/mach-at91/Kconfig
-+++ b/arch/arm/mach-at91/Kconfig
-@@ -6,10 +6,22 @@ config HAVE_AT91_DBGU0
- config HAVE_AT91_DBGU1
- 	bool
- 
-+config AT91_USE_OLD_CLK
-+	bool
-+
- config AT91_PMC_UNIT
- 	bool
- 	default !ARCH_AT91X40
- 
-+config COMMON_CLK_AT91
-+	bool
-+	default AT91_PMC_UNIT && USE_OF && !AT91_USE_OLD_CLK
-+	select COMMON_CLK
-+
-+config OLD_CLK_AT91
-+	bool
-+	default AT91_PMC_UNIT && AT91_USE_OLD_CLK
-+
- config AT91_SAM9_ALT_RESET
- 	bool
- 	default !ARCH_AT91X40
-@@ -65,6 +77,7 @@ config SOC_SAMA5D3
- 	select SOC_SAMA5
- 	select HAVE_FB_ATMEL
- 	select HAVE_AT91_DBGU1
-+	select AT91_USE_OLD_CLK
- 	help
- 	  Select this if you are using one of Atmel's SAMA5D3 family SoC.
- 	  This support covers SAMA5D31, SAMA5D33, SAMA5D34, SAMA5D35.
-@@ -78,11 +91,13 @@ config SOC_AT91RM9200
- 	select HAVE_AT91_DBGU0
- 	select MULTI_IRQ_HANDLER
- 	select SPARSE_IRQ
-+	select AT91_USE_OLD_CLK
- 
- config SOC_AT91SAM9260
- 	bool "AT91SAM9260, AT91SAM9XE or AT91SAM9G20"
- 	select HAVE_AT91_DBGU0
- 	select SOC_AT91SAM9
-+	select AT91_USE_OLD_CLK
- 	help
- 	  Select this if you are using one of Atmel's AT91SAM9260, AT91SAM9XE
- 	  or AT91SAM9G20 SoC.
-@@ -92,6 +107,7 @@ config SOC_AT91SAM9261
- 	select HAVE_AT91_DBGU0
- 	select HAVE_FB_ATMEL
- 	select SOC_AT91SAM9
-+	select AT91_USE_OLD_CLK
- 	help
- 	  Select this if you are using one of Atmel's AT91SAM9261 or AT91SAM9G10 SoC.
- 
-@@ -100,18 +116,21 @@ config SOC_AT91SAM9263
- 	select HAVE_AT91_DBGU1
- 	select HAVE_FB_ATMEL
- 	select SOC_AT91SAM9
-+	select AT91_USE_OLD_CLK
- 
- config SOC_AT91SAM9RL
- 	bool "AT91SAM9RL"
- 	select HAVE_AT91_DBGU0
- 	select HAVE_FB_ATMEL
- 	select SOC_AT91SAM9
-+	select AT91_USE_OLD_CLK
- 
- config SOC_AT91SAM9G45
- 	bool "AT91SAM9G45 or AT91SAM9M10 families"
- 	select HAVE_AT91_DBGU1
- 	select HAVE_FB_ATMEL
- 	select SOC_AT91SAM9
-+	select AT91_USE_OLD_CLK
- 	help
- 	  Select this if you are using one of Atmel's AT91SAM9G45 family SoC.
- 	  This support covers AT91SAM9G45, AT91SAM9G46, AT91SAM9M10 and AT91SAM9M11.
-@@ -121,6 +140,7 @@ config SOC_AT91SAM9X5
- 	select HAVE_AT91_DBGU0
- 	select HAVE_FB_ATMEL
- 	select SOC_AT91SAM9
-+	select AT91_USE_OLD_CLK
- 	help
- 	  Select this if you are using one of Atmel's AT91SAM9x5 family SoC.
- 	  This means that your SAM9 name finishes with a '5' (except if it is
-@@ -133,6 +153,7 @@ config SOC_AT91SAM9N12
- 	select HAVE_AT91_DBGU0
- 	select HAVE_FB_ATMEL
- 	select SOC_AT91SAM9
-+	select AT91_USE_OLD_CLK
- 	help
- 	  Select this if you are using Atmel's AT91SAM9N12 SoC.
- 
-diff --git a/arch/arm/mach-at91/Kconfig.non_dt b/arch/arm/mach-at91/Kconfig.non_dt
-index ca900be..b736b57 100644
---- a/arch/arm/mach-at91/Kconfig.non_dt
-+++ b/arch/arm/mach-at91/Kconfig.non_dt
-@@ -12,26 +12,32 @@ config ARCH_AT91_NONE
- config ARCH_AT91RM9200
- 	bool "AT91RM9200"
- 	select SOC_AT91RM9200
-+	select AT91_USE_OLD_CLK
- 
- config ARCH_AT91SAM9260
- 	bool "AT91SAM9260 or AT91SAM9XE or AT91SAM9G20"
- 	select SOC_AT91SAM9260
-+	select AT91_USE_OLD_CLK
- 
- config ARCH_AT91SAM9261
- 	bool "AT91SAM9261 or AT91SAM9G10"
- 	select SOC_AT91SAM9261
-+	select AT91_USE_OLD_CLK
- 
- config ARCH_AT91SAM9263
- 	bool "AT91SAM9263"
- 	select SOC_AT91SAM9263
-+	select AT91_USE_OLD_CLK
- 
- config ARCH_AT91SAM9RL
- 	bool "AT91SAM9RL"
- 	select SOC_AT91SAM9RL
-+	select AT91_USE_OLD_CLK
- 
- config ARCH_AT91SAM9G45
- 	bool "AT91SAM9G45"
- 	select SOC_AT91SAM9G45
-+	select AT91_USE_OLD_CLK
- 
- config ARCH_AT91X40
- 	bool "AT91x40"
-diff --git a/arch/arm/mach-at91/Makefile b/arch/arm/mach-at91/Makefile
-index 3b0a953..8539411 100644
---- a/arch/arm/mach-at91/Makefile
-+++ b/arch/arm/mach-at91/Makefile
-@@ -7,7 +7,7 @@ obj-m		:=
- obj-n		:=
- obj-		:=
- 
--obj-$(CONFIG_AT91_PMC_UNIT)	+= clock.o
-+obj-$(CONFIG_OLD_CLK_AT91)	+= clock.o
- obj-$(CONFIG_AT91_SAM9_ALT_RESET) += at91sam9_alt_reset.o
- obj-$(CONFIG_AT91_SAM9G45_RESET) += at91sam9g45_reset.o
- obj-$(CONFIG_AT91_SAM9_TIME)	+= at91sam926x_time.o
-diff --git a/arch/arm/mach-at91/generic.h b/arch/arm/mach-at91/generic.h
-index dc6e2f5..375c42e 100644
---- a/arch/arm/mach-at91/generic.h
-+++ b/arch/arm/mach-at91/generic.h
-@@ -44,11 +44,12 @@ extern void at91sam926x_pit_init(void);
- extern void at91x40_timer_init(void);
- 
-  /* Clocks */
--#ifdef CONFIG_AT91_PMC_UNIT
-+#ifdef CONFIG_OLD_CLK_AT91
- extern int __init at91_clock_init(unsigned long main_clock);
- extern int __init at91_dt_clock_init(void);
- #else
- static int inline at91_clock_init(unsigned long main_clock) { return 0; }
-+static int inline at91_dt_clock_init(void) { return 0; }
- #endif
- struct device;
- 
-diff --git a/arch/arm/mach-at91/setup.c b/arch/arm/mach-at91/setup.c
-index 41aa68b..06052fc 100644
---- a/arch/arm/mach-at91/setup.c
-+++ b/arch/arm/mach-at91/setup.c
-@@ -483,7 +483,8 @@ void __init at91rm9200_dt_initialize(void)
- 	at91_dt_clock_init();
- 
- 	/* Register the processor-specific clocks */
--	at91_boot_soc.register_clocks();
-+	if (at91_boot_soc.register_clocks)
-+		at91_boot_soc.register_clocks();
- 
- 	at91_boot_soc.init();
- }
-@@ -498,7 +499,8 @@ void __init at91_dt_initialize(void)
- 	at91_dt_clock_init();
- 
- 	/* Register the processor-specific clocks */
--	at91_boot_soc.register_clocks();
-+	if (at91_boot_soc.register_clocks)
-+		at91_boot_soc.register_clocks();
- 
- 	if (at91_boot_soc.init)
- 		at91_boot_soc.init();
 -- 
-1.7.9.5
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
