@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932479Ab3JKKrV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 06:47:21 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58819 "EHLO
+	id S932353Ab3JKKoU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 06:44:20 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58785 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932364Ab3JKKoW (ORCPT
+	with ESMTP id S932332Ab3JKKoO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 06:44:22 -0400
+	Fri, 11 Oct 2013 06:44:14 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Passion,Zhao" <passion.zhao@intel.com>,
-        Tim Gardner <tim.gardner@canonical.com>,
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 093/100] Smack: Fix the bug smackcipso can't set CIPSO correctly
-Date: Fri, 11 Oct 2013 11:42:03 +0100
-Message-Id: <1381488130-30235-94-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 086/100] powerpc: Fix parameter clobber in csum_partial_copy_generic()
+Date: Fri, 11 Oct 2013 11:41:56 +0100
+Message-Id: <1381488130-30235-87-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
 References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
@@ -28,40 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Passion,Zhao" <passion.zhao@intel.com>
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-commit 0fcfee61d63b82c1eefb5b1a914240480f17d63f upstream.
+commit d9813c3681a36774b254c0cdc9cce53c9e22c756 upstream.
 
-Bug report: https://tizendev.org/bugs/browse/TDIS-3891
+The csum_partial_copy_generic() uses register r7 to adjust the remaining
+bytes to process.  Unfortunately, r7 also holds a parameter, namely the
+address of the flag to set in case of access exceptions while reading
+the source buffer.  Lacking a quantum implementation of PowerPC, this
+commit instead uses register r9 to do the adjusting, leaving r7's
+pointer uncorrupted.
 
-The reason is userspace libsmack only use "smackfs/cipso2" long-label interface,
-but the code's logical is still for orginal fixed length label. Now update
-smack_cipso_apply() to support flexible label (<=256 including tailing '\0')
-
-There is also a bug in kernel/security/smack/smackfs.c:
-When smk_set_cipso() parsing the CIPSO setting from userspace, the offset of
-CIPSO level should be "strlen(label)+1" instead of "strlen(label)"
-
-Signed-off-by: Passion,Zhao <passion.zhao@intel.com>
-Cc: Tim Gardner <tim.gardner@canonical.com>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- security/smack/smackfs.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/powerpc/lib/checksum_64.S | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/security/smack/smackfs.c b/security/smack/smackfs.c
-index cb6d904..fccf04f 100644
---- a/security/smack/smackfs.c
-+++ b/security/smack/smackfs.c
-@@ -819,7 +819,7 @@ static ssize_t smk_set_cipso(struct file *file, const char __user *buf,
- 	if (format == SMK_FIXED24_FMT)
- 		rule += SMK_LABELLEN;
- 	else
--		rule += strlen(skp->smk_known);
-+		rule += strlen(skp->smk_known) + 1;
+diff --git a/arch/powerpc/lib/checksum_64.S b/arch/powerpc/lib/checksum_64.S
+index 18245af..afa2eba 100644
+--- a/arch/powerpc/lib/checksum_64.S
++++ b/arch/powerpc/lib/checksum_64.S
+@@ -272,8 +272,8 @@ _GLOBAL(csum_partial_copy_generic)
+ 	rldicl. r6,r3,64-1,64-2		/* r6 = (r3 & 0x3) >> 1 */
+ 	beq	.Lcopy_aligned
  
- 	ret = sscanf(rule, "%d", &maplevel);
- 	if (ret != 1 || maplevel > SMACK_CIPSO_MAXLEVEL)
+-	li	r7,4
+-	sub	r6,r7,r6
++	li	r9,4
++	sub	r6,r9,r6
+ 	mtctr	r6
+ 
+ 1:
 -- 
 1.8.3.2
 
