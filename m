@@ -1,99 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756807Ab3JKGzm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 02:55:42 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:53515 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753076Ab3JKGzk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 02:55:40 -0400
-Message-ID: <5257A0C0.8000701@ti.com>
-Date: Fri, 11 Oct 2013 12:24:56 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Nishanth Menon <nm@ti.com>
-CC: Mark Rutland <mark.rutland@arm.com>, dt list <devicetree@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Pawel Moll <pawel.moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        Tony Lindgren <tony@atomide.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/2] ARM: dts: omap5-uevm: remove always_on, boot_on from
- smps10_out1
-References: <1381402195-29257-1-git-send-email-kishon@ti.com> <20131010141949.GA13277@kahuna> <52579723.6080209@ti.com> <CAGo_u6odWJ9UKwgaVu2YZzZKuYbveBoGDf99L=rJoK1-9KJ0SA@mail.gmail.com> <5257A05B.2070906@ti.com>
-In-Reply-To: <5257A05B.2070906@ti.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
+	id S1756383Ab3JKHAo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 03:00:44 -0400
+Received: from smtprelay0110.hostedemail.com ([216.40.44.110]:47815 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752326Ab3JKHAn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 03:00:43 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 20,1.5,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2317:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3867:3871:4250:4321:5007:7652:7903:9165:10004:10400:10429:10430:10431:10848:11232:11658:11914:12296:12517:12519:12555:12740:13069:13311:13357:19903:19997,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: cause86_7a6ad3c3ab01d
+X-Filterd-Recvd-Size: 1728
+Message-ID: <1381474839.27498.11.camel@joe-AO722>
+Subject: Re: Extended H/W error log driver
+From: Joe Perches <joe@perches.com>
+To: "Chen, Gong" <gong.chen@linux.intel.com>
+Cc: tony.luck@intel.com, bp@alien8.de, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Date: Fri, 11 Oct 2013 00:00:39 -0700
+In-Reply-To: <1381473166-29303-1-git-send-email-gong.chen@linux.intel.com>
+References: <1381473166-29303-1-git-send-email-gong.chen@linux.intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 11 October 2013 12:23 PM, Kishon Vijay Abraham I wrote:
-> Hi,
+On Fri, 2013-10-11 at 02:32 -0400, Chen, Gong wrote:
+> This patch series adds an enhanced MCA event logging driver provided by Intel.
+[]
+> dmesg output:
 > 
-> On Friday 11 October 2013 12:00 PM, Nishanth Menon wrote:
->> On Fri, Oct 11, 2013 at 1:13 AM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
->>>
->>>> regulator-boot-on indicates that PMIC enables it by default as part of
->>>> OTP or some internal behavior -> Looking at the measurements done on
->>>> uEVM and OTP information -> regulator-boot-on should be kept here.
->>>
->>> No. Actually I don’t want PMIC to enable it by default. I want the palmas-usb
->>> driver to handle it.
->>> Enabling it by default makes palmas-usb to detect VBUS interrupt. This should
->>> ideally be detected only when you connect a host cable.
->>> Btw I didn't exactly get why you want regulator-boot-on should be kept here.
->>
->> binding description states:
->> - regulator-boot-on: bootloader/firmware enabled regulator
->> Further info: include/linux/regulator/machine.h
->> * @boot_on: Set if the regulator is enabled when the system is initially
->> *           started.  If the regulator is not enabled by the hardware or
->> *           bootloader then it will be enabled when the constraints are
->> *           applied.
->>
->> What that means is that it is enabled by firmware/bootloader (in our
->> case One Time Program {OTP} inside Palmas) when the system switches on
->> even before the kernel starts. and we know SMPS10 is autoenabled by
->> Palmas OTP configuration even before first instruction in A15
->> executes.
-> 
-> Not sure about that. Please note SMPS10 has two outputs OUT1 and OUT2 and I
-> tend to think that it might be OUT2 that's getting enabled by the OTP.
->>
->> I think you misunderstand this to mean that you'd like the regulator
->> to be *switched on* automatically at kernel boot by regulator
->> framework - there is no reasoning why we'd want such a binding since
->> we'd expect drivers to do their job of requesting and enabling
->> regulators on need..
-> 
-> The comment you just quoted tells it enables the regulator if its not enabled
-> by hardware. "If the regulator is not enabled by the hardware or bootloader
-> then it will be enabled when the constraints are applied." At-least that's what
-> I understood from that comment.
-> 
-> Also from our experiments it doesn't look like SMPS10_OUT1 is enabled by the
-> OTP and it gets enabled when we have *regulator-boot-on* constraints.
+> [56005.785917] {3}Hardware error detected on CPU0
+> [56005.785959] {3}event severity: corrected
+> [56005.785975] {3}sub_event[0], severity: corrected
+> [56005.785977] {3}section_type: memory error
+> [56005.785981] {3}physical_address: 0x0000000851fe0000
+> [56005.786027] {3}DIMM location: Memriser1 CHANNEL A DIMM 0
+> [56005.786154] {4}Hardware error detected on CPU0
+> [56005.786159] {4}event severity: corrected
+> [56005.786162] {4}sub_event[0], severity: corrected
+> [56005.786166] {4}section_type: memory error
+[]
+> So welcome to add comments for what is needed or not.
 
-btw.. I think this is the code in regulator fw that's responsible for enabling..
+Perhaps there can be a better standardized prefix other than {seq}
+like KBUILD_MODNAME or some other useful identifier like subsystem
+name.
 
-	/* If the constraints say the regulator should be on at this point
-	 * and we have control then make sure it is enabled.
-	 */
-	if ((rdev->constraints->always_on || rdev->constraints->boot_on) &&
-	    ops->enable) {
-		ret = ops->enable(rdev);
-		if (ret < 0) {
-			rdev_err(rdev, "failed to enable\n");
-			goto out;
-		}
-	}
 
-Thanks
-Kishon
