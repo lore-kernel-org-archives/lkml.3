@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933152Ab3JKUOe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:14:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46083 "EHLO
+	id S933156Ab3JKUO5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:14:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46071 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932354Ab3JKTlF (ORCPT
+	with ESMTP id S932334Ab3JKTlE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:41:05 -0400
+	Fri, 11 Oct 2013 15:41:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Vrabel <david.vrabel@citrix.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 021/135] xen-netback: count number required slots for an skb more carefully
-Date: Fri, 11 Oct 2013 12:38:22 -0700
-Message-Id: <20131011193947.523085104@linuxfoundation.org>
+        Jiri Pirko <jiri@resnulli.us>, "David S. Miller" <davem@davemloft.net>
+Subject: [ 009/135] ipv6/exthdrs: accept tlv which includes only padding
+Date: Fri, 11 Oct 2013 12:38:10 -0700
+Message-Id: <20131011193946.232182366@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -28,175 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: Jiri Pirko <jiri@resnulli.us>
 
-[ Upstream commit 6e43fc04a6bc357d260583b8440882f28069207f ]
+[ Upstream commit 8112b1fe071be01a28a774ed55909e6f4b29712d ]
 
-When a VM is providing an iSCSI target and the LUN is used by the
-backend domain, the generated skbs for direct I/O writes to the disk
-have large, multi-page skb->data but no frags.
+In rfc4942 and rfc2460 I cannot find anything which would implicate to
+drop packets which have only padding in tlv.
 
-With some lengths and starting offsets, xen_netbk_count_skb_slots()
-would be one short because the simple calculation of
-DIV_ROUND_UP(skb_headlen(), PAGE_SIZE) was not accounting for the
-decisions made by start_new_rx_buffer() which does not guarantee
-responses are fully packed.
+Current behaviour breaks TAHI Test v6LC.1.2.6.
 
-For example, a skb with length < 2 pages but which spans 3 pages would
-be counted as requiring 2 slots but would actually use 3 slots.
+Problem was intruduced in:
+9b905fe6843 "ipv6/exthdrs: strict Pad1 and PadN check"
 
-skb->data:
-
-    |        1111|222222222222|3333        |
-
-Fully packed, this would need 2 slots:
-
-    |111122222222|22223333    |
-
-But because the 2nd page wholy fits into a slot it is not split across
-slots and goes into a slot of its own:
-
-    |1111        |222222222222|3333        |
-
-Miscounting the number of slots means netback may push more responses
-than the number of available requests.  This will cause the frontend
-to get very confused and report "Too many frags/slots".  The frontend
-never recovers and will eventually BUG.
-
-Fix this by counting the number of required slots more carefully.  In
-xen_netbk_count_skb_slots(), more closely follow the algorithm used by
-xen_netbk_gop_skb() by introducing xen_netbk_count_frag_slots() which
-is the dry-run equivalent of netbk_gop_frag_copy().
-
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
+Signed-off-by: Jiri Pirko <jiri@resnulli.us>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/xen-netback/netback.c |   94 +++++++++++++++++++++++++-------------
- 1 file changed, 64 insertions(+), 30 deletions(-)
+ net/ipv6/exthdrs.c |    6 ------
+ 1 file changed, 6 deletions(-)
 
---- a/drivers/net/xen-netback/netback.c
-+++ b/drivers/net/xen-netback/netback.c
-@@ -361,6 +361,49 @@ static bool start_new_rx_buffer(int offs
- 	return false;
- }
- 
-+struct xenvif_count_slot_state {
-+	unsigned long copy_off;
-+	bool head;
-+};
-+
-+unsigned int xenvif_count_frag_slots(struct xenvif *vif,
-+				     unsigned long offset, unsigned long size,
-+				     struct xenvif_count_slot_state *state)
-+{
-+	unsigned count = 0;
-+
-+	offset &= ~PAGE_MASK;
-+
-+	while (size > 0) {
-+		unsigned long bytes;
-+
-+		bytes = PAGE_SIZE - offset;
-+
-+		if (bytes > size)
-+			bytes = size;
-+
-+		if (start_new_rx_buffer(state->copy_off, bytes, state->head)) {
-+			count++;
-+			state->copy_off = 0;
-+		}
-+
-+		if (state->copy_off + bytes > MAX_BUFFER_OFFSET)
-+			bytes = MAX_BUFFER_OFFSET - state->copy_off;
-+
-+		state->copy_off += bytes;
-+
-+		offset += bytes;
-+		size -= bytes;
-+
-+		if (offset == PAGE_SIZE)
-+			offset = 0;
-+
-+		state->head = false;
-+	}
-+
-+	return count;
-+}
-+
- /*
-  * Figure out how many ring slots we're going to need to send @skb to
-  * the guest. This function is essentially a dry run of
-@@ -368,48 +411,39 @@ static bool start_new_rx_buffer(int offs
-  */
- unsigned int xen_netbk_count_skb_slots(struct xenvif *vif, struct sk_buff *skb)
- {
-+	struct xenvif_count_slot_state state;
- 	unsigned int count;
--	int i, copy_off;
-+	unsigned char *data;
-+	unsigned i;
- 
--	count = DIV_ROUND_UP(skb_headlen(skb), PAGE_SIZE);
-+	state.head = true;
-+	state.copy_off = 0;
- 
--	copy_off = skb_headlen(skb) % PAGE_SIZE;
-+	/* Slot for the first (partial) page of data. */
-+	count = 1;
- 
-+	/* Need a slot for the GSO prefix for GSO extra data? */
- 	if (skb_shinfo(skb)->gso_size)
- 		count++;
- 
--	for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
--		unsigned long size = skb_frag_size(&skb_shinfo(skb)->frags[i]);
--		unsigned long offset = skb_shinfo(skb)->frags[i].page_offset;
--		unsigned long bytes;
--
--		offset &= ~PAGE_MASK;
--
--		while (size > 0) {
--			BUG_ON(offset >= PAGE_SIZE);
--			BUG_ON(copy_off > MAX_BUFFER_OFFSET);
-+	data = skb->data;
-+	while (data < skb_tail_pointer(skb)) {
-+		unsigned long offset = offset_in_page(data);
-+		unsigned long size = PAGE_SIZE - offset;
- 
--			bytes = PAGE_SIZE - offset;
-+		if (data + size > skb_tail_pointer(skb))
-+			size = skb_tail_pointer(skb) - data;
- 
--			if (bytes > size)
--				bytes = size;
-+		count += xenvif_count_frag_slots(vif, offset, size, &state);
- 
--			if (start_new_rx_buffer(copy_off, bytes, 0)) {
--				count++;
--				copy_off = 0;
--			}
--
--			if (copy_off + bytes > MAX_BUFFER_OFFSET)
--				bytes = MAX_BUFFER_OFFSET - copy_off;
--
--			copy_off += bytes;
-+		data += size;
-+	}
- 
--			offset += bytes;
--			size -= bytes;
-+	for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
-+		unsigned long size = skb_frag_size(&skb_shinfo(skb)->frags[i]);
-+		unsigned long offset = skb_shinfo(skb)->frags[i].page_offset;
- 
--			if (offset == PAGE_SIZE)
--				offset = 0;
--		}
-+		count += xenvif_count_frag_slots(vif, offset, size, &state);
+--- a/net/ipv6/exthdrs.c
++++ b/net/ipv6/exthdrs.c
+@@ -162,12 +162,6 @@ static bool ip6_parse_tlv(const struct t
+ 		off += optlen;
+ 		len -= optlen;
  	}
- 	return count;
- }
+-	/* This case will not be caught by above check since its padding
+-	 * length is smaller than 7:
+-	 * 1 byte NH + 1 byte Length + 6 bytes Padding
+-	 */
+-	if ((padlen == 6) && ((off - skb_network_header_len(skb)) == 8))
+-		goto bad;
+ 
+ 	if (len == 0)
+ 		return true;
 
 
