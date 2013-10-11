@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757355Ab3JKVKt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 17:10:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45100 "EHLO
+	id S1757388Ab3JKVLN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 17:11:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45095 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756309Ab3JKTfh (ORCPT
+	with ESMTP id S1756179Ab3JKTfg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:35:37 -0400
+	Fri, 11 Oct 2013 15:35:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joseph Chang <joseph_chang@davicom.com.tw>,
-        Peter Korsgaard <peter@korsgaard.com>,
+        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Dmitry Vyukov <dvyukov@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 14/39] dm9601: fix IFF_ALLMULTI handling
-Date: Fri, 11 Oct 2013 12:34:58 -0700
-Message-Id: <20131011193212.441629884@linuxfoundation.org>
+Subject: [ 12/39] ipv6: udp packets following an UFO enqueued packet need also be handled by UFO
+Date: Fri, 11 Oct 2013 12:34:56 -0700
+Message-Id: <20131011193212.212757125@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193210.843963685@linuxfoundation.org>
 References: <20131011193210.843963685@linuxfoundation.org>
@@ -28,31 +29,122 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Korsgaard <peter@korsgaard.com>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-[ Upstream commit bf0ea6380724beb64f27a722dfc4b0edabff816e ]
+[ Upstream commit 2811ebac2521ceac84f2bdae402455baa6a7fb47 ]
 
-Pass-all-multicast is controlled by bit 3 in RX control, not bit 2
-(pass undersized frames).
+In the following scenario the socket is corked:
+If the first UDP packet is larger then the mtu we try to append it to the
+write queue via ip6_ufo_append_data. A following packet, which is smaller
+than the mtu would be appended to the already queued up gso-skb via
+plain ip6_append_data. This causes random memory corruptions.
 
-Reported-by: Joseph Chang <joseph_chang@davicom.com.tw>
-Signed-off-by: Peter Korsgaard <peter@korsgaard.com>
+In ip6_ufo_append_data we also have to be careful to not queue up the
+same skb multiple times. So setup the gso frame only when no first skb
+is available.
+
+This also fixes a shortcoming where we add the current packet's length to
+cork->length but return early because of a packet > mtu with dontfrag set
+(instead of sutracting it again).
+
+Found with trinity.
+
+Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Reported-by: Dmitry Vyukov <dvyukov@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/usb/dm9601.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ipv6/ip6_output.c |   53 ++++++++++++++++++++------------------------------
+ 1 file changed, 22 insertions(+), 31 deletions(-)
 
---- a/drivers/net/usb/dm9601.c
-+++ b/drivers/net/usb/dm9601.c
-@@ -384,7 +384,7 @@ static void dm9601_set_multicast(struct
- 		rx_ctl |= 0x02;
- 	} else if (net->flags & IFF_ALLMULTI ||
- 		   netdev_mc_count(net) > DM_MAX_MCAST) {
--		rx_ctl |= 0x04;
-+		rx_ctl |= 0x08;
- 	} else if (!netdev_mc_empty(net)) {
- 		struct netdev_hw_addr *ha;
+--- a/net/ipv6/ip6_output.c
++++ b/net/ipv6/ip6_output.c
+@@ -1141,6 +1141,8 @@ static inline int ip6_ufo_append_data(st
+ 	 * udp datagram
+ 	 */
+ 	if ((skb = skb_peek_tail(&sk->sk_write_queue)) == NULL) {
++		struct frag_hdr fhdr;
++
+ 		skb = sock_alloc_send_skb(sk,
+ 			hh_len + fragheaderlen + transhdrlen + 20,
+ 			(flags & MSG_DONTWAIT), &err);
+@@ -1161,12 +1163,6 @@ static inline int ip6_ufo_append_data(st
  
+ 		skb->ip_summed = CHECKSUM_PARTIAL;
+ 		skb->csum = 0;
+-	}
+-
+-	err = skb_append_datato_frags(sk,skb, getfrag, from,
+-				      (length - transhdrlen));
+-	if (!err) {
+-		struct frag_hdr fhdr;
+ 
+ 		/* Specify the length of each IPv6 datagram fragment.
+ 		 * It has to be a multiple of 8.
+@@ -1177,15 +1173,10 @@ static inline int ip6_ufo_append_data(st
+ 		ipv6_select_ident(&fhdr, &rt->rt6i_dst.addr);
+ 		skb_shinfo(skb)->ip6_frag_id = fhdr.identification;
+ 		__skb_queue_tail(&sk->sk_write_queue, skb);
+-
+-		return 0;
+ 	}
+-	/* There is not enough support do UPD LSO,
+-	 * so follow normal path
+-	 */
+-	kfree_skb(skb);
+ 
+-	return err;
++	return skb_append_datato_frags(sk, skb, getfrag, from,
++				       (length - transhdrlen));
+ }
+ 
+ static inline struct ipv6_opt_hdr *ip6_opt_dup(struct ipv6_opt_hdr *src,
+@@ -1354,27 +1345,27 @@ int ip6_append_data(struct sock *sk, int
+ 	 * --yoshfuji
+ 	 */
+ 
+-	cork->length += length;
+-	if (length > mtu) {
+-		int proto = sk->sk_protocol;
+-		if (dontfrag && (proto == IPPROTO_UDP || proto == IPPROTO_RAW)){
+-			ipv6_local_rxpmtu(sk, fl6, mtu-exthdrlen);
+-			return -EMSGSIZE;
+-		}
+-
+-		if (proto == IPPROTO_UDP &&
+-		    (rt->dst.dev->features & NETIF_F_UFO)) {
++	if ((length > mtu) && dontfrag && (sk->sk_protocol == IPPROTO_UDP ||
++					   sk->sk_protocol == IPPROTO_RAW)) {
++		ipv6_local_rxpmtu(sk, fl6, mtu-exthdrlen);
++		return -EMSGSIZE;
++	}
+ 
+-			err = ip6_ufo_append_data(sk, getfrag, from, length,
+-						  hh_len, fragheaderlen,
+-						  transhdrlen, mtu, flags, rt);
+-			if (err)
+-				goto error;
+-			return 0;
+-		}
++	skb = skb_peek_tail(&sk->sk_write_queue);
++	cork->length += length;
++	if (((length > mtu) ||
++	     (skb && skb_is_gso(skb))) &&
++	    (sk->sk_protocol == IPPROTO_UDP) &&
++	    (rt->dst.dev->features & NETIF_F_UFO)) {
++		err = ip6_ufo_append_data(sk, getfrag, from, length,
++					  hh_len, fragheaderlen,
++					  transhdrlen, mtu, flags, rt);
++		if (err)
++			goto error;
++		return 0;
+ 	}
+ 
+-	if ((skb = skb_peek_tail(&sk->sk_write_queue)) == NULL)
++	if (!skb)
+ 		goto alloc_new_skb;
+ 
+ 	while (length > 0) {
 
 
