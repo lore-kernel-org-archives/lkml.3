@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932881Ab3JKTm0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:42:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46523 "EHLO
+	id S1758466Ab3JKTnk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:43:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46593 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758143Ab3JKTmN (ORCPT
+	with ESMTP id S932876Ab3JKTmZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:42:13 -0400
+	Fri, 11 Oct 2013 15:42:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Rafael Aquini <aquini@redhat.com>,
-        Luiz Capitulino <lcapitulino@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 108/135] mm: avoid reinserting isolated balloon pages into LRU lists
-Date: Fri, 11 Oct 2013 12:39:49 -0700
-Message-Id: <20131011193957.018824785@linuxfoundation.org>
+        Tom Gundersen <teg@jklm.no>, David Herrmann <dh.herrmann@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [ 133/135] HID: uhid: allocate static minor
+Date: Fri, 11 Oct 2013 12:40:14 -0700
+Message-Id: <20131011193959.724958384@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -31,144 +27,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rafael Aquini <aquini@redhat.com>
+From: David Herrmann <dh.herrmann@gmail.com>
 
-commit 117aad1e9e4d97448d1df3f84b08bd65811e6d6a upstream.
+commit 19872d20c890073c5207d9e02bb8f14d451a11eb upstream.
 
-Isolated balloon pages can wrongly end up in LRU lists when
-migrate_pages() finishes its round without draining all the isolated
-page list.
+udev has this nice feature of creating "dead" /dev/<node> device-nodes if
+it finds a devnode:<node> modalias. Once the node is accessed, the kernel
+automatically loads the module that provides the node. However, this
+requires udev to know the major:minor code to use for the node. This
+feature was introduced by:
 
-The same issue can happen when reclaim_clean_pages_from_list() tries to
-reclaim pages from an isolated page list, before migration, in the CMA
-path.  Such balloon page leak opens a race window against LRU lists
-shrinkers that leads us to the following kernel panic:
+  commit 578454ff7eab61d13a26b568f99a89a2c9edc881
+  Author: Kay Sievers <kay.sievers@vrfy.org>
+  Date:   Thu May 20 18:07:20 2010 +0200
 
-  BUG: unable to handle kernel NULL pointer dereference at 0000000000000028
-  IP: [<ffffffff810c2625>] shrink_page_list+0x24e/0x897
-  PGD 3cda2067 PUD 3d713067 PMD 0
-  Oops: 0000 [#1] SMP
-  CPU: 0 PID: 340 Comm: kswapd0 Not tainted 3.12.0-rc1-22626-g4367597 #87
-  Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-  RIP: shrink_page_list+0x24e/0x897
-  RSP: 0000:ffff88003da499b8  EFLAGS: 00010286
-  RAX: 0000000000000000 RBX: ffff88003e82bd60 RCX: 00000000000657d5
-  RDX: 0000000000000000 RSI: 000000000000031f RDI: ffff88003e82bd40
-  RBP: ffff88003da49ab0 R08: 0000000000000001 R09: 0000000081121a45
-  R10: ffffffff81121a45 R11: ffff88003c4a9a28 R12: ffff88003e82bd40
-  R13: ffff88003da0e800 R14: 0000000000000001 R15: ffff88003da49d58
-  FS:  0000000000000000(0000) GS:ffff88003fc00000(0000) knlGS:0000000000000000
-  CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-  CR2: 00000000067d9000 CR3: 000000003ace5000 CR4: 00000000000407b0
-  Call Trace:
-    shrink_inactive_list+0x240/0x3de
-    shrink_lruvec+0x3e0/0x566
-    __shrink_zone+0x94/0x178
-    shrink_zone+0x3a/0x82
-    balance_pgdat+0x32a/0x4c2
-    kswapd+0x2f0/0x372
-    kthread+0xa2/0xaa
-    ret_from_fork+0x7c/0xb0
-  Code: 80 7d 8f 01 48 83 95 68 ff ff ff 00 4c 89 e7 e8 5a 7b 00 00 48 85 c0 49 89 c5 75 08 80 7d 8f 00 74 3e eb 31 48 8b 80 18 01 00 00 <48> 8b 74 0d 48 8b 78 30 be 02 00 00 00 ff d2 eb
-  RIP  [<ffffffff810c2625>] shrink_page_list+0x24e/0x897
-   RSP <ffff88003da499b8>
-  CR2: 0000000000000028
-  ---[ end trace 703d2451af6ffbfd ]---
-  Kernel panic - not syncing: Fatal exception
+      driver core: add devname module aliases to allow module on-demand auto-loading
 
-This patch fixes the issue, by assuring the proper tests are made at
-putback_movable_pages() & reclaim_clean_pages_from_list() to avoid
-isolated balloon pages being wrongly reinserted in LRU lists.
+However, uhid uses dynamic minor numbers so this doesn't actually work. We
+need to load uhid to know which minor it's going to use.
 
-[akpm@linux-foundation.org: clarify awkward comment text]
-Signed-off-by: Rafael Aquini <aquini@redhat.com>
-Reported-by: Luiz Capitulino <lcapitulino@redhat.com>
-Tested-by: Luiz Capitulino <lcapitulino@redhat.com>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Hence, allocate a static minor (just like uinput does) and we're good
+to go.
+
+Reported-by: Tom Gundersen <teg@jklm.no>
+Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/balloon_compaction.h |   25 +++++++++++++++++++++++++
- mm/migrate.c                       |    2 +-
- mm/vmscan.c                        |    4 +++-
- 3 files changed, 29 insertions(+), 2 deletions(-)
+ drivers/hid/uhid.c         |    3 ++-
+ include/linux/miscdevice.h |    1 +
+ 2 files changed, 3 insertions(+), 1 deletion(-)
 
---- a/include/linux/balloon_compaction.h
-+++ b/include/linux/balloon_compaction.h
-@@ -159,6 +159,26 @@ static inline bool balloon_page_movable(
- }
+--- a/drivers/hid/uhid.c
++++ b/drivers/hid/uhid.c
+@@ -640,7 +640,7 @@ static const struct file_operations uhid
  
- /*
-+ * isolated_balloon_page - identify an isolated balloon page on private
-+ *			   compaction/migration page lists.
-+ *
-+ * After a compaction thread isolates a balloon page for migration, it raises
-+ * the page refcount to prevent concurrent compaction threads from re-isolating
-+ * the same page. For that reason putback_movable_pages(), or other routines
-+ * that need to identify isolated balloon pages on private pagelists, cannot
-+ * rely on balloon_page_movable() to accomplish the task.
-+ */
-+static inline bool isolated_balloon_page(struct page *page)
-+{
-+	/* Already isolated balloon pages, by default, have a raised refcount */
-+	if (page_flags_cleared(page) && !page_mapped(page) &&
-+	    page_count(page) >= 2)
-+		return __is_movable_balloon_page(page);
-+
-+	return false;
-+}
-+
-+/*
-  * balloon_page_insert - insert a page into the balloon's page list and make
-  *		         the page->mapping assignment accordingly.
-  * @page    : page to be assigned as a 'balloon page'
-@@ -242,6 +262,11 @@ static inline bool balloon_page_movable(
- {
- 	return false;
- }
-+
-+static inline bool isolated_balloon_page(struct page *page)
-+{
-+	return false;
-+}
+ static struct miscdevice uhid_misc = {
+ 	.fops		= &uhid_fops,
+-	.minor		= MISC_DYNAMIC_MINOR,
++	.minor		= UHID_MINOR,
+ 	.name		= UHID_NAME,
+ };
  
- static inline bool balloon_page_isolate(struct page *page)
- {
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -103,7 +103,7 @@ void putback_movable_pages(struct list_h
- 		list_del(&page->lru);
- 		dec_zone_page_state(page, NR_ISOLATED_ANON +
- 				page_is_file_cache(page));
--		if (unlikely(balloon_page_movable(page)))
-+		if (unlikely(isolated_balloon_page(page)))
- 			balloon_page_putback(page);
- 		else
- 			putback_lru_page(page);
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -48,6 +48,7 @@
- #include <asm/div64.h>
+@@ -659,4 +659,5 @@ module_exit(uhid_exit);
+ MODULE_LICENSE("GPL");
+ MODULE_AUTHOR("David Herrmann <dh.herrmann@gmail.com>");
+ MODULE_DESCRIPTION("User-space I/O driver support for HID subsystem");
++MODULE_ALIAS_MISCDEV(UHID_MINOR);
+ MODULE_ALIAS("devname:" UHID_NAME);
+--- a/include/linux/miscdevice.h
++++ b/include/linux/miscdevice.h
+@@ -45,6 +45,7 @@
+ #define MAPPER_CTRL_MINOR	236
+ #define LOOP_CTRL_MINOR		237
+ #define VHOST_NET_MINOR		238
++#define UHID_MINOR		239
+ #define MISC_DYNAMIC_MINOR	255
  
- #include <linux/swapops.h>
-+#include <linux/balloon_compaction.h>
- 
- #include "internal.h"
- 
-@@ -1060,7 +1061,8 @@ unsigned long reclaim_clean_pages_from_l
- 	LIST_HEAD(clean_pages);
- 
- 	list_for_each_entry_safe(page, next, page_list, lru) {
--		if (page_is_file_cache(page) && !PageDirty(page)) {
-+		if (page_is_file_cache(page) && !PageDirty(page) &&
-+		    !isolated_balloon_page(page)) {
- 			ClearPageActive(page);
- 			list_move(&page->lru, &clean_pages);
- 		}
+ struct device;
 
 
