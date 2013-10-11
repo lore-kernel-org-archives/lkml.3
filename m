@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932318Ab3JKKoE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 06:44:04 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58735 "EHLO
+	id S932296Ab3JKKn7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 06:43:59 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58720 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932279Ab3JKKoA (ORCPT
+	with ESMTP id S932279Ab3JKKn4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 06:44:00 -0400
+	Fri, 11 Oct 2013 06:43:56 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Peng Chen <pengchen@qca.qualcomm.com>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
+Cc: Dan Carpenter <dan.carpenter@oracle.com>, Mark Brown <broonie@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 076/100] Bluetooth: Add a new PID/VID 0cf3/e005 for AR3012.
-Date: Fri, 11 Oct 2013 11:41:46 +0100
-Message-Id: <1381488130-30235-77-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 074/100] ASoC: max98095: a couple array underflows
+Date: Fri, 11 Oct 2013 11:41:44 +0100
+Message-Id: <1381488130-30235-75-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
 References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
@@ -28,64 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peng Chen <pengchen@qti.qualcomm.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 0a3658cccdf5326ea508efeb1879b0e2508bb0c3 upstream.
+commit f8d7b13e14357ed19d2ca2799539600418dc3939 upstream.
 
-usb device info:
+The ->put() function are called from snd_ctl_elem_write() with user
+supplied data.  The limit checks here could underflow leading to a
+crash.
 
-T:  Bus=06 Lev=01 Prnt=01 Port=01 Cnt=01 Dev#= 15 Spd=12   MxCh= 0
-D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=0cf3 ProdID=e005 Rev= 0.02
-C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
-I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
-E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
-E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
-I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
-
-Signed-off-by: Peng Chen <pengchen@qca.qualcomm.com>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/bluetooth/ath3k.c | 2 ++
- drivers/bluetooth/btusb.c | 1 +
- 2 files changed, 3 insertions(+)
+ sound/soc/codecs/max98095.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/bluetooth/ath3k.c b/drivers/bluetooth/ath3k.c
-index 5a757be..8c5508b 100644
---- a/drivers/bluetooth/ath3k.c
-+++ b/drivers/bluetooth/ath3k.c
-@@ -85,6 +85,7 @@ static struct usb_device_id ath3k_table[] = {
- 	{ USB_DEVICE(0x04CA, 0x3008) },
- 	{ USB_DEVICE(0x13d3, 0x3362) },
- 	{ USB_DEVICE(0x0CF3, 0xE004) },
-+	{ USB_DEVICE(0x0CF3, 0xE005) },
- 	{ USB_DEVICE(0x0930, 0x0219) },
- 	{ USB_DEVICE(0x0489, 0xe057) },
- 	{ USB_DEVICE(0x13d3, 0x3393) },
-@@ -126,6 +127,7 @@ static struct usb_device_id ath3k_blist_tbl[] = {
- 	{ USB_DEVICE(0x04ca, 0x3008), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3362), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0xe004), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x0cf3, 0xe005), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0930, 0x0219), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0489, 0xe057), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3393), .driver_info = BTUSB_ATH3012 },
-diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
-index e17340f..b29109e 100644
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -154,6 +154,7 @@ static struct usb_device_id blacklist_table[] = {
- 	{ USB_DEVICE(0x04ca, 0x3008), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3362), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0xe004), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x0cf3, 0xe005), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0930, 0x0219), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0489, 0xe057), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3393), .driver_info = BTUSB_ATH3012 },
+diff --git a/sound/soc/codecs/max98095.c b/sound/soc/codecs/max98095.c
+index 35179e2..bf80366 100644
+--- a/sound/soc/codecs/max98095.c
++++ b/sound/soc/codecs/max98095.c
+@@ -1863,7 +1863,7 @@ static int max98095_put_eq_enum(struct snd_kcontrol *kcontrol,
+ 	struct max98095_pdata *pdata = max98095->pdata;
+ 	int channel = max98095_get_eq_channel(kcontrol->id.name);
+ 	struct max98095_cdata *cdata;
+-	int sel = ucontrol->value.integer.value[0];
++	unsigned int sel = ucontrol->value.integer.value[0];
+ 	struct max98095_eq_cfg *coef_set;
+ 	int fs, best, best_val, i;
+ 	int regmask, regsave;
+@@ -2016,7 +2016,7 @@ static int max98095_put_bq_enum(struct snd_kcontrol *kcontrol,
+ 	struct max98095_pdata *pdata = max98095->pdata;
+ 	int channel = max98095_get_bq_channel(codec, kcontrol->id.name);
+ 	struct max98095_cdata *cdata;
+-	int sel = ucontrol->value.integer.value[0];
++	unsigned int sel = ucontrol->value.integer.value[0];
+ 	struct max98095_biquad_cfg *coef_set;
+ 	int fs, best, best_val, i;
+ 	int regmask, regsave;
 -- 
 1.8.3.2
 
