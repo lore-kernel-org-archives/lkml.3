@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932939Ab3JKTnR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:43:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46598 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932882Ab3JKTm0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932881Ab3JKTm0 (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 11 Oct 2013 15:42:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46523 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758143Ab3JKTmN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 15:42:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?=E7=8E=8B=E5=BA=B7?= <scateu@gmail.com>,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 134/135] net: qmi_wwan: add new Qualcomm devices
-Date: Fri, 11 Oct 2013 12:40:15 -0700
-Message-Id: <20131011193959.829933535@linuxfoundation.org>
+        Rafael Aquini <aquini@redhat.com>,
+        Luiz Capitulino <lcapitulino@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 108/135] mm: avoid reinserting isolated balloon pages into LRU lists
+Date: Fri, 11 Oct 2013 12:39:49 -0700
+Message-Id: <20131011193957.018824785@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,179 +31,144 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
+From: Rafael Aquini <aquini@redhat.com>
 
-commit 0470667caa8261beb8a9141102b04a5357dd45b5 upstream.
+commit 117aad1e9e4d97448d1df3f84b08bd65811e6d6a upstream.
 
-Adding the device list from the Windows driver description files
-included with a new Qualcomm MDM9615 based device, "Alcatel-sbell
-ASB TL131 TDD LTE", from China Mobile.  This device is tested
-and verified to work.  The others are assumed to work based on
-using the same Windows driver.
+Isolated balloon pages can wrongly end up in LRU lists when
+migrate_pages() finishes its round without draining all the isolated
+page list.
 
-Many of these devices support multiple QMI/wwan ports, requiring
-multiple interface matching entries.  All devices are composite,
-providing a mix of one or more serial, storage or Android Debug
-Brigde functions in addition to the wwan function.
+The same issue can happen when reclaim_clean_pages_from_list() tries to
+reclaim pages from an isolated page list, before migration, in the CMA
+path.  Such balloon page leak opens a race window against LRU lists
+shrinkers that leads us to the following kernel panic:
 
-This device list included an update of one previously known device,
-which was incorrectly assumed to have a Gobi 2K layout.  This is
-corrected.
+  BUG: unable to handle kernel NULL pointer dereference at 0000000000000028
+  IP: [<ffffffff810c2625>] shrink_page_list+0x24e/0x897
+  PGD 3cda2067 PUD 3d713067 PMD 0
+  Oops: 0000 [#1] SMP
+  CPU: 0 PID: 340 Comm: kswapd0 Not tainted 3.12.0-rc1-22626-g4367597 #87
+  Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+  RIP: shrink_page_list+0x24e/0x897
+  RSP: 0000:ffff88003da499b8  EFLAGS: 00010286
+  RAX: 0000000000000000 RBX: ffff88003e82bd60 RCX: 00000000000657d5
+  RDX: 0000000000000000 RSI: 000000000000031f RDI: ffff88003e82bd40
+  RBP: ffff88003da49ab0 R08: 0000000000000001 R09: 0000000081121a45
+  R10: ffffffff81121a45 R11: ffff88003c4a9a28 R12: ffff88003e82bd40
+  R13: ffff88003da0e800 R14: 0000000000000001 R15: ffff88003da49d58
+  FS:  0000000000000000(0000) GS:ffff88003fc00000(0000) knlGS:0000000000000000
+  CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+  CR2: 00000000067d9000 CR3: 000000003ace5000 CR4: 00000000000407b0
+  Call Trace:
+    shrink_inactive_list+0x240/0x3de
+    shrink_lruvec+0x3e0/0x566
+    __shrink_zone+0x94/0x178
+    shrink_zone+0x3a/0x82
+    balance_pgdat+0x32a/0x4c2
+    kswapd+0x2f0/0x372
+    kthread+0xa2/0xaa
+    ret_from_fork+0x7c/0xb0
+  Code: 80 7d 8f 01 48 83 95 68 ff ff ff 00 4c 89 e7 e8 5a 7b 00 00 48 85 c0 49 89 c5 75 08 80 7d 8f 00 74 3e eb 31 48 8b 80 18 01 00 00 <48> 8b 74 0d 48 8b 78 30 be 02 00 00 00 ff d2 eb
+  RIP  [<ffffffff810c2625>] shrink_page_list+0x24e/0x897
+   RSP <ffff88003da499b8>
+  CR2: 0000000000000028
+  ---[ end trace 703d2451af6ffbfd ]---
+  Kernel panic - not syncing: Fatal exception
 
-Reported-by: 王康 <scateu@gmail.com>
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+This patch fixes the issue, by assuring the proper tests are made at
+putback_movable_pages() & reclaim_clean_pages_from_list() to avoid
+isolated balloon pages being wrongly reinserted in LRU lists.
+
+[akpm@linux-foundation.org: clarify awkward comment text]
+Signed-off-by: Rafael Aquini <aquini@redhat.com>
+Reported-by: Luiz Capitulino <lcapitulino@redhat.com>
+Tested-by: Luiz Capitulino <lcapitulino@redhat.com>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/usb/qmi_wwan.c |  130 ++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 129 insertions(+), 1 deletion(-)
+ include/linux/balloon_compaction.h |   25 +++++++++++++++++++++++++
+ mm/migrate.c                       |    2 +-
+ mm/vmscan.c                        |    4 +++-
+ 3 files changed, 29 insertions(+), 2 deletions(-)
 
---- a/drivers/net/usb/qmi_wwan.c
-+++ b/drivers/net/usb/qmi_wwan.c
-@@ -518,6 +518,135 @@ static const struct usb_device_id produc
+--- a/include/linux/balloon_compaction.h
++++ b/include/linux/balloon_compaction.h
+@@ -159,6 +159,26 @@ static inline bool balloon_page_movable(
+ }
  
- 	/* 3. Combined interface devices matching on interface number */
- 	{QMI_FIXED_INTF(0x0408, 0xea42, 4)},	/* Yota / Megafon M100-1 */
-+	{QMI_FIXED_INTF(0x05c6, 0x7000, 0)},
-+	{QMI_FIXED_INTF(0x05c6, 0x7001, 1)},
-+	{QMI_FIXED_INTF(0x05c6, 0x7002, 1)},
-+	{QMI_FIXED_INTF(0x05c6, 0x7101, 1)},
-+	{QMI_FIXED_INTF(0x05c6, 0x7101, 2)},
-+	{QMI_FIXED_INTF(0x05c6, 0x7101, 3)},
-+	{QMI_FIXED_INTF(0x05c6, 0x7102, 1)},
-+	{QMI_FIXED_INTF(0x05c6, 0x7102, 2)},
-+	{QMI_FIXED_INTF(0x05c6, 0x7102, 3)},
-+	{QMI_FIXED_INTF(0x05c6, 0x8000, 7)},
-+	{QMI_FIXED_INTF(0x05c6, 0x8001, 6)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9000, 4)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9003, 4)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9005, 2)},
-+	{QMI_FIXED_INTF(0x05c6, 0x900a, 4)},
-+	{QMI_FIXED_INTF(0x05c6, 0x900b, 2)},
-+	{QMI_FIXED_INTF(0x05c6, 0x900c, 4)},
-+	{QMI_FIXED_INTF(0x05c6, 0x900c, 5)},
-+	{QMI_FIXED_INTF(0x05c6, 0x900c, 6)},
-+	{QMI_FIXED_INTF(0x05c6, 0x900d, 5)},
-+	{QMI_FIXED_INTF(0x05c6, 0x900f, 3)},
-+	{QMI_FIXED_INTF(0x05c6, 0x900f, 4)},
-+	{QMI_FIXED_INTF(0x05c6, 0x900f, 5)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9010, 4)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9010, 5)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9011, 3)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9011, 4)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9021, 1)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9022, 2)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9025, 4)},	/* Alcatel-sbell ASB TL131 TDD LTE  (China Mobile) */
-+	{QMI_FIXED_INTF(0x05c6, 0x9026, 3)},
-+	{QMI_FIXED_INTF(0x05c6, 0x902e, 5)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9031, 5)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9032, 4)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9033, 3)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9033, 4)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9033, 5)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9033, 6)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9034, 3)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9034, 4)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9034, 5)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9034, 6)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9034, 7)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9035, 4)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9036, 3)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9037, 5)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9038, 4)},
-+	{QMI_FIXED_INTF(0x05c6, 0x903b, 7)},
-+	{QMI_FIXED_INTF(0x05c6, 0x903c, 6)},
-+	{QMI_FIXED_INTF(0x05c6, 0x903d, 6)},
-+	{QMI_FIXED_INTF(0x05c6, 0x903e, 5)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9043, 3)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9046, 3)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9046, 4)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9046, 5)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9047, 2)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9047, 3)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9047, 4)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9048, 4)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9048, 5)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9048, 6)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9048, 7)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9048, 8)},
-+	{QMI_FIXED_INTF(0x05c6, 0x904c, 5)},
-+	{QMI_FIXED_INTF(0x05c6, 0x904c, 6)},
-+	{QMI_FIXED_INTF(0x05c6, 0x904c, 7)},
-+	{QMI_FIXED_INTF(0x05c6, 0x904c, 8)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9050, 3)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9052, 4)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9053, 6)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9053, 7)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9054, 5)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9054, 6)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9055, 3)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9055, 4)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9055, 5)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9055, 6)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9055, 7)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9056, 3)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9062, 2)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9062, 3)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9062, 4)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9062, 5)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9062, 6)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9062, 7)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9062, 8)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9062, 9)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9064, 3)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9065, 6)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9065, 7)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9066, 5)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9066, 6)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9067, 1)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9068, 2)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9068, 3)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9068, 4)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9068, 5)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9068, 6)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9068, 7)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9069, 5)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9069, 6)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9069, 7)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9069, 8)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9070, 4)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9070, 5)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9075, 5)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9076, 4)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9076, 5)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9076, 6)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9076, 7)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9076, 8)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9077, 3)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9077, 4)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9077, 5)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9077, 6)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9078, 3)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9079, 4)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9079, 5)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9079, 6)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9079, 7)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9079, 8)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9080, 5)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9080, 6)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9080, 7)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9080, 8)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9083, 3)},
-+	{QMI_FIXED_INTF(0x05c6, 0x9084, 4)},
-+	{QMI_FIXED_INTF(0x05c6, 0x920d, 0)},
-+	{QMI_FIXED_INTF(0x05c6, 0x920d, 5)},
- 	{QMI_FIXED_INTF(0x12d1, 0x140c, 1)},	/* Huawei E173 */
- 	{QMI_FIXED_INTF(0x12d1, 0x14ac, 1)},	/* Huawei E1820 */
- 	{QMI_FIXED_INTF(0x19d2, 0x0002, 1)},
-@@ -612,7 +741,6 @@ static const struct usb_device_id produc
- 	{QMI_GOBI_DEVICE(0x413c, 0x8186)},	/* Dell Gobi 2000 Modem device (N0218, VU936) */
- 	{QMI_GOBI_DEVICE(0x413c, 0x8194)},	/* Dell Gobi 3000 Composite */
- 	{QMI_GOBI_DEVICE(0x05c6, 0x920b)},	/* Generic Gobi 2000 Modem device */
--	{QMI_GOBI_DEVICE(0x05c6, 0x920d)},	/* Gobi 3000 Composite */
- 	{QMI_GOBI_DEVICE(0x05c6, 0x9225)},	/* Sony Gobi 2000 Modem device (N0279, VU730) */
- 	{QMI_GOBI_DEVICE(0x05c6, 0x9245)},	/* Samsung Gobi 2000 Modem device (VL176) */
- 	{QMI_GOBI_DEVICE(0x03f0, 0x251d)},	/* HP Gobi 2000 Modem device (VP412) */
+ /*
++ * isolated_balloon_page - identify an isolated balloon page on private
++ *			   compaction/migration page lists.
++ *
++ * After a compaction thread isolates a balloon page for migration, it raises
++ * the page refcount to prevent concurrent compaction threads from re-isolating
++ * the same page. For that reason putback_movable_pages(), or other routines
++ * that need to identify isolated balloon pages on private pagelists, cannot
++ * rely on balloon_page_movable() to accomplish the task.
++ */
++static inline bool isolated_balloon_page(struct page *page)
++{
++	/* Already isolated balloon pages, by default, have a raised refcount */
++	if (page_flags_cleared(page) && !page_mapped(page) &&
++	    page_count(page) >= 2)
++		return __is_movable_balloon_page(page);
++
++	return false;
++}
++
++/*
+  * balloon_page_insert - insert a page into the balloon's page list and make
+  *		         the page->mapping assignment accordingly.
+  * @page    : page to be assigned as a 'balloon page'
+@@ -242,6 +262,11 @@ static inline bool balloon_page_movable(
+ {
+ 	return false;
+ }
++
++static inline bool isolated_balloon_page(struct page *page)
++{
++	return false;
++}
+ 
+ static inline bool balloon_page_isolate(struct page *page)
+ {
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -103,7 +103,7 @@ void putback_movable_pages(struct list_h
+ 		list_del(&page->lru);
+ 		dec_zone_page_state(page, NR_ISOLATED_ANON +
+ 				page_is_file_cache(page));
+-		if (unlikely(balloon_page_movable(page)))
++		if (unlikely(isolated_balloon_page(page)))
+ 			balloon_page_putback(page);
+ 		else
+ 			putback_lru_page(page);
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -48,6 +48,7 @@
+ #include <asm/div64.h>
+ 
+ #include <linux/swapops.h>
++#include <linux/balloon_compaction.h>
+ 
+ #include "internal.h"
+ 
+@@ -1060,7 +1061,8 @@ unsigned long reclaim_clean_pages_from_l
+ 	LIST_HEAD(clean_pages);
+ 
+ 	list_for_each_entry_safe(page, next, page_list, lru) {
+-		if (page_is_file_cache(page) && !PageDirty(page)) {
++		if (page_is_file_cache(page) && !PageDirty(page) &&
++		    !isolated_balloon_page(page)) {
+ 			ClearPageActive(page);
+ 			list_move(&page->lru, &clean_pages);
+ 		}
 
 
