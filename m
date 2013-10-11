@@ -1,92 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758104Ab3JKOJF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 10:09:05 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:55976 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758050Ab3JKOJA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 10:09:00 -0400
+	id S1754206Ab3JKONA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 10:13:00 -0400
+Received: from mout.gmx.net ([212.227.17.22]:51265 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751831Ab3JKONA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 10:13:00 -0400
+Message-ID: <52580767.6090604@gmx.de>
+Date: Fri, 11 Oct 2013 16:12:55 +0200
+From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-In-Reply-To: <1380902596-4693-2-git-send-email-sujithkv@ti.com>
-References: <1380902596-4693-1-git-send-email-sujithkv@ti.com>
-	<1380902596-4693-2-git-send-email-sujithkv@ti.com>
-Date: Fri, 11 Oct 2013 16:09:00 +0200
-Message-ID: <CACRpkdYxegBSYXR1-98smUNnDXpyRHo_vuYdnr3r7zhawENiUA@mail.gmail.com>
-Subject: Re: [PATCH v3 1/3] gpio: davinci: add OF support
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        LDOC <linux-doc@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Sekhar Nori <nsekhar@ti.com>, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Fengguang Wu <fengguang.wu@intel.com>
+CC: Richard Weinberger <richard@nod.at>, Jan Kara <jack@suse.cz>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        UML devel <user-mode-linux-devel@lists.sourceforge.net>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        hannes@cmpxchg.org, darrick.wong@oracle.com,
+        Michal Hocko <mhocko@suse.cz>
+Subject: Re: [uml-devel] BUG: soft lockup for a user mode linux image
+References: <CAMuHMdUo8dSd4s3089ZDEc485wL1sFxBKLeaExJuqNiQY+S-Lw@mail.gmail.com> <5251CF94.5040101@gmx.de> <CAMuHMdWs6Y7y12STJ+YXKJjxRF0k5yU9C9+0fiPPmq-GgeW-6Q@mail.gmail.com> <525591AD.4060401@gmx.de> <5255A3E6.6020100@nod.at> <20131009214733.GB25608@quack.suse.cz> <5255D9A6.3010208@nod.at> <5256DA9A.5060904@gmx.de> <20131011011649.GA11191@localhost> <5257B9EB.7080503@gmx.de> <20131011085701.GA27382@localhost>
+In-Reply-To: <20131011085701.GA27382@localhost>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V03:K0:yb2F945SFlwbKiHfc/s5Ld/nIn4YtwowIFBWe2C98bM9tPBn9SM
+ yV7y3pid1HmtIiW6qOpAyKccBVMc1eUUgooz/m096UgMuwi/jIh0LUagVdPLCKU3RAC5Y2u
+ BrWXLfQtGHvymof2v7AgUYxazy3E2Y9dD6Zn1Y8sYzs8vAquVwJty8cT/Mzp/fapZR7jzzC
+ g6WaEJqld2wWGx5cuN4gg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 4, 2013 at 6:03 PM, Prabhakar Lad
-<prabhakar.csengg@gmail.com> wrote:
+On 10/11/2013 10:57 AM, Fengguang Wu wrote:
+> On Fri, Oct 11, 2013 at 10:42:19AM +0200, Toralf Förster wrote:
+>> yeah, now the picture becomes more clear
+>> ...
+>> net.core.warnings = 0                                                                         [ ok ]
+>> ick: pause : -717
+>>                  ick : min_pause : -177
+>>                                    ick : max_pause : -717
+>>                                                      ick: pages_dirtied : 14
+>>                                                                             ick: task_ratelimit: 0
+> 
+> Great and thanks! So it's the max pause calculation went wrong.
+> Would help you try the below patch?
+> 
+Definitely.
+I'm running now the test case since 6 hours w/o any issues.
+before that usually after 15 - 30 min the bug occurred.
 
-> This patch adds OF parser support for davinci gpio
-> driver and also appropriate documentation in gpio-davinci.txt
-> located at Documentation/devicetree/bindings/gpio/.
->
-> Signed-off-by: KV Sujith <sujithkv@ti.com>
-> Signed-off-by: Philip Avinash <avinashphilip@ti.com>
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
-
-^Don't trust this guy.
-
-> [prabhakar.csengg@gmail.com: simplified the OF code and also
->                  the commit message]
-> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+>>From 5420b9bbe42dd0a366d7615e9f3d3724cee725c4 Mon Sep 17 00:00:00 2001
+> From: Fengguang Wu <fengguang.wu@intel.com>
+> Date: Fri, 11 Oct 2013 16:53:26 +0800
+> Subject: [PATCH] fix bdi max pause calculation
+> 
+> Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
 > ---
->  .../devicetree/bindings/gpio/gpio-davinci.txt      |   34 +++++++++++
->  drivers/gpio/gpio-davinci.c                        |   60 +++++++++++++++++++-
->  2 files changed, 91 insertions(+), 3 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/gpio/gpio-davinci.txt
->
-> diff --git a/Documentation/devicetree/bindings/gpio/gpio-davinci.txt b/Documentation/devicetree/bindings/gpio/gpio-davinci.txt
-> new file mode 100644
-> index 0000000..87abd3b
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/gpio/gpio-davinci.txt
-> @@ -0,0 +1,34 @@
-> +Davinci GPIO controller bindings
-> +
-> +Required Properties:
-> +- compatible: should be "ti,dm6441-gpio"
-> +
-> +- reg: Physical base address of the controller and the size of memory mapped
-> +       registers.
-> +
-> +- gpio-controller : Marks the device node as a gpio controller.
-> +
-> +- interrupts: Array of GPIO interrupt number.
-> +
-> +- ngpio: The number of GPIO pins supported.
-> +
-> +- ti,davinci-gpio-irq-base: Base from where GPIO interrupt numbering starts.
+>  mm/page-writeback.c |   10 +++++-----
+>  1 file changed, 5 insertions(+), 5 deletions(-)
+> 
+> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+> index 3f0c895..241a746 100644
+> --- a/mm/page-writeback.c
+> +++ b/mm/page-writeback.c
+> @@ -1104,11 +1104,11 @@ static unsigned long dirty_poll_interval(unsigned long dirty,
+>  	return 1;
+>  }
+>  
+> -static long bdi_max_pause(struct backing_dev_info *bdi,
+> -			  unsigned long bdi_dirty)
+> +static unsigned long bdi_max_pause(struct backing_dev_info *bdi,
+> +				   unsigned long bdi_dirty)
+>  {
+> -	long bw = bdi->avg_write_bandwidth;
+> -	long t;
+> +	unsigned long bw = bdi->avg_write_bandwidth;
+> +	unsigned long t;
+>  
+>  	/*
+>  	 * Limit pause time for small memory systems. If sleeping for too long
+> @@ -1120,7 +1120,7 @@ static long bdi_max_pause(struct backing_dev_info *bdi,
+>  	t = bdi_dirty / (1 + bw / roundup_pow_of_two(1 + HZ / 8));
+>  	t++;
+>  
+> -	return min_t(long, t, MAX_PAUSE);
+> +	return min_t(unsigned long, t, MAX_PAUSE);
+>  }
+>  
+>  static long bdi_min_pause(struct backing_dev_info *bdi,
+> 
 
-What is this?
 
-If I have ever ACKed this I have been drunk. I take it back.
-
-This "base" is a Linux-specific thing and has no place in the
-device tree, and shall not be there. You have to find some way to
-avoid this, what do you think some other OS should do with
-this value...
-
-All IRQs in Linux are assumed to be dynamically assigned numbers
-nowadays, with a property like this you can never switch on
-SPARSE_IRQ for the DaVinci.
-
-Yours,
-Linus Walleij
+-- 
+MfG/Sincerely
+Toralf Förster
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
