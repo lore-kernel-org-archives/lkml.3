@@ -1,319 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755635Ab3JKBaj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 21:30:39 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:33529 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755146Ab3JKBad (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 21:30:33 -0400
-Message-ID: <1381455024.4296.1.camel@phoenix>
-Subject: [PATCH 1/2] regulator: Remove max_uV from struct
- regulator_linear_range
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Yi Zhang <yizhang@marvell.com>, Chao Xie <chao.xie@marvell.com>,
-        Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Margarita Olaya <magi@slimlogic.co.uk>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Date: Fri, 11 Oct 2013 09:30:24 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753247Ab3JKBaM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 21:30:12 -0400
+Received: from mga01.intel.com ([192.55.52.88]:22422 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752039Ab3JKBaI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 21:30:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,1076,1371106800"; 
+   d="scan'208";a="409167549"
+Date: Fri, 11 Oct 2013 09:29:36 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: initcall calibrate_xor_blocks returned with preemption imbalance
+Message-ID: <20131011012936.GB11191@localhost>
+References: <20131010090217.GB2541@localhost>
+ <525710F3.1000209@panasas.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <525710F3.1000209@panasas.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-linear ranges means each range has linear voltage settings.
-So we can calculate max_uV for each linear range in regulator core rather than
-set the max_uV field in drivers.
+Dear Boaz,
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Cc: Yi Zhang <yizhang@marvell.com>
-Cc: Chao Xie <chao.xie@marvell.com>
-Cc: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: Eric Miao <eric.y.miao@gmail.com>
-Cc: Margarita Olaya <magi@slimlogic.co.uk>
----
- drivers/regulator/88pm800.c            | 14 ++++++--------
- drivers/regulator/as3711-regulator.c   | 25 +++++++++++--------------
- drivers/regulator/as3722-regulator.c   |  1 -
- drivers/regulator/da903x.c             |  6 ++----
- drivers/regulator/helpers.c            |  6 +++++-
- drivers/regulator/tps65217-regulator.c | 24 ++++++++----------------
- drivers/regulator/tps65912-regulator.c |  9 +++------
- drivers/regulator/wm831x-ldo.c         | 12 ++++--------
- drivers/regulator/wm8350-regulator.c   |  6 ++----
- drivers/regulator/wm8400-regulator.c   |  6 ++----
- include/linux/regulator/driver.h       |  2 --
- 11 files changed, 43 insertions(+), 68 deletions(-)
+On Thu, Oct 10, 2013 at 01:41:23PM -0700, Boaz Harrosh wrote:
+> On 10/10/2013 02:02 AM, Fengguang Wu wrote:
+> > Greetings,
+> > 
+> > I got the below dmesg and the first bad commit is
+> > 
+> 
+> Dear Wu
+> 
+> This 20545536cd8ea949c61527b6395ec8c0d2c237b1 is from my tree at linux-open-osd.org
+> How did you happen to find it and run with it at all?
+> 
+> I have never pushed it to any mailing list or blessed it for release.
+> Yes it has a known problem that I never bothered to fix. I carry
+> it in my own development trees so I can run xor.ko on UML.
+> 
+> If it has leaked to any upstream trees, I'm so sorry tell me where
+> you found it and I'll have it removed.
 
-diff --git a/drivers/regulator/88pm800.c b/drivers/regulator/88pm800.c
-index 3459f60..22ba4c4 100644
---- a/drivers/regulator/88pm800.c
-+++ b/drivers/regulator/88pm800.c
-@@ -141,18 +141,16 @@ struct pm800_regulators {
- 
- /* Ranges are sorted in ascending order. */
- static const struct regulator_linear_range buck1_volt_range[] = {
--	{ .min_uV = 600000, .max_uV = 1587500, .min_sel = 0, .max_sel = 0x4f,
--	  .uV_step = 12500 },
--	{ .min_uV = 1600000, .max_uV = 1800000, .min_sel = 0x50,
--	  .max_sel = 0x54, .uV_step = 50000 },
-+	{ .min_uV = 600000, .min_sel = 0, .max_sel = 0x4f, .uV_step = 12500 },
-+	{ .min_uV = 1600000, .min_sel = 0x50, .max_sel = 0x54,
-+	  .uV_step = 50000 },
- };
- 
- /* BUCK 2~5 have same ranges. */
- static const struct regulator_linear_range buck2_5_volt_range[] = {
--	{ .min_uV = 600000, .max_uV = 1587500,	.min_sel = 0, .max_sel = 0x4f,
--	  .uV_step = 12500 },
--	{ .min_uV = 1600000, .max_uV = 3300000, .min_sel = 0x50,
--	  .max_sel = 0x72, .uV_step = 50000 },
-+	{ .min_uV = 600000, .min_sel = 0, .max_sel = 0x4f, .uV_step = 12500 },
-+	{ .min_uV = 1600000, .min_sel = 0x50, .max_sel = 0x72,
-+	  .uV_step = 50000 },
- };
- 
- static const unsigned int ldo1_volt_table[] = {
-diff --git a/drivers/regulator/as3711-regulator.c b/drivers/regulator/as3711-regulator.c
-index fb27e6c..84c9ea0 100644
---- a/drivers/regulator/as3711-regulator.c
-+++ b/drivers/regulator/as3711-regulator.c
-@@ -117,26 +117,23 @@ static struct regulator_ops as3711_dldo_ops = {
- };
- 
- static const struct regulator_linear_range as3711_sd_ranges[] = {
--	{ .min_uV = 612500, .max_uV = 1400000,
--	  .min_sel = 0x1, .max_sel = 0x40, .uV_step = 12500 },
--	{ .min_uV = 1425000, .max_uV = 2600000,
--	  .min_sel = 0x41, .max_sel = 0x70, .uV_step = 25000 },
--	{ .min_uV = 2650000, .max_uV = 3350000,
--	  .min_sel = 0x71, .max_sel = 0x7f, .uV_step = 50000 },
-+	{ .min_uV = 612500, .min_sel = 0x1, .max_sel = 0x40, .uV_step = 12500 },
-+	{ .min_uV = 1425000, .min_sel = 0x41, .max_sel = 0x70,
-+	  .uV_step = 25000 },
-+	{ .min_uV = 2650000, .min_sel = 0x71, .max_sel = 0x7f,
-+	  .uV_step = 50000 },
- };
- 
- static const struct regulator_linear_range as3711_aldo_ranges[] = {
--	{ .min_uV = 1200000, .max_uV = 1950000,
--	  .min_sel = 0, .max_sel = 0xf, .uV_step = 50000 },
--	{ .min_uV = 1800000, .max_uV = 3300000,
--	  .min_sel = 0x10, .max_sel = 0x1f, .uV_step = 100000 },
-+	{ .min_uV = 1200000, .min_sel = 0, .max_sel = 0xf, .uV_step = 50000 },
-+	{ .min_uV = 1800000, .min_sel = 0x10, .max_sel = 0x1f,
-+	  .uV_step = 100000 },
- };
- 
- static const struct regulator_linear_range as3711_dldo_ranges[] = {
--	{ .min_uV = 900000, .max_uV = 1700000,
--	  .min_sel = 0, .max_sel = 0x10, .uV_step = 50000 },
--	{ .min_uV = 1750000, .max_uV = 3300000,
--	  .min_sel = 0x20, .max_sel = 0x3f, .uV_step = 50000 },
-+	{ .min_uV = 900000, .min_sel = 0, .max_sel = 0x10, .uV_step = 50000 },
-+	{ .min_uV = 1750000, .min_sel = 0x20, .max_sel = 0x3f,
-+	  .uV_step = 50000 },
- };
- 
- #define AS3711_REG(_id, _en_reg, _en_bit, _vmask, _vshift, _min_uV, _max_uV, _sfx)	\
-diff --git a/drivers/regulator/as3722-regulator.c b/drivers/regulator/as3722-regulator.c
-index d7b71a9..240ae6d 100644
---- a/drivers/regulator/as3722-regulator.c
-+++ b/drivers/regulator/as3722-regulator.c
-@@ -441,7 +441,6 @@ static struct regulator_ops as3722_ldo3_extcntrl_ops = {
- 		.max_sel = _max_sel,					\
- 		.uV_step = _step_uV,					\
- 		.min_uV = _min_uV,					\
--		.max_uV = _min_uV + (_max_sel - _min_sel) * _step_uV,	\
- 	}
- 
- static const struct regulator_linear_range as3722_ldo_ranges[] = {
-diff --git a/drivers/regulator/da903x.c b/drivers/regulator/da903x.c
-index c61d96e..872e14a 100644
---- a/drivers/regulator/da903x.c
-+++ b/drivers/regulator/da903x.c
-@@ -253,10 +253,8 @@ static int da9034_set_dvc_voltage_sel(struct regulator_dev *rdev,
- }
- 
- static const struct regulator_linear_range da9034_ldo12_ranges[] = {
--	{ .min_uV = 1700000, .max_uV = 2050000, .min_sel =  0, .max_sel = 7,
--	  .uV_step =  50000 },
--	{ .min_uV = 2700000, .max_uV = 3050000, .min_sel =  8, .max_sel = 15,
--	  .uV_step =  50000 },
-+	{ .min_uV = 1700000, .min_sel =  0, .max_sel = 7, .uV_step =  50000 },
-+	{ .min_uV = 2700000, .min_sel =  8, .max_sel = 15, .uV_step =  50000 },
- };
- 
- static struct regulator_ops da903x_regulator_ldo_ops = {
-diff --git a/drivers/regulator/helpers.c b/drivers/regulator/helpers.c
-index 6e30df1..e221a27 100644
---- a/drivers/regulator/helpers.c
-+++ b/drivers/regulator/helpers.c
-@@ -284,9 +284,13 @@ int regulator_map_voltage_linear_range(struct regulator_dev *rdev,
- 	}
- 
- 	for (i = 0; i < rdev->desc->n_linear_ranges; i++) {
-+		int linear_max_uV;
-+
- 		range = &rdev->desc->linear_ranges[i];
-+		linear_max_uV = range->min_uV +
-+			(range->max_sel - range->min_sel) * range->uV_step;
- 
--		if (!(min_uV <= range->max_uV && max_uV >= range->min_uV))
-+		if (!(min_uV <= linear_max_uV && max_uV >= range->min_uV))
- 			continue;
- 
- 		if (min_uV <= range->min_uV)
-diff --git a/drivers/regulator/tps65217-regulator.c b/drivers/regulator/tps65217-regulator.c
-index 8860379..baf2aec 100644
---- a/drivers/regulator/tps65217-regulator.c
-+++ b/drivers/regulator/tps65217-regulator.c
-@@ -52,25 +52,17 @@ static const unsigned int LDO1_VSEL_table[] = {
- };
- 
- static const struct regulator_linear_range tps65217_uv1_ranges[] = {
--	{ .min_uV = 900000, .max_uV = 1500000, .min_sel =  0, .max_sel = 24,
--	  .uV_step = 25000 },
--	{ .min_uV = 1550000, .max_uV = 1800000, .min_sel = 25, .max_sel = 30,
--	  .uV_step = 50000 },
--	{ .min_uV = 1850000, .max_uV = 2900000, .min_sel = 31, .max_sel = 52,
--	  .uV_step = 50000 },
--	{ .min_uV = 3000000, .max_uV = 3200000, .min_sel = 53, .max_sel = 55,
--	  .uV_step = 100000 },
--	{ .min_uV = 3300000, .max_uV = 3300000, .min_sel = 56, .max_sel = 62,
--	  .uV_step = 0 },
-+	{ .min_uV = 900000, .min_sel =  0, .max_sel = 24, .uV_step = 25000 },
-+	{ .min_uV = 1550000, .min_sel = 25, .max_sel = 30, .uV_step = 50000 },
-+	{ .min_uV = 1850000, .min_sel = 31, .max_sel = 52, .uV_step = 50000 },
-+	{ .min_uV = 3000000, .min_sel = 53, .max_sel = 55, .uV_step = 100000 },
-+	{ .min_uV = 3300000, .min_sel = 56, .max_sel = 62, .uV_step = 0 },
- };
- 
- static const struct regulator_linear_range tps65217_uv2_ranges[] = {
--	{ .min_uV = 1500000, .max_uV = 1900000, .min_sel =  0, .max_sel = 8,
--	  .uV_step = 50000 },
--	{ .min_uV = 2000000, .max_uV = 2400000, .min_sel = 9, .max_sel = 13,
--	  .uV_step = 100000 },
--	{ .min_uV = 2450000, .max_uV = 3300000, .min_sel = 14, .max_sel = 31,
--	  .uV_step = 50000 },
-+	{ .min_uV = 1500000, .min_sel =  0, .max_sel = 8, .uV_step = 50000 },
-+	{ .min_uV = 2000000, .min_sel = 9, .max_sel = 13, .uV_step = 100000 },
-+	{ .min_uV = 2450000, .min_sel = 14, .max_sel = 31, .uV_step = 50000 },
- };
- 
- static int tps65217_pmic_enable(struct regulator_dev *dev)
-diff --git a/drivers/regulator/tps65912-regulator.c b/drivers/regulator/tps65912-regulator.c
-index 1ed4d04..86bb109 100644
---- a/drivers/regulator/tps65912-regulator.c
-+++ b/drivers/regulator/tps65912-regulator.c
-@@ -119,12 +119,9 @@ struct tps65912_reg {
- };
- 
- static const struct regulator_linear_range tps65912_ldo_ranges[] = {
--	{ .min_uV = 800000, .max_uV = 1600000, .min_sel =  0, .max_sel = 32,
--	  .uV_step = 25000 },
--	{ .min_uV = 1650000, .max_uV = 3000000, .min_sel = 33, .max_sel = 60,
--	  .uV_step = 50000 },
--	{ .min_uV = 3100000, .max_uV = 3300000, .min_sel = 61, .max_sel = 63,
--	  .uV_step = 100000 },
-+	{ .min_uV = 800000, .min_sel =  0, .max_sel = 32, .uV_step = 25000 },
-+	{ .min_uV = 1650000, .min_sel = 33, .max_sel = 60, .uV_step = 50000 },
-+	{ .min_uV = 3100000, .min_sel = 61, .max_sel = 63, .uV_step = 100000 },
- };
- 
- static int tps65912_get_range(struct tps65912_reg *pmic, int id)
-diff --git a/drivers/regulator/wm831x-ldo.c b/drivers/regulator/wm831x-ldo.c
-index 482ebe8..afb1671 100644
---- a/drivers/regulator/wm831x-ldo.c
-+++ b/drivers/regulator/wm831x-ldo.c
-@@ -63,10 +63,8 @@ static irqreturn_t wm831x_ldo_uv_irq(int irq, void *data)
-  */
- 
- static const struct regulator_linear_range wm831x_gp_ldo_ranges[] = {
--	{ .min_uV =  900000, .max_uV = 1600000, .min_sel =  0, .max_sel = 14,
--	  .uV_step =  50000 },
--	{ .min_uV = 1700000, .max_uV = 3300000, .min_sel = 15, .max_sel = 31,
--	  .uV_step = 100000 },
-+	{ .min_uV =  900000, .min_sel =  0, .max_sel = 14, .uV_step =  50000 },
-+	{ .min_uV = 1700000, .min_sel = 15, .max_sel = 31, .uV_step = 100000 },
- };
- 
- static int wm831x_gp_ldo_set_suspend_voltage(struct regulator_dev *rdev,
-@@ -320,10 +318,8 @@ static struct platform_driver wm831x_gp_ldo_driver = {
-  */
- 
- static const struct regulator_linear_range wm831x_aldo_ranges[] = {
--	{ .min_uV = 1000000, .max_uV = 1600000, .min_sel =  0, .max_sel = 12,
--	  .uV_step =  50000 },
--	{ .min_uV = 1700000, .max_uV = 3500000, .min_sel = 13, .max_sel = 31,
--	  .uV_step = 100000 },
-+	{ .min_uV = 1000000, .min_sel =  0, .max_sel = 12, .uV_step =  50000 },
-+	{ .min_uV = 1700000, .min_sel = 13, .max_sel = 31, .uV_step = 100000 },
- };
- 
- static int wm831x_aldo_set_suspend_voltage(struct regulator_dev *rdev,
-diff --git a/drivers/regulator/wm8350-regulator.c b/drivers/regulator/wm8350-regulator.c
-index 017e869..a00690a 100644
---- a/drivers/regulator/wm8350-regulator.c
-+++ b/drivers/regulator/wm8350-regulator.c
-@@ -543,10 +543,8 @@ static int wm8350_dcdc_set_suspend_mode(struct regulator_dev *rdev,
- }
- 
- static const struct regulator_linear_range wm8350_ldo_ranges[] = {
--	{ .min_uV =  900000, .max_uV = 1650000, .min_sel =  0, .max_sel = 15,
--	  .uV_step =  50000 },
--	{ .min_uV = 1800000, .max_uV = 3300000, .min_sel = 16, .max_sel = 31,
--	  .uV_step = 100000 },
-+	{ .min_uV =  900000, .min_sel =  0, .max_sel = 15, .uV_step =  50000 },
-+	{ .min_uV = 1800000, .min_sel = 16, .max_sel = 31, .uV_step = 100000 },
- };
- 
- static int wm8350_ldo_set_suspend_voltage(struct regulator_dev *rdev, int uV)
-diff --git a/drivers/regulator/wm8400-regulator.c b/drivers/regulator/wm8400-regulator.c
-index 870b52f..60cc76c 100644
---- a/drivers/regulator/wm8400-regulator.c
-+++ b/drivers/regulator/wm8400-regulator.c
-@@ -20,10 +20,8 @@
- #include <linux/mfd/wm8400-private.h>
- 
- static const struct regulator_linear_range wm8400_ldo_ranges[] = {
--	{ .min_uV =  900000, .max_uV = 1600000, .min_sel = 0, .max_sel = 14,
--	  .uV_step =  50000 },
--	{ .min_uV = 1700000, .max_uV = 3300000, .min_sel = 15, .max_sel = 31,
--	  .uV_step = 100000 },
-+	{ .min_uV =  900000, .min_sel = 0, .max_sel = 14, .uV_step =  50000 },
-+	{ .min_uV = 1700000, .min_sel = 15, .max_sel = 31, .uV_step = 100000 },
- };
- 
- static struct regulator_ops wm8400_ldo_ops = {
-diff --git a/include/linux/regulator/driver.h b/include/linux/regulator/driver.h
-index c8b492c..a9b3e26 100644
---- a/include/linux/regulator/driver.h
-+++ b/include/linux/regulator/driver.h
-@@ -46,14 +46,12 @@ enum regulator_status {
-  * regulator_list_linear_range().
-  *
-  * @min_uV:  Lowest voltage in range
-- * @max_uV:  Highest voltage in range
-  * @min_sel: Lowest selector for range
-  * @max_sel: Highest selector for range
-  * @uV_step: Step size
-  */
- struct regulator_linear_range {
- 	unsigned int min_uV;
--	unsigned int max_uV;
- 	unsigned int min_sel;
- 	unsigned int max_sel;
- 	unsigned int uV_step;
--- 
-1.8.1.2
+I'm running kernel build/boot/performance tests for *all* the public
+kernel git trees I'm aware of. If this is not necessary for your tree
+or some of the branches, sorry I can remove them from the test pool.
 
+> I can see below:
+> 	Merge 'open-osd/exofs_ioctl' into devel-hourly-2013101007
+> 
+> What is devel-hourly and what does exofs_ioctl branch useful for.
+> exofs_ioctl is for NFS-Ganesha pnfs support. It is not good for
+> any other purpose. 
 
+devel-hourly-* are the internal merge-and-test branches. To be frank I
+don't care what the merged branches are for: the system simply tests
+all branches that can be merged.
 
+> If you are developing NFS-Ganesha pnfs code feel free to remove
+> this patch, again it is so I can run exofs on UML which uses
+> xor.ko. If you use VMs or HW you do not have this problem.
+
+I run lots of kernel boot tests in qemu/kvm for now. However may also
+consider UML if it's simple, reliable and efficient.
+
+Thanks,
+Fengguang
+
+> > commit 20545536cd8ea949c61527b6395ec8c0d2c237b1
+> > Author: Boaz Harrosh <bharrosh@panasas.com>
+> > Date:   Thu Jul 19 15:22:37 2012 +0300
+> > 
+> >     RFC: do_xor_speed Broken on UML do to jiffies
+> >     
+> >     Remember that hang I reported a while back on UML. Well
+> >     I'm at it again, and it still hangs and I found why.
+> >     
+> >     I have dprinted jiffies and it never advances during the
+> >     loop at do_xor_speed. There for it is stuck in an endless
+> >     loop. I have also dprinted current_kernel_time() and it
+> >     returns the same constant value as well.
+> >     
+> >     Note that it does usually work on UML, only during
+> >     the modprobe of xor.ko while that test is running. It looks
+> >     like some lucking is preventing the clock from ticking.
+> >     
+> >     However ktime_get_ts does work for me so I changed the code
+> >     as below, so I can work. See how I put several safety
+> >     guards, to never get hangs again.
+> >     And I think my time based approach is more accurate then
+> >     previous system.
+> >     
+> >     UML guys please investigate the jiffies issue? what is
+> >     xor.ko not doing right?
+> >     
+> >     Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
+> > 
+> > [    0.232004]    generic_sse:  6816.333 MB/sec
+> > [    0.233534] xor: using function: prefetch64-sse (9178.666 MB/sec)
+> > [    0.235445] ------------[ cut here ]------------
+> > [    0.236010] WARNING: CPU: 0 PID: 1 at init/main.c:701 do_one_initcall+0x128/0x138()
+> > [    0.240041] initcall calibrate_xor_blocks+0x0/0x144 returned with preemption imbalance 
+> > [    0.242872] Modules linked in:
+> > [    0.244006] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.12.0-rc4-wl-02197-g3d5587e #119
+> > [    0.246837] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+> > [    0.248004]  0000000000000000 ffff88000e1e5e00 ffffffff81a3a6bf ffff88000e1e5e48
+> > [    0.252003]  ffff88000e1e5e38 ffffffff810c53d5 ffffffff81000315 ffffffff8256ff16
+> > [    0.255243]  0000000000000000 0000000000000000 ffff88000e1e5fd8 ffff88000e1e5e98
+> > [    0.258537] Call Trace:
+> > [    0.260010]  [<ffffffff81a3a6bf>] dump_stack+0x54/0x74
+> > [    0.261730]  [<ffffffff810c53d5>] warn_slowpath_common+0x7f/0x98
+> > [    0.263623]  [<ffffffff81000315>] ? do_one_initcall+0x128/0x138
+> > [    0.264006]  [<ffffffff8256ff16>] ? do_xor_speed+0xe2/0xe2
+> > [    0.265785]  [<ffffffff810c543a>] warn_slowpath_fmt+0x4c/0x4e
+> > [    0.268007]  [<ffffffff811767d9>] ? free_pages+0x45/0x47
+> > [    0.269751]  [<ffffffff8256ff16>] ? do_xor_speed+0xe2/0xe2
+> > [    0.272006]  [<ffffffff81000315>] do_one_initcall+0x128/0x138
+> > [    0.273843]  [<ffffffff82532ed3>] kernel_init_freeable+0x159/0x1da
+> > [    0.276005]  [<ffffffff8253274d>] ? do_early_param+0x88/0x88
+> > [    0.277835]  [<ffffffff81a2a057>] ? rest_init+0xdb/0xdb
+> > [    0.280006]  [<ffffffff81a2a065>] kernel_init+0xe/0xdb
+> > [    0.281718]  [<ffffffff81a4d97c>] ret_from_fork+0x7c/0xb0
+> > [    0.283485]  [<ffffffff81a2a057>] ? rest_init+0xdb/0xdb
+> > [    0.284021] ---[ end trace 3592511960ba24aa ]---
+> > [    0.285636] atomic64 test passed for x86-64 platform with CX8 and with SSE
+> > 
+> > git bisect start 3d5587ec7222eebd6d2fa2d4b245ef837a8f36fa 15c03dd4859ab16f9212238f29dd315654aa94f6 --
+> > git bisect good bd1bc39506ad6ce236bf932757d6e3a81b3e3d55  # 09:41     20+      0  Merge 'regmap/topic/core' into devel-hourly-2013101007
+> > git bisect good f0a6d5852cc8b4e9e518c0426580f0589327e438  # 10:56     20+      0  Merge 'arm-soc/next/dt' into devel-hourly-2013101007
+> > git bisect good 909dc6fa1f1f42dcdae62b07c4d6b894a392e0d7  # 11:36     20+      0  Merge 'ipsec-next/testing' into devel-hourly-2013101007
+> > git bisect good 7fb1b0615235b3975def59fbffd0f52c71736bd3  # 11:57     20+      1  Merge 'arm-soc/next/drivers' into devel-hourly-2013101007
+> > git bisect good ac5fb9846698e9dffc430ab38c1aaefe50a51980  # 12:22     20+      0  Merge remote-tracking branch 'regulator/topic/optional' into regulator-next
+> > git bisect good b9729e9f8d82724c98f13dd358c7b08a4d7de3d2  # 13:31     20+      3  mtd: nand: pxa3xx_nand: Remove redundant of_match_ptr
+> > git bisect  bad c420082bfcc00a908360edd4bb5826ece1c59ae4  # 14:13      0-     20  Merge 'open-osd/exofs_ioctl' into devel-hourly-2013101007
+> > git bisect good 3f8985b977fbab1bf7ddea03bf311949ebca4afd  # 15:03     20+      0  Merge remote-tracking branch 'regulator/topic/tps6586x' into regulator-next
+> > git bisect  bad 7425910fffb08f541e4d2819c4ae7900894fc504  # 15:41      0-      1  {OUT-OF-TREE-DEBUG}: Remove the cdb_offset check because of osc-osd bug
+> > git bisect  bad 71e6bb4b77c4782642b3cb6b4f9369191e08b934  # 15:48      0-      1  pnfs_osd_xdr_srv (private): Add pnfs-objects server side XDR encoding/decoding
+> > git bisect  bad 20545536cd8ea949c61527b6395ec8c0d2c237b1  # 16:03      0-     16  RFC: do_xor_speed Broken on UML do to jiffies
+> > git bisect good 4a9a4b3528afce48d3f4b1c07b988040e78112e2  # 16:22     20+      0  pnfs: Proper delay for NFS4ERR_RECALLCONFLICT in layout_get_done
+> > git bisect good 4a9a4b3528afce48d3f4b1c07b988040e78112e2  # 16:36     60+      0  pnfs: Proper delay for NFS4ERR_RECALLCONFLICT in layout_get_done
+> > git bisect  bad 3d5587ec7222eebd6d2fa2d4b245ef837a8f36fa  # 16:36      0-     19  Merge 'tip/x86/bsp-hotplug' into devel-hourly-2013101007
+> > git bisect good 0e7a3ed04f0cd4311096d691888f88569310ee6c  # 16:57     63+      0  Merge branch 'perf-urgent-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
+> > git bisect good a0cf1abc25ac197dd97b857c0f6341066a8cb1cf  # 16:57     63+      0  Add linux-next specific files for 20130927
+> > 
+> > Thanks,
+> > Fengguang
+> > 
+> 
