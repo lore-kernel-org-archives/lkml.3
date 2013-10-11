@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932717Ab3JKTtJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:49:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46528 "EHLO
+	id S932903Ab3JKTtg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:49:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46488 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759028Ab3JKTmN (ORCPT
+	with ESMTP id S1757472Ab3JKTmJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:42:13 -0400
+	Fri, 11 Oct 2013 15:42:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [ 125/135] s390: fix system call restart after inferior call
-Date: Fri, 11 Oct 2013 12:40:06 -0700
-Message-Id: <20131011193958.838842134@linuxfoundation.org>
+        Eric Sandeen <sandeen@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 110/135] net: Update the sysctl permissions handler to test effective uid/gid
+Date: Fri, 11 Oct 2013 12:39:51 -0700
+Message-Id: <20131011193957.232147048@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -26,43 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-commit dbbfe487e5f3fc00c9fe5207d63309859704d12f upstream.
+commit 2433c8f094a008895e66f25bd1773cdb01c91d01 upstream.
 
-Git commit 616498813b11ffef "s390: system call path micro optimization"
-introduced a regression in regard to system call restarting and inferior
-function calls via the ptrace interface. The pointer to the system call
-table needs to be loaded in sysc_sigpending if do_signal returns with
-TIF_SYSCALl set after it restored a system call context.
+Modify the code to use current_euid(), and in_egroup_p, as in done
+in fs/proc/proc_sysctl.c:test_perm()
 
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Reviewed-by: Eric Sandeen <sandeen@redhat.com>
+Reported-by: Eric Sandeen <sandeen@redhat.com>
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/kernel/entry.S   |    1 +
- arch/s390/kernel/entry64.S |    1 +
- 2 files changed, 2 insertions(+)
+ net/sysctl_net.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/s390/kernel/entry.S
-+++ b/arch/s390/kernel/entry.S
-@@ -265,6 +265,7 @@ sysc_sigpending:
- 	tm	__TI_flags+3(%r12),_TIF_SYSCALL
- 	jno	sysc_return
- 	lm	%r2,%r7,__PT_R2(%r11)	# load svc arguments
-+	l	%r10,__TI_sysc_table(%r12)	# 31 bit system call table
- 	xr	%r8,%r8			# svc 0 returns -ENOSYS
- 	clc	__PT_INT_CODE+2(2,%r11),BASED(.Lnr_syscalls+2)
- 	jnl	sysc_nr_ok		# invalid svc number -> do svc 0
---- a/arch/s390/kernel/entry64.S
-+++ b/arch/s390/kernel/entry64.S
-@@ -296,6 +296,7 @@ sysc_sigpending:
- 	tm	__TI_flags+7(%r12),_TIF_SYSCALL
- 	jno	sysc_return
- 	lmg	%r2,%r7,__PT_R2(%r11)	# load svc arguments
-+	lg	%r10,__TI_sysc_table(%r12)	# address of system call table
- 	lghi	%r8,0			# svc 0 returns -ENOSYS
- 	llgh	%r1,__PT_INT_CODE+2(%r11)	# load new svc number
- 	cghi	%r1,NR_syscalls
+--- a/net/sysctl_net.c
++++ b/net/sysctl_net.c
+@@ -47,12 +47,12 @@ static int net_ctl_permissions(struct ct
+ 
+ 	/* Allow network administrator to have same access as root. */
+ 	if (ns_capable(net->user_ns, CAP_NET_ADMIN) ||
+-	    uid_eq(root_uid, current_uid())) {
++	    uid_eq(root_uid, current_euid())) {
+ 		int mode = (table->mode >> 6) & 7;
+ 		return (mode << 6) | (mode << 3) | mode;
+ 	}
+ 	/* Allow netns root group to have the same access as the root group */
+-	if (gid_eq(root_gid, current_gid())) {
++	if (in_egroup_p(root_gid)) {
+ 		int mode = (table->mode >> 3) & 7;
+ 		return (mode << 3) | mode;
+ 	}
 
 
