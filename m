@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758313Ab3JKTh1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:37:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45378 "EHLO
+	id S1755714Ab3JKUxU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:53:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45402 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758240Ab3JKThY (ORCPT
+	with ESMTP id S1758303Ab3JKTh1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:37:24 -0400
+	Fri, 11 Oct 2013 15:37:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Navin Ahuja <navin.ahuja@saratoga-speed.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 36/48] ib_srpt: Destroy cm_id before destroying QP.
-Date: Fri, 11 Oct 2013 12:36:43 -0700
-Message-Id: <20131011193641.158579941@linuxfoundation.org>
+        Michael Grzeschik <m.grzeschik@pengutronix.de>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Jonghwan Choi <jhbird.choi@samsung.com>
+Subject: [ 41/48] dmaengine: imx-dma: fix callback path in tasklet
+Date: Fri, 11 Oct 2013 12:36:48 -0700
+Message-Id: <20131011193641.698724072@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193637.253208688@linuxfoundation.org>
 References: <20131011193637.253208688@linuxfoundation.org>
@@ -27,53 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Michael Grzeschik <m.grzeschik@pengutronix.de>
 
-commit 0b41d6ca616ddeb3b6c0a80e8770b6f53cd42806 upstream.
+commit fcaaba6c7136fe47e5a13352f99a64b019b6d2c5 upstream.
 
-This patch fixes a bug where ib_destroy_cm_id() was incorrectly being called
-after srpt_destroy_ch_ib() had destroyed the active QP.
+We need to free the ld_active list head before jumping into the callback
+routine. Otherwise the callback could run into issue_pending and change
+our ld_active list head we just going to free. This will run the channel
+list into an currupted and undefined state.
 
-This would result in the following failed SRP_LOGIN_REQ messages:
-
-Received SRP_LOGIN_REQ with i_port_id 0x0:0x2590ffff1762bd, t_port_id 0x2c903009f8f40:0x2c903009f8f40 and it_iu_len 260 on port 1 (guid=0xfe80000000000000:0x2c903009f8f41)
-Received SRP_LOGIN_REQ with i_port_id 0x0:0x2590ffff1758f9, t_port_id 0x2c903009f8f40:0x2c903009f8f40 and it_iu_len 260 on port 2 (guid=0xfe80000000000000:0x2c903009f8f42)
-Received SRP_LOGIN_REQ with i_port_id 0x0:0x2590ffff175941, t_port_id 0x2c903009f8f40:0x2c903009f8f40 and it_iu_len 260 on port 2 (guid=0xfe80000000000000:0x2c90300a3cfb2)
-Received SRP_LOGIN_REQ with i_port_id 0x0:0x2590ffff176299, t_port_id 0x2c903009f8f40:0x2c903009f8f40 and it_iu_len 260 on port 1 (guid=0xfe80000000000000:0x2c90300a3cfb1)
-mlx4_core 0000:84:00.0: command 0x19 failed: fw status = 0x9
-rejected SRP_LOGIN_REQ because creating a new RDMA channel failed.
-Received SRP_LOGIN_REQ with i_port_id 0x0:0x2590ffff176299, t_port_id 0x2c903009f8f40:0x2c903009f8f40 and it_iu_len 260 on port 1 (guid=0xfe80000000000000:0x2c90300a3cfb1)
-mlx4_core 0000:84:00.0: command 0x19 failed: fw status = 0x9
-rejected SRP_LOGIN_REQ because creating a new RDMA channel failed.
-Received SRP_LOGIN_REQ with i_port_id 0x0:0x2590ffff176299, t_port_id 0x2c903009f8f40:0x2c903009f8f40 and it_iu_len 260 on port 1 (guid=0xfe80000000000000:0x2c90300a3cfb1)
-
-Reported-by: Navin Ahuja <navin.ahuja@saratoga-speed.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Michael Grzeschik <m.grzeschik@pengutronix.de>
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+Cc: Jonghwan Choi <jhbird.choi@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/ulp/srpt/ib_srpt.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/dma/imx-dma.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
---- a/drivers/infiniband/ulp/srpt/ib_srpt.c
-+++ b/drivers/infiniband/ulp/srpt/ib_srpt.c
-@@ -2373,6 +2373,8 @@ static void srpt_release_channel_work(st
- 	transport_deregister_session(ch->sess);
- 	ch->sess = NULL;
+--- a/drivers/dma/imx-dma.c
++++ b/drivers/dma/imx-dma.c
+@@ -563,13 +563,11 @@ static void imxdma_tasklet(unsigned long
  
-+	ib_destroy_cm_id(ch->cm_id);
-+
- 	srpt_destroy_ch_ib(ch);
+ 	if (list_empty(&imxdmac->ld_active)) {
+ 		/* Someone might have called terminate all */
+-		goto out;
++		spin_unlock_irqrestore(&imxdma->lock, flags);
++		return;
+ 	}
+ 	desc = list_first_entry(&imxdmac->ld_active, struct imxdma_desc, node);
  
- 	srpt_free_ioctx_ring((struct srpt_ioctx **)ch->ioctx_ring,
-@@ -2383,8 +2385,6 @@ static void srpt_release_channel_work(st
- 	list_del(&ch->list);
- 	spin_unlock_irq(&sdev->spinlock);
- 
--	ib_destroy_cm_id(ch->cm_id);
+-	if (desc->desc.callback)
+-		desc->desc.callback(desc->desc.callback_param);
 -
- 	if (ch->release_done)
- 		complete(ch->release_done);
+ 	/* If we are dealing with a cyclic descriptor keep it on ld_active
+ 	 * and dont mark the descripor as complete.
+ 	 * Only in non-cyclic cases it would be marked as complete
+@@ -597,6 +595,10 @@ static void imxdma_tasklet(unsigned long
+ 	}
+ out:
+ 	spin_unlock_irqrestore(&imxdma->lock, flags);
++
++	if (desc->desc.callback)
++		desc->desc.callback(desc->desc.callback_param);
++
+ }
  
+ static int imxdma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
 
 
