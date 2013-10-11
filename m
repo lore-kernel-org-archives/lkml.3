@@ -1,23 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758243Ab3JKKsr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 06:48:47 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58764 "EHLO
+	id S1758230Ab3JKKsq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 06:48:46 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58779 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932321Ab3JKKoM (ORCPT
+	with ESMTP id S932326Ab3JKKoM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Oct 2013 06:44:12 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Bing Zhao <bzhao@marvell.com>, "John W. Linville" <linville@tuxdriver.com>,
+Cc: =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@prifuk.cz>,
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 083/100] mwifiex: fix NULL pointer dereference in usb suspend handler
-Date: Fri, 11 Oct 2013 11:41:53 +0100
-Message-Id: <1381488130-30235-84-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 084/100] USB: serial: option: Ignore card reader interface on Huawei E1750
+Date: Fri, 11 Oct 2013 11:41:54 +0100
+Message-Id: <1381488130-30235-85-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
 References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,65 +32,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bing Zhao <bzhao@marvell.com>
+From: =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@prifuk.cz>
 
-commit 346ece0b7ba2730b4d633b9e371fe55488803102 upstream.
+commit eb2addd4044b4b2ce77693bde5bc810536dd96ee upstream.
 
-Bug 60815 - Interface hangs in mwifiex_usb
-https://bugzilla.kernel.org/show_bug.cgi?id=60815
+Hi,
 
-[ 2.883807] BUG: unable to handle kernel NULL pointer dereference
-            at 0000000000000048
-[ 2.883813] IP: [<ffffffff815a65e0>] pfifo_fast_enqueue+0x90/0x90
+my Huawei 3G modem has an embedded Smart Card reader which causes
+trouble when the modem is being detected (a bunch of "<warn>  (ttyUSBx):
+open blocked by driver for more than 7 seconds!" in messages.log). This
+trivial patch corrects the problem for me. The modem identifies itself
+as "12d1:1406 Huawei Technologies Co., Ltd. E1750" in lsusb although the
+description on the body says "Model E173u-1"
 
-[ 2.883834] CPU: 1 PID: 3220 Comm: kworker/u8:90 Not tainted
-            3.11.1-monotone-l0 #6
-[ 2.883834] Hardware name: Microsoft Corporation Surface with
-            Windows 8 Pro/Surface with Windows 8 Pro,
-            BIOS 1.03.0450 03/29/2013
-
-On Surface Pro, suspend to ram gives a NULL pointer dereference in
-pfifo_fast_enqueue(). The stack trace reveals that the offending
-call is clearing carrier in mwifiex_usb suspend handler.
-
-Since commit 1499d9f "mwifiex: don't drop carrier flag over suspend"
-has removed the carrier flag handling over suspend/resume in SDIO
-and PCIe drivers, I'm removing it in USB driver too. This also fixes
-the bug for Surface Pro.
-
-Tested-by: Dmitry Khromov <icechrome@gmail.com>
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Michal Malý <madcatxster@prifuk.cz>
+Cc: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/mwifiex/usb.c | 7 -------
- 1 file changed, 7 deletions(-)
+ drivers/usb/serial/option.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/net/wireless/mwifiex/usb.c b/drivers/net/wireless/mwifiex/usb.c
-index 22a5916..7fda0ab 100644
---- a/drivers/net/wireless/mwifiex/usb.c
-+++ b/drivers/net/wireless/mwifiex/usb.c
-@@ -446,9 +446,6 @@ static int mwifiex_usb_suspend(struct usb_interface *intf, pm_message_t message)
- 	 */
- 	adapter->is_suspended = true;
+diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+index 7785df0..d0c2d20 100644
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -81,6 +81,7 @@ static void option_instat_callback(struct urb *urb);
  
--	for (i = 0; i < adapter->priv_num; i++)
--		netif_carrier_off(adapter->priv[i]->netdev);
--
- 	if (atomic_read(&card->rx_cmd_urb_pending) && card->rx_cmd.urb)
- 		usb_kill_urb(card->rx_cmd.urb);
- 
-@@ -508,10 +505,6 @@ static int mwifiex_usb_resume(struct usb_interface *intf)
- 						  MWIFIEX_RX_CMD_BUF_SIZE);
- 	}
- 
--	for (i = 0; i < adapter->priv_num; i++)
--		if (adapter->priv[i]->media_connected)
--			netif_carrier_on(adapter->priv[i]->netdev);
--
- 	/* Disable Host Sleep */
- 	if (adapter->hs_activated)
- 		mwifiex_cancel_hs(mwifiex_get_priv(adapter,
+ #define HUAWEI_VENDOR_ID			0x12D1
+ #define HUAWEI_PRODUCT_E173			0x140C
++#define HUAWEI_PRODUCT_E1750			0x1406
+ #define HUAWEI_PRODUCT_K4505			0x1464
+ #define HUAWEI_PRODUCT_K3765			0x1465
+ #define HUAWEI_PRODUCT_K4605			0x14C6
+@@ -581,6 +582,8 @@ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1c23, USB_CLASS_COMM, 0x02, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E173, 0xff, 0xff, 0xff),
+ 		.driver_info = (kernel_ulong_t) &net_intf1_blacklist },
++	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E1750, 0xff, 0xff, 0xff),
++		.driver_info = (kernel_ulong_t) &net_intf2_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1441, USB_CLASS_COMM, 0x02, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1442, USB_CLASS_COMM, 0x02, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4505, 0xff, 0xff, 0xff),
 -- 
 1.8.3.2
 
