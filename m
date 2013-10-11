@@ -1,292 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756947Ab3JKJca (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 05:32:30 -0400
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:35875 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756675Ab3JKJc1 (ORCPT
+	id S1753650Ab3JKJlR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 05:41:17 -0400
+Received: from mail-bk0-f41.google.com ([209.85.214.41]:50884 "EHLO
+	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751528Ab3JKJlP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 05:32:27 -0400
-Date: Fri, 11 Oct 2013 17:30:18 +0800
-From: Jisheng Zhang <jszhang@marvell.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Thomas Gleixner" <tglx@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/8] irqchip: add DesignWare APB ICTL interrupt
- controller
-Message-ID: <20131011173018.04caee22@xhacker>
-In-Reply-To: <1381235073-17134-2-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1381235073-17134-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<1381235073-17134-2-git-send-email-sebastian.hesselbarth@gmail.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.21; x86_64-pc-linux-gnu)
+	Fri, 11 Oct 2013 05:41:15 -0400
+Date: Fri, 11 Oct 2013 11:39:06 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Arto Merilainen <amerilainen@nvidia.com>
+Cc: tbergstrom@nvidia.com, dri-devel@lists.freedesktop.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] gpu: host1x: Add syncpoint base support
+Message-ID: <20131011093905.GA8659@ulmo.nvidia.com>
+References: <1381319650-9799-1-git-send-email-amerilainen@nvidia.com>
+ <1381319650-9799-2-git-send-email-amerilainen@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
- definitions=2013-10-11_02:2013-10-11,2013-10-10,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=2
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1310110010
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="4Ckj6UjgE2iN1+kY"
+Content-Disposition: inline
+In-Reply-To: <1381319650-9799-2-git-send-email-amerilainen@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 8 Oct 2013 05:24:26 -0700
-Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> wrote:
 
-> This adds an irqchip driver and corresponding devicetree binding for the
-> secondary interrupt controllers based on Synopsys DesignWare IP dw_apb_ictl.
-> 
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> ---
-> Changelog:
-> RFCv1->RFCv2:
-> - added copyright reference
-> 
-> Cc: Jason Cooper <jason@lakedaemon.net>
-> Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: devicetree@vger.kernel.org
-> Cc: linux-doc@vger.kernel.org
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  .../interrupt-controller/snps,dw-apb-ictl.txt      |   29 ++++
->  drivers/irqchip/Kconfig                            |    4 +
->  drivers/irqchip/Makefile                           |    1 +
->  drivers/irqchip/irq-dw-apb-ictl.c                  |  142
-> ++++++++++++++++++++ 4 files changed, 176 insertions(+)
->  create mode 100644
-> Documentation/devicetree/bindings/interrupt-controller/snps,dw-apb-ictl.txt
-> create mode 100644 drivers/irqchip/irq-dw-apb-ictl.c
-> 
-> diff --git
-> a/Documentation/devicetree/bindings/interrupt-controller/snps,dw-apb-ictl.txt
-> b/Documentation/devicetree/bindings/interrupt-controller/snps,dw-apb-ictl.txt
-> new file mode 100644 index 0000000..7ccd1ba --- /dev/null
-> +++
-> b/Documentation/devicetree/bindings/interrupt-controller/snps,dw-apb-ictl.txt
-> @@ -0,0 +1,29 @@ +Synopsys DesignWare APB interrupt controller (dw_apb_ictl)
-> +
-> +Synopsys DesignWare provides interrupt controller IP for APB known as
-> +dw_apb_ictl. The IP is used as secondary interrupt controller in some SoCs
-> with +APB bus, e.g. Marvell Armada 1500.
-> +
-> +Required properties:
-> +- compatible: shall be "snps,dw-apb-ictl"
-> +- reg: base address of interrupt registers starting with ENABLE_LOW
-> register +- interrupt-controller: identifies the node as an interrupt
-> controller +- #interrupt-cells: number of cells to encode an interrupt
-> source, shall be 1 +- interrupts: interrupt reference to primary interrupt
-> controller +- interrupt-parent: (optional) reference specific primary
-> interrupt controller +
-> +The interrupt sources map to the corresponding bits in the interrupt
-> +registers, i.e.
-> +- 0 maps to bit 0 of low interrupts,
-> +- 1 maps to bit 1 of low interrupts,
-> +- 32 maps to bit 0 of high interrupts, and so on.
-> +
-> +Example:
-> +       aic: interrupt-controller@3000 {
-> +               compatible = "snps,dw-apb-ictl";
-> +               reg = <0x3000 0xc00>;
-> +               interrupt-controller;
-> +               #interrupt-cells = <1>;
-> +               interrupt-parent = <&gic>;
-> +               interrupts = <GIC_SPI 3 IRQ_TYPE_LEVEL_HIGH>;
-> +       };
-> diff --git a/drivers/irqchip/Kconfig b/drivers/irqchip/Kconfig
-> index 3792a1a..940638d 100644
-> --- a/drivers/irqchip/Kconfig
-> +++ b/drivers/irqchip/Kconfig
-> @@ -30,6 +30,10 @@ config ARM_VIC_NR
->           The maximum number of VICs available in the system, for
->           power management.
-> 
-> +config DW_APB_ICTL
-> +       bool
-> +       select IRQ_DOMAIN
-> +
->  config IMGPDC_IRQ
->         bool
->         select GENERIC_IRQ_CHIP
-> diff --git a/drivers/irqchip/Makefile b/drivers/irqchip/Makefile
-> index c60b901..6427323 100644
-> --- a/drivers/irqchip/Makefile
-> +++ b/drivers/irqchip/Makefile
-> @@ -6,6 +6,7 @@ obj-$(CONFIG_ARCH_MMP)                  += irq-mmp.o
->  obj-$(CONFIG_ARCH_MVEBU)               += irq-armada-370-xp.o
->  obj-$(CONFIG_ARCH_MXS)                 += irq-mxs.o
->  obj-$(CONFIG_ARCH_S3C24XX)             += irq-s3c24xx.o
-> +obj-$(CONFIG_DW_APB_ICTL)              += irq-dw-apb-ictl.o
->  obj-$(CONFIG_METAG)                    += irq-metag-ext.o
->  obj-$(CONFIG_METAG_PERFCOUNTER_IRQS)   += irq-metag.o
->  obj-$(CONFIG_ARCH_MOXART)              += irq-moxart.o
-> diff --git a/drivers/irqchip/irq-dw-apb-ictl.c
-> b/drivers/irqchip/irq-dw-apb-ictl.c new file mode 100644
-> index 0000000..bbcacee
-> --- /dev/null
-> +++ b/drivers/irqchip/irq-dw-apb-ictl.c
-> @@ -0,0 +1,142 @@
-> +/*
-> + * Synopsys DW APB ICTL irqchip driver.
-> + *
-> + * Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> + *
-> + * based on GPL'ed 2.6 kernel sources
-> + *  (c) Marvell International Ltd.
-> + *
-> + * This file is licensed under the terms of the GNU General Public
-> + * License version 2.  This program is licensed "as is" without any
-> + * warranty of any kind, whether express or implied.
-> + */
-> +
-> +#include <linux/io.h>
-> +#include <linux/irq.h>
-> +#include <linux/irqchip/chained_irq.h>
-> +#include <linux/of_address.h>
-> +#include <linux/of_irq.h>
-> +
-> +#include "irqchip.h"
-> +
-> +#define APB_INT_ENABLE_L       0x00
-> +#define APB_INT_ENABLE_H       0x04
-> +#define APB_INT_MASK_L         0x08
-> +#define APB_INT_MASK_H         0x0c
-> +#define APB_INT_FINALSTATUS_L  0x30
-> +#define APB_INT_FINALSTATUS_H  0x34
-> +
-> +static void dw_apb_ictl_handler(unsigned int irq, struct irq_desc *desc)
+--4Ckj6UjgE2iN1+kY
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Wed, Oct 09, 2013 at 02:54:08PM +0300, Arto Merilainen wrote:
+> This patch adds support for hardware syncpoint bases. This creates
+> a simple mechanism for waiting an operation to complete in the middle
+> of the command buffer.
+
+Perhaps "... simple mechanism to stall the command FIFO until an
+operation is completed." That's what the TRM contains and more
+accurately describes the hardware functionality.
+
+> diff --git a/drivers/gpu/host1x/dev.h b/drivers/gpu/host1x/dev.h
+[...]
+> @@ -26,6 +26,7 @@
+>  #include "cdma.h"
+>  #include "job.h"
+> =20
+> +struct host1x_base;
+
+host1x_syncpt_base is more explicit, host1x_base sounds very generic.
+
+> diff --git a/drivers/gpu/host1x/hw/channel_hw.c b/drivers/gpu/host1x/hw/c=
+hannel_hw.c
+> index ee19962..5f9f735 100644
+> --- a/drivers/gpu/host1x/hw/channel_hw.c
+> +++ b/drivers/gpu/host1x/hw/channel_hw.c
+> @@ -67,6 +67,21 @@ static void submit_gathers(struct host1x_job *job)
+>  	}
+>  }
+> =20
+> +static inline void synchronize_syncpt_base(struct host1x_job *job)
 > +{
-> +       struct irq_chip *chip = irq_get_chip(irq);
-> +       struct irq_chip_generic *gc = irq_get_handler_data(irq);
-> +       struct irq_domain *d = gc->private;
-> +       u32 stat;
-> +       int n;
+> +	struct host1x_channel *ch =3D job->channel;
+> +	struct host1x *host =3D dev_get_drvdata(ch->dev->parent);
+> +	struct host1x_syncpt *sp =3D host->syncpt + job->syncpt_id;
+> +	u32 base_id =3D sp->base->id;
+> +	u32 base_val =3D host1x_syncpt_read_max(sp);
 > +
-> +       chained_irq_enter(chip, desc);
+> +	host1x_cdma_push(&ch->cdma,
+> +			 host1x_opcode_setclass(HOST1X_CLASS_HOST1X,
+> +				host1x_uclass_load_syncpt_base_r(), 1),
+> +			 host1x_uclass_load_syncpt_base_base_indx_f(base_id) |
+> +			 host1x_uclass_load_syncpt_base_value_f(base_val));
+
+Please use the all-caps version of the register definitions. The
+lowercase variants were only introduced to allow profiling and coverage
+testing, which I think nobody's been doing and I'm in fact thinking
+about removing them.
+
+> diff --git a/drivers/gpu/host1x/syncpt.c b/drivers/gpu/host1x/syncpt.c
+[...]
+> +static struct host1x_base *host1x_base_alloc(struct host1x *host)
+> +{
+> +	struct host1x_base *base =3D host->bases;
+> +	int i;
+
+unsigned int
+
 > +
-> +       for (n = 0; n < gc->num_ct; n++) {
-> +               stat = readl_relaxed(gc->reg_base +
-> +                                    APB_INT_FINALSTATUS_L + 4 * n);
-> +               while (stat) {
-> +                       u32 hwirq = ffs(stat) - 1;
-> +                       generic_handle_irq(irq_find_mapping(d,
-> +                                           gc->irq_base + hwirq + 32 * n));
-> +                       stat &= ~(1 << hwirq);
-> +               }
-> +       }
+> +	for (i =3D 0; i < host->info->nb_bases && base->reserved; i++, base++)
+> +		;
+
+I'd like to see this rewritten as:
+
+	for (i =3D 0; i < host->info->nb_bases; i++) {
+		if (!host->bases[i].reserved)
+			break;
+	}
+
+> +static void host1x_base_free(struct host1x_base *base)
+> +{
+> +	if (!base)
+> +		return;
+> +	base->reserved =3D false;
+> +}
+
+The following would be somewhat shorter:
+
+	if (base)
+		base->reserved =3D false;
+
+>  static struct host1x_syncpt *_host1x_syncpt_alloc(struct host1x *host,
+>  						  struct device *dev,
+> -						  bool client_managed)
+> +						  bool client_managed,
+> +						  bool support_base)
+
+I think at this point we probably want to introduce a flags argument
+instead of adding all those boolean parameters. Something like:
+
+	#define HOST1X_SYNCPT_CLIENT_MANAGED	(1 << 0)
+	#define HOST1X_SYNCPT_HAS_BASE		(1 << 1)
+
+	struct host1x_syncpt *host1x_syncpt_alloc(struct host1x *host,
+						  struct device *dev,
+						  unsigned long flags);
+
+>  int host1x_syncpt_init(struct host1x *host)
+>  {
+>  	struct host1x_syncpt *syncpt;
+> +	struct host1x_base *bases;
+>  	int i;
+> =20
+> +	bases =3D devm_kzalloc(host->dev, sizeof(*bases) * host->info->nb_bases,
+> +		GFP_KERNEL);
+>  	syncpt =3D devm_kzalloc(host->dev, sizeof(*syncpt) * host->info->nb_pts,
+>  		GFP_KERNEL);
+
+I'd prefer these to be checked separately. Also the argument alignment
+is wrong here. Align with the first function argument. And for
+consistency, allocate bases after syncpoints...
+
+> -	if (!syncpt)
+> +	if (!syncpt || !bases)
+>  		return -ENOMEM;
+> =20
+> -	for (i =3D 0; i < host->info->nb_pts; ++i) {
+> +	for (i =3D 0; i < host->info->nb_bases; i++)
+> +		bases[i].id =3D i;
 > +
-> +       chained_irq_exit(chip, desc);
+> +	for (i =3D 0; i < host->info->nb_pts; i++) {
+>  		syncpt[i].id =3D i;
+>  		syncpt[i].host =3D host;
+>  	}
+
+=2E.. and initialize them after the syncpoints...
+
+> =20
+>  	host->syncpt =3D syncpt;
+> +	host->bases =3D bases;
+
+=2E.. to match the assignment order.
+
+> @@ -332,7 +368,14 @@ struct host1x_syncpt *host1x_syncpt_request(struct d=
+evice *dev,
+>  					    bool client_managed)
+>  {
+>  	struct host1x *host =3D dev_get_drvdata(dev->parent);
+> -	return _host1x_syncpt_alloc(host, dev, client_managed);
+> +	return _host1x_syncpt_alloc(host, dev, client_managed, false);
 > +}
 > +
-> +static int __init dw_apb_ictl_init(struct device_node *np,
-> +                                  struct device_node *parent)
+> +struct host1x_syncpt *host1x_syncpt_request_based(struct device *dev,
+> +						  bool client_managed)
 > +{
-> +       unsigned int clr = IRQ_NOREQUEST | IRQ_NOPROBE | IRQ_NOAUTOEN;
-> +       struct resource r;
-> +       struct irq_domain *domain;
-> +       struct irq_chip_generic *gc;
-> +       void __iomem *iobase;
-> +       int ret, nrirqs, irq;
-> +       u32 reg;
-> +
-> +       /* Map the parent interrupt for the chained handler */
-> +       irq = irq_of_parse_and_map(np, 0);
-> +       if (irq <= 0) {
-> +               pr_err("%s: unable to parse irq\n", np->name);
-> +               return -EINVAL;
-> +       }
-> +
-> +       ret = of_address_to_resource(np, 0, &r);
-> +       if (ret) {
-> +               pr_err("%s: unable to get resource\n", np->name);
-> +               return ret;
-> +       }
-> +
-> +       if (!request_mem_region(r.start, resource_size(&r), np->name)) {
-> +               pr_err("%s: unable to request mem region\n", np->name);
-> +               return -ENOMEM;
-> +       }
-> +
-> +       iobase = ioremap(r.start, resource_size(&r));
-> +       if (!iobase) {
-> +               pr_err("%s: unable to map resource\n", np->name);
-release_mem_region() is missing
-> +               return -ENOMEM;
-> +       }
-> +
-> +       /*
-> +        * DW IP can be configured to allow 2-64 irqs. We can determine
-> +        * the number of irqs supported by writing into enable register
-> +        * and look for bits not set, as corresponding flip-flops will
-> +        * have been removed by sythesis tool.
-> +        */
-> +
-> +       /* mask and enable all interrupts */
-> +       writel(~0, iobase + APB_INT_MASK_L);
-> +       writel(~0, iobase + APB_INT_MASK_H);
-> +       writel(~0, iobase + APB_INT_ENABLE_L);
-> +       writel(~0, iobase + APB_INT_ENABLE_H);
-> +
-> +       reg = readl(iobase + APB_INT_ENABLE_H);
-> +       if (reg)
-> +               nrirqs = 32 + fls(reg);
-> +       else
-> +               nrirqs = fls(readl(iobase + APB_INT_ENABLE_L));
-> +
-> +       domain = irq_domain_add_linear(np, nrirqs,
-> +                                      &irq_generic_chip_ops, NULL);
-> +       if (!domain) {
-> +               pr_err("%s: unable to add irq domain\n", np->name);
-iounmap() and release_mem_region() is missing
-> +               return -ENOMEM;
-> +       }
-> +
-> +       ret = irq_alloc_domain_generic_chips(domain, 32, (nrirqs > 32) ?
-> 2 : 1,
-> +                                            np->name, handle_level_irq,
-> clr, 0,
-> +                                            IRQ_GC_INIT_MASK_CACHE);
-> +       if (ret) {
-> +               pr_err("%s: unable to alloc irq domain gc\n", np->name);
-> +               return ret;
-> +       }
-> +
-> +       gc = irq_get_domain_generic_chip(domain, 0);
-> +       gc->private = domain;
-> +       gc->reg_base = iobase;
-> +
-> +       gc->chip_types[0].regs.mask = APB_INT_MASK_L;
-> +       gc->chip_types[0].chip.irq_mask = irq_gc_mask_set_bit;
-> +       gc->chip_types[0].chip.irq_unmask = irq_gc_mask_clr_bit;
-> +
-> +       if (nrirqs > 32) {
-> +               gc->chip_types[1].regs.mask = APB_INT_MASK_H;
-> +               gc->chip_types[1].chip.irq_mask = irq_gc_mask_set_bit;
-> +               gc->chip_types[1].chip.irq_unmask = irq_gc_mask_clr_bit;
-> +       }
-> +
-> +       irq_set_handler_data(irq, gc);
-> +       irq_set_chained_handler(irq, dw_apb_ictl_handler);
-> +
-> +       return 0;
-> +}
-> +IRQCHIP_DECLARE(dw_apb_ictl,
-> +               "snps,dw-apb-ictl", dw_apb_ictl_init);
-> --
-> 1.7.10.4
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> +	struct host1x *host =3D dev_get_drvdata(dev->parent);
+> +	return _host1x_syncpt_alloc(host, dev, client_managed, true);
+>  }
 
+If we add a flags parameter to host1x_syncpt_request() (and
+host1x_syncpt_alloc()) then we don't need the separate function.
+
+> diff --git a/drivers/gpu/host1x/syncpt.h b/drivers/gpu/host1x/syncpt.h
+> index 267c0b9..852dc76 100644
+> --- a/drivers/gpu/host1x/syncpt.h
+> +++ b/drivers/gpu/host1x/syncpt.h
+> @@ -30,6 +30,11 @@ struct host1x;
+>  /* Reserved for replacing an expired wait with a NOP */
+>  #define HOST1X_SYNCPT_RESERVED			0
+> =20
+> +struct host1x_base {
+> +	u8 id;
+> +	bool reserved;
+
+Perhaps name this to something like "requested". "reserved" makes it
+sound like it's reserved for some special use.
+
+Thierry
+
+--4Ckj6UjgE2iN1+kY
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSV8c5AAoJEN0jrNd/PrOh0Y4P/jABrv1wrBSv1pv6TkZzDEle
+u9HT1v2ZZEkqu07xVnP6HN14I/Ovx7FqHn1OsIYniRnGVEUPF7f68f9JmlHoHc4y
+t4CS85QAVf47j1foHT8oFdrRMYTAl2Y0mHR0QTkkb1GSE9Eo4tujSmiw+BwTmWu0
+k4C8i+pI75VoQgZ/pNPWCXHa1G2MoM6+SvrVhXGn9qPDCL+GK4uQOqRcW+dwdF3o
+qPZTqi0KVLXRp7SXAEZlZXgLq/56PySb+Ztt2vZ2BGIa2+PoLzfBNpL6LSBkPzSA
+7Jweu8blABNvTg0NdHBAO8kp9NCulFCiDkf5C2PyeauOZS713TsN4968ibaJS/L7
+L9e3jN8Tt/i+G5kyLZ9USuxSyRg48HY3M2G6P3eIznVzM8bYFCy6oZUKw16Gn9eC
+yzVEIId81G5UY19wRS+TrRaBoyGkdDhhuUef9fLmoqjSO7vKrqGr+BtAq5HrqfEb
+epHsXy+Q4UFYuQU0NqJ5AiaMErZ5n1j1c7mBP4K+k2Ye32DYSoj7mvSY/eUs5RzJ
+dbnQU34jjJYpUsOdeWMOn77QPPk+1YUXpR2IRahstomrCVhvSpwX8WbRCS17t2JF
+2sbwNC4RczByfbeV9TAOsrMRNYifksWRhbNNCHQ1AObrsOghHjh/k1dKHkGDc1Wd
+1osGJm1oY2vFEI8Q801c
+=uN7X
+-----END PGP SIGNATURE-----
+
+--4Ckj6UjgE2iN1+kY--
