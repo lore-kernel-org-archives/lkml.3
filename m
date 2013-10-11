@@ -1,89 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757842Ab3JKMWM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 08:22:12 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:9409 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752338Ab3JKMWL (ORCPT
+	id S1757864Ab3JKMXX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 08:23:23 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:49635 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752059Ab3JKMXW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 08:22:11 -0400
-Date: Fri, 11 Oct 2013 08:22:04 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Namhyung Kim <namhyung@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: Re: [RFC/PATCH] ftrace: add set_graph_notrace filter
-Message-ID: <20131011082204.5c6de75d@gandalf.local.home>
-In-Reply-To: <20131011072156.GC4154@osiris>
-References: <1378184708-31385-1-git-send-email-namhyung@kernel.org>
-	<20131011001717.26b92150@gandalf.local.home>
-	<20131011072156.GC4154@osiris>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 11 Oct 2013 08:23:22 -0400
+Subject: [PATCH -tip ] [BUGFIX] perf probe: fix to initialize fname always
+ before use it
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Paul Mackerras <paulus@samba.org>, lkml <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Fri, 11 Oct 2013 12:23:17 +0000
+Message-ID: <20131011122317.9662.29736.stgit@kbuild-fedora.novalocal>
+User-Agent: StGit/0.16
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Oct 2013 09:21:56 +0200
-Heiko Carstens <heiko.carstens@de.ibm.com> wrote:
+Fix perf probe --list to initialize fname local var always before
+use it. This may cause a SEGV if there is a probe which is in
+the function body but not in any inline function.
 
-> 
-> Steven Rostedt noted that s390 is the only architecture which calls
-> ftrace_push_return_trace() before ftrace_graph_entry() and therefore has
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/util/probe-finder.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-I don't know if s390 is the only arch. I didn't finish reading all the
-arch specific code to make sure.
+diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
+index c044052..e41b094 100644
+--- a/tools/perf/util/probe-finder.c
++++ b/tools/perf/util/probe-finder.c
+@@ -1460,10 +1460,10 @@ int debuginfo__find_probe_point(struct debuginfo *self, unsigned long addr,
+ 			goto post;
+ 		}
+ 
++		fname = dwarf_decl_file(&spdie);
+ 		if (addr == (unsigned long)baseaddr) {
+ 			/* Function entry - Relative line number is 0 */
+ 			lineno = baseline;
+-			fname = dwarf_decl_file(&spdie);
+ 			goto post;
+ 		}
+ 
 
-> the small advantage that trace.depth gets initialized automatically.
-> 
-> However this small advantage isn't worth the difference and possible subtle
-> breakage that may result from this.
-> So change s390 to have the same function call order like all other
-> architectures: first ftrace_graph_entry(), then ftrace_push_return_trace()
-> 
-> Reported-by: Steven Rostedt <rostedt@goodmis.org>
-> Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-> ---
->  arch/s390/kernel/ftrace.c | 9 ++++-----
->  1 file changed, 4 insertions(+), 5 deletions(-)
-> 
-> diff --git a/arch/s390/kernel/ftrace.c b/arch/s390/kernel/ftrace.c
-> index 1014ad5..224db03 100644
-> --- a/arch/s390/kernel/ftrace.c
-> +++ b/arch/s390/kernel/ftrace.c
-> @@ -151,14 +151,13 @@ unsigned long __kprobes prepare_ftrace_return(unsigned long parent,
->  	if (unlikely(atomic_read(&current->tracing_graph_pause)))
->  		goto out;
->  	ip = (ip & PSW_ADDR_INSN) - MCOUNT_INSN_SIZE;
-> -	if (ftrace_push_return_trace(parent, ip, &trace.depth, 0) == -EBUSY)
-> -		goto out;
->  	trace.func = ip;
-> +	trace.depth = current->curr_ret_stack + 1;
->  	/* Only trace if the calling function expects to. */
-> -	if (!ftrace_graph_entry(&trace)) {
-> -		current->curr_ret_stack--;
-> +	if (!ftrace_graph_entry(&trace))
-> +		goto out;
-> +	if (ftrace_push_return_trace(parent, ip, &trace.depth, 0) == -EBUSY)
->  		goto out;
-> -	}
-
-Hmm, if this code is so identical among the archs, I may create a
-generic inline function to do the work. That way any change to the flow
-can be done for all archs in one place.
-
-Thanks!
-
--- Steve
-
->  	parent = (unsigned long) return_to_handler;
->  out:
->  	return parent;
 
