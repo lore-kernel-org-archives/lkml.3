@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932353Ab3JKKoU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 06:44:20 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58785 "EHLO
+	id S1758182Ab3JKKrs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 06:47:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58806 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932332Ab3JKKoO (ORCPT
+	with ESMTP id S932347Ab3JKKoT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 06:44:14 -0400
+	Fri, 11 Oct 2013 06:44:19 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: Jack Wang <jinpu.wang@profitbricks.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 086/100] powerpc: Fix parameter clobber in csum_partial_copy_generic()
-Date: Fri, 11 Oct 2013 11:41:56 +0100
-Message-Id: <1381488130-30235-87-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 091/100] ib_srpt: always set response for task management
+Date: Fri, 11 Oct 2013 11:42:01 +0100
+Message-Id: <1381488130-30235-92-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
 References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
@@ -29,40 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+From: Jack Wang <jinpu.wang@profitbricks.com>
 
-commit d9813c3681a36774b254c0cdc9cce53c9e22c756 upstream.
+commit c807f64340932e19f0d2ac9b30c8381e1f60663a upstream.
 
-The csum_partial_copy_generic() uses register r7 to adjust the remaining
-bytes to process.  Unfortunately, r7 also holds a parameter, namely the
-address of the flag to set in case of access exceptions while reading
-the source buffer.  Lacking a quantum implementation of PowerPC, this
-commit instead uses register r9 to do the adjusting, leaving r7's
-pointer uncorrupted.
+The SRP specification requires:
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+  "Response data shall be provided in any SRP_RSP response that is sent in
+   response to an SRP_TSK_MGMT request (see 6.7). The information in the
+   RSP_CODE field (see table 24) shall indicate the completion status of
+   the task management function."
+
+So fix this to avoid the SRP initiator interprets task management functions
+that succeeded as failed.
+
+Signed-off-by: Jack Wang <jinpu.wang@profitbricks.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/powerpc/lib/checksum_64.S | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/infiniband/ulp/srpt/ib_srpt.c | 10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
 
-diff --git a/arch/powerpc/lib/checksum_64.S b/arch/powerpc/lib/checksum_64.S
-index 18245af..afa2eba 100644
---- a/arch/powerpc/lib/checksum_64.S
-+++ b/arch/powerpc/lib/checksum_64.S
-@@ -272,8 +272,8 @@ _GLOBAL(csum_partial_copy_generic)
- 	rldicl. r6,r3,64-1,64-2		/* r6 = (r3 & 0x3) >> 1 */
- 	beq	.Lcopy_aligned
+diff --git a/drivers/infiniband/ulp/srpt/ib_srpt.c b/drivers/infiniband/ulp/srpt/ib_srpt.c
+index 0ff33b0..10f88e6 100644
+--- a/drivers/infiniband/ulp/srpt/ib_srpt.c
++++ b/drivers/infiniband/ulp/srpt/ib_srpt.c
+@@ -1609,7 +1609,7 @@ static int srpt_build_tskmgmt_rsp(struct srpt_rdma_ch *ch,
+ 	int resp_data_len;
+ 	int resp_len;
  
--	li	r7,4
--	sub	r6,r7,r6
-+	li	r9,4
-+	sub	r6,r9,r6
- 	mtctr	r6
+-	resp_data_len = (rsp_code == SRP_TSK_MGMT_SUCCESS) ? 0 : 4;
++	resp_data_len = 4;
+ 	resp_len = sizeof(*srp_rsp) + resp_data_len;
  
- 1:
+ 	srp_rsp = ioctx->ioctx.buf;
+@@ -1621,11 +1621,9 @@ static int srpt_build_tskmgmt_rsp(struct srpt_rdma_ch *ch,
+ 				    + atomic_xchg(&ch->req_lim_delta, 0));
+ 	srp_rsp->tag = tag;
+ 
+-	if (rsp_code != SRP_TSK_MGMT_SUCCESS) {
+-		srp_rsp->flags |= SRP_RSP_FLAG_RSPVALID;
+-		srp_rsp->resp_data_len = cpu_to_be32(resp_data_len);
+-		srp_rsp->data[3] = rsp_code;
+-	}
++	srp_rsp->flags |= SRP_RSP_FLAG_RSPVALID;
++	srp_rsp->resp_data_len = cpu_to_be32(resp_data_len);
++	srp_rsp->data[3] = rsp_code;
+ 
+ 	return resp_len;
+ }
 -- 
 1.8.3.2
 
