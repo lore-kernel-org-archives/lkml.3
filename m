@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758482Ab3JKThh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:37:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45383 "EHLO
+	id S1758525Ab3JKThj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:37:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45431 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758243Ab3JKThY (ORCPT
+	with ESMTP id S1758357Ab3JKThb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:37:24 -0400
+	Fri, 11 Oct 2013 15:37:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jack Wang <jinpu.wang@profitbricks.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 37/48] ib_srpt: always set response for task management
-Date: Fri, 11 Oct 2013 12:36:44 -0700
-Message-Id: <20131011193641.267784628@linuxfoundation.org>
+        Josef Bacik <jbacik@fusionio.com>,
+        Chris Mason <chris.mason@fusionio.com>
+Subject: [ 47/48] Btrfs: change how we queue blocks for backref checking
+Date: Fri, 11 Oct 2013 12:36:54 -0700
+Message-Id: <20131011193642.335830800@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193637.253208688@linuxfoundation.org>
 References: <20131011193637.253208688@linuxfoundation.org>
@@ -27,53 +27,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jack Wang <jinpu.wang@profitbricks.com>
+From: Josef Bacik <jbacik@fusionio.com>
 
-commit c807f64340932e19f0d2ac9b30c8381e1f60663a upstream.
+commit b6c60c8018c4e9beb2f83fc82c09f9d033766571 upstream.
 
-The SRP specification requires:
+Previously we only added blocks to the list to have their backrefs checked if
+the level of the block is right above the one we are searching for.  This is
+because we want to make sure we don't add the entire path up to the root to the
+lists to make sure we process things one at a time.  This assumes that if any
+blocks in the path to the root are going to be not checked (shared in other
+words) then they will be in the level right above the current block on up.  This
+isn't quite right though since we can have blocks higher up the list that are
+shared because they are attached to a reloc root.  But we won't add this block
+to be checked and then later on we will BUG_ON(!upper->checked).  So instead
+keep track of wether or not we've queued a block to be checked in this current
+search, and if we haven't go ahead and queue it to be checked.  This patch fixed
+the panic I was seeing where we BUG_ON(!upper->checked).  Thanks,
 
-  "Response data shall be provided in any SRP_RSP response that is sent in
-   response to an SRP_TSK_MGMT request (see 6.7). The information in the
-   RSP_CODE field (see table 24) shall indicate the completion status of
-   the task management function."
-
-So fix this to avoid the SRP initiator interprets task management functions
-that succeeded as failed.
-
-Signed-off-by: Jack Wang <jinpu.wang@profitbricks.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Josef Bacik <jbacik@fusionio.com>
+Signed-off-by: Chris Mason <chris.mason@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/ulp/srpt/ib_srpt.c |   10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
+ fs/btrfs/relocation.c |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
---- a/drivers/infiniband/ulp/srpt/ib_srpt.c
-+++ b/drivers/infiniband/ulp/srpt/ib_srpt.c
-@@ -1610,7 +1610,7 @@ static int srpt_build_tskmgmt_rsp(struct
- 	int resp_data_len;
- 	int resp_len;
+--- a/fs/btrfs/relocation.c
++++ b/fs/btrfs/relocation.c
+@@ -684,6 +684,7 @@ struct backref_node *build_backref_tree(
+ 	int cowonly;
+ 	int ret;
+ 	int err = 0;
++	bool need_check = true;
  
--	resp_data_len = (rsp_code == SRP_TSK_MGMT_SUCCESS) ? 0 : 4;
-+	resp_data_len = 4;
- 	resp_len = sizeof(*srp_rsp) + resp_data_len;
+ 	path1 = btrfs_alloc_path();
+ 	path2 = btrfs_alloc_path();
+@@ -906,6 +907,7 @@ again:
+ 			cur->bytenr);
  
- 	srp_rsp = ioctx->ioctx.buf;
-@@ -1622,11 +1622,9 @@ static int srpt_build_tskmgmt_rsp(struct
- 				    + atomic_xchg(&ch->req_lim_delta, 0));
- 	srp_rsp->tag = tag;
+ 		lower = cur;
++		need_check = true;
+ 		for (; level < BTRFS_MAX_LEVEL; level++) {
+ 			if (!path2->nodes[level]) {
+ 				BUG_ON(btrfs_root_bytenr(&root->root_item) !=
+@@ -949,14 +951,12 @@ again:
  
--	if (rsp_code != SRP_TSK_MGMT_SUCCESS) {
--		srp_rsp->flags |= SRP_RSP_FLAG_RSPVALID;
--		srp_rsp->resp_data_len = cpu_to_be32(resp_data_len);
--		srp_rsp->data[3] = rsp_code;
--	}
-+	srp_rsp->flags |= SRP_RSP_FLAG_RSPVALID;
-+	srp_rsp->resp_data_len = cpu_to_be32(resp_data_len);
-+	srp_rsp->data[3] = rsp_code;
- 
- 	return resp_len;
- }
+ 				/*
+ 				 * add the block to pending list if we
+-				 * need check its backrefs. only block
+-				 * at 'cur->level + 1' is added to the
+-				 * tail of pending list. this guarantees
+-				 * we check backrefs from lower level
+-				 * blocks to upper level blocks.
++				 * need check its backrefs, we only do this once
++				 * while walking up a tree as we will catch
++				 * anything else later on.
+ 				 */
+-				if (!upper->checked &&
+-				    level == cur->level + 1) {
++				if (!upper->checked && need_check) {
++					need_check = false;
+ 					list_add_tail(&edge->list[UPPER],
+ 						      &list);
+ 				} else
 
 
