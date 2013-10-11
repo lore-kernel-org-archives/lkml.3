@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757832Ab3JKKm4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 06:42:56 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58446 "EHLO
+	id S932172Ab3JKKnH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 06:43:07 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58484 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757719Ab3JKKmv (ORCPT
+	with ESMTP id S1757859Ab3JKKnA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 06:42:51 -0400
+	Fri, 11 Oct 2013 06:43:00 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>,
-        Weng Meiling <wengmeiling.weng@huawei.com>,
+Cc: Marek Vasut <marex@denx.de>, Fabio Estevam <fabio.estevam@freescale.com>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 025/100] cgroup: fail if monitored file and event_control are in different cgroup
-Date: Fri, 11 Oct 2013 11:40:55 +0100
-Message-Id: <1381488130-30235-26-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 031/100] video: mxsfb: Add missing break
+Date: Fri, 11 Oct 2013 11:41:01 +0100
+Message-Id: <1381488130-30235-32-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
 References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
@@ -28,57 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li Zefan <lizefan@huawei.com>
+From: Marek Vasut <marex@denx.de>
 
-commit f169007b2773f285e098cb84c74aac0154d65ff7 upstream.
+commit 6d0bb818041a02be682abadb3ba35ff608f7d60a upstream.
 
-If we pass fd of memory.usage_in_bytes of cgroup A to cgroup.event_control
-of cgroup B, then we won't get memory usage notification from A but B!
+Add missing break into the restore function.
 
-What's worse, if A and B are in different mount hierarchy, we'll end up
-accessing NULL pointer!
-
-Disallow this kind of invalid usage.
-
-Signed-off-by: Li Zefan <lizefan@huawei.com>
-Acked-by: Kirill A. Shutemov <kirill@shutemov.name>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Weng Meiling <wengmeiling.weng@huawei.com>
-Cc: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Marek Vasut <marex@denx.de>
+Cc: Fabio Estevam <fabio.estevam@freescale.com>
+Cc: Shawn Guo <shawn.guo@linaro.org>
+Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/cgroup.c | 11 +++++++++++
- 1 file changed, 11 insertions(+)
+ drivers/video/mxsfb.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 3b3fa5b..7720f52 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -3712,6 +3712,7 @@ static int cgroup_write_event_control(struct cgroup *cgrp, struct cftype *cft,
- 				      const char *buffer)
- {
- 	struct cgroup_event *event = NULL;
-+	struct cgroup *cgrp_cfile;
- 	unsigned int efd, cfd;
- 	struct file *efile = NULL;
- 	struct file *cfile = NULL;
-@@ -3767,6 +3768,16 @@ static int cgroup_write_event_control(struct cgroup *cgrp, struct cftype *cft,
- 		goto fail;
- 	}
- 
-+	/*
-+	 * The file to be monitored must be in the same cgroup as
-+	 * cgroup.event_control is.
-+	 */
-+	cgrp_cfile = __d_cgrp(cfile->f_dentry->d_parent);
-+	if (cgrp_cfile != cgrp) {
-+		ret = -EINVAL;
-+		goto fail;
-+	}
-+
- 	if (!event->cft->register_event || !event->cft->unregister_event) {
- 		ret = -EINVAL;
- 		goto fail;
+diff --git a/drivers/video/mxsfb.c b/drivers/video/mxsfb.c
+index fc2c4381..dc7b4fc 100644
+--- a/drivers/video/mxsfb.c
++++ b/drivers/video/mxsfb.c
+@@ -616,6 +616,7 @@ static int __devinit mxsfb_restore_mode(struct mxsfb_info *host)
+ 		break;
+ 	case 3:
+ 		bits_per_pixel = 32;
++		break;
+ 	case 1:
+ 	default:
+ 		return -EINVAL;
 -- 
 1.8.3.2
 
