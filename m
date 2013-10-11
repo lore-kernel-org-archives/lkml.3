@@ -1,91 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754289Ab3JKUqq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:46:46 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:39891 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753551Ab3JKUql (ORCPT
+	id S1758762Ab3JKTjn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:39:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45489 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758723Ab3JKTji (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 16:46:41 -0400
-Date: Fri, 11 Oct 2013 13:46:40 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Stanimir Varbanov <svarbanov@mm-sol.com>
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Matt Mackall <mpm@selenic.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] ARM: DT: msm: Add Qualcomm's PRNG driver
- binding document
-Message-ID: <20131011204640.GD13139@codeaurora.org>
-References: <1381504601-23773-1-git-send-email-svarbanov@mm-sol.com>
- <1381504601-23773-2-git-send-email-svarbanov@mm-sol.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1381504601-23773-2-git-send-email-svarbanov@mm-sol.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 11 Oct 2013 15:39:38 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Dave Jones <davej@fedoraproject.org>,
+        Neal Cardwell <ncardwell@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 007/110] tcp: Add missing braces to do_tcp_setsockopt
+Date: Fri, 11 Oct 2013 12:37:47 -0700
+Message-Id: <20131011193808.408947862@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
+References: <20131011193807.584188672@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/11, Stanimir Varbanov wrote:
-> This adds Qualcomm PRNG driver device tree binding documentation
-> to use as an example in dts trees.
-> 
-> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
-> ---
->  Documentation/devicetree/bindings/rng/qcom,prng.txt | 17 +++++++++++++++++
->  1 file changed, 17 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/rng/qcom,prng.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/rng/qcom,prng.txt b/Documentation/devicetree/bindings/rng/qcom,prng.txt
-> new file mode 100644
-> index 000000000000..92be00085ab1
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/rng/qcom,prng.txt
-> @@ -0,0 +1,17 @@
-> +Qualcomm MSM pseudo random number generator.
-> +
-> +Required properties:
-> +
-> +- compatible  : should be "qcom,prng"
-> +- reg         : specifies base physical address and size of the registers map
-> +- clocks      : phandle to clock-controller plus clock-specifier pair
-> +- clock-names : "prng" clocks all registers, FIFO and circuits in PRNG IP block
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-We're trying to keep to more generic names such as "core" for
-clocks like this. We've had problems in the past where hardware
-designers named the clock input after the name of the hardware
-and then the name of the hardware changed in the next version of
-the chip (although the hardware was mostly compatible with the
-previous version) and so they renamed the clock input. This
-leaked into the software drivers and we had horrible things like
-platform data for clock names. Sticking to "core" indicates what
-the clock does (i.e. it clocks the core PRNG hardware) while
-staying generic enough to prevent problems in the future if the
-block is renamed to something else. It might also help us in the
-future should our bus layer become smart enough to manage clocks
-for drivers without their knowing.
+------------------
 
-> +
-> +Example:
-> +
-> +	rng {
+From: Dave Jones <davej@redhat.com>
 
-It's good practice to add the unit address here, so rng@f9bff000.
+[ Upstream commit e2e5c4c07caf810d7849658dca42f598b3938e21 ]
 
-> +		compatible = "qcom,prng";
-> +		reg = <0xf9bff000 0x200>;
-> +		clocks = <&clock GCC_PRNG_AHB_CLK>;
-> +		clock-names = "prng";
-> +	};
+Signed-off-by: Dave Jones <davej@fedoraproject.org>
+Acked-by: Neal Cardwell <ncardwell@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ net/ipv4/tcp.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -2447,10 +2447,11 @@ static int do_tcp_setsockopt(struct sock
+ 	case TCP_THIN_DUPACK:
+ 		if (val < 0 || val > 1)
+ 			err = -EINVAL;
+-		else
++		else {
+ 			tp->thin_dupack = val;
+ 			if (tp->thin_dupack)
+ 				tcp_disable_early_retrans(tp);
++		}
+ 		break;
+ 
+ 	case TCP_REPAIR:
+
+
