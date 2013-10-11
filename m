@@ -1,90 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755869Ab3JKAT2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 20:19:28 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:38020 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755427Ab3JKATN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 20:19:13 -0400
-Date: Thu, 10 Oct 2013 20:19:09 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [BUG] WARN_ON(!context) in drivers/pci/hotplug/acpiphp_glue.c
-Message-ID: <20131010201909.5d83cf36@gandalf.local.home>
-In-Reply-To: <CA+55aFwA8WZ+ARtNFFY+z4d8kS5AUBLg32iu7Jkk3rsz_i1OZw@mail.gmail.com>
-References: <20131010165905.7815defa@gandalf.local.home>
-	<CA+55aFxTwBoeQOimg-ut+BipWx2veNOPT0yGvFBFn7nbX5yCkg@mail.gmail.com>
-	<81272921.7ZJW2CaxNE@vostro.rjw.lan>
-	<CA+55aFwA8WZ+ARtNFFY+z4d8kS5AUBLg32iu7Jkk3rsz_i1OZw@mail.gmail.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+	id S1755816Ab3JKAT0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 20:19:26 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:38717 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752020Ab3JKASv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 20:18:51 -0400
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: x86@kernel.org, kernel-hardening@lists.openwall.com, adurbin@google.com,
+        Eric Northup <digitaleric@google.com>, jln@google.com, wad@google.com,
+        Mathias Krause <minipli@googlemail.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, keescook@chromium.org
+Subject: [PATCH v8 3/6] x86, kaslr: provide randomness functions
+Date: Thu, 10 Oct 2013 17:18:15 -0700
+Message-Id: <1381450698-28710-4-git-send-email-keescook@chromium.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1381450698-28710-1-git-send-email-keescook@chromium.org>
+References: <1381450698-28710-1-git-send-email-keescook@chromium.org>
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Oct 2013 14:37:15 -0700
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
+Adds potential sources of randomness: RDRAND, RDTSC, or the i8254.
 
-> On Thu, Oct 10, 2013 at 2:35 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> >
-> > Well, I must have overlooked the original report.  Is it available anywhere
-> > I can find it?
-> 
-> I think Steven has some buggered email system, he has other emails
-> being eaten by lkml too, and apparently other mail gateways (because
-> you were direct-cc'd on the original).
-> 
-> His email sender doesn't quote names with "," in them, and has headers
+This moves the pre-alternatives inline rdrand function into the header so
+both pieces of code can use it. Availability of RDRAND is then controlled
+by CONFIG_ARCH_RANDOM, if someone wants to disable it even for kASLR.
 
-I think the issue is with "." not ","
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+v7:
+ - move rdrand_long into header to avoid code duplication; HPA.
+v3:
+ - fall back to reading the i8254 when no TSC; HPA.
+v2:
+ - use rdtscl from msr.h; Mathias Krause.
+---
+ arch/x86/boot/compressed/aslr.c   |   53 +++++++++++++++++++++++++++++++++++++
+ arch/x86/boot/compressed/misc.h   |    2 ++
+ arch/x86/include/asm/archrandom.h |   21 +++++++++++++++
+ arch/x86/kernel/cpu/rdrand.c      |   14 ----------
+ 4 files changed, 76 insertions(+), 14 deletions(-)
 
-> like this:
-> 
->   From: Steven Rostedt <rostedt@goodmis.org>
->   To: LKML <linux-kernel@vger.kernel.org>
->   Cc: Linus Torvalds <torvalds@linux-foundation.org>, Rafael J. Wysocki
-
-This may have been my fault, as I cut and pasted Rafael's email from
-the git log, and did not add the quotes myself.
-
-Perhaps claws should force names with '.' to be quoted. I don't
-remember having this issue with Evolution (I switched to claws a couple
-of months ago).
-
-
->    <rafael.j.wysocki@intel.com>, Mika Westerberg
->    <mika.westerberg@linux.intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
->    Andrew Morton <akpm@linux-foundation.org>
-> 
-> which is apparently against SMTP rules. The magic line is:
-> 
->   X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-> 
-> The tag-line for that mailer is quite appropriate: "The email reader
-> that bites". That's what they put in the title on their web-page.
-> 
-> Because it sure bites. Except the claws people seemed to think that
-> was supposed to be a good thing. They clearly don't know the slang
-> meaning of "that bites".
-> 
-> Or maybe they do, and they are just unusually self-aware.
-> 
-> Steven, I'd suggest just jettisoning that mailer.
-
-The first time it was from the address book, as when I added it from an
-email, claws stripped out the quotes when it added it. This time it was
-just me cut and pasting a name with a '.' without adding quotes myself.
-
--- Steve
+diff --git a/arch/x86/boot/compressed/aslr.c b/arch/x86/boot/compressed/aslr.c
+index b73cc66..14b24e0 100644
+--- a/arch/x86/boot/compressed/aslr.c
++++ b/arch/x86/boot/compressed/aslr.c
+@@ -1,6 +1,59 @@
+ #include "misc.h"
+ 
+ #ifdef CONFIG_RANDOMIZE_BASE
++#include <asm/msr.h>
++#include <asm/archrandom.h>
++
++#define I8254_PORT_CONTROL	0x43
++#define I8254_PORT_COUNTER0	0x40
++#define I8254_CMD_READBACK	0xC0
++#define I8254_SELECT_COUNTER0	0x02
++#define I8254_STATUS_NOTREADY	0x40
++static inline u16 i8254(void)
++{
++	u16 status, timer;
++
++	do {
++		outb(I8254_PORT_CONTROL,
++		     I8254_CMD_READBACK | I8254_SELECT_COUNTER0);
++		status = inb(I8254_PORT_COUNTER0);
++		timer  = inb(I8254_PORT_COUNTER0);
++		timer |= inb(I8254_PORT_COUNTER0) << 8;
++	} while (status & I8254_STATUS_NOTREADY);
++
++	return timer;
++}
++
++static unsigned long get_random_long(void)
++{
++	unsigned long random;
++
++	if (has_cpuflag(X86_FEATURE_RDRAND)) {
++		debug_putstr("KASLR using RDRAND...\n");
++		if (rdrand_long(&random))
++			return random;
++	}
++
++	if (has_cpuflag(X86_FEATURE_TSC)) {
++		uint32_t raw;
++
++		debug_putstr("KASLR using RDTSC...\n");
++		rdtscl(raw);
++
++		/* Only use the low bits of rdtsc. */
++		random = raw & 0xffff;
++	} else {
++		debug_putstr("KASLR using i8254...\n");
++		random = i8254();
++	}
++
++	/* Extend timer bits poorly... */
++	random |= (random << 16);
++#ifdef CONFIG_X86_64
++	random |= (random << 32);
++#endif
++	return random;
++}
+ 
+ unsigned char *choose_kernel_location(unsigned char *input,
+ 				      unsigned long input_size,
+diff --git a/arch/x86/boot/compressed/misc.h b/arch/x86/boot/compressed/misc.h
+index 9077af7..0782eb0 100644
+--- a/arch/x86/boot/compressed/misc.h
++++ b/arch/x86/boot/compressed/misc.h
+@@ -52,6 +52,8 @@ unsigned char *choose_kernel_location(unsigned char *input,
+ 				      unsigned long input_size,
+ 				      unsigned char *output,
+ 				      unsigned long output_size);
++/* cpuflags.c */
++bool has_cpuflag(int flag);
+ #else
+ static inline
+ unsigned char *choose_kernel_location(unsigned char *input,
+diff --git a/arch/x86/include/asm/archrandom.h b/arch/x86/include/asm/archrandom.h
+index 0d9ec77..e6a9245 100644
+--- a/arch/x86/include/asm/archrandom.h
++++ b/arch/x86/include/asm/archrandom.h
+@@ -39,6 +39,20 @@
+ 
+ #ifdef CONFIG_ARCH_RANDOM
+ 
++/* Instead of arch_get_random_long() when alternatives haven't run. */
++static inline int rdrand_long(unsigned long *v)
++{
++	int ok;
++	asm volatile("1: " RDRAND_LONG "\n\t"
++		     "jc 2f\n\t"
++		     "decl %0\n\t"
++		     "jnz 1b\n\t"
++		     "2:"
++		     : "=r" (ok), "=a" (*v)
++		     : "0" (RDRAND_RETRY_LOOPS));
++	return ok;
++}
++
+ #define GET_RANDOM(name, type, rdrand, nop)			\
+ static inline int name(type *v)					\
+ {								\
+@@ -68,6 +82,13 @@ GET_RANDOM(arch_get_random_int, unsigned int, RDRAND_INT, ASM_NOP3);
+ 
+ #endif /* CONFIG_X86_64 */
+ 
++#else
++
++static inline int rdrand_long(unsigned long *v)
++{
++	return 0;
++}
++
+ #endif  /* CONFIG_ARCH_RANDOM */
+ 
+ extern void x86_init_rdrand(struct cpuinfo_x86 *c);
+diff --git a/arch/x86/kernel/cpu/rdrand.c b/arch/x86/kernel/cpu/rdrand.c
+index 88db010..384df51 100644
+--- a/arch/x86/kernel/cpu/rdrand.c
++++ b/arch/x86/kernel/cpu/rdrand.c
+@@ -31,20 +31,6 @@ static int __init x86_rdrand_setup(char *s)
+ }
+ __setup("nordrand", x86_rdrand_setup);
+ 
+-/* We can't use arch_get_random_long() here since alternatives haven't run */
+-static inline int rdrand_long(unsigned long *v)
+-{
+-	int ok;
+-	asm volatile("1: " RDRAND_LONG "\n\t"
+-		     "jc 2f\n\t"
+-		     "decl %0\n\t"
+-		     "jnz 1b\n\t"
+-		     "2:"
+-		     : "=r" (ok), "=a" (*v)
+-		     : "0" (RDRAND_RETRY_LOOPS));
+-	return ok;
+-}
+-
+ /*
+  * Force a reseed cycle; we are architecturally guaranteed a reseed
+  * after no more than 512 128-bit chunks of random data.  This also
+-- 
+1.7.9.5
 
