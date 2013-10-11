@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964800Ab3JKTvQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:51:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46470 "EHLO
+	id S932796Ab3JKTmE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:42:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46409 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932804Ab3JKTmG (ORCPT
+	with ESMTP id S932753Ab3JKTl5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:42:06 -0400
+	Fri, 11 Oct 2013 15:41:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Vrabel <david.vrabel@citrix.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [ 103/135] xen/hvc: allow xenboot console to be used again
-Date: Fri, 11 Oct 2013 12:39:44 -0700
-Message-Id: <20131011193956.446819261@linuxfoundation.org>
+        Kirill Tkhai <tkhai@yandex.ru>, David Miller <davem@davemloft.net>
+Subject: [ 088/135] sparc64: Fix ITLB handler of null page
+Date: Fri, 11 Oct 2013 12:39:29 -0700
+Message-Id: <20131011193954.817854230@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -26,34 +26,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: Kirill Tkhai <tkhai@yandex.ru>
 
-commit a9fbf4d591da6cd1d3eaab826c7c15f77fc8f6a3 upstream.
+[ Upstream commit 1c2696cdaad84580545a2e9c0879ff597880b1a9 ]
 
-Commit d0380e6c3c0f6edb986d8798a23acfaf33d5df23 (early_printk:
-consolidate random copies of identical code) added in 3.10 introduced
-a check for con->index == -1 in early_console_register().
+1)Use kvmap_itlb_longpath instead of kvmap_dtlb_longpath.
 
-Initialize index to -1 for the xenboot console so earlyprintk=xen
-works again.
+2)Handle page #0 only, don't handle page #1: bleu -> blu
 
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Cc: Jiri Slaby <jslaby@suse.cz>
+ (KERNBASE is 0x400000, so #1 does not exist too. But everything
+  is possible in the future. Fix to not to have problems later.)
+
+3)Remove unused kvmap_itlb_nonlinear.
+
+Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
+CC: David Miller <davem@davemloft.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/tty/hvc/hvc_xen.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/sparc/kernel/ktlb.S |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/tty/hvc/hvc_xen.c
-+++ b/drivers/tty/hvc/hvc_xen.c
-@@ -636,6 +636,7 @@ struct console xenboot_console = {
- 	.name		= "xenboot",
- 	.write		= xenboot_write_console,
- 	.flags		= CON_PRINTBUFFER | CON_BOOT | CON_ANYTIME,
-+	.index		= -1,
- };
- #endif	/* CONFIG_EARLY_PRINTK */
+--- a/arch/sparc/kernel/ktlb.S
++++ b/arch/sparc/kernel/ktlb.S
+@@ -25,11 +25,10 @@ kvmap_itlb:
+ 	 */
+ kvmap_itlb_4v:
  
+-kvmap_itlb_nonlinear:
+ 	/* Catch kernel NULL pointer calls.  */
+ 	sethi		%hi(PAGE_SIZE), %g5
+ 	cmp		%g4, %g5
+-	bleu,pn		%xcc, kvmap_dtlb_longpath
++	blu,pn		%xcc, kvmap_itlb_longpath
+ 	 nop
+ 
+ 	KERN_TSB_LOOKUP_TL1(%g4, %g6, %g5, %g1, %g2, %g3, kvmap_itlb_load)
 
 
