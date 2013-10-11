@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758162Ab3JKNnF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 09:43:05 -0400
-Received: from mx3-phx2.redhat.com ([209.132.183.24]:43592 "EHLO
-	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756819Ab3JKNnD (ORCPT
+	id S1758026Ab3JKNrK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 09:47:10 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:39853 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753646Ab3JKNrI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 09:43:03 -0400
-Date: Fri, 11 Oct 2013 09:42:34 -0400 (EDT)
-From: Dave Young <dyoung@redhat.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Borislav Petkov <bp@alien8.de>, X86 ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Vivek Goyal <vgoyal@redhat.com>, linux-efi@vger.kernel.org,
-        fwts-devel@lists.ubuntu.com
-Message-ID: <643121905.4545046.1381498954428.JavaMail.root@redhat.com>
-In-Reply-To: <20131011102706.GE12321@console-pimps.org>
-References: <1379602494-26684-1-git-send-email-bp@alien8.de> <20131008164831.GD16793@pd.tnic> <20131010080635.GA3692@dhcp-16-126.nay.redhat.com> <20131010081434.GB3692@dhcp-16-126.nay.redhat.com> <20131010085827.GA9929@pd.tnic> <20131010123453.GA12321@console-pimps.org> <20131011062437.GA14115@dhcp-16-126.nay.redhat.com> <20131011102706.GE12321@console-pimps.org>
-Subject: Re: [PATCH 12/12] EFI: Runtime services virtual mapping
+	Fri, 11 Oct 2013 09:47:08 -0400
+Message-ID: <52580157.1040300@hitachi.com>
+Date: Fri, 11 Oct 2013 22:47:03 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+To: Tom Zanussi <tom.zanussi@linux.intel.com>
+Cc: rostedt@goodmis.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v10 04/12] tracing: Add 'snapshot' event trigger command
+References: <cover.1381445299.git.tom.zanussi@linux.intel.com> <4ed13a4c303b83164992b92dc17d79717bea2116.1381445299.git.tom.zanussi@linux.intel.com>
+In-Reply-To: <4ed13a4c303b83164992b92dc17d79717bea2116.1381445299.git.tom.zanussi@linux.intel.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.82.12]
-X-Mailer: Zimbra 8.0.3_GA_5664 (ZimbraWebClient - FF12 (Linux)/8.0.3_GA_5664)
-Thread-Topic: Runtime services virtual mapping
-Thread-Index: zOqUf+Ea2geoF8UNe9ASIVfs2qMwgA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Matt,
+(2013/10/11 9:48), Tom Zanussi wrote:
+>  /**
+> + * tracing_alloc_snapshot - allocate snapshot buffer.
+> + *
+> + * This only allocates the snapshot buffer if it isn't already
+> + * allocated - it doesn't also take a snapshot.
+> + *
+> + * This is meant to be used in cases where the snapshot buffer needs
+> + * to be set up for events that can't sleep but need to be able to
+> + * trigger a snapshot.
+> + */
+> +int tracing_alloc_snapshot(void)
+> +{
+> +	struct trace_array *tr = &global_trace;
+> +	int ret;
+> +
+> +	ret = alloc_snapshot(tr);
+> +	WARN_ON(ret < 0);
+> +
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL_GPL(tracing_alloc_snapshot);
 
-The kernel I referring is the boot kernel aka the 1st kernel,
-the boot loader is grub2 from Fedora 19.
+Out of curiously, why this symbol is exported to modules?
+The functions which are called directly from trace_event macros
+should be exported because those macros can be used in module code,
+but I couldn't find this in such code, at a glance.
 
-[sorry for top reply because of using webmail]
+Thank you,
 
 
------ Original Message -----
-From: "Matt Fleming" <matt@console-pimps.org>
-To: "Dave Young" <dyoung@redhat.com>
-Cc: "Borislav Petkov" <bp@alien8.de>, "X86 ML" <x86@kernel.org>, "LKML" <linux-kernel@vger.kernel.org>, "Borislav Petkov" <bp@suse.de>, "Matthew Garrett" <mjg59@srcf.ucam.org>, "H. Peter Anvin" <hpa@zytor.com>, "James Bottomley" <James.Bottomley@HansenPartnership.com>, "Vivek Goyal" <vgoyal@redhat.com>, linux-efi@vger.kernel.org, fwts-devel@lists.ubuntu.com
-Sent: Friday, October 11, 2013 6:27:06 PM
-Subject: Re: [PATCH 12/12] EFI: Runtime services virtual mapping
-
-On Fri, 11 Oct, at 02:24:37PM, Dave Young wrote:
-> For the boot efi_reserve_boot_services code, it's mainly for the
-> SetVirtualAddressMap callback use, so boot regions should not be reused
-> before SetVirtualAddressMap, but the overlapping happens before the
-> efi_reserve_boot_services, isn't it a problem?
-
-Hang on, which kernel are you referring to here? The boot kernel or the
-kexec'd kernel? I thought you were saying you noticed the overlap when
-running in the second (kexec'd) kernel?
-
-The only reason that you would see this overlap in the first (boot)
-kernel is if the bootloader messed up and allocated the kernel text as
-EfiBootServicesCode/Data. I'd like to believe no bootloaders are still
-doing that.
 
 -- 
-Matt Fleming, Intel Open Source Technology Center
---
-To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
-Please read the FAQ at  http://www.tux.org/lkml/
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
