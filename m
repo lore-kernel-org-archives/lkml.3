@@ -1,65 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756201Ab3JKSkn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 14:40:43 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:44883 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751805Ab3JKSkl (ORCPT
+	id S1756535Ab3JKSkx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 14:40:53 -0400
+Received: from mail-yh0-f46.google.com ([209.85.213.46]:40864 "EHLO
+	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753834Ab3JKSku (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 14:40:41 -0400
-Message-ID: <52584626.4050000@gmail.com>
-Date: Fri, 11 Oct 2013 12:40:38 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Stephane Eranian <eranian@google.com>
-CC: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Jiri Olsa <jolsa@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Kees Cook <keescook@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] perf: disable mmap2 support
-References: <20131009161743.GA3022@quad> <52558278.6080206@gmail.com> <CABPqkBRx1CqwXOjJXWeqEBqkLkZMHWVQJNjv1jjqPakoDNB3Gg@mail.gmail.com> <CABPqkBQKaMd_LuvfUreYb_9hiR-j0BkAyiP2yP-C0TTy+15_fQ@mail.gmail.com> <5255900A.5050103@gmail.com> <CABPqkBQZz=80he07yzagwPjhJBOK-bc_C=hfsK+LjMvcYWZvew@mail.gmail.com>
-In-Reply-To: <CABPqkBQZz=80he07yzagwPjhJBOK-bc_C=hfsK+LjMvcYWZvew@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 11 Oct 2013 14:40:50 -0400
+From: "Geyslan G. Bem" <geyslan@gmail.com>
+To: chris.mason@fusionio.com
+Cc: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jbacik@fusionio.com, behrens@giantdisaster.de, joe@perches.com,
+        kernel-br@googlegroups.com, "Geyslan G. Bem" <geyslan@gmail.com>
+Subject: [PATCH v6] btrfs: Fix memory leakage in the tree-log.c
+Date: Fri, 11 Oct 2013 15:35:45 -0300
+Message-Id: <1381516545-27786-1-git-send-email-geyslan@gmail.com>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephane:
+In add_inode_ref() function:
 
-On 10/9/13 11:40 AM, Stephane Eranian wrote:
-> On Wed, Oct 9, 2013 at 7:19 PM, David Ahern <dsahern@gmail.com> wrote:
->> On 10/9/13 10:39 AM, Stephane Eranian wrote:
->>>
->>> Looks like the easiest thing to do for perf is to revert:
->>>
->>>      Revert "perf tools: Add default handler for mmap2 events"
->>>      git revert 6adb0b0ae26fcc35cfec068d71f13863faac5b44
->>>
->>>      Revert "perf tools: Add attr->mmap2 support"
->>>      git revert 5c5e854bc760a2e2c878df3cfcf2afa4febcd511
->>>
->>> Do you agree?
->>
->>
->> If you want to strip all of mmap2 you also need
->> 5654a0257a86c093c2b38ea5d3ceaa17affd735b.
->>
-> You mean:
-> commit 384c671e33a7ddf905f2c60b433b9883f0e5a605
-> Author: David Ahern <dsahern@gmail.com>
-> Date:   Sun Sep 22 19:44:58 2013 -0600
->
->      perf trace: Add mmap2 handler
->
+Initializes local pointers.
 
-Given that 3.12 rc5 will be out on Sunday and it takes time to go from 
-Arnaldo to Ingo to Linus the revert patches should go out today - in 
-Arnaldo's next perf/urgent request.
+Reduces the logical condition with the __add_inode_ref() return
+value by using only one 'goto out'.
 
-David
+Centralizes the exiting, ensuring the freeing of all used memory.
+
+Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
+---
+ fs/btrfs/tree-log.c | 33 +++++++++++++++++++--------------
+ 1 file changed, 19 insertions(+), 14 deletions(-)
+
+diff --git a/fs/btrfs/tree-log.c b/fs/btrfs/tree-log.c
+index 79f057c..61bb051 100644
+--- a/fs/btrfs/tree-log.c
++++ b/fs/btrfs/tree-log.c
+@@ -1113,11 +1113,11 @@ static noinline int add_inode_ref(struct btrfs_trans_handle *trans,
+ 				  struct extent_buffer *eb, int slot,
+ 				  struct btrfs_key *key)
+ {
+-	struct inode *dir;
+-	struct inode *inode;
++	struct inode *dir = NULL;
++	struct inode *inode = NULL;
+ 	unsigned long ref_ptr;
+ 	unsigned long ref_end;
+-	char *name;
++	char *name = NULL;
+ 	int namelen;
+ 	int ret;
+ 	int search_done = 0;
+@@ -1150,13 +1150,15 @@ static noinline int add_inode_ref(struct btrfs_trans_handle *trans,
+ 	 * care of the rest
+ 	 */
+ 	dir = read_one_inode(root, parent_objectid);
+-	if (!dir)
+-		return -ENOENT;
++	if (!dir) {
++		ret = -ENOENT;
++		goto out;
++	}
+ 
+ 	inode = read_one_inode(root, inode_objectid);
+ 	if (!inode) {
+-		iput(dir);
+-		return -EIO;
++		ret = -EIO;
++		goto out;
+ 	}
+ 
+ 	while (ref_ptr < ref_end) {
+@@ -1169,14 +1171,16 @@ static noinline int add_inode_ref(struct btrfs_trans_handle *trans,
+ 			 */
+ 			if (!dir)
+ 				dir = read_one_inode(root, parent_objectid);
+-			if (!dir)
+-				return -ENOENT;
++			if (!dir) {
++				ret = -ENOENT;
++				goto out;
++			}
+ 		} else {
+ 			ret = ref_get_fields(eb, ref_ptr, &namelen, &name,
+ 					     &ref_index);
+ 		}
+ 		if (ret)
+-			return ret;
++			goto out;
+ 
+ 		/* if we already have a perfect match, we're done */
+ 		if (!inode_in_dir(root, path, btrfs_ino(dir), btrfs_ino(inode),
+@@ -1196,12 +1200,11 @@ static noinline int add_inode_ref(struct btrfs_trans_handle *trans,
+ 						      parent_objectid,
+ 						      ref_index, name, namelen,
+ 						      &search_done);
+-				if (ret == 1) {
+-					ret = 0;
++				if (ret) {
++					if (ret == 1)
++						ret = 0;
+ 					goto out;
+ 				}
+-				if (ret)
+-					goto out;
+ 			}
+ 
+ 			/* insert our name */
+@@ -1215,6 +1218,7 @@ static noinline int add_inode_ref(struct btrfs_trans_handle *trans,
+ 
+ 		ref_ptr = (unsigned long)(ref_ptr + ref_struct_size) + namelen;
+ 		kfree(name);
++		name = NULL;
+ 		if (log_ref_ver) {
+ 			iput(dir);
+ 			dir = NULL;
+@@ -1225,6 +1229,7 @@ static noinline int add_inode_ref(struct btrfs_trans_handle *trans,
+ 	ret = overwrite_item(trans, root, path, eb, slot, key);
+ out:
+ 	btrfs_release_path(path);
++	kfree(name);
+ 	iput(dir);
+ 	iput(inode);
+ 	return ret;
+-- 
+1.8.4
 
