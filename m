@@ -1,73 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757795Ab3JKNPd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 09:15:33 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:52103 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753710Ab3JKNPc (ORCPT
+	id S1756130Ab3JKNTn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 09:19:43 -0400
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:39522 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752905Ab3JKNTm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 09:15:32 -0400
-Message-ID: <5257F9E3.5030708@huawei.com>
-Date: Fri, 11 Oct 2013 21:15:15 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Fri, 11 Oct 2013 09:19:42 -0400
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Tejun Heo <tj@kernel.org>, anjana vk <anjanvk12@gmail.com>,
-        <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <eunki_kim@samsung.com>
-Subject: Re: cgroup_attach_task && while_each_thread (Was: cgroup attach task
- - slogging cpu)
-References: <CALPf4Tz+Gf_Q7wKKBufCc1mtV1qVPVrOW0S1qhHxfOv6pJa2Kg@mail.gmail.com> <20131004130207.GA9338@redhat.com> <20131007184507.GD27396@htj.dyndns.org> <20131008145833.GA15600@redhat.com> <5254EB2A.7090803@huawei.com> <20131009133047.GA12414@redhat.com> <20131009140551.GA15849@redhat.com> <20131009165448.GA22437@redhat.com>
-In-Reply-To: <20131009165448.GA22437@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+In-Reply-To: <5257F687.6020802@giantdisaster.de>
+References: <1381443082-7670-1-git-send-email-geyslan@gmail.com>
+	<5257F687.6020802@giantdisaster.de>
+Date: Fri, 11 Oct 2013 10:19:40 -0300
+Message-ID: <CAGG-pURd2cm=2rYGPedeyC+r--sgMuQTvZ1_vOYho=vZbb21hg@mail.gmail.com>
+Subject: Re: [PATCH v5] btrfs: Fix memory leakage in the tree-log.c
+From: =?UTF-8?Q?Geyslan_Greg=C3=B3rio_Bem?= <geyslan@gmail.com>
+To: Stefan Behrens <sbehrens@giantdisaster.de>
+Cc: chris.mason@fusionio.com, linux-btrfs@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Josef Bacik <jbacik@fusionio.com>,
+        Joe Perches <joe@perches.com>, kernel-br <kernel-br@googlegroups.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/10/10 0:54, Oleg Nesterov wrote:
-> And I am starting to think that this change should also fix the
-> while_each_thread() problems in this particular case.
-> 
-> In generak the code like
-> 
-> 	rcu_read_lock();
-> 	task = find_get_task(...);
-> 	rcu_read_unlock();
-> 
-> 	rcu_read_lock();
-> 	t = task;
-> 	do {
-> 		...
-> 	} while_each_thread (task, t);
-> 	rcu_read_unlock();
-> 
-> is wrong even if while_each_thread() was correct (and we have a lot
-> of examples of this pattern). A GP can pass before the 2nd rcu-lock,
-> and we simply can't trust ->thread_group.next.
-> 
-> But I didn't notice that cgroup_attach_task(tsk, threadgroup) can only
-> be called with threadgroup == T when a) tsk is ->group_leader and b)
-> we hold threadgroup_lock() which blocks de_thread(). IOW, in this case
-> "tsk" can't be removed from ->thread_group list before other threads.
-> 
-> If next_thread() sees thread_group.next != leader, we know that the
-> that .next thread didn't do __unhash_process() yet, and since we
-> know that in this case "leader" didn't do this too we are safe.
-> 
-> In short: __unhash_process(leader) (in this) case can never change
-> ->thread_group.next of another thread, because leader->thread_group
-> should be already list_empty().
-> 
+2013/10/11 Stefan Behrens <sbehrens@giantdisaster.de>:
+> On Thu, 10 Oct 2013 19:11:22 -0300, Geyslan G. Bem wrote:
+>> In add_inode_ref() function:
+>>
+>> Initializes local pointers.
+>>
+>> Reduces the logical condition with the __add_inode_ref() return
+>> value by using only one 'goto out'.
+>>
+>> Centralizes the exiting, ensuring the freeing of all used memory.
+>>
+>> Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
+>
+> The patch looks correct to me, but there are some nitpicking style issues.
+>
+>
+>> ---
+>>  fs/btrfs/tree-log.c | 36 ++++++++++++++++++++++--------------
+>>  1 file changed, 22 insertions(+), 14 deletions(-)
+>>
+>> diff --git a/fs/btrfs/tree-log.c b/fs/btrfs/tree-log.c
+>> index 79f057c..beb41b0 100644
+>> --- a/fs/btrfs/tree-log.c
+>> +++ b/fs/btrfs/tree-log.c
+>> @@ -1113,11 +1113,11 @@ static noinline int add_inode_ref(struct btrfs_trans_handle *trans,
+>>                                 struct extent_buffer *eb, int slot,
+>>                                 struct btrfs_key *key)
+>>  {
+>> -     struct inode *dir;
+>> -     struct inode *inode;
+>> +     struct inode *dir = NULL;
+>> +     struct inode *inode = NULL;
+>>       unsigned long ref_ptr;
+>>       unsigned long ref_end;
+>> -     char *name;
+>> +     char *name = NULL;
+>>       int namelen;
+>>       int ret;
+>>       int search_done = 0;
+>> @@ -1150,13 +1150,15 @@ static noinline int add_inode_ref(struct btrfs_trans_handle *trans,
+>>        * care of the rest
+>>        */
+>>       dir = read_one_inode(root, parent_objectid);
+>> -     if (!dir)
+>> -             return -ENOENT;
+>> +     if (!dir) {
+>> +             ret = -ENOENT;
+>> +             goto out;
+>> +     }
+>>
+>>       inode = read_one_inode(root, inode_objectid);
+>>       if (!inode) {
+>> -             iput(dir);
+>> -             return -EIO;
+>> +             ret = -EIO;
+>> +             goto out;
+>>       }
+>>
+>>       while (ref_ptr < ref_end) {
+>> @@ -1169,14 +1171,17 @@ static noinline int add_inode_ref(struct btrfs_trans_handle *trans,
+>>                        */
+>>                       if (!dir)
+>>                               dir = read_one_inode(root, parent_objectid);
+>> -                     if (!dir)
+>> -                             return -ENOENT;
+>> +                     if (!dir) {
+>> +                             ret = -ENOENT;
+>> +                             goto out;
+>> +                     }
+>>               } else {
+>>                       ret = ref_get_fields(eb, ref_ptr, &namelen, &name,
+>>                                            &ref_index);
+>>               }
+>>               if (ret)
+>> -                     return ret;
+>> +                     goto out;
+>> +
+>
+> This additional empty line is not required, we would have two empty
+> lines in a row.
 
-If threadgroup == false, and if the tsk is existing or is already in
-the targeted cgroup, we won't break the loop due to the bug but do
-this:
+Ok, I'll remove it.
 
-  while_each_thread(task, t)
+>
+>
+>>
+>>               /* if we already have a perfect match, we're done */
+>>               if (!inode_in_dir(root, path, btrfs_ino(dir), btrfs_ino(inode),
+>> @@ -1196,12 +1201,12 @@ static noinline int add_inode_ref(struct btrfs_trans_handle *trans,
+>>                                                     parent_objectid,
+>>                                                     ref_index, name, namelen,
+>>                                                     &search_done);
+>> -                             if (ret == 1) {
+>> -                                     ret = 0;
+>> +
+>
+> This empty line is also not required. You know, this hurts on regular
+> 80x24 terminals. Do you get more than 24 lines on your display?
+> I thought there was a rule for this in Documentation/CodingStyle, but
+> there isn't. Therefore it's up to you. But the two empty lines above are
+> definitely not wanted.
+>
 
-If @task isn't the leader, we might got stuck in the loop?
+Yes, I get more than 24 lines. But no problem, I know about the Coding Style.
+This issue will be fixed.
 
+>
+>> +                             if (ret) {
+>> +                                     if (ret == 1)
+>> +                                             ret--;
+>
+> I don't see a reason to change the "ret = 0" to a "ret--", this is not
+> an optimization and makes the code less readable.
+>
+
+Really. Using -O2 the code is equal. I'll redo to "ret = 0;" with the
+new conditional scope.
+
+>
+>>                                       goto out;
+>>                               }
+>> -                             if (ret)
+>> -                                     goto out;
+>>                       }
+>>
+>>                       /* insert our name */
+>> @@ -1215,6 +1220,8 @@ static noinline int add_inode_ref(struct btrfs_trans_handle *trans,
+>>
+>>               ref_ptr = (unsigned long)(ref_ptr + ref_struct_size) + namelen;
+>>               kfree(name);
+>> +             name = NULL;
+>> +
+>
+> Another empty line which is not required for the purpose of this patch.
+
+Ok, it'll be removed.
+
+>
+>
+>>               if (log_ref_ver) {
+>>                       iput(dir);
+>>                       dir = NULL;
+>> @@ -1225,6 +1232,7 @@ static noinline int add_inode_ref(struct btrfs_trans_handle *trans,
+>>       ret = overwrite_item(trans, root, path, eb, slot, key);
+>>  out:
+>>       btrfs_release_path(path);
+>> +     kfree(name);
+>>       iput(dir);
+>>       iput(inode);
+>>       return ret;
+>>
+>
+>
+
+Thank you again.
+
+Geyslan G. Bem
