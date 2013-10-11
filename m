@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932886Ab3JKUKG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:10:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46137 "EHLO
+	id S933035Ab3JKULF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:11:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46125 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932439Ab3JKTlP (ORCPT
+	with ESMTP id S932425Ab3JKTlN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:41:15 -0400
+	Fri, 11 Oct 2013 15:41:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Dmitry Vyukov <dvyukov@google.com>,
+        Ansis Atteka <aatteka@nicira.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 035/135] ipv6: udp packets following an UFO enqueued packet need also be handled by UFO
-Date: Fri, 11 Oct 2013 12:38:36 -0700
-Message-Id: <20131011193949.053792243@linuxfoundation.org>
+Subject: [ 032/135] ip: use ip_hdr() in __ip_make_skb() to retrieve IP header
+Date: Fri, 11 Oct 2013 12:38:33 -0700
+Message-Id: <20131011193948.721372851@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -29,122 +27,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Ansis Atteka <aatteka@nicira.com>
 
-[ Upstream commit 2811ebac2521ceac84f2bdae402455baa6a7fb47 ]
+[ Upstream commit 749154aa56b57652a282cbde57a57abc278d1205 ]
 
-In the following scenario the socket is corked:
-If the first UDP packet is larger then the mtu we try to append it to the
-write queue via ip6_ufo_append_data. A following packet, which is smaller
-than the mtu would be appended to the already queued up gso-skb via
-plain ip6_append_data. This causes random memory corruptions.
+skb->data already points to IP header, but for the sake of
+consistency we can also use ip_hdr() to retrieve it.
 
-In ip6_ufo_append_data we also have to be careful to not queue up the
-same skb multiple times. So setup the gso frame only when no first skb
-is available.
-
-This also fixes a shortcoming where we add the current packet's length to
-cork->length but return early because of a packet > mtu with dontfrag set
-(instead of sutracting it again).
-
-Found with trinity.
-
-Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Reported-by: Dmitry Vyukov <dvyukov@google.com>
+Signed-off-by: Ansis Atteka <aatteka@nicira.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/ip6_output.c |   53 ++++++++++++++++++++------------------------------
- 1 file changed, 22 insertions(+), 31 deletions(-)
+ net/ipv4/ip_output.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -1040,6 +1040,8 @@ static inline int ip6_ufo_append_data(st
- 	 * udp datagram
- 	 */
- 	if ((skb = skb_peek_tail(&sk->sk_write_queue)) == NULL) {
-+		struct frag_hdr fhdr;
-+
- 		skb = sock_alloc_send_skb(sk,
- 			hh_len + fragheaderlen + transhdrlen + 20,
- 			(flags & MSG_DONTWAIT), &err);
-@@ -1061,12 +1063,6 @@ static inline int ip6_ufo_append_data(st
- 		skb->protocol = htons(ETH_P_IPV6);
- 		skb->ip_summed = CHECKSUM_PARTIAL;
- 		skb->csum = 0;
--	}
--
--	err = skb_append_datato_frags(sk,skb, getfrag, from,
--				      (length - transhdrlen));
--	if (!err) {
--		struct frag_hdr fhdr;
+--- a/net/ipv4/ip_output.c
++++ b/net/ipv4/ip_output.c
+@@ -1316,7 +1316,7 @@ struct sk_buff *__ip_make_skb(struct soc
+ 	else
+ 		ttl = ip_select_ttl(inet, &rt->dst);
  
- 		/* Specify the length of each IPv6 datagram fragment.
- 		 * It has to be a multiple of 8.
-@@ -1077,15 +1073,10 @@ static inline int ip6_ufo_append_data(st
- 		ipv6_select_ident(&fhdr, rt);
- 		skb_shinfo(skb)->ip6_frag_id = fhdr.identification;
- 		__skb_queue_tail(&sk->sk_write_queue, skb);
--
--		return 0;
- 	}
--	/* There is not enough support do UPD LSO,
--	 * so follow normal path
--	 */
--	kfree_skb(skb);
- 
--	return err;
-+	return skb_append_datato_frags(sk, skb, getfrag, from,
-+				       (length - transhdrlen));
- }
- 
- static inline struct ipv6_opt_hdr *ip6_opt_dup(struct ipv6_opt_hdr *src,
-@@ -1252,27 +1243,27 @@ int ip6_append_data(struct sock *sk, int
- 	 * --yoshfuji
- 	 */
- 
--	cork->length += length;
--	if (length > mtu) {
--		int proto = sk->sk_protocol;
--		if (dontfrag && (proto == IPPROTO_UDP || proto == IPPROTO_RAW)){
--			ipv6_local_rxpmtu(sk, fl6, mtu-exthdrlen);
--			return -EMSGSIZE;
--		}
--
--		if (proto == IPPROTO_UDP &&
--		    (rt->dst.dev->features & NETIF_F_UFO)) {
-+	if ((length > mtu) && dontfrag && (sk->sk_protocol == IPPROTO_UDP ||
-+					   sk->sk_protocol == IPPROTO_RAW)) {
-+		ipv6_local_rxpmtu(sk, fl6, mtu-exthdrlen);
-+		return -EMSGSIZE;
-+	}
- 
--			err = ip6_ufo_append_data(sk, getfrag, from, length,
--						  hh_len, fragheaderlen,
--						  transhdrlen, mtu, flags, rt);
--			if (err)
--				goto error;
--			return 0;
--		}
-+	skb = skb_peek_tail(&sk->sk_write_queue);
-+	cork->length += length;
-+	if (((length > mtu) ||
-+	     (skb && skb_is_gso(skb))) &&
-+	    (sk->sk_protocol == IPPROTO_UDP) &&
-+	    (rt->dst.dev->features & NETIF_F_UFO)) {
-+		err = ip6_ufo_append_data(sk, getfrag, from, length,
-+					  hh_len, fragheaderlen,
-+					  transhdrlen, mtu, flags, rt);
-+		if (err)
-+			goto error;
-+		return 0;
- 	}
- 
--	if ((skb = skb_peek_tail(&sk->sk_write_queue)) == NULL)
-+	if (!skb)
- 		goto alloc_new_skb;
- 
- 	while (length > 0) {
+-	iph = (struct iphdr *)skb->data;
++	iph = ip_hdr(skb);
+ 	iph->version = 4;
+ 	iph->ihl = 5;
+ 	iph->tos = inet->tos;
 
 
