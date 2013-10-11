@@ -1,51 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756065Ab3JKU6A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:58:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47255 "EHLO
+	id S1756089Ab3JKU6c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:58:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45325 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752103Ab3JKU55 (ORCPT
+	with ESMTP id S1758077Ab3JKThP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 16:57:57 -0400
-Date: Fri, 11 Oct 2013 13:57:56 -0700
-From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-To: "Fangxiaozhi (Franko)" <fangxiaozhi@huawei.com>
-Cc: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Heyongquan <heyongquan@huawei.com>, Wangyuhua <yuhua.wang@huawei.com>,
-        "Yili (Neil)" <neil.yi@huawei.com>
-Subject: Re: [PATCH 1/1] support new huawei devices in option.c
-Message-ID: <20131011205756.GA8181@kroah.com>
-References: <910F9D9E13B84F4C8FA771DC9BDE99F35E24BA90@szxema506-mbs.china.huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <910F9D9E13B84F4C8FA771DC9BDE99F35E24BA90@szxema506-mbs.china.huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 11 Oct 2013 15:37:15 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Prarit Bhargava <prarit@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 23/48] powerpc/vio: Fix modalias_show return values
+Date: Fri, 11 Oct 2013 12:36:30 -0700
+Message-Id: <20131011193639.760970866@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20131011193637.253208688@linuxfoundation.org>
+References: <20131011193637.253208688@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 11, 2013 at 03:48:21AM +0000, Fangxiaozhi (Franko) wrote:
-> 1. Add new supporting declarations to option.c, to support Huawei new devices with new bInterfaceSubClass value.
-> Signed-off-by: fangxiaozhi <huananhu@huawei.com>
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-In the future, can you use an email client that doesn't turn tabs into
-spaces, so I don't have to edit the patch by hand?
+------------------
 
-Also:
+From: Prarit Bhargava <prarit@redhat.com>
 
-> + { USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x03, 0x01) },
-> + { USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x03, 0x02) },
+commit e82b89a6f19bae73fb064d1b3dd91fcefbb478f4 upstream.
 
-<snip>
+modalias_show() should return an empty string on error, not -ENODEV.
 
-That's a huge list of ids, is there any way we can just mark all of
-these as used by the device in an easier manner?
+This causes the following false and annoying error:
 
-I'll take this for now, but I have a feeling that this list is just
-going to get worse over time, right?
+> find /sys/devices -name modalias -print0 | xargs -0 cat >/dev/null
+cat: /sys/devices/vio/4000/modalias: No such device
+cat: /sys/devices/vio/4001/modalias: No such device
+cat: /sys/devices/vio/4002/modalias: No such device
+cat: /sys/devices/vio/4004/modalias: No such device
+cat: /sys/devices/vio/modalias: No such device
 
-thanks,
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-greg k-h
+---
+ arch/powerpc/kernel/vio.c |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
+
+--- a/arch/powerpc/kernel/vio.c
++++ b/arch/powerpc/kernel/vio.c
+@@ -1341,11 +1341,15 @@ static ssize_t modalias_show(struct devi
+ 	const char *cp;
+ 
+ 	dn = dev->of_node;
+-	if (!dn)
+-		return -ENODEV;
++	if (!dn) {
++		strcat(buf, "\n");
++		return strlen(buf);
++	}
+ 	cp = of_get_property(dn, "compatible", NULL);
+-	if (!cp)
+-		return -ENODEV;
++	if (!cp) {
++		strcat(buf, "\n");
++		return strlen(buf);
++	}
+ 
+ 	return sprintf(buf, "vio:T%sS%s\n", vio_dev->type, cp);
+ }
+
+
