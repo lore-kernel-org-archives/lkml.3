@@ -1,52 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752978Ab3JKFif (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 01:38:35 -0400
-Received: from smtprelay0059.hostedemail.com ([216.40.44.59]:43093 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752332Ab3JKFie (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 01:38:34 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:2904:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3870:3871:3872:3874:4321:5007:7652:7903:10004:10400:10848:11026:11232:11658:11914:12438:12517:12519:12740:13069:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: crown43_84b0e897c7f18
-X-Filterd-Recvd-Size: 1587
-Message-ID: <1381469910.14017.45.camel@joe-AO722>
-Subject: Re: [PATCH 1/2] vsprintf/sysctl: Bugfix, neaten and document %pK
- usages
-From: Joe Perches <joe@perches.com>
-To: Ryan Mallon <rmallon@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dan Rosenberg <dan.j.rosenberg@gmail.com>,
-        Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 10 Oct 2013 22:38:30 -0700
-In-Reply-To: <52578D37.2000004@gmail.com>
-References: <0aef7497929fd764a88ca7b3c22f082a5c2fe909.1381468961.git.joe@perches.com>
-	 <52578D37.2000004@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753475Ab3JKFik (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 01:38:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62914 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752341Ab3JKFii (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 01:38:38 -0400
+Date: Fri, 11 Oct 2013 08:38:31 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Xiao Guangrong <xiaoguangrong.eric@gmail.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        avi.kivity@gmail.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v2 12/15] KVM: MMU: allow locklessly access shadow page
+ table out of vcpu thread
+Message-ID: <20131011053831.GG15954@redhat.com>
+References: <1378376958-27252-13-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <20131008012355.GA3588@amt.cnet>
+ <CAD6C3B4-DD55-47EB-9BC0-17867937AE2D@gmail.com>
+ <20131009015627.GA4816@amt.cnet>
+ <525533DB.1060104@gmail.com>
+ <20131010014710.GA2198@amt.cnet>
+ <20131010120845.GT3574@redhat.com>
+ <20131010164222.GB3211@amt.cnet>
+ <20131010191646.GE15954@redhat.com>
+ <20131010210301.GA7275@amt.cnet>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131010210301.GA7275@amt.cnet>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-10-11 at 16:31 +1100, Ryan Mallon wrote:
-> On 11/10/13 16:25, Joe Perches wrote:
-> > Printing kernel pointers via %pK has a minor defect when
-> > kptr_restrict is set to 2:  the pointer may be emitted
-> > as "pK-error" instead of all 0's when in an interrupt.
+On Thu, Oct 10, 2013 at 06:03:01PM -0300, Marcelo Tosatti wrote:
+> On Thu, Oct 10, 2013 at 10:16:46PM +0300, Gleb Natapov wrote:
+> > On Thu, Oct 10, 2013 at 01:42:22PM -0300, Marcelo Tosatti wrote:
+> > > On Thu, Oct 10, 2013 at 03:08:45PM +0300, Gleb Natapov wrote:
+> > > > On Wed, Oct 09, 2013 at 10:47:10PM -0300, Marcelo Tosatti wrote:
+> > > > > > >> Gleb has a idea that uses RCU_DESTORY to protect the shadow page table
+> > > > > > >> and encodes the page-level into the spte (since we need to check if the spte
+> > > > > > >> is the last-spte. ).  How about this?
+> > > > > > > 
+> > > > > > > Pointer please? Why is DESTROY_SLAB_RCU any safer than call_rcu with
+> > > > > > > regards to limitation? (maybe it is).
+> > > > > > 
+> > > > > > For my experience, freeing shadow page and allocing shadow page are balanced,
+> > > > > > we can check it by (make -j12 on a guest with 4 vcpus and):
+> > > > > > 
+> > > > > > # echo > trace
+> > > > > > [root@eric-desktop tracing]# cat trace > ~/log | sleep 3
+> > > > > > [root@eric-desktop tracing]# cat ~/log | grep new | wc -l
+> > > > > > 10816
+> > > > > > [root@eric-desktop tracing]# cat ~/log | grep prepare | wc -l
+> > > > > > 10656
+> > > > > > [root@eric-desktop tracing]# cat set_event
+> > > > > > kvmmmu:kvm_mmu_get_page
+> > > > > > kvmmmu:kvm_mmu_prepare_zap_page
+> > > > > > 
+> > > > > > alloc VS. free = 10816 : 10656
+> > > > > > 
+> > > > > > So that, mostly all allocing and freeing are done in the slab's
+> > > > > > cache and the slab frees shdadow pages very slowly, there is no rcu issue.
+> > > > > 
+> > > > > A more detailed test case would be:
+> > > > > 
+> > > > > - cpu0-vcpu0 releasing pages as fast as possible
+> > > > > - cpu1 executing get_dirty_log
+> > > > > 
+> > > > > Think of a very large guest.
+> > > > > 
+> > > > The number of shadow pages allocated from slab will be bounded by
+> > > > n_max_mmu_pages, 
+> > > 
+> > > Correct, but that limit is not suitable (maximum number of mmu pages
+> > > should be larger than number of mmu pages freeable in a rcu grace
+> > > period).
+> > > 
+> > I am not sure I understand what you mean here. What I was sating is that if
+> > we change code to allocate sp->spt from slab, this slab will never have
+> > more then n_max_mmu_pages objects in it.
 > 
-> NAK. This is not a defect, as I explained earlier. It is really a defect
-> that it _doesn't_ print 'pK-error' in all cases. 'pK-error' is for
-> finding kernel bugs.
+> n_max_mmu_pages is not a suitable limit to throttle freeing of pages via
+> RCU (its too large). If the free memory watermarks are smaller than 
+> n_max_mmu_pages for all guests, OOM is possible.
+> 
+Ah, yes. I am not saying n_max_mmu_pages will throttle RCU, just saying
+that slab size will be bound, so hopefully shrinker will touch it
+rarely.
 
-Not my understanding.
-
-There is no bug to find when emitting a pointer via %pK.
-
-The only issue is that has_capability_noaudit can not
-be called from an interrupt.
-
-
+> > > > and, in addition, page released to slab is immediately
+> > > > available for allocation, no need to wait for grace period. 
+> > > 
+> > > See SLAB_DESTROY_BY_RCU comment at include/linux/slab.h.
+> > > 
+> > This comment is exactly what I was referring to in the code you quoted. Do
+> > you see anything problematic in what comment describes?
+> 
+> "This delays freeing the SLAB page by a grace period, it does _NOT_
+> delay object freeing." The page is not available for allocation.
+By "page" I mean "spt page" which is a slab object. So "spt page"
+AKA slab object will be available fo allocation immediately.
+ 
+--
+			Gleb.
