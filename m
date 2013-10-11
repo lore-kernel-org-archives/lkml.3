@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757388Ab3JKVLN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 17:11:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45095 "EHLO
+	id S1757413Ab3JKVLg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 17:11:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45072 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756179Ab3JKTfg (ORCPT
+	with ESMTP id S1755674Ab3JKTfa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:35:36 -0400
+	Fri, 11 Oct 2013 15:35:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Dmitry Vyukov <dvyukov@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 12/39] ipv6: udp packets following an UFO enqueued packet need also be handled by UFO
-Date: Fri, 11 Oct 2013 12:34:56 -0700
-Message-Id: <20131011193212.212757125@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Mike Miller <mike.miller@hp.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 03/39] cciss: fix info leak in cciss_ioctl32_passthru()
+Date: Fri, 11 Oct 2013 12:34:47 -0700
+Message-Id: <20131011193211.262741792@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193210.843963685@linuxfoundation.org>
 References: <20131011193210.843963685@linuxfoundation.org>
@@ -29,122 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-[ Upstream commit 2811ebac2521ceac84f2bdae402455baa6a7fb47 ]
+commit 58f09e00ae095e46ef9edfcf3a5fd9ccdfad065e upstream.
 
-In the following scenario the socket is corked:
-If the first UDP packet is larger then the mtu we try to append it to the
-write queue via ip6_ufo_append_data. A following packet, which is smaller
-than the mtu would be appended to the already queued up gso-skb via
-plain ip6_append_data. This causes random memory corruptions.
+The arg64 struct has a hole after ->buf_size which isn't cleared.  Or if
+any of the calls to copy_from_user() fail then that would cause an
+information leak as well.
 
-In ip6_ufo_append_data we also have to be careful to not queue up the
-same skb multiple times. So setup the gso frame only when no first skb
-is available.
+This was assigned CVE-2013-2147.
 
-This also fixes a shortcoming where we add the current packet's length to
-cork->length but return early because of a packet > mtu with dontfrag set
-(instead of sutracting it again).
-
-Found with trinity.
-
-Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Reported-by: Dmitry Vyukov <dvyukov@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Mike Miller <mike.miller@hp.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv6/ip6_output.c |   53 ++++++++++++++++++++------------------------------
- 1 file changed, 22 insertions(+), 31 deletions(-)
 
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -1141,6 +1141,8 @@ static inline int ip6_ufo_append_data(st
- 	 * udp datagram
- 	 */
- 	if ((skb = skb_peek_tail(&sk->sk_write_queue)) == NULL) {
-+		struct frag_hdr fhdr;
-+
- 		skb = sock_alloc_send_skb(sk,
- 			hh_len + fragheaderlen + transhdrlen + 20,
- 			(flags & MSG_DONTWAIT), &err);
-@@ -1161,12 +1163,6 @@ static inline int ip6_ufo_append_data(st
+---
+ drivers/block/cciss.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/drivers/block/cciss.c
++++ b/drivers/block/cciss.c
+@@ -1179,6 +1179,7 @@ static int cciss_ioctl32_passthru(struct
+ 	int err;
+ 	u32 cp;
  
- 		skb->ip_summed = CHECKSUM_PARTIAL;
- 		skb->csum = 0;
--	}
--
--	err = skb_append_datato_frags(sk,skb, getfrag, from,
--				      (length - transhdrlen));
--	if (!err) {
--		struct frag_hdr fhdr;
- 
- 		/* Specify the length of each IPv6 datagram fragment.
- 		 * It has to be a multiple of 8.
-@@ -1177,15 +1173,10 @@ static inline int ip6_ufo_append_data(st
- 		ipv6_select_ident(&fhdr, &rt->rt6i_dst.addr);
- 		skb_shinfo(skb)->ip6_frag_id = fhdr.identification;
- 		__skb_queue_tail(&sk->sk_write_queue, skb);
--
--		return 0;
- 	}
--	/* There is not enough support do UPD LSO,
--	 * so follow normal path
--	 */
--	kfree_skb(skb);
- 
--	return err;
-+	return skb_append_datato_frags(sk, skb, getfrag, from,
-+				       (length - transhdrlen));
- }
- 
- static inline struct ipv6_opt_hdr *ip6_opt_dup(struct ipv6_opt_hdr *src,
-@@ -1354,27 +1345,27 @@ int ip6_append_data(struct sock *sk, int
- 	 * --yoshfuji
- 	 */
- 
--	cork->length += length;
--	if (length > mtu) {
--		int proto = sk->sk_protocol;
--		if (dontfrag && (proto == IPPROTO_UDP || proto == IPPROTO_RAW)){
--			ipv6_local_rxpmtu(sk, fl6, mtu-exthdrlen);
--			return -EMSGSIZE;
--		}
--
--		if (proto == IPPROTO_UDP &&
--		    (rt->dst.dev->features & NETIF_F_UFO)) {
-+	if ((length > mtu) && dontfrag && (sk->sk_protocol == IPPROTO_UDP ||
-+					   sk->sk_protocol == IPPROTO_RAW)) {
-+		ipv6_local_rxpmtu(sk, fl6, mtu-exthdrlen);
-+		return -EMSGSIZE;
-+	}
- 
--			err = ip6_ufo_append_data(sk, getfrag, from, length,
--						  hh_len, fragheaderlen,
--						  transhdrlen, mtu, flags, rt);
--			if (err)
--				goto error;
--			return 0;
--		}
-+	skb = skb_peek_tail(&sk->sk_write_queue);
-+	cork->length += length;
-+	if (((length > mtu) ||
-+	     (skb && skb_is_gso(skb))) &&
-+	    (sk->sk_protocol == IPPROTO_UDP) &&
-+	    (rt->dst.dev->features & NETIF_F_UFO)) {
-+		err = ip6_ufo_append_data(sk, getfrag, from, length,
-+					  hh_len, fragheaderlen,
-+					  transhdrlen, mtu, flags, rt);
-+		if (err)
-+			goto error;
-+		return 0;
- 	}
- 
--	if ((skb = skb_peek_tail(&sk->sk_write_queue)) == NULL)
-+	if (!skb)
- 		goto alloc_new_skb;
- 
- 	while (length > 0) {
++	memset(&arg64, 0, sizeof(arg64));
+ 	err = 0;
+ 	err |=
+ 	    copy_from_user(&arg64.LUN_info, &arg32->LUN_info,
 
 
