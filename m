@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932903Ab3JKTtg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:49:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46488 "EHLO
+	id S932834Ab3JKTmI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:42:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46462 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757472Ab3JKTmJ (ORCPT
+	with ESMTP id S932753Ab3JKTmE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:42:09 -0400
+	Fri, 11 Oct 2013 15:42:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Sandeen <sandeen@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 110/135] net: Update the sysctl permissions handler to test effective uid/gid
-Date: Fri, 11 Oct 2013 12:39:51 -0700
-Message-Id: <20131011193957.232147048@linuxfoundation.org>
+        David Cohen <david.a.cohen@linux.intel.com>
+Subject: [ 101/135] usb: chipidea: add Intel Clovertrail pci id
+Date: Fri, 11 Oct 2013 12:39:42 -0700
+Message-Id: <20131011193956.229251947@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -28,39 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+From: David Cohen <david.a.cohen@linux.intel.com>
 
-commit 2433c8f094a008895e66f25bd1773cdb01c91d01 upstream.
+commit a214339d764a07b99dc0418685d6cc8a0a1970d5 upstream.
 
-Modify the code to use current_euid(), and in_egroup_p, as in done
-in fs/proc/proc_sysctl.c:test_perm()
+Also clean up the last item of the pci id list to be "cleaner".
 
-Reviewed-by: Eric Sandeen <sandeen@redhat.com>
-Reported-by: Eric Sandeen <sandeen@redhat.com>
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/sysctl_net.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/chipidea/ci_hdrc_pci.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/net/sysctl_net.c
-+++ b/net/sysctl_net.c
-@@ -47,12 +47,12 @@ static int net_ctl_permissions(struct ct
+--- a/drivers/usb/chipidea/ci_hdrc_pci.c
++++ b/drivers/usb/chipidea/ci_hdrc_pci.c
+@@ -129,7 +129,12 @@ static DEFINE_PCI_DEVICE_TABLE(ci_hdrc_p
+ 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x0829),
+ 		.driver_data = (kernel_ulong_t)&penwell_pci_platdata,
+ 	},
+-	{ 0, 0, 0, 0, 0, 0, 0 /* end: all zeroes */ }
++	{
++		/* Intel Clovertrail */
++		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xe006),
++		.driver_data = (kernel_ulong_t)&penwell_pci_platdata,
++	},
++	{ 0 } /* end: all zeroes */
+ };
+ MODULE_DEVICE_TABLE(pci, ci_hdrc_pci_id_table);
  
- 	/* Allow network administrator to have same access as root. */
- 	if (ns_capable(net->user_ns, CAP_NET_ADMIN) ||
--	    uid_eq(root_uid, current_uid())) {
-+	    uid_eq(root_uid, current_euid())) {
- 		int mode = (table->mode >> 6) & 7;
- 		return (mode << 6) | (mode << 3) | mode;
- 	}
- 	/* Allow netns root group to have the same access as the root group */
--	if (gid_eq(root_gid, current_gid())) {
-+	if (in_egroup_p(root_gid)) {
- 		int mode = (table->mode >> 3) & 7;
- 		return (mode << 3) | mode;
- 	}
 
 
