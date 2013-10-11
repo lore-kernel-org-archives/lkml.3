@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754084Ab3JKU4m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:56:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45342 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757238Ab3JKThR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1758136Ab3JKThR (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 11 Oct 2013 15:37:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45266 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757238Ab3JKThG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 15:37:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andre Guedes <andre.guedes@openbossa.org>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Subject: [ 27/48] Bluetooth: Fix encryption key size for peripheral role
-Date: Fri, 11 Oct 2013 12:36:34 -0700
-Message-Id: <20131011193640.176561765@linuxfoundation.org>
+        Chris Healy <cphealy@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 09/48] resubmit bridge: fix message_age_timer calculation
+Date: Fri, 11 Oct 2013 12:36:16 -0700
+Message-Id: <20131011193638.277194769@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193637.253208688@linuxfoundation.org>
 References: <20131011193637.253208688@linuxfoundation.org>
@@ -27,32 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andre Guedes <andre.guedes@openbossa.org>
+From: Chris Healy <cphealy@gmail.com>
 
-commit 89cbb4da0abee2f39d75f67f9fd57f7410c8b65c upstream.
+[ Upstream commit 9a0620133ccce9dd35c00a96405c8d80938c2cc0 ]
 
-This patch fixes the connection encryption key size information when
-the host is playing the peripheral role. We should set conn->enc_key_
-size in hci_le_ltk_request_evt, otherwise it is left uninitialized.
+This changes the message_age_timer calculation to use the BPDU's max age as
+opposed to the local bridge's max age.  This is in accordance with section
+8.6.2.3.2 Step 2 of the 802.1D-1998 sprecification.
 
-Signed-off-by: Andre Guedes <andre.guedes@openbossa.org>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+With the current implementation, when running with very large bridge
+diameters, convergance will not always occur even if a root bridge is
+configured to have a longer max age.
+
+Tested successfully on bridge diameters of ~200.
+
+Signed-off-by: Chris Healy <cphealy@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- net/bluetooth/hci_event.c |    2 ++
- 1 file changed, 2 insertions(+)
+ net/bridge/br_stp.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/bluetooth/hci_event.c
-+++ b/net/bluetooth/hci_event.c
-@@ -3379,6 +3379,8 @@ static inline void hci_le_ltk_request_ev
- 	else
- 		conn->pending_sec_level = BT_SECURITY_MEDIUM;
+--- a/net/bridge/br_stp.c
++++ b/net/bridge/br_stp.c
+@@ -189,7 +189,7 @@ static void br_record_config_information
+ 	p->designated_age = jiffies - bpdu->message_age;
  
-+	conn->enc_key_size = ltk->enc_size;
-+
- 	hci_send_cmd(hdev, HCI_OP_LE_LTK_REPLY, sizeof(cp), &cp);
+ 	mod_timer(&p->message_age_timer, jiffies
+-		  + (p->br->max_age - bpdu->message_age));
++		  + (bpdu->max_age - bpdu->message_age));
+ }
  
- 	if (ltk->type & HCI_SMP_STK) {
+ /* called under bridge lock */
 
 
