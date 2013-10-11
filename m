@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752525Ab3JKUpb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:45:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45530 "EHLO
+	id S1754384Ab3JKUp6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:45:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45518 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758771Ab3JKTjp (ORCPT
+	with ESMTP id S1758755Ab3JKTjn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:39:45 -0400
+	Fri, 11 Oct 2013 15:39:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Duan Jiong <duanj.fnst@cn.fujitsu.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Vlad Yasevich <vyasevich@gmail.com>,
-        Daniel Borkmann <dborkman@redhat.com>,
+        Hong Zhiguo <zhiguohong@tencent.com>,
+        Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 026/110] net: sctp: rfc4443: do not report ICMP redirects to user space
-Date: Fri, 11 Oct 2013 12:38:06 -0700
-Message-Id: <20131011193810.555193000@linuxfoundation.org>
+Subject: [ 023/110] bridge: use br_port_get_rtnl within rtnl lock
+Date: Fri, 11 Oct 2013 12:38:03 -0700
+Message-Id: <20131011193810.208126478@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
 References: <20131011193807.584188672@linuxfoundation.org>
@@ -30,59 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Hong Zhiguo <zhiguohong@tencent.com>
 
-[ Upstream commit 3f96a532113131d5a65ac9e00fc83cfa31b0295f ]
+[ Upstream commit 1fb1754a8c70d69ab480763c423e0a74369c4a67 ]
 
-Adapt the same behaviour for SCTP as present in TCP for ICMP redirect
-messages. For IPv6, RFC4443, section 2.4. says:
+current br_port_get_rcu is problematic in bridging path
+(NULL deref). Change these calls in netlink path first.
 
-  ...
-  (e) An ICMPv6 error message MUST NOT be originated as a result of
-      receiving the following:
-  ...
-       (e.2) An ICMPv6 redirect message [IPv6-DISC].
-  ...
-
-Therefore, do not report an error to user space, just invoke dst's redirect
-callback and leave, same for IPv4 as done in TCP as well. The implication
-w/o having this patch could be that the reception of such packets would
-generate a poll notification and in worst case it could even tear down the
-whole connection. Therefore, stop updating sk_err on redirects.
-
-Reported-by: Duan Jiong <duanj.fnst@cn.fujitsu.com>
-Reported-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Suggested-by: Vlad Yasevich <vyasevich@gmail.com>
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Signed-off-by: Hong Zhiguo <zhiguohong@tencent.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/sctp/input.c |    3 +--
- net/sctp/ipv6.c  |    2 +-
- 2 files changed, 2 insertions(+), 3 deletions(-)
+ net/bridge/br_netlink.c |    4 ++--
+ net/bridge/br_private.h |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
---- a/net/sctp/input.c
-+++ b/net/sctp/input.c
-@@ -648,8 +648,7 @@ void sctp_v4_err(struct sk_buff *skb, __
- 		break;
- 	case ICMP_REDIRECT:
- 		sctp_icmp_redirect(sk, transport, skb);
--		err = 0;
--		break;
-+		/* Fall through to out_unlock. */
- 	default:
- 		goto out_unlock;
- 	}
---- a/net/sctp/ipv6.c
-+++ b/net/sctp/ipv6.c
-@@ -189,7 +189,7 @@ SCTP_STATIC void sctp_v6_err(struct sk_b
- 		break;
- 	case NDISC_REDIRECT:
- 		sctp_icmp_redirect(sk, transport, skb);
--		break;
-+		goto out_unlock;
- 	default:
- 		break;
- 	}
+--- a/net/bridge/br_netlink.c
++++ b/net/bridge/br_netlink.c
+@@ -203,7 +203,7 @@ int br_getlink(struct sk_buff *skb, u32
+ 	       struct net_device *dev, u32 filter_mask)
+ {
+ 	int err = 0;
+-	struct net_bridge_port *port = br_port_get_rcu(dev);
++	struct net_bridge_port *port = br_port_get_rtnl(dev);
+ 
+ 	/* not a bridge port and  */
+ 	if (!port && !(filter_mask & RTEXT_FILTER_BRVLAN))
+@@ -443,7 +443,7 @@ static size_t br_get_link_af_size(const
+ 	struct net_port_vlans *pv;
+ 
+ 	if (br_port_exists(dev))
+-		pv = nbp_get_vlan_info(br_port_get_rcu(dev));
++		pv = nbp_get_vlan_info(br_port_get_rtnl(dev));
+ 	else if (dev->priv_flags & IFF_EBRIDGE)
+ 		pv = br_get_vlan_info((struct net_bridge *)netdev_priv(dev));
+ 	else
+--- a/net/bridge/br_private.h
++++ b/net/bridge/br_private.h
+@@ -189,7 +189,7 @@ static inline struct net_bridge_port *br
+ 	return br_port_exists(dev) ? port : NULL;
+ }
+ 
+-static inline struct net_bridge_port *br_port_get_rtnl(struct net_device *dev)
++static inline struct net_bridge_port *br_port_get_rtnl(const struct net_device *dev)
+ {
+ 	return br_port_exists(dev) ?
+ 		rtnl_dereference(dev->rx_handler_data) : NULL;
 
 
