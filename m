@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753816Ab3JKFQN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 01:16:13 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:56694 "EHLO
+	id S1753193Ab3JKFPv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 01:15:51 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:64088 "EHLO
 	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751527Ab3JKFPw (ORCPT
+	with ESMTP id S1751527Ab3JKFPs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 01:15:52 -0400
-X-AuditID: 9c93016f-b7c63ae00000696f-2b-52578983f7a2
+	Fri, 11 Oct 2013 01:15:48 -0400
+X-AuditID: 9c93016f-b7c63ae00000696f-1e-525789811c73
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
         LKML <linux-kernel@vger.kernel.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 8/8] perf tools: Get current comm instead of last one
-Date: Fri, 11 Oct 2013 14:15:43 +0900
-Message-Id: <1381468543-25334-9-git-send-email-namhyung@kernel.org>
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 3/8] perf tools: Show progress on histogram collapsing
+Date: Fri, 11 Oct 2013 14:15:38 +0900
+Message-Id: <1381468543-25334-4-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1381468543-25334-1-git-send-email-namhyung@kernel.org>
 References: <1381468543-25334-1-git-send-email-namhyung@kernel.org>
@@ -29,186 +28,173 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-At insert time, a hist entry should reference comm at the time
-otherwise it'll get the last comm anyway.
+It can take quite amount of time so add progress bar UI to inform user.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Link: http://lkml.kernel.org/n/tip-n6pykiiymtgmcjs834go2t8x@git.kernel.org
-[ Fixed up const pointer issues ]
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/util/comm.c   | 15 +++++++++++++++
- tools/perf/util/comm.h   |  1 +
- tools/perf/util/hist.c   |  3 +++
- tools/perf/util/sort.c   | 14 +++++---------
- tools/perf/util/sort.h   |  1 +
- tools/perf/util/thread.c |  6 +++---
- tools/perf/util/thread.h |  2 ++
- 7 files changed, 30 insertions(+), 12 deletions(-)
+ tools/perf/builtin-annotate.c |  2 +-
+ tools/perf/builtin-diff.c     |  2 +-
+ tools/perf/builtin-report.c   | 10 +++++++++-
+ tools/perf/builtin-top.c      |  4 ++--
+ tools/perf/tests/hists_link.c |  2 +-
+ tools/perf/util/hist.c        |  5 ++++-
+ tools/perf/util/hist.h        |  3 ++-
+ 7 files changed, 20 insertions(+), 8 deletions(-)
 
-diff --git a/tools/perf/util/comm.c b/tools/perf/util/comm.c
-index 0cfb55202537..ecd3c9938d3e 100644
---- a/tools/perf/util/comm.c
-+++ b/tools/perf/util/comm.c
-@@ -94,6 +94,21 @@ struct comm *comm__new(const char *str, u64 timestamp)
- 	return comm;
+diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+index ddde4074fd91..a732a6caeffe 100644
+--- a/tools/perf/builtin-annotate.c
++++ b/tools/perf/builtin-annotate.c
+@@ -246,7 +246,7 @@ static int __cmd_annotate(struct perf_annotate *ann)
+ 
+ 		if (nr_samples > 0) {
+ 			total_nr_samples += nr_samples;
+-			hists__collapse_resort(hists);
++			hists__collapse_resort(hists, NULL);
+ 			hists__output_resort(hists);
+ 
+ 			if (symbol_conf.event_group &&
+diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+index f28799e94f2a..f4ab7d210105 100644
+--- a/tools/perf/builtin-diff.c
++++ b/tools/perf/builtin-diff.c
+@@ -367,7 +367,7 @@ static void perf_evlist__collapse_resort(struct perf_evlist *evlist)
+ 	list_for_each_entry(evsel, &evlist->entries, node) {
+ 		struct hists *hists = &evsel->hists;
+ 
+-		hists__collapse_resort(hists);
++		hists__collapse_resort(hists, NULL);
+ 	}
  }
  
-+void comm__override(struct comm *comm, const char *str, u64 timestamp)
-+{
-+	struct comm_str *old = comm->comm_str;
-+
-+	comm->comm_str = comm_str_findnew(str, &comm_str_root);
-+	if (!comm->comm_str) {
-+		comm->comm_str = old;
-+		return;
-+	}
-+
-+	comm->start = timestamp;
-+	comm_str_get(comm->comm_str);
-+	comm_str_put(old);
-+}
-+
- void comm__free(struct comm *comm)
- {
- 	comm_str_put(comm->comm_str);
-diff --git a/tools/perf/util/comm.h b/tools/perf/util/comm.h
-index f62d215bede2..b2c364b37468 100644
---- a/tools/perf/util/comm.h
-+++ b/tools/perf/util/comm.h
-@@ -16,5 +16,6 @@ struct comm {
- void comm__free(struct comm *comm);
- struct comm *comm__new(const char *str, u64 timestamp);
- const char *comm__str(const struct comm *comm);
-+void comm__override(struct comm *self, const char *str, u64 timestamp);
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index c902229f3f94..83920612984a 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -489,6 +489,7 @@ static int __cmd_report(struct perf_report *rep)
+ 	struct map *kernel_map;
+ 	struct kmap *kernel_kmap;
+ 	const char *help = "For a higher level overview, try: perf report --sort comm,dso";
++	struct perf_progress prog;
  
- #endif  /* __PERF_COMM_H */
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 8b2d96c56d17..e86d18a674b2 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -412,6 +412,7 @@ struct hist_entry *__hists__add_mem_entry(struct hists *self,
- {
- 	struct hist_entry entry = {
- 		.thread	= al->thread,
-+		.comm = thread__comm(al->thread),
- 		.ms = {
- 			.map	= al->map,
- 			.sym	= al->sym,
-@@ -442,6 +443,7 @@ struct hist_entry *__hists__add_branch_entry(struct hists *self,
- {
- 	struct hist_entry entry = {
- 		.thread	= al->thread,
-+		.comm = thread__comm(al->thread),
- 		.ms = {
- 			.map	= bi->to.map,
- 			.sym	= bi->to.sym,
-@@ -471,6 +473,7 @@ struct hist_entry *__hists__add_entry(struct hists *self,
- {
- 	struct hist_entry entry = {
- 		.thread	= al->thread,
-+		.comm = thread__comm(al->thread),
- 		.ms = {
- 			.map	= al->map,
- 			.sym	= al->sym,
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index e68833f3932d..b4cf0cf077ca 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -1,5 +1,6 @@
- #include "sort.h"
- #include "hist.h"
-+#include "comm.h"
- #include "symbol.h"
+ 	signal(SIGINT, sig_handler);
  
- regex_t		parent_regex;
-@@ -80,25 +81,20 @@ static int64_t
- sort__comm_cmp(struct hist_entry *left, struct hist_entry *right)
- {
- 	/* Compare the addr that should be unique among comm */
--	return thread__comm_str(right->thread) - thread__comm_str(left->thread);
-+	return comm__str(right->comm) - comm__str(left->comm);
- }
- 
- static int64_t
- sort__comm_collapse(struct hist_entry *left, struct hist_entry *right)
- {
--	const char *comm_l = thread__comm_str(left->thread);
--	const char *comm_r = thread__comm_str(right->thread);
--
--	if (!comm_l || !comm_r)
--		return cmp_null(comm_l, comm_r);
--
--	return strcmp(comm_l, comm_r);
-+	/* Compare the addr that should be unique among comm */
-+	return comm__str(right->comm) - comm__str(left->comm);
- }
- 
- static int hist_entry__comm_snprintf(struct hist_entry *self, char *bf,
- 				     size_t size, unsigned int width)
- {
--	return repsep_snprintf(bf, size, "%*s", width, thread__comm_str(self->thread));
-+	return repsep_snprintf(bf, size, "%*s", width, comm__str(self->comm));
- }
- 
- struct sort_entry sort_comm = {
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index 4e80dbd271e7..4d0153f83e3c 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -84,6 +84,7 @@ struct hist_entry {
- 	struct he_stat		stat;
- 	struct map_symbol	ms;
- 	struct thread		*thread;
-+	struct comm		*comm;
- 	u64			ip;
- 	s32			cpu;
- 
-diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
-index 095b725d0cd4..cddbde8672b2 100644
---- a/tools/perf/util/thread.c
-+++ b/tools/perf/util/thread.c
-@@ -54,7 +54,7 @@ void thread__delete(struct thread *self)
- 	free(self);
- }
- 
--static struct comm *thread__comm(const struct thread *thread)
-+struct comm *thread__comm(const struct thread *thread)
- {
- 	if (list_empty(&thread->comm_list))
- 		return NULL;
-@@ -69,8 +69,8 @@ int thread__set_comm(struct thread *thread, const char *str, u64 timestamp)
- 
- 	/* Override latest entry if it had no specific time coverage */
- 	if (!curr->start) {
--		list_del(&curr->list);
--		comm__free(curr);
-+		comm__override(curr, str, timestamp);
-+		return 0;
+@@ -550,13 +551,19 @@ static int __cmd_report(struct perf_report *rep)
  	}
  
- 	new = comm__new(str, timestamp);
-diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
-index 307d2ec60123..eaf3e46148b5 100644
---- a/tools/perf/util/thread.h
-+++ b/tools/perf/util/thread.h
-@@ -26,6 +26,7 @@ struct thread {
- };
+ 	nr_samples = 0;
++	list_for_each_entry(pos, &session->evlist->entries, node)
++		nr_samples += pos->hists.nr_entries;
++
++	ui_progress__setup(&prog, nr_samples);
++
++	nr_samples = 0;
+ 	list_for_each_entry(pos, &session->evlist->entries, node) {
+ 		struct hists *hists = &pos->hists;
  
- struct machine;
-+struct comm;
+ 		if (pos->idx == 0)
+ 			hists->symbol_filter_str = rep->symbol_filter_str;
  
- struct thread *thread__new(pid_t pid, pid_t tid);
- void thread__delete(struct thread *self);
-@@ -36,6 +37,7 @@ static inline void thread__exited(struct thread *thread)
+-		hists__collapse_resort(hists);
++		hists__collapse_resort(hists, &prog);
+ 		nr_samples += hists->stats.nr_events[PERF_RECORD_SAMPLE];
  
- int thread__set_comm(struct thread *self, const char *comm, u64 timestamp);
- int thread__comm_len(struct thread *self);
-+struct comm *thread__comm(const struct thread *self);
- const char *thread__comm_str(const struct thread *thread);
- void thread__insert_map(struct thread *self, struct map *map);
- int thread__fork(struct thread *self, struct thread *parent, u64 timestamp);
+ 		/* Non-group events are considered as leader */
+@@ -568,6 +575,7 @@ static int __cmd_report(struct perf_report *rep)
+ 			hists__link(leader_hists, hists);
+ 		}
+ 	}
++	ui_progress__finish();
+ 
+ 	if (nr_samples == 0) {
+ 		ui__error("The %s file has no samples!\n", session->filename);
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index cf4bba07175a..0cb077f823de 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -287,7 +287,7 @@ static void perf_top__print_sym_table(struct perf_top *top)
+ 		return;
+ 	}
+ 
+-	hists__collapse_resort(&top->sym_evsel->hists);
++	hists__collapse_resort(&top->sym_evsel->hists, NULL);
+ 	hists__output_resort(&top->sym_evsel->hists);
+ 	hists__decay_entries(&top->sym_evsel->hists,
+ 			     top->hide_user_symbols,
+@@ -553,7 +553,7 @@ static void perf_top__sort_new_samples(void *arg)
+ 	if (t->evlist->selected != NULL)
+ 		t->sym_evsel = t->evlist->selected;
+ 
+-	hists__collapse_resort(&t->sym_evsel->hists);
++	hists__collapse_resort(&t->sym_evsel->hists, NULL);
+ 	hists__output_resort(&t->sym_evsel->hists);
+ 	hists__decay_entries(&t->sym_evsel->hists,
+ 			     t->hide_user_symbols,
+diff --git a/tools/perf/tests/hists_link.c b/tools/perf/tests/hists_link.c
+index 4228ffc0d968..3b5faaa5c8cf 100644
+--- a/tools/perf/tests/hists_link.c
++++ b/tools/perf/tests/hists_link.c
+@@ -465,7 +465,7 @@ int test__hists_link(void)
+ 		goto out;
+ 
+ 	list_for_each_entry(evsel, &evlist->entries, node) {
+-		hists__collapse_resort(&evsel->hists);
++		hists__collapse_resort(&evsel->hists, NULL);
+ 
+ 		if (verbose > 2)
+ 			print_hists(&evsel->hists);
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index e935d586d288..8b2d96c56d17 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -395,6 +395,7 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
+ 	if (!he)
+ 		return NULL;
+ 
++	hists->nr_entries++;
+ 	rb_link_node(&he->rb_node_in, parent, p);
+ 	rb_insert_color(&he->rb_node_in, hists->entries_in);
+ out:
+@@ -599,7 +600,7 @@ static void hists__apply_filters(struct hists *hists, struct hist_entry *he)
+ 	hists__filter_entry_by_symbol(hists, he);
+ }
+ 
+-void hists__collapse_resort(struct hists *hists)
++void hists__collapse_resort(struct hists *hists, struct perf_progress *prog)
+ {
+ 	struct rb_root *root;
+ 	struct rb_node *next;
+@@ -624,6 +625,8 @@ void hists__collapse_resort(struct hists *hists)
+ 			 */
+ 			hists__apply_filters(hists, n);
+ 		}
++		if (prog)
++			ui_progress__advance(prog, 1, "Merging related events...");
+ 	}
+ }
+ 
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index 7f29792efc58..f3d6cf6bd7d4 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -5,6 +5,7 @@
+ #include <pthread.h>
+ #include "callchain.h"
+ #include "header.h"
++#include "ui/progress.h"
+ 
+ extern struct callchain_param callchain_param;
+ 
+@@ -104,7 +105,7 @@ struct hist_entry *__hists__add_mem_entry(struct hists *self,
+ 					  u64 weight);
+ 
+ void hists__output_resort(struct hists *self);
+-void hists__collapse_resort(struct hists *self);
++void hists__collapse_resort(struct hists *self, struct perf_progress *prog);
+ 
+ void hists__decay_entries(struct hists *hists, bool zap_user, bool zap_kernel);
+ void hists__output_recalc_col_len(struct hists *hists, int max_rows);
 -- 
 1.7.11.7
 
