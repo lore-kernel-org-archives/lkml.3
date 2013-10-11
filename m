@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932705Ab3JKTlw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:41:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46333 "EHLO
+	id S932687Ab3JKTlt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:41:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46323 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932653Ab3JKTlq (ORCPT
+	with ESMTP id S932648Ab3JKTlo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:41:46 -0400
+	Fri, 11 Oct 2013 15:41:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andre Guedes <andre.guedes@openbossa.org>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Subject: [ 076/135] Bluetooth: Fix encryption key size for peripheral role
-Date: Fri, 11 Oct 2013 12:39:17 -0700
-Message-Id: <20131011193953.535286909@linuxfoundation.org>
+        Maxim Patlasov <mpatlasov@parallels.com>,
+        Miklos Szeredi <mszeredi@suse.cz>
+Subject: [ 073/135] fuse: fix fallocate vs. ftruncate race
+Date: Fri, 11 Oct 2013 12:39:14 -0700
+Message-Id: <20131011193953.216505146@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -27,32 +27,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andre Guedes <andre.guedes@openbossa.org>
+From: Maxim Patlasov <MPatlasov@parallels.com>
 
-commit 89cbb4da0abee2f39d75f67f9fd57f7410c8b65c upstream.
+commit 0ab08f576b9e6a6b689fc6b4e632079b978e619b upstream.
 
-This patch fixes the connection encryption key size information when
-the host is playing the peripheral role. We should set conn->enc_key_
-size in hci_le_ltk_request_evt, otherwise it is left uninitialized.
+A former patch introducing FUSE_I_SIZE_UNSTABLE flag provided detailed
+description of races between ftruncate and anyone who can extend i_size:
 
-Signed-off-by: Andre Guedes <andre.guedes@openbossa.org>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+> 1. As in the previous scenario fuse_dentry_revalidate() discovered that i_size
+> changed (due to our own fuse_do_setattr()) and is going to call
+> truncate_pagecache() for some  'new_size' it believes valid right now. But by
+> the time that particular truncate_pagecache() is called ...
+> 2. fuse_do_setattr() returns (either having called truncate_pagecache() or
+> not -- it doesn't matter).
+> 3. The file is extended either by write(2) or ftruncate(2) or fallocate(2).
+> 4. mmap-ed write makes a page in the extended region dirty.
+
+This patch adds necessary bits to fuse_file_fallocate() to protect from that
+race.
+
+Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/bluetooth/hci_event.c |    2 ++
- 1 file changed, 2 insertions(+)
+ fs/fuse/file.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/net/bluetooth/hci_event.c
-+++ b/net/bluetooth/hci_event.c
-@@ -3556,6 +3556,8 @@ static void hci_le_ltk_request_evt(struc
- 	else
- 		conn->pending_sec_level = BT_SECURITY_MEDIUM;
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -2467,6 +2467,7 @@ static long fuse_file_fallocate(struct f
+ {
+ 	struct fuse_file *ff = file->private_data;
+ 	struct inode *inode = file->f_inode;
++	struct fuse_inode *fi = get_fuse_inode(inode);
+ 	struct fuse_conn *fc = ff->fc;
+ 	struct fuse_req *req;
+ 	struct fuse_fallocate_in inarg = {
+@@ -2495,6 +2496,9 @@ static long fuse_file_fallocate(struct f
+ 		}
+ 	}
  
-+	conn->enc_key_size = ltk->enc_size;
++	if (!(mode & FALLOC_FL_KEEP_SIZE))
++		set_bit(FUSE_I_SIZE_UNSTABLE, &fi->state);
 +
- 	hci_send_cmd(hdev, HCI_OP_LE_LTK_REPLY, sizeof(cp), &cp);
+ 	req = fuse_get_req_nopages(fc);
+ 	if (IS_ERR(req)) {
+ 		err = PTR_ERR(req);
+@@ -2527,6 +2531,9 @@ static long fuse_file_fallocate(struct f
+ 	fuse_invalidate_attr(inode);
  
- 	if (ltk->type & HCI_SMP_STK) {
+ out:
++	if (!(mode & FALLOC_FL_KEEP_SIZE))
++		clear_bit(FUSE_I_SIZE_UNSTABLE, &fi->state);
++
+ 	if (lock_inode)
+ 		mutex_unlock(&inode->i_mutex);
+ 
 
 
