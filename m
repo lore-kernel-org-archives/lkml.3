@@ -1,62 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757974Ab3JKN33 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 09:29:29 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:38814 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753552Ab3JKN31 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 09:29:27 -0400
-Message-ID: <5257FD34.2060406@gmail.com>
-Date: Fri, 11 Oct 2013 07:29:24 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Ian Kent <raven@themaw.net>
-CC: autofs@vger.kernel.org, viro@ZenIV.linux.org.uk,
-        linux-kernel@vger.kernel.org
-Subject: Re: NULL pointer dereference in autofs4_expire_wait
-References: <525736C7.9080400@gmail.com>  <1381457199.2631.3.camel@perseus.fritz.box> <1381485327.2631.18.camel@perseus.fritz.box>
-In-Reply-To: <1381485327.2631.18.camel@perseus.fritz.box>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1758206Ab3JKN3q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 09:29:46 -0400
+Received: from mga14.intel.com ([143.182.124.37]:47129 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755467Ab3JKN3p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 09:29:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,1080,1371106800"; 
+   d="scan'208";a="373460650"
+Message-ID: <1381498183.19281.12.camel@empanada>
+Subject: Re: [PATCH v10 11/12] tracing: fix tracing_snapshot kerneldoc
+From: Tom Zanussi <tom.zanussi@linux.intel.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: rostedt@goodmis.org, linux-kernel@vger.kernel.org
+Date: Fri, 11 Oct 2013 08:29:43 -0500
+In-Reply-To: <5257F408.9040503@hitachi.com>
+References: <cover.1381445299.git.tom.zanussi@linux.intel.com>
+	 <af1e1b69b339a85e11f580af9c3ba6dfa28cb20f.1381445299.git.tom.zanussi@linux.intel.com>
+	 <5257F408.9040503@hitachi.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/11/13 3:55 AM, Ian Kent wrote:
-> On Fri, 2013-10-11 at 10:06 +0800, Ian Kent wrote:
->> On Thu, 2013-10-10 at 17:22 -0600, David Ahern wrote:
->>> Running 3.12-rc3 just hit BUG in autofs4_expire_wait
->>
->> It doesn't look like this could be due to Al's change to the locking in
->> autos4_wait() and that the only change to autofs that I'm aware of.
->>
->> Could you do a bisect please?
->
-> Of course that assumes it's repeatable.
-> Is it?
->
-> Can you provide any information about the environment and activity that
-> was happening at the time of the BUG()?
+On Fri, 2013-10-11 at 21:50 +0900, Masami Hiramatsu wrote:
+> (2013/10/11 9:48), Tom Zanussi wrote:
+> > The names of the functions are tracing_snapshot_*, not
+> > trace_snapshot_* - fix up the kerneldoc to avoid confusion.
+> > 
+> > Signed-off-by: Tom Zanussi <tom.zanussi@linux.intel.com>
+> 
+> It seems that this is not related this series.
+> Please send it as a trivial fix patch :)
+> 
 
-The system was up and running for 9 days before hitting the BUG. After 
-that with 3 cpus on softlockup I had to do a reboot (forced). After the 
-reboot I continued the workload again without a repeat incident (yet), 
-so I am not sure bisect is going to be possible.
+Yeah, I keep adding patches as I test things, and 4 of the patches in
+this patchset now fit that description..
 
-This is a corporate environment where practically everything is in an 
-automount. Specific to this problem I was repeatedly building a 
-workspace in one window, using cscope in another and checking code 
-against a different workspace in a third -- all 3 of those were 
-different automounts and different NAS servers.
+Tom
 
- From objdump on vmlinux the line in question is fs/autofs4/expire.c:465
+> Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> 
+> > ---
+> >  kernel/trace/trace.c | 6 +++---
+> >  1 file changed, 3 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+> > index 5aa8f80..81d95bf 100644
+> > --- a/kernel/trace/trace.c
+> > +++ b/kernel/trace/trace.c
+> > @@ -514,7 +514,7 @@ EXPORT_SYMBOL_GPL(__trace_bputs);
+> >  
+> >  #ifdef CONFIG_TRACER_SNAPSHOT
+> >  /**
+> > - * trace_snapshot - take a snapshot of the current buffer.
+> > + * tracing_snapshot - take a snapshot of the current buffer.
+> >   *
+> >   * This causes a swap between the snapshot buffer and the current live
+> >   * tracing buffer. You can use this to take snapshots of the live
+> > @@ -617,9 +617,9 @@ int tracing_alloc_snapshot(void)
+> >  EXPORT_SYMBOL_GPL(tracing_alloc_snapshot);
+> >  
+> >  /**
+> > - * trace_snapshot_alloc - allocate and take a snapshot of the current buffer.
+> > + * tracing_snapshot_alloc - allocate and take a snapshot of the current buffer.
+> >   *
+> > - * This is similar to trace_snapshot(), but it will allocate the
+> > + * This is similar to tracing_snapshot(), but it will allocate the
+> >   * snapshot buffer if it isn't already allocated. Use this only
+> >   * where it is safe to sleep, as the allocation may sleep.
+> >   *
+> > 
+> 
+> 
 
-     if (ino->flags & AUTOFS_INF_EXPIRING) {
 
-I will be continuing the sequence above today (working through compile 
-problems for on OS port). I will bump the kernel to top of tree and see 
-if it repeats.
-
-David
