@@ -1,77 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756743Ab3JKHfJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 03:35:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50203 "EHLO mx1.redhat.com"
+	id S1755324Ab3JKHlw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 03:41:52 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:42370 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754926Ab3JKHfI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 03:35:08 -0400
-Date: Fri, 11 Oct 2013 09:34:48 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCHSET 0/8] perf tools: Fix scalability problem on callchain
- merging (v5)
-Message-ID: <20131011073448.GA11064@krava.redhat.com>
-References: <1381468543-25334-1-git-send-email-namhyung@kernel.org>
- <20131011055829.GA4975@gmail.com>
+	id S1751225Ab3JKHlv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 03:41:51 -0400
+Date: Fri, 11 Oct 2013 09:41:44 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Dave Young <dyoung@redhat.com>
+Cc: Matt Fleming <matt@console-pimps.org>, X86 ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Vivek Goyal <vgoyal@redhat.com>, linux-efi@vger.kernel.org,
+        fwts-devel@lists.ubuntu.com
+Subject: Re: [PATCH 12/12] EFI: Runtime services virtual mapping
+Message-ID: <20131011074144.GA18719@pd.tnic>
+References: <1379602494-26684-1-git-send-email-bp@alien8.de>
+ <20131008164551.GB16793@pd.tnic>
+ <20131008164831.GD16793@pd.tnic>
+ <20131010080635.GA3692@dhcp-16-126.nay.redhat.com>
+ <20131010081434.GB3692@dhcp-16-126.nay.redhat.com>
+ <20131010085827.GA9929@pd.tnic>
+ <20131010123453.GA12321@console-pimps.org>
+ <20131011062437.GA14115@dhcp-16-126.nay.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20131011055829.GA4975@gmail.com>
+In-Reply-To: <20131011062437.GA14115@dhcp-16-126.nay.redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 11, 2013 at 07:58:29AM +0200, Ingo Molnar wrote:
-> 
-> * Namhyung Kim <namhyung@kernel.org> wrote:
-> 
-> > Hello,
-> > 
-> > This is a new version of callchain improvement patchset.  Basically
-> > it's almost same as v4 but rebased on current acme/perf/core and some
-> > functions are renamed as Frederic requested.
-> > 
-> > Now I'm hunting down a bug in 'perf report -s sym' which was found
-> > during the test, but I think it's not related to this change as it can
-> > be reproduced in earlier versions too.
-> > 
-> > I put this series on 'perf/callchain-v5' branch in my tree
-> > 
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
-> > 
-> > Any comments are welcome, thanks.
-> 
-> One thing I noticed about call-graph profiling:
-> 
->   comet:~/tip/tools/perf> ./perf record -g ~/hackbench 10
->   callchain: Unknown -g option value: /home/mingo/hackbench
-> 
-> I think a naked -g used to work just fine in the past. Even if such an 
-> error is displayed the output is very unhelpful, it does does a full 
-> perf-record options dump (unnecessary), the bit that is helpful is hidden 
-> amongst many other options:
-> 
->     -g, --call-graph <mode[,dump_size]>
->                           do call-graph (stack chain/backtrace) recording: [fp] dwarf
-> 
-> and it took me two reads to see that I should specify 'fp'. The '[fp]' 
-> indicates that fp is the default - but that does not appear to be working.
+On Fri, Oct 11, 2013 at 02:24:37PM +0800, Dave Young wrote:
+> But for current implementation from Boris, getting same mapping
+> between diffrent kernel depends on same md order (same start and
+> size for each one) How about using this mapping solution but at the
+> same time for kexec kernel we also pass the virtual mappings via
+> setup_data, only thing diffrent is we only need map the non boot
+> region and just use the boot region size to ensure the other regions
+> are mapped with same virtual address.
 
-'-g' takes optional parameter, so having it in front of
-non option string is causing the error, you could use:
+Actually, as hpa suggested, we will need to be passing the explicit
+virtual addresses to the kexec kernel in case we change the mapping
+algorithm in the future. So all should go through setup_data.
 
-./perf record -g -- ~/hackbench 10
+> OTOH, if we only passing ioremapped data without Boris's current patch
+> the problem I worry about is how can we ensure the addresses are not
+> used by other code before we mapping the in 2nd kernel efi_init.
 
-maybe we could display just only help string of the option
-we failed to process in this case
+Right, the old method of mapping EFI runtime regions used ioremap and
+was mapping the regions in the same address space. Now we have reserved
+a 64G in the VA space ending at -4G (i.e. 0xffff_ffff_0000_0000) which
+is reserved only for EFI RT usage.
 
-jirka
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
