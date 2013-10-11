@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932569Ab3JKU3Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:29:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45806 "EHLO
+	id S1161062Ab3JKU3e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:29:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45802 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759015Ab3JKTkY (ORCPT
+	with ESMTP id S1759011Ab3JKTkX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:40:24 -0400
+	Fri, 11 Oct 2013 15:40:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gurudas Pai <gurudas.pai@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        David Rientjes <rientjes@google.com>
-Subject: [ 075/110] mm: Fix generic hugetlb pte check return type.
-Date: Fri, 11 Oct 2013 12:38:55 -0700
-Message-Id: <20131011193816.012772119@linuxfoundation.org>
+        Kirill Tkhai <tkhai@yandex.ru>, David Miller <davem@davemloft.net>
+Subject: [ 074/110] sparc32: Fix exit flag passed from traced sys_sigreturn
+Date: Fri, 11 Oct 2013 12:38:54 -0700
+Message-Id: <20131011193815.909415624@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
 References: <20131011193807.584188672@linuxfoundation.org>
@@ -28,47 +26,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Miller <davem@davemloft.net>
+From: Kirill Tkhai <tkhai@yandex.ru>
 
-[ Upstream commit 26794942461f438a6bc725ec7294b08a6bd782c4 ]
+[ Upstream commit 7a3b0f89e3fea680f93932691ca41a68eee7ab5e ]
 
-The include/asm-generic/hugetlb.h stubs that just vector huge_pte_*()
-calls to the pte_*() implementations won't work in certain situations.
+Pass 1 in %o1 to indicate that syscall_trace accounts exit.
 
-x86 and sparc, for example, return "unsigned long" from the bit
-checks, and just go "return pte_val(pte) & PTE_BIT_FOO;"
-
-But since huge_pte_*() returns 'int', if any high bits on 64-bit are
-relevant, they get chopped off.
-
-The net effect is that we can loop forever trying to COW a huge page,
-because the huge_pte_write() check signals false all the time.
-
-Reported-by: Gurudas Pai <gurudas.pai@oracle.com>
-Tested-by: Gurudas Pai <gurudas.pai@oracle.com>
+Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
+CC: David Miller <davem@davemloft.net>
 Signed-off-by: David S. Miller <davem@davemloft.net>
-Acked-by: David Rientjes <rientjes@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/asm-generic/hugetlb.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/sparc/kernel/entry.S |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/include/asm-generic/hugetlb.h
-+++ b/include/asm-generic/hugetlb.h
-@@ -6,12 +6,12 @@ static inline pte_t mk_huge_pte(struct p
- 	return mk_pte(page, pgprot);
- }
+--- a/arch/sparc/kernel/entry.S
++++ b/arch/sparc/kernel/entry.S
+@@ -839,7 +839,7 @@ sys_sigreturn:
+ 	 nop
  
--static inline int huge_pte_write(pte_t pte)
-+static inline unsigned long huge_pte_write(pte_t pte)
- {
- 	return pte_write(pte);
- }
+ 	call	syscall_trace
+-	 nop
++	 mov	1, %o1
  
--static inline int huge_pte_dirty(pte_t pte)
-+static inline unsigned long huge_pte_dirty(pte_t pte)
- {
- 	return pte_dirty(pte);
- }
+ 1:
+ 	/* We don't want to muck with user registers like a
 
 
