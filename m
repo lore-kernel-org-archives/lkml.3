@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932842Ab3JKTmU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:42:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46518 "EHLO
+	id S1758757Ab3JKTpm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:45:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46552 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758478Ab3JKTmM (ORCPT
+	with ESMTP id S932841Ab3JKTmU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:42:12 -0400
+	Fri, 11 Oct 2013 15:42:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Grzeschik <m.grzeschik@pengutronix.de>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Jonghwan Choi <jhbird.choi@samsung.com>
-Subject: [ 114/135] dmaengine: imx-dma: fix callback path in tasklet
-Date: Fri, 11 Oct 2013 12:39:55 -0700
-Message-Id: <20131011193957.688376581@linuxfoundation.org>
+        Franck Jullien <franck.jullien@gmail.com>, Chris Ball <cjb@laptop.org>,
+        Adrian Hunter <adrian.hunter@intel.com>
+Subject: [ 123/135] mmc: fix null pointer use in mmc_blk_remove_req
+Date: Fri, 11 Oct 2013 12:40:04 -0700
+Message-Id: <20131011193958.628533634@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -28,52 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Grzeschik <m.grzeschik@pengutronix.de>
+From: Franck Jullien <franck.jullien@gmail.com>
 
-commit fcaaba6c7136fe47e5a13352f99a64b019b6d2c5 upstream.
+commit 8efb83a2f8518a6ffcc074177f8d659c5165ef37 upstream.
 
-We need to free the ld_active list head before jumping into the callback
-routine. Otherwise the callback could run into issue_pending and change
-our ld_active list head we just going to free. This will run the channel
-list into an currupted and undefined state.
+A previous commit (fdfa20c1631210d0) reordered the shutdown sequence
+in mmc_blk_remove_req. However, mmc_cleanup_queue is now called before
+we get the card pointer, and mmc_cleanup_queue sets mq->card to NULL.
 
-Signed-off-by: Michael Grzeschik <m.grzeschik@pengutronix.de>
-Signed-off-by: Vinod Koul <vinod.koul@intel.com>
-Cc: Jonghwan Choi <jhbird.choi@samsung.com>
+This patch moves the card pointer assignment before mmc_cleanup_queue.
+
+Signed-off-by: Franck Jullien <franck.jullien@gmail.com>
+Signed-off-by: Chris Ball <cjb@laptop.org>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/dma/imx-dma.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ drivers/mmc/card/block.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/dma/imx-dma.c
-+++ b/drivers/dma/imx-dma.c
-@@ -627,13 +627,11 @@ static void imxdma_tasklet(unsigned long
- 
- 	if (list_empty(&imxdmac->ld_active)) {
- 		/* Someone might have called terminate all */
--		goto out;
-+		spin_unlock_irqrestore(&imxdma->lock, flags);
-+		return;
- 	}
- 	desc = list_first_entry(&imxdmac->ld_active, struct imxdma_desc, node);
- 
--	if (desc->desc.callback)
--		desc->desc.callback(desc->desc.callback_param);
--
- 	/* If we are dealing with a cyclic descriptor, keep it on ld_active
- 	 * and dont mark the descriptor as complete.
- 	 * Only in non-cyclic cases it would be marked as complete
-@@ -661,6 +659,10 @@ static void imxdma_tasklet(unsigned long
- 	}
- out:
- 	spin_unlock_irqrestore(&imxdma->lock, flags);
-+
-+	if (desc->desc.callback)
-+		desc->desc.callback(desc->desc.callback_param);
-+
- }
- 
- static int imxdma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+--- a/drivers/mmc/card/block.c
++++ b/drivers/mmc/card/block.c
+@@ -2191,10 +2191,10 @@ static void mmc_blk_remove_req(struct mm
+ 		 * is freeing the queue that stops new requests
+ 		 * from being accepted.
+ 		 */
++		card = md->queue.card;
+ 		mmc_cleanup_queue(&md->queue);
+ 		if (md->flags & MMC_BLK_PACKED_CMD)
+ 			mmc_packed_clean(&md->queue);
+-		card = md->queue.card;
+ 		if (md->disk->flags & GENHD_FL_UP) {
+ 			device_remove_file(disk_to_dev(md->disk), &md->force_ro);
+ 			if ((md->area_type & MMC_BLK_DATA_AREA_BOOT) &&
 
 
