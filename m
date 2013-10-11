@@ -1,77 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758153Ab3JKLCn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 07:02:43 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58517 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932175Ab3JKKnJ (ORCPT
+	id S1758652Ab3JKLCy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 07:02:54 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48753 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758383Ab3JKLCu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 06:43:09 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 040/100] drm/radeon: disable tests/benchmarks if accel is disabled
-Date: Fri, 11 Oct 2013 11:41:10 +0100
-Message-Id: <1381488130-30235-41-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
-References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Fri, 11 Oct 2013 07:02:50 -0400
+Date: Fri, 11 Oct 2013 12:02:47 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+Cc: "'linux-arm-msm-owner@vger.kernel.org'" 
+	<linux-arm-msm-owner@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Peng, Arthur" <Arthur.Peng@sonymobile.com>,
+        "Zhang, Bojie" <Bojie.Zhang@sonymobile.com>,
+        "Gu, Youcai 1 (EXT)" <Youcai1.Gu@sonymobile.com>,
+        "Alevoor, Raghavendra 2" <Raghavendra.Alevoor@sonymobile.com>
+Subject: Re: BUG report about ipt_do_table( )
+Message-ID: <20131011110247.GF14732@mudshark.cambridge.arm.com>
+References: <35FD53F367049845BC99AC72306C23D1014D1A0971B1@CNBJMBX05.corpusers.net>
+ <20131010094824.GF3817@mudshark.cambridge.arm.com>
+ <35FD53F367049845BC99AC72306C23D1014D1A0971B4@CNBJMBX05.corpusers.net>
+ <20131010110309.GA6199@mudshark.cambridge.arm.com>
+ <35FD53F367049845BC99AC72306C23D1014D1A0971B5@CNBJMBX05.corpusers.net>
+ <20131010141841.GF6199@mudshark.cambridge.arm.com>
+ <35FD53F367049845BC99AC72306C23D1014D1A0971B6@CNBJMBX05.corpusers.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <35FD53F367049845BC99AC72306C23D1014D1A0971B6@CNBJMBX05.corpusers.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.23 -stable review patch.  If anyone has any objections, please let me know.
+On Fri, Oct 11, 2013 at 02:50:24AM +0100, Wang, Yalin wrote:
+> Hi  Will,
 
-------------------
+Hello again,
 
-From: Alex Deucher <alexander.deucher@amd.com>
+> Maybe I know your meaning ,
+> If it use spinlock to protected the shared data,
+> The bug will not happen, because spinlock will 
+> Use DSB( )  to sync .
 
-commit 4a1132a023eb48cf10522d84c5908d43b612c041 upstream.
+Actually, the dsb is for something else (the sev). It is the smp_mb() call
+which guarantees the ordering of critical sections with respect to spinlock
+operations.
 
-The tests are only usable if the acceleration engines have
-been successfully initialized.
+> Unluckily, here, it use a special seqcount_t( ) (see get_counters( ) function)
 
-Based on an initial patch from: Alex Ivanov <gnidorah@p0n4ik.tk>
+Well, there is a comment about a write_lock being held, so you should be ok
+if that's true. The issue I saw was with the newinfo population, as I
+described in my earlier mail.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/gpu/drm/radeon/radeon_device.c | 15 ++++++++++++---
- 1 file changed, 12 insertions(+), 3 deletions(-)
+> To make sure there is no others using the old data,
+> Before release the old data, this is much like RCU
+> Work, but RCU use rcu_assign_pointer( ) -->
+> Which use smp_wmb( ) , so it's safe,  am I right ?
 
-diff --git a/drivers/gpu/drm/radeon/radeon_device.c b/drivers/gpu/drm/radeon/radeon_device.c
-index d14044e..719702d1 100644
---- a/drivers/gpu/drm/radeon/radeon_device.c
-+++ b/drivers/gpu/drm/radeon/radeon_device.c
-@@ -834,13 +834,22 @@ int radeon_device_init(struct radeon_device *rdev,
- 			return r;
- 	}
- 	if ((radeon_testing & 1)) {
--		radeon_test_moves(rdev);
-+		if (rdev->accel_working)
-+			radeon_test_moves(rdev);
-+		else
-+			DRM_INFO("radeon: acceleration disabled, skipping move tests\n");
- 	}
- 	if ((radeon_testing & 2)) {
--		radeon_test_syncing(rdev);
-+		if (rdev->accel_working)
-+			radeon_test_syncing(rdev);
-+		else
-+			DRM_INFO("radeon: acceleration disabled, skipping sync tests\n");
- 	}
- 	if (radeon_benchmarking) {
--		radeon_benchmark(rdev, radeon_benchmarking);
-+		if (rdev->accel_working)
-+			radeon_benchmark(rdev, radeon_benchmarking);
-+		else
-+			DRM_INFO("radeon: acceleration disabled, skipping benchmarks\n");
- 	}
- 	return 0;
- }
--- 
-1.8.3.2
+RCU is safe. There are *many* weakly ordered architectures on which Linux
+runs, so I don't think you have to worry too much about the core data
+structures and locking/synchronisation/atomic primitives. The major scope
+for errors is in lockless code, where the barrier usage is explicit.
 
+> In my patch, I use mb( ), because this macro
+> Is DSB( ) , while smp_wmb( ) is DMS( ),
+> I just think DSB is much strict than DMS,
+> mmm..  so , DSM( )  or DMS ( )  are both ok ?
+
+I think you're getting confused with your barriers. We have two memory
+barriers on ARM: dmb and dsb. dmb is sufficient to enforce ordering of
+observability. dsb is used to enforce completion.
+
+> The whitepaper I use is here:
+> https://www.google.com/#q=cortex+a15+microarchitecture
+> 
+> the first: [PDF] Exploring the Design of the Cortex-A15 Processor - ARM
+> 
+> I just search in Google, and you know that qcom don't release
+> Much document about its krait cpu's micro architecture details,
+> I just use cortex-a15 for a reference, I am not sure if their 
+> pipeline ( load/store unit) are the same,
+
+I think the lawyers would have a field day if the pipelines were the same!
+You really can't use an A15 slide-deck to infer micro-architectural details
+about Krait.
+
+Please can you test the patch I sent you yesterday?
+
+Will
