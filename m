@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756527Ab3JKVCc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 17:02:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45251 "EHLO
+	id S1754481Ab3JKVCt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 17:02:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45243 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757781Ab3JKThB (ORCPT
+	with ESMTP id S1757760Ab3JKThA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:37:01 -0400
+	Fri, 11 Oct 2013 15:37:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
         Daniel Borkmann <dborkman@redhat.com>,
-        Nikolay Aleksandrov <nikolay@redhat.com>,
+        Michio Honda <micchie@sfc.wide.ad.jp>,
+        Vlad Yasevich <vyasevich@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 06/48] net: flow_dissector: fix thoff for IPPROTO_AH
-Date: Fri, 11 Oct 2013 12:36:13 -0700
-Message-Id: <20131011193637.968301431@linuxfoundation.org>
+Subject: [ 05/48] net: sctp: fix smatch warning in sctp_send_asconf_del_ip
+Date: Fri, 11 Oct 2013 12:36:12 -0700
+Message-Id: <20131011193637.867995112@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193637.253208688@linuxfoundation.org>
 References: <20131011193637.253208688@linuxfoundation.org>
@@ -29,41 +31,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-[ Upstream commit b86783587b3d1d552326d955acee37eac48800f1 ]
+[ Upstream commit 88362ad8f9a6cea787420b57cc27ccacef000dbe ]
 
-In commit 8ed781668dd49 ("flow_keys: include thoff into flow_keys for
-later usage"), we missed that existing code was using nhoff as a
-temporary variable that could not always contain transport header
-offset.
+This was originally reported in [1] and posted by Neil Horman [2], he said:
 
-This is not a problem for TCP/UDP because port offset (@poff)
-is 0 for these protocols.
+  Fix up a missed null pointer check in the asconf code. If we don't find
+  a local address, but we pass in an address length of more than 1, we may
+  dereference a NULL laddr pointer. Currently this can't happen, as the only
+  users of the function pass in the value 1 as the addrcnt parameter, but
+  its not hot path, and it doesn't hurt to check for NULL should that ever
+  be the case.
 
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Daniel Borkmann <dborkman@redhat.com>
-Cc: Nikolay Aleksandrov <nikolay@redhat.com>
-Acked-by: Nikolay Aleksandrov <nikolay@redhat.com>
-Acked-by: Daniel Borkmann <dborkman@redhat.com>
+The callpath from sctp_asconf_mgmt() looks okay. But this could be triggered
+from sctp_setsockopt_bindx() call with SCTP_BINDX_REM_ADDR and addrcnt > 1
+while passing all possible addresses from the bind list to SCTP_BINDX_REM_ADDR
+so that we do *not* find a single address in the association's bind address
+list that is not in the packed array of addresses. If this happens when we
+have an established association with ASCONF-capable peers, then we could get
+a NULL pointer dereference as we only check for laddr == NULL && addrcnt == 1
+and call later sctp_make_asconf_update_ip() with NULL laddr.
+
+BUT: this actually won't happen as sctp_bindx_rem() will catch such a case
+and return with an error earlier. As this is incredably unintuitive and error
+prone, add a check to catch at least future bugs here. As Neil says, its not
+hot path. Introduced by 8a07eb0a5 ("sctp: Add ASCONF operation on the
+single-homed host").
+
+ [1] http://www.spinics.net/lists/linux-sctp/msg02132.html
+ [2] http://www.spinics.net/lists/linux-sctp/msg02133.html
+
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Cc: Michio Honda <micchie@sfc.wide.ad.jp>
+Acked-By: Neil Horman <nhorman@tuxdriver.com>
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/flow_dissector.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/sctp/socket.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/net/core/flow_dissector.c
-+++ b/net/core/flow_dissector.c
-@@ -133,8 +133,8 @@ ipv6:
- 	if (poff >= 0) {
- 		__be32 *ports, _ports;
+--- a/net/sctp/socket.c
++++ b/net/sctp/socket.c
+@@ -814,6 +814,9 @@ static int sctp_send_asconf_del_ip(struc
+ 			goto skip_mkasconf;
+ 		}
  
--		nhoff += poff;
--		ports = skb_header_pointer(skb, nhoff, sizeof(_ports), &_ports);
-+		ports = skb_header_pointer(skb, nhoff + poff,
-+					   sizeof(_ports), &_ports);
- 		if (ports)
- 			flow->ports = *ports;
- 	}
++		if (laddr == NULL)
++			return -EINVAL;
++
+ 		/* We do not need RCU protection throughout this loop
+ 		 * because this is done under a socket lock from the
+ 		 * setsockopt call.
 
 
