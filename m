@@ -1,51 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758193Ab3JKPLT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 11:11:19 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:45420 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752060Ab3JKPLR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 11:11:17 -0400
-Message-ID: <52581511.2010909@gmail.com>
-Date: Fri, 11 Oct 2013 09:11:13 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1755793Ab3JKPNT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 11:13:19 -0400
+Received: from gw1.transmode.se ([195.58.98.146]:53856 "EHLO gw1.transmode.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751850Ab3JKPNS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 11:13:18 -0400
+In-Reply-To: <201310111256.r9BCuepM006243@localhost.localdomain>
+References: <201310111256.r9BCuepM006243@localhost.localdomain>
+To: Christophe Leroy <christophe.leroy@c-s.fr>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        Paul Mackerras <paulus@samba.org>
 MIME-Version: 1.0
-To: Jiri Olsa <jolsa@redhat.com>
-CC: Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCHSET 0/8] perf tools: Fix scalability problem on callchain
- merging (v5)
-References: <1381468543-25334-1-git-send-email-namhyung@kernel.org> <20131011055829.GA4975@gmail.com> <20131011073448.GA11064@krava.redhat.com>
-In-Reply-To: <20131011073448.GA11064@krava.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH] powerpc 8xx: Fixing memory init issue with CONFIG_PIN_TLB
+X-KeepSent: F3401910:4A8AA6D0-C1257C01:0052FC82;
+ type=4; name=$KeepSent
+X-Mailer: Lotus Notes Release 8.5.3 September 15, 2011
+From: Joakim Tjernlund <joakim.tjernlund@transmode.se>
+Message-ID: <OFF3401910.4A8AA6D0-ONC1257C01.0052FC82-C1257C01.00539C55@transmode.se>
+Date: Fri, 11 Oct 2013 17:13:15 +0200
+X-MIMETrack: Serialize by Router on mail1/Transmode(Release 8.5.3FP1|March 07, 2012) at
+ 11/10/2013 17:13:15,
+	Serialize complete at 11/10/2013 17:13:15
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/11/13 1:34 AM, Jiri Olsa wrote:
-> '-g' takes optional parameter, so having it in front of
-> non option string is causing the error, you could use:
->
-> ./perf record -g -- ~/hackbench 10
->
-> maybe we could display just only help string of the option
-> we failed to process in this case
+"Linuxppc-dev" 
+<linuxppc-dev-bounces+joakim.tjernlund=transmode.se@lists.ozlabs.org> 
+wrote on 2013/10/11 14:56:40:
+> 
+> Activating CONFIG_PIN_TLB allows access to the 24 first Mbytes of memory 
+at
+> bootup instead of 8. It is needed for "big" kernels for instance when 
+activating
+> CONFIG_LOCKDEP_SUPPORT. This needs to be taken into account in init_32 
+too,
+> otherwise memory allocation soon fails after startup.
+> 
+> Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+> 
+> diff -ur linux-3.11.org/arch/powerpc/kernel/head_8xx.S 
+linux-3.11/arch/powerpc/kernel/head_8xx.S
+> --- linux-3.11.org/arch/powerpc/mm/init_32.c   2013-09-02 
+22:46:10.000000000 +0200
+> +++ linux-3.11/arch/powerpc/mm/init_32.c   2013-09-09 11:28:54.000000000 
++0200
+> @@ -213,7 +213,12 @@
+>      */
+>     BUG_ON(first_memblock_base != 0);
+> 
+> +#ifdef CONFIG_PIN_TLB
+> +   /* 8xx can only access 24MB at the moment */
+> +   memblock_set_current_limit(min_t(u64, first_memblock_size, 
+0x01800000));
+> +#else
+>     /* 8xx can only access 8MB at the moment */
+>     memblock_set_current_limit(min_t(u64, first_memblock_size, 
+0x00800000));
+> +#endif
+>  }
+>  #endif /* CONFIG_8xx */
 
-That's a syntax change introduced I believe when you added dwarf 
-support. Every now and then I slip up and type -ga -- something that 
-worked up until the callchain arg was expanded -- and now it fails as -g 
-wants to look at 'a' as an argument to it.
+hmm, I think you should always map 24 MB (or less if RAM < 24 MB) and do 
+the same
+in head_8xx.S.
 
-It would be nice to fix the callchain arg handler to not attempt to 
-process the next argument if it is not fp or dwarf.
+Or to keep it simple, just always map at least 16 MB here and in 
+head_8xx.S, assuming 
+that 16 MB is min RAM for any 8xx system running 3.x kernels.
 
-David
+Much of the need for pinning would go away if you adopted my 8MB pages 
+from 2.4 to 3.x 
 
+   Jocke
