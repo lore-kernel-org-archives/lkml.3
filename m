@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964795Ab3JKTpM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:45:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46572 "EHLO
+	id S932842Ab3JKTmU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:42:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46518 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932852Ab3JKTmW (ORCPT
+	with ESMTP id S1758478Ab3JKTmM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:42:22 -0400
+	Fri, 11 Oct 2013 15:42:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Emil Karlson <jekarlson@gmail.com>, Josef Bacik <jbacik@fusionio.com>,
-        Chris Mason <chris.mason@fusionio.com>
-Subject: [ 128/135] Btrfs: skip subvol entries when checking if weve created a dir already
-Date: Fri, 11 Oct 2013 12:40:09 -0700
-Message-Id: <20131011193959.174784517@linuxfoundation.org>
+        Michael Grzeschik <m.grzeschik@pengutronix.de>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Jonghwan Choi <jhbird.choi@samsung.com>
+Subject: [ 114/135] dmaengine: imx-dma: fix callback path in tasklet
+Date: Fri, 11 Oct 2013 12:39:55 -0700
+Message-Id: <20131011193957.688376581@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -27,39 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josef Bacik <jbacik@fusionio.com>
+From: Michael Grzeschik <m.grzeschik@pengutronix.de>
 
-commit a05254143cd183b18002cbba7759a1e4629aa762 upstream.
+commit fcaaba6c7136fe47e5a13352f99a64b019b6d2c5 upstream.
 
-We have logic to see if we've already created a parent directory by check to see
-if an inode inside of that directory has a lower inode number than the one we
-are currently processing.  The logic is that if there is a lower inode number
-then we would have had to made sure the directory was created at that previous
-point.  The problem is that subvols inode numbers count from the lowest objectid
-in the root tree, which may be less than our current progress.  So just skip if
-our dir item key is a root item.  This fixes the original test and the xfstest
-version I made that added an extra subvol create.  Thanks,
+We need to free the ld_active list head before jumping into the callback
+routine. Otherwise the callback could run into issue_pending and change
+our ld_active list head we just going to free. This will run the channel
+list into an currupted and undefined state.
 
-Reported-by: Emil Karlson <jekarlson@gmail.com>
-Signed-off-by: Josef Bacik <jbacik@fusionio.com>
-Signed-off-by: Chris Mason <chris.mason@fusionio.com>
+Signed-off-by: Michael Grzeschik <m.grzeschik@pengutronix.de>
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+Cc: Jonghwan Choi <jhbird.choi@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/send.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/dma/imx-dma.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
---- a/fs/btrfs/send.c
-+++ b/fs/btrfs/send.c
-@@ -2519,7 +2519,8 @@ static int did_create_dir(struct send_ct
- 		di = btrfs_item_ptr(eb, slot, struct btrfs_dir_item);
- 		btrfs_dir_item_key_to_cpu(eb, di, &di_key);
+--- a/drivers/dma/imx-dma.c
++++ b/drivers/dma/imx-dma.c
+@@ -627,13 +627,11 @@ static void imxdma_tasklet(unsigned long
  
--		if (di_key.objectid < sctx->send_progress) {
-+		if (di_key.type != BTRFS_ROOT_ITEM_KEY &&
-+		    di_key.objectid < sctx->send_progress) {
- 			ret = 1;
- 			goto out;
- 		}
+ 	if (list_empty(&imxdmac->ld_active)) {
+ 		/* Someone might have called terminate all */
+-		goto out;
++		spin_unlock_irqrestore(&imxdma->lock, flags);
++		return;
+ 	}
+ 	desc = list_first_entry(&imxdmac->ld_active, struct imxdma_desc, node);
+ 
+-	if (desc->desc.callback)
+-		desc->desc.callback(desc->desc.callback_param);
+-
+ 	/* If we are dealing with a cyclic descriptor, keep it on ld_active
+ 	 * and dont mark the descriptor as complete.
+ 	 * Only in non-cyclic cases it would be marked as complete
+@@ -661,6 +659,10 @@ static void imxdma_tasklet(unsigned long
+ 	}
+ out:
+ 	spin_unlock_irqrestore(&imxdma->lock, flags);
++
++	if (desc->desc.callback)
++		desc->desc.callback(desc->desc.callback_param);
++
+ }
+ 
+ static int imxdma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
 
 
