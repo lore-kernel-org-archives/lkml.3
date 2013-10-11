@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756163Ab3JKU7L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:59:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45312 "EHLO
+	id S1756205Ab3JKU7d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:59:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45309 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757893Ab3JKThN (ORCPT
+	with ESMTP id S1758010Ab3JKThM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:37:13 -0400
+	Fri, 11 Oct 2013 15:37:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Mark Brown <broonie@linaro.org>
-Subject: [ 20/48] ASoC: max98095: a couple array underflows
-Date: Fri, 11 Oct 2013 12:36:27 -0700
-Message-Id: <20131011193639.449278935@linuxfoundation.org>
+        Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 19/48] ll_temac: Reset dma descriptors indexes on ndo_open
+Date: Fri, 11 Oct 2013 12:36:26 -0700
+Message-Id: <20131011193639.342222623@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193637.253208688@linuxfoundation.org>
 References: <20131011193637.253208688@linuxfoundation.org>
@@ -27,41 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Ricardo Ribalda <ricardo.ribalda@gmail.com>
 
-commit f8d7b13e14357ed19d2ca2799539600418dc3939 upstream.
+[ Upstream commit 7167cf0e8cd10287b7912b9ffcccd9616f382922 ]
 
-The ->put() function are called from snd_ctl_elem_write() with user
-supplied data.  The limit checks here could underflow leading to a
-crash.
+The dma descriptors indexes are only initialized on the probe function.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+If a packet is on the buffer when temac_stop is called, the dma
+descriptors indexes can be left on a incorrect state where no other
+package can be sent.
+
+So an interface could be left in an usable state after ifdow/ifup.
+
+This patch makes sure that the descriptors indexes are in a proper
+status when the device is open.
+
+Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- sound/soc/codecs/max98095.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/xilinx/ll_temac_main.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/sound/soc/codecs/max98095.c
-+++ b/sound/soc/codecs/max98095.c
-@@ -1860,7 +1860,7 @@ static int max98095_put_eq_enum(struct s
- 	struct max98095_pdata *pdata = max98095->pdata;
- 	int channel = max98095_get_eq_channel(kcontrol->id.name);
- 	struct max98095_cdata *cdata;
--	int sel = ucontrol->value.integer.value[0];
-+	unsigned int sel = ucontrol->value.integer.value[0];
- 	struct max98095_eq_cfg *coef_set;
- 	int fs, best, best_val, i;
- 	int regmask, regsave;
-@@ -2013,7 +2013,7 @@ static int max98095_put_bq_enum(struct s
- 	struct max98095_pdata *pdata = max98095->pdata;
- 	int channel = max98095_get_bq_channel(codec, kcontrol->id.name);
- 	struct max98095_cdata *cdata;
--	int sel = ucontrol->value.integer.value[0];
-+	unsigned int sel = ucontrol->value.integer.value[0];
- 	struct max98095_biquad_cfg *coef_set;
- 	int fs, best, best_val, i;
- 	int regmask, regsave;
+--- a/drivers/net/ethernet/xilinx/ll_temac_main.c
++++ b/drivers/net/ethernet/xilinx/ll_temac_main.c
+@@ -308,6 +308,12 @@ static int temac_dma_bd_init(struct net_
+ 		       lp->rx_bd_p + (sizeof(*lp->rx_bd_v) * (RX_BD_NUM - 1)));
+ 	lp->dma_out(lp, TX_CURDESC_PTR, lp->tx_bd_p);
+ 
++	/* Init descriptor indexes */
++	lp->tx_bd_ci = 0;
++	lp->tx_bd_next = 0;
++	lp->tx_bd_tail = 0;
++	lp->rx_bd_ci = 0;
++
+ 	return 0;
+ 
+ out:
 
 
