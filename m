@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759436Ab3JKUeR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:34:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45730 "EHLO
+	id S932730Ab3JKUfD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:35:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45722 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758944Ab3JKTkM (ORCPT
+	with ESMTP id S1758939Ab3JKTkL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:40:12 -0400
+	Fri, 11 Oct 2013 15:40:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gabor Juhos <juhosg@openwrt.org>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>
-Subject: [ 043/110] avr32: fix clockevents kernel warning
-Date: Fri, 11 Oct 2013 12:38:23 -0700
-Message-Id: <20131011193812.517558322@linuxfoundation.org>
+        Sooraj Ravindran Nair <soonair3@in.ibm.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 051/110] powerpc/perf: Fix handling of FAB events
+Date: Fri, 11 Oct 2013 12:38:31 -0700
+Message-Id: <20131011193813.375386944@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
 References: <20131011193807.584188672@linuxfoundation.org>
@@ -27,72 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gabor Juhos <juhosg@openwrt.org>
+From: Michael Ellerman <michael@ellerman.id.au>
 
-commit 1b0135b5e20c56b2edae29e92b91c0b12c983432 upstream.
+commit a53b27b3abeef406de92a2bb0ceb6fb4c3fb8fc4 upstream.
 
-Since commit 01426478df3a8791ff5c8b6b82d409e699cfaf38
-(avr32: Use generic idle loop) the kernel throws the
-following warning on avr32:
+Commit 4df4899 "Add power8 EBB support" included a bug in the handling
+of the FAB_CRESP_MATCH and FAB_TYPE_MATCH fields.
 
-  WARNING: at 900322e4 [verbose debug info unavailable]
-  Modules linked in:
-  CPU: 0 PID: 0 Comm: swapper Not tainted 3.12.0-rc2 #117
-  task: 901c3ecc ti: 901c0000 task.ti: 901c0000
-  PC is at cpu_idle_poll_ctrl+0x1c/0x38
-  LR is at comparator_mode+0x3e/0x40
-  pc : [<900322e4>]    lr : [<90014882>]    Not tainted
-  sp : 901c1f74  r12: 00000000  r11: 901c74a0
-  r10: 901d2510  r9 : 00000001  r8 : 901db4de
-  r7 : 901c74a0  r6 : 00000001  r5 : 00410020  r4 : 901db574
-  r3 : 00410024  r2 : 90206fe0  r1 : 00000000  r0 : 007f0000
-  Flags: qvnzc
-  Mode bits: hjmde....G
-  CPU Mode: Supervisor
-  Call trace:
-   [<90039ede>] clockevents_set_mode+0x16/0x2e
-   [<90039f00>] clockevents_shutdown+0xa/0x1e
-   [<9003a078>] clockevents_exchange_device+0x58/0x70
-   [<9003a78c>] tick_check_new_device+0x38/0x54
-   [<9003a1a2>] clockevents_register_device+0x32/0x90
-   [<900035c4>] time_init+0xa8/0x108
-   [<90000520>] start_kernel+0x128/0x23c
+These values are pulled out of the event code using EVENT_THR_CTL_SHIFT,
+however we were then or'ing that value directly into MMCR1.
 
-When the 'avr32_comparator' clockevent device is registered,
-the clockevent core sets the mode of that clockevent device
-to CLOCK_EVT_MODE_SHUTDOWN. Due to this, the 'comparator_mode'
-function calls the 'cpu_idle_poll_ctrl' to disables idle poll.
-This results in the aforementioned warning because the polling
-is not enabled yet.
+This meant we were failing to set the FAB fields correctly, and also
+potentially corrupting the value for PMC4SEL. Leading to no counts for
+the FAB events and incorrect counts for PMC4.
 
-Change the code to only disable idle poll if it is enabled by
-the same function to avoid the warning.
+The fix is simply to shift left the FAB value correctly before or'ing it
+with MMCR1.
 
-Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
-Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Reported-by: Sooraj Ravindran Nair <soonair3@in.ibm.com>
+Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/avr32/kernel/time.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ arch/powerpc/perf/power8-pmu.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/arch/avr32/kernel/time.c
-+++ b/arch/avr32/kernel/time.c
-@@ -98,7 +98,14 @@ static void comparator_mode(enum clock_e
- 	case CLOCK_EVT_MODE_SHUTDOWN:
- 		sysreg_write(COMPARE, 0);
- 		pr_debug("%s: stop\n", evdev->name);
--		cpu_idle_poll_ctrl(false);
-+		if (evdev->mode == CLOCK_EVT_MODE_ONESHOT ||
-+		    evdev->mode == CLOCK_EVT_MODE_RESUME) {
-+			/*
-+			 * Only disable idle poll if we have forced that
-+			 * in a previous call.
-+			 */
-+			cpu_idle_poll_ctrl(false);
-+		}
- 		break;
- 	default:
- 		BUG();
+--- a/arch/powerpc/perf/power8-pmu.c
++++ b/arch/powerpc/perf/power8-pmu.c
+@@ -194,6 +194,7 @@
+ #define MMCR1_UNIT_SHIFT(pmc)		(60 - (4 * ((pmc) - 1)))
+ #define MMCR1_COMBINE_SHIFT(pmc)	(35 - ((pmc) - 1))
+ #define MMCR1_PMCSEL_SHIFT(pmc)		(24 - (((pmc) - 1)) * 8)
++#define MMCR1_FAB_SHIFT			36
+ #define MMCR1_DC_QUAL_SHIFT		47
+ #define MMCR1_IC_QUAL_SHIFT		46
+ 
+@@ -367,8 +368,8 @@ static int power8_compute_mmcr(u64 event
+ 		 * the threshold bits are used for the match value.
+ 		 */
+ 		if (event_is_fab_match(event[i])) {
+-			mmcr1 |= (event[i] >> EVENT_THR_CTL_SHIFT) &
+-				  EVENT_THR_CTL_MASK;
++			mmcr1 |= ((event[i] >> EVENT_THR_CTL_SHIFT) &
++				  EVENT_THR_CTL_MASK) << MMCR1_FAB_SHIFT;
+ 		} else {
+ 			val = (event[i] >> EVENT_THR_CTL_SHIFT) & EVENT_THR_CTL_MASK;
+ 			mmcra |= val << MMCRA_THR_CTL_SHIFT;
 
 
