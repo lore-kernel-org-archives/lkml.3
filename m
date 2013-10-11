@@ -1,98 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758250Ab3JKPbb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 11:31:31 -0400
-Received: from elasmtp-dupuy.atl.sa.earthlink.net ([209.86.89.62]:44655 "EHLO
-	elasmtp-dupuy.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752198Ab3JKPb3 (ORCPT
+	id S1756201Ab3JKPfq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 11:35:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43728 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753206Ab3JKPfp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 11:31:29 -0400
-X-Greylist: delayed 627 seconds by postgrey-1.27 at vger.kernel.org; Fri, 11 Oct 2013 11:31:29 EDT
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=dk20050327; d=mindspring.com;
-  b=fZWnKKVzkIC2hyXv6es1YtgRS7nipJp2wcNCObr7o2LBgHArI9ywvIB1wuLyIJO0;
-  h=Received:From:To:Cc:References:In-Reply-To:Subject:Date:Message-ID:MIME-Version:Content-Type:Content-Transfer-Encoding:X-Mailer:Thread-Index:Content-Language:X-ELNK-Trace:X-Originating-IP;
-From: "Frank Filz" <ffilzlnx@mindspring.com>
-To: "'Jeff Layton'" <jlayton@redhat.com>, <linux-fsdevel@vger.kernel.org>
-Cc: <linux-kernel@vger.kernel.org>, <nfs-ganesha-devel@lists.sourceforge.net>,
-        <samba-technical@lists.samba.org>
-References: <1381494322-2426-1-git-send-email-jlayton@redhat.com> <20131011093510.7ed9871a@tlielax.poochiereds.net>
-In-Reply-To: <20131011093510.7ed9871a@tlielax.poochiereds.net>
-Subject: RE: [RFC PATCH 0/5] locks: implement "filp-private" (aka UNPOSIX) locks
-Date: Fri, 11 Oct 2013 08:20:59 -0700
-Message-ID: <01f801cec695$7e5d17e0$7b1747a0$@mindspring.com>
+	Fri, 11 Oct 2013 11:35:45 -0400
+Date: Fri, 11 Oct 2013 08:35:44 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "ethan.zhao" <ethan.kernel@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/base/core.c: always output device renaming
+ messages.
+Message-ID: <20131011153544.GA14715@kroah.com>
+References: <1381460298-1097-1-git-send-email-ethan.kernel@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 15.0
-Thread-Index: AQIaxc2XaXMwhFVmMgrl8lqeyFTt4AN2GInOmTvsxIA=
-Content-Language: en-us
-X-ELNK-Trace: 136157f01908a8929c7f779228e2f6aeda0071232e20db4d8a8611511604b525f85982445e690e2c350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
-X-Originating-IP: 71.236.153.111
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1381460298-1097-1-git-send-email-ethan.kernel@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > At LSF this year, there was a discussion about the "wishlist" for
-> > userland file servers. One of the things brought up was the goofy and
-> > problematic behavior of POSIX locks when a file is closed. Boaz
-> > started a thread on it here:
-> >
-> >     http://permalink.gmane.org/gmane.linux.file-systems/73364
-> >
-> > Userland fileservers often need to maintain more than one open file
-> > descriptor on a file. The POSIX spec says:
-> >
-> > "All locks associated with a file for a given process shall be removed
-> > when a file descriptor for that file is closed by that process or the
-> > process holding that file descriptor terminates."
-> >
-> > This is problematic since you can't close any file descriptor without
-> > dropping all your POSIX locks. Most userland file servers therefore
-> > end up opening the file with more access than is really necessary, and
-> > keeping fd's open for longer than is necessary to work around this.
-> >
-> > This patchset is a first stab at an approach to address this problem
-> > by adding two new l_type values -- F_RDLCKP and F_WRLCKP (the 'P' is
-> > short for "private" -- I'm open to changing that if you have a better
-> > mnemonic).
-> >
-> > For all intents and purposes these lock types act just like their
-> > "non-P" counterpart. The difference is that they are only implicitly
-> > released when the fd against which they were acquired is closed. As a
-> > side effect, these locks cannot be merged with "non-P" locks since
-> > they have different semantics on close.
-> >
-> > I've given this patchset some very basic smoke testing and it seems to
-> > do the right thing, but it is still pretty rough. If this looks
-> > reasonable I'll plan to do some documentation updates and will take a
-> > stab at trying to get these new lock types added to the POSIX spec (as
-> > HCH recommended).
-> >
-> > At this point, my main questions are:
-> >
-> > 1) does this look useful, particularly for fileserver implementors?
-> >
-> > 2) does this look OK API-wise? We could consider different "cmd" values
-> >    or even different syscalls, but I figured this makes it clearer that
-> >    "P" and "non-P" locks will still conflict with one another.
+On Fri, Oct 11, 2013 at 10:58:18AM +0800, ethan.zhao wrote:
+> From: "ethan.zhao" <ethan.kernel@gmail.com>
+> 
+> While loading ixgbevf driver,every vf detected will be output as the
+> same name 'eth4':
+> 
+>  ixgbevf: Intel(R) 10 Gigabit PCI Express Virtual Function Network Driver -
+>  version 2.8.7
+>  Copyright (c) 2009-2012 Intel Corporation.
+>  ixgbevf 0000:20:10.0: enabling device (0000 -> 0002)
+>  ixgbe 0000:20:00.0 eth0: VF Reset msg received from vf 0
+>  ixgbevf 0000:20:10.0: irq 199 for MSI/MSI-X
+>  ixgbevf 0000:20:10.0: irq 200 for MSI/MSI-X
+>  ixgbevf: eth%d: ixgbevf_init_interrupt_scheme: Multiqueue Disabled: Rx Queue
+>  count = 1, Tx Queue count = 1
 
-This is a good start.
+What is that message?  That's not good, "eth%d"?
 
-I'd prefer a model where the private locks are maintained even if all file
-descriptors are closed and released on garbage collection when the process
-terminates. The model presented would require a server to potentially have
-at least two file descriptors open (the descriptor originally used for the
-locks, and a descriptor used for current access mode needed for some I/O
-operation). The server will also need to "remember" to do all locks using
-the first file descriptor.
+>  ixgbevf: eth4: ixgbevf_probe: Intel(R) X540 Virtual Function
+>  aa:bb:cc:dd:ee:f1
+>  ixgbevf: eth4: ixgbevf_probe: LRO is disabled
+>  ixgbevf: eth4: ixgbevf_probe: GRO is enabled
+>  ixgbevf: eth4: ixgbevf_probe: Intel(R) 10 Gigabit PCI Express Virtual
+>  Function Network Driver
+>  ixgbevf 0000:20:10.2: enabling device (0000 -> 0002)
+>  ixgbe 0000:20:00.0 eth0: VF Reset msg received from vf 1
+>  ixgbevf 0000:20:10.2: irq 201 for MSI/MSI-X
+>  ixgbevf 0000:20:10.2: irq 202 for MSI/MSI-X
+>  ixgbevf: eth%d: ixgbevf_init_interrupt_scheme: Multiqueue Disabled: Rx Queue
+>  count = 1, Tx Queue count = 1
+>  ixgbevf: eth4: ixgbevf_probe: Intel(R) X540 Virtual Function
+>  aa:bb:cc:dd:ee:f2
+>  ixgbevf: eth4: ixgbevf_probe: LRO is disabled
+>  ixgbevf: eth4: ixgbevf_probe: GRO is enabled
+>  ixgbevf: eth4: ixgbevf_probe: Intel(R) 10 Gigabit PCI Express Virtual
+> 
+> But if we view the NICs with ifconfig, found no NIC named 'eth4', the cause is
+> udev has renamed the 'eth4' to 'eth10', 'eth10' one by one. because no renaming
+> messages output, that is confusing.
+> So we need always output renaming messages in device_name() instead of pr_debug().
+> After applied this patch, it is much clearer:
 
-Another thing that would be very useful for servers is to be able to specify
-an arbitrary lock owner. Currently, Ganesha has to manage a union of all
-locks held on a file and carefully pick it apart when a client does an
-unlock. Allowing a process specified owner would allow Ganesha (or other
-servers) to have separate locks for each client lock owner.
+How is journald tracking this today, without this extra message sent to
+the kernel log?  It knows what devices are renamed to what somehow.
 
-Frank
+I really don't want to clutter up the syslog for things that aren't
+needed, and as userspace was the one that told the kernel to rename the
+device, why does the kernel have to spit it back out again to userspace?
+That seems redundant, don't you think?
 
+>  ixgbevf: Intel(R) 10 Gigabit PCI Express Virtual Function Network Driver -
+>  version 2.8.7
+>  Copyright (c) 2009-2012 Intel Corporation.
+>  ixgbevf 0000:20:10.0: enabling device (0000 -> 0002)
+>  ixgbe 0000:20:00.0 eth0: VF Reset msg received from vf 0
+>  ixgbevf 0000:20:10.0: Multiqueue Disabled: Rx Queue count = 1, Tx Queue count
+>  = 1
+>  ixgbevf: eth4: ixgbevf_probe: Intel(R) X540 Virtual Function
+>  net eth4: 'eth4' renaming to 'eth8'
+
+A bit redundant, "eth4" shows up twice.
+
+>  aa:bb:cc:dd:ee:11
+>  ixgbevf: eth8: ixgbevf_probe: LRO is disabled
+>  ixgbevf: eth8: ixgbevf_probe: GRO is enabled
+>  ixgbevf: eth8: ixgbevf_probe: Intel(R) 10 Gigabit PCI Express Virtual
+>  Function Network Driver
+>  ixgbevf 0000:20:10.2: enabling device (0000 -> 0002)
+>  ixgbe 0000:20:00.0 eth0: VF Reset msg received from vf 1
+>  ixgbevf 0000:20:10.2: Multiqueue Disabled: Rx Queue count = 1, Tx Queue count
+>  = 1
+>  ixgbevf: eth4: ixgbevf_probe: Intel(R) X540 Virtual Function
+>  net eth4: 'eth4' renaming to 'eth9'
+>  aa:bb:cc:dd:ee:12
+>  ixgbevf: eth9: ixgbevf_probe: LRO is disabled
+>  ixgbevf: eth9: ixgbevf_probe: GRO is enabled
+>  ixgbevf: eth9: ixgbevf_probe: Intel(R) 10 Gigabit PCI Express Virtual
+>  Function Network Driver
+> 
+> Signed-off-by: ethan.zhao <ethan.kernel@gmail.com>
+> ---
+>  drivers/base/core.c | 3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+> 
+> diff --git a/drivers/base/core.c b/drivers/base/core.c
+> index 2d1c6ba..9a98794 100644
+> --- a/drivers/base/core.c
+> +++ b/drivers/base/core.c
+> @@ -1904,8 +1904,7 @@ int device_rename(struct device *dev, const char *new_name)
+>  	if (!dev)
+>  		return -EINVAL;
+>  
+> -	pr_debug("device: '%s': %s: renaming to '%s'\n", dev_name(dev),
+> -		 __func__, new_name);
+> +	dev_info(dev, "'%s' renaming to '%s'\n", dev_name(dev), new_name);
+
+How about:
+	dev_dbg(dev, "renaming to '%s'\n", new_name);
+
+should be all that is needed, right?  Good call on pointing out that we
+don't need to use pr_debug() here, don't know why I never noticed
+that...
+
+That way, if you really want to know this information, you can
+dynamically turn on that line to be printed out, no need to clutter up
+everyone else's logs.
+
+Care to redo this?
+
+thanks,
+
+greg k-h
