@@ -1,53 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756652Ab3JKG2H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 02:28:07 -0400
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:52970 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756506Ab3JKG1a (ORCPT
+	id S1756701Ab3JKG2g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 02:28:36 -0400
+Received: from mdfmta005.mxout.tch.inty.net ([91.221.169.46]:40632 "EHLO
+	smtp.demon.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756667Ab3JKG2e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 02:27:30 -0400
-From: Kim Phillips <kim.phillips@linaro.org>
-To: Bhushan Bharat <R65777@freescale.com>, Wood Scott <B07421@freescale.com>,
-        Yoder Stuart <B08248@freescale.com>, christoffer.dall@linaro.org,
-        alex.williamson@redhat.com, linux-kernel@vger.kernel.org,
-        a.motakis@virtualopensystems.com, agraf@suse.de,
-        Sethi Varun <B16395@freescale.com>, peter.maydell@linaro.org,
-        santosh.shukla@linaro.org, kvm@vger.kernel.org,
-        gregkh@linuxfoundation.org
-Subject: [PATCH 3/4] VFIO: pci: amend vfio-pci for explicit binding via sysfs only
-Date: Fri, 11 Oct 2013 01:27:19 -0500
-Message-Id: <1381472840-3470-3-git-send-email-kim.phillips@linaro.org>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1381472840-3470-1-git-send-email-kim.phillips@linaro.org>
-References: <1381418830.7979.405.camel@snotra.buserror.net>
- <1381472840-3470-1-git-send-email-kim.phillips@linaro.org>
+	Fri, 11 Oct 2013 02:28:34 -0400
+From: Phillip Lougher <phillip@squashfs.org.uk>
+To: linux-kernel@vger.kernel.org
+Cc: minchan@kernel.org, Phillip Lougher <phillip@squashfs.org.uk>
+Subject: [PATCH 0/3] Squashfs: Directly decompress into the page cache for file data
+Date: Fri, 11 Oct 2013 07:19:37 +0100
+Message-Id: <1381472381-3825-1-git-send-email-phillip@squashfs.org.uk>
+X-Mailer: git-send-email 1.7.10.4
+X-MDF-HostID: 18
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Force the vfio-pci driver to only be bound explicitly via sysfs to avoid
-conflics with other drivers in the event of a hotplug.
+This patch-set introduces an implementation of
+squashfs_readpage() that directly decompresses into the
+page cache.
 
-Signed-off-by: Kim Phillips <kim.phillips@linaro.org>
----
- drivers/vfio/pci/vfio_pci.c | 3 +++
- 1 file changed, 3 insertions(+)
+It first generalises the decompressors by adding a page handler
+abstraction.  This adds helpers to allow the decompressors
+to access and process the output buffers in an implementation
+independant manner.
 
-diff --git a/drivers/vfio/pci/vfio_pci.c b/drivers/vfio/pci/vfio_pci.c
-index 6ab71b9..bdd7833 100644
---- a/drivers/vfio/pci/vfio_pci.c
-+++ b/drivers/vfio/pci/vfio_pci.c
-@@ -901,6 +901,9 @@ static struct pci_driver vfio_pci_driver = {
- 	.probe		= vfio_pci_probe,
- 	.remove		= vfio_pci_remove,
- 	.err_handler	= &vfio_err_handlers,
-+	.driver = {
-+		.sysfs_bind_only = true,
-+	},
- };
- 
- static void __exit vfio_pci_cleanup(void)
--- 
-1.8.4
+It then adds a read_page() implementation for file data that
+uses the page handler abstraction to push down the necessary
+kmap_atomic/kunmap_atomic operations on the page cache buffers into
+the decompressors.  This enables direct copying into the page cache
+without using the slow kmap/kunmap calls.
 
+The code detects when multiple threads are racing in
+squashfs_readpage() to decompress the same block, and avoids
+this regression by falling back to using an intermediate
+buffer.
+
+This patch enhances the performance of Squashfs significantly
+when multiple processes are accessing the filesystem simultaneously
+because it not only reduces memcopying, but it more importantly
+eliminates the lock contention on the intermediate buffer.
+
+Using single-threaded decompression.
+
+        dd if=file1 of=/dev/null bs=4096 &
+        dd if=file2 of=/dev/null bs=4096 &
+        dd if=file3 of=/dev/null bs=4096 &
+        dd if=file4 of=/dev/null bs=4096
+
+Before:
+
+629145600 bytes (629 MB) copied, 45.8046 s, 13.7 MB/s
+
+After:
+
+629145600 bytes (629 MB) copied, 9.29414 s, 67.7 MB/s
