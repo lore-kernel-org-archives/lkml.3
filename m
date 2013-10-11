@@ -1,182 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757668Ab3JKJvw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 05:51:52 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:42879 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757637Ab3JKJvt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 05:51:49 -0400
-Message-ID: <5257CA2F.4030100@huawei.com>
-Date: Fri, 11 Oct 2013 17:51:43 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S932137Ab3JKJwK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 05:52:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58901 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757645Ab3JKJvu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 05:51:50 -0400
+Date: Fri, 11 Oct 2013 11:51:39 +0200
+From: Karel Zak <kzak@redhat.com>
+To: Doug Anderson <dianders@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, Matt Fleming <matt.fleming@intel.com>,
+        Sean Paul <seanpaul@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Bill Richardson <wfrichar@chromium.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Davidlohr Bueso <davidlohr@hp.com>
+Subject: Re: [PATCH] partitions/efi: treat size mismatch as a warning, not an
+ error
+Message-ID: <20131011095139.GA24613@x2.net.home>
+References: <20131009232642.GA12776@jtriplet-mobl1>
+ <1381447702-6240-1-git-send-email-dianders@chromium.org>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>, cgroups <cgroups@vger.kernel.org>
-Subject: [PATCH v2 10/12] cpuset: enable onlined cpu/node in effective masks
-References: <5257C9A1.1030404@huawei.com>
-In-Reply-To: <5257C9A1.1030404@huawei.com>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1381447702-6240-1-git-send-email-dianders@chromium.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Firstly offline cpu1:
+On Thu, Oct 10, 2013 at 04:28:22PM -0700, Doug Anderson wrote:
+> +	 *
+> +	 * Consider a bad value here to be a warning to support dd-ing
+> +	 * an image from a smaller disk to a bigger disk.
+>  	 */
+>  	if (ret == GPT_MBR_PROTECTIVE) {
+>  		sz = le32_to_cpu(mbr->partition_record[part].size_in_lba);
+>  		if (sz != (uint32_t) total_sectors - 1 && sz != 0xFFFFFFFF)
+> -			ret = 0;
+> +			pr_warn("%s: mbr size mismatch (%u != %u)\n", __func__,
+> +				sz, (uint32_t)((uint32_t) total_sectors - 1));
+>  	}
 
-  # echo 0-1 > cpuset.cpus
-  # echo 0 > /sys/devices/system/cpu/cpu1/online
-  # cat cpuset.cpus
-  0-1
-  # cat cpuset.effective_cpus
-  0
+ I did the same change to util-linux v2.24 fdisk, so you can use the fdisk
+ to update your protective MBR and boot without warnings.
 
-Then online it:
+    Karel
 
-  # echo 1 > /sys/devices/system/cpu/cpu1/online
-  # cat cpuset.cpus
-  0-1
-  # cat cpuset.effective_cpus
-  0-1
-
-And cpuset will bring it back to the effective mask.
-
-The implementation is quite straightforward. Instead of calculating the
-offlined cpus/mems and do updates, we just set the new effective_mask
-to online_mask & congifured_mask.
-
-This is a behavior change for sane_behavior, so !sane_behavior won't
-be affected.
-
-v2:
-- make refactoring of cpuset_hotplug_update_tasks() as seperate patch,
-suggested by Tejun.
-- make hotplug_update_tasks_insane() use @new_cpus and @new_mems as
-hotplug_update_tasks_sane() does.
-
-Signed-off-by: Li Zefan <lizefan@huawei.com>
----
- kernel/cpuset.c | 64 ++++++++++++++++++++++++++++++++-------------------------
- 1 file changed, 36 insertions(+), 28 deletions(-)
-
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index cefc8f4..e71c04f 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -2186,26 +2186,27 @@ static void remove_tasks_in_empty_cpuset(struct cpuset *cs)
- 	}
- }
- 
--static void hotplug_update_tasks_insane(struct cpuset *cs,
--					struct cpumask *off_cpus,
--					nodemask_t *off_mems)
-+static void
-+hotplug_update_tasks_insane(struct cpuset *cs,
-+			    struct cpumask *new_cpus, nodemask_t *new_mems,
-+			    bool cpus_updated, bool mems_updated)
- {
- 	bool is_empty;
- 
- 	mutex_lock(&callback_mutex);
--	cpumask_andnot(cs->cpus_allowed, cs->cpus_allowed, off_cpus);
--	cpumask_andnot(cs->effective_cpus, cs->effective_cpus, off_cpus);
--	nodes_andnot(cs->mems_allowed, cs->mems_allowed, *off_mems);
--	nodes_andnot(cs->effective_mems, cs->effective_mems, *off_mems);
-+	cpumask_copy(cs->cpus_allowed, new_cpus);
-+	cpumask_copy(cs->effective_cpus, new_cpus);
-+	cs->mems_allowed = *new_mems;
-+	cs->effective_mems = *new_mems;
- 	mutex_unlock(&callback_mutex);
- 
- 	/*
- 	 * Don't call update_tasks_cpumask() if the cpuset becomes empty,
- 	 * as the tasks will be migratecd to an ancestor.
- 	 */
--	if (!cpumask_empty(off_cpus) && !cpumask_empty(cs->cpus_allowed))
-+	if (cpus_updated && !cpumask_empty(cs->cpus_allowed))
- 		update_tasks_cpumask(cs, NULL);
--	if (!nodes_empty(*off_mems) && !nodes_empty(cs->mems_allowed))
-+	if (mems_updated && !nodes_empty(cs->mems_allowed))
- 		update_tasks_nodemask(cs, NULL);
- 
- 	is_empty = cpumask_empty(cs->cpus_allowed) ||
-@@ -2224,24 +2225,24 @@ static void hotplug_update_tasks_insane(struct cpuset *cs,
- 	mutex_lock(&cpuset_mutex);
- }
- 
--static void hotplug_update_tasks_sane(struct cpuset *cs,
--				      struct cpumask *off_cpus,
--				      nodemask_t *off_mems)
-+static void
-+hotplug_update_tasks_sane(struct cpuset *cs,
-+			  struct cpumask *new_cpus, nodemask_t *new_mems,
-+			  bool cpus_updated, bool mems_updated)
- {
-+	if (cpumask_empty(new_cpus))
-+		cpumask_copy(new_cpus, parent_cs(cs)->effective_cpus);
-+	if (nodes_empty(*new_mems))
-+		*new_mems = parent_cs(cs)->effective_mems;
-+
- 	mutex_lock(&callback_mutex);
--	cpumask_andnot(cs->effective_cpus, cs->effective_cpus, off_cpus);
--	if (cpumask_empty(cs->effective_cpus))
--		cpumask_copy(cs->effective_cpus,
--			     parent_cs(cs)->effective_cpus);
--
--	nodes_andnot(cs->effective_mems, cs->effective_mems, *off_mems);
--	if (nodes_empty(cs->effective_mems))
--		cs->effective_mems = parent_cs(cs)->effective_mems;
-+	cpumask_copy(cs->effective_cpus, new_cpus);
-+	cs->effective_mems = *new_mems;
- 	mutex_unlock(&callback_mutex);
- 
--	if (!cpumask_empty(off_cpus))
-+	if (cpus_updated)
- 		update_tasks_cpumask(cs, NULL);
--	if (!nodes_empty(*off_mems))
-+	if (mems_updated)
- 		update_tasks_nodemask(cs, NULL);
- }
- 
-@@ -2255,8 +2256,10 @@ static void hotplug_update_tasks_sane(struct cpuset *cs,
-  */
- static void cpuset_hotplug_update_tasks(struct cpuset *cs)
- {
--	static cpumask_t off_cpus;
--	static nodemask_t off_mems;
-+	static cpumask_t new_cpus;
-+	static nodemask_t new_mems;
-+	bool cpus_updated;
-+	bool mems_updated;
- retry:
- 	wait_event(cpuset_attach_wq, cs->attach_in_progress == 0);
- 
-@@ -2271,13 +2274,18 @@ retry:
- 		goto retry;
- 	}
- 
--	cpumask_andnot(&off_cpus, cs->effective_cpus, top_cpuset.effective_cpus);
--	nodes_andnot(off_mems, cs->effective_mems, top_cpuset.effective_mems);
-+	cpumask_and(&new_cpus, cs->cpus_allowed, parent_cs(cs)->effective_cpus);
-+	nodes_and(new_mems, cs->mems_allowed, parent_cs(cs)->effective_mems);
-+
-+	cpus_updated = !cpumask_equal(&new_cpus, cs->effective_cpus);
-+	mems_updated = !nodes_equal(new_mems, cs->effective_mems);
- 
- 	if (cgroup_sane_behavior(cs->css.cgroup))
--		hotplug_update_tasks_sane(cs, &off_cpus, &off_mems);
-+		hotplug_update_tasks_sane(cs, &new_cpus, &new_mems,
-+					  cpus_updated, mems_updated);
- 	else
--		hotplug_update_tasks_insane(cs, &off_cpus, &off_mems);
-+		hotplug_update_tasks_insane(cs, &new_cpus, &new_mems,
-+					    cpus_updated, mems_updated);
- 
- 	mutex_unlock(&cpuset_mutex);
- }
 -- 
-1.8.0.2
-
+ Karel Zak  <kzak@redhat.com>
+ http://karelzak.blogspot.com
