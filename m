@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758873Ab3JKTqO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:46:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46557 "EHLO
+	id S1759149Ab3JKTqg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:46:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46549 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932822Ab3JKTmT (ORCPT
+	with ESMTP id S1757594Ab3JKTmS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:42:19 -0400
+	Fri, 11 Oct 2013 15:42:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Herrmann <dh.herrmann@gmail.com>, Jiri Kosina <jkosina@suse.cz>
-Subject: [ 122/135] HID: wiimote: fix FF deadlock
-Date: Fri, 11 Oct 2013 12:40:03 -0700
-Message-Id: <20131011193958.523283082@linuxfoundation.org>
+        Christopher <DIDI2002@web.de>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 120/135] ALSA: hda - Fix GPIO for Acer Aspire 3830TG
+Date: Fri, 11 Oct 2013 12:40:01 -0700
+Message-Id: <20131011193958.310203103@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -26,168 +26,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Herrmann <dh.herrmann@gmail.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit f50f9aabf32db7414551ffdfdccc71be5f3d6e7d upstream.
+commit 4a4370442c996be0fd08234a167c8a127c2488bb upstream.
 
-The input core has an internal spinlock that is acquired during event
-injection via input_event() and friends but also held during FF callbacks.
-That means, there is no way to share a lock between event-injection and FF
-handling. Unfortunately, this is what is required for wiimote state
-tracking and what we do with state.lock and input->lock.
+Acer Aspire 3830TG seems requiring GPIO bit 0 as the primary mute
+control.  When a machine is booted after Windows 8, the GPIO pin is
+turned off and it results in the silent output.
 
-This deadlock can be triggered when using continuous data reporting and FF
-on a wiimote device at the same time. I takes me at least 30m of
-stress-testing to trigger it but users reported considerably shorter
-times (http://bpaste.net/show/132504/) when using some gaming-console
-emulators.
+This patch adds the manual fixup of GPIO bit 0 for this model.
 
-The real problem is that we have two copies of internal state, one in the
-wiimote objects and the other in the input device. As the input-lock is
-not supposed to be accessed from outside of input-core, we have no other
-chance than offloading FF handling into a worker. This actually works
-pretty nice and also allows to implictly merge fast rumble changes into a
-single request.
-
-Due to the 3-layered workers (rumble+queue+l2cap) this might reduce FF
-responsiveness. Initial tests were fine so lets fix the race first and if
-it turns out to be too slow we can always handle FF out-of-band and skip
-the queue-worker.
-
-Reported-by: Thomas Schneider
-Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Reported-by: Christopher <DIDI2002@web.de>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- drivers/hid/hid-wiimote-modules.c |   40 +++++++++++++++++++++++++++-----------
- drivers/hid/hid-wiimote.h         |    4 ++-
- 2 files changed, 32 insertions(+), 12 deletions(-)
 
---- a/drivers/hid/hid-wiimote-modules.c
-+++ b/drivers/hid/hid-wiimote-modules.c
-@@ -119,12 +119,22 @@ static const struct wiimod_ops wiimod_ke
-  * the rumble motor, this flag shouldn't be set.
-  */
- 
-+/* used by wiimod_rumble and wiipro_rumble */
-+static void wiimod_rumble_worker(struct work_struct *work)
-+{
-+	struct wiimote_data *wdata = container_of(work, struct wiimote_data,
-+						  rumble_worker);
-+
-+	spin_lock_irq(&wdata->state.lock);
-+	wiiproto_req_rumble(wdata, wdata->state.cache_rumble);
-+	spin_unlock_irq(&wdata->state.lock);
-+}
-+
- static int wiimod_rumble_play(struct input_dev *dev, void *data,
- 			      struct ff_effect *eff)
- {
- 	struct wiimote_data *wdata = input_get_drvdata(dev);
- 	__u8 value;
--	unsigned long flags;
- 
- 	/*
- 	 * The wiimote supports only a single rumble motor so if any magnitude
-@@ -137,9 +147,10 @@ static int wiimod_rumble_play(struct inp
- 	else
- 		value = 0;
- 
--	spin_lock_irqsave(&wdata->state.lock, flags);
--	wiiproto_req_rumble(wdata, value);
--	spin_unlock_irqrestore(&wdata->state.lock, flags);
-+	/* Locking state.lock here might deadlock with input_event() calls.
-+	 * schedule_work acts as barrier. Merging multiple changes is fine. */
-+	wdata->state.cache_rumble = value;
-+	schedule_work(&wdata->rumble_worker);
- 
- 	return 0;
- }
-@@ -147,6 +158,8 @@ static int wiimod_rumble_play(struct inp
- static int wiimod_rumble_probe(const struct wiimod_ops *ops,
- 			       struct wiimote_data *wdata)
- {
-+	INIT_WORK(&wdata->rumble_worker, wiimod_rumble_worker);
-+
- 	set_bit(FF_RUMBLE, wdata->input->ffbit);
- 	if (input_ff_create_memless(wdata->input, NULL, wiimod_rumble_play))
- 		return -ENOMEM;
-@@ -159,6 +172,8 @@ static void wiimod_rumble_remove(const s
- {
- 	unsigned long flags;
- 
-+	cancel_work_sync(&wdata->rumble_worker);
-+
- 	spin_lock_irqsave(&wdata->state.lock, flags);
- 	wiiproto_req_rumble(wdata, 0);
- 	spin_unlock_irqrestore(&wdata->state.lock, flags);
-@@ -1731,7 +1746,6 @@ static int wiimod_pro_play(struct input_
- {
- 	struct wiimote_data *wdata = input_get_drvdata(dev);
- 	__u8 value;
--	unsigned long flags;
- 
- 	/*
- 	 * The wiimote supports only a single rumble motor so if any magnitude
-@@ -1744,9 +1758,10 @@ static int wiimod_pro_play(struct input_
- 	else
- 		value = 0;
- 
--	spin_lock_irqsave(&wdata->state.lock, flags);
--	wiiproto_req_rumble(wdata, value);
--	spin_unlock_irqrestore(&wdata->state.lock, flags);
-+	/* Locking state.lock here might deadlock with input_event() calls.
-+	 * schedule_work acts as barrier. Merging multiple changes is fine. */
-+	wdata->state.cache_rumble = value;
-+	schedule_work(&wdata->rumble_worker);
- 
- 	return 0;
- }
-@@ -1756,6 +1771,8 @@ static int wiimod_pro_probe(const struct
- {
- 	int ret, i;
- 
-+	INIT_WORK(&wdata->rumble_worker, wiimod_rumble_worker);
-+
- 	wdata->extension.input = input_allocate_device();
- 	if (!wdata->extension.input)
- 		return -ENOMEM;
-@@ -1817,12 +1834,13 @@ static void wiimod_pro_remove(const stru
- 	if (!wdata->extension.input)
- 		return;
- 
-+	input_unregister_device(wdata->extension.input);
-+	wdata->extension.input = NULL;
-+	cancel_work_sync(&wdata->rumble_worker);
-+
- 	spin_lock_irqsave(&wdata->state.lock, flags);
- 	wiiproto_req_rumble(wdata, 0);
- 	spin_unlock_irqrestore(&wdata->state.lock, flags);
--
--	input_unregister_device(wdata->extension.input);
--	wdata->extension.input = NULL;
- }
- 
- static const struct wiimod_ops wiimod_pro = {
---- a/drivers/hid/hid-wiimote.h
-+++ b/drivers/hid/hid-wiimote.h
-@@ -133,13 +133,15 @@ struct wiimote_state {
- 	__u8 *cmd_read_buf;
- 	__u8 cmd_read_size;
- 
--	/* calibration data */
-+	/* calibration/cache data */
- 	__u16 calib_bboard[4][3];
-+	__u8 cache_rumble;
+---
+ sound/pci/hda/patch_conexant.c |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+--- a/sound/pci/hda/patch_conexant.c
++++ b/sound/pci/hda/patch_conexant.c
+@@ -3224,6 +3224,7 @@ enum {
+ 	CXT_PINCFG_LEMOTE_A1205,
+ 	CXT_FIXUP_STEREO_DMIC,
+ 	CXT_FIXUP_INC_MIC_BOOST,
++	CXT_FIXUP_GPIO1,
  };
  
- struct wiimote_data {
- 	struct hid_device *hdev;
- 	struct input_dev *input;
-+	struct work_struct rumble_worker;
- 	struct led_classdev *leds[4];
- 	struct input_dev *accel;
- 	struct input_dev *ir;
+ static void cxt_fixup_stereo_dmic(struct hda_codec *codec,
+@@ -3302,6 +3303,15 @@ static const struct hda_fixup cxt_fixups
+ 		.type = HDA_FIXUP_FUNC,
+ 		.v.func = cxt5066_increase_mic_boost,
+ 	},
++	[CXT_FIXUP_GPIO1] = {
++		.type = HDA_FIXUP_VERBS,
++		.v.verbs = (const struct hda_verb[]) {
++			{ 0x01, AC_VERB_SET_GPIO_MASK, 0x01 },
++			{ 0x01, AC_VERB_SET_GPIO_DIRECTION, 0x01 },
++			{ 0x01, AC_VERB_SET_GPIO_DATA, 0x01 },
++			{ }
++		},
++	},
+ };
+ 
+ static const struct snd_pci_quirk cxt5051_fixups[] = {
+@@ -3311,6 +3321,7 @@ static const struct snd_pci_quirk cxt505
+ 
+ static const struct snd_pci_quirk cxt5066_fixups[] = {
+ 	SND_PCI_QUIRK(0x1025, 0x0543, "Acer Aspire One 522", CXT_FIXUP_STEREO_DMIC),
++	SND_PCI_QUIRK(0x1025, 0x054c, "Acer Aspire 3830TG", CXT_FIXUP_GPIO1),
+ 	SND_PCI_QUIRK(0x17aa, 0x20f2, "Lenovo T400", CXT_PINCFG_LENOVO_TP410),
+ 	SND_PCI_QUIRK(0x17aa, 0x215e, "Lenovo T410", CXT_PINCFG_LENOVO_TP410),
+ 	SND_PCI_QUIRK(0x17aa, 0x215f, "Lenovo T510", CXT_PINCFG_LENOVO_TP410),
 
 
