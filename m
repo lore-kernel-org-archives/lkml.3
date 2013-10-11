@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756949Ab3JKVGc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 17:06:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45165 "EHLO
+	id S1757029Ab3JKVGt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 17:06:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45154 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757006Ab3JKTfs (ORCPT
+	with ESMTP id S1756956Ab3JKTfp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:35:48 -0400
+	Fri, 11 Oct 2013 15:35:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 29/39] kernel/kmod.c: check for NULL in call_usermodehelper_exec()
-Date: Fri, 11 Oct 2013 12:35:13 -0700
-Message-Id: <20131011193214.042998813@linuxfoundation.org>
+        Kirill Tkhai <tkhai@yandex.ru>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 26/39] sparc64: Fix off by one in trampoline TLB mapping installation loop.
+Date: Fri, 11 Oct 2013 12:35:10 -0700
+Message-Id: <20131011193213.722231018@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193210.843963685@linuxfoundation.org>
 References: <20131011193210.843963685@linuxfoundation.org>
@@ -29,45 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+From: "David S. Miller" <davem@davemloft.net>
 
-commit 4c1c7be95c345cf2ad537a0c48e9aeadc7304527 upstream.
+[ Upstream commit 63d499662aeec1864ec36d042aca8184ea6a938e ]
 
-If /proc/sys/kernel/core_pattern contains only "|", a NULL pointer
-dereference happens upon core dump because argv_split("") returns
-argv[0] == NULL.
-
-This bug was once fixed by commit 264b83c07a84 ("usermodehelper: check
-subprocess_info->path != NULL") but was by error reintroduced by commit
-7f57cfa4e2aa ("usermodehelper: kill the sub_info->path[0] check").
-
-This bug seems to exist since 2.6.19 (the version which core dump to
-pipe was added).  Depending on kernel version and config, some side
-effect might happen immediately after this oops (e.g.  kernel panic with
-2.6.32-358.18.1.el6).
-
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Acked-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Kirill Tkhai <tkhai@yandex.ru>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- kernel/kmod.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ arch/sparc/kernel/trampoline_64.S |    2 --
+ 1 file changed, 2 deletions(-)
 
---- a/kernel/kmod.c
-+++ b/kernel/kmod.c
-@@ -420,6 +420,10 @@ int call_usermodehelper_exec(struct subp
- 	DECLARE_COMPLETION_ONSTACK(done);
- 	int retval = 0;
+--- a/arch/sparc/kernel/trampoline_64.S
++++ b/arch/sparc/kernel/trampoline_64.S
+@@ -131,7 +131,6 @@ startup_continue:
+ 	clr		%l5
+ 	sethi		%hi(num_kernel_image_mappings), %l6
+ 	lduw		[%l6 + %lo(num_kernel_image_mappings)], %l6
+-	add		%l6, 1, %l6
  
-+	if (!sub_info->path) {
-+		call_usermodehelper_freeinfo(sub_info);
-+		return -EINVAL;
-+	}
- 	helper_lock();
- 	if (!sub_info->path) {
- 		retval = -EINVAL;
+ 	mov		15, %l7
+ 	BRANCH_IF_ANY_CHEETAH(g1,g5,2f)
+@@ -224,7 +223,6 @@ niagara_lock_tlb:
+ 	clr		%l5
+ 	sethi		%hi(num_kernel_image_mappings), %l6
+ 	lduw		[%l6 + %lo(num_kernel_image_mappings)], %l6
+-	add		%l6, 1, %l6
+ 
+ 1:
+ 	mov		HV_FAST_MMU_MAP_PERM_ADDR, %o5
 
 
