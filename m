@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933028Ab3JKUKJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:10:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46128 "EHLO
+	id S932920Ab3JKUKI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:10:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46134 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932430Ab3JKTlO (ORCPT
+	with ESMTP id S932431Ab3JKTlO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Oct 2013 15:41:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ansis Atteka <aatteka@nicira.com>,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Francois Romieu <romieu@fr.zoreil.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 033/135] ip: generate unique IP identificator if local fragmentation is allowed
-Date: Fri, 11 Oct 2013 12:38:34 -0700
-Message-Id: <20131011193948.828954591@linuxfoundation.org>
+Subject: [ 034/135] skge: fix invalid value passed to pci_unmap_sigle
+Date: Fri, 11 Oct 2013 12:38:35 -0700
+Message-Id: <20131011193948.940622012@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -27,183 +28,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ansis Atteka <aatteka@nicira.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-[ Upstream commit 703133de331a7a7df47f31fb9de51dc6f68a9de8 ]
+[ Upstream commit 3361dc9538832a2a9150a8c722374ca844bf8dc8 ]
 
-If local fragmentation is allowed, then ip_select_ident() and
-ip_select_ident_more() need to generate unique IDs to ensure
-correct defragmentation on the peer.
+In my patch c194992cbe71c20bb3623a566af8d11b0bfaa721 ("skge: fix
+broken driver") I didn't fix the skge bug correctly. The value of the
+new mapping (not old) was passed to pci_unmap_single.
 
-For example, if IPsec (tunnel mode) has to encrypt large skbs
-that have local_df bit set, then all IP fragments that belonged
-to different ESP datagrams would have used the same identificator.
-If one of these IP fragments would get lost or reordered, then
-peer could possibly stitch together wrong IP fragments that did
-not belong to the same datagram. This would lead to a packet loss
-or data corruption.
+If we enable CONFIG_DMA_API_DEBUG, it results in this warning:
+WARNING: CPU: 0 PID: 0 at lib/dma-debug.c:986 check_sync+0x4c4/0x580()
+skge 0000:02:07.0: DMA-API: device driver tries to sync DMA memory it has
+not allocated [device address=0x000000023a0096c0] [size=1536 bytes]
 
-Signed-off-by: Ansis Atteka <aatteka@nicira.com>
+This patch makes the skge driver pass the correct value to
+pci_unmap_single and fixes the warning. It copies the old descriptor to
+on-stack variable "ee" and unmaps it if mapping of the new descriptor
+succeeded.
+
+This patch should be backported to 3.11-stable.
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Reported-by: Francois Romieu <romieu@fr.zoreil.com>
+Tested-by: Mikulas Patocka <mpatocka@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ppp/pptp.c          |    2 +-
- include/net/ip.h                |   12 ++++++++----
- net/ipv4/igmp.c                 |    4 ++--
- net/ipv4/inetpeer.c             |    4 ++--
- net/ipv4/ip_output.c            |    6 +++---
- net/ipv4/ipmr.c                 |    2 +-
- net/ipv4/raw.c                  |    2 +-
- net/ipv4/xfrm4_mode_tunnel.c    |    2 +-
- net/netfilter/ipvs/ip_vs_xmit.c |    2 +-
- 9 files changed, 20 insertions(+), 16 deletions(-)
+ drivers/net/ethernet/marvell/skge.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
---- a/drivers/net/ppp/pptp.c
-+++ b/drivers/net/ppp/pptp.c
-@@ -281,7 +281,7 @@ static int pptp_xmit(struct ppp_channel
- 	nf_reset(skb);
+--- a/drivers/net/ethernet/marvell/skge.c
++++ b/drivers/net/ethernet/marvell/skge.c
+@@ -3086,13 +3086,16 @@ static struct sk_buff *skge_rx_get(struc
+ 					       PCI_DMA_FROMDEVICE);
+ 		skge_rx_reuse(e, skge->rx_buf_size);
+ 	} else {
++		struct skge_element ee;
+ 		struct sk_buff *nskb;
  
- 	skb->ip_summed = CHECKSUM_NONE;
--	ip_select_ident(iph, &rt->dst, NULL);
-+	ip_select_ident(skb, &rt->dst, NULL);
- 	ip_send_check(iph);
+ 		nskb = netdev_alloc_skb_ip_align(dev, skge->rx_buf_size);
+ 		if (!nskb)
+ 			goto resubmit;
  
- 	ip_local_out(skb);
---- a/include/net/ip.h
-+++ b/include/net/ip.h
-@@ -254,9 +254,11 @@ int ip_dont_fragment(struct sock *sk, st
- 
- extern void __ip_select_ident(struct iphdr *iph, struct dst_entry *dst, int more);
- 
--static inline void ip_select_ident(struct iphdr *iph, struct dst_entry *dst, struct sock *sk)
-+static inline void ip_select_ident(struct sk_buff *skb, struct dst_entry *dst, struct sock *sk)
- {
--	if (iph->frag_off & htons(IP_DF)) {
-+	struct iphdr *iph = ip_hdr(skb);
+-		skb = e->skb;
++		ee = *e;
 +
-+	if ((iph->frag_off & htons(IP_DF)) && !skb->local_df) {
- 		/* This is only to work around buggy Windows95/2000
- 		 * VJ compression implementations.  If the ID field
- 		 * does not change, they drop every other packet in
-@@ -268,9 +270,11 @@ static inline void ip_select_ident(struc
- 		__ip_select_ident(iph, dst, 0);
- }
++		skb = ee.skb;
+ 		prefetch(skb->data);
  
--static inline void ip_select_ident_more(struct iphdr *iph, struct dst_entry *dst, struct sock *sk, int more)
-+static inline void ip_select_ident_more(struct sk_buff *skb, struct dst_entry *dst, struct sock *sk, int more)
- {
--	if (iph->frag_off & htons(IP_DF)) {
-+	struct iphdr *iph = ip_hdr(skb);
-+
-+	if ((iph->frag_off & htons(IP_DF)) && !skb->local_df) {
- 		if (sk && inet_sk(sk)->inet_daddr) {
- 			iph->id = htons(inet_sk(sk)->inet_id);
- 			inet_sk(sk)->inet_id += 1 + more;
---- a/net/ipv4/igmp.c
-+++ b/net/ipv4/igmp.c
-@@ -343,7 +343,7 @@ static struct sk_buff *igmpv3_newpack(st
- 	pip->saddr    = fl4.saddr;
- 	pip->protocol = IPPROTO_IGMP;
- 	pip->tot_len  = 0;	/* filled in later */
--	ip_select_ident(pip, &rt->dst, NULL);
-+	ip_select_ident(skb, &rt->dst, NULL);
- 	((u8 *)&pip[1])[0] = IPOPT_RA;
- 	((u8 *)&pip[1])[1] = 4;
- 	((u8 *)&pip[1])[2] = 0;
-@@ -687,7 +687,7 @@ static int igmp_send_report(struct in_de
- 	iph->daddr    = dst;
- 	iph->saddr    = fl4.saddr;
- 	iph->protocol = IPPROTO_IGMP;
--	ip_select_ident(iph, &rt->dst, NULL);
-+	ip_select_ident(skb, &rt->dst, NULL);
- 	((u8 *)&iph[1])[0] = IPOPT_RA;
- 	((u8 *)&iph[1])[1] = 4;
- 	((u8 *)&iph[1])[2] = 0;
---- a/net/ipv4/inetpeer.c
-+++ b/net/ipv4/inetpeer.c
-@@ -32,8 +32,8 @@
-  *  At the moment of writing this notes identifier of IP packets is generated
-  *  to be unpredictable using this code only for packets subjected
-  *  (actually or potentially) to defragmentation.  I.e. DF packets less than
-- *  PMTU in size uses a constant ID and do not use this code (see
-- *  ip_select_ident() in include/net/ip.h).
-+ *  PMTU in size when local fragmentation is disabled use a constant ID and do
-+ *  not use this code (see ip_select_ident() in include/net/ip.h).
-  *
-  *  Route cache entries hold references to our nodes.
-  *  New cache entries get references via lookup by destination IP address in
---- a/net/ipv4/ip_output.c
-+++ b/net/ipv4/ip_output.c
-@@ -148,7 +148,7 @@ int ip_build_and_send_pkt(struct sk_buff
- 	iph->daddr    = (opt && opt->opt.srr ? opt->opt.faddr : daddr);
- 	iph->saddr    = saddr;
- 	iph->protocol = sk->sk_protocol;
--	ip_select_ident(iph, &rt->dst, sk);
-+	ip_select_ident(skb, &rt->dst, sk);
+ 		if (skge_rx_setup(skge, e, nskb, skge->rx_buf_size) < 0) {
+@@ -3101,8 +3104,8 @@ static struct sk_buff *skge_rx_get(struc
+ 		}
  
- 	if (opt && opt->opt.optlen) {
- 		iph->ihl += opt->opt.optlen>>2;
-@@ -386,7 +386,7 @@ packet_routed:
- 		ip_options_build(skb, &inet_opt->opt, inet->inet_daddr, rt, 0);
+ 		pci_unmap_single(skge->hw->pdev,
+-				 dma_unmap_addr(e, mapaddr),
+-				 dma_unmap_len(e, maplen),
++				 dma_unmap_addr(&ee, mapaddr),
++				 dma_unmap_len(&ee, maplen),
+ 				 PCI_DMA_FROMDEVICE);
  	}
  
--	ip_select_ident_more(iph, &rt->dst, sk,
-+	ip_select_ident_more(skb, &rt->dst, sk,
- 			     (skb_shinfo(skb)->gso_segs ?: 1) - 1);
- 
- 	skb->priority = sk->sk_priority;
-@@ -1324,7 +1324,7 @@ struct sk_buff *__ip_make_skb(struct soc
- 	iph->ttl = ttl;
- 	iph->protocol = sk->sk_protocol;
- 	ip_copy_addrs(iph, fl4);
--	ip_select_ident(iph, &rt->dst, sk);
-+	ip_select_ident(skb, &rt->dst, sk);
- 
- 	if (opt) {
- 		iph->ihl += opt->optlen>>2;
---- a/net/ipv4/ipmr.c
-+++ b/net/ipv4/ipmr.c
-@@ -1658,7 +1658,7 @@ static void ip_encap(struct sk_buff *skb
- 	iph->protocol	=	IPPROTO_IPIP;
- 	iph->ihl	=	5;
- 	iph->tot_len	=	htons(skb->len);
--	ip_select_ident(iph, skb_dst(skb), NULL);
-+	ip_select_ident(skb, skb_dst(skb), NULL);
- 	ip_send_check(iph);
- 
- 	memset(&(IPCB(skb)->opt), 0, sizeof(IPCB(skb)->opt));
---- a/net/ipv4/raw.c
-+++ b/net/ipv4/raw.c
-@@ -387,7 +387,7 @@ static int raw_send_hdrinc(struct sock *
- 		iph->check   = 0;
- 		iph->tot_len = htons(length);
- 		if (!iph->id)
--			ip_select_ident(iph, &rt->dst, NULL);
-+			ip_select_ident(skb, &rt->dst, NULL);
- 
- 		iph->check = ip_fast_csum((unsigned char *)iph, iph->ihl);
- 	}
---- a/net/ipv4/xfrm4_mode_tunnel.c
-+++ b/net/ipv4/xfrm4_mode_tunnel.c
-@@ -117,7 +117,7 @@ static int xfrm4_mode_tunnel_output(stru
- 
- 	top_iph->frag_off = (flags & XFRM_STATE_NOPMTUDISC) ?
- 		0 : (XFRM_MODE_SKB_CB(skb)->frag_off & htons(IP_DF));
--	ip_select_ident(top_iph, dst->child, NULL);
-+	ip_select_ident(skb, dst->child, NULL);
- 
- 	top_iph->ttl = ip4_dst_hoplimit(dst->child);
- 
---- a/net/netfilter/ipvs/ip_vs_xmit.c
-+++ b/net/netfilter/ipvs/ip_vs_xmit.c
-@@ -883,7 +883,7 @@ ip_vs_tunnel_xmit(struct sk_buff *skb, s
- 	iph->daddr		=	cp->daddr.ip;
- 	iph->saddr		=	saddr;
- 	iph->ttl		=	old_iph->ttl;
--	ip_select_ident(iph, &rt->dst, NULL);
-+	ip_select_ident(skb, &rt->dst, NULL);
- 
- 	/* Another hack: avoid icmp_send in ip_fragment */
- 	skb->local_df = 1;
 
 
