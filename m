@@ -1,142 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758309Ab3JKPsH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 11:48:07 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:60750 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754457Ab3JKPsF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 11:48:05 -0400
-From: Antonios Motakis <a.motakis@virtualopensystems.com>
-To: Alex Williamson <alex.williamson@redhat.com>,
-        kvm@vger.kernel.org (open list:VFIO DRIVER),
-        linux-kernel@vger.kernel.org (open list)
-Cc: kvmarm@lists.cs.columbia.edu, iommu@lists.linux-foundation.org,
-        tech@virtualopensystems.com, agraf@suse.de, B08248@freescale.com,
-        Antonios Motakis <a.motakis@virtualopensystems.com>
-Subject: [PATCH] VFIO: vfio_iommu_type1: fix bug caused by break in nested loop
-Date: Fri, 11 Oct 2013 17:47:31 +0200
-Message-Id: <1381506452-2069-1-git-send-email-a.motakis@virtualopensystems.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S1758622Ab3JKPtq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 11:49:46 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:55060 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754926Ab3JKPtp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 11:49:45 -0400
+Date: Fri, 11 Oct 2013 17:49:38 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "Chen, Gong" <gong.chen@linux.intel.com>
+Cc: tony.luck@intel.com, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 6/8] ACPI, APEI, CPER: Enhance memory reporting capability
+Message-ID: <20131011154938.GK5925@pd.tnic>
+References: <1381473166-29303-1-git-send-email-gong.chen@linux.intel.com>
+ <1381473166-29303-7-git-send-email-gong.chen@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1381473166-29303-7-git-send-email-gong.chen@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In vfio_iommu_type1.c there is a bug in vfio_dma_do_map, when checking
-that pages are not already mapped. Since the check is being done in a
-for loop nested within the main loop, breaking out of it does not create
-the intended behavior. If the underlying IOMMU driver returns a non-NULL
-value, this will be ignored and mapping the DMA range will be attempted
-anyway, leading to unpredictable behavior.
+On Fri, Oct 11, 2013 at 02:32:44AM -0400, Chen, Gong wrote:
+> After H/W error happens under FFM enabled mode, lots of information
+> are shown but some important parts like DIMM location missed. This
+> patch is used to show these extra fileds.
+> 
+> Original-author: Tony Luck <tony.luck@intel.com>
+> Signed-off-by: Chen, Gong <gong.chen@linux.intel.com>
+> ---
+>  drivers/acpi/apei/cper.c | 12 ++++++++++++
+>  1 file changed, 12 insertions(+)
+> 
+> diff --git a/drivers/acpi/apei/cper.c b/drivers/acpi/apei/cper.c
+> index 680230c..2a4389f 100644
+> --- a/drivers/acpi/apei/cper.c
+> +++ b/drivers/acpi/apei/cper.c
+> @@ -28,6 +28,7 @@
+>  #include <linux/module.h>
+>  #include <linux/time.h>
+>  #include <linux/cper.h>
+> +#include <linux/dmi.h>
+>  #include <linux/acpi.h>
+>  #include <linux/pci.h>
+>  #include <linux/aer.h>
+> @@ -210,6 +211,8 @@ static void cper_print_mem(const char *pfx, const struct cper_sec_mem_err *mem)
+>  		printk("%s""card: %d\n", pfx, mem->card);
+>  	if (mem->validation_bits & CPER_MEM_VALID_MODULE)
+>  		printk("%s""module: %d\n", pfx, mem->module);
+> +	if (mem->validation_bits & CPER_MEM_VALID_RANK_NUMBER)
+> +		printk("%s""rank: %d\n", pfx, mem->rank);
+>  	if (mem->validation_bits & CPER_MEM_VALID_BANK)
+>  		printk("%s""bank: %d\n", pfx, mem->bank);
+>  	if (mem->validation_bits & CPER_MEM_VALID_DEVICE)
+> @@ -232,6 +235,15 @@ static void cper_print_mem(const char *pfx, const struct cper_sec_mem_err *mem)
+>  		       etype < ARRAY_SIZE(cper_mem_err_type_strs) ?
+>  		       cper_mem_err_type_strs[etype] : "unknown");
+>  	}
+> +	if (mem->validation_bits & CPER_MEM_VALID_MODULE_HANDLE) {
+> +		const char *bank = NULL, *device = NULL;
+> +		dmi_memdev_name(mem->mem_dev_handle, &bank, &device);
+> +		if (bank != NULL && device != NULL)
+> +			printk("%s""DIMM location: %s %s", pfx, bank, device);
+> +		else
+> +			printk("%s""DIMM DMI handle: 0x%.4x", pfx,
+> +					mem->mem_dev_handle);
 
-This interracts badly with the ARM SMMU driver issue fixed in the patch
-that was submitted with the title:
-"[PATCH 2/2] ARM: SMMU: return NULL on error in arm_smmu_iova_to_phys"
-Both fixes are required in order to use the vfio_iommu_type1 driver
-with an ARM SMMU.
+Just a nitpick: maybe better arg alignment:
 
-This patch refactors the function slightly, in order to also make this
-kind of bug less likely.
+			printk("%s""DIMM DMI handle: 0x%.4x",
+			       pfx, mem->mem_dev_handle);
 
-Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
----
- drivers/vfio/vfio_iommu_type1.c | 40 +++++++++++++++++++++-------------------
- 1 file changed, 21 insertions(+), 19 deletions(-)
-
-diff --git a/drivers/vfio/vfio_iommu_type1.c b/drivers/vfio/vfio_iommu_type1.c
-index fa72a71..023ba12 100644
---- a/drivers/vfio/vfio_iommu_type1.c
-+++ b/drivers/vfio/vfio_iommu_type1.c
-@@ -548,6 +548,8 @@ static int vfio_dma_do_map(struct vfio_iommu *iommu,
- 	long npage;
- 	int ret = 0, prot = 0;
- 	uint64_t mask;
-+	struct vfio_dma *dma = NULL;
-+	unsigned long pfn;
- 
- 	end = map->iova + map->size;
- 
-@@ -590,8 +592,6 @@ static int vfio_dma_do_map(struct vfio_iommu *iommu,
- 	}
- 
- 	for (iova = map->iova; iova < end; iova += size, vaddr += size) {
--		struct vfio_dma *dma = NULL;
--		unsigned long pfn;
- 		long i;
- 
- 		/* Pin a contiguous chunk of memory */
-@@ -600,16 +600,15 @@ static int vfio_dma_do_map(struct vfio_iommu *iommu,
- 		if (npage <= 0) {
- 			WARN_ON(!npage);
- 			ret = (int)npage;
--			break;
-+			goto out;
- 		}
- 
- 		/* Verify pages are not already mapped */
- 		for (i = 0; i < npage; i++) {
- 			if (iommu_iova_to_phys(iommu->domain,
- 					       iova + (i << PAGE_SHIFT))) {
--				vfio_unpin_pages(pfn, npage, prot, true);
- 				ret = -EBUSY;
--				break;
-+				goto out_unpin;
- 			}
- 		}
- 
-@@ -619,8 +618,7 @@ static int vfio_dma_do_map(struct vfio_iommu *iommu,
- 		if (ret) {
- 			if (ret != -EBUSY ||
- 			    map_try_harder(iommu, iova, pfn, npage, prot)) {
--				vfio_unpin_pages(pfn, npage, prot, true);
--				break;
-+				goto out_unpin;
- 			}
- 		}
- 
-@@ -675,9 +673,8 @@ static int vfio_dma_do_map(struct vfio_iommu *iommu,
- 			dma = kzalloc(sizeof(*dma), GFP_KERNEL);
- 			if (!dma) {
- 				iommu_unmap(iommu->domain, iova, size);
--				vfio_unpin_pages(pfn, npage, prot, true);
- 				ret = -ENOMEM;
--				break;
-+				goto out_unpin;
- 			}
- 
- 			dma->size = size;
-@@ -688,16 +685,21 @@ static int vfio_dma_do_map(struct vfio_iommu *iommu,
- 		}
- 	}
- 
--	if (ret) {
--		struct vfio_dma *tmp;
--		iova = map->iova;
--		size = map->size;
--		while ((tmp = vfio_find_dma(iommu, iova, size))) {
--			int r = vfio_remove_dma_overlap(iommu, iova,
--							&size, tmp);
--			if (WARN_ON(r || !size))
--				break;
--		}
-+	WARN_ON(ret);
-+	mutex_unlock(&iommu->lock);
-+	return ret;
-+
-+out_unpin:
-+	vfio_unpin_pages(pfn, npage, prot, true);
-+
-+out:
-+	iova = map->iova;
-+	size = map->size;
-+	while ((dma = vfio_find_dma(iommu, iova, size))) {
-+		int r = vfio_remove_dma_overlap(iommu, iova,
-+						&size, dma);
-+		if (WARN_ON(r || !size))
-+			break;
- 	}
- 
- 	mutex_unlock(&iommu->lock);
 -- 
-1.8.1.2
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
