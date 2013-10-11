@@ -1,81 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932222Ab3JKLAH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 07:00:07 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58574 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757908Ab3JKKnU (ORCPT
+	id S932305Ab3JKLA2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 07:00:28 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:42546 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932251Ab3JKLAX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 06:43:20 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Henrik Rydberg <rydberg@euromail.se>, Guenter Roeck <linux@roeck-us.net>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 047/100] hwmon: (applesmc) Check key count before proceeding
-Date: Fri, 11 Oct 2013 11:41:17 +0100
-Message-Id: <1381488130-30235-48-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
-References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Fri, 11 Oct 2013 07:00:23 -0400
+MIME-Version: 1.0
+In-Reply-To: <1381392071-21407-2-git-send-email-mika.westerberg@linux.intel.com>
+References: <1381392071-21407-1-git-send-email-mika.westerberg@linux.intel.com>
+	<1381392071-21407-2-git-send-email-mika.westerberg@linux.intel.com>
+Date: Fri, 11 Oct 2013 13:00:22 +0200
+Message-ID: <CACRpkdZgP9VnVSpBN2Wg4ihL4ryZXeP=ASwr6BCP=u79eg6s6g@mail.gmail.com>
+Subject: Re: [PATCH v2 1/5] gpiolib / ACPI: move acpi_gpiochip_free_interrupts
+ next to the request function
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Alexandre Courbot <acourbot@nvidia.com>, Rob Landley <rob@landley.net>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.23 -stable review patch.  If anyone has any objections, please let me know.
+On Thu, Oct 10, 2013 at 10:01 AM, Mika Westerberg
+<mika.westerberg@linux.intel.com> wrote:
 
-------------------
+> It makes more sense to have these functions close to each other. No
+> functional changes.
+>
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-From: Henrik Rydberg <rydberg@euromail.se>
+So I've applied this first patch, and I'm just waiting for Alexandre's
+ACK on the remaining patches concerning gpiod so we get this
+100% right.
 
-commit 5f4513864304672e6ea9eac60583eeac32e679f2 upstream.
-
-After reports from Chris and Josh Boyer of a rare crash in applesmc,
-Guenter pointed at the initialization problem fixed below. The patch
-has not been verified to fix the crash, but should be applied
-regardless.
-
-Reported-by: <jwboyer@fedoraproject.org>
-Suggested-by: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/hwmon/applesmc.c | 11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/hwmon/applesmc.c b/drivers/hwmon/applesmc.c
-index 2cde9ec..0882b25 100644
---- a/drivers/hwmon/applesmc.c
-+++ b/drivers/hwmon/applesmc.c
-@@ -489,16 +489,25 @@ static int applesmc_init_smcreg_try(void)
- {
- 	struct applesmc_registers *s = &smcreg;
- 	bool left_light_sensor, right_light_sensor;
-+	unsigned int count;
- 	u8 tmp[1];
- 	int ret;
- 
- 	if (s->init_complete)
- 		return 0;
- 
--	ret = read_register_count(&s->key_count);
-+	ret = read_register_count(&count);
- 	if (ret)
- 		return ret;
- 
-+	if (s->cache && s->key_count != count) {
-+		pr_warn("key count changed from %d to %d\n",
-+			s->key_count, count);
-+		kfree(s->cache);
-+		s->cache = NULL;
-+	}
-+	s->key_count = count;
-+
- 	if (!s->cache)
- 		s->cache = kcalloc(s->key_count, sizeof(*s->cache), GFP_KERNEL);
- 	if (!s->cache)
--- 
-1.8.3.2
-
+Yours,
+Linus Walleij
