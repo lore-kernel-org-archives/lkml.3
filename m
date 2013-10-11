@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759408Ab3JKUdz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:33:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45737 "EHLO
+	id S1759456Ab3JKUeT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:34:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45728 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758950Ab3JKTkN (ORCPT
+	with ESMTP id S1758941Ab3JKTkM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:40:13 -0400
+	Fri, 11 Oct 2013 15:40:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kirill Tkhai <tkhai@yandex.ru>, David Miller <davem@davemloft.net>
-Subject: [ 069/110] sparc64: Remove RWSEM export leftovers
-Date: Fri, 11 Oct 2013 12:38:49 -0700
-Message-Id: <20131011193815.367486327@linuxfoundation.org>
+        Michael Neuling <mikey@neuling.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 052/110] powerpc/tm: Switch out userspace PPR and DSCR sooner
+Date: Fri, 11 Oct 2013 12:38:32 -0700
+Message-Id: <20131011193813.490550089@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
 References: <20131011193807.584188672@linuxfoundation.org>
@@ -26,48 +27,211 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kirill Tkhai <tkhai@yandex.ru>
+From: Michael Neuling <mikey@neuling.org>
 
-[ Upstream commit 61d9b9355b0d427bd1e732bd54628ff9103e496f ]
+commit e9bdc3d6143d1c4b8d8ce5231fc958268331f983 upstream.
 
-The functions
+When we do a treclaim or trecheckpoint we end up running with userspace
+PPR and DSCR values.  Currently we don't do anything special to avoid
+running with user values which could cause a severe performance
+degradation.
 
-			__down_read
-			__down_read_trylock
-			__down_write
-			__down_write_trylock
-			__up_read
-			__up_write
-			__downgrade_write
+This patch moves the PPR and DSCR save and restore around treclaim and
+trecheckpoint so that we run with user values for a much shorter period.
+More care is taken with the PPR as it's impact is greater than the DSCR.
 
-are implemented inline, so remove corresponding EXPORT_SYMBOLs
-(They lead to compile errors on RT kernel).
+This is similar to user exceptions, where we run HTM_MEDIUM early to
+ensure that we don't run with a userspace PPR values in the kernel.
 
-Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
-CC: David Miller <davem@davemloft.net>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Michael Neuling <mikey@neuling.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- arch/sparc/lib/ksyms.c |    9 ---------
- 1 file changed, 9 deletions(-)
 
---- a/arch/sparc/lib/ksyms.c
-+++ b/arch/sparc/lib/ksyms.c
-@@ -98,15 +98,6 @@ EXPORT_SYMBOL(___copy_from_user);
- EXPORT_SYMBOL(___copy_in_user);
- EXPORT_SYMBOL(__clear_user);
+---
+ arch/powerpc/kernel/tm.S |   94 +++++++++++++++++++++++++++++++----------------
+ 1 file changed, 63 insertions(+), 31 deletions(-)
+
+--- a/arch/powerpc/kernel/tm.S
++++ b/arch/powerpc/kernel/tm.S
+@@ -79,6 +79,11 @@ _GLOBAL(tm_abort)
+ 	TABORT(R3)
+ 	blr
  
--/* RW semaphores */
--EXPORT_SYMBOL(__down_read);
--EXPORT_SYMBOL(__down_read_trylock);
--EXPORT_SYMBOL(__down_write);
--EXPORT_SYMBOL(__down_write_trylock);
--EXPORT_SYMBOL(__up_read);
--EXPORT_SYMBOL(__up_write);
--EXPORT_SYMBOL(__downgrade_write);
++	.section	".toc","aw"
++DSCR_DEFAULT:
++	.tc dscr_default[TC],dscr_default
++
++	.section	".text"
+ 
+ /* void tm_reclaim(struct thread_struct *thread,
+  *                 unsigned long orig_msr,
+@@ -178,11 +183,18 @@ dont_backup_fp:
+ 	std	r1, PACATMSCRATCH(r13)
+ 	ld	r1, PACAR1(r13)
+ 
++	/* Store the PPR in r11 and reset to decent value */
++	std	r11, GPR11(r1)			/* Temporary stash */
++	mfspr	r11, SPRN_PPR
++	HMT_MEDIUM
++
+ 	/* Now get some more GPRS free */
+ 	std	r7, GPR7(r1)			/* Temporary stash */
+ 	std	r12, GPR12(r1)			/* ''   ''    ''   */
+ 	ld	r12, STACK_PARAM(0)(r1)		/* Param 0, thread_struct * */
+ 
++	std	r11, THREAD_TM_PPR(r12)		/* Store PPR and free r11 */
++
+ 	addi	r7, r12, PT_CKPT_REGS		/* Thread's ckpt_regs */
+ 
+ 	/* Make r7 look like an exception frame so that we
+@@ -194,15 +206,19 @@ dont_backup_fp:
+ 	SAVE_GPR(0, r7)				/* user r0 */
+ 	SAVE_GPR(2, r7)			/* user r2 */
+ 	SAVE_4GPRS(3, r7)			/* user r3-r6 */
+-	SAVE_4GPRS(8, r7)			/* user r8-r11 */
++	SAVE_GPR(8, r7)				/* user r8 */
++	SAVE_GPR(9, r7)				/* user r9 */
++	SAVE_GPR(10, r7)			/* user r10 */
+ 	ld	r3, PACATMSCRATCH(r13)		/* user r1 */
+ 	ld	r4, GPR7(r1)			/* user r7 */
+-	ld	r5, GPR12(r1)			/* user r12 */
+-	GET_SCRATCH0(6)				/* user r13 */
++	ld	r5, GPR11(r1)			/* user r11 */
++	ld	r6, GPR12(r1)			/* user r12 */
++	GET_SCRATCH0(8)				/* user r13 */
+ 	std	r3, GPR1(r7)
+ 	std	r4, GPR7(r7)
+-	std	r5, GPR12(r7)
+-	std	r6, GPR13(r7)
++	std	r5, GPR11(r7)
++	std	r6, GPR12(r7)
++	std	r8, GPR13(r7)
+ 
+ 	SAVE_NVGPRS(r7)				/* user r14-r31 */
+ 
+@@ -225,14 +241,12 @@ dont_backup_fp:
+ 	std	r6, _XER(r7)
+ 
+ 
+-	/* ******************** TAR, PPR, DSCR ********** */
++	/* ******************** TAR, DSCR ********** */
+ 	mfspr	r3, SPRN_TAR
+-	mfspr	r4, SPRN_PPR
+-	mfspr	r5, SPRN_DSCR
++	mfspr	r4, SPRN_DSCR
+ 
+ 	std	r3, THREAD_TM_TAR(r12)
+-	std	r4, THREAD_TM_PPR(r12)
+-	std	r5, THREAD_TM_DSCR(r12)
++	std	r4, THREAD_TM_DSCR(r12)
+ 
+ 	/* MSR and flags:  We don't change CRs, and we don't need to alter
+ 	 * MSR.
+@@ -249,7 +263,7 @@ dont_backup_fp:
+ 	std	r3, THREAD_TM_TFHAR(r12)
+ 	std	r4, THREAD_TM_TFIAR(r12)
+ 
+-	/* AMR and PPR are checkpointed too, but are unsupported by Linux. */
++	/* AMR is checkpointed too, but is unsupported by Linux. */
+ 
+ 	/* Restore original MSR/IRQ state & clear TM mode */
+ 	ld	r14, TM_FRAME_L0(r1)		/* Orig MSR */
+@@ -265,6 +279,12 @@ dont_backup_fp:
+ 	mtcr	r4
+ 	mtlr	r0
+ 	ld	r2, 40(r1)
++
++	/* Load system default DSCR */
++	ld	r4, DSCR_DEFAULT@toc(r2)
++	ld	r0, 0(r4)
++	mtspr	SPRN_DSCR, r0
++
+ 	blr
+ 
+ 
+@@ -349,44 +369,50 @@ dont_restore_fp:
+ 
+ restore_gprs:
+ 
+-	/* ******************** TAR, PPR, DSCR ********** */
+-	ld	r4, THREAD_TM_TAR(r3)
+-	ld	r5, THREAD_TM_PPR(r3)
+-	ld	r6, THREAD_TM_DSCR(r3)
++	/* ******************** CR,LR,CCR,MSR ********** */
++	ld	r4, _CTR(r7)
++	ld	r5, _LINK(r7)
++	ld	r6, _CCR(r7)
++	ld	r8, _XER(r7)
++
++	mtctr	r4
++	mtlr	r5
++	mtcr	r6
++	mtxer	r8
+ 
++	/* ******************** TAR ******************** */
++	ld	r4, THREAD_TM_TAR(r3)
+ 	mtspr	SPRN_TAR,	r4
+-	mtspr	SPRN_PPR,	r5
+-	mtspr	SPRN_DSCR,	r6
+ 
+-	/* ******************** CR,LR,CCR,MSR ********** */
+-	ld	r3, _CTR(r7)
+-	ld	r4, _LINK(r7)
+-	ld	r5, _CCR(r7)
+-	ld	r6, _XER(r7)
 -
- /* Atomic counter implementation. */
- EXPORT_SYMBOL(atomic_add);
- EXPORT_SYMBOL(atomic_add_ret);
+-	mtctr	r3
+-	mtlr	r4
+-	mtcr	r5
+-	mtxer	r6
++	/* Load up the PPR and DSCR in GPRs only at this stage */
++	ld	r5, THREAD_TM_DSCR(r3)
++	ld	r6, THREAD_TM_PPR(r3)
+ 
+ 	/* MSR and flags:  We don't change CRs, and we don't need to alter
+ 	 * MSR.
+ 	 */
+ 
+ 	REST_4GPRS(0, r7)			/* GPR0-3 */
+-	REST_GPR(4, r7)				/* GPR4-6 */
+-	REST_GPR(5, r7)
+-	REST_GPR(6, r7)
++	REST_GPR(4, r7)				/* GPR4 */
+ 	REST_4GPRS(8, r7)			/* GPR8-11 */
+ 	REST_2GPRS(12, r7)			/* GPR12-13 */
+ 
+ 	REST_NVGPRS(r7)				/* GPR14-31 */
+ 
+-	ld	r7, GPR7(r7)			/* GPR7 */
++	/* Load up PPR and DSCR here so we don't run with user values for long
++	 */
++	mtspr	SPRN_DSCR, r5
++	mtspr	SPRN_PPR, r6
++
++	REST_GPR(5, r7)				/* GPR5-7 */
++	REST_GPR(6, r7)
++	ld	r7, GPR7(r7)
+ 
+ 	/* Commit register state as checkpointed state: */
+ 	TRECHKPT
+ 
++	HMT_MEDIUM
++
+ 	/* Our transactional state has now changed.
+ 	 *
+ 	 * Now just get out of here.  Transactional (current) state will be
+@@ -405,6 +431,12 @@ restore_gprs:
+ 	mtcr	r4
+ 	mtlr	r0
+ 	ld	r2, 40(r1)
++
++	/* Load system default DSCR */
++	ld	r4, DSCR_DEFAULT@toc(r2)
++	ld	r0, 0(r4)
++	mtspr	SPRN_DSCR, r0
++
+ 	blr
+ 
+ 	/* ****************************************************************** */
 
 
