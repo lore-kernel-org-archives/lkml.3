@@ -1,107 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753475Ab3JKFik (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 01:38:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62914 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752341Ab3JKFii (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 01:38:38 -0400
-Date: Fri, 11 Oct 2013 08:38:31 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Xiao Guangrong <xiaoguangrong.eric@gmail.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        avi.kivity@gmail.com, pbonzini@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v2 12/15] KVM: MMU: allow locklessly access shadow page
- table out of vcpu thread
-Message-ID: <20131011053831.GG15954@redhat.com>
-References: <1378376958-27252-13-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <20131008012355.GA3588@amt.cnet>
- <CAD6C3B4-DD55-47EB-9BC0-17867937AE2D@gmail.com>
- <20131009015627.GA4816@amt.cnet>
- <525533DB.1060104@gmail.com>
- <20131010014710.GA2198@amt.cnet>
- <20131010120845.GT3574@redhat.com>
- <20131010164222.GB3211@amt.cnet>
- <20131010191646.GE15954@redhat.com>
- <20131010210301.GA7275@amt.cnet>
+	id S1752654Ab3JKFrC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 01:47:02 -0400
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:51484 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751947Ab3JKFrA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 01:47:00 -0400
+Date: Fri, 11 Oct 2013 07:46:55 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Fengguang Wu <fengguang.wu@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jakub Jelinek <jakub@redhat.com>, Richard Henderson <rth@twiddle.net>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH, -v3] compiler/gcc4: Add quirk for 'asm goto'
+ miscompilation bug
+Message-ID: <20131011054655.GA28077@gmail.com>
+References: <20131009190851.GX30970@tucnak.zalov.cz>
+ <20131010062238.GB9853@gmail.com>
+ <20131010065104.GY30970@tucnak.zalov.cz>
+ <20131010080457.GC21875@tucnak.zalov.cz>
+ <20131010082430.GA20577@gmail.com>
+ <20131010083107.GZ30970@tucnak.zalov.cz>
+ <5256B3E2.4060401@twiddle.net>
+ <20131010142703.GI30970@tucnak.zalov.cz>
+ <20131010151219.GC5167@gmail.com>
+ <20131011043553.GA9015@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131010210301.GA7275@amt.cnet>
+In-Reply-To: <20131011043553.GA9015@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 10, 2013 at 06:03:01PM -0300, Marcelo Tosatti wrote:
-> On Thu, Oct 10, 2013 at 10:16:46PM +0300, Gleb Natapov wrote:
-> > On Thu, Oct 10, 2013 at 01:42:22PM -0300, Marcelo Tosatti wrote:
-> > > On Thu, Oct 10, 2013 at 03:08:45PM +0300, Gleb Natapov wrote:
-> > > > On Wed, Oct 09, 2013 at 10:47:10PM -0300, Marcelo Tosatti wrote:
-> > > > > > >> Gleb has a idea that uses RCU_DESTORY to protect the shadow page table
-> > > > > > >> and encodes the page-level into the spte (since we need to check if the spte
-> > > > > > >> is the last-spte. ).  How about this?
-> > > > > > > 
-> > > > > > > Pointer please? Why is DESTROY_SLAB_RCU any safer than call_rcu with
-> > > > > > > regards to limitation? (maybe it is).
-> > > > > > 
-> > > > > > For my experience, freeing shadow page and allocing shadow page are balanced,
-> > > > > > we can check it by (make -j12 on a guest with 4 vcpus and):
-> > > > > > 
-> > > > > > # echo > trace
-> > > > > > [root@eric-desktop tracing]# cat trace > ~/log | sleep 3
-> > > > > > [root@eric-desktop tracing]# cat ~/log | grep new | wc -l
-> > > > > > 10816
-> > > > > > [root@eric-desktop tracing]# cat ~/log | grep prepare | wc -l
-> > > > > > 10656
-> > > > > > [root@eric-desktop tracing]# cat set_event
-> > > > > > kvmmmu:kvm_mmu_get_page
-> > > > > > kvmmmu:kvm_mmu_prepare_zap_page
-> > > > > > 
-> > > > > > alloc VS. free = 10816 : 10656
-> > > > > > 
-> > > > > > So that, mostly all allocing and freeing are done in the slab's
-> > > > > > cache and the slab frees shdadow pages very slowly, there is no rcu issue.
-> > > > > 
-> > > > > A more detailed test case would be:
-> > > > > 
-> > > > > - cpu0-vcpu0 releasing pages as fast as possible
-> > > > > - cpu1 executing get_dirty_log
-> > > > > 
-> > > > > Think of a very large guest.
-> > > > > 
-> > > > The number of shadow pages allocated from slab will be bounded by
-> > > > n_max_mmu_pages, 
-> > > 
-> > > Correct, but that limit is not suitable (maximum number of mmu pages
-> > > should be larger than number of mmu pages freeable in a rcu grace
-> > > period).
-> > > 
-> > I am not sure I understand what you mean here. What I was sating is that if
-> > we change code to allocate sp->spt from slab, this slab will never have
-> > more then n_max_mmu_pages objects in it.
-> 
-> n_max_mmu_pages is not a suitable limit to throttle freeing of pages via
-> RCU (its too large). If the free memory watermarks are smaller than 
-> n_max_mmu_pages for all guests, OOM is possible.
-> 
-Ah, yes. I am not saying n_max_mmu_pages will throttle RCU, just saying
-that slab size will be bound, so hopefully shrinker will touch it
-rarely.
 
-> > > > and, in addition, page released to slab is immediately
-> > > > available for allocation, no need to wait for grace period. 
-> > > 
-> > > See SLAB_DESTROY_BY_RCU comment at include/linux/slab.h.
-> > > 
-> > This comment is exactly what I was referring to in the code you quoted. Do
-> > you see anything problematic in what comment describes?
+* Fengguang Wu <fengguang.wu@intel.com> wrote:
+
+> > Indeed. Something like the updated version below?
+> > 
+> > [ I kept the asm_volatile_goto() naming to make sure the implicit volatile 
+> >   is visible. ]
 > 
-> "This delays freeing the SLAB page by a grace period, it does _NOT_
-> delay object freeing." The page is not available for allocation.
-By "page" I mean "spt page" which is a slab object. So "spt page"
-AKA slab object will be available fo allocation immediately.
- 
---
-			Gleb.
+> Ingo, I applied this patch (as commit c015a7f0b746) on top of 
+> tip/sched/core
+> 
+>         3354781a2184 "sched/numa: Reflow task_numa_group() to avoid a compiler warning"
+> 
+> The below results show that it does fixed the many oops:
+
+Thanks Fengguang!
+
+I've added your Tested-by tag as well and have split the patch in two 
+parts: the upstream part with a -stable tag and the rmwcc.h part that goes 
+into the scheduler tree.
+
+If there are no objections I will send a pull request for the upstream 
+part to Linus later today.
+
+Thanks,
+
+	Ingo
