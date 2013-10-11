@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933400Ab3JKUWt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:22:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45941 "EHLO
+	id S1758403Ab3JKUXH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:23:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45937 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932177Ab3JKTkp (ORCPT
+	with ESMTP id S932172Ab3JKTko (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:40:45 -0400
+	Fri, 11 Oct 2013 15:40:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Josef Bacik <jbacik@fusionio.com>,
-        Chris Mason <chris.mason@fusionio.com>
-Subject: [ 103/110] Btrfs: change how we queue blocks for backref checking
-Date: Fri, 11 Oct 2013 12:39:23 -0700
-Message-Id: <20131011193819.007429862@linuxfoundation.org>
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [ 102/110] s390: fix system call restart after inferior call
+Date: Fri, 11 Oct 2013 12:39:22 -0700
+Message-Id: <20131011193818.902202549@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
 References: <20131011193807.584188672@linuxfoundation.org>
@@ -27,68 +26,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josef Bacik <jbacik@fusionio.com>
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
 
-commit b6c60c8018c4e9beb2f83fc82c09f9d033766571 upstream.
+commit dbbfe487e5f3fc00c9fe5207d63309859704d12f upstream.
 
-Previously we only added blocks to the list to have their backrefs checked if
-the level of the block is right above the one we are searching for.  This is
-because we want to make sure we don't add the entire path up to the root to the
-lists to make sure we process things one at a time.  This assumes that if any
-blocks in the path to the root are going to be not checked (shared in other
-words) then they will be in the level right above the current block on up.  This
-isn't quite right though since we can have blocks higher up the list that are
-shared because they are attached to a reloc root.  But we won't add this block
-to be checked and then later on we will BUG_ON(!upper->checked).  So instead
-keep track of wether or not we've queued a block to be checked in this current
-search, and if we haven't go ahead and queue it to be checked.  This patch fixed
-the panic I was seeing where we BUG_ON(!upper->checked).  Thanks,
+Git commit 616498813b11ffef "s390: system call path micro optimization"
+introduced a regression in regard to system call restarting and inferior
+function calls via the ptrace interface. The pointer to the system call
+table needs to be loaded in sysc_sigpending if do_signal returns with
+TIF_SYSCALl set after it restored a system call context.
 
-Signed-off-by: Josef Bacik <jbacik@fusionio.com>
-Signed-off-by: Chris Mason <chris.mason@fusionio.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/relocation.c |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ arch/s390/kernel/entry.S   |    1 +
+ arch/s390/kernel/entry64.S |    1 +
+ 2 files changed, 2 insertions(+)
 
---- a/fs/btrfs/relocation.c
-+++ b/fs/btrfs/relocation.c
-@@ -691,6 +691,7 @@ struct backref_node *build_backref_tree(
- 	int cowonly;
- 	int ret;
- 	int err = 0;
-+	bool need_check = true;
- 
- 	path1 = btrfs_alloc_path();
- 	path2 = btrfs_alloc_path();
-@@ -914,6 +915,7 @@ again:
- 			cur->bytenr);
- 
- 		lower = cur;
-+		need_check = true;
- 		for (; level < BTRFS_MAX_LEVEL; level++) {
- 			if (!path2->nodes[level]) {
- 				BUG_ON(btrfs_root_bytenr(&root->root_item) !=
-@@ -957,14 +959,12 @@ again:
- 
- 				/*
- 				 * add the block to pending list if we
--				 * need check its backrefs. only block
--				 * at 'cur->level + 1' is added to the
--				 * tail of pending list. this guarantees
--				 * we check backrefs from lower level
--				 * blocks to upper level blocks.
-+				 * need check its backrefs, we only do this once
-+				 * while walking up a tree as we will catch
-+				 * anything else later on.
- 				 */
--				if (!upper->checked &&
--				    level == cur->level + 1) {
-+				if (!upper->checked && need_check) {
-+					need_check = false;
- 					list_add_tail(&edge->list[UPPER],
- 						      &list);
- 				} else
+--- a/arch/s390/kernel/entry.S
++++ b/arch/s390/kernel/entry.S
+@@ -265,6 +265,7 @@ sysc_sigpending:
+ 	tm	__TI_flags+3(%r12),_TIF_SYSCALL
+ 	jno	sysc_return
+ 	lm	%r2,%r7,__PT_R2(%r11)	# load svc arguments
++	l	%r10,__TI_sysc_table(%r12)	# 31 bit system call table
+ 	xr	%r8,%r8			# svc 0 returns -ENOSYS
+ 	clc	__PT_INT_CODE+2(2,%r11),BASED(.Lnr_syscalls+2)
+ 	jnl	sysc_nr_ok		# invalid svc number -> do svc 0
+--- a/arch/s390/kernel/entry64.S
++++ b/arch/s390/kernel/entry64.S
+@@ -293,6 +293,7 @@ sysc_sigpending:
+ 	tm	__TI_flags+7(%r12),_TIF_SYSCALL
+ 	jno	sysc_return
+ 	lmg	%r2,%r7,__PT_R2(%r11)	# load svc arguments
++	lg	%r10,__TI_sysc_table(%r12)	# address of system call table
+ 	lghi	%r8,0			# svc 0 returns -ENOSYS
+ 	llgh	%r1,__PT_INT_CODE+2(%r11)	# load new svc number
+ 	cghi	%r1,NR_syscalls
 
 
