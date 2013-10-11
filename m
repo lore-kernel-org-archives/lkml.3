@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932631Ab3JKTlm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:41:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46271 "EHLO
+	id S933003Ab3JKT7q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:59:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46304 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932577Ab3JKTlg (ORCPT
+	with ESMTP id S932627Ab3JKTll (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:41:36 -0400
+	Fri, 11 Oct 2013 15:41:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>
-Subject: [ 062/135] iommu/arm-smmu: dont enable SMMU device until probing has completed
-Date: Fri, 11 Oct 2013 12:39:03 -0700
-Message-Id: <20131011193952.026756189@linuxfoundation.org>
+        Nathan Fontenot <nfont@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 069/135] powerpc: Fix memory hotplug with sparse vmemmap
+Date: Fri, 11 Oct 2013 12:39:10 -0700
+Message-Id: <20131011193952.786691435@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -26,44 +27,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Nathan Fontenot <nfont@linux.vnet.ibm.com>
 
-commit fd90cecbde065eac6ecc3ef38abace725ad27010 upstream.
+commit f7e3334a6bcb42e7295a9bd9cb36ca4e6e4e66b4 upstream.
 
-We currently reset and enable the SMMU before the device has finished
-being probed, so if we fail later on (for example, because we couldn't
-request a global irq successfully) then we will leave the device in an
-active state.
+Previous commit 46723bfa540... introduced a new config option
+HAVE_BOOTMEM_INFO_NODE that ended up breaking memory hot-remove for ppc
+when sparse vmemmap is not defined.
 
-This patch delays the reset and enabling of the SMMU hardware until
-probing has completed.
+This patch defines HAVE_BOOTMEM_INFO_NODE for ppc and adds the call to
+register_page_bootmem_info_node. Without this we get a BUG_ON for memory
+hot remove in put_page_bootmem().
 
-Signed-off-by: Will Deacon <will.deacon@arm.com>
+This also adds a stub for register_page_bootmem_memmap to allow ppc to build
+with sparse vmemmap defined. Leaving this as a stub is fine since the same
+vmemmap addresses are also handled in vmemmap_populate and as such are
+properly mapped.
+
+Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iommu/arm-smmu.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/powerpc/mm/init_64.c |    4 ++++
+ arch/powerpc/mm/mem.c     |    9 +++++++++
+ mm/Kconfig                |    2 +-
+ 3 files changed, 14 insertions(+), 1 deletion(-)
 
---- a/drivers/iommu/arm-smmu.c
-+++ b/drivers/iommu/arm-smmu.c
-@@ -1839,8 +1839,6 @@ static int arm_smmu_device_dt_probe(stru
- 		goto out_put_parent;
- 	}
+--- a/arch/powerpc/mm/init_64.c
++++ b/arch/powerpc/mm/init_64.c
+@@ -300,5 +300,9 @@ void vmemmap_free(unsigned long start, u
+ {
+ }
  
--	arm_smmu_device_reset(smmu);
--
- 	for (i = 0; i < smmu->num_global_irqs; ++i) {
- 		err = request_irq(smmu->irqs[i],
- 				  arm_smmu_global_fault,
-@@ -1858,6 +1856,8 @@ static int arm_smmu_device_dt_probe(stru
- 	spin_lock(&arm_smmu_devices_lock);
- 	list_add(&smmu->list, &arm_smmu_devices);
- 	spin_unlock(&arm_smmu_devices_lock);
++void register_page_bootmem_memmap(unsigned long section_nr,
++				  struct page *start_page, unsigned long size)
++{
++}
+ #endif /* CONFIG_SPARSEMEM_VMEMMAP */
+ 
+--- a/arch/powerpc/mm/mem.c
++++ b/arch/powerpc/mm/mem.c
+@@ -297,12 +297,21 @@ void __init paging_init(void)
+ }
+ #endif /* ! CONFIG_NEED_MULTIPLE_NODES */
+ 
++static void __init register_page_bootmem_info(void)
++{
++	int i;
 +
-+	arm_smmu_device_reset(smmu);
- 	return 0;
++	for_each_online_node(i)
++		register_page_bootmem_info_node(NODE_DATA(i));
++}
++
+ void __init mem_init(void)
+ {
+ #ifdef CONFIG_SWIOTLB
+ 	swiotlb_init(0);
+ #endif
  
- out_free_irqs:
++	register_page_bootmem_info();
+ 	high_memory = (void *) __va(max_low_pfn * PAGE_SIZE);
+ 	set_max_mapnr(max_pfn);
+ 	free_all_bootmem();
+--- a/mm/Kconfig
++++ b/mm/Kconfig
+@@ -183,7 +183,7 @@ config MEMORY_HOTPLUG_SPARSE
+ config MEMORY_HOTREMOVE
+ 	bool "Allow for memory hot remove"
+ 	select MEMORY_ISOLATION
+-	select HAVE_BOOTMEM_INFO_NODE if X86_64
++	select HAVE_BOOTMEM_INFO_NODE if (X86_64 || PPC64)
+ 	depends on MEMORY_HOTPLUG && ARCH_ENABLE_MEMORY_HOTREMOVE
+ 	depends on MIGRATION
+ 
 
 
