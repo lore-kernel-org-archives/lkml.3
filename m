@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759049Ab3JKTk2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:40:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45743 "EHLO
+	id S1161051Ab3JKU1u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:27:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45829 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758956Ab3JKTkO (ORCPT
+	with ESMTP id S1759047Ab3JKTk2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:40:14 -0400
+	Fri, 11 Oct 2013 15:40:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Brad Spengler <spender@grsecurity.net>,
-        Kees Cook <keescook@chromium.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 071/110] sparc: fix ldom_reboot buffer overflow harder
-Date: Fri, 11 Oct 2013 12:38:51 -0700
-Message-Id: <20131011193815.576100463@linuxfoundation.org>
+        Dmitry Khromov <icechrome@gmail.com>, Bing Zhao <bzhao@marvell.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 080/110] mwifiex: fix NULL pointer dereference in usb suspend handler
+Date: Fri, 11 Oct 2013 12:39:00 -0700
+Message-Id: <20131011193816.542926019@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
 References: <20131011193807.584188672@linuxfoundation.org>
@@ -28,34 +27,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Bing Zhao <bzhao@marvell.com>
 
-[ Upstream commit 20928bd3f08afb036c096d9559d581926b895918 ]
+commit 346ece0b7ba2730b4d633b9e371fe55488803102 upstream.
 
-The length argument to strlcpy was still wrong. It could overflow the end of
-full_boot_str by 5 bytes. Instead of strcat and strlcpy, just use snprint.
+Bug 60815 - Interface hangs in mwifiex_usb
+https://bugzilla.kernel.org/show_bug.cgi?id=60815
 
-Reported-by: Brad Spengler <spender@grsecurity.net>
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+[ 2.883807] BUG: unable to handle kernel NULL pointer dereference
+            at 0000000000000048
+[ 2.883813] IP: [<ffffffff815a65e0>] pfifo_fast_enqueue+0x90/0x90
+
+[ 2.883834] CPU: 1 PID: 3220 Comm: kworker/u8:90 Not tainted
+            3.11.1-monotone-l0 #6
+[ 2.883834] Hardware name: Microsoft Corporation Surface with
+            Windows 8 Pro/Surface with Windows 8 Pro,
+            BIOS 1.03.0450 03/29/2013
+
+On Surface Pro, suspend to ram gives a NULL pointer dereference in
+pfifo_fast_enqueue(). The stack trace reveals that the offending
+call is clearing carrier in mwifiex_usb suspend handler.
+
+Since commit 1499d9f "mwifiex: don't drop carrier flag over suspend"
+has removed the carrier flag handling over suspend/resume in SDIO
+and PCIe drivers, I'm removing it in USB driver too. This also fixes
+the bug for Surface Pro.
+
+Tested-by: Dmitry Khromov <icechrome@gmail.com>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- arch/sparc/kernel/ds.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
 
---- a/arch/sparc/kernel/ds.c
-+++ b/arch/sparc/kernel/ds.c
-@@ -842,9 +842,8 @@ void ldom_reboot(const char *boot_comman
- 	if (boot_command && strlen(boot_command)) {
- 		unsigned long len;
+---
+ drivers/net/wireless/mwifiex/usb.c |    7 -------
+ 1 file changed, 7 deletions(-)
+
+--- a/drivers/net/wireless/mwifiex/usb.c
++++ b/drivers/net/wireless/mwifiex/usb.c
+@@ -446,9 +446,6 @@ static int mwifiex_usb_suspend(struct us
+ 	 */
+ 	adapter->is_suspended = true;
  
--		strcpy(full_boot_str, "boot ");
--		strlcpy(full_boot_str + strlen("boot "), boot_command,
--			sizeof(full_boot_str));
-+		snprintf(full_boot_str, sizeof(full_boot_str), "boot %s",
-+			 boot_command);
- 		len = strlen(full_boot_str);
+-	for (i = 0; i < adapter->priv_num; i++)
+-		netif_carrier_off(adapter->priv[i]->netdev);
+-
+ 	if (atomic_read(&card->rx_cmd_urb_pending) && card->rx_cmd.urb)
+ 		usb_kill_urb(card->rx_cmd.urb);
  
- 		if (reboot_data_supported) {
+@@ -508,10 +505,6 @@ static int mwifiex_usb_resume(struct usb
+ 						  MWIFIEX_RX_CMD_BUF_SIZE);
+ 	}
+ 
+-	for (i = 0; i < adapter->priv_num; i++)
+-		if (adapter->priv[i]->media_connected)
+-			netif_carrier_on(adapter->priv[i]->netdev);
+-
+ 	/* Disable Host Sleep */
+ 	if (adapter->hs_activated)
+ 		mwifiex_cancel_hs(mwifiex_get_priv(adapter,
 
 
