@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161039Ab3JKU1e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:27:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45835 "EHLO
+	id S1759049Ab3JKTk2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:40:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45743 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759051Ab3JKTk3 (ORCPT
+	with ESMTP id S1758956Ab3JKTkO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:40:29 -0400
+	Fri, 11 Oct 2013 15:40:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kirill Tkhai <tkhai@yandex.ru>,
+        Brad Spengler <spender@grsecurity.net>,
+        Kees Cook <keescook@chromium.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 072/110] sparc64: Fix off by one in trampoline TLB mapping installation loop.
-Date: Fri, 11 Oct 2013 12:38:52 -0700
-Message-Id: <20131011193815.688452744@linuxfoundation.org>
+Subject: [ 071/110] sparc: fix ldom_reboot buffer overflow harder
+Date: Fri, 11 Oct 2013 12:38:51 -0700
+Message-Id: <20131011193815.576100463@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
 References: <20131011193807.584188672@linuxfoundation.org>
@@ -27,34 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "David S. Miller" <davem@davemloft.net>
+From: Kees Cook <keescook@chromium.org>
 
-[ Upstream commit 63d499662aeec1864ec36d042aca8184ea6a938e ]
+[ Upstream commit 20928bd3f08afb036c096d9559d581926b895918 ]
 
-Reported-by: Kirill Tkhai <tkhai@yandex.ru>
+The length argument to strlcpy was still wrong. It could overflow the end of
+full_boot_str by 5 bytes. Instead of strcat and strlcpy, just use snprint.
+
+Reported-by: Brad Spengler <spender@grsecurity.net>
+Signed-off-by: Kees Cook <keescook@chromium.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/kernel/trampoline_64.S |    2 --
- 1 file changed, 2 deletions(-)
+ arch/sparc/kernel/ds.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
---- a/arch/sparc/kernel/trampoline_64.S
-+++ b/arch/sparc/kernel/trampoline_64.S
-@@ -131,7 +131,6 @@ startup_continue:
- 	clr		%l5
- 	sethi		%hi(num_kernel_image_mappings), %l6
- 	lduw		[%l6 + %lo(num_kernel_image_mappings)], %l6
--	add		%l6, 1, %l6
+--- a/arch/sparc/kernel/ds.c
++++ b/arch/sparc/kernel/ds.c
+@@ -842,9 +842,8 @@ void ldom_reboot(const char *boot_comman
+ 	if (boot_command && strlen(boot_command)) {
+ 		unsigned long len;
  
- 	mov		15, %l7
- 	BRANCH_IF_ANY_CHEETAH(g1,g5,2f)
-@@ -224,7 +223,6 @@ niagara_lock_tlb:
- 	clr		%l5
- 	sethi		%hi(num_kernel_image_mappings), %l6
- 	lduw		[%l6 + %lo(num_kernel_image_mappings)], %l6
--	add		%l6, 1, %l6
+-		strcpy(full_boot_str, "boot ");
+-		strlcpy(full_boot_str + strlen("boot "), boot_command,
+-			sizeof(full_boot_str));
++		snprintf(full_boot_str, sizeof(full_boot_str), "boot %s",
++			 boot_command);
+ 		len = strlen(full_boot_str);
  
- 1:
- 	mov		HV_FAST_MMU_MAP_PERM_ADDR, %o5
+ 		if (reboot_data_supported) {
 
 
