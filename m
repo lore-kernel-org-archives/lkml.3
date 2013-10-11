@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759355Ab3JKTyr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:54:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46386 "EHLO
+	id S932724Ab3JKTlx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:41:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46354 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932730Ab3JKTly (ORCPT
+	with ESMTP id S932689Ab3JKTlu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:41:54 -0400
+	Fri, 11 Oct 2013 15:41:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 085/135] sparc64: Fix buggy strlcpy() conversion in ldom_reboot().
-Date: Fri, 11 Oct 2013 12:39:26 -0700
-Message-Id: <20131011193954.498446145@linuxfoundation.org>
+        Kirill Tkhai <tkhai@yandex.ru>, David Miller <davem@davemloft.net>
+Subject: [ 091/135] sparc64: Fix not SRAed %o5 in 32-bit traced syscall
+Date: Fri, 11 Oct 2013 12:39:32 -0700
+Message-Id: <20131011193955.134813877@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -26,45 +26,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "David S. Miller" <davem@davemloft.net>
+From: Kirill Tkhai <tkhai@yandex.ru>
 
-[ Upstream commit 2bd161a605f1f84a5fc8a4fe8410113a94f79355 ]
+[ Upstream commit ab2abda6377723e0d5fbbfe5f5aa16a5523344d1 ]
 
-Commit 117a0c5fc9c2d06045bd217385b2b39ea426b5a6 ("sparc: kernel: using
-strlcpy() instead of strcpy()") added a bug to ldom_reboot in
-arch/sparc/kernel/ds.c
+(From v1 to v2: changed comment)
 
--		strcpy(full_boot_str + strlen("boot "), boot_command);
-+				     strlcpy(full_boot_str + strlen("boot "), boot_command,
-+				     			     sizeof(full_boot_str + strlen("boot ")));
+On the way linux_sparc_syscall32->linux_syscall_trace32->goto 2f,
+register %o5 doesn't clear its second 32-bit.
 
-That last sizeof() expression evaluates to sizeof(size_t) which is
-not what was intended.
+Fix that.
 
-Also even the corrected:
-
-     sizeof(full_boot_str) + strlen("boot ")
-
-is not right as the destination buffer length is just plain
-"sizeof(full_boot_str)" and that's what the final argument
-should be.
-
+Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
+CC: David Miller <davem@davemloft.net>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/kernel/ds.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/sparc/kernel/syscalls.S |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/arch/sparc/kernel/ds.c
-+++ b/arch/sparc/kernel/ds.c
-@@ -851,7 +851,7 @@ void ldom_reboot(const char *boot_comman
+--- a/arch/sparc/kernel/syscalls.S
++++ b/arch/sparc/kernel/syscalls.S
+@@ -152,7 +152,7 @@ linux_syscall_trace32:
+ 	srl	%i4, 0, %o4
+ 	srl	%i1, 0, %o1
+ 	srl	%i2, 0, %o2
+-	ba,pt	%xcc, 2f
++	ba,pt	%xcc, 5f
+ 	 srl	%i3, 0, %o3
  
- 		strcpy(full_boot_str, "boot ");
- 		strlcpy(full_boot_str + strlen("boot "), boot_command,
--			sizeof(full_boot_str + strlen("boot ")));
-+			sizeof(full_boot_str));
- 		len = strlen(full_boot_str);
+ linux_syscall_trace:
+@@ -182,13 +182,13 @@ linux_sparc_syscall32:
+ 	srl	%i1, 0, %o1				! IEU0	Group
+ 	ldx	[%g6 + TI_FLAGS], %l0		! Load
  
- 		if (reboot_data_supported) {
+-	srl	%i5, 0, %o5				! IEU1
++	srl	%i3, 0, %o3				! IEU0
+ 	srl	%i2, 0, %o2				! IEU0	Group
+ 	andcc	%l0, (_TIF_SYSCALL_TRACE|_TIF_SECCOMP|_TIF_SYSCALL_AUDIT|_TIF_SYSCALL_TRACEPOINT), %g0
+ 	bne,pn	%icc, linux_syscall_trace32		! CTI
+ 	 mov	%i0, %l5				! IEU1
+-	call	%l7					! CTI	Group brk forced
+-	 srl	%i3, 0, %o3				! IEU0
++5:	call	%l7					! CTI	Group brk forced
++	 srl	%i5, 0, %o5				! IEU1
+ 	ba,a,pt	%xcc, 3f
+ 
+ 	/* Linux native system calls enter here... */
 
 
