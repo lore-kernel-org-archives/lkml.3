@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758035Ab3JKKoJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 06:44:09 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58753 "EHLO
+	id S932375Ab3JKKvA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 06:51:00 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58745 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932279Ab3JKKoF (ORCPT
+	with ESMTP id S932308Ab3JKKoD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 06:44:05 -0400
+	Fri, 11 Oct 2013 06:44:03 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Raphael Kubo da Costa <rakuco@FreeBSD.org>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 080/100] rtlwifi: Align private space in rtl_priv struct
-Date: Fri, 11 Oct 2013 11:41:50 +0100
-Message-Id: <1381488130-30235-81-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 079/100] Bluetooth: Add support for BCM20702A0 [0b05, 17cb]
+Date: Fri, 11 Oct 2013 11:41:49 +0100
+Message-Id: <1381488130-30235-80-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
 References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
@@ -28,37 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Raphael Kubo da Costa <rakuco@FreeBSD.org>
 
-commit 60ce314d1750fef843e9db70050e09e49f838b69 upstream.
+commit 38a172bef8c93ecbfd69715fd88396988e4073fd upstream.
 
-The private array at the end of the rtl_priv struct is not aligned.
-On ARM architecture, this causes an alignment trap and is fixed by aligning
-that array with __align(sizeof(void *)). That should properly align that
-space according to the requirements of all architectures.
+Yet another vendor specific ID for this chipset; this one for the ASUS
+USB-BT400 Bluetooth 4.0 adapter.
 
-Reported-by: Jason Andrews <jasona@cadence.com>
-Tested-by: Jason Andrews <jasona@cadence.com>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+T:  Bus=03 Lev=02 Prnt=02 Port=01 Cnt=01 Dev#=  6 Spd=12  MxCh= 0
+D:  Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=0b05 ProdID=17cb Rev=01.12
+S:  Manufacturer=Broadcom Corp
+S:  Product=BCM20702A0
+S:  SerialNumber=000272C64400
+C:  #Ifs= 4 Cfg#= 1 Atr=a0 MxPwr=100mA
+I:  If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=(none)
+I:  If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=(none)
+I:  If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+I:  If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
+
+Signed-off-by: Raphael Kubo da Costa <rakuco@FreeBSD.org>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/rtlwifi/wifi.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/bluetooth/btusb.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/net/wireless/rtlwifi/wifi.h b/drivers/net/wireless/rtlwifi/wifi.h
-index cdaa21f..dec7c55 100644
---- a/drivers/net/wireless/rtlwifi/wifi.h
-+++ b/drivers/net/wireless/rtlwifi/wifi.h
-@@ -1701,7 +1701,7 @@ struct rtl_priv {
- 	   that it points to the data allocated
- 	   beyond  this structure like:
- 	   rtl_pci_priv or rtl_usb_priv */
--	u8 priv[0];
-+	u8 priv[0] __aligned(sizeof(void *));
- };
+diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
+index b29109e..a5eef4e 100644
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -108,6 +108,7 @@ static struct usb_device_id btusb_table[] = {
  
- #define rtl_priv(hw)		(((struct rtl_priv *)(hw)->priv))
+ 	/* Broadcom BCM20702A0 */
+ 	{ USB_DEVICE(0x0b05, 0x17b5) },
++	{ USB_DEVICE(0x0b05, 0x17cb) },
+ 	{ USB_DEVICE(0x04ca, 0x2003) },
+ 	{ USB_DEVICE(0x0489, 0xe042) },
+ 	{ USB_DEVICE(0x413c, 0x8197) },
 -- 
 1.8.3.2
 
