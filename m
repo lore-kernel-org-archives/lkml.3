@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755264Ab3JKA2W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 20:28:22 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:37267 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751823Ab3JKA2U (ORCPT
+	id S1755620Ab3JKA2e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 20:28:34 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:56393 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755388Ab3JKA2d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 20:28:20 -0400
+	Thu, 10 Oct 2013 20:28:33 -0400
 From: Chenggang Qin <chenggang.qin@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: root <root@core097011.sqa.cm4>, David Ahern <dsahern@gmail.com>,
+Cc: Chenggang Qin <chenggang.qcg@taobao.com>, David Ahern <dsahern@gmail.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
@@ -17,24 +17,27 @@ Cc: root <root@core097011.sqa.cm4>, David Ahern <dsahern@gmail.com>,
         Namhyung Kim <namhyung@gmail.com>,
         Yanmin Zhang <yanmin.zhang@intel.com>,
         Wu Fengguang <fengguang.wu@intel.com>, Mike Galbraith <efault@gmx.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chenggang Qin <chenggang.qcg@taobao.com>
-Subject: [PATCH 1/3] perf core: Fix a mmap and munmap mismatched bug
-Date: Fri, 11 Oct 2013 08:27:57 +0800
-Message-Id: <1381451279-4109-1-git-send-email-chenggang.qin@gmail.com>
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 2/3] perf core: Fix a mmap & munmap mismatches bug in dso__load
+Date: Fri, 11 Oct 2013 08:27:58 +0800
+Message-Id: <1381451279-4109-2-git-send-email-chenggang.qin@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1381451279-4109-1-git-send-email-chenggang.qin@gmail.com>
+References: <1381451279-4109-1-git-send-email-chenggang.qin@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: root <root@core097011.sqa.cm4>
+From: Chenggang Qin <chenggang.qcg@taobao.com>
 
-In function filename__read_debuglink(), while the ELF file is opend and mmapped
-in elf_begin(), but if this file is considered to not be usable during the
-following code, we will goto the close(fd) directly. The elf_end() is skipped.
-So, the mmaped ELF file cannot be munmapped. The memory areas are mmapped is
-exist during the life of perf. This is a memory leak.
-This patch fixed this bug.
+Some dsos' symsrc is neither syms_ss or runtime_ss. In this situation, the
+corresponding ELF file is opened and mmapped in symsrc__init(), but they will
+be not closed and munmapped in any place.
+This bug can lead to mmap & munmap mismatched, the mmap areas will exist during
+the life of perf. We can think this is a memory leak.
+This patch fixed the bug. symsrc__destroy() is called while the opened and
+mmaped ELF file has neither symtlb section nor dynsym section, and opdsec
+section.
 Thanks.
 
 Cc: David Ahern <dsahern@gmail.com>
@@ -49,49 +52,26 @@ Cc: Wu Fengguang <fengguang.wu@intel.com>
 Cc: Mike Galbraith <efault@gmx.de>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Chenggang Qin <chenggang.qcg@taobao.com>
-Reviewed-by: Namhyung Kim <namhyung@kernel.org>
+Acked-by: Namhyung Kim <namhyung@kernel.org>
 
 ---
- tools/perf/util/symbol-elf.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
+ tools/perf/util/symbol.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-index 4b12bf8..b4df870 100644
---- a/tools/perf/util/symbol-elf.c
-+++ b/tools/perf/util/symbol-elf.c
-@@ -471,27 +471,27 @@ int filename__read_debuglink(const char *filename, char *debuglink,
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index d5528e1..9675866 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -828,7 +828,8 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
  
- 	ek = elf_kind(elf);
- 	if (ek != ELF_K_ELF)
--		goto out_close;
-+		goto out_elf_end;
+ 			if (syms_ss && runtime_ss)
+ 				break;
+-		}
++		} else
++			symsrc__destroy(ss);
  
- 	if (gelf_getehdr(elf, &ehdr) == NULL) {
- 		pr_err("%s: cannot get elf header.\n", __func__);
--		goto out_close;
-+		goto out_elf_end;
  	}
  
- 	sec = elf_section_by_name(elf, &ehdr, &shdr,
- 				  ".gnu_debuglink", NULL);
- 	if (sec == NULL)
--		goto out_close;
-+		goto out_elf_end;
- 
- 	data = elf_getdata(sec, NULL);
- 	if (data == NULL)
--		goto out_close;
-+		goto out_elf_end;
- 
- 	/* the start of this section is a zero-terminated string */
- 	strncpy(debuglink, data->d_buf, size);
- 
-+out_elf_end:
- 	elf_end(elf);
--
- out_close:
- 	close(fd);
- out:
 -- 
 1.7.8.rc2.5.g815b
 
