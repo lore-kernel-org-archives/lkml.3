@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932286Ab3JKTsv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:48:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46533 "EHLO
+	id S932717Ab3JKTtJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:49:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46528 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759085Ab3JKTmO (ORCPT
+	with ESMTP id S1759028Ab3JKTmN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:42:14 -0400
+	Fri, 11 Oct 2013 15:42:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Josef Bacik <jbacik@fusionio.com>,
-        Chris Mason <chris.mason@fusionio.com>
-Subject: [ 126/135] Btrfs: reset ret in record_one_backref
-Date: Fri, 11 Oct 2013 12:40:07 -0700
-Message-Id: <20131011193958.949925440@linuxfoundation.org>
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [ 125/135] s390: fix system call restart after inferior call
+Date: Fri, 11 Oct 2013 12:40:06 -0700
+Message-Id: <20131011193958.838842134@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -27,42 +26,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josef Bacik <jbacik@fusionio.com>
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
 
-commit 50f1319cb5f7690e4d9de18d1a75ea89296d0e53 upstream.
+commit dbbfe487e5f3fc00c9fe5207d63309859704d12f upstream.
 
-I was getting warnings when running find ./ -type f -exec btrfs fi defrag -f {}
-\; from record_one_backref because ret was set.  Turns out it was because it was
-set to 1 because the search slot didn't come out exact and we never reset it.
-So reset it to 0 right after the search so we don't leak this and get
-uneccessary warnings.  Thanks,
+Git commit 616498813b11ffef "s390: system call path micro optimization"
+introduced a regression in regard to system call restarting and inferior
+function calls via the ptrace interface. The pointer to the system call
+table needs to be loaded in sysc_sigpending if do_signal returns with
+TIF_SYSCALl set after it restored a system call context.
 
-Signed-off-by: Josef Bacik <jbacik@fusionio.com>
-Signed-off-by: Chris Mason <chris.mason@fusionio.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/inode.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ arch/s390/kernel/entry.S   |    1 +
+ arch/s390/kernel/entry64.S |    1 +
+ 2 files changed, 2 insertions(+)
 
---- a/fs/btrfs/inode.c
-+++ b/fs/btrfs/inode.c
-@@ -2132,6 +2132,7 @@ static noinline int record_one_backref(u
- 		WARN_ON(1);
- 		return ret;
- 	}
-+	ret = 0;
- 
- 	while (1) {
- 		cond_resched();
-@@ -2181,8 +2182,6 @@ static noinline int record_one_backref(u
- 		    old->len || extent_offset + num_bytes <=
- 		    old->extent_offset + old->offset)
- 			continue;
--
--		ret = 0;
- 		break;
- 	}
- 
+--- a/arch/s390/kernel/entry.S
++++ b/arch/s390/kernel/entry.S
+@@ -265,6 +265,7 @@ sysc_sigpending:
+ 	tm	__TI_flags+3(%r12),_TIF_SYSCALL
+ 	jno	sysc_return
+ 	lm	%r2,%r7,__PT_R2(%r11)	# load svc arguments
++	l	%r10,__TI_sysc_table(%r12)	# 31 bit system call table
+ 	xr	%r8,%r8			# svc 0 returns -ENOSYS
+ 	clc	__PT_INT_CODE+2(2,%r11),BASED(.Lnr_syscalls+2)
+ 	jnl	sysc_nr_ok		# invalid svc number -> do svc 0
+--- a/arch/s390/kernel/entry64.S
++++ b/arch/s390/kernel/entry64.S
+@@ -296,6 +296,7 @@ sysc_sigpending:
+ 	tm	__TI_flags+7(%r12),_TIF_SYSCALL
+ 	jno	sysc_return
+ 	lmg	%r2,%r7,__PT_R2(%r11)	# load svc arguments
++	lg	%r10,__TI_sysc_table(%r12)	# address of system call table
+ 	lghi	%r8,0			# svc 0 returns -ENOSYS
+ 	llgh	%r1,__PT_INT_CODE+2(%r11)	# load new svc number
+ 	cghi	%r1,NR_syscalls
 
 
