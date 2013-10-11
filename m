@@ -1,77 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752816Ab3JKF6U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 01:58:20 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:50997 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751947Ab3JKF6S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 01:58:18 -0400
-Message-ID: <52579371.8070408@ti.com>
-Date: Fri, 11 Oct 2013 08:58:09 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1753367Ab3JKF6e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 01:58:34 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:44988 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752713Ab3JKF6d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 01:58:33 -0400
+Date: Fri, 11 Oct 2013 07:58:29 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCHSET 0/8] perf tools: Fix scalability problem on callchain
+ merging (v5)
+Message-ID: <20131011055829.GA4975@gmail.com>
+References: <1381468543-25334-1-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-To: Michal Simek <michal.simek@xilinx.com>
-CC: <linux-kernel@vger.kernel.org>, <monstr@monstr.eu>, <joe@perches.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, <linux-fbdev@vger.kernel.org>,
-        <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v3 1/3] video: xilinxfb: Use standard variable name convention
-References: <631df9a44b366af4129d00f1d4e1d3baad7d4903.1381386616.git.michal.simek@xilinx.com>
-In-Reply-To: <631df9a44b366af4129d00f1d4e1d3baad7d4903.1381386616.git.michal.simek@xilinx.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="catTPNVVv4gFOm9LsvdwmNclLLtE5x089"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1381468543-25334-1-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---catTPNVVv4gFOm9LsvdwmNclLLtE5x089
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
 
-On 10/10/13 09:30, Michal Simek wrote:
-> s/op/pdev/ in xilinxfb_of_probe().
-> No functional chagnes.
->=20
-> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
-> ---
-> Changes in v3: None
-> Changes in v2: None
->=20
->  drivers/video/xilinxfb.c | 18 +++++++++---------
->  1 file changed, 9 insertions(+), 9 deletions(-)
+* Namhyung Kim <namhyung@kernel.org> wrote:
 
-Thanks, queued this series for 3.13.
+> Hello,
+> 
+> This is a new version of callchain improvement patchset.  Basically
+> it's almost same as v4 but rebased on current acme/perf/core and some
+> functions are renamed as Frederic requested.
+> 
+> Now I'm hunting down a bug in 'perf report -s sym' which was found
+> during the test, but I think it's not related to this change as it can
+> be reproduced in earlier versions too.
+> 
+> I put this series on 'perf/callchain-v5' branch in my tree
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
+> 
+> Any comments are welcome, thanks.
 
- Tomi
+One thing I noticed about call-graph profiling:
 
+  comet:~/tip/tools/perf> ./perf record -g ~/hackbench 10
+  callchain: Unknown -g option value: /home/mingo/hackbench
 
+I think a naked -g used to work just fine in the past. Even if such an 
+error is displayed the output is very unhelpful, it does does a full 
+perf-record options dump (unnecessary), the bit that is helpful is hidden 
+amongst many other options:
 
---catTPNVVv4gFOm9LsvdwmNclLLtE5x089
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+    -g, --call-graph <mode[,dump_size]>
+                          do call-graph (stack chain/backtrace) recording: [fp] dwarf
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+and it took me two reads to see that I should specify 'fp'. The '[fp]' 
+indicates that fp is the default - but that does not appear to be working.
 
-iQIcBAEBAgAGBQJSV5NxAAoJEPo9qoy8lh71cn0P/0aoh15bnSNQAdKZ8HufYbZb
-jmd8AANUVCgRmiiSKNvXgU6vjj0sA/gT1FxcOww3F17NSrNxaJxaZYkG+o7JNcp4
-1JjDBfK/HJt7+TM+AfDEwdGCy3grkfgalm6EF55paFYiEgd8xPSc7U+mlD3EAU6o
-tRtrRtgdl6nN5FLHD8xJTC5XDzuKiXIZV6I9qy0gzjF2WCJIuF63PrwrOTMstW9f
-adXg4O/X0ZAUk3pqOHcbZRan7LqhHhihQgAL3mQyIpGy8aTiSuTL1mPV05gUEl3v
-7RVzzpqYSNnWhH9eQIgNbDYon8Xn/ueqeZAAguo75WXwO4JCGcihDhDr/p5t+PeH
-V+HdOCqbpKEu3hljCvRt46gkbbeqvNOxKLQiwFly36tf/+NwAmREKSt3CEvQZdoo
-YDfjsQCPbs8hD9e0XElJGtkhsSs91dzzwlCr2QbT+p+b9n683r6Fj427RdKFKpP4
-Weokl1YPza8GGGFbuaRg8KdTogygJNWrCybGHyuru6k074e1YAkKxgPsvMsmHEN2
-VjgOekCNG4zX2R02f4vw7rpMQs9dxOqDtCn+F4Fd7SPrpOUN6U/FBDo22FhKeCs+
-t2/LyFA6rhUyjkIAJI8lOuxt0hX3u98AY+LFJq819GW097GKNWW1pzRZ6Xd215Yb
-jsAK1HzcX+tWjtEmrii2
-=LVr9
------END PGP SIGNATURE-----
+Another thing I noticed is that there are a fair number of conflicts 
+against perf/core, and some more against Arnaldo's tree.
 
---catTPNVVv4gFOm9LsvdwmNclLLtE5x089--
+Otherwise it seems to be working well!
+
+Thanks,
+
+	Ingo
+
