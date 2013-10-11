@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964897Ab3JKT7J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:59:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46314 "EHLO
+	id S932987Ab3JKT73 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:59:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46308 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932634Ab3JKTln (ORCPT
+	with ESMTP id S932577Ab3JKTlm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:41:43 -0400
+	Fri, 11 Oct 2013 15:41:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Anton Blanchard <anton@samba.org>,
+        Madhavan Srinivasan <maddy@linux.vnet.ibm.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 071/135] powerpc: Restore registers on error exit from csum_partial_copy_generic()
-Date: Fri, 11 Oct 2013 12:39:12 -0700
-Message-Id: <20131011193952.999608898@linuxfoundation.org>
+Subject: [ 070/135] powerpc/sysfs: Disable writing to PURR in guest mode
+Date: Fri, 11 Oct 2013 12:39:11 -0700
+Message-Id: <20131011193952.898773100@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -28,158 +27,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+From: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
 
-commit 8f21bd0090052e740944f9397e2be5ac7957ded7 upstream.
+commit d1211af3049f4c9c1d8d4eb8f8098cc4f4f0d0c7 upstream.
 
-The csum_partial_copy_generic() function saves the PowerPC non-volatile
-r14, r15, and r16 registers for the main checksum-and-copy loop.
-Unfortunately, it fails to restore them upon error exit from this loop,
-which results in silent corruption of these registers in the presumably
-rare event of an access exception within that loop.
+arch/powerpc/kernel/sysfs.c exports PURR with write permission.
+This may be valid for kernel in phyp mode. But writing to
+the file in guest mode causes crash due to a priviledge violation
 
-This commit therefore restores these register on error exit from the loop.
-
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/lib/checksum_64.S |   54 ++++++++++++++++++++++++++++++-----------
- 1 file changed, 40 insertions(+), 14 deletions(-)
+ arch/powerpc/kernel/sysfs.c |   18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
 
---- a/arch/powerpc/lib/checksum_64.S
-+++ b/arch/powerpc/lib/checksum_64.S
-@@ -226,19 +226,35 @@ _GLOBAL(csum_partial)
- 	blr
+--- a/arch/powerpc/kernel/sysfs.c
++++ b/arch/powerpc/kernel/sysfs.c
+@@ -17,6 +17,7 @@
+ #include <asm/machdep.h>
+ #include <asm/smp.h>
+ #include <asm/pmc.h>
++#include <asm/firmware.h>
  
+ #include "cacheinfo.h"
  
--	.macro source
-+	.macro srcnr
- 100:
- 	.section __ex_table,"a"
- 	.align 3
--	.llong 100b,.Lsrc_error
-+	.llong 100b,.Lsrc_error_nr
- 	.previous
- 	.endm
+@@ -179,15 +180,25 @@ SYSFS_PMCSETUP(spurr, SPRN_SPURR);
+ SYSFS_PMCSETUP(dscr, SPRN_DSCR);
+ SYSFS_PMCSETUP(pir, SPRN_PIR);
  
--	.macro dest
-+	.macro source
-+150:
-+	.section __ex_table,"a"
-+	.align 3
-+	.llong 150b,.Lsrc_error
-+	.previous
-+	.endm
++/*
++  Lets only enable read for phyp resources and
++  enable write when needed with a separate function.
++  Lets be conservative and default to pseries.
++*/
+ static DEVICE_ATTR(mmcra, 0600, show_mmcra, store_mmcra);
+ static DEVICE_ATTR(spurr, 0400, show_spurr, NULL);
+ static DEVICE_ATTR(dscr, 0600, show_dscr, store_dscr);
+-static DEVICE_ATTR(purr, 0600, show_purr, store_purr);
++static DEVICE_ATTR(purr, 0400, show_purr, store_purr);
+ static DEVICE_ATTR(pir, 0400, show_pir, NULL);
+ 
+ unsigned long dscr_default = 0;
+ EXPORT_SYMBOL(dscr_default);
+ 
++static void add_write_permission_dev_attr(struct device_attribute *attr)
++{
++	attr->attr.mode |= 0200;
++}
 +
-+	.macro dstnr
- 200:
- 	.section __ex_table,"a"
- 	.align 3
--	.llong 200b,.Ldest_error
-+	.llong 200b,.Ldest_error_nr
-+	.previous
-+	.endm
-+
-+	.macro dest
-+250:
-+	.section __ex_table,"a"
-+	.align 3
-+	.llong 250b,.Ldest_error
- 	.previous
- 	.endm
+ static ssize_t show_dscr_default(struct device *dev,
+ 		struct device_attribute *attr, char *buf)
+ {
+@@ -394,8 +405,11 @@ static void register_cpu_online(unsigned
+ 	if (cpu_has_feature(CPU_FTR_MMCRA))
+ 		device_create_file(s, &dev_attr_mmcra);
  
-@@ -274,11 +290,11 @@ _GLOBAL(csum_partial_copy_generic)
- 	mtctr	r6
+-	if (cpu_has_feature(CPU_FTR_PURR))
++	if (cpu_has_feature(CPU_FTR_PURR)) {
++		if (!firmware_has_feature(FW_FEATURE_LPAR))
++			add_write_permission_dev_attr(&dev_attr_purr);
+ 		device_create_file(s, &dev_attr_purr);
++	}
  
- 1:
--source;	lhz	r6,0(r3)		/* align to doubleword */
-+srcnr;	lhz	r6,0(r3)		/* align to doubleword */
- 	subi	r5,r5,2
- 	addi	r3,r3,2
- 	adde	r0,r0,r6
--dest;	sth	r6,0(r4)
-+dstnr;	sth	r6,0(r4)
- 	addi	r4,r4,2
- 	bdnz	1b
- 
-@@ -392,10 +408,10 @@ dest;	std	r16,56(r4)
- 
- 	mtctr	r6
- 3:
--source;	ld	r6,0(r3)
-+srcnr;	ld	r6,0(r3)
- 	addi	r3,r3,8
- 	adde	r0,r0,r6
--dest;	std	r6,0(r4)
-+dstnr;	std	r6,0(r4)
- 	addi	r4,r4,8
- 	bdnz	3b
- 
-@@ -405,10 +421,10 @@ dest;	std	r6,0(r4)
- 	srdi.	r6,r5,2
- 	beq	.Lcopy_tail_halfword
- 
--source;	lwz	r6,0(r3)
-+srcnr;	lwz	r6,0(r3)
- 	addi	r3,r3,4
- 	adde	r0,r0,r6
--dest;	stw	r6,0(r4)
-+dstnr;	stw	r6,0(r4)
- 	addi	r4,r4,4
- 	subi	r5,r5,4
- 
-@@ -416,10 +432,10 @@ dest;	stw	r6,0(r4)
- 	srdi.	r6,r5,1
- 	beq	.Lcopy_tail_byte
- 
--source;	lhz	r6,0(r3)
-+srcnr;	lhz	r6,0(r3)
- 	addi	r3,r3,2
- 	adde	r0,r0,r6
--dest;	sth	r6,0(r4)
-+dstnr;	sth	r6,0(r4)
- 	addi	r4,r4,2
- 	subi	r5,r5,2
- 
-@@ -427,10 +443,10 @@ dest;	sth	r6,0(r4)
- 	andi.	r6,r5,1
- 	beq	.Lcopy_finish
- 
--source;	lbz	r6,0(r3)
-+srcnr;	lbz	r6,0(r3)
- 	sldi	r9,r6,8			/* Pad the byte out to 16 bits */
- 	adde	r0,r0,r9
--dest;	stb	r6,0(r4)
-+dstnr;	stb	r6,0(r4)
- 
- .Lcopy_finish:
- 	addze	r0,r0			/* add in final carry */
-@@ -440,6 +456,11 @@ dest;	stb	r6,0(r4)
- 	blr
- 
- .Lsrc_error:
-+	ld	r14,STK_REG(R14)(r1)
-+	ld	r15,STK_REG(R15)(r1)
-+	ld	r16,STK_REG(R16)(r1)
-+	addi	r1,r1,STACKFRAMESIZE
-+.Lsrc_error_nr:
- 	cmpdi	0,r7,0
- 	beqlr
- 	li	r6,-EFAULT
-@@ -447,6 +468,11 @@ dest;	stb	r6,0(r4)
- 	blr
- 
- .Ldest_error:
-+	ld	r14,STK_REG(R14)(r1)
-+	ld	r15,STK_REG(R15)(r1)
-+	ld	r16,STK_REG(R16)(r1)
-+	addi	r1,r1,STACKFRAMESIZE
-+.Ldest_error_nr:
- 	cmpdi	0,r8,0
- 	beqlr
- 	li	r6,-EFAULT
+ 	if (cpu_has_feature(CPU_FTR_SPURR))
+ 		device_create_file(s, &dev_attr_spurr);
 
 
