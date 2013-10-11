@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758179Ab3JKThT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:37:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45316 "EHLO
+	id S1754933Ab3JKUz5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:55:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45351 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758035Ab3JKThN (ORCPT
+	with ESMTP id S1758167Ab3JKThT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:37:13 -0400
+	Fri, 11 Oct 2013 15:37:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Mark Brown <broonie@linaro.org>
-Subject: [ 21/48] ASoC: 88pm860x: array overflow in snd_soc_put_volsw_2r_st()
-Date: Fri, 11 Oct 2013 12:36:28 -0700
-Message-Id: <20131011193639.556205450@linuxfoundation.org>
+        Kirill Tkhai <tkhai@yandex.ru>, David Miller <davem@davemloft.net>
+Subject: [ 29/48] sparc64: Fix ITLB handler of null page
+Date: Fri, 11 Oct 2013 12:36:36 -0700
+Message-Id: <20131011193640.407157474@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193637.253208688@linuxfoundation.org>
 References: <20131011193637.253208688@linuxfoundation.org>
@@ -27,32 +26,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Kirill Tkhai <tkhai@yandex.ru>
 
-commit d967967e8d1116fb38bad25e58714b5dddd03cca upstream.
+[ Upstream commit 1c2696cdaad84580545a2e9c0879ff597880b1a9 ]
 
-This is called from snd_ctl_elem_write() with user supplied data so we
-need to add some bounds checking.
+1)Use kvmap_itlb_longpath instead of kvmap_dtlb_longpath.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+2)Handle page #0 only, don't handle page #1: bleu -> blu
+
+ (KERNBASE is 0x400000, so #1 does not exist too. But everything
+  is possible in the future. Fix to not to have problems later.)
+
+3)Remove unused kvmap_itlb_nonlinear.
+
+Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
+CC: David Miller <davem@davemloft.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- sound/soc/codecs/88pm860x-codec.c |    3 +++
- 1 file changed, 3 insertions(+)
+ arch/sparc/kernel/ktlb.S |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/sound/soc/codecs/88pm860x-codec.c
-+++ b/sound/soc/codecs/88pm860x-codec.c
-@@ -351,6 +351,9 @@ static int snd_soc_put_volsw_2r_st(struc
- 	val = ucontrol->value.integer.value[0];
- 	val2 = ucontrol->value.integer.value[1];
+--- a/arch/sparc/kernel/ktlb.S
++++ b/arch/sparc/kernel/ktlb.S
+@@ -25,11 +25,10 @@ kvmap_itlb:
+ 	 */
+ kvmap_itlb_4v:
  
-+	if (val >= ARRAY_SIZE(st_table) || val2 >= ARRAY_SIZE(st_table))
-+		return -EINVAL;
-+
- 	err = snd_soc_update_bits(codec, reg, 0x3f, st_table[val].m);
- 	if (err < 0)
- 		return err;
+-kvmap_itlb_nonlinear:
+ 	/* Catch kernel NULL pointer calls.  */
+ 	sethi		%hi(PAGE_SIZE), %g5
+ 	cmp		%g4, %g5
+-	bleu,pn		%xcc, kvmap_dtlb_longpath
++	blu,pn		%xcc, kvmap_itlb_longpath
+ 	 nop
+ 
+ 	KERN_TSB_LOOKUP_TL1(%g4, %g6, %g5, %g1, %g2, %g3, kvmap_itlb_load)
 
 
