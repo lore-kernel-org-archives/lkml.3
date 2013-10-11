@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932816Ab3JKTmG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:42:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46460 "EHLO
+	id S932933Ab3JKTus (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:50:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46474 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932798Ab3JKTmE (ORCPT
+	with ESMTP id S932818Ab3JKTmH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:42:04 -0400
+	Fri, 11 Oct 2013 15:42:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bing Zhao <bzhao@marvell.com>, Amitkumar Karwar <akarwar@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 100/135] mwifiex: fix PCIe hs_cfg cancel cmd timeout
-Date: Fri, 11 Oct 2013 12:39:41 -0700
-Message-Id: <20131011193956.122547870@linuxfoundation.org>
+        Navin Ahuja <navin.ahuja@saratoga-speed.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 104/135] ib_srpt: Destroy cm_id before destroying QP.
+Date: Fri, 11 Oct 2013 12:39:45 -0700
+Message-Id: <20131011193956.558604331@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -27,47 +27,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bing Zhao <bzhao@marvell.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit b7be1522def9a9988b67afd0be999c50a96394b5 upstream.
+commit 0b41d6ca616ddeb3b6c0a80e8770b6f53cd42806 upstream.
 
-For pcie8897, the hs_cfg cancel command (0xe5) times out when host
-comes out of suspend. This is caused by an incompleted host sleep
-handshake between driver and firmware.
+This patch fixes a bug where ib_destroy_cm_id() was incorrectly being called
+after srpt_destroy_ch_ib() had destroyed the active QP.
 
-Like SDIO interface, PCIe also needs to go through firmware power
-save events to complete the handshake for host sleep configuration.
-Only USB interface doesn't require power save events for hs_cfg.
+This would result in the following failed SRP_LOGIN_REQ messages:
 
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Received SRP_LOGIN_REQ with i_port_id 0x0:0x2590ffff1762bd, t_port_id 0x2c903009f8f40:0x2c903009f8f40 and it_iu_len 260 on port 1 (guid=0xfe80000000000000:0x2c903009f8f41)
+Received SRP_LOGIN_REQ with i_port_id 0x0:0x2590ffff1758f9, t_port_id 0x2c903009f8f40:0x2c903009f8f40 and it_iu_len 260 on port 2 (guid=0xfe80000000000000:0x2c903009f8f42)
+Received SRP_LOGIN_REQ with i_port_id 0x0:0x2590ffff175941, t_port_id 0x2c903009f8f40:0x2c903009f8f40 and it_iu_len 260 on port 2 (guid=0xfe80000000000000:0x2c90300a3cfb2)
+Received SRP_LOGIN_REQ with i_port_id 0x0:0x2590ffff176299, t_port_id 0x2c903009f8f40:0x2c903009f8f40 and it_iu_len 260 on port 1 (guid=0xfe80000000000000:0x2c90300a3cfb1)
+mlx4_core 0000:84:00.0: command 0x19 failed: fw status = 0x9
+rejected SRP_LOGIN_REQ because creating a new RDMA channel failed.
+Received SRP_LOGIN_REQ with i_port_id 0x0:0x2590ffff176299, t_port_id 0x2c903009f8f40:0x2c903009f8f40 and it_iu_len 260 on port 1 (guid=0xfe80000000000000:0x2c90300a3cfb1)
+mlx4_core 0000:84:00.0: command 0x19 failed: fw status = 0x9
+rejected SRP_LOGIN_REQ because creating a new RDMA channel failed.
+Received SRP_LOGIN_REQ with i_port_id 0x0:0x2590ffff176299, t_port_id 0x2c903009f8f40:0x2c903009f8f40 and it_iu_len 260 on port 1 (guid=0xfe80000000000000:0x2c90300a3cfb1)
+
+Reported-by: Navin Ahuja <navin.ahuja@saratoga-speed.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/mwifiex/cmdevt.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ drivers/infiniband/ulp/srpt/ib_srpt.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/mwifiex/cmdevt.c
-+++ b/drivers/net/wireless/mwifiex/cmdevt.c
-@@ -1155,7 +1155,7 @@ int mwifiex_ret_802_11_hs_cfg(struct mwi
- 	uint32_t conditions = le32_to_cpu(phs_cfg->params.hs_config.conditions);
+--- a/drivers/infiniband/ulp/srpt/ib_srpt.c
++++ b/drivers/infiniband/ulp/srpt/ib_srpt.c
+@@ -2358,6 +2358,8 @@ static void srpt_release_channel_work(st
+ 	transport_deregister_session(se_sess);
+ 	ch->sess = NULL;
  
- 	if (phs_cfg->action == cpu_to_le16(HS_ACTIVATE) &&
--	    adapter->iface_type == MWIFIEX_SDIO) {
-+	    adapter->iface_type != MWIFIEX_USB) {
- 		mwifiex_hs_activated_event(priv, true);
- 		return 0;
- 	} else {
-@@ -1167,8 +1167,7 @@ int mwifiex_ret_802_11_hs_cfg(struct mwi
- 	}
- 	if (conditions != HS_CFG_CANCEL) {
- 		adapter->is_hs_configured = true;
--		if (adapter->iface_type == MWIFIEX_USB ||
--		    adapter->iface_type == MWIFIEX_PCIE)
-+		if (adapter->iface_type == MWIFIEX_USB)
- 			mwifiex_hs_activated_event(priv, true);
- 	} else {
- 		adapter->is_hs_configured = false;
++	ib_destroy_cm_id(ch->cm_id);
++
+ 	srpt_destroy_ch_ib(ch);
+ 
+ 	srpt_free_ioctx_ring((struct srpt_ioctx **)ch->ioctx_ring,
+@@ -2368,8 +2370,6 @@ static void srpt_release_channel_work(st
+ 	list_del(&ch->list);
+ 	spin_unlock_irq(&sdev->spinlock);
+ 
+-	ib_destroy_cm_id(ch->cm_id);
+-
+ 	if (ch->release_done)
+ 		complete(ch->release_done);
+ 
 
 
