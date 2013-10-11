@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756107Ab3JKAtD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 20:49:03 -0400
+	id S1756189Ab3JKAto (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 20:49:44 -0400
 Received: from mga09.intel.com ([134.134.136.24]:11959 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756075Ab3JKAtB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 20:49:01 -0400
+	id S1752898Ab3JKAs5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 20:48:57 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,1075,1371106800"; 
-   d="scan'208";a="391352661"
+   d="scan'208";a="391352647"
 From: Tom Zanussi <tom.zanussi@linux.intel.com>
 To: rostedt@goodmis.org
 Cc: masami.hiramatsu.pt@hitachi.com, linux-kernel@vger.kernel.org,
         Tom Zanussi <tom.zanussi@linux.intel.com>
-Subject: [PATCH v10 12/12] tracing: define trace_dump_stack() if !CONFIG_STACKTRACE
-Date: Thu, 10 Oct 2013 19:48:36 -0500
-Message-Id: <b88c6631dc9bdd143e5fc19341954e42e59de128.1381445299.git.tom.zanussi@linux.intel.com>
+Subject: [PATCH v10 10/12] tracing: Make register/unregister_ftrace_command __init
+Date: Thu, 10 Oct 2013 19:48:34 -0500
+Message-Id: <06318f8811a6a5a965b26e79bdca6d9c7486c10c.1381445299.git.tom.zanussi@linux.intel.com>
 X-Mailer: git-send-email 1.7.11.4
 In-Reply-To: <cover.1381445299.git.tom.zanussi@linux.intel.com>
 References: <cover.1381445299.git.tom.zanussi@linux.intel.com>
@@ -25,28 +25,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If CONFIG_STACKTRACE is turned off, trace_dump_stack() isn't defined,
-resulting in an 'undefined reference' error - define a stub to remedy
-that.
+register/unregister_ftrace_command() are only ever called from __init
+functions, so can themselves be made __init.
+
+Also make register_snapshot_cmd() __init for the same reason.
 
 Signed-off-by: Tom Zanussi <tom.zanussi@linux.intel.com>
 ---
- kernel/trace/trace.c | 2 ++
- 1 file changed, 2 insertions(+)
+ include/linux/ftrace.h |  4 ++--
+ kernel/trace/ftrace.c  | 12 ++++++++++--
+ kernel/trace/trace.c   |  4 ++--
+ 3 files changed, 14 insertions(+), 6 deletions(-)
 
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index 9f15c00..6062491 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -533,11 +533,11 @@ static inline int ftrace_force_update(void) { return 0; }
+ static inline void ftrace_disable_daemon(void) { }
+ static inline void ftrace_enable_daemon(void) { }
+ static inline void ftrace_release_mod(struct module *mod) {}
+-static inline int register_ftrace_command(struct ftrace_func_command *cmd)
++static inline __init int register_ftrace_command(struct ftrace_func_command *cmd)
+ {
+ 	return -EINVAL;
+ }
+-static inline int unregister_ftrace_command(char *cmd_name)
++static inline __init int unregister_ftrace_command(char *cmd_name)
+ {
+ 	return -EINVAL;
+ }
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 03cf44a..4669ac7 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -3307,7 +3307,11 @@ void unregister_ftrace_function_probe_all(char *glob)
+ static LIST_HEAD(ftrace_commands);
+ static DEFINE_MUTEX(ftrace_cmd_mutex);
+ 
+-int register_ftrace_command(struct ftrace_func_command *cmd)
++/*
++ * Currently we only register ftrace commands from __init, so mark this
++ * __init too.
++ */
++__init int register_ftrace_command(struct ftrace_func_command *cmd)
+ {
+ 	struct ftrace_func_command *p;
+ 	int ret = 0;
+@@ -3326,7 +3330,11 @@ int register_ftrace_command(struct ftrace_func_command *cmd)
+ 	return ret;
+ }
+ 
+-int unregister_ftrace_command(struct ftrace_func_command *cmd)
++/*
++ * Currently we only unregister ftrace commands from __init, so mark
++ * this __init too.
++ */
++__init int unregister_ftrace_command(struct ftrace_func_command *cmd)
+ {
+ 	struct ftrace_func_command *p, *n;
+ 	int ret = -ENODEV;
 diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 81d95bf..3eca804 100644
+index 3468346..5aa8f80 100644
 --- a/kernel/trace/trace.c
 +++ b/kernel/trace/trace.c
-@@ -1879,6 +1879,8 @@ static void __trace_userstack(struct trace_array *tr, unsigned long flags)
+@@ -5501,12 +5501,12 @@ static struct ftrace_func_command ftrace_snapshot_cmd = {
+ 	.func			= ftrace_trace_snapshot_callback,
+ };
+ 
+-static int register_snapshot_cmd(void)
++static __init int register_snapshot_cmd(void)
+ {
+ 	return register_ftrace_command(&ftrace_snapshot_cmd);
  }
- #endif /* UNUSED */
+ #else
+-static inline int register_snapshot_cmd(void) { return 0; }
++static inline __init int register_snapshot_cmd(void) { return 0; }
+ #endif /* defined(CONFIG_TRACER_SNAPSHOT) && defined(CONFIG_DYNAMIC_FTRACE) */
  
-+#else
-+void trace_dump_stack(int skip) {}
- #endif /* CONFIG_STACKTRACE */
- 
- /* created for use with alloc_percpu */
+ struct dentry *tracing_init_dentry_tr(struct trace_array *tr)
 -- 
 1.7.11.4
 
