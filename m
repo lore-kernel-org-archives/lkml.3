@@ -1,65 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758410Ab3JKQE3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 12:04:29 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:54542 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757255Ab3JKQE1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 12:04:27 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <52582181.50901@roeck-us.net>
-Date: Fri, 11 Oct 2013 09:04:17 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1758486Ab3JKQGf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 12:06:35 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:54319 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756014Ab3JKQGd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 12:06:33 -0400
+Date: Fri, 11 Oct 2013 11:05:28 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Boris BREZILLON <b.brezillon@overkiz.com>
+CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@linaro.org>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Josh Wu <josh.wu@atmel.com>, Richard Genoud <richard.genoud@gmail.com>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH v4 01/17] ARM: at91: move at91_pmc.h to
+ include/linux/clk/at91_pmc.h
+Message-ID: <20131011160528.GV25706@radagast>
+Reply-To: <balbi@ti.com>
+References: <1381477081-6041-1-git-send-email-b.brezillon@overkiz.com>
+ <1381477081-6041-2-git-send-email-b.brezillon@overkiz.com>
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>, Thierry Reding <thierry.reding@gmail.com>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: Tree for Oct 10
-References: <20131010225507.GY21581@sirena.org.uk>
-In-Reply-To: <20131010225507.GY21581@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="pEAjBjStGYT6H+Py"
+Content-Disposition: inline
+In-Reply-To: <1381477081-6041-2-git-send-email-b.brezillon@overkiz.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/10/2013 03:55 PM, Mark Brown wrote:
-> Hi all,
->
-> I've uploaded today's linux-next tree to the master branch of the
-> repository below:
->
->          git://gitorious.org/thierryreding/linux-next.git
->
-> A next-20131010 tag is also provided for convenience.
->
-> There were a few new conflicts which have been reported, each merge
-> builds fine with x86 allmodconfig.  A few cross tree integration fixes
-> are still being carried but nothing new.
->
+--pEAjBjStGYT6H+Py
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Build test results:
-	total: 110 pass: 97 skipped: 4 fail: 9
+On Fri, Oct 11, 2013 at 09:37:45AM +0200, Boris BREZILLON wrote:
+> This patch moves at91_pmc.h header from machine specific directory
+> (arch/arm/mach-at91/include/mach/at91_pmc.h) to clk include directory
+> (include/linux/clk/at91_pmc.h).
+> We need this to avoid reference to machine specific headers in clk
+> drivers.
+>=20
+> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
 
-Failed builds:
-	arm:allmodconfig
-	arm:kirkwood_defconfig
-	blackfin:defconfig
-	mips:nlm_xlp_defconfig
-	mips:cavium_octeon_defconfig
-	powerpc:ppc64e_defconfig
-	powerpc:chroma_defconfig
-	powerpc:mpc85xx_smp_defconfig
-	sparc64:allmodconfig
+for drivers/usb/gadget:
 
-mips qemu runs also still fail (and have for a while). mips32 hangs during boot, mips64 fails to build.
+Acked-by: Felipe Balbi <balbi@ti.com>
 
-Details are at http://server.roeck-us.net:8010/builders.
 
-For some reason buildbot fails to poll the repository status from gitorious. ZZManual update works, though.
-I tried both git: and https: URLs. If anyone has an idea how to solve this problem, please let me know.
+--=20
+balbi
 
-Thanks,
-Guenter
+--pEAjBjStGYT6H+Py
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSWCHIAAoJEIaOsuA1yqREYTUP/jo1tAeSsGLgW8wPWSHBtM2U
+3NoEP4BFgO5zen+YQpD39m5yR/LSfMNsUG0l45q4ewRmPAziTOvVTAHBGRmsdLZL
+33QAoy56TJj2a3tbweEKKhl6uVaL+phLA3r5MiRClxudGDakqxlTbTSKmNtbvgQV
+SlOZQY/n5uR70eYsUmACMn1ss+0lurxQXfaArqi0VXvxjxD7sxGzV2g5l4dC7ERC
+elPyT0bbCNCdZChFbd02E0cpe2rBa87xIDyq88qzJiOkLtrtTI0nVwIE6U9FHG9/
+IL7cvo8nUq9/j3P/lvw4V13V/FR9GKsLZpK+UM1UyCQuYbTsvyt6DdmQGAVwQjmR
+lgTKUuw/MBiZlCz4PDsgtxXjFbRQVguSUSFXC4NATVId9gUU/v75fKrEIOCzTqDD
+fYAV1H6qT4A6HouCJz4qaMyspyneIN+52hwKZytZa9EfA2WZSoWGT1RiCm030+XS
+IZiasUBKklcxUGz9KdD1a8POJdgjti/BWbG8So5lgSZA6/1D57bYfi0SBCEghLms
+kq8ghrkUcx2a0rZrpmPGc3wup6nIKuzniW7ONExQrhAoxqZXq1chb18fT5uTi3oe
+zjrsUwUyKuKdErPmhF2rYUcNYb+FFDC4YYMmbVoHvWNmPBaFio3VQ0/28A2MV6Bk
+TPeLe4J+AXnU/hvNe2bP
+=Q8gr
+-----END PGP SIGNATURE-----
+
+--pEAjBjStGYT6H+Py--
