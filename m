@@ -1,518 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754513Ab3JKSxc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 14:53:32 -0400
-Received: from usindpps06.hds.com ([207.126.252.19]:46801 "EHLO
-	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752696Ab3JKSxa (ORCPT
+	id S1755284Ab3JKSxk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 14:53:40 -0400
+Received: from elasmtp-junco.atl.sa.earthlink.net ([209.86.89.63]:43466 "EHLO
+	elasmtp-junco.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754562Ab3JKSxi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 14:53:30 -0400
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>
-CC: "hpa@zytor.com" <hpa@zytor.com>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "mingo@elte.hu" <mingo@elte.hu>, "bp@alien8.de" <bp@alien8.de>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "fdeslaur@gmail.com" <fdeslaur@gmail.com>,
-        "raphael.beamonte@gmail.com" <raphael.beamonte@gmail.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Tomoki Sekiyama <tomoki.sekiyama@hds.com>
-Subject: RE: [PATCH v3] Introduce page fault tracepoint
-Thread-Topic: [PATCH v3] Introduce page fault tracepoint
-Thread-Index: AQHOrad/oNbddzIzgE+oLKBHsS+xvpnwCqnA
-Date: Fri, 11 Oct 2013 18:52:31 +0000
-Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D443EF1624@USINDEM103.corp.hds.com>
-References: <522E43D5.9010505@hds.com>
-In-Reply-To: <522E43D5.9010505@hds.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.74.73.11]
-Content-Type: text/plain; charset="utf-8"
+	Fri, 11 Oct 2013 14:53:38 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=dk20050327; d=mindspring.com;
+  b=k7vjl2W6ISfQeE6mge+jGLcGW8IW2FfTTKcjjpDSC22wrGn5JF2ErRAsdS2JOpmx;
+  h=Received:From:To:Cc:References:In-Reply-To:Subject:Date:Message-ID:MIME-Version:Content-Type:Content-Transfer-Encoding:X-Mailer:Thread-Index:Content-Language:X-ELNK-Trace:X-Originating-IP;
+From: "Frank Filz" <ffilzlnx@mindspring.com>
+To: "'Jeff Layton'" <jlayton@redhat.com>
+Cc: <linux-fsdevel@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <nfs-ganesha-devel@lists.sourceforge.net>,
+        <samba-technical@lists.samba.org>
+References: <1381494322-2426-1-git-send-email-jlayton@redhat.com>	<20131011093510.7ed9871a@tlielax.poochiereds.net>	<01f801cec695$7e5d17e0$7b1747a0$@mindspring.com>	<20131011115006.697d6bd7@tlielax.poochiereds.net>	<020001cec6a4$601b6f70$20524e50$@mindspring.com> <20131011144240.007f96c1@tlielax.poochiereds.net>
+In-Reply-To: <20131011144240.007f96c1@tlielax.poochiereds.net>
+Subject: RE: [RFC PATCH 0/5] locks: implement "filp-private" (aka UNPOSIX) locks
+Date: Fri, 11 Oct 2013 11:53:30 -0700
+Message-ID: <020301cec6b3$30aa5d00$91ff1700$@mindspring.com>
 MIME-Version: 1.0
-X-Proofpoint-SPF-Result: pass
-X-Proofpoint-SPF-Record: v=spf1 mx ip4:207.126.244.0/26 ip4:207.126.252.0/25 include:mktomail.com
- include:cloud.hds.com ~all
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
- definitions=2013-10-11_07:2013-10-11,2013-10-11,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=outbound_policy score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1310110081
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 15.0
+Thread-Index: AQIaxc2XaXMwhFVmMgrl8lqeyFTt4AN2GInOALyaS6wCJdtqrgDJFpUBAlze9TeZC+Pr4A==
+Content-Language: en-us
+X-ELNK-Trace: 136157f01908a8929c7f779228e2f6aeda0071232e20db4d2c0b2701b6237e4eab17c8f725204726350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
+X-Originating-IP: 71.236.153.111
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r9BIreQU032065
 
-Peter,
+> > > > > > At LSF this year, there was a discussion about the "wishlist"
+> > > > > > for userland file servers. One of the things brought up was
+> > > > > > the goofy and problematic behavior of POSIX locks when a file is
+> closed.
+> > > > > > Boaz started a thread on it here:
+> > > > > >
+> > > > > >     http://permalink.gmane.org/gmane.linux.file-systems/73364
+> > > > > >
+> > > > > > Userland fileservers often need to maintain more than one open
+> > > > > > file descriptor on a file. The POSIX spec says:
+> > > > > >
+> > > > > > "All locks associated with a file for a given process shall be
+> > > > > > removed when a file descriptor for that file is closed by that
+> > > > > > process or the process holding that file descriptor terminates."
+> > > > > >
+> > > > > > This is problematic since you can't close any file descriptor
+> > > > > > without dropping all your POSIX locks. Most userland file
+> > > > > > servers therefore end up opening the file with more access
+> > > > > > than is really necessary, and keeping fd's open for longer
+> > > > > > than is necessary to
+> > work
+> > > around this.
+> > > > > >
+> > > > > > This patchset is a first stab at an approach to address this
+> > > > > > problem by adding two new l_type values -- F_RDLCKP and
+> > > > > > F_WRLCKP (the 'P' is short for "private" -- I'm open to
+> > > > > > changing that if you have a better mnemonic).
+> > > > > >
+> > > > > > For all intents and purposes these lock types act just like
+> > > > > > their "non-P" counterpart. The difference is that they are
+> > > > > > only implicitly released when the fd against which they were
+> > > > > > acquired is closed. As a side effect, these locks cannot be
+> > > > > > merged with "non-P" locks since they have different semantics on
+> close.
+> > > > > >
+> > > > > > I've given this patchset some very basic smoke testing and it
+> > > > > > seems to do the right thing, but it is still pretty rough. If
+> > > > > > this looks reasonable I'll plan to do some documentation
+> > > > > > updates and will take a stab at trying to get these new lock
+> > > > > > types added to the POSIX spec (as HCH recommended).
+> > > > > >
+> > > > > > At this point, my main questions are:
+> > > > > >
+> > > > > > 1) does this look useful, particularly for fileserver
+implementors?
+> > > > > >
+> > > > > > 2) does this look OK API-wise? We could consider different "cmd"
+> > > values
+> > > > > >    or even different syscalls, but I figured this makes it
+> > > > > > clearer
+> > that
+> > > > > >    "P" and "non-P" locks will still conflict with one another.
+> > > >
+> > > > This is a good start.
+> > > >
+> > > > I'd prefer a model where the private locks are maintained even if
+> > > > all file descriptors are closed and released on garbage collection
+> > > > when the process terminates. The model presented would require a
+> > > > server to potentially have at least two file descriptors open (the
+> > > > descriptor originally used for the locks, and a descriptor used
+> > > > for current access mode needed for some I/O operation). The server
+> > > > will also need to "remember" to do all locks using the first file
+> descriptor.
+> > > >
+> > >
+> > > That's sort of a non-starter, I think at least in Linux. If you have
+> > > no
+> > open file
+> > > descriptor then you have nothing to hang the lock off of.
+> > > That sort of interface sounds error-prone and "leaky" too. A long
+> > > running process could easily end up leaking POSIX locks over time if
+> > > you forget to explicitly unlock them.
+> >
+> > There is a point there, however see below for discussion of file
+> > descriptor resources.
+> >
+> > > > Another thing that would be very useful for servers is to be able
+> > > > to specify an arbitrary lock owner. Currently, Ganesha has to
+> > > > manage a union of all locks held on a file and carefully pick it
+> > > > apart when a client does an unlock. Allowing a process specified
+> > > > owner would allow Ganesha (or other
+> > > > servers) to have separate locks for each client lock owner.
+> > > >
+> > >
+> > > The trivial answer there would be to give each lockowner its own
+> > > file descriptor, right?
+> >
+> > Hmm, that would be a solution (of course that would imply that private
+> > locks held by the same process but by different file descriptors would
+> > conflict appropriately).
+> >
+> 
+> Good point. In the implementation I have so far, POSIX locks held by the
+> same process don't conflict, just like normal POSIX locks do. For these
+sorts
+> of locks, I think it would make sense to have more flock()-like behavior
+there,
+> such that locks held by the same process on different file descriptors
+will still
+> conflict. I'll plan to make that change on the next pass.
 
-Any comment?
+Yea, and I think the "private" being part of the descriptor of these locks
+will make those semantics make sense. These locks are private to the
+particular file descriptor.
 
-Seiji
+> > There is a resource issue though of how many file descriptors we have
+> open.
+> > Is there any practical limit on the number of file descriptors a
+> > process has open? Can the kernel support 1000s of descriptors? How
+> > much resource does a file descriptor take? Looks like a struct file
+> > isn't tiny, not quite sure just how big it is.
+> >
+> > There is also some consideration of how this interacts with share
+> > reservations (where is that proposal going BTW?). But I don't think
+> > this really introduces anything new. We still have to guess the best
+> > access mode to open a file descriptor that will be used for locks no
+> > matter how we implement this.
+> >
+> 
+> At least in the currently proposed patchset by Pavel, share reservations
+are
+> orthogonal to these since they're based on LOCK_MAND
+> flock() locks.
 
-> -----Original Message-----
-> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of Seiji Aguchi
-> Sent: Monday, September 09, 2013 5:56 PM
-> To: linux-kernel@vger.kernel.org; x86@kernel.org
-> Cc: hpa@zytor.com; rostedt@goodmis.org; mingo@elte.hu; bp@alien8.de; tglx@linutronix.de; fdeslaur@gmail.com;
-> raphael.beamonte@gmail.com; dle-develop@lists.sourceforge.net; Tomoki Sekiyama
-> Subject: [PATCH v3] Introduce page fault tracepoint
+Sure, and I don't think they'll cause an issue. Hmm, what about delegations?
+An out of tree file system I used to be associated with had issues with
+Ganesha's opening files read/write because of the POSIX behavior caused fits
+with delegations.
+
+> > So I guess my big concern is the resource impact of lots of file
+> > descriptors.
+> >
 > 
-> Change from v2
->  - Print entry->ip instead of entry->regs->ip to avoid kernel crash.
->  - Use %pf instead of 0x%lx to print address and ip.
+> That's understandable. I'm not clear on how big an overhead there is on
+> maintaining an open file descriptor. OTOH, people use flock() and such and
+it
+> has similar requirements.
+
+Let's mull on that some more. Does anyone have a quick answer to the amount
+of memory used by an open file descriptor, and the related question of how
+many open file descriptors it's reasonable for one process to have?
+
+> I guess my main concern is that while I'm interested in adding interfaces
+that
+> make it _easier_ to implement fileservers, I'm not terribly interested in
+> adding interfaces that are _specific_ to implementing them.
 > 
-> This patch introduces page fault tracepoints to x86 architecture
-> by switching IDT.
-> 
-> [Use case of page fault events]
-> 
->   Two events, for user and kernel spaces, are introduced at the beginning of
->   page fault handler.
-> 
->   - User space event
->     There is a request of page fault event for user space as below.
-> 
->     http://marc.info/?l=linux-mm&m=136807959830182&w=2
->     http://marc.info/?l=linux-mm&m=136807959130175&w=2
-> 
->   - Kernel space event:
->     Overhead in kernel space is measurable by enabling it.
-> 
-> [Creating IDT]
-> 
->  A way to create IDT is as below.
-> 
->  - Introduce set_intr_gate_raw() to register just non-trace handler to IDT.
->    This is used at boot time which tracing is disabled.
->  - Make set_intr_gate() macro so that it can register trace handler to
->    trace IDT and non-trace handler to normal IDT.
-> 
-> Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
-> ---
->  arch/x86/include/asm/desc.h             | 33 +++++++++++++++++----
->  arch/x86/include/asm/hw_irq.h           | 14 ++++++++-
->  arch/x86/include/asm/trace/exceptions.h | 52 +++++++++++++++++++++++++++++++++
->  arch/x86/include/asm/traps.h            | 22 ++++++++++++++
->  arch/x86/kernel/entry_32.S              | 10 +++++++
->  arch/x86/kernel/entry_64.S              | 13 ++++++++-
->  arch/x86/kernel/head64.c                |  2 +-
->  arch/x86/kernel/irqinit.c               |  2 +-
->  arch/x86/kernel/kvm.c                   |  2 +-
->  arch/x86/kernel/traps.c                 | 28 +++++++++---------
->  arch/x86/mm/Makefile                    |  2 ++
->  arch/x86/mm/fault.c                     | 22 ++++++++++++++
->  12 files changed, 178 insertions(+), 24 deletions(-)
->  create mode 100644 arch/x86/include/asm/trace/exceptions.h
-> 
-> diff --git a/arch/x86/include/asm/desc.h b/arch/x86/include/asm/desc.h
-> index b90e5df..c04302b 100644
-> --- a/arch/x86/include/asm/desc.h
-> +++ b/arch/x86/include/asm/desc.h
-> @@ -327,10 +327,28 @@ static inline void write_trace_idt_entry(int entry, const gate_desc *gate)
->  {
->  	write_idt_entry(trace_idt_table, entry, gate);
->  }
-> +
-> +static inline void _trace_set_gate(int gate, unsigned type, void *addr,
-> +				   unsigned dpl, unsigned ist, unsigned seg)
-> +{
-> +	gate_desc s;
-> +
-> +	pack_gate(&s, type, (unsigned long)addr, dpl, ist, seg);
-> +	/*
-> +	 * does not need to be atomic because it is only done once at
-> +	 * setup time
-> +	 */
-> +	write_trace_idt_entry(gate, &s);
-> +}
->  #else
->  static inline void write_trace_idt_entry(int entry, const gate_desc *gate)
->  {
->  }
-> +
-> +static inline void _trace_set_gate(int gate, unsigned type, void *addr,
-> +				   unsigned dpl, unsigned ist, unsigned seg)
-> +{
-> +}
->  #endif
-> 
->  static inline void _set_gate(int gate, unsigned type, void *addr,
-> @@ -353,12 +371,20 @@ static inline void _set_gate(int gate, unsigned type, void *addr,
->   * Pentium F0 0F bugfix can have resulted in the mapped
->   * IDT being write-protected.
->   */
-> -static inline void set_intr_gate(unsigned int n, void *addr)
-> +static inline void set_intr_gate_raw(unsigned int n, void *addr)
->  {
->  	BUG_ON((unsigned)n > 0xFF);
->  	_set_gate(n, GATE_INTERRUPT, addr, 0, 0, __KERNEL_CS);
->  }
-> 
-> +#define set_intr_gate(n, addr)						\
-> +	do {								\
-> +		BUG_ON((unsigned)n > 0xFF);				\
-> +		_set_gate(n, GATE_INTERRUPT, addr, 0, 0, __KERNEL_CS);	\
-> +		_trace_set_gate(n, GATE_INTERRUPT, trace_##addr, 0, 0,	\
-> +				__KERNEL_CS);				\
-> +	} while (0)
-> +
->  extern int first_system_vector;
->  /* used_vectors is BITMAP for irq is not managed by percpu vector_irq */
->  extern unsigned long used_vectors[];
-> @@ -395,10 +421,7 @@ static inline void trace_set_intr_gate(unsigned int gate, void *addr)
->  #define __trace_alloc_intr_gate(n, addr)
->  #endif
-> 
-> -static inline void __alloc_intr_gate(unsigned int n, void *addr)
-> -{
-> -	set_intr_gate(n, addr);
-> -}
-> +#define __alloc_intr_gate(n, addr) set_intr_gate(n, addr)
-> 
->  #define alloc_intr_gate(n, addr)				\
->  	do {							\
-> diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
-> index 92b3bae..c856e69 100644
-> --- a/arch/x86/include/asm/hw_irq.h
-> +++ b/arch/x86/include/asm/hw_irq.h
-> @@ -89,10 +89,22 @@ extern void trace_reschedule_interrupt(void);
->  extern void trace_threshold_interrupt(void);
->  extern void trace_call_function_interrupt(void);
->  extern void trace_call_function_single_interrupt(void);
-> +#else /* CONFIG_TRACING */
-> +#define trace_apic_timer_interrupt apic_timer_interrupt
-> +#define trace_x86_platform_ipi x86_platform_ipi
-> +#define trace_error_interrupt error_interrupt
-> +#define trace_irq_work_interrupt irq_work_interrupt
-> +#define trace_spurious_interrupt spurious_interrupt
-> +#define trace_thermal_interrupt thermal_interrupt
-> +#define trace_reschedule_interrupt reschedule_interrupt
-> +#define trace_threshold_interrupt threshold_interrupt
-> +#define trace_call_function_interrupt call_function_interrupt
-> +#define trace_call_function_single_interrupt call_function_single_interrupt
-> +#endif
-> +
->  #define trace_irq_move_cleanup_interrupt  irq_move_cleanup_interrupt
->  #define trace_reboot_interrupt  reboot_interrupt
->  #define trace_kvm_posted_intr_ipi kvm_posted_intr_ipi
-> -#endif /* CONFIG_TRACING */
-> 
->  /* IOAPIC */
->  #define IO_APIC_IRQ(x) (((x) >= NR_IRQS_LEGACY) || ((1<<(x)) & io_apic_irqs))
-> diff --git a/arch/x86/include/asm/trace/exceptions.h b/arch/x86/include/asm/trace/exceptions.h
-> new file mode 100644
-> index 0000000..86540c0
-> --- /dev/null
-> +++ b/arch/x86/include/asm/trace/exceptions.h
-> @@ -0,0 +1,52 @@
-> +#undef TRACE_SYSTEM
-> +#define TRACE_SYSTEM exceptions
-> +
-> +#if !defined(_TRACE_PAGE_FAULT_H) || defined(TRACE_HEADER_MULTI_READ)
-> +#define _TRACE_PAGE_FAULT_H
-> +
-> +#include <linux/tracepoint.h>
-> +
-> +extern void trace_irq_vector_regfunc(void);
-> +extern void trace_irq_vector_unregfunc(void);
-> +
-> +DECLARE_EVENT_CLASS(x86_exceptions,
-> +
-> +	TP_PROTO(unsigned long address, struct pt_regs *regs,
-> +		 unsigned long error_code),
-> +
-> +	TP_ARGS(address, regs, error_code),
-> +
-> +	TP_STRUCT__entry(
-> +		__field(		unsigned long, address	)
-> +		__field(		unsigned long, ip	)
-> +		__field(		unsigned long, error_code )
-> +	),
-> +
-> +	TP_fast_assign(
-> +		__entry->address = address;
-> +		__entry->ip = regs->ip;
-> +		__entry->error_code = error_code;
-> +	),
-> +
-> +	TP_printk("address=%pf ip=%pf error_code=0x%lx",
-> +		  (void *)__entry->address, (void *)__entry->ip,
-> +		  __entry->error_code) );
-> +
-> +#define DEFINE_PAGE_FAULT_EVENT(name)				\
-> +DEFINE_EVENT_FN(x86_exceptions, name,				\
-> +	TP_PROTO(unsigned long address,	struct pt_regs *regs,	\
-> +		 unsigned long error_code),			\
-> +	TP_ARGS(address, regs, error_code),			\
-> +	trace_irq_vector_regfunc,				\
-> +	trace_irq_vector_unregfunc);
-> +
-> +DEFINE_PAGE_FAULT_EVENT(user_page_fault);
-> +DEFINE_PAGE_FAULT_EVENT(kernel_page_fault);
-> +
-> +#undef TRACE_INCLUDE_PATH
-> +#define TRACE_INCLUDE_PATH .
-> +#define TRACE_INCLUDE_FILE exceptions
-> +#endif /*  _TRACE_PAGE_FAULT_H */
-> +
-> +/* This part must be outside protection */
-> +#include <trace/define_trace.h>
-> diff --git a/arch/x86/include/asm/traps.h b/arch/x86/include/asm/traps.h
-> index 7036cb6..a400a22 100644
-> --- a/arch/x86/include/asm/traps.h
-> +++ b/arch/x86/include/asm/traps.h
-> @@ -37,6 +37,25 @@ asmlinkage void machine_check(void);
->  #endif /* CONFIG_X86_MCE */
->  asmlinkage void simd_coprocessor_error(void);
-> 
-> +#ifdef CONFIG_TRACING
-> +asmlinkage void trace_page_fault(void);
-> +#else
-> +#define trace_page_fault page_fault
-> +#endif
-> +#define trace_divide_error divide_error
-> +#define trace_bounds bounds
-> +#define trace_invalid_op invalid_op
-> +#define trace_device_not_available device_not_available
-> +#define trace_coprocessor_segment_overrun coprocessor_segment_overrun
-> +#define trace_invalid_TSS invalid_TSS
-> +#define trace_segment_not_present segment_not_present
-> +#define trace_general_protection general_protection
-> +#define trace_spurious_interrupt_bug spurious_interrupt_bug
-> +#define trace_coprocessor_error coprocessor_error
-> +#define trace_alignment_check alignment_check
-> +#define trace_simd_coprocessor_error simd_coprocessor_error
-> +#define trace_async_page_fault async_page_fault
-> +
->  dotraplinkage void do_divide_error(struct pt_regs *, long);
->  dotraplinkage void do_debug(struct pt_regs *, long);
->  dotraplinkage void do_nmi(struct pt_regs *, long);
-> @@ -55,6 +74,9 @@ asmlinkage __kprobes struct pt_regs *sync_regs(struct pt_regs *);
->  #endif
->  dotraplinkage void do_general_protection(struct pt_regs *, long);
->  dotraplinkage void do_page_fault(struct pt_regs *, unsigned long);
-> +#ifdef CONFIG_TRACING
-> +dotraplinkage void trace_do_page_fault(struct pt_regs *, unsigned long);
-> +#endif
->  dotraplinkage void do_spurious_interrupt_bug(struct pt_regs *, long);
->  dotraplinkage void do_coprocessor_error(struct pt_regs *, long);
->  dotraplinkage void do_alignment_check(struct pt_regs *, long);
-> diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-> index 2cfbc3a..c9eb4e2 100644
-> --- a/arch/x86/kernel/entry_32.S
-> +++ b/arch/x86/kernel/entry_32.S
-> @@ -1244,6 +1244,16 @@ return_to_handler:
->   */
->  	.pushsection .kprobes.text, "ax"
-> 
-> +#ifdef CONFIG_TRACING
-> +ENTRY(trace_page_fault)
-> +	RING0_EC_FRAME
-> +	ASM_CLAC
-> +	pushl_cfi $trace_do_page_fault
-> +	jmp error_code
-> +	CFI_ENDPROC
-> +END(trace_page_fault)
-> +#endif
-> +
->  ENTRY(page_fault)
->  	RING0_EC_FRAME
->  	ASM_CLAC
-> diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-> index 1b69951..5136404 100644
-> --- a/arch/x86/kernel/entry_64.S
-> +++ b/arch/x86/kernel/entry_64.S
-> @@ -1295,6 +1295,17 @@ ENTRY(\sym)
->  END(\sym)
->  .endm
-> 
-> +#ifdef CONFIG_TRACING
-> +.macro trace_errorentry sym do_sym
-> +errorentry trace(\sym) trace(\do_sym)
-> +errorentry \sym \do_sym
-> +.endm
-> +#else
-> +.macro trace_errorentry sym do_sym
-> +errorentry \sym \do_sym
-> +.endm
-> +#endif
-> +
->  	/* error code is on the stack already */
->  .macro paranoiderrorentry sym do_sym
->  ENTRY(\sym)
-> @@ -1497,7 +1508,7 @@ zeroentry xen_int3 do_int3
->  errorentry xen_stack_segment do_stack_segment
->  #endif
->  errorentry general_protection do_general_protection
-> -errorentry page_fault do_page_fault
-> +trace_errorentry page_fault do_page_fault
->  #ifdef CONFIG_KVM_GUEST
->  errorentry async_page_fault do_async_page_fault
->  #endif
-> diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
-> index 1be8e43..aebb2bf 100644
-> --- a/arch/x86/kernel/head64.c
-> +++ b/arch/x86/kernel/head64.c
-> @@ -162,7 +162,7 @@ asmlinkage void __init x86_64_start_kernel(char * real_mode_data)
->  	clear_bss();
-> 
->  	for (i = 0; i < NUM_EXCEPTION_VECTORS; i++)
-> -		set_intr_gate(i, &early_idt_handlers[i]);
-> +		set_intr_gate_raw(i, &early_idt_handlers[i]);
->  	load_idt((const struct desc_ptr *)&idt_descr);
-> 
->  	copy_bootdata(__va(real_mode_data));
-> diff --git a/arch/x86/kernel/irqinit.c b/arch/x86/kernel/irqinit.c
-> index a2a1fbc..2ca2354 100644
-> --- a/arch/x86/kernel/irqinit.c
-> +++ b/arch/x86/kernel/irqinit.c
-> @@ -206,7 +206,7 @@ void __init native_init_IRQ(void)
->  	i = FIRST_EXTERNAL_VECTOR;
->  	for_each_clear_bit_from(i, used_vectors, NR_VECTORS) {
->  		/* IA32_SYSCALL_VECTOR could be used in trap_init already. */
-> -		set_intr_gate(i, interrupt[i - FIRST_EXTERNAL_VECTOR]);
-> +		set_intr_gate_raw(i, interrupt[i - FIRST_EXTERNAL_VECTOR]);
->  	}
-> 
->  	if (!acpi_ioapic && !of_ioapic)
-> diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-> index 697b93a..ba202ee 100644
-> --- a/arch/x86/kernel/kvm.c
-> +++ b/arch/x86/kernel/kvm.c
-> @@ -464,7 +464,7 @@ static struct notifier_block kvm_cpu_notifier = {
-> 
->  static void __init kvm_apf_trap_init(void)
->  {
-> -	set_intr_gate(14, &async_page_fault);
-> +	set_intr_gate(14, async_page_fault);
->  }
-> 
->  void __init kvm_guest_init(void)
-> diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-> index 8c8093b..1c9d0ad 100644
-> --- a/arch/x86/kernel/traps.c
-> +++ b/arch/x86/kernel/traps.c
-> @@ -713,7 +713,7 @@ void __init early_trap_init(void)
->  	/* int3 can be called from all */
->  	set_system_intr_gate_ist(X86_TRAP_BP, &int3, DEBUG_STACK);
->  #ifdef CONFIG_X86_32
-> -	set_intr_gate(X86_TRAP_PF, &page_fault);
-> +	set_intr_gate(X86_TRAP_PF, page_fault);
->  #endif
->  	load_idt(&idt_descr);
->  }
-> @@ -721,7 +721,7 @@ void __init early_trap_init(void)
->  void __init early_trap_pf_init(void)
->  {
->  #ifdef CONFIG_X86_64
-> -	set_intr_gate(X86_TRAP_PF, &page_fault);
-> +	set_intr_gate(X86_TRAP_PF, page_fault);
->  #endif
->  }
-> 
-> @@ -737,30 +737,30 @@ void __init trap_init(void)
->  	early_iounmap(p, 4);
->  #endif
-> 
-> -	set_intr_gate(X86_TRAP_DE, &divide_error);
-> +	set_intr_gate(X86_TRAP_DE, divide_error);
->  	set_intr_gate_ist(X86_TRAP_NMI, &nmi, NMI_STACK);
->  	/* int4 can be called from all */
->  	set_system_intr_gate(X86_TRAP_OF, &overflow);
-> -	set_intr_gate(X86_TRAP_BR, &bounds);
-> -	set_intr_gate(X86_TRAP_UD, &invalid_op);
-> -	set_intr_gate(X86_TRAP_NM, &device_not_available);
-> +	set_intr_gate(X86_TRAP_BR, bounds);
-> +	set_intr_gate(X86_TRAP_UD, invalid_op);
-> +	set_intr_gate(X86_TRAP_NM, device_not_available);
->  #ifdef CONFIG_X86_32
->  	set_task_gate(X86_TRAP_DF, GDT_ENTRY_DOUBLEFAULT_TSS);
->  #else
->  	set_intr_gate_ist(X86_TRAP_DF, &double_fault, DOUBLEFAULT_STACK);
->  #endif
-> -	set_intr_gate(X86_TRAP_OLD_MF, &coprocessor_segment_overrun);
-> -	set_intr_gate(X86_TRAP_TS, &invalid_TSS);
-> -	set_intr_gate(X86_TRAP_NP, &segment_not_present);
-> +	set_intr_gate(X86_TRAP_OLD_MF, coprocessor_segment_overrun);
-> +	set_intr_gate(X86_TRAP_TS, invalid_TSS);
-> +	set_intr_gate(X86_TRAP_NP, segment_not_present);
->  	set_intr_gate_ist(X86_TRAP_SS, &stack_segment, STACKFAULT_STACK);
-> -	set_intr_gate(X86_TRAP_GP, &general_protection);
-> -	set_intr_gate(X86_TRAP_SPURIOUS, &spurious_interrupt_bug);
-> -	set_intr_gate(X86_TRAP_MF, &coprocessor_error);
-> -	set_intr_gate(X86_TRAP_AC, &alignment_check);
-> +	set_intr_gate(X86_TRAP_GP, general_protection);
-> +	set_intr_gate(X86_TRAP_SPURIOUS, spurious_interrupt_bug);
-> +	set_intr_gate(X86_TRAP_MF, coprocessor_error);
-> +	set_intr_gate(X86_TRAP_AC, alignment_check);
->  #ifdef CONFIG_X86_MCE
->  	set_intr_gate_ist(X86_TRAP_MC, &machine_check, MCE_STACK);
->  #endif
-> -	set_intr_gate(X86_TRAP_XF, &simd_coprocessor_error);
-> +	set_intr_gate(X86_TRAP_XF, simd_coprocessor_error);
-> 
->  	/* Reserve all the builtin and the syscall vector: */
->  	for (i = 0; i < FIRST_EXTERNAL_VECTOR; i++)
-> diff --git a/arch/x86/mm/Makefile b/arch/x86/mm/Makefile
-> index 23d8e5f..6a19ad9 100644
-> --- a/arch/x86/mm/Makefile
-> +++ b/arch/x86/mm/Makefile
-> @@ -6,6 +6,8 @@ nostackp := $(call cc-option, -fno-stack-protector)
->  CFLAGS_physaddr.o		:= $(nostackp)
->  CFLAGS_setup_nx.o		:= $(nostackp)
-> 
-> +CFLAGS_fault.o := -I$(src)/../include/asm/trace
-> +
->  obj-$(CONFIG_X86_PAT)		+= pat_rbtree.o
->  obj-$(CONFIG_SMP)		+= tlb.o
-> 
-> diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-> index 654be4a..f515154 100644
-> --- a/arch/x86/mm/fault.c
-> +++ b/arch/x86/mm/fault.c
-> @@ -20,6 +20,9 @@
->  #include <asm/kmemcheck.h>		/* kmemcheck_*(), ...		*/
->  #include <asm/fixmap.h>			/* VSYSCALL_START		*/
-> 
-> +#define CREATE_TRACE_POINTS
-> +#include <asm/trace/exceptions.h>
-> +
->  /*
->   * Page fault error code bits:
->   *
-> @@ -1230,3 +1233,22 @@ do_page_fault(struct pt_regs *regs, unsigned long error_code)
->  	__do_page_fault(regs, error_code);
->  	exception_exit(prev_state);
->  }
-> +
-> +static void trace_page_fault_entries(struct pt_regs *regs,
-> +				     unsigned long error_code)
-> +{
-> +	if (user_mode(regs))
-> +		trace_user_page_fault(read_cr2(), regs, error_code);
-> +	else
-> +		trace_kernel_page_fault(read_cr2(), regs, error_code);
-> +}
-> +
-> +dotraplinkage void __kprobes
-> +trace_do_page_fault(struct pt_regs *regs, unsigned long error_code)
-> +{
-> +	enum ctx_state prev_state;
-> +	prev_state = exception_enter();
-> +	trace_page_fault_entries(regs, error_code);
-> +	__do_page_fault(regs, error_code);
-> +	exception_exit(prev_state);
-> +}
-> --
-> 1.8.2.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> Whatever interface we add needs to be generic enough to be useful to other
+> applications as well. The changes you're suggesting sound rather specific
+to a
+> particular use-case.
+
+Sure, understood, though the Samba folks may have some input here also
+(though at least they have a process per connection still right? So the
+trouble would be a client with lots of processes running on it, not lots of
+clients running one (or a few) process each.
+
+Frank
+
