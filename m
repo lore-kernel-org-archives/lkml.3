@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932442Ab3JKKoi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 06:44:38 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58850 "EHLO
+	id S932428Ab3JKKog (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 06:44:36 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58844 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932408Ab3JKKoa (ORCPT
+	with ESMTP id S932390Ab3JKKoa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Oct 2013 06:44:30 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Masanari Iida <standby24x7@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+Cc: Michael Grzeschik <m.grzeschik@pengutronix.de>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Jonghwan Choi <jhbird.choi@samsung.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 099/100] dma: fix comments
-Date: Fri, 11 Oct 2013 11:42:09 +0100
-Message-Id: <1381488130-30235-100-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 097/100] dmaengine: imx-dma: fix slow path issue in prep_dma_cyclic
+Date: Fri, 11 Oct 2013 11:42:07 +0100
+Message-Id: <1381488130-30235-98-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
 References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
@@ -27,151 +29,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Masanari Iida <standby24x7@gmail.com>
+From: Michael Grzeschik <m.grzeschik@pengutronix.de>
 
-commit d73111c6d43f08d697a3d986fe3bd8ca796a2096 upstream.
+commit edc530fe7ee5a562680615d2e7cd205879c751a7 upstream.
 
-Correct spelling typo in drivers/dma.
+When perparing cyclic_dma buffers by the sound layer, it will dump the
+following lockdep trace. The leading snd_pcm_action_single get called
+with read_lock_irq called. To fix this, we change the kcalloc call from
+GFP_KERNEL to GFP_ATOMIC.
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-[ luis: backported to 3.5: required to make 6e35f9b "dmaengine: imx-dma:
-   fix callback path in tasklet" a clean cherry-pick ]
+WARNING: at kernel/lockdep.c:2740 lockdep_trace_alloc+0xcc/0x114()
+DEBUG_LOCKS_WARN_ON(irqs_disabled_flags(flags))
+Modules linked in:
+CPU: 0 PID: 832 Comm: aplay Not tainted 3.11.0-20130823+ #903
+Backtrace:
+[<c000b98c>] (dump_backtrace+0x0/0x10c) from [<c000bb28>] (show_stack+0x18/0x1c)
+ r6:c004c090 r5:00000009 r4:c2e0bd18 r3:00404000
+[<c000bb10>] (show_stack+0x0/0x1c) from [<c02f397c>] (dump_stack+0x20/0x28)
+[<c02f395c>] (dump_stack+0x0/0x28) from [<c001531c>] (warn_slowpath_common+0x54/0x70)
+[<c00152c8>] (warn_slowpath_common+0x0/0x70) from [<c00153dc>] (warn_slowpath_fmt+0x38/0x40)
+ r8:00004000 r7:a3b90000 r6:000080d0 r5:60000093 r4:c2e0a000 r3:00000009
+[<c00153a4>] (warn_slowpath_fmt+0x0/0x40) from [<c004c090>] (lockdep_trace_alloc+0xcc/0x114)
+ r3:c03955d8 r2:c03907db
+[<c004bfc4>] (lockdep_trace_alloc+0x0/0x114) from [<c008f16c>] (__kmalloc+0x34/0x118)
+ r6:000080d0 r5:c3800120 r4:000080d0 r3:c040a0f8
+[<c008f138>] (__kmalloc+0x0/0x118) from [<c019c95c>] (imxdma_prep_dma_cyclic+0x64/0x168)
+ r7:a3b90000 r6:00000004 r5:c39d8420 r4:c3847150
+[<c019c8f8>] (imxdma_prep_dma_cyclic+0x0/0x168) from [<c024618c>] (snd_dmaengine_pcm_trigger+0xa8/0x160)
+[<c02460e4>] (snd_dmaengine_pcm_trigger+0x0/0x160) from [<c0241fa8>] (soc_pcm_trigger+0x90/0xb4)
+ r8:c058c7b0 r7:c3b8140c r6:c39da560 r5:00000001 r4:c3b81000
+[<c0241f18>] (soc_pcm_trigger+0x0/0xb4) from [<c022ece4>] (snd_pcm_do_start+0x2c/0x38)
+ r7:00000000 r6:00000003 r5:c058c7b0 r4:c3b81000
+[<c022ecb8>] (snd_pcm_do_start+0x0/0x38) from [<c022e958>] (snd_pcm_action_single+0x40/0x6c)
+[<c022e918>] (snd_pcm_action_single+0x0/0x6c) from [<c022ea64>] (snd_pcm_action_lock_irq+0x7c/0x9c)
+ r7:00000003 r6:c3b810f0 r5:c3b810f0 r4:c3b81000
+[<c022e9e8>] (snd_pcm_action_lock_irq+0x0/0x9c) from [<c023009c>] (snd_pcm_common_ioctl1+0x7f8/0xfd0)
+ r8:c3b7f888 r7:005407b8 r6:c2c991c0 r5:c3b81000 r4:c3b81000 r3:00004142
+[<c022f8a4>] (snd_pcm_common_ioctl1+0x0/0xfd0) from [<c023117c>] (snd_pcm_playback_ioctl1+0x464/0x488)
+[<c0230d18>] (snd_pcm_playback_ioctl1+0x0/0x488) from [<c02311d4>] (snd_pcm_playback_ioctl+0x34/0x40)
+ r8:c3b7f888 r7:00004142 r6:00000004 r5:c2c991c0 r4:005407b8
+[<c02311a0>] (snd_pcm_playback_ioctl+0x0/0x40) from [<c00a14a4>] (vfs_ioctl+0x30/0x44)
+[<c00a1474>] (vfs_ioctl+0x0/0x44) from [<c00a1fe8>] (do_vfs_ioctl+0x55c/0x5c0)
+[<c00a1a8c>] (do_vfs_ioctl+0x0/0x5c0) from [<c00a208c>] (SyS_ioctl+0x40/0x68)
+[<c00a204c>] (SyS_ioctl+0x0/0x68) from [<c0009380>] (ret_fast_syscall+0x0/0x44)
+ r8:c0009544 r7:00000036 r6:bedeaa58 r5:00000000 r4:000000c0
+
+Signed-off-by: Michael Grzeschik <m.grzeschik@pengutronix.de>
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+Cc: Jonghwan Choi <jhbird.choi@samsung.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/dma/at_hdmac.c           | 8 ++++----
- drivers/dma/ep93xx_dma.c         | 2 +-
- drivers/dma/fsldma.c             | 2 +-
- drivers/dma/imx-dma.c            | 4 ++--
- drivers/dma/intel_mid_dma_regs.h | 6 +++---
- drivers/dma/pl330.c              | 2 +-
- drivers/dma/ppc4xx/adma.c        | 2 +-
- drivers/dma/ste_dma40_ll.h       | 2 +-
- 8 files changed, 14 insertions(+), 14 deletions(-)
+ drivers/dma/imx-dma.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
-index 4058430..fffd143 100644
---- a/drivers/dma/at_hdmac.c
-+++ b/drivers/dma/at_hdmac.c
-@@ -169,9 +169,9 @@ static void atc_desc_put(struct at_dma_chan *atchan, struct at_desc *desc)
- }
- 
- /**
-- * atc_desc_chain - build chain adding a descripor
-- * @first: address of first descripor of the chain
-- * @prev: address of previous descripor of the chain
-+ * atc_desc_chain - build chain adding a descriptor
-+ * @first: address of first descriptor of the chain
-+ * @prev: address of previous descriptor of the chain
-  * @desc: descriptor to queue
-  *
-  * Called from prep_* functions
-@@ -797,7 +797,7 @@ err_out:
- }
- 
- /**
-- * atc_dma_cyclic_fill_desc - Fill one period decriptor
-+ * atc_dma_cyclic_fill_desc - Fill one period descriptor
-  */
- static int
- atc_dma_cyclic_fill_desc(struct dma_chan *chan, struct at_desc *desc,
-diff --git a/drivers/dma/ep93xx_dma.c b/drivers/dma/ep93xx_dma.c
-index c64917e..bb02fd9 100644
---- a/drivers/dma/ep93xx_dma.c
-+++ b/drivers/dma/ep93xx_dma.c
-@@ -1118,7 +1118,7 @@ fail:
-  * @chan: channel
-  * @dma_addr: DMA mapped address of the buffer
-  * @buf_len: length of the buffer (in bytes)
-- * @period_len: lenght of a single period
-+ * @period_len: length of a single period
-  * @dir: direction of the operation
-  * @context: operation context (ignored)
-  *
-diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
-index 8f84761..094437b 100644
---- a/drivers/dma/fsldma.c
-+++ b/drivers/dma/fsldma.c
-@@ -1015,7 +1015,7 @@ static irqreturn_t fsldma_chan_irq(int irq, void *data)
- 	/*
- 	 * Programming Error
- 	 * The DMA_INTERRUPT async_tx is a NULL transfer, which will
--	 * triger a PE interrupt.
-+	 * trigger a PE interrupt.
- 	 */
- 	if (stat & FSL_DMA_SR_PE) {
- 		chan_dbg(chan, "irq: Programming Error INT\n");
 diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
-index 9e77cc5..2eb396e 100644
+index 8aa9113..332f28d 100644
 --- a/drivers/dma/imx-dma.c
 +++ b/drivers/dma/imx-dma.c
-@@ -571,8 +571,8 @@ static void imxdma_tasklet(unsigned long data)
- 	if (desc->desc.callback)
- 		desc->desc.callback(desc->desc.callback_param);
+@@ -824,7 +824,7 @@ static struct dma_async_tx_descriptor *imxdma_prep_dma_cyclic(
+ 		kfree(imxdmac->sg_list);
  
--	/* If we are dealing with a cyclic descriptor keep it on ld_active
--	 * and dont mark the descripor as complete.
-+	/* If we are dealing with a cyclic descriptor, keep it on ld_active
-+	 * and dont mark the descriptor as complete.
- 	 * Only in non-cyclic cases it would be marked as complete
- 	 */
- 	if (imxdma_chan_is_doing_cyclic(imxdmac))
-diff --git a/drivers/dma/intel_mid_dma_regs.h b/drivers/dma/intel_mid_dma_regs.h
-index 1bfa926..17b4219 100644
---- a/drivers/dma/intel_mid_dma_regs.h
-+++ b/drivers/dma/intel_mid_dma_regs.h
-@@ -168,9 +168,9 @@ union intel_mid_dma_cfg_hi {
-  * @active_list: current active descriptors
-  * @queue: current queued up descriptors
-  * @free_list: current free descriptors
-- * @slave: dma slave struture
-- * @descs_allocated: total number of decsiptors allocated
-- * @dma: dma device struture pointer
-+ * @slave: dma slave structure
-+ * @descs_allocated: total number of descriptors allocated
-+ * @dma: dma device structure pointer
-  * @busy: bool representing if ch is busy (active txn) or not
-  * @in_use: bool representing if ch is in use or not
-  * @raw_tfr: raw trf interrupt received
-diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
-index de4ec1a..0d5a996 100644
---- a/drivers/dma/pl330.c
-+++ b/drivers/dma/pl330.c
-@@ -522,7 +522,7 @@ enum desc_status {
- 	/* In the DMAC pool */
- 	FREE,
- 	/*
--	 * Allocted to some channel during prep_xxx
-+	 * Allocated to some channel during prep_xxx
- 	 * Also may be sitting on the work_list.
- 	 */
- 	PREP,
-diff --git a/drivers/dma/ppc4xx/adma.c b/drivers/dma/ppc4xx/adma.c
-index ced9882..f72348d 100644
---- a/drivers/dma/ppc4xx/adma.c
-+++ b/drivers/dma/ppc4xx/adma.c
-@@ -4446,7 +4446,7 @@ static int __devinit ppc440spe_adma_probe(struct platform_device *ofdev)
- 		ret = -ENOMEM;
- 		goto err_dma_alloc;
- 	}
--	dev_dbg(&ofdev->dev, "allocted descriptor pool virt 0x%p phys 0x%llx\n",
-+	dev_dbg(&ofdev->dev, "allocated descriptor pool virt 0x%p phys 0x%llx\n",
- 		adev->dma_desc_pool_virt, (u64)adev->dma_desc_pool);
+ 	imxdmac->sg_list = kcalloc(periods + 1,
+-			sizeof(struct scatterlist), GFP_KERNEL);
++			sizeof(struct scatterlist), GFP_ATOMIC);
+ 	if (!imxdmac->sg_list)
+ 		return NULL;
  
- 	regs = ioremap(res.start, resource_size(&res));
-diff --git a/drivers/dma/ste_dma40_ll.h b/drivers/dma/ste_dma40_ll.h
-index 51e8e53..6d47373 100644
---- a/drivers/dma/ste_dma40_ll.h
-+++ b/drivers/dma/ste_dma40_ll.h
-@@ -202,7 +202,7 @@
- /* LLI related structures */
- 
- /**
-- * struct d40_phy_lli - The basic configration register for each physical
-+ * struct d40_phy_lli - The basic configuration register for each physical
-  * channel.
-  *
-  * @reg_cfg: The configuration register.
 -- 
 1.8.3.2
 
