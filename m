@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757399Ab3JKJuL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 05:50:11 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:43401 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752551Ab3JKJuJ (ORCPT
+	id S1757427Ab3JKJuR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 05:50:17 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:15766 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757327Ab3JKJuM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 05:50:09 -0400
-Message-ID: <5257C9A1.1030404@huawei.com>
-Date: Fri, 11 Oct 2013 17:49:21 +0800
+	Fri, 11 Oct 2013 05:50:12 -0400
+Message-ID: <5257C9CC.3080806@huawei.com>
+Date: Fri, 11 Oct 2013 17:50:04 +0800
 From: Li Zefan <lizefan@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
 To: Tejun Heo <tj@kernel.org>
 CC: LKML <linux-kernel@vger.kernel.org>, cgroups <cgroups@vger.kernel.org>
-Subject: [PATCH v2 00/12] cpuset: separate configured masks and effective
- masks
+Subject: [PATCH v2 03/12] cpuset: update cs->effective_{cpus,mems} when config
+ changes
+References: <5257C9A1.1030404@huawei.com>
+In-Reply-To: <5257C9A1.1030404@huawei.com>
 Content-Type: text/plain; charset="GB2312"
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [10.135.68.215]
@@ -24,51 +26,227 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patcheset introduces behavior changes, but only if you mount cgroupfs
-with sane_behavior option:
+We're going to have separate user-configured masks and effective ones.
 
-- We introduce new interfaces cpuset.effective_cpus and cpuset.effective_mems,
-  while cpuset.cpus and cpuset.mems will be configured masks.
+Eventually configured masks can only be changed by writing cpuset.cpus
+and cpuset.mems, and they won't be restricted by parent cpuset. While
+effective masks reflect cpu/memory hotplug and hierachical restriction,
+and these are the real masks that apply to the tasks in the cpuset.
 
-- The configured masks can be changed by writing cpuset.cpus/mems only. They
-  won't be changed when hotplug happens.
+We calculate effective mask this way:
+  - top cpuset's effective_mask == online_mask, otherwise
+  - cpuset's effective_mask == configured_mask & parent effective_mask,
+    if the result is empty, it inherits parent effective mask.
 
-- Users can config cpus and mems without restrictions from the parent cpuset.
-  effective masks will enforce the hierarchical behavior.
+Those behavior changes are for sane_behavior only. For !sane_behavior
+effective_mask and configured_mask are the same, so we won't break old
+interfaces.
 
-- Users can also config cpus and mems to have already offlined CPU/nodes.
+To make cs->effective_{cpus,mems} to be effective masks, we need to
+  - change the effective masks at hotplug
+  - change the effective masks at config change
+  - take on ancestor's mask when the effective mask is empty
 
-- When a CPU/node is onlined, it will be brought back to the effective masks
-  if it's in the configured masks.
+The second item is done here. We don't need to treat root_cs specially
+in update_cpumasks_hier(). While at it, remove the redundant variable
+is_load_balanced.
 
-- We build sched domains based on effective cpumask but not configured cpumask.
-
+This won't introduce behavior change.
 
 v2:
-- fixed two bugs
-- made changelogs more verbose
-- added more comments
-- changed cs->real_{mems,cpus}_allowed to cs->effective_{mems, cpus}
-- splitted "cpuset: enable onlined cpu/node in effective masks" into 2 patches
-- exported cpuset.effective_{cpus,mems} unconditionally
+- revise the comment in update_{cpu,node}masks_hier(), suggested by Tejun.
+- fix to use @cp instead of @cs in these two functions.
 
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+---
+ kernel/cpuset.c | 115 ++++++++++++++++++++++++++++++++------------------------
+ 1 file changed, 66 insertions(+), 49 deletions(-)
 
-Li Zefan (12):
-  cpuset: add cs->effective_cpus and cs->effective_mems
-  cpuset: update cpuset->effective_{cpus,mems} at hotplug
-  cpuset: update cs->effective_{cpus,mems} when config changes
-  cpuset: inherit ancestor's masks if effective_{cpus,mems} becomes empty
-  cpuset: use effective cpumask to build sched domains
-  cpuset: initialize top_cpuset's configured masks at mount
-  cpuset: apply cs->effective_{cpus,mems}
-  cpuset: make cs->{cpus,mems}_allowed as user-configured masks
-  cpuset: refactor cpuset_hotplug_update_tasks()
-  cpuset: enable onlined cpu/node in effective masks
-  cpuset: allow writing offlined masks to cpuset.cpus/mems
-  cpuset: export effective masks to userspace
-
- kernel/cpuset.c | 513 ++++++++++++++++++++++++++++++++++----------------------
- 1 file changed, 316 insertions(+), 197 deletions(-)
-
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index d0ccde2..bdc6047 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -879,39 +879,49 @@ static void update_tasks_cpumask(struct cpuset *cs, struct ptr_heap *heap)
+ 	css_scan_tasks(&cs->css, NULL, cpuset_change_cpumask, cs, heap);
+ }
+ 
+-/*
+- * update_tasks_cpumask_hier - Update the cpumasks of tasks in the hierarchy.
+- * @root_cs: the root cpuset of the hierarchy
+- * @update_root: update root cpuset or not?
++/**
++ * update_cpumasks_hier - Update effective cpumasks and tasks in the subtree
++ * @cs: the cpuset to consider
++ * @trialcs: the trial cpuset
+  * @heap: the heap used by css_scan_tasks()
+  *
+- * This will update cpumasks of tasks in @root_cs and all other empty cpusets
+- * which take on cpumask of @root_cs.
+- *
+- * Called with cpuset_mutex held
++ * When configured cpumask is changed, the effective cpumasks of this cpuset
++ * and all its descendants need to be updated.
+  */
+-static void update_tasks_cpumask_hier(struct cpuset *root_cs,
+-				      bool update_root, struct ptr_heap *heap)
++static void update_cpumasks_hier(struct cpuset *cs, struct cpuset *trialcs,
++				 struct ptr_heap *heap)
+ {
+-	struct cpuset *cp;
+ 	struct cgroup_subsys_state *pos_css;
++	struct cpuset *cp;
+ 
+ 	rcu_read_lock();
+-	cpuset_for_each_descendant_pre(cp, pos_css, root_cs) {
+-		if (cp == root_cs) {
+-			if (!update_root)
+-				continue;
+-		} else {
+-			/* skip the whole subtree if @cp have some CPU */
+-			if (!cpumask_empty(cp->cpus_allowed)) {
+-				pos_css = css_rightmost_descendant(pos_css);
+-				continue;
+-			}
++	cpuset_for_each_descendant_pre(cp, pos_css, cs) {
++		struct cpuset *parent = parent_cs(cp);
++		struct cpumask *new_cpus = trialcs->effective_cpus;
++
++		cpumask_and(new_cpus, cp->cpus_allowed,
++			    parent->effective_cpus);
++
++		/*
++		 * Skip the whole subtree if the cpumask remains the same
++		 * and isn't empty. If it's empty, we need to update tasks
++		 * to take on an ancestor's cpumask.
++		 */
++		if (cpumask_equal(new_cpus, cp->effective_cpus) &&
++		    ((cp == cs) || !cpumask_empty(new_cpus))) {
++			pos_css = css_rightmost_descendant(pos_css);
++			continue;
+ 		}
++
+ 		if (!css_tryget(&cp->css))
+ 			continue;
++
+ 		rcu_read_unlock();
+ 
++		mutex_lock(&callback_mutex);
++		cpumask_copy(cp->effective_cpus, new_cpus);
++		mutex_unlock(&callback_mutex);
++
+ 		update_tasks_cpumask(cp, heap);
+ 
+ 		rcu_read_lock();
+@@ -930,7 +940,6 @@ static int update_cpumask(struct cpuset *cs, struct cpuset *trialcs,
+ {
+ 	struct ptr_heap heap;
+ 	int retval;
+-	int is_load_balanced;
+ 
+ 	/* top_cpuset.cpus_allowed tracks cpu_online_mask; it's read-only */
+ 	if (cs == &top_cpuset)
+@@ -965,17 +974,15 @@ static int update_cpumask(struct cpuset *cs, struct cpuset *trialcs,
+ 	if (retval)
+ 		return retval;
+ 
+-	is_load_balanced = is_sched_load_balance(trialcs);
+-
+ 	mutex_lock(&callback_mutex);
+ 	cpumask_copy(cs->cpus_allowed, trialcs->cpus_allowed);
+ 	mutex_unlock(&callback_mutex);
+ 
+-	update_tasks_cpumask_hier(cs, true, &heap);
++	update_cpumasks_hier(cs, trialcs, &heap);
+ 
+ 	heap_free(&heap);
+ 
+-	if (is_load_balanced)
++	if (is_sched_load_balance(cs))
+ 		rebuild_sched_domains_locked();
+ 	return 0;
+ }
+@@ -1136,40 +1143,50 @@ static void update_tasks_nodemask(struct cpuset *cs, struct ptr_heap *heap)
+ 	cpuset_being_rebound = NULL;
+ }
+ 
+-/*
+- * update_tasks_nodemask_hier - Update the nodemasks of tasks in the hierarchy.
+- * @cs: the root cpuset of the hierarchy
+- * @update_root: update the root cpuset or not?
++/**
++ * update_nodesmasks_hier - Update effective nodemasks and tasks in the subtree
++ * @cs: the cpuset to consider
++ * @trialcs: the trial cpuset
+  * @heap: the heap used by css_scan_tasks()
+  *
+- * This will update nodemasks of tasks in @root_cs and all other empty cpusets
+- * which take on nodemask of @root_cs.
+- *
+- * Called with cpuset_mutex held
++ * When configured nodemask is changed, the effective nodemasks of this cpuset
++ * and all its descendants need to be updated.
+  */
+-static void update_tasks_nodemask_hier(struct cpuset *root_cs,
+-				       bool update_root, struct ptr_heap *heap)
++static void update_nodemasks_hier(struct cpuset *cs, struct cpuset *trialcs,
++				 struct ptr_heap *heap)
+ {
+-	struct cpuset *cp;
+ 	struct cgroup_subsys_state *pos_css;
++	struct cpuset *cp;
+ 
+ 	rcu_read_lock();
+-	cpuset_for_each_descendant_pre(cp, pos_css, root_cs) {
+-		if (cp == root_cs) {
+-			if (!update_root)
+-				continue;
+-		} else {
+-			/* skip the whole subtree if @cp have some CPU */
+-			if (!nodes_empty(cp->mems_allowed)) {
+-				pos_css = css_rightmost_descendant(pos_css);
+-				continue;
+-			}
++	cpuset_for_each_descendant_pre(cp, pos_css, cs) {
++		struct cpuset *parent = parent_cs(cp);
++		nodemask_t *new_mems = &trialcs->effective_mems;
++
++		nodes_and(*new_mems, cp->mems_allowed,
++			  parent->effective_mems);
++
++		/*
++		 * Skip the whole subtree if the nodemask remains the same
++		 * and isn't empty. If it's empty, we need to update tasks
++		 * to take on an ancestor's nodemask.
++		 */
++		if (nodes_equal(*new_mems, cp->effective_mems) &&
++		    ((cp == cs) || !nodes_empty(*new_mems))) {
++			pos_css = css_rightmost_descendant(pos_css);
++			continue;
+ 		}
++
+ 		if (!css_tryget(&cp->css))
+ 			continue;
++
+ 		rcu_read_unlock();
+ 
+-		update_tasks_nodemask(cp, heap);
++		mutex_lock(&callback_mutex);
++		cp->effective_mems = *new_mems;
++		mutex_unlock(&callback_mutex);
++
++		update_tasks_cpumask(cp, heap);
+ 
+ 		rcu_read_lock();
+ 		css_put(&cp->css);
+@@ -1241,7 +1258,7 @@ static int update_nodemask(struct cpuset *cs, struct cpuset *trialcs,
+ 	cs->mems_allowed = trialcs->mems_allowed;
+ 	mutex_unlock(&callback_mutex);
+ 
+-	update_tasks_nodemask_hier(cs, true, &heap);
++	update_nodemasks_hier(cs, trialcs, &heap);
+ 
+ 	heap_free(&heap);
+ done:
 -- 
 1.8.0.2
+
