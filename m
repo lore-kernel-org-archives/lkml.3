@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759335Ab3JKUc4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:32:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45756 "EHLO
+	id S1759361Ab3JKUdR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:33:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45751 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758973Ab3JKTkQ (ORCPT
+	with ESMTP id S1758968Ab3JKTkQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Oct 2013 15:40:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peng Chen <pengchen@qca.qualcomm.com>,
+        Andre Guedes <andre.guedes@openbossa.org>,
         Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Subject: [ 062/110] Bluetooth: Add a new PID/VID 0cf3/e005 for AR3012.
-Date: Fri, 11 Oct 2013 12:38:42 -0700
-Message-Id: <20131011193814.581706509@linuxfoundation.org>
+Subject: [ 061/110] Bluetooth: Fix encryption key size for peripheral role
+Date: Fri, 11 Oct 2013 12:38:41 -0700
+Message-Id: <20131011193814.480028694@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
 References: <20131011193807.584188672@linuxfoundation.org>
@@ -27,60 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peng Chen <pengchen@qti.qualcomm.com>
+From: Andre Guedes <andre.guedes@openbossa.org>
 
-commit 0a3658cccdf5326ea508efeb1879b0e2508bb0c3 upstream.
+commit 89cbb4da0abee2f39d75f67f9fd57f7410c8b65c upstream.
 
-usb device info:
+This patch fixes the connection encryption key size information when
+the host is playing the peripheral role. We should set conn->enc_key_
+size in hci_le_ltk_request_evt, otherwise it is left uninitialized.
 
-T:  Bus=06 Lev=01 Prnt=01 Port=01 Cnt=01 Dev#= 15 Spd=12   MxCh= 0
-D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=0cf3 ProdID=e005 Rev= 0.02
-C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
-I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
-E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
-E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
-I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
-
-Signed-off-by: Peng Chen <pengchen@qca.qualcomm.com>
+Signed-off-by: Andre Guedes <andre.guedes@openbossa.org>
 Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/bluetooth/ath3k.c |    2 ++
- drivers/bluetooth/btusb.c |    1 +
- 2 files changed, 3 insertions(+)
+ net/bluetooth/hci_event.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/bluetooth/ath3k.c
-+++ b/drivers/bluetooth/ath3k.c
-@@ -85,6 +85,7 @@ static struct usb_device_id ath3k_table[
- 	{ USB_DEVICE(0x04CA, 0x3008) },
- 	{ USB_DEVICE(0x13d3, 0x3362) },
- 	{ USB_DEVICE(0x0CF3, 0xE004) },
-+	{ USB_DEVICE(0x0CF3, 0xE005) },
- 	{ USB_DEVICE(0x0930, 0x0219) },
- 	{ USB_DEVICE(0x0489, 0xe057) },
- 	{ USB_DEVICE(0x13d3, 0x3393) },
-@@ -126,6 +127,7 @@ static struct usb_device_id ath3k_blist_
- 	{ USB_DEVICE(0x04ca, 0x3008), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3362), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0xe004), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x0cf3, 0xe005), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0930, 0x0219), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0489, 0xe057), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3393), .driver_info = BTUSB_ATH3012 },
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -148,6 +148,7 @@ static struct usb_device_id blacklist_ta
- 	{ USB_DEVICE(0x04ca, 0x3008), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3362), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0xe004), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x0cf3, 0xe005), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0930, 0x0219), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0489, 0xe057), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3393), .driver_info = BTUSB_ATH3012 },
+--- a/net/bluetooth/hci_event.c
++++ b/net/bluetooth/hci_event.c
+@@ -3615,6 +3615,8 @@ static void hci_le_ltk_request_evt(struc
+ 	else
+ 		conn->pending_sec_level = BT_SECURITY_MEDIUM;
+ 
++	conn->enc_key_size = ltk->enc_size;
++
+ 	hci_send_cmd(hdev, HCI_OP_LE_LTK_REPLY, sizeof(cp), &cp);
+ 
+ 	if (ltk->type & HCI_SMP_STK) {
 
 
