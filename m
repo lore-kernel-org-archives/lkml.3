@@ -1,251 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758419Ab3JKQOq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 12:14:46 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:49012 "EHLO mail.skyhub.de"
+	id S1758631Ab3JKQRV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 12:17:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16956 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757272Ab3JKQOo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 12:14:44 -0400
-Date: Fri, 11 Oct 2013 18:14:36 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Chen, Gong" <gong.chen@linux.intel.com>
-Cc: tony.luck@intel.com, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 8/8] ACPI / trace: Add trace interface for eMCA driver
-Message-ID: <20131011161436.GM5925@pd.tnic>
-References: <1381473166-29303-1-git-send-email-gong.chen@linux.intel.com>
- <1381473166-29303-9-git-send-email-gong.chen@linux.intel.com>
+	id S1753552Ab3JKQRS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 12:17:18 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+Subject: [PATCH] KEYS: Fix a race between negating a key and reading the
+ error set
+To: jmorris@namei.org
+From: David Howells <dhowells@redhat.com>
+Cc: Scott Mayhew <smayhew@redhat.com>, keyrings@linux-nfs.org,
+        Dave Wysochanski <dwysocha@redhat.com>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+Date: Fri, 11 Oct 2013 17:16:59 +0100
+Message-ID: <20131011161659.15534.27955.stgit@warthog.procyon.org.uk>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1381473166-29303-9-git-send-email-gong.chen@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 11, 2013 at 02:32:46AM -0400, Chen, Gong wrote:
-> Use trace interface to elaborate all H/W error related
-> information.
-> 
-> Signed-off-by: Chen, Gong <gong.chen@linux.intel.com>
-> ---
->  drivers/acpi/Kconfig        |   7 ++-
->  drivers/acpi/Makefile       |   4 ++
->  drivers/acpi/acpi_extlog.c  |  28 +++++++++++-
->  drivers/acpi/apei/cper.c    |  13 ++++--
->  drivers/acpi/debug_extlog.h |  16 +++++++
->  drivers/acpi/extlog_trace.c | 105 ++++++++++++++++++++++++++++++++++++++++++++
->  drivers/acpi/extlog_trace.h |  77 ++++++++++++++++++++++++++++++++
->  include/linux/cper.h        |   2 +
->  8 files changed, 246 insertions(+), 6 deletions(-)
->  create mode 100644 drivers/acpi/debug_extlog.h
->  create mode 100644 drivers/acpi/extlog_trace.c
->  create mode 100644 drivers/acpi/extlog_trace.h
-> 
-> diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
-> index 1465fa8..9ea343e 100644
-> --- a/drivers/acpi/Kconfig
-> +++ b/drivers/acpi/Kconfig
-> @@ -372,12 +372,17 @@ config ACPI_BGRT
->  
->  source "drivers/acpi/apei/Kconfig"
->  
-> +config EXTLOG_TRACE
-> +	def_bool n
+key_reject_and_link() marking a key as negative and setting the error with
+which it was negated races with keyring searches and other things that read
+that error.
 
-Why the separate config item?
+The fix is to switch the order in which the assignments are done in
+key_reject_and_link() and to use memory barriers.
 
-> +
->  config ACPI_EXTLOG
->  	tristate "Extended Error Log support"
->  	depends on X86 && X86_MCE
-> +	select EXTLOG_TRACE
->  	default n
->  	help
->  	  This driver adds support for decoding extended errors from hardware.
-> -	  which allows the operating system to obtain data from trace.
-> +	  which allows the operating system to obtain data from trace. It will
-> +	  appear under /sys/kernel/debug/tracing/ras/ .
->  
->  endif	# ACPI
-> diff --git a/drivers/acpi/Makefile b/drivers/acpi/Makefile
-> index bce34af..a6e41b7 100644
-> --- a/drivers/acpi/Makefile
-> +++ b/drivers/acpi/Makefile
-> @@ -83,4 +83,8 @@ obj-$(CONFIG_ACPI_PROCESSOR_AGGREGATOR) += acpi_pad.o
->  
->  obj-$(CONFIG_ACPI_APEI)		+= apei/
->  
-> +# extended log support
-> +acpi-$(CONFIG_EXTLOG_TRACE)	+= extlog_trace.o
+Kudos to Dave Wysochanski <dwysocha@redhat.com> and Scott Mayhew
+<smayhew@redhat.com> for tracking this down.
 
-You can simply do
+This may be the cause of:
 
-obj-$(CONFIG_ACPI_EXTLOG)	+= acpi_extlog.o extlog_trace.o
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000070
+IP: [<ffffffff81219011>] wait_for_key_construction+0x31/0x80
+PGD c6b2c3067 PUD c59879067 PMD 0
+Oops: 0000 [#1] SMP
+last sysfs file: /sys/devices/system/cpu/cpu3/cache/index2/shared_cpu_map
+CPU 0
+Modules linked in: ...
 
-> +CFLAGS_extlog_trace.o := -I$(src)
-> +
->  obj-$(CONFIG_ACPI_EXTLOG)	+= acpi_extlog.o
+Pid: 13359, comm: amqzxma0 Not tainted 2.6.32-358.20.1.el6.x86_64 #1 IBM System x3650 M3 -[7945PSJ]-/00J6159
+RIP: 0010:[<ffffffff81219011>] wait_for_key_construction+0x31/0x80
+RSP: 0018:ffff880c6ab33758  EFLAGS: 00010246
+RAX: ffffffff81219080 RBX: 0000000000000000 RCX: 0000000000000002
+RDX: ffffffff81219060 RSI: 0000000000000000 RDI: 0000000000000000
+RBP: ffff880c6ab33768 R08: 0000000000000000 R09: 0000000000000000
+R10: 0000000000000001 R11: 0000000000000000 R12: ffff880adfcbce40
+R13: ffffffffa03afb84 R14: ffff880adfcbce40 R15: ffff880adfcbce43
+FS:  00007f29b8042700(0000) GS:ffff880028200000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 0000000000000070 CR3: 0000000c613dc000 CR4: 00000000000007f0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process amqzxma0 (pid: 13359, threadinfo ffff880c6ab32000, task ffff880c610deae0)
+Stack:
+ ffff880adfcbce40 0000000000000000 ffff880c6ab337b8 ffffffff81219695
+<d> 0000000000000000 ffff880a000000d0 ffff880c6ab337a8 000000000000000f
+<d> ffffffffa03afb93 000000000000000f ffff88186c7882c0 0000000000000014
+Call Trace:
+ [<ffffffff81219695>] request_key+0x65/0xa0
+ [<ffffffffa03a0885>] nfs_idmap_request_key+0xc5/0x170 [nfs]
+ [<ffffffffa03a0eb4>] nfs_idmap_lookup_id+0x34/0x80 [nfs]
+ [<ffffffffa03a1255>] nfs_map_group_to_gid+0x75/0xa0 [nfs]
+ [<ffffffffa039a9ad>] decode_getfattr_attrs+0xbdd/0xfb0 [nfs]
+ [<ffffffff81057310>] ? __dequeue_entity+0x30/0x50
+ [<ffffffff8100988e>] ? __switch_to+0x26e/0x320
+ [<ffffffffa039ae03>] decode_getfattr+0x83/0xe0 [nfs]
+ [<ffffffffa039b610>] ? nfs4_xdr_dec_getattr+0x0/0xa0 [nfs]
+ [<ffffffffa039b69f>] nfs4_xdr_dec_getattr+0x8f/0xa0 [nfs]
+ [<ffffffffa02dada4>] rpcauth_unwrap_resp+0x84/0xb0 [sunrpc]
+ [<ffffffffa039b610>] ? nfs4_xdr_dec_getattr+0x0/0xa0 [nfs]
+ [<ffffffffa02cf923>] call_decode+0x1b3/0x800 [sunrpc]
+ [<ffffffff81096de0>] ? wake_bit_function+0x0/0x50
+ [<ffffffffa02cf770>] ? call_decode+0x0/0x800 [sunrpc]
+ [<ffffffffa02d99a7>] __rpc_execute+0x77/0x350 [sunrpc]
+ [<ffffffff81096c67>] ? bit_waitqueue+0x17/0xd0
+ [<ffffffffa02d9ce1>] rpc_execute+0x61/0xa0 [sunrpc]
+ [<ffffffffa02d03a5>] rpc_run_task+0x75/0x90 [sunrpc]
+ [<ffffffffa02d04c2>] rpc_call_sync+0x42/0x70 [sunrpc]
+ [<ffffffffa038ff80>] _nfs4_call_sync+0x30/0x40 [nfs]
+ [<ffffffffa038836c>] _nfs4_proc_getattr+0xac/0xc0 [nfs]
+ [<ffffffff810aac87>] ? futex_wait+0x227/0x380
+ [<ffffffffa038b856>] nfs4_proc_getattr+0x56/0x80 [nfs]
+ [<ffffffffa0371403>] __nfs_revalidate_inode+0xe3/0x220 [nfs]
+ [<ffffffffa037158e>] nfs_revalidate_mapping+0x4e/0x170 [nfs]
+ [<ffffffffa036f147>] nfs_file_read+0x77/0x130 [nfs]
+ [<ffffffff811811aa>] do_sync_read+0xfa/0x140
+ [<ffffffff81096da0>] ? autoremove_wake_function+0x0/0x40
+ [<ffffffff8100bb8e>] ? apic_timer_interrupt+0xe/0x20
+ [<ffffffff8100b9ce>] ? common_interrupt+0xe/0x13
+ [<ffffffff81228ffb>] ? selinux_file_permission+0xfb/0x150
+ [<ffffffff8121bed6>] ? security_file_permission+0x16/0x20
+ [<ffffffff81181a95>] vfs_read+0xb5/0x1a0
+ [<ffffffff81181bd1>] sys_read+0x51/0x90
+ [<ffffffff810dc685>] ? __audit_syscall_exit+0x265/0x290
+ [<ffffffff8100b072>] system_call_fastpath+0x16/0x1b
 
-[ ... ]
+Signed-off-by: David Howells <dhowells@redhat.com>
+cc: Dave Wysochanski <dwysocha@redhat.com>
+cc: Scott Mayhew <smayhew@redhat.com>
+---
 
-> diff --git a/drivers/acpi/extlog_trace.c b/drivers/acpi/extlog_trace.c
-> new file mode 100644
-> index 0000000..2b2824c
-> --- /dev/null
-> +++ b/drivers/acpi/extlog_trace.c
-> @@ -0,0 +1,105 @@
-> +#include <linux/export.h>
-> +#include <linux/dmi.h>
-> +#include "debug_extlog.h"
-> +
-> +#define CREATE_TRACE_POINTS
-> +#include "extlog_trace.h"
-> +
-> +static char mem_location[LOC_LEN];
-> +static char dimm_location[LOC_LEN];
-> +
-> +static void mem_err_location(struct cper_sec_mem_err *mem)
-> +{
-> +	char *p;
-> +	u32 n = 0;
-> +
-> +	memset(mem_location, 0, LOC_LEN);
-> +	p = mem_location;
-> +	if (mem->validation_bits & CPER_MEM_VALID_NODE)
-> +		n += sprintf(p + n, " node: %d", mem->node);
-> +	if (n >= LOC_LEN)
-> +		goto end;
-> +	if (mem->validation_bits & CPER_MEM_VALID_CARD)
-> +		n += sprintf(p + n, " card: %d", mem->card);
-> +	if (n >= LOC_LEN)
-> +		goto end;
-> +	if (mem->validation_bits & CPER_MEM_VALID_MODULE)
-> +		n += sprintf(p + n, " module: %d", mem->module);
-> +	if (n >= LOC_LEN)
-> +		goto end;
-> +	if (mem->validation_bits & CPER_MEM_VALID_RANK_NUMBER)
-> +		n += sprintf(p + n, " rank: %d", mem->rank);
-> +	if (n >= LOC_LEN)
-> +		goto end;
-> +	if (mem->validation_bits & CPER_MEM_VALID_BANK)
-> +		n += sprintf(p + n, " bank: %d", mem->bank);
-> +	if (n >= LOC_LEN)
-> +		goto end;
-> +	if (mem->validation_bits & CPER_MEM_VALID_DEVICE)
-> +		n += sprintf(p + n, " device: %d", mem->device);
-> +	if (n >= LOC_LEN)
-> +		goto end;
-> +	if (mem->validation_bits & CPER_MEM_VALID_ROW)
-> +		n += sprintf(p + n, " row: %d", mem->row);
-> +	if (n >= LOC_LEN)
-> +		goto end;
-> +	if (mem->validation_bits & CPER_MEM_VALID_COLUMN)
-> +		n += sprintf(p + n, " column: %d", mem->column);
-> +	if (n >= LOC_LEN)
-> +		goto end;
-> +	if (mem->validation_bits & CPER_MEM_VALID_BIT_POSITION)
-> +		n += sprintf(p + n, " bit_position: %d", mem->bit_pos);
-> +	if (n >= LOC_LEN)
-> +		goto end;
-> +	if (mem->validation_bits & CPER_MEM_VALID_REQUESTOR_ID)
-> +		n += sprintf(p + n, " requestor_id: 0x%016llx",
-> +				mem->requestor_id);
-> +	if (n >= LOC_LEN)
-> +		goto end;
-> +	if (mem->validation_bits & CPER_MEM_VALID_RESPONDER_ID)
-> +		n += sprintf(p + n, " responder_id: 0x%016llx",
-> +				mem->responder_id);
-> +	if (n >= LOC_LEN)
-> +		goto end;
-> +	if (mem->validation_bits & CPER_MEM_VALID_TARGET_ID)
-> +		n += sprintf(p + n, " target_id: 0x%016llx", mem->target_id);
-> +end:
-> +	return;
-> +}
-> +
-> +static void dimm_err_location(struct cper_sec_mem_err *mem)
-> +{
-> +	memset(dimm_location, 0, LOC_LEN);
-> +	if (mem->validation_bits & CPER_MEM_VALID_MODULE_HANDLE) {
+ security/keys/key.c         |    3 ++-
+ security/keys/keyring.c     |    7 +++++--
+ security/keys/request_key.c |    4 +++-
+ 3 files changed, 10 insertions(+), 4 deletions(-)
 
-By reversing this test you can save yourself an indentation level and a
-superfluous memset:
+diff --git a/security/keys/key.c b/security/keys/key.c
+index 8fb7c7b..eaa9f34 100644
+--- a/security/keys/key.c
++++ b/security/keys/key.c
+@@ -557,9 +557,10 @@ int key_reject_and_link(struct key *key,
+ 	if (!test_bit(KEY_FLAG_INSTANTIATED, &key->flags)) {
+ 		/* mark the key as being negatively instantiated */
+ 		atomic_inc(&key->user->nikeys);
++		key->type_data.reject_error = -error;
++		smp_wmb();
+ 		set_bit(KEY_FLAG_NEGATIVE, &key->flags);
+ 		set_bit(KEY_FLAG_INSTANTIATED, &key->flags);
+-		key->type_data.reject_error = -error;
+ 		now = current_kernel_time();
+ 		key->expiry = now.tv_sec + timeout;
+ 		key_schedule_gc(key->expiry + key_gc_delay);
+diff --git a/security/keys/keyring.c b/security/keys/keyring.c
+index 6ece7f2..d4cf442 100644
+--- a/security/keys/keyring.c
++++ b/security/keys/keyring.c
+@@ -371,9 +371,11 @@ key_ref_t keyring_search_aux(key_ref_t keyring_ref,
+ 			goto error_2;
+ 		if (key->expiry && now.tv_sec >= key->expiry)
+ 			goto error_2;
+-		key_ref = ERR_PTR(key->type_data.reject_error);
+-		if (kflags & (1 << KEY_FLAG_NEGATIVE))
++		if (kflags & (1 << KEY_FLAG_NEGATIVE)) {
++			smp_rmb();
++			key_ref = ERR_PTR(key->type_data.reject_error);
+ 			goto error_2;
++		}
+ 		goto found;
+ 	}
+ 
+@@ -432,6 +434,7 @@ descend:
+ 
+ 		/* we set a different error code if we pass a negative key */
+ 		if (kflags & (1 << KEY_FLAG_NEGATIVE)) {
++			smp_rmb();
+ 			err = key->type_data.reject_error;
+ 			continue;
+ 		}
+diff --git a/security/keys/request_key.c b/security/keys/request_key.c
+index c411f9b..dc6f3be 100644
+--- a/security/keys/request_key.c
++++ b/security/keys/request_key.c
+@@ -592,8 +592,10 @@ int wait_for_key_construction(struct key *key, bool intr)
+ 			  intr ? TASK_INTERRUPTIBLE : TASK_UNINTERRUPTIBLE);
+ 	if (ret < 0)
+ 		return ret;
+-	if (test_bit(KEY_FLAG_NEGATIVE, &key->flags))
++	if (test_bit(KEY_FLAG_NEGATIVE, &key->flags)) {
++		smp_rmb();
+ 		return key->type_data.reject_error;
++	}
+ 	return key_validate(key);
+ }
+ EXPORT_SYMBOL(wait_for_key_construction);
 
-	if (!(mem->validation_bits & CPER_MEM_VALID_MODULE_HANDLE))
-		return;
-
-	memset(dimm_location, 0, LOC_LEN);
-	dmi_memdev_name...
-	...
-
-
-> +		const char *bank = NULL, *device = NULL;
-> +		dmi_memdev_name(mem->mem_dev_handle, &bank, &device);
-> +		if (bank != NULL && device != NULL)
-> +			snprintf(dimm_location, LOC_LEN - 1,
-> +				"%s %s", bank, device);
-> +		else
-> +			snprintf(dimm_location, LOC_LEN - 1,
-> +				"DMI handle: 0x%.4x", mem->mem_dev_handle);
-> +	}
-> +}
-> +
-> +void trace_mem_error(const uuid_le *fru_id, char *fru_text,
-> +		u64 err_count, u32 severity, struct cper_sec_mem_err *mem)
-> +{
-> +	u32 etype = ~0U;
-> +	u64 phy_addr = 0;
-> +
-> +	if (mem->validation_bits & CPER_MEM_VALID_ERROR_TYPE)
-> +		etype = mem->error_type;
-> +	if (mem->validation_bits & CPER_MEM_VALID_PHYSICAL_ADDRESS) {
-> +		phy_addr = mem->physical_addr;
-> +		if (mem->validation_bits &
-> +				CPER_MEM_VALID_PHYSICAL_ADDRESS_MASK)
-
-This mask could use some slimming:
-
-CPER_MEM_VALID_PA_MASK or CPER_MEM_VALID_PHYS_ADDR_MASK or so so that it
-fits in 80 cols.
-
-> +			phy_addr &= mem->physical_addr_mask;
-> +	}
-> +	mem_err_location(mem);
-> +	dimm_err_location(mem);
-> +
-> +	trace_extlog_mem_event(etype, dimm_location, fru_id, fru_text,
-> +			err_count, severity, phy_addr, mem_location);
-
-arg alignment
-
-> +}
-> +EXPORT_SYMBOL_GPL(trace_mem_error);
-> diff --git a/drivers/acpi/extlog_trace.h b/drivers/acpi/extlog_trace.h
-> new file mode 100644
-> index 0000000..21f0887
-> --- /dev/null
-> +++ b/drivers/acpi/extlog_trace.h
-> @@ -0,0 +1,77 @@
-> +#if !defined(_TRACE_EXTLOG_H) || defined(TRACE_HEADER_MULTI_READ)
-> +#define _TRACE_EXTLOG_H
-> +
-> +#include <linux/tracepoint.h>
-> +#include <linux/cper.h>
-> +
-> +#undef TRACE_SYSTEM
-> +#define TRACE_SYSTEM extlog
-
-Shouldn't that be TRACE_SYSTEM ras
-
-...
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
