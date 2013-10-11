@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964882Ab3JKT6d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:58:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46330 "EHLO
+	id S932973Ab3JKT6t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:58:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46318 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932651Ab3JKTlq (ORCPT
+	with ESMTP id S932643Ab3JKTlo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:41:46 -0400
+	Fri, 11 Oct 2013 15:41:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andre Guedes <andre.guedes@openbossa.org>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Subject: [ 075/135] Bluetooth: Fix security level for peripheral role
-Date: Fri, 11 Oct 2013 12:39:16 -0700
-Message-Id: <20131011193953.429374888@linuxfoundation.org>
+        Maxim Patlasov <mpatlasov@parallels.com>,
+        Miklos Szeredi <mszeredi@suse.cz>
+Subject: [ 072/135] fuse: wait for writeback in fuse_file_fallocate()
+Date: Fri, 11 Oct 2013 12:39:13 -0700
+Message-Id: <20131011193953.107582886@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -27,43 +27,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andre Guedes <andre.guedes@openbossa.org>
+From: Maxim Patlasov <MPatlasov@parallels.com>
 
-commit f8776218e8546397be64ad2bc0ebf4748522d6e3 upstream.
+commit bde52788bdb755b9e4b75db6c434f30e32a0ca0b upstream.
 
-While playing the peripheral role, the host gets a LE Long Term Key
-Request Event from the controller when a connection is established
-with a bonded device. The host then informs the LTK which should be
-used for the connection. Once the link is encrypted, the host gets
-an Encryption Change Event.
+The patch fixes a race between mmap-ed write and fallocate(PUNCH_HOLE):
 
-Therefore we should set conn->pending_sec_level instead of conn->
-sec_level in hci_le_ltk_request_evt. This way, conn->sec_level is
-properly updated in hci_encrypt_change_evt.
+1) An user makes a page dirty via mmap-ed write.
+2) The user performs fallocate(2) with mode == PUNCH_HOLE|KEEP_SIZE
+   and <offset, size> covering the page.
+3) Before truncate_pagecache_range call from fuse_file_fallocate,
+   the page goes to write-back. The page is fully processed by fuse_writepage
+   (including end_page_writeback on the page), but fuse_flush_writepages did
+   nothing because fi->writectr < 0.
+4) truncate_pagecache_range is called and fuse_file_fallocate is finishing
+   by calling fuse_release_nowrite. The latter triggers processing queued
+   write-back request which will write stale data to the hole soon.
 
-Moreover, since we have a LTK associated to the device, we have at
-least BT_SECURITY_MEDIUM security level.
+Changed in v2 (thanks to Brian for suggestion):
+ - Do not truncate page cache until FUSE_FALLOCATE succeeded. Otherwise,
+   we can end up in returning -ENOTSUPP while user data is already punched
+   from page cache. Use filemap_write_and_wait_range() instead.
+Changed in v3 (thanks to Miklos for suggestion):
+ - fuse_wait_on_writeback() is prone to livelocks; use fuse_set_nowrite()
+   instead. So far as we need a dirty-page barrier only, fuse_sync_writes()
+   should be enough.
+ - rebased to for-linus branch of fuse.git
 
-Signed-off-by: Andre Guedes <andre.guedes@openbossa.org>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/bluetooth/hci_event.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ fs/fuse/file.c |   16 ++++++++++------
+ 1 file changed, 10 insertions(+), 6 deletions(-)
 
---- a/net/bluetooth/hci_event.c
-+++ b/net/bluetooth/hci_event.c
-@@ -3552,7 +3552,9 @@ static void hci_le_ltk_request_evt(struc
- 	cp.handle = cpu_to_le16(conn->handle);
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -2484,8 +2484,15 @@ static long fuse_file_fallocate(struct f
  
- 	if (ltk->authenticated)
--		conn->sec_level = BT_SECURITY_HIGH;
-+		conn->pending_sec_level = BT_SECURITY_HIGH;
-+	else
-+		conn->pending_sec_level = BT_SECURITY_MEDIUM;
+ 	if (lock_inode) {
+ 		mutex_lock(&inode->i_mutex);
+-		if (mode & FALLOC_FL_PUNCH_HOLE)
+-			fuse_set_nowrite(inode);
++		if (mode & FALLOC_FL_PUNCH_HOLE) {
++			loff_t endbyte = offset + length - 1;
++			err = filemap_write_and_wait_range(inode->i_mapping,
++							   offset, endbyte);
++			if (err)
++				goto out;
++
++			fuse_sync_writes(inode);
++		}
+ 	}
  
- 	hci_send_cmd(hdev, HCI_OP_LE_LTK_REPLY, sizeof(cp), &cp);
+ 	req = fuse_get_req_nopages(fc);
+@@ -2520,11 +2527,8 @@ static long fuse_file_fallocate(struct f
+ 	fuse_invalidate_attr(inode);
  
+ out:
+-	if (lock_inode) {
+-		if (mode & FALLOC_FL_PUNCH_HOLE)
+-			fuse_release_nowrite(inode);
++	if (lock_inode)
+ 		mutex_unlock(&inode->i_mutex);
+-	}
+ 
+ 	return err;
+ }
 
 
