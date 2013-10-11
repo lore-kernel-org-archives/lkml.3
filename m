@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756816Ab3JKTfm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:35:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45090 "EHLO
+	id S1756991Ab3JKTfq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:35:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45142 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753436Ab3JKTff (ORCPT
+	with ESMTP id S1756805Ab3JKTfn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:35:35 -0400
+	Fri, 11 Oct 2013 15:35:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Salam Noureddine <noureddine@aristanetworks.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 11/39] ipv4 igmp: use in_dev_put in timer handlers instead of __in_dev_put
-Date: Fri, 11 Oct 2013 12:34:55 -0700
-Message-Id: <20131011193212.108492237@linuxfoundation.org>
+        Meelis Roos <mroos@linux.ee>, "David S. Miller" <davem@davemloft.net>
+Subject: [ 23/39] esp_scsi: Fix tag state corruption when autosensing.
+Date: Fri, 11 Oct 2013 12:35:07 -0700
+Message-Id: <20131011193213.406297169@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193210.843963685@linuxfoundation.org>
 References: <20131011193210.843963685@linuxfoundation.org>
@@ -27,47 +26,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Salam Noureddine <noureddine@aristanetworks.com>
+From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit e2401654dd0f5f3fb7a8d80dad9554d73d7ca394 ]
+[ Upstream commit 21af8107f27878813d0364733c0b08813c2c192a ]
 
-It is possible for the timer handlers to run after the call to
-ip_mc_down so use in_dev_put instead of __in_dev_put in the handler
-function in order to do proper cleanup when the refcnt reaches 0.
-Otherwise, the refcnt can reach zero without the in_device being
-destroyed and we end up leaking a reference to the net_device and
-see messages like the following,
+Meelis Roos reports a crash in esp_free_lun_tag() in the presense
+of a disk which has died.
 
-unregister_netdevice: waiting for eth0 to become free. Usage count = 1
+The issue is that when we issue an autosense command, we do so by
+hijacking the original command that caused the check-condition.
 
-Tested on linux-3.4.43.
+When we do so we clear out the ent->tag[] array when we issue it via
+find_and_prep_issuable_command().  This is so that the autosense
+command is forced to be issued non-tagged.
 
-Signed-off-by: Salam Noureddine <noureddine@aristanetworks.com>
+That is problematic, because it is the value of ent->tag[] which
+determines whether we issued the original scsi command as tagged
+vs. non-tagged (see esp_alloc_lun_tag()).
+
+And that, in turn, is what trips up the sanity checks in
+esp_free_lun_tag().  That function needs the original ->tag[] values
+in order to free up the tag slot properly.
+
+Fix this by remembering the original command's tag values, and
+having esp_alloc_lun_tag() and esp_free_lun_tag() use them.
+
+Reported-by: Meelis Roos <mroos@linux.ee>
+Tested-by: Meelis Roos <mroos@linux.ee>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/igmp.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/scsi/esp_scsi.c |   14 ++++++++------
+ drivers/scsi/esp_scsi.h |    1 +
+ 2 files changed, 9 insertions(+), 6 deletions(-)
 
---- a/net/ipv4/igmp.c
-+++ b/net/ipv4/igmp.c
-@@ -705,7 +705,7 @@ static void igmp_gq_timer_expire(unsigne
- 
- 	in_dev->mr_gq_running = 0;
- 	igmpv3_send_report(in_dev, NULL);
--	__in_dev_put(in_dev);
-+	in_dev_put(in_dev);
- }
- 
- static void igmp_ifc_timer_expire(unsigned long data)
-@@ -717,7 +717,7 @@ static void igmp_ifc_timer_expire(unsign
- 		in_dev->mr_ifc_count--;
- 		igmp_ifc_start_timer(in_dev, IGMP_Unsolicited_Report_Interval);
+--- a/drivers/scsi/esp_scsi.c
++++ b/drivers/scsi/esp_scsi.c
+@@ -530,7 +530,7 @@ static int esp_need_to_nego_sync(struct
+ static int esp_alloc_lun_tag(struct esp_cmd_entry *ent,
+ 			     struct esp_lun_data *lp)
+ {
+-	if (!ent->tag[0]) {
++	if (!ent->orig_tag[0]) {
+ 		/* Non-tagged, slot already taken?  */
+ 		if (lp->non_tagged_cmd)
+ 			return -EBUSY;
+@@ -564,9 +564,9 @@ static int esp_alloc_lun_tag(struct esp_
+ 			return -EBUSY;
  	}
--	__in_dev_put(in_dev);
-+	in_dev_put(in_dev);
- }
  
- static void igmp_ifc_event(struct in_device *in_dev)
+-	BUG_ON(lp->tagged_cmds[ent->tag[1]]);
++	BUG_ON(lp->tagged_cmds[ent->orig_tag[1]]);
+ 
+-	lp->tagged_cmds[ent->tag[1]] = ent;
++	lp->tagged_cmds[ent->orig_tag[1]] = ent;
+ 	lp->num_tagged++;
+ 
+ 	return 0;
+@@ -575,9 +575,9 @@ static int esp_alloc_lun_tag(struct esp_
+ static void esp_free_lun_tag(struct esp_cmd_entry *ent,
+ 			     struct esp_lun_data *lp)
+ {
+-	if (ent->tag[0]) {
+-		BUG_ON(lp->tagged_cmds[ent->tag[1]] != ent);
+-		lp->tagged_cmds[ent->tag[1]] = NULL;
++	if (ent->orig_tag[0]) {
++		BUG_ON(lp->tagged_cmds[ent->orig_tag[1]] != ent);
++		lp->tagged_cmds[ent->orig_tag[1]] = NULL;
+ 		lp->num_tagged--;
+ 	} else {
+ 		BUG_ON(lp->non_tagged_cmd != ent);
+@@ -667,6 +667,8 @@ static struct esp_cmd_entry *find_and_pr
+ 			ent->tag[0] = 0;
+ 			ent->tag[1] = 0;
+ 		}
++		ent->orig_tag[0] = ent->tag[0];
++		ent->orig_tag[1] = ent->tag[1];
+ 
+ 		if (esp_alloc_lun_tag(ent, lp) < 0)
+ 			continue;
+--- a/drivers/scsi/esp_scsi.h
++++ b/drivers/scsi/esp_scsi.h
+@@ -271,6 +271,7 @@ struct esp_cmd_entry {
+ #define ESP_CMD_FLAG_AUTOSENSE	0x04 /* Doing automatic REQUEST_SENSE */
+ 
+ 	u8			tag[2];
++	u8			orig_tag[2];
+ 
+ 	u8			status;
+ 	u8			message;
 
 
