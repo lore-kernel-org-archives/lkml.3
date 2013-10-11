@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933062Ab3JKUMD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:12:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46118 "EHLO
+	id S933088Ab3JKUMX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:12:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46116 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932403Ab3JKTlL (ORCPT
+	with ESMTP id S932324Ab3JKTlL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Oct 2013 15:41:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Antonio Quartulli <antonio@open-mesh.org>,
-        Simon Wunderlich <siwu@hrz.tu-chemnitz.de>,
-        Marek Lindner <mareklindner@neomailbox.ch>
-Subject: [ 030/135] batman-adv: set the TAG flag for the vid passed to BLA
-Date: Fri, 11 Oct 2013 12:38:31 -0700
-Message-Id: <20131011193948.500218367@linuxfoundation.org>
+        Sridhar Samudrala <sri@us.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 029/135] vxlan: Avoid creating fdb entry with NULL destination
+Date: Fri, 11 Oct 2013 12:38:30 -0700
+Message-Id: <20131011193948.399277401@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -28,46 +27,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Antonio Quartulli <antonio@open-mesh.com>
+From: Sridhar Samudrala <sri@us.ibm.com>
 
-[ Upstream commit 4c18c425b2d228415b635e97a64737d7f27c5536 ]
+[ Upstream commit 2936b6ab455433a5ad14c7a1d2473afe1fa3faa7 ]
 
-When receiving or sending a packet a packet on a VLAN, the
-vid has to be marked with the TAG flag in order to make any
-component in batman-adv understand that the packet is coming
-from a really tagged network.
+Commit afbd8bae9c798c5cdbe4439d3a50536b5438247c
+   vxlan: add implicit fdb entry for default destination
+creates an implicit fdb entry for default destination. This results
+in an invalid fdb entry if default destination is not specified.
+For ex:
+  ip link add vxlan1 type vxlan id 100
+creates the following fdb entry
+  00:00:00:00:00:00 dev vxlan1 dst 0.0.0.0 self permanent
 
-This fix the Bridge Loop Avoidance behaviour which was not
-able to send announces over VLAN interfaces.
+This patch fixes this issue by creating an fdb entry only if a
+valid default destination is specified.
 
-Introduced by 0b1da1765fdb00ca5d53bc95c9abc70dfc9aae5b
-("batman-adv: change VID semantic in the BLA code")
-
-Signed-off-by: Antonio Quartulli <antonio@open-mesh.org>
-Acked-by: Simon Wunderlich <siwu@hrz.tu-chemnitz.de>
-Signed-off-by: Marek Lindner <mareklindner@neomailbox.ch>
+Signed-off-by: Sridhar Samudrala <sri@us.ibm.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/batman-adv/soft-interface.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/net/vxlan.c |   20 +++++++++++---------
+ 1 file changed, 11 insertions(+), 9 deletions(-)
 
---- a/net/batman-adv/soft-interface.c
-+++ b/net/batman-adv/soft-interface.c
-@@ -168,6 +168,7 @@ static int batadv_interface_tx(struct sk
- 	case ETH_P_8021Q:
- 		vhdr = (struct vlan_ethhdr *)skb->data;
- 		vid = ntohs(vhdr->h_vlan_TCI) & VLAN_VID_MASK;
-+		vid |= BATADV_VLAN_HAS_TAG;
+--- a/drivers/net/vxlan.c
++++ b/drivers/net/vxlan.c
+@@ -1767,15 +1767,17 @@ static int vxlan_newlink(struct net *net
  
- 		if (vhdr->h_vlan_encapsulated_proto != ethertype)
- 			break;
-@@ -329,6 +330,7 @@ void batadv_interface_rx(struct net_devi
- 	case ETH_P_8021Q:
- 		vhdr = (struct vlan_ethhdr *)skb->data;
- 		vid = ntohs(vhdr->h_vlan_TCI) & VLAN_VID_MASK;
-+		vid |= BATADV_VLAN_HAS_TAG;
+ 	SET_ETHTOOL_OPS(dev, &vxlan_ethtool_ops);
  
- 		if (vhdr->h_vlan_encapsulated_proto != ethertype)
- 			break;
+-	/* create an fdb entry for default destination */
+-	err = vxlan_fdb_create(vxlan, all_zeros_mac,
+-			       vxlan->default_dst.remote_ip,
+-			       NUD_REACHABLE|NUD_PERMANENT,
+-			       NLM_F_EXCL|NLM_F_CREATE,
+-			       vxlan->dst_port, vxlan->default_dst.remote_vni,
+-			       vxlan->default_dst.remote_ifindex, NTF_SELF);
+-	if (err)
+-		return err;
++	/* create an fdb entry for a valid default destination */
++	if (vxlan->default_dst.remote_ip != htonl(INADDR_ANY)) {
++		err = vxlan_fdb_create(vxlan, all_zeros_mac,
++				       vxlan->default_dst.remote_ip,
++				       NUD_REACHABLE|NUD_PERMANENT,
++				       NLM_F_EXCL|NLM_F_CREATE,
++				       vxlan->dst_port, vxlan->default_dst.remote_vni,
++				       vxlan->default_dst.remote_ifindex, NTF_SELF);
++		if (err)
++			return err;
++	}
+ 
+ 	err = register_netdevice(dev);
+ 	if (err) {
 
 
