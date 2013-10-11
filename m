@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758182Ab3JKKrs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 06:47:48 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58806 "EHLO
+	id S1758167Ab3JKKrq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 06:47:46 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58808 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932347Ab3JKKoT (ORCPT
+	with ESMTP id S932349Ab3JKKoT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Oct 2013 06:44:19 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jack Wang <jinpu.wang@profitbricks.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
+Cc: Prarit Bhargava <prarit@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 091/100] ib_srpt: always set response for task management
-Date: Fri, 11 Oct 2013 11:42:01 +0100
-Message-Id: <1381488130-30235-92-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 090/100] powerpc/vio: Fix modalias_show return values
+Date: Fri, 11 Oct 2013 11:42:00 +0100
+Message-Id: <1381488130-30235-91-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
 References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
@@ -28,54 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jack Wang <jinpu.wang@profitbricks.com>
+From: Prarit Bhargava <prarit@redhat.com>
 
-commit c807f64340932e19f0d2ac9b30c8381e1f60663a upstream.
+commit e82b89a6f19bae73fb064d1b3dd91fcefbb478f4 upstream.
 
-The SRP specification requires:
+modalias_show() should return an empty string on error, not -ENODEV.
 
-  "Response data shall be provided in any SRP_RSP response that is sent in
-   response to an SRP_TSK_MGMT request (see 6.7). The information in the
-   RSP_CODE field (see table 24) shall indicate the completion status of
-   the task management function."
+This causes the following false and annoying error:
 
-So fix this to avoid the SRP initiator interprets task management functions
-that succeeded as failed.
+> find /sys/devices -name modalias -print0 | xargs -0 cat >/dev/null
+cat: /sys/devices/vio/4000/modalias: No such device
+cat: /sys/devices/vio/4001/modalias: No such device
+cat: /sys/devices/vio/4002/modalias: No such device
+cat: /sys/devices/vio/4004/modalias: No such device
+cat: /sys/devices/vio/modalias: No such device
 
-Signed-off-by: Jack Wang <jinpu.wang@profitbricks.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/infiniband/ulp/srpt/ib_srpt.c | 10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
+ arch/powerpc/kernel/vio.c | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/infiniband/ulp/srpt/ib_srpt.c b/drivers/infiniband/ulp/srpt/ib_srpt.c
-index 0ff33b0..10f88e6 100644
---- a/drivers/infiniband/ulp/srpt/ib_srpt.c
-+++ b/drivers/infiniband/ulp/srpt/ib_srpt.c
-@@ -1609,7 +1609,7 @@ static int srpt_build_tskmgmt_rsp(struct srpt_rdma_ch *ch,
- 	int resp_data_len;
- 	int resp_len;
+diff --git a/arch/powerpc/kernel/vio.c b/arch/powerpc/kernel/vio.c
+index cb87301..b161bae 100644
+--- a/arch/powerpc/kernel/vio.c
++++ b/arch/powerpc/kernel/vio.c
+@@ -1520,11 +1520,15 @@ static ssize_t modalias_show(struct device *dev, struct device_attribute *attr,
+ 	const char *cp;
  
--	resp_data_len = (rsp_code == SRP_TSK_MGMT_SUCCESS) ? 0 : 4;
-+	resp_data_len = 4;
- 	resp_len = sizeof(*srp_rsp) + resp_data_len;
+ 	dn = dev->of_node;
+-	if (!dn)
+-		return -ENODEV;
++	if (!dn) {
++		strcat(buf, "\n");
++		return strlen(buf);
++	}
+ 	cp = of_get_property(dn, "compatible", NULL);
+-	if (!cp)
+-		return -ENODEV;
++	if (!cp) {
++		strcat(buf, "\n");
++		return strlen(buf);
++	}
  
- 	srp_rsp = ioctx->ioctx.buf;
-@@ -1621,11 +1621,9 @@ static int srpt_build_tskmgmt_rsp(struct srpt_rdma_ch *ch,
- 				    + atomic_xchg(&ch->req_lim_delta, 0));
- 	srp_rsp->tag = tag;
- 
--	if (rsp_code != SRP_TSK_MGMT_SUCCESS) {
--		srp_rsp->flags |= SRP_RSP_FLAG_RSPVALID;
--		srp_rsp->resp_data_len = cpu_to_be32(resp_data_len);
--		srp_rsp->data[3] = rsp_code;
--	}
-+	srp_rsp->flags |= SRP_RSP_FLAG_RSPVALID;
-+	srp_rsp->resp_data_len = cpu_to_be32(resp_data_len);
-+	srp_rsp->data[3] = rsp_code;
- 
- 	return resp_len;
+ 	return sprintf(buf, "vio:T%sS%s\n", vio_dev->type, cp);
  }
 -- 
 1.8.3.2
