@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932217Ab3JKKn0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 06:43:26 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58555 "EHLO
+	id S932198Ab3JKKnX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 06:43:23 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58557 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757901Ab3JKKnR (ORCPT
+	with ESMTP id S1757903Ab3JKKnR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Oct 2013 06:43:17 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Masoud Sharbiani <msharbiani@twitter.com>, Vinson Lee <vlee@twitter.com>,
+        Robin Holt <holt@sgi.com>, Russell King <rmk+kernel@arm.linux.org.uk>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>, Ingo Molnar <mingo@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 045/100] USB: fix PM config symbol in uhci-hcd, ehci-hcd, and xhci-hcd
-Date: Fri, 11 Oct 2013 11:41:15 +0100
-Message-Id: <1381488130-30235-46-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 039/100] x86/reboot: Add quirk to make Dell C6100 use reboot=pci automatically
+Date: Fri, 11 Oct 2013 11:41:09 +0100
+Message-Id: <1381488130-30235-40-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
 References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
@@ -29,67 +29,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Masoud Sharbiani <msharbiani@twitter.com>
 
-commit f875fdbf344b9fde207f66b392c40845dd7e5aa6 upstream.
+commit 4f0acd31c31f03ba42494c8baf6c0465150e2621 upstream.
 
-Since uhci-hcd, ehci-hcd, and xhci-hcd support runtime PM, the .pm
-field in their pci_driver structures should be protected by CONFIG_PM
-rather than CONFIG_PM_SLEEP.  The corresponding change has already
-been made for ohci-hcd.
+Dell PowerEdge C6100 machines fail to completely reboot about 20% of the time.
 
-Without this change, controllers won't do runtime suspend if system
-suspend or hibernation isn't enabled.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Masoud Sharbiani <msharbiani@twitter.com>
+Signed-off-by: Vinson Lee <vlee@twitter.com>
+Cc: Robin Holt <holt@sgi.com>
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
+Link: http://lkml.kernel.org/r/1379717947-18042-1-git-send-email-vlee@freedesktop.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/host/ehci-pci.c | 2 +-
- drivers/usb/host/uhci-pci.c | 2 +-
- drivers/usb/host/xhci-pci.c | 2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+ arch/x86/kernel/reboot.c | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
-diff --git a/drivers/usb/host/ehci-pci.c b/drivers/usb/host/ehci-pci.c
-index 0909783..3302c27 100644
---- a/drivers/usb/host/ehci-pci.c
-+++ b/drivers/usb/host/ehci-pci.c
-@@ -549,7 +549,7 @@ static struct pci_driver ehci_pci_driver = {
- 	.remove =	usb_hcd_pci_remove,
- 	.shutdown = 	usb_hcd_pci_shutdown,
- 
--#ifdef CONFIG_PM_SLEEP
-+#ifdef CONFIG_PM
- 	.driver =	{
- 		.pm =	&usb_hcd_pci_pm_ops
+diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+index 2a29384..d1ef8a7 100644
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -459,6 +459,22 @@ static struct dmi_system_id __initdata reboot_dmi_table[] = {
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "Precision M6600"),
+ 		},
  	},
-diff --git a/drivers/usb/host/uhci-pci.c b/drivers/usb/host/uhci-pci.c
-index c300bd2f7..0f228c4 100644
---- a/drivers/usb/host/uhci-pci.c
-+++ b/drivers/usb/host/uhci-pci.c
-@@ -293,7 +293,7 @@ static struct pci_driver uhci_pci_driver = {
- 	.remove =	usb_hcd_pci_remove,
- 	.shutdown =	uhci_shutdown,
++	{	/* Handle problems with rebooting on the Dell PowerEdge C6100. */
++		.callback = set_pci_reboot,
++		.ident = "Dell PowerEdge C6100",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "C6100"),
++		},
++	},
++	{	/* Some C6100 machines were shipped with vendor being 'Dell'. */
++		.callback = set_pci_reboot,
++		.ident = "Dell PowerEdge C6100",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Dell"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "C6100"),
++		},
++	},
+ 	{ }
+ };
  
--#ifdef CONFIG_PM_SLEEP
-+#ifdef CONFIG_PM
- 	.driver =	{
- 		.pm =	&usb_hcd_pci_pm_ops
- 	},
-diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
-index be08444..5e3ef3e 100644
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -343,7 +343,7 @@ static struct pci_driver xhci_pci_driver = {
- 	/* suspend and resume implemented later */
- 
- 	.shutdown = 	usb_hcd_pci_shutdown,
--#ifdef CONFIG_PM_SLEEP
-+#ifdef CONFIG_PM
- 	.driver = {
- 		.pm = &usb_hcd_pci_pm_ops
- 	},
 -- 
 1.8.3.2
 
