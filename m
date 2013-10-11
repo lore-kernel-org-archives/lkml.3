@@ -1,66 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757661Ab3JKLaK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 07:30:10 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:59136 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753801Ab3JKLaI (ORCPT
+	id S1757859Ab3JKLaw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 07:30:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9683 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757594Ab3JKLau convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 07:30:08 -0400
-Date: Fri, 11 Oct 2013 12:29:44 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Nishanth Menon <nm@ti.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Message-ID: <20131011112944.GA2443@sirena.org.uk>
-References: <1381485852-18085-1-git-send-email-nm@ti.com>
+	Fri, 11 Oct 2013 07:30:50 -0400
+Date: Fri, 11 Oct 2013 14:30:43 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: chai wen <chaiw.fnst@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, pbonzini@redhat.com, tangchen@cn.fujitsu.com,
+        guz.fnst@cn.fujitsu.com, zhangyanfei@cn.fujitsu.com,
+        guijianfeng@cn.fujitsu.com, chaiwen_0825@hotmail.com
+Subject: Re: [RFC][PATCH] Drop FOLL_GET in GUP when doing async_pf in kvm
+Message-ID: <20131011113043.GA14789@redhat.com>
+References: <1381411215-23830-1-git-send-email-chaiw.fnst@cn.fujitsu.com>
+ <20131010151539.GD15954@redhat.com>
+ <5257CE10.9020800@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="HcAYCG3uE/tztfnV"
+Content-Type: text/plain; charset=cp1255
 Content-Disposition: inline
-In-Reply-To: <1381485852-18085-1-git-send-email-nm@ti.com>
-X-Cookie: Time and tide wait for no man.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: ti-abb: Fix operator precedence typo
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <5257CE10.9020800@cn.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Oct 11, 2013 at 06:08:16PM +0800, chai wen wrote:
+> On 10/10/2013 11:15 PM, Gleb Natapov wrote:
+> > On Thu, Oct 10, 2013 at 09:20:15PM +0800, chai wen wrote:
+> >> Hi Gleb
+> >>
+> >> Thanks for you explanation about async_pf in kvm.
+> >> Page pinning is not mandatory in kvm async_pf processing and probably should
+> >> be dropped later.this patch drops the FOLL_GET flag when doing GUP in async_pf
+> >> and uses a bool (marking result of GUP) to replace the *page in kvm_async_pf
+> >> structure to simplify some following async_pf check/clear processing.
+> > Thanks, but the patch need to be on top of
+> > git://git.kernel.org/pub/scm/virt/kvm/kvm.git queue branch.
+> >
+> > Some more comment bellow.
+> >
+> >> Thanks.
+> >>
+> >> Suggested-by:  gleb@redhat.com
+> >> Signed-off-by: chai wen <chaiw.fnst@cn.fujitsu.com>
+> >> ---
+> >>  arch/x86/kvm/x86.c       |    5 ++---
+> >>  include/linux/kvm_host.h |    2 +-
+> >>  virt/kvm/async_pf.c      |   16 ++++++----------
+> >>  3 files changed, 9 insertions(+), 14 deletions(-)
+> >>
+> >> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> >> index e5ca72a..0ff7d02 100644
+> >> --- a/arch/x86/kvm/x86.c
+> >> +++ b/arch/x86/kvm/x86.c
+> >> @@ -7282,8 +7282,7 @@ void kvm_arch_async_page_ready(struct kvm_vcpu *vcpu, struct kvm_async_pf *work)
+> >>  {
+> >>  	int r;
+> >>  
+> >> -	if ((vcpu->arch.mmu.direct_map != work->arch.direct_map) ||
+> >> -	      is_error_page(work->page))
+> >> +	if ((vcpu->arch.mmu.direct_map != work->arch.direct_map))
+> >>  		return;
+> >>  
+> >>  	r = kvm_mmu_reload(vcpu);
+> >> @@ -7393,7 +7392,7 @@ void kvm_arch_async_page_present(struct kvm_vcpu *vcpu,
+> >>  	struct x86_exception fault;
+> >>  
+> >>  	trace_kvm_async_pf_ready(work->arch.token, work->gva);
+> >> -	if (is_error_page(work->page))
+> >> +	if (!work->got_page)
+> >>  		work->arch.token = ~0; /* broadcast wakeup */
+> >>  	else
+> >>  		kvm_del_async_pf_gfn(vcpu, work->arch.gfn);
+> >> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+> >> index 0fbbc7a..232a7d0 100644
+> >> --- a/include/linux/kvm_host.h
+> >> +++ b/include/linux/kvm_host.h
+> >> @@ -189,7 +189,7 @@ struct kvm_async_pf {
+> >>  	gva_t gva;
+> >>  	unsigned long addr;
+> >>  	struct kvm_arch_async_pf arch;
+> >> -	struct page *page;
+> >> +	bool got_page;
+> > I would call it wakeup_all.
+> >
+> >>  	bool done;
+> >>  };
+> >>  
+> >> diff --git a/virt/kvm/async_pf.c b/virt/kvm/async_pf.c
+> >> index 8a39dda..0cafdc7 100644
+> >> --- a/virt/kvm/async_pf.c
+> >> +++ b/virt/kvm/async_pf.c
+> >> @@ -56,7 +56,7 @@ void kvm_async_pf_vcpu_init(struct kvm_vcpu *vcpu)
+> >>  
+> >>  static void async_pf_execute(struct work_struct *work)
+> >>  {
+> >> -	struct page *page = NULL;
+> >> +	long nrpages = 0;
+> >>  	struct kvm_async_pf *apf =
+> >>  		container_of(work, struct kvm_async_pf, work);
+> >>  	struct mm_struct *mm = apf->mm;
+> >> @@ -68,13 +68,13 @@ static void async_pf_execute(struct work_struct *work)
+> >>  
+> >>  	use_mm(mm);
+> >>  	down_read(&mm->mmap_sem);
+> >> -	get_user_pages(current, mm, addr, 1, 1, 0, &page, NULL);
+> >> +	nrpages = get_user_pages(current, mm, addr, 1, 1, 0, NULL, NULL);
+> >>  	up_read(&mm->mmap_sem);
+> >>  	unuse_mm(mm);
+> >>  
+> >>  	spin_lock(&vcpu->async_pf.lock);
+> >>  	list_add_tail(&apf->link, &vcpu->async_pf.done);
+> >> -	apf->page = page;
+> >> +	apf->got_page = (1==nrpages);
+> > Space before and after ==, but this is not needed at all.  It does
+> > not matter if GUP failed or not here. We need to wake up guest process
+> > that is waiting on a page, so just set wakeup_all to false in kvm_setup_async_pf().
+> Hi Gleb
+> Thanks for you reply.
+> It does not matter if GUP failed or not here. But in the original logic of
+> kvm_arch_async_page_ready and kvm_arch_async_page_present, there is
+> is_error_page
+> checking in them. I am not sure wheher this ‘logic’ should be dropped.
+> And in kvm_async_pf_wakeup_all we used a dummy bad page pointer to generate
+> boradcast wakeup before. if wakeup_all(bool) is marking the result of
+> gup should it be false in this function ?
+> 
+is_error_page() does not consider NULL as error value.
 
---HcAYCG3uE/tztfnV
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> thanks
+> >
+> >>  	apf->done = true;
+> >>  	spin_unlock(&vcpu->async_pf.lock);
+> >>  
+> >> @@ -114,8 +114,6 @@ void kvm_clear_async_pf_completion_queue(struct kvm_vcpu *vcpu)
+> >>  			list_entry(vcpu->async_pf.done.next,
+> >>  				   typeof(*work), link);
+> >>  		list_del(&work->link);
+> >> -		if (!is_error_page(work->page))
+> >> -			kvm_release_page_clean(work->page);
+> >>  		kmem_cache_free(async_pf_cache, work);
+> >>  	}
+> >>  	spin_unlock(&vcpu->async_pf.lock);
+> >> @@ -135,14 +133,12 @@ void kvm_check_async_pf_completion(struct kvm_vcpu *vcpu)
+> >>  		list_del(&work->link);
+> >>  		spin_unlock(&vcpu->async_pf.lock);
+> >>  
+> >> -		if (work->page)
+> >> +		if (work->got_page)
+> >>  			kvm_arch_async_page_ready(vcpu, work);
+> >>  		kvm_arch_async_page_present(vcpu, work);
+> >>  
+> >>  		list_del(&work->queue);
+> >>  		vcpu->async_pf.queued--;
+> >> -		if (!is_error_page(work->page))
+> >> -			kvm_release_page_clean(work->page);
+> >>  		kmem_cache_free(async_pf_cache, work);
+> >>  	}
+> >>  }
+> >> @@ -165,7 +161,7 @@ int kvm_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn,
+> >>  	if (!work)
+> >>  		return 0;
+> >>  
+> >> -	work->page = NULL;
+> >> +	work->got_page = false;
+> > Sp here do:
+> > 	work->wakeup_all = false;
+> >
+> >>  	work->done = false;
+> >>  	work->vcpu = vcpu;
+> >>  	work->gva = gva;
+> >> @@ -206,7 +202,7 @@ int kvm_async_pf_wakeup_all(struct kvm_vcpu *vcpu)
+> >>  	if (!work)
+> >>  		return -ENOMEM;
+> >>  
+> >> -	work->page = KVM_ERR_PTR_BAD_PAGE;
+> >> +	work->got_page = false;
+> > And here:
+> > 	work->wakeup_all = true;
+> >>  	INIT_LIST_HEAD(&work->queue); /* for list_del to work */
+> >>  
+> >>  	spin_lock(&vcpu->async_pf.lock);
+> >> -- 
+> >> 1.7.1
+> > --
+> > 			Gleb.
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> >
+> 
+> 
+> -- 
+> Regards
+> 
+> chai wen
+> 
 
-On Fri, Oct 11, 2013 at 05:04:12AM -0500, Nishanth Menon wrote:
-> commit 40b1936e (regulator: Introduce TI Adaptive Body Bias(ABB) on-chip
-> LDO driver) missed a pair of brackets which cause the wrong vset data to be
-> picked up from efuse, resulting in bad VBB voltage values.
-
-Applied, thanks.
-
---HcAYCG3uE/tztfnV
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSV+EbAAoJELSic+t+oim9b2AQAIIcemZT55MeN/IJcRdnOk4n
-6wJoNsHe2jPlyZvWMwioHJV0Fthnr0wJcnqXGtlZb70v1SXgMV+uSCqSOkyVURnR
-K85f83cn98iI1O04XlZmnvnqf0d0NokN1FPgPEpVXGXiomdZ2BzlTQuc2WltSvx3
-oIrKZ/9Tk2y2I1QFZJwnyk+iUrbS4BtD0W1Rfy+hQuUORaRDNzwABgoTx3a6f9Va
-sb524JQ0vaO9rs1pF0IUJ74yWPq+Vi6VhN7wdsllzepXS3fV7KYbfuhWkFykXoEO
-lkNyfLsIabJVqOqelgIc1hQXMGGrkNoHSgCUkbElSZTsiVhhzvyGxUkZauicOSG1
-kDrRNTmNwhnQem3m8rO1LR/ekGeeHl2xhu+aybR0SnbpfCR0YqY3l3z7muyJ5qRC
-3A1QI9Eq7/5foQHbduuMhMeU7eEwKKghfBS8b4SMmTl1r5WEv5DKYteFtg95Xq2Z
-A62JwJqk8I5PyBvj7e2jHEkL7CshNHlZYOAr9FGnhU5DQRbshSr+pTFaTZ6bB1lO
-ATnZ78CnRiQCpmWxY3tlTmvM9zRIaZX4fIiwnGJhcFog6xGLlUoi6VGtd+ZyNnbQ
-QgLqI+YDFBeITA681vDepEBGtHTpNPl2qWEq6zcBKsl3J0w9VbeIOLP/f/5FT+Bk
-JRf+ttF+vbG72c5JqSzt
-=X+oG
------END PGP SIGNATURE-----
-
---HcAYCG3uE/tztfnV--
+--
+			Gleb.
