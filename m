@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759312Ab3JKTw3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:52:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46444 "EHLO
+	id S932776Ab3JKTmA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:42:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46413 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932783Ab3JKTmC (ORCPT
+	with ESMTP id S932690Ab3JKTl6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:42:02 -0400
+	Fri, 11 Oct 2013 15:41:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andy Adamson <andros@netapp.com>, Jeff Layton <jlayton@redhat.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 097/135] NFSv4.1: nfs4_fl_prepare_ds - fix bugs when the connect attempt fails
-Date: Fri, 11 Oct 2013 12:39:38 -0700
-Message-Id: <20131011193955.801094071@linuxfoundation.org>
+        Johan Hedberg <johan.hedberg@intel.com>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Subject: [ 079/135] Bluetooth: Introduce a new HCI_RFKILLED flag
+Date: Fri, 11 Oct 2013 12:39:20 -0700
+Message-Id: <20131011193953.853975831@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -27,67 +28,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Johan Hedberg <johan.hedberg@intel.com>
 
-commit 52b26a3e1bb3e065c32b3febdac1e1f117d88e15 upstream.
+commit 5e130367d43ff22836bbae380d197d600fe8ddbb upstream.
 
-- Fix an Oops when nfs4_ds_connect() returns an error.
-- Always check the device status after waiting for a connect to complete.
+This makes it more convenient to check for rfkill (no need to check for
+dev->rfkill before calling rfkill_blocked()) and also avoids potential
+races if the RFKILL state needs to be checked from within the rfkill
+callback.
 
-Reported-by: Andy Adamson <andros@netapp.com>
-Reported-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+Acked-by: Marcel Holtmann <marcel@holtmann.org>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4filelayoutdev.c |   18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+ include/net/bluetooth/hci.h |    1 +
+ net/bluetooth/hci_core.c    |   15 ++++++++++-----
+ 2 files changed, 11 insertions(+), 5 deletions(-)
 
---- a/fs/nfs/nfs4filelayoutdev.c
-+++ b/fs/nfs/nfs4filelayoutdev.c
-@@ -801,34 +801,34 @@ nfs4_fl_prepare_ds(struct pnfs_layout_se
- 	struct nfs4_file_layout_dsaddr *dsaddr = FILELAYOUT_LSEG(lseg)->dsaddr;
- 	struct nfs4_pnfs_ds *ds = dsaddr->ds_list[ds_idx];
- 	struct nfs4_deviceid_node *devid = FILELAYOUT_DEVID_NODE(lseg);
+--- a/include/net/bluetooth/hci.h
++++ b/include/net/bluetooth/hci.h
+@@ -104,6 +104,7 @@ enum {
+ enum {
+ 	HCI_SETUP,
+ 	HCI_AUTO_OFF,
++	HCI_RFKILLED,
+ 	HCI_MGMT,
+ 	HCI_PAIRABLE,
+ 	HCI_SERVICE_CACHE,
+--- a/net/bluetooth/hci_core.c
++++ b/net/bluetooth/hci_core.c
+@@ -1134,7 +1134,7 @@ int hci_dev_open(__u16 dev)
+ 		goto done;
+ 	}
+ 
+-	if (hdev->rfkill && rfkill_blocked(hdev->rfkill)) {
++	if (test_bit(HCI_RFKILLED, &hdev->dev_flags)) {
+ 		ret = -ERFKILL;
+ 		goto done;
+ 	}
+@@ -1554,10 +1554,12 @@ static int hci_rfkill_set_block(void *da
+ 
+ 	BT_DBG("%p name %s blocked %d", hdev, hdev->name, blocked);
+ 
+-	if (!blocked)
+-		return 0;
 -
--	if (filelayout_test_devid_unavailable(devid))
--		return NULL;
-+	struct nfs4_pnfs_ds *ret = ds;
+-	hci_dev_do_close(hdev);
++	if (blocked) {
++		set_bit(HCI_RFKILLED, &hdev->dev_flags);
++		hci_dev_do_close(hdev);
++	} else {
++		clear_bit(HCI_RFKILLED, &hdev->dev_flags);
++}
  
- 	if (ds == NULL) {
- 		printk(KERN_ERR "NFS: %s: No data server for offset index %d\n",
- 			__func__, ds_idx);
- 		filelayout_mark_devid_invalid(devid);
--		return NULL;
-+		goto out;
- 	}
- 	if (ds->ds_clp)
--		return ds;
-+		goto out_test_devid;
- 
- 	if (test_and_set_bit(NFS4DS_CONNECTING, &ds->ds_state) == 0) {
- 		struct nfs_server *s = NFS_SERVER(lseg->pls_layout->plh_inode);
- 		int err;
- 
- 		err = nfs4_ds_connect(s, ds);
--		if (err) {
-+		if (err)
- 			nfs4_mark_deviceid_unavailable(devid);
--			ds = NULL;
--		}
- 		nfs4_clear_ds_conn_bit(ds);
- 	} else {
- 		/* Either ds is connected, or ds is NULL */
- 		nfs4_wait_ds_connect(ds);
- 	}
--	return ds;
-+out_test_devid:
-+	if (filelayout_test_devid_unavailable(devid))
-+		ret = NULL;
-+out:
-+	return ret;
+ 	return 0;
  }
+@@ -2197,6 +2199,9 @@ int hci_register_dev(struct hci_dev *hde
+ 		}
+ 	}
  
- module_param(dataserver_retrans, uint, 0644);
++	if (hdev->rfkill && rfkill_blocked(hdev->rfkill))
++		set_bit(HCI_RFKILLED, &hdev->dev_flags);
++
+ 	set_bit(HCI_SETUP, &hdev->dev_flags);
+ 
+ 	if (hdev->dev_type != HCI_AMP)
 
 
