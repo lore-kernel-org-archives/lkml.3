@@ -1,148 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755763Ab3JKRyo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 13:54:44 -0400
-Received: from b232-131.smtp-out.amazonses.com ([199.127.232.131]:53936 "EHLO
-	b232-131.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754708Ab3JKRyk (ORCPT
+	id S1755983Ab3JKRyy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 13:54:54 -0400
+Received: from b232-35.smtp-out.amazonses.com ([199.127.232.35]:34434 "EHLO
+	b232-35.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754774Ab3JKRyn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 13:54:40 -0400
-Message-Id: <00000141a8a7ecfe-16f29a32-36eb-4588-a87e-6ba8e0b3a91c-000000@email.amazonses.com>
+	Fri, 11 Oct 2013 13:54:43 -0400
+Message-Id: <00000141a8a7fa10-998dfc65-4d07-4d83-999e-31cb0056cfb3-000000@email.amazonses.com>
 User-Agent: quilt/0.60-1
-Date: Fri, 11 Oct 2013 17:54:39 +0000
+Date: Fri, 11 Oct 2013 17:54:42 +0000
 From: Christoph Lameter <cl@linux.com>
 To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linuxfoundation.org
+Cc: akpm@linuxfoundation.org, Alex Shi <alex.shi@intel.com>
 Cc: Steven Rostedt <srostedt@redhat.com>
 Cc: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 2/6] percpu: Add raw_cpu_ops
+Subject: [PATCH 3/6] mm: Use raw_cpu ops for determining current NUMA node
 References: <20131011175518.634285474@linux.com>
-X-SES-Outgoing: 199.127.232.131
+X-SES-Outgoing: 199.127.232.35
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following patches will add preemption checks to __this_cpu ops so we
-need to have an alternative way to use this cpu operations without
-preemption checks.
+With the preempt checking logic for __this_cpu_ops we will get false
+positives from locations in the code that use numa_node_id.
 
-raw_cpu ops rely on the __this_cpu_xxx_1/2/4/8 operations having no
-preemption checks. We therefore do not have to duplicate these functions
-but can affort to only duplicate the higher level macros.
+Before the  __this_cpu ops where introduced there were
+no checks for preemption present either. smp_raw_processor_id()
+was used. See http://www.spinics.net/lists/linux-numa/msg00641.html
 
-Also add raw_cpu_ptr for symmetries sake.
+Therefore we need to use raw_cpu_read here to avoid false postives.
 
+Note that this issue has been discussed in prior years.
+If the process changes nodes after retrieving the current numa node then
+that is acceptable since most uses of numa_node etc are for optimization
+and not for correctness.
+
+Some sample traces:
+
+__this_cpu_read operation in preemptible [00000000] code: login/1456
+caller is __this_cpu_preempt_check+0x2b/0x2d
+CPU: 0 PID: 1456 Comm: login Not tainted 3.12.0-rc4-cl-00062-g2fe80d3-dirty #185
+Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+ 000000000000013c ffff88001f31ba58 ffffffff8147cf5e ffff88001f31bfd8
+ ffff88001f31ba88 ffffffff8127eea9 0000000000000000 ffff88001f3975c0
+ 00000000f7707000 ffff88001f3975c0 ffff88001f31bac0 ffffffff8127eeef
+Call Trace:
+ [<ffffffff8147cf5e>] dump_stack+0x4e/0x82
+ [<ffffffff8127eea9>] check_preemption_disabled+0xc5/0xe0
+ [<ffffffff8127eeef>] __this_cpu_preempt_check+0x2b/0x2d
+ [<ffffffff81030ff5>] ? show_stack+0x3b/0x3d
+ [<ffffffff810ebee3>] get_task_policy+0x1d/0x49
+ [<ffffffff810ed705>] get_vma_policy+0x14/0x76
+ [<ffffffff810ed8ff>] alloc_pages_vma+0x35/0xff
+ [<ffffffff810dad97>] handle_mm_fault+0x290/0x73b
+ [<ffffffff810503da>] __do_page_fault+0x3fe/0x44d
+ [<ffffffff8109b360>] ? trace_hardirqs_on_caller+0x142/0x19e
+ [<ffffffff8109b3c9>] ? trace_hardirqs_on+0xd/0xf
+ [<ffffffff81278bed>] ? trace_hardirqs_off_thunk+0x3a/0x3c
+ [<ffffffff810be97f>] ? find_get_pages_contig+0x18e/0x18e
+ [<ffffffff810be97f>] ? find_get_pages_contig+0x18e/0x18e
+ [<ffffffff81050451>] do_page_fault+0x9/0xc
+ [<ffffffff81483602>] page_fault+0x22/0x30
+ [<ffffffff810be97f>] ? find_get_pages_contig+0x18e/0x18e
+ [<ffffffff810be97f>] ? find_get_pages_contig+0x18e/0x18e
+ [<ffffffff810be4c3>] ? file_read_actor+0x3a/0x15a
+ [<ffffffff810be97f>] ? find_get_pages_contig+0x18e/0x18e
+ [<ffffffff810bffab>] generic_file_aio_read+0x38e/0x624
+ [<ffffffff810f6d69>] do_sync_read+0x54/0x73
+ [<ffffffff810f7890>] vfs_read+0x9d/0x12a
+ [<ffffffff810f7a59>] SyS_read+0x47/0x7e
+ [<ffffffff81484f21>] cstar_dispatch+0x7/0x23
+
+
+caller is __this_cpu_preempt_check+0x2b/0x2d
+CPU: 0 PID: 1456 Comm: login Not tainted 3.12.0-rc4-cl-00062-g2fe80d3-dirty #185
+Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+ 00000000000000e8 ffff88001f31bbf8 ffffffff8147cf5e ffff88001f31bfd8
+ ffff88001f31bc28 ffffffff8127eea9 ffffffff823c5c40 00000000000213da
+ 0000000000000000 0000000000000000 ffff88001f31bc60 ffffffff8127eeef
+Call Trace:
+ [<ffffffff8147cf5e>] dump_stack+0x4e/0x82
+ [<ffffffff8127eea9>] check_preemption_disabled+0xc5/0xe0
+ [<ffffffff8127eeef>] __this_cpu_preempt_check+0x2b/0x2d
+ [<ffffffff810e006e>] ? install_special_mapping+0x11/0xe4
+ [<ffffffff810ec8a8>] alloc_pages_current+0x8f/0xbc
+ [<ffffffff810bec6b>] __page_cache_alloc+0xb/0xd
+ [<ffffffff810c7e90>] __do_page_cache_readahead+0xf4/0x219
+ [<ffffffff810c7e0e>] ? __do_page_cache_readahead+0x72/0x219
+ [<ffffffff810c827c>] ra_submit+0x1c/0x20
+ [<ffffffff810c850c>] ondemand_readahead+0x28c/0x2b4
+ [<ffffffff810c85e9>] page_cache_sync_readahead+0x38/0x3a
+ [<ffffffff810bfe7e>] generic_file_aio_read+0x261/0x624
+ [<ffffffff810f6d69>] do_sync_read+0x54/0x73
+ [<ffffffff810f7890>] vfs_read+0x9d/0x12a
+ [<ffffffff810f7a59>] SyS_read+0x47/0x7e
+ [<ffffffff81484f21>] cstar_dispatch+0x7/0x23
+
+
+CC: linux-mm@kvack.org
+Cc: Alex Shi <alex.shi@intel.com>
 Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Index: linux/include/linux/percpu.h
+Index: linux/include/linux/topology.h
 ===================================================================
---- linux.orig/include/linux/percpu.h	2013-09-23 10:20:05.050535801 -0500
-+++ linux/include/linux/percpu.h	2013-09-23 10:20:05.050535801 -0500
-@@ -139,6 +139,9 @@ extern int __init pcpu_page_first_chunk(
- 				pcpu_fc_populate_pte_fn_t populate_pte_fn);
+--- linux.orig/include/linux/topology.h	2013-09-24 11:29:51.000000000 -0500
++++ linux/include/linux/topology.h	2013-09-24 11:30:18.893831971 -0500
+@@ -182,7 +182,7 @@ DECLARE_PER_CPU(int, numa_node);
+ /* Returns the number of the current Node. */
+ static inline int numa_node_id(void)
+ {
+-	return __this_cpu_read(numa_node);
++	return raw_cpu_read(numa_node);
+ }
  #endif
  
-+/* For symmetries sake. */
-+#define raw_cpu_ptr __this_cpu_ptr
-+
- /*
-  * Use this to get to a cpu's version of the per-cpu object
-  * dynamically allocated. Non-atomic access to the current CPU's
-@@ -520,17 +523,7 @@ do {									\
- 
- /*
-  * Generic percpu operations for context that are safe from preemption/interrupts.
-- * Either we do not care about races or the caller has the
-- * responsibility of handling preemption/interrupt issues. Arch code can still
-- * override these instructions since the arch per cpu code may be more
-- * efficient and may actually get race freeness for free (that is the
-- * case for x86 for example).
-- *
-- * If there is no other protection through preempt disable and/or
-- * disabling interupts then one of these RMW operations can show unexpected
-- * behavior because the execution thread was rescheduled on another processor
-- * or an interrupt occurred and the same percpu variable was modified from
-- * the interrupt context.
-+ * These functions verify that preemption has been disabled.
-  */
- #ifndef __this_cpu_read
- # ifndef __this_cpu_read_1
-@@ -755,4 +748,74 @@ do {									\
- 	__pcpu_double_call_return_bool(__this_cpu_cmpxchg_double_, (pcp1), (pcp2), (oval1), (oval2), (nval1), (nval2))
+@@ -239,7 +239,7 @@ static inline void set_numa_mem(int node
+ /* Returns the number of the nearest Node with memory */
+ static inline int numa_mem_id(void)
+ {
+-	return __this_cpu_read(_numa_mem_);
++	return raw_cpu_read(_numa_mem_);
+ }
  #endif
  
-+/*
-+ * Generic percpu operations for context where we do not want to do
-+ * any checks for preemptiosn.
-+ *
-+ * If there is no other protection through preempt disable and/or
-+ * disabling interupts then one of these RMW operations can show unexpected
-+ * behavior because the execution thread was rescheduled on another processor
-+ * or an interrupt occurred and the same percpu variable was modified from
-+ * the interrupt context.
-+ */
-+#ifndef raw_cpu_read
-+# define raw_cpu_read(pcp)	__pcpu_size_call_return(__this_cpu_read_, (pcp))
-+#endif
-+
-+#ifndef raw_cpu_write
-+# define raw_cpu_write(pcp, val)	__pcpu_size_call(__this_cpu_write_, (pcp), (val))
-+#endif
-+
-+#ifndef raw_cpu_add
-+# define raw_cpu_add(pcp, val)	__pcpu_size_call(__this_cpu_add_, (pcp), (val))
-+#endif
-+
-+#ifndef raw_cpu_sub
-+# define raw_cpu_sub(pcp, val)	raw_cpu_add((pcp), -(val))
-+#endif
-+
-+#ifndef raw_cpu_inc
-+# define raw_cpu_inc(pcp)		raw_cpu_add((pcp), 1)
-+#endif
-+
-+#ifndef raw_cpu_dec
-+# define raw_cpu_dec(pcp)		raw_cpu_sub((pcp), 1)
-+#endif
-+
-+#ifndef raw_cpu_and
-+# define raw_cpu_and(pcp, val)	__pcpu_size_call(__this_cpu_and_, (pcp), (val))
-+#endif
-+
-+#ifndef raw_cpu_or
-+# define raw_cpu_or(pcp, val)	__pcpu_size_call(__this_cpu_or_, (pcp), (val))
-+#endif
-+
-+#ifndef raw_cpu_xor
-+# define raw_cpu_xor(pcp, val)	__pcpu_size_call(__this_cpu_xor_, (pcp), (val))
-+#endif
-+
-+#ifndef raw_cpu_add_return
-+# define raw_cpu_add_return(pcp, val)	\
-+	__pcpu_size_call_return2(__this_cpu_add_return_, pcp, val)
-+#endif
-+
-+#define raw_cpu_sub_return(pcp, val)	raw_cpu_add_return(pcp, -(val))
-+#define raw_cpu_inc_return(pcp)	raw_cpu_add_return(pcp, 1)
-+#define raw_cpu_dec_return(pcp)	raw_cpu_add_return(pcp, -1)
-+
-+#ifndef raw_cpu_xchg
-+# define raw_cpu_xchg(pcp, nval)	\
-+	__pcpu_size_call_return2(__this_cpu_xchg_, (pcp), nval)
-+#endif
-+
-+#ifndef raw_cpu_cmpxchg
-+# define raw_cpu_cmpxchg(pcp, oval, nval)	\
-+	__pcpu_size_call_return2(__this_cpu_cmpxchg_, pcp, oval, nval)
-+#endif
-+
-+#ifndef raw_cpu_cmpxchg_double
-+# define raw_cpu_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
-+	__pcpu_double_call_return_bool(__this_cpu_cmpxchg_double_, (pcp1), (pcp2), (oval1), (oval2), (nval1), (nval2))
-+#endif
-+
- #endif /* __LINUX_PERCPU_H */
 
