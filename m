@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758027Ab3JKThM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:37:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45274 "EHLO
+	id S1756163Ab3JKU7L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:59:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45312 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757893Ab3JKThH (ORCPT
+	with ESMTP id S1757893Ab3JKThN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:37:07 -0400
+	Fri, 11 Oct 2013 15:37:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ansis Atteka <aatteka@nicira.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 11/48] ip: use ip_hdr() in __ip_make_skb() to retrieve IP header
-Date: Fri, 11 Oct 2013 12:36:18 -0700
-Message-Id: <20131011193638.487172876@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Mark Brown <broonie@linaro.org>
+Subject: [ 20/48] ASoC: max98095: a couple array underflows
+Date: Fri, 11 Oct 2013 12:36:27 -0700
+Message-Id: <20131011193639.449278935@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193637.253208688@linuxfoundation.org>
 References: <20131011193637.253208688@linuxfoundation.org>
@@ -27,30 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ansis Atteka <aatteka@nicira.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-[ Upstream commit 749154aa56b57652a282cbde57a57abc278d1205 ]
+commit f8d7b13e14357ed19d2ca2799539600418dc3939 upstream.
 
-skb->data already points to IP header, but for the sake of
-consistency we can also use ip_hdr() to retrieve it.
+The ->put() function are called from snd_ctl_elem_write() with user
+supplied data.  The limit checks here could underflow leading to a
+crash.
 
-Signed-off-by: Ansis Atteka <aatteka@nicira.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv4/ip_output.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/ipv4/ip_output.c
-+++ b/net/ipv4/ip_output.c
-@@ -1342,7 +1342,7 @@ struct sk_buff *__ip_make_skb(struct soc
- 	else
- 		ttl = ip_select_ttl(inet, &rt->dst);
- 
--	iph = (struct iphdr *)skb->data;
-+	iph = ip_hdr(skb);
- 	iph->version = 4;
- 	iph->ihl = 5;
- 	iph->tos = inet->tos;
+---
+ sound/soc/codecs/max98095.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/sound/soc/codecs/max98095.c
++++ b/sound/soc/codecs/max98095.c
+@@ -1860,7 +1860,7 @@ static int max98095_put_eq_enum(struct s
+ 	struct max98095_pdata *pdata = max98095->pdata;
+ 	int channel = max98095_get_eq_channel(kcontrol->id.name);
+ 	struct max98095_cdata *cdata;
+-	int sel = ucontrol->value.integer.value[0];
++	unsigned int sel = ucontrol->value.integer.value[0];
+ 	struct max98095_eq_cfg *coef_set;
+ 	int fs, best, best_val, i;
+ 	int regmask, regsave;
+@@ -2013,7 +2013,7 @@ static int max98095_put_bq_enum(struct s
+ 	struct max98095_pdata *pdata = max98095->pdata;
+ 	int channel = max98095_get_bq_channel(codec, kcontrol->id.name);
+ 	struct max98095_cdata *cdata;
+-	int sel = ucontrol->value.integer.value[0];
++	unsigned int sel = ucontrol->value.integer.value[0];
+ 	struct max98095_biquad_cfg *coef_set;
+ 	int fs, best, best_val, i;
+ 	int regmask, regsave;
 
 
