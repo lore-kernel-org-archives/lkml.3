@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933086Ab3JKUk1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:40:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45621 "EHLO
+	id S1758854Ab3JKTj4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:39:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45556 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758861Ab3JKTj5 (ORCPT
+	with ESMTP id S1758817Ab3JKTju (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:39:57 -0400
+	Fri, 11 Oct 2013 15:39:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Catalin(ux) M. BOIE" <catab@embedromix.ro>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 032/110] IPv6 NAT: Do not drop DNATed 6to4/6rd packets
-Date: Fri, 11 Oct 2013 12:38:12 -0700
-Message-Id: <20131011193811.259952630@linuxfoundation.org>
+Subject: [ 020/110] xen-netback: count number required slots for an skb more carefully
+Date: Fri, 11 Oct 2013 12:38:00 -0700
+Message-Id: <20131011193809.819430001@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
 References: <20131011193807.584188672@linuxfoundation.org>
@@ -28,190 +28,175 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Catalin(ux) M. BOIE" <catab@embedromix.ro>
+From: David Vrabel <david.vrabel@citrix.com>
 
-[ Upstream commit 7df37ff33dc122f7bd0614d707939fe84322d264 ]
+[ Upstream commit 6e43fc04a6bc357d260583b8440882f28069207f ]
 
-When a router is doing DNAT for 6to4/6rd packets the latest
-anti-spoofing commit 218774dc ("ipv6: add anti-spoofing checks for
-6to4 and 6rd") will drop them because the IPv6 address embedded does
-not match the IPv4 destination. This patch will allow them to pass by
-testing if we have an address that matches on 6to4/6rd interface.  I
-have been hit by this problem using Fedora and IPV6TO4_IPV4ADDR.
-Also, log the dropped packets (with rate limit).
+When a VM is providing an iSCSI target and the LUN is used by the
+backend domain, the generated skbs for direct I/O writes to the disk
+have large, multi-page skb->data but no frags.
 
-Signed-off-by: Catalin(ux) M. BOIE <catab@embedromix.ro>
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+With some lengths and starting offsets, xen_netbk_count_skb_slots()
+would be one short because the simple calculation of
+DIV_ROUND_UP(skb_headlen(), PAGE_SIZE) was not accounting for the
+decisions made by start_new_rx_buffer() which does not guarantee
+responses are fully packed.
+
+For example, a skb with length < 2 pages but which spans 3 pages would
+be counted as requiring 2 slots but would actually use 3 slots.
+
+skb->data:
+
+    |        1111|222222222222|3333        |
+
+Fully packed, this would need 2 slots:
+
+    |111122222222|22223333    |
+
+But because the 2nd page wholy fits into a slot it is not split across
+slots and goes into a slot of its own:
+
+    |1111        |222222222222|3333        |
+
+Miscounting the number of slots means netback may push more responses
+than the number of available requests.  This will cause the frontend
+to get very confused and report "Too many frags/slots".  The frontend
+never recovers and will eventually BUG.
+
+Fix this by counting the number of required slots more carefully.  In
+xen_netbk_count_skb_slots(), more closely follow the algorithm used by
+xen_netbk_gop_skb() by introducing xen_netbk_count_frag_slots() which
+is the dry-run equivalent of netbk_gop_frag_copy().
+
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Acked-by: Ian Campbell <ian.campbell@citrix.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/net/addrconf.h |    4 ++
- net/ipv6/addrconf.c    |   27 +++++++++++++++
- net/ipv6/sit.c         |   84 ++++++++++++++++++++++++++++++++++++++++---------
- 3 files changed, 100 insertions(+), 15 deletions(-)
+ drivers/net/xen-netback/netback.c |   94 +++++++++++++++++++++++++-------------
+ 1 file changed, 64 insertions(+), 30 deletions(-)
 
---- a/include/net/addrconf.h
-+++ b/include/net/addrconf.h
-@@ -73,6 +73,10 @@ extern int			ipv6_chk_home_addr(struct n
- 						   const struct in6_addr *addr);
- #endif
- 
-+bool ipv6_chk_custom_prefix(const struct in6_addr *addr,
-+				   const unsigned int prefix_len,
-+				   struct net_device *dev);
-+
- extern int			ipv6_chk_prefix(const struct in6_addr *addr,
- 						struct net_device *dev);
- 
---- a/net/ipv6/addrconf.c
-+++ b/net/ipv6/addrconf.c
-@@ -1533,6 +1533,33 @@ static bool ipv6_chk_same_addr(struct ne
+--- a/drivers/net/xen-netback/netback.c
++++ b/drivers/net/xen-netback/netback.c
+@@ -354,6 +354,49 @@ static bool start_new_rx_buffer(int offs
  	return false;
  }
  
-+/* Compares an address/prefix_len with addresses on device @dev.
-+ * If one is found it returns true.
-+ */
-+bool ipv6_chk_custom_prefix(const struct in6_addr *addr,
-+	const unsigned int prefix_len, struct net_device *dev)
-+{
-+	struct inet6_dev *idev;
-+	struct inet6_ifaddr *ifa;
-+	bool ret = false;
++struct xenvif_count_slot_state {
++	unsigned long copy_off;
++	bool head;
++};
 +
-+	rcu_read_lock();
-+	idev = __in6_dev_get(dev);
-+	if (idev) {
-+		read_lock_bh(&idev->lock);
-+		list_for_each_entry(ifa, &idev->addr_list, if_list) {
-+			ret = ipv6_prefix_equal(addr, &ifa->addr, prefix_len);
-+			if (ret)
-+				break;
++unsigned int xenvif_count_frag_slots(struct xenvif *vif,
++				     unsigned long offset, unsigned long size,
++				     struct xenvif_count_slot_state *state)
++{
++	unsigned count = 0;
++
++	offset &= ~PAGE_MASK;
++
++	while (size > 0) {
++		unsigned long bytes;
++
++		bytes = PAGE_SIZE - offset;
++
++		if (bytes > size)
++			bytes = size;
++
++		if (start_new_rx_buffer(state->copy_off, bytes, state->head)) {
++			count++;
++			state->copy_off = 0;
 +		}
-+		read_unlock_bh(&idev->lock);
++
++		if (state->copy_off + bytes > MAX_BUFFER_OFFSET)
++			bytes = MAX_BUFFER_OFFSET - state->copy_off;
++
++		state->copy_off += bytes;
++
++		offset += bytes;
++		size -= bytes;
++
++		if (offset == PAGE_SIZE)
++			offset = 0;
++
++		state->head = false;
 +	}
-+	rcu_read_unlock();
 +
-+	return ret;
++	return count;
 +}
-+EXPORT_SYMBOL(ipv6_chk_custom_prefix);
 +
- int ipv6_chk_prefix(const struct in6_addr *addr, struct net_device *dev)
+ /*
+  * Figure out how many ring slots we're going to need to send @skb to
+  * the guest. This function is essentially a dry run of
+@@ -361,48 +404,39 @@ static bool start_new_rx_buffer(int offs
+  */
+ unsigned int xen_netbk_count_skb_slots(struct xenvif *vif, struct sk_buff *skb)
  {
- 	struct inet6_dev *idev;
---- a/net/ipv6/sit.c
-+++ b/net/ipv6/sit.c
-@@ -566,6 +566,70 @@ static inline bool is_spoofed_6rd(struct
- 	return false;
++	struct xenvif_count_slot_state state;
+ 	unsigned int count;
+-	int i, copy_off;
++	unsigned char *data;
++	unsigned i;
+ 
+-	count = DIV_ROUND_UP(skb_headlen(skb), PAGE_SIZE);
++	state.head = true;
++	state.copy_off = 0;
+ 
+-	copy_off = skb_headlen(skb) % PAGE_SIZE;
++	/* Slot for the first (partial) page of data. */
++	count = 1;
+ 
++	/* Need a slot for the GSO prefix for GSO extra data? */
+ 	if (skb_shinfo(skb)->gso_size)
+ 		count++;
+ 
+-	for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
+-		unsigned long size = skb_frag_size(&skb_shinfo(skb)->frags[i]);
+-		unsigned long offset = skb_shinfo(skb)->frags[i].page_offset;
+-		unsigned long bytes;
+-
+-		offset &= ~PAGE_MASK;
+-
+-		while (size > 0) {
+-			BUG_ON(offset >= PAGE_SIZE);
+-			BUG_ON(copy_off > MAX_BUFFER_OFFSET);
++	data = skb->data;
++	while (data < skb_tail_pointer(skb)) {
++		unsigned long offset = offset_in_page(data);
++		unsigned long size = PAGE_SIZE - offset;
+ 
+-			bytes = PAGE_SIZE - offset;
++		if (data + size > skb_tail_pointer(skb))
++			size = skb_tail_pointer(skb) - data;
+ 
+-			if (bytes > size)
+-				bytes = size;
++		count += xenvif_count_frag_slots(vif, offset, size, &state);
+ 
+-			if (start_new_rx_buffer(copy_off, bytes, 0)) {
+-				count++;
+-				copy_off = 0;
+-			}
+-
+-			if (copy_off + bytes > MAX_BUFFER_OFFSET)
+-				bytes = MAX_BUFFER_OFFSET - copy_off;
+-
+-			copy_off += bytes;
++		data += size;
++	}
+ 
+-			offset += bytes;
+-			size -= bytes;
++	for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
++		unsigned long size = skb_frag_size(&skb_shinfo(skb)->frags[i]);
++		unsigned long offset = skb_shinfo(skb)->frags[i].page_offset;
+ 
+-			if (offset == PAGE_SIZE)
+-				offset = 0;
+-		}
++		count += xenvif_count_frag_slots(vif, offset, size, &state);
+ 	}
+ 	return count;
  }
- 
-+/* Checks if an address matches an address on the tunnel interface.
-+ * Used to detect the NAT of proto 41 packets and let them pass spoofing test.
-+ * Long story:
-+ * This function is called after we considered the packet as spoofed
-+ * in is_spoofed_6rd.
-+ * We may have a router that is doing NAT for proto 41 packets
-+ * for an internal station. Destination a.a.a.a/PREFIX:bbbb:bbbb
-+ * will be translated to n.n.n.n/PREFIX:bbbb:bbbb. And is_spoofed_6rd
-+ * function will return true, dropping the packet.
-+ * But, we can still check if is spoofed against the IP
-+ * addresses associated with the interface.
-+ */
-+static bool only_dnatted(const struct ip_tunnel *tunnel,
-+	const struct in6_addr *v6dst)
-+{
-+	int prefix_len;
-+
-+#ifdef CONFIG_IPV6_SIT_6RD
-+	prefix_len = tunnel->ip6rd.prefixlen + 32
-+		- tunnel->ip6rd.relay_prefixlen;
-+#else
-+	prefix_len = 48;
-+#endif
-+	return ipv6_chk_custom_prefix(v6dst, prefix_len, tunnel->dev);
-+}
-+
-+/* Returns true if a packet is spoofed */
-+static bool packet_is_spoofed(struct sk_buff *skb,
-+			      const struct iphdr *iph,
-+			      struct ip_tunnel *tunnel)
-+{
-+	const struct ipv6hdr *ipv6h;
-+
-+	if (tunnel->dev->priv_flags & IFF_ISATAP) {
-+		if (!isatap_chksrc(skb, iph, tunnel))
-+			return true;
-+
-+		return false;
-+	}
-+
-+	if (tunnel->dev->flags & IFF_POINTOPOINT)
-+		return false;
-+
-+	ipv6h = ipv6_hdr(skb);
-+
-+	if (unlikely(is_spoofed_6rd(tunnel, iph->saddr, &ipv6h->saddr))) {
-+		net_warn_ratelimited("Src spoofed %pI4/%pI6c -> %pI4/%pI6c\n",
-+				     &iph->saddr, &ipv6h->saddr,
-+				     &iph->daddr, &ipv6h->daddr);
-+		return true;
-+	}
-+
-+	if (likely(!is_spoofed_6rd(tunnel, iph->daddr, &ipv6h->daddr)))
-+		return false;
-+
-+	if (only_dnatted(tunnel, &ipv6h->daddr))
-+		return false;
-+
-+	net_warn_ratelimited("Dst spoofed %pI4/%pI6c -> %pI4/%pI6c\n",
-+			     &iph->saddr, &ipv6h->saddr,
-+			     &iph->daddr, &ipv6h->daddr);
-+	return true;
-+}
-+
- static int ipip6_rcv(struct sk_buff *skb)
- {
- 	const struct iphdr *iph = ip_hdr(skb);
-@@ -584,19 +648,9 @@ static int ipip6_rcv(struct sk_buff *skb
- 		skb->protocol = htons(ETH_P_IPV6);
- 		skb->pkt_type = PACKET_HOST;
- 
--		if (tunnel->dev->priv_flags & IFF_ISATAP) {
--			if (!isatap_chksrc(skb, iph, tunnel)) {
--				tunnel->dev->stats.rx_errors++;
--				goto out;
--			}
--		} else if (!(tunnel->dev->flags&IFF_POINTOPOINT)) {
--			if (is_spoofed_6rd(tunnel, iph->saddr,
--					   &ipv6_hdr(skb)->saddr) ||
--			    is_spoofed_6rd(tunnel, iph->daddr,
--					   &ipv6_hdr(skb)->daddr)) {
--				tunnel->dev->stats.rx_errors++;
--				goto out;
--			}
-+		if (packet_is_spoofed(skb, iph, tunnel)) {
-+			tunnel->dev->stats.rx_errors++;
-+			goto out;
- 		}
- 
- 		__skb_tunnel_rx(skb, tunnel->dev);
-@@ -713,7 +767,7 @@ static netdev_tx_t ipip6_tunnel_xmit(str
- 			neigh = dst_neigh_lookup(skb_dst(skb), &iph6->daddr);
- 
- 		if (neigh == NULL) {
--			net_dbg_ratelimited("sit: nexthop == NULL\n");
-+			net_dbg_ratelimited("nexthop == NULL\n");
- 			goto tx_error;
- 		}
- 
-@@ -742,7 +796,7 @@ static netdev_tx_t ipip6_tunnel_xmit(str
- 			neigh = dst_neigh_lookup(skb_dst(skb), &iph6->daddr);
- 
- 		if (neigh == NULL) {
--			net_dbg_ratelimited("sit: nexthop == NULL\n");
-+			net_dbg_ratelimited("nexthop == NULL\n");
- 			goto tx_error;
- 		}
- 
 
 
