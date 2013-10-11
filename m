@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758407Ab3JKLGN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 07:06:13 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58463 "EHLO
+	id S1758472Ab3JKLGe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 07:06:34 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58458 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757821Ab3JKKmz (ORCPT
+	with ESMTP id S1757809Ab3JKKmy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 06:42:55 -0400
+	Fri, 11 Oct 2013 06:42:54 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
@@ -14,9 +14,9 @@ Cc: Dan Carpenter <dan.carpenter@oracle.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 029/100] cpqarray: fix info leak in ida_locked_ioctl()
-Date: Fri, 11 Oct 2013 11:40:59 +0100
-Message-Id: <1381488130-30235-30-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 028/100] cciss: fix info leak in cciss_ioctl32_passthru()
+Date: Fri, 11 Oct 2013 11:40:58 +0100
+Message-Id: <1381488130-30235-29-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
 References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
@@ -31,10 +31,11 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 627aad1c01da6f881e7f98d71fd928ca0c316b1a upstream.
+commit 58f09e00ae095e46ef9edfcf3a5fd9ccdfad065e upstream.
 
-The pciinfo struct has a two byte hole after ->dev_fn so stack
-information could be leaked to the user.
+The arg64 struct has a hole after ->buf_size which isn't cleared.  Or if
+any of the calls to copy_from_user() fail then that would cause an
+information leak as well.
 
 This was assigned CVE-2013-2147.
 
@@ -44,21 +45,21 @@ Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/block/cpqarray.c | 1 +
+ drivers/block/cciss.c | 1 +
  1 file changed, 1 insertion(+)
 
-diff --git a/drivers/block/cpqarray.c b/drivers/block/cpqarray.c
-index 9125bbe..504bc16 100644
---- a/drivers/block/cpqarray.c
-+++ b/drivers/block/cpqarray.c
-@@ -1195,6 +1195,7 @@ out_passthru:
- 		ida_pci_info_struct pciinfo;
+diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
+index d3446f6..d7ad865 100644
+--- a/drivers/block/cciss.c
++++ b/drivers/block/cciss.c
+@@ -1186,6 +1186,7 @@ static int cciss_ioctl32_passthru(struct block_device *bdev, fmode_t mode,
+ 	int err;
+ 	u32 cp;
  
- 		if (!arg) return -EINVAL;
-+		memset(&pciinfo, 0, sizeof(pciinfo));
- 		pciinfo.bus = host->pci_dev->bus->number;
- 		pciinfo.dev_fn = host->pci_dev->devfn;
- 		pciinfo.board_id = host->board_id;
++	memset(&arg64, 0, sizeof(arg64));
+ 	err = 0;
+ 	err |=
+ 	    copy_from_user(&arg64.LUN_info, &arg32->LUN_info,
 -- 
 1.8.3.2
 
