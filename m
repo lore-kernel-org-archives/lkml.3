@@ -1,33 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756819Ab3JKO15 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 10:27:57 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:39248 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752510Ab3JKO14 (ORCPT
+	id S1757762Ab3JKO2I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 10:28:08 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:35584 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752510Ab3JKO2G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 10:27:56 -0400
-Message-ID: <52580AAF.5010809@kernel.dk>
-Date: Fri, 11 Oct 2013 08:26:55 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Fri, 11 Oct 2013 10:28:06 -0400
 MIME-Version: 1.0
-To: Shaohua Li <shli@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] null_blk: fix a bug in capacity calculation
-References: <20131011041428.GB1692@kernel.org>
-In-Reply-To: <20131011041428.GB1692@kernel.org>
+In-Reply-To: <1380909598-6382-2-git-send-email-acourbot@nvidia.com>
+References: <1380909598-6382-1-git-send-email-acourbot@nvidia.com>
+	<1380909598-6382-2-git-send-email-acourbot@nvidia.com>
+Date: Fri, 11 Oct 2013 16:28:05 +0200
+Message-ID: <CACRpkdYzCt6pbLahFoA7cn326bBESu-vVRmFSu6b9wCm+J7bOQ@mail.gmail.com>
+Subject: Re: [PATCH 2/2] gpiolib: let gpiod_request() return -EPROBE_DEFER
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Alexandre Courbot <acourbot@nvidia.com>
+Cc: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alexandre Courbot <gnurou@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/10/2013 10:14 PM, Shaohua Li wrote:
-> the capacity calculation is obvious buggy.
+On Fri, Oct 4, 2013 at 7:59 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
 
-Thanks, applied.
+> Patch be1a4b brought some improvements to the GPIO error handling code,
+> but also changed the return value of gpiod_request() when called on a
+> not yet initialized GPIO descriptor: it now returns -EINVAL instead of
+> -EPROBE_DEFER, and this affects some drivers.
+>
+> This patch restores the original behavior for gpiod_request(). It is
+> safe to do so now that desc_to_gpio() does not rely on the GPIO
+> descriptor to be initialized. Other functions changed by patch be1a4b
+> do not see their return value affected, so these are not reverted.
+>
+> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+> Reported-by: Dr. H. Nikolaus Schaller <hns@goldelico.com>
 
+Patch applied.
 
--- 
-Jens Axboe
+Are these two patches regressions that need to go into fixes
+for v3.12?
 
+Yours,
+Linus Walleij
