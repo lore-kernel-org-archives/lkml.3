@@ -1,51 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932390Ab3JKLER (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 07:04:17 -0400
-Received: from mga09.intel.com ([134.134.136.24]:58660 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932119Ab3JKLEN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 07:04:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,1079,1371106800"; 
-   d="scan'208";a="417690706"
-Date: Fri, 11 Oct 2013 14:09:40 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] gpio/lynxpoint: check if the interrupt is enabled in IRQ
- handler
-Message-ID: <20131011110940.GO3521@intel.com>
-References: <1380638143-20040-1-git-send-email-mika.westerberg@linux.intel.com>
- <CACRpkda=C3+pkVsVbZAkasxyWGedNsb7oAKTt4ApnJ4Q+k9BCw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkda=C3+pkVsVbZAkasxyWGedNsb7oAKTt4ApnJ4Q+k9BCw@mail.gmail.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758093Ab3JKLEt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 07:04:49 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58493 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932066Ab3JKKnC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 06:43:02 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 034/100] serial: pch_uart: fix tty-kref leak in dma-rx path
+Date: Fri, 11 Oct 2013 11:41:04 +0100
+Message-Id: <1381488130-30235-35-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
+References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 11, 2013 at 12:57:37PM +0200, Linus Walleij wrote:
-> On Tue, Oct 1, 2013 at 4:35 PM, Mika Westerberg
-> <mika.westerberg@linux.intel.com> wrote:
-> 
-> > Checking LP_INT_STAT is not enough in the interrupt handler because its
-> > contents get updated regardless of whether the pin has interrupt enabled or
-> > not. This causes the driver to loop forever for GPIOs that are pulled up.
-> >
-> > Fix this by checking the interrupt enable bit for the pin as well.
-> >
-> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> 
-> Patch applied for fixes with Mathias ACK.
+3.5.7.23 -stable review patch.  If anyone has any objections, please let me know.
 
-Thanks!
+------------------
 
-> Should this be tagged for -stable as well?
+From: Johan Hovold <jhovold@gmail.com>
 
-Yes, please. I think starting from 3.9 when this driver was merged.
+commit 19b85cfb190eb9980eaf416bff96aef4159a430e upstream.
+
+Fix tty_kref leak when tty_buffer_request room fails in dma-rx path.
+
+Note that the tty ref isn't really needed anymore, but as the leak has
+always been there, fixing it before removing should makes it easier to
+backport the fix.
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/tty/serial/pch_uart.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/tty/serial/pch_uart.c b/drivers/tty/serial/pch_uart.c
+index 9e97a39..206c58c 100644
+--- a/drivers/tty/serial/pch_uart.c
++++ b/drivers/tty/serial/pch_uart.c
+@@ -643,11 +643,12 @@ static int dma_push_rx(struct eg20t_port *priv, int size)
+ 		dev_warn(port->dev, "Rx overrun: dropping %u bytes\n",
+ 			 size - room);
+ 	if (!room)
+-		return room;
++		goto out;
+ 
+ 	tty_insert_flip_string(tty, sg_virt(&priv->sg_rx), size);
+ 
+ 	port->icount.rx += room;
++out:
+ 	tty_kref_put(tty);
+ 
+ 	return room;
+-- 
+1.8.3.2
+
