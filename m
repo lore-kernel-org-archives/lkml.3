@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933179Ab3JKUPY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:15:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46045 "EHLO
+	id S933166Ab3JKUPW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:15:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46068 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932318Ab3JKTlA (ORCPT
+	with ESMTP id S932327Ab3JKTlD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:41:00 -0400
+	Fri, 11 Oct 2013 15:41:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>,
-        Daniel Borkmann <dborkman@redhat.com>,
         Nikolay Aleksandrov <nikolay@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 014/135] net: flow_dissector: fix thoff for IPPROTO_AH
-Date: Fri, 11 Oct 2013 12:38:15 -0700
-Message-Id: <20131011193946.789417433@linuxfoundation.org>
+Subject: [ 018/135] netpoll: fix NULL pointer dereference in netpoll_cleanup
+Date: Fri, 11 Oct 2013 12:38:19 -0700
+Message-Id: <20131011193947.215071719@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -29,41 +27,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Nikolay Aleksandrov <nikolay@redhat.com>
 
-[ Upstream commit b86783587b3d1d552326d955acee37eac48800f1 ]
+[ Upstream commit d0fe8c888b1fd1a2f84b9962cabcb98a70988aec ]
 
-In commit 8ed781668dd49 ("flow_keys: include thoff into flow_keys for
-later usage"), we missed that existing code was using nhoff as a
-temporary variable that could not always contain transport header
-offset.
+I've been hitting a NULL ptr deref while using netconsole because the
+np->dev check and the pointer manipulation in netpoll_cleanup are done
+without rtnl and the following sequence happens when having a netconsole
+over a vlan and we remove the vlan while disabling the netconsole:
+	CPU 1					CPU2
+					removes vlan and calls the notifier
+enters store_enabled(), calls
+netdev_cleanup which checks np->dev
+and then waits for rtnl
+					executes the netconsole netdev
+					release notifier making np->dev
+					== NULL and releases rtnl
+continues to dereference a member of
+np->dev which at this point is == NULL
 
-This is not a problem for TCP/UDP because port offset (@poff)
-is 0 for these protocols.
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Daniel Borkmann <dborkman@redhat.com>
-Cc: Nikolay Aleksandrov <nikolay@redhat.com>
-Acked-by: Nikolay Aleksandrov <nikolay@redhat.com>
-Acked-by: Daniel Borkmann <dborkman@redhat.com>
+Signed-off-by: Nikolay Aleksandrov <nikolay@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/flow_dissector.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/core/netpoll.c |    9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
 
---- a/net/core/flow_dissector.c
-+++ b/net/core/flow_dissector.c
-@@ -150,8 +150,8 @@ ipv6:
- 	if (poff >= 0) {
- 		__be32 *ports, _ports;
+--- a/net/core/netpoll.c
++++ b/net/core/netpoll.c
+@@ -1284,15 +1284,14 @@ EXPORT_SYMBOL_GPL(__netpoll_free_async);
  
--		nhoff += poff;
--		ports = skb_header_pointer(skb, nhoff, sizeof(_ports), &_ports);
-+		ports = skb_header_pointer(skb, nhoff + poff,
-+					   sizeof(_ports), &_ports);
- 		if (ports)
- 			flow->ports = *ports;
- 	}
+ void netpoll_cleanup(struct netpoll *np)
+ {
+-	if (!np->dev)
+-		return;
+-
+ 	rtnl_lock();
++	if (!np->dev)
++		goto out;
+ 	__netpoll_cleanup(np);
+-	rtnl_unlock();
+-
+ 	dev_put(np->dev);
+ 	np->dev = NULL;
++out:
++	rtnl_unlock();
+ }
+ EXPORT_SYMBOL(netpoll_cleanup);
+ 
 
 
