@@ -1,28 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758230Ab3JKKsq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 06:48:46 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58779 "EHLO
+	id S1758215Ab3JKKsp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 06:48:45 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58796 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932326Ab3JKKoM (ORCPT
+	with ESMTP id S932320Ab3JKKoQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 06:44:12 -0400
+	Fri, 11 Oct 2013 06:44:16 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@prifuk.cz>,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 084/100] USB: serial: option: Ignore card reader interface on Huawei E1750
-Date: Fri, 11 Oct 2013 11:41:54 +0100
-Message-Id: <1381488130-30235-85-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 088/100] powerpc/sysfs: Disable writing to PURR in guest mode
+Date: Fri, 11 Oct 2013 11:41:58 +0100
+Message-Id: <1381488130-30235-89-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
 References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,48 +28,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@prifuk.cz>
+From: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
 
-commit eb2addd4044b4b2ce77693bde5bc810536dd96ee upstream.
+commit d1211af3049f4c9c1d8d4eb8f8098cc4f4f0d0c7 upstream.
 
-Hi,
+arch/powerpc/kernel/sysfs.c exports PURR with write permission.
+This may be valid for kernel in phyp mode. But writing to
+the file in guest mode causes crash due to a priviledge violation
 
-my Huawei 3G modem has an embedded Smart Card reader which causes
-trouble when the modem is being detected (a bunch of "<warn>  (ttyUSBx):
-open blocked by driver for more than 7 seconds!" in messages.log). This
-trivial patch corrects the problem for me. The modem identifies itself
-as "12d1:1406 Huawei Technologies Co., Ltd. E1750" in lsusb although the
-description on the body says "Model E173u-1"
-
-Signed-off-by: Michal Malý <madcatxster@prifuk.cz>
-Cc: Bjørn Mork <bjorn@mork.no>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/serial/option.c | 3 +++
- 1 file changed, 3 insertions(+)
+ arch/powerpc/kernel/sysfs.c | 18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-index 7785df0..d0c2d20 100644
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -81,6 +81,7 @@ static void option_instat_callback(struct urb *urb);
+diff --git a/arch/powerpc/kernel/sysfs.c b/arch/powerpc/kernel/sysfs.c
+index 8302af6..bbe9965 100644
+--- a/arch/powerpc/kernel/sysfs.c
++++ b/arch/powerpc/kernel/sysfs.c
+@@ -17,6 +17,7 @@
+ #include <asm/machdep.h>
+ #include <asm/smp.h>
+ #include <asm/pmc.h>
++#include <asm/firmware.h>
  
- #define HUAWEI_VENDOR_ID			0x12D1
- #define HUAWEI_PRODUCT_E173			0x140C
-+#define HUAWEI_PRODUCT_E1750			0x1406
- #define HUAWEI_PRODUCT_K4505			0x1464
- #define HUAWEI_PRODUCT_K3765			0x1465
- #define HUAWEI_PRODUCT_K4605			0x14C6
-@@ -581,6 +582,8 @@ static const struct usb_device_id option_ids[] = {
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1c23, USB_CLASS_COMM, 0x02, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E173, 0xff, 0xff, 0xff),
- 		.driver_info = (kernel_ulong_t) &net_intf1_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E1750, 0xff, 0xff, 0xff),
-+		.driver_info = (kernel_ulong_t) &net_intf2_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1441, USB_CLASS_COMM, 0x02, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1442, USB_CLASS_COMM, 0x02, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4505, 0xff, 0xff, 0xff),
+ #include "cacheinfo.h"
+ 
+@@ -179,15 +180,25 @@ SYSFS_PMCSETUP(spurr, SPRN_SPURR);
+ SYSFS_PMCSETUP(dscr, SPRN_DSCR);
+ SYSFS_PMCSETUP(pir, SPRN_PIR);
+ 
++/*
++  Lets only enable read for phyp resources and
++  enable write when needed with a separate function.
++  Lets be conservative and default to pseries.
++*/
+ static DEVICE_ATTR(mmcra, 0600, show_mmcra, store_mmcra);
+ static DEVICE_ATTR(spurr, 0600, show_spurr, NULL);
+ static DEVICE_ATTR(dscr, 0600, show_dscr, store_dscr);
+-static DEVICE_ATTR(purr, 0600, show_purr, store_purr);
++static DEVICE_ATTR(purr, 0400, show_purr, store_purr);
+ static DEVICE_ATTR(pir, 0400, show_pir, NULL);
+ 
+ unsigned long dscr_default = 0;
+ EXPORT_SYMBOL(dscr_default);
+ 
++static void add_write_permission_dev_attr(struct device_attribute *attr)
++{
++	attr->attr.mode |= 0200;
++}
++
+ static ssize_t show_dscr_default(struct device *dev,
+ 		struct device_attribute *attr, char *buf)
+ {
+@@ -394,8 +405,11 @@ static void __cpuinit register_cpu_online(unsigned int cpu)
+ 	if (cpu_has_feature(CPU_FTR_MMCRA))
+ 		device_create_file(s, &dev_attr_mmcra);
+ 
+-	if (cpu_has_feature(CPU_FTR_PURR))
++	if (cpu_has_feature(CPU_FTR_PURR)) {
++		if (!firmware_has_feature(FW_FEATURE_LPAR))
++			add_write_permission_dev_attr(&dev_attr_purr);
+ 		device_create_file(s, &dev_attr_purr);
++	}
+ 
+ 	if (cpu_has_feature(CPU_FTR_SPURR))
+ 		device_create_file(s, &dev_attr_spurr);
 -- 
 1.8.3.2
 
