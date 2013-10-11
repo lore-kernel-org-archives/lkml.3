@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757606Ab3JKKme (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 06:42:34 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58378 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757549Ab3JKKmc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757562Ab3JKKmc (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 11 Oct 2013 06:42:32 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58358 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753122Ab3JKKm1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 06:42:27 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Fabio Porcedda <fabio.porcedda@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 012/100] net: usb: cdc_ether: Use wwan interface for Telit modules
-Date: Fri, 11 Oct 2013 11:40:42 +0100
-Message-Id: <1381488130-30235-13-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 003/100] sched/fair: Fix small race where child->se.parent,cfs_rq might point to invalid ones
+Date: Fri, 11 Oct 2013 11:40:33 +0100
+Message-Id: <1381488130-30235-4-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
 References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
@@ -28,34 +28,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Fabio Porcedda <fabio.porcedda@gmail.com>
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
 
-commit 0092820407901a0b2c4e343e85f96bb7abfcded1 upstream.
+commit 6c9a27f5da9609fca46cb2b183724531b48f71ad upstream.
 
-Signed-off-by: Fabio Porcedda <fabio.porcedda@gmail.com>
-Acked-by: Oliver Neukum <oliver@neukum.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+There is a small race between copy_process() and cgroup_attach_task()
+where child->se.parent,cfs_rq points to invalid (old) ones.
+
+        parent doing fork()      | someone moving the parent to another cgroup
+  -------------------------------+---------------------------------------------
+    copy_process()
+      + dup_task_struct()
+        -> parent->se is copied to child->se.
+           se.parent,cfs_rq of them point to old ones.
+
+                                     cgroup_attach_task()
+                                       + cgroup_task_migrate()
+                                         -> parent->cgroup is updated.
+                                       + cpu_cgroup_attach()
+                                         + sched_move_task()
+                                           + task_move_group_fair()
+                                             +- set_task_rq()
+                                                -> se.parent,cfs_rq of parent
+                                                   are updated.
+
+      + cgroup_fork()
+        -> parent->cgroup is copied to child->cgroup. (*1)
+      + sched_fork()
+        + task_fork_fair()
+          -> se.parent,cfs_rq of child are accessed
+             while they point to old ones. (*2)
+
+In the worst case, this bug can lead to "use-after-free" and cause a panic,
+because it's new cgroup's refcount that is incremented at (*1),
+so the old cgroup(and related data) can be freed before (*2).
+
+In fact, a panic caused by this bug was originally caught in RHEL6.4.
+
+    BUG: unable to handle kernel NULL pointer dereference at (null)
+    IP: [<ffffffff81051e3e>] sched_slice+0x6e/0xa0
+    [...]
+    Call Trace:
+     [<ffffffff81051f25>] place_entity+0x75/0xa0
+     [<ffffffff81056a3a>] task_fork_fair+0xaa/0x160
+     [<ffffffff81063c0b>] sched_fork+0x6b/0x140
+     [<ffffffff8106c3c2>] copy_process+0x5b2/0x1450
+     [<ffffffff81063b49>] ? wake_up_new_task+0xd9/0x130
+     [<ffffffff8106d2f4>] do_fork+0x94/0x460
+     [<ffffffff81072a9e>] ? sys_wait4+0xae/0x100
+     [<ffffffff81009598>] sys_clone+0x28/0x30
+     [<ffffffff8100b393>] stub_clone+0x13/0x20
+     [<ffffffff8100b072>] ? system_call_fastpath+0x16/0x1b
+
+Signed-off-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/039601ceae06$733d3130$59b79390$@mxp.nes.nec.co.jp
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/usb/cdc_ether.c | 5 +++++
- 1 file changed, 5 insertions(+)
+ kernel/sched/fair.c | 14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/net/usb/cdc_ether.c b/drivers/net/usb/cdc_ether.c
-index e7d4238..81182fb 100644
---- a/drivers/net/usb/cdc_ether.c
-+++ b/drivers/net/usb/cdc_ether.c
-@@ -707,6 +707,11 @@ static const struct usb_device_id	products [] = {
- 	.bInterfaceProtocol	= USB_CDC_PROTO_NONE,
- 	.driver_info = (unsigned long)&wwan_info,
- }, {
-+	/* Telit modules */
-+	USB_VENDOR_AND_INTERFACE_INFO(0x1bc7, USB_CLASS_COMM,
-+			USB_CDC_SUBCLASS_ETHERNET, USB_CDC_PROTO_NONE),
-+	.driver_info = (kernel_ulong_t) &wwan_info,
-+}, {
- 	USB_INTERFACE_INFO(USB_CLASS_COMM, USB_CDC_SUBCLASS_ETHERNET,
- 			USB_CDC_PROTO_NONE),
- 	.driver_info = (unsigned long) &cdc_info,
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index eb12b9e..811a254 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4929,11 +4929,15 @@ static void task_fork_fair(struct task_struct *p)
+ 	cfs_rq = task_cfs_rq(current);
+ 	curr = cfs_rq->curr;
+ 
+-	if (unlikely(task_cpu(p) != this_cpu)) {
+-		rcu_read_lock();
+-		__set_task_cpu(p, this_cpu);
+-		rcu_read_unlock();
+-	}
++	/*
++	 * Not only the cpu but also the task_group of the parent might have
++	 * been changed after parent->se.parent,cfs_rq were copied to
++	 * child->se.parent,cfs_rq. So call __set_task_cpu() to make those
++	 * of child point to valid ones.
++	 */
++	rcu_read_lock();
++	__set_task_cpu(p, this_cpu);
++	rcu_read_unlock();
+ 
+ 	update_curr(cfs_rq);
+ 
 -- 
 1.8.3.2
 
