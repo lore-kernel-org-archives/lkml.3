@@ -1,93 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754114Ab3JKXRK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 19:17:10 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:46699 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752414Ab3JKXRI (ORCPT
+	id S1754215Ab3JKXRZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 19:17:25 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:63679 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753793Ab3JKXRU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 19:17:08 -0400
-Date: Fri, 11 Oct 2013 16:16:59 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu, fengguang.wu@intel.com, stephen@networkplumber.org,
-        davem@davemloft.net, bridge@lists.linux-foundation.org,
-        netdev@vger.kernel.org, tgraf@suug.ch, gaofeng@cn.fujitsu.com,
-        linux-decnet-user@lists.sourceforge.net, kuznet@ms2.inr.ac.ru,
-        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
-        linville@tuxdriver.com, johannes@sipsolutions.net
-Subject: [PATCH v3 tip/core/rcu 0/14] Sparse-related updates for 3.13
-Message-ID: <20131011231659.GA28062@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13101123-6688-0000-0000-000002770388
+	Fri, 11 Oct 2013 19:17:20 -0400
+Date: Fri, 11 Oct 2013 18:17:17 -0500
+From: Kim Phillips <kim.phillips@linaro.org>
+To: scottwood@freescale.com
+Cc: R65777@freescale.com, B07421@freescale.com, B08248@freescale.com,
+        christoffer.dall@linaro.org, alex.williamson@redhat.com,
+        linux-kernel@vger.kernel.org, a.motakis@virtualopensystems.com,
+        agraf@suse.de, B16395@freescale.com, peter.maydell@linaro.org,
+        santosh.shukla@linaro.org, kvm@vger.kernel.org,
+        gregkh@linuxfoundation.org
+Subject: Re: [PATCH 3/4] VFIO: pci: amend vfio-pci for explicit binding via
+ sysfs only
+Message-Id: <20131011181717.e4051736cf42c5a647222941@linaro.org>
+In-Reply-To: <1381524220.7979.560.camel@snotra.buserror.net>
+References: <1381418830.7979.405.camel@snotra.buserror.net>
+	<1381472840-3470-1-git-send-email-kim.phillips@linaro.org>
+	<1381472840-3470-3-git-send-email-kim.phillips@linaro.org>
+	<1381524220.7979.560.camel@snotra.buserror.net>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+On Fri, 11 Oct 2013 15:43:40 -0500
+Scott Wood <scottwood@freescale.com> wrote:
 
-This series features updates to allow sparse to do a better job of
-statically analyzing RCU usage:
+> On Fri, 2013-10-11 at 01:27 -0500, Kim Phillips wrote:
+> > Force the vfio-pci driver to only be bound explicitly via sysfs to avoid
+> > conflics with other drivers in the event of a hotplug.
+> > 
+> > Signed-off-by: Kim Phillips <kim.phillips@linaro.org>
+> > ---
+> >  drivers/vfio/pci/vfio_pci.c | 3 +++
+> >  1 file changed, 3 insertions(+)
+> > 
+> > diff --git a/drivers/vfio/pci/vfio_pci.c b/drivers/vfio/pci/vfio_pci.c
+> > index 6ab71b9..bdd7833 100644
+> > --- a/drivers/vfio/pci/vfio_pci.c
+> > +++ b/drivers/vfio/pci/vfio_pci.c
+> > @@ -901,6 +901,9 @@ static struct pci_driver vfio_pci_driver = {
+> >  	.probe		= vfio_pci_probe,
+> >  	.remove		= vfio_pci_remove,
+> >  	.err_handler	= &vfio_err_handlers,
+> > +	.driver = {
+> > +		.sysfs_bind_only = true,
+> > +	},
+> >  };
+> >  
+> >  static void __exit vfio_pci_cleanup(void)
+> 
+> You also need to add a PCI_ANY_ID match in order to be able to get rid
+> of the new_id usage.
 
-1.	Add a comment indicating that despite appearances,
-	rcu_assign_pointer() really only evaluates its arguments once,
-	as a cpp macro should.
+thanks - see below.
 
-2-13.	Apply ACCESS_ONCE() to avoid a number of rcu_assign_pointer()
-	calls that would otherwise suffer sparse false positives given
-	patch #13 below.
+Can someone with a PCI bus test this?  Bharat?
 
-14.	Apply ACCESS_ONCE() to rcu_assign_pointer()'s target to prevent
-	comiler mischief.  Also require that the source pointer be from
-	the kernel address space.  Sometimes it can be from the RCU address
-	space, which necessitates the remaining patches in this series.
-	Which, it must be admitted, apply to a very small fraction of
-	the rcu_assign_pointer() invocations in the kernel.  This commit
-	courtesy of Josh Triplett.
+Kim
 
-Changes from v2:
+>From a8d6c12f2ec763c2ac7fd384a3397c370cc1b932 Mon Sep 17 00:00:00 2001
+From: Kim Phillips <kim.phillips@linaro.org>
+Date: Thu, 10 Oct 2013 22:16:34 -0500
+Subject: [PATCH 3/4 v2] VFIO: pci: amend vfio-pci for explicit binding via sysfs
+ only
 
-o	Switch from rcu_assign_pointer() to ACCESS_ONCE() given that
-	the pointers are all --rcu and already visible to readers,
-	as suggested by Eric Dumazet and Josh Triplett.
+Force the vfio-pci driver to only be bound explicitly via sysfs to avoid
+conflics with other drivers in the event of a hotplug.  Also replace
+the only dynamic ids assignment with a table with a single PCI_ANY_ID
+entry since writing the sysfs bind file without having to specify ids
+via the new_id file first should no longer be necessary.
 
-o	Place the commit adding the rcu_assign_pointer()'s ACCESS_ONCE()
-	at the end to allow better bisectability, as suggested by Josh
-	Triplett.
+Signed-off-by: Kim Phillips <kim.phillips@linaro.org>
+---
+ drivers/vfio/pci/vfio_pci.c | 12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
-o	Add a comment to rcu_assign_pointer() noting that it only evaluates
-	its arguments once, as suggested by Josh Triplett.
-
-Changes from v1:
-
-o	Fix grammar nit in commit logs.
-
-							Thanx, Paul
-
-
- b/drivers/net/bonding/bond_alb.c  |    3 ++-
- b/drivers/net/bonding/bond_main.c |    8 +++++---
- b/include/linux/rcupdate.h        |   20 +++++++++++++++++++-
- b/kernel/notifier.c               |    3 ++-
- b/net/bridge/br_mdb.c             |    2 +-
- b/net/bridge/br_multicast.c       |    4 ++--
- b/net/decnet/dn_route.c           |    8 +++++---
- b/net/ipv4/ip_sockglue.c          |    3 ++-
- b/net/ipv6/ip6_gre.c              |    3 ++-
- b/net/ipv6/ip6_tunnel.c           |    3 ++-
- b/net/ipv6/sit.c                  |    3 ++-
- b/net/mac80211/sta_info.c         |    7 ++++---
- b/net/wireless/scan.c             |   32 ++++++++++++++++++--------------
- 13 files changed, 66 insertions(+), 33 deletions(-)
-
+diff --git a/drivers/vfio/pci/vfio_pci.c b/drivers/vfio/pci/vfio_pci.c
+index 6ab71b9..c5b434f 100644
+--- a/drivers/vfio/pci/vfio_pci.c
++++ b/drivers/vfio/pci/vfio_pci.c
+@@ -895,12 +895,22 @@ static struct pci_error_handlers vfio_err_handlers = {
+ 	.error_detected = vfio_pci_aer_err_detected,
+ };
+ 
++static DEFINE_PCI_DEVICE_TABLE(vfio_pci_id_table) = {
++        { PCI_DEVICE(PCI_ANY_ID, PCI_ANY_ID) },
++        { 0 }
++};
++
++MODULE_DEVICE_TABLE(pci, vfio_pci_id_table);
++
+ static struct pci_driver vfio_pci_driver = {
+ 	.name		= "vfio-pci",
+-	.id_table	= NULL, /* only dynamic ids */
++	.id_table	= vfio_pci_id_table, /* no dynamic ids */
+ 	.probe		= vfio_pci_probe,
+ 	.remove		= vfio_pci_remove,
+ 	.err_handler	= &vfio_err_handlers,
++	.driver = {
++		.sysfs_bind_only = true, /* bind only via sysfs */
++	},
+ };
+ 
+ static void __exit vfio_pci_cleanup(void)
+-- 
+1.8.4
