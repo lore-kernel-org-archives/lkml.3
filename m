@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756089Ab3JKU6c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:58:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45325 "EHLO
+	id S1756138Ab3JKU6w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:58:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45321 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758077Ab3JKThP (ORCPT
+	with ESMTP id S1758054Ab3JKThO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:37:15 -0400
+	Fri, 11 Oct 2013 15:37:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Prarit Bhargava <prarit@redhat.com>,
+        Nishanth Aravamudan <nacc@us.ibm.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 23/48] powerpc/vio: Fix modalias_show return values
-Date: Fri, 11 Oct 2013 12:36:30 -0700
-Message-Id: <20131011193639.760970866@linuxfoundation.org>
+Subject: [ 22/48] powerpc/iommu: Use GFP_KERNEL instead of GFP_ATOMIC in iommu_init_table()
+Date: Fri, 11 Oct 2013 12:36:29 -0700
+Message-Id: <20131011193639.658296572@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193637.253208688@linuxfoundation.org>
 References: <20131011193637.253208688@linuxfoundation.org>
@@ -27,50 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Prarit Bhargava <prarit@redhat.com>
+From: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
 
-commit e82b89a6f19bae73fb064d1b3dd91fcefbb478f4 upstream.
+commit 1cf389df090194a0976dc867b7fffe99d9d490cb upstream.
 
-modalias_show() should return an empty string on error, not -ENODEV.
+Under heavy (DLPAR?) stress, we tripped this panic() in
+arch/powerpc/kernel/iommu.c::iommu_init_table():
 
-This causes the following false and annoying error:
+	page = alloc_pages_node(nid, GFP_ATOMIC, get_order(sz));
+	if (!page)
+		panic("iommu_init_table: Can't allocate %ld bytes\n", sz);
 
-> find /sys/devices -name modalias -print0 | xargs -0 cat >/dev/null
-cat: /sys/devices/vio/4000/modalias: No such device
-cat: /sys/devices/vio/4001/modalias: No such device
-cat: /sys/devices/vio/4002/modalias: No such device
-cat: /sys/devices/vio/4004/modalias: No such device
-cat: /sys/devices/vio/modalias: No such device
+Before the panic() we got a page allocation failure for an order-2
+allocation. There appears to be memory free, but perhaps not in the
+ATOMIC context. I looked through all the call-sites of
+iommu_init_table() and didn't see any obvious reason to need an ATOMIC
+allocation. Most call-sites in fact have an explicit GFP_KERNEL
+allocation shortly before the call to iommu_init_table(), indicating we
+are not in an atomic context. There is some indirection for some paths,
+but I didn't see any locks indicating that GFP_KERNEL is inappropriate.
 
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+With this change under the same conditions, we have not been able to
+reproduce the panic.
+
+Signed-off-by: Nishanth Aravamudan <nacc@us.ibm.com>
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/vio.c |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ arch/powerpc/kernel/iommu.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/powerpc/kernel/vio.c
-+++ b/arch/powerpc/kernel/vio.c
-@@ -1341,11 +1341,15 @@ static ssize_t modalias_show(struct devi
- 	const char *cp;
+--- a/arch/powerpc/kernel/iommu.c
++++ b/arch/powerpc/kernel/iommu.c
+@@ -501,7 +501,7 @@ struct iommu_table *iommu_init_table(str
+ 	/* number of bytes needed for the bitmap */
+ 	sz = (tbl->it_size + 7) >> 3;
  
- 	dn = dev->of_node;
--	if (!dn)
--		return -ENODEV;
-+	if (!dn) {
-+		strcat(buf, "\n");
-+		return strlen(buf);
-+	}
- 	cp = of_get_property(dn, "compatible", NULL);
--	if (!cp)
--		return -ENODEV;
-+	if (!cp) {
-+		strcat(buf, "\n");
-+		return strlen(buf);
-+	}
- 
- 	return sprintf(buf, "vio:T%sS%s\n", vio_dev->type, cp);
- }
+-	page = alloc_pages_node(nid, GFP_ATOMIC, get_order(sz));
++	page = alloc_pages_node(nid, GFP_KERNEL, get_order(sz));
+ 	if (!page)
+ 		panic("iommu_init_table: Can't allocate %ld bytes\n", sz);
+ 	tbl->it_map = page_address(page);
 
 
