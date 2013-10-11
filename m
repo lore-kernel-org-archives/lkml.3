@@ -1,152 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754095Ab3JKFbo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 01:31:44 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:57897 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752335Ab3JKFbn (ORCPT
+	id S1752978Ab3JKFif (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 01:38:35 -0400
+Received: from smtprelay0059.hostedemail.com ([216.40.44.59]:43093 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752332Ab3JKFie (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 01:31:43 -0400
-Message-ID: <52578D37.2000004@gmail.com>
-Date: Fri, 11 Oct 2013 16:31:35 +1100
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>, Andrew Morton <akpm@linux-foundation.org>
-CC: Dan Rosenberg <dan.j.rosenberg@gmail.com>, Rob Landley <rob@landley.net>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+	Fri, 11 Oct 2013 01:38:34 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:2904:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3870:3871:3872:3874:4321:5007:7652:7903:10004:10400:10848:11026:11232:11658:11914:12438:12517:12519:12740:13069:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: crown43_84b0e897c7f18
+X-Filterd-Recvd-Size: 1587
+Message-ID: <1381469910.14017.45.camel@joe-AO722>
 Subject: Re: [PATCH 1/2] vsprintf/sysctl: Bugfix, neaten and document %pK
  usages
+From: Joe Perches <joe@perches.com>
+To: Ryan Mallon <rmallon@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dan Rosenberg <dan.j.rosenberg@gmail.com>,
+        Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 10 Oct 2013 22:38:30 -0700
+In-Reply-To: <52578D37.2000004@gmail.com>
 References: <0aef7497929fd764a88ca7b3c22f082a5c2fe909.1381468961.git.joe@perches.com>
-In-Reply-To: <0aef7497929fd764a88ca7b3c22f082a5c2fe909.1381468961.git.joe@perches.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	 <52578D37.2000004@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/10/13 16:25, Joe Perches wrote:
-> Printing kernel pointers via %pK has a minor defect when
-> kptr_restrict is set to 2:  the pointer may be emitted
-> as "pK-error" instead of all 0's when in an interrupt.
+On Fri, 2013-10-11 at 16:31 +1100, Ryan Mallon wrote:
+> On 11/10/13 16:25, Joe Perches wrote:
+> > Printing kernel pointers via %pK has a minor defect when
+> > kptr_restrict is set to 2:  the pointer may be emitted
+> > as "pK-error" instead of all 0's when in an interrupt.
+> 
+> NAK. This is not a defect, as I explained earlier. It is really a defect
+> that it _doesn't_ print 'pK-error' in all cases. 'pK-error' is for
+> finding kernel bugs.
 
-NAK. This is not a defect, as I explained earlier. It is really a defect
-that it _doesn't_ print 'pK-error' in all cases. 'pK-error' is for
-finding kernel bugs.
+Not my understanding.
 
-If a user sets kptr_restrict to 0 (or 2 with this patch), then pointer
-values printed from interrupt handlers will appear as normal (all 0's in
-kptr_restrict=2 case), so the user will not notice that the kernel code
-is actually buggy. If they ever set kptr_restrict to 1 then they will
-start seeing the 'pK-error' value. Since the default kptr_restrict
-setting is now 0, it is less likely that users/developers will see the
-'pK-error' message for buggy code.
+There is no bug to find when emitting a pointer via %pK.
 
-~Ryan
+The only issue is that has_capability_noaudit can not
+be called from an interrupt.
 
-> 
-> Fix this defect, neaten the code, and correct the sysctl
-> documentation.
-> 
-> Add missing documentation for 2 other uses: %pNF and %pV.
-> 
-> Trivially reduces vsprintf.o object size:
-> 
-> $ size lib/vsprintf.o*
->    text	   data	    bss	    dec	    hex	filename
->   14536	      6	      0	  14542	   38ce	lib/vsprintf.o.new
->   14568	      6	      0	  14574	   38ee	lib/vsprintf.o.old
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  Documentation/sysctl/kernel.txt | 17 +++++++++--------
->  lib/vsprintf.c                  | 38 ++++++++++++++++++++++++--------------
->  2 files changed, 33 insertions(+), 22 deletions(-)
-> 
-> diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
-> index 9d4c1d1..c17d5ca 100644
-> --- a/Documentation/sysctl/kernel.txt
-> +++ b/Documentation/sysctl/kernel.txt
-> @@ -289,14 +289,15 @@ Default value is "/sbin/hotplug".
->  
->  kptr_restrict:
->  
-> -This toggle indicates whether restrictions are placed on
-> -exposing kernel addresses via /proc and other interfaces.  When
-> -kptr_restrict is set to (0), there are no restrictions.  When
-> -kptr_restrict is set to (1), the default, kernel pointers
-> -printed using the %pK format specifier will be replaced with 0's
-> -unless the user has CAP_SYSLOG.  When kptr_restrict is set to
-> -(2), kernel pointers printed using %pK will be replaced with 0's
-> -regardless of privileges.
-> +This toggle indicates whether restrictions are placed on exposing kernel
-> +addresses via /proc and other interfaces.
-> +
-> +When kptr_restrict is set to (0), the default, there are no restrictions.
-> +When kptr_restrict is set to (1), kernel pointers printed using the %pK
-> +format specifier will be replaced with 0's unless the user has CAP_SYSLOG
-> +and effective user and group ids are equal to the real ids.
-> +When kptr_restrict is set to (2), kernel pointers printed using %pK will
-> +be replaced with 0's regardless of privileges.
->  
->  ==============================================================
->  
-> diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-> index 26559bd..ce55f52 100644
-> --- a/lib/vsprintf.c
-> +++ b/lib/vsprintf.c
-> @@ -1301,21 +1301,28 @@ char *pointer(const char *fmt, char *buf, char *end, void *ptr,
->  			va_end(va);
->  			return buf;
->  		}
-> -	case 'K':
-> -		/*
-> -		 * %pK cannot be used in IRQ context because its test
-> -		 * for CAP_SYSLOG would be meaningless.
-> -		 */
-> -		if (kptr_restrict && (in_irq() || in_serving_softirq() ||
-> -				      in_nmi())) {
-> -			if (spec.field_width == -1)
-> -				spec.field_width = default_width;
-> -			return string(buf, end, "pK-error", spec);
-> -		}
-> -		if (!((kptr_restrict == 0) ||
-> -		      (kptr_restrict == 1 &&
-> -		       has_capability_noaudit(current, CAP_SYSLOG))))
-> +	case 'K':		/* see: Documentation/sysctl/kernel.txt */
-> +		switch (kptr_restrict) {
-> +		case 0:			/* None (default) */
-> +			break;
-> +		case 1:			/* Restricted */
-> +			if (in_irq() || in_serving_softirq() || in_nmi()) {
-> +				/*
-> +				 * This cannot be used in IRQ context because
-> +				 * the test for CAP_SYSLOG would be meaningless
-> +				 */
-> +				if (spec.field_width == -1)
-> +					spec.field_width = default_width;
-> +				return string(buf, end, "pK-error", spec);
-> +			}
-> +			if (!has_capability_noaudit(current, CAP_SYSLOG))
-> +				ptr = NULL;
-> +			break;
-> +		case 2:			/* Never - Always emit 0 */
-> +		default:
->  			ptr = NULL;
-> +			break;
-> +		}
->  		break;
->  	case 'N':
->  		switch (fmt[1]) {
-> @@ -1574,6 +1581,9 @@ qualifier:
->   * %piS depending on sa_family of 'struct sockaddr *' print IPv4/IPv6 address
->   * %pU[bBlL] print a UUID/GUID in big or little endian using lower or upper
->   *   case.
-> + * %pV recurse and output a struct va_format (const char *fmt, va_list *)
-> + * %pK output a kernel address or 0 depending on sysctl kptr_restrict
-> + * %NF output a netdev_features_t
->   * %*ph[CDN] a variable-length hex string with a separator (supports up to 64
->   *           bytes of the input)
->   * %n is ignored
-> 
 
