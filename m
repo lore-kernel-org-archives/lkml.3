@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756991Ab3JKTfq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:35:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45142 "EHLO
+	id S1757363Ab3JKTfz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:35:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45197 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756805Ab3JKTfn (ORCPT
+	with ESMTP id S1757296Ab3JKTfx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:35:43 -0400
+	Fri, 11 Oct 2013 15:35:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Meelis Roos <mroos@linux.ee>, "David S. Miller" <davem@davemloft.net>
-Subject: [ 23/39] esp_scsi: Fix tag state corruption when autosensing.
-Date: Fri, 11 Oct 2013 12:35:07 -0700
-Message-Id: <20131011193213.406297169@linuxfoundation.org>
+        "Theodore Tso" <tytso@mit.edu>, Zheng Liu <wenqing.lz@taobao.com>,
+        Jan Kara <jack@suse.cz>
+Subject: [ 37/39] ext4: avoid hang when mounting non-journal filesystems with orphan list
+Date: Fri, 11 Oct 2013 12:35:21 -0700
+Message-Id: <20131011193214.898399268@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193210.843963685@linuxfoundation.org>
 References: <20131011193210.843963685@linuxfoundation.org>
@@ -26,94 +27,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "David S. Miller" <davem@davemloft.net>
+From: Theodore Ts'o <tytso@mit.edu>
 
-[ Upstream commit 21af8107f27878813d0364733c0b08813c2c192a ]
+commit 0e9a9a1ad619e7e987815d20262d36a2f95717ca upstream.
 
-Meelis Roos reports a crash in esp_free_lun_tag() in the presense
-of a disk which has died.
+When trying to mount a file system which does not contain a journal,
+but which does have a orphan list containing an inode which needs to
+be truncated, the mount call with hang forever in
+ext4_orphan_cleanup() because ext4_orphan_del() will return
+immediately without removing the inode from the orphan list, leading
+to an uninterruptible loop in kernel code which will busy out one of
+the CPU's on the system.
 
-The issue is that when we issue an autosense command, we do so by
-hijacking the original command that caused the check-condition.
+This can be trivially reproduced by trying to mount the file system
+found in tests/f_orphan_extents_inode/image.gz from the e2fsprogs
+source tree.  If a malicious user were to put this on a USB stick, and
+mount it on a Linux desktop which has automatic mounts enabled, this
+could be considered a potential denial of service attack.  (Not a big
+deal in practice, but professional paranoids worry about such things,
+and have even been known to allocate CVE numbers for such problems.)
 
-When we do so we clear out the ent->tag[] array when we issue it via
-find_and_prep_issuable_command().  This is so that the autosense
-command is forced to be issued non-tagged.
+-js: This is a fix for CVE-2013-2015.
 
-That is problematic, because it is the value of ent->tag[] which
-determines whether we issued the original scsi command as tagged
-vs. non-tagged (see esp_alloc_lun_tag()).
-
-And that, in turn, is what trips up the sanity checks in
-esp_free_lun_tag().  That function needs the original ->tag[] values
-in order to free up the tag slot properly.
-
-Fix this by remembering the original command's tag values, and
-having esp_alloc_lun_tag() and esp_free_lun_tag() use them.
-
-Reported-by: Meelis Roos <mroos@linux.ee>
-Tested-by: Meelis Roos <mroos@linux.ee>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Reviewed-by: Zheng Liu <wenqing.lz@taobao.com>
+Acked-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/scsi/esp_scsi.c |   14 ++++++++------
- drivers/scsi/esp_scsi.h |    1 +
- 2 files changed, 9 insertions(+), 6 deletions(-)
 
---- a/drivers/scsi/esp_scsi.c
-+++ b/drivers/scsi/esp_scsi.c
-@@ -530,7 +530,7 @@ static int esp_need_to_nego_sync(struct
- static int esp_alloc_lun_tag(struct esp_cmd_entry *ent,
- 			     struct esp_lun_data *lp)
- {
--	if (!ent->tag[0]) {
-+	if (!ent->orig_tag[0]) {
- 		/* Non-tagged, slot already taken?  */
- 		if (lp->non_tagged_cmd)
- 			return -EBUSY;
-@@ -564,9 +564,9 @@ static int esp_alloc_lun_tag(struct esp_
- 			return -EBUSY;
- 	}
+---
+ fs/ext4/namei.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+--- a/fs/ext4/namei.c
++++ b/fs/ext4/namei.c
+@@ -2059,7 +2059,8 @@ int ext4_orphan_del(handle_t *handle, st
+ 	int err = 0;
  
--	BUG_ON(lp->tagged_cmds[ent->tag[1]]);
-+	BUG_ON(lp->tagged_cmds[ent->orig_tag[1]]);
+ 	/* ext4_handle_valid() assumes a valid handle_t pointer */
+-	if (handle && !ext4_handle_valid(handle))
++	if (handle && !ext4_handle_valid(handle) &&
++	    !(EXT4_SB(inode->i_sb)->s_mount_state & EXT4_ORPHAN_FS))
+ 		return 0;
  
--	lp->tagged_cmds[ent->tag[1]] = ent;
-+	lp->tagged_cmds[ent->orig_tag[1]] = ent;
- 	lp->num_tagged++;
- 
- 	return 0;
-@@ -575,9 +575,9 @@ static int esp_alloc_lun_tag(struct esp_
- static void esp_free_lun_tag(struct esp_cmd_entry *ent,
- 			     struct esp_lun_data *lp)
- {
--	if (ent->tag[0]) {
--		BUG_ON(lp->tagged_cmds[ent->tag[1]] != ent);
--		lp->tagged_cmds[ent->tag[1]] = NULL;
-+	if (ent->orig_tag[0]) {
-+		BUG_ON(lp->tagged_cmds[ent->orig_tag[1]] != ent);
-+		lp->tagged_cmds[ent->orig_tag[1]] = NULL;
- 		lp->num_tagged--;
- 	} else {
- 		BUG_ON(lp->non_tagged_cmd != ent);
-@@ -667,6 +667,8 @@ static struct esp_cmd_entry *find_and_pr
- 			ent->tag[0] = 0;
- 			ent->tag[1] = 0;
- 		}
-+		ent->orig_tag[0] = ent->tag[0];
-+		ent->orig_tag[1] = ent->tag[1];
- 
- 		if (esp_alloc_lun_tag(ent, lp) < 0)
- 			continue;
---- a/drivers/scsi/esp_scsi.h
-+++ b/drivers/scsi/esp_scsi.h
-@@ -271,6 +271,7 @@ struct esp_cmd_entry {
- #define ESP_CMD_FLAG_AUTOSENSE	0x04 /* Doing automatic REQUEST_SENSE */
- 
- 	u8			tag[2];
-+	u8			orig_tag[2];
- 
- 	u8			status;
- 	u8			message;
+ 	mutex_lock(&EXT4_SB(inode->i_sb)->s_orphan_lock);
 
 
