@@ -1,71 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755253Ab3JKWFq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 18:05:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2975 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753042Ab3JKWFo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 18:05:44 -0400
-Message-ID: <1381529474.4278.24.camel@dcbw.foobar.com>
-Subject: Re: [PATCH 1/1] support new huawei devices in option.c
-From: Dan Williams <dcbw@redhat.com>
-To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Cc: "Fangxiaozhi (Franko)" <fangxiaozhi@huawei.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Heyongquan <heyongquan@huawei.com>, Wangyuhua <yuhua.wang@huawei.com>,
-        "Yili (Neil)" <neil.yi@huawei.com>
-Date: Fri, 11 Oct 2013 17:11:14 -0500
-In-Reply-To: <20131011205756.GA8181@kroah.com>
-References: <910F9D9E13B84F4C8FA771DC9BDE99F35E24BA90@szxema506-mbs.china.huawei.com>
-	 <20131011205756.GA8181@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
+	id S1755494Ab3JKWHE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 18:07:04 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:62553 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754780Ab3JKWHC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 18:07:02 -0400
+Message-ID: <52587681.8090703@gmail.com>
+Date: Fri, 11 Oct 2013 15:06:57 -0700
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Ralf Baechle <ralf@linux-mips.org>
+CC: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>, Anton Arapov <anton@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org
+Subject: Re: [PATCH] UPROBES: Remove useless __weak attribute
+References: <20131009120809.GN1615@linux-mips.org> <20131011005128.GA2199@linux.vnet.ibm.com> <20131011122407.GO1615@linux-mips.org>
+In-Reply-To: <20131011122407.GO1615@linux-mips.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-10-11 at 13:57 -0700, gregkh@linuxfoundation.org wrote:
-> On Fri, Oct 11, 2013 at 03:48:21AM +0000, Fangxiaozhi (Franko) wrote:
-> > 1. Add new supporting declarations to option.c, to support Huawei new devices with new bInterfaceSubClass value.
-> > Signed-off-by: fangxiaozhi <huananhu@huawei.com>
-> 
-> In the future, can you use an email client that doesn't turn tabs into
-> spaces, so I don't have to edit the patch by hand?
-> 
-> Also:
-> 
-> > + { USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x03, 0x01) },
-> > + { USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0x03, 0x02) },
-> 
-> <snip>
-> 
-> That's a huge list of ids, is there any way we can just mark all of
-> these as used by the device in an easier manner?
-> 
-> I'll take this for now, but I have a feeling that this list is just
-> going to get worse over time, right?
+On 10/11/2013 05:24 AM, Ralf Baechle wrote:
+> On Fri, Oct 11, 2013 at 06:21:28AM +0530, Srikar Dronamraju wrote:
+>
+>> Will be nice to have another arch(mips) support for uprobes.
+>
+> It's basically ready to be merged - but it's triggering issues elsewhere
+> in the kernel which I have to resolve first.
+>
+> The short version is that the memory special mapping created by uprobe
+> with VM_EXEC but not VM_READ permissions is not working but it's working
+> if I add VM_READ.  That should not be necessary so something deep down
+> in the guts of arch/mips is wrong.
+>
 
-This is very, very odd.  Note the (ab)use of tons of subclass/protocol
-numbers here to match devices instead of VID/PID.  Perhaps Huawei is
-actually *running out* of PIDs or something?  There's no way every
-single one of these devices actually speaks a different comm protocol on
-these USB interfaces.  There has to be a reason that Huawei is now using
-subclass/protocol for device matching instead of VID/PID like everyone
-else is...
+Weird, I have a testcase that explicitly tests VM_EXEC and !VM_READ that 
+works.
 
-That said, I'm not sure there's much we can do about it.  But it still
-raises one of my eyebrows up to the ceiling.
+Do you have more information about the failure, I can look at it in the 
+simulator and see where it goes wrong.
 
-Dan
-
-> thanks,
-> 
-> greg k-h
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+Thanks,
+David Daney
 
