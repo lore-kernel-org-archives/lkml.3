@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757294Ab3JKVJC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 17:09:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45118 "EHLO
+	id S1755150Ab3JKVJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 17:09:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45112 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756710Ab3JKTfk (ORCPT
+	with ESMTP id S1752654Ab3JKTfj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:35:40 -0400
+	Fri, 11 Oct 2013 15:35:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Dan Carpenter <dan.carpenter@oracle.com>,
         Mark Brown <broonie@linaro.org>
-Subject: [ 18/39] ASoC: 88pm860x: array overflow in snd_soc_put_volsw_2r_st()
-Date: Fri, 11 Oct 2013 12:35:02 -0700
-Message-Id: <20131011193212.868470649@linuxfoundation.org>
+Subject: [ 17/39] ASoC: max98095: a couple array underflows
+Date: Fri, 11 Oct 2013 12:35:01 -0700
+Message-Id: <20131011193212.757480372@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193210.843963685@linuxfoundation.org>
 References: <20131011193210.843963685@linuxfoundation.org>
@@ -29,30 +29,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit d967967e8d1116fb38bad25e58714b5dddd03cca upstream.
+commit f8d7b13e14357ed19d2ca2799539600418dc3939 upstream.
 
-This is called from snd_ctl_elem_write() with user supplied data so we
-need to add some bounds checking.
+The ->put() function are called from snd_ctl_elem_write() with user
+supplied data.  The limit checks here could underflow leading to a
+crash.
 
 Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/88pm860x-codec.c |    3 +++
- 1 file changed, 3 insertions(+)
+ sound/soc/codecs/max98095.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/sound/soc/codecs/88pm860x-codec.c
-+++ b/sound/soc/codecs/88pm860x-codec.c
-@@ -350,6 +350,9 @@ static int snd_soc_put_volsw_2r_st(struc
- 	val = ucontrol->value.integer.value[0];
- 	val2 = ucontrol->value.integer.value[1];
- 
-+	if (val >= ARRAY_SIZE(st_table) || val2 >= ARRAY_SIZE(st_table))
-+		return -EINVAL;
-+
- 	err = snd_soc_update_bits(codec, reg, 0x3f, st_table[val].m);
- 	if (err < 0)
- 		return err;
+--- a/sound/soc/codecs/max98095.c
++++ b/sound/soc/codecs/max98095.c
+@@ -1865,7 +1865,7 @@ static int max98095_put_eq_enum(struct s
+ 	struct max98095_pdata *pdata = max98095->pdata;
+ 	int channel = max98095_get_eq_channel(kcontrol->id.name);
+ 	struct max98095_cdata *cdata;
+-	int sel = ucontrol->value.integer.value[0];
++	unsigned int sel = ucontrol->value.integer.value[0];
+ 	struct max98095_eq_cfg *coef_set;
+ 	int fs, best, best_val, i;
+ 	int regmask, regsave;
+@@ -2011,7 +2011,7 @@ static int max98095_put_bq_enum(struct s
+ 	struct max98095_pdata *pdata = max98095->pdata;
+ 	int channel = max98095_get_bq_channel(kcontrol->id.name);
+ 	struct max98095_cdata *cdata;
+-	int sel = ucontrol->value.integer.value[0];
++	unsigned int sel = ucontrol->value.integer.value[0];
+ 	struct max98095_biquad_cfg *coef_set;
+ 	int fs, best, best_val, i;
+ 	int regmask, regsave;
 
 
