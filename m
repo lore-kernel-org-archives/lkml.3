@@ -1,25 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933308Ab3JKUUL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:20:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45969 "EHLO
+	id S933320Ab3JKUUl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:20:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45965 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932218Ab3JKTku (ORCPT
+	with ESMTP id S932213Ab3JKTkt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:40:50 -0400
+	Fri, 11 Oct 2013 15:40:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kent Overstreet <kmo@daterainc.com>,
-        Gabriel de Perthuis <g2p.code@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 110/110] bcache: Fix a null ptr deref regression
-Date: Fri, 11 Oct 2013 12:39:30 -0700
-Message-Id: <20131011193819.774377331@linuxfoundation.org>
+        =?UTF-8?q?=E7=8E=8B=E5=BA=B7?= <scateu@gmail.com>,
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 109/110] net: qmi_wwan: add new Qualcomm devices
+Date: Fri, 11 Oct 2013 12:39:29 -0700
+Message-Id: <20131011193819.665351884@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
 References: <20131011193807.584188672@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,41 +31,179 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kent Overstreet <kmo@daterainc.com>
+From: Bjørn Mork <bjorn@mork.no>
 
-commit 2fe80d3bbf1c8bd9efc5b8154207c8dd104e7306 upstream.
+commit 0470667caa8261beb8a9141102b04a5357dd45b5 upstream.
 
-Commit c0f04d88e46d ("bcache: Fix flushes in writeback mode") was fixing
-a reported data corruption bug, but it seems some last minute
-refactoring or rebasing introduced a null pointer deref.
+Adding the device list from the Windows driver description files
+included with a new Qualcomm MDM9615 based device, "Alcatel-sbell
+ASB TL131 TDD LTE", from China Mobile.  This device is tested
+and verified to work.  The others are assumed to work based on
+using the same Windows driver.
 
-Signed-off-by: Kent Overstreet <kmo@daterainc.com>
-Reported-by: Gabriel de Perthuis <g2p.code@gmail.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Many of these devices support multiple QMI/wwan ports, requiring
+multiple interface matching entries.  All devices are composite,
+providing a mix of one or more serial, storage or Android Debug
+Brigde functions in addition to the wwan function.
+
+This device list included an update of one previously known device,
+which was incorrectly assumed to have a Gobi 2K layout.  This is
+corrected.
+
+Reported-by: 王康 <scateu@gmail.com>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/bcache/request.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/net/usb/qmi_wwan.c |  130 ++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 129 insertions(+), 1 deletion(-)
 
---- a/drivers/md/bcache/request.c
-+++ b/drivers/md/bcache/request.c
-@@ -1055,6 +1055,7 @@ static void request_write(struct cached_
- 	} else {
- 		trace_bcache_writeback(s->orig_bio);
- 		bch_writeback_add(dc, bio_sectors(bio));
-+		s->op.cache_bio = bio;
+--- a/drivers/net/usb/qmi_wwan.c
++++ b/drivers/net/usb/qmi_wwan.c
+@@ -518,6 +518,135 @@ static const struct usb_device_id produc
  
- 		if (bio->bi_rw & REQ_FLUSH) {
- 			/* Also need to send a flush to the backing device */
-@@ -1067,8 +1068,6 @@ static void request_write(struct cached_
- 			flush->bi_private = cl;
- 
- 			closure_bio_submit(flush, cl, s->d);
--		} else {
--			s->op.cache_bio = bio;
- 		}
- 	}
- out:
+ 	/* 3. Combined interface devices matching on interface number */
+ 	{QMI_FIXED_INTF(0x0408, 0xea42, 4)},	/* Yota / Megafon M100-1 */
++	{QMI_FIXED_INTF(0x05c6, 0x7000, 0)},
++	{QMI_FIXED_INTF(0x05c6, 0x7001, 1)},
++	{QMI_FIXED_INTF(0x05c6, 0x7002, 1)},
++	{QMI_FIXED_INTF(0x05c6, 0x7101, 1)},
++	{QMI_FIXED_INTF(0x05c6, 0x7101, 2)},
++	{QMI_FIXED_INTF(0x05c6, 0x7101, 3)},
++	{QMI_FIXED_INTF(0x05c6, 0x7102, 1)},
++	{QMI_FIXED_INTF(0x05c6, 0x7102, 2)},
++	{QMI_FIXED_INTF(0x05c6, 0x7102, 3)},
++	{QMI_FIXED_INTF(0x05c6, 0x8000, 7)},
++	{QMI_FIXED_INTF(0x05c6, 0x8001, 6)},
++	{QMI_FIXED_INTF(0x05c6, 0x9000, 4)},
++	{QMI_FIXED_INTF(0x05c6, 0x9003, 4)},
++	{QMI_FIXED_INTF(0x05c6, 0x9005, 2)},
++	{QMI_FIXED_INTF(0x05c6, 0x900a, 4)},
++	{QMI_FIXED_INTF(0x05c6, 0x900b, 2)},
++	{QMI_FIXED_INTF(0x05c6, 0x900c, 4)},
++	{QMI_FIXED_INTF(0x05c6, 0x900c, 5)},
++	{QMI_FIXED_INTF(0x05c6, 0x900c, 6)},
++	{QMI_FIXED_INTF(0x05c6, 0x900d, 5)},
++	{QMI_FIXED_INTF(0x05c6, 0x900f, 3)},
++	{QMI_FIXED_INTF(0x05c6, 0x900f, 4)},
++	{QMI_FIXED_INTF(0x05c6, 0x900f, 5)},
++	{QMI_FIXED_INTF(0x05c6, 0x9010, 4)},
++	{QMI_FIXED_INTF(0x05c6, 0x9010, 5)},
++	{QMI_FIXED_INTF(0x05c6, 0x9011, 3)},
++	{QMI_FIXED_INTF(0x05c6, 0x9011, 4)},
++	{QMI_FIXED_INTF(0x05c6, 0x9021, 1)},
++	{QMI_FIXED_INTF(0x05c6, 0x9022, 2)},
++	{QMI_FIXED_INTF(0x05c6, 0x9025, 4)},	/* Alcatel-sbell ASB TL131 TDD LTE  (China Mobile) */
++	{QMI_FIXED_INTF(0x05c6, 0x9026, 3)},
++	{QMI_FIXED_INTF(0x05c6, 0x902e, 5)},
++	{QMI_FIXED_INTF(0x05c6, 0x9031, 5)},
++	{QMI_FIXED_INTF(0x05c6, 0x9032, 4)},
++	{QMI_FIXED_INTF(0x05c6, 0x9033, 3)},
++	{QMI_FIXED_INTF(0x05c6, 0x9033, 4)},
++	{QMI_FIXED_INTF(0x05c6, 0x9033, 5)},
++	{QMI_FIXED_INTF(0x05c6, 0x9033, 6)},
++	{QMI_FIXED_INTF(0x05c6, 0x9034, 3)},
++	{QMI_FIXED_INTF(0x05c6, 0x9034, 4)},
++	{QMI_FIXED_INTF(0x05c6, 0x9034, 5)},
++	{QMI_FIXED_INTF(0x05c6, 0x9034, 6)},
++	{QMI_FIXED_INTF(0x05c6, 0x9034, 7)},
++	{QMI_FIXED_INTF(0x05c6, 0x9035, 4)},
++	{QMI_FIXED_INTF(0x05c6, 0x9036, 3)},
++	{QMI_FIXED_INTF(0x05c6, 0x9037, 5)},
++	{QMI_FIXED_INTF(0x05c6, 0x9038, 4)},
++	{QMI_FIXED_INTF(0x05c6, 0x903b, 7)},
++	{QMI_FIXED_INTF(0x05c6, 0x903c, 6)},
++	{QMI_FIXED_INTF(0x05c6, 0x903d, 6)},
++	{QMI_FIXED_INTF(0x05c6, 0x903e, 5)},
++	{QMI_FIXED_INTF(0x05c6, 0x9043, 3)},
++	{QMI_FIXED_INTF(0x05c6, 0x9046, 3)},
++	{QMI_FIXED_INTF(0x05c6, 0x9046, 4)},
++	{QMI_FIXED_INTF(0x05c6, 0x9046, 5)},
++	{QMI_FIXED_INTF(0x05c6, 0x9047, 2)},
++	{QMI_FIXED_INTF(0x05c6, 0x9047, 3)},
++	{QMI_FIXED_INTF(0x05c6, 0x9047, 4)},
++	{QMI_FIXED_INTF(0x05c6, 0x9048, 4)},
++	{QMI_FIXED_INTF(0x05c6, 0x9048, 5)},
++	{QMI_FIXED_INTF(0x05c6, 0x9048, 6)},
++	{QMI_FIXED_INTF(0x05c6, 0x9048, 7)},
++	{QMI_FIXED_INTF(0x05c6, 0x9048, 8)},
++	{QMI_FIXED_INTF(0x05c6, 0x904c, 5)},
++	{QMI_FIXED_INTF(0x05c6, 0x904c, 6)},
++	{QMI_FIXED_INTF(0x05c6, 0x904c, 7)},
++	{QMI_FIXED_INTF(0x05c6, 0x904c, 8)},
++	{QMI_FIXED_INTF(0x05c6, 0x9050, 3)},
++	{QMI_FIXED_INTF(0x05c6, 0x9052, 4)},
++	{QMI_FIXED_INTF(0x05c6, 0x9053, 6)},
++	{QMI_FIXED_INTF(0x05c6, 0x9053, 7)},
++	{QMI_FIXED_INTF(0x05c6, 0x9054, 5)},
++	{QMI_FIXED_INTF(0x05c6, 0x9054, 6)},
++	{QMI_FIXED_INTF(0x05c6, 0x9055, 3)},
++	{QMI_FIXED_INTF(0x05c6, 0x9055, 4)},
++	{QMI_FIXED_INTF(0x05c6, 0x9055, 5)},
++	{QMI_FIXED_INTF(0x05c6, 0x9055, 6)},
++	{QMI_FIXED_INTF(0x05c6, 0x9055, 7)},
++	{QMI_FIXED_INTF(0x05c6, 0x9056, 3)},
++	{QMI_FIXED_INTF(0x05c6, 0x9062, 2)},
++	{QMI_FIXED_INTF(0x05c6, 0x9062, 3)},
++	{QMI_FIXED_INTF(0x05c6, 0x9062, 4)},
++	{QMI_FIXED_INTF(0x05c6, 0x9062, 5)},
++	{QMI_FIXED_INTF(0x05c6, 0x9062, 6)},
++	{QMI_FIXED_INTF(0x05c6, 0x9062, 7)},
++	{QMI_FIXED_INTF(0x05c6, 0x9062, 8)},
++	{QMI_FIXED_INTF(0x05c6, 0x9062, 9)},
++	{QMI_FIXED_INTF(0x05c6, 0x9064, 3)},
++	{QMI_FIXED_INTF(0x05c6, 0x9065, 6)},
++	{QMI_FIXED_INTF(0x05c6, 0x9065, 7)},
++	{QMI_FIXED_INTF(0x05c6, 0x9066, 5)},
++	{QMI_FIXED_INTF(0x05c6, 0x9066, 6)},
++	{QMI_FIXED_INTF(0x05c6, 0x9067, 1)},
++	{QMI_FIXED_INTF(0x05c6, 0x9068, 2)},
++	{QMI_FIXED_INTF(0x05c6, 0x9068, 3)},
++	{QMI_FIXED_INTF(0x05c6, 0x9068, 4)},
++	{QMI_FIXED_INTF(0x05c6, 0x9068, 5)},
++	{QMI_FIXED_INTF(0x05c6, 0x9068, 6)},
++	{QMI_FIXED_INTF(0x05c6, 0x9068, 7)},
++	{QMI_FIXED_INTF(0x05c6, 0x9069, 5)},
++	{QMI_FIXED_INTF(0x05c6, 0x9069, 6)},
++	{QMI_FIXED_INTF(0x05c6, 0x9069, 7)},
++	{QMI_FIXED_INTF(0x05c6, 0x9069, 8)},
++	{QMI_FIXED_INTF(0x05c6, 0x9070, 4)},
++	{QMI_FIXED_INTF(0x05c6, 0x9070, 5)},
++	{QMI_FIXED_INTF(0x05c6, 0x9075, 5)},
++	{QMI_FIXED_INTF(0x05c6, 0x9076, 4)},
++	{QMI_FIXED_INTF(0x05c6, 0x9076, 5)},
++	{QMI_FIXED_INTF(0x05c6, 0x9076, 6)},
++	{QMI_FIXED_INTF(0x05c6, 0x9076, 7)},
++	{QMI_FIXED_INTF(0x05c6, 0x9076, 8)},
++	{QMI_FIXED_INTF(0x05c6, 0x9077, 3)},
++	{QMI_FIXED_INTF(0x05c6, 0x9077, 4)},
++	{QMI_FIXED_INTF(0x05c6, 0x9077, 5)},
++	{QMI_FIXED_INTF(0x05c6, 0x9077, 6)},
++	{QMI_FIXED_INTF(0x05c6, 0x9078, 3)},
++	{QMI_FIXED_INTF(0x05c6, 0x9079, 4)},
++	{QMI_FIXED_INTF(0x05c6, 0x9079, 5)},
++	{QMI_FIXED_INTF(0x05c6, 0x9079, 6)},
++	{QMI_FIXED_INTF(0x05c6, 0x9079, 7)},
++	{QMI_FIXED_INTF(0x05c6, 0x9079, 8)},
++	{QMI_FIXED_INTF(0x05c6, 0x9080, 5)},
++	{QMI_FIXED_INTF(0x05c6, 0x9080, 6)},
++	{QMI_FIXED_INTF(0x05c6, 0x9080, 7)},
++	{QMI_FIXED_INTF(0x05c6, 0x9080, 8)},
++	{QMI_FIXED_INTF(0x05c6, 0x9083, 3)},
++	{QMI_FIXED_INTF(0x05c6, 0x9084, 4)},
++	{QMI_FIXED_INTF(0x05c6, 0x920d, 0)},
++	{QMI_FIXED_INTF(0x05c6, 0x920d, 5)},
+ 	{QMI_FIXED_INTF(0x12d1, 0x140c, 1)},	/* Huawei E173 */
+ 	{QMI_FIXED_INTF(0x12d1, 0x14ac, 1)},	/* Huawei E1820 */
+ 	{QMI_FIXED_INTF(0x19d2, 0x0002, 1)},
+@@ -610,7 +739,6 @@ static const struct usb_device_id produc
+ 	{QMI_GOBI_DEVICE(0x413c, 0x8186)},	/* Dell Gobi 2000 Modem device (N0218, VU936) */
+ 	{QMI_GOBI_DEVICE(0x413c, 0x8194)},	/* Dell Gobi 3000 Composite */
+ 	{QMI_GOBI_DEVICE(0x05c6, 0x920b)},	/* Generic Gobi 2000 Modem device */
+-	{QMI_GOBI_DEVICE(0x05c6, 0x920d)},	/* Gobi 3000 Composite */
+ 	{QMI_GOBI_DEVICE(0x05c6, 0x9225)},	/* Sony Gobi 2000 Modem device (N0279, VU730) */
+ 	{QMI_GOBI_DEVICE(0x05c6, 0x9245)},	/* Samsung Gobi 2000 Modem device (VL176) */
+ 	{QMI_GOBI_DEVICE(0x03f0, 0x251d)},	/* HP Gobi 2000 Modem device (VP412) */
 
 
