@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759498Ab3JKUfc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:35:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45714 "EHLO
+	id S1759477Ab3JKUf3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:35:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45719 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758910Ab3JKTkJ (ORCPT
+	with ESMTP id S1758935Ab3JKTkK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:40:09 -0400
+	Fri, 11 Oct 2013 15:40:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Mark Brown <broonie@linaro.org>
-Subject: [ 049/110] ASoC: ab8500-codec: info leak in anc_status_control_put()
-Date: Fri, 11 Oct 2013 12:38:29 -0700
-Message-Id: <20131011193813.157602441@linuxfoundation.org>
+        Nishanth Aravamudan <nacc@us.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 050/110] powerpc/iommu: Use GFP_KERNEL instead of GFP_ATOMIC in iommu_init_table()
+Date: Fri, 11 Oct 2013 12:38:30 -0700
+Message-Id: <20131011193813.261097713@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193807.584188672@linuxfoundation.org>
 References: <20131011193807.584188672@linuxfoundation.org>
@@ -27,43 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
 
-commit d63733aed90b432e5cc489ddfa28e342f91b4652 upstream.
+commit 1cf389df090194a0976dc867b7fffe99d9d490cb upstream.
 
-If the user passes an invalid value it leads to an info leak when we
-print the error message or it could oops.  This is called with user
-supplied data from snd_ctl_elem_write().
+Under heavy (DLPAR?) stress, we tripped this panic() in
+arch/powerpc/kernel/iommu.c::iommu_init_table():
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+	page = alloc_pages_node(nid, GFP_ATOMIC, get_order(sz));
+	if (!page)
+		panic("iommu_init_table: Can't allocate %ld bytes\n", sz);
+
+Before the panic() we got a page allocation failure for an order-2
+allocation. There appears to be memory free, but perhaps not in the
+ATOMIC context. I looked through all the call-sites of
+iommu_init_table() and didn't see any obvious reason to need an ATOMIC
+allocation. Most call-sites in fact have an explicit GFP_KERNEL
+allocation shortly before the call to iommu_init_table(), indicating we
+are not in an atomic context. There is some indirection for some paths,
+but I didn't see any locks indicating that GFP_KERNEL is inappropriate.
+
+With this change under the same conditions, we have not been able to
+reproduce the panic.
+
+Signed-off-by: Nishanth Aravamudan <nacc@us.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/ab8500-codec.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ arch/powerpc/kernel/iommu.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/soc/codecs/ab8500-codec.c
-+++ b/sound/soc/codecs/ab8500-codec.c
-@@ -1225,13 +1225,18 @@ static int anc_status_control_put(struct
- 	struct ab8500_codec_drvdata *drvdata = dev_get_drvdata(codec->dev);
- 	struct device *dev = codec->dev;
- 	bool apply_fir, apply_iir;
--	int req, status;
-+	unsigned int req;
-+	int status;
+--- a/arch/powerpc/kernel/iommu.c
++++ b/arch/powerpc/kernel/iommu.c
+@@ -658,7 +658,7 @@ struct iommu_table *iommu_init_table(str
+ 	/* number of bytes needed for the bitmap */
+ 	sz = BITS_TO_LONGS(tbl->it_size) * sizeof(unsigned long);
  
- 	dev_dbg(dev, "%s: Enter.\n", __func__);
- 
- 	mutex_lock(&drvdata->anc_lock);
- 
- 	req = ucontrol->value.integer.value[0];
-+	if (req >= ARRAY_SIZE(enum_anc_state)) {
-+		status = -EINVAL;
-+		goto cleanup;
-+	}
- 	if (req != ANC_APPLY_FIR_IIR && req != ANC_APPLY_FIR &&
- 		req != ANC_APPLY_IIR) {
- 		dev_err(dev, "%s: ERROR: Unsupported status to set '%s'!\n",
+-	page = alloc_pages_node(nid, GFP_ATOMIC, get_order(sz));
++	page = alloc_pages_node(nid, GFP_KERNEL, get_order(sz));
+ 	if (!page)
+ 		panic("iommu_init_table: Can't allocate %ld bytes\n", sz);
+ 	tbl->it_map = page_address(page);
 
 
