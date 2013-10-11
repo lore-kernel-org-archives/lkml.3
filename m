@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755831Ab3JKUxj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 16:53:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45397 "EHLO
+	id S1755938Ab3JKUx7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 16:53:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45392 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758290Ab3JKTh0 (ORCPT
+	with ESMTP id S1758259Ab3JKTh0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Oct 2013 15:37:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Grzeschik <m.grzeschik@pengutronix.de>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Jonghwan Choi <jhbird.choi@samsung.com>
-Subject: [ 40/48] dmaengine: imx-dma: fix lockdep issue between irqhandler and tasklet
-Date: Fri, 11 Oct 2013 12:36:47 -0700
-Message-Id: <20131011193641.590964408@linuxfoundation.org>
+        Joerg Kalisch <the_force@gmx.de>,
+        Christian Lamparter <chunkeey@googlemail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 39/48] p54usb: add USB ID for Corega WLUSB2GTST USB adapter
+Date: Fri, 11 Oct 2013 12:36:46 -0700
+Message-Id: <20131011193641.487278843@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193637.253208688@linuxfoundation.org>
 References: <20131011193637.253208688@linuxfoundation.org>
@@ -28,185 +28,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Grzeschik <m.grzeschik@pengutronix.de>
+From: Christian Lamparter <chunkeey@googlemail.com>
 
-commit 5a276fa6bdf82fd442046969603968c83626ce0b upstream.
+commit 1e43692cdb7cc445d6347d8a5207d9cef0c71434 upstream.
 
-The tasklet and irqhandler are using spin_lock while other routines are
-using spin_lock_irqsave/restore. This leads to lockdep issues as
-described bellow. This patch is changing the code to use
-spinlock_irq_save/restore in both code pathes.
+Added USB ID for Corega WLUSB2GTST USB adapter.
 
-As imxdma_xfer_desc always gets called with spin_lock_irqsave lock held,
-this patch also removes the spare call inside the routine to avoid
-double locking.
-
-[  403.358162] =================================
-[  403.362549] [ INFO: inconsistent lock state ]
-[  403.366945] 3.10.0-20130823+ #904 Not tainted
-[  403.371331] ---------------------------------
-[  403.375721] inconsistent {IN-HARDIRQ-W} -> {HARDIRQ-ON-W} usage.
-[  403.381769] swapper/0 [HC0[0]:SC1[1]:HE1:SE0] takes:
-[  403.386762]  (&(&imxdma->lock)->rlock){?.-...}, at: [<c019d77c>] imxdma_tasklet+0x20/0x134
-[  403.395201] {IN-HARDIRQ-W} state was registered at:
-[  403.400108]   [<c004b264>] mark_lock+0x2a0/0x6b4
-[  403.404798]   [<c004d7c8>] __lock_acquire+0x650/0x1a64
-[  403.410004]   [<c004f15c>] lock_acquire+0x94/0xa8
-[  403.414773]   [<c02f74e4>] _raw_spin_lock+0x54/0x8c
-[  403.419720]   [<c019d094>] dma_irq_handler+0x78/0x254
-[  403.424845]   [<c0061124>] handle_irq_event_percpu+0x38/0x1b4
-[  403.430670]   [<c00612e4>] handle_irq_event+0x44/0x64
-[  403.435789]   [<c0063a70>] handle_level_irq+0xd8/0xf0
-[  403.440903]   [<c0060a20>] generic_handle_irq+0x28/0x38
-[  403.446194]   [<c0009cc4>] handle_IRQ+0x68/0x8c
-[  403.450789]   [<c0008714>] avic_handle_irq+0x3c/0x48
-[  403.455811]   [<c0008f84>] __irq_svc+0x44/0x74
-[  403.460314]   [<c0040b04>] cpu_startup_entry+0x88/0xf4
-[  403.465525]   [<c02f00d0>] rest_init+0xb8/0xe0
-[  403.470045]   [<c03e07dc>] start_kernel+0x28c/0x2d4
-[  403.474986]   [<a0008040>] 0xa0008040
-[  403.478709] irq event stamp: 50854
-[  403.482140] hardirqs last  enabled at (50854): [<c001c6b8>] tasklet_action+0x38/0xdc
-[  403.489954] hardirqs last disabled at (50853): [<c001c6a0>] tasklet_action+0x20/0xdc
-[  403.497761] softirqs last  enabled at (50850): [<c001bc64>] _local_bh_enable+0x14/0x18
-[  403.505741] softirqs last disabled at (50851): [<c001c268>] irq_exit+0x88/0xdc
-[  403.513026]
-[  403.513026] other info that might help us debug this:
-[  403.519593]  Possible unsafe locking scenario:
-[  403.519593]
-[  403.525548]        CPU0
-[  403.528020]        ----
-[  403.530491]   lock(&(&imxdma->lock)->rlock);
-[  403.534828]   <Interrupt>
-[  403.537474]     lock(&(&imxdma->lock)->rlock);
-[  403.541983]
-[  403.541983]  *** DEADLOCK ***
-[  403.541983]
-[  403.547951] no locks held by swapper/0.
-[  403.551813]
-[  403.551813] stack backtrace:
-[  403.556222] CPU: 0 PID: 0 Comm: swapper Not tainted 3.10.0-20130823+ #904
-[  403.563039] Backtrace:
-[  403.565581] [<c000b98c>] (dump_backtrace+0x0/0x10c) from [<c000bb28>] (show_stack+0x18/0x1c)
-[  403.574054]  r6:00000000 r5:c05c51d8 r4:c040bd58 r3:00200000
-[  403.579872] [<c000bb10>] (show_stack+0x0/0x1c) from [<c02f398c>] (dump_stack+0x20/0x28)
-[  403.587955] [<c02f396c>] (dump_stack+0x0/0x28) from [<c02f29c8>] (print_usage_bug.part.28+0x224/0x28c)
-[  403.597340] [<c02f27a4>] (print_usage_bug.part.28+0x0/0x28c) from [<c004b404>] (mark_lock+0x440/0x6b4)
-[  403.606682]  r8:c004a41c r7:00000000 r6:c040bd58 r5:c040c040 r4:00000002
-[  403.613566] [<c004afc4>] (mark_lock+0x0/0x6b4) from [<c004d844>] (__lock_acquire+0x6cc/0x1a64)
-[  403.622244] [<c004d178>] (__lock_acquire+0x0/0x1a64) from [<c004f15c>] (lock_acquire+0x94/0xa8)
-[  403.631010] [<c004f0c8>] (lock_acquire+0x0/0xa8) from [<c02f74e4>] (_raw_spin_lock+0x54/0x8c)
-[  403.639614] [<c02f7490>] (_raw_spin_lock+0x0/0x8c) from [<c019d77c>] (imxdma_tasklet+0x20/0x134)
-[  403.648434]  r6:c3847010 r5:c040e890 r4:c38470d4
-[  403.653194] [<c019d75c>] (imxdma_tasklet+0x0/0x134) from [<c001c70c>] (tasklet_action+0x8c/0xdc)
-[  403.662013]  r8:c0599160 r7:00000000 r6:00000000 r5:c040e890 r4:c3847114 r3:c019d75c
-[  403.670042] [<c001c680>] (tasklet_action+0x0/0xdc) from [<c001bd4c>] (__do_softirq+0xe4/0x1f0)
-[  403.678687]  r7:00000101 r6:c0402000 r5:c059919c r4:00000001
-[  403.684498] [<c001bc68>] (__do_softirq+0x0/0x1f0) from [<c001c268>] (irq_exit+0x88/0xdc)
-[  403.692652] [<c001c1e0>] (irq_exit+0x0/0xdc) from [<c0009cc8>] (handle_IRQ+0x6c/0x8c)
-[  403.700514]  r4:00000030 r3:00000110
-[  403.704192] [<c0009c5c>] (handle_IRQ+0x0/0x8c) from [<c0008714>] (avic_handle_irq+0x3c/0x48)
-[  403.712664]  r5:c0403f28 r4:c0593ebc
-[  403.716343] [<c00086d8>] (avic_handle_irq+0x0/0x48) from [<c0008f84>] (__irq_svc+0x44/0x74)
-[  403.724733] Exception stack(0xc0403f28 to 0xc0403f70)
-[  403.729841] 3f20:                   00000001 00000004 00000000 20000013 c0402000 c04104a8
-[  403.738078] 3f40: 00000002 c0b69620 a0004000 41069264 a03fb5f4 c0403f7c c0403f40 c0403f70
-[  403.746301] 3f60: c004b92c c0009e74 20000013 ffffffff
-[  403.751383]  r6:ffffffff r5:20000013 r4:c0009e74 r3:c004b92c
-[  403.757210] [<c0009e30>] (arch_cpu_idle+0x0/0x4c) from [<c0040b04>] (cpu_startup_entry+0x88/0xf4)
-[  403.766161] [<c0040a7c>] (cpu_startup_entry+0x0/0xf4) from [<c02f00d0>] (rest_init+0xb8/0xe0)
-[  403.774753] [<c02f0018>] (rest_init+0x0/0xe0) from [<c03e07dc>] (start_kernel+0x28c/0x2d4)
-[  403.783051]  r6:c03fc484 r5:ffffffff r4:c040a0e0
-[  403.787797] [<c03e0550>] (start_kernel+0x0/0x2d4) from [<a0008040>] (0xa0008040)
-
-Signed-off-by: Michael Grzeschik <m.grzeschik@pengutronix.de>
-Signed-off-by: Vinod Koul <vinod.koul@intel.com>
-Cc: Jonghwan Choi <jhbird.choi@samsung.com>
+Reported-by: Joerg Kalisch <the_force@gmx.de>
+Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/dma/imx-dma.c |   19 ++++++++-----------
- 1 file changed, 8 insertions(+), 11 deletions(-)
+ drivers/net/wireless/p54/p54usb.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/dma/imx-dma.c
-+++ b/drivers/dma/imx-dma.c
-@@ -373,17 +373,18 @@ static void dma_irq_handle_channel(struc
- 	struct imxdma_engine *imxdma = imxdmac->imxdma;
- 	int chno = imxdmac->channel;
- 	struct imxdma_desc *desc;
-+	unsigned long flags;
- 
--	spin_lock(&imxdma->lock);
-+	spin_lock_irqsave(&imxdma->lock, flags);
- 	if (list_empty(&imxdmac->ld_active)) {
--		spin_unlock(&imxdma->lock);
-+		spin_unlock_irqrestore(&imxdma->lock, flags);
- 		goto out;
- 	}
- 
- 	desc = list_first_entry(&imxdmac->ld_active,
- 				struct imxdma_desc,
- 				node);
--	spin_unlock(&imxdma->lock);
-+	spin_unlock_irqrestore(&imxdma->lock, flags);
- 
- 	if (desc->sg) {
- 		u32 tmp;
-@@ -455,7 +456,6 @@ static int imxdma_xfer_desc(struct imxdm
- {
- 	struct imxdma_channel *imxdmac = to_imxdma_chan(d->desc.chan);
- 	struct imxdma_engine *imxdma = imxdmac->imxdma;
--	unsigned long flags;
- 	int slot = -1;
- 	int i;
- 
-@@ -463,7 +463,6 @@ static int imxdma_xfer_desc(struct imxdm
- 	switch (d->type) {
- 	case IMXDMA_DESC_INTERLEAVED:
- 		/* Try to get a free 2D slot */
--		spin_lock_irqsave(&imxdma->lock, flags);
- 		for (i = 0; i < IMX_DMA_2D_SLOTS; i++) {
- 			if ((imxdma->slots_2d[i].count > 0) &&
- 			((imxdma->slots_2d[i].xsr != d->x) ||
-@@ -473,10 +472,8 @@ static int imxdma_xfer_desc(struct imxdm
- 			slot = i;
- 			break;
- 		}
--		if (slot < 0) {
--			spin_unlock_irqrestore(&imxdma->lock, flags);
-+		if (slot < 0)
- 			return -EBUSY;
--		}
- 
- 		imxdma->slots_2d[slot].xsr = d->x;
- 		imxdma->slots_2d[slot].ysr = d->y;
-@@ -485,7 +482,6 @@ static int imxdma_xfer_desc(struct imxdm
- 
- 		imxdmac->slot_2d = slot;
- 		imxdmac->enabled_2d = true;
--		spin_unlock_irqrestore(&imxdma->lock, flags);
- 
- 		if (slot == IMX_DMA_2D_SLOT_A) {
- 			d->config_mem &= ~CCR_MSEL_B;
-@@ -561,8 +557,9 @@ static void imxdma_tasklet(unsigned long
- 	struct imxdma_channel *imxdmac = (void *)data;
- 	struct imxdma_engine *imxdma = imxdmac->imxdma;
- 	struct imxdma_desc *desc;
-+	unsigned long flags;
- 
--	spin_lock(&imxdma->lock);
-+	spin_lock_irqsave(&imxdma->lock, flags);
- 
- 	if (list_empty(&imxdmac->ld_active)) {
- 		/* Someone might have called terminate all */
-@@ -599,7 +596,7 @@ static void imxdma_tasklet(unsigned long
- 				 __func__, imxdmac->channel);
- 	}
- out:
--	spin_unlock(&imxdma->lock);
-+	spin_unlock_irqrestore(&imxdma->lock, flags);
- }
- 
- static int imxdma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+--- a/drivers/net/wireless/p54/p54usb.c
++++ b/drivers/net/wireless/p54/p54usb.c
+@@ -83,6 +83,7 @@ static struct usb_device_id p54u_table[]
+ 	{USB_DEVICE(0x06a9, 0x000e)},	/* Westell 802.11g USB (A90-211WG-01) */
+ 	{USB_DEVICE(0x06b9, 0x0121)},	/* Thomson SpeedTouch 121g */
+ 	{USB_DEVICE(0x0707, 0xee13)},   /* SMC 2862W-G version 2 */
++	{USB_DEVICE(0x07aa, 0x0020)},	/* Corega WLUSB2GTST USB */
+ 	{USB_DEVICE(0x0803, 0x4310)},	/* Zoom 4410a */
+ 	{USB_DEVICE(0x083a, 0x4521)},   /* Siemens Gigaset USB Adapter 54 version 2 */
+ 	{USB_DEVICE(0x083a, 0x4531)},	/* T-Com Sinus 154 data II */
 
 
