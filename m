@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755970Ab3JKAsx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Oct 2013 20:48:53 -0400
-Received: from mga09.intel.com ([134.134.136.24]:11959 "EHLO mga09.intel.com"
+	id S1756262Ab3JKAup (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Oct 2013 20:50:45 -0400
+Received: from mga11.intel.com ([192.55.52.93]:32156 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755715Ab3JKAsu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Oct 2013 20:48:50 -0400
+	id S1755931Ab3JKAsv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Oct 2013 20:48:51 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,1075,1371106800"; 
-   d="scan'208";a="391352609"
+   d="scan'208";a="415183143"
 From: Tom Zanussi <tom.zanussi@linux.intel.com>
 To: rostedt@goodmis.org
 Cc: masami.hiramatsu.pt@hitachi.com, linux-kernel@vger.kernel.org,
         Tom Zanussi <tom.zanussi@linux.intel.com>
-Subject: [PATCH v10 05/12] tracing: Add 'stacktrace' event trigger command
-Date: Thu, 10 Oct 2013 19:48:29 -0500
-Message-Id: <efd22d6f203f9f8db63906169712b1b030e830c2.1381445299.git.tom.zanussi@linux.intel.com>
+Subject: [PATCH v10 06/12] tracing: Add 'enable_event' and 'disable_event' event trigger commands
+Date: Thu, 10 Oct 2013 19:48:30 -0500
+Message-Id: <37ac08ca79938d47de720ff843826947a47fd67c.1381445299.git.tom.zanussi@linux.intel.com>
 X-Mailer: git-send-email 1.7.11.4
 In-Reply-To: <cover.1381445299.git.tom.zanussi@linux.intel.com>
 References: <cover.1381445299.git.tom.zanussi@linux.intel.com>
@@ -25,139 +25,459 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add 'stacktrace' event_command.  stacktrace event triggers are added
-by the user via this command in a similar way and using practically
-the same syntax as the analogous 'stacktrace' ftrace function command,
-but instead of writing to the set_ftrace_filter file, the stacktrace
-event trigger is written to the per-event 'trigger' files:
+Add 'enable_event' and 'disable_event' event_command commands.
 
-    echo 'stacktrace' > .../tracing/events/somesys/someevent/trigger
+enable_event and disable_event event triggers are added by the user
+via these commands in a similar way and using practically the same
+syntax as the analagous 'enable_event' and 'disable_event' ftrace
+function commands, but instead of writing to the set_ftrace_filter
+file, the enable_event and disable_event triggers are written to the
+per-event 'trigger' files:
 
-The above command will turn on stacktraces for someevent i.e. whenever
-someevent is hit, a stacktrace will be logged.
+    echo 'enable_event:system:event' > .../othersys/otherevent/trigger
+    echo 'disable_event:system:event' > .../othersys/otherevent/trigger
+
+The above commands will enable or disable the 'system:event' trace
+events whenever the othersys:otherevent events are hit.
 
 This also adds a 'count' version that limits the number of times the
 command will be invoked:
 
-    echo 'stacktrace:N' > .../tracing/events/somesys/someevent/trigger
+    echo 'enable_event:system:event:N' > .../othersys/otherevent/trigger
+    echo 'disable_event:system:event:N' > .../othersys/otherevent/trigger
 
 Where N is the number of times the command will be invoked.
 
-The above command will log N stacktraces for someevent i.e. whenever
-someevent is hit N times, a stacktrace will be logged.
+The above commands will will enable or disable the 'system:event'
+trace events whenever the othersys:otherevent events are hit, but only
+N times.
+
+This also makes the find_event_file() helper function extern, since
+it's useful to use from other places, such as the event triggers code,
+so make it accessible.
 
 Signed-off-by: Tom Zanussi <tom.zanussi@linux.intel.com>
 ---
- include/linux/ftrace_event.h        |  1 +
- kernel/trace/trace_events_trigger.c | 79 +++++++++++++++++++++++++++++++++++++
- 2 files changed, 80 insertions(+)
+ include/linux/ftrace_event.h        |   1 +
+ kernel/trace/trace.h                |   4 +
+ kernel/trace/trace_events.c         |   2 +-
+ kernel/trace/trace_events_trigger.c | 359 ++++++++++++++++++++++++++++++++++++
+ 4 files changed, 365 insertions(+), 1 deletion(-)
 
 diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index 40b517b..31750df 100644
+index 31750df..8e87302 100644
 --- a/include/linux/ftrace_event.h
 +++ b/include/linux/ftrace_event.h
-@@ -320,6 +320,7 @@ enum event_trigger_type {
- 	ETT_NONE		= (0),
+@@ -321,6 +321,7 @@ enum event_trigger_type {
  	ETT_TRACE_ONOFF		= (1 << 0),
  	ETT_SNAPSHOT		= (1 << 1),
-+	ETT_STACKTRACE		= (1 << 2),
+ 	ETT_STACKTRACE		= (1 << 2),
++	ETT_EVENT_ENABLE	= (1 << 3),
  };
  
  extern void destroy_preds(struct ftrace_event_call *call);
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index d0b4482..273b333 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -1017,6 +1017,10 @@ extern void trace_event_enable_cmd_record(bool enable);
+ extern int event_trace_add_tracer(struct dentry *parent, struct trace_array *tr);
+ extern int event_trace_del_tracer(struct trace_array *tr);
+ 
++extern struct ftrace_event_file *find_event_file(struct trace_array *tr,
++						 const char *system,
++						 const char *event);
++
+ static inline void *event_file_data(struct file *filp)
+ {
+ 	return ACCESS_ONCE(file_inode(filp)->i_private);
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 7d8eb8a..25b2c86 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -1860,7 +1860,7 @@ struct event_probe_data {
+ 	bool				enable;
+ };
+ 
+-static struct ftrace_event_file *
++struct ftrace_event_file *
+ find_event_file(struct trace_array *tr, const char *system,  const char *event)
+ {
+ 	struct ftrace_event_file *file;
 diff --git a/kernel/trace/trace_events_trigger.c b/kernel/trace/trace_events_trigger.c
-index d775c3d..a3bd1da 100644
+index a3bd1da..45e48b1 100644
 --- a/kernel/trace/trace_events_trigger.c
 +++ b/kernel/trace/trace_events_trigger.c
-@@ -780,6 +780,84 @@ static __init int register_trigger_snapshot_cmd(void)
- static __init int register_trigger_snapshot_cmd(void) { return 0; }
- #endif /* CONFIG_TRACER_SNAPSHOT */
+@@ -864,6 +864,364 @@ static __init void unregister_trigger_traceon_traceoff_cmds(void)
+ 	unregister_event_command(&trigger_traceoff_cmd);
+ }
  
-+#ifdef CONFIG_STACKTRACE
-+/*
-+ * Skip 3:
-+ *   stacktrace_trigger()
-+ *   event_triggers_post_call()
-+ *   ftrace_raw_event_xxx()
-+ */
-+#define STACK_SKIP 3
++/* Avoid typos */
++#define ENABLE_EVENT_STR	"enable_event"
++#define DISABLE_EVENT_STR	"disable_event"
++
++struct enable_trigger_data {
++	struct ftrace_event_file	*file;
++	bool				enable;
++};
 +
 +static void
-+stacktrace_trigger(struct event_trigger_data *data)
++event_enable_trigger(struct event_trigger_data *data)
 +{
-+	trace_dump_stack(STACK_SKIP);
++	struct enable_trigger_data *enable_data = data->private_data;
++
++	if (enable_data->enable)
++		clear_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &enable_data->file->flags);
++	else
++		set_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &enable_data->file->flags);
 +}
 +
 +static void
-+stacktrace_count_trigger(struct event_trigger_data *data)
++event_enable_count_trigger(struct event_trigger_data *data)
 +{
++	struct enable_trigger_data *enable_data = data->private_data;
++
 +	if (!data->count)
++		return;
++
++	/* Skip if the event is in a state we want to switch to */
++	if (enable_data->enable == !(enable_data->file->flags & FTRACE_EVENT_FL_SOFT_DISABLED))
 +		return;
 +
 +	if (data->count != -1)
 +		(data->count)--;
 +
-+	stacktrace_trigger(data);
++	event_enable_trigger(data);
 +}
 +
 +static int
-+stacktrace_trigger_print(struct seq_file *m, struct event_trigger_ops *ops,
-+			 struct event_trigger_data *data)
++event_enable_trigger_print(struct seq_file *m, struct event_trigger_ops *ops,
++			   struct event_trigger_data *data)
 +{
-+	return event_trigger_print("stacktrace", m, (void *)data->count,
-+				   data->filter_str);
++	struct enable_trigger_data *enable_data = data->private_data;
++
++	seq_printf(m, "%s:%s:%s",
++		   enable_data->enable ? ENABLE_EVENT_STR : DISABLE_EVENT_STR,
++		   enable_data->file->event_call->class->system,
++		   enable_data->file->event_call->name);
++
++	if (data->count == -1)
++		seq_puts(m, ":unlimited");
++	else
++		seq_printf(m, ":count=%ld", data->count);
++
++	if (data->filter_str)
++		seq_printf(m, " if %s\n", data->filter_str);
++	else
++		seq_puts(m, "\n");
++
++	return 0;
 +}
 +
-+static struct event_trigger_ops stacktrace_trigger_ops = {
-+	.func			= stacktrace_trigger,
-+	.print			= stacktrace_trigger_print,
++static void
++event_enable_trigger_free(struct event_trigger_ops *ops,
++			  struct event_trigger_data *data)
++{
++	struct enable_trigger_data *enable_data = data->private_data;
++
++	if (WARN_ON_ONCE(data->ref <= 0))
++		return;
++
++	data->ref--;
++	if (!data->ref) {
++		/* Remove the SOFT_MODE flag */
++		trace_event_enable_disable(enable_data->file, 0, 1);
++		module_put(enable_data->file->event_call->mod);
++		trigger_data_free(data);
++		kfree(enable_data);
++	}
++}
++
++static struct event_trigger_ops event_enable_trigger_ops = {
++	.func			= event_enable_trigger,
++	.print			= event_enable_trigger_print,
 +	.init			= event_trigger_init,
-+	.free			= event_trigger_free,
++	.free			= event_enable_trigger_free,
 +};
 +
-+static struct event_trigger_ops stacktrace_count_trigger_ops = {
-+	.func			= stacktrace_count_trigger,
-+	.print			= stacktrace_trigger_print,
++static struct event_trigger_ops event_enable_count_trigger_ops = {
++	.func			= event_enable_count_trigger,
++	.print			= event_enable_trigger_print,
 +	.init			= event_trigger_init,
-+	.free			= event_trigger_free,
++	.free			= event_enable_trigger_free,
 +};
++
++static struct event_trigger_ops event_disable_trigger_ops = {
++	.func			= event_enable_trigger,
++	.print			= event_enable_trigger_print,
++	.init			= event_trigger_init,
++	.free			= event_enable_trigger_free,
++};
++
++static struct event_trigger_ops event_disable_count_trigger_ops = {
++	.func			= event_enable_count_trigger,
++	.print			= event_enable_trigger_print,
++	.init			= event_trigger_init,
++	.free			= event_enable_trigger_free,
++};
++
++static int
++event_enable_trigger_func(struct event_command *cmd_ops,
++			  struct ftrace_event_file *file,
++			  char *glob, char *cmd, char *param)
++{
++	struct ftrace_event_file *event_enable_file;
++	struct enable_trigger_data *enable_data;
++	struct event_trigger_data *trigger_data;
++	struct event_trigger_ops *trigger_ops;
++	struct trace_array *tr = file->tr;
++	const char *system;
++	const char *event;
++	char *trigger;
++	char *number;
++	bool enable;
++	int ret;
++
++	if (!param)
++		return -EINVAL;
++
++	/* separate the trigger from the filter (s:e:n [if filter]) */
++	trigger = strsep(&param, " \t");
++	if (!trigger)
++		return -EINVAL;
++
++	system = strsep(&trigger, ":");
++	if (!trigger)
++		return -EINVAL;
++
++	event = strsep(&trigger, ":");
++
++	ret = -EINVAL;
++	event_enable_file = find_event_file(tr, system, event);
++	if (!event_enable_file)
++		goto out;
++
++	enable = strcmp(cmd, ENABLE_EVENT_STR) == 0;
++
++	trigger_ops = cmd_ops->get_trigger_ops(cmd, trigger);
++
++	ret = -ENOMEM;
++	trigger_data = kzalloc(sizeof(*trigger_data), GFP_KERNEL);
++	if (!trigger_data)
++		goto out;
++
++	enable_data = kzalloc(sizeof(*enable_data), GFP_KERNEL);
++	if (!enable_data) {
++		kfree(trigger_data);
++		goto out;
++	}
++
++	trigger_data->count = -1;
++	trigger_data->ops = trigger_ops;
++	trigger_data->cmd_ops = cmd_ops;
++	INIT_LIST_HEAD(&trigger_data->list);
++	RCU_INIT_POINTER(trigger_data->filter, NULL);
++
++	enable_data->enable = enable;
++	enable_data->file = event_enable_file;
++	trigger_data->private_data = enable_data;
++
++	if (glob[0] == '!') {
++		cmd_ops->unreg(glob+1, trigger_ops, trigger_data, file);
++		kfree(trigger_data);
++		kfree(enable_data);
++		ret = 0;
++		goto out;
++	}
++
++	if (trigger) {
++		number = strsep(&trigger, ":");
++
++		ret = -EINVAL;
++		if (!strlen(number))
++			goto out_free;
++
++		/*
++		 * We use the callback data field (which is a pointer)
++		 * as our counter.
++		 */
++		ret = kstrtoul(number, 0, &trigger_data->count);
++		if (ret)
++			goto out_free;
++	}
++
++	if (!param) /* if param is non-empty, it's supposed to be a filter */
++		goto out_reg;
++
++	if (!cmd_ops->set_filter)
++		goto out_reg;
++
++	ret = cmd_ops->set_filter(param, trigger_data, file);
++	if (ret < 0)
++		goto out_free;
++
++ out_reg:
++	/* Don't let event modules unload while probe registered */
++	ret = try_module_get(event_enable_file->event_call->mod);
++	if (!ret) {
++		ret = -EBUSY;
++		goto out_free;
++	}
++
++	ret = trace_event_enable_disable(event_enable_file, 1, 1);
++	if (ret < 0)
++		goto out_put;
++	ret = cmd_ops->reg(glob, trigger_ops, trigger_data, file);
++	/*
++	 * The above returns on success the # of functions enabled,
++	 * but if it didn't find any functions it returns zero.
++	 * Consider no functions a failure too.
++	 */
++	if (!ret) {
++		ret = -ENOENT;
++		goto out_disable;
++	} else if (ret < 0)
++		goto out_disable;
++	/* Just return zero, not the number of enabled functions */
++	ret = 0;
++ out:
++	return ret;
++
++ out_disable:
++	trace_event_enable_disable(event_enable_file, 0, 1);
++ out_put:
++	module_put(event_enable_file->event_call->mod);
++ out_free:
++	kfree(trigger_data);
++	kfree(enable_data);
++	goto out;
++}
++
++static int event_enable_register_trigger(char *glob,
++					 struct event_trigger_ops *ops,
++					 struct event_trigger_data *data,
++					 struct ftrace_event_file *file)
++{
++	struct enable_trigger_data *enable_data = data->private_data;
++	struct enable_trigger_data *test_enable_data;
++	struct event_trigger_data *test;
++	int ret = 0;
++
++	list_for_each_entry_rcu(test, &file->triggers, list) {
++		test_enable_data = test->private_data;
++		if (test_enable_data &&
++		    (test_enable_data->file == enable_data->file)) {
++			ret = -EEXIST;
++			goto out;
++		}
++	}
++
++	if (data->ops->init) {
++		ret = data->ops->init(data->ops, data);
++		if (ret < 0)
++			goto out;
++	}
++
++	list_add_rcu(&data->list, &file->triggers);
++	ret++;
++
++	if (trace_event_trigger_enable_disable(file, 1) < 0) {
++		list_del_rcu(&data->list);
++		ret--;
++	}
++out:
++	return ret;
++}
++
++static void event_enable_unregister_trigger(char *glob,
++					    struct event_trigger_ops *ops,
++					    struct event_trigger_data *test,
++					    struct ftrace_event_file *file)
++{
++	struct enable_trigger_data *test_enable_data = test->private_data;
++	struct enable_trigger_data *enable_data;
++	struct event_trigger_data *data;
++	bool unregistered = false;
++
++	list_for_each_entry_rcu(data, &file->triggers, list) {
++		enable_data = data->private_data;
++		if (enable_data &&
++		    (enable_data->file == test_enable_data->file)) {
++			unregistered = true;
++			list_del_rcu(&data->list);
++			trace_event_trigger_enable_disable(file, 0);
++			break;
++		}
++	}
++
++	if (unregistered && data->ops->free)
++		data->ops->free(data->ops, data);
++}
 +
 +static struct event_trigger_ops *
-+stacktrace_get_trigger_ops(char *cmd, char *param)
++event_enable_get_trigger_ops(char *cmd, char *param)
 +{
-+	return param ? &stacktrace_count_trigger_ops : &stacktrace_trigger_ops;
++	struct event_trigger_ops *ops;
++	bool enable;
++
++	enable = strcmp(cmd, ENABLE_EVENT_STR) == 0;
++
++	if (enable)
++		ops = param ? &event_enable_count_trigger_ops :
++			&event_enable_trigger_ops;
++	else
++		ops = param ? &event_disable_count_trigger_ops :
++			&event_disable_trigger_ops;
++
++	return ops;
 +}
 +
-+static struct event_command trigger_stacktrace_cmd = {
-+	.name			= "stacktrace",
-+	.trigger_type		= ETT_STACKTRACE,
-+	.post_trigger		= true,
-+	.func			= event_trigger_callback,
-+	.reg			= register_trigger,
-+	.unreg			= unregister_trigger,
-+	.get_trigger_ops	= stacktrace_get_trigger_ops,
++static struct event_command trigger_enable_cmd = {
++	.name			= ENABLE_EVENT_STR,
++	.trigger_type		= ETT_EVENT_ENABLE,
++	.func			= event_enable_trigger_func,
++	.reg			= event_enable_register_trigger,
++	.unreg			= event_enable_unregister_trigger,
++	.get_trigger_ops	= event_enable_get_trigger_ops,
 +};
 +
-+static __init int register_trigger_stacktrace_cmd(void)
++static struct event_command trigger_disable_cmd = {
++	.name			= DISABLE_EVENT_STR,
++	.trigger_type		= ETT_EVENT_ENABLE,
++	.func			= event_enable_trigger_func,
++	.reg			= event_enable_register_trigger,
++	.unreg			= event_enable_unregister_trigger,
++	.get_trigger_ops	= event_enable_get_trigger_ops,
++};
++
++static __init void unregister_trigger_enable_disable_cmds(void)
++{
++	unregister_event_command(&trigger_enable_cmd);
++	unregister_event_command(&trigger_disable_cmd);
++}
++
++static __init int register_trigger_enable_disable_cmds(void)
 +{
 +	int ret;
 +
-+	ret = register_event_command(&trigger_stacktrace_cmd);
-+	WARN_ON(ret < 0);
++	ret = register_event_command(&trigger_enable_cmd);
++	if (WARN_ON(ret < 0))
++		return ret;
++	ret = register_event_command(&trigger_disable_cmd);
++	if (WARN_ON(ret < 0))
++		unregister_trigger_enable_disable_cmds();
 +
 +	return ret;
 +}
-+#else
-+static __init int register_trigger_stacktrace_cmd(void) { return 0; }
-+#endif /* CONFIG_STACKTRACE */
 +
- static __init void unregister_trigger_traceon_traceoff_cmds(void)
+ static __init int register_trigger_traceon_traceoff_cmds(void)
  {
- 	unregister_event_command(&trigger_traceon_cmd);
-@@ -804,6 +882,7 @@ __init int register_trigger_cmds(void)
- {
+ 	int ret;
+@@ -883,6 +1241,7 @@ __init int register_trigger_cmds(void)
  	register_trigger_traceon_traceoff_cmds();
  	register_trigger_snapshot_cmd();
-+	register_trigger_stacktrace_cmd();
+ 	register_trigger_stacktrace_cmd();
++	register_trigger_enable_disable_cmds();
  
  	return 0;
  }
