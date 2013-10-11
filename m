@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932406Ab3JKKo1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 06:44:27 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58830 "EHLO
+	id S932442Ab3JKKoi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 06:44:38 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58850 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932390Ab3JKKoZ (ORCPT
+	with ESMTP id S932408Ab3JKKoa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 06:44:25 -0400
+	Fri, 11 Oct 2013 06:44:30 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Daniel Drake <dsd@laptop.org>, "John W. Linville" <linville@tuxdriver.com>,
+Cc: Masanari Iida <standby24x7@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 095/100] mwifiex: fix memory corruption when unsetting multicast list
-Date: Fri, 11 Oct 2013 11:42:05 +0100
-Message-Id: <1381488130-30235-96-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 099/100] dma: fix comments
+Date: Fri, 11 Oct 2013 11:42:09 +0100
+Message-Id: <1381488130-30235-100-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
 References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
@@ -27,79 +27,151 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Drake <dsd@laptop.org>
+From: Masanari Iida <standby24x7@gmail.com>
 
-commit 6390d88529835a8ad3563fe01a5da89fa52d6db2 upstream.
+commit d73111c6d43f08d697a3d986fe3bd8ca796a2096 upstream.
 
-When trying to unset a previously-set multicast list (i.e. the new list
-has 0 entries), mwifiex_set_multicast_list() was calling down to
-mwifiex_request_set_multicast_list() while leaving
-mcast_list.num_multicast_addr as an uninitialized value.
+Correct spelling typo in drivers/dma.
 
-We were arriving at mwifiex_cmd_mac_multicast_adr() which would then
-proceed to do an often huge memcpy of
-mcast_list.num_multicast_addr*ETH_ALEN bytes, causing memory corruption
-and hard to debug crashes.
-
-Fix this by setting mcast_list.num_multicast_addr to 0 when no multicast
-list is provided. Similarly, fix up the logic in
-mwifiex_request_set_multicast_list() to unset the multicast list that
-was previously sent to the hardware in such cases.
-
-Signed-off-by: Daniel Drake <dsd@laptop.org>
-Acked-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+[ luis: backported to 3.5: required to make 6e35f9b "dmaengine: imx-dma:
+   fix callback path in tasklet" a clean cherry-pick ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/mwifiex/main.c      |  5 ++---
- drivers/net/wireless/mwifiex/sta_ioctl.c | 18 ++++++++----------
- 2 files changed, 10 insertions(+), 13 deletions(-)
+ drivers/dma/at_hdmac.c           | 8 ++++----
+ drivers/dma/ep93xx_dma.c         | 2 +-
+ drivers/dma/fsldma.c             | 2 +-
+ drivers/dma/imx-dma.c            | 4 ++--
+ drivers/dma/intel_mid_dma_regs.h | 6 +++---
+ drivers/dma/pl330.c              | 2 +-
+ drivers/dma/ppc4xx/adma.c        | 2 +-
+ drivers/dma/ste_dma40_ll.h       | 2 +-
+ 8 files changed, 14 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/net/wireless/mwifiex/main.c b/drivers/net/wireless/mwifiex/main.c
-index 4be4d43..20e50e5 100644
---- a/drivers/net/wireless/mwifiex/main.c
-+++ b/drivers/net/wireless/mwifiex/main.c
-@@ -571,9 +571,8 @@ static void mwifiex_set_multicast_list(struct net_device *dev)
- 		mcast_list.mode = MWIFIEX_ALL_MULTI_MODE;
- 	} else {
- 		mcast_list.mode = MWIFIEX_MULTICAST_MODE;
--		if (netdev_mc_count(dev))
--			mcast_list.num_multicast_addr =
--				mwifiex_copy_mcast_addr(&mcast_list, dev);
-+		mcast_list.num_multicast_addr =
-+			mwifiex_copy_mcast_addr(&mcast_list, dev);
- 	}
- 	mwifiex_request_set_multicast_list(priv, &mcast_list);
+diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
+index 4058430..fffd143 100644
+--- a/drivers/dma/at_hdmac.c
++++ b/drivers/dma/at_hdmac.c
+@@ -169,9 +169,9 @@ static void atc_desc_put(struct at_dma_chan *atchan, struct at_desc *desc)
  }
-diff --git a/drivers/net/wireless/mwifiex/sta_ioctl.c b/drivers/net/wireless/mwifiex/sta_ioctl.c
-index fc6ae9b..2ea3a20 100644
---- a/drivers/net/wireless/mwifiex/sta_ioctl.c
-+++ b/drivers/net/wireless/mwifiex/sta_ioctl.c
-@@ -113,16 +113,14 @@ int mwifiex_request_set_multicast_list(struct mwifiex_private *priv,
- 		} else {
- 			priv->curr_pkt_filter &=
- 				~HostCmd_ACT_MAC_ALL_MULTICAST_ENABLE;
--			if (mcast_list->num_multicast_addr) {
--				dev_dbg(priv->adapter->dev,
--					"info: Set multicast list=%d\n",
--				       mcast_list->num_multicast_addr);
--				/* Send multicast addresses to firmware */
--				ret = mwifiex_send_cmd_async(priv,
--					HostCmd_CMD_MAC_MULTICAST_ADR,
--					HostCmd_ACT_GEN_SET, 0,
--					mcast_list);
--			}
-+			dev_dbg(priv->adapter->dev,
-+				"info: Set multicast list=%d\n",
-+				mcast_list->num_multicast_addr);
-+			/* Send multicast addresses to firmware */
-+			ret = mwifiex_send_cmd_async(priv,
-+				HostCmd_CMD_MAC_MULTICAST_ADR,
-+				HostCmd_ACT_GEN_SET, 0,
-+				mcast_list);
- 		}
+ 
+ /**
+- * atc_desc_chain - build chain adding a descripor
+- * @first: address of first descripor of the chain
+- * @prev: address of previous descripor of the chain
++ * atc_desc_chain - build chain adding a descriptor
++ * @first: address of first descriptor of the chain
++ * @prev: address of previous descriptor of the chain
+  * @desc: descriptor to queue
+  *
+  * Called from prep_* functions
+@@ -797,7 +797,7 @@ err_out:
+ }
+ 
+ /**
+- * atc_dma_cyclic_fill_desc - Fill one period decriptor
++ * atc_dma_cyclic_fill_desc - Fill one period descriptor
+  */
+ static int
+ atc_dma_cyclic_fill_desc(struct dma_chan *chan, struct at_desc *desc,
+diff --git a/drivers/dma/ep93xx_dma.c b/drivers/dma/ep93xx_dma.c
+index c64917e..bb02fd9 100644
+--- a/drivers/dma/ep93xx_dma.c
++++ b/drivers/dma/ep93xx_dma.c
+@@ -1118,7 +1118,7 @@ fail:
+  * @chan: channel
+  * @dma_addr: DMA mapped address of the buffer
+  * @buf_len: length of the buffer (in bytes)
+- * @period_len: lenght of a single period
++ * @period_len: length of a single period
+  * @dir: direction of the operation
+  * @context: operation context (ignored)
+  *
+diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
+index 8f84761..094437b 100644
+--- a/drivers/dma/fsldma.c
++++ b/drivers/dma/fsldma.c
+@@ -1015,7 +1015,7 @@ static irqreturn_t fsldma_chan_irq(int irq, void *data)
+ 	/*
+ 	 * Programming Error
+ 	 * The DMA_INTERRUPT async_tx is a NULL transfer, which will
+-	 * triger a PE interrupt.
++	 * trigger a PE interrupt.
+ 	 */
+ 	if (stat & FSL_DMA_SR_PE) {
+ 		chan_dbg(chan, "irq: Programming Error INT\n");
+diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
+index 9e77cc5..2eb396e 100644
+--- a/drivers/dma/imx-dma.c
++++ b/drivers/dma/imx-dma.c
+@@ -571,8 +571,8 @@ static void imxdma_tasklet(unsigned long data)
+ 	if (desc->desc.callback)
+ 		desc->desc.callback(desc->desc.callback_param);
+ 
+-	/* If we are dealing with a cyclic descriptor keep it on ld_active
+-	 * and dont mark the descripor as complete.
++	/* If we are dealing with a cyclic descriptor, keep it on ld_active
++	 * and dont mark the descriptor as complete.
+ 	 * Only in non-cyclic cases it would be marked as complete
+ 	 */
+ 	if (imxdma_chan_is_doing_cyclic(imxdmac))
+diff --git a/drivers/dma/intel_mid_dma_regs.h b/drivers/dma/intel_mid_dma_regs.h
+index 1bfa926..17b4219 100644
+--- a/drivers/dma/intel_mid_dma_regs.h
++++ b/drivers/dma/intel_mid_dma_regs.h
+@@ -168,9 +168,9 @@ union intel_mid_dma_cfg_hi {
+  * @active_list: current active descriptors
+  * @queue: current queued up descriptors
+  * @free_list: current free descriptors
+- * @slave: dma slave struture
+- * @descs_allocated: total number of decsiptors allocated
+- * @dma: dma device struture pointer
++ * @slave: dma slave structure
++ * @descs_allocated: total number of descriptors allocated
++ * @dma: dma device structure pointer
+  * @busy: bool representing if ch is busy (active txn) or not
+  * @in_use: bool representing if ch is in use or not
+  * @raw_tfr: raw trf interrupt received
+diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
+index de4ec1a..0d5a996 100644
+--- a/drivers/dma/pl330.c
++++ b/drivers/dma/pl330.c
+@@ -522,7 +522,7 @@ enum desc_status {
+ 	/* In the DMAC pool */
+ 	FREE,
+ 	/*
+-	 * Allocted to some channel during prep_xxx
++	 * Allocated to some channel during prep_xxx
+ 	 * Also may be sitting on the work_list.
+ 	 */
+ 	PREP,
+diff --git a/drivers/dma/ppc4xx/adma.c b/drivers/dma/ppc4xx/adma.c
+index ced9882..f72348d 100644
+--- a/drivers/dma/ppc4xx/adma.c
++++ b/drivers/dma/ppc4xx/adma.c
+@@ -4446,7 +4446,7 @@ static int __devinit ppc440spe_adma_probe(struct platform_device *ofdev)
+ 		ret = -ENOMEM;
+ 		goto err_dma_alloc;
  	}
- 	dev_dbg(priv->adapter->dev,
+-	dev_dbg(&ofdev->dev, "allocted descriptor pool virt 0x%p phys 0x%llx\n",
++	dev_dbg(&ofdev->dev, "allocated descriptor pool virt 0x%p phys 0x%llx\n",
+ 		adev->dma_desc_pool_virt, (u64)adev->dma_desc_pool);
+ 
+ 	regs = ioremap(res.start, resource_size(&res));
+diff --git a/drivers/dma/ste_dma40_ll.h b/drivers/dma/ste_dma40_ll.h
+index 51e8e53..6d47373 100644
+--- a/drivers/dma/ste_dma40_ll.h
++++ b/drivers/dma/ste_dma40_ll.h
+@@ -202,7 +202,7 @@
+ /* LLI related structures */
+ 
+ /**
+- * struct d40_phy_lli - The basic configration register for each physical
++ * struct d40_phy_lli - The basic configuration register for each physical
+  * channel.
+  *
+  * @reg_cfg: The configuration register.
 -- 
 1.8.3.2
 
