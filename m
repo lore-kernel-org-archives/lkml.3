@@ -1,99 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756956Ab3JKI7e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 04:59:34 -0400
-Received: from mail-qe0-f52.google.com ([209.85.128.52]:36308 "EHLO
-	mail-qe0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751980Ab3JKI7a (ORCPT
+	id S1757314Ab3JKI7t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 04:59:49 -0400
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:48134 "EHLO
+	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752608Ab3JKI7c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 04:59:30 -0400
+	Fri, 11 Oct 2013 04:59:32 -0400
+Date: Fri, 11 Oct 2013 10:58:09 +0200
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: Re: [RFC/PATCH] ftrace: add set_graph_notrace filter
+Message-ID: <20131011085809.GD4154@osiris>
+References: <1378184708-31385-1-git-send-email-namhyung@kernel.org>
+ <20131011001717.26b92150@gandalf.local.home>
+ <20131011072156.GC4154@osiris>
+ <871u3scik4.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-In-Reply-To: <5257B420.10808@ti.com>
-References: <1381352915-17219-1-git-send-email-marek@goldelico.com>
-	<525662F5.3090600@ti.com>
-	<7FAC77D4-5E1E-4B11-B067-3A8233C69240@goldelico.com>
-	<52568B40.4040802@ti.com>
-	<04AC7291-38E4-421B-979C-BF03D52E94BD@goldelico.com>
-	<525699EF.6090803@ti.com>
-	<52569CE8.5070201@metafoo.de>
-	<A7739B52-2632-4DD8-924D-B657A6BFE3ED@goldelico.com>
-	<5256F8DF.2020801@metafoo.de>
-	<5257815F.5070803@ti.com>
-	<5257A402.5030806@metafoo.de>
-	<5570E6D7-4F66-40BE-A50C-6CCA8074BD83@goldelico.com>
-	<5257B420.10808@ti.com>
-Date: Fri, 11 Oct 2013 10:59:29 +0200
-Message-ID: <CAAfyv36HSb4FOxaYnqcwBusqSuhtVnT0gEAoGgcW_rBkhWhf0A@mail.gmail.com>
-Subject: Re: [PATCH] omapdss: Add new panel driver for Topolly td028ttec1 LCD.
-From: Belisko Marek <marek.belisko@gmail.com>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        linux-fbdev@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <871u3scik4.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13101108-4966-0000-0000-000007289608
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tomi,
+On Fri, Oct 11, 2013 at 05:34:19PM +0900, Namhyung Kim wrote:
+> Hi Heiko,
+> 
+> On Fri, 11 Oct 2013 09:21:56 +0200, Heiko Carstens wrote:
+> > On Fri, Oct 11, 2013 at 12:17:17AM -0400, Steven Rostedt wrote:
+> >> Isn't there a way we could pass the state? Hmm, I think we could use
+> >> depth to do that. As depth is a pointer to trace.depth and not used
+> >> before then. We could make it negative and then check that.
+> >> 
+> >> /me looks at other archs.
+> >> 
+> >> Darn it, s390 calls ftrace_push_return_trace() before
+> >> ftrace_graph_entry(). They got fancy, as they must have noticed that
+> >> trace.depth is set by ftrace_push_return_trace() and they just figured
+> >> to let the ftrace_push_return_trace() do the work.
+> >> 
+> >> Hmm, we could add a config to do the check on one side or the other
+> >> depending on how the arch handles it.
+> >> 
+> >> It needs to be well commented though.
+> >
+> > I don't remember I why decided to do that more than four years ago, however
+> > on the other hand I really don't think we need a config for this.
+> > So I just committed the patch below... it compiles and doesn't crash
+> > immediately, so must be good.
+> > It will be merged during the next merge window.
+> 
+> Nice!
+> 
+> >
+> > From 8c539d10400ee2efe000d324497a0661a2143dbf Mon Sep 17 00:00:00 2001
+> > From: Heiko Carstens <heiko.carstens@de.ibm.com>
+> > Date: Fri, 11 Oct 2013 08:55:57 +0200
+> > Subject: [PATCH] s390/ftrace: prepare_ftrace_return() function call order
+> >
+> > Steven Rostedt noted that s390 is the only architecture which calls
+> > ftrace_push_return_trace() before ftrace_graph_entry() and therefore has
+> > the small advantage that trace.depth gets initialized automatically.
+> 
+> Well, this is not true.  AFAICS arm, x86 and powerpc have same order, and
+> other archs have different (inverted) order.  And it'd really great if
+> all archs agreed on a single ordering.
 
-On Fri, Oct 11, 2013 at 10:17 AM, Tomi Valkeinen <tomi.valkeinen@ti.com> wrote:
-> On 11/10/13 10:42, Dr. H. Nikolaus Schaller wrote:
->
->> I am not sure if there is a SPI driver for a McBSP port [1]? And to make that
->> work (reliably) and tested it might need a lot of work for us. At least I think
->> such a change (e.g. setting up clock polarity etc.) is not done in some minutes.
->> And the only feedback we have from the panel is "does not work"/"works". I.e.
->> if we are not lucky that it works immediately we have no real means to debug.
->>
->> IMHO it also gives more flexibility to board designers to choose GPIOs instead
->> of enforcing some SPI interface by the driver (and encapsulate this arguable
->> protocol in the driver). Maybe some board has 3 spare GPIOs but neither
->> McBSPs nor McSPIs available.
->
-> This has been an interesting thread, I've learnt a lot =).
->
-> I still think the panel driver should not handle this, but there should
-> be a separate spi bitbang driver for it.
->
-> I understand you're not enthusiastic going that way, as the current
-> version works for you. However, when using DT, we need to think how to
-> represent the hardware in the device tree data, and it has to be right
-> from the beginning.
->
-> That's why I won't allow representing this panel as having 4 gpios in
-> the DT data, because that is not correct. The panel has 3 pins. But
-> then, the panel does allow reading, which could be implemented using 4
-> gpios as you have done. This data should be in the spi-bitbang data, and
-> the panel should just use the standard SPI framework.
-I disagree. There are different drivers which pass in platform data
-gpios (encoder-tfp410.c or encoder-tpd12s015.c)
-and those must be covered by DT then. I cannot see problem why to have
-for td028 panel 3 or 4 gpios defined in DT.
->
-> Using SPI framework does not mean you should use McBSP or McSPI. It's up
-> to you how the 3-wire SPI is implemented on the SoC side, the panel
-> would just work in all the cases.
->
->  Tomi
->
->
+Ooops. Anyway.. I just realized that we also have an out-of-tree patch
+that relies on the now new order on s390. So that patch got a bit smaller
+as an added bonus ;)
 
-BR,
-
-marek
-
--- 
-as simple and primitive as possible
--------------------------------------------------
-Marek Belisko - OPEN-NANDRA
-Freelance Developer
-
-Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
-Tel: +421 915 052 184
-skype: marekwhite
-twitter: #opennandra
-web: http://open-nandra.com
