@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932899Ab3JKTm1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:42:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46568 "EHLO
+	id S932914Ab3JKTmc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:42:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46608 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932847Ab3JKTmV (ORCPT
+	with ESMTP id S932897Ab3JKTm1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:42:21 -0400
+	Fri, 11 Oct 2013 15:42:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Grzeschik <m.grzeschik@pengutronix.de>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Jonghwan Choi <jhbird.choi@samsung.com>
-Subject: [ 115/135] dmaengine: imx-dma: fix slow path issue in prep_dma_cyclic
-Date: Fri, 11 Oct 2013 12:39:56 -0700
-Message-Id: <20131011193957.795197725@linuxfoundation.org>
+        Josef Bacik <jbacik@fusionio.com>,
+        Chris Mason <chris.mason@fusionio.com>
+Subject: [ 127/135] Btrfs: change how we queue blocks for backref checking
+Date: Fri, 11 Oct 2013 12:40:08 -0700
+Message-Id: <20131011193959.066090025@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -28,70 +27,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Grzeschik <m.grzeschik@pengutronix.de>
+From: Josef Bacik <jbacik@fusionio.com>
 
-commit edc530fe7ee5a562680615d2e7cd205879c751a7 upstream.
+commit b6c60c8018c4e9beb2f83fc82c09f9d033766571 upstream.
 
-When perparing cyclic_dma buffers by the sound layer, it will dump the
-following lockdep trace. The leading snd_pcm_action_single get called
-with read_lock_irq called. To fix this, we change the kcalloc call from
-GFP_KERNEL to GFP_ATOMIC.
+Previously we only added blocks to the list to have their backrefs checked if
+the level of the block is right above the one we are searching for.  This is
+because we want to make sure we don't add the entire path up to the root to the
+lists to make sure we process things one at a time.  This assumes that if any
+blocks in the path to the root are going to be not checked (shared in other
+words) then they will be in the level right above the current block on up.  This
+isn't quite right though since we can have blocks higher up the list that are
+shared because they are attached to a reloc root.  But we won't add this block
+to be checked and then later on we will BUG_ON(!upper->checked).  So instead
+keep track of wether or not we've queued a block to be checked in this current
+search, and if we haven't go ahead and queue it to be checked.  This patch fixed
+the panic I was seeing where we BUG_ON(!upper->checked).  Thanks,
 
-WARNING: at kernel/lockdep.c:2740 lockdep_trace_alloc+0xcc/0x114()
-DEBUG_LOCKS_WARN_ON(irqs_disabled_flags(flags))
-Modules linked in:
-CPU: 0 PID: 832 Comm: aplay Not tainted 3.11.0-20130823+ #903
-Backtrace:
-[<c000b98c>] (dump_backtrace+0x0/0x10c) from [<c000bb28>] (show_stack+0x18/0x1c)
- r6:c004c090 r5:00000009 r4:c2e0bd18 r3:00404000
-[<c000bb10>] (show_stack+0x0/0x1c) from [<c02f397c>] (dump_stack+0x20/0x28)
-[<c02f395c>] (dump_stack+0x0/0x28) from [<c001531c>] (warn_slowpath_common+0x54/0x70)
-[<c00152c8>] (warn_slowpath_common+0x0/0x70) from [<c00153dc>] (warn_slowpath_fmt+0x38/0x40)
- r8:00004000 r7:a3b90000 r6:000080d0 r5:60000093 r4:c2e0a000 r3:00000009
-[<c00153a4>] (warn_slowpath_fmt+0x0/0x40) from [<c004c090>] (lockdep_trace_alloc+0xcc/0x114)
- r3:c03955d8 r2:c03907db
-[<c004bfc4>] (lockdep_trace_alloc+0x0/0x114) from [<c008f16c>] (__kmalloc+0x34/0x118)
- r6:000080d0 r5:c3800120 r4:000080d0 r3:c040a0f8
-[<c008f138>] (__kmalloc+0x0/0x118) from [<c019c95c>] (imxdma_prep_dma_cyclic+0x64/0x168)
- r7:a3b90000 r6:00000004 r5:c39d8420 r4:c3847150
-[<c019c8f8>] (imxdma_prep_dma_cyclic+0x0/0x168) from [<c024618c>] (snd_dmaengine_pcm_trigger+0xa8/0x160)
-[<c02460e4>] (snd_dmaengine_pcm_trigger+0x0/0x160) from [<c0241fa8>] (soc_pcm_trigger+0x90/0xb4)
- r8:c058c7b0 r7:c3b8140c r6:c39da560 r5:00000001 r4:c3b81000
-[<c0241f18>] (soc_pcm_trigger+0x0/0xb4) from [<c022ece4>] (snd_pcm_do_start+0x2c/0x38)
- r7:00000000 r6:00000003 r5:c058c7b0 r4:c3b81000
-[<c022ecb8>] (snd_pcm_do_start+0x0/0x38) from [<c022e958>] (snd_pcm_action_single+0x40/0x6c)
-[<c022e918>] (snd_pcm_action_single+0x0/0x6c) from [<c022ea64>] (snd_pcm_action_lock_irq+0x7c/0x9c)
- r7:00000003 r6:c3b810f0 r5:c3b810f0 r4:c3b81000
-[<c022e9e8>] (snd_pcm_action_lock_irq+0x0/0x9c) from [<c023009c>] (snd_pcm_common_ioctl1+0x7f8/0xfd0)
- r8:c3b7f888 r7:005407b8 r6:c2c991c0 r5:c3b81000 r4:c3b81000 r3:00004142
-[<c022f8a4>] (snd_pcm_common_ioctl1+0x0/0xfd0) from [<c023117c>] (snd_pcm_playback_ioctl1+0x464/0x488)
-[<c0230d18>] (snd_pcm_playback_ioctl1+0x0/0x488) from [<c02311d4>] (snd_pcm_playback_ioctl+0x34/0x40)
- r8:c3b7f888 r7:00004142 r6:00000004 r5:c2c991c0 r4:005407b8
-[<c02311a0>] (snd_pcm_playback_ioctl+0x0/0x40) from [<c00a14a4>] (vfs_ioctl+0x30/0x44)
-[<c00a1474>] (vfs_ioctl+0x0/0x44) from [<c00a1fe8>] (do_vfs_ioctl+0x55c/0x5c0)
-[<c00a1a8c>] (do_vfs_ioctl+0x0/0x5c0) from [<c00a208c>] (SyS_ioctl+0x40/0x68)
-[<c00a204c>] (SyS_ioctl+0x0/0x68) from [<c0009380>] (ret_fast_syscall+0x0/0x44)
- r8:c0009544 r7:00000036 r6:bedeaa58 r5:00000000 r4:000000c0
-
-Signed-off-by: Michael Grzeschik <m.grzeschik@pengutronix.de>
-Signed-off-by: Vinod Koul <vinod.koul@intel.com>
-Cc: Jonghwan Choi <jhbird.choi@samsung.com>
+Signed-off-by: Josef Bacik <jbacik@fusionio.com>
+Signed-off-by: Chris Mason <chris.mason@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/dma/imx-dma.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/btrfs/relocation.c |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
---- a/drivers/dma/imx-dma.c
-+++ b/drivers/dma/imx-dma.c
-@@ -884,7 +884,7 @@ static struct dma_async_tx_descriptor *i
- 	kfree(imxdmac->sg_list);
+--- a/fs/btrfs/relocation.c
++++ b/fs/btrfs/relocation.c
+@@ -691,6 +691,7 @@ struct backref_node *build_backref_tree(
+ 	int cowonly;
+ 	int ret;
+ 	int err = 0;
++	bool need_check = true;
  
- 	imxdmac->sg_list = kcalloc(periods + 1,
--			sizeof(struct scatterlist), GFP_KERNEL);
-+			sizeof(struct scatterlist), GFP_ATOMIC);
- 	if (!imxdmac->sg_list)
- 		return NULL;
+ 	path1 = btrfs_alloc_path();
+ 	path2 = btrfs_alloc_path();
+@@ -914,6 +915,7 @@ again:
+ 			cur->bytenr);
  
+ 		lower = cur;
++		need_check = true;
+ 		for (; level < BTRFS_MAX_LEVEL; level++) {
+ 			if (!path2->nodes[level]) {
+ 				BUG_ON(btrfs_root_bytenr(&root->root_item) !=
+@@ -957,14 +959,12 @@ again:
+ 
+ 				/*
+ 				 * add the block to pending list if we
+-				 * need check its backrefs. only block
+-				 * at 'cur->level + 1' is added to the
+-				 * tail of pending list. this guarantees
+-				 * we check backrefs from lower level
+-				 * blocks to upper level blocks.
++				 * need check its backrefs, we only do this once
++				 * while walking up a tree as we will catch
++				 * anything else later on.
+ 				 */
+-				if (!upper->checked &&
+-				    level == cur->level + 1) {
++				if (!upper->checked && need_check) {
++					need_check = false;
+ 					list_add_tail(&edge->list[UPPER],
+ 						      &list);
+ 				} else
 
 
