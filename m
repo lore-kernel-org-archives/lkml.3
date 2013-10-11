@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757645Ab3JKKmg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 06:42:36 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58383 "EHLO
+	id S1757681Ab3JKKmk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 06:42:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58391 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757597Ab3JKKme (ORCPT
+	with ESMTP id S1757631Ab3JKKmg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 06:42:34 -0400
+	Fri, 11 Oct 2013 06:42:36 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alan Stern <stern@rowland.harvard.edu>, Felipe Balbi <balbi@ti.com>,
+Cc: Ben Hutchings <bhutchings@solarflare.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 013/100] usb: gadget: fix a bug and a WARN_ON in dummy-hcd
-Date: Fri, 11 Oct 2013 11:40:43 +0100
-Message-Id: <1381488130-30235-14-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 015/100] sfc: Fix efx_rx_buf_offset() for recycled pages
+Date: Fri, 11 Oct 2013 11:40:45 +0100
+Message-Id: <1381488130-30235-16-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
 References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
@@ -27,58 +27,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Ben Hutchings <bhutchings@solarflare.com>
 
-commit 5f5610f69be3a925b1f79af27150bb7377bc9ad6 upstream.
+This bug fix is only for stable branches older than 3.10.  The bug was
+fixed upstream by commit 2768935a4660 ('sfc: reuse pages to avoid DMA
+mapping/unmapping costs'), but that change is totally unsuitable for
+stable.
 
-This patch fixes a NULL pointer dereference and a WARN_ON in
-dummy-hcd.  These things were the result of moving to the UDC core
-framework, and possibly of changes to that framework.
+Commit b590ace09d51 ('sfc: Fix efx_rx_buf_offset() in the presence of
+swiotlb') added an explicit page_offset member to struct
+efx_rx_buffer, which must be set consistently with the u.page and
+dma_addr fields.  However, it failed to add the necessary assignment
+in efx_resurrect_rx_buffer().  It also did not correct the calculation
+of efx_rx_buffer::dma_addr in efx_resurrect_rx_buffer(), which assumes
+that DMA-mapping a page will result in a page-aligned DMA address
+(exactly what swiotlb violates).
 
-Now unloading a gadget driver causes the UDC to be stopped after the
-gadget driver is unbound, not before.  Therefore the "driver" argument
-to dummy_udc_stop() can be NULL, so we must not try to print the
-driver's name without checking first.
+Add the assignment of efx_rx_buffer::page_offset and change the
+calculation of dma_addr to make use of it.
 
-Also, the UDC framework automatically unregisters the gadget when the
-UDC is deleted.  Therefore a sysfs attribute file attached to the
-gadget must be removed before the UDC is deleted, not after.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-[ luis: backported to 3.5: adjusted context ]
+Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/gadget/dummy_hcd.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ drivers/net/ethernet/sfc/rx.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/gadget/dummy_hcd.c b/drivers/usb/gadget/dummy_hcd.c
-index 4ad1f1c..1e0f8cd 100644
---- a/drivers/usb/gadget/dummy_hcd.c
-+++ b/drivers/usb/gadget/dummy_hcd.c
-@@ -921,8 +921,9 @@ static int dummy_udc_stop(struct usb_gadget *g,
- 	struct dummy_hcd	*dum_hcd = gadget_to_dummy_hcd(g);
- 	struct dummy		*dum = dum_hcd->dum;
+diff --git a/drivers/net/ethernet/sfc/rx.c b/drivers/net/ethernet/sfc/rx.c
+index f8f7fc8..617e625 100644
+--- a/drivers/net/ethernet/sfc/rx.c
++++ b/drivers/net/ethernet/sfc/rx.c
+@@ -306,8 +306,9 @@ static void efx_resurrect_rx_buffer(struct efx_rx_queue *rx_queue,
  
--	dev_dbg(udc_dev(dum), "unregister gadget driver '%s'\n",
--			driver->driver.name);
-+	if (driver)
-+		dev_dbg(udc_dev(dum), "unregister gadget driver '%s'\n",
-+				driver->driver.name);
- 
- 	dum->driver = NULL;
- 
-@@ -1011,9 +1012,9 @@ static int dummy_udc_remove(struct platform_device *pdev)
- {
- 	struct dummy	*dum = platform_get_drvdata(pdev);
- 
--	usb_del_gadget_udc(&dum->gadget);
- 	platform_set_drvdata(pdev, NULL);
- 	device_remove_file(&dum->gadget.dev, &dev_attr_function);
-+	usb_del_gadget_udc(&dum->gadget);
- 	device_unregister(&dum->gadget.dev);
- 	return 0;
- }
+ 	index = rx_queue->added_count & rx_queue->ptr_mask;
+ 	new_buf = efx_rx_buffer(rx_queue, index);
+-	new_buf->dma_addr = rx_buf->dma_addr ^ (PAGE_SIZE >> 1);
+ 	new_buf->u.page = rx_buf->u.page;
++	new_buf->page_offset = rx_buf->page_offset ^ (PAGE_SIZE >> 1);
++	new_buf->dma_addr = state->dma_addr + new_buf->page_offset;
+ 	new_buf->len = rx_buf->len;
+ 	new_buf->flags = EFX_RX_BUF_PAGE;
+ 	++rx_queue->added_count;
 -- 
 1.8.3.2
 
