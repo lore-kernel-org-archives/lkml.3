@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932776Ab3JKTmA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 15:42:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46413 "EHLO
+	id S964826Ab3JKTw7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 15:52:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46429 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932690Ab3JKTl6 (ORCPT
+	with ESMTP id S932777Ab3JKTmA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 15:41:58 -0400
+	Fri, 11 Oct 2013 15:42:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hedberg <johan.hedberg@intel.com>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Subject: [ 079/135] Bluetooth: Introduce a new HCI_RFKILLED flag
-Date: Fri, 11 Oct 2013 12:39:20 -0700
-Message-Id: <20131011193953.853975831@linuxfoundation.org>
+        Gurudas Pai <gurudas.pai@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        David Rientjes <rientjes@google.com>
+Subject: [ 093/135] mm: Fix generic hugetlb pte check return type.
+Date: Fri, 11 Oct 2013 12:39:34 -0700
+Message-Id: <20131011193955.369035517@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131011193945.181603934@linuxfoundation.org>
 References: <20131011193945.181603934@linuxfoundation.org>
@@ -28,72 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hedberg <johan.hedberg@intel.com>
+From: David Miller <davem@davemloft.net>
 
-commit 5e130367d43ff22836bbae380d197d600fe8ddbb upstream.
+[ Upstream commit 26794942461f438a6bc725ec7294b08a6bd782c4 ]
 
-This makes it more convenient to check for rfkill (no need to check for
-dev->rfkill before calling rfkill_blocked()) and also avoids potential
-races if the RFKILL state needs to be checked from within the rfkill
-callback.
+The include/asm-generic/hugetlb.h stubs that just vector huge_pte_*()
+calls to the pte_*() implementations won't work in certain situations.
 
-Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
-Acked-by: Marcel Holtmann <marcel@holtmann.org>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+x86 and sparc, for example, return "unsigned long" from the bit
+checks, and just go "return pte_val(pte) & PTE_BIT_FOO;"
+
+But since huge_pte_*() returns 'int', if any high bits on 64-bit are
+relevant, they get chopped off.
+
+The net effect is that we can loop forever trying to COW a huge page,
+because the huge_pte_write() check signals false all the time.
+
+Reported-by: Gurudas Pai <gurudas.pai@oracle.com>
+Tested-by: Gurudas Pai <gurudas.pai@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Acked-by: David Rientjes <rientjes@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- include/net/bluetooth/hci.h |    1 +
- net/bluetooth/hci_core.c    |   15 ++++++++++-----
- 2 files changed, 11 insertions(+), 5 deletions(-)
+ include/asm-generic/hugetlb.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/include/net/bluetooth/hci.h
-+++ b/include/net/bluetooth/hci.h
-@@ -104,6 +104,7 @@ enum {
- enum {
- 	HCI_SETUP,
- 	HCI_AUTO_OFF,
-+	HCI_RFKILLED,
- 	HCI_MGMT,
- 	HCI_PAIRABLE,
- 	HCI_SERVICE_CACHE,
---- a/net/bluetooth/hci_core.c
-+++ b/net/bluetooth/hci_core.c
-@@ -1134,7 +1134,7 @@ int hci_dev_open(__u16 dev)
- 		goto done;
- 	}
- 
--	if (hdev->rfkill && rfkill_blocked(hdev->rfkill)) {
-+	if (test_bit(HCI_RFKILLED, &hdev->dev_flags)) {
- 		ret = -ERFKILL;
- 		goto done;
- 	}
-@@ -1554,10 +1554,12 @@ static int hci_rfkill_set_block(void *da
- 
- 	BT_DBG("%p name %s blocked %d", hdev, hdev->name, blocked);
- 
--	if (!blocked)
--		return 0;
--
--	hci_dev_do_close(hdev);
-+	if (blocked) {
-+		set_bit(HCI_RFKILLED, &hdev->dev_flags);
-+		hci_dev_do_close(hdev);
-+	} else {
-+		clear_bit(HCI_RFKILLED, &hdev->dev_flags);
-+}
- 
- 	return 0;
+--- a/include/asm-generic/hugetlb.h
++++ b/include/asm-generic/hugetlb.h
+@@ -6,12 +6,12 @@ static inline pte_t mk_huge_pte(struct p
+ 	return mk_pte(page, pgprot);
  }
-@@ -2197,6 +2199,9 @@ int hci_register_dev(struct hci_dev *hde
- 		}
- 	}
  
-+	if (hdev->rfkill && rfkill_blocked(hdev->rfkill))
-+		set_bit(HCI_RFKILLED, &hdev->dev_flags);
-+
- 	set_bit(HCI_SETUP, &hdev->dev_flags);
+-static inline int huge_pte_write(pte_t pte)
++static inline unsigned long huge_pte_write(pte_t pte)
+ {
+ 	return pte_write(pte);
+ }
  
- 	if (hdev->dev_type != HCI_AMP)
+-static inline int huge_pte_dirty(pte_t pte)
++static inline unsigned long huge_pte_dirty(pte_t pte)
+ {
+ 	return pte_dirty(pte);
+ }
 
 
