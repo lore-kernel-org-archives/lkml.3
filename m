@@ -1,221 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753775Ab3JLUpx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Oct 2013 16:45:53 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:29757 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753125Ab3JLUpu (ORCPT
+	id S1753906Ab3JLUqS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Oct 2013 16:46:18 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:49894 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1753865Ab3JLUqP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Oct 2013 16:45:50 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(zzzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzd2iz1de098h1de097h8275bhz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h1155h)
-From: Varun Sethi <Varun.Sethi@freescale.com>
-To: <joro@8bytes.org>, <iommu@lists.linux-foundation.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        <stuart.yoder@freescale.com>, <scottwood@freescale.com>,
-        <alex.williamson@redhat.com>, <r65777@freescale.com>
-CC: Varun Sethi <Varun.Sethi@freescale.com>
-Subject: [PATCH 1/3] iommu/fsl: Factor out PCI specific code.
-Date: Sun, 13 Oct 2013 02:02:32 +0530
-Message-ID: <1381609954-15283-2-git-send-email-Varun.Sethi@freescale.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1381609954-15283-1-git-send-email-Varun.Sethi@freescale.com>
-References: <1381609954-15283-1-git-send-email-Varun.Sethi@freescale.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	Sat, 12 Oct 2013 16:46:15 -0400
+X-Greylist: delayed 1876 seconds by postgrey-1.27 at vger.kernel.org; Sat, 12 Oct 2013 16:46:15 EDT
+From: Jiri Slaby <jslaby@suse.cz>
+To: x86@kernel.org
+Cc: jirislaby@gmail.com, linux-kernel@vger.kernel.org,
+        Jiri Slaby <jslaby@suse.cz>, Namhyung Kim <namhyung@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 1/1] dumpstack: fix printk_address for direct addresses
+Date: Sat, 12 Oct 2013 22:13:37 +0200
+Message-Id: <1381608817-3507-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Factor out PCI specific code in the PAMU driver.
+Consider modules like this:
+static int my_init(void)
+{
+  char *map = (void *)0x5;
+  *map = 3;
+  return 0;
+}
+module_init(my_init);
 
-Signed-off-by: Varun Sethi <Varun.Sethi@freescale.com>
+When we turn off FRAME_POINTERs, the very first instruction in that
+function causes a BUG. The problem is that we print IP in the BUG
+report using %pB (from printk_address). And %pB decrements the pointer
+by one to fix printing addresses of functions with tail calls. This
+was added in commit 71f9e59800e5ad4e6b683348424c9fe54306cd43 (x86,
+dumpstack: Use %pB format specifier for stack trace) to fix the call
+stack printouts.
+
+So instead of correct output:
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000005
+IP: [<ffffffffa01ac000>] my_init+0x0/0x10 [pb173]
+
+We get:
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000005
+IP: [<ffffffffa0152000>] 0xffffffffa0151fff
+
+To fix that, we use %pS only for stack addresses printouts (via newly
+added printk_stack_address) and %pB for regs->ip (via printk_address).
+I.e. we revert to the old behaviour for all except call stacks. And
+since from all those reliable is 1, we remove that parameter from
+printk_address.
+
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
 ---
- drivers/iommu/fsl_pamu_domain.c |   81 +++++++++++++++++++--------------------
- 1 file changed, 40 insertions(+), 41 deletions(-)
+ arch/x86/include/asm/kdebug.h |  2 +-
+ arch/x86/kernel/dumpstack.c   | 11 ++++++++---
+ arch/x86/kernel/process_64.c  |  2 +-
+ arch/x86/mm/fault.c           |  2 +-
+ arch/x86/platform/uv/uv_nmi.c |  2 +-
+ 5 files changed, 12 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/iommu/fsl_pamu_domain.c b/drivers/iommu/fsl_pamu_domain.c
-index c857c30..e02e1de 100644
---- a/drivers/iommu/fsl_pamu_domain.c
-+++ b/drivers/iommu/fsl_pamu_domain.c
-@@ -677,13 +677,9 @@ static int handle_attach_device(struct fsl_dma_domain *dma_domain,
- 	return ret;
+diff --git a/arch/x86/include/asm/kdebug.h b/arch/x86/include/asm/kdebug.h
+index 2c37aad..32ce713 100644
+--- a/arch/x86/include/asm/kdebug.h
++++ b/arch/x86/include/asm/kdebug.h
+@@ -21,7 +21,7 @@ enum die_val {
+ 	DIE_NMIUNKNOWN,
+ };
+ 
+-extern void printk_address(unsigned long address, int reliable);
++extern void printk_address(unsigned long address);
+ extern void die(const char *, struct pt_regs *,long);
+ extern int __must_check __die(const char *, struct pt_regs *, long);
+ extern void show_trace(struct task_struct *t, struct pt_regs *regs,
+diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
+index deb6421..d9c12d3 100644
+--- a/arch/x86/kernel/dumpstack.c
++++ b/arch/x86/kernel/dumpstack.c
+@@ -25,12 +25,17 @@ unsigned int code_bytes = 64;
+ int kstack_depth_to_print = 3 * STACKSLOTS_PER_LINE;
+ static int die_counter;
+ 
+-void printk_address(unsigned long address, int reliable)
++static void printk_stack_address(unsigned long address, int reliable)
+ {
+ 	pr_cont(" [<%p>] %s%pB\n",
+ 		(void *)address, reliable ? "" : "? ", (void *)address);
  }
  
--static int fsl_pamu_attach_device(struct iommu_domain *domain,
--				  struct device *dev)
-+static void check_for_pci_dma_device(struct device **dev)
- {
--	struct fsl_dma_domain *dma_domain = domain->priv;
--	const u32 *liodn;
--	u32 liodn_cnt;
--	int len, ret = 0;
-+#ifdef CONFIG_PCI
- 	struct pci_dev *pdev = NULL;
- 	struct pci_controller *pci_ctl;
- 
-@@ -691,25 +687,38 @@ static int fsl_pamu_attach_device(struct iommu_domain *domain,
- 	 * Use LIODN of the PCI controller while attaching a
- 	 * PCI device.
- 	 */
--	if (dev->bus == &pci_bus_type) {
--		pdev = to_pci_dev(dev);
-+	if ((*dev)->bus == &pci_bus_type) {
-+		pdev = to_pci_dev(*dev);
- 		pci_ctl = pci_bus_to_host(pdev->bus);
- 		/*
- 		 * make dev point to pci controller device
- 		 * so we can get the LIODN programmed by
- 		 * u-boot.
- 		 */
--		dev = pci_ctl->parent;
-+		*dev = pci_ctl->parent;
- 	}
-+#endif
-+}
- 
--	liodn = of_get_property(dev->of_node, "fsl,liodn", &len);
-+static int fsl_pamu_attach_device(struct iommu_domain *domain,
-+				  struct device *dev)
++void printk_address(unsigned long address)
 +{
-+	struct fsl_dma_domain *dma_domain = domain->priv;
-+	struct device *dma_dev = dev;
-+	const u32 *liodn;
-+	u32 liodn_cnt;
-+	int len, ret = 0;
++	pr_cont(" [<%p>] %pS\n", (void *)address, (void *)address);
++}
 +
-+	check_for_pci_dma_device(&dma_dev);
-+
-+	liodn = of_get_property(dma_dev->of_node, "fsl,liodn", &len);
- 	if (liodn) {
- 		liodn_cnt = len / sizeof(u32);
- 		ret = handle_attach_device(dma_domain, dev,
- 					 liodn, liodn_cnt);
- 	} else {
- 		pr_debug("missing fsl,liodn property at %s\n",
--		          dev->of_node->full_name);
-+		          dma_dev->of_node->full_name);
- 			ret = -EINVAL;
- 	}
- 
-@@ -720,32 +729,18 @@ static void fsl_pamu_detach_device(struct iommu_domain *domain,
- 				      struct device *dev)
+ #ifdef CONFIG_FUNCTION_GRAPH_TRACER
+ static void
+ print_ftrace_graph_addr(unsigned long addr, void *data,
+@@ -151,7 +156,7 @@ static void print_trace_address(void *data, unsigned long addr, int reliable)
  {
- 	struct fsl_dma_domain *dma_domain = domain->priv;
-+	struct device *dma_dev = dev;
- 	const u32 *prop;
- 	int len;
--	struct pci_dev *pdev = NULL;
--	struct pci_controller *pci_ctl;
- 
--	/*
--	 * Use LIODN of the PCI controller while detaching a
--	 * PCI device.
--	 */
--	if (dev->bus == &pci_bus_type) {
--		pdev = to_pci_dev(dev);
--		pci_ctl = pci_bus_to_host(pdev->bus);
--		/*
--		 * make dev point to pci controller device
--		 * so we can get the LIODN programmed by
--		 * u-boot.
--		 */
--		dev = pci_ctl->parent;
--	}
-+	check_for_pci_dma_device(&dma_dev);
- 
--	prop = of_get_property(dev->of_node, "fsl,liodn", &len);
-+	prop = of_get_property(dma_dev->of_node, "fsl,liodn", &len);
- 	if (prop)
- 		detach_device(dev, dma_domain);
- 	else
- 		pr_debug("missing fsl,liodn property at %s\n",
--		          dev->of_node->full_name);
-+		          dma_dev->of_node->full_name);
+ 	touch_nmi_watchdog();
+ 	printk(data);
+-	printk_address(addr, reliable);
++	printk_stack_address(addr, reliable);
  }
  
- static  int configure_domain_geometry(struct iommu_domain *domain, void *data)
-@@ -905,6 +900,7 @@ static struct iommu_group *get_device_iommu_group(struct device *dev)
- 	return group;
+ static const struct stacktrace_ops print_trace_ops = {
+@@ -281,7 +286,7 @@ int __kprobes __die(const char *str, struct pt_regs *regs, long err)
+ #else
+ 	/* Executive summary in case the oops scrolled away */
+ 	printk(KERN_ALERT "RIP ");
+-	printk_address(regs->ip, 1);
++	printk_address(regs->ip);
+ 	printk(" RSP <%016lx>\n", regs->sp);
+ #endif
+ 	return 0;
+diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
+index 45ab4d6..176ad94 100644
+--- a/arch/x86/kernel/process_64.c
++++ b/arch/x86/kernel/process_64.c
+@@ -63,7 +63,7 @@ void __show_regs(struct pt_regs *regs, int all)
+ 	unsigned int ds, cs, es;
+ 
+ 	printk(KERN_DEFAULT "RIP: %04lx:[<%016lx>] ", regs->cs & 0xffff, regs->ip);
+-	printk_address(regs->ip, 1);
++	printk_address(regs->ip);
+ 	printk(KERN_DEFAULT "RSP: %04lx:%016lx  EFLAGS: %08lx\n", regs->ss,
+ 			regs->sp, regs->flags);
+ 	printk(KERN_DEFAULT "RAX: %016lx RBX: %016lx RCX: %016lx\n",
+diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+index 3aaeffc..18feeb3 100644
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -596,7 +596,7 @@ show_fault_oops(struct pt_regs *regs, unsigned long error_code,
+ 
+ 	printk(KERN_CONT " at %p\n", (void *) address);
+ 	printk(KERN_ALERT "IP:");
+-	printk_address(regs->ip, 1);
++	printk_address(regs->ip);
+ 
+ 	dump_pagetable(address);
+ }
+diff --git a/arch/x86/platform/uv/uv_nmi.c b/arch/x86/platform/uv/uv_nmi.c
+index 9126dfb..019b6ec 100644
+--- a/arch/x86/platform/uv/uv_nmi.c
++++ b/arch/x86/platform/uv/uv_nmi.c
+@@ -402,7 +402,7 @@ static void uv_nmi_dump_cpu_ip(int cpu, struct pt_regs *regs)
+ 	printk(KERN_DEFAULT "UV: %4d %6d %-32.32s ",
+ 		cpu, current->pid, current->comm);
+ 
+-	printk_address(regs->ip, 1);
++	printk_address(regs->ip);
  }
  
-+#ifdef CONFIG_PCI
- static  bool check_pci_ctl_endpt_part(struct pci_controller *pci_ctl)
- {
- 	u32 version;
-@@ -945,13 +941,18 @@ static struct iommu_group *get_shared_pci_device_group(struct pci_dev *pdev)
- 	return NULL;
- }
- 
--static struct iommu_group *get_pci_device_group(struct pci_dev *pdev)
-+static struct iommu_group *get_pci_device_group(struct device *dev)
- {
- 	struct pci_controller *pci_ctl;
- 	bool pci_endpt_partioning;
- 	struct iommu_group *group = NULL;
--	struct pci_dev *bridge, *dma_pdev = NULL;
-+	struct pci_dev *bridge, *pdev;
-+	struct pci_dev *dma_pdev = NULL;
- 
-+	pdev = to_pci_dev(dev);
-+	/* Don't create device groups for virtual PCI bridges */
-+	if (pdev->subordinate)
-+		return NULL;
- 	pci_ctl = pci_bus_to_host(pdev->bus);
- 	pci_endpt_partioning = check_pci_ctl_endpt_part(pci_ctl);
- 	/* We can partition PCIe devices so assign device group to the device */
-@@ -1044,11 +1045,11 @@ root_bus:
- 
- 	return group;
- }
-+#endif
- 
- static int fsl_pamu_add_device(struct device *dev)
- {
- 	struct iommu_group *group = NULL;
--	struct pci_dev *pdev;
- 	const u32 *prop;
- 	int ret, len;
- 
-@@ -1056,19 +1057,15 @@ static int fsl_pamu_add_device(struct device *dev)
- 	 * For platform devices we allocate a separate group for
- 	 * each of the devices.
- 	 */
--	if (dev->bus == &pci_bus_type) {
--		pdev = to_pci_dev(dev);
--		/* Don't create device groups for virtual PCI bridges */
--		if (pdev->subordinate)
--			return 0;
--
--		group = get_pci_device_group(pdev);
--
--	} else {
-+	if (dev->bus == &platform_bus_type) {
- 		prop = of_get_property(dev->of_node, "fsl,liodn", &len);
- 		if (prop)
- 			group = get_device_iommu_group(dev);
- 	}
-+#ifdef CONFIG_PCI
-+	else
-+		group = get_pci_device_group(dev);
-+#endif
- 
- 	if (!group || IS_ERR(group))
- 		return PTR_ERR(group);
-@@ -1166,7 +1163,9 @@ int pamu_domain_init()
- 		return ret;
- 
- 	bus_set_iommu(&platform_bus_type, &fsl_pamu_ops);
-+#ifdef CONFIG_PCI
- 	bus_set_iommu(&pci_bus_type, &fsl_pamu_ops);
-+#endif
- 
- 	return ret;
- }
+ /* Dump this cpu's state */
 -- 
-1.7.9.5
+1.8.4
 
 
