@@ -1,165 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753390Ab3JLTGe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Oct 2013 15:06:34 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:54021 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753125Ab3JLTGc (ORCPT
+	id S1753666Ab3JLTK1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Oct 2013 15:10:27 -0400
+Received: from nm23-vm7.access.bullet.mail.bf1.yahoo.com ([216.109.115.166]:30731
+	"EHLO nm23-vm7.access.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752697Ab3JLTK0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Oct 2013 15:06:32 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        Kosaki Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [RFC PATCH 01/10] posix-timers: Remove dead thread posix cpu timers caching
-Date: Sat, 12 Oct 2013 21:06:17 +0200
-Message-Id: <1381604786-21293-2-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1381604786-21293-1-git-send-email-fweisbec@gmail.com>
-References: <1381604786-21293-1-git-send-email-fweisbec@gmail.com>
+	Sat, 12 Oct 2013 15:10:26 -0400
+X-Greylist: delayed 409 seconds by postgrey-1.27 at vger.kernel.org; Sat, 12 Oct 2013 15:10:25 EDT
+X-Yahoo-Newman-Id: 254380.19288.bm@smtp119.sbc.mail.bf1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: ursgbG8VM1k7ujPh.Z.J43XYIX2yPJ1g7S7S9DSfPw6eNf7
+ W8LyVvhHKwuHrGxzwTWrGsT.IG9frIVTcoWX4vQx.dPSNsSgEsNS47Ii56pl
+ P0OoXr9VrUFfDSjAURTruqCNiPpzhWBkLJ1pX.GHPEesKl012huhFhduhdJ0
+ Vp6aG6ubH.9ycJYPJGb6IzKGSwqU0RWx2Hkduc.tjX7Z1Z2t4ijRh1gB.tpZ
+ p4xWNkvVoLfxlteOnwKyghuaqGJRhWz.RSegbqYBiovgkqVIymrk8rj0.SmI
+ XAmQSn8NeduJbaF1dQP.8bb7_8bAMw0M3p_ktrNPPw91oDZgIzg45zYGaJq1
+ Ess21akcV0pGH0elX9RnQyO4cuWckZrtV2DIqjSCDi8EFpm5DwAYQQARczwV
+ xqF6.t5yHyIijhar9CbL3.DLLp71BkwAghu1lkJKFrR1Z9.h8dJqgZ7qy2WU
+ aBTJLkciSGfSu0mYhBB1gE9PjOvwd5PF4dD6HCmys_GqyAgN.doDfGm4_1_B
+ Y8Dp0nyVqhV1_OtMbrMRMW5uEoyCBx1gkgPEApB.WkwXi50tK3vXY3Yd_tRr
+ GnMuP8_ksJaE-
+X-Yahoo-SMTP: rZzhDImswBA_40COIyZI42.8nAz5YXic.zo1v550XQVtX7k-
+X-Rocket-Received: from segfault.sh0n.net (shawn.starr@174.112.94.49 with )
+        by smtp119.sbc.mail.bf1.yahoo.com with SMTP; 12 Oct 2013 19:03:36 +0000 UTC
+From: Shawn Starr <shawn.starr@rogers.com>
+To: linux-kernel@vger.kernel.org
+Subject: No longer able to build kernel into RPM on Fedora
+Date: Sat, 12 Oct 2013 15:03:32 -0400
+Message-ID: <2492370.jKSlzuQ6pe@segfault.sh0n.net>
+Organization: sh0n.net
+User-Agent: KMail/4.11.2 (Linux/3.12.0-0.rc4.git1.2.fc21.x86_64; KDE/4.11.2; x86_64; ; )
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a task is exiting or has exited, its posix cpu timers
-don't tick anymore and won't elapse further. It's too late
-for them to expire.
+Hello folks,
 
-So any further call to timer_gettime() on these timers will
-return the same remaining expiry time.
+My usual approach to testing git snapshots of Linus's tree (with custom 
+patches applied on top) is to make rpm and install this into my system for a 
+clean add/remove of test kernels.
 
-The current code optimize this by caching the remaining delta
-and storing it where we use to save the absolute expiration time.
-This way, the future calls to timer_gettime() won't need to
-compute the difference between the absolute expiration time and
-the current time anymore.
+However,  the developers of rpm removed the --target and -ta options, so I 
+can't take tarball and build into RPM anymore.
 
-Now this optimization doesn't seem to bring much value. Computing
-the timer remaining delta is not very costly. Fetching the timer
-value OTOH can be costly in two ways:
+Since I last built custom RPM builds of Linus's tree was likely Fedora 18, it 
+seems the option target got removed by 19.
 
-* CPUCLOCK_SCHED read requires to lock the target's rq. But some
-optimizations are on the way to make task_sched_runtime() not holding
-the rq lock of a non-running target.
+Any ideas, fixes?
 
-* CPUCLOCK_VIRT/CPUCLOCK_PROF read simply consist in fetching
-current->utime/current->stime except when the system uses full
-dynticks cputime accounting. The latter requires a per task lock
-in order to correctly compute user and system time. But once the
-target is dead, this lock shouldn't be contended anyway.
-
-Also some recent bugfixes (see a0b2062b0904ef07944c4a6e4d0f88ee44f1e9f2
-"posix_timers: fix racy timer delta caching on task exit") have shown
-long standing issues on posix cpu timers that were gross enough
-to deduce that fetching a timer on a dead target is probably not a very
-common operation.
-
-Given that this caching complicates the code significantly for
-few wins, let's remove it on single thread timers.
-
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Kosaki Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
----
- kernel/posix-cpu-timers.c | 34 ++++++++++++++++------------------
- 1 file changed, 16 insertions(+), 18 deletions(-)
-
-diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
-index c7f31aa..b803265 100644
---- a/kernel/posix-cpu-timers.c
-+++ b/kernel/posix-cpu-timers.c
-@@ -787,7 +787,6 @@ static void posix_cpu_timer_get(struct k_itimer *timer, struct itimerspec *itp)
- {
- 	unsigned long long now;
- 	struct task_struct *p = timer->it.cpu.task;
--	int clear_dead;
- 
- 	/*
- 	 * Easy part: convert the reload time.
-@@ -801,6 +800,7 @@ static void posix_cpu_timer_get(struct k_itimer *timer, struct itimerspec *itp)
- 	}
- 
- 	if (unlikely(p == NULL)) {
-+		WARN_ON_ONCE(CPUCLOCK_PERTHREAD(timer->it_clock));
- 		/*
- 		 * This task already died and the timer will never fire.
- 		 * In this case, expires is actually the dead value.
-@@ -816,7 +816,6 @@ static void posix_cpu_timer_get(struct k_itimer *timer, struct itimerspec *itp)
- 	 */
- 	if (CPUCLOCK_PERTHREAD(timer->it_clock)) {
- 		cpu_clock_sample(timer->it_clock, p, &now);
--		clear_dead = p->exit_state;
- 	} else {
- 		read_lock(&tasklist_lock);
- 		if (unlikely(p->sighand == NULL)) {
-@@ -832,22 +831,20 @@ static void posix_cpu_timer_get(struct k_itimer *timer, struct itimerspec *itp)
- 			goto dead;
- 		} else {
- 			cpu_timer_sample_group(timer->it_clock, p, &now);
--			clear_dead = (unlikely(p->exit_state) &&
--				      thread_group_empty(p));
-+			if (unlikely(p->exit_state) && thread_group_empty(p)) {
-+				read_unlock(&tasklist_lock);
-+				/*
-+				 * We've noticed that the thread is dead, but
-+				 * not yet reaped.  Take this opportunity to
-+				 * drop our task ref.
-+				 */
-+				clear_dead_task(timer, now);
-+				goto dead;
-+			}
- 		}
- 		read_unlock(&tasklist_lock);
- 	}
- 
--	if (unlikely(clear_dead)) {
--		/*
--		 * We've noticed that the thread is dead, but
--		 * not yet reaped.  Take this opportunity to
--		 * drop our task ref.
--		 */
--		clear_dead_task(timer, now);
--		goto dead;
--	}
--
- 	if (now < timer->it.cpu.expires) {
- 		sample_to_timespec(timer->it_clock,
- 				   timer->it.cpu.expires - now,
-@@ -1062,11 +1059,13 @@ void posix_cpu_timer_schedule(struct k_itimer *timer)
- 	struct task_struct *p = timer->it.cpu.task;
- 	unsigned long long now;
- 
--	if (unlikely(p == NULL))
-+	if (unlikely(p == NULL)) {
-+		WARN_ON_ONCE(CPUCLOCK_PERTHREAD(timer->it_clock));
- 		/*
- 		 * The task was cleaned up already, no future firings.
- 		 */
- 		goto out;
-+	}
- 
- 	/*
- 	 * Fetch the current sample and update the timer's expiry time.
-@@ -1074,10 +1073,9 @@ void posix_cpu_timer_schedule(struct k_itimer *timer)
- 	if (CPUCLOCK_PERTHREAD(timer->it_clock)) {
- 		cpu_clock_sample(timer->it_clock, p, &now);
- 		bump_cpu_timer(timer, now);
--		if (unlikely(p->exit_state)) {
--			clear_dead_task(timer, now);
-+		if (unlikely(p->exit_state))
- 			goto out;
--		}
-+
- 		read_lock(&tasklist_lock); /* arm_timer needs it.  */
- 		spin_lock(&p->sighand->siglock);
- 	} else {
--- 
-1.8.3.1
-
+Thanks,
+Shawn
