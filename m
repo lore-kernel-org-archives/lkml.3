@@ -1,55 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754582Ab3JLDVZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 23:21:25 -0400
-Received: from mail-qe0-f43.google.com ([209.85.128.43]:64942 "EHLO
-	mail-qe0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753030Ab3JLDVX (ORCPT
+	id S1754862Ab3JLDVt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 23:21:49 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:53853 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753137Ab3JLDVs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 23:21:23 -0400
-MIME-Version: 1.0
-In-Reply-To: <1381331617-14703-1-git-send-email-badarkhe.manish@gmail.com>
-References: <1381331617-14703-1-git-send-email-badarkhe.manish@gmail.com>
-Date: Sat, 12 Oct 2013 08:51:22 +0530
-Message-ID: <CAKohpokPpyZNN=aH=u8kxDjiQrsE2mwu=0MN6pkWfuXLu9cZKw@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq: fix false return check from "regulator_set_voltage"
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Manish Badarkhe <badarkhe.manish@gmail.com>
-Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rjw@sisk.pl, kgene.kim@samsung.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 11 Oct 2013 23:21:48 -0400
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+To: stigge@antcom.de, linux@arm.linux.org.uk
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Subject: [PATCH] ARM: LPC32xx: remove deprecated IRQF_DISABLED
+Date: Sat, 12 Oct 2013 05:21:40 +0200
+Message-Id: <1381548100-5035-1-git-send-email-michael.opdenacker@free-electrons.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2013, Manish Badarkhe <badarkhe.manish@gmail.com> wrote:
-> Currently, code checks false return value from "regulator_set_voltage"
-> to show failure message. Modify the code to check proper return
-> value from "regulator_set_voltage".
->
-> Signed-off-by: Manish Badarkhe <badarkhe.manish@gmail.com>
-> ---
-> Based on master branch of linux-mainline.
->
-> :100644 100644 0fac344... 1537f32... M	drivers/cpufreq/exynos-cpufreq.c
->  drivers/cpufreq/exynos-cpufreq.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/cpufreq/exynos-cpufreq.c
-> b/drivers/cpufreq/exynos-cpufreq.c
-> index 0fac344..1537f32 100644
-> --- a/drivers/cpufreq/exynos-cpufreq.c
-> +++ b/drivers/cpufreq/exynos-cpufreq.c
-> @@ -141,7 +141,7 @@ post_notify:
->  	if ((freqs.new < freqs.old) ||
->  	   ((freqs.new > freqs.old) && safe_arm_volt)) {
->  		/* down the voltage after frequency change */
-> -		regulator_set_voltage(arm_regulator, arm_volt,
-> +		ret = regulator_set_voltage(arm_regulator, arm_volt,
->  				arm_volt);
->  		if (ret) {
->  			pr_err("%s: failed to set cpu voltage to %d\n",
+This patch proposes to remove the use of the IRQF_DISABLED flag
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+It's a NOOP since 2.6.35 and it will be removed one day.
+
+Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+---
+ arch/arm/mach-lpc32xx/timer.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/mach-lpc32xx/timer.c b/arch/arm/mach-lpc32xx/timer.c
+index 20eab63..4e58372 100644
+--- a/arch/arm/mach-lpc32xx/timer.c
++++ b/arch/arm/mach-lpc32xx/timer.c
+@@ -90,7 +90,7 @@ static irqreturn_t lpc32xx_timer_interrupt(int irq, void *dev_id)
+ 
+ static struct irqaction lpc32xx_timer_irq = {
+ 	.name		= "LPC32XX Timer Tick",
+-	.flags		= IRQF_DISABLED | IRQF_TIMER | IRQF_IRQPOLL,
++	.flags		= IRQF_TIMER | IRQF_IRQPOLL,
+ 	.handler	= lpc32xx_timer_interrupt,
+ };
+ 
+-- 
+1.8.1.2
+
