@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751386Ab3JLEXd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Oct 2013 00:23:33 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:54066 "EHLO
+	id S1751038Ab3JLE3t (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Oct 2013 00:29:49 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:54074 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750705Ab3JLEXc (ORCPT
+	with ESMTP id S1750732Ab3JLE3s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Oct 2013 00:23:32 -0400
+	Sat, 12 Oct 2013 00:29:48 -0400
 From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: willy@linux.intel.com
-Cc: linux-nvme@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH] NVMe: remove deprecated IRQF_DISABLED
-Date: Sat, 12 Oct 2013 06:23:29 +0200
-Message-Id: <1381551809-6236-1-git-send-email-michael.opdenacker@free-electrons.com>
+To: linux-kernel@vger.kernel.org
+Cc: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Subject: [PATCH] block: hd: remove deprecated IRQF_DISABLED
+Date: Sat, 12 Oct 2013 06:29:41 +0200
+Message-Id: <1381552181-6310-1-git-send-email-michael.opdenacker@free-electrons.com>
 X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,29 +22,43 @@ This patch proposes to remove the use of the IRQF_DISABLED flag
 
 It's a NOOP since 2.6.35 and it will be removed one day.
 
+This also removes a related comment which is obsolete too.
+
 Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
 ---
- drivers/block/nvme-core.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ drivers/block/hd.c | 12 +-----------
+ 1 file changed, 1 insertion(+), 11 deletions(-)
 
-diff --git a/drivers/block/nvme-core.c b/drivers/block/nvme-core.c
-index da52092..c6699af 100644
---- a/drivers/block/nvme-core.c
-+++ b/drivers/block/nvme-core.c
-@@ -1134,11 +1134,10 @@ static int queue_request_irq(struct nvme_dev *dev, struct nvme_queue *nvmeq,
- {
- 	if (use_threaded_interrupts)
- 		return request_threaded_irq(dev->entry[nvmeq->cq_vector].vector,
--					nvme_irq_check, nvme_irq,
--					IRQF_DISABLED | IRQF_SHARED,
-+					nvme_irq_check, nvme_irq, IRQF_SHARED,
- 					name, nvmeq);
- 	return request_irq(dev->entry[nvmeq->cq_vector].vector, nvme_irq,
--				IRQF_DISABLED | IRQF_SHARED, name, nvmeq);
-+				IRQF_SHARED, name, nvmeq);
- }
+diff --git a/drivers/block/hd.c b/drivers/block/hd.c
+index bf397bf..e16985f 100644
+--- a/drivers/block/hd.c
++++ b/drivers/block/hd.c
+@@ -694,16 +694,6 @@ static const struct block_device_operations hd_fops = {
+ 	.getgeo =	hd_getgeo,
+ };
  
- static void nvme_init_queue(struct nvme_queue *nvmeq, u16 qid)
+-/*
+- * This is the hard disk IRQ description. The IRQF_DISABLED in sa_flags
+- * means we run the IRQ-handler with interrupts disabled:  this is bad for
+- * interrupt latency, but anything else has led to problems on some
+- * machines.
+- *
+- * We enable interrupts in some of the routines after making sure it's
+- * safe.
+- */
+-
+ static int __init hd_init(void)
+ {
+ 	int drive;
+@@ -761,7 +751,7 @@ static int __init hd_init(void)
+ 			p->cyl, p->head, p->sect);
+ 	}
+ 
+-	if (request_irq(HD_IRQ, hd_interrupt, IRQF_DISABLED, "hd", NULL)) {
++	if (request_irq(HD_IRQ, hd_interrupt, 0, "hd", NULL)) {
+ 		printk("hd: unable to get IRQ%d for the hard disk driver\n",
+ 			HD_IRQ);
+ 		goto out1;
 -- 
 1.8.1.2
 
