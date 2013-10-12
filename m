@@ -1,155 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755554Ab3JLDmN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 23:42:13 -0400
-Received: from mga02.intel.com ([134.134.136.20]:24856 "EHLO mga02.intel.com"
+	id S1755483Ab3JLDmM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 23:42:12 -0400
+Received: from mga02.intel.com ([134.134.136.20]:29702 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754182Ab3JLDjc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754288Ab3JLDjc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Oct 2013 23:39:32 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,479,1378882800"; 
-   d="scan'208";a="391905937"
+   d="scan'208";a="391905939"
 From: David Cohen <david.a.cohen@linux.intel.com>
 To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com
 Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
         platform-driver-x86@vger.kernel.org,
+        Kuppuswamy Sathyanarayanan 
+	<sathyanarayanan.kuppuswamy@linux.intel.com>,
         David Cohen <david.a.cohen@linux.intel.com>
-Subject: [PATCH v3 00/10] rework arch/x86/platform/[mrst => intel-mid]
-Date: Fri, 11 Oct 2013 20:43:14 -0700
-Message-Id: <1381549404-22594-1-git-send-email-david.a.cohen@linux.intel.com>
+Subject: [PATCH v3 02/10] mrst: Fixed indentation issues
+Date: Fri, 11 Oct 2013 20:43:16 -0700
+Message-Id: <1381549404-22594-3-git-send-email-david.a.cohen@linux.intel.com>
 X-Mailer: git-send-email 1.8.4.rc3
+In-Reply-To: <1381549404-22594-1-git-send-email-david.a.cohen@linux.intel.com>
+References: <1381549404-22594-1-git-send-email-david.a.cohen@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set does initial rework from arch/x86/platform/mrst to
-arch/x86/platform/intel-mid.
-These changes are necessary to update the obsolete Intel Atom Moorestown code
-to support the newer Atom processors of this family (called 'intel-mid'). 
+From: Kuppuswamy Sathyanarayanan <sathyanarayanan.kuppuswamy@linux.intel.com>
 
-Kuppuswamy Sathyanarayanan (10):
-  mrst: Fixed printk/pr_* related issues
-  mrst: Fixed indentation issues
-  mrst: Fixed checkpatch warnings
-  intel_mid: Renamed *mrst* to *intel_mid*
-  intel_mid: Renamed *mrst* to *intel_mid*
-  intel_mid: Refactored sfi_parse_devs() function
-  intel_mid: Added custom device_handler support
-  intel_mid: Added custom handler for ipc devices
-  intel_mid: Moved board related code to a new file
-  intel_mid: Moved SFI related code to intel_mid_sfi.c
+Fixed indentation issues reported by checkpatch script in
+mrst related files.
 
- Documentation/kernel-parameters.txt                |    6 +-
- arch/x86/include/asm/{mrst.h => intel-mid.h}       |   62 +-
- .../include/asm/{mrst-vrtc.h => intel_mid_vrtc.h}  |    4 +-
- arch/x86/include/asm/setup.h                       |    4 +-
- arch/x86/include/uapi/asm/bootparam.h              |    2 +-
- arch/x86/kernel/apb_timer.c                        |   10 +-
- arch/x86/kernel/early_printk.c                     |    2 +-
- arch/x86/kernel/head32.c                           |    4 +-
- arch/x86/kernel/rtc.c                              |    4 +-
- arch/x86/pci/Makefile                              |    2 +-
- arch/x86/pci/{mrst.c => intel_mid_pci.c}           |   14 +-
- arch/x86/platform/Makefile                         |    2 +-
- arch/x86/platform/intel-mid/Makefile               |    9 +
- arch/x86/platform/intel-mid/board.c                |  109 ++
- arch/x86/platform/intel-mid/device_libs/Makefile   |   21 +
- .../intel-mid/device_libs/platform_emc1403.c       |   33 +
- .../intel-mid/device_libs/platform_emc1403.h       |   16 +
- .../intel-mid/device_libs/platform_gpio_keys.c     |   82 ++
- .../intel-mid/device_libs/platform_gpio_keys.h     |   16 +
- .../platform/intel-mid/device_libs/platform_ipc.c  |   59 ++
- .../platform/intel-mid/device_libs/platform_ipc.h  |   17 +
- .../intel-mid/device_libs/platform_lis331.c        |   32 +
- .../intel-mid/device_libs/platform_lis331.h        |   16 +
- .../intel-mid/device_libs/platform_max3111.c       |   28 +
- .../intel-mid/device_libs/platform_max3111.h       |   16 +
- .../intel-mid/device_libs/platform_max7315.c       |   62 ++
- .../intel-mid/device_libs/platform_max7315.h       |   19 +
- .../intel-mid/device_libs/platform_mpu3050.c       |   28 +
- .../intel-mid/device_libs/platform_mpu3050.h       |   16 +
- .../platform/intel-mid/device_libs/platform_msic.c |   87 ++
- .../platform/intel-mid/device_libs/platform_msic.h |   19 +
- .../intel-mid/device_libs/platform_msic_audio.c    |   36 +
- .../intel-mid/device_libs/platform_msic_audio.h    |   16 +
- .../intel-mid/device_libs/platform_msic_battery.c  |   26 +
- .../intel-mid/device_libs/platform_msic_battery.h  |   17 +
- .../intel-mid/device_libs/platform_msic_gpio.c     |   37 +
- .../intel-mid/device_libs/platform_msic_gpio.h     |   16 +
- .../intel-mid/device_libs/platform_msic_ocd.c      |   39 +
- .../intel-mid/device_libs/platform_msic_ocd.h      |   16 +
- .../device_libs/platform_msic_power_btn.c          |   25 +
- .../device_libs/platform_msic_power_btn.h          |   17 +
- .../intel-mid/device_libs/platform_msic_thermal.c  |   26 +
- .../intel-mid/device_libs/platform_msic_thermal.h  |   17 +
- .../intel-mid/device_libs/platform_pmic_gpio.c     |   36 +
- .../intel-mid/device_libs/platform_pmic_gpio.h     |   16 +
- .../intel-mid/device_libs/platform_tc35876x.c      |   29 +
- .../intel-mid/device_libs/platform_tc35876x.h      |   16 +
- .../intel-mid/device_libs/platform_tca6416.c       |   45 +
- .../intel-mid/device_libs/platform_tca6416.h       |   20 +
- .../early_printk_intel_mid.c}                      |   11 +-
- arch/x86/platform/intel-mid/intel-mid.c            |  213 ++++
- arch/x86/platform/intel-mid/intel_mid_sfi.c        |  485 +++++++++
- .../{mrst/vrtc.c => intel-mid/intel_mid_vrtc.c}    |   19 +-
- arch/x86/platform/intel-mid/intel_mid_weak_decls.h |   15 +
- arch/x86/platform/mrst/Makefile                    |    3 -
- arch/x86/platform/mrst/mrst.c                      | 1052 --------------------
- drivers/gpu/drm/gma500/mdfld_dsi_output.h          |    2 +-
- drivers/gpu/drm/gma500/oaktrail_device.c           |    2 +-
- drivers/gpu/drm/gma500/oaktrail_lvds.c             |    2 +-
- drivers/platform/x86/intel_scu_ipc.c               |    4 +-
- drivers/rtc/rtc-mrst.c                             |    4 +-
- drivers/watchdog/intel_scu_watchdog.c              |    4 +-
- 62 files changed, 1944 insertions(+), 1123 deletions(-)
- rename arch/x86/include/asm/{mrst.h => intel-mid.h} (50%)
- rename arch/x86/include/asm/{mrst-vrtc.h => intel_mid_vrtc.h} (81%)
- rename arch/x86/pci/{mrst.c => intel_mid_pci.c} (96%)
- create mode 100644 arch/x86/platform/intel-mid/Makefile
- create mode 100644 arch/x86/platform/intel-mid/board.c
- create mode 100644 arch/x86/platform/intel-mid/device_libs/Makefile
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_emc1403.c
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_emc1403.h
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_gpio_keys.c
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_gpio_keys.h
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_ipc.c
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_ipc.h
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_lis331.c
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_lis331.h
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_max3111.c
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_max3111.h
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_max7315.c
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_max7315.h
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_mpu3050.c
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_mpu3050.h
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_msic.c
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_msic.h
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_msic_audio.c
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_msic_audio.h
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_msic_battery.c
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_msic_battery.h
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_msic_gpio.c
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_msic_gpio.h
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_msic_ocd.c
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_msic_ocd.h
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_msic_power_btn.c
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_msic_power_btn.h
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_msic_thermal.c
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_msic_thermal.h
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_pmic_gpio.c
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_pmic_gpio.h
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_tc35876x.c
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_tc35876x.h
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_tca6416.c
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_tca6416.h
- rename arch/x86/platform/{mrst/early_printk_mrst.c => intel-mid/early_printk_intel_mid.c} (97%)
- create mode 100644 arch/x86/platform/intel-mid/intel-mid.c
- create mode 100644 arch/x86/platform/intel-mid/intel_mid_sfi.c
- rename arch/x86/platform/{mrst/vrtc.c => intel-mid/intel_mid_vrtc.c} (90%)
- create mode 100644 arch/x86/platform/intel-mid/intel_mid_weak_decls.h
- delete mode 100644 arch/x86/platform/mrst/Makefile
- delete mode 100644 arch/x86/platform/mrst/mrst.c
+Signed-off-by: Kuppuswamy Sathyanarayanan <sathyanarayanan.kuppuswamy@linux.intel.com>
+Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+---
+ arch/x86/platform/mrst/early_printk_mrst.c |  3 ++-
+ arch/x86/platform/mrst/mrst.c              | 24 +++++++++++++-----------
+ 2 files changed, 15 insertions(+), 12 deletions(-)
 
+diff --git a/arch/x86/platform/mrst/early_printk_mrst.c b/arch/x86/platform/mrst/early_printk_mrst.c
+index 95880f7..39ecc27 100644
+--- a/arch/x86/platform/mrst/early_printk_mrst.c
++++ b/arch/x86/platform/mrst/early_printk_mrst.c
+@@ -219,7 +219,8 @@ static void early_mrst_spi_putc(char c)
+ }
+ 
+ /* Early SPI only uses polling mode */
+-static void early_mrst_spi_write(struct console *con, const char *str, unsigned n)
++static void early_mrst_spi_write(struct console *con, const char *str,
++					unsigned n)
+ {
+ 	int i;
+ 
+diff --git a/arch/x86/platform/mrst/mrst.c b/arch/x86/platform/mrst/mrst.c
+index b9aeb54..235a742 100644
+--- a/arch/x86/platform/mrst/mrst.c
++++ b/arch/x86/platform/mrst/mrst.c
+@@ -131,7 +131,7 @@ struct sfi_timer_table_entry *sfi_get_mtmr(int hint)
+ 	int i;
+ 	if (hint < sfi_mtimer_num) {
+ 		if (!sfi_mtimer_usage[hint]) {
+-			pr_debug("hint taken for timer %d irq %d\n",\
++			pr_debug("hint taken for timer %d irq %d\n",
+ 				hint, sfi_mtimer_array[hint].irq);
+ 			sfi_mtimer_usage[hint] = 1;
+ 			return &sfi_mtimer_array[hint];
+@@ -679,14 +679,14 @@ static void *msic_thermal_platform_data(void *info)
+ /* tc35876x DSI-LVDS bridge chip and panel platform data */
+ static void *tc35876x_platform_data(void *data)
+ {
+-       static struct tc35876x_platform_data pdata;
++	static struct tc35876x_platform_data pdata;
+ 
+-       /* gpio pins set to -1 will not be used by the driver */
+-       pdata.gpio_bridge_reset = get_gpio_by_name("LCMB_RXEN");
+-       pdata.gpio_panel_bl_en = get_gpio_by_name("6S6P_BL_EN");
+-       pdata.gpio_panel_vadd = get_gpio_by_name("EN_VREG_LCD_V3P3");
++	/* gpio pins set to -1 will not be used by the driver */
++	pdata.gpio_bridge_reset = get_gpio_by_name("LCMB_RXEN");
++	pdata.gpio_panel_bl_en = get_gpio_by_name("6S6P_BL_EN");
++	pdata.gpio_panel_vadd = get_gpio_by_name("EN_VREG_LCD_V3P3");
+ 
+-       return &pdata;
++	return &pdata;
+ }
+ 
+ static const struct devs_id __initconst device_ids[] = {
+@@ -729,7 +729,7 @@ static int i2c_next_dev;
+ 
+ static void __init intel_scu_device_register(struct platform_device *pdev)
+ {
+-	if(ipc_next_dev == MAX_IPCDEVS)
++	if (ipc_next_dev == MAX_IPCDEVS)
+ 		pr_err("too many SCU IPC devices");
+ 	else
+ 		ipc_devs[ipc_next_dev++] = pdev;
+@@ -872,7 +872,8 @@ static void __init sfi_handle_spi_dev(struct spi_board_info *spi_info)
+ 
+ 	while (dev->name[0]) {
+ 		if (dev->type == SFI_DEV_TYPE_SPI &&
+-				!strncmp(dev->name, spi_info->modalias, SFI_NAME_LEN)) {
++			!strncmp(dev->name, spi_info->modalias,
++						SFI_NAME_LEN)) {
+ 			pdata = dev->get_platform_data(spi_info);
+ 			break;
+ 		}
+@@ -904,7 +905,7 @@ static void __init sfi_handle_i2c_dev(int bus, struct i2c_board_info *i2c_info)
+ 		intel_scu_i2c_device_register(bus, i2c_info);
+ 	else
+ 		i2c_register_board_info(bus, i2c_info, 1);
+- }
++}
+ 
+ 
+ static int __init sfi_parse_devs(struct sfi_table_header *table)
+@@ -1034,7 +1035,8 @@ static int __init pb_keys_init(void)
+ 	num = sizeof(gpio_button) / sizeof(struct gpio_keys_button);
+ 	for (i = 0; i < num; i++) {
+ 		gb[i].gpio = get_gpio_by_name(gb[i].desc);
+-		pr_debug("info[%2d]: name = %s, gpio = %d\n", i, gb[i].desc, gb[i].gpio);
++		pr_debug("info[%2d]: name = %s, gpio = %d\n", i, gb[i].desc,
++					gb[i].gpio);
+ 		if (gb[i].gpio == -1)
+ 			continue;
+ 
 -- 
 1.8.4.rc3
 
