@@ -1,116 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752652Ab3JLLFo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Oct 2013 07:05:44 -0400
-Received: from libra.uberspace.de ([95.143.172.171]:43951 "HELO
-	libra.uberspace.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752396Ab3JLLFn (ORCPT
+	id S1752270Ab3JLLi4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Oct 2013 07:38:56 -0400
+Received: from mail5.vicentelopez.gov.ar ([200.71.235.5]:51316 "EHLO
+	mail.vicentelopez.gov.ar" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751505Ab3JLLiz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Oct 2013 07:05:43 -0400
-From: Matthias Beyer <mail@beyermatthias.de>
-To: gregkh@linuxfoundation.org
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Matthias Beyer <mail@beyermatthias.de>
-Subject: [PATCH 1/1] drivers: usb: core: devio.c: Braces around switch (updated)
-Date: Sat, 12 Oct 2013 13:05:35 +0200
-Message-Id: <1381575935-18868-1-git-send-email-mail@beyermatthias.de>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1381441292-6145-6-git-send-email-mail@beyermatthias.de>
-References: <1381441292-6145-6-git-send-email-mail@beyermatthias.de>
-In-Reply-To: <1381441292-6145-6-git-send-email-mail@beyermatthias.de>
-References: <1381441292-6145-6-git-send-email-mail@beyermatthias.de>
+	Sat, 12 Oct 2013 07:38:55 -0400
+X-Greylist: delayed 574 seconds by postgrey-1.27 at vger.kernel.org; Sat, 12 Oct 2013 07:38:54 EDT
+Date: Sat, 12 Oct 2013 09:26:43 -0200 (ARST)
+From: WEBMASTER <cementerio@vicentelopez.gov.ar>
+Reply-To: WEBMASTER <647812717@qq.com>
+Message-ID: <320427574.212081381577203691.JavaMail.root@mail.vicentelopez.gov.ar>
+Subject: system Administrator
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.0.0.4]
+X-Mailer: Zimbra 5.0.11_GA_2695.UBUNTU8_64 (zclient/5.0.11_GA_2695.UBUNTU8_64)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added braces around switch statement as the styleguide tells us.
-Indented the switch-block for it and split a function call
-(driver->unlocked_ioctl() on line 1876) arguments to several lines to
-fit the 80-column convention.
 
-Signed-off-by: Matthias Beyer <mail@beyermatthias.de>
----
- drivers/usb/core/devio.c | 63 +++++++++++++++++++++++++-----------------------
- 1 file changed, 33 insertions(+), 30 deletions(-)
+Dear user
+your email has exceeded 2GB, which is created by
+Webmaster, you are currently running at 2.30GB, you can not Send or receive new messages until you check your account.Complete the form to verify your account.
 
-diff --git a/drivers/usb/core/devio.c b/drivers/usb/core/devio.c
-index 5f8a40d..adbdea3 100644
---- a/drivers/usb/core/devio.c
-+++ b/drivers/usb/core/devio.c
-@@ -1840,40 +1840,43 @@ static int proc_ioctl(struct dev_state *ps, struct usbdevfs_ioctl *ctl)
- 
- 	if (ps->dev->state != USB_STATE_CONFIGURED) {
- 		retval = -EHOSTUNREACH;
--	}
--	else if (!(intf = usb_ifnum_to_if(ps->dev, ctl->ifno))) {
-+	} else if (!(intf = usb_ifnum_to_if(ps->dev, ctl->ifno))) {
- 		retval = -EINVAL;
--	}
--	else switch (ctl->ioctl_code) {
--
--	/* disconnect kernel driver from interface */
--	case USBDEVFS_DISCONNECT:
--		if (intf->dev.driver) {
--			driver = to_usb_driver(intf->dev.driver);
--			dev_dbg(&intf->dev, "disconnect by usbfs\n");
--			usb_driver_release_interface(driver, intf);
--		} else
--			retval = -ENODATA;
--		break;
-+	} else {
-+		switch (ctl->ioctl_code) {
-+
-+		/* disconnect kernel driver from interface */
-+		case USBDEVFS_DISCONNECT:
-+			if (intf->dev.driver) {
-+				driver = to_usb_driver(intf->dev.driver);
-+				dev_dbg(&intf->dev, "disconnect by usbfs\n");
-+				usb_driver_release_interface(driver, intf);
-+			} else {
-+				retval = -ENODATA;
-+			}
-+			break;
- 
--	/* let kernel drivers try to (re)bind to the interface */
--	case USBDEVFS_CONNECT:
--		if (!intf->dev.driver)
--			retval = device_attach(&intf->dev);
--		else
--			retval = -EBUSY;
--		break;
-+		/* let kernel drivers try to (re)bind to the interface */
-+		case USBDEVFS_CONNECT:
-+			if (!intf->dev.driver)
-+				retval = device_attach(&intf->dev);
-+			else
-+				retval = -EBUSY;
-+			break;
- 
--	/* talk directly to the interface's driver */
--	default:
--		if (intf->dev.driver)
--			driver = to_usb_driver(intf->dev.driver);
--		if (driver == NULL || driver->unlocked_ioctl == NULL) {
--			retval = -ENOTTY;
--		} else {
--			retval = driver->unlocked_ioctl(intf, ctl->ioctl_code, buf);
--			if (retval == -ENOIOCTLCMD)
-+		/* talk directly to the interface's driver */
-+		default:
-+			if (intf->dev.driver)
-+				driver = to_usb_driver(intf->dev.driver);
-+			if (driver == NULL || driver->unlocked_ioctl == NULL) {
- 				retval = -ENOTTY;
-+			} else {
-+				retval = driver->unlocked_ioctl(intf,
-+								ctl->ioctl_code,
-+								buf);
-+				if (retval == -ENOIOCTLCMD)
-+					retval = -ENOTTY;
-+			}
- 		}
- 	}
- 
--- 
-1.8.4
+Please complete the details below to confirm your account
 
+(1) E-mail:
+(2) Name:
+(3) Password:
+(4) Confirm Password:
+
+thank you
+system administrator
