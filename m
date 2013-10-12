@@ -1,89 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755109Ab3JLBkG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 21:40:06 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:36486 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752599Ab3JLBkE (ORCPT
+	id S1753804Ab3JLBqA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 21:46:00 -0400
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:35208 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751742Ab3JLBp6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 21:40:04 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rob Landley <rob@landley.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-References: <8761v7h2pt.fsf@tw-ebiederman.twitter.com>
-	<CAJfpegtT7y-1HhbEVAMKkdQugTG_w7G_epGtQHGvQLpcZB5FVA@mail.gmail.com>
-	<87li281wx6.fsf_-_@xmission.com> <87a9ioo37a.fsf_-_@xmission.com>
-	<20131007043919.GB10284@mail.hallyn.com> <87vc191sf2.fsf@xmission.com>
-	<CALCETrUaubASZyeoNZcYxn5-GJO68=Ng=GYmas7K_OBsjM7f0Q@mail.gmail.com>
-	<87d2ngyb02.fsf@xmission.com>
-	<20131008160601.GJ14242@tucsk.piliscsaba.szeredi.hu>
-	<CALCETrWw=htmgxqq=RQztdJQ-a8c3860vmJh9Ni=Hhs0TkO3YA@mail.gmail.com>
-	<20131008161135.GK14242@tucsk.piliscsaba.szeredi.hu>
-	<87li23trll.fsf@tw-ebiederman.twitter.com>
-	<CAJfpegv+h7xh_2e-X7is9dq1Fp06A0eKwsyWFMPX=azbbDCX5Q@mail.gmail.com>
-	<87vc15mjuw.fsf@xmission.com>
-	<CAJfpegvF89LzAvNB0h0otv7sKoS3rewZzQKAauQx3P+rCkCcSg@mail.gmail.com>
-	<87iox38fkv.fsf@xmission.com>
-Date: Fri, 11 Oct 2013 18:39:53 -0700
-In-Reply-To: <87iox38fkv.fsf@xmission.com> (Eric W. Biederman's message of
-	"Fri, 11 Oct 2013 18:04:32 -0700")
-Message-ID: <87d2nb8dxy.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Fri, 11 Oct 2013 21:45:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX18WtyBMlTRTojrRFnqpwc5905xp0CYyhcQ=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  1.5 TR_Symld_Words too many words that have symbols inside
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0002]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Miklos Szeredi <miklos@szeredi.hu>
-X-Spam-Relay-Country: 
-Subject: Re: [RFC][PATCH 4/3] vfs: Allow rmdir to remove mounts in all but the current mount namespace
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+In-Reply-To: <2579337.FPgJGgHYdz@tauon>
+References: <2579337.FPgJGgHYdz@tauon>
+Date: Fri, 11 Oct 2013 21:45:57 -0400
+Message-ID: <CACXcFm=qdv9ktjYDGo+L=ssh+tCs7vVniznNpXyWVTBSB1CMRg@mail.gmail.com>
+Subject: Re: [PATCH] CPU Jitter RNG: inclusion into kernel crypto API and /dev/random
+From: Sandy Harris <sandyinchina@gmail.com>
+To: Stephan Mueller <smueller@chronox.de>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, LKML <linux-kernel@vger.kernel.org>,
+        linux-crypto@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ebiederm@xmission.com (Eric W. Biederman) writes:
+On Fri, Oct 11, 2013 at 2:38 PM, Stephan Mueller <smueller@chronox.de> wrote:
 
-> Miklos Szeredi <miklos@szeredi.hu> writes:
+I like the basic idea. Here I'm alternately reading the email and the
+page you link to & commenting on both.
+
+A nitpick in the paper is that you cite RFC 1750. That was superceded
+some years back by RFC 4086
+http://tools.ietf.org/html/rfc4086
+
+(Ted's comments in the actual driver had the same problem last
+I looked. That is excusable since they were written long ago.)
+
+I think you may be missing some other citations that should be
+there, to previous work along similar lines. One is the HAVEGE
+work, another:
+McGuire, Okech & Schiesser,
+Analysis of inherent randomness of the Linux kernel,
+http://lwn.net/images/conf/rtlws11/random-hardware.pdf
+
+Paper has:
+
+" the time delta is partitioned into chunks of 1 bit starting at the lowest bit
+" .... The 64 1 bit chunks of the time value are XORed with each other to
+" form a 1 bit value.
+
+As I read that, you are just taking the parity. Why not use that simpler
+description & possibly one of several possible optimised algorithms
+for the task: http://graphics.stanford.edu/~seander/bithacks.html
+
+If what you are doing is not a parity computation, then you need a
+better description so people like me do not misread it.
+
+A bit later you have:
+
+" After obtaining the 1 bit folded and unbiased time stamp,
+" how is it mixed into the entropy pool? ... The 1 bit folded
+" value is XORed with 1 bit from the entropy pool.
+
+This appears to be missing the cryptographically strong
+mixing step which most RNG code includes. If that is
+what you are doing, you need to provide some strong
+arguments to justify it.
+
+Sometimes doing without is justified; for example my
+code along these lines
+ftp://ftp.cs.sjtu.edu.cn:990/sandy/maxwell/
+does more mixing than I see in yours, but probably
+not enough overall. That's OK because I am just
+feeding into /dev/random which has plenty of
+mixing.
+
+It is OK for your code too if you are feeding into
+/dev/random, but it looks problematic if your code
+is expected to stand alone.
+
+Ah! You talk about whitening a bit later. However,
+you seem to make it optional, up to the user. I
+cannot see that that is a good idea.
+
+At the very least I think you need something like
+the linear transform from the ARIA cipher -- fast
+and cheap, 128 bits in & 128 out and it makes
+every output bit depend on every input bit. That
+might not be enough, though.
+
+You require compilation without optimisation. How does
+that interact with kernel makefiles? Can you avoid
+undesirable optimisations in some other way, such as
+volatile declartions?
+
+> I am asking whether this RNG would good as an inclusion into the Linux
+> kernel for:
 >
->> On Thu, Oct 10, 2013 at 1:43 PM, Eric W. Biederman
->>> Miklos if you as the fuse maintainer aren't worried about network
->>> filesystems, and multiple namespaces I won't worry either.  Especially
->>> since modern versions of fuse aren't affected.
->>
->> I think the above conditions (local mount blocks unlink/rename) are
->> enough to prevent most of the problems, of which there aren't many in
->> any case.
->
-> Dumb question.
->
-> What prevents someone setting up a race between the fusermount
-> permission checks and replacing the destination with a symlink, perhaps
-> to /etc/shadow?
->
-> Do we need a MS_NOFOLLOW?
+> - kernel crypto API to provide a true random number generator as part of
+> this API (see [2] appendix B for a description)
 
-Doh!  mount(".",...) works just fine..
+My first reaction is no. We have /dev/random for the userspace
+API and there is a decent kernel API too. I may change my
+mind here as I look more at your appendix & maybe the code.
 
-My apologies for the silly question.
+> - inclusion into /dev/random as an entropy provider of last resort when
+> the entropy estimator falls low.
 
-Eric
+Why only 'of last resort'? If it can provide good entropy, we should
+use it often.
 
+> I will present the RNG at the Linux Symposium in Ottawa this year. There
+> I can give a detailed description of the design and testing.
+
+I live in Ottawa, don't know if I'll make it to the Symposium this
+year. Ted; I saw you at one Symposium; are you coming this
+year?
