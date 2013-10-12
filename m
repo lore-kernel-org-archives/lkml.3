@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753246Ab3JLTGc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Oct 2013 15:06:32 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:56597 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753089Ab3JLTGb (ORCPT
+	id S1753459Ab3JLTGf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Oct 2013 15:06:35 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:53935 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753089Ab3JLTGd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Oct 2013 15:06:31 -0400
+	Sat, 12 Oct 2013 15:06:33 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -14,49 +14,104 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
         Kosaki Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: posix-timers: Various cleanups 
-Date: Sat, 12 Oct 2013 21:06:16 +0200
-Message-Id: <1381604786-21293-1-git-send-email-fweisbec@gmail.com>
+Subject: [RFC PATCH 02/10] posix-timers: Remove dead process posix cpu timers caching
+Date: Sat, 12 Oct 2013 21:06:18 +0200
+Message-Id: <1381604786-21293-3-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1381604786-21293-1-git-send-email-fweisbec@gmail.com>
+References: <1381604786-21293-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So this is a first take to cleanup the posix cpu timers code. It removes
-some optimizations that don't seem very worth the code complications to me,
-and also bring some locking cleanup (remove use of tasklist_lock), etc..
+Now that we removed dead thread posix cpu timers caching,
+lets remove the dead process wide version. This caching
+is similar to the per thread version but it should be even
+more rare:
 
-It has been only lightly tested for now (just ran though the posix timers
-selftests in tools/testing/selftests).
+* If the process id dead, we are not reading its timers
+status from a thread belonging to its group. So this only
+concern remote process timers reads.
 
-And there is still some work to do, I need to integrate the fixes proposed
-by Kosaki: https://lkml.kernel.org/r/1369604149-13016-1-git-send-email-kosaki.motohiro@gmail.com
-and there is some more chunks to sanitize.
+* Unlike per thread timers caching, this only applies to
+zombies targets. Buried targets process wide timers return
+0 values.
 
-But anyway that's a first step. And I would like to also make sure
-that people are fine with the optimizations I'm removing. So here is it.
+Then again this caching seem to complicate the code for
+corner cases that are probably not worth it. So lets get
+rid of it.
 
-Thanks.
-
-git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
-	timers/posix-timers-rfc
-
-Thanks,
-	Frederic
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Kosaki Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
 ---
+ kernel/posix-cpu-timers.c | 34 +---------------------------------
+ 1 file changed, 1 insertion(+), 33 deletions(-)
 
-Frederic Weisbecker (10):
-      posix-timers: Remove dead thread posix cpu timers caching
-      posix-timers: Remove dead process posix cpu timers caching
-      posix-timers: Cleanup reaped target handling
-      posix-timers: Remove dead task special case
-      posix-timers: Remove useless clock sample on timers cleanup
-      posix-timers: Consolidate posix_cpu_clock_get()
-      posix-timers: Use sighand lock instead of tasklist_lock for task clock sample
-      posix-timers: Use sighand lock instead of tasklist_lock on timer deletion
-      posix-timers: Remove remaining uses of tasklist_lock
-      posix-timers: Convert abuses of BUG_ON to WARN_ON
+diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
+index b803265..dd75dc4 100644
+--- a/kernel/posix-cpu-timers.c
++++ b/kernel/posix-cpu-timers.c
+@@ -453,23 +453,6 @@ void posix_cpu_timers_exit_group(struct task_struct *tsk)
+ 		       tsk->se.sum_exec_runtime + sig->sum_sched_runtime);
+ }
+ 
+-static void clear_dead_task(struct k_itimer *itimer, unsigned long long now)
+-{
+-	struct cpu_timer_list *timer = &itimer->it.cpu;
+-
+-	/*
+-	 * That's all for this thread or process.
+-	 * We leave our residual in expires to be reported.
+-	 */
+-	put_task_struct(timer->task);
+-	timer->task = NULL;
+-	if (timer->expires < now) {
+-		timer->expires = 0;
+-	} else {
+-		timer->expires -= now;
+-	}
+-}
+-
+ static inline int expires_gt(cputime_t expires, cputime_t new_exp)
+ {
+ 	return expires == 0 || expires > new_exp;
+@@ -831,16 +814,6 @@ static void posix_cpu_timer_get(struct k_itimer *timer, struct itimerspec *itp)
+ 			goto dead;
+ 		} else {
+ 			cpu_timer_sample_group(timer->it_clock, p, &now);
+-			if (unlikely(p->exit_state) && thread_group_empty(p)) {
+-				read_unlock(&tasklist_lock);
+-				/*
+-				 * We've noticed that the thread is dead, but
+-				 * not yet reaped.  Take this opportunity to
+-				 * drop our task ref.
+-				 */
+-				clear_dead_task(timer, now);
+-				goto dead;
+-			}
+ 		}
+ 		read_unlock(&tasklist_lock);
+ 	}
+@@ -1090,13 +1063,8 @@ void posix_cpu_timer_schedule(struct k_itimer *timer)
+ 			timer->it.cpu.expires = 0;
+ 			goto out_unlock;
+ 		} else if (unlikely(p->exit_state) && thread_group_empty(p)) {
+-			/*
+-			 * We've noticed that the thread is dead, but
+-			 * not yet reaped.  Take this opportunity to
+-			 * drop our task ref.
+-			 */
++			/* Optimizations: if the process is dying, no need to rearm */
+ 			cpu_timer_sample_group(timer->it_clock, p, &now);
+-			clear_dead_task(timer, now);
+ 			goto out_unlock;
+ 		}
+ 		spin_lock(&p->sighand->siglock);
+-- 
+1.8.3.1
 
-
- kernel/posix-cpu-timers.c | 307 +++++++++++++++++++---------------------------
- 1 file changed, 127 insertions(+), 180 deletions(-)
