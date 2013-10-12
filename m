@@ -1,89 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754785Ab3JLAnv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 20:43:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20829 "EHLO mx1.redhat.com"
+	id S1754875Ab3JLAoG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 20:44:06 -0400
+Received: from mga11.intel.com ([192.55.52.93]:41752 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754508Ab3JLAnt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 20:43:49 -0400
-Message-Id: <20131012004216.971202555@amt.cnet>
-User-Agent: quilt/0.60-1
-Date: Fri, 11 Oct 2013 21:39:25 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: kvm@vger.kernel.org
-Cc: dzickus@redhat.com, pbonzini@redhat.com, gleb@redhat.com,
-        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>
-Subject: [patch 1/2] pvclock: detect watchdog reset at pvclock read
-References: <20131012003924.092908362@amt.cnet>
-Content-Disposition: inline; filename=02-kvmclock-touch-watchdog-on-kvmclock-read
+	id S1754341Ab3JLAoC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 20:44:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,479,1378882800"; 
+   d="scan'208";a="409687394"
+Date: Sat, 12 Oct 2013 08:43:55 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Toralf =?utf-8?Q?F=C3=B6rster?= <toralf.foerster@gmx.de>,
+        Richard Weinberger <richard@nod.at>, Jan Kara <jack@suse.cz>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        UML devel <user-mode-linux-devel@lists.sourceforge.net>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        hannes@cmpxchg.org, darrick.wong@oracle.com,
+        Michal Hocko <mhocko@suse.cz>
+Subject: [PATCH] writeback: fix negative bdi max pause
+Message-ID: <20131012004355.GB7520@localhost>
+References: <CAMuHMdWs6Y7y12STJ+YXKJjxRF0k5yU9C9+0fiPPmq-GgeW-6Q@mail.gmail.com>
+ <525591AD.4060401@gmx.de>
+ <5255A3E6.6020100@nod.at>
+ <20131009214733.GB25608@quack.suse.cz>
+ <5255D9A6.3010208@nod.at>
+ <5256DA9A.5060904@gmx.de>
+ <20131011011649.GA11191@localhost>
+ <5257B9EB.7080503@gmx.de>
+ <20131011085701.GA27382@localhost>
+ <52580767.6090604@gmx.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <52580767.6090604@gmx.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement reset of kernel watchdogs at pvclock read time. This avoids
-adding special code to every watchdog.
+Toralf runs trinity on UML/i386.
+After some time it hangs and the last message line is
 
-This is possible for watchdogs which measure time based on sched_clock() or 
-ktime_get() variants.
+	BUG: soft lockup - CPU#0 stuck for 22s! [trinity-child0:1521]
 
-Suggested by Don Zickus.
+It's found that pages_dirtied becomes very large.
+More than 1000000000 pages in this case:
 
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+	period = HZ * pages_dirtied / task_ratelimit;
+	BUG_ON(pages_dirtied > 2000000000);
+	BUG_ON(pages_dirtied > 1000000000);      <---------
 
-Index: kvm/arch/x86/kernel/kvmclock.c
-===================================================================
---- kvm.orig/arch/x86/kernel/kvmclock.c
-+++ kvm/arch/x86/kernel/kvmclock.c
-@@ -139,6 +139,7 @@ bool kvm_check_and_clear_guest_paused(vo
- 	src = &hv_clock[cpu].pvti;
- 	if ((src->flags & PVCLOCK_GUEST_STOPPED) != 0) {
- 		src->flags &= ~PVCLOCK_GUEST_STOPPED;
-+		pvclock_touch_watchdogs();
- 		ret = true;
- 	}
- 
-Index: kvm/arch/x86/kernel/pvclock.c
-===================================================================
---- kvm.orig/arch/x86/kernel/pvclock.c
-+++ kvm/arch/x86/kernel/pvclock.c
-@@ -43,6 +43,13 @@ unsigned long pvclock_tsc_khz(struct pvc
- 	return pv_tsc_khz;
+UML debug printf shows that we got negative pause here:
+
+	ick: pause : -984
+	ick: pages_dirtied : 0
+	ick: task_ratelimit: 0
+
+	 pause:
+	+       if (pause < 0)  {
+	+               extern int printf(char *, ...);
+	+               printf("ick : pause : %li\n", pause);
+	+               printf("ick: pages_dirtied : %lu\n", pages_dirtied);
+	+               printf("ick: task_ratelimit: %lu\n", task_ratelimit);
+	+               BUG_ON(1);
+	+       }
+	        trace_balance_dirty_pages(bdi,
+
+Since pause is bounded by [min_pause, max_pause] where min_pause is also
+bounded by max_pause. It's suspected and demonstrated that the max_pause
+calculation goes wrong:
+
+	ick: pause : -717
+	ick: min_pause : -177
+	ick: max_pause : -717
+	ick: pages_dirtied : 14
+	ick: task_ratelimit: 0
+
+The problem lies in the two "long = unsigned long" assignments in
+bdi_max_pause() which might go negative if the highest bit is 1, and
+the min_t(long, ...) check failed to protect it falling under 0. Fix
+all of them by using "unsigned long" throughout the function.
+
+Reported-by: Toralf Förster <toralf.foerster@gmx.de>
+Tested-by: Toralf Förster <toralf.foerster@gmx.de>
+Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
+---
+ mm/page-writeback.c |   10 +++++-----
+ mm/readahead.c      |    2 +-
+ 2 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index 3f0c895..241a746 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -1104,11 +1104,11 @@ static unsigned long dirty_poll_interval(unsigned long dirty,
+ 	return 1;
  }
  
-+void pvclock_touch_watchdogs(void)
-+{
-+	touch_softlockup_watchdog_sync();
-+	clocksource_touch_watchdog();
-+	rcu_cpu_stall_reset();
-+}
-+
- static atomic64_t last_value = ATOMIC64_INIT(0);
+-static long bdi_max_pause(struct backing_dev_info *bdi,
+-			  unsigned long bdi_dirty)
++static unsigned long bdi_max_pause(struct backing_dev_info *bdi,
++				   unsigned long bdi_dirty)
+ {
+-	long bw = bdi->avg_write_bandwidth;
+-	long t;
++	unsigned long bw = bdi->avg_write_bandwidth;
++	unsigned long t;
  
- void pvclock_resume(void)
-@@ -74,6 +81,11 @@ cycle_t pvclock_clocksource_read(struct
- 		version = __pvclock_read_cycles(src, &ret, &flags);
- 	} while ((src->version & 1) || version != src->version);
+ 	/*
+ 	 * Limit pause time for small memory systems. If sleeping for too long
+@@ -1120,7 +1120,7 @@ static long bdi_max_pause(struct backing_dev_info *bdi,
+ 	t = bdi_dirty / (1 + bw / roundup_pow_of_two(1 + HZ / 8));
+ 	t++;
  
-+	if (unlikely((flags & PVCLOCK_GUEST_STOPPED) != 0)) {
-+		src->flags &= ~PVCLOCK_GUEST_STOPPED;
-+		pvclock_touch_watchdogs();
-+	}
-+
- 	if ((valid_flags & PVCLOCK_TSC_STABLE_BIT) &&
- 		(flags & PVCLOCK_TSC_STABLE_BIT))
- 		return ret;
-Index: kvm/arch/x86/include/asm/pvclock.h
-===================================================================
---- kvm.orig/arch/x86/include/asm/pvclock.h
-+++ kvm/arch/x86/include/asm/pvclock.h
-@@ -14,6 +14,8 @@ void pvclock_read_wallclock(struct pvclo
- 			    struct timespec *ts);
- void pvclock_resume(void);
+-	return min_t(long, t, MAX_PAUSE);
++	return min_t(unsigned long, t, MAX_PAUSE);
+ }
  
-+void pvclock_touch_watchdogs(void);
-+
- /*
-  * Scale a 64-bit delta by scaling and multiplying by a 32-bit fraction,
-  * yielding a 64-bit result.
-
-
+ static long bdi_min_pause(struct backing_dev_info *bdi,
