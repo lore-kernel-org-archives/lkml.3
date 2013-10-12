@@ -1,80 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753616Ab3JLUc4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Oct 2013 16:32:56 -0400
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:54214 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752744Ab3JLUcy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Oct 2013 16:32:54 -0400
-Date: Sat, 12 Oct 2013 23:32:50 +0300
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Vivek Goyal <vgoyal@redhat.com>, Jan Willeke <willeke@de.ibm.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, kexec@lists.infradead.org
-Subject: Re: mmap for /proc/vmcore broken since 3.12-rc1
-Message-ID: <20131012203250.GA3458@p183.telecom.by>
-References: <20131002140356.63706540@holzheu>
- <524D0ADF.2010507@jp.fujitsu.com>
- <52521FA5.3040101@jp.fujitsu.com>
- <CACVxJT8S7kA92=80DWVmVJJvbnaQ6WkyvsiFq4wP37WHV=tfuA@mail.gmail.com>
- <52552C9F.2030404@jp.fujitsu.com>
+	id S1753445Ab3JLUgv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Oct 2013 16:36:51 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38776 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752770Ab3JLUgv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Oct 2013 16:36:51 -0400
+Message-ID: <5259B29E.6000003@zytor.com>
+Date: Sat, 12 Oct 2013 13:35:42 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52552C9F.2030404@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>
+CC: Ingo Molnar <mingo@kernel.org>, Avi Kivity <avi@redhat.com>,
+        Len Brown <len.brown@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] x86 fixes
+References: <20131012171553.GA17548@gmail.com>	<CA+55aFxFu9k7xOWd8DqXx8t+PONoV5ijGJv5mshZrYeVsVp32w@mail.gmail.com>	<820c2fd2311341ce8a9b59e621c3fd1f@BY2PR05MB222.namprd05.prod.outlook.com> <CA+55aFz2b_HYRuATpquNEo1yD=iWLJmCQAJ2pxYcsePjpY+CiQ@mail.gmail.com>
+In-Reply-To: <CA+55aFz2b_HYRuATpquNEo1yD=iWLJmCQAJ2pxYcsePjpY+CiQ@mail.gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 09, 2013 at 07:14:55PM +0900, HATAYAMA Daisuke wrote:
-> Hello,
+On 10/12/2013 12:41 PM, Linus Torvalds wrote:
+> On Sat, Oct 12, 2013 at 12:28 PM, Matthew Garrett
+> <matthew.garrett@nebula.com> wrote:
+>>
+>> The most likely cause of the problem that we're seeing here is that we're leaving the hardware in a state that isn't compatible with assumptions made by Dell's SMM code. We've certainly seen that some previous Dell machines have made incorrect assumptions about VT-d, which probably means that we should be destroying that state before reboot. David Woodhouse had been looking into that - I don't know whether we ever actually merged anything to do so.
 > 
-> (2013/10/08 21:49), Alexey Dobriyan wrote:
-> > On Mon, Oct 7, 2013 at 5:42 AM, HATAYAMA Daisuke
-> > <d.hatayama@jp.fujitsu.com> wrote:
-> >
-> >> +static unsigned long
-> >> +get_unmapped_area_vmcore(struct file *filp, unsigned long addr,
-> >> +                        unsigned long len, unsigned long pgoff,
-> >> +                        unsigned long flags)
-> >> +{
-> >> +#ifdef CONFIG_MMU
-> >> +       return current->mm->get_unmapped_area(filp, addr, len, pgoff,
-> >> flags);
-> >> +#else
-> >> +       return -EIO;
-> >> +#endif
-> >> +}
-> >> +
-> >>   static const struct file_operations proc_vmcore_operations = {
-> >>          .read           = read_vmcore,
-> >>          .llseek         = default_llseek,
-> >>          .mmap           = mmap_vmcore,
-> >> +       .get_unmapped_area = get_unmapped_area_vmcore,
-> >
-> > I think current->mm->get_unmapped_area should be used by core proc code.
+> I have access to one of the affected Dell systems, so I'm willing to
+> try patches..
 > 
-> What do you actually suggest here? You mean moving this code in proc code?
-> I don't think you suggest so.
 
-Please, try this patch, I don't have kexec setup handy.
+The Dell machines definitely use some kind of SMM to reboot.
 
---- a/fs/proc/inode.c
-+++ b/fs/proc/inode.c
-@@ -291,7 +291,11 @@ static unsigned long proc_reg_get_unmapped_area(struct file *file, unsigned long
- 	int rv = -EIO;
- 	unsigned long (*get_unmapped_area)(struct file *, unsigned long, unsigned long, unsigned long, unsigned long);
- 	if (use_pde(pde)) {
--		get_unmapped_area = pde->proc_fops->get_unmapped_area;
-+		get_unmapped_area = current->mm->get_unmapped_area;
-+#ifdef CONFIG_MMU
-+		if (pde->proc_fops->get_unmapped_area)
-+			get_unmapped_area = pde->proc_fops->get_unmapped_area;
-+#endif
- 		if (get_unmapped_area)
- 			rv = get_unmapped_area(file, orig_addr, len, pgoff, flags);
- 		unuse_pde(pde);
+	-hpa
+
+
