@@ -1,125 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752880Ab3JLTEn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Oct 2013 15:04:43 -0400
-Received: from mail.eperm.de ([89.247.134.16]:40295 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752613Ab3JLTEm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Oct 2013 15:04:42 -0400
-From: Stephan Mueller <smueller@chronox.de>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Sandy Harris <sandyinchina@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-crypto@vger.kernel.org
-Subject: Re: [PATCH] CPU Jitter RNG: inclusion into kernel crypto API and /dev/random
-Date: Sat, 12 Oct 2013 21:04:35 +0200
-Message-ID: <1868914.MfDRAbAfK8@tauon>
-User-Agent: KMail/4.11.2 (Linux/3.11.3-201.fc19.x86_64; KDE/4.11.2; x86_64; ; )
-In-Reply-To: <20131012032835.GC30680@thunk.org>
-References: <2579337.FPgJGgHYdz@tauon> <CACXcFm=qdv9ktjYDGo+L=ssh+tCs7vVniznNpXyWVTBSB1CMRg@mail.gmail.com> <20131012032835.GC30680@thunk.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1753246Ab3JLTGc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Oct 2013 15:06:32 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:56597 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753089Ab3JLTGb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Oct 2013 15:06:31 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Kosaki Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: posix-timers: Various cleanups 
+Date: Sat, 12 Oct 2013 21:06:16 +0200
+Message-Id: <1381604786-21293-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Freitag, 11. Oktober 2013, 23:28:35 schrieb Theodore Ts'o:
+So this is a first take to cleanup the posix cpu timers code. It removes
+some optimizations that don't seem very worth the code complications to me,
+and also bring some locking cleanup (remove use of tasklist_lock), etc..
 
-Hi Theodore,
+It has been only lightly tested for now (just ran though the posix timers
+selftests in tools/testing/selftests).
 
->Hi Stephan,
->
->I haven't had a chance to look at your paper in detail, yet, but a
->quick scan has found a huge red flag for me that puts the rest of your
->analysis in severe doubt for me.
->
->You say that you got really good results and perfect statistical
->entropy on a number of platforms, including on an MIPS embedded
->system.  You also say that you are harvesting jitter by using
->get_cycles() yes?
->
->Well, on the MIPS platform, here is the definition of get_cycles:
->
->static inline cycles_t get_cycles(void)
->{
->	return 0;
->}
+And there is still some work to do, I need to integrate the fixes proposed
+by Kosaki: https://lkml.kernel.org/r/1369604149-13016-1-git-send-email-kosaki.motohiro@gmail.com
+and there is some more chunks to sanitize.
 
-There are multiple catches to this issue:
+But anyway that's a first step. And I would like to also make sure
+that people are fine with the optimizations I'm removing. So here is it.
 
-- First, if the time gathering function does not work or is to coarse, 
-the function jent_entropy_init() returns an error. As outlined in 
-jitterentropy(3), the result of this function must be honored before 
-using the RNG.
+Thanks.
 
-- Second, the time stamp function of jent_get_nstime uses 
-__getnstimeofday in case get_cycles returns zero (see implementation of 
-jent_get_nstime()). On MIPS systems with missing get_cycles, the RNG 
-would use the __getnstimeofday() as get_cycles returns 0. When using the 
-RNG in user space, it calls clock_gettime(CLOCK_REALTIME) that is backed 
-by the same timer of__getnstimeofday on MIPS.
+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
+	timers/posix-timers-rfc
 
-Please consider the use of the jent_entropy_init function in the two 
-patches for /dev/random and kernel crypto API:
+Thanks,
+	Frederic
+---
 
-/dev/random:
-
-+               /* we are uninitialized, try to initialize */
-+               if(jent_entropy_init())
-+               {
-+                       /* there is no CPU Jitter, disable the entropy 
-collector */
-+                       r->jent_enable = 0;
-+                       return;
-+               }
+Frederic Weisbecker (10):
+      posix-timers: Remove dead thread posix cpu timers caching
+      posix-timers: Remove dead process posix cpu timers caching
+      posix-timers: Cleanup reaped target handling
+      posix-timers: Remove dead task special case
+      posix-timers: Remove useless clock sample on timers cleanup
+      posix-timers: Consolidate posix_cpu_clock_get()
+      posix-timers: Use sighand lock instead of tasklist_lock for task clock sample
+      posix-timers: Use sighand lock instead of tasklist_lock on timer deletion
+      posix-timers: Remove remaining uses of tasklist_lock
+      posix-timers: Convert abuses of BUG_ON to WARN_ON
 
 
-kernel crypto API:
-
-static int __init jent_drng_init(void)
-{
-...
-        ret = jent_entropy_init();
-        if(ret)
-        {
-                printk(DRIVER_NAME ": Initialization failed with host 
-not compliant with requirements: %d\n", ret);
-                return -EFAULT;
-        }
-
->
->So if you are getting great entropy results when in effect you
->couldn't possibly be harvesting any jitter at all, then something is
->really, Really, REALLY wrong with your tests.
->
->One might be that you are just getting great statistical results
->because of the whitening step.  This is why I have very little faith
-
-There is *no* whitening function (cryptographic or otherwise) involved 
-in the generation of random data. All is done by harvesting time deltas 
-and align them appropriately. This is the sole reason why the heart of 
-the RNG is only 30 lines of code.
-
-I have added arguments about broken time stamp collections in section 
-4.3 of the documentation in [2]. These anti tests clearly show that 
-broken time stamps would be immediately visible and not disguised by 
-some whitening function.
-
-Note, the testing of the 200+ systems is tone by measuring the jitter of 
-the core of the RNG. The measurement is logically similar to measure the 
-different add_*_randomness functions for random.c. Thus, even the logic 
-to arrange the timing values to a random value bit stream does not 
-affect the measurements.
-
->in statistical tests of randomness, given that they will return
->perfect results for the following "random number generator"
->
->	AES_ENCRYPT(i++, NSA_KEY)
->
->Regards,
->
->					- Ted
-
-
-Ciao
-Stephan
+ kernel/posix-cpu-timers.c | 307 +++++++++++++++++++---------------------------
+ 1 file changed, 127 insertions(+), 180 deletions(-)
