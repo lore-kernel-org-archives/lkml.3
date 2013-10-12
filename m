@@ -1,86 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752892Ab3JLSLv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Oct 2013 14:11:51 -0400
-Received: from shrek-wifi.podlesie.net ([93.179.225.50]:40459 "EHLO
-	shrek.podlesie.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752541Ab3JLSLu (ORCPT
+	id S1753372Ab3JLSML (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Oct 2013 14:12:11 -0400
+Received: from elasmtp-mealy.atl.sa.earthlink.net ([209.86.89.69]:39297 "EHLO
+	elasmtp-mealy.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753198Ab3JLSMK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Oct 2013 14:11:50 -0400
-X-Greylist: delayed 384 seconds by postgrey-1.27 at vger.kernel.org; Sat, 12 Oct 2013 14:11:50 EDT
-From: Krzysztof Mazur <krzysiek@podlesie.net>
-To: linux-kernel@vger.kernel.org
-Cc: Pawel Moll <pawel.moll@arm.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Krzysztof Mazur <krzysiek@podlesie.net>
-Subject: [PATCH] init: fix in-place parameter modification regression
-Date: Sat, 12 Oct 2013 20:05:00 +0200
-Message-Id: <1381601100-5622-1-git-send-email-krzysiek@podlesie.net>
-X-Mailer: git-send-email 1.8.4.652.g0d6e0ce
+	Sat, 12 Oct 2013 14:12:10 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=dk20050327; d=mindspring.com;
+  b=szEXKcbJxY0/R8AjauZ1u+tkbcwE1nSzIYEX0hRLwckvVwVNGHWdwZLcvS/EXhbl;
+  h=Received:From:To:Cc:References:In-Reply-To:Subject:Date:Message-ID:MIME-Version:Content-Type:Content-Transfer-Encoding:X-Mailer:Thread-Index:Content-Language:X-ELNK-Trace:X-Originating-IP;
+From: "Frank Filz" <ffilzlnx@mindspring.com>
+To: "'Jeff Layton'" <jlayton@redhat.com>,
+        "'Scott Lovenberg'" <scott.lovenberg@gmail.com>
+Cc: "'Jeremy Allison'" <jra@samba.org>, "'Andreas Dilger'" <adilger@dilger.ca>,
+        <linux-fsdevel@vger.kernel.org>,
+        "'Ganesha NFS List'" <nfs-ganesha-devel@lists.sourceforge.net>,
+        <samba-technical@lists.samba.org>,
+        "'Linux Kernel Mailing List'" <linux-kernel@vger.kernel.org>
+References: <1381494322-2426-1-git-send-email-jlayton@redhat.com>	<20131011200756.GB22160@fieldses.org>	<EE732BCB-C38E-4874-AEDF-2EB9E1389A86@dilger.ca>	<20131011192118.483e436f@tlielax.poochiereds.net>	<20131011234923.GD8688@samba2>	<B0205F0B-0AC4-4B80-91C2-E3BD2D4B8E81@gmail.com> <20131011204244.72c2d672@corrin.poochiereds.net>
+In-Reply-To: <20131011204244.72c2d672@corrin.poochiereds.net>
+Subject: RE: [RFC PATCH 0/5] locks: implement "filp-private" (aka UNPOSIX) locks
+Date: Sat, 12 Oct 2013 11:12:03 -0700
+Message-ID: <024101cec776$8f004130$ad00c390$@mindspring.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-2
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 15.0
+Thread-Index: AQIaxc2XaXMwhFVmMgrl8lqeyFTt4AHYOUbiArnvCugBgxKMZgIPcxlDA0h1vzIB7gYOMJjuhyEw
+Content-Language: en-us
+X-ELNK-Trace: 136157f01908a8929c7f779228e2f6aeda0071232e20db4dd14ff0356e43788764bd315707775cfa350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
+X-Originating-IP: 71.236.153.111
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Before commit 026cee0086fe1df4cf74691cf273062cc769617d
-("params: <level>_initcall-like kernel parameters") the __setup
-parameter parsing code could modify parameter in the
-static_command_line buffer and such modifications were kept. After
-that commit such modifications are destroyed during per-initcall level
-parameter parsing because the same static_command_line buffer is used
-and only parameters for appropriate initcall level are parsed.
+> This blog post of Jeremy's explains some of the history:
+> 
+> 
+> http://www.samba.org/samba/news/articles/low_point/tale_two_stds_os2
+> .html
+> 
+> See the section entitled "First Implementation Past the Post".
 
-That change broke at least parsing "ubd" parameter in the ubd driver
-when the COW file is used.
+Interesting that Jeremy actually suggested the implementation should have
+had an arbitrary lock owner as part of the flock structure:
 
-Now the separate buffer is used for per-initcall parameter parsing,
-like in parsing early params.
+"This is an example of a POSIX interface not being future-proofed against
+modern techniques such as threading. A simple amendment to the original
+primitive allowing a user-defined "locking context" (like a process id) to
+be entered in the struct flock structure used to define the lock would have
+fixed this problem, along with extra flags allowing the number of locks per
+context to be recorded if needed."
 
-Signed-off-by: Krzysztof Mazur <krzysiek@podlesie.net>
----
-Hi,
+But I'm happy with the lock context per kernel struct file as a solution,
+especially since that will allow locks to be sensibly passed to a forked
+process.
 
-this patch fixes an old Linux 3.4 regression in ubd parameter parsing.
-It was previously reported by the David Fernández in the
-"ubd option parsing problem when using cow filesystems in kernel 3.4"
-thread on user-mode-linux-devel mailing list
-(http://marc.info/?t=134009640700003&r=1&w=2).
-The bug still exists in the Linux 3.12-rc4.
+Another next step would be an asynchronous blocking lock...
 
-I've been using a different patch that changed the ubd driver. I just
-copied the parsed filename to separate buffer, but I think it's better
-to fix generic code.
+Frank
 
-Maybe the tmp_cmdline should be shared with the parse_early_param().
-
-Regards,
-Krzysiek
-
- init/main.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/init/main.c b/init/main.c
-index 63d3e8f..e5b322a 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -742,12 +742,13 @@ static char *initcall_level_names[] __initdata = {
- 
- static void __init do_initcall_level(int level)
- {
-+	static __initdata char tmp_cmdline[COMMAND_LINE_SIZE];
- 	extern const struct kernel_param __start___param[], __stop___param[];
- 	initcall_t *fn;
- 
--	strcpy(static_command_line, saved_command_line);
-+	strcpy(tmp_cmdline, saved_command_line);
- 	parse_args(initcall_level_names[level],
--		   static_command_line, __start___param,
-+		   tmp_cmdline, __start___param,
- 		   __stop___param - __start___param,
- 		   level, level,
- 		   &repair_env_string);
--- 
-1.8.4.652.g0d6e0ce
 
