@@ -1,74 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753612Ab3JLU4Y (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Oct 2013 16:56:24 -0400
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:63446 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752732Ab3JLU4X convert rfc822-to-8bit (ORCPT
+	id S1753821Ab3JLU5T (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Oct 2013 16:57:19 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:54949 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753750Ab3JLU5S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Oct 2013 16:56:23 -0400
+	Sat, 12 Oct 2013 16:57:18 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] ACPI and power management fixes for v3.12-rc5
+Date: Sat, 12 Oct 2013 23:09:03 +0200
+Message-ID: <2749952.3MjEW76cA8@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
 MIME-Version: 1.0
-In-Reply-To: <20131011204244.72c2d672@corrin.poochiereds.net>
-References: <1381494322-2426-1-git-send-email-jlayton@redhat.com>
-	<20131011200756.GB22160@fieldses.org>
-	<EE732BCB-C38E-4874-AEDF-2EB9E1389A86@dilger.ca>
-	<20131011192118.483e436f@tlielax.poochiereds.net>
-	<20131011234923.GD8688@samba2>
-	<B0205F0B-0AC4-4B80-91C2-E3BD2D4B8E81@gmail.com>
-	<20131011204244.72c2d672@corrin.poochiereds.net>
-Date: Sat, 12 Oct 2013 16:56:21 -0400
-Message-ID: <CAFB9KM2avLpWaMhzZVnB0oXXzWb0NSOBB6oR+RE9JPeuustmvA@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/5] locks: implement "filp-private" (aka UNPOSIX) locks
-From: Scott Lovenberg <scott.lovenberg@gmail.com>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: Jeremy Allison <jra@samba.org>, Andreas Dilger <adilger@dilger.ca>,
-        "linux-fsdevel@vger.kernel.org Devel" <linux-fsdevel@vger.kernel.org>,
-        Ganesha NFS List <nfs-ganesha-devel@lists.sourceforge.net>,
-        "samba-technical@lists.samba.org" <samba-technical@lists.samba.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 11, 2013 at 8:42 PM, Jeff Layton <jlayton@redhat.com> wrote:
-> On Fri, 11 Oct 2013 20:18:58 -0400
-> Scott Lovenberg <scott.lovenberg@gmail.com> wrote:
->
->>
->> On Oct 11, 2013, at 19:49, Jeremy Allison <jra@samba.org> wrote:
->>
->> > On Fri, 11 Oct 2013 15:36:43 -0600 Andreas Dilger <adilger@dilger.ca> wrote:
->> >>>
->> >>> At this point, my main questions are:
->> >>>
->> >>> 1) does this look useful, particularly for fileserver implementors?
->> >
->> > Yes from the Samba perspective. We'll have to keep the old
->> > code around for compatibility with non-Linux OS'es, but this
->> > will allow Linux Samba to short-circuit a bunch of logic
->> > we have to get around the insane POSIX locking semantics
->> > on close.
->> >
->> > Jeremy.
->>
->> From the peanut gallery, IIRC from college a few years back, wasn't the POSIX file locking stuff passed by all parties because they intended to do their own thing regardless of the standard?  The reason that all locks are blown on a release is mostly because there were already implementations and no one wanted to push the issue, or am I misunderstanding/forgetting the history of file locks in POSIX?
->
-> This blog post of Jeremy's explains some of the history:
->
->     http://www.samba.org/samba/news/articles/low_point/tale_two_stds_os2.html
->
-> See the section entitled "First Implementation Past the Post".
->
-> --
-> Jeff Layton <jlayton@redhat.com>
+Hi Linus,
 
-Thanks, Jeff.  That was actually the exact article I was referencing
-but forgetting the details of.  Jeremy, thanks for writing that up so
-many years ago (I used to eat that stuff up in college).
+Please pull from the git repository at
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git pm+acpi-3.12-rc5
+
+to receive ACPI and power management fixes for v3.12-rc5 with
+top-most commit 2c5bfce855ead529e2ea6f33757aa26a651d4460
+
+  Merge branch 'acpi-pci-hotplug'
+
+on top of commit d0e639c9e06d44e713170031fe05fb60ebe680af
+
+  Linux 3.12-rc4
+
+These fix two recent bugs in ACPIPHP (ACPI-based PCI hotplug) and
+update a bunch of web links and e-mail addresses in MAINTAINERS, docs
+and Kconfig that either are stale or will expire soon.
+
+Specifics:
+
+ - The WARN_ON() in acpiphp_enumerate_slots() triggers as a false
+   positive in some cases, so drop it.
+
+ - Add a missing pci_dev_put() to an error code path in
+   acpiphp_enumerate_slots().
+
+ - Replace my old e-mail address that's going to expire with a new one.
+
+ - Update ACPI web links and git tree information in MAINTAINERS.
+
+ - Update links to the Linux-ACPI project's page in MAINTAINERS.
+
+ - Update some stale links and e-mail addresses under Documentation
+   and in the ACPI Kconfig file.
+
+Thanks!
 
 
--- 
-Peace and Blessings,
--Scott.
+---------------
+
+Rafael J. Wysocki (6):
+      MAINTAINERS / Documentation: Update Rafael's e-mail address
+      MAINTAINERS / ACPI: Update links and git tree information
+      MAINTAINERS / ACPI: Update links to the Linux-ACPI project web page
+      ACPI / PM / Documentation: Replace outdated project links and addresses
+      ACPI / hotplug / PCI: Fix error code path in acpiphp_enumerate_slots()
+      ACPI / hotplug / PCI: Drop WARN_ON() from acpiphp_enumerate_slots()
+
+---------------
+
+ Documentation/ABI/stable/sysfs-bus-usb        |    8 +++----
+ Documentation/ABI/testing/sysfs-devices-power |   32 ++++++++++++-------------
+ Documentation/ABI/testing/sysfs-power         |   22 ++++++++---------
+ Documentation/acpi/dsdt-override.txt          |    2 +-
+ MAINTAINERS                                   |   26 ++++++++++----------
+ drivers/acpi/Kconfig                          |    2 +-
+ drivers/pci/hotplug/acpiphp_glue.c            |    8 ++++---
+ 7 files changed, 51 insertions(+), 49 deletions(-)
+
