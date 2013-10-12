@@ -1,119 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752271Ab3JLLBt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Oct 2013 07:01:49 -0400
-Received: from libra.uberspace.de ([95.143.172.171]:41749 "HELO
+	id S1752652Ab3JLLFo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Oct 2013 07:05:44 -0400
+Received: from libra.uberspace.de ([95.143.172.171]:43951 "HELO
 	libra.uberspace.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751038Ab3JLLBq (ORCPT
+	with SMTP id S1752396Ab3JLLFn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Oct 2013 07:01:46 -0400
+	Sat, 12 Oct 2013 07:05:43 -0400
 From: Matthias Beyer <mail@beyermatthias.de>
 To: gregkh@linuxfoundation.org
 Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
         Matthias Beyer <mail@beyermatthias.de>
-Subject: [PATCH 1/1] drivers: usb: core: devio.c: Coding style fixes
-Date: Sat, 12 Oct 2013 13:01:34 +0200
-Message-Id: <1381575694-9886-1-git-send-email-mail@beyermatthias.de>
+Subject: [PATCH 1/1] drivers: usb: core: devio.c: Braces around switch (updated)
+Date: Sat, 12 Oct 2013 13:05:35 +0200
+Message-Id: <1381575935-18868-1-git-send-email-mail@beyermatthias.de>
 X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1381441292-6145-5-git-send-email-mail@beyermatthias.de>
-References: <1381441292-6145-5-git-send-email-mail@beyermatthias.de>
-In-Reply-To: <1381441292-6145-5-git-send-email-mail@beyermatthias.de>
-References: <1381441292-6145-5-git-send-email-mail@beyermatthias.de>
+In-Reply-To: <1381441292-6145-6-git-send-email-mail@beyermatthias.de>
+References: <1381441292-6145-6-git-send-email-mail@beyermatthias.de>
+In-Reply-To: <1381441292-6145-6-git-send-email-mail@beyermatthias.de>
+References: <1381441292-6145-6-git-send-email-mail@beyermatthias.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Whitespace fixes, including:
-
-- Whitespace after if-keyword
-- Spaces to Tabs
-
-Other coding style fixes:
-
-- Added braces for if-else blocks where missing
+Added braces around switch statement as the styleguide tells us.
+Indented the switch-block for it and split a function call
+(driver->unlocked_ioctl() on line 1876) arguments to several lines to
+fit the 80-column convention.
 
 Signed-off-by: Matthias Beyer <mail@beyermatthias.de>
 ---
- drivers/usb/core/devio.c | 40 +++++++++++++++++++++-------------------
- 1 file changed, 21 insertions(+), 19 deletions(-)
+ drivers/usb/core/devio.c | 63 +++++++++++++++++++++++++-----------------------
+ 1 file changed, 33 insertions(+), 30 deletions(-)
 
 diff --git a/drivers/usb/core/devio.c b/drivers/usb/core/devio.c
-index 71dc5d7..5f8a40d 100644
+index 5f8a40d..adbdea3 100644
 --- a/drivers/usb/core/devio.c
 +++ b/drivers/usb/core/devio.c
-@@ -1222,7 +1222,7 @@ static int proc_do_submiturb(struct dev_state *ps, struct usbdevfs_urb *uurb,
- 		return -ENOENT;
+@@ -1840,40 +1840,43 @@ static int proc_ioctl(struct dev_state *ps, struct usbdevfs_ioctl *ctl)
  
- 	u = 0;
--	switch(uurb->type) {
-+	switch (uurb->type) {
- 	case USBDEVFS_URB_TYPE_CONTROL:
- 		if (!usb_endpoint_xfer_control(&ep->desc))
- 			return -EINVAL;
-@@ -1636,32 +1636,32 @@ static int proc_reapurbnonblock(struct dev_state *ps, void __user *arg)
- static int proc_control_compat(struct dev_state *ps,
- 				struct usbdevfs_ctrltransfer32 __user *p32)
- {
--        struct usbdevfs_ctrltransfer __user *p;
--        __u32 udata;
--        p = compat_alloc_user_space(sizeof(*p));
--        if (copy_in_user(p, p32, (sizeof(*p32) - sizeof(compat_caddr_t))) ||
--            get_user(udata, &p32->data) ||
-+	struct usbdevfs_ctrltransfer __user *p;
-+	__u32 udata;
-+	p = compat_alloc_user_space(sizeof(*p));
-+	if (copy_in_user(p, p32, (sizeof(*p32) - sizeof(compat_caddr_t))) ||
-+	    get_user(udata, &p32->data) ||
- 	    put_user(compat_ptr(udata), &p->data))
- 		return -EFAULT;
--        return proc_control(ps, p);
-+	return proc_control(ps, p);
- }
+ 	if (ps->dev->state != USB_STATE_CONFIGURED) {
+ 		retval = -EHOSTUNREACH;
+-	}
+-	else if (!(intf = usb_ifnum_to_if(ps->dev, ctl->ifno))) {
++	} else if (!(intf = usb_ifnum_to_if(ps->dev, ctl->ifno))) {
+ 		retval = -EINVAL;
+-	}
+-	else switch (ctl->ioctl_code) {
+-
+-	/* disconnect kernel driver from interface */
+-	case USBDEVFS_DISCONNECT:
+-		if (intf->dev.driver) {
+-			driver = to_usb_driver(intf->dev.driver);
+-			dev_dbg(&intf->dev, "disconnect by usbfs\n");
+-			usb_driver_release_interface(driver, intf);
+-		} else
+-			retval = -ENODATA;
+-		break;
++	} else {
++		switch (ctl->ioctl_code) {
++
++		/* disconnect kernel driver from interface */
++		case USBDEVFS_DISCONNECT:
++			if (intf->dev.driver) {
++				driver = to_usb_driver(intf->dev.driver);
++				dev_dbg(&intf->dev, "disconnect by usbfs\n");
++				usb_driver_release_interface(driver, intf);
++			} else {
++				retval = -ENODATA;
++			}
++			break;
  
- static int proc_bulk_compat(struct dev_state *ps,
- 			struct usbdevfs_bulktransfer32 __user *p32)
- {
--        struct usbdevfs_bulktransfer __user *p;
--        compat_uint_t n;
--        compat_caddr_t addr;
-+	struct usbdevfs_bulktransfer __user *p;
-+	compat_uint_t n;
-+	compat_caddr_t addr;
+-	/* let kernel drivers try to (re)bind to the interface */
+-	case USBDEVFS_CONNECT:
+-		if (!intf->dev.driver)
+-			retval = device_attach(&intf->dev);
+-		else
+-			retval = -EBUSY;
+-		break;
++		/* let kernel drivers try to (re)bind to the interface */
++		case USBDEVFS_CONNECT:
++			if (!intf->dev.driver)
++				retval = device_attach(&intf->dev);
++			else
++				retval = -EBUSY;
++			break;
  
--        p = compat_alloc_user_space(sizeof(*p));
-+	p = compat_alloc_user_space(sizeof(*p));
- 
--        if (get_user(n, &p32->ep) || put_user(n, &p->ep) ||
--            get_user(n, &p32->len) || put_user(n, &p->len) ||
--            get_user(n, &p32->timeout) || put_user(n, &p->timeout) ||
--            get_user(addr, &p32->data) || put_user(compat_ptr(addr), &p->data))
--                return -EFAULT;
-+	if (get_user(n, &p32->ep) || put_user(n, &p->ep) ||
-+	    get_user(n, &p32->len) || put_user(n, &p->len) ||
-+	    get_user(n, &p32->timeout) || put_user(n, &p->timeout) ||
-+	    get_user(addr, &p32->data) || put_user(compat_ptr(addr), &p->data))
-+		return -EFAULT;
- 
--        return proc_bulk(ps, p);
-+	return proc_bulk(ps, p);
- }
- static int proc_disconnectsignal_compat(struct dev_state *ps, void __user *arg)
- {
-@@ -1838,10 +1838,12 @@ static int proc_ioctl(struct dev_state *ps, struct usbdevfs_ioctl *ctl)
- 		return -ENODEV;
+-	/* talk directly to the interface's driver */
+-	default:
+-		if (intf->dev.driver)
+-			driver = to_usb_driver(intf->dev.driver);
+-		if (driver == NULL || driver->unlocked_ioctl == NULL) {
+-			retval = -ENOTTY;
+-		} else {
+-			retval = driver->unlocked_ioctl(intf, ctl->ioctl_code, buf);
+-			if (retval == -ENOIOCTLCMD)
++		/* talk directly to the interface's driver */
++		default:
++			if (intf->dev.driver)
++				driver = to_usb_driver(intf->dev.driver);
++			if (driver == NULL || driver->unlocked_ioctl == NULL) {
+ 				retval = -ENOTTY;
++			} else {
++				retval = driver->unlocked_ioctl(intf,
++								ctl->ioctl_code,
++								buf);
++				if (retval == -ENOIOCTLCMD)
++					retval = -ENOTTY;
++			}
+ 		}
  	}
  
--	if (ps->dev->state != USB_STATE_CONFIGURED)
-+	if (ps->dev->state != USB_STATE_CONFIGURED) {
- 		retval = -EHOSTUNREACH;
--	else if (!(intf = usb_ifnum_to_if(ps->dev, ctl->ifno)))
-+	}
-+	else if (!(intf = usb_ifnum_to_if(ps->dev, ctl->ifno))) {
- 		retval = -EINVAL;
-+	}
- 	else switch (ctl->ioctl_code) {
- 
- 	/* disconnect kernel driver from interface */
 -- 
 1.8.4
 
