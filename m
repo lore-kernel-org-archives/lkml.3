@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754108Ab3JLTIL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Oct 2013 15:08:11 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:59709 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753489Ab3JLTGi (ORCPT
+	id S1754141Ab3JLTIk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Oct 2013 15:08:40 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:44230 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753313Ab3JLTGe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Oct 2013 15:06:38 -0400
+	Sat, 12 Oct 2013 15:06:34 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -14,9 +14,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
         Kosaki Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [RFC PATCH 06/10] posix-timers: Consolidate posix_cpu_clock_get()
-Date: Sat, 12 Oct 2013 21:06:22 +0200
-Message-Id: <1381604786-21293-7-git-send-email-fweisbec@gmail.com>
+Subject: [RFC PATCH 03/10] posix-timers: Cleanup reaped target handling
+Date: Sat, 12 Oct 2013 21:06:19 +0200
+Message-Id: <1381604786-21293-4-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1381604786-21293-1-git-send-email-fweisbec@gmail.com>
 References: <1381604786-21293-1-git-send-email-fweisbec@gmail.com>
@@ -24,21 +24,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Consolidate the clock sampling common code used for both local
-and remote targets.
+When a timer's target is seen to be buried, for example on calls
+to timer_gettime(), the posix cpu timers code behaves a bit
+like a garbage collector and releases early the reference to the
+task.
 
-Note that this introduces a tiny user ABI change: if a
-PID is passed to clock_gettime() along the clockid,
-we used to forbid a process wide clock sample when that
-PID doesn't belong to a group leader. Now after this patch
-we allow process wide clock samples if that PID belongs to
-the current task, even if the current task is not the
-group leader.
+Then again, this optimization complicates the code for no much
+value: it's up to the user to release the timer and its associated
+ressources by calling timer_delete() after it buries the target
+tasks.
 
-But local process wide clock samples are allowed if PID == 0
-(current task) even if the current task is not the group leader.
-So in the end this should be no big deal as this actually harmonize
-the behaviour when the remote sample is actually a local one.
+Remove this to simplify the code.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
@@ -48,104 +44,40 @@ Cc: Oleg Nesterov <oleg@redhat.com>
 Cc: Kosaki Motohiro <kosaki.motohiro@jp.fujitsu.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 ---
- kernel/posix-cpu-timers.c | 64 ++++++++++++++++++++++-------------------------
- 1 file changed, 30 insertions(+), 34 deletions(-)
+ kernel/posix-cpu-timers.c | 6 ------
+ 1 file changed, 6 deletions(-)
 
 diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
-index bf49832..7117f6d 100644
+index dd75dc4..f509f53 100644
 --- a/kernel/posix-cpu-timers.c
 +++ b/kernel/posix-cpu-timers.c
-@@ -260,30 +260,43 @@ static int cpu_clock_sample_group(const clockid_t which_clock,
- 	return 0;
- }
- 
-+static int posix_cpu_clock_get_task(struct task_struct *tsk,
-+				    const clockid_t which_clock,
-+				    struct timespec *tp)
-+{
-+	int err = -EINVAL;
-+	unsigned long long rtn;
-+
-+	if (CPUCLOCK_PERTHREAD(which_clock)) {
-+		if (same_thread_group(tsk, current))
-+			err = cpu_clock_sample(which_clock, tsk, &rtn);
-+	} else {
-+		read_lock(&tasklist_lock);
-+
-+		if (tsk->sighand && (tsk == current || thread_group_leader(tsk)))
-+			err = cpu_clock_sample_group(which_clock, tsk, &rtn);
-+
-+		read_unlock(&tasklist_lock);
-+	}
-+
-+	if (!err)
-+		sample_to_timespec(which_clock, rtn, tp);
-+
-+	return err;
-+}
-+
- 
- static int posix_cpu_clock_get(const clockid_t which_clock, struct timespec *tp)
- {
- 	const pid_t pid = CPUCLOCK_PID(which_clock);
--	int error = -EINVAL;
--	unsigned long long rtn;
-+	int err = -EINVAL;
- 
- 	if (pid == 0) {
- 		/*
- 		 * Special case constant value for our own clocks.
- 		 * We don't have to do any lookup to find ourselves.
- 		 */
--		if (CPUCLOCK_PERTHREAD(which_clock)) {
--			/*
--			 * Sampling just ourselves we can do with no locking.
--			 */
--			error = cpu_clock_sample(which_clock,
--						 current, &rtn);
--		} else {
--			read_lock(&tasklist_lock);
--			error = cpu_clock_sample_group(which_clock,
--						       current, &rtn);
--			read_unlock(&tasklist_lock);
--		}
-+		err = posix_cpu_clock_get_task(current, which_clock, tp);
- 	} else {
- 		/*
- 		 * Find the given PID, and validate that the caller
-@@ -292,29 +305,12 @@ static int posix_cpu_clock_get(const clockid_t which_clock, struct timespec *tp)
- 		struct task_struct *p;
- 		rcu_read_lock();
- 		p = find_task_by_vpid(pid);
--		if (p) {
--			if (CPUCLOCK_PERTHREAD(which_clock)) {
--				if (same_thread_group(p, current)) {
--					error = cpu_clock_sample(which_clock,
--								 p, &rtn);
--				}
--			} else {
--				read_lock(&tasklist_lock);
--				if (thread_group_leader(p) && p->sighand) {
--					error =
--					    cpu_clock_sample_group(which_clock,
--							           p, &rtn);
--				}
--				read_unlock(&tasklist_lock);
--			}
--		}
-+		if (p)
-+			err = posix_cpu_clock_get_task(p, which_clock, tp);
- 		rcu_read_unlock();
+@@ -638,8 +638,6 @@ static int posix_cpu_timer_set(struct k_itimer *timer, int flags,
+ 	 */
+ 	if (unlikely(p->sighand == NULL)) {
+ 		read_unlock(&tasklist_lock);
+-		put_task_struct(p);
+-		timer->it.cpu.task = NULL;
+ 		return -ESRCH;
  	}
  
--	if (error)
--		return error;
--	sample_to_timespec(which_clock, rtn, tp);
--	return 0;
-+	return err;
- }
- 
- 
+@@ -807,8 +805,6 @@ static void posix_cpu_timer_get(struct k_itimer *timer, struct itimerspec *itp)
+ 			 * We can't even collect a sample any more.
+ 			 * Call the timer disarmed, nothing else to do.
+ 			 */
+-			put_task_struct(p);
+-			timer->it.cpu.task = NULL;
+ 			timer->it.cpu.expires = 0;
+ 			read_unlock(&tasklist_lock);
+ 			goto dead;
+@@ -1058,8 +1054,6 @@ void posix_cpu_timer_schedule(struct k_itimer *timer)
+ 			 * The process has been reaped.
+ 			 * We can't even collect a sample any more.
+ 			 */
+-			put_task_struct(p);
+-			timer->it.cpu.task = p = NULL;
+ 			timer->it.cpu.expires = 0;
+ 			goto out_unlock;
+ 		} else if (unlikely(p->exit_state) && thread_group_empty(p)) {
 -- 
 1.8.3.1
 
