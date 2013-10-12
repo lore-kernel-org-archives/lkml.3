@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753337Ab3JLKZm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Oct 2013 06:25:42 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:38148 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752692Ab3JLKZk (ORCPT
+	id S1753746Ab3JLK1s (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Oct 2013 06:27:48 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:46401 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753489Ab3JLK1r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Oct 2013 06:25:40 -0400
-Message-ID: <5259239F.1080709@gmail.com>
-Date: Sat, 12 Oct 2013 12:25:35 +0200
+	Sat, 12 Oct 2013 06:27:47 -0400
+Message-ID: <5259241F.6060203@gmail.com>
+Date: Sat, 12 Oct 2013 12:27:43 +0200
 From: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
 MIME-Version: 1.0
@@ -18,25 +18,27 @@ CC: Tomasz Stanislawski <t.stanislaws@samsung.com>, m.chehab@samsung.com,
         b.zolnierkie@samsung.com, s.nawrocki@samsung.com,
         linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 3/4] media: s5p-tv: Fix sdo driver to work with CCF
-References: <1379775649-6331-1-git-send-email-m.krawczuk@partner.samsung.com> <1379775649-6331-4-git-send-email-m.krawczuk@partner.samsung.com> <52430871.6040003@samsung.com>
-In-Reply-To: <52430871.6040003@samsung.com>
+Subject: Re: [PATCH v5 4/4] media: s5p-tv: Fix mixer driver to work with CCF
+References: <1379775649-6331-1-git-send-email-m.krawczuk@partner.samsung.com> <1379775649-6331-5-git-send-email-m.krawczuk@partner.samsung.com> <52430AB6.8020307@samsung.com>
+In-Reply-To: <52430AB6.8020307@samsung.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/25/2013 05:59 PM, Tomasz Stanislawski wrote:
-> Rename to 'media: s5p-tv: sdo: integrate with CCF'
+On 09/25/2013 06:09 PM, Tomasz Stanislawski wrote:
+> rename to 'media: s5p-tv: mixer: integrate with CCF'
 >
 > On 09/21/2013 05:00 PM, Mateusz Krawczuk wrote:
->> Replace clk_enable by clock_enable_prepare and clk_disable with clk_disable_unprepare.
->> Clock prepare is required by Clock Common Framework, and old clock driver didn`t support it.
->> Without it Common Clock Framework prints a warning.
->>
->> Signed-off-by: Mateusz Krawczuk<m.krawczuk@partner.samsung.com>
->> Signed-off-by: Kyungmin Park<kyungmin.park@samsung.com>
+>> >  Replace clk_enable by clock_enable_prepare and clk_disable with clk_disable_unprepare.
+>> >  Clock prepare is required by Clock Common Framework, and old clock driver didn`t support it.
+>> >  Without it Common Clock Framework prints a warning.
+>> >
+>> >  Signed-off-by: Mateusz Krawczuk<m.krawczuk@partner.samsung.com>
+>> >  Signed-off-by: Kyungmin Park<kyungmin.park@samsung.com>
+>
+> Acked-by: Tomasz Stanislawski<t.stanislaws@samsung.com>
 
 Patch applied with following commit log:
 
