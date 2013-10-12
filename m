@@ -1,160 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752433Ab3JLLr0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Oct 2013 07:47:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64551 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751731Ab3JLLrY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Oct 2013 07:47:24 -0400
-Date: Sat, 12 Oct 2013 07:47:12 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: "Stefan (metze) Metzmacher" <metze@samba.org>
-Cc: linux-fsdevel@vger.kernel.org, nfs-ganesha-devel@lists.sourceforge.net,
-        samba-technical@lists.samba.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 0/5] locks: implement "filp-private" (aka UNPOSIX)
- locks
-Message-ID: <20131012074712.3d3b9148@tlielax.poochiereds.net>
-In-Reply-To: <52591461.7070605@samba.org>
-References: <1381494322-2426-1-git-send-email-jlayton@redhat.com>
-	<52591461.7070605@samba.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752433Ab3JLMOj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Oct 2013 08:14:39 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:37830 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752189Ab3JLMOi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Oct 2013 08:14:38 -0400
+Date: Sat, 12 Oct 2013 13:14:12 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Wei Ni <wni@nvidia.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-ID: <20131012121412.GJ2443@sirena.org.uk>
+References: <5253A17E.10503@nvidia.com>
+ <20131008090910.GW21581@sirena.org.uk>
+ <5253D489.7010900@nvidia.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="OX7PPUk8qMPP4++R"
+Content-Disposition: inline
+In-Reply-To: <5253D489.7010900@nvidia.com>
+X-Cookie: Time and tide wait for no man.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: About [PATCH 1/2] regulator: core: Provide a dummy regulator
+ with full constraints
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 12 Oct 2013 11:20:33 +0200
-"Stefan (metze) Metzmacher" <metze@samba.org> wrote:
 
-> Hi Jeff,
-> 
-> > At LSF this year, there was a discussion about the "wishlist" for
-> > userland file servers. One of the things brought up was the goofy and
-> > problematic behavior of POSIX locks when a file is closed. Boaz started
-> > a thread on it here:
-> > 
-> >     http://permalink.gmane.org/gmane.linux.file-systems/73364
-> > 
-> > Userland fileservers often need to maintain more than one open file
-> > descriptor on a file. The POSIX spec says:
-> > 
-> > "All locks associated with a file for a given process shall be removed
-> >  when a file descriptor for that file is closed by that process or the
-> >  process holding that file descriptor terminates."
-> > 
-> > This is problematic since you can't close any file descriptor without
-> > dropping all your POSIX locks. Most userland file servers therefore
-> > end up opening the file with more access than is really necessary, and
-> > keeping fd's open for longer than is necessary to work around this.
-> > 
-> > This patchset is a first stab at an approach to address this problem by
-> > adding two new l_type values -- F_RDLCKP and F_WRLCKP (the 'P' is short
-> > for "private" -- I'm open to changing that if you have a better
-> > mnemonic).
-> > 
-> > For all intents and purposes these lock types act just like their
-> > "non-P" counterpart. The difference is that they are only implicitly
-> > released when the fd against which they were acquired is closed. As a
-> > side effect, these locks cannot be merged with "non-P" locks since they
-> > have different semantics on close.
-> > 
-> > I've given this patchset some very basic smoke testing and it seems to
-> > do the right thing, but it is still pretty rough. If this looks
-> > reasonable I'll plan to do some documentation updates and will take a
-> > stab at trying to get these new lock types added to the POSIX spec (as
-> > HCH recommended).
-> > 
-> > At this point, my main questions are:
-> > 
-> > 1) does this look useful, particularly for fileserver implementors?
-> > 
-> > 2) does this look OK API-wise? We could consider different "cmd" values
-> >    or even different syscalls, but I figured this makes it clearer that
-> >    "P" and "non-P" locks will still conflict with one another.
-> > 
-> > Jeff Layton (5):
-> >   locks: consolidate checks for compatible filp->f_mode values in setlk
-> >     handlers
-> >   locks: add definitions for F_RDLCKP and F_WRLCKP
-> >   locks: skip FL_FILP_PRIVATE locks on close unless we're closing the
-> >     correct filp
-> >   locks: handle merging of locks when FL_FILP_PRIVATE is set
-> >   locks: show private lock types in /proc/locks
-> 
-> I haven't looked at the patches, but it would be very good to have locks
-> per "open" and not per "fd".
-> 
+--OX7PPUk8qMPP4++R
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-My intent is to make it "per-filp" (aka "struct file") in the same way
-that flock() locks are today. Note that the patchset posted so far
-doesn't quite have the right semantics yet.
+On Tue, Oct 08, 2013 at 05:46:49PM +0800, Wei Ni wrote:
 
-Currently, I think that we want to give these locks flock-like
-inheritance and close semantics, but to allow them to conflict with
-"legacy" POSIX range locks.
+> In the regulator_dev_lookup(), it will try to read the "xx-supply" to
+> get the regnode, but I didn't set the vcc-supply in dts file for lm90,
+> so the of_get_regulator() will return NULL, then the
+> regulator_dev_lookup() will set the ret to -ENODEV, and return the rdev
+> as NULL.
 
-> What happens in this example?
-> 
+OK, I think the device tree board code just needs to set full
+constraints during machine initialisation.  We can't have multiple
+initcalls in the regulator code and doing it there is really a bit of a
+workaround anyway.
 
-As I said, I haven't sat down to change the implementation yet, but
-I'll try to answer this in the way that I think we'll want to do it...
+--OX7PPUk8qMPP4++R
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> fd1 = open("/somefile", ...);
-> fd2 = open("/somefile", ...);
-> fd3 = dup(fd1);
-> 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-At this point:
+iQIcBAEBAgAGBQJSWT0RAAoJELSic+t+oim9qrwP/1AzXlbQUjIozkLPOAOabHV8
+7dcewa/tF2cmnRWkhp/5jp23MzaLTXNqIwK1OmBCGCIs0l3wlMfjpcZLYRSI3RTE
+B/ANrw6Neubj0WC1qYKacJy5OYrBXU84S2vxTzuZGZwLaTqioqJbkJtiFHpaDZ8J
+/RVY5m7ZYFWuZsJToGLvr45AApplqwffGDvEK7oDAW5bgESy18+smMp/SzCwQCDd
+7IaDRfJqN8h8f84wodv+jTEnWgaRd/LSdse9h+uXZZieUZgNgPMoplLpabzxJZvz
+LtvFE7LEM20XF7r2JzXAJSHEYIxqnVnAmaSUk8UAbFSC7A8hSTWnd/GWxB7CL52V
+bI2Hdu4hfeoCFbbnral9ecJg/+Soed8PNhA++SewDgTtc0chpj0/bauioFBFmXm3
+QoQ5n5x+lkzTknhW3E9+/nG42rD7b4JK+G2wc7hhwFNBchOnVf+30Jjp8A+uR/UM
+PFLmAvOIraMNYQ5vcFzKVJRj6FKywPs1rqilHJZcN7uK63FS2kvfAjdaStySVZNd
+BmyxN+LaIGpuzfnlpXBb9S7BiP1qJomxZgjTmfO35G5CLHNbKxVZn+/bqNviQ3jr
+8YeryNVDeynnNdaE3cY5VZ9jZHaGwcKMjRAcgB18weILt2gwtfjJh37KALIy++1V
+hXLtYSFuCDlAcWSrXzH6
+=KhHX
+-----END PGP SIGNATURE-----
 
-fd1 = filp1
-fd2 = filp2
-fd3 = filp1
-
-...fd1 and fd3 both hold a reference to filp1.
-
-> lock(fd1, range1)
-> lock(fd2, range2)
-> lock(fd3, range3)
-> 
-
-I'll assume that lock() means setting a F_SETLK with F_WRLCKP
-
-> lock(fd2, range1) // => error already locked?
-> 
-
-Right. fd1 will hold the lock on range1 so -EAGAIN.
-
-> lock(fd3, range1) // stacked lock?
-> 
-
-Not stacked per-se, but replaced. Since fd1 == fd3, this lock() call
-won't conflict and the new lock will replace the old one. Since the
-range is the same though, there will be no real difference in the
-outcome.
-
-> close(fd1)
-> 
-
-fput(filp1), but fd3 still has a reference so the lock won't be
-released.
-
-> lock(fd2, range1) // is range1 still locked by fd3 ?
-> 
-
-Yep, still locked.
-
-> What about fd-passing, will the locks be transferred/shared with the
-> other process?
-> 
-
-Yes, I think so. Locks will be passed to the other process in the same
-way that flock() locks are today. AIUI, when you fork() you basically
-dup() all the file descriptors of the parent so that's basically the
-same as what happens above.
-
-Again though, I'm still trying to settle on what the semantics should
-be. None of this is etched in stone yet.
-
--- 
-Jeff Layton <jlayton@redhat.com>
+--OX7PPUk8qMPP4++R--
