@@ -1,160 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753528Ab3JLVPD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Oct 2013 17:15:03 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:59499 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753125Ab3JLVPA (ORCPT
+	id S1753506Ab3JLVfP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Oct 2013 17:35:15 -0400
+Received: from smtprelay0127.hostedemail.com ([216.40.44.127]:34890 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753125Ab3JLVfO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Oct 2013 17:15:00 -0400
-From: Rohit Vaswani <rvaswani@codeaurora.org>
-To: David Brown <davidb@codeaurora.org>
-Cc: Rohit Vaswani <rvaswani@codeaurora.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: [PATCHv5 2/4] ARM: msm: Add support for APQ8074 Dragonboard
-Date: Sat, 12 Oct 2013 14:14:44 -0700
-Message-Id: <1381612484-760-1-git-send-email-rvaswani@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.1
+	Sat, 12 Oct 2013 17:35:14 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::,RULES_HIT:41:355:379:541:599:960:967:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1535:1544:1593:1594:1605:1711:1730:1747:1777:1792:2393:2525:2561:2564:2682:2685:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3622:3865:3867:3868:3870:3871:3872:3873:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4321:4605:5007:7652:8660:9025:9038:10004:10848:11026:11232:11473:11657:11658:11914:12043:12296:12438:12517:12519:12555:12663:12740:13148:13230:13845,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MS
+X-HE-Tag: spy83_676c93c4f3800
+X-Filterd-Recvd-Size: 5312
+Message-ID: <1381613710.8864.27.camel@joe-AO722>
+Subject: Re: [PATCH 1/1] dumpstack: fix printk_address for direct addresses
+From: Joe Perches <joe@perches.com>
+To: Jiri Slaby <jslaby@suse.cz>, Jiri Kosina <trivial@kernel.org>
+Cc: x86@kernel.org, jirislaby@gmail.com, linux-kernel@vger.kernel.org,
+        Namhyung Kim <namhyung@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Date: Sat, 12 Oct 2013 14:35:10 -0700
+In-Reply-To: <1381608817-3507-1-git-send-email-jslaby@suse.cz>
+References: <1381608817-3507-1-git-send-email-jslaby@suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds basic board support for APQ8074 Dragonboard
-which belongs to the Snapdragon 800 family.
-For now, just support a basic machine with device tree.
+On Sat, 2013-10-12 at 22:13 +0200, Jiri Slaby wrote:
+[]
+> To fix that, we use %pS only for stack addresses printouts (via newly
+> added printk_stack_address) and %pB for regs->ip (via printk_address).
+> I.e. we revert to the old behaviour for all except call stacks. And
+> since from all those reliable is 1, we remove that parameter from
+> printk_address.
 
-Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
----
- arch/arm/boot/dts/Makefile                     |  3 ++-
- arch/arm/boot/dts/qcom-apq8074-dragonboard.dts |  6 +++++
- arch/arm/boot/dts/qcom-msm8974.dtsi            | 35 ++++++++++++++++++++++++++
- arch/arm/mach-msm/Kconfig                      | 13 ++++++++++
- arch/arm/mach-msm/board-dt.c                   |  9 +++++++
- 5 files changed, 65 insertions(+), 1 deletion(-)
- create mode 100644 arch/arm/boot/dts/qcom-apq8074-dragonboard.dts
- create mode 100644 arch/arm/boot/dts/qcom-msm8974.dtsi
+I'm still waiting for you to apply this:
 
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index 000cf76..e71a3ec 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -102,7 +102,8 @@ dtb-$(CONFIG_ARCH_KIRKWOOD) += kirkwood-cloudbox.dtb \
- 	kirkwood-openblocks_a6.dtb
- dtb-$(CONFIG_ARCH_MARCO) += marco-evb.dtb
- dtb-$(CONFIG_ARCH_MSM) += msm8660-surf.dtb \
--	msm8960-cdp.dtb
-+	msm8960-cdp.dtb \
-+	qcom-apq8074-dragonboard.dtb
- dtb-$(CONFIG_ARCH_MVEBU) += armada-370-db.dtb \
- 	armada-370-mirabox.dtb \
- 	armada-370-netgear-rn102.dtb \
-diff --git a/arch/arm/boot/dts/qcom-apq8074-dragonboard.dts b/arch/arm/boot/dts/qcom-apq8074-dragonboard.dts
-new file mode 100644
-index 0000000..13ac3e2
---- /dev/null
-+++ b/arch/arm/boot/dts/qcom-apq8074-dragonboard.dts
-@@ -0,0 +1,6 @@
-+#include "qcom-msm8974.dtsi"
-+
-+/ {
-+	model = "Qualcomm APQ8074 Dragonboard";
-+	compatible = "qcom,apq8074-dragonboard", "qcom,apq8074";
-+};
-diff --git a/arch/arm/boot/dts/qcom-msm8974.dtsi b/arch/arm/boot/dts/qcom-msm8974.dtsi
-new file mode 100644
-index 0000000..e0fd55a
---- /dev/null
-+++ b/arch/arm/boot/dts/qcom-msm8974.dtsi
-@@ -0,0 +1,35 @@
-+/dts-v1/;
-+
-+#include "skeleton.dtsi"
-+
-+/ {
-+	model = "Qualcomm MSM8974";
-+	compatible = "qcom,msm8974";
-+	interrupt-parent = <&intc>;
-+
-+	soc: soc { };
-+};
-+
-+&soc {
-+	#address-cells = <1>;
-+	#size-cells = <1>;
-+	ranges;
-+	compatible = "simple-bus";
-+
-+	intc: interrupt-controller@f9000000 {
-+		compatible = "qcom,msm-qgic2";
-+		interrupt-controller;
-+		#interrupt-cells = <3>;
-+		reg = <0xf9000000 0x1000>,
-+		      <0xf9002000 0x1000>;
-+	};
-+
-+	timer {
-+		compatible = "arm,armv7-timer";
-+		interrupts = <1 2 0xf08>,
-+			     <1 3 0xf08>,
-+			     <1 4 0xf08>,
-+			     <1 1 0xf08>;
-+		clock-frequency = <19200000>;
-+	};
-+};
-diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
-index 2586c28..086bcb9 100644
---- a/arch/arm/mach-msm/Kconfig
-+++ b/arch/arm/mach-msm/Kconfig
-@@ -64,6 +64,19 @@ config ARCH_MSM_DT
- 	select SPARSE_IRQ
- 	select USE_OF
+https://lkml.org/lkml/2013/7/22/701
+https://lkml.org/lkml/2013/7/22/700
+
+Oh wait, wrong Jiri... ;-)
+
+Anyway, I'd rather your specific changes be done inline
+so it's less possible to have interleaved messages.
+
+
+> diff --git a/arch/x86/include/asm/kdebug.h b/arch/x86/include/asm/kdebug.h
+[]
+> @@ -21,7 +21,7 @@ enum die_val {
+>  	DIE_NMIUNKNOWN,
+>  };
+>  
+> -extern void printk_address(unsigned long address, int reliable);
+> +extern void printk_address(unsigned long address);
+
+I think this can be removed.
+
+> diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
+[]
+> @@ -25,12 +25,17 @@ unsigned int code_bytes = 64;
+>  int kstack_depth_to_print = 3 * STACKSLOTS_PER_LINE;
+>  static int die_counter;
+>  
+> -void printk_address(unsigned long address, int reliable)
+> +static void printk_stack_address(unsigned long address, int reliable)
+>  {
+>  	pr_cont(" [<%p>] %s%pB\n",
+>  		(void *)address, reliable ? "" : "? ", (void *)address);
+>  }
+
+This is now used only once and could/should be done
+at the single use site.
+
+> +void printk_address(unsigned long address)
+> +{
+> +	pr_cont(" [<%p>] %pS\n", (void *)address, (void *)address);
+> +}
+> +
+
+And this could/should be done inline in the few
+places it's used.
+
+>  #ifdef CONFIG_FUNCTION_GRAPH_TRACER
+>  static void
+>  print_ftrace_graph_addr(unsigned long addr, void *data,
+> @@ -151,7 +156,7 @@ static void print_trace_address(void *data, unsigned long addr, int reliable)
+>  {
+>  	touch_nmi_watchdog();
+>  	printk(data);
+> -	printk_address(addr, reliable);
+> +	printk_stack_address(addr, reliable);
+
+	printk("%s [<%p>] %s%pB\n",
+	       data, (void *)addr, reliable ? "" : "? ", (void *)addr);
+
+> @@ -281,7 +286,7 @@ int __kprobes __die(const char *str, struct pt_regs *regs, long err)
+>  #else
+>  	/* Executive summary in case the oops scrolled away */
+>  	printk(KERN_ALERT "RIP ");
+> -	printk_address(regs->ip, 1);
+> +	printk_address(regs->ip);
+
+	printk(KERN_ALERT "RIP [<%p>] %pS\n",
+	       (void *)regs->ip, (void *)regs->ip);
+
+> diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
+[]
+> @@ -63,7 +63,7 @@ void __show_regs(struct pt_regs *regs, int all)
+>  	unsigned int ds, cs, es;
+>  
+>  	printk(KERN_DEFAULT "RIP: %04lx:[<%016lx>] ", regs->cs & 0xffff, regs->ip);
+> -	printk_address(regs->ip, 1);
+> +	printk_address(regs->ip);
+
+	printk(KERN_DEFAULT "RIP: %04lx:[<%016lx>] [<%p>] %pS\n",
+	       regs->cs & 0xffff, regs->ip,
+	       (void *)regs->ip, (void *)regs->ip);
+
+This one looks ugly to me.
+It emits the address twice.
+
+>  	printk(KERN_DEFAULT "RSP: %04lx:%016lx  EFLAGS: %08lx\n", regs->ss,
+>  			regs->sp, regs->flags);
+>  	printk(KERN_DEFAULT "RAX: %016lx RBX: %016lx RCX: %016lx\n",
+> diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+> index 3aaeffc..18feeb3 100644
+> --- a/arch/x86/mm/fault.c
+> +++ b/arch/x86/mm/fault.c
+> @@ -596,7 +596,7 @@ show_fault_oops(struct pt_regs *regs, unsigned long error_code,
+>  
+>  	printk(KERN_CONT " at %p\n", (void *) address);
+>  	printk(KERN_ALERT "IP:");
+> -	printk_address(regs->ip, 1);
+> +	printk_address(regs->ip);
+
+	printk(KERN_ALERT "IP: [<%p>] %pS\n",
+	       (void *)regs->ip, (void *)regs->ip);
  
-+config ARCH_MSM8974
-+	bool "MSM8974"
-+	select ARM_GIC
-+	select CPU_V7
-+	select HAVE_ARM_ARCH_TIMER
-+	select HAVE_SMP
-+	select MSM_SCM if SMP
-+	select USE_OF
-+
-+config ARCH_MSM_DT
-+	def_bool y
-+	depends on (ARCH_MSM8X60 || ARCH_MSM8960 || ARCH_MSM8974)
-+
- config MSM_HAS_DEBUG_UART_HS
- 	bool
- 
-diff --git a/arch/arm/mach-msm/board-dt.c b/arch/arm/mach-msm/board-dt.c
-index 266a280..5211e80 100644
---- a/arch/arm/mach-msm/board-dt.c
-+++ b/arch/arm/mach-msm/board-dt.c
-@@ -26,7 +26,16 @@ static const char * const msm_dt_match[] __initconst = {
- 	NULL
- };
- 
-+static const char * const apq8074_dt_match[] __initconst = {
-+	"qcom,apq8074-dragonboard",
-+	NULL
-+};
-+
- DT_MACHINE_START(MSM_DT, "Qualcomm MSM (Flattened Device Tree)")
- 	.smp = smp_ops(msm_smp_ops),
- 	.dt_compat = msm_dt_match,
- MACHINE_END
-+
-+DT_MACHINE_START(APQ_DT, "Qualcomm MSM (Flattened Device Tree)")
-+	.dt_compat = apq8074_dt_match,
-+MACHINE_END
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+>  	dump_pagetable(address);
+>  }
+> diff --git a/arch/x86/platform/uv/uv_nmi.c b/arch/x86/platform/uv/uv_nmi.c
+> index 9126dfb..019b6ec 100644
+> --- a/arch/x86/platform/uv/uv_nmi.c
+> +++ b/arch/x86/platform/uv/uv_nmi.c
+> @@ -402,7 +402,7 @@ static void uv_nmi_dump_cpu_ip(int cpu, struct pt_regs *regs)
+>  	printk(KERN_DEFAULT "UV: %4d %6d %-32.32s ",
+>  		cpu, current->pid, current->comm);
+>  
+> -	printk_address(regs->ip, 1);
+> +	printk_address(regs->ip);
+
+	printk(KERN_DEFAULT "UV: %4d %6d %-32.32s [<%p>] %pS\n",
+	       cpu, current->pid, current->comm,
+	       (void *)regs->ip, (void *)regs->ip);
+
 
