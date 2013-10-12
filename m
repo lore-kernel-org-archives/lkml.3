@@ -1,51 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753536Ab3JLTm6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Oct 2013 15:42:58 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:50951 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752723Ab3JLTm5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Oct 2013 15:42:57 -0400
-Message-ID: <5259A63B.5050406@gmail.com>
-Date: Sat, 12 Oct 2013 13:42:51 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	id S1753260Ab3JLTtO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Oct 2013 15:49:14 -0400
+Received: from mail.efficios.com ([78.47.125.74]:48450 "EHLO mail.efficios.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752732Ab3JLTtM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Oct 2013 15:49:12 -0400
+X-Greylist: delayed 406 seconds by postgrey-1.27 at vger.kernel.org; Sat, 12 Oct 2013 15:49:12 EDT
+Date: Sat, 12 Oct 2013 19:42:18 +0000 (UTC)
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu, "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
+Message-ID: <1882655271.38519.1381606938076.JavaMail.zimbra@efficios.com>
+In-Reply-To: <20131012173734.GC20321@order.stressinduktion.org>
+References: <20131009225617.GH11709@jtriplet-mobl1> <20131010002833.GJ5790@linux.vnet.ibm.com> <20131010020422.GB24368@order.stressinduktion.org> <20131010190532.GQ5790@linux.vnet.ibm.com> <20131012022508.GA20321@order.stressinduktion.org> <20131012075336.GA5790@linux.vnet.ibm.com> <20131012164345.GB20321@order.stressinduktion.org> <20131012173734.GC20321@order.stressinduktion.org>
+Subject: Re: [PATCH v2 tip/core/rcu 07/13] ipv6/ip6_tunnel: Apply
+ rcu_access_pointer() to avoid sparse false positive
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCHSET 0/8] perf tools: Fix scalability problem on callchain
- merging (v5)
-References: <1381468543-25334-1-git-send-email-namhyung@kernel.org> <20131011055829.GA4975@gmail.com> <20131011073448.GA11064@krava.redhat.com> <52581511.2010909@gmail.com> <52581737.8090309@gmail.com> <20131012165319.GB15116@gmail.com>
-In-Reply-To: <20131012165319.GB15116@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [206.248.138.119]
+X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF24 (Linux)/8.0.5_GA_5839)
+Thread-Topic: ipv6/ip6_tunnel: Apply rcu_access_pointer() to avoid sparse false positive
+Thread-Index: OgxyUbPInVSRzsqZOng+rFdUjJmsRw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/12/13 10:53 AM, Ingo Molnar wrote:
->
-> * David Ahern <dsahern@gmail.com> wrote:
->
->> On 10/11/13 9:11 AM, David Ahern wrote:
->>> It would be nice to fix the callchain arg handler to not attempt to
->>> process the next argument if it is not fp or dwarf.
->>
->> Specifically, something like this which maintains syntax and default
->> fp option:
->
-> Lets not maintain a broken syntax please - breaking the very simple -ga
-> was the primary regression to begin with, so lets fix that.
+----- Original Message -----
+> From: "Hannes Frederic Sowa" <hannes@stressinduktion.org>
+> To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, "Eric Dumazet" <eric.dumazet@gmail.com>, "Josh Triplett"
+> <josh@joshtriplett.org>, linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+> akpm@linux-foundation.org, "mathieu desnoyers" <mathieu.desnoyers@efficios.com>, niv@us.ibm.com, tglx@linutronix.de,
+> peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+> fweisbec@gmail.com, sbw@mit.edu, "David S. Miller" <davem@davemloft.net>, "Alexey Kuznetsov" <kuznet@ms2.inr.ac.ru>,
+> "James Morris" <jmorris@namei.org>, "Hideaki YOSHIFUJI" <yoshfuji@linux-ipv6.org>, "Patrick McHardy"
+> <kaber@trash.net>, netdev@vger.kernel.org
+> Sent: Saturday, October 12, 2013 1:37:34 PM
+> Subject: Re: [PATCH v2 tip/core/rcu 07/13] ipv6/ip6_tunnel: Apply rcu_access_pointer() to avoid sparse false positive
+> 
+> On Sat, Oct 12, 2013 at 06:43:45PM +0200, Hannes Frederic Sowa wrote:
+> > Regarding the volatile access, I hope that the C11 memory model
+> > and enhancements to the compiler will some day provide a better
+> > way to express the semantics of what is tried to express here
+> > (__atomic_store_n/__atomic_load_n with the accompanied memory model,
+> > which could be even weaker to what a volatile access would enfore
+> > now and could guarantee atomic stores/loads).
+> 
+> I just played around a bit more. Perhaps we could try to warn of silly
+> usages of ACCESS_ONCE():
+> 
+> --- a/include/linux/compiler.h
+> +++ b/include/linux/compiler.h
+> @@ -349,7 +349,11 @@ void ftrace_likely_update(struct ftrace_branch_data *f,
+> int val, int expect);
+>   * use is to mediate communication between process-level code and irq/NMI
+>   * handlers, all running on the same CPU.
+>   */
+> -#define ACCESS_ONCE(x) (*(volatile typeof(x) *)&(x))
+> +#define ACCESS_ONCE(x) (*({						\
+> +		compiletime_assert(sizeof(typeof(x)) <= sizeof(typeof(&x)), \
+> +				   "ACCESS_ONCE likely not atomic");	\
 
-I think I did with the second follow up patch: -ga -ag -g fp -g dwarf 
-should all work properly with fp the default for -g.
+AFAIU, ACCESS_ONCE() is not meant to ensure atomicity of load/store, but rather merely ensures that the compiler will not merge nor refetch accesses. I don't think the assert check you propose is appropriate with respect to the ACCESS_ONCE() semantic.
 
-David
+Thanks,
 
+Mathieu
+
+> +		(volatile typeof(x) *)&(x);				\
+> +}))
+>  
+>  /* Ignore/forbid kprobes attach on very low level functions marked by this
+>  attribute: */
+>  #ifdef CONFIG_KPROBES
+> 
+> 
+
+-- 
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
