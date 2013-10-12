@@ -1,150 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752577Ab3JLQnt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Oct 2013 12:43:49 -0400
-Received: from order.stressinduktion.org ([87.106.68.36]:58080 "EHLO
-	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752027Ab3JLQnr (ORCPT
+	id S1752569Ab3JLQv0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Oct 2013 12:51:26 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:42106 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752147Ab3JLQvY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Oct 2013 12:43:47 -0400
-Date: Sat, 12 Oct 2013 18:43:45 +0200
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
-        darren@dvhart.com, fweisbec@gmail.com, sbw@mit.edu,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
-Subject: Re: [PATCH v2 tip/core/rcu 07/13] ipv6/ip6_tunnel: Apply rcu_access_pointer() to avoid sparse false positive
-Message-ID: <20131012164345.GB20321@order.stressinduktion.org>
-Mail-Followup-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-	Eric Dumazet <eric.dumazet@gmail.com>,
-	Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
-	mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-	akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-	niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-	rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
-	darren@dvhart.com, fweisbec@gmail.com, sbw@mit.edu,
-	"David S. Miller" <davem@davemloft.net>,
-	Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-	James Morris <jmorris@namei.org>,
-	Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-	Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
-References: <1381359077.4971.37.camel@edumazet-glaptop.roam.corp.google.com> <20131009225617.GH11709@jtriplet-mobl1> <1381360675.4971.45.camel@edumazet-glaptop.roam.corp.google.com> <20131009234040.GB14055@jtriplet-mobl1> <1381363960.4971.55.camel@edumazet-glaptop.roam.corp.google.com> <20131010002833.GJ5790@linux.vnet.ibm.com> <20131010020422.GB24368@order.stressinduktion.org> <20131010190532.GQ5790@linux.vnet.ibm.com> <20131012022508.GA20321@order.stressinduktion.org> <20131012075336.GA5790@linux.vnet.ibm.com>
-Mime-Version: 1.0
+	Sat, 12 Oct 2013 12:51:24 -0400
+Date: Sat, 12 Oct 2013 18:51:20 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: David Miller <davem@davemloft.net>
+Cc: cl@linux.com, tj@kernel.org, akpm@linuxfoundation.org, srostedt@redhat.com,
+        linux-kernel@vger.kernel.org, peterz@infradead.org, tglx@linutronix.de
+Subject: Re: [PATCH 0/6] percpu: Implement Preemption checks for __this_cpu
+ operations V4
+Message-ID: <20131012165120.GA15116@gmail.com>
+References: <00000141a8a7ea27-4ab5f822-e15f-4789-a5cf-f313c402a901-000000@email.amazonses.com>
+ <20131011.140814.422793173894221852.davem@davemloft.net>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20131012075336.GA5790@linux.vnet.ibm.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131011.140814.422793173894221852.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 12, 2013 at 12:53:36AM -0700, Paul E. McKenney wrote:
-> On Sat, Oct 12, 2013 at 04:25:08AM +0200, Hannes Frederic Sowa wrote:
-> > I saw your patch regarding making rcu_assign_pointer volatile and wonder if we
-> > can still make it a bit more safe to use if we force the evaluation of the
-> > to-be-assigned pointer before the write barrier. This is what I have in mind:
-> > 
-> > diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-> > index f1f1bc3..79eccc3 100644
-> > --- a/include/linux/rcupdate.h
-> > +++ b/include/linux/rcupdate.h
-> > @@ -550,8 +550,9 @@ static inline void rcu_preempt_sleep_check(void)
-> >  	})
-> >  #define __rcu_assign_pointer(p, v, space) \
-> >  	do { \
-> > +		typeof(v) ___v = (v); \
-> >  		smp_wmb(); \
-> > -		(p) = (typeof(*v) __force space *)(v); \
-> > +		(p) = (typeof(*___v) __force space *)(___v); \
-> >  	} while (0)
-> > 
-> > 
-> > I don't think ___v must be volatile for this case because the memory barrier
-> > will force the evaluation of v first.
-> > 
-> > This would guard against cases where rcu_assign_pointer is used like:
-> > 
-> > rcu_assign_pointer(ptr, compute_ptr_with_side_effects());
-> 
-> I am sorry, but I am not seeing how this would be particularly useful.
 
-Oh, I do not think it is useful. It should help enforcing the right memory
-orderings if someone uses rcu_assign_pointer in such a nasty way.
+* David Miller <davem@davemloft.net> wrote:
 
-It was meant by me as a "defensive rearragement" to guard rcu_assign_pointer
-to accidentaly slip memory mutations across the barrier without hurting
-compiler optimizations too bad (or at all).
+> Most sites are rejecting your posting because the CC: list looked like 
+> this:
+> 
+> Cc:	akpm@linuxfoundation.org
+> Cc:	Steven Rostedt <srostedt@redhat.com>
+> Cc:	linux-kernel@vger.kernel.org
+> Cc:	Ingo Molnar <mingo@kernel.org>
+> Cc:	Peter Zijlstra <peterz@infradead.org>
+> Cc:	Thomas Gleixner <tglx@linutronix.de>
+> 
+> Please only specify one CC: list with a comma separated list of 
+> recipients.
 
-> The point of rcu_assign_pointer() is to order the initialization of
-> a data structure against publishing a pointer to that data structure.
-> An example may be found in cgroup_create():
-> 
-> 	name = cgroup_alloc_name(dentry);
-> 	if (!name)
-> 		goto err_free_cgrp;
-> 	rcu_assign_pointer(cgrp->name, name);
-> 
-> Here, cgroup_alloc_name() allocates memory for the name and fills in
-> the name:
-> 
-> static struct cgroup_name *cgroup_alloc_name(struct dentry *dentry)
-> {
-> 	struct cgroup_name *name;
-> 
-> 	name = kmalloc(sizeof(*name) + dentry->d_name.len + 1, GFP_KERNEL);
-> 	if (!name)
-> 		return NULL;
-> 	strcpy(name->name, dentry->d_name.name);
-> 	return name;
-> }
-> 
-> So the point of the smp_wmb() in __rcu_assign_pointer() is to order the
-> strcpy() in cgroup_alloc_name() to happen before the assignment of the
-> name pointer to cgrp->name.
-> 
-> To make this example fit your pattern, we could change the code in
-> cgroup_create() to look as follows (and to be buggy):
-> 
-> 	/* BAD CODE!  Do not do this! */
-> 	rcu_assign_pointer(cgrp->name, cgroup_alloc_name(dentry));
-> 	if (!cgrp->name)
-> 		goto err_free_cgrp;
-> 
-> The reason that this is bad practice is that it is hiding the fact that
-> the allocation and initialization in cgroup_alloc_name() needs to be
-> ordered before the assignment to cgrp->name.
-> 
-> Make sense?
+Another problem is that the patch emails are not properly threaded to the 
+0/6 patch and thus appear out of order and mixed up:
 
-Absolutely! But e.g. the pointer could be preallocated and no length
-checks are needed so there is no need for an error path, I guess someone
-could think it is safe to put the get_ptr_with_side_effects (and if the
-side effect is only a bit flip in the strucutre pointed to by the value)
-in the v argument of rcu_assign_pointer.
+66216 N C Oct 11 Christoph Lamet (  36) [PATCH 0/6] percpu: Implement Preemption checks for __this_cpu operations V4
+66217 N C Oct 11 David Miller    (  13) └─>
+66218 N C Oct 11 Christoph Lamet (  43) ┬─>[PATCH 1/6] net: ip4_datagram_connect: Use correct form of statistics update
+66219 N C Oct 11 Eric Dumazet    (  17) │ └─>
+66220 N C Oct 11 Christoph Lamet ( 121) ├─>[PATCH 2/6] percpu: Add raw_cpu_ops
+66221 N C Oct 11 Christoph Lamet ( 189) ├─>[PATCH 6/6] percpu: Add preemption checks to __this_cpu ops
+66222 N C Oct 11 Christoph Lamet (  64) ├─>[PATCH 5/6] net: __this_cpu_inc in route.c
+66223 N C Oct 11 Christoph Lamet ( 103) ├─>[PATCH 3/6] mm: Use raw_cpu ops for determining current NUMA node
+66224 N C Oct 11 Christoph Lamet (  43) └─>[PATCH 4/6] Use raw_cpu_write for initialization of per cpu refcount.
 
-I also tought about adding a (*(&(v))) statement to enfore that only
-lvalues where allowed as the value in rcu_assign_pointer, but that would
-already cause compilation errors (e.g. rcu_assign_pointer(ptr, ptr|MARK)).
+Note how the order is 1,2,6,5,3,4 with no threading instead of 1,2,3,4,5,6 
+with proper threading.
 
-The nice thing with ACCESS_ONCE(p) is, that there is now no way to put
-a non-lvalue expression into the first argument of rcu_assign_pointer. :)
+That won't cause email servers to reject the mails, it just makes the 
+patches a bit harder to review.
 
-Regarding the volatile access, I hope that the C11 memory model
-and enhancements to the compiler will some day provide a better
-way to express the semantics of what is tried to express here
-(__atomic_store_n/__atomic_load_n with the accompanied memory model,
-which could be even weaker to what a volatile access would enfore
-now and could guarantee atomic stores/loads).
+Most kernel developers tend to use 'git send-email' to send patches to 
+lkml, and that method is working pretty reliably.
 
-Greeting,
+The relevant 'git send-email' line is pretty well described in Greg's "The 
+newbie's guide to hacking the Linux kernel" book:
 
-  Hannes
+  http://www.tuxradar.com/content/newbies-guide-hacking-linux-kernel
 
+Thanks,
+
+	Ingo
