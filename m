@@ -1,100 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753448Ab3JLTmL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Oct 2013 15:42:11 -0400
-Received: from nm18-vm1.access.bullet.mail.bf1.yahoo.com ([216.109.115.80]:34389
-	"EHLO nm18-vm1.access.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752744Ab3JLTmK (ORCPT
+	id S1753536Ab3JLTm6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Oct 2013 15:42:58 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:50951 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752723Ab3JLTm5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Oct 2013 15:42:10 -0400
-X-Yahoo-Newman-Id: 439014.61770.bm@smtp117.sbc.mail.bf1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: zAmcFXcVM1nP76nZBMrimqJ68x5xMtHF3EOShoRISoKixew
- vU8jRqFzLriDMdMaR862UPPHBdfMNkZwtIByJzekXsvicakMu4tFuAxWW5PG
- 8svyRzm7bayGci28kk06Qj7e2huywz7D6L7y6yAEMh7cQc7mDI4YTwrWkYif
- zPXGiNfOZqbe1NERRuCwysYdCxJgWuzmo9pvgi968_XjGWa4z7S7Qvx1_0Ks
- .ATqx5ZBPU68CehcnXmkCXwHNxkeYNZyXfaP03ZKIVYoujC..bfjCJnDNvWQ
- B9kAljzuPzSejBw4apX2bcQEEV2zAUo1ckCv.EoNg4l5D1l3iefcBCPOqNwa
- k_14.KoARtfOAGTnDXDs2WvqUzLxOC2z_A9_GqKnP5kDiSQPskaLKRbQVv2S
- 8uY_t2Gc3qAK8rDNtGEegZypYON1I63Sjvy.X_6gSnjboGtk5NA6x.1CYbGX
- zaAYGYP0w23BQlQbdCVsYGu9bIkMCNI1lbZJj3D4Wwrrh8p5KUafnRqJMp9G
- Ug_yKNNt_YEY9pVEogPZ6ly2lBWd95fgWCG7KFnJizeFPmWwut7xEBlcwsNK
- W_ixDqHwZxH4-
-X-Yahoo-SMTP: rZzhDImswBA_40COIyZI42.8nAz5YXic.zo1v550XQVtX7k-
-X-Rocket-Received: from segfault.sh0n.net (shawn.starr@174.112.94.49 with )
-        by smtp117.sbc.mail.bf1.yahoo.com with SMTP; 12 Oct 2013 19:42:09 +0000 UTC
-From: Shawn Starr <shawn.starr@rogers.com>
-To: linux-kernel@vger.kernel.org
-Subject: resend [PATCH][BUILD] Force check for rpm-build where package is not installed
-Date: Sat, 12 Oct 2013 15:42:05 -0400
-Message-ID: <5058738.GtqTL1pBjr@segfault.sh0n.net>
-Organization: sh0n.net
-User-Agent: KMail/4.11.2 (Linux/3.12.0-0.rc4.git1.2.fc21.x86_64; KDE/4.11.2; x86_64; ; )
-In-Reply-To: <13301057.7X5ko0dHEr@segfault.sh0n.net>
-References: <2492370.jKSlzuQ6pe@segfault.sh0n.net> <13301057.7X5ko0dHEr@segfault.sh0n.net>
+	Sat, 12 Oct 2013 15:42:57 -0400
+Message-ID: <5259A63B.5050406@gmail.com>
+Date: Sat, 12 Oct 2013 13:42:51 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Ingo Molnar <mingo@kernel.org>
+CC: Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCHSET 0/8] perf tools: Fix scalability problem on callchain
+ merging (v5)
+References: <1381468543-25334-1-git-send-email-namhyung@kernel.org> <20131011055829.GA4975@gmail.com> <20131011073448.GA11064@krava.redhat.com> <52581511.2010909@gmail.com> <52581737.8090309@gmail.com> <20131012165319.GB15116@gmail.com>
+In-Reply-To: <20131012165319.GB15116@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, October 12, 2013 03:39:05 PM Shawn Starr wrote:
-> On Saturday, October 12, 2013 03:03:32 PM Shawn Starr wrote:
-> > Hello folks,
-> > 
-> > My usual approach to testing git snapshots of Linus's tree (with custom
-> > patches applied on top) is to make rpm and install this into my system for
-> > a clean add/remove of test kernels.
-> > 
-> > However,  the developers of rpm removed the --target and -ta options, so I
-> > can't take tarball and build into RPM anymore.
-> > 
-> > Since I last built custom RPM builds of Linus's tree was likely Fedora 18,
-> > it seems the option target got removed by 19.
-> > 
-> > Any ideas, fixes?
-> > 
-> > Thanks,
-> > Shawn
-> 
-> Sorry for noise,  I was missing rpm-build. That said, here's a patch to
-> force check for rpm-build as any modern RPM distribution should be be using
-> a newer rpm release.
-> 
-> Thanks,
-> Shawn
+On 10/12/13 10:53 AM, Ingo Molnar wrote:
 >
+> * David Ahern <dsahern@gmail.com> wrote:
+>
+>> On 10/11/13 9:11 AM, David Ahern wrote:
+>>> It would be nice to fix the callchain arg handler to not attempt to
+>>> process the next argument if it is not fp or dwarf.
+>>
+>> Specifically, something like this which maintains syntax and default
+>> fp option:
+>
+> Lets not maintain a broken syntax please - breaking the very simple -ga
+> was the primary regression to begin with, so lets fix that.
 
-Signed-off-by: Shawn Starr <shawn.starr@rogers.com>
----
- scripts/package/Makefile               | 8 +++++++-
- 1 files changed, 7 insertions(+), 1 deletion(-)
+I think I did with the second follow up patch: -ga -ag -g fp -g dwarf 
+should all work properly with fp the default for -g.
 
-diff --git a/scripts/package/Makefile b/scripts/package/Makefile                                                                                  
-index a4f31c9..aac24de 100644                                                                                                                     
---- a/scripts/package/Makefile                                                                                                                    
-+++ b/scripts/package/Makefile                                                                                                                    
-@@ -23,7 +23,7 @@                                                                                                                                 
-                                                                                                                                                  
- # Do we have rpmbuild, otherwise fall back to the older rpm                                                                                      
- RPM := $(shell if [ -x "/usr/bin/rpmbuild" ]; then echo rpmbuild; \                                                                              
--                  else echo rpm; fi)                                                                                                             
-+                  else echo none; fi)                                                                                                           
-                                                                                                                                                  
- # Remove hyphens since they have special meaning in RPM filenames                                                                                
- KERNELPATH := kernel-$(subst -,_,$(KERNELRELEASE))                                                                                               
-@@ -51,6 +51,12 @@ rpm-pkg rpm: FORCE                                                                                                             
-        rm -f $(objtree)/.scmversion                                                                                                              
-        $(CONFIG_SHELL) $(srctree)/scripts/mkversion > $(objtree)/.tmp_version                                                                    
-        mv -f $(objtree)/.tmp_version $(objtree)/.version
-+       @if test "$(RPM)" != "rpmbuild"; then \
-+               echo "To build the kernel you must install the rpm-build 
-package from your distribution" ;\
-+               echo "aborting package creation." ; \
-+               false; \
-+       fi
-+
-        $(RPM) $(RPMOPTS) --target $(UTS_MACHINE) -ta $(KERNELPATH).tar.gz
-        rm $(KERNELPATH).tar.gz kernel.spec
- 
+David
+
