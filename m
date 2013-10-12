@@ -1,120 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752753Ab3JLQU3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Oct 2013 12:20:29 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:55121 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752599Ab3JLQU1 (ORCPT
+	id S1752577Ab3JLQnt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Oct 2013 12:43:49 -0400
+Received: from order.stressinduktion.org ([87.106.68.36]:58080 "EHLO
+	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752027Ab3JLQnr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Oct 2013 12:20:27 -0400
-Message-ID: <52598494.5020108@cogentembedded.com>
-Date: Sat, 12 Oct 2013 19:19:16 +0200
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Matthias Beyer <mail@beyermatthias.de>
-CC: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] drivers: usb: core: devio.c: Coding style fixes
-References: <1381441292-6145-5-git-send-email-mail@beyermatthias.de> <1381575694-9886-1-git-send-email-mail@beyermatthias.de>
-In-Reply-To: <1381575694-9886-1-git-send-email-mail@beyermatthias.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sat, 12 Oct 2013 12:43:47 -0400
+Date: Sat, 12 Oct 2013 18:43:45 +0200
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
+        darren@dvhart.com, fweisbec@gmail.com, sbw@mit.edu,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
+Subject: Re: [PATCH v2 tip/core/rcu 07/13] ipv6/ip6_tunnel: Apply rcu_access_pointer() to avoid sparse false positive
+Message-ID: <20131012164345.GB20321@order.stressinduktion.org>
+Mail-Followup-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+	Eric Dumazet <eric.dumazet@gmail.com>,
+	Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
+	mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+	akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+	niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+	rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
+	darren@dvhart.com, fweisbec@gmail.com, sbw@mit.edu,
+	"David S. Miller" <davem@davemloft.net>,
+	Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+	James Morris <jmorris@namei.org>,
+	Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+	Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
+References: <1381359077.4971.37.camel@edumazet-glaptop.roam.corp.google.com> <20131009225617.GH11709@jtriplet-mobl1> <1381360675.4971.45.camel@edumazet-glaptop.roam.corp.google.com> <20131009234040.GB14055@jtriplet-mobl1> <1381363960.4971.55.camel@edumazet-glaptop.roam.corp.google.com> <20131010002833.GJ5790@linux.vnet.ibm.com> <20131010020422.GB24368@order.stressinduktion.org> <20131010190532.GQ5790@linux.vnet.ibm.com> <20131012022508.GA20321@order.stressinduktion.org> <20131012075336.GA5790@linux.vnet.ibm.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20131012075336.GA5790@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Sat, Oct 12, 2013 at 12:53:36AM -0700, Paul E. McKenney wrote:
+> On Sat, Oct 12, 2013 at 04:25:08AM +0200, Hannes Frederic Sowa wrote:
+> > I saw your patch regarding making rcu_assign_pointer volatile and wonder if we
+> > can still make it a bit more safe to use if we force the evaluation of the
+> > to-be-assigned pointer before the write barrier. This is what I have in mind:
+> > 
+> > diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+> > index f1f1bc3..79eccc3 100644
+> > --- a/include/linux/rcupdate.h
+> > +++ b/include/linux/rcupdate.h
+> > @@ -550,8 +550,9 @@ static inline void rcu_preempt_sleep_check(void)
+> >  	})
+> >  #define __rcu_assign_pointer(p, v, space) \
+> >  	do { \
+> > +		typeof(v) ___v = (v); \
+> >  		smp_wmb(); \
+> > -		(p) = (typeof(*v) __force space *)(v); \
+> > +		(p) = (typeof(*___v) __force space *)(___v); \
+> >  	} while (0)
+> > 
+> > 
+> > I don't think ___v must be volatile for this case because the memory barrier
+> > will force the evaluation of v first.
+> > 
+> > This would guard against cases where rcu_assign_pointer is used like:
+> > 
+> > rcu_assign_pointer(ptr, compute_ptr_with_side_effects());
+> 
+> I am sorry, but I am not seeing how this would be particularly useful.
 
-On 12-10-2013 13:01, Matthias Beyer wrote:
+Oh, I do not think it is useful. It should help enforcing the right memory
+orderings if someone uses rcu_assign_pointer in such a nasty way.
 
-> Whitespace fixes, including:
+It was meant by me as a "defensive rearragement" to guard rcu_assign_pointer
+to accidentaly slip memory mutations across the barrier without hurting
+compiler optimizations too bad (or at all).
 
-> - Whitespace after if-keyword
-> - Spaces to Tabs
+> The point of rcu_assign_pointer() is to order the initialization of
+> a data structure against publishing a pointer to that data structure.
+> An example may be found in cgroup_create():
+> 
+> 	name = cgroup_alloc_name(dentry);
+> 	if (!name)
+> 		goto err_free_cgrp;
+> 	rcu_assign_pointer(cgrp->name, name);
+> 
+> Here, cgroup_alloc_name() allocates memory for the name and fills in
+> the name:
+> 
+> static struct cgroup_name *cgroup_alloc_name(struct dentry *dentry)
+> {
+> 	struct cgroup_name *name;
+> 
+> 	name = kmalloc(sizeof(*name) + dentry->d_name.len + 1, GFP_KERNEL);
+> 	if (!name)
+> 		return NULL;
+> 	strcpy(name->name, dentry->d_name.name);
+> 	return name;
+> }
+> 
+> So the point of the smp_wmb() in __rcu_assign_pointer() is to order the
+> strcpy() in cgroup_alloc_name() to happen before the assignment of the
+> name pointer to cgrp->name.
+> 
+> To make this example fit your pattern, we could change the code in
+> cgroup_create() to look as follows (and to be buggy):
+> 
+> 	/* BAD CODE!  Do not do this! */
+> 	rcu_assign_pointer(cgrp->name, cgroup_alloc_name(dentry));
+> 	if (!cgrp->name)
+> 		goto err_free_cgrp;
+> 
+> The reason that this is bad practice is that it is hiding the fact that
+> the allocation and initialization in cgroup_alloc_name() needs to be
+> ordered before the assignment to cgrp->name.
+> 
+> Make sense?
 
-> Other coding style fixes:
+Absolutely! But e.g. the pointer could be preallocated and no length
+checks are needed so there is no need for an error path, I guess someone
+could think it is safe to put the get_ptr_with_side_effects (and if the
+side effect is only a bit flip in the strucutre pointed to by the value)
+in the v argument of rcu_assign_pointer.
 
-> - Added braces for if-else blocks where missing
+I also tought about adding a (*(&(v))) statement to enfore that only
+lvalues where allowed as the value in rcu_assign_pointer, but that would
+already cause compilation errors (e.g. rcu_assign_pointer(ptr, ptr|MARK)).
 
-> Signed-off-by: Matthias Beyer <mail@beyermatthias.de>
-> ---
->   drivers/usb/core/devio.c | 40 +++++++++++++++++++++-------------------
->   1 file changed, 21 insertions(+), 19 deletions(-)
+The nice thing with ACCESS_ONCE(p) is, that there is now no way to put
+a non-lvalue expression into the first argument of rcu_assign_pointer. :)
 
-> diff --git a/drivers/usb/core/devio.c b/drivers/usb/core/devio.c
-> index 71dc5d7..5f8a40d 100644
-> --- a/drivers/usb/core/devio.c
-> +++ b/drivers/usb/core/devio.c
-[...]
-> @@ -1636,32 +1636,32 @@ static int proc_reapurbnonblock(struct dev_state *ps, void __user *arg)
->   static int proc_control_compat(struct dev_state *ps,
->   				struct usbdevfs_ctrltransfer32 __user *p32)
->   {
-> -        struct usbdevfs_ctrltransfer __user *p;
-> -        __u32 udata;
-> -        p = compat_alloc_user_space(sizeof(*p));
-> -        if (copy_in_user(p, p32, (sizeof(*p32) - sizeof(compat_caddr_t))) ||
-> -            get_user(udata, &p32->data) ||
-> +	struct usbdevfs_ctrltransfer __user *p;
-> +	__u32 udata;
+Regarding the volatile access, I hope that the C11 memory model
+and enhancements to the compiler will some day provide a better
+way to express the semantics of what is tried to express here
+(__atomic_store_n/__atomic_load_n with the accompanied memory model,
+which could be even weaker to what a volatile access would enfore
+now and could guarantee atomic stores/loads).
 
-    Could you also add an empty line here, for consistency with the below code?
+Greeting,
 
-> +	p = compat_alloc_user_space(sizeof(*p));
-> +	if (copy_in_user(p, p32, (sizeof(*p32) - sizeof(compat_caddr_t))) ||
-> +	    get_user(udata, &p32->data) ||
->   	    put_user(compat_ptr(udata), &p->data))
->   		return -EFAULT;
-> -        return proc_control(ps, p);
-> +	return proc_control(ps, p);
->   }
->
->   static int proc_bulk_compat(struct dev_state *ps,
->   			struct usbdevfs_bulktransfer32 __user *p32)
->   {
-> -        struct usbdevfs_bulktransfer __user *p;
-> -        compat_uint_t n;
-> -        compat_caddr_t addr;
-> +	struct usbdevfs_bulktransfer __user *p;
-> +	compat_uint_t n;
-> +	compat_caddr_t addr;
->
-> -        p = compat_alloc_user_space(sizeof(*p));
-> +	p = compat_alloc_user_space(sizeof(*p));
->
-> -        if (get_user(n, &p32->ep) || put_user(n, &p->ep) ||
-> -            get_user(n, &p32->len) || put_user(n, &p->len) ||
-> -            get_user(n, &p32->timeout) || put_user(n, &p->timeout) ||
-> -            get_user(addr, &p32->data) || put_user(compat_ptr(addr), &p->data))
-> -                return -EFAULT;
-> +	if (get_user(n, &p32->ep) || put_user(n, &p->ep) ||
-> +	    get_user(n, &p32->len) || put_user(n, &p->len) ||
-> +	    get_user(n, &p32->timeout) || put_user(n, &p->timeout) ||
-> +	    get_user(addr, &p32->data) || put_user(compat_ptr(addr), &p->data))
-> +		return -EFAULT;
->
-> -        return proc_bulk(ps, p);
-> +	return proc_bulk(ps, p);
->   }
->   static int proc_disconnectsignal_compat(struct dev_state *ps, void __user *arg)
->   {
-> @@ -1838,10 +1838,12 @@ static int proc_ioctl(struct dev_state *ps, struct usbdevfs_ioctl *ctl)
->   		return -ENODEV;
->   	}
->
-> -	if (ps->dev->state != USB_STATE_CONFIGURED)
-> +	if (ps->dev->state != USB_STATE_CONFIGURED) {
->   		retval = -EHOSTUNREACH;
-> -	else if (!(intf = usb_ifnum_to_if(ps->dev, ctl->ifno)))
-> +	}
-> +	else if (!(intf = usb_ifnum_to_if(ps->dev, ctl->ifno))) {
-
-    No, } and *else* should be on the same line. But wait, both arms of *if* 
-are single statements, so why you added {} in the first place? :-/
-
->   		retval = -EINVAL;
-> +	}
-
-WBR, Sergei
+  Hannes
 
