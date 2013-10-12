@@ -1,119 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753950Ab3JLWAL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Oct 2013 18:00:11 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:36952 "EHLO bear.ext.ti.com"
+	id S1754238Ab3JLWAU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Oct 2013 18:00:20 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:49549 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753442Ab3JLV7v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Oct 2013 17:59:51 -0400
+	id S1753459Ab3JLV75 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Oct 2013 17:59:57 -0400
 From: Santosh Shilimkar <santosh.shilimkar@ti.com>
 To: <tj@kernel.org>, <yinghai@kernel.org>
 CC: <linux-arm-kernel@lists.infradead.org>, <linux-mm@kvack.org>,
         <linux-kernel@vger.kernel.org>, <grygorii.strashko@ti.com>,
         Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Olof Johansson <olof@lixom.net>
-Subject: [RFC 00/23] mm: Use memblock interface instead of bootmem
-Date: Sat, 12 Oct 2013 17:58:43 -0400
-Message-ID: <1381615146-20342-1-git-send-email-santosh.shilimkar@ti.com>
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [RFC 11/23] mm/page_alloc: Use memblock apis for early memory allocations
+Date: Sat, 12 Oct 2013 17:58:54 -0400
+Message-ID: <1381615146-20342-12-git-send-email-santosh.shilimkar@ti.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1381615146-20342-1-git-send-email-santosh.shilimkar@ti.com>
+References: <1381615146-20342-1-git-send-email-santosh.shilimkar@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun, Yinghai and others, 
-
-Here is an attempt to convert the core kernel code to memblock allocator
-APIs when used with NO_BOOTMEM. Based on discussion thread [1] and my
-limited understanding of the topic, I tried to cook up this RFC with
-help from Grygorii. I am counting on reviews, guidance and testing help
-to move forward with the approach. This is one of the blocking item for
-the ARM LPAE architecture on the physical memory starts after 4BG boundary
-and hence needs the early memory allocators 
-
-As outlined by Tejun, we would like to remove the use of nobootmem.c and
-then eventually bootmem allocator once all arch switch to NO_BOOTMEM.
-Not to break the existing architectures using bootmem, all the new
-memblock interfaces fall back to bootmem layer with !NO_BOOTMEM
-
-Testing is done on ARM architecture with 32 bit and ARM LAPE machines
-with normal as well sparse(famed) memory model. To convert ARM to
-NO_BOOTMEM, I have used Russell's work [2] and couple of patches
-on top of that.
-
-Comments/suggestions are welcome !!
+Switch to memblock interfaces for early memory allocator
 
 Cc: Yinghai Lu <yinghai@kernel.org>
 Cc: Tejun Heo <tj@kernel.org>
-Cc: H. Peter Anvin <hpa@zytor.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Olof Johansson <olof@lixom.net>
 
-Grygorii Strashko (9):
-  mm/bootmem: remove duplicated declaration of __free_pages_bootmem()
-  mm/block: remove unnecessary inclusion of bootmem.h
-  mm/memory_hotplug: remove unnecessary inclusion of bootmem.h
-  mm/staging: remove unnecessary inclusion of bootmem.h
-  mm/char: remove unnecessary inclusion of bootmem.h
-  mm/memblock: debug: correct displaying of upper memory boundary
-  mm/memblock: debug: don't free reserved array if
-    !ARCH_DISCARD_MEMBLOCK
-  mm/hugetlb: Use memblock apis for early memory allocations
-  mm/page_cgroup: Use memblock apis for early memory allocations
+Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+---
+ mm/page_alloc.c |   26 ++++++++++++++------------
+ 1 file changed, 14 insertions(+), 12 deletions(-)
 
-Santosh Shilimkar (14):
-  mm/memblock: Add memblock early memory allocation apis
-  mm/init: Use memblock apis for early memory allocations
-  mm/printk: Use memblock apis for early memory allocations
-  mm/page_alloc: Use memblock apis for early memory allocations
-  mm/power: Use memblock apis for early memory allocations
-  mm/lib: Use memblock apis for early memory allocations
-  mm/lib: Use memblock apis for early memory allocations
-  mm/sparse: Use memblock apis for early memory allocations
-  mm/percpu: Use memblock apis for early memory allocations
-  mm/memory_hotplug: Use memblock apis for early memory allocations
-  mm/firmware: Use memblock apis for early memory allocations
-  mm/ARM: kernel: Use memblock apis for early memory allocations
-  mm/ARM: mm: Use memblock apis for early memory allocations
-  mm/ARM: OMAP: Use memblock apis for early memory allocations
-
- arch/arm/kernel/devtree.c        |    2 +-
- arch/arm/kernel/setup.c          |    2 +-
- arch/arm/mach-omap2/omap_hwmod.c |    8 +--
- arch/arm/mm/init.c               |    2 +-
- block/blk-ioc.c                  |    1 -
- drivers/char/mem.c               |    1 -
- drivers/firmware/memmap.c        |    2 +-
- drivers/staging/speakup/main.c   |    2 -
- include/linux/bootmem.h          |   73 ++++++++++++++++++++++-
- init/main.c                      |    4 +-
- kernel/power/snapshot.c          |    2 +-
- kernel/printk/printk.c           |   10 +---
- lib/cpumask.c                    |    4 +-
- lib/swiotlb.c                    |   30 +++++-----
- mm/hugetlb.c                     |   10 ++--
- mm/memblock.c                    |  122 +++++++++++++++++++++++++++++++++++++-
- mm/memory_hotplug.c              |    3 +-
- mm/page_alloc.c                  |   26 ++++----
- mm/page_cgroup.c                 |    5 +-
- mm/percpu.c                      |   39 +++++++-----
- mm/sparse-vmemmap.c              |    5 +-
- mm/sparse.c                      |   24 ++++----
- 22 files changed, 284 insertions(+), 93 deletions(-)
-
-Regards,
-Santosh
-
-[1] https://lkml.org/lkml/2013/6/29/77
-[2] http://lwn.net/Articles/561854/
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 0ee638f..a451ebd 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -4218,7 +4218,6 @@ static noinline __init_refok
+ int zone_wait_table_init(struct zone *zone, unsigned long zone_size_pages)
+ {
+ 	int i;
+-	struct pglist_data *pgdat = zone->zone_pgdat;
+ 	size_t alloc_size;
+ 
+ 	/*
+@@ -4234,7 +4233,8 @@ int zone_wait_table_init(struct zone *zone, unsigned long zone_size_pages)
+ 
+ 	if (!slab_is_available()) {
+ 		zone->wait_table = (wait_queue_head_t *)
+-			alloc_bootmem_node_nopanic(pgdat, alloc_size);
++			memblock_early_alloc_node_nopanic(
++				zone->zone_pgdat->node_id, alloc_size);
+ 	} else {
+ 		/*
+ 		 * This case means that a zone whose size was 0 gets new memory
+@@ -4354,13 +4354,14 @@ bool __meminit early_pfn_in_nid(unsigned long pfn, int node)
+ #endif
+ 
+ /**
+- * free_bootmem_with_active_regions - Call free_bootmem_node for each active range
++ * free_bootmem_with_active_regions - Call memblock_free_early_nid for each active range
+  * @nid: The node to free memory on. If MAX_NUMNODES, all nodes are freed.
+- * @max_low_pfn: The highest PFN that will be passed to free_bootmem_node
++ * @max_low_pfn: The highest PFN that will be passed to memblock_free_early_nid
+  *
+  * If an architecture guarantees that all ranges registered with
+  * add_active_ranges() contain no holes and may be freed, this
+- * this function may be used instead of calling free_bootmem() manually.
++ * this function may be used instead of calling memblock_free_early_nid()
++ * manually.
+  */
+ void __init free_bootmem_with_active_regions(int nid, unsigned long max_low_pfn)
+ {
+@@ -4372,9 +4373,8 @@ void __init free_bootmem_with_active_regions(int nid, unsigned long max_low_pfn)
+ 		end_pfn = min(end_pfn, max_low_pfn);
+ 
+ 		if (start_pfn < end_pfn)
+-			free_bootmem_node(NODE_DATA(this_nid),
+-					  PFN_PHYS(start_pfn),
+-					  (end_pfn - start_pfn) << PAGE_SHIFT);
++			memblock_free_early_nid(this_nid, PFN_PHYS(start_pfn),
++					(end_pfn - start_pfn) << PAGE_SHIFT);
+ 	}
+ }
+ 
+@@ -4645,8 +4645,9 @@ static void __init setup_usemap(struct pglist_data *pgdat,
+ 	unsigned long usemapsize = usemap_size(zone_start_pfn, zonesize);
+ 	zone->pageblock_flags = NULL;
+ 	if (usemapsize)
+-		zone->pageblock_flags = alloc_bootmem_node_nopanic(pgdat,
+-								   usemapsize);
++		zone->pageblock_flags =
++			memblock_early_alloc_node_nopanic(pgdat->node_id,
++							  usemapsize);
+ }
+ #else
+ static inline void setup_usemap(struct pglist_data *pgdat, struct zone *zone,
+@@ -4840,7 +4841,8 @@ static void __init_refok alloc_node_mem_map(struct pglist_data *pgdat)
+ 		size =  (end - start) * sizeof(struct page);
+ 		map = alloc_remap(pgdat->node_id, size);
+ 		if (!map)
+-			map = alloc_bootmem_node_nopanic(pgdat, size);
++			map = memblock_early_alloc_node_nopanic(pgdat->node_id,
++								size);
+ 		pgdat->node_mem_map = map + (pgdat->node_start_pfn - start);
+ 	}
+ #ifndef CONFIG_NEED_MULTIPLE_NODES
+@@ -5866,7 +5868,7 @@ void *__init alloc_large_system_hash(const char *tablename,
+ 	do {
+ 		size = bucketsize << log2qty;
+ 		if (flags & HASH_EARLY)
+-			table = alloc_bootmem_nopanic(size);
++			table = memblock_early_alloc_nopanic(size);
+ 		else if (hashdist)
+ 			table = __vmalloc(size, GFP_ATOMIC, PAGE_KERNEL);
+ 		else {
 -- 
 1.7.9.5
 
