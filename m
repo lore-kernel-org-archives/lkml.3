@@ -1,57 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753040Ab3JLKG3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Oct 2013 06:06:29 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:41837 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752604Ab3JLKG2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Oct 2013 06:06:28 -0400
-Message-ID: <52591F20.10506@gmail.com>
-Date: Sat, 12 Oct 2013 12:06:24 +0200
-From: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
+	id S1753550Ab3JLKIH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Oct 2013 06:08:07 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:51003 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752739Ab3JLKIF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Oct 2013 06:08:05 -0400
+Message-ID: <52591F7A.1020400@ti.com>
+Date: Sat, 12 Oct 2013 15:37:54 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
-CC: Tomasz Stanislawski <t.stanislaws@samsung.com>, t.figa@samsung.com,
-        kyungmin.park@samsung.com, b.zolnierkie@samsung.com,
-        s.nawrocki@samsung.com, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 2/4] media: s5p-tv: Restore vpll clock rate
-References: <1379775649-6331-1-git-send-email-m.krawczuk@partner.samsung.com> <1379775649-6331-3-git-send-email-m.krawczuk@partner.samsung.com> <5243055C.7070205@samsung.com>
-In-Reply-To: <5243055C.7070205@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Arokux X <arokux@gmail.com>
+CC: <peter.chen@freescale.com>, Felipe Balbi <balbi@ti.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Greg KH <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: Re: When USB PHY framework should be used?
+References: <CAPNxggauvgpWR5HK4Z-Osv7-mB-Tf3-vfyXQDMiTx08K2M=nJQ@mail.gmail.com> <52579592.1020209@ti.com> <CAPNxgga6xSPrGPWnKJuamMURQdrX0_Hkhx_ZDdS2dcUgs72EKw@mail.gmail.com>
+In-Reply-To: <CAPNxgga6xSPrGPWnKJuamMURQdrX0_Hkhx_ZDdS2dcUgs72EKw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/25/2013 05:46 PM, Tomasz Stanislawski wrote:
-> Hi,
->
-> As you can see sdo, hdmi and mixer are saparate drivers that are
-> parts of s5p-tv drivers set. Could you rename commit name to
-> 'media: s5p-tv: sdo: Restore vpll clock rate after streamoff'
+Hi,
 
-Patch applied with the above commit summary line and checkpatch error
-as below fixed. Please always run scripts/checkpatch.pl before submitting
-patches.
+On Friday 11 October 2013 10:52 PM, Arokux X wrote:
+>> I think you should have a wrapper driver to EHCI/OHCI to handle this reset.
+> 
+> Thank you Kishon and Peter for the quick replies. Is there any good
+> example of such a wrapper driver in the kernel already?
 
-$ scripts/checkpatch.pl v5-2-4-media-s5p-tv-Restore-vpll-clock-rate.patch
-ERROR: trailing whitespace
-#67: FILE: drivers/media/platform/s5p-tv/sdo_drv.c:220:
-+^I$
+can you explain how your IP actually looks like? Do you have separate address
+space for EHCI and OHCI? Do you have any common address space for doing some
+configuration (USB host in OMAP used to have it)? Where does PHY registers
+reside exactly?
 
-total: 1 errors, 0 warnings, 50 lines checked
-
-NOTE: whitespace errors detected, you may wish to use scripts/cleanpatch or
-       scripts/cleanfile
-
-v5-2-4-media-s5p-tv-Restore-vpll-clock-rate.patch has style problems, 
-please review.
-
-If any of these errors are false positives, please report
-
---
-Thanks,
-Sylwester
+Thanks
+Kishon
