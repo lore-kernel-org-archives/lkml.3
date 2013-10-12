@@ -1,283 +1,299 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753386Ab3JLTxl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Oct 2013 15:53:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34551 "EHLO mx1.redhat.com"
+	id S1753129Ab3JLUMZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Oct 2013 16:12:25 -0400
+Received: from mail.eperm.de ([89.247.134.16]:47067 "EHLO mail.eperm.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752701Ab3JLTxj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Oct 2013 15:53:39 -0400
-Message-ID: <1381607911.21655.7.camel@dcbw.foobar.com>
-Subject: Re: [Patch 1/1]: libertas/sdio: fix releasing memory twice.
-From: Dan Williams <dcbw@redhat.com>
-To: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
-Cc: "John W. Linville" <linville@tuxdriver.com>, Bing Zhao <bzhao@marvell.com>,
-        Harro Haan <hrhaan@gmail.com>, libertas-dev@lists.infradead.org,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Belisko Marek <marek@goldelico.com>, NeilBrown Brown <neilb@suse.de>
-Date: Sat, 12 Oct 2013 14:58:31 -0500
-In-Reply-To: <D5BD8103-A6A6-4070-878B-99FC5883725F@goldelico.com>
-References: <D5BD8103-A6A6-4070-878B-99FC5883725F@goldelico.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753118Ab3JLUMX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Oct 2013 16:12:23 -0400
+From: Stephan Mueller <smueller@chronox.de>
+To: Sandy Harris <sandyinchina@gmail.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, LKML <linux-kernel@vger.kernel.org>,
+        linux-crypto@vger.kernel.org
+Subject: Re: [PATCH] CPU Jitter RNG: inclusion into kernel crypto API and /dev/random
+Date: Sat, 12 Oct 2013 22:12:18 +0200
+Message-ID: <5356953.K0nNZDGpEZ@tauon>
+User-Agent: KMail/4.11.2 (Linux/3.11.3-201.fc19.x86_64; KDE/4.11.2; x86_64; ; )
+In-Reply-To: <CACXcFm=qdv9ktjYDGo+L=ssh+tCs7vVniznNpXyWVTBSB1CMRg@mail.gmail.com>
+References: <2579337.FPgJGgHYdz@tauon> <CACXcFm=qdv9ktjYDGo+L=ssh+tCs7vVniznNpXyWVTBSB1CMRg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-10-12 at 18:02 +0200, Dr. H. Nikolaus Schaller wrote:
-> While upgrading the GTA04 kernel to 3.12-rc4 we came across
-> an issue with libertas/sdio referencing stale memory on ifconfig up
-> when trying to load the firmware (for a second time).
-> 
-> I am not at all sure if the patch is how it should be done and the right
-> location, but it appears to work for us with resetting priv->helper_fw to NULL
-> before asynchronously loading the firmware again.
+Am Freitag, 11. Oktober 2013, 21:45:57 schrieb Sandy Harris:
 
-How about we go even simpler?  helper_fw is *only* used inside
-firmware.c anyway, and that's probably where its lifetime should be
-handled.  Same for the main firmware.  I have no idea why the bus code
-is responsible for releasing the firmware anyway, when it originates
-from firmware.c and control returns back there after the firmware loaded
-callback is done.  Does the following patch fix your problem too?
+Hi Sandy,
 
-Dan
+>On Fri, Oct 11, 2013 at 2:38 PM, Stephan Mueller <smueller@chronox.de>
+>wrote:
+>
+>I like the basic idea. Here I'm alternately reading the email and the
+>page you link to & commenting on both.
 
----
-diff --git a/drivers/net/wireless/libertas/firmware.c b/drivers/net/wireless/libertas/firmware.c
-index c0f9e7e..51b92b5 100644
---- a/drivers/net/wireless/libertas/firmware.c
-+++ b/drivers/net/wireless/libertas/firmware.c
-@@ -49,14 +49,19 @@ static void main_firmware_cb(const struct firmware *firmware, void *context)
- 		/* Failed to find firmware: try next table entry */
- 		load_next_firmware_from_table(priv);
- 		return;
- 	}
- 
- 	/* Firmware found! */
- 	lbs_fw_loaded(priv, 0, priv->helper_fw, firmware);
-+	if (priv->helper_fw) {
-+		release_firmware (priv->helper_fw);
-+		priv->helper_fw = NULL;
-+	}
-+	release_firmware (firmware);
- }
- 
- static void helper_firmware_cb(const struct firmware *firmware, void *context)
- {
- 	struct lbs_private *priv = context;
- 
- 	if (!firmware) {
-diff --git a/drivers/net/wireless/libertas/if_cs.c b/drivers/net/wireless/libertas/if_cs.c
-index c94dd68..ef8c98e 100644
---- a/drivers/net/wireless/libertas/if_cs.c
-+++ b/drivers/net/wireless/libertas/if_cs.c
-@@ -750,22 +750,22 @@ static void if_cs_prog_firmware(struct lbs_private *priv, int ret,
- 	}
- 
- 	/* Load the firmware */
- 	ret = if_cs_prog_helper(card, helper);
- 	if (ret == 0 && (card->model != MODEL_8305))
- 		ret = if_cs_prog_real(card, mainfw);
- 	if (ret)
--		goto out;
-+		return;
- 
- 	/* Now actually get the IRQ */
- 	ret = request_irq(card->p_dev->irq, if_cs_interrupt,
- 		IRQF_SHARED, DRV_NAME, card);
- 	if (ret) {
- 		pr_err("error in request_irq\n");
--		goto out;
-+		return;
- 	}
- 
- 	/*
- 	 * Clear any interrupt cause that happened while sending
- 	 * firmware/initializing card
- 	 */
- 	if_cs_write16(card, IF_CS_CARD_INT_CAUSE, IF_CS_BIT_MASK);
-@@ -773,18 +773,14 @@ static void if_cs_prog_firmware(struct lbs_private *priv, int ret,
- 
- 	/* And finally bring the card up */
- 	priv->fw_ready = 1;
- 	if (lbs_start_card(priv) != 0) {
- 		pr_err("could not activate card\n");
- 		free_irq(card->p_dev->irq, card);
- 	}
--
--out:
--	release_firmware(helper);
--	release_firmware(mainfw);
- }
- 
- 
- /********************************************************************/
- /* Callback functions for libertas.ko                               */
- /********************************************************************/
- 
-diff --git a/drivers/net/wireless/libertas/if_sdio.c b/drivers/net/wireless/libertas/if_sdio.c
-index 4557833..991238a 100644
---- a/drivers/net/wireless/libertas/if_sdio.c
-+++ b/drivers/net/wireless/libertas/if_sdio.c
-@@ -704,28 +704,24 @@ static void if_sdio_do_prog_firmware(struct lbs_private *priv, int ret,
- 	if (ret) {
- 		pr_err("failed to find firmware (%d)\n", ret);
- 		return;
- 	}
- 
- 	ret = if_sdio_prog_helper(card, helper);
- 	if (ret)
--		goto out;
-+		return;
- 
- 	lbs_deb_sdio("Helper firmware loaded\n");
- 
- 	ret = if_sdio_prog_real(card, mainfw);
- 	if (ret)
--		goto out;
-+		return;
- 
- 	lbs_deb_sdio("Firmware loaded\n");
- 	if_sdio_finish_power_on(card);
--
--out:
--	release_firmware(helper);
--	release_firmware(mainfw);
- }
- 
- static int if_sdio_prog_firmware(struct if_sdio_card *card)
- {
- 	int ret;
- 	u16 scratch;
- 
-diff --git a/drivers/net/wireless/libertas/if_spi.c b/drivers/net/wireless/libertas/if_spi.c
-index 4bb6574..87ff0ca 100644
---- a/drivers/net/wireless/libertas/if_spi.c
-+++ b/drivers/net/wireless/libertas/if_spi.c
-@@ -1090,19 +1090,15 @@ static int if_spi_init_card(struct if_spi_card *card)
- 	}
- 
- 	err = spu_set_interrupt_mode(card, 0, 1);
- 	if (err)
- 		goto out;
- 
- out:
--	release_firmware(helper);
--	release_firmware(mainfw);
--
- 	lbs_deb_leave_args(LBS_DEB_SPI, "err %d\n", err);
--
- 	return err;
- }
- 
- static void if_spi_resume_worker(struct work_struct *work)
- {
- 	struct if_spi_card *card;
- 
-diff --git a/drivers/net/wireless/libertas/if_usb.c b/drivers/net/wireless/libertas/if_usb.c
-index 2798077..dff08a2 100644
---- a/drivers/net/wireless/libertas/if_usb.c
-+++ b/drivers/net/wireless/libertas/if_usb.c
-@@ -840,15 +840,15 @@ static void if_usb_prog_firmware(struct lbs_private *priv, int ret,
- 		pr_err("failed to find firmware (%d)\n", ret);
- 		goto done;
- 	}
- 
- 	cardp->fw = fw;
- 	if (check_fwfile_format(cardp->fw->data, cardp->fw->size)) {
- 		ret = -EINVAL;
--		goto release_fw;
-+		goto done;
- 	}
- 
- 	/* Cancel any pending usb business */
- 	usb_kill_urb(cardp->rx_urb);
- 	usb_kill_urb(cardp->tx_urb);
- 
- 	cardp->fwlastblksent = 0;
-@@ -857,15 +857,15 @@ static void if_usb_prog_firmware(struct lbs_private *priv, int ret,
- 	cardp->fwfinalblk = 0;
- 	cardp->bootcmdresp = 0;
- 
- restart:
- 	if (if_usb_submit_rx_urb_fwload(cardp) < 0) {
- 		lbs_deb_usbd(&cardp->udev->dev, "URB submission is failed\n");
- 		ret = -EIO;
--		goto release_fw;
-+		goto done;
- 	}
- 
- 	cardp->bootcmdresp = 0;
- 	do {
- 		int j = 0;
- 		i++;
- 		if_usb_issue_boot_command(cardp, BOOT_CMD_FW_BY_USB);
-@@ -879,22 +879,22 @@ restart:
- 	if (cardp->bootcmdresp == BOOT_CMD_RESP_NOT_SUPPORTED) {
- 		/* Return to normal operation */
- 		ret = -EOPNOTSUPP;
- 		usb_kill_urb(cardp->rx_urb);
- 		usb_kill_urb(cardp->tx_urb);
- 		if (if_usb_submit_rx_urb(cardp) < 0)
- 			ret = -EIO;
--		goto release_fw;
-+		goto done;
- 	} else if (cardp->bootcmdresp <= 0) {
- 		if (--reset_count >= 0) {
- 			if_usb_reset_device(cardp);
- 			goto restart;
- 		}
- 		ret = -EIO;
--		goto release_fw;
-+		goto done;
- 	}
- 
- 	i = 0;
- 
- 	cardp->totalbytes = 0;
- 	cardp->fwlastblksent = 0;
- 	cardp->CRC_OK = 1;
-@@ -917,37 +917,34 @@ restart:
- 		if (--reset_count >= 0) {
- 			if_usb_reset_device(cardp);
- 			goto restart;
- 		}
- 
- 		pr_info("FW download failure, time = %d ms\n", i * 100);
- 		ret = -EIO;
--		goto release_fw;
-+		goto done;
- 	}
- 
- 	cardp->priv->fw_ready = 1;
- 	if_usb_submit_rx_urb(cardp);
- 
- 	if (lbs_start_card(priv))
--		goto release_fw;
-+		goto done;
- 
- 	if_usb_setup_firmware(priv);
- 
- 	/*
- 	 * EHS_REMOVE_WAKEUP is not supported on all versions of the firmware.
- 	 */
- 	priv->wol_criteria = EHS_REMOVE_WAKEUP;
- 	if (lbs_host_sleep_cfg(priv, priv->wol_criteria, NULL))
- 		priv->ehs_remove_supported = false;
- 
-- release_fw:
--	release_firmware(cardp->fw);
--	cardp->fw = NULL;
--
-  done:
-+	cardp->fw = NULL;
- 	lbs_deb_leave(LBS_DEB_USB);
- }
- 
- 
- #ifdef CONFIG_PM
- static int if_usb_suspend(struct usb_interface *intf, pm_message_t message)
- {
+Thank you very much for reviewing both and sharing your thoughts.
+>
+>A nitpick in the paper is that you cite RFC 1750. That was superceded
+>some years back by RFC 4086
+>http://tools.ietf.org/html/rfc4086
+
+Thank you for the link. I updated the reference in the paper. Though, 
+the Von-Neumann unbias operation is way older than this RFC and I just 
+listed the RFC to give people a reference.
+>
+>(Ted's comments in the actual driver had the same problem last
+>I looked. That is excusable since they were written long ago.)
+>
+>I think you may be missing some other citations that should be
+>there, to previous work along similar lines. One is the HAVEGE
+>work, another:
+>McGuire, Okech & Schiesser,
+>Analysis of inherent randomness of the Linux kernel,
+>http://lwn.net/images/conf/rtlws11/random-hardware.pdf
+
+Thank you for the reminder. I added section 1.1.
+
+>
+>Paper has:
+>
+>" the time delta is partitioned into chunks of 1 bit starting at the
+>lowest bit " .... The 64 1 bit chunks of the time value are XORed with
+>each other to " form a 1 bit value.
+>
+>As I read that, you are just taking the parity. Why not use that
+>simpler description & possibly one of several possible optimised
+>algorithms for the task:
+>http://graphics.stanford.edu/~seander/bithacks.html
+
+I am fully aware that the bit operation is inefficient. Yet it is 
+deliberately inefficient, because that "folding loop" performs actual 
+work for the RNG (the collapse of 64 bits into one bit) and at the very 
+same time, it is the fixed instruction set over which I measure the time 
+variations. 
+
+Thus, the folding loop can be considered as the entropy source at the 
+same time. Thus, when making it shorter or more efficient, we alter the 
+duration of the loop. With significantly shorter durations, the jitter 
+measurements will get smaller.
+
+That issue is the sole reason why that code part of the RNG shall be 
+compiled without optimizations. The compiler is clever enough to arrange 
+my inefficient operation into something faster when optimizing. You 
+clearly see that with Clang: the unoptimized folding loop code takes 
+about 300 nanoseconds on my i7 2nd gen. Optimized, it takes about 40 ns! 
+At the same time, the jitter is lower (it is still sufficient, but the 
+cushion is smaller).
+
+As the RNG is not primarily about speed, the folding operation should 
+stay inefficient.
+>
+>If what you are doing is not a parity computation, then you need a
+>better description so people like me do not misread it.
+
+It is not a parity computation that the folding loop performs. The code 
+XORs each individual bit of the 64 bit stream with each other, whereas 
+your cited document implies an ANDing of the bits (see section 
+"Computing parity the naive way" of the cited document). The reason is 
+that the different bits contain entropy -- the lower the bit index, the 
+more entropy they are assumed to have. The only operation to retain 
+entropy and yet collapse a bit string is to use XOR. Any other operation 
+will result in the fact that you cannot make any statement about the 
+entropy behavior any more.
+
+The rationale about the folding loop is given in section 5.1 [2].
+
+>
+>A bit later you have:
+>
+>" After obtaining the 1 bit folded and unbiased time stamp,
+>" how is it mixed into the entropy pool? ... The 1 bit folded
+>" value is XORed with 1 bit from the entropy pool.
+>
+>This appears to be missing the cryptographically strong
+>mixing step which most RNG code includes. If that is
+>what you are doing, you need to provide some strong
+>arguments to justify it.
+
+The key here is that there is no cryptographic function needed for 
+mixing as in fact I am not really mixing things. I am simply 
+concatenating the new bit to the previously obtained bits. That is it.
+
+The argument for doing that is that the time deltas are independent of 
+each other. Yet, these deltas show variations which are collapsed into 
+the one bit that is the result of the folding loop. Therefore, the 
+individual bits are independent of each other and yet contain the 
+variations of the jitter. Now, there is no need to apply a cryptographic 
+function for further mixing.
+
+The key here is that the variations in the time deltas must be *larger* 
+than one bit. What does that mean? For example, if the variation would 
+be, say 50% of 250 ns and 50% of 251 ns, we have 1 bit variation 
+(considering that each individual measurement is independent of the 
+others). Or, if you have 30% with 249ns, 20% with 250%, 25% with 251 and 
+25% with 252ns, you have more than one bit. You see, that this line of 
+thought brings us to the Shannon Entropy formula. And now we come to the 
+200+ test systems that I tested on: all with the exception of one very 
+old system showed a variation with the lower boundary of more than one 
+bit. Therefore, each bit from the folding operation therefore contains 
+one bit of entropy. So, why should I mix it even further with some 
+crypto function?
+
+>
+>Sometimes doing without is justified; for example my
+>code along these lines
+>ftp://ftp.cs.sjtu.edu.cn:990/sandy/maxwell/
+>does more mixing than I see in yours, but probably
+>not enough overall. That's OK because I am just
+>feeding into /dev/random which has plenty of
+>mixing.
+>
+>It is OK for your code too if you are feeding into
+>/dev/random, but it looks problematic if your code
+>is expected to stand alone.
+
+Please consider use case of the CPU Jitter RNG: it is intended as a seed 
+source for deterministic RNGs. That is how the various integration 
+patches for the kernel crypto API, /dev/random, OpenSSL, libgcrypt or 
+even the stand-alone entropy feeding daemon operate. Thus, you have a 
+whitening function when using it together with such DRNGs.
+
+Yet, the code allows other users that may want entropy (NSS or even 
+stand-alone DRNGs come to mind) to simply use that noise source without 
+the burden of another whitening function to their DRNGs.
+
+>
+>Ah! You talk about whitening a bit later. However,
+>you seem to make it optional, up to the user. I
+>cannot see that that is a good idea.
+
+Why is whitening a good idea in the first place when the statistical 
+properties of your output already are white noise? When applying all 
+kinds of statistical test to my non-whitened output, I do not see any 
+statistical significant odd behavior -- ent (Chi-Square test, mean test, 
+monte carlo simulation), dieharder tests, various tests from the German 
+BSI, NIST test suite.
+
+And if you say that your entropy source has problems, then your 
+whitening function only disguises the fact but does not remedy it. 
+Please refer to section 4.3 of my document in [2] where I have some 
+"anti" tests with broken timers. Such brokenness would be immediately 
+visible for anybody without a whitening function (such as the jitter 
+RNG). But if the jitter RNG would use a whitening function, the missing 
+entropy would not be visible.
+
+Also, the RNG is intended as a seeding mechanism for all kinds of use 
+cases. The typical one is the seeding of a DRNG of your choice. This is 
+one more reason why I consider the use of a whitening function as not 
+helpful.
+
+>
+>At the very least I think you need something like
+>the linear transform from the ARIA cipher -- fast
+>and cheap, 128 bits in & 128 out and it makes
+>every output bit depend on every input bit. That
+>might not be enough, though.
+
+Can you please help me understand why you think that a whitening 
+function (cryptographic or not) is needed in the case of the CPU Jitter 
+RNG, provided that I can show that each individual bit coming from the 
+folding operation has one bit of entropy?
+>
+>You require compilation without optimisation. How does
+>that interact with kernel makefiles? Can you avoid
+>undesirable optimisations in some other way, such as
+>volatile declartions?
+
+That is very easy to implement, see the kernel Makefile for my code:
+
+...
+obj-m += jitterentropy.o
+CFLAGS_jitterentropy-base.o = -O0
+jitterentropy-y := jitterentropy-base.o jitterentropy-drng.o
+...
+
+This code implies that only the compilation of jitterentropy-base.c is 
+performed with -O0. Any other C file from my code or even the reminder 
+of the kernel is compiled with the optimization the kernel developer 
+deemed right.
+
+>
+>> I am asking whether this RNG would good as an inclusion into the
+>> Linux
+>> kernel for:
+>> 
+>> - kernel crypto API to provide a true random number generator as part
+>> of this API (see [2] appendix B for a description)
+>
+>My first reaction is no. We have /dev/random for the userspace
+>API and there is a decent kernel API too. I may change my
+>mind here as I look more at your appendix & maybe the code.
+
+The concern with /dev/random and its get_random_bytes() function is that 
+inside the kernel, we only have the equivalent of /dev/urandom. 
+Therefore, in the worst case, you have *no* guarantee that you obtain 
+random numbers that are freshly seeded with hardware entropy.
+
+For example, when you look into libgcrypt and you want to have "strong 
+random numbers", libgcrypt seeds from /dev/random every 1000 or so 
+random numbers produced from the DRNG.
+
+Due to the ability of user space to obtain data via the nonblocking_pool 
+using /dev/urandom and the use of the same pool for get_random_bytes, 
+equally strong random numbers as, for example, libgcrypt would produce 
+would not be available.
+
+Therefore, the code linking with the kernel crypto API registers three 
+RNGs:
+
+- one X9.31 DRNG that is seeded "once in a while" with the CPU jitter
+
+- one X9.31 DRNG that is seeded "frequently" with the CPU jitter
+
+- and one direct access to the CPU jitter RNG
+
+This is logically equivalent to what is done in libgcrypt.
+
+Of course, we may replace the X9.31 with, say, an SP800-90A DRBG, if 
+that becomes available.
+
+Furthermore, one of the core ideas of the CPU jitter RNG is that you get 
+away from the centralized noise source of /dev/random. Such central 
+services are also the focus for hackers. The CPU Jitter RNG allows 
+multiple instantiations of the noise source into independent components. 
+Every "user" of random data may now have its own private copy of a noise 
+source and its operation.
+>
+>> - inclusion into /dev/random as an entropy provider of last resort
+>> when the entropy estimator falls low.
+>
+>Why only 'of last resort'? If it can provide good entropy, we should
+>use it often.
+
+I did not dare to be more than a provider of last resort at this point. 
+The CPU jitter RNG is new and I guess people may want to study it first.
+
+>From my point of view, it surely can become one "regular" source. But as 
+it delivers entropy on demand, it may simply outpace any other entropy 
+source of /dev/random. This means, in some normal use cases, my CPU 
+jitter RNG would always be the provider of the majority of the entropy, 
+by far. Therefore, my CPU Jitter RNG would alter the nature of 
+/dev/random significantly.
+
+If Ted thinks that this is ok, I am all for it and will change the 
+patch. But I tried to be cautious and not to overwhelm people :-)
+>
+>> I will present the RNG at the Linux Symposium in Ottawa this year.
+>> There I can give a detailed description of the design and testing.
+>
+>I live in Ottawa, don't know if I'll make it to the Symposium this
+>year. Ted; I saw you at one Symposium; are you coming this
+>year?
+
+As mentioned before, I would really like to meet you there to have a cup 
+of coffee over that matter.
 
 
+Ciao
+Stephan
