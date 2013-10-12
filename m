@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754335Ab3JLWB0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Oct 2013 18:01:26 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:36970 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753447Ab3JLWAO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Oct 2013 18:00:14 -0400
+	id S1754034Ab3JLWAN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Oct 2013 18:00:13 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:43565 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753447Ab3JLV7w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Oct 2013 17:59:52 -0400
 From: Santosh Shilimkar <santosh.shilimkar@ti.com>
 To: <tj@kernel.org>, <yinghai@kernel.org>
 CC: <linux-arm-kernel@lists.infradead.org>, <linux-mm@kvack.org>,
         <linux-kernel@vger.kernel.org>, <grygorii.strashko@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [RFC 23/23] mm/ARM: OMAP: Use memblock apis for early memory allocations
-Date: Sat, 12 Oct 2013 17:59:06 -0400
-Message-ID: <1381615146-20342-24-git-send-email-santosh.shilimkar@ti.com>
+        Andrew Morton <akpm@linux-foundation.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: [RFC 08/23] mm/memblock: debug: don't free reserved array if !ARCH_DISCARD_MEMBLOCK
+Date: Sat, 12 Oct 2013 17:58:51 -0400
+Message-ID: <1381615146-20342-9-git-send-email-santosh.shilimkar@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1381615146-20342-1-git-send-email-santosh.shilimkar@ti.com>
 References: <1381615146-20342-1-git-send-email-santosh.shilimkar@ti.com>
@@ -24,43 +25,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switch to memblock interfaces for early memory allocator
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+
+Now the Nobootmem allocator will always try to free memory allocated for
+reserved memory regions (free_low_memory_core_early()) without taking
+into to account current memblock debugging configuration
+(CONFIG_ARCH_DISCARD_MEMBLOCK and CONFIG_DEBUG_FS state).
+As result if:
+ - CONFIG_DEBUG_FS defined
+ - CONFIG_ARCH_DISCARD_MEMBLOCK not defined;
+-  reserved memory regions array have been resized during boot
+
+then:
+- memory allocated for reserved memory regions array will be freed to
+buddy allocator;
+- debug_fs entry "sys/kernel/debug/memblock/reserved" will show garbage
+instead of state of memory reservations. like:
+   0: 0x98393bc0..0x9a393bbf
+   1: 0xff120000..0xff11ffff
+   2: 0x00000000..0xffffffff
+
+Hence, do not free memory allocated for reserved memory regions if
+defined(CONFIG_DEBUG_FS) && !defined(CONFIG_ARCH_DISCARD_MEMBLOCK).
 
 Cc: Yinghai Lu <yinghai@kernel.org>
 Cc: Tejun Heo <tj@kernel.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 
+Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
 Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 ---
- arch/arm/mach-omap2/omap_hwmod.c |    8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ mm/memblock.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/arch/arm/mach-omap2/omap_hwmod.c b/arch/arm/mach-omap2/omap_hwmod.c
-index d9ee0ff..adfd6a2 100644
---- a/arch/arm/mach-omap2/omap_hwmod.c
-+++ b/arch/arm/mach-omap2/omap_hwmod.c
-@@ -2676,9 +2676,7 @@ static int __init _alloc_links(struct omap_hwmod_link **ml,
- 	sz = sizeof(struct omap_hwmod_link) * LINKS_PER_OCP_IF;
+diff --git a/mm/memblock.c b/mm/memblock.c
+index d903138..1bb2cc0 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -169,6 +169,10 @@ phys_addr_t __init_memblock get_allocated_memblock_reserved_regions_info(
+ 	if (memblock.reserved.regions == memblock_reserved_init_regions)
+ 		return 0;
  
- 	*sl = NULL;
--	*ml = alloc_bootmem(sz);
--
--	memset(*ml, 0, sz);
-+	*ml = memblock_early_alloc(sz);
++	if (IS_ENABLED(CONFIG_DEBUG_FS) &&
++	    !IS_ENABLED(CONFIG_ARCH_DISCARD_MEMBLOCK))
++		return 0;
++
+ 	*addr = __pa(memblock.reserved.regions);
  
- 	*sl = (void *)(*ml) + sizeof(struct omap_hwmod_link);
- 
-@@ -2797,9 +2795,7 @@ static int __init _alloc_linkspace(struct omap_hwmod_ocp_if **ois)
- 	pr_debug("omap_hwmod: %s: allocating %d byte linkspace (%d links)\n",
- 		 __func__, sz, max_ls);
- 
--	linkspace = alloc_bootmem(sz);
--
--	memset(linkspace, 0, sz);
-+	linkspace = memblock_early_alloc(sz);
- 
- 	return 0;
- }
+ 	return PAGE_ALIGN(sizeof(struct memblock_region) *
 -- 
 1.7.9.5
 
