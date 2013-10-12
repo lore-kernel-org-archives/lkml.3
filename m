@@ -1,249 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753198Ab3JLHUR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Oct 2013 03:20:17 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:19538 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752609Ab3JLHUP convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Oct 2013 03:20:15 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz9371I542I1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275bhz2dh2a8h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h19ceh1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5hbe9i1155h)
-From: Sethi Varun-B16395 <B16395@freescale.com>
-To: "joro@8bytes.org" <joro@8bytes.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Yoder Stuart-B08248 <B08248@freescale.com>,
-        "alex.williamson@redhat.com" <alex.williamson@redhat.com>
-Subject: RE: [PATCH 1/2] iommu/fsl: Factor out PCI specific code.
-Thread-Topic: [PATCH 1/2] iommu/fsl: Factor out PCI specific code.
-Thread-Index: AQHOxR7l1sARH9xatkqNHFH6zdCYSZnwrD0Q
-Date: Sat, 12 Oct 2013 07:20:12 +0000
-Message-ID: <C5ECD7A89D1DC44195F34B25E172658D0A53259E@039-SN2MPN1-013.039d.mgd.msft.net>
-References: <1381343194-24059-1-git-send-email-Varun.Sethi@freescale.com>
-In-Reply-To: <1381343194-24059-1-git-send-email-Varun.Sethi@freescale.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [182.64.58.89]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752609Ab3JLHxs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Oct 2013 03:53:48 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:33162 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750799Ab3JLHxq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Oct 2013 03:53:46 -0400
+Date: Sat, 12 Oct 2013 00:53:36 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>,
+        Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
+        darren@dvhart.com, fweisbec@gmail.com, sbw@mit.edu,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
+Subject: Re: [PATCH v2 tip/core/rcu 07/13] ipv6/ip6_tunnel: Apply
+ rcu_access_pointer() to avoid sparse false positive
+Message-ID: <20131012075336.GA5790@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20131009223652.GC5790@linux.vnet.ibm.com>
+ <1381359077.4971.37.camel@edumazet-glaptop.roam.corp.google.com>
+ <20131009225617.GH11709@jtriplet-mobl1>
+ <1381360675.4971.45.camel@edumazet-glaptop.roam.corp.google.com>
+ <20131009234040.GB14055@jtriplet-mobl1>
+ <1381363960.4971.55.camel@edumazet-glaptop.roam.corp.google.com>
+ <20131010002833.GJ5790@linux.vnet.ibm.com>
+ <20131010020422.GB24368@order.stressinduktion.org>
+ <20131010190532.GQ5790@linux.vnet.ibm.com>
+ <20131012022508.GA20321@order.stressinduktion.org>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131012022508.GA20321@order.stressinduktion.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13101207-0928-0000-0000-000002793713
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joerg,
-Please consider these patches for 3.12.
+On Sat, Oct 12, 2013 at 04:25:08AM +0200, Hannes Frederic Sowa wrote:
+> On Thu, Oct 10, 2013 at 12:05:32PM -0700, Paul E. McKenney wrote:
+> > On Thu, Oct 10, 2013 at 04:04:22AM +0200, Hannes Frederic Sowa wrote:
+> > > On Wed, Oct 09, 2013 at 05:28:33PM -0700, Paul E. McKenney wrote:
+> > > > On Wed, Oct 09, 2013 at 05:12:40PM -0700, Eric Dumazet wrote:
+> > > > > On Wed, 2013-10-09 at 16:40 -0700, Josh Triplett wrote:
+> > > > > 
+> > > > > > that.  Constructs like list_del_rcu are much clearer, and not
+> > > > > > open-coded.  Open-coding synchronization code is almost always a Bad
+> > > > > > Idea.
+> > > > > 
+> > > > > OK, so you think there is synchronization code.
+> > > > > 
+> > > > > I will shut up then, no need to waste time.
+> > > > 
+> > > > As you said earlier, we should at least get rid of the memory barrier
+> > > > as long as we are changing the code.
+> > > 
+> > > Interesting thread!
+> > > 
+> > > Sorry to chime in and asking a question:
+> > > 
+> > > Why do we need an ACCESS_ONCE here if rcu_assign_pointer can do without one?
+> > > In other words I wonder why rcu_assign_pointer is not a static inline function
+> > > to use the sequence point in argument evaluation (if I remember correctly this
+> > > also holds for inline functions) to not allow something like this:
+> > > 
+> > > E.g. we want to publish which lock to take first to prevent an ABBA problem
+> > > (extreme example):
+> > > 
+> > > rcu_assign_pointer(lockptr, min(lptr1, lptr2));
+> > > 
+> > > Couldn't a compiler spill the lockptr memory location as a temporary buffer
+> > > if the compiler is under register pressure? (yes, this seems unlikely if we
+> > > flushed out most registers to memory because of the barrier, but still... ;) )
+> > > 
+> > > This seems to be also the case if we publish a multi-dereferencing pointers
+> > > e.g. ptr->ptr->ptr.
+> > 
+> > IIRC, sequence points only confine volatile accesses.  For non-volatile
+> > accesses, the so-called "as-if rule" allows compiler writers to do some
+> > surprisingly global reordering.
+> > 
+> > The reason that rcu_assign_pointer() isn't an inline function is because
+> > it needs to be type-generic, in other words, it needs to be OK to use
+> > it on any type of pointers as long as the C types of the two pointers
+> > match (the sparse types can vary a bit).
+> > 
+> > One of the reasons for wanting a volatile cast in rcu_assign_pointer() is
+> > to prevent compiler mischief such as you described in your last two
+> > paragraphs.  That said, it would take a very brave compiler to pull
+> > a pointer-referenced memory location into a register and keep it there.
+> > Unfortunately, increasing compiler bravery seems to be a solid long-term
+> > trend.
+> 
+> I saw your patch regarding making rcu_assign_pointer volatile and wonder if we
+> can still make it a bit more safe to use if we force the evaluation of the
+> to-be-assigned pointer before the write barrier. This is what I have in mind:
+> 
+> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+> index f1f1bc3..79eccc3 100644
+> --- a/include/linux/rcupdate.h
+> +++ b/include/linux/rcupdate.h
+> @@ -550,8 +550,9 @@ static inline void rcu_preempt_sleep_check(void)
+>  	})
+>  #define __rcu_assign_pointer(p, v, space) \
+>  	do { \
+> +		typeof(v) ___v = (v); \
+>  		smp_wmb(); \
+> -		(p) = (typeof(*v) __force space *)(v); \
+> +		(p) = (typeof(*___v) __force space *)(___v); \
+>  	} while (0)
+> 
+> 
+> I don't think ___v must be volatile for this case because the memory barrier
+> will force the evaluation of v first.
+> 
+> This would guard against cases where rcu_assign_pointer is used like:
+> 
+> rcu_assign_pointer(ptr, compute_ptr_with_side_effects());
 
-Regards
-Varun
+I am sorry, but I am not seeing how this would be particularly useful.
 
-> -----Original Message-----
-> From: Sethi Varun-B16395
-> Sent: Wednesday, October 09, 2013 11:57 PM
-> To: joro@8bytes.org; iommu@lists.linux-foundation.org; linuxppc-
-> dev@lists.ozabs.org; linux-kernel@vger.kernel.org; Yoder Stuart-B08248;
-> alex.williamson@redhat.com
-> Cc: Sethi Varun-B16395
-> Subject: [PATCH 1/2] iommu/fsl: Factor out PCI specific code.
-> 
-> Factor out PCI specific code in the PAMU driver.
-> 
-> Signed-off-by: Varun Sethi <Varun.Sethi@freescale.com>
-> ---
->  drivers/iommu/fsl_pamu_domain.c |   81 +++++++++++++++++++--------------
-> ------
->  1 file changed, 40 insertions(+), 41 deletions(-)
-> 
-> diff --git a/drivers/iommu/fsl_pamu_domain.c
-> b/drivers/iommu/fsl_pamu_domain.c index c857c30..e02e1de 100644
-> --- a/drivers/iommu/fsl_pamu_domain.c
-> +++ b/drivers/iommu/fsl_pamu_domain.c
-> @@ -677,13 +677,9 @@ static int handle_attach_device(struct
-> fsl_dma_domain *dma_domain,
->  	return ret;
->  }
-> 
-> -static int fsl_pamu_attach_device(struct iommu_domain *domain,
-> -				  struct device *dev)
-> +static void check_for_pci_dma_device(struct device **dev)
->  {
-> -	struct fsl_dma_domain *dma_domain = domain->priv;
-> -	const u32 *liodn;
-> -	u32 liodn_cnt;
-> -	int len, ret = 0;
-> +#ifdef CONFIG_PCI
->  	struct pci_dev *pdev = NULL;
->  	struct pci_controller *pci_ctl;
-> 
-> @@ -691,25 +687,38 @@ static int fsl_pamu_attach_device(struct
-> iommu_domain *domain,
->  	 * Use LIODN of the PCI controller while attaching a
->  	 * PCI device.
->  	 */
-> -	if (dev->bus == &pci_bus_type) {
-> -		pdev = to_pci_dev(dev);
-> +	if ((*dev)->bus == &pci_bus_type) {
-> +		pdev = to_pci_dev(*dev);
->  		pci_ctl = pci_bus_to_host(pdev->bus);
->  		/*
->  		 * make dev point to pci controller device
->  		 * so we can get the LIODN programmed by
->  		 * u-boot.
->  		 */
-> -		dev = pci_ctl->parent;
-> +		*dev = pci_ctl->parent;
->  	}
-> +#endif
-> +}
-> 
-> -	liodn = of_get_property(dev->of_node, "fsl,liodn", &len);
-> +static int fsl_pamu_attach_device(struct iommu_domain *domain,
-> +				  struct device *dev)
-> +{
-> +	struct fsl_dma_domain *dma_domain = domain->priv;
-> +	struct device *dma_dev = dev;
-> +	const u32 *liodn;
-> +	u32 liodn_cnt;
-> +	int len, ret = 0;
-> +
-> +	check_for_pci_dma_device(&dma_dev);
-> +
-> +	liodn = of_get_property(dma_dev->of_node, "fsl,liodn", &len);
->  	if (liodn) {
->  		liodn_cnt = len / sizeof(u32);
->  		ret = handle_attach_device(dma_domain, dev,
->  					 liodn, liodn_cnt);
->  	} else {
->  		pr_debug("missing fsl,liodn property at %s\n",
-> -		          dev->of_node->full_name);
-> +		          dma_dev->of_node->full_name);
->  			ret = -EINVAL;
->  	}
-> 
-> @@ -720,32 +729,18 @@ static void fsl_pamu_detach_device(struct
-> iommu_domain *domain,
->  				      struct device *dev)
->  {
->  	struct fsl_dma_domain *dma_domain = domain->priv;
-> +	struct device *dma_dev = dev;
->  	const u32 *prop;
->  	int len;
-> -	struct pci_dev *pdev = NULL;
-> -	struct pci_controller *pci_ctl;
-> 
-> -	/*
-> -	 * Use LIODN of the PCI controller while detaching a
-> -	 * PCI device.
-> -	 */
-> -	if (dev->bus == &pci_bus_type) {
-> -		pdev = to_pci_dev(dev);
-> -		pci_ctl = pci_bus_to_host(pdev->bus);
-> -		/*
-> -		 * make dev point to pci controller device
-> -		 * so we can get the LIODN programmed by
-> -		 * u-boot.
-> -		 */
-> -		dev = pci_ctl->parent;
-> -	}
-> +	check_for_pci_dma_device(&dma_dev);
-> 
-> -	prop = of_get_property(dev->of_node, "fsl,liodn", &len);
-> +	prop = of_get_property(dma_dev->of_node, "fsl,liodn", &len);
->  	if (prop)
->  		detach_device(dev, dma_domain);
->  	else
->  		pr_debug("missing fsl,liodn property at %s\n",
-> -		          dev->of_node->full_name);
-> +		          dma_dev->of_node->full_name);
->  }
-> 
->  static  int configure_domain_geometry(struct iommu_domain *domain, void
-> *data) @@ -905,6 +900,7 @@ static struct iommu_group
-> *get_device_iommu_group(struct device *dev)
->  	return group;
->  }
-> 
-> +#ifdef CONFIG_PCI
->  static  bool check_pci_ctl_endpt_part(struct pci_controller *pci_ctl)  {
->  	u32 version;
-> @@ -945,13 +941,18 @@ static struct iommu_group
-> *get_shared_pci_device_group(struct pci_dev *pdev)
->  	return NULL;
->  }
-> 
-> -static struct iommu_group *get_pci_device_group(struct pci_dev *pdev)
-> +static struct iommu_group *get_pci_device_group(struct device *dev)
->  {
->  	struct pci_controller *pci_ctl;
->  	bool pci_endpt_partioning;
->  	struct iommu_group *group = NULL;
-> -	struct pci_dev *bridge, *dma_pdev = NULL;
-> +	struct pci_dev *bridge, *pdev;
-> +	struct pci_dev *dma_pdev = NULL;
-> 
-> +	pdev = to_pci_dev(dev);
-> +	/* Don't create device groups for virtual PCI bridges */
-> +	if (pdev->subordinate)
-> +		return NULL;
->  	pci_ctl = pci_bus_to_host(pdev->bus);
->  	pci_endpt_partioning = check_pci_ctl_endpt_part(pci_ctl);
->  	/* We can partition PCIe devices so assign device group to the
-> device */ @@ -1044,11 +1045,11 @@ root_bus:
-> 
->  	return group;
->  }
-> +#endif
-> 
->  static int fsl_pamu_add_device(struct device *dev)  {
->  	struct iommu_group *group = NULL;
-> -	struct pci_dev *pdev;
->  	const u32 *prop;
->  	int ret, len;
-> 
-> @@ -1056,19 +1057,15 @@ static int fsl_pamu_add_device(struct device
-> *dev)
->  	 * For platform devices we allocate a separate group for
->  	 * each of the devices.
->  	 */
-> -	if (dev->bus == &pci_bus_type) {
-> -		pdev = to_pci_dev(dev);
-> -		/* Don't create device groups for virtual PCI bridges */
-> -		if (pdev->subordinate)
-> -			return 0;
-> -
-> -		group = get_pci_device_group(pdev);
-> -
-> -	} else {
-> +	if (dev->bus == &platform_bus_type) {
->  		prop = of_get_property(dev->of_node, "fsl,liodn", &len);
->  		if (prop)
->  			group = get_device_iommu_group(dev);
->  	}
-> +#ifdef CONFIG_PCI
-> +	else
-> +		group = get_pci_device_group(dev);
-> +#endif
-> 
->  	if (!group || IS_ERR(group))
->  		return PTR_ERR(group);
-> @@ -1166,7 +1163,9 @@ int pamu_domain_init()
->  		return ret;
-> 
->  	bus_set_iommu(&platform_bus_type, &fsl_pamu_ops);
-> +#ifdef CONFIG_PCI
->  	bus_set_iommu(&pci_bus_type, &fsl_pamu_ops);
-> +#endif
-> 
->  	return ret;
->  }
-> --
-> 1.7.9.5
+The point of rcu_assign_pointer() is to order the initialization of
+a data structure against publishing a pointer to that data structure.
+An example may be found in cgroup_create():
 
+	name = cgroup_alloc_name(dentry);
+	if (!name)
+		goto err_free_cgrp;
+	rcu_assign_pointer(cgrp->name, name);
+
+Here, cgroup_alloc_name() allocates memory for the name and fills in
+the name:
+
+static struct cgroup_name *cgroup_alloc_name(struct dentry *dentry)
+{
+	struct cgroup_name *name;
+
+	name = kmalloc(sizeof(*name) + dentry->d_name.len + 1, GFP_KERNEL);
+	if (!name)
+		return NULL;
+	strcpy(name->name, dentry->d_name.name);
+	return name;
+}
+
+So the point of the smp_wmb() in __rcu_assign_pointer() is to order the
+strcpy() in cgroup_alloc_name() to happen before the assignment of the
+name pointer to cgrp->name.
+
+To make this example fit your pattern, we could change the code in
+cgroup_create() to look as follows (and to be buggy):
+
+	/* BAD CODE!  Do not do this! */
+	rcu_assign_pointer(cgrp->name, cgroup_alloc_name(dentry));
+	if (!cgrp->name)
+		goto err_free_cgrp;
+
+The reason that this is bad practice is that it is hiding the fact that
+the allocation and initialization in cgroup_alloc_name() needs to be
+ordered before the assignment to cgrp->name.
+
+Make sense?
+
+							Thanx, Paul
 
