@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751038Ab3JLE3t (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Oct 2013 00:29:49 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:54074 "EHLO
+	id S1751272Ab3JLEeC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Oct 2013 00:34:02 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:54080 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750732Ab3JLE3s (ORCPT
+	with ESMTP id S1750705Ab3JLEeB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Oct 2013 00:29:48 -0400
+	Sat, 12 Oct 2013 00:34:01 -0400
 From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: linux-kernel@vger.kernel.org
-Cc: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH] block: hd: remove deprecated IRQF_DISABLED
-Date: Sat, 12 Oct 2013 06:29:41 +0200
-Message-Id: <1381552181-6310-1-git-send-email-michael.opdenacker@free-electrons.com>
+To: jg1.han@samsung.com, akpm@linux-foundation.org, axboe@kernel.dk,
+        yongjun_wei@trendmicro.com.cn
+Cc: linux-kernel@vger.kernel.org,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Subject: [PATCH] mg_disk: remove deprecated IRQF_DISABLED
+Date: Sat, 12 Oct 2013 06:33:47 +0200
+Message-Id: <1381552427-6381-1-git-send-email-michael.opdenacker@free-electrons.com>
 X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,43 +24,24 @@ This patch proposes to remove the use of the IRQF_DISABLED flag
 
 It's a NOOP since 2.6.35 and it will be removed one day.
 
-This also removes a related comment which is obsolete too.
-
 Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
 ---
- drivers/block/hd.c | 12 +-----------
- 1 file changed, 1 insertion(+), 11 deletions(-)
+ drivers/block/mg_disk.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/block/hd.c b/drivers/block/hd.c
-index bf397bf..e16985f 100644
---- a/drivers/block/hd.c
-+++ b/drivers/block/hd.c
-@@ -694,16 +694,6 @@ static const struct block_device_operations hd_fops = {
- 	.getgeo =	hd_getgeo,
- };
- 
--/*
-- * This is the hard disk IRQ description. The IRQF_DISABLED in sa_flags
-- * means we run the IRQ-handler with interrupts disabled:  this is bad for
-- * interrupt latency, but anything else has led to problems on some
-- * machines.
-- *
-- * We enable interrupts in some of the routines after making sure it's
-- * safe.
-- */
--
- static int __init hd_init(void)
- {
- 	int drive;
-@@ -761,7 +751,7 @@ static int __init hd_init(void)
- 			p->cyl, p->head, p->sect);
- 	}
- 
--	if (request_irq(HD_IRQ, hd_interrupt, IRQF_DISABLED, "hd", NULL)) {
-+	if (request_irq(HD_IRQ, hd_interrupt, 0, "hd", NULL)) {
- 		printk("hd: unable to get IRQ%d for the hard disk driver\n",
- 			HD_IRQ);
- 		goto out1;
+diff --git a/drivers/block/mg_disk.c b/drivers/block/mg_disk.c
+index 77a60be..7bc363f 100644
+--- a/drivers/block/mg_disk.c
++++ b/drivers/block/mg_disk.c
+@@ -936,7 +936,7 @@ static int mg_probe(struct platform_device *plat_dev)
+ 			goto probe_err_3b;
+ 		}
+ 		err = request_irq(host->irq, mg_irq,
+-				IRQF_DISABLED | IRQF_TRIGGER_RISING,
++				IRQF_TRIGGER_RISING,
+ 				MG_DEV_NAME, host);
+ 		if (err) {
+ 			printk(KERN_ERR "%s:%d fail (request_irq err=%d)\n",
 -- 
 1.8.1.2
 
