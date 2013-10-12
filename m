@@ -1,49 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754139Ab3JLABE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 20:01:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49481 "EHLO
+	id S1754127Ab3JLAGJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 20:06:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49498 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753218Ab3JLABC (ORCPT
+	with ESMTP id S1752071Ab3JLAGG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 20:01:02 -0400
-Date: Fri, 11 Oct 2013 17:01:00 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org
-Subject: Re: [ 000/135] 3.11.5-stable review
-Message-ID: <20131012000100.GA19121@kroah.com>
-References: <20131011193945.181603934@linuxfoundation.org>
- <20131011235806.GA5067@roeck-us.net>
+	Fri, 11 Oct 2013 20:06:06 -0400
+Date: Fri, 11 Oct 2013 17:06:05 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Matthias Beyer <mail@beyermatthias.de>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/6] drivers: usb: core: devio.c: Coding style fixes
+Message-ID: <20131012000605.GA26571@kroah.com>
+References: <1381441292-6145-1-git-send-email-mail@beyermatthias.de>
+ <1381441292-6145-5-git-send-email-mail@beyermatthias.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20131011235806.GA5067@roeck-us.net>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1381441292-6145-5-git-send-email-mail@beyermatthias.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 11, 2013 at 04:58:06PM -0700, Guenter Roeck wrote:
-> On Fri, Oct 11, 2013 at 12:38:01PM -0700, Greg Kroah-Hartman wrote:
-> > This is the start of the stable review cycle for the 3.11.5 release.
-> > There are 135 patches in this series, all will be posted as a response
-> > to this one.  If anyone has any issues with these being applied, please
-> > let me know.
-> > 
-> > Responses should be made by Sun Oct 13 19:38:31 UTC 2013.
-> > Anything received after that time might be too late.
-> > 
-> > The whole patch series can be found in one patch at:
-> > 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.11.5-rc1.gz
-> > and the diffstat can be found below.
-> > 
-> Build test looks good:
-> 	total: 110 pass: 108 skipped: 2 fail: 0
-> 
-> qemu tests all pass (with the known warning for the sh target).
+On Thu, Oct 10, 2013 at 11:41:30PM +0200, Matthias Beyer wrote:
+> @@ -1838,9 +1838,10 @@ static int proc_ioctl(struct dev_state *ps, struct usbdevfs_ioctl *ctl)
+>  		return -ENODEV;
+>  	}
+>  
+> -	if (ps->dev->state != USB_STATE_CONFIGURED)
+> +	if (ps->dev->state != USB_STATE_CONFIGURED) {
+>  		retval = -EHOSTUNREACH;
+> -	else if (!(intf = usb_ifnum_to_if(ps->dev, ctl->ifno)))
+> +	}
+> +	else if (!(intf = usb_ifnum_to_if(ps->dev, ctl->ifno))) {
+>  		retval = -EINVAL;
+>  	else switch (ctl->ioctl_code) {
 
-Great, thanks for testing and letting me know.
+I don't think you actually built the code after you made this change :(
+
+drivers/usb/core/devio.c: In function ‘proc_ioctl’:
+drivers/usb/core/devio.c:1844:2: error: expected ‘}’ before ‘else’
+
+Please be more careful.
+
+thanks,
 
 greg k-h
