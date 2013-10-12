@@ -1,63 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754433Ab3JLAlN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 20:41:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4540 "EHLO mx1.redhat.com"
+	id S1754785Ab3JLAnv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 20:43:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20829 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752129Ab3JLAlL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 20:41:11 -0400
-Date: Fri, 11 Oct 2013 20:42:44 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Scott Lovenberg <scott.lovenberg@gmail.com>
-Cc: Jeremy Allison <jra@samba.org>, Andreas Dilger <adilger@dilger.ca>,
-        "linux-fsdevel@vger.kernel.org Devel" <linux-fsdevel@vger.kernel.org>,
-        Ganesha NFS List <nfs-ganesha-devel@lists.sourceforge.net>,
-        "samba-technical@lists.samba.org" <samba-technical@lists.samba.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 0/5] locks: implement "filp-private" (aka UNPOSIX)
- locks
-Message-ID: <20131011204244.72c2d672@corrin.poochiereds.net>
-In-Reply-To: <B0205F0B-0AC4-4B80-91C2-E3BD2D4B8E81@gmail.com>
-References: <1381494322-2426-1-git-send-email-jlayton@redhat.com>
-	<20131011200756.GB22160@fieldses.org>
-	<EE732BCB-C38E-4874-AEDF-2EB9E1389A86@dilger.ca>
-	<20131011192118.483e436f@tlielax.poochiereds.net>
-	<20131011234923.GD8688@samba2>
-	<B0205F0B-0AC4-4B80-91C2-E3BD2D4B8E81@gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754508Ab3JLAnt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 20:43:49 -0400
+Message-Id: <20131012004216.971202555@amt.cnet>
+User-Agent: quilt/0.60-1
+Date: Fri, 11 Oct 2013 21:39:25 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: kvm@vger.kernel.org
+Cc: dzickus@redhat.com, pbonzini@redhat.com, gleb@redhat.com,
+        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>
+Subject: [patch 1/2] pvclock: detect watchdog reset at pvclock read
+References: <20131012003924.092908362@amt.cnet>
+Content-Disposition: inline; filename=02-kvmclock-touch-watchdog-on-kvmclock-read
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Oct 2013 20:18:58 -0400
-Scott Lovenberg <scott.lovenberg@gmail.com> wrote:
+Implement reset of kernel watchdogs at pvclock read time. This avoids
+adding special code to every watchdog.
 
-> 
-> On Oct 11, 2013, at 19:49, Jeremy Allison <jra@samba.org> wrote:
-> 
-> > On Fri, 11 Oct 2013 15:36:43 -0600 Andreas Dilger <adilger@dilger.ca> wrote:
-> >>> 
-> >>> At this point, my main questions are:
-> >>> 
-> >>> 1) does this look useful, particularly for fileserver implementors?
-> > 
-> > Yes from the Samba perspective. We'll have to keep the old
-> > code around for compatibility with non-Linux OS'es, but this
-> > will allow Linux Samba to short-circuit a bunch of logic
-> > we have to get around the insane POSIX locking semantics
-> > on close.
-> > 
-> > Jeremy.
-> 
-> From the peanut gallery, IIRC from college a few years back, wasn't the POSIX file locking stuff passed by all parties because they intended to do their own thing regardless of the standard?  The reason that all locks are blown on a release is mostly because there were already implementations and no one wanted to push the issue, or am I misunderstanding/forgetting the history of file locks in POSIX?
+This is possible for watchdogs which measure time based on sched_clock() or 
+ktime_get() variants.
 
-This blog post of Jeremy's explains some of the history:
+Suggested by Don Zickus.
 
-    http://www.samba.org/samba/news/articles/low_point/tale_two_stds_os2.html
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
 
-See the section entitled "First Implementation Past the Post".
+Index: kvm/arch/x86/kernel/kvmclock.c
+===================================================================
+--- kvm.orig/arch/x86/kernel/kvmclock.c
++++ kvm/arch/x86/kernel/kvmclock.c
+@@ -139,6 +139,7 @@ bool kvm_check_and_clear_guest_paused(vo
+ 	src = &hv_clock[cpu].pvti;
+ 	if ((src->flags & PVCLOCK_GUEST_STOPPED) != 0) {
+ 		src->flags &= ~PVCLOCK_GUEST_STOPPED;
++		pvclock_touch_watchdogs();
+ 		ret = true;
+ 	}
+ 
+Index: kvm/arch/x86/kernel/pvclock.c
+===================================================================
+--- kvm.orig/arch/x86/kernel/pvclock.c
++++ kvm/arch/x86/kernel/pvclock.c
+@@ -43,6 +43,13 @@ unsigned long pvclock_tsc_khz(struct pvc
+ 	return pv_tsc_khz;
+ }
+ 
++void pvclock_touch_watchdogs(void)
++{
++	touch_softlockup_watchdog_sync();
++	clocksource_touch_watchdog();
++	rcu_cpu_stall_reset();
++}
++
+ static atomic64_t last_value = ATOMIC64_INIT(0);
+ 
+ void pvclock_resume(void)
+@@ -74,6 +81,11 @@ cycle_t pvclock_clocksource_read(struct
+ 		version = __pvclock_read_cycles(src, &ret, &flags);
+ 	} while ((src->version & 1) || version != src->version);
+ 
++	if (unlikely((flags & PVCLOCK_GUEST_STOPPED) != 0)) {
++		src->flags &= ~PVCLOCK_GUEST_STOPPED;
++		pvclock_touch_watchdogs();
++	}
++
+ 	if ((valid_flags & PVCLOCK_TSC_STABLE_BIT) &&
+ 		(flags & PVCLOCK_TSC_STABLE_BIT))
+ 		return ret;
+Index: kvm/arch/x86/include/asm/pvclock.h
+===================================================================
+--- kvm.orig/arch/x86/include/asm/pvclock.h
++++ kvm/arch/x86/include/asm/pvclock.h
+@@ -14,6 +14,8 @@ void pvclock_read_wallclock(struct pvclo
+ 			    struct timespec *ts);
+ void pvclock_resume(void);
+ 
++void pvclock_touch_watchdogs(void);
++
+ /*
+  * Scale a 64-bit delta by scaling and multiplying by a 32-bit fraction,
+  * yielding a 64-bit result.
 
--- 
-Jeff Layton <jlayton@redhat.com>
+
