@@ -1,175 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752609Ab3JLHxs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Oct 2013 03:53:48 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:33162 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750799Ab3JLHxq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Oct 2013 03:53:46 -0400
-Date: Sat, 12 Oct 2013 00:53:36 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>,
-        Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
-        darren@dvhart.com, fweisbec@gmail.com, sbw@mit.edu,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
-Subject: Re: [PATCH v2 tip/core/rcu 07/13] ipv6/ip6_tunnel: Apply
- rcu_access_pointer() to avoid sparse false positive
-Message-ID: <20131012075336.GA5790@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20131009223652.GC5790@linux.vnet.ibm.com>
- <1381359077.4971.37.camel@edumazet-glaptop.roam.corp.google.com>
- <20131009225617.GH11709@jtriplet-mobl1>
- <1381360675.4971.45.camel@edumazet-glaptop.roam.corp.google.com>
- <20131009234040.GB14055@jtriplet-mobl1>
- <1381363960.4971.55.camel@edumazet-glaptop.roam.corp.google.com>
- <20131010002833.GJ5790@linux.vnet.ibm.com>
- <20131010020422.GB24368@order.stressinduktion.org>
- <20131010190532.GQ5790@linux.vnet.ibm.com>
- <20131012022508.GA20321@order.stressinduktion.org>
+	id S1752566Ab3JLHzX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Oct 2013 03:55:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26259 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751711Ab3JLHzV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Oct 2013 03:55:21 -0400
+Date: Sat, 12 Oct 2013 15:54:44 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Matt Fleming <matt@console-pimps.org>, X86 ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Vivek Goyal <vgoyal@redhat.com>, linux-efi@vger.kernel.org,
+        fwts-devel@lists.ubuntu.com
+Subject: Re: [PATCH 12/12] EFI: Runtime services virtual mapping
+Message-ID: <20131012075443.GD7550@dhcp-16-126.nay.redhat.com>
+References: <1379602494-26684-1-git-send-email-bp@alien8.de>
+ <20131008164551.GB16793@pd.tnic>
+ <20131008164831.GD16793@pd.tnic>
+ <20131010080635.GA3692@dhcp-16-126.nay.redhat.com>
+ <20131010081434.GB3692@dhcp-16-126.nay.redhat.com>
+ <20131010085827.GA9929@pd.tnic>
+ <20131010123453.GA12321@console-pimps.org>
+ <20131011062437.GA14115@dhcp-16-126.nay.redhat.com>
+ <20131011074144.GA18719@pd.tnic>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131012022508.GA20321@order.stressinduktion.org>
+In-Reply-To: <20131011074144.GA18719@pd.tnic>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13101207-0928-0000-0000-000002793713
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 12, 2013 at 04:25:08AM +0200, Hannes Frederic Sowa wrote:
-> On Thu, Oct 10, 2013 at 12:05:32PM -0700, Paul E. McKenney wrote:
-> > On Thu, Oct 10, 2013 at 04:04:22AM +0200, Hannes Frederic Sowa wrote:
-> > > On Wed, Oct 09, 2013 at 05:28:33PM -0700, Paul E. McKenney wrote:
-> > > > On Wed, Oct 09, 2013 at 05:12:40PM -0700, Eric Dumazet wrote:
-> > > > > On Wed, 2013-10-09 at 16:40 -0700, Josh Triplett wrote:
-> > > > > 
-> > > > > > that.  Constructs like list_del_rcu are much clearer, and not
-> > > > > > open-coded.  Open-coding synchronization code is almost always a Bad
-> > > > > > Idea.
-> > > > > 
-> > > > > OK, so you think there is synchronization code.
-> > > > > 
-> > > > > I will shut up then, no need to waste time.
-> > > > 
-> > > > As you said earlier, we should at least get rid of the memory barrier
-> > > > as long as we are changing the code.
-> > > 
-> > > Interesting thread!
-> > > 
-> > > Sorry to chime in and asking a question:
-> > > 
-> > > Why do we need an ACCESS_ONCE here if rcu_assign_pointer can do without one?
-> > > In other words I wonder why rcu_assign_pointer is not a static inline function
-> > > to use the sequence point in argument evaluation (if I remember correctly this
-> > > also holds for inline functions) to not allow something like this:
-> > > 
-> > > E.g. we want to publish which lock to take first to prevent an ABBA problem
-> > > (extreme example):
-> > > 
-> > > rcu_assign_pointer(lockptr, min(lptr1, lptr2));
-> > > 
-> > > Couldn't a compiler spill the lockptr memory location as a temporary buffer
-> > > if the compiler is under register pressure? (yes, this seems unlikely if we
-> > > flushed out most registers to memory because of the barrier, but still... ;) )
-> > > 
-> > > This seems to be also the case if we publish a multi-dereferencing pointers
-> > > e.g. ptr->ptr->ptr.
-> > 
-> > IIRC, sequence points only confine volatile accesses.  For non-volatile
-> > accesses, the so-called "as-if rule" allows compiler writers to do some
-> > surprisingly global reordering.
-> > 
-> > The reason that rcu_assign_pointer() isn't an inline function is because
-> > it needs to be type-generic, in other words, it needs to be OK to use
-> > it on any type of pointers as long as the C types of the two pointers
-> > match (the sparse types can vary a bit).
-> > 
-> > One of the reasons for wanting a volatile cast in rcu_assign_pointer() is
-> > to prevent compiler mischief such as you described in your last two
-> > paragraphs.  That said, it would take a very brave compiler to pull
-> > a pointer-referenced memory location into a register and keep it there.
-> > Unfortunately, increasing compiler bravery seems to be a solid long-term
-> > trend.
+On 10/11/13 at 09:41am, Borislav Petkov wrote:
+> On Fri, Oct 11, 2013 at 02:24:37PM +0800, Dave Young wrote:
+> > But for current implementation from Boris, getting same mapping
+> > between diffrent kernel depends on same md order (same start and
+> > size for each one) How about using this mapping solution but at the
+> > same time for kexec kernel we also pass the virtual mappings via
+> > setup_data, only thing diffrent is we only need map the non boot
+> > region and just use the boot region size to ensure the other regions
+> > are mapped with same virtual address.
 > 
-> I saw your patch regarding making rcu_assign_pointer volatile and wonder if we
-> can still make it a bit more safe to use if we force the evaluation of the
-> to-be-assigned pointer before the write barrier. This is what I have in mind:
+> Actually, as hpa suggested, we will need to be passing the explicit
+> virtual addresses to the kexec kernel in case we change the mapping
+> algorithm in the future. So all should go through setup_data.
 > 
-> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-> index f1f1bc3..79eccc3 100644
-> --- a/include/linux/rcupdate.h
-> +++ b/include/linux/rcupdate.h
-> @@ -550,8 +550,9 @@ static inline void rcu_preempt_sleep_check(void)
->  	})
->  #define __rcu_assign_pointer(p, v, space) \
->  	do { \
-> +		typeof(v) ___v = (v); \
->  		smp_wmb(); \
-> -		(p) = (typeof(*v) __force space *)(v); \
-> +		(p) = (typeof(*___v) __force space *)(___v); \
->  	} while (0)
+> > OTOH, if we only passing ioremapped data without Boris's current patch
+> > the problem I worry about is how can we ensure the addresses are not
+> > used by other code before we mapping the in 2nd kernel efi_init.
 > 
-> 
-> I don't think ___v must be volatile for this case because the memory barrier
-> will force the evaluation of v first.
-> 
-> This would guard against cases where rcu_assign_pointer is used like:
-> 
-> rcu_assign_pointer(ptr, compute_ptr_with_side_effects());
+> Right, the old method of mapping EFI runtime regions used ioremap and
+> was mapping the regions in the same address space. Now we have reserved
+> a 64G in the VA space ending at -4G (i.e. 0xffff_ffff_0000_0000) which
+> is reserved only for EFI RT usage.
 
-I am sorry, but I am not seeing how this would be particularly useful.
+Boris:
 
-The point of rcu_assign_pointer() is to order the initialization of
-a data structure against publishing a pointer to that data structure.
-An example may be found in cgroup_create():
+For the boot service region overlapping problem I have another idea,
+how about modify your mapping code to always mapping the RUNTIME region
+(non boot service region) firstly from the efi_va, then mapping other
+regions in order, in this way kexec 2nd kernel will be happy because
+it does not call SetVirtualAddressMap and it does not need the boot
+service area at all.
 
-	name = cgroup_alloc_name(dentry);
-	if (!name)
-		goto err_free_cgrp;
-	rcu_assign_pointer(cgrp->name, name);
-
-Here, cgroup_alloc_name() allocates memory for the name and fills in
-the name:
-
-static struct cgroup_name *cgroup_alloc_name(struct dentry *dentry)
-{
-	struct cgroup_name *name;
-
-	name = kmalloc(sizeof(*name) + dentry->d_name.len + 1, GFP_KERNEL);
-	if (!name)
-		return NULL;
-	strcpy(name->name, dentry->d_name.name);
-	return name;
-}
-
-So the point of the smp_wmb() in __rcu_assign_pointer() is to order the
-strcpy() in cgroup_alloc_name() to happen before the assignment of the
-name pointer to cgrp->name.
-
-To make this example fit your pattern, we could change the code in
-cgroup_create() to look as follows (and to be buggy):
-
-	/* BAD CODE!  Do not do this! */
-	rcu_assign_pointer(cgrp->name, cgroup_alloc_name(dentry));
-	if (!cgrp->name)
-		goto err_free_cgrp;
-
-The reason that this is bad practice is that it is hiding the fact that
-the allocation and initialization in cgroup_alloc_name() needs to be
-ordered before the assignment to cgrp->name.
-
-Make sense?
-
-							Thanx, Paul
-
+Thanks
+Dave
