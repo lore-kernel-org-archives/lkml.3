@@ -1,166 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753906Ab3JLUqS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Oct 2013 16:46:18 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:49894 "EHLO
-	smtp.pripojeni.net" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1753865Ab3JLUqP (ORCPT
+	id S1753841Ab3JLUp7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Oct 2013 16:45:59 -0400
+Received: from co9ehsobe005.messaging.microsoft.com ([207.46.163.28]:50886
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753788Ab3JLUp5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Oct 2013 16:46:15 -0400
-X-Greylist: delayed 1876 seconds by postgrey-1.27 at vger.kernel.org; Sat, 12 Oct 2013 16:46:15 EDT
-From: Jiri Slaby <jslaby@suse.cz>
-To: x86@kernel.org
-Cc: jirislaby@gmail.com, linux-kernel@vger.kernel.org,
-        Jiri Slaby <jslaby@suse.cz>, Namhyung Kim <namhyung@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 1/1] dumpstack: fix printk_address for direct addresses
-Date: Sat, 12 Oct 2013 22:13:37 +0200
-Message-Id: <1381608817-3507-1-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.8.4
+	Sat, 12 Oct 2013 16:45:57 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VS1(zzzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzd2iz1de098h1de097h8275bhz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h1155h)
+From: Varun Sethi <Varun.Sethi@freescale.com>
+To: <joro@8bytes.org>, <iommu@lists.linux-foundation.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <stuart.yoder@freescale.com>, <scottwood@freescale.com>,
+        <alex.williamson@redhat.com>, <r65777@freescale.com>
+CC: Varun Sethi <Varun.Sethi@freescale.com>
+Subject: [PATCH 2/3] iommu/fsl: Enable default DMA window for PCIe devices once detached
+Date: Sun, 13 Oct 2013 02:02:33 +0530
+Message-ID: <1381609954-15283-3-git-send-email-Varun.Sethi@freescale.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1381609954-15283-1-git-send-email-Varun.Sethi@freescale.com>
+References: <1381609954-15283-1-git-send-email-Varun.Sethi@freescale.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Consider modules like this:
-static int my_init(void)
-{
-  char *map = (void *)0x5;
-  *map = 3;
-  return 0;
-}
-module_init(my_init);
+from domain.
 
-When we turn off FRAME_POINTERs, the very first instruction in that
-function causes a BUG. The problem is that we print IP in the BUG
-report using %pB (from printk_address). And %pB decrements the pointer
-by one to fix printing addresses of functions with tail calls. This
-was added in commit 71f9e59800e5ad4e6b683348424c9fe54306cd43 (x86,
-dumpstack: Use %pB format specifier for stack trace) to fix the call
-stack printouts.
+Once the PCIe device assigned to a guest VM (via VFIO) gets detached from the iommu domain
+(when guest terminates), its PAMU table entry is disabled. So, this would prevent the device
+from being used once it's assigned back to the host.
 
-So instead of correct output:
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000005
-IP: [<ffffffffa01ac000>] my_init+0x0/0x10 [pb173]
+This patch allows for creation of a default DMA window corresponding to the device
+and subsequently enabling the PAMU table entry. Before we enable the entry, we ensure that
+the device's bus master capability is disabled (device quiesced).
 
-We get:
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000005
-IP: [<ffffffffa0152000>] 0xffffffffa0151fff
-
-To fix that, we use %pS only for stack addresses printouts (via newly
-added printk_stack_address) and %pB for regs->ip (via printk_address).
-I.e. we revert to the old behaviour for all except call stacks. And
-since from all those reliable is 1, we remove that parameter from
-printk_address.
-
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Varun Sethi <Varun.Sethi@freescale.com>
 ---
- arch/x86/include/asm/kdebug.h |  2 +-
- arch/x86/kernel/dumpstack.c   | 11 ++++++++---
- arch/x86/kernel/process_64.c  |  2 +-
- arch/x86/mm/fault.c           |  2 +-
- arch/x86/platform/uv/uv_nmi.c |  2 +-
- 5 files changed, 12 insertions(+), 7 deletions(-)
+ drivers/iommu/fsl_pamu.c        |   43 +++++++++++++++++++++++++++++++--------
+ drivers/iommu/fsl_pamu.h        |    1 +
+ drivers/iommu/fsl_pamu_domain.c |   35 +++++++++++++++++++++++++++++++
+ 3 files changed, 70 insertions(+), 9 deletions(-)
 
-diff --git a/arch/x86/include/asm/kdebug.h b/arch/x86/include/asm/kdebug.h
-index 2c37aad..32ce713 100644
---- a/arch/x86/include/asm/kdebug.h
-+++ b/arch/x86/include/asm/kdebug.h
-@@ -21,7 +21,7 @@ enum die_val {
- 	DIE_NMIUNKNOWN,
- };
- 
--extern void printk_address(unsigned long address, int reliable);
-+extern void printk_address(unsigned long address);
- extern void die(const char *, struct pt_regs *,long);
- extern int __must_check __die(const char *, struct pt_regs *, long);
- extern void show_trace(struct task_struct *t, struct pt_regs *regs,
-diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
-index deb6421..d9c12d3 100644
---- a/arch/x86/kernel/dumpstack.c
-+++ b/arch/x86/kernel/dumpstack.c
-@@ -25,12 +25,17 @@ unsigned int code_bytes = 64;
- int kstack_depth_to_print = 3 * STACKSLOTS_PER_LINE;
- static int die_counter;
- 
--void printk_address(unsigned long address, int reliable)
-+static void printk_stack_address(unsigned long address, int reliable)
- {
- 	pr_cont(" [<%p>] %s%pB\n",
- 		(void *)address, reliable ? "" : "? ", (void *)address);
+diff --git a/drivers/iommu/fsl_pamu.c b/drivers/iommu/fsl_pamu.c
+index cba0498..fb4a031 100644
+--- a/drivers/iommu/fsl_pamu.c
++++ b/drivers/iommu/fsl_pamu.c
+@@ -225,6 +225,21 @@ static struct paace *pamu_get_spaace(struct paace *paace, u32 wnum)
+ 	return spaace;
  }
  
-+void printk_address(unsigned long address)
++/*
++ * Defaul PPAACE settings for an LIODN.
++ */
++static void setup_default_ppaace(struct paace *ppaace)
 +{
-+	pr_cont(" [<%p>] %pS\n", (void *)address, (void *)address);
++	pamu_init_ppaace(ppaace);
++	/* window size is 2^(WSE+1) bytes */
++	set_bf(ppaace->addr_bitfields, PPAACE_AF_WSE, 35);
++	ppaace->wbah = 0;
++	set_bf(ppaace->addr_bitfields, PPAACE_AF_WBAL, 0);
++	set_bf(ppaace->impl_attr, PAACE_IA_ATM,
++		PAACE_ATM_NO_XLATE);
++	set_bf(ppaace->addr_bitfields, PAACE_AF_AP,
++		PAACE_AP_PERMS_ALL);
++}
+ /**
+  * pamu_get_fspi_and_allocate() - Allocates fspi index and reserves subwindows
+  *                                required for primary PAACE in the secondary
+@@ -253,6 +268,24 @@ static unsigned long pamu_get_fspi_and_allocate(u32 subwin_cnt)
+ 	return (spaace_addr - (unsigned long)spaact) / (sizeof(struct paace));
+ }
+ 
++/* Reset the PAACE entry to the default state */
++void enable_default_dma_window(int liodn)
++{
++	struct paace *ppaace;
++
++	ppaace = pamu_get_ppaace(liodn);
++	if (!ppaace) {
++		pr_debug("Invalid liodn entry\n");
++		return;
++	}
++
++	memset(ppaace, 0, sizeof(struct paace));
++
++	setup_default_ppaace(ppaace);
++	mb();
++	pamu_enable_liodn(liodn);
 +}
 +
- #ifdef CONFIG_FUNCTION_GRAPH_TRACER
- static void
- print_ftrace_graph_addr(unsigned long addr, void *data,
-@@ -151,7 +156,7 @@ static void print_trace_address(void *data, unsigned long addr, int reliable)
+ /* Release the subwindows reserved for a particular LIODN */
+ void pamu_free_subwins(int liodn)
  {
- 	touch_nmi_watchdog();
- 	printk(data);
--	printk_address(addr, reliable);
-+	printk_stack_address(addr, reliable);
+@@ -752,15 +785,7 @@ static void __init setup_liodns(void)
+ 				continue;
+ 			}
+ 			ppaace = pamu_get_ppaace(liodn);
+-			pamu_init_ppaace(ppaace);
+-			/* window size is 2^(WSE+1) bytes */
+-			set_bf(ppaace->addr_bitfields, PPAACE_AF_WSE, 35);
+-			ppaace->wbah = 0;
+-			set_bf(ppaace->addr_bitfields, PPAACE_AF_WBAL, 0);
+-			set_bf(ppaace->impl_attr, PAACE_IA_ATM,
+-				PAACE_ATM_NO_XLATE);
+-			set_bf(ppaace->addr_bitfields, PAACE_AF_AP,
+-				PAACE_AP_PERMS_ALL);
++			setup_default_ppaace(ppaace);
+ 			if (of_device_is_compatible(node, "fsl,qman-portal"))
+ 				setup_qbman_paace(ppaace, QMAN_PORTAL_PAACE);
+ 			if (of_device_is_compatible(node, "fsl,qman"))
+diff --git a/drivers/iommu/fsl_pamu.h b/drivers/iommu/fsl_pamu.h
+index 8fc1a12..0edcbbbb 100644
+--- a/drivers/iommu/fsl_pamu.h
++++ b/drivers/iommu/fsl_pamu.h
+@@ -406,5 +406,6 @@ void get_ome_index(u32 *omi_index, struct device *dev);
+ int  pamu_update_paace_stash(int liodn, u32 subwin, u32 value);
+ int pamu_disable_spaace(int liodn, u32 subwin);
+ u32 pamu_get_max_subwin_cnt(void);
++void enable_default_dma_window(int liodn);
+ 
+ #endif  /* __FSL_PAMU_H */
+diff --git a/drivers/iommu/fsl_pamu_domain.c b/drivers/iommu/fsl_pamu_domain.c
+index e02e1de..553ef3c 100644
+--- a/drivers/iommu/fsl_pamu_domain.c
++++ b/drivers/iommu/fsl_pamu_domain.c
+@@ -340,6 +340,40 @@ static inline struct device_domain_info *find_domain(struct device *dev)
+ 	return dev->archdata.iommu_domain;
  }
  
- static const struct stacktrace_ops print_trace_ops = {
-@@ -281,7 +286,7 @@ int __kprobes __die(const char *str, struct pt_regs *regs, long err)
- #else
- 	/* Executive summary in case the oops scrolled away */
- 	printk(KERN_ALERT "RIP ");
--	printk_address(regs->ip, 1);
-+	printk_address(regs->ip);
- 	printk(" RSP <%016lx>\n", regs->sp);
- #endif
- 	return 0;
-diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
-index 45ab4d6..176ad94 100644
---- a/arch/x86/kernel/process_64.c
-+++ b/arch/x86/kernel/process_64.c
-@@ -63,7 +63,7 @@ void __show_regs(struct pt_regs *regs, int all)
- 	unsigned int ds, cs, es;
- 
- 	printk(KERN_DEFAULT "RIP: %04lx:[<%016lx>] ", regs->cs & 0xffff, regs->ip);
--	printk_address(regs->ip, 1);
-+	printk_address(regs->ip);
- 	printk(KERN_DEFAULT "RSP: %04lx:%016lx  EFLAGS: %08lx\n", regs->ss,
- 			regs->sp, regs->flags);
- 	printk(KERN_DEFAULT "RAX: %016lx RBX: %016lx RCX: %016lx\n",
-diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index 3aaeffc..18feeb3 100644
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -596,7 +596,7 @@ show_fault_oops(struct pt_regs *regs, unsigned long error_code,
- 
- 	printk(KERN_CONT " at %p\n", (void *) address);
- 	printk(KERN_ALERT "IP:");
--	printk_address(regs->ip, 1);
-+	printk_address(regs->ip);
- 
- 	dump_pagetable(address);
- }
-diff --git a/arch/x86/platform/uv/uv_nmi.c b/arch/x86/platform/uv/uv_nmi.c
-index 9126dfb..019b6ec 100644
---- a/arch/x86/platform/uv/uv_nmi.c
-+++ b/arch/x86/platform/uv/uv_nmi.c
-@@ -402,7 +402,7 @@ static void uv_nmi_dump_cpu_ip(int cpu, struct pt_regs *regs)
- 	printk(KERN_DEFAULT "UV: %4d %6d %-32.32s ",
- 		cpu, current->pid, current->comm);
- 
--	printk_address(regs->ip, 1);
-+	printk_address(regs->ip);
- }
- 
- /* Dump this cpu's state */
++/* Disable device DMA capability and enable default DMA window */
++static void disable_device_dma(struct device_domain_info *info)
++{
++	struct device_domain_info *tmp;
++	int enable_dma_window = 1;
++
++#ifdef CONFIG_PCI
++	if (info->dev->bus == &pci_bus_type) {
++		struct pci_dev *pdev = NULL;
++		pdev = to_pci_dev(info->dev);
++		if (pci_is_enabled(pdev))
++			pci_disable_device(pdev);
++	}
++#endif
++	/*
++	 * Sanity check, to ensure that this is not a
++	 * shared LIODN. In case of a PCIe controller
++	 * it's possible that all PCIe devices share
++	 * the same LIODN. We can't enable the default
++	 * DMA window till all the devices have been
++	 * quiesced (for PCIe devices, we explicitly
++	 * disable the bus master capability).
++	 */
++	list_for_each_entry(tmp, &info->domain->devices, link) {
++		if (info->dev->iommu_group == tmp->dev->iommu_group) {
++			enable_dma_window = 0;
++			break;
++		}
++	}
++
++	if (enable_dma_window)
++		enable_default_dma_window(info->liodn);
++}
++
+ static void remove_device_ref(struct device_domain_info *info, u32 win_cnt)
+ {
+ 	unsigned long flags;
+@@ -351,6 +385,7 @@ static void remove_device_ref(struct device_domain_info *info, u32 win_cnt)
+ 	pamu_disable_liodn(info->liodn);
+ 	spin_unlock_irqrestore(&iommu_lock, flags);
+ 	spin_lock_irqsave(&device_domain_lock, flags);
++	disable_device_dma(info);
+ 	info->dev->archdata.iommu_domain = NULL;
+ 	kmem_cache_free(iommu_devinfo_cache, info);
+ 	spin_unlock_irqrestore(&device_domain_lock, flags);
 -- 
-1.8.4
+1.7.9.5
 
 
