@@ -1,237 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752258Ab3JLNGs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Oct 2013 09:06:48 -0400
-Received: from mga02.intel.com ([134.134.136.20]:44446 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750716Ab3JLNGp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Oct 2013 09:06:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,480,1378882800"; 
-   d="scan'208";a="418170002"
-From: tianyu.lan@intel.com
-To: lenb@kernel.org, rjw@rjwysocki.net
-Cc: Lan Tianyu <tianyu.lan@intel.com>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [Resend PATCH] ACPI/AC: Remove AC's proc directory.
-Date: Sat, 12 Oct 2013 21:04:48 +0800
-Message-Id: <1381583088-6305-1-git-send-email-tianyu.lan@intel.com>
-X-Mailer: git-send-email 1.8.2.1
+	id S1752543Ab3JLNI4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Oct 2013 09:08:56 -0400
+Received: from eddie.linux-mips.org ([78.24.191.182]:47653 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750723Ab3JLNIy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Oct 2013 09:08:54 -0400
+Date: Sat, 12 Oct 2013 14:08:52 +0100 (BST)
+From: "Maciej W. Rozycki" <macro@linux-mips.org>
+To: Joe Perches <joe@perches.com>
+cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>
+Subject: Re: [PATCH 2/2] framebuffer: Remove pmag-aa-fb
+In-Reply-To: <alpine.LFD.2.03.1309201946430.8379@linux-mips.org>
+Message-ID: <alpine.LFD.2.03.1310121308310.10951@linux-mips.org>
+References: <c94f3e342947923f20d4c12932f382aa5200511b.1379641901.git.joe@perches.com>         <6f500d88eb23fd9a4cfc5583f5ca17bc5f58fe24.1379641901.git.joe@perches.com>         <CAMuHMdW6R5qTJ0uvsUUaYBZAqFcNshPsXeMbz5hwqq5UOkJr-g@mail.gmail.com>        
+ <alpine.LFD.2.03.1309201907380.8379@linux-mips.org> <1379702587.2301.12.camel@joe-AO722> <alpine.LFD.2.03.1309201946430.8379@linux-mips.org>
+User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=ISO-8859-7
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lan Tianyu <tianyu.lan@intel.com>
+Joe,
 
-AC's proc directory is not used and so remove it. Prepare for removing
-/proc/acpi directory.
+ Just a quick update.
 
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
----
-Rebase on the latest linux-pm tree linux-next branch.
+On Sun, 22 Sep 2013, Maciej W. Rozycki wrote:
 
- drivers/acpi/ac.c | 129 ++----------------------------------------------------
- 1 file changed, 3 insertions(+), 126 deletions(-)
+>  As to the PMAG-AA board itself -- well, this is indeed a very rare item, 
+> but I happen to have a specimen.  To support it properly I'll first have 
+> to wire it to a monitor somehow though; signalling is standard, 1.0 Vpp 
+> composite monochrome, but what looks to me like a type F connector is used 
+> for video output, quite unusually for a graphics card (and for DEC itself 
+> too as 3W3 was their usual video socket).  It looks to me like converting 
+> it to BNC and then a standard DE-15 VGA connector (via the green line) 
+> will be the easiest way to get image produced by the adapter on a 
+> contemporary monitor (sync-on-green required of course, but with LCD 
+> devices being the norm now that seems less of a problem these days).
 
-diff --git a/drivers/acpi/ac.c b/drivers/acpi/ac.c
-index 324b5a0..b9f0d5f 100644
---- a/drivers/acpi/ac.c
-+++ b/drivers/acpi/ac.c
-@@ -30,10 +30,6 @@
- #include <linux/types.h>
- #include <linux/dmi.h>
- #include <linux/delay.h>
--#ifdef CONFIG_ACPI_PROCFS_POWER
--#include <linux/proc_fs.h>
--#include <linux/seq_file.h>
--#endif
- #include <linux/platform_device.h>
- #include <linux/power_supply.h>
- #include <acpi/acpi_bus.h>
-@@ -56,12 +52,6 @@ MODULE_AUTHOR("Paul Diefenbaugh");
- MODULE_DESCRIPTION("ACPI AC Adapter Driver");
- MODULE_LICENSE("GPL");
- 
--#ifdef CONFIG_ACPI_PROCFS_POWER
--extern struct proc_dir_entry *acpi_lock_ac_dir(void);
--extern void *acpi_unlock_ac_dir(struct proc_dir_entry *acpi_ac_dir);
--static int acpi_ac_open_fs(struct inode *inode, struct file *file);
--#endif
--
- static int ac_sleep_before_get_state_ms;
- 
- struct acpi_ac {
-@@ -73,16 +63,6 @@ struct acpi_ac {
- 
- #define to_acpi_ac(x) container_of(x, struct acpi_ac, charger)
- 
--#ifdef CONFIG_ACPI_PROCFS_POWER
--static const struct file_operations acpi_ac_fops = {
--	.owner = THIS_MODULE,
--	.open = acpi_ac_open_fs,
--	.read = seq_read,
--	.llseek = seq_lseek,
--	.release = single_release,
--};
--#endif
--
- /* --------------------------------------------------------------------------
-                                AC Adapter Management
-    -------------------------------------------------------------------------- */
-@@ -132,83 +112,6 @@ static enum power_supply_property ac_props[] = {
- 	POWER_SUPPLY_PROP_ONLINE,
- };
- 
--#ifdef CONFIG_ACPI_PROCFS_POWER
--/* --------------------------------------------------------------------------
--                              FS Interface (/proc)
--   -------------------------------------------------------------------------- */
--
--static struct proc_dir_entry *acpi_ac_dir;
--
--static int acpi_ac_seq_show(struct seq_file *seq, void *offset)
--{
--	struct acpi_ac *ac = seq->private;
--
--
--	if (!ac)
--		return 0;
--
--	if (acpi_ac_get_state(ac)) {
--		seq_puts(seq, "ERROR: Unable to read AC Adapter state\n");
--		return 0;
--	}
--
--	seq_puts(seq, "state:                   ");
--	switch (ac->state) {
--	case ACPI_AC_STATUS_OFFLINE:
--		seq_puts(seq, "off-line\n");
--		break;
--	case ACPI_AC_STATUS_ONLINE:
--		seq_puts(seq, "on-line\n");
--		break;
--	default:
--		seq_puts(seq, "unknown\n");
--		break;
--	}
--
--	return 0;
--}
--
--static int acpi_ac_open_fs(struct inode *inode, struct file *file)
--{
--	return single_open(file, acpi_ac_seq_show, PDE_DATA(inode));
--}
--
--static int acpi_ac_add_fs(struct acpi_ac *ac)
--{
--	struct proc_dir_entry *entry = NULL;
--
--	printk(KERN_WARNING PREFIX "Deprecated procfs I/F for AC is loaded,"
--			" please retry with CONFIG_ACPI_PROCFS_POWER cleared\n");
--	if (!acpi_device_dir(ac->adev)) {
--		acpi_device_dir(ac->adev) =
--			proc_mkdir(acpi_device_bid(ac->adev), acpi_ac_dir);
--		if (!acpi_device_dir(ac->adev))
--			return -ENODEV;
--	}
--
--	/* 'state' [R] */
--	entry = proc_create_data(ACPI_AC_FILE_STATE,
--				 S_IRUGO, acpi_device_dir(ac->adev),
--				 &acpi_ac_fops, ac);
--	if (!entry)
--		return -ENODEV;
--	return 0;
--}
--
--static int acpi_ac_remove_fs(struct acpi_ac *ac)
--{
--
--	if (acpi_device_dir(ac->adev)) {
--		remove_proc_entry(ACPI_AC_FILE_STATE,
--				  acpi_device_dir(ac->adev));
--		remove_proc_entry(acpi_device_bid(ac->adev), acpi_ac_dir);
--		acpi_device_dir(ac->adev) = NULL;
--	}
--
--	return 0;
--}
--#endif
--
- /* --------------------------------------------------------------------------
-                                    Driver Model
-    -------------------------------------------------------------------------- */
-@@ -293,11 +196,6 @@ static int acpi_ac_probe(struct platform_device *pdev)
- 	if (result)
- 		goto end;
- 
--#ifdef CONFIG_ACPI_PROCFS_POWER
--	result = acpi_ac_add_fs(ac);
--	if (result)
--		goto end;
--#endif
- 	ac->charger.name = acpi_device_bid(adev);
- 	ac->charger.type = POWER_SUPPLY_TYPE_MAINS;
- 	ac->charger.properties = ac_props;
-@@ -317,13 +215,9 @@ static int acpi_ac_probe(struct platform_device *pdev)
- 	       acpi_device_name(adev), acpi_device_bid(adev),
- 	       ac->state ? "on-line" : "off-line");
- 
--      end:
--	if (result) {
--#ifdef CONFIG_ACPI_PROCFS_POWER
--		acpi_ac_remove_fs(ac);
--#endif
-+end:
-+	if (result)
- 		kfree(ac);
--	}
- 
- 	dmi_check_system(ac_dmi_table);
- 	return result;
-@@ -366,10 +260,6 @@ static int acpi_ac_remove(struct platform_device *pdev)
- 	if (ac->charger.dev)
- 		power_supply_unregister(&ac->charger);
- 
--#ifdef CONFIG_ACPI_PROCFS_POWER
--	acpi_ac_remove_fs(ac);
--#endif
--
- 	kfree(ac);
- 
- 	return 0;
-@@ -399,19 +289,9 @@ static int __init acpi_ac_init(void)
- 	if (acpi_disabled)
- 		return -ENODEV;
- 
--#ifdef CONFIG_ACPI_PROCFS_POWER
--	acpi_ac_dir = acpi_lock_ac_dir();
--	if (!acpi_ac_dir)
--		return -ENODEV;
--#endif
--
- 	result = platform_driver_register(&acpi_ac_driver);
--	if (result < 0) {
--#ifdef CONFIG_ACPI_PROCFS_POWER
--		acpi_unlock_ac_dir(acpi_ac_dir);
--#endif
-+	if (result < 0)
- 		return -ENODEV;
--	}
- 
- 	return 0;
- }
-@@ -419,9 +299,6 @@ static int __init acpi_ac_init(void)
- static void __exit acpi_ac_exit(void)
- {
- 	platform_driver_unregister(&acpi_ac_driver);
--#ifdef CONFIG_ACPI_PROCFS_POWER
--	acpi_unlock_ac_dir(acpi_ac_dir);
--#endif
- }
- module_init(acpi_ac_init);
- module_exit(acpi_ac_exit);
--- 
-1.8.2.1
+ So more weirdly even that's actually a TNC connector rather than a type F 
+one.  I've got a suitable TNC->BNC adapter now (although regrettably such 
+adapters seem to be available as 50Ù parts only; hopefully any distortion 
+won't be too significant or maybe my digital monitor will even be able to 
+compensate it, but at £1.76 (~$2.64) per item it's certainly worth trying 
+before resorting to the original DEC TNC->BNC cable still apparently 
+available from second-hand part suppliers at ~£80/$120 per a mere 1ft 
+part) and a BNC->DE-15 cable is on the way.
 
+> > --- a/drivers/video/pmag-aa-fb.c
+> > +++ b/drivers/video/pmag-aa-fb.c
+> > @@ -459,7 +459,7 @@ static int __init init_one(int slot)
+> >  		return -EINVAL;
+> >  
+> >  	printk(KERN_INFO "fb%d: %s frame buffer in TC slot %d\n",
+> > -	       GET_FB_IDX(ip->info.node), ip->info.modename, slot);
+> > +	       ip->info.node, ip->info.modename, slot);
+> >  
+> >  	return 0;
+> >  }
+> 
+>  Thanks, but the changes required are actually much more than that -- the 
+> driver has never been converted to the modern TURBOchannel API.  I have 
+> now dug out an old patch I was working on back in 2006 to convert this 
+> driver as well as drivers/video/maxinefb.c.  I'll try to complete the two 
+> drivers as soon as possible (unfortunately I can't test the latter at all; 
+> it's for an onboard graphics adapter of another DECstation model), 
+> although I now remember the main reason I didn't complete them back then 
+> was they used an old internal API that was removed and no suitable 
+> replacement provided.  I need to investigate again what that actually was 
+> though (hw cursor probably).
+
+ So I think I've got all the basic stuff covered now, including a change 
+similar to your proposal as well as a conversion to the driver model/new 
+TURBOchannel support infrastructure.  But what I remembered is actually 
+right, the issue is wiring hardware cursor support into fbcon.  The driver 
+uses its own display_switch structure with its own aafbcon_cursor handler 
+to use the twin onboard Bt431 chips for cursor generation (there's also 
+aafbcon_set_font that pokes at the Bt431s for cursor dimension changes).  
+I need to figure out what the best way will be to make the fbcon subsystem 
+support such an arrangement and that'll take me a little bit yet, so 
+please be patient.
+
+ Note that the board is weird enough to have a 1-bit (true monochrome) 
+graphics plane, however the Bt455 used by the MX graphics adapter for 
+screen image generation is a 4-bit grey-scale video RAMDAC (only the LSB 
+inputs of its pixel port are wired to the graphics plane) and the twin 
+Bt431s use the overlay plane to produce a 2-bit grey-scale cursor.  So we 
+do want to use the hardware cursor to be able to make it prominent among 
+the characters displayed throughout the screen and a software-generated 
+cursor cannot really substitute what hardware provides.
+
+  Maciej
