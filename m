@@ -1,85 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752375Ab3JLGg4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Oct 2013 02:36:56 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:35895 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751318Ab3JLGgz (ORCPT
+	id S1752599Ab3JLGlE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Oct 2013 02:41:04 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:51751 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751711Ab3JLGlB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Oct 2013 02:36:55 -0400
+	Sat, 12 Oct 2013 02:41:01 -0400
 MIME-Version: 1.0
-In-Reply-To: <5982877.kDV2Xg8Ocr@amdn883>
-References: <1381490814-20890-1-git-send-email-ch.naveen@samsung.com>
- <3245175.os31ym2KFi@amdn883> <2030813.WOPcW68yit@amdn883> <5982877.kDV2Xg8Ocr@amdn883>
+In-Reply-To: <52580B95.5010603@metafoo.de>
+References: <1365048389-6364-1-git-send-email-naveenkrishna.ch@gmail.com>
+ <1381479821-17276-1-git-send-email-ch.naveen@samsung.com> <52580B95.5010603@metafoo.de>
 From: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
-Date: Sat, 12 Oct 2013 12:06:34 +0530
-Message-ID: <CAHfPSqCHUAccv4Usd1XcZ8MzD+Jf=jHSWWQ0m1Mj64nKCN7_jw@mail.gmail.com>
-Subject: Re: [PATCH] i2c: s3c2410: dont need CPU_FREQ transitions for exynos series
-To: Tomasz Figa <t.figa@samsung.com>
-Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>, sjg@chromium.org,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+Date: Sat, 12 Oct 2013 12:10:40 +0530
+Message-ID: <CAHfPSqCfU8OPx2BmJsUu+FGuau7wu2vEDJEad8ff7U031mMO4g@mail.gmail.com>
+Subject: Re: [PATCH v3] iio: exynos_adc: use wait_for_completion_timeout
+ instead of interruptible
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
         "linux-samsung-soc@vger.kernel.org" 
 	<linux-samsung-soc@vger.kernel.org>,
-        wsa@the-dreams.de, khali@linux-fr.org, Ben Dooks <ben-linux@fluff.org>,
-        grant.likely@secretlab.ca, broonie@kernel.org, dianders@chromium.org,
-        cpgs@samsung.com
+        dianders@chromium.org, gregkh@linuxfoundation.org,
+        tomasz.figa@gmail.com
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 October 2013 11:12, Tomasz Figa <t.figa@samsung.com> wrote:
-> On Saturday 12 of October 2013 04:28:51 Tomasz Figa wrote:
->> [Fixing incorrent mail addresses and dropping the old DT ML.]
+On 11 October 2013 20:00, Lars-Peter Clausen <lars@metafoo.de> wrote:
+> On 10/11/2013 10:23 AM, Naveen Krishna Chatradhi wrote:
+>> This patch does the following
+>> 1. use wait_for_completion_timeout instead of
+>>    wait_for_completion_interruptible_timeout
+>> 2. Reset software if a timeout happens.
+>> 3. Also reduce the timeout to 100milli secs
+>
+> It is always good to have a description of why a chance should be done in
+> the commit message. It is obvious what the patch does by just looking at the
+> changed lines, it is not that obvious though why those lines had to be changed.
+>
 >>
->> On Saturday 12 of October 2013 04:22:04 Tomasz Figa wrote:
->> > Hi Naveen,
->> >
->> > On Friday 11 of October 2013 16:56:54 Naveen Krishna Chatradhi wrote:
->> > > The exynos5 i2c clock is based on a fixed 66 MHz peripheral clock, and
->> > > therefore is completely independent of the cpu frequency.
->> > > Thus, registering for a CPU freq notifier is very wasteful.
->> > >
->> > > This patch modifes the code such that, i2c bus registers to
->> > > cpu_freq_transition only for non Exynos SoCs.
->> > >
->> > > This change should save a bunch of cpufreq transitions calls
->> > > which does not apply to exynos SoCs.
->> >
->> > The idea is fine, although...
->> >
->> > > Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
->> > > ---
->> > >  drivers/i2c/busses/i2c-s3c2410.c |    4 ++--
->> > >  1 file changed, 2 insertions(+), 2 deletions(-)
->> > >
->> > > diff --git a/drivers/i2c/busses/i2c-s3c2410.c b/drivers/i2c/busses/i2c-s3c2410.c
->> > > index cab1c91..d062fa7 100644
->> > > --- a/drivers/i2c/busses/i2c-s3c2410.c
->> > > +++ b/drivers/i2c/busses/i2c-s3c2410.c
->> > > @@ -123,7 +123,7 @@ struct s3c24xx_i2c {
->> > >   struct s3c2410_platform_i2c     *pdata;
->> > >   int                     gpios[2];
->> > >   struct pinctrl          *pctrl;
->> > > -#ifdef CONFIG_CPU_FREQ
->> > > +#if defined(CONFIG_CPU_FREQ) && !defined(CONFIG_ARCH_EXYNOS)
->> >
->> > ...this is not a good coding practice, especially when already having
->> > multiplatform kernels in sight.
->> >
->> > The best way would be to check on which SoC we are running at runtime,
->> > but since this might need changing a lot of code, then at least I would
->> > change this from !defined(EXYNOS) to defined(S3C24XX), so it is not being
->> > compiled in when S3C24XX support is not enabled and if it's enabled then
->> > the notifier will be registered as a safe fallback that will run correctly
->> > on all platforms.
+>> Note: submitted for review at https://patchwork.kernel.org/patch/2279591/
+>>
+>> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+>> Cc: Doug Anderson <dianders@chromium.org>
+>> Cc: Lars-Peter Clausen <lars@metafoo.de>
+>> ---
+>> Changes since v1:
+>> As per discussion at
+>> http://marc.info/?l=linux-kernel&m=136517637228869&w=3
+>>
+>> This patch does the following
+>> 1. use wait_for_completion_timeout instead of
+>>    wait_for_completion_interruptible_timeout
+>> 2. Reset software if a timeout happens.
+>> 3. Also reduce the timeout to 100milli secs
+>>
+>> Changes since v2:
+>> None.
+>> Rebased and reposting.
+>>
+>> ---
+>>  drivers/iio/adc/exynos_adc.c |   66 +++++++++++++++++++++++-------------------
+>>  1 file changed, 36 insertions(+), 30 deletions(-)
+>>
+>> diff --git a/drivers/iio/adc/exynos_adc.c b/drivers/iio/adc/exynos_adc.c
+>> index d25b262..f18ed7e 100644
+>> --- a/drivers/iio/adc/exynos_adc.c
+>> +++ b/drivers/iio/adc/exynos_adc.c
+>> @@ -82,7 +82,7 @@ enum adc_version {
+>>  #define ADC_CON_EN_START     (1u << 0)
+>>  #define ADC_DATX_MASK                0xFFF
+>>
+>> -#define EXYNOS_ADC_TIMEOUT   (msecs_to_jiffies(1000))
+>> +#define EXYNOS_ADC_TIMEOUT   (msecs_to_jiffies(100))
+>>
+>>  struct exynos_adc {
+>>       void __iomem            *regs;
+>> @@ -112,6 +112,30 @@ static inline unsigned int exynos_adc_get_version(struct platform_device *pdev)
+>>       return (unsigned int)match->data;
+>>  }
+>>
+>> +static void exynos_adc_hw_init(struct exynos_adc *info)
+>> +{
+>> +     u32 con1, con2;
+>> +
+>> +     if (info->version == ADC_V2) {
+>> +             con1 = ADC_V2_CON1_SOFT_RESET;
+>> +             writel(con1, ADC_V2_CON1(info->regs));
+>> +
+>> +             con2 = ADC_V2_CON2_OSEL | ADC_V2_CON2_ESEL |
+>> +                     ADC_V2_CON2_HIGHF | ADC_V2_CON2_C_TIME(0);
+>> +             writel(con2, ADC_V2_CON2(info->regs));
+>> +
+>> +             /* Enable interrupts */
+>> +             writel(1, ADC_V2_INT_EN(info->regs));
+>> +     } else {
+>> +             /* set default prescaler values and Enable prescaler */
+>> +             con1 =  ADC_V1_CON_PRSCLV(49) | ADC_V1_CON_PRSCEN;
+>> +
+>> +             /* Enable 12-bit ADC resolution */
+>> +             con1 |= ADC_V1_CON_RES;
+>> +             writel(con1, ADC_V1_CON(info->regs));
+>> +     }
+>> +}
+>> +
+>>  static int exynos_read_raw(struct iio_dev *indio_dev,
+>>                               struct iio_chan_spec const *chan,
+>>                               int *val,
+>> @@ -121,6 +145,7 @@ static int exynos_read_raw(struct iio_dev *indio_dev,
+>>       struct exynos_adc *info = iio_priv(indio_dev);
+>>       unsigned long timeout;
+>>       u32 con1, con2;
+>> +     int ret;
+>>
+>>       if (mask != IIO_CHAN_INFO_RAW)
+>>               return -EINVAL;
+>> @@ -145,16 +170,21 @@ static int exynos_read_raw(struct iio_dev *indio_dev,
+>>                               ADC_V1_CON(info->regs));
+>>       }
+>>
+>> -     timeout = wait_for_completion_interruptible_timeout
+>> +     timeout = wait_for_completion_timeout
+>>                       (&info->completion, EXYNOS_ADC_TIMEOUT);
 >
-> Actually you can simply check for CONFIG_CPU_FREQ_S3C24XX here.
-sure, this makes it more meaningful. will make the modifications and resubmit.
+> Nitpick: It would be nice to put the &info->completion on the same line as
+> the wait_for_completion...
+I received a comment from Grant regarding the same.
+I'm away from work this weekend. Will submit the code once i get back,
 >
-> Best regards,
-> Tomasz
+>> +     if (timeout == 0) {
+>> +             dev_warn(&indio_dev->dev, "Conversion timed out reseting\n");
+>> +             exynos_adc_hw_init(info);
+>> +             ret = -ETIMEDOUT;
+>> +     } else {
+>> +             *val = info->value;
+>> +             ret = IIO_VAL_INT;
+>> +     }
+>>       *val = info->value;
 >
+> This line above should probably be removed.
+Yes this is unnecessary. Will remove this.
+>
+>>
+>>       mutex_unlock(&indio_dev->mlock);
+>>
+>> -     if (timeout == 0)
+>> -             return -ETIMEDOUT;
+>> -
+>> -     return IIO_VAL_INT;
+>> +     return ret;
+>>  }
+>>
+>>  static irqreturn_t exynos_adc_isr(int irq, void *dev_id)
+>> @@ -226,30 +256,6 @@ static int exynos_adc_remove_devices(struct device *dev, void *c)
+>>       return 0;
+>>  }
+>>
+>> -static void exynos_adc_hw_init(struct exynos_adc *info)
+>> -{
+>> -     u32 con1, con2;
+>> -
+>> -     if (info->version == ADC_V2) {
+>> -             con1 = ADC_V2_CON1_SOFT_RESET;
+>> -             writel(con1, ADC_V2_CON1(info->regs));
+>> -
+>> -             con2 = ADC_V2_CON2_OSEL | ADC_V2_CON2_ESEL |
+>> -                     ADC_V2_CON2_HIGHF | ADC_V2_CON2_C_TIME(0);
+>> -             writel(con2, ADC_V2_CON2(info->regs));
+>> -
+>> -             /* Enable interrupts */
+>> -             writel(1, ADC_V2_INT_EN(info->regs));
+>> -     } else {
+>> -             /* set default prescaler values and Enable prescaler */
+>> -             con1 =  ADC_V1_CON_PRSCLV(49) | ADC_V1_CON_PRSCEN;
+>> -
+>> -             /* Enable 12-bit ADC resolution */
+>> -             con1 |= ADC_V1_CON_RES;
+>> -             writel(con1, ADC_V1_CON(info->regs));
+>> -     }
+>> -}
+>> -
+>>  static int exynos_adc_probe(struct platform_device *pdev)
+>>  {
+>>       struct exynos_adc *info = NULL;
+>>
+>
+Thanks for the review.
 
 
 
