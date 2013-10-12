@@ -1,62 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752315Ab3JLEqa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Oct 2013 00:46:30 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:37572 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750737Ab3JLEq3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Oct 2013 00:46:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <1381549451-5362-1-git-send-email-michael.opdenacker@free-electrons.com>
-References: <1381549451-5362-1-git-send-email-michael.opdenacker@free-electrons.com>
-From: Wan ZongShun <mcuos.com@gmail.com>
-Date: Sat, 12 Oct 2013 12:46:08 +0800
-Message-ID: <CAKT61h8QGU0ZZhms9WgMmyWhEmB_odTOfD0guihf6TfRpZ2YUw@mail.gmail.com>
-Subject: Re: [PATCH] ARM: w90x900: remove deprecated IRQF_DISABLED
-To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751640Ab3JLEvO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Oct 2013 00:51:14 -0400
+Received: from mga09.intel.com ([134.134.136.24]:8640 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750717Ab3JLEvN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Oct 2013 00:51:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,480,1378882800"; 
+   d="scan'208";a="391917615"
+From: David Cohen <david.a.cohen@linux.intel.com>
+To: x86@kernel.org, linux-kernel@vger.kernel.org
+Cc: David Cohen <david.a.cohen@intel.com>
+Subject: [PATCH 0/1] add maintainers for low-power Intel MID platform
+Date: Fri, 11 Oct 2013 21:55:03 -0700
+Message-Id: <1381553704-23321-1-git-send-email-david.a.cohen@linux.intel.com>
+X-Mailer: git-send-email 1.8.4.rc3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/10/12 Michael Opdenacker <michael.opdenacker@free-electrons.com>:
-> This patch proposes to remove the use of the IRQF_DISABLED flag
->
-> It's a NOOP since 2.6.35 and it will be removed one day.
->
-> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+From: David Cohen <david.a.cohen@intel.com>
 
-Acked-by: Wan zongshun <mcuos.com@gmail.com>
+Hi,
 
-Thanks!
+I'd like to add official maintainers for Intel MID platform on Linux kernel.
+Current Intel MID support on upstream is outdated, but we've immediate plans to
+update the code.
+The 2 persons this patch is adding as maintainers are also part of Intel's
+internal team responsible for it.
 
-> ---
->  arch/arm/mach-w90x900/time.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/arch/arm/mach-w90x900/time.c b/arch/arm/mach-w90x900/time.c
-> index 30fbca8..9230d37 100644
-> --- a/arch/arm/mach-w90x900/time.c
-> +++ b/arch/arm/mach-w90x900/time.c
-> @@ -111,7 +111,7 @@ static irqreturn_t nuc900_timer0_interrupt(int irq, void *dev_id)
->
->  static struct irqaction nuc900_timer0_irq = {
->         .name           = "nuc900-timer0",
-> -       .flags          = IRQF_DISABLED | IRQF_TIMER | IRQF_IRQPOLL,
-> +       .flags          = IRQF_TIMER | IRQF_IRQPOLL,
->         .handler        = nuc900_timer0_interrupt,
->  };
->
-> --
-> 1.8.1.2
->
+Please, consider to apply it.
 
+This patch is meant to be merged just after renaming Moorestown code to generic
+up-to-date Intel MID name on this patch set:
+http://marc.info/?l=linux-kernel&m=138154934101936&w=2
 
+Br, David Cohen
+---
+
+David Cohen (1):
+  MAINTAINERS: INTEL MID SOC: add maintainers
+
+ MAINTAINERS | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
 -- 
-Wan ZongShun.
-www.mcuos.com
+1.8.4.rc3
+
