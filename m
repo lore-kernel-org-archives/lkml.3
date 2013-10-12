@@ -1,66 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754540Ab3JLD2n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 23:28:43 -0400
-Received: from imap.thunk.org ([74.207.234.97]:45092 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751591Ab3JLD2m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 23:28:42 -0400
-Date: Fri, 11 Oct 2013 23:28:35 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Sandy Harris <sandyinchina@gmail.com>
-Cc: Stephan Mueller <smueller@chronox.de>, LKML <linux-kernel@vger.kernel.org>,
-        linux-crypto@vger.kernel.org
-Subject: Re: [PATCH] CPU Jitter RNG: inclusion into kernel crypto API and
- /dev/random
-Message-ID: <20131012032835.GC30680@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Sandy Harris <sandyinchina@gmail.com>,
-	Stephan Mueller <smueller@chronox.de>,
-	LKML <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org
-References: <2579337.FPgJGgHYdz@tauon>
- <CACXcFm=qdv9ktjYDGo+L=ssh+tCs7vVniznNpXyWVTBSB1CMRg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACXcFm=qdv9ktjYDGo+L=ssh+tCs7vVniznNpXyWVTBSB1CMRg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1754190Ab3JLDgM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 23:36:12 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:53892 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751591Ab3JLDgK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Oct 2013 23:36:10 -0400
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+To: ben-linux@fluff.org, kgene.kim@samsung.com, linux@arm.linux.org.uk
+Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Subject: [PATCH] ARM: SAMSUNG: remove IRQF_DISABLED
+Date: Sat, 12 Oct 2013 05:36:06 +0200
+Message-Id: <1381548966-5210-1-git-send-email-michael.opdenacker@free-electrons.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephan,
+This patch proposes to remove the use of the IRQF_DISABLED flag
 
-I haven't had a chance to look at your paper in detail, yet, but a
-quick scan has found a huge red flag for me that puts the rest of your
-analysis in severe doubt for me.
+It's a NOOP since 2.6.35 and it will be removed one day.
 
-You say that you got really good results and perfect statistical
-entropy on a number of platforms, including on an MIPS embedded
-system.  You also say that you are harvesting jitter by using
-get_cycles() yes?
+Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+---
+ arch/arm/mach-s3c24xx/dma.c         | 2 +-
+ arch/arm/mach-s3c24xx/simtec-usb.c  | 3 +--
+ arch/arm/mach-s3c64xx/mach-smartq.c | 2 +-
+ 3 files changed, 3 insertions(+), 4 deletions(-)
 
-Well, on the MIPS platform, here is the definition of get_cycles:
+diff --git a/arch/arm/mach-s3c24xx/dma.c b/arch/arm/mach-s3c24xx/dma.c
+index 4a65cba..a8dafc1 100644
+--- a/arch/arm/mach-s3c24xx/dma.c
++++ b/arch/arm/mach-s3c24xx/dma.c
+@@ -742,7 +742,7 @@ int s3c2410_dma_request(enum dma_ch channel,
+ 		chan->irq_claimed = 1;
+ 		local_irq_restore(flags);
+ 
+-		err = request_irq(chan->irq, s3c2410_dma_irq, IRQF_DISABLED,
++		err = request_irq(chan->irq, s3c2410_dma_irq, 0,
+ 				  client->name, (void *)chan);
+ 
+ 		local_irq_save(flags);
+diff --git a/arch/arm/mach-s3c24xx/simtec-usb.c b/arch/arm/mach-s3c24xx/simtec-usb.c
+index 2ed2e32..bb3eac6 100644
+--- a/arch/arm/mach-s3c24xx/simtec-usb.c
++++ b/arch/arm/mach-s3c24xx/simtec-usb.c
+@@ -78,8 +78,7 @@ static void usb_simtec_enableoc(struct s3c2410_hcd_info *info, int on)
+ 
+ 	if (on) {
+ 		ret = request_irq(BAST_IRQ_USBOC, usb_simtec_ocirq,
+-				  IRQF_DISABLED | IRQF_TRIGGER_RISING |
+-				   IRQF_TRIGGER_FALLING,
++				  IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
+ 				  "USB Over-current", info);
+ 		if (ret != 0) {
+ 			printk(KERN_ERR "failed to request usb oc irq\n");
+diff --git a/arch/arm/mach-s3c64xx/mach-smartq.c b/arch/arm/mach-s3c64xx/mach-smartq.c
+index 86d980b..389cc49 100644
+--- a/arch/arm/mach-s3c64xx/mach-smartq.c
++++ b/arch/arm/mach-s3c64xx/mach-smartq.c
+@@ -106,7 +106,7 @@ static void smartq_usb_host_enableoc(struct s3c2410_hcd_info *info, int on)
+ 
+ 	if (on) {
+ 		ret = request_irq(gpio_to_irq(S3C64XX_GPL(10)),
+-				  smartq_usb_host_ocirq, IRQF_DISABLED |
++				  smartq_usb_host_ocirq,
+ 				  IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
+ 				  "USB host overcurrent", info);
+ 		if (ret != 0)
+-- 
+1.8.1.2
 
-static inline cycles_t get_cycles(void)
-{
-	return 0;
-}
-
-So if you are getting great entropy results when in effect you
-couldn't possibly be harvesting any jitter at all, then something is
-really, Really, REALLY wrong with your tests.
-
-One might be that you are just getting great statistical results
-because of the whitening step.  This is why I have very little faith
-in statistical tests of randomness, given that they will return
-perfect results for the following "random number generator"
-
-	AES_ENCRYPT(i++, NSA_KEY)
-
-Regards,
-
-					- Ted
