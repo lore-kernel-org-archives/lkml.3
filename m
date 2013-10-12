@@ -1,112 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753407Ab3JLU30 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Oct 2013 16:29:26 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:51008 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752732Ab3JLU3Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Oct 2013 16:29:25 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cpufreq: acpi: Add comment under ACPI_ADR_SPACE_SYSTEM_IO case
-Date: Sat, 12 Oct 2013 22:41:08 +0200
-Message-ID: <1402816.XYNGOIhCWR@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <CAKohpokJkcsNN_vnQOuu2=arsiQCGPaCxpRL_TRAQYFg+LmR+w@mail.gmail.com>
-References: <6334c0aed4840857944d1b267871ada4d7014d57.1381541632.git.viresh.kumar@linaro.org> <1922770.iubCDBg3Zg@vostro.rjw.lan> <CAKohpokJkcsNN_vnQOuu2=arsiQCGPaCxpRL_TRAQYFg+LmR+w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1753519Ab3JLUa4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Oct 2013 16:30:56 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:36261 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752732Ab3JLUay (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Oct 2013 16:30:54 -0400
+Date: Sun, 13 Oct 2013 07:30:46 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thierry Reding <thierry.reding@gmail.com>, Mark Brown <broonie@kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: Tree for Sep 30
+Message-Id: <20131013073046.9608a959d93dbc04687980c6@canb.auug.org.au>
+In-Reply-To: <20130930102033.GA9251@ulmo.nvidia.com>
+References: <20130930102033.GA9251@ulmo.nvidia.com>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.21; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Sun__13_Oct_2013_07_30_46_+1100_b+UZCxUFEv3r7JBo"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, October 12, 2013 08:58:10 PM Viresh Kumar wrote:
-> On 12/10/2013, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > Well, please merge it with the existing comment and use the usual format
-> > for comments that are longer than two lines.
-> 
-> I thought these are separate comments and so keeping them separate
-> might be better,
+--Signature=_Sun__13_Oct_2013_07_30_46_+1100_b+UZCxUFEv3r7JBo
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-No, comments that go like
+Hi Thierry, Mark,
 
-	/* Comment 1. */
-	/* Comment 2. */
+On Mon, 30 Sep 2013 12:20:34 +0200 Thierry Reding <thierry.reding@gmail.com=
+> wrote:
+>
+> As I'm sure is the case for many of us, I've become very dependent upon
+> the linux-next tree. So everytime Stephen goes on vacation I break out
+> in a cold sweat.
+>=20
+> Here's my attempt at providing temporary service until Stephen is back.
 
-do not even *look* separate.
+OK, WOW!  I cannot thank you guys enough for taking this on.  I have been
+very reticent to ask anyone to do this in my absence as I know how much
+time it can take away from anything else you may want to do.
 
-In general you can do something like
+=46rom other messages I have seen, you guys seem to be doing a good job - I
+might just extend my holiday ;-)
 
-	/*
-	 * Comment 1.
-	 *
-	 * Comment 2.
-	 */
+So thank you very much.
 
-in such cases, but again in this particular case the comments aren't even
-logically separate in my opinion. ->
+> I took some notes about conflicts, but I lack any contact information
+> for the trees so unless I can scrape some useful information from the
+> MAINTAINERS file I will just have to send them out to LKML and hope that
+> the right people look at them.
 
-> so that this one doesn't get deleted in case somebody
-> is removing the other one.. and vice versa..
-> 
-> Anyway its fixed in attached commit now :)
-> 
-> commit ecb9ef81b50eb5e8559f7d132ef46803c8272091
-> Author: Viresh Kumar <viresh.kumar@linaro.org>
-> Date:   Sat Oct 12 07:00:01 2013 +0530
-> 
->     cpufreq: acpi: Add comment under ACPI_ADR_SPACE_SYSTEM_IO case
-> 
->     policy->cur is now set by cpufreq core when cpufreq_driver->get()
-> is defined and
->     so drivers aren't required to set it. When space_id is
-> ACPI_ADR_SPACE_SYSTEM_IO
->     for acpi cpufreq driver it doesn't set ->get to a valid function
-> pointer and so
->     policy->cur is required to be set by driver.
-> 
->     This is already followed in acpi-cpufreq driver. This patch adds a comment
->     describing why we need to set policy->cur from driver.
-> 
->     Suggested-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->     Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> ---
->  drivers/cpufreq/acpi-cpufreq.c | 7 ++++++-
->  1 file changed, 6 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/cpufreq/acpi-cpufreq.c b/drivers/cpufreq/acpi-cpufreq.c
-> index a8dac7b..d2df543 100644
-> --- a/drivers/cpufreq/acpi-cpufreq.c
-> +++ b/drivers/cpufreq/acpi-cpufreq.c
-> @@ -837,7 +837,12 @@ static int acpi_cpufreq_cpu_init(struct
-> cpufreq_policy *policy)
-> 
->         switch (perf->control_register.space_id) {
->         case ACPI_ADR_SPACE_SYSTEM_IO:
-> -               /* Current speed is unknown and not detectable by IO port */
-> +               /*
-> +                * Current speed is unknown and not detectable by IO port.
-> +                * policy->cur wouldn't be set by core as cpufreq_driver->get()
-> +                * is NULL for this space_id and so we need to set policy->cur
-> +                * here.
-> +                */
+I will forward you and Mark my contacts list in another email.
 
--> What about this:
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-	/*
-	 * The core will not set policy->cur, because cpufreq_driver->get is NULL,
-	 * so we need to set it here.  However, we have to guess it, because the
-	 * current speed is unknown and not detectable via IO ports.
-	 */
+--Signature=_Sun__13_Oct_2013_07_30_46_+1100_b+UZCxUFEv3r7JBo
+Content-Type: application/pgp-signature
 
->                 policy->cur = acpi_cpufreq_guess_freq(data, policy->cpu);
->                 break;
->         case ACPI_ADR_SPACE_FIXED_HARDWARE:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+iQIcBAEBCAAGBQJSWbF7AAoJEMDTa8Ir7ZwVcjUP/3467zMYt7AtxYHh6M6l+RQC
+knAPvJHQCBD3s3NLoNXvQZ0a4QGTkllzm0q+ECyd1qV3JKu1LvDHtWcsdHeaVg+K
+pbMlFSCel9WgU1D+Snq8jAyN6xOmlk8rlo7BU3mvjM70idz13YzZNJZE/usVy7Ux
+xXUDZxqvFpXyvvl+Z9k8mFq8QYYOYe1tDM5/FEshNO8tnXsjKTAjFyPUenhKdKT2
+69C5K6ZkA53mNibuxL5VhNEu8+I3xoCx6xfDdTyFjtjJlDK3sLjig9A3QGVFB9pp
+jp9dfIYoZNW0yoskNQ0dwEO5bqqP3vuWhpZsHardIyaFXiEnUN2afXpUSsuaVwNf
+GRRlPKtH+TLP/hauBH8eXItpMAs1vbYT3hunkSbOKbNNeFCgkgFmHdWDZBGKHcR/
+UghBisdaEsLCG6hYs7Xxsn6ypjJh8X/8FoZf1pOlwijFApnsfWahf2axUWm+0YUz
+fUIqr6ljsrZmWYFx5mmioiDHjOcI0B7AdOahN9rzfT/HZ+m6Sm9b6oxbDPndu3N+
+4x4FQLxhT02XOwkDq+j/RbNYds/di0CHf41lhOm4RGSjx6p1PGsXOaUAZ313zGML
+6bkw2JKHPaPqiN1RDHDENzVZ+KvOb/5Dy4na0ZrocJn3RfQWIjIO0Ht+12hpNzsD
+q8U8LF3g2hvOfgZRCXpT
+=BKA/
+-----END PGP SIGNATURE-----
+
+--Signature=_Sun__13_Oct_2013_07_30_46_+1100_b+UZCxUFEv3r7JBo--
