@@ -1,66 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752994Ab3JLWWJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Oct 2013 18:22:09 -0400
-Received: from mail-vb0-f44.google.com ([209.85.212.44]:60200 "EHLO
-	mail-vb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752299Ab3JLWWI (ORCPT
+	id S1753313Ab3JLW2t (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Oct 2013 18:28:49 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:47485 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753129Ab3JLW2s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Oct 2013 18:22:08 -0400
-From: Felipe Pena <felipensp@gmail.com>
-To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Markus Pargmann <mpa@pengutronix.de>,
-        Bill Pemberton <wfp5p@virginia.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        Felipe Pena <felipensp@gmail.com>
-Subject: [PATCH] sound: soc: fsl: Fix memory leak in imx-audmux.c
-Date: Sat, 12 Oct 2013 19:22:34 -0300
-Message-Id: <1381616554-18654-1-git-send-email-felipensp@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Sat, 12 Oct 2013 18:28:48 -0400
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 6.6 \(1510\))
+Subject: Re: [PATCH] arm/arm64: remove atomic_clear_mask() in "include/asm/atomic.h"
+From: Catalin Marinas <catalin.marinas@arm.com>
+In-Reply-To: <20131011165530.GS14732@mudshark.cambridge.arm.com>
+Date: Sat, 12 Oct 2013 23:28:42 +0100
+Cc: Chen Gang <gang.chen@asianux.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux390@de.ibm.com" <linux390@de.ibm.com>,
+        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 7bit
+Message-Id: <794E70F6-80D3-4100-A0FF-A6F34AFB9A59@arm.com>
+References: <5256117A.4000009@asianux.com> <5256121A.9030504@asianux.com> <52561269.60900@asianux.com> <20131010100733.GH3817@mudshark.cambridge.arm.com> <52568998.2080108@asianux.com> <20131010142305.GG6199@mudshark.cambridge.arm.com> <525751E2.3020207@asianux.com> <20131011104419.GE14732@mudshark.cambridge.arm.com> <5257E033.3090607@asianux.com> <5257E539.9080902@asianux.com> <20131011165530.GS14732@mudshark.cambridge.arm.com>
+To: Will Deacon <will.deacon@arm.com>
+X-Mailer: Apple Mail (2.1510)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When audmux_clk is used and clk_prepare_enable function succeed,
-the memory alloc'd to buf variable is leaked
+On 11 Oct 2013, at 17:55, Will Deacon <will.deacon@arm.com> wrote:
+> On Fri, Oct 11, 2013 at 12:47:05PM +0100, Chen Gang wrote:
+>> In current kernel wide source code, except other architectures, only
+>> s390 scsi drivers use atomic_clear_mask(), and arm/arm64 need not
+>> support s390 drivers.
+>> 
+>> So remove atomic_clear_mask() from "arm[64]/include/asm/atomic.h".
+> 
+>  Acked-by: Will Deacon <will.deacon@arm.com>
+> 
+> Catalin, are you happy for me to send this via the ARM tree?
 
-Signed-off-by: Felipe Pena <felipensp@gmail.com>
----
- sound/soc/fsl/imx-audmux.c |    9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+Fine by me.
 
-diff --git a/sound/soc/fsl/imx-audmux.c b/sound/soc/fsl/imx-audmux.c
-index d3bf71a..977759a 100644
---- a/sound/soc/fsl/imx-audmux.c
-+++ b/sound/soc/fsl/imx-audmux.c
-@@ -66,19 +66,20 @@ static ssize_t audmux_read_file(struct file *file, char __user *user_buf,
- 				size_t count, loff_t *ppos)
- {
- 	ssize_t ret;
--	char *buf = kmalloc(PAGE_SIZE, GFP_KERNEL);
-+	char *buf;
- 	int port = (int)file->private_data;
- 	u32 pdcr, ptcr;
- 
--	if (!buf)
--		return -ENOMEM;
--
- 	if (audmux_clk) {
- 		ret = clk_prepare_enable(audmux_clk);
- 		if (ret)
- 			return ret;
- 	}
- 
-+	buf = kmalloc(PAGE_SIZE, GFP_KERNEL);
-+	if (!buf)
-+		return -ENOMEM;
-+
- 	ptcr = readl(audmux_base + IMX_AUDMUX_V2_PTCR(port));
- 	pdcr = readl(audmux_base + IMX_AUDMUX_V2_PDCR(port));
- 
--- 
-1.7.10.4
-
+Catalin
