@@ -1,73 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752971Ab3JLRW5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Oct 2013 13:22:57 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:56994 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752244Ab3JLRW4 (ORCPT
+	id S1753238Ab3JLRX1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Oct 2013 13:23:27 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:37565 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753096Ab3JLRXZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Oct 2013 13:22:56 -0400
-Date: Sat, 12 Oct 2013 18:21:50 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <20131012172150.GN2443@sirena.org.uk>
+	Sat, 12 Oct 2013 13:23:25 -0400
+Date: Sat, 12 Oct 2013 10:22:06 -0700
+From: tip-bot for Ramkumar Ramachandra <tipbot@zytor.com>
+Message-ID: <tip-62e947cb0cd27c392aabe732c64f5023e272cf0e@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, iamjoonsoo.kim@lge.com, artagnon@gmail.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, tglx@linutronix.de, artagnon@gmail.com,
+        iamjoonsoo.kim@lge.com
+In-Reply-To: <1381400433-2030-1-git-send-email-artagnon@gmail.com>
+References: <1381400433-2030-1-git-send-email-artagnon@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched:
+  Remove bogus parameter in structured comment
+Git-Commit-ID: 62e947cb0cd27c392aabe732c64f5023e272cf0e
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="xdWF/UuCWMRSqXrg"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Cookie: Time and tide wait for no man.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: linux-next: Tree for Oct 11
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sat, 12 Oct 2013 10:22:14 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  62e947cb0cd27c392aabe732c64f5023e272cf0e
+Gitweb:     http://git.kernel.org/tip/62e947cb0cd27c392aabe732c64f5023e272cf0e
+Author:     Ramkumar Ramachandra <artagnon@gmail.com>
+AuthorDate: Thu, 10 Oct 2013 15:50:33 +0530
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Sat, 12 Oct 2013 19:01:24 +0200
 
---xdWF/UuCWMRSqXrg
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+sched: Remove bogus parameter in structured comment
 
-Hi all,
+The balance parameter was removed by 23f0d20 ("sched: Factor out
+code to should_we_balance()", 2013-08-06).
 
-I've uploaded today's linux-next tree to the master branch of the
-repository below:
+Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1381400433-2030-1-git-send-email-artagnon@gmail.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ kernel/sched/fair.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-        git://gitorious.org/thierryreding/linux-next.git
-
-A next-20131011 tag is also provided for convenience.
-
-There was one new conflict which has been reported, each merge builds
-fine with x86 allmodconfig.  A few cross tree integration fixes are
-still being carried but nothing new.
-
-Thanks,
-Mark
-
---xdWF/UuCWMRSqXrg
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSWYUqAAoJELSic+t+oim9xAwP/1SI3+YLofs0Cat9wD9wsXeD
-5NN1xoF3LCQugga9XnWD68qHQBkvYkyzwI/DBuJlL2vL3CzKR+MTmzem5Q8ftoiT
-QDaoP1lc9GCNYntyl4YNT8p98O7Q922kNDWj+yCtqaAudxlq2uEw0ptB3XqpwyN4
-qb57YlZKuoew+D6melRE8BnYPPa9GkummWwd+6XSroZuMGHVOz3Qux98c/BHgGJL
-s+5S2//tW+o/sM96N/PFvGaxTzLKak95cTOSkvs8wY6cyzZlQlWwn4iYAzwWsgNc
-hbyYYd9oKNL3BJDnQ6aZGN4OIsXlwJnDVDgbxxdVmu/fnx417KJtMUFzGH5NlIlP
-mxTwXSnJ0405kxPuFqKHqHljfEGtUilNoZny8pKLwPwMUT7z0Iq2Pj8S8PH2KDTQ
-bTs9VbgYx67eMSpm5rrFMLtDbNo1kffnDDfmMAv/uwQwIktqwIJ7v/2Zhnvm1aAX
-ZR0yuBDU6XS8RGp0xthMpN6WW2lBSxZM2wliJjDus+IjMTgYakYOqZn70tHVbiUj
-0FTyvLuBrwwNbYMk502n40KaOGWYJsmLarq6wvCEZqnswDsCxqYvvpgXS8Q+bsVX
-mDZUhc3FiT2bu8Zyt8I+5Oheg6OlzZhdnlu7nsmp7YlWauLhHP68C2in0UtQzgJf
-qHt+VJMHQ7ZhP2ZLz10J
-=GV2B
------END PGP SIGNATURE-----
-
---xdWF/UuCWMRSqXrg--
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 803e343..8274679 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -5586,7 +5586,6 @@ static inline enum fbq_type fbq_classify_rq(struct rq *rq)
+ /**
+  * update_sd_lb_stats - Update sched_domain's statistics for load balancing.
+  * @env: The load balancing environment.
+- * @balance: Should we balance.
+  * @sds: variable to hold the statistics for this sched_domain.
+  */
+ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sds)
