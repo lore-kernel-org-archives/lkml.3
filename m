@@ -1,49 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753697Ab3JLVq1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Oct 2013 17:46:27 -0400
-Received: from filtteri5.pp.htv.fi ([213.243.153.188]:59450 "EHLO
-	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753198Ab3JLVq0 (ORCPT
+	id S1753129Ab3JLV7k (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Oct 2013 17:59:40 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:43545 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752539Ab3JLV7i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Oct 2013 17:46:26 -0400
-Date: Sun, 13 Oct 2013 00:46:18 +0300
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: USB regression in v3.12-rc4
-Message-ID: <20131012214618.GD29989@blackmetal.musicnaut.iki.fi>
+	Sat, 12 Oct 2013 17:59:38 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+To: <tj@kernel.org>, <yinghai@kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>, <grygorii.strashko@ti.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: [RFC 01/23] mm/bootmem: remove duplicated declaration of __free_pages_bootmem()
+Date: Sat, 12 Oct 2013 17:58:44 -0400
+Message-ID: <1381615146-20342-2-git-send-email-santosh.shilimkar@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1381615146-20342-1-git-send-email-santosh.shilimkar@ti.com>
+References: <1381615146-20342-1-git-send-email-santosh.shilimkar@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Grygorii Strashko <grygorii.strashko@ti.com>
 
-With v3.12-rc4 I can no longer connect to N800 (OMAP2) with USB
-(peripheral, g_ether).
+The __free_pages_bootmem is used internally by MM core and
+already defined in internal.h. So, remove duplicated declaration.
 
-According to git bisect this is caused by:
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
 
-9b0a1de3c85d99d881c86a29b3d52da7b9c7bd61 is the first bad commit
-commit 9b0a1de3c85d99d881c86a29b3d52da7b9c7bd61
-Author: Bin Liu <b-liu@ti.com>
-Date:   Tue Sep 17 15:33:35 2013 -0500
+Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+---
+ include/linux/bootmem.h |    1 -
+ 1 file changed, 1 deletion(-)
 
-    usb: musb: gadget: fix otg active status flag
+diff --git a/include/linux/bootmem.h b/include/linux/bootmem.h
+index f1f07d3..55d52fb 100644
+--- a/include/linux/bootmem.h
++++ b/include/linux/bootmem.h
+@@ -52,7 +52,6 @@ extern void free_bootmem_node(pg_data_t *pgdat,
+ 			      unsigned long size);
+ extern void free_bootmem(unsigned long physaddr, unsigned long size);
+ extern void free_bootmem_late(unsigned long physaddr, unsigned long size);
+-extern void __free_pages_bootmem(struct page *page, unsigned int order);
+ 
+ /*
+  * Flags for reserve_bootmem (also if CONFIG_HAVE_ARCH_BOOTMEM_NODE,
+-- 
+1.7.9.5
 
-    In gadget mode, musb->is_active should be set only when connected to the
-    host. musb_g_reset() already takes care of it.
-
-    Signed-off-by: Bin Liu <b-liu@ti.com>
-    Signed-off-by: Felipe Balbi <balbi@ti.com>
-
-Reverting that commit from v3.12-rc4 will fix the issue. Based on the
-commit log this is not fixing any real issue, so I wonder why was it
-included in -rc4 in the first place?
-
-A.
