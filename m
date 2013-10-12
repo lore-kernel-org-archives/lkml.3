@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754047Ab3JLTHh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Oct 2013 15:07:37 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:52298 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753550Ab3JLTGj (ORCPT
+	id S1753981Ab3JLTHf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Oct 2013 15:07:35 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:48807 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753089Ab3JLTGj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 12 Oct 2013 15:06:39 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
@@ -14,9 +14,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
         Kosaki Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [RFC PATCH 07/10] posix-timers: Use sighand lock instead of tasklist_lock for task clock sample
-Date: Sat, 12 Oct 2013 21:06:23 +0200
-Message-Id: <1381604786-21293-8-git-send-email-fweisbec@gmail.com>
+Subject: [RFC PATCH 08/10] posix-timers: Use sighand lock instead of tasklist_lock on timer deletion
+Date: Sat, 12 Oct 2013 21:06:24 +0200
+Message-Id: <1381604786-21293-9-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1381604786-21293-1-git-send-email-fweisbec@gmail.com>
 References: <1381604786-21293-1-git-send-email-fweisbec@gmail.com>
@@ -24,18 +24,21 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no need for the tasklist_lock just to take a process
-wide clock sample.
+Timer deletion doesn't need the tasklist lock.
+We need to protect against:
 
-All we need is to get a coherent sample that doesn't race with
-exit() and exec():
+* concurrent access to the lists p->cputime_expires and
+  p->sighand->cputime_expires
 
-* exit() may be concurrently reaping a task and flushing its time
+* task reaping that may also delete the timer list entry
 
-* sighand is unstable under exit() and exec(), and the latter also
-  result in group leader that can change
+* timer firing
 
-To protect against these, locking the target's sighand is enough.
+We already hold the timer lock which protects us against concurrent
+timer firing.
+
+The rest only need the targets sighand to be locked.
+So hold it and drop the use of tasklist_lock there.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
@@ -45,39 +48,52 @@ Cc: Oleg Nesterov <oleg@redhat.com>
 Cc: Kosaki Motohiro <kosaki.motohiro@jp.fujitsu.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 ---
- kernel/posix-cpu-timers.c | 16 +++++++++++++---
- 1 file changed, 13 insertions(+), 3 deletions(-)
+ kernel/posix-cpu-timers.c | 17 +++++++++++------
+ 1 file changed, 11 insertions(+), 6 deletions(-)
 
 diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
-index 7117f6d..cd56e71 100644
+index cd56e71..302e80e 100644
 --- a/kernel/posix-cpu-timers.c
 +++ b/kernel/posix-cpu-timers.c
-@@ -271,12 +271,22 @@ static int posix_cpu_clock_get_task(struct task_struct *tsk,
- 		if (same_thread_group(tsk, current))
- 			err = cpu_clock_sample(which_clock, tsk, &rtn);
+@@ -377,27 +377,32 @@ static int posix_cpu_timer_create(struct k_itimer *new_timer)
+  */
+ static int posix_cpu_timer_del(struct k_itimer *timer)
+ {
+-	struct task_struct *p = timer->it.cpu.task;
+ 	int ret = 0;
++	unsigned long flags;
++	struct sighand_struct *sighand;
++	struct task_struct *p = timer->it.cpu.task;
+ 
+ 	WARN_ON_ONCE(p == NULL);
+ 
+-	read_lock(&tasklist_lock);
+-	if (unlikely(p->sighand == NULL)) {
++	/*
++	 * Protect against sighand release/switch in exit/exec and process/
++	 * thread timer list entry concurrent read/writes.
++	 */
++	sighand = lock_task_sighand(p, &flags);
++	if (unlikely(sighand == NULL)) {
+ 		/*
+ 		 * We raced with the reaping of the task.
+ 		 * The deletion should have cleared us off the list.
+ 		 */
+ 		BUG_ON(!list_empty(&timer->it.cpu.entry));
  	} else {
--		read_lock(&tasklist_lock);
-+		unsigned long flags;
-+		struct sighand_struct *sighand;
- 
--		if (tsk->sighand && (tsk == current || thread_group_leader(tsk)))
-+		/*
-+		 * while_each_thread() is not yet entirely RCU safe,
-+		 * keep locking the group while sampling process
-+		 * clock for now.
-+		 */
-+		sighand = lock_task_sighand(tsk, &flags);
-+		if (!sighand)
-+			return err;
+-		spin_lock(&p->sighand->siglock);
+ 		if (timer->it.cpu.firing)
+ 			ret = TIMER_RETRY;
+ 		else
+ 			list_del(&timer->it.cpu.entry);
+-		spin_unlock(&p->sighand->siglock);
 +
-+		if (tsk == current || thread_group_leader(tsk))
- 			err = cpu_clock_sample_group(which_clock, tsk, &rtn);
- 
--		read_unlock(&tasklist_lock);
-+		unlock_task_sighand(tsk, &flags);
++		unlock_task_sighand(p, &flags);
  	}
+-	read_unlock(&tasklist_lock);
  
- 	if (!err)
+ 	if (!ret)
+ 		put_task_struct(p);
 -- 
 1.8.3.1
 
