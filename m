@@ -1,91 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753841Ab3JLKbG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Oct 2013 06:31:06 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:57814 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752692Ab3JLKbE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Oct 2013 06:31:04 -0400
-Date: Sat, 12 Oct 2013 12:30:55 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Dave Young <dyoung@redhat.com>, X86 ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Vivek Goyal <vgoyal@redhat.com>, linux-efi@vger.kernel.org,
-        fwts-devel@lists.ubuntu.com
-Subject: Re: [PATCH 12/12] EFI: Runtime services virtual mapping
-Message-ID: <20131012103054.GA13739@pd.tnic>
-References: <20131008164551.GB16793@pd.tnic>
- <20131008164831.GD16793@pd.tnic>
- <20131010080635.GA3692@dhcp-16-126.nay.redhat.com>
- <20131010081434.GB3692@dhcp-16-126.nay.redhat.com>
- <20131010085827.GA9929@pd.tnic>
- <20131010123453.GA12321@console-pimps.org>
- <20131011062437.GA14115@dhcp-16-126.nay.redhat.com>
- <20131011074144.GA18719@pd.tnic>
- <20131012075443.GD7550@dhcp-16-126.nay.redhat.com>
- <20131012101308.GI12321@console-pimps.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20131012101308.GI12321@console-pimps.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752271Ab3JLLBt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Oct 2013 07:01:49 -0400
+Received: from libra.uberspace.de ([95.143.172.171]:41749 "HELO
+	libra.uberspace.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751038Ab3JLLBq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Oct 2013 07:01:46 -0400
+From: Matthias Beyer <mail@beyermatthias.de>
+To: gregkh@linuxfoundation.org
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Matthias Beyer <mail@beyermatthias.de>
+Subject: [PATCH 1/1] drivers: usb: core: devio.c: Coding style fixes
+Date: Sat, 12 Oct 2013 13:01:34 +0200
+Message-Id: <1381575694-9886-1-git-send-email-mail@beyermatthias.de>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1381441292-6145-5-git-send-email-mail@beyermatthias.de>
+References: <1381441292-6145-5-git-send-email-mail@beyermatthias.de>
+In-Reply-To: <1381441292-6145-5-git-send-email-mail@beyermatthias.de>
+References: <1381441292-6145-5-git-send-email-mail@beyermatthias.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 12, 2013 at 11:13:08AM +0100, Matt Fleming wrote:
-> On Sat, 12 Oct, at 03:54:44PM, Dave Young wrote:
-> > Boris:
-> > 
-> > For the boot service region overlapping problem I have another idea,
-> > how about modify your mapping code to always mapping the RUNTIME region
-> > (non boot service region) firstly from the efi_va, then mapping other
-> > regions in order, in this way kexec 2nd kernel will be happy because
-> > it does not call SetVirtualAddressMap and it does not need the boot
-> > service area at all.
-> 
-> Coalescing the runtime regions together implies that the second kernel
-> would care about the fragmentation caused by unmapping the boot service
-> regions - it shouldn't. We've sliced up a considerable chunk of kernel
-> virtual address space (64G) and fragmentation shouldn't be an issue
-> right now.
-> 
-> Even if we run out of address space in the future due to fragmentation,
-> and end up needing to coalesce runtime regions, this would be
-> transparent to the kexec kernel because it's passed the memmap entries
-> through setup_data.
-> 
-> Though we are defining an ABI around the EFI address range
-> (0xffffffef00000000 - 0xffffffff00000000), such that it needs to be the
-> same between kernels, we must not make the layout of regions within that
-> range part of the ABI. We need the freedom to change the layout in the
-> future.
+Whitespace fixes, including:
 
-Basically, to sum up what Matt so eloquently explained, we will be
-passing all the runtime regions *but* *not* the boot regions (because
-the kexec kernel doesn't need them anyway) through setup_data to the
-kexec kernel.
+- Whitespace after if-keyword
+- Spaces to Tabs
 
-I.e., boot services regions is a dont-care for kexec.
+Other coding style fixes:
 
-And it is very important to restate that we want to reserve ourselves
-the most flexible way of passing regions to the kexec kernel in case we
-want to change the mapping algorithm in the future. Therefore, kexec
-should simply not know anything about the VA layout of the EFI regions
-but will get them spelled out through the boot header's setup_data.
+- Added braces for if-else blocks where missing
 
-This is the picture so far, AFAICT. Matt, please make a lot of noise if
-I've misrepresented anything.
+Signed-off-by: Matthias Beyer <mail@beyermatthias.de>
+---
+ drivers/usb/core/devio.c | 40 +++++++++++++++++++++-------------------
+ 1 file changed, 21 insertions(+), 19 deletions(-)
 
-Thanks.
-
+diff --git a/drivers/usb/core/devio.c b/drivers/usb/core/devio.c
+index 71dc5d7..5f8a40d 100644
+--- a/drivers/usb/core/devio.c
++++ b/drivers/usb/core/devio.c
+@@ -1222,7 +1222,7 @@ static int proc_do_submiturb(struct dev_state *ps, struct usbdevfs_urb *uurb,
+ 		return -ENOENT;
+ 
+ 	u = 0;
+-	switch(uurb->type) {
++	switch (uurb->type) {
+ 	case USBDEVFS_URB_TYPE_CONTROL:
+ 		if (!usb_endpoint_xfer_control(&ep->desc))
+ 			return -EINVAL;
+@@ -1636,32 +1636,32 @@ static int proc_reapurbnonblock(struct dev_state *ps, void __user *arg)
+ static int proc_control_compat(struct dev_state *ps,
+ 				struct usbdevfs_ctrltransfer32 __user *p32)
+ {
+-        struct usbdevfs_ctrltransfer __user *p;
+-        __u32 udata;
+-        p = compat_alloc_user_space(sizeof(*p));
+-        if (copy_in_user(p, p32, (sizeof(*p32) - sizeof(compat_caddr_t))) ||
+-            get_user(udata, &p32->data) ||
++	struct usbdevfs_ctrltransfer __user *p;
++	__u32 udata;
++	p = compat_alloc_user_space(sizeof(*p));
++	if (copy_in_user(p, p32, (sizeof(*p32) - sizeof(compat_caddr_t))) ||
++	    get_user(udata, &p32->data) ||
+ 	    put_user(compat_ptr(udata), &p->data))
+ 		return -EFAULT;
+-        return proc_control(ps, p);
++	return proc_control(ps, p);
+ }
+ 
+ static int proc_bulk_compat(struct dev_state *ps,
+ 			struct usbdevfs_bulktransfer32 __user *p32)
+ {
+-        struct usbdevfs_bulktransfer __user *p;
+-        compat_uint_t n;
+-        compat_caddr_t addr;
++	struct usbdevfs_bulktransfer __user *p;
++	compat_uint_t n;
++	compat_caddr_t addr;
+ 
+-        p = compat_alloc_user_space(sizeof(*p));
++	p = compat_alloc_user_space(sizeof(*p));
+ 
+-        if (get_user(n, &p32->ep) || put_user(n, &p->ep) ||
+-            get_user(n, &p32->len) || put_user(n, &p->len) ||
+-            get_user(n, &p32->timeout) || put_user(n, &p->timeout) ||
+-            get_user(addr, &p32->data) || put_user(compat_ptr(addr), &p->data))
+-                return -EFAULT;
++	if (get_user(n, &p32->ep) || put_user(n, &p->ep) ||
++	    get_user(n, &p32->len) || put_user(n, &p->len) ||
++	    get_user(n, &p32->timeout) || put_user(n, &p->timeout) ||
++	    get_user(addr, &p32->data) || put_user(compat_ptr(addr), &p->data))
++		return -EFAULT;
+ 
+-        return proc_bulk(ps, p);
++	return proc_bulk(ps, p);
+ }
+ static int proc_disconnectsignal_compat(struct dev_state *ps, void __user *arg)
+ {
+@@ -1838,10 +1838,12 @@ static int proc_ioctl(struct dev_state *ps, struct usbdevfs_ioctl *ctl)
+ 		return -ENODEV;
+ 	}
+ 
+-	if (ps->dev->state != USB_STATE_CONFIGURED)
++	if (ps->dev->state != USB_STATE_CONFIGURED) {
+ 		retval = -EHOSTUNREACH;
+-	else if (!(intf = usb_ifnum_to_if(ps->dev, ctl->ifno)))
++	}
++	else if (!(intf = usb_ifnum_to_if(ps->dev, ctl->ifno))) {
+ 		retval = -EINVAL;
++	}
+ 	else switch (ctl->ioctl_code) {
+ 
+ 	/* disconnect kernel driver from interface */
 -- 
-Regards/Gruss,
-    Boris.
+1.8.4
 
-Sent from a fat crate under my desk. Formatting is fine.
---
