@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754468Ab3JLWBo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Oct 2013 18:01:44 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:43587 "EHLO
+	id S1754428Ab3JLWBn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Oct 2013 18:01:43 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:43588 "EHLO
 	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753970Ab3JLWAN (ORCPT
+	with ESMTP id S1753986Ab3JLWAN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 12 Oct 2013 18:00:13 -0400
 From: Santosh Shilimkar <santosh.shilimkar@ti.com>
@@ -13,9 +13,9 @@ CC: <linux-arm-kernel@lists.infradead.org>, <linux-mm@kvack.org>,
         <linux-kernel@vger.kernel.org>, <grygorii.strashko@ti.com>,
         Santosh Shilimkar <santosh.shilimkar@ti.com>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [RFC 21/23] mm/ARM: kernel: Use memblock apis for early memory allocations
-Date: Sat, 12 Oct 2013 17:59:04 -0400
-Message-ID: <1381615146-20342-22-git-send-email-santosh.shilimkar@ti.com>
+Subject: [RFC 22/23] mm/ARM: mm: Use memblock apis for early memory allocations
+Date: Sat, 12 Oct 2013 17:59:05 -0400
+Message-ID: <1381615146-20342-23-git-send-email-santosh.shilimkar@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1381615146-20342-1-git-send-email-santosh.shilimkar@ti.com>
 References: <1381615146-20342-1-git-send-email-santosh.shilimkar@ti.com>
@@ -33,36 +33,22 @@ Cc: Andrew Morton <akpm@linux-foundation.org>
 
 Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 ---
- arch/arm/kernel/devtree.c |    2 +-
- arch/arm/kernel/setup.c   |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ arch/arm/mm/init.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm/kernel/devtree.c b/arch/arm/kernel/devtree.c
-index f35906b..881c495 100644
---- a/arch/arm/kernel/devtree.c
-+++ b/arch/arm/kernel/devtree.c
-@@ -33,7 +33,7 @@ void __init early_init_dt_add_memory_arch(u64 base, u64 size)
- 
- void * __init early_init_dt_alloc_memory_arch(u64 size, u64 align)
- {
--	return alloc_bootmem_align(size, align);
-+	return memblock_early_alloc_align(size, align);
+diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+index cef338d..091e2c9 100644
+--- a/arch/arm/mm/init.c
++++ b/arch/arm/mm/init.c
+@@ -414,7 +414,7 @@ free_memmap(unsigned long start_pfn, unsigned long end_pfn)
+ 	 * free the section of the memmap array.
+ 	 */
+ 	if (pg < pgend)
+-		free_bootmem(pg, pgend - pg);
++		memblock_free_early(pg, pgend - pg);
  }
  
- void __init arm_dt_memblock_reserve(void)
-diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
-index e1b1394..d928500 100644
---- a/arch/arm/kernel/setup.c
-+++ b/arch/arm/kernel/setup.c
-@@ -707,7 +707,7 @@ static void __init request_standard_resources(const struct machine_desc *mdesc)
- 	kernel_data.end     = virt_to_phys(_end - 1);
- 
- 	for_each_memblock(memory, region) {
--		res = alloc_bootmem_low(sizeof(*res));
-+		res = memblock_early_alloc(sizeof(*res));
- 		res->name  = "System RAM";
- 		res->start = __pfn_to_phys(memblock_region_memory_base_pfn(region));
- 		res->end = __pfn_to_phys(memblock_region_memory_end_pfn(region)) - 1;
+ /*
 -- 
 1.7.9.5
 
