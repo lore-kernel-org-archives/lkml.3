@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753882Ab3JLWAI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Oct 2013 18:00:08 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:43564 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753445Ab3JLV7w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Oct 2013 17:59:52 -0400
+	id S1754719Ab3JLWDb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Oct 2013 18:03:31 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:49565 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753821Ab3JLWAH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Oct 2013 18:00:07 -0400
 From: Santosh Shilimkar <santosh.shilimkar@ti.com>
 To: <tj@kernel.org>, <yinghai@kernel.org>
 CC: <linux-arm-kernel@lists.infradead.org>, <linux-mm@kvack.org>,
         <linux-kernel@vger.kernel.org>, <grygorii.strashko@ti.com>,
         Santosh Shilimkar <santosh.shilimkar@ti.com>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [RFC 09/23] mm/init: Use memblock apis for early memory allocations
-Date: Sat, 12 Oct 2013 17:58:52 -0400
-Message-ID: <1381615146-20342-10-git-send-email-santosh.shilimkar@ti.com>
+Subject: [RFC 20/23] mm/firmware: Use memblock apis for early memory allocations
+Date: Sat, 12 Oct 2013 17:59:03 -0400
+Message-ID: <1381615146-20342-21-git-send-email-santosh.shilimkar@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1381615146-20342-1-git-send-email-santosh.shilimkar@ti.com>
 References: <1381615146-20342-1-git-send-email-santosh.shilimkar@ti.com>
@@ -31,26 +30,25 @@ Cc: Yinghai Lu <yinghai@kernel.org>
 Cc: Tejun Heo <tj@kernel.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 
+Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
 Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 ---
- init/main.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/firmware/memmap.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/init/main.c b/init/main.c
-index af310af..e8d382a 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -346,8 +346,8 @@ static inline void smp_prepare_cpus(unsigned int maxcpus) { }
-  */
- static void __init setup_command_line(char *command_line)
+diff --git a/drivers/firmware/memmap.c b/drivers/firmware/memmap.c
+index e2e04b0..fa8a789 100644
+--- a/drivers/firmware/memmap.c
++++ b/drivers/firmware/memmap.c
+@@ -324,7 +324,7 @@ int __init firmware_map_add_early(u64 start, u64 end, const char *type)
  {
--	saved_command_line = alloc_bootmem(strlen (boot_command_line)+1);
--	static_command_line = alloc_bootmem(strlen (command_line)+1);
-+	saved_command_line = memblock_early_alloc(strlen(boot_command_line)+1);
-+	static_command_line = memblock_early_alloc(strlen(command_line)+1);
- 	strcpy (saved_command_line, boot_command_line);
- 	strcpy (static_command_line, command_line);
- }
+ 	struct firmware_map_entry *entry;
+ 
+-	entry = alloc_bootmem(sizeof(struct firmware_map_entry));
++	entry = memblock_early_alloc(sizeof(struct firmware_map_entry));
+ 	if (WARN_ON(!entry))
+ 		return -ENOMEM;
+ 
 -- 
 1.7.9.5
 
