@@ -1,179 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753156Ab3JLSKI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Oct 2013 14:10:08 -0400
-Received: from elasmtp-dupuy.atl.sa.earthlink.net ([209.86.89.62]:57700 "EHLO
-	elasmtp-dupuy.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752811Ab3JLSKG (ORCPT
+	id S1752892Ab3JLSLv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Oct 2013 14:11:51 -0400
+Received: from shrek-wifi.podlesie.net ([93.179.225.50]:40459 "EHLO
+	shrek.podlesie.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752541Ab3JLSLu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Oct 2013 14:10:06 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=dk20050327; d=mindspring.com;
-  b=GdSIH7CFvqMON0uMKxU8zzUUUfzIElV1JMDfjRq8mMrlvfOrRC+h0EvPwKJ73gh5;
-  h=Received:From:To:Cc:References:In-Reply-To:Subject:Date:Message-ID:MIME-Version:Content-Type:Content-Transfer-Encoding:X-Mailer:Thread-Index:Content-Language:X-ELNK-Trace:X-Originating-IP;
-From: "Frank Filz" <ffilzlnx@mindspring.com>
-To: "'Jeff Layton'" <jlayton@redhat.com>,
-        "'Stefan \(metze\) Metzmacher'" <metze@samba.org>
-Cc: <linux-fsdevel@vger.kernel.org>, <nfs-ganesha-devel@lists.sourceforge.net>,
-        <samba-technical@lists.samba.org>, <linux-kernel@vger.kernel.org>
-References: <1381494322-2426-1-git-send-email-jlayton@redhat.com>	<52591461.7070605@samba.org> <20131012074712.3d3b9148@tlielax.poochiereds.net>
-In-Reply-To: <20131012074712.3d3b9148@tlielax.poochiereds.net>
-Subject: RE: [Nfs-ganesha-devel] [RFC PATCH 0/5] locks: implement "filp-private" (aka UNPOSIX) locks
-Date: Sat, 12 Oct 2013 11:10:02 -0700
-Message-ID: <024001cec776$466e1190$d34a34b0$@mindspring.com>
+	Sat, 12 Oct 2013 14:11:50 -0400
+X-Greylist: delayed 384 seconds by postgrey-1.27 at vger.kernel.org; Sat, 12 Oct 2013 14:11:50 EDT
+From: Krzysztof Mazur <krzysiek@podlesie.net>
+To: linux-kernel@vger.kernel.org
+Cc: Pawel Moll <pawel.moll@arm.com>, Rusty Russell <rusty@rustcorp.com.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Krzysztof Mazur <krzysiek@podlesie.net>
+Subject: [PATCH] init: fix in-place parameter modification regression
+Date: Sat, 12 Oct 2013 20:05:00 +0200
+Message-Id: <1381601100-5622-1-git-send-email-krzysiek@podlesie.net>
+X-Mailer: git-send-email 1.8.4.652.g0d6e0ce
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 15.0
-Thread-Index: AQIaxc2XaXMwhFVmMgrl8lqeyFTt4AKoGXVhAU20SRqZObF7kA==
-Content-Language: en-us
-X-ELNK-Trace: 136157f01908a8929c7f779228e2f6aeda0071232e20db4d5e3582581f5fca9090775c3972c556ee350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
-X-Originating-IP: 71.236.153.111
+Content-Type: text/plain; charset=iso-8859-2
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > At LSF this year, there was a discussion about the "wishlist" for
-> > > userland file servers. One of the things brought up was the goofy
-> > > and problematic behavior of POSIX locks when a file is closed. Boaz
-> > > started a thread on it here:
-> > >
-> > >     http://permalink.gmane.org/gmane.linux.file-systems/73364
-> > >
-> > > Userland fileservers often need to maintain more than one open file
-> > > descriptor on a file. The POSIX spec says:
-> > >
-> > > "All locks associated with a file for a given process shall be
-> > > removed  when a file descriptor for that file is closed by that
-> > > process or the  process holding that file descriptor terminates."
-> > >
-> > > This is problematic since you can't close any file descriptor
-> > > without dropping all your POSIX locks. Most userland file servers
-> > > therefore end up opening the file with more access than is really
-> > > necessary, and keeping fd's open for longer than is necessary to work
-> around this.
-> > >
-> > > This patchset is a first stab at an approach to address this problem
-> > > by adding two new l_type values -- F_RDLCKP and F_WRLCKP (the 'P' is
-> > > short for "private" -- I'm open to changing that if you have a
-> > > better mnemonic).
-> > >
-> > > For all intents and purposes these lock types act just like their
-> > > "non-P" counterpart. The difference is that they are only implicitly
-> > > released when the fd against which they were acquired is closed. As
-> > > a side effect, these locks cannot be merged with "non-P" locks since
-> > > they have different semantics on close.
-> > >
-> > > I've given this patchset some very basic smoke testing and it seems
-> > > to do the right thing, but it is still pretty rough. If this looks
-> > > reasonable I'll plan to do some documentation updates and will take
-> > > a stab at trying to get these new lock types added to the POSIX spec
-> > > (as HCH recommended).
-> > >
-> > > At this point, my main questions are:
-> > >
-> > > 1) does this look useful, particularly for fileserver implementors?
-> > >
-> > > 2) does this look OK API-wise? We could consider different "cmd"
-values
-> > >    or even different syscalls, but I figured this makes it clearer
-that
-> > >    "P" and "non-P" locks will still conflict with one another.
-> > >
-> > > Jeff Layton (5):
-> > >   locks: consolidate checks for compatible filp->f_mode values in
-setlk
-> > >     handlers
-> > >   locks: add definitions for F_RDLCKP and F_WRLCKP
-> > >   locks: skip FL_FILP_PRIVATE locks on close unless we're closing the
-> > >     correct filp
-> > >   locks: handle merging of locks when FL_FILP_PRIVATE is set
-> > >   locks: show private lock types in /proc/locks
-> >
-> > I haven't looked at the patches, but it would be very good to have
-> > locks per "open" and not per "fd".
-> >
-> 
-> My intent is to make it "per-filp" (aka "struct file") in the same way
-that
-> flock() locks are today. Note that the patchset posted so far doesn't
-quite
-> have the right semantics yet.
-> 
-> Currently, I think that we want to give these locks flock-like inheritance
-and
-> close semantics, but to allow them to conflict with "legacy" POSIX range
-> locks.
-> 
-> > What happens in this example?
-> >
-> 
-> As I said, I haven't sat down to change the implementation yet, but I'll
-try to
-> answer this in the way that I think we'll want to do it...
-> 
-> > fd1 = open("/somefile", ...);
-> > fd2 = open("/somefile", ...);
-> > fd3 = dup(fd1);
-> >
-> 
-> At this point:
-> 
-> fd1 = filp1
-> fd2 = filp2
-> fd3 = filp1
-> 
-> ...fd1 and fd3 both hold a reference to filp1.
-> 
-> > lock(fd1, range1)
-> > lock(fd2, range2)
-> > lock(fd3, range3)
-> >
-> 
-> I'll assume that lock() means setting a F_SETLK with F_WRLCKP
-> 
-> > lock(fd2, range1) // => error already locked?
-> >
-> 
-> Right. fd1 will hold the lock on range1 so -EAGAIN.
-> 
-> > lock(fd3, range1) // stacked lock?
-> >
-> 
-> Not stacked per-se, but replaced. Since fd1 == fd3, this lock() call won't
-> conflict and the new lock will replace the old one. Since the range is the
-same
-> though, there will be no real difference in the outcome.
-> 
-> > close(fd1)
-> >
-> 
-> fput(filp1), but fd3 still has a reference so the lock won't be released.
-> 
-> > lock(fd2, range1) // is range1 still locked by fd3 ?
-> >
-> 
-> Yep, still locked.
-> 
-> > What about fd-passing, will the locks be transferred/shared with the
-> > other process?
-> >
-> 
-> Yes, I think so. Locks will be passed to the other process in the same way
-that
-> flock() locks are today. AIUI, when you fork() you basically
-> dup() all the file descriptors of the parent so that's basically the same
-as what
-> happens above.
-> 
-> Again though, I'm still trying to settle on what the semantics should be.
-None
-> of this is etched in stone yet.
+Before commit 026cee0086fe1df4cf74691cf273062cc769617d
+("params: <level>_initcall-like kernel parameters") the __setup
+parameter parsing code could modify parameter in the
+static_command_line buffer and such modifications were kept. After
+that commit such modifications are destroyed during per-initcall level
+parameter parsing because the same static_command_line buffer is used
+and only parameters for appropriate initcall level are parsed.
 
-At a quick read, that sounds right to me, connect the locks to the kernel
-struct file (filp) and we will get the desirable semantics you describe and
-I think it will be easy to document the behavior.
+That change broke at least parsing "ubd" parameter in the ubd driver
+when the COW file is used.
 
-Frank
+Now the separate buffer is used for per-initcall parameter parsing,
+like in parsing early params.
+
+Signed-off-by: Krzysztof Mazur <krzysiek@podlesie.net>
+---
+Hi,
+
+this patch fixes an old Linux 3.4 regression in ubd parameter parsing.
+It was previously reported by the David Fernández in the
+"ubd option parsing problem when using cow filesystems in kernel 3.4"
+thread on user-mode-linux-devel mailing list
+(http://marc.info/?t=134009640700003&r=1&w=2).
+The bug still exists in the Linux 3.12-rc4.
+
+I've been using a different patch that changed the ubd driver. I just
+copied the parsed filename to separate buffer, but I think it's better
+to fix generic code.
+
+Maybe the tmp_cmdline should be shared with the parse_early_param().
+
+Regards,
+Krzysiek
+
+ init/main.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/init/main.c b/init/main.c
+index 63d3e8f..e5b322a 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -742,12 +742,13 @@ static char *initcall_level_names[] __initdata = {
+ 
+ static void __init do_initcall_level(int level)
+ {
++	static __initdata char tmp_cmdline[COMMAND_LINE_SIZE];
+ 	extern const struct kernel_param __start___param[], __stop___param[];
+ 	initcall_t *fn;
+ 
+-	strcpy(static_command_line, saved_command_line);
++	strcpy(tmp_cmdline, saved_command_line);
+ 	parse_args(initcall_level_names[level],
+-		   static_command_line, __start___param,
++		   tmp_cmdline, __start___param,
+ 		   __stop___param - __start___param,
+ 		   level, level,
+ 		   &repair_env_string);
+-- 
+1.8.4.652.g0d6e0ce
 
