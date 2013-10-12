@@ -1,141 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754835Ab3JLBrH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Oct 2013 21:47:07 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:9182 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754341Ab3JLBrF (ORCPT
+	id S1752919Ab3JLB4a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Oct 2013 21:56:30 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:34880 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751791Ab3JLB42 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Oct 2013 21:47:05 -0400
-X-Spam-Score: -100.7
-Message-ID: <5258A9DB.1070008@asianux.com>
-Date: Sat, 12 Oct 2013 09:46:03 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux390@de.ibm.com" <linux390@de.ibm.com>,
-        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arm/arm64: remove atomic_clear_mask() in "include/asm/atomic.h"
-References: <5256117A.4000009@asianux.com> <5256121A.9030504@asianux.com> <52561269.60900@asianux.com> <20131010100733.GH3817@mudshark.cambridge.arm.com> <52568998.2080108@asianux.com> <20131010142305.GG6199@mudshark.cambridge.arm.com> <525751E2.3020207@asianux.com> <20131011104419.GE14732@mudshark.cambridge.arm.com> <5257E033.3090607@asianux.com> <5257E539.9080902@asianux.com> <20131011165530.GS14732@mudshark.cambridge.arm.com>
-In-Reply-To: <20131011165530.GS14732@mudshark.cambridge.arm.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 11 Oct 2013 21:56:28 -0400
+X-Sasl-enc: 8CVjt8qd8Z6hIU3BZoUXJ/zcv6kJq0t8FmBDiqzlSKB1 1381542987
+Message-ID: <1381542984.2272.21.camel@perseus.fritz.box>
+Subject: Re: NULL pointer dereference in autofs4_expire_wait
+From: Ian Kent <raven@themaw.net>
+To: David Ahern <dsahern@gmail.com>
+Cc: autofs@vger.kernel.org, viro@ZenIV.linux.org.uk,
+        linux-kernel@vger.kernel.org
+Date: Sat, 12 Oct 2013 09:56:24 +0800
+In-Reply-To: <5257FD34.2060406@gmail.com>
+References: <525736C7.9080400@gmail.com>
+	  <1381457199.2631.3.camel@perseus.fritz.box>
+	 <1381485327.2631.18.camel@perseus.fritz.box> <5257FD34.2060406@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/12/2013 12:55 AM, Will Deacon wrote:
-> On Fri, Oct 11, 2013 at 12:47:05PM +0100, Chen Gang wrote:
->> In current kernel wide source code, except other architectures, only
->> s390 scsi drivers use atomic_clear_mask(), and arm/arm64 need not
->> support s390 drivers.
->>
->> So remove atomic_clear_mask() from "arm[64]/include/asm/atomic.h".
+On Fri, 2013-10-11 at 07:29 -0600, David Ahern wrote:
+> On 10/11/13 3:55 AM, Ian Kent wrote:
+> > On Fri, 2013-10-11 at 10:06 +0800, Ian Kent wrote:
+> >> On Thu, 2013-10-10 at 17:22 -0600, David Ahern wrote:
+> >>> Running 3.12-rc3 just hit BUG in autofs4_expire_wait
+> >>
+> >> It doesn't look like this could be due to Al's change to the locking in
+> >> autos4_wait() and that the only change to autofs that I'm aware of.
+> >>
+> >> Could you do a bisect please?
+> >
+> > Of course that assumes it's repeatable.
+> > Is it?
+> >
+> > Can you provide any information about the environment and activity that
+> > was happening at the time of the BUG()?
 > 
->   Acked-by: Will Deacon <will.deacon@arm.com>
+> The system was up and running for 9 days before hitting the BUG. After 
+> that with 3 cpus on softlockup I had to do a reboot (forced). After the 
+> reboot I continued the workload again without a repeat incident (yet), 
+> so I am not sure bisect is going to be possible.
+
+Yeah, it isn't repeatable.
+
 > 
-
-Thank you for your whole work.
-
-> Catalin, are you happy for me to send this via the ARM tree?
+> This is a corporate environment where practically everything is in an 
+> automount. Specific to this problem I was repeatedly building a 
+> workspace in one window, using cscope in another and checking code 
+> against a different workspace in a third -- all 3 of those were 
+> different automounts and different NAS servers.
 > 
-> Will
+>  From objdump on vmlinux the line in question is fs/autofs4/expire.c:465
 > 
+>      if (ino->flags & AUTOFS_INF_EXPIRING) {
+
+Right, there haven't been changes to the autofs kernel code that affect
+the reference counting of dentrys so I have to conclude this is being
+caused by other changes.
+
+When walking an autofs path, the walk should always be put into refwalk
+mode, so the function containing this line should always have a dentry
+with a reference held. Which just means that the autofs info struct (ino
+here) won't be invalid.
+
+Now ->d_release() (which frees ino) is only called after the dentry
+reference count falls to zero and the dentry is going away.
+
+We can't check ino for NULL here because the dentry pointer to it isn't
+set to NULL when it's freed in ->d_release(). Setting the dentry field
+to NULL is futile because the next thing the VFS does is to free the
+dentry itself. Well, it calls RCU to schedule the free anyway.
+
+The fact that ->d_release() has been called makes me think there's a
+reference counting problem somewhere in the VFS.
+
+Al, is my thinking correct here?
+
+There were some significant changes to this area of the VFS in 3.11 by
+the look of it.
+
+So more history please, had you used 3.11 for an extended amount of
+time, before using the 3.12-rc? IOW what's your kernel version use
+history please?
+
+Ian
 
 
-Thanks.
-
---
-Chen Gang
-
->>
->> Signed-off-by: Chen Gang <gang.chen@asianux.com>
->> ---
->>  arch/arm/include/asm/atomic.h   |   24 ------------------------
->>  arch/arm64/include/asm/atomic.h |   14 --------------
->>  2 files changed, 0 insertions(+), 38 deletions(-)
->>
->> diff --git a/arch/arm/include/asm/atomic.h b/arch/arm/include/asm/atomic.h
->> index da1c77d..3b3ae49fa 100644
->> --- a/arch/arm/include/asm/atomic.h
->> +++ b/arch/arm/include/asm/atomic.h
->> @@ -134,21 +134,6 @@ static inline int atomic_cmpxchg(atomic_t *ptr, int old, int new)
->>  	return oldval;
->>  }
->>  
->> -static inline void atomic_clear_mask(unsigned long mask, unsigned long *addr)
->> -{
->> -	unsigned long tmp, tmp2;
->> -
->> -	__asm__ __volatile__("@ atomic_clear_mask\n"
->> -"1:	ldrex	%0, [%3]\n"
->> -"	bic	%0, %0, %4\n"
->> -"	strex	%1, %0, [%3]\n"
->> -"	teq	%1, #0\n"
->> -"	bne	1b"
->> -	: "=&r" (tmp), "=&r" (tmp2), "+Qo" (*addr)
->> -	: "r" (addr), "Ir" (mask)
->> -	: "cc");
->> -}
->> -
->>  #else /* ARM_ARCH_6 */
->>  
->>  #ifdef CONFIG_SMP
->> @@ -197,15 +182,6 @@ static inline int atomic_cmpxchg(atomic_t *v, int old, int new)
->>  	return ret;
->>  }
->>  
->> -static inline void atomic_clear_mask(unsigned long mask, unsigned long *addr)
->> -{
->> -	unsigned long flags;
->> -
->> -	raw_local_irq_save(flags);
->> -	*addr &= ~mask;
->> -	raw_local_irq_restore(flags);
->> -}
->> -
->>  #endif /* __LINUX_ARM_ARCH__ */
->>  
->>  #define atomic_xchg(v, new) (xchg(&((v)->counter), new))
->> diff --git a/arch/arm64/include/asm/atomic.h b/arch/arm64/include/asm/atomic.h
->> index 8363644..01de5aa 100644
->> --- a/arch/arm64/include/asm/atomic.h
->> +++ b/arch/arm64/include/asm/atomic.h
->> @@ -126,20 +126,6 @@ static inline int atomic_cmpxchg(atomic_t *ptr, int old, int new)
->>  	return oldval;
->>  }
->>  
->> -static inline void atomic_clear_mask(unsigned long mask, unsigned long *addr)
->> -{
->> -	unsigned long tmp, tmp2;
->> -
->> -	asm volatile("// atomic_clear_mask\n"
->> -"1:	ldxr	%0, %2\n"
->> -"	bic	%0, %0, %3\n"
->> -"	stxr	%w1, %0, %2\n"
->> -"	cbnz	%w1, 1b"
->> -	: "=&r" (tmp), "=&r" (tmp2), "+Q" (*addr)
->> -	: "Ir" (mask)
->> -	: "cc");
->> -}
->> -
->>  #define atomic_xchg(v, new) (xchg(&((v)->counter), new))
->>  
->>  static inline int __atomic_add_unless(atomic_t *v, int a, int u)
->> -- 
->> 1.7.7.6
->>
-> 
-> 
-
-
--- 
-Chen Gang
