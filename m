@@ -1,66 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753372Ab3JLSML (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Oct 2013 14:12:11 -0400
-Received: from elasmtp-mealy.atl.sa.earthlink.net ([209.86.89.69]:39297 "EHLO
-	elasmtp-mealy.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753198Ab3JLSMK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Oct 2013 14:12:10 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=dk20050327; d=mindspring.com;
-  b=szEXKcbJxY0/R8AjauZ1u+tkbcwE1nSzIYEX0hRLwckvVwVNGHWdwZLcvS/EXhbl;
-  h=Received:From:To:Cc:References:In-Reply-To:Subject:Date:Message-ID:MIME-Version:Content-Type:Content-Transfer-Encoding:X-Mailer:Thread-Index:Content-Language:X-ELNK-Trace:X-Originating-IP;
-From: "Frank Filz" <ffilzlnx@mindspring.com>
-To: "'Jeff Layton'" <jlayton@redhat.com>,
-        "'Scott Lovenberg'" <scott.lovenberg@gmail.com>
-Cc: "'Jeremy Allison'" <jra@samba.org>, "'Andreas Dilger'" <adilger@dilger.ca>,
-        <linux-fsdevel@vger.kernel.org>,
-        "'Ganesha NFS List'" <nfs-ganesha-devel@lists.sourceforge.net>,
-        <samba-technical@lists.samba.org>,
-        "'Linux Kernel Mailing List'" <linux-kernel@vger.kernel.org>
-References: <1381494322-2426-1-git-send-email-jlayton@redhat.com>	<20131011200756.GB22160@fieldses.org>	<EE732BCB-C38E-4874-AEDF-2EB9E1389A86@dilger.ca>	<20131011192118.483e436f@tlielax.poochiereds.net>	<20131011234923.GD8688@samba2>	<B0205F0B-0AC4-4B80-91C2-E3BD2D4B8E81@gmail.com> <20131011204244.72c2d672@corrin.poochiereds.net>
-In-Reply-To: <20131011204244.72c2d672@corrin.poochiereds.net>
-Subject: RE: [RFC PATCH 0/5] locks: implement "filp-private" (aka UNPOSIX) locks
-Date: Sat, 12 Oct 2013 11:12:03 -0700
-Message-ID: <024101cec776$8f004130$ad00c390$@mindspring.com>
+	id S1752811Ab3JLSTi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Oct 2013 14:19:38 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:37905 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752200Ab3JLSTh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Oct 2013 14:19:37 -0400
+Message-ID: <52599277.3090502@zytor.com>
+Date: Sat, 12 Oct 2013 11:18:31 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 15.0
-Thread-Index: AQIaxc2XaXMwhFVmMgrl8lqeyFTt4AHYOUbiArnvCugBgxKMZgIPcxlDA0h1vzIB7gYOMJjuhyEw
-Content-Language: en-us
-X-ELNK-Trace: 136157f01908a8929c7f779228e2f6aeda0071232e20db4dd14ff0356e43788764bd315707775cfa350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
-X-Originating-IP: 71.236.153.111
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Avi Kivity <avi@redhat.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Len Brown <len.brown@intel.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] x86 fixes
+References: <20131012171553.GA17548@gmail.com> <CA+55aFxFu9k7xOWd8DqXx8t+PONoV5ijGJv5mshZrYeVsVp32w@mail.gmail.com>
+In-Reply-To: <CA+55aFxFu9k7xOWd8DqXx8t+PONoV5ijGJv5mshZrYeVsVp32w@mail.gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This blog post of Jeremy's explains some of the history:
+On 10/12/2013 11:05 AM, Linus Torvalds wrote:
+> On Sat, Oct 12, 2013 at 10:15 AM, Ingo Molnar <mingo@kernel.org> wrote:
+>>
+>> Ville Syrjälä (1):
+>>       x86/reboot: Add reboot quirk for Dell Latitude E5410
 > 
+> So we have a number of these quirks, and Dell seems to be one of the
+> more common factors.
 > 
-> http://www.samba.org/samba/news/articles/low_point/tale_two_stds_os2
-> .html
+> Now, I'd suggest we just trigger it automatically for Dell, but the
+> thing is, Dell tends to be the *least* differentiating PC maker out
+> there, so I'm wondering if it is our default reboot order that is just
+> plain wrong.
 > 
-> See the section entitled "First Implementation Past the Post".
+> We start off trying to reboot using ACPI. Is that really sane? Is
+> there any reason to not make the default case be to use the PCI
+> reboot?
 
-Interesting that Jeremy actually suggested the implementation should have
-had an arbitrary lock owner as part of the flock structure:
+We tried it, it broke too many systems.  However, I'm seriously
+considering it for the case of Dell specificall.
 
-"This is an example of a POSIX interface not being future-proofed against
-modern techniques such as threading. A simple amendment to the original
-primitive allowing a user-defined "locking context" (like a process id) to
-be entered in the struct flock structure used to define the lock would have
-fixed this problem, along with extra flags allowing the number of locks per
-context to be recorded if needed."
+The problem with Dell is that they are using something unusual like the
+KBC to reboot, *and* apparently it is broken when VT-d is enabled.  This
+may becase the versions of Windows they're testing on aren't using it,
+or because they "expect" the OS to disable VT-d before shutdown.
 
-But I'm happy with the lock context per kernel struct file as a solution,
-especially since that will allow locks to be sensibly passed to a forked
-process.
+> The history behind this seems to be that we _used_ to default to
+> REBOOT_KBD (since that's the traditional method), and fall back to the
+> triple fault. Then, it was changed to default to ACPI back in 2008 by
+> Avi Kivity, because those methods apparently could "assert INIT
+> instead of RESET", and INIT is apparently blocked in Intel VT.  See
+> commit
+> 
+> But that immediately caused problems, and got reverted by commit
+> 8d00450d296d. But despite the _known_ problems with the ACPI method,
+> then in 2011 Matthew Garrett defaulted to ACPI again in commit
+> 660e34cebf0a, claiming that that is what Windows does. Which is
+> clearly NOT TRUE, since I can pretty much guarantee that Windows works
+> fine on Dell computers.
+>
+> So Windows clearly does not default to the ACPI reboot model, at least
+> not unconditionally. There must be something we're missing.
 
-Another next step would be an asynchronous blocking lock...
+See above.
 
-Frank
+> I'm
+> wondering if the way Matthew figured out the Windows defaults was to
+> run it in a virtual environment? Or uses some other flag to determine
+> whether the ACPI reboot is reliable or not. Because considering the
+> known issues with VT, maybe what Windows actually does is to use ACPI
+> only on VT machines, or something like that.
+> 
+> Because since that whole re-introduction of "default to ACPI", the
+> majority of patches to the reboot.c file seems to be just "ACPI reboot
+> doesn't work on this machine, so let's quirk it".
+> 
+> The alternative is that our "acpi_reboot" code is just completely
+> bogus. If you look at it, it does magic things with
+> ACPI_ADR_SPACE_PCI_CONFIG: and then calls acpi_reset() if that's not
+> the case. And the two functions have *inconsistent* validation of the
+> ACPI registers. acpi_reboot() will happily use a zero address forits
+> ACPI_ADR_SPACE_PCI_CONFIG poking, for example. And those functions
+> have gone back and forth on their breakage too (like not checking
+> ACPI_FADT_RESET_REGISTER which broke things entirely etc etc).
+> 
+> Guys, any ideas/suggestions? Because this constant "let's quirk things
+> because we're clearly doing something wrong" is wrong.
+
+Very much so... the question is what to do about it.  However, as you
+see above we actually have some idea about what is wrong.
+
+	-hpa
 
 
