@@ -1,51 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753355Ab3JLWLc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Oct 2013 18:11:32 -0400
-Received: from shrek-wifi.podlesie.net ([93.179.225.50]:47803 "EHLO
-	shrek.podlesie.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752299Ab3JLWLb (ORCPT
+	id S1752994Ab3JLWPh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Oct 2013 18:15:37 -0400
+Received: from mail-yh0-f48.google.com ([209.85.213.48]:51383 "EHLO
+	mail-yh0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752539Ab3JLWPg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Oct 2013 18:11:31 -0400
-From: Krzysztof Mazur <krzysiek@podlesie.net>
-To: linux-acpi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, lenb@kernel.org, rjw@rjwysocki.net,
-        Krzysztof Mazur <krzysiek@podlesie.net>
-Subject: [PATCH] ACPI: remove /proc/acpi/event from ACPI_BUTTON help
-Date: Sun, 13 Oct 2013 00:11:00 +0200
-Message-Id: <1381615860-1882-1-git-send-email-krzysiek@podlesie.net>
-X-Mailer: git-send-email 1.8.4.652.g0d6e0ce
+	Sat, 12 Oct 2013 18:15:36 -0400
+From: "Victor N. Ramos Mello" <victornrm@gmail.com>
+To: Mike Turquette <mturquette@linaro.org>,
+        =?UTF-8?q?Emilio=20L=C3=B3pez?= <emilio@elopez.com.ar>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Stephen Boyd <sboyd@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org,
+        "Victor N. Ramos Mello" <victornrm@gmail.com>
+Subject: [PATCH 1/1] drivers: clk: sunxi: Fix memory leakage in clk-sunxi.c
+Date: Sat, 12 Oct 2013 19:05:54 -0300
+Message-Id: <1381615554-4167-1-git-send-email-victornrm@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The commit 1696d9dc57e062ce5200f6a42a6aaada15b434bb
-("ACPI: Remove the old /proc/acpi/event interface")
-removed the old /proc/acpi/event interface but did not remove
-/proc/acpi/event from ACPI_BUTTON help.
+From: "Victor N. Ramos Mello" <victornrm@gmail.com>
 
-Signed-off-by: Krzysztof Mazur <krzysiek@podlesie.net>
+Fix a possible memory leak in sun4i_osc_clk_setup().
+Moved clock-frequency check to save superfluous allocation.
+
+Signed-off-by: Victor N. Ramos Mello <victornrm@gmail.com>
 ---
- drivers/acpi/Kconfig | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/clk/sunxi/clk-sunxi.c |   16 +++++++++-------
+ 1 files changed, 9 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
-index 22327e6..4e9e98b 100644
---- a/drivers/acpi/Kconfig
-+++ b/drivers/acpi/Kconfig
-@@ -123,9 +123,9 @@ config ACPI_BUTTON
- 	default y
- 	help
- 	  This driver handles events on the power, sleep, and lid buttons.
--	  A daemon reads /proc/acpi/event and perform user-defined actions
--	  such as shutting down the system.  This is necessary for
--	  software-controlled poweroff.
-+	  A daemon reads events from input devices or via netlink and
-+	  perform user-defined actions such as shutting down the system.
-+	  This is necessary for software-controlled poweroff.
+diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
+index 34ee69f..a741770 100644
+--- a/drivers/clk/sunxi/clk-sunxi.c
++++ b/drivers/clk/sunxi/clk-sunxi.c
+@@ -38,18 +38,16 @@ static void __init sun4i_osc_clk_setup(struct device_node *node)
+ 	const char *clk_name = node->name;
+ 	u32 rate;
  
- 	  To compile this driver as a module, choose M here:
- 	  the module will be called button.
++	if (of_property_read_u32(node, "clock-frequency", &rate))
++		return;
++
+ 	/* allocate fixed-rate and gate clock structs */
+ 	fixed = kzalloc(sizeof(struct clk_fixed_rate), GFP_KERNEL);
+ 	if (!fixed)
+ 		return;
+ 	gate = kzalloc(sizeof(struct clk_gate), GFP_KERNEL);
+-	if (!gate) {
+-		kfree(fixed);
+-		return;
+-	}
+-
+-	if (of_property_read_u32(node, "clock-frequency", &rate))
+-		return;
++	if (!gate)
++		goto err_gate;
+ 
+ 	/* set up gate and fixed rate properties */
+ 	gate->reg = of_iomap(node, 0);
+@@ -67,7 +65,11 @@ static void __init sun4i_osc_clk_setup(struct device_node *node)
+ 	if (!IS_ERR(clk)) {
+ 		of_clk_add_provider(node, of_clk_src_simple_get, clk);
+ 		clk_register_clkdev(clk, clk_name, NULL);
++		return;
+ 	}
++	kfree(gate);
++err_gate:
++	kfree(fixed);
+ }
+ CLK_OF_DECLARE(sun4i_osc, "allwinner,sun4i-osc-clk", sun4i_osc_clk_setup);
+ 
 -- 
-1.8.4.652.g0d6e0ce
+1.7.5.4
 
