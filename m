@@ -1,90 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752726Ab3JLQCX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Oct 2013 12:02:23 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.161]:61760 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752157Ab3JLQCV (ORCPT
+	id S1752716Ab3JLQIW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Oct 2013 12:08:22 -0400
+Received: from smtprelay0205.hostedemail.com ([216.40.44.205]:47266 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752157Ab3JLQIV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Oct 2013 12:02:21 -0400
-X-RZG-AUTH: :JGIXVUS7cutRB/49FwqZ7WcKdUCnXG6JabOfSXKWrat+jNPsyo0=
-X-RZG-CLASS-ID: mo00
-From: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
-Content-Type: multipart/mixed; boundary=Apple-Mail-219--440396343
-Subject: [Patch 1/1]: libertas/sdio: fix releasing memory twice.
-Date: Sat, 12 Oct 2013 18:02:09 +0200
-Message-Id: <D5BD8103-A6A6-4070-878B-99FC5883725F@goldelico.com>
-To: "John W. Linville" <linville@tuxdriver.com>, Bing Zhao <bzhao@marvell.com>,
-        "H. Nikolaus Schaller" <hns@goldelico.com>,
-        Dan Williams <dcbw@redhat.com>, Harro Haan <hrhaan@gmail.com>,
-        libertas-dev@lists.infradead.org, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Belisko Marek <marek@goldelico.com>, NeilBrown Brown <neilb@suse.de>
-Mime-Version: 1.0 (Apple Message framework v1085)
-X-Mailer: Apple Mail (2.1085)
+	Sat, 12 Oct 2013 12:08:21 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 30,2,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:857:988:989:1042:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2124:2194:2199:2393:2559:2562:2693:2828:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3871:3872:3873:3874:4043:4250:4321:5007:6119:7652:7903:9108:10004:10400:10848:11026:11232:11658:11914:12296:12517:12519:12740:13069:13311:13357:13618,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: list93_e60e4ee8c209
+X-Filterd-Recvd-Size: 2897
+Message-ID: <1381594098.8864.9.camel@joe-AO722>
+Subject: Re: [PATCH 2/2] framebuffer: Remove pmag-aa-fb
+From: Joe Perches <joe@perches.com>
+To: "Maciej W. Rozycki" <macro@linux-mips.org>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>
+Date: Sat, 12 Oct 2013 09:08:18 -0700
+In-Reply-To: <alpine.LFD.2.03.1310121308310.10951@linux-mips.org>
+References: <c94f3e342947923f20d4c12932f382aa5200511b.1379641901.git.joe@perches.com>
+	 <6f500d88eb23fd9a4cfc5583f5ca17bc5f58fe24.1379641901.git.joe@perches.com>
+	 <CAMuHMdW6R5qTJ0uvsUUaYBZAqFcNshPsXeMbz5hwqq5UOkJr-g@mail.gmail.com>
+	 <alpine.LFD.2.03.1309201907380.8379@linux-mips.org>
+	 <1379702587.2301.12.camel@joe-AO722>
+	 <alpine.LFD.2.03.1309201946430.8379@linux-mips.org>
+	 <alpine.LFD.2.03.1310121308310.10951@linux-mips.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 2013-10-12 at 14:08 +0100, Maciej W. Rozycki wrote:
+[]
+> So I think I've got all the basic stuff covered now, including a change 
+> similar to your proposal as well as a conversion to the driver model/new 
+> TURBOchannel support infrastructure.  But what I remembered is actually 
+> right, the issue is wiring hardware cursor support into fbcon.  The driver 
+> uses its own display_switch structure with its own aafbcon_cursor handler 
+> to use the twin onboard Bt431 chips for cursor generation (there's also 
+> aafbcon_set_font that pokes at the Bt431s for cursor dimension changes).  
+> I need to figure out what the best way will be to make the fbcon subsystem 
+> support such an arrangement and that'll take me a little bit yet, so 
+> please be patient.
+> 
+> Note that the board is weird enough to have a 1-bit (true monochrome) 
+> graphics plane, however the Bt455 used by the MX graphics adapter for 
+> screen image generation is a 4-bit grey-scale video RAMDAC (only the LSB 
+> inputs of its pixel port are wired to the graphics plane) and the twin 
+> Bt431s use the overlay plane to produce a 2-bit grey-scale cursor.  So we 
+> do want to use the hardware cursor to be able to make it prominent among 
+> the characters displayed throughout the screen and a software-generated 
+> cursor cannot really substitute what hardware provides.
 
---Apple-Mail-219--440396343
-Content-Transfer-Encoding: quoted-printable
-Content-Type: text/plain;
-	charset=us-ascii
+I hope you're enjoying tinkering with old toys.
 
-While upgrading the GTA04 kernel to 3.12-rc4 we came across
-an issue with libertas/sdio referencing stale memory on ifconfig up
-when trying to load the firmware (for a second time).
-
-I am not at all sure if the patch is how it should be done and the right
-location, but it appears to work for us with resetting priv->helper_fw =
-to NULL
-before asynchronously loading the firmware again.
+Best of luck getting it going.
 
 
-
-
---Apple-Mail-219--440396343
-Content-Disposition: attachment;
-	filename=0001-libertas-sdio-fix-releasing-memory-twice.patch
-Content-Type: application/octet-stream;
-	name="0001-libertas-sdio-fix-releasing-memory-twice.patch"
-Content-Transfer-Encoding: quoted-printable
-
-=46rom=20f6864491ea45d2bd877a37fbb4a618e42fe03fbe=20Mon=20Sep=2017=20=
-00:00:00=202001=0AFrom:=20"H.=20Nikolaus=20Schaller"=20=
-<hns@goldelico.com>=0ADate:=20Sat,=2012=20Oct=202013=2017:49:31=20+0200=0A=
-Subject:=20[PATCH]=20libertas/sdio:=20fix=20releasing=20memory=20twice.=20=
-We=20have=20connected=0A=20a=20Wi2Wi=20W2CBW003=20to=20an=20OMAP3=20=
-using=20SDIO.=20We=20have=20seen=20an=0A=20issue=20(not=20related=20with=20=
-this=20patch)=20that=20sometimes=20power=20is=0A=20not=20turned=20off.=20=
-This=20did=20lead=20to=20a=20kernel=20Oops=20if=20an=0A=20ifconfig=20up=20=
-/=20down=20/=20up=20when=20the=20chip=20was=20not=20powered=20down.=0A=20=
-This=20leads=20to=20a=20second=20call=20to=20lbs_get_firmware_async()=0A=20=
-with=20the=20same=20priv=20data=20-=20and=20that=20tries=20to=0A=20=
-release_firmware(priv->helper_fw);=20This=20appears=20to=20be=0A=20=
-wrong,=20since=20it=20was=20alredy=20released=20in=20the=0A=20=
-if_sdio_do_prog_firmware.=0A=0ASigned-off-by:=20H.=20Nikolaus=20Schaller=20=
-<hns@goldelico.com>=0A---=0A=20drivers/net/wireless/libertas/if_sdio.c=20=
-|=20=20=2013=20+++++++++++++=0A=201=20files=20changed,=2013=20=
-insertions(+),=200=20deletions(-)=0A=0Adiff=20--git=20=
-a/drivers/net/wireless/libertas/if_sdio.c=20=
-b/drivers/net/wireless/libertas/if_sdio.c=0Aindex=204557833..a04eb41=20=
-100644=0A---=20a/drivers/net/wireless/libertas/if_sdio.c=0A+++=20=
-b/drivers/net/wireless/libertas/if_sdio.c=0A@@=20-769,6=20+769,19=20@@=20=
-static=20int=20if_sdio_prog_firmware(struct=20if_sdio_card=20*card)=0A=20=
-=09=09return=200;=0A=20=09}=0A=20=0A+=09/*=20This=20is=20missing=20in=20=
-lbs_get_firmware_async()=0A+=09=20*=20and=20therefore=20a=20second=20=
-call=20using=20the=20same=20priv=20structure=0A+=09=20*=20may=20find=20a=20=
-stale=20helper_fw=20entry=20that=20has=20already=20been=0A+=09=20*=20=
-released=20by=20release_firmware(helper)=20in=0A+=09=20*=20=
-if_sdio_do_prog_firmware().=0A+=09=20*=20Or=20doing=20that=20release=20=
-in=20if_sdio_do_prog_firmware()=0A+=09=20*=20is=20a=20duplicate=20and=20=
-should=20not=20be=20there.=0A+=09=20*=20Anyways,=20this=20can=20happen=20=
-if=20a=20ifconfig=20up=20/=20down=20/=20up=0A+=09=20*=20sequence=20is=20=
-issued.=0A+=09=20*/=0A+=0A+=09card->priv->helper_fw=20=3D=20NULL;=0A+=0A=20=
-=09ret=20=3D=20lbs_get_firmware_async(card->priv,=20&card->func->dev,=20=
-card->model,=0A=20=09=09=09=09=20=20=20=20=20fw_table,=20=
-if_sdio_do_prog_firmware);=0A=20=0A--=20=0A1.7.7.4=0A=0A=
-
---Apple-Mail-219--440396343--
