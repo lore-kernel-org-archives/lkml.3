@@ -1,69 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751688Ab3JUQbC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Oct 2013 12:31:02 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:26843 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751305Ab3JUQbA (ORCPT
+	id S1751505Ab3JUQfv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Oct 2013 12:35:51 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:44947 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751266Ab3JUQft (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Oct 2013 12:31:00 -0400
-Date: Mon, 21 Oct 2013 12:30:38 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Cc: mingo@redhat.com, hpa@zytor.com, x86@kernel.org, gleb@redhat.com,
-        pbonzini@redhat.com, tglx@linutronix.de, linux@eikelenboom.it,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH] x86 kconfig: Add recommendation to enable paravirt
- spinlock
-Message-ID: <20131021163038.GA17709@phenom.dumpdata.com>
-References: <n>
- <1382371508-3843-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1382371508-3843-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Mon, 21 Oct 2013 12:35:49 -0400
+From: ycbzzjlby@gmail.com
+To: neilb@suse.de
+Cc: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org,
+        majianpeng@gmail.com, Bian Yu <bianyu@kedacom.com>
+Subject: [PATCH] md: avoid deadlock when md_set_badblocks.
+Date: Sat, 12 Oct 2013 01:10:03 -0400
+Message-Id: <1381554603-1695-1-git-send-email-ycbzzjlby@gmail.com>
+X-Mailer: git-send-email 1.7.1
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 21, 2013 at 09:35:08PM +0530, Raghavendra K T wrote:
-> Since paravirt spinlock optimization are in 3.12 kernel, we have
-> very good performance benefit for paravirtualized KVM / Xen kernel.
-> Also we no longer suffer from 5% side effect on native kernel.
+From: Bian Yu <bianyu@kedacom.com>
 
-Yeey!
-> 
-> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-> ---
->  Would like to thank Sander for spotting and suggesting this.
->  pvspinlock benefit on KVM link: https://lkml.org/lkml/2013/8/6/178 
->  
->  Attilio's tests on native kernel impact:
->  http://blog.xen.org/index.php/2012/05/11/benchmarking-the-new-pv-ticketlock-implementation/
-> 
->  arch/x86/Kconfig | 6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index f67e839..4ba9d32 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -638,10 +638,10 @@ config PARAVIRT_SPINLOCKS
->  	  spinlock implementation with something virtualization-friendly
->  	  (for example, block the virtual CPU rather than spinning).
->  
-> -	  Unfortunately the downside is an up to 5% performance hit on
-> -	  native kernels, with various workloads.
-> +	  It has minimal impact on native kernels and gives nice performance
-> +	  benefit for paravirtualized KVM / Xen kernels.
->  
-> -	  If you are unsure how to answer this question, answer N.
-> +	  If you are unsure how to answer this question, answer Y.
->  
->  source "arch/x86/xen/Kconfig"
->  
-> -- 
-> 1.7.11.7
-> 
+When operate harddisk and hit errors, md_set_badblocks is called after
+scsi_restart_operations which already disabled the irq. but md_set_badblocks
+will call write_sequnlock_irq and enable irq. so softirq can preempt the
+current thread and that may cause a deadlock. I think this situation should
+use write_sequnlock_irqsave/irqrestore instead.
+
+I met the situation and the call trace is below:
+[  638.919974] BUG: spinlock recursion on CPU#0, scsi_eh_13/1010
+[  638.921923]  lock: 0xffff8800d4d51fc8, .magic: dead4ead, .owner: scsi_eh_13/1010, .owner_cpu: 0
+[  638.923890] CPU: 0 PID: 1010 Comm: scsi_eh_13 Not tainted 3.12.0-rc5+ #37
+[  638.925844] Hardware name: To be filled by O.E.M. To be filled by O.E.M./MAHOBAY, BIOS 4.6.5 03/05/2013
+[  638.927816]  ffff880037ad4640 ffff880118c03d50 ffffffff8172ff85 0000000000000007
+[  638.929829]  ffff8800d4d51fc8 ffff880118c03d70 ffffffff81730030 ffff8800d4d51fc8
+[  638.931848]  ffffffff81a72eb0 ffff880118c03d90 ffffffff81730056 ffff8800d4d51fc8
+[  638.933884] Call Trace:
+[  638.935867]  <IRQ>  [<ffffffff8172ff85>] dump_stack+0x55/0x76
+[  638.937878]  [<ffffffff81730030>] spin_dump+0x8a/0x8f
+[  638.939861]  [<ffffffff81730056>] spin_bug+0x21/0x26
+[  638.941836]  [<ffffffff81336de4>] do_raw_spin_lock+0xa4/0xc0
+[  638.943801]  [<ffffffff8173f036>] _raw_spin_lock+0x66/0x80
+[  638.945747]  [<ffffffff814a73ed>] ? scsi_device_unbusy+0x9d/0xd0
+[  638.947672]  [<ffffffff8173fb1b>] ? _raw_spin_unlock+0x2b/0x50
+[  638.949595]  [<ffffffff814a73ed>] scsi_device_unbusy+0x9d/0xd0
+[  638.951504]  [<ffffffff8149ec47>] scsi_finish_command+0x37/0xe0
+[  638.953388]  [<ffffffff814a75e8>] scsi_softirq_done+0xa8/0x140
+[  638.955248]  [<ffffffff8130e32b>] blk_done_softirq+0x7b/0x90
+[  638.957116]  [<ffffffff8104fddd>] __do_softirq+0xfd/0x330
+[  638.958987]  [<ffffffff810b964f>] ? __lock_release+0x6f/0x100
+[  638.960861]  [<ffffffff8174a5cc>] call_softirq+0x1c/0x30
+[  638.962724]  [<ffffffff81004c7d>] do_softirq+0x8d/0xc0
+[  638.964565]  [<ffffffff8105024e>] irq_exit+0x10e/0x150
+[  638.966390]  [<ffffffff8174ad4a>] smp_apic_timer_interrupt+0x4a/0x60
+[  638.968223]  [<ffffffff817499af>] apic_timer_interrupt+0x6f/0x80
+[  638.970079]  <EOI>  [<ffffffff810b964f>] ? __lock_release+0x6f/0x100
+[  638.971899]  [<ffffffff8173fa6a>] ? _raw_spin_unlock_irq+0x3a/0x50
+[  638.973691]  [<ffffffff8173fa60>] ? _raw_spin_unlock_irq+0x30/0x50
+[  638.975475]  [<ffffffff81562393>] md_set_badblocks+0x1f3/0x4a0
+[  638.977243]  [<ffffffff81566e07>] rdev_set_badblocks+0x27/0x80
+[  638.978988]  [<ffffffffa00d97bb>] raid5_end_read_request+0x36b/0x4e0 [raid456]
+[  638.980723]  [<ffffffff811b5a1d>] bio_endio+0x1d/0x40
+[  638.982463]  [<ffffffff81304ff3>] req_bio_endio.isra.65+0x83/0xa0
+[  638.984214]  [<ffffffff81306b9f>] blk_update_request+0x7f/0x350
+[  638.985967]  [<ffffffff81306ea1>] blk_update_bidi_request+0x31/0x90
+[  638.987710]  [<ffffffff813085e0>] __blk_end_bidi_request+0x20/0x50
+[  638.989439]  [<ffffffff8130862f>] __blk_end_request_all+0x1f/0x30
+[  638.991149]  [<ffffffff81308746>] blk_peek_request+0x106/0x250
+[  638.992861]  [<ffffffff814a62a9>] ? scsi_kill_request.isra.32+0xe9/0x130
+[  638.994561]  [<ffffffff814a633a>] scsi_request_fn+0x4a/0x3d0
+[  638.996251]  [<ffffffff813040a7>] __blk_run_queue+0x37/0x50
+[  638.997900]  [<ffffffff813045af>] blk_run_queue+0x2f/0x50
+[  638.999553]  [<ffffffff814a5750>] scsi_run_queue+0xe0/0x1c0
+[  639.001185]  [<ffffffff814a7721>] scsi_run_host_queues+0x21/0x40
+[  639.002798]  [<ffffffff814a2e87>] scsi_restart_operations+0x177/0x200
+[  639.004391]  [<ffffffff814a4fe9>] scsi_error_handler+0xc9/0xe0
+[  639.005996]  [<ffffffff814a4f20>] ? scsi_unjam_host+0xd0/0xd0
+[  639.007600]  [<ffffffff81072f6b>] kthread+0xdb/0xe0
+[  639.009205]  [<ffffffff81072e90>] ? flush_kthread_worker+0x170/0x170
+[  639.010821]  [<ffffffff81748cac>] ret_from_fork+0x7c/0xb0
+[  639.012437]  [<ffffffff81072e90>] ? flush_kthread_worker+0x170/0x170
+
+Signed-off-by: Bian Yu <bianyu@kedacom.com>
+Reviewed-by: Jianpeng Ma <majianpeng@gmail.com>
+---
+ drivers/md/md.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/md/md.c b/drivers/md/md.c
+index 8a0d762..2445fec 100644
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -8111,6 +8111,7 @@ static int md_set_badblocks(struct badblocks *bb, sector_t s, int sectors,
+ 	u64 *p;
+ 	int lo, hi;
+ 	int rv = 1;
++	unsigned long flags;
+ 
+ 	if (bb->shift < 0)
+ 		/* badblocks are disabled */
+@@ -8125,7 +8126,7 @@ static int md_set_badblocks(struct badblocks *bb, sector_t s, int sectors,
+ 		sectors = next - s;
+ 	}
+ 
+-	write_seqlock_irq(&bb->lock);
++	write_seqlock_irqsave(&bb->lock, flags);
+ 
+ 	p = bb->page;
+ 	lo = 0;
+@@ -8241,7 +8242,7 @@ static int md_set_badblocks(struct badblocks *bb, sector_t s, int sectors,
+ 	bb->changed = 1;
+ 	if (!acknowledged)
+ 		bb->unacked_exist = 1;
+-	write_sequnlock_irq(&bb->lock);
++	write_sequnlock_irqrestore(&bb->lock, flags);
+ 
+ 	return rv;
+ }
+-- 
+1.7.1
+
