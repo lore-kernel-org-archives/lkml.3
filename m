@@ -1,56 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752852Ab3JLV7j (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Oct 2013 17:59:39 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:43546 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752299Ab3JLV7i (ORCPT
+	id S1753355Ab3JLWLc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Oct 2013 18:11:32 -0400
+Received: from shrek-wifi.podlesie.net ([93.179.225.50]:47803 "EHLO
+	shrek.podlesie.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752299Ab3JLWLb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Oct 2013 17:59:38 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-To: <tj@kernel.org>, <yinghai@kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, <grygorii.strashko@ti.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: [RFC 05/23] mm/char: remove unnecessary inclusion of bootmem.h
-Date: Sat, 12 Oct 2013 17:58:48 -0400
-Message-ID: <1381615146-20342-6-git-send-email-santosh.shilimkar@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1381615146-20342-1-git-send-email-santosh.shilimkar@ti.com>
-References: <1381615146-20342-1-git-send-email-santosh.shilimkar@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Sat, 12 Oct 2013 18:11:31 -0400
+From: Krzysztof Mazur <krzysiek@podlesie.net>
+To: linux-acpi@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, lenb@kernel.org, rjw@rjwysocki.net,
+        Krzysztof Mazur <krzysiek@podlesie.net>
+Subject: [PATCH] ACPI: remove /proc/acpi/event from ACPI_BUTTON help
+Date: Sun, 13 Oct 2013 00:11:00 +0200
+Message-Id: <1381615860-1882-1-git-send-email-krzysiek@podlesie.net>
+X-Mailer: git-send-email 1.8.4.652.g0d6e0ce
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Grygorii Strashko <grygorii.strashko@ti.com>
+The commit 1696d9dc57e062ce5200f6a42a6aaada15b434bb
+("ACPI: Remove the old /proc/acpi/event interface")
+removed the old /proc/acpi/event interface but did not remove
+/proc/acpi/event from ACPI_BUTTON help.
 
-Clean-up to remove depedency with bootmem headers.
-
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-
-Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
-Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Signed-off-by: Krzysztof Mazur <krzysiek@podlesie.net>
 ---
- drivers/char/mem.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/acpi/Kconfig | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/char/mem.c b/drivers/char/mem.c
-index f895a8c..92c5937 100644
---- a/drivers/char/mem.c
-+++ b/drivers/char/mem.c
-@@ -22,7 +22,6 @@
- #include <linux/device.h>
- #include <linux/highmem.h>
- #include <linux/backing-dev.h>
--#include <linux/bootmem.h>
- #include <linux/splice.h>
- #include <linux/pfn.h>
- #include <linux/export.h>
+diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
+index 22327e6..4e9e98b 100644
+--- a/drivers/acpi/Kconfig
++++ b/drivers/acpi/Kconfig
+@@ -123,9 +123,9 @@ config ACPI_BUTTON
+ 	default y
+ 	help
+ 	  This driver handles events on the power, sleep, and lid buttons.
+-	  A daemon reads /proc/acpi/event and perform user-defined actions
+-	  such as shutting down the system.  This is necessary for
+-	  software-controlled poweroff.
++	  A daemon reads events from input devices or via netlink and
++	  perform user-defined actions such as shutting down the system.
++	  This is necessary for software-controlled poweroff.
+ 
+ 	  To compile this driver as a module, choose M here:
+ 	  the module will be called button.
 -- 
-1.7.9.5
+1.8.4.652.g0d6e0ce
 
