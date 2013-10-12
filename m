@@ -1,183 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751680Ab3JLNFh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Oct 2013 09:05:37 -0400
-Received: from mga14.intel.com ([143.182.124.37]:17383 "EHLO mga14.intel.com"
+	id S1752258Ab3JLNGs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Oct 2013 09:06:48 -0400
+Received: from mga02.intel.com ([134.134.136.20]:44446 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750716Ab3JLNFe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Oct 2013 09:05:34 -0400
+	id S1750716Ab3JLNGp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Oct 2013 09:06:45 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,480,1378882800"; 
-   d="scan'208";a="373843708"
-Message-ID: <5259491E.8030709@intel.com>
-Date: Sat, 12 Oct 2013 21:05:34 +0800
-From: Lan Tianyu <tianyu.lan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>
-Subject: Re: [Resend PATCH 4/5] X86/PCI/ACPI: Rework setup_resource() via
- functions ACPI resource functions
-References: <1381493941-4650-1-git-send-email-tianyu.lan@intel.com> <1381493941-4650-5-git-send-email-tianyu.lan@intel.com> <CAE9FiQWysaOj7+-NDcroGgJnVPZOi+kA6S7SXrosZhQuS_Z8_A@mail.gmail.com>
-In-Reply-To: <CAE9FiQWysaOj7+-NDcroGgJnVPZOi+kA6S7SXrosZhQuS_Z8_A@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+   d="scan'208";a="418170002"
+From: tianyu.lan@intel.com
+To: lenb@kernel.org, rjw@rjwysocki.net
+Cc: Lan Tianyu <tianyu.lan@intel.com>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [Resend PATCH] ACPI/AC: Remove AC's proc directory.
+Date: Sat, 12 Oct 2013 21:04:48 +0800
+Message-Id: <1381583088-6305-1-git-send-email-tianyu.lan@intel.com>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/12/2013 02:30 AM, Yinghai Lu wrote:
-> On Fri, Oct 11, 2013 at 5:19 AM,  <tianyu.lan@intel.com> wrote:
->> From: Lan Tianyu <tianyu.lan@intel.com>
->>
->> Using ACPI resource functions to convert ACPI resource to generic resource
->> instead of resource_to_addr(). Remove resource_to_addr().
->>
->> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
->
-> for 1-4
->
-> Acked-by: Yinghai Lu <yinghai@kernel.org>
+From: Lan Tianyu <tianyu.lan@intel.com>
 
+AC's proc directory is not used and so remove it. Prepare for removing
+/proc/acpi directory.
 
-Thanks for Ack.
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+---
+Rebase on the latest linux-pm tree linux-next branch.
 
->
->> ---
->>   arch/x86/pci/acpi.c | 81 ++++++++---------------------------------------------
->>   1 file changed, 12 insertions(+), 69 deletions(-)
->>
->> diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
->> index d641897..f4290a1 100644
->> --- a/arch/x86/pci/acpi.c
->> +++ b/arch/x86/pci/acpi.c
->> @@ -219,62 +219,15 @@ static void teardown_mcfg_map(struct pci_root_info *info)
->>   #endif
->>
->>   static acpi_status
->> -resource_to_addr(struct acpi_resource *resource,
->> -                       struct acpi_resource_address64 *addr)
->> -{
->> -       acpi_status status;
->> -       struct acpi_resource_memory24 *memory24;
->> -       struct acpi_resource_memory32 *memory32;
->> -       struct acpi_resource_fixed_memory32 *fixed_memory32;
->> -
->> -       memset(addr, 0, sizeof(*addr));
->> -       switch (resource->type) {
->> -       case ACPI_RESOURCE_TYPE_MEMORY24:
->> -               memory24 = &resource->data.memory24;
->> -               addr->resource_type = ACPI_MEMORY_RANGE;
->> -               addr->minimum = memory24->minimum;
->> -               addr->address_length = memory24->address_length;
->> -               addr->maximum = addr->minimum + addr->address_length - 1;
->> -               return AE_OK;
->> -       case ACPI_RESOURCE_TYPE_MEMORY32:
->> -               memory32 = &resource->data.memory32;
->> -               addr->resource_type = ACPI_MEMORY_RANGE;
->> -               addr->minimum = memory32->minimum;
->> -               addr->address_length = memory32->address_length;
->> -               addr->maximum = addr->minimum + addr->address_length - 1;
->> -               return AE_OK;
->> -       case ACPI_RESOURCE_TYPE_FIXED_MEMORY32:
->> -               fixed_memory32 = &resource->data.fixed_memory32;
->> -               addr->resource_type = ACPI_MEMORY_RANGE;
->> -               addr->minimum = fixed_memory32->address;
->> -               addr->address_length = fixed_memory32->address_length;
->> -               addr->maximum = addr->minimum + addr->address_length - 1;
->> -               return AE_OK;
->> -       case ACPI_RESOURCE_TYPE_ADDRESS16:
->> -       case ACPI_RESOURCE_TYPE_ADDRESS32:
->> -       case ACPI_RESOURCE_TYPE_ADDRESS64:
->> -               status = acpi_resource_to_address64(resource, addr);
->> -               if (ACPI_SUCCESS(status) &&
->> -                   (addr->resource_type == ACPI_MEMORY_RANGE ||
->> -                   addr->resource_type == ACPI_IO_RANGE) &&
->> -                   addr->address_length > 0) {
->> -                       return AE_OK;
->> -               }
->> -               break;
->> -       }
->> -       return AE_ERROR;
->> -}
->> -
->> -static acpi_status
->>   count_resource(struct acpi_resource *acpi_res, void *data)
->>   {
->>          struct pci_root_info *info = data;
->> -       struct acpi_resource_address64 addr;
->> -       acpi_status status;
->> +       struct resource res;
->>
->> -       status = resource_to_addr(acpi_res, &addr);
->> -       if (ACPI_SUCCESS(status))
->> +       if (acpi_dev_resource_address_space(acpi_res, &res)
->> +           || acpi_dev_resource_memory(acpi_res, &res))
->>                  info->res_num++;
->> +
->>          return AE_OK;
->>   }
->>
->> @@ -282,27 +235,18 @@ static acpi_status
->>   setup_resource(struct acpi_resource *acpi_res, void *data)
->>   {
->>          struct pci_root_info *info = data;
->> -       struct resource *res;
->> +       struct resource *res = &info->res[info->res_num];
->>          struct acpi_resource_address64 addr;
->> -       acpi_status status;
->> -       unsigned long flags;
->>          u64 start, orig_end, end;
->>
->> -       status = resource_to_addr(acpi_res, &addr);
->> -       if (!ACPI_SUCCESS(status))
->> -               return AE_OK;
->> +       memset(&addr, 0x00, sizeof(addr));
->>
->> -       if (addr.resource_type == ACPI_MEMORY_RANGE) {
->> -               flags = IORESOURCE_MEM;
->> -               if (addr.info.mem.caching == ACPI_PREFETCHABLE_MEMORY)
->> -                       flags |= IORESOURCE_PREFETCH;
->> -       } else if (addr.resource_type == ACPI_IO_RANGE) {
->> -               flags = IORESOURCE_IO;
->> -       } else
->> +       if (!(acpi_dev_resource_address_space_full(acpi_res, &addr, res)
->> +           || acpi_dev_resource_memory(acpi_res, res)))
->>                  return AE_OK;
->>
->> -       start = addr.minimum + addr.translation_offset;
->> -       orig_end = end = addr.maximum + addr.translation_offset;
->> +       start = res->start;
->> +       orig_end = end = res->end;
->>
->>          /* Exclude non-addressable range or non-addressable portion of range */
->>          end = min(end, (u64)iomem_resource.end);
->> @@ -310,6 +254,7 @@ setup_resource(struct acpi_resource *acpi_res, void *data)
->>                  dev_info(&info->bridge->dev,
->>                          "host bridge window [%#llx-%#llx] "
->>                          "(ignored, not CPU addressable)\n", start, orig_end);
->> +               memset(&info->res[info->res_num], 0x00, sizeof(*res));
->>                  return AE_OK;
->>          } else if (orig_end != end) {
->>                  dev_info(&info->bridge->dev,
->> @@ -318,11 +263,9 @@ setup_resource(struct acpi_resource *acpi_res, void *data)
->>                          start, orig_end, end + 1, orig_end);
->>          }
->>
->> -       res = &info->res[info->res_num];
->>          res->name = info->name;
->> -       res->flags = flags;
->> -       res->start = start;
->>          res->end = end;
->> +
->>          info->res_offset[info->res_num] = addr.translation_offset;
->>          info->res_num++;
->>
->> --
->> 1.8.2.1
->>
+ drivers/acpi/ac.c | 129 ++----------------------------------------------------
+ 1 file changed, 3 insertions(+), 126 deletions(-)
+
+diff --git a/drivers/acpi/ac.c b/drivers/acpi/ac.c
+index 324b5a0..b9f0d5f 100644
+--- a/drivers/acpi/ac.c
++++ b/drivers/acpi/ac.c
+@@ -30,10 +30,6 @@
+ #include <linux/types.h>
+ #include <linux/dmi.h>
+ #include <linux/delay.h>
+-#ifdef CONFIG_ACPI_PROCFS_POWER
+-#include <linux/proc_fs.h>
+-#include <linux/seq_file.h>
+-#endif
+ #include <linux/platform_device.h>
+ #include <linux/power_supply.h>
+ #include <acpi/acpi_bus.h>
+@@ -56,12 +52,6 @@ MODULE_AUTHOR("Paul Diefenbaugh");
+ MODULE_DESCRIPTION("ACPI AC Adapter Driver");
+ MODULE_LICENSE("GPL");
+ 
+-#ifdef CONFIG_ACPI_PROCFS_POWER
+-extern struct proc_dir_entry *acpi_lock_ac_dir(void);
+-extern void *acpi_unlock_ac_dir(struct proc_dir_entry *acpi_ac_dir);
+-static int acpi_ac_open_fs(struct inode *inode, struct file *file);
+-#endif
+-
+ static int ac_sleep_before_get_state_ms;
+ 
+ struct acpi_ac {
+@@ -73,16 +63,6 @@ struct acpi_ac {
+ 
+ #define to_acpi_ac(x) container_of(x, struct acpi_ac, charger)
+ 
+-#ifdef CONFIG_ACPI_PROCFS_POWER
+-static const struct file_operations acpi_ac_fops = {
+-	.owner = THIS_MODULE,
+-	.open = acpi_ac_open_fs,
+-	.read = seq_read,
+-	.llseek = seq_lseek,
+-	.release = single_release,
+-};
+-#endif
+-
+ /* --------------------------------------------------------------------------
+                                AC Adapter Management
+    -------------------------------------------------------------------------- */
+@@ -132,83 +112,6 @@ static enum power_supply_property ac_props[] = {
+ 	POWER_SUPPLY_PROP_ONLINE,
+ };
+ 
+-#ifdef CONFIG_ACPI_PROCFS_POWER
+-/* --------------------------------------------------------------------------
+-                              FS Interface (/proc)
+-   -------------------------------------------------------------------------- */
+-
+-static struct proc_dir_entry *acpi_ac_dir;
+-
+-static int acpi_ac_seq_show(struct seq_file *seq, void *offset)
+-{
+-	struct acpi_ac *ac = seq->private;
+-
+-
+-	if (!ac)
+-		return 0;
+-
+-	if (acpi_ac_get_state(ac)) {
+-		seq_puts(seq, "ERROR: Unable to read AC Adapter state\n");
+-		return 0;
+-	}
+-
+-	seq_puts(seq, "state:                   ");
+-	switch (ac->state) {
+-	case ACPI_AC_STATUS_OFFLINE:
+-		seq_puts(seq, "off-line\n");
+-		break;
+-	case ACPI_AC_STATUS_ONLINE:
+-		seq_puts(seq, "on-line\n");
+-		break;
+-	default:
+-		seq_puts(seq, "unknown\n");
+-		break;
+-	}
+-
+-	return 0;
+-}
+-
+-static int acpi_ac_open_fs(struct inode *inode, struct file *file)
+-{
+-	return single_open(file, acpi_ac_seq_show, PDE_DATA(inode));
+-}
+-
+-static int acpi_ac_add_fs(struct acpi_ac *ac)
+-{
+-	struct proc_dir_entry *entry = NULL;
+-
+-	printk(KERN_WARNING PREFIX "Deprecated procfs I/F for AC is loaded,"
+-			" please retry with CONFIG_ACPI_PROCFS_POWER cleared\n");
+-	if (!acpi_device_dir(ac->adev)) {
+-		acpi_device_dir(ac->adev) =
+-			proc_mkdir(acpi_device_bid(ac->adev), acpi_ac_dir);
+-		if (!acpi_device_dir(ac->adev))
+-			return -ENODEV;
+-	}
+-
+-	/* 'state' [R] */
+-	entry = proc_create_data(ACPI_AC_FILE_STATE,
+-				 S_IRUGO, acpi_device_dir(ac->adev),
+-				 &acpi_ac_fops, ac);
+-	if (!entry)
+-		return -ENODEV;
+-	return 0;
+-}
+-
+-static int acpi_ac_remove_fs(struct acpi_ac *ac)
+-{
+-
+-	if (acpi_device_dir(ac->adev)) {
+-		remove_proc_entry(ACPI_AC_FILE_STATE,
+-				  acpi_device_dir(ac->adev));
+-		remove_proc_entry(acpi_device_bid(ac->adev), acpi_ac_dir);
+-		acpi_device_dir(ac->adev) = NULL;
+-	}
+-
+-	return 0;
+-}
+-#endif
+-
+ /* --------------------------------------------------------------------------
+                                    Driver Model
+    -------------------------------------------------------------------------- */
+@@ -293,11 +196,6 @@ static int acpi_ac_probe(struct platform_device *pdev)
+ 	if (result)
+ 		goto end;
+ 
+-#ifdef CONFIG_ACPI_PROCFS_POWER
+-	result = acpi_ac_add_fs(ac);
+-	if (result)
+-		goto end;
+-#endif
+ 	ac->charger.name = acpi_device_bid(adev);
+ 	ac->charger.type = POWER_SUPPLY_TYPE_MAINS;
+ 	ac->charger.properties = ac_props;
+@@ -317,13 +215,9 @@ static int acpi_ac_probe(struct platform_device *pdev)
+ 	       acpi_device_name(adev), acpi_device_bid(adev),
+ 	       ac->state ? "on-line" : "off-line");
+ 
+-      end:
+-	if (result) {
+-#ifdef CONFIG_ACPI_PROCFS_POWER
+-		acpi_ac_remove_fs(ac);
+-#endif
++end:
++	if (result)
+ 		kfree(ac);
+-	}
+ 
+ 	dmi_check_system(ac_dmi_table);
+ 	return result;
+@@ -366,10 +260,6 @@ static int acpi_ac_remove(struct platform_device *pdev)
+ 	if (ac->charger.dev)
+ 		power_supply_unregister(&ac->charger);
+ 
+-#ifdef CONFIG_ACPI_PROCFS_POWER
+-	acpi_ac_remove_fs(ac);
+-#endif
+-
+ 	kfree(ac);
+ 
+ 	return 0;
+@@ -399,19 +289,9 @@ static int __init acpi_ac_init(void)
+ 	if (acpi_disabled)
+ 		return -ENODEV;
+ 
+-#ifdef CONFIG_ACPI_PROCFS_POWER
+-	acpi_ac_dir = acpi_lock_ac_dir();
+-	if (!acpi_ac_dir)
+-		return -ENODEV;
+-#endif
+-
+ 	result = platform_driver_register(&acpi_ac_driver);
+-	if (result < 0) {
+-#ifdef CONFIG_ACPI_PROCFS_POWER
+-		acpi_unlock_ac_dir(acpi_ac_dir);
+-#endif
++	if (result < 0)
+ 		return -ENODEV;
+-	}
+ 
+ 	return 0;
+ }
+@@ -419,9 +299,6 @@ static int __init acpi_ac_init(void)
+ static void __exit acpi_ac_exit(void)
+ {
+ 	platform_driver_unregister(&acpi_ac_driver);
+-#ifdef CONFIG_ACPI_PROCFS_POWER
+-	acpi_unlock_ac_dir(acpi_ac_dir);
+-#endif
+ }
+ module_init(acpi_ac_init);
+ module_exit(acpi_ac_exit);
+-- 
+1.8.2.1
 
