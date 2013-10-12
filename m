@@ -1,54 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752994Ab3JLSzn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Oct 2013 14:55:43 -0400
-Received: from imap.thunk.org ([74.207.234.97]:45241 "EHLO imap.thunk.org"
+	id S1752880Ab3JLTEn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Oct 2013 15:04:43 -0400
+Received: from mail.eperm.de ([89.247.134.16]:40295 "EHLO mail.eperm.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752612Ab3JLSzm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Oct 2013 14:55:42 -0400
-Date: Sat, 12 Oct 2013 14:55:39 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: torvalds@linux-foundation.org
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] ext4 bug fixes for 3.12
-Message-ID: <20131012185539.GA18630@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	torvalds@linux-foundation.org, linux-ext4@vger.kernel.org,
-	linux-kernel@vger.kernel.org
+	id S1752613Ab3JLTEm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Oct 2013 15:04:42 -0400
+From: Stephan Mueller <smueller@chronox.de>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Sandy Harris <sandyinchina@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux-crypto@vger.kernel.org
+Subject: Re: [PATCH] CPU Jitter RNG: inclusion into kernel crypto API and /dev/random
+Date: Sat, 12 Oct 2013 21:04:35 +0200
+Message-ID: <1868914.MfDRAbAfK8@tauon>
+User-Agent: KMail/4.11.2 (Linux/3.11.3-201.fc19.x86_64; KDE/4.11.2; x86_64; ; )
+In-Reply-To: <20131012032835.GC30680@thunk.org>
+References: <2579337.FPgJGgHYdz@tauon> <CACXcFm=qdv9ktjYDGo+L=ssh+tCs7vVniznNpXyWVTBSB1CMRg@mail.gmail.com> <20131012032835.GC30680@thunk.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit ad4eec613536dc7e5ea0c6e59849e6edca634d8b:
+Am Freitag, 11. Oktober 2013, 23:28:35 schrieb Theodore Ts'o:
 
-  ext4: allow specifying external journal by pathname mount option (2013-08-28 19:05:07 -0400)
+Hi Theodore,
 
-are available in the git repository at:
+>Hi Stephan,
+>
+>I haven't had a chance to look at your paper in detail, yet, but a
+>quick scan has found a huge red flag for me that puts the rest of your
+>analysis in severe doubt for me.
+>
+>You say that you got really good results and perfect statistical
+>entropy on a number of platforms, including on an MIPS embedded
+>system.  You also say that you are harvesting jitter by using
+>get_cycles() yes?
+>
+>Well, on the MIPS platform, here is the definition of get_cycles:
+>
+>static inline cycles_t get_cycles(void)
+>{
+>	return 0;
+>}
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git tags/ext4_for_linus_stable
+There are multiple catches to this issue:
 
-for you to fetch changes up to 6e4ea8e33b2057b85d75175dd89b93f5e26de3bc:
+- First, if the time gathering function does not work or is to coarse, 
+the function jent_entropy_init() returns an error. As outlined in 
+jitterentropy(3), the result of this function must be honored before 
+using the RNG.
 
-  ext4: fix memory leak in xattr (2013-10-12 14:39:49 -0400)
+- Second, the time stamp function of jent_get_nstime uses 
+__getnstimeofday in case get_cycles returns zero (see implementation of 
+jent_get_nstime()). On MIPS systems with missing get_cycles, the RNG 
+would use the __getnstimeofday() as get_cycles returns 0. When using the 
+RNG in user space, it calls clock_gettime(CLOCK_REALTIME) that is backed 
+by the same timer of__getnstimeofday on MIPS.
 
-----------------------------------------------------------------
-A bug fix and performance regression fix for ext4.
+Please consider the use of the jent_entropy_init function in the two 
+patches for /dev/random and kernel crypto API:
 
-----------------------------------------------------------------
-Dave Jones (1):
-      ext4: fix memory leak in xattr
+/dev/random:
 
-Jan Kara (1):
-      ext4: fix performance regression in writeback of random writes
++               /* we are uninitialized, try to initialize */
++               if(jent_entropy_init())
++               {
++                       /* there is no CPU Jitter, disable the entropy 
+collector */
++                       r->jent_enable = 0;
++                       return;
++               }
 
- fs/ext4/inode.c | 2 +-
- fs/ext4/xattr.c | 2 ++
- 2 files changed, 3 insertions(+), 1 deletion(-)
 
+kernel crypto API:
+
+static int __init jent_drng_init(void)
+{
+...
+        ret = jent_entropy_init();
+        if(ret)
+        {
+                printk(DRIVER_NAME ": Initialization failed with host 
+not compliant with requirements: %d\n", ret);
+                return -EFAULT;
+        }
+
+>
+>So if you are getting great entropy results when in effect you
+>couldn't possibly be harvesting any jitter at all, then something is
+>really, Really, REALLY wrong with your tests.
+>
+>One might be that you are just getting great statistical results
+>because of the whitening step.  This is why I have very little faith
+
+There is *no* whitening function (cryptographic or otherwise) involved 
+in the generation of random data. All is done by harvesting time deltas 
+and align them appropriately. This is the sole reason why the heart of 
+the RNG is only 30 lines of code.
+
+I have added arguments about broken time stamp collections in section 
+4.3 of the documentation in [2]. These anti tests clearly show that 
+broken time stamps would be immediately visible and not disguised by 
+some whitening function.
+
+Note, the testing of the 200+ systems is tone by measuring the jitter of 
+the core of the RNG. The measurement is logically similar to measure the 
+different add_*_randomness functions for random.c. Thus, even the logic 
+to arrange the timing values to a random value bit stream does not 
+affect the measurements.
+
+>in statistical tests of randomness, given that they will return
+>perfect results for the following "random number generator"
+>
+>	AES_ENCRYPT(i++, NSA_KEY)
+>
+>Regards,
+>
+>					- Ted
+
+
+Ciao
+Stephan
