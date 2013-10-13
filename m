@@ -1,76 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754637Ab3JMLR3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Oct 2013 07:17:29 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:37982 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754231Ab3JMLR1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Oct 2013 07:17:27 -0400
-Date: Sun, 13 Oct 2013 04:17:16 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>, peterz@infradead.org,
-        fweisbec@gmail.com, dhowells@redhat.com, edumazet@google.com,
-        gaofeng@cn.fujitsu.com, mingo@kernel.org,
-        bridge@lists.linux-foundation.org, jmorris@namei.org,
-        dipankar@in.ibm.com, darren@dvhart.com, rostedt@goodmis.org,
-        niv@us.ibm.com, mathieu.desnoyers@efficios.com, kuznet@ms2.inr.ac.ru,
-        tglx@linutronix.de, johannes@sipsolutions.net, laijs@cn.fujitsu.com,
-        yoshfuji@linux-ipv6.org, netdev@vger.kernel.org,
-        linux-decnet-user@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        kaber@trash.net, stephen@networkplumber.org, sbw@mit.edu,
-        tgraf@suug.ch, akpm@linux-foundation.org, fengguang.wu@intel.com,
-        davem@davemloft.net
-Subject: Re: [Bridge] [PATCH v3 tip/core/rcu 0/14] Sparse-related updates for
- 3.13
-Message-ID: <20131013111716.GG5790@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20131011231659.GA28062@linux.vnet.ibm.com>
- <20131012065326.GG15339@leaf>
- <20131012171345.GB5790@linux.vnet.ibm.com>
- <20131012173930.GD20321@order.stressinduktion.org>
- <20131012174354.GE20321@order.stressinduktion.org>
+	id S1754412Ab3JMLhJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Oct 2013 07:37:09 -0400
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:41923 "EHLO
+	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754285Ab3JMLhF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Oct 2013 07:37:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=message-id:date
+	:from:mime-version:to:cc:subject:references:in-reply-to
+	:content-type:content-transfer-encoding; q=dns; s=sasl; b=amkrpI
+	0ICEM8dBsfK8zWNetaiKjdgWkNxuuGdSJv1MaMNmINrJ1dOqhztvUYcjLPyzhGTV
+	5O8DAhjHFfO46kaucVWmsSjPb9ZA614hOYHTOFeMEqYXgn9M3zMVUv6XPXC7yjtz
+	ppd1OC5a9fz1oG3ib3ZRtE2vPzlKIcxbVci84=
+Message-ID: <525A85D6.3090608@pobox.com>
+Date: Sun, 13 Oct 2013 20:36:54 +0900
+From: Shinya Kuribayashi <skuribay@pobox.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131012174354.GE20321@order.stressinduktion.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13101311-8236-0000-0000-000002AD11EB
+To: rmallon@gmail.com, mika.westerberg@linux.intel.com,
+        Romain.Baeriswyl@abilis.com
+CC: wsa@the-dreams.de, rob.herring@calxeda.com, pawel.moll@arm.com,
+        mark.rutland@arm.com, swarren@wwwdotorg.org,
+        ijc+devicetree@hellion.org.uk, rob@landley.net,
+        pierrick.hascoet@abilis.com, vgupta@synopsys.com,
+        christian.ruppert@abilis.com, chiau.ee.chew@intel.com,
+        khali@linux-fr.org, rafael.j.wysocki@intel.com,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
+        romainba@abilis.com
+Subject: Re: [PATCH 1/2] i2c designware make SCL and SDA falling time configurable
+References: <20130828153429.GB7066@ab42.lan> <1381244455-3836-1-git-send-email-romainba@abilis.com> <20131009075538.GQ3521@intel.com> <5255FAB5.7080803@gmail.com>
+In-Reply-To: <5255FAB5.7080803@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Pobox-Relay-ID: C642CB30-33FB-11E3-914A-8F264F2CC097-47602734!b-pb-sasl-quonix.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 12, 2013 at 07:43:54PM +0200, Hannes Frederic Sowa wrote:
-> On Sat, Oct 12, 2013 at 07:39:30PM +0200, Hannes Frederic Sowa wrote:
-> > On Sat, Oct 12, 2013 at 10:13:45AM -0700, Paul E. McKenney wrote:
-> > > On Fri, Oct 11, 2013 at 11:53:27PM -0700, Josh Triplett wrote:
-> > > > On Fri, Oct 11, 2013 at 04:16:59PM -0700, Paul E. McKenney wrote:
-> > > > > Changes from v2:
-> > > > > 
-> > > > > o	Switch from rcu_assign_pointer() to ACCESS_ONCE() given that
-> > > > > 	the pointers are all --rcu and already visible to readers,
-> > > > > 	as suggested by Eric Dumazet and Josh Triplett.
-> > > > 
-> > > > Hang on a moment.  Do *none* of these cases need write memory barriers?
-> > > 
-> > > Sigh.  Some afternoons it doesn't pay to touch the keyboard.
-> > > 
-> > > Thank you for catching this.  I will fix, but at this point, I am thinking
-> > > in terms of 3.14 rather than 3.13 for this series.
-> > 
-> > Some of them looked safe. You could also replace --rcu with __rcu in the
-> > comments while at it.
-> 
-> Most of them deal with management, maybe a rtnl_assign_pointer with lockdep
-> check for rtnl lock could help to not clean up the wrong bits.
-> 
-> I don't know if rtnl_assign_pointer is that a could name as it does not really
-> explain why the barrier is not needed there. :/
+On 10/10/13 9:54 AM, Ryan Mallon wrote:
+> On 09/10/13 18:55, Mika Westerberg wrote:
+>> On Tue, Oct 08, 2013 at 05:00:54PM +0200, Romain Baeriswyl wrote:
+>>> @@ -307,15 +309,25 @@ int i2c_dw_init(struct dw_i2c_dev *dev)
+>>>
+>>>   	/* set standard and fast speed deviders for high/low periods */
+>>>
+>>> +	if (dev->sda_falling_time)
+>>> +		sda_falling_time = dev->sda_falling_time;
+>>> +	else
+>>> +		sda_falling_time = 300; /* ns */
+>>
+>> I think this looks better:
+>>
+>> 	sda_falling_time = dev->sda_falling_time ? dev->sda_falling_time : 300;
+>
+> You can also use the gcc-ism, which is a bit more concise:
+>
+> 	sda_falling_time = dev->sda_falling_time ?: 300;
 
-Beyond a certain point, I need to let people who know more about Linux's
-networking implementation handle this sort of thing.
-
-							Thanx, Paul
++1
 
