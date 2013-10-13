@@ -1,47 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753155Ab3JLXMM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Oct 2013 19:12:12 -0400
-Received: from nm32-vm4.bullet.mail.bf1.yahoo.com ([72.30.239.140]:26197 "EHLO
-	nm32-vm4.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752800Ab3JLXML convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Oct 2013 19:12:11 -0400
-X-Greylist: delayed 425 seconds by postgrey-1.27 at vger.kernel.org; Sat, 12 Oct 2013 19:12:11 EDT
-X-Yahoo-Newman-Property: ymail-4
-X-Yahoo-Newman-Id: 306002.73735.bm@omp1036.mail.bf1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=hszW+A1X1bB4R4DKjSWlWjy6qFarhY4o8OzL7qzY9dw+fVN6SR2XO6OqgbgFjHNlKcjWOFI8wAvKgToV54W5pV/d1kV691g9Sq8Y+Yb8fdeQIv4HpjtIkvQTlJcnsK9nAHTy2QidYecF4PcVHB5BWIjWLv0+q5Hcfa6COk+yk4Q=;
-X-YMail-OSG: Yu8pH1EVM1nmfibZUU0OzqWmdMV9zr0xZWKoTjY6xLqpULQ
- z0wllrE28J9SFMh3hEKFEmRgrZmmjLSteXN.BZw--
-X-Rocket-MIMEInfo: 002.001,CgpHcmVldGluZ3MhSSBhbSBuZXcgdG8ga3ZtIGFuZCBhcmUgd3JpdGluZyBhIHB5dGhvbiBzY3JpcHQgdG8gZ2V0IHRoZSBudW1iZXIgb2YgcHJlLWNvcHkgY3ljbGVzIGR1cmluZyBhIHJlbW90ZSB2bSBtaWdyYXRpb24gZ2l2ZW4gbWVtb3J5IHNpemUgTcKgIG9mIGEgVk0gaW4gTUIsIHRoZSBwYWdlIGRpcnR5IHJhdGUgUiBvZiBhIHZtIGluIE1CL3MuIE15IHF1ZXN0aW9uIGlzIG9uIApob3cgdG8gZ2V0IHRoZSBwYWdlIGRpcnR5IHJhdGUuIERvZXMga3ZtIHByb3ZpZGUgYSBkaXJ0eSBwYWdlIApsb2cgZmEBMAEBAQE-
-X-Mailer: YahooMailWebService/0.8.160.587
-Message-ID: <1381619103.81760.YahooMailNeo@web163102.mail.bf1.yahoo.com>
-Date: Sat, 12 Oct 2013 16:05:03 -0700 (PDT)
-From: hellen maziku <nahelna@yahoo.com>
-Reply-To: hellen maziku <nahelna@yahoo.com>
-Subject: KVM Dirty Page Log Facility
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753337Ab3JMAN7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Oct 2013 20:13:59 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:50946 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752922Ab3JMAN6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Oct 2013 20:13:58 -0400
+From: baker.kernel@gmail.com
+To: davem@davemloft.net
+Cc: kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "baker.zhang" <baker.kernel@gmail.com>
+Subject: [PATCH net-next] fib_trie: remove duplicated rcu lock
+Date: Sun, 13 Oct 2013 08:13:37 +0800
+Message-Id: <1381623217-5883-1-git-send-email-baker.kernel@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: "baker.zhang" <baker.kernel@gmail.com>
 
+fib_table_lookup has included the rcu lock protection.
 
-Greetings!I am new to kvm and are writing a python script to get the number of pre-copy cycles during a remote vm migration given memory size M  of a VM in MB, the page dirty rate R of a vm in MB/s. My question is on 
-how to get the page dirty rate. Does kvm provide a dirty page 
-log facility that provides user space with a bitmap of modified pages 
-since the last call? And if yes, please kindly direct me on how to get 
-started. I have searched and come across things like
+Signed-off-by: baker.zhang <baker.kernel@gmail.com>
+---
+ net/ipv4/fib_frontend.c | 4 ----
+ 1 file changed, 4 deletions(-)
 
-int kvm_get_dirty_log(struct kvm *kvm, struct kvm_dirty_log *log int *is_dirty)
-
-I do not know if this is what I should use and if so how  I could go about to implement it. 
-
-Thank you very much,
+diff --git a/net/ipv4/fib_frontend.c b/net/ipv4/fib_frontend.c
+index b3f627a..0e9127d 100644
+--- a/net/ipv4/fib_frontend.c
++++ b/net/ipv4/fib_frontend.c
+@@ -170,12 +170,10 @@ static inline unsigned int __inet_dev_addr_type(struct net *net,
+ 	local_table = fib_get_table(net, RT_TABLE_LOCAL);
+ 	if (local_table) {
+ 		ret = RTN_UNICAST;
+-		rcu_read_lock();
+ 		if (!fib_table_lookup(local_table, &fl4, &res, FIB_LOOKUP_NOREF)) {
+ 			if (!dev || dev == res.fi->fib_dev)
+ 				ret = res.type;
+ 		}
+-		rcu_read_unlock();
+ 	}
+ 	return ret;
+ }
+@@ -933,7 +931,6 @@ static void nl_fib_lookup(struct fib_result_nl *frn, struct fib_table *tb)
+ 		local_bh_disable();
+ 
+ 		frn->tb_id = tb->tb_id;
+-		rcu_read_lock();
+ 		frn->err = fib_table_lookup(tb, &fl4, &res, FIB_LOOKUP_NOREF);
+ 
+ 		if (!frn->err) {
+@@ -942,7 +939,6 @@ static void nl_fib_lookup(struct fib_result_nl *frn, struct fib_table *tb)
+ 			frn->type = res.type;
+ 			frn->scope = res.scope;
+ 		}
+-		rcu_read_unlock();
+ 		local_bh_enable();
+ 	}
+ }
+-- 
+1.8.1.2
 
