@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754286Ab3JMMx5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Oct 2013 08:53:57 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:43540 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751165Ab3JMMx4 (ORCPT
+	id S1754196Ab3JMOUu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Oct 2013 10:20:50 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:59978 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750855Ab3JMOUs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Oct 2013 08:53:56 -0400
-Date: Sun, 13 Oct 2013 08:53:44 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, sebastien.dugue@bull.net,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org
-Subject: Re: [PATCH] x86: Run checksumming in parallel accross multiple alu's
-Message-ID: <20131013125344.GC9286@neilslaptop.think-freely.org>
-References: <1381510298-20572-1-git-send-email-nhorman@tuxdriver.com>
- <5259CD44.2000200@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5259CD44.2000200@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
+	Sun, 13 Oct 2013 10:20:48 -0400
+From: Jiang Liu <liuj97@gmail.com>
+To: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: Jiang Liu <liuj97@gmail.com>
+Subject: [RFT PATCH v2 1/4] arm64: fix possible invalid FPSIMD initialization state
+Date: Sun, 13 Oct 2013 22:20:17 +0800
+Message-Id: <1381674029-430-1-git-send-email-liuj97@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 12, 2013 at 03:29:24PM -0700, H. Peter Anvin wrote:
-> On 10/11/2013 09:51 AM, Neil Horman wrote:
-> > Sébastien Dugué reported to me that devices implementing ipoib (which don't have
-> > checksum offload hardware were spending a significant amount of time computing
-> > checksums.  We found that by splitting the checksum computation into two
-> > separate streams, each skipping successive elements of the buffer being summed,
-> > we could parallelize the checksum operation accros multiple alus.  Since neither
-> > chain is dependent on the result of the other, we get a speedup in execution (on
-> > hardware that has multiple alu's available, which is almost ubiquitous on x86),
-> > and only a negligible decrease on hardware that has only a single alu (an extra
-> > addition is introduced).  Since addition in commutative, the result is the same,
-> > only faster
-> 
-> On hardware that implement ADCX/ADOX then you should also be able to
-> have additional streams interleaved since those instructions allow for
-> dual carry chains.
-> 
-Ok, thats a good idea, I'll look into those instructions this week
-Neil
+From: Jiang Liu <jiang.liu@huawei.com>
 
-> 	-hpa
-> 
-> 
-> 
-> 
+If context switching happens during executing fpsimd_flush_thread(),
+stale value in FPSIMD registers will be saved into current thread's
+fpsimd_state by fpsimd_thread_switch(). That may cause invalid
+initialization state for the new process, so disable preemption
+when executing fpsimd_flush_thread().
+
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Cc: Jiang Liu <liuj97@gmail.com>
+---
+ arch/arm64/kernel/fpsimd.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/arm64/kernel/fpsimd.c b/arch/arm64/kernel/fpsimd.c
+index 1f2e4d5..bb785d2 100644
+--- a/arch/arm64/kernel/fpsimd.c
++++ b/arch/arm64/kernel/fpsimd.c
+@@ -80,8 +80,10 @@ void fpsimd_thread_switch(struct task_struct *next)
+ 
+ void fpsimd_flush_thread(void)
+ {
++	preempt_disable();
+ 	memset(&current->thread.fpsimd_state, 0, sizeof(struct fpsimd_state));
+ 	fpsimd_load_state(&current->thread.fpsimd_state);
++	preempt_enable();
+ }
+ 
+ #ifdef CONFIG_KERNEL_MODE_NEON
+-- 
+1.8.1.2
+
