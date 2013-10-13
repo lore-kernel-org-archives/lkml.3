@@ -1,96 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755320Ab3JMULG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Oct 2013 16:11:06 -0400
-Received: from order.stressinduktion.org ([87.106.68.36]:60247 "EHLO
-	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755103Ab3JMULE (ORCPT
+	id S1755334Ab3JMUMl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Oct 2013 16:12:41 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46078 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755096Ab3JMUMj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Oct 2013 16:11:04 -0400
-Date: Sun, 13 Oct 2013 22:11:02 +0200
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu, "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
-Subject: Re: [PATCH v2 tip/core/rcu 07/13] ipv6/ip6_tunnel: Apply rcu_access_pointer() to avoid sparse false positive
-Message-ID: <20131013201102.GD14021@order.stressinduktion.org>
-Mail-Followup-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-	Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-	Eric Dumazet <eric.dumazet@gmail.com>,
-	Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
-	mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-	akpm@linux-foundation.org, niv@us.ibm.com, tglx@linutronix.de,
-	peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-	edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-	sbw@mit.edu, "David S. Miller" <davem@davemloft.net>,
-	Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-	James Morris <jmorris@namei.org>,
-	Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-	Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
-References: <20131009225617.GH11709@jtriplet-mobl1> <20131010002833.GJ5790@linux.vnet.ibm.com> <20131010020422.GB24368@order.stressinduktion.org> <20131010190532.GQ5790@linux.vnet.ibm.com> <20131012022508.GA20321@order.stressinduktion.org> <20131012075336.GA5790@linux.vnet.ibm.com> <20131012164345.GB20321@order.stressinduktion.org> <20131012173734.GC20321@order.stressinduktion.org> <1882655271.38519.1381606938076.JavaMail.zimbra@efficios.com> <20131013111439.GE5790@linux.vnet.ibm.com>
+	Sun, 13 Oct 2013 16:12:39 -0400
+Message-ID: <1381695143.1301.96.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [GIT PULL] firmware: wl1251 firmware binary
+From: Ben Hutchings <ben@decadent.org.uk>
+To: balbi@ti.com
+Cc: dwmw2@infradead.org, Luca Coelho <luca@coelho.fi>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-wireless@vger.kernel.org, Pavel Machek <pavel@denx.de>
+Date: Sun, 13 Oct 2013 21:12:23 +0100
+In-Reply-To: <20131002125535.GL1476@radagast>
+References: <1380033894-5007-1-git-send-email-balbi@ti.com>
+	 <1380107096.4503.8.camel@porter.coelho.fi>
+	 <1380107278.4503.9.camel@porter.coelho.fi>
+	 <20130925132359.GE10746@radagast>
+	 <1380116535.4503.19.camel@porter.coelho.fi>
+	 <20130925135943.GI10746@radagast> <20131002125535.GL1476@radagast>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-DBu59udU/X2je7iwaB8D"
+X-Mailer: Evolution 3.8.5-2 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20131013111439.GE5790@linux.vnet.ibm.com>
+X-SA-Exim-Connect-IP: 192.168.4.101
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 13, 2013 at 04:14:39AM -0700, Paul E. McKenney wrote:
-> On Sat, Oct 12, 2013 at 07:42:18PM +0000, Mathieu Desnoyers wrote:
-> > ----- Original Message -----
-> > > On Sat, Oct 12, 2013 at 06:43:45PM +0200, Hannes Frederic Sowa wrote:
-> > > > Regarding the volatile access, I hope that the C11 memory model
-> > > > and enhancements to the compiler will some day provide a better
-> > > > way to express the semantics of what is tried to express here
-> > > > (__atomic_store_n/__atomic_load_n with the accompanied memory model,
-> > > > which could be even weaker to what a volatile access would enfore
-> > > > now and could guarantee atomic stores/loads).
-> > > 
-> > > I just played around a bit more. Perhaps we could try to warn of silly
-> > > usages of ACCESS_ONCE():
-> > > 
-> > > --- a/include/linux/compiler.h
-> > > +++ b/include/linux/compiler.h
-> > > @@ -349,7 +349,11 @@ void ftrace_likely_update(struct ftrace_branch_data *f,
-> > > int val, int expect);
-> > >   * use is to mediate communication between process-level code and irq/NMI
-> > >   * handlers, all running on the same CPU.
-> > >   */
-> > > -#define ACCESS_ONCE(x) (*(volatile typeof(x) *)&(x))
-> > > +#define ACCESS_ONCE(x) (*({						\
-> > > +		compiletime_assert(sizeof(typeof(x)) <= sizeof(typeof(&x)), \
-> > > +				   "ACCESS_ONCE likely not atomic");	\
-> > 
-> > AFAIU, ACCESS_ONCE() is not meant to ensure atomicity of load/store,
-> > but rather merely ensures that the compiler will not merge nor refetch
-> > accesses. I don't think the assert check you propose is appropriate with
-> > respect to the ACCESS_ONCE() semantic.
-> 
-> I am with Mathieu on this one, at least unless there is some set of actual
-> bugs already in the kernel that these length checks would find.
 
-I guess my wording of "ACCESS_ONCE likely not atomic" was misplaced. Something
-like volatile access to memory larger than the processor register size is
-probably not what you intended. Use atomics or proper locking. ;)
-And maybe that is not even correct.
+--=-DBu59udU/X2je7iwaB8D
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> /me wonders about structs of size 3, 5, 6, and 7...
+On Wed, 2013-10-02 at 07:55 -0500, Felipe Balbi wrote:
+> Hi,
+>=20
+> here's a pull request for wl4 firmware. I'll send a patch for wl1251
+> driver updating firmware load path.
+>=20
+> The following changes since commit b8ac7c7e27dcd13fa3c843aaf62457e9c57ea4=
+db:
+>=20
+>   linux-firmware: Add Brocade FC/FCOE Adapter firmware files (2013-09-30 =
+04:53:32 +0100)
+>=20
+> are available in the git repository at:
+>=20
+>   git://git.kernel.org/pub/scm/linux/kernel/git/balbi/linux-firmware.git =
+wilink4
+>=20
+> for you to fetch changes up to d726804dbc8dad88587b6be17716714cd91ed86c:
+>=20
+>   ti-connectivity: add wl1251 firmware and license (2013-10-02 06:55:39 -=
+0500)
+>=20
+> ----------------------------------------------------------------
+> Felipe Balbi (1):
+>       ti-connectivity: add wl1251 firmware and license
+>=20
+>  LICENCE.wl1251                 |  59 +++++++++++++++++++++++++++++++++++=
+++++++
+>  WHENCE                         |  18 +++++++++++++
+>  ti-connectivity/wl1251-fw.bin  | Bin 0 -> 194180 bytes
+>  ti-connectivity/wl1251-nvs.bin | Bin 0 -> 752 bytes
+>  4 files changed, 77 insertions(+)
+>  create mode 100644 LICENCE.wl1251
+>  create mode 100644 ti-connectivity/wl1251-fw.bin
+>  create mode 100644 ti-connectivity/wl1251-nvs.bin
 
-Checked a x86_64 allyesconfig build with sizes above pointer size and odd
-parity and nothing broke.
+Pulled, thanks.
 
-Greetings,
+Ben.
 
-  Hannes
+--=20
+Ben Hutchings
+Beware of bugs in the above code;
+I have only proved it correct, not tried it. - Donald Knuth
 
+--=-DBu59udU/X2je7iwaB8D
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIVAwUAUlr+p+e/yOyVhhEJAQp9zA/5ASDBSdmJ1UepzrtukikLusUFRMOTZ7Pd
+V/tYpwhMCn7ODZd1VjP/Zeb7sZViOKMBdleiiI0zBRyLK4IX9Fpf0jIhSm+4TxEc
++Ls7pLid3BptfGi+m4Qbars/v4Fh3BVZ5OKAovQ4aZbYFDJevTLEMEUGHpEk+tkK
+AJLV6C/dLYjVXklQGkNvfp9dBMhnXUbHZSt01XkHwJg8W8mdgb2KsczcVtYDKlpz
+bJeRW49zOnkLW7LZVzE536f1EayQ0/a4ODUflxILkUdNHHsHoxE6gP1tLAPDZx3I
+AjK2aFnbxnyqU4vqkBNbUKrNOVQjdXO4EsbqRYKShJNMywiA38Pmrj5cehy1AKlu
+bqUWflabEDqOeNdv+VhPRBvds6mrHlDEY2uKRWmRUwIoFH7OZ0z8ZNe/gIQj253s
+Y29LX2rqD/pVIzXkXhsj/RssksnPHdHLxRCu0+KrVclFRFRB0aU7desX9Md5AuOn
+5uqPsc6n3l8cpOLXMbz9np2tn1QOa7zI0gZn8M3NrqnCLS3YvjpiGKjqn58Ioxq1
+qkQbA/KuzSsg9hu00jNmsgbSVx+bLrPzMfkGfZIWoA6XR/VJ/z5E0UrbYetqQfL7
++zUcdXmkfcWHpDArwiMl052FGU8NrqSdB1B3a2rVSTehzQ8CqYevjQVPBdNO9wic
+wQA2ekfAsnc=
+=E/CI
+-----END PGP SIGNATURE-----
+
+--=-DBu59udU/X2je7iwaB8D--
