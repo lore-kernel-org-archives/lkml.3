@@ -1,112 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755235Ab3JMTZw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Oct 2013 15:25:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41728 "EHLO mx1.redhat.com"
+	id S1755353Ab3JMT3M (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Oct 2013 15:29:12 -0400
+Received: from mail.tpi.com ([74.45.170.26]:39007 "EHLO mail.tpi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755158Ab3JMTZh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Oct 2013 15:25:37 -0400
-Date: Sun, 13 Oct 2013 21:18:31 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Anton Arapov <aarapov@redhat.com>, David Smith <dsmith@redhat.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Martin Cermak <mcermak@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+	id S1755099Ab3JMT3L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Oct 2013 15:29:11 -0400
+From: Tim Gardner <tim.gardner@canonical.com>
+To: linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/5] uprobes: Change the callsite of uprobe_copy_process()
-Message-ID: <20131013191831.GA32480@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131013191815.GA32466@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Cc: Tim Gardner <tim.gardner@canonical.com>, Steve French <sfrench@samba.org>
+Subject: [PATCH 3.12-rc4] cifs: ntstatus_to_dos_map[] is not terminated
+Date: Sun, 13 Oct 2013 13:29:03 -0600
+Message-Id: <1381692543-41226-1-git-send-email-tim.gardner@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Preparation for the next patches.
+Functions that walk the ntstatus_to_dos_map[] array could
+run off the end. For example, ntstatus_to_dos() loops
+while ntstatus_to_dos_map[].ntstatus is not 0. Granted,
+this is mostly theoretical, but could be used as a DOS attack
+if the error code in the SMB header is bogus.
 
-Move the callsite of uprobe_copy_process() in copy_process() down
-to the succesfull return. We do not care if copy_process() fails,
-uprobe_free_utask() won't be called in this case so the wrong
-->utask != NULL doesn't matter.
-
-OTOH, with this change we know that copy_process() can't fail when
-uprobe_copy_process() is called, the new task should either return
-to user-mode or call do_exit(). This way uprobe_copy_process() can:
-
-	1. setup p->utask != NULL if necessary
-
-	2. setup uprobes_state.xol_area
-
-	3. use task_work_add(p)
-
-Also, move the definition of uprobe_copy_process() down so that it
-can see get_utask().
-
-Cc: stable@vger.kernel.org # 3.9+
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Cc: Steve French <sfrench@samba.org>
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
 ---
- kernel/events/uprobes.c |   16 ++++++++--------
- kernel/fork.c           |    2 +-
- 2 files changed, 9 insertions(+), 9 deletions(-)
+ fs/cifs/netmisc.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index ad8e1bd..db7a1dc 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -1345,14 +1345,6 @@ void uprobe_free_utask(struct task_struct *t)
- }
+diff --git a/fs/cifs/netmisc.c b/fs/cifs/netmisc.c
+index af847e1..651a527 100644
+--- a/fs/cifs/netmisc.c
++++ b/fs/cifs/netmisc.c
+@@ -780,7 +780,9 @@ static const struct {
+ 	ERRDOS, ERRnoaccess, 0xc0000290}, {
+ 	ERRDOS, ERRbadfunc, 0xc000029c}, {
+ 	ERRDOS, ERRsymlink, NT_STATUS_STOPPED_ON_SYMLINK}, {
+-	ERRDOS, ERRinvlevel, 0x007c0001}, };
++	ERRDOS, ERRinvlevel, 0x007c0001}, {
++	0, 0, 0 }
++};
  
- /*
-- * Called in context of a new clone/fork from copy_process.
-- */
--void uprobe_copy_process(struct task_struct *t)
--{
--	t->utask = NULL;
--}
--
--/*
-  * Allocate a uprobe_task object for the task if if necessary.
-  * Called when the thread hits a breakpoint.
-  *
-@@ -1368,6 +1360,14 @@ static struct uprobe_task *get_utask(void)
- }
- 
- /*
-+ * Called in context of a new clone/fork from copy_process.
-+ */
-+void uprobe_copy_process(struct task_struct *t)
-+{
-+	t->utask = NULL;
-+}
-+
-+/*
-  * Current area->vaddr notion assume the trampoline address is always
-  * equal area->vaddr.
-  *
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 086fe73..d3603b8 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1373,7 +1373,6 @@ static struct task_struct *copy_process(unsigned long clone_flags,
- 	INIT_LIST_HEAD(&p->pi_state_list);
- 	p->pi_state_cache = NULL;
- #endif
--	uprobe_copy_process(p);
- 	/*
- 	 * sigaltstack should be cleared when sharing the same VM
- 	 */
-@@ -1490,6 +1489,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
- 	perf_event_fork(p);
- 
- 	trace_task_newtask(p, clone_flags);
-+	uprobe_copy_process(p);
- 
- 	return p;
- 
+ /*****************************************************************************
+  Print an error message from the status code
 -- 
-1.5.5.1
+1.7.9.5
 
