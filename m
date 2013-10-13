@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753986Ab3JMIiQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Oct 2013 04:38:16 -0400
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:52089 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753566Ab3JMIiO (ORCPT
+	id S1753965Ab3JMItp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Oct 2013 04:49:45 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:45759 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753152Ab3JMItn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Oct 2013 04:38:14 -0400
-From: Stefan Beller <stefanbeller@googlemail.com>
-To: tytso@mit.edu, linux-kernel@vger.kernel.org, arnd@arndb.de,
-        gregkh@linuxfoundation.org
-Cc: Stefan Beller <stefanbeller@googlemail.com>
-Subject: [PATCH] random.c: fix a typo in comments
-Date: Sun, 13 Oct 2013 10:38:35 +0200
-Message-Id: <1381653515-19908-1-git-send-email-stefanbeller@googlemail.com>
-X-Mailer: git-send-email 1.8.4.1.471.g53f64e4.dirty
+	Sun, 13 Oct 2013 04:49:43 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAHR064ge8zew7uMeD+_LXR3ju5ARGG1y8utLOFzOLexny_DPLA@mail.gmail.com>
+References: <1381236524-19633-1-git-send-email-felipe.contreras@gmail.com>
+	<CAHR064ge8zew7uMeD+_LXR3ju5ARGG1y8utLOFzOLexny_DPLA@mail.gmail.com>
+Date: Sun, 13 Oct 2013 03:49:41 -0500
+Message-ID: <CAMP44s3KVJwTwpxG14k22Q47UXGYFHLQ9ZmWcEdHWiUkbahoaA@mail.gmail.com>
+Subject: Re: [PATCH v2] platform: x86: asus-wmi: add fan control
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Corentin Chary <corentin.chary@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        acpi4asus-user <acpi4asus-user@lists.sourceforge.net>,
+        Linux PM <linux-pm@vger.kernel.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Also removes (trailing) tabs from an empty line.
+On Thu, Oct 10, 2013 at 10:59 AM, Corentin Chary
+<corentin.chary@gmail.com> wrote:
+>
+>
+>
+> On Tue, Oct 8, 2013 at 1:48 PM, Felipe Contreras
+> <felipe.contreras@gmail.com> wrote:
+>>
+>> Simple driver to enable control of the fan in ASUS laptops. So far this
+>> has only been tested in ASUS Zenbook Prime UX31A, but according to some
+>> online reference [1], it should work in other models as well.
+>>
+>> The implementation is very straight-forward, the only caveat is that the
+>> fan speed needs to be saved after it has been manually changed because
+>> it won't be reported properly until it goes back to 'auto' mode.
+>
+> This doesn't really seems to be related to wmi, and is likely to be
+> available only on a subset of models. Maybe it should a separate driver
+> instead ?
 
-Signed-off-by: Stefan Beller <stefanbeller@googlemail.com>
----
- drivers/char/random.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+The first patch I sent was standalone, and you said it should be wmi,
+and now I do it wmi, and you said it should be separate. Which is it?
 
-diff --git a/drivers/char/random.c b/drivers/char/random.c
-index 57d4b15..294a59c 100644
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -385,7 +385,7 @@ static struct poolinfo {
-  * modulo the generator polymnomial.  Now, for random primitive polynomials,
-  * this is a universal class of hash functions, meaning that the chance
-  * of a collision is limited by the attacker's knowledge of the generator
-- * polynomail, so if it is chosen at random, an attacker can never force
-+ * polynomial, so if it is chosen at random, an attacker can never force
-  * a collision.  Here, we use a fixed polynomial, but we *can* assume that
-  * ###--> it is unknown to the processes generating the input entropy. <-###
-  * Because of this important property, this is a good, collision-resistant
-@@ -1073,7 +1073,7 @@ void get_random_bytes_arch(void *buf, int nbytes)
- 
- 		if (!arch_get_random_long(&v))
- 			break;
--		
-+
- 		memcpy(p, &v, chunk);
- 		p += chunk;
- 		nbytes -= chunk;
 -- 
-1.8.4.1.471.g53f64e4.dirty
-
+Felipe Contreras
