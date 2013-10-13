@@ -1,155 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754708Ab3JMOWt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Oct 2013 10:22:49 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:50160 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754536Ab3JMOWr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Oct 2013 10:22:47 -0400
-From: Jiang Liu <liuj97@gmail.com>
-To: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        Javi Merino <javi.merino@arm.com>, Marc Zyngier <marc.zyngier@arm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Jiang Liu <liuj97@gmail.com>
-Subject: [RFT PATCH v2 4/4] arm64: reuse FPSIMD hardware context if possible
-Date: Sun, 13 Oct 2013 22:20:20 +0800
-Message-Id: <1381674029-430-4-git-send-email-liuj97@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1381674029-430-1-git-send-email-liuj97@gmail.com>
-References: <1381674029-430-1-git-send-email-liuj97@gmail.com>
+	id S1754335Ab3JMOpu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Oct 2013 10:45:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56388 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753550Ab3JMOpt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Oct 2013 10:45:49 -0400
+Message-ID: <1381675529.2796.86.camel@ul30vt.home>
+Subject: Re: [PATCH] VFIO: vfio_iommu_type1: fix bug caused by break in
+ nested loop
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Antonios Motakis <a.motakis@virtualopensystems.com>
+Cc: "open list:VFIO DRIVER" <kvm@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>, kvmarm@lists.cs.columbia.edu,
+        iommu@lists.linux-foundation.org, tech@virtualopensystems.com,
+        agraf@suse.de, B08248@freescale.com
+Date: Sun, 13 Oct 2013 08:45:29 -0600
+In-Reply-To: <1381506452-2069-1-git-send-email-a.motakis@virtualopensystems.com>
+References: <1381506452-2069-1-git-send-email-a.motakis@virtualopensystems.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiang Liu <jiang.liu@huawei.com>
+On Fri, 2013-10-11 at 17:47 +0200, Antonios Motakis wrote:
+> In vfio_iommu_type1.c there is a bug in vfio_dma_do_map, when checking
+> that pages are not already mapped. Since the check is being done in a
+> for loop nested within the main loop, breaking out of it does not create
+> the intended behavior. If the underlying IOMMU driver returns a non-NULL
+> value, this will be ignored and mapping the DMA range will be attempted
+> anyway, leading to unpredictable behavior.
+> 
+> This interracts badly with the ARM SMMU driver issue fixed in the patch
+> that was submitted with the title:
+> "[PATCH 2/2] ARM: SMMU: return NULL on error in arm_smmu_iova_to_phys"
+> Both fixes are required in order to use the vfio_iommu_type1 driver
+> with an ARM SMMU.
+> 
+> This patch refactors the function slightly, in order to also make this
+> kind of bug less likely.
+> 
+> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
+> ---
 
-Reuse FPSIMD hardware context if it hasn't been touched by other thread
-yet, so we can get rid of unnecessary FPSIMD context restores. This is
-especially useful when switching between kernel thread and user thread
-because kernel thread usaually doesn't touch FPSIMD registers.
+Thanks for fixing this.  Applied to my for-linus branch.  I'll try to
+get this in for 3.12.  Thanks,
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Jiang Liu <liuj97@gmail.com>
----
- arch/arm64/include/asm/fpsimd.h |  2 ++
- arch/arm64/kernel/fpsimd.c      | 35 +++++++++++++++++++++++++++++++++--
- arch/arm64/kernel/smp.c         |  1 +
- 3 files changed, 36 insertions(+), 2 deletions(-)
+Alex
 
-diff --git a/arch/arm64/include/asm/fpsimd.h b/arch/arm64/include/asm/fpsimd.h
-index 6f034082f..ab7bf61 100644
---- a/arch/arm64/include/asm/fpsimd.h
-+++ b/arch/arm64/include/asm/fpsimd.h
-@@ -35,6 +35,7 @@ struct fpsimd_state {
- 			__uint128_t vregs[32];
- 			u32 fpsr;
- 			u32 fpcr;
-+			int last_cpu;
- 		};
- 	};
- };
-@@ -56,6 +57,7 @@ struct task_struct;
- 
- extern void fpsimd_save_state(struct fpsimd_state *state);
- extern void fpsimd_load_state(struct fpsimd_state *state);
-+extern void fpsimd_reset_lazy_restore(void);
- 
- extern void fpsimd_dup_task_struct(struct task_struct *dst,
- 				   struct task_struct *src);
-diff --git a/arch/arm64/kernel/fpsimd.c b/arch/arm64/kernel/fpsimd.c
-index 604fe9f..b1b3b0e 100644
---- a/arch/arm64/kernel/fpsimd.c
-+++ b/arch/arm64/kernel/fpsimd.c
-@@ -22,6 +22,7 @@
- #include <linux/sched.h>
- #include <linux/signal.h>
- #include <linux/hardirq.h>
-+#include <linux/percpu.h>
- 
- #include <asm/fpsimd.h>
- #include <asm/cputype.h>
-@@ -33,6 +34,13 @@
- #define FPEXC_IXF	(1 << 4)
- #define FPEXC_IDF	(1 << 7)
- 
-+static DEFINE_PER_CPU(struct fpsimd_state *, fpsimd_owner);
-+
-+static inline void fpsimd_set_last_cpu(struct fpsimd_state *state, int cpu)
-+{
-+	state->last_cpu = cpu;
-+}
-+
- static inline void fpsimd_init_hw_state(void)
- {
- 	int val = AARCH64_FPCR_DEFAULT_VAL;
-@@ -83,19 +91,41 @@ void do_fpsimd_exc(unsigned int esr, struct pt_regs *regs)
- 	send_sig_info(SIGFPE, &info, current);
- }
- 
-+static void fpsimd_load_state_lazy(struct fpsimd_state *state)
-+{
-+	/* Could we reuse the hardware context? */
-+	if (state->last_cpu == smp_processor_id() &&
-+	    __this_cpu_read(fpsimd_owner) == state)
-+		return;
-+	fpsimd_load_state(state);
-+}
-+
-+static void fpsimd_save_state_lazy(struct fpsimd_state *state)
-+{
-+	fpsimd_save_state(state);
-+	fpsimd_set_last_cpu(state, smp_processor_id());
-+	__this_cpu_write(fpsimd_owner, state);
-+}
-+
-+void fpsimd_reset_lazy_restore(void)
-+{
-+	this_cpu_write(fpsimd_owner, NULL);
-+}
-+
- void fpsimd_dup_task_struct(struct task_struct *dst, struct task_struct *src)
- {
- 	fpsimd_save_state(&src->thread.fpsimd_state);
- 	*dst = *src;
-+	fpsimd_set_last_cpu(&dst->thread.fpsimd_state, -1);
- }
- 
- void fpsimd_thread_switch(struct task_struct *next)
- {
- 	/* check if not kernel threads */
- 	if (current->mm)
--		fpsimd_save_state(&current->thread.fpsimd_state);
-+		fpsimd_save_state_lazy(&current->thread.fpsimd_state);
- 	if (next->mm)
--		fpsimd_load_state(&next->thread.fpsimd_state);
-+		fpsimd_load_state_lazy(&next->thread.fpsimd_state);
- }
- 
- void fpsimd_flush_thread(void)
-@@ -107,6 +137,7 @@ void fpsimd_flush_thread(void)
- #if (AARCH64_FPCR_DEFAULT_VAL != 0)
- 	state->fpcr = AARCH64_FPCR_DEFAULT_VAL;
- #endif
-+	fpsimd_set_last_cpu(state, -1);
- 	fpsimd_load_state(state);
- 	preempt_enable();
- }
-diff --git a/arch/arm64/kernel/smp.c b/arch/arm64/kernel/smp.c
-index 78db90d..aae15c4 100644
---- a/arch/arm64/kernel/smp.c
-+++ b/arch/arm64/kernel/smp.c
-@@ -183,6 +183,7 @@ asmlinkage void secondary_start_kernel(void)
- 	 */
- 	cpu_set_reserved_ttbr0();
- 	flush_tlb_all();
-+	fpsimd_reset_lazy_restore();
- 
- 	preempt_disable();
- 	trace_hardirqs_off();
--- 
-1.8.1.2
+>  drivers/vfio/vfio_iommu_type1.c | 40 +++++++++++++++++++++-------------------
+>  1 file changed, 21 insertions(+), 19 deletions(-)
+> 
+> diff --git a/drivers/vfio/vfio_iommu_type1.c b/drivers/vfio/vfio_iommu_type1.c
+> index fa72a71..023ba12 100644
+> --- a/drivers/vfio/vfio_iommu_type1.c
+> +++ b/drivers/vfio/vfio_iommu_type1.c
+> @@ -548,6 +548,8 @@ static int vfio_dma_do_map(struct vfio_iommu *iommu,
+>  	long npage;
+>  	int ret = 0, prot = 0;
+>  	uint64_t mask;
+> +	struct vfio_dma *dma = NULL;
+> +	unsigned long pfn;
+>  
+>  	end = map->iova + map->size;
+>  
+> @@ -590,8 +592,6 @@ static int vfio_dma_do_map(struct vfio_iommu *iommu,
+>  	}
+>  
+>  	for (iova = map->iova; iova < end; iova += size, vaddr += size) {
+> -		struct vfio_dma *dma = NULL;
+> -		unsigned long pfn;
+>  		long i;
+>  
+>  		/* Pin a contiguous chunk of memory */
+> @@ -600,16 +600,15 @@ static int vfio_dma_do_map(struct vfio_iommu *iommu,
+>  		if (npage <= 0) {
+>  			WARN_ON(!npage);
+>  			ret = (int)npage;
+> -			break;
+> +			goto out;
+>  		}
+>  
+>  		/* Verify pages are not already mapped */
+>  		for (i = 0; i < npage; i++) {
+>  			if (iommu_iova_to_phys(iommu->domain,
+>  					       iova + (i << PAGE_SHIFT))) {
+> -				vfio_unpin_pages(pfn, npage, prot, true);
+>  				ret = -EBUSY;
+> -				break;
+> +				goto out_unpin;
+>  			}
+>  		}
+>  
+> @@ -619,8 +618,7 @@ static int vfio_dma_do_map(struct vfio_iommu *iommu,
+>  		if (ret) {
+>  			if (ret != -EBUSY ||
+>  			    map_try_harder(iommu, iova, pfn, npage, prot)) {
+> -				vfio_unpin_pages(pfn, npage, prot, true);
+> -				break;
+> +				goto out_unpin;
+>  			}
+>  		}
+>  
+> @@ -675,9 +673,8 @@ static int vfio_dma_do_map(struct vfio_iommu *iommu,
+>  			dma = kzalloc(sizeof(*dma), GFP_KERNEL);
+>  			if (!dma) {
+>  				iommu_unmap(iommu->domain, iova, size);
+> -				vfio_unpin_pages(pfn, npage, prot, true);
+>  				ret = -ENOMEM;
+> -				break;
+> +				goto out_unpin;
+>  			}
+>  
+>  			dma->size = size;
+> @@ -688,16 +685,21 @@ static int vfio_dma_do_map(struct vfio_iommu *iommu,
+>  		}
+>  	}
+>  
+> -	if (ret) {
+> -		struct vfio_dma *tmp;
+> -		iova = map->iova;
+> -		size = map->size;
+> -		while ((tmp = vfio_find_dma(iommu, iova, size))) {
+> -			int r = vfio_remove_dma_overlap(iommu, iova,
+> -							&size, tmp);
+> -			if (WARN_ON(r || !size))
+> -				break;
+> -		}
+> +	WARN_ON(ret);
+> +	mutex_unlock(&iommu->lock);
+> +	return ret;
+> +
+> +out_unpin:
+> +	vfio_unpin_pages(pfn, npage, prot, true);
+> +
+> +out:
+> +	iova = map->iova;
+> +	size = map->size;
+> +	while ((dma = vfio_find_dma(iommu, iova, size))) {
+> +		int r = vfio_remove_dma_overlap(iommu, iova,
+> +						&size, dma);
+> +		if (WARN_ON(r || !size))
+> +			break;
+>  	}
+>  
+>  	mutex_unlock(&iommu->lock);
+
+
 
