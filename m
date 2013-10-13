@@ -1,74 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755185Ab3JMSDt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Oct 2013 14:03:49 -0400
-Received: from sauhun.de ([89.238.76.85]:45044 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754778Ab3JMSDr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Oct 2013 14:03:47 -0400
-Date: Sun, 13 Oct 2013 20:03:43 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: RAGHAVENDRA GANIGA <ravi23ganiga@gmail.com>
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i2c: i2c-core: fix paranthesis coding style issue in
- i2c-core.c
-Message-ID: <20131013180343.GA5713@katana>
-References: <525ADEC0.7020908@gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="IS0zKkzwUGydFO0o"
+	id S1755013Ab3JMSHc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Oct 2013 14:07:32 -0400
+Received: from ns1.pc-advies.be ([83.149.101.17]:37426 "EHLO
+	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754840Ab3JMSHb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Oct 2013 14:07:31 -0400
+Date: Sun, 13 Oct 2013 20:07:27 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Subject: [GIT PULL REQUEST] watchdog - v3.12-rc4 Fixes
+Message-ID: <20131013180727.GN401@spo001.leaseweb.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <525ADEC0.7020908@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Linus,
 
---IS0zKkzwUGydFO0o
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Please pull from 'master' branch of
+	git://www.linux-watchdog.org/linux-watchdog.git
 
-On Sun, Oct 13, 2013 at 11:26:16PM +0530, RAGHAVENDRA GANIGA wrote:
-> From 46aed97f5e5a434e8ec24c14e085a138958ba559 Mon Sep 17 00:00:00 2001
-> From: Raghavendra Ganiga <ravi23ganiga@gmail.com>
-> Date: Sun, 13 Oct 2013 19:13:46 +0530
-> Subject: [PATCH] i2c: i2c-core: fix paranthesis coding style issue in
->  i2c-core.c
->=20
-> This is a patch to the i2c-core.c file that fixes the paranthesis
-> warning found by the checkpatch.pl tool
->=20
-> Signed-off-by: Raghavendra Chandra Ganiga <ravi23ganiga@gmail.com>
+This will fix a deadlock on the ts72xx_wdt driver,
+fix bitmasks in the kempld_wdt driver and
+fix a section mismatch in the sunxi_wdt driver.
 
-You fixed the warning but not the error?
+This will update the following files:
 
-If you fix the split strings, too, I will apply the patch. I am not
-applying one single checkpatch cleanup when there are enough others
-left.
+ kempld_wdt.c |    2 +-
+ sunxi_wdt.c  |    4 ++--
+ ts72xx_wdt.c |    3 ++-
+ 3 files changed, 5 insertions(+), 4 deletions(-)
 
+with these Changes:
 
---IS0zKkzwUGydFO0o
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+commit 1d5898b4f8a0f6e231546d30dd54f6f9b89c232c
+Author: Maxime Ripard <maxime.ripard@free-electrons.com>
+Date:   Sat Oct 5 16:20:17 2013 +0200
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
+    watchdog: sunxi: Fix section mismatch
+    
+    This driver has a section mismatch, for probe and remove functions,
+    leading to the following warning during the compilation.
+    
+    WARNING: drivers/watchdog/built-in.o(.data+0x24): Section mismatch in
+    reference from the variable sunxi_wdt_driver to the function
+    .init.text:sunxi_wdt_probe()
+    The variable sunxi_wdt_driver references
+    the function __init sunxi_wdt_probe()
+    
+    Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+    Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+    Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
 
-iQIcBAEBAgAGBQJSWuB/AAoJEBQN5MwUoCm2J1cQALNibc+HYk/VqjWq2vtjs6u5
-i4rSUIUCSBevv7tXBOF0bcDi8Bi3lismw0Z3XgHc8tCmLdFp2iWVA2fqvCw7AnfU
-SwaUViscjFiQR6R5+uHiOzstYjEKzmGs2CpqpQ3NdFGtrEByzeuzu+XRZhm1ofh1
-WpQAutYrYCM4fobAkIp7H/THO52v3OM135BOl/FS/3RaRnTU7ed4DthnjfCogxwk
-3ywTGIg9jOB+ujM61PRSRcu1vfEt68sqPyx2baoTwivIRcKArIJVTul7tV7Lp3Js
-wxb3wWNbJLBQf9V6UoyotloermBfdvtEqpOjNxW2gLRFd0Xkg1+nMwbrenj9VfPp
-p1Bs4NYkVQCjVvNGyKbKYi3NoodmqmOBorv03Fuwz2sprvGz2XFxL5DtZxsgW2vA
-S5hgc32WOig3Jq0rANdYFSK5G64lZ/PEdFPBd6wuGypVVPI/h5KHTHdLDUGZldGB
-aSbWPxO+EZ/N0uMjaOBcmLpfteAgSvNxeCobGxGmwCRoj22gaKXPxWQWbakp3pix
-2WAiLz+8bg43bBYpoSJkRg5rm3S8FnbB+9yVKKsyZB5dru5Oc9GEIgrf2+UB94bt
-Udn+blDa/bm7guAsewtvZuGCgCZ2K9/2CIOkUMVRHoBtF5AUbCAEv0vU0aEXK+mt
-udYlkXNhYBhyNvIqa44r
-=Vj/J
------END PGP SIGNATURE-----
+commit 4c4e45669de475573b15d968a6dca8d00124c9ad
+Author: Jingoo Han <jg1.han@samsung.com>
+Date:   Mon Sep 23 19:16:57 2013 +0900
 
---IS0zKkzwUGydFO0o--
+    watchdog: kempld_wdt: Fix bit mask definition
+    
+    STAGE_CFG bits are defined as [5:4] bits. However, '(((x) & 0x30) << 4)'
+    handles [9:8] bits. Thus, it should be fixed in order to handle
+    [5:4] bits.
+    
+    Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+    Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+    Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+
+commit 8612ed0d97abcf1c016d34755b7cf2060de71963
+Author: Dan Carpenter <dan.carpenter@oracle.com>
+Date:   Fri Aug 23 11:40:59 2013 +0300
+
+    watchdog: ts72xx_wdt: locking bug in ioctl
+    
+    Calling the WDIOC_GETSTATUS & WDIOC_GETBOOTSTATUS and twice will cause a
+    interruptible deadlock.
+    
+    Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+    Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+    Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+
+For completeness, I added the overal diff below.
+
+Greetings,
+Wim.
+
+================================================================================
+diff --git a/drivers/watchdog/hpwdt.c b/drivers/watchdog/hpwdt.c
+index 1eff743..ae60406 100644
+--- a/drivers/watchdog/hpwdt.c
++++ b/drivers/watchdog/hpwdt.c
+@@ -814,6 +814,9 @@ static int __devinit hpwdt_init_one(struct pci_dev *dev,
+ 	hpwdt_timer_reg = pci_mem_addr + 0x70;
+ 	hpwdt_timer_con = pci_mem_addr + 0x72;
+ 
++	/* Make sure that timer is disabled until /dev/watchdog is opened */
++	hpwdt_stop();
++
+ 	/* Make sure that we have a valid soft_margin */
+ 	if (hpwdt_change_timer(soft_margin))
+ 		hpwdt_change_timer(DEFAULT_MARGIN);
+diff --git a/drivers/watchdog/watchdog_core.c b/drivers/watchdog/watchdog_core.c
+index 6aa46a9..3796434 100644
+--- a/drivers/watchdog/watchdog_core.c
++++ b/drivers/watchdog/watchdog_core.c
+@@ -128,11 +128,12 @@ EXPORT_SYMBOL_GPL(watchdog_register_device);
+ void watchdog_unregister_device(struct watchdog_device *wdd)
+ {
+ 	int ret;
+-	int devno = wdd->cdev.dev;
++	int devno;
+ 
+ 	if (wdd == NULL)
+ 		return;
+ 
++	devno = wdd->cdev.dev;
+ 	ret = watchdog_dev_unregister(wdd);
+ 	if (ret)
+ 		pr_err("error unregistering /dev/watchdog (err=%d)\n", ret);
