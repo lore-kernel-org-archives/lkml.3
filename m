@@ -1,86 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755010Ab3JMSNE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Oct 2013 14:13:04 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:45344 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754840Ab3JMSND (ORCPT
+	id S1755155Ab3JMSOs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Oct 2013 14:14:48 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:59600 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755109Ab3JMSOr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Oct 2013 14:13:03 -0400
-Date: Sun, 13 Oct 2013 19:12:38 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Nikita Kiryanov <nikita@compulab.co.il>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>,
-        Igor Grinberg <grinberg@compulab.co.il>
-Message-ID: <20131013181238.GO2443@sirena.org.uk>
-References: <1381676471-25619-1-git-send-email-nikita@compulab.co.il>
+	Sun, 13 Oct 2013 14:14:47 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <525AE311.8060605@roeck-us.net>
+Date: Sun, 13 Oct 2013 11:14:41 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Zvl510+jvRFHh8wJ"
-Content-Disposition: inline
-In-Reply-To: <1381676471-25619-1-git-send-email-nikita@compulab.co.il>
-X-Cookie: Time and tide wait for no man.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: fix use_count bug
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Wim Van Sebroeck <wim@iguana.be>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Subject: Re: [GIT PULL REQUEST] watchdog - v3.12-rc4 Fixes
+References: <20131013180727.GN401@spo001.leaseweb.com>
+In-Reply-To: <20131013180727.GN401@spo001.leaseweb.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/13/2013 11:07 AM, Wim Van Sebroeck wrote:
+> Hi Linus,
+>
+> Please pull from 'master' branch of
+> 	git://www.linux-watchdog.org/linux-watchdog.git
+>
+> This will fix a deadlock on the ts72xx_wdt driver,
+> fix bitmasks in the kempld_wdt driver and
+> fix a section mismatch in the sunxi_wdt driver.
+>
+> This will update the following files:
+>
+>   kempld_wdt.c |    2 +-
+>   sunxi_wdt.c  |    4 ++--
+>   ts72xx_wdt.c |    3 ++-
+>   3 files changed, 5 insertions(+), 4 deletions(-)
+>
+> with these Changes:
+>
+> commit 1d5898b4f8a0f6e231546d30dd54f6f9b89c232c
+> Author: Maxime Ripard <maxime.ripard@free-electrons.com>
+> Date:   Sat Oct 5 16:20:17 2013 +0200
+>
+>      watchdog: sunxi: Fix section mismatch
+>
+>      This driver has a section mismatch, for probe and remove functions,
+>      leading to the following warning during the compilation.
+>
+>      WARNING: drivers/watchdog/built-in.o(.data+0x24): Section mismatch in
+>      reference from the variable sunxi_wdt_driver to the function
+>      .init.text:sunxi_wdt_probe()
+>      The variable sunxi_wdt_driver references
+>      the function __init sunxi_wdt_probe()
+>
+>      Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+>      Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+>      Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+>
+> commit 4c4e45669de475573b15d968a6dca8d00124c9ad
+> Author: Jingoo Han <jg1.han@samsung.com>
+> Date:   Mon Sep 23 19:16:57 2013 +0900
+>
+>      watchdog: kempld_wdt: Fix bit mask definition
+>
+>      STAGE_CFG bits are defined as [5:4] bits. However, '(((x) & 0x30) << 4)'
+>      handles [9:8] bits. Thus, it should be fixed in order to handle
+>      [5:4] bits.
+>
+>      Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+>      Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+>      Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+>
+> commit 8612ed0d97abcf1c016d34755b7cf2060de71963
+> Author: Dan Carpenter <dan.carpenter@oracle.com>
+> Date:   Fri Aug 23 11:40:59 2013 +0300
+>
+>      watchdog: ts72xx_wdt: locking bug in ioctl
+>
+>      Calling the WDIOC_GETSTATUS & WDIOC_GETBOOTSTATUS and twice will cause a
+>      interruptible deadlock.
+>
+>      Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+>      Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+>      Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+>
+> For completeness, I added the overal diff below.
+>
+Hi Wim,
 
---Zvl510+jvRFHh8wJ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+thanks a lot for picking up those patches.
 
-On Sun, Oct 13, 2013 at 06:01:11PM +0300, Nikita Kiryanov wrote:
-> During regulator registration the regulator framework checks that the
-> regulator is:
+Looks like the diffs don't match the description.
+Are those possibly the diffs from your previous pull request ?
 
-Please try to make your commit messages briefer and more focused on
-describing the problem.  A good way to do this is usually to start from
-the problem and then explain it - what you're doing here is providing a
-lot of background material without telling the reader why which makes it
-hard to find out what the commit is supposed to do.
+Guenter
 
-> invocations. The state of regX is not the result of a regulator_enable
-> call, so use_count increments should not be propogated on the supply
-> dependency chain. Instead, if there's a need for regX to be enabled on
-> boot, the boot_on flag should be used for all the regulators on the
-> supply chain.
+> Greetings,
+> Wim.
+>
+> ================================================================================
+> diff --git a/drivers/watchdog/hpwdt.c b/drivers/watchdog/hpwdt.c
+> index 1eff743..ae60406 100644
+> --- a/drivers/watchdog/hpwdt.c
+> +++ b/drivers/watchdog/hpwdt.c
+> @@ -814,6 +814,9 @@ static int __devinit hpwdt_init_one(struct pci_dev *dev,
+>   	hpwdt_timer_reg = pci_mem_addr + 0x70;
+>   	hpwdt_timer_con = pci_mem_addr + 0x72;
+>
+> +	/* Make sure that timer is disabled until /dev/watchdog is opened */
+> +	hpwdt_stop();
+> +
+>   	/* Make sure that we have a valid soft_margin */
+>   	if (hpwdt_change_timer(soft_margin))
+>   		hpwdt_change_timer(DEFAULT_MARGIN);
+> diff --git a/drivers/watchdog/watchdog_core.c b/drivers/watchdog/watchdog_core.c
+> index 6aa46a9..3796434 100644
+> --- a/drivers/watchdog/watchdog_core.c
+> +++ b/drivers/watchdog/watchdog_core.c
+> @@ -128,11 +128,12 @@ EXPORT_SYMBOL_GPL(watchdog_register_device);
+>   void watchdog_unregister_device(struct watchdog_device *wdd)
+>   {
+>   	int ret;
+> -	int devno = wdd->cdev.dev;
+> +	int devno;
+>
+>   	if (wdd == NULL)
+>   		return;
+>
+> +	devno = wdd->cdev.dev;
+>   	ret = watchdog_dev_unregister(wdd);
+>   	if (ret)
+>   		pr_err("error unregistering /dev/watchdog (err=%d)\n", ret);
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-watchdog" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+>
 
-No, that's not what this is trying to do.  It's trying to bring the
-logical state of the system in sync with the physical state of the
-system (as you'll see from the commit introducing it).  I suspect what
-needs to happen to maintain the functionality is that the code needs to
-directly call the ops (and walk the tree manually) to do the enables so
-that the reference counts aren't disturbed.
-
-boot_on definitely shouldn't be related to this and probably shouldn't
-need all the parent regulators to be manually forced on either.
-
---Zvl510+jvRFHh8wJ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSWuKSAAoJELSic+t+oim9zZwQAIKZE7pe3+5tmNAaVaZBYuLP
-85GlsZmvNMU80G4FbvPC1W2eeli8Ie+ApHwT2xiuh7tXYlHcqvksNv2MmSWV6wmA
-+bCeCMtZboJXCorttykICrmxui+iClXl03OzXGAUYMz3ggMB8FFfk83yK+OH+DrN
-DNWfhF4TQDEMoXYBcAJNxeS327QUG/6QYwoDwAWh4nvCfuGvnItm36as4qSNnjau
-h12VaUIXNJAEPiG2/4fdV+XERKT49O9JV2ImoNu3YzJE4w0ktmdNf2e1bQp10WWa
-RsNOYq73scCCIEBX4WVT2Ea6GpHnpOSpaW/1jcMgd3aw8azxfbaP9ff8BGymF3xL
-PEXTLMqz8/jiKJzCd2ouaVA1BH0k51QgdE4V6/Onbo0U8GEICKJB7N72RrhYowVU
-2Gy/SiRYbkBQP0rpI/G9CWb/PQIZq5+vHuDVjKuVv2F71a+CmsgqGSzT4gUTO1Dl
-65MhaILIzdOb0EmerOB7ZH6QOReqEfL4x/8yRiOcS5g9m6td1rFTbwMXjN4gcRnR
-OvuoSIqLA9QBnAy2Jsu2BEc51ncVgneYrXJg4sMCMgQfhV0ZTrEPpgwvXY4ZdPHU
-jeFnJIvLlpzkJohBPfPBnwR5AWfId3bn6+Jk858QgbqS9iVYkjoAnpFYhQ9p+kRo
-lPWkin/6EGb2on6C1u/r
-=Dgaa
------END PGP SIGNATURE-----
-
---Zvl510+jvRFHh8wJ--
