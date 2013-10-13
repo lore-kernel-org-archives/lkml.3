@@ -1,80 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755361Ab3JMTaE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Oct 2013 15:30:04 -0400
-Received: from smtprelay0156.hostedemail.com ([216.40.44.156]:45620 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755059Ab3JMTaC (ORCPT
+	id S1755300Ab3JMTch (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Oct 2013 15:32:37 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:43387 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755059Ab3JMTcf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Oct 2013 15:30:02 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:421:541:599:960:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1801:2393:2559:2562:2828:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3871:3872:3873:4321:4605:4823:5007:7652:10004:10400:10848:11026:11233:11473:11658:11914:12043:12295:12438:12517:12519:12740:13069:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: rule12_5766b62d6475a
-X-Filterd-Recvd-Size: 2671
-Message-ID: <1381692599.25528.5.camel@joe-AO722>
-Subject: Re: [PATCH 2/2] i2c: i2c-core: fix coding style issues in i2c-core.c
-From: Joe Perches <joe@perches.com>
-To: RAGHAVENDRA GANIGA <ravi23ganiga@gmail.com>
-Cc: wsa@the-dreams.de, linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Sun, 13 Oct 2013 12:29:59 -0700
-In-Reply-To: <525AF0ED.7050209@gmail.com>
-References: <525AF0ED.7050209@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	Sun, 13 Oct 2013 15:32:35 -0400
+Message-ID: <525AF4B8.8030005@infradead.org>
+Date: Sun, 13 Oct 2013 12:30:00 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: kbuild test robot <fengguang.wu@intel.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, kbuild-all@01.org,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        LKML <linux-kernel@vger.kernel.org>, Daniel Drake <dsd@laptop.org>,
+        Jens Frederich <jfrederich@gmail.com>,
+        Jon Nettleton <jon.nettleton@gmail.com>
+Subject: [PATCH v2] staging/olpc_dcon: fix kconfig to fix build errors
+References: <524a3b76.oejnG6gfqBFdWbl/%fengguang.wu@intel.com>
+In-Reply-To: <524a3b76.oejnG6gfqBFdWbl/%fengguang.wu@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-10-14 at 00:43 +0530, RAGHAVENDRA GANIGA wrote:
-[]
-> diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-[]
-> @@ -1737,9 +1735,10 @@ int i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num)
->  	if (adap->algo->master_xfer) {
->  #ifdef DEBUG
->  		for (ret = 0; ret < num; ret++) {
-> -			dev_dbg(&adap->dev, "master_xfer[%d] %c, addr=0x%02x, "
-> -				"len=%d%s\n", ret, (msgs[ret].flags & I2C_M_RD)
-> -				? 'R' : 'W', msgs[ret].addr, msgs[ret].len,
-> +			dev_dbg(&adap->dev, "master_xfer[%d] %c, addr=0x%02x, len=%d%s\n",
-> +				ret,
-> +				((msgs[ret].flags & I2C_M_RD) ? 'R' : 'W'),
-> +				msgs[ret].addr, msgs[ret].len,
->  				(msgs[ret].flags & I2C_M_RECV_LEN) ? "+" : "");
->  		}
+From: Randy Dunlap <rdunlap@infradead.org>
 
-You added an unnecessary set of parentheses here and
-you made it different from the similar line below.
+Fix build errors when GPIO_CS5535=m and FB_OLPC_DCON=y
+by preventing that kconfig combination.
 
-Neither test really needs any parenthesis and this
-could be written as:
+These build errors are caused by having a kconfig bool symbol
+(FB_OLPC_DCON_1) that depend on a tristate symbol (GPIO_CS5535),
+but when the tristate symbol is =m, the bool symbol is =y.
 
-			dev_dbg(&adap->dev, "master_xfer[%d] %c, addr=0x%02x, len=%d%s\n",
-				ret,
-				msgs[ret].flags & I2C_M_RD ? 'R' : 'W',
-				msgs[ret].addr, msgs[ret].len,
-				msgs[ret].flags & I2C_M_RECV_LEN ? "+" : "";
+  drivers/built-in.o: In function `dcon_read_status_xo_1':
+  olpc_dcon_xo_1.c:(.text+0x359531): undefined reference to `cs5535_gpio_set'
+  drivers/built-in.o: In function `dcon_wiggle_xo_1':
+  olpc_dcon_xo_1.c:(.text+0x35959f): undefined reference to `cs5535_gpio_set'
+  olpc_dcon_xo_1.c:(.text+0x359610): undefined reference to `cs5535_gpio_clear'
+  drivers/built-in.o:olpc_dcon_xo_1.c:(.text+0x3596a1): more undefined references to `cs5535_gpio_clear' follow
+  drivers/built-in.o: In function `dcon_wiggle_xo_1':
+  olpc_dcon_xo_1.c:(.text+0x359708): undefined reference to `cs5535_gpio_set'
+  drivers/built-in.o: In function `dcon_init_xo_1':
+  olpc_dcon_xo_1.c:(.text+0x35989b): undefined reference to `cs5535_gpio_clear'
+  olpc_dcon_xo_1.c:(.text+0x3598b5): undefined reference to `cs5535_gpio_isset'
+  olpc_dcon_xo_1.c:(.text+0x359963): undefined reference to `cs5535_gpio_setup_event'
+  olpc_dcon_xo_1.c:(.text+0x359980): undefined reference to `cs5535_gpio_set_irq'
+  olpc_dcon_xo_1.c:(.text+0x359a36): undefined reference to `cs5535_gpio_set'
 
-> @@ -2118,7 +2120,7 @@ EXPORT_SYMBOL(i2c_smbus_read_byte);
->  s32 i2c_smbus_write_byte(const struct i2c_client *client, u8 value)
->  {
->  	return i2c_smbus_xfer(client->adapter, client->addr, client->flags,
-> -	                      I2C_SMBUS_WRITE, value, I2C_SMBUS_BYTE, NULL);
-> +				I2C_SMBUS_WRITE, value, I2C_SMBUS_BYTE, NULL);
+However, adding GPIO_CS5535 to the Kconfig dependencies also creates
+a kconfig recursive dependency error on powerpc:
+  drivers/i2c/Kconfig:5:error: recursive dependency detected!
+  drivers/i2c/Kconfig:5:	symbol I2C is selected by FB_OLPC_DCON
+  drivers/staging/olpc_dcon/Kconfig:1:	symbol FB_OLPC_DCON depends on GPIO_CS5535
+  drivers/gpio/Kconfig:577:	symbol GPIO_CS5535 depends on GPIOLIB
+  drivers/gpio/Kconfig:38:	symbol GPIOLIB is selected by ARCH_REQUIRE_GPIOLIB
+  drivers/gpio/Kconfig:23:	symbol ARCH_REQUIRE_GPIOLIB is selected by MCU_MPC8349EMITX
+  arch/powerpc/platforms/Kconfig:351:	symbol MCU_MPC8349EMITX depends on I2C
 
-Not an improvement.
+This is due to FB_OLPC_DCON selecting I2C instead of depending on it,
+so change the select to a dependency.
 
-Yes, the deleted line should use tabs but
-the alignment of the new line is not correct.
-Please align the indentation to the open parenthesis
+Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+Cc:	Daniel Drake <dsd@laptop.org>
+Cc:	Jens Frederich <jfrederich@gmail.com>
+Cc:	Jon Nettleton <jon.nettleton@gmail.com>
+---
+ drivers/staging/olpc_dcon/Kconfig |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-	return i2c_smbus_xfer(client->adapter, client->addr, client->flags,
-			      I2C_SMBUS_WRITE, value, I2C_SMBUS_BYTE, NULL);
-
-Using maximal tabs at start of line, and up to 7 spaces
-to align properly.
-
-(using 3 tabs, 6 spaces)
-
+--- lnx-312-rc4.orig/drivers/staging/olpc_dcon/Kconfig
++++ lnx-312-rc4/drivers/staging/olpc_dcon/Kconfig
+@@ -1,7 +1,8 @@
+ config FB_OLPC_DCON
+ 	tristate "One Laptop Per Child Display CONtroller support"
+ 	depends on OLPC && FB
+-	select I2C
++	depends on I2C
++	depends on (GPIO_CS5535 || GPIO_CS5535=n)
+ 	select BACKLIGHT_CLASS_DEVICE
+ 	---help---
+ 	  In order to support very low power operation, the XO laptop uses a
