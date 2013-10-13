@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755288Ab3JMTZy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Oct 2013 15:25:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34786 "EHLO mx1.redhat.com"
+	id S1755263Ab3JMTZx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Oct 2013 15:25:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15615 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755182Ab3JMTZn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755180Ab3JMTZn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 13 Oct 2013 15:25:43 -0400
-Date: Sun, 13 Oct 2013 21:18:35 +0200
+Date: Sun, 13 Oct 2013 21:18:38 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: Anton Arapov <aarapov@redhat.com>, David Smith <dsmith@redhat.com>,
@@ -15,8 +15,9 @@ Cc: Anton Arapov <aarapov@redhat.com>, David Smith <dsmith@redhat.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 2/5] uprobes: Introduce __create_xol_area()
-Message-ID: <20131013191835.GA32487@redhat.com>
+Subject: [PATCH 3/5] uprobes: Teach __create_xol_area() to accept the
+	predefined vaddr
+Message-ID: <20131013191838.GA32490@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -26,121 +27,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No functional changes, preparation.
+Currently xol_add_vma() uses get_unmapped_area() for area->vaddr,
+but the next patches need to use the fixed address. So this patch
+adds the new "vaddr" argument to __create_xol_area() which should
+be used as area->vaddr if it is nonzero.
 
-Extract the code which actually allocates/installs the new area
-into the new helper, __create_xol_area().
+xol_add_vma() doesn't bother to verify that the predefined addr is
+not used, insert_vm_struct() should fail if find_vma_links() detects
+the overlap with the existing vma.
 
-While at it remove the unnecessary "ret = ENOMEM" and "ret = 0"
-in xol_add_vma(), they both have no effect.
+Also, __create_xol_area() doesn't need __GFP_ZERO to allocate area.
 
 Cc: stable@vger.kernel.org # 3.9+
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- kernel/events/uprobes.c |   49 ++++++++++++++++++++++++----------------------
- 1 files changed, 26 insertions(+), 23 deletions(-)
+ kernel/events/uprobes.c |   18 +++++++++++-------
+ 1 files changed, 11 insertions(+), 7 deletions(-)
 
 diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index db7a1dc..c09d417 100644
+index c09d417..c836135 100644
 --- a/kernel/events/uprobes.c
 +++ b/kernel/events/uprobes.c
-@@ -1096,17 +1096,15 @@ void uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsigned lon
- }
- 
- /* Slot allocation for XOL */
--static int xol_add_vma(struct xol_area *area)
-+static int xol_add_vma(struct mm_struct *mm, struct xol_area *area)
- {
--	struct mm_struct *mm = current->mm;
- 	int ret = -EALREADY;
- 
- 	down_write(&mm->mmap_sem);
+@@ -1104,11 +1104,14 @@ static int xol_add_vma(struct mm_struct *mm, struct xol_area *area)
  	if (mm->uprobes_state.xol_area)
  		goto fail;
  
--	ret = -ENOMEM;
--	/* Try to map as high as possible, this is only a hint. */
-+		/* Try to map as high as possible, this is only a hint. */
- 	area->vaddr = get_unmapped_area(NULL, TASK_SIZE - PAGE_SIZE, PAGE_SIZE, 0, 0);
- 	if (area->vaddr & ~PAGE_MASK) {
- 		ret = area->vaddr;
-@@ -1120,28 +1118,17 @@ static int xol_add_vma(struct xol_area *area)
++	if (!area->vaddr) {
+ 		/* Try to map as high as possible, this is only a hint. */
+-	area->vaddr = get_unmapped_area(NULL, TASK_SIZE - PAGE_SIZE, PAGE_SIZE, 0, 0);
+-	if (area->vaddr & ~PAGE_MASK) {
+-		ret = area->vaddr;
+-		goto fail;
++		area->vaddr = get_unmapped_area(NULL, TASK_SIZE - PAGE_SIZE,
++						PAGE_SIZE, 0, 0);
++		if (area->vaddr & ~PAGE_MASK) {
++			ret = area->vaddr;
++			goto fail;
++		}
+ 	}
  
- 	smp_wmb();	/* pairs with get_xol_area() */
- 	mm->uprobes_state.xol_area = area;
--	ret = 0;
-  fail:
- 	up_write(&mm->mmap_sem);
- 
+ 	ret = install_special_mapping(mm, area->vaddr, PAGE_SIZE,
+@@ -1124,13 +1127,13 @@ static int xol_add_vma(struct mm_struct *mm, struct xol_area *area)
  	return ret;
  }
  
--/*
-- * get_xol_area - Allocate process's xol_area if necessary.
-- * This area will be used for storing instructions for execution out of line.
-- *
-- * Returns the allocated area or NULL.
-- */
--static struct xol_area *get_xol_area(void)
-+static struct xol_area *__create_xol_area(void)
+-static struct xol_area *__create_xol_area(void)
++static struct xol_area *__create_xol_area(unsigned long vaddr)
  {
  	struct mm_struct *mm = current->mm;
--	struct xol_area *area;
  	uprobe_opcode_t insn = UPROBE_SWBP_INSN;
--
--	area = mm->uprobes_state.xol_area;
--	if (area)
--		goto ret;
-+	struct xol_area *area;
+ 	struct xol_area *area;
  
- 	area = kzalloc(sizeof(*area), GFP_KERNEL);
+-	area = kzalloc(sizeof(*area), GFP_KERNEL);
++	area = kmalloc(sizeof(*area), GFP_KERNEL);
  	if (unlikely(!area))
-@@ -1155,13 +1142,13 @@ static struct xol_area *get_xol_area(void)
+ 		goto out;
+ 
+@@ -1142,6 +1145,7 @@ static struct xol_area *__create_xol_area(void)
  	if (!area->page)
  		goto free_bitmap;
  
--	/* allocate first slot of task's xol_area for the return probes */
-+	init_waitqueue_head(&area->wq);
-+	/* Reserve the 1st slot for get_trampoline_vaddr() */
++	area->vaddr = vaddr;
+ 	init_waitqueue_head(&area->wq);
+ 	/* Reserve the 1st slot for get_trampoline_vaddr() */
  	set_bit(0, area->bitmap);
--	copy_to_page(area->page, 0, &insn, UPROBE_SWBP_INSN_SIZE);
- 	atomic_set(&area->slot_count, 1);
--	init_waitqueue_head(&area->wq);
-+	copy_to_page(area->page, 0, &insn, UPROBE_SWBP_INSN_SIZE);
+@@ -1172,7 +1176,7 @@ static struct xol_area *get_xol_area(void)
+ 	struct xol_area *area;
  
--	if (!xol_add_vma(area))
-+	if (!xol_add_vma(mm, area))
- 		return area;
+ 	if (!mm->uprobes_state.xol_area)
+-		__create_xol_area();
++		__create_xol_area(0);
  
- 	__free_page(area->page);
-@@ -1170,9 +1157,25 @@ static struct xol_area *get_xol_area(void)
-  free_area:
- 	kfree(area);
-  out:
-+ 	return NULL;
-+}
-+
-+/*
-+ * get_xol_area - Allocate process's xol_area if necessary.
-+ * This area will be used for storing instructions for execution out of line.
-+ *
-+ * Returns the allocated area or NULL.
-+ */
-+static struct xol_area *get_xol_area(void)
-+{
-+	struct mm_struct *mm = current->mm;
-+	struct xol_area *area;
-+
-+	if (!mm->uprobes_state.xol_area)
-+		__create_xol_area();
-+
  	area = mm->uprobes_state.xol_area;
-- ret:
--	smp_read_barrier_depends();     /* pairs with wmb in xol_add_vma() */
-+	smp_read_barrier_depends();	/* pairs with wmb in xol_add_vma() */
- 	return area;
- }
- 
+ 	smp_read_barrier_depends();	/* pairs with wmb in xol_add_vma() */
 -- 
 1.5.5.1
 
