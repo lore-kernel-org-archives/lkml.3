@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755314Ab3JMTZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Oct 2013 15:25:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46504 "EHLO mx1.redhat.com"
+	id S1755288Ab3JMTZy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Oct 2013 15:25:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34786 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755179Ab3JMTZr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Oct 2013 15:25:47 -0400
-Date: Sun, 13 Oct 2013 21:18:41 +0200
+	id S1755182Ab3JMTZn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Oct 2013 15:25:43 -0400
+Date: Sun, 13 Oct 2013 21:18:35 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: Anton Arapov <aarapov@redhat.com>, David Smith <dsmith@redhat.com>,
@@ -15,9 +15,8 @@ Cc: Anton Arapov <aarapov@redhat.com>, David Smith <dsmith@redhat.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 4/5] uprobes: Change uprobe_copy_process() to dup
-	return_instances
-Message-ID: <20131013191841.GA32499@redhat.com>
+Subject: [PATCH 2/5] uprobes: Introduce __create_xol_area()
+Message-ID: <20131013191835.GA32487@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -27,85 +26,121 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-uprobe_copy_process() assumes that the new child doesn't need
-->utask, it should be allocated by demand.
+No functional changes, preparation.
 
-But this is not true if the forking task has the pending ret-
-probes, the child should report them as well and thus it needs
-the copy of parent's ->return_instances chain. Otherwise the
-child crashes when it returns from the probed function.
+Extract the code which actually allocates/installs the new area
+into the new helper, __create_xol_area().
 
-Note: this change alone doesn't fix the problem, see the next
-change.
+While at it remove the unnecessary "ret = ENOMEM" and "ret = 0"
+in xol_add_vma(), they both have no effect.
 
 Cc: stable@vger.kernel.org # 3.9+
-Reported-by: Martin Cermak <mcermak@redhat.com>
-Reported-by: David Smith <dsmith@redhat.com>
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- kernel/events/uprobes.c |   43 +++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 43 insertions(+), 0 deletions(-)
+ kernel/events/uprobes.c |   49 ++++++++++++++++++++++++----------------------
+ 1 files changed, 26 insertions(+), 23 deletions(-)
 
 diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index c836135..67b65c8 100644
+index db7a1dc..c09d417 100644
 --- a/kernel/events/uprobes.c
 +++ b/kernel/events/uprobes.c
-@@ -1366,12 +1366,55 @@ static struct uprobe_task *get_utask(void)
- 	return current->utask;
+@@ -1096,17 +1096,15 @@ void uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsigned lon
  }
  
-+static int dup_utask(struct task_struct *t, struct uprobe_task *o_utask)
-+{
-+	struct uprobe_task *n_utask;
-+	struct return_instance **p, *o, *n;
-+
-+	n_utask = kzalloc(sizeof(struct uprobe_task), GFP_KERNEL);
-+	if (!n_utask)
-+		return -ENOMEM;
-+	t->utask = n_utask;
-+
-+	p = &n_utask->return_instances;
-+	for (o = o_utask->return_instances; o; o = o->next) {
-+		n = kmalloc(sizeof(struct return_instance), GFP_KERNEL);
-+		if (!n)
-+			return -ENOMEM;
-+
-+		*n = *o;
-+		atomic_inc(&n->uprobe->ref);
-+		n->next = NULL;
-+
-+		*p = n;
-+		p = &n->next;
-+		n_utask->depth++;
-+	}
-+
-+	return 0;
-+}
-+
-+static void uprobe_warn(struct task_struct *t, const char *msg)
-+{
-+	pr_warn("uprobe: %s:%d failed to %s\n",
-+			current->comm, current->pid, msg);
-+}
-+
- /*
-  * Called in context of a new clone/fork from copy_process.
-  */
- void uprobe_copy_process(struct task_struct *t)
+ /* Slot allocation for XOL */
+-static int xol_add_vma(struct xol_area *area)
++static int xol_add_vma(struct mm_struct *mm, struct xol_area *area)
  {
-+	struct uprobe_task *utask = current->utask;
-+	struct mm_struct *mm = current->mm;
-+
- 	t->utask = NULL;
-+
-+	if (mm == t->mm || !utask || !utask->return_instances)
-+		return;
-+
-+	if (dup_utask(t, utask))
-+		return uprobe_warn(t, "dup ret instances");
+-	struct mm_struct *mm = current->mm;
+ 	int ret = -EALREADY;
+ 
+ 	down_write(&mm->mmap_sem);
+ 	if (mm->uprobes_state.xol_area)
+ 		goto fail;
+ 
+-	ret = -ENOMEM;
+-	/* Try to map as high as possible, this is only a hint. */
++		/* Try to map as high as possible, this is only a hint. */
+ 	area->vaddr = get_unmapped_area(NULL, TASK_SIZE - PAGE_SIZE, PAGE_SIZE, 0, 0);
+ 	if (area->vaddr & ~PAGE_MASK) {
+ 		ret = area->vaddr;
+@@ -1120,28 +1118,17 @@ static int xol_add_vma(struct xol_area *area)
+ 
+ 	smp_wmb();	/* pairs with get_xol_area() */
+ 	mm->uprobes_state.xol_area = area;
+-	ret = 0;
+  fail:
+ 	up_write(&mm->mmap_sem);
+ 
+ 	return ret;
  }
  
- /*
+-/*
+- * get_xol_area - Allocate process's xol_area if necessary.
+- * This area will be used for storing instructions for execution out of line.
+- *
+- * Returns the allocated area or NULL.
+- */
+-static struct xol_area *get_xol_area(void)
++static struct xol_area *__create_xol_area(void)
+ {
+ 	struct mm_struct *mm = current->mm;
+-	struct xol_area *area;
+ 	uprobe_opcode_t insn = UPROBE_SWBP_INSN;
+-
+-	area = mm->uprobes_state.xol_area;
+-	if (area)
+-		goto ret;
++	struct xol_area *area;
+ 
+ 	area = kzalloc(sizeof(*area), GFP_KERNEL);
+ 	if (unlikely(!area))
+@@ -1155,13 +1142,13 @@ static struct xol_area *get_xol_area(void)
+ 	if (!area->page)
+ 		goto free_bitmap;
+ 
+-	/* allocate first slot of task's xol_area for the return probes */
++	init_waitqueue_head(&area->wq);
++	/* Reserve the 1st slot for get_trampoline_vaddr() */
+ 	set_bit(0, area->bitmap);
+-	copy_to_page(area->page, 0, &insn, UPROBE_SWBP_INSN_SIZE);
+ 	atomic_set(&area->slot_count, 1);
+-	init_waitqueue_head(&area->wq);
++	copy_to_page(area->page, 0, &insn, UPROBE_SWBP_INSN_SIZE);
+ 
+-	if (!xol_add_vma(area))
++	if (!xol_add_vma(mm, area))
+ 		return area;
+ 
+ 	__free_page(area->page);
+@@ -1170,9 +1157,25 @@ static struct xol_area *get_xol_area(void)
+  free_area:
+ 	kfree(area);
+  out:
++ 	return NULL;
++}
++
++/*
++ * get_xol_area - Allocate process's xol_area if necessary.
++ * This area will be used for storing instructions for execution out of line.
++ *
++ * Returns the allocated area or NULL.
++ */
++static struct xol_area *get_xol_area(void)
++{
++	struct mm_struct *mm = current->mm;
++	struct xol_area *area;
++
++	if (!mm->uprobes_state.xol_area)
++		__create_xol_area();
++
+ 	area = mm->uprobes_state.xol_area;
+- ret:
+-	smp_read_barrier_depends();     /* pairs with wmb in xol_add_vma() */
++	smp_read_barrier_depends();	/* pairs with wmb in xol_add_vma() */
+ 	return area;
+ }
+ 
 -- 
 1.5.5.1
 
