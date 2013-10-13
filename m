@@ -1,97 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754977Ab3JMRX3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Oct 2013 13:23:29 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:19042 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754540Ab3JMRX2 (ORCPT
+	id S1754885Ab3JMRgX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Oct 2013 13:36:23 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:44466 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754624Ab3JMRgW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Oct 2013 13:23:28 -0400
-Message-ID: <525AD704.6040705@oracle.com>
-Date: Mon, 14 Oct 2013 01:23:16 +0800
-From: Vaughan Cao <vaughan.cao@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: JBottomley@parallels.com
-CC: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        vaughan.cao@oracle.com
-Subject: PROBLEM: special sense code asc,ascq=04h,0Ch abort scsi scan in the
- middle
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Sun, 13 Oct 2013 13:36:22 -0400
+From: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@redhat.com, peterz@infradead.org
+Subject: [PATCH TRIVIAL] sched/fair: Fix a typo in comments of get_sd_load_idx()
+Date: Sun, 13 Oct 2013 23:06:15 +0530
+Message-Id: <1381685775-3544-1-git-send-email-kamalesh@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.4.474.g128a96c
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13101317-5490-0000-0000-0000044DE2F0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi James,
+Fix a trival typo in description of idle in comments of
+get_sd_load_idx().
 
-[1.] One line summary of the problem:
-special sense code asc,ascq=04h,0Ch abort scsi scan in the middle
+Signed-off-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+---
+ kernel/sched/fair.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-[2.] Full description of the problem/report:
-For instance, storage represents 8 iscsi LUNs, however the LUN No.7 is 
-not well configured or has something wrong.
-Then messages received:
-kernel: scsi 5:0:0:0: Unexpected response from lun 7 while scanning, 
-scan aborted
-Which will make LUN No.8 unavailable.
-It's confirmed that Windows and Solaris systems will continue the scan 
-and make LUN No.1,2,3,4,5,6 and 8 available.
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 82746796578d..b234b869470f 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -5206,7 +5206,7 @@ static inline void init_sd_lb_stats(struct sd_lb_stats *sds)
+ /**
+  * get_sd_load_idx - Obtain the load index for a given sched domain.
+  * @sd: The sched_domain whose load_idx is to be obtained.
+- * @idle: The Idle status of the CPU for whose sd load_icx is obtained.
++ * @idle: The Idle status of the CPU for whose sd load_idx is obtained.
+  *
+  * Return: The load index.
+  */
+-- 
+1.8.4.474.g128a96c
 
-Log snippet is as below:
-Aug 24 00:32:49 vmhodtest019 kernel: scsi 5:0:0:7: scsi scan: INQUIRY 
-pass 1 length 36
-Aug 24 00:32:49 vmhodtest019 kernel: scsi 5:0:0:7: Send: 0xffff8801e9bd4280
-Aug 24 00:32:49 vmhodtest019 kernel: scsi 5:0:0:7: CDB: Inquiry: 12 00 
-00 00 24 00
-Aug 24 00:32:49 vmhodtest019 kernel: buffer = 0xffff8801f71fc180, 
-bufflen = 36, queuecommand 0xffffffffa00b99e7
-Aug 24 00:32:49 vmhodtest019 kernel: leaving scsi_dispatch_cmnd()
-Aug 24 00:32:49 vmhodtest019 kernel: scsi 5:0:0:7: Done: 
-0xffff8801e9bd4280 SUCCESS
-Aug 24 00:32:49 vmhodtest019 kernel: scsi 5:0:0:7: Result: 
-hostbyte=DID_OK driverbyte=DRIVER_OK
-Aug 24 00:32:49 vmhodtest019 kernel: scsi 5:0:0:7: CDB: Inquiry: 12 00 
-00 00 24 00
-Aug 24 00:32:49 vmhodtest019 kernel: scsi 5:0:0:7: Sense Key : Not Ready 
-[current]
-Aug 24 00:32:49 vmhodtest019 kernel: scsi 5:0:0:7: Add. Sense: Logical 
-unit not accessible, target port in unavailable state
-Aug 24 00:32:49 vmhodtest019 kernel: scsi 5:0:0:7: scsi host busy 1 failed 0
-Aug 24 00:32:49 vmhodtest019 kernel: 0 sectors total, 36 bytes done.
-Aug 24 00:32:49 vmhodtest019 kernel: scsi scan: INQUIRY failed with code 
-0x8000002
-Aug 24 00:32:49 vmhodtest019 kernel: scsi 5:0:0:0: Unexpected response 
-from lun 7 while scanning, scan aborted
-
-According to scsi_report_lun_scan(), I found:
-Linux use an inquiry command to probe a lun according to the result of 
-report_lun command.
-It assumes every probe cmd will get a legal result. Otherwise, it 
-regards the whole peripheral not exist or dead.
-If the return of inquiry passes its legal checking and indicates 'LUN 
-not present', it won't break but also continue with the scan process.
-In the log, inquiry to LUN7 return a sense - asc,ascq=04h,0Ch (Logical 
-unit not accessible, target port in unavailable state).
-And this is ignored, so scsi_probe_lun() returns -EIO and the scan 
-process is aborted.
-
-I have two questions:
-1. Is it correct for hardware to return a sense 04h,0Ch to inquiry 
-again, even after presenting this lun in responce to REPORT_LUN command?
-2. Since windows and solaris can continue scan, is it reasonable for 
-linux to do the same, even for a fault-tolerance purpose?
-
-Below is information of our storage setting:
-Storage array is configured as a cluster mode, and there is a "default" 
-target group and "default" initiator group exist on
-the storage that includes the target nodename of both the nodes in the 
-cluster and all initiator names respectively.
-In the partner node, there was lun mapped to the default target 
-group/initiator group and having the ID 7.
-Since that lun is owner by the partner node, the SCSI inquiry was 
-failing on it and as a result the initiator aborts the scan.
-
-Thanks,
-Vaughan
