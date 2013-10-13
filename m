@@ -1,81 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754792Ab3JMQoC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Oct 2013 12:44:02 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:36144 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753275Ab3JMQoA (ORCPT
+	id S1754873Ab3JMQto (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Oct 2013 12:49:44 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:47240 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753275Ab3JMQtm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Oct 2013 12:44:00 -0400
-Date: Sun, 13 Oct 2013 09:43:33 -0700
-From: Olof Johansson <olof@lixom.net>
-To: torvalds@linux-foundation.org
-Cc: olof@lixom.net, arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] ARM: SoC fixes for 3.12-rc
-Message-ID: <20131013164333.GA10894@quad.lixom.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 13 Oct 2013 12:49:42 -0400
+From: Ming Lei <ming.lei@canonical.com>
+To: linux-kernel@vger.kernel.org
+Cc: Ming Lei <ming.lei@canonical.com>, Ted Tso <tytso@mit.edu>,
+        Jan Kara <jack@suse.cz>, linux-ext4@vger.kernel.org,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Subject: [PATCH] ext4: fix checking on nr_to_write
+Date: Mon, 14 Oct 2013 00:39:52 +0800
+Message-Id: <1381682393-5769-1-git-send-email-ming.lei@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Commit 4e7ea81db5(ext4: restructure writeback path) introduces
+another performance regression on random write:
 
+- one more page may be mapped to ext4 extent in mpage_prepare_extent_to_map,
+and will be submitted for I/O so nr_to_write will become -1 before 'done'
+is set
 
-The following changes since commit d0e639c9e06d44e713170031fe05fb60ebe680af:
+- the worse thing is that dirty pages may still be retrieved from page
+  cache after nr_to_write becomes negative, so lots of small chunks can be
+  submitted to block device when page writeback is catching up with write path,
+  and performance is hurted.
 
-  Linux 3.12-rc4 (2013-10-06 14:00:20 -0700)
+On one arm A15 board(arndale) with sata 3.0 SSD(CPU: 1.5GHz dura core, RAM: 2GB),
+this patch can improve below test result from 157MB/sec to 174MB/sec(>10%):
 
-are available in the git repository at:
+	dd if=/dev/zero of=./z.img bs=8K count=512K
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/fixes-for-linus
+The above test is actually prototype of block write in bonnie++ utility.
 
-for you to fetch changes up to 4d594dd3028ba8cdfcbd854bde3811a1ee4e36d7:
+This patch fixes check on nr_to_write in mpage_prepare_extent_to_map()
+to make sure nr_to_write won't become negative.
 
-  ARM: exynos: dts: Update 5250 arch timer node with clock frequency (2013-10-13 09:33:54 -0700)
+Cc: Ted Tso <tytso@mit.edu>
+Cc: Jan Kara <jack@suse.cz>
+Cc: linux-ext4@vger.kernel.org
+Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Signed-off-by: Ming Lei <ming.lei@canonical.com>
+---
+ fs/ext4/inode.c |   20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
 
-----------------------------------------------------------------
-ARM: SoC fixes for 3.12-rc
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index 32c04ab..6a62803 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -2356,15 +2356,6 @@ static int mpage_prepare_extent_to_map(struct mpage_da_data *mpd)
+ 			if (mpd->map.m_len == 0)
+ 				mpd->first_page = page->index;
+ 			mpd->next_page = page->index + 1;
+-			/* Add all dirty buffers to mpd */
+-			lblk = ((ext4_lblk_t)page->index) <<
+-				(PAGE_CACHE_SHIFT - blkbits);
+-			head = page_buffers(page);
+-			err = mpage_process_page_bufs(mpd, head, head, lblk);
+-			if (err <= 0)
+-				goto out;
+-			err = 0;
+-
+ 			/*
+ 			 * Accumulated enough dirty pages? This doesn't apply
+ 			 * to WB_SYNC_ALL mode. For integrity sync we have to
+@@ -2374,9 +2365,18 @@ static int mpage_prepare_extent_to_map(struct mpage_da_data *mpd)
+ 			 * of the old dirty pages.
+ 			 */
+ 			if (mpd->wbc->sync_mode == WB_SYNC_NONE &&
+-			    mpd->next_page - mpd->first_page >=
++			    mpd->next_page - mpd->first_page >
+ 							mpd->wbc->nr_to_write)
+ 				goto out;
++
++			/* Add all dirty buffers to mpd */
++			lblk = ((ext4_lblk_t)page->index) <<
++				(PAGE_CACHE_SHIFT - blkbits);
++			head = page_buffers(page);
++			err = mpage_process_page_bufs(mpd, head, head, lblk);
++			if (err <= 0)
++				goto out;
++			err = 0;
+ 		}
+ 		pagevec_release(&pvec);
+ 		cond_resched();
+-- 
+1.7.9.5
 
-A small batch of fixes this week, mostly OMAP related. Nothing stands out
-as particularly controversial.
-
-Also a fix for a 3.12-rc1 timer regression for Exynos platforms, including
-the Chromebooks.
-
-----------------------------------------------------------------
-Aaro Koskinen (1):
-      ARM: OMAP2: gpmc-onenand: fix sync mode setup with DT
-
-Nishanth Menon (1):
-      ARM: OMAP3: Fix hardware detection for omap3630 when booted with device tree
-
-Olof Johansson (1):
-      Merge tag 'fixes-against-v3.12-rc3-take2' of git://git.kernel.org/.../tmlind/linux-omap into fixes
-
-Pali Rohár (1):
-      ARM: OMAP2: RX-51: Add missing max_current to rx51_lp5523_led_config
-
-Simon Barth (1):
-      ARM: mach-omap2: board-generic: fix undefined symbol
-
-Tony Lindgren (1):
-      ARM: dts: Fix pinctrl mask for omap3
-
-Yuvaraj Kumar C D (1):
-      ARM: exynos: dts: Update 5250 arch timer node with clock frequency
-
- arch/arm/boot/dts/exynos5250.dtsi            |  5 +++++
- arch/arm/boot/dts/omap3-beagle-xm.dts        |  2 +-
- arch/arm/boot/dts/omap3.dtsi                 |  4 ++--
- arch/arm/mach-omap2/board-generic.c          | 18 ++++++++++++++++++
- arch/arm/mach-omap2/board-rx51-peripherals.c |  9 +++++++++
- arch/arm/mach-omap2/gpmc-onenand.c           | 12 +++++++++++-
- arch/arm/mach-omap2/mux.h                    |  4 +---
- arch/arm/mach-omap2/timer.c                  |  4 ++--
- include/dt-bindings/pinctrl/omap.h           |  4 +---
- 9 files changed, 50 insertions(+), 12 deletions(-)
