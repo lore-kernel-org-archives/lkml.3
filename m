@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755457Ab3JMXpq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Oct 2013 19:45:46 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41010 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755331Ab3JMXpp (ORCPT
+	id S1755461Ab3JMXxV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Oct 2013 19:53:21 -0400
+Received: from mailgw01.dd24.net ([193.46.215.41]:50615 "EHLO
+	mailgw01.dd24.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755331Ab3JMXxU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Oct 2013 19:45:45 -0400
-Date: Mon, 14 Oct 2013 00:45:07 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: timer-sp: remove deprecated IRQF_DISABLED
-Message-ID: <20131013234507.GH25034@n2100.arm.linux.org.uk>
-References: <1381546322-4632-1-git-send-email-michael.opdenacker@free-electrons.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1381546322-4632-1-git-send-email-michael.opdenacker@free-electrons.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Sun, 13 Oct 2013 19:53:20 -0400
+X-Greylist: delayed 411 seconds by postgrey-1.27 at vger.kernel.org; Sun, 13 Oct 2013 19:53:20 EDT
+Message-ID: <1381707976.3914.22.camel@heisenberg.scientia.net>
+Subject: Re: support for Intel Atom based QNAP LEDs/buttons/buzzer in Linux?
+From: Christoph Anton Mitterer <calestyo@scientia.net>
+To: linux-kernel@vger.kernel.org
+Cc: Chris Eastwood <chris2027@gmail.com>, gregkh@linuxfoundation.org,
+        linux@roeck-us.net
+Date: Mon, 14 Oct 2013 01:46:16 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If you want to either send these to the patch system, or alternatively
-collect them up in a git tree somewhere for me and/or arm-soc to pull...
+Hi Greg, Guenter and Chris.
 
-On Sat, Oct 12, 2013 at 04:52:02AM +0200, Michael Opdenacker wrote:
-> This patch proposes to remove the use of the IRQF_DISABLED flag
-> 
-> It's a NOOP since 2.6.35 and it will be removed one day.
-> 
-> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-> ---
->  arch/arm/common/timer-sp.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm/common/timer-sp.c b/arch/arm/common/timer-sp.c
-> index e901d0f..ce922d0 100644
-> --- a/arch/arm/common/timer-sp.c
-> +++ b/arch/arm/common/timer-sp.c
-> @@ -175,7 +175,7 @@ static struct clock_event_device sp804_clockevent = {
->  
->  static struct irqaction sp804_timer_irq = {
->  	.name		= "timer",
-> -	.flags		= IRQF_DISABLED | IRQF_TIMER | IRQF_IRQPOLL,
-> +	.flags		= IRQF_TIMER | IRQF_IRQPOLL,
->  	.handler	= sp804_timer_interrupt,
->  	.dev_id		= &sp804_clockevent,
->  };
-> -- 
-> 1.8.1.2
-> 
+Coming back to the stuff discussed previously[0].
+
+Chris Eastwood has made most of these (i.e. LEDs and buttons, the
+buzzers may work on at least some of the devices via some other serial
+device) working (AFAIU based on the previously mentioned code at
+Github[1]), he told me in several iterations of private mail.
+
+I'm not sure now, whether anything based on this code would be
+appropriate for the mainline kernel, since Guenter mentioned he'd prefer
+a mfd core driver for all that... OTOH, the later may probably never
+happen, and Chris' work seems to already do the job.
+
+I don't know however, whether he needs to patch any other places in the
+kernel, but I'm sure he can show his work (and ask questions) better
+than I, thereby inviting him to do so.
+Greg you had mentioned before that you might be able to spend some time
+on this, so if you could help Chris, that would be great.
+
+
+Cheers,
+Chris.
+
+[0] http://thread.gmane.org/gmane.linux.kernel/1508763/focus=1512903
+[1] https://github.com/tomtastic/qnap-gpio/
+
+PS: Sorry for having lost the message threading.
+
