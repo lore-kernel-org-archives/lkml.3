@@ -1,78 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755286Ab3JMUIW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Oct 2013 16:08:22 -0400
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:47061 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755096Ab3JMUIU (ORCPT
+	id S1755320Ab3JMULG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Oct 2013 16:11:06 -0400
+Received: from order.stressinduktion.org ([87.106.68.36]:60247 "EHLO
+	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755103Ab3JMULE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Oct 2013 16:08:20 -0400
-Date: Sun, 13 Oct 2013 16:08:16 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, anjana vk <anjanvk12@gmail.com>,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        eunki_kim@samsung.com
-Subject: Re: [PATCH] cgroup: fix to break the while loop in
- cgroup_attach_task() correctly
-Message-ID: <20131013200816.GE18075@htj.dyndns.org>
-References: <20131004130207.GA9338@redhat.com>
- <20131007184507.GD27396@htj.dyndns.org>
- <20131008145833.GA15600@redhat.com>
- <5254EB2A.7090803@huawei.com>
- <20131009133047.GA12414@redhat.com>
- <20131009140551.GA15849@redhat.com>
- <20131009165448.GA22437@redhat.com>
- <5257F9E3.5030708@huawei.com>
- <20131011160004.GA26416@redhat.com>
- <5258BB05.8030106@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Sun, 13 Oct 2013 16:11:04 -0400
+Date: Sun, 13 Oct 2013 22:11:02 +0200
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu, "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
+Subject: Re: [PATCH v2 tip/core/rcu 07/13] ipv6/ip6_tunnel: Apply rcu_access_pointer() to avoid sparse false positive
+Message-ID: <20131013201102.GD14021@order.stressinduktion.org>
+Mail-Followup-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+	Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+	Eric Dumazet <eric.dumazet@gmail.com>,
+	Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
+	mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+	akpm@linux-foundation.org, niv@us.ibm.com, tglx@linutronix.de,
+	peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+	edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+	sbw@mit.edu, "David S. Miller" <davem@davemloft.net>,
+	Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+	James Morris <jmorris@namei.org>,
+	Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+	Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
+References: <20131009225617.GH11709@jtriplet-mobl1> <20131010002833.GJ5790@linux.vnet.ibm.com> <20131010020422.GB24368@order.stressinduktion.org> <20131010190532.GQ5790@linux.vnet.ibm.com> <20131012022508.GA20321@order.stressinduktion.org> <20131012075336.GA5790@linux.vnet.ibm.com> <20131012164345.GB20321@order.stressinduktion.org> <20131012173734.GC20321@order.stressinduktion.org> <1882655271.38519.1381606938076.JavaMail.zimbra@efficios.com> <20131013111439.GE5790@linux.vnet.ibm.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <5258BB05.8030106@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131013111439.GE5790@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 12, 2013 at 10:59:17AM +0800, Li Zefan wrote:
-> From: Anjana V Kumar <anjanavk12@gmail.com>
+On Sun, Oct 13, 2013 at 04:14:39AM -0700, Paul E. McKenney wrote:
+> On Sat, Oct 12, 2013 at 07:42:18PM +0000, Mathieu Desnoyers wrote:
+> > ----- Original Message -----
+> > > On Sat, Oct 12, 2013 at 06:43:45PM +0200, Hannes Frederic Sowa wrote:
+> > > > Regarding the volatile access, I hope that the C11 memory model
+> > > > and enhancements to the compiler will some day provide a better
+> > > > way to express the semantics of what is tried to express here
+> > > > (__atomic_store_n/__atomic_load_n with the accompanied memory model,
+> > > > which could be even weaker to what a volatile access would enfore
+> > > > now and could guarantee atomic stores/loads).
+> > > 
+> > > I just played around a bit more. Perhaps we could try to warn of silly
+> > > usages of ACCESS_ONCE():
+> > > 
+> > > --- a/include/linux/compiler.h
+> > > +++ b/include/linux/compiler.h
+> > > @@ -349,7 +349,11 @@ void ftrace_likely_update(struct ftrace_branch_data *f,
+> > > int val, int expect);
+> > >   * use is to mediate communication between process-level code and irq/NMI
+> > >   * handlers, all running on the same CPU.
+> > >   */
+> > > -#define ACCESS_ONCE(x) (*(volatile typeof(x) *)&(x))
+> > > +#define ACCESS_ONCE(x) (*({						\
+> > > +		compiletime_assert(sizeof(typeof(x)) <= sizeof(typeof(&x)), \
+> > > +				   "ACCESS_ONCE likely not atomic");	\
+> > 
+> > AFAIU, ACCESS_ONCE() is not meant to ensure atomicity of load/store,
+> > but rather merely ensures that the compiler will not merge nor refetch
+> > accesses. I don't think the assert check you propose is appropriate with
+> > respect to the ACCESS_ONCE() semantic.
 > 
-> Both Anjana and Eunki reported a stall in the while_each_thread loop
-> in cgroup_attach_task().
-> 
-> It's because, when we attach a single thread to a cgroup, if the cgroup
-> is exiting or is already in that cgroup, we won't break the loop.
-> 
-> If the task is already in the cgroup, the bug can lead to another thread
-> being attached to the cgroup unexpectedly:
-> 
->   # echo 5207 > tasks
->   # cat tasks
->   5207
->   # echo 5207 > tasks
->   # cat tasks
->   5207
->   5215
-> 
-> What's worse, if the task to be attached isn't the leader of the thread
-> group, we might never exit the loop, hence cpu stall. Thanks for Oleg's
-> analysis.
-> 
-> This bug was introduced by commit 081aa458c38ba576bdd4265fc807fa95b48b9e79
-> ("cgroup: consolidate cgroup_attach_task() and cgroup_attach_proc()")
-> 
-> Cc: <stable@vger.kernel.org> # 3.9+
-> Reported-by: Eunki Kim <eunki_kim@samsung.com>
-> Reported-by: Anjana V Kumar <anjanavk12@gmail.com>
-> Signed-off-by: Anjana V Kumar <anjanavk12@gmail.com>
-> [ lizf: - fixed the first continue, pointed out by Oleg,
->         - rewrote changelog. ]
-> Signed-off-by: Li Zefan <lizefan@huawei.com>
+> I am with Mathieu on this one, at least unless there is some set of actual
+> bugs already in the kernel that these length checks would find.
 
-Applied to cgroup/for-3.12-fixes.
+I guess my wording of "ACCESS_ONCE likely not atomic" was misplaced. Something
+like volatile access to memory larger than the processor register size is
+probably not what you intended. Use atomics or proper locking. ;)
+And maybe that is not even correct.
 
-Thanks.
+> /me wonders about structs of size 3, 5, 6, and 7...
 
--- 
-tejun
+Checked a x86_64 allyesconfig build with sizes above pointer size and odd
+parity and nothing broke.
+
+Greetings,
+
+  Hannes
+
