@@ -1,79 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755367Ab3JMVWa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Oct 2013 17:22:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52025 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755256Ab3JMVW3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Oct 2013 17:22:29 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+	id S1755344Ab3JMVcy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Oct 2013 17:32:54 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:59348 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755230Ab3JMVcw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Oct 2013 17:32:52 -0400
+Date: Sun, 13 Oct 2013 23:32:51 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH] perf make: Move DEBUG initialization into Makefile.perf
-Date: Sun, 13 Oct 2013 23:22:09 +0200
-Message-Id: <1381699329-6418-1-git-send-email-jolsa@redhat.com>
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [RFC] perf record,top: Add callchain option into .perfconfig
+Message-ID: <20131013213251.GC2592@two.firstfloor.org>
+References: <1381468543-25334-1-git-send-email-namhyung@kernel.org>
+ <20131011055829.GA4975@gmail.com>
+ <20131011073448.GA11064@krava.redhat.com>
+ <52581511.2010909@gmail.com>
+ <52581737.8090309@gmail.com>
+ <87wqljxyqg.fsf@tassilo.jf.intel.com>
+ <525875FB.1090104@gmail.com>
+ <20131013102521.GA1044@krava.brq.redhat.com>
+ <20131013211805.GA1018@krava>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131013211805.GA1018@krava>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding new top level Makefile invalidated the
-DEBUG variable check for "command line" origin.
+On Sun, Oct 13, 2013 at 11:18:05PM +0200, Jiri Olsa wrote:
+> On Sun, Oct 13, 2013 at 12:25:21PM +0200, Jiri Olsa wrote:
+> 
+> SNIP
+> 
+> > 
+> > I'll try to come up with something later today
+> > 
+> > jirka
+> 
+> 
+> hi,
+> here it is.. not fully tested, no doc updates, dont want
+> to go too far before we agreed on this ;-)
 
-Moving this check into Makefile.perf.
+I don't think that's a good idea. Still need some way to control
+dwarf from the command line.
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/Makefile        | 6 +++++-
- tools/perf/config/Makefile | 3 ---
- 2 files changed, 5 insertions(+), 4 deletions(-)
-
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 5aa3d04..db21dad 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -37,12 +37,16 @@ ifneq ($(O),)
-   FULL_O := $(shell readlink -f $(O))
- endif
- 
-+ifeq ("$(origin DEBUG)", "command line")
-+  D = $(DEBUG)
-+endif
-+
- define print_msg
-   @printf '  BUILD:   Doing '\''make \033[33m-j'$(JOBS)'\033[m'\'' parallel build\n'
- endef
- 
- define make
--  @$(MAKE) -f Makefile.perf --no-print-directory -j$(JOBS) O=$(FULL_O) $@
-+  @$(MAKE) -f Makefile.perf --no-print-directory -j$(JOBS) O=$(FULL_O) PERF_DEBUG=$(D) $@
- endef
- 
- #
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 9680424..912026a 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -66,9 +66,6 @@ ifneq ($(WERROR),0)
-   CFLAGS += -Werror
- endif
- 
--ifeq ("$(origin DEBUG)", "command line")
--  PERF_DEBUG = $(DEBUG)
--endif
- ifndef PERF_DEBUG
-   CFLAGS += -O6
- endif
--- 
-1.7.11.7
-
+-Andi
