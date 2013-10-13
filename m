@@ -1,152 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754814Ab3JMMCb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Oct 2013 08:02:31 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43736 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754667Ab3JMMC0 (ORCPT
+	id S1754834Ab3JMMDK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Oct 2013 08:03:10 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:36825 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754578Ab3JMMCD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Oct 2013 08:02:26 -0400
-Date: Sun, 13 Oct 2013 05:02:15 -0700
-From: "tip-bot for H. Peter Anvin" <tipbot@zytor.com>
-Message-ID: <tip-6e6a4932b0f569b1a5bb4fcbf5dde1b1a42f01bb@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1381450698-28710-2-git-send-email-keescook@chromium.org>
-References: <1381450698-28710-2-git-send-email-keescook@chromium.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/kaslr] x86, boot: Rename get_flags() and check_flags()
-  to *_cpuflags()
-Git-Commit-ID: 6e6a4932b0f569b1a5bb4fcbf5dde1b1a42f01bb
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Sun, 13 Oct 2013 08:02:03 -0400
+Date: Sun, 13 Oct 2013 14:02:01 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Rogelio Serrano <rogelio.serrano@gmail.com>
+Cc: "luke.leighton" <luke.leighton@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Transcend's "one of the most cavalier GPL violations in a long
+ time"
+Message-ID: <20131013120201.GA23970@amd.pavel.ucw.cz>
+References: <CACGw4H5+5bkgy+UJPCbwG2KXZDj3zhXLR4cZCbeDvjJhfTJwmQ@mail.gmail.com>
+ <CAPweEDzf1DbRHeXr_cL8ZZk9s0Srhp0s5rrYm0pksyurO0CXpw@mail.gmail.com>
+ <CAPweEDyaEo-7NzEYfxU7Hofq08Raepc_JFevoqF+Nzrwzz2kXQ@mail.gmail.com>
+ <CANszf4iyed-tCBK7g8HEWgBpTXydSwcsRTA1UzyxZhN1uy0vQg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sun, 13 Oct 2013 05:02:21 -0700 (PDT)
+In-Reply-To: <CANszf4iyed-tCBK7g8HEWgBpTXydSwcsRTA1UzyxZhN1uy0vQg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6e6a4932b0f569b1a5bb4fcbf5dde1b1a42f01bb
-Gitweb:     http://git.kernel.org/tip/6e6a4932b0f569b1a5bb4fcbf5dde1b1a42f01bb
-Author:     H. Peter Anvin <hpa@linux.intel.com>
-AuthorDate: Sun, 13 Oct 2013 04:08:56 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Sun, 13 Oct 2013 04:08:56 -0700
+On Tue 2013-10-08 17:08:22, Rogelio Serrano wrote:
+> On Fri, Sep 20, 2013 at 12:29 PM, luke.leighton <luke.leighton@gmail.com> wrote:
+> > this is a quick message to let people know that evidence has been
+> > collected of not just knowingly-infringing copyright but *blatant*
+> > copyright infringment [a la "bring it on, fuckers"] by transcend
+> > technologies.  does anyone have any recommendations as to whom should
+> > be contacted in order to pursue a copyright violation case against
+> > transcend?  as a minor linux kernel source copyright holder they could
+> > easily and simply remove the source code contributions i have made,
+> > but i would still like to pursue them for copyright infringment.
+> >
+> >
+> 
+> I dont think the majority of linux kernel developers care about
+> enforcement at all. Its virtually public domain as far as i can see,
+> Linus himself will not run after violators.
+> 
+> Any company out there is free to do what they want.
 
-x86, boot: Rename get_flags() and check_flags() to *_cpuflags()
+Not sure what you are smoking but it must be pretty strong stuff.
 
-When a function is used in more than one file it may not be possible
-to immediately tell from context what the intended meaning is.  As
-such, it is more important that the naming be self-evident.  Thus,
-change get_flags() to get_cpuflags().
-
-For consistency, change check_flags() to check_cpuflags() even though
-it is only used in cpucheck.c.
-
-Link: http://lkml.kernel.org/r/1381450698-28710-2-git-send-email-keescook@chromium.org
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/boot/compressed/cpuflags.c |  2 +-
- arch/x86/boot/cpucheck.c            | 14 +++++++-------
- arch/x86/boot/cpuflags.c            |  2 +-
- arch/x86/boot/cpuflags.h            |  2 +-
- 4 files changed, 10 insertions(+), 10 deletions(-)
-
-diff --git a/arch/x86/boot/compressed/cpuflags.c b/arch/x86/boot/compressed/cpuflags.c
-index 931cba6..aa31346 100644
---- a/arch/x86/boot/compressed/cpuflags.c
-+++ b/arch/x86/boot/compressed/cpuflags.c
-@@ -4,7 +4,7 @@
- 
- bool has_cpuflag(int flag)
- {
--	get_flags();
-+	get_cpuflags();
- 
- 	return test_bit(flag, cpu.flags);
- }
-diff --git a/arch/x86/boot/cpucheck.c b/arch/x86/boot/cpucheck.c
-index e1f3c16..100a9a1 100644
---- a/arch/x86/boot/cpucheck.c
-+++ b/arch/x86/boot/cpucheck.c
-@@ -68,7 +68,7 @@ static int is_transmeta(void)
- }
- 
- /* Returns a bitmask of which words we have error bits in */
--static int check_flags(void)
-+static int check_cpuflags(void)
- {
- 	u32 err;
- 	int i;
-@@ -101,8 +101,8 @@ int check_cpu(int *cpu_level_ptr, int *req_level_ptr, u32 **err_flags_ptr)
- 	if (has_eflag(X86_EFLAGS_AC))
- 		cpu.level = 4;
- 
--	get_flags();
--	err = check_flags();
-+	get_cpuflags();
-+	err = check_cpuflags();
- 
- 	if (test_bit(X86_FEATURE_LM, cpu.flags))
- 		cpu.level = 64;
-@@ -121,8 +121,8 @@ int check_cpu(int *cpu_level_ptr, int *req_level_ptr, u32 **err_flags_ptr)
- 		eax &= ~(1 << 15);
- 		asm("wrmsr" : : "a" (eax), "d" (edx), "c" (ecx));
- 
--		get_flags();	/* Make sure it really did something */
--		err = check_flags();
-+		get_cpuflags();	/* Make sure it really did something */
-+		err = check_cpuflags();
- 	} else if (err == 0x01 &&
- 		   !(err_flags[0] & ~(1 << X86_FEATURE_CX8)) &&
- 		   is_centaur() && cpu.model >= 6) {
-@@ -137,7 +137,7 @@ int check_cpu(int *cpu_level_ptr, int *req_level_ptr, u32 **err_flags_ptr)
- 		asm("wrmsr" : : "a" (eax), "d" (edx), "c" (ecx));
- 
- 		set_bit(X86_FEATURE_CX8, cpu.flags);
--		err = check_flags();
-+		err = check_cpuflags();
- 	} else if (err == 0x01 && is_transmeta()) {
- 		/* Transmeta might have masked feature bits in word 0 */
- 
-@@ -152,7 +152,7 @@ int check_cpu(int *cpu_level_ptr, int *req_level_ptr, u32 **err_flags_ptr)
- 		    : : "ecx", "ebx");
- 		asm("wrmsr" : : "a" (eax), "d" (edx), "c" (ecx));
- 
--		err = check_flags();
-+		err = check_cpuflags();
- 	}
- 
- 	if (err_flags_ptr)
-diff --git a/arch/x86/boot/cpuflags.c b/arch/x86/boot/cpuflags.c
-index b02544a..a9fcb7c 100644
---- a/arch/x86/boot/cpuflags.c
-+++ b/arch/x86/boot/cpuflags.c
-@@ -65,7 +65,7 @@ static inline void cpuid(u32 id, u32 *a, u32 *b, u32 *c, u32 *d)
- 	);
- }
- 
--void get_flags(void)
-+void get_cpuflags(void)
- {
- 	u32 max_intel_level, max_amd_level;
- 	u32 tfms;
-diff --git a/arch/x86/boot/cpuflags.h b/arch/x86/boot/cpuflags.h
-index 9bb4e25..ea97697 100644
---- a/arch/x86/boot/cpuflags.h
-+++ b/arch/x86/boot/cpuflags.h
-@@ -14,6 +14,6 @@ extern struct cpu_features cpu;
- extern u32 cpu_vendor[3];
- 
- int has_eflag(unsigned long mask);
--void get_flags(void);
-+void get_cpuflags(void);
- 
- #endif
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
