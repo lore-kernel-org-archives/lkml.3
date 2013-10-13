@@ -1,29 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753892Ab3JMIXW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Oct 2013 04:23:22 -0400
-Received: from www1453.sakura.ne.jp ([219.94.163.63]:56652 "EHLO
-	www1453.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753550Ab3JMIXU convert rfc822-to-8bit (ORCPT
+	id S1753986Ab3JMIiQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Oct 2013 04:38:16 -0400
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:52089 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753566Ab3JMIiO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Oct 2013 04:23:20 -0400
-X-Greylist: delayed 2887 seconds by postgrey-1.27 at vger.kernel.org; Sun, 13 Oct 2013 04:23:19 EDT
-Message-ID: <30BD272231B4427696789388A9C9F8FD@tidj>
-Reply-To: "kristina-svetlova4" <fionakraft@chass.utoronto.ca>
-From: "kristina-svetlova4" <webmaster@anetservices.biz>
-To: <info@mymunami.rugestour>, <belinda@etudes.freeserve.co.uk>,
-        <linux-kernel@vger.kernel.org>, <lomonosova@tesar-city.ru>,
-        <skip2811@ya.ru>
-Subject: =?windows-1251?B?7eDo6/P3+OjpIOzl8u7kIOL76+X36PL8IOPr?=
-	=?windows-1251?B?4Ofo6ug=?=
-Date: Sun, 13 Oct 2013 09:34:55 +0200
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="windows-1251";
-Content-Transfer-Encoding: 8BIT
-X-Priority: 3
+	Sun, 13 Oct 2013 04:38:14 -0400
+From: Stefan Beller <stefanbeller@googlemail.com>
+To: tytso@mit.edu, linux-kernel@vger.kernel.org, arnd@arndb.de,
+        gregkh@linuxfoundation.org
+Cc: Stefan Beller <stefanbeller@googlemail.com>
+Subject: [PATCH] random.c: fix a typo in comments
+Date: Sun, 13 Oct 2013 10:38:35 +0200
+Message-Id: <1381653515-19908-1-git-send-email-stefanbeller@googlemail.com>
+X-Mailer: git-send-email 1.8.4.1.471.g53f64e4.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-изрядное зрение неизменно уважается http://demo1.s37.by/wp-content/plugins/wp_sed/lferm.htm?Dzc
+Also removes (trailing) tabs from an empty line.
+
+Signed-off-by: Stefan Beller <stefanbeller@googlemail.com>
+---
+ drivers/char/random.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/char/random.c b/drivers/char/random.c
+index 57d4b15..294a59c 100644
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -385,7 +385,7 @@ static struct poolinfo {
+  * modulo the generator polymnomial.  Now, for random primitive polynomials,
+  * this is a universal class of hash functions, meaning that the chance
+  * of a collision is limited by the attacker's knowledge of the generator
+- * polynomail, so if it is chosen at random, an attacker can never force
++ * polynomial, so if it is chosen at random, an attacker can never force
+  * a collision.  Here, we use a fixed polynomial, but we *can* assume that
+  * ###--> it is unknown to the processes generating the input entropy. <-###
+  * Because of this important property, this is a good, collision-resistant
+@@ -1073,7 +1073,7 @@ void get_random_bytes_arch(void *buf, int nbytes)
+ 
+ 		if (!arch_get_random_long(&v))
+ 			break;
+-		
++
+ 		memcpy(p, &v, chunk);
+ 		p += chunk;
+ 		nbytes -= chunk;
+-- 
+1.8.4.1.471.g53f64e4.dirty
+
