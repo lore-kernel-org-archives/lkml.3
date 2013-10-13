@@ -1,58 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755064Ab3JMS0p (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Oct 2013 14:26:45 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:42759 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754921Ab3JMS0o (ORCPT
+	id S1755172Ab3JMS3Q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Oct 2013 14:29:16 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:57697 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754971Ab3JMS3P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Oct 2013 14:26:44 -0400
-Date: Sun, 13 Oct 2013 12:26:40 -0600
-From: Jens Axboe <axboe@kernel.dk>
-To: Shaohua Li <shli@kernel.org>
-Cc: linux-kernel@vger.kernel.org, kmo@daterainc.com
-Subject: Re: [patch 4/4] blk-mq: switch to percpu-ida for tag menagement
-Message-ID: <20131013182640.GH31029@kernel.dk>
-References: <20131011071802.148101321@kernel.org>
- <20131011072404.749268620@kernel.org>
- <52580B26.2090508@kernel.dk>
- <20131012004905.GA17666@kernel.org>
+	Sun, 13 Oct 2013 14:29:15 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <525AE675.1010606@roeck-us.net>
+Date: Sun, 13 Oct 2013 11:29:09 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131012004905.GA17666@kernel.org>
+To: Wim Van Sebroeck <wim@iguana.be>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Subject: Re: [GIT PULL REQUEST] watchdog - v3.12-rc4 Fixes
+References: <20131013180727.GN401@spo001.leaseweb.com> <525AE311.8060605@roeck-us.net> <20131013181933.GP401@spo001.leaseweb.com>
+In-Reply-To: <20131013181933.GP401@spo001.leaseweb.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 12 2013, Shaohua Li wrote:
-> On Fri, Oct 11, 2013 at 08:28:54AM -0600, Jens Axboe wrote:
-> > On 10/11/2013 01:18 AM, Shaohua Li wrote:
-> > > Using percpu-ida to manage blk-mq tags. the percpu-ida has similar algorithm
-> > > like the blk-mq-tag. The difference is when a cpu can't allocate tags
-> > > blk-mq-tag uses ipi to purge remote cpu cache and percpu-ida directly purges
-> > > remote cpu cache. In practice (testing null_blk), the percpu-ida approach is
-> > > much faster when total tags aren't enough.
-> > 
-> > I'm not surprised it's a lot faster the the pathological case of needing
-> > to prune tags, the IPI isn't near ideal for that. I'm assuming the
-> > general performance is the same for the non-full case?
-> 
-> Yep. My test is done in a 2 sockets machine, 12 process cross the 2 sockets. So
-> if there is lock contention or ipi, should be stressed heavily. Testing is done
-> for null-blk.
-> 
-> hw_queue_depth	nopatch iops	patch iops
-> 64		~800k/s		~1470k/s
-> 2048		~4470k/s	~4340k/s
-> 
-> In the 2048 case, perf doesn't should any percpu-ida function is hot (no one
-> use > 1% cpu time), so the small difference should be drift. So yes, the
-> general performance is the same.
+On 10/13/2013 11:19 AM, Wim Van Sebroeck wrote:
+> Hi Guenter,
+>
+>> Looks like the diffs don't match the description.
+>> Are those possibly the diffs from your previous pull request ?
+>
+>>From a 3.6 pull request to be precisely :-( I use the old mail
+> as template and apparently forgot to change the diff...
+> The correct diff here below.
+>
 
-Yep, that definitely looks a lot prettier. Thanks! I've had this on the
-TODO for a while, since the ida got fixed up.
+I use a template and script to generate my pull request e-mails to avoid
+this kind of problem. This way worst that can happen is an unexpected
+"rcX" in the headline ... unless the pull request itself is screwed up,
+which I should hopefully notice before I send it out.
 
--- 
-Jens Axboe
+Guenter
 
