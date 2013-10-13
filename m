@@ -1,54 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753965Ab3JMItp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Oct 2013 04:49:45 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:45759 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753152Ab3JMItn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Oct 2013 04:49:43 -0400
+	id S1754126Ab3JMJZe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Oct 2013 05:25:34 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:37292 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753873Ab3JMJZc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Oct 2013 05:25:32 -0400
+Date: Sun, 13 Oct 2013 11:25:21 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Dave Young <dyoung@redhat.com>
+Cc: Matt Fleming <matt@console-pimps.org>, X86 ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Vivek Goyal <vgoyal@redhat.com>, linux-efi@vger.kernel.org,
+        fwts-devel@lists.ubuntu.com
+Subject: Re: [PATCH 12/12] EFI: Runtime services virtual mapping
+Message-ID: <20131013092521.GA22866@pd.tnic>
+References: <20131010080635.GA3692@dhcp-16-126.nay.redhat.com>
+ <20131010081434.GB3692@dhcp-16-126.nay.redhat.com>
+ <20131010085827.GA9929@pd.tnic>
+ <20131010123453.GA12321@console-pimps.org>
+ <20131011062437.GA14115@dhcp-16-126.nay.redhat.com>
+ <20131011074144.GA18719@pd.tnic>
+ <20131012075443.GD7550@dhcp-16-126.nay.redhat.com>
+ <20131012101308.GI12321@console-pimps.org>
+ <20131012103054.GA13739@pd.tnic>
+ <20131013031126.GB1914@darkstar.nay.redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CAHR064ge8zew7uMeD+_LXR3ju5ARGG1y8utLOFzOLexny_DPLA@mail.gmail.com>
-References: <1381236524-19633-1-git-send-email-felipe.contreras@gmail.com>
-	<CAHR064ge8zew7uMeD+_LXR3ju5ARGG1y8utLOFzOLexny_DPLA@mail.gmail.com>
-Date: Sun, 13 Oct 2013 03:49:41 -0500
-Message-ID: <CAMP44s3KVJwTwpxG14k22Q47UXGYFHLQ9ZmWcEdHWiUkbahoaA@mail.gmail.com>
-Subject: Re: [PATCH v2] platform: x86: asus-wmi: add fan control
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Corentin Chary <corentin.chary@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        acpi4asus-user <acpi4asus-user@lists.sourceforge.net>,
-        Linux PM <linux-pm@vger.kernel.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20131013031126.GB1914@darkstar.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 10, 2013 at 10:59 AM, Corentin Chary
-<corentin.chary@gmail.com> wrote:
->
->
->
-> On Tue, Oct 8, 2013 at 1:48 PM, Felipe Contreras
-> <felipe.contreras@gmail.com> wrote:
->>
->> Simple driver to enable control of the fan in ASUS laptops. So far this
->> has only been tested in ASUS Zenbook Prime UX31A, but according to some
->> online reference [1], it should work in other models as well.
->>
->> The implementation is very straight-forward, the only caveat is that the
->> fan speed needs to be saved after it has been manually changed because
->> it won't be reported properly until it goes back to 'auto' mode.
->
-> This doesn't really seems to be related to wmi, and is likely to be
-> available only on a subset of models. Maybe it should a separate driver
-> instead ?
+On Sun, Oct 13, 2013 at 11:11:27AM +0800, Dave Young wrote:
+> Boris, I think we have got the agreement about passing setup_data?
 
-The first patch I sent was standalone, and you said it should be wmi,
-and now I do it wmi, and you said it should be separate. Which is it?
+Yes.
+
+Basically, we want to start with what hpa suggested and see where it
+gets us:
+
+http://marc.info/?l=linux-kernel&m=138006799131051
+
+> I think it should be on top of your patch series,
+
+Yep.
+
+> I can work on that along with other kexec related patches. Or if you
+> would like to do it please let me know.
+
+Absolutely, please feel free to do so - it's not like I don't have
+anything else to do :-)
+
+In the meantime, I'll finish randconfigs testing of the patches and
+upload the latest version to k-org, I'll let you know.
+
+Thanks.
 
 -- 
-Felipe Contreras
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
