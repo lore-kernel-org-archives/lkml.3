@@ -1,59 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754625Ab3JMLuh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Oct 2013 07:50:37 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:40225 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753249Ab3JMLug (ORCPT
+	id S1753124Ab3JMMBe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Oct 2013 08:01:34 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43686 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750815Ab3JMMBc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Oct 2013 07:50:36 -0400
-From: baker.kernel@gmail.com
-To: davem@davemloft.net, eric.dumazet@gmail.com
-Cc: kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "baker.zhang" <baker.kernel@gmail.com>
-Subject: [PATCH v2 net-next] fib_trie: remove duplicated rcu lock
-Date: Sun, 13 Oct 2013 19:50:09 +0800
-Message-Id: <1381665009-4436-1-git-send-email-baker.kernel@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1381636737.3392.29.camel@edumazet-glaptop.roam.corp.google.com>
-References: <1381636737.3392.29.camel@edumazet-glaptop.roam.corp.google.com>
+	Sun, 13 Oct 2013 08:01:32 -0400
+Date: Sun, 13 Oct 2013 05:01:08 -0700
+From: tip-bot for Michael Davidson <tipbot@zytor.com>
+Message-ID: <tip-d751c169e9a6f0f853346f1184881422bd10b3c2@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        keescook@chromium.org, md@google.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        keescook@chromium.org, md@google.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+In-Reply-To: <20131011013954.GA28902@www.outflux.net>
+References: <20131011013954.GA28902@www.outflux.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/kaslr] x86, relocs: Add more per-cpu gold special cases
+Git-Commit-ID: d751c169e9a6f0f853346f1184881422bd10b3c2
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sun, 13 Oct 2013 05:01:16 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "baker.zhang" <baker.kernel@gmail.com>
+Commit-ID:  d751c169e9a6f0f853346f1184881422bd10b3c2
+Gitweb:     http://git.kernel.org/tip/d751c169e9a6f0f853346f1184881422bd10b3c2
+Author:     Michael Davidson <md@google.com>
+AuthorDate: Thu, 10 Oct 2013 18:39:54 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Sun, 13 Oct 2013 03:11:57 -0700
 
-fib_table_lookup has included the rcu lock protection.
+x86, relocs: Add more per-cpu gold special cases
 
-Signed-off-by: baker.zhang <baker.kernel@gmail.com>
+The "gold" linker doesn't seem to put some additional per-cpu cases in
+the right place. Add these to the per-cpu check. Without this, the kASLR
+patch series fails to correctly apply relocations, and fails to boot.
+
+Signed-off-by: Michael Davidson <md@google.com>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Link: http://lkml.kernel.org/r/20131011013954.GA28902@www.outflux.net
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
-Thanks for Eric Dumazet's review.
-The V1 patch remove a necessary rcu read lock.
+ arch/x86/tools/relocs.c | 18 +++++++++++++-----
+ 1 file changed, 13 insertions(+), 5 deletions(-)
 
- net/ipv4/fib_frontend.c | 2 --
- 1 file changed, 2 deletions(-)
-
-diff --git a/net/ipv4/fib_frontend.c b/net/ipv4/fib_frontend.c
-index b3f627a..d846304 100644
---- a/net/ipv4/fib_frontend.c
-+++ b/net/ipv4/fib_frontend.c
-@@ -933,7 +933,6 @@ static void nl_fib_lookup(struct fib_result_nl *frn, struct fib_table *tb)
- 		local_bh_disable();
+diff --git a/arch/x86/tools/relocs.c b/arch/x86/tools/relocs.c
+index f7bab68..71a2533 100644
+--- a/arch/x86/tools/relocs.c
++++ b/arch/x86/tools/relocs.c
+@@ -722,15 +722,23 @@ static void percpu_init(void)
  
- 		frn->tb_id = tb->tb_id;
--		rcu_read_lock();
- 		frn->err = fib_table_lookup(tb, &fl4, &res, FIB_LOOKUP_NOREF);
- 
- 		if (!frn->err) {
-@@ -942,7 +941,6 @@ static void nl_fib_lookup(struct fib_result_nl *frn, struct fib_table *tb)
- 			frn->type = res.type;
- 			frn->scope = res.scope;
- 		}
--		rcu_read_unlock();
- 		local_bh_enable();
- 	}
+ /*
+  * Check to see if a symbol lies in the .data..percpu section.
+- * For some as yet not understood reason the "__init_begin"
+- * symbol which immediately preceeds the .data..percpu section
+- * also shows up as it it were part of it so we do an explict
+- * check for that symbol name and ignore it.
++ *
++ * The linker incorrectly associates some symbols with the
++ * .data..percpu section so we also need to check the symbol
++ * name to make sure that we classify the symbol correctly.
++ *
++ * The GNU linker incorrectly associates:
++ *	__init_begin
++ *
++ * The "gold" linker incorrectly associates:
++ *	init_per_cpu__irq_stack_union
++ *	init_per_cpu__gdt_page
+  */
+ static int is_percpu_sym(ElfW(Sym) *sym, const char *symname)
+ {
+ 	return (sym->st_shndx == per_cpu_shndx) &&
+-		strcmp(symname, "__init_begin");
++		strcmp(symname, "__init_begin") &&
++		strncmp(symname, "init_per_cpu_", 13);
  }
--- 
-1.8.1.2
-
+ 
+ 
