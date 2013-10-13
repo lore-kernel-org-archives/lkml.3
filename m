@@ -1,46 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754384Ab3JMLN3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Oct 2013 07:13:29 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:47818 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754215Ab3JMLN2 (ORCPT
+	id S1754543Ab3JMLOu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Oct 2013 07:14:50 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:45786 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754289Ab3JMLOs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Oct 2013 07:13:28 -0400
-Message-ID: <525A8053.9020409@gmail.com>
-Date: Sun, 13 Oct 2013 13:13:23 +0200
-From: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
+	Sun, 13 Oct 2013 07:14:48 -0400
+Date: Sun, 13 Oct 2013 04:14:39 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu, "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
+Subject: Re: [PATCH v2 tip/core/rcu 07/13] ipv6/ip6_tunnel: Apply
+ rcu_access_pointer() to avoid sparse false positive
+Message-ID: <20131013111439.GE5790@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20131009225617.GH11709@jtriplet-mobl1>
+ <20131010002833.GJ5790@linux.vnet.ibm.com>
+ <20131010020422.GB24368@order.stressinduktion.org>
+ <20131010190532.GQ5790@linux.vnet.ibm.com>
+ <20131012022508.GA20321@order.stressinduktion.org>
+ <20131012075336.GA5790@linux.vnet.ibm.com>
+ <20131012164345.GB20321@order.stressinduktion.org>
+ <20131012173734.GC20321@order.stressinduktion.org>
+ <1882655271.38519.1381606938076.JavaMail.zimbra@efficios.com>
 MIME-Version: 1.0
-To: Roel Kluin <roel.kluin@gmail.com>
-CC: Kyungmin Park <kyungmin.park@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, linux-media@vger.kernel.org,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: exynos4: index out of bounds if no pixelcode found
-References: <alpine.DEB.2.02.1310131204550.11060@Z>
-In-Reply-To: <alpine.DEB.2.02.1310131204550.11060@Z>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1882655271.38519.1381606938076.JavaMail.zimbra@efficios.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13101311-9332-0000-0000-000001BFEBA9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Roel,
+On Sat, Oct 12, 2013 at 07:42:18PM +0000, Mathieu Desnoyers wrote:
+> ----- Original Message -----
+> > On Sat, Oct 12, 2013 at 06:43:45PM +0200, Hannes Frederic Sowa wrote:
+> > > Regarding the volatile access, I hope that the C11 memory model
+> > > and enhancements to the compiler will some day provide a better
+> > > way to express the semantics of what is tried to express here
+> > > (__atomic_store_n/__atomic_load_n with the accompanied memory model,
+> > > which could be even weaker to what a volatile access would enfore
+> > > now and could guarantee atomic stores/loads).
+> > 
+> > I just played around a bit more. Perhaps we could try to warn of silly
+> > usages of ACCESS_ONCE():
+> > 
+> > --- a/include/linux/compiler.h
+> > +++ b/include/linux/compiler.h
+> > @@ -349,7 +349,11 @@ void ftrace_likely_update(struct ftrace_branch_data *f,
+> > int val, int expect);
+> >   * use is to mediate communication between process-level code and irq/NMI
+> >   * handlers, all running on the same CPU.
+> >   */
+> > -#define ACCESS_ONCE(x) (*(volatile typeof(x) *)&(x))
+> > +#define ACCESS_ONCE(x) (*({						\
+> > +		compiletime_assert(sizeof(typeof(x)) <= sizeof(typeof(&x)), \
+> > +				   "ACCESS_ONCE likely not atomic");	\
+> 
+> AFAIU, ACCESS_ONCE() is not meant to ensure atomicity of load/store,
+> but rather merely ensures that the compiler will not merge nor refetch
+> accesses. I don't think the assert check you propose is appropriate with
+> respect to the ACCESS_ONCE() semantic.
 
-On 10/13/2013 12:16 PM, Roel Kluin wrote:
-> In case no valid pixelcode is found, an i of -1 after the loop is out of
-> bounds for the array.
->
-> Signed-off-by: Roel Kluin<roel.kluin@gmail.com>
+I am with Mathieu on this one, at least unless there is some set of actual
+bugs already in the kernel that these length checks would find.
 
-Thank you for the fix, I have applied this patch to my tree for 3.13.
-However it seems to be mangled (at least line wrapped) and didn't
-apply cleanly. The patchwork also didn't catch it properly:
-https://patchwork.linuxtv.org/patch/20380/
+/me wonders about structs of size 3, 5, 6, and 7...
 
-I'd suggest using git send-email in future.
+							Thanx, Paul
 
-Thanks,
-Sylwester
+> Thanks,
+> 
+> Mathieu
+> 
+> > +		(volatile typeof(x) *)&(x);				\
+> > +}))
+> >  
+> >  /* Ignore/forbid kprobes attach on very low level functions marked by this
+> >  attribute: */
+> >  #ifdef CONFIG_KPROBES
+> > 
+> > 
+> 
+> -- 
+> Mathieu Desnoyers
+> EfficiOS Inc.
+> http://www.efficios.com
+> 
+
