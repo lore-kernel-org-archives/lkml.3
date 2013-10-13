@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754845Ab3JMRSI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Oct 2013 13:18:08 -0400
-Received: from 13.mo3.mail-out.ovh.net ([188.165.33.202]:52127 "EHLO
+	id S1754936Ab3JMRT3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Oct 2013 13:19:29 -0400
+Received: from 19.mo3.mail-out.ovh.net ([178.32.98.231]:55253 "EHLO
 	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754305Ab3JMRSH (ORCPT
+	with ESMTP id S1754305Ab3JMRT2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Oct 2013 13:18:07 -0400
+	Sun, 13 Oct 2013 13:19:28 -0400
 From: Boris BREZILLON <b.brezillon@overkiz.com>
 To: Rob Landley <rob@landley.net>, Rob Herring <rob.herring@calxeda.com>,
         Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
@@ -17,17 +17,19 @@ To: Rob Landley <rob@landley.net>, Rob Herring <rob.herring@calxeda.com>,
 Cc: Boris BREZILLON <b.brezillon@overkiz.com>, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org
-Subject: [RFC PATCH RESEND 0/2] clk: add clk accuracy support
-Date: Sun, 13 Oct 2013 19:17:09 +0200
-Message-Id: <1381684631-10835-1-git-send-email-b.brezillon@overkiz.com>
+Subject: [RFC PATCH RESEND 2/2] clk: add accuracy support for fixed clock
+Date: Sun, 13 Oct 2013 19:17:11 +0200
+Message-Id: <1381684631-10835-3-git-send-email-b.brezillon@overkiz.com>
 X-Mailer: git-send-email 1.7.9.5
-X-Ovh-Tracer-Id: 15393022051619928162
+In-Reply-To: <1381684631-10835-1-git-send-email-b.brezillon@overkiz.com>
+References: <1381684631-10835-1-git-send-email-b.brezillon@overkiz.com>
+X-Ovh-Tracer-Id: 15416665949663623268
 X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
 X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
 X-OVH-SPAMSTATE: OK
 X-OVH-SPAMSCORE: -100
 X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrvdeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.500001/N
+X-Spam-Check: DONE|U 0.5/N
 X-VR-SPAMSTATE: OK
 X-VR-SPAMSCORE: -100
 X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrvdeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
@@ -35,61 +37,148 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+This patch adds support for accuracy retrieval on fixed clocks.
+It also adds a new dt property called 'clock-accuracy' to define the clock
+accuracy.
 
-Sorry for the noise, but I didn't get any feedback on this patch series.
+This can be usefull for oscillator (RC, crystal, ...) definitions which are
+always given an accuracy characteristic.
 
-This patch series is a proposal to add clock accuracy retrieval support to the
-common clk framework.
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+---
+ .../devicetree/bindings/clock/fixed-clock.txt      |    3 ++
+ drivers/clk/clk-fixed-rate.c                       |   43 +++++++++++++++++---
+ include/linux/clk-provider.h                       |    3 ++
+ 3 files changed, 43 insertions(+), 6 deletions(-)
 
-The support of accuracy retrieval may benefit to the at91 platform (I explain
-why in the following paragraphs).
-
-I don't know if other platforms may benefit from this accuracy support. This
-series is here to get feedbacks from other developpers/maintainers, and see if
-this can be integrated in the clk framework.
-
-Here is why at91 platform may need the clk accuracy informations:
-
-AT91 SoCs provide a slow clock (32 KHz clock) which can be used as a clock
-source for some peripherals (USART, TC blocks, ...).
-
-This slow clock can be generated from 2 sources:
-- a 32KHz internal RC with a poor accuracy (50000 ppm)
-- a 32KHz external crystal oscillator
-
-Most of the supported at91 boards (if not all) use the external 32KHz crystal
-source except for the kizbox (the board I'm working with :)).
-It probably comes from a bad hardware design (hardware team should have
-connected a crystal oscillator to the SoC instead of relying on the unaccurate
-internal RC).
-Anyway, I can't change the hardware as it is already widely deployed.
-
-What I'm proposing is to give clock users the ability to retrieve clocks
-accuracies in order to choose the most accurate source (or at least discard
-clocks with poor accuracy).
-
-Could you tell me if this approach is right, and if other platforms/boards have
-similar issues and would be interrested by this series ?
-
-Best Regards,
-
-Boris
-
-Boris BREZILLON (2):
-  clk: add clk accuracy retrieval support
-  clk: add accuracy support for fixed clock
-
- Documentation/clk.txt                              |    4 +
- .../devicetree/bindings/clock/fixed-clock.txt      |    3 +
- drivers/clk/Kconfig                                |    4 +
- drivers/clk/clk-fixed-rate.c                       |   43 +++++++--
- drivers/clk/clk.c                                  |   92 +++++++++++++++++++-
- include/linux/clk-private.h                        |    1 +
- include/linux/clk-provider.h                       |   14 +++
- include/linux/clk.h                                |   17 ++++
- 8 files changed, 168 insertions(+), 10 deletions(-)
-
+diff --git a/Documentation/devicetree/bindings/clock/fixed-clock.txt b/Documentation/devicetree/bindings/clock/fixed-clock.txt
+index 0b1fe78..48ea0ad 100644
+--- a/Documentation/devicetree/bindings/clock/fixed-clock.txt
++++ b/Documentation/devicetree/bindings/clock/fixed-clock.txt
+@@ -10,6 +10,8 @@ Required properties:
+ - clock-frequency : frequency of clock in Hz. Should be a single cell.
+ 
+ Optional properties:
++- clock-accuracy : accuracy of clock in ppb (parts per billion).
++		   Should be a single cell.
+ - gpios : From common gpio binding; gpio connection to clock enable pin.
+ - clock-output-names : From common clock binding.
+ 
+@@ -18,4 +20,5 @@ Example:
+ 		compatible = "fixed-clock";
+ 		#clock-cells = <0>;
+ 		clock-frequency = <1000000000>;
++		clock-accuracy = <100>;
+ 	};
+diff --git a/drivers/clk/clk-fixed-rate.c b/drivers/clk/clk-fixed-rate.c
+index 1ed591a..0fc56ab 100644
+--- a/drivers/clk/clk-fixed-rate.c
++++ b/drivers/clk/clk-fixed-rate.c
+@@ -34,22 +34,31 @@ static unsigned long clk_fixed_rate_recalc_rate(struct clk_hw *hw,
+ 	return to_clk_fixed_rate(hw)->fixed_rate;
+ }
+ 
++static unsigned long clk_fixed_rate_recalc_accuracy(struct clk_hw *hw,
++		unsigned long parent_accuracy)
++{
++	return to_clk_fixed_rate(hw)->fixed_accuracy;
++}
++
+ const struct clk_ops clk_fixed_rate_ops = {
+ 	.recalc_rate = clk_fixed_rate_recalc_rate,
++	.recalc_accuracy = clk_fixed_rate_recalc_accuracy,
+ };
+ EXPORT_SYMBOL_GPL(clk_fixed_rate_ops);
+ 
+ /**
+- * clk_register_fixed_rate - register fixed-rate clock with the clock framework
++ * clk_register_fixed_rate_with_accuracy - register fixed-rate clock with the
++ *					   clock framework
+  * @dev: device that is registering this clock
+  * @name: name of this clock
+  * @parent_name: name of clock's parent
+  * @flags: framework-specific flags
+  * @fixed_rate: non-adjustable clock rate
++ * @fixed_accuracy: non-adjustable clock rate
+  */
+-struct clk *clk_register_fixed_rate(struct device *dev, const char *name,
+-		const char *parent_name, unsigned long flags,
+-		unsigned long fixed_rate)
++struct clk *clk_register_fixed_rate_with_accuracy(struct device *dev,
++		const char *name, const char *parent_name, unsigned long flags,
++		unsigned long fixed_rate, unsigned long fixed_accuracy)
+ {
+ 	struct clk_fixed_rate *fixed;
+ 	struct clk *clk;
+@@ -70,16 +79,33 @@ struct clk *clk_register_fixed_rate(struct device *dev, const char *name,
+ 
+ 	/* struct clk_fixed_rate assignments */
+ 	fixed->fixed_rate = fixed_rate;
++	fixed->fixed_accuracy = fixed_accuracy;
+ 	fixed->hw.init = &init;
+ 
+ 	/* register the clock */
+ 	clk = clk_register(dev, &fixed->hw);
+-
+ 	if (IS_ERR(clk))
+ 		kfree(fixed);
+ 
+ 	return clk;
+ }
++EXPORT_SYMBOL_GPL(clk_register_fixed_rate_with_accuracy);
++
++/**
++ * clk_register_fixed_rate - register fixed-rate clock with the clock framework
++ * @dev: device that is registering this clock
++ * @name: name of this clock
++ * @parent_name: name of clock's parent
++ * @flags: framework-specific flags
++ * @fixed_rate: non-adjustable clock rate
++ */
++struct clk *clk_register_fixed_rate(struct device *dev, const char *name,
++		const char *parent_name, unsigned long flags,
++		unsigned long fixed_rate)
++{
++	return clk_register_fixed_rate_with_accuracy(dev, name, parent_name,
++						     flags, fixed_rate, 0);
++}
+ EXPORT_SYMBOL_GPL(clk_register_fixed_rate);
+ 
+ #ifdef CONFIG_OF
+@@ -91,13 +117,18 @@ void of_fixed_clk_setup(struct device_node *node)
+ 	struct clk *clk;
+ 	const char *clk_name = node->name;
+ 	u32 rate;
++	u32 accuracy = 0;
+ 
+ 	if (of_property_read_u32(node, "clock-frequency", &rate))
+ 		return;
+ 
++	of_property_read_u32(node, "clock-accuracy", &accuracy);
++
+ 	of_property_read_string(node, "clock-output-names", &clk_name);
+ 
+-	clk = clk_register_fixed_rate(NULL, clk_name, NULL, CLK_IS_ROOT, rate);
++	clk = clk_register_fixed_rate_with_accuracy(NULL, clk_name, NULL,
++						    CLK_IS_ROOT, rate,
++						    accuracy);
+ 	if (!IS_ERR(clk))
+ 		of_clk_add_provider(node, of_clk_src_simple_get, clk);
+ }
+diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
+index 942811d..67878a4 100644
+--- a/include/linux/clk-provider.h
++++ b/include/linux/clk-provider.h
+@@ -212,6 +212,9 @@ extern const struct clk_ops clk_fixed_rate_ops;
+ struct clk *clk_register_fixed_rate(struct device *dev, const char *name,
+ 		const char *parent_name, unsigned long flags,
+ 		unsigned long fixed_rate);
++struct clk *clk_register_fixed_rate_with_accuracy(struct device *dev,
++		const char *name, const char *parent_name, unsigned long flags,
++		unsigned long fixed_rate, unsigned long fixed_accuracy);
+ 
+ void of_fixed_clk_setup(struct device_node *np);
+ 
 -- 
 1.7.9.5
 
