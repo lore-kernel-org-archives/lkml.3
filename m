@@ -1,46 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754609Ab3JMOqe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Oct 2013 10:46:34 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:46047 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754497Ab3JMOqd (ORCPT
+	id S1754327Ab3JMOuo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Oct 2013 10:50:44 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:54131 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753550Ab3JMOun (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Oct 2013 10:46:33 -0400
-From: "ethan.zhao" <ethan.kernel@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, "ethan.zhao" <ethan.kernel@gmail.com>
-Subject: [PATCH] drivers/base/core.c: output device renaming messages with dev_dbg(). 
-Date: Sun, 13 Oct 2013 22:44:45 +0800
-Message-Id: <1381675485-695-1-git-send-email-ethan.kernel@gmail.com>
-X-Mailer: git-send-email 1.7.12.4 (Apple Git-37)
+	Sun, 13 Oct 2013 10:50:43 -0400
+From: Jiang Liu <liuj97@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
+Cc: Jiang Liu <jiang.liu@huawei.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 0/7] Optimize jump label implementation on ARM64
+Date: Sun, 13 Oct 2013 22:50:20 +0800
+Message-Id: <1381675827-1610-1-git-send-email-liuj97@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "ethan.zhao" <ethan.kernel@gmail.com>
+From: Jiang Liu <jiang.liu@huawei.com>
 
-Replace pr_debug() with dev_dbg().
+This patchset tries to optimize arch specfic jump label implementation
+for ARM64 by dynamic kernel text patching.
 
-Signed-off-by: ethan.zhao <ethan.kernel@gmail.com>
----
- drivers/base/core.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+To enable this feature, your toolchain must support "asm goto" extension
+and "%c" constraint extesion. Current GCC for AARCH64 doesn't support
+"%c", so you need a GCC patch similiar to this:
+http://gcc.gnu.org/viewcvs/gcc/trunk/gcc/config/arm/arm.c?view=patch&r1=175293&r2=175565&pathrev=175565
+http://gcc.gnu.org/bugzilla/show_bug.cgi?id=48637
 
-diff --git a/drivers/base/core.c b/drivers/base/core.c
-index 2d1c6ba..8c4d3dc 100644
---- a/drivers/base/core.c
-+++ b/drivers/base/core.c
-@@ -1904,8 +1904,7 @@ int device_rename(struct device *dev, const char *new_name)
- 	if (!dev)
- 		return -EINVAL;
- 
--	pr_debug("device: '%s': %s: renaming to '%s'\n", dev_name(dev),
--		 __func__, new_name);
-+	dev_dbg(dev, "renaming to %s\n", new_name);
- 
- 	old_device_name = kstrdup(dev_name(dev), GFP_KERNEL);
- 	if (!old_device_name) {
+It has been tested on ARM Fast mode, but not on real hardware yet.
+
+Any comments are welcomed!
+
+V1->V2: address review comments of V1
+1) refine comments
+2) add a new interface to always synchronize with stop_machine()
+   when patching code
+3) handle endian issue when patching code
+
+Jiang Liu (7):
+  arm64: introduce basic aarch64 instruction decoding helpers
+  arm64: introduce interfaces to hotpatch kernel and module code
+  arm64: move encode_insn_immediate() from module.c to insn.c
+  arm64: introduce aarch64_insn_gen_{nop|branch_imm}() helper functions
+  arm64, jump label: detect %c support for ARM64
+  arm64, jump label: optimize jump label implementation
+  jump_label: use defined macros instead of hard-coding for better
+    readability
+
+ arch/arm64/Kconfig                  |   1 +
+ arch/arm64/include/asm/insn.h       |  79 ++++++++++
+ arch/arm64/include/asm/jump_label.h |  52 +++++++
+ arch/arm64/kernel/Makefile          |   3 +-
+ arch/arm64/kernel/insn.c            | 290 ++++++++++++++++++++++++++++++++++++
+ arch/arm64/kernel/jump_label.c      |  60 ++++++++
+ arch/arm64/kernel/module.c          | 151 ++++---------------
+ include/linux/jump_label.h          |  15 +-
+ scripts/gcc-goto.sh                 |   2 +-
+ 9 files changed, 527 insertions(+), 126 deletions(-)
+ create mode 100644 arch/arm64/include/asm/insn.h
+ create mode 100644 arch/arm64/include/asm/jump_label.h
+ create mode 100644 arch/arm64/kernel/insn.c
+ create mode 100644 arch/arm64/kernel/jump_label.c
+
 -- 
-1.7.12.4 (Apple Git-37)
+1.8.1.2
 
