@@ -1,52 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755317Ab3JMUsd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Oct 2013 16:48:33 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:46836 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755160Ab3JMUsb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Oct 2013 16:48:31 -0400
-Message-ID: <525B06CB.6090602@zytor.com>
-Date: Sun, 13 Oct 2013 13:47:07 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1755309Ab3JMVMs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Oct 2013 17:12:48 -0400
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:43200 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755192Ab3JMVMr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Oct 2013 17:12:47 -0400
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>, Matt Fleming <matt@console-pimps.org>
-CC: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Matt Fleming <matt.fleming@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Peter Jones <pjones@redhat.com>
-Subject: Re: [PATCH] x86/efi: Add EFI framebuffer earlyprintk support
-References: <1381423261-30566-1-git-send-email-matt@console-pimps.org> <20131010172844.GA26430@gmail.com> <20131011140039.GF12321@console-pimps.org> <20131012174934.GA18849@gmail.com>
-In-Reply-To: <20131012174934.GA18849@gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Date: Mon, 14 Oct 2013 01:12:47 +0400
+Message-ID: <CAMo8BfKqWPbDCMwCoH6BO6uXyYwr0Z1=AaMJDRLQt66FLb7LAg@mail.gmail.com>
+Subject: CONFIG_SLUB/USE_SPLIT_PTLOCKS compatibility
+From: Max Filippov <jcmvbkbc@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/12/2013 10:49 AM, Ingo Molnar wrote:
-> 
->>>> +static void early_efi_write_char(void *dst, char c, int h)
->>>> +{
->>>> +	const u8 *src;
->>>> +	u32 fgcolor = 0xaaaaaa;
->>>
->>> That's RGB grey, right? Why not 0xffffff for a very visible white?
->>  
->> The VGA earlyprintk code uses the equivalent grey, AFAIK, which is why I 
->> picked this value.
-> 
-> The VGA code should be changed to white too I suspect ;-)
-> 
+Hello,
 
-For compatibility with the classical text console we use light grey as
-the default color and a double-stroked font (which was necessary on the
-CGA display since it didn't have enough bandwidth to handle
-single-stroked fonts well).  The problem with changing that to white is
-that you end up with a mismatch between the earlyprintk console and the
-"real" console, *or* we change the behavior of everyone's consoles...
+I'm reliably getting kernel crash on xtensa when CONFIG_SLUB
+is selected and USE_SPLIT_PTLOCKS appears to be true (SMP=y,
+NR_CPUS=4, DEBUG_SPINLOCK=n, DEBUG_LOCK_ALLOC=n).
+This happens because spinlock_t ptl and struct page *first_page overlap
+in the struct page. The following call chain makes allocation of order
+3 and initializes first_page pointer in its 7 tail pages:
 
-	-hpa
+ do_page_fault
+  handle_mm_fault
+   __pte_alloc
+    kmem_cache_alloc
+     __slab_alloc
+      new_slab
+       __alloc_pages_nodemask
+        get_page_from_freelist
+         prep_compound_page
 
+Later pte_offset_map_lock is called with one of these tail pages
+overwriting its first_page pointer:
 
+ do_fork
+  copy_process
+   dup_mm
+    copy_page_range
+     copy_pte_range
+      pte_alloc_map_lock
+       pte_offset_map_lock
+
+Finally kmem_cache_free is called for that tail page, which calls
+slab_free(s, virt_to_head_page(x),... but virt_to_head_page here
+returns NULL, because the page's first_page pointer was overwritten
+earlier:
+
+exit_mmap
+ free_pgtables
+  free_pgd_range
+   free_pud_range
+    free_pmd_range
+     free_pte_range
+      pte_free
+       kmem_cache_free
+        slab_free
+         __slab_free
+
+__slab_free touches NULL struct page, that's it.
+
+Changing allocator to SLAB or enabling DEBUG_SPINLOCK
+fixes that crash.
+
+My question is, is CONFIG_SLUB supposed to work with
+USE_SPLIT_PTLOCKS (and if yes what's wrong in my case)?
+
+-- 
+Thanks.
+-- Max
