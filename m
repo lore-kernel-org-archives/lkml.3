@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755263Ab3JMTZx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Oct 2013 15:25:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15615 "EHLO mx1.redhat.com"
+	id S1755235Ab3JMTZw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Oct 2013 15:25:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41728 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755180Ab3JMTZn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Oct 2013 15:25:43 -0400
-Date: Sun, 13 Oct 2013 21:18:38 +0200
+	id S1755158Ab3JMTZh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Oct 2013 15:25:37 -0400
+Date: Sun, 13 Oct 2013 21:18:31 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: Anton Arapov <aarapov@redhat.com>, David Smith <dsmith@redhat.com>,
@@ -15,9 +15,8 @@ Cc: Anton Arapov <aarapov@redhat.com>, David Smith <dsmith@redhat.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 3/5] uprobes: Teach __create_xol_area() to accept the
-	predefined vaddr
-Message-ID: <20131013191838.GA32490@redhat.com>
+Subject: [PATCH 1/5] uprobes: Change the callsite of uprobe_copy_process()
+Message-ID: <20131013191831.GA32480@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -27,79 +26,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently xol_add_vma() uses get_unmapped_area() for area->vaddr,
-but the next patches need to use the fixed address. So this patch
-adds the new "vaddr" argument to __create_xol_area() which should
-be used as area->vaddr if it is nonzero.
+Preparation for the next patches.
 
-xol_add_vma() doesn't bother to verify that the predefined addr is
-not used, insert_vm_struct() should fail if find_vma_links() detects
-the overlap with the existing vma.
+Move the callsite of uprobe_copy_process() in copy_process() down
+to the succesfull return. We do not care if copy_process() fails,
+uprobe_free_utask() won't be called in this case so the wrong
+->utask != NULL doesn't matter.
 
-Also, __create_xol_area() doesn't need __GFP_ZERO to allocate area.
+OTOH, with this change we know that copy_process() can't fail when
+uprobe_copy_process() is called, the new task should either return
+to user-mode or call do_exit(). This way uprobe_copy_process() can:
+
+	1. setup p->utask != NULL if necessary
+
+	2. setup uprobes_state.xol_area
+
+	3. use task_work_add(p)
+
+Also, move the definition of uprobe_copy_process() down so that it
+can see get_utask().
 
 Cc: stable@vger.kernel.org # 3.9+
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- kernel/events/uprobes.c |   18 +++++++++++-------
- 1 files changed, 11 insertions(+), 7 deletions(-)
+ kernel/events/uprobes.c |   16 ++++++++--------
+ kernel/fork.c           |    2 +-
+ 2 files changed, 9 insertions(+), 9 deletions(-)
 
 diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index c09d417..c836135 100644
+index ad8e1bd..db7a1dc 100644
 --- a/kernel/events/uprobes.c
 +++ b/kernel/events/uprobes.c
-@@ -1104,11 +1104,14 @@ static int xol_add_vma(struct mm_struct *mm, struct xol_area *area)
- 	if (mm->uprobes_state.xol_area)
- 		goto fail;
- 
-+	if (!area->vaddr) {
- 		/* Try to map as high as possible, this is only a hint. */
--	area->vaddr = get_unmapped_area(NULL, TASK_SIZE - PAGE_SIZE, PAGE_SIZE, 0, 0);
--	if (area->vaddr & ~PAGE_MASK) {
--		ret = area->vaddr;
--		goto fail;
-+		area->vaddr = get_unmapped_area(NULL, TASK_SIZE - PAGE_SIZE,
-+						PAGE_SIZE, 0, 0);
-+		if (area->vaddr & ~PAGE_MASK) {
-+			ret = area->vaddr;
-+			goto fail;
-+		}
- 	}
- 
- 	ret = install_special_mapping(mm, area->vaddr, PAGE_SIZE,
-@@ -1124,13 +1127,13 @@ static int xol_add_vma(struct mm_struct *mm, struct xol_area *area)
- 	return ret;
+@@ -1345,14 +1345,6 @@ void uprobe_free_utask(struct task_struct *t)
  }
  
--static struct xol_area *__create_xol_area(void)
-+static struct xol_area *__create_xol_area(unsigned long vaddr)
- {
- 	struct mm_struct *mm = current->mm;
- 	uprobe_opcode_t insn = UPROBE_SWBP_INSN;
- 	struct xol_area *area;
+ /*
+- * Called in context of a new clone/fork from copy_process.
+- */
+-void uprobe_copy_process(struct task_struct *t)
+-{
+-	t->utask = NULL;
+-}
+-
+-/*
+  * Allocate a uprobe_task object for the task if if necessary.
+  * Called when the thread hits a breakpoint.
+  *
+@@ -1368,6 +1360,14 @@ static struct uprobe_task *get_utask(void)
+ }
  
--	area = kzalloc(sizeof(*area), GFP_KERNEL);
-+	area = kmalloc(sizeof(*area), GFP_KERNEL);
- 	if (unlikely(!area))
- 		goto out;
+ /*
++ * Called in context of a new clone/fork from copy_process.
++ */
++void uprobe_copy_process(struct task_struct *t)
++{
++	t->utask = NULL;
++}
++
++/*
+  * Current area->vaddr notion assume the trampoline address is always
+  * equal area->vaddr.
+  *
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 086fe73..d3603b8 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1373,7 +1373,6 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+ 	INIT_LIST_HEAD(&p->pi_state_list);
+ 	p->pi_state_cache = NULL;
+ #endif
+-	uprobe_copy_process(p);
+ 	/*
+ 	 * sigaltstack should be cleared when sharing the same VM
+ 	 */
+@@ -1490,6 +1489,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+ 	perf_event_fork(p);
  
-@@ -1142,6 +1145,7 @@ static struct xol_area *__create_xol_area(void)
- 	if (!area->page)
- 		goto free_bitmap;
+ 	trace_task_newtask(p, clone_flags);
++	uprobe_copy_process(p);
  
-+	area->vaddr = vaddr;
- 	init_waitqueue_head(&area->wq);
- 	/* Reserve the 1st slot for get_trampoline_vaddr() */
- 	set_bit(0, area->bitmap);
-@@ -1172,7 +1176,7 @@ static struct xol_area *get_xol_area(void)
- 	struct xol_area *area;
+ 	return p;
  
- 	if (!mm->uprobes_state.xol_area)
--		__create_xol_area();
-+		__create_xol_area(0);
- 
- 	area = mm->uprobes_state.xol_area;
- 	smp_read_barrier_depends();	/* pairs with wmb in xol_add_vma() */
 -- 
 1.5.5.1
 
