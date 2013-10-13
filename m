@@ -1,53 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754114Ab3JMILQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Oct 2013 04:11:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6582 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753759Ab3JMILM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Oct 2013 04:11:12 -0400
-Date: Sun, 13 Oct 2013 11:11:00 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Cc: mingo@redhat.com, hpa@zytor.com, tglx@linutronix.de, x86@kernel.org,
-        pbonzini@redhat.com, konrad.wilk@oracle.com,
-        habanero@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, mtosatti@redhat.com,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] kvm fix: Enable pvspinlock after jump_label_init() to
- avoid VM hang
-Message-ID: <20131013081059.GA15657@redhat.com>
-References: <y>
- <1381309401-23663-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
- <525A5519.2050205@linux.vnet.ibm.com>
+	id S1753892Ab3JMIXW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Oct 2013 04:23:22 -0400
+Received: from www1453.sakura.ne.jp ([219.94.163.63]:56652 "EHLO
+	www1453.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753550Ab3JMIXU convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Oct 2013 04:23:20 -0400
+X-Greylist: delayed 2887 seconds by postgrey-1.27 at vger.kernel.org; Sun, 13 Oct 2013 04:23:19 EDT
+Message-ID: <30BD272231B4427696789388A9C9F8FD@tidj>
+Reply-To: "kristina-svetlova4" <fionakraft@chass.utoronto.ca>
+From: "kristina-svetlova4" <webmaster@anetservices.biz>
+To: <info@mymunami.rugestour>, <belinda@etudes.freeserve.co.uk>,
+        <linux-kernel@vger.kernel.org>, <lomonosova@tesar-city.ru>,
+        <skip2811@ya.ru>
+Subject: =?windows-1251?B?7eDo6/P3+OjpIOzl8u7kIOL76+X36PL8IOPr?=
+	=?windows-1251?B?4Ofo6ug=?=
+Date: Sun, 13 Oct 2013 09:34:55 +0200
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <525A5519.2050205@linux.vnet.ibm.com>
+Content-Type: text/plain;
+	charset="windows-1251";
+Content-Transfer-Encoding: 8BIT
+X-Priority: 3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 13, 2013 at 01:38:57PM +0530, Raghavendra K T wrote:
-> On 10/09/2013 02:33 PM, Raghavendra K T wrote:
-> >We use jump label to enable pv-spinlock. With the changes in
-> >(442e0973e927 Merge branch 'x86/jumplabel'), the jump label behaviour has changed
-> >that would result in evntual hang of the VM since we would end up in a situation
-> >where slowpath locks would halt the vcpus but we will not be able to wakeup the
-> >vcpu by lock releaser using unlock kick.
-> >
-> >Similar problem in Xen and more detailed description is available in
-> >a945928ea270 (xen: Do not enable spinlocks before jump_label_init() has executed)
-> >
-> >This patch splits kvm_spinlock_init to separate jump label changes with pvops
-> >patching and also make jump label enabling after jump_label_init().
-> >
-> >Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-> 
-> Ingo,
-> Could you please take this fix?
-> This is reviewed by Paolo and Steven.
-It's KVM, I'll take it.
-
---
-			Gleb.
+изрядное зрение неизменно уважается http://demo1.s37.by/wp-content/plugins/wp_sed/lferm.htm?Dzc
