@@ -1,50 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755172Ab3JMS3Q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Oct 2013 14:29:16 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:57697 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754971Ab3JMS3P (ORCPT
+	id S1755105Ab3JMSmR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Oct 2013 14:42:17 -0400
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:62325 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754971Ab3JMSmQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Oct 2013 14:29:15 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <525AE675.1010606@roeck-us.net>
-Date: Sun, 13 Oct 2013 11:29:09 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Sun, 13 Oct 2013 14:42:16 -0400
+Date: Sun, 13 Oct 2013 14:42:12 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>, grygorii.strashko@ti.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>, yinghai@kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC 06/23] mm/memblock: Add memblock early memory allocation
+ apis
+Message-ID: <20131013184212.GA18075@htj.dyndns.org>
+References: <1381615146-20342-1-git-send-email-santosh.shilimkar@ti.com>
+ <1381615146-20342-7-git-send-email-santosh.shilimkar@ti.com>
+ <20131013175648.GC5253@mtj.dyndns.org>
+ <20131013180058.GG25034@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-To: Wim Van Sebroeck <wim@iguana.be>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Subject: Re: [GIT PULL REQUEST] watchdog - v3.12-rc4 Fixes
-References: <20131013180727.GN401@spo001.leaseweb.com> <525AE311.8060605@roeck-us.net> <20131013181933.GP401@spo001.leaseweb.com>
-In-Reply-To: <20131013181933.GP401@spo001.leaseweb.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131013180058.GG25034@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/13/2013 11:19 AM, Wim Van Sebroeck wrote:
-> Hi Guenter,
->
->> Looks like the diffs don't match the description.
->> Are those possibly the diffs from your previous pull request ?
->
->>From a 3.6 pull request to be precisely :-( I use the old mail
-> as template and apparently forgot to change the diff...
-> The correct diff here below.
->
+On Sun, Oct 13, 2013 at 07:00:59PM +0100, Russell King - ARM Linux wrote:
+> On Sun, Oct 13, 2013 at 01:56:48PM -0400, Tejun Heo wrote:
+> > Hello,
+> > 
+> > On Sat, Oct 12, 2013 at 05:58:49PM -0400, Santosh Shilimkar wrote:
+> > > Introduce memblock early memory allocation APIs which allow to support
+> > > LPAE extension on 32 bits archs. More over, this is the next step
+> > 
+> > LPAE isn't something people outside arm circle would understand.
+> > Let's stick to highmem.
+> 
+> LPAE != highmem.  Two totally different things, unless you believe
+> system memory always starts at physical address zero, which is very
+> far from the case on the majority of ARM platforms.
+> 
+> So replacing LPAE with "highmem" is pure misrepresentation and is
+> inaccurate.  PAE might be a better term, and is also the x86 term
+> for this.
 
-I use a template and script to generate my pull request e-mails to avoid
-this kind of problem. This way worst that can happen is an unexpected
-"rcX" in the headline ... unless the pull request itself is screwed up,
-which I should hopefully notice before I send it out.
+Ah, right, forgot about the base address.  Let's please spell out the
+requirements then.  Briefly explaining both aspects (non-zero base
+addr & highmem) and why the existing bootmem based interfaced can't
+serve them would be helpful to later readers.
 
-Guenter
+Thanks.
 
+-- 
+tejun
