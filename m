@@ -1,91 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754182Ab3JMKH5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Oct 2013 06:07:57 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:34843 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753952Ab3JMKHz (ORCPT
+	id S1754224Ab3JMKOB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Oct 2013 06:14:01 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:53006 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753970Ab3JMKNx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Oct 2013 06:07:55 -0400
-Message-ID: <525A70EF.8000503@gmail.com>
-Date: Sun, 13 Oct 2013 18:07:43 +0800
-From: Lennox Wu <lennox.wu@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Sun, 13 Oct 2013 06:13:53 -0400
+Message-ID: <525A725E.5070308@linaro.org>
+Date: Sun, 13 Oct 2013 12:13:50 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-arch@vger.kernel.org, Chen Liqin <liqin.chen@sunplusct.com>
-Subject: Re: [PATCH 25/34] score: handle pgtable_page_ctor() fail
-References: <1381428359-14843-1-git-send-email-kirill.shutemov@linux.intel.com> <1381428359-14843-26-git-send-email-kirill.shutemov@linux.intel.com>
-In-Reply-To: <1381428359-14843-26-git-send-email-kirill.shutemov@linux.intel.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="er0PeqXieLTmsBfs7UNSVDVx4wcWwM5RK"
+To: boris brezillon <b.brezillon@overkiz.com>,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>,
+        nicolas.ferre@atmel.com, tglx@linutronix.de
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] clocksource: at91/tc: remove deprecated IRQF_DISABLED
+References: <1381639559-6981-1-git-send-email-michael.opdenacker@free-electrons.com> <525A679A.2060408@overkiz.com>
+In-Reply-To: <525A679A.2060408@overkiz.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---er0PeqXieLTmsBfs7UNSVDVx4wcWwM5RK
-Content-Type: text/plain; charset=Big5
-Content-Transfer-Encoding: quoted-printable
-
-Thanks.
-
-Acked-by: Lennox Wu <lennox.wu@gmail.com>
-
-=A9=F3 2013/10/11 =A4W=A4=C8 02:05, Kirill A. Shutemov =B4=A3=A8=EC:
-> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> Cc: Chen Liqin <liqin.chen@sunplusct.com>
-> Cc: Lennox Wu <lennox.wu@gmail.com>
-> ---
->  arch/score/include/asm/pgalloc.h | 9 ++++++---
->  1 file changed, 6 insertions(+), 3 deletions(-)
+On 10/13/2013 11:27 AM, boris brezillon wrote:
+> Hello Micheal,
 >
-> diff --git a/arch/score/include/asm/pgalloc.h b/arch/score/include/asm/=
-pgalloc.h
-> index 059a61b707..2a861ffbd5 100644
-> --- a/arch/score/include/asm/pgalloc.h
-> +++ b/arch/score/include/asm/pgalloc.h
-> @@ -54,9 +54,12 @@ static inline struct page *pte_alloc_one(struct mm_s=
-truct *mm,
->  	struct page *pte;
-> =20
->  	pte =3D alloc_pages(GFP_KERNEL | __GFP_REPEAT, PTE_ORDER);
-> -	if (pte) {
-> -		clear_highpage(pte);
-> -		pgtable_page_ctor(pte);
-> +	if (!pte)
-> +		return NULL;
-> +	clear_highpage(pte);
-> +	if (!pgtable_page_ctor(pte)) {
-> +		__free_page(pte);
-> +		return NULL;
->  	}
->  	return pte;
->  }
+> This flag has been removed in a recent submission (see
+> https://lkml.org/lkml/2013/10/2/202), and, if I'm correct, is on his way
+> for mainlining.
+
+Yes, it has been merged in the tip tree:
+
+https://git.kernel.org/cgit/linux/kernel/git/tip/tip.git/commit/?h=timers/core&id=f51380a75652a4600b34ce384c4ff89ce0a15132
+
+> On 13/10/2013 06:45, Michael Opdenacker wrote:
+>> This patch proposes to remove the use of the IRQF_DISABLED flag
+>>
+>> It's a NOOP since 2.6.35 and it will be removed one day.
+>>
+>> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+>> ---
+>>   drivers/clocksource/tcb_clksrc.c | 2 +-
+>>   1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/clocksource/tcb_clksrc.c
+>> b/drivers/clocksource/tcb_clksrc.c
+>> index 8a61872..2efeb3b 100644
+>> --- a/drivers/clocksource/tcb_clksrc.c
+>> +++ b/drivers/clocksource/tcb_clksrc.c
+>> @@ -180,7 +180,7 @@ static irqreturn_t ch2_irq(int irq, void *handle)
+>>
+>>   static struct irqaction tc_irqaction = {
+>>       .name        = "tc_clkevt",
+>> -    .flags        = IRQF_TIMER | IRQF_DISABLED,
+>> +    .flags        = IRQF_TIMER,
+>>       .handler    = ch2_irq,
+>>   };
+>>
+>>
+>
 
 
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
---er0PeqXieLTmsBfs7UNSVDVx4wcWwM5RK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.7 (MingW32)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQEVAwUBUlpw8hIBnItolwGVAQL/sQf/QneZCl4KA0apRznG3MOEsettXq6ekB7+
-y0qtw81SJ/fUEVu9kPCzQByOYwRdgAoiSObTUKoFzzUQkCuHSm7AmZF1YUE2v7ne
-E2pMXv/haP0sNj8ZBMCYTZa/6TcC5sVsY1Rxwo0yB+BqxXcRh1pg37SIm/6Clf5i
-7iHWkGNo5o+egq6bc7MJ9XtxejIahi202BnPZdGWeVUH8amxplDcmvd0WNpkArRd
-ds/39+NASiAJzP6WvNM5vBdKJccoEnkm7PJw13x5CbRs8COXexxZTQDoOPuBhZem
-P1Bloy85A0/k2S2nQc4Ql2jRnTZLaQIKUUEed2Wy5FuW3VOz2cBivg==
-=w5X6
------END PGP SIGNATURE-----
-
---er0PeqXieLTmsBfs7UNSVDVx4wcWwM5RK--
