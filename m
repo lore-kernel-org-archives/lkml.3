@@ -1,44 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754553Ab3JMPfE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Oct 2013 11:35:04 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:40791 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753186Ab3JMPfB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Oct 2013 11:35:01 -0400
-Date: Sun, 13 Oct 2013 11:35:00 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
+	id S1754605Ab3JMPpx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Oct 2013 11:45:53 -0400
+Received: from mga14.intel.com ([143.182.124.37]:2060 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753186Ab3JMPpw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Oct 2013 11:45:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,486,1378882800"; 
+   d="scan'208";a="374127918"
+Date: Sun, 13 Oct 2013 20:23:06 +0530
+From: Vinod Koul <vinod.koul@intel.com>
 To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-cc: gregkh@linuxfoundation.org, <sarah.a.sharp@linux.intel.com>,
-        <tianyu.lan@intel.com>, <broonie@linaro.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb/hcd: remove unnecessary local_irq_save
-In-Reply-To: <1381648459-2957-1-git-send-email-michael.opdenacker@free-electrons.com>
-Message-ID: <Pine.LNX.4.44L0.1310131133410.11381-100000@netrider.rowland.org>
+Cc: linus.walleij@linaro.org, dan.j.williams@intel.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] dma: coh901318: remove deprecated IRQF_DISABLED
+Message-ID: <20131013145306.GG2954@intel.com>
+References: <1381640400-7146-1-git-send-email-michael.opdenacker@free-electrons.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1381640400-7146-1-git-send-email-michael.opdenacker@free-electrons.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 13 Oct 2013, Michael Opdenacker wrote:
-
-> Remove the use of local_irq_save() and IRQF_DISABLED, no longer needed since
-> interrupt handlers are always run with interrupts disabled on the
-> current CPU.
+On Sun, Oct 13, 2013 at 07:00:00AM +0200, Michael Opdenacker wrote:
+> This patch proposes to remove the use of the IRQF_DISABLED flag
 > 
-> Tested successfully with 3.12.0-rc4 on my PC. Didn't find
-> any issue because of this change.
+> It's a NOOP since 2.6.35 and it will be removed one day.
+Applied, thanks
+
+~Vinod
+
 > 
 > Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
 > ---
->  drivers/usb/core/hcd.c | 15 ---------------
->  1 file changed, 15 deletions(-)
+>  drivers/dma/coh901318.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/dma/coh901318.c b/drivers/dma/coh901318.c
+> index 31011d2..3025b91 100644
+> --- a/drivers/dma/coh901318.c
+> +++ b/drivers/dma/coh901318.c
+> @@ -2694,7 +2694,7 @@ static int __init coh901318_probe(struct platform_device *pdev)
+>  	if (irq < 0)
+>  		return irq;
+>  
+> -	err = devm_request_irq(&pdev->dev, irq, dma_irq_handler, IRQF_DISABLED,
+> +	err = devm_request_irq(&pdev->dev, irq, dma_irq_handler, 0,
+>  			       "coh901318", base);
+>  	if (err)
+>  		return err;
+> -- 
+> 1.8.1.2
+> 
 
-How about removing all the other unnecessary usages of IRQF_DISABLED
-under drivers/usb while you're at it?
-
-Alan Stern
-
+-- 
