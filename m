@@ -1,51 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754185Ab3JMJ3j (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Oct 2013 05:29:39 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:53761 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753841Ab3JMJ3h (ORCPT
+	id S1754139Ab3JMJxJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Oct 2013 05:53:09 -0400
+Received: from 18.mo3.mail-out.ovh.net ([87.98.172.162]:43673 "EHLO
+	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753841Ab3JMJxH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Oct 2013 05:29:37 -0400
+	Sun, 13 Oct 2013 05:53:07 -0400
+Message-ID: <525A679A.2060408@overkiz.com>
+Date: Sun, 13 Oct 2013 11:27:54 +0200
+From: boris brezillon <b.brezillon@overkiz.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-In-Reply-To: <1381421199.4248.2.camel@x230.lan>
-References: <1381236524-19633-1-git-send-email-felipe.contreras@gmail.com>
-	<CAHR064ge8zew7uMeD+_LXR3ju5ARGG1y8utLOFzOLexny_DPLA@mail.gmail.com>
-	<1381421199.4248.2.camel@x230.lan>
-Date: Sun, 13 Oct 2013 04:29:34 -0500
-Message-ID: <CAMP44s04+_aP7KpVMTUjdNcRWMg6PC6HBaNhF_uhAHm=fhmTcw@mail.gmail.com>
-Subject: Re: [PATCH v2] platform: x86: asus-wmi: add fan control
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Matthew Garrett <matthew.garrett@nebula.com>
-Cc: "corentin.chary@gmail.com" <corentin.chary@gmail.com>,
-        "acpi4asus-user@lists.sourceforge.net" 
-	<acpi4asus-user@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Michael Opdenacker <michael.opdenacker@free-electrons.com>,
+        nicolas.ferre@atmel.com, daniel.lezcano@linaro.org, tglx@linutronix.de
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] clocksource: at91/tc: remove deprecated IRQF_DISABLED
+References: <1381639559-6981-1-git-send-email-michael.opdenacker@free-electrons.com>
+In-Reply-To: <1381639559-6981-1-git-send-email-michael.opdenacker@free-electrons.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 7465842284055853129
+X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrvdeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrvdeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 10, 2013 at 11:06 AM, Matthew Garrett
-<matthew.garrett@nebula.com> wrote:
-> On Thu, 2013-10-10 at 16:59 +0100, Corentin Chary wrote:
->
->>
->> This doesn't really seems to be related to wmi, and is likely to be
->> available only on a subset of models. Maybe it should a separate
->> driver instead ?
->
-> This version seems to be implemented entirely in WMI, and it's using the
-> same WMI GUID as asus-wmi - implementing it here seems appropriate. I am
-> concerned about the phys/virt thing, though. The ACPI interpreter is
-> running in the kernel, not the hardware - are we artificially limiting
-> SystemMemory opregions to physical addresses?
+Hello Micheal,
 
-I don't see anything in acpi_ex_system_memory_space_handler() that
-takes into consideration virtual addresses.
+This flag has been removed in a recent submission (see 
+https://lkml.org/lkml/2013/10/2/202), and, if I'm correct, is on his way 
+for mainlining.
 
--- 
-Felipe Contreras
+Best Regards,
+
+Boris
+
+On 13/10/2013 06:45, Michael Opdenacker wrote:
+> This patch proposes to remove the use of the IRQF_DISABLED flag
+>
+> It's a NOOP since 2.6.35 and it will be removed one day.
+>
+> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+> ---
+>   drivers/clocksource/tcb_clksrc.c | 2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/clocksource/tcb_clksrc.c b/drivers/clocksource/tcb_clksrc.c
+> index 8a61872..2efeb3b 100644
+> --- a/drivers/clocksource/tcb_clksrc.c
+> +++ b/drivers/clocksource/tcb_clksrc.c
+> @@ -180,7 +180,7 @@ static irqreturn_t ch2_irq(int irq, void *handle)
+>
+>   static struct irqaction tc_irqaction = {
+>   	.name		= "tc_clkevt",
+> -	.flags		= IRQF_TIMER | IRQF_DISABLED,
+> +	.flags		= IRQF_TIMER,
+>   	.handler	= ch2_irq,
+>   };
+>
+>
+
