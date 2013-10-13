@@ -1,54 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755123Ab3JMSCd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Oct 2013 14:02:33 -0400
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:53002 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754921Ab3JMSCc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Oct 2013 14:02:32 -0400
-Date: Sun, 13 Oct 2013 14:02:27 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: yinghai@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        grygorii.strashko@ti.com, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC 07/23] mm/memblock: debug: correct displaying of upper
- memory boundary
-Message-ID: <20131013180227.GD5253@mtj.dyndns.org>
-References: <1381615146-20342-1-git-send-email-santosh.shilimkar@ti.com>
- <1381615146-20342-8-git-send-email-santosh.shilimkar@ti.com>
+	id S1755185Ab3JMSDt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Oct 2013 14:03:49 -0400
+Received: from sauhun.de ([89.238.76.85]:45044 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754778Ab3JMSDr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Oct 2013 14:03:47 -0400
+Date: Sun, 13 Oct 2013 20:03:43 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: RAGHAVENDRA GANIGA <ravi23ganiga@gmail.com>
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] i2c: i2c-core: fix paranthesis coding style issue in
+ i2c-core.c
+Message-ID: <20131013180343.GA5713@katana>
+References: <525ADEC0.7020908@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="IS0zKkzwUGydFO0o"
 Content-Disposition: inline
-In-Reply-To: <1381615146-20342-8-git-send-email-santosh.shilimkar@ti.com>
+In-Reply-To: <525ADEC0.7020908@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 12, 2013 at 05:58:50PM -0400, Santosh Shilimkar wrote:
-> From: Grygorii Strashko <grygorii.strashko@ti.com>
-> 
-> When debugging is enabled (cmdline has "memblock=debug") the memblock
-> will display upper memory boundary per each allocated/freed memory range
-> wrongly. For example:
->  memblock_reserve: [0x0000009e7e8000-0x0000009e7ed000] _memblock_early_alloc_try_nid_nopanic+0xfc/0x12c
-> 
-> The 0x0000009e7ed000 is displayed instead of 0x0000009e7ecfff
-> 
-> Hence, correct this by changing formula used to calculate upper memory
-> boundary to (u64)base + size - 1 instead of  (u64)base + size everywhere
-> in the debug messages.
 
-I kinda prefer base + size because it's easier to actually know the
-size but yeah, it should have been [base, base + size) and other
-places use base + size - 1 notation so it probably is better to stick
-to that.  Maybe move this one to the beginning of the series?
+--IS0zKkzwUGydFO0o
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Acked-by: Tejun Heo <tj@kernel.org>
+On Sun, Oct 13, 2013 at 11:26:16PM +0530, RAGHAVENDRA GANIGA wrote:
+> From 46aed97f5e5a434e8ec24c14e085a138958ba559 Mon Sep 17 00:00:00 2001
+> From: Raghavendra Ganiga <ravi23ganiga@gmail.com>
+> Date: Sun, 13 Oct 2013 19:13:46 +0530
+> Subject: [PATCH] i2c: i2c-core: fix paranthesis coding style issue in
+>  i2c-core.c
+>=20
+> This is a patch to the i2c-core.c file that fixes the paranthesis
+> warning found by the checkpatch.pl tool
+>=20
+> Signed-off-by: Raghavendra Chandra Ganiga <ravi23ganiga@gmail.com>
 
-Thanks.
+You fixed the warning but not the error?
 
--- 
-tejun
+If you fix the split strings, too, I will apply the patch. I am not
+applying one single checkpatch cleanup when there are enough others
+left.
+
+
+--IS0zKkzwUGydFO0o
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSWuB/AAoJEBQN5MwUoCm2J1cQALNibc+HYk/VqjWq2vtjs6u5
+i4rSUIUCSBevv7tXBOF0bcDi8Bi3lismw0Z3XgHc8tCmLdFp2iWVA2fqvCw7AnfU
+SwaUViscjFiQR6R5+uHiOzstYjEKzmGs2CpqpQ3NdFGtrEByzeuzu+XRZhm1ofh1
+WpQAutYrYCM4fobAkIp7H/THO52v3OM135BOl/FS/3RaRnTU7ed4DthnjfCogxwk
+3ywTGIg9jOB+ujM61PRSRcu1vfEt68sqPyx2baoTwivIRcKArIJVTul7tV7Lp3Js
+wxb3wWNbJLBQf9V6UoyotloermBfdvtEqpOjNxW2gLRFd0Xkg1+nMwbrenj9VfPp
+p1Bs4NYkVQCjVvNGyKbKYi3NoodmqmOBorv03Fuwz2sprvGz2XFxL5DtZxsgW2vA
+S5hgc32WOig3Jq0rANdYFSK5G64lZ/PEdFPBd6wuGypVVPI/h5KHTHdLDUGZldGB
+aSbWPxO+EZ/N0uMjaOBcmLpfteAgSvNxeCobGxGmwCRoj22gaKXPxWQWbakp3pix
+2WAiLz+8bg43bBYpoSJkRg5rm3S8FnbB+9yVKKsyZB5dru5Oc9GEIgrf2+UB94bt
+Udn+blDa/bm7guAsewtvZuGCgCZ2K9/2CIOkUMVRHoBtF5AUbCAEv0vU0aEXK+mt
+udYlkXNhYBhyNvIqa44r
+=Vj/J
+-----END PGP SIGNATURE-----
+
+--IS0zKkzwUGydFO0o--
