@@ -1,87 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755261Ab3JMUDM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Oct 2013 16:03:12 -0400
-Received: from mail.abilis.ch ([195.70.19.74]:22659 "EHLO mail.abilis.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755147Ab3JMUDK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Oct 2013 16:03:10 -0400
-Date: Sun, 13 Oct 2013 22:02:52 +0200 (CEST)
-From: Romain Baeriswyl <Romain.Baeriswyl@abilis.com>
-To: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
-Cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Christian Ruppert <chrisr@abilis.com>
-Message-ID: <808496140.2212.1381694572197.JavaMail.root@abilis.com>
-In-Reply-To: <52557606.8030201@st.com>
-Subject: Re: [RFC] net: stmmac: keep RXC running in LPI mode to avoid system
- overload
+	id S1755286Ab3JMUIW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Oct 2013 16:08:22 -0400
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:47061 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755096Ab3JMUIU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Oct 2013 16:08:20 -0400
+Date: Sun, 13 Oct 2013 16:08:16 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, anjana vk <anjanvk12@gmail.com>,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        eunki_kim@samsung.com
+Subject: Re: [PATCH] cgroup: fix to break the while loop in
+ cgroup_attach_task() correctly
+Message-ID: <20131013200816.GE18075@htj.dyndns.org>
+References: <20131004130207.GA9338@redhat.com>
+ <20131007184507.GD27396@htj.dyndns.org>
+ <20131008145833.GA15600@redhat.com>
+ <5254EB2A.7090803@huawei.com>
+ <20131009133047.GA12414@redhat.com>
+ <20131009140551.GA15849@redhat.com>
+ <20131009165448.GA22437@redhat.com>
+ <5257F9E3.5030708@huawei.com>
+ <20131011160004.GA26416@redhat.com>
+ <5258BB05.8030106@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Mailer: Zimbra 7.2.4_GA_2900 (ZimbraWebClient - FF3.0 (Linux)/7.2.4_GA_2900)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5258BB05.8030106@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Guiseppe,
-
-Thanks for your answer. Please find below some details and answers.
-
-> > In order to avoid system overload, the clock RXC from the Phy
-> > should not be
-> > stopped when in LPI mode.
-> >
-> > With the RTL8211E PHY which support EEE mode and with Apple Airport
-> > Extreme that
-> > supports it also, the kernel get frozen as soon as some Ethernet
-> > transfers are
+On Sat, Oct 12, 2013 at 10:59:17AM +0800, Li Zefan wrote:
+> From: Anjana V Kumar <anjanavk12@gmail.com>
 > 
+> Both Anjana and Eunki reported a stall in the while_each_thread loop
+> in cgroup_attach_task().
 > 
-> hmm, I have a board with this transceiver so I could do some tests
-> this could take a while, unfortunately.
+> It's because, when we attach a single thread to a cgroup, if the cgroup
+> is exiting or is already in that cgroup, we won't break the loop.
 > 
-> > on-going. System seems to be overloaded with too many interrupts.
-> > The 'top'
-> > command reports often around ~80% irq.
+> If the task is already in the cgroup, the bug can lead to another thread
+> being attached to the cgroup unexpectedly:
 > 
-> do you mean lpi mac interrupts?
- 
-By disabling the LPI mode with ethtool --set-eee eth0 eee off, the 
-interrupt overload remains. Both counters irq_rx_path_in_lpi_mode_n and 
-irq_rx_path_exit_lpi_mode_n continue to run meaning the PHY continue
-to put the RX path in LPI mode.
+>   # echo 5207 > tasks
+>   # cat tasks
+>   5207
+>   # echo 5207 > tasks
+>   # cat tasks
+>   5207
+>   5215
+> 
+> What's worse, if the task to be attached isn't the leader of the thread
+> group, we might never exit the loop, hence cpu stall. Thanks for Oleg's
+> analysis.
+> 
+> This bug was introduced by commit 081aa458c38ba576bdd4265fc807fa95b48b9e79
+> ("cgroup: consolidate cgroup_attach_task() and cgroup_attach_proc()")
+> 
+> Cc: <stable@vger.kernel.org> # 3.9+
+> Reported-by: Eunki Kim <eunki_kim@samsung.com>
+> Reported-by: Anjana V Kumar <anjanavk12@gmail.com>
+> Signed-off-by: Anjana V Kumar <anjanavk12@gmail.com>
+> [ lizf: - fixed the first continue, pointed out by Oleg,
+>         - rewrote changelog. ]
+> Signed-off-by: Li Zefan <lizefan@huawei.com>
 
-Only way I found to get ride of the overload is to keep the RX_CLK running
-in LPI mode. In this configuration, the RX link still continue to go in
-LPI mode and the two above counters continue to run.
+Applied to cgroup/for-3.12-fixes.
 
-> >
-> > By letting the RXC clock running even in LPI mode as proposed
-> > below, the issue
-> > seems solved. Is it the right way to proceed?
-> 
-> For EEE capability, RX_CLK may be halted for this reason i used it as
-> default in the stmmac and never seen your issue.
-> 
-> >
-> > What is the power impact to not stop RXC in LPI mode?
-> 
-> I can point you to "22.2.2.8a Receive direction LPI transition"
-> in IEEE802-3az... where is it reported that the PHY  halt the RX_CLK
-> in LPI mode.
+Thanks.
 
-Actually the PHY "may" stop RX_CLK.
-
-> 
-> May I suspect some issues on your HW? or disable it with ethtool
-> 
-
-Yes, it could be HW issue. It would be very useful if you could reproduce 
-the setup using a SoC with "DesignWare Cores Ethernet MAC" core, 
-the RTL8211E PHY and an Apple Airport Extreme. The issue could well be between 
-the controller and the PHY.
-
-Which Ethernet switch or router did you use to test the EEE mode? 
-I may try these equipments as well.
-
-Romain
+-- 
+tejun
