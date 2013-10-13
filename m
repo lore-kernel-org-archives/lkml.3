@@ -1,57 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754085Ab3JMHUR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Oct 2013 03:20:17 -0400
-Received: from cassarossa.samfundet.no ([193.35.52.29]:35193 "EHLO
-	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753781Ab3JMHUP (ORCPT
+	id S1754161Ab3JMHUY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Oct 2013 03:20:24 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:56362 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753781Ab3JMHUV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Oct 2013 03:20:15 -0400
-Date: Sun, 13 Oct 2013 09:20:03 +0200
-From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Cc: tglx@linutronix.de, juhosg@openwrt.org, srivatsa.bhat@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] avr32: remove deprecated IRQF_DISABLED
-Message-ID: <20131013072003.GA11195@samfundet.no>
-References: <1381550641-5894-1-git-send-email-michael.opdenacker@free-electrons.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1381550641-5894-1-git-send-email-michael.opdenacker@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 13 Oct 2013 03:20:21 -0400
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+To: zbr@ioremap.net
+Cc: gregkh@linuxfoundation.org, wfp5p@virginia.edu,
+        linux-kernel@vger.kernel.org,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Subject: [PATCH] w1: omap-hdq: remove deprecated IRQF_DISABLED
+Date: Sun, 13 Oct 2013 09:20:05 +0200
+Message-Id: <1381648805-3372-1-git-send-email-michael.opdenacker@free-electrons.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Around Sat 12 Oct 2013 06:04:01 +0200 or thereabout, Michael Opdenacker wrote:
-> This patch proposes to remove the use of the IRQF_DISABLED flag
-> 
-> It's a NOOP since 2.6.35 and it will be removed one day.
-> 
-> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+This patch proposes to remove the use of the IRQF_DISABLED flag
 
-Thank you for cleaning (-:
+It's a NOOP since 2.6.35 and it will be removed one day.
 
-Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+---
+ drivers/w1/masters/omap_hdq.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-> ---
->  arch/avr32/kernel/time.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/avr32/kernel/time.c b/arch/avr32/kernel/time.c
-> index 12f828a..d0f771b 100644
-> --- a/arch/avr32/kernel/time.c
-> +++ b/arch/avr32/kernel/time.c
-> @@ -59,7 +59,7 @@ static irqreturn_t timer_interrupt(int irq, void *dev_id)
->  static struct irqaction timer_irqaction = {
->  	.handler	= timer_interrupt,
->  	/* Oprofile uses the same irq as the timer, so allow it to be shared */
-> -	.flags		= IRQF_TIMER | IRQF_DISABLED | IRQF_SHARED,
-> +	.flags		= IRQF_TIMER | IRQF_SHARED,
->  	.name		= "avr32_comparator",
->  };
->  
+diff --git a/drivers/w1/masters/omap_hdq.c b/drivers/w1/masters/omap_hdq.c
+index 6e94d8dd..9900e8e 100644
+--- a/drivers/w1/masters/omap_hdq.c
++++ b/drivers/w1/masters/omap_hdq.c
+@@ -577,8 +577,7 @@ static int omap_hdq_probe(struct platform_device *pdev)
+ 		goto err_irq;
+ 	}
+ 
+-	ret = devm_request_irq(dev, irq, hdq_isr, IRQF_DISABLED,
+-			"omap_hdq", hdq_data);
++	ret = devm_request_irq(dev, irq, hdq_isr, 0, "omap_hdq", hdq_data);
+ 	if (ret < 0) {
+ 		dev_dbg(&pdev->dev, "could not request irq\n");
+ 		goto err_irq;
 -- 
-mvh
-Hans-Christian Egtvedt
+1.8.1.2
+
