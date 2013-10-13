@@ -1,80 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754106Ab3JMHOo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Oct 2013 03:14:44 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:56350 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753781Ab3JMHOm (ORCPT
+	id S1754085Ab3JMHUR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Oct 2013 03:20:17 -0400
+Received: from cassarossa.samfundet.no ([193.35.52.29]:35193 "EHLO
+	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753781Ab3JMHUP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Oct 2013 03:14:42 -0400
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: gregkh@linuxfoundation.org
-Cc: stern@rowland.harvard.edu, sarah.a.sharp@linux.intel.com,
-        tianyu.lan@intel.com, broonie@linaro.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH] usb/hcd: remove unnecessary local_irq_save
-Date: Sun, 13 Oct 2013 09:14:19 +0200
-Message-Id: <1381648459-2957-1-git-send-email-michael.opdenacker@free-electrons.com>
-X-Mailer: git-send-email 1.8.1.2
+	Sun, 13 Oct 2013 03:20:15 -0400
+Date: Sun, 13 Oct 2013 09:20:03 +0200
+From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Cc: tglx@linutronix.de, juhosg@openwrt.org, srivatsa.bhat@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] avr32: remove deprecated IRQF_DISABLED
+Message-ID: <20131013072003.GA11195@samfundet.no>
+References: <1381550641-5894-1-git-send-email-michael.opdenacker@free-electrons.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1381550641-5894-1-git-send-email-michael.opdenacker@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the use of local_irq_save() and IRQF_DISABLED, no longer needed since
-interrupt handlers are always run with interrupts disabled on the
-current CPU.
+Around Sat 12 Oct 2013 06:04:01 +0200 or thereabout, Michael Opdenacker wrote:
+> This patch proposes to remove the use of the IRQF_DISABLED flag
+> 
+> It's a NOOP since 2.6.35 and it will be removed one day.
+> 
+> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
 
-Tested successfully with 3.12.0-rc4 on my PC. Didn't find
-any issue because of this change.
+Thank you for cleaning (-:
 
-Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
----
- drivers/usb/core/hcd.c | 15 ---------------
- 1 file changed, 15 deletions(-)
+Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
 
-diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
-index d6a8d23..1c309f1 100644
---- a/drivers/usb/core/hcd.c
-+++ b/drivers/usb/core/hcd.c
-@@ -2324,15 +2324,8 @@ EXPORT_SYMBOL_GPL(usb_bus_start_enum);
- irqreturn_t usb_hcd_irq (int irq, void *__hcd)
- {
- 	struct usb_hcd		*hcd = __hcd;
--	unsigned long		flags;
- 	irqreturn_t		rc;
- 
--	/* IRQF_DISABLED doesn't work correctly with shared IRQs
--	 * when the first handler doesn't use it.  So let's just
--	 * assume it's never used.
--	 */
--	local_irq_save(flags);
--
- 	if (unlikely(HCD_DEAD(hcd) || !HCD_HW_ACCESSIBLE(hcd)))
- 		rc = IRQ_NONE;
- 	else if (hcd->driver->irq(hcd) == IRQ_NONE)
-@@ -2340,7 +2333,6 @@ irqreturn_t usb_hcd_irq (int irq, void *__hcd)
- 	else
- 		rc = IRQ_HANDLED;
- 
--	local_irq_restore(flags);
- 	return rc;
- }
- EXPORT_SYMBOL_GPL(usb_hcd_irq);
-@@ -2547,13 +2539,6 @@ static int usb_hcd_request_irqs(struct usb_hcd *hcd,
- 
- 	if (hcd->driver->irq) {
- 
--		/* IRQF_DISABLED doesn't work as advertised when used together
--		 * with IRQF_SHARED. As usb_hcd_irq() will always disable
--		 * interrupts we can remove it here.
--		 */
--		if (irqflags & IRQF_SHARED)
--			irqflags &= ~IRQF_DISABLED;
--
- 		snprintf(hcd->irq_descr, sizeof(hcd->irq_descr), "%s:usb%d",
- 				hcd->driver->description, hcd->self.busnum);
- 		retval = request_irq(irqnum, &usb_hcd_irq, irqflags,
+> ---
+>  arch/avr32/kernel/time.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/avr32/kernel/time.c b/arch/avr32/kernel/time.c
+> index 12f828a..d0f771b 100644
+> --- a/arch/avr32/kernel/time.c
+> +++ b/arch/avr32/kernel/time.c
+> @@ -59,7 +59,7 @@ static irqreturn_t timer_interrupt(int irq, void *dev_id)
+>  static struct irqaction timer_irqaction = {
+>  	.handler	= timer_interrupt,
+>  	/* Oprofile uses the same irq as the timer, so allow it to be shared */
+> -	.flags		= IRQF_TIMER | IRQF_DISABLED | IRQF_SHARED,
+> +	.flags		= IRQF_TIMER | IRQF_SHARED,
+>  	.name		= "avr32_comparator",
+>  };
+>  
 -- 
-1.8.1.2
-
+mvh
+Hans-Christian Egtvedt
