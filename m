@@ -1,73 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754224Ab3JMKOB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Oct 2013 06:14:01 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:53006 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753970Ab3JMKNx (ORCPT
+	id S1754328Ab3JMKQh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Oct 2013 06:16:37 -0400
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:40054 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754273Ab3JMKQf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Oct 2013 06:13:53 -0400
-Message-ID: <525A725E.5070308@linaro.org>
-Date: Sun, 13 Oct 2013 12:13:50 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Sun, 13 Oct 2013 06:16:35 -0400
+Date: Sun, 13 Oct 2013 12:16:30 +0200 (CEST)
+From: Roel Kluin <roel.kluin@gmail.com>
+To: Kyungmin Park <kyungmin.park@samsung.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, linux-media@vger.kernel.org,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: exynos4: index out of bounds if no pixelcode found
+Message-ID: <alpine.DEB.2.02.1310131204550.11060@Z>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: boris brezillon <b.brezillon@overkiz.com>,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>,
-        nicolas.ferre@atmel.com, tglx@linutronix.de
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] clocksource: at91/tc: remove deprecated IRQF_DISABLED
-References: <1381639559-6981-1-git-send-email-michael.opdenacker@free-electrons.com> <525A679A.2060408@overkiz.com>
-In-Reply-To: <525A679A.2060408@overkiz.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/13/2013 11:27 AM, boris brezillon wrote:
-> Hello Micheal,
->
-> This flag has been removed in a recent submission (see
-> https://lkml.org/lkml/2013/10/2/202), and, if I'm correct, is on his way
-> for mainlining.
+In case no valid pixelcode is found, an i of -1 after the loop is out of 
+bounds for the array.
 
-Yes, it has been merged in the tip tree:
-
-https://git.kernel.org/cgit/linux/kernel/git/tip/tip.git/commit/?h=timers/core&id=f51380a75652a4600b34ce384c4ff89ce0a15132
-
-> On 13/10/2013 06:45, Michael Opdenacker wrote:
->> This patch proposes to remove the use of the IRQF_DISABLED flag
->>
->> It's a NOOP since 2.6.35 and it will be removed one day.
->>
->> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
->> ---
->>   drivers/clocksource/tcb_clksrc.c | 2 +-
->>   1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/drivers/clocksource/tcb_clksrc.c
->> b/drivers/clocksource/tcb_clksrc.c
->> index 8a61872..2efeb3b 100644
->> --- a/drivers/clocksource/tcb_clksrc.c
->> +++ b/drivers/clocksource/tcb_clksrc.c
->> @@ -180,7 +180,7 @@ static irqreturn_t ch2_irq(int irq, void *handle)
->>
->>   static struct irqaction tc_irqaction = {
->>       .name        = "tc_clkevt",
->> -    .flags        = IRQF_TIMER | IRQF_DISABLED,
->> +    .flags        = IRQF_TIMER,
->>       .handler    = ch2_irq,
->>   };
->>
->>
->
-
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
+---
+diff --git a/drivers/media/platform/exynos4-is/fimc-lite-reg.c 
+b/drivers/media/platform/exynos4-is/fimc-lite-reg.c
+index 72a343e3b..d0dc7ee 100644
+--- a/drivers/media/platform/exynos4-is/fimc-lite-reg.c
++++ b/drivers/media/platform/exynos4-is/fimc-lite-reg.c
+@@ -133,7 +133,7 @@ void flite_hw_set_source_format(struct fimc_lite *dev, 
+struct flite_frame *f)
+ 	int i = ARRAY_SIZE(src_pixfmt_map);
+ 	u32 cfg;
+ 
+-	while (--i >= 0) {
++	while (--i) {
+ 		if (src_pixfmt_map[i][0] == pixelcode)
+ 			break;
+ 	}
+@@ -240,7 +240,7 @@ static void flite_hw_set_out_order(struct fimc_lite 
+*dev, struct flite_frame *f)
+ 	u32 cfg = readl(dev->regs + FLITE_REG_CIODMAFMT);
+ 	int i = ARRAY_SIZE(pixcode);
+ 
+-	while (--i >= 0)
++	while (--i)
+ 		if (pixcode[i][0] == f->fmt->mbus_code)
+ 			break;
+ 	cfg &= ~FLITE_REG_CIODMAFMT_YCBCR_ORDER_MASK;
 
