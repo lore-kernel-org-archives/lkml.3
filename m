@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754794Ab3JMOww (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Oct 2013 10:52:52 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:65350 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754605Ab3JMOwv (ORCPT
+	id S1754829Ab3JMOxr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Oct 2013 10:53:47 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:36263 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754527Ab3JMOxq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Oct 2013 10:52:51 -0400
+	Sun, 13 Oct 2013 10:53:46 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Steven Rostedt <rostedt@goodmis.org>,
         Catalin Marinas <catalin.marinas@arm.com>,
@@ -15,9 +15,9 @@ To: Steven Rostedt <rostedt@goodmis.org>,
         Jiang Liu <jiang.liu@huawei.com>, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
 Cc: Jiang Liu <liuj97@gmail.com>
-Subject: [PATCH v2 2/7] arm64: introduce interfaces to hotpatch kernel and module code
-Date: Sun, 13 Oct 2013 22:50:22 +0800
-Message-Id: <1381675827-1610-3-git-send-email-liuj97@gmail.com>
+Subject: [PATCH v2 3/7] arm64: move encode_insn_immediate() from module.c to insn.c
+Date: Sun, 13 Oct 2013 22:50:23 +0800
+Message-Id: <1381675827-1610-4-git-send-email-liuj97@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381675827-1610-1-git-send-email-liuj97@gmail.com>
 References: <1381675827-1610-1-git-send-email-liuj97@gmail.com>
@@ -27,156 +27,435 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiang Liu <jiang.liu@huawei.com>
 
-Introduce three interfaces to patch kernel and module code:
-aarch64_insn_patch_text_nosync():
-	patch code without synchronization, it's caller's responsibility
-	to synchronize all CPUs if needed.
-aarch64_insn_patch_text_sync():
-	patch code and always synchronize with stop_machine()
-aarch64_insn_patch_text():
-	patch code and synchronize with stop_machine() if needed
+Function encode_insn_immediate() will be used by other instruction
+manipulate related functions, so move it into insn.c and rename it
+as aarch64_insn_encode_immediate().
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
 Cc: Jiang Liu <liuj97@gmail.com>
 ---
- arch/arm64/include/asm/insn.h |   7 ++-
- arch/arm64/kernel/insn.c      | 101 ++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 107 insertions(+), 1 deletion(-)
+ arch/arm64/include/asm/insn.h |  14 ++++
+ arch/arm64/kernel/insn.c      |  77 +++++++++++++++++++++
+ arch/arm64/kernel/module.c    | 151 +++++++++---------------------------------
+ 3 files changed, 123 insertions(+), 119 deletions(-)
 
 diff --git a/arch/arm64/include/asm/insn.h b/arch/arm64/include/asm/insn.h
-index e7d1bc8..2dfcdb4 100644
+index 2dfcdb4..8dc0a91 100644
 --- a/arch/arm64/include/asm/insn.h
 +++ b/arch/arm64/include/asm/insn.h
-@@ -47,7 +47,12 @@ __AARCH64_INSN_FUNCS(nop,	0xFFFFFFFF, 0xD503201F)
+@@ -28,6 +28,18 @@ enum aarch64_insn_class {
+ 					 * system instructions */
+ };
+ 
++enum aarch64_insn_imm_type {
++	AARCH64_INSN_IMM_MOVNZ,
++	AARCH64_INSN_IMM_MOVK,
++	AARCH64_INSN_IMM_ADR,
++	AARCH64_INSN_IMM_26,
++	AARCH64_INSN_IMM_19,
++	AARCH64_INSN_IMM_16,
++	AARCH64_INSN_IMM_14,
++	AARCH64_INSN_IMM_12,
++	AARCH64_INSN_IMM_9,
++};
++
+ #define	__AARCH64_INSN_FUNCS(abbr, mask, val)	\
+ static __always_inline bool aarch64_insn_is_##abbr(u32 code) \
+ { return (code & (mask)) == (val); }	\
+@@ -47,6 +59,8 @@ __AARCH64_INSN_FUNCS(nop,	0xFFFFFFFF, 0xD503201F)
  #undef	__AARCH64_INSN_FUNCS
  
  enum aarch64_insn_class aarch64_get_insn_class(u32 insn);
--
-+u32 aarch64_insn_read(void *addr);
-+void aarch64_insn_write(void *addr, u32 insn);
++u32 aarch64_insn_encode_immediate(enum aarch64_insn_imm_type type,
++				  u32 insn, u64 imm);
+ u32 aarch64_insn_read(void *addr);
+ void aarch64_insn_write(void *addr, u32 insn);
  bool aarch64_insn_hotpatch_safe(u32 old_insn, u32 new_insn);
- 
-+int aarch64_insn_patch_text_nosync(void *addrs[], u32 insns[], int cnt);
-+int aarch64_insn_patch_text_sync(void *addrs[], u32 insns[], int cnt);
-+int aarch64_insn_patch_text(void *addrs[], u32 insns[], int cnt);
-+
- #endif	/* _ASM_ARM64_INSN_H */
 diff --git a/arch/arm64/kernel/insn.c b/arch/arm64/kernel/insn.c
-index cc54705..40acf0e 100644
+index 40acf0e..a0f60cc 100644
 --- a/arch/arm64/kernel/insn.c
 +++ b/arch/arm64/kernel/insn.c
-@@ -15,6 +15,8 @@
-  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-  */
- #include <linux/kernel.h>
-+#include <linux/stop_machine.h>
-+#include <asm/cacheflush.h>
- #include <asm/insn.h>
- 
- /*
-@@ -83,3 +85,102 @@ bool __kprobes aarch64_insn_hotpatch_safe(u32 old_insn, u32 new_insn)
- 	return __aarch64_insn_hotpatch_safe(old_insn) &&
- 	       __aarch64_insn_hotpatch_safe(new_insn);
+@@ -184,3 +184,80 @@ int __kprobes aarch64_insn_patch_text(void *addrs[], u32 insns[], int cnt)
+ 	else
+ 		return aarch64_insn_patch_text_sync(addrs, insns, cnt);
  }
 +
-+/*
-+ * In ARMv8-A, A64 instructions have a fixed length of 32 bits and are always
-+ * little-endian. On the other hand, SCTLR_EL1.EE (bit 25, Exception Endianness)
-+ * flag controls endianness for EL1 explicit data accesses and stage 1
-+ * translation table walks as below:
-+ *	0: little-endian
-+ *	1: big-endian
-+ * So need to handle endianness when patching kernel code.
-+ */
-+static inline unsigned int __kprobes aarch64_is_el1_big_endian(void)
++u32 aarch64_insn_encode_immediate(enum aarch64_insn_imm_type type,
++				  u32 insn, u64 imm)
 +{
-+	u32 sctlr;
++	u32 immlo, immhi, lomask, himask, mask;
++	int shift;
 +
-+	asm volatile ("mrs %0, sctlr_el1" : "=r" (sctlr));
-+	return (sctlr >> 25) & 0x1;
-+}
++	switch (type) {
++	case AARCH64_INSN_IMM_MOVNZ:
++		/*
++		 * For signed MOVW relocations, we have to manipulate the
++		 * instruction encoding depending on whether or not the
++		 * immediate is less than zero.
++		 */
++		insn &= ~(3 << 29);
++		if ((s64)imm >= 0) {
++			/* >=0: Set the instruction to MOVZ (opcode 10b). */
++			insn |= 2 << 29;
++		} else {
++			/*
++			 * <0: Set the instruction to MOVN (opcode 00b).
++			 *     Since we've masked the opcode already, we
++			 *     don't need to do anything other than
++			 *     inverting the new immediate field.
++			 */
++			imm = ~imm;
++		}
++	case AARCH64_INSN_IMM_MOVK:
++		mask = BIT(16) - 1;
++		shift = 5;
++		break;
++	case AARCH64_INSN_IMM_ADR:
++		lomask = 0x3;
++		himask = 0x7ffff;
++		immlo = imm & lomask;
++		imm >>= 2;
++		immhi = imm & himask;
++		imm = (immlo << 24) | (immhi);
++		mask = (lomask << 24) | (himask);
++		shift = 5;
++		break;
++	case AARCH64_INSN_IMM_26:
++		mask = BIT(26) - 1;
++		shift = 0;
++		break;
++	case AARCH64_INSN_IMM_19:
++		mask = BIT(19) - 1;
++		shift = 5;
++		break;
++	case AARCH64_INSN_IMM_16:
++		mask = BIT(16) - 1;
++		shift = 5;
++		break;
++	case AARCH64_INSN_IMM_14:
++		mask = BIT(14) - 1;
++		shift = 5;
++		break;
++	case AARCH64_INSN_IMM_12:
++		mask = BIT(12) - 1;
++		shift = 10;
++		break;
++	case AARCH64_INSN_IMM_9:
++		mask = BIT(9) - 1;
++		shift = 12;
++		break;
++	default:
++		pr_err("aarch64_insn_encode_immediate: unknown immediate encoding %d\n",
++			type);
++		return 0;
++	}
 +
-+u32 __kprobes aarch64_insn_read(void *addr)
-+{
-+	u32 insn;
-+
-+	if (aarch64_is_el1_big_endian())
-+		insn = swab32(*(u32 *)addr);
-+	else
-+		insn = *(u32 *)addr;
++	/* Update the immediate field. */
++	insn &= ~(mask << shift);
++	insn |= (imm & mask) << shift;
 +
 +	return insn;
 +}
-+
-+void __kprobes aarch64_insn_write(void *addr, u32 insn)
-+{
-+	if (aarch64_is_el1_big_endian())
-+		*(u32 *)addr = swab32(insn);
-+	else
-+		*(u32 *)addr = insn;
-+}
-+
-+int __kprobes aarch64_insn_patch_text_nosync(void *addrs[], u32 insns[],
-+					     int cnt)
-+{
-+	int i;
-+	u32 *tp;
-+
-+	if (cnt <= 0)
-+		return -EINVAL;
-+
-+	for (i = 0; i < cnt; i++) {
-+		tp = addrs[i];
-+		/* A64 instructions must be word aligned */
-+		if ((uintptr_t)tp & 0x3)
-+			return -EINVAL;
-+		aarch64_insn_write(tp, insns[i]);
-+		flush_icache_range((uintptr_t)tp, (uintptr_t)tp + sizeof(u32));
-+	}
-+
-+	return 0;
-+}
-+
-+struct aarch64_insn_patch {
-+	void	**text_addrs;
-+	u32	*new_insns;
-+	int	insn_cnt;
-+};
-+
-+static int __kprobes aarch64_insn_patch_text_cb(void *arg)
-+{
-+	struct aarch64_insn_patch *pp = arg;
-+
-+	return aarch64_insn_patch_text_nosync(pp->text_addrs, pp->new_insns,
-+					      pp->insn_cnt);
-+}
-+
-+int __kprobes aarch64_insn_patch_text_sync(void *addrs[], u32 insns[], int cnt)
-+{
-+	struct aarch64_insn_patch patch = {
-+		.text_addrs = addrs,
-+		.new_insns = insns,
-+		.insn_cnt = cnt,
-+	};
-+
-+	if (cnt <= 0)
-+		return -EINVAL;
-+
-+	/*
-+	 * Execute __aarch64_insn_patch_text() on every online CPU,
-+	 * which ensure serialization among all online CPUs.
-+	 */
-+	return stop_machine(aarch64_insn_patch_text_cb, &patch, NULL);
-+}
-+
-+int __kprobes aarch64_insn_patch_text(void *addrs[], u32 insns[], int cnt)
-+{
-+	if (cnt == 1 && aarch64_insn_hotpatch_safe(aarch64_insn_read(addrs[0]),
-+						   insns[0]))
-+		return aarch64_insn_patch_text_nosync(addrs, insns, cnt);
-+	else
-+		return aarch64_insn_patch_text_sync(addrs, insns, cnt);
-+}
+diff --git a/arch/arm64/kernel/module.c b/arch/arm64/kernel/module.c
+index ca0e3d5..69e3c31 100644
+--- a/arch/arm64/kernel/module.c
++++ b/arch/arm64/kernel/module.c
+@@ -25,6 +25,7 @@
+ #include <linux/mm.h>
+ #include <linux/moduleloader.h>
+ #include <linux/vmalloc.h>
++#include <asm/insn.h>
+ 
+ void *module_alloc(unsigned long size)
+ {
+@@ -94,96 +95,8 @@ static int reloc_data(enum aarch64_reloc_op op, void *place, u64 val, int len)
+ 	return 0;
+ }
+ 
+-enum aarch64_imm_type {
+-	INSN_IMM_MOVNZ,
+-	INSN_IMM_MOVK,
+-	INSN_IMM_ADR,
+-	INSN_IMM_26,
+-	INSN_IMM_19,
+-	INSN_IMM_16,
+-	INSN_IMM_14,
+-	INSN_IMM_12,
+-	INSN_IMM_9,
+-};
+-
+-static u32 encode_insn_immediate(enum aarch64_imm_type type, u32 insn, u64 imm)
+-{
+-	u32 immlo, immhi, lomask, himask, mask;
+-	int shift;
+-
+-	switch (type) {
+-	case INSN_IMM_MOVNZ:
+-		/*
+-		 * For signed MOVW relocations, we have to manipulate the
+-		 * instruction encoding depending on whether or not the
+-		 * immediate is less than zero.
+-		 */
+-		insn &= ~(3 << 29);
+-		if ((s64)imm >= 0) {
+-			/* >=0: Set the instruction to MOVZ (opcode 10b). */
+-			insn |= 2 << 29;
+-		} else {
+-			/*
+-			 * <0: Set the instruction to MOVN (opcode 00b).
+-			 *     Since we've masked the opcode already, we
+-			 *     don't need to do anything other than
+-			 *     inverting the new immediate field.
+-			 */
+-			imm = ~imm;
+-		}
+-	case INSN_IMM_MOVK:
+-		mask = BIT(16) - 1;
+-		shift = 5;
+-		break;
+-	case INSN_IMM_ADR:
+-		lomask = 0x3;
+-		himask = 0x7ffff;
+-		immlo = imm & lomask;
+-		imm >>= 2;
+-		immhi = imm & himask;
+-		imm = (immlo << 24) | (immhi);
+-		mask = (lomask << 24) | (himask);
+-		shift = 5;
+-		break;
+-	case INSN_IMM_26:
+-		mask = BIT(26) - 1;
+-		shift = 0;
+-		break;
+-	case INSN_IMM_19:
+-		mask = BIT(19) - 1;
+-		shift = 5;
+-		break;
+-	case INSN_IMM_16:
+-		mask = BIT(16) - 1;
+-		shift = 5;
+-		break;
+-	case INSN_IMM_14:
+-		mask = BIT(14) - 1;
+-		shift = 5;
+-		break;
+-	case INSN_IMM_12:
+-		mask = BIT(12) - 1;
+-		shift = 10;
+-		break;
+-	case INSN_IMM_9:
+-		mask = BIT(9) - 1;
+-		shift = 12;
+-		break;
+-	default:
+-		pr_err("encode_insn_immediate: unknown immediate encoding %d\n",
+-			type);
+-		return 0;
+-	}
+-
+-	/* Update the immediate field. */
+-	insn &= ~(mask << shift);
+-	insn |= (imm & mask) << shift;
+-
+-	return insn;
+-}
+-
+ static int reloc_insn_movw(enum aarch64_reloc_op op, void *place, u64 val,
+-			   int lsb, enum aarch64_imm_type imm_type)
++			   int lsb, enum aarch64_insn_imm_type imm_type)
+ {
+ 	u64 imm, limit = 0;
+ 	s64 sval;
+@@ -194,7 +107,7 @@ static int reloc_insn_movw(enum aarch64_reloc_op op, void *place, u64 val,
+ 	imm = sval & 0xffff;
+ 
+ 	/* Update the instruction with the new encoding. */
+-	*(u32 *)place = encode_insn_immediate(imm_type, insn, imm);
++	*(u32 *)place = aarch64_insn_encode_immediate(imm_type, insn, imm);
+ 
+ 	/* Shift out the immediate field. */
+ 	sval >>= 16;
+@@ -203,9 +116,9 @@ static int reloc_insn_movw(enum aarch64_reloc_op op, void *place, u64 val,
+ 	 * For unsigned immediates, the overflow check is straightforward.
+ 	 * For signed immediates, the sign bit is actually the bit past the
+ 	 * most significant bit of the field.
+-	 * The INSN_IMM_16 immediate type is unsigned.
++	 * The AARCH64_INSN_IMM_16 immediate type is unsigned.
+ 	 */
+-	if (imm_type != INSN_IMM_16) {
++	if (imm_type != AARCH64_INSN_IMM_16) {
+ 		sval++;
+ 		limit++;
+ 	}
+@@ -218,7 +131,7 @@ static int reloc_insn_movw(enum aarch64_reloc_op op, void *place, u64 val,
+ }
+ 
+ static int reloc_insn_imm(enum aarch64_reloc_op op, void *place, u64 val,
+-			  int lsb, int len, enum aarch64_imm_type imm_type)
++			  int lsb, int len, enum aarch64_insn_imm_type imm_type)
+ {
+ 	u64 imm, imm_mask;
+ 	s64 sval;
+@@ -233,7 +146,7 @@ static int reloc_insn_imm(enum aarch64_reloc_op op, void *place, u64 val,
+ 	imm = sval & imm_mask;
+ 
+ 	/* Update the instruction's immediate field. */
+-	*(u32 *)place = encode_insn_immediate(imm_type, insn, imm);
++	*(u32 *)place = aarch64_insn_encode_immediate(imm_type, insn, imm);
+ 
+ 	/*
+ 	 * Extract the upper value bits (including the sign bit) and
+@@ -315,125 +228,125 @@ int apply_relocate_add(Elf64_Shdr *sechdrs,
+ 			overflow_check = false;
+ 		case R_AARCH64_MOVW_UABS_G0:
+ 			ovf = reloc_insn_movw(RELOC_OP_ABS, loc, val, 0,
+-					      INSN_IMM_16);
++					      AARCH64_INSN_IMM_16);
+ 			break;
+ 		case R_AARCH64_MOVW_UABS_G1_NC:
+ 			overflow_check = false;
+ 		case R_AARCH64_MOVW_UABS_G1:
+ 			ovf = reloc_insn_movw(RELOC_OP_ABS, loc, val, 16,
+-					      INSN_IMM_16);
++					      AARCH64_INSN_IMM_16);
+ 			break;
+ 		case R_AARCH64_MOVW_UABS_G2_NC:
+ 			overflow_check = false;
+ 		case R_AARCH64_MOVW_UABS_G2:
+ 			ovf = reloc_insn_movw(RELOC_OP_ABS, loc, val, 32,
+-					      INSN_IMM_16);
++					      AARCH64_INSN_IMM_16);
+ 			break;
+ 		case R_AARCH64_MOVW_UABS_G3:
+ 			/* We're using the top bits so we can't overflow. */
+ 			overflow_check = false;
+ 			ovf = reloc_insn_movw(RELOC_OP_ABS, loc, val, 48,
+-					      INSN_IMM_16);
++					      AARCH64_INSN_IMM_16);
+ 			break;
+ 		case R_AARCH64_MOVW_SABS_G0:
+ 			ovf = reloc_insn_movw(RELOC_OP_ABS, loc, val, 0,
+-					      INSN_IMM_MOVNZ);
++					      AARCH64_INSN_IMM_MOVNZ);
+ 			break;
+ 		case R_AARCH64_MOVW_SABS_G1:
+ 			ovf = reloc_insn_movw(RELOC_OP_ABS, loc, val, 16,
+-					      INSN_IMM_MOVNZ);
++					      AARCH64_INSN_IMM_MOVNZ);
+ 			break;
+ 		case R_AARCH64_MOVW_SABS_G2:
+ 			ovf = reloc_insn_movw(RELOC_OP_ABS, loc, val, 32,
+-					      INSN_IMM_MOVNZ);
++					      AARCH64_INSN_IMM_MOVNZ);
+ 			break;
+ 		case R_AARCH64_MOVW_PREL_G0_NC:
+ 			overflow_check = false;
+ 			ovf = reloc_insn_movw(RELOC_OP_PREL, loc, val, 0,
+-					      INSN_IMM_MOVK);
++					      AARCH64_INSN_IMM_MOVK);
+ 			break;
+ 		case R_AARCH64_MOVW_PREL_G0:
+ 			ovf = reloc_insn_movw(RELOC_OP_PREL, loc, val, 0,
+-					      INSN_IMM_MOVNZ);
++					      AARCH64_INSN_IMM_MOVNZ);
+ 			break;
+ 		case R_AARCH64_MOVW_PREL_G1_NC:
+ 			overflow_check = false;
+ 			ovf = reloc_insn_movw(RELOC_OP_PREL, loc, val, 16,
+-					      INSN_IMM_MOVK);
++					      AARCH64_INSN_IMM_MOVK);
+ 			break;
+ 		case R_AARCH64_MOVW_PREL_G1:
+ 			ovf = reloc_insn_movw(RELOC_OP_PREL, loc, val, 16,
+-					      INSN_IMM_MOVNZ);
++					      AARCH64_INSN_IMM_MOVNZ);
+ 			break;
+ 		case R_AARCH64_MOVW_PREL_G2_NC:
+ 			overflow_check = false;
+ 			ovf = reloc_insn_movw(RELOC_OP_PREL, loc, val, 32,
+-					      INSN_IMM_MOVK);
++					      AARCH64_INSN_IMM_MOVK);
+ 			break;
+ 		case R_AARCH64_MOVW_PREL_G2:
+ 			ovf = reloc_insn_movw(RELOC_OP_PREL, loc, val, 32,
+-					      INSN_IMM_MOVNZ);
++					      AARCH64_INSN_IMM_MOVNZ);
+ 			break;
+ 		case R_AARCH64_MOVW_PREL_G3:
+ 			/* We're using the top bits so we can't overflow. */
+ 			overflow_check = false;
+ 			ovf = reloc_insn_movw(RELOC_OP_PREL, loc, val, 48,
+-					      INSN_IMM_MOVNZ);
++					      AARCH64_INSN_IMM_MOVNZ);
+ 			break;
+ 
+ 		/* Immediate instruction relocations. */
+ 		case R_AARCH64_LD_PREL_LO19:
+ 			ovf = reloc_insn_imm(RELOC_OP_PREL, loc, val, 2, 19,
+-					     INSN_IMM_19);
++					     AARCH64_INSN_IMM_19);
+ 			break;
+ 		case R_AARCH64_ADR_PREL_LO21:
+ 			ovf = reloc_insn_imm(RELOC_OP_PREL, loc, val, 0, 21,
+-					     INSN_IMM_ADR);
++					     AARCH64_INSN_IMM_ADR);
+ 			break;
+ 		case R_AARCH64_ADR_PREL_PG_HI21_NC:
+ 			overflow_check = false;
+ 		case R_AARCH64_ADR_PREL_PG_HI21:
+ 			ovf = reloc_insn_imm(RELOC_OP_PAGE, loc, val, 12, 21,
+-					     INSN_IMM_ADR);
++					     AARCH64_INSN_IMM_ADR);
+ 			break;
+ 		case R_AARCH64_ADD_ABS_LO12_NC:
+ 		case R_AARCH64_LDST8_ABS_LO12_NC:
+ 			overflow_check = false;
+ 			ovf = reloc_insn_imm(RELOC_OP_ABS, loc, val, 0, 12,
+-					     INSN_IMM_12);
++					     AARCH64_INSN_IMM_12);
+ 			break;
+ 		case R_AARCH64_LDST16_ABS_LO12_NC:
+ 			overflow_check = false;
+ 			ovf = reloc_insn_imm(RELOC_OP_ABS, loc, val, 1, 11,
+-					     INSN_IMM_12);
++					     AARCH64_INSN_IMM_12);
+ 			break;
+ 		case R_AARCH64_LDST32_ABS_LO12_NC:
+ 			overflow_check = false;
+ 			ovf = reloc_insn_imm(RELOC_OP_ABS, loc, val, 2, 10,
+-					     INSN_IMM_12);
++					     AARCH64_INSN_IMM_12);
+ 			break;
+ 		case R_AARCH64_LDST64_ABS_LO12_NC:
+ 			overflow_check = false;
+ 			ovf = reloc_insn_imm(RELOC_OP_ABS, loc, val, 3, 9,
+-					     INSN_IMM_12);
++					     AARCH64_INSN_IMM_12);
+ 			break;
+ 		case R_AARCH64_LDST128_ABS_LO12_NC:
+ 			overflow_check = false;
+ 			ovf = reloc_insn_imm(RELOC_OP_ABS, loc, val, 4, 8,
+-					     INSN_IMM_12);
++					     AARCH64_INSN_IMM_12);
+ 			break;
+ 		case R_AARCH64_TSTBR14:
+ 			ovf = reloc_insn_imm(RELOC_OP_PREL, loc, val, 2, 14,
+-					     INSN_IMM_14);
++					     AARCH64_INSN_IMM_14);
+ 			break;
+ 		case R_AARCH64_CONDBR19:
+ 			ovf = reloc_insn_imm(RELOC_OP_PREL, loc, val, 2, 19,
+-					     INSN_IMM_19);
++					     AARCH64_INSN_IMM_19);
+ 			break;
+ 		case R_AARCH64_JUMP26:
+ 		case R_AARCH64_CALL26:
+ 			ovf = reloc_insn_imm(RELOC_OP_PREL, loc, val, 2, 26,
+-					     INSN_IMM_26);
++					     AARCH64_INSN_IMM_26);
+ 			break;
+ 
+ 		default:
 -- 
 1.8.1.2
 
