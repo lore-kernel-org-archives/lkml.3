@@ -1,60 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755105Ab3JMSmR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Oct 2013 14:42:17 -0400
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:62325 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754971Ab3JMSmQ (ORCPT
+	id S1755127Ab3JMTC5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Oct 2013 15:02:57 -0400
+Received: from [157.56.116.102] ([157.56.116.102]:48551 "EHLO
+	emea01-am1-obe.outbound.protection.outlook.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755000Ab3JMTC4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Oct 2013 14:42:16 -0400
-Date: Sun, 13 Oct 2013 14:42:12 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>, grygorii.strashko@ti.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>, yinghai@kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC 06/23] mm/memblock: Add memblock early memory allocation
- apis
-Message-ID: <20131013184212.GA18075@htj.dyndns.org>
-References: <1381615146-20342-1-git-send-email-santosh.shilimkar@ti.com>
- <1381615146-20342-7-git-send-email-santosh.shilimkar@ti.com>
- <20131013175648.GC5253@mtj.dyndns.org>
- <20131013180058.GG25034@n2100.arm.linux.org.uk>
+	Sun, 13 Oct 2013 15:02:56 -0400
+Content-Type: text/plain; charset=US-ASCII
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131013180058.GG25034@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: RE: INVESTMENT/ RELOCATION ASSISTANCE. 13th/10/2013 
+To: Recipients <WEB86@HUSSEIN676.onmicrosoft.com>
+From: "Mrs. Maryann Jamila Hussein." <WEB86@HUSSEIN676.onmicrosoft.com>
+Date: Mon, 14 Oct 2013 00:30:29 +0530
+Reply-To: <mrs.induja.in@postribe.com>
+Message-ID: <7c61456a-222f-406d-a6a1-f8d888fd2325@HKXPR02MB149.apcprd02.prod.outlook.com>
+X-Originating-IP: [106.202.94.141]
+X-ClientProxiedBy: SIXPR02CA022.apcprd02.prod.outlook.com (10.141.119.17) To
+ HKXPR02MB149.apcprd02.prod.outlook.com (10.141.132.13)
+X-Forefront-PRVS: 0998671D02
+X-Forefront-Antispam-Report: SFV:SPM;SFS:(199002)(189002)(47776003)(76482001)(54316002)(47976001)(46102001)(80976001)(23756003)(69226001)(74502001)(56776001)(74876001)(47446002)(553524002)(54356001)(42186004)(50986001)(50466002)(74662001)(63696002)(59766001)(53256004)(76176001)(4396001)(74706001)(49866001)(74366001)(47736001)(79102001)(74316001)(43066001)(81686001)(77982001)(81542001)(33646001)(77096001)(81342001)(56816003)(83322001)(19580395003)(31686002)(81816001)(76576001)(80022001)(76796001)(217433001)(76786001)(51856001)(83072001)(85306002)(65816001)(66066001)(506694002);DIR:OUT;SFP:1501;SCL:5;SRVR:HKXPR02MB149;H:[106.202.94.141];CLIP:106.202.94.141;FPR:;RD:InfoNoRecords;A:0;MX:1;LANG:en;
+X-OriginatorOrg: HUSSEIN676.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 13, 2013 at 07:00:59PM +0100, Russell King - ARM Linux wrote:
-> On Sun, Oct 13, 2013 at 01:56:48PM -0400, Tejun Heo wrote:
-> > Hello,
-> > 
-> > On Sat, Oct 12, 2013 at 05:58:49PM -0400, Santosh Shilimkar wrote:
-> > > Introduce memblock early memory allocation APIs which allow to support
-> > > LPAE extension on 32 bits archs. More over, this is the next step
-> > 
-> > LPAE isn't something people outside arm circle would understand.
-> > Let's stick to highmem.
-> 
-> LPAE != highmem.  Two totally different things, unless you believe
-> system memory always starts at physical address zero, which is very
-> far from the case on the majority of ARM platforms.
-> 
-> So replacing LPAE with "highmem" is pure misrepresentation and is
-> inaccurate.  PAE might be a better term, and is also the x86 term
-> for this.
+Dear Beloved, 
 
-Ah, right, forgot about the base address.  Let's please spell out the
-requirements then.  Briefly explaining both aspects (non-zero base
-addr & highmem) and why the existing bootmem based interfaced can't
-serve them would be helpful to later readers.
+I am Mrs. Maryann Jamila Hussein a Teacher and a Muslim Convert here in Syria,i had sent a previous mail which i am not sure you got. I need your assistance to invest and help me relocate my 3 kids who are 17 years and below, so that they can get a better life there in your country due to the on going crises here in Syria.
 
-Thanks.
+I need your trust, before the death of my husband we had a savings with an Indian Bank, so money is not the issue. 
 
--- 
-tejun
+I got your reference in my search for someone who suits my 
+purpose.If you can help me reply, let me know.
+
+Regards,
+
+Mrs. Maryann Jamila Hussein.
+=====================================
