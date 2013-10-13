@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755338Ab3JMTZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Oct 2013 15:25:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37965 "EHLO mx1.redhat.com"
+	id S1755314Ab3JMTZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Oct 2013 15:25:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46504 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755190Ab3JMTZs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Oct 2013 15:25:48 -0400
-Date: Sun, 13 Oct 2013 21:18:44 +0200
+	id S1755179Ab3JMTZr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Oct 2013 15:25:47 -0400
+Date: Sun, 13 Oct 2013 21:18:41 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: Anton Arapov <aarapov@redhat.com>, David Smith <dsmith@redhat.com>,
@@ -15,8 +15,9 @@ Cc: Anton Arapov <aarapov@redhat.com>, David Smith <dsmith@redhat.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 5/5] uprobes: Change uprobe_copy_process() to dup xol_area
-Message-ID: <20131013191844.GA32502@redhat.com>
+Subject: [PATCH 4/5] uprobes: Change uprobe_copy_process() to dup
+	return_instances
+Message-ID: <20131013191841.GA32499@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -26,101 +27,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This finally fixes the serious bug in uretprobes: a forked child
-crashes if the parent called fork() with the pending ret probe.
+uprobe_copy_process() assumes that the new child doesn't need
+->utask, it should be allocated by demand.
 
-Trivial test-case:
+But this is not true if the forking task has the pending ret-
+probes, the child should report them as well and thus it needs
+the copy of parent's ->return_instances chain. Otherwise the
+child crashes when it returns from the probed function.
 
-	# perf probe -x /lib/libc.so.6 __fork%return
-	# perf record -e probe_libc:__fork perl -le 'fork || print "OK"'
-
-(the child doesn't print "OK", it is killed by SIGSEGV)
-
-If the child returns from the probed function it actually returns
-to trampoline_vaddr, because it got the copy of parent's stack
-mangled by prepare_uretprobe() when the parent entered this func.
-
-It crashes because a) this address is not mapped and b) until the
-previous change it doesn't have the proper->return_instances info.
-
-This means that uprobe_copy_process() has to create xol_area which
-has the trampoline slot, and its vaddr should be equal to parent's
-xol_area->vaddr.
-
-Unfortunately, uprobe_copy_process() can not simply do
-__create_xol_area(child, xol_area->vaddr). This could actually work
-but perf_event_mmap() doesn't expect the usage of foreign ->mm. So
-we offload this to task_work_run(), and pass the argument via not
-yet used utask->vaddr.
-
-We know that this vaddr is fine for install_special_mapping(), the
-necessary hole was recently "created" by dup_mmap() which skips the
-parent's VM_DONTCOPY area, and nobody else could use the new mm.
-
-Unfortunately, this also means that we can not handle the errors
-properly, we obviously can not abort the already completed fork().
-So we simply print the warning if GFP_KERNEL allocation (the only
-possible reason) fails.
+Note: this change alone doesn't fix the problem, see the next
+change.
 
 Cc: stable@vger.kernel.org # 3.9+
 Reported-by: Martin Cermak <mcermak@redhat.com>
 Reported-by: David Smith <dsmith@redhat.com>
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- kernel/events/uprobes.c |   22 ++++++++++++++++++++++
- 1 files changed, 22 insertions(+), 0 deletions(-)
+ kernel/events/uprobes.c |   43 +++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 43 insertions(+), 0 deletions(-)
 
 diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 67b65c8..0c5d9d4 100644
+index c836135..67b65c8 100644
 --- a/kernel/events/uprobes.c
 +++ b/kernel/events/uprobes.c
-@@ -35,6 +35,7 @@
- #include <linux/kdebug.h>	/* notifier mechanism */
- #include "../../mm/internal.h"	/* munlock_vma_page */
- #include <linux/percpu-rwsem.h>
-+#include <linux/task_work.h>
- 
- #include <linux/uprobes.h>
- 
-@@ -1400,6 +1401,17 @@ static void uprobe_warn(struct task_struct *t, const char *msg)
- 			current->comm, current->pid, msg);
+@@ -1366,12 +1366,55 @@ static struct uprobe_task *get_utask(void)
+ 	return current->utask;
  }
  
-+static void dup_xol_work(struct callback_head *work)
++static int dup_utask(struct task_struct *t, struct uprobe_task *o_utask)
 +{
-+	kfree(work);
++	struct uprobe_task *n_utask;
++	struct return_instance **p, *o, *n;
 +
-+	if (current->flags & PF_EXITING)
-+		return;
++	n_utask = kzalloc(sizeof(struct uprobe_task), GFP_KERNEL);
++	if (!n_utask)
++		return -ENOMEM;
++	t->utask = n_utask;
 +
-+	if (!__create_xol_area(current->utask->vaddr))
-+		uprobe_warn(current, "dup xol area");
++	p = &n_utask->return_instances;
++	for (o = o_utask->return_instances; o; o = o->next) {
++		n = kmalloc(sizeof(struct return_instance), GFP_KERNEL);
++		if (!n)
++			return -ENOMEM;
++
++		*n = *o;
++		atomic_inc(&n->uprobe->ref);
++		n->next = NULL;
++
++		*p = n;
++		p = &n->next;
++		n_utask->depth++;
++	}
++
++	return 0;
++}
++
++static void uprobe_warn(struct task_struct *t, const char *msg)
++{
++	pr_warn("uprobe: %s:%d failed to %s\n",
++			current->comm, current->pid, msg);
 +}
 +
  /*
   * Called in context of a new clone/fork from copy_process.
   */
-@@ -1407,6 +1419,7 @@ void uprobe_copy_process(struct task_struct *t)
+ void uprobe_copy_process(struct task_struct *t)
  {
- 	struct uprobe_task *utask = current->utask;
- 	struct mm_struct *mm = current->mm;
-+	struct callback_head *work;
- 
++	struct uprobe_task *utask = current->utask;
++	struct mm_struct *mm = current->mm;
++
  	t->utask = NULL;
- 
-@@ -1415,6 +1428,15 @@ void uprobe_copy_process(struct task_struct *t)
- 
- 	if (dup_utask(t, utask))
- 		return uprobe_warn(t, "dup ret instances");
 +
-+	/* TODO: move it into the union in uprobe_task */
-+	work = kmalloc(sizeof(*work), GFP_KERNEL);
-+	if (!work)
-+		return uprobe_warn(t, "dup xol area");
++	if (mm == t->mm || !utask || !utask->return_instances)
++		return;
 +
-+	utask->vaddr = mm->uprobes_state.xol_area->vaddr;
-+	init_task_work(work, dup_xol_work);
-+	task_work_add(t, work, true);
++	if (dup_utask(t, utask))
++		return uprobe_warn(t, "dup ret instances");
  }
  
  /*
