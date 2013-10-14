@@ -1,76 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932508Ab3JNUVM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 16:21:12 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:42627 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932215Ab3JNUVK (ORCPT
+	id S932433Ab3JNUUf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 16:20:35 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:39008 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757710Ab3JNUDG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 16:21:10 -0400
-X-Originating-IP: 173.246.103.110
-Date: Mon, 14 Oct 2013 13:20:53 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Joe Perches <joe@perches.com>
-Cc: linux-kernel@vger.kernel.org,
-        Nandini Hanumanthagowda <nandu.hgowda@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andy Whitcroft <apw@canonical.com>
-Subject: Re: [PATCH] checkpatch: Allow spaces before the ':' of a bitfield
-Message-ID: <20131014202053.GA4171@jtriplet-mobl1>
-References: <20131013121635.GA29395@nandinih-Inspiron-5521>
- <20131013153943.GA27861@kroah.com>
- <687af3bd-edc6-40cf-b994-0d0fdb7cd30d@googlegroups.com>
- <20131014173207.GE16517@jtriplet-mobl1>
- <1381773108.25528.22.camel@joe-AO722>
- <20131014180001.GA20139@jtriplet-mobl1>
- <1381773878.25528.24.camel@joe-AO722>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1381773878.25528.24.camel@joe-AO722>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 14 Oct 2013 16:03:06 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 120/161] perf stat: Fix misleading message when specifying cpu list or system wide
+Date: Mon, 14 Oct 2013 17:01:49 -0300
+Message-Id: <1381780950-25642-121-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1381780950-25642-1-git-send-email-acme@infradead.org>
+References: <1381780950-25642-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 14, 2013 at 11:04:38AM -0700, Joe Perches wrote:
-> On Mon, 2013-10-14 at 11:00 -0700, Josh Triplett wrote:
-> > On Mon, Oct 14, 2013 at 10:51:48AM -0700, Joe Perches wrote:
-> > > On Mon, 2013-10-14 at 10:32 -0700, Josh Triplett wrote:
-> > > > checkpatch warns about spaces both before and after the ':' separating a
-> > > > bitfield name from its width.  However, many drivers do put space before
-> > > > the : to line up the widths, which makes the definition significantly
-> > > > more readable; checkpatch should not warn about that.  Remove the
-> > > > warning for space before the ':' of a bitfield.
-> > > 
-> > > There are a _bunch_ of different styles used for
-> > > alignment of bitfields.
-> > > 
-> > > $ grep -rPh --include=*.[ch] \
-> > >   '(?:unsigned\s+|signed\s+|)(char|short|long|long\s+long|\w+_t|(?:__|)(?:u|s)(?:8|16|32|64))\s+\w+\s*:\s*\d+\s*(?:,|;)' *
-> > > 
-> > > spaces before colon
-> > > spaces after colon
-> > > aligned on bitfield size
-> > > 
-> > > I'd just as soon make it a --strict check.
-> > 
-> > I'd be fine with removing the check entirely, or making it --strict;
-> > however, even for --strict mode I'd suggest applying this patch, as I
-> > don't think checkpatch should ever prohibit spaces before the ':'.
-> 
-> Maybe something like that patch, but spaces probably
-> should be prohibited after the : in a bitfield either.
-> 
-> This style is pretty common
-> 
-> 		u32 dma_address0                   :30;
-> 		u32 dma_0No_update                 : 1;
-> 		u32 dma_0start                     : 1;
-> 		u32 dma_addr_size                  :24;
-> 		u32 DMA_maxpackets                 : 8;
+From: David Ahern <dsahern@gmail.com>
 
-I'm fine with just dropping the check entirely; want a patch for that
-instead?  It's a much simpler patch.
+The "perf stat" tool displays the command run in its summary output
+which is misleading when using a cpu list or system wide collection.
 
-- Josh Triplett
+Before:
+
+perf stat -a -- sleep 1
+
+ Performance counter stats for 'sleep 1':
+
+16152.670249 task-clock                #   16.132 CPUs utilized
+         417 context-switches          #    0.002 M/sec
+           7 cpu-migrations            #    0.030 K/sec
+...
+
+After:
+
+perf stat -a -- sleep 1
+
+ Performance counter stats for 'system wide':
+
+16206.931120 task-clock                #   16.144 CPUs utilized
+         395 context-switches          #    0.002 M/sec
+           5 cpu-migrations            #    0.030 K/sec
+...
+
+or
+
+perf stat -C1 -- sleep 1
+
+ Performance counter stats for 'CPU(s) 1':
+
+   1001.669257 task-clock                #    1.000 CPUs utilized
+         4,264 context-switches          #    0.004 M/sec
+             3 cpu-migrations            #    0.003 K/sec
+...
+
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1380400080-9211-2-git-send-email-dsahern@gmail.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-stat.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index fb02b53b0e3d..c8a2662eb57a 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -1229,7 +1229,11 @@ static void print_stat(int argc, const char **argv)
+ 	if (!csv_output) {
+ 		fprintf(output, "\n");
+ 		fprintf(output, " Performance counter stats for ");
+-		if (!perf_target__has_task(&target)) {
++		if (target.system_wide)
++			fprintf(output, "\'system wide");
++		else if (target.cpu_list)
++			fprintf(output, "\'CPU(s) %s", target.cpu_list);
++		else if (!perf_target__has_task(&target)) {
+ 			fprintf(output, "\'%s", argv[0]);
+ 			for (i = 1; i < argc; i++)
+ 				fprintf(output, " %s", argv[i]);
+-- 
+1.8.1.4
+
