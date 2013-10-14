@@ -1,64 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756640Ab3JNMtc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 08:49:32 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:45093 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756028Ab3JNMtM (ORCPT
+	id S1756594Ab3JNMtA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 08:49:00 -0400
+Received: from eu1sys200aog121.obsmtp.com ([207.126.144.151]:55179 "EHLO
+	eu1sys200aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755955Ab3JNMsy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 08:49:12 -0400
-Date: Mon, 14 Oct 2013 13:48:37 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Antonios Motakis <a.motakis@virtualopensystems.com>
-Cc: Joerg Roedel <joro@8bytes.org>,
-        "moderated list:ARM SMMU DRIVER" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "open list:IOMMU DRIVERS" <iommu@lists.linux-foundation.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        "tech@virtualopensystems.com" <tech@virtualopensystems.com>,
-        "agraf@suse.de" <agraf@suse.de>,
-        "B08248@freescale.com" <B08248@freescale.com>
-Subject: Re: [PATCH 2/2] ARM: SMMU: return NULL on error in
- arm_smmu_iova_to_phys
-Message-ID: <20131014124837.GD10491@mudshark.cambridge.arm.com>
-References: <1381497887-14586-1-git-send-email-a.motakis@virtualopensystems.com>
- <1381497887-14586-2-git-send-email-a.motakis@virtualopensystems.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1381497887-14586-2-git-send-email-a.motakis@virtualopensystems.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 14 Oct 2013 08:48:54 -0400
+From: Maxime COQUELIN <maxime.coquelin@st.com>
+To: Wolfram Sang <wsa@the-dreams.de>, srinivas.kandagatla@st.com,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-i2c@vger.kernel.org
+Cc: stephen.gallimore@st.com, stuart.menefy@st.com,
+        Lee Jones <lee.jones@linaro.org>, gabriel.fernandez@st.com,
+        Maxime Coquelin <maxime.coquelin@st.com>
+Subject: [PATCH v5 3/4] ARM: STi: Supply I2C configuration to STiH415 SoC
+Date: Mon, 14 Oct 2013 14:46:51 +0200
+Message-Id: <1381754813-4679-4-git-send-email-maxime.coquelin@st.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1381754813-4679-1-git-send-email-maxime.coquelin@st.com>
+References: <1381754813-4679-1-git-send-email-maxime.coquelin@st.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 11, 2013 at 02:24:47PM +0100, Antonios Motakis wrote:
-> The return value of arm_smmu_iova_to_phys is directly passed to the
-> user of the IOMMU API via iommu_iova_to_phys; however the ARM SMMU
-> driver returns -EINVAL on error, which is not consistent with the
-> rest of the drivers implementing the IOMMU API. VFIO also relies on
-> the call returning NULL when a page has not been mapped already.
-> 
-> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
-> ---
->  drivers/iommu/arm-smmu.c | 5 +----
->  1 file changed, 1 insertion(+), 4 deletions(-)
-> 
-> diff --git a/drivers/iommu/arm-smmu.c b/drivers/iommu/arm-smmu.c
-> index 8b71332..fe81b20 100644
-> --- a/drivers/iommu/arm-smmu.c
-> +++ b/drivers/iommu/arm-smmu.c
-> @@ -1480,10 +1480,7 @@ static phys_addr_t arm_smmu_iova_to_phys(struct iommu_domain *domain,
->  
->  err_unlock:
->  	spin_unlock(&smmu_domain->lock);
-> -	dev_warn(smmu->dev,
-> -		 "invalid (corrupt?) page tables detected for iova 0x%llx\n",
-> -		 (unsigned long long)iova);
-> -	return -EINVAL;
-> +	return NULL;
+This patch supplies I2C configuration to STiH415 SoC.
 
-Why are you removing the warning message?
+Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
+---
+ arch/arm/boot/dts/stih415-pinctrl.dtsi |   36 ++++++++++++++++++++++
+ arch/arm/boot/dts/stih415.dtsi         |   53 ++++++++++++++++++++++++++++++++
+ 2 files changed, 89 insertions(+)
 
-Will
+diff --git a/arch/arm/boot/dts/stih415-pinctrl.dtsi b/arch/arm/boot/dts/stih415-pinctrl.dtsi
+index 1d322b2..e56449d 100644
+--- a/arch/arm/boot/dts/stih415-pinctrl.dtsi
++++ b/arch/arm/boot/dts/stih415-pinctrl.dtsi
+@@ -86,6 +86,24 @@
+ 					};
+ 				};
+ 			};
++
++			sbc_i2c0 {
++				pinctrl_sbc_i2c0_default: sbc_i2c0-default {
++					st,pins {
++						sda = <&PIO4 6 ALT1 BIDIR>;
++						scl = <&PIO4 5 ALT1 BIDIR>;
++					};
++				};
++			};
++
++			sbc_i2c1 {
++				pinctrl_sbc_i2c1_default: sbc_i2c1-default {
++					st,pins {
++						sda = <&PIO3 2 ALT2 BIDIR>;
++						scl = <&PIO3 1 ALT2 BIDIR>;
++					};
++				};
++			};
+ 		};
+ 
+ 		pin-controller-front {
+@@ -143,6 +161,24 @@
+ 				reg		= <0x7000 0x100>;
+ 				st,bank-name	= "PIO12";
+ 			};
++
++			i2c0 {
++				pinctrl_i2c0_default: i2c0-default {
++					st,pins {
++						sda = <&PIO9 3 ALT1 BIDIR>;
++						scl = <&PIO9 2 ALT1 BIDIR>;
++					};
++				};
++			};
++
++			i2c1 {
++				pinctrl_i2c1_default: i2c1-default {
++					st,pins {
++						sda = <&PIO12 1 ALT1 BIDIR>;
++						scl = <&PIO12 0 ALT1 BIDIR>;
++					};
++				};
++			};
+ 		};
+ 
+ 		pin-controller-rear {
+diff --git a/arch/arm/boot/dts/stih415.dtsi b/arch/arm/boot/dts/stih415.dtsi
+index 74ab8de..a85fbf1 100644
+--- a/arch/arm/boot/dts/stih415.dtsi
++++ b/arch/arm/boot/dts/stih415.dtsi
+@@ -9,6 +9,7 @@
+ #include "stih41x.dtsi"
+ #include "stih415-clock.dtsi"
+ #include "stih415-pinctrl.dtsi"
++#include <dt-bindings/interrupt-controller/arm-gic.h>
+ / {
+ 
+ 	L2: cache-controller {
+@@ -83,5 +84,57 @@
+ 			pinctrl-names 	= "default";
+ 			pinctrl-0	= <&pinctrl_sbc_serial1>;
+ 		};
++
++		i2c@fed40000 {
++			compatible	= "st,comms-ssc-i2c";
++			reg		= <0xfed40000 0x110>;
++			interrupts	=  <GIC_SPI 187 IRQ_TYPE_LEVEL_HIGH>;
++			clocks		= <&CLKS_ICN_REG_0>;
++			clock-names	= "ssc";
++			clock-frequency = <400000>;
++			pinctrl-names	= "default";
++			pinctrl-0	= <&pinctrl_i2c0_default>;
++
++			status		= "disabled";
++		};
++
++		i2c@fed41000 {
++			compatible	= "st,comms-ssc-i2c";
++			reg		= <0xfed41000 0x110>;
++			interrupts	=  <GIC_SPI 188 IRQ_TYPE_LEVEL_HIGH>;
++			clocks		= <&CLKS_ICN_REG_0>;
++			clock-names	= "ssc";
++			clock-frequency = <400000>;
++			pinctrl-names	= "default";
++			pinctrl-0	= <&pinctrl_i2c1_default>;
++
++			status		= "disabled";
++		};
++
++		i2c@fe540000 {
++			compatible	= "st,comms-ssc-i2c";
++			reg		= <0xfe540000 0x110>;
++			interrupts	=  <GIC_SPI 206 IRQ_TYPE_LEVEL_HIGH>;
++			clocks		= <&CLK_SYSIN>;
++			clock-names	= "ssc";
++			clock-frequency = <400000>;
++			pinctrl-names	= "default";
++			pinctrl-0	= <&pinctrl_sbc_i2c0_default>;
++
++			status		= "disabled";
++		};
++
++		i2c@fe541000 {
++			compatible	= "st,comms-ssc-i2c";
++			reg		= <0xfe541000 0x110>;
++			interrupts	=  <GIC_SPI 207 IRQ_TYPE_LEVEL_HIGH>;
++			clocks		= <&CLK_SYSIN>;
++			clock-names	= "ssc";
++			clock-frequency = <400000>;
++			pinctrl-names	= "default";
++			pinctrl-0	= <&pinctrl_sbc_i2c1_default>;
++
++			status		= "disabled";
++		};
+ 	};
+ };
+-- 
+1.7.9.5
+
