@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758122Ab3JNUqK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 16:46:10 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:38480 "EHLO
+	id S1758094Ab3JNUqI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 16:46:08 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38490 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757477Ab3JNUCr (ORCPT
+	with ESMTP id S1757483Ab3JNUCs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 16:02:47 -0400
+	Mon, 14 Oct 2013 16:02:48 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 020/161] tools/perf/build: Split out feature check: 'libslang'
-Date: Mon, 14 Oct 2013 17:00:09 -0300
-Message-Id: <1381780950-25642-21-git-send-email-acme@infradead.org>
+Subject: [PATCH 028/161] tools/perf/build: Split out feature check: 'on-exit'
+Date: Mon, 14 Oct 2013 17:00:17 -0300
+Message-Id: <1381780950-25642-29-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1381780950-25642-1-git-send-email-acme@infradead.org>
 References: <1381780950-25642-1-git-send-email-acme@infradead.org>
@@ -32,70 +32,69 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/n/tip-FGmpkydfwqlkaw7yy8ewjpza@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-gmywXandzfxnlcbzlX6bkpw1@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- tools/perf/config/Makefile                       | 4 ++--
- tools/perf/config/feature-checks/Makefile        | 4 ++++
- tools/perf/config/feature-checks/test-libslang.c | 6 ++++++
- 3 files changed, 12 insertions(+), 2 deletions(-)
- create mode 100644 tools/perf/config/feature-checks/test-libslang.c
+ tools/perf/config/Makefile                      | 3 ++-
+ tools/perf/config/feature-checks/Makefile       | 4 ++++
+ tools/perf/config/feature-checks/test-on-exit.c | 6 ++++++
+ 3 files changed, 12 insertions(+), 1 deletion(-)
+ create mode 100644 tools/perf/config/feature-checks/test-on-exit.c
 
 diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index d4f18f4c8d51..43713c641600 100644
+index c8ac4df05db1..44affb5477c5 100644
 --- a/tools/perf/config/Makefile
 +++ b/tools/perf/config/Makefile
-@@ -115,6 +115,7 @@ FEATURE_TESTS =				\
- 	libelf-getphdrnum		\
- 	libunwind			\
- 	libaudit			\
-+	libslang			\
+@@ -123,6 +123,7 @@ FEATURE_TESTS =				\
+ 	libpython-version		\
+ 	strlcpy				\
+ 	libbfd				\
++	on-exit				\
  	libnuma
  
  $(foreach test,$(FEATURE_TESTS),$(call feature_check,$(test),$(test)))
-@@ -280,8 +281,7 @@ ifdef NO_NEWT
+@@ -441,7 +442,7 @@ ifndef NO_STRLCPY
  endif
  
- ifndef NO_SLANG
--  FLAGS_SLANG=$(CFLAGS) $(LDFLAGS) $(EXTLIBS) -I/usr/include/slang -lslang
--  ifneq ($(call try-cc,$(SOURCE_SLANG),$(FLAGS_SLANG),libslang),y)
-+  ifneq ($(feature-libslang), 1)
-     msg := $(warning slang not found, disables TUI support. Please install slang-devel or libslang-dev);
-     NO_SLANG := 1
-   else
+ ifndef NO_ON_EXIT
+-  ifeq ($(call try-cc,$(SOURCE_ON_EXIT),,-DHAVE_ON_EXIT_SUPPORT),y)
++  ifeq ($(feature-on-exit), 1)
+     CFLAGS += -DHAVE_ON_EXIT_SUPPORT
+   endif
+ endif
 diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
-index 8e49fa0c922b..c9b15b0a819b 100644
+index d348aa0ec181..20f1b8c0f865 100644
 --- a/tools/perf/config/feature-checks/Makefile
 +++ b/tools/perf/config/feature-checks/Makefile
-@@ -13,6 +13,7 @@ FILES=					\
- 	test-libelf-getphdrnum		\
- 	test-libunwind			\
- 	test-libaudit			\
-+	test-libslang			\
+@@ -21,6 +21,7 @@ FILES=					\
+ 	test-libpython-version		\
+ 	test-strlcpy			\
+ 	test-libbfd			\
++	test-on-exit			\
  	test-libnuma
  
  CC := $(CC) -MD
-@@ -65,6 +66,9 @@ test-libunwind:
- test-libaudit:
- 	$(BUILD) -laudit
+@@ -120,6 +121,9 @@ test-strlcpy:
+ test-libbfd:
+ 	$(BUILD) -DPACKAGE='perf' -DPACKAGE=perf -lbfd -ldl
  
-+test-libslang:
-+	$(BUILD) -I/usr/include/slang -lslang
++test-on-exit:
++	$(BUILD)
 +
  -include *.d */*.d
  
  ###############################
-diff --git a/tools/perf/config/feature-checks/test-libslang.c b/tools/perf/config/feature-checks/test-libslang.c
+diff --git a/tools/perf/config/feature-checks/test-on-exit.c b/tools/perf/config/feature-checks/test-on-exit.c
 new file mode 100644
-index 000000000000..22ff22ed94d1
+index 000000000000..473f1dea5316
 --- /dev/null
-+++ b/tools/perf/config/feature-checks/test-libslang.c
++++ b/tools/perf/config/feature-checks/test-on-exit.c
 @@ -0,0 +1,6 @@
-+#include <slang.h>
++#include <stdio.h>
 +
 +int main(void)
 +{
-+	return SLsmg_init_smg();
++	return on_exit(NULL, NULL);
 +}
 -- 
 1.8.1.4
