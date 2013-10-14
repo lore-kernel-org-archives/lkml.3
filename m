@@ -1,53 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933111Ab3JNUcO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 16:32:14 -0400
-Received: from mail-qe0-f47.google.com ([209.85.128.47]:54598 "EHLO
-	mail-qe0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932189Ab3JNUcJ (ORCPT
+	id S933003Ab3JNUap (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 16:30:45 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38911 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757655Ab3JNUDD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 16:32:09 -0400
-MIME-Version: 1.0
-In-Reply-To: <1381782256-2434-1-git-send-email-geyslan@gmail.com>
-References: <1381782256-2434-1-git-send-email-geyslan@gmail.com>
-Date: Mon, 14 Oct 2013 17:32:08 -0300
-Message-ID: <CAGG-pURU_8p2-2EQH5hK_NX+1PjEBCMhe05KFVfvD3E0zXZuhQ@mail.gmail.com>
-Subject: Re: [PATCH v2] nfs: Use PTR_ERR_OR_ZERO in 'nfs41_callback_up' function
-From: =?UTF-8?Q?Geyslan_Greg=C3=B3rio_Bem?= <geyslan@gmail.com>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: schumaker.anna@gmail.com, linux-nfs@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        kernel-br <kernel-br@googlegroups.com>,
-        "Geyslan G. Bem" <geyslan@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 14 Oct 2013 16:03:03 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 065/161] perf trace: Remove duplicate mmap entry in syscall_fmts array
+Date: Mon, 14 Oct 2013 17:00:54 -0300
+Message-Id: <1381780950-25642-66-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1381780950-25642-1-git-send-email-acme@infradead.org>
+References: <1381780950-25642-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/10/14 Geyslan G. Bem <geyslan@gmail.com>:
-> Use 'PTR_ERR_OR_ZERO()' rather than 'IS_ERR(...) ? PTR_ERR(...) : 0'.
->
-> Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
-> ---
->  fs/nfs/callback.c | 3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
->
-> diff --git a/fs/nfs/callback.c b/fs/nfs/callback.c
-> index 67cd732..073b4cf 100644
-> --- a/fs/nfs/callback.c
-> +++ b/fs/nfs/callback.c
-> @@ -164,8 +164,7 @@ nfs41_callback_up(struct svc_serv *serv)
->                 svc_xprt_put(serv->sv_bc_xprt);
->                 serv->sv_bc_xprt = NULL;
->         }
-> -       dprintk("--> %s return %ld\n", __func__,
-> -               IS_ERR(rqstp) ? PTR_ERR(rqstp) : 0);
-> +       dprintk("--> %s return %d\n", __func__, PTR_ERR_OR_ZERO(rqstp));
->         return rqstp;
->  }
->
-> --
-> 1.8.4
->
-In this version (v2):
-Format changed from %ld to %d.
+From: David Ahern <dsahern@gmail.com>
+
+Entries in syscall_fmts need to be in alphabetical order, and the
+duplicate entry breaks bsearch on new entries around this duplicate
+entry.
+
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1378319865-55695-2-git-send-email-dsahern@gmail.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-trace.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index bc21140ac782..903416c573af 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -461,7 +461,6 @@ static struct syscall_fmt {
+ 	{ .name	    = "arch_prctl", .errmsg = true, .alias = "prctl", },
+ 	{ .name	    = "brk",	    .hexret = true,
+ 	  .arg_scnprintf = { [0] = SCA_HEX, /* brk */ }, },
+-	{ .name	    = "mmap",	    .hexret = true, },
+ 	{ .name	    = "connect",    .errmsg = true, },
+ 	{ .name	    = "fcntl",	    .errmsg = true,
+ 	  .arg_scnprintf = { [1] = SCA_STRARRAY, /* cmd */ },
+-- 
+1.8.1.4
+
