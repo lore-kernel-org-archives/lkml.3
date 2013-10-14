@@ -1,66 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756963Ab3JNSkd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 14:40:33 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:51984 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756429Ab3JNSka (ORCPT
+	id S1757299Ab3JNSlc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 14:41:32 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:50823 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757091Ab3JNSlb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 14:40:30 -0400
-Message-ID: <525C3A9A.5000207@wwwdotorg.org>
-Date: Mon, 14 Oct 2013 12:40:26 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Mon, 14 Oct 2013 14:41:31 -0400
 MIME-Version: 1.0
-To: Rhyland Klein <rklein@nvidia.com>
-CC: Anton Vorontsov <anton@enomsg.org>, David Woodhouse <dwmw2@infradead.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Darbha Sriharsha <dsriharsha@nvidia.com>,
-        Manish Badarkha <badarkhe.manish@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark Rutland <Mark.Rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: Re: [Patch V5] drivers: power: Add support for bq24735 charger
-References: <1381526143-20800-1-git-send-email-rklein@nvidia.com> <525C361C.1020703@wwwdotorg.org> <525C376A.3000009@nvidia.com>
-In-Reply-To: <525C376A.3000009@nvidia.com>
-X-Enigmail-Version: 1.5.2
+In-Reply-To: <20131014132711.GC4722@htj.dyndns.org>
+References: <1380663729-18243-1-git-send-email-tj@kernel.org>
+	<20131006004032.GA3601@kroah.com>
+	<20131007170005.GB2481@htj.dyndns.org>
+	<20131007231136.GB27270@kroah.com>
+	<CAE9FiQV-bs0hiTDSzOR0GREMf=whichBocLPBF_uV09=LjTCtw@mail.gmail.com>
+	<20131011204904.GA1308@kroah.com>
+	<20131014132711.GC4722@htj.dyndns.org>
+Date: Mon, 14 Oct 2013 11:41:30 -0700
+X-Google-Sender-Auth: wgpPWyQ-9kXTXProUX1_LutNOR8
+Message-ID: <CAE9FiQWJfc=c9zVyFcj9HLBRCkYaJD8UzggjdiJ9oU1mSEzBBw@mail.gmail.com>
+Subject: Re: [PATCH driver-core-next] sysfs: make sysfs_file_ops() follow
+ ignore_lockdep flag
+From: Yinghai Lu <yinghai@kernel.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Kay Sievers <kay@vrfy.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/14/2013 12:26 PM, Rhyland Klein wrote:
-> On 10/14/2013 2:21 PM, Stephen Warren wrote:
->> On 10/11/2013 03:15 PM, Rhyland Klein wrote:
->>> From: Darbha Sriharsha <dsriharsha@nvidia.com>
->>>
->>> Adds support for the bq24735 charger chipset. The bq24735 is a
->>> high-efficiency, synchronous battery charger.
->>>
->>> It allows control of the charging current, input current, and the charger
->>> voltage DAC's through SMBus.
->>
->> Please CC the DT bindings maintainers on patches that add DT bindings.
-> 
-> Oops, sorry, will do in the future.
-> 
->>
->>> diff --git a/Documentation/devicetree/bindings/power_supply/ti,bq24735.txt b/Documentation/devicetree/bindings/power_supply/ti,bq24735.txt
->>
->>> +Optional properties :
->>
->>> + - ti,ac-detect-gpios : This GPIO is optionally used to read the AC adapter
->>> +   presence.
->>
->> Is that actually a property of the BQ24735 chip itself (i.e. is it an
->> output signal from the chip), or part of the board/system?
-> 
-> The gpio itself is actually what the IRQ line is tied to from the
-> bq24735 -> tegra (in this case). In other words this is a Host GPIO that
-> is configured as an input and connected to the bq24735.
+On Mon, Oct 14, 2013 at 6:27 AM, Tejun Heo <tj@kernel.org> wrote:
+> 375b611e60 ("sysfs: remove sysfs_buffer->ops") introduced
+> sysfs_file_ops() which determines the associated file operation of a
+> given sysfs_dirent.  As file ops access should be protected by an
+> active reference, the new function includes a lockdep assertion on the
+> sysfs_dirent; unfortunately, I forgot to take attr->ignore_lockdep
+> flag into account and the lockdep assertion trips spuriously for files
+> which opt out from active reference lockdep checking.
+>
+> # cat /sys/devices/pci0000:00/0000:00:01.2/usb1/authorized
+>
+>  ------------[ cut here ]------------
+>  WARNING: CPU: 1 PID: 540 at /work/os/work/fs/sysfs/file.c:79 sysfs_file_ops+0x4e/0x60()
+>  Modules linked in:
+>  CPU: 1 PID: 540 Comm: cat Not tainted 3.11.0-work+ #3
+>  Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+>   0000000000000009 ffff880016205c08 ffffffff81ca0131 0000000000000000
+>   ffff880016205c40 ffffffff81096d0d ffff8800166cb898 ffff8800166f6f60
+>   ffffffff8125a220 ffff880011ab1ec0 ffff88000aff0c78 ffff880016205c50
+>  Call Trace:
+>   [<ffffffff81ca0131>] dump_stack+0x4e/0x82
+>   [<ffffffff81096d0d>] warn_slowpath_common+0x7d/0xa0
+>   [<ffffffff81096dea>] warn_slowpath_null+0x1a/0x20
+>   [<ffffffff8125994e>] sysfs_file_ops+0x4e/0x60
+>   [<ffffffff8125a274>] sysfs_open_file+0x54/0x300
+>   [<ffffffff811df612>] do_dentry_open.isra.17+0x182/0x280
+>   [<ffffffff811df820>] finish_open+0x30/0x40
+>   [<ffffffff811f0623>] do_last+0x503/0xd90
+>   [<ffffffff811f0f6b>] path_openat+0xbb/0x6d0
+>   [<ffffffff811f23ba>] do_filp_open+0x3a/0x90
+>   [<ffffffff811e09a9>] do_sys_open+0x129/0x220
+>   [<ffffffff811e0abe>] SyS_open+0x1e/0x20
+>   [<ffffffff81caf3c2>] system_call_fastpath+0x16/0x1b
+>  ---[ end trace aa48096b111dafdb ]---
+>
+> Rename fs/sysfs/dir.c::ignore_lockdep() to sysfs_ignore_lockdep() and
+> move it to fs/sysfs/sysfs.h and make sysfs_file_ops() skip lockdep
+> assertion if sysfs_ignore_lockdep() is true.
+>
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Reported-by: Yinghai Lu <yinghai@kernel.org>
 
-Ok, so this is the ACOK output pin? In that case, it's fine. It might be
-worth mentioning that explicitly though.
+Tested-by: Yinghai Lu <yinghai@kernel.org>
