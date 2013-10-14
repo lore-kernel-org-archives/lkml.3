@@ -1,98 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755738Ab3JNPCr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 11:02:47 -0400
-Received: from ns.mm-sol.com ([212.124.72.66]:48285 "EHLO extserv.mm-sol.com"
+	id S1756562Ab3JNPC4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 11:02:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36589 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750849Ab3JNPCp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 11:02:45 -0400
-Message-ID: <525C0746.40506@mm-sol.com>
-Date: Mon, 14 Oct 2013 18:01:26 +0300
-From: Stanimir Varbanov <svarbanov@mm-sol.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	id S1756036Ab3JNPCx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 11:02:53 -0400
+Date: Mon, 14 Oct 2013 16:55:39 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Anton Arapov <aarapov@redhat.com>,
+        David Smith <dsmith@redhat.com>, "Frank Ch. Eigler" <fche@redhat.com>,
+        Martin Cermak <mcermak@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/5] uprobes: Change uprobe_copy_process() to dup
+	xol_area
+Message-ID: <20131014145539.GA4319@redhat.com>
+References: <20131013191815.GA32466@redhat.com> <20131013191844.GA32502@redhat.com> <20131014140942.GI28601@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>
-CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Matt Mackall <mpm@selenic.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] ARM: DT: msm: Add Qualcomm's PRNG driver binding
- document
-References: <1381504601-23773-1-git-send-email-svarbanov@mm-sol.com> <1381504601-23773-2-git-send-email-svarbanov@mm-sol.com> <20131011204640.GD13139@codeaurora.org>
-In-Reply-To: <20131011204640.GD13139@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131014140942.GI28601@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+On 10/14, Peter Zijlstra wrote:
+>
+> On Sun, Oct 13, 2013 at 09:18:44PM +0200, Oleg Nesterov wrote:
+> > This finally fixes the serious bug in uretprobes: a forked child
+> > crashes if the parent called fork() with the pending ret probe.
+> > ...
+> >
+> > Unfortunately, this also means that we can not handle the errors
+> > properly, we obviously can not abort the already completed fork().
+> > So we simply print the warning if GFP_KERNEL allocation (the only
+> > possible reason) fails.
+>
+> Oh cute.. so we could actually ignore this perf_event_mmap() because we
+> got it for the parent when we inserted the probe, and the perf tools
+> assume the child mm layout is identical to the parent layout (it doesn't
+> actually see the VM_DONTCOPY bit).
+>
+> So we could add: 'if (vma->vm_mm != current->mm) return;' to
+> perf_event_mmap() with a very big nasty comment.
 
-Thanks for the review.
+Perhaps. I can't really comment, but this is really nasty. I mean, this
+simply doesn't look good. perf_event_mmap() will be reported or not
+depending on how/why the task creates xol_area.
 
-On 10/11/2013 11:46 PM, Stephen Boyd wrote:
-> On 10/11, Stanimir Varbanov wrote:
->> This adds Qualcomm PRNG driver device tree binding documentation
->> to use as an example in dts trees.
->>
->> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
->> ---
->>  Documentation/devicetree/bindings/rng/qcom,prng.txt | 17 +++++++++++++++++
->>  1 file changed, 17 insertions(+)
->>  create mode 100644 Documentation/devicetree/bindings/rng/qcom,prng.txt
->>
->> diff --git a/Documentation/devicetree/bindings/rng/qcom,prng.txt b/Documentation/devicetree/bindings/rng/qcom,prng.txt
->> new file mode 100644
->> index 000000000000..92be00085ab1
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/rng/qcom,prng.txt
->> @@ -0,0 +1,17 @@
->> +Qualcomm MSM pseudo random number generator.
->> +
->> +Required properties:
->> +
->> +- compatible  : should be "qcom,prng"
->> +- reg         : specifies base physical address and size of the registers map
->> +- clocks      : phandle to clock-controller plus clock-specifier pair
->> +- clock-names : "prng" clocks all registers, FIFO and circuits in PRNG IP block
-> 
-> We're trying to keep to more generic names such as "core" for
-> clocks like this. We've had problems in the past where hardware
-> designers named the clock input after the name of the hardware
-> and then the name of the hardware changed in the next version of
-> the chip (although the hardware was mostly compatible with the
-> previous version) and so they renamed the clock input. This
-> leaked into the software drivers and we had horrible things like
-> platform data for clock names. Sticking to "core" indicates what
-> the clock does (i.e. it clocks the core PRNG hardware) while
-> staying generic enough to prevent problems in the future if the
-> block is renamed to something else. It might also help us in the
-> future should our bus layer become smart enough to manage clocks
-> for drivers without their knowing.
+> That said; should we hide the XOL vma from perf altogether? That is; it
+> will greatly obfuscate the perf data to get hits from the XOL table as
+> we've got no means of mapping it back to an instruction.
 
-Thanks for the detailed explanation, I will rename the clock.
+Again, I can't really comment. But this creates the special case. OK,
+xol_area is "special" anon mapping anyway, but still. And of course
+this needs __install_special_mapping().
 
-> 
->> +
->> +Example:
->> +
->> +	rng {
-> 
-> It's good practice to add the unit address here, so rng@f9bff000.
+So I'd prefer to push these changes as is for now. GFP_KERNEL should
+"never" fail and we need the fix for stable.
 
-I will follow the good practice, thanks.
+I agree, in the long term we should fix the inability to handle the
+errors correctly. But this needs more changes and more uprobes hooks.
+To simplify, suppose that we simply remove perf_event_mmap() from
+install_special_mapping() (yes, wes, we cant'). Then we should:
 
-> 
->> +		compatible = "qcom,prng";
->> +		reg = <0xf9bff000 0x200>;
->> +		clocks = <&clock GCC_PRNG_AHB_CLK>;
->> +		clock-names = "prng";
->> +	};
-> 
+	1. revert 1/5, it already moves uprobe_copy_process() to the
+	   point-of-no-return (for 4-5).
+
+	2. uprobe_copy_process() can avoid task_work_add() _and_ it can
+	   return an error if dup_utask/dup_xol fails.
+
+	3. However, 2. means that we need to handle the potential errors
+	   after uprobe_copy_process() suceeds. This means we need, say,
+	   uprobe_abort_fork() somewhere near bad_fork_cleanup_mm.
+
+So will you agree with task_work for now?
+
+Oleg.
 
