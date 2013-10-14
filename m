@@ -1,49 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756369Ab3JNNx5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 09:53:57 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:51345 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750793Ab3JNNxz (ORCPT
+	id S1756479Ab3JNNz6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 09:55:58 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:54274 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750906Ab3JNNz5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 09:53:55 -0400
+	Mon, 14 Oct 2013 09:55:57 -0400
+Date: Mon, 14 Oct 2013 14:54:58 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Will Deacon <Will.Deacon@arm.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFT PATCH v2 1/4] arm64: fix possible invalid FPSIMD
+ initialization state
+Message-ID: <20131014135457.GE7682@arm.com>
+References: <1381674029-430-1-git-send-email-liuj97@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20131014133620.GF4722@htj.dyndns.org>
-References: <1381574794-7639-1-git-send-email-zhiguohong@tencent.com>
-	<1381741757-20888-1-git-send-email-zhiguohong@tencent.com>
-	<20131014133620.GF4722@htj.dyndns.org>
-Date: Mon, 14 Oct 2013 21:53:54 +0800
-Message-ID: <CAA7+ByWPM2Pizm+dP1AxPM7Ut-w=AtRfD2GkCK-0OVh+C2Twkg@mail.gmail.com>
-Subject: Re: [PATCH v2] blk-throttle: simplify logic by token bucket algorithm
-From: Hong zhi guo <honkiko@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Jens Axboe <axboe@kernel.dk>, vgoyal@redhat.com, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Hong Zhiguo <zhiguohong@tencent.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1381674029-430-1-git-send-email-liuj97@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Tejun,
+On Sun, Oct 13, 2013 at 03:20:17PM +0100, Jiang Liu wrote:
+> From: Jiang Liu <jiang.liu@huawei.com>
+> 
+> If context switching happens during executing fpsimd_flush_thread(),
+> stale value in FPSIMD registers will be saved into current thread's
+> fpsimd_state by fpsimd_thread_switch(). That may cause invalid
+> initialization state for the new process, so disable preemption
+> when executing fpsimd_flush_thread().
+> 
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> Cc: Jiang Liu <liuj97@gmail.com>
 
-I've not tested hierarchical setup yet. I'll do it tomorrow.
-BTW, what kind of setup do you expect? Is hierarchy of 2 levels enough?
-
-Zhiguo
-
-On Mon, Oct 14, 2013 at 9:36 PM, Tejun Heo <tj@kernel.org> wrote:
-> Hello,
->
-> Yes, this definitely is the direction we wanna take it.  I'll wait for
-> Vivek to chime in but have you also tested hierarchical setup?
->
-> Thanks.
->
-> --
-> tejun
-
-
+That's already in mainline (3.12-rc4).
 
 -- 
-best regards
-Hong Zhiguo
+Catalin
