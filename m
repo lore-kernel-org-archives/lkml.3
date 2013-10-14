@@ -1,222 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753906Ab3JNIkE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 04:40:04 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:18909 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751451Ab3JNIkD (ORCPT
+	id S1754455Ab3JNIlh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 04:41:37 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:51164 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753959Ab3JNIlg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 04:40:03 -0400
-X-Spam-Score: -100.8
-Message-ID: <525BAD9F.6060406@asianux.com>
-Date: Mon, 14 Oct 2013 16:38:55 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Mon, 14 Oct 2013 04:41:36 -0400
+X-AuditID: 9c930179-b7c78ae000003065-39-525bae3fdd9c
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCHSET 0/8] perf tools: Fix scalability problem on callchain merging (v5)
+References: <1381468543-25334-1-git-send-email-namhyung@kernel.org>
+	<20131013123444.GB1044@krava.brq.redhat.com>
+	<87k3hgbgn2.fsf@sejong.aot.lge.com>
+	<20131014080108.GA1590@krava.redhat.com>
+Date: Mon, 14 Oct 2013 17:41:34 +0900
+In-Reply-To: <20131014080108.GA1590@krava.redhat.com> (Jiri Olsa's message of
+	"Mon, 14 Oct 2013 10:01:08 +0200")
+Message-ID: <87bo2sb5xd.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: josh@freedesktop.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] kernel/rcutorture.c: use scnprintf() instead of sprintf()
-References: <5253C335.5050609@asianux.com> <20131013110518.GC5790@linux.vnet.ibm.com>
-In-Reply-To: <20131013110518.GC5790@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the contents is more than 4096 bytes (e.g. if have 1K cpus), current
-sprintf() will cause memory overflow.
+Hi Jiri,
 
-They are all test information which can be truncated, so use scnprintf()
-instead of sprintf(), also add 'max' parameter for related functions,
-also notice 80 columns boundary and parameters alignments.
+On Mon, 14 Oct 2013 10:01:08 +0200, Jiri Olsa wrote:
+> On Mon, Oct 14, 2013 at 01:50:09PM +0900, Namhyung Kim wrote:
+>> On Sun, 13 Oct 2013 14:34:44 +0200, Jiri Olsa wrote:
+>> > I put perf archive and data output in here if you're interested:
+>> > http://people.redhat.com/jolsa/cc/
+>> 
+>> I can't download the data output (but the archive is fine).
+>> 
+>>   $ curl http://people.redhat.com/jolsa/cc/perf.data
+>>   <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+>>   <html><head>
+>>   <title>403 Forbidden</title>
+>>   </head><body>
+>>   <h1>Forbidden</h1>
+>>   <p>You don't have permission to access /jolsa/cc/perf.data
+>>   on this server.</p>
+>>   <hr>
+>>   <address>Apache Server at people.redhat.com Port 80</address>
+>>   </body></html>
+>
+> oops, should be fixed now.. haven't checked persmissions :-\
 
-Test case:
+I got it now, thanks.
 
-  Fedora16 x86_64, 2 CPUs, 2GB RAM, [in/rm]mod with "torture_type=srcu".
+But I couldn't reproduce the segfault (both for TUI and stdio).
+Do you have any scenario?
 
-    let maximize buffer to 256 to truncate in rcu_torture_printk().
-    let maximize buffer to 410 to may truncate in srcu_torture_stats().
-    let maximize buffer to 4096 (original size) to print full.
+  # ========
+  # captured on: Mon Oct 14 17:30:03 2013
+  # hostname : dhcp-26-214.brq.redhat.com
+  # os release : 3.12.0-rc2+
+  # perf version : 3.12.rc2.g9de23a
+  # arch : x86_64
+  # nrcpus online : 2
+  # nrcpus avail : 2
+  # cpudesc : Intel(R) Core(TM)2 Duo CPU T9400 @ 2.53GHz
+  # cpuid : GenuineIntel,6,23,10
+  # total memory : 1968996 kB
+  # cmdline : /home/jolsa/linux-perf/tools/perf/perf record -g -e cycles:pp make -j 
+  # event : name = cycles:pp, type = 0, config = 0x0, config1 = 0x0, config2 = 0x0, excl_usr = 
+  # HEADER_CPU_TOPOLOGY info available, use -I to display
+  # pmu mappings: cpu = 4, software = 1, tracepoint = 2, breakpoint = 5
+  # ========
+  #
+  # Samples: 285K of event 'cycles:pp'
+  # Event count (approx.): 173578957575
+  ...
 
-  it is a rcu test module, so not need additional test or consideration.
-
-
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- kernel/rcutorture.c |  110 +++++++++++++++++++++++++++-----------------------
- 1 files changed, 59 insertions(+), 51 deletions(-)
-
-diff --git a/kernel/rcutorture.c b/kernel/rcutorture.c
-index be63101..107fd76 100644
---- a/kernel/rcutorture.c
-+++ b/kernel/rcutorture.c
-@@ -370,7 +370,7 @@ struct rcu_torture_ops {
- 	void (*call)(struct rcu_head *head, void (*func)(struct rcu_head *rcu));
- 	void (*cb_barrier)(void);
- 	void (*fqs)(void);
--	int (*stats)(char *page);
-+	int (*stats)(char *page, int max);
- 	int irq_capable;
- 	int can_boost;
- 	const char *name;
-@@ -572,20 +572,20 @@ static void srcu_torture_barrier(void)
- 	srcu_barrier(&srcu_ctl);
- }
- 
--static int srcu_torture_stats(char *page)
-+static int srcu_torture_stats(char *page, int max)
- {
- 	int cnt = 0;
- 	int cpu;
- 	int idx = srcu_ctl.completed & 0x1;
- 
--	cnt += sprintf(&page[cnt], "%s%s per-CPU(idx=%d):",
--		       torture_type, TORTURE_FLAG, idx);
-+	cnt += scnprintf(&page[cnt], max - cnt, "%s%s per-CPU(idx=%d):",
-+			torture_type, TORTURE_FLAG, idx);
- 	for_each_possible_cpu(cpu) {
--		cnt += sprintf(&page[cnt], " %d(%lu,%lu)", cpu,
--			       per_cpu_ptr(srcu_ctl.per_cpu_ref, cpu)->c[!idx],
--			       per_cpu_ptr(srcu_ctl.per_cpu_ref, cpu)->c[idx]);
-+		cnt += scnprintf(&page[cnt], max - cnt, " %d(%lu,%lu)", cpu,
-+				per_cpu_ptr(srcu_ctl.per_cpu_ref, cpu)->c[!idx],
-+				per_cpu_ptr(srcu_ctl.per_cpu_ref, cpu)->c[idx]);
- 	}
--	cnt += sprintf(&page[cnt], "\n");
-+	cnt += scnprintf(&page[cnt], max - cnt, "\n");
- 	return cnt;
- }
- 
-@@ -1047,7 +1047,7 @@ rcu_torture_reader(void *arg)
-  * Create an RCU-torture statistics message in the specified buffer.
-  */
- static int
--rcu_torture_printk(char *page)
-+rcu_torture_printk(char *page, int max)
- {
- 	int cnt = 0;
- 	int cpu;
-@@ -1065,61 +1065,69 @@ rcu_torture_printk(char *page)
- 		if (pipesummary[i] != 0)
- 			break;
- 	}
--	cnt += sprintf(&page[cnt], "%s%s ", torture_type, TORTURE_FLAG);
--	cnt += sprintf(&page[cnt],
--		       "rtc: %p ver: %lu tfle: %d rta: %d rtaf: %d rtf: %d ",
--		       rcu_torture_current,
--		       rcu_torture_current_version,
--		       list_empty(&rcu_torture_freelist),
--		       atomic_read(&n_rcu_torture_alloc),
--		       atomic_read(&n_rcu_torture_alloc_fail),
--		       atomic_read(&n_rcu_torture_free));
--	cnt += sprintf(&page[cnt], "rtmbe: %d rtbke: %ld rtbre: %ld ",
--		       atomic_read(&n_rcu_torture_mberror),
--		       n_rcu_torture_boost_ktrerror,
--		       n_rcu_torture_boost_rterror);
--	cnt += sprintf(&page[cnt], "rtbf: %ld rtb: %ld nt: %ld ",
--		       n_rcu_torture_boost_failure,
--		       n_rcu_torture_boosts,
--		       n_rcu_torture_timers);
--	cnt += sprintf(&page[cnt],
--		       "onoff: %ld/%ld:%ld/%ld %d,%d:%d,%d %lu:%lu (HZ=%d) ",
--		       n_online_successes, n_online_attempts,
--		       n_offline_successes, n_offline_attempts,
--		       min_online, max_online,
--		       min_offline, max_offline,
--		       sum_online, sum_offline, HZ);
--	cnt += sprintf(&page[cnt], "barrier: %ld/%ld:%ld",
--		       n_barrier_successes,
--		       n_barrier_attempts,
--		       n_rcu_torture_barrier_error);
--	cnt += sprintf(&page[cnt], "\n%s%s ", torture_type, TORTURE_FLAG);
-+	cnt += scnprintf(&page[cnt], max - cnt, "%s%s ",
-+			torture_type, TORTURE_FLAG);
-+	cnt += scnprintf(&page[cnt], max - cnt,
-+			"rtc: %p ver: %lu tfle: %d rta: %d rtaf: %d rtf: %d ",
-+			rcu_torture_current,
-+			rcu_torture_current_version,
-+			list_empty(&rcu_torture_freelist),
-+			atomic_read(&n_rcu_torture_alloc),
-+			atomic_read(&n_rcu_torture_alloc_fail),
-+			atomic_read(&n_rcu_torture_free));
-+	cnt += scnprintf(&page[cnt], max - cnt,
-+			"rtmbe: %d rtbke: %ld rtbre: %ld ",
-+			atomic_read(&n_rcu_torture_mberror),
-+			n_rcu_torture_boost_ktrerror,
-+			n_rcu_torture_boost_rterror);
-+	cnt += scnprintf(&page[cnt], max - cnt,
-+			"rtbf: %ld rtb: %ld nt: %ld ",
-+			n_rcu_torture_boost_failure,
-+			n_rcu_torture_boosts,
-+			n_rcu_torture_timers);
-+	cnt += scnprintf(&page[cnt], max - cnt,
-+			"onoff: %ld/%ld:%ld/%ld %d,%d:%d,%d %lu:%lu (HZ=%d) ",
-+			n_online_successes, n_online_attempts,
-+			n_offline_successes, n_offline_attempts,
-+			min_online, max_online,
-+			min_offline, max_offline,
-+			sum_online, sum_offline, HZ);
-+	cnt += scnprintf(&page[cnt], max - cnt,
-+			"barrier: %ld/%ld:%ld",
-+			n_barrier_successes,
-+			n_barrier_attempts,
-+			n_rcu_torture_barrier_error);
-+	cnt += scnprintf(&page[cnt], max - cnt, "\n%s%s ",
-+			torture_type, TORTURE_FLAG);
- 	if (atomic_read(&n_rcu_torture_mberror) != 0 ||
- 	    n_rcu_torture_barrier_error != 0 ||
- 	    n_rcu_torture_boost_ktrerror != 0 ||
- 	    n_rcu_torture_boost_rterror != 0 ||
- 	    n_rcu_torture_boost_failure != 0 ||
- 	    i > 1) {
--		cnt += sprintf(&page[cnt], "!!! ");
-+		cnt += scnprintf(&page[cnt], max - cnt, "!!! ");
- 		atomic_inc(&n_rcu_torture_error);
- 		WARN_ON_ONCE(1);
- 	}
--	cnt += sprintf(&page[cnt], "Reader Pipe: ");
-+	cnt += scnprintf(&page[cnt], max - cnt, "Reader Pipe: ");
- 	for (i = 0; i < RCU_TORTURE_PIPE_LEN + 1; i++)
--		cnt += sprintf(&page[cnt], " %ld", pipesummary[i]);
--	cnt += sprintf(&page[cnt], "\n%s%s ", torture_type, TORTURE_FLAG);
--	cnt += sprintf(&page[cnt], "Reader Batch: ");
-+		cnt += scnprintf(&page[cnt], max - cnt, " %ld", pipesummary[i]);
-+	cnt += scnprintf(&page[cnt], max - cnt, "\n%s%s ",
-+			torture_type, TORTURE_FLAG);
-+	cnt += scnprintf(&page[cnt], max - cnt, "Reader Batch: ");
- 	for (i = 0; i < RCU_TORTURE_PIPE_LEN + 1; i++)
--		cnt += sprintf(&page[cnt], " %ld", batchsummary[i]);
--	cnt += sprintf(&page[cnt], "\n%s%s ", torture_type, TORTURE_FLAG);
--	cnt += sprintf(&page[cnt], "Free-Block Circulation: ");
-+		cnt += scnprintf(&page[cnt], max - cnt, " %ld",
-+				batchsummary[i]);
-+	cnt += scnprintf(&page[cnt], max - cnt, "\n%s%s ",
-+			torture_type, TORTURE_FLAG);
-+	cnt += scnprintf(&page[cnt], max - cnt, "Free-Block Circulation: ");
- 	for (i = 0; i < RCU_TORTURE_PIPE_LEN + 1; i++) {
--		cnt += sprintf(&page[cnt], " %d",
--			       atomic_read(&rcu_torture_wcount[i]));
-+		cnt += scnprintf(&page[cnt], max - cnt, " %d",
-+				atomic_read(&rcu_torture_wcount[i]));
- 	}
--	cnt += sprintf(&page[cnt], "\n");
-+	cnt += scnprintf(&page[cnt], max - cnt, "\n");
- 	if (cur_ops->stats)
--		cnt += cur_ops->stats(&page[cnt]);
-+		cnt += cur_ops->stats(&page[cnt], max - cnt);
- 	return cnt;
- }
- 
-@@ -1136,7 +1144,7 @@ rcu_torture_stats_print(void)
- {
- 	int cnt;
- 
--	cnt = rcu_torture_printk(printk_buf);
-+	cnt = rcu_torture_printk(printk_buf, sizeof(printk_buf));
- 	pr_alert("%s", printk_buf);
- }
- 
--- 
-1.7.7.6
+Thanks,
+Namhyung
