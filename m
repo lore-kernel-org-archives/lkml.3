@@ -1,54 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755461Ab3JMXxV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Oct 2013 19:53:21 -0400
-Received: from mailgw01.dd24.net ([193.46.215.41]:50615 "EHLO
-	mailgw01.dd24.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755331Ab3JMXxU (ORCPT
+	id S1755460Ab3JNAW3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Oct 2013 20:22:29 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:48540 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755331Ab3JNAW2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Oct 2013 19:53:20 -0400
-X-Greylist: delayed 411 seconds by postgrey-1.27 at vger.kernel.org; Sun, 13 Oct 2013 19:53:20 EDT
-Message-ID: <1381707976.3914.22.camel@heisenberg.scientia.net>
-Subject: Re: support for Intel Atom based QNAP LEDs/buttons/buzzer in Linux?
-From: Christoph Anton Mitterer <calestyo@scientia.net>
-To: linux-kernel@vger.kernel.org
-Cc: Chris Eastwood <chris2027@gmail.com>, gregkh@linuxfoundation.org,
-        linux@roeck-us.net
-Date: Mon, 14 Oct 2013 01:46:16 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sun, 13 Oct 2013 20:22:28 -0400
+From: Felipe Pena <felipensp@gmail.com>
+To: Or Gerlitz <ogerlitz@mellanox.com>, Roi Dayan <roid@mellanox.com>,
+        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>
+Cc: linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Felipe Pena <felipensp@gmail.com>
+Subject: [PATCH 1/1] drivers: infiniband: ulp: Fix possible use-after-free
+Date: Sun, 13 Oct 2013 21:22:46 -0300
+Message-Id: <1381710166-27341-1-git-send-email-felipensp@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg, Guenter and Chris.
+The tx_desc variable is being used to access its type member
+after a kmem_cache_free call
 
-Coming back to the stuff discussed previously[0].
+Signed-off-by: Felipe Pena <felipensp@gmail.com>
+---
+ drivers/infiniband/ulp/iser/iser_initiator.c |    8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
 
-Chris Eastwood has made most of these (i.e. LEDs and buttons, the
-buzzers may work on at least some of the devices via some other serial
-device) working (AFAIU based on the previously mentioned code at
-Github[1]), he told me in several iterations of private mail.
-
-I'm not sure now, whether anything based on this code would be
-appropriate for the mainline kernel, since Guenter mentioned he'd prefer
-a mfd core driver for all that... OTOH, the later may probably never
-happen, and Chris' work seems to already do the job.
-
-I don't know however, whether he needs to patch any other places in the
-kernel, but I'm sure he can show his work (and ask questions) better
-than I, thereby inviting him to do so.
-Greg you had mentioned before that you might be able to spend some time
-on this, so if you could help Chris, that would be great.
-
-
-Cheers,
-Chris.
-
-[0] http://thread.gmane.org/gmane.linux.kernel/1508763/focus=1512903
-[1] https://github.com/tomtastic/qnap-gpio/
-
-PS: Sorry for having lost the message threading.
+diff --git a/drivers/infiniband/ulp/iser/iser_initiator.c b/drivers/infiniband/ulp/iser/iser_initiator.c
+index 5388226..15b545c 100644
+--- a/drivers/infiniband/ulp/iser/iser_initiator.c
++++ b/drivers/infiniband/ulp/iser/iser_initiator.c
+@@ -610,17 +610,15 @@ void iser_snd_completion(struct iser_tx_desc *tx_desc,
+ 		ib_dma_unmap_single(device->ib_device, tx_desc->dma_addr,
+ 					ISER_HEADERS_LEN, DMA_TO_DEVICE);
+ 		kmem_cache_free(ig.desc_cache, tx_desc);
+-	}
+-
+-	atomic_dec(&ib_conn->post_send_buf_count);
+-
+-	if (tx_desc->type == ISCSI_TX_CONTROL) {
++	} else if (tx_desc->type == ISCSI_TX_CONTROL) {
+ 		/* this arithmetic is legal by libiscsi dd_data allocation */
+ 		task = (void *) ((long)(void *)tx_desc -
+ 				  sizeof(struct iscsi_task));
+ 		if (task->hdr->itt == RESERVED_ITT)
+ 			iscsi_put_task(task);
+ 	}
++
++	atomic_dec(&ib_conn->post_send_buf_count);
+ }
+ 
+ void iser_task_rdma_init(struct iscsi_iser_task *iser_task)
+-- 
+1.7.10.4
 
