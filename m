@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756321Ab3JNMTN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 08:19:13 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:22959 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756081Ab3JNMS4 (ORCPT
+	id S1756406Ab3JNMTg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 08:19:36 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:21340 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756069Ab3JNMTL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 08:18:56 -0400
-X-AuditID: cbfee61a-b7f7a6d00000235f-e2-525be12ed9f6
+	Mon, 14 Oct 2013 08:19:11 -0400
+X-AuditID: cbfee61a-b7f7a6d00000235f-f8-525be13d2f2e
 From: Lukasz Majewski <l.majewski@samsung.com>
 To: Viresh Kumar <viresh.kumar@linaro.org>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>,
@@ -21,41 +21,33 @@ Cc: "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
         linux-kernel <linux-kernel@vger.kernel.org>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Myungjoo Ham <myungjoo.ham@samsung.com>, durgadoss.r@intel.com
-Subject: [PATCH v9 4/7] cpufreq:boost:Kconfig: Provide support for software
- managed BOOST
-Date: Mon, 14 Oct 2013 14:17:47 +0200
-Message-id: <1381753070-2853-5-git-send-email-l.majewski@samsung.com>
+Subject: [PATCH v9 7/7] cpufreq:exynos4x12: Change L0 driver data to
+ CPUFREQ_BOOST_FREQ
+Date: Mon, 14 Oct 2013 14:17:50 +0200
+Message-id: <1381753070-2853-8-git-send-email-l.majewski@samsung.com>
 X-Mailer: git-send-email 1.7.10
 In-reply-to: <1381753070-2853-1-git-send-email-l.majewski@samsung.com>
 References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
  <1381753070-2853-1-git-send-email-l.majewski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrDLMWRmVeSWpSXmKPExsVy+t9jAV39h9FBBl/ns1hsnLGe1eJp0w92
-	i76fV5gt1uz/yWTRefYJs8WbR9wWbx5uZrS4vGsOm8Xn3iOMFrcbV7BZnDl9idXiycM+NouN
-	Xz0ceD0W73nJ5HHn2h42j3XT3jJ7bLnazuLRt2UVo8fxG9uZPD5vkgtgj+KySUnNySxLLdK3
-	S+DKmNq8jKVgs0jFgidrmBsYnwp0MXJySAiYSDw/9YwRwhaTuHBvPVsXIxeHkMAiRond3zYw
-	QzhdTBLXTk1gBaliE9CT+Hz3KRNIQkRgCaPE66YFrCAOs0APs8Tx69uB+jk4hAWiJVZ1loE0
-	sAioSkzce4wFxOYVcJX40jGJHWKdvMTT+31sIDangJvEqW0w2xoZJbad28A6gZF3ASPDKkbR
-	1ILkguKk9FxDveLE3OLSvHS95PzcTYzgMH0mtYNxZYPFIUYBDkYlHl4Bp+ggIdbEsuLK3EOM
-	EhzMSiK8H68ChXhTEiurUovy44tKc1KLDzFKc7AoifMeaLUOFBJITyxJzU5NLUgtgskycXBK
-	NTAu23dbzeNyxsEL3V78LzyN856+MZ9c1Tst+vIt3XevmEoS7r9eL9Cm8lx5qsFPWyeNJbrC
-	u78EOp5hCj23uPVxovUcrX1bQ9sD+1u6b/rw8Gx3PrKE+e7TrmLlvSW33mpa/vebKRa3ONDm
-	SNvRS91PGjQ40l+ZzYpZeuwgz/HGiacWrldK0jqsxFKckWioxVxUnAgAaY1A408CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrDLMWRmVeSWpSXmKPExsVy+t9jAV27h9FBBr+62Cw2zljPavG06Qe7
+	Rd/PK8wWa/b/ZLLoPPuE2eLNI26LNw83M1pc3jWHzeJz7xFGi9uNK9gszpy+xGrx5GEfUOtX
+	Dwdej8V7XjJ53Lm2h81j3bS3zB5brrazePRtWcXocfzGdiaPz5vkAtijuGxSUnMyy1KL9O0S
+	uDLOPn7LUnCfo+LcVsUGxtnsXYycHBICJhLL9k1nhrDFJC7cW8/WxcjFISSwiFHiZucUVgin
+	i0li2q0LjCBVbAJ6Ep/vPmUCSYgILGGUeN20AKyKWaCHWeL49e1sIFXCApES7U/WgNksAqoS
+	izdeArN5BVwltt2dzwixT17i6f0+sDingJvEqW0bmCHWNTJKbDu3gXUCI+8CRoZVjKKpBckF
+	xUnpuYZ6xYm5xaV56XrJ+bmbGMFh+kxqB+PKBotDjAIcjEo8vAJO0UFCrIllxZW5hxglOJiV
+	RHg/XgUK8aYkVlalFuXHF5XmpBYfYpTmYFES5z3Qah0oJJCeWJKanZpakFoEk2Xi4JRqYBTx
+	6G3c49j7u//zr0N6rT2Lf/KotHSXyIf76pkKip1cubHV5che5foLNgvLDa9cfuf3yelETMIk
+	kZAJ81X27tJIavOeqrKOrTPadjGnRn5cQOOZBZzv1u2NXGUeqf82LGvlrHedVvcYN8tJfbj3
+	7j2XkYlXytL/PoeZ58W/vn7G8bYLX7eNvRJLcUaioRZzUXEiALVdL1VPAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For safety reasons new flag - CONFIG_CPU_FREQ_BOOST_SW has been added.
-Only after selecting "EXYNOS Frequency Overclocking - Software" Kconfig
-option the software managed boost is enabled. It also selects thermal
-subsystem to be compiled in. Thermal is necessary for disabling boost
-and cooling down the device when overheating detected.
-
-Boost _MUST_NOT_ work without thermal subsystem with properly defined
-overheating temperatures.
-
-This option doesn't affect x86's ACPI hardware managed boost support
-(i.e. Intel, AMD). In this situation boost management is embedded at
-hardware.
+Special driver data flag (CPUFREQ_BOOST_FREQ) has been added to indicate
+frequency, which can be only enabled for BOOST mode.
+This frequency shall be used only for limited time, since it might cause
+target device to overheat.
 
 Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
 Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
@@ -69,63 +61,27 @@ Changes for v8:
 - None
 
 Changes for v7:
-- Remove superfluous "default n" definition
-- Generic CPU_FREQ_BOOST_SW depends on THERMAL
+- None
 
 Changes for v6:
-- CPU_FREQ_BOOST_SW [1] is now defined as "invisible" bool option.
-- Platform dependent ARM_EXYNOS_CPU_FREQ_BOOST_SW config option has been
-  added. It depends on ARM_EXYNOS_CPUFREQ options and selects
-  EXYNOS_THERMAL with the main boost config [1].
-
-Changes for v5:
 - New patch
 
- drivers/cpufreq/Kconfig     |    4 ++++
- drivers/cpufreq/Kconfig.arm |   15 +++++++++++++++
- 2 files changed, 19 insertions(+)
+ drivers/cpufreq/exynos4x12-cpufreq.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/cpufreq/Kconfig b/drivers/cpufreq/Kconfig
-index 38093e2..c8818c1 100644
---- a/drivers/cpufreq/Kconfig
-+++ b/drivers/cpufreq/Kconfig
-@@ -20,6 +20,10 @@ if CPU_FREQ
- config CPU_FREQ_GOV_COMMON
- 	bool
+diff --git a/drivers/cpufreq/exynos4x12-cpufreq.c b/drivers/cpufreq/exynos4x12-cpufreq.c
+index 08b7477..178ab4b 100644
+--- a/drivers/cpufreq/exynos4x12-cpufreq.c
++++ b/drivers/cpufreq/exynos4x12-cpufreq.c
+@@ -32,7 +32,7 @@ static unsigned int exynos4x12_volt_table[] = {
+ };
  
-+config CPU_FREQ_BOOST_SW
-+	bool
-+	depends on THERMAL
-+
- config CPU_FREQ_STAT
- 	tristate "CPU frequency translation statistics"
- 	default y
-diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
-index 701ec95..549166a 100644
---- a/drivers/cpufreq/Kconfig.arm
-+++ b/drivers/cpufreq/Kconfig.arm
-@@ -64,6 +64,21 @@ config ARM_EXYNOS5440_CPUFREQ
- 
- 	  If in doubt, say N.
- 
-+config ARM_EXYNOS_CPU_FREQ_BOOST_SW
-+	bool "EXYNOS Frequency Overclocking - Software"
-+	depends on ARM_EXYNOS_CPUFREQ
-+	select CPU_FREQ_BOOST_SW
-+	select EXYNOS_THERMAL
-+	help
-+	  This driver supports software managed overclocking (BOOST).
-+	  It allows usage of special frequencies for Samsung Exynos
-+	  processors if thermal conditions are appropriate.
-+
-+	  It reguires, for safe operation, thermal framework with properly
-+	  defined trip points.
-+
-+	  If in doubt, say N.
-+
- config ARM_HIGHBANK_CPUFREQ
- 	tristate "Calxeda Highbank-based"
- 	depends on ARCH_HIGHBANK
+ static struct cpufreq_frequency_table exynos4x12_freq_table[] = {
+-	{L0, CPUFREQ_ENTRY_INVALID},
++	{CPUFREQ_BOOST_FREQ, 1500 * 1000},
+ 	{L1, 1400 * 1000},
+ 	{L2, 1300 * 1000},
+ 	{L3, 1200 * 1000},
 -- 
 1.7.10.4
 
