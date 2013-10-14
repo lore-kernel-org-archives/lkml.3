@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757439Ab3JNRi5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 13:38:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14232 "EHLO mx1.redhat.com"
+	id S1757449Ab3JNRjJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 13:39:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27014 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756880Ab3JNRiz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 13:38:55 -0400
+	id S1756859Ab3JNRjF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 13:39:05 -0400
 From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 To: linux-mm@kvack.org
 Cc: Andrew Morton <akpm@linux-foundation.org>, Matt Mackall <mpm@selenic.com>,
@@ -16,147 +16,149 @@ Cc: Andrew Morton <akpm@linux-foundation.org>, Matt Mackall <mpm@selenic.com>,
         Michal Hocko <mhocko@suse.cz>,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
         Pavel Emelyanov <xemul@parallels.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 07/11] memcg: redefine callback functions for page table walker
-Date: Mon, 14 Oct 2013 13:37:06 -0400
-Message-Id: <1381772230-26878-8-git-send-email-n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH 04/11] clear_refs: redefine callback functions for page table walker
+Date: Mon, 14 Oct 2013 13:37:03 -0400
+Message-Id: <1381772230-26878-5-git-send-email-n-horiguchi@ah.jp.nec.com>
 In-Reply-To: <1381772230-26878-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 References: <1381772230-26878-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move code around pte loop in mem_cgroup_count_precharge_pte_range() into
-mem_cgroup_count_precharge_pte() connected to pte_entry().
+Currently clear_refs_pte_range() is connected to pmd_entry() to split thps
+if found. But now this work can be done in core page table walker code.
+So we have no reason to keep this callback on pmd_entry(). This patch moves
+pte handling code on pte_entry() callback.
 
-We don't change the callback mem_cgroup_move_charge_pte_range() for now,
-because we can't do the same replacement easily due to 'goto retry'.
+clear_refs_write() has some prechecks about if we really walk over a given
+vma. It's fine to let them done by test_walk() callback, so let's define it.
 
 Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 ---
- mm/memcontrol.c | 72 ++++++++++++++++++++++-----------------------------------
- 1 file changed, 27 insertions(+), 45 deletions(-)
+ fs/proc/task_mmu.c | 82 ++++++++++++++++++++++--------------------------------
+ 1 file changed, 33 insertions(+), 49 deletions(-)
 
-diff --git v3.12-rc4.orig/mm/memcontrol.c v3.12-rc4/mm/memcontrol.c
-index 1c52ddb..a0ea918 100644
---- v3.12-rc4.orig/mm/memcontrol.c
-+++ v3.12-rc4/mm/memcontrol.c
-@@ -6621,30 +6621,28 @@ static inline enum mc_target_type get_mctgt_type_thp(struct vm_area_struct *vma,
- }
- #endif
+diff --git v3.12-rc4.orig/fs/proc/task_mmu.c v3.12-rc4/fs/proc/task_mmu.c
+index c88ee95..4abe883 100644
+--- v3.12-rc4.orig/fs/proc/task_mmu.c
++++ v3.12-rc4/fs/proc/task_mmu.c
+@@ -704,7 +704,6 @@ enum clear_refs_types {
+ };
  
--static int mem_cgroup_count_precharge_pte_range(pmd_t *pmd,
-+static int mem_cgroup_count_precharge_pte(pte_t *pte,
- 					unsigned long addr, unsigned long end,
- 					struct mm_walk *walk)
+ struct clear_refs_private {
+-	struct vm_area_struct *vma;
+ 	enum clear_refs_types type;
+ };
+ 
+@@ -736,41 +735,43 @@ static inline void clear_soft_dirty(struct vm_area_struct *vma,
+ #endif
+ }
+ 
+-static int clear_refs_pte_range(pmd_t *pmd, unsigned long addr,
++static int clear_refs_pte(pte_t *pte, unsigned long addr,
+ 				unsigned long end, struct mm_walk *walk)
  {
--	struct vm_area_struct *vma = walk->private;
--	pte_t *pte;
+ 	struct clear_refs_private *cp = walk->private;
+-	struct vm_area_struct *vma = cp->vma;
+-	pte_t *pte, ptent;
 -	spinlock_t *ptl;
-+	if (get_mctgt_type(walk->vma, addr, *pte, NULL))
-+		mc.precharge++;	/* increment precharge temporarily */
++	struct vm_area_struct *vma = walk->vma;
+ 	struct page *page;
+ 
+-	split_huge_page_pmd(vma, addr, pmd);
+-	if (pmd_trans_unstable(pmd))
++	if (cp->type == CLEAR_REFS_SOFT_DIRTY) {
++		clear_soft_dirty(vma, addr, pte);
+ 		return 0;
++	}
++	if (!pte_present(*pte))
++		return 0;
++	page = vm_normal_page(vma, addr, *pte);
++	if (!page)
++		return 0;
++	/* Clear accessed and referenced bits. */
++	ptep_test_and_clear_young(vma, addr, pte);
++	ClearPageReferenced(page);
 +	return 0;
 +}
-+
-+static int mem_cgroup_count_precharge_pmd(pmd_t *pmd,
-+					unsigned long addr, unsigned long end,
-+					struct mm_walk *walk)
+ 
+-	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
+-	for (; addr != end; pte++, addr += PAGE_SIZE) {
+-		ptent = *pte;
+-
+-		if (cp->type == CLEAR_REFS_SOFT_DIRTY) {
+-			clear_soft_dirty(vma, addr, pte);
+-			continue;
+-		}
+-
+-		if (!pte_present(ptent))
+-			continue;
+-
+-		page = vm_normal_page(vma, addr, ptent);
+-		if (!page)
+-			continue;
++static int clear_refs_test_walk(unsigned long start, unsigned long end,
++				struct mm_walk *walk)
 +{
++	struct clear_refs_private *cp = walk->private;
 +	struct vm_area_struct *vma = walk->vma;
  
- 	if (pmd_trans_huge_lock(pmd, vma) == 1) {
- 		if (get_mctgt_type_thp(vma, addr, *pmd, NULL) == MC_TARGET_PAGE)
- 			mc.precharge += HPAGE_PMD_NR;
- 		spin_unlock(&vma->vm_mm->page_table_lock);
--		return 0;
-+		/* don't call mem_cgroup_count_precharge_pte() */
-+		walk->skip = 1;
- 	}
--
--	if (pmd_trans_unstable(pmd))
--		return 0;
--	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
--	for (; addr != end; pte++, addr += PAGE_SIZE)
--		if (get_mctgt_type(vma, addr, *pte, NULL))
--			mc.precharge++;	/* increment precharge temporarily */
+-		/* Clear accessed and referenced bits. */
+-		ptep_test_and_clear_young(vma, addr, pte);
+-		ClearPageReferenced(page);
+-	}
 -	pte_unmap_unlock(pte - 1, ptl);
 -	cond_resched();
--
++	/*
++	 * Writing 1 to /proc/pid/clear_refs affects all pages.
++	 * Writing 2 to /proc/pid/clear_refs only affects anonymous pages.
++	 * Writing 3 to /proc/pid/clear_refs only affects file mapped pages.
++	 */
++	if (cp->type == CLEAR_REFS_ANON && vma->vm_file)
++		walk->skip = 1;
++	if (cp->type == CLEAR_REFS_MAPPED && !vma->vm_file)
++		walk->skip = 1;
  	return 0;
  }
  
-@@ -6653,18 +6651,14 @@ static unsigned long mem_cgroup_count_precharge(struct mm_struct *mm)
- 	unsigned long precharge;
- 	struct vm_area_struct *vma;
- 
-+	struct mm_walk mem_cgroup_count_precharge_walk = {
-+		.pmd_entry = mem_cgroup_count_precharge_pmd,
-+		.pte_entry = mem_cgroup_count_precharge_pte,
-+		.mm = mm,
-+	};
- 	down_read(&mm->mmap_sem);
--	for (vma = mm->mmap; vma; vma = vma->vm_next) {
--		struct mm_walk mem_cgroup_count_precharge_walk = {
--			.pmd_entry = mem_cgroup_count_precharge_pte_range,
--			.mm = mm,
--			.private = vma,
--		};
--		if (is_vm_hugetlb_page(vma))
--			continue;
--		walk_page_range(vma->vm_start, vma->vm_end,
--					&mem_cgroup_count_precharge_walk);
--	}
-+	for (vma = mm->mmap; vma; vma = vma->vm_next)
-+		walk_page_vma(vma, &mem_cgroup_count_precharge_walk);
- 	up_read(&mm->mmap_sem);
- 
- 	precharge = mc.precharge;
-@@ -6803,7 +6797,7 @@ static int mem_cgroup_move_charge_pte_range(pmd_t *pmd,
- 				struct mm_walk *walk)
- {
- 	int ret = 0;
--	struct vm_area_struct *vma = walk->private;
-+	struct vm_area_struct *vma = walk->vma;
- 	pte_t *pte;
- 	spinlock_t *ptl;
- 	enum mc_target_type target_type;
-@@ -6904,6 +6898,10 @@ put:			/* get_mctgt_type() gets the page */
- static void mem_cgroup_move_charge(struct mm_struct *mm)
- {
- 	struct vm_area_struct *vma;
-+	struct mm_walk mem_cgroup_move_charge_walk = {
-+		.pmd_entry = mem_cgroup_move_charge_pte_range,
-+		.mm = mm,
-+	};
- 
- 	lru_add_drain_all();
- retry:
-@@ -6919,24 +6917,8 @@ static void mem_cgroup_move_charge(struct mm_struct *mm)
- 		cond_resched();
- 		goto retry;
- 	}
--	for (vma = mm->mmap; vma; vma = vma->vm_next) {
--		int ret;
--		struct mm_walk mem_cgroup_move_charge_walk = {
--			.pmd_entry = mem_cgroup_move_charge_pte_range,
--			.mm = mm,
--			.private = vma,
--		};
--		if (is_vm_hugetlb_page(vma))
--			continue;
--		ret = walk_page_range(vma->vm_start, vma->vm_end,
--						&mem_cgroup_move_charge_walk);
--		if (ret)
+@@ -812,33 +813,16 @@ static ssize_t clear_refs_write(struct file *file, const char __user *buf,
+ 			.type = type,
+ 		};
+ 		struct mm_walk clear_refs_walk = {
+-			.pmd_entry = clear_refs_pte_range,
++			.pte_entry = clear_refs_pte,
++			.test_walk = clear_refs_test_walk,
+ 			.mm = mm,
+ 			.private = &cp,
+ 		};
+ 		down_read(&mm->mmap_sem);
+ 		if (type == CLEAR_REFS_SOFT_DIRTY)
+ 			mmu_notifier_invalidate_range_start(mm, 0, -1);
+-		for (vma = mm->mmap; vma; vma = vma->vm_next) {
+-			cp.vma = vma;
+-			if (is_vm_hugetlb_page(vma))
+-				continue;
 -			/*
--			 * means we have consumed all precharges and failed in
--			 * doing additional charge. Just abandon here.
+-			 * Writing 1 to /proc/pid/clear_refs affects all pages.
+-			 *
+-			 * Writing 2 to /proc/pid/clear_refs only affects
+-			 * Anonymous pages.
+-			 *
+-			 * Writing 3 to /proc/pid/clear_refs only affects file
+-			 * mapped pages.
 -			 */
--			break;
--	}
-+	for (vma = mm->mmap; vma; vma = vma->vm_next)
-+		walk_page_vma(vma, &mem_cgroup_move_charge_walk);
- 	up_read(&mm->mmap_sem);
- }
- 
+-			if (type == CLEAR_REFS_ANON && vma->vm_file)
+-				continue;
+-			if (type == CLEAR_REFS_MAPPED && !vma->vm_file)
+-				continue;
+-			walk_page_range(vma->vm_start, vma->vm_end,
+-					&clear_refs_walk);
+-		}
++		for (vma = mm->mmap; vma; vma = vma->vm_next)
++			walk_page_vma(vma, &clear_refs_walk);
+ 		if (type == CLEAR_REFS_SOFT_DIRTY)
+ 			mmu_notifier_invalidate_range_end(mm, 0, -1);
+ 		flush_tlb_mm(mm);
 -- 
 1.8.3.1
 
