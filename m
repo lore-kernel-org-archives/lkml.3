@@ -1,49 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932298Ab3JNWxo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 18:53:44 -0400
-Received: from smtprelay0184.hostedemail.com ([216.40.44.184]:55889 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932260Ab3JNWxm (ORCPT
+	id S932367Ab3JNW5I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 18:57:08 -0400
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:53347 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932083Ab3JNW5F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 18:53:42 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1537:1566:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:2894:2914:3138:3139:3140:3141:3142:3622:3867:3871:387
-X-HE-Tag: moon84_1fcac6f1d8e5e
-X-Filterd-Recvd-Size: 1605
-Message-ID: <1381791216.16896.8.camel@joe-AO722>
-Subject: Re: [PATCH v4] vsprintf: Check real user/group id for %pK
-From: Joe Perches <joe@perches.com>
-To: Ryan Mallon <rmallon@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, eldad@fogrefinery.com,
-        Jiri Kosina <jkosina@suse.cz>, jgunthorpe@obsidianresearch.com,
-        Dan Rosenberg <dan.j.rosenberg@gmail.com>,
-        Kees Cook <keescook@chromium.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        George Spelvin <linux@horizon.com>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Landley <rob@landley.net>, Ingo Molnar <mingo@elte.hu>,
-        linux-doc@vger.kernel.org
-Date: Mon, 14 Oct 2013 15:53:36 -0700
-In-Reply-To: <525C7278.3090200@gmail.com>
-References: <525C7278.3090200@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 14 Oct 2013 18:57:05 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130820140447.GL27005@ZenIV.linux.org.uk>
+References: <CAKZGPANQz5-uyf=uSp_0HxBq1_uH053H0XOohpAaWsbeoy7zhw@mail.gmail.com>
+	<20130820055153.GH27005@ZenIV.linux.org.uk>
+	<CAKZGPAN3W_FFHcxnatFJNQ9VDt-TL9c2Wyddqvdz98612U4gzQ@mail.gmail.com>
+	<20130820073622.GK27005@ZenIV.linux.org.uk>
+	<20130820140447.GL27005@ZenIV.linux.org.uk>
+Date: Mon, 14 Oct 2013 15:57:04 -0700
+Message-ID: <CAMbhsRRMwhugwUX-jeo9q9t+RZNAcWj8BL-c_QuYYpJKd-2w5w@mail.gmail.com>
+Subject: Re: [PATCH v1] seq_file: Fix overflow condition in seq_commit
+From: Colin Cross <ccross@google.com>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Arun KS <arunks.linux@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Matthew Wilcox <matthew@wil.cx>, Bruce Fields <bfields@fieldses.org>,
+        lkml <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        vinayak menon <vinayakm.list@gmail.com>,
+        Nagachandra P <nagachandra@gmail.com>, Vikram MP <mp.vikram@gmail.com>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-10-15 at 09:38 +1100, Ryan Mallon wrote:
-> This is a temporary solution only, but fixes a minor security hole when
-> kptr_restrict=1. I am working to fix this properly, but there is still
-> some discussion around how to achieve this, see here:
+On Tue, Aug 20, 2013 at 7:04 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> On Tue, Aug 20, 2013 at 08:36:22AM +0100, Al Viro wrote:
+>
+>> Aha.  _That_ is a bug, all right - dynamic_dname() is simply not suitable
+>> for that kind of uses.  ashmem.c is certainly abusing shmem_file_setup();
+>> feeding that kind of mess as dentry name is a Bad Idea(tm).  Anyway,
+>> I'd suggest this for a fix:
+>>
+>>       va_list args;
+>>       size_t sz;
+>>       va_start(args, fmt);
+>>       sz = vsnprintf(NULL, 0, fmt, args) + 1;
+>>       va_end(args);
+>>       if (sz > buflen)
+>>               return ERR_PTR(-ENAMETOOLONG);
+>>       va_start(args, fmt);
+>>       buffer += buflen - sz;
+>>       vsprintf(buffer, fmt, args);
+>>       va_end(args);
+>>       return buffer;
+>>
+>> Either right in dynamic_dname(), or as possibly_fucking_long_dname(),
+>> to be used by shmem.c...
+>
+> Actually, looking at the users of dynamic_dname()...  Most of them are
+> fine with dynamic_dname() as it is, with 2 possible exceptions:
+> hugetlb_dname() and shmem_dname().  Both are using "/%s (deleted)",
+> dentry->d_name.name as format...  So the solution above may very
+> well be an overkill; something like
+>
+> char *simple_dname(struct dentry *dentry, char *buffer, int buflen)
+> {
+>         char *end = buffer + buflen;
+>         /* these dentries are never renamed, so d_lock is not needed */
+>         if (prepend(&end, &buflen, " (deleted)", 11) ||
+>             prepend_name(&end, &buflen, &dentry->d_name) ||
+>             prepend(&end, &buflen, "/", 1))
+>                 end = ERR_PTR(-ENAMETOOLONG);
+>         return end;
+> }
+>
+> will do for those two.  Care to test the diff below?
+>
+> cope with potentially long ->d_dname() output for shmem/hugetlb
+>
+> dynamic_dname() is both too much and too little for those - the
+> output may be well in excess of 64 bytes dynamic_dname() assumes
+> to be enough (thanks to ashmem feeding really long names to
+> shmem_file_setup()) and vsnprintf() is an overkill for those
+> guys.
+>
+> Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+> ---
+> diff --git a/fs/dcache.c b/fs/dcache.c
+> index 87bdb53..83cfb83 100644
+> --- a/fs/dcache.c
+> +++ b/fs/dcache.c
+> @@ -2724,6 +2724,17 @@ char *dynamic_dname(struct dentry *dentry, char *buffer, int buflen,
+>         return memcpy(buffer, temp, sz);
+>  }
+>
+> +char *simple_dname(struct dentry *dentry, char *buffer, int buflen)
+> +{
+> +       char *end = buffer + buflen;
+> +       /* these dentries are never renamed, so d_lock is not needed */
+> +       if (prepend(&end, &buflen, " (deleted)", 11) ||
+> +           prepend_name(&end, &buflen, &dentry->d_name) ||
+> +           prepend(&end, &buflen, "/", 1))
+> +               end = ERR_PTR(-ENAMETOOLONG);
+> +       return end;
+> +}
+> +
+>  /*
+>   * Write full pathname from the root of the filesystem into the buffer.
+>   */
+> diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
+> index a3f868a..4e5f332 100644
+> --- a/fs/hugetlbfs/inode.c
+> +++ b/fs/hugetlbfs/inode.c
+> @@ -916,14 +916,8 @@ static int get_hstate_idx(int page_size_log)
+>         return h - hstates;
+>  }
+>
+> -static char *hugetlb_dname(struct dentry *dentry, char *buffer, int buflen)
+> -{
+> -       return dynamic_dname(dentry, buffer, buflen, "/%s (deleted)",
+> -                               dentry->d_name.name);
+> -}
+> -
+>  static struct dentry_operations anon_ops = {
+> -       .d_dname = hugetlb_dname
+> +       .d_dname = simple_dname
+>  };
+>
+>  /*
+> diff --git a/include/linux/dcache.h b/include/linux/dcache.h
+> index b90337c..4a12532 100644
+> --- a/include/linux/dcache.h
+> +++ b/include/linux/dcache.h
+> @@ -336,6 +336,7 @@ extern int d_validate(struct dentry *, struct dentry *);
+>   * helper function for dentry_operations.d_dname() members
+>   */
+>  extern char *dynamic_dname(struct dentry *, char *, int, const char *, ...);
+> +extern char *simple_dname(struct dentry *, char *, int);
+>
+>  extern char *__d_path(const struct path *, const struct path *, char *, int);
+>  extern char *d_absolute_path(const struct path *, char *, int);
+> diff --git a/mm/shmem.c b/mm/shmem.c
+> index 8335dbd..e43dc55 100644
+> --- a/mm/shmem.c
+> +++ b/mm/shmem.c
+> @@ -2909,14 +2909,8 @@ EXPORT_SYMBOL_GPL(shmem_truncate_range);
+>
+>  /* common code */
+>
+> -static char *shmem_dname(struct dentry *dentry, char *buffer, int buflen)
+> -{
+> -       return dynamic_dname(dentry, buffer, buflen, "/%s (deleted)",
+> -                               dentry->d_name.name);
+> -}
+> -
+>  static struct dentry_operations anon_ops = {
+> -       .d_dname = shmem_dname
+> +       .d_dname = simple_dname
+>  };
+>
+>  /**
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Glad you changed your mind.
-
-
+Can this patch (committed as 118b23022512eb2f41ce42db70dc0568d00be4ba
+upstream) go in stable?  It fixes a regression introduced in 3.9
+dumping /proc/pid/maps for processes with ashmem regions with long
+names.
