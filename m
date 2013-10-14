@@ -1,89 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755694Ab3JNCXW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Oct 2013 22:23:22 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:35068 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755611Ab3JNCXV (ORCPT
+	id S1755751Ab3JNCZw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Oct 2013 22:25:52 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:38470 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755565Ab3JNCZu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Oct 2013 22:23:21 -0400
-X-Spam-Score: -100.8
-Message-ID: <525B555C.3040102@asianux.com>
-Date: Mon, 14 Oct 2013 10:22:20 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Sun, 13 Oct 2013 22:25:50 -0400
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: josh@freedesktop.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Suggestion] kernel/rcutorture.c: about using scnprintf() instead
- of sprintf().
-References: <5253C335.5050609@asianux.com> <20131013110518.GC5790@linux.vnet.ibm.com> <525B4BB0.1090609@asianux.com>
-In-Reply-To: <525B4BB0.1090609@asianux.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1381692543-41226-1-git-send-email-tim.gardner@canonical.com>
+References: <1381692543-41226-1-git-send-email-tim.gardner@canonical.com>
+Date: Sun, 13 Oct 2013 21:25:50 -0500
+Message-ID: <CAH2r5mvduivP8vddnZ8ybCZZ1=48NmMCb1gonOXe=D8aRJW_uQ@mail.gmail.com>
+Subject: Re: [PATCH 3.12-rc4] cifs: ntstatus_to_dos_map[] is not terminated
+From: Steve French <smfrench@gmail.com>
+To: Tim Gardner <tim.gardner@canonical.com>
+Cc: "linux-cifs@vger.kernel.org" <linux-cifs@vger.kernel.org>,
+        samba-technical <samba-technical@lists.samba.org>,
+        LKML <linux-kernel@vger.kernel.org>, Steve French <sfrench@samba.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/14/2013 09:41 AM, Chen Gang wrote:
-> On 10/13/2013 07:05 PM, Paul E. McKenney wrote:
->> On Tue, Oct 08, 2013 at 04:32:53PM +0800, Chen Gang wrote:
->>> Hello Maintainers:
->>>
->>> In srcu_torture_stats(), if cpus are more than 1K, the PAGE_SIZE will
->>> not be enough.
->>>
->>> In rcu_torture_printk(), the 'page' maximized size is 4096, it has a
->>> function pointer for printing, which not tell its maximized length.
->>>
->>> Welcome any additional suggestions or completions.
->>
->> I never have run rcutorture on a system with that many CPUs.  ;-)
->>
-> 
-> I guess most of members (include me), never have run under that case.
-> 
-> 
->> Given that rcutorture is not used in production, my approach would be to
->> fix this when I encountered it.  But what change would you suggest, and,
->> more importantly, how would you go about testing it before submitting
->> a patch?
->>
-> 
-> OK, thanks, I will/should give a fix and test.
-> 
-> Hmm, In my opinion, we need:
-> 
->  - let it pass LTP common simple test (so I can know how to test it).
-> 
+Merged into cifs-2.6.git
 
-Oh, after read "Documentation/RCU/torture.txt", it is a test module, so
-except related special test (e.g. shrink maximized buffer), it seems not
-need additional common test for it (e.g. LTP).
+(for-next and for-linus branches)
 
->  - intend to shrink maximized buffer (PAGE_SIZE -> 64, 256 ..) for test.
-> 
->  - read your original mail again (about testing contents) as reference.
-> 
-> Excuse me, I have to do some other things of company, so I will/should
-> try to finish it within this week (2013-10-20), if this time point is
-> not quite suitable, please let me know, thanks.
-> 
-> 
->> Or if you are simply reporting this as a bug, please let me know that.
->>
-> 
-> I will/should do: in q4 of 2013, I will/should spend part of my time
-> resources on testing.
-> 
-> 
-> 
-> Welcome any additional suggestions or completions.
-> 
-> Thanks.
-> 
+Thoughts about suitability for stable anyone?
+
+On Sun, Oct 13, 2013 at 2:29 PM, Tim Gardner <tim.gardner@canonical.com> wrote:
+> Functions that walk the ntstatus_to_dos_map[] array could
+> run off the end. For example, ntstatus_to_dos() loops
+> while ntstatus_to_dos_map[].ntstatus is not 0. Granted,
+> this is mostly theoretical, but could be used as a DOS attack
+> if the error code in the SMB header is bogus.
+>
+> Cc: Steve French <sfrench@samba.org>
+> Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+> ---
+>  fs/cifs/netmisc.c |    4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+>
+> diff --git a/fs/cifs/netmisc.c b/fs/cifs/netmisc.c
+> index af847e1..651a527 100644
+> --- a/fs/cifs/netmisc.c
+> +++ b/fs/cifs/netmisc.c
+> @@ -780,7 +780,9 @@ static const struct {
+>         ERRDOS, ERRnoaccess, 0xc0000290}, {
+>         ERRDOS, ERRbadfunc, 0xc000029c}, {
+>         ERRDOS, ERRsymlink, NT_STATUS_STOPPED_ON_SYMLINK}, {
+> -       ERRDOS, ERRinvlevel, 0x007c0001}, };
+> +       ERRDOS, ERRinvlevel, 0x007c0001}, {
+> +       0, 0, 0 }
+> +};
+>
+>  /*****************************************************************************
+>   Print an error message from the status code
+> --
+> 1.7.9.5
+>
+
 
 
 -- 
-Chen Gang
+Thanks,
+
+Steve
