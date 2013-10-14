@@ -1,85 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933362Ab3JNUmm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 16:42:42 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:38583 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757539Ab3JNUCw (ORCPT
+	id S933383Ab3JNUnD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 16:43:03 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:50171 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932153Ab3JNUm6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 16:02:52 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 047/161] tools/perf/build: Make sure autodep feature binaries honor the O= setting
-Date: Mon, 14 Oct 2013 17:00:36 -0300
-Message-Id: <1381780950-25642-48-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1381780950-25642-1-git-send-email-acme@infradead.org>
-References: <1381780950-25642-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 14 Oct 2013 16:42:58 -0400
+MIME-Version: 1.0
+In-Reply-To: <525C55A6.1030406@zytor.com>
+References: <5258E560.5050506@cn.fujitsu.com>
+	<525B19C3.9040907@gmail.com>
+	<20131014133835.GG4722@htj.dyndns.org>
+	<525BFCF3.5010908@gmail.com>
+	<20131014142719.GI4722@htj.dyndns.org>
+	<525C02DC.4050706@gmail.com>
+	<20131014145131.GJ4722@htj.dyndns.org>
+	<525C0866.2010808@gmail.com>
+	<20131014151902.GL4722@htj.dyndns.org>
+	<525C0EFE.2010409@gmail.com>
+	<CAE9FiQX0xeR61ehPy2SfWfN-fgSZVS=dtaWT-QQ+RR12tx+A0w@mail.gmail.com>
+	<525C55A6.1030406@zytor.com>
+Date: Mon, 14 Oct 2013 13:42:57 -0700
+X-Google-Sender-Auth: M6f09SJQTCsQEp0jlQ2fLsqUv2E
+Message-ID: <CAE9FiQUQaB2RAPyNjW8vF1uEigCEaxVFH1PBs=xgYNRRCpZPuw@mail.gmail.com>
+Subject: Re: [PATCH part2 v2 0/8] Arrange hotpluggable memory as ZONE_MOVABLE
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Zhang Yanfei <zhangyanfei.yes@gmail.com>, Tejun Heo <tj@kernel.org>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Toshi Kani <toshi.kani@hp.com>, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ingo Molnar <mingo@kernel.org>
+On Mon, Oct 14, 2013 at 1:35 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+...
+>> 2. also we should avoid adding "movable_nodes" command line.
+...
+>> 6. in the long run, We should rework our NUMA booting:
+>> a. boot system with boot numa nodes early only.
+>> b. in later init stage or user space, init other nodes
+>> RAM/CPU/PCI...in parallel.
+>> that will reduce boot time for 8 sockets/32 sockets dramatically.
+>>
+>> We will need to parse srat table early so could avoid init memory for
+>> non-boot nodes.
+>>
+>
+> I really like the long-term plan (and, I might want to add, the above
+> writeup.)
+>
+> However, I don't understand how we can avoid #2, given that it is
+> fundamentally a sysadmin-driven tradeoff between performance and
+> reliability.
 
-Arnaldo noticed that the feature-check binaries are generated in the
-config/check-features/ directory even if O= is specified.
+If we make all numa systems support nodes hot-remove logically.
+like we boot system with node0, and hot add other nodes one by one,
+we should hot remove them later.
 
-Implement $(OUTPUT) logic for config/check-features/Makefile.
+Thanks
 
-Reported-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/n/tip-NLwlnv5prsubuey0vfocebym@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- tools/perf/config/Makefile | 11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
-
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index e80ffe8262b0..3d656e3e6284 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -88,9 +88,14 @@ CFLAGS += -std=gnu99
- 
- EXTLIBS = -lelf -lpthread -lrt -lm -ldl
- 
-+ifneq ($(OUTPUT),)
-+  OUTPUT_FEATURES = $(OUTPUT)config/feature-checks/
-+  $(shell mkdir -p $(OUTPUT_FEATURES))
-+endif
-+
- feature_check = $(eval $(feature_check_code))
- define feature_check_code
--  feature-$(1) := $(shell $(MAKE) -C config/feature-checks test-$1 >/dev/null 2>/dev/null && echo 1 || echo 0)
-+  feature-$(1) := $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) -C config/feature-checks test-$1 >/dev/null 2>/dev/null && echo 1 || echo 0)
- endef
- 
- feature_set = $(eval $(feature_set_code))
-@@ -138,7 +143,7 @@ CORE_FEATURE_TESTS =			\
- # to skip the print-out of the long features list if the file
- # existed before and after it was built:
- #
--ifeq ($(wildcard config/feature-checks/test-all),)
-+ifeq ($(wildcard $(OUTPUT)config/feature-checks/test-all),)
-   test-all-failed := 1
- else
-   test-all-failed := 0
-@@ -168,7 +173,7 @@ ifeq ($(feature-all), 1)
-   #
-   $(foreach feat,$(CORE_FEATURE_TESTS),$(call feature_set,$(feat)))
- else
--  $(shell $(MAKE) -i -j -C config/feature-checks $(CORE_FEATURE_TESTS) >/dev/null 2>&1)
-+  $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) -i -j -C config/feature-checks $(CORE_FEATURE_TESTS) >/dev/null 2>&1)
-   $(foreach feat,$(CORE_FEATURE_TESTS),$(call feature_check,$(feat)))
- endif
- 
--- 
-1.8.1.4
-
+Yinghai
