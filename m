@@ -1,74 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932882Ab3JNU2M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 16:28:12 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:43011 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932266Ab3JNU2I (ORCPT
+	id S932755Ab3JNU0h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 16:26:37 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38941 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757678Ab3JNUDE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 16:28:08 -0400
-Date: Mon, 14 Oct 2013 21:27:23 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Thierry Reding <thierry.reding@gmail.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Kent Overstreet <kmo@daterainc.com>,
-        linux-bcache@vger.kernel.org
-Message-ID: <20131014202723.GQ2443@sirena.org.uk>
-References: <1381762088-18880-1-git-send-email-treding@nvidia.com>
- <525C3EC2.20404@infradead.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="YiSnftFthKPM0z4v"
-Content-Disposition: inline
-In-Reply-To: <525C3EC2.20404@infradead.org>
-X-Cookie: Time and tide wait for no man.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: linux-next: Tree for Oct 14 (bcache)
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Mon, 14 Oct 2013 16:03:04 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Davidlohr Bueso <davidlohr@hp.com>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 079/161] perf lock: Remove dead code
+Date: Mon, 14 Oct 2013 17:01:08 -0300
+Message-Id: <1381780950-25642-80-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1381780950-25642-1-git-send-email-acme@infradead.org>
+References: <1381780950-25642-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Davidlohr Bueso <davidlohr@hp.com>
 
---YiSnftFthKPM0z4v
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+No need for break statements after goto jumps.
 
-On Mon, Oct 14, 2013 at 11:58:10AM -0700, Randy Dunlap wrote:
-> On 10/14/13 07:48, Thierry Reding wrote:
+Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Aswin Chandramouleeswaran <aswin@hp.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1378693159-8747-2-git-send-email-davidlohr@hp.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-lock.c | 6 ------
+ 1 file changed, 6 deletions(-)
 
-> > Gained a few conflicts, but nothing too exciting. x86 and ARM default
-> > configurations build fine. There were some build failures unrelated to
+diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
+index ee33ba2f05dd..148f7e28ade7 100644
+--- a/tools/perf/builtin-lock.c
++++ b/tools/perf/builtin-lock.c
+@@ -446,7 +446,6 @@ broken:
+ 		list_del(&seq->list);
+ 		free(seq);
+ 		goto end;
+-		break;
+ 	default:
+ 		BUG_ON("Unknown state of lock sequence found!\n");
+ 		break;
+@@ -508,8 +507,6 @@ static int report_lock_acquired_event(struct perf_evsel *evsel,
+ 		list_del(&seq->list);
+ 		free(seq);
+ 		goto end;
+-		break;
+-
+ 	default:
+ 		BUG_ON("Unknown state of lock sequence found!\n");
+ 		break;
+@@ -564,7 +561,6 @@ static int report_lock_contended_event(struct perf_evsel *evsel,
+ 		list_del(&seq->list);
+ 		free(seq);
+ 		goto end;
+-		break;
+ 	default:
+ 		BUG_ON("Unknown state of lock sequence found!\n");
+ 		break;
+@@ -606,7 +602,6 @@ static int report_lock_release_event(struct perf_evsel *evsel,
+ 	switch (seq->state) {
+ 	case SEQ_STATE_UNINITIALIZED:
+ 		goto end;
+-		break;
+ 	case SEQ_STATE_ACQUIRED:
+ 		break;
+ 	case SEQ_STATE_READ_ACQUIRED:
+@@ -624,7 +619,6 @@ static int report_lock_release_event(struct perf_evsel *evsel,
+ 		ls->discard = 1;
+ 		bad_hist[BROKEN_RELEASE]++;
+ 		goto free_seq;
+-		break;
+ 	default:
+ 		BUG_ON("Unknown state of lock sequence found!\n");
+ 		break;
+-- 
+1.8.1.4
 
-> Maybe you could build allmodconfig instead of a default config
-> for more better coverage?  I am seeing lots of build problems.
-
-I'd say in addition - if you look at the last tree I did it's got fixes
-for all these tihngs I think.
-
---YiSnftFthKPM0z4v
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSXFOnAAoJELSic+t+oim9kp0QAJCCX5jjgDO9QBDpwz51Gh2A
-Zys9MLzehYYH+KIVmzUO5fRyWOpYSkT+YzTMMWxRMxwmlmSiU7e9QanVOTXS3p9G
-M2Rm3DJZxO1CXh+bxOv3vR3DUHw6meL1HNBGEM6VeagpBV8goqMtNNbiEwJ3Rx0P
-ZYK8a8SWlnqUINdw6Yf4lMpprzk7oFazUAStbwQgvRGyQ+PAY8DO2EOHIYMI45Jx
-jc3R2AW+vGFaVurRG0uKeblZQRG/NJFP/DvOml3bC/w8eKqRfHIp8vma6sF/STqe
-1vZcanr72FAQcylgJF2B3cj0OUO7yQpjG95e10AYxMKq7lP/CswoSFN+I/4DQLbt
-WMXbmL9QWgIvab2928JD2BgPCSLV2R7Z60F7HOK3G6e88BGrqNZ5aXBE4gaYvPUf
-S1RSqQuxF+irOt/UGh5ohF1fEExLVikhkAg+FidNUdJM7+pLneTyDNMleD/dbwJU
-5jJw+rfDrvEdZk4KAt30D3wfH3X1Y6ZYXqUozvBJBiDoP6jVeVCa7qxMlaLjh2MJ
-Qt2O02KdQr5XVBYhmbVUvkGYzlEL+jgVzBoBcngThmftF1E5LsIfxZfKRmuJo3dt
-O01JKrV7dX18dk49Q/hWXrMFesApB027nb3dDpJnTnt+WBkkmWZMIbmFbDbxLdbr
-Nzn93XhSJh+7rlQwyyug
-=GfpC
------END PGP SIGNATURE-----
-
---YiSnftFthKPM0z4v--
