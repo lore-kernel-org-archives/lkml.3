@@ -1,167 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756594Ab3JNMtA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 08:49:00 -0400
-Received: from eu1sys200aog121.obsmtp.com ([207.126.144.151]:55179 "EHLO
-	eu1sys200aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755955Ab3JNMsy (ORCPT
+	id S932101Ab3JNMuK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 08:50:10 -0400
+Received: from shrek-wifi.podlesie.net ([93.179.225.50]:34139 "EHLO
+	shrek.podlesie.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932073Ab3JNMuF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 08:48:54 -0400
-From: Maxime COQUELIN <maxime.coquelin@st.com>
-To: Wolfram Sang <wsa@the-dreams.de>, srinivas.kandagatla@st.com,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-i2c@vger.kernel.org
-Cc: stephen.gallimore@st.com, stuart.menefy@st.com,
-        Lee Jones <lee.jones@linaro.org>, gabriel.fernandez@st.com,
-        Maxime Coquelin <maxime.coquelin@st.com>
-Subject: [PATCH v5 3/4] ARM: STi: Supply I2C configuration to STiH415 SoC
-Date: Mon, 14 Oct 2013 14:46:51 +0200
-Message-Id: <1381754813-4679-4-git-send-email-maxime.coquelin@st.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1381754813-4679-1-git-send-email-maxime.coquelin@st.com>
-References: <1381754813-4679-1-git-send-email-maxime.coquelin@st.com>
+	Mon, 14 Oct 2013 08:50:05 -0400
+Date: Mon, 14 Oct 2013 14:50:01 +0200
+From: Krzysztof Mazur <krzysiek@podlesie.net>
+To: Pawel Moll <pawel.moll@arm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] init: fix in-place parameter modification regression
+Message-ID: <20131014125001.GA6015@shrek.podlesie.net>
+References: <1381601100-5622-1-git-send-email-krzysiek@podlesie.net>
+ <1381750442.3247.48.camel@hornet>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1381750442.3247.48.camel@hornet>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch supplies I2C configuration to STiH415 SoC.
+On Mon, Oct 14, 2013 at 12:34:02PM +0100, Pawel Moll wrote:
+> On Sat, 2013-10-12 at 19:05 +0100, Krzysztof Mazur wrote:
+> > Before commit 026cee0086fe1df4cf74691cf273062cc769617d
+> > ("params: <level>_initcall-like kernel parameters") the __setup
+> > parameter parsing code could modify parameter in the
+> > static_command_line buffer and such modifications were kept. After
+> > that commit such modifications are destroyed during per-initcall level
+> > parameter parsing because the same static_command_line buffer is used
+> > and only parameters for appropriate initcall level are parsed.
+> > 
+> > That change broke at least parsing "ubd" parameter in the ubd driver
+> > when the COW file is used.
+> > 
+> > Now the separate buffer is used for per-initcall parameter parsing,
+> > like in parsing early params.
+> > 
+> > Signed-off-by: Krzysztof Mazur <krzysiek@podlesie.net>
+> > ---
+> >
+> >  init/main.c | 5 +++--
+> >  1 file changed, 3 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/init/main.c b/init/main.c
+> > index 63d3e8f..e5b322a 100644
+> > --- a/init/main.c
+> > +++ b/init/main.c
+> > @@ -742,12 +742,13 @@ static char *initcall_level_names[] __initdata = {
+> >  
+> >  static void __init do_initcall_level(int level)
+> >  {
+> > +	static __initdata char tmp_cmdline[COMMAND_LINE_SIZE];
+> >  	extern const struct kernel_param __start___param[], __stop___param[];
+> >  	initcall_t *fn;
+> >  
+> > -	strcpy(static_command_line, saved_command_line);
+> > +	strcpy(tmp_cmdline, saved_command_line);
+> >  	parse_args(initcall_level_names[level],
+> > -		   static_command_line, __start___param,
+> > +		   tmp_cmdline, __start___param,
+> >  		   __stop___param - __start___param,
+> >  		   level, level,
+> >  		   &repair_env_string);
+> 
+> Hold on. static_command_line can be only accessed within init/main.c. As
+> far as I can say, it is only used by unknown_bootoption() (so your
+> __setup callbacks) and then in the do_initcall_level().
 
-Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
----
- arch/arm/boot/dts/stih415-pinctrl.dtsi |   36 ++++++++++++++++++++++
- arch/arm/boot/dts/stih415.dtsi         |   53 ++++++++++++++++++++++++++++++++
- 2 files changed, 89 insertions(+)
+But I think it's legal to keep the pointer to the option argument
+(which points to static_command_line) in __setup callback and use it later,
+and assume that the argument value will never change.
 
-diff --git a/arch/arm/boot/dts/stih415-pinctrl.dtsi b/arch/arm/boot/dts/stih415-pinctrl.dtsi
-index 1d322b2..e56449d 100644
---- a/arch/arm/boot/dts/stih415-pinctrl.dtsi
-+++ b/arch/arm/boot/dts/stih415-pinctrl.dtsi
-@@ -86,6 +86,24 @@
- 					};
- 				};
- 			};
-+
-+			sbc_i2c0 {
-+				pinctrl_sbc_i2c0_default: sbc_i2c0-default {
-+					st,pins {
-+						sda = <&PIO4 6 ALT1 BIDIR>;
-+						scl = <&PIO4 5 ALT1 BIDIR>;
-+					};
-+				};
-+			};
-+
-+			sbc_i2c1 {
-+				pinctrl_sbc_i2c1_default: sbc_i2c1-default {
-+					st,pins {
-+						sda = <&PIO3 2 ALT2 BIDIR>;
-+						scl = <&PIO3 1 ALT2 BIDIR>;
-+					};
-+				};
-+			};
- 		};
- 
- 		pin-controller-front {
-@@ -143,6 +161,24 @@
- 				reg		= <0x7000 0x100>;
- 				st,bank-name	= "PIO12";
- 			};
-+
-+			i2c0 {
-+				pinctrl_i2c0_default: i2c0-default {
-+					st,pins {
-+						sda = <&PIO9 3 ALT1 BIDIR>;
-+						scl = <&PIO9 2 ALT1 BIDIR>;
-+					};
-+				};
-+			};
-+
-+			i2c1 {
-+				pinctrl_i2c1_default: i2c1-default {
-+					st,pins {
-+						sda = <&PIO12 1 ALT1 BIDIR>;
-+						scl = <&PIO12 0 ALT1 BIDIR>;
-+					};
-+				};
-+			};
- 		};
- 
- 		pin-controller-rear {
-diff --git a/arch/arm/boot/dts/stih415.dtsi b/arch/arm/boot/dts/stih415.dtsi
-index 74ab8de..a85fbf1 100644
---- a/arch/arm/boot/dts/stih415.dtsi
-+++ b/arch/arm/boot/dts/stih415.dtsi
-@@ -9,6 +9,7 @@
- #include "stih41x.dtsi"
- #include "stih415-clock.dtsi"
- #include "stih415-pinctrl.dtsi"
-+#include <dt-bindings/interrupt-controller/arm-gic.h>
- / {
- 
- 	L2: cache-controller {
-@@ -83,5 +84,57 @@
- 			pinctrl-names 	= "default";
- 			pinctrl-0	= <&pinctrl_sbc_serial1>;
- 		};
-+
-+		i2c@fed40000 {
-+			compatible	= "st,comms-ssc-i2c";
-+			reg		= <0xfed40000 0x110>;
-+			interrupts	=  <GIC_SPI 187 IRQ_TYPE_LEVEL_HIGH>;
-+			clocks		= <&CLKS_ICN_REG_0>;
-+			clock-names	= "ssc";
-+			clock-frequency = <400000>;
-+			pinctrl-names	= "default";
-+			pinctrl-0	= <&pinctrl_i2c0_default>;
-+
-+			status		= "disabled";
-+		};
-+
-+		i2c@fed41000 {
-+			compatible	= "st,comms-ssc-i2c";
-+			reg		= <0xfed41000 0x110>;
-+			interrupts	=  <GIC_SPI 188 IRQ_TYPE_LEVEL_HIGH>;
-+			clocks		= <&CLKS_ICN_REG_0>;
-+			clock-names	= "ssc";
-+			clock-frequency = <400000>;
-+			pinctrl-names	= "default";
-+			pinctrl-0	= <&pinctrl_i2c1_default>;
-+
-+			status		= "disabled";
-+		};
-+
-+		i2c@fe540000 {
-+			compatible	= "st,comms-ssc-i2c";
-+			reg		= <0xfe540000 0x110>;
-+			interrupts	=  <GIC_SPI 206 IRQ_TYPE_LEVEL_HIGH>;
-+			clocks		= <&CLK_SYSIN>;
-+			clock-names	= "ssc";
-+			clock-frequency = <400000>;
-+			pinctrl-names	= "default";
-+			pinctrl-0	= <&pinctrl_sbc_i2c0_default>;
-+
-+			status		= "disabled";
-+		};
-+
-+		i2c@fe541000 {
-+			compatible	= "st,comms-ssc-i2c";
-+			reg		= <0xfe541000 0x110>;
-+			interrupts	=  <GIC_SPI 207 IRQ_TYPE_LEVEL_HIGH>;
-+			clocks		= <&CLK_SYSIN>;
-+			clock-names	= "ssc";
-+			clock-frequency = <400000>;
-+			pinctrl-names	= "default";
-+			pinctrl-0	= <&pinctrl_sbc_i2c1_default>;
-+
-+			status		= "disabled";
-+		};
- 	};
- };
--- 
-1.7.9.5
+However, with my patch it's no longer true for per-initcall arguments
+because they share the same command line buffer, so the tmp_cmdline
+have the __initdata attribute. The same restriction applies to
+the "early params".
 
+> 
+> So, assuming that it is actually legal to modify static_command_line in
+> __setup()-s (and I must say I have rather mixed feelings about it ;-),
+
+I also have mixed feelings about that, but the parse_args() already
+does that, because some characters are replaced with '\0' to split
+command line into separate strings. The ubd driver does the same
+to split parameter into two strings.
+
+So after parsing, the command line:
+
+	"ubd0=cow_file,file hostfs=/path"
+
+is changed to:
+
+	"ubd0\0cow_file\0file\0hostfs\0path"
+
+
+However after do_initcalls(), because __setup("ubd", ...) callback is not
+called, it's changed to:
+
+	"ubd0\0cow_file,file\0hostfs\0path"
+
+and the ubd driver tries to use "cow_file,file" as COW file because
+it just saves pointer.
+
+
+With my patch because do_initcall_level() uses different scratch buffer
+this difference is not visible to the ubd driver.
+ 
+> the only place that will be able to make use of this changes will be
+> do_initcall_level().
+> 
+> But your change actually uses *saved*_command_line instead of
+> *static*_command_line as the base for parse_args.
+
+Yes, because static_command_line is already destroyed by parsing
+(NUL terminators are added).
+
+> 
+> Generally I agree that the commit in question changed the semantics in a
+> subtle way - it makes the do_initcalls() use saved_command_line as a
+> string to be parsed instead of static_command_line. I was convinced that
+> at this stage of execution they must be identical (and the
+
+No, at that stage the static_command_line is already parsed by
+parse_args("Booting kernel", ...).
+
+> static_command_line is a de-facto scratch buffer). You're saying that is
+> may not be the case, which can be true, but you're keeping the same
+> behaviour :-)
+> 
+> So either you have some extra changes in your kernel actually using
+> static_command_line for some other reason, or your change makes no
+> difference. The third option is me being brain dead today, which is not
+> impossible ;-)
+> 
+
+I've been using vanilla v3.12-rc4-92-gb68ba36. Now I'm using v3.12-rc5.
+
+Thanks,
+Krzysiek
