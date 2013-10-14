@@ -1,85 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754510Ab3JNOJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 10:09:59 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:58130 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750926Ab3JNOJ6 (ORCPT
+	id S1755307Ab3JNOKb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 10:10:31 -0400
+Received: from s3.sipsolutions.net ([144.76.43.152]:58873 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750738Ab3JNOK3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 10:09:58 -0400
-Date: Mon, 14 Oct 2013 16:09:42 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Anton Arapov <aarapov@redhat.com>,
-        David Smith <dsmith@redhat.com>, "Frank Ch. Eigler" <fche@redhat.com>,
-        Martin Cermak <mcermak@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] uprobes: Change uprobe_copy_process() to dup xol_area
-Message-ID: <20131014140942.GI28601@twins.programming.kicks-ass.net>
-References: <20131013191815.GA32466@redhat.com>
- <20131013191844.GA32502@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131013191844.GA32502@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Mon, 14 Oct 2013 10:10:29 -0400
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rob Landley <rob@landley.net>, Randy Dunlap <rdunlap@infradead.org>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [PATCH] kernel-doc: improve "no structured comments found" error
+Date: Mon, 14 Oct 2013 16:10:22 +0200
+Message-Id: <1381759822-1218-1-git-send-email-johannes@sipsolutions.net>
+X-Mailer: git-send-email 1.8.4.rc3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 13, 2013 at 09:18:44PM +0200, Oleg Nesterov wrote:
-> This finally fixes the serious bug in uretprobes: a forked child
-> crashes if the parent called fork() with the pending ret probe.
-> 
-> Trivial test-case:
-> 
-> 	# perf probe -x /lib/libc.so.6 __fork%return
-> 	# perf record -e probe_libc:__fork perl -le 'fork || print "OK"'
-> 
-> (the child doesn't print "OK", it is killed by SIGSEGV)
-> 
-> If the child returns from the probed function it actually returns
-> to trampoline_vaddr, because it got the copy of parent's stack
-> mangled by prepare_uretprobe() when the parent entered this func.
-> 
-> It crashes because a) this address is not mapped and b) until the
-> previous change it doesn't have the proper->return_instances info.
-> 
-> This means that uprobe_copy_process() has to create xol_area which
-> has the trampoline slot, and its vaddr should be equal to parent's
-> xol_area->vaddr.
-> 
-> Unfortunately, uprobe_copy_process() can not simply do
-> __create_xol_area(child, xol_area->vaddr). This could actually work
-> but perf_event_mmap() doesn't expect the usage of foreign ->mm. So
-> we offload this to task_work_run(), and pass the argument via not
-> yet used utask->vaddr.
-> 
-> We know that this vaddr is fine for install_special_mapping(), the
-> necessary hole was recently "created" by dup_mmap() which skips the
-> parent's VM_DONTCOPY area, and nobody else could use the new mm.
-> 
-> Unfortunately, this also means that we can not handle the errors
-> properly, we obviously can not abort the already completed fork().
-> So we simply print the warning if GFP_KERNEL allocation (the only
-> possible reason) fails.
+From: Johannes Berg <johannes.berg@intel.com>
 
-Oh cute.. so we could actually ignore this perf_event_mmap() because we
-got it for the parent when we inserted the probe, and the perf tools
-assume the child mm layout is identical to the parent layout (it doesn't
-actually see the VM_DONTCOPY bit).
+When using '!Ffile function' in a docbook template, and the function
+no longer exists, you get a "no structured comments found" error from
+the kernel-doc processing script. It's useful to know which functions
+it was looking for, so print them out in this case. Also do the same
+for '!Pfile doc-section'
 
-So we could add: 'if (vma->vm_mm != current->mm) return;' to
-perf_event_mmap() with a very big nasty comment.
+The same error also happens when using '!Efile' when some exported
+functions aren't documented (in the same file.) There's a very large
+number of such functions though, so don't print the message in this
+case -- right now it would give ~850 messages.
 
-That said; should we hide the XOL vma from perf altogether? That is; it
-will greatly obfuscate the perf data to get hits from the XOL table as
-we've got no means of mapping it back to an instruction.
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+---
+Just needed this patch again, Rob previously said he had no objection
+but also didn't want to merge the patch.
 
-We could transform the perf IP from XOL areas back to the original
-instruction site. The only side effect that has is that since the XOL
-code is far more expensive than the original single instruction the
-instruction appears excessively more expensive than expected.
+Andrew, I'm thus sending it to you as a last resort. If you know a
+better maintainer, I'm all ears.
+---
+ scripts/docproc.c  | 14 +++++++++-----
+ scripts/kernel-doc |  6 ++++++
+ 2 files changed, 15 insertions(+), 5 deletions(-)
 
-Thoughts?
+diff --git a/scripts/docproc.c b/scripts/docproc.c
+index 4cfdc17..2b69eaf 100644
+--- a/scripts/docproc.c
++++ b/scripts/docproc.c
+@@ -72,6 +72,7 @@ FILELINE * docsection;
+ #define FUNCTION      "-function"
+ #define NOFUNCTION    "-nofunction"
+ #define NODOCSECTIONS "-no-doc-sections"
++#define SHOWNOTFOUND  "-show-not-found"
+ 
+ static char *srctree, *kernsrctree;
+ 
+@@ -294,6 +295,7 @@ static void singfunc(char * filename, char * line)
+         int startofsym = 1;
+ 	vec[idx++] = KERNELDOC;
+ 	vec[idx++] = DOCBOOK;
++	vec[idx++] = SHOWNOTFOUND;
+ 
+         /* Split line up in individual parameters preceded by FUNCTION */
+         for (i=0; line[i]; i++) {
+@@ -325,7 +327,8 @@ static void singfunc(char * filename, char * line)
+  */
+ static void docsect(char *filename, char *line)
+ {
+-	char *vec[6]; /* kerneldoc -docbook -function "section" file NULL */
++	/* kerneldoc -docbook -show-not-found -function "section" file NULL */
++	char *vec[7];
+ 	char *s;
+ 
+ 	for (s = line; *s; s++)
+@@ -341,10 +344,11 @@ static void docsect(char *filename, char *line)
+ 
+ 	vec[0] = KERNELDOC;
+ 	vec[1] = DOCBOOK;
+-	vec[2] = FUNCTION;
+-	vec[3] = line;
+-	vec[4] = filename;
+-	vec[5] = NULL;
++	vec[2] = SHOWNOTFOUND;
++	vec[3] = FUNCTION;
++	vec[4] = line;
++	vec[5] = filename;
++	vec[6] = NULL;
+ 	exec_kernel_doc(vec);
+ }
+ 
+diff --git a/scripts/kernel-doc b/scripts/kernel-doc
+index 4305b2f..dbd3e1e 100755
+--- a/scripts/kernel-doc
++++ b/scripts/kernel-doc
+@@ -257,6 +257,7 @@ my $man_date = ('January', 'February', 'March', 'April', 'May', 'June',
+ 		'July', 'August', 'September', 'October',
+ 		'November', 'December')[(localtime)[4]] .
+   " " . ((localtime)[5]+1900);
++my $show_not_found = 0;
+ 
+ # Essentially these are globals.
+ # They probably want to be tidied up, made more localised or something.
+@@ -369,6 +370,8 @@ while ($ARGV[0] =~ m/^-(.*)/) {
+ 	usage();
+     } elsif ($cmd eq '-no-doc-sections') {
+ 	    $no_doc_sections = 1;
++    } elsif ($cmd eq '-show-not-found') {
++	$show_not_found = 1;
+     }
+ }
+ 
+@@ -2536,6 +2539,9 @@ sub process_file($) {
+     }
+     if ($initial_section_counter == $section_counter) {
+ 	print STDERR "Warning(${file}): no structured comments found\n";
++	if (($function_only == 1) && ($show_not_found == 1)) {
++	    print STDERR "    Was looking for '$_'.\n" for keys %function_table;
++	}
+ 	if ($output_mode eq "xml") {
+ 	    # The template wants at least one RefEntry here; make one.
+ 	    print "<refentry>\n";
+-- 
+1.8.4.rc3
+
