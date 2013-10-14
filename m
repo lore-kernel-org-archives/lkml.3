@@ -1,265 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756191Ab3JNKo7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 06:44:59 -0400
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:45366 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756149Ab3JNKop (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 06:44:45 -0400
-From: Juri Lelli <juri.lelli@gmail.com>
-To: peterz@infradead.org, tglx@linutronix.de
-Cc: mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
-        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
-        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, fchecconi@gmail.com,
-        tommaso.cucinotta@sssup.it, juri.lelli@gmail.com,
-        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
-        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
-        raistlin@linux.it, insop.song@gmail.com, liming.wang@windriver.com,
-        jkacur@redhat.com, harald.gustafsson@ericsson.com,
-        vincent.guittot@linaro.org,
-        bruce.ashfield@windriver.com--no-chain-reply-to
-Subject: [PATCH 14/14] sched: add sched_dl documentation.
-Date: Mon, 14 Oct 2013 12:43:46 +0200
-Message-Id: <1381747426-31334-15-git-send-email-juri.lelli@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1381747426-31334-1-git-send-email-juri.lelli@gmail.com>
-References: <1381747426-31334-1-git-send-email-juri.lelli@gmail.com>
+	id S1756208Ab3JNKpI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 06:45:08 -0400
+Received: from mga14.intel.com ([143.182.124.37]:45722 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755747Ab3JNKpG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 06:45:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,491,1378882800"; 
+   d="scan'208";a="374383684"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH V7 2/7] perf tools: fix annotate_browser__callq()
+Date: Mon, 14 Oct 2013 13:43:39 +0300
+Message-Id: <1381747424-3557-3-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1381747424-3557-1-git-send-email-adrian.hunter@intel.com>
+References: <1381747424-3557-1-git-send-email-adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dario Faggioli <raistlin@linux.it>
+When following a call, annotate_browser__callq()
+uses the current symbol's map to look up the
+target ip.  That will not work if the target ip
+is on a map with a different mapping (i.e.
+start - pgoff is different).
 
-Add in Documentation/scheduler/ some hints about the design
-choices, the usage and the future possible developments of the
-sched_dl scheduling class and of the SCHED_DEADLINE policy.
-
-Signed-off-by: Dario Faggioli <raistlin@linux.it>
-Signed-off-by: Juri Lelli <juri.lelli@gmail.com>
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- Documentation/scheduler/sched-deadline.txt |  196 ++++++++++++++++++++++++++++
- kernel/sched/deadline.c                    |    3 +-
- 2 files changed, 198 insertions(+), 1 deletion(-)
- create mode 100644 Documentation/scheduler/sched-deadline.txt
+ tools/perf/ui/browsers/annotate.c | 21 ++++++++++-----------
+ 1 file changed, 10 insertions(+), 11 deletions(-)
 
-diff --git a/Documentation/scheduler/sched-deadline.txt b/Documentation/scheduler/sched-deadline.txt
-new file mode 100644
-index 0000000..4d1ed52
---- /dev/null
-+++ b/Documentation/scheduler/sched-deadline.txt
-@@ -0,0 +1,196 @@
-+			  Deadline Task Scheduling
-+			  ------------------------
-+
-+CONTENTS
-+========
-+
-+0. WARNING
-+1. Overview
-+2. Task scheduling
-+2. The Interface
-+3. Bandwidth management
-+  3.1 System-wide settings
-+  3.2 Task interface
-+  3.4 Default behavior
-+4. Tasks CPU affinity
-+  4.1 SCHED_DEADLINE and cpusets HOWTO
-+5. Future plans
-+
-+
-+0. WARNING
-+==========
-+
-+ Fiddling with these settings can result in an unpredictable or even unstable
-+ system behavior. As for -rt (group) scheduling, it is assumed that root users
-+ know what they're doing.
-+
-+
-+1. Overview
-+===========
-+
-+ The SCHED_DEADLINE policy contained inside the sched_dl scheduling class is
-+ basically an implementation of the Earliest Deadline First (EDF) scheduling
-+ algorithm, augmented with a mechanism (called Constant Bandwidth Server, CBS)
-+ that makes it possible to isolate the behavior of tasks between each other.
-+
-+
-+2. Task scheduling
-+==================
-+
-+ The typical -deadline task is composed of a computation phase (instance)
-+ which is activated on a periodic or sporadic fashion. The expected (maximum)
-+ duration of such computation is called the task's runtime; the time interval
-+ by which each instance needs to be completed is called the task's relative
-+ deadline. The task's absolute deadline is dynamically calculated as the
-+ time instant a task (or, more properly) activates plus the relative
-+ deadline.
-+
-+ The EDF[1] algorithm selects the task with the smallest absolute deadline as
-+ the one to be executed first, while the CBS[2,3] ensures that each task runs
-+ for at most its runtime every period, avoiding any interference between
-+ different tasks (bandwidth isolation).
-+ Thanks to this feature, also tasks that do not strictly comply with the
-+ computational model described above can effectively use the new policy.
-+ IOW, there are no limitations on what kind of task can exploit this new
-+ scheduling discipline, even if it must be said that it is particularly
-+ suited for periodic or sporadic tasks that need guarantees on their
-+ timing behavior, e.g., multimedia, streaming, control applications, etc.
-+
-+ References:
-+  1 - C. L. Liu and J. W. Layland. Scheduling algorithms for multiprogram-
-+      ming in a hard-real-time environment. Journal of the Association for
-+      Computing Machinery, 20(1), 1973.
-+  2 - L. Abeni , G. Buttazzo. Integrating Multimedia Applications in Hard
-+      Real-Time Systems. Proceedings of the 19th IEEE Real-time Systems
-+      Symposium, 1998. http://retis.sssup.it/~giorgio/paps/1998/rtss98-cbs.pdf
-+  3 - L. Abeni. Server Mechanisms for Multimedia Applications. ReTiS Lab
-+      Technical Report. http://xoomer.virgilio.it/lucabe72/pubs/tr-98-01.ps
-+
-+3. Bandwidth management
-+=======================
-+
-+ In order for the -deadline scheduling to be effective and useful, it is
-+ important to have some method to keep the allocation of the available CPU
-+ bandwidth to the tasks under control.
-+ This is usually called "admission control" and if it is not performed at all,
-+ no guarantee can be given on the actual scheduling of the -deadline tasks.
-+
-+ Since when RT-throttling has been introduced each task group has a bandwidth
-+ associated, calculated as a certain amount of runtime over a period.
-+ Moreover, to make it possible to manipulate such bandwidth, readable/writable
-+ controls have been added to both procfs (for system wide settings) and cgroupfs
-+ (for per-group settings).
-+ Therefore, the same interface is being used for controlling the bandwidth
-+ distrubution to -deadline tasks and task groups, i.e., new controls but with
-+ similar names, equivalent meaning and with the same usage paradigm are added.
-+
-+ However, more discussion is needed in order to figure out how we want to manage
-+ SCHED_DEADLINE bandwidth at the task group level. Therefore, SCHED_DEADLINE
-+ uses (for now) a less sophisticated, but actually very sensible, mechanism to
-+ ensure that a certain utilization cap is not overcome per each root_domain.
-+
-+ Another main difference between deadline bandwidth management and RT-throttling
-+ is that -deadline tasks have bandwidth on their own (while -rt ones don't!),
-+ and thus we don't need an higher level throttling mechanism to enforce the
-+ desired bandwidth.
-+
-+3.1 System wide settings
-+------------------------
-+
-+ The system wide settings are configured under the /proc virtual file system.
-+
-+ The control knob that is added to the /proc virtual file system is
-+ /proc/sys/kernel/sched_dl_runtime_us. It accepts (if written) and provides (if
-+ read) the new runtime for each CPU in each root_domain. The period control knob
-+ is instead shared with -rt settings (/proc/sys/kernel/sched_rt_period_us). 
-+
-+ The CPU bandwidth available to -deadline tasks is actually a sub-quota of
-+ the -rt bandwidth. By default 95% of system bandwidth is allocate to -rt tasks;
-+ among this, a 40% quota is reserved for -dl tasks. To have the actual quota a
-+ simple multiplication is needed: .95 * .40 = .38 (38% of system bandwidth for
-+ deadline tasks).
-+
-+ This means that, for a root_domain comprising M CPUs, -deadline tasks
-+ can be created until the sum of their bandwidths stay below:
-+
-+   M * (sched_dl_runtime_us * rt_bw)
-+
-+ It is also possible to disable this bandwidth management logic, and
-+ be thus free of oversubscribing the system up to any arbitrary level.
-+ This is done by writing -1 in /proc/sys/kernel/sched_dl_runtime_us or
-+ in /proc/sys/kernel/sched_rt_runtime_us.
-+
-+
-+3.2 Task interface
-+------------------
-+
-+ Specifying a periodic/sporadic task that executes for a given amount of
-+ runtime at each instance, and that is scheduled according to the urgency of
-+ its own timing constraints needs, in general, a way of declaring:
-+  - a (maximum/typical) instance execution time,
-+  - a minimum interval between consecutive instances,
-+  - a time constraint by which each instance must be completed.
-+
-+ Therefore:
-+  * a new struct sched_param2, containing all the necessary fields is
-+    provided;
-+  * the new scheduling related syscalls that manipulate it, i.e.,
-+    sched_setscheduler2(), sched_setparam2() and sched_getparam2()
-+    are implemented.
-+
-+
-+3.3 Default behavior
-+---------------------
-+
-+The default value for SCHED_DEADLINE bandwidth is to have dl_runtime equal to
-+40000. Being rt_period equal to 1000000, by default, it means that -deadline
-+tasks can use at most 40%, multiplied by the number of CPUs that compose the
-+root_domain, for each root_domain.
-+
-+A -deadline task cannot fork.
-+
-+4. Tasks CPU affinity
-+=====================
-+
-+-deadline tasks cannot have an affinity mask smaller that the entire
-+root_domain they are created on. However, affinities can be specified
-+through the cpuset facility (Documentation/cgroups/cpusets.txt).
-+
-+4.1 SCHED_DEADLINE and cpusets HOWTO
-+------------------------------------
-+
-+An example of a simple configuration (pin a -deadline task to CPU0)
-+follows (rt-app is used to create a -deadline task).
-+
-+mkdir /dev/cpuset
-+mount -t cgroup -o cpuset cpuset /dev/cpuset
-+cd /dev/cpuset
-+mkdir cpu0
-+echo 0 > cpu0/cpuset.cpus
-+echo 0 > cpu0/cpuset.mems
-+echo 1 > cpuset.cpu_exclusive
-+echo 0 > cpuset.sched_load_balance
-+echo 1 > cpu0/cpuset.cpu_exclusive
-+echo 1 > cpu0/cpuset.mem_exclusive
-+echo $$ > cpu0/tasks
-+rt-app -t 100000:10000:d:0 -D5 (it is now actually superfluous to specify
-+task affinity)
-+
-+5. Future plans
-+===============
-+
-+Still missing:
-+
-+ - refinements to deadline inheritance, especially regarding the possibility
-+   of retaining bandwidth isolation among non-interacting tasks. This is
-+   being studied from both theoretical and practical point of views, and
-+   hopefully we should be able to produce some demonstrative code soon;
-+ - (c)group based bandwidth management, and maybe scheduling;
-+ - access control for non-root users (and related security concerns to
-+   address), which is the best way to allow unprivileged use of the mechanisms
-+   and how to prevent non-root users "cheat" the system?
-+
-+As already discussed, we are planning also to merge this work with the EDF
-+throttling patches [https://lkml.org/lkml/2010/2/23/239] but we still are in
-+the preliminary phases of the merge and we really seek feedback that would
-+help us decide on the direction it should take.
-diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-index 1499381..00b550b 100644
---- a/kernel/sched/deadline.c
-+++ b/kernel/sched/deadline.c
-@@ -348,7 +348,8 @@ static void replenish_dl_entity(struct sched_dl_entity *dl_se,
-  * disrupting the schedulability of the system. Otherwise, we should
-  * refill the runtime and set the deadline a period in the future,
-  * because keeping the current (absolute) deadline of the task would
-- * result in breaking guarantees promised to other tasks.
-+ * result in breaking guarantees promised to other tasks (refer to
-+ * Documentation/scheduler/sched-deadline.txt for more informations).
-  *
-  * This function returns true if:
-  *
+diff --git a/tools/perf/ui/browsers/annotate.c b/tools/perf/ui/browsers/annotate.c
+index 08545ae..57d3a86 100644
+--- a/tools/perf/ui/browsers/annotate.c
++++ b/tools/perf/ui/browsers/annotate.c
+@@ -442,35 +442,34 @@ static bool annotate_browser__callq(struct annotate_browser *browser,
+ {
+ 	struct map_symbol *ms = browser->b.priv;
+ 	struct disasm_line *dl = browser->selection;
+-	struct symbol *sym = ms->sym;
+ 	struct annotation *notes;
+-	struct symbol *target;
+-	u64 ip;
++	struct addr_map_symbol target = {
++		.map = ms->map,
++		.addr = dl->ops.target.addr,
++	};
+ 	char title[SYM_TITLE_MAX_SIZE];
+ 
+ 	if (!ins__is_call(dl->ins))
+ 		return false;
+ 
+-	ip = ms->map->map_ip(ms->map, dl->ops.target.addr);
+-	target = map__find_symbol(ms->map, ip, NULL);
+-	if (target == NULL) {
++	if (map_groups__find_ams(&target, NULL)) {
+ 		ui_helpline__puts("The called function was not found.");
+ 		return true;
+ 	}
+ 
+-	notes = symbol__annotation(target);
++	notes = symbol__annotation(target.sym);
+ 	pthread_mutex_lock(&notes->lock);
+ 
+-	if (notes->src == NULL && symbol__alloc_hist(target) < 0) {
++	if (notes->src == NULL && symbol__alloc_hist(target.sym) < 0) {
+ 		pthread_mutex_unlock(&notes->lock);
+ 		ui__warning("Not enough memory for annotating '%s' symbol!\n",
+-			    target->name);
++			    target.sym->name);
+ 		return true;
+ 	}
+ 
+ 	pthread_mutex_unlock(&notes->lock);
+-	symbol__tui_annotate(target, ms->map, evsel, hbt);
+-	sym_title(sym, ms->map, title, sizeof(title));
++	symbol__tui_annotate(target.sym, target.map, evsel, hbt);
++	sym_title(ms->sym, ms->map, title, sizeof(title));
+ 	ui_browser__show_title(&browser->b, title);
+ 	return true;
+ }
 -- 
-1.7.9.5
+1.7.11.7
 
