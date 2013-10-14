@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757864Ab3JNUDQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 16:03:16 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:38543 "EHLO
+	id S1757981Ab3JNUEe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 16:04:34 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:39157 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756708Ab3JNUCv (ORCPT
+	with ESMTP id S1757520Ab3JNUDP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 16:02:51 -0400
+	Mon, 14 Oct 2013 16:03:15 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 034/161] tools/perf/build: Speed up the final link
-Date: Mon, 14 Oct 2013 17:00:23 -0300
-Message-Id: <1381780950-25642-35-git-send-email-acme@infradead.org>
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 157/161] perf annotate: Fix annotate_browser__callq()
+Date: Mon, 14 Oct 2013 17:02:26 -0300
+Message-Id: <1381780950-25642-158-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1381780950-25642-1-git-send-email-acme@infradead.org>
 References: <1381780950-25642-1-git-send-email-acme@infradead.org>
@@ -25,90 +29,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ingo Molnar <mingo@kernel.org>
+From: Adrian Hunter <adrian.hunter@intel.com>
 
-libtraceevent.a and liblk.a rules have always-missed dependencies,
-which causes python.so to be relinked at every build attempt - even
-if none of the affected code changes.
+When following a call, annotate_browser__callq() uses the current
+symbol's map to look up the target ip.  That will not work if the target
+ip is on a map with a different mapping (i.e.  start - pgoff is
+different).
 
-This slows down re-builds unnecessarily, by adding more than a second
-to the build time:
-
-  comet:~/tip/tools/perf> time make
-
-  ...
-
-    SUBDIR /fast/mingo/tip/tools/lib/lk/
-    make[1]: `liblk.a' is up to date.
-    SUBDIR /fast/mingo/tip/tools/lib/traceevent/
-    LINK perf
-    GEN python/perf.so
-
-  real    0m1.701s
-  user    0m1.338s
-  sys     0m0.301s
-
-Add the (trivial) dependencies to not force a re-link.
-
-This speeds up an empty re-build enormously:
-
-  comet:~/tip/tools/perf> time make
-
-  ...
-
-  real    0m0.207s
-  user    0m0.134s
-  sys     0m0.028s
-
-[ This adds some coupling between the build dependencies of
-  libtraceevent and liblk - but until those stay relatively
-  simple this should not be an issue. ]
-
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/n/tip-wvmlrurufuk6mo1ovtNigguT@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1381747424-3557-3-git-send-email-adrian.hunter@intel.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile | 10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ tools/perf/ui/browsers/annotate.c | 21 ++++++++++-----------
+ 1 file changed, 10 insertions(+), 11 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 6b5452a120af..df76198d45d4 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -669,15 +669,19 @@ $(LIB_FILE): $(LIB_OBJS)
- 	$(QUIET_AR)$(RM) $@ && $(AR) rcs $@ $(LIB_OBJS)
+diff --git a/tools/perf/ui/browsers/annotate.c b/tools/perf/ui/browsers/annotate.c
+index 08545ae46992..57d3a8659fc0 100644
+--- a/tools/perf/ui/browsers/annotate.c
++++ b/tools/perf/ui/browsers/annotate.c
+@@ -442,35 +442,34 @@ static bool annotate_browser__callq(struct annotate_browser *browser,
+ {
+ 	struct map_symbol *ms = browser->b.priv;
+ 	struct disasm_line *dl = browser->selection;
+-	struct symbol *sym = ms->sym;
+ 	struct annotation *notes;
+-	struct symbol *target;
+-	u64 ip;
++	struct addr_map_symbol target = {
++		.map = ms->map,
++		.addr = dl->ops.target.addr,
++	};
+ 	char title[SYM_TITLE_MAX_SIZE];
  
- # libtraceevent.a
--$(LIBTRACEEVENT):
-+TE_SOURCES = $(wildcard $(TRACE_EVENT_DIR)*.[ch])
-+
-+$(LIBTRACEEVENT): $(TE_SOURCES)
- 	$(QUIET_SUBDIR0)$(TRACE_EVENT_DIR) $(QUIET_SUBDIR1) O=$(OUTPUT) libtraceevent.a
+ 	if (!ins__is_call(dl->ins))
+ 		return false;
  
- $(LIBTRACEEVENT)-clean:
- 	$(QUIET_SUBDIR0)$(TRACE_EVENT_DIR) $(QUIET_SUBDIR1) O=$(OUTPUT) clean
+-	ip = ms->map->map_ip(ms->map, dl->ops.target.addr);
+-	target = map__find_symbol(ms->map, ip, NULL);
+-	if (target == NULL) {
++	if (map_groups__find_ams(&target, NULL)) {
+ 		ui_helpline__puts("The called function was not found.");
+ 		return true;
+ 	}
  
-+LIBLK_SOURCES = $(wildcard $(LK_PATH)*.[ch])
-+
- # if subdir is set, we've been called from above so target has been built
- # already
--$(LIBLK):
-+$(LIBLK): $(LIBLK_SOURCES)
- ifeq ($(subdir),)
- 	$(QUIET_SUBDIR0)$(LK_DIR) $(QUIET_SUBDIR1) O=$(OUTPUT) liblk.a
- endif
-@@ -825,6 +829,6 @@ else
-     GIT-HEAD-PHONY =
- endif
+-	notes = symbol__annotation(target);
++	notes = symbol__annotation(target.sym);
+ 	pthread_mutex_lock(&notes->lock);
  
--.PHONY: all install clean strip $(LIBTRACEEVENT) $(LIBLK)
-+.PHONY: all install clean strip
- .PHONY: shell_compatibility_test please_set_SHELL_PATH_to_a_more_modern_shell
- .PHONY: $(GIT-HEAD-PHONY) TAGS tags cscope .FORCE-PERF-CFLAGS
+-	if (notes->src == NULL && symbol__alloc_hist(target) < 0) {
++	if (notes->src == NULL && symbol__alloc_hist(target.sym) < 0) {
+ 		pthread_mutex_unlock(&notes->lock);
+ 		ui__warning("Not enough memory for annotating '%s' symbol!\n",
+-			    target->name);
++			    target.sym->name);
+ 		return true;
+ 	}
+ 
+ 	pthread_mutex_unlock(&notes->lock);
+-	symbol__tui_annotate(target, ms->map, evsel, hbt);
+-	sym_title(sym, ms->map, title, sizeof(title));
++	symbol__tui_annotate(target.sym, target.map, evsel, hbt);
++	sym_title(ms->sym, ms->map, title, sizeof(title));
+ 	ui_browser__show_title(&browser->b, title);
+ 	return true;
+ }
 -- 
 1.8.1.4
 
