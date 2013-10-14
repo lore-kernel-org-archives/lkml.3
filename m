@@ -1,50 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756250Ab3JNMGI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 08:06:08 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:34814 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755886Ab3JNMGH (ORCPT
+	id S1756304Ab3JNMHm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 08:07:42 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:54774 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755387Ab3JNMHl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 08:06:07 -0400
+	Mon, 14 Oct 2013 08:07:41 -0400
+Date: Mon, 14 Oct 2013 14:07:24 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Juri Lelli <juri.lelli@gmail.com>
+Cc: tglx@linutronix.de, mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com,
+        fweisbec@gmail.com, darren@dvhart.com, johan.eker@ericsson.com,
+        p.faure@akatech.ch, linux-kernel@vger.kernel.org,
+        claudio@evidence.eu.com, michael@amarulasolutions.com,
+        fchecconi@gmail.com, tommaso.cucinotta@sssup.it,
+        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
+        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
+        raistlin@linux.it, insop.song@gmail.com, liming.wang@windriver.com,
+        jkacur@redhat.com, harald.gustafsson@ericsson.com,
+        vincent.guittot@linaro.org,
+        bruce.ashfield@windriver.com--no-chain-reply-to
+Subject: Re: [PATCH 06/14] sched: add period support for -deadline tasks.
+Message-ID: <20131014120724.GI3081@twins.programming.kicks-ass.net>
+References: <1381747426-31334-1-git-send-email-juri.lelli@gmail.com>
+ <1381747426-31334-7-git-send-email-juri.lelli@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20131014115937.GR2443@sirena.org.uk>
-References: <1381617306-18764-1-git-send-email-felipensp@gmail.com> <20131014115937.GR2443@sirena.org.uk>
-From: Felipe Pena <felipensp@gmail.com>
-Date: Mon, 14 Oct 2013 09:05:44 -0300
-Message-ID: <CA+5g0SJGMy+XJw91uE6doidbjiPJrwXdgSkidZHCfP4L=Xx7dg@mail.gmail.com>
-Subject: Re: [PATCH v2] sound: soc: fsl: Fix memory leak in imx-audmux.c
-To: Mark Brown <broonie@kernel.org>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Markus Pargmann <mpa@pengutronix.de>,
-        Bill Pemberton <wfp5p@virginia.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1381747426-31334-7-git-send-email-juri.lelli@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Oct 14, 2013 at 12:43:38PM +0200, Juri Lelli wrote:
+> From: Harald Gustafsson <harald.gustafsson@ericsson.com>
+> 
+> Make it possible to specify a period (different or equal than
+> deadline) for -deadline tasks.
 
-On Mon, Oct 14, 2013 at 8:59 AM, Mark Brown <broonie@kernel.org> wrote:
-> On Sat, Oct 12, 2013 at 07:35:06PM -0300, Felipe Pena wrote:
->> When audmux_clk is used and clk_prepare_enable function succeed,
->> the memory alloc'd to buf variable is leaked
->
-> Applied, thanks.  Please try to use subject lines appropriate for the
-> subsystem and keep your CC lists focused - you want to send to
-> maintainers and people working on the specific code but it's best to
-> avoid people working on tree wide cleanups like Bill so they don't get
-> too much spam.
+Could we add a little blurb here as to why we'd want this?
 
-Thanks guys for accepting the patch. Sorry for inconvenience about the
-subject line.
-
-About the CC list I just use the one that I get from scripts/get_maintainer.pl.
-
--- 
-Regards,
-Felipe Pena
+(I think I do, and I certainly know where to find the answer, but its
+better to have a more complete changelog).
