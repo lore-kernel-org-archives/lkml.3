@@ -1,207 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756490Ab3JNOk0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 10:40:26 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:58520 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750849Ab3JNOkZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 10:40:25 -0400
-Message-ID: <525C023A.8070608@ti.com>
-Date: Mon, 14 Oct 2013 10:39:54 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1756609Ab3JNOlJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 10:41:09 -0400
+Received: from mail.eperm.de ([89.247.134.16]:60390 "EHLO mail.eperm.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750782Ab3JNOlF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 10:41:05 -0400
+From: Stephan Mueller <smueller@chronox.de>
+To: Sandy Harris <sandyinchina@gmail.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, LKML <linux-kernel@vger.kernel.org>,
+        linux-crypto@vger.kernel.org
+Subject: Re: [PATCH] CPU Jitter RNG: inclusion into kernel crypto API and /dev/random
+Date: Mon, 14 Oct 2013 16:40:54 +0200
+Message-ID: <3593500.a7fOuGKlEX@tauon>
+User-Agent: KMail/4.11.2 (Linux/3.11.3-201.fc19.x86_64; KDE/4.11.2; x86_64; ; )
+In-Reply-To: <CACXcFmnDjSWHrU-4dR=Nb5n-9t=0PmM9Bc_pOFMTi3eotR2g6A@mail.gmail.com>
+References: <2579337.FPgJGgHYdz@tauon> <CACXcFm=3Ee1+HGYRpsjhFMwqn2t15qAZNnMpZ8jOsE_HkB2CPg@mail.gmail.com> <CACXcFmnDjSWHrU-4dR=Nb5n-9t=0PmM9Bc_pOFMTi3eotR2g6A@mail.gmail.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: "yinghai@kernel.org" <yinghai@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Strashko, Grygorii" <grygorii.strashko@ti.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC 06/23] mm/memblock: Add memblock early memory allocation
- apis
-References: <1381615146-20342-1-git-send-email-santosh.shilimkar@ti.com> <1381615146-20342-7-git-send-email-santosh.shilimkar@ti.com> <20131013175648.GC5253@mtj.dyndns.org>
-In-Reply-To: <20131013175648.GC5253@mtj.dyndns.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 13 October 2013 01:56 PM, Tejun Heo wrote:
-> Hello,
-> 
-> On Sat, Oct 12, 2013 at 05:58:49PM -0400, Santosh Shilimkar wrote:
->> Introduce memblock early memory allocation APIs which allow to support
->> LPAE extension on 32 bits archs. More over, this is the next step
-> 
+Am Montag, 14. Oktober 2013, 10:14:00 schrieb Sandy Harris:
 
-[..]
+Hi Sandy,
 
->> +/* FIXME: Move to memblock.h at a point where we remove nobootmem.c */
->> +void *memblock_early_alloc_try_nid_nopanic(int nid, phys_addr_t size,
->> +		phys_addr_t align, phys_addr_t from, phys_addr_t max_addr);
->> +void *memblock_early_alloc_try_nid(int nid, phys_addr_t size,
->> +		phys_addr_t align, phys_addr_t from, phys_addr_t max_addr);
-> 
-> Wouldn't it make more sense to put @nid at the end.  @size is the main
-> parameter here and it gets confusing with _alloc_node() interface as
-> the positions of paramters change.  Plus, kmalloc_node() puts @node at
-> the end too.
-> 
-Ok. Will make @nid as a last parameter.
-
->> +void __memblock_free_early(phys_addr_t base, phys_addr_t size);
->> +void __memblock_free_late(phys_addr_t base, phys_addr_t size);
-> 
-> Would it be possible to drop "early"?  It's redundant and makes the
-> function names unnecessarily long.  When memblock is enabled, these
-> are basically doing about the same thing as memblock_alloc() and
-> friends, right?  Wouldn't it make more sense to define these as
-> memblock_alloc_XXX()?
-> 
-A small a difference w.r.t existing memblock_alloc() vs these new
-exports returns virtual mapped memory pointers. Actually I started
-with memblock_alloc_xxx() but then memblock already exports memblock_alloc_xx()
-returning physical memory pointer. So just wanted to make these interfaces
-distinct and added "early". But I agree with you that the 'early' can
-be dropped. Will fix it.
-
->> +#define memblock_early_alloc(x) \
->> +	memblock_early_alloc_try_nid(MAX_NUMNODES, x, SMP_CACHE_BYTES, \
->> +			BOOTMEM_LOW_LIMIT, BOOTMEM_ALLOC_ACCESSIBLE)
->> +#define memblock_early_alloc_align(x, align) \
->> +	memblock_early_alloc_try_nid(MAX_NUMNODES, x, align, \
->> +			BOOTMEM_LOW_LIMIT, BOOTMEM_ALLOC_ACCESSIBLE)
->> +#define memblock_early_alloc_nopanic(x) \
->> +	memblock_early_alloc_try_nid_nopanic(MAX_NUMNODES, x, SMP_CACHE_BYTES, \
->> +			BOOTMEM_LOW_LIMIT, BOOTMEM_ALLOC_ACCESSIBLE)
->> +#define memblock_early_alloc_pages(x) \
->> +	memblock_early_alloc_try_nid(MAX_NUMNODES, x, PAGE_SIZE, \
->> +			BOOTMEM_LOW_LIMIT, BOOTMEM_ALLOC_ACCESSIBLE)
->> +#define memblock_early_alloc_pages_nopanic(x) \
->> +	memblock_early_alloc_try_nid_nopanic(MAX_NUMNODES, x, PAGE_SIZE, \
->> +			BOOTMEM_LOW_LIMIT, BOOTMEM_ALLOC_ACCESSIBLE)
-> 
-> I always felt a bit weird about _pages() interface.  It says pages but
-> takes bytes in size.  Maybe we're better off just converting the
-> current _pages users to _alloc_align()?
-> 
-I thought the pages interfaces are more for asking the memory
-allocations which are page aligned. So yes, we could convert
-these users to make use of align interfaces.
-
-
->> +#define memblock_early_alloc_node(nid, x) \
->> +	memblock_early_alloc_try_nid(nid, x, SMP_CACHE_BYTES, \
->> +			BOOTMEM_LOW_LIMIT, BOOTMEM_ALLOC_ACCESSIBLE)
->> +#define memblock_early_alloc_node_nopanic(nid, x) \
->> +	memblock_early_alloc_try_nid_nopanic(nid, x, SMP_CACHE_BYTES, \
->> +			BOOTMEM_LOW_LIMIT, BOOTMEM_ALLOC_ACCESSIBLE)
-> 
-> Ditto as above.  Maybe @nid can be moved to the end?
+>On Mon, Oct 14, 2013 at 9:38 AM, Sandy Harris <sandyinchina@gmail.com> 
+wrote:
+>> Stephan Mueller <smueller@chronox.de> wrote:
+>>> Can you please help me understand why you think that a whitening
+>>> function (cryptographic or not) is needed in the case of the CPU
+>>> Jitter RNG, provided that I can show that each individual bit
+>>> coming from the folding operation has one bit of entropy?
+>> 
+>> Basically, sheer paranoia. I'd mix and whiten just on general
+>> principles. Since efficiency is not a large concern, there is little
+>> reason not to.
+>> 
+>> On the other hand, most RNGs use a hash because they need
+>> to distill some large amount of low-entropy input into a smaller
+>> high-entropy output. With high input entropy, you do not need
+>> the hash and can choose some cheaper mixer.
 >
-ok
- 
->> +static void * __init _memblock_early_alloc_try_nid_nopanic(int nid,
->> +				phys_addr_t size, phys_addr_t align,
->> +				phys_addr_t from, phys_addr_t max_addr)
->> +{
->> +	phys_addr_t alloc;
->> +	void *ptr;
->> +
->> +	if (WARN_ON_ONCE(slab_is_available())) {
->> +		if (nid == MAX_NUMNODES)
-> 
-> Shouldn't we be using NUMA_NO_NODE?
-> 
->> +			return kzalloc(size, GFP_NOWAIT);
->> +		else
->> +			return kzalloc_node(size, GFP_NOWAIT, nid);
-> 
-> And kzalloc_node() understands NUMA_NO_NODE.
-> 
-Will try this out.
-
->> +	}
->> +
->> +	if (WARN_ON(!align))
->> +		align = __alignof__(long long);
-> 
-> Wouldn't SMP_CACHE_BYTES make more sense?  Also, I'm not sure we
-> actually want WARN on it.  Interpreting 0 as "default align" isn't
-> that weird.
-> 
-Will drop that WARN and use SMP_CACHE_BYTES as a default.
-
-
->> +	/* align @size to avoid excessive fragmentation on reserved array */
->> +	size = round_up(size, align);
->> +
->> +again:
->> +	alloc = memblock_find_in_range_node(from, max_addr, size, align, nid);
->> +	if (alloc)
->> +		goto done;
->> +
->> +	if (nid != MAX_NUMNODES) {
->> +		alloc =
->> +			memblock_find_in_range_node(from, max_addr, size,
->> +						    align, MAX_NUMNODES);
->> +		if (alloc)
->> +			goto done;
->> +	}
->> +
->> +	if (from) {
->> +		from = 0;
->> +		goto again;
->> +	} else {
->> +		goto error;
->> +	}
->> +
->> +done:
->> +	memblock_reserve(alloc, size);
->> +	ptr = phys_to_virt(alloc);
->> +	memset(ptr, 0, size);
-> 
-> What if the address is high?  Don't we need kmapping here?
+>You could use strong mixing/whitening:
 >
-The current nobootmem code actually don't handle the high
-addresses since the max memory is limited by memblock.current_limit
-which is max_low_pfn. So I am assuming we don't need to support
-it. __alloc_bootmem_node_high() interface underneath uses
-__alloc_memory_core_early() and we tried to keep the same
-functionality in new code.
- 
->> +
->> +	/*
->> +	 * The min_count is set to 0 so that bootmem allocated blocks
->> +	 * are never reported as leaks.
->> +	 */
->> +	kmemleak_alloc(ptr, size, 0, 0);
->> +
->> +	return ptr;
->> +
->> +error:
->> +	return NULL;
->> +}
->> +
->> +void * __init memblock_early_alloc_try_nid_nopanic(int nid,
->> +				phys_addr_t size, phys_addr_t align,
->> +				phys_addr_t from, phys_addr_t max_addr)
->> +{
->> +	memblock_dbg("%s: %llu bytes align=0x%llx nid=%d from=0x%llx max_addr=0x%llx %pF\n",
->> +			__func__, (u64)size, (u64)align, nid, (u64)from,
->> +			(u64)max_addr, (void *)_RET_IP_);
->> +	return _memblock_early_alloc_try_nid_nopanic(nid, size,
->> +						align, from, max_addr);
-> 
-> Do we need the extra level of wrapping?  Just implement
-> alloc_try_nid_nopanic() here and make the panicky version call it?
-> 
-It was useful to have caller information (_RET_IP_) for debug. But
-it can be dropped if you insist.
+>Feed into random(4) and let it do the mixing.
 
-Regards,
-Santosh
+That is exactly the goal with the patch found in patches/linux-3.9-
+random.patch in the code distribution.
+
+And that approach is exactly what I do in the linking code / patches for 
+other crypto libs:
+
+- kernel crypto API
+
+- OpenSSL (implementation as an Engine that uses the internal DRNGs or a 
+hook into RAND_poll that implements the seeding for the DRNGs)
+
+- libgcrypt (hook into the seeding of the DRNGs)
+
+>
+>Use some early outputs from your RNG to key an AES
+>instance. Then encrypt later outputs; this gives a 64 in 64
+>out mixer that is cryptographically strong but perhaps a bit
+>slow in the context.
+
+That is exactly what the SP800-90A CTR DRBG or the X9.31 does. As these 
+DRNGs are available for different crypto libs, I am simply reusing them 
+with the crypto lib linking code.
+>
+>Alternately, quite a few plausible components for fast cheap
+>mixing are readily available.
+
+Thank you for the references. I have seen that in your maxwell(8) 
+documentation. But again, I do not re-invent the wheel with the CPU 
+Jitter RNG and therefore skipped the whitening step based on the reasons 
+above.
+
+Another thing: when you start adding whitening functions, other people 
+are starting (and did -- thus I added section 4.3 to my documentation) 
+to complain that you hide your weaknesses behind the whiteners. I simply 
+want to counter that argument and show that RNG produces white noise 
+without a whitener.
+
+Ciao
+Stephan
