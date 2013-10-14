@@ -1,137 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756755Ab3JNR37 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 13:29:59 -0400
-Received: from mga09.intel.com ([134.134.136.24]:40365 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755714Ab3JNR36 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 13:29:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,493,1378882800"; 
-   d="scan'208";a="392784790"
-Message-ID: <1381771798.9489.87.camel@dvhart-mobl4.amr.corp.intel.com>
-Subject: Re: GPIO: Performance sensitive applications, gpiochip-level locking
-From: Darren Hart <dvhart@linux.intel.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>
-Date: Mon, 14 Oct 2013 10:29:58 -0700
-In-Reply-To: <CACRpkdY4HBmNUMAE6LzGEjR05x+XunxeQrazRk9JLAiHjOcz3A@mail.gmail.com>
-References: <1380562166.32071.172.camel@dvhart-mobl4.amr.corp.intel.com>
-	 <CACRpkdY4HBmNUMAE6LzGEjR05x+XunxeQrazRk9JLAiHjOcz3A@mail.gmail.com>
-Organization: Intel
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756909Ab3JNRa6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 13:30:58 -0400
+Received: from 8.mo4.mail-out.ovh.net ([188.165.33.112]:41733 "EHLO
+	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756839Ab3JNRa5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 13:30:57 -0400
+Date: Mon, 14 Oct 2013 19:24:45 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: at91: remove init_machine() as default is suitable
+Message-ID: <20131014172445.GL11420@ns203013.ovh.net>
+References: <1381480147-14190-1-git-send-email-nicolas.ferre@atmel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1381480147-14190-1-git-send-email-nicolas.ferre@atmel.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Ovh-Tracer-Id: 2979694103912229740
+X-Ovh-Remote: 91.121.171.124 (ns203013.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrvdekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrvdekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-10-11 at 16:02 +0200, Linus Walleij wrote:
-> On Mon, Sep 30, 2013 at 7:29 PM, Darren Hart <dvhart@linux.intel.com> wrote:
+On 10:29 Fri 11 Oct     , Nicolas Ferre wrote:
+> Since 883a106b0866ca8d75b5520bdb3ca1cf8e3730ba (ARM: default
+> machine descriptor for multiplatform) we can remove the SoC-specific
+> callback init_machine() to use the default code.
+> This cleans up the code and reduces the number of lines.
 > 
-> > I'm currently working with a graphics driver that makes use of 2 GPIO
-> > pins for EDID communication (clock and data). In order to coexist
-> > peacefully with the driver for the GPIO chip, it must use gpiolib to
-> > request the lines, set direction, and set values. This results in a
-> > spinlock/unlock for every operation with this particular gpio driver.
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+
+Best Regards,
+J.
+> ---
+>  arch/arm/mach-at91/board-dt-rm9200.c | 7 -------
+>  arch/arm/mach-at91/board-dt-sam9.c   | 7 -------
+>  2 files changed, 14 deletions(-)
 > 
-> Do you mean that this particular GPIO driver (which one?)
-
-gpio-sch
-
-> has a problem with this, or do you mean that there is something
-> in the gpiolib architecture that prevents you from augmenting
-> the GPIO driver to do what you want?
+> diff --git a/arch/arm/mach-at91/board-dt-rm9200.c b/arch/arm/mach-at91/board-dt-rm9200.c
+> index 3fcb662..3a185fa 100644
+> --- a/arch/arm/mach-at91/board-dt-rm9200.c
+> +++ b/arch/arm/mach-at91/board-dt-rm9200.c
+> @@ -14,7 +14,6 @@
+>  #include <linux/gpio.h>
+>  #include <linux/of.h>
+>  #include <linux/of_irq.h>
+> -#include <linux/of_platform.h>
+>  
+>  #include <asm/setup.h>
+>  #include <asm/irq.h>
+> @@ -36,11 +35,6 @@ static void __init at91rm9200_dt_init_irq(void)
+>  	of_irq_init(irq_of_match);
+>  }
+>  
+> -static void __init at91rm9200_dt_device_init(void)
+> -{
+> -	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
+> -}
+> -
+>  static const char *at91rm9200_dt_board_compat[] __initdata = {
+>  	"atmel,at91rm9200",
+>  	NULL
+> @@ -52,6 +46,5 @@ DT_MACHINE_START(at91rm9200_dt, "Atmel AT91RM9200 (Device Tree)")
+>  	.handle_irq	= at91_aic_handle_irq,
+>  	.init_early	= at91rm9200_dt_initialize,
+>  	.init_irq	= at91rm9200_dt_init_irq,
+> -	.init_machine	= at91rm9200_dt_device_init,
+>  	.dt_compat	= at91rm9200_dt_board_compat,
+>  MACHINE_END
+> diff --git a/arch/arm/mach-at91/board-dt-sam9.c b/arch/arm/mach-at91/board-dt-sam9.c
+> index 8db3013..3dab868 100644
+> --- a/arch/arm/mach-at91/board-dt-sam9.c
+> +++ b/arch/arm/mach-at91/board-dt-sam9.c
+> @@ -13,7 +13,6 @@
+>  #include <linux/gpio.h>
+>  #include <linux/of.h>
+>  #include <linux/of_irq.h>
+> -#include <linux/of_platform.h>
+>  
+>  #include <asm/setup.h>
+>  #include <asm/irq.h>
+> @@ -37,11 +36,6 @@ static void __init at91_dt_init_irq(void)
+>  	of_irq_init(irq_of_match);
+>  }
+>  
+> -static void __init at91_dt_device_init(void)
+> -{
+> -	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
+> -}
+> -
+>  static const char *at91_dt_board_compat[] __initdata = {
+>  	"atmel,at91sam9",
+>  	NULL
+> @@ -54,6 +48,5 @@ DT_MACHINE_START(at91sam_dt, "Atmel AT91SAM (Device Tree)")
+>  	.handle_irq	= at91_aic_handle_irq,
+>  	.init_early	= at91_dt_initialize,
+>  	.init_irq	= at91_dt_init_irq,
+> -	.init_machine	= at91_dt_device_init,
+>  	.dt_compat	= at91_dt_board_compat,
+>  MACHINE_END
+> -- 
+> 1.8.2.2
 > 
-> I can't see that we're taking any locks in the GPIOlib core.
-
-Right, this is going to be driver specific. Each driver, as I understand
-it, is responsible for setting up any necessary locking since some may
-share registers, others may not. However, if memory serves, a shared for
-all pins for direction, enable, and value is not uncommon, and requires
-a mutual exclusion mechanism.
-
-In the case of the gpio-sch driver, each operation for direction and
-value require a lock/unlock. There is no API in gpiolib to lock the chip
-as a whole and then make lockless calls. We could do this for this
-specific driver, but it seems to me it would better to do so at the
-gpiolib layer. For some chips these operations might be no-ops, for
-others, like the gpio-sch chip, they could avoid the lock/unlock for
-every call and allow for some performance improvement.
-
-Full disclosure here, I don't yet know if the lock/unlock presents a
-performance bottleneck. I've asked the graphics driver developers to try
-with the existing API and see if it is adequate.
-
-
-> 
-> > It would be preferable to lock the resources once, perform the EDID
-> > communication, then unlock the resources. The resources in this case are
-> > the value and direction registers off the PCI GPIO base address register
-> > which is shared with the other lines provided by the GPIO chip.
-> >
-> > Is there a best practice for dealing with this kind of configuration?
-> 
-> No.
-> 
-> > If not, would it make sense to add optional gpiochip-level lock/unlock
-> > and lockless direction and value operations to the gpiochip function
-> > block?
-> 
-> How do you imagine the API?
-> 
-> I can imagine something like:
-> 
-> gpio_bitbang_array(struct gpio_desc *desc, int value *, unsigned int values)
-> {
->    /* Fall all the way through to the driver */
-> }
-> 
-> Or even:
-> 
-> struct bitbang_entry {
->     unsigned int val;
->     unsigned int delay_after;
-> }
-> 
-> gpio_bitbang_array(struct gpio_desc *desc,
->                             struct bitbang_entry **,
->                             int entries);
-> 
-> In either case (for the rough sketches) the gpiolib core has to fall back to
-> iterating over the array and just using set_value() if the accelerated ops
-> are not supported by the driver.
-> 
-> Possibly things can be learned from other parts of the kernel here.
-
-Hrm... I hadn't considered something like that. My thinking was more
-along the lines of:
-
-gpio_lock_chip(struct gpio_chip *chip)
-gpio_direction_input_locked(gpio)
-val = gpio_get_value_locked(gpio)
-...
-gpio_direction_output_locked(gpio
-gpio_set_value_locked(gpio, val)
-...
-gpio_unlock_chip(struct gpio_chip *chip)
-
-I like the possibility of your suggestion, but I wonder if it will be
-flexible enough.
-
-Thanks,
-
-Darren
-
-> 
-> Yours,
-> Linus Walleij
-
--- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Linux Kernel
-
-
