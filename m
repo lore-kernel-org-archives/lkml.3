@@ -1,114 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757684Ab3JNXSY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 19:18:24 -0400
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:43137 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756699Ab3JNXSX (ORCPT
+	id S1757849Ab3JNXSk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 19:18:40 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:38885 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757767Ab3JNXSi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 19:18:23 -0400
-Message-ID: <525C7BB7.8000209@gmail.com>
-Date: Tue, 15 Oct 2013 01:18:15 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-CC: Jason Cooper <jason@lakedaemon.net>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Arnd Bergmann <arnd@arndb.de>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Jisheng Zhang <jszhang@marvell.com>
-Subject: Re: [PATCH 7/8] ARM: add Armada 1500 and Sony NSZ-GS7 device tree
- files
-References: <1381235073-17134-1-git-send-email-sebastian.hesselbarth@gmail.com> <1381235073-17134-8-git-send-email-sebastian.hesselbarth@gmail.com> <525C7A91.9060101@gmail.com>
-In-Reply-To: <525C7A91.9060101@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 14 Oct 2013 19:18:38 -0400
+MIME-Version: 1.0
+In-Reply-To: <20131014155254.GB20187@srcf.ucam.org>
+References: <1381236524-19633-1-git-send-email-felipe.contreras@gmail.com>
+	<CAHR064ge8zew7uMeD+_LXR3ju5ARGG1y8utLOFzOLexny_DPLA@mail.gmail.com>
+	<1381421199.4248.2.camel@x230.lan>
+	<CAMP44s04+_aP7KpVMTUjdNcRWMg6PC6HBaNhF_uhAHm=fhmTcw@mail.gmail.com>
+	<20131013151729.GA4028@srcf.ucam.org>
+	<CAMP44s0utW0ABWgFicDH=vDMxZbQudeM6D13RL8BfPnr55hR8Q@mail.gmail.com>
+	<20131014155254.GB20187@srcf.ucam.org>
+Date: Mon, 14 Oct 2013 18:18:36 -0500
+Message-ID: <CAMP44s3O6z6-gVCqhCps7fKSKMbL9JSakZLfBUxqUYytrWFWKw@mail.gmail.com>
+Subject: Re: [PATCH v2] platform: x86: asus-wmi: add fan control
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: "corentin.chary@gmail.com" <corentin.chary@gmail.com>,
+        "acpi4asus-user@lists.sourceforge.net" 
+	<acpi4asus-user@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/15/2013 01:13 AM, Sebastian Hesselbarth wrote:
-> On 10/08/2013 02:24 PM, Sebastian Hesselbarth wrote:
->> This adds very basic device tree files for the Marvell Armada 1500 SoC
->> (88DE3100) and the Sony NSZ-GS7 GoogleTV board. Currently, SoC only has
->> nodes for cpus, some clocks, l2 cache controller, local timer, apb
->> timers,
->> uart, and interrupt controllers. The Sony NSZ-GS7 is a GoogleTV consumer
->> device comprising the Armada 1500 SoC above.
+On Mon, Oct 14, 2013 at 10:52 AM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+> On Sun, Oct 13, 2013 at 09:31:25PM -0500, Felipe Contreras wrote:
+>> On Sun, Oct 13, 2013 at 10:17 AM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+>> > The spec doesn't seem to constrain it to physical addresses (it just
+>> > refers to "Control Methods read and write data to locations in address
+>> > spaces (for example, System memory and System I/O)", so I'd lean towards
+>> > changing the behaviour of acpica rather than adding virt_to_phys().
 >>
->> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
->> Reviewed-by: Jason Cooper <jason@lakedaemon.net>
->> Reviewed-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
->> Reviewed-by: Arnd Bergmann <arnd@arndb.de>
->> ---
->> Changelog:
->> RCFv2->v1:
->> - switch to (soon to be) correct "marvell,pj4b" cpu compatible
->> - reference fixed-clock for uarts instead of hard-coded clock-frequency
->> - disable timers except two for clksrc and clkevt
->> RFCv1->RFCv2:
->> - add binding documentation (Reported by Jason Cooper)
->> - change l2cc from aurora to tauros3 (Reported by Thomas Petazzoni)
->> - add copyright reference
->> - adapt compatibles to mach-berlin instead of mach-mvebu
->>
->> Cc: Jason Cooper <jason@lakedaemon.net>
->> Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
->> Cc: Arnd Bergmann <arnd@arndb.de>
->> Cc: devicetree@vger.kernel.org
->> Cc: linux-doc@vger.kernel.org
->> Cc: linux-arm-kernel@lists.infradead.org
->> Cc: linux-kernel@vger.kernel.org
->> ---
->>   .../devicetree/bindings/arm/marvell,berlin.txt     |   23 ++
->>   arch/arm/boot/dts/Makefile                         |    2 +
->>   arch/arm/boot/dts/mv88de3100-sony-nsz-gs7.dts      |   29 +++
->>   arch/arm/boot/dts/mv88de3100.dtsi                  |  227
->> ++++++++++++++++++++
->>   4 files changed, 281 insertions(+)
->>   create mode 100644
->> Documentation/devicetree/bindings/arm/marvell,berlin.txt
->>   create mode 100644 arch/arm/boot/dts/mv88de3100-sony-nsz-gs7.dts
->>   create mode 100644 arch/arm/boot/dts/mv88de3100.dtsi
->>
->> diff --git a/Documentation/devicetree/bindings/arm/marvell,berlin.txt
->> b/Documentation/devicetree/bindings/arm/marvell,berlin.txt
->> new file mode 100644
->> index 0000000..e389cba
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/arm/marvell,berlin.txt
->> @@ -0,0 +1,23 @@
->> +Marvell Berlin (88DE3xxx) family SoCs Device Tree Bindings
->> +---------------------------------------------------------------
->> +
->> +Boards with a SoC of the Marvell Berlin (88DE3xxx) family, e.g.
->> Armada 1500
->> +shall have the following properties:
->> +
->> +* Required root node properties:
->> +compatible: must contain "marvell,berlin"
->> +
->> +In addition, the above compatible shall be extended with the specific
->> +SoC and board used. Currently known SoC compatibles are:
->> +    "marvell,88de3100"    for Marvell 88DE3100 (Armada 1500),
->> +    "marvell,88de3010"    for Marvell 88DE3010 (Armada 1000),
->> +    "marvell,88de3005"    for Marvell 88DE3005 (Armada 1500-mini)
+>> And I assume you are not going to do that. Isn't acpica code outside
+>> of the scope of Linux kernel development? If not, how do I go about
+>> adding that capability.
 >
-> Jisheng,
+> I wasn't planning on it, no. Just write the code and submit it to
+> linux-acpi, and Cc: Bob Moore.
 
-(adding Jisheng to Cc, missed that)
+I might give it a try.
 
-> I am trying to follow your request to get rid of 88DExxxx numbering and
-> replace it where possible with berlin type-of names.
+>> Also, I find it weird that this the first driver that needs this.
 >
-> For the above, I have:
-> "marvell,berlin-bg2" for Marvell Armada 1500 (BG2, 88DE3100)
-> "marvell,berlin-bg2cd" for Marvell Armada 1500-mini (BG2CD, 88DE3005)
+> The normal way to do this would be for the ASL to just define a buffer
+> within the argument, rather than assigning it to an operation region. I
+> haven't seen anyone take this approach before.
 >
-> I cannot pin down Armada 1000 in the BG naming scheme. It would be great
-> if you provide info here on how Marvell would like to see the
-> compatibles.
+>> Finally, I'm much more interested on what happens next, because I want
+>> to link this driver to the thermal framework, so when temperature gets
+>> too high, the fan gets an increased speed, because right now it seems
+>> it's always on low speed, temperature gets high, and instead the CPU
+>> gets throttled, which is not desirable.
 >
-> Sebastian
->
+> It wouldn't be appropriate to alter the firmware behaviour by default,
+> but yeah, that's the kind of thing that the thermal framework exists to
+> do.
 
+Well, how do I do that? The driver is up and running, and I can
+manually set different fan speeds, however nothing seems to happen
+automatically when the temperature increases.
+
+>> Maybe this driver should be added to the staging area.
+>
+> I don't think you can easily register multiple drivers for the same WMI
+> device.
+
+I don't mean this one, I mean the standalone one. Actually, the first
+one I sent doesn't require all this system memory stuff.
+
+-- 
+Felipe Contreras
