@@ -1,66 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933155Ab3JNUdT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 16:33:19 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:38882 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757639Ab3JNUDD (ORCPT
+	id S933202Ab3JNUeB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 16:34:01 -0400
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:48072 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933139Ab3JNUdS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 16:03:03 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 092/161] perf annotate: Reuse path from the result of addr2line
-Date: Mon, 14 Oct 2013 17:01:21 -0300
-Message-Id: <1381780950-25642-93-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1381780950-25642-1-git-send-email-acme@infradead.org>
-References: <1381780950-25642-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 14 Oct 2013 16:33:18 -0400
+MIME-Version: 1.0
+In-Reply-To: <1381782256-2434-2-git-send-email-geyslan@gmail.com>
+References: <1381782256-2434-1-git-send-email-geyslan@gmail.com>
+	<1381782256-2434-2-git-send-email-geyslan@gmail.com>
+Date: Mon, 14 Oct 2013 17:33:17 -0300
+Message-ID: <CAGG-pUTZGHjzVYj2r0Df_ehUz27FL8=bPCQ5FMBxScN-NNTO2A@mail.gmail.com>
+Subject: Re: [PATCH v2] nfs: Use PTR_ERR_OR_ZERO in 'nfs/nfs4super.c'
+From: =?UTF-8?Q?Geyslan_Greg=C3=B3rio_Bem?= <geyslan@gmail.com>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: schumaker.anna@gmail.com, linux-nfs@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        kernel-br <kernel-br@googlegroups.com>,
+        "Geyslan G. Bem" <geyslan@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+2013/10/14 Geyslan G. Bem <geyslan@gmail.com>:
+> Use 'PTR_ERR_OR_ZERO()' rather than 'IS_ERR(...) ? PTR_ERR(...) : 0'.
+>
+> Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
+> ---
+>  fs/nfs/nfs4super.c | 12 ++++++------
+>  1 file changed, 6 insertions(+), 6 deletions(-)
+>
+> diff --git a/fs/nfs/nfs4super.c b/fs/nfs/nfs4super.c
+> index e26acdd..65ab0a0 100644
+> --- a/fs/nfs/nfs4super.c
+> +++ b/fs/nfs/nfs4super.c
+> @@ -261,9 +261,9 @@ struct dentry *nfs4_try_mount(int flags, const char *dev_name,
+>
+>         res = nfs_follow_remote_path(root_mnt, export_path);
+>
+> -       dfprintk(MOUNT, "<-- nfs4_try_mount() = %ld%s\n",
+> -                       IS_ERR(res) ? PTR_ERR(res) : 0,
+> -                       IS_ERR(res) ? " [error]" : "");
+> +       dfprintk(MOUNT, "<-- nfs4_try_mount() = %d%s\n",
+> +                PTR_ERR_OR_ZERO(res),
+> +                IS_ERR(res) ? " [error]" : "");
+>         return res;
+>  }
+>
+> @@ -319,9 +319,9 @@ static struct dentry *nfs4_referral_mount(struct file_system_type *fs_type,
+>         data->mnt_path = export_path;
+>
+>         res = nfs_follow_remote_path(root_mnt, export_path);
+> -       dprintk("<-- nfs4_referral_mount() = %ld%s\n",
+> -                       IS_ERR(res) ? PTR_ERR(res) : 0,
+> -                       IS_ERR(res) ? " [error]" : "");
+> +       dprintk("<-- nfs4_referral_mount() = %d%s\n",
+> +               PTR_ERR_OR_ZERO(res),
+> +               IS_ERR(res) ? " [error]" : "");
+>         return res;
+>  }
+>
+> --
+> 1.8.4
+>
 
-In the symbol__get_source_line(), path and src_line->path will have same
-value, but they were allocated separately, and leaks one.  Just share
-path to src_line->path.
-
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Reviewed-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1378876173-13363-3-git-send-email-namhyung@kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/annotate.c | 6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
-
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index 7eae5488ecea..c6fd1870f278 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -1143,11 +1143,7 @@ static int symbol__get_source_line(struct symbol *sym, struct map *map,
- 		if (getline(&path, &line_len, fp) < 0 || !line_len)
- 			goto next_close;
- 
--		src_line->path = malloc(sizeof(char) * line_len + 1);
--		if (!src_line->path)
--			goto next_close;
--
--		strcpy(src_line->path, path);
-+		src_line->path = path;
- 		insert_source_line(&tmp_root, src_line);
- 
- 	next_close:
--- 
-1.8.1.4
-
+In this version (v2):
+Format changed from %ld to %d.
