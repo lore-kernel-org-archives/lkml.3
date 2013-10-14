@@ -1,25 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757918Ab3JNUMT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 16:12:19 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:39124 "EHLO
+	id S932230Ab3JNUMS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 16:12:18 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:39129 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757784Ab3JNUDK (ORCPT
+	with ESMTP id S1757791Ab3JNUDK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 14 Oct 2013 16:03:10 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 144/161] perf symbols: Validate kcore module addresses
-Date: Mon, 14 Oct 2013 17:02:13 -0300
-Message-Id: <1381780950-25642-145-git-send-email-acme@infradead.org>
+        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 153/161] tools/perf/build: Simplify the autodep inclusion rule
+Date: Mon, 14 Oct 2013 17:02:22 -0300
+Message-Id: <1381780950-25642-154-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1381780950-25642-1-git-send-email-acme@infradead.org>
 References: <1381780950-25642-1-git-send-email-acme@infradead.org>
@@ -29,271 +24,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Adrian Hunter <adrian.hunter@intel.com>
+From: Ingo Molnar <mingo@kernel.org>
 
-Before using kcore we need to check that modules are in memory at the
-same addresses that they were when data was recorded.
+Namhyung Kim noticed that the autodep .d file inclusion rule was
+unnecessarily complicated:
 
-This is done because, while we could remap symbols to different
-addresses, the object code linkages would still be different which would
-provide an erroneous view of the object code.
+  > > +-include *.d */*.d
+  >
+  > Hmm.. this */*.d part is really needed?
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
+Only include *.d files.
+
+Reported-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1381320078-16497-2-git-send-email-adrian.hunter@intel.com
-[ Rename basename to base_name to avoid shadowing libgen's basename in fedora 12 ]
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/symbol.c | 196 ++++++++++++++++++++++++++++++++++++++++++-----
- 1 file changed, 175 insertions(+), 21 deletions(-)
+ tools/perf/config/feature-checks/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 5fd95135e838..b2f60ddc864f 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -798,51 +798,201 @@ bool symbol__restricted_filename(const char *filename,
- 	return restricted;
- }
+diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
+index c70d23ecb64e..452b67cc4d7b 100644
+--- a/tools/perf/config/feature-checks/Makefile
++++ b/tools/perf/config/feature-checks/Makefile
+@@ -136,7 +136,7 @@ test-on-exit:
+ test-backtrace:
+ 	$(BUILD)
  
--struct kcore_mapfn_data {
--	struct dso *dso;
--	enum map_type type;
--	struct list_head maps;
-+struct module_info {
-+	struct rb_node rb_node;
-+	char *name;
-+	u64 start;
- };
+--include *.d */*.d
++-include *.d
  
--static int kcore_mapfn(u64 start, u64 len, u64 pgoff, void *data)
-+static void add_module(struct module_info *mi, struct rb_root *modules)
- {
--	struct kcore_mapfn_data *md = data;
--	struct map *map;
-+	struct rb_node **p = &modules->rb_node;
-+	struct rb_node *parent = NULL;
-+	struct module_info *m;
+ ###############################
  
--	map = map__new2(start, md->dso, md->type);
--	if (map == NULL)
-+	while (*p != NULL) {
-+		parent = *p;
-+		m = rb_entry(parent, struct module_info, rb_node);
-+		if (strcmp(mi->name, m->name) < 0)
-+			p = &(*p)->rb_left;
-+		else
-+			p = &(*p)->rb_right;
-+	}
-+	rb_link_node(&mi->rb_node, parent, p);
-+	rb_insert_color(&mi->rb_node, modules);
-+}
-+
-+static void delete_modules(struct rb_root *modules)
-+{
-+	struct module_info *mi;
-+	struct rb_node *next = rb_first(modules);
-+
-+	while (next) {
-+		mi = rb_entry(next, struct module_info, rb_node);
-+		next = rb_next(&mi->rb_node);
-+		rb_erase(&mi->rb_node, modules);
-+		free(mi->name);
-+		free(mi);
-+	}
-+}
-+
-+static struct module_info *find_module(const char *name,
-+				       struct rb_root *modules)
-+{
-+	struct rb_node *n = modules->rb_node;
-+
-+	while (n) {
-+		struct module_info *m;
-+		int cmp;
-+
-+		m = rb_entry(n, struct module_info, rb_node);
-+		cmp = strcmp(name, m->name);
-+		if (cmp < 0)
-+			n = n->rb_left;
-+		else if (cmp > 0)
-+			n = n->rb_right;
-+		else
-+			return m;
-+	}
-+
-+	return NULL;
-+}
-+
-+static int __read_proc_modules(void *arg, const char *name, u64 start)
-+{
-+	struct rb_root *modules = arg;
-+	struct module_info *mi;
-+
-+	mi = zalloc(sizeof(struct module_info));
-+	if (!mi)
- 		return -ENOMEM;
- 
--	map->end = map->start + len;
--	map->pgoff = pgoff;
-+	mi->name = strdup(name);
-+	mi->start = start;
- 
--	list_add(&map->node, &md->maps);
-+	if (!mi->name) {
-+		free(mi);
-+		return -ENOMEM;
-+	}
-+
-+	add_module(mi, modules);
-+
-+	return 0;
-+}
-+
-+static int read_proc_modules(const char *filename, struct rb_root *modules)
-+{
-+	if (symbol__restricted_filename(filename, "/proc/modules"))
-+		return -1;
-+
-+	if (modules__parse(filename, modules, __read_proc_modules)) {
-+		delete_modules(modules);
-+		return -1;
-+	}
- 
- 	return 0;
- }
- 
-+static int do_validate_kcore_modules(const char *filename, struct map *map,
-+				  struct map_groups *kmaps)
-+{
-+	struct rb_root modules = RB_ROOT;
-+	struct map *old_map;
-+	int err;
-+
-+	err = read_proc_modules(filename, &modules);
-+	if (err)
-+		return err;
-+
-+	old_map = map_groups__first(kmaps, map->type);
-+	while (old_map) {
-+		struct map *next = map_groups__next(old_map);
-+		struct module_info *mi;
-+
-+		if (old_map == map || old_map->start == map->start) {
-+			/* The kernel map */
-+			old_map = next;
-+			continue;
-+		}
-+
-+		/* Module must be in memory at the same address */
-+		mi = find_module(old_map->dso->short_name, &modules);
-+		if (!mi || mi->start != old_map->start) {
-+			err = -EINVAL;
-+			goto out;
-+		}
-+
-+		old_map = next;
-+	}
-+out:
-+	delete_modules(&modules);
-+	return err;
-+}
-+
- /*
-- * If kallsyms is referenced by name then we look for kcore in the same
-+ * If kallsyms is referenced by name then we look for filename in the same
-  * directory.
-  */
--static bool kcore_filename_from_kallsyms_filename(char *kcore_filename,
--						  const char *kallsyms_filename)
-+static bool filename_from_kallsyms_filename(char *filename,
-+					    const char *base_name,
-+					    const char *kallsyms_filename)
- {
- 	char *name;
- 
--	strcpy(kcore_filename, kallsyms_filename);
--	name = strrchr(kcore_filename, '/');
-+	strcpy(filename, kallsyms_filename);
-+	name = strrchr(filename, '/');
- 	if (!name)
- 		return false;
- 
--	if (!strcmp(name, "/kallsyms")) {
--		strcpy(name, "/kcore");
-+	name += 1;
-+
-+	if (!strcmp(name, "kallsyms")) {
-+		strcpy(name, base_name);
- 		return true;
- 	}
- 
- 	return false;
- }
- 
-+static int validate_kcore_modules(const char *kallsyms_filename,
-+				  struct map *map)
-+{
-+	struct map_groups *kmaps = map__kmap(map)->kmaps;
-+	char modules_filename[PATH_MAX];
-+
-+	if (!filename_from_kallsyms_filename(modules_filename, "modules",
-+					     kallsyms_filename))
-+		return -EINVAL;
-+
-+	if (do_validate_kcore_modules(modules_filename, map, kmaps))
-+		return -EINVAL;
-+
-+	return 0;
-+}
-+
-+struct kcore_mapfn_data {
-+	struct dso *dso;
-+	enum map_type type;
-+	struct list_head maps;
-+};
-+
-+static int kcore_mapfn(u64 start, u64 len, u64 pgoff, void *data)
-+{
-+	struct kcore_mapfn_data *md = data;
-+	struct map *map;
-+
-+	map = map__new2(start, md->dso, md->type);
-+	if (map == NULL)
-+		return -ENOMEM;
-+
-+	map->end = map->start + len;
-+	map->pgoff = pgoff;
-+
-+	list_add(&map->node, &md->maps);
-+
-+	return 0;
-+}
-+
- static int dso__load_kcore(struct dso *dso, struct map *map,
- 			   const char *kallsyms_filename)
- {
-@@ -859,8 +1009,12 @@ static int dso__load_kcore(struct dso *dso, struct map *map,
- 	if (map != machine->vmlinux_maps[map->type])
- 		return -EINVAL;
- 
--	if (!kcore_filename_from_kallsyms_filename(kcore_filename,
--						   kallsyms_filename))
-+	if (!filename_from_kallsyms_filename(kcore_filename, "kcore",
-+					     kallsyms_filename))
-+		return -EINVAL;
-+
-+	/* All modules must be present at their original addresses */
-+	if (validate_kcore_modules(kallsyms_filename, map))
- 		return -EINVAL;
- 
- 	md.dso = dso;
 -- 
 1.8.1.4
 
