@@ -1,51 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757616Ab3JNWM4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 18:12:56 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:58197 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750813Ab3JNWMy (ORCPT
+	id S1756923Ab3JNWNw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 18:13:52 -0400
+Received: from a9-70.smtp-out.amazonses.com ([54.240.9.70]:60779 "EHLO
+	a9-70.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756107Ab3JNWNt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 18:12:54 -0400
-Message-ID: <525C6C61.5090306@wwwdotorg.org>
-Date: Mon, 14 Oct 2013 16:12:49 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Mon, 14 Oct 2013 18:13:49 -0400
+Date: Mon, 14 Oct 2013 22:13:48 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-arch@vger.kernel.org
+Subject: Re: [PATCH 34/34] mm: dynamically allocate page->ptl if it cannot
+ be embedded to struct page
+In-Reply-To: <20131014212514.C7C19E0090@blue.fi.intel.com>
+Message-ID: <00000141b90841a8-3fb61f1e-89aa-4a35-94d4-a264ac91462b-000000@email.amazonses.com>
+References: <1381428359-14843-1-git-send-email-kirill.shutemov@linux.intel.com> <1381428359-14843-35-git-send-email-kirill.shutemov@linux.intel.com> <00000141a3f48ada-37ee9c14-2f2b-40a2-93f4-70258363351b-000000@email.amazonses.com> <20131010200921.91D84E0090@blue.fi.intel.com>
+ <00000141a7d2aa7b-e59f292a-746c-4f55-aa51-9fa060a7fbeb-000000@email.amazonses.com> <20131014090437.F22CBE0090@blue.fi.intel.com> <00000141b85a90a0-7cf6bab0-4c17-4fc0-8224-74bbb1fc85ee-000000@email.amazonses.com>
+ <20131014212514.C7C19E0090@blue.fi.intel.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Alexandre Courbot <acourbot@nvidia.com>,
-        Russell King <linux@arm.linux.org.uk>
-CC: Olof Johansson <olof@lixom.net>, Tomasz Figa <t.figa@samsung.com>,
-        Dave Martin <Dave.Martin@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Kevin Hilman <khilman@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v8 1/5] ARM: add basic support for Trusted Foundations
-References: <1381527938-22840-1-git-send-email-acourbot@nvidia.com> <1381527938-22840-2-git-send-email-acourbot@nvidia.com>
-In-Reply-To: <1381527938-22840-2-git-send-email-acourbot@nvidia.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.10.14-54.240.9.70
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/11/2013 03:45 PM, Alexandre Courbot wrote:
-> Trusted Foundations is a TrustZone-based secure monitor for ARM that
-> can be invoked using the same SMC-based API on all supported
-> platforms. This patch adds initial basic support for Trusted
-> Foundations using the ARM firmware API. Current features are limited
-> to the ability to boot secondary processors.
-> 
-> Note: The API followed by Trusted Foundations does *not* follow the SMC
-> calling conventions. It has nothing to do with PSCI neither and is only
-> relevant to devices that use Trusted Foundations (like most Tegra-based
-> retail devices).
+On Tue, 15 Oct 2013, Kirill A. Shutemov wrote:
 
-Russell, are you OK with this patch? Is it OK if I take it through the
-Tegra tree, or would you like to take it through your tree and give me a
-stable branch I can apply the rest on top of?
+> Feel free to propose a patch. I don't see much point.
 
-Thanks.
+Right now you are using a long to stand in for a spinlock_t or a pointer
+to a spinlock_t. An #ifdef would allow to define the proper type and
+therefore the compiler to check that the ptl is correctly used.
+
