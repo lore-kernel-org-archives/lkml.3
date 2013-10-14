@@ -1,61 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932149Ab3JNWAR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 18:00:17 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:41306 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757189Ab3JNWAP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 18:00:15 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-To: <rui.zhang@intel.com>
-CC: <amit.daniel@samsung.com>, <l.majewski@samsung.com>,
-        <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>
-Subject: [GIT PULL] thermal-soc: urgent fixes for 3.12
-Date: Mon, 14 Oct 2013 18:00:01 -0400
-Message-ID: <1381788001-3508-1-git-send-email-eduardo.valentin@ti.com>
-X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
+	id S932258Ab3JNWBX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 18:01:23 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:37993 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932160Ab3JNWBW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 18:01:22 -0400
+Message-ID: <525C69AC.1010004@gmail.com>
+Date: Tue, 15 Oct 2013 09:01:16 +1100
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: H Hartley Sweeten <hartleys@visionengravers.com>,
+        linux-usb@vger.kernel.org
+CC: ARM Kernel <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, stern@rowland.harvard.edu,
+        gregkh@linuxfoundation.org
+Subject: Re: [PATCH] usb: ohci: remove ep93xx bus glue platform driver
+References: <201310141435.31147.hartleys@visionengravers.com>
+In-Reply-To: <201310141435.31147.hartleys@visionengravers.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Rui,
+On 15/10/13 08:35, H Hartley Sweeten wrote:
+> Convert ep93xx to use the OHCI platform driver and remove the
+> ohci-ep93xx bus glue driver.
+> 
+> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+> Cc: Alan Stern <stern@rowland.harvard.edu>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Ryan Mallon <rmallon@gmail.com>
+> ---
 
-Please pull the following changes. It contains fixes for 3.12 on Exynos
-thermal driver, which is currently broken, Exynos4412 is the main affected.
-Thanks Lukasz for his persistence on getting this done for 3.12.
+> diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
+> index b3f20d7..2c8f2db 100644
+> --- a/drivers/usb/host/Kconfig
+> +++ b/drivers/usb/host/Kconfig
+> @@ -472,7 +472,7 @@ config USB_CNS3XXX_OHCI
+>  
+>  config USB_OHCI_HCD_PLATFORM
+>  	tristate "Generic OHCI driver for a platform device"
+> -	default n
+> +	default y if ARCH_EP93XX
 
-Lukasz, you need to queue the remaining changes on DT via your platform tree.
+Shouldn't we select USB_OHCI_HCD_PLATFORM, e.g. something like:
 
-It contains also a fix on the extrapolation rules for TI SoCs.
+	config ARCH_EP93XX_USB
+		tristate "USB OHCI support"
+		default y
+		select USB_OHCI_HCD_PLATFORM
 
-The following changes since commit 74ae45a3d656d3e86bb8e776634ebdfd3f39f37c:
+In arch/arm/mach-ep93xx/Kconfig rather than polluting
+drivers/usb/host/Kconfig with arch specific stuff?
 
-  Merge branches 'x86_pkg_temp' and 'misc' of .git into next (2013-09-25 21:41:44 +0800)
+~Ryan
 
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/evalenti/linux-soc-thermal.git next
-
-for you to fetch changes up to 848a3b2b91a45f6b7814e2779f58cc0461d88fce:
-
-  drivers: thermal: allow ti-soc-thermal run without pcb zone (2013-10-14 17:48:33 -0400)
-
-----------------------------------------------------------------
-Eduardo Valentin (1):
-      drivers: thermal: allow ti-soc-thermal run without pcb zone
-
-Lukasz Majewski (3):
-      thermal: exynos: Remove check for thermal device pointer at exynos_report_trigger()
-      thermal: exynos: Provide separate TMU data for Exynos4412
-      thermal: exynos: Provide initial setting for TMU's test MUX address at Exynos4412
-
- drivers/thermal/samsung/exynos_thermal_common.c    |  2 --
- drivers/thermal/samsung/exynos_tmu.c               | 12 ++++++---
- drivers/thermal/samsung/exynos_tmu.h               |  7 ++++-
- drivers/thermal/samsung/exynos_tmu_data.c          | 30 +++++++++++++++++-----
- drivers/thermal/samsung/exynos_tmu_data.h          | 13 +++++++++-
- drivers/thermal/ti-soc-thermal/ti-thermal-common.c |  1 +
- 6 files changed, 51 insertions(+), 14 deletions(-)
