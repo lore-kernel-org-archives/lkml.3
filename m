@@ -1,77 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933021Ab3JNUas (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 16:30:48 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:38908 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757654Ab3JNUDD (ORCPT
+	id S933111Ab3JNUcO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 16:32:14 -0400
+Received: from mail-qe0-f47.google.com ([209.85.128.47]:54598 "EHLO
+	mail-qe0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932189Ab3JNUcJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 16:03:03 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Ramkumar Ramachandra <artagnon@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 116/161] perf stat: Don't print bogus data on -e instructions
-Date: Mon, 14 Oct 2013 17:01:45 -0300
-Message-Id: <1381780950-25642-117-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1381780950-25642-1-git-send-email-acme@infradead.org>
-References: <1381780950-25642-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 14 Oct 2013 16:32:09 -0400
+MIME-Version: 1.0
+In-Reply-To: <1381782256-2434-1-git-send-email-geyslan@gmail.com>
+References: <1381782256-2434-1-git-send-email-geyslan@gmail.com>
+Date: Mon, 14 Oct 2013 17:32:08 -0300
+Message-ID: <CAGG-pURU_8p2-2EQH5hK_NX+1PjEBCMhe05KFVfvD3E0zXZuhQ@mail.gmail.com>
+Subject: Re: [PATCH v2] nfs: Use PTR_ERR_OR_ZERO in 'nfs41_callback_up' function
+From: =?UTF-8?Q?Geyslan_Greg=C3=B3rio_Bem?= <geyslan@gmail.com>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: schumaker.anna@gmail.com, linux-nfs@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        kernel-br <kernel-br@googlegroups.com>,
+        "Geyslan G. Bem" <geyslan@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ramkumar Ramachandra <artagnon@gmail.com>
-
-When only the instructions event is requested:
-
-$ perf stat -e instructions git s
-M  builtin-stat.c
-
- Performance counter stats for 'git s':
-
-       917,453,420 instructions              #    0.00  insns per cycle
-
-       0.213002926 seconds time elapsed
-
-The 0.00 insns per cycle comment in the output is totally bogus and
-misleading. It happens because update_shadow_stats() doesn't touch
-runtime_cycles_stats when only the instructions event is requested. So,
-omit printing the bogus data altogether.
-
-Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
-Acked-by: Ingo Molnar <mingo@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1380616604-4077-1-git-send-email-artagnon@gmail.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-stat.c | 7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
-
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index ce2266c5cd52..fb02b53b0e3d 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -930,11 +930,10 @@ static void abs_printout(int cpu, int nr, struct perf_evsel *evsel, double avg)
- 
- 	if (perf_evsel__match(evsel, HARDWARE, HW_INSTRUCTIONS)) {
- 		total = avg_stats(&runtime_cycles_stats[cpu]);
--		if (total)
-+		if (total) {
- 			ratio = avg / total;
--
--		fprintf(output, " #   %5.2f  insns per cycle        ", ratio);
--
-+			fprintf(output, " #   %5.2f  insns per cycle        ", ratio);
-+		}
- 		total = avg_stats(&runtime_stalled_cycles_front_stats[cpu]);
- 		total = max(total, avg_stats(&runtime_stalled_cycles_back_stats[cpu]));
- 
--- 
-1.8.1.4
-
+2013/10/14 Geyslan G. Bem <geyslan@gmail.com>:
+> Use 'PTR_ERR_OR_ZERO()' rather than 'IS_ERR(...) ? PTR_ERR(...) : 0'.
+>
+> Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
+> ---
+>  fs/nfs/callback.c | 3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+>
+> diff --git a/fs/nfs/callback.c b/fs/nfs/callback.c
+> index 67cd732..073b4cf 100644
+> --- a/fs/nfs/callback.c
+> +++ b/fs/nfs/callback.c
+> @@ -164,8 +164,7 @@ nfs41_callback_up(struct svc_serv *serv)
+>                 svc_xprt_put(serv->sv_bc_xprt);
+>                 serv->sv_bc_xprt = NULL;
+>         }
+> -       dprintk("--> %s return %ld\n", __func__,
+> -               IS_ERR(rqstp) ? PTR_ERR(rqstp) : 0);
+> +       dprintk("--> %s return %d\n", __func__, PTR_ERR_OR_ZERO(rqstp));
+>         return rqstp;
+>  }
+>
+> --
+> 1.8.4
+>
+In this version (v2):
+Format changed from %ld to %d.
