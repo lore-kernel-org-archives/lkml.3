@@ -1,208 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756297Ab3JNKqI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 06:46:08 -0400
-Received: from mga14.intel.com ([143.182.124.37]:45722 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756211Ab3JNKpK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 06:45:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,491,1378882800"; 
-   d="scan'208";a="374383810"
-From: Adrian Hunter <adrian.hunter@intel.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH V7 6/7] perf tools: add ability to find kcore in build-id cache
-Date: Mon, 14 Oct 2013 13:43:43 +0300
-Message-Id: <1381747424-3557-7-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1381747424-3557-1-git-send-email-adrian.hunter@intel.com>
-References: <1381747424-3557-1-git-send-email-adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+	id S1756154Ab3JNKoo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 06:44:44 -0400
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:56242 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755950Ab3JNKo1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 06:44:27 -0400
+From: Juri Lelli <juri.lelli@gmail.com>
+To: peterz@infradead.org, tglx@linutronix.de
+Cc: mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
+        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        tommaso.cucinotta@sssup.it, juri.lelli@gmail.com,
+        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
+        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
+        raistlin@linux.it, insop.song@gmail.com, liming.wang@windriver.com,
+        jkacur@redhat.com, harald.gustafsson@ericsson.com,
+        vincent.guittot@linaro.org,
+        bruce.ashfield@windriver.com--no-chain-reply-to
+Subject: [PATCH 06/14] sched: add period support for -deadline tasks.
+Date: Mon, 14 Oct 2013 12:43:38 +0200
+Message-Id: <1381747426-31334-7-git-send-email-juri.lelli@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1381747426-31334-1-git-send-email-juri.lelli@gmail.com>
+References: <1381747426-31334-1-git-send-email-juri.lelli@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When no vmlinux is found, tools will use kallsyms and,
-if possible, kcore.  Add the ability to find kcore in
-the build-id cache.
+From: Harald Gustafsson <harald.gustafsson@ericsson.com>
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Make it possible to specify a period (different or equal than
+deadline) for -deadline tasks.
+
+Signed-off-by: Harald Gustafsson <harald.gustafsson@ericsson.com>
+Signed-off-by: Dario Faggioli <raistlin@linux.it>
+Signed-off-by: Juri Lelli <juri.lelli@gmail.com>
 ---
- tools/perf/util/symbol.c | 147 +++++++++++++++++++++++++++++++++--------------
- 1 file changed, 103 insertions(+), 44 deletions(-)
+ include/linux/sched.h   |    1 +
+ kernel/sched/core.c     |   15 ++++++++++++---
+ kernel/sched/deadline.c |   10 +++++++---
+ 3 files changed, 20 insertions(+), 6 deletions(-)
 
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index ef2680e..b66c1ee 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -1442,6 +1442,105 @@ out:
- 	return err;
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index b071ca2..424f64a 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1068,6 +1068,7 @@ struct sched_dl_entity {
+ 	 */
+ 	u64 dl_runtime;		/* maximum runtime for each instance	*/
+ 	u64 dl_deadline;	/* relative deadline of each instance	*/
++	u64 dl_period;		/* separation of two instances (period) */
+ 
+ 	/*
+ 	 * Actual scheduling parameters. Initialized with the values above,
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index aa02240..2ec8a93 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1617,6 +1617,7 @@ static void __sched_fork(struct task_struct *p)
+ 	hrtimer_init(&p->dl.dl_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+ 	p->dl.dl_runtime = p->dl.runtime = 0;
+ 	p->dl.dl_deadline = p->dl.deadline = 0;
++	p->dl.dl_period = 0;
+ 	p->dl.flags = 0;
+ 
+ 	INIT_LIST_HEAD(&p->rt.run_list);
+@@ -3304,6 +3305,10 @@ __setparam_dl(struct task_struct *p, const struct sched_param2 *param2)
+ 	init_dl_task_timer(dl_se);
+ 	dl_se->dl_runtime = param2->sched_runtime;
+ 	dl_se->dl_deadline = param2->sched_deadline;
++	if (param2->sched_period != 0)
++		dl_se->dl_period = param2->sched_period;
++	else
++		dl_se->dl_period = dl_se->dl_deadline;
+ 	dl_se->flags = param2->sched_flags;
+ 	dl_se->dl_throttled = 0;
+ 	dl_se->dl_new = 1;
+@@ -3317,19 +3322,23 @@ __getparam_dl(struct task_struct *p, struct sched_param2 *param2)
+ 	param2->sched_priority = p->rt_priority;
+ 	param2->sched_runtime = dl_se->dl_runtime;
+ 	param2->sched_deadline = dl_se->dl_deadline;
++	param2->sched_period = dl_se->dl_period;
+ 	param2->sched_flags = dl_se->flags;
  }
  
-+static int find_matching_kcore(struct map *map, char *dir, size_t dir_sz)
-+{
-+	char kallsyms_filename[PATH_MAX];
-+	struct dirent *dent;
-+	int ret = -1;
-+	DIR *d;
-+
-+	d = opendir(dir);
-+	if (!d)
-+		return -1;
-+
-+	while (1) {
-+		dent = readdir(d);
-+		if (!dent)
-+			break;
-+		if (dent->d_type != DT_DIR)
-+			continue;
-+		scnprintf(kallsyms_filename, sizeof(kallsyms_filename),
-+			  "%s/%s/kallsyms", dir, dent->d_name);
-+		if (!validate_kcore_modules(kallsyms_filename, map)) {
-+			strlcpy(dir, kallsyms_filename, dir_sz);
-+			ret = 0;
-+			break;
-+		}
-+	}
-+
-+	closedir(d);
-+
-+	return ret;
-+}
-+
-+static char *dso__find_kallsyms(struct dso *dso, struct map *map)
-+{
-+	u8 host_build_id[BUILD_ID_SIZE];
-+	char sbuild_id[BUILD_ID_SIZE * 2 + 1];
-+	bool is_host = false;
-+	char path[PATH_MAX];
-+
-+	if (!dso->has_build_id) {
-+		/*
-+		 * Last resort, if we don't have a build-id and couldn't find
-+		 * any vmlinux file, try the running kernel kallsyms table.
-+		 */
-+		goto proc_kallsyms;
-+	}
-+
-+	if (sysfs__read_build_id("/sys/kernel/notes", host_build_id,
-+				 sizeof(host_build_id)) == 0)
-+		is_host = dso__build_id_equal(dso, host_build_id);
-+
-+	build_id__sprintf(dso->build_id, sizeof(dso->build_id), sbuild_id);
-+
-+	/* Use /proc/kallsyms if possible */
-+	if (is_host) {
-+		DIR *d;
-+		int fd;
-+
-+		/* If no cached kcore go with /proc/kallsyms */
-+		scnprintf(path, sizeof(path), "%s/[kernel.kcore]/%s",
-+			  buildid_dir, sbuild_id);
-+		d = opendir(path);
-+		if (!d)
-+			goto proc_kallsyms;
-+		closedir(d);
-+
-+		/*
-+		 * Do not check the build-id cache, until we know we cannot use
-+		 * /proc/kcore.
-+		 */
-+		fd = open("/proc/kcore", O_RDONLY);
-+		if (fd != -1) {
-+			close(fd);
-+			/* If module maps match go with /proc/kallsyms */
-+			if (!validate_kcore_modules("/proc/kallsyms", map))
-+				goto proc_kallsyms;
-+		}
-+
-+		/* Find kallsyms in build-id cache with kcore */
-+		if (!find_matching_kcore(map, path, sizeof(path)))
-+			return strdup(path);
-+
-+		goto proc_kallsyms;
-+	}
-+
-+	scnprintf(path, sizeof(path), "%s/[kernel.kallsyms]/%s",
-+		  buildid_dir, sbuild_id);
-+
-+	if (access(path, F_OK)) {
-+		pr_err("No kallsyms or vmlinux with build-id %s was found\n",
-+		       sbuild_id);
-+		return NULL;
-+	}
-+
-+	return strdup(path);
-+
-+proc_kallsyms:
-+	return strdup("/proc/kallsyms");
-+}
-+
- static int dso__load_kernel_sym(struct dso *dso, struct map *map,
- 				symbol_filter_t filter)
+ /*
+  * This function validates the new parameters of a -deadline task.
+  * We ask for the deadline not being zero, and greater or equal
+- * than the runtime.
++ * than the runtime, as well as the period of being zero or
++ * greater than deadline.
+  */
+ static bool
+ __checkparam_dl(const struct sched_param2 *prm)
  {
-@@ -1490,51 +1589,11 @@ static int dso__load_kernel_sym(struct dso *dso, struct map *map,
- 	if (symbol_conf.symfs[0] != 0)
- 		return -1;
+-	return prm && (&prm->sched_deadline) != 0 &&
+-	       (s64)(&prm->sched_deadline - &prm->sched_runtime) >= 0;
++	return prm && prm->sched_deadline != 0 &&
++	       (prm->sched_period == 0 ||
++		(s64)(prm->sched_period - prm->sched_deadline) >= 0) &&
++	       (s64)(prm->sched_deadline - prm->sched_runtime) >= 0;
+ }
  
--	/*
--	 * Say the kernel DSO was created when processing the build-id header table,
--	 * we have a build-id, so check if it is the same as the running kernel,
--	 * using it if it is.
--	 */
--	if (dso->has_build_id) {
--		u8 kallsyms_build_id[BUILD_ID_SIZE];
--		char sbuild_id[BUILD_ID_SIZE * 2 + 1];
--
--		if (sysfs__read_build_id("/sys/kernel/notes", kallsyms_build_id,
--					 sizeof(kallsyms_build_id)) == 0) {
--			if (dso__build_id_equal(dso, kallsyms_build_id)) {
--				kallsyms_filename = "/proc/kallsyms";
--				goto do_kallsyms;
--			}
--		}
--		/*
--		 * Now look if we have it on the build-id cache in
--		 * $HOME/.debug/[kernel.kallsyms].
--		 */
--		build_id__sprintf(dso->build_id, sizeof(dso->build_id),
--				  sbuild_id);
--
--		if (asprintf(&kallsyms_allocated_filename,
--			     "%s/.debug/[kernel.kallsyms]/%s",
--			     getenv("HOME"), sbuild_id) == -1) {
--			pr_err("Not enough memory for kallsyms file lookup\n");
--			return -1;
--		}
--
--		kallsyms_filename = kallsyms_allocated_filename;
-+	kallsyms_allocated_filename = dso__find_kallsyms(dso, map);
-+	if (!kallsyms_allocated_filename)
-+		return -1;
+ /*
+diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+index d3334fc..92546f3 100644
+--- a/kernel/sched/deadline.c
++++ b/kernel/sched/deadline.c
+@@ -287,7 +287,7 @@ static void replenish_dl_entity(struct sched_dl_entity *dl_se)
+ 	 * arbitrary large.
+ 	 */
+ 	while (dl_se->runtime <= 0) {
+-		dl_se->deadline += dl_se->dl_deadline;
++		dl_se->deadline += dl_se->dl_period;
+ 		dl_se->runtime += dl_se->dl_runtime;
+ 	}
  
--		if (access(kallsyms_filename, F_OK)) {
--			pr_err("No kallsyms or vmlinux with build-id %s "
--			       "was found\n", sbuild_id);
--			free(kallsyms_allocated_filename);
--			return -1;
--		}
--	} else {
--		/*
--		 * Last resort, if we don't have a build-id and couldn't find
--		 * any vmlinux file, try the running kernel kallsyms table.
--		 */
--		kallsyms_filename = "/proc/kallsyms";
--	}
-+	kallsyms_filename = kallsyms_allocated_filename;
+@@ -327,9 +327,13 @@ static void replenish_dl_entity(struct sched_dl_entity *dl_se)
+  *
+  * This function returns true if:
+  *
+- *   runtime / (deadline - t) > dl_runtime / dl_deadline ,
++ *   runtime / (deadline - t) > dl_runtime / dl_period ,
+  *
+  * IOW we can't recycle current parameters.
++ *
++ * Notice that the bandwidth check is done against the period. For
++ * task with deadline equal to period this is the same of using
++ * dl_deadline instead of dl_period in the equation above.
+  */
+ static bool dl_entity_overflow(struct sched_dl_entity *dl_se, u64 t)
+ {
+@@ -353,7 +357,7 @@ static bool dl_entity_overflow(struct sched_dl_entity *dl_se, u64 t)
+ 	 * of anything below microseconds resolution is actually fiction
+ 	 * (but still we want to give the user that illusion >;).
+ 	 */
+-	left = (dl_se->dl_deadline >> 10) * (dl_se->runtime >> 10);
++	left = (dl_se->dl_period >> 10) * (dl_se->runtime >> 10);
+ 	right = ((dl_se->deadline - t) >> 10) * (dl_se->dl_runtime >> 10);
  
- do_kallsyms:
- 	err = dso__load_kallsyms(dso, kallsyms_filename, map, filter);
+ 	return dl_time_before(right, left);
 -- 
-1.7.11.7
+1.7.9.5
 
