@@ -1,66 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932159Ab3JNUhu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 16:37:50 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56854 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932289Ab3JNUhF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 16:37:05 -0400
-Message-ID: <525C55A6.1030406@zytor.com>
-Date: Mon, 14 Oct 2013 13:35:50 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>, Zhang Yanfei <zhangyanfei.yes@gmail.com>
-CC: Tejun Heo <tj@kernel.org>, Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Toshi Kani <toshi.kani@hp.com>, Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH part2 v2 0/8] Arrange hotpluggable memory as ZONE_MOVABLE
-References: <5258E560.5050506@cn.fujitsu.com>	<525B19C3.9040907@gmail.com>	<20131014133835.GG4722@htj.dyndns.org>	<525BFCF3.5010908@gmail.com>	<20131014142719.GI4722@htj.dyndns.org>	<525C02DC.4050706@gmail.com>	<20131014145131.GJ4722@htj.dyndns.org>	<525C0866.2010808@gmail.com>	<20131014151902.GL4722@htj.dyndns.org>	<525C0EFE.2010409@gmail.com> <CAE9FiQX0xeR61ehPy2SfWfN-fgSZVS=dtaWT-QQ+RR12tx+A0w@mail.gmail.com>
-In-Reply-To: <CAE9FiQX0xeR61ehPy2SfWfN-fgSZVS=dtaWT-QQ+RR12tx+A0w@mail.gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1757628Ab3JNUDB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 16:03:01 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38537 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757523Ab3JNUCu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 16:02:50 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 041/161] tools/perf/build: Standardize the various messages output by parallel make
+Date: Mon, 14 Oct 2013 17:00:30 -0300
+Message-Id: <1381780950-25642-42-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1381780950-25642-1-git-send-email-acme@infradead.org>
+References: <1381780950-25642-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/14/2013 12:34 PM, Yinghai Lu wrote:
-> 
-> The points for parsing SRAT early instead of Yanfei/Tang v7:
-> 1. We just reached one unified path to setup page tables for 32bit,
-> 64bit and xen or non xen after several years. We should not have add
-> another path for system
-> that support hotplug.
-> 
-> 2. also we should avoid adding "movable_nodes" command line.
-> 
-> 3. debug mapping 4k, and it is working all the way, why breaking it even for
-> memory hotplug path?
-> 
-> 4. numa_meminfo now is static structure.
-> we have no reason that we can not parse SRAT etc to fill that struct.
-> 
-> 5. for device tree, i assume that we could do same like srat parsing to find out
-> numa to fill the numa_meminfo early. or with help of BRK.
-> 
-> 6. in the long run, We should rework our NUMA booting:
-> a. boot system with boot numa nodes early only.
-> b. in later init stage or user space, init other nodes
-> RAM/CPU/PCI...in parallel.
-> that will reduce boot time for 8 sockets/32 sockets dramatically.
-> 
-> We will need to parse srat table early so could avoid init memory for
-> non-boot nodes.
-> 
+From: Ingo Molnar <mingo@kernel.org>
 
-I really like the long-term plan (and, I might want to add, the above
-writeup.)
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Link: http://lkml.kernel.org/n/tip-mky0rtpwxi3ivxsvdjoOEmhr@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ tools/perf/Makefile        | 23 ++++++++++++++++++++---
+ tools/perf/config/Makefile |  4 ++--
+ 2 files changed, 22 insertions(+), 5 deletions(-)
 
-However, I don't understand how we can avoid #2, given that it is
-fundamentally a sysadmin-driven tradeoff between performance and
-reliability.
-
-	-hpa
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index ce7874b73dd9..3b925ad0d5f5 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -13,13 +13,30 @@ endif
+ 
+ export JOBS
+ 
+-$(info $(shell printf '# [ perf build: Doing '\''make \033[33m-j'$(JOBS)'\033[m'\'' parallel build. ]\n'))
++define print_msg
++  @printf '    BUILD: Doing '\''make \033[33m-j'$(JOBS)'\033[m'\'' parallel build\n'
++endef
++
++define make
++  @$(MAKE) -f Makefile.perf --no-print-directory -j$(JOBS) $@
++endef
+ 
+ #
+ # Needed if no target specified:
+ #
+ all:
+-	@$(MAKE) -f Makefile.perf --no-print-directory -j$(JOBS) $@
++	$(print_msg)
++	$(make)
++
++#
++# The clean target is not really parallel, don't print the jobs info:
++#
++clean:
++	$(make)
+ 
++#
++# All other targets get passed through:
++#
+ %:
+-	@$(MAKE) -f Makefile.perf --no-print-directory -j$(JOBS) $@
++	$(print_msg)
++	$(make)
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index fb6ec069f541..62d02cd03f29 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -179,9 +179,9 @@ endif
+ feature_print = $(eval $(feature_print_code))
+ define feature_print_code
+   ifeq ($(feature-$(1)), 1)
+-    MSG := $(shell printf '...%30s: [ \033[32mon\033[m  ]' $(1))
++    MSG = $(shell printf '...%30s: [ \033[32mon\033[m  ]' $(1))
+   else
+-    MSG := $(shell printf '...%30s: [ \033[31mOFF\033[m ]' $(1))
++    MSG = $(shell printf '...%30s: [ \033[31mOFF\033[m ]' $(1))
+   endif
+   $(info $(MSG))
+ endef
+-- 
+1.8.1.4
 
