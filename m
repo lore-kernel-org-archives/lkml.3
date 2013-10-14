@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933224Ab3JNUey (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 16:34:54 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:38865 "EHLO
+	id S933208Ab3JNUex (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 16:34:53 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38868 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757633Ab3JNUDC (ORCPT
+	with ESMTP id S1757634Ab3JNUDC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 14 Oct 2013 16:03:02 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Namhyung Kim <namhyung.kim@lge.com>, Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 111/161] perf bench sched: Add --threaded option
-Date: Mon, 14 Oct 2013 17:01:40 -0300
-Message-Id: <1381780950-25642-112-git-send-email-acme@infradead.org>
+Subject: [PATCH 096/161] perf annotate: Pass dso instead of dso_name to get_srcline()
+Date: Mon, 14 Oct 2013 17:01:25 -0300
+Message-Id: <1381780950-25642-97-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1381780950-25642-1-git-send-email-acme@infradead.org>
 References: <1381780950-25642-1-git-send-email-acme@infradead.org>
@@ -25,215 +26,135 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ingo Molnar <mingo@kernel.org>
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-Allow the measurement of thread versus process context switch
-performance.
+This is a preparation of next change.  No functional changes are
+intended.
 
-The default stays at 'process' based measurement, like lmbench's lat_ctx
-benchmark.
-
-Sample output:
-
- comet:~/tip/tools/perf> taskset 1 ./perf bench sched pipe
- # Running sched/pipe benchmark...
- # Executed 1000000 pipe operations between two processes
-
-     Total time: 4.138 [sec]
-
-       4.138729 usecs/op
-         241620 ops/sec
- comet:~/tip/tools/perf> taskset 1 ./perf bench sched pipe --threaded
- # Running sched/pipe benchmark...
- # Executed 1000000 pipe operations between two threads
-
-     Total time: 3.667 [sec]
-
-       3.667667 usecs/op
-         272652 ops/sec
-
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Reviewed-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
-Link: http://lkml.kernel.org/r/20130917114256.GA31159@gmail.com
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1378876173-13363-7-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/bench/sched-pipe.c | 115 +++++++++++++++++++++++++++++++-----------
- 1 file changed, 86 insertions(+), 29 deletions(-)
+ tools/perf/util/annotate.c | 11 ++++-------
+ tools/perf/util/dso.h      |  1 +
+ tools/perf/util/sort.c     |  2 +-
+ tools/perf/util/srcline.c  |  4 +++-
+ tools/perf/util/util.h     |  4 +++-
+ 5 files changed, 12 insertions(+), 10 deletions(-)
 
-diff --git a/tools/perf/bench/sched-pipe.c b/tools/perf/bench/sched-pipe.c
-index 69cfba8d4c6c..07a8d7646a15 100644
---- a/tools/perf/bench/sched-pipe.c
-+++ b/tools/perf/bench/sched-pipe.c
-@@ -7,9 +7,7 @@
-  * Based on pipe-test-1m.c by Ingo Molnar <mingo@redhat.com>
-  *  http://people.redhat.com/mingo/cfs-scheduler/tools/pipe-test-1m.c
-  * Ported to perf by Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-- *
-  */
--
- #include "../perf.h"
- #include "../util/util.h"
- #include "../util/parse-options.h"
-@@ -28,12 +26,24 @@
- #include <sys/time.h>
- #include <sys/types.h>
- 
-+#include <pthread.h>
-+
-+struct thread_data {
-+	int			nr;
-+	int			pipe_read;
-+	int			pipe_write;
-+	pthread_t		pthread;
-+};
-+
- #define LOOPS_DEFAULT 1000000
--static int loops = LOOPS_DEFAULT;
-+static	int			loops = LOOPS_DEFAULT;
-+
-+/* Use processes by default: */
-+static bool			threaded;
- 
- static const struct option options[] = {
--	OPT_INTEGER('l', "loop", &loops,
--		    "Specify number of loops"),
-+	OPT_INTEGER('l', "loop",	&loops,		"Specify number of loops"),
-+	OPT_BOOLEAN('T', "threaded",	&threaded,	"Specify threads/process based task setup"),
- 	OPT_END()
- };
- 
-@@ -42,13 +52,37 @@ static const char * const bench_sched_pipe_usage[] = {
- 	NULL
- };
- 
--int bench_sched_pipe(int argc, const char **argv,
--		     const char *prefix __maybe_unused)
-+static void *worker_thread(void *__tdata)
+diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+index d48297d77e19..d73e8008aada 100644
+--- a/tools/perf/util/annotate.c
++++ b/tools/perf/util/annotate.c
+@@ -1081,8 +1081,7 @@ static void symbol__free_source_line(struct symbol *sym, int len)
+ /* Get the filename:line for the colored entries */
+ static int symbol__get_source_line(struct symbol *sym, struct map *map,
+ 				   struct perf_evsel *evsel,
+-				   struct rb_root *root, int len,
+-				   const char *filename)
++				   struct rb_root *root, int len)
  {
--	int pipe_1[2], pipe_2[2];
-+	struct thread_data *td = __tdata;
- 	int m = 0, i;
-+	int ret;
-+
-+	for (i = 0; i < loops; i++) {
-+		if (!td->nr) {
-+			ret = read(td->pipe_read, &m, sizeof(int));
-+			BUG_ON(ret != sizeof(int));
-+			ret = write(td->pipe_write, &m, sizeof(int));
-+			BUG_ON(ret != sizeof(int));
-+		} else {
-+			ret = write(td->pipe_write, &m, sizeof(int));
-+			BUG_ON(ret != sizeof(int));
-+			ret = read(td->pipe_read, &m, sizeof(int));
-+			BUG_ON(ret != sizeof(int));
-+		}
-+	}
-+
-+	return NULL;
-+}
-+
-+int bench_sched_pipe(int argc, const char **argv, const char *prefix __maybe_unused)
-+{
-+	struct thread_data threads[2], *td;
-+	int pipe_1[2], pipe_2[2];
- 	struct timeval start, stop, diff;
- 	unsigned long long result_usec = 0;
-+	int nr_threads = 2;
-+	int t;
+ 	u64 start;
+ 	int i, k;
+@@ -1131,7 +1130,7 @@ static int symbol__get_source_line(struct symbol *sym, struct map *map,
+ 			goto next;
  
- 	/*
- 	 * why does "ret" exist?
-@@ -58,43 +92,66 @@ int bench_sched_pipe(int argc, const char **argv,
- 	int __maybe_unused ret, wait_stat;
- 	pid_t pid, retpid __maybe_unused;
+ 		offset = start + i;
+-		src_line->path = get_srcline(filename, offset);
++		src_line->path = get_srcline(map->dso, offset);
+ 		insert_source_line(&tmp_root, src_line);
  
--	argc = parse_options(argc, argv, options,
--			     bench_sched_pipe_usage, 0);
-+	argc = parse_options(argc, argv, options, bench_sched_pipe_usage, 0);
+ 	next:
+@@ -1338,7 +1337,6 @@ int symbol__tty_annotate(struct symbol *sym, struct map *map,
+ 			 bool full_paths, int min_pcnt, int max_lines)
+ {
+ 	struct dso *dso = map->dso;
+-	const char *filename = dso->long_name;
+ 	struct rb_root source_line = RB_ROOT;
+ 	u64 len;
  
- 	BUG_ON(pipe(pipe_1));
- 	BUG_ON(pipe(pipe_2));
+@@ -1348,9 +1346,8 @@ int symbol__tty_annotate(struct symbol *sym, struct map *map,
+ 	len = symbol__size(sym);
  
--	pid = fork();
--	assert(pid >= 0);
--
- 	gettimeofday(&start, NULL);
- 
--	if (!pid) {
--		for (i = 0; i < loops; i++) {
--			ret = read(pipe_1[0], &m, sizeof(int));
--			ret = write(pipe_2[1], &m, sizeof(int));
--		}
--	} else {
--		for (i = 0; i < loops; i++) {
--			ret = write(pipe_1[1], &m, sizeof(int));
--			ret = read(pipe_2[0], &m, sizeof(int));
-+	for (t = 0; t < nr_threads; t++) {
-+		td = threads + t;
-+
-+		td->nr = t;
-+
-+		if (t == 0) {
-+			td->pipe_read = pipe_1[0];
-+			td->pipe_write = pipe_2[1];
-+		} else {
-+			td->pipe_write = pipe_1[1];
-+			td->pipe_read = pipe_2[0];
- 		}
+ 	if (print_lines) {
+-		symbol__get_source_line(sym, map, evsel, &source_line,
+-					len, filename);
+-		print_summary(&source_line, filename);
++		symbol__get_source_line(sym, map, evsel, &source_line, len);
++		print_summary(&source_line, dso->long_name);
  	}
  
--	gettimeofday(&stop, NULL);
--	timersub(&stop, &start, &diff);
+ 	symbol__annotate_printf(sym, map, evsel, full_paths,
+diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
+index dbd9241ea290..72eedd65fc2d 100644
+--- a/tools/perf/util/dso.h
++++ b/tools/perf/util/dso.h
+@@ -6,6 +6,7 @@
+ #include <stdbool.h>
+ #include "types.h"
+ #include "map.h"
++#include "build-id.h"
  
--	if (pid) {
-+	if (threaded) {
-+
-+		for (t = 0; t < nr_threads; t++) {
-+			td = threads + t;
-+
-+			ret = pthread_create(&td->pthread, NULL, worker_thread, td);
-+			BUG_ON(ret);
-+		}
-+
-+		for (t = 0; t < nr_threads; t++) {
-+			td = threads + t;
-+
-+			ret = pthread_join(td->pthread, NULL);
-+			BUG_ON(ret);
-+		}
-+
-+	} else {
-+		pid = fork();
-+		assert(pid >= 0);
-+
-+		if (!pid) {
-+			worker_thread(threads + 0);
-+			exit(0);
-+		} else {
-+			worker_thread(threads + 1);
-+		}
-+
- 		retpid = waitpid(pid, &wait_stat, 0);
- 		assert((retpid == pid) && WIFEXITED(wait_stat));
--	} else {
--		exit(0);
- 	}
+ enum dso_binary_type {
+ 	DSO_BINARY_TYPE__KALLSYMS = 0,
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index d4435939c774..f732120e8bc6 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -259,7 +259,7 @@ static int hist_entry__srcline_snprintf(struct hist_entry *self, char *bf,
+ 	if (!self->ms.map)
+ 		goto out_ip;
  
-+	gettimeofday(&stop, NULL);
-+	timersub(&stop, &start, &diff);
-+
- 	switch (bench_format) {
- 	case BENCH_FORMAT_DEFAULT:
--		printf("# Executed %d pipe operations between two tasks\n\n",
--			loops);
-+		printf("# Executed %d pipe operations between two %s\n\n",
-+			loops, threaded ? "threads" : "processes");
+-	path = get_srcline(self->ms.map->dso->long_name, self->ip);
++	path = get_srcline(self->ms.map->dso, self->ip);
+ 	self->srcline = path;
  
- 		result_usec = diff.tv_sec * 1000000;
- 		result_usec += diff.tv_usec;
+ out_path:
+diff --git a/tools/perf/util/srcline.c b/tools/perf/util/srcline.c
+index 777f91880cdb..c736d9428cf2 100644
+--- a/tools/perf/util/srcline.c
++++ b/tools/perf/util/srcline.c
+@@ -4,6 +4,7 @@
+ 
+ #include <linux/kernel.h>
+ 
++#include "util/dso.h"
+ #include "util/util.h"
+ #include "util/debug.h"
+ 
+@@ -53,11 +54,12 @@ out:
+ 	return ret;
+ }
+ 
+-char *get_srcline(const char *dso_name, unsigned long addr)
++char *get_srcline(struct dso *dso, unsigned long addr)
+ {
+ 	char *file;
+ 	unsigned line;
+ 	char *srcline = SRCLINE_UNKNOWN;
++	char *dso_name = dso->long_name;
+ 	size_t size;
+ 
+ 	if (dso_name[0] == '[')
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index 7c8b43fa8898..1f06ba44cd53 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -300,6 +300,8 @@ unsigned long parse_tag_value(const char *str, struct parse_tag *tags);
+ 
+ #define SRCLINE_UNKNOWN  ((char *) "??:0")
+ 
+-char *get_srcline(const char *dso_name, unsigned long addr);
++struct dso;
++
++char *get_srcline(struct dso *dso, unsigned long addr);
+ void free_srcline(char *srcline);
+ #endif /* GIT_COMPAT_UTIL_H */
 -- 
 1.8.1.4
 
