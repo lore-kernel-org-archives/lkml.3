@@ -1,72 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758678Ab3JNUSd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 16:18:33 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:39072 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757741Ab3JNUDH (ORCPT
+	id S932314Ab3JNUTf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 16:19:35 -0400
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:44958 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758672Ab3JNUSd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 16:03:07 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 112/161] perf machine: Use snprintf instead of sprintf
-Date: Mon, 14 Oct 2013 17:01:41 -0300
-Message-Id: <1381780950-25642-113-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1381780950-25642-1-git-send-email-acme@infradead.org>
-References: <1381780950-25642-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 14 Oct 2013 16:18:33 -0400
+MIME-Version: 1.0
+In-Reply-To: <87ob6r625t.fsf@linaro.org>
+References: <1374189690-10810-1-git-send-email-sboyd@codeaurora.org>
+	<1374189690-10810-6-git-send-email-sboyd@codeaurora.org>
+	<87k3hf7kvb.fsf@linaro.org>
+	<525C3E2F.2030109@codeaurora.org>
+	<87ob6r625t.fsf@linaro.org>
+Date: Mon, 14 Oct 2013 13:18:32 -0700
+Message-ID: <CALAqxLWVWZ+BGhDOMOAGLF6uE+xN9wkMYpxyoa7JGn7d2Djmxg@mail.gmail.com>
+Subject: Re: [PATCH v4 05/17] arch_timer: Move to generic sched_clock framework
+From: John Stultz <john.stultz@linaro.org>
+To: Kevin Hilman <khilman@linaro.org>
+Cc: Stephen Boyd <sboyd@codeaurora.org>, lkml <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Christopher Covington <cov@codeaurora.org>,
+        Olof Johansson <olof@lixom.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Adrian Hunter <adrian.hunter@intel.com>
+On Mon, Oct 14, 2013 at 1:14 PM, Kevin Hilman <khilman@linaro.org> wrote:
+> Stephen Boyd <sboyd@codeaurora.org> writes:
+>
+>> Can you try this patch?
+>
+> Yup, your patch gets it booting again.
+>
+> John, how do you want to proceed on this?  The version of $SUBJECT patch
+> that made it to -next doesn't match the one in sent in this thread.
 
-To avoid buffer overruns.
+We'll need to get the fix applied to -tip, where my mis-merge landed.
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1379845338-29637-2-git-send-email-adrian.hunter@intel.com
-[ Split from aa7fe3b ]
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/machine.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index 6188d2876a71..ddf917b787fa 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -785,10 +785,10 @@ static int machine__create_modules(struct machine *machine)
- 	const char *modules;
- 	char path[PATH_MAX];
- 
--	if (machine__is_default_guest(machine))
-+	if (machine__is_default_guest(machine)) {
- 		modules = symbol_conf.default_guest_modules;
--	else {
--		sprintf(path, "%s/proc/modules", machine->root_dir);
-+	} else {
-+		snprintf(path, PATH_MAX, "%s/proc/modules", machine->root_dir);
- 		modules = path;
- 	}
- 
--- 
-1.8.1.4
-
+thanks
+-john
