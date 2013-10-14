@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754900Ab3JNJDa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 05:03:30 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43550 "EHLO mx2.suse.de"
+	id S1755562Ab3JNJEn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 05:04:43 -0400
+Received: from mga03.intel.com ([143.182.124.21]:42674 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753797Ab3JNJD3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 05:03:29 -0400
-Date: Mon, 14 Oct 2013 11:03:22 +0200
-From: Petr Tesarik <ptesarik@suse.cz>
-To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        ebiederm@xmission.com, akpm@linux-foundation.org, jingbai.ma@hp.com
-Subject: Re: [PATCH 0/2] x86, apic: Disable BSP if boot cpu is AP
-Message-ID: <20131014110322.32aecd6c@hananiah.suse.cz>
-In-Reply-To: <20131009202012.GO6383@redhat.com>
-References: <20130829092458.5476.10277.stgit@localhost6.localdomain6>
-	<521F5297.4070906@linux.intel.com>
-	<521FDE8D.4040807@jp.fujitsu.com>
-	<5220BDBC.2060807@linux.intel.com>
-	<20131009202012.GO6383@redhat.com>
-Organization: SUSE Linux, s.r.o.
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.21; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754376Ab3JNJEm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 05:04:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,491,1378882800"; 
+   d="scan'208";a="410502002"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-arch@vger.kernel.org
+In-Reply-To: <00000141a7d2aa7b-e59f292a-746c-4f55-aa51-9fa060a7fbeb-000000@email.amazonses.com>
+References: <1381428359-14843-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1381428359-14843-35-git-send-email-kirill.shutemov@linux.intel.com>
+ <00000141a3f48ada-37ee9c14-2f2b-40a2-93f4-70258363351b-000000@email.amazonses.com>
+ <20131010200921.91D84E0090@blue.fi.intel.com>
+ <00000141a7d2aa7b-e59f292a-746c-4f55-aa51-9fa060a7fbeb-000000@email.amazonses.com>
+Subject: Re: [PATCH 34/34] mm: dynamically allocate page->ptl if it cannot be
+ embedded to struct page
 Content-Transfer-Encoding: 7bit
+Message-Id: <20131014090437.F22CBE0090@blue.fi.intel.com>
+Date: Mon, 14 Oct 2013 12:04:37 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 9 Oct 2013 16:20:12 -0400
-Vivek Goyal <vgoyal@redhat.com> wrote:
-
-> On Fri, Aug 30, 2013 at 08:43:56AM -0700, H. Peter Anvin wrote:
-> > On 08/29/2013 04:51 PM, HATAYAMA Daisuke wrote:
-> > > 
-> > > This is not a regression just as Eric explains.
-> > > 
-> > > There is also my explanation in the description of the 2nd patch. I
-> > > should have described so here explicitly.
-> > > 
-> > 
-> > OK.  We're probably days away from a merge window, so I would like to
-> > put this in the queue for 3.13.
+Christoph Lameter wrote:
+> On Thu, 10 Oct 2013, Kirill A. Shutemov wrote:
 > 
-> Hi hpa,
+> > Christoph Lameter wrote:
+> > > On Thu, 10 Oct 2013, Kirill A. Shutemov wrote:
+> > >
+> > > > +static inline bool ptlock_alloc(struct page *page)
+> > > > +{
+> > > > +	if (sizeof(spinlock_t) > sizeof(page->ptl))
+> > > > +		return __ptlock_alloc(page);
+> > > > +	return true;
+> > > > +}
+> > >
+> > > Could you make the check a CONFIG option? CONFIG_PTLOCK_DOES_NOT_FIT_IN_PAGE_STRUCT or
+> > > so?
+> >
+> > No. We will have to track what affects sizeof(spinlock_t) manually.
+> > Not a fun and error prune.
 > 
-> Have you queued up these patches for 3.13?
+> You can generate a config option depending on the size of the object via
+> Kbuild. Kbuild will determine the setting before building the kernel as a
+> whole by runing some small C program.
 
-Yeah, I'm also interested. But I think we were waiting for HATAYAMA
-Daisuke to send a cleaned up version of the patch set.
+I don't think it's any better than what we have there now.
 
-@HATAYAMA: If you're too busy to clean up the series, I can do that for
-you and re-send it here. But I don't want to "steal" the work from you.
-
-Petr T
+-- 
+ Kirill A. Shutemov
