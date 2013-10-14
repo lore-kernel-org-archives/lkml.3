@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932184Ab3JNM2f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 08:28:35 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:64608 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932121Ab3JNM2a (ORCPT
+	id S932204Ab3JNM2k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 08:28:40 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:29267 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932162Ab3JNM2e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 08:28:30 -0400
+	Mon, 14 Oct 2013 08:28:34 -0400
 From: Kefeng Wang <wangkefeng.wang@huawei.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 CC: John McCutchan <john@johnmccutchan.com>,
@@ -14,9 +14,9 @@ CC: John McCutchan <john@johnmccutchan.com>,
         Eric Paris <eparis@redhat.com>, Robert Love <rlove@rlove.org>,
         <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
         <linux-nfs@vger.kernel.org>
-Subject: [PATCH 3/3] fs: notify: use path_equal() to simply code
-Date: Mon, 14 Oct 2013 20:26:02 +0800
-Message-ID: <1381753562-47884-4-git-send-email-wangkefeng.wang@huawei.com>
+Subject: [PATCH 2/3] fs: nfsd: use path_equal() to simply code
+Date: Mon, 14 Oct 2013 20:26:01 +0800
+Message-ID: <1381753562-47884-3-git-send-email-wangkefeng.wang@huawei.com>
 X-Mailer: git-send-email 1.8.3.msysgit.0
 In-Reply-To: <1381753562-47884-1-git-send-email-wangkefeng.wang@huawei.com>
 References: <1381753562-47884-1-git-send-email-wangkefeng.wang@huawei.com>
@@ -30,38 +30,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Kefeng Wang <wangkefeng.wang@huawei.com>
 ---
- fs/notify/fanotify/fanotify.c        | 3 +--
- fs/notify/inotify/inotify_fsnotify.c | 3 +--
- 2 files changed, 2 insertions(+), 4 deletions(-)
+ fs/nfsd/export.c  | 3 +--
+ fs/nfsd/nfs4xdr.c | 2 +-
+ 2 files changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/fs/notify/fanotify/fanotify.c b/fs/notify/fanotify/fanotify.c
-index 0c2f912..777af06 100644
---- a/fs/notify/fanotify/fanotify.c
-+++ b/fs/notify/fanotify/fanotify.c
-@@ -24,8 +24,7 @@ static bool should_merge(struct fsnotify_event *old, struct fsnotify_event *new)
- 			    (new->mask & FAN_ALL_PERM_EVENTS))
- 				return false;
- #endif
--			if ((old->path.mnt == new->path.mnt) &&
--			    (old->path.dentry == new->path.dentry))
-+			if (path_equal(&old->path, &new->path))
- 				return true;
+diff --git a/fs/nfsd/export.c b/fs/nfsd/export.c
+index 5f38ea3..ca3610d 100644
+--- a/fs/nfsd/export.c
++++ b/fs/nfsd/export.c
+@@ -649,8 +649,7 @@ static int svc_export_match(struct cache_head *a, struct cache_head *b)
+ 	struct svc_export *orig = container_of(a, struct svc_export, h);
+ 	struct svc_export *new = container_of(b, struct svc_export, h);
+ 	return orig->ex_client == new->ex_client &&
+-		orig->ex_path.dentry == new->ex_path.dentry &&
+-		orig->ex_path.mnt == new->ex_path.mnt;
++		path_equal(&orig->ex_path, &new->ex_path);
+ }
+ 
+ static void svc_export_init(struct cache_head *cnew, struct cache_head *citem)
+diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
+index d9454fe..6af4ff1 100644
+--- a/fs/nfsd/nfs4xdr.c
++++ b/fs/nfsd/nfs4xdr.c
+@@ -1829,7 +1829,7 @@ static __be32 nfsd4_encode_path(const struct path *root,
+ 	 * dentries/path components in an array.
+ 	 */
+ 	for (;;) {
+-		if (cur.dentry == root->dentry && cur.mnt == root->mnt)
++		if (path_equal(&cur, root))
  			break;
- 		case (FSNOTIFY_EVENT_NONE):
-diff --git a/fs/notify/inotify/inotify_fsnotify.c b/fs/notify/inotify/inotify_fsnotify.c
-index 4216308..58b638d 100644
---- a/fs/notify/inotify/inotify_fsnotify.c
-+++ b/fs/notify/inotify/inotify_fsnotify.c
-@@ -53,8 +53,7 @@ static bool event_compare(struct fsnotify_event *old, struct fsnotify_event *new
- 				return true;
- 			break;
- 		case (FSNOTIFY_EVENT_PATH):
--			if ((old->path.mnt == new->path.mnt) &&
--			    (old->path.dentry == new->path.dentry))
-+			if (path_equal(&old->path, &new->path))
- 				return true;
- 			break;
- 		case (FSNOTIFY_EVENT_NONE):
+ 		if (cur.dentry == cur.mnt->mnt_root) {
+ 			if (follow_up(&cur))
 -- 
 1.8.2.1
 
