@@ -1,46 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755774Ab3JNCmG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Oct 2013 22:42:06 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:58597 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755633Ab3JNCmE (ORCPT
+	id S1755740Ab3JNDNg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Oct 2013 23:13:36 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:58240 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755520Ab3JNDNf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Oct 2013 22:42:04 -0400
-From: Manish Badarkhe <badarkhe.manish@gmail.com>
-To: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-Cc: badarkhe.manish@gmail.com, a.zummo@towertech.it
-Subject: [PATCH] rtc: rtc-tps65910: remove unnecessary include
-Date: Mon, 14 Oct 2013 08:11:56 +0530
-Message-Id: <1381718516-3698-1-git-send-email-badarkhe.manish@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Sun, 13 Oct 2013 23:13:35 -0400
+Message-ID: <525B615A.2070807@free-electrons.com>
+Date: Mon, 14 Oct 2013 05:13:30 +0200
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: boris brezillon <b.brezillon@overkiz.com>, nicolas.ferre@atmel.com,
+        daniel.lezcano@linaro.org, tglx@linutronix.de
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] clocksource: at91/tc: remove deprecated IRQF_DISABLED
+References: <1381639559-6981-1-git-send-email-michael.opdenacker@free-electrons.com> <525A679A.2060408@overkiz.com>
+In-Reply-To: <525A679A.2060408@overkiz.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, driver includes 'pm_runtime.h' which is not
-used anywhere in code hence remove this unnecessory
-inclusion.
+Hi Boris,
 
-Signed-off-by: Manish Badarkhe <badarkhe.manish@gmail.com>
----
-:100644 100644 a9caf04... 7af0020... M	drivers/rtc/rtc-tps65910.c
- drivers/rtc/rtc-tps65910.c |    1 -
- 1 file changed, 1 deletion(-)
+On 10/13/2013 11:27 AM, boris brezillon wrote:
+> Hello Micheal,
+>
+> This flag has been removed in a recent submission (see
+> https://lkml.org/lkml/2013/10/2/202), and, if I'm correct, is on his
+> way for mainlining.
+That's good news. Thank you very much!
 
-diff --git a/drivers/rtc/rtc-tps65910.c b/drivers/rtc/rtc-tps65910.c
-index a9caf04..7af0020 100644
---- a/drivers/rtc/rtc-tps65910.c
-+++ b/drivers/rtc/rtc-tps65910.c
-@@ -22,7 +22,6 @@
- #include <linux/rtc.h>
- #include <linux/bcd.h>
- #include <linux/platform_device.h>
--#include <linux/pm_runtime.h>
- #include <linux/interrupt.h>
- #include <linux/mfd/tps65910.h>
- 
+Cheers,
+
+Michael.
+
 -- 
-1.7.10.4
+Michael Opdenacker, CEO, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
++33 484 258 098
 
