@@ -1,77 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932078Ab3JNOg0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 10:36:26 -0400
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:33776 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751704Ab3JNOgZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 10:36:25 -0400
-Message-ID: <525C0163.2060002@gmail.com>
-Date: Mon, 14 Oct 2013 16:36:19 +0200
-From: Juri Lelli <juri.lelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1756134Ab3JNOi7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 10:38:59 -0400
+Received: from mail1.bemta3.messagelabs.com ([195.245.230.169]:12011 "EHLO
+	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751002Ab3JNOi6 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 10:38:58 -0400
+X-Env-Sender: anthony.olech.opensource@diasemi.com
+X-Msg-Ref: server-15.tower-38.messagelabs.com!1381761535!1327343!1
+X-Originating-IP: [82.210.246.133]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.12; banners=-,-,-
+X-VirusChecked: Checked
+From: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
+To: Mark Brown <broonie@kernel.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Dajun Chen <david.chen@diasemi.com>
+Subject: RE: [PATCH V1] new API regmap_multi_reg_write() definition
+Thread-Topic: [PATCH V1] new API regmap_multi_reg_write() definition
+Thread-Index: AQHOxpAvtnFSWmpW+kamOXXn2a8HhZn0MaUAgAAWwfA=
+Date: Mon, 14 Oct 2013 14:38:54 +0000
+Message-ID: <24DF37198A1E704D9811D8F72B87EB516FC73493@NB-EX-MBX02.diasemi.com>
+References: <201310111442.r9BEgxmJ029386@swsrvapps-02.lan>
+ <20131014141500.GA2443@sirena.org.uk>
+In-Reply-To: <20131014141500.GA2443@sirena.org.uk>
+Accept-Language: en-GB, de-DE, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.20.24.104]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: tglx@linutronix.de, mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com,
-        fweisbec@gmail.com, darren@dvhart.com, johan.eker@ericsson.com,
-        p.faure@akatech.ch, linux-kernel@vger.kernel.org,
-        claudio@evidence.eu.com, michael@amarulasolutions.com,
-        fchecconi@gmail.com, tommaso.cucinotta@sssup.it,
-        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
-        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
-        raistlin@linux.it, insop.song@gmail.com, liming.wang@windriver.com,
-        jkacur@redhat.com, harald.gustafsson@ericsson.com,
-        vincent.guittot@linaro.org,
-        bruce.ashfield@windriver.com--no-chain-reply-to
-Subject: Re: [PATCH 03/14] sched: SCHED_DEADLINE structures & implementation.
-References: <1381747426-31334-1-git-send-email-juri.lelli@gmail.com> <1381747426-31334-4-git-send-email-juri.lelli@gmail.com> <20131014112410.GC3081@twins.programming.kicks-ass.net>
-In-Reply-To: <20131014112410.GC3081@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/14/2013 01:24 PM, Peter Zijlstra wrote:
-> On Mon, Oct 14, 2013 at 12:43:35PM +0200, Juri Lelli wrote:
->> +/*
->> + * We are being explicitly informed that a new instance is starting,
->> + * and this means that:
->> + *  - the absolute deadline of the entity has to be placed at
->> + *    current time + relative deadline;
->> + *  - the runtime of the entity has to be set to the maximum value.
->> + *
->> + * The capability of specifying such event is useful whenever a -deadline
->> + * entity wants to (try to!) synchronize its behaviour with the scheduler's
->> + * one, and to (try to!) reconcile itself with its own scheduling
->> + * parameters.
->> + */
->> +static inline void setup_new_dl_entity(struct sched_dl_entity *dl_se)
->> +{
->> +	struct dl_rq *dl_rq = dl_rq_of_se(dl_se);
->> +	struct rq *rq = rq_of_dl_rq(dl_rq);
->> +
->> +	WARN_ON(!dl_se->dl_new || dl_se->dl_throttled);
->> +
->> +	/*
->> +	 * We use the regular wall clock time to set deadlines in the
->> +	 * future; in fact, we must consider execution overheads (time
->> +	 * spent on hardirq context, etc.).
->> +	 */
->> +	dl_se->deadline = rq->clock + dl_se->dl_deadline;
->> +	dl_se->runtime = dl_se->dl_runtime;
->> +	dl_se->dl_new = 0;
->> +}
+> -----Original Message-----
+> From: Mark Brown [mailto:broonie@kernel.org]
+> Sent: 14 October 2013 15:15
+> To: Opensource [Anthony Olech]
+> Cc: Greg Kroah-Hartman; LKML; David Dajun Chen
+> Subject: Re: [PATCH V1] new API regmap_multi_reg_write() definition
 > 
-> 78becc270975 sched: Use an accessor to read the rq clock
+> On Fri, Oct 11, 2013 at 03:31:11PM +0100, Anthony Olech wrote:
+> > New API regmap_multi_reg_write() is defined that allows a set of
+> > reg,val pairs to be written to a I2C client device as one block
+> > transfer from the point of view of a single I2C master system.
 > 
-> wants you to use rq_clock(rq) there I think.
+> Applied, thanks.  I'll also push out a tag "multi-write" that other subsystems
+> can pull to start using the new API prior to it hitting Linus' tree.
 > 
-> 
+> As well as implementing the feature for your devices it would be good to
+> refactor the code so it's implemented inside an internal version of the
+> function so that things like patch application can be implemented in terms of
+> this - that way they'll benefit from any work done here.
 
-Modified here and below.
+I will work on that basis, but I expect a couple of iterations as there is room
+for me to have misunderstood you.
 
-Thanks,
+Thanks
 
-- Juri
+Tony Olech
