@@ -1,55 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756056Ab3JNJhT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 05:37:19 -0400
-Received: from mg-edge1.Phoenixchildrens.com ([63.149.29.50]:60601 "EHLO
-	phoenixchildrens.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754575Ab3JNJhR convert rfc822-to-8bit (ORCPT
+	id S1756098Ab3JNJid (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 05:38:33 -0400
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:49691 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755912Ab3JNJib (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 05:37:17 -0400
-X-Greylist: delayed 995 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Oct 2013 05:37:17 EDT
-From: "Bode, Ryan" <RBode@phoenixchildrens.com>
-To: "Bode, Ryan" <RBode@phoenixchildrens.com>
-Subject: RE: NOTIFICATION
-Thread-Topic: NOTIFICATION
-Thread-Index: Ac7ImXOLGU5U72mJRb2a7K/TUamoTQAJB5EH
-Date: Mon, 14 Oct 2013 09:17:33 +0000
-Message-ID: <4875144870DB5D4F91911F696598559C1411760A@tpdcpmsg041.phoenixchildrens.com>
-References: <4875144870DB5D4F91911F696598559C14112AD6@tpdcpmsg041.phoenixchildrens.com>
-In-Reply-To: <4875144870DB5D4F91911F696598559C14112AD6@tpdcpmsg041.phoenixchildrens.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [74.115.70.10]
-Content-Transfer-Encoding: 8BIT
+	Mon, 14 Oct 2013 05:38:31 -0400
+Date: Mon, 14 Oct 2013 11:38:27 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: hpa@zytor.com, linux-kernel@vger.kernel.org, keescook@chromium.org,
+        md@google.com, tglx@linutronix.de, hpa@linux.intel.com
+Cc: linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/kaslr] x86, relocs: Add more per-cpu gold special cases
+Message-ID: <20131014093826.GA22177@gmail.com>
+References: <20131011013954.GA28902@www.outflux.net>
+ <tip-d751c169e9a6f0f853346f1184881422bd10b3c2@git.kernel.org>
+ <20131014083035.GA20976@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="iso-8859-1"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131014083035.GA20976@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+* Ingo Molnar <mingo@kernel.org> wrote:
 
-Your Mailbox Has Exceeded It Storage Limit As Set By Your Administrator, And You Will Not Be  Able To Receive New Mails  until You Re-Validate It. To Re-Validate<http://weblinkfill.coffeecup.com/forms/soso%20blade%20coffeecup/>  or If it does not work then copy and past the link. Thank you
+> * tip-bot for Michael Davidson <tipbot@zytor.com> wrote:
+> 
+> > Commit-ID:  d751c169e9a6f0f853346f1184881422bd10b3c2
+> > Gitweb:     http://git.kernel.org/tip/d751c169e9a6f0f853346f1184881422bd10b3c2
+> > Author:     Michael Davidson <md@google.com>
+> > AuthorDate: Thu, 10 Oct 2013 18:39:54 -0700
+> > Committer:  H. Peter Anvin <hpa@linux.intel.com>
+> > CommitDate: Sun, 13 Oct 2013 03:11:57 -0700
+> > 
+> > x86, relocs: Add more per-cpu gold special cases
+> 
+> I'm quite sure that one of the recent x86/kaslr changes causes this 
+> early x86-64 crash:
 
-© 2013 by Intellectual Reserve, Inc. All rights reserved
+excluding tip:x86/kaslr fixes the crash. So it's one of these commits:
 
-This transmission, including any attachments, is for the sole use
+6e6a4932b0f5 x86, boot: Rename get_flags() and check_flags() to *_cpuflags()
+6145cfe394a7 x86, kaslr: Raise the maximum virtual address to -1 GiB on x86_64
+f32360ef6608 x86, kaslr: Report kernel offset on panic
+82fa9637a2ba x86, kaslr: Select random position from e820 maps
+5bfce5ef55cb x86, kaslr: Provide randomness functions
+8ab3820fd5b2 x86, kaslr: Return location from decompress_kernel
+dd78b97367bd x86, boot: Move CPU flags out of cpucheck
+d751c169e9a6 x86, relocs: Add more per-cpu gold special cases
 
-of the intended recipient (s) and may contain information that is
+One guess would be:
 
-confidential, proprietary, legally privileged, or otherwise
+ dd78b97367bd x86, boot: Move CPU flags out of cpucheck
 
-protected by law from disclosure. Any unauthorized review, use,
+That commit is crazy large - it should be done in at least two steps:
 
-copying, disclosure, or distribution is prohibited.  If you are not
+ - first the movement to cpuflags.c
+ - the PIC-safe refactoring
 
-the intended recipient, or the person responsible for delivering
+Also, checking:
 
-this to an addressee, you should notify the sender immediately by
+ 82fa9637a2ba x86, kaslr: Select random position from e820 maps
 
-telephone or by reply e-mail, and destroy all copies of the
+I see:
 
-original message.
+ +#ifdef CONFIG_X86_64
+ +#define memptr long
+ +#else
+ +#define memptr unsigned
+ +#endif
+
+wtf? That should really be cleaned up while we are touching that code.
+
+Thanks,
+
+	Ingo
