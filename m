@@ -1,116 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757999Ab3JNUEo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 16:04:44 -0400
-Received: from mail-qe0-f48.google.com ([209.85.128.48]:48426 "EHLO
-	mail-qe0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757520Ab3JNUEl (ORCPT
+	id S1757961Ab3JNUEd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 16:04:33 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:39159 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757847Ab3JNUDP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 16:04:41 -0400
-Date: Mon, 14 Oct 2013 16:04:37 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Zhang Yanfei <zhangyanfei.yes@gmail.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Toshi Kani <toshi.kani@hp.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH part2 v2 0/8] Arrange hotpluggable memory as ZONE_MOVABLE
-Message-ID: <20131014200437.GA5720@htj.dyndns.org>
-References: <525B19C3.9040907@gmail.com>
- <20131014133835.GG4722@htj.dyndns.org>
- <525BFCF3.5010908@gmail.com>
- <20131014142719.GI4722@htj.dyndns.org>
- <525C02DC.4050706@gmail.com>
- <20131014145131.GJ4722@htj.dyndns.org>
- <525C0866.2010808@gmail.com>
- <20131014151902.GL4722@htj.dyndns.org>
- <525C0EFE.2010409@gmail.com>
- <CAE9FiQX0xeR61ehPy2SfWfN-fgSZVS=dtaWT-QQ+RR12tx+A0w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAE9FiQX0xeR61ehPy2SfWfN-fgSZVS=dtaWT-QQ+RR12tx+A0w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 14 Oct 2013 16:03:15 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 159/161] perf annotate: Another fix for annotate_browser__callq()
+Date: Mon, 14 Oct 2013 17:02:28 -0300
+Message-Id: <1381780950-25642-160-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1381780950-25642-1-git-send-email-acme@infradead.org>
+References: <1381780950-25642-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Yinghai.
+From: Adrian Hunter <adrian.hunter@intel.com>
 
-On Mon, Oct 14, 2013 at 12:34:49PM -0700, Yinghai Lu wrote:
-> The points for parsing SRAT early instead of Yanfei/Tang v7:
->
-> 1. We just reached one unified path to setup page tables for 32bit,
-> 64bit and xen or non xen after several years. We should not have add
-> another path for system
-> that support hotplug.
+The target address is provided by objdump and is not necessary a memory
+address.  Add a helper to get the correct address.
 
-The separate code path we're talking about is tiny.  It's just an
-extra function for page table allocation and another for memblock
-allocation which is symmetric to the existing one.  Sure, there are
-benefits to not diverging code paths but these are fairly trivial in
-terms of maintenance overhead and test coverage.
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1381747424-3557-8-git-send-email-adrian.hunter@intel.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/ui/browsers/annotate.c |  7 +++++--
+ tools/perf/util/map.c             | 31 ++++++++++++++++++++++++++++++-
+ tools/perf/util/map.h             |  3 +++
+ 3 files changed, 38 insertions(+), 3 deletions(-)
 
-> 2. also we should avoid adding "movable_nodes" command line.
-
-Can we?  What about the pgdat?  We're allocating them off-node with
-movable_nodes which can't be the default behavior.
-
-> 3. debug mapping 4k, and it is working all the way, why breaking it even for
-> memory hotplug path?
-
-If it comes for free, sure, no reason to break it.  On the other hand,
-if maintaining it fully with a niche feature costs overhead, it's
-somethinig to be traded-off.  It's not like using 4k page mapping with
-bottom-up allocation will be immediately broken either.  It might
-affect devices which can't DMA to higher addresses on gigantic
-machines under debug configs.  It's quite a corner case.
-
-> 4. numa_meminfo now is static structure.
-> we have no reason that we can not parse SRAT etc to fill that struct.
-
-Sure, there's no reason we can't.  The whole point is that the
-benefits arent' strong enough.  We don't do things just because we
-can.
-
-> 5. for device tree, i assume that we could do same like srat parsing to find out
-> numa to fill the numa_meminfo early. or with help of BRK.
-
-Digesting device tree involves a lot more complexity.  The whole
-reason why things like SRAT are broken into tables in the first place.
-We'll be basically pulling in huge chunk of ACPICA into early boot.
-Again, justfications.  The *only* thing which may benefit from that
-are debug setups.  We'll have to pull in a lot of complexity before
-page table setup and modify page table allocation to be
-memory-device-specific just for debug configs, which is not a good
-trade-off.  Benefit / cost ratio doesn't make any sense.
-
-> 6. in the long run, We should rework our NUMA booting:
-> a. boot system with boot numa nodes early only.
-> b. in later init stage or user space, init other nodes
-> RAM/CPU/PCI...in parallel.
-> that will reduce boot time for 8 sockets/32 sockets dramatically.
-> 
-> We will need to parse srat table early so could avoid init memory for
-> non-boot nodes.
-
-Among the six you listed, this one sounds somewhat valid but still
-assuming huge page, what difference does it make?  We're just talking
-about page table alloc / init and ACPI init.  If you wanna speed up
-huge NUMA machine booting and chop down memory init per-NUMA, sure,
-move those pieces to later stages.  You can init the amount necessary
-during early boot and then bring up the rest later on.  I don't see
-why that'd require parsing SRAT.  In fact, I think there'll be more
-cases where you want to actively ignore NUMA mapping during early
-boot.  What if the system maps low memory to a non-boot numa node?
-
-Optimizing NUMA boot just requires moving the heavy lifting to
-appropriate NUMA nodes.  It doesn't require that early boot phase
-should strictly follow NUMA node boundaries.
-
-Thanks.
-
+diff --git a/tools/perf/ui/browsers/annotate.c b/tools/perf/ui/browsers/annotate.c
+index 57d3a8659fc0..f0697a3aede0 100644
+--- a/tools/perf/ui/browsers/annotate.c
++++ b/tools/perf/ui/browsers/annotate.c
+@@ -445,14 +445,17 @@ static bool annotate_browser__callq(struct annotate_browser *browser,
+ 	struct annotation *notes;
+ 	struct addr_map_symbol target = {
+ 		.map = ms->map,
+-		.addr = dl->ops.target.addr,
++		.addr = map__objdump_2mem(ms->map, dl->ops.target.addr),
+ 	};
+ 	char title[SYM_TITLE_MAX_SIZE];
+ 
+ 	if (!ins__is_call(dl->ins))
+ 		return false;
+ 
+-	if (map_groups__find_ams(&target, NULL)) {
++	if (map_groups__find_ams(&target, NULL) ||
++	    map__rip_2objdump(target.map, target.map->map_ip(target.map,
++							     target.addr)) !=
++	    dl->ops.target.addr) {
+ 		ui_helpline__puts("The called function was not found.");
+ 		return true;
+ 	}
+diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+index 9dea404de3fa..ef5bc913ca7a 100644
+--- a/tools/perf/util/map.c
++++ b/tools/perf/util/map.c
+@@ -252,10 +252,16 @@ size_t map__fprintf_dsoname(struct map *map, FILE *fp)
+ 	return fprintf(fp, "%s", dsoname);
+ }
+ 
+-/*
++/**
++ * map__rip_2objdump - convert symbol start address to objdump address.
++ * @map: memory map
++ * @rip: symbol start address
++ *
+  * objdump wants/reports absolute IPs for ET_EXEC, and RIPs for ET_DYN.
+  * map->dso->adjust_symbols==1 for ET_EXEC-like cases except ET_REL which is
+  * relative to section start.
++ *
++ * Return: Address suitable for passing to "objdump --start-address="
+  */
+ u64 map__rip_2objdump(struct map *map, u64 rip)
+ {
+@@ -268,6 +274,29 @@ u64 map__rip_2objdump(struct map *map, u64 rip)
+ 	return map->unmap_ip(map, rip);
+ }
+ 
++/**
++ * map__objdump_2mem - convert objdump address to a memory address.
++ * @map: memory map
++ * @ip: objdump address
++ *
++ * Closely related to map__rip_2objdump(), this function takes an address from
++ * objdump and converts it to a memory address.  Note this assumes that @map
++ * contains the address.  To be sure the result is valid, check it forwards
++ * e.g. map__rip_2objdump(map->map_ip(map, map__objdump_2mem(map, ip))) == ip
++ *
++ * Return: Memory address.
++ */
++u64 map__objdump_2mem(struct map *map, u64 ip)
++{
++	if (!map->dso->adjust_symbols)
++		return map->unmap_ip(map, ip);
++
++	if (map->dso->rel)
++		return map->unmap_ip(map, ip + map->pgoff);
++
++	return ip;
++}
++
+ void map_groups__init(struct map_groups *mg)
+ {
+ 	int i;
+diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
+index 0359b4a808f0..e4e259c3ba16 100644
+--- a/tools/perf/util/map.h
++++ b/tools/perf/util/map.h
+@@ -84,6 +84,9 @@ static inline u64 identity__map_ip(struct map *map __maybe_unused, u64 ip)
+ /* rip/ip <-> addr suitable for passing to `objdump --start-address=` */
+ u64 map__rip_2objdump(struct map *map, u64 rip);
+ 
++/* objdump address -> memory address */
++u64 map__objdump_2mem(struct map *map, u64 ip);
++
+ struct symbol;
+ 
+ typedef int (*symbol_filter_t)(struct map *map, struct symbol *sym);
 -- 
-tejun
+1.8.1.4
+
