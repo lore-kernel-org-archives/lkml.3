@@ -1,120 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756582Ab3JNN4u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 09:56:50 -0400
-Received: from mga14.intel.com ([143.182.124.37]:65230 "EHLO mga14.intel.com"
+	id S1756629Ab3JNN45 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 09:56:57 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:48059 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755633Ab3JNN4s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 09:56:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,492,1378882800"; 
-   d="scan'208";a="410634012"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
-        Ning Qu <quning@google.com>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20130925232915.GK26872@dastard>
-References: <1379937950-8411-1-git-send-email-kirill.shutemov@linux.intel.com>
- <20130924163740.4bc7db61e3e520798220dc4c@linux-foundation.org>
- <20130925095105.06464E0090@blue.fi.intel.com>
- <20130925232915.GK26872@dastard>
-Subject: Re: [PATCHv6 00/22] Transparent huge page cache: phase 1, everything
- but mmap()
-Content-Transfer-Encoding: 7bit
-Message-Id: <20131014135642.05DFEE0090@blue.fi.intel.com>
-Date: Mon, 14 Oct 2013 16:56:41 +0300 (EEST)
+	id S1756514Ab3JNN4x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 09:56:53 -0400
+Message-ID: <525BF815.2030604@ti.com>
+Date: Mon, 14 Oct 2013 09:56:37 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+CC: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        <linux-pm@vger.kernel.org>, <naveenkrishna.ch@gmail.com>,
+        <rui.zhang@intel.com>, <eduardo.valentin@ti.com>,
+        <linux-samsung-soc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <amit.daniel@samsung.com>, <kgene.kim@samsung.com>,
+        <devicetree@vger.kernel.org>, Lukasz Majewski <l.majewski@samsung.com>
+Subject: Re: [PATCH 1/3 v4] thermal: samsung: correct the fall interrupt en,
+ status bit fields
+References: <1378268629-2886-3-git-send-email-ch.naveen@samsung.com> <1381320509-23967-1-git-send-email-ch.naveen@samsung.com> <2386580.3V2pzai3k2@amdc1032>
+In-Reply-To: <2386580.3V2pzai3k2@amdc1032>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature";
+	boundary="alS4v14A89j7t0ojtcWorSOPkkrtwOgSA"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Chinner wrote:
-> On Wed, Sep 25, 2013 at 12:51:04PM +0300, Kirill A. Shutemov wrote:
-> > Andrew Morton wrote:
-> > > On Mon, 23 Sep 2013 15:05:28 +0300 "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
-> > > 
-> > > > It brings thp support for ramfs, but without mmap() -- it will be posted
-> > > > separately.
-> > > 
-> > > We were never going to do this :(
-> > > 
-> > > Has anyone reviewed these patches much yet?
-> > 
-> > Dave did very good review. Few other people looked to separate patches.
-> > See Reviewed-by/Acked-by tags in patches.
-> > 
-> > It looks like most mm experts are busy with numa balancing nowadays, so
-> > it's hard to get more review.
-> 
-> Nobody has reviewed it from the filesystem side, though.
-> 
-> The changes that require special code paths for huge pages in the
-> write_begin/write_end paths are nasty. You're adding conditional
-> code that depends on the page size and then having to add checks to
-> ensure that large page operations don't step over small page
-> boundaries and other such corner cases. It's an extremely fragile
-> design, IMO.
-> 
-> In general, I don't like all the if (thp) {} else {}; code that this
-> series introduces - they are code paths that simply won't get tested
-> with any sort of regularity and make the code more complex for those
-> that aren't using THP to understand and debug...
+--alS4v14A89j7t0ojtcWorSOPkkrtwOgSA
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Okay, I'll try to get rid of special cases where it's possible.
 
-> Then there is a new per-inode lock that is used in
-> generic_perform_write() which is held across page faults and calls
-> to filesystem block mapping callbacks. This inserts into the middle
-> of an existing locking chain that needs to be strictly ordered, and
-> as such will lead to the same type of lock inversion problems that
-> the mmap_sem had.  We do not want to introduce a new lock that has
-> this same problem just as we are getting rid of that long standing
-> nastiness from the page fault path...
+Naveen,
 
-I don't see how we can protect against splitting with existing locks,
-but I'll try find a way.
+On 09-10-2013 10:03, Bartlomiej Zolnierkiewicz wrote:
+>=20
+> Hi,
+>=20
+> All patches (#1-#3) look good to me, FWIW you can add:
+>=20
+> 	Reviewed-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+>=20
+> Please note that (at least) patch #3 conflicts with Lukasz's EXYNOS4412=
 
-> I also note that you didn't convert invalidate_inode_pages2_range()
-> to support huge pages which is needed by real filesystems that
-> support direct IO. There are other truncate/invalidate interfaces
-> that you didn't convert, either, and some of them will present you
-> with interesting locking challenges as a result of adding that new
-> lock...
+> fixup patchset:
+>=20
+> 	https://lkml.org/lkml/2013/10/9/35
+>=20
+> It is up to Eduardo to resolve this but it probably would be better to
+> merge EXYNOS4412 fixes first and then add EXYNOS5420 support. This woul=
+d
+> require you to port patch #3 over Lukasz's patchset though.
+>=20
 
-Thanks. I'll take a look on these code paths.
+Please rebase your patch set on top of Lukasz'. There are conflicts
+while applying patch 3. Please also compile test it before posting,
+check comment I made on patch 2.
 
-> > The patchset was mostly ignored for few rounds and Dave suggested to split
-> > to have less scary patch number.
-> 
-> It's still being ignored by filesystem people because you haven't
-> actually tried to implement support into a real filesystem.....
+> Best regards,
+> --
+> Bartlomiej Zolnierkiewicz
+> Samsung R&D Institute Poland
+> Samsung Electronics
+>=20
+> On Wednesday, October 09, 2013 05:38:27 PM Naveen Krishna Chatradhi wro=
+te:
+>> The FALL interrupt related en, status bits are available at an offset =
+of
+>> 16 on INTEN, INTSTAT registers and at an offset of
+>> 12 on INTCLEAR register.
+>>
+>> This patch corrects the same for exyns5250 and exynos5440
+>>
+>> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+>> ---
+>> Changes since v1:
+>> Changes since v2:
+>> Changes since v3:
+>>   None
+>>
+>>  drivers/thermal/samsung/exynos_tmu.c      |    2 +-
+>>  drivers/thermal/samsung/exynos_tmu.h      |    2 ++
+>>  drivers/thermal/samsung/exynos_tmu_data.c |    2 ++
+>>  drivers/thermal/samsung/exynos_tmu_data.h |    3 ++-
+>>  4 files changed, 7 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/sa=
+msung/exynos_tmu.c
+>> index b43afda..af69209 100644
+>> --- a/drivers/thermal/samsung/exynos_tmu.c
+>> +++ b/drivers/thermal/samsung/exynos_tmu.c
+>> @@ -265,7 +265,7 @@ skip_calib_data:
+>>  				data->base + reg->threshold_th1);
+>> =20
+>>  		writel((reg->inten_rise_mask << reg->inten_rise_shift) |
+>> -			(reg->inten_fall_mask << reg->inten_fall_shift),
+>> +			(reg->inten_fall_mask << reg->intclr_fall_shift),
+>>  				data->base + reg->tmu_intclear);
+>> =20
+>>  		/* if last threshold limit is also present */
+>> diff --git a/drivers/thermal/samsung/exynos_tmu.h b/drivers/thermal/sa=
+msung/exynos_tmu.h
+>> index b364c9e..7c6c34a 100644
+>> --- a/drivers/thermal/samsung/exynos_tmu.h
+>> +++ b/drivers/thermal/samsung/exynos_tmu.h
+>> @@ -134,6 +134,7 @@ enum soc_type {
+>>   * @inten_fall3_shift: shift bits of falling 3 interrupt bits.
+>>   * @tmu_intstat: Register containing the interrupt status values.
+>>   * @tmu_intclear: Register for clearing the raised interrupt status.
+>> + * @intclr_fall_shift: shift bits for interrupt clear fall 0
+>>   * @emul_con: TMU emulation controller register.
+>>   * @emul_temp_shift: shift bits of emulation temperature.
+>>   * @emul_time_shift: shift bits of emulation time.
+>> @@ -204,6 +205,7 @@ struct exynos_tmu_registers {
+>>  	u32	tmu_intstat;
+>> =20
+>>  	u32	tmu_intclear;
+>> +	u32	intclr_fall_shift;
+>> =20
+>>  	u32	emul_con;
+>>  	u32	emul_temp_shift;
+>> diff --git a/drivers/thermal/samsung/exynos_tmu_data.c b/drivers/therm=
+al/samsung/exynos_tmu_data.c
+>> index 9002499..23fea23 100644
+>> --- a/drivers/thermal/samsung/exynos_tmu_data.c
+>> +++ b/drivers/thermal/samsung/exynos_tmu_data.c
+>> @@ -122,6 +122,7 @@ static const struct exynos_tmu_registers exynos525=
+0_tmu_registers =3D {
+>>  	.inten_fall0_shift =3D EXYNOS_TMU_INTEN_FALL0_SHIFT,
+>>  	.tmu_intstat =3D EXYNOS_TMU_REG_INTSTAT,
+>>  	.tmu_intclear =3D EXYNOS_TMU_REG_INTCLEAR,
+>> +	.intclr_fall_shift =3D EXYNOS_TMU_CLEAR_FALL_INT_SHIFT,
+>>  	.emul_con =3D EXYNOS_EMUL_CON,
+>>  	.emul_temp_shift =3D EXYNOS_EMUL_DATA_SHIFT,
+>>  	.emul_time_shift =3D EXYNOS_EMUL_TIME_SHIFT,
+>> @@ -210,6 +211,7 @@ static const struct exynos_tmu_registers exynos544=
+0_tmu_registers =3D {
+>>  	.inten_fall0_shift =3D EXYNOS5440_TMU_INTEN_FALL0_SHIFT,
+>>  	.tmu_intstat =3D EXYNOS5440_TMU_S0_7_IRQ,
+>>  	.tmu_intclear =3D EXYNOS5440_TMU_S0_7_IRQ,
+>> +	.intclr_fall_shift =3D EXYNOS_TMU_CLEAR_FALL_INT_SHIFT,
+>>  	.tmu_irqstatus =3D EXYNOS5440_TMU_IRQ_STATUS,
+>>  	.emul_con =3D EXYNOS5440_TMU_S0_7_DEBUG,
+>>  	.emul_temp_shift =3D EXYNOS_EMUL_DATA_SHIFT,
+>> diff --git a/drivers/thermal/samsung/exynos_tmu_data.h b/drivers/therm=
+al/samsung/exynos_tmu_data.h
+>> index dc7feb5..8788a87 100644
+>> --- a/drivers/thermal/samsung/exynos_tmu_data.h
+>> +++ b/drivers/thermal/samsung/exynos_tmu_data.h
+>> @@ -69,9 +69,10 @@
+>>  #define EXYNOS_TMU_RISE_INT_MASK	0x111
+>>  #define EXYNOS_TMU_RISE_INT_SHIFT	0
+>>  #define EXYNOS_TMU_FALL_INT_MASK	0x111
+>> -#define EXYNOS_TMU_FALL_INT_SHIFT	12
+>> +#define EXYNOS_TMU_FALL_INT_SHIFT	16
+>>  #define EXYNOS_TMU_CLEAR_RISE_INT	0x111
+>>  #define EXYNOS_TMU_CLEAR_FALL_INT	(0x111 << 12)
+>> +#define EXYNOS_TMU_CLEAR_FALL_INT_SHIFT	12
+>>  #define EXYNOS_TMU_TRIP_MODE_SHIFT	13
+>>  #define EXYNOS_TMU_TRIP_MODE_MASK	0x7
+>>  #define EXYNOS_TMU_THERM_TRIP_EN_SHIFT	12
+>=20
+>=20
+>=20
 
-If it will support a real filesystem, wouldn't it be ignored due
-patch count? ;)
 
-> > > > Please review and consider applying.
-> > > 
-> > > It appears rather too immature at this stage.
-> > 
-> > More review is always welcome and I'm committed to address issues.
-> 
-> IMO, supporting a real block based filesystem like ext4 or XFS and
-> demonstrating that everything works is necessary before we go any
-> further...
+--=20
+You have got to be excited about what you are doing. (L. Lamport)
 
-Will see what numbers I can bring in next iterations.
+Eduardo Valentin
 
-Thanks for your feedback. And sorry for late answer.
 
--- 
- Kirill A. Shutemov
+--alS4v14A89j7t0ojtcWorSOPkkrtwOgSA
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iF4EAREIAAYFAlJb+BgACgkQCXcVR3XQvP33bAEA+TvC0CzHsDA0FOFZiSffXNo4
+sEnJ+BhLsXeiA9wyds4A/0kR9MLg89ZKsceLQuH6xf73QjUm9+Rb2wuFkMif/TJ1
+=BQrI
+-----END PGP SIGNATURE-----
+
+--alS4v14A89j7t0ojtcWorSOPkkrtwOgSA--
