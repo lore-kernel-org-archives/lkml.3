@@ -1,129 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757475Ab3JNVnw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 17:43:52 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:58090 "EHLO zene.cmpxchg.org"
+	id S1757416Ab3JNVvB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 17:51:01 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:37165 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757151Ab3JNVnu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 17:43:50 -0400
-Date: Mon, 14 Oct 2013 17:42:50 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Greg Thelen <gthelen@google.com>,
-        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
-        Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Michel Lespinasse <walken@google.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Roman Gushchin <klamm@yandex-team.ru>,
-        Ozgun Erdogan <ozgun@citusdata.com>, Metin Doslu <metin@citusdata.com>,
-        Vlastimil Babka <vbabka@suse.cz>, Tejun Heo <tj@kernel.org>,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 0/8] mm: thrash detection-based file cache sizing v5
-Message-ID: <20131014214250.GG856@cmpxchg.org>
-References: <1381441622-26215-1-git-send-email-hannes@cmpxchg.org>
- <20131011003930.GC4446@dastard>
+	id S1757175Ab3JNVu7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 17:50:59 -0400
+Date: Mon, 14 Oct 2013 23:50:47 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Tony Luck <tony.luck@gmail.com>
+Cc: Chen Gong <gong.chen@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-acpi <linux-acpi@vger.kernel.org>,
+        Lance Ortiz <lance.ortiz@hp.com>,
+        "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+Subject: Re: [PATCH 7/8] ACPI, APEI, CPER: Cleanup CPER memory error output
+ format
+Message-ID: <20131014215047.GL4009@pd.tnic>
+References: <1381473166-29303-1-git-send-email-gong.chen@linux.intel.com>
+ <1381473166-29303-8-git-send-email-gong.chen@linux.intel.com>
+ <20131011160208.GL5925@pd.tnic>
+ <20131014045500.GC12189@gchen.bj.intel.com>
+ <20131014103616.GE4009@pd.tnic>
+ <CA+8MBbJ9P1GVf3SCh7LMY_LH+pxQg3GWkxKMzni1b1Wyx1o8NQ@mail.gmail.com>
+ <20131014184717.GK4009@pd.tnic>
+ <CA+8MBbKDhFvRmJv1csMp5At8WfvHvSsDBbCKvOfQhVdgmnwBWg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20131011003930.GC4446@dastard>
+In-Reply-To: <CA+8MBbKDhFvRmJv1csMp5At8WfvHvSsDBbCKvOfQhVdgmnwBWg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
+On Mon, Oct 14, 2013 at 02:03:16PM -0700, Tony Luck wrote:
+> Do you have a suggested mechanism for this disabling of dmesg?
 
-On Fri, Oct 11, 2013 at 11:39:30AM +1100, Dave Chinner wrote:
-> On Thu, Oct 10, 2013 at 05:46:54PM -0400, Johannes Weiner wrote:
-> > 	Costs
-> > 
-> > These patches increase struct inode by three words to manage shadow
-> > entries in the page cache radix tree.
-> 
-> An additional 24 bytes on a 64 bit system. Filesystem developers
-> will kill to save 4 bytes in the struct inode, so adding 24 bytes is
-> a *major* concern.
-> 
-> > However, given that a typical
-> > inode (like the ext4 inode) is already 1k in size, this is not much.
-> > It's a 2% size increase for a reclaimable object. 
-> 
-> The struct ext4_inode is one of the larger inodes in the system at
-> 960 bytes (same as the xfs_inode) - most of the filesystem inode
-> structures are down around the 600-700 byte range.
-> 
-> Really, the struct inode is what you should be comparing the
-> increase against (i.e. the VFS inode footprint), not the filesystem
-> specific inode footprint. In that case, it's actually an increase of
-> closer to a 4% increase in size because we are talking about a 560
-> byte structure....
-> 
-> > fs_mark metadata
-> > tests with millions of inodes did not show a measurable difference.
-> > And as soon as there is any file data involved, the page cache pages
-> > dominate the memory cost anyway.
-> 
-> We don't need to measure it at runtime to know the difference - a
-> million inodes will consume an extra 24MB of RAM at minimum. If the
-> size increase pushes the inode over a slab boundary, it might be
-> significantly more than that...
-> 
-> The main cost here is a new list head for a new shrinker. There's
-> interesting new inode lifecycle issues introduced by this shadow
-> tree - adding serialisation in evict() because the VM can now modify
-> to the address space without having a reference to the inode
-> is kinda nasty.
+Hmm, how about a 64-bit flag variable (we can use the remaining bits
+for other stuff later) called x86_ras_flags which is private to
+arch/x86/ras/core.c (a new file)...
 
-This is unlikely to change, though.  Direct reclaim may hold all kinds
-of fs locks so we can't reasonably do iput() from reclaim context.
+ [ btw, I'm thinking of something similar to efi's x86_efi_facility which we
+ nicely query with test_bit and set with set_bit and clear_bit, etc, etc ]
 
-We already serialize inode eviction and reclaim through the page lock
-of cached pages.  I just added the equivalent for shadow entries,
-which don't have their own per-item serialization.
+Also, look at arch/x86/platform/efi/efi.c::efi_enabled() how it hides
+the actual variable and we can do something similar so that eMCA and
+other users like cper.c can do
 
-> Also, I really don't like the idea of a new inode cache shrinker
-> that is completely uncoordinated with the existing inode cache
-> shrinkers. It uses a global lock and list and is not node aware so
-> all it will do under many workloads is re-introduce a scalability
-> choke point we just got rid of in 3.12.
+apei_estatus_print_section:
 
-Shadow entries are mostly self-regulating and, unlike the inode case,
-the shrinker is not the primary means of resource control here.  I
-don't think this has the same scalability requirements as inode
-shrinking.
+	if (!ras_tracepoint_enabled())
+		cper_print_mem(...)
 
-> I think that you could simply piggy-back on inode_lru_isolate() to
-> remove shadow mappings in exactly the same manner it removes inode
-> buffers and page cache pages on inodes that are about to be
-> reclaimed.  Keeping the size of the inode cache down will have the
-> side effect of keeping the shadow mappings under control, and so I
-> don't see a need for a separate shrinker at all here.
+We set the bit in x86_ras_flags from, say, debugfs, i.e., a userspace
+tool sets it and from that moment on all RAS output is rerouted to the
+trace event. I.e., the output for which there is a trace event...
 
-Pinned inodes are not on the LRU, so you could send a machine OOM by
-simply catting a single large (sparse) file to /dev/null.
+How does that look like?
 
-Buffers and page cache are kept in check by page reclaim, the inode
-shrinker only drops cache as part of inode lifetime management.  Just
-like with buffers and page cache, there is no relationship between the
-amount of memory occupied and the number of inodes; or between the
-node of said memory and the node that holds the inode object.  The
-inode shrinker does not really seem appropriate for managing excessive
-shadow entry memory.
+Purely hypothetical, of course, I might me missing something but it
+looks ok from here. As always, the devil is in the detail, of course.
 
-> And removing the special shrinker will bring the struct inode size
-> increase back to only 8 bytes, and I think we can live with that
-> increase given the workload improvements that the rest of the
-> functionality brings.
+HTH.
 
-That would be very desirable indeed.
+-- 
+Regards/Gruss,
+    Boris.
 
-What we would really want is a means of per-zone tracking of
-radix_tree_nodes occupied by shadow entries but I can't see a way to
-do this without blowing up the radix tree structure at a much bigger
-cost than an extra list_head in struct address_space.
+Sent from a fat crate under my desk. Formatting is fine.
+--
