@@ -1,222 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756624Ab3JNNcJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 09:32:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53944 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756091Ab3JNNcI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 09:32:08 -0400
-Message-ID: <525BF256.6060707@suse.de>
-Date: Mon, 14 Oct 2013 15:32:06 +0200
-From: Hannes Reinecke <hare@suse.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1756667Ab3JNNdA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 09:33:00 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:56711 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756496Ab3JNNc7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 09:32:59 -0400
+Date: Mon, 14 Oct 2013 15:32:34 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Morten Rasmussen <morten.rasmussen@arm.com>
+Cc: mingo@kernel.org, pjt@google.com, arjan@linux.intel.com, rjw@sisk.pl,
+        dirk.j.brandewie@intel.com, vincent.guittot@linaro.org,
+        alex.shi@linaro.org, preeti@linux.vnet.ibm.com, efault@gmx.de,
+        corbet@lwn.net, tglx@linutronix.de, catalin.marinas@arm.com,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org
+Subject: Re: [RFC][PATCH 0/7] Power-aware scheduling v2
+Message-ID: <20131014133234.GM3081@twins.programming.kicks-ass.net>
+References: <1381511957-29776-1-git-send-email-morten.rasmussen@arm.com>
 MIME-Version: 1.0
-To: Steffen Maier <maier@linux.vnet.ibm.com>
-Cc: Vaughan Cao <vaughan.cao@oracle.com>, JBottomley@parallels.com,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: PROBLEM: special sense code asc,ascq=04h,0Ch abort scsi scan
- in the middle
-References: <525AD704.6040705@oracle.com> <525BD1EA.6000701@suse.de> <525BE8C1.5090606@linux.vnet.ibm.com> <525BEF2B.2030907@suse.de>
-In-Reply-To: <525BEF2B.2030907@suse.de>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1381511957-29776-1-git-send-email-morten.rasmussen@arm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/14/2013 03:18 PM, Hannes Reinecke wrote:
-> On 10/14/2013 02:51 PM, Steffen Maier wrote:
->> Hi Hannes,
->>
->> On 10/14/2013 01:13 PM, Hannes Reinecke wrote:
->>> On 10/13/2013 07:23 PM, Vaughan Cao wrote:
->>>> Hi James,
->>>>
->>>> [1.] One line summary of the problem:
->>>> special sense code asc,ascq=04h,0Ch abort scsi scan in the middle
->>>>
->>>> [2.] Full description of the problem/report:
->>>> For instance, storage represents 8 iscsi LUNs, however the LUN No.7
->>>> is not well configured or has something wrong.
->>>> Then messages received:
->>>> kernel: scsi 5:0:0:0: Unexpected response from lun 7 while scanning, scan aborted
->>>> Which will make LUN No.8 unavailable.
->>>> It's confirmed that Windows and Solaris systems will continue the
->>>> scan and make LUN No.1,2,3,4,5,6 and 8 available.
->>>>
->>>> Log snippet is as below:
->>>> Aug 24 00:32:49 vmhodtest019 kernel: scsi 5:0:0:7: scsi scan: INQUIRY pass 1 length 36
->>>> Aug 24 00:32:49 vmhodtest019 kernel: scsi 5:0:0:7: Send: 0xffff8801e9bd4280
->>>> Aug 24 00:32:49 vmhodtest019 kernel: scsi 5:0:0:7: CDB: Inquiry: 12 00 00 00 24 00
->>>> Aug 24 00:32:49 vmhodtest019 kernel: buffer = 0xffff8801f71fc180, bufflen = 36, queuecommand 0xffffffffa00b99e7
->>>> Aug 24 00:32:49 vmhodtest019 kernel: leaving scsi_dispatch_cmnd()
->>>> Aug 24 00:32:49 vmhodtest019 kernel: scsi 5:0:0:7: Done: 0xffff8801e9bd4280 SUCCESS
->>>> Aug 24 00:32:49 vmhodtest019 kernel: scsi 5:0:0:7: Result: hostbyte=DID_OK driverbyte=DRIVER_OK
->>>> Aug 24 00:32:49 vmhodtest019 kernel: scsi 5:0:0:7: CDB: Inquiry: 12 00 00 00 24 00
->>>> Aug 24 00:32:49 vmhodtest019 kernel: scsi 5:0:0:7: Sense Key : Not Ready [current]
->>>> Aug 24 00:32:49 vmhodtest019 kernel: scsi 5:0:0:7: Add. Sense: Logical unit not accessible, target port in unavailable state
->>>> Aug 24 00:32:49 vmhodtest019 kernel: scsi 5:0:0:7: scsi host busy 1 failed 0
->>>> Aug 24 00:32:49 vmhodtest019 kernel: 0 sectors total, 36 bytes done.
->>>> Aug 24 00:32:49 vmhodtest019 kernel: scsi scan: INQUIRY failed with code 0x8000002
->>>> Aug 24 00:32:49 vmhodtest019 kernel: scsi 5:0:0:0: Unexpected response from lun 7 while scanning, scan aborted
->>>>
->>>> According to scsi_report_lun_scan(), I found:
->>>> Linux use an inquiry command to probe a lun according to the result
->>>> of report_lun command.
->>>> It assumes every probe cmd will get a legal result. Otherwise, it
->>>> regards the whole peripheral not exist or dead.
->>>> If the return of inquiry passes its legal checking and indicates
->>>> 'LUN not present', it won't break but also continue with the scan
->>>> process.
->>>> In the log, inquiry to LUN7 return a sense - asc,ascq=04h,0Ch
->>>> (Logical unit not accessible, target port in unavailable state).
->>>> And this is ignored, so scsi_probe_lun() returns -EIO and the scan
->>>> process is aborted.
->>>>
->>>> I have two questions:
->>>> 1. Is it correct for hardware to return a sense 04h,0Ch to inquiry
->>>> again, even after presenting this lun in responce to REPORT_LUN
->>>> command?
->>> Yes, this is correct. 'REPORT LUNS' is supported in 'Unavailable' state.
->>>
->>>> 2. Since windows and solaris can continue scan, is it reasonable for
->>>> linux to do the same, even for a fault-tolerance purpose?
->>>>
->>> Hmm. Yes, and no.
->>>
->>> _Actually_ this is an issue with the target, as it looks as if it
->>> will return the above sense code while sending an 'INQUIRY' to the
->>> device.
->>> SPC explicitely states that the INQUIRY command should _not_ fail
->>> for unavailable devices.
->>> But yeah, we probably should work around this issues.
->>> Nevertheless, please raise this issue with your array vendor.
->>>
->>> Please try the attached patch.
->>>
->>> Cheers,
->>>
->>> Hannes
->>>
->>
->>> From b0e90778f012010c881f8bdc03bce63a36921b77 Mon Sep 17 00:00:00 2001
->>> From: Hannes Reinecke <hare@suse.de>
->>> Date: Mon, 14 Oct 2013 13:11:22 +0200
->>> Subject: [PATCH] scsi_scan: continue report_lun_scan after error
->>>
->>> When scsi_probe_and_add_lun() fails in scsi_report_lun_scan() this
->>> does _not_ indicate that the entire target is done for.
->>> So continue scanning for the remaining devices.
->>>
->>> Signed-off-by: Hannes Reinecke <hare@suse.de>
->>>
->>> diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
->>> index 307a811..973a121 100644
->>> --- a/drivers/scsi/scsi_scan.c
->>> +++ b/drivers/scsi/scsi_scan.c
->>> @@ -1484,13 +1484,12 @@ static int scsi_report_lun_scan(struct scsi_target *starget, int bflags,
->>>  				lun, NULL, NULL, rescan, NULL);
->>>  			if (res == SCSI_SCAN_NO_RESPONSE) {
->>>  				/*
->>> -				 * Got some results, but now none, abort.
->>> +				 * Got some results, but now none, ignore.
->>>  				 */
->>>  				sdev_printk(KERN_ERR, sdev,
->>>  					"Unexpected response"
->>> -				        " from lun %d while scanning, scan"
->>> -				        " aborted\n", lun);
->>> -				break;
->>> +					" from lun %d while scanning,"
->>> +					" ignoring device\n", lun);
->>>  			}
->>>  		}
->>>  	}
->>
->> In LLDDs that do their own initiator based LUN masking (because the midlayer does not have this
->> functionality to enable hardware virtualization without NPIV, or
-> to work around suboptimal LUN
->> masking on the target), they are likely to return -ENXIO from
-> slave_alloc(), making scsi_alloc_sdev()
->> return NULL, being converted to SCSI_SCAN_NO_RESPONSE by
-> scsi_probe_and_add_lun() and thus going
->> through the same code path above.
->>
-> Ah. Hmm. Yes, they would.
+On Fri, Oct 11, 2013 at 06:19:10PM +0100, Morten Rasmussen wrote:
+> Hi,
 > 
-> However, I personally would question this approach, as SPC states that
+> I have revised the previous power scheduler proposal[1] trying to address as
+> many of the comments as possible. The overall idea was discussed at LPC[2,3].
+> The revised design has removed the power scheduler and replaced it with a high
+> level power driver interface. An interface that allows the scheduler to query
+> the power driver for information and provide hints to guide power management
+> decisions in the power driver.
 > 
->> The REPORT LUNS command (see table 284) requests the device
->> server to return the peripheral device logical unit inventory
->> accessible to the I_T nexus.
+> The power driver is going to be a unified platform power driver that can
+> replace cpufreq and cpuidle drivers. Generic power policies will be optional
+> helper functions called from the power driver. Platforms may choose to
+> implement their own policies as part of their power driver.
 > 
-> So by plain reading this would meant that you either should modify
-> 'REPORT LUNS' to not show the masked LUNs, or set the pqual field to
-> '0x10' or '0x11' for those LUNs.
+> This RFC series prototypes a part of the power driver interface (cpu capacity
+> hints) and shows how they can be used from the scheduler. More extensive use of
+> the power driver hints and queries is left for later. The focus for now is the
+> power driver interface. The patch series includes a power driver/cpufreq
+> governor that can use existing cpufreq drivers as backend. It has been tested
+> (not thoroughly) on ARM TC2. The cpufreq governor power driver implementation
+> is rather horrible, but it illustrates how the power driver interface can be
+> used. Native power drivers is on the todo list.
 > 
->> E.g. zfcp does return -ENXIO if the particular LUN was not made known to the unit whitelist
->> (via zfcp sysfs attribute unit_add).
->> If we attach LUN 0 (via unit_add) and trigger a target scan with SCAN_WILD_CARD for the scsi
->> lun (e.g. on remote port recovery), we see exactly above error
-> message for the first LUN in
->> the response of report lun which is not explicitly attached to zfcp.
->> IIRC, other LLDDs such as bfa also do similar stuff [http://marc.info/?l=linux-scsi&m=134489842105383&w=2].
->>
->> For those cases, I think it makes sense to abort scsi_report_lun_scan().
->> Otherwise we would force the LLDD to return -ENXIO for every
-> single LUN reported by report lun but not
->> explicitly added to the LLDD LUN whitelist; and this would likely
-> *flood kernel messages*.
->>
->> Maybe Vaughan's case needs to be distinguished in a patch.
->>
-> Well, as mentioned initially, the real issue is that the target
-> aborts an INQUIRY while being in 'Unavailable'. Which, according to
-> SPC-3 (or later), is a violation of the spec.
+> The power driver interface is still missing quite a few calls to handle: Idle,
+> adding extra information to the sched_domain hierarchy to guide scheduling
+> decisions (packing), and possibly scaling of tracked load to compensate for
+> frequency changes and asymmetric systems (big.LITTLE).
 > 
-> So we _could_ just tell them to go away, but admittedly that's bad
-> style. Which means we'll have to implement a workaround; the above
-> was just a simple way of implementing it. If that's not working of
-> course we'll have to do something else.
-> 
-What about this patch:
+> This set is based on 3.11. I have done ARM TC2 testing based on linux-linaro
+> 2013.08[4] to get cpufreq support for TC2.
 
-diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
-index 973a121..01a7d69 100644
---- a/drivers/scsi/scsi_scan.c
-+++ b/drivers/scsi/scsi_scan.c
-@@ -594,6 +594,19 @@ static int scsi_probe_lun(struct scsi_device
-*sdev, unsigne
-d char *inq_result,
-                                     (sshdr.asc == 0x29)) &&
-                                    (sshdr.ascq == 0))
-                                        continue;
-+                               /*
-+                                * Some buggy implementations return
-+                                * 'target port in unavailable state'
-+                                * even on INQUIRY.
-+                                * Set peripheral qualifier 3
-+                                * for these devices.
-+                                */
-+                               if ((sshdr.sense_key == NOT_READY) &&
-+                                   ((sshdr.asc == 0x04) &&
-+                                    (sshdr.ascq == 0x0C))) {
-+                                   inq_result[0] = 3 << 5;
-+                                   return 0;
-+                               }
-                        }
-                } else {
-                        /*
+What I'm missing is a general overview of why what and how.
 
-(watchout, linebreaks mangled and all that).
-Should be working for this particular case without interrupting
-normal workflow, now should it not?
+In particular; how does this proposal lead to power savings. Is there a
+mathematical model that supports this framework? Something where if you
+give it a task set with global utilisation < 1 (ie. there's idle time),
+it results in less power used.
 
-Cheers,
+Also, how does this proposal deal with cpufreq's fundamental broken
+approach to SMP? Afaict nothing considers the effect of one cpu upon
+another -- something which isn't true at all.
 
-Hannes
--- 
-Dr. Hannes Reinecke		      zSeries & Storage
-hare@suse.de			      +49 911 74053 688
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
-GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
+In fact, I don't see anything except a random bunch of hooks without an
+over-all picture of how to get less power used.
