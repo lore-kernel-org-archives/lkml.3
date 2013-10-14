@@ -1,93 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756570Ab3JNSyY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 14:54:24 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:64190 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750884Ab3JNSyW (ORCPT
+	id S1756931Ab3JNSzr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 14:55:47 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:58175 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750813Ab3JNSzp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 14:54:22 -0400
+	Mon, 14 Oct 2013 14:55:45 -0400
+Message-ID: <525C3E2F.2030109@codeaurora.org>
+Date: Mon, 14 Oct 2013 11:55:43 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-In-Reply-To: <1381751200-27376-1-git-send-email-chaowang@redhat.com>
-References: <1381751200-27376-1-git-send-email-chaowang@redhat.com>
-Date: Mon, 14 Oct 2013 11:54:22 -0700
-X-Google-Sender-Auth: 0FaN0PzeNZ6tRDTI57hACaViqPs
-Message-ID: <CAE9FiQUNMDuVZtqud3LBbAmE0SL8ZWLFnc+CSYZm4UfTvNUaOA@mail.gmail.com>
-Subject: Re: [PATCH] x86, kdump: crashkernel=X try to reserve below 896M
- first, then try below 4G, then MAXMEM
-From: Yinghai Lu <yinghai@kernel.org>
-To: WANG Chao <chaowang@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Pekka Enberg <penberg@kernel.org>,
-        Jacob Shin <jacob.shin@amd.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Vivek Goyal <vgoyal@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+To: Kevin Hilman <khilman@linaro.org>
+CC: John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Christopher Covington <cov@codeaurora.org>,
+        Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH v4 05/17] arch_timer: Move to generic sched_clock framework
+References: <1374189690-10810-1-git-send-email-sboyd@codeaurora.org>	<1374189690-10810-6-git-send-email-sboyd@codeaurora.org> <87k3hf7kvb.fsf@linaro.org>
+In-Reply-To: <87k3hf7kvb.fsf@linaro.org>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 14, 2013 at 4:46 AM, WANG Chao <chaowang@redhat.com> wrote:
-> Now crashkernel=X will fail out if there's not enough memory at
-> low (below 896M). What makes sense for crashkernel=X would be:
+On 10/14/13 11:44, Kevin Hilman wrote:
+> Stephen Boyd <sboyd@codeaurora.org> writes:
 >
->  - First try to reserve X below 896M (for being compatible with old
->    kexec-tools).
->  - If fails, try to reserve X below 4G (swiotlb need to stay below 4G).
->  - If fails, try to reserve X from MAXMEM top down.
+>> Register with the generic sched_clock framework now that it
+>> supports 64 bits. This fixes two problems with the current
+>> sched_clock support for machines using the architected timers.
+>> First off, we don't subtract the start value from subsequent
+>> sched_clock calls so we can potentially start off with
+>> sched_clock returning gigantic numbers. Second, there is no
+>> support for suspend/resume handling so problems such as discussed
+>> in 6a4dae5 (ARM: 7565/1: sched: stop sched_clock() during
+>> suspend, 2012-10-23) can happen without this patch. Finally, it
+>> allows us to move the sched_clock setup into drivers clocksource
+>> out of the arch ports.
+>>
+>> Cc: Christopher Covington <cov@codeaurora.org>
+>> Cc: Catalin Marinas <catalin.marinas@arm.com>
+>> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> A boot failure on Exynos5/Arndale showed up in next-20131014[1], and a
+> subsequent bisect has fingered this patch as the culprit.  
 >
-> So that user can easily reserve large memory with crashkernel=X instead
-> of crashkernel=X,high. It's more transparent and user-friendly.
+> I haven't had a chance to debug this any further, but wanted to share in
+> case someone else can debug.  
 >
-> If crashkernel is large and the reserved is beyond 896M, old kexec-tools
-> won't be compatible with new kernel for most of time.
->
-> kexec will fail out immediately in this case. But the failure could be
-> expected, because old kexec users should not try to reserve that large
-> amount of memory at the first place.
->
-> On the other hand, old kexec also will fail on old kernel when there's
-> not enough low memory to reserve a large crash kernel area. So the
-> failure of old kexec is consistent between old kernel and new kernel.
->
-> Signed-off-by: WANG Chao <chaowang@redhat.com>
-> ---
->  arch/x86/kernel/setup.c | 14 ++++++++++++++
->  1 file changed, 14 insertions(+)
->
-> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-> index f0de629..38e6c1f 100644
-> --- a/arch/x86/kernel/setup.c
-> +++ b/arch/x86/kernel/setup.c
-> @@ -593,6 +593,20 @@ static void __init reserve_crashkernel(void)
->                                         high ? CRASH_KERNEL_ADDR_HIGH_MAX :
->                                                CRASH_KERNEL_ADDR_LOW_MAX,
->                                         crash_size, alignment);
-> +               /*
-> +                * crashkernel=X reserve below 896M fails? Try below 4G
-> +                */
-> +               if (!high && !crash_base)
-> +                       crash_base = memblock_find_in_range(alignment,
-> +                                               (1ULL << 32),
-> +                                               crash_size, alignment);
-> +               /*
-> +                * crashkernel=X reserve below 4G fails? Try MAXMEM
-> +                */
-> +               if (!high && !crash_base)
-> +                       crash_base = memblock_find_in_range(alignment,
-> +                                               CRASH_KERNEL_ADDR_HIGH_MAX,
-> +                                               crash_size, alignment);
->
->                 if (!crash_base) {
->                         pr_info("crashkernel reservation failed - No suitable area found.\n");
-> --
+> The console log is below, but don't think there is much useful there as
+> it shows nothing after the 'Starting kernel ...' from u-boot.
 
-User should change crashkernel=X to crashkernel=X,high.
+debug_ll output would be nice. Anyway, that patch looks "weird". It is
+definitely not what I sent out. Most notably, this hunk jumps out
 
-As user could forget to update kexec-tools to utilize ",high" feature, and get
-kdump later fail later.
+@@ -471,6 +472,15 @@ static int __init arch_timer_register(void)
+                goto out;
+        }
+ 
++       clocksource_register_hz(&clocksource_counter, arch_timer_rate);
++       cyclecounter.mult = clocksource_counter.mult;
++       cyclecounter.shift = clocksource_counter.shift;
++       timecounter_init(&timecounter, &cyclecounter,
++                        arch_counter_get_cntvct());
++
++       /* 56 bits minimum, so we assume worst case rollover */
++       sched_clock_register(arch_timer_read_counter, 56, arch_timer_rate);
++
+        if (arch_timer_use_virtual) {
+                ppi = arch_timer_ppi[VIRT_PPI];
+                err = request_percpu_irq(ppi, arch_timer_handler_virt,
 
-Yinghai
+
+Which is adding the clocksource_register_hz() and timecounter_init()
+call twice. It should only be adding the sched_clock_register() call and
+the sched_clock_register() call should be in arch_counter_register().
+Can you try this patch?
+
+----8<----
+
+diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
+index 5d52789..865ecd8 100644
+--- a/drivers/clocksource/arm_arch_timer.c
++++ b/drivers/clocksource/arm_arch_timer.c
+@@ -420,6 +420,9 @@ static void __init arch_counter_register(unsigned type)
+ 	cyclecounter.mult = clocksource_counter.mult;
+ 	cyclecounter.shift = clocksource_counter.shift;
+ 	timecounter_init(&timecounter, &cyclecounter, start_count);
++
++	/* 56 bits minimum, so we assume worst case rollover */
++	sched_clock_register(arch_timer_read_counter, 56, arch_timer_rate);
+ }
+ 
+ static void arch_timer_stop(struct clock_event_device *clk)
+@@ -472,15 +475,6 @@ static int __init arch_timer_register(void)
+ 		goto out;
+ 	}
+ 
+-	clocksource_register_hz(&clocksource_counter, arch_timer_rate);
+-	cyclecounter.mult = clocksource_counter.mult;
+-	cyclecounter.shift = clocksource_counter.shift;
+-	timecounter_init(&timecounter, &cyclecounter,
+-			 arch_counter_get_cntvct());
+-
+-	/* 56 bits minimum, so we assume worst case rollover */
+-	sched_clock_register(arch_timer_read_counter, 56, arch_timer_rate);
+-
+ 	if (arch_timer_use_virtual) {
+ 		ppi = arch_timer_ppi[VIRT_PPI];
+ 		err = request_percpu_irq(ppi, arch_timer_handler_virt,
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
+
