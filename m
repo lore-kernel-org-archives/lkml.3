@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933137Ab3JNUdR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 16:33:17 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:38884 "EHLO
+	id S933121Ab3JNUdQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 16:33:16 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38886 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757640Ab3JNUDD (ORCPT
+	with ESMTP id S1757642Ab3JNUDD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 14 Oct 2013 16:03:03 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 062/161] perf trace: Beautify access 'mode' arg
-Date: Mon, 14 Oct 2013 17:00:51 -0300
-Message-Id: <1381780950-25642-63-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Petr Holasek <pholasek@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        Petr Benas <pbenas@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 118/161] perf bench: Fix failing assertions in numa bench
+Date: Mon, 14 Oct 2013 17:01:47 -0300
+Message-Id: <1381780950-25642-119-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1381780950-25642-1-git-send-email-acme@infradead.org>
 References: <1381780950-25642-1-git-send-email-acme@infradead.org>
@@ -28,73 +25,153 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Petr Holasek <pholasek@redhat.com>
 
-Removing the _OK suffix and using RWX when all three bits are set, for
-instance.
+Patch adds more subtle handling of -C and -N parameters in
+parse_{cpu,node}_setup_list() functions when there isn't enough NUMA
+nodes or CPUs present.  Instead of assertion and terminating benchmark,
+partial test is skipped with error message and perf will continue to the
+next one.
 
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Fixed problem can be easily reproduced on machine with only one NUMA
+node:
+
+ # Running numa/mem benchmark...
+
+  # Running main, "perf bench numa mem -a"
+
+...
+
+ # Running RAM-bw-remote, "perf bench numa mem -p 1 -t 1 -P 1024 -C 0 -M 1 -s
+perf: bench/numa.c:622: parse_setup_node_list: Assertion `!(bind_node_0 < 0 ||
+		bind_node_0 >= g->p.nr_nodes)' failed.
+Aborted
+
+Signed-off-by: Petr Holasek <pholasek@redhat.com>
+Acked-by: Ingo Molnar <mingo@kernel.org>
+Cc: Ingo Molnar <mingo@redhat.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-ypaz9k43lyqy94679feqnv8x@git.kernel.org
+Cc: Petr Benas <pbenas@redhat.com>
+Link: http://lkml.kernel.org/r/1380821325-4017-1-git-send-email-pholasek@redhat.com
+Signed-off-by: Petr Benas <pbenas@redhat.com>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-trace.c | 30 +++++++++++++++++++++++++++++-
- 1 file changed, 29 insertions(+), 1 deletion(-)
+ tools/perf/bench/numa.c | 34 +++++++++++++++++++++-------------
+ 1 file changed, 21 insertions(+), 13 deletions(-)
 
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index 2b19aef7d3b5..7aa6bcacd51f 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -312,6 +312,33 @@ static size_t syscall_arg__scnprintf_socket_type(char *bf, size_t size,
+diff --git a/tools/perf/bench/numa.c b/tools/perf/bench/numa.c
+index 30d1c3225b46..64fa01cfc34d 100644
+--- a/tools/perf/bench/numa.c
++++ b/tools/perf/bench/numa.c
+@@ -429,14 +429,14 @@ static int parse_cpu_list(const char *arg)
+ 	return 0;
+ }
  
- #define SCA_SK_TYPE syscall_arg__scnprintf_socket_type
- 
-+static size_t syscall_arg__scnprintf_access_mode(char *bf, size_t size,
-+						 struct syscall_arg *arg)
-+{
-+	size_t printed = 0;
-+	int mode = arg->val;
-+
-+	if (mode == F_OK) /* 0 */
-+		return scnprintf(bf, size, "F");
-+#define	P_MODE(n) \
-+	if (mode & n##_OK) { \
-+		printed += scnprintf(bf + printed, size - printed, "%s", #n); \
-+		mode &= ~n##_OK; \
-+	}
-+
-+	P_MODE(R);
-+	P_MODE(W);
-+	P_MODE(X);
-+#undef P_MODE
-+
-+	if (mode)
-+		printed += scnprintf(bf + printed, size - printed, "|%#x", mode);
-+
-+	return printed;
-+}
-+
-+#define SCA_ACCMODE syscall_arg__scnprintf_access_mode
-+
- static size_t syscall_arg__scnprintf_open_flags(char *bf, size_t size,
- 					       struct syscall_arg *arg)
+-static void parse_setup_cpu_list(void)
++static int parse_setup_cpu_list(void)
  {
-@@ -422,7 +449,8 @@ static struct syscall_fmt {
- 	bool	   timeout;
- 	bool	   hexret;
- } syscall_fmts[] = {
--	{ .name	    = "access",	    .errmsg = true, },
-+	{ .name	    = "access",	    .errmsg = true,
-+	  .arg_scnprintf = { [1] = SCA_ACCMODE, /* mode */ }, },
- 	{ .name	    = "arch_prctl", .errmsg = true, .alias = "prctl", },
- 	{ .name	    = "brk",	    .hexret = true,
- 	  .arg_scnprintf = { [0] = SCA_HEX, /* brk */ }, },
+ 	struct thread_data *td;
+ 	char *str0, *str;
+ 	int t;
+ 
+ 	if (!g->p.cpu_list_str)
+-		return;
++		return 0;
+ 
+ 	dprintf("g->p.nr_tasks: %d\n", g->p.nr_tasks);
+ 
+@@ -500,8 +500,12 @@ static void parse_setup_cpu_list(void)
+ 
+ 		dprintf("CPUs: %d_%d-%d#%dx%d\n", bind_cpu_0, bind_len, bind_cpu_1, step, mul);
+ 
+-		BUG_ON(bind_cpu_0 < 0 || bind_cpu_0 >= g->p.nr_cpus);
+-		BUG_ON(bind_cpu_1 < 0 || bind_cpu_1 >= g->p.nr_cpus);
++		if (bind_cpu_0 >= g->p.nr_cpus || bind_cpu_1 >= g->p.nr_cpus) {
++			printf("\nTest not applicable, system has only %d CPUs.\n", g->p.nr_cpus);
++			return -1;
++		}
++
++		BUG_ON(bind_cpu_0 < 0 || bind_cpu_1 < 0);
+ 		BUG_ON(bind_cpu_0 > bind_cpu_1);
+ 
+ 		for (bind_cpu = bind_cpu_0; bind_cpu <= bind_cpu_1; bind_cpu += step) {
+@@ -541,6 +545,7 @@ out:
+ 		printf("# NOTE: %d tasks bound, %d tasks unbound\n", t, g->p.nr_tasks - t);
+ 
+ 	free(str0);
++	return 0;
+ }
+ 
+ static int parse_cpus_opt(const struct option *opt __maybe_unused,
+@@ -561,14 +566,14 @@ static int parse_node_list(const char *arg)
+ 	return 0;
+ }
+ 
+-static void parse_setup_node_list(void)
++static int parse_setup_node_list(void)
+ {
+ 	struct thread_data *td;
+ 	char *str0, *str;
+ 	int t;
+ 
+ 	if (!g->p.node_list_str)
+-		return;
++		return 0;
+ 
+ 	dprintf("g->p.nr_tasks: %d\n", g->p.nr_tasks);
+ 
+@@ -619,8 +624,12 @@ static void parse_setup_node_list(void)
+ 
+ 		dprintf("NODEs: %d-%d #%d\n", bind_node_0, bind_node_1, step);
+ 
+-		BUG_ON(bind_node_0 < 0 || bind_node_0 >= g->p.nr_nodes);
+-		BUG_ON(bind_node_1 < 0 || bind_node_1 >= g->p.nr_nodes);
++		if (bind_node_0 >= g->p.nr_nodes || bind_node_1 >= g->p.nr_nodes) {
++			printf("\nTest not applicable, system has only %d nodes.\n", g->p.nr_nodes);
++			return -1;
++		}
++
++		BUG_ON(bind_node_0 < 0 || bind_node_1 < 0);
+ 		BUG_ON(bind_node_0 > bind_node_1);
+ 
+ 		for (bind_node = bind_node_0; bind_node <= bind_node_1; bind_node += step) {
+@@ -651,6 +660,7 @@ out:
+ 		printf("# NOTE: %d tasks mem-bound, %d tasks unbound\n", t, g->p.nr_tasks - t);
+ 
+ 	free(str0);
++	return 0;
+ }
+ 
+ static int parse_nodes_opt(const struct option *opt __maybe_unused,
+@@ -1356,8 +1366,8 @@ static int init(void)
+ 	init_thread_data();
+ 
+ 	tprintf("#\n");
+-	parse_setup_cpu_list();
+-	parse_setup_node_list();
++	if (parse_setup_cpu_list() || parse_setup_node_list())
++		return -1;
+ 	tprintf("#\n");
+ 
+ 	print_summary();
+@@ -1600,7 +1610,6 @@ static int run_bench_numa(const char *name, const char **argv)
+ 	return 0;
+ 
+ err:
+-	usage_with_options(numa_usage, options);
+ 	return -1;
+ }
+ 
+@@ -1701,8 +1710,7 @@ static int bench_all(void)
+ 	BUG_ON(ret < 0);
+ 
+ 	for (i = 0; i < nr; i++) {
+-		if (run_bench_numa(tests[i][0], tests[i] + 1))
+-			return -1;
++		run_bench_numa(tests[i][0], tests[i] + 1);
+ 	}
+ 
+ 	printf("\n");
 -- 
 1.8.1.4
 
