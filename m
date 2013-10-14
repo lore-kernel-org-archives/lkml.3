@@ -1,279 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757860Ab3JNWqz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 18:46:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12859 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757199Ab3JNWqx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 18:46:53 -0400
-Message-ID: <1381791115.20491.8.camel@dcbw.foobar.com>
-Subject: [PATCH] libertas: move firmware lifetime handling to firmware.c
-From: Dan Williams <dcbw@redhat.com>
-To: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
-Cc: libertas-dev@lists.infradead.org, NeilBrown Brown <neilb@suse.de>,
-        netdev@vger.kernel.org, linux-wireless@vger.kernel.org,
-        Harro Haan <hrhaan@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Belisko Marek <marek@goldelico.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 14 Oct 2013 17:51:55 -0500
-In-Reply-To: <47ACD120-9393-41EA-BF8A-4E5E316A0C79@goldelico.com>
-References: <D5BD8103-A6A6-4070-878B-99FC5883725F@goldelico.com>
-	 <1381607911.21655.7.camel@dcbw.foobar.com>
-	 <47ACD120-9393-41EA-BF8A-4E5E316A0C79@goldelico.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1757917Ab3JNWr7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 18:47:59 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:61091 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757255Ab3JNWr6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 18:47:58 -0400
+MIME-Version: 1.0
+From: Andreas Noever <andreas.noever@gmail.com>
+Date: Tue, 15 Oct 2013 00:47:36 +0200
+Message-ID: <CAMxnaaUim-MCDpaTiLmBqN3wfxjn9V6XE_n4SMfuO=vqeT6rVA@mail.gmail.com>
+Subject: [3.11.4] Thunderbolt/PCI unplug oops in pci_pme_list_scan
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously, each bus type was responsible for freeing the firmware
-structure, but some did that badly.  Move responsibility for freeing
-firmware into firmware.c so that it's done once and correctly, instead
-of happening in multiple places in bus-specific code.
+When I unplug the Thunderbolt ethernet adapter on my MacBookPro Linux
+crashes a few seconds later. Using
+echo 1 > /sys/bus/pci/devices/0000:08:00.0/remove
+to remove a bridge two levels above the device triggers the fault immediately:
 
-This fixes a use-after-free bug found by Dr. H. Nikolaus Schaller where
-the SDIO code forgot to NULL priv->helper_fw after freeing it.
+pciehp 0000:09:00.0:pcie24: unloading service driver pciehp
+pci_bus 0000:0a: busn_res: [bus 0a] is released
+pci_bus 0000:09: busn_res: [bus 09-0a] is released
+general protection fault: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+....
+Workqueue: events pci_pme_list_scan
+task: ffff88044b0b8000 ti: ffff88044ac62000 task.ti: ffff88044ac62000
+RIP: 0010:[<ffffffff812bdc8c>]  [<ffffffff812bdc8c>] pci_pme_list_scan+0x3c/0xe0
+RSP: 0018:ffff88044ac63e10  EFLAGS: 00010202
+RAX: ffff88045601e7b0 RBX: ffffffff8187b070 RCX: 0000000000000000
+RDX: 6b6b6b6b6b6b6b6b RSI: ffff88044ac63da0 RDI: ffff880453250ca8
+RBP: ffff88044ac63e20 R08: ffff88044ac63da0 R09: 0001f9e0c287afc0
+R10: 0001f9e0c287afc0 R11: 0000000000000000 R12: ffff880453250ca8
+R13: ffff88046d053d00 R14: ffff88046d058200 R15: ffffffff8187afc8
+FS:  0000000000000000(0000) GS:ffff88046d040000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 00007fd301d57000 CR3: 000000000280d000 CR4: 00000000001407e0
+Stack:
+ ffffffff8187afc0 ffff88044a920e40 ffff88044ac63e68 ffffffff8107ddd6
+ 000000006d053d00 0000000000000000 ffff88046d053d00 ffff88046d053d18
+ ffff88044a920e70 ffff88044b0b8000 ffff88044a920e40 ffff88044ac63ec8
+Call Trace:
+ [<ffffffff8107ddd6>] process_one_work+0x176/0x470
+ [<ffffffff8107e79b>] worker_thread+0x11b/0x3a0
+ [<ffffffff8107e680>] ? manage_workers.isra.21+0x2b0/0x2b0
+ [<ffffffff810855e0>] kthread+0xc0/0xd0
+ [<ffffffff81085520>] ? kthread_create_on_node+0x110/0x110
+ [<ffffffff814f4c2c>] ret_from_fork+0x7c/0xb0
+ [<ffffffff81085520>] ? kthread_create_on_node+0x110/0x110
+Code: 54 53 e8 f8 c6 22 00 4c 8b 25 01 d4 5b 00 49 81 fc 70 b0 87 81
+0f 84 98 00 00 00 49 8b 1c 24 4c 89 e7 eb 36 0f 1f 00 48 8b 50 10 <48>
+8b 52 38 48 85 d2 74 07 8b 4a 78 85 c9 75 0a 31 f6 48 89 c7
+RIP  [<ffffffff812bdc8c>] pci_pme_list_scan+0x3c/0xe0
+ RSP <ffff88044ac63e10>
+---[ end trace 3905f90a7dacf7b3 ]---
 
-Signed-off-by: Dan Williams <dcbw@redhat.com>
----
-Tested firmware loading on USB (8388), CS (8385), and SDIO (8686).
+The offending line is:
+(gdb) list *(pci_pme_list_scan+0x3c)
+0xffffffff812bdc8c is in pci_pme_list_scan (drivers/pci/pci.c:1551).
+1546            if (!list_empty(&pci_pme_list)) {
+1547                    list_for_each_entry_safe(pme_dev, n,
+&pci_pme_list, list) {
+1548                            if (pme_dev->dev->pme_poll) {
+1549                                    struct pci_dev *bridge;
+1550
+1551                                    bridge = pme_dev->dev->bus->self;
+1552                                    /*
+1553                                     * If bridge is in low power state, the
+1554                                     * configuration space of
+subordinate devices
+1555                                     * may be not accessible
+If I read the disassembly correctly then the deref of bus seems to
+cause the oops.
 
-diff --git a/drivers/net/wireless/libertas/firmware.c b/drivers/net/wireless/libertas/firmware.c
-index c0f9e7e..51b92b5 100644
---- a/drivers/net/wireless/libertas/firmware.c
-+++ b/drivers/net/wireless/libertas/firmware.c
-@@ -49,14 +49,19 @@ static void main_firmware_cb(const struct firmware *firmware, void *context)
- 		/* Failed to find firmware: try next table entry */
- 		load_next_firmware_from_table(priv);
- 		return;
- 	}
- 
- 	/* Firmware found! */
- 	lbs_fw_loaded(priv, 0, priv->helper_fw, firmware);
-+	if (priv->helper_fw) {
-+		release_firmware (priv->helper_fw);
-+		priv->helper_fw = NULL;
-+	}
-+	release_firmware (firmware);
- }
- 
- static void helper_firmware_cb(const struct firmware *firmware, void *context)
- {
- 	struct lbs_private *priv = context;
- 
- 	if (!firmware) {
-diff --git a/drivers/net/wireless/libertas/if_cs.c b/drivers/net/wireless/libertas/if_cs.c
-index c94dd68..ef8c98e 100644
---- a/drivers/net/wireless/libertas/if_cs.c
-+++ b/drivers/net/wireless/libertas/if_cs.c
-@@ -750,22 +750,22 @@ static void if_cs_prog_firmware(struct lbs_private *priv, int ret,
- 	}
- 
- 	/* Load the firmware */
- 	ret = if_cs_prog_helper(card, helper);
- 	if (ret == 0 && (card->model != MODEL_8305))
- 		ret = if_cs_prog_real(card, mainfw);
- 	if (ret)
--		goto out;
-+		return;
- 
- 	/* Now actually get the IRQ */
- 	ret = request_irq(card->p_dev->irq, if_cs_interrupt,
- 		IRQF_SHARED, DRV_NAME, card);
- 	if (ret) {
- 		pr_err("error in request_irq\n");
--		goto out;
-+		return;
- 	}
- 
- 	/*
- 	 * Clear any interrupt cause that happened while sending
- 	 * firmware/initializing card
- 	 */
- 	if_cs_write16(card, IF_CS_CARD_INT_CAUSE, IF_CS_BIT_MASK);
-@@ -773,18 +773,14 @@ static void if_cs_prog_firmware(struct lbs_private *priv, int ret,
- 
- 	/* And finally bring the card up */
- 	priv->fw_ready = 1;
- 	if (lbs_start_card(priv) != 0) {
- 		pr_err("could not activate card\n");
- 		free_irq(card->p_dev->irq, card);
- 	}
--
--out:
--	release_firmware(helper);
--	release_firmware(mainfw);
- }
- 
- 
- /********************************************************************/
- /* Callback functions for libertas.ko                               */
- /********************************************************************/
- 
-diff --git a/drivers/net/wireless/libertas/if_sdio.c b/drivers/net/wireless/libertas/if_sdio.c
-index 4557833..991238a 100644
---- a/drivers/net/wireless/libertas/if_sdio.c
-+++ b/drivers/net/wireless/libertas/if_sdio.c
-@@ -704,28 +704,24 @@ static void if_sdio_do_prog_firmware(struct lbs_private *priv, int ret,
- 	if (ret) {
- 		pr_err("failed to find firmware (%d)\n", ret);
- 		return;
- 	}
- 
- 	ret = if_sdio_prog_helper(card, helper);
- 	if (ret)
--		goto out;
-+		return;
- 
- 	lbs_deb_sdio("Helper firmware loaded\n");
- 
- 	ret = if_sdio_prog_real(card, mainfw);
- 	if (ret)
--		goto out;
-+		return;
- 
- 	lbs_deb_sdio("Firmware loaded\n");
- 	if_sdio_finish_power_on(card);
--
--out:
--	release_firmware(helper);
--	release_firmware(mainfw);
- }
- 
- static int if_sdio_prog_firmware(struct if_sdio_card *card)
- {
- 	int ret;
- 	u16 scratch;
- 
-diff --git a/drivers/net/wireless/libertas/if_spi.c b/drivers/net/wireless/libertas/if_spi.c
-index 4bb6574..87ff0ca 100644
---- a/drivers/net/wireless/libertas/if_spi.c
-+++ b/drivers/net/wireless/libertas/if_spi.c
-@@ -1090,19 +1090,15 @@ static int if_spi_init_card(struct if_spi_card *card)
- 	}
- 
- 	err = spu_set_interrupt_mode(card, 0, 1);
- 	if (err)
- 		goto out;
- 
- out:
--	release_firmware(helper);
--	release_firmware(mainfw);
--
- 	lbs_deb_leave_args(LBS_DEB_SPI, "err %d\n", err);
--
- 	return err;
- }
- 
- static void if_spi_resume_worker(struct work_struct *work)
- {
- 	struct if_spi_card *card;
- 
-diff --git a/drivers/net/wireless/libertas/if_usb.c b/drivers/net/wireless/libertas/if_usb.c
-index 2798077..dff08a2 100644
---- a/drivers/net/wireless/libertas/if_usb.c
-+++ b/drivers/net/wireless/libertas/if_usb.c
-@@ -840,15 +840,15 @@ static void if_usb_prog_firmware(struct lbs_private *priv, int ret,
- 		pr_err("failed to find firmware (%d)\n", ret);
- 		goto done;
- 	}
- 
- 	cardp->fw = fw;
- 	if (check_fwfile_format(cardp->fw->data, cardp->fw->size)) {
- 		ret = -EINVAL;
--		goto release_fw;
-+		goto done;
- 	}
- 
- 	/* Cancel any pending usb business */
- 	usb_kill_urb(cardp->rx_urb);
- 	usb_kill_urb(cardp->tx_urb);
- 
- 	cardp->fwlastblksent = 0;
-@@ -857,15 +857,15 @@ static void if_usb_prog_firmware(struct lbs_private *priv, int ret,
- 	cardp->fwfinalblk = 0;
- 	cardp->bootcmdresp = 0;
- 
- restart:
- 	if (if_usb_submit_rx_urb_fwload(cardp) < 0) {
- 		lbs_deb_usbd(&cardp->udev->dev, "URB submission is failed\n");
- 		ret = -EIO;
--		goto release_fw;
-+		goto done;
- 	}
- 
- 	cardp->bootcmdresp = 0;
- 	do {
- 		int j = 0;
- 		i++;
- 		if_usb_issue_boot_command(cardp, BOOT_CMD_FW_BY_USB);
-@@ -879,22 +879,22 @@ restart:
- 	if (cardp->bootcmdresp == BOOT_CMD_RESP_NOT_SUPPORTED) {
- 		/* Return to normal operation */
- 		ret = -EOPNOTSUPP;
- 		usb_kill_urb(cardp->rx_urb);
- 		usb_kill_urb(cardp->tx_urb);
- 		if (if_usb_submit_rx_urb(cardp) < 0)
- 			ret = -EIO;
--		goto release_fw;
-+		goto done;
- 	} else if (cardp->bootcmdresp <= 0) {
- 		if (--reset_count >= 0) {
- 			if_usb_reset_device(cardp);
- 			goto restart;
- 		}
- 		ret = -EIO;
--		goto release_fw;
-+		goto done;
- 	}
- 
- 	i = 0;
- 
- 	cardp->totalbytes = 0;
- 	cardp->fwlastblksent = 0;
- 	cardp->CRC_OK = 1;
-@@ -917,37 +917,34 @@ restart:
- 		if (--reset_count >= 0) {
- 			if_usb_reset_device(cardp);
- 			goto restart;
- 		}
- 
- 		pr_info("FW download failure, time = %d ms\n", i * 100);
- 		ret = -EIO;
--		goto release_fw;
-+		goto done;
- 	}
- 
- 	cardp->priv->fw_ready = 1;
- 	if_usb_submit_rx_urb(cardp);
- 
- 	if (lbs_start_card(priv))
--		goto release_fw;
-+		goto done;
- 
- 	if_usb_setup_firmware(priv);
- 
- 	/*
- 	 * EHS_REMOVE_WAKEUP is not supported on all versions of the firmware.
- 	 */
- 	priv->wol_criteria = EHS_REMOVE_WAKEUP;
- 	if (lbs_host_sleep_cfg(priv, priv->wol_criteria, NULL))
- 		priv->ehs_remove_supported = false;
- 
-- release_fw:
--	release_firmware(cardp->fw);
--	cardp->fw = NULL;
--
-  done:
-+	cardp->fw = NULL;
- 	lbs_deb_leave(LBS_DEB_USB);
- }
- 
- 
- #ifdef CONFIG_PM
- static int if_usb_suspend(struct usb_interface *intf, pm_message_t message)
- {
+An almost identical bug was reported (and fixed) some time ago:
+http://lkml.indiana.edu/hypermail/linux/kernel/1302.1/01165.html
 
-
+Andreas
