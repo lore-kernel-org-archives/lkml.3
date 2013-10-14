@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756010Ab3JNKod (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 06:44:33 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:63780 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753797Ab3JNKoO (ORCPT
+	id S1756205Ab3JNKuq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 06:50:46 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:48991 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755964Ab3JNKoc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 06:44:14 -0400
+	Mon, 14 Oct 2013 06:44:32 -0400
 From: Juri Lelli <juri.lelli@gmail.com>
 To: peterz@infradead.org, tglx@linutronix.de
 Cc: mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
@@ -20,9 +20,9 @@ Cc: mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
         jkacur@redhat.com, harald.gustafsson@ericsson.com,
         vincent.guittot@linaro.org,
         bruce.ashfield@windriver.com--no-chain-reply-to
-Subject: [PATCH 02/14] sched: add extended scheduling interface.
-Date: Mon, 14 Oct 2013 12:43:34 +0200
-Message-Id: <1381747426-31334-3-git-send-email-juri.lelli@gmail.com>
+Subject: [PATCH 09/14] rtmutex: turn the plist into an rb-tree.
+Date: Mon, 14 Oct 2013 12:43:41 +0200
+Message-Id: <1381747426-31334-10-git-send-email-juri.lelli@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1381747426-31334-1-git-send-email-juri.lelli@gmail.com>
 References: <1381747426-31334-1-git-send-email-juri.lelli@gmail.com>
@@ -30,386 +30,590 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dario Faggioli <raistlin@linux.it>
+From: Peter Zijlstra <peterz@infradead.org>
 
-Add the interface bits needed for supporting scheduling algorithms
-with extended parameters (e.g., SCHED_DEADLINE).
+Turn the pi-chains from plist to rb-tree, in the rt_mutex code,
+and provide a proper comparison function for -deadline and
+-priority tasks.
 
-In general, it makes possible to specify a periodic/sporadic task,
-that executes for a given amount of runtime at each instance, and is
-scheduled according to the urgency of their own timing constraints,
-i.e.:
- - a (maximum/typical) instance execution time,
- - a minimum interval between consecutive instances,
- - a time constraint by which each instance must be completed.
+This is done mainly because:
+ - classical prio field of the plist is just an int, which might
+   not be enough for representing a deadline;
+ - manipulating such a list would become O(nr_deadline_tasks),
+   which might be to much, as the number of -deadline task increases.
 
-Thus, both the data structure that holds the scheduling parameters of
-the tasks and the system calls dealing with it must be extended.
-Unfortunately, modifying the existing struct sched_param would break
-the ABI and result in potentially serious compatibility issues with
-legacy binaries.
+Therefore, an rb-tree is used, and tasks are queued in it according
+to the following logic:
+ - among two -priority (i.e., SCHED_BATCH/OTHER/RR/FIFO) tasks, the
+   one with the higher (lower, actually!) prio wins;
+ - among a -priority and a -deadline task, the latter always wins;
+ - among two -deadline tasks, the one with the earliest deadline
+   wins.
 
-For these reasons, this patch:
- - defines the new struct sched_param2, containing all the fields
-   that are necessary for specifying a task in the computational
-   model described above;
- - defines and implements the new scheduling related syscalls that
-   manipulate it, i.e., sched_setscheduler2(), sched_setparam2()
-   and sched_getparam2().
+Queueing and dequeueing functions are changed accordingly, for both
+the list of a task's pi-waiters and the list of tasks blocked on
+a pi-lock.
 
-Syscalls are introduced for x86 (32 and 64 bits) and ARM only, as a
-proof of concept and for developing and testing purposes. Making them
-available on other architectures is straightforward.
-
-Since no "user" for these new parameters is introduced in this patch,
-the implementation of the new system calls is just identical to their
-already existing counterpart. Future patches that implement scheduling
-policies able to exploit the new data structure must also take care of
-modifying the *2() calls accordingly with their own purposes.
-
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Dario Faggioli <raistlin@linux.it>
 Signed-off-by: Juri Lelli <juri.lelli@gmail.com>
 ---
- arch/arm/include/asm/unistd.h      |    2 +-
- arch/arm/include/uapi/asm/unistd.h |    3 +
- arch/arm/kernel/calls.S            |    3 +
- arch/x86/syscalls/syscall_32.tbl   |    3 +
- arch/x86/syscalls/syscall_64.tbl   |    3 +
- include/linux/sched.h              |   50 ++++++++++++++++
- include/linux/syscalls.h           |    7 +++
- kernel/sched/core.c                |  110 +++++++++++++++++++++++++++++++++++-
- 8 files changed, 177 insertions(+), 4 deletions(-)
+ include/linux/init_task.h |   10 +++
+ include/linux/rtmutex.h   |   18 ++----
+ include/linux/sched.h     |    4 +-
+ kernel/fork.c             |    3 +-
+ kernel/futex.c            |    2 +
+ kernel/rtmutex-debug.c    |    8 +--
+ kernel/rtmutex.c          |  152 ++++++++++++++++++++++++++++++++++++---------
+ kernel/rtmutex_common.h   |   22 +++----
+ kernel/sched/core.c       |    4 --
+ 9 files changed, 157 insertions(+), 66 deletions(-)
 
-diff --git a/arch/arm/include/asm/unistd.h b/arch/arm/include/asm/unistd.h
-index 141baa3..5f260fd 100644
---- a/arch/arm/include/asm/unistd.h
-+++ b/arch/arm/include/asm/unistd.h
-@@ -15,7 +15,7 @@
+diff --git a/include/linux/init_task.h b/include/linux/init_task.h
+index 5cd0f09..69b97ea 100644
+--- a/include/linux/init_task.h
++++ b/include/linux/init_task.h
+@@ -11,6 +11,7 @@
+ #include <linux/user_namespace.h>
+ #include <linux/securebits.h>
+ #include <linux/seqlock.h>
++#include <linux/rbtree.h>
+ #include <net/net_namespace.h>
+ #include <linux/sched/rt.h>
  
- #include <uapi/asm/unistd.h>
+@@ -154,6 +155,14 @@ extern struct task_group root_task_group;
  
--#define __NR_syscalls  (380)
-+#define __NR_syscalls  (383)
- #define __ARM_NR_cmpxchg		(__ARM_NR_BASE+0x00fff0)
+ #define INIT_TASK_COMM "swapper"
  
- #define __ARCH_WANT_STAT64
-diff --git a/arch/arm/include/uapi/asm/unistd.h b/arch/arm/include/uapi/asm/unistd.h
-index af33b44..6a4985e 100644
---- a/arch/arm/include/uapi/asm/unistd.h
-+++ b/arch/arm/include/uapi/asm/unistd.h
-@@ -406,6 +406,9 @@
- #define __NR_process_vm_writev		(__NR_SYSCALL_BASE+377)
- #define __NR_kcmp			(__NR_SYSCALL_BASE+378)
- #define __NR_finit_module		(__NR_SYSCALL_BASE+379)
-+#define __NR_sched_setscheduler2	(__NR_SYSCALL_BASE+380)
-+#define __NR_sched_setparam2		(__NR_SYSCALL_BASE+381)
-+#define __NR_sched_getparam2		(__NR_SYSCALL_BASE+382)
- 
++#ifdef CONFIG_RT_MUTEXES
++# define INIT_RT_MUTEXES(tsk)						\
++	.pi_waiters = RB_ROOT,						\
++	.pi_waiters_leftmost = NULL,
++#else
++# define INIT_RT_MUTEXES(tsk)
++#endif
++
  /*
-  * This may need to be greater than __NR_last_syscall+1 in order to
-diff --git a/arch/arm/kernel/calls.S b/arch/arm/kernel/calls.S
-index c6ca7e3..0fb1ef7 100644
---- a/arch/arm/kernel/calls.S
-+++ b/arch/arm/kernel/calls.S
-@@ -389,6 +389,9 @@
- 		CALL(sys_process_vm_writev)
- 		CALL(sys_kcmp)
- 		CALL(sys_finit_module)
-+/* 380 */	CALL(sys_sched_setscheduler2)
-+		CALL(sys_sched_setparam2)
-+		CALL(sys_sched_getparam2)
- #ifndef syscalls_counted
- .equ syscalls_padding, ((NR_syscalls + 3) & ~3) - NR_syscalls
- #define syscalls_counted
-diff --git a/arch/x86/syscalls/syscall_32.tbl b/arch/x86/syscalls/syscall_32.tbl
-index aabfb83..dfce815 100644
---- a/arch/x86/syscalls/syscall_32.tbl
-+++ b/arch/x86/syscalls/syscall_32.tbl
-@@ -357,3 +357,6 @@
- 348	i386	process_vm_writev	sys_process_vm_writev		compat_sys_process_vm_writev
- 349	i386	kcmp			sys_kcmp
- 350	i386	finit_module		sys_finit_module
-+351	i386	sched_setparam2		sys_sched_setparam2
-+352	i386	sched_getparam2		sys_sched_getparam2
-+353	i386	sched_setscheduler2	sys_sched_setscheduler2
-diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
-index 38ae65d..1849a70 100644
---- a/arch/x86/syscalls/syscall_64.tbl
-+++ b/arch/x86/syscalls/syscall_64.tbl
-@@ -320,6 +320,9 @@
- 311	64	process_vm_writev	sys_process_vm_writev
- 312	common	kcmp			sys_kcmp
- 313	common	finit_module		sys_finit_module
-+314	common	sched_setparam2		sys_sched_setparam2
-+315	common	sched_getparam2		sys_sched_getparam2
-+316	common	sched_setscheduler2	sys_sched_setscheduler2
+  *  INIT_TASK is used to set up the first task table, touch at
+  * your own risk!. Base=0, limit=0x1fffff (=2MB)
+@@ -221,6 +230,7 @@ extern struct task_group root_task_group;
+ 	INIT_TRACE_RECURSION						\
+ 	INIT_TASK_RCU_PREEMPT(tsk)					\
+ 	INIT_CPUSET_SEQ							\
++	INIT_RT_MUTEXES(tsk)						\
+ 	INIT_VTIME(tsk)							\
+ }
  
- #
- # x32-specific system call numbers start at 512 to avoid cache impact
+diff --git a/include/linux/rtmutex.h b/include/linux/rtmutex.h
+index de17134..3aed8d7 100644
+--- a/include/linux/rtmutex.h
++++ b/include/linux/rtmutex.h
+@@ -13,7 +13,7 @@
+ #define __LINUX_RT_MUTEX_H
+ 
+ #include <linux/linkage.h>
+-#include <linux/plist.h>
++#include <linux/rbtree.h>
+ #include <linux/spinlock_types.h>
+ 
+ extern int max_lock_depth; /* for sysctl */
+@@ -22,12 +22,14 @@ extern int max_lock_depth; /* for sysctl */
+  * The rt_mutex structure
+  *
+  * @wait_lock:	spinlock to protect the structure
+- * @wait_list:	pilist head to enqueue waiters in priority order
++ * @waiters:	rbtree root to enqueue waiters in priority order
++ * @waiters_leftmost: top waiter
+  * @owner:	the mutex owner
+  */
+ struct rt_mutex {
+ 	raw_spinlock_t		wait_lock;
+-	struct plist_head	wait_list;
++	struct rb_root          waiters;
++	struct rb_node          *waiters_leftmost;
+ 	struct task_struct	*owner;
+ #ifdef CONFIG_DEBUG_RT_MUTEXES
+ 	int			save_state;
+@@ -66,7 +68,7 @@ struct hrtimer_sleeper;
+ 
+ #define __RT_MUTEX_INITIALIZER(mutexname) \
+ 	{ .wait_lock = __RAW_SPIN_LOCK_UNLOCKED(mutexname.wait_lock) \
+-	, .wait_list = PLIST_HEAD_INIT(mutexname.wait_list) \
++	, .waiters = RB_ROOT \
+ 	, .owner = NULL \
+ 	__DEBUG_RT_MUTEX_INITIALIZER(mutexname)}
+ 
+@@ -98,12 +100,4 @@ extern int rt_mutex_trylock(struct rt_mutex *lock);
+ 
+ extern void rt_mutex_unlock(struct rt_mutex *lock);
+ 
+-#ifdef CONFIG_RT_MUTEXES
+-# define INIT_RT_MUTEXES(tsk)						\
+-	.pi_waiters	= PLIST_HEAD_INIT(tsk.pi_waiters),	\
+-	INIT_RT_MUTEX_DEBUG(tsk)
+-#else
+-# define INIT_RT_MUTEXES(tsk)
+-#endif
+-
+ #endif
 diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 6682da3..6cc7193 100644
+index c8bfabc..2fbb50a 100644
 --- a/include/linux/sched.h
 +++ b/include/linux/sched.h
-@@ -55,6 +55,54 @@ struct sched_param {
+@@ -16,6 +16,7 @@ struct sched_param {
+ #include <linux/types.h>
+ #include <linux/timex.h>
+ #include <linux/jiffies.h>
++#include <linux/plist.h>
+ #include <linux/rbtree.h>
+ #include <linux/thread_info.h>
+ #include <linux/cpumask.h>
+@@ -1340,7 +1341,8 @@ struct task_struct {
  
- #include <asm/processor.h>
+ #ifdef CONFIG_RT_MUTEXES
+ 	/* PI waiters blocked on a rt_mutex held by this task */
+-	struct plist_head pi_waiters;
++	struct rb_root pi_waiters;
++	struct rb_node *pi_waiters_leftmost;
+ 	/* Deadlock detection and priority inheritance handling */
+ 	struct rt_mutex_waiter *pi_blocked_on;
+ #endif
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 55fc95f..aa6e18d 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1089,7 +1089,8 @@ static void rt_mutex_init_task(struct task_struct *p)
+ {
+ 	raw_spin_lock_init(&p->pi_lock);
+ #ifdef CONFIG_RT_MUTEXES
+-	plist_head_init(&p->pi_waiters);
++	p->pi_waiters = RB_ROOT;
++	p->pi_waiters_leftmost = NULL;
+ 	p->pi_blocked_on = NULL;
+ #endif
+ }
+diff --git a/kernel/futex.c b/kernel/futex.c
+index c3a1a55..ff7141e 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -2315,6 +2315,8 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
+ 	 * code while we sleep on uaddr.
+ 	 */
+ 	debug_rt_mutex_init_waiter(&rt_waiter);
++	RB_CLEAR_NODE(&rt_waiter.pi_tree_entry);
++	RB_CLEAR_NODE(&rt_waiter.tree_entry);
+ 	rt_waiter.task = NULL;
  
-+/*
-+ * Extended scheduling parameters data structure.
-+ *
-+ * This is needed because the original struct sched_param can not be
-+ * altered without introducing ABI issues with legacy applications
-+ * (e.g., in sched_getparam()).
-+ *
-+ * However, the possibility of specifying more than just a priority for
-+ * the tasks may be useful for a wide variety of application fields, e.g.,
-+ * multimedia, streaming, automation and control, and many others.
-+ *
-+ * This variant (sched_param2) is meant at describing a so-called
-+ * sporadic time-constrained task. In such model a task is specified by:
-+ *  - the activation period or minimum instance inter-arrival time;
-+ *  - the maximum (or average, depending on the actual scheduling
-+ *    discipline) computation time of all instances, a.k.a. runtime;
-+ *  - the deadline (relative to the actual activation time) of each
-+ *    instance.
-+ * Very briefly, a periodic (sporadic) task asks for the execution of
-+ * some specific computation --which is typically called an instance--
-+ * (at most) every period. Moreover, each instance typically lasts no more
-+ * than the runtime and must be completed by time instant t equal to
-+ * the instance activation time + the deadline.
-+ *
-+ * This is reflected by the actual fields of the sched_param2 structure:
-+ *
-+ *  @sched_priority     task's priority (might still be useful)
-+ *  @sched_deadline     representative of the task's deadline
-+ *  @sched_runtime      representative of the task's runtime
-+ *  @sched_period       representative of the task's period
-+ *  @sched_flags        for customizing the scheduler behaviour
-+ *
-+ * Given this task model, there are a multiplicity of scheduling algorithms
-+ * and policies, that can be used to ensure all the tasks will make their
-+ * timing constraints.
-+ *
-+ * @__unused		padding to allow future expansion without ABI issues
-+ */
-+struct sched_param2 {
-+	int sched_priority;
-+	unsigned int sched_flags;
-+	u64 sched_runtime;
-+	u64 sched_deadline;
-+	u64 sched_period;
+ 	ret = get_futex_key(uaddr2, flags & FLAGS_SHARED, &key2, VERIFY_WRITE);
+diff --git a/kernel/rtmutex-debug.c b/kernel/rtmutex-debug.c
+index 13b243a..49b2ed3 100644
+--- a/kernel/rtmutex-debug.c
++++ b/kernel/rtmutex-debug.c
+@@ -24,7 +24,7 @@
+ #include <linux/kallsyms.h>
+ #include <linux/syscalls.h>
+ #include <linux/interrupt.h>
+-#include <linux/plist.h>
++#include <linux/rbtree.h>
+ #include <linux/fs.h>
+ #include <linux/debug_locks.h>
+ 
+@@ -57,7 +57,7 @@ static void printk_lock(struct rt_mutex *lock, int print_owner)
+ 
+ void rt_mutex_debug_task_free(struct task_struct *task)
+ {
+-	DEBUG_LOCKS_WARN_ON(!plist_head_empty(&task->pi_waiters));
++	DEBUG_LOCKS_WARN_ON(!RB_EMPTY_ROOT(&task->pi_waiters));
+ 	DEBUG_LOCKS_WARN_ON(task->pi_blocked_on);
+ }
+ 
+@@ -154,16 +154,12 @@ void debug_rt_mutex_proxy_unlock(struct rt_mutex *lock)
+ void debug_rt_mutex_init_waiter(struct rt_mutex_waiter *waiter)
+ {
+ 	memset(waiter, 0x11, sizeof(*waiter));
+-	plist_node_init(&waiter->list_entry, MAX_PRIO);
+-	plist_node_init(&waiter->pi_list_entry, MAX_PRIO);
+ 	waiter->deadlock_task_pid = NULL;
+ }
+ 
+ void debug_rt_mutex_free_waiter(struct rt_mutex_waiter *waiter)
+ {
+ 	put_pid(waiter->deadlock_task_pid);
+-	DEBUG_LOCKS_WARN_ON(!plist_node_empty(&waiter->list_entry));
+-	DEBUG_LOCKS_WARN_ON(!plist_node_empty(&waiter->pi_list_entry));
+ 	memset(waiter, 0x22, sizeof(*waiter));
+ }
+ 
+diff --git a/kernel/rtmutex.c b/kernel/rtmutex.c
+index 0dd6aec..4ea7eaa 100644
+--- a/kernel/rtmutex.c
++++ b/kernel/rtmutex.c
+@@ -91,10 +91,104 @@ static inline void mark_rt_mutex_waiters(struct rt_mutex *lock)
+ }
+ #endif
+ 
++static inline int
++rt_mutex_waiter_less(struct rt_mutex_waiter *left,
++		     struct rt_mutex_waiter *right)
++{
++	if (left->task->prio < right->task->prio)
++		return 1;
 +
-+	u64 __unused[12];
-+};
++	/*
++	 * If both tasks are dl_task(), we check their deadlines.
++	 */
++	if (dl_prio(left->task->prio) && dl_prio(right->task->prio))
++		return (left->task->dl.deadline < right->task->dl.deadline);
 +
- struct exec_domain;
- struct futex_pi_state;
- struct robust_list_head;
-@@ -1896,6 +1944,8 @@ extern int sched_setscheduler(struct task_struct *, int,
- 			      const struct sched_param *);
- extern int sched_setscheduler_nocheck(struct task_struct *, int,
- 				      const struct sched_param *);
-+extern int sched_setscheduler2(struct task_struct *, int,
-+				 const struct sched_param2 *);
- extern struct task_struct *idle_task(int cpu);
- /**
-  * is_idle_task - is the specified task an idle task?
-diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-index 7fac04e..170ac59 100644
---- a/include/linux/syscalls.h
-+++ b/include/linux/syscalls.h
-@@ -38,6 +38,7 @@ struct rlimit;
- struct rlimit64;
- struct rusage;
- struct sched_param;
-+struct sched_param2;
- struct sel_arg_struct;
- struct semaphore;
- struct sembuf;
-@@ -277,11 +278,17 @@ asmlinkage long sys_clock_nanosleep(clockid_t which_clock, int flags,
- asmlinkage long sys_nice(int increment);
- asmlinkage long sys_sched_setscheduler(pid_t pid, int policy,
- 					struct sched_param __user *param);
-+asmlinkage long sys_sched_setscheduler2(pid_t pid, int policy,
-+					struct sched_param2 __user *param);
- asmlinkage long sys_sched_setparam(pid_t pid,
- 					struct sched_param __user *param);
-+asmlinkage long sys_sched_setparam2(pid_t pid,
-+					struct sched_param2 __user *param);
- asmlinkage long sys_sched_getscheduler(pid_t pid);
- asmlinkage long sys_sched_getparam(pid_t pid,
- 					struct sched_param __user *param);
-+asmlinkage long sys_sched_getparam2(pid_t pid,
-+					struct sched_param2 __user *param);
- asmlinkage long sys_sched_setaffinity(pid_t pid, unsigned int len,
- 					unsigned long __user *user_mask_ptr);
- asmlinkage long sys_sched_getaffinity(pid_t pid, unsigned int len,
++	return 0;
++}
++
++static void
++rt_mutex_enqueue(struct rt_mutex *lock, struct rt_mutex_waiter *waiter)
++{
++	struct rb_node **link = &lock->waiters.rb_node;
++	struct rb_node *parent = NULL;
++	struct rt_mutex_waiter *entry;
++	int leftmost = 1;
++
++	while (*link) {
++		parent = *link;
++		entry = rb_entry(parent, struct rt_mutex_waiter, tree_entry);
++		if (rt_mutex_waiter_less(waiter, entry)) {
++			link = &parent->rb_left;
++		} else {
++			link = &parent->rb_right;
++			leftmost = 0;
++		}
++	}
++
++	if (leftmost)
++		lock->waiters_leftmost = &waiter->tree_entry;
++
++	rb_link_node(&waiter->tree_entry, parent, link);
++	rb_insert_color(&waiter->tree_entry, &lock->waiters);
++}
++
++static void
++rt_mutex_dequeue(struct rt_mutex *lock, struct rt_mutex_waiter *waiter)
++{
++	if (RB_EMPTY_NODE(&waiter->tree_entry))
++		return;
++
++	if (lock->waiters_leftmost == &waiter->tree_entry)
++		lock->waiters_leftmost = rb_next(&waiter->tree_entry);
++
++	rb_erase(&waiter->tree_entry, &lock->waiters);
++	RB_CLEAR_NODE(&waiter->tree_entry);
++}
++
++static void
++rt_mutex_enqueue_pi(struct task_struct *task, struct rt_mutex_waiter *waiter)
++{
++	struct rb_node **link = &task->pi_waiters.rb_node;
++	struct rb_node *parent = NULL;
++	struct rt_mutex_waiter *entry;
++	int leftmost = 1;
++
++	while (*link) {
++		parent = *link;
++		entry = rb_entry(parent, struct rt_mutex_waiter, pi_tree_entry);
++		if (rt_mutex_waiter_less(waiter, entry)) {
++			link = &parent->rb_left;
++		} else {
++			link = &parent->rb_right;
++			leftmost = 0;
++		}
++	}
++
++	if (leftmost)
++		task->pi_waiters_leftmost = &waiter->pi_tree_entry;
++
++	rb_link_node(&waiter->pi_tree_entry, parent, link);
++	rb_insert_color(&waiter->pi_tree_entry, &task->pi_waiters);
++}
++
++static void
++rt_mutex_dequeue_pi(struct task_struct *task, struct rt_mutex_waiter *waiter)
++{
++	if (RB_EMPTY_NODE(&waiter->pi_tree_entry))
++		return;
++
++	if (task->pi_waiters_leftmost == &waiter->pi_tree_entry)
++		task->pi_waiters_leftmost = rb_next(&waiter->pi_tree_entry);
++
++	rb_erase(&waiter->pi_tree_entry, &task->pi_waiters);
++	RB_CLEAR_NODE(&waiter->pi_tree_entry);
++}
++
+ /*
+- * Calculate task priority from the waiter list priority
++ * Calculate task priority from the waiter tree priority
+  *
+- * Return task->normal_prio when the waiter list is empty or when
++ * Return task->normal_prio when the waiter tree is empty or when
+  * the waiter is not allowed to do priority boosting
+  */
+ int rt_mutex_getprio(struct task_struct *task)
+@@ -102,7 +196,7 @@ int rt_mutex_getprio(struct task_struct *task)
+ 	if (likely(!task_has_pi_waiters(task)))
+ 		return task->normal_prio;
+ 
+-	return min(task_top_pi_waiter(task)->pi_list_entry.prio,
++	return min(task_top_pi_waiter(task)->task->prio,
+ 		   task->normal_prio);
+ }
+ 
+@@ -233,7 +327,7 @@ static int rt_mutex_adjust_prio_chain(struct task_struct *task,
+ 	 * When deadlock detection is off then we check, if further
+ 	 * priority adjustment is necessary.
+ 	 */
+-	if (!detect_deadlock && waiter->list_entry.prio == task->prio)
++	if (!detect_deadlock && waiter->task->prio == task->prio)
+ 		goto out_unlock_pi;
+ 
+ 	lock = waiter->lock;
+@@ -254,9 +348,9 @@ static int rt_mutex_adjust_prio_chain(struct task_struct *task,
+ 	top_waiter = rt_mutex_top_waiter(lock);
+ 
+ 	/* Requeue the waiter */
+-	plist_del(&waiter->list_entry, &lock->wait_list);
+-	waiter->list_entry.prio = task->prio;
+-	plist_add(&waiter->list_entry, &lock->wait_list);
++	rt_mutex_dequeue(lock, waiter);
++	waiter->task->prio = task->prio;
++	rt_mutex_enqueue(lock, waiter);
+ 
+ 	/* Release the task */
+ 	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
+@@ -280,17 +374,15 @@ static int rt_mutex_adjust_prio_chain(struct task_struct *task,
+ 
+ 	if (waiter == rt_mutex_top_waiter(lock)) {
+ 		/* Boost the owner */
+-		plist_del(&top_waiter->pi_list_entry, &task->pi_waiters);
+-		waiter->pi_list_entry.prio = waiter->list_entry.prio;
+-		plist_add(&waiter->pi_list_entry, &task->pi_waiters);
++		rt_mutex_dequeue_pi(task, top_waiter);
++		rt_mutex_enqueue_pi(task, waiter);
+ 		__rt_mutex_adjust_prio(task);
+ 
+ 	} else if (top_waiter == waiter) {
+ 		/* Deboost the owner */
+-		plist_del(&waiter->pi_list_entry, &task->pi_waiters);
++		rt_mutex_dequeue_pi(task, waiter);
+ 		waiter = rt_mutex_top_waiter(lock);
+-		waiter->pi_list_entry.prio = waiter->list_entry.prio;
+-		plist_add(&waiter->pi_list_entry, &task->pi_waiters);
++		rt_mutex_enqueue_pi(task, waiter);
+ 		__rt_mutex_adjust_prio(task);
+ 	}
+ 
+@@ -355,7 +447,7 @@ static int try_to_take_rt_mutex(struct rt_mutex *lock, struct task_struct *task,
+ 	 * 3) it is top waiter
+ 	 */
+ 	if (rt_mutex_has_waiters(lock)) {
+-		if (task->prio >= rt_mutex_top_waiter(lock)->list_entry.prio) {
++		if (task->prio >= rt_mutex_top_waiter(lock)->task->prio) {
+ 			if (!waiter || waiter != rt_mutex_top_waiter(lock))
+ 				return 0;
+ 		}
+@@ -369,7 +461,7 @@ static int try_to_take_rt_mutex(struct rt_mutex *lock, struct task_struct *task,
+ 
+ 		/* remove the queued waiter. */
+ 		if (waiter) {
+-			plist_del(&waiter->list_entry, &lock->wait_list);
++			rt_mutex_dequeue(lock, waiter);
+ 			task->pi_blocked_on = NULL;
+ 		}
+ 
+@@ -379,8 +471,7 @@ static int try_to_take_rt_mutex(struct rt_mutex *lock, struct task_struct *task,
+ 		 */
+ 		if (rt_mutex_has_waiters(lock)) {
+ 			top = rt_mutex_top_waiter(lock);
+-			top->pi_list_entry.prio = top->list_entry.prio;
+-			plist_add(&top->pi_list_entry, &task->pi_waiters);
++			rt_mutex_enqueue_pi(task, top);
+ 		}
+ 		raw_spin_unlock_irqrestore(&task->pi_lock, flags);
+ 	}
+@@ -416,13 +507,11 @@ static int task_blocks_on_rt_mutex(struct rt_mutex *lock,
+ 	__rt_mutex_adjust_prio(task);
+ 	waiter->task = task;
+ 	waiter->lock = lock;
+-	plist_node_init(&waiter->list_entry, task->prio);
+-	plist_node_init(&waiter->pi_list_entry, task->prio);
+-
++	
+ 	/* Get the top priority waiter on the lock */
+ 	if (rt_mutex_has_waiters(lock))
+ 		top_waiter = rt_mutex_top_waiter(lock);
+-	plist_add(&waiter->list_entry, &lock->wait_list);
++	rt_mutex_enqueue(lock, waiter);
+ 
+ 	task->pi_blocked_on = waiter;
+ 
+@@ -433,8 +522,8 @@ static int task_blocks_on_rt_mutex(struct rt_mutex *lock,
+ 
+ 	if (waiter == rt_mutex_top_waiter(lock)) {
+ 		raw_spin_lock_irqsave(&owner->pi_lock, flags);
+-		plist_del(&top_waiter->pi_list_entry, &owner->pi_waiters);
+-		plist_add(&waiter->pi_list_entry, &owner->pi_waiters);
++		rt_mutex_dequeue_pi(owner, top_waiter);
++		rt_mutex_enqueue_pi(owner, waiter);
+ 
+ 		__rt_mutex_adjust_prio(owner);
+ 		if (owner->pi_blocked_on)
+@@ -486,7 +575,7 @@ static void wakeup_next_waiter(struct rt_mutex *lock)
+ 	 * boosted mode and go back to normal after releasing
+ 	 * lock->wait_lock.
+ 	 */
+-	plist_del(&waiter->pi_list_entry, &current->pi_waiters);
++	rt_mutex_dequeue_pi(current, waiter);
+ 
+ 	rt_mutex_set_owner(lock, NULL);
+ 
+@@ -510,7 +599,7 @@ static void remove_waiter(struct rt_mutex *lock,
+ 	int chain_walk = 0;
+ 
+ 	raw_spin_lock_irqsave(&current->pi_lock, flags);
+-	plist_del(&waiter->list_entry, &lock->wait_list);
++	rt_mutex_dequeue(lock, waiter);
+ 	current->pi_blocked_on = NULL;
+ 	raw_spin_unlock_irqrestore(&current->pi_lock, flags);
+ 
+@@ -521,13 +610,13 @@ static void remove_waiter(struct rt_mutex *lock,
+ 
+ 		raw_spin_lock_irqsave(&owner->pi_lock, flags);
+ 
+-		plist_del(&waiter->pi_list_entry, &owner->pi_waiters);
++		rt_mutex_dequeue_pi(owner, waiter);
+ 
+ 		if (rt_mutex_has_waiters(lock)) {
+ 			struct rt_mutex_waiter *next;
+ 
+ 			next = rt_mutex_top_waiter(lock);
+-			plist_add(&next->pi_list_entry, &owner->pi_waiters);
++			rt_mutex_enqueue_pi(owner, next);
+ 		}
+ 		__rt_mutex_adjust_prio(owner);
+ 
+@@ -537,8 +626,6 @@ static void remove_waiter(struct rt_mutex *lock,
+ 		raw_spin_unlock_irqrestore(&owner->pi_lock, flags);
+ 	}
+ 
+-	WARN_ON(!plist_node_empty(&waiter->pi_list_entry));
+-
+ 	if (!chain_walk)
+ 		return;
+ 
+@@ -565,7 +652,7 @@ void rt_mutex_adjust_pi(struct task_struct *task)
+ 	raw_spin_lock_irqsave(&task->pi_lock, flags);
+ 
+ 	waiter = task->pi_blocked_on;
+-	if (!waiter || waiter->list_entry.prio == task->prio) {
++	if (!waiter || waiter->task->prio == task->prio) {
+ 		raw_spin_unlock_irqrestore(&task->pi_lock, flags);
+ 		return;
+ 	}
+@@ -638,6 +725,8 @@ rt_mutex_slowlock(struct rt_mutex *lock, int state,
+ 	int ret = 0;
+ 
+ 	debug_rt_mutex_init_waiter(&waiter);
++	RB_CLEAR_NODE(&waiter.pi_tree_entry);
++	RB_CLEAR_NODE(&waiter.tree_entry);
+ 
+ 	raw_spin_lock(&lock->wait_lock);
+ 
+@@ -904,7 +993,8 @@ void __rt_mutex_init(struct rt_mutex *lock, const char *name)
+ {
+ 	lock->owner = NULL;
+ 	raw_spin_lock_init(&lock->wait_lock);
+-	plist_head_init(&lock->wait_list);
++	lock->waiters = RB_ROOT;
++	lock->waiters_leftmost = NULL;
+ 
+ 	debug_rt_mutex_init(lock, name);
+ }
+diff --git a/kernel/rtmutex_common.h b/kernel/rtmutex_common.h
+index 53a66c8..b65442f 100644
+--- a/kernel/rtmutex_common.h
++++ b/kernel/rtmutex_common.h
+@@ -40,13 +40,13 @@ extern void schedule_rt_mutex_test(struct rt_mutex *lock);
+  * This is the control structure for tasks blocked on a rt_mutex,
+  * which is allocated on the kernel stack on of the blocked task.
+  *
+- * @list_entry:		pi node to enqueue into the mutex waiters list
+- * @pi_list_entry:	pi node to enqueue into the mutex owner waiters list
++ * @tree_entry:		pi node to enqueue into the mutex waiters tree
++ * @pi_tree_entry:	pi node to enqueue into the mutex owner waiters tree
+  * @task:		task reference to the blocked task
+  */
+ struct rt_mutex_waiter {
+-	struct plist_node	list_entry;
+-	struct plist_node	pi_list_entry;
++	struct rb_node          tree_entry;
++	struct rb_node          pi_tree_entry;
+ 	struct task_struct	*task;
+ 	struct rt_mutex		*lock;
+ #ifdef CONFIG_DEBUG_RT_MUTEXES
+@@ -57,11 +57,11 @@ struct rt_mutex_waiter {
+ };
+ 
+ /*
+- * Various helpers to access the waiters-plist:
++ * Various helpers to access the waiters-tree:
+  */
+ static inline int rt_mutex_has_waiters(struct rt_mutex *lock)
+ {
+-	return !plist_head_empty(&lock->wait_list);
++	return !RB_EMPTY_ROOT(&lock->waiters);
+ }
+ 
+ static inline struct rt_mutex_waiter *
+@@ -69,8 +69,8 @@ rt_mutex_top_waiter(struct rt_mutex *lock)
+ {
+ 	struct rt_mutex_waiter *w;
+ 
+-	w = plist_first_entry(&lock->wait_list, struct rt_mutex_waiter,
+-			       list_entry);
++	w = rb_entry(lock->waiters_leftmost, struct rt_mutex_waiter,
++		     tree_entry);
+ 	BUG_ON(w->lock != lock);
+ 
+ 	return w;
+@@ -78,14 +78,14 @@ rt_mutex_top_waiter(struct rt_mutex *lock)
+ 
+ static inline int task_has_pi_waiters(struct task_struct *p)
+ {
+-	return !plist_head_empty(&p->pi_waiters);
++	return !RB_EMPTY_ROOT(&p->pi_waiters);
+ }
+ 
+ static inline struct rt_mutex_waiter *
+ task_top_pi_waiter(struct task_struct *p)
+ {
+-	return plist_first_entry(&p->pi_waiters, struct rt_mutex_waiter,
+-				  pi_list_entry);
++	return rb_entry(p->pi_waiters_leftmost, struct rt_mutex_waiter,
++			pi_tree_entry);
+ }
+ 
+ /*
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 850a02c..4fcbf13 100644
+index 2ec8a93..3925282 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
-@@ -3285,7 +3285,8 @@ static bool check_same_owner(struct task_struct *p)
- }
+@@ -6729,10 +6729,6 @@ void __init sched_init(void)
+ 	INIT_HLIST_HEAD(&init_task.preempt_notifiers);
+ #endif
  
- static int __sched_setscheduler(struct task_struct *p, int policy,
--				const struct sched_param *param, bool user)
-+				const struct sched_param2 *param,
-+				bool user)
- {
- 	int retval, oldprio, oldpolicy = -1, on_rq, running;
- 	unsigned long flags;
-@@ -3450,10 +3451,20 @@ recheck:
- int sched_setscheduler(struct task_struct *p, int policy,
- 		       const struct sched_param *param)
- {
--	return __sched_setscheduler(p, policy, param, true);
-+	struct sched_param2 param2 = {
-+		.sched_priority = param->sched_priority
-+	};
-+	return __sched_setscheduler(p, policy, &param2, true);
- }
- EXPORT_SYMBOL_GPL(sched_setscheduler);
- 
-+int sched_setscheduler2(struct task_struct *p, int policy,
-+			  const struct sched_param2 *param2)
-+{
-+	return __sched_setscheduler(p, policy, param2, true);
-+}
-+EXPORT_SYMBOL_GPL(sched_setscheduler2);
-+
- /**
-  * sched_setscheduler_nocheck - change the scheduling policy and/or RT priority of a thread from kernelspace.
-  * @p: the task in question.
-@@ -3470,7 +3481,10 @@ EXPORT_SYMBOL_GPL(sched_setscheduler);
- int sched_setscheduler_nocheck(struct task_struct *p, int policy,
- 			       const struct sched_param *param)
- {
--	return __sched_setscheduler(p, policy, param, false);
-+	struct sched_param2 param2 = {
-+		.sched_priority = param->sched_priority
-+	};
-+	return __sched_setscheduler(p, policy, &param2, false);
- }
- 
- static int
-@@ -3495,6 +3509,31 @@ do_sched_setscheduler(pid_t pid, int policy, struct sched_param __user *param)
- 	return retval;
- }
- 
-+static int
-+do_sched_setscheduler2(pid_t pid, int policy,
-+			 struct sched_param2 __user *param2)
-+{
-+	struct sched_param2 lparam2;
-+	struct task_struct *p;
-+	int retval;
-+
-+	if (!param2 || pid < 0)
-+		return -EINVAL;
-+
-+	memset(&lparam2, 0, sizeof(struct sched_param2));
-+	if (copy_from_user(&lparam2, param2, sizeof(struct sched_param2)))
-+		return -EFAULT;
-+
-+	rcu_read_lock();
-+	retval = -ESRCH;
-+	p = find_process_by_pid(pid);
-+	if (p != NULL)
-+		retval = sched_setscheduler2(p, policy, &lparam2);
-+	rcu_read_unlock();
-+
-+	return retval;
-+}
-+
- /**
-  * sys_sched_setscheduler - set/change the scheduler policy and RT priority
-  * @pid: the pid in question.
-@@ -3514,6 +3553,21 @@ SYSCALL_DEFINE3(sched_setscheduler, pid_t, pid, int, policy,
- }
- 
- /**
-+ * sys_sched_setscheduler2 - same as above, but with extended sched_param
-+ * @pid: the pid in question.
-+ * @policy: new policy (could use extended sched_param).
-+ * @param: structure containg the extended parameters.
-+ */
-+SYSCALL_DEFINE3(sched_setscheduler2, pid_t, pid, int, policy,
-+		struct sched_param2 __user *, param2)
-+{
-+	if (policy < 0)
-+		return -EINVAL;
-+
-+	return do_sched_setscheduler2(pid, policy, param2);
-+}
-+
-+/**
-  * sys_sched_setparam - set/change the RT priority of a thread
-  * @pid: the pid in question.
-  * @param: structure containing the new RT priority.
-@@ -3526,6 +3580,17 @@ SYSCALL_DEFINE2(sched_setparam, pid_t, pid, struct sched_param __user *, param)
- }
- 
- /**
-+ * sys_sched_setparam2 - same as above, but with extended sched_param
-+ * @pid: the pid in question.
-+ * @param2: structure containing the extended parameters.
-+ */
-+SYSCALL_DEFINE2(sched_setparam2, pid_t, pid,
-+		struct sched_param2 __user *, param2)
-+{
-+	return do_sched_setscheduler2(pid, -1, param2);
-+}
-+
-+/**
-  * sys_sched_getscheduler - get the policy (scheduling class) of a thread
-  * @pid: the pid in question.
-  *
-@@ -3595,6 +3660,45 @@ out_unlock:
- 	return retval;
- }
- 
-+/**
-+ * sys_sched_getparam2 - same as above, but with extended sched_param
-+ * @pid: the pid in question.
-+ * @param2: structure containing the extended parameters.
-+ */
-+SYSCALL_DEFINE2(sched_getparam2, pid_t, pid,
-+		struct sched_param2 __user *, param2)
-+{
-+	struct sched_param2 lp;
-+	struct task_struct *p;
-+	int retval;
-+
-+	if (!param2 || pid < 0)
-+		return -EINVAL;
-+
-+	rcu_read_lock();
-+	p = find_process_by_pid(pid);
-+	retval = -ESRCH;
-+	if (!p)
-+		goto out_unlock;
-+
-+	retval = security_task_getscheduler(p);
-+	if (retval)
-+		goto out_unlock;
-+
-+	lp.sched_priority = p->rt_priority;
-+	rcu_read_unlock();
-+
-+	retval = copy_to_user(param2, &lp,
-+			sizeof(struct sched_param2)) ? -EFAULT : 0;
-+
-+	return retval;
-+
-+out_unlock:
-+	rcu_read_unlock();
-+	return retval;
-+
-+}
-+
- long sched_setaffinity(pid_t pid, const struct cpumask *in_mask)
- {
- 	cpumask_var_t cpus_allowed, new_mask;
+-#ifdef CONFIG_RT_MUTEXES
+-	plist_head_init(&init_task.pi_waiters);
+-#endif
+-
+ 	/*
+ 	 * The boot idle thread does lazy MMU switching as well:
+ 	 */
 -- 
 1.7.9.5
 
