@@ -1,76 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932577Ab3JNUXP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 16:23:15 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:38992 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757528Ab3JNUDG (ORCPT
+	id S932595Ab3JNUXb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 16:23:31 -0400
+Received: from smtprelay0145.hostedemail.com ([216.40.44.145]:51119 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932579Ab3JNUX1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 16:03:06 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Ramkumar Ramachandra <artagnon@gmail.com>,
-        David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 137/161] perf timechart: Add example in the documentation
-Date: Mon, 14 Oct 2013 17:02:06 -0300
-Message-Id: <1381780950-25642-138-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1381780950-25642-1-git-send-email-acme@infradead.org>
-References: <1381780950-25642-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 14 Oct 2013 16:23:27 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1801:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3354:3622:3865:3866:3867:3868:3870:3871:3872:3874:4250:4321:4605:5007:6119:6691:7652:8531:8603:10004:10400:10848:11026:11232:11658:11914:12043:12517:12519:12663:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: drain28_1dd6e83001a43
+X-Filterd-Recvd-Size: 3200
+Message-ID: <1381782202.12919.5.camel@joe-AO722>
+Subject: Re: [PATCH] checkpatch: Allow spaces before the ':' of a bitfield
+From: Joe Perches <joe@perches.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: linux-kernel@vger.kernel.org,
+        Nandini Hanumanthagowda <nandu.hgowda@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andy Whitcroft <apw@canonical.com>
+Date: Mon, 14 Oct 2013 13:23:22 -0700
+In-Reply-To: <20131014202053.GA4171@jtriplet-mobl1>
+References: <20131013121635.GA29395@nandinih-Inspiron-5521>
+	 <20131013153943.GA27861@kroah.com>
+	 <687af3bd-edc6-40cf-b994-0d0fdb7cd30d@googlegroups.com>
+	 <20131014173207.GE16517@jtriplet-mobl1>
+	 <1381773108.25528.22.camel@joe-AO722>
+	 <20131014180001.GA20139@jtriplet-mobl1>
+	 <1381773878.25528.24.camel@joe-AO722>
+	 <20131014202053.GA4171@jtriplet-mobl1>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ramkumar Ramachandra <artagnon@gmail.com>
+On Mon, 2013-10-14 at 13:20 -0700, Josh Triplett wrote:
+> On Mon, Oct 14, 2013 at 11:04:38AM -0700, Joe Perches wrote:
+> > On Mon, 2013-10-14 at 11:00 -0700, Josh Triplett wrote:
+> > > On Mon, Oct 14, 2013 at 10:51:48AM -0700, Joe Perches wrote:
+> > > > On Mon, 2013-10-14 at 10:32 -0700, Josh Triplett wrote:
+> > > > > checkpatch warns about spaces both before and after the ':' separating a
+> > > > > bitfield name from its width.  However, many drivers do put space before
+> > > > > the : to line up the widths, which makes the definition significantly
+> > > > > more readable; checkpatch should not warn about that.  Remove the
+> > > > > warning for space before the ':' of a bitfield.
+> > > > 
+> > > > There are a _bunch_ of different styles used for
+> > > > alignment of bitfields.
+> > > > 
+> > > > $ grep -rPh --include=*.[ch] \
+> > > >   '(?:unsigned\s+|signed\s+|)(char|short|long|long\s+long|\w+_t|(?:__|)(?:u|s)(?:8|16|32|64))\s+\w+\s*:\s*\d+\s*(?:,|;)' *
+> > > > 
+> > > > spaces before colon
+> > > > spaces after colon
+> > > > aligned on bitfield size
+> > > > 
+> > > > I'd just as soon make it a --strict check.
+> > > 
+> > > I'd be fine with removing the check entirely, or making it --strict;
+> > > however, even for --strict mode I'd suggest applying this patch, as I
+> > > don't think checkpatch should ever prohibit spaces before the ':'.
+> > 
+> > Maybe something like that patch, but spaces probably
+> > should be prohibited after the : in a bitfield either.
+> > 
+> > This style is pretty common
+> > 
+> > 		u32 dma_address0                   :30;
+> > 		u32 dma_0No_update                 : 1;
+> > 		u32 dma_0start                     : 1;
+> > 		u32 dma_addr_size                  :24;
+> > 		u32 DMA_maxpackets                 : 8;
+> 
+> I'm fine with just dropping the check entirely; want a patch for that
+> instead?  It's a much simpler patch.
 
-While at it, update the synopsis to show both forms.
+Maybe Andy has an opinion?  He's the one that
+wrote almost all of these SPACING checks.
 
-Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Link: http://lkml.kernel.org/r/1380791716-10325-1-git-send-email-artagnon@gmail.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/Documentation/perf-timechart.txt | 15 ++++++++++++++-
- 1 file changed, 14 insertions(+), 1 deletion(-)
-
-diff --git a/tools/perf/Documentation/perf-timechart.txt b/tools/perf/Documentation/perf-timechart.txt
-index 1632b0efc757..3ff8bd4f0b4d 100644
---- a/tools/perf/Documentation/perf-timechart.txt
-+++ b/tools/perf/Documentation/perf-timechart.txt
-@@ -8,7 +8,8 @@ perf-timechart - Tool to visualize total system behavior during a workload
- SYNOPSIS
- --------
- [verse]
--'perf timechart' {record}
-+'perf timechart' record <command>
-+'perf timechart' [<options>]
- 
- DESCRIPTION
- -----------
-@@ -41,6 +42,18 @@ OPTIONS
- --symfs=<directory>::
-         Look for files with symbols relative to this directory.
- 
-+EXAMPLES
-+--------
-+
-+$ perf timechart record git pull
-+
-+  [ perf record: Woken up 13 times to write data ]
-+  [ perf record: Captured and wrote 4.253 MB perf.data (~185801 samples) ]
-+
-+$ perf timechart
-+
-+  Written 10.2 seconds of trace to output.svg.
-+
- SEE ALSO
- --------
- linkperf:perf-record[1]
--- 
-1.8.1.4
 
