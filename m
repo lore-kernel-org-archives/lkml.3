@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756153Ab3JNScT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 14:32:19 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:46641 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750843Ab3JNScS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 14:32:18 -0400
-Message-ID: <525C38AB.3060002@ti.com>
-Date: Mon, 14 Oct 2013 13:32:11 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Jingoo Han <jg1.han@samsung.com>, "'Mark Brown'" <broonie@linaro.org>
-CC: "'Liam Girdwood'" <lgirdwood@gmail.com>, <linux-kernel@vger.kernel.org>,
-        "'Balaji T K'" <balajitk@ti.com>
-Subject: Re: [PATCH 11/11] regulator: twl: Fix checkpatch issue
-References: <000001cec8b9$931f4c90$b95de5b0$%han@samsung.com> <000a01cec8bb$13bf5970$3b3e0c50$%han@samsung.com>
-In-Reply-To: <000a01cec8bb$13bf5970$3b3e0c50$%han@samsung.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1756711Ab3JNScl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 14:32:41 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:23640 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756540Ab3JNSck (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 14:32:40 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 108.39.110.144
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18/g3hBOkbUCqmpBU0kJgRBXENjZDp2wqk=
+From: Jason Cooper <jason@lakedaemon.net>
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Kevin Hilman <khilman@linaro.org>
+Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] MAINTAINERS: ARM: mvebu: add Sebastian Hesselbarth
+Date: Mon, 14 Oct 2013 18:32:21 +0000
+Message-Id: <1381775541-24027-1-git-send-email-jason@lakedaemon.net>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/14/2013 03:55 AM, Jingoo Han wrote:
-> Fix the following checkpatch warnings.
-> 
->   WARNING: please, no space before tabs
->   WARNING: space prohibited between function name and open parenthesis '('
-> 
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-> ---
->  drivers/regulator/twl-regulator.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/regulator/twl-regulator.c b/drivers/regulator/twl-regulator.c
-> index 8ebd785..fed28ab 100644
-> --- a/drivers/regulator/twl-regulator.c
-> +++ b/drivers/regulator/twl-regulator.c
-> @@ -58,7 +58,7 @@ struct twlreg_info {
->  	struct regulator_desc	desc;
->  
->  	/* chip specific features */
-> -	unsigned long 		features;
-> +	unsigned long		features;
->  
->  	/*
->  	 * optional override functions for voltage set/get
-> @@ -1128,7 +1128,7 @@ static int twlreg_probe(struct platform_device *pdev)
->  	if (!initdata)
->  		return -EINVAL;
->  
-> -	info = kmemdup(template, sizeof (*info), GFP_KERNEL);
-> +	info = kmemdup(template, sizeof(*info), GFP_KERNEL);
->  	if (!info)
->  		return -ENOMEM;
->  
-> 
+Sebastian is a hobbyist who has done a lot of heavy lifting converting
+mach-dove to devicetree, and assisting others with patches pertaining to
+mvebu.
 
-Acked-by: Nishanth Menon <nm@ti.com>
+It is hoped that he will continue this work, and also assist the current
+mvebu maintainers with patch wrangling and pull request submissions.
+
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+---
+ MAINTAINERS | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 8a0cbf3..7a45039 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -1009,6 +1009,7 @@ ARM/Marvell Armada 370 and Armada XP SOC support
+ M:	Jason Cooper <jason@lakedaemon.net>
+ M:	Andrew Lunn <andrew@lunn.ch>
+ M:	Gregory Clement <gregory.clement@free-electrons.com>
++M:	Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+ L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+ S:	Maintained
+ F:	arch/arm/mach-mvebu/
+@@ -1016,6 +1017,7 @@ F:	arch/arm/mach-mvebu/
+ ARM/Marvell Dove/Kirkwood/MV78xx0/Orion SOC support
+ M:	Jason Cooper <jason@lakedaemon.net>
+ M:	Andrew Lunn <andrew@lunn.ch>
++M:	Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+ L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+ S:	Maintained
+ F:	arch/arm/mach-dove/
 -- 
-Regards,
-Nishanth Menon
+1.8.3.2
+
