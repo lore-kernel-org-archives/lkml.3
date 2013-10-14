@@ -1,80 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753263Ab3JNHaF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 03:30:05 -0400
-Received: from plane.gmane.org ([80.91.229.3]:35959 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751259Ab3JNHaE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 03:30:04 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Romain Izard <romain.izard.pro@gmail.com>
-Subject: Re: [PATCH 2/4] drivers/mmc/host: don't use
- devm_pinctrl_get_select_default() in probe
-Date: Mon, 14 Oct 2013 07:28:09 +0000 (UTC)
-Message-ID: <l3g6e9$fqh$1@ger.gmane.org>
-References: <1381681071-6021-1-git-send-email-wsa@the-dreams.de>
- <1381681071-6021-3-git-send-email-wsa@the-dreams.de>
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: 146.187.3.109.rev.sfr.net
-User-Agent: slrn/pre1.0.0-18 (Linux)
-Cc: linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org
-Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org
+	id S1751452Ab3JNHe4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 03:34:56 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:49318 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750778Ab3JNHey (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 03:34:54 -0400
+Date: Mon, 14 Oct 2013 09:34:37 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
+        Marc Pignat <marc.pignat@hevs.ch>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>, kernel@pengutronix.de,
+        John Stulz <john.stultz@linaro.org>,
+        Ronald Wahl <ronald.wahl@raritan.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [GIT PULL] fixes for integer rounding in timer core
+Message-ID: <20131014073436.GX10079@pengutronix.de>
+References: <alpine.DEB.2.02.1309191629040.4089@ionos.tec.linutronix.de>
+ <1380052223-24139-1-git-send-email-u.kleine-koenig@pengutronix.de>
+ <5253D9A1.1080106@pengutronix.de>
+ <20131008153147.GR10079@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131008153147.GR10079@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-10-13, Wolfram Sang <wsa@the-dreams.de> wrote:
-> Since commit ab78029 (drivers/pinctrl: grab default handles from device core),
-> we can rely on device core for setting the default pins. Compile tested only.
->
-> Acked-by: Linus Walleij <linus.walleij@linaro.org> (personally at LCE13)
-> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
-> ---
->  drivers/mmc/host/mvsdio.c          | 7 +------
->  drivers/mmc/host/omap_hsmmc.c      | 7 -------
->  drivers/mmc/host/sdhci-esdhc-imx.c | 8 --------
->  3 files changed, 1 insertion(+), 21 deletions(-)
->
-> diff --git a/drivers/mmc/host/mvsdio.c b/drivers/mmc/host/mvsdio.c
-> index 06c5b0b..8c9f448 100644
-> --- a/drivers/mmc/host/mvsdio.c
-> +++ b/drivers/mmc/host/mvsdio.c
-> @@ -25,7 +25,6 @@
->  #include <linux/of_irq.h>
->  #include <linux/mmc/host.h>
->  #include <linux/mmc/slot-gpio.h>
-> -#include <linux/pinctrl/consumer.h>
->  
->  #include <asm/sizes.h>
->  #include <asm/unaligned.h>
-> @@ -685,7 +684,7 @@ static int __init mvsd_probe(struct platform_device *pdev)
->  	const struct mbus_dram_target_info *dram;
->  	struct resource *r;
->  	int ret, irq;
-> -	struct pinctrl *pinctrl;
-> +	int gpio_card_detect, gpio_write_protect;
->  
+Hello Linus, hello Ingo,
 
-This new line does not belong to this patch.
+On Tue, Oct 08, 2013 at 05:31:47PM +0200, Uwe Kleine-König wrote:
+> > What's the status of this patch?
+> I pinged Thomas about it already via irc, but I didn't get a response up
+> to now. It would be great to get that into 3.12. To make it easy for
+> Thomas, here is a pull request that includes the fix and converts
+> at91rm9200 back to clockevents_config_and_register dropping one of the
+> workarounds for the fixed bug.
+> 
+> The following changes since commit 4a10c2ac2f368583138b774ca41fac4207911983:
+> 
+>   Linux 3.12-rc2 (2013-09-23 15:41:09 -0700)
+> 
+> are available in the git repository at:
+> 
+>   git://git.pengutronix.de/git/ukl/linux.git tags/timer-for-tip
+> 
+> for you to fetch changes up to b58c4b70121070f45eefa739ecbb58d57da1c4d9:
+> 
+>   ARM: at91: rm9200: switch back to clockevents_config_and_register (2013-10-08 16:58:22 +0200)
+> 
+> ----------------------------------------------------------------
+> The first patch in this pull request fixes an old integer rounding bug in the
+> timer core that was (and still is) worked around in a few arch's timer code.
+> The second patch drops such a work around now that the core is fixed.
+It would be nice to get that fix into 3.12, but Thomas stopped
+responding nearly a month ago---his last mail in this thread[1] dates back
+to September 20.
 
->  	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->  	irq = platform_get_irq(pdev, 0);
-> @@ -702,10 +701,6 @@ static int __init mvsd_probe(struct platform_device *pdev)
->  	host->mmc = mmc;
->  	host->dev = &pdev->dev;
->  
-> -	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
-> -	if (IS_ERR(pinctrl))
-> -		dev_warn(&pdev->dev, "no pins associated\n");
-> -
->  	/*
->  	 * Some non-DT platforms do not pass a clock, and the clock
->  	 * frequency is passed through platform_data. On DT platforms,
+Can one of you please take it directly?
 
-Best regards,
+Thanks
+Uwe
+ 
+[1] http://thread.gmane.org/gmane.linux.kernel/1563370/
+> ----------------------------------------------------------------
+> Thomas Gleixner (1):
+>       clockevents: Sanitize ticks to nsec conversion
+> 
+> Uwe Kleine-König (1):
+>       ARM: at91: rm9200: switch back to clockevents_config_and_register
+> 
+>  arch/arm/mach-at91/at91rm9200_time.c |  7 ++--
+>  kernel/time/clockevents.c            | 65 +++++++++++++++++++++++++++---------
+>  2 files changed, 52 insertions(+), 20 deletions(-)
+> 
+> -- 
+> Pengutronix e.K.                           | Uwe Kleine-König            |
+> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> 
+
 -- 
-Romain Izard
-
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
