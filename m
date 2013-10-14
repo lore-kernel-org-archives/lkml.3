@@ -1,89 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757391Ab3JNTyE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 15:54:04 -0400
-Received: from smtprelay0155.hostedemail.com ([216.40.44.155]:35162 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754984Ab3JNTyB (ORCPT
+	id S1757289Ab3JNUCn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 16:02:43 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38404 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756719Ab3JNUCl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 15:54:01 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:800:960:967:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2525:2561:2564:2682:2685:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3353:3622:3657:3865:3866:3867:3870:3871:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4250:4321:5007:6117:7576:7652:7875:8599:8603:9010:9025:9388:10004:10049:10400:10848:11026:11232:11253:11257:11658:11854:11914:12043:12114:12214:12438:12517:12519:12555:12740:12776:13069:13095:13255:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not
-X-HE-Tag: shock04_3fe25a92a4a35
-X-Filterd-Recvd-Size: 2987
-Message-ID: <1381780437.12919.3.camel@joe-AO722>
-Subject: Re: [PATCH -next] netdev: inet_timewait_sock.h missing semi-colon
- when KMEMCHECK is enabled
-From: Joe Perches <joe@perches.com>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Thierry Reding <thierry.reding@gmail.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Mark Brown <broonie@kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        David Miller <davem@davemloft.net>
-Date: Mon, 14 Oct 2013 12:53:57 -0700
-In-Reply-To: <525C47C0.2000907@infradead.org>
-References: <1381762088-18880-1-git-send-email-treding@nvidia.com>
-	 <525C47C0.2000907@infradead.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 14 Oct 2013 16:02:41 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 008/161] tools/perf/build: Split out feature check: 'fortify-source'
+Date: Mon, 14 Oct 2013 16:59:57 -0300
+Message-Id: <1381780950-25642-9-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1381780950-25642-1-git-send-email-acme@infradead.org>
+References: <1381780950-25642-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-10-14 at 12:36 -0700, Randy Dunlap wrote:
-> From: Randy Dunlap <rdunlap@infradead.org>
-> 
-> Fix (a few hundred) build errors due to missing semi-colon when
-> KMEMCHECK is enabled:
-> 
->   include/net/inet_timewait_sock.h:139:2: error: expected ',', ';' or '}' before 'int'
->   include/net/inet_timewait_sock.h:148:28: error: 'const struct inet_timewait_sock' has no member named 'tw_death_node'
-> 
-> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
-> ---
->  include/net/inet_timewait_sock.h |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> --- next-2013-1014.orig/include/net/inet_timewait_sock.h
-> +++ next-2013-1014/include/net/inet_timewait_sock.h
-> @@ -135,7 +135,7 @@ struct inet_timewait_sock {
->  				tw_transparent  : 1,
->  				tw_pad		: 6,	/* 6 bits hole */
->  				tw_tos		: 8,
-> -				tw_pad2		: 16 /* 16 bits hole */
-> +				tw_pad2		: 16;	/* 16 bits hole */
->  	kmemcheck_bitfield_end(flags);
->  	u32			tw_ttd;
->  	struct inet_bind_bucket	*tw_tb;
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+From: Ingo Molnar <mingo@kernel.org>
 
-Shouldn't this be done in kmemcheck.h?
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Link: http://lkml.kernel.org/n/tip-wicrcLCy2wkalka7iwsuzgpb@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ tools/perf/config/Makefile                             | 3 ++-
+ tools/perf/config/feature-checks/Makefile              | 4 ++++
+ tools/perf/config/feature-checks/test-fortify-source.c | 6 ++++++
+ 3 files changed, 12 insertions(+), 1 deletion(-)
+ create mode 100644 tools/perf/config/feature-checks/test-fortify-source.c
 
- include/linux/kmemcheck.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/include/linux/kmemcheck.h b/include/linux/kmemcheck.h
-index 39f8453..b9ffad5 100644
---- a/include/linux/kmemcheck.h
-+++ b/include/linux/kmemcheck.h
-@@ -62,10 +62,10 @@ bool kmemcheck_is_obj_initialized(unsigned long addr, size_t size);
-  *     kmemcheck_annotate_bitfield(a, flags);
-  */
- #define kmemcheck_bitfield_begin(name)	\
--	int name##_begin[0];
-+	int name##_begin[0]
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index a3de2f8bd61a..7a614f92ce8c 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -106,6 +106,7 @@ FEATURE_TESTS =				\
+ 	stackprotector-all		\
+ 	stackprotector			\
+ 	volatile-register-var		\
++	fortify-source			\
+ 	libnuma
  
- #define kmemcheck_bitfield_end(name)	\
--	int name##_end[0];
-+	int name##_end[0]
+ $(foreach test,$(FEATURE_TESTS),$(call feature_check,$(test),$(test)))
+@@ -123,7 +124,7 @@ ifeq ($(feature-volatile-register-var), 1)
+ endif
  
- #define kmemcheck_annotate_bitfield(ptr, name)				\
- 	do {								\
-
+ ifndef PERF_DEBUG
+-  ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -D_FORTIFY_SOURCE=2,-D_FORTIFY_SOURCE=2),y)
++  ifeq ($(feature-fortify-source), 1)
+     CFLAGS += -D_FORTIFY_SOURCE=2
+   endif
+ endif
+diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
+index 5693299b4806..529317e6009b 100644
+--- a/tools/perf/config/feature-checks/Makefile
++++ b/tools/perf/config/feature-checks/Makefile
+@@ -4,6 +4,7 @@ FILES=					\
+ 	test-stackprotector-all		\
+ 	test-stackprotector		\
+ 	test-volatile-register-var	\
++	test-fortify-source		\
+ 	test-libnuma
+ 
+ CC := $(CC) -MD
+@@ -26,6 +27,9 @@ test-stackprotector:
+ test-volatile-register-var:
+ 	$(BUILD) -Werror -Wvolatile-register-var
+ 
++test-fortify-source:
++	$(BUILD) -O2 -Werror -D_FORTIFY_SOURCE=2
++
+ test-libnuma:
+ 	$(BUILD) -lnuma
+ 
+diff --git a/tools/perf/config/feature-checks/test-fortify-source.c b/tools/perf/config/feature-checks/test-fortify-source.c
+new file mode 100644
+index 000000000000..c9f398d87868
+--- /dev/null
++++ b/tools/perf/config/feature-checks/test-fortify-source.c
+@@ -0,0 +1,6 @@
++#include <stdio.h>
++
++int main(void)
++{
++	return puts("hi");
++}
+-- 
+1.8.1.4
 
