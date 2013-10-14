@@ -1,54 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756715Ab3JNNu7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 09:50:59 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:48674 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756207Ab3JNNu5 (ORCPT
+	id S1756742Ab3JNNvH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 09:51:07 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:57230 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756207Ab3JNNvF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 09:50:57 -0400
+	Mon, 14 Oct 2013 09:51:05 -0400
+Date: Mon, 14 Oct 2013 15:50:40 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Juri Lelli <juri.lelli@gmail.com>, tglx@linutronix.de, mingo@redhat.com,
+        rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
+        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
+        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
+        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@gmail.com,
+        liming.wang@windriver.com, jkacur@redhat.com,
+        harald.gustafsson@ericsson.com, vincent.guittot@linaro.org,
+        bruce.ashfield@windriver.com
+Subject: Re: [PATCH 00/14] sched: SCHED_DEADLINE v8
+Message-ID: <20131014135040.GF28601@twins.programming.kicks-ass.net>
+References: <1381747426-31334-1-git-send-email-juri.lelli@gmail.com>
+ <20131014122424.GK3081@twins.programming.kicks-ass.net>
+ <20131014123855.GA25046@gmail.com>
+ <20131014132219.GL3081@twins.programming.kicks-ass.net>
+ <20131014133638.GA26319@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20131014125858.GH19604@quack.suse.cz>
-References: <1381682393-5769-1-git-send-email-ming.lei@canonical.com>
-	<20131014125858.GH19604@quack.suse.cz>
-Date: Mon, 14 Oct 2013 21:50:54 +0800
-Message-ID: <CACVXFVPpkJdw_AVwd=dRpD8ju6frjaU3QhKorr_PNNGu_D0jAQ@mail.gmail.com>
-Subject: Re: [PATCH] ext4: fix checking on nr_to_write
-From: Ming Lei <ming.lei@canonical.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ted Tso <tytso@mit.edu>, linux-ext4@vger.kernel.org,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131014133638.GA26319@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 14, 2013 at 8:58 PM, Jan Kara <jack@suse.cz> wrote:
->   Umm, I guess I see what are you pointing at. Thanks for catching that.
-> mpage_process_page_bufs() always adds a buffer to mpd even if nr_to_write
-> is already <= 0. But I would somewhat prefer not to call
-> mpage_prepare_extent_to_map() at all when nr_to_write <= 0. So a patch
-> like:
->                 ret = mpage_prepare_extent_to_map(&mpd);
->                 if (!ret) {
-> -                       if (mpd.map.m_len)
-> +                       if (mpd.map.m_len) {
->                                 ret = mpage_map_and_submit_extent(handle, &mpd,
->                                         &give_up_on_write);
-> -                       else {
-> +                               done = (wbc->nr_to_write <= 0);
-> +                       } else {
->
-> Should also fix your problem, am I right?
+On Mon, Oct 14, 2013 at 03:36:38PM +0200, Ingo Molnar wrote:
+> 
+> * Peter Zijlstra <peterz@infradead.org> wrote:
+> 
+> > On Mon, Oct 14, 2013 at 02:38:55PM +0200, Ingo Molnar wrote:
+> >
+> > > > [...] the only 'issue' I have is the cgroup abi muck. We clearly 
+> > > > need a bit more discussion on what/how we want things there but 
+> > > > there are no easy answers :/ So I'd say lets try this and see where 
+> > > > we'll find ourselves.
+> > > 
+> > > I'd suggest we leave out the cgroup ABI muck from the first round of 
+> > > upstream merge - do it in a second round, that will give it more 
+> > > attention.
+> > 
+> > I'm afraid that'd give rise to some very weird situations for people 
+> > using cgroups :/
+> 
+> Why? One solution would be to just not offer bandwidth management 
+> initially - but use some sane default.
+> 
+> Yes, this doesn't offer "true" deadline scheduling yet, but would allow us 
+> to move most of the code upstream, without any ABI changes initially 
+> (other than adding the SCHED_DEADLINE policy and such).
 
-I am afraid it can't, because we need to stop scanning page cache
-if end of file is reached.
-
-nr_to_write will become negative inside mpage_map_and_submit_extent(),
-that is why I fix it inside mpage_prepare_extent_to_map().
-
-
-Thanks,
---
-Ming Lei
+I suppose we could keep the global sysctl thingies but indeed ignore all
+the cgroup limits for now. That would allow some admission control but
+leaves out the hairiest part.
