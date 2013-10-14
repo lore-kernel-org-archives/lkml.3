@@ -1,133 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932558Ab3JNUks (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 16:40:48 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:49235 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932106Ab3JNUk1 (ORCPT
+	id S933349Ab3JNUlr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 16:41:47 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38590 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757271Ab3JNUCy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 16:40:27 -0400
-Message-ID: <525C56EF.8000807@gmail.com>
-Date: Tue, 15 Oct 2013 07:41:19 +1100
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
-MIME-Version: 1.0
-To: Djalal Harouni <tixxdz@opendz.org>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>, Joe Perches <joe@perches.com>,
-        Andrew Morton <akpm@linux-foundation.org>, eldad@fogrefinery.com,
-        Jiri Kosina <jkosina@suse.cz>, jgunthorpe@obsidianresearch.com,
-        Dan Rosenberg <dan.j.rosenberg@gmail.com>,
-        Kees Cook <keescook@chromium.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        George Spelvin <linux@horizon.com>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3a] vsprintf: Check real user/group id for %pK
-References: <5255D023.2030907@gmail.com> <1381356014.2050.28.camel@joe-AO722> <5255D2FD.6050705@gmail.com> <1381356861.2050.33.camel@joe-AO722> <5255D7D4.8050204@gmail.com> <1381358030.2050.36.camel@joe-AO722> <5255DBD8.30005@gmail.com> <1381360187.2050.44.camel@joe-AO722> <87pprck0q7.fsf@xmission.com> <52576E32.1050700@gmail.com> <20131014101706.GA5605@dztty>
-In-Reply-To: <20131014101706.GA5605@dztty>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 14 Oct 2013 16:02:54 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 051/161] tools/perf/build: Harmonize the style of the feature testcases
+Date: Mon, 14 Oct 2013 17:00:40 -0300
+Message-Id: <1381780950-25642-52-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1381780950-25642-1-git-send-email-acme@infradead.org>
+References: <1381780950-25642-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/10/13 21:17, Djalal Harouni wrote:
+From: Ingo Molnar <mingo@kernel.org>
 
-> On Fri, Oct 11, 2013 at 02:19:14PM +1100, Ryan Mallon wrote:
->> On 11/10/13 13:20, Eric W. Biederman wrote:
->>> Joe Perches <joe@perches.com> writes:
->>>
->>>> Some setuid binaries will allow reading of files which have read
->>>> permission by the real user id. This is problematic with files which
->>>> use %pK because the file access permission is checked at open() time,
->>>> but the kptr_restrict setting is checked at read() time. If a setuid
->>>> binary opens a %pK file as an unprivileged user, and then elevates
->>>> permissions before reading the file, then kernel pointer values may be
->>>> leaked.
->>>>
->>>> This happens for example with the setuid pppd application on Ubuntu
->>>> 12.04:
->>>>
->>>>   $ head -1 /proc/kallsyms
->>>>   00000000 T startup_32
->>>>
->>>>   $ pppd file /proc/kallsyms
->>>>   pppd: In file /proc/kallsyms: unrecognized option 'c1000000'
->>>>
->>>> This will only leak the pointer value from the first line, but other
->>>> setuid binaries may leak more information.
->>>>
->>>> Fix this by adding a check that in addition to the current process
->>>> having CAP_SYSLOG, that effective user and group ids are equal to the
->>>> real ids. If a setuid binary reads the contents of a file which uses
->>>> %pK then the pointer values will be printed as NULL if the real user
->>>> is unprivileged.
->>>>
->>>> Update the sysctl documentation to reflect the changes, and also
->>>> correct the documentation to state the kptr_restrict=0 is the default.
->>>
->>> Sigh.  This is all wrong.  The only correct thing to test is
->>> file->f_cred.  Aka the capabilities of the program that opened the
->>> file.
->>>
->>> Which means that the interface to %pK in the case of kptr_restrict is
->>> broken as it has no way to be passed the information it needs to make
->>> a sensible decision.
->>
->> Would it make sense to add a struct file * to struct seq_file and set
->> that in seq_open? Then the capability check can be done against seq->file.
-> For the "add a struct file * to struct seq_file" and set it during
-> seq_open(), It was proposed by Linus, but Al Viro didn't like it:
-> https://lkml.org/lkml/2013/9/25/765
-> 
-> I'm not sure if this will work for you: you can make seq_file->private
-> cache some data, by calling single_open()... at ->open(), later check it
-> during read()...
-> 
-> 
-> As noted by Eric, I'll also go for the capability check at ->open(), if it
-> does not break some userspace. BTW the CAP_SYSLOG check should do the job
+The various testcases used different styles, which was not really
+visible as long as they hid in feature-tests.mak. Now that they
+are out in the open make them prettier.
 
-Yes, it has already been agreed on that open() time is the correct place to
-do the check, and that either the check value should be cached in the
-struct seq_file or the struct cred/file should be kept so that the check
-can be done later. I think caching the result is actually better since it
-removes the whole in_irq() problem also.
+( Also delete the leftover, empty feature-tests.mak file. )
 
-The problem I have at the moment is handling the case for 
-/sys/module<modname>/sections/*, which are seq_files in Greg's
-driver-core tree, but do not actually pass the struct seq_file to the show
-function, which makes it impossible to check what the open() time
-permissions were.
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Link: http://lkml.kernel.org/n/tip-drDWk8xltndjdsespzjbhu6w@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ tools/perf/config/feature-checks/test-backtrace.c         | 1 -
+ tools/perf/config/feature-checks/test-cplus-demangle.c    | 1 -
+ tools/perf/config/feature-checks/test-dwarf.c             | 1 +
+ tools/perf/config/feature-checks/test-glibc.c             | 2 +-
+ tools/perf/config/feature-checks/test-libaudit.c          | 1 +
+ tools/perf/config/feature-checks/test-libbfd.c            | 1 -
+ tools/perf/config/feature-checks/test-libelf-getphdrnum.c | 3 ++-
+ tools/perf/config/feature-checks/test-libelf-mmap.c       | 3 ++-
+ tools/perf/config/feature-checks/test-libelf.c            | 1 +
+ tools/perf/config/feature-checks/test-libnuma.c           | 1 +
+ tools/perf/config/feature-checks/test-libpython.c         | 3 ++-
+ tools/perf/config/feature-tests.mak                       | 2 --
+ 12 files changed, 11 insertions(+), 9 deletions(-)
+ delete mode 100644 tools/perf/config/feature-tests.mak
 
-> Checks during read() are not sufficient, since the design allows passing
-> file descriptors and dup() stdin/stdout of suid-execve.
-> 
-> 
-> IMO: unprivileged code should not get that file descriptor, so ->open()
-> should fail.
-> If this will break userspace then allow open() and cache result for read()
-> 
-> 
-> Can you emulate the behaviour of kptr_restrict=1 ? If so:
-> 1) perform check during open() and cache data
-> 2) during read() check kptr_restrict==1
->    check the cached value and if opener had CAP_SYSLOG  if so:
->    print something like this: 00000000 T startup_32
-> 
-> All this without modifying vsprintf, I mean just do the checks outside
-> vsprintf() inside your ->read()
+diff --git a/tools/perf/config/feature-checks/test-backtrace.c b/tools/perf/config/feature-checks/test-backtrace.c
+index 5b33bcf12c27..7124aa1dc8fb 100644
+--- a/tools/perf/config/feature-checks/test-backtrace.c
++++ b/tools/perf/config/feature-checks/test-backtrace.c
+@@ -11,4 +11,3 @@ int main(void)
+ 
+ 	return 0;
+ }
+-
+diff --git a/tools/perf/config/feature-checks/test-cplus-demangle.c b/tools/perf/config/feature-checks/test-cplus-demangle.c
+index ab29f80570af..610c686e0009 100644
+--- a/tools/perf/config/feature-checks/test-cplus-demangle.c
++++ b/tools/perf/config/feature-checks/test-cplus-demangle.c
+@@ -12,4 +12,3 @@ int main(void)
+ 
+ 	return 0;
+ }
+-
+diff --git a/tools/perf/config/feature-checks/test-dwarf.c b/tools/perf/config/feature-checks/test-dwarf.c
+index 783dfcd9a5c4..3fc1801ce4a9 100644
+--- a/tools/perf/config/feature-checks/test-dwarf.c
++++ b/tools/perf/config/feature-checks/test-dwarf.c
+@@ -5,5 +5,6 @@
+ int main(void)
+ {
+ 	Dwarf *dbg = dwarf_begin(0, DWARF_C_READ);
++
+ 	return (long)dbg;
+ }
+diff --git a/tools/perf/config/feature-checks/test-glibc.c b/tools/perf/config/feature-checks/test-glibc.c
+index 13c66a58f2ec..b0820345cd98 100644
+--- a/tools/perf/config/feature-checks/test-glibc.c
++++ b/tools/perf/config/feature-checks/test-glibc.c
+@@ -3,6 +3,6 @@
+ int main(void)
+ {
+ 	const char *version = gnu_get_libc_version();
++
+ 	return (long)version;
+ }
+-
+diff --git a/tools/perf/config/feature-checks/test-libaudit.c b/tools/perf/config/feature-checks/test-libaudit.c
+index f7e791efa6d1..afc019f08641 100644
+--- a/tools/perf/config/feature-checks/test-libaudit.c
++++ b/tools/perf/config/feature-checks/test-libaudit.c
+@@ -5,5 +5,6 @@ extern int printf(const char *format, ...);
+ int main(void)
+ {
+ 	printf("error message: %s\n", audit_errno_to_name(0));
++
+ 	return audit_open();
+ }
+diff --git a/tools/perf/config/feature-checks/test-libbfd.c b/tools/perf/config/feature-checks/test-libbfd.c
+index 1886c78c30e7..24059907e990 100644
+--- a/tools/perf/config/feature-checks/test-libbfd.c
++++ b/tools/perf/config/feature-checks/test-libbfd.c
+@@ -13,4 +13,3 @@ int main(void)
+ 
+ 	return 0;
+ }
+-
+diff --git a/tools/perf/config/feature-checks/test-libelf-getphdrnum.c b/tools/perf/config/feature-checks/test-libelf-getphdrnum.c
+index 58eca5332520..d710459306c3 100644
+--- a/tools/perf/config/feature-checks/test-libelf-getphdrnum.c
++++ b/tools/perf/config/feature-checks/test-libelf-getphdrnum.c
+@@ -1,7 +1,8 @@
+ #include <libelf.h>
+-#
++
+ int main(void)
+ {
+ 	size_t dst;
++
+ 	return elf_getphdrnum(0, &dst);
+ }
+diff --git a/tools/perf/config/feature-checks/test-libelf-mmap.c b/tools/perf/config/feature-checks/test-libelf-mmap.c
+index 1c648159c705..564427d7ef18 100644
+--- a/tools/perf/config/feature-checks/test-libelf-mmap.c
++++ b/tools/perf/config/feature-checks/test-libelf-mmap.c
+@@ -1,7 +1,8 @@
+ #include <libelf.h>
+-#
++
+ int main(void)
+ {
+ 	Elf *elf = elf_begin(0, ELF_C_READ_MMAP, 0);
++
+ 	return (long)elf;
+ }
+diff --git a/tools/perf/config/feature-checks/test-libelf.c b/tools/perf/config/feature-checks/test-libelf.c
+index 1a08f9717344..08db322d8957 100644
+--- a/tools/perf/config/feature-checks/test-libelf.c
++++ b/tools/perf/config/feature-checks/test-libelf.c
+@@ -3,5 +3,6 @@
+ int main(void)
+ {
+ 	Elf *elf = elf_begin(0, ELF_C_READ, 0);
++
+ 	return (long)elf;
+ }
+diff --git a/tools/perf/config/feature-checks/test-libnuma.c b/tools/perf/config/feature-checks/test-libnuma.c
+index 70510a923e5a..4763d9cd587d 100644
+--- a/tools/perf/config/feature-checks/test-libnuma.c
++++ b/tools/perf/config/feature-checks/test-libnuma.c
+@@ -4,5 +4,6 @@
+ int main(void)
+ {
+ 	numa_available();
++
+ 	return 0;
+ }
+diff --git a/tools/perf/config/feature-checks/test-libpython.c b/tools/perf/config/feature-checks/test-libpython.c
+index 72267972fa98..b24b28ad6324 100644
+--- a/tools/perf/config/feature-checks/test-libpython.c
++++ b/tools/perf/config/feature-checks/test-libpython.c
+@@ -1,7 +1,8 @@
+ #include <Python.h>
+-#
++
+ int main(void)
+ {
+ 	Py_Initialize();
++
+ 	return 0;
+ }
+diff --git a/tools/perf/config/feature-tests.mak b/tools/perf/config/feature-tests.mak
+deleted file mode 100644
+index 139597f9cb07..000000000000
+--- a/tools/perf/config/feature-tests.mak
++++ /dev/null
+@@ -1,2 +0,0 @@
+-
+-
+-- 
+1.8.1.4
 
-
-Again, this has already been agreed on. As suggested by George I have
-a function called seq_kernel_pointer(), which returns either the real
-pointer or NULL based on the cached check at seq_open(), so you do
-prints like:
-
-  seq_printf(seq, "secret value = %p\n", seq_kernel_pointer(seq, ptr));
-
-Once I figure out how to resolve the module sections case, I will post
-a patch series.
-
-~Ryan
