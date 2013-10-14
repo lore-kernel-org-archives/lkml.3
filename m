@@ -1,66 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755851Ab3JNDX1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Oct 2013 23:23:27 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:58267 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755817Ab3JNDXZ (ORCPT
+	id S1752779Ab3JNDaN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Oct 2013 23:30:13 -0400
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:32816 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750797Ab3JNDaK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Oct 2013 23:23:25 -0400
-Message-ID: <525B63AB.8070601@free-electrons.com>
-Date: Mon, 14 Oct 2013 05:23:23 +0200
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Sun, 13 Oct 2013 23:30:10 -0400
 MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: gregkh@linuxfoundation.org, sarah.a.sharp@linux.intel.com,
-        tianyu.lan@intel.com, broonie@linaro.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usb/hcd: remove unnecessary local_irq_save
-References: <Pine.LNX.4.44L0.1310131133410.11381-100000@netrider.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1310131133410.11381-100000@netrider.rowland.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20131010212326.GZ4446@dastard>
+References: <1381090388-2761-1-git-send-email-linkinjeon@gmail.com>
+	<20131010005154.GS4446@dastard>
+	<CAKYAXd8=ZKESV5Fmw7hqwL=G8L=BG6h0LQpc2cVjN9uTkj7nYw@mail.gmail.com>
+	<20131010212326.GZ4446@dastard>
+Date: Mon, 14 Oct 2013 12:30:09 +0900
+Message-ID: <CAKYAXd9Z3OY1Hw3sNMVQAwZH2SwZ9au+rB=RKupwYH2MR=2+aQ@mail.gmail.com>
+Subject: Re: [PATCH RESEND 2/7] xfs: add support FALLOC_FL_COLLAPSE_RANGE for fallocate
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: viro@zeniv.linux.org.uk, mtk.manpages@gmail.com, tytso@mit.edu,
+        adilger.kernel@dilger.ca, bpm@sgi.com, elder@kernel.org,
+        hch@infradead.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        xfs@oss.sgi.com, a.sangwan@samsung.com,
+        Namjae Jeon <namjae.jeon@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
-
-On 10/13/2013 05:35 PM, Alan Stern wrote:
-> On Sun, 13 Oct 2013, Michael Opdenacker wrote:
+2013/10/11 Dave Chinner <david@fromorbit.com>:
+> On Thu, Oct 10, 2013 at 04:00:13PM +0900, Namjae Jeon wrote:
+>> >
+>> > /*
+>> >  * Shift extent records to the left to cover a hole.
+>> >  *
+>> >  * The maximum number of extents to be shifted in a single operation
+>> >  * is @count, and @current_ext keeps track of the current extent
+>> >  * index we have shifted. If there is no hole to shift the extents
+>> >  * into, then we abort immediately.
+>> >  */
+>> Thanks for your help. I will change this comment instead of original one.
+>>
+>> >> +int
+>> >> +xfs_bmap_shift_extents(
+>> >> +     struct xfs_trans        *tp,
+>> >> +     struct xfs_inode        *ip,
+>> >> +     int                     *done,
+>> >> +     xfs_fileoff_t           start_fsb,
+>> >> +     xfs_fileoff_t           shift,
+>> >
+>> > Shift means ...? Number of extents to shift, a length, a number of
+>> > block, or something else?
+>> Ah, yes, shift_len would be a more proper name
 >
->> Remove the use of local_irq_save() and IRQF_DISABLED, no longer needed since
->> interrupt handlers are always run with interrupts disabled on the
->> current CPU.
+> I'm not sure that's a lot better. What are we shifting? We are
+> shifting the offset of the blocks, right? And the unit is in fsb?
+> So perhaps offset_shift_fsb, and add that to the description of the
+> function above?
+Okay, I will change it as your suggestion.
+
+>
+>> >> +             /*
+>> >> +              * Before shifting extent into hole, make sure that the hole
+>> >> +              * is large enough to accomodate the shift.
+>> >> +              */
+>> >> +             if (*current_ext) {
+>> >> +                     state |= BMAP_LEFT_VALID;
+>> >> +                     xfs_bmbt_get_all(xfs_iext_get_ext(ifp,
+>> >> +                                             *current_ext - 1), &left);
+>> >> +
+>> >> +                     if (isnullstartblock(left.br_startblock))
+>> >> +                             state |= BMAP_LEFT_DELAY;
+>> >> +
+>> >> +                     if (startoff < left.br_startoff + left.br_blockcount)
+>> >> +                             error = XFS_ERROR(EFSCORRUPTED);
+>> >
+>> > Why is the filesystem corrupted if the shift we asked for is too
+>> > large for the hole in the file? I haven't seen any checks before
+>> > this that guarantee that the hole is big enough for the shift...
 >>
->> Tested successfully with 3.12.0-rc4 on my PC. Didn't find
->> any issue because of this change.
->>
->> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
->> ---
->>  drivers/usb/core/hcd.c | 15 ---------------
->>  1 file changed, 15 deletions(-)
-> How about removing all the other unnecessary usages of IRQF_DISABLED
-> under drivers/usb while you're at it?
-I believe I already did, through patches sent on Oct. 6:
+>> we call xfs_free_file_space to free enough blocks for shifting.
+>> If still the space is not big enough will it be considered as fs corrupted?
+>> What error could we return in this case?
+>
+> Hole punching rounds inwards, and the amount of rounding is not
+> necessarily the nearest filesystem block. Again it's the block size
+> smaller than page size case that will trip you over here, as the
+> rounding  when punching holes will be done to page size, not
+> filesystem block size. Hence it's entirely possible that your
+> calculated shift start and lengths don't match the size of the hole
+> that was punched.
+>
+> That doesn't mean there was a corruption - just that the hole wasn't
+> the size and shape that was expected....
+Right. I will consider your points.
 
-drivers/usb/gadget/mv_u3d_core.c:               IRQF_DISABLED |
-IRQF_SHARED, driver_name, u3d)) {
-=> Sent fix on Oct. 6, 2013
-
-drivers/usb/host/uhci-platform.c:       ret = usb_add_hcd(hcd,
-pdev->resource[1].start, IRQF_DISABLED |
-=> Sent fix on Oct. 6, 2013
-
-Cheers,
-
-Michael.
-
--- 
-Michael Opdenacker, CEO, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-+33 484 258 098
-
+Thanks very much for your valuable comments.
+>
+> Cheers,
+>
+> Dave.
+> --
+> Dave Chinner
+> david@fromorbit.com
