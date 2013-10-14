@@ -1,105 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932784Ab3JNUrr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 16:47:47 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:38471 "EHLO
+	id S1758154Ab3JNUsB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 16:48:01 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:40477 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757457Ab3JNUCr (ORCPT
+	with ESMTP id S1757197Ab3JNUr7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 16:02:47 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 025/161] tools/perf/build: Split out feature check: 'libpython-version'
-Date: Mon, 14 Oct 2013 17:00:14 -0300
-Message-Id: <1381780950-25642-26-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1381780950-25642-1-git-send-email-acme@infradead.org>
-References: <1381780950-25642-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 14 Oct 2013 16:47:59 -0400
+Message-ID: <525C5863.1000505@infradead.org>
+Date: Mon, 14 Oct 2013 13:47:31 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Joe Perches <joe@perches.com>
+CC: Thierry Reding <thierry.reding@gmail.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Mark Brown <broonie@kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        David Miller <davem@davemloft.net>
+Subject: Re: [PATCH -next] netdev: inet_timewait_sock.h missing semi-colon
+ when KMEMCHECK is enabled
+References: <1381762088-18880-1-git-send-email-treding@nvidia.com>	 <525C47C0.2000907@infradead.org> <1381780437.12919.3.camel@joe-AO722>
+In-Reply-To: <1381780437.12919.3.camel@joe-AO722>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ingo Molnar <mingo@kernel.org>
+On 10/14/13 12:53, Joe Perches wrote:
+> On Mon, 2013-10-14 at 12:36 -0700, Randy Dunlap wrote:
+>> From: Randy Dunlap <rdunlap@infradead.org>
+>>
+>> Fix (a few hundred) build errors due to missing semi-colon when
+>> KMEMCHECK is enabled:
+>>
+>>   include/net/inet_timewait_sock.h:139:2: error: expected ',', ';' or '}' before 'int'
+>>   include/net/inet_timewait_sock.h:148:28: error: 'const struct inet_timewait_sock' has no member named 'tw_death_node'
+>>
+>> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+>> ---
+>>  include/net/inet_timewait_sock.h |    2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> --- next-2013-1014.orig/include/net/inet_timewait_sock.h
+>> +++ next-2013-1014/include/net/inet_timewait_sock.h
+>> @@ -135,7 +135,7 @@ struct inet_timewait_sock {
+>>  				tw_transparent  : 1,
+>>  				tw_pad		: 6,	/* 6 bits hole */
+>>  				tw_tos		: 8,
+>> -				tw_pad2		: 16 /* 16 bits hole */
+>> +				tw_pad2		: 16;	/* 16 bits hole */
+>>  	kmemcheck_bitfield_end(flags);
+>>  	u32			tw_ttd;
+>>  	struct inet_bind_bucket	*tw_tb;
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> Shouldn't this be done in kmemcheck.h?
 
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/n/tip-raHmlqlnv0zexsrPau8hhane@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- tools/perf/config/Makefile                                |  3 ++-
- tools/perf/config/feature-checks/Makefile                 |  4 ++++
- tools/perf/config/feature-checks/test-libpython-version.c | 10 ++++++++++
- 3 files changed, 16 insertions(+), 1 deletion(-)
- create mode 100644 tools/perf/config/feature-checks/test-libpython-version.c
+This patch makes sense and probably should be merged
+but it does not fix the build errors that I reported.
 
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 595c0e0dd139..63ba069868c9 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -120,6 +120,7 @@ FEATURE_TESTS =				\
- 	gtk2-infobar			\
- 	libperl				\
- 	libpython			\
-+	libpython-version		\
- 	libnuma
- 
- $(foreach test,$(FEATURE_TESTS),$(call feature_check,$(test),$(test)))
-@@ -372,7 +373,7 @@ else
-         $(call disable-python,Python.h (for Python 2.x))
-       else
- 
--        ifneq ($(call try-cc,$(SOURCE_PYTHON_VERSION),$(FLAGS_PYTHON_EMBED),python version),y)
-+        ifneq ($(feature-libpython-version), 1)
-           $(warning Python 3 is not yet supported; please set)
-           $(warning PYTHON and/or PYTHON_CONFIG appropriately.)
-           $(warning If you also have Python 2 installed, then)
-diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
-index e7ed05aa5710..d15074d77243 100644
---- a/tools/perf/config/feature-checks/Makefile
-+++ b/tools/perf/config/feature-checks/Makefile
-@@ -18,6 +18,7 @@ FILES=					\
- 	test-gtk2-infobar		\
- 	test-libperl			\
- 	test-libpython			\
-+	test-libpython-version		\
- 	test-libnuma
- 
- CC := $(CC) -MD
-@@ -108,6 +109,9 @@ FLAGS_PYTHON_EMBED = $(PYTHON_EMBED_CCOPTS) $(PYTHON_EMBED_LDOPTS)
- test-libpython:
- 	$(BUILD) $(FLAGS_PYTHON_EMBED)
- 
-+test-libpython-version:
-+	$(BUILD) $(FLAGS_PYTHON_EMBED)
-+
- -include *.d */*.d
- 
- ###############################
-diff --git a/tools/perf/config/feature-checks/test-libpython-version.c b/tools/perf/config/feature-checks/test-libpython-version.c
-new file mode 100644
-index 000000000000..facea122d812
---- /dev/null
-+++ b/tools/perf/config/feature-checks/test-libpython-version.c
-@@ -0,0 +1,10 @@
-+#include <Python.h>
-+
-+#if PY_VERSION_HEX >= 0x03000000
-+	#error
-+#endif
-+
-+int main(void)
-+{
-+	return 0;
-+}
+
+>  include/linux/kmemcheck.h | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/linux/kmemcheck.h b/include/linux/kmemcheck.h
+> index 39f8453..b9ffad5 100644
+> --- a/include/linux/kmemcheck.h
+> +++ b/include/linux/kmemcheck.h
+> @@ -62,10 +62,10 @@ bool kmemcheck_is_obj_initialized(unsigned long addr, size_t size);
+>   *     kmemcheck_annotate_bitfield(a, flags);
+>   */
+>  #define kmemcheck_bitfield_begin(name)	\
+> -	int name##_begin[0];
+> +	int name##_begin[0]
+>  
+>  #define kmemcheck_bitfield_end(name)	\
+> -	int name##_end[0];
+> +	int name##_end[0]
+>  
+>  #define kmemcheck_annotate_bitfield(ptr, name)				\
+>  	do {								\
+> 
+> 
+> --
+
+
+
 -- 
-1.8.1.4
-
+~Randy
