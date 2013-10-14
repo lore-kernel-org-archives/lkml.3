@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756749Ab3JNOvZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 10:51:25 -0400
-Received: from mail-bk0-f49.google.com ([209.85.214.49]:36569 "EHLO
-	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754841Ab3JNOu3 (ORCPT
+	id S1756625Ab3JNOu1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 10:50:27 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:54417 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755714Ab3JNOuX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 10:50:29 -0400
+	Mon, 14 Oct 2013 10:50:23 -0400
 From: Thierry Reding <thierry.reding@gmail.com>
-To: Shawn Guo <shawn.guo@linaro.org>,
-        Fabio Estevam <fabio.estevam@freescale.com>
+To: Kent Overstreet <kmo@daterainc.com>, Jens Axboe <axboe@kernel.dk>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: manual merge of th imx-mxs tree
-Date: Mon, 14 Oct 2013 16:48:05 +0200
-Message-Id: <1381762088-18880-5-git-send-email-treding@nvidia.com>
+Subject: linux-next: manual merge of the block tree
+Date: Mon, 14 Oct 2013 16:48:02 +0200
+Message-Id: <1381762088-18880-2-git-send-email-treding@nvidia.com>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1381762088-18880-1-git-send-email-treding@nvidia.com>
 References: <1381762088-18880-1-git-send-email-treding@nvidia.com>
@@ -21,116 +20,136 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Today's linux-next merge of the imx-mxs tree got conflicts in:
+Today's linux-next merge of the block tree got conflicts in
 
-	arch/arm/mach-imx/clk-imx51-imx53.c
-	arch/arm/mach-imx/mach-imx6q.c
+	drivers/md/bcache/bcache.h
+	drivers/md/bcache/bset.c
+	drivers/md/bcache/journal.c
+	drivers/md/bcache/request.c
+	drivers/md/bcache/writeback.c
 
-caused by commits 0efe995 (ARM: mach-imx: clk-imx51-imx53: Retrieve base
-address and irq from dt) and 4d9d18a (ARM: imx: remove custom .init_time
-hook).
-
-This looks like the same conflict as last week, only this time I think I
-actually fixed it up properly. Please verify that the resolution looks
+I've fixed them up (see below). Please verify that the resolution looks
 good.
 
 Thanks,
 Thierry
 ---
-diff --cc arch/arm/mach-imx/clk-imx51-imx53.c
-index ceaac9c,03ca2e3..ce37af2
---- a/arch/arm/mach-imx/clk-imx51-imx53.c
-+++ b/arch/arm/mach-imx/clk-imx51-imx53.c
-@@@ -11,9 -11,11 +11,12 @@@
-  #include <linux/clk.h>
-  #include <linux/io.h>
-  #include <linux/clkdev.h>
- +#include <linux/clk-provider.h>
-  #include <linux/of.h>
-  #include <linux/err.h>
-+ #include <linux/of.h>
-+ #include <linux/of_address.h>
-+ #include <linux/of_irq.h>
+diff --cc drivers/md/bcache/btree.c
+index f42fc7e,117a12a..1ccb702
+--- a/drivers/md/bcache/btree.c
++++ b/drivers/md/bcache/btree.c
+@@@ -633,10 -712,10 +707,10 @@@ static unsigned long bch_mca_scan(struc
+  			break;
   
-  #include "crm-regs-imx5.h"
-  #include "clk.h"
-@@@ -464,16 -468,13 +467,17 @@@ int __init mx51_clocks_init(unsigned lo
-  	return 0;
-  }
+  		if (++i > 3 &&
+- 		    !mca_reap(b, NULL, 0)) {
++ 		    !mca_reap(b, 0, false)) {
+  			mca_data_free(b);
+  			rw_unlock(true, b);
+ -			--nr;
+ +			freed++;
+  		}
+  	}
   
- -int __init mx53_clocks_init(unsigned long rate_ckil, unsigned long rate_osc,
- -			unsigned long rate_ckih1, unsigned long rate_ckih2)
- +static void __init mx51_clocks_init_dt(struct device_node *np)
- +{
- +	mx51_clocks_init(0, 0, 0, 0);
- +}
- +CLK_OF_DECLARE(imx51_ccm, "fsl,imx51-ccm", mx51_clocks_init_dt);
+diff --cc drivers/md/bcache/request.c
+index b6a74bc,231b108..9e1ff8e
+--- a/drivers/md/bcache/request.c
++++ b/drivers/md/bcache/request.c
+@@@ -979,67 -1059,52 +1059,54 @@@ static void cached_dev_write(struct cac
+  
+  	if (should_writeback(dc, s->orig_bio,
+  			     cache_mode(dc, bio),
+- 			     s->op.skip)) {
+- 		s->op.skip = false;
+- 		s->writeback = true;
++ 			     s->iop.bypass)) {
++ 		s->iop.bypass = false;
++ 		s->iop.writeback = true;
+  	}
+  
+- 	if (s->op.skip)
+- 		goto skip;
+- 
+- 	trace_bcache_write(s->orig_bio, s->writeback, s->op.skip);
++ 	if (s->iop.bypass) {
++ 		s->iop.bio = s->orig_bio;
++ 		bio_get(s->iop.bio);
+  
+- 	if (!s->writeback) {
+- 		s->op.cache_bio = bio_clone_bioset(bio, GFP_NOIO,
+- 						   dc->disk.bio_split);
+- 
+- 		closure_bio_submit(bio, cl, s->d);
+- 	} else {
++ 		if (!(bio->bi_rw & REQ_DISCARD) ||
++ 		    blk_queue_discard(bdev_get_queue(dc->bdev)))
++ 			closure_bio_submit(bio, cl, s->d);
++ 	} else if (s->iop.writeback) {
+  		bch_writeback_add(dc);
+ +		s->op.cache_bio = bio;
+  
+ -		if (s->iop.flush_journal) {
+ +		if (bio->bi_rw & REQ_FLUSH) {
+  			/* Also need to send a flush to the backing device */
+ -			s->iop.bio = bio_clone_bioset(bio, GFP_NOIO,
+ -						      dc->disk.bio_split);
+ +			struct bio *flush = bio_alloc_bioset(0, GFP_NOIO,
+ +							     dc->disk.bio_split);
+  
+ -			bio->bi_size = 0;
+ -			bio->bi_vcnt = 0;
+ -			closure_bio_submit(bio, cl, s->d);
+ -		} else {
+ -			s->iop.bio = bio;
+ +			flush->bi_rw	= WRITE_FLUSH;
+ +			flush->bi_bdev	= bio->bi_bdev;
+ +			flush->bi_end_io = request_endio;
+ +			flush->bi_private = cl;
  +
- +static void __init mx53_clocks_init(struct device_node *np)
-  {
-- 	int i;
-+ 	int i, irq;
-  	unsigned long r;
- -	struct device_node *np;
-+ 	void __iomem *base;
+ +			closure_bio_submit(flush, cl, s->d);
+  		}
+- 	}
+- out:
+- 	closure_call(&s->op.cl, bch_insert_data, NULL, cl);
+- 	continue_at(cl, cached_dev_write_complete, NULL);
+- skip:
+- 	s->op.skip = true;
+- 	s->op.cache_bio = s->orig_bio;
+- 	bio_get(s->op.cache_bio);
++ 	} else {
++ 		s->iop.bio = bio_clone_bioset(bio, GFP_NOIO,
++ 					      dc->disk.bio_split);
   
-  	clk[pll1_sw] = imx_clk_pllv2("pll1_sw", "osc", MX53_DPLL1_BASE);
-  	clk[pll2_sw] = imx_clk_pllv2("pll2_sw", "osc", MX53_DPLL2_BASE);
-@@@ -568,5 -567,22 +569,11 @@@
+- 	if ((bio->bi_rw & REQ_DISCARD) &&
+- 	    !blk_queue_discard(bdev_get_queue(dc->bdev)))
+- 		goto out;
++ 		closure_bio_submit(bio, cl, s->d);
++ 	}
   
-  	r = clk_round_rate(clk[usboh3_per_gate], 54000000);
-  	clk_set_rate(clk[usboh3_per_gate], r);
-+ 
-+ 	np = of_find_compatible_node(NULL, NULL, "fsl,imx53-gpt");
-+ 	base = of_iomap(np, 0);
-+ 	WARN_ON(!base);
-+ 	irq = irq_of_parse_and_map(np, 0);
-+ 	mxc_timer_init(base, irq);
- -
- -	return 0;
- -}
- -
- -int __init mx51_clocks_init_dt(void)
- -{
- -	return mx51_clocks_init(0, 0, 0, 0);
- -}
- -
- -int __init mx53_clocks_init_dt(void)
- -{
- -	return mx53_clocks_init(0, 0, 0, 0);
+- 	closure_bio_submit(bio, cl, s->d);
+- 	goto out;
++ 	closure_call(&s->iop.cl, bch_data_insert, NULL, cl);
++ 	continue_at(cl, cached_dev_write_complete, NULL);
   }
- +CLK_OF_DECLARE(imx53_ccm, "fsl,imx53-ccm", mx53_clocks_init);
-diff --cc arch/arm/mach-imx/mach-imx6q.c
-index 3be0fa0,53e70f4..0f9f241
---- a/arch/arm/mach-imx/mach-imx6q.c
-+++ b/arch/arm/mach-imx/mach-imx6q.c
-@@@ -11,9 -11,10 +11,8 @@@
-   */
   
-  #include <linux/clk.h>
- -#include <linux/clk-provider.h>
-  #include <linux/clkdev.h>
- -#include <linux/clocksource.h>
-  #include <linux/cpu.h>
-- #include <linux/delay.h>
-  #include <linux/export.h>
-  #include <linux/init.h>
-  #include <linux/io.h>
-@@@ -190,8 -133,13 +131,16 @@@ static void __init imx6q_1588_init(void
-  
-  static void __init imx6q_init_machine(void)
+- static void request_nodata(struct cached_dev *dc, struct search *s)
++ static void cached_dev_nodata(struct closure *cl)
   {
-+ 	struct device *parent;
-+ 
- +	imx_print_silicon_rev(cpu_is_imx6dl() ? "i.MX6DL" : "i.MX6Q",
-- 			      imx6q_revision());
-++			      imx_get_soc_revision());
-++
-+ 	mxc_arch_reset_init_dt();
-+ 
-+ 	parent = imx_soc_device_init();
-+ 	if (parent == NULL)
-+ 		pr_warn("failed to initialize soc device\n");
+- 	struct closure *cl = &s->cl;
++ 	struct search *s = container_of(cl, struct search, cl);
+  	struct bio *bio = &s->bio.bio;
   
-  	imx6q_enet_phy_init();
+- 	if (bio->bi_rw & REQ_DISCARD) {
+- 		request_write(dc, s);
+- 		return;
+- 	}
+- 
+- 	if (s->op.flush_journal)
+- 		bch_journal_meta(s->op.c, cl);
++ 	if (s->iop.flush_journal)
++ 		bch_journal_meta(s->iop.c, cl);
   
++ 	/* If it's a flush, we send the flush to the backing device too */
+  	closure_bio_submit(bio, cl, s->d);
+  
+  	continue_at(cl, cached_dev_bio_complete, NULL);
