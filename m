@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932433Ab3JNUUf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 16:20:35 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:39008 "EHLO
+	id S932417Ab3JNUUc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 16:20:32 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:39016 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757710Ab3JNUDG (ORCPT
+	with ESMTP id S1757717Ab3JNUDG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 14 Oct 2013 16:03:06 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 120/161] perf stat: Fix misleading message when specifying cpu list or system wide
-Date: Mon, 14 Oct 2013 17:01:49 -0300
-Message-Id: <1381780950-25642-121-git-send-email-acme@infradead.org>
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 103/161] perf trace: Don't supress zeroed args when there is an strarray entry for it
+Date: Mon, 14 Oct 2013 17:01:32 -0300
+Message-Id: <1381780950-25642-104-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1381780950-25642-1-git-send-email-acme@infradead.org>
 References: <1381780950-25642-1-git-send-email-acme@infradead.org>
@@ -27,74 +28,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Ahern <dsahern@gmail.com>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-The "perf stat" tool displays the command run in its summary output
-which is misleading when using a cpu list or system wide collection.
+Case in hand:
 
-Before:
+   9.682 ( 0.001 ms): Xorg/13079 setitimer(which: REAL, value: 0x7fffede42470) = 0
 
-perf stat -a -- sleep 1
+ITIMER_REAL is zero.
 
- Performance counter stats for 'sleep 1':
-
-16152.670249 task-clock                #   16.132 CPUs utilized
-         417 context-switches          #    0.002 M/sec
-           7 cpu-migrations            #    0.030 K/sec
-...
-
-After:
-
-perf stat -a -- sleep 1
-
- Performance counter stats for 'system wide':
-
-16206.931120 task-clock                #   16.144 CPUs utilized
-         395 context-switches          #    0.002 M/sec
-           5 cpu-migrations            #    0.030 K/sec
-...
-
-or
-
-perf stat -C1 -- sleep 1
-
- Performance counter stats for 'CPU(s) 1':
-
-   1001.669257 task-clock                #    1.000 CPUs utilized
-         4,264 context-switches          #    0.004 M/sec
-             3 cpu-migrations            #    0.003 K/sec
-...
-
-Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1380400080-9211-2-git-send-email-dsahern@gmail.com
+Link: http://lkml.kernel.org/n/tip-6hnoqsjh99t4hxi3xu2nlwep@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-stat.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ tools/perf/builtin-trace.c | 11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index fb02b53b0e3d..c8a2662eb57a 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -1229,7 +1229,11 @@ static void print_stat(int argc, const char **argv)
- 	if (!csv_output) {
- 		fprintf(output, "\n");
- 		fprintf(output, " Performance counter stats for ");
--		if (!perf_target__has_task(&target)) {
-+		if (target.system_wide)
-+			fprintf(output, "\'system wide");
-+		else if (target.cpu_list)
-+			fprintf(output, "\'CPU(s) %s", target.cpu_list);
-+		else if (!perf_target__has_task(&target)) {
- 			fprintf(output, "\'%s", argv[0]);
- 			for (i = 1; i < argc; i++)
- 				fprintf(output, " %s", argv[i]);
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index 8855207deae8..27b0ec88cb23 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -940,8 +940,15 @@ static size_t syscall__scnprintf_args(struct syscall *sc, char *bf, size_t size,
+ 		     field = field->next, ++arg.idx, bit <<= 1) {
+ 			if (arg.mask & bit)
+ 				continue;
+-
+-			if (args[arg.idx] == 0)
++			/*
++ 			 * Suppress this argument if its value is zero and
++ 			 * and we don't have a string associated in an
++ 			 * strarray for it.
++ 			 */
++			if (args[arg.idx] == 0 &&
++			    !(sc->arg_scnprintf &&
++			      sc->arg_scnprintf[arg.idx] == SCA_STRARRAY &&
++			      sc->arg_parm[arg.idx]))
+ 				continue;
+ 
+ 			printed += scnprintf(bf + printed, size - printed,
 -- 
 1.8.1.4
 
