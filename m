@@ -1,199 +1,364 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755985Ab3JNKQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 06:16:58 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47612 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753567Ab3JNKQ4 (ORCPT
+	id S1755936Ab3JNKN1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 06:13:27 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:50163 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752787Ab3JNKNZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 06:16:56 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: stable@vger.kernel.org, kernel-team@lists.ubuntu.com,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH 087/100] powerpc: Restore registers on error exit from csum_partial_copy_generic()
-References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
-	<1381488130-30235-88-git-send-email-luis.henriques@canonical.com>
-Date: Mon, 14 Oct 2013 11:16:48 +0100
-In-Reply-To: <1381488130-30235-88-git-send-email-luis.henriques@canonical.com>
-	(Luis Henriques's message of "Fri, 11 Oct 2013 11:41:57 +0100")
-Message-ID: <87k3hgrwbz.fsf@canonical.com>
-User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 14 Oct 2013 06:13:25 -0400
+X-AuditID: cbfee61a-b7f7a6d00000235f-34-525bc3c381be
+From: Weijie Yang <weijie.yang@samsung.com>
+To: akpm@linux-foundation.org
+Cc: sjenning@linux.vnet.ibm.com, sjennings@variantweb.net,
+        "'Minchan Kim'" <minchan@kernel.org>, bob.liu@oracle.com,
+        weijie.yang.kh@gmail.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, stable@vger.kernel.org
+Subject: [PATCH 2/2] mm/zswap: refoctor the get/put routines
+Date: Mon, 14 Oct 2013 18:12:34 +0800
+Message-id: <000101cec8c6$01b10020$05130060$%yang@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac7IxccyjWXUKTCqROyKNUAvCVYonA==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrLLMWRmVeSWpSXmKPExsVy+t9jAd3Dh6ODDB6+kLaYs34Nm0XXqaks
+	Fpd3zWGzuLfmP6vFsq/v2S0O7VvFbvHp6CM2iwUbHzFaPDnxn8WB02PnrLvsHptWdbJ5bPo0
+	id3jxIzfLB4PDm1m8fj49BaLx/VvRR6fN8kFcERx2aSk5mSWpRbp2yVwZXR8WMhWcN2j4twf
+	1QbGU1ZdjJwcEgImEr+72lghbDGJC/fWs3UxcnEICSxilDjwfDILhPOHUeJ+yy1GkCo2AW2J
+	u/0bwTpEBGQlpv49D1bELHCbUWLG9/9MIAlhARuJLQ9XsYPYLAKqElv3vQVr4BWwk3i+eykz
+	hC0o8WPyPaBmDqBmdYkpU3JBwswC8hKb17xlBglLAIUf/dWFWKUn8fz0VUaIEnGJjUdusUxg
+	FJiFZNAshEGzkAyahaRjASPLKkbR1ILkguKk9FxDveLE3OLSvHS95PzcTYzgSHkmtYNxZYPF
+	IUYBDkYlHl4Bp+ggIdbEsuLK3EOMEhzMSiK8gvOAQrwpiZVVqUX58UWlOanFhxilOViUxHkP
+	tFoHCgmkJ5akZqemFqQWwWSZODilGhhNL+rVSoRk1sddX6/iO52dyX9qZklxpqX566vPdazi
+	PCtXCFm5aGdwxQafCT9fbpYxY6vY8Qp9R8/J5a2h7cVSks+fps3v5F/zUCT56z2DtOa3ck6T
+	tuoL5J/Ik7ugki372LnI+deksuW+iTptZ3eu5NujzjQrpf/pqdWzO4VMWr/PTpp9QImlOCPR
+	UIu5qDgRAPTmKBSQAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Luis Henriques <luis.henriques@canonical.com> writes:
+The refcount routine was not fit the kernel get/put semantic exactly,
+There were too many judgement statements on refcount and it could be minus.
 
-> 3.5.7.23 -stable review patch.  If anyone has any objections, please let me know.
->
-> ------------------
->
-> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
->
-> commit 8f21bd0090052e740944f9397e2be5ac7957ded7 upstream.
+This patch does the following:
 
-I'm dropping this patch as it is causing some build failures on
-powerpc configs.
+- move refcount judgement to zswap_entry_put() to hide resource free function.
 
-Cheers,
+- add a new function zswap_entry_find_get(), so that callers can use easily
+in the following pattern:
+
+   zswap_entry_find_get
+   .../* do something */
+   zswap_entry_put
+
+- to eliminate compile error, move some functions declaration
+
+This patch is based on Minchan Kim <minchan@kernel.org> 's idea and suggestion.
+
+Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
+---
+ mm/zswap.c |  176 +++++++++++++++++++++++++++++-------------------------------
+ 1 file changed, 85 insertions(+), 91 deletions(-)
+
+diff --git a/mm/zswap.c b/mm/zswap.c
+index f25394a..986563c 100755
+--- a/mm/zswap.c
++++ b/mm/zswap.c
+@@ -217,6 +217,7 @@ static struct zswap_entry *zswap_entry_cache_alloc(gfp_t gfp)
+ 	if (!entry)
+ 		return NULL;
+ 	entry->refcount = 1;
++	RB_CLEAR_NODE(&entry->rbnode);
+ 	return entry;
+ }
+ 
+@@ -225,19 +226,6 @@ static void zswap_entry_cache_free(struct zswap_entry *entry)
+ 	kmem_cache_free(zswap_entry_cache, entry);
+ }
+ 
+-/* caller must hold the tree lock */
+-static void zswap_entry_get(struct zswap_entry *entry)
+-{
+-	entry->refcount++;
+-}
+-
+-/* caller must hold the tree lock */
+-static int zswap_entry_put(struct zswap_entry *entry)
+-{
+-	entry->refcount--;
+-	return entry->refcount;
+-}
+-
+ /*********************************
+ * rbtree functions
+ **********************************/
+@@ -285,6 +273,59 @@ static int zswap_rb_insert(struct rb_root *root, struct zswap_entry *entry,
+ 	return 0;
+ }
+ 
++static void zswap_rb_erase(struct rb_root *root, struct zswap_entry *entry)
++{
++	if (!RB_EMPTY_NODE(&entry->rbnode)) {
++		rb_erase(&entry->rbnode, root);
++		RB_CLEAR_NODE(&entry->rbnode);
++	}
++}
++
++/*
++ * Carries out the common pattern of freeing and entry's zsmalloc allocation,
++ * freeing the entry itself, and decrementing the number of stored pages.
++ */
++static void zswap_free_entry(struct zswap_tree *tree, struct zswap_entry *entry)
++{
++	zbud_free(tree->pool, entry->handle);
++	zswap_entry_cache_free(entry);
++	atomic_dec(&zswap_stored_pages);
++	zswap_pool_pages = zbud_get_pool_size(tree->pool);
++}
++
++/* caller must hold the tree lock */
++static void zswap_entry_get(struct zswap_entry *entry)
++{
++	entry->refcount++;
++}
++
++/* caller must hold the tree lock
++* remove from the tree and free it, if nobody reference the entry
++*/
++static void zswap_entry_put(struct zswap_tree *tree, struct zswap_entry *entry)
++{
++	int refcount = --entry->refcount;
++
++	BUG_ON(refcount < 0);
++	if (refcount == 0) {
++		zswap_rb_erase(&tree->rbroot, entry);
++		zswap_free_entry(tree, entry);
++	}
++}
++
++/* caller must hold the tree lock */
++static struct zswap_entry *zswap_entry_find_get(struct rb_root *root,
++							pgoff_t offset)
++{
++	struct zswap_entry *entry = NULL;
++
++	entry = zswap_rb_search(root, offset);
++	if (entry)
++		zswap_entry_get(entry);
++
++	return entry;
++}
++
+ /*********************************
+ * per-cpu code
+ **********************************/
+@@ -368,18 +409,6 @@ static bool zswap_is_full(void)
+ 		zswap_pool_pages);
+ }
+ 
+-/*
+- * Carries out the common pattern of freeing and entry's zsmalloc allocation,
+- * freeing the entry itself, and decrementing the number of stored pages.
+- */
+-static void zswap_free_entry(struct zswap_tree *tree, struct zswap_entry *entry)
+-{
+-	zbud_free(tree->pool, entry->handle);
+-	zswap_entry_cache_free(entry);
+-	atomic_dec(&zswap_stored_pages);
+-	zswap_pool_pages = zbud_get_pool_size(tree->pool);
+-}
+-
+ /*********************************
+ * writeback code
+ **********************************/
+@@ -503,7 +532,7 @@ static int zswap_writeback_entry(struct zbud_pool *pool, unsigned long handle)
+ 	struct page *page;
+ 	u8 *src, *dst;
+ 	unsigned int dlen;
+-	int ret, refcount;
++	int ret;
+ 	struct writeback_control wbc = {
+ 		.sync_mode = WB_SYNC_NONE,
+ 	};
+@@ -518,13 +547,12 @@ static int zswap_writeback_entry(struct zbud_pool *pool, unsigned long handle)
+ 
+ 	/* find and ref zswap entry */
+ 	spin_lock(&tree->lock);
+-	entry = zswap_rb_search(&tree->rbroot, offset);
++	entry = zswap_entry_find_get(&tree->rbroot, offset);
+ 	if (!entry) {
+ 		/* entry was invalidated */
+ 		spin_unlock(&tree->lock);
+ 		return 0;
+ 	}
+-	zswap_entry_get(entry);
+ 	spin_unlock(&tree->lock);
+ 	BUG_ON(offset != entry->offset);
+ 
+@@ -563,42 +591,34 @@ static int zswap_writeback_entry(struct zbud_pool *pool, unsigned long handle)
+ 	zswap_written_back_pages++;
+ 
+ 	spin_lock(&tree->lock);
+-
+ 	/* drop local reference */
+-	zswap_entry_put(entry);
+-	/* drop the initial reference from entry creation */
+-	refcount = zswap_entry_put(entry);
+-
++	zswap_entry_put(tree, entry);
+ 	/*
+-	 * There are three possible values for refcount here:
+-	 * (1) refcount is 1, load is in progress, unlink from rbtree,
+-	 *     load will free
+-	 * (2) refcount is 0, (normal case) entry is valid,
+-	 *     remove from rbtree and free entry
+-	 * (3) refcount is -1, invalidate happened during writeback,
+-	 *     free entry
+-	 */
+-	if (refcount >= 0) {
+-		/* no invalidate yet, remove from rbtree */
+-		rb_erase(&entry->rbnode, &tree->rbroot);
+-	}
++	* There are two possible situations for entry here:
++	* (1) refcount is 1(normal case),  entry is valid and on the tree
++	* (2) refcount is 0, entry is freed and not on the tree
++	*     because invalidate happened during writeback
++	*  to handle (1), search the tree and free the entry
++	*/
++	 if (entry == zswap_rb_search(&tree->rbroot, offset))
++		zswap_entry_put(tree, entry);
+ 	spin_unlock(&tree->lock);
+-	if (refcount <= 0) {
+-		/* free the entry */
+-		zswap_free_entry(tree, entry);
+-		return 0;
+-	}
+-	return -EAGAIN;
+ 
++	goto end;
++
++	/*
++	* if we get here due to ZSWAP_SWAPCACHE_EXIST
++	* a load may happening concurrently
++	* it is safe and okay to not free the entry
++	* if we free the entry in the following put
++	* it it either okay to return !0
++	*/
+ fail:
+ 	spin_lock(&tree->lock);
+-	refcount = zswap_entry_put(entry);
+-	if (refcount <= 0) {
+-		/* invalidate happened, consider writeback as success */
+-		zswap_free_entry(tree, entry);
+-		ret = 0;
+-	}
++	zswap_entry_put(tree, entry);
+ 	spin_unlock(&tree->lock);
++
++end:
+ 	return ret;
+ }
+ 
+@@ -682,11 +702,8 @@ static int zswap_frontswap_store(unsigned type, pgoff_t offset,
+ 		if (ret == -EEXIST) {
+ 			zswap_duplicate_entry++;
+ 			/* remove from rbtree */
+-			rb_erase(&dupentry->rbnode, &tree->rbroot);
+-			if (!zswap_entry_put(dupentry)) {
+-				/* free */
+-				zswap_free_entry(tree, dupentry);
+-			}
++			zswap_rb_erase(&tree->rbroot, dupentry);
++			zswap_entry_put(tree, dupentry);
+ 		}
+ 	} while (ret == -EEXIST);
+ 	spin_unlock(&tree->lock);
+@@ -715,17 +732,16 @@ static int zswap_frontswap_load(unsigned type, pgoff_t offset,
+ 	struct zswap_entry *entry;
+ 	u8 *src, *dst;
+ 	unsigned int dlen;
+-	int refcount, ret;
++	int ret;
+ 
+ 	/* find */
+ 	spin_lock(&tree->lock);
+-	entry = zswap_rb_search(&tree->rbroot, offset);
++	entry = zswap_entry_find_get(&tree->rbroot, offset);
+ 	if (!entry) {
+ 		/* entry was written back */
+ 		spin_unlock(&tree->lock);
+ 		return -1;
+ 	}
+-	zswap_entry_get(entry);
+ 	spin_unlock(&tree->lock);
+ 
+ 	/* decompress */
+@@ -740,22 +756,9 @@ static int zswap_frontswap_load(unsigned type, pgoff_t offset,
+ 	BUG_ON(ret);
+ 
+ 	spin_lock(&tree->lock);
+-	refcount = zswap_entry_put(entry);
+-	if (likely(refcount)) {
+-		spin_unlock(&tree->lock);
+-		return 0;
+-	}
++	zswap_entry_put(tree, entry);
+ 	spin_unlock(&tree->lock);
+ 
+-	/*
+-	 * We don't have to unlink from the rbtree because
+-	 * zswap_writeback_entry() or zswap_frontswap_invalidate page()
+-	 * has already done this for us if we are the last reference.
+-	 */
+-	/* free */
+-
+-	zswap_free_entry(tree, entry);
+-
+ 	return 0;
+ }
+ 
+@@ -764,7 +767,6 @@ static void zswap_frontswap_invalidate_page(unsigned type, pgoff_t offset)
+ {
+ 	struct zswap_tree *tree = zswap_trees[type];
+ 	struct zswap_entry *entry;
+-	int refcount;
+ 
+ 	/* find */
+ 	spin_lock(&tree->lock);
+@@ -776,20 +778,12 @@ static void zswap_frontswap_invalidate_page(unsigned type, pgoff_t offset)
+ 	}
+ 
+ 	/* remove from rbtree */
+-	rb_erase(&entry->rbnode, &tree->rbroot);
++	zswap_rb_erase(&tree->rbroot, entry);
+ 
+ 	/* drop the initial reference from entry creation */
+-	refcount = zswap_entry_put(entry);
++	zswap_entry_put(tree, entry);
+ 
+ 	spin_unlock(&tree->lock);
+-
+-	if (refcount) {
+-		/* writeback in progress, writeback will free */
+-		return;
+-	}
+-
+-	/* free */
+-	zswap_free_entry(tree, entry);
+ }
+ 
+ /* frees all zswap entries for the given swap type */
+@@ -815,7 +809,7 @@ static void zswap_frontswap_invalidate_area(unsigned type)
+ 	 */
+ 	while ((node = rb_first(&tree->rbroot))) {
+ 		entry = rb_entry(node, struct zswap_entry, rbnode);
+-		rb_erase(&entry->rbnode, &tree->rbroot);
++		zswap_rb_erase(&tree->rbroot, entry);
+ 		zbud_free(tree->pool, entry->handle);
+ 		zswap_entry_cache_free(entry);
+ 		atomic_dec(&zswap_stored_pages);
 -- 
-Luis
+1.7.10.4
 
-
->
-> The csum_partial_copy_generic() function saves the PowerPC
->non-volatile
-> r14, r15, and r16 registers for the main checksum-and-copy loop.
-> Unfortunately, it fails to restore them upon error exit from this loop,
-> which results in silent corruption of these registers in the presumably
-> rare event of an access exception within that loop.
->
-> This commit therefore restores these register on error exit from the loop.
->
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Signed-off-by: Anton Blanchard <anton@samba.org>
-> Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
-> ---
->  arch/powerpc/lib/checksum_64.S | 54 +++++++++++++++++++++++++++++++-----------
->  1 file changed, 40 insertions(+), 14 deletions(-)
->
-> diff --git a/arch/powerpc/lib/checksum_64.S b/arch/powerpc/lib/checksum_64.S
-> index afa2eba..d0e8390 100644
-> --- a/arch/powerpc/lib/checksum_64.S
-> +++ b/arch/powerpc/lib/checksum_64.S
-> @@ -229,19 +229,35 @@ _GLOBAL(csum_partial)
->  	blr
->  
->  
-> -	.macro source
-> +	.macro srcnr
->  100:
->  	.section __ex_table,"a"
->  	.align 3
-> -	.llong 100b,.Lsrc_error
-> +	.llong 100b,.Lsrc_error_nr
->  	.previous
->  	.endm
->  
-> -	.macro dest
-> +	.macro source
-> +150:
-> +	.section __ex_table,"a"
-> +	.align 3
-> +	.llong 150b,.Lsrc_error
-> +	.previous
-> +	.endm
-> +
-> +	.macro dstnr
->  200:
->  	.section __ex_table,"a"
->  	.align 3
-> -	.llong 200b,.Ldest_error
-> +	.llong 200b,.Ldest_error_nr
-> +	.previous
-> +	.endm
-> +
-> +	.macro dest
-> +250:
-> +	.section __ex_table,"a"
-> +	.align 3
-> +	.llong 250b,.Ldest_error
->  	.previous
->  	.endm
->  
-> @@ -277,11 +293,11 @@ _GLOBAL(csum_partial_copy_generic)
->  	mtctr	r6
->  
->  1:
-> -source;	lhz	r6,0(r3)		/* align to doubleword */
-> +srcnr;	lhz	r6,0(r3)		/* align to doubleword */
->  	subi	r5,r5,2
->  	addi	r3,r3,2
->  	adde	r0,r0,r6
-> -dest;	sth	r6,0(r4)
-> +dstnr;	sth	r6,0(r4)
->  	addi	r4,r4,2
->  	bdnz	1b
->  
-> @@ -395,10 +411,10 @@ dest;	std	r16,56(r4)
->  
->  	mtctr	r6
->  3:
-> -source;	ld	r6,0(r3)
-> +srcnr;	ld	r6,0(r3)
->  	addi	r3,r3,8
->  	adde	r0,r0,r6
-> -dest;	std	r6,0(r4)
-> +dstnr;	std	r6,0(r4)
->  	addi	r4,r4,8
->  	bdnz	3b
->  
-> @@ -408,10 +424,10 @@ dest;	std	r6,0(r4)
->  	srdi.	r6,r5,2
->  	beq	.Lcopy_tail_halfword
->  
-> -source;	lwz	r6,0(r3)
-> +srcnr;	lwz	r6,0(r3)
->  	addi	r3,r3,4
->  	adde	r0,r0,r6
-> -dest;	stw	r6,0(r4)
-> +dstnr;	stw	r6,0(r4)
->  	addi	r4,r4,4
->  	subi	r5,r5,4
->  
-> @@ -419,10 +435,10 @@ dest;	stw	r6,0(r4)
->  	srdi.	r6,r5,1
->  	beq	.Lcopy_tail_byte
->  
-> -source;	lhz	r6,0(r3)
-> +srcnr;	lhz	r6,0(r3)
->  	addi	r3,r3,2
->  	adde	r0,r0,r6
-> -dest;	sth	r6,0(r4)
-> +dstnr;	sth	r6,0(r4)
->  	addi	r4,r4,2
->  	subi	r5,r5,2
->  
-> @@ -430,10 +446,10 @@ dest;	sth	r6,0(r4)
->  	andi.	r6,r5,1
->  	beq	.Lcopy_finish
->  
-> -source;	lbz	r6,0(r3)
-> +srcnr;	lbz	r6,0(r3)
->  	sldi	r9,r6,8			/* Pad the byte out to 16 bits */
->  	adde	r0,r0,r9
-> -dest;	stb	r6,0(r4)
-> +dstnr;	stb	r6,0(r4)
->  
->  .Lcopy_finish:
->  	addze	r0,r0			/* add in final carry */
-> @@ -443,6 +459,11 @@ dest;	stb	r6,0(r4)
->  	blr
->  
->  .Lsrc_error:
-> +	ld	r14,STK_REG(R14)(r1)
-> +	ld	r15,STK_REG(R15)(r1)
-> +	ld	r16,STK_REG(R16)(r1)
-> +	addi	r1,r1,STACKFRAMESIZE
-> +.Lsrc_error_nr:
->  	cmpdi	0,r7,0
->  	beqlr
->  	li	r6,-EFAULT
-> @@ -450,6 +471,11 @@ dest;	stb	r6,0(r4)
->  	blr
->  
->  .Ldest_error:
-> +	ld	r14,STK_REG(R14)(r1)
-> +	ld	r15,STK_REG(R15)(r1)
-> +	ld	r16,STK_REG(R16)(r1)
-> +	addi	r1,r1,STACKFRAMESIZE
-> +.Ldest_error_nr:
->  	cmpdi	0,r8,0
->  	beqlr
->  	li	r6,-EFAULT
