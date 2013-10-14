@@ -1,47 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755671Ab3JNPUP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 11:20:15 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:47775 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750814Ab3JNPUN (ORCPT
+	id S1756474Ab3JNPVq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 11:21:46 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:57593 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754052Ab3JNPVn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 11:20:13 -0400
-Date: Mon, 14 Oct 2013 16:19:38 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 0/7] Optimize jump label implementation on ARM64
-Message-ID: <20131014151938.GJ10491@mudshark.cambridge.arm.com>
-References: <1381675827-1610-1-git-send-email-liuj97@gmail.com>
+	Mon, 14 Oct 2013 11:21:43 -0400
+Message-ID: <525C0C02.7030404@gmail.com>
+Date: Mon, 14 Oct 2013 20:51:38 +0530
+From: RAGHAVENDRA GANIGA <ravi23ganiga@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1381675827-1610-1-git-send-email-liuj97@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: wsa@the-dreams.de
+CC: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ravi23ganiga@gmail.com
+Subject: [PATCH 1/3] i2c: i2c-core: fix paranthesis coding style issue in,
+ i2c-core.c
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 13, 2013 at 03:50:20PM +0100, Jiang Liu wrote:
-> From: Jiang Liu <jiang.liu@huawei.com>
-> 
-> This patchset tries to optimize arch specfic jump label implementation
-> for ARM64 by dynamic kernel text patching.
-> 
-> To enable this feature, your toolchain must support "asm goto" extension
-> and "%c" constraint extesion. Current GCC for AARCH64 doesn't support
-> "%c", so you need a GCC patch similiar to this:
-> http://gcc.gnu.org/viewcvs/gcc/trunk/gcc/config/arm/arm.c?view=patch&r1=175293&r2=175565&pathrev=175565
-> http://gcc.gnu.org/bugzilla/show_bug.cgi?id=48637
+>From 46aed97f5e5a434e8ec24c14e085a138958ba559 Mon Sep 17 00:00:00 2001
+From: Raghavendra Ganiga <ravi23ganiga@gmail.com>
+Date: Sun, 13 Oct 2013 19:13:46 +0530
+Subject: [PATCH 1/3] i2c: i2c-core: fix paranthesis coding style issue in
+ i2c-core.c
 
-Right, but this is just for the ARM (AArch32) backend afaict. Are there any
-plans for upstream GCC to support this constraint for AArch64?
+This is a patch to the i2c-core.c file that fixes the paranthesis
+warning found by the checkpatch.pl tool
 
-Will
+Signed-off-by: Raghavendra Chandra Ganiga <ravi23ganiga@gmail.com>
+---
+ drivers/i2c/i2c-core.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
+index 29d3f04..b1197bb 100644
+--- a/drivers/i2c/i2c-core.c
++++ b/drivers/i2c/i2c-core.c
+@@ -637,7 +637,7 @@ i2c_new_device(struct i2c_adapter *adap, struct i2c_board_info const *info)
+ 	struct i2c_client	*client;
+ 	int			status;
+ 
+-	client = kzalloc(sizeof *client, GFP_KERNEL);
++	client = kzalloc(sizeof(*client), GFP_KERNEL);
+ 	if (!client)
+ 		return NULL;
+ 
+-- 
+1.7.10.4
