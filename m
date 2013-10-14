@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758501Ab3JNUOU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 16:14:20 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:39080 "EHLO
+	id S1758481Ab3JNUOT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 16:14:19 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:39083 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757750Ab3JNUDI (ORCPT
+	with ESMTP id S1757755Ab3JNUDI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 14 Oct 2013 16:03:08 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Felipe Pena <felipensp@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 142/161] perf tests: Fix memory leak in dso-data.c
-Date: Mon, 14 Oct 2013 17:02:11 -0300
-Message-Id: <1381780950-25642-143-git-send-email-acme@infradead.org>
+Subject: [PATCH 106/161] perf trace: Add beautifier for clock_gettime's clk_id argument
+Date: Mon, 14 Oct 2013 17:01:35 -0300
+Message-Id: <1381780950-25642-107-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1381780950-25642-1-git-send-email-acme@infradead.org>
 References: <1381780950-25642-1-git-send-email-acme@infradead.org>
@@ -26,34 +28,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Felipe Pena <felipensp@gmail.com>
+From: David Ahern <dsahern@gmail.com>
 
-Fix for a memory leak on test_file() function in dso-data.c.
+Before:
+0.030 ( 0.002 ms): 2571 clock_gettime(which_clock: 1, tp: 0x7f3b45729cd0 ) = 0
 
-Signed-off-by: Felipe Pena <felipensp@gmail.com>
-Acked-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Ingo Molnar <mingo@redhat.com>
+After:
+0.030 ( 0.002 ms): 2571 clock_gettime(which_clock: MONOTONIC, tp: 0x7f3b45729cd0 ) = 0
+
+v2: Update to use the STRARRAY option
+
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1381370438-4209-1-git-send-email-felipensp@gmail.com
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1379900700-5186-6-git-send-email-dsahern@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/tests/dso-data.c | 1 +
- 1 file changed, 1 insertion(+)
+ tools/perf/builtin-trace.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/tools/perf/tests/dso-data.c b/tools/perf/tests/dso-data.c
-index dffe0551acaa..9cc81a3eb9b4 100644
---- a/tools/perf/tests/dso-data.c
-+++ b/tools/perf/tests/dso-data.c
-@@ -35,6 +35,7 @@ static char *test_file(int size)
- 	if (size != write(fd, buf, size))
- 		templ = NULL;
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index 76d9427b4b91..39a947a0d122 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -297,6 +297,12 @@ static DEFINE_STRARRAY(rlimit_resources);
+ static const char *sighow[] = { "BLOCK", "UNBLOCK", "SETMASK", };
+ static DEFINE_STRARRAY(sighow);
  
-+	free(buf);
- 	close(fd);
- 	return templ;
- }
++static const char *clockid[] = {
++	"REALTIME", "MONOTONIC", "PROCESS_CPUTIME_ID", "THREAD_CPUTIME_ID",
++	"MONOTONIC_RAW", "REALTIME_COARSE", "MONOTONIC_COARSE",
++};
++static DEFINE_STRARRAY(clockid);
++
+ static const char *socket_families[] = {
+ 	"UNSPEC", "LOCAL", "INET", "AX25", "IPX", "APPLETALK", "NETROM",
+ 	"BRIDGE", "ATMPVC", "X25", "INET6", "ROSE", "DECnet", "NETBEUI",
+@@ -603,6 +609,7 @@ static struct syscall_fmt {
+ 	{ .name	    = "arch_prctl", .errmsg = true, .alias = "prctl", },
+ 	{ .name	    = "brk",	    .hexret = true,
+ 	  .arg_scnprintf = { [0] = SCA_HEX, /* brk */ }, },
++	{ .name     = "clock_gettime",  .errmsg = true, STRARRAY(0, clk_id, clockid), },
+ 	{ .name	    = "connect",    .errmsg = true, },
+ 	{ .name	    = "epoll_ctl",  .errmsg = true, STRARRAY(1, op, epoll_ctl_ops), },
+ 	{ .name	    = "eventfd2",   .errmsg = true,
 -- 
 1.8.1.4
 
