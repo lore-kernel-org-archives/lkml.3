@@ -1,43 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757083Ab3JNTwZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 15:52:25 -0400
-Received: from emea01-db3-ndr.ptr.protection.outlook.com ([157.56.120.105]:16563
-	"EHLO emea01-db3-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756312Ab3JNTwY convert rfc822-to-8bit (ORCPT
+	id S1757391Ab3JNTyE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 15:54:04 -0400
+Received: from smtprelay0155.hostedemail.com ([216.40.44.155]:35162 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754984Ab3JNTyB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 15:52:24 -0400
-Content-Type: text/plain; charset=US-ASCII
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: RE: INVESTMENT/ RELOCATION ASSISTANCE. 14th/10/2013 
-To: Recipients <WEB8@HUSSEIN967.onmicrosoft.com>
-From: "Mrs. Maryann Jamila Hussein." <WEB8@HUSSEIN967.onmicrosoft.com>
-Date: Tue, 15 Oct 2013 01:21:42 +0530
-Reply-To: <mrs.maryann_qassim@live.com>
-Message-ID: <bc55c7d6-b213-4f4a-a5d2-90e10c9222f3@HKXPR03MB007.apcprd03.prod.outlook.com>
-X-Originating-IP: [106.204.132.64]
-X-ClientProxiedBy: SIXPR04CA005.apcprd04.prod.outlook.com (10.242.58.35) To
- HKXPR03MB007.apcprd03.prod.outlook.com (10.242.98.23)
-X-Forefront-PRVS: 0999136621
-X-Forefront-Antispam-Report: SFV:SPM;SFS:(189002)(199002)(56816003)(77096001)(76576001)(42186004)(49866001)(23756003)(50986001)(76796001)(553524002)(4396001)(47736001)(80976001)(76176001)(85306002)(46102001)(51856001)(83072001)(33646001)(54356001)(69226001)(47976001)(76786001)(31686002)(217433001)(81686001)(43066001)(81342001)(74706001)(74316001)(81542001)(74876001)(74366001)(50466002)(74502001)(47446002)(81816001)(74662001)(79102001)(53256004)(19580395003)(83322001)(80022001)(76482001)(54316002)(59766001)(56776001)(63696002)(77982001)(66066001)(47776003)(65816001)(506694002);DIR:OUT;SFP:1501;SCL:5;SRVR:HKXPR03MB007;H:[106.204.132.64];CLIP:106.204.132.64;FPR:;RD:InfoNoRecords;MX:1;A:0;LANG:en;
-X-OriginatorOrg: HUSSEIN967.onmicrosoft.com
+	Mon, 14 Oct 2013 15:54:01 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:800:960:967:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2525:2561:2564:2682:2685:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3353:3622:3657:3865:3866:3867:3870:3871:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4250:4321:5007:6117:7576:7652:7875:8599:8603:9010:9025:9388:10004:10049:10400:10848:11026:11232:11253:11257:11658:11854:11914:12043:12114:12214:12438:12517:12519:12555:12740:12776:13069:13095:13255:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not
+X-HE-Tag: shock04_3fe25a92a4a35
+X-Filterd-Recvd-Size: 2987
+Message-ID: <1381780437.12919.3.camel@joe-AO722>
+Subject: Re: [PATCH -next] netdev: inet_timewait_sock.h missing semi-colon
+ when KMEMCHECK is enabled
+From: Joe Perches <joe@perches.com>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Thierry Reding <thierry.reding@gmail.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Mark Brown <broonie@kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        David Miller <davem@davemloft.net>
+Date: Mon, 14 Oct 2013 12:53:57 -0700
+In-Reply-To: <525C47C0.2000907@infradead.org>
+References: <1381762088-18880-1-git-send-email-treding@nvidia.com>
+	 <525C47C0.2000907@infradead.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Beloved, 
+On Mon, 2013-10-14 at 12:36 -0700, Randy Dunlap wrote:
+> From: Randy Dunlap <rdunlap@infradead.org>
+> 
+> Fix (a few hundred) build errors due to missing semi-colon when
+> KMEMCHECK is enabled:
+> 
+>   include/net/inet_timewait_sock.h:139:2: error: expected ',', ';' or '}' before 'int'
+>   include/net/inet_timewait_sock.h:148:28: error: 'const struct inet_timewait_sock' has no member named 'tw_death_node'
+> 
+> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+> ---
+>  include/net/inet_timewait_sock.h |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> --- next-2013-1014.orig/include/net/inet_timewait_sock.h
+> +++ next-2013-1014/include/net/inet_timewait_sock.h
+> @@ -135,7 +135,7 @@ struct inet_timewait_sock {
+>  				tw_transparent  : 1,
+>  				tw_pad		: 6,	/* 6 bits hole */
+>  				tw_tos		: 8,
+> -				tw_pad2		: 16 /* 16 bits hole */
+> +				tw_pad2		: 16;	/* 16 bits hole */
+>  	kmemcheck_bitfield_end(flags);
+>  	u32			tw_ttd;
+>  	struct inet_bind_bucket	*tw_tb;
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-I am Mrs. Maryann Jamila Hussein a Teacher and a Muslim Convert here in Syria,i had sent a previous mail which i am not sure you got. I need your assistance to invest and help me relocate my 3 kids who are 17 years and below, so that they can get a better life there in your country due to the on going crises here in Syria.
+Shouldn't this be done in kmemcheck.h?
 
-I need your trust, before the death of my husband we had a savings with an Indian Bank, so money is not the issue. 
+ include/linux/kmemcheck.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-I got your reference in my search for someone who suits my 
-purpose.If you can help me reply, let me know.
+diff --git a/include/linux/kmemcheck.h b/include/linux/kmemcheck.h
+index 39f8453..b9ffad5 100644
+--- a/include/linux/kmemcheck.h
++++ b/include/linux/kmemcheck.h
+@@ -62,10 +62,10 @@ bool kmemcheck_is_obj_initialized(unsigned long addr, size_t size);
+  *     kmemcheck_annotate_bitfield(a, flags);
+  */
+ #define kmemcheck_bitfield_begin(name)	\
+-	int name##_begin[0];
++	int name##_begin[0]
+ 
+ #define kmemcheck_bitfield_end(name)	\
+-	int name##_end[0];
++	int name##_end[0]
+ 
+ #define kmemcheck_annotate_bitfield(ptr, name)				\
+ 	do {								\
 
-Regards,
 
-Mrs. Maryann Jamila Hussein.
-=====================================
