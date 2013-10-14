@@ -1,93 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758543Ab3JNUPA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 16:15:00 -0400
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:39097 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758521Ab3JNUO6 (ORCPT
+	id S1758419Ab3JNUON (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 16:14:13 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:39102 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757763Ab3JNUDI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 16:14:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <525C3E2F.2030109@codeaurora.org>
-References: <1374189690-10810-1-git-send-email-sboyd@codeaurora.org>
-	<1374189690-10810-6-git-send-email-sboyd@codeaurora.org>
-	<87k3hf7kvb.fsf@linaro.org>
-	<525C3E2F.2030109@codeaurora.org>
-Date: Mon, 14 Oct 2013 13:14:57 -0700
-Message-ID: <CALAqxLUVnL08HJw0CAGabKEGKuSPPNx-GUF_jPX6v0cZ4LZHDg@mail.gmail.com>
-Subject: Re: [PATCH v4 05/17] arch_timer: Move to generic sched_clock framework
-From: John Stultz <john.stultz@linaro.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Kevin Hilman <khilman@linaro.org>, lkml <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Christopher Covington <cov@codeaurora.org>,
-        Olof Johansson <olof@lixom.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 14 Oct 2013 16:03:08 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 110/161] perf trace: Add 'trace' alias to 'perf trace'
+Date: Mon, 14 Oct 2013 17:01:39 -0300
+Message-Id: <1381780950-25642-111-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1381780950-25642-1-git-send-email-acme@infradead.org>
+References: <1381780950-25642-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 14, 2013 at 11:55 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> On 10/14/13 11:44, Kevin Hilman wrote:
->> Stephen Boyd <sboyd@codeaurora.org> writes:
->>
->>> Register with the generic sched_clock framework now that it
->>> supports 64 bits. This fixes two problems with the current
->>> sched_clock support for machines using the architected timers.
->>> First off, we don't subtract the start value from subsequent
->>> sched_clock calls so we can potentially start off with
->>> sched_clock returning gigantic numbers. Second, there is no
->>> support for suspend/resume handling so problems such as discussed
->>> in 6a4dae5 (ARM: 7565/1: sched: stop sched_clock() during
->>> suspend, 2012-10-23) can happen without this patch. Finally, it
->>> allows us to move the sched_clock setup into drivers clocksource
->>> out of the arch ports.
->>>
->>> Cc: Christopher Covington <cov@codeaurora.org>
->>> Cc: Catalin Marinas <catalin.marinas@arm.com>
->>> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
->> A boot failure on Exynos5/Arndale showed up in next-20131014[1], and a
->> subsequent bisect has fingered this patch as the culprit.
->>
->> I haven't had a chance to debug this any further, but wanted to share in
->> case someone else can debug.
->>
->> The console log is below, but don't think there is much useful there as
->> it shows nothing after the 'Starting kernel ...' from u-boot.
->
-> debug_ll output would be nice. Anyway, that patch looks "weird". It is
-> definitely not what I sent out. Most notably, this hunk jumps out
->
-> @@ -471,6 +472,15 @@ static int __init arch_timer_register(void)
->                 goto out;
->         }
->
-> +       clocksource_register_hz(&clocksource_counter, arch_timer_rate);
-> +       cyclecounter.mult = clocksource_counter.mult;
-> +       cyclecounter.shift = clocksource_counter.shift;
-> +       timecounter_init(&timecounter, &cyclecounter,
-> +                        arch_counter_get_cntvct());
-> +
-> +       /* 56 bits minimum, so we assume worst case rollover */
-> +       sched_clock_register(arch_timer_read_counter, 56, arch_timer_rate);
-> +
->         if (arch_timer_use_virtual) {
->                 ppi = arch_timer_ppi[VIRT_PPI];
->                 err = request_percpu_irq(ppi, arch_timer_handler_virt,
->
->
-> Which is adding the clocksource_register_hz() and timecounter_init()
-> call twice. It should only be adding the sched_clock_register() call and
-> the sched_clock_register() call should be in arch_counter_register().
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Sorry, that's my fault. That bit collided when I applied the patch
-onto my queue.
+Make 'perf trace' more accessible by aliasing it to just 'trace':
 
-thanks
--john
+  [root@zoo linux]# trace --duration 15 -a -e futex sleep 1
+   110.092 (16.188 ms): libvirtd/1166 futex(uaddr: 0x185b344, op: WAIT|PRIV, val: 174293                    ) = 0
+   110.101 (15.903 ms): libvirtd/1171 futex(uaddr: 0x185b3dc, op: WAIT|PRIV, val: 139265                    ) = 0
+   111.594 (15.776 ms): libvirtd/1165 futex(uaddr: 0x185b344, op: WAIT|PRIV, val: 174295                    ) = 0
+   111.610 (15.969 ms): libvirtd/1169 futex(uaddr: 0x185b3dc, op: WAIT|PRIV, val: 139267                    ) = 0
+   113.556 (16.216 ms): libvirtd/1168 futex(uaddr: 0x185b3dc, op: WAIT|PRIV, val: 139269                    ) = 0
+   291.265 (199.508 ms): chromium-brows/15830 futex(uaddr: 0x7fff2986bcb4, op: WAIT_BITSET|PRIV|CLKRT, val: 1, utime: 0x7fff2986bab0, val3: 4294967295) = -1 ETIMEDOUT Connection timed out
+     360.354 (69.053 ms): chromium-brows/15830 futex(uaddr: 0x7fff2986bcb4, op: WAIT_BITSET|PRIV|CLKRT, val: 1, utime: 0x7fff2986bab0, val3: 4294967295) = -1 ETIMEDOUT Connection timed out
+  [root@zoo linux]#
+
+I.e. looking for futex calls that take at least 15ms, system wide, during a one
+second window. Now to get callchains into 'trace' to figure out what are those
+locks :-)
+
+Requested-by: Ingo Molnar <mingo@kernel.org>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-ch4smqz8b5fmgrte7c5e4fuw@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/Makefile.perf | 2 ++
+ tools/perf/perf.c        | 9 ++++++++-
+ 2 files changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index 1f1361531f92..2badb08a0037 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -78,6 +78,7 @@ CC = $(CROSS_COMPILE)gcc
+ AR = $(CROSS_COMPILE)ar
+ 
+ RM      = rm -f
++LN      = ln -f
+ MKDIR   = mkdir
+ FIND    = find
+ INSTALL = install
+@@ -809,6 +810,7 @@ install-gtk:
+ install-bin: all install-gtk
+ 	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(bindir_SQ)'
+ 	$(INSTALL) $(OUTPUT)perf '$(DESTDIR_SQ)$(bindir_SQ)'
++	$(LN) '$(DESTDIR_SQ)$(bindir_SQ)/perf' '$(DESTDIR_SQ)$(bindir_SQ)/trace'
+ 	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)'
+ 	$(INSTALL) $(OUTPUT)perf-archive -t '$(DESTDIR_SQ)$(perfexec_instdir_SQ)'
+ ifndef NO_LIBPERL
+diff --git a/tools/perf/perf.c b/tools/perf/perf.c
+index 626577830264..8b38b4e80ec2 100644
+--- a/tools/perf/perf.c
++++ b/tools/perf/perf.c
+@@ -481,7 +481,14 @@ int main(int argc, const char **argv)
+ 		fprintf(stderr, "cannot handle %s internally", cmd);
+ 		goto out;
+ 	}
+-
++#ifdef HAVE_LIBAUDIT_SUPPORT
++	if (!prefixcmp(cmd, "trace")) {
++		set_buildid_dir();
++		setup_path();
++		argv[0] = "trace";
++		return cmd_trace(argc, argv, NULL);
++	}
++#endif
+ 	/* Look for flags.. */
+ 	argv++;
+ 	argc--;
+-- 
+1.8.1.4
+
