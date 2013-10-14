@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933376Ab3JNUmo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 16:42:44 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:38582 "EHLO
+	id S933362Ab3JNUmm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 16:42:42 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38583 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757538Ab3JNUCw (ORCPT
+	with ESMTP id S1757539Ab3JNUCw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 14 Oct 2013 16:02:52 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 042/161] tools/perf/build: Split out feature checks: 'liberty', 'liberty-z', 'cplus-demangle'
-Date: Mon, 14 Oct 2013 17:00:31 -0300
-Message-Id: <1381780950-25642-43-git-send-email-acme@infradead.org>
+Subject: [PATCH 047/161] tools/perf/build: Make sure autodep feature binaries honor the O= setting
+Date: Mon, 14 Oct 2013 17:00:36 -0300
+Message-Id: <1381780950-25642-48-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1381780950-25642-1-git-send-email-acme@infradead.org>
 References: <1381780950-25642-1-git-send-email-acme@infradead.org>
@@ -27,103 +26,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ingo Molnar <mingo@kernel.org>
 
-Note that these are rarely executed tests, so we call feature_check() explicitly
-and don't have them in CORE_FEATURE_CHECKS.
+Arnaldo noticed that the feature-check binaries are generated in the
+config/check-features/ directory even if O= is specified.
 
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Implement $(OUTPUT) logic for config/check-features/Makefile.
+
+Reported-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/n/tip-pvumlx6mbtfxffgrlwO2mRcx@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-NLwlnv5prsubuey0vfocebym@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- tools/perf/config/Makefile                             | 16 ++++++----------
- tools/perf/config/feature-checks/Makefile              | 12 ++++++++++++
- tools/perf/config/feature-checks/test-cplus-demangle.c | 10 ++++++++++
- 3 files changed, 28 insertions(+), 10 deletions(-)
- create mode 100644 tools/perf/config/feature-checks/test-cplus-demangle.c
+ tools/perf/config/Makefile | 11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
 diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 62d02cd03f29..89b2d47d2e4b 100644
+index e80ffe8262b0..3d656e3e6284 100644
 --- a/tools/perf/config/Makefile
 +++ b/tools/perf/config/Makefile
-@@ -472,23 +472,19 @@ else
-     EXTLIBS += -liberty
-     CFLAGS += -DHAVE_CPLUS_DEMANGLE_SUPPORT
-   else
--    FLAGS_BFD=$(CFLAGS) $(LDFLAGS) $(EXTLIBS) -DPACKAGE='perf' -lbfd
-     ifeq ($(feature-libbfd), 1)
-       EXTLIBS += -lbfd
-     else
--      FLAGS_BFD_IBERTY=$(FLAGS_BFD) -liberty
--      has_bfd_iberty := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY),liberty)
--      ifeq ($(has_bfd_iberty),y)
-+      $(feature_check,liberty)
-+      ifeq ($(feature-liberty), 1)
-         EXTLIBS += -lbfd -liberty
-       else
--        FLAGS_BFD_IBERTY_Z=$(FLAGS_BFD_IBERTY) -lz
--        has_bfd_iberty_z := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY_Z),libz)
--        ifeq ($(has_bfd_iberty_z),y)
-+        $(feature_check,liberty-z)
-+        ifeq ($(feature-liberty-z), 1)
-           EXTLIBS += -lbfd -liberty -lz
-         else
--          FLAGS_CPLUS_DEMANGLE=$(CFLAGS) $(LDFLAGS) $(EXTLIBS) -liberty
--          has_cplus_demangle := $(call try-cc,$(SOURCE_CPLUS_DEMANGLE),$(FLAGS_CPLUS_DEMANGLE),demangle)
--          ifeq ($(has_cplus_demangle),y)
-+          $(feature_check,cplus-demangle)
-+          ifeq ($(feature-cplus-demangle), 1)
-             EXTLIBS += -liberty
-             CFLAGS += -DHAVE_CPLUS_DEMANGLE_SUPPORT
-           else
-diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
-index d4c55acc82bb..e21bceb80bf2 100644
---- a/tools/perf/config/feature-checks/Makefile
-+++ b/tools/perf/config/feature-checks/Makefile
-@@ -11,6 +11,9 @@ FILES=					\
- 	test-hello			\
- 	test-libaudit			\
- 	test-libbfd			\
-+	test-liberty			\
-+	test-liberty-z			\
-+	test-cplus-demangle		\
- 	test-libelf			\
- 	test-libelf-getphdrnum		\
- 	test-libelf-mmap		\
-@@ -122,6 +125,15 @@ test-libpython-version:
- test-libbfd:
- 	$(BUILD) -DPACKAGE='perf' -DPACKAGE=perf -lbfd -ldl
+@@ -88,9 +88,14 @@ CFLAGS += -std=gnu99
  
-+test-liberty:
-+	$(CC) -o $(OUTPUT)$@ test-libbfd.c -DPACKAGE='perf' -DPACKAGE=perf -lbfd -ldl -liberty
-+
-+test-liberty-z:
-+	$(CC) -o $(OUTPUT)$@ test-libbfd.c -DPACKAGE='perf' -DPACKAGE=perf -lbfd -ldl -liberty -lz
-+
-+test-cplus-demangle:
-+	$(BUILD) -liberty
-+
- test-on-exit:
- 	$(BUILD)
+ EXTLIBS = -lelf -lpthread -lrt -lm -ldl
  
-diff --git a/tools/perf/config/feature-checks/test-cplus-demangle.c b/tools/perf/config/feature-checks/test-cplus-demangle.c
-new file mode 100644
-index 000000000000..5202f5038ad8
---- /dev/null
-+++ b/tools/perf/config/feature-checks/test-cplus-demangle.c
-@@ -0,0 +1,10 @@
++ifneq ($(OUTPUT),)
++  OUTPUT_FEATURES = $(OUTPUT)config/feature-checks/
++  $(shell mkdir -p $(OUTPUT_FEATURES))
++endif
 +
-+extern char *cplus_demangle(const char *, int);
-+
-+int main(void)
-+{
-+	cplus_demangle(0, 0);
-+
-+	return 0;
-+}
-+
+ feature_check = $(eval $(feature_check_code))
+ define feature_check_code
+-  feature-$(1) := $(shell $(MAKE) -C config/feature-checks test-$1 >/dev/null 2>/dev/null && echo 1 || echo 0)
++  feature-$(1) := $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) -C config/feature-checks test-$1 >/dev/null 2>/dev/null && echo 1 || echo 0)
+ endef
+ 
+ feature_set = $(eval $(feature_set_code))
+@@ -138,7 +143,7 @@ CORE_FEATURE_TESTS =			\
+ # to skip the print-out of the long features list if the file
+ # existed before and after it was built:
+ #
+-ifeq ($(wildcard config/feature-checks/test-all),)
++ifeq ($(wildcard $(OUTPUT)config/feature-checks/test-all),)
+   test-all-failed := 1
+ else
+   test-all-failed := 0
+@@ -168,7 +173,7 @@ ifeq ($(feature-all), 1)
+   #
+   $(foreach feat,$(CORE_FEATURE_TESTS),$(call feature_set,$(feat)))
+ else
+-  $(shell $(MAKE) -i -j -C config/feature-checks $(CORE_FEATURE_TESTS) >/dev/null 2>&1)
++  $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) -i -j -C config/feature-checks $(CORE_FEATURE_TESTS) >/dev/null 2>&1)
+   $(foreach feat,$(CORE_FEATURE_TESTS),$(call feature_check,$(feat)))
+ endif
+ 
 -- 
 1.8.1.4
 
