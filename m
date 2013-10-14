@@ -1,51 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753140Ab3JNH2R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 03:28:17 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:27305 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752009Ab3JNH2Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 03:28:16 -0400
-Message-ID: <525B9CEC.5000903@huawei.com>
-Date: Mon, 14 Oct 2013 15:27:40 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Pekka Enberg <penberg@kernel.org>
-CC: Christoph Lameter <cl@linux.com>, LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH] slub: Fix calculation of cpu slabs
-References: <522E9569.9060104@huawei.com> <0000014109b29246-61170b4a-7ab7-41f0-a887-a1cd62603196-000000@email.amazonses.com>
-In-Reply-To: <0000014109b29246-61170b4a-7ab7-41f0-a887-a1cd62603196-000000@email.amazonses.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+	id S1753263Ab3JNHaF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 03:30:05 -0400
+Received: from plane.gmane.org ([80.91.229.3]:35959 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751259Ab3JNHaE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 03:30:04 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Romain Izard <romain.izard.pro@gmail.com>
+Subject: Re: [PATCH 2/4] drivers/mmc/host: don't use
+ devm_pinctrl_get_select_default() in probe
+Date: Mon, 14 Oct 2013 07:28:09 +0000 (UTC)
+Message-ID: <l3g6e9$fqh$1@ger.gmane.org>
+References: <1381681071-6021-1-git-send-email-wsa@the-dreams.de>
+ <1381681071-6021-3-git-send-email-wsa@the-dreams.de>
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: 146.187.3.109.rev.sfr.net
+User-Agent: slrn/pre1.0.0-18 (Linux)
+Cc: linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org
+Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pekka,
+On 2013-10-13, Wolfram Sang <wsa@the-dreams.de> wrote:
+> Since commit ab78029 (drivers/pinctrl: grab default handles from device core),
+> we can rely on device core for setting the default pins. Compile tested only.
+>
+> Acked-by: Linus Walleij <linus.walleij@linaro.org> (personally at LCE13)
+> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+> ---
+>  drivers/mmc/host/mvsdio.c          | 7 +------
+>  drivers/mmc/host/omap_hsmmc.c      | 7 -------
+>  drivers/mmc/host/sdhci-esdhc-imx.c | 8 --------
+>  3 files changed, 1 insertion(+), 21 deletions(-)
+>
+> diff --git a/drivers/mmc/host/mvsdio.c b/drivers/mmc/host/mvsdio.c
+> index 06c5b0b..8c9f448 100644
+> --- a/drivers/mmc/host/mvsdio.c
+> +++ b/drivers/mmc/host/mvsdio.c
+> @@ -25,7 +25,6 @@
+>  #include <linux/of_irq.h>
+>  #include <linux/mmc/host.h>
+>  #include <linux/mmc/slot-gpio.h>
+> -#include <linux/pinctrl/consumer.h>
+>  
+>  #include <asm/sizes.h>
+>  #include <asm/unaligned.h>
+> @@ -685,7 +684,7 @@ static int __init mvsd_probe(struct platform_device *pdev)
+>  	const struct mbus_dram_target_info *dram;
+>  	struct resource *r;
+>  	int ret, irq;
+> -	struct pinctrl *pinctrl;
+> +	int gpio_card_detect, gpio_write_protect;
+>  
 
-could you pick up this patch?
+This new line does not belong to this patch.
 
-On 2013/9/11 5:06, Christoph Lameter wrote:
-> On Tue, 10 Sep 2013, Li Zefan wrote:
-> 
->> We should use page->pages instead of page->pobjects when calculating
->> the number of cpu partial slabs. This also fixes the mapping of slabs
->> and nodes.
-> 
-> True.
-> 
->> As there's no variable storing the number of total/active objects in
->> cpu partial slabs, and we don't have user interfaces requiring those
->> statistics, I just add WARN_ON for those cases.
-> 
-> 
-> Well that is not strictly required but it does not hurt either.
-> 
-> Acked-by: Christoph Lameter <cl@linux.com>
-> 
+>  	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>  	irq = platform_get_irq(pdev, 0);
+> @@ -702,10 +701,6 @@ static int __init mvsd_probe(struct platform_device *pdev)
+>  	host->mmc = mmc;
+>  	host->dev = &pdev->dev;
+>  
+> -	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
+> -	if (IS_ERR(pinctrl))
+> -		dev_warn(&pdev->dev, "no pins associated\n");
+> -
+>  	/*
+>  	 * Some non-DT platforms do not pass a clock, and the clock
+>  	 * frequency is passed through platform_data. On DT platforms,
+
+Best regards,
+-- 
+Romain Izard
 
