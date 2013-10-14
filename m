@@ -1,75 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751021Ab3JNF06 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 01:26:58 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:57222 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750722Ab3JNF05 (ORCPT
+	id S1751428Ab3JNF2o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 01:28:44 -0400
+Received: from nasmtp01.atmel.com ([192.199.1.245]:35231 "EHLO
+	DVREDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750806Ab3JNF2n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 01:26:57 -0400
-From: Manish Badarkhe <badarkhe.manish@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org
-Cc: badarkhe.manish@gmail.com, anton@enomsg.org, dwmw2@infradead.org
-Subject: [PATCH] max17042_battery: use SIMPLE_DEV_PM_OPS
-Date: Mon, 14 Oct 2013 10:56:51 +0530
-Message-Id: <1381728411-21935-1-git-send-email-badarkhe.manish@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Mon, 14 Oct 2013 01:28:43 -0400
+Message-ID: <525B8105.6090303@atmel.com>
+Date: Mon, 14 Oct 2013 13:28:37 +0800
+From: Bo Shen <voice.shen@atmel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Wolfram Sang <wsa@the-dreams.de>
+CC: <linux-arm-kernel@lists.infradead.org>, <alsa-devel@alsa-project.org>,
+        Takashi Iwai <tiwai@suse.de>, <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
+        Mark Brown <broonie@kernel.org>
+Subject: Re: [PATCH 4/4] sound/soc/atmel: don't use devm_pinctrl_get_select_default()
+ in probe
+References: <1381681071-6021-1-git-send-email-wsa@the-dreams.de> <1381681071-6021-5-git-send-email-wsa@the-dreams.de>
+In-Reply-To: <1381681071-6021-5-git-send-email-wsa@the-dreams.de>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.168.5.13]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the SIMPLE_DEV_PM_OPS macro to declare the driver's
-pm_ops.
+Hi Wolfram Sang,
 
-Signed-off-by: Manish Badarkhe <badarkhe.manish@gmail.com>
----
-:100644 100644 d664ef5... bd72b0f... M	drivers/power/max17042_battery.c
- drivers/power/max17042_battery.c |   16 +++++-----------
- 1 file changed, 5 insertions(+), 11 deletions(-)
+On 10/14/2013 00:17, Wolfram Sang wrote:
+> Since commit ab78029 (drivers/pinctrl: grab default handles from device core),
+> we can rely on device core for setting the default pins.
+>
+> Acked-by: Linus Walleij <linus.walleij@linaro.org> (personally at LCE13)
+> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+> ---
+>   sound/soc/atmel/atmel_wm8904.c | 8 --------
+>   1 file changed, 8 deletions(-)
 
-diff --git a/drivers/power/max17042_battery.c b/drivers/power/max17042_battery.c
-index d664ef5..bd72b0f 100644
---- a/drivers/power/max17042_battery.c
-+++ b/drivers/power/max17042_battery.c
-@@ -786,7 +786,7 @@ static int max17042_remove(struct i2c_client *client)
- 	return 0;
- }
- 
--#ifdef CONFIG_PM
-+#ifdef CONFIG_PM_SLEEP
- static int max17042_suspend(struct device *dev)
- {
- 	struct max17042_chip *chip = dev_get_drvdata(dev);
-@@ -816,17 +816,11 @@ static int max17042_resume(struct device *dev)
- 
- 	return 0;
- }
--
--static const struct dev_pm_ops max17042_pm_ops = {
--	.suspend	= max17042_suspend,
--	.resume		= max17042_resume,
--};
--
--#define MAX17042_PM_OPS (&max17042_pm_ops)
--#else
--#define MAX17042_PM_OPS NULL
- #endif
- 
-+static SIMPLE_DEV_PM_OPS(max17042_pm_ops, max17042_suspend,
-+			max17042_resume);
-+
- #ifdef CONFIG_OF
- static const struct of_device_id max17042_dt_match[] = {
- 	{ .compatible = "maxim,max17042" },
-@@ -849,7 +843,7 @@ static struct i2c_driver max17042_i2c_driver = {
- 	.driver	= {
- 		.name	= "max17042",
- 		.of_match_table = of_match_ptr(max17042_dt_match),
--		.pm	= MAX17042_PM_OPS,
-+		.pm	= &max17042_pm_ops,
- 	},
- 	.probe		= max17042_probe,
- 	.remove		= max17042_remove,
--- 
-1.7.10.4
+Tested OK on at91sam9n12ek and sama5d3xek board.
+Thanks.
 
+Acked-by: Bo Shen <voice.shen@atmel.com>
+
+Best Regards,
+Bo Shen
