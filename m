@@ -1,86 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756861Ab3JNS0o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 14:26:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42164 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755714Ab3JNS0n (ORCPT
+	id S1756989Ab3JNS0z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 14:26:55 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:6985 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755714Ab3JNS0x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 14:26:43 -0400
-Date: Mon, 14 Oct 2013 11:26:42 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: Davidlohr Bueso <davidlohr@hp.com>, Matt Fleming <matt.fleming@intel.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Karel Zak <kzak@redhat.com>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
-        Doug Anderson <dianders@chromium.org>
-Subject: Re: [PATCH 2/2 for 3.12-rc6] Revert
- "partitions/efi: account for pmbr size in lba"
-Message-Id: <20131014112642.8efe63022ea05b07ced7fad8@linux-foundation.org>
-In-Reply-To: <1381750909-20082-2-git-send-email-dedekind1@gmail.com>
-References: <1381750909-20082-1-git-send-email-dedekind1@gmail.com>
-	<1381750909-20082-2-git-send-email-dedekind1@gmail.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 14 Oct 2013 14:26:53 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 14 Oct 2013 11:26:53 -0700
+Message-ID: <525C376A.3000009@nvidia.com>
+Date: Mon, 14 Oct 2013 14:26:50 -0400
+From: Rhyland Klein <rklein@nvidia.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Anton Vorontsov <anton@enomsg.org>, David Woodhouse <dwmw2@infradead.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Darbha Sriharsha <dsriharsha@nvidia.com>,
+        Manish Badarkha <badarkhe.manish@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Rutland <Mark.Rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: Re: [Patch V5] drivers: power: Add support for bq24735 charger
+References: <1381526143-20800-1-git-send-email-rklein@nvidia.com> <525C361C.1020703@wwwdotorg.org>
+In-Reply-To: <525C361C.1020703@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Oct 2013 14:41:49 +0300 Artem Bityutskiy <dedekind1@gmail.com> wrote:
-
-> This reverts commit 27a7c642174eaec627f6a3a254035bf8abd02c5e.
+On 10/14/2013 2:21 PM, Stephen Warren wrote:
+> On 10/11/2013 03:15 PM, Rhyland Klein wrote:
+>> From: Darbha Sriharsha <dsriharsha@nvidia.com>
+>>
+>> Adds support for the bq24735 charger chipset. The bq24735 is a
+>> high-efficiency, synchronous battery charger.
+>>
+>> It allows control of the charging current, input current, and the charger
+>> voltage DAC's through SMBus.
 > 
-> This patch breaks existing systems, for example, Tizen IVI images do not boot
-> the way they have always been booted because of this patch.
+> Please CC the DT bindings maintainers on patches that add DT bindings.
 
-Does Doug's patch fix this?
+Oops, sorry, will do in the future.
+
+> 
+>> diff --git a/Documentation/devicetree/bindings/power_supply/ti,bq24735.txt b/Documentation/devicetree/bindings/power_supply/ti,bq24735.txt
+> 
+>> +Optional properties :
+> 
+>> + - ti,ac-detect-gpios : This GPIO is optionally used to read the AC adapter
+>> +   presence.
+> 
+> Is that actually a property of the BQ24735 chip itself (i.e. is it an
+> output signal from the chip), or part of the board/system?
+
+The gpio itself is actually what the IRQ line is tied to from the
+bq24735 -> tegra (in this case). In other words this is a Host GPIO that
+is configured as an input and connected to the bq24735.
+
+-rhyland
+
+> 
+> Aside from that, the binding looks reasonable to me (although I'm no
+> longer a DT bindings maintainer).
+> 
 
 
-From: Doug Anderson <dianders@chromium.org>
-Subject: block/partitions/efi.c: treat size mismatch as a warning, not an error
-
-In 27a7c64 ("partitions/efi: account for pmbr size in lba") we started
-treating bad sizes in lba field of the partition that has the 0xEE (GPT
-protective) as errors.  However, we may run into these "bad sizes" in the
-real world if someone uses dd to copy an image from a smaller disk to a
-bigger disk.  Since this case used to work (even without using force_gpt),
-keep it working and treat the size mismatch as a warning instead of an
-error.
-
-Reported-by: Josh Triplett <josh@joshtriplett.org>
-Reported-by: Sean Paul <seanpaul@chromium.org>
-Signed-off-by: Doug Anderson <dianders@chromium.org>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-Acked-by: Davidlohr Bueso <davidlohr@hp.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-
- block/partitions/efi.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
-
-diff -puN block/partitions/efi.c~block-partitions-efic-treat-size-mismatch-as-a-warning-not-an-error block/partitions/efi.c
---- a/block/partitions/efi.c~block-partitions-efic-treat-size-mismatch-as-a-warning-not-an-error
-+++ a/block/partitions/efi.c
-@@ -222,11 +222,16 @@ check_hybrid:
- 	 * the disk size.
- 	 *
- 	 * Hybrid MBRs do not necessarily comply with this.
-+	 *
-+	 * Consider a bad value here to be a warning to support dd'ing
-+	 * an image from a smaller disk to a larger disk.
- 	 */
- 	if (ret == GPT_MBR_PROTECTIVE) {
- 		sz = le32_to_cpu(mbr->partition_record[part].size_in_lba);
- 		if (sz != (uint32_t) total_sectors - 1 && sz != 0xFFFFFFFF)
--			ret = 0;
-+			pr_debug("GPT: mbr size in lba (%u) different than whole disk (%u).\n",
-+				 sz, min_t(uint32_t,
-+					   total_sectors - 1, 0xFFFFFFFF));
- 	}
- done:
- 	return ret;
-_
-
+-- 
+nvpublic
