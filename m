@@ -1,63 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758091Ab3JNUHz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 16:07:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42707 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757114Ab3JNUHq (ORCPT
+	id S1758158Ab3JNUID (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 16:08:03 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:39340 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757114Ab3JNUIA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 16:07:46 -0400
-Date: Mon, 14 Oct 2013 13:07:45 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Aaro Koskinen <aaro.koskinen@iki.fi>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, b-liu@ti.com
-Subject: Re: USB regression in v3.12-rc4
-Message-ID: <20131014200745.GA14338@kroah.com>
-References: <20131012214618.GD29989@blackmetal.musicnaut.iki.fi>
- <20131014153356.GA18373@kroah.com>
- <20131014190539.GI3132@radagast>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131014190539.GI3132@radagast>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 14 Oct 2013 16:08:00 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Chenggang Qin <chenggang.qcg@taobao.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Yanmin Zhang <yanmin.zhang@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 161/161] perf symbols: Fix a mmap and munmap mismatched bug
+Date: Mon, 14 Oct 2013 17:02:30 -0300
+Message-Id: <1381780950-25642-162-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1381780950-25642-1-git-send-email-acme@infradead.org>
+References: <1381780950-25642-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 14, 2013 at 02:05:39PM -0500, Felipe Balbi wrote:
-> Hi,
-> 
-> On Mon, Oct 14, 2013 at 08:33:56AM -0700, Greg Kroah-Hartman wrote:
-> > On Sun, Oct 13, 2013 at 12:46:18AM +0300, Aaro Koskinen wrote:
-> > > Hi,
-> > > 
-> > > With v3.12-rc4 I can no longer connect to N800 (OMAP2) with USB
-> > > (peripheral, g_ether).
-> > > 
-> > > According to git bisect this is caused by:
-> > > 
-> > > 9b0a1de3c85d99d881c86a29b3d52da7b9c7bd61 is the first bad commit
-> > > commit 9b0a1de3c85d99d881c86a29b3d52da7b9c7bd61
-> > > Author: Bin Liu <b-liu@ti.com>
-> > > Date:   Tue Sep 17 15:33:35 2013 -0500
-> > > 
-> > >     usb: musb: gadget: fix otg active status flag
-> > > 
-> > >     In gadget mode, musb->is_active should be set only when connected to the
-> > >     host. musb_g_reset() already takes care of it.
-> > > 
-> > >     Signed-off-by: Bin Liu <b-liu@ti.com>
-> > >     Signed-off-by: Felipe Balbi <balbi@ti.com>
-> > > 
-> > > Reverting that commit from v3.12-rc4 will fix the issue. Based on the
-> > > commit log this is not fixing any real issue, so I wonder why was it
-> > > included in -rc4 in the first place?
-> > 
-> > Hm, Felipe, should I just revert this patch for 3.12-final?
-> 
-> Yeah, let's do that... It's unfortunate that tusb6010 is so messed up
-> :-(
+From: Chenggang Qin <chenggang.qcg@taobao.com>
 
-Ok, now reverted.
+In function filename__read_debuglink(), while the ELF file is opend and
+mmapped in elf_begin(), but if this file is considered to not be usable
+during the following code, we will goto the close(fd) directly. The
+elf_end() is skipped.  So, the mmaped ELF file cannot be munmapped. The
+mmapped areas exist during the life of perf.
+
+This is a memory leak.  This patch fixed this bug.
+
+Reviewed-by: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Chenggang Qin <chenggang.qcg@taobao.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Chenggang Qin <chenggang.qcg@taobao.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Yanmin Zhang <yanmin.zhang@intel.com>
+Link: http://lkml.kernel.org/r/1381451279-4109-1-git-send-email-chenggang.qin@gmail.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/symbol-elf.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
+index d6b8af3ce344..eed0b96302af 100644
+--- a/tools/perf/util/symbol-elf.c
++++ b/tools/perf/util/symbol-elf.c
+@@ -487,27 +487,27 @@ int filename__read_debuglink(const char *filename, char *debuglink,
+ 
+ 	ek = elf_kind(elf);
+ 	if (ek != ELF_K_ELF)
+-		goto out_close;
++		goto out_elf_end;
+ 
+ 	if (gelf_getehdr(elf, &ehdr) == NULL) {
+ 		pr_err("%s: cannot get elf header.\n", __func__);
+-		goto out_close;
++		goto out_elf_end;
+ 	}
+ 
+ 	sec = elf_section_by_name(elf, &ehdr, &shdr,
+ 				  ".gnu_debuglink", NULL);
+ 	if (sec == NULL)
+-		goto out_close;
++		goto out_elf_end;
+ 
+ 	data = elf_getdata(sec, NULL);
+ 	if (data == NULL)
+-		goto out_close;
++		goto out_elf_end;
+ 
+ 	/* the start of this section is a zero-terminated string */
+ 	strncpy(debuglink, data->d_buf, size);
+ 
++out_elf_end:
+ 	elf_end(elf);
+-
+ out_close:
+ 	close(fd);
+ out:
+-- 
+1.8.1.4
+
