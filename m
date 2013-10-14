@@ -1,44 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756606Ab3JNOpG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 10:45:06 -0400
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:57269 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750843Ab3JNOpF (ORCPT
+	id S1756320Ab3JNOuX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 10:50:23 -0400
+Received: from mail-bk0-f53.google.com ([209.85.214.53]:45466 "EHLO
+	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754841Ab3JNOuV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 10:45:05 -0400
-Date: Mon, 14 Oct 2013 11:44:54 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Chenggang Qin <chenggang.qin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, root <root@core097011.sqa.cm4>,
-        David Ahern <dsahern@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Namhyung Kim <namhyung@gmail.com>,
-        Yanmin Zhang <yanmin.zhang@intel.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Mike Galbraith <efault@gmx.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chenggang Qin <chenggang.qcg@taobao.com>
-Subject: Re: [PATCH 1/3] perf core: Fix a mmap and munmap mismatched bug
-Message-ID: <20131014144454.GB11175@ghostprotocols.net>
-References: <1381451279-4109-1-git-send-email-chenggang.qin@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1381451279-4109-1-git-send-email-chenggang.qin@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 14 Oct 2013 10:50:21 -0400
+From: Thierry Reding <thierry.reding@gmail.com>
+To: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Mark Brown <broonie@kernel.org>
+Subject: linux-next: Tree for Oct 14
+Date: Mon, 14 Oct 2013 16:48:01 +0200
+Message-Id: <1381762088-18880-1-git-send-email-treding@nvidia.com>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please use "perf tools: " as the prefix, I was assuming that "perf core:
-" was related to the kernel code and was skipping those patches.
+Hi all,
 
-I'll fix up the prefix to use the standard used for the various files in
-tools/perf, "perf symbols: " for this patch, for instance.
+I've uploaded today's linux-next tree to the master branch of the
+repository below:
 
-Applied this one and I'm checking the other patches from you, thanks,
+        git://gitorious.org/thierryreding/linux-next.git
 
-- Arnaldo
+A next-20131014 tag is also provided for convenience.
+
+Gained a few conflicts, but nothing too exciting. x86 and ARM default
+configurations build fine. There were some build failures unrelated to
+the merge, most of which I fixed and added as patches on top of the
+final merge.
+
+Thierry
