@@ -1,90 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757012Ab3JNTab (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 15:30:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30457 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751070Ab3JNTa3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 15:30:29 -0400
-Date: Mon, 14 Oct 2013 16:29:45 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Xiao Guangrong <xiaoguangrong.eric@gmail.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        avi.kivity@gmail.com, pbonzini@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v2 12/15] KVM: MMU: allow locklessly access shadow page
- table out of vcpu thread
-Message-ID: <20131014192945.GA22655@amt.cnet>
-References: <20131009015627.GA4816@amt.cnet>
- <525533DB.1060104@gmail.com>
- <20131010014710.GA2198@amt.cnet>
- <20131010120845.GT3574@redhat.com>
- <20131010164222.GB3211@amt.cnet>
- <20131010191646.GE15954@redhat.com>
- <20131010210301.GA7275@amt.cnet>
- <20131011053831.GG15954@redhat.com>
- <20131011203017.GA29576@amt.cnet>
- <20131012055356.GC14789@redhat.com>
+	id S1756858Ab3JNTev (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 15:34:51 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:56782 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756312Ab3JNTeu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 15:34:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131012055356.GC14789@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <525C0EFE.2010409@gmail.com>
+References: <5258E560.5050506@cn.fujitsu.com>
+	<525B19C3.9040907@gmail.com>
+	<20131014133835.GG4722@htj.dyndns.org>
+	<525BFCF3.5010908@gmail.com>
+	<20131014142719.GI4722@htj.dyndns.org>
+	<525C02DC.4050706@gmail.com>
+	<20131014145131.GJ4722@htj.dyndns.org>
+	<525C0866.2010808@gmail.com>
+	<20131014151902.GL4722@htj.dyndns.org>
+	<525C0EFE.2010409@gmail.com>
+Date: Mon, 14 Oct 2013 12:34:49 -0700
+X-Google-Sender-Auth: PS3HdBErhvw-erujtmXoVsydP68
+Message-ID: <CAE9FiQX0xeR61ehPy2SfWfN-fgSZVS=dtaWT-QQ+RR12tx+A0w@mail.gmail.com>
+Subject: Re: [PATCH part2 v2 0/8] Arrange hotpluggable memory as ZONE_MOVABLE
+From: Yinghai Lu <yinghai@kernel.org>
+To: Zhang Yanfei <zhangyanfei.yes@gmail.com>
+Cc: Tejun Heo <tj@kernel.org>, Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Toshi Kani <toshi.kani@hp.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 12, 2013 at 08:53:56AM +0300, Gleb Natapov wrote:
-> On Fri, Oct 11, 2013 at 05:30:17PM -0300, Marcelo Tosatti wrote:
-> > On Fri, Oct 11, 2013 at 08:38:31AM +0300, Gleb Natapov wrote:
-> > > > n_max_mmu_pages is not a suitable limit to throttle freeing of pages via
-> > > > RCU (its too large). If the free memory watermarks are smaller than 
-> > > > n_max_mmu_pages for all guests, OOM is possible.
-> > > > 
-> > > Ah, yes. I am not saying n_max_mmu_pages will throttle RCU, just saying
-> > > that slab size will be bound, so hopefully shrinker will touch it
-> > > rarely.
-> > > 
-> > > > > > > and, in addition, page released to slab is immediately
-> > > > > > > available for allocation, no need to wait for grace period. 
-> > > > > > 
-> > > > > > See SLAB_DESTROY_BY_RCU comment at include/linux/slab.h.
-> > > > > > 
-> > > > > This comment is exactly what I was referring to in the code you quoted. Do
-> > > > > you see anything problematic in what comment describes?
-> > > > 
-> > > > "This delays freeing the SLAB page by a grace period, it does _NOT_
-> > > > delay object freeing." The page is not available for allocation.
-> > > By "page" I mean "spt page" which is a slab object. So "spt page"
-> > > AKA slab object will be available fo allocation immediately.
-> > 
-> > The object is reusable within that SLAB cache only, not the 
-> > entire system (therefore it does not prevent OOM condition).
-> > 
-> Since object is allocatable immediately by shadow paging code the number
-> of SLAB objects is bound by n_max_mmu_pages. If there is no enough
-> memory for n_max_mmu_pages OOM condition can happen anyway since shadow
-> paging code will usually have exactly n_max_mmu_pages allocated.
-> 
-> > OK, perhaps it is useful to use SLAB_DESTROY_BY_RCU, but throttling 
-> > is still necessary, as described in the RCU documentation.
-> > 
-> I do not see what should be throttled if we use SLAB_DESTROY_BY_RCU. RCU
-> comes into play only when SLAB cache is shrunk and it happens far from
-> kvm code.
+On Mon, Oct 14, 2013 at 8:34 AM, Zhang Yanfei <zhangyanfei.yes@gmail.com> wrote:
+> Hello tejun,
+>
+> On 10/14/2013 11:19 PM, Tejun Heo wrote:
+>> Hey,
+>>
+>> On Mon, Oct 14, 2013 at 11:06:14PM +0800, Zhang Yanfei wrote:
+>>> a little difference here, consider a 16-GB node. If we parse SRAT earlier,
+>>> and still use the top-down allocation, and kernel image is loaded at 16MB,
+>>> we reserve other nodes but this 16GB node that kernel resides in is used
+>>> for boot-up allocation. So the page table is allocated from 16GB to 0.
+>>> The page table is allocated on top of the the memory as possible.
+>>>
+>>> But if we use this approach, no matter how large the page table is, we
+>>> allocate the page table in low memory which is the case that hpa concerns
+>>> about the DMA.
+>>
+>> Yeah, sure there will be cases where parsing SRAT would be better.
+>>
+>>  4k mapping is in use, which is mostly for debugging && memory map is
+>>  composed such that the highest non-hotpluggable address is high
+>>  enough.
+>>
+>> It's going in circles again but my point has always been that the
+>> above in itself don't seem to be substantial enough to justify
+>> putting, say, initrd loading before page table init.
+>>
+>> Later some argued that bringing SRAT parsing earlier could help
+>> implementing finer grained hotplug, which would be an acceptable path
+>> to follow; however, that doesn't turn out to be true either.
+>>
+>> * Again, it matter if and only if 4k mapping is in use.  Do we even
+>>   care?
+>>
+>> * SRAT isn't enough.  The whole device tree needs to be parsed to put
+>>   page tables into local device.  It's a lot of churn, including major
+>>   updates to page table allocation, just to support debug 4k mapping
+>>   cases.  Doesn't make much sense to me.
+>>
+>> So, SRAT's usefulness seems extremely limited - it helps if the user
+>> wants to use debug features along with memory hotplug on an extreme
+>> large machine with devices which have low DMA limit, and that's it.
+>> To me, it seems to be a poor argument.  Just declaring memory hotplug
+>> works iff large kernel mapping is in use feels like a pretty good
+>> trade-off to me, and I have no idea why I have to repeat all this,
+>> which I've written multiple times already, in a private thread again.
+>>
+>> If the thread is to make progress, one has to provide counter
+>> arguments to the points raised.  It feels like I'm going in circle
+>> again.  The exact same content I wrote above has been repeated
+>> multiple times in the past discussions and I'm getting tired of doing
+>> it without getting any actual response.
 
-You are right.
+The points for parsing SRAT early instead of Yanfei/Tang v7:
+1. We just reached one unified path to setup page tables for 32bit,
+64bit and xen or non xen after several years. We should not have add
+another path for system
+that support hotplug.
 
-Why is it safe to allow access, by the lockless page write protect
-side, to spt pointer for shadow page A that can change to a shadow page 
-pointer of shadow page B?
+2. also we should avoid adding "movable_nodes" command line.
 
-Write protect spte of any page at will? Or verify that in fact thats the
-shadow you want to write protect?
+3. debug mapping 4k, and it is working all the way, why breaking it even for
+memory hotplug path?
 
-Note that spte value might be the same for different shadow pages, 
-so cmpxchg succeeding does not guarantees its the same shadow page that
-has been protected.
+4. numa_meminfo now is static structure.
+we have no reason that we can not parse SRAT etc to fill that struct.
 
+5. for device tree, i assume that we could do same like srat parsing to find out
+numa to fill the numa_meminfo early. or with help of BRK.
 
+6. in the long run, We should rework our NUMA booting:
+a. boot system with boot numa nodes early only.
+b. in later init stage or user space, init other nodes
+RAM/CPU/PCI...in parallel.
+that will reduce boot time for 8 sockets/32 sockets dramatically.
+
+We will need to parse srat table early so could avoid init memory for
+non-boot nodes.
+
+Yinghai
