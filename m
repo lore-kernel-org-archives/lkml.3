@@ -1,60 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756487Ab3JNNNq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 09:13:46 -0400
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:38471 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756134Ab3JNNNo (ORCPT
+	id S1756566Ab3JNNOc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 09:14:32 -0400
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:55857 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756505Ab3JNNO3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 09:13:44 -0400
-Date: Mon, 14 Oct 2013 10:13:35 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH V7 5/7] perf buildid-cache: add ability to add kcore to
- the cache
-Message-ID: <20131014131335.GA11175@ghostprotocols.net>
-References: <1381747424-3557-1-git-send-email-adrian.hunter@intel.com>
- <1381747424-3557-6-git-send-email-adrian.hunter@intel.com>
+	Mon, 14 Oct 2013 09:14:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1381747424-3557-6-git-send-email-adrian.hunter@intel.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1905683.dBVjOILnXT@vostro.rjw.lan>
+References: <1380820383-23336-1-git-send-email-felipe.contreras@gmail.com>
+	<CAMP44s0sGCDKj86awEqUK27LB=TL62-w9F=e99J3gRGmmfGMWg@mail.gmail.com>
+	<1905683.dBVjOILnXT@vostro.rjw.lan>
+Date: Mon, 14 Oct 2013 08:14:28 -0500
+Message-ID: <CAMP44s1hVCk=vkAmYoQA85U1sTQ-JCLmWi0kDejfY8m=sXQdpQ@mail.gmail.com>
+Subject: Re: [PATCH] acpi: update win8 OSI blacklist
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Oct 14, 2013 at 01:43:42PM +0300, Adrian Hunter escreveu:
-> +static int kcore_copy__compare_fds(int from, int to)
-<SNIP>
-> +	while (1) {
-> +		/* Use read because mmap won't work on proc files */
-> +		ret = read(from, buf_from, page_size);
-> +		if (ret < 0)
-> +			return -1;
-> +		if (!ret)
-> +			return 0;
-> +		n = ret;
-> +		len = ret;
-> +		while (n) {
-> +			ret = read(to, buf_to, n);
-> +			if (ret <= 0)
-> +				return -1;
-> +			n -= ret;
+On Mon, Oct 14, 2013 at 6:58 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Sunday, October 13, 2013 10:30:50 PM Felipe Contreras wrote:
+>> On Thu, Oct 3, 2013 at 12:13 PM, Felipe Contreras
+>> <felipe.contreras@gmail.com> wrote:
+>> > More people have reported they need this for their machines to work
+>> > correctly.
+>> >
+>> > https://bugzilla.kernel.org/show_bug.cgi?id=60682
+>>
+>> I see this was merged to the linux-next branch. Is there any reason
+>> why it's not proposed for v3.12?
+>
+> It is not a fix for a recent breakage, it doesn't fix an outright crash or
+> security issue and there is a chance, albeit arguably very small, that
+> something will not function on one of the affected systems for someone
+> as a result of the blacklisting.
 
-You can't go on potentially rewriting 'buf_to' like that, consider using
-readn().
+So? That chance is already there because the blacklist is already
+there, but we cannot know until v3.12 is released, because that's when
+most people would be testing that code.
 
-> +		}
-> +
-> +		if (memcmp(buf_from, buf_to, len))
-> +			return -1;
-> +	}
-> +}
+It seems to me your worry is that somebody would report a regression
+that happened v3.12-rc6 (if it has this patch applied), while it
+worked correctly in v3.12-rc5, in which case you would get a complaint
+from Linus.
+
+But we all know that's not going to happen. The complaints (if any)
+would arrive in v3.12, and that would happen regardless of this patch.
+
+Besides, our goal is to make v3.12 as stable as possible, and it seems
+to me you are blindly following the letter of a rule, instead if
+interpreting what is the intent of rule. If I had sent the patch the
+29th of June, it would have been aplied by now and be part of the
+current blacklist, and the result would be the same; we cannot really
+know until v3.12 is released.
+
+-- 
+Felipe Contreras
