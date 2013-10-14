@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756304Ab3JNMHm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 08:07:42 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:54774 "EHLO
+	id S1756363Ab3JNMIv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 08:08:51 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:54798 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755387Ab3JNMHl (ORCPT
+	with ESMTP id S1756226Ab3JNMIu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 08:07:41 -0400
-Date: Mon, 14 Oct 2013 14:07:24 +0200
+	Mon, 14 Oct 2013 08:08:50 -0400
+Date: Mon, 14 Oct 2013 14:08:31 +0200
 From: Peter Zijlstra <peterz@infradead.org>
 To: Juri Lelli <juri.lelli@gmail.com>
 Cc: tglx@linutronix.de, mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com,
@@ -21,26 +21,24 @@ Cc: tglx@linutronix.de, mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com,
         jkacur@redhat.com, harald.gustafsson@ericsson.com,
         vincent.guittot@linaro.org,
         bruce.ashfield@windriver.com--no-chain-reply-to
-Subject: Re: [PATCH 06/14] sched: add period support for -deadline tasks.
-Message-ID: <20131014120724.GI3081@twins.programming.kicks-ass.net>
+Subject: Re: [PATCH 07/14] sched: add schedstats for -deadline tasks.
+Message-ID: <20131014120831.GJ3081@twins.programming.kicks-ass.net>
 References: <1381747426-31334-1-git-send-email-juri.lelli@gmail.com>
- <1381747426-31334-7-git-send-email-juri.lelli@gmail.com>
+ <1381747426-31334-8-git-send-email-juri.lelli@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1381747426-31334-7-git-send-email-juri.lelli@gmail.com>
+In-Reply-To: <1381747426-31334-8-git-send-email-juri.lelli@gmail.com>
 User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 14, 2013 at 12:43:38PM +0200, Juri Lelli wrote:
-> From: Harald Gustafsson <harald.gustafsson@ericsson.com>
+On Mon, Oct 14, 2013 at 12:43:39PM +0200, Juri Lelli wrote:
+> From: Dario Faggioli <raistlin@linux.it>
 > 
-> Make it possible to specify a period (different or equal than
-> deadline) for -deadline tasks.
+> Add some typical sched-debug output to dl_rq(s) and some
+> schedstats to -deadline tasks.
 
-Could we add a little blurb here as to why we'd want this?
-
-(I think I do, and I certainly know where to find the answer, but its
-better to have a more complete changelog).
+Could you perhaps add a bit to the changelog explaining what kind of
+problems this patch helped (or could help) to find?
