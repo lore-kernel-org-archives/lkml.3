@@ -1,47 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757282Ab3JNRfX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 13:35:23 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:35650 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756161Ab3JNRfU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 13:35:20 -0400
-Date: Mon, 14 Oct 2013 19:34:56 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Juri Lelli <juri.lelli@gmail.com>
-Cc: tglx@linutronix.de, mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com,
-        fweisbec@gmail.com, darren@dvhart.com, johan.eker@ericsson.com,
-        p.faure@akatech.ch, linux-kernel@vger.kernel.org,
-        claudio@evidence.eu.com, michael@amarulasolutions.com,
-        fchecconi@gmail.com, tommaso.cucinotta@sssup.it,
-        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
-        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
-        raistlin@linux.it, insop.song@gmail.com, liming.wang@windriver.com,
-        jkacur@redhat.com, harald.gustafsson@ericsson.com,
-        vincent.guittot@linaro.org,
-        bruce.ashfield@windriver.com--no-chain-reply-to
-Subject: Re: [PATCH 03/14] sched: SCHED_DEADLINE structures & implementation.
-Message-ID: <20131014173456.GC2675@laptop.programming.kicks-ass.net>
-References: <1381747426-31334-1-git-send-email-juri.lelli@gmail.com>
- <1381747426-31334-4-git-send-email-juri.lelli@gmail.com>
- <20131014114433.GE3081@twins.programming.kicks-ass.net>
- <525C22CB.7000200@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <525C22CB.7000200@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	id S1757307Ab3JNRiD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 13:38:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45453 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756880Ab3JNRh5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 13:37:57 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: linux-mm@kvack.org
+Cc: Andrew Morton <akpm@linux-foundation.org>, Matt Mackall <mpm@selenic.com>,
+        Cliff Wickman <cpw@sgi.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Pavel Emelyanov <xemul@parallels.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH 09/11] arch/powerpc/mm/subpage-prot.c: use walk_page_vma() instead of walk_page_range()
+Date: Mon, 14 Oct 2013 13:37:08 -0400
+Message-Id: <1381772230-26878-10-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1381772230-26878-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1381772230-26878-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 14, 2013 at 06:58:51PM +0200, Juri Lelli wrote:
-> On 10/14/2013 01:44 PM, Peter Zijlstra wrote:
-> > On Mon, Oct 14, 2013 at 12:43:35PM +0200, Juri Lelli wrote:
-> We discussed on this point in the past...
+We don't have to use mm_walk->private to pass vma to the callback
+function, because mm_walk->vma is automatically set to the valid one.
 
-Ah, completely forgot about that; please update the comment that we
-indeed use different clocks for deadline and runtime and that the full
-ramifications need further study; but that deadline needs hard walltime
-and clock_task is more natural for runtime.
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+---
+ arch/powerpc/mm/subpage-prot.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
+
+diff --git v3.12-rc4.orig/arch/powerpc/mm/subpage-prot.c v3.12-rc4/arch/powerpc/mm/subpage-prot.c
+index a770df2d..cec0af0 100644
+--- v3.12-rc4.orig/arch/powerpc/mm/subpage-prot.c
++++ v3.12-rc4/arch/powerpc/mm/subpage-prot.c
+@@ -134,7 +134,7 @@ static void subpage_prot_clear(unsigned long addr, unsigned long len)
+ static int subpage_walk_pmd_entry(pmd_t *pmd, unsigned long addr,
+ 				  unsigned long end, struct mm_walk *walk)
+ {
+-	struct vm_area_struct *vma = walk->private;
++	struct vm_area_struct *vma = walk->vma;
+ 	split_huge_page_pmd(vma, addr, pmd);
+ 	return 0;
+ }
+@@ -163,9 +163,7 @@ static void subpage_mark_vma_nohuge(struct mm_struct *mm, unsigned long addr,
+ 		if (vma->vm_start >= (addr + len))
+ 			break;
+ 		vma->vm_flags |= VM_NOHUGEPAGE;
+-		subpage_proto_walk.private = vma;
+-		walk_page_range(vma->vm_start, vma->vm_end,
+-				&subpage_proto_walk);
++		walk_page_vma(vma, &subpage_proto_walk);
+ 		vma = vma->vm_next;
+ 	}
+ }
+-- 
+1.8.3.1
+
