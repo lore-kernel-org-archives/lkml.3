@@ -1,58 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756759Ab3JNQNT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 12:13:19 -0400
-Received: from mga14.intel.com ([143.182.124.37]:54964 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750837Ab3JNQNR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 12:13:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,493,1378882800"; 
-   d="scan'208";a="307582156"
-Message-ID: <525C1817.1050909@linux.intel.com>
-Date: Mon, 14 Oct 2013 09:13:11 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1756829Ab3JNQQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 12:16:56 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:62789 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750969Ab3JNQQz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 12:16:55 -0400
+Message-ID: <525C18F2.9050205@gmail.com>
+Date: Mon, 14 Oct 2013 18:16:50 +0200
+From: Juri Lelli <juri.lelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Morten Rasmussen <morten.rasmussen@arm.com>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "pjt@google.com" <pjt@google.com>, "rjw@sisk.pl" <rjw@sisk.pl>,
-        "dirk.j.brandewie@intel.com" <dirk.j.brandewie@intel.com>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        "alex.shi@linaro.org" <alex.shi@linaro.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "efault@gmx.de" <efault@gmx.de>, "corbet@lwn.net" <corbet@lwn.net>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
-Subject: Re: [RFC][PATCH 4/7] sched: power: Remove power capacity hints for
- kworker threads
-References: <1381511957-29776-1-git-send-email-morten.rasmussen@arm.com> <1381511957-29776-5-git-send-email-morten.rasmussen@arm.com> <20131014133356.GN3081@twins.programming.kicks-ass.net> <20131014161011.GO31039@e103034-lin>
-In-Reply-To: <20131014161011.GO31039@e103034-lin>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+To: Peter Zijlstra <peterz@infradead.org>
+CC: tglx@linutronix.de, mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com,
+        fweisbec@gmail.com, darren@dvhart.com, johan.eker@ericsson.com,
+        p.faure@akatech.ch, linux-kernel@vger.kernel.org,
+        claudio@evidence.eu.com, michael@amarulasolutions.com,
+        fchecconi@gmail.com, tommaso.cucinotta@sssup.it,
+        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
+        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
+        raistlin@linux.it, insop.song@gmail.com, liming.wang@windriver.com,
+        jkacur@redhat.com, harald.gustafsson@ericsson.com,
+        vincent.guittot@linaro.org
+Subject: Re: [PATCH 03/14] sched: SCHED_DEADLINE structures & implementation.
+References: <1381747426-31334-1-git-send-email-juri.lelli@gmail.com> <1381747426-31334-4-git-send-email-juri.lelli@gmail.com> <20131014113301.GD3081@twins.programming.kicks-ass.net>
+In-Reply-To: <20131014113301.GD3081@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/14/2013 9:10 AM, Morten Rasmussen wrote:
-> On Mon, Oct 14, 2013 at 02:33:56PM +0100, Peter Zijlstra wrote:
->> On Fri, Oct 11, 2013 at 06:19:14PM +0100, Morten Rasmussen wrote:
->>> Removing power hints for kworker threads enables easier use of
->>> workqueues in the power driver late callback. That would otherwise
->>> lead to an endless loop unless it is prevented in the power driver.
->>
->> There's many kworker users; some of them actually consume lots of
->> cputime. Therefore how did you come to the conclusion that excepting all
->> users was the better choice of a little added complexity in the one
->> place where it actually matters?
->
-> Agreed that it is not ideal. I will find a better solution for this
-> problem.
->
+On 10/14/2013 01:33 PM, Peter Zijlstra wrote:
+> On Mon, Oct 14, 2013 at 12:43:35PM +0200, Juri Lelli wrote:
+>> +static void replenish_dl_entity(struct sched_dl_entity *dl_se)
+>> +{
+>> +	struct dl_rq *dl_rq = dl_rq_of_se(dl_se);
+>> +	struct rq *rq = rq_of_dl_rq(dl_rq);
+>> +
+>> +	/*
+>> +	 * We keep moving the deadline away until we get some
+>> +	 * available runtime for the entity. This ensures correct
+>> +	 * handling of situations where the runtime overrun is
+>> +	 * arbitrary large.
+>> +	 */
+>> +	while (dl_se->runtime <= 0) {
+>> +		dl_se->deadline += dl_se->dl_deadline;
+>> +		dl_se->runtime += dl_se->dl_runtime;
+>> +	}
+> 
+> Are we sure GCC won't be 'smart' and bite us; that is do we need
+> something like:
+> 
+>   asm("" : "+rm" (dl_se->runtime));
+> 
+> in there? See:
+> 
+> 0d98bb2656e9 sched: Prevent compiler from optimising the sched_avg_update() loop
+> 
 
-can you explain which architectures we're talking about that need this?
-is it only old stuff, or is there anything current ?
+When disassembled everything seems fine, at least for x86 and ARM. Do I add the
+fake data hazard anyway?
 
+Thanks,
+
+- Juri
