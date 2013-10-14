@@ -1,103 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751452Ab3JNHe4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 03:34:56 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:49318 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750778Ab3JNHey (ORCPT
+	id S1752345Ab3JNHjM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 03:39:12 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:36959 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750924Ab3JNHjK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 03:34:54 -0400
-Date: Mon, 14 Oct 2013 09:34:37 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
-        Marc Pignat <marc.pignat@hevs.ch>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>, kernel@pengutronix.de,
-        John Stulz <john.stultz@linaro.org>,
-        Ronald Wahl <ronald.wahl@raritan.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [GIT PULL] fixes for integer rounding in timer core
-Message-ID: <20131014073436.GX10079@pengutronix.de>
-References: <alpine.DEB.2.02.1309191629040.4089@ionos.tec.linutronix.de>
- <1380052223-24139-1-git-send-email-u.kleine-koenig@pengutronix.de>
- <5253D9A1.1080106@pengutronix.de>
- <20131008153147.GR10079@pengutronix.de>
+	Mon, 14 Oct 2013 03:39:10 -0400
+Message-ID: <525B9F93.9040001@atmel.com>
+Date: Mon, 14 Oct 2013 09:38:59 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20131008153147.GR10079@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Bo Shen <voice.shen@atmel.com>, <plagnioj@jcrosoft.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 0/5] ARM:at91:enable sound on at91sam9n12ek board
+References: <1381729113-29714-1-git-send-email-voice.shen@atmel.com>
+In-Reply-To: <1381729113-29714-1-git-send-email-voice.shen@atmel.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Linus, hello Ingo,
+On 14/10/2013 07:38, Bo Shen :
+> This patch series enable sound on at91sam9n12ek board with wm8904 codec
+>
+>
+> Bo Shen (5):
+>    ARM: at91: add at91sam9n12 ssc clock in look up table
+>    ARM: at91: add ssc dma parameter for at91sam9n12
+>    ARM: at91: enable wm8904 on at91sam9n12ek board
+>    ARM: at91: enable ssc on at91sam9n12ek board
+>    ARM: at91: add sound support on at91sam9n12ek board
 
-On Tue, Oct 08, 2013 at 05:31:47PM +0200, Uwe Kleine-König wrote:
-> > What's the status of this patch?
-> I pinged Thomas about it already via irc, but I didn't get a response up
-> to now. It would be great to get that into 3.12. To make it easy for
-> Thomas, here is a pull request that includes the fix and converts
-> at91rm9200 back to clockevents_config_and_register dropping one of the
-> workarounds for the fixed bug.
-> 
-> The following changes since commit 4a10c2ac2f368583138b774ca41fac4207911983:
-> 
->   Linux 3.12-rc2 (2013-09-23 15:41:09 -0700)
-> 
-> are available in the git repository at:
-> 
->   git://git.pengutronix.de/git/ukl/linux.git tags/timer-for-tip
-> 
-> for you to fetch changes up to b58c4b70121070f45eefa739ecbb58d57da1c4d9:
-> 
->   ARM: at91: rm9200: switch back to clockevents_config_and_register (2013-10-08 16:58:22 +0200)
-> 
-> ----------------------------------------------------------------
-> The first patch in this pull request fixes an old integer rounding bug in the
-> timer core that was (and still is) worked around in a few arch's timer code.
-> The second patch drops such a work around now that the core is fixed.
-It would be nice to get that fix into 3.12, but Thomas stopped
-responding nearly a month ago---his last mail in this thread[1] dates back
-to September 20.
+Great!
 
-Can one of you please take it directly?
+And on the whole patch series:
 
-Thanks
-Uwe
- 
-[1] http://thread.gmane.org/gmane.linux.kernel/1563370/
-> ----------------------------------------------------------------
-> Thomas Gleixner (1):
->       clockevents: Sanitize ticks to nsec conversion
-> 
-> Uwe Kleine-König (1):
->       ARM: at91: rm9200: switch back to clockevents_config_and_register
-> 
->  arch/arm/mach-at91/at91rm9200_time.c |  7 ++--
->  kernel/time/clockevents.c            | 65 +++++++++++++++++++++++++++---------
->  2 files changed, 52 insertions(+), 20 deletions(-)
-> 
-> -- 
-> Pengutronix e.K.                           | Uwe Kleine-König            |
-> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> 
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+
+I stack it on at91-3.13-dt branch.
+
+Thanks.
+
+>
+>   arch/arm/boot/dts/at91sam9n12.dtsi  |    3 +++
+>   arch/arm/boot/dts/at91sam9n12ek.dts |   34 ++++++++++++++++++++++++++++++++++
+>   arch/arm/mach-at91/at91sam9n12.c    |    1 +
+>   3 files changed, 38 insertions(+)
+>
+
 
 -- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Nicolas Ferre
