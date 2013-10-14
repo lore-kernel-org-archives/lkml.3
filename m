@@ -1,84 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755935Ab3JNJcO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 05:32:14 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:41896 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754656Ab3JNJcM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 05:32:12 -0400
-Message-ID: <525BB9EE.3010709@ti.com>
-Date: Mon, 14 Oct 2013 12:31:26 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1755821Ab3JNJee (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 05:34:34 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51369 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754571Ab3JNJed (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 05:34:33 -0400
+Date: Mon, 14 Oct 2013 02:34:08 -0700
+From: tip-bot for Kamalesh Babulal <tipbot@zytor.com>
+Message-ID: <tip-ed1b7732868035990f07aeb532b1d86272ea909e@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        kamalesh@linux.vnet.ibm.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        kamalesh@linux.vnet.ibm.com, tglx@linutronix.de
+In-Reply-To: <1381685775-3544-1-git-send-email-kamalesh@linux.vnet.ibm.com>
+References: <1381685775-3544-1-git-send-email-kamalesh@linux.vnet.ibm.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched/fair: Fix trivial typos in comments
+Git-Commit-ID: ed1b7732868035990f07aeb532b1d86272ea909e
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Kishon Vijay Abraham I <kishon@ti.com>
-CC: <balbi@ti.com>, <bcousson@baylibre.com>, <tony@atomide.com>,
-        <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <linux@arm.linux.org.uk>,
-        <grant.likely@linaro.org>, <s.nawrocki@samsung.com>,
-        <galak@codeaurora.org>, <swarren@wwwdotorg.org>,
-        <ian.campbell@citrix.com>, <rob@landley.net>, <george.cherian@ti.com>,
-        <gregkh@linuxfoundation.org>, <linux-doc@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/7] drivers: phy: usb3/pipe3: Adapt pipe3 driver to Generic
- PHY Framework
-References: <1378136591-7463-1-git-send-email-kishon@ti.com> <1378136591-7463-4-git-send-email-kishon@ti.com> <5231A35D.7060006@ti.com> <5236749F.3070707@ti.com> <5236B537.1090902@ti.com> <52581304.9010205@ti.com> <525BB726.6040100@ti.com>
-In-Reply-To: <525BB726.6040100@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 14 Oct 2013 02:34:15 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kishon,
+Commit-ID:  ed1b7732868035990f07aeb532b1d86272ea909e
+Gitweb:     http://git.kernel.org/tip/ed1b7732868035990f07aeb532b1d86272ea909e
+Author:     Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+AuthorDate: Sun, 13 Oct 2013 23:06:15 +0530
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Mon, 14 Oct 2013 09:22:55 +0200
 
-On 10/14/2013 12:19 PM, Kishon Vijay Abraham I wrote:
-> Hi Roger,
-> 
-> On Friday 11 October 2013 08:32 PM, Roger Quadros wrote:
->> On 09/16/2013 10:37 AM, Roger Quadros wrote:
->>> On 09/16/2013 06:01 AM, Kishon Vijay Abraham I wrote:
->>>> On Thursday 12 September 2013 04:49 PM, Roger Quadros wrote:
->>>>> Hi Kishon,
->>>>>
->>>>> On 09/02/2013 06:43 PM, Kishon Vijay Abraham I wrote:
+sched/fair: Fix trivial typos in comments
 
->>>>>>   #ifdef CONFIG_OF
->>>>>> -static const struct of_device_id omap_usb3_id_table[] = {
->>>>>> +static const struct of_device_id omap_pipe3_id_table[] = {
->>>>>> +    { .compatible = "ti,omap-pipe3" },
->>>>>
->>>>> why do you need "omap-pipe3", isn't sata, pcie and usb3 sufficient?
->>>>
->>>> I thought it would be better if everyone uses omap-pipe3 and added pcie, sata if there are any specific settings (for pcie or sata) that should be done.
->>>
->>> We can always add specialized options later when needed. AFAIK just the
->>> DPLL data is different among the different PHYs.
->>>>>
->>>>>> +    { .compatible = "ti,omap-sata" },
->>>>>> +    { .compatible = "ti,omap-pcie" },
->>>>>>       { .compatible = "ti,omap-usb3" },
->>>
->>> I think compatible strings should be improved to indicate that it is a PHY.
->>>
->>> e.g. "ti,omap-phy-sata" or just "ti,pipe3-phy-sata"
->>>
->>
->> Please remove "ti,omap-pcie" for now, you can add it later whenever you add
->> dpll settings for pcie.
->>
->> Also, please change the newly added compatible strings to
->>
->> "ti,phy-pipe3-usb3" and "ti,phy-pipe3-sata"
-> 
-> No, I think we should have omap in the compatible since this PHY is specific to
-> OMAP.
+ - 'load_icx' => 'load_idx'
+ - 'calculcate_imbalance' => 'calculate_imbalance'
 
-DRA7x and an am43x are not OMAP so I was suggesting not to use it for new PHY types.
-We still preserve just "ti,omap-usb3" for backward compatibility.
+Signed-off-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+Cc: peterz@infradead.org
+Link: http://lkml.kernel.org/r/1381685775-3544-1-git-send-email-kamalesh@linux.vnet.ibm.com
+[ Also, don't capitalize 'idle' unnecessarily. ]
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ kernel/sched/fair.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-cheers,
--roger
-
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 8274679..4aa0b10 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -5206,7 +5206,7 @@ static inline void init_sd_lb_stats(struct sd_lb_stats *sds)
+ /**
+  * get_sd_load_idx - Obtain the load index for a given sched domain.
+  * @sd: The sched_domain whose load_idx is to be obtained.
+- * @idle: The Idle status of the CPU for whose sd load_icx is obtained.
++ * @idle: The idle status of the CPU for whose sd load_idx is obtained.
+  *
+  * Return: The load index.
+  */
+@@ -5412,7 +5412,7 @@ fix_small_capacity(struct sched_domain *sd, struct sched_group *group)
+  * moving tasks due to affinity constraints.
+  *
+  * When this is so detected; this group becomes a candidate for busiest; see
+- * update_sd_pick_busiest(). And calculcate_imbalance() and
++ * update_sd_pick_busiest(). And calculate_imbalance() and
+  * find_busiest_group() avoid some of the usual balance conditions to allow it
+  * to create an effective group imbalance.
+  *
