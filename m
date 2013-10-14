@@ -1,515 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757076Ab3JNQV7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 12:21:59 -0400
-Received: from mga11.intel.com ([192.55.52.93]:44186 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755583Ab3JNQV5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 12:21:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,493,1378882800"; 
-   d="scan'208";a="416643238"
-From: "R, Durgadoss" <durgadoss.r@intel.com>
-To: "Zhang, Rui" <rui.zhang@intel.com>
-CC: "eduardo.valentin@ti.com" <eduardo.valentin@ti.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+	id S1757128Ab3JNQYy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 12:24:54 -0400
+Received: from tango.0pointer.de ([85.214.72.216]:48559 "EHLO
+	tango.0pointer.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754841Ab3JNQYw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 12:24:52 -0400
+Date: Mon, 14 Oct 2013 18:24:46 +0200
+From: Lennart Poettering <mzxreary@0pointer.de>
+To: Matthew Garrett <matthew.garrett@nebula.com>
+Cc: "lenb@kernel.org" <lenb@kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hongbo.zhang@freescale.com" <hongbo.zhang@freescale.com>,
-        "wni@nvidia.com" <wni@nvidia.com>
-Subject: RE: [PATCHv4 2/9] Thermal: Create sensor level APIs
-Thread-Topic: [PATCHv4 2/9] Thermal: Create sensor level APIs
-Thread-Index: AQHOvqfiyiSSrf5AwUOJOXchzYZZEpnzpVGAgADONZA=
-Date: Mon, 14 Oct 2013 16:21:52 +0000
-Message-ID: <4D68720C2E767A4AA6A8796D42C8EB59DADB0B@BGSMSX101.gar.corp.intel.com>
-References: <1380652688-5787-1-git-send-email-durgadoss.r@intel.com>
-	 <1380652688-5787-3-git-send-email-durgadoss.r@intel.com>
- <1381742769.2034.26.camel@rzhang1-mobl4>
-In-Reply-To: <1381742769.2034.26.camel@rzhang1-mobl4>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.223.10.10]
-Content-Type: text/plain; charset="utf-8"
+        "aaron.lu@intel.com" <aaron.lu@intel.com>, "rjw@sisk.pl" <rjw@sisk.pl>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>
+Subject: Re: [PATCH] acpi/video: Add Lenovo IdeaPad Yoga 13 to acpi video
+  detect blacklist
+Message-ID: <20131014162445.GA11682@tango.0pointer.de>
+References: <20131014005505.GA30503@tango.0pointer.de>
+ <525B44C0.3010204@intel.com>
+ <20131014022325.GA2248@tango.0pointer.de>
+ <525B58BE.5050009@intel.com>
+ <20131014034927.GA3638@tango.0pointer.de>
+ <525B703E.7080102@intel.com>
+ <20131014153621.GA7758@tango.0pointer.de>
+ <1381765708.24317.1.camel@x230.lan>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1381765708.24317.1.camel@x230.lan>
+Organization: Red Hat, Inc.
+X-Campaign-1: ()  ASCII Ribbon Campaign
+X-Campaign-2: /  Against HTML Email & vCards - Against Microsoft Attachments
+User-Agent: Leviathan/19.8.0 [zh] (Cray 3; I; Solaris 4.711; Console)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r9EGM4mm016595
 
-Hi Rui,
+On Mon, 14.10.13 15:48, Matthew Garrett (matthew.garrett@nebula.com) wrote:
 
-> -----Original Message-----
-> From: linux-pm-owner@vger.kernel.org [mailto:linux-pm-
-> owner@vger.kernel.org] On Behalf Of Zhang Rui
-> Sent: Monday, October 14, 2013 2:56 PM
-> To: R, Durgadoss
-> Cc: eduardo.valentin@ti.com; linux-pm@vger.kernel.org; linux-
-> kernel@vger.kernel.org; hongbo.zhang@freescale.com; wni@nvidia.com
-> Subject: Re: [PATCHv4 2/9] Thermal: Create sensor level APIs
+> On Mon, 2013-10-14 at 17:36 +0200, Lennart Poettering wrote:
 > 
-> On Wed, 2013-10-02 at 00:08 +0530, Durgadoss R wrote:
-> > This patch creates sensor level APIs, in the
-> > generic thermal framework.
-> >
-> > A Thermal sensor is a piece of hardware that can report
-> > temperature of the spot in which it is placed. A thermal
-> > sensor driver reads the temperature from this sensor
-> > and reports it out. This kind of driver can be in
-> > any subsystem. If the sensor needs to participate
-> > in platform thermal management, the corresponding
-> > driver can use the APIs introduced in this patch, to
-> > register(or unregister) with the thermal framework.
-> >
-> > Signed-off-by: Durgadoss R <durgadoss.r@intel.com>
-> > ---
-> >  drivers/thermal/thermal_core.c |  284
-> ++++++++++++++++++++++++++++++++++++++++
-> >  include/linux/thermal.h        |   29 ++++
-> >  2 files changed, 313 insertions(+)
-> >
-> > diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
-> > index 8c5131d..8c46567 100644
-> > --- a/drivers/thermal/thermal_core.c
-> > +++ b/drivers/thermal/thermal_core.c
-> > @@ -45,13 +45,16 @@ MODULE_LICENSE("GPL v2");
-> >
-> >  static DEFINE_IDR(thermal_tz_idr);
-> >  static DEFINE_IDR(thermal_cdev_idr);
-> > +static DEFINE_IDR(thermal_sensor_idr);
-> >  static DEFINE_MUTEX(thermal_idr_lock);
-> >
-> >  static LIST_HEAD(thermal_tz_list);
-> > +static LIST_HEAD(thermal_sensor_list);
-> >  static LIST_HEAD(thermal_cdev_list);
-> >  static LIST_HEAD(thermal_governor_list);
-> >
-> >  static DEFINE_MUTEX(thermal_list_lock);
-> > +static DEFINE_MUTEX(sensor_list_lock);
-> >  static DEFINE_MUTEX(thermal_governor_lock);
-> >
-> >  static struct thermal_governor *__find_governor(const char *name)
-> > @@ -463,6 +466,103 @@ static void thermal_zone_device_check(struct
-> work_struct *work)
-> >  #define to_thermal_zone(_dev) \
-> >  	container_of(_dev, struct thermal_zone_device, device)
-> >
-> > +#define to_thermal_sensor(_dev) \
-> > +	container_of(_dev, struct thermal_sensor, device)
-> > +
-> > +static ssize_t
-> > +sensor_name_show(struct device *dev, struct device_attribute *attr, char
-> *buf)
-> > +{
-> > +	struct thermal_sensor *ts = to_thermal_sensor(dev);
-> > +
-> > +	return sprintf(buf, "%s\n", ts->name);
-> > +}
-> > +
-> > +static ssize_t
-> > +sensor_temp_show(struct device *dev, struct device_attribute *attr, char
-> *buf)
-> > +{
-> > +	int ret;
-> > +	long val;
-> > +	struct thermal_sensor *ts = to_thermal_sensor(dev);
-> > +
-> > +	ret = ts->ops->get_temp(ts, &val);
-> > +
-> > +	return ret ? ret : sprintf(buf, "%ld\n", val);
-> > +}
-> > +
-> > +static ssize_t
-> > +hyst_show(struct device *dev, struct device_attribute *attr, char *buf)
-> > +{
-> > +	int indx, ret;
-> > +	long val;
-> > +	struct thermal_sensor *ts = to_thermal_sensor(dev);
-> > +
-> > +	if (!sscanf(attr->attr.name, "threshold%d_hyst", &indx))
-> > +		return -EINVAL;
-> > +
-> > +	ret = ts->ops->get_hyst(ts, indx, &val);
-> > +
-> > +	return ret ? ret : sprintf(buf, "%ld\n", val);
-> > +}
-> > +
-> > +static ssize_t
-> > +hyst_store(struct device *dev, struct device_attribute *attr,
-> > +				   const char *buf, size_t count)
-> > +{
-> > +	int indx, ret;
-> > +	long val;
-> > +	struct thermal_sensor *ts = to_thermal_sensor(dev);
-> > +
-> > +	if (!ts->ops->set_hyst)
-> > +		return -EPERM;
-> > +
-> > +	if (!sscanf(attr->attr.name, "threshold%d_hyst", &indx))
-> > +		return -EINVAL;
-> > +
-> > +	if (kstrtol(buf, 10, &val))
-> > +		return -EINVAL;
-> > +
-> > +	ret = ts->ops->set_hyst(ts, indx, val);
-> > +
-> > +	return ret ? ret : count;
-> > +}
-> > +
-> > +static ssize_t
-> > +threshold_show(struct device *dev, struct device_attribute *attr, char *buf)
-> > +{
-> > +	int indx, ret;
-> > +	long val;
-> > +	struct thermal_sensor *ts = to_thermal_sensor(dev);
-> > +
-> > +	if (!sscanf(attr->attr.name, "threshold%d", &indx))
-> > +		return -EINVAL;
-> > +
-> > +	ret = ts->ops->get_threshold(ts, indx, &val);
-> > +
-> > +	return ret ? ret : sprintf(buf, "%ld\n", val);
-> > +}
-> > +
-> > +static ssize_t
-> > +threshold_store(struct device *dev, struct device_attribute *attr,
-> > +				   const char *buf, size_t count)
-> > +{
-> > +	int indx, ret;
-> > +	long val;
-> > +	struct thermal_sensor *ts = to_thermal_sensor(dev);
-> > +
-> > +	if (!ts->ops->set_threshold)
-> > +		return -EPERM;
-> > +
-> > +	if (!sscanf(attr->attr.name, "threshold%d", &indx))
-> > +		return -EINVAL;
-> > +
-> > +	if (kstrtol(buf, 10, &val))
-> > +		return -EINVAL;
-> > +
-> > +	ret = ts->ops->set_threshold(ts, indx, val);
-> > +
-> > +	return ret ? ret : count;
-> > +}
-> > +
-> >  static ssize_t
-> >  type_show(struct device *dev, struct device_attribute *attr, char *buf)
-> >  {
-> > @@ -772,6 +872,10 @@ static DEVICE_ATTR(mode, 0644, mode_show,
-> mode_store);
-> >  static DEVICE_ATTR(passive, S_IRUGO | S_IWUSR, passive_show,
-> passive_store);
-> >  static DEVICE_ATTR(policy, S_IRUGO | S_IWUSR, policy_show, policy_store);
-> >
-> > +/* Thermal sensor attributes */
-> > +static DEVICE_ATTR(sensor_name, 0444, sensor_name_show, NULL);
+> > Sorry, still not getting this. How should this ever work if the intel
+> > video driver is compiled as kmod? That means that it isn't clear at all
+> > when the kmod is going to be loaded or if it is loaded at all, you
+> > cannot delay the registration of the acpi backlight that long, since the
+> > time you'd have to wait is basically unbounded...
 > 
-> this attribute is under sensorX/ directory, thus I think "name" is clear
-> enough.
-> what do you think?
+> See the intel_opregion_present() code in drivers/acpi/video.c. The ACPI
+> driver won't bind to Intel hardware until i915 indicates that it should
+> do so.
 
-Yes. That makes sense. I will give this a try in next version.
+Hmm, OK, so this means that the acpi backlight will check whether i915
+hw is around, and not whether the i915 driver is actually loaded? That
+would work for me I guess. Thanks.
 
-> 
-> > +static DEVICE_ATTR(temp_input, 0444, sensor_temp_show, NULL);
-> > +
-> what about "temp"? to be consistent with the current naming.
+That means on win8 machines with win8 graphics there'll always be a
+single backlight device in userspace only?
 
-I think I tried this, but we already had a 'temp' attribute. So, was compelled
-to give another name.
+Lennart
 
-I will try this one again and let you know.
-
-> 
-> >  /* sys I/F for cooling device */
-> >  #define to_cooling_device(_dev)	\
-> >  	container_of(_dev, struct thermal_cooling_device, device)
-> > @@ -1585,6 +1689,186 @@ static void remove_trip_attrs(struct
-> thermal_zone_device *tz)
-> >  	kfree(tz->trip_hyst_attrs);
-> >  }
-> >
-> > + /**
-> > + * enable_sensor_thresholds - create sysfs nodes for thresholdX
-> IMO, this name is confusing. It looks like that you are enabling the
-> sensor hardware here.
-> so why not "thermal_sensor_sysfs_add", and you can add the "name" and
-> "temp" attribute in this function as well.
-
-Okay. Will do.
-
-> 
-> > + * @ts:		the thermal sensor
-> > + * @count:	Number of thresholds supported by sensor hardware
-> > + *
-> > + * 'Thresholds' are temperatures programmed into the sensor hardware,
-> > + * on crossing which the sensor can generate an interrupt.
-> > + */
-> > +static int enable_sensor_thresholds(struct thermal_sensor *ts, int count)
-> > +{
-> > +	int i;
-> > +	int size = sizeof(struct thermal_attr) * count;
-> > +
-> > +	ts->thresh_attrs = devm_kzalloc(&ts->device, size, GFP_KERNEL);
-> > +	if (!ts->thresh_attrs)
-> > +		return -ENOMEM;
-> > +
-> > +	if (ts->ops->get_hyst) {
-> > +		ts->hyst_attrs = devm_kzalloc(&ts->device, size, GFP_KERNEL);
-> > +		if (!ts->hyst_attrs)
-> > +			return -ENOMEM;
-> > +	}
-> > +
-> I do not think you can use devm_kzalloc here.
-
-Any specific reason ?
-I thought this memory will be freed when we do device_unregister on 'ts'.
-Please enlighten me if this is not the case.
-
-> 
-> > +	ts->thresholds = count;
-> > +
-> > +	/* Create threshold attributes */
-> > +	for (i = 0; i < count; i++) {
-> > +		snprintf(ts->thresh_attrs[i].name, THERMAL_NAME_LENGTH,
-> > +						 "threshold%d", i);
-> > +
-> > +		sysfs_attr_init(&ts->thresh_attrs[i].attr.attr);
-> > +		ts->thresh_attrs[i].attr.attr.name = ts->thresh_attrs[i].name;
-> > +		ts->thresh_attrs[i].attr.attr.mode = S_IRUGO | S_IWUSR;
-> > +		ts->thresh_attrs[i].attr.show = threshold_show;
-> > +		ts->thresh_attrs[i].attr.store = threshold_store;
-> > +
-> > +		device_create_file(&ts->device, &ts->thresh_attrs[i].attr);
-> > +
-> > +		/* Create threshold_hyst attributes */
-> > +		if (!ts->ops->get_hyst)
-> > +			continue;
-> > +
-> > +		snprintf(ts->hyst_attrs[i].name, THERMAL_NAME_LENGTH,
-> > +						 "threshold%d_hyst", i);
-> > +
-> > +		sysfs_attr_init(&ts->hyst_attrs[i].attr.attr);
-> > +		ts->hyst_attrs[i].attr.attr.name = ts->hyst_attrs[i].name;
-> > +		ts->hyst_attrs[i].attr.attr.mode = S_IRUGO | S_IWUSR;
-> > +		ts->hyst_attrs[i].attr.show = hyst_show;
-> > +		ts->hyst_attrs[i].attr.store = hyst_store;
-> > +
-> > +		device_create_file(&ts->device, &ts->hyst_attrs[i].attr);
-> > +	}
-> > +	return 0;
-> > +}
-> > +
-> > +/**
-> > + * thermal_sensor_register - register a new thermal sensor
-> > + * @name:	name of the thermal sensor
-> > + * @count:	Number of thresholds supported by hardware
-> > + * @ops:	standard thermal sensor callbacks
-> > + * @devdata:	private device data
-> > + *
-> > + * On Success returns a thermal sensor reference, otherwise:
-> > + * -EINVAL for invalid parameters,
-> > + * -ENOMEM for insufficient memory cases,
-> > +*/
-> > +struct thermal_sensor *thermal_sensor_register(const char *name, int count,
-> > +			struct thermal_sensor_ops *ops, void *devdata)
-> > +{
-> > +	struct thermal_sensor *ts;
-> > +	int ret;
-> > +
-> > +	if (!name || (name && strlen(name) >= THERMAL_NAME_LENGTH))
-> > +		return ERR_PTR(-EINVAL);
-> > +
-> > +	if (!ops || !ops->get_temp)
-> > +		return ERR_PTR(-EINVAL);
-> > +
-> > +	ts = kzalloc(sizeof(*ts), GFP_KERNEL);
-> > +	if (!ts)
-> > +		return ERR_PTR(-ENOMEM);
-> > +
-> > +	idr_init(&ts->idr);
-> > +	ret = get_idr(&thermal_sensor_idr, &thermal_idr_lock, &ts->id);
-> > +	if (ret)
-> > +		goto exit_free;
-> > +
-> > +	strlcpy(ts->name, name, sizeof(ts->name));
-> > +	ts->ops = ops;
-> > +	ts->devdata = devdata;
-> > +	ts->device.class = &thermal_class;
-> > +
-> > +	dev_set_name(&ts->device, "sensor%d", ts->id);
-> > +	ret = device_register(&ts->device);
-> > +	if (ret)
-> > +		goto exit_idr;
-> > +
-> > +	ret = device_create_file(&ts->device, &dev_attr_sensor_name);
-> > +	if (ret)
-> > +		goto exit_unregister;
-> > +
-> > +	ret = device_create_file(&ts->device, &dev_attr_temp_input);
-> > +	if (ret)
-> > +		goto exit_name;
-> > +
-> > +	if (count > 0 && ts->ops->get_threshold) {
-> > +		ret = enable_sensor_thresholds(ts, count);
-> > +		if (ret)
-> > +			goto exit_temp;
-> > +	}
-> > +
-> > +	/* Add this sensor to the global list of sensors */
-> > +	mutex_lock(&sensor_list_lock);
-> > +	list_add_tail(&ts->node, &thermal_sensor_list);
-> > +	mutex_unlock(&sensor_list_lock);
-> > +
-> > +	return ts;
-> > +
-> > +exit_temp:
-> > +	device_remove_file(&ts->device, &dev_attr_temp_input);
-> > +exit_name:
-> > +	device_remove_file(&ts->device, &dev_attr_sensor_name);
-> > +exit_unregister:
-> > +	device_unregister(&ts->device);
-> > +exit_idr:
-> > +	release_idr(&thermal_sensor_idr, &thermal_idr_lock, ts->id);
-> > +exit_free:
-> > +	kfree(ts);
-> > +	return ERR_PTR(ret);
-> > +}
-> > +EXPORT_SYMBOL(thermal_sensor_register);
-> > +
-> > +/**
-> > + * remove_thermal_zone - removes the sysfs nodes for given sensor
-> 
-> s/remove_thermal_zone/thermal_sensor_unregister
-> 
-> > + * @ts:	Thermal sensor to be removed.
-> > + */
-> > +void thermal_sensor_unregister(struct thermal_sensor *ts)
-> > +{
-> > +	int i;
-> > +	struct thermal_sensor *pos, *next;
-> > +	bool found = false;
-> > +
-> > +	if (!ts)
-> > +		return;
-> > +
-> > +	mutex_lock(&sensor_list_lock);
-> > +	list_for_each_entry_safe(pos, next, &thermal_sensor_list, node) {
-> > +		if (pos == ts) {
-> > +			list_del(&ts->node);
-> > +			found = true;
-> > +			break;
-> > +		}
-> > +	}
-> > +	mutex_unlock(&sensor_list_lock);
-> > +
-> > +	if (!found)
-> > +		return;
-> > +
-> > +	for (i = 0; i < ts->thresholds; i++) {
-> > +		device_remove_file(&ts->device, &ts->thresh_attrs[i].attr);
-> > +		if (ts->ops->get_hyst) {
-> > +			device_remove_file(&ts->device,
-> > +					&ts->hyst_attrs[i].attr);
-> > +		}
-> > +	}
-> > +
-> > +	device_remove_file(&ts->device, &dev_attr_sensor_name);
-> > +	device_remove_file(&ts->device, &dev_attr_temp_input);
-> > +
-> hmmm, I'd prefer you to introduce a separate function for the sysfs
-> cleanup code.
-
->From the above comment, we can have a similar 
-thermal_sensor_sysfs_remove function.
-
-Thanks,
-Durga
-
-> 
-> thanks,
-> rui
-> > +	release_idr(&thermal_sensor_idr, &thermal_idr_lock, ts->id);
-> > +	idr_destroy(&ts->idr);
-> > +
-> > +	device_unregister(&ts->device);
-> > +
-> > +	kfree(ts);
-> > +	return;
-> > +}
-> > +EXPORT_SYMBOL(thermal_sensor_unregister);
-> > +
-> >  /**
-> >   * thermal_zone_device_register() - register a new thermal zone device
-> >   * @type:	the thermal zone device type
-> > diff --git a/include/linux/thermal.h b/include/linux/thermal.h
-> > index a386a1c..25fc562 100644
-> > --- a/include/linux/thermal.h
-> > +++ b/include/linux/thermal.h
-> > @@ -58,6 +58,7 @@
-> >  #define DEFAULT_THERMAL_GOVERNOR       "user_space"
-> >  #endif
-> >
-> > +struct thermal_sensor;
-> >  struct thermal_zone_device;
-> >  struct thermal_cooling_device;
-> >
-> > @@ -139,6 +140,15 @@ struct thermal_cooling_device_ops {
-> >  	int (*set_cur_state) (struct thermal_cooling_device *, unsigned long);
-> >  };
-> >
-> > +struct thermal_sensor_ops {
-> > +	int (*get_temp) (struct thermal_sensor *, long *);
-> > +	int (*get_trend) (struct thermal_sensor *, int, enum thermal_trend *);
-> > +	int (*set_threshold) (struct thermal_sensor *, int, long);
-> > +	int (*get_threshold) (struct thermal_sensor *, int, long *);
-> > +	int (*set_hyst) (struct thermal_sensor *, int, long);
-> > +	int (*get_hyst) (struct thermal_sensor *, int, long *);
-> > +};
-> > +
-> >  struct thermal_cooling_device {
-> >  	int id;
-> >  	char type[THERMAL_NAME_LENGTH];
-> > @@ -156,6 +166,21 @@ struct thermal_attr {
-> >  	char name[THERMAL_NAME_LENGTH];
-> >  };
-> >
-> > +struct thermal_sensor {
-> > +	char name[THERMAL_NAME_LENGTH];
-> > +	int id;
-> > +	int temp;
-> > +	int prev_temp;
-> > +	int thresholds;
-> > +	void *devdata;
-> > +	struct idr idr;
-> > +	struct device device;
-> > +	struct list_head node;
-> > +	struct thermal_sensor_ops *ops;
-> > +	struct thermal_attr *thresh_attrs;
-> > +	struct thermal_attr *hyst_attrs;
-> > +};
-> > +
-> >  struct thermal_zone_device {
-> >  	int id;
-> >  	char type[THERMAL_NAME_LENGTH];
-> > @@ -248,6 +273,10 @@ struct thermal_instance *get_thermal_instance(struct
-> thermal_zone_device *,
-> >  void thermal_cdev_update(struct thermal_cooling_device *);
-> >  void thermal_notify_framework(struct thermal_zone_device *, int);
-> >
-> > +struct thermal_sensor *thermal_sensor_register(const char *, int,
-> > +				struct thermal_sensor_ops *, void *);
-> > +void thermal_sensor_unregister(struct thermal_sensor *);
-> > +
-> >  #ifdef CONFIG_NET
-> >  extern int thermal_generate_netlink_event(struct thermal_zone_device *tz,
-> >  						enum events event);
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-- 
+Lennart Poettering - Red Hat, Inc.
