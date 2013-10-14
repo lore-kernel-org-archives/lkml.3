@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757386Ab3JNRid (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 13:38:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22656 "EHLO mx1.redhat.com"
+	id S1757401Ab3JNRiq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 13:38:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23799 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756880Ab3JNRi1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 13:38:27 -0400
+	id S1756880Ab3JNRio (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 13:38:44 -0400
 From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 To: linux-mm@kvack.org
 Cc: Andrew Morton <akpm@linux-foundation.org>, Matt Mackall <mpm@selenic.com>,
@@ -16,69 +16,150 @@ Cc: Andrew Morton <akpm@linux-foundation.org>, Matt Mackall <mpm@selenic.com>,
         Michal Hocko <mhocko@suse.cz>,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
         Pavel Emelyanov <xemul@parallels.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 0/11] update page table walker
-Date: Mon, 14 Oct 2013 13:36:59 -0400
-Message-Id: <1381772230-26878-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH 05/11] pagemap: redefine callback functions for page table walker
+Date: Mon, 14 Oct 2013 13:37:04 -0400
+Message-Id: <1381772230-26878-6-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1381772230-26878-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1381772230-26878-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Page table walker is widely used when you want to traverse page table
-tree and do some work for the entries (and pages pointed to by them.)
-This is a common operation, and keep the code clean and maintainable
-is important. Moreover this patchset introduces caller-specific walk
-control function which is helpful for us to newly introduce page table
-walker to some other users. Core change comes from patch 1, so please
-see it for how it's supposed to work.
+pagemap_pte_range() connected to pmd_entry() does both of pmd loop and
+pte loop. So this patch moves pte part into pagemap_pte() on pte_entry().
 
-This patchset changes core code in mm/pagewalk.c at first in patch 1 and 2,
-and then updates all of current users to make the code cleaner in patch
-3-9. Patch 10 changes the interface of hugetlb_entry(), I put it here to
-keep bisectability of the whole patchset. Patch 11 applies page table walker
-to a new user queue_pages_range().
+We remove VM_SOFTDIRTY check in pagemap_pte_range(), because in the new
+page table walker we call __walk_page_range() for each vma separately,
+so we never experience multiple vmas in single pgd/pud/pmd/pte loop.
 
-There're some other candidates of new users of page table walker:
- - do_mincore()
- - copy_page_range()
- - remap_pfn_range()
- - zap_page_range()
- - free_pgtables()
- - vmap_page_range_noflush()
- - change_protection_range()
-, but at the first step I start with adding only one new user,
-queue_pages_range().
-
-Any comments?
-
-Thanks,
-Naoya Horiguchi
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 ---
-GitHub:
-  git://github.com/Naoya-Horiguchi/linux.git v3.12-rc4/rewrite_pagewalker.v1
+ fs/proc/task_mmu.c | 71 +++++++++++++++++++++---------------------------------
+ 1 file changed, 27 insertions(+), 44 deletions(-)
 
-Test code:
-  git://github.com/Naoya-Horiguchi/test_rewrite_page_table_walker.git
----
-Summary:
+diff --git v3.12-rc4.orig/fs/proc/task_mmu.c v3.12-rc4/fs/proc/task_mmu.c
+index 4abe883..21e5828 100644
+--- v3.12-rc4.orig/fs/proc/task_mmu.c
++++ v3.12-rc4/fs/proc/task_mmu.c
+@@ -961,18 +961,32 @@ static inline void thp_pmd_to_pagemap_entry(pagemap_entry_t *pme, struct pagemap
+ }
+ #endif
+ 
+-static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
++static int pagemap_pte(pte_t *pte, unsigned long addr, unsigned long end,
+ 			     struct mm_walk *walk)
+ {
+-	struct vm_area_struct *vma;
++	struct vm_area_struct *vma = walk->vma;
+ 	struct pagemapread *pm = walk->private;
+-	pte_t *pte;
++	pagemap_entry_t pme = make_pme(PM_NOT_PRESENT(pm->v2));
++
++	if (vma && vma->vm_start <= addr && end <= vma->vm_end) {
++		pte_to_pagemap_entry(&pme, pm, vma, addr, *pte);
++		/* unmap before userspace copy */
++		pte_unmap(pte);
++	}
++	return add_to_pagemap(addr, &pme, pm);
++}
++
++static int pagemap_pmd(pmd_t *pmd, unsigned long addr, unsigned long end,
++			     struct mm_walk *walk)
++{
+ 	int err = 0;
++	struct vm_area_struct *vma = walk->vma;
++	struct pagemapread *pm = walk->private;
+ 	pagemap_entry_t pme = make_pme(PM_NOT_PRESENT(pm->v2));
+ 
+-	/* find the first VMA at or above 'addr' */
+-	vma = find_vma(walk->mm, addr);
+-	if (vma && pmd_trans_huge_lock(pmd, vma) == 1) {
++	if (!vma)
++		return err;
++	if (pmd_trans_huge_lock(pmd, vma) == 1) {
+ 		int pmd_flags2;
+ 
+ 		if ((vma->vm_flags & VM_SOFTDIRTY) || pmd_soft_dirty(*pmd))
+@@ -991,41 +1005,9 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+ 				break;
+ 		}
+ 		spin_unlock(&walk->mm->page_table_lock);
+-		return err;
+-	}
+-
+-	if (pmd_trans_unstable(pmd))
+-		return 0;
+-	for (; addr != end; addr += PAGE_SIZE) {
+-		int flags2;
+-
+-		/* check to see if we've left 'vma' behind
+-		 * and need a new, higher one */
+-		if (vma && (addr >= vma->vm_end)) {
+-			vma = find_vma(walk->mm, addr);
+-			if (vma && (vma->vm_flags & VM_SOFTDIRTY))
+-				flags2 = __PM_SOFT_DIRTY;
+-			else
+-				flags2 = 0;
+-			pme = make_pme(PM_NOT_PRESENT(pm->v2) | PM_STATUS2(pm->v2, flags2));
+-		}
+-
+-		/* check that 'vma' actually covers this address,
+-		 * and that it isn't a huge page vma */
+-		if (vma && (vma->vm_start <= addr) &&
+-		    !is_vm_hugetlb_page(vma)) {
+-			pte = pte_offset_map(pmd, addr);
+-			pte_to_pagemap_entry(&pme, pm, vma, addr, *pte);
+-			/* unmap before userspace copy */
+-			pte_unmap(pte);
+-		}
+-		err = add_to_pagemap(addr, &pme, pm);
+-		if (err)
+-			return err;
++		/* don't call pagemap_pte() */
++		walk->skip = 1;
+ 	}
+-
+-	cond_resched();
+-
+ 	return err;
+ }
+ 
+@@ -1048,12 +1030,11 @@ static int pagemap_hugetlb_range(pte_t *pte, unsigned long hmask,
+ 				 struct mm_walk *walk)
+ {
+ 	struct pagemapread *pm = walk->private;
+-	struct vm_area_struct *vma;
++	struct vm_area_struct *vma = walk->vma;
+ 	int err = 0;
+ 	int flags2;
+ 	pagemap_entry_t pme;
+ 
+-	vma = find_vma(walk->mm, addr);
+ 	WARN_ON_ONCE(!vma);
+ 
+ 	if (vma && (vma->vm_flags & VM_SOFTDIRTY))
+@@ -1061,6 +1042,7 @@ static int pagemap_hugetlb_range(pte_t *pte, unsigned long hmask,
+ 	else
+ 		flags2 = 0;
+ 
++	hmask = huge_page_mask(hstate_vma(vma));
+ 	for (; addr != end; addr += PAGE_SIZE) {
+ 		int offset = (addr & ~hmask) >> PAGE_SHIFT;
+ 		huge_pte_to_pagemap_entry(&pme, pm, *pte, offset, flags2);
+@@ -1137,10 +1119,11 @@ static ssize_t pagemap_read(struct file *file, char __user *buf,
+ 	if (!mm || IS_ERR(mm))
+ 		goto out_free;
+ 
+-	pagemap_walk.pmd_entry = pagemap_pte_range;
++	pagemap_walk.pte_entry = pagemap_pte;
++	pagemap_walk.pmd_entry = pagemap_pmd;
+ 	pagemap_walk.pte_hole = pagemap_pte_hole;
+ #ifdef CONFIG_HUGETLB_PAGE
+-	pagemap_walk.hugetlb_entry = pagemap_hugetlb_range;
++	pagemap_walk.hugetlb_entry = pagemap_hugetlb;
+ #endif
+ 	pagemap_walk.mm = mm;
+ 	pagemap_walk.private = &pm;
+-- 
+1.8.3.1
 
-Naoya Horiguchi (11):
-      pagewalk: update page table walker core
-      pagewalk: add walk_page_vma()
-      smaps: redefine callback functions for page table walker
-      clear_refs: redefine callback functions for page table walker
-      pagemap: redefine callback functions for page table walker
-      numa_maps: redefine callback functions for page table walker
-      memcg: redefine callback functions for page table walker
-      madvise: redefine callback functions for page table walker
-      arch/powerpc/mm/subpage-prot.c: use walk_page_vma() instead of walk_page_range()
-      pagewalk: remove argument hmask from hugetlb_entry()
-      mempolicy: apply page table walker on queue_pages_range()
-
- arch/powerpc/mm/subpage-prot.c |   6 +-
- fs/proc/task_mmu.c             | 262 +++++++++++++-----------------
- include/linux/mm.h             |  24 ++-
- mm/madvise.c                   |  43 ++---
- mm/memcontrol.c                |  72 ++++-----
- mm/mempolicy.c                 | 251 +++++++++++------------------
- mm/pagewalk.c                  | 352 +++++++++++++++++++++++++----------------
- 7 files changed, 482 insertions(+), 528 deletions(-)
