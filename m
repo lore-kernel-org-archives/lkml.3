@@ -1,65 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756873Ab3JNQzt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 12:55:49 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:49155 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756161Ab3JNQzr (ORCPT
+	id S1756795Ab3JNQ65 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 12:58:57 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:36420 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756177Ab3JNQ64 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 12:55:47 -0400
+	Mon, 14 Oct 2013 12:58:56 -0400
+Message-ID: <525C22CB.7000200@gmail.com>
+Date: Mon, 14 Oct 2013 18:58:51 +0200
+From: Juri Lelli <juri.lelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdaVyLwOC-b2mKDRAfCQPzFZKEAm8OZxvHtbpc1koeUz-w@mail.gmail.com>
-References: <1381392071-21407-1-git-send-email-mika.westerberg@linux.intel.com>
- <1381392071-21407-2-git-send-email-mika.westerberg@linux.intel.com>
- <CACRpkdZgP9VnVSpBN2Wg4ihL4ryZXeP=ASwr6BCP=u79eg6s6g@mail.gmail.com>
- <CAAVeFu+K6HvQTMOQqMbZPUD_C3nQ1MvYju1BGUOWPYJjQEpTjg@mail.gmail.com> <CACRpkdaVyLwOC-b2mKDRAfCQPzFZKEAm8OZxvHtbpc1koeUz-w@mail.gmail.com>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Mon, 14 Oct 2013 09:55:26 -0700
-Message-ID: <CAAVeFuK6Jm62VYG5n+T_odBBRSuftS3H0rmQx8+SDxjT28C-NQ@mail.gmail.com>
-Subject: Re: [PATCH v2 1/5] gpiolib / ACPI: move acpi_gpiochip_free_interrupts
- next to the request function
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Alexandre Courbot <acourbot@nvidia.com>, Rob Landley <rob@landley.net>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Peter Zijlstra <peterz@infradead.org>
+CC: tglx@linutronix.de, mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com,
+        fweisbec@gmail.com, darren@dvhart.com, johan.eker@ericsson.com,
+        p.faure@akatech.ch, linux-kernel@vger.kernel.org,
+        claudio@evidence.eu.com, michael@amarulasolutions.com,
+        fchecconi@gmail.com, tommaso.cucinotta@sssup.it,
+        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
+        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
+        raistlin@linux.it, insop.song@gmail.com, liming.wang@windriver.com,
+        jkacur@redhat.com, harald.gustafsson@ericsson.com,
+        vincent.guittot@linaro.org,
+        bruce.ashfield@windriver.com--no-chain-reply-to
+Subject: Re: [PATCH 03/14] sched: SCHED_DEADLINE structures & implementation.
+References: <1381747426-31334-1-git-send-email-juri.lelli@gmail.com> <1381747426-31334-4-git-send-email-juri.lelli@gmail.com> <20131014114433.GE3081@twins.programming.kicks-ass.net>
+In-Reply-To: <20131014114433.GE3081@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 13, 2013 at 11:58 PM, Linus Walleij
-<linus.walleij@linaro.org> wrote:
-> On Fri, Oct 11, 2013 at 6:42 PM, Alexandre Courbot <gnurou@gmail.com> wrote:
->> On Fri, Oct 11, 2013 at 4:00 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
->>> On Thu, Oct 10, 2013 at 10:01 AM, Mika Westerberg
->>> <mika.westerberg@linux.intel.com> wrote:
->>>
->>>> It makes more sense to have these functions close to each other. No
->>>> functional changes.
->>>>
->>>> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
->>>> Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->>>
->>> So I've applied this first patch, and I'm just waiting for Alexandre's
->>> ACK on the remaining patches concerning gpiod so we get this
->>> 100% right.
->>
->> I think I'm ok with Mika's patches, however I need to send you a new
->> version of gpiod. I wanted to finish documentation first, but maybe
->> that can come slightly after so you can at least go ahead with both
->> series?
->
-> The important thing right now is to get it in a testable form I think?
-> So that I can throw it at the autobuilder and it gets included into
-> linux-next as that comes back online.
->
-> So give me whatever you have ... BTW is this series dependent on
-> yours to go in first? Sorry for not seeing the details here...
+On 10/14/2013 01:44 PM, Peter Zijlstra wrote:
+> On Mon, Oct 14, 2013 at 12:43:35PM +0200, Juri Lelli wrote:
+>> +static void update_curr_dl(struct rq *rq)
+>> +{
+>> +	struct task_struct *curr = rq->curr;
+>> +	struct sched_dl_entity *dl_se = &curr->dl;
+>> +	u64 delta_exec;
+>> +
+>> +	if (!dl_task(curr) || !on_dl_rq(dl_se))
+>> +		return;
+>> +
+>> +	/*
+>> +	 * Consumed budget is computed considering the time as
+>> +	 * observed by schedulable tasks (excluding time spent
+>> +	 * in hardirq context, etc.)
+>> +	 */
+>> +	delta_exec = rq->clock_task - curr->se.exec_start;
+> 
+> Oh, cute.. So we compute deadlines from rq->clock but compute runtime
+> from rq->clock_task.
+> 
+> So won't that give funny results in that clock_task is generally slower
+> than clock; so people get more 'time'.
+> 
+> Maybe there's some illumination on this point further on; I'll continue
+> reading.
+> 
 
-Yes it is. I have sent you the v2 of my series last Friday (+ one fix
-to squash into 3/3).
+We discussed on this point in the past...
+
+On 04/23/2012 12:31 PM, Peter Zijlstra wrote:> On Fri, 2012-04-06 at 09:14
++0200, Juri Lelli wrote:
+>> +       dl_se->deadline = rq->clock + dl_se->dl_deadline;
+>
+> You might want to use rq->clock_task, this clock excludes times spend in
+> hardirq context and steal-time (when paravirt).
+>
+> Then again, it might not want to use that.. but its something you might
+> want to consider and make explicit by means of a comment.
+>
+
+On 04/24/2012 08:29 AM, Dario Faggioli wrote:> On Tue, 2012-04-24 at 00:25
++0100, Tommaso Cucinotta wrote:
+>>> The idea is that ->clock_task gives the time as observed by schedulable
+>>> tasks and excludes other muck.
+>>
+>> so clock_task might be better to compute the consumed budget at task
+>> deschedule, but for setting deadlines one period ahead in the future
+>> guess the regular wall-time rq->clock is the one to be used?
+>>
+> Yep, that was the idea, unless my recollection has completely gone
+> flaky! :-P
+>
+> Perhaps adding a comment saying right this thing above, as Peter
+> suggested?
+
+And we kind of agreed on the current use of the different clocks. Do you think
+we have to reason (test) more about this? Or do we live with that and see if
+something strange happens? (I actually didn't see anything suspiciuos in my
+use of the patchset).
+
+Thanks,
+
+- Juri
