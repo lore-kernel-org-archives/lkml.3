@@ -1,82 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758026Ab3JNV0n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 17:26:43 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:23400 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756665Ab3JNV0m (ORCPT
+	id S1757658Ab3JNV2i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 17:28:38 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:38365 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756708Ab3JNV2g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 17:26:42 -0400
-Date: Mon, 14 Oct 2013 17:26:37 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Cc: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org, yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH V2 0/5] trace-cmd: Support the feature recording trace
- data of guests on the host
-Message-ID: <20131014172637.2ced6be9@gandalf.local.home>
-In-Reply-To: <20130913020627.28927.69090.stgit@yunodevel>
-References: <20130913020627.28927.69090.stgit@yunodevel>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+	Mon, 14 Oct 2013 17:28:36 -0400
+Date: Mon, 14 Oct 2013 14:28:30 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Knut Petersen <Knut_Petersen@t-online.de>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Greg KH <greg@kroah.com>, linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [BUG 3.12.rc4] Oops: unable to handle kernel paging request
+ during shutdown
+Message-ID: <20131014212830.GD5790@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <525BD08C.2080101@t-online.de>
+ <CA+55aFwN++wO=rTFaH7m6YYQX+Fv3qDt6Hxs7UnPUJpFsrwSkA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+55aFwN++wO=rTFaH7m6YYQX+Fv3qDt6Hxs7UnPUJpFsrwSkA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13101421-6688-0000-0000-00000288BA2F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Sep 2013 11:06:27 +0900
-Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com> wrote:
-
-
-> <How to use>
-> 1. Run virt-server on a host
->    # trace-cmd virt-server
+On Mon, Oct 14, 2013 at 10:53:03AM -0700, Linus Torvalds wrote:
+> Hmm. No obvious ideas come to mind, but I'm adding more people to the cc.
 > 
-> 2. Make guest domain directory
->    # mkdir -p /tmp/trace-cmd/virt/<domain>
->    # chmod 710 /tmp/trace-cmd/virt/<domain>
->    # chgrp qemu /tmp/trace-cmd/virt/<domain>
-
-Quick comment. I think the above should be done by trace-cmd. At least
-have options for it like:
-
-trace-cmd virt-server -d /tmp/trace-cmd/virt/domain -m 710 -g qemu
-
-Perhaps default some of those, and have trace-cmd print out:
-
-  Process Directory:     /tmp/trace-cmd/virt/domain
-  Directory permission:  0710
-  Group:                 qemu
-
-OK, now to look at the actual code ;-)
-
--- Steve
-
-
+> Clearly the wait_event_interruptible_timeout() in the RCU grace-period
+> thread causes this, but I'm not seeing why shutdown would trigger it.
 > 
-> 3. Make FIFO on the host
->    # mkfifo /tmp/trace-cmd/virt/<domain>/trace-path-cpu{0,1,...,X}.{in,out}
+> The code disassembles to
 > 
-> 4. Set up of virtio-serial pipe of a guest on the host
->    Add the following tags to domain XML files.
->    # virsh edit <domain>
->    <channel type='unix'>
->       <source mode='connect' path='/tmp/trace-cmd/virt/agent-ctl-path'/>
->       <target type='virtio' name='agent-ctl-path'/>
->    </channel>
->    <channel type='pipe'>
->       <source path='/tmp/trace-cmd/virt/<domain>/trace-path-cpu0'/>
->       <target type='virtio' name='trace-path-cpu0'/>
->    </channel>
->    ... (cpu1, cpu2, ...)
+>    0: 85 db                 test   %ebx,%ebx
+>    2: 79 0c                 jns    0x10
+>    4: 81 e6 ff 00 00 00     and    $0xff,%esi
+>    a: 8d 44 f0 30           lea    0x30(%eax,%esi,8),%eax
+>    e: eb 0a                 jmp    0x1a
+>   10: c1 e9 1a             shr    $0x1a,%ecx
+>   13: 8d 84 c8 30 0e 00 00 lea    0xe30(%eax,%ecx,8),%eax
+>   1a: 8b 48 04             mov    0x4(%eax),%ecx
+>   1d: 89 50 04             mov    %edx,0x4(%eax)
+>   20: 89 02                 mov    %eax,(%edx)
+>   22: 89 4a 04             mov    %ecx,0x4(%edx)
+>   25:* 89 11                 mov    %edx,(%ecx) <-- trapping instruction
+>   27: 5b                   pop    %ebx
+>   28: 5e                   pop    %esi
+>   29: 5d                   pop    %ebp
+>   2a: c3                   ret
 > 
-> 5. Boot the guest
->    # virsh start <domain>
+> so the oops is in the final
 > 
-> 6. Execute "record --virt" on the guest
->    # trace-cmd record --virt -e sched*
+>         list_add_tail(&timer->entry, vec);
 > 
+> where "%ecx" is "vec->prev" (f8c551f4). That looks like it might be a
+> perfectly valid pointer, but clearly it isn't (it's about 115M off the
+> top of virtual memory, I think that might be in the vmalloc area).
+> 
+> So I'm *guessing* that something did a vfree() on some data structure
+> that contained active timers - and then later on the RCU thread ended
+> up being the next thing that tried to add a timer after the
+> now-non-existing one.
+> 
+> And your other oopses do seem to have a similar pattern, even if their
+> actual oops is elsewhere. They oops in run_timer_softirq, also taking
+> a page fault in the 0xf9...... range, so it might well be a vmalloc
+> address there too.
+> 
+> But I sure as hell can't start to guess what that would be.
+> 
+> I'm wondering it CONFIG_DEBUG_OBJECTS (and then
+> CONFIG_DEBUG_OBJECTS_FREE=y and CONFIG_DEBUG_OBJECTS_TIMERS=y) might
+> help catch this...
+
+I would also like to nominate CONFIG_DEBUG_OBJECTS_RCU_HEAD=y, which
+checks for invoking call_rcu() twice in a row on the same rcu_head.
+
+Any chance of a look at the .config file?
+
+							Thanx, Paul
+
+>                 Linus
+> 
+> On Mon, Oct 14, 2013 at 4:07 AM, Knut Petersen
+> <Knut_Petersen@t-online.de> wrote:
+> >
+> > It愀 the third time in four months that I have to report a kernel Oops during
+> > shutdown.
+> > All of these Oopses seem somehow related to the timer subsystem, but they
+> > are
+> > not easily reproducible. As all this happens on two different machines, it愀
+> > unlikely
+> > that this mess is related to bad hardware.
+> >
+> > I clearly would appreciate any idea how to track this down.
+> >
+> > For the last two reports see:
+> >
+> > http://www.gossamer-threads.com/lists/linux/kernel/1782575?#1782575
+> >
+> > http://www.gossamer-threads.com/lists/linux/kernel/1744892?#1744892
+> >
+> > This time the kernel oopsed after systemd reported that target shutdown
+> > had been reached - see attached pdf for the full trace. To make it easier
+> > to find this problem a shortened call trace:
+> >
+> >
+> > Call Trace:
+> >     internal_add_timer
+> >     schedule_timeout
+> >     ? call_timer_fn
+> >     rcu_gp_kthread
+> >     __init_waitqueue_head
+> >     ? rcu_gp_fqs
+> >     kthread
+> >     ret_from_kernel_thread
+> >     ? __init_kthread_worker
+> >
+> > EIP: __internal_add_timer
+> >
+> > Hardware: AOpen i915GMm-hfs mobo with a Pentium-M Dothan and 2GB of RAM.
+> > Distribution: openSuSE 12.3
+> > Kernel: local 3.12.0-rc4-00127-g45877c4 is  kernel 9d05746 with my
+> > "Enforce 1 as lower limit for perf_event_max_sample_rate"
+> > patch applied.
+> >
+> > cu,
+> >  knut
+> 
+
