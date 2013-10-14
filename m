@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932971Ab3JNUan (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 16:30:43 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:38913 "EHLO
+	id S933188Ab3JNUdW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 16:33:22 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38880 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757659Ab3JNUDD (ORCPT
+	with ESMTP id S1757635Ab3JNUDD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 14 Oct 2013 16:03:03 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Davidlohr Bueso <davidlohr@hp.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 080/161] perf lock: Return proper code in report_lock_*_event
-Date: Mon, 14 Oct 2013 17:01:09 -0300
-Message-Id: <1381780950-25642-81-git-send-email-acme@infradead.org>
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 058/161] perf trace: Beautify rt_sigprocmask 'how' arg
+Date: Mon, 14 Oct 2013 17:00:47 -0300
+Message-Id: <1381780950-25642-59-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1381780950-25642-1-git-send-email-acme@infradead.org>
 References: <1381780950-25642-1-git-send-email-acme@infradead.org>
@@ -27,113 +28,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Davidlohr Bueso <davidlohr@hp.com>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-The report_lock_*_event() functions return -1 when lock_stat_findnew(),
-thread_stat_findnew() or get_seq() return NULL. These functions only
-return this value when failing to allocate memory, this return -ENOMEM
-instead.
-
-Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Aswin Chandramouleeswaran <aswin@hp.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1378693159-8747-3-git-send-email-davidlohr@hp.com
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-e2epkc38e3x0uqmi1xie4tgc@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-lock.c | 24 ++++++++++++------------
- 1 file changed, 12 insertions(+), 12 deletions(-)
+ tools/perf/builtin-trace.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
-index 148f7e28ade7..d3188629cbaf 100644
---- a/tools/perf/builtin-lock.c
-+++ b/tools/perf/builtin-lock.c
-@@ -400,17 +400,17 @@ static int report_lock_acquire_event(struct perf_evsel *evsel,
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index 8455a0af852c..ecc83ce99bfe 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -252,6 +252,9 @@ static const char *fcntl_cmds[] = {
+ };
+ static DEFINE_STRARRAY(fcntl_cmds);
  
- 	ls = lock_stat_findnew(addr, name);
- 	if (!ls)
--		return -1;
-+		return -ENOMEM;
- 	if (ls->discard)
- 		return 0;
- 
- 	ts = thread_stat_findnew(sample->tid);
- 	if (!ts)
--		return -1;
-+		return -ENOMEM;
- 
- 	seq = get_seq(ts, addr);
- 	if (!seq)
--		return -1;
-+		return -ENOMEM;
- 
- 	switch (seq->state) {
- 	case SEQ_STATE_UNINITIALIZED:
-@@ -472,17 +472,17 @@ static int report_lock_acquired_event(struct perf_evsel *evsel,
- 
- 	ls = lock_stat_findnew(addr, name);
- 	if (!ls)
--		return -1;
-+		return -ENOMEM;
- 	if (ls->discard)
- 		return 0;
- 
- 	ts = thread_stat_findnew(sample->tid);
- 	if (!ts)
--		return -1;
-+		return -ENOMEM;
- 
- 	seq = get_seq(ts, addr);
- 	if (!seq)
--		return -1;
-+		return -ENOMEM;
- 
- 	switch (seq->state) {
- 	case SEQ_STATE_UNINITIALIZED:
-@@ -533,17 +533,17 @@ static int report_lock_contended_event(struct perf_evsel *evsel,
- 
- 	ls = lock_stat_findnew(addr, name);
- 	if (!ls)
--		return -1;
-+		return -ENOMEM;
- 	if (ls->discard)
- 		return 0;
- 
- 	ts = thread_stat_findnew(sample->tid);
- 	if (!ts)
--		return -1;
-+		return -ENOMEM;
- 
- 	seq = get_seq(ts, addr);
- 	if (!seq)
--		return -1;
-+		return -ENOMEM;
- 
- 	switch (seq->state) {
- 	case SEQ_STATE_UNINITIALIZED:
-@@ -587,17 +587,17 @@ static int report_lock_release_event(struct perf_evsel *evsel,
- 
- 	ls = lock_stat_findnew(addr, name);
- 	if (!ls)
--		return -1;
-+		return -ENOMEM;
- 	if (ls->discard)
- 		return 0;
- 
- 	ts = thread_stat_findnew(sample->tid);
- 	if (!ts)
--		return -1;
-+		return -ENOMEM;
- 
- 	seq = get_seq(ts, addr);
- 	if (!seq)
--		return -1;
-+		return -ENOMEM;
- 
- 	switch (seq->state) {
- 	case SEQ_STATE_UNINITIALIZED:
++static const char *sighow[] = { "BLOCK", "UNBLOCK", "SETMASK", };
++static DEFINE_STRARRAY(sighow);
++
+ static size_t syscall_arg__scnprintf_open_flags(char *bf, size_t size,
+ 					       struct syscall_arg *arg)
+ {
+@@ -366,6 +369,9 @@ static struct syscall_fmt {
+ 	{ .name	    = "pwrite",	    .errmsg = true, .alias = "pwrite64", },
+ 	{ .name	    = "read",	    .errmsg = true, },
+ 	{ .name	    = "recvfrom",   .errmsg = true, },
++	{ .name	    = "rt_sigprocmask", .errmsg = true,
++	  .arg_scnprintf = { [0] = SCA_STRARRAY, /* how */ },
++	  .arg_parm	 = { [0] = &strarray__sighow, /* how */ }, },
+ 	{ .name	    = "select",	    .errmsg = true, .timeout = true, },
+ 	{ .name	    = "setitimer",  .errmsg = true,
+ 	  .arg_scnprintf = { [0] = SCA_STRARRAY, /* which */ },
 -- 
 1.8.1.4
 
