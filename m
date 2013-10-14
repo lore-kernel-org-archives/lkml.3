@@ -1,144 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757442Ab3JNUHw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 16:07:52 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:39331 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757231Ab3JNUHs (ORCPT
+	id S1758171Ab3JNUIw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 16:08:52 -0400
+Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:41492 "EHLO
+	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757889Ab3JNUIt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 16:07:48 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 114/161] perf tools: Move start conditions to start of the flex file
-Date: Mon, 14 Oct 2013 17:01:43 -0300
-Message-Id: <1381780950-25642-115-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1381780950-25642-1-git-send-email-acme@infradead.org>
-References: <1381780950-25642-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 14 Oct 2013 16:08:49 -0400
+From: Toshi Kani <toshi.kani@hp.com>
+To: akpm@linux-foundation.org
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Toshi Kani <toshi.kani@hp.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Subject: [PATCH] mm: Set N_CPU to node_states during boot
+Date: Mon, 14 Oct 2013 14:04:56 -0600
+Message-Id: <1381781096-13168-1-git-send-email-toshi.kani@hp.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+After a system booted, N_CPU is not set to any node as has_cpu
+shows an empty line.
 
-Moving start conditions to start of the flex file so it's clear what the
-INITIAL condition rules are.
+  # cat /sys/devices/system/node/has_cpu
+  (show-empty-line)
 
-Plus adding default rule for INITIAL condition. This prevents default
-space to be printed for events like:
+setup_vmstat() registers its CPU notifier callback,
+vmstat_cpuup_callback(), which marks N_CPU to a node when
+a CPU is put into online.  However, setup_vmstat() is called
+after all CPUs are launched in the boot sequence.
 
-$ ./perf stat -e "cycles        " kill 2>/dev/null
-        $
-^^^^^^^^
+Change setup_vmstat() to mark N_CPU to the nodes with online
+CPUs at boot.
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1380299398-10839-1-git-send-email-jolsa@redhat.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+Cc: Christoph Lameter <cl@linux-foundation.org>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 ---
- tools/perf/util/parse-events.l | 63 +++++++++++++++++++++---------------------
- 1 file changed, 32 insertions(+), 31 deletions(-)
+ mm/vmstat.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
-index 91346b753960..343299575b30 100644
---- a/tools/perf/util/parse-events.l
-+++ b/tools/perf/util/parse-events.l
-@@ -126,6 +126,37 @@ modifier_bp	[rwx]{1,3}
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index 9bb3145..c464a22 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -1276,8 +1276,10 @@ static int __init setup_vmstat(void)
  
- }
+ 	register_cpu_notifier(&vmstat_notifier);
  
-+<config>{
-+config			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_CONFIG); }
-+config1			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_CONFIG1); }
-+config2			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_CONFIG2); }
-+name			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_NAME); }
-+period			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_SAMPLE_PERIOD); }
-+branch_type		{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE); }
-+,			{ return ','; }
-+"/"			{ BEGIN(INITIAL); return '/'; }
-+{name_minus}		{ return str(yyscanner, PE_NAME); }
-+}
-+
-+<mem>{
-+{modifier_bp}		{ return str(yyscanner, PE_MODIFIER_BP); }
-+:			{ return ':'; }
-+{num_dec}		{ return value(yyscanner, 10); }
-+{num_hex}		{ return value(yyscanner, 16); }
-+	/*
-+	 * We need to separate 'mem:' scanner part, in order to get specific
-+	 * modifier bits parsed out. Otherwise we would need to handle PE_NAME
-+	 * and we'd need to parse it manually. During the escape from <mem>
-+	 * state we need to put the escaping char back, so we dont miss it.
-+	 */
-+.			{ unput(*yytext); BEGIN(INITIAL); }
-+	/*
-+	 * We destroy the scanner after reaching EOF,
-+	 * but anyway just to be sure get back to INIT state.
-+	 */
-+<<EOF>>			{ BEGIN(INITIAL); }
-+}
-+
- cpu-cycles|cycles				{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES); }
- stalled-cycles-frontend|idle-cycles-frontend	{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_STALLED_CYCLES_FRONTEND); }
- stalled-cycles-backend|idle-cycles-backend	{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_STALLED_CYCLES_BACKEND); }
-@@ -162,18 +193,6 @@ speculative-read|speculative-load	|
- refs|Reference|ops|access		|
- misses|miss				{ return str(yyscanner, PE_NAME_CACHE_OP_RESULT); }
- 
--<config>{
--config			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_CONFIG); }
--config1			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_CONFIG1); }
--config2			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_CONFIG2); }
--name			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_NAME); }
--period			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_SAMPLE_PERIOD); }
--branch_type		{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE); }
--,			{ return ','; }
--"/"			{ BEGIN(INITIAL); return '/'; }
--{name_minus}		{ return str(yyscanner, PE_NAME); }
--}
--
- mem:			{ BEGIN(mem); return PE_PREFIX_MEM; }
- r{num_raw_hex}		{ return raw(yyscanner); }
- {num_dec}		{ return value(yyscanner, 10); }
-@@ -189,25 +208,7 @@ r{num_raw_hex}		{ return raw(yyscanner); }
- "}"			{ return '}'; }
- =			{ return '='; }
- \n			{ }
--
--<mem>{
--{modifier_bp}		{ return str(yyscanner, PE_MODIFIER_BP); }
--:			{ return ':'; }
--{num_dec}		{ return value(yyscanner, 10); }
--{num_hex}		{ return value(yyscanner, 16); }
--	/*
--	 * We need to separate 'mem:' scanner part, in order to get specific
--	 * modifier bits parsed out. Otherwise we would need to handle PE_NAME
--	 * and we'd need to parse it manually. During the escape from <mem>
--	 * state we need to put the escaping char back, so we dont miss it.
--	 */
--.			{ unput(*yytext); BEGIN(INITIAL); }
--	/*
--	 * We destroy the scanner after reaching EOF,
--	 * but anyway just to be sure get back to INIT state.
--	 */
--<<EOF>>			{ BEGIN(INITIAL); }
--}
-+.			{ }
- 
- %%
- 
--- 
-1.8.1.4
-
+-	for_each_online_cpu(cpu)
++	for_each_online_cpu(cpu) {
+ 		start_cpu_timer(cpu);
++		node_set_state(cpu_to_node(cpu), N_CPU);
++	}
+ #endif
+ #ifdef CONFIG_PROC_FS
+ 	proc_create("buddyinfo", S_IRUGO, NULL, &fragmentation_file_operations);
