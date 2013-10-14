@@ -1,107 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932348Ab3JNXJQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 19:09:16 -0400
-Received: from mail-ea0-f181.google.com ([209.85.215.181]:57817 "EHLO
-	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932158Ab3JNXJO (ORCPT
+	id S932373Ab3JNXKt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 19:10:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44588 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932140Ab3JNXKs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 19:09:14 -0400
-Message-ID: <525C7993.40408@gmail.com>
-Date: Tue, 15 Oct 2013 01:09:07 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-CC: Jason Cooper <jason@lakedaemon.net>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Arnd Bergmann <arnd@arndb.de>, Rob Landley <rob@landley.net>,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Jisheng Zhang <jszhang@marvell.com>
-Subject: Re: [PATCH 4/8] ARM: add Marvell Berlin SoC familiy to Marvell doc
-References: <1381235073-17134-1-git-send-email-sebastian.hesselbarth@gmail.com> <1381235073-17134-5-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1381235073-17134-5-git-send-email-sebastian.hesselbarth@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Mon, 14 Oct 2013 19:10:48 -0400
+Date: Mon, 14 Oct 2013 16:10:47 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Subject: Re: [PATCH] mm: Set N_CPU to node_states during boot
+Message-Id: <20131014161047.4a6a54e985d68a9f1ce7234b@linux-foundation.org>
+In-Reply-To: <1381781096-13168-1-git-send-email-toshi.kani@hp.com>
+References: <1381781096-13168-1-git-send-email-toshi.kani@hp.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/08/2013 02:24 PM, Sebastian Hesselbarth wrote:
-> This adds known facts and rumors about the Marvell Berlin (88DE3xxx) SoC
-> family to the Marvell SoC documentation.
->
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> Reviewed-by: Jason Cooper <jason@lakedaemon.net>
-> Reviewed-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-> Reviewed-by: Arnd Bergmann <arnd@arndb.de>
-> ---
-> Changelog:
-> RFCv2->v1:
-> - move Berlin below PXA/MMP[23] where it belongs to
-> - add note about IP (re-)used in Berlin SoCs
-> RFCv1->RFCv2:
-> - initial patch
->
-> Cc: Jason Cooper <jason@lakedaemon.net>
-> Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Rob Landley <rob@landley.net>
-> Cc: linux-doc@vger.kernel.org
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->   Documentation/arm/Marvell/README |   29 +++++++++++++++++++++++++++++
->   1 file changed, 29 insertions(+)
->
-> diff --git a/Documentation/arm/Marvell/README b/Documentation/arm/Marvell/README
-> index 8f08a86..993c45d 100644
-> --- a/Documentation/arm/Marvell/README
-> +++ b/Documentation/arm/Marvell/README
-> @@ -210,6 +210,35 @@ MMP/MMP2 family (communication processor)
->      Linux kernel mach directory: arch/arm/mach-mmp
->      Linux kernel plat directory: arch/arm/plat-pxa
->
-> +Berlin family (Digital Entertainment)
-> +-------------------------------------
-> +
-> +  Flavors:
-> +	88DE3005, Armada 1500-mini
-> +		Design name:	BG2CD(A0)
-> +		Core:		ARM Cortex-A9, PL310 L2CC
-> +		Homepage:	http://www.marvell.com/digital-entertainment/armada-1500-mini/
-> +	88DE3010, Armada 1000
-> +		Design name:	BG2(?)
-> +		Core:		Marvell PJ4B (ARMv7), Tauros3 L2CC
-> +		Product Brief:	http://www.marvell.com/digital-entertainment/assets/armada_1000_pb.pdf
-> +	88DE3100, Armada 1500
-> +		Design name:	BG2(A0)
-> +		Core:		Marvell PJ4B (ARMv7), Tauros3 L2CC
-> +		Homepage:	http://www.marvell.com/digital-entertainment/armada-1500/
-> +		Product Brief:	http://www.marvell.com/digital-entertainment/armada-1500/assets/Marvell-ARMADA-1500-Product-Brief.pdf
-> +	88DE????
-> +		Design name:	BG3
-> +		Core:		ARM Cortex-A15, CA15 integrated L2CC
+On Mon, 14 Oct 2013 14:04:56 -0600 Toshi Kani <toshi.kani@hp.com> wrote:
 
-Jisheng,
-
-can you comment on the above and fill in the missing pieces?
-
-Especially, if we want to base device tree compatibles later, we should
-make it right in the first place.
-
-Sebastian
-
-> +  Homepage: http://www.marvell.com/digital-entertainment/
-> +  Directory: arch/arm/mach-berlin
-> +
-> +  Comments:
-> +   * This line of SoCs is based on Marvell Sheeva or ARM Cortex CPUs
-> +     with Synopsys DesignWare (IRQ, GPIO, Timers, ...) and PXA IP (SDHCI, USB, ETH, ...).
-> +   * Currently known design names are: C2, BG2(Z1), BG2(A0), BG2CD(A0), BG2CT(A0)
-> +
->   Long-term plans
->   ---------------
+> After a system booted, N_CPU is not set to any node as has_cpu
+> shows an empty line.
+> 
+>   # cat /sys/devices/system/node/has_cpu
+>   (show-empty-line)
+> 
+> setup_vmstat() registers its CPU notifier callback,
+> vmstat_cpuup_callback(), which marks N_CPU to a node when
+> a CPU is put into online.  However, setup_vmstat() is called
+> after all CPUs are launched in the boot sequence.
+> 
+> Change setup_vmstat() to mark N_CPU to the nodes with online
+> CPUs at boot.
+> 
+> ...
 >
->
+> --- a/mm/vmstat.c
+> +++ b/mm/vmstat.c
+> @@ -1276,8 +1276,10 @@ static int __init setup_vmstat(void)
+>  
+>  	register_cpu_notifier(&vmstat_notifier);
+>  
+> -	for_each_online_cpu(cpu)
+> +	for_each_online_cpu(cpu) {
+>  		start_cpu_timer(cpu);
+> +		node_set_state(cpu_to_node(cpu), N_CPU);
+> +	}
+>  #endif
+>  #ifdef CONFIG_PROC_FS
+>  	proc_create("buddyinfo", S_IRUGO, NULL, &fragmentation_file_operations);
 
+This seems a bit hacky.  Would it not be better to register
+vmstat_notifier() before bringing up CPUs?
+
+
+And this patch might be racy as well - what happens if a CPU comes up
+and goes down again before setup_vmstat() is called?
+
+(Where does N_CPU get cleared?  It doesn't, afaict.  Should we clear it
+if a node's final CPU goes offline?)
