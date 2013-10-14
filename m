@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758299Ab3JNUMz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 16:12:55 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:39116 "EHLO
+	id S1758284Ab3JNUMy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 16:12:54 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:39115 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757777Ab3JNUDJ (ORCPT
+	with ESMTP id S1757774Ab3JNUDJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 14 Oct 2013 16:03:09 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 139/161] perf util: Add findnew method to intlist
-Date: Mon, 14 Oct 2013 17:02:08 -0300
-Message-Id: <1381780950-25642-140-git-send-email-acme@infradead.org>
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 109/161] perf trace: Show path associated with fd in live sessions
+Date: Mon, 14 Oct 2013 17:01:38 -0300
+Message-Id: <1381780950-25642-110-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1381780950-25642-1-git-send-email-acme@infradead.org>
 References: <1381780950-25642-1-git-send-email-acme@infradead.org>
@@ -27,145 +28,429 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Ahern <dsahern@gmail.com>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Similar to other findnew based methods if the requested object is not
-found, add it to the list.
+For live sessions we can just access /proc to map an fd to its path, on
+a best effort way, i.e. sometimes the fd will have gone away when we try
+to do the mapping, as it is done in a lazy way, only when a reference to
+such fd is made then the path will be looked up in /proc.
 
-v2: followed format of other findnew methods per acme's request
+This is disabled when processing perf.data files, where we will have to
+have a way to get getname events, be it via an on-the-fly 'perf probe'
+event or after a vfs_getname tracepoint is added to the kernel.
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
+A first step will be to synthesize such event for the use cases where
+the threads in the monitored workload exist already.
+
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1381289214-24885-2-git-send-email-dsahern@gmail.com
+Link: http://lkml.kernel.org/n/tip-1r1ti33ye1666jezu2d8q1c3@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/intlist.c | 22 ++++++++++++++++++----
- tools/perf/util/intlist.h |  1 +
- tools/perf/util/rblist.c  | 27 ++++++++++++++++++++++++---
- tools/perf/util/rblist.h  |  1 +
- 4 files changed, 44 insertions(+), 7 deletions(-)
+ tools/perf/builtin-trace.c | 253 ++++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 237 insertions(+), 16 deletions(-)
 
-diff --git a/tools/perf/util/intlist.c b/tools/perf/util/intlist.c
-index 826d7b38c9a0..89715b64a315 100644
---- a/tools/perf/util/intlist.c
-+++ b/tools/perf/util/intlist.c
-@@ -58,22 +58,36 @@ void intlist__remove(struct intlist *ilist, struct int_node *node)
- 	rblist__remove_node(&ilist->rblist, &node->rb_node);
- }
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index 12a275d02ada..fcc157fce6c6 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -36,6 +36,8 @@
  
--struct int_node *intlist__find(struct intlist *ilist, int i)
-+static struct int_node *__intlist__findnew(struct intlist *ilist,
-+					   int i, bool create)
- {
--	struct int_node *node;
-+	struct int_node *node = NULL;
- 	struct rb_node *rb_node;
+ struct syscall_arg {
+ 	unsigned long val;
++	struct thread *thread;
++	struct trace  *trace;
+ 	void	      *parm;
+ 	u8	      idx;
+ 	u8	      mask;
+@@ -65,6 +67,29 @@ static size_t syscall_arg__scnprintf_strarray(char *bf, size_t size,
  
- 	if (ilist == NULL)
- 		return NULL;
+ #define SCA_STRARRAY syscall_arg__scnprintf_strarray
  
--	node = NULL;
--	rb_node = rblist__find(&ilist->rblist, (void *)((long)i));
-+	if (create)
-+		rb_node = rblist__findnew(&ilist->rblist, (void *)((long)i));
-+	else
-+		rb_node = rblist__find(&ilist->rblist, (void *)((long)i));
++static size_t syscall_arg__scnprintf_fd(char *bf, size_t size,
++					struct syscall_arg *arg);
 +
- 	if (rb_node)
- 		node = container_of(rb_node, struct int_node, rb_node);
- 
- 	return node;
- }
- 
-+struct int_node *intlist__find(struct intlist *ilist, int i)
++#define SCA_FD syscall_arg__scnprintf_fd
++
++static size_t syscall_arg__scnprintf_fd_at(char *bf, size_t size,
++					   struct syscall_arg *arg)
 +{
-+	return __intlist__findnew(ilist, i, false);
++	int fd = arg->val;
++
++	if (fd == AT_FDCWD)
++		return scnprintf(bf, size, "CWD");
++
++	return syscall_arg__scnprintf_fd(bf, size, arg);
 +}
 +
-+struct int_node *intlist__findnew(struct intlist *ilist, int i)
-+{
-+	return __intlist__findnew(ilist, i, true);
-+}
++#define SCA_FDAT syscall_arg__scnprintf_fd_at
 +
- static int intlist__parse_list(struct intlist *ilist, const char *s)
++static size_t syscall_arg__scnprintf_close_fd(char *bf, size_t size,
++					      struct syscall_arg *arg);
++
++#define SCA_CLOSE_FD syscall_arg__scnprintf_close_fd
++
+ static size_t syscall_arg__scnprintf_hex(char *bf, size_t size,
+ 					 struct syscall_arg *arg)
  {
- 	char *sep;
-diff --git a/tools/perf/util/intlist.h b/tools/perf/util/intlist.h
-index 0eb00ac39e01..aa6877d36858 100644
---- a/tools/perf/util/intlist.h
-+++ b/tools/perf/util/intlist.h
-@@ -24,6 +24,7 @@ int intlist__add(struct intlist *ilist, int i);
+@@ -613,28 +638,84 @@ static struct syscall_fmt {
+ 	{ .name	    = "brk",	    .hexret = true,
+ 	  .arg_scnprintf = { [0] = SCA_HEX, /* brk */ }, },
+ 	{ .name     = "clock_gettime",  .errmsg = true, STRARRAY(0, clk_id, clockid), },
++	{ .name	    = "close",	    .errmsg = true,
++	  .arg_scnprintf = { [0] = SCA_CLOSE_FD, /* fd */ }, }, 
+ 	{ .name	    = "connect",    .errmsg = true, },
++	{ .name	    = "dup",	    .errmsg = true,
++	  .arg_scnprintf = { [0] = SCA_FD, /* fd */ }, }, 
++	{ .name	    = "dup2",	    .errmsg = true,
++	  .arg_scnprintf = { [0] = SCA_FD, /* fd */ }, }, 
++	{ .name	    = "dup3",	    .errmsg = true,
++	  .arg_scnprintf = { [0] = SCA_FD, /* fd */ }, }, 
+ 	{ .name	    = "epoll_ctl",  .errmsg = true, STRARRAY(1, op, epoll_ctl_ops), },
+ 	{ .name	    = "eventfd2",   .errmsg = true,
+ 	  .arg_scnprintf = { [1] = SCA_EFD_FLAGS, /* flags */ }, },
+-	{ .name	    = "fcntl",	    .errmsg = true, STRARRAY(1, cmd, fcntl_cmds), },
++	{ .name	    = "faccessat",  .errmsg = true,
++	  .arg_scnprintf = { [0] = SCA_FDAT, /* dfd */ }, },
++	{ .name	    = "fadvise64",  .errmsg = true,
++	  .arg_scnprintf = { [0] = SCA_FD, /* fd */ }, }, 
++	{ .name	    = "fallocate",  .errmsg = true,
++	  .arg_scnprintf = { [0] = SCA_FD, /* fd */ }, }, 
++	{ .name	    = "fchdir",	    .errmsg = true,
++	  .arg_scnprintf = { [0] = SCA_FD, /* fd */ }, }, 
++	{ .name	    = "fchmod",	    .errmsg = true,
++	  .arg_scnprintf = { [0] = SCA_FD, /* fd */ }, }, 
++	{ .name	    = "fchmodat",   .errmsg = true,
++	  .arg_scnprintf = { [0] = SCA_FDAT, /* fd */ }, }, 
++	{ .name	    = "fchown",	    .errmsg = true,
++	  .arg_scnprintf = { [0] = SCA_FD, /* fd */ }, }, 
++	{ .name	    = "fchownat",   .errmsg = true,
++	  .arg_scnprintf = { [0] = SCA_FDAT, /* fd */ }, }, 
++	{ .name	    = "fcntl",	    .errmsg = true,
++	  .arg_scnprintf = { [0] = SCA_FD, /* fd */
++			     [1] = SCA_STRARRAY, /* cmd */ },
++	  .arg_parm	 = { [1] = &strarray__fcntl_cmds, /* cmd */ }, },
++	{ .name	    = "fdatasync",  .errmsg = true,
++	  .arg_scnprintf = { [0] = SCA_FD, /* fd */ }, }, 
+ 	{ .name	    = "flock",	    .errmsg = true,
+-	  .arg_scnprintf = { [1] = SCA_FLOCK, /* cmd */ }, },
+-	{ .name	    = "fstat",	    .errmsg = true, .alias = "newfstat", },
+-	{ .name	    = "fstatat",    .errmsg = true, .alias = "newfstatat", },
++	  .arg_scnprintf = { [0] = SCA_FD, /* fd */
++			     [1] = SCA_FLOCK, /* cmd */ }, },
++	{ .name	    = "fsetxattr",  .errmsg = true,
++	  .arg_scnprintf = { [0] = SCA_FD, /* fd */ }, }, 
++	{ .name	    = "fstat",	    .errmsg = true, .alias = "newfstat",
++	  .arg_scnprintf = { [0] = SCA_FD, /* fd */ }, }, 
++	{ .name	    = "fstatat",    .errmsg = true, .alias = "newfstatat",
++	  .arg_scnprintf = { [0] = SCA_FDAT, /* dfd */ }, }, 
++	{ .name	    = "fstatfs",    .errmsg = true,
++	  .arg_scnprintf = { [0] = SCA_FD, /* fd */ }, }, 
++	{ .name	    = "fsync",    .errmsg = true,
++	  .arg_scnprintf = { [0] = SCA_FD, /* fd */ }, }, 
++	{ .name	    = "ftruncate", .errmsg = true,
++	  .arg_scnprintf = { [0] = SCA_FD, /* fd */ }, }, 
+ 	{ .name	    = "futex",	    .errmsg = true,
+ 	  .arg_scnprintf = { [1] = SCA_FUTEX_OP, /* op */ }, },
++	{ .name	    = "futimesat", .errmsg = true,
++	  .arg_scnprintf = { [0] = SCA_FDAT, /* fd */ }, }, 
++	{ .name	    = "getdents",   .errmsg = true,
++	  .arg_scnprintf = { [0] = SCA_FD, /* fd */ }, }, 
++	{ .name	    = "getdents64", .errmsg = true,
++	  .arg_scnprintf = { [0] = SCA_FD, /* fd */ }, }, 
+ 	{ .name	    = "getitimer",  .errmsg = true, STRARRAY(0, which, itimers), },
+ 	{ .name	    = "getrlimit",  .errmsg = true, STRARRAY(0, resource, rlimit_resources), },
+ 	{ .name	    = "ioctl",	    .errmsg = true,
+-	  .arg_scnprintf = { [2] = SCA_HEX, /* arg */ }, },
++	  .arg_scnprintf = { [0] = SCA_FD, /* fd */ 
++			     [2] = SCA_HEX, /* arg */ }, },
+ 	{ .name	    = "kill",	    .errmsg = true,
+ 	  .arg_scnprintf = { [1] = SCA_SIGNUM, /* sig */ }, },
+-	{ .name	    = "lseek",	    .errmsg = true, STRARRAY(2, whence, whences), },
++	{ .name	    = "linkat",	    .errmsg = true,
++	  .arg_scnprintf = { [0] = SCA_FDAT, /* fd */ }, }, 
++	{ .name	    = "lseek",	    .errmsg = true,
++	  .arg_scnprintf = { [0] = SCA_FD, /* fd */
++			     [2] = SCA_STRARRAY, /* whence */ },
++	  .arg_parm	 = { [2] = &strarray__whences, /* whence */ }, },
+ 	{ .name	    = "lstat",	    .errmsg = true, .alias = "newlstat", },
+ 	{ .name     = "madvise",    .errmsg = true,
+ 	  .arg_scnprintf = { [0] = SCA_HEX,	 /* start */
+ 			     [2] = SCA_MADV_BHV, /* behavior */ }, },
++	{ .name	    = "mkdirat",    .errmsg = true,
++	  .arg_scnprintf = { [0] = SCA_FDAT, /* fd */ }, }, 
++	{ .name	    = "mknodat",    .errmsg = true,
++	  .arg_scnprintf = { [0] = SCA_FDAT, /* fd */ }, }, 
+ 	{ .name	    = "mlock",	    .errmsg = true,
+ 	  .arg_scnprintf = { [0] = SCA_HEX, /* addr */ }, },
+ 	{ .name	    = "mlockall",   .errmsg = true,
+@@ -653,26 +734,45 @@ static struct syscall_fmt {
+ 	  .arg_scnprintf = { [0] = SCA_HEX, /* addr */ }, },
+ 	{ .name	    = "munmap",	    .errmsg = true,
+ 	  .arg_scnprintf = { [0] = SCA_HEX, /* addr */ }, },
++	{ .name	    = "name_to_handle_at", .errmsg = true,
++	  .arg_scnprintf = { [0] = SCA_FDAT, /* dfd */ }, }, 
++	{ .name	    = "newfstatat", .errmsg = true,
++	  .arg_scnprintf = { [0] = SCA_FDAT, /* dfd */ }, }, 
+ 	{ .name	    = "open",	    .errmsg = true,
+ 	  .arg_scnprintf = { [1] = SCA_OPEN_FLAGS, /* flags */ }, },
+ 	{ .name	    = "open_by_handle_at", .errmsg = true,
+-	  .arg_scnprintf = { [2] = SCA_OPEN_FLAGS, /* flags */ }, },
++	  .arg_scnprintf = { [0] = SCA_FDAT, /* dfd */
++			     [2] = SCA_OPEN_FLAGS, /* flags */ }, },
+ 	{ .name	    = "openat",	    .errmsg = true,
+-	  .arg_scnprintf = { [2] = SCA_OPEN_FLAGS, /* flags */ }, },
++	  .arg_scnprintf = { [0] = SCA_FDAT, /* dfd */
++			     [2] = SCA_OPEN_FLAGS, /* flags */ }, },
+ 	{ .name	    = "pipe2",	    .errmsg = true,
+ 	  .arg_scnprintf = { [1] = SCA_PIPE_FLAGS, /* flags */ }, },
+ 	{ .name	    = "poll",	    .errmsg = true, .timeout = true, },
+ 	{ .name	    = "ppoll",	    .errmsg = true, .timeout = true, },
+-	{ .name	    = "pread",	    .errmsg = true, .alias = "pread64", },
++	{ .name	    = "pread",	    .errmsg = true, .alias = "pread64",
++	  .arg_scnprintf = { [0] = SCA_FD, /* fd */ }, }, 
++	{ .name	    = "preadv",	    .errmsg = true, .alias = "pread",
++	  .arg_scnprintf = { [0] = SCA_FD, /* fd */ }, }, 
+ 	{ .name	    = "prlimit64",  .errmsg = true, STRARRAY(1, resource, rlimit_resources), },
+-	{ .name	    = "pwrite",	    .errmsg = true, .alias = "pwrite64", },
+-	{ .name	    = "read",	    .errmsg = true, },
++	{ .name	    = "pwrite",	    .errmsg = true, .alias = "pwrite64",
++	  .arg_scnprintf = { [0] = SCA_FD, /* fd */ }, }, 
++	{ .name	    = "pwritev",    .errmsg = true,
++	  .arg_scnprintf = { [0] = SCA_FD, /* fd */ }, }, 
++	{ .name	    = "read",	    .errmsg = true,
++	  .arg_scnprintf = { [0] = SCA_FD, /* fd */ }, }, 
++	{ .name	    = "readlinkat", .errmsg = true,
++	  .arg_scnprintf = { [0] = SCA_FDAT, /* dfd */ }, }, 
++	{ .name	    = "readv",	    .errmsg = true,
++	  .arg_scnprintf = { [0] = SCA_FD, /* fd */ }, }, 
+ 	{ .name	    = "recvfrom",   .errmsg = true,
+ 	  .arg_scnprintf = { [3] = SCA_MSG_FLAGS, /* flags */ }, },
+ 	{ .name	    = "recvmmsg",   .errmsg = true,
+ 	  .arg_scnprintf = { [3] = SCA_MSG_FLAGS, /* flags */ }, },
+ 	{ .name	    = "recvmsg",    .errmsg = true,
+ 	  .arg_scnprintf = { [2] = SCA_MSG_FLAGS, /* flags */ }, },
++	{ .name	    = "renameat",   .errmsg = true,
++	  .arg_scnprintf = { [0] = SCA_FDAT, /* dfd */ }, }, 
+ 	{ .name	    = "rt_sigaction", .errmsg = true,
+ 	  .arg_scnprintf = { [0] = SCA_SIGNUM, /* sig */ }, },
+ 	{ .name	    = "rt_sigprocmask",  .errmsg = true, STRARRAY(0, how, sighow), },
+@@ -689,6 +789,8 @@ static struct syscall_fmt {
+ 	  .arg_scnprintf = { [3] = SCA_MSG_FLAGS, /* flags */ }, },
+ 	{ .name	    = "setitimer",  .errmsg = true, STRARRAY(0, which, itimers), },
+ 	{ .name	    = "setrlimit",  .errmsg = true, STRARRAY(0, resource, rlimit_resources), },
++	{ .name	    = "shutdown",   .errmsg = true,
++	  .arg_scnprintf = { [0] = SCA_FD, /* fd */ }, }, 
+ 	{ .name	    = "socket",	    .errmsg = true,
+ 	  .arg_scnprintf = { [0] = SCA_STRARRAY, /* family */
+ 			     [1] = SCA_SK_TYPE, /* type */ },
+@@ -698,11 +800,21 @@ static struct syscall_fmt {
+ 			     [1] = SCA_SK_TYPE, /* type */ },
+ 	  .arg_parm	 = { [0] = &strarray__socket_families, /* family */ }, },
+ 	{ .name	    = "stat",	    .errmsg = true, .alias = "newstat", },
++	{ .name	    = "symlinkat",  .errmsg = true,
++	  .arg_scnprintf = { [0] = SCA_FDAT, /* dfd */ }, }, 
+ 	{ .name	    = "tgkill",	    .errmsg = true,
+ 	  .arg_scnprintf = { [2] = SCA_SIGNUM, /* sig */ }, },
+ 	{ .name	    = "tkill",	    .errmsg = true,
+ 	  .arg_scnprintf = { [1] = SCA_SIGNUM, /* sig */ }, },
+ 	{ .name	    = "uname",	    .errmsg = true, .alias = "newuname", },
++	{ .name	    = "unlinkat",   .errmsg = true,
++	  .arg_scnprintf = { [0] = SCA_FDAT, /* dfd */ }, },
++	{ .name	    = "utimensat",  .errmsg = true,
++	  .arg_scnprintf = { [0] = SCA_FDAT, /* dirfd */ }, },
++	{ .name	    = "write",	    .errmsg = true,
++	  .arg_scnprintf = { [0] = SCA_FD, /* fd */ }, }, 
++	{ .name	    = "writev",	    .errmsg = true,
++	  .arg_scnprintf = { [0] = SCA_FD, /* fd */ }, }, 
+ };
  
- struct int_node *intlist__entry(const struct intlist *ilist, unsigned int idx);
- struct int_node *intlist__find(struct intlist *ilist, int i);
-+struct int_node *intlist__findnew(struct intlist *ilist, int i);
+ static int syscall_fmt__cmp(const void *name, const void *fmtp)
+@@ -747,11 +859,20 @@ struct thread_trace {
+ 	unsigned long	  nr_events;
+ 	char		  *entry_str;
+ 	double		  runtime_ms;
++	struct {
++		int	  max;
++		char	  **table;
++	} paths;
+ };
  
- static inline bool intlist__has_entry(struct intlist *ilist, int i)
+ static struct thread_trace *thread_trace__new(void)
  {
-diff --git a/tools/perf/util/rblist.c b/tools/perf/util/rblist.c
-index a16cdd2625ad..0dfe27d99458 100644
---- a/tools/perf/util/rblist.c
-+++ b/tools/perf/util/rblist.c
-@@ -48,10 +48,12 @@ void rblist__remove_node(struct rblist *rblist, struct rb_node *rb_node)
- 	rblist->node_delete(rblist, rb_node);
+-	return zalloc(sizeof(struct thread_trace));
++	struct thread_trace *ttrace =  zalloc(sizeof(struct thread_trace));
++
++	if (ttrace)
++		ttrace->paths.max = -1;
++
++	return ttrace;
  }
  
--struct rb_node *rblist__find(struct rblist *rblist, const void *entry)
-+static struct rb_node *__rblist__findnew(struct rblist *rblist,
-+					 const void *entry,
-+					 bool create)
- {
- 	struct rb_node **p = &rblist->entries.rb_node;
--	struct rb_node *parent = NULL;
-+	struct rb_node *parent = NULL, *new_node = NULL;
+ static struct thread_trace *thread__trace(struct thread *thread, FILE *fp)
+@@ -792,6 +913,7 @@ struct trace {
+ 	unsigned long		nr_events;
+ 	struct strlist		*ev_qualifier;
+ 	bool			not_ev_qualifier;
++	bool			live;
+ 	struct intlist		*tid_list;
+ 	struct intlist		*pid_list;
+ 	bool			sched;
+@@ -801,6 +923,98 @@ struct trace {
+ 	double			runtime_ms;
+ };
  
- 	while (*p != NULL) {
- 		int rc;
-@@ -67,7 +69,26 @@ struct rb_node *rblist__find(struct rblist *rblist, const void *entry)
- 			return parent;
- 	}
- 
--	return NULL;
-+	if (create) {
-+		new_node = rblist->node_new(rblist, entry);
-+		if (new_node) {
-+			rb_link_node(new_node, parent, p);
-+			rb_insert_color(new_node, &rblist->entries);
-+			++rblist->nr_entries;
-+		}
++static int thread__read_fd_path(struct thread *thread, int fd)
++{
++	struct thread_trace *ttrace = thread->priv;
++	char linkname[PATH_MAX], pathname[PATH_MAX];
++	struct stat st;
++	int ret;
++
++	if (thread->pid_ == thread->tid) {
++		scnprintf(linkname, sizeof(linkname),
++			  "/proc/%d/fd/%d", thread->pid_, fd);
++	} else {
++		scnprintf(linkname, sizeof(linkname),
++			  "/proc/%d/task/%d/fd/%d", thread->pid_, thread->tid, fd);
 +	}
 +
-+	return new_node;
++	if (lstat(linkname, &st) < 0 || st.st_size + 1 > (off_t)sizeof(pathname))
++		return -1;
++
++	ret = readlink(linkname, pathname, sizeof(pathname));
++
++	if (ret < 0 || ret > st.st_size)
++		return -1;
++
++	pathname[ret] = '\0';
++
++	if (fd > ttrace->paths.max) {
++		char **npath = realloc(ttrace->paths.table, (fd + 1) * sizeof(char *));
++
++		if (npath == NULL)
++			return -1;
++
++		if (ttrace->paths.max != -1) {
++			memset(npath + ttrace->paths.max + 1, 0,
++			       (fd - ttrace->paths.max) * sizeof(char *));
++		} else {
++			memset(npath, 0, (fd + 1) * sizeof(char *));
++		}
++
++		ttrace->paths.table = npath;
++		ttrace->paths.max   = fd;
++	}
++
++	ttrace->paths.table[fd] = strdup(pathname);
++
++	return ttrace->paths.table[fd] != NULL ? 0 : -1;
 +}
 +
-+struct rb_node *rblist__find(struct rblist *rblist, const void *entry)
++static const char *thread__fd_path(struct thread *thread, int fd, bool live)
 +{
-+	return __rblist__findnew(rblist, entry, false);
++	struct thread_trace *ttrace = thread->priv;
++
++	if (ttrace == NULL)
++		return NULL;
++
++	if (fd < 0)
++		return NULL;
++
++	if ((fd > ttrace->paths.max || ttrace->paths.table[fd] == NULL) &&
++	    (!live || thread__read_fd_path(thread, fd)))
++		return NULL;
++
++	return ttrace->paths.table[fd];
 +}
 +
-+struct rb_node *rblist__findnew(struct rblist *rblist, const void *entry)
++static size_t syscall_arg__scnprintf_fd(char *bf, size_t size,
++					struct syscall_arg *arg)
 +{
-+	return __rblist__findnew(rblist, entry, true);
++	int fd = arg->val;
++	size_t printed = scnprintf(bf, size, "%d", fd);
++	const char *path = thread__fd_path(arg->thread, fd, arg->trace->live);
++
++	if (path)
++		printed += scnprintf(bf + printed, size - printed, "<%s>", path);
++
++	return printed;
++}
++
++static size_t syscall_arg__scnprintf_close_fd(char *bf, size_t size,
++					      struct syscall_arg *arg)
++{
++	int fd = arg->val;
++	size_t printed = syscall_arg__scnprintf_fd(bf, size, arg);
++	struct thread_trace *ttrace = arg->thread->priv;
++
++	if (ttrace && fd >= 0 && fd <= ttrace->paths.max) {
++		free(ttrace->paths.table[fd]);
++		ttrace->paths.table[fd] = NULL;
++	}
++
++	return printed;
++}
++
+ static bool trace__filter_duration(struct trace *trace, double t)
+ {
+ 	return t < (trace->duration_filter * NSEC_PER_MSEC);
+@@ -969,7 +1183,8 @@ static int trace__read_syscall_info(struct trace *trace, int id)
  }
  
- void rblist__init(struct rblist *rblist)
-diff --git a/tools/perf/util/rblist.h b/tools/perf/util/rblist.h
-index 6d0cae5ae83d..ff9913b994c2 100644
---- a/tools/perf/util/rblist.h
-+++ b/tools/perf/util/rblist.h
-@@ -32,6 +32,7 @@ void rblist__delete(struct rblist *rblist);
- int rblist__add_node(struct rblist *rblist, const void *new_entry);
- void rblist__remove_node(struct rblist *rblist, struct rb_node *rb_node);
- struct rb_node *rblist__find(struct rblist *rblist, const void *entry);
-+struct rb_node *rblist__findnew(struct rblist *rblist, const void *entry);
- struct rb_node *rblist__entry(const struct rblist *rblist, unsigned int idx);
+ static size_t syscall__scnprintf_args(struct syscall *sc, char *bf, size_t size,
+-				      unsigned long *args)
++				      unsigned long *args, struct trace *trace,
++				      struct thread *thread)
+ {
+ 	size_t printed = 0;
  
- static inline bool rblist__empty(const struct rblist *rblist)
+@@ -977,8 +1192,10 @@ static size_t syscall__scnprintf_args(struct syscall *sc, char *bf, size_t size,
+ 		struct format_field *field;
+ 		u8 bit = 1;
+ 		struct syscall_arg arg = {
+-			.idx  = 0,
+-			.mask = 0,
++			.idx	= 0,
++			.mask	= 0,
++			.trace  = trace,
++			.thread = thread,
+ 		};
+ 
+ 		for (field = sc->tp_format->format.fields->next; field;
+@@ -1111,7 +1328,8 @@ static int trace__sys_enter(struct trace *trace, struct perf_evsel *evsel,
+ 	msg = ttrace->entry_str;
+ 	printed += scnprintf(msg + printed, 1024 - printed, "%s(", sc->name);
+ 
+-	printed += syscall__scnprintf_args(sc, msg + printed, 1024 - printed,  args);
++	printed += syscall__scnprintf_args(sc, msg + printed, 1024 - printed,
++					   args, trace, thread);
+ 
+ 	if (!strcmp(sc->name, "exit_group") || !strcmp(sc->name, "exit")) {
+ 		if (!trace->duration_filter) {
+@@ -1292,6 +1510,8 @@ static int trace__run(struct trace *trace, int argc, const char **argv)
+ 	unsigned long before;
+ 	const bool forks = argc > 0;
+ 
++	trace->live = true;
++
+ 	if (evlist == NULL) {
+ 		fprintf(trace->output, "Not enough memory to run!\n");
+ 		goto out;
+@@ -1423,6 +1643,7 @@ out_delete_maps:
+ out_delete_evlist:
+ 	perf_evlist__delete(evlist);
+ out:
++	trace->live = false;
+ 	return err;
+ }
+ 
 -- 
 1.8.1.4
 
