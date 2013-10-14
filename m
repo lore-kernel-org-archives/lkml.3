@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756171Ab3JNKty (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 06:49:54 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:46278 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753797Ab3JNKoe (ORCPT
+	id S1756010Ab3JNKod (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 06:44:33 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:63780 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753797Ab3JNKoO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 06:44:34 -0400
+	Mon, 14 Oct 2013 06:44:14 -0400
 From: Juri Lelli <juri.lelli@gmail.com>
 To: peterz@infradead.org, tglx@linutronix.de
 Cc: mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
@@ -20,9 +20,9 @@ Cc: mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
         jkacur@redhat.com, harald.gustafsson@ericsson.com,
         vincent.guittot@linaro.org,
         bruce.ashfield@windriver.com--no-chain-reply-to
-Subject: [PATCH 10/14] sched: drafted deadline inheritance logic.
-Date: Mon, 14 Oct 2013 12:43:42 +0200
-Message-Id: <1381747426-31334-11-git-send-email-juri.lelli@gmail.com>
+Subject: [PATCH 02/14] sched: add extended scheduling interface.
+Date: Mon, 14 Oct 2013 12:43:34 +0200
+Message-Id: <1381747426-31334-3-git-send-email-juri.lelli@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1381747426-31334-1-git-send-email-juri.lelli@gmail.com>
 References: <1381747426-31334-1-git-send-email-juri.lelli@gmail.com>
@@ -32,462 +32,384 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dario Faggioli <raistlin@linux.it>
 
-Some method to deal with rt-mutexes and make sched_dl interact with
-the current PI-coded is needed, raising all but trivial issues, that
-needs (according to us) to be solved with some restructuring of
-the pi-code (i.e., going toward a proxy execution-ish implementation).
+Add the interface bits needed for supporting scheduling algorithms
+with extended parameters (e.g., SCHED_DEADLINE).
 
-This is under development, in the meanwhile, as a temporary solution,
-what this commits does is:
- - ensure a pi-lock owner with waiters is never throttled down. Instead,
-   when it runs out of runtime, it immediately gets replenished and it's
-   deadline is postponed;
- - the scheduling parameters (relative deadline and default runtime)
-   used for that replenishments --during the whole period it holds the
-   pi-lock-- are the ones of the waiting task with earliest deadline.
+In general, it makes possible to specify a periodic/sporadic task,
+that executes for a given amount of runtime at each instance, and is
+scheduled according to the urgency of their own timing constraints,
+i.e.:
+ - a (maximum/typical) instance execution time,
+ - a minimum interval between consecutive instances,
+ - a time constraint by which each instance must be completed.
 
-Acting this way, we provide some kind of boosting to the lock-owner,
-still by using the existing (actually, slightly modified by the previous
-commit) pi-architecture.
+Thus, both the data structure that holds the scheduling parameters of
+the tasks and the system calls dealing with it must be extended.
+Unfortunately, modifying the existing struct sched_param would break
+the ABI and result in potentially serious compatibility issues with
+legacy binaries.
 
-We would stress the fact that this is only a surely needed, all but
-clean solution to the problem. In the end it's only a way to re-start
-discussion within the community. So, as always, comments, ideas, rants,
-etc.. are welcome! :-)
+For these reasons, this patch:
+ - defines the new struct sched_param2, containing all the fields
+   that are necessary for specifying a task in the computational
+   model described above;
+ - defines and implements the new scheduling related syscalls that
+   manipulate it, i.e., sched_setscheduler2(), sched_setparam2()
+   and sched_getparam2().
+
+Syscalls are introduced for x86 (32 and 64 bits) and ARM only, as a
+proof of concept and for developing and testing purposes. Making them
+available on other architectures is straightforward.
+
+Since no "user" for these new parameters is introduced in this patch,
+the implementation of the new system calls is just identical to their
+already existing counterpart. Future patches that implement scheduling
+policies able to exploit the new data structure must also take care of
+modifying the *2() calls accordingly with their own purposes.
 
 Signed-off-by: Dario Faggioli <raistlin@linux.it>
 Signed-off-by: Juri Lelli <juri.lelli@gmail.com>
 ---
- include/linux/sched.h    |    8 +++-
- include/linux/sched/rt.h |    1 +
- kernel/fork.c            |    1 +
- kernel/rtmutex.c         |   13 ++++++-
- kernel/sched/core.c      |   36 +++++++++++++++---
- kernel/sched/deadline.c  |   91 +++++++++++++++++++++++++++-------------------
- kernel/sched/sched.h     |   14 +++++++
- 7 files changed, 117 insertions(+), 47 deletions(-)
+ arch/arm/include/asm/unistd.h      |    2 +-
+ arch/arm/include/uapi/asm/unistd.h |    3 +
+ arch/arm/kernel/calls.S            |    3 +
+ arch/x86/syscalls/syscall_32.tbl   |    3 +
+ arch/x86/syscalls/syscall_64.tbl   |    3 +
+ include/linux/sched.h              |   50 ++++++++++++++++
+ include/linux/syscalls.h           |    7 +++
+ kernel/sched/core.c                |  110 +++++++++++++++++++++++++++++++++++-
+ 8 files changed, 177 insertions(+), 4 deletions(-)
 
+diff --git a/arch/arm/include/asm/unistd.h b/arch/arm/include/asm/unistd.h
+index 141baa3..5f260fd 100644
+--- a/arch/arm/include/asm/unistd.h
++++ b/arch/arm/include/asm/unistd.h
+@@ -15,7 +15,7 @@
+ 
+ #include <uapi/asm/unistd.h>
+ 
+-#define __NR_syscalls  (380)
++#define __NR_syscalls  (383)
+ #define __ARM_NR_cmpxchg		(__ARM_NR_BASE+0x00fff0)
+ 
+ #define __ARCH_WANT_STAT64
+diff --git a/arch/arm/include/uapi/asm/unistd.h b/arch/arm/include/uapi/asm/unistd.h
+index af33b44..6a4985e 100644
+--- a/arch/arm/include/uapi/asm/unistd.h
++++ b/arch/arm/include/uapi/asm/unistd.h
+@@ -406,6 +406,9 @@
+ #define __NR_process_vm_writev		(__NR_SYSCALL_BASE+377)
+ #define __NR_kcmp			(__NR_SYSCALL_BASE+378)
+ #define __NR_finit_module		(__NR_SYSCALL_BASE+379)
++#define __NR_sched_setscheduler2	(__NR_SYSCALL_BASE+380)
++#define __NR_sched_setparam2		(__NR_SYSCALL_BASE+381)
++#define __NR_sched_getparam2		(__NR_SYSCALL_BASE+382)
+ 
+ /*
+  * This may need to be greater than __NR_last_syscall+1 in order to
+diff --git a/arch/arm/kernel/calls.S b/arch/arm/kernel/calls.S
+index c6ca7e3..0fb1ef7 100644
+--- a/arch/arm/kernel/calls.S
++++ b/arch/arm/kernel/calls.S
+@@ -389,6 +389,9 @@
+ 		CALL(sys_process_vm_writev)
+ 		CALL(sys_kcmp)
+ 		CALL(sys_finit_module)
++/* 380 */	CALL(sys_sched_setscheduler2)
++		CALL(sys_sched_setparam2)
++		CALL(sys_sched_getparam2)
+ #ifndef syscalls_counted
+ .equ syscalls_padding, ((NR_syscalls + 3) & ~3) - NR_syscalls
+ #define syscalls_counted
+diff --git a/arch/x86/syscalls/syscall_32.tbl b/arch/x86/syscalls/syscall_32.tbl
+index aabfb83..dfce815 100644
+--- a/arch/x86/syscalls/syscall_32.tbl
++++ b/arch/x86/syscalls/syscall_32.tbl
+@@ -357,3 +357,6 @@
+ 348	i386	process_vm_writev	sys_process_vm_writev		compat_sys_process_vm_writev
+ 349	i386	kcmp			sys_kcmp
+ 350	i386	finit_module		sys_finit_module
++351	i386	sched_setparam2		sys_sched_setparam2
++352	i386	sched_getparam2		sys_sched_getparam2
++353	i386	sched_setscheduler2	sys_sched_setscheduler2
+diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
+index 38ae65d..1849a70 100644
+--- a/arch/x86/syscalls/syscall_64.tbl
++++ b/arch/x86/syscalls/syscall_64.tbl
+@@ -320,6 +320,9 @@
+ 311	64	process_vm_writev	sys_process_vm_writev
+ 312	common	kcmp			sys_kcmp
+ 313	common	finit_module		sys_finit_module
++314	common	sched_setparam2		sys_sched_setparam2
++315	common	sched_getparam2		sys_sched_getparam2
++316	common	sched_setscheduler2	sys_sched_setscheduler2
+ 
+ #
+ # x32-specific system call numbers start at 512 to avoid cache impact
 diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 2fbb50a..17da410 100644
+index 6682da3..6cc7193 100644
 --- a/include/linux/sched.h
 +++ b/include/linux/sched.h
-@@ -1099,8 +1099,12 @@ struct sched_dl_entity {
- 	 * @dl_new tells if a new instance arrived. If so we must
- 	 * start executing it with full runtime and reset its absolute
- 	 * deadline;
-+	 *
-+	 * @dl_boosted tells if we are boosted due to DI. If so we are
-+	 * outside bandwidth enforcement mechanism (but only until we
-+	 * exit the critical section).
- 	 */
--	int dl_throttled, dl_new;
-+	int dl_throttled, dl_new, dl_boosted;
+@@ -55,6 +55,54 @@ struct sched_param {
  
- 	/*
- 	 * Bandwidth enforcement timer. Each -deadline task has its
-@@ -1345,6 +1349,8 @@ struct task_struct {
- 	struct rb_node *pi_waiters_leftmost;
- 	/* Deadlock detection and priority inheritance handling */
- 	struct rt_mutex_waiter *pi_blocked_on;
-+	/* Top pi_waiters task */
-+	struct task_struct *pi_top_task;
- #endif
+ #include <asm/processor.h>
  
- #ifdef CONFIG_DEBUG_MUTEXES
-diff --git a/include/linux/sched/rt.h b/include/linux/sched/rt.h
-index a157797..1fa88a2c 100644
---- a/include/linux/sched/rt.h
-+++ b/include/linux/sched/rt.h
-@@ -35,6 +35,7 @@ static inline int rt_task(struct task_struct *p)
- #ifdef CONFIG_RT_MUTEXES
- extern int rt_mutex_getprio(struct task_struct *p);
- extern void rt_mutex_setprio(struct task_struct *p, int prio);
-+extern struct task_struct *rt_mutex_get_top_task(struct task_struct *task);
- extern void rt_mutex_adjust_pi(struct task_struct *p);
- static inline bool tsk_is_pi_blocked(struct task_struct *tsk)
- {
-diff --git a/kernel/fork.c b/kernel/fork.c
-index aa6e18d..7247105 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1092,6 +1092,7 @@ static void rt_mutex_init_task(struct task_struct *p)
- 	p->pi_waiters = RB_ROOT;
- 	p->pi_waiters_leftmost = NULL;
- 	p->pi_blocked_on = NULL;
-+	p->pi_top_task = NULL;
- #endif
- }
- 
-diff --git a/kernel/rtmutex.c b/kernel/rtmutex.c
-index 4ea7eaa..cb5f950 100644
---- a/kernel/rtmutex.c
-+++ b/kernel/rtmutex.c
-@@ -200,6 +200,14 @@ int rt_mutex_getprio(struct task_struct *task)
- 		   task->normal_prio);
- }
- 
-+struct task_struct *rt_mutex_get_top_task(struct task_struct *task)
-+{
-+	if (likely(!task_has_pi_waiters(task)))
-+		return NULL;
++/*
++ * Extended scheduling parameters data structure.
++ *
++ * This is needed because the original struct sched_param can not be
++ * altered without introducing ABI issues with legacy applications
++ * (e.g., in sched_getparam()).
++ *
++ * However, the possibility of specifying more than just a priority for
++ * the tasks may be useful for a wide variety of application fields, e.g.,
++ * multimedia, streaming, automation and control, and many others.
++ *
++ * This variant (sched_param2) is meant at describing a so-called
++ * sporadic time-constrained task. In such model a task is specified by:
++ *  - the activation period or minimum instance inter-arrival time;
++ *  - the maximum (or average, depending on the actual scheduling
++ *    discipline) computation time of all instances, a.k.a. runtime;
++ *  - the deadline (relative to the actual activation time) of each
++ *    instance.
++ * Very briefly, a periodic (sporadic) task asks for the execution of
++ * some specific computation --which is typically called an instance--
++ * (at most) every period. Moreover, each instance typically lasts no more
++ * than the runtime and must be completed by time instant t equal to
++ * the instance activation time + the deadline.
++ *
++ * This is reflected by the actual fields of the sched_param2 structure:
++ *
++ *  @sched_priority     task's priority (might still be useful)
++ *  @sched_deadline     representative of the task's deadline
++ *  @sched_runtime      representative of the task's runtime
++ *  @sched_period       representative of the task's period
++ *  @sched_flags        for customizing the scheduler behaviour
++ *
++ * Given this task model, there are a multiplicity of scheduling algorithms
++ * and policies, that can be used to ensure all the tasks will make their
++ * timing constraints.
++ *
++ * @__unused		padding to allow future expansion without ABI issues
++ */
++struct sched_param2 {
++	int sched_priority;
++	unsigned int sched_flags;
++	u64 sched_runtime;
++	u64 sched_deadline;
++	u64 sched_period;
 +
-+	return task_top_pi_waiter(task)->task;
-+}
++	u64 __unused[12];
++};
 +
- /*
-  * Adjust the priority of a task, after its pi_waiters got modified.
-  *
-@@ -209,7 +217,7 @@ static void __rt_mutex_adjust_prio(struct task_struct *task)
- {
- 	int prio = rt_mutex_getprio(task);
- 
--	if (task->prio != prio)
-+	if (task->prio != prio || dl_prio(prio))
- 		rt_mutex_setprio(task, prio);
- }
- 
-@@ -652,7 +660,8 @@ void rt_mutex_adjust_pi(struct task_struct *task)
- 	raw_spin_lock_irqsave(&task->pi_lock, flags);
- 
- 	waiter = task->pi_blocked_on;
--	if (!waiter || waiter->task->prio == task->prio) {
-+	if (!waiter || (waiter->task->prio == task->prio &&
-+			!dl_prio(task->prio))) {
- 		raw_spin_unlock_irqrestore(&task->pi_lock, flags);
- 		return;
- 	}
+ struct exec_domain;
+ struct futex_pi_state;
+ struct robust_list_head;
+@@ -1896,6 +1944,8 @@ extern int sched_setscheduler(struct task_struct *, int,
+ 			      const struct sched_param *);
+ extern int sched_setscheduler_nocheck(struct task_struct *, int,
+ 				      const struct sched_param *);
++extern int sched_setscheduler2(struct task_struct *, int,
++				 const struct sched_param2 *);
+ extern struct task_struct *idle_task(int cpu);
+ /**
+  * is_idle_task - is the specified task an idle task?
+diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+index 7fac04e..170ac59 100644
+--- a/include/linux/syscalls.h
++++ b/include/linux/syscalls.h
+@@ -38,6 +38,7 @@ struct rlimit;
+ struct rlimit64;
+ struct rusage;
+ struct sched_param;
++struct sched_param2;
+ struct sel_arg_struct;
+ struct semaphore;
+ struct sembuf;
+@@ -277,11 +278,17 @@ asmlinkage long sys_clock_nanosleep(clockid_t which_clock, int flags,
+ asmlinkage long sys_nice(int increment);
+ asmlinkage long sys_sched_setscheduler(pid_t pid, int policy,
+ 					struct sched_param __user *param);
++asmlinkage long sys_sched_setscheduler2(pid_t pid, int policy,
++					struct sched_param2 __user *param);
+ asmlinkage long sys_sched_setparam(pid_t pid,
+ 					struct sched_param __user *param);
++asmlinkage long sys_sched_setparam2(pid_t pid,
++					struct sched_param2 __user *param);
+ asmlinkage long sys_sched_getscheduler(pid_t pid);
+ asmlinkage long sys_sched_getparam(pid_t pid,
+ 					struct sched_param __user *param);
++asmlinkage long sys_sched_getparam2(pid_t pid,
++					struct sched_param2 __user *param);
+ asmlinkage long sys_sched_setaffinity(pid_t pid, unsigned int len,
+ 					unsigned long __user *user_mask_ptr);
+ asmlinkage long sys_sched_getaffinity(pid_t pid, unsigned int len,
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 3925282..f9e7906 100644
+index 850a02c..4fcbf13 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
-@@ -951,7 +951,7 @@ static inline void check_class_changed(struct rq *rq, struct task_struct *p,
- 		if (prev_class->switched_from)
- 			prev_class->switched_from(rq, p);
- 		p->sched_class->switched_to(rq, p);
--	} else if (oldprio != p->prio)
-+	} else if (oldprio != p->prio || dl_task(p))
- 		p->sched_class->prio_changed(rq, p, oldprio);
+@@ -3285,7 +3285,8 @@ static bool check_same_owner(struct task_struct *p)
  }
  
-@@ -3042,7 +3042,7 @@ EXPORT_SYMBOL(sleep_on_timeout);
-  */
- void rt_mutex_setprio(struct task_struct *p, int prio)
+ static int __sched_setscheduler(struct task_struct *p, int policy,
+-				const struct sched_param *param, bool user)
++				const struct sched_param2 *param,
++				bool user)
  {
--	int oldprio, on_rq, running;
-+	int oldprio, on_rq, running, enqueue_flag = 0;
- 	struct rq *rq;
- 	const struct sched_class *prev_class;
- 
-@@ -3069,6 +3069,7 @@ void rt_mutex_setprio(struct task_struct *p, int prio)
- 	}
- 
- 	trace_sched_pi_setprio(p, prio);
-+	p->pi_top_task = rt_mutex_get_top_task(p);
- 	oldprio = p->prio;
- 	prev_class = p->sched_class;
- 	on_rq = p->on_rq;
-@@ -3078,19 +3079,42 @@ void rt_mutex_setprio(struct task_struct *p, int prio)
- 	if (running)
- 		p->sched_class->put_prev_task(rq, p);
- 
--	if (dl_prio(prio))
-+	/*
-+	 * Boosting condition are:
-+	 * 1. -rt task is running and holds mutex A
-+	 *      --> -dl task blocks on mutex A
-+	 *
-+	 * 2. -dl task is running and holds mutex A
-+	 *      --> -dl task blocks on mutex A and could preempt the
-+	 *          running task
-+	 */
-+	if (dl_prio(prio)) {
-+		if (!dl_prio(p->normal_prio) || (p->pi_top_task &&
-+			dl_entity_preempt(&p->pi_top_task->dl, &p->dl))) {
-+			p->dl.dl_boosted = 1;
-+			p->dl.dl_throttled = 0;
-+			enqueue_flag = ENQUEUE_REPLENISH;
-+		} else
-+			p->dl.dl_boosted = 0;
- 		p->sched_class = &dl_sched_class;
--	else if (rt_prio(prio))
-+	} else if (rt_prio(prio)) {
-+		if (dl_prio(oldprio))
-+			p->dl.dl_boosted = 0;
-+		if (oldprio < prio)
-+			enqueue_flag = ENQUEUE_HEAD;
- 		p->sched_class = &rt_sched_class;
--	else
-+	} else {
-+		if (dl_prio(oldprio))
-+			p->dl.dl_boosted = 0;
- 		p->sched_class = &fair_sched_class;
-+	}
- 
- 	p->prio = prio;
- 
- 	if (running)
- 		p->sched_class->set_curr_task(rq);
- 	if (on_rq)
--		enqueue_task(rq, p, oldprio < prio ? ENQUEUE_HEAD : 0);
-+		enqueue_task(rq, p, enqueue_flag);
- 
- 	check_class_changed(rq, p, prev_class, oldprio);
- out_unlock:
-diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-index c2381f3..aded515 100644
---- a/kernel/sched/deadline.c
-+++ b/kernel/sched/deadline.c
-@@ -16,20 +16,6 @@
-  */
- #include "sched.h"
- 
--static inline int dl_time_before(u64 a, u64 b)
--{
--	return (s64)(a - b) < 0;
--}
--
--/*
-- * Tells if entity @a should preempt entity @b.
-- */
--static inline
--int dl_entity_preempt(struct sched_dl_entity *a, struct sched_dl_entity *b)
--{
--	return dl_time_before(a->deadline, b->deadline);
--}
--
- static inline struct task_struct *dl_task_of(struct sched_dl_entity *dl_se)
+ 	int retval, oldprio, oldpolicy = -1, on_rq, running;
+ 	unsigned long flags;
+@@ -3450,10 +3451,20 @@ recheck:
+ int sched_setscheduler(struct task_struct *p, int policy,
+ 		       const struct sched_param *param)
  {
- 	return container_of(dl_se, struct task_struct, dl);
-@@ -240,7 +226,8 @@ static void check_preempt_curr_dl(struct rq *rq, struct task_struct *p,
-  * one, and to (try to!) reconcile itself with its own scheduling
-  * parameters.
-  */
--static inline void setup_new_dl_entity(struct sched_dl_entity *dl_se)
-+static inline void setup_new_dl_entity(struct sched_dl_entity *dl_se,
-+				       struct sched_dl_entity *pi_se)
- {
- 	struct dl_rq *dl_rq = dl_rq_of_se(dl_se);
- 	struct rq *rq = rq_of_dl_rq(dl_rq);
-@@ -252,8 +239,8 @@ static inline void setup_new_dl_entity(struct sched_dl_entity *dl_se)
- 	 * future; in fact, we must consider execution overheads (time
- 	 * spent on hardirq context, etc.).
- 	 */
--	dl_se->deadline = rq->clock + dl_se->dl_deadline;
--	dl_se->runtime = dl_se->dl_runtime;
-+	dl_se->deadline = rq->clock + pi_se->dl_deadline;
-+	dl_se->runtime = pi_se->dl_runtime;
- 	dl_se->dl_new = 0;
+-	return __sched_setscheduler(p, policy, param, true);
++	struct sched_param2 param2 = {
++		.sched_priority = param->sched_priority
++	};
++	return __sched_setscheduler(p, policy, &param2, true);
  }
+ EXPORT_SYMBOL_GPL(sched_setscheduler);
  
-@@ -275,11 +262,23 @@ static inline void setup_new_dl_entity(struct sched_dl_entity *dl_se)
-  * could happen are, typically, a entity voluntarily trying to overcome its
-  * runtime, or it just underestimated it during sched_setscheduler_ex().
-  */
--static void replenish_dl_entity(struct sched_dl_entity *dl_se)
-+static void replenish_dl_entity(struct sched_dl_entity *dl_se,
-+				struct sched_dl_entity *pi_se)
- {
- 	struct dl_rq *dl_rq = dl_rq_of_se(dl_se);
- 	struct rq *rq = rq_of_dl_rq(dl_rq);
- 
-+	BUG_ON(pi_se->dl_runtime <= 0);
-+
-+	/*
-+	 * This could be the case for a !-dl task that is boosted.
-+	 * Just go with full inherited parameters.
-+	 */
-+	if (dl_se->dl_deadline == 0) {
-+		dl_se->deadline = rq->clock + pi_se->dl_deadline;
-+		dl_se->runtime = pi_se->dl_runtime;
-+	}
-+
- 	/*
- 	 * We keep moving the deadline away until we get some
- 	 * available runtime for the entity. This ensures correct
-@@ -287,8 +286,8 @@ static void replenish_dl_entity(struct sched_dl_entity *dl_se)
- 	 * arbitrary large.
- 	 */
- 	while (dl_se->runtime <= 0) {
--		dl_se->deadline += dl_se->dl_period;
--		dl_se->runtime += dl_se->dl_runtime;
-+		dl_se->deadline += pi_se->dl_period;
-+		dl_se->runtime += pi_se->dl_runtime;
- 	}
- 
- 	/*
-@@ -307,8 +306,8 @@ static void replenish_dl_entity(struct sched_dl_entity *dl_se)
- 			lag_once = true;
- 			printk_sched("sched: DL replenish lagged to much\n");
- 		}
--		dl_se->deadline = rq->clock + dl_se->dl_deadline;
--		dl_se->runtime = dl_se->dl_runtime;
-+		dl_se->deadline = rq->clock + pi_se->dl_deadline;
-+		dl_se->runtime = pi_se->dl_runtime;
- 	}
- }
- 
-@@ -335,7 +334,8 @@ static void replenish_dl_entity(struct sched_dl_entity *dl_se)
-  * task with deadline equal to period this is the same of using
-  * dl_deadline instead of dl_period in the equation above.
-  */
--static bool dl_entity_overflow(struct sched_dl_entity *dl_se, u64 t)
-+static bool dl_entity_overflow(struct sched_dl_entity *dl_se,
-+			       struct sched_dl_entity *pi_se, u64 t)
- {
- 	u64 left, right;
- 
-@@ -357,8 +357,8 @@ static bool dl_entity_overflow(struct sched_dl_entity *dl_se, u64 t)
- 	 * of anything below microseconds resolution is actually fiction
- 	 * (but still we want to give the user that illusion >;).
- 	 */
--	left = (dl_se->dl_period >> 10) * (dl_se->runtime >> 10);
--	right = ((dl_se->deadline - t) >> 10) * (dl_se->dl_runtime >> 10);
-+	left = (pi_se->dl_period >> 10) * (dl_se->runtime >> 10);
-+	right = ((dl_se->deadline - t) >> 10) * (pi_se->dl_runtime >> 10);
- 
- 	return dl_time_before(right, left);
- }
-@@ -372,7 +372,8 @@ static bool dl_entity_overflow(struct sched_dl_entity *dl_se, u64 t)
-  *  - using the remaining runtime with the current deadline would make
-  *    the entity exceed its bandwidth.
-  */
--static void update_dl_entity(struct sched_dl_entity *dl_se)
-+static void update_dl_entity(struct sched_dl_entity *dl_se,
-+			     struct sched_dl_entity *pi_se)
- {
- 	struct dl_rq *dl_rq = dl_rq_of_se(dl_se);
- 	struct rq *rq = rq_of_dl_rq(dl_rq);
-@@ -382,14 +383,14 @@ static void update_dl_entity(struct sched_dl_entity *dl_se)
- 	 * the actual scheduling parameters have to be "renewed".
- 	 */
- 	if (dl_se->dl_new) {
--		setup_new_dl_entity(dl_se);
-+		setup_new_dl_entity(dl_se, pi_se);
- 		return;
- 	}
- 
- 	if (dl_time_before(dl_se->deadline, rq->clock) ||
--	    dl_entity_overflow(dl_se, rq->clock)) {
--		dl_se->deadline = rq->clock + dl_se->dl_deadline;
--		dl_se->runtime = dl_se->dl_runtime;
-+	    dl_entity_overflow(dl_se, pi_se, rq->clock)) {
-+		dl_se->deadline = rq->clock + pi_se->dl_deadline;
-+		dl_se->runtime = pi_se->dl_runtime;
- 	}
- }
- 
-@@ -403,7 +404,7 @@ static void update_dl_entity(struct sched_dl_entity *dl_se)
-  * actually started or not (i.e., the replenishment instant is in
-  * the future or in the past).
-  */
--static int start_dl_timer(struct sched_dl_entity *dl_se)
-+static int start_dl_timer(struct sched_dl_entity *dl_se, bool boosted)
- {
- 	struct dl_rq *dl_rq = dl_rq_of_se(dl_se);
- 	struct rq *rq = rq_of_dl_rq(dl_rq);
-@@ -412,6 +413,8 @@ static int start_dl_timer(struct sched_dl_entity *dl_se)
- 	unsigned long range;
- 	s64 delta;
- 
-+	if (boosted)
-+		return 0;
- 	/*
- 	 * We want the timer to fire at the deadline, but considering
- 	 * that it is actually coming from rq->clock and not from
-@@ -586,7 +589,7 @@ static void update_curr_dl(struct rq *rq)
- 	dl_se->runtime -= delta_exec;
- 	if (dl_runtime_exceeded(rq, dl_se)) {
- 		__dequeue_task_dl(rq, curr, 0);
--		if (likely(start_dl_timer(dl_se)))
-+		if (likely(start_dl_timer(dl_se, curr->dl.dl_boosted)))
- 			dl_se->dl_throttled = 1;
- 		else
- 			enqueue_task_dl(rq, curr, ENQUEUE_REPLENISH);
-@@ -741,7 +744,8 @@ static void __dequeue_dl_entity(struct sched_dl_entity *dl_se)
- }
- 
- static void
--enqueue_dl_entity(struct sched_dl_entity *dl_se, int flags)
-+enqueue_dl_entity(struct sched_dl_entity *dl_se,
-+		  struct sched_dl_entity *pi_se, int flags)
- {
- 	BUG_ON(on_dl_rq(dl_se));
- 
-@@ -751,9 +755,9 @@ enqueue_dl_entity(struct sched_dl_entity *dl_se, int flags)
- 	 * we want a replenishment of its runtime.
- 	 */
- 	if (!dl_se->dl_new && flags & ENQUEUE_REPLENISH)
--		replenish_dl_entity(dl_se);
-+		replenish_dl_entity(dl_se, pi_se);
- 	else
--		update_dl_entity(dl_se);
-+		update_dl_entity(dl_se, pi_se);
- 
- 	__enqueue_dl_entity(dl_se);
- }
-@@ -765,6 +769,18 @@ static void dequeue_dl_entity(struct sched_dl_entity *dl_se)
- 
- static void enqueue_task_dl(struct rq *rq, struct task_struct *p, int flags)
- {
-+	struct task_struct *pi_task = p->pi_top_task;
-+	struct sched_dl_entity *pi_se = &p->dl;
-+
-+	/*
-+	 * Use the scheduling parameters of the top pi-waiter
-+	 * task if we have one and its (relative) deadline is
-+	 * smaller than our one... OTW we keep our runtime and
-+	 * deadline.
-+	 */
-+	if (pi_task && p->dl.dl_boosted && dl_prio(pi_task->normal_prio))
-+		pi_se = &pi_task->dl;
-+
- 	/*
- 	 * If p is throttled, we do nothing. In fact, if it exhausted
- 	 * its budget it needs a replenishment and, since it now is on
-@@ -774,7 +790,7 @@ static void enqueue_task_dl(struct rq *rq, struct task_struct *p, int flags)
- 	if (p->dl.dl_throttled)
- 		return;
- 
--	enqueue_dl_entity(&p->dl, flags);
-+	enqueue_dl_entity(&p->dl, pi_se, flags);
- 
- 	if (!task_current(rq, p) && p->nr_cpus_allowed > 1)
- 		enqueue_pushable_dl_task(rq, p);
-@@ -1013,8 +1029,7 @@ static void task_dead_dl(struct task_struct *p)
- {
- 	struct hrtimer *timer = &p->dl.dl_timer;
- 
--	if (hrtimer_active(timer))
--		hrtimer_try_to_cancel(timer);
-+	hrtimer_cancel(timer);
- }
- 
- static void set_curr_task_dl(struct rq *rq)
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index b04aeed..4da50db 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -105,6 +105,20 @@ static inline int task_has_dl_policy(struct task_struct *p)
- 	return dl_policy(p->policy);
- }
- 
-+static inline int dl_time_before(u64 a, u64 b)
++int sched_setscheduler2(struct task_struct *p, int policy,
++			  const struct sched_param2 *param2)
 +{
-+	return (s64)(a - b) < 0;
++	return __sched_setscheduler(p, policy, param2, true);
++}
++EXPORT_SYMBOL_GPL(sched_setscheduler2);
++
+ /**
+  * sched_setscheduler_nocheck - change the scheduling policy and/or RT priority of a thread from kernelspace.
+  * @p: the task in question.
+@@ -3470,7 +3481,10 @@ EXPORT_SYMBOL_GPL(sched_setscheduler);
+ int sched_setscheduler_nocheck(struct task_struct *p, int policy,
+ 			       const struct sched_param *param)
+ {
+-	return __sched_setscheduler(p, policy, param, false);
++	struct sched_param2 param2 = {
++		.sched_priority = param->sched_priority
++	};
++	return __sched_setscheduler(p, policy, &param2, false);
+ }
+ 
+ static int
+@@ -3495,6 +3509,31 @@ do_sched_setscheduler(pid_t pid, int policy, struct sched_param __user *param)
+ 	return retval;
+ }
+ 
++static int
++do_sched_setscheduler2(pid_t pid, int policy,
++			 struct sched_param2 __user *param2)
++{
++	struct sched_param2 lparam2;
++	struct task_struct *p;
++	int retval;
++
++	if (!param2 || pid < 0)
++		return -EINVAL;
++
++	memset(&lparam2, 0, sizeof(struct sched_param2));
++	if (copy_from_user(&lparam2, param2, sizeof(struct sched_param2)))
++		return -EFAULT;
++
++	rcu_read_lock();
++	retval = -ESRCH;
++	p = find_process_by_pid(pid);
++	if (p != NULL)
++		retval = sched_setscheduler2(p, policy, &lparam2);
++	rcu_read_unlock();
++
++	return retval;
 +}
 +
-+/*
-+ * Tells if entity @a should preempt entity @b.
+ /**
+  * sys_sched_setscheduler - set/change the scheduler policy and RT priority
+  * @pid: the pid in question.
+@@ -3514,6 +3553,21 @@ SYSCALL_DEFINE3(sched_setscheduler, pid_t, pid, int, policy,
+ }
+ 
+ /**
++ * sys_sched_setscheduler2 - same as above, but with extended sched_param
++ * @pid: the pid in question.
++ * @policy: new policy (could use extended sched_param).
++ * @param: structure containg the extended parameters.
 + */
-+static inline
-+int dl_entity_preempt(struct sched_dl_entity *a, struct sched_dl_entity *b)
++SYSCALL_DEFINE3(sched_setscheduler2, pid_t, pid, int, policy,
++		struct sched_param2 __user *, param2)
 +{
-+	return dl_time_before(a->deadline, b->deadline);
++	if (policy < 0)
++		return -EINVAL;
++
++	return do_sched_setscheduler2(pid, policy, param2);
 +}
 +
- /*
-  * This is the priority-queue data structure of the RT scheduling class:
-  */
++/**
+  * sys_sched_setparam - set/change the RT priority of a thread
+  * @pid: the pid in question.
+  * @param: structure containing the new RT priority.
+@@ -3526,6 +3580,17 @@ SYSCALL_DEFINE2(sched_setparam, pid_t, pid, struct sched_param __user *, param)
+ }
+ 
+ /**
++ * sys_sched_setparam2 - same as above, but with extended sched_param
++ * @pid: the pid in question.
++ * @param2: structure containing the extended parameters.
++ */
++SYSCALL_DEFINE2(sched_setparam2, pid_t, pid,
++		struct sched_param2 __user *, param2)
++{
++	return do_sched_setscheduler2(pid, -1, param2);
++}
++
++/**
+  * sys_sched_getscheduler - get the policy (scheduling class) of a thread
+  * @pid: the pid in question.
+  *
+@@ -3595,6 +3660,45 @@ out_unlock:
+ 	return retval;
+ }
+ 
++/**
++ * sys_sched_getparam2 - same as above, but with extended sched_param
++ * @pid: the pid in question.
++ * @param2: structure containing the extended parameters.
++ */
++SYSCALL_DEFINE2(sched_getparam2, pid_t, pid,
++		struct sched_param2 __user *, param2)
++{
++	struct sched_param2 lp;
++	struct task_struct *p;
++	int retval;
++
++	if (!param2 || pid < 0)
++		return -EINVAL;
++
++	rcu_read_lock();
++	p = find_process_by_pid(pid);
++	retval = -ESRCH;
++	if (!p)
++		goto out_unlock;
++
++	retval = security_task_getscheduler(p);
++	if (retval)
++		goto out_unlock;
++
++	lp.sched_priority = p->rt_priority;
++	rcu_read_unlock();
++
++	retval = copy_to_user(param2, &lp,
++			sizeof(struct sched_param2)) ? -EFAULT : 0;
++
++	return retval;
++
++out_unlock:
++	rcu_read_unlock();
++	return retval;
++
++}
++
+ long sched_setaffinity(pid_t pid, const struct cpumask *in_mask)
+ {
+ 	cpumask_var_t cpus_allowed, new_mask;
 -- 
 1.7.9.5
 
