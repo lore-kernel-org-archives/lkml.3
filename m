@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758048Ab3JNUQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 16:16:56 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:39077 "EHLO
+	id S932294Ab3JNUSi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 16:18:38 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:39047 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757747Ab3JNUDI (ORCPT
+	with ESMTP id S1757726Ab3JNUDH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 16:03:08 -0400
+	Mon, 14 Oct 2013 16:03:07 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 149/161] tools/perf/build: Fix DPACKAGE definitions for the libbfd et al testcases
-Date: Mon, 14 Oct 2013 17:02:18 -0300
-Message-Id: <1381780950-25642-150-git-send-email-acme@infradead.org>
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 087/161] perf evlist: Introduce perf_evlist__new_default function
+Date: Mon, 14 Oct 2013 17:01:16 -0300
+Message-Id: <1381780950-25642-88-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1381780950-25642-1-git-send-email-acme@infradead.org>
 References: <1381780950-25642-1-git-send-email-acme@infradead.org>
@@ -25,58 +29,129 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ingo Molnar <mingo@kernel.org>
+From: Jiri Olsa <jolsa@redhat.com>
 
-Namhyung Kim reported these duplicate DPACKAGE definitions:
+Adding new common function to create evlist with default event. It
+spares some code lines in automated tests.
 
-  test-libbfd:
-       $(BUILD) -DPACKAGE='perf' -DPACKAGE=perf -lbfd -ldl
-
-Fix all affected places and use Namhyung's suggestion that the
-definition should look like a normal C string: -DPACKAGE='"perf"'.
-
-Reported-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1378031796-17892-4-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/config/feature-checks/Makefile | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ tools/perf/tests/perf-record.c | 12 +-----------
+ tools/perf/tests/task-exit.c   | 14 ++------------
+ tools/perf/util/evlist.c       | 12 ++++++++++++
+ tools/perf/util/evlist.h       |  1 +
+ 4 files changed, 16 insertions(+), 23 deletions(-)
 
-diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
-index 8ecac1908d5e..cf33596c7300 100644
---- a/tools/perf/config/feature-checks/Makefile
-+++ b/tools/perf/config/feature-checks/Makefile
-@@ -37,7 +37,7 @@ BUILD = $(CC) $(LDFLAGS) -o $(OUTPUT)$@ $@.c
- ###############################
+diff --git a/tools/perf/tests/perf-record.c b/tools/perf/tests/perf-record.c
+index b8a7056519ac..82ac71550091 100644
+--- a/tools/perf/tests/perf-record.c
++++ b/tools/perf/tests/perf-record.c
+@@ -45,7 +45,7 @@ int test__PERF_RECORD(void)
+ 	};
+ 	cpu_set_t cpu_mask;
+ 	size_t cpu_mask_size = sizeof(cpu_mask);
+-	struct perf_evlist *evlist = perf_evlist__new();
++	struct perf_evlist *evlist = perf_evlist__new_default();
+ 	struct perf_evsel *evsel;
+ 	struct perf_sample sample;
+ 	const char *cmd = "sleep";
+@@ -66,16 +66,6 @@ int test__PERF_RECORD(void)
+ 	}
  
- test-all:
--	$(BUILD) -Werror -fstack-protector -fstack-protector-all -Wvolatile-register-var -O2 -Werror -D_FORTIFY_SOURCE=2 -ldw -lelf -lnuma -lunwind -lunwind-x86_64 -lelf -laudit -I/usr/include/slang -lslang $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null) $(FLAGS_PERL_EMBED) $(FLAGS_PYTHON_EMBED) -DPACKAGE='perf' -DPACKAGE=perf -lbfd -ldl
-+	$(BUILD) -Werror -fstack-protector -fstack-protector-all -Wvolatile-register-var -O2 -Werror -D_FORTIFY_SOURCE=2 -ldw -lelf -lnuma -lunwind -lunwind-x86_64 -lelf -laudit -I/usr/include/slang -lslang $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null) $(FLAGS_PERL_EMBED) $(FLAGS_PYTHON_EMBED) -DPACKAGE='"perf"' -lbfd -ldl
+ 	/*
+-	 * We need at least one evsel in the evlist, use the default
+-	 * one: "cycles".
+-	 */
+-	err = perf_evlist__add_default(evlist);
+-	if (err < 0) {
+-		pr_debug("Not enough memory to create evsel\n");
+-		goto out_delete_evlist;
+-	}
+-
+-	/*
+ 	 * Create maps of threads and cpus to monitor. In this case
+ 	 * we start with all threads and cpus (-1, -1) but then in
+ 	 * perf_evlist__prepare_workload we'll fill in the only thread
+diff --git a/tools/perf/tests/task-exit.c b/tools/perf/tests/task-exit.c
+index 28fe5894b061..b07f8a14e15d 100644
+--- a/tools/perf/tests/task-exit.c
++++ b/tools/perf/tests/task-exit.c
+@@ -37,20 +37,11 @@ int test__task_exit(void)
+ 	signal(SIGCHLD, sig_handler);
+ 	signal(SIGUSR1, sig_handler);
  
- test-hello:
- 	$(BUILD)
-@@ -123,13 +123,13 @@ test-libpython-version:
- 	$(BUILD) $(FLAGS_PYTHON_EMBED)
+-	evlist = perf_evlist__new();
++	evlist = perf_evlist__new_default();
+ 	if (evlist == NULL) {
+-		pr_debug("perf_evlist__new\n");
++		pr_debug("perf_evlist__new_default\n");
+ 		return -1;
+ 	}
+-	/*
+-	 * We need at least one evsel in the evlist, use the default
+-	 * one: "cycles".
+-	 */
+-	err = perf_evlist__add_default(evlist);
+-	if (err < 0) {
+-		pr_debug("Not enough memory to create evsel\n");
+-		goto out_free_evlist;
+-	}
  
- test-libbfd:
--	$(BUILD) -DPACKAGE='perf' -DPACKAGE=perf -lbfd -ldl
-+	$(BUILD) -DPACKAGE='"perf"' -lbfd -ldl
+ 	/*
+ 	 * Create maps of threads and cpus to monitor. In this case
+@@ -117,7 +108,6 @@ out_close_evlist:
+ 	perf_evlist__close(evlist);
+ out_delete_maps:
+ 	perf_evlist__delete_maps(evlist);
+-out_free_evlist:
+ 	perf_evlist__delete(evlist);
+ 	return err;
+ }
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index d21ab0812926..f0d71a9d49f4 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -50,6 +50,18 @@ struct perf_evlist *perf_evlist__new(void)
+ 	return evlist;
+ }
  
- test-liberty:
--	$(CC) -o $(OUTPUT)$@ test-libbfd.c -DPACKAGE='perf' -DPACKAGE=perf -lbfd -ldl -liberty
-+	$(CC) -o $(OUTPUT)$@ test-libbfd.c -DPACKAGE='"perf"' -lbfd -ldl -liberty
++struct perf_evlist *perf_evlist__new_default(void)
++{
++	struct perf_evlist *evlist = perf_evlist__new();
++
++	if (evlist && perf_evlist__add_default(evlist)) {
++		perf_evlist__delete(evlist);
++		evlist = NULL;
++	}
++
++	return evlist;
++}
++
+ /**
+  * perf_evlist__set_id_pos - set the positions of event ids.
+  * @evlist: selected event list
+diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+index 4edb5008fd36..871b55ab5dee 100644
+--- a/tools/perf/util/evlist.h
++++ b/tools/perf/util/evlist.h
+@@ -53,6 +53,7 @@ struct perf_evsel_str_handler {
+ };
  
- test-liberty-z:
--	$(CC) -o $(OUTPUT)$@ test-libbfd.c -DPACKAGE='perf' -DPACKAGE=perf -lbfd -ldl -liberty -lz
-+	$(CC) -o $(OUTPUT)$@ test-libbfd.c -DPACKAGE='"perf"' -lbfd -ldl -liberty -lz
- 
- test-cplus-demangle:
- 	$(BUILD) -liberty
+ struct perf_evlist *perf_evlist__new(void);
++struct perf_evlist *perf_evlist__new_default(void);
+ void perf_evlist__init(struct perf_evlist *evlist, struct cpu_map *cpus,
+ 		       struct thread_map *threads);
+ void perf_evlist__exit(struct perf_evlist *evlist);
 -- 
 1.8.1.4
 
