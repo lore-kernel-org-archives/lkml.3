@@ -1,111 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757463Ab3JNRln (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 13:41:43 -0400
-Received: from mail-vb0-f49.google.com ([209.85.212.49]:53646 "EHLO
-	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756831Ab3JNRll (ORCPT
+	id S1756983Ab3JNRvw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 13:51:52 -0400
+Received: from smtprelay0230.hostedemail.com ([216.40.44.230]:51547 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756362Ab3JNRvv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 13:41:41 -0400
-From: "Geyslan G. Bem" <geyslan@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: "Geyslan G. Bem" <geyslan@gmail.com>
-Subject: [PATCH] fs/fhandle.c: 'handle_to_path' function reorganization
-Date: Mon, 14 Oct 2013 14:37:02 -0300
-Message-Id: <1381772222-21323-1-git-send-email-geyslan@gmail.com>
-X-Mailer: git-send-email 1.8.4
+	Mon, 14 Oct 2013 13:51:51 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:968:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3872:3874:4321:5007:6119:6691:7652:8531:8603:10004:10400:10848:11658:11914:12043:12517:12519:12740:13069:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: mask58_ff4c62c13d3b
+X-Filterd-Recvd-Size: 1793
+Message-ID: <1381773108.25528.22.camel@joe-AO722>
+Subject: Re: [PATCH] checkpatch: Allow spaces before the ':' of a bitfield
+From: Joe Perches <joe@perches.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: linux-kernel@vger.kernel.org,
+        Nandini Hanumanthagowda <nandu.hgowda@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andy Whitcroft <apw@canonical.com>
+Date: Mon, 14 Oct 2013 10:51:48 -0700
+In-Reply-To: <20131014173207.GE16517@jtriplet-mobl1>
+References: <20131013121635.GA29395@nandinih-Inspiron-5521>
+	 <20131013153943.GA27861@kroah.com>
+	 <687af3bd-edc6-40cf-b994-0d0fdb7cd30d@googlegroups.com>
+	 <20131014173207.GE16517@jtriplet-mobl1>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reorganization:
+On Mon, 2013-10-14 at 10:32 -0700, Josh Triplett wrote:
+> checkpatch warns about spaces both before and after the ':' separating a
+> bitfield name from its width.  However, many drivers do put space before
+> the : to line up the widths, which makes the definition significantly
+> more readable; checkpatch should not warn about that.  Remove the
+> warning for space before the ':' of a bitfield.
 
-Removes the exiting labels and adds direct return, once that
-there is only one cleanup necessity.
+There are a _bunch_ of different styles used for
+alignment of bitfields.
 
-Removes 'retval' and 'file_handle' prior assignments due this new
-approach.
+$ grep -rPh --include=*.[ch] \
+  '(?:unsigned\s+|signed\s+|)(char|short|long|long\s+long|\w+_t|(?:__|)(?:u|s)(?:8|16|32|64))\s+\w+\s*:\s*\d+\s*(?:,|;)' *
 
-Adds 'size' and 'byte' variables to make the code cleaner and more
-understandable.
+spaces before colon
+spaces after colon
+aligned on bitfield size
 
-Uses 'memdup_user' instead 'kmalloc' + 'copy_from_user'.
+I'd just as soon make it a --strict check.
 
-Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
----
- fs/fhandle.c | 48 ++++++++++++++++++------------------------------
- 1 file changed, 18 insertions(+), 30 deletions(-)
-
-diff --git a/fs/fhandle.c b/fs/fhandle.c
-index 999ff5c..56b120d 100644
---- a/fs/fhandle.c
-+++ b/fs/fhandle.c
-@@ -166,47 +166,35 @@ out_err:
- static int handle_to_path(int mountdirfd, struct file_handle __user *ufh,
- 		   struct path *path)
- {
--	int retval = 0;
-+	int retval;
- 	struct file_handle f_handle;
--	struct file_handle *handle = NULL;
-+	struct file_handle *handle;
-+	unsigned int size, bytes;
- 
- 	/*
- 	 * With handle we don't look at the execute bit on the
- 	 * the directory. Ideally we would like CAP_DAC_SEARCH.
- 	 * But we don't have that
- 	 */
--	if (!capable(CAP_DAC_READ_SEARCH)) {
--		retval = -EPERM;
--		goto out_err;
--	}
--	if (copy_from_user(&f_handle, ufh, sizeof(struct file_handle))) {
--		retval = -EFAULT;
--		goto out_err;
--	}
--	if ((f_handle.handle_bytes > MAX_HANDLE_SZ) ||
--	    (f_handle.handle_bytes == 0)) {
--		retval = -EINVAL;
--		goto out_err;
--	}
--	handle = kmalloc(sizeof(struct file_handle) + f_handle.handle_bytes,
--			 GFP_KERNEL);
--	if (!handle) {
--		retval = -ENOMEM;
--		goto out_err;
--	}
--	/* copy the full handle */
--	if (copy_from_user(handle, ufh,
--			   sizeof(struct file_handle) +
--			   f_handle.handle_bytes)) {
--		retval = -EFAULT;
--		goto out_handle;
--	}
-+	if (!capable(CAP_DAC_READ_SEARCH))
-+		return -EPERM;
-+
-+	size = sizeof(struct file_handle);
-+	if (copy_from_user(&f_handle, ufh, size))
-+		return -EFAULT;
-+
-+	bytes = f_handle.handle_bytes;
-+	if ((bytes > MAX_HANDLE_SZ) || (bytes == 0))
-+		return -EINVAL;
-+
-+	size += bytes;
-+	handle = memdup_user(ufh, size);
-+	if (IS_ERR(handle))
-+		return PTR_ERR(handle);
- 
- 	retval = do_handle_to_path(mountdirfd, handle, path);
- 
--out_handle:
- 	kfree(handle);
--out_err:
- 	return retval;
- }
- 
--- 
-1.8.4
 
