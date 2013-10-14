@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755965Ab3JNLTE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 07:19:04 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:53872 "EHLO
+	id S1756006Ab3JNLYb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 07:24:31 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:54020 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753797Ab3JNLTC (ORCPT
+	with ESMTP id S1753797Ab3JNLYa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 07:19:02 -0400
-Date: Mon, 14 Oct 2013 13:18:42 +0200
+	Mon, 14 Oct 2013 07:24:30 -0400
+Date: Mon, 14 Oct 2013 13:24:10 +0200
 From: Peter Zijlstra <peterz@infradead.org>
 To: Juri Lelli <juri.lelli@gmail.com>
 Cc: tglx@linutronix.de, mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com,
@@ -22,7 +22,7 @@ Cc: tglx@linutronix.de, mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com,
         vincent.guittot@linaro.org,
         bruce.ashfield@windriver.com--no-chain-reply-to
 Subject: Re: [PATCH 03/14] sched: SCHED_DEADLINE structures & implementation.
-Message-ID: <20131014111842.GB3081@twins.programming.kicks-ass.net>
+Message-ID: <20131014112410.GC3081@twins.programming.kicks-ass.net>
 References: <1381747426-31334-1-git-send-email-juri.lelli@gmail.com>
  <1381747426-31334-4-git-send-email-juri.lelli@gmail.com>
 MIME-Version: 1.0
@@ -35,22 +35,37 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Mon, Oct 14, 2013 at 12:43:35PM +0200, Juri Lelli wrote:
-> @@ -1693,8 +1701,14 @@ void sched_fork(struct task_struct *p)
->  		p->sched_reset_on_fork = 0;
->  	}
->  
-> -	if (!rt_prio(p->prio))
-> +	if (dl_prio(p->prio)) {
-> +		put_cpu();
-> +		return -EAGAIN;
+> +/*
+> + * We are being explicitly informed that a new instance is starting,
+> + * and this means that:
+> + *  - the absolute deadline of the entity has to be placed at
+> + *    current time + relative deadline;
+> + *  - the runtime of the entity has to be set to the maximum value.
+> + *
+> + * The capability of specifying such event is useful whenever a -deadline
+> + * entity wants to (try to!) synchronize its behaviour with the scheduler's
+> + * one, and to (try to!) reconcile itself with its own scheduling
+> + * parameters.
+> + */
+> +static inline void setup_new_dl_entity(struct sched_dl_entity *dl_se)
+> +{
+> +	struct dl_rq *dl_rq = dl_rq_of_se(dl_se);
+> +	struct rq *rq = rq_of_dl_rq(dl_rq);
+> +
+> +	WARN_ON(!dl_se->dl_new || dl_se->dl_throttled);
+> +
+> +	/*
+> +	 * We use the regular wall clock time to set deadlines in the
+> +	 * future; in fact, we must consider execution overheads (time
+> +	 * spent on hardirq context, etc.).
+> +	 */
+> +	dl_se->deadline = rq->clock + dl_se->dl_deadline;
+> +	dl_se->runtime = dl_se->dl_runtime;
+> +	dl_se->dl_new = 0;
+> +}
 
-Is this really the error we want to return on fork()?
+78becc270975 sched: Use an accessor to read the rq clock
 
-EAGAIN to me indicates a spurious error and we should try again later;
-however as it obvious from the code above; we'll always fail, there's no
-point in trying again later.
+wants you to use rq_clock(rq) there I think.
 
-I would think something like EINVAL; even though there are no arguments
-to fork(); would me a better option.
 
-Then again; I really don't care too much; anybody any preferences?
