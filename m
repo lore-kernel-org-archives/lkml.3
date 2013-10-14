@@ -1,51 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756436Ab3JNMo7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 08:44:59 -0400
-Received: from mga14.intel.com ([143.182.124.37]:51302 "EHLO mga14.intel.com"
+	id S1756494Ab3JNMpe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 08:45:34 -0400
+Received: from mga03.intel.com ([143.182.124.21]:10367 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756084Ab3JNMo6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 08:44:58 -0400
+	id S1756082Ab3JNMpc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 08:45:32 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,492,1378882800"; 
-   d="scan'208";a="410602018"
-Message-ID: <525BE745.6000305@linux.intel.com>
-Date: Mon, 14 Oct 2013 15:44:53 +0300
-From: Jarkko Nikula <jarkko.nikula@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
-MIME-Version: 1.0
-To: Zhang Rui <rui.zhang@intel.com>
-CC: Mika Westerberg <mika.westerberg@linux.intel.com>, rjw@sisk.pl,
-        linux-acpi@vger.kernel.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] ACPI: add module autoloading support for ACPI enumerated
- devices
-References: <1381741834-7334-1-git-send-email-rui.zhang@intel.com>  <20131014101423.GE3521@intel.com> <1381749388.2034.28.camel@rzhang1-mobl4>
-In-Reply-To: <1381749388.2034.28.camel@rzhang1-mobl4>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+   d="scan'208";a="374435788"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: Max Filippov <jcmvbkbc@gmail.com>, Chris Zankel <chris@zankel.net>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-arch@vger.kernel.org, linux-xtensa@linux-xtensa.org,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: [PATCH 1/2] mm: try to detect that page->ptl is in use
+Date: Mon, 14 Oct 2013 15:45:22 +0300
+Message-Id: <1381754723-21783-1-git-send-email-kirill.shutemov@linux.intel.com>
+X-Mailer: git-send-email 1.8.4.rc3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+prep_new_page() initialize page->private (and therefore page->ptl) with
+0. Make sure nobody took it in use in between allocation of the page and
+page table constructor.
 
-On 10/14/2013 02:16 PM, Zhang Rui wrote:
-> On Mon, 2013-10-14 at 13:14 +0300, Mika Westerberg wrote:
->> For the three patches.
->>
->> I wonder if we should do the same for SPI bus as well?
->>
-> yes, you are right.
-> Actually, I should check for buses that supports
-> acpi_driver_match_device() and fix them all.
-> Will add it in next version.
->
-You could have my pre- "Tested-by: Jarkko Nikula 
-<jarkko.nikula@linux.intel.com>".
+It can happen if arch try to use slab for page table allocation: slab
+code uses page->slab_cache and page->first_page (for tail pages), which
+share storage with page->ptl.
 
-With your set I see bunch of failing modprobe calls from udev for 
-i2c:INTABCD:xy and platform:INTDCBA:xy modaliases gone.
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+---
+ Documentation/vm/split_page_table_lock | 4 ++++
+ include/linux/mm.h                     | 9 +++++++++
+ 2 files changed, 13 insertions(+)
 
+diff --git a/Documentation/vm/split_page_table_lock b/Documentation/vm/split_page_table_lock
+index e2f617b732..3c54f7dca2 100644
+--- a/Documentation/vm/split_page_table_lock
++++ b/Documentation/vm/split_page_table_lock
+@@ -53,6 +53,10 @@ There's no need in special enabling of PTE split page table lock:
+ everything required is done by pgtable_page_ctor() and pgtable_page_dtor(),
+ which must be called on PTE table allocation / freeing.
+ 
++Make sure the architecture doesn't use slab allocator for page table
++allacation: slab uses page->slab_cache and page->first_page for its pages.
++These fields share storage with page->ptl.
++
+ PMD split lock only makes sense if you have more than two page table
+ levels.
+ 
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 658e8b317f..9a4a873b2f 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1262,6 +1262,15 @@ static inline spinlock_t *pte_lockptr(struct mm_struct *mm, pmd_t *pmd)
+ 
+ static inline bool ptlock_init(struct page *page)
+ {
++	/*
++	 * prep_new_page() initialize page->private (and therefore page->ptl)
++	 * with 0. Make sure nobody took it in use in between.
++	 *
++	 * It can happen if arch try to use slab for page table allocation:
++	 * slab code uses page->slab_cache and page->first_page (for tail
++	 * pages), which share storage with page->ptl.
++	 */
++	VM_BUG_ON(page->ptl);
+ 	if (!ptlock_alloc(page))
+ 		return false;
+ 	spin_lock_init(ptlock_ptr(page));
 -- 
-Jarkko
+1.8.4.rc3
+
