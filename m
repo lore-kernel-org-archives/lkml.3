@@ -1,83 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758895Ab3JNUzq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 16:55:46 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:53772 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757663Ab3JNUzo (ORCPT
+	id S1758913Ab3JNU5s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 16:57:48 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:61944 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757643Ab3JNU5q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 16:55:44 -0400
-Date: Mon, 14 Oct 2013 16:55:40 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Zhang Yanfei <zhangyanfei.yes@gmail.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Toshi Kani <toshi.kani@hp.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH part2 v2 0/8] Arrange hotpluggable memory as ZONE_MOVABLE
-Message-ID: <20131014205540.GM4722@htj.dyndns.org>
-References: <525BFCF3.5010908@gmail.com>
- <20131014142719.GI4722@htj.dyndns.org>
- <525C02DC.4050706@gmail.com>
- <20131014145131.GJ4722@htj.dyndns.org>
- <525C0866.2010808@gmail.com>
- <20131014151902.GL4722@htj.dyndns.org>
- <525C0EFE.2010409@gmail.com>
- <CAE9FiQX0xeR61ehPy2SfWfN-fgSZVS=dtaWT-QQ+RR12tx+A0w@mail.gmail.com>
- <20131014200437.GA5720@htj.dyndns.org>
- <CAE9FiQXCG6gR-XL9fVudpNVEdS-3MHPObfWQ=Uf=q7pv33QBOA@mail.gmail.com>
+	Mon, 14 Oct 2013 16:57:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAE9FiQXCG6gR-XL9fVudpNVEdS-3MHPObfWQ=Uf=q7pv33QBOA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+55aFw64xTR7LXjo5OfUvRwDb9UF8EcfjguAbF0C3VsUXCecg@mail.gmail.com>
+References: <20131014154627.GA9525@redhat.com>
+	<CA+55aFw64xTR7LXjo5OfUvRwDb9UF8EcfjguAbF0C3VsUXCecg@mail.gmail.com>
+Date: Mon, 14 Oct 2013 13:57:45 -0700
+X-Google-Sender-Auth: nHtt2Il2pPOsQbSnVVYq69_IlP0
+Message-ID: <CA+55aFxOpT9YLf7WLM+SOsp5U2R1-Px0LiEsdqV0Adr897dOqQ@mail.gmail.com>
+Subject: Re: epoll oops.
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Davide Libenzi <davidel@xmailserver.org>,
+        Eric Wong <normalperson@yhbt.net>, Oleg Nesterov <oleg@redhat.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Peter Hurley <peter@hurleysoftware.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+[ Adding Pekka to verify the SLAB_DESTROY_BY_RCU semantics, and Peter
+Hurley due to the possible tty association ]
 
-On Mon, Oct 14, 2013 at 01:37:20PM -0700, Yinghai Lu wrote:
-> The problem is how to define "amount necessary". If we can parse srat early,
-> then we could just map RAM for all boot nodes one time, instead of try some
-> small and then after SRAT table, expand it cover non-boot nodes.
+On Mon, Oct 14, 2013 at 10:31 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> Oleg, does this trigger any memory for you? Commit 971316f0503a
+> ("epoll: ep_unregister_pollwait() can use the freed pwq->whead") just
+> makes me go "Hmm, this is *exactly* that that commit is talking
+> about.."
 
-Wouldn't that amount be fairly static and restricted?  If you wanna
-chunk memory init anyway, there's no reason to init more than
-necessary until smp stage is reached.  The more you do early, the more
-serialized you're, so wouldn't the goal naturally be initing the
-minimum possible?
+Ok, Oleg, going back to that whole thread, I think that old bug went like this:
 
-> To keep non-boot numa node hot-removable. we need to page table (and other
-> that we allocate during boot stage) on ram of non boot nodes, or their
-> local node ram.  (share page table always should be on boot nodes).
+ (a) normally all the wait-queues that epoll accesses are associated
+with files, and as such they cannot go away for any normal file
+activity. If the file exists, the waitqueue used for poll() on that
+file must exist.
 
-The above assumes the followings,
+ (b) signalfd is special, and it does a
 
-* 4k page mappings.  It'd be nice to keep everything working for 4k
-  but just following SRAT isn't enough.  What if the non-hotpluggable
-  boot node doesn't stretch high enough and page table reaches down
-  too far?  This won't be an optional behavior, so it is actually
-  *likely* to happen on certain setups.
+        poll_wait(file, &current->sighand->signalfd_wqh);
 
-* Memory hotplug is at NUMA node granularity instead of device.
+     which means that the wait-queue isn't associated with the file
+lifetime at all. It cleans it up with signalfd_cleanup() if the signal
+handlers are removed. Normal (non-epoll) handling is safe, because
+"current->sighand" obviously cannot go away as long as the current
+thread (doing the polling) is in its poll/select handling.
 
-> > Optimizing NUMA boot just requires moving the heavy lifting to
-> > appropriate NUMA nodes.  It doesn't require that early boot phase
-> > should strictly follow NUMA node boundaries.
-> 
-> At end of day, I like to see all numa system (ram/cpu/pci) could have
-> non boot nodes to be hot-removed logically. with any boot command
-> line.
+ (c) as a result, epoll and exit() can race, since the normal epoll
+cleanup() is serialized by the file being closed, and we're missing
+that for the case of sighand going away.
 
-I suppose you mean "without any boot command line"?  Sure, but, first
-of all, there is a clear performance trade-off, and, secondly, don't
-we want something finer grained?  Why would we want to that per-NUMA
-node, which is extremely coarse?
+ (d) we have this magic POLLFREE protocol to make signal handling
+cleanup inform the epoll logic that "oops, this is going away", and we
+depend on the underlying sighand data not going away thanks to the
+eventual destruction of the slab being delayed by RCU.
 
-Thanks.
+ (e) we are also very careful to only ever initialize the signalfd_wqh
+entry in the SLAB *constructor*, because we cannot do it at every
+allocation: it might still be in reused as long as it exists in the
+slab cache: the SLAB_DESTROY_BY_RCU flag does *not* delay individual
+slab entries, it only delays the final free of the underlying memory
+allocation.
 
--- 
-tejun
+ (f) to make things even more exciting, the SLAB_DESTROY_BY_RCU depend
+on the slab implementation: slub and slob seem to delay each
+individual allocation (and do ctor/dtor on every allocation), while
+slab does that "delay only the underlying big page allocator" thing.
+
+Agreed so far? Ugly, ugly, ugly, and I think there's exactly one
+person who understands all of this. Namely you.
+
+Anyway, so we protect the magic wait_queue_head_t from going away from
+under us. We even make sure that we are very careful about only
+initializing the sighand spinlock and this magic signalfd_wqh only
+once per RCU lifetime. We're going to a lot of trouble to make this
+all work. And it looks like it should work.
+
+BUT.
+
+It's enough that *one* other user of "poll_wait()" does something
+similar to signalfd, and *doesn't* go through all this effort to make
+it ok.
+
+And I see a few worrisome cases. For example, look at "tty_poll()". It
+ends up doing something very similar, except it uses the tty instead
+of sighand. And exactly like the sighand struct, the tty allocation
+lifespan can - thanks to hangup() - be shorter than the file
+allocation lifespan.
+
+Peter? Does a tty hangup end up actually possibly freeing the tty
+struct? Looking at it, I'm starting to think that it only affects
+f_op, and the "struct tty" stays around, in which case this is all
+fine.
+
+Hmm? There might be other cases..
+
+                    Linus
