@@ -1,124 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756588Ab3JNM7D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 08:59:03 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52282 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756487Ab3JNM7A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 08:59:00 -0400
-Date: Mon, 14 Oct 2013 14:58:58 +0200
-From: Jan Kara <jack@suse.cz>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: linux-kernel@vger.kernel.org, Ted Tso <tytso@mit.edu>,
-        Jan Kara <jack@suse.cz>, linux-ext4@vger.kernel.org,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH] ext4: fix checking on nr_to_write
-Message-ID: <20131014125858.GH19604@quack.suse.cz>
-References: <1381682393-5769-1-git-send-email-ming.lei@canonical.com>
+	id S1756521Ab3JNNBQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 09:01:16 -0400
+Received: from co1ehsobe002.messaging.microsoft.com ([216.32.180.185]:5303
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755670Ab3JNNBO convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 09:01:14 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VS-4(zz98dI9371I936eI542I1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275bh8275dhz2dh2a8h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5hbe9i1155h)
+From: Yoder Stuart-B08248 <B08248@freescale.com>
+To: Kim Phillips <kim.phillips@linaro.org>,
+        Wood Scott-B07421 <B07421@freescale.com>,
+        "alex.williamson@redhat.com" <alex.williamson@redhat.com>
+CC: Bhushan Bharat-R65777 <R65777@freescale.com>,
+        Wood Scott-B07421 <B07421@freescale.com>,
+        "christoffer.dall@linaro.org" <christoffer.dall@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "a.motakis@virtualopensystems.com" <a.motakis@virtualopensystems.com>,
+        "agraf@suse.de" <agraf@suse.de>,
+        Sethi Varun-B16395 <B16395@freescale.com>,
+        "peter.maydell@linaro.org" <peter.maydell@linaro.org>,
+        "santosh.shukla@linaro.org" <santosh.shukla@linaro.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+Subject: RE: [PATCH 3/4] VFIO: pci: amend vfio-pci for explicit binding via
+ sysfs only
+Thread-Topic: [PATCH 3/4] VFIO: pci: amend vfio-pci for explicit binding via
+ sysfs only
+Thread-Index: AQHOxkr6bbFT8NuiMUCyYeg1D4NxlJnv+IwAgAAq64CABAqocA==
+Date: Mon, 14 Oct 2013 13:01:11 +0000
+Message-ID: <9F6FE96B71CF29479FF1CDC8046E15036E2CB8@039-SN1MPN1-002.039d.mgd.msft.net>
+References: <1381418830.7979.405.camel@snotra.buserror.net>
+	<1381472840-3470-1-git-send-email-kim.phillips@linaro.org>
+	<1381472840-3470-3-git-send-email-kim.phillips@linaro.org>
+	<1381524220.7979.560.camel@snotra.buserror.net>
+ <20131011181717.e4051736cf42c5a647222941@linaro.org>
+In-Reply-To: <20131011181717.e4051736cf42c5a647222941@linaro.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.214.81.30]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1381682393-5769-1-git-send-email-ming.lei@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hello,
 
-On Mon 14-10-13 00:39:52, Ming Lei wrote:
-> Commit 4e7ea81db5(ext4: restructure writeback path) introduces
-> another performance regression on random write:
-> 
-> - one more page may be mapped to ext4 extent in mpage_prepare_extent_to_map,
-> and will be submitted for I/O so nr_to_write will become -1 before 'done'
-> is set
-> 
-> - the worse thing is that dirty pages may still be retrieved from page
->   cache after nr_to_write becomes negative, so lots of small chunks can be
->   submitted to block device when page writeback is catching up with write path,
->   and performance is hurted.
-  Umm, I guess I see what are you pointing at. Thanks for catching that.
-mpage_process_page_bufs() always adds a buffer to mpd even if nr_to_write
-is already <= 0. But I would somewhat prefer not to call
-mpage_prepare_extent_to_map() at all when nr_to_write <= 0. So a patch
-like:
-                ret = mpage_prepare_extent_to_map(&mpd);
-                if (!ret) {
--			if (mpd.map.m_len)
-+			if (mpd.map.m_len) {
-                                ret = mpage_map_and_submit_extent(handle, &mpd,
-                                        &give_up_on_write);
--                       else {
-+				done = (wbc->nr_to_write <= 0);
-+                       } else {
 
-Should also fix your problem, am I right?
-
-								Honza
-
-> On one arm A15 board(arndale) with sata 3.0 SSD(CPU: 1.5GHz dura core, RAM: 2GB),
-> this patch can improve below test result from 157MB/sec to 174MB/sec(>10%):
+> -----Original Message-----
+> From: Kim Phillips [mailto:kim.phillips@linaro.org]
+> Sent: Friday, October 11, 2013 6:17 PM
+> To: Wood Scott-B07421
+> Cc: Bhushan Bharat-R65777; Wood Scott-B07421; Yoder Stuart-B08248;
+> christoffer.dall@linaro.org; alex.williamson@redhat.com; linux-
+> kernel@vger.kernel.org; a.motakis@virtualopensystems.com; agraf@suse.de;
+> Sethi Varun-B16395; peter.maydell@linaro.org; santosh.shukla@linaro.org;
+> kvm@vger.kernel.org; gregkh@linuxfoundation.org
+> Subject: Re: [PATCH 3/4] VFIO: pci: amend vfio-pci for explicit binding
+> via sysfs only
 > 
-> 	dd if=/dev/zero of=./z.img bs=8K count=512K
+> On Fri, 11 Oct 2013 15:43:40 -0500
+> Scott Wood <scottwood@freescale.com> wrote:
 > 
-> The above test is actually prototype of block write in bonnie++ utility.
+> > On Fri, 2013-10-11 at 01:27 -0500, Kim Phillips wrote:
+> > > Force the vfio-pci driver to only be bound explicitly via sysfs to
+> avoid
+> > > conflics with other drivers in the event of a hotplug.
+> > >
+> > > Signed-off-by: Kim Phillips <kim.phillips@linaro.org>
+> > > ---
+> > >  drivers/vfio/pci/vfio_pci.c | 3 +++
+> > >  1 file changed, 3 insertions(+)
+> > >
+> > > diff --git a/drivers/vfio/pci/vfio_pci.c
+> b/drivers/vfio/pci/vfio_pci.c
+> > > index 6ab71b9..bdd7833 100644
+> > > --- a/drivers/vfio/pci/vfio_pci.c
+> > > +++ b/drivers/vfio/pci/vfio_pci.c
+> > > @@ -901,6 +901,9 @@ static struct pci_driver vfio_pci_driver = {
+> > >  	.probe		= vfio_pci_probe,
+> > >  	.remove		= vfio_pci_remove,
+> > >  	.err_handler	= &vfio_err_handlers,
+> > > +	.driver = {
+> > > +		.sysfs_bind_only = true,
+> > > +	},
+> > >  };
+> > >
+> > >  static void __exit vfio_pci_cleanup(void)
+> >
+> > You also need to add a PCI_ANY_ID match in order to be able to get rid
+> > of the new_id usage.
 > 
-> This patch fixes check on nr_to_write in mpage_prepare_extent_to_map()
-> to make sure nr_to_write won't become negative.
+> thanks - see below.
 > 
-> Cc: Ted Tso <tytso@mit.edu>
-> Cc: Jan Kara <jack@suse.cz>
-> Cc: linux-ext4@vger.kernel.org
-> Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-> Signed-off-by: Ming Lei <ming.lei@canonical.com>
+> Can someone with a PCI bus test this?  Bharat?
+> 
+> Kim
+> 
+> From a8d6c12f2ec763c2ac7fd384a3397c370cc1b932 Mon Sep 17 00:00:00 2001
+> From: Kim Phillips <kim.phillips@linaro.org>
+> Date: Thu, 10 Oct 2013 22:16:34 -0500
+> Subject: [PATCH 3/4 v2] VFIO: pci: amend vfio-pci for explicit binding
+> via sysfs
+>  only
+> 
+> Force the vfio-pci driver to only be bound explicitly via sysfs to avoid
+> conflics with other drivers in the event of a hotplug.  Also replace
+> the only dynamic ids assignment with a table with a single PCI_ANY_ID
+> entry since writing the sysfs bind file without having to specify ids
+> via the new_id file first should no longer be necessary.
+> 
+> Signed-off-by: Kim Phillips <kim.phillips@linaro.org>
 > ---
->  fs/ext4/inode.c |   20 ++++++++++----------
->  1 file changed, 10 insertions(+), 10 deletions(-)
+>  drivers/vfio/pci/vfio_pci.c | 12 +++++++++++-
+>  1 file changed, 11 insertions(+), 1 deletion(-)
 > 
-> diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-> index 32c04ab..6a62803 100644
-> --- a/fs/ext4/inode.c
-> +++ b/fs/ext4/inode.c
-> @@ -2356,15 +2356,6 @@ static int mpage_prepare_extent_to_map(struct mpage_da_data *mpd)
->  			if (mpd->map.m_len == 0)
->  				mpd->first_page = page->index;
->  			mpd->next_page = page->index + 1;
-> -			/* Add all dirty buffers to mpd */
-> -			lblk = ((ext4_lblk_t)page->index) <<
-> -				(PAGE_CACHE_SHIFT - blkbits);
-> -			head = page_buffers(page);
-> -			err = mpage_process_page_bufs(mpd, head, head, lblk);
-> -			if (err <= 0)
-> -				goto out;
-> -			err = 0;
-> -
->  			/*
->  			 * Accumulated enough dirty pages? This doesn't apply
->  			 * to WB_SYNC_ALL mode. For integrity sync we have to
-> @@ -2374,9 +2365,18 @@ static int mpage_prepare_extent_to_map(struct mpage_da_data *mpd)
->  			 * of the old dirty pages.
->  			 */
->  			if (mpd->wbc->sync_mode == WB_SYNC_NONE &&
-> -			    mpd->next_page - mpd->first_page >=
-> +			    mpd->next_page - mpd->first_page >
->  							mpd->wbc->nr_to_write)
->  				goto out;
+> diff --git a/drivers/vfio/pci/vfio_pci.c b/drivers/vfio/pci/vfio_pci.c
+> index 6ab71b9..c5b434f 100644
+> --- a/drivers/vfio/pci/vfio_pci.c
+> +++ b/drivers/vfio/pci/vfio_pci.c
+> @@ -895,12 +895,22 @@ static struct pci_error_handlers vfio_err_handlers
+> = {
+>  	.error_detected = vfio_pci_aer_err_detected,
+>  };
+> 
+> +static DEFINE_PCI_DEVICE_TABLE(vfio_pci_id_table) = {
+> +        { PCI_DEVICE(PCI_ANY_ID, PCI_ANY_ID) },
+> +        { 0 }
+> +};
 > +
-> +			/* Add all dirty buffers to mpd */
-> +			lblk = ((ext4_lblk_t)page->index) <<
-> +				(PAGE_CACHE_SHIFT - blkbits);
-> +			head = page_buffers(page);
-> +			err = mpage_process_page_bufs(mpd, head, head, lblk);
-> +			if (err <= 0)
-> +				goto out;
-> +			err = 0;
->  		}
->  		pagevec_release(&pvec);
->  		cond_resched();
-> -- 
-> 1.7.9.5
+> +MODULE_DEVICE_TABLE(pci, vfio_pci_id_table);
+> +
+>  static struct pci_driver vfio_pci_driver = {
+>  	.name		= "vfio-pci",
+> -	.id_table	= NULL, /* only dynamic ids */
+> +	.id_table	= vfio_pci_id_table, /* no dynamic ids */
+>  	.probe		= vfio_pci_probe,
+>  	.remove		= vfio_pci_remove,
+>  	.err_handler	= &vfio_err_handlers,
+> +	.driver = {
+> +		.sysfs_bind_only = true, /* bind only via sysfs */
+> +	},
+>  };
 > 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+>  static void __exit vfio_pci_cleanup(void)
+
+sysfs bind only seems orthogonal to PCI_ANY_ID...I would have split
+those into 2 different patches.
+
+Stuart
+
