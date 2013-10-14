@@ -1,112 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751217Ab3JNFw0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 01:52:26 -0400
-Received: from mga14.intel.com ([143.182.124.37]:51770 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750796Ab3JNFwX convert rfc822-to-8bit (ORCPT
+	id S1751549Ab3JNFz4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 01:55:56 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:29562 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751249Ab3JNFzy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 01:52:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,490,1378882800"; 
-   d="scan'208";a="307382443"
-From: "Zhang, Rui" <rui.zhang@intel.com>
-To: Lukasz Majewski <l.majewski@samsung.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        "kgene.kim@samsung.com" <kgene.kim@samsung.com>
-CC: Linux PM list <linux-pm@vger.kernel.org>,
+	Mon, 14 Oct 2013 01:55:54 -0400
+X-AuditID: cbfee61a-b7f7a6d00000235f-2b-525b8768528f
+Date: Mon, 14 Oct 2013 07:55:46 +0200
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
         Lukasz Majewski <l.majewski@majess.pl>,
         linux-kernel <linux-kernel@vger.kernel.org>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "Amit Daniel Kachhap" <amit.daniel@samsung.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>
-Subject: RE: [PATCH v2 0/5] thermal: exynos: Fixes for v3.12
-Thread-Topic: [PATCH v2 0/5] thermal: exynos: Fixes for v3.12
-Thread-Index: AQHOxLkjmaAGqPyX2EmS+yNHrsdoLpnzMe2AgACGu8A=
-Date: Mon, 14 Oct 2013 05:52:19 +0000
-Message-ID: <744357E9AAD1214791ACBA4B0B90926301190077@SHSMSX101.ccr.corp.intel.com>
-References: <1380010102-25817-1-git-send-email-l.majewski@samsung.com>
- <1381300194-13134-1-git-send-email-l.majewski@samsung.com>
- <20131014074635.77fd9f6e@amdc308.digital.local>
-In-Reply-To: <20131014074635.77fd9f6e@amdc308.digital.local>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
+        Tomasz Figa <t.figa@samsung.com>
+Subject: Re: [PATCH v2 0/2] cpufreq: exynos: Fixes for v3.12
+Message-id: <20131014075546.72e0dc61@amdc308.digital.local>
+In-reply-to: <2822925.9aRTDAMrLp@vostro.rjw.lan>
+References: <1380108138-30402-1-git-send-email-l.majewski@samsung.com>
+ <1381320523-28183-1-git-send-email-l.majewski@samsung.com>
+ <1457107.oQjJi4YKRz@vostro.rjw.lan> <2822925.9aRTDAMrLp@vostro.rjw.lan>
+Organization: SPRC Poland
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgkeLIzCtJLcpLzFFi42I5/e+xgG5Ge3SQQcMpPYuNM9azWjxt+sFu
+	0Xn2CbPFm0fcFpd3zWGz+Nx7hNHiduMKNoszpy+xWqyf8ZrFYuNXD4u5vxtZHbg9ds66y+5x
+	59oeNo91094ye2y52s7i0bdlFaPH501yAWxRXDYpqTmZZalF+nYJXBnrns5hKVjCVdG75DBz
+	A2MzRxcjJ4eEgIlE09w5rBC2mMSFe+vZuhi5OIQEFjFKLDp5jgXCaWeSOHFlNjNIFYuAqsSj
+	VdeZQGw2AT2Jz3efgtkiAtoSc3tOMYM0MAscZZZYdmQdWIOwgI3E80tH2UBsXgFribbHJ8DW
+	cQoYSBxqPssOYgsJnGWUWHhCGMTmF5CUaP/3gxniJDuJc582sEP0Ckr8mHyPBcRmFtCS2Lyt
+	iRXClpfYvOYt8wRGwVlIymYhKZuFpGwBI/MqRtHUguSC4qT0XEO94sTc4tK8dL3k/NxNjOB4
+	eSa1g3Flg8UhRgEORiUeXgGn6CAh1sSy4srcQ4wSHMxKIrxX64BCvCmJlVWpRfnxRaU5qcWH
+	GKU5WJTEeQ+0WgcKCaQnlqRmp6YWpBbBZJk4OKUaGNMPucTOdv/FZK1n+b3vsuzWPJV98iu4
+	PC+2nNPc77FxV8AH8ZX7NtjcmM5pb2GkYeFyYIqR8CTFBZxbFv3idQqYlpFY8q02JT3mMkvH
+	1krVDwwuXybOdhSR/1ev800qafrngBNTbznxflDdcbPzW++c6ONxDUlPpq3ROpfH8q4s9oFn
+	/mq2S0osxRmJhlrMRcWJAIOMLkqTAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eduardo,
+Hi Rafael,
 
-What's your opinion on this patch set?
-BTW, please send me all the urgent fixes for thermal soc drivers that you think should go to 3.12.
+> On Friday, October 11, 2013 01:22:57 PM Rafael J. Wysocki wrote:
+> > On Wednesday, October 09, 2013 02:08:41 PM Lukasz Majewski wrote:
+> > > Attached commits provide cpufreq regression fixes for Trats and
+> > > Trats2 Exynos4 boards.
+> > > Since v3.12 Exynos4 uses common clock framework for clock
+> > > manipulation. Those patches restore correct output for
+> > > cpuinfo_cur_freq [1] sysfs attribute.
+> > > Without them, the [1] provides default frequency (800 MHz) set at
+> > > driver initialization.
+> > > 
+> > > 
+> > > Lukasz Majewski (2):
+> > >   cpufreq: exynos4x12: Use the common clock framework to set APLL
+> > > clock rate
+> > >   cpufreq: exynos4210: Use the common clock framework to set APLL
+> > > clock rate
+> > > 
+> > >  drivers/cpufreq/exynos4210-cpufreq.c |   67
+> > > ++++-----------------------------
+> > > drivers/cpufreq/exynos4x12-cpufreq.c |   69
+> > > ++++------------------------------ 2 files changed, 16
+> > > insertions(+), 120 deletions(-)
+> > 
+> > Can you please resend [1/2], it got lost somewhere (at least I
+> > can't see it now)?
+> 
+> Scratch this, it's there in patchwork.
+> 
 
-Thanks,
-rui
-> -----Original Message-----
-> From: Lukasz Majewski [mailto:l.majewski@samsung.com]
-> Sent: Monday, October 14, 2013 1:47 PM
-> To: Zhang, Rui; Eduardo Valentin; kgene.kim@samsung.com
-> Cc: Lukasz Majewski; Linux PM list; Lukasz Majewski; linux-kernel;
-> Bartlomiej Zolnierkiewicz; devicetree@vger.kernel.org; Amit Daniel
-> Kachhap; linux-samsung-soc@vger.kernel.org
-> Subject: Re: [PATCH v2 0/5] thermal: exynos: Fixes for v3.12
-> Importance: High
-> 
-> Hi Zhang, Eduardo,
-> 
-> > This patch series is divided into two parts:
-> > 1. Device tree node definition and enabelement for TMU at Exynos4412
-> > (Trats2) 2. Exynos thermal subsystem regressions for v3.12-rc4.
-> > Several commits were necessary to properly fix regression for TMU
-> test
-> > MUX address setting after reset.
-> >
-> > Test HW:
-> > - Exynos4412 - TRATS2 board (Linux v3.12-rc4)
-> > SHA1: 8b5ede69d24db939f52b47effff2f6fe1e83e08b
-> >
-> >
-> > Lukasz Majewski (5):
-> >   thermal: exynos: Remove check for thermal device pointer at
-> >     exynos_report_trigger()
-> >   thermal: exynos: Provide separate TMU data for Exynos4412
-> >   thermal: exynos: Provide initial setting for TMU's test MUX address
-> >     at Exynos4412
-> >   ARM: dts: exynos4x12: Device tree node definition for TMU on
-> >     Exynos4x12
-> >   ARM: dts: exynos4412-trats2: Enable TMU support at Trats2
-> >
-> 
-> Zhang, Eduardo - any comments?
-> 
-> Would it be possible to add them to v3.12 since they do fix critical
-> error and regression on Exynos4412.
-> 
-> 
-> >  arch/arm/boot/dts/exynos4412-trats2.dts         |    5 ++++
-> >  arch/arm/boot/dts/exynos4x12.dtsi               |   10 ++++++++
-> >  drivers/thermal/samsung/exynos_thermal_common.c |    2 --
-> >  drivers/thermal/samsung/exynos_tmu.c            |   12 ++++++---
-> >  drivers/thermal/samsung/exynos_tmu.h            |    7 +++++-
-> >  drivers/thermal/samsung/exynos_tmu_data.c       |   30
-> > ++++++++++++++++++-----
-> > drivers/thermal/samsung/exynos_tmu_data.h       |   13 +++++++++- 7
-> > files changed, 65 insertions(+), 14 deletions(-)
-> >
-> 
-> 
-> 
-> --
-> Best regards,
-> 
-> Lukasz Majewski
-> 
-> Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
+Rafael, do you need any more help with those fixes? 
+
+-- 
+Best regards,
+
+Lukasz Majewski
+
+Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
