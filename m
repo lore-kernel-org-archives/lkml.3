@@ -1,58 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757971Ab3JNV0Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 17:26:16 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:35682 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757390Ab3JNV0N (ORCPT
+	id S1758026Ab3JNV0n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 17:26:43 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:23400 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756665Ab3JNV0m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 17:26:13 -0400
-Message-ID: <525C6170.1060901@gmail.com>
-Date: Mon, 14 Oct 2013 23:26:08 +0200
-From: Juri Lelli <juri.lelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: tglx@linutronix.de, mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com,
-        fweisbec@gmail.com, darren@dvhart.com, johan.eker@ericsson.com,
-        p.faure@akatech.ch, linux-kernel@vger.kernel.org,
-        claudio@evidence.eu.com, michael@amarulasolutions.com,
-        fchecconi@gmail.com, tommaso.cucinotta@sssup.it,
-        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
-        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
-        raistlin@linux.it, insop.song@gmail.com, liming.wang@windriver.com,
-        jkacur@redhat.com, harald.gustafsson@ericsson.com,
-        vincent.guittot@linaro.org,
-        bruce.ashfield@windriver.com--no-chain-reply-to
-Subject: Re: [PATCH 03/14] sched: SCHED_DEADLINE structures & implementation.
-References: <1381747426-31334-1-git-send-email-juri.lelli@gmail.com> <1381747426-31334-4-git-send-email-juri.lelli@gmail.com> <20131014115138.GG3081@twins.programming.kicks-ass.net>
-In-Reply-To: <20131014115138.GG3081@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 14 Oct 2013 17:26:42 -0400
+Date: Mon, 14 Oct 2013 17:26:37 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Cc: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org, yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH V2 0/5] trace-cmd: Support the feature recording trace
+ data of guests on the host
+Message-ID: <20131014172637.2ced6be9@gandalf.local.home>
+In-Reply-To: <20130913020627.28927.69090.stgit@yunodevel>
+References: <20130913020627.28927.69090.stgit@yunodevel>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/14/2013 01:51 PM, Peter Zijlstra wrote:
-> On Mon, Oct 14, 2013 at 12:43:35PM +0200, Juri Lelli wrote:
->> +static void set_cpus_allowed_dl(struct task_struct *p,
->> +				const struct cpumask *new_mask)
->> +{
->> +	int weight = cpumask_weight(new_mask);
->> +
->> +	BUG_ON(!dl_task(p));
->> +
->> +	cpumask_copy(&p->cpus_allowed, new_mask);
->> +	p->dl.nr_cpus_allowed = weight;
->> +}
+On Fri, 13 Sep 2013 11:06:27 +0900
+Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com> wrote:
+
+
+> <How to use>
+> 1. Run virt-server on a host
+>    # trace-cmd virt-server
 > 
-> This seems identical so the default in do_set_cpus_allowed(); can we
-> leave this function out and use the default?
+> 2. Make guest domain directory
+>    # mkdir -p /tmp/trace-cmd/virt/<domain>
+>    # chmod 710 /tmp/trace-cmd/virt/<domain>
+>    # chgrp qemu /tmp/trace-cmd/virt/<domain>
+
+Quick comment. I think the above should be done by trace-cmd. At least
+have options for it like:
+
+trace-cmd virt-server -d /tmp/trace-cmd/virt/domain -m 710 -g qemu
+
+Perhaps default some of those, and have trace-cmd print out:
+
+  Process Directory:     /tmp/trace-cmd/virt/domain
+  Directory permission:  0710
+  Group:                 qemu
+
+OK, now to look at the actual code ;-)
+
+-- Steve
+
+
 > 
-
-Another thing that is changed completely in next patch. Anyway, I removed it
-from here too.
-
-Thanks,
-
-- Juri
+> 3. Make FIFO on the host
+>    # mkfifo /tmp/trace-cmd/virt/<domain>/trace-path-cpu{0,1,...,X}.{in,out}
+> 
+> 4. Set up of virtio-serial pipe of a guest on the host
+>    Add the following tags to domain XML files.
+>    # virsh edit <domain>
+>    <channel type='unix'>
+>       <source mode='connect' path='/tmp/trace-cmd/virt/agent-ctl-path'/>
+>       <target type='virtio' name='agent-ctl-path'/>
+>    </channel>
+>    <channel type='pipe'>
+>       <source path='/tmp/trace-cmd/virt/<domain>/trace-path-cpu0'/>
+>       <target type='virtio' name='trace-path-cpu0'/>
+>    </channel>
+>    ... (cpu1, cpu2, ...)
+> 
+> 5. Boot the guest
+>    # virsh start <domain>
+> 
+> 6. Execute "record --virt" on the guest
+>    # trace-cmd record --virt -e sched*
+> 
