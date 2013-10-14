@@ -1,61 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756229Ab3JNLo6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 07:44:58 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:54287 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755988Ab3JNLo5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 07:44:57 -0400
-Date: Mon, 14 Oct 2013 13:44:33 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Juri Lelli <juri.lelli@gmail.com>
-Cc: tglx@linutronix.de, mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com,
-        fweisbec@gmail.com, darren@dvhart.com, johan.eker@ericsson.com,
-        p.faure@akatech.ch, linux-kernel@vger.kernel.org,
-        claudio@evidence.eu.com, michael@amarulasolutions.com,
-        fchecconi@gmail.com, tommaso.cucinotta@sssup.it,
-        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
-        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
-        raistlin@linux.it, insop.song@gmail.com, liming.wang@windriver.com,
-        jkacur@redhat.com, harald.gustafsson@ericsson.com,
-        vincent.guittot@linaro.org,
-        bruce.ashfield@windriver.com--no-chain-reply-to
-Subject: Re: [PATCH 03/14] sched: SCHED_DEADLINE structures & implementation.
-Message-ID: <20131014114433.GE3081@twins.programming.kicks-ass.net>
-References: <1381747426-31334-1-git-send-email-juri.lelli@gmail.com>
- <1381747426-31334-4-git-send-email-juri.lelli@gmail.com>
+	id S1756108Ab3JNLrN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 07:47:13 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:51155 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753797Ab3JNLrL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 07:47:11 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Subject: Re: [PATCH] acpi: update win8 OSI blacklist
+Date: Mon, 14 Oct 2013 13:58:55 +0200
+Message-ID: <1905683.dBVjOILnXT@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <CAMP44s0sGCDKj86awEqUK27LB=TL62-w9F=e99J3gRGmmfGMWg@mail.gmail.com>
+References: <1380820383-23336-1-git-send-email-felipe.contreras@gmail.com> <CAMP44s0sGCDKj86awEqUK27LB=TL62-w9F=e99J3gRGmmfGMWg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1381747426-31334-4-git-send-email-juri.lelli@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 14, 2013 at 12:43:35PM +0200, Juri Lelli wrote:
-> +static void update_curr_dl(struct rq *rq)
-> +{
-> +	struct task_struct *curr = rq->curr;
-> +	struct sched_dl_entity *dl_se = &curr->dl;
-> +	u64 delta_exec;
-> +
-> +	if (!dl_task(curr) || !on_dl_rq(dl_se))
-> +		return;
-> +
-> +	/*
-> +	 * Consumed budget is computed considering the time as
-> +	 * observed by schedulable tasks (excluding time spent
-> +	 * in hardirq context, etc.)
-> +	 */
-> +	delta_exec = rq->clock_task - curr->se.exec_start;
+On Sunday, October 13, 2013 10:30:50 PM Felipe Contreras wrote:
+> On Thu, Oct 3, 2013 at 12:13 PM, Felipe Contreras
+> <felipe.contreras@gmail.com> wrote:
+> > More people have reported they need this for their machines to work
+> > correctly.
+> >
+> > https://bugzilla.kernel.org/show_bug.cgi?id=60682
+> 
+> I see this was merged to the linux-next branch. Is there any reason
+> why it's not proposed for v3.12?
 
-Oh, cute.. So we compute deadlines from rq->clock but compute runtime
-from rq->clock_task.
+It is not a fix for a recent breakage, it doesn't fix an outright crash or
+security issue and there is a chance, albeit arguably very small, that
+something will not function on one of the affected systems for someone
+as a result of the blacklisting.
 
-So won't that give funny results in that clock_task is generally slower
-than clock; so people get more 'time'.
+Thanks!
 
-Maybe there's some illumination on this point further on; I'll continue
-reading.
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
