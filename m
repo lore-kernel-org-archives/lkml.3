@@ -1,434 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756775Ab3JNOvy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 10:51:54 -0400
-Received: from mail-bk0-f50.google.com ([209.85.214.50]:53409 "EHLO
-	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756161Ab3JNOuZ (ORCPT
+	id S1756796Ab3JNOxI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 10:53:08 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:13237 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756615Ab3JNOxF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 10:50:25 -0400
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org,
-        =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
-	<ville.syrjala@linux.intel.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: manual merge of the drm-intel tree
-Date: Mon, 14 Oct 2013 16:48:03 +0200
-Message-Id: <1381762088-18880-3-git-send-email-treding@nvidia.com>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1381762088-18880-1-git-send-email-treding@nvidia.com>
-References: <1381762088-18880-1-git-send-email-treding@nvidia.com>
+	Mon, 14 Oct 2013 10:53:05 -0400
+X-AuditID: cbfee61a-b7f7a6d00000235f-61-525c054e3ef8
+Date: Mon, 14 Oct 2013 16:52:49 +0200
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: Eduardo Valentin <eduardo.valentin@ti.com>
+Cc: Zhang Rui <rui.zhang@intel.com>, kgene.kim@samsung.com,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>, devicetree@vger.kernel.org,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        linux-samsung-soc@vger.kernel.org
+Subject: Re: [PATCH v2 2/5] thermal: exynos: Provide separate TMU data for
+ Exynos4412
+Message-id: <20131014165249.7b8b2f9e@amdc308.digital.local>
+In-reply-to: <525BFDC5.4000109@ti.com>
+References: <1380010102-25817-1-git-send-email-l.majewski@samsung.com>
+ <1381300194-13134-1-git-send-email-l.majewski@samsung.com>
+ <1381300194-13134-3-git-send-email-l.majewski@samsung.com>
+ <525BFDC5.4000109@ti.com>
+Organization: SPRC Poland
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplkeLIzCtJLcpLzFFi42I5/e+xoK4/a0yQwZRfLBYNV0MsNs5Yz2ox
+	/8g5Vos1+38yWXSefcJs0bvgKpvFm0fcFpd3zWGz+Nx7hNFixvl9TBa3G1ewWZw5fYnV4snD
+	PjaL9TNeszjweSze85LJY920t8weW662s3j0bVnF6HH8xnYmj8+b5ALYorhsUlJzMstSi/Tt
+	Ergyri1OL9hlVNF29T9bA2OzZhcjJ4eEgInEx30TmSBsMYkL99azgdhCAtMZJX5MY+5i5AKy
+	25kkru04xwKSYBFQlTj9djEjiM0moCfx+e5TsGYRIPvGiydMIA3MAt0sEjfXbmMHSQgLhEtc
+	er0XrIhXwFpi/pzFQHEODk4BNYlXa+wgFtxhlHi+dRFYDb+ApET7vx/MEBfZSZz7tIEdoldQ
+	4sfke2BHMAtoSWze1sQKYctLbF7zlnkCo+AsJGWzkJTNQlK2gJF5FaNoakFyQXFSeq6hXnFi
+	bnFpXrpecn7uJkZwJD2T2sG4ssHiEKMAB6MSD6+AU3SQEGtiWXFl7iFGCQ5mJRHe3LdAId6U
+	xMqq1KL8+KLSnNTiQ4zSHCxK4rwHWq0DhQTSE0tSs1NTC1KLYLJMHJxSDYyLi7IklmTPPCe5
+	dc5tUfcrUpezlix79la3yyHDkUXE2oPXq6RnuR93moLk1/v1M7qVJR51vr/wSo3hyP9DNwpa
+	9x7ZFK3z5U7ErPuuza0nVvHHpj9RXO+wtTDgzen4TQf3PDhbuKbE31i1WHFT6omKCW7swTcu
+	zap+kcw7a8stboUYCYME9klKLMUZiYZazEXFiQBPMk1joAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Today's linux-next merge of the drm-intel tree got conflicts in:
+Hi Eduardo,
 
-	drivers/gpu/drm/i915/i915_dma.c
-	drivers/gpu/drm/i915/intel_dp.c
-	drivers/gpu/drm/i915/intel_drv.h
+> On 09-10-2013 02:29, Lukasz Majewski wrote:
+> > Up till now Exynos5250 and Exynos4412 had the same definitions for
+> > TMU data. Following commit changes that, by introducing separate
+> > exynos4412_default_tmu_data structure.
+> > 
+> > Since Exynos4412 was chronologically first, the corresponding name
+> > for TMU registers and default data was renamed.
+> > 
+> > Additionally, new SOC_ARCH_EXYNOS4412 type has been defined.
+> > 
+> > Moreover, the SOC_ARCH_EXYNOS name has been changed to
+> > SOC_ARCH_EXYNOS5250.
+> > 
+> > Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
+> > Reviewed-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> > Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+> > 
+> > ---
+> > Changes for v2:
+> > - Replace SOC_ARCH_EXYNOS with SOC_ARCH_EXYNOS5250
+> > - Fix coding style for tmu_data elements definition
+> > 
+> >  drivers/thermal/samsung/exynos_tmu.c      |    9 +++++----
+> >  drivers/thermal/samsung/exynos_tmu.h      |    3 ++-
+> >  drivers/thermal/samsung/exynos_tmu_data.c |   28
+> > ++++++++++++++++++++++------
+> > drivers/thermal/samsung/exynos_tmu_data.h |    9 ++++++++- 4 files
+> > changed, 37 insertions(+), 12 deletions(-)
+> > 
+> > diff --git a/drivers/thermal/samsung/exynos_tmu.c
+> > b/drivers/thermal/samsung/exynos_tmu.c index b43afda..1312b34 100644
+> > --- a/drivers/thermal/samsung/exynos_tmu.c
+> > +++ b/drivers/thermal/samsung/exynos_tmu.c
+> > @@ -488,7 +488,7 @@ static const struct of_device_id
+> > exynos_tmu_match[] = { },
+> >  	{
+> >  		.compatible = "samsung,exynos4412-tmu",
+> > -		.data = (void *)EXYNOS5250_TMU_DRV_DATA,
+> > +		.data = (void *)EXYNOS4412_TMU_DRV_DATA,
+> >  	},
+> >  	{
+> >  		.compatible = "samsung,exynos5250-tmu",
+> > @@ -629,9 +629,10 @@ static int exynos_tmu_probe(struct
+> > platform_device *pdev) if (ret)
+> >  		return ret;
+> >  
+> > -	if (pdata->type == SOC_ARCH_EXYNOS ||
+> > -		pdata->type == SOC_ARCH_EXYNOS4210 ||
+> > -				pdata->type == SOC_ARCH_EXYNOS5440)
+> > +	if (pdata->type == SOC_ARCH_EXYNOS4210 ||
+> > +	    pdata->type == SOC_ARCH_EXYNOS4412 ||
+> > +	    pdata->type == SOC_ARCH_EXYNOS5250 ||
+> > +	    pdata->type == SOC_ARCH_EXYNOS5440)
+> >  		data->soc = pdata->type;
+> >  	else {
+> >  		ret = -EINVAL;
+> > diff --git a/drivers/thermal/samsung/exynos_tmu.h
+> > b/drivers/thermal/samsung/exynos_tmu.h index b364c9e..b42ece4 100644
+> > --- a/drivers/thermal/samsung/exynos_tmu.h
+> > +++ b/drivers/thermal/samsung/exynos_tmu.h
+> > @@ -41,7 +41,8 @@ enum calibration_mode {
+> >  
+> >  enum soc_type {
+> >  	SOC_ARCH_EXYNOS4210 = 1,
+> > -	SOC_ARCH_EXYNOS,
+> > +	SOC_ARCH_EXYNOS4412,
+> > +	SOC_ARCH_EXYNOS5250,
+> >  	SOC_ARCH_EXYNOS5440,
+> >  };
+> >  
+> > diff --git a/drivers/thermal/samsung/exynos_tmu_data.c
+> > b/drivers/thermal/samsung/exynos_tmu_data.c index 9002499..d8de5c1
+> > 100644 --- a/drivers/thermal/samsung/exynos_tmu_data.c
+> > +++ b/drivers/thermal/samsung/exynos_tmu_data.c
+> > @@ -90,8 +90,8 @@ struct exynos_tmu_init_data const
+> > exynos4210_default_tmu_data = { };
+> >  #endif
+> >  
+> > -#if defined(CONFIG_SOC_EXYNOS5250) ||
+> > defined(CONFIG_SOC_EXYNOS4412) -static const struct
+> > exynos_tmu_registers exynos5250_tmu_registers = { +#if
+> > defined(CONFIG_SOC_EXYNOS4412) || defined(CONFIG_SOC_EXYNOS5250)
+> 
+> Below will be only 4412 definitions,right? Why should we test for
+> 5250? 
+   ^^^^^^^^ [1]
 
-caused by commits e1264eb (Revert "drm/i915: Delay disabling of VGA memory
-until vgacon->fbcon handoff is done") and ce35255 (drm/i915: Fix unclaimed
-register access due to delayed VGA memory disable).
+Below are registers definitions for Exynos4412, which appeared first.
 
-I fixed them up (see below). Please verify that the resolution looks good.
+However, the Exynos5250 is reusing those registers. 
 
-Thanks,
-Thierry
----
-diff --cc drivers/gpu/drm/i915/i915_dma.c
-index 24640dc,42cddc1..f240150
---- a/drivers/gpu/drm/i915/i915_dma.c
-+++ b/drivers/gpu/drm/i915/i915_dma.c
-@@@ -1350,6 -1358,13 +1355,8 @@@ static int i915_load_modeset_init(struc
-  	 */
-  	intel_fbdev_initial_config(dev);
-  
- -	/*
- -	 * Must do this after fbcon init so that
- -	 * vgacon_save_screen() works during the handover.
- -	 */
- -	i915_disable_vga_mem(dev);
-+ 	intel_display_power_put(dev, POWER_DOMAIN_VGA);
-+ 
-  	/* Only enable hotplug handling once the fbdev is fully set up. */
-  	dev_priv->enable_hotplug_processing = true;
-  
-diff --cc drivers/gpu/drm/i915/intel_display.c
-index 1fdf49c,4a8a2e4..fbd028e
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@@ -10237,8 -10388,37 +10384,10 @@@ static void i915_disable_vga(struct drm
-  	POSTING_READ(vga_reg);
-  }
-  
- -static void i915_enable_vga_mem(struct drm_device *dev)
- -{
- -	/* Enable VGA memory on Intel HD */
- -	if (HAS_PCH_SPLIT(dev)) {
- -		vga_get_uninterruptible(dev->pdev, VGA_RSRC_LEGACY_IO);
- -		outb(inb(VGA_MSR_READ) | VGA_MSR_MEM_EN, VGA_MSR_WRITE);
- -		vga_set_legacy_decoding(dev->pdev, VGA_RSRC_LEGACY_IO |
- -						   VGA_RSRC_LEGACY_MEM |
- -						   VGA_RSRC_NORMAL_IO |
- -						   VGA_RSRC_NORMAL_MEM);
- -		vga_put(dev->pdev, VGA_RSRC_LEGACY_IO);
- -	}
- -}
- -
- -void i915_disable_vga_mem(struct drm_device *dev)
- -{
- -	/* Disable VGA memory on Intel HD */
- -	if (HAS_PCH_SPLIT(dev)) {
- -		vga_get_uninterruptible(dev->pdev, VGA_RSRC_LEGACY_IO);
- -		outb(inb(VGA_MSR_READ) & ~VGA_MSR_MEM_EN, VGA_MSR_WRITE);
- -		vga_set_legacy_decoding(dev->pdev, VGA_RSRC_LEGACY_IO |
- -						   VGA_RSRC_NORMAL_IO |
- -						   VGA_RSRC_NORMAL_MEM);
- -		vga_put(dev->pdev, VGA_RSRC_LEGACY_IO);
- -	}
- -}
- -
-  void intel_modeset_init_hw(struct drm_device *dev)
-  {
-+ 	struct drm_i915_private *dev_priv = dev->dev_private;
-+ 
-  	intel_prepare_ddi(dev);
-  
-  	intel_init_clock_gating(dev);
-@@@ -10510,9 -10697,10 +10666,9 @@@ void i915_redisable_vga(struct drm_devi
-  	    (I915_READ(HSW_PWR_WELL_DRIVER) & HSW_PWR_WELL_STATE_ENABLED) == 0)
-  		return;
-  
-- 	if (I915_READ(vga_reg) != VGA_DISP_DISABLE) {
-+ 	if (!(I915_READ(vga_reg) & VGA_DISP_DISABLE)) {
-  		DRM_DEBUG_KMS("Something enabled VGA plane, disabling it\n");
-  		i915_disable_vga(dev);
- -		i915_disable_vga_mem(dev);
-  	}
-  }
-  
-diff --cc drivers/gpu/drm/i915/intel_dp.c
-index 98f3b64,bee09e1..c392ad2
---- a/drivers/gpu/drm/i915/intel_dp.c
-+++ b/drivers/gpu/drm/i915/intel_dp.c
-@@@ -1532,8 -1541,8 +1541,8 @@@ static void intel_edp_psr_setup(struct 
-  	intel_edp_psr_write_vsc(intel_dp, &psr_vsc);
-  
-  	/* Avoid continuous PSR exit by masking memup and hpd */
-- 	I915_WRITE(EDP_PSR_DEBUG_CTL, EDP_PSR_DEBUG_MASK_MEMUP |
-+ 	I915_WRITE(EDP_PSR_DEBUG_CTL(dev), EDP_PSR_DEBUG_MASK_MEMUP |
- -		   EDP_PSR_DEBUG_MASK_HPD);
- +		   EDP_PSR_DEBUG_MASK_HPD | EDP_PSR_DEBUG_MASK_LPSP);
-  
-  	intel_dp->psr_setup_done = true;
-  }
-diff --cc drivers/gpu/drm/i915/intel_drv.h
-index 39bfdb3,189257d..343f0fa
---- a/drivers/gpu/drm/i915/intel_drv.h
-+++ b/drivers/gpu/drm/i915/intel_drv.h
-@@@ -714,116 -656,196 +656,197 @@@ void assert_fdi_rx_pll(struct drm_i915_
-  		       enum pipe pipe, bool state);
-  #define assert_fdi_rx_pll_enabled(d, p) assert_fdi_rx_pll(d, p, true)
-  #define assert_fdi_rx_pll_disabled(d, p) assert_fdi_rx_pll(d, p, false)
-- extern void assert_pipe(struct drm_i915_private *dev_priv, enum pipe pipe,
-- 			bool state);
-+ void assert_pipe(struct drm_i915_private *dev_priv, enum pipe pipe, bool state);
-  #define assert_pipe_enabled(d, p) assert_pipe(d, p, true)
-  #define assert_pipe_disabled(d, p) assert_pipe(d, p, false)
-+ void intel_write_eld(struct drm_encoder *encoder,
-+ 		     struct drm_display_mode *mode);
-+ unsigned long intel_gen4_compute_page_offset(int *x, int *y,
-+ 					     unsigned int tiling_mode,
-+ 					     unsigned int bpp,
-+ 					     unsigned int pitch);
-+ void intel_display_handle_reset(struct drm_device *dev);
-+ void hsw_enable_pc8_work(struct work_struct *__work);
-+ void hsw_enable_package_c8(struct drm_i915_private *dev_priv);
-+ void hsw_disable_package_c8(struct drm_i915_private *dev_priv);
-+ void intel_dp_get_m_n(struct intel_crtc *crtc,
-+ 		      struct intel_crtc_config *pipe_config);
-+ int intel_dotclock_calculate(int link_freq, const struct intel_link_m_n *m_n);
-+ void
-+ ironlake_check_encoder_dotclock(const struct intel_crtc_config *pipe_config,
-+ 				int dotclock);
-+ bool intel_crtc_active(struct drm_crtc *crtc);
-+ void i915_disable_vga_mem(struct drm_device *dev);
-+ void hsw_enable_ips(struct intel_crtc *crtc);
-+ void hsw_disable_ips(struct intel_crtc *crtc);
-+ 
-+ 
-+ /* intel_dp.c */
-+ void intel_dp_init(struct drm_device *dev, int output_reg, enum port port);
-+ bool intel_dp_init_connector(struct intel_digital_port *intel_dig_port,
-+ 			     struct intel_connector *intel_connector);
-+ void intel_dp_start_link_train(struct intel_dp *intel_dp);
-+ void intel_dp_complete_link_train(struct intel_dp *intel_dp);
-+ void intel_dp_stop_link_train(struct intel_dp *intel_dp);
-+ void intel_dp_sink_dpms(struct intel_dp *intel_dp, int mode);
-+ void intel_dp_encoder_destroy(struct drm_encoder *encoder);
-+ void intel_dp_check_link_status(struct intel_dp *intel_dp);
-+ bool intel_dp_compute_config(struct intel_encoder *encoder,
-+ 			     struct intel_crtc_config *pipe_config);
-+ bool intel_dpd_is_edp(struct drm_device *dev);
-+ void ironlake_edp_backlight_on(struct intel_dp *intel_dp);
-+ void ironlake_edp_backlight_off(struct intel_dp *intel_dp);
-+ void ironlake_edp_panel_on(struct intel_dp *intel_dp);
-+ void ironlake_edp_panel_off(struct intel_dp *intel_dp);
-+ void ironlake_edp_panel_vdd_on(struct intel_dp *intel_dp);
-+ void ironlake_edp_panel_vdd_off(struct intel_dp *intel_dp, bool sync);
-+ void intel_edp_psr_enable(struct intel_dp *intel_dp);
-+ void intel_edp_psr_disable(struct intel_dp *intel_dp);
-+ void intel_edp_psr_update(struct drm_device *dev);
-+ 
-+ 
-+ /* intel_dsi.c */
-+ bool intel_dsi_init(struct drm_device *dev);
-+ 
-  
-- extern void intel_init_clock_gating(struct drm_device *dev);
-- extern void intel_suspend_hw(struct drm_device *dev);
-- extern void intel_write_eld(struct drm_encoder *encoder,
-- 			    struct drm_display_mode *mode);
-- extern void intel_prepare_ddi(struct drm_device *dev);
-- extern void hsw_fdi_link_train(struct drm_crtc *crtc);
-- extern void intel_ddi_init(struct drm_device *dev, enum port port);
-- extern enum port intel_ddi_get_encoder_port(struct intel_encoder *intel_encoder);
-- 
-- /* For use by IVB LP watermark workaround in intel_sprite.c */
-- extern void intel_update_watermarks(struct drm_crtc *crtc);
-- extern void intel_update_sprite_watermarks(struct drm_plane *plane,
-- 					   struct drm_crtc *crtc,
-- 					   uint32_t sprite_width, int pixel_size,
-- 					   bool enabled, bool scaled);
-- 
-- extern unsigned long intel_gen4_compute_page_offset(int *x, int *y,
-- 						    unsigned int tiling_mode,
-- 						    unsigned int bpp,
-- 						    unsigned int pitch);
-- 
-- extern int intel_sprite_set_colorkey(struct drm_device *dev, void *data,
-- 				     struct drm_file *file_priv);
-- extern int intel_sprite_get_colorkey(struct drm_device *dev, void *data,
-- 				     struct drm_file *file_priv);
-- 
-- /* Power-related functions, located in intel_pm.c */
-- extern void intel_init_pm(struct drm_device *dev);
-- /* FBC */
-- extern bool intel_fbc_enabled(struct drm_device *dev);
-- extern void intel_update_fbc(struct drm_device *dev);
-- /* IPS */
-- extern void intel_gpu_ips_init(struct drm_i915_private *dev_priv);
-- extern void intel_gpu_ips_teardown(void);
-- 
-- /* Power well */
-- extern int i915_init_power_well(struct drm_device *dev);
-- extern void i915_remove_power_well(struct drm_device *dev);
-- 
-- extern bool intel_display_power_enabled(struct drm_device *dev,
-- 					enum intel_display_power_domain domain);
-- extern void intel_display_power_get(struct drm_device *dev,
-- 				    enum intel_display_power_domain domain);
-- extern void intel_display_power_put(struct drm_device *dev,
-- 				    enum intel_display_power_domain domain);
-- extern void intel_init_power_well(struct drm_device *dev);
-- extern void intel_set_power_well(struct drm_device *dev, bool enable);
-- extern void intel_resume_power_well(struct drm_device *dev);
-- extern void intel_enable_gt_powersave(struct drm_device *dev);
-- extern void intel_disable_gt_powersave(struct drm_device *dev);
-- extern void ironlake_teardown_rc6(struct drm_device *dev);
-+ /* intel_dvo.c */
-+ void intel_dvo_init(struct drm_device *dev);
-+ 
-+ 
-+ /* legacy fbdev emulation in intel_fbdev.c */
-+ #ifdef CONFIG_DRM_I915_FBDEV
-+ extern int intel_fbdev_init(struct drm_device *dev);
-+ extern void intel_fbdev_initial_config(struct drm_device *dev);
-+ extern void intel_fbdev_fini(struct drm_device *dev);
-+ extern void intel_fbdev_set_suspend(struct drm_device *dev, int state);
-+ extern void intel_fbdev_output_poll_changed(struct drm_device *dev);
-+ extern void intel_fbdev_restore_mode(struct drm_device *dev);
-+ #else
-+ static inline int intel_fbdev_init(struct drm_device *dev)
-+ {
-+ 	return 0;
-+ }
-+ 
-+ static inline void intel_fbdev_initial_config(struct drm_device *dev)
-+ {
-+ }
-+ 
-+ static inline void intel_fbdev_fini(struct drm_device *dev)
-+ {
-+ }
-+ 
-+ static inline void intel_fbdev_set_suspend(struct drm_device *dev, int state)
-+ {
-+ }
-+ 
-+ static inline void intel_fbdev_restore_mode(struct drm_device *dev)
-+ {
-+ }
-+ #endif
-+ 
-+ /* intel_hdmi.c */
-+ void intel_hdmi_init(struct drm_device *dev, int hdmi_reg, enum port port);
-+ void intel_hdmi_init_connector(struct intel_digital_port *intel_dig_port,
-+ 			       struct intel_connector *intel_connector);
-+ struct intel_hdmi *enc_to_intel_hdmi(struct drm_encoder *encoder);
-+ bool intel_hdmi_compute_config(struct intel_encoder *encoder,
-+ 			       struct intel_crtc_config *pipe_config);
-+ 
-+ 
-+ /* intel_lvds.c */
-+ void intel_lvds_init(struct drm_device *dev);
-+ bool intel_is_dual_link_lvds(struct drm_device *dev);
-+ 
-+ 
-+ /* intel_modes.c */
-+ int intel_connector_update_modes(struct drm_connector *connector,
-+ 				 struct edid *edid);
-+ int intel_ddc_get_modes(struct drm_connector *c, struct i2c_adapter *adapter);
-+ void intel_attach_force_audio_property(struct drm_connector *connector);
-+ void intel_attach_broadcast_rgb_property(struct drm_connector *connector);
-+ 
-+ 
-+ /* intel_overlay.c */
-+ void intel_setup_overlay(struct drm_device *dev);
-+ void intel_cleanup_overlay(struct drm_device *dev);
-+ int intel_overlay_switch_off(struct intel_overlay *overlay);
-+ int intel_overlay_put_image(struct drm_device *dev, void *data,
-+ 			    struct drm_file *file_priv);
-+ int intel_overlay_attrs(struct drm_device *dev, void *data,
-+ 			struct drm_file *file_priv);
-+ 
-+ 
-+ /* intel_panel.c */
-+ int intel_panel_init(struct intel_panel *panel,
-+ 		     struct drm_display_mode *fixed_mode);
-+ void intel_panel_fini(struct intel_panel *panel);
-+ void intel_fixed_panel_mode(const struct drm_display_mode *fixed_mode,
-+ 			    struct drm_display_mode *adjusted_mode);
-+ void intel_pch_panel_fitting(struct intel_crtc *crtc,
-+ 			     struct intel_crtc_config *pipe_config,
-+ 			     int fitting_mode);
-+ void intel_gmch_panel_fitting(struct intel_crtc *crtc,
-+ 			      struct intel_crtc_config *pipe_config,
-+ 			      int fitting_mode);
-+ void intel_panel_set_backlight(struct drm_device *dev, u32 level, u32 max);
-+ int intel_panel_setup_backlight(struct drm_connector *connector);
-+ void intel_panel_enable_backlight(struct drm_device *dev, enum pipe pipe);
-+ void intel_panel_disable_backlight(struct drm_device *dev);
-+ void intel_panel_destroy_backlight(struct drm_device *dev);
-+ enum drm_connector_status intel_panel_detect(struct drm_device *dev);
-+ 
-+ 
-+ /* intel_pm.c */
-+ void intel_init_clock_gating(struct drm_device *dev);
-+ void intel_suspend_hw(struct drm_device *dev);
-+ void intel_update_watermarks(struct drm_crtc *crtc);
-+ void intel_update_sprite_watermarks(struct drm_plane *plane,
-+ 				    struct drm_crtc *crtc,
-+ 				    uint32_t sprite_width, int pixel_size,
-+ 				    bool enabled, bool scaled);
-+ void intel_init_pm(struct drm_device *dev);
-+ bool intel_fbc_enabled(struct drm_device *dev);
-+ void intel_update_fbc(struct drm_device *dev);
-+ void intel_gpu_ips_init(struct drm_i915_private *dev_priv);
-+ void intel_gpu_ips_teardown(void);
-+ int i915_init_power_well(struct drm_device *dev);
-+ void i915_remove_power_well(struct drm_device *dev);
-+ bool intel_display_power_enabled(struct drm_device *dev,
-+ 				 enum intel_display_power_domain domain);
-+ void intel_display_power_get(struct drm_device *dev,
-+ 			     enum intel_display_power_domain domain);
-+ void intel_display_power_put(struct drm_device *dev,
-+ 			     enum intel_display_power_domain domain);
-+ void intel_init_power_well(struct drm_device *dev);
-+ void intel_set_power_well(struct drm_device *dev, bool enable);
-+ void intel_enable_gt_powersave(struct drm_device *dev);
-+ void intel_disable_gt_powersave(struct drm_device *dev);
-+ void ironlake_teardown_rc6(struct drm_device *dev);
-  void gen6_update_ring_freq(struct drm_device *dev);
-+ void gen6_rps_idle(struct drm_i915_private *dev_priv);
-+ void gen6_rps_boost(struct drm_i915_private *dev_priv);
-+ void intel_aux_display_runtime_get(struct drm_i915_private *dev_priv);
-+ void intel_aux_display_runtime_put(struct drm_i915_private *dev_priv);
-  
-- extern bool intel_ddi_get_hw_state(struct intel_encoder *encoder,
-- 				   enum pipe *pipe);
-- extern int intel_ddi_get_cdclk_freq(struct drm_i915_private *dev_priv);
-- extern void intel_ddi_pll_init(struct drm_device *dev);
-- extern void intel_ddi_enable_transcoder_func(struct drm_crtc *crtc);
-- extern void intel_ddi_disable_transcoder_func(struct drm_i915_private *dev_priv,
-- 					      enum transcoder cpu_transcoder);
-- extern void intel_ddi_enable_pipe_clock(struct intel_crtc *intel_crtc);
-- extern void intel_ddi_disable_pipe_clock(struct intel_crtc *intel_crtc);
-- extern void intel_ddi_setup_hw_pll_state(struct drm_device *dev);
-- extern bool intel_ddi_pll_mode_set(struct drm_crtc *crtc);
-- extern void intel_ddi_put_crtc_pll(struct drm_crtc *crtc);
-- extern void intel_ddi_set_pipe_settings(struct drm_crtc *crtc);
-- extern void intel_ddi_prepare_link_retrain(struct drm_encoder *encoder);
-- extern bool
-- intel_ddi_connector_get_hw_state(struct intel_connector *intel_connector);
-- extern void intel_ddi_fdi_disable(struct drm_crtc *crtc);
-- 
-- extern void intel_display_handle_reset(struct drm_device *dev);
-- extern bool intel_set_cpu_fifo_underrun_reporting(struct drm_device *dev,
-- 						  enum pipe pipe,
-- 						  bool enable);
-- extern bool intel_set_pch_fifo_underrun_reporting(struct drm_device *dev,
-- 						 enum transcoder pch_transcoder,
-- 						 bool enable);
-- 
-- extern void intel_edp_psr_enable(struct intel_dp *intel_dp);
-- extern void intel_edp_psr_disable(struct intel_dp *intel_dp);
-- extern void intel_edp_psr_update(struct drm_device *dev);
-- extern void hsw_disable_lcpll(struct drm_i915_private *dev_priv,
-- 			      bool switch_to_fclk, bool allow_power_down);
-- extern void hsw_restore_lcpll(struct drm_i915_private *dev_priv);
-- extern void ilk_enable_gt_irq(struct drm_i915_private *dev_priv, uint32_t mask);
-- extern void ilk_disable_gt_irq(struct drm_i915_private *dev_priv,
-- 			       uint32_t mask);
-- extern void snb_enable_pm_irq(struct drm_i915_private *dev_priv, uint32_t mask);
-- extern void snb_disable_pm_irq(struct drm_i915_private *dev_priv,
-- 			       uint32_t mask);
-- extern void hsw_enable_pc8_work(struct work_struct *__work);
-- extern void hsw_enable_package_c8(struct drm_i915_private *dev_priv);
-- extern void hsw_disable_package_c8(struct drm_i915_private *dev_priv);
-- extern void hsw_pc8_disable_interrupts(struct drm_device *dev);
-- extern void hsw_pc8_restore_interrupts(struct drm_device *dev);
-- extern void intel_aux_display_runtime_get(struct drm_i915_private *dev_priv);
-- extern void intel_aux_display_runtime_put(struct drm_i915_private *dev_priv);
-- extern void intel_dp_get_m_n(struct intel_crtc *crtc,
-- 			     struct intel_crtc_config *pipe_config);
-- extern int intel_dotclock_calculate(int link_freq,
-- 				    const struct intel_link_m_n *m_n);
-- extern void ironlake_check_encoder_dotclock(const struct intel_crtc_config *pipe_config,
-- 					    int dotclock);
-  
-- extern bool intel_crtc_active(struct drm_crtc *crtc);
-+ /* intel_sdvo.c */
-+ bool intel_sdvo_init(struct drm_device *dev, uint32_t sdvo_reg, bool is_sdvob);
-+ 
-+ 
-+ /* intel_sprite.c */
-+ int intel_plane_init(struct drm_device *dev, enum pipe pipe, int plane);
-+ void intel_flush_primary_plane(struct drm_i915_private *dev_priv,
-+ 			       enum plane plane);
-+ void intel_plane_restore(struct drm_plane *plane);
-+ void intel_plane_disable(struct drm_plane *plane);
-+ int intel_sprite_set_colorkey(struct drm_device *dev, void *data,
-+ 			      struct drm_file *file_priv);
-+ int intel_sprite_get_colorkey(struct drm_device *dev, void *data,
-+ 			      struct drm_file *file_priv);
-+ 
-++bool intel_crtc_active(struct drm_crtc *crtc);
-+ 
-+ /* intel_tv.c */
-+ void intel_tv_init(struct drm_device *dev);
-  
-  #endif /* __INTEL_DRV_H__ */
+The exact separation between Exynos4412 and Exynos5250 is done when we
+assign value to .tmu_data at exynos4412_default_tmu_data and
+exynos5250_default_tmu_data.
+
+The test [1] is correct here.
+
+> 
+> > +static const struct exynos_tmu_registers exynos4412_tmu_registers
+> > = { .triminfo_data = EXYNOS_TMU_REG_TRIMINFO,
+> >  	.triminfo_25_shift = EXYNOS_TRIMINFO_25_SHIFT,
+> >  	.triminfo_85_shift = EXYNOS_TRIMINFO_85_SHIFT,
+> > @@ -128,7 +128,7 @@ static const struct exynos_tmu_registers
+> > exynos5250_tmu_registers = { .emul_time_mask =
+> > EXYNOS_EMUL_TIME_MASK, };
+> >  
+> > -#define EXYNOS5250_TMU_DATA \
+> > +#define EXYNOS4412_TMU_DATA \
+> >  	.threshold_falling = 10, \
+> >  	.trigger_levels[0] = 85, \
+> >  	.trigger_levels[1] = 103, \
+> > @@ -162,15 +162,31 @@ static const struct exynos_tmu_registers
+> > exynos5250_tmu_registers = { .temp_level = 103, \
+> >  	}, \
+> >  	.freq_tab_count = 2, \
+> > -	.type = SOC_ARCH_EXYNOS, \
+> > -	.registers = &exynos5250_tmu_registers, \
+> > +	.registers = &exynos4412_tmu_registers, \
+> >  	.features = (TMU_SUPPORT_EMULATION |
+> > TMU_SUPPORT_TRIM_RELOAD | \ TMU_SUPPORT_FALLING_TRIP |
+> > TMU_SUPPORT_READY_STATUS | \ TMU_SUPPORT_EMUL_TIME)
+> > +#endif
+> >  
+> > +#if defined(CONFIG_SOC_EXYNOS4412)
+> > +struct exynos_tmu_init_data const exynos4412_default_tmu_data = {
+> > +	.tmu_data = {
+> > +		{
+> > +			EXYNOS4412_TMU_DATA,
+> > +			.type = SOC_ARCH_EXYNOS4412,
+> > +		},
+> > +	},
+> > +	.tmu_count = 1,
+> > +};
+> > +#endif
+> > +
+> > +#if defined(CONFIG_SOC_EXYNOS5250)
+> >  struct exynos_tmu_init_data const exynos5250_default_tmu_data = {
+> >  	.tmu_data = {
+> > -		{ EXYNOS5250_TMU_DATA },
+> > +		{
+> > +			EXYNOS4412_TMU_DATA,
+> > +			.type = SOC_ARCH_EXYNOS5250,
+> > +		},
+> >  	},
+> >  	.tmu_count = 1,
+> >  };
+> > diff --git a/drivers/thermal/samsung/exynos_tmu_data.h
+> > b/drivers/thermal/samsung/exynos_tmu_data.h index dc7feb5..b130b1e
+> > 100644 --- a/drivers/thermal/samsung/exynos_tmu_data.h
+> > +++ b/drivers/thermal/samsung/exynos_tmu_data.h
+> > @@ -138,7 +138,14 @@ extern struct exynos_tmu_init_data const
+> > exynos4210_default_tmu_data; #define EXYNOS4210_TMU_DRV_DATA (NULL)
+> >  #endif
+> >  
+> > -#if (defined(CONFIG_SOC_EXYNOS5250) ||
+> > defined(CONFIG_SOC_EXYNOS4412)) +#if defined(CONFIG_SOC_EXYNOS4412)
+> > +extern struct exynos_tmu_init_data const
+> > exynos4412_default_tmu_data; +#define EXYNOS4412_TMU_DRV_DATA
+> > (&exynos4412_default_tmu_data) +#else
+> > +#define EXYNOS4412_TMU_DRV_DATA (NULL)
+> > +#endif
+> > +
+> > +#if defined(CONFIG_SOC_EXYNOS5250)
+> >  extern struct exynos_tmu_init_data const
+> > exynos5250_default_tmu_data; #define EXYNOS5250_TMU_DRV_DATA
+> > (&exynos5250_default_tmu_data) #else
+> > 
+> 
+> 
+
+
+
+-- 
+Best regards,
+
+Lukasz Majewski
+
+Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
