@@ -1,75 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757140Ab3JNTIJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 15:08:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40994 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755590Ab3JNTII (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 15:08:08 -0400
-Date: Mon, 14 Oct 2013 21:00:54 +0200
-From: Oleg Nesterov <oleg@redhat.com>
+	id S1757310Ab3JNTIb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 15:08:31 -0400
+Received: from a9-42.smtp-out.amazonses.com ([54.240.9.42]:59508 "EHLO
+	a9-42.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757266Ab3JNTIa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 15:08:30 -0400
+Date: Mon, 14 Oct 2013 19:02:29 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
 To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Anton Arapov <aarapov@redhat.com>,
-        David Smith <dsmith@redhat.com>, "Frank Ch. Eigler" <fche@redhat.com>,
-        Martin Cermak <mcermak@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/5] uprobes: Change uprobe_copy_process() to dup
-	return_instances
-Message-ID: <20131014190054.GA15710@redhat.com>
-References: <20131013191815.GA32466@redhat.com> <20131013191841.GA32499@redhat.com> <20131014184548.GG2675@laptop.programming.kicks-ass.net>
+cc: Ingo Molnar <mingo@kernel.org>, David Miller <davem@davemloft.net>,
+        tj@kernel.org, akpm@linuxfoundation.org, srostedt@redhat.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de
+Subject: Re: [PATCH 0/6] percpu: Implement Preemption checks for __this_cpu
+ operations V4
+In-Reply-To: <20131014103258.GY3081@twins.programming.kicks-ass.net>
+Message-ID: <00000141b8591950-3f399b8b-fdc7-41a0-b84c-bb632e8adba7-000000@email.amazonses.com>
+References: <00000141a8a7ea27-4ab5f822-e15f-4789-a5cf-f313c402a901-000000@email.amazonses.com> <20131011.140814.422793173894221852.davem@davemloft.net> <20131012165120.GA15116@gmail.com> <20131014103258.GY3081@twins.programming.kicks-ass.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131014184548.GG2675@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.10.14-54.240.9.42
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/14, Peter Zijlstra wrote:
+On Mon, 14 Oct 2013, Peter Zijlstra wrote:
+
+> > Most kernel developers tend to use 'git send-email' to send patches to
+> > lkml, and that method is working pretty reliably.
 >
-> On Sun, Oct 13, 2013 at 09:18:41PM +0200, Oleg Nesterov wrote:
-> > uprobe_copy_process() assumes that the new child doesn't need
-> > ->utask, it should be allocated by demand.
-> >
-> > But this is not true if the forking task has the pending ret-
-> > probes, the child should report them as well and thus it needs
-> > the copy of parent's ->return_instances chain. Otherwise the
-> > child crashes when it returns from the probed function.
->
-> So children don't automagically inherit the same probes
+> I always use quilt mail, it typically adds a reference to the 0/0 email
+> and ensures the time of each msg is one second ahead of the previous one
+> to ensure order is correct.
 
-They actually do. And in this case they also "inherit" the fact that
-the probed function was called, even if the forked child didn't do
-this actually.
+Yes that I also what I expected to happen and what always happened in the
+past.
 
-> so wouldn't simply fixing up the
-> child stack be a solution?
+> I've no idea how Christoph managed to wreck this, but normally quilt
+> mail DTRT (as opposed to git send-email which used to default to
+> endlessly deep threads -- got fixed in 1.6 or 1.7 or thereabouts).
 
-This was plan A ;)
-
-> If not; its not entirely clear to my why this isn't a good solution
-
-Tthis doesn't look correct, although "correct" is subjective and we
-never tried to enforce the rules before. But at least stap wants to
-see the reports from the child.
-
-Another reason is that this needs the arch-specific changes/hooks.
-Say, I simply do not know how we can "revert" the effect of
-"regs->link = trampoline_vaddr" on powerpc, this looks simply
-impossible.
-
-And even on x86 we either need __access_remote_vm() from copy_process()
-or or dup_utask() + task_work_run() so that the child can do this itself.
-
-(plus we also need to change prepare_uretprobe(), say, on x86 it should
- record regs->sp in return_instance, but this is minor).
-
-> based on these changelogs.
-
-Note the "the child should report them as well"... but yes, agreed,
-I will update the changelog.
-
-Oleg.
+Well this is going through Amazon cloud email which may be wrecking
+things. Had a number of issues already with messages being delayed etc. I
+can try to revert to my home setup and see if that fixes things.
 
