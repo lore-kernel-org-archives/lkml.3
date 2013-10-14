@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755002Ab3JNIqk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 04:46:40 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:50803 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754142Ab3JNIqi (ORCPT
+	id S1755523Ab3JNIrn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 04:47:43 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:36260 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753950Ab3JNIrl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 04:46:38 -0400
-X-AuditID: cbfee68f-b7f1e6d000004e8d-c2-525baf6d997f
+	Mon, 14 Oct 2013 04:47:41 -0400
+X-AuditID: cbfee68d-b7fe86d0000077a5-0f-525bafa4eb22
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Mark Brown'" <broonie@kernel.org>
 Cc: "'Liam Girdwood'" <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
         "'Jingoo Han'" <jg1.han@samsung.com>,
-        "'Laxman Dewangan'" <ldewangan@nvidia.com>
+        "'Marek Szyprowski'" <m.szyprowski@samsung.com>
 References: <000001cec8b9$931f4c90$b95de5b0$%han@samsung.com>
 In-reply-to: <000001cec8b9$931f4c90$b95de5b0$%han@samsung.com>
-Subject: [PATCH 03/11] regulator: fixed: Fix checkpatch issue
-Date: Mon, 14 Oct 2013 17:46:36 +0900
-Message-id: <000201cec8b9$e47ceb60$ad76c220$%han@samsung.com>
+Subject: [PATCH 04/11] regulator: lp3971: Fix checkpatch issue
+Date: Mon, 14 Oct 2013 17:47:31 +0900
+Message-id: <000301cec8ba$0530ce80$0f926b80$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac7IuZK01KcLw1AZSDCREfGxHfkpOgAADe0g
+Thread-index: Ac7IuZK01KcLw1AZSDCREfGxHfkpOgAAFKzg
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOIsWRmVeSWpSXmKPExsVy+t8zA93c9dFBBvf3sVlMffiEzeLywkus
-	Fkv3rWax+Halg8ni8q45bA6sHjtn3WX32LSqk82jt/kdm0ffllWMHp83yQWwRnHZpKTmZJal
-	FunbJXBlrL33iqngFkfFo0UTWBsYu9i7GDk5JARMJFoOLoSyxSQu3FvPBmILCSxjlDh8IxOm
-	5uaF7YxdjFxA8UWMEse//mKGcH4xSjz+cRmsg01ATeLLl8NAkzg4RARUJf6/cgepYRaYzihx
-	duZ9doipthJ3T19iBrE5BewkFn7bxQJiCwPFz+/YATaHBaj395NWsDgvULx94gUmCFtQ4sfk
-	e2BxZgEtifU7jzNB2PISm9e8ZQbZKyGgLvHory5IWETASOLl7bdQJSIS+168A3tAQuAWu8TL
-	GT1MELsEJL5NPsQC0SsrsekAM8TDkhIHV9xgmcAoMQvJ5llINs9CsnkWkhULGFlWMYqmFiQX
-	FCelFxnrFSfmFpfmpesl5+duYoREav8OxrsHrA8xJgOtn8gsJZqcD4z0vJJ4Q2MzIwtTE1Nj
-	I3NLM9KElcR51VqsA4UE0hNLUrNTUwtSi+KLSnNSiw8xMnFwSjUw5s6vuM69OOrjBcWPUvy/
-	zDKNpkzpdOU7lZuvtuZKN59u8r3tprWZfM+OhDbI31bM8L7w4SHjxzOxS95pBDm+tKvf8fGz
-	arG+mXulTjnz4Tlqj5xbTqvHVItJ3pm7U7wsuq7TYuHStObvEcr3tV9cY7FVPuk1da1U1jcb
-	zf/N/UfYnG8tLNqvxFKckWioxVxUnAgALdGNS+oCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKKsWRmVeSWpSXmKPExsVy+t9jAd3c9dFBBg/2MFlMffiEzeLywkus
-	Fkv3rWax+Halg8ni8q45bA6sHjtn3WX32LSqk82jt/kdm0ffllWMHp83yQWwRjUw2mSkJqak
-	Fimk5iXnp2TmpdsqeQfHO8ebmhkY6hpaWpgrKeQl5qbaKrn4BOi6ZeYAbVdSKEvMKQUKBSQW
-	Fyvp22GaEBripmsB0xih6xsSBNdjZIAGEtYxZqy994qp4BZHxaNFE1gbGLvYuxg5OSQETCRu
-	XtjOCGGLSVy4t56ti5GLQ0hgEaPE8a+/mCGcX4wSj39cZgOpYhNQk/jy5TBQNweHiICqxP9X
-	7iA1zALTGSXOzrwPNlVIwFbi7ulLzCA2p4CdxMJvu1hAbGGg+PkdO8DmsAD1/n7SChbnBYq3
-	T7zABGELSvyYfA8sziygJbF+53EmCFteYvOat8wgeyUE1CUe/dUFCYsIGEm8vP0WqkREYt+L
-	d4wTGIVmIZk0C8mkWUgmzULSsoCRZRWjaGpBckFxUnqukV5xYm5xaV66XnJ+7iZGcCJ4Jr2D
-	cVWDxSFGAQ5GJR5eAafoICHWxLLiytxDjBIczEoivILzgEK8KYmVValF+fFFpTmpxYcYk4Ee
-	ncgsJZqcD0xSeSXxhsYmZkaWRmYWRibm5qQJK4nzHmy1DhQSSE8sSc1OTS1ILYLZwsTBKdXA
-	uHzTb8ZJ85dOCor1N28+LKYqtdhCaWll3ltHkamZkcelYl2CehTiVKe/Mfh9Qznvd3S503X/
-	kwovi7eu1Hs049MBWYlz7s172BVLYl9NOvCLaRfLk8QXsSecbDJ0rnPz/b3N78Ehtd+eeXYb
-	Jyev98qUh3wOh1wD1RYWOiqtljv03mWfo4a/EktxRqKhFnNRcSIAUe25vUgDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMIsWRmVeSWpSXmKPExsVy+t8zQ90l66ODDE6t5rCY+vAJm8XlhZdY
+	Lb5d6WCyuLxrDpvF2iN32R1YPXbOusvusWlVJ5tH35ZVjB6fN8kFsERx2aSk5mSWpRbp2yVw
+	ZRzddIy9YB1rRc/uC2wNjAtZuhg5OSQETCQO3u9jgrDFJC7cW8/WxcjFISSwjFFi3dOJzDBF
+	i9+fYIZITGeUePf2HzuE84tR4lxDA1g7m4CaxJcvh4ESHBwiAqoS/1+5g9QwC8xjlPjw7zw7
+	SI2QgK3E3dOXwKZyCthJLPy2C+wMYSD7x71GNhCbBaj3fFcbK4jNC1Tfu/E1E4QtKPFj8j2w
+	emYBLYn1O48zQdjyEpvXvGUG2SshoC7x6K8uSFhEwEhiyrN5UCUiEvtevGMEuUdC4Bq7xPEj
+	U1kgdglIfJt8iAWiV1Zi0wGohyUlDq64wTKBUWIWks2zkGyehWTzLCQrFjCyrGIUTS1ILihO
+	Si8y1CtOzC0uzUvXS87P3cQIidDeHYy3D1gfYkwGWj+RWUo0OR8Y4Xkl8YbGZkYWpiamxkbm
+	lmakCSuJ86q1WAcKCaQnlqRmp6YWpBbFF5XmpBYfYmTi4JRqYMycuPLVKTVh4z8xP0p3z9j6
+	a8ZrFrdAjjMxnsd2bjHrO8o5k9H22hobxQgrvudrYnYuS06zvNapIXGCx/rx1yPBX1KzO7L3
+	fmBI1Y8xF7TeWBb0wnbN4o2zF39/onRI9pv70UdVPQENcqZuNx//yZyVW7D1D5NQL39vi3wf
+	w+3fpcdPHw2NkVZiKc5INNRiLipOBACLM4Ic5gIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrAKsWRmVeSWpSXmKPExsVy+t9jQd0l66ODDNofsVhMffiEzeLywkus
+	Ft+udDBZXN41h81i7ZG77A6sHjtn3WX32LSqk82jb8sqRo/Pm+QCWKIaGG0yUhNTUosUUvOS
+	81My89JtlbyD453jTc0MDHUNLS3MlRTyEnNTbZVcfAJ03TJzgBYrKZQl5pQChQISi4uV9O0w
+	TQgNcdO1gGmM0PUNCYLrMTJAAwnrGDOObjrGXrCOtaJn9wW2BsaFLF2MnBwSAiYSi9+fYIaw
+	xSQu3FvP1sXIxSEkMJ1R4t3bf+wQzi9GiXMNDUwgVWwCahJfvhwGSnBwiAioSvx/5Q5Swyww
+	j1Hiw7/z7CA1QgK2EndPXwKbyilgJ7Hw2y6wbcJA9o97jWwgNgtQ7/muNlYQmxeovnfjayYI
+	W1Dix+R7YPXMAloS63ceZ4Kw5SU2r3nLDLJXQkBd4tFfXZCwiICRxJRn86BKRCT2vXjHOIFR
+	aBaSSbOQTJqFZNIsJC0LGFlWMYqmFiQXFCel5xrqFSfmFpfmpesl5+duYgTH/zOpHYwrGywO
+	MQpwMCrx8Ao4RQcJsSaWFVfmHmKU4GBWEuEVnAcU4k1JrKxKLcqPLyrNSS0+xJgM9OhEZinR
+	5HxgasoriTc0NjEzsjQyszAyMTcnTVhJnPdAq3WgkEB6YklqdmpqQWoRzBYmDk4pYJSmSFRe
+	uN3KbLjx2PZrW79w3Zvz3ORlwflNU2c3JD9yd8n992B9uu9DV68KgeWHtNJnePwpnGRpxLRx
+	gyaLzhuV/fb6EpM+Cgo01b7wUzi2OGu7I+dGGU+Jd4yffqk23e5O38jWeF9u8p2oXauLHz7P
+	KDj3wr7hTeDn+bU7Nkw5kfCHecPuD8eVWIozEg21mIuKEwG6290MQwMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -58,39 +58,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Fix the following checkpatch warnings.
 
-  WARNING: braces {} are not necessary for any arm of this statement
+  WARNING: please, no spaces at the start of a line
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/regulator/fixed.c |   10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
+ drivers/regulator/lp3971.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/regulator/fixed.c b/drivers/regulator/fixed.c
-index de811f3..5ea64b9 100644
---- a/drivers/regulator/fixed.c
-+++ b/drivers/regulator/fixed.c
-@@ -168,17 +168,15 @@ static int reg_fixed_voltage_probe(struct platform_device *pdev)
- 		cfg.ena_gpio = config->gpio;
- 	cfg.ena_gpio_invert = !config->enable_high;
- 	if (config->enabled_at_boot) {
--		if (config->enable_high) {
-+		if (config->enable_high)
- 			cfg.ena_gpio_flags |= GPIOF_OUT_INIT_HIGH;
--		} else {
-+		else
- 			cfg.ena_gpio_flags |= GPIOF_OUT_INIT_LOW;
--		}
- 	} else {
--		if (config->enable_high) {
-+		if (config->enable_high)
- 			cfg.ena_gpio_flags |= GPIOF_OUT_INIT_LOW;
--		} else {
-+		else
- 			cfg.ena_gpio_flags |= GPIOF_OUT_INIT_HIGH;
--		}
- 	}
- 	if (config->gpio_is_open_drain)
- 		cfg.ena_gpio_flags |= GPIOF_OPEN_DRAIN;
+diff --git a/drivers/regulator/lp3971.c b/drivers/regulator/lp3971.c
+index 5a4604e..947c05f 100644
+--- a/drivers/regulator/lp3971.c
++++ b/drivers/regulator/lp3971.c
+@@ -474,8 +474,8 @@ static int lp3971_i2c_remove(struct i2c_client *i2c)
+ }
+ 
+ static const struct i2c_device_id lp3971_i2c_id[] = {
+-       { "lp3971", 0 },
+-       { }
++	{ "lp3971", 0 },
++	{ }
+ };
+ MODULE_DEVICE_TABLE(i2c, lp3971_i2c_id);
+ 
 -- 
 1.7.10.4
 
