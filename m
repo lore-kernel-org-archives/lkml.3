@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932121Ab3JNOua (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 10:50:30 -0400
-Received: from mail-bk0-f52.google.com ([209.85.214.52]:40311 "EHLO
-	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756560Ab3JNOu1 (ORCPT
+	id S932175Ab3JNOuh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 10:50:37 -0400
+Received: from mail-bk0-f42.google.com ([209.85.214.42]:62724 "EHLO
+	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932155Ab3JNOue (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 10:50:27 -0400
+	Mon, 14 Oct 2013 10:50:34 -0400
 From: Thierry Reding <thierry.reding@gmail.com>
-To: Dave Airlie <airlied@linux.ie>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
-	<ville.syrjala@linux.intel.com>
+To: Mark Brown <broonie@kernel.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Jarkko Nikula <jarkko.nikula@linux.intel.com>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: manual merge of the drm tree
-Date: Mon, 14 Oct 2013 16:48:04 +0200
-Message-Id: <1381762088-18880-4-git-send-email-treding@nvidia.com>
+Subject: linux-next: manual merge of the spi tree
+Date: Mon, 14 Oct 2013 16:48:08 +0200
+Message-Id: <1381762088-18880-8-git-send-email-treding@nvidia.com>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1381762088-18880-1-git-send-email-treding@nvidia.com>
 References: <1381762088-18880-1-git-send-email-treding@nvidia.com>
@@ -23,38 +23,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Today's linux-next merge of the drm tree got conflicts in
+Today's linux-next merge of the spi tree got a conflict in
 
-	drivers/gpu/drm/i915/intel_drv.h
+	drivers/spi/spi.c
 
-caused by commits e1264eb (Revert "drm/i915: Delay disabling of VGA memory
-until vgacon->fbcon handoff is done"), 20ddf66 (drm/i915: Make
-intel_crtc_active() available outside intel_pm.c), 18442d0 (drm/i915: Fix
-port_clock and adjusted_mode.clock readout all over), 6878da0 (drm/i915:
-Add intel_dotclock_calculate()) and eb14cb7 (drm/i915: Add state readout
-and checking for has_dp_encoder and dp_m_n).
+Caused by commits cf9eb39 (spi: Fix modalias for ACPI enumerated SPI devices)
+and 33cf00e (spi: attach/detach SPI device to the ACPI power domain).
 
-I fixed them up (see below). Please verify that the resolution looks good.
+I fixed it up (see below). Please verify that the resolution looks good.
 
 Thanks,
 Thierry
 ---
-diff --cc drivers/gpu/drm/i915/intel_drv.h
-index 9b7b68f,287bbef..39bfdb3
---- a/drivers/gpu/drm/i915/intel_drv.h
-+++ b/drivers/gpu/drm/i915/intel_drv.h
-@@@ -793,5 -817,14 +817,13 @@@ extern void hsw_pc8_disable_interrupts(
-  extern void hsw_pc8_restore_interrupts(struct drm_device *dev);
-  extern void intel_aux_display_runtime_get(struct drm_i915_private *dev_priv);
-  extern void intel_aux_display_runtime_put(struct drm_i915_private *dev_priv);
-+ extern void intel_dp_get_m_n(struct intel_crtc *crtc,
-+ 			     struct intel_crtc_config *pipe_config);
-+ extern int intel_dotclock_calculate(int link_freq,
-+ 				    const struct intel_link_m_n *m_n);
-+ extern void ironlake_check_encoder_dotclock(const struct intel_crtc_config *pipe_config,
-+ 					    int dotclock);
-+ 
-+ extern bool intel_crtc_active(struct drm_crtc *crtc);
- -extern void i915_disable_vga_mem(struct drm_device *dev);
+diff --cc drivers/spi/spi.c
+index 740f9dd,2d29dee..8a0fc92
+--- a/drivers/spi/spi.c
++++ b/drivers/spi/spi.c
+@@@ -1037,10 -1143,8 +1155,10 @@@ static acpi_status acpi_spi_add_device(
+  		return AE_OK;
+  	}
   
-  #endif /* __INTEL_DRV_H__ */
+ +	adev->power.flags.ignore_parent = true;
+- 	strlcpy(spi->modalias, dev_name(&adev->dev), sizeof(spi->modalias));
++ 	strlcpy(spi->modalias, acpi_device_hid(adev), sizeof(spi->modalias));
+  	if (spi_add_device(spi)) {
+ +		adev->power.flags.ignore_parent = false;
+  		dev_err(&master->dev, "failed to add SPI device %s from ACPI\n",
+  			dev_name(&adev->dev));
+  		spi_dev_put(spi);
