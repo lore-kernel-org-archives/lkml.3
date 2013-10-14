@@ -1,61 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757174Ab3JNQmW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 12:42:22 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49748 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756467Ab3JNQmU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 12:42:20 -0400
-Date: Mon, 14 Oct 2013 17:41:34 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Jiang Liu <liuj97@gmail.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 0/7] Optimize jump label implementation on ARM64
-Message-ID: <20131014164134.GP10491@mudshark.cambridge.arm.com>
-References: <1381675827-1610-1-git-send-email-liuj97@gmail.com>
- <20131014154044.GR25034@n2100.arm.linux.org.uk>
- <525C1469.4000906@gmail.com>
- <20131014160419.GS25034@n2100.arm.linux.org.uk>
+	id S1757354Ab3JNQnL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 12:43:11 -0400
+Received: from mga02.intel.com ([134.134.136.20]:61032 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757034Ab3JNQnI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 12:43:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,493,1378882800"; 
+   d="scan'208";a="418980433"
+Message-ID: <525C2004.1030604@linux.intel.com>
+Date: Mon, 14 Oct 2013 09:47:00 -0700
+From: David Cohen <david.a.cohen@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130929 Icedove/17.0.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131014160419.GS25034@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: tglx@linutronix.de, mingo@redhat.com, linux-kernel@vger.kernel.org,
+        x86@kernel.org, platform-driver-x86@vger.kernel.org,
+        Kuppuswamy Sathyanarayanan 
+	<sathyanarayanan.kuppuswamy@linux.intel.com>
+Subject: Re: [PATCH v3 10/10] intel_mid: Moved SFI related code to intel_mid_sfi.c
+References: <1381549404-22594-1-git-send-email-david.a.cohen@linux.intel.com> <1381549404-22594-11-git-send-email-david.a.cohen@linux.intel.com> <525C1E1C.9060306@zytor.com>
+In-Reply-To: <525C1E1C.9060306@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 14, 2013 at 05:04:20PM +0100, Russell King - ARM Linux wrote:
-> > On 10/14/2013 11:40 PM, Russell King - ARM Linux wrote:
-> |  In the simplest case, a `%' followed by a digit N says to output
-> | operand N at that point in the string.
-> | 
-> |  `%' followed by a letter and a digit says to output an operand in an
-> | alternate fashion.  Four letters have standard, built-in meanings
-> | described below.  The machine description macro `PRINT_OPERAND' can
-> | define additional letters with nonstandard meanings.
-> | 
-> |  `%cDIGIT' can be used to substitute an operand that is a constant
-> | value without the syntax that normally indicates an immediate operand.
-> | ...
-> |  `%lDIGIT' is used to substitute a `label_ref' into a jump instruction.
-> 
-> %lDIGIT is used (but not commented upon) in the gcc extended asm
-> documentation where it talks about asm gotos, so there's probably a doc
-> bug here too about whether these options should be described in the
-> main doc as well.
-> 
-> Nevertheness, this section is documenting the _internals_ of gcc, and
-> it seems perverse for a gcc backend to ignore something that is
-> documented as being a standard part of gcc.
+On 10/14/2013 09:38 AM, H. Peter Anvin wrote:
+> On 10/11/2013 08:43 PM, David Cohen wrote:
+>> From: Kuppuswamy Sathyanarayanan <sathyanarayanan.kuppuswamy@linux.intel.com>
+>>
+>> Moved SFI specific parsing/handling code to intel_mid_sfi.c. This will enable
+>> us to reuse our intel-mid code for platforms that supports firmware interfaces
+>> other than SFI (like ACPI).
+>>
+>> Signed-off-by: Kuppuswamy Sathyanarayanan <sathyanarayanan.kuppuswamy@linux.intel.com>
+>> Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+>> ---
+>>   arch/x86/include/asm/intel-mid.h            |   1 +
+>>   arch/x86/platform/intel-mid/Makefile        |   5 +-
+>>   arch/x86/platform/intel-mid/intel-mid.c     | 450 --------------------------
+>>   arch/x86/platform/intel-mid/intel_mid_sfi.c | 485 ++++++++++++++++++++++++++++
+>>   4 files changed, 489 insertions(+), 452 deletions(-)
+>>   create mode 100644 arch/x86/platform/intel-mid/intel_mid_sfi.c
+>>
+>
+> Why not just sfi.c?  It is already in a directly named intel-mid.
+>
+> I presume otherwise this is just code movement... I haven't verified
+> that, but it looked like it.
 
-I'll make sure this gets fixed.
+Yes, it is and I agree sfi.c seems better. Changing it for next patch
+set too.
 
-Will
+Br, David Cohen
+
+>
+> 	-hpa
+>
+
