@@ -1,56 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756700Ab3JNPfL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 11:35:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40271 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750958Ab3JNPfJ (ORCPT
+	id S1756800Ab3JNPgZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 11:36:25 -0400
+Received: from tango.0pointer.de ([85.214.72.216]:48186 "EHLO
+	tango.0pointer.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754052Ab3JNPgX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 11:35:09 -0400
-Date: Mon, 14 Oct 2013 08:33:56 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Aaro Koskinen <aaro.koskinen@iki.fi>
-Cc: Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: USB regression in v3.12-rc4
-Message-ID: <20131014153356.GA18373@kroah.com>
-References: <20131012214618.GD29989@blackmetal.musicnaut.iki.fi>
+	Mon, 14 Oct 2013 11:36:23 -0400
+Date: Mon, 14 Oct 2013 17:36:21 +0200
+From: Lennart Poettering <mzxreary@0pointer.de>
+To: Aaron Lu <aaron.lu@intel.com>
+Cc: Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        platform-driver-x86@vger.kernel.org
+Subject: Re: [PATCH] acpi/video: Add Lenovo IdeaPad Yoga 13 to acpi video
+  detect blacklist
+Message-ID: <20131014153621.GA7758@tango.0pointer.de>
+References: <20131014005505.GA30503@tango.0pointer.de>
+ <525B44C0.3010204@intel.com>
+ <20131014022325.GA2248@tango.0pointer.de>
+ <525B58BE.5050009@intel.com>
+ <20131014034927.GA3638@tango.0pointer.de>
+ <525B703E.7080102@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131012214618.GD29989@blackmetal.musicnaut.iki.fi>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <525B703E.7080102@intel.com>
+Organization: Red Hat, Inc.
+X-Campaign-1: ()  ASCII Ribbon Campaign
+X-Campaign-2: /  Against HTML Email & vCards - Against Microsoft Attachments
+User-Agent: Leviathan/19.8.0 [zh] (Cray 3; I; Solaris 4.711; Console)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 13, 2013 at 12:46:18AM +0300, Aaro Koskinen wrote:
-> Hi,
-> 
-> With v3.12-rc4 I can no longer connect to N800 (OMAP2) with USB
-> (peripheral, g_ether).
-> 
-> According to git bisect this is caused by:
-> 
-> 9b0a1de3c85d99d881c86a29b3d52da7b9c7bd61 is the first bad commit
-> commit 9b0a1de3c85d99d881c86a29b3d52da7b9c7bd61
-> Author: Bin Liu <b-liu@ti.com>
-> Date:   Tue Sep 17 15:33:35 2013 -0500
-> 
->     usb: musb: gadget: fix otg active status flag
-> 
->     In gadget mode, musb->is_active should be set only when connected to the
->     host. musb_g_reset() already takes care of it.
-> 
->     Signed-off-by: Bin Liu <b-liu@ti.com>
->     Signed-off-by: Felipe Balbi <balbi@ti.com>
-> 
-> Reverting that commit from v3.12-rc4 will fix the issue. Based on the
-> commit log this is not fixing any real issue, so I wonder why was it
-> included in -rc4 in the first place?
+On Mon, 14.10.13 12:17, Aaron Lu (aaron.lu@intel.com) wrote:
 
-Hm, Felipe, should I just revert this patch for 3.12-final?
+> > Hmm, regarding your patch series, do you plan to skip the registration
+> > of the acpi backlight device if the "raw" device is supported? I mean,
+> 
+> Yes, that's right.
+> 
+> > the intel driver could be compiled as a module (and generally is on the
+> > popular distros), so at the time the ACPI subsystem wants to register
+> > the backlight device and know if a raw backlight device is around it
+> > never will be, so what is the point of that? Or am I missing something?
+> 
+> For systems with Intel i915 GPU, ACPI video will wait for GPU driver to
+> run first, see drivers/acpi/video.c acpi_video_init, the actual
+> acpi_video_register function is called by i915 driver in
+> i915_driver_load due to operation region related stuff. Since all
+> problematic systems reported so far has an Intel GPU, I'm doing it this
+> way now. If things change, we can enhance it then.
 
-thanks,
+Sorry, still not getting this. How should this ever work if the intel
+video driver is compiled as kmod? That means that it isn't clear at all
+when the kmod is going to be loaded or if it is loaded at all, you
+cannot delay the registration of the acpi backlight that long, since the
+time you'd have to wait is basically unbounded...
 
-greg k-h
+So, how could this ever work?
+
+AFAICS all popular distros ship the video drivers as kernel modules,
+hence trying to avoid registration of the ACPI backlight if the intel
+driver is compiled will be an entirely pointless excercise on all
+distros?
+
+What am I missing?
+
+Lennart
+
+-- 
+Lennart Poettering - Red Hat, Inc.
