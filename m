@@ -1,60 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756833Ab3JNPST (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 11:18:19 -0400
-Received: from mail-vb0-f47.google.com ([209.85.212.47]:38653 "EHLO
-	mail-vb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756081Ab3JNPSS (ORCPT
+	id S1756855Ab3JNPTK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 11:19:10 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:51582 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756081Ab3JNPTF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 11:18:18 -0400
+	Mon, 14 Oct 2013 11:19:05 -0400
+Message-ID: <525C0B50.5050601@oracle.com>
+Date: Mon, 14 Oct 2013 23:18:40 +0800
+From: Vaughan Cao <vaughan.cao@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-In-Reply-To: <3593500.a7fOuGKlEX@tauon>
-References: <2579337.FPgJGgHYdz@tauon>
-	<CACXcFm=3Ee1+HGYRpsjhFMwqn2t15qAZNnMpZ8jOsE_HkB2CPg@mail.gmail.com>
-	<CACXcFmnDjSWHrU-4dR=Nb5n-9t=0PmM9Bc_pOFMTi3eotR2g6A@mail.gmail.com>
-	<3593500.a7fOuGKlEX@tauon>
-Date: Mon, 14 Oct 2013 11:18:16 -0400
-Message-ID: <CACXcFm=M2Jrra3tttWyhwfs-a6iVm0joiKi=wHKuANe_s_F-Sw@mail.gmail.com>
-Subject: Re: [PATCH] CPU Jitter RNG: inclusion into kernel crypto API and /dev/random
-From: Sandy Harris <sandyinchina@gmail.com>
-To: Stephan Mueller <smueller@chronox.de>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, LKML <linux-kernel@vger.kernel.org>,
-        linux-crypto@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Hannes Reinecke <hare@suse.de>, Steffen Maier <maier@linux.vnet.ibm.com>
+CC: JBottomley@parallels.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Krishna Gudipati <kgudipat@Brocade.com>
+Subject: Re: PROBLEM: special sense code asc,ascq=04h,0Ch abort scsi scan
+ in the middle
+References: <525AD704.6040705@oracle.com> <525BD1EA.6000701@suse.de> <525BE8C1.5090606@linux.vnet.ibm.com> <525BEF2B.2030907@suse.de>
+In-Reply-To: <525BEF2B.2030907@suse.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 14, 2013 at 10:40 AM, Stephan Mueller <smueller@chronox.de> wrote:
 
-> Another thing: when you start adding whitening functions, other people
-> are starting (and did -- thus I added section 4.3 to my documentation)
-> to complain that you hide your weaknesses behind the whiteners. I simply
-> want to counter that argument and show that RNG produces white noise
-> without a whitener.
+On 2013年10月14日 21:18, Hannes Reinecke wrote:
+> On 10/14/2013 02:51 PM, Steffen Maier wrote:
+>> Hi Hannes,
+>>
+>> On 10/14/2013 01:13 PM, Hannes Reinecke wrote:
+>>> On 10/13/2013 07:23 PM, Vaughan Cao wrote:
+>>>> Hi James,
+>>>>
+>>>> [1.] One line summary of the problem:
+>>>> special sense code asc,ascq=04h,0Ch abort scsi scan in the middle
+>>>>
+>>>> [2.] Full description of the problem/report:
+>>>> For instance, storage represents 8 iscsi LUNs, however the LUN No.7
+>>>> is not well configured or has something wrong.
+>>>> Then messages received:
+>>>> kernel: scsi 5:0:0:0: Unexpected response from lun 7 while scanning, scan aborted
+>>>> Which will make LUN No.8 unavailable.
+>>>> It's confirmed that Windows and Solaris systems will continue the
+>>>> scan and make LUN No.1,2,3,4,5,6 and 8 available.
+>>>>
+>>>> Log snippet is as below:
+>>>> Aug 24 00:32:49 vmhodtest019 kernel: scsi 5:0:0:7: scsi scan: INQUIRY pass 1 length 36
+>>>> Aug 24 00:32:49 vmhodtest019 kernel: scsi 5:0:0:7: Send: 0xffff8801e9bd4280
+>>>> Aug 24 00:32:49 vmhodtest019 kernel: scsi 5:0:0:7: CDB: Inquiry: 12 00 00 00 24 00
+>>>> Aug 24 00:32:49 vmhodtest019 kernel: buffer = 0xffff8801f71fc180, bufflen = 36, queuecommand 0xffffffffa00b99e7
+>>>> Aug 24 00:32:49 vmhodtest019 kernel: leaving scsi_dispatch_cmnd()
+>>>> Aug 24 00:32:49 vmhodtest019 kernel: scsi 5:0:0:7: Done: 0xffff8801e9bd4280 SUCCESS
+>>>> Aug 24 00:32:49 vmhodtest019 kernel: scsi 5:0:0:7: Result: hostbyte=DID_OK driverbyte=DRIVER_OK
+>>>> Aug 24 00:32:49 vmhodtest019 kernel: scsi 5:0:0:7: CDB: Inquiry: 12 00 00 00 24 00
+>>>> Aug 24 00:32:49 vmhodtest019 kernel: scsi 5:0:0:7: Sense Key : Not Ready [current]
+>>>> Aug 24 00:32:49 vmhodtest019 kernel: scsi 5:0:0:7: Add. Sense: Logical unit not accessible, target port in unavailable state
+>>>> Aug 24 00:32:49 vmhodtest019 kernel: scsi 5:0:0:7: scsi host busy 1 failed 0
+>>>> Aug 24 00:32:49 vmhodtest019 kernel: 0 sectors total, 36 bytes done.
+>>>> Aug 24 00:32:49 vmhodtest019 kernel: scsi scan: INQUIRY failed with code 0x8000002
+>>>> Aug 24 00:32:49 vmhodtest019 kernel: scsi 5:0:0:0: Unexpected response from lun 7 while scanning, scan aborted
+>>>>
+>>>> According to scsi_report_lun_scan(), I found:
+>>>> Linux use an inquiry command to probe a lun according to the result
+>>>> of report_lun command.
+>>>> It assumes every probe cmd will get a legal result. Otherwise, it
+>>>> regards the whole peripheral not exist or dead.
+>>>> If the return of inquiry passes its legal checking and indicates
+>>>> 'LUN not present', it won't break but also continue with the scan
+>>>> process.
+>>>> In the log, inquiry to LUN7 return a sense - asc,ascq=04h,0Ch
+>>>> (Logical unit not accessible, target port in unavailable state).
+>>>> And this is ignored, so scsi_probe_lun() returns -EIO and the scan
+>>>> process is aborted.
+>>>>
+>>>> I have two questions:
+>>>> 1. Is it correct for hardware to return a sense 04h,0Ch to inquiry
+>>>> again, even after presenting this lun in responce to REPORT_LUN
+>>>> command?
+>>> Yes, this is correct. 'REPORT LUNS' is supported in 'Unavailable' state.
+>>>
+>>>> 2. Since windows and solaris can continue scan, is it reasonable for
+>>>> linux to do the same, even for a fault-tolerance purpose?
+>>>>
+>>> Hmm. Yes, and no.
+>>>
+>>> _Actually_ this is an issue with the target, as it looks as if it
+>>> will return the above sense code while sending an 'INQUIRY' to the
+>>> device.
+>>> SPC explicitely states that the INQUIRY command should _not_ fail
+>>> for unavailable devices.
+>>> But yeah, we probably should work around this issues.
+>>> Nevertheless, please raise this issue with your array vendor.
+>>>
+>>> Please try the attached patch.
+>>>
+>>> Cheers,
+>>>
+>>> Hannes
+>>>
+>> In LLDDs that do their own initiator based LUN masking (because the midlayer does not have this
+>> functionality to enable hardware virtualization without NPIV, or
+> to work around suboptimal LUN
+>> masking on the target), they are likely to return -ENXIO from
+> slave_alloc(), making scsi_alloc_sdev()
+>> return NULL, being converted to SCSI_SCAN_NO_RESPONSE by
+> scsi_probe_and_add_lun() and thus going
+>> through the same code path above.
+>>
+> Ah. Hmm. Yes, they would.
+>
+> However, I personally would question this approach, as SPC states that
+>
+>> The REPORT LUNS command (see table 284) requests the device
+>> server to return the peripheral device logical unit inventory
+>> accessible to the I_T nexus.
+> So by plain reading this would meant that you either should modify
+> 'REPORT LUNS' to not show the masked LUNs,
+I have the same question. If you don't want us use them, why still you 
+present them in response to REPORT_LUN?
+Since you report it in REPORT_LUN, I suppose the target server at least 
+hold some information of this lun, so it shouldn't give an error when I 
+check it? It should give me something to suggest that lun does exist, 
+though it's not allowed to deal more with it at this time.
+Or 'accessible' doesn't mean accessible at this time, but we have rights 
+to address this LUN in this session? Whether it's online or not depends 
+on the result of INQUIRY and TEST_UNIT_READY?
 
-Yes, you absolutely have to test the unwhitened input entropy, and
-provide a way for others to test it so they can have confidence in your
-code and it can be tested again if it is going to be used on some new
-host. You do a fine job of that; your paper has the most detailed
-analysis I have seen. Bravo.
+>   or set the pqual field to
+> '0x10' or '0x11' for those LUNs.
+Do you mean 001b?
+After read the spc4r36g again, I'm confused on the difference between 
+pqual=000b and 001b.
+It seems 000b don't guarantee a lun is connected while 001b indicates a 
+lun is surely not connected?
+Anyone will explain these two questions a bit clearer?
 
-However, having done that, I see no reason not to add mixing.
-Using bit() for getting one bit of input and rotl(x) for rotating
-left one bit, your code is basically, with 64-bit x:
+###snippet form spc4
+In response to an INQUIRY command received by an incorrect logical unit, 
+the SCSI target device shall return
+the INQUIRY data with the peripheral qualifier set to the value defined 
+in 6.6.2. The INQUIRY command shall
+return CHECK CONDITION status only if the device server is unable to 
+return the requested INQUIRY data.
 
-   for( i=0, x = 0 ; i < 64; i++, x =rotl(x) )
-        x |= bit()
+Table 175 — PERIPHERAL QUALIFIER field
+Qualifier Description
+000b A peripheral device having the specified peripheral device type is 
+connected to this
+logical unit. *If the device server is unable to determine whether or 
+not a peripheral
+device is connected, it also shall use this peripheral qualifier. This 
+peripheral qualifier
+does not mean that the peripheral device connected to the logical unit 
+is ready for
+access.*
+001b A peripheral device having the specified peripheral device type is 
+not connected to this
+logical unit. However, the device server is capable of supporting the 
+specified periph-
+eral device type on this logical unit. (spc4r36g)
+>> E.g. zfcp does return -ENXIO if the particular LUN was not made known to the unit whitelist
+>> (via zfcp sysfs attribute unit_add).
+>> If we attach LUN 0 (via unit_add) and trigger a target scan with SCAN_WILD_CARD for the scsi
+>> lun (e.g. on remote port recovery), we see exactly above error message for the first LUN in
+>> the response of report lun which is not explicitly attached to zfcp.
+>> IIRC, other LLDDs such as bfa also do similar stuff [http://marc.info/?l=linux-scsi&m=134489842105383&w=2].
+>>
+>> For those cases, I think it makes sense to abort scsi_report_lun_scan().
+>> Otherwise we would force the LLDD to return -ENXIO for every single LUN reported by report lun but not
+>> explicitly added to the LLDD LUN whitelist; and this would likely *flood kernel messages*.
+To Steffen,
+It acts like scsi_sequential_lun_scan().
+* Generally, scan from LUN 1 (LUN 0 is assumed to already have been
+* scanned) to some maximum lun until a LUN is found with no device
+* attached.
+But is there case where a lun in the middle is indeed broken, but others 
+following are fine, which worths a tolerate?
+Never happen?
 
-Why not declare some 64-bit constant C with a significant
-number of bits set and do this:
 
-   for( i=0, x = 0 ; i < 64; i++, x =rotl(x) ) // same loop control
-      if( bit() ) x ^= C ;
+Vaughan
+>> Maybe Vaughan's case needs to be distinguished in a patch.
+>>
+> Well, as mentioned initially, the real issue is that the target
+> aborts an INQUIRY while being in 'Unavailable'. Which, according to
+> SPC-3 (or later), is a violation of the spec.
+>
+> So we _could_ just tell them to go away, but admittedly that's bad
+> style. Which means we'll have to implement a workaround; the above
+> was just a simple way of implementing it. If that's not working of
+> course we'll have to do something else.
+>
+> Cheers,
+>
+> Hannes
 
-This makes every output bit depend on many input bits
-and costs almost nothing extra.
-
-In the unlikely event that the overhead here matters,
-your deliberately inefficient parity calculation in bit()
-could easily be made faster to compensate.
