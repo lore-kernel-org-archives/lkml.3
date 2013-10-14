@@ -1,131 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756798Ab3JNO5r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 10:57:47 -0400
-Received: from mail-ve0-f179.google.com ([209.85.128.179]:34881 "EHLO
-	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754841Ab3JNO5q (ORCPT
+	id S1756804Ab3JNO62 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 10:58:28 -0400
+Received: from host171.canaca.com ([67.55.55.225]:60208 "EHLO
+	host171.canaca.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754841Ab3JNO61 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 10:57:46 -0400
-Date: Mon, 14 Oct 2013 11:57:38 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Chenggang Qin <chenggang.qin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Chenggang Qin <chenggang.qcg@taobao.com>,
-        David Ahern <dsahern@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Namhyung Kim <namhyung@gmail.com>,
-        Yanmin Zhang <yanmin.zhang@intel.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Mike Galbraith <efault@gmx.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/2] perf tools: avoid traverse dsos list while find vdso
-Message-ID: <20131014145738.GC11175@ghostprotocols.net>
-References: <1378732916-3537-1-git-send-email-chenggang.qin@gmail.com>
+	Mon, 14 Oct 2013 10:58:27 -0400
+Message-ID: <d241ee8c4a607eebd06cfdf5b04ab200.squirrel@mungewell.org>
+In-Reply-To: <alpine.LNX.2.00.1310141602540.12405@pobox.suse.cz>
+References: <alpine.LNX.2.00.1310101002120.13289@pobox.suse.cz>
+    <1381414814-2107-1-git-send-email-simon@mungewell.org>
+    <1381414814-2107-3-git-send-email-simon@mungewell.org>
+    <CADbOyBQodqzSb04OCO6oduJSZvveZXxQjSdp+CdyKKk5Bs=O7w@mail.gmail.com>
+    <alpine.LNX.2.00.1310141602540.12405@pobox.suse.cz>
+Date: Mon, 14 Oct 2013 10:58:21 -0400
+Subject: Re: [PATCHv2 3/3] HID:Kconfig: Correct MOMO description in wrong
+ place (handled by LG4FF).
+From: simon@mungewell.org
+To: "Jiri Kosina" <jkosina@suse.cz>
+Cc: "Elias Vanderstuyft" <elias.vds@gmail.com>,
+        "Simon Wood" <simon@mungewell.org>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        =?iso-8859-1?Q?=22Michal_Mal=FD=22?= <madcatxster@prifuk.cz>
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1378732916-3537-1-git-send-email-chenggang.qin@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - host171.canaca.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - mungewell.org
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Sep 09, 2013 at 09:21:55PM +0800, Chenggang Qin escreveu:
-> From: Chenggang Qin <chenggang.qcg@taobao.com>
-> 
-> Vdso is only one in a system. It is not necessory to traverse the
-> macine->user_dsos list when looking for the dso of vdso.
-> The flag vdso_found should be replaced by a pointor that point to the dso of
-> vdso. If the pointer is NULL, dso of vdso have not been created. Else, the
-> pointor can be returned directly in function vdso__dso_findnew().
-> The list traversing can be avoided by this method.
-> Thanks.
-> 
-> Cc: David Ahern <dsahern@gmail.com>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> Cc: Arjan van de Ven <arjan@linux.intel.com>
-> Cc: Namhyung Kim <namhyung@gmail.com>
-> Cc: Yanmin Zhang <yanmin.zhang@intel.com>
-> Cc: Wu Fengguang <fengguang.wu@intel.com>
-> Cc: Mike Galbraith <efault@gmx.de>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Chenggang Qin <chenggang.qcg@taobao.com>
-> 
-> ---
->  tools/perf/util/vdso.c |   22 ++++++++--------------
->  1 files changed, 8 insertions(+), 14 deletions(-)
-> 
-> diff --git a/tools/perf/util/vdso.c b/tools/perf/util/vdso.c
-> index 3915982..8022ef0 100644
-> --- a/tools/perf/util/vdso.c
-> +++ b/tools/perf/util/vdso.c
-> @@ -13,7 +13,7 @@
->  #include "symbol.h"
->  #include "linux/string.h"
->  
-> -static bool vdso_found;
-> +static struct dso *vdso_dso = NULL;
->  static char vdso_file[] = "/tmp/perf-vdso.so-XXXXXX";
->  
->  static int find_vdso_map(void **start, void **end)
-> @@ -55,9 +55,6 @@ static char *get_file(void)
->  	size_t size;
->  	int fd;
->  
-> -	if (vdso_found)
-> -		return vdso_file;
-> -
->  	if (find_vdso_map(&start, &end))
->  		return NULL;
->  
-> @@ -79,33 +76,30 @@ static char *get_file(void)
->   out:
->  	free(buf);
->  
-> -	vdso_found = (vdso != NULL);
->  	return vdso;
->  }
->  
->  void vdso__exit(void)
->  {
-> -	if (vdso_found)
-> +	if (vdso_dso)
->  		unlink(vdso_file);
+> On Thu, 10 Oct 2013, Elias Vanderstuyft wrote:
+>
+>> I don't see any report-descriptor being fixed up, this results in having
+>> only two axes: steering and combined accel-brake axis.
+>> So, same procedure as the Formula Vibration wheel, I'll send you the
+>> report
+>> descriptor and some hidraw data when using the accel and brake pedals,
+>> in
+>> my next mail.
+>
+> So should I wait for v3, where the rdesc fixup for splitting the axes will
+> be done, or are you planning to submit it to me as a followup patch?
 
-Don't we have to delete the vfso_dso and set it to NULL?
+The HID descriptor for the MOMO Black was re-written in part2 of the patch
+series:
+https://patchwork.kernel.org/patch/3016111/
 
->  }
->  
->  struct dso *vdso__dso_findnew(struct list_head *head)
->  {
-> -	struct dso *dso = dsos__find(head, VDSO__MAP_NAME, true);
-> -
-> -	if (!dso) {
-> +	if (!vdso_dso) {
->  		char *file;
->  
->  		file = get_file();
->  		if (!file)
->  			return NULL;
->  
-> -		dso = dso__new(VDSO__MAP_NAME);
-> -		if (dso != NULL) {
-> -			dsos__add(head, dso);
-> -			dso__set_long_name(dso, file);
-> +		vdso_dso = dso__new(VDSO__MAP_NAME);
-> +		if (vdso_dso != NULL) {
-> +			dsos__add(head, vdso_dso);
-> +			dso__set_long_name(vdso_dso, file);
->  		}
->  	}
->  
-> -	return dso;
-> +	return vdso_dso;
->  }
-> -- 
-> 1.7.8.rc2.5.g815b
+Simon
+
