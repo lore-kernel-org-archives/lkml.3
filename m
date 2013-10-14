@@ -1,49 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751428Ab3JNF2o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 01:28:44 -0400
-Received: from nasmtp01.atmel.com ([192.199.1.245]:35231 "EHLO
-	DVREDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750806Ab3JNF2n (ORCPT
+	id S1752751Ab3JNFlU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 01:41:20 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:35711 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751129Ab3JNFlF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 01:28:43 -0400
-Message-ID: <525B8105.6090303@atmel.com>
-Date: Mon, 14 Oct 2013 13:28:37 +0800
+	Mon, 14 Oct 2013 01:41:05 -0400
 From: Bo Shen <voice.shen@atmel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Wolfram Sang <wsa@the-dreams.de>
-CC: <linux-arm-kernel@lists.infradead.org>, <alsa-devel@alsa-project.org>,
-        Takashi Iwai <tiwai@suse.de>, <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Mark Brown <broonie@kernel.org>
-Subject: Re: [PATCH 4/4] sound/soc/atmel: don't use devm_pinctrl_get_select_default()
- in probe
-References: <1381681071-6021-1-git-send-email-wsa@the-dreams.de> <1381681071-6021-5-git-send-email-wsa@the-dreams.de>
-In-Reply-To: <1381681071-6021-5-git-send-email-wsa@the-dreams.de>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.168.5.13]
+To: nicolas.ferre@atmel.com, plagnioj@jcrosoft.com
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Bo Shen <voice.shen@atmel.com>
+Subject: [PATCH 4/5] ARM: at91: enable ssc on at91sam9n12ek board
+Date: Mon, 14 Oct 2013 13:38:32 +0800
+Message-Id: <1381729113-29714-5-git-send-email-voice.shen@atmel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1381729113-29714-1-git-send-email-voice.shen@atmel.com>
+References: <1381729113-29714-1-git-send-email-voice.shen@atmel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wolfram Sang,
+Enable ssc on at91sam9n12ek board
 
-On 10/14/2013 00:17, Wolfram Sang wrote:
-> Since commit ab78029 (drivers/pinctrl: grab default handles from device core),
-> we can rely on device core for setting the default pins.
->
-> Acked-by: Linus Walleij <linus.walleij@linaro.org> (personally at LCE13)
-> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
-> ---
->   sound/soc/atmel/atmel_wm8904.c | 8 --------
->   1 file changed, 8 deletions(-)
+Signed-off-by: Bo Shen <voice.shen@atmel.com>
+---
+ arch/arm/boot/dts/at91sam9n12ek.dts |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-Tested OK on at91sam9n12ek and sama5d3xek board.
-Thanks.
+diff --git a/arch/arm/boot/dts/at91sam9n12ek.dts b/arch/arm/boot/dts/at91sam9n12ek.dts
+index 1ba8def..391c532 100644
+--- a/arch/arm/boot/dts/at91sam9n12ek.dts
++++ b/arch/arm/boot/dts/at91sam9n12ek.dts
+@@ -38,6 +38,10 @@
+ 				status = "okay";
+ 			};
+ 
++			ssc0: ssc@f0010000 {
++				status = "okay";
++			};
++
+ 			i2c0: i2c@f8010000 {
+ 				status = "okay";
+ 
+-- 
+1.7.9.5
 
-Acked-by: Bo Shen <voice.shen@atmel.com>
-
-Best Regards,
-Bo Shen
