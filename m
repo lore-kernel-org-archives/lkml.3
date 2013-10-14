@@ -1,106 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756502Ab3JNMU6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 08:20:58 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:35791 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755914Ab3JNMTC (ORCPT
+	id S1756515Ab3JNMWD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 08:22:03 -0400
+Received: from numidia.opendz.org ([98.142.220.152]:51941 "EHLO
+	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755914Ab3JNMWB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 08:19:02 -0400
-X-AuditID: cbfee61b-b7f776d0000016c8-97-525be1342a71
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>
-Cc: "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Lukasz Majewski <l.majewski@samsung.com>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>, durgadoss.r@intel.com
-Subject: [PATCH v9 5/7] cpufreq:exynos:Extend Exynos cpufreq driver to support
- boost framework
-Date: Mon, 14 Oct 2013 14:17:48 +0200
-Message-id: <1381753070-2853-6-git-send-email-l.majewski@samsung.com>
-X-Mailer: git-send-email 1.7.10
-In-reply-to: <1381753070-2853-1-git-send-email-l.majewski@samsung.com>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
- <1381753070-2853-1-git-send-email-l.majewski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrDLMWRmVeSWpSXmKPExsVy+t9jAV2Th9FBBvs71S02zljPavG06Qe7
-	Rd/PK8wWa/b/ZLLoPPuE2eLNI26LNw83M1pc3jWHzeJz7xFGi9uNK9gszpy+xGrx5GEfm8XG
-	rx4OvB6L97xk8rhzbQ+bx7ppb5k9tlxtZ/Ho27KK0eP4je1MHp83yQWwR3HZpKTmZJalFunb
-	JXBlXD18hLVgDl/F27ln2BsYP3B3MXJwSAiYSEz879fFyAlkiklcuLeerYuRi0NIYBGjxJyd
-	x6GcLiaJbZtesYBUsQnoSXy++5QJJCEisIRR4nXTAlYQh1mgh1ni+PXtbCBVwgIJEnfvzGUE
-	sVkEVCWmdM1hBbF5BVwl+pe/ZoPYJy/x9H4fmM0p4CZxatsGZoh1jYwS285tYJ3AyLuAkWEV
-	o2hqQXJBcVJ6rpFecWJucWleul5yfu4mRnCYPpPewbiqweIQowAHoxIPr4BTdJAQa2JZcWXu
-	IUYJDmYlEd6PV4FCvCmJlVWpRfnxRaU5qcWHGKU5WJTEeQ+2WgcKCaQnlqRmp6YWpBbBZJk4
-	OKUaGE2S57S7rU5J+cD764Bc4qq9S3sv9AkrTmO4/WLNmoPZl7UkXfgec7AsZsk71WUt+GH2
-	m46l++eWdSs/uH9gcfOU4MqOVWGbtnhxaRydulJ6+7djP3ZzJ+TtyM8UuDn18svdgdZTMw7K
-	rdJi8tx/8f5rp/anfxY6CW9115gne2HBnGmTCuYUXelQYinOSDTUYi4qTgQAe0U5Kk8CAAA=
+	Mon, 14 Oct 2013 08:22:01 -0400
+Date: Mon, 14 Oct 2013 13:21:54 +0100
+From: Djalal Harouni <tixxdz@opendz.org>
+To: Ryan Mallon <rmallon@gmail.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, Joe Perches <joe@perches.com>,
+        Andrew Morton <akpm@linux-foundation.org>, eldad@fogrefinery.com,
+        Jiri Kosina <jkosina@suse.cz>, jgunthorpe@obsidianresearch.com,
+        Dan Rosenberg <dan.j.rosenberg@gmail.com>,
+        Kees Cook <keescook@chromium.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        George Spelvin <linux@horizon.com>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3a] vsprintf: Check real user/group id for %pK
+Message-ID: <20131014122154.GA7341@dztty>
+References: <1381356014.2050.28.camel@joe-AO722>
+ <5255D2FD.6050705@gmail.com>
+ <1381356861.2050.33.camel@joe-AO722>
+ <5255D7D4.8050204@gmail.com>
+ <1381358030.2050.36.camel@joe-AO722>
+ <5255DBD8.30005@gmail.com>
+ <1381360187.2050.44.camel@joe-AO722>
+ <87pprck0q7.fsf@xmission.com>
+ <52576E32.1050700@gmail.com>
+ <20131014101706.GA5605@dztty>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131014101706.GA5605@dztty>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The cpufreq_driver's boost_supported flag is true only when boost
-support is explicitly enabled.
+On Mon, Oct 14, 2013 at 11:17:06AM +0100, Djalal Harouni wrote:
+> On Fri, Oct 11, 2013 at 02:19:14PM +1100, Ryan Mallon wrote:
+> > On 11/10/13 13:20, Eric W. Biederman wrote:
+> > > Joe Perches <joe@perches.com> writes:
+> > > 
+> > >> Some setuid binaries will allow reading of files which have read
+> > >> permission by the real user id. This is problematic with files which
+> > >> use %pK because the file access permission is checked at open() time,
+> > >> but the kptr_restrict setting is checked at read() time. If a setuid
+> > >> binary opens a %pK file as an unprivileged user, and then elevates
+> > >> permissions before reading the file, then kernel pointer values may be
+> > >> leaked.
+> > >>
+> > >> This happens for example with the setuid pppd application on Ubuntu
+> > >> 12.04:
+> > >>
+> > >>   $ head -1 /proc/kallsyms
+> > >>   00000000 T startup_32
+> > >>
+> > >>   $ pppd file /proc/kallsyms
+> > >>   pppd: In file /proc/kallsyms: unrecognized option 'c1000000'
+> > >>
+> > >> This will only leak the pointer value from the first line, but other
+> > >> setuid binaries may leak more information.
+> > >>
+> > >> Fix this by adding a check that in addition to the current process
+> > >> having CAP_SYSLOG, that effective user and group ids are equal to the
+> > >> real ids. If a setuid binary reads the contents of a file which uses
+> > >> %pK then the pointer values will be printed as NULL if the real user
+> > >> is unprivileged.
+> > >>
+> > >> Update the sysctl documentation to reflect the changes, and also
+> > >> correct the documentation to state the kptr_restrict=0 is the default.
+> > > 
+> > > Sigh.  This is all wrong.  The only correct thing to test is
+> > > file->f_cred.  Aka the capabilities of the program that opened the
+> > > file.
+> > > 
+> > > Which means that the interface to %pK in the case of kptr_restrict is
+> > > broken as it has no way to be passed the information it needs to make
+> > > a sensible decision.
+> > 
+> > Would it make sense to add a struct file * to struct seq_file and set
+> > that in seq_open? Then the capability check can be done against seq->file.
+> For the "add a struct file * to struct seq_file" and set it during
+> seq_open(), It was proposed by Linus, but Al Viro didn't like it:
+> https://lkml.org/lkml/2013/9/25/765
+> 
+> I'm not sure if this will work for you: you can make seq_file->private
+> cache some data, by calling single_open()... at ->open(), later check it
+> during read()...
+> 
+> 
+> As noted by Eric, I'll also go for the capability check at ->open(), if it
+> does not break some userspace. BTW the CAP_SYSLOG check should do the job
+> 
+> Checks during read() are not sufficient, since the design allows passing
+> file descriptors and dup() stdin/stdout of suid-execve.
+> 
+> 
+> IMO: unprivileged code should not get that file descriptor, so ->open()
+> should fail.
+> If this will break userspace then allow open() and cache result for read()
+> 
+> 
+> Can you emulate the behaviour of kptr_restrict=1 ? If so:
+> 1) perform check during open() and cache data
+> 2) during read() check kptr_restrict==1
+>    check the cached value and if opener had CAP_SYSLOG  if so:
+>    print something like this: 00000000 T startup_32
+Sorry, I mean if the opener didn't have CAP_SYSLOG
 
-Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
-Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-
----
-Changes for v9:
-- The exynos_cpufreq_attr[] has been replaced by generic_cpufreq_attr[],
-  therefore the cpufreq_freq_attr_scaling_boost_freqs is now added at
-  freq_table.c file.
-
-Changes for v8:
-- None
-
-Changes for v7:
-- Replace CONFIG_CPU_FREQ_BOOST_SW with CONFIG_ARM_EXYNOS_CPU_FREQ_BOOST_SW
-- Move boost_supported initialization to struct cpufreq_driver exynos_driver
-
-Changes for v6:
-- Replace exynos_driver.boost_supported = 1 to = true
-- Protect boost attributes export with CONFIG_CPU_FREQ_BOOST_SW
-
-Changes for v5:
-- None
-
-Changes for v4:
-- None
-
-Changes for v3:
-- Remove low level boost code
-- Move boost management code to cpufreq core code
-- Use boost_supported flag to indicate if driver supports over clocking
-
-Changes for v2:
-- Removal of struct cpufreq_boost
-- Removal of the CONFIG_CPU_FREQ_BOOST flag
-- low_level_boost with valid address when boost is supported
-
- drivers/cpufreq/exynos-cpufreq.c |    3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/drivers/cpufreq/exynos-cpufreq.c b/drivers/cpufreq/exynos-cpufreq.c
-index b96fcc8..77a0aed 100644
---- a/drivers/cpufreq/exynos-cpufreq.c
-+++ b/drivers/cpufreq/exynos-cpufreq.c
-@@ -253,6 +253,9 @@ static struct cpufreq_driver exynos_driver = {
- 	.exit		= cpufreq_generic_exit,
- 	.name		= "exynos_cpufreq",
- 	.attr		= cpufreq_generic_attr,
-+#ifdef CONFIG_ARM_EXYNOS_CPU_FREQ_BOOST_SW
-+	.boost_supported = true,
-+#endif
- #ifdef CONFIG_PM
- 	.suspend	= exynos_cpufreq_suspend,
- 	.resume		= exynos_cpufreq_resume,
 -- 
-1.7.10.4
-
+Djalal Harouni
+http://opendz.org
