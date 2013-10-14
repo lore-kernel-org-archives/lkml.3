@@ -1,137 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756383Ab3JNMed (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 08:34:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51300 "EHLO mx2.suse.de"
+	id S932084Ab3JNMfh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 08:35:37 -0400
+Received: from mout.gmx.net ([212.227.17.20]:50327 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755933Ab3JNMe3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 08:34:29 -0400
-Date: Mon, 14 Oct 2013 14:34:26 +0200
-From: Jan Kara <jack@suse.cz>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>,
-        Richard Weinberger <richard@nod.at>, Jan Kara <jack@suse.cz>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        UML devel <user-mode-linux-devel@lists.sourceforge.net>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        hannes@cmpxchg.org, darrick.wong@oracle.com,
-        Michal Hocko <mhocko@suse.cz>
-Subject: Re: [PATCH v2] writeback: fix negative bdi max pause
-Message-ID: <20131014123426.GG19604@quack.suse.cz>
-References: <525591AD.4060401@gmx.de>
- <5255A3E6.6020100@nod.at>
- <20131009214733.GB25608@quack.suse.cz>
- <5255D9A6.3010208@nod.at>
- <5256DA9A.5060904@gmx.de>
- <20131011011649.GA11191@localhost>
- <5257B9EB.7080503@gmx.de>
- <20131011085701.GA27382@localhost>
- <52580767.6090604@gmx.de>
- <20131012044517.GA32048@localhost>
+	id S1755670Ab3JNMff (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 08:35:35 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20131012044517.GA32048@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-ID: <trinity-4f52e27f-75d8-4137-83d6-d242e529c3c9-1381754133846@3capp-gmx-bs48>
+From: "Helge Deller" <deller@gmx.de>
+To: "Christoph Hellwig" <hch@infradead.org>
+Cc: "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Linux Kernel Development" <linux-kernel@vger.kernel.org>,
+        linux-parisc@vger.kernel.org,
+        "James Bottomley" <James.Bottomley@HansenPartnership.com>
+Subject: Aw: Re: [GIT PULL] parisc updates for v3.12-rc5
+Content-Type: text/plain; charset=UTF-8
+Date: Mon, 14 Oct 2013 14:35:33 +0200 (CEST)
+Importance: normal
+Sensitivity: Normal
+In-Reply-To: <20131014112621.GA9705@infradead.org>
+References: <20131013161130.GA19534@p100.box>,
+ <20131014112621.GA9705@infradead.org>
+X-UI-Message-Type: mail
+X-Priority: 3
+X-Provags-ID: V03:K0:GJqUwy1bzfHifCoSepgB+MfMUKEBN7w4qhYVM+5lur/
+ xDFeW1B/t8jG+HY1N4SKfR21BpBQ4uqRxwwnMo35Accz/oOJ3A
+ BF6gJj/h/Mf58zchvJKWJMJR0yP+cVO03KDQNPEQWFCvCGc9Hf
+ C44Mx1ysTG3bKqMbLKv4QdKq3mqP1aZKKTKXlCgYhfGQZ7+GUy
+ tJa2hyUWFBUZSh0LA/0A0jm+Mnj0VZcBG3txDG5rCcp0KrtO3+
+ rTNsElTAwQgNakootGA4po2G+WsOfQracColqha4prQ7aJo30Z BJQCus=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 12-10-13 12:45:17, Wu Fengguang wrote:
-> Toralf runs trinity on UML/i386.
-> After some time it hangs and the last message line is
+> > Geert Uytterhoeven (1):
+> >       parisc: Export flush_cache_page() (needed by lustre)
 > 
-> 	BUG: soft lockup - CPU#0 stuck for 22s! [trinity-child0:1521]
-> 
-> It's found that pages_dirtied becomes very large.
-> More than 1000000000 pages in this case:
-> 
-> 	period = HZ * pages_dirtied / task_ratelimit;
-> 	BUG_ON(pages_dirtied > 2000000000);
-> 	BUG_ON(pages_dirtied > 1000000000);      <---------
-> 
-> UML debug printf shows that we got negative pause here:
-> 
-> 	ick: pause : -984
-> 	ick: pages_dirtied : 0
-> 	ick: task_ratelimit: 0
-> 
-> 	 pause:
-> 	+       if (pause < 0)  {
-> 	+               extern int printf(char *, ...);
-> 	+               printf("ick : pause : %li\n", pause);
-> 	+               printf("ick: pages_dirtied : %lu\n", pages_dirtied);
-> 	+               printf("ick: task_ratelimit: %lu\n", task_ratelimit);
-> 	+               BUG_ON(1);
-> 	+       }
-> 	        trace_balance_dirty_pages(bdi,
-> 
-> Since pause is bounded by [min_pause, max_pause] where min_pause is also
-> bounded by max_pause. It's suspected and demonstrated that the max_pause
-> calculation goes wrong:
-> 
-> 	ick: pause : -717
-> 	ick: min_pause : -177
-> 	ick: max_pause : -717
-> 	ick: pages_dirtied : 14
-> 	ick: task_ratelimit: 0
-> 
-> The problem lies in the two "long = unsigned long" assignments in
-> bdi_max_pause() which might go negative if the highest bit is 1, and
-> the min_t(long, ...) check failed to protect it falling under 0. Fix
-> all of them by using "unsigned long" throughout the function.
-> 
-> Reported-by: Toralf Förster <toralf.foerster@gmx.de>
-> Tested-by: Toralf Förster <toralf.foerster@gmx.de>
-> Cc: <stable@vger.kernel.org>
-> Cc: Jan Kara <jack@suse.cz>
-> Cc: Richard Weinberger <richard@nod.at>
-> Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-> Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
-  The patch looks good. You can add:
-Reviewed-by: Jan Kara <jack@suse.cz>
+> This one shouldn't go in - Geert sent it a bit prematurely, as Lustre
+> shouldn't use it just to reimplement core VM functionality (which it
+> shouldn't use either, but that's a separate story).
 
-								Honza
+Ok, it's my fault then.
+I'll include a reverting patch in the next parisc pull request...
 
-> ---
->  mm/page-writeback.c |   10 +++++-----
->  mm/readahead.c      |    2 +-
->  2 files changed, 6 insertions(+), 6 deletions(-)
-> 
->  Changes since v1: Add CC list.
-> 
-> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-> index 3f0c895..241a746 100644
-> --- a/mm/page-writeback.c
-> +++ b/mm/page-writeback.c
-> @@ -1104,11 +1104,11 @@ static unsigned long dirty_poll_interval(unsigned long dirty,
->  	return 1;
->  }
->  
-> -static long bdi_max_pause(struct backing_dev_info *bdi,
-> -			  unsigned long bdi_dirty)
-> +static unsigned long bdi_max_pause(struct backing_dev_info *bdi,
-> +				   unsigned long bdi_dirty)
->  {
-> -	long bw = bdi->avg_write_bandwidth;
-> -	long t;
-> +	unsigned long bw = bdi->avg_write_bandwidth;
-> +	unsigned long t;
->  
->  	/*
->  	 * Limit pause time for small memory systems. If sleeping for too long
-> @@ -1120,7 +1120,7 @@ static long bdi_max_pause(struct backing_dev_info *bdi,
->  	t = bdi_dirty / (1 + bw / roundup_pow_of_two(1 + HZ / 8));
->  	t++;
->  
-> -	return min_t(long, t, MAX_PAUSE);
-> +	return min_t(unsigned long, t, MAX_PAUSE);
->  }
->  
->  static long bdi_min_pause(struct backing_dev_info *bdi,
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Thanks,
+Helge
