@@ -1,140 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757658Ab3JNV2i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 17:28:38 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:38365 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756708Ab3JNV2g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 17:28:36 -0400
-Date: Mon, 14 Oct 2013 14:28:30 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Knut Petersen <Knut_Petersen@t-online.de>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Greg KH <greg@kroah.com>, linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG 3.12.rc4] Oops: unable to handle kernel paging request
- during shutdown
-Message-ID: <20131014212830.GD5790@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <525BD08C.2080101@t-online.de>
- <CA+55aFwN++wO=rTFaH7m6YYQX+Fv3qDt6Hxs7UnPUJpFsrwSkA@mail.gmail.com>
+	id S932212Ab3JNV3A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 17:29:00 -0400
+Received: from mga02.intel.com ([134.134.136.20]:15967 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757413Ab3JNV27 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 17:28:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,494,1378882800"; 
+   d="scan'208";a="392866883"
+Date: Mon, 14 Oct 2013 14:28:40 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: dave.hansen@linux.intel.com, a.p.zijlstra@chello.nl, eranian@google.com,
+        jmario@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: x86, perf: throttling issues with long nmi latencies
+Message-ID: <20131014212840.GE7456@tassilo.jf.intel.com>
+References: <20131014203549.GY227855@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+55aFwN++wO=rTFaH7m6YYQX+Fv3qDt6Hxs7UnPUJpFsrwSkA@mail.gmail.com>
+In-Reply-To: <20131014203549.GY227855@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13101421-6688-0000-0000-00000288BA2F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 14, 2013 at 10:53:03AM -0700, Linus Torvalds wrote:
-> Hmm. No obvious ideas come to mind, but I'm adding more people to the cc.
-> 
-> Clearly the wait_event_interruptible_timeout() in the RCU grace-period
-> thread causes this, but I'm not seeing why shutdown would trigger it.
-> 
-> The code disassembles to
-> 
->    0: 85 db                 test   %ebx,%ebx
->    2: 79 0c                 jns    0x10
->    4: 81 e6 ff 00 00 00     and    $0xff,%esi
->    a: 8d 44 f0 30           lea    0x30(%eax,%esi,8),%eax
->    e: eb 0a                 jmp    0x1a
->   10: c1 e9 1a             shr    $0x1a,%ecx
->   13: 8d 84 c8 30 0e 00 00 lea    0xe30(%eax,%ecx,8),%eax
->   1a: 8b 48 04             mov    0x4(%eax),%ecx
->   1d: 89 50 04             mov    %edx,0x4(%eax)
->   20: 89 02                 mov    %eax,(%edx)
->   22: 89 4a 04             mov    %ecx,0x4(%edx)
->   25:* 89 11                 mov    %edx,(%ecx) <-- trapping instruction
->   27: 5b                   pop    %ebx
->   28: 5e                   pop    %esi
->   29: 5d                   pop    %ebp
->   2a: c3                   ret
-> 
-> so the oops is in the final
-> 
->         list_add_tail(&timer->entry, vec);
-> 
-> where "%ecx" is "vec->prev" (f8c551f4). That looks like it might be a
-> perfectly valid pointer, but clearly it isn't (it's about 115M off the
-> top of virtual memory, I think that might be in the vmalloc area).
-> 
-> So I'm *guessing* that something did a vfree() on some data structure
-> that contained active timers - and then later on the RCU thread ended
-> up being the next thing that tried to add a timer after the
-> now-non-existing one.
-> 
-> And your other oopses do seem to have a similar pattern, even if their
-> actual oops is elsewhere. They oops in run_timer_softirq, also taking
-> a page fault in the 0xf9...... range, so it might well be a vmalloc
-> address there too.
-> 
-> But I sure as hell can't start to guess what that would be.
-> 
-> I'm wondering it CONFIG_DEBUG_OBJECTS (and then
-> CONFIG_DEBUG_OBJECTS_FREE=y and CONFIG_DEBUG_OBJECTS_TIMERS=y) might
-> help catch this...
+On Mon, Oct 14, 2013 at 04:35:49PM -0400, Don Zickus wrote:
+> I have been playing with quad socket Ivy Bridges for awhile and have seen
+> numerous "perf samples too long" messages, to the point, the machine is
+> unusable for any perf analyzing.
 
-I would also like to nominate CONFIG_DEBUG_OBJECTS_RCU_HEAD=y, which
-checks for invoking call_rcu() twice in a row on the same rcu_head.
+We've seen the same problem on our large systems. Dave 
+did some fixes in mainline, but they only work around the problem.
 
-Any chance of a look at the .config file?
+One main cause I believe is that dynamic period, which often 
+goes down to insanely low values for cycles.
 
-							Thanx, Paul
+This also causes a lot of measurement overhead, without really giving better
+data.
 
->                 Linus
+If you use -c ... with a reasonable period the problem completely
+goes away (with pmu-tools ocperf stat -c default sets a reasonable default)
+
+> So I tried to investigate the source of the NMI latencies using the
+> traditional 'rdtscll()' command.  That failed miserably.  Then it was
+> pointed out to me that rdtscll() is terrible for benchmarking due to
+> out-of-order execution by the Intel processors.  This Intel whitepaper
+> describes a better way using cpuid and rdtsc:
+
+We just used ftrace function tracer.
+
+> the longest one first.  It seems to be 'copy_user_from_nmi'
 > 
-> On Mon, Oct 14, 2013 at 4:07 AM, Knut Petersen
-> <Knut_Petersen@t-online.de> wrote:
-> >
-> > It愀 the third time in four months that I have to report a kernel Oops during
-> > shutdown.
-> > All of these Oopses seem somehow related to the timer subsystem, but they
-> > are
-> > not easily reproducible. As all this happens on two different machines, it愀
-> > unlikely
-> > that this mess is related to bad hardware.
-> >
-> > I clearly would appreciate any idea how to track this down.
-> >
-> > For the last two reports see:
-> >
-> > http://www.gossamer-threads.com/lists/linux/kernel/1782575?#1782575
-> >
-> > http://www.gossamer-threads.com/lists/linux/kernel/1744892?#1744892
-> >
-> > This time the kernel oopsed after systemd reported that target shutdown
-> > had been reached - see attached pdf for the full trace. To make it easier
-> > to find this problem a shortened call trace:
-> >
-> >
-> > Call Trace:
-> >     internal_add_timer
-> >     schedule_timeout
-> >     ? call_timer_fn
-> >     rcu_gp_kthread
-> >     __init_waitqueue_head
-> >     ? rcu_gp_fqs
-> >     kthread
-> >     ret_from_kernel_thread
-> >     ? __init_kthread_worker
-> >
-> > EIP: __internal_add_timer
-> >
-> > Hardware: AOpen i915GMm-hfs mobo with a Pentium-M Dothan and 2GB of RAM.
-> > Distribution: openSuSE 12.3
-> > Kernel: local 3.12.0-rc4-00127-g45877c4 is  kernel 9d05746 with my
-> > "Enforce 1 as lower limit for perf_event_max_sample_rate"
-> > patch applied.
-> >
-> > cu,
-> >  knut
+> intel_pmu_handle_irq ->
+> 	intel_pmu_drain_pebs_nhm ->
+> 		__intel_pmu_drain_pebs_nhm ->
+> 			__intel_pmu_pebs_event ->
+> 				intel_pmu_pebs_fixup_ip ->
+> 					copy_from_user_nmi
 > 
+> In intel_pmu_pebs_fixup_ip(), if the while-loop goes over 50, the sum of
+> all the copy_from_user_nmi latencies seems to go over 1,000,000 cycles
+
+fixup_ip has to decode a whole basic block, to correct off by one.
+I'm not sure why the copy dominates though. But copy_from_user_nmi
+does a lot of nasty things.
+
+I would just use :p which skips this. The single instruction correction 
+is not worth all the overhead, and  there is always more skid anyways
+even with the correction.
+
+The good news is that Haswell fixes the overhead, :pp is as fast as :p
+
+> (there are some cases where only 10 iterations are needed to go that high
+> too, but in generall over 50 or so).  At this point copy_user_from_nmi
+> seems to account for over 90% of the nmi latency.
+
+Yes saw the same. It's unclear why it is that expensive.
+I've also seen the copy dominate with -g.
+
+Also for some reason it seems to hurt much more on larger systems
+(cache misses?) Unfortunately it's hard to use perf to analyze
+perf, that was the road block last time I understanding this better.
+
+One guess was that if you profile the same code running on many
+cores the copy*user_nmi code will have a very hot cache line
+with the page reference count.
+
+Some obvious improvements are likely possible:
+
+The copy function is pretty dumb -- for example it repins the pages
+for each access. It would be likely much faster to batch that
+and only do it once per backtrace/decode. This would need
+a new interface.
+
+I suppose there would be a way to do this access without actually
+incrementing the ref count (e.g. with a seqlock like scheme
+or just using TSX)
+
+But if you don't do the IP correction and only the stack access
+in theory it should be possible to avoid the majority of changes.
+
+First level recommendations:
+
+- Always use -c ... / or -F ..., NEVER dynamic period
+- Don't use :pp
+
+-Andi
 
