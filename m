@@ -1,62 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757846Ab3JNXhE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 19:37:04 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:35073 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757110Ab3JNXhC (ORCPT
+	id S1757438Ab3JNXsn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 19:48:43 -0400
+Received: from mail-ve0-f175.google.com ([209.85.128.175]:57374 "EHLO
+	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756719Ab3JNXsl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 19:37:02 -0400
-Message-ID: <525C8018.3070805@gmail.com>
-Date: Tue, 15 Oct 2013 10:36:56 +1100
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Hartley Sweeten <HartleyS@visionengravers.com>,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: ep93xx: remove deprecated IRQF_DISABLED
-References: <1381547439-4888-1-git-send-email-michael.opdenacker@free-electrons.com> <DC148C5AA1CEBA4E87973D432B1C2D8817DAB036@P3PWEX4MB008.ex4.secureserver.net>
-In-Reply-To: <DC148C5AA1CEBA4E87973D432B1C2D8817DAB036@P3PWEX4MB008.ex4.secureserver.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 14 Oct 2013 19:48:41 -0400
+From: Felipe Pena <felipensp@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Namhyung Kim <namhyung@kernel.org>, Borislav Petkov <bp@suse.de>
+Cc: linux-kernel@vger.kernel.org, Felipe Pena <felipensp@gmail.com>
+Subject: [PATCH v3] tools/perf/util: Fix memory leak in trace-event-info.c
+Date: Mon, 14 Oct 2013 20:48:24 -0300
+Message-Id: <1381794504-4146-1-git-send-email-felipensp@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15/10/13 02:47, Hartley Sweeten wrote:
-> On Friday, October 11, 2013 8:11 PM, Michael Opdenacker wrote:
->> This patch proposes to remove the use of the IRQF_DISABLED flag
->>
->> It's a NOOP since 2.6.35 and it will be removed one day.
->>
->> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
->> ---
->>  arch/arm/mach-ep93xx/core.c | 2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/arch/arm/mach-ep93xx/core.c b/arch/arm/mach-ep93xx/core.c
->> index 3f12b88..fcc965f 100644
->> --- a/arch/arm/mach-ep93xx/core.c
->> +++ b/arch/arm/mach-ep93xx/core.c
->> @@ -136,7 +136,7 @@ static irqreturn_t ep93xx_timer_interrupt(int irq, void *dev_id)
->>  
->>  static struct irqaction ep93xx_timer_irq = {
->>  	.name		= "ep93xx timer",
->> -	.flags		= IRQF_DISABLED | IRQF_TIMER | IRQF_IRQPOLL,
->> +	.flags		= IRQF_TIMER | IRQF_IRQPOLL,
->>  	.handler	= ep93xx_timer_interrupt,
->>  };
->>  
-> 
-> Acked-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Fix for a memory leak on tracing_data_get() function when returning NULL explicitly
 
-Applied to ep93xx-fixes.
+Signed-off-by: Felipe Pena <felipensp@gmail.com>
+---
+ tools/perf/util/trace-event-info.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-Thanks,
-~Ryan
+diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
+index f3c9e55..83b3a67 100644
+--- a/tools/perf/util/trace-event-info.c
++++ b/tools/perf/util/trace-event-info.c
+@@ -496,7 +496,7 @@ struct tracing_data *tracing_data_get(struct list_head *pattrs,
+ {
+ 	struct tracepoint_path *tps;
+ 	struct tracing_data *tdata;
+-	int err;
++	int err = -1;
 
+ 	output_fd = fd;
+
+@@ -506,7 +506,7 @@ struct tracing_data *tracing_data_get(struct list_head *pattrs,
+
+ 	tdata = malloc(sizeof(*tdata));
+ 	if (!tdata)
+-		return NULL;
++		goto err_tps;
+
+ 	tdata->temp = temp;
+ 	tdata->size = 0;
+@@ -518,13 +518,13 @@ struct tracing_data *tracing_data_get(struct list_head *pattrs,
+ 			 "/tmp/perf-XXXXXX");
+ 		if (!mkstemp(tdata->temp_file)) {
+ 			pr_debug("Can't make temp file");
+-			return NULL;
++			goto err_tdata;
+ 		}
+
+ 		temp_fd = open(tdata->temp_file, O_RDWR);
+ 		if (temp_fd < 0) {
+ 			pr_debug("Can't read '%s'", tdata->temp_file);
+-			return NULL;
++			goto err_tdata;
+ 		}
+
+ 		/*
+@@ -562,11 +562,13 @@ out:
+ 		output_fd = fd;
+ 	}
+
++err_tdata:
+ 	if (err) {
+ 		free(tdata);
+ 		tdata = NULL;
+ 	}
+
++err_tps:
+ 	put_tracepoints_path(tps);
+ 	return tdata;
+ }
+--
+1.7.10.4
 
