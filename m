@@ -1,105 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750801Ab3JNE5Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 00:57:25 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:40211 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750740Ab3JNE5X (ORCPT
+	id S1750896Ab3JNFHP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 01:07:15 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:51375 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750718Ab3JNFHO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 00:57:23 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
-Message-ID: <525B7898.6010802@jp.fujitsu.com>
-Date: Mon, 14 Oct 2013 13:52:40 +0900
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Mon, 14 Oct 2013 01:07:14 -0400
+X-AuditID: 9c93017d-b7b79ae000001729-f6-525b7bfe76e5
+From: Namhyung Kim <namhyung@kernel.org>
+To: Felipe Pena <felipensp@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Borislav Petkov <bp@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] tools/perf/util: Fix memory leak in trace-event-info.c
+References: <1381454489-4135-1-git-send-email-felipensp@gmail.com>
+Date: Mon, 14 Oct 2013 14:07:09 +0900
+In-Reply-To: <1381454489-4135-1-git-send-email-felipensp@gmail.com> (Felipe
+	Pena's message of "Thu, 10 Oct 2013 22:21:29 -0300")
+Message-ID: <87fvs4bfuq.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Alexey Dobriyan <adobriyan@gmail.com>
-CC: Michael Holzheu <holzheu@linux.vnet.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Vivek Goyal <vgoyal@redhat.com>, Jan Willeke <willeke@de.ibm.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, kexec@lists.infradead.org
-Subject: Re: mmap for /proc/vmcore broken since 3.12-rc1
-References: <20131002140356.63706540@holzheu> <524D0ADF.2010507@jp.fujitsu.com> <52521FA5.3040101@jp.fujitsu.com> <CACVxJT8S7kA92=80DWVmVJJvbnaQ6WkyvsiFq4wP37WHV=tfuA@mail.gmail.com> <52552C9F.2030404@jp.fujitsu.com> <20131012203250.GA3458@p183.telecom.by>
-In-Reply-To: <20131012203250.GA3458@p183.telecom.by>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/10/13 5:32), Alexey Dobriyan wrote:
-> On Wed, Oct 09, 2013 at 07:14:55PM +0900, HATAYAMA Daisuke wrote:
->> Hello,
->>
->> (2013/10/08 21:49), Alexey Dobriyan wrote:
->>> On Mon, Oct 7, 2013 at 5:42 AM, HATAYAMA Daisuke
->>> <d.hatayama@jp.fujitsu.com> wrote:
->>>
->>>> +static unsigned long
->>>> +get_unmapped_area_vmcore(struct file *filp, unsigned long addr,
->>>> +                        unsigned long len, unsigned long pgoff,
->>>> +                        unsigned long flags)
->>>> +{
->>>> +#ifdef CONFIG_MMU
->>>> +       return current->mm->get_unmapped_area(filp, addr, len, pgoff,
->>>> flags);
->>>> +#else
->>>> +       return -EIO;
->>>> +#endif
->>>> +}
->>>> +
->>>>    static const struct file_operations proc_vmcore_operations = {
->>>>           .read           = read_vmcore,
->>>>           .llseek         = default_llseek,
->>>>           .mmap           = mmap_vmcore,
->>>> +       .get_unmapped_area = get_unmapped_area_vmcore,
->>>
->>> I think current->mm->get_unmapped_area should be used by core proc code.
->>
->> What do you actually suggest here? You mean moving this code in proc code?
->> I don't think you suggest so.
+Hi Felipe,
+
+On Thu, 10 Oct 2013 22:21:29 -0300, Felipe Pena wrote:
+> Fix for a memory leak on tracing_data_get() function when returning NULL explicitly
 >
-> Please, try this patch, I don't have kexec setup handy.
+> Signed-off-by: Felipe Pena <felipensp@gmail.com>
+> ---
+>  tools/perf/util/trace-event-info.c |    7 +++++--
+>  1 file changed, 5 insertions(+), 2 deletions(-)
 >
-> --- a/fs/proc/inode.c
-> +++ b/fs/proc/inode.c
-> @@ -291,7 +291,11 @@ static unsigned long proc_reg_get_unmapped_area(struct file *file, unsigned long
->   	int rv = -EIO;
->   	unsigned long (*get_unmapped_area)(struct file *, unsigned long, unsigned long, unsigned long, unsigned long);
->   	if (use_pde(pde)) {
-> -		get_unmapped_area = pde->proc_fops->get_unmapped_area;
-> +		get_unmapped_area = current->mm->get_unmapped_area;
-> +#ifdef CONFIG_MMU
-> +		if (pde->proc_fops->get_unmapped_area)
-> +			get_unmapped_area = pde->proc_fops->get_unmapped_area;
-> +#endif
->   		if (get_unmapped_area)
->   			rv = get_unmapped_area(file, orig_addr, len, pgoff, flags);
->   		unuse_pde(pde);
+> diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
+> index f3c9e55..2a0c3c9 100644
+> --- a/tools/perf/util/trace-event-info.c
+> +++ b/tools/perf/util/trace-event-info.c
+> @@ -518,13 +518,15 @@ struct tracing_data *tracing_data_get(struct list_head *pattrs,
+>  			 "/tmp/perf-XXXXXX");
+>  		if (!mkstemp(tdata->temp_file)) {
+>  			pr_debug("Can't make temp file");
+> -			return NULL;
+> +			err = -1;
+> +			goto err_tdata;
+>  		}
 >
+>  		temp_fd = open(tdata->temp_file, O_RDWR);
+>  		if (temp_fd < 0) {
+>  			pr_debug("Can't read '%s'", tdata->temp_file);
+> -			return NULL;
+> +			err = -1;
+> +			goto err_tdata;
 
-Slight modification to #ifdef ...
+I'd rather initialize err to -1 at the beginning.  And the malloc of
+tdata should also be handled like this.
 
-get_unmapped_area = NULL;
-#ifdef CONFIG_MMU
-get_unmapped_area = current->mm->get_unmapped_area
-#endif
-if (pde->proc_fops->get_unmapped_area)
-   get_unmapped_area = pde->proc_fops->get_unmapped_area;
+Thanks,
+Namhyung
 
-And, I found the bug. The variable rv should have been defined as unsigned
-long. sizeof(int) is 4 bytes but sizeof(long) is 8 bytes at least on x86_64.
 
-The reason why returned value looked like kernel virtual address was due to
-signed extension performed during conversion from negative 32-bit signed
-integer to 64-bit unsigned long integer.
-
-Hmm, I first checked signature of related functions but overlooked...
-
-Anyway, I'll post fixing patch soon.
-
--- 
-Thanks.
-HATAYAMA, Daisuke
-
+>  		}
+>
+>  		/*
+> @@ -562,6 +564,7 @@ out:
+>  		output_fd = fd;
+>  	}
+>
+> +err_tdata:
+>  	if (err) {
+>  		free(tdata);
+>  		tdata = NULL;
+> --
+> 1.7.10.4
