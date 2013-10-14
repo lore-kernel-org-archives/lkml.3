@@ -1,108 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755715Ab3JNJFI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 05:05:08 -0400
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:59138 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755654Ab3JNJFF (ORCPT
+	id S1755842Ab3JNJFd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 05:05:33 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:51557 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755777Ab3JNJFb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 05:05:05 -0400
-Message-ID: <525BB3B7.7000802@monstr.eu>
-Date: Mon, 14 Oct 2013 11:04:55 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Mon, 14 Oct 2013 05:05:31 -0400
+Date: Mon, 14 Oct 2013 11:05:08 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/6] Optimize the cpu hotplug locking -v2
+Message-ID: <20131014090508.GW3081@twins.programming.kicks-ass.net>
+References: <20131010094355.6f75e5a2.akpm@linux-foundation.org>
+ <20131010165337.GT3081@twins.programming.kicks-ass.net>
+ <20131010131305.58558079@gandalf.local.home>
+ <20131010104856.8f042977112d5ac2693973ae@linux-foundation.org>
+ <20131010183409.GP13848@laptop.programming.kicks-ass.net>
+ <CA+55aFyoP5KFUg44Xenp_Jz0_5ssosn-KF6LDsa0qsmCjyJ56g@mail.gmail.com>
+ <20131011123820.GV3081@twins.programming.kicks-ass.net>
+ <20131011182507.GA31625@redhat.com>
+ <20131011204827.GX3657@laptop.programming.kicks-ass.net>
+ <20131012170656.GA11450@redhat.com>
 MIME-Version: 1.0
-To: Soren Brinkmann <soren.brinkmann@xilinx.com>
-CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>,
-        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-doc@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] clk/zynq/clkc: Add 'fclk-enable' feature
-References: <1381425018-5653-1-git-send-email-soren.brinkmann@xilinx.com>
-In-Reply-To: <1381425018-5653-1-git-send-email-soren.brinkmann@xilinx.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="dEccllHRKSxu9DdNso9tRnDA2bEFqAE0o"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131012170656.GA11450@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---dEccllHRKSxu9DdNso9tRnDA2bEFqAE0o
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Sat, Oct 12, 2013 at 07:06:56PM +0200, Oleg Nesterov wrote:
+> it even disables irqs, so this should always imply rcu_read_lock() with
+> any implementation, 
 
-On 10/10/2013 07:10 PM, Soren Brinkmann wrote:
-> In some use cases Zynq's FPGA clocks are used as static clock
-> generators for IP in the FPGA part of the SOC for which no Linux driver=
+Not so; I could make an RCU implementation that drives the state machine
+from rcu_read_unlock(). Such an implementation doesn't need the
+interrupt driven poll-state driver we currently have and could thus
+subvert that assumption :-)
 
-> exists and would control those clocks. To avoid automatic
-> gating of these clocks in such cases a new property - fclk-enable - is
-> added to the clock controller's DT description to accomodate such use
-> cases. It's value is a bitmask, where a set bit results in enabling
-> the corresponding FCLK through the clkc.
->=20
-> FPGA clocks are handled following the rules below:
->=20
-> If an FCLK is not enabled by bootloaders, that FCLK will be disabled in=
+Then again, there's a good reason PaulMck didn't pick this
+implementation.
 
-> Linux. Drivers can enable and control it through the CCF as usual.
->=20
-> If an FCLK is enabled by bootloaders AND the corresponding bit in the
-> 'fclk-enable' DT property is set, that FCLK will be enabled by the clkc=
-,
-> resulting in an off by one reference count for that clock. Ensuring it
-> will always be running.
->=20
-> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-> ---
-> v2:
->  - change default value for fclk-enable to '0'
-> ---
->  Documentation/devicetree/bindings/clock/zynq-7000.txt |  4 ++++
->  drivers/clk/zynq/clkc.c                               | 18 +++++++++++=
-++++---
->  2 files changed, 19 insertions(+), 3 deletions(-)
+> In fact I do not even understand why getaffinity() doesn't simply
+> return ->cpus_allowed, but this is off-topic.
 
-For both patches:
-Acked-by: Michal Simek <michal.simek@xilinx.com>
-
-Mike: Can you please add both these patches to your tree?
-There shouldn't be any conflict with DT patch itself.
-But if you don't want to add 2/2 through your tree, I am also fine
-with taking this through my zynq tree.
-
-Thanks,
-Michal
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---dEccllHRKSxu9DdNso9tRnDA2bEFqAE0o
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlJbs7wACgkQykllyylKDCHTiwCeJf5wDat0vQWyAjf5hzSOugtX
-EzMAoIOjtlrHrMFEVzGRYyAxd4mkSFYB
-=n4gz
------END PGP SIGNATURE-----
-
---dEccllHRKSxu9DdNso9tRnDA2bEFqAE0o--
+Yeah, me neither :-(, it always surprises me. But changing it is likely
+to break stuff so there we are.
