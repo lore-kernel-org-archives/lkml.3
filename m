@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756348Ab3JNM0Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 08:26:16 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:18674 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755933Ab3JNM0L (ORCPT
+	id S1756445Ab3JNM0e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 08:26:34 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:12925 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756292Ab3JNM0N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 08:26:11 -0400
+	Mon, 14 Oct 2013 08:26:13 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 14 Oct 2013 05:21:49 -0700
+	by hqnvupgp07.nvidia.com on Mon, 14 Oct 2013 05:26:12 -0700
 From: Arto Merilainen <amerilainen@nvidia.com>
 To: <tbergstrom@nvidia.com>, <thierry.reding@gmail.com>
 CC: <dri-devel@lists.freedesktop.org>, <linux-tegra@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <amerilainen@nvidia.com>
-Subject: [PATCHv2 2/4] gpu: host1x: Add syncpoint base support
-Date: Mon, 14 Oct 2013 15:21:53 +0300
-Message-ID: <1381753315-21778-3-git-send-email-amerilainen@nvidia.com>
+Subject: [PATCHv2 3/4] drm/tegra: Deliver syncpoint base to user space
+Date: Mon, 14 Oct 2013 15:21:54 +0300
+Message-ID: <1381753315-21778-4-git-send-email-amerilainen@nvidia.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1381753315-21778-1-git-send-email-amerilainen@nvidia.com>
 References: <1381753315-21778-1-git-send-email-amerilainen@nvidia.com>
@@ -26,213 +26,109 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for hardware syncpoint bases. This creates
-a simple mechanism to stall the command FIFO until an operation is
-completed.
+This patch adds a separate ioctl for delivering syncpoint base number
+to user space. If the syncpoint does not have an associated base, the
+function returns -ENXIO.
 
 Signed-off-by: Arto Merilainen <amerilainen@nvidia.com>
 ---
- drivers/gpu/host1x/dev.h                   |  2 ++
- drivers/gpu/host1x/hw/channel_hw.c         | 19 +++++++++++++
- drivers/gpu/host1x/hw/hw_host1x01_uclass.h |  6 ++++
- drivers/gpu/host1x/syncpt.c                | 44 ++++++++++++++++++++++++++++--
- drivers/gpu/host1x/syncpt.h                |  7 +++++
- 5 files changed, 76 insertions(+), 2 deletions(-)
+ drivers/gpu/host1x/drm/drm.c | 25 +++++++++++++++++++++++++
+ include/uapi/drm/tegra_drm.h | 26 +++++++++++++++++---------
+ 2 files changed, 42 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/gpu/host1x/dev.h b/drivers/gpu/host1x/dev.h
-index bed90a8..516ce0a 100644
---- a/drivers/gpu/host1x/dev.h
-+++ b/drivers/gpu/host1x/dev.h
-@@ -27,6 +27,7 @@
- #include "job.h"
- 
- struct host1x_syncpt;
-+struct host1x_syncpt_base;
- struct host1x_channel;
- struct host1x_cdma;
- struct host1x_job;
-@@ -102,6 +103,7 @@ struct host1x {
- 
- 	void __iomem *regs;
- 	struct host1x_syncpt *syncpt;
-+	struct host1x_syncpt_base *bases;
- 	struct device *dev;
- 	struct clk *clk;
- 
-diff --git a/drivers/gpu/host1x/hw/channel_hw.c b/drivers/gpu/host1x/hw/channel_hw.c
-index ee19962..06f44bf 100644
---- a/drivers/gpu/host1x/hw/channel_hw.c
-+++ b/drivers/gpu/host1x/hw/channel_hw.c
-@@ -67,6 +67,21 @@ static void submit_gathers(struct host1x_job *job)
- 	}
+diff --git a/drivers/gpu/host1x/drm/drm.c b/drivers/gpu/host1x/drm/drm.c
+index 8c61cee..c11cbf5 100644
+--- a/drivers/gpu/host1x/drm/drm.c
++++ b/drivers/gpu/host1x/drm/drm.c
+@@ -472,6 +472,30 @@ static int tegra_get_syncpt(struct drm_device *drm, void *data,
+ 	return 0;
  }
  
-+static inline void synchronize_syncpt_base(struct host1x_job *job)
++static int tegra_get_syncpt_base(struct drm_device *drm, void *data,
++				 struct drm_file *file)
 +{
-+	struct host1x_channel *ch = job->channel;
-+	struct host1x *host = dev_get_drvdata(ch->dev->parent);
-+	struct host1x_syncpt *sp = host->syncpt + job->syncpt_id;
-+	u32 base_id = sp->base->id;
-+	u32 base_val = host1x_syncpt_read_max(sp);
++	struct drm_tegra_get_syncpt_base *args = data;
++	struct host1x_drm_file *fpriv = file->driver_priv;
++	struct host1x_drm_context *context =
++		(struct host1x_drm_context *)(uintptr_t)args->context;
++	struct host1x_syncpt_base *base;
 +
-+	host1x_cdma_push(&ch->cdma,
-+			 host1x_opcode_setclass(HOST1X_CLASS_HOST1X,
-+				HOST1X_UCLASS_LOAD_SYNCPT_BASE, 1),
-+			 HOST1X_UCLASS_LOAD_SYNCPT_BASE_BASE_INDX_F(base_id) |
-+			 HOST1X_UCLASS_LOAD_SYNCPT_BASE_VALUE_F(base_val));
++	if (!host1x_drm_file_owns_context(fpriv, context))
++		return -ENODEV;
++
++	if (args->index >= context->client->num_syncpts)
++		return -EINVAL;
++
++	base = context->client->syncpts[args->index]->base;
++	if (!base)
++		return -ENXIO;
++
++	args->base_id = base->id;
++
++	return 0;
 +}
 +
- static int channel_submit(struct host1x_job *job)
+ static int tegra_submit(struct drm_device *drm, void *data,
+ 			struct drm_file *file)
  {
- 	struct host1x_channel *ch = job->channel;
-@@ -118,6 +133,10 @@ static int channel_submit(struct host1x_job *job)
- 					host1x_syncpt_read_max(sp)));
- 	}
+@@ -498,6 +522,7 @@ static const struct drm_ioctl_desc tegra_drm_ioctls[] = {
+ 	DRM_IOCTL_DEF_DRV(TEGRA_CLOSE_CHANNEL, tegra_close_channel, DRM_UNLOCKED),
+ 	DRM_IOCTL_DEF_DRV(TEGRA_GET_SYNCPT, tegra_get_syncpt, DRM_UNLOCKED),
+ 	DRM_IOCTL_DEF_DRV(TEGRA_SUBMIT, tegra_submit, DRM_UNLOCKED),
++	DRM_IOCTL_DEF_DRV(TEGRA_GET_SYNCPT_BASE, tegra_get_syncpt_base, DRM_UNLOCKED),
+ #endif
+ };
  
-+	/* Synchronize base register to allow using it for relative waiting */
-+	if (sp->base)
-+		synchronize_syncpt_base(job);
-+
- 	syncval = host1x_syncpt_incr_max(sp, user_syncpt_incrs);
+diff --git a/include/uapi/drm/tegra_drm.h b/include/uapi/drm/tegra_drm.h
+index 73bde4e..8b8094c 100644
+--- a/include/uapi/drm/tegra_drm.h
++++ b/include/uapi/drm/tegra_drm.h
+@@ -65,6 +65,12 @@ struct drm_tegra_get_syncpt {
+ 	__u32 id;
+ };
  
- 	job->syncpt_end = syncval;
-diff --git a/drivers/gpu/host1x/hw/hw_host1x01_uclass.h b/drivers/gpu/host1x/hw/hw_host1x01_uclass.h
-index 42f3ce1..f755359 100644
---- a/drivers/gpu/host1x/hw/hw_host1x01_uclass.h
-+++ b/drivers/gpu/host1x/hw/hw_host1x01_uclass.h
-@@ -111,6 +111,12 @@ static inline u32 host1x_uclass_wait_syncpt_base_offset_f(u32 v)
- }
- #define HOST1X_UCLASS_WAIT_SYNCPT_BASE_OFFSET_F(v) \
- 	host1x_uclass_wait_syncpt_base_offset_f(v)
-+static inline u32 host1x_uclass_load_syncpt_base_r(void)
-+{
-+	return 0xb;
-+}
-+#define HOST1X_UCLASS_LOAD_SYNCPT_BASE \
-+	host1x_uclass_load_syncpt_base_r()
- static inline u32 host1x_uclass_load_syncpt_base_base_indx_f(u32 v)
- {
- 	return (v & 0xff) << 24;
-diff --git a/drivers/gpu/host1x/syncpt.c b/drivers/gpu/host1x/syncpt.c
-index d376cd4..b5cb97c 100644
---- a/drivers/gpu/host1x/syncpt.c
-+++ b/drivers/gpu/host1x/syncpt.c
-@@ -30,6 +30,28 @@
- #define SYNCPT_CHECK_PERIOD (2 * HZ)
- #define MAX_STUCK_CHECK_COUNT 15
- 
-+static struct host1x_syncpt_base *host1x_base_alloc(struct host1x *host)
-+{
-+	struct host1x_syncpt_base *bases = host->bases;
-+	unsigned int i;
-+
-+	for (i = 0; i < host->info->nb_bases; i++)
-+		if (!bases[i].requested)
-+			break;
-+
-+	if (i >= host->info->nb_bases)
-+		return NULL;
-+
-+	bases[i].requested = true;
-+	return &bases[i];
-+}
-+
-+static void host1x_syncpt_base_free(struct host1x_syncpt_base *base)
-+{
-+	if (base)
-+		base->requested = false;
-+}
-+
- static struct host1x_syncpt *host1x_syncpt_alloc(struct host1x *host,
- 						 struct device *dev,
- 						 unsigned long flags)
-@@ -44,6 +66,12 @@ static struct host1x_syncpt *host1x_syncpt_alloc(struct host1x *host,
- 	if (i >= host->info->nb_pts)
- 		return NULL;
- 
-+	if (flags & HOST1X_SYNCPT_HAS_BASE) {
-+		sp->base = host1x_base_alloc(host);
-+		if (!sp->base)
-+			return NULL;
-+	}
-+
- 	name = kasprintf(GFP_KERNEL, "%02d-%s", sp->id,
- 			dev ? dev_name(dev) : NULL);
- 	if (!name)
-@@ -304,19 +332,29 @@ int host1x_syncpt_patch_wait(struct host1x_syncpt *sp, void *patch_addr)
- int host1x_syncpt_init(struct host1x *host)
- {
- 	struct host1x_syncpt *syncpt;
-+	struct host1x_syncpt_base *bases;
- 	int i;
- 
- 	syncpt = devm_kzalloc(host->dev, sizeof(*syncpt) * host->info->nb_pts,
--		GFP_KERNEL);
-+			      GFP_KERNEL);
- 	if (!syncpt)
- 		return -ENOMEM;
- 
--	for (i = 0; i < host->info->nb_pts; ++i) {
-+	bases = devm_kzalloc(host->dev, sizeof(*bases) * host->info->nb_bases,
-+			     GFP_KERNEL);
-+	if (!bases)
-+		return -ENOMEM;
-+
-+	for (i = 0; i < host->info->nb_pts; i++) {
- 		syncpt[i].id = i;
- 		syncpt[i].host = host;
- 	}
- 
-+	for (i = 0; i < host->info->nb_bases; i++)
-+		bases[i].id = i;
-+
- 	host->syncpt = syncpt;
-+	host->bases = bases;
- 
- 	host1x_syncpt_restore(host);
- 
-@@ -340,7 +378,9 @@ void host1x_syncpt_free(struct host1x_syncpt *sp)
- 	if (!sp)
- 		return;
- 
-+	host1x_syncpt_base_free(sp->base);
- 	kfree(sp->name);
-+	sp->base = NULL;
- 	sp->dev = NULL;
- 	sp->name = NULL;
- 	sp->client_managed = false;
-diff --git a/drivers/gpu/host1x/syncpt.h b/drivers/gpu/host1x/syncpt.h
-index 1de7b58..28ec886 100644
---- a/drivers/gpu/host1x/syncpt.h
-+++ b/drivers/gpu/host1x/syncpt.h
-@@ -30,6 +30,11 @@ struct host1x;
- /* Reserved for replacing an expired wait with a NOP */
- #define HOST1X_SYNCPT_RESERVED			0
- 
-+struct host1x_syncpt_base {
-+	unsigned int id;
-+	bool requested;
++struct drm_tegra_get_syncpt_base {
++	__u64 context;
++	__u32 index;
++	__u32 base_id;
 +};
 +
- struct host1x_syncpt {
- 	int id;
- 	atomic_t min_val;
-@@ -39,6 +44,7 @@ struct host1x_syncpt {
- 	bool client_managed;
- 	struct host1x *host;
- 	struct device *dev;
-+	struct host1x_syncpt_base *base;
+ struct drm_tegra_syncpt {
+ 	__u32 id;
+ 	__u32 incrs;
+@@ -115,15 +121,16 @@ struct drm_tegra_submit {
+ 	__u32 reserved[5];	/* future expansion */
+ };
  
- 	/* interrupt data */
- 	struct host1x_syncpt_intr intr;
-@@ -154,6 +160,7 @@ u32 host1x_syncpt_id(struct host1x_syncpt *sp);
+-#define DRM_TEGRA_GEM_CREATE	0x00
+-#define DRM_TEGRA_GEM_MMAP	0x01
+-#define DRM_TEGRA_SYNCPT_READ	0x02
+-#define DRM_TEGRA_SYNCPT_INCR	0x03
+-#define DRM_TEGRA_SYNCPT_WAIT	0x04
+-#define DRM_TEGRA_OPEN_CHANNEL	0x05
+-#define DRM_TEGRA_CLOSE_CHANNEL	0x06
+-#define DRM_TEGRA_GET_SYNCPT	0x07
+-#define DRM_TEGRA_SUBMIT	0x08
++#define DRM_TEGRA_GEM_CREATE		0x00
++#define DRM_TEGRA_GEM_MMAP		0x01
++#define DRM_TEGRA_SYNCPT_READ		0x02
++#define DRM_TEGRA_SYNCPT_INCR		0x03
++#define DRM_TEGRA_SYNCPT_WAIT		0x04
++#define DRM_TEGRA_OPEN_CHANNEL		0x05
++#define DRM_TEGRA_CLOSE_CHANNEL		0x06
++#define DRM_TEGRA_GET_SYNCPT		0x07
++#define DRM_TEGRA_SUBMIT		0x08
++#define DRM_TEGRA_GET_SYNCPT_BASE	0x09
  
- /* Allocate a sync point for a device. */
- #define HOST1X_SYNCPT_CLIENT_MANAGED	(1 << 0)
-+#define HOST1X_SYNCPT_HAS_BASE		(1 << 1)
- struct host1x_syncpt *host1x_syncpt_request(struct device *dev,
- 					    unsigned long flags);
+ #define DRM_IOCTL_TEGRA_GEM_CREATE DRM_IOWR(DRM_COMMAND_BASE + DRM_TEGRA_GEM_CREATE, struct drm_tegra_gem_create)
+ #define DRM_IOCTL_TEGRA_GEM_MMAP DRM_IOWR(DRM_COMMAND_BASE + DRM_TEGRA_GEM_MMAP, struct drm_tegra_gem_mmap)
+@@ -134,5 +141,6 @@ struct drm_tegra_submit {
+ #define DRM_IOCTL_TEGRA_CLOSE_CHANNEL DRM_IOWR(DRM_COMMAND_BASE + DRM_TEGRA_CLOSE_CHANNEL, struct drm_tegra_open_channel)
+ #define DRM_IOCTL_TEGRA_GET_SYNCPT DRM_IOWR(DRM_COMMAND_BASE + DRM_TEGRA_GET_SYNCPT, struct drm_tegra_get_syncpt)
+ #define DRM_IOCTL_TEGRA_SUBMIT DRM_IOWR(DRM_COMMAND_BASE + DRM_TEGRA_SUBMIT, struct drm_tegra_submit)
++#define DRM_IOCTL_TEGRA_GET_SYNCPT_BASE DRM_IOWR(DRM_COMMAND_BASE + DRM_TEGRA_GET_SYNCPT_BASE, struct drm_tegra_get_syncpt_base)
  
+ #endif
 -- 
 1.8.1.5
 
