@@ -1,122 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756475Ab3JNM1F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 08:27:05 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:14803 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755962Ab3JNM0J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 08:26:09 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 14 Oct 2013 05:26:08 -0700
-From: Arto Merilainen <amerilainen@nvidia.com>
-To: <tbergstrom@nvidia.com>, <thierry.reding@gmail.com>
-CC: <dri-devel@lists.freedesktop.org>, <linux-tegra@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <amerilainen@nvidia.com>
-Subject: [PATCHv2 1/4] gpu: host1x: Add 'flags' field to syncpt request
-Date: Mon, 14 Oct 2013 15:21:52 +0300
-Message-ID: <1381753315-21778-2-git-send-email-amerilainen@nvidia.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1381753315-21778-1-git-send-email-amerilainen@nvidia.com>
-References: <1381753315-21778-1-git-send-email-amerilainen@nvidia.com>
-X-NVConfidentiality: public
+	id S932100Ab3JNM1N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 08:27:13 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:44419 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756082Ab3JNM1E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 08:27:04 -0400
+Message-ID: <525BE2B2.8020105@ti.com>
+Date: Mon, 14 Oct 2013 15:25:22 +0300
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        LDOC <linux-doc@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Sekhar Nori <nsekhar@ti.com>, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>
+Subject: Re: [PATCH v3 1/3] gpio: davinci: add OF support
+References: <1380902596-4693-1-git-send-email-sujithkv@ti.com>	<1380902596-4693-2-git-send-email-sujithkv@ti.com>	<CACRpkdYxegBSYXR1-98smUNnDXpyRHo_vuYdnr3r7zhawENiUA@mail.gmail.com>	<CA+V-a8vyPyL0j0nPOZyjxrecusFzXovFPsNBLKYXns5ASWR-wg@mail.gmail.com>	<CACRpkdYNexWWXuQ052xuQ4NOdXm2gt-+ByREKeGo-VAnbH4D2w@mail.gmail.com> <CA+V-a8vH7VXqz=2cz-uD=YfRBRYrJ10K1Aptw28vV8gP+PiT2g@mail.gmail.com>
+In-Reply-To: <CA+V-a8vH7VXqz=2cz-uD=YfRBRYrJ10K1Aptw28vV8gP+PiT2g@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.145.172]
+X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Functions host1x_syncpt_request() and _host1x_syncpt_alloc() have
-been taking a separate boolean flag ('client_managed') for indicating
-if the syncpoint value should be tracked by the host1x driver.
+Hi Prabhakar Lad,
 
-This patch converts the field into generic 'flags' field so that
-we can easily add more information while requesting a syncpoint.
-Clients are adapted to use the new interface accordingly.
+On 10/11/2013 07:18 PM, Prabhakar Lad wrote:
+> Hi Linus,
+> 
+> On 10/11/13, Linus Walleij <linus.walleij@linaro.org> wrote:
+>> On Fri, Oct 11, 2013 at 4:59 PM, Prabhakar Lad
+>> <prabhakar.csengg@gmail.com> wrote:
+>>> On 10/11/13, Linus Walleij <linus.walleij@linaro.org> wrote:
+>>>> On Fri, Oct 4, 2013 at 6:03 PM, Prabhakar Lad
+>>>> <prabhakar.csengg@gmail.com> wrote:
+>>
+>>>>> +- ti,davinci-gpio-irq-base: Base from where GPIO interrupt numbering
+>>>>> starts.
+>>>>
+>>>> What is this?
+>>>>
+>>>> If I have ever ACKed this I have been drunk. I take it back.
+>>>>
+>>> here is the ACK https://patchwork.kernel.org/patch/2721181/
+>>
+>> And as suspected that version of the patch did not contain
+>> this strange node property.
+>>
+> The property did exist in the patch 'intc_irq_num', I just renamed
+> it and gave a proper description to it.
+> 
+>> Don't keep my ACK on patches if you change basic stuff like
+>> that, they need to be re-acked, this runs the risk of abusing
+>> my trust amongst other subsystem maintainers who might
+>> go and merge this because "aha the GPIO maintainer
+>> thinks that this is OK".
+>>
+> Agreed, I carry forwarded the ACK since it had minor changes.
+> 
+>>>> This "base" is a Linux-specific thing and has no place in the
+>>>> device tree, and shall not be there. You have to find some way to
+>>>> avoid this, what do you think some other OS should do with
+>>>> this value...
+>>>>
+>>>> All IRQs in Linux are assumed to be dynamically assigned numbers
+>>>> nowadays, with a property like this you can never switch on
+>>>> SPARSE_IRQ for the DaVinci.
+>>>>
+>>> Can you point to any alternative solution if you have any ?
+>>
+>> First convert this GPIO driver to use an irqdomain to map
+>> HW IRQs to Linux IRQs, and grab a few IRQ descriptors
+>> dynamically off the irq descriptor heap.
+>> Example: commit
+>> a6c45b99a658521291cfb66ecf035cc58b38f206
+>> "pinctrl/coh901: use irqdomain, allocate irqdescs"
+>>
+>> Then on a longer term convert DaVinci to use dynamically
+>> allocated IRQs for all interrupt controllers, and move it over
+>> to SPARSE_IRQ so you know this works.
+>>
+> Thanks for the pointers.
+> 
 
-Signed-off-by: Arto Merilainen <amerilainen@nvidia.com>
----
- drivers/gpu/host1x/drm/gr2d.c |  2 +-
- drivers/gpu/host1x/syncpt.c   | 14 +++++++-------
- drivers/gpu/host1x/syncpt.h   |  3 ++-
- 3 files changed, 10 insertions(+), 9 deletions(-)
+Could it be possible to use "interrupts" and "interrupt-names" to identify
+assigned banked & unbanked IRQs?
 
-diff --git a/drivers/gpu/host1x/drm/gr2d.c b/drivers/gpu/host1x/drm/gr2d.c
-index 27ffcf1..7efd97b 100644
---- a/drivers/gpu/host1x/drm/gr2d.c
-+++ b/drivers/gpu/host1x/drm/gr2d.c
-@@ -285,7 +285,7 @@ static int gr2d_probe(struct platform_device *pdev)
- 	if (!gr2d->channel)
- 		return -ENOMEM;
- 
--	*syncpts = host1x_syncpt_request(dev, false);
-+	*syncpts = host1x_syncpt_request(dev, 0);
- 	if (!(*syncpts)) {
- 		host1x_channel_free(gr2d->channel);
- 		return -ENOMEM;
-diff --git a/drivers/gpu/host1x/syncpt.c b/drivers/gpu/host1x/syncpt.c
-index 409745b..d376cd4 100644
---- a/drivers/gpu/host1x/syncpt.c
-+++ b/drivers/gpu/host1x/syncpt.c
-@@ -30,9 +30,9 @@
- #define SYNCPT_CHECK_PERIOD (2 * HZ)
- #define MAX_STUCK_CHECK_COUNT 15
- 
--static struct host1x_syncpt *_host1x_syncpt_alloc(struct host1x *host,
--						  struct device *dev,
--						  bool client_managed)
-+static struct host1x_syncpt *host1x_syncpt_alloc(struct host1x *host,
-+						 struct device *dev,
-+						 unsigned long flags)
- {
- 	int i;
- 	struct host1x_syncpt *sp = host->syncpt;
-@@ -51,7 +51,7 @@ static struct host1x_syncpt *_host1x_syncpt_alloc(struct host1x *host,
- 
- 	sp->dev = dev;
- 	sp->name = name;
--	sp->client_managed = client_managed;
-+	sp->client_managed = !!(flags & HOST1X_SYNCPT_CLIENT_MANAGED);
- 
- 	return sp;
- }
-@@ -321,7 +321,7 @@ int host1x_syncpt_init(struct host1x *host)
- 	host1x_syncpt_restore(host);
- 
- 	/* Allocate sync point to use for clearing waits for expired fences */
--	host->nop_sp = _host1x_syncpt_alloc(host, NULL, false);
-+	host->nop_sp = host1x_syncpt_alloc(host, NULL, 0);
- 	if (!host->nop_sp)
- 		return -ENOMEM;
- 
-@@ -329,10 +329,10 @@ int host1x_syncpt_init(struct host1x *host)
- }
- 
- struct host1x_syncpt *host1x_syncpt_request(struct device *dev,
--					    bool client_managed)
-+					    unsigned long flags)
- {
- 	struct host1x *host = dev_get_drvdata(dev->parent);
--	return _host1x_syncpt_alloc(host, dev, client_managed);
-+	return host1x_syncpt_alloc(host, dev, flags);
- }
- 
- void host1x_syncpt_free(struct host1x_syncpt *sp)
-diff --git a/drivers/gpu/host1x/syncpt.h b/drivers/gpu/host1x/syncpt.h
-index 267c0b9..1de7b58 100644
---- a/drivers/gpu/host1x/syncpt.h
-+++ b/drivers/gpu/host1x/syncpt.h
-@@ -153,8 +153,9 @@ int host1x_syncpt_patch_wait(struct host1x_syncpt *sp, void *patch_addr);
- u32 host1x_syncpt_id(struct host1x_syncpt *sp);
- 
- /* Allocate a sync point for a device. */
-+#define HOST1X_SYNCPT_CLIENT_MANAGED	(1 << 0)
- struct host1x_syncpt *host1x_syncpt_request(struct device *dev,
--					    bool client_managed);
-+					    unsigned long flags);
- 
- /* Free a sync point. */
- void host1x_syncpt_free(struct host1x_syncpt *sp);
--- 
-1.8.1.5
+For example DM646x (http://www.ti.com/lit/ug/sprueq8a/sprueq8a.pdf):
 
+interrupts = <48 IRQ_TYPE_EDGE_BOTH>,
+             <49 IRQ_TYPE_EDGE_BOTH>,
+             <50 IRQ_TYPE_EDGE_BOTH>,
+             <51 IRQ_TYPE_EDGE_BOTH>,
+             <52 IRQ_TYPE_EDGE_BOTH>,
+             <53 IRQ_TYPE_EDGE_BOTH>,
+             <54 IRQ_TYPE_EDGE_BOTH>,
+             <55 IRQ_TYPE_EDGE_BOTH>,
+             <56 IRQ_TYPE_EDGE_BOTH>,
+             <57 IRQ_TYPE_EDGE_BOTH>,
+             <58 IRQ_TYPE_EDGE_BOTH>;
+interrupt-names = "gpio0", "gpio1", "gpio2", "gpio3", "gpio4", "gpio5", "gpio6", "gpio7", "bank0", "bank1", "bank2";
+
+For example OMAP-L138 (http://www.ti.com/lit/ug/spruh77a/spruh77a.pdf):
+
+interrupts = <42 IRQ_TYPE_EDGE_BOTH>,
+             <43 IRQ_TYPE_EDGE_BOTH>,
+             <44 IRQ_TYPE_EDGE_BOTH>,
+             <45 IRQ_TYPE_EDGE_BOTH>,
+             <46 IRQ_TYPE_EDGE_BOTH>,
+             <47 IRQ_TYPE_EDGE_BOTH>,
+             <48 IRQ_TYPE_EDGE_BOTH>,
+             <49 IRQ_TYPE_EDGE_BOTH>,
+             <50 IRQ_TYPE_EDGE_BOTH>;
+
+interrupt-names = "bank0", "bank1", "bank2", "bank3", "bank4", "bank5", "bank6", "bank7", "bank8";
+
+For example Keystone 66AK2E05/02
+ (http://www.ti.com/lit/ds/sprs865a/sprs865a.pdf and http://www.ti.com/lit/ug/sprugv1/sprugv1.pdf):
+
+interrupts = <GIC_SPI 120 IRQ_TYPE_LEVEL_HIGH>,
+             <GIC_SPI 121 IRQ_TYPE_LEVEL_HIGH>,
+[..]
+             <GIC_SPI 150 IRQ_TYPE_LEVEL_HIGH>,
+             <GIC_SPI 151 IRQ_TYPE_LEVEL_HIGH>;
+
+
+interrupt-names = "gpio0", "gpio1", [...], "gpio30", "gpio31";
+
+So then, following properties would not be needed at all, because all inf. can be
+taken from interrupt's properties: 
++- ti,davinci-gpio-irq-base: Base from where GPIO interrupt numbering starts.
++- ti,davinci-gpio-unbanked: The number of GPIOs that have an individual interrupt line to processor.
+
+It should work good if Davinci-gpio driver will be converted to use
+linear IRQ domains for banked irqs.
+
+
+Regards,
+-grygorii
