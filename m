@@ -1,71 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933202Ab3JNUeB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 16:34:01 -0400
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:48072 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933139Ab3JNUdS (ORCPT
+	id S933137Ab3JNUdR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 16:33:17 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38884 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757640Ab3JNUDD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 16:33:18 -0400
-MIME-Version: 1.0
-In-Reply-To: <1381782256-2434-2-git-send-email-geyslan@gmail.com>
-References: <1381782256-2434-1-git-send-email-geyslan@gmail.com>
-	<1381782256-2434-2-git-send-email-geyslan@gmail.com>
-Date: Mon, 14 Oct 2013 17:33:17 -0300
-Message-ID: <CAGG-pUTZGHjzVYj2r0Df_ehUz27FL8=bPCQ5FMBxScN-NNTO2A@mail.gmail.com>
-Subject: Re: [PATCH v2] nfs: Use PTR_ERR_OR_ZERO in 'nfs/nfs4super.c'
-From: =?UTF-8?Q?Geyslan_Greg=C3=B3rio_Bem?= <geyslan@gmail.com>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: schumaker.anna@gmail.com, linux-nfs@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        kernel-br <kernel-br@googlegroups.com>,
-        "Geyslan G. Bem" <geyslan@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 14 Oct 2013 16:03:03 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 062/161] perf trace: Beautify access 'mode' arg
+Date: Mon, 14 Oct 2013 17:00:51 -0300
+Message-Id: <1381780950-25642-63-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1381780950-25642-1-git-send-email-acme@infradead.org>
+References: <1381780950-25642-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/10/14 Geyslan G. Bem <geyslan@gmail.com>:
-> Use 'PTR_ERR_OR_ZERO()' rather than 'IS_ERR(...) ? PTR_ERR(...) : 0'.
->
-> Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
-> ---
->  fs/nfs/nfs4super.c | 12 ++++++------
->  1 file changed, 6 insertions(+), 6 deletions(-)
->
-> diff --git a/fs/nfs/nfs4super.c b/fs/nfs/nfs4super.c
-> index e26acdd..65ab0a0 100644
-> --- a/fs/nfs/nfs4super.c
-> +++ b/fs/nfs/nfs4super.c
-> @@ -261,9 +261,9 @@ struct dentry *nfs4_try_mount(int flags, const char *dev_name,
->
->         res = nfs_follow_remote_path(root_mnt, export_path);
->
-> -       dfprintk(MOUNT, "<-- nfs4_try_mount() = %ld%s\n",
-> -                       IS_ERR(res) ? PTR_ERR(res) : 0,
-> -                       IS_ERR(res) ? " [error]" : "");
-> +       dfprintk(MOUNT, "<-- nfs4_try_mount() = %d%s\n",
-> +                PTR_ERR_OR_ZERO(res),
-> +                IS_ERR(res) ? " [error]" : "");
->         return res;
->  }
->
-> @@ -319,9 +319,9 @@ static struct dentry *nfs4_referral_mount(struct file_system_type *fs_type,
->         data->mnt_path = export_path;
->
->         res = nfs_follow_remote_path(root_mnt, export_path);
-> -       dprintk("<-- nfs4_referral_mount() = %ld%s\n",
-> -                       IS_ERR(res) ? PTR_ERR(res) : 0,
-> -                       IS_ERR(res) ? " [error]" : "");
-> +       dprintk("<-- nfs4_referral_mount() = %d%s\n",
-> +               PTR_ERR_OR_ZERO(res),
-> +               IS_ERR(res) ? " [error]" : "");
->         return res;
->  }
->
-> --
-> 1.8.4
->
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-In this version (v2):
-Format changed from %ld to %d.
+Removing the _OK suffix and using RWX when all three bits are set, for
+instance.
+
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-ypaz9k43lyqy94679feqnv8x@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-trace.c | 30 +++++++++++++++++++++++++++++-
+ 1 file changed, 29 insertions(+), 1 deletion(-)
+
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index 2b19aef7d3b5..7aa6bcacd51f 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -312,6 +312,33 @@ static size_t syscall_arg__scnprintf_socket_type(char *bf, size_t size,
+ 
+ #define SCA_SK_TYPE syscall_arg__scnprintf_socket_type
+ 
++static size_t syscall_arg__scnprintf_access_mode(char *bf, size_t size,
++						 struct syscall_arg *arg)
++{
++	size_t printed = 0;
++	int mode = arg->val;
++
++	if (mode == F_OK) /* 0 */
++		return scnprintf(bf, size, "F");
++#define	P_MODE(n) \
++	if (mode & n##_OK) { \
++		printed += scnprintf(bf + printed, size - printed, "%s", #n); \
++		mode &= ~n##_OK; \
++	}
++
++	P_MODE(R);
++	P_MODE(W);
++	P_MODE(X);
++#undef P_MODE
++
++	if (mode)
++		printed += scnprintf(bf + printed, size - printed, "|%#x", mode);
++
++	return printed;
++}
++
++#define SCA_ACCMODE syscall_arg__scnprintf_access_mode
++
+ static size_t syscall_arg__scnprintf_open_flags(char *bf, size_t size,
+ 					       struct syscall_arg *arg)
+ {
+@@ -422,7 +449,8 @@ static struct syscall_fmt {
+ 	bool	   timeout;
+ 	bool	   hexret;
+ } syscall_fmts[] = {
+-	{ .name	    = "access",	    .errmsg = true, },
++	{ .name	    = "access",	    .errmsg = true,
++	  .arg_scnprintf = { [1] = SCA_ACCMODE, /* mode */ }, },
+ 	{ .name	    = "arch_prctl", .errmsg = true, .alias = "prctl", },
+ 	{ .name	    = "brk",	    .hexret = true,
+ 	  .arg_scnprintf = { [0] = SCA_HEX, /* brk */ }, },
+-- 
+1.8.1.4
+
