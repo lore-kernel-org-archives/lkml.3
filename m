@@ -1,55 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756029Ab3JNKRV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 06:17:21 -0400
-Received: from hardeman.nu ([95.142.160.32]:35777 "EHLO hardeman.nu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753959Ab3JNKRR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 06:17:17 -0400
-X-Greylist: delayed 583 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Oct 2013 06:17:17 EDT
-To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: Re: [PATCH] [media] winbond-cir: remove deprecated  =?UTF-8?Q?IRQF=5FDISABLED?=
-X-PHP-Originating-Script: 0:rcmail.php
+	id S1756002Ab3JNKRN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 06:17:13 -0400
+Received: from numidia.opendz.org ([98.142.220.152]:41146 "EHLO
+	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753567Ab3JNKRL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 06:17:11 -0400
+Date: Mon, 14 Oct 2013 11:17:06 +0100
+From: Djalal Harouni <tixxdz@opendz.org>
+To: Ryan Mallon <rmallon@gmail.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, Joe Perches <joe@perches.com>,
+        Andrew Morton <akpm@linux-foundation.org>, eldad@fogrefinery.com,
+        Jiri Kosina <jkosina@suse.cz>, jgunthorpe@obsidianresearch.com,
+        Dan Rosenberg <dan.j.rosenberg@gmail.com>,
+        Kees Cook <keescook@chromium.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        George Spelvin <linux@horizon.com>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3a] vsprintf: Check real user/group id for %pK
+Message-ID: <20131014101706.GA5605@dztty>
+References: <5255D023.2030907@gmail.com>
+ <1381356014.2050.28.camel@joe-AO722>
+ <5255D2FD.6050705@gmail.com>
+ <1381356861.2050.33.camel@joe-AO722>
+ <5255D7D4.8050204@gmail.com>
+ <1381358030.2050.36.camel@joe-AO722>
+ <5255DBD8.30005@gmail.com>
+ <1381360187.2050.44.camel@joe-AO722>
+ <87pprck0q7.fsf@xmission.com>
+ <52576E32.1050700@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 8bit
-Date: Mon, 14 Oct 2013 12:07:32 +0200
-From: =?UTF-8?Q?David_H=C3=A4rdeman?= <david@hardeman.nu>
-Cc: m.chehab@samsung.com, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org
-In-Reply-To: <1381644672-9283-1-git-send-email-michael.opdenacker@free-electrons.com>
-References: <1381644672-9283-1-git-send-email-michael.opdenacker@free-electrons.com>
-Message-ID: <23ea039a250b4b074fb89a653e0c5c18@hardeman.nu>
-User-Agent: Roundcube Webmail/0.9.2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52576E32.1050700@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-10-13 08:11, Michael Opdenacker wrote:
-> This patch proposes to remove the use of the IRQF_DISABLED flag
+On Fri, Oct 11, 2013 at 02:19:14PM +1100, Ryan Mallon wrote:
+> On 11/10/13 13:20, Eric W. Biederman wrote:
+> > Joe Perches <joe@perches.com> writes:
+> > 
+> >> Some setuid binaries will allow reading of files which have read
+> >> permission by the real user id. This is problematic with files which
+> >> use %pK because the file access permission is checked at open() time,
+> >> but the kptr_restrict setting is checked at read() time. If a setuid
+> >> binary opens a %pK file as an unprivileged user, and then elevates
+> >> permissions before reading the file, then kernel pointer values may be
+> >> leaked.
+> >>
+> >> This happens for example with the setuid pppd application on Ubuntu
+> >> 12.04:
+> >>
+> >>   $ head -1 /proc/kallsyms
+> >>   00000000 T startup_32
+> >>
+> >>   $ pppd file /proc/kallsyms
+> >>   pppd: In file /proc/kallsyms: unrecognized option 'c1000000'
+> >>
+> >> This will only leak the pointer value from the first line, but other
+> >> setuid binaries may leak more information.
+> >>
+> >> Fix this by adding a check that in addition to the current process
+> >> having CAP_SYSLOG, that effective user and group ids are equal to the
+> >> real ids. If a setuid binary reads the contents of a file which uses
+> >> %pK then the pointer values will be printed as NULL if the real user
+> >> is unprivileged.
+> >>
+> >> Update the sysctl documentation to reflect the changes, and also
+> >> correct the documentation to state the kptr_restrict=0 is the default.
+> > 
+> > Sigh.  This is all wrong.  The only correct thing to test is
+> > file->f_cred.  Aka the capabilities of the program that opened the
+> > file.
+> > 
+> > Which means that the interface to %pK in the case of kptr_restrict is
+> > broken as it has no way to be passed the information it needs to make
+> > a sensible decision.
 > 
-> It's a NOOP since 2.6.35 and it will be removed one day.
-> 
-> Signed-off-by: Michael Opdenacker 
-> <michael.opdenacker@free-electrons.com>
-Acked-by: David Härdeman <david@hardeman.nu>
-> ---
->  drivers/media/rc/winbond-cir.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/media/rc/winbond-cir.c 
-> b/drivers/media/rc/winbond-cir.c
-> index 98bd496..904baf4 100644
-> --- a/drivers/media/rc/winbond-cir.c
-> +++ b/drivers/media/rc/winbond-cir.c
-> @@ -1110,7 +1110,7 @@ wbcir_probe(struct pnp_dev *device, const struct
-> pnp_device_id *dev_id)
->  	}
-> 
->  	err = request_irq(data->irq, wbcir_irq_handler,
-> -			  IRQF_DISABLED, DRVNAME, device);
-> +			  0, DRVNAME, device);
->  	if (err) {
->  		dev_err(dev, "Failed to claim IRQ %u\n", data->irq);
->  		err = -EBUSY;
+> Would it make sense to add a struct file * to struct seq_file and set
+> that in seq_open? Then the capability check can be done against seq->file.
+For the "add a struct file * to struct seq_file" and set it during
+seq_open(), It was proposed by Linus, but Al Viro didn't like it:
+https://lkml.org/lkml/2013/9/25/765
+
+I'm not sure if this will work for you: you can make seq_file->private
+cache some data, by calling single_open()... at ->open(), later check it
+during read()...
+
+
+As noted by Eric, I'll also go for the capability check at ->open(), if it
+does not break some userspace. BTW the CAP_SYSLOG check should do the job
+
+Checks during read() are not sufficient, since the design allows passing
+file descriptors and dup() stdin/stdout of suid-execve.
+
+
+IMO: unprivileged code should not get that file descriptor, so ->open()
+should fail.
+If this will break userspace then allow open() and cache result for read()
+
+
+Can you emulate the behaviour of kptr_restrict=1 ? If so:
+1) perform check during open() and cache data
+2) during read() check kptr_restrict==1
+   check the cached value and if opener had CAP_SYSLOG  if so:
+   print something like this: 00000000 T startup_32
+
+All this without modifying vsprintf, I mean just do the checks outside
+vsprintf() inside your ->read()
+
+Just my 2 cents
+
+
+Please cc:me, Thanks
+
+-- 
+Djalal Harouni
+http://opendz.org
