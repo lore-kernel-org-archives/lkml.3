@@ -1,158 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755854Ab3JNJOf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 05:14:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6332 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754431Ab3JNJOe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 05:14:34 -0400
-Date: Mon, 14 Oct 2013 12:14:23 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: chai wen <chaiw.fnst@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, pbonzini@redhat.com, tangchen@cn.fujitsu.com,
-        guz.fnst@cn.fujitsu.com, zhangyanfei@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, chaiwen_0825@hotmail.com
-Subject: Re: [PATCH] Drop FOLL_GET in GUP when doing async_pf in kvm
-Message-ID: <20131014091423.GM15657@redhat.com>
-References: <1381741602-8805-1-git-send-email-chaiw.fnst@cn.fujitsu.com>
+	id S1755781Ab3JNJRq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 05:17:46 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:63031 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754367Ab3JNJRp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 05:17:45 -0400
+Message-ID: <525BB6E0.9030600@gmail.com>
+Date: Mon, 14 Oct 2013 20:18:24 +1100
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1381741602-8805-1-git-send-email-chaiw.fnst@cn.fujitsu.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: George Spelvin <linux@horizon.com>, joe@perches.com,
+        akpm@linux-foundation.org, dan.j.rosenberg@gmail.com,
+        eldad@fogrefinery.com, jgunthorpe@obsidianresearch.com,
+        jkosina@suse.cz, keescook@chromium.org,
+        kernel-hardening@lists.openwall.com, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, rusty@rustcorp.com.au,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH v3a] vsprintf: Check real user/group id for %pK
+References: <20131011044232.11545.qmail@science.horizon.com>	<525875DB.9030300@gmail.com> <87d2nba0yb.fsf@xmission.com>
+In-Reply-To: <87d2nba0yb.fsf@xmission.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 14, 2013 at 05:06:42PM +0800, chai wen wrote:
-> Hi Gleb
-> Thanks for you comment.
-> this new patch is based on git://git.kernel.org/pub/scm/virt/kvm/kvm.git
-> queue branch.
-> Page pinning is not mandatory in kvm async_pf processing and probably should
-> be dropped later.And we don't mind whether the GUP is failed or not.What we
-> need to do is to wake up guests process that is waitting on a page.
-> So drop the FOLL_GET flag in GUP, and do some simplifying in async_pf
-> check/clear processing.
-> thanks.
-> 
-Have you tested it? Compiled it?
+On 12/10/13 09:37, Eric W. Biederman wrote:
 
-> Suggested-by: Gleb Natapov <gleb@redhat.com>
-> Signed-off-by: Gu zheng <guz.fnst@cn.fujitsu.com>
-> Signed-off-by: chai wen <chaiw.fnst@cn.fujitsu.com>
-> ---
->  arch/x86/kvm/x86.c       |    4 ++--
->  include/linux/kvm_host.h |    2 +-
->  virt/kvm/async_pf.c      |   15 ++++-----------
->  3 files changed, 7 insertions(+), 14 deletions(-)
+> Ryan Mallon <rmallon@gmail.com> writes:
 > 
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index c951c71..edf2a07 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -7298,7 +7298,7 @@ void kvm_arch_async_page_ready(struct kvm_vcpu *vcpu, struct kvm_async_pf *work)
->  	int r;
->  
->  	if ((vcpu->arch.mmu.direct_map != work->arch.direct_map) ||
-> -	      is_error_page(work->page))
-> +	      work->wakeup_all)
->  		return;
->  
->  	r = kvm_mmu_reload(vcpu);
-> @@ -7408,7 +7408,7 @@ void kvm_arch_async_page_present(struct kvm_vcpu *vcpu,
->  	struct x86_exception fault;
->  
->  	trace_kvm_async_pf_ready(work->arch.token, work->gva);
-> -	if (is_error_page(work->page))
-> +	if (work->wakeup_all)
->  		work->arch.token = ~0; /* broadcast wakeup */
->  	else
->  		kvm_del_async_pf_gfn(vcpu, work->arch.gfn);
-> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-> index 7c961e1..5841e14 100644
-> --- a/include/linux/kvm_host.h
-> +++ b/include/linux/kvm_host.h
-> @@ -189,7 +189,7 @@ struct kvm_async_pf {
->  	gva_t gva;
->  	unsigned long addr;
->  	struct kvm_arch_async_pf arch;
-> -	struct page *page;
-> +	bool   wakeup_all;
->  };
->  
->  void kvm_clear_async_pf_completion_queue(struct kvm_vcpu *vcpu);
-> diff --git a/virt/kvm/async_pf.c b/virt/kvm/async_pf.c
-> index b197950..81a98a4 100644
-> --- a/virt/kvm/async_pf.c
-> +++ b/virt/kvm/async_pf.c
-> @@ -56,7 +56,6 @@ void kvm_async_pf_vcpu_init(struct kvm_vcpu *vcpu)
->  
->  static void async_pf_execute(struct work_struct *work)
->  {
-> -	struct page *page = NULL;
->  	struct kvm_async_pf *apf =
->  		container_of(work, struct kvm_async_pf, work);
->  	struct mm_struct *mm = apf->mm;
-> @@ -68,13 +67,12 @@ static void async_pf_execute(struct work_struct *work)
->  
->  	use_mm(mm);
->  	down_read(&mm->mmap_sem);
-> -	get_user_pages(current, mm, addr, 1, 1, 0, &page, NULL);
-> +	get_user_pages(current, mm, addr, 1, 1, 0, NULL, NULL);
->  	up_read(&mm->mmap_sem);
->  	unuse_mm(mm);
->  
->  	spin_lock(&vcpu->async_pf.lock);
->  	list_add_tail(&apf->link, &vcpu->async_pf.done);
-> -	apf->page = page;
->  	spin_unlock(&vcpu->async_pf.lock);
->  
->  	/*
-> @@ -112,8 +110,6 @@ void kvm_clear_async_pf_completion_queue(struct kvm_vcpu *vcpu)
->  			list_entry(vcpu->async_pf.done.next,
->  				   typeof(*work), link);
->  		list_del(&work->link);
-> -		if (!is_error_page(work->page))
-> -			kvm_release_page_clean(work->page);
->  		kmem_cache_free(async_pf_cache, work);
->  	}
->  	spin_unlock(&vcpu->async_pf.lock);
-> @@ -133,14 +129,11 @@ void kvm_check_async_pf_completion(struct kvm_vcpu *vcpu)
->  		list_del(&work->link);
->  		spin_unlock(&vcpu->async_pf.lock);
->  
-> -		if (work->page)
-> -			kvm_arch_async_page_ready(vcpu, work);
-> +		kvm_arch_async_page_ready(vcpu, work);
->  		kvm_arch_async_page_present(vcpu, work);
->  
->  		list_del(&work->queue);
->  		vcpu->async_pf.queued--;
-> -		if (!is_error_page(work->page))
-> -			kvm_release_page_clean(work->page);
->  		kmem_cache_free(async_pf_cache, work);
->  	}
->  }
-> @@ -163,7 +156,7 @@ int kvm_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn,
->  	if (!work)
->  		return 0;
->  
-> -	work->page = NULL;
-> +	work->wakeup_all = false;
->  	work->vcpu = vcpu;
->  	work->gva = gva;
->  	work->addr = gfn_to_hva(vcpu->kvm, gfn);
-> @@ -203,7 +196,7 @@ int kvm_async_pf_wakeup_all(struct kvm_vcpu *vcpu)
->  	if (!work)
->  		return -ENOMEM;
->  
-> -	work->page = KVM_ERR_PTR_BAD_PAGE;
-> +	work->wakeup_all = true;
->  	INIT_LIST_HEAD(&work->queue); /* for list_del to work */
->  
->  	spin_lock(&vcpu->async_pf.lock);
-> -- 
-> 1.7.1
+>> The only remaining problem is kernel/module.c:module_sect_show() which
+>> is used to write the sysfs files in /sys/module/<modname>/sections/.
+>> Those files are actually are really good target for leaking %pK values
+>> via setuid binaries. The problem is that the module_sect_show() function
+>> isn't passed information about who opened the sysfs file. I don't think
+>> this information is available in general for sysfs files either. Also,
+>> I can't actually see how module_sect_show() gets called?
+>>
+>> I'm a bit stuck on how to solve this. Any ideas?
+> 
+> I haven't yet had a chance to review the patches but there are patches
+> to make sysfs files seq files in Greg's driver core tree.
 
---
-			Gleb.
+
+Hmm, I had a look at the driver-core tree, and although sysfs files
+internally use the seq_file interface, the sysfs show/store handlers do
+not get passed the struct seq_file, so doesn't appear possible to do the
+checks there.
+
+We could add a sysfs_ops->seq_show, but that feels clunky to have two
+different interfaces for handling sysfs files. Converting the whole
+tree to pass struct seq_file to the sysfs handlers would be painful :-/.
+
+I assume the reason the /sys/module/<modname>/sections/* cannot be made
+0400 is that some user-space tools are expecting those files to be
+readable by unprivileged users?
+
+~Ryan
