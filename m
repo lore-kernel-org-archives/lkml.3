@@ -1,311 +1,232 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756095Ab3JNOUe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 10:20:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18663 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750939Ab3JNOUc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 10:20:32 -0400
-Message-ID: <1381760412.2796.90.camel@ul30vt.home>
-Subject: Re: [PATCH 2/7] iommu: add api to get iommu_domain of a device
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Sethi Varun-B16395 <B16395@freescale.com>
-Cc: Bhushan Bharat-R65777 <R65777@freescale.com>,
-        "agraf@suse.de" <agraf@suse.de>,
-        Wood Scott-B07421 <B07421@freescale.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "galak@kernel.crashing.org" <galak@kernel.crashing.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
-Date: Mon, 14 Oct 2013 08:20:12 -0600
-In-Reply-To: <C5ECD7A89D1DC44195F34B25E172658D0A535437@039-SN2MPN1-013.039d.mgd.msft.net>
-References: <1379575763-2091-1-git-send-email-Bharat.Bhushan@freescale.com>
-	 <1379575763-2091-3-git-send-email-Bharat.Bhushan@freescale.com>
-	 <1380127533.3030.319.camel@ul30vt.home>
-	 <6A3DF150A5B70D4F9B66A25E3F7C888D0718FD1C@039-SN2MPN1-011.039d.mgd.msft.net>
-	 <1380901507.2673.204.camel@ul30vt.home>
-	 <6A3DF150A5B70D4F9B66A25E3F7C888D07190F35@039-SN2MPN1-011.039d.mgd.msft.net>
-	 <1380906772.25705.19.camel@ul30vt.home>
-	 <6A3DF150A5B70D4F9B66A25E3F7C888D07191143@039-SN2MPN1-011.039d.mgd.msft.net>
-	 <1380910322.25705.56.camel@ul30vt.home>
-	 <6A3DF150A5B70D4F9B66A25E3F7C888D0719385B@039-SN2MPN1-011.039d.mgd.msft.net>
-	 <1381201980.6330.4.camel@ul30vt.home>
-	 <C5ECD7A89D1DC44195F34B25E172658D0A52BAC7@039-SN2MPN1-013.039d.mgd.msft.net>
-	 <1381437698.2796.53.camel@ul30vt.home>
-	 <C5ECD7A89D1DC44195F34B25E172658D0A535437@039-SN2MPN1-013.039d.mgd.msft.net>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756271Ab3JNOVV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 10:21:21 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:57347 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755651Ab3JNOVS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 10:21:18 -0400
+Message-ID: <525BFDC5.4000109@ti.com>
+Date: Mon, 14 Oct 2013 10:20:53 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Lukasz Majewski <l.majewski@samsung.com>
+CC: Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>, <kgene.kim@samsung.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>, <devicetree@vger.kernel.org>,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        <linux-samsung-soc@vger.kernel.org>
+Subject: Re: [PATCH v2 2/5] thermal: exynos: Provide separate TMU data for
+ Exynos4412
+References: <1380010102-25817-1-git-send-email-l.majewski@samsung.com> <1381300194-13134-1-git-send-email-l.majewski@samsung.com> <1381300194-13134-3-git-send-email-l.majewski@samsung.com>
+In-Reply-To: <1381300194-13134-3-git-send-email-l.majewski@samsung.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature";
+	boundary="8QTIFGTxN50L5nUipJ46sVoC4PwddkdTs"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-10-14 at 12:58 +0000, Sethi Varun-B16395 wrote:
-> 
-> > -----Original Message-----
-> > From: Alex Williamson [mailto:alex.williamson@redhat.com]
-> > Sent: Friday, October 11, 2013 2:12 AM
-> > To: Sethi Varun-B16395
-> > Cc: Bhushan Bharat-R65777; agraf@suse.de; Wood Scott-B07421; linux-
-> > pci@vger.kernel.org; galak@kernel.crashing.org; linux-
-> > kernel@vger.kernel.org; iommu@lists.linux-foundation.org;
-> > benh@kernel.crashing.org; linuxppc-dev@lists.ozlabs.org
-> > Subject: Re: [PATCH 2/7] iommu: add api to get iommu_domain of a device
-> > 
-> > On Thu, 2013-10-10 at 20:09 +0000, Sethi Varun-B16395 wrote:
-> > >
-> > > > -----Original Message-----
-> > > > From: iommu-bounces@lists.linux-foundation.org [mailto:iommu-
-> > > > bounces@lists.linux-foundation.org] On Behalf Of Alex Williamson
-> > > > Sent: Tuesday, October 08, 2013 8:43 AM
-> > > > To: Bhushan Bharat-R65777
-> > > > Cc: agraf@suse.de; Wood Scott-B07421; linux-pci@vger.kernel.org;
-> > > > galak@kernel.crashing.org; linux-kernel@vger.kernel.org;
-> > > > iommu@lists.linux-foundation.org; benh@kernel.crashing.org;
-> > > > linuxppc- dev@lists.ozlabs.org
-> > > > Subject: Re: [PATCH 2/7] iommu: add api to get iommu_domain of a
-> > > > device
-> > > >
-> > > > On Mon, 2013-10-07 at 05:46 +0000, Bhushan Bharat-R65777 wrote:
-> > > > >
-> > > > > > -----Original Message-----
-> > > > > > From: Alex Williamson [mailto:alex.williamson@redhat.com]
-> > > > > > Sent: Friday, October 04, 2013 11:42 PM
-> > > > > > To: Bhushan Bharat-R65777
-> > > > > > Cc: joro@8bytes.org; benh@kernel.crashing.org;
-> > > > > > galak@kernel.crashing.org; linux- kernel@vger.kernel.org;
-> > > > > > linuxppc-dev@lists.ozlabs.org; linux- pci@vger.kernel.org;
-> > > > > > agraf@suse.de; Wood Scott-B07421; iommu@lists.linux-
-> > > > > > foundation.org
-> > > > > > Subject: Re: [PATCH 2/7] iommu: add api to get iommu_domain of a
-> > > > > > device
-> > > > > >
-> > > > > > On Fri, 2013-10-04 at 17:23 +0000, Bhushan Bharat-R65777 wrote:
-> > > > > > >
-> > > > > > > > -----Original Message-----
-> > > > > > > > From: Alex Williamson [mailto:alex.williamson@redhat.com]
-> > > > > > > > Sent: Friday, October 04, 2013 10:43 PM
-> > > > > > > > To: Bhushan Bharat-R65777
-> > > > > > > > Cc: joro@8bytes.org; benh@kernel.crashing.org;
-> > > > > > > > galak@kernel.crashing.org; linux- kernel@vger.kernel.org;
-> > > > > > > > linuxppc-dev@lists.ozlabs.org; linux- pci@vger.kernel.org;
-> > > > > > > > agraf@suse.de; Wood Scott-B07421; iommu@lists.linux-
-> > > > > > > > foundation.org
-> > > > > > > > Subject: Re: [PATCH 2/7] iommu: add api to get iommu_domain
-> > > > > > > > of a device
-> > > > > > > >
-> > > > > > > > On Fri, 2013-10-04 at 16:47 +0000, Bhushan Bharat-R65777
-> > wrote:
-> > > > > > > > >
-> > > > > > > > > > -----Original Message-----
-> > > > > > > > > > From: Alex Williamson
-> > > > > > > > > > [mailto:alex.williamson@redhat.com]
-> > > > > > > > > > Sent: Friday, October 04, 2013 9:15 PM
-> > > > > > > > > > To: Bhushan Bharat-R65777
-> > > > > > > > > > Cc: joro@8bytes.org; benh@kernel.crashing.org;
-> > > > > > > > > > galak@kernel.crashing.org; linux-
-> > > > > > > > > > kernel@vger.kernel.org; linuxppc-dev@lists.ozlabs.org;
-> > > > > > > > > > linux- pci@vger.kernel.org; agraf@suse.de; Wood
-> > > > > > > > > > Scott-B07421; iommu@lists.linux- foundation.org
-> > > > > > > > > > Subject: Re: [PATCH 2/7] iommu: add api to get
-> > > > > > > > > > iommu_domain of a device
-> > > > > > > > > >
-> > > > > > > > > > On Fri, 2013-10-04 at 09:54 +0000, Bhushan Bharat-R65777
-> > > > wrote:
-> > > > > > > > > > >
-> > > > > > > > > > > > -----Original Message-----
-> > > > > > > > > > > > From: linux-pci-owner@vger.kernel.org
-> > > > > > > > > > > > [mailto:linux-pci-owner@vger.kernel.org]
-> > > > > > > > > > > > On Behalf Of Alex Williamson
-> > > > > > > > > > > > Sent: Wednesday, September 25, 2013 10:16 PM
-> > > > > > > > > > > > To: Bhushan Bharat-R65777
-> > > > > > > > > > > > Cc: joro@8bytes.org; benh@kernel.crashing.org;
-> > > > > > > > > > > > galak@kernel.crashing.org; linux-
-> > > > > > > > > > > > kernel@vger.kernel.org;
-> > > > > > > > > > > > linuxppc-dev@lists.ozlabs.org;
-> > > > > > > > > > > > linux- pci@vger.kernel.org; agraf@suse.de; Wood
-> > > > > > > > > > > > Scott-B07421; iommu@lists.linux- foundation.org;
-> > > > > > > > > > > > Bhushan
-> > > > > > > > > > > > Bharat-R65777
-> > > > > > > > > > > > Subject: Re: [PATCH 2/7] iommu: add api to get
-> > > > > > > > > > > > iommu_domain of a device
-> > > > > > > > > > > >
-> > > > > > > > > > > > On Thu, 2013-09-19 at 12:59 +0530, Bharat Bhushan
-> > wrote:
-> > > > > > > > > > > > > This api return the iommu domain to which the
-> > > > > > > > > > > > > device is
-> > > > attached.
-> > > > > > > > > > > > > The iommu_domain is required for making API calls
-> > > > > > > > > > > > > related to
-> > > > > > iommu.
-> > > > > > > > > > > > > Follow up patches which use this API to know iommu
-> > > > maping.
-> > > > > > > > > > > > >
-> > > > > > > > > > > > > Signed-off-by: Bharat Bhushan
-> > > > > > > > > > > > > <bharat.bhushan@freescale.com>
-> > > > > > > > > > > > > ---
-> > > > > > > > > > > > >  drivers/iommu/iommu.c |   10 ++++++++++
-> > > > > > > > > > > > >  include/linux/iommu.h |    7 +++++++
-> > > > > > > > > > > > >  2 files changed, 17 insertions(+), 0 deletions(-)
-> > > > > > > > > > > > >
-> > > > > > > > > > > > > diff --git a/drivers/iommu/iommu.c
-> > > > > > > > > > > > > b/drivers/iommu/iommu.c index
-> > > > > > > > > > > > > fbe9ca7..6ac5f50 100644
-> > > > > > > > > > > > > --- a/drivers/iommu/iommu.c
-> > > > > > > > > > > > > +++ b/drivers/iommu/iommu.c
-> > > > > > > > > > > > > @@ -696,6 +696,16 @@ void
-> > > > > > > > > > > > > iommu_detach_device(struct iommu_domain *domain,
-> > > > > > > > > > > > > struct device *dev)  }
-> > > > > > > > > > > > > EXPORT_SYMBOL_GPL(iommu_detach_device);
-> > > > > > > > > > > > >
-> > > > > > > > > > > > > +struct iommu_domain *iommu_get_dev_domain(struct
-> > > > device *dev) {
-> > > > > > > > > > > > > +	struct iommu_ops *ops = dev->bus->iommu_ops;
-> > > > > > > > > > > > > +
-> > > > > > > > > > > > > +	if (unlikely(ops == NULL ||
-> > > > > > > > > > > > > +ops->get_dev_iommu_domain ==
-> > > > > > NULL))
-> > > > > > > > > > > > > +		return NULL;
-> > > > > > > > > > > > > +
-> > > > > > > > > > > > > +	return ops->get_dev_iommu_domain(dev); }
-> > > > > > > > > > > > > +EXPORT_SYMBOL_GPL(iommu_get_dev_domain);
-> > > > > > > > > > > >
-> > > > > > > > > > > > What prevents this from racing iommu_domain_free()?
-> > > > > > > > > > > > There's no references acquired, so there's no reason
-> > > > > > > > > > > > for the caller to assume the
-> > > > > > > > > > pointer is valid.
-> > > > > > > > > > >
-> > > > > > > > > > > Sorry for late query, somehow this email went into a
-> > > > > > > > > > > folder and escaped;
-> > > > > > > > > > >
-> > > > > > > > > > > Just to be sure, there is not lock at generic "struct
-> > > > > > > > > > > iommu_domain", but IP
-> > > > > > > > > > specific structure (link FSL domain) linked in
-> > > > > > > > > > iommu_domain->priv have a lock, so we need to ensure
-> > > > > > > > > > this race in FSL iommu code (say
-> > > > > > > > > > drivers/iommu/fsl_pamu_domain.c),
-> > > > right?
-> > > > > > > > > >
-> > > > > > > > > > No, it's not sufficient to make sure that your use of
-> > > > > > > > > > the interface is race free.  The interface itself needs
-> > > > > > > > > > to be designed so that it's difficult to use incorrectly.
-> > > > > > > > >
-> > > > > > > > > So we can define
-> > > > > > > > > iommu_get_dev_domain()/iommu_put_dev_domain();
-> > > > > > > > > iommu_get_dev_domain() will return domain with the lock
-> > > > > > > > > held, and
-> > > > > > > > > iommu_put_dev_domain() will release the lock? And
-> > > > > > > > > iommu_get_dev_domain() must always be followed by
-> > > > > > > > > iommu_get_dev_domain().
-> > > > > > > >
-> > > > > > > > What lock?  get/put are generally used for reference
-> > > > > > > > counting, not locking in the kernel.
-> > > > > > > >
-> > > > > > > > > > That's not the case here.  This is a backdoor to get the
-> > > > > > > > > > iommu domain from the iommu driver regardless of who is
-> > > > > > > > > > using
-> > > > it or how.
-> > > > > > > > > > The iommu domain is created and managed by vfio, so
-> > > > > > > > > > shouldn't we be looking at how to do this through vfio?
-> > > > > > > > >
-> > > > > > > > > Let me first describe what we are doing here:
-> > > > > > > > > During initialization:-
-> > > > > > > > >  - vfio talks to MSI system to know the MSI-page and size
-> > > > > > > > >  - vfio then interacts with iommu to map the MSI-page in
-> > > > > > > > > iommu (IOVA is decided by userspace and physical address
-> > > > > > > > > is the
-> > > > > > > > > MSI-page)
-> > > > > > > > >  - So the IOVA subwindow mapping is created in iommu and
-> > > > > > > > > yes VFIO know about
-> > > > > > > > this mapping.
-> > > > > > > > >
-> > > > > > > > > Now do SET_IRQ(MSI/MSIX) ioctl:
-> > > > > > > > >  - calls pci_enable_msix()/pci_enable_msi_block(): which
-> > > > > > > > > is supposed to set
-> > > > > > > > MSI address/data in device.
-> > > > > > > > >  - So in current implementation (this patchset)
-> > > > > > > > > msi-subsystem gets the IOVA
-> > > > > > > > from iommu via this defined interface.
-> > > > > > > > >  - Are you saying that rather than getting this from
-> > > > > > > > > iommu, we should get this
-> > > > > > > > from vfio? What difference does this make?
-> > > > > > > >
-> > > > > > > > Yes, you just said above that vfio knows the msi to iova
-> > > > > > > > mapping, so why go outside of vfio to find it later?  The
-> > > > > > > > difference is one case you can have a proper reference to
-> > > > > > > > data structures to make sure the pointer you get back
-> > > > > > > > actually has meaning at the time you're using it vs the code
-> > > > > > > > here where you're defining an API that returns a meaningless
-> > > > > > > > value
-> > > > > > >
-> > > > > > > With FSL-PAMU we will always get consistant data from iommu or
-> > > > > > > vfio-data
-> > > > > > structure.
-> > > > > >
-> > > > > > Great, but you're trying to add a generic API to the IOMMU
-> > > > > > subsystem that's difficult to use correctly.  The fact that you
-> > > > > > use it correctly does not justify the API.
-> > > > > >
-> > > > > > > > because you can't check or
-> > > > > > > > enforce that an arbitrary caller is using it correctly.
-> > > > > > >
-> > > > > > > I am not sure what is arbitrary caller? pdev is known to vfio,
-> > > > > > > so vfio will only make
-> > > > > > > pci_enable_msix()/pci_enable_msi_block() for
-> > > > this pdev.
-> > > > > > > If anyother code makes then it is some other unexpectedly
-> > > > > > > thing happening in system, no?
-> > > > > >
-> > > > > > What's proposed here is a generic IOMMU API.  Anybody can call
-> > this.
-> > > > > > What if the host SCSI driver decides to go get the iommu domain
-> > > > > > for it's device (or any other device)?  Does that fit your usage
-> > model?
-> > > > > >
-> > > > > > > >  It's not maintainable.
-> > > > > > > > Thanks,
-> > > > > > >
-> > > > > > > I do not have any issue with this as well, can you also
-> > > > > > > describe the type of API you are envisioning; I can think of
-> > > > > > > defining some function in vfio.c/vfio_iommu*.c, make them
-> > > > > > > global and declare then in include/Linux/vfio.h And include
-> > > > > > > <Linux/vfio.h> in caller file
-> > > > > > > (arch/powerpc/kernel/msi.c)
-> > > > > >
-> > > > > > Do you really want module dependencies between vfio and your
-> > > > > > core kernel MSI setup?  Look at the vfio external user interface
-> > > > > > that
-> > > > we've already defined.
-> > > > > > That allows other components of the kernel to get a proper
-> > > > > > reference to a vfio group.  From there you can work out how to
-> > > > > > get what you want.  Another alternative is that vfio could
-> > > > > > register an MSI to IOVA mapping with architecture code when the
-> > mapping is created.
-> > > > > > The MSI setup path could then do a lookup in architecture code
-> > > > > > for the mapping.  You could even store the MSI to IOVA mapping
-> > > > > > in VFIO and create an interface where SET_IRQ passes that
-> > > > > > mapping into setup
-> > > > code.
-> > > [Sethi Varun-B16395] What you are suggesting is that the MSI setup
-> > > path queries the vfio subsystem for the mapping, rather than directly
-> > > querying the iommu subsystem. So, say if we add an interface for
-> > > getting MSI to IOVA mapping in the msi setup path, wouldn't this again
-> > > be specific to vfio? I reckon that this interface would again ppc
-> > > machine specific interface.
-> > 
-> > Sure, if this is a generic MSI setup path then clearly vfio should not be
-> > involved.  But by that same notion, if this is a generic MSI setup path,
-> > how can the proposed solutions guarantee that the iommu_domain or iova
-> > returned is still valid in all cases?  It's racy.  If the caller trying
-> > to setup MSI has the information needed, why doesn't it pass it in as
-> > part of the setup?  Thanks,
-> [Sethi Varun-B16395] Agreed, the proposed interface is not clean. But, we still need an interface through which MSI driver can call in to the vfio layer.
+--8QTIFGTxN50L5nUipJ46sVoC4PwddkdTs
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Or one that allows vfio to pass in the iova when the interrupt is being
-setup.  I'm afraid any kind of reverse interface where MSI calls back
-into vfio is going to be racy.  Thanks,
+On 09-10-2013 02:29, Lukasz Majewski wrote:
+> Up till now Exynos5250 and Exynos4412 had the same definitions for TMU
+> data. Following commit changes that, by introducing separate
+> exynos4412_default_tmu_data structure.
+>=20
+> Since Exynos4412 was chronologically first, the corresponding name for
+> TMU registers and default data was renamed.
+>=20
+> Additionally, new SOC_ARCH_EXYNOS4412 type has been defined.
+>=20
+> Moreover, the SOC_ARCH_EXYNOS name has been changed to SOC_ARCH_EXYNOS5=
+250.
+>=20
+> Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
+> Reviewed-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+>=20
+> ---
+> Changes for v2:
+> - Replace SOC_ARCH_EXYNOS with SOC_ARCH_EXYNOS5250
+> - Fix coding style for tmu_data elements definition
+>=20
+>  drivers/thermal/samsung/exynos_tmu.c      |    9 +++++----
+>  drivers/thermal/samsung/exynos_tmu.h      |    3 ++-
+>  drivers/thermal/samsung/exynos_tmu_data.c |   28 +++++++++++++++++++++=
++------
+>  drivers/thermal/samsung/exynos_tmu_data.h |    9 ++++++++-
+>  4 files changed, 37 insertions(+), 12 deletions(-)
+>=20
+> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/sam=
+sung/exynos_tmu.c
+> index b43afda..1312b34 100644
+> --- a/drivers/thermal/samsung/exynos_tmu.c
+> +++ b/drivers/thermal/samsung/exynos_tmu.c
+> @@ -488,7 +488,7 @@ static const struct of_device_id exynos_tmu_match[]=
+ =3D {
+>  	},
+>  	{
+>  		.compatible =3D "samsung,exynos4412-tmu",
+> -		.data =3D (void *)EXYNOS5250_TMU_DRV_DATA,
+> +		.data =3D (void *)EXYNOS4412_TMU_DRV_DATA,
+>  	},
+>  	{
+>  		.compatible =3D "samsung,exynos5250-tmu",
+> @@ -629,9 +629,10 @@ static int exynos_tmu_probe(struct platform_device=
+ *pdev)
+>  	if (ret)
+>  		return ret;
+> =20
+> -	if (pdata->type =3D=3D SOC_ARCH_EXYNOS ||
+> -		pdata->type =3D=3D SOC_ARCH_EXYNOS4210 ||
+> -				pdata->type =3D=3D SOC_ARCH_EXYNOS5440)
+> +	if (pdata->type =3D=3D SOC_ARCH_EXYNOS4210 ||
+> +	    pdata->type =3D=3D SOC_ARCH_EXYNOS4412 ||
+> +	    pdata->type =3D=3D SOC_ARCH_EXYNOS5250 ||
+> +	    pdata->type =3D=3D SOC_ARCH_EXYNOS5440)
+>  		data->soc =3D pdata->type;
+>  	else {
+>  		ret =3D -EINVAL;
+> diff --git a/drivers/thermal/samsung/exynos_tmu.h b/drivers/thermal/sam=
+sung/exynos_tmu.h
+> index b364c9e..b42ece4 100644
+> --- a/drivers/thermal/samsung/exynos_tmu.h
+> +++ b/drivers/thermal/samsung/exynos_tmu.h
+> @@ -41,7 +41,8 @@ enum calibration_mode {
+> =20
+>  enum soc_type {
+>  	SOC_ARCH_EXYNOS4210 =3D 1,
+> -	SOC_ARCH_EXYNOS,
+> +	SOC_ARCH_EXYNOS4412,
+> +	SOC_ARCH_EXYNOS5250,
+>  	SOC_ARCH_EXYNOS5440,
+>  };
+> =20
+> diff --git a/drivers/thermal/samsung/exynos_tmu_data.c b/drivers/therma=
+l/samsung/exynos_tmu_data.c
+> index 9002499..d8de5c1 100644
+> --- a/drivers/thermal/samsung/exynos_tmu_data.c
+> +++ b/drivers/thermal/samsung/exynos_tmu_data.c
+> @@ -90,8 +90,8 @@ struct exynos_tmu_init_data const exynos4210_default_=
+tmu_data =3D {
+>  };
+>  #endif
+> =20
+> -#if defined(CONFIG_SOC_EXYNOS5250) || defined(CONFIG_SOC_EXYNOS4412)
+> -static const struct exynos_tmu_registers exynos5250_tmu_registers =3D =
+{
+> +#if defined(CONFIG_SOC_EXYNOS4412) || defined(CONFIG_SOC_EXYNOS5250)
 
-Alex
+Below will be only 4412 definitions,right? Why should we test for 5250?
 
+> +static const struct exynos_tmu_registers exynos4412_tmu_registers =3D =
+{
+>  	.triminfo_data =3D EXYNOS_TMU_REG_TRIMINFO,
+>  	.triminfo_25_shift =3D EXYNOS_TRIMINFO_25_SHIFT,
+>  	.triminfo_85_shift =3D EXYNOS_TRIMINFO_85_SHIFT,
+> @@ -128,7 +128,7 @@ static const struct exynos_tmu_registers exynos5250=
+_tmu_registers =3D {
+>  	.emul_time_mask =3D EXYNOS_EMUL_TIME_MASK,
+>  };
+> =20
+> -#define EXYNOS5250_TMU_DATA \
+> +#define EXYNOS4412_TMU_DATA \
+>  	.threshold_falling =3D 10, \
+>  	.trigger_levels[0] =3D 85, \
+>  	.trigger_levels[1] =3D 103, \
+> @@ -162,15 +162,31 @@ static const struct exynos_tmu_registers exynos52=
+50_tmu_registers =3D {
+>  		.temp_level =3D 103, \
+>  	}, \
+>  	.freq_tab_count =3D 2, \
+> -	.type =3D SOC_ARCH_EXYNOS, \
+> -	.registers =3D &exynos5250_tmu_registers, \
+> +	.registers =3D &exynos4412_tmu_registers, \
+>  	.features =3D (TMU_SUPPORT_EMULATION | TMU_SUPPORT_TRIM_RELOAD | \
+>  			TMU_SUPPORT_FALLING_TRIP | TMU_SUPPORT_READY_STATUS | \
+>  			TMU_SUPPORT_EMUL_TIME)
+> +#endif
+> =20
+> +#if defined(CONFIG_SOC_EXYNOS4412)
+> +struct exynos_tmu_init_data const exynos4412_default_tmu_data =3D {
+> +	.tmu_data =3D {
+> +		{
+> +			EXYNOS4412_TMU_DATA,
+> +			.type =3D SOC_ARCH_EXYNOS4412,
+> +		},
+> +	},
+> +	.tmu_count =3D 1,
+> +};
+> +#endif
+> +
+> +#if defined(CONFIG_SOC_EXYNOS5250)
+>  struct exynos_tmu_init_data const exynos5250_default_tmu_data =3D {
+>  	.tmu_data =3D {
+> -		{ EXYNOS5250_TMU_DATA },
+> +		{
+> +			EXYNOS4412_TMU_DATA,
+> +			.type =3D SOC_ARCH_EXYNOS5250,
+> +		},
+>  	},
+>  	.tmu_count =3D 1,
+>  };
+> diff --git a/drivers/thermal/samsung/exynos_tmu_data.h b/drivers/therma=
+l/samsung/exynos_tmu_data.h
+> index dc7feb5..b130b1e 100644
+> --- a/drivers/thermal/samsung/exynos_tmu_data.h
+> +++ b/drivers/thermal/samsung/exynos_tmu_data.h
+> @@ -138,7 +138,14 @@ extern struct exynos_tmu_init_data const exynos421=
+0_default_tmu_data;
+>  #define EXYNOS4210_TMU_DRV_DATA (NULL)
+>  #endif
+> =20
+> -#if (defined(CONFIG_SOC_EXYNOS5250) || defined(CONFIG_SOC_EXYNOS4412))=
+
+> +#if defined(CONFIG_SOC_EXYNOS4412)
+> +extern struct exynos_tmu_init_data const exynos4412_default_tmu_data;
+> +#define EXYNOS4412_TMU_DRV_DATA (&exynos4412_default_tmu_data)
+> +#else
+> +#define EXYNOS4412_TMU_DRV_DATA (NULL)
+> +#endif
+> +
+> +#if defined(CONFIG_SOC_EXYNOS5250)
+>  extern struct exynos_tmu_init_data const exynos5250_default_tmu_data;
+>  #define EXYNOS5250_TMU_DRV_DATA (&exynos5250_default_tmu_data)
+>  #else
+>=20
+
+
+--=20
+You have got to be excited about what you are doing. (L. Lamport)
+
+Eduardo Valentin
+
+
+--8QTIFGTxN50L5nUipJ46sVoC4PwddkdTs
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iF4EAREIAAYFAlJb/c0ACgkQCXcVR3XQvP1AugEAh+JL1Uf3PyuM1lpmTYD4uIAE
+GTjhHQFUWTLC9mhYvtcA/250f0nxseUo8V34NabOXuxy+7rDkCTvbDvcXKeoTrlQ
+=sLzO
+-----END PGP SIGNATURE-----
+
+--8QTIFGTxN50L5nUipJ46sVoC4PwddkdTs--
