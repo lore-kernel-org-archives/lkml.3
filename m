@@ -1,59 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756039Ab3JNKYj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 06:24:39 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:52661 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756007Ab3JNKYh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 06:24:37 -0400
-Date: Mon, 14 Oct 2013 12:24:26 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: perf_event_mmap(vma) && !vma->vm_mm
-Message-ID: <20131014102426.GX3081@twins.programming.kicks-ass.net>
-References: <20131012192203.GA21738@redhat.com>
+	id S1755963Ab3JNK0s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 06:26:48 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:53272 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753874Ab3JNK0q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 06:26:46 -0400
+Date: Mon, 14 Oct 2013 12:26:35 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Chen Gong <gong.chen@linux.intel.com>
+Cc: tony.luck@intel.com, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 3/8] ACPI, x86: Extended error log driver for x86 platform
+Message-ID: <20131014102635.GC4009@pd.tnic>
+References: <1381473166-29303-1-git-send-email-gong.chen@linux.intel.com>
+ <1381473166-29303-4-git-send-email-gong.chen@linux.intel.com>
+ <20131011152451.GF5925@pd.tnic>
+ <20131014031633.GA12189@gchen.bj.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20131012192203.GA21738@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20131014031633.GA12189@gchen.bj.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 12, 2013 at 09:22:03PM +0200, Oleg Nesterov wrote:
-> Hi,
-> 
-> I am fighting with uprobe bug, and perf_event_mmap() complicates
-> the problem, it is the only reason (afaics) why the forking task
-> can not do install_special_mapping(new_child_mm). This means that
-> the child should do this itself, say, from task_work_run() but
-> this way it can't handle the error if get_xol_area() fails, too
-> late to abort the already finished copy_process().
-> 
-> But please ignore, the only question is that I can't understand
-> this
-> 
-> 	if (!vma->vm_mm) {
-> 		name = strncpy(tmp, "[vdso]", sizeof(tmp));
-> 		goto got_name;
-> 	}
-> 
-> code in perf_event_mmap_event() and I am just curious. How it is
-> possible that vma->vm_mm == NULL ? perf_event_mmap(vma) is never
-> called with, say, vma == gate_vma. And even if it was possible
-> arch_vma_name() should handle this case?
+On Sun, Oct 13, 2013 at 11:16:33PM -0400, Chen Gong wrote:
+> But this driver can be loaded as a module. If this module is unloaded,
+> extlog_print is gone. I can't keep such a pointer internally.
 
-Uuuhhhh... I wrote that didn't I ;-)
+Sure you can - you define a weak extlog_print() function in a
+compilation unit which is always builtin. Maybe mce.c or so.
 
-So I think that was due to the x86_32 gate_vma, but yes I don't think
-we'd ever call perf_event_mmap() (perf_counter_mmap at the time) on it.
+> This macro is great and I'd loved to use it. But it looks like a
+> litttle bit weird to let eMCA depends on a header file like edac.h.
+> Meanwhile, I found in drivers/video/sis/init.c:3323 we have a very
+> similar macro for this purpose. So how about writing a separate patch
+> to clean it up first?
 
-Also, the x86_32 arch_vma_name() didn't deal with the gate_vma (it still
-doesn't appear to do so) as opposed to x86_64 which does.
+Actually, you're right. Those macros are much more generic and
+could be exposed to the general public by putting them, say into
+include/include/bitops.h, for example?
 
-But the main reason I added it was because task_mmu.c:show_map_vma() did
-so too; I just wanted to be extra careful.
+Btw, the sis one generates unsigneds (4 byte on x86) while the edac one
+8 byte ULLs. So you could call them
 
+GENMASK
+and
+GENMASK_ULL
+
+How does that sound?
+
+> Because I think in theory "CPU < 0" is impossible. When it hits such
+> situation, it should be a very serious H/W or firmware bug. At least,
+> It think it should be a WARN_ON.
+
+Yes, I think a WARN_ON is much better than the heavy hammer. We can
+always turn it into a FW_BUG later if it really starts to trigger
+anywhere...
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
