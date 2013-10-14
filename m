@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757218Ab3JNQjK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 12:39:10 -0400
-Received: from mga09.intel.com ([134.134.136.24]:20830 "EHLO mga09.intel.com"
+	id S1757378Ab3JNQk7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 12:40:59 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54963 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756578Ab3JNQjJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 12:39:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,493,1378882800"; 
-   d="scan'208";a="418979148"
-Date: Mon, 14 Oct 2013 19:44:35 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Mark Brown <broonie@kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Jarkko Nikula <jarkko.nikula@linux.intel.com>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: manual merge of the spi tree
-Message-ID: <20131014164435.GG3521@intel.com>
-References: <1381762088-18880-1-git-send-email-treding@nvidia.com>
- <1381762088-18880-8-git-send-email-treding@nvidia.com>
+	id S1757268Ab3JNQkv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 12:40:51 -0400
+Message-ID: <525C1E1C.9060306@zytor.com>
+Date: Mon, 14 Oct 2013 09:38:52 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1381762088-18880-8-git-send-email-treding@nvidia.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Cohen <david.a.cohen@linux.intel.com>, tglx@linutronix.de,
+        mingo@redhat.com
+CC: linux-kernel@vger.kernel.org, x86@kernel.org,
+        platform-driver-x86@vger.kernel.org,
+        Kuppuswamy Sathyanarayanan 
+	<sathyanarayanan.kuppuswamy@linux.intel.com>
+Subject: Re: [PATCH v3 10/10] intel_mid: Moved SFI related code to intel_mid_sfi.c
+References: <1381549404-22594-1-git-send-email-david.a.cohen@linux.intel.com> <1381549404-22594-11-git-send-email-david.a.cohen@linux.intel.com>
+In-Reply-To: <1381549404-22594-11-git-send-email-david.a.cohen@linux.intel.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 14, 2013 at 04:48:08PM +0200, Thierry Reding wrote:
-> Today's linux-next merge of the spi tree got a conflict in
+On 10/11/2013 08:43 PM, David Cohen wrote:
+> From: Kuppuswamy Sathyanarayanan <sathyanarayanan.kuppuswamy@linux.intel.com>
 > 
-> 	drivers/spi/spi.c
+> Moved SFI specific parsing/handling code to intel_mid_sfi.c. This will enable
+> us to reuse our intel-mid code for platforms that supports firmware interfaces
+> other than SFI (like ACPI).
 > 
-> Caused by commits cf9eb39 (spi: Fix modalias for ACPI enumerated SPI devices)
-> and 33cf00e (spi: attach/detach SPI device to the ACPI power domain).
-> 
-> I fixed it up (see below). Please verify that the resolution looks good.
-> 
-> Thanks,
-> Thierry
+> Signed-off-by: Kuppuswamy Sathyanarayanan <sathyanarayanan.kuppuswamy@linux.intel.com>
+> Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
 > ---
-> diff --cc drivers/spi/spi.c
-> index 740f9dd,2d29dee..8a0fc92
-> --- a/drivers/spi/spi.c
-> +++ b/drivers/spi/spi.c
-> @@@ -1037,10 -1143,8 +1155,10 @@@ static acpi_status acpi_spi_add_device(
->   		return AE_OK;
->   	}
->   
->  +	adev->power.flags.ignore_parent = true;
-> - 	strlcpy(spi->modalias, dev_name(&adev->dev), sizeof(spi->modalias));
-> + 	strlcpy(spi->modalias, acpi_device_hid(adev), sizeof(spi->modalias));
->   	if (spi_add_device(spi)) {
->  +		adev->power.flags.ignore_parent = false;
->   		dev_err(&master->dev, "failed to add SPI device %s from ACPI\n",
->   			dev_name(&adev->dev));
->   		spi_dev_put(spi);
+>  arch/x86/include/asm/intel-mid.h            |   1 +
+>  arch/x86/platform/intel-mid/Makefile        |   5 +-
+>  arch/x86/platform/intel-mid/intel-mid.c     | 450 --------------------------
+>  arch/x86/platform/intel-mid/intel_mid_sfi.c | 485 ++++++++++++++++++++++++++++
+>  4 files changed, 489 insertions(+), 452 deletions(-)
+>  create mode 100644 arch/x86/platform/intel-mid/intel_mid_sfi.c
+> 
 
-Looks good to me, thanks!
+Why not just sfi.c?  It is already in a directly named intel-mid.
+
+I presume otherwise this is just code movement... I haven't verified
+that, but it looked like it.
+
+	-hpa
+
