@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758847Ab3JNUxw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 16:53:52 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:38410 "EHLO
+	id S1758833Ab3JNUxv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 16:53:51 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38412 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756977Ab3JNUCm (ORCPT
+	with ESMTP id S1757044Ab3JNUCm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 14 Oct 2013 16:02:42 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -13,9 +13,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 010/161] tools/perf/build: Clean up the libelf logic in config/Makefile
-Date: Mon, 14 Oct 2013 16:59:59 -0300
-Message-Id: <1381780950-25642-11-git-send-email-acme@infradead.org>
+Subject: [PATCH 003/161] tools/perf/build: Add 'autodep' functionality, generate feature test dependencies automatically
+Date: Mon, 14 Oct 2013 16:59:52 -0300
+Message-Id: <1381780950-25642-4-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1381780950-25642-1-git-send-email-acme@infradead.org>
 References: <1381780950-25642-1-git-send-email-acme@infradead.org>
@@ -27,91 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ingo Molnar <mingo@kernel.org>
 
-Nest the rules properly. No change in functionality.
+Use GCC's -MD feature to generate a dependency file for each feature test .c file,
+and include that .d file in the config/feature-checks/Makefile.
+
+This allows us to do two things:
+
+ - speed up feature tests
+ - detect removal or changes in build dependencies - including system libraries/headers
 
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/n/tip-dDgivr9xtjrof2vmoyOfwxkj@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-Jfma8pmPnnqzpxjbs3hpgmsj@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- tools/perf/config/Makefile | 58 +++++++++++++++++++++++-----------------------
- 1 file changed, 29 insertions(+), 29 deletions(-)
+ tools/perf/config/feature-checks/Makefile | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 09e2ecc4b056..a2e0e1b200c3 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -164,38 +164,38 @@ ifdef NO_LIBELF
-   NO_DEMANGLE := 1
-   NO_LIBUNWIND := 1
- else
--FLAGS_LIBELF=$(CFLAGS) $(LDFLAGS) $(EXTLIBS)
--ifneq ($(call try-cc,$(SOURCE_LIBELF),$(FLAGS_LIBELF),libelf),y)
--  FLAGS_GLIBC=$(CFLAGS) $(LDFLAGS)
--  ifeq ($(call try-cc,$(SOURCE_GLIBC),$(FLAGS_GLIBC),glibc),y)
--    LIBC_SUPPORT := 1
--  endif
--  ifeq ($(BIONIC),1)
--    LIBC_SUPPORT := 1
--  endif
--  ifeq ($(LIBC_SUPPORT),1)
--    msg := $(warning No libelf found, disables 'probe' tool, please install elfutils-libelf-devel/libelf-dev);
-+  FLAGS_LIBELF=$(CFLAGS) $(LDFLAGS) $(EXTLIBS)
-+  ifneq ($(call try-cc,$(SOURCE_LIBELF),$(FLAGS_LIBELF),libelf),y)
-+    FLAGS_GLIBC=$(CFLAGS) $(LDFLAGS)
-+    ifeq ($(call try-cc,$(SOURCE_GLIBC),$(FLAGS_GLIBC),glibc),y)
-+      LIBC_SUPPORT := 1
-+    endif
-+    ifeq ($(BIONIC),1)
-+      LIBC_SUPPORT := 1
-+    endif
-+    ifeq ($(LIBC_SUPPORT),1)
-+      msg := $(warning No libelf found, disables 'probe' tool, please install elfutils-libelf-devel/libelf-dev);
+diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
+index b3f6372ad8b0..4708ccadfc54 100644
+--- a/tools/perf/config/feature-checks/Makefile
++++ b/tools/perf/config/feature-checks/Makefile
+@@ -1,16 +1,20 @@
  
--    NO_LIBELF := 1
--    NO_DWARF := 1
--    NO_DEMANGLE := 1
-+      NO_LIBELF := 1
-+      NO_DWARF := 1
-+      NO_DEMANGLE := 1
-+    else
-+      msg := $(error No gnu/libc-version.h found, please install glibc-dev[el]/glibc-static);
-+    endif
-   else
--    msg := $(error No gnu/libc-version.h found, please install glibc-dev[el]/glibc-static);
--  endif
--else
--  # for linking with debug library, run like:
--  # make DEBUG=1 LIBDW_DIR=/opt/libdw/
--  ifdef LIBDW_DIR
--    LIBDW_CFLAGS  := -I$(LIBDW_DIR)/include
--    LIBDW_LDFLAGS := -L$(LIBDW_DIR)/lib
--  endif
-+    # for linking with debug library, run like:
-+    # make DEBUG=1 LIBDW_DIR=/opt/libdw/
-+    ifdef LIBDW_DIR
-+      LIBDW_CFLAGS  := -I$(LIBDW_DIR)/include
-+      LIBDW_LDFLAGS := -L$(LIBDW_DIR)/lib
-+    endif
+ FILES=test-hello
  
--  FLAGS_DWARF=$(CFLAGS) $(LIBDW_CFLAGS) -ldw -lz -lelf $(LIBDW_LDFLAGS) $(LDFLAGS) $(EXTLIBS)
--  ifneq ($(call try-cc,$(SOURCE_DWARF),$(FLAGS_DWARF),libdw),y)
--    msg := $(warning No libdw.h found or old libdw.h found or elfutils is older than 0.138, disables dwarf support. Please install new elfutils-devel/libdw-dev);
--    NO_DWARF := 1
--  endif # Dwarf support
--endif # SOURCE_LIBELF
-+    FLAGS_DWARF=$(CFLAGS) $(LIBDW_CFLAGS) -ldw -lz -lelf $(LIBDW_LDFLAGS) $(LDFLAGS) $(EXTLIBS)
-+    ifneq ($(call try-cc,$(SOURCE_DWARF),$(FLAGS_DWARF),libdw),y)
-+      msg := $(warning No libdw.h found or old libdw.h found or elfutils is older than 0.138, disables dwarf support. Please install new elfutils-devel/libdw-dev);
-+      NO_DWARF := 1
-+    endif # Dwarf support
-+  endif # SOURCE_LIBELF
- endif # NO_LIBELF
++CC := $(CC) -MD
++
+ all: $(FILES)
  
- ifndef NO_LIBELF
+ BUILD = $(CC) -o $(OUTPUT)$@ $@.c
+ 
+ ###############################
+ 
+-test-hello: test-hello.c
++test-hello:
+ 	$(BUILD)
+ 
++-include *.d */*.d
++
+ ###############################
+ 
+ clean:
+-	rm -f $(FILES)
++	rm -f $(FILES) *.d
 -- 
 1.8.1.4
 
