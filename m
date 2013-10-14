@@ -1,46 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756108Ab3JNLrN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 07:47:13 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:51155 "EHLO hydra.sisk.pl"
+	id S1756257Ab3JNLrT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 07:47:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10325 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753797Ab3JNLrL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 07:47:11 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Subject: Re: [PATCH] acpi: update win8 OSI blacklist
-Date: Mon, 14 Oct 2013 13:58:55 +0200
-Message-ID: <1905683.dBVjOILnXT@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <CAMP44s0sGCDKj86awEqUK27LB=TL62-w9F=e99J3gRGmmfGMWg@mail.gmail.com>
-References: <1380820383-23336-1-git-send-email-felipe.contreras@gmail.com> <CAMP44s0sGCDKj86awEqUK27LB=TL62-w9F=e99J3gRGmmfGMWg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1756195Ab3JNLrR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 07:47:17 -0400
+From: WANG Chao <chaowang@redhat.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
+        Pekka Enberg <penberg@kernel.org>, Jacob Shin <jacob.shin@amd.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Vivek Goyal <vgoyal@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] x86, kdump: crashkernel=X try to reserve below 896M first, then try below 4G, then MAXMEM
+Date: Mon, 14 Oct 2013 19:46:40 +0800
+Message-Id: <1381751200-27376-1-git-send-email-chaowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, October 13, 2013 10:30:50 PM Felipe Contreras wrote:
-> On Thu, Oct 3, 2013 at 12:13 PM, Felipe Contreras
-> <felipe.contreras@gmail.com> wrote:
-> > More people have reported they need this for their machines to work
-> > correctly.
-> >
-> > https://bugzilla.kernel.org/show_bug.cgi?id=60682
-> 
-> I see this was merged to the linux-next branch. Is there any reason
-> why it's not proposed for v3.12?
+Now crashkernel=X will fail out if there's not enough memory at
+low (below 896M). What makes sense for crashkernel=X would be:
 
-It is not a fix for a recent breakage, it doesn't fix an outright crash or
-security issue and there is a chance, albeit arguably very small, that
-something will not function on one of the affected systems for someone
-as a result of the blacklisting.
+ - First try to reserve X below 896M (for being compatible with old
+   kexec-tools).
+ - If fails, try to reserve X below 4G (swiotlb need to stay below 4G).
+ - If fails, try to reserve X from MAXMEM top down.
 
-Thanks!
+So that user can easily reserve large memory with crashkernel=X instead
+of crashkernel=X,high. It's more transparent and user-friendly.
 
+If crashkernel is large and the reserved is beyond 896M, old kexec-tools
+won't be compatible with new kernel for most of time.
+
+kexec will fail out immediately in this case. But the failure could be
+expected, because old kexec users should not try to reserve that large
+amount of memory at the first place.
+
+On the other hand, old kexec also will fail on old kernel when there's
+not enough low memory to reserve a large crash kernel area. So the
+failure of old kexec is consistent between old kernel and new kernel.
+
+Signed-off-by: WANG Chao <chaowang@redhat.com>
+---
+ arch/x86/kernel/setup.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index f0de629..38e6c1f 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -593,6 +593,20 @@ static void __init reserve_crashkernel(void)
+ 					high ? CRASH_KERNEL_ADDR_HIGH_MAX :
+ 					       CRASH_KERNEL_ADDR_LOW_MAX,
+ 					crash_size, alignment);
++		/*
++		 * crashkernel=X reserve below 896M fails? Try below 4G
++		 */
++		if (!high && !crash_base)
++			crash_base = memblock_find_in_range(alignment,
++						(1ULL << 32),
++						crash_size, alignment);
++		/*
++		 * crashkernel=X reserve below 4G fails? Try MAXMEM
++		 */
++		if (!high && !crash_base)
++			crash_base = memblock_find_in_range(alignment,
++						CRASH_KERNEL_ADDR_HIGH_MAX,
++						crash_size, alignment);
+ 
+ 		if (!crash_base) {
+ 			pr_info("crashkernel reservation failed - No suitable area found.\n");
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.8.3.1
+
