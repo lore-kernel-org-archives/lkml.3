@@ -1,49 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755545Ab3JNBeL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Oct 2013 21:34:11 -0400
-Received: from m15-113.126.com ([220.181.15.113]:40339 "EHLO m15-113.126.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755406Ab3JNBeJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Oct 2013 21:34:09 -0400
-X-Coremail-DSSMTP: 14.146.24.173
-Date: Mon, 14 Oct 2013 09:33:44 +0800
-From: "Numberone Biotech Inc." <gdgzlgkj@126.com>
-Reply-To: cnrocket020@126.com
-To: "linux-kernel" <linux-kernel@vger.kernel.org>
-Subject: Steroid Products
-Message-ID: <201310140933446250235@126.com>
-X-Priority: 3
-X-Has-Attach: no
-X-Mailer: Internet Mail Service (5.5.2650.21)
+	id S1755563Ab3JNBmJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Oct 2013 21:42:09 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:22665 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755423Ab3JNBmH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Oct 2013 21:42:07 -0400
+X-Spam-Score: -100.8
+Message-ID: <525B4BB0.1090609@asianux.com>
+Date: Mon, 14 Oct 2013 09:41:04 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="GB2312"
-X-CM-TRANSID: DcmowEBp90QISltSpOIuEw--.559S2
-X-Coremail-Antispam: 1Uf129KBjvdXoWrtw13AFWkJF15GFW3JF43Wrg_yoW3KwbE9F
-	98W3s7GF1Utr9Fqr4jkr1kArWF9ay0kr15tr98XF47K34kWa95Zayqgr15Kr93GrWxuFn0
-	9rnIyFZ7tas8ujkaLaAFLSUrUUUUnb8apTn2vfkv8UJUUUU8Yxn0WfASr-VFAUDa7-sFnT
-	9fnUUvcSsGvfC2KfnxnUUI43ZEXa7IU0cyCJUUUUU==
-X-CM-SenderInfo: hjgj6zxjnmqiyswou0bp/1tbiXAC2gU3mDwSIFQAAsW
+To: paulmck@linux.vnet.ibm.com
+CC: josh@freedesktop.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Suggestion] kernel/rcutorture.c: about using scnprintf() instead
+ of sprintf().
+References: <5253C335.5050609@asianux.com> <20131013110518.GC5790@linux.vnet.ibm.com>
+In-Reply-To: <20131013110518.GC5790@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r9E1YEl2011731
 
-Hey,
-We supply injectable steroid and oral steroid products. They are Nandrolone series, Boldenone series, Testosterone series, Trenbolone series, Drostanolone series and some others.
-Min. order quantity: As your request.
-Payment type: Western Union, Bank Transfer.
-Delivery time: within 10 working days after get payment.
-Shipping term: express mail (with registered tracking number, door delivery).
-Supplying ability: 5000 vials(bottles) per week.
-Return policy: we will return your money if our products don¡¯t have good effect.
-You can learn the details of our products on our web: <numberone-cn.com>.
-If you are interested in our products, we are pleased to send you our price quote for them.
-If you have any questions, please feel free to contact us.
+On 10/13/2013 07:05 PM, Paul E. McKenney wrote:
+> On Tue, Oct 08, 2013 at 04:32:53PM +0800, Chen Gang wrote:
+>> Hello Maintainers:
+>>
+>> In srcu_torture_stats(), if cpus are more than 1K, the PAGE_SIZE will
+>> not be enough.
+>>
+>> In rcu_torture_printk(), the 'page' maximized size is 4096, it has a
+>> function pointer for printing, which not tell its maximized length.
+>>
+>> Welcome any additional suggestions or completions.
+> 
+> I never have run rcutorture on a system with that many CPUs.  ;-)
+> 
 
-Best Regards,
+I guess most of members (include me), never have run under that case.
 
-Overseas Sales Division
-Numberone Biotech Co., Ltd.ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+
+> Given that rcutorture is not used in production, my approach would be to
+> fix this when I encountered it.  But what change would you suggest, and,
+> more importantly, how would you go about testing it before submitting
+> a patch?
+> 
+
+OK, thanks, I will/should give a fix and test.
+
+Hmm, In my opinion, we need:
+
+ - let it pass LTP common simple test (so I can know how to test it).
+
+ - intend to shrink maximized buffer (PAGE_SIZE -> 64, 256 ..) for test.
+
+ - read your original mail again (about testing contents) as reference.
+
+Excuse me, I have to do some other things of company, so I will/should
+try to finish it within this week (2013-10-20), if this time point is
+not quite suitable, please let me know, thanks.
+
+
+> Or if you are simply reporting this as a bug, please let me know that.
+> 
+
+I will/should do: in q4 of 2013, I will/should spend part of my time
+resources on testing.
+
+
+
+Welcome any additional suggestions or completions.
+
+Thanks.
+-- 
+Chen Gang
