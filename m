@@ -1,92 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932087Ab3JNSkB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 14:40:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39983 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750813Ab3JNSj7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 14:39:59 -0400
-Date: Mon, 14 Oct 2013 20:39:57 +0200
-From: Jan Kara <jack@suse.cz>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        Hans de Goede <hdegoede@redhat.com>, Gerd Hoffmann <kraxel@redhat.com>
-Subject: Re: Warning when calling radix_tree_insert on 3.12-rc4
-Message-ID: <20131014183957.GM19604@quack.suse.cz>
-References: <20131011221315.GE7094@xanatos>
- <20131014123034.GF19604@quack.suse.cz>
- <20131014181721.GA18408@xanatos>
+	id S1756963Ab3JNSkd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 14:40:33 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:51984 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756429Ab3JNSka (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 14:40:30 -0400
+Message-ID: <525C3A9A.5000207@wwwdotorg.org>
+Date: Mon, 14 Oct 2013 12:40:26 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131014181721.GA18408@xanatos>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Rhyland Klein <rklein@nvidia.com>
+CC: Anton Vorontsov <anton@enomsg.org>, David Woodhouse <dwmw2@infradead.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Darbha Sriharsha <dsriharsha@nvidia.com>,
+        Manish Badarkha <badarkhe.manish@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Rutland <Mark.Rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: Re: [Patch V5] drivers: power: Add support for bq24735 charger
+References: <1381526143-20800-1-git-send-email-rklein@nvidia.com> <525C361C.1020703@wwwdotorg.org> <525C376A.3000009@nvidia.com>
+In-Reply-To: <525C376A.3000009@nvidia.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 14-10-13 11:17:21, Sarah Sharp wrote:
-> On Mon, Oct 14, 2013 at 02:30:34PM +0200, Jan Kara wrote:
-> >   Hello Sarah,
-> > 
-> > On Fri 11-10-13 15:13:15, Sarah Sharp wrote:
-> > > I'm testing out some changes to the xHCI USB host controller driver
-> > > (which uses a radix tree when a UAS device is attached to the host), and
-> > > I noticed the following warning:
-> > > 
-> > > Oct 11 14:42:08 xanatos kernel: [18165.819014] usb 2-2: new SuperSpeed USB device number 2 using xhci_hcd
-> > > Oct 11 14:42:08 xanatos kernel: [18165.836264] usb 2-2: New USB device found, idVendor=174c, idProduct=55aa
-> > > Oct 11 14:42:08 xanatos kernel: [18165.836271] usb 2-2: New USB device strings: Mfr=2, Product=3, SerialNumber=1
-> > > Oct 11 14:42:08 xanatos kernel: [18165.836275] usb 2-2: Product: Plugable USB3-SATA-UASP1
-> > > Oct 11 14:42:08 xanatos kernel: [18165.836279] usb 2-2: Manufacturer: ASM1053E
-> > > Oct 11 14:42:08 xanatos kernel: [18165.836291] usb 2-2: SerialNumber: 123456789045
-> > > Oct 11 14:42:08 xanatos kernel: [18165.847661] BUG: using smp_processor_id() in preemptible [00000000] code: modprobe/8759
-> > > Oct 11 14:42:08 xanatos kernel: [18165.847667] caller is radix_tree_node_alloc+0x5c/0xa0
-> >   Well, this warning seems to come from the __get_cpu_var() function. I don't
-> > see how my commit could have caused what you observe. It seems you are
-> > calling radix_tree_insert() for a radix tree which has atomic gfp mask set
-> > and you don't do radix_tree_preload() / radix_tree_preload_end() around
-> > that? That was always problematic and could lead to the above warning.
+On 10/14/2013 12:26 PM, Rhyland Klein wrote:
+> On 10/14/2013 2:21 PM, Stephen Warren wrote:
+>> On 10/11/2013 03:15 PM, Rhyland Klein wrote:
+>>> From: Darbha Sriharsha <dsriharsha@nvidia.com>
+>>>
+>>> Adds support for the bq24735 charger chipset. The bq24735 is a
+>>> high-efficiency, synchronous battery charger.
+>>>
+>>> It allows control of the charging current, input current, and the charger
+>>> voltage DAC's through SMBus.
+>>
+>> Please CC the DT bindings maintainers on patches that add DT bindings.
 > 
-> I see.  Ok, we'll need to fix that.  The code went into the kernel years
-> ago, but wasn't really tested until now.
+> Oops, sorry, will do in the future.
 > 
-> Do we only need to call radix_tree_preload() and
-> radix_tree_preload_end() only around the radix_tree_insert()?  Or will
-> we need it around radix_tree_delete() as well?
-  Only around insert. The reason is radix_tree_insert() may need to
-allocate new radix tree nodes. radix_tree_delete() doesn't need to allocate
-anything.
+>>
+>>> diff --git a/Documentation/devicetree/bindings/power_supply/ti,bq24735.txt b/Documentation/devicetree/bindings/power_supply/ti,bq24735.txt
+>>
+>>> +Optional properties :
+>>
+>>> + - ti,ac-detect-gpios : This GPIO is optionally used to read the AC adapter
+>>> +   presence.
+>>
+>> Is that actually a property of the BQ24735 chip itself (i.e. is it an
+>> output signal from the chip), or part of the board/system?
+> 
+> The gpio itself is actually what the IRQ line is tied to from the
+> bq24735 -> tegra (in this case). In other words this is a Host GPIO that
+> is configured as an input and connected to the bq24735.
 
-> > I'm not sure in which contexts xhci_update_stream_ring() can be called. But
-> > if you are guaranteed non-atomic context, then using radix_tree_preload()
-> > with a more relaxed gfp mask is good (lowers pressure on atomic allocations).
-> >
-> > If the context depends on the caller, things are more complex. Generally,
-> > you can use radix_tree_maybe_preload() but you have to set gfp mask
-> > argument according to the context. The function then figures out whether
-> > it's worth it to do a preload or not (but it always does preempt_disable()
-> > which will silence the warning).
-> 
-> There are a couple ways xhci_update_stream_ring() could be called:
-> 
->  - xhci_alloc_stream_info can be called while the bandwidth mutex is
->    held, so that must be in process context
-> 
->  - xhci_ring_free is called when the command to disable a slot
->    completes, in interrupt context.
-> 
->  - xhci_ring_expansion during URB submission, which can happen in
->    interrupt context.
-> 
-> So it looks like the context depends on the caller, and we'll have to
-> call radix_tree_maybe_preload().
-  Yes, you need radix_tree_maybe_preload() in that case. Usually we handle
-similar situations (e.g. in block/blk-ioc.c) by passing gfp mask from the
-caller which knows the context.
-
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Ok, so this is the ACOK output pin? In that case, it's fine. It might be
+worth mentioning that explicitly though.
