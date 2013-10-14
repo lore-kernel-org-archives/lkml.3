@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932294Ab3JNUSi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 16:18:38 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:39047 "EHLO
+	id S1758723Ab3JNUSh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 16:18:37 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:39046 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757726Ab3JNUDH (ORCPT
+	with ESMTP id S1757731Ab3JNUDH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 14 Oct 2013 16:03:07 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>,
         Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
         Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 087/161] perf evlist: Introduce perf_evlist__new_default function
-Date: Mon, 14 Oct 2013 17:01:16 -0300
-Message-Id: <1381780950-25642-88-git-send-email-acme@infradead.org>
+Subject: [PATCH 077/161] perf tools: Remove unused trace-event-* code
+Date: Mon, 14 Oct 2013 17:01:06 -0300
+Message-Id: <1381780950-25642-78-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1381780950-25642-1-git-send-email-acme@infradead.org>
 References: <1381780950-25642-1-git-send-email-acme@infradead.org>
@@ -31,11 +30,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiri Olsa <jolsa@redhat.com>
 
-Adding new common function to create evlist with default event. It
-spares some code lines in automated tests.
+Removing unused trace-event-* code.
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Andi Kleen <ak@linux.intel.com>
+Acked-by: Namhyung Kim <namhyung@kernel.org>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
@@ -43,115 +40,100 @@ Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1378031796-17892-4-git-send-email-jolsa@redhat.com
+Link: http://lkml.kernel.org/r/1379003976-5839-3-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/tests/perf-record.c | 12 +-----------
- tools/perf/tests/task-exit.c   | 14 ++------------
- tools/perf/util/evlist.c       | 12 ++++++++++++
- tools/perf/util/evlist.h       |  1 +
- 4 files changed, 16 insertions(+), 23 deletions(-)
+ tools/perf/util/trace-event-parse.c | 36 ------------------------------------
+ tools/perf/util/trace-event.h       |  9 ---------
+ 2 files changed, 45 deletions(-)
 
-diff --git a/tools/perf/tests/perf-record.c b/tools/perf/tests/perf-record.c
-index b8a7056519ac..82ac71550091 100644
---- a/tools/perf/tests/perf-record.c
-+++ b/tools/perf/tests/perf-record.c
-@@ -45,7 +45,7 @@ int test__PERF_RECORD(void)
- 	};
- 	cpu_set_t cpu_mask;
- 	size_t cpu_mask_size = sizeof(cpu_mask);
--	struct perf_evlist *evlist = perf_evlist__new();
-+	struct perf_evlist *evlist = perf_evlist__new_default();
- 	struct perf_evsel *evsel;
- 	struct perf_sample sample;
- 	const char *cmd = "sleep";
-@@ -66,16 +66,6 @@ int test__PERF_RECORD(void)
- 	}
+diff --git a/tools/perf/util/trace-event-parse.c b/tools/perf/util/trace-event-parse.c
+index e9e1c03f927d..6681f71f2f95 100644
+--- a/tools/perf/util/trace-event-parse.c
++++ b/tools/perf/util/trace-event-parse.c
+@@ -120,42 +120,6 @@ raw_field_value(struct event_format *event, const char *name, void *data)
+ 	return val;
+ }
  
- 	/*
--	 * We need at least one evsel in the evlist, use the default
--	 * one: "cycles".
--	 */
--	err = perf_evlist__add_default(evlist);
--	if (err < 0) {
--		pr_debug("Not enough memory to create evsel\n");
--		goto out_delete_evlist;
+-void *raw_field_ptr(struct event_format *event, const char *name, void *data)
+-{
+-	struct format_field *field;
+-
+-	field = pevent_find_any_field(event, name);
+-	if (!field)
+-		return NULL;
+-
+-	if (field->flags & FIELD_IS_DYNAMIC) {
+-		int offset;
+-
+-		offset = *(int *)(data + field->offset);
+-		offset &= 0xffff;
+-
+-		return data + offset;
 -	}
 -
--	/*
- 	 * Create maps of threads and cpus to monitor. In this case
- 	 * we start with all threads and cpus (-1, -1) but then in
- 	 * perf_evlist__prepare_workload we'll fill in the only thread
-diff --git a/tools/perf/tests/task-exit.c b/tools/perf/tests/task-exit.c
-index 28fe5894b061..b07f8a14e15d 100644
---- a/tools/perf/tests/task-exit.c
-+++ b/tools/perf/tests/task-exit.c
-@@ -37,20 +37,11 @@ int test__task_exit(void)
- 	signal(SIGCHLD, sig_handler);
- 	signal(SIGUSR1, sig_handler);
+-	return data + field->offset;
+-}
+-
+-int trace_parse_common_type(struct pevent *pevent, void *data)
+-{
+-	struct pevent_record record;
+-
+-	record.data = data;
+-	return pevent_data_type(pevent, &record);
+-}
+-
+-int trace_parse_common_pid(struct pevent *pevent, void *data)
+-{
+-	struct pevent_record record;
+-
+-	record.data = data;
+-	return pevent_data_pid(pevent, &record);
+-}
+-
+ unsigned long long read_size(struct event_format *event, void *ptr, int size)
+ {
+ 	return pevent_read_number(event->pevent, ptr, size);
+diff --git a/tools/perf/util/trace-event.h b/tools/perf/util/trace-event.h
+index fafe1a40444a..04df63114109 100644
+--- a/tools/perf/util/trace-event.h
++++ b/tools/perf/util/trace-event.h
+@@ -11,8 +11,6 @@ union perf_event;
+ struct perf_tool;
+ struct thread;
  
--	evlist = perf_evlist__new();
-+	evlist = perf_evlist__new_default();
- 	if (evlist == NULL) {
--		pr_debug("perf_evlist__new\n");
-+		pr_debug("perf_evlist__new_default\n");
- 		return -1;
- 	}
--	/*
--	 * We need at least one evsel in the evlist, use the default
--	 * one: "cycles".
--	 */
--	err = perf_evlist__add_default(evlist);
--	if (err < 0) {
--		pr_debug("Not enough memory to create evsel\n");
--		goto out_free_evlist;
--	}
+-extern struct pevent *perf_pevent;
+-
+ int bigendian(void);
  
- 	/*
- 	 * Create maps of threads and cpus to monitor. In this case
-@@ -117,7 +108,6 @@ out_close_evlist:
- 	perf_evlist__close(evlist);
- out_delete_maps:
- 	perf_evlist__delete_maps(evlist);
--out_free_evlist:
- 	perf_evlist__delete(evlist);
- 	return err;
- }
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index d21ab0812926..f0d71a9d49f4 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -50,6 +50,18 @@ struct perf_evlist *perf_evlist__new(void)
- 	return evlist;
- }
+ struct pevent *read_trace_init(int file_bigendian, int host_bigendian);
+@@ -23,26 +21,19 @@ int parse_ftrace_file(struct pevent *pevent, char *buf, unsigned long size);
+ int parse_event_file(struct pevent *pevent,
+ 		     char *buf, unsigned long size, char *sys);
  
-+struct perf_evlist *perf_evlist__new_default(void)
-+{
-+	struct perf_evlist *evlist = perf_evlist__new();
-+
-+	if (evlist && perf_evlist__add_default(evlist)) {
-+		perf_evlist__delete(evlist);
-+		evlist = NULL;
-+	}
-+
-+	return evlist;
-+}
-+
- /**
-  * perf_evlist__set_id_pos - set the positions of event ids.
-  * @evlist: selected event list
-diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
-index 4edb5008fd36..871b55ab5dee 100644
---- a/tools/perf/util/evlist.h
-+++ b/tools/perf/util/evlist.h
-@@ -53,6 +53,7 @@ struct perf_evsel_str_handler {
- };
+-struct pevent_record *trace_peek_data(struct pevent *pevent, int cpu);
+-
+ unsigned long long
+ raw_field_value(struct event_format *event, const char *name, void *data);
+-void *raw_field_ptr(struct event_format *event, const char *name, void *data);
  
- struct perf_evlist *perf_evlist__new(void);
-+struct perf_evlist *perf_evlist__new_default(void);
- void perf_evlist__init(struct perf_evlist *evlist, struct cpu_map *cpus,
- 		       struct thread_map *threads);
- void perf_evlist__exit(struct perf_evlist *evlist);
+ void parse_proc_kallsyms(struct pevent *pevent, char *file, unsigned int size);
+ void parse_ftrace_printk(struct pevent *pevent, char *file, unsigned int size);
+ 
+ ssize_t trace_report(int fd, struct pevent **pevent, bool repipe);
+ 
+-int trace_parse_common_type(struct pevent *pevent, void *data);
+-int trace_parse_common_pid(struct pevent *pevent, void *data);
+-
+ struct event_format *trace_find_next_event(struct pevent *pevent,
+ 					   struct event_format *event);
+ unsigned long long read_size(struct event_format *event, void *ptr, int size);
+ unsigned long long eval_flag(const char *flag);
+ 
+-struct pevent_record *trace_read_data(struct pevent *pevent, int cpu);
+ int read_tracing_data(int fd, struct list_head *pattrs);
+ 
+ struct tracing_data {
 -- 
 1.8.1.4
 
