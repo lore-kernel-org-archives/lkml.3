@@ -1,41 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757120Ab3JNRQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 13:16:58 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:57106 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756467Ab3JNRQ5 (ORCPT
+	id S932183Ab3JNRSJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 13:18:09 -0400
+Received: from mail-wg0-f66.google.com ([74.125.82.66]:46459 "EHLO
+	mail-wg0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756608Ab3JNRSH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 13:16:57 -0400
+	Mon, 14 Oct 2013 13:18:07 -0400
 MIME-Version: 1.0
-In-Reply-To: <20131014170741.GA4351@pd.tnic>
-References: <1381473166-29303-1-git-send-email-gong.chen@linux.intel.com>
-	<1381473166-29303-4-git-send-email-gong.chen@linux.intel.com>
-	<20131011152451.GF5925@pd.tnic>
-	<20131014031633.GA12189@gchen.bj.intel.com>
-	<20131014102635.GC4009@pd.tnic>
-	<CA+8MBbJ+mOWhZR5d8wP4x_ncgumGOANziOGmDBzj0QdbPSDH0w@mail.gmail.com>
-	<20131014170741.GA4351@pd.tnic>
-Date: Mon, 14 Oct 2013 10:16:55 -0700
-Message-ID: <CA+8MBbJhtTyPE+NON1=7AQw9FSM5B83Z-TDPNrwnu-8RbS6E=w@mail.gmail.com>
-Subject: Re: [PATCH 3/8] ACPI, x86: Extended error log driver for x86 platform
-From: Tony Luck <tony.luck@gmail.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Chen Gong <gong.chen@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-acpi <linux-acpi@vger.kernel.org>
+Reply-To: noreply@noreply.edu
+Date: Mon, 14 Oct 2013 19:18:06 +0200
+Message-ID: <CAMF18KfUyDcwi+Kk8q1bt8vYfd_C-8GXdDUwNBDi2WgSQ7MgYQ@mail.gmail.com>
+Subject: Webmail Account Alert!!!
+From: Webmail Team <enggames.social@ecaconcordia.ca>
+To: undisclosed-recipients:;
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 14, 2013 at 10:07 AM, Borislav Petkov <bp@alien8.de> wrote:
-> Ok, then. How about a reg/dereg functionality, something like what I did
-> in drivers/edac/mce_amd.c, near the top? We're basically handing down a
-> proper function pointer to call and at module unload time we clear it.
+Dear Account User,
 
-Yes - register and unregister functions would be better than
+   This message is from Webmail Admin Team, Your email account has
+exceeded its mail quota on our server database and your account will
+be inactive within the next 24-48 hours if it is not verified. You are
+advised to on click the link below and follow the instructions to
+verify your account.
 
-> exporting a naked function pointer.
+www.web-accs-verification.jimdo.com
 
--Tony
+Thanks.
+Web Help Desk.
