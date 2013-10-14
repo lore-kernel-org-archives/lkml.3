@@ -1,74 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756667Ab3JNNdA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 09:33:00 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:56711 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756496Ab3JNNc7 (ORCPT
+	id S1756689Ab3JNNds (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 09:33:48 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:63450 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756228Ab3JNNdr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 09:32:59 -0400
-Date: Mon, 14 Oct 2013 15:32:34 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Morten Rasmussen <morten.rasmussen@arm.com>
-Cc: mingo@kernel.org, pjt@google.com, arjan@linux.intel.com, rjw@sisk.pl,
-        dirk.j.brandewie@intel.com, vincent.guittot@linaro.org,
-        alex.shi@linaro.org, preeti@linux.vnet.ibm.com, efault@gmx.de,
-        corbet@lwn.net, tglx@linutronix.de, catalin.marinas@arm.com,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org
-Subject: Re: [RFC][PATCH 0/7] Power-aware scheduling v2
-Message-ID: <20131014133234.GM3081@twins.programming.kicks-ass.net>
-References: <1381511957-29776-1-git-send-email-morten.rasmussen@arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1381511957-29776-1-git-send-email-morten.rasmussen@arm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Mon, 14 Oct 2013 09:33:47 -0400
+From: Chang Xiangzhong <changxiangzhong@gmail.com>
+To: nhorman@tuxdriver.com, vyasevich@gmail.com
+Cc: davem@davemloft.net, linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Chang Xiangzhong <changxiangzhong@gmail.com>
+Subject: [PATCH] net: sctp: fix a cacc_saw_newack missetting issue
+Date: Mon, 14 Oct 2013 15:33:43 +0200
+Message-Id: <1381757623-12803-1-git-send-email-changxiangzhong@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 11, 2013 at 06:19:10PM +0100, Morten Rasmussen wrote:
-> Hi,
-> 
-> I have revised the previous power scheduler proposal[1] trying to address as
-> many of the comments as possible. The overall idea was discussed at LPC[2,3].
-> The revised design has removed the power scheduler and replaced it with a high
-> level power driver interface. An interface that allows the scheduler to query
-> the power driver for information and provide hints to guide power management
-> decisions in the power driver.
-> 
-> The power driver is going to be a unified platform power driver that can
-> replace cpufreq and cpuidle drivers. Generic power policies will be optional
-> helper functions called from the power driver. Platforms may choose to
-> implement their own policies as part of their power driver.
-> 
-> This RFC series prototypes a part of the power driver interface (cpu capacity
-> hints) and shows how they can be used from the scheduler. More extensive use of
-> the power driver hints and queries is left for later. The focus for now is the
-> power driver interface. The patch series includes a power driver/cpufreq
-> governor that can use existing cpufreq drivers as backend. It has been tested
-> (not thoroughly) on ARM TC2. The cpufreq governor power driver implementation
-> is rather horrible, but it illustrates how the power driver interface can be
-> used. Native power drivers is on the todo list.
-> 
-> The power driver interface is still missing quite a few calls to handle: Idle,
-> adding extra information to the sched_domain hierarchy to guide scheduling
-> decisions (packing), and possibly scaling of tracked load to compensate for
-> frequency changes and asymmetric systems (big.LITTLE).
-> 
-> This set is based on 3.11. I have done ARM TC2 testing based on linux-linaro
-> 2013.08[4] to get cpufreq support for TC2.
+For for each TSN t being newly acked (Not only cumulatively,
+but also SELECTIVELY) cacc_saw_newack should be set to 1.
 
-What I'm missing is a general overview of why what and how.
+Signed-off-by: Xiangzhong Chang <changxiangzhong@gmail.com>
+---
+ net/sctp/outqueue.c |   42 +++++++++++++++++++++---------------------
+ 1 file changed, 21 insertions(+), 21 deletions(-)
 
-In particular; how does this proposal lead to power savings. Is there a
-mathematical model that supports this framework? Something where if you
-give it a task set with global utilisation < 1 (ie. there's idle time),
-it results in less power used.
+diff --git a/net/sctp/outqueue.c b/net/sctp/outqueue.c
+index 94df758..d86032b 100644
+--- a/net/sctp/outqueue.c
++++ b/net/sctp/outqueue.c
+@@ -1398,6 +1398,27 @@ static void sctp_check_transmitted(struct sctp_outq *q,
+ 				forward_progress = true;
+ 			}
+ 
++			if (!tchunk->tsn_gap_acked) {
++				/*
++				 * SFR-CACC algorithm:
++				 * 2) If the SACK contains gap acks
++				 * and the flag CHANGEOVER_ACTIVE is
++				 * set the receiver of the SACK MUST
++				 * take the following action:
++				 *
++				 * B) For each TSN t being acked that
++				 * has not been acked in any SACK so
++				 * far, set cacc_saw_newack to 1 for
++				 * the destination that the TSN was
++				 * sent to.
++				 */
++				if (transport &&
++				    sack->num_gap_ack_blocks &&
++				    q->asoc->peer.primary_path->cacc.
++				    changeover_active)
++					transport->cacc.cacc_saw_newack	= 1;
++			}
++
+ 			if (TSN_lte(tsn, sack_ctsn)) {
+ 				/* RFC 2960  6.3.2 Retransmission Timer Rules
+ 				 *
+@@ -1411,27 +1432,6 @@ static void sctp_check_transmitted(struct sctp_outq *q,
+ 				restart_timer = 1;
+ 				forward_progress = true;
+ 
+-				if (!tchunk->tsn_gap_acked) {
+-					/*
+-					 * SFR-CACC algorithm:
+-					 * 2) If the SACK contains gap acks
+-					 * and the flag CHANGEOVER_ACTIVE is
+-					 * set the receiver of the SACK MUST
+-					 * take the following action:
+-					 *
+-					 * B) For each TSN t being acked that
+-					 * has not been acked in any SACK so
+-					 * far, set cacc_saw_newack to 1 for
+-					 * the destination that the TSN was
+-					 * sent to.
+-					 */
+-					if (transport &&
+-					    sack->num_gap_ack_blocks &&
+-					    q->asoc->peer.primary_path->cacc.
+-					    changeover_active)
+-						transport->cacc.cacc_saw_newack
+-							= 1;
+-				}
+ 
+ 				list_add_tail(&tchunk->transmitted_list,
+ 					      &q->sacked);
+-- 
+1.7.9.5
 
-Also, how does this proposal deal with cpufreq's fundamental broken
-approach to SMP? Afaict nothing considers the effect of one cpu upon
-another -- something which isn't true at all.
-
-In fact, I don't see anything except a random bunch of hooks without an
-over-all picture of how to get less power used.
