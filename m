@@ -1,88 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754455Ab3JNIlh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 04:41:37 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:51164 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753959Ab3JNIlg (ORCPT
+	id S1754295Ab3JNIoX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 04:44:23 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:35697 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750827Ab3JNIoW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 04:41:36 -0400
-X-AuditID: 9c930179-b7c78ae000003065-39-525bae3fdd9c
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCHSET 0/8] perf tools: Fix scalability problem on callchain merging (v5)
-References: <1381468543-25334-1-git-send-email-namhyung@kernel.org>
-	<20131013123444.GB1044@krava.brq.redhat.com>
-	<87k3hgbgn2.fsf@sejong.aot.lge.com>
-	<20131014080108.GA1590@krava.redhat.com>
-Date: Mon, 14 Oct 2013 17:41:34 +0900
-In-Reply-To: <20131014080108.GA1590@krava.redhat.com> (Jiri Olsa's message of
-	"Mon, 14 Oct 2013 10:01:08 +0200")
-Message-ID: <87bo2sb5xd.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 14 Oct 2013 04:44:22 -0400
+X-AuditID: cbfee68f-b7f1e6d000004e8d-1c-525baee46f39
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Mark Brown'" <broonie@kernel.org>
+Cc: "'Liam Girdwood'" <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH 01/11] regulator: core: Fix checkpatch issue
+Date: Mon, 14 Oct 2013 17:44:20 +0900
+Message-id: <000001cec8b9$931f4c90$b95de5b0$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac7IuZK01KcLw1AZSDCREfGxHfkpOg==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrEIsWRmVeSWpSXmKPExsVy+t8zY90n66KDDKZ0KlpMffiEzeLywkus
+	Ft+udDBZXN41h82BxWPnrLvsHptWdbJ59G1ZxejxeZNcAEsUl01Kak5mWWqRvl0CV8aZLU8Y
+	C37yVkx8fomtgfE7VxcjJ4eEgInE9tvL2CFsMYkL99azdTFycQgJLGOU2LN3OiNM0f+tz6ES
+	ixglblx4ANYhJPCLUeLfW30Qm01ATeLLl8NAcQ4OEQFVif+v3EFMZoFcie5t6SAVwgI2Erfa
+	vzGD2CxAFb/2vGEFsXkFbCVWNX1lg7AFJX5MvscCYjMLaEms33mcCcKWl9i85i0zyEgJAXWJ
+	R391IRbpSbxoFoaoEJHY9+IdI8iREgKb2CUW3V3BBrFKQOLb5EMsEK2yEpsOMEM8JSlxcMUN
+	lgmMYrOQLJ6FZPEsJItnIVmxgJFlFaNoakFyQXFSepGxXnFibnFpXrpecn7uJkZIfPXvYLx7
+	wPoQYzLQ+onMUqLJ+cD4zCuJNzQ2M7IwNTE1NjK3NCNNWEmcV63FOlBIID2xJDU7NbUgtSi+
+	qDQntfgQIxMHp1QDo956TYUF5d1fptZZ3XRYq3IuLS4zyyomrOzvtStxJcWtX7q2SL04c1Bl
+	6t+V2c+3Xymaf7XxaMs0C4f1rq7Ja/rqj/UfWp+VYcC5UX6LuPNliRw344p+p8/KZ4/O8Dzy
+	64MlT//bdle2/kffvq960WSgsYDTMive8YbLUo0Hl3P9fWJ0Xyg1KbEUZyQaajEXFScCAJoY
+	CPvFAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupnleLIzCtJLcpLzFFi42I5/e+xgO6TddFBBsfuylhMffiEzeLywkus
+	Ft+udDBZXN41h82BxWPnrLvsHptWdbJ59G1ZxejxeZNcAEtUA6NNRmpiSmqRQmpecn5KZl66
+	rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtBOJYWyxJxSoFBAYnGxkr4dpgmhIW66
+	FjCNEbq+IUFwPUYGaCBhHWPGmS1PGAt+8lZMfH6JrYHxO1cXIyeHhICJxP+tz9kgbDGJC/fW
+	A9lcHEICixglblx4wA6SEBL4xSjx760+iM0moCbx5cthoDgHh4iAqsT/V+4gJrNArkT3tnSQ
+	CmEBG4lb7d+YQWwWoIpfe96wgti8ArYSq5q+skHYghI/Jt9jAbGZBbQk1u88zgRhy0tsXvOW
+	GWSkhIC6xKO/uhCL9CReNAtDVIhI7HvxjnECo8AsJINmIRk0C8mgWUhaFjCyrGIUTS1ILihO
+	Ss811CtOzC0uzUvXS87P3cQIjt5nUjsYVzZYHGIU4GBU4uEVcIoOEmJNLCuuzD3EKMHBrCTC
+	KzgPKMSbklhZlVqUH19UmpNafIgxGejPicxSosn5wMSSVxJvaGxiZmRpZGZhZGJuTpqwkjjv
+	gVbrQCGB9MSS1OzU1ILUIpgtTBycUg2MgXurpkxT6/Wym5ByJr6zeZ200uKog05sm1mKo2y0
+	hc9PznpwUMz1xi/xz8X23LdLLl09U7b7S+0nUeFHxb4n4u6smtzU6/P2dNVK7+JZ8TdKQmQv
+	3n5zQkD+e6Fqxqowh+dRNp3z+BfPao4MXzbfxvRg28QVEz5qf+rd7L1qcdWav0r7M2dyKrEU
+	ZyQaajEXFScCAEY9y1AiAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
+Fix the following checkpatch errors and warnings.
 
-On Mon, 14 Oct 2013 10:01:08 +0200, Jiri Olsa wrote:
-> On Mon, Oct 14, 2013 at 01:50:09PM +0900, Namhyung Kim wrote:
->> On Sun, 13 Oct 2013 14:34:44 +0200, Jiri Olsa wrote:
->> > I put perf archive and data output in here if you're interested:
->> > http://people.redhat.com/jolsa/cc/
->> 
->> I can't download the data output (but the archive is fine).
->> 
->>   $ curl http://people.redhat.com/jolsa/cc/perf.data
->>   <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
->>   <html><head>
->>   <title>403 Forbidden</title>
->>   </head><body>
->>   <h1>Forbidden</h1>
->>   <p>You don't have permission to access /jolsa/cc/perf.data
->>   on this server.</p>
->>   <hr>
->>   <address>Apache Server at people.redhat.com Port 80</address>
->>   </body></html>
->
-> oops, should be fixed now.. haven't checked persmissions :-\
+  ERROR: trailing whitespace
+  WARNING: braces {} are not necessary for single statement blocks
 
-I got it now, thanks.
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/regulator/core.c |   10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
 
-But I couldn't reproduce the segfault (both for TUI and stdio).
-Do you have any scenario?
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 13263d1..e8ccf20 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -1287,9 +1287,8 @@ static struct regulator *_regulator_get(struct device *dev, const char *id,
+ 	 * If we have return value from dev_lookup fail, we do not expect to
+ 	 * succeed, so, quit with appropriate error value
+ 	 */
+-	if (ret && ret != -ENODEV) {
++	if (ret && ret != -ENODEV)
+ 		goto out;
+-	}
+ 
+ 	if (!devname)
+ 		devname = "deviceless";
+@@ -2238,7 +2237,7 @@ int regulator_set_voltage(struct regulator *regulator, int min_uV, int max_uV)
+ 	ret = regulator_check_voltage(rdev, &min_uV, &max_uV);
+ 	if (ret < 0)
+ 		goto out;
+-	
++
+ 	/* restore original values in case of error */
+ 	old_min_uV = regulator->min_uV;
+ 	old_max_uV = regulator->max_uV;
+@@ -2252,7 +2251,7 @@ int regulator_set_voltage(struct regulator *regulator, int min_uV, int max_uV)
+ 	ret = _regulator_do_set_voltage(rdev, min_uV, max_uV);
+ 	if (ret < 0)
+ 		goto out2;
+-	
++
+ out:
+ 	mutex_unlock(&rdev->mutex);
+ 	return ret;
+@@ -3657,9 +3656,8 @@ static int __init regulator_init_complete(void)
+ 			 * goes wrong. */
+ 			rdev_info(rdev, "disabling\n");
+ 			ret = ops->disable(rdev);
+-			if (ret != 0) {
++			if (ret != 0)
+ 				rdev_err(rdev, "couldn't disable: %d\n", ret);
+-			}
+ 		} else {
+ 			/* The intention is that in future we will
+ 			 * assume that full constraints are provided
+-- 
+1.7.10.4
 
-  # ========
-  # captured on: Mon Oct 14 17:30:03 2013
-  # hostname : dhcp-26-214.brq.redhat.com
-  # os release : 3.12.0-rc2+
-  # perf version : 3.12.rc2.g9de23a
-  # arch : x86_64
-  # nrcpus online : 2
-  # nrcpus avail : 2
-  # cpudesc : Intel(R) Core(TM)2 Duo CPU T9400 @ 2.53GHz
-  # cpuid : GenuineIntel,6,23,10
-  # total memory : 1968996 kB
-  # cmdline : /home/jolsa/linux-perf/tools/perf/perf record -g -e cycles:pp make -j 
-  # event : name = cycles:pp, type = 0, config = 0x0, config1 = 0x0, config2 = 0x0, excl_usr = 
-  # HEADER_CPU_TOPOLOGY info available, use -I to display
-  # pmu mappings: cpu = 4, software = 1, tracepoint = 2, breakpoint = 5
-  # ========
-  #
-  # Samples: 285K of event 'cycles:pp'
-  # Event count (approx.): 173578957575
-  ...
 
-Thanks,
-Namhyung
