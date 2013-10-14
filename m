@@ -1,457 +1,271 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755837Ab3JNJ0R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 05:26:17 -0400
-Received: from mga11.intel.com ([192.55.52.93]:60120 "EHLO mga11.intel.com"
+	id S1755938Ab3JNJ1P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 05:27:15 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:38925 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754549Ab3JNJ0P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 05:26:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,491,1378882800"; 
-   d="scan'208";a="416433635"
-Message-ID: <1381742769.2034.26.camel@rzhang1-mobl4>
-Subject: Re: [PATCHv4 2/9] Thermal: Create sensor level APIs
-From: Zhang Rui <rui.zhang@intel.com>
-To: Durgadoss R <durgadoss.r@intel.com>
-Cc: eduardo.valentin@ti.com, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, hongbo.zhang@freescale.com,
-        wni@nvidia.com
-Date: Mon, 14 Oct 2013 17:26:09 +0800
-In-Reply-To: <1380652688-5787-3-git-send-email-durgadoss.r@intel.com>
-References: <1380652688-5787-1-git-send-email-durgadoss.r@intel.com>
-	 <1380652688-5787-3-git-send-email-durgadoss.r@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S1755500Ab3JNJ1M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 05:27:12 -0400
+Message-ID: <525BB8C0.1070802@ti.com>
+Date: Mon, 14 Oct 2013 14:56:24 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Roger Quadros <rogerq@ti.com>
+CC: <balbi@ti.com>, <bcousson@baylibre.com>, <tony@atomide.com>,
+        <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <linux@arm.linux.org.uk>,
+        <grant.likely@linaro.org>, <s.nawrocki@samsung.com>,
+        <galak@codeaurora.org>, <swarren@wwwdotorg.org>,
+        <ian.campbell@citrix.com>, <rob@landley.net>, <george.cherian@ti.com>,
+        <gregkh@linuxfoundation.org>, <linux-doc@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/7] usb: dwc3: adapt dwc3 core to use Generic PHY Framework
+References: <1378136591-7463-1-git-send-email-kishon@ti.com> <1378136591-7463-3-git-send-email-kishon@ti.com> <525814A9.7060106@ti.com>
+In-Reply-To: <525814A9.7060106@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-10-02 at 00:08 +0530, Durgadoss R wrote:
-> This patch creates sensor level APIs, in the
-> generic thermal framework.
+Hi Roger,
+
+On Friday 11 October 2013 08:39 PM, Roger Quadros wrote:
+> Hi,
 > 
-> A Thermal sensor is a piece of hardware that can report
-> temperature of the spot in which it is placed. A thermal
-> sensor driver reads the temperature from this sensor
-> and reports it out. This kind of driver can be in
-> any subsystem. If the sensor needs to participate
-> in platform thermal management, the corresponding
-> driver can use the APIs introduced in this patch, to
-> register(or unregister) with the thermal framework.
+> On 09/02/2013 06:43 PM, Kishon Vijay Abraham I wrote:
+>> Adapted dwc3 core to use the Generic PHY Framework. So for init, exit,
+>> power_on and power_off the following APIs are used phy_init(), phy_exit(),
+>> phy_power_on() and phy_power_off().
+>>
+>> However using the old USB phy library wont be removed till the PHYs of all
+>> other SoC's using dwc3 core is adapted to the Generic PHY Framework.
+>>
+>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+>> ---
+>>  Documentation/devicetree/bindings/usb/dwc3.txt |    6 ++-
+>>  drivers/usb/dwc3/Kconfig                       |    1 +
+>>  drivers/usb/dwc3/core.c                        |   49 ++++++++++++++++++++++++
+>>  drivers/usb/dwc3/core.h                        |    7 ++++
+>>  4 files changed, 61 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/Documentation/devicetree/bindings/usb/dwc3.txt b/Documentation/devicetree/bindings/usb/dwc3.txt
+>> index e807635..471366d 100644
+>> --- a/Documentation/devicetree/bindings/usb/dwc3.txt
+>> +++ b/Documentation/devicetree/bindings/usb/dwc3.txt
+>> @@ -6,11 +6,13 @@ Required properties:
+>>   - compatible: must be "snps,dwc3"
+>>   - reg : Address and length of the register set for the device
+>>   - interrupts: Interrupts used by the dwc3 controller.
+>> +
+>> +Optional properties:
+>>   - usb-phy : array of phandle for the PHY device.  The first element
+>>     in the array is expected to be a handle to the USB2/HS PHY and
+>>     the second element is expected to be a handle to the USB3/SS PHY
+>> -
+>> -Optional properties:
+>> + - phys: from the *Generic PHY* bindings
+>> + - phy-names: from the *Generic PHY* bindings
+>>   - tx-fifo-resize: determines if the FIFO *has* to be reallocated.
+>>  
+>>  This is usually a subnode to DWC3 glue to which it is connected.
+>> diff --git a/drivers/usb/dwc3/Kconfig b/drivers/usb/dwc3/Kconfig
+>> index cfc16dd..ad7ce83 100644
+>> --- a/drivers/usb/dwc3/Kconfig
+>> +++ b/drivers/usb/dwc3/Kconfig
+>> @@ -3,6 +3,7 @@ config USB_DWC3
+>>  	depends on (USB || USB_GADGET) && GENERIC_HARDIRQS && HAS_DMA
+>>  	depends on EXTCON
+>>  	select USB_PHY
+>> +	select GENERIC_PHY
+>>  	select USB_XHCI_PLATFORM if USB_SUPPORT && USB_XHCI_HCD
+>>  	help
+>>  	  Say Y or M here if your system has a Dual Role SuperSpeed
+>> diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
+>> index 428c29e..485d365 100644
+>> --- a/drivers/usb/dwc3/core.c
+>> +++ b/drivers/usb/dwc3/core.c
+>> @@ -82,6 +82,12 @@ static void dwc3_core_soft_reset(struct dwc3 *dwc)
+>>  
+>>  	usb_phy_init(dwc->usb2_phy);
+>>  	usb_phy_init(dwc->usb3_phy);
 > 
-> Signed-off-by: Durgadoss R <durgadoss.r@intel.com>
-> ---
->  drivers/thermal/thermal_core.c |  284 ++++++++++++++++++++++++++++++++++++++++
->  include/linux/thermal.h        |   29 ++++
->  2 files changed, 313 insertions(+)
+> How about adding
+> +	if (dwc->usb2_phy)
+> +		usb_phy_init(dwc->usb2_phy);
+> +	if (dwc->usb3_phy)
+> +		usb_phy_init(dwc->usb3_phy);
+
+Thankfully that usb_phy_init will check if phy is NULL.
 > 
-> diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
-> index 8c5131d..8c46567 100644
-> --- a/drivers/thermal/thermal_core.c
-> +++ b/drivers/thermal/thermal_core.c
-> @@ -45,13 +45,16 @@ MODULE_LICENSE("GPL v2");
->  
->  static DEFINE_IDR(thermal_tz_idr);
->  static DEFINE_IDR(thermal_cdev_idr);
-> +static DEFINE_IDR(thermal_sensor_idr);
->  static DEFINE_MUTEX(thermal_idr_lock);
->  
->  static LIST_HEAD(thermal_tz_list);
-> +static LIST_HEAD(thermal_sensor_list);
->  static LIST_HEAD(thermal_cdev_list);
->  static LIST_HEAD(thermal_governor_list);
->  
->  static DEFINE_MUTEX(thermal_list_lock);
-> +static DEFINE_MUTEX(sensor_list_lock);
->  static DEFINE_MUTEX(thermal_governor_lock);
->  
->  static struct thermal_governor *__find_governor(const char *name)
-> @@ -463,6 +466,103 @@ static void thermal_zone_device_check(struct work_struct *work)
->  #define to_thermal_zone(_dev) \
->  	container_of(_dev, struct thermal_zone_device, device)
->  
-> +#define to_thermal_sensor(_dev) \
-> +	container_of(_dev, struct thermal_sensor, device)
-> +
-> +static ssize_t
-> +sensor_name_show(struct device *dev, struct device_attribute *attr, char *buf)
-> +{
-> +	struct thermal_sensor *ts = to_thermal_sensor(dev);
-> +
-> +	return sprintf(buf, "%s\n", ts->name);
-> +}
-> +
-> +static ssize_t
-> +sensor_temp_show(struct device *dev, struct device_attribute *attr, char *buf)
-> +{
-> +	int ret;
-> +	long val;
-> +	struct thermal_sensor *ts = to_thermal_sensor(dev);
-> +
-> +	ret = ts->ops->get_temp(ts, &val);
-> +
-> +	return ret ? ret : sprintf(buf, "%ld\n", val);
-> +}
-> +
-> +static ssize_t
-> +hyst_show(struct device *dev, struct device_attribute *attr, char *buf)
-> +{
-> +	int indx, ret;
-> +	long val;
-> +	struct thermal_sensor *ts = to_thermal_sensor(dev);
-> +
-> +	if (!sscanf(attr->attr.name, "threshold%d_hyst", &indx))
-> +		return -EINVAL;
-> +
-> +	ret = ts->ops->get_hyst(ts, indx, &val);
-> +
-> +	return ret ? ret : sprintf(buf, "%ld\n", val);
-> +}
-> +
-> +static ssize_t
-> +hyst_store(struct device *dev, struct device_attribute *attr,
-> +				   const char *buf, size_t count)
-> +{
-> +	int indx, ret;
-> +	long val;
-> +	struct thermal_sensor *ts = to_thermal_sensor(dev);
-> +
-> +	if (!ts->ops->set_hyst)
-> +		return -EPERM;
-> +
-> +	if (!sscanf(attr->attr.name, "threshold%d_hyst", &indx))
-> +		return -EINVAL;
-> +
-> +	if (kstrtol(buf, 10, &val))
-> +		return -EINVAL;
-> +
-> +	ret = ts->ops->set_hyst(ts, indx, val);
-> +
-> +	return ret ? ret : count;
-> +}
-> +
-> +static ssize_t
-> +threshold_show(struct device *dev, struct device_attribute *attr, char *buf)
-> +{
-> +	int indx, ret;
-> +	long val;
-> +	struct thermal_sensor *ts = to_thermal_sensor(dev);
-> +
-> +	if (!sscanf(attr->attr.name, "threshold%d", &indx))
-> +		return -EINVAL;
-> +
-> +	ret = ts->ops->get_threshold(ts, indx, &val);
-> +
-> +	return ret ? ret : sprintf(buf, "%ld\n", val);
-> +}
-> +
-> +static ssize_t
-> +threshold_store(struct device *dev, struct device_attribute *attr,
-> +				   const char *buf, size_t count)
-> +{
-> +	int indx, ret;
-> +	long val;
-> +	struct thermal_sensor *ts = to_thermal_sensor(dev);
-> +
-> +	if (!ts->ops->set_threshold)
-> +		return -EPERM;
-> +
-> +	if (!sscanf(attr->attr.name, "threshold%d", &indx))
-> +		return -EINVAL;
-> +
-> +	if (kstrtol(buf, 10, &val))
-> +		return -EINVAL;
-> +
-> +	ret = ts->ops->set_threshold(ts, indx, val);
-> +
-> +	return ret ? ret : count;
-> +}
-> +
->  static ssize_t
->  type_show(struct device *dev, struct device_attribute *attr, char *buf)
->  {
-> @@ -772,6 +872,10 @@ static DEVICE_ATTR(mode, 0644, mode_show, mode_store);
->  static DEVICE_ATTR(passive, S_IRUGO | S_IWUSR, passive_show, passive_store);
->  static DEVICE_ATTR(policy, S_IRUGO | S_IWUSR, policy_show, policy_store);
->  
-> +/* Thermal sensor attributes */
-> +static DEVICE_ATTR(sensor_name, 0444, sensor_name_show, NULL);
+> both usb phy and generic phy shouldn't be present together.
 
-this attribute is under sensorX/ directory, thus I think "name" is clear
-enough.
-what do you think?
+ok.
+> 
+>> +
+>> +	if (dwc->usb2_generic_phy)
+>> +		phy_init(dwc->usb2_generic_phy);
+>> +	if (dwc->usb3_generic_phy)
+>> +		phy_init(dwc->usb3_generic_phy);
+>> +
+>>  	mdelay(100);
+>>  
+>>  	/* Clear USB3 PHY reset */
+>> @@ -343,6 +349,11 @@ static void dwc3_core_exit(struct dwc3 *dwc)
+>>  {
+>>  	usb_phy_shutdown(dwc->usb2_phy);
+>>  	usb_phy_shutdown(dwc->usb3_phy);
+> 
+> here as well
+> 
+>> +
+>> +	if (dwc->usb2_generic_phy)
+>> +		phy_power_off(dwc->usb2_generic_phy);
+>> +	if (dwc->usb3_generic_phy)
+>> +		phy_power_off(dwc->usb3_generic_phy);
+>>  }
+>>  
+>>  #define DWC3_ALIGN_MASK		(16 - 1)
+>> @@ -427,6 +438,23 @@ static int dwc3_probe(struct platform_device *pdev)
+>>  		dwc->usb3_phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB3);
+>>  	}
+>>  
+>> +	if (of_property_read_bool(node, "phys") || pdata->has_phy) {
+>> +		dwc->usb2_generic_phy = devm_phy_get(dev, "usb2-phy");
+>> +		if (IS_ERR(dwc->usb2_generic_phy)) {
+>> +			dev_err(dev, "no usb2 phy configured yet");
+>> +			return PTR_ERR(dwc->usb2_generic_phy);
+>> +		}
+>> +
+>> +		dwc->usb3_generic_phy = devm_phy_get(dev, "usb3-phy");
+>> +		if (IS_ERR(dwc->usb3_generic_phy)) {
+>> +			dev_err(dev, "no usb3 phy configured yet");
+>> +			return PTR_ERR(dwc->usb3_generic_phy);
+>> +		}
+> 
+> better to add
+> +		/* Don't use USB PHY if generic PHY was found */
+> +		dwc->usb2_phy = dwc->usb3_phy = NULL;
 
-> +static DEVICE_ATTR(temp_input, 0444, sensor_temp_show, NULL);
-> +
-what about "temp"? to be consistent with the current naming.
+ok.
+> 
+>> +	} else {
+> 
+> not required as we've used kzalloc for dwc.
+> 
+>> +		dwc->usb2_generic_phy = NULL;
+>> +		dwc->usb3_generic_phy = NULL;
+>> +	}
+>> +
+>>  	/* default to superspeed if no maximum_speed passed */
+>>  	if (dwc->maximum_speed == USB_SPEED_UNKNOWN)
+>>  		dwc->maximum_speed = USB_SPEED_SUPER;
+>> @@ -450,6 +478,11 @@ static int dwc3_probe(struct platform_device *pdev)
+> 
+> if (dwc->usb2_phy)
+> 
+>>  	usb_phy_set_suspend(dwc->usb2_phy, 0);
+> 
+> if (dwc->usb3_phy)
+> 
+>>  	usb_phy_set_suspend(dwc->usb3_phy, 0);
+>>  
+>> +	if (dwc->usb2_generic_phy)
+>> +		phy_power_on(dwc->usb2_generic_phy);
+>> +	if (dwc->usb3_generic_phy)
+>> +		phy_power_on(dwc->usb3_generic_phy);
+>> +
+>>  	spin_lock_init(&dwc->lock);
+>>  	platform_set_drvdata(pdev, dwc);
+>>  
+>> @@ -576,6 +609,11 @@ static int dwc3_remove(struct platform_device *pdev)
+> 
+> if (dwc->usb2_phy)
+>>  	usb_phy_set_suspend(dwc->usb2_phy, 1);
+> 
+> if (dwc->usb3_phy)
+>>  	usb_phy_set_suspend(dwc->usb3_phy, 1);
+>>  
+>> +	if (dwc->usb2_generic_phy)
+>> +		phy_power_off(dwc->usb2_generic_phy);
+>> +	if (dwc->usb3_generic_phy)
+>> +		phy_power_off(dwc->usb3_generic_phy);
+>> +
+>>  	pm_runtime_put(&pdev->dev);
+>>  	pm_runtime_disable(&pdev->dev);
+>>  
+>> @@ -673,6 +711,11 @@ static int dwc3_suspend(struct device *dev)
+> 
+> if (dwc->usb3_phy)
+>>  	usb_phy_shutdown(dwc->usb3_phy);
+> 
+> if (dwc->usb2_phy)
+>>  	usb_phy_shutdown(dwc->usb2_phy);
+>>  
+>> +	if (dwc->usb2_generic_phy)
+>> +		phy_exit(dwc->usb2_generic_phy);
+>> +	if (dwc->usb3_generic_phy)
+>> +		phy_exit(dwc->usb3_generic_phy);
+>> +
+>>  	return 0;
+>>  }
+>>  
+>> @@ -683,6 +726,12 @@ static int dwc3_resume(struct device *dev)
+>>  
+> 
+> if (dwc->usb3_phy)
+>>  	usb_phy_init(dwc->usb3_phy);
+> 
+> if (dwc->usb2_phy)
+>>  	usb_phy_init(dwc->usb2_phy);
+>> +
+>> +	if (dwc->usb2_generic_phy)
+>> +		phy_init(dwc->usb2_generic_phy);
+>> +	if (dwc->usb3_generic_phy)
+>> +		phy_init(dwc->usb3_generic_phy);
+>> +
+>>  	msleep(100);
+>>  
+>>  	spin_lock_irqsave(&dwc->lock, flags);
+>> diff --git a/drivers/usb/dwc3/core.h b/drivers/usb/dwc3/core.h
+>> index f8af8d4..01ec7d7 100644
+>> --- a/drivers/usb/dwc3/core.h
+>> +++ b/drivers/usb/dwc3/core.h
+>> @@ -31,6 +31,8 @@
+>>  #include <linux/usb/gadget.h>
+>>  #include <linux/usb/otg.h>
+>>  
+>> +#include <linux/phy/phy.h>
+>> +
+>>  /* Global constants */
+>>  #define DWC3_EP0_BOUNCE_SIZE	512
+>>  #define DWC3_ENDPOINTS_NUM	32
+>> @@ -613,6 +615,8 @@ struct dwc3_scratchpad_array {
+>>   * @dr_mode: requested mode of operation
+>>   * @usb2_phy: pointer to USB2 PHY
+>>   * @usb3_phy: pointer to USB3 PHY
+>> + * @usb2_generic_phy: pointer to USB2 PHY
+>> + * @usb3_generic_phy: pointer to USB3 PHY
+>>   * @dcfg: saved contents of DCFG register
+>>   * @gctl: saved contents of GCTL register
+>>   * @is_selfpowered: true when we are selfpowered
+>> @@ -665,6 +669,9 @@ struct dwc3 {
+>>  	struct usb_phy		*usb2_phy;
+>>  	struct usb_phy		*usb3_phy;
+>>  
+>> +	struct phy		*usb2_generic_phy;
+>> +	struct phy		*usb3_generic_phy;
+>> +
+>>  	void __iomem		*regs;
+>>  	size_t			regs_size;
+>>  
+>>
 
->  /* sys I/F for cooling device */
->  #define to_cooling_device(_dev)	\
->  	container_of(_dev, struct thermal_cooling_device, device)
-> @@ -1585,6 +1689,186 @@ static void remove_trip_attrs(struct thermal_zone_device *tz)
->  	kfree(tz->trip_hyst_attrs);
->  }
->  
-> + /**
-> + * enable_sensor_thresholds - create sysfs nodes for thresholdX
-IMO, this name is confusing. It looks like that you are enabling the
-sensor hardware here.
-so why not "thermal_sensor_sysfs_add", and you can add the "name" and
-"temp" attribute in this function as well.
+Do you have any suggestions on how to get only individual PHYs? like only
+usb2phy or usb3phy?
 
-> + * @ts:		the thermal sensor
-> + * @count:	Number of thresholds supported by sensor hardware
-> + *
-> + * 'Thresholds' are temperatures programmed into the sensor hardware,
-> + * on crossing which the sensor can generate an interrupt.
-> + */
-> +static int enable_sensor_thresholds(struct thermal_sensor *ts, int count)
-> +{
-> +	int i;
-> +	int size = sizeof(struct thermal_attr) * count;
-> +
-> +	ts->thresh_attrs = devm_kzalloc(&ts->device, size, GFP_KERNEL);
-> +	if (!ts->thresh_attrs)
-> +		return -ENOMEM;
-> +
-> +	if (ts->ops->get_hyst) {
-> +		ts->hyst_attrs = devm_kzalloc(&ts->device, size, GFP_KERNEL);
-> +		if (!ts->hyst_attrs)
-> +			return -ENOMEM;
-> +	}
-> +
-I do not think you can use devm_kzalloc here.
-
-> +	ts->thresholds = count;
-> +
-> +	/* Create threshold attributes */
-> +	for (i = 0; i < count; i++) {
-> +		snprintf(ts->thresh_attrs[i].name, THERMAL_NAME_LENGTH,
-> +						 "threshold%d", i);
-> +
-> +		sysfs_attr_init(&ts->thresh_attrs[i].attr.attr);
-> +		ts->thresh_attrs[i].attr.attr.name = ts->thresh_attrs[i].name;
-> +		ts->thresh_attrs[i].attr.attr.mode = S_IRUGO | S_IWUSR;
-> +		ts->thresh_attrs[i].attr.show = threshold_show;
-> +		ts->thresh_attrs[i].attr.store = threshold_store;
-> +
-> +		device_create_file(&ts->device, &ts->thresh_attrs[i].attr);
-> +
-> +		/* Create threshold_hyst attributes */
-> +		if (!ts->ops->get_hyst)
-> +			continue;
-> +
-> +		snprintf(ts->hyst_attrs[i].name, THERMAL_NAME_LENGTH,
-> +						 "threshold%d_hyst", i);
-> +
-> +		sysfs_attr_init(&ts->hyst_attrs[i].attr.attr);
-> +		ts->hyst_attrs[i].attr.attr.name = ts->hyst_attrs[i].name;
-> +		ts->hyst_attrs[i].attr.attr.mode = S_IRUGO | S_IWUSR;
-> +		ts->hyst_attrs[i].attr.show = hyst_show;
-> +		ts->hyst_attrs[i].attr.store = hyst_store;
-> +
-> +		device_create_file(&ts->device, &ts->hyst_attrs[i].attr);
-> +	}
-> +	return 0;
-> +}
-> +
-> +/**
-> + * thermal_sensor_register - register a new thermal sensor
-> + * @name:	name of the thermal sensor
-> + * @count:	Number of thresholds supported by hardware
-> + * @ops:	standard thermal sensor callbacks
-> + * @devdata:	private device data
-> + *
-> + * On Success returns a thermal sensor reference, otherwise:
-> + * -EINVAL for invalid parameters,
-> + * -ENOMEM for insufficient memory cases,
-> +*/
-> +struct thermal_sensor *thermal_sensor_register(const char *name, int count,
-> +			struct thermal_sensor_ops *ops, void *devdata)
-> +{
-> +	struct thermal_sensor *ts;
-> +	int ret;
-> +
-> +	if (!name || (name && strlen(name) >= THERMAL_NAME_LENGTH))
-> +		return ERR_PTR(-EINVAL);
-> +
-> +	if (!ops || !ops->get_temp)
-> +		return ERR_PTR(-EINVAL);
-> +
-> +	ts = kzalloc(sizeof(*ts), GFP_KERNEL);
-> +	if (!ts)
-> +		return ERR_PTR(-ENOMEM);
-> +
-> +	idr_init(&ts->idr);
-> +	ret = get_idr(&thermal_sensor_idr, &thermal_idr_lock, &ts->id);
-> +	if (ret)
-> +		goto exit_free;
-> +
-> +	strlcpy(ts->name, name, sizeof(ts->name));
-> +	ts->ops = ops;
-> +	ts->devdata = devdata;
-> +	ts->device.class = &thermal_class;
-> +
-> +	dev_set_name(&ts->device, "sensor%d", ts->id);
-> +	ret = device_register(&ts->device);
-> +	if (ret)
-> +		goto exit_idr;
-> +
-> +	ret = device_create_file(&ts->device, &dev_attr_sensor_name);
-> +	if (ret)
-> +		goto exit_unregister;
-> +
-> +	ret = device_create_file(&ts->device, &dev_attr_temp_input);
-> +	if (ret)
-> +		goto exit_name;
-> +
-> +	if (count > 0 && ts->ops->get_threshold) {
-> +		ret = enable_sensor_thresholds(ts, count);
-> +		if (ret)
-> +			goto exit_temp;
-> +	}
-> +
-> +	/* Add this sensor to the global list of sensors */
-> +	mutex_lock(&sensor_list_lock);
-> +	list_add_tail(&ts->node, &thermal_sensor_list);
-> +	mutex_unlock(&sensor_list_lock);
-> +
-> +	return ts;
-> +
-> +exit_temp:
-> +	device_remove_file(&ts->device, &dev_attr_temp_input);
-> +exit_name:
-> +	device_remove_file(&ts->device, &dev_attr_sensor_name);
-> +exit_unregister:
-> +	device_unregister(&ts->device);
-> +exit_idr:
-> +	release_idr(&thermal_sensor_idr, &thermal_idr_lock, ts->id);
-> +exit_free:
-> +	kfree(ts);
-> +	return ERR_PTR(ret);
-> +}
-> +EXPORT_SYMBOL(thermal_sensor_register);
-> +
-> +/**
-> + * remove_thermal_zone - removes the sysfs nodes for given sensor
-
-s/remove_thermal_zone/thermal_sensor_unregister
-
-> + * @ts:	Thermal sensor to be removed.
-> + */
-> +void thermal_sensor_unregister(struct thermal_sensor *ts)
-> +{
-> +	int i;
-> +	struct thermal_sensor *pos, *next;
-> +	bool found = false;
-> +
-> +	if (!ts)
-> +		return;
-> +
-> +	mutex_lock(&sensor_list_lock);
-> +	list_for_each_entry_safe(pos, next, &thermal_sensor_list, node) {
-> +		if (pos == ts) {
-> +			list_del(&ts->node);
-> +			found = true;
-> +			break;
-> +		}
-> +	}
-> +	mutex_unlock(&sensor_list_lock);
-> +
-> +	if (!found)
-> +		return;
-> +
-> +	for (i = 0; i < ts->thresholds; i++) {
-> +		device_remove_file(&ts->device, &ts->thresh_attrs[i].attr);
-> +		if (ts->ops->get_hyst) {
-> +			device_remove_file(&ts->device,
-> +					&ts->hyst_attrs[i].attr);
-> +		}
-> +	}
-> +
-> +	device_remove_file(&ts->device, &dev_attr_sensor_name);
-> +	device_remove_file(&ts->device, &dev_attr_temp_input);
-> +
-hmmm, I'd prefer you to introduce a separate function for the sysfs
-cleanup code. 
-
-thanks,
-rui
-> +	release_idr(&thermal_sensor_idr, &thermal_idr_lock, ts->id);
-> +	idr_destroy(&ts->idr);
-> +
-> +	device_unregister(&ts->device);
-> +
-> +	kfree(ts);
-> +	return;
-> +}
-> +EXPORT_SYMBOL(thermal_sensor_unregister);
-> +
->  /**
->   * thermal_zone_device_register() - register a new thermal zone device
->   * @type:	the thermal zone device type
-> diff --git a/include/linux/thermal.h b/include/linux/thermal.h
-> index a386a1c..25fc562 100644
-> --- a/include/linux/thermal.h
-> +++ b/include/linux/thermal.h
-> @@ -58,6 +58,7 @@
->  #define DEFAULT_THERMAL_GOVERNOR       "user_space"
->  #endif
->  
-> +struct thermal_sensor;
->  struct thermal_zone_device;
->  struct thermal_cooling_device;
->  
-> @@ -139,6 +140,15 @@ struct thermal_cooling_device_ops {
->  	int (*set_cur_state) (struct thermal_cooling_device *, unsigned long);
->  };
->  
-> +struct thermal_sensor_ops {
-> +	int (*get_temp) (struct thermal_sensor *, long *);
-> +	int (*get_trend) (struct thermal_sensor *, int, enum thermal_trend *);
-> +	int (*set_threshold) (struct thermal_sensor *, int, long);
-> +	int (*get_threshold) (struct thermal_sensor *, int, long *);
-> +	int (*set_hyst) (struct thermal_sensor *, int, long);
-> +	int (*get_hyst) (struct thermal_sensor *, int, long *);
-> +};
-> +
->  struct thermal_cooling_device {
->  	int id;
->  	char type[THERMAL_NAME_LENGTH];
-> @@ -156,6 +166,21 @@ struct thermal_attr {
->  	char name[THERMAL_NAME_LENGTH];
->  };
->  
-> +struct thermal_sensor {
-> +	char name[THERMAL_NAME_LENGTH];
-> +	int id;
-> +	int temp;
-> +	int prev_temp;
-> +	int thresholds;
-> +	void *devdata;
-> +	struct idr idr;
-> +	struct device device;
-> +	struct list_head node;
-> +	struct thermal_sensor_ops *ops;
-> +	struct thermal_attr *thresh_attrs;
-> +	struct thermal_attr *hyst_attrs;
-> +};
-> +
->  struct thermal_zone_device {
->  	int id;
->  	char type[THERMAL_NAME_LENGTH];
-> @@ -248,6 +273,10 @@ struct thermal_instance *get_thermal_instance(struct thermal_zone_device *,
->  void thermal_cdev_update(struct thermal_cooling_device *);
->  void thermal_notify_framework(struct thermal_zone_device *, int);
->  
-> +struct thermal_sensor *thermal_sensor_register(const char *, int,
-> +				struct thermal_sensor_ops *, void *);
-> +void thermal_sensor_unregister(struct thermal_sensor *);
-> +
->  #ifdef CONFIG_NET
->  extern int thermal_generate_netlink_event(struct thermal_zone_device *tz,
->  						enum events event);
-
-
+Thanks
+Kishon
