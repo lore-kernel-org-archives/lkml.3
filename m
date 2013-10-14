@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933058Ab3JNUaw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 16:30:52 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:38898 "EHLO
+	id S933041Ab3JNUau (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 16:30:50 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38897 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757648Ab3JNUDD (ORCPT
+	with ESMTP id S1757649Ab3JNUDD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 14 Oct 2013 16:03:03 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 063/161] perf trace: Beautify rlmimit resources
-Date: Mon, 14 Oct 2013 17:00:52 -0300
-Message-Id: <1381780950-25642-64-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Ramkumar Ramachandra <artagnon@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 115/161] perf stat: Don't print bogus data on -e cycles
+Date: Mon, 14 Oct 2013 17:01:44 -0300
+Message-Id: <1381780950-25642-116-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1381780950-25642-1-git-send-email-acme@infradead.org>
 References: <1381780950-25642-1-git-send-email-acme@infradead.org>
@@ -28,72 +25,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Ramkumar Ramachandra <artagnon@gmail.com>
 
-On the getrlimit, setrlimit and prlimit64 syscalls.
+When only the cycles event is requested:
 
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
+$ perf stat -e cycles dd if=/dev/zero of=/dev/null count=1000000
+1000000+0 records in
+1000000+0 records out
+512000000 bytes (512 MB) copied, 0.26123 s, 2.0 GB/s
+
+ Performance counter stats for 'dd if=/dev/zero of=/dev/null count=1000000':
+
+       911,626,453 cycles                    #    0.000 GHz
+
+       0.262113350 seconds time elapsed
+
+The 0.000 GHz comment in the output is totally bogus and misleading. It
+happens because update_shadow_stats() doesn't touch runtime_nsecs_stats;
+it is only written when a requested counter matches a SW_TASK_CLOCK. In
+our case, since we have only requested HW_CPU_CYCLES,
+runtime_nsecs_stats is unavailable. So, omit printing the comment
+altogether.
+
+Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
+Acked-by: Ingo Molnar <mingo@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-pups75313afhn7p96qwhzs9v@git.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1380539585-23859-3-git-send-email-artagnon@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-trace.c | 16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+ tools/perf/builtin-stat.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index 7aa6bcacd51f..7ce036ee863b 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -252,6 +252,13 @@ static const char *fcntl_cmds[] = {
- };
- static DEFINE_STRARRAY(fcntl_cmds);
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index 700b47849101..ce2266c5cd52 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -997,10 +997,10 @@ static void abs_printout(int cpu, int nr, struct perf_evsel *evsel, double avg)
+ 	} else if (perf_evsel__match(evsel, HARDWARE, HW_CPU_CYCLES)) {
+ 		total = avg_stats(&runtime_nsecs_stats[cpu]);
  
-+static const char *rlimit_resources[] = {
-+	"CPU", "FSIZE", "DATA", "STACK", "CORE", "RSS", "NPROC", "NOFILE",
-+	"MEMLOCK", "AS", "LOCKS", "SIGPENDING", "MSGQUEUE", "NICE", "RTPRIO",
-+	"RTTIME",
-+};
-+static DEFINE_STRARRAY(rlimit_resources);
-+
- static const char *sighow[] = { "BLOCK", "UNBLOCK", "SETMASK", };
- static DEFINE_STRARRAY(sighow);
- 
-@@ -466,6 +473,9 @@ static struct syscall_fmt {
- 	{ .name	    = "getitimer",  .errmsg = true,
- 	  .arg_scnprintf = { [0] = SCA_STRARRAY, /* which */ },
- 	  .arg_parm	 = { [0] = &strarray__itimers, /* which */ }, },
-+	{ .name	    = "getrlimit",  .errmsg = true,
-+	  .arg_scnprintf = { [0] = SCA_STRARRAY, /* resource */ },
-+	  .arg_parm	 = { [0] = &strarray__rlimit_resources, /* resource */ }, },
- 	{ .name	    = "ioctl",	    .errmsg = true,
- 	  .arg_scnprintf = { [2] = SCA_HEX, /* arg */ }, },
- 	{ .name	    = "kill",	    .errmsg = true,
-@@ -498,6 +508,9 @@ static struct syscall_fmt {
- 	{ .name	    = "poll",	    .errmsg = true, .timeout = true, },
- 	{ .name	    = "ppoll",	    .errmsg = true, .timeout = true, },
- 	{ .name	    = "pread",	    .errmsg = true, .alias = "pread64", },
-+	{ .name	    = "prlimit64",  .errmsg = true,
-+	  .arg_scnprintf = { [1] = SCA_STRARRAY, /* resource */ },
-+	  .arg_parm	 = { [1] = &strarray__rlimit_resources, /* resource */ }, },
- 	{ .name	    = "pwrite",	    .errmsg = true, .alias = "pwrite64", },
- 	{ .name	    = "read",	    .errmsg = true, },
- 	{ .name	    = "recvfrom",   .errmsg = true, },
-@@ -514,6 +527,9 @@ static struct syscall_fmt {
- 	{ .name	    = "setitimer",  .errmsg = true,
- 	  .arg_scnprintf = { [0] = SCA_STRARRAY, /* which */ },
- 	  .arg_parm	 = { [0] = &strarray__itimers, /* which */ }, },
-+	{ .name	    = "setrlimit",  .errmsg = true,
-+	  .arg_scnprintf = { [0] = SCA_STRARRAY, /* resource */ },
-+	  .arg_parm	 = { [0] = &strarray__rlimit_resources, /* resource */ }, },
- 	{ .name	    = "socket",	    .errmsg = true,
- 	  .arg_scnprintf = { [0] = SCA_STRARRAY, /* family */
- 			     [1] = SCA_SK_TYPE, /* type */ },
+-		if (total)
+-			ratio = 1.0 * avg / total;
+-
+-		fprintf(output, " # %8.3f GHz                    ", ratio);
++		if (total) {
++			ratio = avg / total;
++			fprintf(output, " # %8.3f GHz                    ", ratio);
++		}
+ 	} else if (transaction_run &&
+ 		   perf_evsel__cmp(evsel, nth_evsel(T_CYCLES_IN_TX))) {
+ 		total = avg_stats(&runtime_cycles_stats[cpu]);
 -- 
 1.8.1.4
 
