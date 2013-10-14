@@ -1,350 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932176Ab3JNPMm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 11:12:42 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:24293 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755646Ab3JNPLo (ORCPT
+	id S932195Ab3JNPNR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 11:13:17 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:41733 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754736Ab3JNPNP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 11:11:44 -0400
-X-AuditID: cbfec7f5-b7ef66d00000795a-0e-525c09ad81af
-From: Vyacheslav Tyrtov <v.tyrtov@samsung.com>
-To: linux-kernel@vger.kernel.org
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Heiko Stuebner <heiko@sntech.de>,
-        Naour Romain <romain.naour@openwide.fr>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org,
-        Tarek Dakhran <t.dakhran@samsung.com>,
-        Tyrtov Vyacheslav <v.tyrtov@samsung.com>
-Subject: [PATCH v2 3/4] ARM: EXYNOS: add Exynos Dual Cluster Support
-Date: Mon, 14 Oct 2013 19:08:24 +0400
-Message-id: <1381763305-7085-4-git-send-email-v.tyrtov@samsung.com>
-X-Mailer: git-send-email 1.8.1.5
-In-reply-to: <1381763305-7085-1-git-send-email-v.tyrtov@samsung.com>
-References: <1381763305-7085-1-git-send-email-v.tyrtov@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKLMWRmVeSWpSXmKPExsVy+t/xa7prOWOCDM7dF7SYtO4Ak8W8z7IW
-	84+cY7X4/+g1q8W5VysZLXoXXGWz2PT4GqvFwrYlLBaXd81hs5hxfh+Txe3LvBZLr19ksng6
-	4SKbxYTpa1ksDq8AmrHu5XQWiy0/OxgtXh1sY7FY//wUo8XmTVOZLabO+MHuIOqxZt4aRo+W
-	5h42jwWfr7B7/F31gtlj5fIvbB6vVs9k9bhzbQ+bx7tz59g9Ni+p93h1jcWjb8sqRo/t1+Yx
-	e3zeJOexcW5oAF8Ul01Kak5mWWqRvl0CV8aHR7vZC067VlxfPpW1gXGRRRcjJ4eEgInEwTkn
-	mSBsMYkL99azdTFycQgJLGWUWLFsFQuE08MksfbPFBaQKjYBPYm+VzfAbBEBBYnNvc9YQYqY
-	BX6xSnyaeYIZJCEs4CKx9uJudhCbRUBV4tiFSYwgNq+As8Tjtp+MEOsUJI62vQWr4QSq/7dh
-	CSuILQRUc+DVP8YJjLwLGBlWMYqmliYXFCel5xrpFSfmFpfmpesl5+duYoREzdcdjEuPWR1i
-	FOBgVOLhFXCKDhJiTSwrrsw9xCjBwawkwpv7FijEm5JYWZValB9fVJqTWnyIkYmDU6qBMfz/
-	9ol/+/8cLZv6UOL8vt/SYgUt85J2Loo2n3wl7/GyP3Frq+Jt7HhS/Tytcn8+Uog7Ud61MW3i
-	qYhnN3znqCo5n7xj22BZYKe17Hh7yZnZ/4sb798tLFho0WNnwfOZ/arqw/tCC900GBp1iztq
-	taKZ+Dazp4e/9k3b/yy1ZPHfhdXavYpsSizFGYmGWsxFxYkAXBwqbHgCAAA=
+	Mon, 14 Oct 2013 11:13:15 -0400
+MIME-Version: 1.0
+X-Originating-IP: [2a01:e35:2434:4600:91ce:e2b8:d002:9a5c]
+In-Reply-To: <20131014124815.GC10491@mudshark.cambridge.arm.com>
+References: <1381497887-14586-1-git-send-email-a.motakis@virtualopensystems.com>
+	<20131014124815.GC10491@mudshark.cambridge.arm.com>
+Date: Mon, 14 Oct 2013 17:13:15 +0200
+Message-ID: <CAG8rG2wftreREPnCbH8cKtsHD4TXBFAYGfY0ZMmsX3UW757r4Q@mail.gmail.com>
+Subject: Re: [PATCH 1/2] ARM: SMMU: add devices attached to the SMMU to an
+ IOMMU group
+From: Antonios Motakis <a.motakis@virtualopensystems.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Joerg Roedel <joro@8bytes.org>,
+        "moderated list:ARM SMMU DRIVER" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "open list:IOMMU DRIVERS" <iommu@lists.linux-foundation.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        "tech@virtualopensystems.com" <tech@virtualopensystems.com>,
+        "agraf@suse.de" <agraf@suse.de>,
+        "B08248@freescale.com" <B08248@freescale.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tarek Dakhran <t.dakhran@samsung.com>
+On Mon, Oct 14, 2013 at 2:48 PM, Will Deacon <will.deacon@arm.com> wrote:
+>
+> Hi Antonios,
+>
+> On Fri, Oct 11, 2013 at 02:24:46PM +0100, Antonios Motakis wrote:
+> > IOMMU groups are expected by certain users of the IOMMU API,
+> > e.g. VFIO. Add new devices found by the SMMU driver to an IOMMU
+> > group to satisfy those users.
+>
+> Cheers for looking at this: VFIO has been on my TODO list for some time.
+>
+> > Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
+> > ---
+> >  drivers/iommu/arm-smmu.c | 18 +++++++++++++++++-
+> >  1 file changed, 17 insertions(+), 1 deletion(-)
+> >
+> > diff --git a/drivers/iommu/arm-smmu.c b/drivers/iommu/arm-smmu.c
+> > index 0f45a48..8b71332 100644
+> > --- a/drivers/iommu/arm-smmu.c
+> > +++ b/drivers/iommu/arm-smmu.c
+> > @@ -1502,6 +1502,8 @@ static int arm_smmu_add_device(struct device *dev)
+> >  {
+> >       struct arm_smmu_device *child, *parent, *smmu;
+> >       struct arm_smmu_master *master = NULL;
+> > +     struct iommu_group *group;
+> > +     int ret;
+> >
+> >       spin_lock(&arm_smmu_devices_lock);
+> >       list_for_each_entry(parent, &arm_smmu_devices, list) {
+> > @@ -1534,13 +1536,27 @@ static int arm_smmu_add_device(struct device *dev)
+> >       if (!master)
+> >               return -ENODEV;
+> >
+> > +     group = iommu_group_get(dev);
+>
+> I'm not especially familiar with IOMMU groups (I understand them as the
+> minimum translation granularity, which would mean single StreamID for the
+> ARM SMMU), but under what circumstances would you expect to receive a
+> non-NULL group here? I can't see any other code adding devices to groups
+> (outside of other drivers)...
+>
+Hi Will,
 
-Add EDCS(Exynos Dual Cluster Support) for Samsung Exynos5410 SoC.
-This enables all 8 cores, 4 x A7 and 4 x A15 run at the same time.
+You are right, only other IOMMU drivers will add a device to a group.
+There was a discussion about this when I posted a similar patch for
+the Exynos System MMU driver, see
+http://lists.infradead.org/pipermail/linux-arm-kernel/2013-July/185675.html
 
-Signed-off-by: Tarek Dakhran <t.dakhran@samsung.com>
-Signed-off-by: Vyacheslav Tyrtov <v.tyrtov@samsung.com>
----
- arch/arm/mach-exynos/Makefile |   2 +
- arch/arm/mach-exynos/edcs.c   | 270 ++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 272 insertions(+)
- create mode 100644 arch/arm/mach-exynos/edcs.c
+The idea is to check in the case of add_device() being called multiple
+times, which is not the case most of the time, but still a sane
+safeguard.
 
-diff --git a/arch/arm/mach-exynos/Makefile b/arch/arm/mach-exynos/Makefile
-index 5369615..ba6efdb 100644
---- a/arch/arm/mach-exynos/Makefile
-+++ b/arch/arm/mach-exynos/Makefile
-@@ -34,3 +34,5 @@ AFLAGS_exynos-smc.o		:=-Wa,-march=armv7-a$(plus_sec)
- 
- obj-$(CONFIG_MACH_EXYNOS4_DT)		+= mach-exynos4-dt.o
- obj-$(CONFIG_MACH_EXYNOS5_DT)		+= mach-exynos5-dt.o
-+
-+obj-$(CONFIG_SOC_EXYNOS5410)		+= edcs.o
-diff --git a/arch/arm/mach-exynos/edcs.c b/arch/arm/mach-exynos/edcs.c
-new file mode 100644
-index 0000000..e304bd9
---- /dev/null
-+++ b/arch/arm/mach-exynos/edcs.c
-@@ -0,0 +1,270 @@
-+/*
-+ * arch/arm/mach-exynos/edcs.c - exynos dual cluster power management support
-+ *
-+ * Copyright (c) 2013 Samsung Electronics Co., Ltd.
-+ * Author: Tarek Dakhran <t.dakhran@samsung.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * EDCS(exynos dual cluster support) for Exynos5410 SoC.
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/io.h>
-+#include <linux/of_address.h>
-+#include <linux/spinlock.h>
-+#include <linux/errno.h>
-+
-+#include <asm/mcpm.h>
-+#include <asm/proc-fns.h>
-+#include <asm/cacheflush.h>
-+#include <asm/cputype.h>
-+#include <asm/cp15.h>
-+
-+#include <linux/arm-cci.h>
-+#include <mach/regs-pmu.h>
-+
-+#define EDCS_CPUS_PER_CLUSTER	4
-+#define EDCS_CLUSTERS		2
-+
-+/* Exynos5410 power management registers */
-+#define EDCS_CORE_CONFIGURATION(_nr)	(S5P_ARM_CORE0_CONFIGURATION	\
-+						+ ((_nr) * 0x80))
-+#define EDCS_CORE_STATUS(_nr)		(EDCS_CORE_CONFIGURATION(_nr) + 0x4)
-+#define EDCS_CORE_OPTION(_nr)		(EDCS_CORE_CONFIGURATION(_nr) + 0x8)
-+
-+#define REG_CPU_STATE_ADDR0		(S5P_VA_SYSRAM_NS + 0x28)
-+#define REG_CPU_STATE_ADDR(_nr)		(REG_CPU_STATE_ADDR0 +	\
-+						 _nr * EDCS_CPUS_PER_CLUSTER)
-+
-+static arch_spinlock_t edcs_lock = __ARCH_SPIN_LOCK_UNLOCKED;
-+
-+static int edcs_use_count[EDCS_CPUS_PER_CLUSTER][EDCS_CLUSTERS];
-+static int core_count[EDCS_CLUSTERS];
-+
-+static void exynos_core_power_control(unsigned int cpu, unsigned int cluster,
-+				bool enable)
-+{
-+	unsigned int offset = cluster * EDCS_CPUS_PER_CLUSTER + cpu;
-+	int value = enable ? S5P_CORE_LOCAL_PWR_EN : 0;
-+
-+	if ((__raw_readl(EDCS_CORE_STATUS(offset)) & 0x3) != value)
-+		__raw_writel(value, EDCS_CORE_CONFIGURATION(offset));
-+}
-+
-+static void exynos_core_power_up(unsigned int cpu, unsigned int cluster)
-+{
-+	exynos_core_power_control(cpu, cluster, true);
-+}
-+
-+static void exynos_core_power_down(unsigned int cpu, unsigned int cluster)
-+{
-+	exynos_core_power_control(cpu, cluster, false);
-+}
-+
-+void set_boot_flag(unsigned int cpu, unsigned int mode)
-+{
-+	__raw_writel(mode, REG_CPU_STATE_ADDR(cpu));
-+}
-+
-+static int exynos_power_up(unsigned int cpu, unsigned int cluster)
-+{
-+	pr_debug("%s: cpu %u cluster %u\n", __func__, cpu, cluster);
-+	BUG_ON(cpu >= EDCS_CPUS_PER_CLUSTER || cluster >= EDCS_CLUSTERS);
-+
-+	local_irq_disable();
-+	arch_spin_lock(&edcs_lock);
-+
-+	edcs_use_count[cpu][cluster]++;
-+	if (edcs_use_count[cpu][cluster] == 1) {
-+		++core_count[cluster];
-+		set_boot_flag(cpu, 0x2);
-+		exynos_core_power_up(cpu, cluster);
-+	} else if (edcs_use_count[cpu][cluster] != 2) {
-+		/*
-+		 * The only possible values are:
-+		 * 0 = CPU down
-+		 * 1 = CPU (still) up
-+		 * 2 = CPU requested to be up before it had a chance
-+		 *     to actually make itself down.
-+		 * Any other value is a bug.
-+		 */
-+		BUG();
-+	}
-+
-+	arch_spin_unlock(&edcs_lock);
-+	local_irq_enable();
-+
-+	return 0;
-+}
-+static void exynos_power_down(void)
-+{
-+	unsigned int mpidr, cpu, cluster;
-+	bool last_man = false, skip_wfi = false;
-+
-+	mpidr = read_cpuid_mpidr();
-+	cpu = MPIDR_AFFINITY_LEVEL(mpidr, 0);
-+	cluster = MPIDR_AFFINITY_LEVEL(mpidr, 1);
-+
-+	pr_debug("%s: cpu %u cluster %u\n", __func__, cpu, cluster);
-+	BUG_ON(cpu >= EDCS_CPUS_PER_CLUSTER  || cluster >= EDCS_CLUSTERS);
-+
-+	__mcpm_cpu_going_down(cpu, cluster);
-+
-+	arch_spin_lock(&edcs_lock);
-+	BUG_ON(__mcpm_cluster_state(cluster) != CLUSTER_UP);
-+	edcs_use_count[cpu][cluster]--;
-+	if (edcs_use_count[cpu][cluster] == 0) {
-+		--core_count[cluster];
-+		if (core_count[cluster] == 0)
-+			last_man = true;
-+	} else if (edcs_use_count[cpu][cluster] == 1) {
-+		/*
-+		 * A power_up request went ahead of us.
-+		 * Even if we do not want to shut this CPU down,
-+		 * the caller expects a certain state as if the WFI
-+		 * was aborted.  So let's continue with cache cleaning.
-+		 */
-+		skip_wfi = true;
-+	} else
-+		BUG();
-+
-+	if (last_man && __mcpm_outbound_enter_critical(cpu, cluster)) {
-+		arch_spin_unlock(&edcs_lock);
-+
-+		if (read_cpuid_part_number() == ARM_CPU_PART_CORTEX_A15) {
-+			/*
-+			 * On the Cortex-A15 we need to disable
-+			 * L2 prefetching before flushing the cache.
-+			 */
-+			asm volatile(
-+			"mcr	p15, 1, %0, c15, c0, 3\n\t"
-+			"isb\n\t"
-+			"dsb"
-+			: : "r" (0x400));
-+		}
-+
-+		/*
-+		 * We need to disable and flush the whole (L1 and L2) cache.
-+		 * Let's do it in the safest possible way i.e. with
-+		 * no memory access within the following sequence
-+		 * including the stack.
-+		 *
-+		 * Note: fp is preserved to the stack explicitly prior doing
-+		 * this since adding it to the clobber list is incompatible
-+		 * with having CONFIG_FRAME_POINTER=y.
-+		 */
-+		asm volatile(
-+		"str	fp, [sp, #-4]!\n\t"
-+		"mrc	p15, 0, r0, c1, c0, 0	@ get CR\n\t"
-+		"bic	r0, r0, #"__stringify(CR_C)"\n\t"
-+		"mcr	p15, 0, r0, c1, c0, 0	@ set CR\n\t"
-+		"isb\n\t"
-+		"bl	v7_flush_dcache_all\n\t"
-+		"clrex\n\t"
-+		"mrc	p15, 0, r0, c1, c0, 1	@ get AUXCR\n\t"
-+		"bic	r0, r0, #(1 << 6)	@ disable local coherency\n\t"
-+		"mcr	p15, 0, r0, c1, c0, 1	@ set AUXCR\n\t"
-+		"isb\n\t"
-+		"dsb\n\t"
-+		"ldr	fp, [sp], #4"
-+		: : : "r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7",
-+			"r9", "r10", "lr", "memory");
-+
-+		cci_disable_port_by_cpu(mpidr);
-+
-+		__mcpm_outbound_leave_critical(cluster, CLUSTER_DOWN);
-+
-+	} else {
-+		arch_spin_unlock(&edcs_lock);
-+		/*
-+			* We need to disable and flush only the L1 cache.
-+			* Let's do it in the safest possible way as above.
-+		*/
-+		asm volatile(
-+		"str	fp, [sp, #-4]!\n\t"
-+		"mrc	p15, 0, r0, c1, c0, 0	@ get CR\n\t"
-+		"bic	r0, r0, #"__stringify(CR_C)"\n\t"
-+		"mcr	p15, 0, r0, c1, c0, 0	@ set CR\n\t"
-+		"isb\n\t"
-+		"bl	v7_flush_dcache_louis\n\t"
-+		"clrex\n\t"
-+		"mrc	p15, 0, r0, c1, c0, 1	@ get AUXCR\n\t"
-+		"bic	r0, r0, #(1 << 6)	@ disable local coherency\n\t"
-+		"mcr	p15, 0, r0, c1, c0, 1	@ set AUXCR\n\t"
-+		"isb\n\t"
-+		"dsb\n\t"
-+		"ldr	fp, [sp], #4"
-+		: : : "r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7",
-+		      "r9", "r10", "lr", "memory");
-+
-+	}
-+	__mcpm_cpu_down(cpu, cluster);
-+
-+	if (!skip_wfi) {
-+		exynos_core_power_down(cpu, cluster);
-+		wfi();
-+	}
-+}
-+
-+static const struct mcpm_platform_ops exynos_power_ops = {
-+	.power_up	= exynos_power_up,
-+	.power_down	= exynos_power_down,
-+};
-+
-+static void __init edcs_data_init(void)
-+{
-+	unsigned int mpidr, cpu, cluster;
-+
-+	mpidr = read_cpuid_mpidr();
-+	cpu = MPIDR_AFFINITY_LEVEL(mpidr, 0);
-+	cluster = MPIDR_AFFINITY_LEVEL(mpidr, 1);
-+
-+	pr_debug("%s: cpu %u cluster %u\n", __func__, cpu, cluster);
-+	BUG_ON(cpu >= EDCS_CPUS_PER_CLUSTER  || cluster >= EDCS_CLUSTERS);
-+	edcs_use_count[cpu][cluster] = 1;
-+	++core_count[cluster];
-+}
-+
-+/*
-+ * Enable cluster-level coherency, in preparation for turning on the MMU.
-+ */
-+static void __naked edcs_power_up_setup(unsigned int affinity_level)
-+{
-+	asm volatile ("\n"
-+	"b	cci_enable_port_for_self");
-+}
-+
-+static int __init edcs_init(void)
-+{
-+	int ret;
-+	struct device_node *node;
-+
-+	node = of_find_compatible_node(NULL, NULL, "samsung,exynos5410");
-+	if (!node)
-+		return -ENODEV;
-+
-+	if (!cci_probed())
-+		return -ENODEV;
-+
-+	/*
-+	 * Future entries into the kernel can now go
-+	 * through the cluster entry vectors.
-+	 */
-+	__raw_writel(virt_to_phys(mcpm_entry_point),
-+				S5P_VA_SYSRAM_NS + 0x1c);
-+
-+	edcs_data_init();
-+	mcpm_smp_set_ops();
-+
-+	ret = mcpm_platform_register(&exynos_power_ops);
-+	if (!ret) {
-+		mcpm_sync_init(edcs_power_up_setup);
-+		pr_info("EDCS power management initialized\n");
-+	}
-+	return ret;
-+}
-+
-+early_initcall(edcs_init);
--- 
-1.8.1.5
-
+>
+> Will
