@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932175Ab3JNOuh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 10:50:37 -0400
-Received: from mail-bk0-f42.google.com ([209.85.214.42]:62724 "EHLO
-	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932155Ab3JNOue (ORCPT
+	id S1756729Ab3JNOvD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 10:51:03 -0400
+Received: from mail-bk0-f47.google.com ([209.85.214.47]:49766 "EHLO
+	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932125Ab3JNOuc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 10:50:34 -0400
+	Mon, 14 Oct 2013 10:50:32 -0400
 From: Thierry Reding <thierry.reding@gmail.com>
-To: Mark Brown <broonie@kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Jarkko Nikula <jarkko.nikula@linux.intel.com>
+To: Wolfram Sang <wsa@the-dreams.de>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Lars-Peter Clausen <lars@metafoo.de>, Lv Zheng <lv.zheng@intel.com>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: manual merge of the spi tree
-Date: Mon, 14 Oct 2013 16:48:08 +0200
-Message-Id: <1381762088-18880-8-git-send-email-treding@nvidia.com>
+Subject: linux-next: manual merge of the pm tree
+Date: Mon, 14 Oct 2013 16:48:07 +0200
+Message-Id: <1381762088-18880-7-git-send-email-treding@nvidia.com>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1381762088-18880-1-git-send-email-treding@nvidia.com>
 References: <1381762088-18880-1-git-send-email-treding@nvidia.com>
@@ -23,31 +21,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Today's linux-next merge of the spi tree got a conflict in
+Today's linux-next merge of the pm tree (5d5e5df) got conflicts in
 
-	drivers/spi/spi.c
+	drivers/i2c/i2c-core.c
 
-Caused by commits cf9eb39 (spi: Fix modalias for ACPI enumerated SPI devices)
-and 33cf00e (spi: attach/detach SPI device to the ACPI power domain).
+caused by commits 0acc2b3 (i2c: Remove redundant 'driver' field from the
+i2c_client struct) and a76e9bd (i2c: attach/detach I2C client device to
+the ACPI power domain).
 
-I fixed it up (see below). Please verify that the resolution looks good.
+I fixed them up (see below). Please verify that the resolution looks
+good.
 
 Thanks,
 Thierry
 ---
-diff --cc drivers/spi/spi.c
-index 740f9dd,2d29dee..8a0fc92
---- a/drivers/spi/spi.c
-+++ b/drivers/spi/spi.c
-@@@ -1037,10 -1143,8 +1155,10 @@@ static acpi_status acpi_spi_add_device(
-  		return AE_OK;
-  	}
+diff --cc drivers/i2c/i2c-core.c
+index 111b2c6,03a8ae6..5923cfa
+--- a/drivers/i2c/i2c-core.c
++++ b/drivers/i2c/i2c-core.c
+@@@ -254,10 -254,13 +254,12 @@@ static int i2c_device_probe(struct devi
+  					client->flags & I2C_CLIENT_WAKE);
+  	dev_dbg(dev, "probe\n");
   
- +	adev->power.flags.ignore_parent = true;
-- 	strlcpy(spi->modalias, dev_name(&adev->dev), sizeof(spi->modalias));
-+ 	strlcpy(spi->modalias, acpi_device_hid(adev), sizeof(spi->modalias));
-  	if (spi_add_device(spi)) {
- +		adev->power.flags.ignore_parent = false;
-  		dev_err(&master->dev, "failed to add SPI device %s from ACPI\n",
-  			dev_name(&adev->dev));
-  		spi_dev_put(spi);
++ 	acpi_dev_pm_attach(&client->dev, true);
+  	status = driver->probe(client, i2c_match_id(driver->id_table, client));
+- 	if (status)
++ 	if (status) {
+ -		client->driver = NULL;
+  		i2c_set_clientdata(client, NULL);
+- 
++ 		acpi_dev_pm_detach(&client->dev, true);
++ 	}
+  	return status;
+  }
+  
+@@@ -278,9 -281,11 +280,9 @@@ static int i2c_device_remove(struct dev
+  		dev->driver = NULL;
+  		status = 0;
+  	}
+ -	if (status == 0) {
+ -		client->driver = NULL;
+ +	if (status == 0)
+  		i2c_set_clientdata(client, NULL);
+- 
+ -	}
++ 	acpi_dev_pm_detach(&client->dev, true);
+  	return status;
+  }
+  
