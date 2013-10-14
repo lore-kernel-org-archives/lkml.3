@@ -1,127 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755307Ab3JNOKb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 10:10:31 -0400
-Received: from s3.sipsolutions.net ([144.76.43.152]:58873 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750738Ab3JNOK3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 10:10:29 -0400
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rob Landley <rob@landley.net>, Randy Dunlap <rdunlap@infradead.org>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH] kernel-doc: improve "no structured comments found" error
-Date: Mon, 14 Oct 2013 16:10:22 +0200
-Message-Id: <1381759822-1218-1-git-send-email-johannes@sipsolutions.net>
-X-Mailer: git-send-email 1.8.4.rc3
+	id S1755589Ab3JNOMl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 10:12:41 -0400
+Received: from mail.eperm.de ([89.247.134.16]:42904 "EHLO mail.eperm.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751018Ab3JNOMk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 10:12:40 -0400
+From: Stephan Mueller <smueller@chronox.de>
+To: Sandy Harris <sandyinchina@gmail.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, LKML <linux-kernel@vger.kernel.org>,
+        linux-crypto@vger.kernel.org
+Subject: Re: Fwd: [PATCH] CPU Jitter RNG: inclusion into kernel crypto API and /dev/random
+Date: Mon, 14 Oct 2013 16:12:24 +0200
+Message-ID: <5084508.OCAIYQezeq@tauon>
+User-Agent: KMail/4.11.2 (Linux/3.11.3-201.fc19.x86_64; KDE/4.11.2; x86_64; ; )
+In-Reply-To: <CACXcFm=3Ee1+HGYRpsjhFMwqn2t15qAZNnMpZ8jOsE_HkB2CPg@mail.gmail.com>
+References: <2579337.FPgJGgHYdz@tauon> <CACXcFm=_jmeKe2YYbHDi-jTGX-23hDsDeu_weWQkr2F_FpE_6g@mail.gmail.com> <CACXcFm=3Ee1+HGYRpsjhFMwqn2t15qAZNnMpZ8jOsE_HkB2CPg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johannes Berg <johannes.berg@intel.com>
+Am Montag, 14. Oktober 2013, 09:38:34 schrieb Sandy Harris:
 
-When using '!Ffile function' in a docbook template, and the function
-no longer exists, you get a "no structured comments found" error from
-the kernel-doc processing script. It's useful to know which functions
-it was looking for, so print them out in this case. Also do the same
-for '!Pfile doc-section'
+Hi Sandy,
 
-The same error also happens when using '!Efile' when some exported
-functions aren't documented (in the same file.) There's a very large
-number of such functions though, so don't print the message in this
-case -- right now it would give ~850 messages.
+>Stephan Mueller <smueller@chronox.de> wrote:
+>
+>>>If what you are doing is not a parity computation, then you need a
+>>>better description so people like me do not misread it.
+>>>
+>> It is not a parity computation that the folding loop performs. The
+>> code XORs each individual bit of the 64 bit stream with each other,
+>> whereas your cited document implies an ANDing of the bits (see
+>> section "Computing parity the naive way" of the cited document).
+>
+>No. The AND is used in a trick; x&(x-1) gives a value with exactly
+>one bit set, the lowest bit set in x. The code there just counts that
+>way for efficiency.
+>
+>Parity asks whether the number of set bits is odd or even. For
+>example this is another way to find the parity of x.
+>
+>   for( p = 0; x ; x >>= 1 )
+>         p ^= (x&1) ;
+>
+>From your description (I haven't looked at the code) you are
+>computing parity. If so, say that. If not, explain.
 
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
----
-Just needed this patch again, Rob previously said he had no objection
-but also didn't want to merge the patch.
+I re-read the referenced documentation. Yes, what I do is a parity 
+calculation. But I do not want to think that way, although technically 
+it is.
 
-Andrew, I'm thus sending it to you as a last resort. If you know a
-better maintainer, I'm all ears.
----
- scripts/docproc.c  | 14 +++++++++-----
- scripts/kernel-doc |  6 ++++++
- 2 files changed, 15 insertions(+), 5 deletions(-)
+The reason and the goal of the implementation is the following: To 
+maintain a mathematical model in which the entropy is preserved, I can 
+only perform the following operations:
 
-diff --git a/scripts/docproc.c b/scripts/docproc.c
-index 4cfdc17..2b69eaf 100644
---- a/scripts/docproc.c
-+++ b/scripts/docproc.c
-@@ -72,6 +72,7 @@ FILELINE * docsection;
- #define FUNCTION      "-function"
- #define NOFUNCTION    "-nofunction"
- #define NODOCSECTIONS "-no-doc-sections"
-+#define SHOWNOTFOUND  "-show-not-found"
- 
- static char *srctree, *kernsrctree;
- 
-@@ -294,6 +295,7 @@ static void singfunc(char * filename, char * line)
-         int startofsym = 1;
- 	vec[idx++] = KERNELDOC;
- 	vec[idx++] = DOCBOOK;
-+	vec[idx++] = SHOWNOTFOUND;
- 
-         /* Split line up in individual parameters preceded by FUNCTION */
-         for (i=0; line[i]; i++) {
-@@ -325,7 +327,8 @@ static void singfunc(char * filename, char * line)
-  */
- static void docsect(char *filename, char *line)
- {
--	char *vec[6]; /* kerneldoc -docbook -function "section" file NULL */
-+	/* kerneldoc -docbook -show-not-found -function "section" file NULL */
-+	char *vec[7];
- 	char *s;
- 
- 	for (s = line; *s; s++)
-@@ -341,10 +344,11 @@ static void docsect(char *filename, char *line)
- 
- 	vec[0] = KERNELDOC;
- 	vec[1] = DOCBOOK;
--	vec[2] = FUNCTION;
--	vec[3] = line;
--	vec[4] = filename;
--	vec[5] = NULL;
-+	vec[2] = SHOWNOTFOUND;
-+	vec[3] = FUNCTION;
-+	vec[4] = line;
-+	vec[5] = filename;
-+	vec[6] = NULL;
- 	exec_kernel_doc(vec);
- }
- 
-diff --git a/scripts/kernel-doc b/scripts/kernel-doc
-index 4305b2f..dbd3e1e 100755
---- a/scripts/kernel-doc
-+++ b/scripts/kernel-doc
-@@ -257,6 +257,7 @@ my $man_date = ('January', 'February', 'March', 'April', 'May', 'June',
- 		'July', 'August', 'September', 'October',
- 		'November', 'December')[(localtime)[4]] .
-   " " . ((localtime)[5]+1900);
-+my $show_not_found = 0;
- 
- # Essentially these are globals.
- # They probably want to be tidied up, made more localised or something.
-@@ -369,6 +370,8 @@ while ($ARGV[0] =~ m/^-(.*)/) {
- 	usage();
-     } elsif ($cmd eq '-no-doc-sections') {
- 	    $no_doc_sections = 1;
-+    } elsif ($cmd eq '-show-not-found') {
-+	$show_not_found = 1;
-     }
- }
- 
-@@ -2536,6 +2539,9 @@ sub process_file($) {
-     }
-     if ($initial_section_counter == $section_counter) {
- 	print STDERR "Warning(${file}): no structured comments found\n";
-+	if (($function_only == 1) && ($show_not_found == 1)) {
-+	    print STDERR "    Was looking for '$_'.\n" for keys %function_table;
-+	}
- 	if ($output_mode eq "xml") {
- 	    # The template wants at least one RefEntry here; make one.
- 	    print "<refentry>\n";
--- 
-1.8.4.rc3
+1. Use of concatenation which in terms of entropy implies that two 
+values concatenated with each other add the entropy the two values 
+contain. For example: string a contains 4 bits of entropy, string b 
+contains 6 bits of entropy. Now, when concatenating both, I get 10 bits 
+of entropy in the combined string.
 
+2. The use of XOR implies that the resulting value has the maximum 
+entropy of the two individual strings. With the same example above, a 
+XOR b implies that the resulting string has 6 bits of entropy.
+
+Any other operation will loose entropy in a way that is not easily to be 
+modeled.
+
+Now, back to the folding loop: I know that the lower bits have some 
+entropy. When collapsing them into one single bit, I "slice" the 64 bit 
+timer value into 64 1 bit values and XOR the 64 bit values together. The 
+goal is to preserve the entropy each bit holds.
+
+(PS: I am aware that in case none of the individual bits would contain 
+one full bit of entropy, the folding operation may --mathematically 
+spoken-- not deliver one full bit of entropy. However, after speaking 
+with a mathematician, that slight inconsistency is ok, if I can show 
+that the distribution of the folded bit is 50% zeros and 50% ones. That 
+is what I did in section 5.2.1. Thus, the conclusion is that I receive 
+one bit of entropy after the folding loop.)
+
+Yes, that is equal to parity calculation. But the reference to a parity 
+calculation is not defined when you want to apply a mathematical model 
+to entropy maintenance. Thus, I would rather like to have a consistent 
+design description that I can easily apply to the entropy discussion.
+
+>
+>>>This appears to be missing the cryptographically strong
+>>>mixing step which most RNG code includes. If that is
+>>>what you are doing, you need to provide some strong
+>>>arguments to justify it.
+>>>
+>> The key here is that there is no cryptographic function needed for
+>> mixing as in fact I am not really mixing things. I am simply
+>> concatenating the new bit to the previously obtained bits. That is
+>> it.
+>> 
+>> The argument for doing that is that the time deltas are independent
+>> of
+>> each other. ...
+>> 
+>> ... each bit from the folding operation therefore contains
+>> one bit of entropy. So, why should I mix it even further with some
+>> crypto function?
+>
+>That does make sense, but in security code I tend to prefer a
+>belt-and-suspenders approach. Even believing that each
+>individual bit is truly random, I'd still mix some just in case.
+
+I am with you on the potential for further mixing. However, please note 
+that the standard hashes are all surjective and not bijective. Thus, 
+they implicitly loose entropy (albeit it is not much). Therefore, a good 
+mixing function would be a symmetric cipher.
+
+Also, I tried to have my code portable to a large variety of target 
+systems. All of them have crypto libraries with a great number of cipher 
+implementation, but which suffer from the lack of entropy. Thus, I 
+concluded that I do not want to re-invent the wheel by reimplementing 
+some cipher, but only provide what is missing: a decentral entropy 
+source that delivers entropy on demand in kernel and user space.
+
+Who would be a user of the CPU Jitter RNG? I hardly believe that a 
+normal end user would use it, but rather it would be provided via some 
+crypto lib. And the authors of a crypto lib surely know how to handle 
+the seed source (I hope).
+
+This all is the reason why I implemented the different links to various 
+crypto libraries, where the kernel crypto API is one of it. The CPU 
+Jitter RNG is no a stand-alone system, but always linked with a DRNG 
+that is frequently seeded by the CPU Jitter RNG.
+>
+>> Can you please help me understand why you think that a whitening
+>> function (cryptographic or not) is needed in the case of the CPU
+>> Jitter RNG, provided that I can show that each individual bit coming
+>> from the folding operation has one bit of entropy?
+>
+>Basically, sheer paranoia. I'd mix and whiten just on general
+>principles. Since efficiency is not a large concern, there is little
+>reason not to.
+
+I am ok with that, when you consider the surjective/bijective argument 
+above. Still, as mentioned above, I think that will be covered by the 
+"users" of the CPU jitter RNG.
+>
+>On the other hand, most RNGs use a hash because they need
+>to distill some large amount of low-entropy input into a smaller
+>high-entropy output. With high input entropy, you do not need
+>the hash and can choose some cheaper mixer.
+
+IMHO, that decision is left to the user of the code. Some users are 
+forced to use some DRNGs (e.g. FIPS comes to mind). Thus, I do not want 
+to do things that will need to be re-done in a slightly different way 
+again. This is what I see as inefficient complexity that I truly want to 
+avoid.
+>
+>>>> I will present the RNG at the Linux Symposium in Ottawa this year.
+>>>> ....
+>>>
+>>>I live in Ottawa, ...
+>>>
+>> As mentioned before, I would really like to meet you there to have a
+>> cup of coffee over that matter.
+>
+>Sounds good. Ted, will you be around?
+
+
+Thanks
+Stephan
