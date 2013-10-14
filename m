@@ -1,79 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756031Ab3JNLD4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 07:03:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7341 "EHLO mx1.redhat.com"
+	id S1756068Ab3JNLHX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 07:07:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65310 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755306Ab3JNLDz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 07:03:55 -0400
-Date: Mon, 14 Oct 2013 14:06:21 +0300
+	id S1753874Ab3JNLHW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 07:07:22 -0400
+Date: Mon, 14 Oct 2013 14:09:51 +0300
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: Jason Wang <jasowang@redhat.com>
 Cc: virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, rusty@rustcorp.com.au,
-        Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Subject: Re: [PATCH net 1/2] virtio-net: don't respond to cpu hotplug
- notifier if we're not ready
-Message-ID: <20131014110621.GF30954@redhat.com>
+        linux-kernel@vger.kernel.org, rusty@rustcorp.com.au
+Subject: Re: [PATCH net 2/2] virtio-net: refill only when device is up during
+ setting queues
+Message-ID: <20131014110951.GG30954@redhat.com>
 References: <1381744595-26881-1-git-send-email-jasowang@redhat.com>
+ <1381744595-26881-2-git-send-email-jasowang@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1381744595-26881-1-git-send-email-jasowang@redhat.com>
+In-Reply-To: <1381744595-26881-2-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 14, 2013 at 05:56:34PM +0800, Jason Wang wrote:
-> We're trying to re-configure the affinity unconditionally in cpu hotplug
-> callback. This may lead the issue during resuming from s3/s4 since
+On Mon, Oct 14, 2013 at 05:56:35PM +0800, Jason Wang wrote:
+> We used to schedule the refill work unconditionally after changing the
+> number of queues. This may lead an issue if the device is not
+> up. Since we only try to cancel the work in ndo_stop(), this may cause
+> the refill work still work after removing the device. Fix this by only
+> schedule the work when device is up.
 > 
-> - virt queues haven't been allocated at that time.
-> - it's unnecessary since thaw method will re-configure the affinity.
-> 
-> Fix this issue by checking the config_enable and do nothing is we're not ready.
-> 
-> The bug were introduced by commit 8de4b2f3ae90c8fc0f17eeaab87d5a951b66ee17
-> (virtio-net: reset virtqueue affinity when doing cpu hotplug).
+> The bug were introduce by commit 9b9cd8024a2882e896c65222aa421d461354e3f2.
+> (virtio-net: fix the race between channels setting and refill)
 > 
 > Cc: Rusty Russell <rusty@rustcorp.com.au>
 > Cc: Michael S. Tsirkin <mst@redhat.com>
-> Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>
 > Signed-off-by: Jason Wang <jasowang@redhat.com>
 
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
+It bothers me that we look at the flag without any
+locks here.
+I think we'll need to take the rtnl lock at least
+on restore.
 
 > ---
-> The patch is need for 3.8 and above.
+> The patch were need for 3.10 and above.
 > ---
->  drivers/net/virtio_net.c | 8 ++++++++
->  1 file changed, 8 insertions(+)
+>  drivers/net/virtio_net.c | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
 > 
 > diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> index defec2b..c4bc1cc 100644
+> index c4bc1cc..92f0096 100644
 > --- a/drivers/net/virtio_net.c
 > +++ b/drivers/net/virtio_net.c
-> @@ -1116,6 +1116,11 @@ static int virtnet_cpu_callback(struct notifier_block *nfb,
->  {
->  	struct virtnet_info *vi = container_of(nfb, struct virtnet_info, nb);
->  
-> +	mutex_lock(&vi->config_lock);
-> +
-> +	if (!vi->config_enable)
-> +		goto done;
-> +
->  	switch(action & ~CPU_TASKS_FROZEN) {
->  	case CPU_ONLINE:
->  	case CPU_DOWN_FAILED:
-> @@ -1128,6 +1133,9 @@ static int virtnet_cpu_callback(struct notifier_block *nfb,
->  	default:
->  		break;
+> @@ -938,7 +938,9 @@ static int virtnet_set_queues(struct virtnet_info *vi, u16 queue_pairs)
+>  		return -EINVAL;
+>  	} else {
+>  		vi->curr_queue_pairs = queue_pairs;
+> -		schedule_delayed_work(&vi->refill, 0);
+> +		/* virtnet_open() will refill when device is going to up. */
+> +		if (dev->flags & IFF_UP)
+> +			schedule_delayed_work(&vi->refill, 0);
 >  	}
-> +
-> +done:
-> +	mutex_unlock(&vi->config_lock);
->  	return NOTIFY_OK;
->  }
 >  
+>  	return 0;
 > -- 
 > 1.8.1.2
