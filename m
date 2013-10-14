@@ -1,160 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757055Ab3JNROI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 13:14:08 -0400
-Received: from mail-db9lp0248.outbound.messaging.microsoft.com ([213.199.154.248]:25218
-	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756605Ab3JNROG (ORCPT
+	id S932132Ab3JNRPi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 13:15:38 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:48772 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756887Ab3JNRPh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 13:14:06 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -5
-X-BigFish: VS-5(zz98dI9371I936eI542I1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275bh8275dhz2dh2a8h839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h1155h)
-Message-ID: <1381770828.7979.606.camel@snotra.buserror.net>
-Subject: Re: [PATCH 3/4] VFIO: pci: amend vfio-pci for explicit binding via
- sysfs only
-From: Scott Wood <scottwood@freescale.com>
-To: Yoder Stuart-B08248 <B08248@freescale.com>
-CC: Kim Phillips <kim.phillips@linaro.org>,
-        Wood Scott-B07421 <B07421@freescale.com>,
-        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
-        Bhushan Bharat-R65777 <R65777@freescale.com>,
-        "christoffer.dall@linaro.org" <christoffer.dall@linaro.org>,
+	Mon, 14 Oct 2013 13:15:37 -0400
+Date: Mon, 14 Oct 2013 18:15:41 +0100
+From: Morten Rasmussen <morten.rasmussen@arm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "mingo@kernel.org" <mingo@kernel.org>, "pjt@google.com" <pjt@google.com>,
+        "arjan@linux.intel.com" <arjan@linux.intel.com>,
+        "rjw@sisk.pl" <rjw@sisk.pl>,
+        "dirk.j.brandewie@intel.com" <dirk.j.brandewie@intel.com>,
+        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
+        "alex.shi@linaro.org" <alex.shi@linaro.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "efault@gmx.de" <efault@gmx.de>, "corbet@lwn.net" <corbet@lwn.net>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "a.motakis@virtualopensystems.com" <a.motakis@virtualopensystems.com>,
-        "agraf@suse.de" <agraf@suse.de>,
-        Sethi Varun-B16395 <B16395@freescale.com>,
-        "peter.maydell@linaro.org" <peter.maydell@linaro.org>,
-        "santosh.shukla@linaro.org" <santosh.shukla@linaro.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Date: Mon, 14 Oct 2013 12:13:48 -0500
-In-Reply-To: <9F6FE96B71CF29479FF1CDC8046E15036E2CB8@039-SN1MPN1-002.039d.mgd.msft.net>
-References: <1381418830.7979.405.camel@snotra.buserror.net>
-	 <1381472840-3470-1-git-send-email-kim.phillips@linaro.org>
-	 <1381472840-3470-3-git-send-email-kim.phillips@linaro.org>
-	 <1381524220.7979.560.camel@snotra.buserror.net>
-	 <20131011181717.e4051736cf42c5a647222941@linaro.org>
-	 <9F6FE96B71CF29479FF1CDC8046E15036E2CB8@039-SN1MPN1-002.039d.mgd.msft.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
+Subject: Re: [RFC][PATCH 0/7] Power-aware scheduling v2
+Message-ID: <20131014171541.GP31039@e103034-lin>
+References: <1381511957-29776-1-git-send-email-morten.rasmussen@arm.com>
+ <20131014133234.GM3081@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+In-Reply-To: <20131014133234.GM3081@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 14 Oct 2013 17:15:33.0346 (UTC) FILETIME=[FDACB420:01CEC900]
+X-MC-Unique: 113101418153405101
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-10-14 at 08:01 -0500, Yoder Stuart-B08248 wrote:
+On Mon, Oct 14, 2013 at 02:32:34PM +0100, Peter Zijlstra wrote:
+> On Fri, Oct 11, 2013 at 06:19:10PM +0100, Morten Rasmussen wrote:
+> > Hi,
+> > 
+> > I have revised the previous power scheduler proposal[1] trying to address as
+> > many of the comments as possible. The overall idea was discussed at LPC[2,3].
+> > The revised design has removed the power scheduler and replaced it with a high
+> > level power driver interface. An interface that allows the scheduler to query
+> > the power driver for information and provide hints to guide power management
+> > decisions in the power driver.
+> > 
+> > The power driver is going to be a unified platform power driver that can
+> > replace cpufreq and cpuidle drivers. Generic power policies will be optional
+> > helper functions called from the power driver. Platforms may choose to
+> > implement their own policies as part of their power driver.
+> > 
+> > This RFC series prototypes a part of the power driver interface (cpu capacity
+> > hints) and shows how they can be used from the scheduler. More extensive use of
+> > the power driver hints and queries is left for later. The focus for now is the
+> > power driver interface. The patch series includes a power driver/cpufreq
+> > governor that can use existing cpufreq drivers as backend. It has been tested
+> > (not thoroughly) on ARM TC2. The cpufreq governor power driver implementation
+> > is rather horrible, but it illustrates how the power driver interface can be
+> > used. Native power drivers is on the todo list.
+> > 
+> > The power driver interface is still missing quite a few calls to handle: Idle,
+> > adding extra information to the sched_domain hierarchy to guide scheduling
+> > decisions (packing), and possibly scaling of tracked load to compensate for
+> > frequency changes and asymmetric systems (big.LITTLE).
+> > 
+> > This set is based on 3.11. I have done ARM TC2 testing based on linux-linaro
+> > 2013.08[4] to get cpufreq support for TC2.
 > 
-> > -----Original Message-----
-> > From: Kim Phillips [mailto:kim.phillips@linaro.org]
-> > Sent: Friday, October 11, 2013 6:17 PM
-> > To: Wood Scott-B07421
-> > Cc: Bhushan Bharat-R65777; Wood Scott-B07421; Yoder Stuart-B08248;
-> > christoffer.dall@linaro.org; alex.williamson@redhat.com; linux-
-> > kernel@vger.kernel.org; a.motakis@virtualopensystems.com; agraf@suse.de;
-> > Sethi Varun-B16395; peter.maydell@linaro.org; santosh.shukla@linaro.org;
-> > kvm@vger.kernel.org; gregkh@linuxfoundation.org
-> > Subject: Re: [PATCH 3/4] VFIO: pci: amend vfio-pci for explicit binding
-> > via sysfs only
-> > 
-> > On Fri, 11 Oct 2013 15:43:40 -0500
-> > Scott Wood <scottwood@freescale.com> wrote:
-> > 
-> > > On Fri, 2013-10-11 at 01:27 -0500, Kim Phillips wrote:
-> > > > Force the vfio-pci driver to only be bound explicitly via sysfs to
-> > avoid
-> > > > conflics with other drivers in the event of a hotplug.
-> > > >
-> > > > Signed-off-by: Kim Phillips <kim.phillips@linaro.org>
-> > > > ---
-> > > >  drivers/vfio/pci/vfio_pci.c | 3 +++
-> > > >  1 file changed, 3 insertions(+)
-> > > >
-> > > > diff --git a/drivers/vfio/pci/vfio_pci.c
-> > b/drivers/vfio/pci/vfio_pci.c
-> > > > index 6ab71b9..bdd7833 100644
-> > > > --- a/drivers/vfio/pci/vfio_pci.c
-> > > > +++ b/drivers/vfio/pci/vfio_pci.c
-> > > > @@ -901,6 +901,9 @@ static struct pci_driver vfio_pci_driver = {
-> > > >  	.probe		= vfio_pci_probe,
-> > > >  	.remove		= vfio_pci_remove,
-> > > >  	.err_handler	= &vfio_err_handlers,
-> > > > +	.driver = {
-> > > > +		.sysfs_bind_only = true,
-> > > > +	},
-> > > >  };
-> > > >
-> > > >  static void __exit vfio_pci_cleanup(void)
-> > >
-> > > You also need to add a PCI_ANY_ID match in order to be able to get rid
-> > > of the new_id usage.
-> > 
-> > thanks - see below.
-> > 
-> > Can someone with a PCI bus test this?  Bharat?
-> > 
-> > Kim
-> > 
-> > From a8d6c12f2ec763c2ac7fd384a3397c370cc1b932 Mon Sep 17 00:00:00 2001
-> > From: Kim Phillips <kim.phillips@linaro.org>
-> > Date: Thu, 10 Oct 2013 22:16:34 -0500
-> > Subject: [PATCH 3/4 v2] VFIO: pci: amend vfio-pci for explicit binding
-> > via sysfs
-> >  only
-> > 
-> > Force the vfio-pci driver to only be bound explicitly via sysfs to avoid
-> > conflics with other drivers in the event of a hotplug.  Also replace
-> > the only dynamic ids assignment with a table with a single PCI_ANY_ID
-> > entry since writing the sysfs bind file without having to specify ids
-> > via the new_id file first should no longer be necessary.
-> > 
-> > Signed-off-by: Kim Phillips <kim.phillips@linaro.org>
-> > ---
-> >  drivers/vfio/pci/vfio_pci.c | 12 +++++++++++-
-> >  1 file changed, 11 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/vfio/pci/vfio_pci.c b/drivers/vfio/pci/vfio_pci.c
-> > index 6ab71b9..c5b434f 100644
-> > --- a/drivers/vfio/pci/vfio_pci.c
-> > +++ b/drivers/vfio/pci/vfio_pci.c
-> > @@ -895,12 +895,22 @@ static struct pci_error_handlers vfio_err_handlers
-> > = {
-> >  	.error_detected = vfio_pci_aer_err_detected,
-> >  };
-> > 
-> > +static DEFINE_PCI_DEVICE_TABLE(vfio_pci_id_table) = {
-> > +        { PCI_DEVICE(PCI_ANY_ID, PCI_ANY_ID) },
-> > +        { 0 }
-> > +};
-> > +
-> > +MODULE_DEVICE_TABLE(pci, vfio_pci_id_table);
-> > +
-> >  static struct pci_driver vfio_pci_driver = {
-> >  	.name		= "vfio-pci",
-> > -	.id_table	= NULL, /* only dynamic ids */
-> > +	.id_table	= vfio_pci_id_table, /* no dynamic ids */
-> >  	.probe		= vfio_pci_probe,
-> >  	.remove		= vfio_pci_remove,
-> >  	.err_handler	= &vfio_err_handlers,
-> > +	.driver = {
-> > +		.sysfs_bind_only = true, /* bind only via sysfs */
-> > +	},
-> >  };
-> > 
-> >  static void __exit vfio_pci_cleanup(void)
+> What I'm missing is a general overview of why what and how.
 > 
-> sysfs bind only seems orthogonal to PCI_ANY_ID...I would have split
-> those into 2 different patches.
+> In particular; how does this proposal lead to power savings. Is there a
+> mathematical model that supports this framework? Something where if you
+> give it a task set with global utilisation < 1 (ie. there's idle time),
+> it results in less power used.
 
-The mechanisms are orthogonal, but the change in use case is not.
-sysfs_bind_only is required for PCI_ANY_ID to be safely used here.  I
-don't see a huge need to split them, but if they are split then
-sysfs_bind_only must be first.
+It is not there yet. What I'm proposing here is just the interface with
+some very simple examples of how they can be used. It is not the
+complete set of hooks, but a starting point. In the first round of
+discussions it was clear that it is quite important to find an interface
+that can work for everyone. To find a good power optimization model we
+first need to know what information the platform (represented by the
+power driver) can provide.
 
--Scott
+With guidance from the power driver about what level performance we can
+expect from a cpu, and possibly also the power cost, we can make better
+load-balancing decisions. We can add task packing support and let the
+platform decide the degree of packing that meets the power/performance
+target.
 
+> 
+> Also, how does this proposal deal with cpufreq's fundamental broken
+> approach to SMP? Afaict nothing considers the effect of one cpu upon
+> another -- something which isn't true at all.
 
+If you are referring to not doing anything clever with the affected cpus
+in the power driver then yes. I doesn't do anything clever at the
+moment. However, the go_faster/slower() interface would allow the power
+driver to refuse increasing the frequency if the power cost can't be
+justified for some reason. Using the power driver interface the
+scheduler will know this and be able to try a different balance. Spread
+load to other cpus in the same frequency domain that are less loaded, if
+possible.
+
+> 
+> In fact, I don't see anything except a random bunch of hooks without an
+> over-all picture of how to get less power used.
+
+I will follow up with a better description of the overall picture. The
+slides I linked to are not really self-explaining.
+
+Thanks,
+Morten
 
