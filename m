@@ -1,117 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758999Ab3JNVD4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 17:03:56 -0400
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:62231 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932203Ab3JNVC6 (ORCPT
+	id S1759033Ab3JNVEX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 17:04:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43259 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759015Ab3JNVEU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 17:02:58 -0400
-From: Marek Belisko <marek@goldelico.com>
-To: tony@atomide.com, linux@arm.linux.org.uk, tomi.valkeinen@ti.com,
-        plagnioj@jcrosoft.com
-Cc: linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        neilb@suse.de, hns@goldelico.com, Marek Belisko <marek@goldelico.com>
-Subject: [PATCH 2/3] video: venc: Add new callback and handling for bypass and acbias setup.
-Date: Mon, 14 Oct 2013 23:02:34 +0200
-Message-Id: <1381784555-18344-3-git-send-email-marek@goldelico.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1381784555-18344-1-git-send-email-marek@goldelico.com>
-References: <1381784555-18344-1-git-send-email-marek@goldelico.com>
+	Mon, 14 Oct 2013 17:04:20 -0400
+Date: Mon, 14 Oct 2013 14:04:19 -0700
+From: greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Cc: "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: ARC fixes backport for stable 3.10
+Message-ID: <20131014210419.GA12262@kroah.com>
+References: <525BA41B.4000109@synopsys.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <525BA41B.4000109@synopsys.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add new callback to set bypass and acbias. During venc enble disable those
-bit are updated in devconf1 register.
+On Mon, Oct 14, 2013 at 01:28:19PM +0530, Vineet Gupta wrote:
+> Hi Greg,
+> 
+> Can you please apply the following mainline commits to your queue for next 3.10
+> stable, in that order.
+> 
+> e11a3d063c18 ARC: SMP failed to boot due to missing IVT setup
 
-Signed-off-by: Marek Belisko <marek@goldelico.com>
----
- drivers/video/omap2/dss/venc.c | 21 +++++++++++++++++++++
- include/video/omapdss.h        |  2 ++
- 2 files changed, 23 insertions(+)
+I don't know what this git commit id is, should that be
+c3567f8a359b7917dcffa442301f88ed0a75211f?  If so, I've now applied it,
+if not, please let me know.
 
-diff --git a/drivers/video/omap2/dss/venc.c b/drivers/video/omap2/dss/venc.c
-index 5f88ac4..17bd45b 100644
---- a/drivers/video/omap2/dss/venc.c
-+++ b/drivers/video/omap2/dss/venc.c
-@@ -34,6 +34,7 @@
- #include <linux/platform_device.h>
- #include <linux/regulator/consumer.h>
- #include <linux/pm_runtime.h>
-+#include <linux/omap-tvout.h>
- 
- #include <video/omapdss.h>
- 
-@@ -303,6 +304,8 @@ static struct {
- 	struct omap_video_timings timings;
- 	enum omap_dss_venc_type type;
- 	bool invert_polarity;
-+	bool bypass;
-+	bool acbias;
- 
- 	struct omap_dss_device output;
- } venc;
-@@ -455,6 +458,9 @@ static int venc_power_on(struct omap_dss_device *dssdev)
- 
- 	venc_write_reg(VENC_OUTPUT_CONTROL, l);
- 
-+	/* apply bypass and acbias */
-+	update_bypass_acbias(venc.bypass, venc.acbias);
-+
- 	dss_mgr_set_timings(mgr, &venc.timings);
- 
- 	r = regulator_enable(venc.vdda_dac_reg);
-@@ -485,6 +491,9 @@ static void venc_power_off(struct omap_dss_device *dssdev)
- 	venc_write_reg(VENC_OUTPUT_CONTROL, 0);
- 	dss_set_dac_pwrdn_bgz(0);
- 
-+	/* clear bypass and acbias */
-+	update_bypass_acbias(false, false);
-+
- 	dss_mgr_disable(mgr);
- 
- 	regulator_disable(venc.vdda_dac_reg);
-@@ -629,6 +638,17 @@ static void venc_invert_vid_out_polarity(struct omap_dss_device *dssdev,
- 	mutex_unlock(&venc.venc_lock);
- }
- 
-+static void venc_bypass_and_acbias(struct omap_dss_device *dssdev,
-+		bool bypass, bool acbias)
-+{
-+	mutex_lock(&venc.venc_lock);
-+
-+	venc.bypass = bypass;
-+	venc.acbias = acbias;
-+
-+	mutex_unlock(&venc.venc_lock);
-+}
-+
- static int venc_init_regulator(void)
- {
- 	struct regulator *vdda_dac;
-@@ -777,6 +797,7 @@ static const struct omapdss_atv_ops venc_ops = {
- 
- 	.set_type = venc_set_type,
- 	.invert_vid_out_polarity = venc_invert_vid_out_polarity,
-+	.bypass_and_acbias = venc_bypass_and_acbias,
- 
- 	.set_wss = venc_set_wss,
- 	.get_wss = venc_get_wss,
-diff --git a/include/video/omapdss.h b/include/video/omapdss.h
-index 3d7c51a..54a185f 100644
---- a/include/video/omapdss.h
-+++ b/include/video/omapdss.h
-@@ -607,6 +607,8 @@ struct omapdss_atv_ops {
- 		enum omap_dss_venc_type type);
- 	void (*invert_vid_out_polarity)(struct omap_dss_device *dssdev,
- 		bool invert_polarity);
-+	void (*bypass_and_acbias)(struct omap_dss_device *dssdev,
-+		bool bypass, bool acbias);
- 
- 	int (*set_wss)(struct omap_dss_device *dssdev, u32 wss);
- 	u32 (*get_wss)(struct omap_dss_device *dssdev);
--- 
-1.8.1.2
+thanks,
 
+greg k-h
