@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756574Ab3JNMs6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 08:48:58 -0400
-Received: from eu1sys200aog122.obsmtp.com ([207.126.144.153]:52889 "EHLO
-	eu1sys200aog122.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755990Ab3JNMsy (ORCPT
+	id S1756553Ab3JNMs5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 08:48:57 -0400
+Received: from eu1sys200aog103.obsmtp.com ([207.126.144.115]:60058 "EHLO
+	eu1sys200aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754583Ab3JNMsx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 08:48:54 -0400
+	Mon, 14 Oct 2013 08:48:53 -0400
 From: Maxime COQUELIN <maxime.coquelin@st.com>
 To: Wolfram Sang <wsa@the-dreams.de>, srinivas.kandagatla@st.com,
         Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
@@ -20,77 +20,76 @@ To: Wolfram Sang <wsa@the-dreams.de>, srinivas.kandagatla@st.com,
 Cc: stephen.gallimore@st.com, stuart.menefy@st.com,
         Lee Jones <lee.jones@linaro.org>, gabriel.fernandez@st.com,
         Maxime Coquelin <maxime.coquelin@st.com>
-Subject: [PATCH v5 0/4] Add I2C support to ST SoCs
-Date: Mon, 14 Oct 2013 14:46:48 +0200
-Message-Id: <1381754813-4679-1-git-send-email-maxime.coquelin@st.com>
+Subject: [PATCH v5 4/4] ARM: STi: Add I2C config to B2000 and B2020 boards
+Date: Mon, 14 Oct 2013 14:46:52 +0200
+Message-Id: <1381754813-4679-5-git-send-email-maxime.coquelin@st.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1381754813-4679-1-git-send-email-maxime.coquelin@st.com>
+References: <1381754813-4679-1-git-send-email-maxime.coquelin@st.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The goal of this series is to add I2C support to ST SoCs.
-The DT definition is added for STiH415 and STiH416 SoCs on
-B2000 and B2020 boards.
-
-The series has been tested working on STiH416-B2020 board.
-It applies on top of v3.12-rc5.
-
-Changes since v4:
-  - Fixed IRQ flags to level high triggering as reported by Stephen Gallimore
-  - Revert back to generic DT properties for Anti-glitch filtering. Their DT
-    binding documentation will be updated when i2c DT binding docuementation
-    will be created (In Wolfram's ToDo list)
-  - Rebased on v3.12-rc5
-
-Changes since v3:
-  - Switch back to vendor specific DT properties regarding the anti-glitch
-    filter configuration, as this IP is the only one having such a filter
-  - Add DT binding documentation regarding pinctrl-related properties
-  - Move recommended properties to optional properties in DT binding
-    documentation
-  - Rebased on v3.12-rc4
-
-Changes since v2:
-  - Create generic DT property for Anti-glitch filtering configuration
-  - Sort i2c-st entries in Makefile and Kconfig
-  - Various cosmetics changes
-  - Return IRQ_NONE in case of spurious interrupt
-  - Use INIT_COMPLETION instead of init_completion in st_i2c_xfer_msg
-  - Simplify st_i2c_xfer as proposed by Wolfram
-  - Fix PM ops issues
-  - Change author name to myself and fix license to GPL v2
-  - Include .h file content into the .c file
-
-Changes since v1:
-  - Anti-glitch filtering simplified (Only HW Anti-glitch is kept)
-  - Update I2C timings to comply with I2C specification
-  - Handle spurious interrupts properly
-  - DT binding updates taking into account Stephen's comments
-  - Use "clock-names" property to comply with GCF
-  - DT cosmetic changes reported by Lee and Gabriel 
+This patch supplies I2C configuration to B2000 and B2020
+based on either STiH415 or STiH416 SoCs.
 
 Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
+---
+ arch/arm/boot/dts/stih41x-b2000.dtsi |    9 +++++++++
+ arch/arm/boot/dts/stih41x-b2020.dtsi |   22 ++++++++++++++++++++++
+ 2 files changed, 31 insertions(+)
 
-Maxime Coquelin (4):
-  i2c: busses: i2c-st: Add ST I2C controller
-  ARM: STi: Supply I2C configuration to STiH416 SoC
-  ARM: STi: Supply I2C configuration to STiH415 SoC
-  ARM: STi: Add I2C config to B2000 and B2020 boards
-
- Documentation/devicetree/bindings/i2c/i2c-st.txt |   38 +
- arch/arm/boot/dts/stih415-pinctrl.dtsi           |   36 +
- arch/arm/boot/dts/stih415.dtsi                   |   53 ++
- arch/arm/boot/dts/stih416-pinctrl.dtsi           |   35 +
- arch/arm/boot/dts/stih416.dtsi                   |   53 ++
- arch/arm/boot/dts/stih41x-b2000.dtsi             |    9 +
- arch/arm/boot/dts/stih41x-b2020.dtsi             |   22 +
- drivers/i2c/busses/Kconfig                       |   10 +
- drivers/i2c/busses/Makefile                      |    1 +
- drivers/i2c/busses/i2c-st.c                      |  867 ++++++++++++++++++++++
- 10 files changed, 1124 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/i2c/i2c-st.txt
- create mode 100644 drivers/i2c/busses/i2c-st.c
-
+diff --git a/arch/arm/boot/dts/stih41x-b2000.dtsi b/arch/arm/boot/dts/stih41x-b2000.dtsi
+index 8e694d2..1e6aa92 100644
+--- a/arch/arm/boot/dts/stih41x-b2000.dtsi
++++ b/arch/arm/boot/dts/stih41x-b2000.dtsi
+@@ -37,5 +37,14 @@
+ 			};
+ 		};
+ 
++		/* HDMI Tx I2C */
++		i2c@fed41000 {
++			/* HDMI V1.3a supports Standard mode only */
++			clock-frequency = <100000>;
++			i2c-min-scl-pulse-width-us = <0>;
++			i2c-min-sda-pulse-width-us = <5>;
++
++			status = "okay";
++		};
+ 	};
+ };
+diff --git a/arch/arm/boot/dts/stih41x-b2020.dtsi b/arch/arm/boot/dts/stih41x-b2020.dtsi
+index 133e181..0ef0a69 100644
+--- a/arch/arm/boot/dts/stih41x-b2020.dtsi
++++ b/arch/arm/boot/dts/stih41x-b2020.dtsi
+@@ -38,5 +38,27 @@
+ 				default-state = "off";
+ 			};
+ 		};
++
++		i2c@fed40000 {
++			status = "okay";
++		};
++
++		/* HDMI Tx I2C */
++		i2c@fed41000 {
++			/* HDMI V1.3a supports Standard mode only */
++			clock-frequency = <100000>;
++			i2c-min-scl-pulse-width-us = <0>;
++			i2c-min-sda-pulse-width-us = <5>;
++
++			status = "okay";
++		};
++
++		i2c@fe540000 {
++			status = "okay";
++		};
++
++		i2c@fe541000 {
++			status = "okay";
++		};
+ 	};
+ };
 -- 
 1.7.9.5
 
