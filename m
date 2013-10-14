@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757000Ab3JNP0J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 11:26:09 -0400
-Received: from ns.mm-sol.com ([212.124.72.66]:49745 "EHLO extserv.mm-sol.com"
+	id S1757016Ab3JNP0L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 11:26:11 -0400
+Received: from ns.mm-sol.com ([212.124.72.66]:49716 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756957Ab3JNP0D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 11:26:03 -0400
+	id S1756955Ab3JNP0E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 11:26:04 -0400
 From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 To: balbi@ti.com
 Cc: rob.herring@calxeda.com, pawel.moll@arm.com, mark.rutland@arm.com,
@@ -18,9 +18,9 @@ Cc: rob.herring@calxeda.com, pawel.moll@arm.com, mark.rutland@arm.com,
         linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org,
         "Ivan T. Ivanov" <iivanov@mm-sol.com>
-Subject: [PATCH v3 04/13] usb: phy: msm: Remove unnecessarily check for valid regulators.
-Date: Mon, 14 Oct 2013 18:24:31 +0300
-Message-Id: <1381764280-28420-5-git-send-email-iivanov@mm-sol.com>
+Subject: [PATCH v3 01/13] usb: phy: msm: Move mach depndend code to platform data
+Date: Mon, 14 Oct 2013 18:24:28 +0300
+Message-Id: <1381764280-28420-2-git-send-email-iivanov@mm-sol.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1381764280-28420-1-git-send-email-iivanov@mm-sol.com>
 References: <1381764280-28420-1-git-send-email-iivanov@mm-sol.com>
@@ -30,36 +30,217 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 
-Whether regulators are available or not is checked at driver
-probe. If they are not available driver will refuse to load,
-so no need to check them again.
+This patch fix compilation error and is an intermediate step
+before the addition of DeviceTree support for newer targets.
 
+Cc: David Brown <davidb@codeaurora.org>
+Cc: Daniel Walker <dwalker@fifo99.com>
+Cc: Felipe Balbi <balbi@ti.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
 ---
- drivers/usb/phy/phy-msm-usb.c |   10 ----------
- 1 file changed, 10 deletions(-)
+ arch/arm/mach-msm/board-msm7x30.c |   35 +++++++++++++++++++++++++++++++++++
+ arch/arm/mach-msm/board-qsd8x50.c |   35 +++++++++++++++++++++++++++++++++++
+ drivers/usb/phy/phy-msm-usb.c     |   34 ++++++++++++++--------------------
+ include/linux/usb/msm_hsusb.h     |    3 +++
+ 4 files changed, 87 insertions(+), 20 deletions(-)
 
+diff --git a/arch/arm/mach-msm/board-msm7x30.c b/arch/arm/mach-msm/board-msm7x30.c
+index f9af5a4..46de789 100644
+--- a/arch/arm/mach-msm/board-msm7x30.c
++++ b/arch/arm/mach-msm/board-msm7x30.c
+@@ -30,6 +30,7 @@
+ #include <asm/memory.h>
+ #include <asm/setup.h>
+ 
++#include <mach/clk.h>
+ #include <mach/msm_iomap.h>
+ #include <mach/dma.h>
+ 
+@@ -60,10 +61,44 @@ static int hsusb_phy_init_seq[] = {
+ 	-1
+ };
+ 
++static int hsusb_link_clk_reset(struct clk *link_clk, bool assert)
++{
++	int ret;
++
++	if (assert) {
++		ret = clk_reset(link_clk, CLK_RESET_ASSERT);
++		if (ret)
++			pr_err("usb hs_clk assert failed\n");
++	} else {
++		ret = clk_reset(link_clk, CLK_RESET_DEASSERT);
++		if (ret)
++			pr_err("usb hs_clk deassert failed\n");
++	}
++	return ret;
++}
++
++static int hsusb_phy_clk_reset(struct clk *phy_clk)
++{
++	int ret;
++
++	ret = clk_reset(phy_clk, CLK_RESET_ASSERT);
++	if (ret) {
++		pr_err("usb phy clk assert failed\n");
++		return ret;
++	}
++	usleep_range(10000, 12000);
++	ret = clk_reset(phy_clk, CLK_RESET_DEASSERT);
++	if (ret)
++		pr_err("usb phy clk deassert failed\n");
++	return ret;
++}
++
+ static struct msm_otg_platform_data msm_otg_pdata = {
+ 	.phy_init_seq		= hsusb_phy_init_seq,
+ 	.mode                   = USB_PERIPHERAL,
+ 	.otg_control		= OTG_PHY_CONTROL,
++	.link_clk_reset		= hsusb_link_clk_reset,
++	.phy_clk_reset		= hsusb_phy_clk_reset,
+ };
+ 
+ struct msm_gpiomux_config msm_gpiomux_configs[GPIOMUX_NGPIOS] = {
+diff --git a/arch/arm/mach-msm/board-qsd8x50.c b/arch/arm/mach-msm/board-qsd8x50.c
+index 5f933bc..9169ec3 100644
+--- a/arch/arm/mach-msm/board-qsd8x50.c
++++ b/arch/arm/mach-msm/board-qsd8x50.c
+@@ -31,6 +31,7 @@
+ #include <mach/irqs.h>
+ #include <mach/sirc.h>
+ #include <mach/vreg.h>
++#include <mach/clk.h>
+ #include <linux/platform_data/mmc-msm_sdcc.h>
+ 
+ #include "devices.h"
+@@ -81,10 +82,44 @@ static int hsusb_phy_init_seq[] = {
+ 	-1
+ };
+ 
++static int hsusb_link_clk_reset(struct clk *link_clk, bool assert)
++{
++	int ret;
++
++	if (assert) {
++		ret = clk_reset(link_clk, CLK_RESET_ASSERT);
++		if (ret)
++			pr_err("usb hs_clk assert failed\n");
++	} else {
++		ret = clk_reset(link_clk, CLK_RESET_DEASSERT);
++		if (ret)
++			pr_err("usb hs_clk deassert failed\n");
++	}
++	return ret;
++}
++
++static int hsusb_phy_clk_reset(struct clk *phy_clk)
++{
++	int ret;
++
++	ret = clk_reset(phy_clk, CLK_RESET_ASSERT);
++	if (ret) {
++		pr_err("usb phy clk assert failed\n");
++		return ret;
++	}
++	usleep_range(10000, 12000);
++	ret = clk_reset(phy_clk, CLK_RESET_DEASSERT);
++	if (ret)
++		pr_err("usb phy clk deassert failed\n");
++	return ret;
++}
++
+ static struct msm_otg_platform_data msm_otg_pdata = {
+ 	.phy_init_seq		= hsusb_phy_init_seq,
+ 	.mode                   = USB_PERIPHERAL,
+ 	.otg_control		= OTG_PHY_CONTROL,
++	.link_clk_reset		= hsusb_link_clk_reset,
++	.phy_clk_reset		= hsusb_phy_clk_reset,
+ };
+ 
+ static struct platform_device *devices[] __initdata = {
 diff --git a/drivers/usb/phy/phy-msm-usb.c b/drivers/usb/phy/phy-msm-usb.c
-index 136f063..b77441b 100644
+index e9d4cd9..118798d 100644
 --- a/drivers/usb/phy/phy-msm-usb.c
 +++ b/drivers/usb/phy/phy-msm-usb.c
-@@ -159,16 +159,6 @@ static int msm_hsusb_ldo_set_mode(struct msm_otg *motg, int on)
- {
- 	int ret = 0;
+@@ -40,8 +40,6 @@
+ #include <linux/usb/msm_hsusb_hw.h>
+ #include <linux/regulator/consumer.h>
  
--	if (!motg->v1p8 || IS_ERR(motg->v1p8)) {
--		pr_err("%s: HSUSB_1p8 is not initialized\n", __func__);
--		return -ENODEV;
--	}
+-#include <mach/clk.h>
 -
--	if (!motg->v3p3 || IS_ERR(motg->v3p3)) {
--		pr_err("%s: HSUSB_3p3 is not initialized\n", __func__);
--		return -ENODEV;
+ #define MSM_USB_BASE	(motg->regs)
+ #define DRIVER_NAME	"msm_otg"
+ 
+@@ -308,33 +306,29 @@ static void ulpi_init(struct msm_otg *motg)
+ 
+ static int msm_otg_link_clk_reset(struct msm_otg *motg, bool assert)
+ {
+-	int ret;
++	int ret = 0;
++
++	if (!motg->pdata->link_clk_reset)
++		return ret;
++
++	ret = motg->pdata->link_clk_reset(motg->clk, assert);
++	if (ret)
++		dev_err(motg->phy.dev, "usb link clk reset failed\n");
+ 
+-	if (assert) {
+-		ret = clk_reset(motg->clk, CLK_RESET_ASSERT);
+-		if (ret)
+-			dev_err(motg->phy.dev, "usb hs_clk assert failed\n");
+-	} else {
+-		ret = clk_reset(motg->clk, CLK_RESET_DEASSERT);
+-		if (ret)
+-			dev_err(motg->phy.dev, "usb hs_clk deassert failed\n");
 -	}
--
- 	if (on) {
- 		ret = regulator_set_optimum_mode(motg->v1p8,
- 				USB_PHY_1P8_HPM_LOAD);
+ 	return ret;
+ }
+ 
+ static int msm_otg_phy_clk_reset(struct msm_otg *motg)
+ {
+-	int ret;
++	int ret = 0;
+ 
+-	ret = clk_reset(motg->phy_reset_clk, CLK_RESET_ASSERT);
+-	if (ret) {
+-		dev_err(motg->phy.dev, "usb phy clk assert failed\n");
++	if (!motg->pdata->phy_clk_reset)
+ 		return ret;
+-	}
+-	usleep_range(10000, 12000);
+-	ret = clk_reset(motg->phy_reset_clk, CLK_RESET_DEASSERT);
++
++	ret = motg->pdata->phy_clk_reset(motg->phy_reset_clk);
+ 	if (ret)
+-		dev_err(motg->phy.dev, "usb phy clk deassert failed\n");
++		dev_err(motg->phy.dev, "usb phy clk assert failed\n");
++
+ 	return ret;
+ }
+ 
+diff --git a/include/linux/usb/msm_hsusb.h b/include/linux/usb/msm_hsusb.h
+index 22a396c..3275483 100644
+--- a/include/linux/usb/msm_hsusb.h
++++ b/include/linux/usb/msm_hsusb.h
+@@ -20,6 +20,7 @@
+ 
+ #include <linux/types.h>
+ #include <linux/usb/otg.h>
++#include <linux/clk.h>
+ 
+ /**
+  * Supported USB modes
+@@ -135,6 +136,8 @@ struct msm_otg_platform_data {
+ 	enum msm_usb_phy_type phy_type;
+ 	void (*setup_gpio)(enum usb_otg_state state);
+ 	char *pclk_src_name;
++	int (*link_clk_reset)(struct clk *link_clk, bool assert);
++	int (*phy_clk_reset)(struct clk *phy_clk);
+ };
+ 
+ /**
 -- 
 1.7.9.5
 
