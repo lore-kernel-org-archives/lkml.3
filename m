@@ -1,61 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757278Ab3JNSh2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 14:37:28 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50040 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754751Ab3JNSh1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 14:37:27 -0400
-Message-ID: <525C39E2.4030507@canonical.com>
-Date: Mon, 14 Oct 2013 11:37:22 -0700
-From: John Johansen <john.johansen@canonical.com>
-Organization: Canonical
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S932087Ab3JNSkB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 14:40:01 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39983 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750813Ab3JNSj7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 14:39:59 -0400
+Date: Mon, 14 Oct 2013 20:39:57 +0200
+From: Jan Kara <jack@suse.cz>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        Hans de Goede <hdegoede@redhat.com>, Gerd Hoffmann <kraxel@redhat.com>
+Subject: Re: Warning when calling radix_tree_insert on 3.12-rc4
+Message-ID: <20131014183957.GM19604@quack.suse.cz>
+References: <20131011221315.GE7094@xanatos>
+ <20131014123034.GF19604@quack.suse.cz>
+ <20131014181721.GA18408@xanatos>
 MIME-Version: 1.0
-To: James Morris <jmorris@namei.org>
-CC: SECURITY SUBSYSTEM <linux-security-module@vger.kernel.org>,
-        LKLM <linux-kernel@vger.kernel.org>
-Subject: Re: apparmor: two more regression fixes for 3.12
-References: <525906EE.90409@canonical.com> <alpine.LRH.2.02.1310150220160.6053@tundra.namei.org>
-In-Reply-To: <alpine.LRH.2.02.1310150220160.6053@tundra.namei.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131014181721.GA18408@xanatos>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/14/2013 08:20 AM, James Morris wrote:
-> On Sat, 12 Oct 2013, John Johansen wrote:
+On Mon 14-10-13 11:17:21, Sarah Sharp wrote:
+> On Mon, Oct 14, 2013 at 02:30:34PM +0200, Jan Kara wrote:
+> >   Hello Sarah,
+> > 
+> > On Fri 11-10-13 15:13:15, Sarah Sharp wrote:
+> > > I'm testing out some changes to the xHCI USB host controller driver
+> > > (which uses a radix tree when a UAS device is attached to the host), and
+> > > I noticed the following warning:
+> > > 
+> > > Oct 11 14:42:08 xanatos kernel: [18165.819014] usb 2-2: new SuperSpeed USB device number 2 using xhci_hcd
+> > > Oct 11 14:42:08 xanatos kernel: [18165.836264] usb 2-2: New USB device found, idVendor=174c, idProduct=55aa
+> > > Oct 11 14:42:08 xanatos kernel: [18165.836271] usb 2-2: New USB device strings: Mfr=2, Product=3, SerialNumber=1
+> > > Oct 11 14:42:08 xanatos kernel: [18165.836275] usb 2-2: Product: Plugable USB3-SATA-UASP1
+> > > Oct 11 14:42:08 xanatos kernel: [18165.836279] usb 2-2: Manufacturer: ASM1053E
+> > > Oct 11 14:42:08 xanatos kernel: [18165.836291] usb 2-2: SerialNumber: 123456789045
+> > > Oct 11 14:42:08 xanatos kernel: [18165.847661] BUG: using smp_processor_id() in preemptible [00000000] code: modprobe/8759
+> > > Oct 11 14:42:08 xanatos kernel: [18165.847667] caller is radix_tree_node_alloc+0x5c/0xa0
+> >   Well, this warning seems to come from the __get_cpu_var() function. I don't
+> > see how my commit could have caused what you observe. It seems you are
+> > calling radix_tree_insert() for a radix tree which has atomic gfp mask set
+> > and you don't do radix_tree_preload() / radix_tree_preload_end() around
+> > that? That was always problematic and could lead to the above warning.
 > 
->> Hi James,
->>
->>   Can you please pull and forward the following 2 fixes for regressions in
->>   3.12 apparmor
->>
+> I see.  Ok, we'll need to fix that.  The code went into the kernel years
+> ago, but wasn't really tested until now.
+> 
+> Do we only need to call radix_tree_preload() and
+> radix_tree_preload_end() only around the radix_tree_insert()?  Or will
+> we need it around radix_tree_delete() as well?
+  Only around insert. The reason is radix_tree_insert() may need to
+allocate new radix tree nodes. radix_tree_delete() doesn't need to allocate
+anything.
 
-sure replied below or you can pull them from the branch below which I just rebased
+> > I'm not sure in which contexts xhci_update_stream_ring() can be called. But
+> > if you are guaranteed non-atomic context, then using radix_tree_preload()
+> > with a more relaxed gfp mask is good (lowers pressure on atomic allocations).
+> >
+> > If the context depends on the caller, things are more complex. Generally,
+> > you can use radix_tree_maybe_preload() but you have to set gfp mask
+> > argument according to the context. The function then figures out whether
+> > it's worth it to do a preload or not (but it always does preempt_disable()
+> > which will silence the warning).
+> 
+> There are a couple ways xhci_update_stream_ring() could be called:
+> 
+>  - xhci_alloc_stream_info can be called while the bandwidth mutex is
+>    held, so that must be in process context
+> 
+>  - xhci_ring_free is called when the command to disable a slot
+>    completes, in interrupt context.
+> 
+>  - xhci_ring_expansion during URB submission, which can happen in
+>    interrupt context.
+> 
+> So it looks like the context depends on the caller, and we'll have to
+> call radix_tree_maybe_preload().
+  Yes, you need radix_tree_maybe_preload() in that case. Usually we handle
+similar situations (e.g. in block/blk-ioc.c) by passing gfp mask from the
+caller which knows the context.
 
-The following changes since commit d6099aeb4a9aad5e7ab1c72eb119ebd52dee0d52:
-
-  Merge branch 'fixes' of git://git.linaro.org/people/rmk/linux-arm (2013-10-14 10:02:23 -0700)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/jj/linux-apparmor for-security
-
-for you to fetch changes up to 78aaf3232b29abbc83521814b946158b5c6293fc:
-
-  apparmor: fix bad lock balance when introspecting policy (2013-10-14 11:31:34 -0700)
-
-----------------------------------------------------------------
-John Johansen (2):
-      apparmor: fix memleak of the profile hash
-      apparmor: fix bad lock balance when introspecting policy
-
- security/apparmor/apparmorfs.c | 4 +---
- security/apparmor/policy.c     | 1 +
- 2 files changed, 2 insertions(+), 3 deletions(-)
-
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
