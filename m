@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756236Ab3JNMTH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 08:19:07 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:61854 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756065Ab3JNMSq (ORCPT
+	id S1756321Ab3JNMTN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 08:19:13 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:22959 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756081Ab3JNMS4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 08:18:46 -0400
-X-AuditID: cbfee61a-b7f7a6d00000235f-d7-525be125ea21
+	Mon, 14 Oct 2013 08:18:56 -0400
+X-AuditID: cbfee61a-b7f7a6d00000235f-e2-525be12ed9f6
 From: Lukasz Majewski <l.majewski@samsung.com>
 To: Viresh Kumar <viresh.kumar@linaro.org>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>,
@@ -21,38 +21,41 @@ Cc: "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
         linux-kernel <linux-kernel@vger.kernel.org>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Myungjoo Ham <myungjoo.ham@samsung.com>, durgadoss.r@intel.com
-Subject: [PATCH v9 2/7] cpufreq:acpi:x86: Adjust the acpi-cpufreq.c code to
- work with common boost solution
-Date: Mon, 14 Oct 2013 14:17:45 +0200
-Message-id: <1381753070-2853-3-git-send-email-l.majewski@samsung.com>
+Subject: [PATCH v9 4/7] cpufreq:boost:Kconfig: Provide support for software
+ managed BOOST
+Date: Mon, 14 Oct 2013 14:17:47 +0200
+Message-id: <1381753070-2853-5-git-send-email-l.majewski@samsung.com>
 X-Mailer: git-send-email 1.7.10
 In-reply-to: <1381753070-2853-1-git-send-email-l.majewski@samsung.com>
 References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
  <1381753070-2853-1-git-send-email-l.majewski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrFLMWRmVeSWpSXmKPExsVy+t9jAV3Vh9FBBhfOiFlsnLGe1eJp0w92
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrDLMWRmVeSWpSXmKPExsVy+t9jAV39h9FBBl/ns1hsnLGe1eJp0w92
 	i76fV5gt1uz/yWTRefYJs8WbR9wWbx5uZrS4vGsOm8Xn3iOMFrcbV7BZnDl9idXiycM+NouN
 	Xz0ceD0W73nJ5HHn2h42j3XT3jJ7bLnazuLRt2UVo8fxG9uZPD5vkgtgj+KySUnNySxLLdK3
-	S+DKWPzRuaDbqGLNqr3MDYw/NLoYOTkkBEwkru4+zgxhi0lcuLeeDcQWEljEKDF5U0oXIxeQ
-	3cUk0fh/GgtIgk1AT+Lz3adMIAkRgSWMEq+bFrCCOMwCPcwSx69vB2rn4BAWyJV41msD0sAi
-	oCqx6eUjVhCbV8BVYkPDNyaIbfIST+/3gW3jFHCTOLVtAzPEtkZGiW3nNrBOYORdwMiwilE0
-	tSC5oDgpPddQrzgxt7g0L10vOT93EyM4RJ9J7WBc2WBxiFGAg1GJh1fAKTpIiDWxrLgy9xCj
-	BAezkgjvx6tAId6UxMqq1KL8+KLSnNTiQ4zSHCxK4rwHWq0DhQTSE0tSs1NTC1KLYLJMHJxS
-	DYwFO5yfmLNu+5vGYrFy2UvznusfwgMu6mw6MfFDUKd7Jq/xtqwjYQaxl35NcM+7Hcy7PF1p
-	zQer2R+SCxgyNj4T/xu9WPTKHbEvk99pMeiv6zv978gyw2UBzx/eMqlR1pRtm5Dr4TDpcYfu
-	siQznoaO/wJd+wOzjymHB38zi1DY4KTPo2Lx+6oSS3FGoqEWc1FxIgCwL+VxTQIAAA==
+	S+DKmNq8jKVgs0jFgidrmBsYnwp0MXJySAiYSDw/9YwRwhaTuHBvPVsXIxeHkMAiRond3zYw
+	QzhdTBLXTk1gBaliE9CT+Hz3KRNIQkRgCaPE66YFrCAOs0APs8Tx69uB+jk4hAWiJVZ1loE0
+	sAioSkzce4wFxOYVcJX40jGJHWKdvMTT+31sIDangJvEqW0w2xoZJbad28A6gZF3ASPDKkbR
+	1ILkguKk9FxDveLE3OLSvHS95PzcTYzgMH0mtYNxZYPFIUYBDkYlHl4Bp+ggIdbEsuLK3EOM
+	EhzMSiK8H68ChXhTEiurUovy44tKc1KLDzFKc7AoifMeaLUOFBJITyxJzU5NLUgtgskycXBK
+	NTAu23dbzeNyxsEL3V78LzyN856+MZ9c1Tst+vIt3XevmEoS7r9eL9Cm8lx5qsFPWyeNJbrC
+	u78EOp5hCj23uPVxovUcrX1bQ9sD+1u6b/rw8Gx3PrKE+e7TrmLlvSW33mpa/vebKRa3ONDm
+	SNvRS91PGjQ40l+ZzYpZeuwgz/HGiacWrldK0jqsxFKckWioxVxUnAgAaY1A408CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Intel's hardware based boost solution driver has been changed to cooperate with
-common cpufreq boost framework.
+For safety reasons new flag - CONFIG_CPU_FREQ_BOOST_SW has been added.
+Only after selecting "EXYNOS Frequency Overclocking - Software" Kconfig
+option the software managed boost is enabled. It also selects thermal
+subsystem to be compiled in. Thermal is necessary for disabling boost
+and cooling down the device when overheating detected.
 
-The global sysfs boost attribute entry code (/sys/devices/system/cpu/cpufreq/boost)
-has been moved to a core cpufreq code. This attribute is now only visible,
-when cpufreq driver supports it.
+Boost _MUST_NOT_ work without thermal subsystem with properly defined
+overheating temperatures.
 
-The _store_boost() function has been redesigned to be used as set_boost
-callback.
+This option doesn't affect x86's ACPI hardware managed boost support
+(i.e. Intel, AMD). In this situation boost management is embedded at
+hardware.
 
 Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
 Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
@@ -66,206 +69,63 @@ Changes for v8:
 - None
 
 Changes for v7:
-- Remove superfluous acpi_cpufreq_driver.boost_supported = false at
-  acpi_cpufreq_boost_init()
+- Remove superfluous "default n" definition
+- Generic CPU_FREQ_BOOST_SW depends on THERMAL
 
 Changes for v6:
-- Perform acpi_cpufreq_boost_init initialization before cpufreq_driver
-  registration
-- Compile store_boost() only when CONFIG_X86_ACPI_CPUFREQ_CPB defined
-- Use boost_enabled flag defined at acpi_cpufreq_driver to store information
-  about boost state
-- Instead of using cpufreq_set_boost_enabled(), modify the boost_enable in
-  the acpi driver code
+- CPU_FREQ_BOOST_SW [1] is now defined as "invisible" bool option.
+- Platform dependent ARM_EXYNOS_CPU_FREQ_BOOST_SW config option has been
+  added. It depends on ARM_EXYNOS_CPUFREQ options and selects
+  EXYNOS_THERMAL with the main boost config [1].
 
 Changes for v5:
-- Remove acpi-cpufreq's boost_enabled global flag and reuse one defined at
-  cpufreq core
+- New patch
 
-Changes for v4:
-- add _store_boost to acpi_cpufreq_driver structure
+ drivers/cpufreq/Kconfig     |    4 ++++
+ drivers/cpufreq/Kconfig.arm |   15 +++++++++++++++
+ 2 files changed, 19 insertions(+)
 
-Changes for v3:
-- Bring back boost_enabled as a global flag
-- Move boost_supported to cpufreq_driver structure
-
-Changes for v2:
-- Replace boost_enabled and boost_supported global flags with proper entries
-  at struct cpufreq_driver.
-- Removal of struct cpufreq_boost
-
- drivers/cpufreq/acpi-cpufreq.c |   86 ++++++++++++++--------------------------
- 1 file changed, 29 insertions(+), 57 deletions(-)
-
-diff --git a/drivers/cpufreq/acpi-cpufreq.c b/drivers/cpufreq/acpi-cpufreq.c
-index a8dac7b..6a92530 100644
---- a/drivers/cpufreq/acpi-cpufreq.c
-+++ b/drivers/cpufreq/acpi-cpufreq.c
-@@ -80,7 +80,6 @@ static struct acpi_processor_performance __percpu *acpi_perf_data;
- static struct cpufreq_driver acpi_cpufreq_driver;
+diff --git a/drivers/cpufreq/Kconfig b/drivers/cpufreq/Kconfig
+index 38093e2..c8818c1 100644
+--- a/drivers/cpufreq/Kconfig
++++ b/drivers/cpufreq/Kconfig
+@@ -20,6 +20,10 @@ if CPU_FREQ
+ config CPU_FREQ_GOV_COMMON
+ 	bool
  
- static unsigned int acpi_pstate_strict;
--static bool boost_enabled, boost_supported;
- static struct msr __percpu *msrs;
- 
- static bool boost_state(unsigned int cpu)
-@@ -133,49 +132,16 @@ static void boost_set_msrs(bool enable, const struct cpumask *cpumask)
- 	wrmsr_on_cpus(cpumask, msr_addr, msrs);
- }
- 
--static ssize_t _store_boost(const char *buf, size_t count)
-+static int _store_boost(int val)
- {
--	int ret;
--	unsigned long val = 0;
--
--	if (!boost_supported)
--		return -EINVAL;
--
--	ret = kstrtoul(buf, 10, &val);
--	if (ret || (val > 1))
--		return -EINVAL;
--
--	if ((val && boost_enabled) || (!val && !boost_enabled))
--		return count;
--
- 	get_online_cpus();
--
- 	boost_set_msrs(val, cpu_online_mask);
--
- 	put_online_cpus();
--
--	boost_enabled = val;
- 	pr_debug("Core Boosting %sabled.\n", val ? "en" : "dis");
- 
--	return count;
--}
--
--static ssize_t store_global_boost(struct kobject *kobj, struct attribute *attr,
--				  const char *buf, size_t count)
--{
--	return _store_boost(buf, count);
--}
--
--static ssize_t show_global_boost(struct kobject *kobj,
--				 struct attribute *attr, char *buf)
--{
--	return sprintf(buf, "%u\n", boost_enabled);
-+	return 0;
- }
- 
--static struct global_attr global_boost = __ATTR(boost, 0644,
--						show_global_boost,
--						store_global_boost);
--
- static ssize_t show_freqdomain_cpus(struct cpufreq_policy *policy, char *buf)
- {
- 	struct acpi_cpufreq_data *data = per_cpu(acfreq_data, policy->cpu);
-@@ -186,15 +152,32 @@ static ssize_t show_freqdomain_cpus(struct cpufreq_policy *policy, char *buf)
- cpufreq_freq_attr_ro(freqdomain_cpus);
- 
- #ifdef CONFIG_X86_ACPI_CPUFREQ_CPB
-+static ssize_t store_boost(const char *buf, size_t count)
-+{
-+	int ret;
-+	unsigned long val = 0;
++config CPU_FREQ_BOOST_SW
++	bool
++	depends on THERMAL
 +
-+	if (!acpi_cpufreq_driver.boost_supported)
-+		return -EINVAL;
+ config CPU_FREQ_STAT
+ 	tristate "CPU frequency translation statistics"
+ 	default y
+diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
+index 701ec95..549166a 100644
+--- a/drivers/cpufreq/Kconfig.arm
++++ b/drivers/cpufreq/Kconfig.arm
+@@ -64,6 +64,21 @@ config ARM_EXYNOS5440_CPUFREQ
+ 
+ 	  If in doubt, say N.
+ 
++config ARM_EXYNOS_CPU_FREQ_BOOST_SW
++	bool "EXYNOS Frequency Overclocking - Software"
++	depends on ARM_EXYNOS_CPUFREQ
++	select CPU_FREQ_BOOST_SW
++	select EXYNOS_THERMAL
++	help
++	  This driver supports software managed overclocking (BOOST).
++	  It allows usage of special frequencies for Samsung Exynos
++	  processors if thermal conditions are appropriate.
 +
-+	ret = kstrtoul(buf, 10, &val);
-+	if (ret || (val > 1))
-+		return -EINVAL;
++	  It reguires, for safe operation, thermal framework with properly
++	  defined trip points.
 +
-+	_store_boost((int) val);
++	  If in doubt, say N.
 +
-+	return count;
-+}
-+
- static ssize_t store_cpb(struct cpufreq_policy *policy, const char *buf,
- 			 size_t count)
- {
--	return _store_boost(buf, count);
-+	return store_boost(buf, count);
- }
- 
- static ssize_t show_cpb(struct cpufreq_policy *policy, char *buf)
- {
--	return sprintf(buf, "%u\n", boost_enabled);
-+	return sprintf(buf, "%u\n", acpi_cpufreq_driver.boost_enabled);
- }
- 
- cpufreq_freq_attr_rw(cpb);
-@@ -573,7 +556,7 @@ static int boost_notify(struct notifier_block *nb, unsigned long action,
- 	switch (action) {
- 	case CPU_UP_PREPARE:
- 	case CPU_UP_PREPARE_FROZEN:
--		boost_set_msrs(boost_enabled, cpumask);
-+		boost_set_msrs(acpi_cpufreq_driver.boost_enabled, cpumask);
- 		break;
- 
- 	case CPU_DOWN_PREPARE:
-@@ -925,6 +908,7 @@ static struct cpufreq_driver acpi_cpufreq_driver = {
- 	.resume		= acpi_cpufreq_resume,
- 	.name		= "acpi-cpufreq",
- 	.attr		= acpi_cpufreq_attr,
-+	.set_boost      = _store_boost,
- };
- 
- static void __init acpi_cpufreq_boost_init(void)
-@@ -935,33 +919,22 @@ static void __init acpi_cpufreq_boost_init(void)
- 		if (!msrs)
- 			return;
- 
--		boost_supported = true;
--		boost_enabled = boost_state(0);
--
-+		acpi_cpufreq_driver.boost_supported = true;
-+		acpi_cpufreq_driver.boost_enabled = boost_state(0);
- 		get_online_cpus();
- 
- 		/* Force all MSRs to the same value */
--		boost_set_msrs(boost_enabled, cpu_online_mask);
-+		boost_set_msrs(acpi_cpufreq_driver.boost_enabled,
-+			       cpu_online_mask);
- 
- 		register_cpu_notifier(&boost_nb);
- 
- 		put_online_cpus();
--	} else
--		global_boost.attr.mode = 0444;
--
--	/* We create the boost file in any case, though for systems without
--	 * hardware support it will be read-only and hardwired to return 0.
--	 */
--	if (cpufreq_sysfs_create_file(&(global_boost.attr)))
--		pr_warn(PFX "could not register global boost sysfs file\n");
--	else
--		pr_debug("registered global boost sysfs file\n");
-+	}
- }
- 
- static void __exit acpi_cpufreq_boost_exit(void)
- {
--	cpufreq_sysfs_remove_file(&(global_boost.attr));
--
- 	if (msrs) {
- 		unregister_cpu_notifier(&boost_nb);
- 
-@@ -1007,12 +980,11 @@ static int __init acpi_cpufreq_init(void)
- 			*iter = &cpb;
- 	}
- #endif
-+	acpi_cpufreq_boost_init();
- 
- 	ret = cpufreq_register_driver(&acpi_cpufreq_driver);
- 	if (ret)
- 		free_acpi_perf_data();
--	else
--		acpi_cpufreq_boost_init();
- 
- 	return ret;
- }
+ config ARM_HIGHBANK_CPUFREQ
+ 	tristate "Calxeda Highbank-based"
+ 	depends on ARCH_HIGHBANK
 -- 
 1.7.10.4
 
