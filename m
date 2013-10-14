@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932490Ab3JNUUl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 16:20:41 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:39015 "EHLO
+	id S932471Ab3JNUUk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 16:20:40 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:39007 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757708Ab3JNUDG (ORCPT
+	with ESMTP id S1757702Ab3JNUDG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 14 Oct 2013 16:03:06 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+Cc: linux-kernel@vger.kernel.org,
+        Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>,
+        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>,
+        Waiman Long <Waiman.Long@hp.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 126/161] perf trace: Use new machine method to loop over threads
-Date: Mon, 14 Oct 2013 17:01:55 -0300
-Message-Id: <1381780950-25642-127-git-send-email-acme@infradead.org>
+Subject: [PATCH 076/161] perf symbols: Support for Openembedded/Yocto -dbg packages
+Date: Mon, 14 Oct 2013 17:01:05 -0300
+Message-Id: <1381780950-25642-77-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1381780950-25642-1-git-send-email-acme@infradead.org>
 References: <1381780950-25642-1-git-send-email-acme@infradead.org>
@@ -27,113 +30,137 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Ahern <dsahern@gmail.com>
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
 
-Use the new machine method that loops over threads to dump summary data.
+On OpenEmbedded the symbol files are located under a .debug folder on
+the same folder as the binary file.
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
+This patch adds support for such files.
+
+Without this patch on perf top you can see:
+
+no symbols found in /usr/lib/gstreamer-1.0/libtheoraenc.so.1.1.2, maybe
+install a debug package?
+
+84.56%  libtheoraenc.so.1.1.2       [.] 0x000000000000b346
+
+With this patch symbols are shown:
+
+19.06%  libtheoraenc.so.1.1.2       [.] oc_int_frag_satd_thresh_mmxext
+9.76%   libtheoraenc.so.1.1.2       [.] oc_analyze_mb_mode_luma
+5.58%   libtheoraenc.so.1.1.2       [.] oc_qii_state_advance
+4.84%   libtheoraenc.so.1.1.2       [.] oc_enc_tokenize_ac
+...
+
+Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Acked-by: Ingo Molnar <mingo@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1380395584-9025-3-git-send-email-dsahern@gmail.com
+Cc: Waiman Long <Waiman.Long@hp.com>
+Link: http://lkml.kernel.org/r/1379512574-25912-1-git-send-email-ricardo.ribalda@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-trace.c | 76 +++++++++++++++++++++++++++++-----------------
- 1 file changed, 48 insertions(+), 28 deletions(-)
+ tools/perf/util/dso.c    | 49 +++++++++++++++++++++++++++++++++++-------------
+ tools/perf/util/dso.h    |  1 +
+ tools/perf/util/symbol.c |  1 +
+ 3 files changed, 38 insertions(+), 13 deletions(-)
 
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index 1e2368f56a74..addc3e11f999 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -1751,37 +1751,57 @@ static size_t trace__fprintf_threads_header(FILE *fp)
- 	return printed;
- }
- 
-+/* struct used to pass data to per-thread function */
-+struct summary_data {
-+	FILE *fp;
-+	struct trace *trace;
-+	size_t printed;
-+};
-+
-+static int trace__fprintf_one_thread(struct thread *thread, void *priv)
-+{
-+	struct summary_data *data = priv;
-+	FILE *fp = data->fp;
-+	size_t printed = data->printed;
-+	struct trace *trace = data->trace;
-+	struct thread_trace *ttrace = thread->priv;
-+	const char *color;
-+	double ratio;
-+
-+	if (ttrace == NULL)
-+		return 0;
-+
-+	ratio = (double)ttrace->nr_events / trace->nr_events * 100.0;
-+
-+	color = PERF_COLOR_NORMAL;
-+	if (ratio > 50.0)
-+		color = PERF_COLOR_RED;
-+	else if (ratio > 25.0)
-+		color = PERF_COLOR_GREEN;
-+	else if (ratio > 5.0)
-+		color = PERF_COLOR_YELLOW;
-+
-+	printed += color_fprintf(fp, color, "%20s", thread->comm);
-+	printed += fprintf(fp, " - %-5d :%11lu   [", thread->tid, ttrace->nr_events);
-+	printed += color_fprintf(fp, color, "%5.1f%%", ratio);
-+	printed += fprintf(fp, " ] %10.3f ms\n", ttrace->runtime_ms);
-+
-+	data->printed += printed;
-+
-+	return 0;
-+}
-+
- static size_t trace__fprintf_thread_summary(struct trace *trace, FILE *fp)
+diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
+index e3c1ff8512c8..6bfc8aacaf7c 100644
+--- a/tools/perf/util/dso.c
++++ b/tools/perf/util/dso.c
+@@ -7,19 +7,20 @@
+ char dso__symtab_origin(const struct dso *dso)
  {
--	size_t printed = trace__fprintf_threads_header(fp);
--	struct rb_node *nd;
--
--	for (nd = rb_first(&trace->host->threads); nd; nd = rb_next(nd)) {
--		struct thread *thread = rb_entry(nd, struct thread, rb_node);
--		struct thread_trace *ttrace = thread->priv;
--		const char *color;
--		double ratio;
--
--		if (ttrace == NULL)
--			continue;
--
--		ratio = (double)ttrace->nr_events / trace->nr_events * 100.0;
--
--		color = PERF_COLOR_NORMAL;
--		if (ratio > 50.0)
--			color = PERF_COLOR_RED;
--		else if (ratio > 25.0)
--			color = PERF_COLOR_GREEN;
--		else if (ratio > 5.0)
--			color = PERF_COLOR_YELLOW;
--
--		printed += color_fprintf(fp, color, "%20s", thread->comm);
--		printed += fprintf(fp, " - %-5d :%11lu   [", thread->tid, ttrace->nr_events);
--		printed += color_fprintf(fp, color, "%5.1f%%", ratio);
--		printed += fprintf(fp, " ] %10.3f ms\n", ttrace->runtime_ms);
--	}
-+	struct summary_data data = {
-+		.fp = fp,
-+		.trace = trace
-+	};
-+	data.printed = trace__fprintf_threads_header(fp);
+ 	static const char origin[] = {
+-		[DSO_BINARY_TYPE__KALLSYMS]		= 'k',
+-		[DSO_BINARY_TYPE__VMLINUX]		= 'v',
+-		[DSO_BINARY_TYPE__JAVA_JIT]		= 'j',
+-		[DSO_BINARY_TYPE__DEBUGLINK]		= 'l',
+-		[DSO_BINARY_TYPE__BUILD_ID_CACHE]	= 'B',
+-		[DSO_BINARY_TYPE__FEDORA_DEBUGINFO]	= 'f',
+-		[DSO_BINARY_TYPE__UBUNTU_DEBUGINFO]	= 'u',
+-		[DSO_BINARY_TYPE__BUILDID_DEBUGINFO]	= 'b',
+-		[DSO_BINARY_TYPE__SYSTEM_PATH_DSO]	= 'd',
+-		[DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE]	= 'K',
+-		[DSO_BINARY_TYPE__GUEST_KALLSYMS]	= 'g',
+-		[DSO_BINARY_TYPE__GUEST_KMODULE]	= 'G',
+-		[DSO_BINARY_TYPE__GUEST_VMLINUX]	= 'V',
++		[DSO_BINARY_TYPE__KALLSYMS]			= 'k',
++		[DSO_BINARY_TYPE__VMLINUX]			= 'v',
++		[DSO_BINARY_TYPE__JAVA_JIT]			= 'j',
++		[DSO_BINARY_TYPE__DEBUGLINK]			= 'l',
++		[DSO_BINARY_TYPE__BUILD_ID_CACHE]		= 'B',
++		[DSO_BINARY_TYPE__FEDORA_DEBUGINFO]		= 'f',
++		[DSO_BINARY_TYPE__UBUNTU_DEBUGINFO]		= 'u',
++		[DSO_BINARY_TYPE__OPENEMBEDDED_DEBUGINFO]	= 'o',
++		[DSO_BINARY_TYPE__BUILDID_DEBUGINFO]		= 'b',
++		[DSO_BINARY_TYPE__SYSTEM_PATH_DSO]		= 'd',
++		[DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE]		= 'K',
++		[DSO_BINARY_TYPE__GUEST_KALLSYMS]		= 'g',
++		[DSO_BINARY_TYPE__GUEST_KMODULE]		= 'G',
++		[DSO_BINARY_TYPE__GUEST_VMLINUX]		= 'V',
+ 	};
  
--	return printed;
-+	machine__for_each_thread(trace->host, trace__fprintf_one_thread, &data);
+ 	if (dso == NULL || dso->symtab_type == DSO_BINARY_TYPE__NOT_FOUND)
+@@ -64,6 +65,28 @@ int dso__binary_type_file(struct dso *dso, enum dso_binary_type type,
+ 			 symbol_conf.symfs, dso->long_name);
+ 		break;
+ 
++	case DSO_BINARY_TYPE__OPENEMBEDDED_DEBUGINFO:
++	{
++		char *last_slash;
++		size_t len;
++		size_t dir_size;
 +
-+	return data.printed;
- }
++		last_slash = dso->long_name + dso->long_name_len;
++		while (last_slash != dso->long_name && *last_slash != '/')
++			last_slash--;
++
++		len = scnprintf(file, size, "%s", symbol_conf.symfs);
++		dir_size = last_slash - dso->long_name + 2;
++		if (dir_size > (size - len)) {
++			ret = -1;
++			break;
++		}
++		len += scnprintf(file + len, dir_size, "%s",  dso->long_name);
++		len += scnprintf(file + len , size - len, ".debug%s",
++								last_slash);
++		break;
++	}
++
+ 	case DSO_BINARY_TYPE__BUILDID_DEBUGINFO:
+ 		if (!dso->has_build_id) {
+ 			ret = -1;
+diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
+index b793053335d6..dbd9241ea290 100644
+--- a/tools/perf/util/dso.h
++++ b/tools/perf/util/dso.h
+@@ -23,6 +23,7 @@ enum dso_binary_type {
+ 	DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE,
+ 	DSO_BINARY_TYPE__KCORE,
+ 	DSO_BINARY_TYPE__GUEST_KCORE,
++	DSO_BINARY_TYPE__OPENEMBEDDED_DEBUGINFO,
+ 	DSO_BINARY_TYPE__NOT_FOUND,
+ };
  
- static int trace__set_duration(const struct option *opt, const char *str,
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 7eb0362f4ffd..cd1dcc45049b 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -51,6 +51,7 @@ static enum dso_binary_type binary_type_symtab[] = {
+ 	DSO_BINARY_TYPE__SYSTEM_PATH_DSO,
+ 	DSO_BINARY_TYPE__GUEST_KMODULE,
+ 	DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE,
++	DSO_BINARY_TYPE__OPENEMBEDDED_DEBUGINFO,
+ 	DSO_BINARY_TYPE__NOT_FOUND,
+ };
+ 
 -- 
 1.8.1.4
 
