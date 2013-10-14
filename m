@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933306Ab3JNUfD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 16:35:03 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:38826 "EHLO
+	id S933290Ab3JNUfB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 16:35:01 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38836 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757624Ab3JNUDC (ORCPT
+	with ESMTP id S1757627Ab3JNUDC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 14 Oct 2013 16:03:02 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 068/161] perf trace: Beautify eventfd2 'flags' arg
-Date: Mon, 14 Oct 2013 17:00:57 -0300
-Message-Id: <1381780950-25642-69-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Willy Tarreau <w@1wt.eu>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 089/161] perf symbols: Add new option --ignore-vmlinux for perf top
+Date: Mon, 14 Oct 2013 17:01:18 -0300
+Message-Id: <1381780950-25642-90-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1381780950-25642-1-git-send-email-acme@infradead.org>
 References: <1381780950-25642-1-git-send-email-acme@infradead.org>
@@ -28,78 +24,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Willy Tarreau <w@1wt.eu>
 
- 61.168 ( 0.004 ms): 24267 eventfd2(flags: CLOEXEC|NONBLOCK) = 9
+Running "perf top" on a machine with possibly invalid or non-matching
+vmlinux at the various places results in no symbol resolving despite
+/proc/kallsyms being present and valid.
 
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-3hg8eajdzil077501c8f5jkw@git.kernel.org
+Add a new option --ignore-vmlinux to explicitly indicate that we do not
+want to use these kernels and just use what we have (kallsyms).
+
+Signed-off-by: Willy Tarreau <w@1wt.eu>
+Cc: Ingo Molnar <mingo@redhat.com>
+Link: http://lkml.kernel.org/r/20130914083259.GA3418@1wt.eu
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-trace.c | 29 +++++++++++++++++++++++++++++
- 1 file changed, 29 insertions(+)
+ tools/perf/builtin-top.c | 2 ++
+ tools/perf/util/symbol.c | 4 ++--
+ tools/perf/util/symbol.h | 1 +
+ 3 files changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index c400fbee1fc7..8a09ba3dcd97 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -13,6 +13,7 @@
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index e8466956adbe..65c49b2f51c1 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -1073,6 +1073,8 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		    "list of cpus to monitor"),
+ 	OPT_STRING('k', "vmlinux", &symbol_conf.vmlinux_name,
+ 		   "file", "vmlinux pathname"),
++	OPT_BOOLEAN(0, "ignore-vmlinux", &symbol_conf.ignore_vmlinux,
++		    "don't load vmlinux even if found"),
+ 	OPT_BOOLEAN('K', "hide_kernel_symbols", &top.hide_kernel_symbols,
+ 		    "hide kernel symbols"),
+ 	OPT_CALLBACK('m', "mmap-pages", &opts->mmap_pages, "pages",
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index cd1dcc45049b..48c38791d61b 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -1215,7 +1215,7 @@ static int dso__load_kernel_sym(struct dso *dso, struct map *map,
+ 		goto do_kallsyms;
+ 	}
  
- #include <libaudit.h>
- #include <stdlib.h>
-+#include <sys/eventfd.h>
- #include <sys/mman.h>
- #include <linux/futex.h>
+-	if (symbol_conf.vmlinux_name != NULL) {
++	if (!symbol_conf.ignore_vmlinux && symbol_conf.vmlinux_name != NULL) {
+ 		err = dso__load_vmlinux(dso, map,
+ 					symbol_conf.vmlinux_name, filter);
+ 		if (err > 0) {
+@@ -1227,7 +1227,7 @@ static int dso__load_kernel_sym(struct dso *dso, struct map *map,
+ 		return err;
+ 	}
  
-@@ -456,6 +457,32 @@ static size_t syscall_arg__scnprintf_open_flags(char *bf, size_t size,
- 
- #define SCA_OPEN_FLAGS syscall_arg__scnprintf_open_flags
- 
-+static size_t syscall_arg__scnprintf_eventfd_flags(char *bf, size_t size,
-+						   struct syscall_arg *arg)
-+{
-+	int printed = 0, flags = arg->val;
-+
-+	if (flags == 0)
-+		return scnprintf(bf, size, "NONE");
-+#define	P_FLAG(n) \
-+	if (flags & EFD_##n) { \
-+		printed += scnprintf(bf + printed, size - printed, "%s%s", printed ? "|" : "", #n); \
-+		flags &= ~EFD_##n; \
-+	}
-+
-+	P_FLAG(SEMAPHORE);
-+	P_FLAG(CLOEXEC);
-+	P_FLAG(NONBLOCK);
-+#undef P_FLAG
-+
-+	if (flags)
-+		printed += scnprintf(bf + printed, size - printed, "%s%#x", printed ? "|" : "", flags);
-+
-+	return printed;
-+}
-+
-+#define SCA_EFD_FLAGS syscall_arg__scnprintf_eventfd_flags
-+
- static size_t syscall_arg__scnprintf_signum(char *bf, size_t size, struct syscall_arg *arg)
- {
- 	int sig = arg->val;
-@@ -516,6 +543,8 @@ static struct syscall_fmt {
- 	{ .name	    = "brk",	    .hexret = true,
- 	  .arg_scnprintf = { [0] = SCA_HEX, /* brk */ }, },
- 	{ .name	    = "connect",    .errmsg = true, },
-+	{ .name	    = "eventfd2",   .errmsg = true,
-+	  .arg_scnprintf = { [1] = SCA_EFD_FLAGS, /* flags */ }, },
- 	{ .name	    = "fcntl",	    .errmsg = true,
- 	  .arg_scnprintf = { [1] = SCA_STRARRAY, /* cmd */ },
- 	  .arg_parm	 = { [1] = &strarray__fcntl_cmds, /* cmd */ }, },
+-	if (vmlinux_path != NULL) {
++	if (!symbol_conf.ignore_vmlinux && vmlinux_path != NULL) {
+ 		err = dso__load_vmlinux_path(dso, map, filter);
+ 		if (err > 0)
+ 			return err;
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index 2a97bb1a8097..9b8b213a62c1 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -85,6 +85,7 @@ struct symbol_conf {
+ 	unsigned short	priv_size;
+ 	unsigned short	nr_events;
+ 	bool		try_vmlinux_path,
++			ignore_vmlinux,
+ 			show_kernel_path,
+ 			use_modules,
+ 			sort_by_name,
 -- 
 1.8.1.4
 
