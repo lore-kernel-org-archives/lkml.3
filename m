@@ -1,75 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755981Ab3JNJej (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 05:34:39 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51370 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754571Ab3JNJeg (ORCPT
+	id S1755994Ab3JNJgL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 05:36:11 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:55094 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754622Ab3JNJgJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 05:34:36 -0400
-Date: Mon, 14 Oct 2013 02:34:17 -0700
-From: tip-bot for Borislav Petkov <tipbot@zytor.com>
-Message-ID: <tip-80030e3d8ec6414790a5ec67ae4c5eeee82aba98@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, bp@suse.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, bp@suse.de
-In-Reply-To: <1381682189-14470-1-git-send-email-bp@alien8.de>
-References: <1381682189-14470-1-git-send-email-bp@alien8.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86/microcode: Correct Kconfig dependencies
-Git-Commit-ID: 80030e3d8ec6414790a5ec67ae4c5eeee82aba98
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 14 Oct 2013 05:36:09 -0400
+Subject: [PATCH 0/3] procfs,
+ vmcore: fix regression of mmap on /proc/vmcore since v3.12-rc1
+To: akpm@linux-foundation.org
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        davem@davemloft.net, ebiederm@xmission.com, holzheu@linux.vnet.ibm.com,
+        adobriyan@gmail.com, vgoyal@redhat.com
+Date: Mon, 14 Oct 2013 18:36:06 +0900
+Message-ID: <20131014093606.9801.11175.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 14 Oct 2013 02:34:24 -0700 (PDT)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  80030e3d8ec6414790a5ec67ae4c5eeee82aba98
-Gitweb:     http://git.kernel.org/tip/80030e3d8ec6414790a5ec67ae4c5eeee82aba98
-Author:     Borislav Petkov <bp@suse.de>
-AuthorDate: Sun, 13 Oct 2013 18:36:29 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 14 Oct 2013 09:24:27 +0200
+This patch set fixes regression of mmap on /proc/vmcore since
+v3.12-rc1. The primary one is the 2nd patch. The 1st patch is another
+bug I found during investiation and it affects mmap on /proc/vmcore
+even if only 2nd patch is applied, so fix it together in this patch
+set. The last patch is just for cleaning up of target function in both
+1st and 2nd patches.
 
-x86/microcode: Correct Kconfig dependencies
-
-I have a randconfig here which has enabled only
-
-  CONFIG_MICROCODE=y
-  CONFIG_MICROCODE_OLD_INTERFACE=y
-
-with both
-
-  # CONFIG_MICROCODE_INTEL is not set
-  # CONFIG_MICROCODE_AMD is not set
-
-off. Which makes building the microcode functionality a little
-pointless. Don't do that in such cases then.
-
-Signed-off-by: Borislav Petkov <bp@suse.de>
-Link: http://lkml.kernel.org/r/1381682189-14470-1-git-send-email-bp@alien8.de
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/Kconfig | 1 +
- 1 file changed, 1 insertion(+)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 145d703..f67e839 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -1033,6 +1033,7 @@ config X86_REBOOTFIXUPS
- 
- config MICROCODE
- 	tristate "CPU microcode loading support"
-+	depends on CPU_SUP_AMD || CPU_SUP_INTEL
- 	select FW_LOADER
- 	---help---
- 
+HATAYAMA Daisuke (3):
+      procfs: fix unintended truncation of returned mapped address
+      procfs: Call default get_unmapped_area on MMU-present architectures
+      procfs: clean up proc_reg_get_unmapped_area for 80-column limit
+
+
+ fs/proc/inode.c |   20 ++++++++++++++------
+ 1 file changed, 14 insertions(+), 6 deletions(-)
+
+-- 
+Thanks.
+HATAYAMA, Daisuke
