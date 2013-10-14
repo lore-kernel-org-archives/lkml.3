@@ -1,42 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759084Ab3JNVGc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 17:06:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43266 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759064Ab3JNVGb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 17:06:31 -0400
-Date: Mon, 14 Oct 2013 14:06:30 -0700
-From: greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Cc: "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: ARC fixes backport for stable 3.11
-Message-ID: <20131014210629.GC12262@kroah.com>
-References: <525BA3C2.4090407@synopsys.com>
+	id S932431Ab3JNVHQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 17:07:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15837 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932352Ab3JNVHN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 17:07:13 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Jens Axboe <jaxboe@fusionio.com>, Sam Bradshaw <sbradshaw@micron.com>,
+        Asai Thambi S P <asamymuthupa@micron.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: blk-mq: mtip32xx: set numa node in blk_mq_reg structure
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Mon, 14 Oct 2013 17:07:03 -0400
+Message-ID: <x49hacja7ew.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <525BA3C2.4090407@synopsys.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 14, 2013 at 01:26:50PM +0530, Vineet Gupta wrote:
-> Hi Greg,
-> 
-> Can you please apply the following mainline commits to your queue for next 3.11
-> stable, in that order.
-> 
-> 7efd0da2d173 ARC: Fix __udelay calculation
-> c11eb222fd7d ARC: Handle zero-overhead-loop in unaligned access handler
-> 0752adfda15f ARC: Fix 32-bit wrap around in access_ok()
-> 6c00350b573c ARC: Workaround spinlock livelock in SMP SystemC simulation
-> 10469350e345 ARC: Fix signal frame management for SA_SIGINFO
-> 5b24282846c0 ARC: Ignore ptrace SETREGSET request for synthetic register "stop_pc"
+Hi,
 
-All applied, thanks.
+The mtip32xx driver figures out its numa node, but never updates its
+blk_mq_reg structure.
 
-greg k-h
+Patch against the new-queue branch of linux-block.git.
+
+Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+
+diff --git a/drivers/block/mtip32xx/mtip32xx.c b/drivers/block/mtip32xx/mtip32xx.c
+index 3c4c668..ca63a00 100644
+--- a/drivers/block/mtip32xx/mtip32xx.c
++++ b/drivers/block/mtip32xx/mtip32xx.c
+@@ -3990,6 +3990,7 @@ static int mtip_pci_probe(struct pci_dev *pdev,
+ 		my_node, pcibus_to_node(pdev->bus), dev_to_node(&pdev->dev),
+ 		cpu_to_node(smp_processor_id()), smp_processor_id());
+ 
++	mtip_mq_reg.numa_node = my_node;
+ 	dd = kzalloc_node(sizeof(struct driver_data), GFP_KERNEL, my_node);
+ 	if (dd == NULL) {
+ 		dev_err(&pdev->dev,
