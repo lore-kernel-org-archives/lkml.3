@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758181Ab3JNUJk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 16:09:40 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:39321 "EHLO
+	id S1757977Ab3JNULD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 16:11:03 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:39296 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756531Ab3JNUHp (ORCPT
+	with ESMTP id S1756683Ab3JNUHn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 16:07:45 -0400
+	Mon, 14 Oct 2013 16:07:43 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 156/161] perf symbols: Add ability to find kcore in build-id cache
-Date: Mon, 14 Oct 2013 17:02:25 -0300
-Message-Id: <1381780950-25642-157-git-send-email-acme@infradead.org>
+        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 033/161] tools/perf/build: Speed up git-version test on re-make
+Date: Mon, 14 Oct 2013 17:00:22 -0300
+Message-Id: <1381780950-25642-34-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1381780950-25642-1-git-send-email-acme@infradead.org>
 References: <1381780950-25642-1-git-send-email-acme@infradead.org>
@@ -29,192 +25,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Adrian Hunter <adrian.hunter@intel.com>
+From: Ingo Molnar <mingo@kernel.org>
 
-When no vmlinux is found, tools will use kallsyms and, if possible,
-kcore.  Add the ability to find kcore in the build-id cache.
+util/PERF-VERSION-GEN is currently executed on every build attempt,
+and this script can take a lot of time on trees that are at a
+significant git-distance from Linus's tree:
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
+  $ time util/PERF-VERSION-GEN
+
+  real    0m4.343s
+  user    0m4.176s
+  sys     0m0.140s
+
+It also takes a lot of time if the Git repository is network attached, etc.,
+because the commands it uses:
+
+        TAG=$(git describe --abbrev=0 --match "v[0-9].[0-9]*" 2>/dev/null )
+
+has to count commits from the nearest tag and thus has to access (and
+decompress) every git commit blob on the relevant version path.
+
+Even on Linus's tree it takes 0.28 seconds on a fast box to count all the
+commits and get the git version string:
+
+  $ time util/PERF-VERSION-GEN
+
+  real    0m0.279s
+  user    0m0.247s
+  sys     0m0.025s
+
+But the version string only has to be regenerated if the git repository's
+head commit changes. So add a dependency of ../../.git/HEAD and touch
+the file every time it's regenerated, so that Make's build rules can
+pick it up and cache the result:
+
+  make: `PERF-VERSION-FILE' is up to date.
+
+  real    0m0.184s
+  user    0m0.117s
+  sys     0m0.026s
+
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1381747424-3557-7-git-send-email-adrian.hunter@intel.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Link: http://lkml.kernel.org/n/tip-wvmlrurufuk6mo1ovtNigguT@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- tools/perf/util/symbol.c | 147 +++++++++++++++++++++++++++++++++--------------
- 1 file changed, 103 insertions(+), 44 deletions(-)
+ tools/perf/Makefile | 15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index b2f60ddc864f..76a9e933a7a5 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -1401,6 +1401,105 @@ out:
- 	return err;
- }
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 64c043b7a438..6b5452a120af 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -70,8 +70,9 @@ ifneq ($(OUTPUT),)
+ #$(info Determined 'OUTPUT' to be $(OUTPUT))
+ endif
  
-+static int find_matching_kcore(struct map *map, char *dir, size_t dir_sz)
-+{
-+	char kallsyms_filename[PATH_MAX];
-+	struct dirent *dent;
-+	int ret = -1;
-+	DIR *d;
-+
-+	d = opendir(dir);
-+	if (!d)
-+		return -1;
-+
-+	while (1) {
-+		dent = readdir(d);
-+		if (!dent)
-+			break;
-+		if (dent->d_type != DT_DIR)
-+			continue;
-+		scnprintf(kallsyms_filename, sizeof(kallsyms_filename),
-+			  "%s/%s/kallsyms", dir, dent->d_name);
-+		if (!validate_kcore_modules(kallsyms_filename, map)) {
-+			strlcpy(dir, kallsyms_filename, dir_sz);
-+			ret = 0;
-+			break;
-+		}
-+	}
-+
-+	closedir(d);
-+
-+	return ret;
-+}
-+
-+static char *dso__find_kallsyms(struct dso *dso, struct map *map)
-+{
-+	u8 host_build_id[BUILD_ID_SIZE];
-+	char sbuild_id[BUILD_ID_SIZE * 2 + 1];
-+	bool is_host = false;
-+	char path[PATH_MAX];
-+
-+	if (!dso->has_build_id) {
-+		/*
-+		 * Last resort, if we don't have a build-id and couldn't find
-+		 * any vmlinux file, try the running kernel kallsyms table.
-+		 */
-+		goto proc_kallsyms;
-+	}
-+
-+	if (sysfs__read_build_id("/sys/kernel/notes", host_build_id,
-+				 sizeof(host_build_id)) == 0)
-+		is_host = dso__build_id_equal(dso, host_build_id);
-+
-+	build_id__sprintf(dso->build_id, sizeof(dso->build_id), sbuild_id);
-+
-+	/* Use /proc/kallsyms if possible */
-+	if (is_host) {
-+		DIR *d;
-+		int fd;
-+
-+		/* If no cached kcore go with /proc/kallsyms */
-+		scnprintf(path, sizeof(path), "%s/[kernel.kcore]/%s",
-+			  buildid_dir, sbuild_id);
-+		d = opendir(path);
-+		if (!d)
-+			goto proc_kallsyms;
-+		closedir(d);
-+
-+		/*
-+		 * Do not check the build-id cache, until we know we cannot use
-+		 * /proc/kcore.
-+		 */
-+		fd = open("/proc/kcore", O_RDONLY);
-+		if (fd != -1) {
-+			close(fd);
-+			/* If module maps match go with /proc/kallsyms */
-+			if (!validate_kcore_modules("/proc/kallsyms", map))
-+				goto proc_kallsyms;
-+		}
-+
-+		/* Find kallsyms in build-id cache with kcore */
-+		if (!find_matching_kcore(map, path, sizeof(path)))
-+			return strdup(path);
-+
-+		goto proc_kallsyms;
-+	}
-+
-+	scnprintf(path, sizeof(path), "%s/[kernel.kallsyms]/%s",
-+		  buildid_dir, sbuild_id);
-+
-+	if (access(path, F_OK)) {
-+		pr_err("No kallsyms or vmlinux with build-id %s was found\n",
-+		       sbuild_id);
-+		return NULL;
-+	}
-+
-+	return strdup(path);
-+
-+proc_kallsyms:
-+	return strdup("/proc/kallsyms");
-+}
-+
- static int dso__load_kernel_sym(struct dso *dso, struct map *map,
- 				symbol_filter_t filter)
- {
-@@ -1449,51 +1548,11 @@ static int dso__load_kernel_sym(struct dso *dso, struct map *map,
- 	if (symbol_conf.symfs[0] != 0)
- 		return -1;
+-$(OUTPUT)PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
++$(OUTPUT)PERF-VERSION-FILE: ../../.git/HEAD
+ 	@$(SHELL_PATH) util/PERF-VERSION-GEN $(OUTPUT)
++	@touch $(OUTPUT)PERF-VERSION-FILE
  
--	/*
--	 * Say the kernel DSO was created when processing the build-id header table,
--	 * we have a build-id, so check if it is the same as the running kernel,
--	 * using it if it is.
--	 */
--	if (dso->has_build_id) {
--		u8 kallsyms_build_id[BUILD_ID_SIZE];
--		char sbuild_id[BUILD_ID_SIZE * 2 + 1];
--
--		if (sysfs__read_build_id("/sys/kernel/notes", kallsyms_build_id,
--					 sizeof(kallsyms_build_id)) == 0) {
--			if (dso__build_id_equal(dso, kallsyms_build_id)) {
--				kallsyms_filename = "/proc/kallsyms";
--				goto do_kallsyms;
--			}
--		}
--		/*
--		 * Now look if we have it on the build-id cache in
--		 * $HOME/.debug/[kernel.kallsyms].
--		 */
--		build_id__sprintf(dso->build_id, sizeof(dso->build_id),
--				  sbuild_id);
--
--		if (asprintf(&kallsyms_allocated_filename,
--			     "%s/.debug/[kernel.kallsyms]/%s",
--			     getenv("HOME"), sbuild_id) == -1) {
--			pr_err("Not enough memory for kallsyms file lookup\n");
--			return -1;
--		}
--
--		kallsyms_filename = kallsyms_allocated_filename;
-+	kallsyms_allocated_filename = dso__find_kallsyms(dso, map);
-+	if (!kallsyms_allocated_filename)
-+		return -1;
+ CC = $(CROSS_COMPILE)gcc
+ AR = $(CROSS_COMPILE)ar
+@@ -814,6 +815,16 @@ clean: $(LIBTRACEEVENT)-clean $(LIBLK)-clean
+ 	$(RM) $(OUTPUT)util/*-flex*
+ 	$(python-clean)
  
--		if (access(kallsyms_filename, F_OK)) {
--			pr_err("No kallsyms or vmlinux with build-id %s "
--			       "was found\n", sbuild_id);
--			free(kallsyms_allocated_filename);
--			return -1;
--		}
--	} else {
--		/*
--		 * Last resort, if we don't have a build-id and couldn't find
--		 * any vmlinux file, try the running kernel kallsyms table.
--		 */
--		kallsyms_filename = "/proc/kallsyms";
--	}
-+	kallsyms_filename = kallsyms_allocated_filename;
- 
- do_kallsyms:
- 	err = dso__load_kallsyms(dso, kallsyms_filename, map, filter);
++#
++# Trick: if ../../.git does not exist - we are building out of tree for example,
++# then force version regeneration:
++#
++ifeq ($(wildcard ../../.git/HEAD),)
++    GIT-HEAD-PHONY = ../../.git/HEAD
++else
++    GIT-HEAD-PHONY =
++endif
++
+ .PHONY: all install clean strip $(LIBTRACEEVENT) $(LIBLK)
+ .PHONY: shell_compatibility_test please_set_SHELL_PATH_to_a_more_modern_shell
+-.PHONY: .FORCE-PERF-VERSION-FILE TAGS tags cscope .FORCE-PERF-CFLAGS
++.PHONY: $(GIT-HEAD-PHONY) TAGS tags cscope .FORCE-PERF-CFLAGS
 -- 
 1.8.1.4
 
