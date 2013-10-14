@@ -1,49 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757310Ab3JNTIb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 15:08:31 -0400
-Received: from a9-42.smtp-out.amazonses.com ([54.240.9.42]:59508 "EHLO
-	a9-42.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757266Ab3JNTIa (ORCPT
+	id S1757332Ab3JNTJW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 15:09:22 -0400
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:49999 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757173Ab3JNTJV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 15:08:30 -0400
-Date: Mon, 14 Oct 2013 19:02:29 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Ingo Molnar <mingo@kernel.org>, David Miller <davem@davemloft.net>,
-        tj@kernel.org, akpm@linuxfoundation.org, srostedt@redhat.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de
-Subject: Re: [PATCH 0/6] percpu: Implement Preemption checks for __this_cpu
- operations V4
-In-Reply-To: <20131014103258.GY3081@twins.programming.kicks-ass.net>
-Message-ID: <00000141b8591950-3f399b8b-fdc7-41a0-b84c-bb632e8adba7-000000@email.amazonses.com>
-References: <00000141a8a7ea27-4ab5f822-e15f-4789-a5cf-f313c402a901-000000@email.amazonses.com> <20131011.140814.422793173894221852.davem@davemloft.net> <20131012165120.GA15116@gmail.com> <20131014103258.GY3081@twins.programming.kicks-ass.net>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.10.14-54.240.9.42
+	Mon, 14 Oct 2013 15:09:21 -0400
+Message-ID: <525C415A.2020505@gmail.com>
+Date: Mon, 14 Oct 2013 21:09:14 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+To: Jason Cooper <jason@lakedaemon.net>
+CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Roel Kluin <roel.kluin@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] unset twsi option3 for gconfig as well
+References: <1381706847-32762-1-git-send-email-roel.kluin@gmail.com> <CACRpkdb8ibOm61D_iGkOkbas1475n4k5jptnRH7VFk=9+pipHQ@mail.gmail.com> <20131014091230.65047d00@skate> <525C3B65.30501@gmail.com> <20131014190247.GN5402@titan.lakedaemon.net>
+In-Reply-To: <20131014190247.GN5402@titan.lakedaemon.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Oct 2013, Peter Zijlstra wrote:
-
-> > Most kernel developers tend to use 'git send-email' to send patches to
-> > lkml, and that method is working pretty reliably.
+On 10/14/2013 09:02 PM, Jason Cooper wrote:
+> On Mon, Oct 14, 2013 at 08:43:49PM +0200, Sebastian Hesselbarth wrote:
+> ...
+>> You know a good way to determine how far it should go back to -stable?
 >
-> I always use quilt mail, it typically adds a reference to the 0/0 email
-> and ensures the time of each msg is one second ahead of the previous one
-> to ensure order is correct.
+> $ git blame -L 338,338 drivers/pinctrl/mvebu/pinctrl-dove.c
+> c9f95ced drivers/pinctrl/pinctrl-dove.c (Sebastian Hesselbarth
+> 2012-09-13 17:41:44 +0200 338)   gcfg2 &= ~(DOVE_TWSI_ENABLE_OPTION2 |
+> DOVE_TWSI_ENABLE_OPTION2);
+>
+> $ git tag --contains c9f95ced | grep '^v[23]\.[0-9][0-9]*' | sed -r -e
+> 's/^(v[23]\.[0-9][0-9]*).*$/\1.x/' | sort -uV
+> v3.7.x
+> v3.8.x
+> v3.9.x
+> v3.10.x
+> v3.11.x
+> v3.12.x
+>
+> so it should get flagged for v3.7 and newer.
+>
+> Watch out for really old stuff, the regex above doesn't properly handle
+> v2.6.XX.x...
 
-Yes that I also what I expected to happen and what always happened in the
-past.
+Ok, it is not in pre-v3.0, so the regex is fine. Thanks for the above -
+and I also see git magic to resolve the rename of pinctrl-dove.c :)
 
-> I've no idea how Christoph managed to wreck this, but normally quilt
-> mail DTRT (as opposed to git send-email which used to default to
-> endlessly deep threads -- got fixed in 1.6 or 1.7 or thereabouts).
+If it originates from before the rename, I guess we need two different
+-stable patches, one for pre-rename, one for post-rename?
 
-Well this is going through Amazon cloud email which may be wrecking
-things. Had a number of issues already with messages being delayed etc. I
-can try to revert to my home setup and see if that fixes things.
-
+Sebastian
