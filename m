@@ -1,80 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750896Ab3JNFHP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 01:07:15 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:51375 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750718Ab3JNFHO (ORCPT
+	id S1751112Ab3JNFI1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 01:08:27 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:39395 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750761Ab3JNFIZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 01:07:14 -0400
-X-AuditID: 9c93017d-b7b79ae000001729-f6-525b7bfe76e5
-From: Namhyung Kim <namhyung@kernel.org>
-To: Felipe Pena <felipensp@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Borislav Petkov <bp@suse.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] tools/perf/util: Fix memory leak in trace-event-info.c
-References: <1381454489-4135-1-git-send-email-felipensp@gmail.com>
-Date: Mon, 14 Oct 2013 14:07:09 +0900
-In-Reply-To: <1381454489-4135-1-git-send-email-felipensp@gmail.com> (Felipe
-	Pena's message of "Thu, 10 Oct 2013 22:21:29 -0300")
-Message-ID: <87fvs4bfuq.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Mon, 14 Oct 2013 01:08:25 -0400
+Date: Mon, 14 Oct 2013 06:08:20 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Matt Fleming <matt.fleming@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Jones <pjones@redhat.com>
+Subject: Re: [PATCH v2 2/2] x86/efi: Add EFI framebuffer earlyprintk support
+Message-ID: <20131014050820.GK12321@console-pimps.org>
+References: <1381502037-22225-1-git-send-email-matt@console-pimps.org>
+ <1381502037-22225-3-git-send-email-matt@console-pimps.org>
+ <20131012175615.GB18849@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131012175615.GB18849@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Felipe,
+On Sat, 12 Oct, at 07:56:15PM, Ingo Molnar wrote:
+> > +static void early_efi_write_char(u32 *dst, unsigned char c, unsigned int h)
+> > +{
+> > +	const u32 color_black = 0x00000000;
+> > +	const u32 color_grey = 0x00aaaaaa;
+> 
+> I still think this should be white - that should be more visible than 
+> grey, especially in brightly lit places. (And I'm really sorry about nerds 
+> in the basement getting eye damage.)
+> 
+> Also, what is the highest byte typically, can that ever be part of 
+> multiple framebuffers and can it mean an alpha channel? If yes then '0x00' 
+> (read: fully translucent) might not be the best of choices for console 
+> output. In that case -1 (0xffffffff) would work in a natural way.
+> 
+> (If it's reserved bits then it has to be all zeroes.)
 
-On Thu, 10 Oct 2013 22:21:29 -0300, Felipe Pena wrote:
-> Fix for a memory leak on tracing_data_get() function when returning NULL explicitly
->
-> Signed-off-by: Felipe Pena <felipensp@gmail.com>
-> ---
->  tools/perf/util/trace-event-info.c |    7 +++++--
->  1 file changed, 5 insertions(+), 2 deletions(-)
->
-> diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
-> index f3c9e55..2a0c3c9 100644
-> --- a/tools/perf/util/trace-event-info.c
-> +++ b/tools/perf/util/trace-event-info.c
-> @@ -518,13 +518,15 @@ struct tracing_data *tracing_data_get(struct list_head *pattrs,
->  			 "/tmp/perf-XXXXXX");
->  		if (!mkstemp(tdata->temp_file)) {
->  			pr_debug("Can't make temp file");
-> -			return NULL;
-> +			err = -1;
-> +			goto err_tdata;
->  		}
->
->  		temp_fd = open(tdata->temp_file, O_RDWR);
->  		if (temp_fd < 0) {
->  			pr_debug("Can't read '%s'", tdata->temp_file);
-> -			return NULL;
-> +			err = -1;
-> +			goto err_tdata;
+The GOP part of the spec says that the top byte is reserved, and must be
+set to zero, and looking at the efifb driver it disables transparency
+support when allocating the color map,
 
-I'd rather initialize err to -1 at the beginning.  And the malloc of
-tdata should also be handled like this.
+int fb_alloc_cmap(struct fb_cmap *cmap, int len, int transp)
 
-Thanks,
-Namhyung
+[...]
+
+	if ((err = fb_alloc_cmap(&info->cmap, 256, 0)) < 0) {
+		printk(KERN_ERR "efifb: cannot allocate colormap\n");
+		goto err_unmap;
+	}
 
 
->  		}
->
->  		/*
-> @@ -562,6 +564,7 @@ out:
->  		output_fd = fd;
->  	}
->
-> +err_tdata:
->  	if (err) {
->  		free(tdata);
->  		tdata = NULL;
-> --
-> 1.7.10.4
+-- 
+Matt Fleming, Intel Open Source Technology Center
