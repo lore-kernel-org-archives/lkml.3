@@ -1,66 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755374Ab3JNIy5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 04:54:57 -0400
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:23343
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753959Ab3JNIy4 (ORCPT
+	id S1755808Ab3JNIzK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 04:55:10 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:37452 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754138Ab3JNIzH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 04:54:56 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275bh8275dhz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Mon, 14 Oct 2013 16:55:42 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Jingoo Han <jg1.han@samsung.com>
-CC: "'Mark Brown'" <broonie@kernel.org>,
-        "'Liam Girdwood'" <lgirdwood@gmail.com>,
-        <linux-kernel@vger.kernel.org>, "'Marek Vasut'" <marex@denx.de>
-Subject: Re: [PATCH 02/11] regulator: anatop: Fix checkpatch issue
-Message-ID: <20131014085540.GB27668@S2101-09.ap.freescale.net>
+	Mon, 14 Oct 2013 04:55:07 -0400
+X-AuditID: cbfee68d-b7fe86d0000077a5-43-525bb169362e
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Mark Brown'" <broonie@linaro.org>
+Cc: "'Liam Girdwood'" <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
+        "'Jingoo Han'" <jg1.han@samsung.com>, "'Balaji T K'" <balajitk@ti.com>,
+        "'Nishanth Menon'" <nm@ti.com>
 References: <000001cec8b9$931f4c90$b95de5b0$%han@samsung.com>
- <000101cec8b9$c967efa0$5c37cee0$%han@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <000101cec8b9$c967efa0$5c37cee0$%han@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+In-reply-to: <000001cec8b9$931f4c90$b95de5b0$%han@samsung.com>
+Subject: [PATCH 11/11] regulator: twl: Fix checkpatch issue
+Date: Mon, 14 Oct 2013 17:55:05 +0900
+Message-id: <000a01cec8bb$13bf5970$3b3e0c50$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac7IuZK01KcLw1AZSDCREfGxHfkpOgAAU+bw
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDIsWRmVeSWpSXmKPExsVy+t8zI93MjdFBBq+7jCymTt7OZrHp+nVW
+	i8sLL7FafLvSwWRxedccNos3P84yObB57Jx1l93jzrU9bB59W1Yxehy/sZ3J4/MmuQDWKC6b
+	lNSczLLUIn27BK6M/p0aBY0cFS0re5gaGA+ydTFyckgImEj0HTrGCmGLSVy4tx4ozsUhJLCM
+	UeLNqjfsMEUr3/VDJaYzSnzedJcRwvnFKPGpbzkTSBWbgJrEly+HwTpEBFQl9jx/AmYzC6xl
+	lJjT7Q1iCwnYStw9fYkZxOYUsJNY+G0XC4gtLGAtsW7ZcbAzWIB6J6z6A9bLC1R/pGc2E4Qt
+	KPFj8j0WiJlaEut3HmeCsOUlNq95CzSTA+hSdYlHf3UhTjCSeLp0IlS5iMS+F+/AbpYQuMUu
+	sel+JxPELgGJb5MPsUD0ykpsOsAM8bCkxMEVN1gmMErMQrJ5FpLNs5BsnoVkxQJGllWMoqkF
+	yQXFSelFhnrFibnFpXnpesn5uZsYITHbu4Px9gHrQ4zJQOsnMkuJJucDYz6vJN7Q2MzIwtTE
+	1NjI3NKMNGElcV61FutAIYH0xJLU7NTUgtSi+KLSnNTiQ4xMHJxSDYxrIxwMDsnmXQo+37Ry
+	arGZ1NeiBbPEEqJqGTdeskls1i5bKSzKrz+tpOkB9zWzzWuaLl+a9PSiJu/CXSd1jfhr/Ty/
+	WEZy5bi5y+ip1CU5dmn/fKiaIPYqYuKRO4tVBXY0Wq1zOLtFQ2yBleD1afnFl0MN1svtcU5+
+	Jq2ZvuvSPe1nzBnxHkosxRmJhlrMRcWJAGd3VinvAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJKsWRmVeSWpSXmKPExsVy+t9jQd3MjdFBBhMX6VlMnbydzWLT9eus
+	FpcXXmK1+Halg8ni8q45bBZvfpxlcmDz2DnrLrvHnWt72Dz6tqxi9Dh+YzuTx+dNcgGsUQ2M
+	NhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlAJygplCXm
+	lAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0JgusxMkADCesYM/p3ahQ0clS0rOxhamA8yNbFyMkh
+	IWAisfJdP5QtJnHh3nogm4tDSGA6o8TnTXcZIZxfjBKf+pYzgVSxCahJfPlymB3EFhFQldjz
+	/AmYzSywllFiTrc3iC0kYCtx9/QlZhCbU8BOYuG3XSwgtrCAtcS6ZcdZQWwWoN4Jq/6A9fIC
+	1R/pmc0EYQtK/Jh8jwVippbE+p3HmSBseYnNa94CzeQAulRd4tFfXYgTjCSeLp0IVS4ise/F
+	O8YJjEKzkEyahWTSLCSTZiFpWcDIsopRNLUguaA4KT3XSK84Mbe4NC9dLzk/dxMjOCE8k97B
+	uKrB4hCjAAejEg+vgFN0kBBrYllxZe4hRgkOZiURXsF5QCHelMTKqtSi/Pii0pzU4kOMyUCP
+	TmSWEk3OByarvJJ4Q2MTMyNLIzMLIxNzc9KElcR5D7ZaBwoJpCeWpGanphakFsFsYeLglGpg
+	VHGP8nl9beOfO76iDIsWnlHPv5Ijofz44Hp/1usakdXeDPNv1ORIn2VKTeE44c6UuWhfnUJP
+	28v8AF6jnr8fPD7EvjywsMk07dUq/XuV9je3ZDEEZ5rfkKrf6e+SZ56ieLXAah2vzaOl3LPm
+	9e9Rvsg6cUL345Zl5iqb3672PX1T6tek0qRzSizFGYmGWsxFxYkAFY1gdEwDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 14, 2013 at 05:45:51PM +0900, Jingoo Han wrote:
-> Fix the following checkpatch warning.
-> 
->   WARNING: quoted string split across lines
-> 
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+Fix the following checkpatch warnings.
 
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
+  WARNING: please, no space before tabs
+  WARNING: space prohibited between function name and open parenthesis '('
 
-> ---
->  drivers/regulator/anatop-regulator.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/regulator/anatop-regulator.c b/drivers/regulator/anatop-regulator.c
-> index e42bfd1..c734d09 100644
-> --- a/drivers/regulator/anatop-regulator.c
-> +++ b/drivers/regulator/anatop-regulator.c
-> @@ -255,7 +255,7 @@ static void __exit anatop_regulator_exit(void)
->  }
->  module_exit(anatop_regulator_exit);
->  
-> -MODULE_AUTHOR("Nancy Chen <Nancy.Chen@freescale.com>, "
-> -	      "Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org>");
-> +MODULE_AUTHOR("Nancy Chen <Nancy.Chen@freescale.com>");
-> +MODULE_AUTHOR("Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org>");
->  MODULE_DESCRIPTION("ANATOP Regulator driver");
->  MODULE_LICENSE("GPL v2");
-> -- 
-> 1.7.10.4
-> 
-> 
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/regulator/twl-regulator.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/regulator/twl-regulator.c b/drivers/regulator/twl-regulator.c
+index 8ebd785..fed28ab 100644
+--- a/drivers/regulator/twl-regulator.c
++++ b/drivers/regulator/twl-regulator.c
+@@ -58,7 +58,7 @@ struct twlreg_info {
+ 	struct regulator_desc	desc;
+ 
+ 	/* chip specific features */
+-	unsigned long 		features;
++	unsigned long		features;
+ 
+ 	/*
+ 	 * optional override functions for voltage set/get
+@@ -1128,7 +1128,7 @@ static int twlreg_probe(struct platform_device *pdev)
+ 	if (!initdata)
+ 		return -EINVAL;
+ 
+-	info = kmemdup(template, sizeof (*info), GFP_KERNEL);
++	info = kmemdup(template, sizeof(*info), GFP_KERNEL);
+ 	if (!info)
+ 		return -ENOMEM;
+ 
+-- 
+1.7.10.4
+
 
