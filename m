@@ -1,95 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758154Ab3JNUsB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 16:48:01 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:40477 "EHLO
+	id S1758258Ab3JNUsc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 16:48:32 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38467 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757197Ab3JNUr7 (ORCPT
+	with ESMTP id S1757441Ab3JNUCq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 16:47:59 -0400
-Message-ID: <525C5863.1000505@infradead.org>
-Date: Mon, 14 Oct 2013 13:47:31 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Thierry Reding <thierry.reding@gmail.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Mark Brown <broonie@kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        David Miller <davem@davemloft.net>
-Subject: Re: [PATCH -next] netdev: inet_timewait_sock.h missing semi-colon
- when KMEMCHECK is enabled
-References: <1381762088-18880-1-git-send-email-treding@nvidia.com>	 <525C47C0.2000907@infradead.org> <1381780437.12919.3.camel@joe-AO722>
-In-Reply-To: <1381780437.12919.3.camel@joe-AO722>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 14 Oct 2013 16:02:46 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 018/161] tools/perf/build: Split out feature check: 'libunwind'
+Date: Mon, 14 Oct 2013 17:00:07 -0300
+Message-Id: <1381780950-25642-19-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1381780950-25642-1-git-send-email-acme@infradead.org>
+References: <1381780950-25642-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/14/13 12:53, Joe Perches wrote:
-> On Mon, 2013-10-14 at 12:36 -0700, Randy Dunlap wrote:
->> From: Randy Dunlap <rdunlap@infradead.org>
->>
->> Fix (a few hundred) build errors due to missing semi-colon when
->> KMEMCHECK is enabled:
->>
->>   include/net/inet_timewait_sock.h:139:2: error: expected ',', ';' or '}' before 'int'
->>   include/net/inet_timewait_sock.h:148:28: error: 'const struct inet_timewait_sock' has no member named 'tw_death_node'
->>
->> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
->> ---
->>  include/net/inet_timewait_sock.h |    2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> --- next-2013-1014.orig/include/net/inet_timewait_sock.h
->> +++ next-2013-1014/include/net/inet_timewait_sock.h
->> @@ -135,7 +135,7 @@ struct inet_timewait_sock {
->>  				tw_transparent  : 1,
->>  				tw_pad		: 6,	/* 6 bits hole */
->>  				tw_tos		: 8,
->> -				tw_pad2		: 16 /* 16 bits hole */
->> +				tw_pad2		: 16;	/* 16 bits hole */
->>  	kmemcheck_bitfield_end(flags);
->>  	u32			tw_ttd;
->>  	struct inet_bind_bucket	*tw_tb;
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> Shouldn't this be done in kmemcheck.h?
+From: Ingo Molnar <mingo@kernel.org>
 
-This patch makes sense and probably should be merged
-but it does not fix the build errors that I reported.
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Link: http://lkml.kernel.org/n/tip-vTiatsVyva3tfgh3vhxaidxl@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ tools/perf/config/Makefile                        | 13 ++++++++-----
+ tools/perf/config/feature-checks/Makefile         |  4 ++++
+ tools/perf/config/feature-checks/test-libunwind.c | 20 ++++++++++++++++++++
+ 3 files changed, 32 insertions(+), 5 deletions(-)
+ create mode 100644 tools/perf/config/feature-checks/test-libunwind.c
 
-
->  include/linux/kmemcheck.h | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/include/linux/kmemcheck.h b/include/linux/kmemcheck.h
-> index 39f8453..b9ffad5 100644
-> --- a/include/linux/kmemcheck.h
-> +++ b/include/linux/kmemcheck.h
-> @@ -62,10 +62,10 @@ bool kmemcheck_is_obj_initialized(unsigned long addr, size_t size);
->   *     kmemcheck_annotate_bitfield(a, flags);
->   */
->  #define kmemcheck_bitfield_begin(name)	\
-> -	int name##_begin[0];
-> +	int name##_begin[0]
->  
->  #define kmemcheck_bitfield_end(name)	\
-> -	int name##_end[0];
-> +	int name##_end[0]
->  
->  #define kmemcheck_annotate_bitfield(ptr, name)				\
->  	do {								\
-> 
-> 
-> --
-
-
-
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 0d7558790a02..d684a292536e 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -113,6 +113,7 @@ FEATURE_TESTS =				\
+ 	dwarf				\
+ 	libelf-mmap			\
+ 	libelf-getphdrnum		\
++	libunwind			\
+ 	libnuma
+ 
+ $(foreach test,$(FEATURE_TESTS),$(call feature_check,$(test),$(test)))
+@@ -240,15 +241,17 @@ ifneq ($(ARCH),x86)
+ endif
+ 
+ ifndef NO_LIBUNWIND
+-  # for linking with debug library, run like:
+-  # make DEBUG=1 LIBUNWIND_DIR=/opt/libunwind/
++  #
++  # For linking with debug library, run like:
++  #
++  #   make DEBUG=1 LIBUNWIND_DIR=/opt/libunwind/
++  #
+   ifdef LIBUNWIND_DIR
+     LIBUNWIND_CFLAGS  := -I$(LIBUNWIND_DIR)/include
+     LIBUNWIND_LDFLAGS := -L$(LIBUNWIND_DIR)/lib
+   endif
+ 
+-  FLAGS_UNWIND=$(LIBUNWIND_CFLAGS) $(CFLAGS) $(LIBUNWIND_LDFLAGS) $(LDFLAGS) $(EXTLIBS) $(LIBUNWIND_LIBS)
+-  ifneq ($(call try-cc,$(SOURCE_LIBUNWIND),$(FLAGS_UNWIND),libunwind),y)
++  ifneq ($(feature-libunwind), 1)
+     msg := $(warning No libunwind found, disabling post unwind support. Please install libunwind-dev[el] >= 0.99);
+     NO_LIBUNWIND := 1
+   endif
+@@ -259,7 +262,7 @@ ifndef NO_LIBUNWIND
+   EXTLIBS += $(LIBUNWIND_LIBS)
+   CFLAGS += $(LIBUNWIND_CFLAGS)
+   LDFLAGS += $(LIBUNWIND_LDFLAGS)
+-endif # NO_LIBUNWIND
++endif
+ 
+ ifndef NO_LIBAUDIT
+   FLAGS_LIBAUDIT = $(CFLAGS) $(LDFLAGS) -laudit
+diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
+index 83b3a02b64d8..d6d9570a038f 100644
+--- a/tools/perf/config/feature-checks/Makefile
++++ b/tools/perf/config/feature-checks/Makefile
+@@ -11,6 +11,7 @@ FILES=					\
+ 	test-dwarf			\
+ 	test-libelf-mmap		\
+ 	test-libelf-getphdrnum		\
++	test-libunwind			\
+ 	test-libnuma
+ 
+ CC := $(CC) -MD
+@@ -57,6 +58,9 @@ test-libelf-getphdrnum:
+ test-libnuma:
+ 	$(BUILD) -lnuma
+ 
++test-libunwind:
++	$(BUILD) -lunwind -lunwind-x86_64 -lelf
++
+ -include *.d */*.d
+ 
+ ###############################
+diff --git a/tools/perf/config/feature-checks/test-libunwind.c b/tools/perf/config/feature-checks/test-libunwind.c
+new file mode 100644
+index 000000000000..562274695c76
+--- /dev/null
++++ b/tools/perf/config/feature-checks/test-libunwind.c
+@@ -0,0 +1,20 @@
++#include <libunwind.h>
++#include <stdlib.h>
++
++extern int UNW_OBJ(dwarf_search_unwind_table) (unw_addr_space_t as,
++                                      unw_word_t ip,
++                                      unw_dyn_info_t *di,
++                                      unw_proc_info_t *pi,
++                                      int need_unwind_info, void *arg);
++
++
++#define dwarf_search_unwind_table UNW_OBJ(dwarf_search_unwind_table)
++
++int main(void)
++{
++	unw_addr_space_t addr_space;
++	addr_space = unw_create_addr_space(NULL, 0);
++	unw_init_remote(NULL, addr_space, NULL);
++	dwarf_search_unwind_table(addr_space, 0, NULL, NULL, 0, NULL);
++	return 0;
++}
 -- 
-~Randy
+1.8.1.4
+
