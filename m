@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932340Ab3JNXEh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 19:04:37 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:49197 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756977Ab3JNXEf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 19:04:35 -0400
+	id S932421Ab3JNXEt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 19:04:49 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:53423 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932278Ab3JNXEr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 19:04:47 -0400
 From: Eduardo Valentin <eduardo.valentin@ti.com>
 To: <rui.zhang@intel.com>
 CC: Eduardo Valentin <eduardo.valentin@ti.com>,
@@ -16,9 +17,11 @@ CC: Eduardo Valentin <eduardo.valentin@ti.com>,
         <linux-pm@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linux-kernel@vger.kernel.org>
 Subject: [RFC] thermal: introduce clock cooling device
-Date: Mon, 14 Oct 2013 19:03:48 -0400
-Message-ID: <1381791829-885-1-git-send-email-eduardo.valentin@ti.com>
+Date: Mon, 14 Oct 2013 19:03:49 -0400
+Message-ID: <1381791829-885-2-git-send-email-eduardo.valentin@ti.com>
 X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
+In-Reply-To: <1381791829-885-1-git-send-email-eduardo.valentin@ti.com>
+References: <1381791829-885-1-git-send-email-eduardo.valentin@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
