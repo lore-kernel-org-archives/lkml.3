@@ -1,146 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932101Ab3JNMuK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 08:50:10 -0400
-Received: from shrek-wifi.podlesie.net ([93.179.225.50]:34139 "EHLO
-	shrek.podlesie.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932073Ab3JNMuF (ORCPT
+	id S1756574Ab3JNMs6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 08:48:58 -0400
+Received: from eu1sys200aog122.obsmtp.com ([207.126.144.153]:52889 "EHLO
+	eu1sys200aog122.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755990Ab3JNMsy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 08:50:05 -0400
-Date: Mon, 14 Oct 2013 14:50:01 +0200
-From: Krzysztof Mazur <krzysiek@podlesie.net>
-To: Pawel Moll <pawel.moll@arm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] init: fix in-place parameter modification regression
-Message-ID: <20131014125001.GA6015@shrek.podlesie.net>
-References: <1381601100-5622-1-git-send-email-krzysiek@podlesie.net>
- <1381750442.3247.48.camel@hornet>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1381750442.3247.48.camel@hornet>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 14 Oct 2013 08:48:54 -0400
+From: Maxime COQUELIN <maxime.coquelin@st.com>
+To: Wolfram Sang <wsa@the-dreams.de>, srinivas.kandagatla@st.com,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-i2c@vger.kernel.org
+Cc: stephen.gallimore@st.com, stuart.menefy@st.com,
+        Lee Jones <lee.jones@linaro.org>, gabriel.fernandez@st.com,
+        Maxime Coquelin <maxime.coquelin@st.com>
+Subject: [PATCH v5 0/4] Add I2C support to ST SoCs
+Date: Mon, 14 Oct 2013 14:46:48 +0200
+Message-Id: <1381754813-4679-1-git-send-email-maxime.coquelin@st.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 14, 2013 at 12:34:02PM +0100, Pawel Moll wrote:
-> On Sat, 2013-10-12 at 19:05 +0100, Krzysztof Mazur wrote:
-> > Before commit 026cee0086fe1df4cf74691cf273062cc769617d
-> > ("params: <level>_initcall-like kernel parameters") the __setup
-> > parameter parsing code could modify parameter in the
-> > static_command_line buffer and such modifications were kept. After
-> > that commit such modifications are destroyed during per-initcall level
-> > parameter parsing because the same static_command_line buffer is used
-> > and only parameters for appropriate initcall level are parsed.
-> > 
-> > That change broke at least parsing "ubd" parameter in the ubd driver
-> > when the COW file is used.
-> > 
-> > Now the separate buffer is used for per-initcall parameter parsing,
-> > like in parsing early params.
-> > 
-> > Signed-off-by: Krzysztof Mazur <krzysiek@podlesie.net>
-> > ---
-> >
-> >  init/main.c | 5 +++--
-> >  1 file changed, 3 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/init/main.c b/init/main.c
-> > index 63d3e8f..e5b322a 100644
-> > --- a/init/main.c
-> > +++ b/init/main.c
-> > @@ -742,12 +742,13 @@ static char *initcall_level_names[] __initdata = {
-> >  
-> >  static void __init do_initcall_level(int level)
-> >  {
-> > +	static __initdata char tmp_cmdline[COMMAND_LINE_SIZE];
-> >  	extern const struct kernel_param __start___param[], __stop___param[];
-> >  	initcall_t *fn;
-> >  
-> > -	strcpy(static_command_line, saved_command_line);
-> > +	strcpy(tmp_cmdline, saved_command_line);
-> >  	parse_args(initcall_level_names[level],
-> > -		   static_command_line, __start___param,
-> > +		   tmp_cmdline, __start___param,
-> >  		   __stop___param - __start___param,
-> >  		   level, level,
-> >  		   &repair_env_string);
-> 
-> Hold on. static_command_line can be only accessed within init/main.c. As
-> far as I can say, it is only used by unknown_bootoption() (so your
-> __setup callbacks) and then in the do_initcall_level().
+The goal of this series is to add I2C support to ST SoCs.
+The DT definition is added for STiH415 and STiH416 SoCs on
+B2000 and B2020 boards.
 
-But I think it's legal to keep the pointer to the option argument
-(which points to static_command_line) in __setup callback and use it later,
-and assume that the argument value will never change.
+The series has been tested working on STiH416-B2020 board.
+It applies on top of v3.12-rc5.
 
-However, with my patch it's no longer true for per-initcall arguments
-because they share the same command line buffer, so the tmp_cmdline
-have the __initdata attribute. The same restriction applies to
-the "early params".
+Changes since v4:
+  - Fixed IRQ flags to level high triggering as reported by Stephen Gallimore
+  - Revert back to generic DT properties for Anti-glitch filtering. Their DT
+    binding documentation will be updated when i2c DT binding docuementation
+    will be created (In Wolfram's ToDo list)
+  - Rebased on v3.12-rc5
 
-> 
-> So, assuming that it is actually legal to modify static_command_line in
-> __setup()-s (and I must say I have rather mixed feelings about it ;-),
+Changes since v3:
+  - Switch back to vendor specific DT properties regarding the anti-glitch
+    filter configuration, as this IP is the only one having such a filter
+  - Add DT binding documentation regarding pinctrl-related properties
+  - Move recommended properties to optional properties in DT binding
+    documentation
+  - Rebased on v3.12-rc4
 
-I also have mixed feelings about that, but the parse_args() already
-does that, because some characters are replaced with '\0' to split
-command line into separate strings. The ubd driver does the same
-to split parameter into two strings.
+Changes since v2:
+  - Create generic DT property for Anti-glitch filtering configuration
+  - Sort i2c-st entries in Makefile and Kconfig
+  - Various cosmetics changes
+  - Return IRQ_NONE in case of spurious interrupt
+  - Use INIT_COMPLETION instead of init_completion in st_i2c_xfer_msg
+  - Simplify st_i2c_xfer as proposed by Wolfram
+  - Fix PM ops issues
+  - Change author name to myself and fix license to GPL v2
+  - Include .h file content into the .c file
 
-So after parsing, the command line:
+Changes since v1:
+  - Anti-glitch filtering simplified (Only HW Anti-glitch is kept)
+  - Update I2C timings to comply with I2C specification
+  - Handle spurious interrupts properly
+  - DT binding updates taking into account Stephen's comments
+  - Use "clock-names" property to comply with GCF
+  - DT cosmetic changes reported by Lee and Gabriel 
 
-	"ubd0=cow_file,file hostfs=/path"
+Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
 
-is changed to:
+Maxime Coquelin (4):
+  i2c: busses: i2c-st: Add ST I2C controller
+  ARM: STi: Supply I2C configuration to STiH416 SoC
+  ARM: STi: Supply I2C configuration to STiH415 SoC
+  ARM: STi: Add I2C config to B2000 and B2020 boards
 
-	"ubd0\0cow_file\0file\0hostfs\0path"
+ Documentation/devicetree/bindings/i2c/i2c-st.txt |   38 +
+ arch/arm/boot/dts/stih415-pinctrl.dtsi           |   36 +
+ arch/arm/boot/dts/stih415.dtsi                   |   53 ++
+ arch/arm/boot/dts/stih416-pinctrl.dtsi           |   35 +
+ arch/arm/boot/dts/stih416.dtsi                   |   53 ++
+ arch/arm/boot/dts/stih41x-b2000.dtsi             |    9 +
+ arch/arm/boot/dts/stih41x-b2020.dtsi             |   22 +
+ drivers/i2c/busses/Kconfig                       |   10 +
+ drivers/i2c/busses/Makefile                      |    1 +
+ drivers/i2c/busses/i2c-st.c                      |  867 ++++++++++++++++++++++
+ 10 files changed, 1124 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/i2c/i2c-st.txt
+ create mode 100644 drivers/i2c/busses/i2c-st.c
 
+-- 
+1.7.9.5
 
-However after do_initcalls(), because __setup("ubd", ...) callback is not
-called, it's changed to:
-
-	"ubd0\0cow_file,file\0hostfs\0path"
-
-and the ubd driver tries to use "cow_file,file" as COW file because
-it just saves pointer.
-
-
-With my patch because do_initcall_level() uses different scratch buffer
-this difference is not visible to the ubd driver.
- 
-> the only place that will be able to make use of this changes will be
-> do_initcall_level().
-> 
-> But your change actually uses *saved*_command_line instead of
-> *static*_command_line as the base for parse_args.
-
-Yes, because static_command_line is already destroyed by parsing
-(NUL terminators are added).
-
-> 
-> Generally I agree that the commit in question changed the semantics in a
-> subtle way - it makes the do_initcalls() use saved_command_line as a
-> string to be parsed instead of static_command_line. I was convinced that
-> at this stage of execution they must be identical (and the
-
-No, at that stage the static_command_line is already parsed by
-parse_args("Booting kernel", ...).
-
-> static_command_line is a de-facto scratch buffer). You're saying that is
-> may not be the case, which can be true, but you're keeping the same
-> behaviour :-)
-> 
-> So either you have some extra changes in your kernel actually using
-> static_command_line for some other reason, or your change makes no
-> difference. The third option is me being brain dead today, which is not
-> impossible ;-)
-> 
-
-I've been using vanilla v3.12-rc4-92-gb68ba36. Now I'm using v3.12-rc5.
-
-Thanks,
-Krzysiek
