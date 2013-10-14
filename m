@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756913Ab3JNQFJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 12:05:09 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41130 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754652Ab3JNQFG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 12:05:06 -0400
-Date: Mon, 14 Oct 2013 17:04:20 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        Jiang Liu <jiang.liu@huawei.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/7] Optimize jump label implementation on ARM64
-Message-ID: <20131014160419.GS25034@n2100.arm.linux.org.uk>
-References: <1381675827-1610-1-git-send-email-liuj97@gmail.com> <20131014154044.GR25034@n2100.arm.linux.org.uk> <525C1469.4000906@gmail.com>
+	id S1756780Ab3JNQFH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 12:05:07 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54569 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754396Ab3JNQFF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 12:05:05 -0400
+Message-ID: <525C15E8.9010201@zytor.com>
+Date: Mon, 14 Oct 2013 09:03:52 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <525C1469.4000906@gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: David Cohen <david.a.cohen@linux.intel.com>, tglx@linutronix.de,
+        Ingo Molnar <mingo@kernel.org>
+CC: linux-kernel@vger.kernel.org, x86@kernel.org,
+        platform-driver-x86@vger.kernel.org,
+        Kuppuswamy Sathyanarayanan 
+	<sathyanarayanan.kuppuswamy@linux.intel.com>
+Subject: Re: [PATCH v3 07/10] intel_mid: Added custom device_handler support
+References: <1381549404-22594-1-git-send-email-david.a.cohen@linux.intel.com> <1381549404-22594-8-git-send-email-david.a.cohen@linux.intel.com>
+In-Reply-To: <1381549404-22594-8-git-send-email-david.a.cohen@linux.intel.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 14, 2013 at 11:57:29PM +0800, Jiang Liu wrote:
-> On 10/14/2013 11:40 PM, Russell King - ARM Linux wrote:
-> > On Sun, Oct 13, 2013 at 10:50:20PM +0800, Jiang Liu wrote:
-> >> To enable this feature, your toolchain must support "asm goto" extension
-> >> and "%c" constraint extesion. Current GCC for AARCH64 doesn't support
-> >> "%c", so you need a GCC patch similiar to this:
-> > 
-> > Oh god, not that again.  I've no idea why ARM stuff has such a problem with
-> > supporting this very useful "%c" GCC constraint.  Aarch32 didn't for ages
-> > consequently we now have horrid hacks around it in the kernel source
-> > because our compilers suck.  Seems Aarch64 is doomed to repeat the same
-> > stupid mistakes. :(
-> > 
-> We need to do the same trick for ARM64 too:)
+On 10/11/2013 08:43 PM, David Cohen wrote:
+>  
+>  	/* MSIC subdevices */
+> -	{"msic_battery", SFI_DEV_TYPE_IPC, 1, &msic_battery_platform_data},
+> -	{"msic_gpio", SFI_DEV_TYPE_IPC, 1, &msic_gpio_platform_data},
+> -	{"msic_audio", SFI_DEV_TYPE_IPC, 1, &msic_audio_platform_data},
+> -	{"msic_power_btn", SFI_DEV_TYPE_IPC, 1, &msic_power_btn_platform_data},
+> -	{"msic_ocd", SFI_DEV_TYPE_IPC, 1, &msic_ocd_platform_data},
+> -	{"msic_thermal", SFI_DEV_TYPE_IPC, 1, &msic_thermal_platform_data},
+> -
+> +	{"msic_battery", SFI_DEV_TYPE_IPC, 1, &msic_battery_platform_data,
+> +					NULL},
+> +	{"msic_gpio", SFI_DEV_TYPE_IPC, 1, &msic_gpio_platform_data, NULL},
+> +	{"msic_audio", SFI_DEV_TYPE_IPC, 1, &msic_audio_platform_data, NULL},
+> +	{"msic_power_btn", SFI_DEV_TYPE_IPC, 1, &msic_power_btn_platform_data,
+> +					NULL},
+> +	{"msic_ocd", SFI_DEV_TYPE_IPC, 1, &msic_ocd_platform_data, NULL},
+> +	{"msic_thermal", SFI_DEV_TYPE_IPC, 1, &msic_thermal_platform_data,
+> +					NULL},
+>  	{},
+>  };
+>  
 
-Just been locating it - it's part of the gcc internals documentation:
+For highly regular arrays like this it is better to keep each line a
+single line even if it gets a bit too long rather than randomly breaking
+them.  The alternative is to put every field of every entry on a
+separate line, but I don't think that is necessary called for here.
 
-|  In the simplest case, a `%' followed by a digit N says to output
-| operand N at that point in the string.
-| 
-|  `%' followed by a letter and a digit says to output an operand in an
-| alternate fashion.  Four letters have standard, built-in meanings
-| described below.  The machine description macro `PRINT_OPERAND' can
-| define additional letters with nonstandard meanings.
-| 
-|  `%cDIGIT' can be used to substitute an operand that is a constant
-| value without the syntax that normally indicates an immediate operand.
-| ...
-|  `%lDIGIT' is used to substitute a `label_ref' into a jump instruction.
+	-hpa
 
-%lDIGIT is used (but not commented upon) in the gcc extended asm
-documentation where it talks about asm gotos, so there's probably a doc
-bug here too about whether these options should be described in the
-main doc as well.
 
-Nevertheness, this section is documenting the _internals_ of gcc, and
-it seems perverse for a gcc backend to ignore something that is
-documented as being a standard part of gcc.
