@@ -1,130 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756653Ab3JNNTZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 09:19:25 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:46416 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756082Ab3JNNTX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 09:19:23 -0400
-Message-ID: <525BEF4D.3000103@ti.com>
-Date: Mon, 14 Oct 2013 16:19:09 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1756677Ab3JNNUz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 09:20:55 -0400
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:47095 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756228Ab3JNNUx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 09:20:53 -0400
+Date: Mon, 14 Oct 2013 09:20:49 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Lukasz Dorau <lukasz.dorau@intel.com>
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] libahci: fix turning on LEDs in ahci_start_port()
+Message-ID: <20131014132049.GB4722@htj.dyndns.org>
+References: <20131014125819.19262.32922.stgit@gklab-154-244.igk.intel.com>
 MIME-Version: 1.0
-To: George Cherian <george.cherian@ti.com>
-CC: <linux-omap@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <tony@atomide.com>, <kishon@ti.com>,
-        <gregkh@linuxfoundation.org>, <balbi@ti.com>, <rob@landley.net>,
-        <ijc+devicetree@hellion.org.uk>, <swarren@wwwdotorg.org>,
-        <mark.rutland@arm.com>, <pawel.moll@arm.com>,
-        <rob.herring@calxeda.com>
-Subject: Re: [PATCH] usb: phy: omap: Add omap-control Support for AM437x
-References: <1381755071-11931-1-git-send-email-george.cherian@ti.com>
-In-Reply-To: <1381755071-11931-1-git-send-email-george.cherian@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131014125819.19262.32922.stgit@gklab-154-244.igk.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi George,
-
-On 10/14/2013 03:51 PM, George Cherian wrote:
-> This adds omap control module support for USBSS in AM437x SoC.
-> Update DT binding information to reflect these changes.
+On Mon, Oct 14, 2013 at 02:58:19PM +0200, Lukasz Dorau wrote:
+> If EM Transmit bit is busy during init ata_msleep() is called.
+> It is wrong - msleep() should be used instead of ata_msleep(),
+> because if EM Transmit bit is busy for one port, it will be busy
+> for all other ports too, so using ata_msleep() causes wasting
+> tries for another ports.
 > 
-> Signed-off-by: George Cherian <george.cherian@ti.com>
+> The most common scenario looks like that now
+> (six ports try to transmit a LED meaasege):
+> - port #0 tries for the 1st time and succeeds
+> - ports #1-5 try for the 1st time and sleeps
+> - port #1 tries for the 2nd time and succeeds
+> - ports #2-5 try for the 2nd time and sleeps
+> - port #2 tries for the 3rd time and succeeds
+> - ports #3-5 try for the 3rd time and sleeps
+> - port #3 tries for the 4th time and succeeds
+> - ports #4-5 try for the 4th time and sleeps
+> - port #4 tries for the 5th time and succeeds
+> - port #5 tries for the 5th time and sleeps
+> At this moment port #5 wasted all its five tries and failed to initialize.
+> Because there are only 5 (EM_MAX_RETRY) tries available usually only five ports
+> succeed to initialize. The sixth port and next ones usually will fail.
+> 
+> If msleep() is used instead of ata_msleep() the first port succeeds to initialize
+> in the first try and next ones usually succeed to initialize in the second try.
+
+Ah, interesting.
+
+> Signed-off-by: Lukasz Dorau <lukasz.dorau@intel.com>
 > ---
->  Documentation/devicetree/bindings/usb/omap-usb.txt |  2 ++
->  drivers/usb/phy/phy-omap-control.c                 | 17 +++++++++++++++++
->  include/linux/usb/omap_control_usb.h               |  6 ++++++
->  3 files changed, 25 insertions(+)
+>  drivers/ata/libahci.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> diff --git a/Documentation/devicetree/bindings/usb/omap-usb.txt b/Documentation/devicetree/bindings/usb/omap-usb.txt
-> index 090e5e2..c495135 100644
-> --- a/Documentation/devicetree/bindings/usb/omap-usb.txt
-> +++ b/Documentation/devicetree/bindings/usb/omap-usb.txt
-> @@ -87,6 +87,8 @@ Required properties:
->  			e.g. USB3 PHY and SATA PHY on OMAP5.
->   "ti,control-phy-dra7usb2" - if it has power down register like USB2 PHY on
->  			DRA7 platform.
-> + "ti,control-phy-am437usb2" - if it has power down register like USB2 PHY on
-> +			AM437 platform.
->   - reg : Address and length of the register set for the device. It contains
->     the address of "otghs_control" for control-phy-otghs or "power" register
->     for other types.
-> diff --git a/drivers/usb/phy/phy-omap-control.c b/drivers/usb/phy/phy-omap-control.c
-> index 09c5ace..c453b81 100644
-> --- a/drivers/usb/phy/phy-omap-control.c
-> +++ b/drivers/usb/phy/phy-omap-control.c
-> @@ -84,6 +84,18 @@ void omap_control_usb_phy_power(struct device *dev, int on)
->  		else
->  			val |= OMAP_CTRL_USB2_PHY_PD;
->  		break;
-> +
-> +	case OMAP_CTRL_TYPE_AM437USB2:
-> +		if (on) {
-> +			val &= ~(AM437X_CTRL_USB2_PHY_PD |
-> +					AM437X_CTRL_USB2_OTG_PD);
-> +			val |= (AM437X_CTRL_USB2_OTGVDET_EN |
-> +					AM437X_CTRL_USB2_OTGSESSEND_EN);
+> diff --git a/drivers/ata/libahci.c b/drivers/ata/libahci.c
+> index acfd0f7..cf38692 100644
+> --- a/drivers/ata/libahci.c
+> +++ b/drivers/ata/libahci.c
+> @@ -779,7 +779,7 @@ static void ahci_start_port(struct ata_port *ap)
+>  							       emp->led_state,
+>  							       4);
+>  				if (rc == -EBUSY)
+> -					ata_msleep(ap, 1);
+> +					msleep(1);
 
-The ON and OFF operations are not symmetric because of this. Shouldn't the
-OTG specific stuff go in otg specific ops?
+This is so unobvious.  Can you please add a comment explaining what's
+going on?
 
-> +		} else {
-> +			val |= (AM437X_CTRL_USB2_PHY_PD |
-> +					 AM437X_CTRL_USB2_OTG_PD);
-> +		}
-> +		break;
->  	default:
->  		dev_err(dev, "%s: type %d not recognized\n",
->  					__func__, control_usb->type);
-> @@ -197,6 +209,7 @@ static const enum omap_control_usb_type otghs_data = OMAP_CTRL_TYPE_OTGHS;
->  static const enum omap_control_usb_type usb2_data = OMAP_CTRL_TYPE_USB2;
->  static const enum omap_control_usb_type pipe3_data = OMAP_CTRL_TYPE_PIPE3;
->  static const enum omap_control_usb_type dra7usb2_data = OMAP_CTRL_TYPE_DRA7USB2;
-> +static const enum omap_control_usb_type am437usb2_data = OMAP_CTRL_TYPE_AM437USB2;
->  
->  static const struct of_device_id omap_control_usb_id_table[] = {
->  	{
-> @@ -215,6 +228,10 @@ static const struct of_device_id omap_control_usb_id_table[] = {
->  		.compatible = "ti,control-phy-dra7usb2",
->  		.data = &dra7usb2_data,
->  	},
-> +	{
-> +		.compatible = "ti,control-phy-am437usb2",
-> +		.data = &am437usb2_data,
-> +	},
->  	{},
->  };
->  MODULE_DEVICE_TABLE(of, omap_control_usb_id_table);
-> diff --git a/include/linux/usb/omap_control_usb.h b/include/linux/usb/omap_control_usb.h
-> index 596b019..69ae383 100644
-> --- a/include/linux/usb/omap_control_usb.h
-> +++ b/include/linux/usb/omap_control_usb.h
-> @@ -24,6 +24,7 @@ enum omap_control_usb_type {
->  	OMAP_CTRL_TYPE_USB2,	/* USB2_PHY, power down in CONTROL_DEV_CONF */
->  	OMAP_CTRL_TYPE_PIPE3,	/* PIPE3 PHY, DPLL & seperate Rx/Tx power */
->  	OMAP_CTRL_TYPE_DRA7USB2, /* USB2 PHY, power and power_aux e.g. DRA7 */
-> +	OMAP_CTRL_TYPE_AM437USB2, /* USB2 PHY, power e.g. AM437x */
->  };
->  
->  struct omap_control_usb {
-> @@ -64,6 +65,11 @@ enum omap_control_usb_mode {
->  
->  #define OMAP_CTRL_USB2_PHY_PD		BIT(28)
->  
-> +#define AM437X_CTRL_USB2_PHY_PD		BIT(0)
-> +#define AM437X_CTRL_USB2_OTG_PD		BIT(1)
-> +#define AM437X_CTRL_USB2_OTGVDET_EN	BIT(19)
-> +#define AM437X_CTRL_USB2_OTGSESSEND_EN	BIT(20)
-> +
->  #if IS_ENABLED(CONFIG_OMAP_CONTROL_USB)
->  extern void omap_control_usb_phy_power(struct device *dev, int on);
->  extern void omap_control_usb_set_mode(struct device *dev,
-> 
+Thanks.
 
-cheers,
--roger
+-- 
+tejun
