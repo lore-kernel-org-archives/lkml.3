@@ -1,189 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756620Ab3JNNSm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 09:18:42 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53309 "EHLO mx2.suse.de"
+	id S1756653Ab3JNNTZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 09:19:25 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:46416 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756084Ab3JNNSj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 09:18:39 -0400
-Message-ID: <525BEF2B.2030907@suse.de>
-Date: Mon, 14 Oct 2013 15:18:35 +0200
-From: Hannes Reinecke <hare@suse.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1756082Ab3JNNTX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 09:19:23 -0400
+Message-ID: <525BEF4D.3000103@ti.com>
+Date: Mon, 14 Oct 2013 16:19:09 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Steffen Maier <maier@linux.vnet.ibm.com>
-Cc: Vaughan Cao <vaughan.cao@oracle.com>, JBottomley@parallels.com,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Krishna Gudipati <kgudipat@Brocade.com>
-Subject: Re: PROBLEM: special sense code asc,ascq=04h,0Ch abort scsi scan
- in the middle
-References: <525AD704.6040705@oracle.com> <525BD1EA.6000701@suse.de> <525BE8C1.5090606@linux.vnet.ibm.com>
-In-Reply-To: <525BE8C1.5090606@linux.vnet.ibm.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+To: George Cherian <george.cherian@ti.com>
+CC: <linux-omap@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <tony@atomide.com>, <kishon@ti.com>,
+        <gregkh@linuxfoundation.org>, <balbi@ti.com>, <rob@landley.net>,
+        <ijc+devicetree@hellion.org.uk>, <swarren@wwwdotorg.org>,
+        <mark.rutland@arm.com>, <pawel.moll@arm.com>,
+        <rob.herring@calxeda.com>
+Subject: Re: [PATCH] usb: phy: omap: Add omap-control Support for AM437x
+References: <1381755071-11931-1-git-send-email-george.cherian@ti.com>
+In-Reply-To: <1381755071-11931-1-git-send-email-george.cherian@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/14/2013 02:51 PM, Steffen Maier wrote:
-> Hi Hannes,
-> 
-> On 10/14/2013 01:13 PM, Hannes Reinecke wrote:
->> On 10/13/2013 07:23 PM, Vaughan Cao wrote:
->>> Hi James,
->>>
->>> [1.] One line summary of the problem:
->>> special sense code asc,ascq=04h,0Ch abort scsi scan in the middle
->>>
->>> [2.] Full description of the problem/report:
->>> For instance, storage represents 8 iscsi LUNs, however the LUN No.7
->>> is not well configured or has something wrong.
->>> Then messages received:
->>> kernel: scsi 5:0:0:0: Unexpected response from lun 7 while scanning, scan aborted
->>> Which will make LUN No.8 unavailable.
->>> It's confirmed that Windows and Solaris systems will continue the
->>> scan and make LUN No.1,2,3,4,5,6 and 8 available.
->>>
->>> Log snippet is as below:
->>> Aug 24 00:32:49 vmhodtest019 kernel: scsi 5:0:0:7: scsi scan: INQUIRY pass 1 length 36
->>> Aug 24 00:32:49 vmhodtest019 kernel: scsi 5:0:0:7: Send: 0xffff8801e9bd4280
->>> Aug 24 00:32:49 vmhodtest019 kernel: scsi 5:0:0:7: CDB: Inquiry: 12 00 00 00 24 00
->>> Aug 24 00:32:49 vmhodtest019 kernel: buffer = 0xffff8801f71fc180, bufflen = 36, queuecommand 0xffffffffa00b99e7
->>> Aug 24 00:32:49 vmhodtest019 kernel: leaving scsi_dispatch_cmnd()
->>> Aug 24 00:32:49 vmhodtest019 kernel: scsi 5:0:0:7: Done: 0xffff8801e9bd4280 SUCCESS
->>> Aug 24 00:32:49 vmhodtest019 kernel: scsi 5:0:0:7: Result: hostbyte=DID_OK driverbyte=DRIVER_OK
->>> Aug 24 00:32:49 vmhodtest019 kernel: scsi 5:0:0:7: CDB: Inquiry: 12 00 00 00 24 00
->>> Aug 24 00:32:49 vmhodtest019 kernel: scsi 5:0:0:7: Sense Key : Not Ready [current]
->>> Aug 24 00:32:49 vmhodtest019 kernel: scsi 5:0:0:7: Add. Sense: Logical unit not accessible, target port in unavailable state
->>> Aug 24 00:32:49 vmhodtest019 kernel: scsi 5:0:0:7: scsi host busy 1 failed 0
->>> Aug 24 00:32:49 vmhodtest019 kernel: 0 sectors total, 36 bytes done.
->>> Aug 24 00:32:49 vmhodtest019 kernel: scsi scan: INQUIRY failed with code 0x8000002
->>> Aug 24 00:32:49 vmhodtest019 kernel: scsi 5:0:0:0: Unexpected response from lun 7 while scanning, scan aborted
->>>
->>> According to scsi_report_lun_scan(), I found:
->>> Linux use an inquiry command to probe a lun according to the result
->>> of report_lun command.
->>> It assumes every probe cmd will get a legal result. Otherwise, it
->>> regards the whole peripheral not exist or dead.
->>> If the return of inquiry passes its legal checking and indicates
->>> 'LUN not present', it won't break but also continue with the scan
->>> process.
->>> In the log, inquiry to LUN7 return a sense - asc,ascq=04h,0Ch
->>> (Logical unit not accessible, target port in unavailable state).
->>> And this is ignored, so scsi_probe_lun() returns -EIO and the scan
->>> process is aborted.
->>>
->>> I have two questions:
->>> 1. Is it correct for hardware to return a sense 04h,0Ch to inquiry
->>> again, even after presenting this lun in responce to REPORT_LUN
->>> command?
->> Yes, this is correct. 'REPORT LUNS' is supported in 'Unavailable' state.
->>
->>> 2. Since windows and solaris can continue scan, is it reasonable for
->>> linux to do the same, even for a fault-tolerance purpose?
->>>
->> Hmm. Yes, and no.
->>
->> _Actually_ this is an issue with the target, as it looks as if it
->> will return the above sense code while sending an 'INQUIRY' to the
->> device.
->> SPC explicitely states that the INQUIRY command should _not_ fail
->> for unavailable devices.
->> But yeah, we probably should work around this issues.
->> Nevertheless, please raise this issue with your array vendor.
->>
->> Please try the attached patch.
->>
->> Cheers,
->>
->> Hannes
->>
-> 
->> From b0e90778f012010c881f8bdc03bce63a36921b77 Mon Sep 17 00:00:00 2001
->> From: Hannes Reinecke <hare@suse.de>
->> Date: Mon, 14 Oct 2013 13:11:22 +0200
->> Subject: [PATCH] scsi_scan: continue report_lun_scan after error
->>
->> When scsi_probe_and_add_lun() fails in scsi_report_lun_scan() this
->> does _not_ indicate that the entire target is done for.
->> So continue scanning for the remaining devices.
->>
->> Signed-off-by: Hannes Reinecke <hare@suse.de>
->>
->> diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
->> index 307a811..973a121 100644
->> --- a/drivers/scsi/scsi_scan.c
->> +++ b/drivers/scsi/scsi_scan.c
->> @@ -1484,13 +1484,12 @@ static int scsi_report_lun_scan(struct scsi_target *starget, int bflags,
->>  				lun, NULL, NULL, rescan, NULL);
->>  			if (res == SCSI_SCAN_NO_RESPONSE) {
->>  				/*
->> -				 * Got some results, but now none, abort.
->> +				 * Got some results, but now none, ignore.
->>  				 */
->>  				sdev_printk(KERN_ERR, sdev,
->>  					"Unexpected response"
->> -				        " from lun %d while scanning, scan"
->> -				        " aborted\n", lun);
->> -				break;
->> +					" from lun %d while scanning,"
->> +					" ignoring device\n", lun);
->>  			}
->>  		}
->>  	}
-> 
-> In LLDDs that do their own initiator based LUN masking (because the midlayer does not have this
-> functionality to enable hardware virtualization without NPIV, or
-to work around suboptimal LUN
-> masking on the target), they are likely to return -ENXIO from
-slave_alloc(), making scsi_alloc_sdev()
-> return NULL, being converted to SCSI_SCAN_NO_RESPONSE by
-scsi_probe_and_add_lun() and thus going
-> through the same code path above.
-> 
-Ah. Hmm. Yes, they would.
+Hi George,
 
-However, I personally would question this approach, as SPC states that
-
-> The REPORT LUNS command (see table 284) requests the device
-> server to return the peripheral device logical unit inventory
-> accessible to the I_T nexus.
-
-So by plain reading this would meant that you either should modify
-'REPORT LUNS' to not show the masked LUNs, or set the pqual field to
-'0x10' or '0x11' for those LUNs.
-
-> E.g. zfcp does return -ENXIO if the particular LUN was not made known to the unit whitelist
-> (via zfcp sysfs attribute unit_add).
-> If we attach LUN 0 (via unit_add) and trigger a target scan with SCAN_WILD_CARD for the scsi
-> lun (e.g. on remote port recovery), we see exactly above error
-message for the first LUN in
-> the response of report lun which is not explicitly attached to zfcp.
-> IIRC, other LLDDs such as bfa also do similar stuff [http://marc.info/?l=linux-scsi&m=134489842105383&w=2].
+On 10/14/2013 03:51 PM, George Cherian wrote:
+> This adds omap control module support for USBSS in AM437x SoC.
+> Update DT binding information to reflect these changes.
 > 
-> For those cases, I think it makes sense to abort scsi_report_lun_scan().
-> Otherwise we would force the LLDD to return -ENXIO for every
-single LUN reported by report lun but not
-> explicitly added to the LLDD LUN whitelist; and this would likely
-*flood kernel messages*.
+> Signed-off-by: George Cherian <george.cherian@ti.com>
+> ---
+>  Documentation/devicetree/bindings/usb/omap-usb.txt |  2 ++
+>  drivers/usb/phy/phy-omap-control.c                 | 17 +++++++++++++++++
+>  include/linux/usb/omap_control_usb.h               |  6 ++++++
+>  3 files changed, 25 insertions(+)
 > 
-> Maybe Vaughan's case needs to be distinguished in a patch.
+> diff --git a/Documentation/devicetree/bindings/usb/omap-usb.txt b/Documentation/devicetree/bindings/usb/omap-usb.txt
+> index 090e5e2..c495135 100644
+> --- a/Documentation/devicetree/bindings/usb/omap-usb.txt
+> +++ b/Documentation/devicetree/bindings/usb/omap-usb.txt
+> @@ -87,6 +87,8 @@ Required properties:
+>  			e.g. USB3 PHY and SATA PHY on OMAP5.
+>   "ti,control-phy-dra7usb2" - if it has power down register like USB2 PHY on
+>  			DRA7 platform.
+> + "ti,control-phy-am437usb2" - if it has power down register like USB2 PHY on
+> +			AM437 platform.
+>   - reg : Address and length of the register set for the device. It contains
+>     the address of "otghs_control" for control-phy-otghs or "power" register
+>     for other types.
+> diff --git a/drivers/usb/phy/phy-omap-control.c b/drivers/usb/phy/phy-omap-control.c
+> index 09c5ace..c453b81 100644
+> --- a/drivers/usb/phy/phy-omap-control.c
+> +++ b/drivers/usb/phy/phy-omap-control.c
+> @@ -84,6 +84,18 @@ void omap_control_usb_phy_power(struct device *dev, int on)
+>  		else
+>  			val |= OMAP_CTRL_USB2_PHY_PD;
+>  		break;
+> +
+> +	case OMAP_CTRL_TYPE_AM437USB2:
+> +		if (on) {
+> +			val &= ~(AM437X_CTRL_USB2_PHY_PD |
+> +					AM437X_CTRL_USB2_OTG_PD);
+> +			val |= (AM437X_CTRL_USB2_OTGVDET_EN |
+> +					AM437X_CTRL_USB2_OTGSESSEND_EN);
+
+The ON and OFF operations are not symmetric because of this. Shouldn't the
+OTG specific stuff go in otg specific ops?
+
+> +		} else {
+> +			val |= (AM437X_CTRL_USB2_PHY_PD |
+> +					 AM437X_CTRL_USB2_OTG_PD);
+> +		}
+> +		break;
+>  	default:
+>  		dev_err(dev, "%s: type %d not recognized\n",
+>  					__func__, control_usb->type);
+> @@ -197,6 +209,7 @@ static const enum omap_control_usb_type otghs_data = OMAP_CTRL_TYPE_OTGHS;
+>  static const enum omap_control_usb_type usb2_data = OMAP_CTRL_TYPE_USB2;
+>  static const enum omap_control_usb_type pipe3_data = OMAP_CTRL_TYPE_PIPE3;
+>  static const enum omap_control_usb_type dra7usb2_data = OMAP_CTRL_TYPE_DRA7USB2;
+> +static const enum omap_control_usb_type am437usb2_data = OMAP_CTRL_TYPE_AM437USB2;
+>  
+>  static const struct of_device_id omap_control_usb_id_table[] = {
+>  	{
+> @@ -215,6 +228,10 @@ static const struct of_device_id omap_control_usb_id_table[] = {
+>  		.compatible = "ti,control-phy-dra7usb2",
+>  		.data = &dra7usb2_data,
+>  	},
+> +	{
+> +		.compatible = "ti,control-phy-am437usb2",
+> +		.data = &am437usb2_data,
+> +	},
+>  	{},
+>  };
+>  MODULE_DEVICE_TABLE(of, omap_control_usb_id_table);
+> diff --git a/include/linux/usb/omap_control_usb.h b/include/linux/usb/omap_control_usb.h
+> index 596b019..69ae383 100644
+> --- a/include/linux/usb/omap_control_usb.h
+> +++ b/include/linux/usb/omap_control_usb.h
+> @@ -24,6 +24,7 @@ enum omap_control_usb_type {
+>  	OMAP_CTRL_TYPE_USB2,	/* USB2_PHY, power down in CONTROL_DEV_CONF */
+>  	OMAP_CTRL_TYPE_PIPE3,	/* PIPE3 PHY, DPLL & seperate Rx/Tx power */
+>  	OMAP_CTRL_TYPE_DRA7USB2, /* USB2 PHY, power and power_aux e.g. DRA7 */
+> +	OMAP_CTRL_TYPE_AM437USB2, /* USB2 PHY, power e.g. AM437x */
+>  };
+>  
+>  struct omap_control_usb {
+> @@ -64,6 +65,11 @@ enum omap_control_usb_mode {
+>  
+>  #define OMAP_CTRL_USB2_PHY_PD		BIT(28)
+>  
+> +#define AM437X_CTRL_USB2_PHY_PD		BIT(0)
+> +#define AM437X_CTRL_USB2_OTG_PD		BIT(1)
+> +#define AM437X_CTRL_USB2_OTGVDET_EN	BIT(19)
+> +#define AM437X_CTRL_USB2_OTGSESSEND_EN	BIT(20)
+> +
+>  #if IS_ENABLED(CONFIG_OMAP_CONTROL_USB)
+>  extern void omap_control_usb_phy_power(struct device *dev, int on);
+>  extern void omap_control_usb_set_mode(struct device *dev,
 > 
-Well, as mentioned initially, the real issue is that the target
-aborts an INQUIRY while being in 'Unavailable'. Which, according to
-SPC-3 (or later), is a violation of the spec.
 
-So we _could_ just tell them to go away, but admittedly that's bad
-style. Which means we'll have to implement a workaround; the above
-was just a simple way of implementing it. If that's not working of
-course we'll have to do something else.
-
-Cheers,
-
-Hannes
--- 
-Dr. Hannes Reinecke		      zSeries & Storage
-hare@suse.de			      +49 911 74053 688
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
-GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
+cheers,
+-roger
