@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758250Ab3JNUMw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 16:12:52 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:39121 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757521Ab3JNUDJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757775Ab3JNUDJ (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 14 Oct 2013 16:03:09 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38523 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757521Ab3JNUCt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 16:02:49 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 129/161] perf trace: Allow specifying index offset in strarrays
-Date: Mon, 14 Oct 2013 17:01:58 -0300
-Message-Id: <1381780950-25642-130-git-send-email-acme@infradead.org>
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 022/161] tools/perf/build: Split out feature check: 'gtk2-infobar'
+Date: Mon, 14 Oct 2013 17:00:11 -0300
+Message-Id: <1381780950-25642-23-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1381780950-25642-1-git-send-email-acme@infradead.org>
 References: <1381780950-25642-1-git-send-email-acme@infradead.org>
@@ -28,72 +25,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Ingo Molnar <mingo@kernel.org>
 
-So that the index passed doesn't have to start at zero, being
-decremented from an offset specified when declaring the strarray before
-being used as the real array index.
-
-Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-k1ce6uqyt4qar9edrj3mevod@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Link: http://lkml.kernel.org/n/tip-oumjyVjonjvgH8ts4mftagel@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- tools/perf/builtin-trace.c | 15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+ tools/perf/config/Makefile                           |  3 ++-
+ tools/perf/config/feature-checks/Makefile            |  4 ++++
+ tools/perf/config/feature-checks/test-gtk2-infobar.c | 10 ++++++++++
+ 3 files changed, 16 insertions(+), 1 deletion(-)
+ create mode 100644 tools/perf/config/feature-checks/test-gtk2-infobar.c
 
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index addc3e11f999..7424298b87e3 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -44,6 +44,7 @@ struct syscall_arg {
- };
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index b3bf931dd2a0..3d3d435b41fa 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -117,6 +117,7 @@ FEATURE_TESTS =				\
+ 	libaudit			\
+ 	libslang			\
+ 	gtk2				\
++	gtk2-infobar			\
+ 	libnuma
  
- struct strarray {
-+	int	    offset;
- 	int	    nr_entries;
- 	const char **entries;
- };
-@@ -53,14 +54,20 @@ struct strarray {
- 	.entries = array, \
- }
+ $(foreach test,$(FEATURE_TESTS),$(call feature_check,$(test),$(test)))
+@@ -299,7 +300,7 @@ ifndef NO_GTK2
+     msg := $(warning GTK2 not found, disables GTK2 support. Please install gtk2-devel or libgtk2.0-dev);
+     NO_GTK2 := 1
+   else
+-    ifeq ($(call try-cc,$(SOURCE_GTK2_INFOBAR),$(FLAGS_GTK2),-DHAVE_GTK_INFO_BAR_SUPPORT),y)
++    ifeq ($(feature-gtk2-infobar), 1)
+       CFLAGS += -DHAVE_GTK_INFO_BAR_SUPPORT
+     endif
+     CFLAGS += -DHAVE_GTK2_SUPPORT
+diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
+index 920958c83ce8..017918f809ff 100644
+--- a/tools/perf/config/feature-checks/Makefile
++++ b/tools/perf/config/feature-checks/Makefile
+@@ -15,6 +15,7 @@ FILES=					\
+ 	test-libaudit			\
+ 	test-libslang			\
+ 	test-gtk2			\
++	test-gtk2-infobar		\
+ 	test-libnuma
  
-+#define DEFINE_STRARRAY_OFFSET(array, off) struct strarray strarray__##array = { \
-+	.offset	    = off, \
-+	.nr_entries = ARRAY_SIZE(array), \
-+	.entries = array, \
-+}
+ CC := $(CC) -MD
+@@ -73,6 +74,9 @@ test-libslang:
+ test-gtk2:
+ 	$(BUILD) $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null)
+ 
++test-gtk2-infobar:
++	$(BUILD) $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null)
 +
- static size_t syscall_arg__scnprintf_strarray(char *bf, size_t size,
- 					      struct syscall_arg *arg)
- {
--	int idx = arg->val;
- 	struct strarray *sa = arg->parm;
-+	int idx = arg->val - sa->offset;
+ -include *.d */*.d
  
- 	if (idx < 0 || idx >= sa->nr_entries)
--		return scnprintf(bf, size, "%d", idx);
-+		return scnprintf(bf, size, "%d", arg->val);
- 
- 	return scnprintf(bf, size, "%s", sa->entries[idx]);
- }
-@@ -288,8 +295,8 @@ static size_t syscall_arg__scnprintf_futex_op(char *bf, size_t size, struct sysc
- 
- #define SCA_FUTEX_OP  syscall_arg__scnprintf_futex_op
- 
--static const char *epoll_ctl_ops[] = { [1] = "ADD", "DEL", "MOD", };
--static DEFINE_STRARRAY(epoll_ctl_ops);
-+static const char *epoll_ctl_ops[] = { "ADD", "DEL", "MOD", };
-+static DEFINE_STRARRAY_OFFSET(epoll_ctl_ops, 1);
- 
- static const char *itimers[] = { "REAL", "VIRTUAL", "PROF", };
- static DEFINE_STRARRAY(itimers);
+ ###############################
+diff --git a/tools/perf/config/feature-checks/test-gtk2-infobar.c b/tools/perf/config/feature-checks/test-gtk2-infobar.c
+new file mode 100644
+index 000000000000..eebcfbc45120
+--- /dev/null
++++ b/tools/perf/config/feature-checks/test-gtk2-infobar.c
+@@ -0,0 +1,10 @@
++#pragma GCC diagnostic ignored "-Wstrict-prototypes"
++#include <gtk/gtk.h>
++#pragma GCC diagnostic error "-Wstrict-prototypes"
++
++int main(void)
++{
++	gtk_info_bar_new();
++
++	return 0;
++}
 -- 
 1.8.1.4
 
