@@ -1,67 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756033Ab3JNJgW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 05:36:22 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:33811 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755958Ab3JNJgU (ORCPT
+	id S1756056Ab3JNJhT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 05:37:19 -0400
+Received: from mg-edge1.Phoenixchildrens.com ([63.149.29.50]:60601 "EHLO
+	phoenixchildrens.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754575Ab3JNJhR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 05:36:20 -0400
-Subject: [PATCH 2/3] procfs: Call default get_unmapped_area on MMU-present
- architectures
-To: akpm@linux-foundation.org
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        davem@davemloft.net, ebiederm@xmission.com, holzheu@linux.vnet.ibm.com,
-        adobriyan@gmail.com, vgoyal@redhat.com
-Date: Mon, 14 Oct 2013 18:36:17 +0900
-Message-ID: <20131014093617.9801.68068.stgit@localhost6.localdomain6>
-In-Reply-To: <20131014093606.9801.11175.stgit@localhost6.localdomain6>
-References: <20131014093606.9801.11175.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.16
+	Mon, 14 Oct 2013 05:37:17 -0400
+X-Greylist: delayed 995 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Oct 2013 05:37:17 EDT
+From: "Bode, Ryan" <RBode@phoenixchildrens.com>
+To: "Bode, Ryan" <RBode@phoenixchildrens.com>
+Subject: RE: NOTIFICATION
+Thread-Topic: NOTIFICATION
+Thread-Index: Ac7ImXOLGU5U72mJRb2a7K/TUamoTQAJB5EH
+Date: Mon, 14 Oct 2013 09:17:33 +0000
+Message-ID: <4875144870DB5D4F91911F696598559C1411760A@tpdcpmsg041.phoenixchildrens.com>
+References: <4875144870DB5D4F91911F696598559C14112AD6@tpdcpmsg041.phoenixchildrens.com>
+In-Reply-To: <4875144870DB5D4F91911F696598559C14112AD6@tpdcpmsg041.phoenixchildrens.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [74.115.70.10]
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+	charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit c4fe24485729fc2cbff324c111e67a1cc2f9adea added
-proc_reg_get_unmapped_area in proc_reg_file_ops and
-proc_reg_file_ops_no_compat, by which now mmap always returns EIO if
-get_unmapped_area method is not defiend for the target procfs file,
-which causes regression of mmap on /proc/vmcore.
 
-To address this issue, like get_unmapped_area(), call default
-current->mm->get_unmapped_area on MMU-present architectures if
-pde->proc_fops->get_unmapped_area, i.e. the one in actual file
-operation in the procfs file, is not defined.
 
-Reported-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Cc: Alexey Dobriyan <adobriyan@gmail.com>
----
- fs/proc/inode.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+Your Mailbox Has Exceeded It Storage Limit As Set By Your Administrator, And You Will Not Be  Able To Receive New Mails  until You Re-Validate It. To Re-Validate<http://weblinkfill.coffeecup.com/forms/soso%20blade%20coffeecup/>  or If it does not work then copy and past the link. Thank you
 
-diff --git a/fs/proc/inode.c b/fs/proc/inode.c
-index 6c501c4..8eaa1ba 100644
---- a/fs/proc/inode.c
-+++ b/fs/proc/inode.c
-@@ -289,9 +289,13 @@ static unsigned long proc_reg_get_unmapped_area(struct file *file, unsigned long
- {
- 	struct proc_dir_entry *pde = PDE(file_inode(file));
- 	unsigned long rv = -EIO;
--	unsigned long (*get_unmapped_area)(struct file *, unsigned long, unsigned long, unsigned long, unsigned long);
-+	unsigned long (*get_unmapped_area)(struct file *, unsigned long, unsigned long, unsigned long, unsigned long) = NULL;
- 	if (use_pde(pde)) {
--		get_unmapped_area = pde->proc_fops->get_unmapped_area;
-+#ifdef CONFIG_MMU
-+		get_unmapped_area = current->mm->get_unmapped_area;
-+#endif
-+		if (pde->proc_fops->get_unmapped_area)
-+			get_unmapped_area = pde->proc_fops->get_unmapped_area;
- 		if (get_unmapped_area)
- 			rv = get_unmapped_area(file, orig_addr, len, pgoff, flags);
- 		unuse_pde(pde);
+© 2013 by Intellectual Reserve, Inc. All rights reserved
 
+This transmission, including any attachments, is for the sole use
+
+of the intended recipient (s) and may contain information that is
+
+confidential, proprietary, legally privileged, or otherwise
+
+protected by law from disclosure. Any unauthorized review, use,
+
+copying, disclosure, or distribution is prohibited.  If you are not
+
+the intended recipient, or the person responsible for delivering
+
+this to an addressee, you should notify the sender immediately by
+
+telephone or by reply e-mail, and destroy all copies of the
+
+original message.
