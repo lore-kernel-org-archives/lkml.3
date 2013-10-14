@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757977Ab3JNULD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 16:11:03 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:39296 "EHLO
+	id S932198Ab3JNULb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 16:11:31 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:39136 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756683Ab3JNUHn (ORCPT
+	with ESMTP id S1757796Ab3JNUDL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 16:07:43 -0400
+	Mon, 14 Oct 2013 16:03:11 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 033/161] tools/perf/build: Speed up git-version test on re-make
-Date: Mon, 14 Oct 2013 17:00:22 -0300
-Message-Id: <1381780950-25642-34-git-send-email-acme@infradead.org>
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 124/161] perf trace: Add record option
+Date: Mon, 14 Oct 2013 17:01:53 -0300
+Message-Id: <1381780950-25642-125-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1381780950-25642-1-git-send-email-acme@infradead.org>
 References: <1381780950-25642-1-git-send-email-acme@infradead.org>
@@ -25,90 +27,113 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ingo Molnar <mingo@kernel.org>
+From: David Ahern <dsahern@gmail.com>
 
-util/PERF-VERSION-GEN is currently executed on every build attempt,
-and this script can take a lot of time on trees that are at a
-significant git-distance from Linus's tree:
+The record option is a convience alias to include the -e raw_syscalls:*
+argument to perf-record. All other options are passed to perf-record's
+handler. Resulting data file can be analyzed by perf-trace -i.
 
-  $ time util/PERF-VERSION-GEN
-
-  real    0m4.343s
-  user    0m4.176s
-  sys     0m0.140s
-
-It also takes a lot of time if the Git repository is network attached, etc.,
-because the commands it uses:
-
-        TAG=$(git describe --abbrev=0 --match "v[0-9].[0-9]*" 2>/dev/null )
-
-has to count commits from the nearest tag and thus has to access (and
-decompress) every git commit blob on the relevant version path.
-
-Even on Linus's tree it takes 0.28 seconds on a fast box to count all the
-commits and get the git version string:
-
-  $ time util/PERF-VERSION-GEN
-
-  real    0m0.279s
-  user    0m0.247s
-  sys     0m0.025s
-
-But the version string only has to be regenerated if the git repository's
-head commit changes. So add a dependency of ../../.git/HEAD and touch
-the file every time it's regenerated, so that Make's build rules can
-pick it up and cache the result:
-
-  make: `PERF-VERSION-FILE' is up to date.
-
-  real    0m0.184s
-  user    0m0.117s
-  sys     0m0.026s
-
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: David Ahern <dsahern@gmail.com>
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/n/tip-wvmlrurufuk6mo1ovtNigguT@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1380395584-9025-5-git-send-email-dsahern@gmail.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile | 15 +++++++++++++--
- 1 file changed, 13 insertions(+), 2 deletions(-)
+ tools/perf/Documentation/perf-trace.txt | 12 +++++++++---
+ tools/perf/builtin-trace.c              | 32 ++++++++++++++++++++++++++++++++
+ 2 files changed, 41 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 64c043b7a438..6b5452a120af 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -70,8 +70,9 @@ ifneq ($(OUTPUT),)
- #$(info Determined 'OUTPUT' to be $(OUTPUT))
- endif
+diff --git a/tools/perf/Documentation/perf-trace.txt b/tools/perf/Documentation/perf-trace.txt
+index 7f70d3640edd..1a224862118f 100644
+--- a/tools/perf/Documentation/perf-trace.txt
++++ b/tools/perf/Documentation/perf-trace.txt
+@@ -9,6 +9,7 @@ SYNOPSIS
+ --------
+ [verse]
+ 'perf trace'
++'perf trace record'
  
--$(OUTPUT)PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
-+$(OUTPUT)PERF-VERSION-FILE: ../../.git/HEAD
- 	@$(SHELL_PATH) util/PERF-VERSION-GEN $(OUTPUT)
-+	@touch $(OUTPUT)PERF-VERSION-FILE
+ DESCRIPTION
+ -----------
+@@ -16,9 +17,14 @@ This command will show the events associated with the target, initially
+ syscalls, but other system events like pagefaults, task lifetime events,
+ scheduling events, etc.
  
- CC = $(CROSS_COMPILE)gcc
- AR = $(CROSS_COMPILE)ar
-@@ -814,6 +815,16 @@ clean: $(LIBTRACEEVENT)-clean $(LIBLK)-clean
- 	$(RM) $(OUTPUT)util/*-flex*
- 	$(python-clean)
- 
-+#
-+# Trick: if ../../.git does not exist - we are building out of tree for example,
-+# then force version regeneration:
-+#
-+ifeq ($(wildcard ../../.git/HEAD),)
-+    GIT-HEAD-PHONY = ../../.git/HEAD
-+else
-+    GIT-HEAD-PHONY =
-+endif
+-Initially this is a live mode only tool, but eventually will work with
+-perf.data files like the other tools, allowing a detached 'record' from
+-analysis phases.
++This is a live mode tool in addition to working with perf.data files like
++the other perf tools. Files can be generated using the 'perf record' command
++but the session needs to include the raw_syscalls events (-e 'raw_syscalls:*').
++Alernatively, the 'perf trace record' can be used as a shortcut to
++automatically include the raw_syscalls events when writing events to a file.
 +
- .PHONY: all install clean strip $(LIBTRACEEVENT) $(LIBLK)
- .PHONY: shell_compatibility_test please_set_SHELL_PATH_to_a_more_modern_shell
--.PHONY: .FORCE-PERF-VERSION-FILE TAGS tags cscope .FORCE-PERF-CFLAGS
-+.PHONY: $(GIT-HEAD-PHONY) TAGS tags cscope .FORCE-PERF-CFLAGS
++The following options apply to perf trace; options to perf trace record are
++found in the perf record man page.
+ 
+ OPTIONS
+ -------
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index 5776b5f829e1..1e2368f56a74 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -1501,6 +1501,33 @@ static int parse_target_str(struct trace *trace)
+ 	return 0;
+ }
+ 
++static int trace__record(int argc, const char **argv)
++{
++	unsigned int rec_argc, i, j;
++	const char **rec_argv;
++	const char * const record_args[] = {
++		"record",
++		"-R",
++		"-m", "1024",
++		"-c", "1",
++		"-e", "raw_syscalls:sys_enter,raw_syscalls:sys_exit",
++	};
++
++	rec_argc = ARRAY_SIZE(record_args) + argc;
++	rec_argv = calloc(rec_argc + 1, sizeof(char *));
++
++	if (rec_argv == NULL)
++		return -ENOMEM;
++
++	for (i = 0; i < ARRAY_SIZE(record_args); i++)
++		rec_argv[i] = record_args[i];
++
++	for (j = 0; j < (unsigned int)argc; j++, i++)
++		rec_argv[i] = argv[j];
++
++	return cmd_record(i, rec_argv, NULL);
++}
++
+ static int trace__run(struct trace *trace, int argc, const char **argv)
+ {
+ 	struct perf_evlist *evlist = perf_evlist__new();
+@@ -1788,6 +1815,8 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	const char * const trace_usage[] = {
+ 		"perf trace [<options>] [<command>]",
+ 		"perf trace [<options>] -- <command> [<options>]",
++		"perf trace record [<options>] [<command>]",
++		"perf trace record [<options>] -- <command> [<options>]",
+ 		NULL
+ 	};
+ 	struct trace trace = {
+@@ -1844,6 +1873,9 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	int err;
+ 	char bf[BUFSIZ];
+ 
++	if ((argc > 1) && (strcmp(argv[1], "record") == 0))
++		return trace__record(argc-2, &argv[2]);
++
+ 	argc = parse_options(argc, argv, trace_options, trace_usage, 0);
+ 
+ 	if (output_name != NULL) {
 -- 
 1.8.1.4
 
