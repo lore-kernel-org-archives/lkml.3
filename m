@@ -1,118 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756515Ab3JNMWD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 08:22:03 -0400
-Received: from numidia.opendz.org ([98.142.220.152]:51941 "EHLO
-	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755914Ab3JNMWB (ORCPT
+	id S1756244Ab3JNMYt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 08:24:49 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:55066 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755933Ab3JNMYs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 08:22:01 -0400
-Date: Mon, 14 Oct 2013 13:21:54 +0100
-From: Djalal Harouni <tixxdz@opendz.org>
-To: Ryan Mallon <rmallon@gmail.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>, Joe Perches <joe@perches.com>,
-        Andrew Morton <akpm@linux-foundation.org>, eldad@fogrefinery.com,
-        Jiri Kosina <jkosina@suse.cz>, jgunthorpe@obsidianresearch.com,
-        Dan Rosenberg <dan.j.rosenberg@gmail.com>,
-        Kees Cook <keescook@chromium.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        George Spelvin <linux@horizon.com>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3a] vsprintf: Check real user/group id for %pK
-Message-ID: <20131014122154.GA7341@dztty>
-References: <1381356014.2050.28.camel@joe-AO722>
- <5255D2FD.6050705@gmail.com>
- <1381356861.2050.33.camel@joe-AO722>
- <5255D7D4.8050204@gmail.com>
- <1381358030.2050.36.camel@joe-AO722>
- <5255DBD8.30005@gmail.com>
- <1381360187.2050.44.camel@joe-AO722>
- <87pprck0q7.fsf@xmission.com>
- <52576E32.1050700@gmail.com>
- <20131014101706.GA5605@dztty>
+	Mon, 14 Oct 2013 08:24:48 -0400
+Date: Mon, 14 Oct 2013 14:24:24 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Juri Lelli <juri.lelli@gmail.com>
+Cc: tglx@linutronix.de, mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com,
+        fweisbec@gmail.com, darren@dvhart.com, johan.eker@ericsson.com,
+        p.faure@akatech.ch, linux-kernel@vger.kernel.org,
+        claudio@evidence.eu.com, michael@amarulasolutions.com,
+        fchecconi@gmail.com, tommaso.cucinotta@sssup.it,
+        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
+        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
+        raistlin@linux.it, insop.song@gmail.com, liming.wang@windriver.com,
+        jkacur@redhat.com, harald.gustafsson@ericsson.com,
+        vincent.guittot@linaro.org,
+        bruce.ashfield@windriver.com--no-chain-reply-to
+Subject: Re: [PATCH 00/14] sched: SCHED_DEADLINE v8
+Message-ID: <20131014122424.GK3081@twins.programming.kicks-ass.net>
+References: <1381747426-31334-1-git-send-email-juri.lelli@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131014101706.GA5605@dztty>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1381747426-31334-1-git-send-email-juri.lelli@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 14, 2013 at 11:17:06AM +0100, Djalal Harouni wrote:
-> On Fri, Oct 11, 2013 at 02:19:14PM +1100, Ryan Mallon wrote:
-> > On 11/10/13 13:20, Eric W. Biederman wrote:
-> > > Joe Perches <joe@perches.com> writes:
-> > > 
-> > >> Some setuid binaries will allow reading of files which have read
-> > >> permission by the real user id. This is problematic with files which
-> > >> use %pK because the file access permission is checked at open() time,
-> > >> but the kptr_restrict setting is checked at read() time. If a setuid
-> > >> binary opens a %pK file as an unprivileged user, and then elevates
-> > >> permissions before reading the file, then kernel pointer values may be
-> > >> leaked.
-> > >>
-> > >> This happens for example with the setuid pppd application on Ubuntu
-> > >> 12.04:
-> > >>
-> > >>   $ head -1 /proc/kallsyms
-> > >>   00000000 T startup_32
-> > >>
-> > >>   $ pppd file /proc/kallsyms
-> > >>   pppd: In file /proc/kallsyms: unrecognized option 'c1000000'
-> > >>
-> > >> This will only leak the pointer value from the first line, but other
-> > >> setuid binaries may leak more information.
-> > >>
-> > >> Fix this by adding a check that in addition to the current process
-> > >> having CAP_SYSLOG, that effective user and group ids are equal to the
-> > >> real ids. If a setuid binary reads the contents of a file which uses
-> > >> %pK then the pointer values will be printed as NULL if the real user
-> > >> is unprivileged.
-> > >>
-> > >> Update the sysctl documentation to reflect the changes, and also
-> > >> correct the documentation to state the kptr_restrict=0 is the default.
-> > > 
-> > > Sigh.  This is all wrong.  The only correct thing to test is
-> > > file->f_cred.  Aka the capabilities of the program that opened the
-> > > file.
-> > > 
-> > > Which means that the interface to %pK in the case of kptr_restrict is
-> > > broken as it has no way to be passed the information it needs to make
-> > > a sensible decision.
-> > 
-> > Would it make sense to add a struct file * to struct seq_file and set
-> > that in seq_open? Then the capability check can be done against seq->file.
-> For the "add a struct file * to struct seq_file" and set it during
-> seq_open(), It was proposed by Linus, but Al Viro didn't like it:
-> https://lkml.org/lkml/2013/9/25/765
+On Mon, Oct 14, 2013 at 12:43:32PM +0200, Juri Lelli wrote:
+> Hello everyone,
 > 
-> I'm not sure if this will work for you: you can make seq_file->private
-> cache some data, by calling single_open()... at ->open(), later check it
-> during read()...
-> 
-> 
-> As noted by Eric, I'll also go for the capability check at ->open(), if it
-> does not break some userspace. BTW the CAP_SYSLOG check should do the job
-> 
-> Checks during read() are not sufficient, since the design allows passing
-> file descriptors and dup() stdin/stdout of suid-execve.
-> 
-> 
-> IMO: unprivileged code should not get that file descriptor, so ->open()
-> should fail.
-> If this will break userspace then allow open() and cache result for read()
-> 
-> 
-> Can you emulate the behaviour of kptr_restrict=1 ? If so:
-> 1) perform check during open() and cache data
-> 2) during read() check kptr_restrict==1
->    check the cached value and if opener had CAP_SYSLOG  if so:
->    print something like this: 00000000 T startup_32
-Sorry, I mean if the opener didn't have CAP_SYSLOG
+> here we go with a new version of the SCHED_DEADLINE patchset (v8). I know that
+> it has been a while since I released last version [1], but I thought not to
+> spam the mailing list with simple updates. Well... this IS basically an update
+> to 3.12-rc5, but it comes right before the next Kernel Summit and Real Time
+> Linux Workshop and, since I'll be present at both events, it is probably time
+> to fire-up the discussion again.
 
--- 
-Djalal Harouni
-http://opendz.org
+So I feel we should just merge this stuff already; the only 'issue' I
+have is the cgroup abi muck. We clearly need a bit more discussion on
+what/how we want things there but there are no easy answers :/ So I'd
+say lets try this and see where we'll find ourselves.
+
+Steve; could you go over the SMP push/pull bits as they're modeled after
+the stuff you did for FIFO.
+
+
