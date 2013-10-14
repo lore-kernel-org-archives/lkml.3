@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932640Ab3JNUYx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 16:24:53 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:38963 "EHLO
+	id S932675Ab3JNUY4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 16:24:56 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38968 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757684Ab3JNUDF (ORCPT
+	with ESMTP id S1757686Ab3JNUDF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 14 Oct 2013 16:03:05 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+Cc: linux-kernel@vger.kernel.org, Davidlohr Bueso <davidlohr@hp.com>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
         Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 069/161] perf trace: Add option to show process COMM
-Date: Mon, 14 Oct 2013 17:00:58 -0300
-Message-Id: <1381780950-25642-70-git-send-email-acme@infradead.org>
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 082/161] perf lock: Redo __cmd_report
+Date: Mon, 14 Oct 2013 17:01:11 -0300
+Message-Id: <1381780950-25642-83-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1381780950-25642-1-git-send-email-acme@infradead.org>
 References: <1381780950-25642-1-git-send-email-acme@infradead.org>
@@ -28,105 +27,158 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Davidlohr Bueso <davidlohr@hp.com>
 
-Enabled by default, disable with --no-comm, e.g.:
+This function should be straightforward, and we can remove some trivial
+logic by moving the functionality of read_events() into __cmd_report() -
+thus allowing a new session to be properly deleted.
 
- 181.821 (0.001 ms): deja-dup-monit/10784 recvmsg(fd: 8, msg: 0x7fff4342baf0, flags: PEEK|TRUNC|CMSG_CLOEXEC ) = 20
- 181.824 (0.001 ms): deja-dup-monit/10784 geteuid(                                                           ) = 1000
- 181.825 (0.001 ms): deja-dup-monit/10784 getegid(                                                           ) = 1000
- 181.834 (0.002 ms): deja-dup-monit/10784 recvmsg(fd: 8, msg: 0x7fff4342baf0, flags: CMSG_CLOEXEC            ) = 20
- 181.836 (0.001 ms): deja-dup-monit/10784 geteuid(                                                           ) = 1000
- 181.838 (0.001 ms): deja-dup-monit/10784 getegid(                                                           ) = 1000
- 181.705 (0.003 ms): evolution-addr/10924 recvmsg(fd: 10, msg: 0x7fff17dc6990, flags: PEEK|TRUNC|CMSG_CLOEXEC) = 1256
- 181.710 (0.002 ms): evolution-addr/10924 geteuid(                                                           ) = 1000
- 181.712 (0.001 ms): evolution-addr/10924 getegid(                                                           ) = 1000
- 181.727 (0.003 ms): evolution-addr/10924 recvmsg(fd: 10, msg: 0x7fff17dc6990, flags: CMSG_CLOEXEC           ) = 1256
- 181.731 (0.001 ms): evolution-addr/10924 geteuid(                                                           ) = 1000
- 181.734 (0.001 ms): evolution-addr/10924 getegid(                                                           ) = 1000
- 181.908 (0.002 ms): evolution-addr/10924 recvmsg(fd: 10, msg: 0x7fff17dc6990, flags: PEEK|TRUNC|CMSG_CLOEXEC) = 20
- 181.913 (0.001 ms): evolution-addr/10924 geteuid(                                                           ) = 1000
- 181.915 (0.001 ms): evolution-addr/10924 getegid(                                                           ) = 1000
- 181.930 (0.003 ms): evolution-addr/10924 recvmsg(fd: 10, msg: 0x7fff17dc6990, flags: CMSG_CLOEXEC           ) = 20
- 181.934 (0.001 ms): evolution-addr/10924 geteuid(                                                           ) = 1000
- 181.937 (0.001 ms): evolution-addr/10924 getegid(                                                           ) = 1000
- 220.718 (0.010 ms): at-spi2-regist/10715 sendmsg(fd: 3, msg: 0x7fffdb8756c0, flags: NOSIGNAL                ) = 200
- 220.741 (0.000 ms): dbus-daemon/10711  ... [continued]: epoll_wait()) = 1
- 220.759 (0.004 ms): dbus-daemon/10711 recvmsg(fd: 11, msg: 0x7ffff94594d0, flags: CMSG_CLOEXEC              ) = 200
- 220.780 (0.002 ms): dbus-daemon/10711 recvmsg(fd: 11, msg: 0x7ffff94594d0, flags: CMSG_CLOEXEC              ) = 200
- 220.788 (0.001 ms): dbus-daemon/10711 recvmsg(fd: 11, msg: 0x7ffff94594d0, flags: CMSG_CLOEXEC              ) = -1 EAGAIN Resource temporarily unavailable
- 220.760 (0.004 ms): at-spi2-regist/10715 sendmsg(fd: 3, msg: 0x7fffdb8756c0, flags: NOSIGNAL                ) = 200
- 220.771 (0.023 ms): perf/26347 open(filename: 0xf2e780, mode: 15918976                               ) = 19
- 220.850 (0.002 ms): perf/26347 close(fd: 19                                                          ) = 0
+Since the 'info' subcommand also needs to process the recorded events,
+add a 'display_info' flag to differentiate between report and info
+commands.
 
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
+Furthermore, this patch also calls perf_session__has_traces(), making
+sure that we don't compare apples and oranges, fixing a segfault when
+using an perf.data file generated by a different subcommand. ie:
+
+./perf mem record sleep 1
+[ perf record: Woken up 1 times to write data ]
+[ perf record: Captured and wrote 0.017 MB perf.data (~724 samples) ]
+
+./perf lock report
+Segmentation fault (core dumped)
+
+Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Aswin Chandramouleeswaran <aswin@hp.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
+Cc: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-6be5jvnkdzjptdrebfn5263n@git.kernel.org
+Link: http://lkml.kernel.org/r/1378693159-8747-5-git-send-email-davidlohr@hp.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/perf-trace.txt | 3 +++
- tools/perf/builtin-trace.c              | 9 ++++++++-
- 2 files changed, 11 insertions(+), 1 deletion(-)
+ tools/perf/builtin-lock.c | 68 +++++++++++++++++++++++++----------------------
+ 1 file changed, 36 insertions(+), 32 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-trace.txt b/tools/perf/Documentation/perf-trace.txt
-index a93e91aad583..37773854d5c4 100644
---- a/tools/perf/Documentation/perf-trace.txt
-+++ b/tools/perf/Documentation/perf-trace.txt
-@@ -82,6 +82,9 @@ the thread executes on the designated CPUs. Default is to monitor all CPUs.
- --time
- 	Print full timestamp rather time relative to first sample.
+diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
+index 77843478a27a..780484fb59a0 100644
+--- a/tools/perf/builtin-lock.c
++++ b/tools/perf/builtin-lock.c
+@@ -818,6 +818,18 @@ static int process_sample_event(struct perf_tool *tool __maybe_unused,
+ 	return 0;
+ }
  
-+--comm::
-+        Show process COMM right beside its ID, on by default, disable with --no-comm.
++static void sort_result(void)
++{
++	unsigned int i;
++	struct lock_stat *st;
 +
- SEE ALSO
- --------
- linkperf:perf-record[1], linkperf:perf-script[1]
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index 8a09ba3dcd97..be658433d3bb 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -726,6 +726,7 @@ struct trace {
- 	struct intlist		*pid_list;
- 	bool			sched;
- 	bool			multiple_threads;
-+	bool			show_comm;
- 	double			duration_filter;
- 	double			runtime_ms;
++	for (i = 0; i < LOCKHASH_SIZE; i++) {
++		list_for_each_entry(st, &lockhash_table[i], hash_entry) {
++			insert_to_result(st, compare);
++		}
++	}
++}
++
+ static const struct perf_evsel_str_handler lock_tracepoints[] = {
+ 	{ "lock:lock_acquire",	 perf_evsel__process_lock_acquire,   }, /* CONFIG_LOCKDEP */
+ 	{ "lock:lock_acquired",	 perf_evsel__process_lock_acquired,  }, /* CONFIG_LOCKDEP, CONFIG_LOCK_STAT */
+@@ -825,51 +837,47 @@ static const struct perf_evsel_str_handler lock_tracepoints[] = {
+ 	{ "lock:lock_release",	 perf_evsel__process_lock_release,   }, /* CONFIG_LOCKDEP */
  };
-@@ -755,8 +756,11 @@ static size_t trace__fprintf_entry_head(struct trace *trace, struct thread *thre
- 	size_t printed = trace__fprintf_tstamp(trace, tstamp, fp);
- 	printed += fprintf_duration(duration, fp);
  
--	if (trace->multiple_threads)
-+	if (trace->multiple_threads) {
-+		if (trace->show_comm)
-+			printed += fprintf(fp, "%.14s/", thread->comm);
- 		printed += fprintf(fp, "%d ", thread->tid);
+-static int read_events(void)
++static int __cmd_report(bool display_info)
+ {
++	int err = -EINVAL;
+ 	struct perf_tool eops = {
+ 		.sample		 = process_sample_event,
+ 		.comm		 = perf_event__process_comm,
+ 		.ordered_samples = true,
+ 	};
++
+ 	session = perf_session__new(input_name, O_RDONLY, 0, false, &eops);
+ 	if (!session) {
+ 		pr_err("Initializing perf session failed\n");
+-		return -1;
++		return -ENOMEM;
+ 	}
+ 
++	if (!perf_session__has_traces(session, "lock record"))
++		goto out_delete;
++
+ 	if (perf_session__set_tracepoints_handlers(session, lock_tracepoints)) {
+ 		pr_err("Initializing perf session tracepoint handlers failed\n");
+-		return -1;
++		goto out_delete;
+ 	}
+ 
+-	return perf_session__process_events(session, &eops);
+-}
++	if (select_key())
++		goto out_delete;
+ 
+-static void sort_result(void)
+-{
+-	unsigned int i;
+-	struct lock_stat *st;
+-
+-	for (i = 0; i < LOCKHASH_SIZE; i++) {
+-		list_for_each_entry(st, &lockhash_table[i], hash_entry) {
+-			insert_to_result(st, compare);
+-		}
+-	}
+-}
++	err = perf_session__process_events(session, &eops);
++	if (err)
++		goto out_delete;
+ 
+-static int __cmd_report(void)
+-{
+ 	setup_pager();
++	if (display_info) /* used for info subcommand */
++		err = dump_info();
++	else {
++		sort_result();
++		print_result();
 +	}
  
- 	return printed;
+-	if ((select_key() != 0) ||
+-	    (read_events() != 0))
+-		return -1;
+-
+-	sort_result();
+-	print_result();
+-
+-	return 0;
++out_delete:
++	perf_session__delete(session);
++	return err;
  }
-@@ -1503,10 +1507,13 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
- 			.mmap_pages    = 1024,
- 		},
- 		.output = stdout,
-+		.show_comm = true,
- 	};
- 	const char *output_name = NULL;
- 	const char *ev_qualifier_str = NULL;
- 	const struct option trace_options[] = {
-+	OPT_BOOLEAN(0, "comm", &trace.show_comm,
-+		    "show the thread COMM next to its id"),
- 	OPT_STRING('e', "expr", &ev_qualifier_str, "expr",
- 		    "list of events to trace"),
- 	OPT_STRING('o', "output", &output_name, "file", "output file name"),
+ 
+ static int __cmd_record(int argc, const char **argv)
+@@ -970,7 +978,7 @@ int cmd_lock(int argc, const char **argv, const char *prefix __maybe_unused)
+ 			if (argc)
+ 				usage_with_options(report_usage, report_options);
+ 		}
+-		__cmd_report();
++		rc = __cmd_report(false);
+ 	} else if (!strcmp(argv[0], "script")) {
+ 		/* Aliased to 'perf script' */
+ 		return cmd_script(argc, argv, prefix);
+@@ -983,11 +991,7 @@ int cmd_lock(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		}
+ 		/* recycling report_lock_ops */
+ 		trace_handler = &report_lock_ops;
+-		setup_pager();
+-		if (read_events() != 0)
+-			rc = -1;
+-		else
+-			rc = dump_info();
++		rc = __cmd_report(true);
+ 	} else {
+ 		usage_with_options(lock_usage, lock_options);
+ 	}
 -- 
 1.8.1.4
 
