@@ -1,65 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932193Ab3JNQr1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 12:47:27 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:47337 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755633Ab3JNQrZ (ORCPT
+	id S1756943Ab3JNQuE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 12:50:04 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:65340 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755633Ab3JNQuB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 12:47:25 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: <linux-arm-kernel@lists.infradead.org>, <ebenard@eukrea.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-crypto@vger.kernel.org>,
-        <herbert@gondor.hengli.com.au>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH 3/3] ARM: at91/dt/sama5d3: add DMA information to SHA/AES/TDES nodes
-Date: Mon, 14 Oct 2013 18:46:37 +0200
-Message-ID: <269bcba07a15338d3e7a3699ed25c4e775f7fca0.1381769174.git.nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.2.2
-In-Reply-To: <ba9872c3bb29c9a06f06caa8e0b4528329f07675.1381769174.git.nicolas.ferre@atmel.com>
-References: <ba9872c3bb29c9a06f06caa8e0b4528329f07675.1381769174.git.nicolas.ferre@atmel.com>
+	Mon, 14 Oct 2013 12:50:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20131014102635.GC4009@pd.tnic>
+References: <1381473166-29303-1-git-send-email-gong.chen@linux.intel.com>
+	<1381473166-29303-4-git-send-email-gong.chen@linux.intel.com>
+	<20131011152451.GF5925@pd.tnic>
+	<20131014031633.GA12189@gchen.bj.intel.com>
+	<20131014102635.GC4009@pd.tnic>
+Date: Mon, 14 Oct 2013 09:50:00 -0700
+Message-ID: <CA+8MBbJ+mOWhZR5d8wP4x_ncgumGOANziOGmDBzj0QdbPSDH0w@mail.gmail.com>
+Subject: Re: [PATCH 3/8] ACPI, x86: Extended error log driver for x86 platform
+From: Tony Luck <tony.luck@gmail.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Chen Gong <gong.chen@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-acpi <linux-acpi@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
- arch/arm/boot/dts/sama5d3.dtsi | 8 ++++++++
- 1 file changed, 8 insertions(+)
+On Mon, Oct 14, 2013 at 3:26 AM, Borislav Petkov <bp@alien8.de> wrote:
+> On Sun, Oct 13, 2013 at 11:16:33PM -0400, Chen Gong wrote:
+>> But this driver can be loaded as a module. If this module is unloaded,
+>> extlog_print is gone. I can't keep such a pointer internally.
+>
+> Sure you can - you define a weak extlog_print() function in a
+> compilation unit which is always builtin. Maybe mce.c or so.
 
-diff --git a/arch/arm/boot/dts/sama5d3.dtsi b/arch/arm/boot/dts/sama5d3.dtsi
-index 99bd4a6..aca3893 100644
---- a/arch/arm/boot/dts/sama5d3.dtsi
-+++ b/arch/arm/boot/dts/sama5d3.dtsi
-@@ -345,18 +345,26 @@
- 				compatible = "atmel,at91sam9g46-sha";
- 				reg = <0xf8034000 0x100>;
- 				interrupts = <42 IRQ_TYPE_LEVEL_HIGH 0>;
-+				dmas = <&dma1 2 AT91_DMA_CFG_PER_ID(17)>;
-+				dma-names = "tx";
- 			};
- 
- 			aes@f8038000 {
- 				compatible = "atmel,at91sam9g46-aes";
- 				reg = <0xf8038000 0x100>;
- 				interrupts = <43 IRQ_TYPE_LEVEL_HIGH 0>;
-+				dmas = <&dma1 2 AT91_DMA_CFG_PER_ID(18)>,
-+				       <&dma1 2 AT91_DMA_CFG_PER_ID(19)>;
-+				dma-names = "tx", "rx";
- 			};
- 
- 			tdes@f803c000 {
- 				compatible = "atmel,at91sam9g46-tdes";
- 				reg = <0xf803c000 0x100>;
- 				interrupts = <44 IRQ_TYPE_LEVEL_HIGH 0>;
-+				dmas = <&dma1 2 AT91_DMA_CFG_PER_ID(20)>,
-+				       <&dma1 2 AT91_DMA_CFG_PER_ID(21)>;
-+				dma-names = "tx", "rx";
- 			};
- 
- 			dma0: dma-controller@ffffe600 {
--- 
-1.8.2.2
+"weak" is a good compile/link time tool to provide a default function
+while allowing override with a architecture (or more generally a CONFIG_*)
+specific one.  But it is no help when loading/unloading modules.
 
+Think about it ... we have a call to this function from some place in the
+base kernel (originating from mce.o).  Before the module is loaded you
+want that to leap to your weak function.
+
+Now load the module with the not-weak definition of the function - the
+module loader would have to go do a relocation fix-up in the base kernel
+to point to this new function. At module unload it would have to undo
+that.
+
+-Tony
