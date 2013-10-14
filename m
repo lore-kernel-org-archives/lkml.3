@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757326Ab3JNRia (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 13:38:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56533 "EHLO mx1.redhat.com"
+	id S1757137Ab3JNRiA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 13:38:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50181 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757151Ab3JNRi2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 13:38:28 -0400
+	id S1756608Ab3JNRh5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 13:37:57 -0400
 From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 To: linux-mm@kvack.org
 Cc: Andrew Morton <akpm@linux-foundation.org>, Matt Mackall <mpm@selenic.com>,
@@ -16,130 +16,90 @@ Cc: Andrew Morton <akpm@linux-foundation.org>, Matt Mackall <mpm@selenic.com>,
         Michal Hocko <mhocko@suse.cz>,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
         Pavel Emelyanov <xemul@parallels.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 03/11] smaps: redefine callback functions for page table walker
-Date: Mon, 14 Oct 2013 13:37:02 -0400
-Message-Id: <1381772230-26878-4-git-send-email-n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH 08/11] madvise: redefine callback functions for page table walker
+Date: Mon, 14 Oct 2013 13:37:07 -0400
+Message-Id: <1381772230-26878-9-git-send-email-n-horiguchi@ah.jp.nec.com>
 In-Reply-To: <1381772230-26878-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 References: <1381772230-26878-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-smaps_pte_range() connected to pmd_entry() does both of pmd loop and pte loop.
-So this patch moves pte part into smaps_pte() on pte_entry() as expected by
-the name.
+swapin_walk_pmd_entry() is defined as pmd_entry(), but it has no code
+about pmd handling (except pmd_none_or_trans_huge_or_clear_bad, but the
+same check are now done in core page table walk code).
+So let's move this function on pte_entry() as swapin_walk_pte_entry().
 
 Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 ---
- fs/proc/task_mmu.c | 48 +++++++++++++++++-------------------------------
- 1 file changed, 17 insertions(+), 31 deletions(-)
+ mm/madvise.c | 43 +++++++++++++------------------------------
+ 1 file changed, 13 insertions(+), 30 deletions(-)
 
-diff --git v3.12-rc4.orig/fs/proc/task_mmu.c v3.12-rc4/fs/proc/task_mmu.c
-index c591928..c88ee95 100644
---- v3.12-rc4.orig/fs/proc/task_mmu.c
-+++ v3.12-rc4/fs/proc/task_mmu.c
-@@ -430,7 +430,6 @@ const struct file_operations proc_tid_maps_operations = {
- 
- #ifdef CONFIG_PROC_PAGE_MONITOR
- struct mem_size_stats {
--	struct vm_area_struct *vma;
- 	unsigned long resident;
- 	unsigned long shared_clean;
- 	unsigned long shared_dirty;
-@@ -444,15 +443,16 @@ struct mem_size_stats {
- 	u64 pss;
- };
- 
--
--static void smaps_pte_entry(pte_t ptent, unsigned long addr,
--		unsigned long ptent_size, struct mm_walk *walk)
-+static int smaps_pte(pte_t *pte, unsigned long addr, unsigned long end,
-+			struct mm_walk *walk)
- {
- 	struct mem_size_stats *mss = walk->private;
--	struct vm_area_struct *vma = mss->vma;
-+	struct vm_area_struct *vma = walk->vma;
- 	pgoff_t pgoff = linear_page_index(vma, addr);
- 	struct page *page = NULL;
- 	int mapcount;
-+	pte_t ptent = *pte;
-+	unsigned long ptent_size = end - addr;
- 
- 	if (pte_present(ptent)) {
- 		page = vm_normal_page(vma, addr, ptent);
-@@ -469,7 +469,7 @@ static void smaps_pte_entry(pte_t ptent, unsigned long addr,
- 	}
- 
- 	if (!page)
--		return;
-+		return 0;
- 
- 	if (PageAnon(page))
- 		mss->anonymous += ptent_size;
-@@ -495,35 +495,21 @@ static void smaps_pte_entry(pte_t ptent, unsigned long addr,
- 			mss->private_clean += ptent_size;
- 		mss->pss += (ptent_size << PSS_SHIFT);
- 	}
-+	return 0;
+diff --git v3.12-rc4.orig/mm/madvise.c v3.12-rc4/mm/madvise.c
+index 539eeb9..5e957b9 100644
+--- v3.12-rc4.orig/mm/madvise.c
++++ v3.12-rc4/mm/madvise.c
+@@ -135,38 +135,22 @@ static long madvise_behavior(struct vm_area_struct *vma,
  }
  
--static int smaps_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
--			   struct mm_walk *walk)
-+static int smaps_pmd(pmd_t *pmd, unsigned long addr, unsigned long end,
-+			struct mm_walk *walk)
+ #ifdef CONFIG_SWAP
+-static int swapin_walk_pmd_entry(pmd_t *pmd, unsigned long start,
++static int swapin_walk_pte_entry(pte_t *pte, unsigned long start,
+ 	unsigned long end, struct mm_walk *walk)
  {
- 	struct mem_size_stats *mss = walk->private;
--	struct vm_area_struct *vma = mss->vma;
--	pte_t *pte;
--	spinlock_t *ptl;
+-	pte_t *orig_pte;
+-	struct vm_area_struct *vma = walk->private;
+-	unsigned long index;
++	swp_entry_t entry;
++	struct page *page;
++	struct vm_area_struct *vma = walk->vma;
  
--	if (pmd_trans_huge_lock(pmd, vma) == 1) {
--		smaps_pte_entry(*(pte_t *)pmd, addr, HPAGE_PMD_SIZE, walk);
-+	if (pmd_trans_huge_lock(pmd, walk->vma) == 1) {
-+		smaps_pte((pte_t *)pmd, addr, addr + HPAGE_PMD_SIZE, walk);
- 		spin_unlock(&walk->mm->page_table_lock);
- 		mss->anonymous_thp += HPAGE_PMD_SIZE;
--		return 0;
-+		/* don't call smaps_pte() */
-+		walk->skip = 1;
- 	}
+-	if (pmd_none_or_trans_huge_or_clear_bad(pmd))
++	if (pte_present(*pte) || pte_none(*pte) || pte_file(*pte))
+ 		return 0;
 -
--	if (pmd_trans_unstable(pmd))
--		return 0;
--	/*
--	 * The mmap_sem held all the way back in m_start() is what
--	 * keeps khugepaged out of here and from collapsing things
--	 * in here.
--	 */
--	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
--	for (; addr != end; pte++, addr += PAGE_SIZE)
--		smaps_pte_entry(*pte, addr, PAGE_SIZE, walk);
--	pte_unmap_unlock(pte - 1, ptl);
--	cond_resched();
+-	for (index = start; index != end; index += PAGE_SIZE) {
+-		pte_t pte;
+-		swp_entry_t entry;
+-		struct page *page;
+-		spinlock_t *ptl;
+-
+-		orig_pte = pte_offset_map_lock(vma->vm_mm, pmd, start, &ptl);
+-		pte = *(orig_pte + ((index - start) / PAGE_SIZE));
+-		pte_unmap_unlock(orig_pte, ptl);
+-
+-		if (pte_present(pte) || pte_none(pte) || pte_file(pte))
+-			continue;
+-		entry = pte_to_swp_entry(pte);
+-		if (unlikely(non_swap_entry(entry)))
+-			continue;
+-
+-		page = read_swap_cache_async(entry, GFP_HIGHUSER_MOVABLE,
+-								vma, index);
+-		if (page)
+-			page_cache_release(page);
+-	}
+-
++	entry = pte_to_swp_entry(*pte);
++	if (unlikely(non_swap_entry(entry)))
++		return 0;
++	page = read_swap_cache_async(entry, GFP_HIGHUSER_MOVABLE,
++				     vma, start);
++	if (page)
++		page_cache_release(page);
  	return 0;
  }
  
-@@ -588,16 +574,16 @@ static int show_smap(struct seq_file *m, void *v, int is_pid)
- 	struct vm_area_struct *vma = v;
- 	struct mem_size_stats mss;
- 	struct mm_walk smaps_walk = {
--		.pmd_entry = smaps_pte_range,
-+		.pmd_entry = smaps_pmd,
-+		.pte_entry = smaps_pte,
+@@ -175,8 +159,7 @@ static void force_swapin_readahead(struct vm_area_struct *vma,
+ {
+ 	struct mm_walk walk = {
  		.mm = vma->vm_mm,
-+		.vma = vma,
- 		.private = &mss,
+-		.pmd_entry = swapin_walk_pmd_entry,
+-		.private = vma,
++		.pte_entry = swapin_walk_pte_entry,
  	};
  
- 	memset(&mss, 0, sizeof mss);
--	mss.vma = vma;
- 	/* mmap_sem is held in m_start */
--	if (vma->vm_mm && !is_vm_hugetlb_page(vma))
--		walk_page_range(vma->vm_start, vma->vm_end, &smaps_walk);
-+	walk_page_vma(vma, &smaps_walk);
- 
- 	show_map_vma(m, vma, is_pid);
- 
+ 	walk_page_range(start, end, &walk);
 -- 
 1.8.3.1
 
