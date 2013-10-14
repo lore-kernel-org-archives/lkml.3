@@ -1,38 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757170Ab3JNQaD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 12:30:03 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54820 "EHLO mail.zytor.com"
+	id S1757195Ab3JNQaY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 12:30:24 -0400
+Received: from mga11.intel.com ([192.55.52.93]:10269 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756227Ab3JNQaB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 12:30:01 -0400
-Message-ID: <525C1BC1.6090501@zytor.com>
-Date: Mon, 14 Oct 2013 09:28:49 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1757049Ab3JNQaX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 12:30:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,493,1378882800"; 
+   d="scan'208";a="410704170"
+Message-ID: <525C1CDE.9020309@linux.intel.com>
+Date: Mon, 14 Oct 2013 09:33:34 -0700
+From: David Cohen <david.a.cohen@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130929 Icedove/17.0.9
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        keescook@chromium.org, md@google.com, tglx@linutronix.de,
-        hpa@linux.intel.com
-CC: linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/kaslr] x86, relocs: Add more per-cpu gold special cases
-References: <20131011013954.GA28902@www.outflux.net> <tip-d751c169e9a6f0f853346f1184881422bd10b3c2@git.kernel.org> <20131014083035.GA20976@gmail.com> <007cdb12-9fc7-4744-8686-695891b926a3@email.android.com>
-In-Reply-To: <007cdb12-9fc7-4744-8686-695891b926a3@email.android.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: tglx@linutronix.de, mingo@redhat.com, linux-kernel@vger.kernel.org,
+        x86@kernel.org, platform-driver-x86@vger.kernel.org,
+        Kuppuswamy Sathyanarayanan 
+	<sathyanarayanan.kuppuswamy@linux.intel.com>
+Subject: Re: [PATCH v3 08/10] intel_mid: Added custom handler for ipc devices
+References: <1381549404-22594-1-git-send-email-david.a.cohen@linux.intel.com> <1381549404-22594-9-git-send-email-david.a.cohen@linux.intel.com> <525C1617.7090304@zytor.com>
+In-Reply-To: <525C1617.7090304@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/14/2013 07:19 AM, H. Peter Anvin wrote:
-> My guess is that the 95 addresses are randomized and the 82 address is an address which failed to relocate.
+On 10/14/2013 09:04 AM, H. Peter Anvin wrote:
+> On 10/11/2013 08:43 PM, David Cohen wrote:
+>> +
+>> +	/*
+>> +	 * We need to call platform init of IPC devices to fill misc_pdata
+>> +	 * structure. It will be used in msic_init for initialization.
+>> +	 */
+>> +	if (dev != NULL)
+>> +		pdata = dev->get_platform_data(pentry);
+>> +
+>
+> The Linux style usually prefers:
+>
+> 	if (dev)
 
-> ffffffff82a04a58 is:
-> ffffffff82a03000 t init_per_cpu__gdt_page
+Thanks. I'll change it on next patch set.
 
-
-Specifically, it looks like the percpu stuff isn't getting set up correctly.
-
-	-hpa
-
+Br, David Cohen
