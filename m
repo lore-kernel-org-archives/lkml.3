@@ -1,69 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757334Ab3JNSon (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 14:44:43 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50069 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756978Ab3JNSol (ORCPT
+	id S1757358Ab3JNSoq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 14:44:46 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:54424 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757188Ab3JNSon (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 14:44:41 -0400
-Message-ID: <525C3B92.5060700@canonical.com>
-Date: Mon, 14 Oct 2013 11:44:34 -0700
-From: John Johansen <john.johansen@canonical.com>
-Organization: Canonical
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Mon, 14 Oct 2013 14:44:43 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Christopher Covington <cov@codeaurora.org>,
+        Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH v4 05/17] arch_timer: Move to generic sched_clock framework
+References: <1374189690-10810-1-git-send-email-sboyd@codeaurora.org>
+	<1374189690-10810-6-git-send-email-sboyd@codeaurora.org>
+Date: Mon, 14 Oct 2013 11:44:40 -0700
+In-Reply-To: <1374189690-10810-6-git-send-email-sboyd@codeaurora.org> (Stephen
+	Boyd's message of "Thu, 18 Jul 2013 16:21:18 -0700")
+Message-ID: <87k3hf7kvb.fsf@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: John Johansen <john.johansen@canonical.com>,
-        James Morris <jmorris@namei.org>
-CC: SECURITY SUBSYSTEM <linux-security-module@vger.kernel.org>,
-        LKLM <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/2] apparmor: fix memleak of the profile hash
-References: <525906EE.90409@canonical.com> <alpine.LRH.2.02.1310150220160.6053@tundra.namei.org> <525C39E2.4030507@canonical.com>
-In-Reply-To: <525C39E2.4030507@canonical.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-BugLink: http://bugs.launchpad.net/bugs/1235523
+Stephen Boyd <sboyd@codeaurora.org> writes:
 
-This fixes the following kmemleak trace:
-unreferenced object 0xffff8801e8c35680 (size 32):
-  comm "apparmor_parser", pid 691, jiffies 4294895667 (age 13230.876s)
-  hex dump (first 32 bytes):
-    e0 d3 4e b5 ac 6d f4 ed 3f cb ee 48 1c fd 40 cf  ..N..m..?..H..@.
-    5b cc e9 93 00 00 00 00 00 00 00 00 00 00 00 00  [...............
-  backtrace:
-    [<ffffffff817a97ee>] kmemleak_alloc+0x4e/0xb0
-    [<ffffffff811ca9f3>] __kmalloc+0x103/0x290
-    [<ffffffff8138acbc>] aa_calc_profile_hash+0x6c/0x150
-    [<ffffffff8138074d>] aa_unpack+0x39d/0xd50
-    [<ffffffff8137eced>] aa_replace_profiles+0x3d/0xd80
-    [<ffffffff81376937>] profile_replace+0x37/0x50
-    [<ffffffff811e9f2d>] vfs_write+0xbd/0x1e0
-    [<ffffffff811ea96c>] SyS_write+0x4c/0xa0
-    [<ffffffff817ccb1d>] system_call_fastpath+0x1a/0x1f
-    [<ffffffffffffffff>] 0xffffffffffffffff
+> Register with the generic sched_clock framework now that it
+> supports 64 bits. This fixes two problems with the current
+> sched_clock support for machines using the architected timers.
+> First off, we don't subtract the start value from subsequent
+> sched_clock calls so we can potentially start off with
+> sched_clock returning gigantic numbers. Second, there is no
+> support for suspend/resume handling so problems such as discussed
+> in 6a4dae5 (ARM: 7565/1: sched: stop sched_clock() during
+> suspend, 2012-10-23) can happen without this patch. Finally, it
+> allows us to move the sched_clock setup into drivers clocksource
+> out of the arch ports.
+>
+> Cc: Christopher Covington <cov@codeaurora.org>
+> Cc: Catalin Marinas <catalin.marinas@arm.com>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 
-Signed-off-by: John Johansen <john.johansen@canonical.com>
----
- security/apparmor/policy.c | 1 +
- 1 file changed, 1 insertion(+)
+A boot failure on Exynos5/Arndale showed up in next-20131014[1], and a
+subsequent bisect has fingered this patch as the culprit.  
 
-diff --git a/security/apparmor/policy.c b/security/apparmor/policy.c
-index 345bec0..705c287 100644
---- a/security/apparmor/policy.c
-+++ b/security/apparmor/policy.c
-@@ -610,6 +610,7 @@ void aa_free_profile(struct aa_profile *profile)
- 	aa_put_dfa(profile->policy.dfa);
- 	aa_put_replacedby(profile->replacedby);
- 
-+	kzfree(profile->hash);
- 	kzfree(profile);
- }
- 
--- 
-1.8.3.2
+I haven't had a chance to debug this any further, but wanted to share in
+case someone else can debug.  
 
+The console log is below, but don't think there is much useful there as
+it shows nothing after the 'Starting kernel ...' from u-boot.
+
+Kevin
+
+[1] http://lists.linaro.org/pipermail/kernel-build-reports/2013-October/000651.html
+
+Connected to arndale console [channel connected] (~$quit to exit)
+(user:khilman) is already connected
+
+~$hardreset
+
+Command(arndale console)> hardreset
+(user:khilman) Reboot arndale
+Reboot: arndale ; phidget 2 0 :  off, sleep, on
+
+
+U-Boot 2013.01.-rc1-dirty (Jun 28 2013 - 07:14:48) for ARNDALE5250
+
+CPU:	Exynos5250@1000MHz
+
+Board:  for ARNDALE5250
+I2C:   ready
+DRAM:  2 GiB
+WARNING: Caches not enabled
+
+Checking Boot Mode ... SDMMC
+MMC:   EXYNOS DWMMC: 0, EXYNOS DWMMC: 1, EXYNOS DWMMC: 2
+In:    serial
+Out:   serial
+Err:   serial
+Net:   No ethernet found.
+(Re)start USB...
+USB0:   USB EHCI 1.00
+scanning bus 0 for devices... 4 USB Device(s) found
+       scanning usb for storage devices... 0 Storage Device(s) found
+       scanning usb for ethernet devices... 1 Ethernet Device(s) found
+Hit any key to stop autoboot: 
+ 3  0 
+ARNDALE5250 # version
+version
+
+U-Boot 2013.01.-rc1-dirty (Jun 28 2013 - 07:14:48) for ARNDALE5250
+arm-linux-gnueabi-gcc (Ubuntu/Linaro 4.7.2-1ubuntu1) 4.7.2
+GNU ld (GNU Binutils for Ubuntu) 2.22.90.20120919
+ARNDALE5250 # setenv bootargs console=tty0 console=ttySAC2,115200n8 rw root=/dev/mmcblk1p3 rootwait rootfstype=ext4
+setenv bootargs console=tty0 console=ttySAC2,115200n8 rw root=/dev/mmcblk1p3 rootwait rootfstype=ext4
+ARNDALE5250 # setenv netargs 'setenv bootargs ${bootargs} ip=${ipaddr}:${serverip}:${gatewayip}:${netmask}::::192.168.1.254:none'
+setenv netargs 'setenv bootargs ${bootargs} ip=${ipaddr}:${serverip}:${gatewayip}:${netmask}::::192.168.1.254:none'
+ARNDALE5250 # if test -n ${initenv}; then run initenv; fi
+if test -n ${initenv}; then run initenv; fi
+ARNDALE5250 # if test -n ${preboot}; then run preboot; fi
+if test -n ${preboot}; then run preboot; fi
+(Re)start USB...
+USB0:   USB EHCI 1.00
+scanning bus 0 for devices... 4 USB Device(s) found
+       scanning usb for storage devices... 0 Storage Device(s) found
+       scanning usb for ethernet devices... 1 Ethernet Device(s) found
+ARNDALE5250 #setenv autoload no; setenv autoboot no
+ setenv autoload no; setenv autoboot no
+ARNDALE5250 # dhcp
+dhcp
+Waiting for Ethernet connection... done.
+BOOTP broadcast 1
+DHCP client bound to address 192.168.1.171
+ARNDALE5250 # setenv serverip 192.168.1.2
+setenv serverip 192.168.1.2
+ARNDALE5250 # if test -n ${netargs}; then run netargs; fi
+if test -n ${netargs}; then run netargs; fi
+ARNDALE5250 # tftp 0x40800000 tmp/arndale-lNb7OG/zImage
+tftp 0x40800000 tmp/arndale-lNb7OG/zImage
+Waiting for Ethernet connection... done.
+Using asx0 device
+TFTP from server 192.168.1.2; our IP address is 192.168.1.171
+Filename 'tmp/arndale-lNb7OG/zImage'.
+Load address: 0x40800000
+Loading: *#################################################################
+	 #################################################################
+	 #######################################################
+done
+Bytes transferred = 2709912 (295998 hex)
+ARNDALE5250 # tftp 0x407c0000 tmp/arndale-lNb7OG/exynos5250-arndale.dtb
+tftp 0x407c0000 tmp/arndale-lNb7OG/exynos5250-arndale.dtb
+Waiting for Ethernet connection... done.
+Using asx0 device
+TFTP from server 192.168.1.2; our IP address is 192.168.1.171
+Filename 'tmp/arndale-lNb7OG/exynos5250-arndale.dtb'.
+Load address: 0x407c0000
+Loading: *###
+done
+Bytes transferred = 32949 (80b5 hex)
+ARNDALE5250 # printenv bootargs
+printenv bootargs
+bootargs=console=tty0 console=ttySAC2,115200n8 rw root=/dev/mmcblk1p3 rootwait rootfstype=ext4 ip=192.168.1.171:192.168.1.2:192.168.1.254:255.255.255.0::::192.168.1.254:none
+ARNDALE5250 # bootz 0x40800000 - 0x407c0000
+bootz 0x40800000 - 0x407c0000
+## Flattened Device Tree blob at 407c0000
+   Booting using the fdt blob at 0x407c0000
+   Using Device Tree in place at 407c0000, end 407cb0b4
+
+Starting kernel ...
+
+~$off
+# PYBOOT: Exception: kernel: ERROR: did not start booting.
+# PYBOOT: Time: 33.50 seconds.
+# PYBOOT: Result: FAIL
