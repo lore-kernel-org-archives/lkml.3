@@ -1,47 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757200Ab3JNSK4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 14:10:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41996 "EHLO
+	id S1757191Ab3JNSMQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 14:12:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42005 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756723Ab3JNSKz (ORCPT
+	with ESMTP id S1756152Ab3JNSMP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 14:10:55 -0400
-Date: Mon, 14 Oct 2013 11:10:54 -0700
+	Mon, 14 Oct 2013 14:12:15 -0400
+Date: Mon, 14 Oct 2013 11:12:14 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
-To: Xiao Jin <jin.xiao@intel.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, mingo@elte.hu,
-        a.p.zijlstra@chello.nl, rusty@rustcorp.com.au,
-        william.douglas@intel.com, sboyd@codeaurora.org, jslaby@suse.cz,
-        oliver@neukum.org, linux-usb@vger.kernel.org
-Subject: Re: [PATCH] USB: cdc-acm: put delayed_wb to list
-Message-ID: <20131014181054.GA6023@kroah.com>
-References: <1381223328.9531.3.camel@xiaojin>
+To: Matthias Beyer <mail@beyermatthias.de>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] drivers: usb: core: devio.c: Coding style fixes
+Message-ID: <20131014181214.GB6023@kroah.com>
+References: <1381441292-6145-5-git-send-email-mail@beyermatthias.de>
+ <1381575694-9886-1-git-send-email-mail@beyermatthias.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1381223328.9531.3.camel@xiaojin>
+In-Reply-To: <1381575694-9886-1-git-send-email-mail@beyermatthias.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 08, 2013 at 05:08:48PM +0800, Xiao Jin wrote:
+On Sat, Oct 12, 2013 at 01:01:34PM +0200, Matthias Beyer wrote:
+> Whitespace fixes, including:
 > 
-> From: xiao jin <jin.xiao@intel.com>
+> - Whitespace after if-keyword
+> - Spaces to Tabs
 > 
-> If acm_write_start during acm suspend, write acm_wb is backuped
-> to delayed_wb. When acm resume, the delayed_wb will be started.
-> This mechanism can only record one write during acm suspend. More
-> acm write will be abandoned.
+> Other coding style fixes:
 > 
-> This patch is to use list_head to record the write acm_wb during acm
-> suspend. It can ensure no acm write abandoned.
+> - Added braces for if-else blocks where missing
 
+When doing coding style cleanups, please only do one thing per patch.
+You are doing a bunch of different things here, all in one patch, which
+isn't good so I can't take it, sorry.
 
-This patch is line-wrapped, making it impossible to apply.  Please check
-your email client and fix up to not do this in the future and resend
-this patch.
+Please split this up into different patches and I will be glad to accept
+it.
 
 thanks,
 
