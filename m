@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758009Ab3JNX7e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 19:59:34 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:40235 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757955Ab3JNX7b (ORCPT
+	id S1758058Ab3JNX7o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 19:59:44 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:54467 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757784Ab3JNX7d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 19:59:31 -0400
+	Mon, 14 Oct 2013 19:59:33 -0400
 From: Soren Brinkmann <soren.brinkmann@xilinx.com>
 To: Nicolas Ferre <nicolas.ferre@atmel.com>
 Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         Michal Simek <michal.simek@xilinx.com>,
         Soren Brinkmann <soren.brinkmann@xilinx.com>
-Subject: [PATCH RFC 4/5] net: macb: Use devm_request_irq()
-Date: Mon, 14 Oct 2013 16:58:59 -0700
-Message-Id: <1381795140-10792-5-git-send-email-soren.brinkmann@xilinx.com>
+Subject: [PATCH RFC 5/5] net: macb: Adjust tx_clk when link speed changes
+Date: Mon, 14 Oct 2013 16:59:00 -0700
+Message-Id: <1381795140-10792-6-git-send-email-soren.brinkmann@xilinx.com>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1381795140-10792-1-git-send-email-soren.brinkmann@xilinx.com>
 References: <1381795140-10792-1-git-send-email-soren.brinkmann@xilinx.com>
@@ -22,54 +22,152 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the device managed interface to request the IRQ, simplifying error
-paths.
+Adjust the ethernet clock according to the negotiated link speed.
 
 Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
 ---
- drivers/net/ethernet/cadence/macb.c | 8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+ drivers/net/ethernet/cadence/macb.c | 66 +++++++++++++++++++++++++++++++++++++
+ drivers/net/ethernet/cadence/macb.h |  1 +
+ 2 files changed, 67 insertions(+)
 
 diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
-index 436aecc31732..603844b1d483 100644
+index 603844b1d483..beb9fa863811 100644
 --- a/drivers/net/ethernet/cadence/macb.c
 +++ b/drivers/net/ethernet/cadence/macb.c
-@@ -1825,7 +1825,8 @@ static int __init macb_probe(struct platform_device *pdev)
+@@ -204,6 +204,49 @@ static int macb_mdio_reset(struct mii_bus *bus)
+ 	return 0;
+ }
+ 
++/**
++ * macb_set_tx_clk() - Set a clock to a new frequency
++ * @clk		Pointer to the clock to change
++ * @rate	New frequency in Hz
++ * @dev		Pointer to the struct net_device
++ */
++static void macb_set_tx_clk(struct clk *clk, int speed, struct net_device *dev)
++{
++	long ferr;
++	long rate;
++	long rate_rounded;
++
++	switch (speed) {
++	case SPEED_10:
++		rate = 2500000;
++		break;
++	case SPEED_100:
++		rate = 25000000;
++		break;
++	case SPEED_1000:
++		rate = 125000000;
++		break;
++	default:
++		break;
++	}
++
++	rate_rounded = clk_round_rate(clk, rate);
++	if (rate_rounded < 0)
++		return;
++
++	/* RGMII allows 50 ppm frequency error. Test and warn if this limit
++	 * are not satisfied.
++	 */
++	ferr = abs(rate_rounded - rate);
++	ferr = DIV_ROUND_UP(ferr, rate / 100000);
++	if (ferr > 5)
++		netdev_warn(dev, "unable to generate target frequency: %ld Hz\n",
++				rate);
++
++	if (clk_set_rate(clk, rate_rounded))
++		netdev_err(dev, "adjusting tx_clk failed.\n");
++}
++
+ static void macb_handle_link_change(struct net_device *dev)
+ {
+ 	struct macb *bp = netdev_priv(dev);
+@@ -251,6 +294,9 @@ static void macb_handle_link_change(struct net_device *dev)
+ 
+ 	spin_unlock_irqrestore(&bp->lock, flags);
+ 
++	if (!IS_ERR(bp->tx_clk))
++		macb_set_tx_clk(bp->tx_clk, phydev->speed, dev);
++
+ 	if (status_change) {
+ 		if (phydev->link) {
+ 			netif_carrier_on(dev);
+@@ -1805,6 +1851,8 @@ static int __init macb_probe(struct platform_device *pdev)
+ 		goto err_out_free_dev;
  	}
  
- 	dev->irq = platform_get_irq(pdev, 0);
--	err = request_irq(dev->irq, macb_interrupt, 0, dev->name, dev);
-+	err = devm_request_irq(&pdev->dev, dev->irq, macb_interrupt, 0,
-+			dev->name, dev);
++	bp->tx_clk = devm_clk_get(&pdev->dev, "tx_clk");
++
+ 	err = clk_prepare_enable(bp->pclk);
  	if (err) {
- 		dev_err(&pdev->dev, "Unable to request IRQ %d (error %d)\n",
- 			dev->irq, err);
-@@ -1892,7 +1893,7 @@ static int __init macb_probe(struct platform_device *pdev)
- 	err = register_netdev(dev);
- 	if (err) {
- 		dev_err(&pdev->dev, "Cannot register net device, aborting.\n");
--		goto err_out_free_irq;
-+		goto err_out_disable_clocks;
+ 		dev_err(&pdev->dev, "failed to enable pclk (%u)\n", err);
+@@ -1817,6 +1865,15 @@ static int __init macb_probe(struct platform_device *pdev)
+ 		goto err_out_disable_pclk;
  	}
  
- 	err = macb_mii_init(bp);
-@@ -1915,8 +1916,6 @@ static int __init macb_probe(struct platform_device *pdev)
- 
++	if (!IS_ERR(bp->tx_clk)) {
++		err = clk_prepare_enable(bp->tx_clk);
++		if (err) {
++			dev_err(&pdev->dev, "failed to enable tx_clk (%u)\n",
++					err);
++			goto err_out_disable_hclk;
++		}
++	}
++
+ 	bp->regs = devm_ioremap(&pdev->dev, regs->start, resource_size(regs));
+ 	if (!bp->regs) {
+ 		dev_err(&pdev->dev, "failed to map registers, aborting.\n");
+@@ -1917,6 +1974,9 @@ static int __init macb_probe(struct platform_device *pdev)
  err_out_unregister_netdev:
  	unregister_netdev(dev);
--err_out_free_irq:
--	free_irq(dev->irq, dev);
  err_out_disable_clocks:
++	if (!IS_ERR(bp->tx_clk))
++		clk_disable_unprepare(bp->tx_clk);
++err_out_disable_hclk:
  	clk_disable_unprepare(bp->hclk);
  err_out_disable_pclk:
-@@ -1942,7 +1941,6 @@ static int __exit macb_remove(struct platform_device *pdev)
+ 	clk_disable_unprepare(bp->pclk);
+@@ -1941,6 +2001,8 @@ static int __exit macb_remove(struct platform_device *pdev)
  		kfree(bp->mii_bus->irq);
  		mdiobus_free(bp->mii_bus);
  		unregister_netdev(dev);
--		free_irq(dev->irq, dev);
++		if (!IS_ERR(bp->tx_clk))
++			clk_disable_unprepare(bp->tx_clk);
  		clk_disable_unprepare(bp->hclk);
  		clk_disable_unprepare(bp->pclk);
  		free_netdev(dev);
+@@ -1959,6 +2021,8 @@ static int macb_suspend(struct device *dev)
+ 	netif_carrier_off(netdev);
+ 	netif_device_detach(netdev);
+ 
++	if (!IS_ERR(bp->tx_clk))
++		clk_disable_unprepare(bp->tx_clk);
+ 	clk_disable_unprepare(bp->hclk);
+ 	clk_disable_unprepare(bp->pclk);
+ 
+@@ -1973,6 +2037,8 @@ static int macb_resume(struct device *dev)
+ 
+ 	clk_prepare_enable(bp->pclk);
+ 	clk_prepare_enable(bp->hclk);
++	if (!IS_ERR(bp->tx_clk))
++		clk_prepare_enable(bp->tx_clk);
+ 
+ 	netif_device_attach(netdev);
+ 
+diff --git a/drivers/net/ethernet/cadence/macb.h b/drivers/net/ethernet/cadence/macb.h
+index f4076155bed7..51c02442160a 100644
+--- a/drivers/net/ethernet/cadence/macb.h
++++ b/drivers/net/ethernet/cadence/macb.h
+@@ -572,6 +572,7 @@ struct macb {
+ 	struct platform_device	*pdev;
+ 	struct clk		*pclk;
+ 	struct clk		*hclk;
++	struct clk		*tx_clk;
+ 	struct net_device	*dev;
+ 	struct napi_struct	napi;
+ 	struct work_struct	tx_error_task;
 -- 
 1.8.4
 
