@@ -1,139 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755864Ab3JNKMd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 06:12:33 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:9427 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753567Ab3JNKMb (ORCPT
+	id S1755985Ab3JNKQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 06:16:58 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47612 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753567Ab3JNKQ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 06:12:31 -0400
-X-AuditID: cbfee61a-b7f7a6d00000235f-74-525bc38edaf1
-From: Weijie Yang <weijie.yang@samsung.com>
-To: akpm@linux-foundation.org
-Cc: sjenning@linux.vnet.ibm.com, sjennings@variantweb.net,
-        "'Minchan Kim'" <minchan@kernel.org>, bob.liu@oracle.com,
-        weijie.yang.kh@gmail.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, stable@vger.kernel.org
-Subject: [PATCH 1/2] mm/zswap: bugfix: memory leak when invalidate and reclaim
- occur concurrently
-Date: Mon, 14 Oct 2013 18:11:11 +0800
-Message-id: <000001cec8c5$e4231520$ac693f60$%yang@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac7IxbU+iflL6poRTFKa4FrW+JMliw==
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrLLMWRmVeSWpSXmKPExsVy+t9jAd2+w9FBBlNO8VvMWb+GzaLr1FQW
-	i8u75rBZ3Fvzn9Vi2df37BaH9q1it/h09BGbxYKNjxgtnpz4z+LA6bFz1l12j02rOtk8Nn2a
-	xO5xYsZvFo8HhzazeHx8eovF4/q3Io/Pm+QCOKK4bFJSczLLUov07RK4MnatmctS0Cpd0X30
-	P1MDY4tYFyMnh4SAicTev29ZIGwxiQv31rN1MXJxCAksYpS40vGYCcL5wyjx5eNasCo2AW2J
-	u/0bWUFsEQFZial/z7OAFDEL3GaUmPH9PxNIQlggWaJ3wTPmLkYODhYBVYlZm9hBwrwCdhLv
-	rh1jhbAFJX5MvscCUsIsoC4xZUouSJhZQF5i85q3YJ0SQOFHf3UhNulJLNw7hxWiRFxi45Fb
-	LBMYBWYhGTQLYdAsJINmIelYwMiyilE0tSC5oDgpPddQrzgxt7g0L10vOT93EyM4Up5J7WBc
-	2WBxiFGAg1GJh1fAKTpIiDWxrLgy9xCjBAezkgiv4DygEG9KYmVValF+fFFpTmrxIUZpDhYl
-	cd4DrdaBQgLpiSWp2ampBalFMFkmDk6pBsZtDxdHtp4xUj/8/qpD8wxVhWubvUuvxebtFL5j
-	+GPJjzNpOUI8r26x+S81dnx9p/yslihb4LP/Aqsun9q5xXCx6kar1zE+T3NbgrXERFct4d3v
-	bzjxzoOFIg/VtIqUZEK6a/4JXKsXvfDZyujRm8kfCmU77F4LNUxzyVUP+ehV0vxUvMlNZJES
-	S3FGoqEWc1FxIgBvLYk9kAIAAA==
+	Mon, 14 Oct 2013 06:16:56 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org
+Cc: stable@vger.kernel.org, kernel-team@lists.ubuntu.com,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH 087/100] powerpc: Restore registers on error exit from csum_partial_copy_generic()
+References: <1381488130-30235-1-git-send-email-luis.henriques@canonical.com>
+	<1381488130-30235-88-git-send-email-luis.henriques@canonical.com>
+Date: Mon, 14 Oct 2013 11:16:48 +0100
+In-Reply-To: <1381488130-30235-88-git-send-email-luis.henriques@canonical.com>
+	(Luis Henriques's message of "Fri, 11 Oct 2013 11:41:57 +0100")
+Message-ID: <87k3hgrwbz.fsf@canonical.com>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Consider the following scenario:
-thread 0: reclaim entry x (get refcount, but not call zswap_get_swap_cache_page)
-thread 1: call zswap_frontswap_invalidate_page to invalidate entry x.
-	finished, entry x and its zbud is not freed as its refcount != 0
-	now, the swap_map[x] = 0
-thread 0: now call zswap_get_swap_cache_page
-	swapcache_prepare return -ENOENT because entry x is not used any more
-	zswap_get_swap_cache_page return ZSWAP_SWAPCACHE_NOMEM
-	zswap_writeback_entry do nothing except put refcount
-Now, the memory of zswap_entry x and its zpage leak.
+Luis Henriques <luis.henriques@canonical.com> writes:
 
-Modify:
- - check the refcount in fail path, free memory if it is not referenced.
+> 3.5.7.23 -stable review patch.  If anyone has any objections, please let me know.
+>
+> ------------------
+>
+> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+>
+> commit 8f21bd0090052e740944f9397e2be5ac7957ded7 upstream.
 
- - use ZSWAP_SWAPCACHE_FAIL instead of ZSWAP_SWAPCACHE_NOMEM as the fail path
-   can be not only caused by nomem but also by invalidate.
+I'm dropping this patch as it is causing some build failures on
+powerpc configs.
 
-Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
-Reviewed-by: Bob Liu <bob.liu@oracle.com>
-Cc: Minchan Kim <minchan@kernel.org>
-Cc: <stable@vger.kernel.org>
-Acked-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
- mm/zswap.c |   22 ++++++++++++++--------
- 1 file changed, 14 insertions(+), 8 deletions(-)
- mode change 100644 => 100755 mm/zswap.c
-
-diff --git a/mm/zswap.c b/mm/zswap.c
-old mode 100644
-new mode 100755
-index deda2b6..f25394a
---- a/mm/zswap.c
-+++ b/mm/zswap.c
-@@ -387,7 +387,7 @@ static void zswap_free_entry(struct zswap_tree *tree, struct zswap_entry *entry)
- enum zswap_get_swap_ret {
- 	ZSWAP_SWAPCACHE_NEW,
- 	ZSWAP_SWAPCACHE_EXIST,
--	ZSWAP_SWAPCACHE_NOMEM
-+	ZSWAP_SWAPCACHE_FAIL,
- };
- 
- /*
-@@ -401,9 +401,10 @@ enum zswap_get_swap_ret {
-  * added to the swap cache, and returned in retpage.
-  *
-  * If success, the swap cache page is returned in retpage
-- * Returns 0 if page was already in the swap cache, page is not locked
-- * Returns 1 if the new page needs to be populated, page is locked
-- * Returns <0 on error
-+ * Returns ZSWAP_SWAPCACHE_EXIST if page was already in the swap cache
-+ * Returns ZSWAP_SWAPCACHE_NEW if the new page needs to be populated,
-+ * 	page is locked
-+ * Returns ZSWAP_SWAPCACHE_FAIL on error
-  */
- static int zswap_get_swap_cache_page(swp_entry_t entry,
- 				struct page **retpage)
-@@ -475,7 +476,7 @@ static int zswap_get_swap_cache_page(swp_entry_t entry,
- 	if (new_page)
- 		page_cache_release(new_page);
- 	if (!found_page)
--		return ZSWAP_SWAPCACHE_NOMEM;
-+		return ZSWAP_SWAPCACHE_FAIL;
- 	*retpage = found_page;
- 	return ZSWAP_SWAPCACHE_EXIST;
- }
-@@ -529,11 +530,11 @@ static int zswap_writeback_entry(struct zbud_pool *pool, unsigned long handle)
- 
- 	/* try to allocate swap cache page */
- 	switch (zswap_get_swap_cache_page(swpentry, &page)) {
--	case ZSWAP_SWAPCACHE_NOMEM: /* no memory */
-+	case ZSWAP_SWAPCACHE_FAIL: /* no memory or invalidate happened */
- 		ret = -ENOMEM;
- 		goto fail;
- 
--	case ZSWAP_SWAPCACHE_EXIST: /* page is unlocked */
-+	case ZSWAP_SWAPCACHE_EXIST:
- 		/* page is already in the swap cache, ignore for now */
- 		page_cache_release(page);
- 		ret = -EEXIST;
-@@ -591,7 +592,12 @@ static int zswap_writeback_entry(struct zbud_pool *pool, unsigned long handle)
- 
- fail:
- 	spin_lock(&tree->lock);
--	zswap_entry_put(entry);
-+	refcount = zswap_entry_put(entry);
-+	if (refcount <= 0) {
-+		/* invalidate happened, consider writeback as success */
-+		zswap_free_entry(tree, entry);
-+		ret = 0;
-+	}
- 	spin_unlock(&tree->lock);
- 	return ret;
- }
+Cheers,
 -- 
-1.7.10.4
+Luis
 
+
+>
+> The csum_partial_copy_generic() function saves the PowerPC
+>non-volatile
+> r14, r15, and r16 registers for the main checksum-and-copy loop.
+> Unfortunately, it fails to restore them upon error exit from this loop,
+> which results in silent corruption of these registers in the presumably
+> rare event of an access exception within that loop.
+>
+> This commit therefore restores these register on error exit from the loop.
+>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Signed-off-by: Anton Blanchard <anton@samba.org>
+> Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+> ---
+>  arch/powerpc/lib/checksum_64.S | 54 +++++++++++++++++++++++++++++++-----------
+>  1 file changed, 40 insertions(+), 14 deletions(-)
+>
+> diff --git a/arch/powerpc/lib/checksum_64.S b/arch/powerpc/lib/checksum_64.S
+> index afa2eba..d0e8390 100644
+> --- a/arch/powerpc/lib/checksum_64.S
+> +++ b/arch/powerpc/lib/checksum_64.S
+> @@ -229,19 +229,35 @@ _GLOBAL(csum_partial)
+>  	blr
+>  
+>  
+> -	.macro source
+> +	.macro srcnr
+>  100:
+>  	.section __ex_table,"a"
+>  	.align 3
+> -	.llong 100b,.Lsrc_error
+> +	.llong 100b,.Lsrc_error_nr
+>  	.previous
+>  	.endm
+>  
+> -	.macro dest
+> +	.macro source
+> +150:
+> +	.section __ex_table,"a"
+> +	.align 3
+> +	.llong 150b,.Lsrc_error
+> +	.previous
+> +	.endm
+> +
+> +	.macro dstnr
+>  200:
+>  	.section __ex_table,"a"
+>  	.align 3
+> -	.llong 200b,.Ldest_error
+> +	.llong 200b,.Ldest_error_nr
+> +	.previous
+> +	.endm
+> +
+> +	.macro dest
+> +250:
+> +	.section __ex_table,"a"
+> +	.align 3
+> +	.llong 250b,.Ldest_error
+>  	.previous
+>  	.endm
+>  
+> @@ -277,11 +293,11 @@ _GLOBAL(csum_partial_copy_generic)
+>  	mtctr	r6
+>  
+>  1:
+> -source;	lhz	r6,0(r3)		/* align to doubleword */
+> +srcnr;	lhz	r6,0(r3)		/* align to doubleword */
+>  	subi	r5,r5,2
+>  	addi	r3,r3,2
+>  	adde	r0,r0,r6
+> -dest;	sth	r6,0(r4)
+> +dstnr;	sth	r6,0(r4)
+>  	addi	r4,r4,2
+>  	bdnz	1b
+>  
+> @@ -395,10 +411,10 @@ dest;	std	r16,56(r4)
+>  
+>  	mtctr	r6
+>  3:
+> -source;	ld	r6,0(r3)
+> +srcnr;	ld	r6,0(r3)
+>  	addi	r3,r3,8
+>  	adde	r0,r0,r6
+> -dest;	std	r6,0(r4)
+> +dstnr;	std	r6,0(r4)
+>  	addi	r4,r4,8
+>  	bdnz	3b
+>  
+> @@ -408,10 +424,10 @@ dest;	std	r6,0(r4)
+>  	srdi.	r6,r5,2
+>  	beq	.Lcopy_tail_halfword
+>  
+> -source;	lwz	r6,0(r3)
+> +srcnr;	lwz	r6,0(r3)
+>  	addi	r3,r3,4
+>  	adde	r0,r0,r6
+> -dest;	stw	r6,0(r4)
+> +dstnr;	stw	r6,0(r4)
+>  	addi	r4,r4,4
+>  	subi	r5,r5,4
+>  
+> @@ -419,10 +435,10 @@ dest;	stw	r6,0(r4)
+>  	srdi.	r6,r5,1
+>  	beq	.Lcopy_tail_byte
+>  
+> -source;	lhz	r6,0(r3)
+> +srcnr;	lhz	r6,0(r3)
+>  	addi	r3,r3,2
+>  	adde	r0,r0,r6
+> -dest;	sth	r6,0(r4)
+> +dstnr;	sth	r6,0(r4)
+>  	addi	r4,r4,2
+>  	subi	r5,r5,2
+>  
+> @@ -430,10 +446,10 @@ dest;	sth	r6,0(r4)
+>  	andi.	r6,r5,1
+>  	beq	.Lcopy_finish
+>  
+> -source;	lbz	r6,0(r3)
+> +srcnr;	lbz	r6,0(r3)
+>  	sldi	r9,r6,8			/* Pad the byte out to 16 bits */
+>  	adde	r0,r0,r9
+> -dest;	stb	r6,0(r4)
+> +dstnr;	stb	r6,0(r4)
+>  
+>  .Lcopy_finish:
+>  	addze	r0,r0			/* add in final carry */
+> @@ -443,6 +459,11 @@ dest;	stb	r6,0(r4)
+>  	blr
+>  
+>  .Lsrc_error:
+> +	ld	r14,STK_REG(R14)(r1)
+> +	ld	r15,STK_REG(R15)(r1)
+> +	ld	r16,STK_REG(R16)(r1)
+> +	addi	r1,r1,STACKFRAMESIZE
+> +.Lsrc_error_nr:
+>  	cmpdi	0,r7,0
+>  	beqlr
+>  	li	r6,-EFAULT
+> @@ -450,6 +471,11 @@ dest;	stb	r6,0(r4)
+>  	blr
+>  
+>  .Ldest_error:
+> +	ld	r14,STK_REG(R14)(r1)
+> +	ld	r15,STK_REG(R15)(r1)
+> +	ld	r16,STK_REG(R16)(r1)
+> +	addi	r1,r1,STACKFRAMESIZE
+> +.Ldest_error_nr:
+>  	cmpdi	0,r8,0
+>  	beqlr
+>  	li	r6,-EFAULT
