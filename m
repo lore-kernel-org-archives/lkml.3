@@ -1,64 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756566Ab3JNNOc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 09:14:32 -0400
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:55857 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756505Ab3JNNO3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 09:14:29 -0400
+	id S1756584Ab3JNNRz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 09:17:55 -0400
+Received: from mga02.intel.com ([134.134.136.20]:39657 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756157Ab3JNNRx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 09:17:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,492,1378882800"; 
+   d="asc'?scan'208";a="418884270"
+Date: Mon, 14 Oct 2013 09:03:11 -0400
+From: Chen Gong <gong.chen@linux.intel.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: tony.luck@intel.com, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 3/8] ACPI, x86: Extended error log driver for x86 platform
+Message-ID: <20131014130311.GA1695@gchen.bj.intel.com>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>, tony.luck@intel.com,
+	linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+References: <1381473166-29303-1-git-send-email-gong.chen@linux.intel.com>
+ <1381473166-29303-4-git-send-email-gong.chen@linux.intel.com>
+ <20131011152451.GF5925@pd.tnic>
+ <20131014031633.GA12189@gchen.bj.intel.com>
+ <20131014102635.GC4009@pd.tnic>
 MIME-Version: 1.0
-In-Reply-To: <1905683.dBVjOILnXT@vostro.rjw.lan>
-References: <1380820383-23336-1-git-send-email-felipe.contreras@gmail.com>
-	<CAMP44s0sGCDKj86awEqUK27LB=TL62-w9F=e99J3gRGmmfGMWg@mail.gmail.com>
-	<1905683.dBVjOILnXT@vostro.rjw.lan>
-Date: Mon, 14 Oct 2013 08:14:28 -0500
-Message-ID: <CAMP44s1hVCk=vkAmYoQA85U1sTQ-JCLmWi0kDejfY8m=sXQdpQ@mail.gmail.com>
-Subject: Re: [PATCH] acpi: update win8 OSI blacklist
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="IS0zKkzwUGydFO0o"
+Content-Disposition: inline
+In-Reply-To: <20131014102635.GC4009@pd.tnic>
+X-PGP-Key-ID: A43922C7
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 14, 2013 at 6:58 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Sunday, October 13, 2013 10:30:50 PM Felipe Contreras wrote:
->> On Thu, Oct 3, 2013 at 12:13 PM, Felipe Contreras
->> <felipe.contreras@gmail.com> wrote:
->> > More people have reported they need this for their machines to work
->> > correctly.
->> >
->> > https://bugzilla.kernel.org/show_bug.cgi?id=60682
->>
->> I see this was merged to the linux-next branch. Is there any reason
->> why it's not proposed for v3.12?
->
-> It is not a fix for a recent breakage, it doesn't fix an outright crash or
-> security issue and there is a chance, albeit arguably very small, that
-> something will not function on one of the affected systems for someone
-> as a result of the blacklisting.
 
-So? That chance is already there because the blacklist is already
-there, but we cannot know until v3.12 is released, because that's when
-most people would be testing that code.
+--IS0zKkzwUGydFO0o
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-It seems to me your worry is that somebody would report a regression
-that happened v3.12-rc6 (if it has this patch applied), while it
-worked correctly in v3.12-rc5, in which case you would get a complaint
-from Linus.
+On Mon, Oct 14, 2013 at 12:26:35PM +0200, Borislav Petkov wrote:
+> Date: Mon, 14 Oct 2013 12:26:35 +0200
+> From: Borislav Petkov <bp@alien8.de>
+> To: Chen Gong <gong.chen@linux.intel.com>
+> Cc: tony.luck@intel.com, linux-kernel@vger.kernel.org,
+>  linux-acpi@vger.kernel.org
+> Subject: Re: [PATCH 3/8] ACPI, x86: Extended error log driver for x86
+>  platform
+> User-Agent: Mutt/1.5.21 (2010-09-15)
+>=20
+> On Sun, Oct 13, 2013 at 11:16:33PM -0400, Chen Gong wrote:
+> > But this driver can be loaded as a module. If this module is unloaded,
+> > extlog_print is gone. I can't keep such a pointer internally.
+>=20
+> Sure you can - you define a weak extlog_print() function in a
+> compilation unit which is always builtin. Maybe mce.c or so.
+>=20
+Oh, yes. Let me do it.
 
-But we all know that's not going to happen. The complaints (if any)
-would arrive in v3.12, and that would happen regardless of this patch.
+> > This macro is great and I'd loved to use it. But it looks like a
+> > litttle bit weird to let eMCA depends on a header file like edac.h.
+> > Meanwhile, I found in drivers/video/sis/init.c:3323 we have a very
+> > similar macro for this purpose. So how about writing a separate patch
+> > to clean it up first?
+>=20
+> Actually, you're right. Those macros are much more generic and
+> could be exposed to the general public by putting them, say into
+> include/include/bitops.h, for example?
+>=20
+> Btw, the sis one generates unsigneds (4 byte on x86) while the edac one
+> 8 byte ULLs. So you could call them
+>=20
+> GENMASK
+> and
+> GENMASK_ULL
+>=20
+> How does that sound?
 
-Besides, our goal is to make v3.12 as stable as possible, and it seems
-to me you are blindly following the letter of a rule, instead if
-interpreting what is the intent of rule. If I had sent the patch the
-29th of June, it would have been aplied by now and be part of the
-current blacklist, and the result would be the same; we cannot really
-know until v3.12 is released.
+This kind of mask is often unsigned. So how about following mode:
 
--- 
-Felipe Contreras
+GENMASKL / GENMASKQ
+or
+GENMASK_L / GENMASK_Q
+
+>=20
+> > Because I think in theory "CPU < 0" is impossible. When it hits such
+> > situation, it should be a very serious H/W or firmware bug. At least,
+> > It think it should be a WARN_ON.
+>=20
+> Yes, I think a WARN_ON is much better than the heavy hammer. We can
+> always turn it into a FW_BUG later if it really starts to trigger
+> anywhere...
+>=20
+Agree.
+
+> Thanks.
+>=20
+> --=20
+> Regards/Gruss,
+>     Boris.
+>=20
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
+
+--IS0zKkzwUGydFO0o
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSW+uOAAoJEI01n1+kOSLHUPMP+wcvtXl3jrPm94dMWfbgSgVS
+0DQBouyL8hiIKntks0ijHWBJfltCrXQtaHMGJO9hF+1lGdXkOHkCT8eDpKqQDJ17
+EE35N5xVaaTV9cbeZ3ts26HzGmr1umbeKDFid1QzmBtWWbA2L2XI1qQA+kpRTvIL
+s4vAIR00VpfDZZGLAVCCzhAK4WtE3XyvyWKuC0k+zmuHs93ilS34GmhdEsukTD4N
+KIwBp367Eb1yKBx5QhdauQQljFzwUEZ3ZKZ3KlEbOF7zbwcc5kIavdqRH0cCSbfu
+eC/PsWQCSVQ6FvIRa8xp+mIyFHLVDjfzTd096N5isgLPKmYdrwoUZQ42Oyc/yuh4
+x5fyRb+pEVRSqu3IZCF6SGjp3T/Wi83UC5Y8TvS4t1WNfL0mW4pf7nRQ+udLu0eU
+EwZdndIBL31Fqe9/JtaCwxDUqB0T4G9kPe8Xc3ZQQcrBK1LVMb9l/lUfsezMI4gK
+hLlYBtf8jVRDbHTLijQf798raA7mV56F7LrbN1EXYy/qnqLoidc9kPtbJNE2bbYF
+RrKq6JNrHgDWNDSH0AckaJO/xYWdMvV8K6b0NIFW5vPIIIfTygDC7gb0CwMWR79+
+R5LOBE89zIDb1jmpoFD4+VzJV3sKuZOKPinFqxrwANZdIxCajmbUGyDKkJwuYxBW
+Sg8JjxqF/9dWompwWLtq
+=aRKN
+-----END PGP SIGNATURE-----
+
+--IS0zKkzwUGydFO0o--
