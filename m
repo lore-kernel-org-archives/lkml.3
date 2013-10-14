@@ -1,71 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756793Ab3JNPD4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 11:03:56 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:59783 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754396Ab3JNPDz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 11:03:55 -0400
-Message-ID: <525C07C0.2020303@ti.com>
-Date: Mon, 14 Oct 2013 11:03:28 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1756542Ab3JNPGV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 11:06:21 -0400
+Received: from ns.mm-sol.com ([212.124.72.66]:48560 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750837Ab3JNPGS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 11:06:18 -0400
+Message-ID: <525C0820.7000601@mm-sol.com>
+Date: Mon, 14 Oct 2013 18:05:04 +0300
+From: Stanimir Varbanov <svarbanov@mm-sol.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: "yinghai@kernel.org" <yinghai@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Strashko, Grygorii" <grygorii.strashko@ti.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC 06/23] mm/memblock: Add memblock early memory allocation
- apis
-References: <1381615146-20342-1-git-send-email-santosh.shilimkar@ti.com> <1381615146-20342-7-git-send-email-santosh.shilimkar@ti.com> <20131013175648.GC5253@mtj.dyndns.org> <525C023A.8070608@ti.com> <20131014145833.GK4722@htj.dyndns.org>
-In-Reply-To: <20131014145833.GK4722@htj.dyndns.org>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Matt Mackall <mpm@selenic.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH v2 2/2] hwrng: msm: Add PRNG support for MSM SoC's
+References: <1381504601-23773-1-git-send-email-svarbanov@mm-sol.com> <1381504601-23773-3-git-send-email-svarbanov@mm-sol.com> <20131011203701.GC13139@codeaurora.org>
+In-Reply-To: <20131011203701.GC13139@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 14 October 2013 10:58 AM, Tejun Heo wrote:
-> Hello,
+Hi Stephen,
+
+Thanks for the review.
+
+On 10/11/2013 11:37 PM, Stephen Boyd wrote:
+> On 10/11, Stanimir Varbanov wrote:
+>> This adds a driver for hardware random number generator present
+>> on Qualcomm MSM SoC's.
+>>
+>> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
+>> ---
 > 
-> On Mon, Oct 14, 2013 at 10:39:54AM -0400, Santosh Shilimkar wrote:
->>>> +void __memblock_free_early(phys_addr_t base, phys_addr_t size);
->>>> +void __memblock_free_late(phys_addr_t base, phys_addr_t size);
->>>
->>> Would it be possible to drop "early"?  It's redundant and makes the
->>> function names unnecessarily long.  When memblock is enabled, these
->>> are basically doing about the same thing as memblock_alloc() and
->>> friends, right?  Wouldn't it make more sense to define these as
->>> memblock_alloc_XXX()?
->>>
->> A small a difference w.r.t existing memblock_alloc() vs these new
->> exports returns virtual mapped memory pointers. Actually I started
->> with memblock_alloc_xxx() but then memblock already exports memblock_alloc_xx()
->> returning physical memory pointer. So just wanted to make these interfaces
->> distinct and added "early". But I agree with you that the 'early' can
->> be dropped. Will fix it.
+> Just nitpicks.
 > 
-> Hmmm, so while this removes address limit on the base / limit side, it
-> keeps virt address on the result.  In that case, we probably want to
-> somehow distinguish the two sets of interfaces - one set dealing with
-> phys and the other dealing with virts.  Maybe we want to build the
-> base interface on phys address and add convenience wrappers for virts?
-> Would that make more sense?
+>> diff --git a/drivers/char/hw_random/Kconfig b/drivers/char/hw_random/Kconfig
+>> index 0aa9d91daef5..d902330cef43 100644
+>> --- a/drivers/char/hw_random/Kconfig
+>> +++ b/drivers/char/hw_random/Kconfig
+>> @@ -314,3 +314,15 @@ config HW_RANDOM_TPM
+>>  	  module will be called tpm-rng.
+>>  
+>>  	  If unsure, say Y.
+>> +
+>> +config HW_RANDOM_MSM
+>> +        tristate "Qualcomm MSM Random Number Generator support"
+>> +        depends on HW_RANDOM && ARCH_MSM && HAVE_CLK
 > 
-Thats what more or less we are doing if you look at it. The only
-additional code we have is to manage the virtual memory and checks
-as such, just the same way initially done in nobootmem.c wrappers.
+> It should be fine to drop HAVE_CLK here because ARCH_MSM always
+> selects COMMON_CLK which indirectly selects HAVE_CLK.
 
-Not sure if adding 'virt' word in these APIs to make it explicit
-would help to avoid any confusion.
+It is leftover, I'll remove HAVE_CLK dependency.
 
-Regards,
-Santosh
+> 
+>> +        ---help---
+>> +          This driver provides kernel-side support for the Random Number
+>> +          Generator hardware found on Qualcomm MSM SoCs.
+>> +
+>> +          To compile this driver as a module, choose M here. the
+>> +          module will be called msm-rng.
+>> +
+>> +          If unsure, say Y.
+>> diff --git a/drivers/char/hw_random/msm-rng.c b/drivers/char/hw_random/msm-rng.c
+>> new file mode 100644
+>> index 000000000000..e219e94d02c1
+>> --- /dev/null
+>> +++ b/drivers/char/hw_random/msm-rng.c
+>> @@ -0,0 +1,195 @@
+>> +#include <linux/clk.h>
+>> +#include <linux/hw_random.h>
+>> +#include <linux/io.h>
+>> +#include <linux/module.h>
+>> +#include <linux/of.h>
+>> +#include <linux/platform_device.h>
+> 
+> +#include <linux/err.h> for -ENOMEM usage.
 
+OK
 
+> 
+>> +
+>> +/* Device specific register offsets */
+>> +#define PRNG_DATA_OUT		0x0000
+>> +#define PRNG_STATUS		0x0004
+>> +#define PRNG_LFSR_CFG		0x0100
+>> +#define PRNG_CONFIG		0x0104
+>> +
+> [snip]
+>> +
+>> +MODULE_AUTHOR("The Linux Foundation");
+>> +MODULE_DESCRIPTION("Qualcomm MSM random number generator driver");
+>> +MODULE_LICENSE("GPL v2");
+> 
+> MODULE_ALIAS perhaps?
+
+OK, I will add it.
+
+regards,
+Stan
 
