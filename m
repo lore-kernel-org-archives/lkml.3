@@ -1,40 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756704Ab3JNNeQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 09:34:16 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:56760 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756157Ab3JNNeO (ORCPT
+	id S1756713Ab3JNNfc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 09:35:32 -0400
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:57152 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756104Ab3JNNfb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 09:34:14 -0400
-Date: Mon, 14 Oct 2013 15:33:56 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Morten Rasmussen <morten.rasmussen@arm.com>
-Cc: mingo@kernel.org, pjt@google.com, arjan@linux.intel.com, rjw@sisk.pl,
-        dirk.j.brandewie@intel.com, vincent.guittot@linaro.org,
-        alex.shi@linaro.org, preeti@linux.vnet.ibm.com, efault@gmx.de,
-        corbet@lwn.net, tglx@linutronix.de, catalin.marinas@arm.com,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org
-Subject: Re: [RFC][PATCH 4/7] sched: power: Remove power capacity hints for
- kworker threads
-Message-ID: <20131014133356.GN3081@twins.programming.kicks-ass.net>
-References: <1381511957-29776-1-git-send-email-morten.rasmussen@arm.com>
- <1381511957-29776-5-git-send-email-morten.rasmussen@arm.com>
+	Mon, 14 Oct 2013 09:35:31 -0400
+Date: Mon, 14 Oct 2013 09:35:27 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Matias Bjorling <m@bjorling.me>
+Cc: kmo@daterainc.com, paulmck@linux.vnet.ibm.com, tytso@mit.edu,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] percpu_refcount: Export symbols
+Message-ID: <20131014133527.GE4722@htj.dyndns.org>
+References: <1381740932-14419-1-git-send-email-m@bjorling.me>
+ <1381740932-14419-2-git-send-email-m@bjorling.me>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1381511957-29776-5-git-send-email-morten.rasmussen@arm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1381740932-14419-2-git-send-email-m@bjorling.me>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 11, 2013 at 06:19:14PM +0100, Morten Rasmussen wrote:
-> Removing power hints for kworker threads enables easier use of
-> workqueues in the power driver late callback. That would otherwise
-> lead to an endless loop unless it is prevented in the power driver.
+(cc'ing Andrew)
 
-There's many kworker users; some of them actually consume lots of
-cputime. Therefore how did you come to the conclusion that excepting all
-users was the better choice of a little added complexity in the one
-place where it actually matters?
+On Mon, Oct 14, 2013 at 10:55:32AM +0200, Matias Bjorling wrote:
+> Export the interface to be used within modules.
+> 
+> Signed-off-by: Matias Bjorling <m@bjorling.me>
+
+ Acked-by: Tejun Heo <tj@kernel.org>
+
+Andrew, I don't have any percpu changes queued or scheduled for the
+next merge window and I think it'd be easier if you can pick up this
+one.  The original patch is at
+
+ http://article.gmane.org/gmane.linux.kernel/1578435/raw
+
+Thanks a lot!
+
+-- 
+tejun
