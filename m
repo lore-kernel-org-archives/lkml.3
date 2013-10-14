@@ -1,119 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756248Ab3JNMml (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 08:42:41 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:41422 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754583Ab3JNMmk convert rfc822-to-8bit (ORCPT
+	id S1756324Ab3JNMnq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 08:43:46 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:52884 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756008Ab3JNMno (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 08:42:40 -0400
-Date: Mon, 14 Oct 2013 13:42:43 +0100
-From: Morten Rasmussen <morten.rasmussen@arm.com>
-To: Michael wang <wangyun@linux.vnet.ibm.com>
-Cc: "mingo@kernel.org" <mingo@kernel.org>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "pjt@google.com" <pjt@google.com>,
-        "arjan@linux.intel.com" <arjan@linux.intel.com>,
-        "rjw@sisk.pl" <rjw@sisk.pl>,
-        "dirk.j.brandewie@intel.com" <dirk.j.brandewie@intel.com>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        "alex.shi@linaro.org" <alex.shi@linaro.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "efault@gmx.de" <efault@gmx.de>, "corbet@lwn.net" <corbet@lwn.net>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
-Subject: Re: [RFC][PATCH 3/7] sched: power: go_faster/slower power driver
- hints
-Message-ID: <20131014124243.GL31039@e103034-lin>
-References: <1381511957-29776-1-git-send-email-morten.rasmussen@arm.com>
- <1381511957-29776-4-git-send-email-morten.rasmussen@arm.com>
- <5258BABF.4020404@linux.vnet.ibm.com>
+	Mon, 14 Oct 2013 08:43:44 -0400
+From: George Cherian <george.cherian@ti.com>
+To: <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <devicetree@vger.kernel.org>
+CC: <tony@atomide.com>, <balbi@ti.com>, <kishon@ti.com>, <rob@landley.net>,
+        <ijc+devicetree@hellion.org.uk>, <swarren@wwwdotorg.org>,
+        <mark.rutland@arm.com>, <pawel.moll@arm.com>,
+        <rob.herring@calxeda.com>, George Cherian <george.cherian@ti.com>
+Subject: [PATCH] phy: omap: Adapt phy-omap-usb2 for AM437x
+Date: Mon, 14 Oct 2013 18:13:23 +0530
+Message-ID: <1381754603-11581-1-git-send-email-george.cherian@ti.com>
+X-Mailer: git-send-email 1.8.1
 MIME-Version: 1.0
-In-Reply-To: <5258BABF.4020404@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 14 Oct 2013 12:42:35.0570 (UTC) FILETIME=[DBC26920:01CEC8DA]
-X-MC-Unique: 113101413423703001
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michael,
+This patch adds a compatible for AM437x "ti,am43xx-usb2" to
+reuse the same phy-omap-usb2 driver.
 
-On Sat, Oct 12, 2013 at 03:58:07AM +0100, Michael wang wrote:
-> Hi, Morten
-> 
-> On 10/12/2013 01:19 AM, Morten Rasmussen wrote:
-> [snip]
-> >  
-> > @@ -5743,6 +5772,7 @@ static void run_rebalance_domains(struct softirq_action *h)
-> >  	 */
-> >  	nohz_idle_balance(this_cpu, idle);
-> >  
-> > +	inc_cpu_capacity(this_cpu);
-> 
-> Just wondering is this check necessary here? if rq get more tasks during
-> the balance, enqueue_task() should already do the check each time when
-> we move_task(), isn't it?
+Also updated the documentation to add the new compatible.
 
-True. enqueue_task() should do the necessary check when we move tasks.
-Hovewer, the cpu load may change over time without moving tasks if a
-task changes its behavior. A small task may enter a cpu intensive phase
-and grow bigger over time while staying on the rq due to the load
-tracking. That won't be noticed unless we check the cpuload
-periodically. That is the reason behind this check.
+Signed-off-by: George Cherian <george.cherian@ti.com>
+---
+ Documentation/devicetree/bindings/usb/usb-phy.txt |  2 +-
+ drivers/phy/phy-omap-usb2.c                       | 13 ++++++++++---
+ 2 files changed, 11 insertions(+), 4 deletions(-)
 
-I will look at remove the redundant call to inc_cpu_capacity() when
-actually did move tasks. More work is needed on the policy for
-inc/dec_cpu_capacity(). I just added a few easy examples of how they can
-be used for this post.
-
-Thanks,
-Morten
-
-> 
-> Regards,
-> Michael Wang
-> 
-> >  	power_late_callback(this_cpu);
-> >  }
-> >  
-> > diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-> > index 907a967..88e7968 100644
-> > --- a/kernel/sched/sched.h
-> > +++ b/kernel/sched/sched.h
-> > @@ -1367,8 +1367,26 @@ static inline u64 irq_time_read(int cpu)
-> >  
-> >  #ifdef CONFIG_SCHED_POWER
-> >  extern void power_late_callback(int cpu);
-> > +extern int at_max_capacity(int cpu);
-> > +extern int go_faster(int cpu, int hint);
-> > +extern int go_slower(int cpu, int hint);
-> >  #else
-> >  static inline void power_late_callback(int cpu)
-> >  {
-> >  }
-> > +
-> > +static inline int at_max_capacity(int cpu)
-> > +{
-> > +	return 1;
-> > +}
-> > +
-> > +static inline int go_faster(int cpu, int hint)
-> > +{
-> > +	return 0;
-> > +}
-> > +
-> > +static inline int go_slower(int cpu, int hint)
-> > +{
-> > +	return 0;
-> > +}
-> >  #endif /* CONFIG_SCHED_POWER */
-> > 
-> 
-> 
+diff --git a/Documentation/devicetree/bindings/usb/usb-phy.txt b/Documentation/devicetree/bindings/usb/usb-phy.txt
+index c0245c8..d5a7f21 100644
+--- a/Documentation/devicetree/bindings/usb/usb-phy.txt
++++ b/Documentation/devicetree/bindings/usb/usb-phy.txt
+@@ -3,7 +3,7 @@ USB PHY
+ OMAP USB2 PHY
+ 
+ Required properties:
+- - compatible: Should be "ti,omap-usb2"
++ - compatible: Should be "ti,omap-usb2" or "ti,am437x-usb2"
+  - reg : Address and length of the register set for the device.
+  - #phy-cells: determine the number of cells that should be given in the
+    phandle while referencing this phy.
+diff --git a/drivers/phy/phy-omap-usb2.c b/drivers/phy/phy-omap-usb2.c
+index bfc5c33..0529c83 100644
+--- a/drivers/phy/phy-omap-usb2.c
++++ b/drivers/phy/phy-omap-usb2.c
+@@ -29,6 +29,7 @@
+ #include <linux/delay.h>
+ #include <linux/usb/omap_control_usb.h>
+ #include <linux/phy/phy.h>
++#include <linux/of.h>
+ #include <linux/of_platform.h>
+ 
+ /**
+@@ -172,7 +173,10 @@ static int omap_usb2_probe(struct platform_device *pdev)
+ 	phy->dev		= &pdev->dev;
+ 
+ 	phy->phy.dev		= phy->dev;
+-	phy->phy.label		= "omap-usb2";
++	if (of_device_is_compatible(node, "ti,am437x-usb2"))
++		phy->phy.label		= "am437x-usb2";
++	else
++		phy->phy.label		= "omap-usb2";
+ 	phy->phy.set_suspend	= omap_usb2_suspend;
+ 	phy->phy.otg		= otg;
+ 	phy->phy.type		= USB_PHY_TYPE_USB2;
+@@ -201,8 +205,10 @@ static int omap_usb2_probe(struct platform_device *pdev)
+ 
+ 	otg->set_host		= omap_usb_set_host;
+ 	otg->set_peripheral	= omap_usb_set_peripheral;
+-	otg->set_vbus		= omap_usb_set_vbus;
+-	otg->start_srp		= omap_usb_start_srp;
++	if (of_device_is_compatible(node, "ti,omap-usb2")) {
++		otg->set_vbus		= omap_usb_set_vbus;
++		otg->start_srp		= omap_usb_start_srp;
++	}
+ 	otg->phy		= &phy->phy;
+ 
+ 	platform_set_drvdata(pdev, phy);
+@@ -300,6 +306,7 @@ static const struct dev_pm_ops omap_usb2_pm_ops = {
+ #ifdef CONFIG_OF
+ static const struct of_device_id omap_usb2_id_table[] = {
+ 	{ .compatible = "ti,omap-usb2" },
++	{ .compatible = "ti,am437x-usb2" },
+ 	{}
+ };
+ MODULE_DEVICE_TABLE(of, omap_usb2_id_table);
+-- 
+1.8.1
 
