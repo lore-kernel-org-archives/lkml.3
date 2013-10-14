@@ -1,84 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757221Ab3JNSRY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 14:17:24 -0400
-Received: from mga09.intel.com ([134.134.136.24]:50507 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755714Ab3JNSRX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 14:17:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,493,1378882800"; 
-   d="scan'208";a="392802940"
-Date: Mon, 14 Oct 2013 11:17:21 -0700
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, Hans de Goede <hdegoede@redhat.com>,
-        Gerd Hoffmann <kraxel@redhat.com>
-Subject: Re: Warning when calling radix_tree_insert on 3.12-rc4
-Message-ID: <20131014181721.GA18408@xanatos>
-References: <20131011221315.GE7094@xanatos>
- <20131014123034.GF19604@quack.suse.cz>
+	id S1757339Ab3JNSRk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 14:17:40 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:52662 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757313Ab3JNSRj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 14:17:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131014123034.GF19604@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <52591F7A.1020400@ti.com>
+References: <CAPNxggauvgpWR5HK4Z-Osv7-mB-Tf3-vfyXQDMiTx08K2M=nJQ@mail.gmail.com>
+	<52579592.1020209@ti.com>
+	<CAPNxgga6xSPrGPWnKJuamMURQdrX0_Hkhx_ZDdS2dcUgs72EKw@mail.gmail.com>
+	<52591F7A.1020400@ti.com>
+Date: Mon, 14 Oct 2013 20:17:38 +0200
+Message-ID: <CAPNxggbJkXK_RhaWSfXZKFc=iy-2UmkEukCsbOUzYSmbcqmoKw@mail.gmail.com>
+Subject: Re: When USB PHY framework should be used?
+From: Arokux X <arokux@gmail.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: peter.chen@freescale.com, Felipe Balbi <balbi@ti.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Greg KH <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 14, 2013 at 02:30:34PM +0200, Jan Kara wrote:
->   Hello Sarah,
-> 
-> On Fri 11-10-13 15:13:15, Sarah Sharp wrote:
-> > I'm testing out some changes to the xHCI USB host controller driver
-> > (which uses a radix tree when a UAS device is attached to the host), and
-> > I noticed the following warning:
-> > 
-> > Oct 11 14:42:08 xanatos kernel: [18165.819014] usb 2-2: new SuperSpeed USB device number 2 using xhci_hcd
-> > Oct 11 14:42:08 xanatos kernel: [18165.836264] usb 2-2: New USB device found, idVendor=174c, idProduct=55aa
-> > Oct 11 14:42:08 xanatos kernel: [18165.836271] usb 2-2: New USB device strings: Mfr=2, Product=3, SerialNumber=1
-> > Oct 11 14:42:08 xanatos kernel: [18165.836275] usb 2-2: Product: Plugable USB3-SATA-UASP1
-> > Oct 11 14:42:08 xanatos kernel: [18165.836279] usb 2-2: Manufacturer: ASM1053E
-> > Oct 11 14:42:08 xanatos kernel: [18165.836291] usb 2-2: SerialNumber: 123456789045
-> > Oct 11 14:42:08 xanatos kernel: [18165.847661] BUG: using smp_processor_id() in preemptible [00000000] code: modprobe/8759
-> > Oct 11 14:42:08 xanatos kernel: [18165.847667] caller is radix_tree_node_alloc+0x5c/0xa0
->   Well, this warning seems to come from the __get_cpu_var() function. I don't
-> see how my commit could have caused what you observe. It seems you are
-> calling radix_tree_insert() for a radix tree which has atomic gfp mask set
-> and you don't do radix_tree_preload() / radix_tree_preload_end() around
-> that? That was always problematic and could lead to the above warning.
+Dear Kishon,
 
-I see.  Ok, we'll need to fix that.  The code went into the kernel years
-ago, but wasn't really tested until now.
-
-Do we only need to call radix_tree_preload() and
-radix_tree_preload_end() only around the radix_tree_insert()?  Or will
-we need it around radix_tree_delete() as well?
-
-> I'm not sure in which contexts xhci_update_stream_ring() can be called. But
-> if you are guaranteed non-atomic context, then using radix_tree_preload()
-> with a more relaxed gfp mask is good (lowers pressure on atomic allocations).
+On Sat, Oct 12, 2013 at 12:07 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+> Hi,
 >
-> If the context depends on the caller, things are more complex. Generally,
-> you can use radix_tree_maybe_preload() but you have to set gfp mask
-> argument according to the context. The function then figures out whether
-> it's worth it to do a preload or not (but it always does preempt_disable()
-> which will silence the warning).
+> On Friday 11 October 2013 10:52 PM, Arokux X wrote:
+>>> I think you should have a wrapper driver to EHCI/OHCI to handle this reset.
+>>
+>> Thank you Kishon and Peter for the quick replies. Is there any good
+>> example of such a wrapper driver in the kernel already?
+>
+> can you explain how your IP actually looks like? Do you have separate address
+> space for EHCI and OHCI? Do you have any common address space for doing some
+> configuration (USB host in OMAP used to have it)? Where does PHY registers
+> reside exactly?
 
-There are a couple ways xhci_update_stream_ring() could be called:
+The knowledge I have about the IP is derived from the source code of
+the different kernel trees some of which were leaked and the others
+released by Allwinner. I cannot really see similarities to the other
+USB IPs supported by the mainline kernel since I have zero experience
+with kernel development and this simple bus glue driver is going to be
+my first contribution.
 
- - xhci_alloc_stream_info can be called while the bandwidth mutex is
-   held, so that must be in process context
+USB Host Controller as available in Allwinner SoCs supports EHCI and
+OHCI. The address spaces of EHCI and OHCI are separate. Let the
+address of the host controller be X, then EHCI is at X and OHCI is at
+X+OHCI_OFFSET, where OHCI_OFFSET = 0x100.
 
- - xhci_ring_free is called when the command to disable a slot
-   completes, in interrupt context.
+The driver in the vendor's tree also touches the address X + 0x800 and
+enables DMA burst, similar to the SAMSUNG S5P USB HOST EHCI Controller
+[1].
 
- - xhci_ring_expansion during URB submission, which can happen in
-   interrupt context.
+In addition another memory location is touched to configure the PHY.
+At that place two things occur [2]: "adjust PHY's magnitude and rate"
+and adjusting the threshold of the disconnect. (Both are translated
+from Chinese and I'm not sure whether the former is correct).
 
-So it looks like the context depends on the caller, and we'll have to
-call radix_tree_maybe_preload().
+There are either two or one USB Host Controllers in a SoC. For each
+controller there are EHCI and OHCI gatable clocks, one common clock
+for all the PHYs and one reset bit for each PHY.
 
-Sarah Sharp
+I think this is pretty much it. As you see the EHCI and OHCI parts are
+almost independent from each other. The only problem is the common
+reset bit which I do not know how to manage. Any help is highly
+appreciated.
+
+Best regards,
+Arokux
+
+[1] http://lxr.free-electrons.com/source/drivers/usb/host/ehci-s5p.c#L34
+[2] https://github.com/arokux/linux/commit/1f271d01b8138d5a593df18a80b4129a08eac1be#diff-2fdea331a4331eca7c86f18cd2d87e72R89
