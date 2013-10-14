@@ -1,79 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756942Ab3JNRKc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 13:10:32 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:50525 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756335Ab3JNRKb (ORCPT
+	id S1756999Ab3JNRMi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 13:12:38 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:61500 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756608Ab3JNRMh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 13:10:31 -0400
-Date: Mon, 14 Oct 2013 18:09:48 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Antonios Motakis <a.motakis@virtualopensystems.com>
-Cc: Joerg Roedel <joro@8bytes.org>,
-        "moderated list:ARM SMMU DRIVER" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "open list:IOMMU DRIVERS" <iommu@lists.linux-foundation.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        "tech@virtualopensystems.com" <tech@virtualopensystems.com>,
-        "agraf@suse.de" <agraf@suse.de>,
-        "B08248@freescale.com" <B08248@freescale.com>
-Subject: Re: [PATCH 2/2] ARM: SMMU: return NULL on error in
- arm_smmu_iova_to_phys
-Message-ID: <20131014170948.GS10491@mudshark.cambridge.arm.com>
-References: <1381497887-14586-1-git-send-email-a.motakis@virtualopensystems.com>
- <1381497887-14586-2-git-send-email-a.motakis@virtualopensystems.com>
- <20131014124837.GD10491@mudshark.cambridge.arm.com>
- <CAG8rG2yE=xWmYP_bOy7=jzWEQKNkbgk-9_Jecnx_XXx=jC9i_Q@mail.gmail.com>
+	Mon, 14 Oct 2013 13:12:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAG8rG2yE=xWmYP_bOy7=jzWEQKNkbgk-9_Jecnx_XXx=jC9i_Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131014103616.GE4009@pd.tnic>
+References: <1381473166-29303-1-git-send-email-gong.chen@linux.intel.com>
+	<1381473166-29303-8-git-send-email-gong.chen@linux.intel.com>
+	<20131011160208.GL5925@pd.tnic>
+	<20131014045500.GC12189@gchen.bj.intel.com>
+	<20131014103616.GE4009@pd.tnic>
+Date: Mon, 14 Oct 2013 10:12:35 -0700
+Message-ID: <CA+8MBbJ9P1GVf3SCh7LMY_LH+pxQg3GWkxKMzni1b1Wyx1o8NQ@mail.gmail.com>
+Subject: Re: [PATCH 7/8] ACPI, APEI, CPER: Cleanup CPER memory error output format
+From: Tony Luck <tony.luck@gmail.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Chen Gong <gong.chen@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-acpi <linux-acpi@vger.kernel.org>,
+        Lance Ortiz <lance.ortiz@hp.com>,
+        "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 14, 2013 at 04:17:51PM +0100, Antonios Motakis wrote:
-> On Mon, Oct 14, 2013 at 2:48 PM, Will Deacon <will.deacon@arm.com> wrote:
-> > On Fri, Oct 11, 2013 at 02:24:47PM +0100, Antonios Motakis wrote:
-> >> The return value of arm_smmu_iova_to_phys is directly passed to the
-> >> user of the IOMMU API via iommu_iova_to_phys; however the ARM SMMU
-> >> driver returns -EINVAL on error, which is not consistent with the
-> >> rest of the drivers implementing the IOMMU API. VFIO also relies on
-> >> the call returning NULL when a page has not been mapped already.
-> >>
-> >> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
-> >> ---
-> >>  drivers/iommu/arm-smmu.c | 5 +----
-> >>  1 file changed, 1 insertion(+), 4 deletions(-)
-> >>
-> >> diff --git a/drivers/iommu/arm-smmu.c b/drivers/iommu/arm-smmu.c
-> >> index 8b71332..fe81b20 100644
-> >> --- a/drivers/iommu/arm-smmu.c
-> >> +++ b/drivers/iommu/arm-smmu.c
-> >> @@ -1480,10 +1480,7 @@ static phys_addr_t arm_smmu_iova_to_phys(struct iommu_domain *domain,
-> >>
-> >>  err_unlock:
-> >>       spin_unlock(&smmu_domain->lock);
-> >> -     dev_warn(smmu->dev,
-> >> -              "invalid (corrupt?) page tables detected for iova 0x%llx\n",
-> >> -              (unsigned long long)iova);
-> >> -     return -EINVAL;
-> >> +     return NULL;
-> >
-> > Why are you removing the warning message?
-> 
-> VFIO will exercise this code path every time when mapping DMA memory.
-> This is normal and VFIO *expects* the function to fail - it is only if
-> the function succeeds that VFIO needs to back down from the DMA
-> mapping and fail.
-> 
-> This means that there would be a warning every time a VFIO user maps
-> some memory for DMA use, even though nothing went wrong.
+On Mon, Oct 14, 2013 at 3:36 AM, Borislav Petkov <bp@alien8.de> wrote:
+> On Mon, Oct 14, 2013 at 12:55:00AM -0400, Chen Gong wrote:
+>> Because most of data in CPER are empty or unimportant.
+>
+> It is not about whether it is important or not - the question is whether
+> changing existing functionality which someone might rely upon is a
+> problem here? Someone might be expecting exactly those messages to
+> appear in dmesg.
 
-Ok, in which case it might be worth reworking arm_smmu_iova_to_phys to treat
-{pgd,pud,pmd,pte}_none different from {pgd,pud,pmd,pte}_bad.
+Pulling in a couple more people who have been touching error reporting
+code in the last year or so (Hi Lance, Naveen ... feel free to drag more
+people to look at this thread).
 
-Will
+I prodded Chen Gong in to make this change because our console messages
+are way to verbose (and scary) for simple corrected errors.  There are 18
+fields in the memory error section (as of UEFI 2.4 ... more are likely to be
+added because there are issues that some of the 16-bit wide fields are too
+small to handle increased internal values in modern DIMMs).  Whether you
+print that one item per line, or a few very long lines - it is way
+more information
+than the average user will ever want or need to see.
+
+> Btw, what is the real reason for this patch, to save yourself the output
+> in dmesg? If so, you can disable this output when eMCA module has been
+> loaded but leave it intact otherwise.
+
+This is an excellent idea - if the full data is being logged via TRACE, then
+we can drop to virtually nothing on the console (just have something similar
+to the "Machine check events logged" message so that people will get a
+tip that they might want to go dig into other logs).  Maybe something like:
+    %d corrected memory errors\n", count
+[rate limited]
+
+But we'd have to make sure that the existing user(s) of this code also
+have a TRACE path.
+
+-Tony
