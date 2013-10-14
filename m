@@ -1,196 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753202Ab3JNIJI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 04:09:08 -0400
-Received: from [204.155.152.216] ([204.155.152.216]:45457 "EHLO shutemov.name"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751129Ab3JNIJF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 04:09:05 -0400
-Date: Mon, 14 Oct 2013 10:12:05 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Max Filippov <jcmvbkbc@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: CONFIG_SLUB/USE_SPLIT_PTLOCKS compatibility
-Message-ID: <20131014071205.GA23735@shutemov.name>
-References: <CAMo8BfKqWPbDCMwCoH6BO6uXyYwr0Z1=AaMJDRLQt66FLb7LAg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMo8BfKqWPbDCMwCoH6BO6uXyYwr0Z1=AaMJDRLQt66FLb7LAg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752857Ab3JNISS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 04:18:18 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45351 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751102Ab3JNISR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 04:18:17 -0400
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: lee.jones@linaro.org
+Cc: sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org,
+        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Subject: [PATCH] mfd: arizona: Mark missing AOD registers as volatile
+Date: Mon, 14 Oct 2013 09:09:00 +0100
+Message-Id: <1381738140-14007-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 14, 2013 at 01:12:47AM +0400, Max Filippov wrote:
-> Hello,
-> 
-> I'm reliably getting kernel crash on xtensa when CONFIG_SLUB
-> is selected and USE_SPLIT_PTLOCKS appears to be true (SMP=y,
-> NR_CPUS=4, DEBUG_SPINLOCK=n, DEBUG_LOCK_ALLOC=n).
-> This happens because spinlock_t ptl and struct page *first_page overlap
-> in the struct page. The following call chain makes allocation of order
-> 3 and initializes first_page pointer in its 7 tail pages:
-> 
->  do_page_fault
->   handle_mm_fault
->    __pte_alloc
->     kmem_cache_alloc
->      __slab_alloc
->       new_slab
->        __alloc_pages_nodemask
->         get_page_from_freelist
->          prep_compound_page
-> 
-> Later pte_offset_map_lock is called with one of these tail pages
-> overwriting its first_page pointer:
-> 
->  do_fork
->   copy_process
->    dup_mm
->     copy_page_range
->      copy_pte_range
->       pte_alloc_map_lock
->        pte_offset_map_lock
-> 
-> Finally kmem_cache_free is called for that tail page, which calls
-> slab_free(s, virt_to_head_page(x),... but virt_to_head_page here
-> returns NULL, because the page's first_page pointer was overwritten
-> earlier:
-> 
-> exit_mmap
->  free_pgtables
->   free_pgd_range
->    free_pud_range
->     free_pmd_range
->      free_pte_range
->       pte_free
->        kmem_cache_free
->         slab_free
->          __slab_free
-> 
-> __slab_free touches NULL struct page, that's it.
-> 
-> Changing allocator to SLAB or enabling DEBUG_SPINLOCK
-> fixes that crash.
-> 
-> My question is, is CONFIG_SLUB supposed to work with
-> USE_SPLIT_PTLOCKS (and if yes what's wrong in my case)?
+This registers ARIZONA_AOD_WKUP_AND_TRIG and ARIZONA_AOD_IRQ_RAW_STATUS
+contain interrupt status bits and thus should be volatile. They are
+correctly marked on wm5102 but not on wm5110, this patch changes this.
+Furthermore volatile registers don't need defaults so remove those.
 
-Sure, CONFIG_SLUB && USE_SPLIT_PTLOCKS works fine. Unless you try use slab
-to allocate pagetable.
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+---
+ drivers/mfd/wm5102-tables.c |    1 -
+ drivers/mfd/wm5110-tables.c |    3 ++-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-Note: no other arch allocates PTE page tables from slab.
-Some archs (sparc, power) uses slabs to allocate hihger page tables, but
-not PTE. [ And these archs will have to avoid slab, if they wants to
-support split ptl for PMD tables. ]
-
-I don't see much sense in having separate slab for allocting PAGE_SIZE
-objects aligned to PAGE_SIZE. What's wrong with plain buddy allocator?
-
-Completely untested patch to use buddy allocator instead of slub for page
-table allocation on xtensa is below. Please, try.
-
-diff --git a/arch/xtensa/include/asm/pgalloc.h b/arch/xtensa/include/asm/pgalloc.h
-index b8774f1e21..8e27d4200e 100644
---- a/arch/xtensa/include/asm/pgalloc.h
-+++ b/arch/xtensa/include/asm/pgalloc.h
-@@ -38,14 +38,16 @@ static inline void pgd_free(struct mm_struct *mm, pgd_t *pgd)
- 	free_page((unsigned long)pgd);
- }
- 
--/* Use a slab cache for the pte pages (see also sparc64 implementation) */
--
--extern struct kmem_cache *pgtable_cache;
--
- static inline pte_t *pte_alloc_one_kernel(struct mm_struct *mm,
- 					 unsigned long address)
- {
--	return kmem_cache_alloc(pgtable_cache, GFP_KERNEL|__GFP_REPEAT);
-+	pte_t *ptep;
-+
-+	ptep = (pte_t *)__get_free_page(GFP_KERNEL|__GFP_REPEAT);
-+	if (!ptep)
-+		return NULL;
-+	for (i = 0; i < 1024; i++, ptep++)
-+		pte_clear(NULL, 0, ptep);
- }
- 
- static inline pgtable_t pte_alloc_one(struct mm_struct *mm,
-@@ -59,7 +61,7 @@ static inline pgtable_t pte_alloc_one(struct mm_struct *mm,
- 		return NULL;
- 	page = virt_to_page(pte);
- 	if (!pgtable_page_ctor(page)) {
--		kmem_cache_free(pgtable_cache, pte);
-+		__free_page(page);
- 		return NULL;
- 	}
- 	return page;
-@@ -67,13 +69,13 @@ static inline pgtable_t pte_alloc_one(struct mm_struct *mm,
- 
- static inline void pte_free_kernel(struct mm_struct *mm, pte_t *pte)
- {
--	kmem_cache_free(pgtable_cache, pte);
-+	free_page((unsigned long)pte);
- }
- 
- static inline void pte_free(struct mm_struct *mm, pgtable_t pte)
- {
- 	pgtable_page_dtor(pte);
--	kmem_cache_free(pgtable_cache, page_address(pte));
-+	__free_page(page);
- }
- #define pmd_pgtable(pmd) pmd_page(pmd)
- 
-diff --git a/arch/xtensa/include/asm/pgtable.h b/arch/xtensa/include/asm/pgtable.h
-index 0fdf5d043f..216446295a 100644
---- a/arch/xtensa/include/asm/pgtable.h
-+++ b/arch/xtensa/include/asm/pgtable.h
-@@ -220,12 +220,11 @@ extern unsigned long empty_zero_page[1024];
- #ifdef CONFIG_MMU
- extern pgd_t swapper_pg_dir[PAGE_SIZE/sizeof(pgd_t)];
- extern void paging_init(void);
--extern void pgtable_cache_init(void);
- #else
- # define swapper_pg_dir NULL
- static inline void paging_init(void) { }
--static inline void pgtable_cache_init(void) { }
- #endif
-+static inline void pgtable_cache_init(void) { }
- 
- /*
-  * The pmd contains the kernel virtual address of the pte page.
-diff --git a/arch/xtensa/mm/mmu.c b/arch/xtensa/mm/mmu.c
-index a1077570e3..c43771c974 100644
---- a/arch/xtensa/mm/mmu.c
-+++ b/arch/xtensa/mm/mmu.c
-@@ -50,23 +50,3 @@ void __init init_mmu(void)
- 	 */
- 	set_ptevaddr_register(PGTABLE_START);
- }
--
--struct kmem_cache *pgtable_cache __read_mostly;
--
--static void pgd_ctor(void *addr)
--{
--	pte_t *ptep = (pte_t *)addr;
--	int i;
--
--	for (i = 0; i < 1024; i++, ptep++)
--		pte_clear(NULL, 0, ptep);
--
--}
--
--void __init pgtable_cache_init(void)
--{
--	pgtable_cache = kmem_cache_create("pgd",
--			PAGE_SIZE, PAGE_SIZE,
--			SLAB_HWCACHE_ALIGN,
--			pgd_ctor);
--}
+diff --git a/drivers/mfd/wm5102-tables.c b/drivers/mfd/wm5102-tables.c
+index 802dd3c..1e9a4b2 100644
+--- a/drivers/mfd/wm5102-tables.c
++++ b/drivers/mfd/wm5102-tables.c
+@@ -903,7 +903,6 @@ static const struct reg_default wm5102_reg_default[] = {
+ 	{ 0x00000D1B, 0xFFFF },   /* R3355  - IRQ2 Status 4 Mask */ 
+ 	{ 0x00000D1C, 0xFFFF },   /* R3356  - IRQ2 Status 5 Mask */ 
+ 	{ 0x00000D1F, 0x0000 },   /* R3359  - IRQ2 Control */ 
+-	{ 0x00000D50, 0x0000 },   /* R3408  - AOD wkup and trig */
+ 	{ 0x00000D53, 0xFFFF },   /* R3411  - AOD IRQ Mask IRQ1 */ 
+ 	{ 0x00000D54, 0xFFFF },   /* R3412  - AOD IRQ Mask IRQ2 */ 
+ 	{ 0x00000D56, 0x0000 },   /* R3414  - Jack detect debounce */ 
+diff --git a/drivers/mfd/wm5110-tables.c b/drivers/mfd/wm5110-tables.c
+index f71bd9b..c5c116a 100644
+--- a/drivers/mfd/wm5110-tables.c
++++ b/drivers/mfd/wm5110-tables.c
+@@ -1204,7 +1204,6 @@ static const struct reg_default wm5110_reg_default[] = {
+ 	{ 0x00000D1B, 0xFFFF },    /* R3355  - IRQ2 Status 4 Mask */
+ 	{ 0x00000D1C, 0xFFFF },    /* R3356  - IRQ2 Status 5 Mask */
+ 	{ 0x00000D1F, 0x0000 },    /* R3359  - IRQ2 Control */
+-	{ 0x00000D50, 0x0000 },    /* R3408  - AOD wkup and trig */
+ 	{ 0x00000D53, 0xFFFF },    /* R3411  - AOD IRQ Mask IRQ1 */
+ 	{ 0x00000D54, 0xFFFF },    /* R3412  - AOD IRQ Mask IRQ2 */
+ 	{ 0x00000D56, 0x0000 },    /* R3414  - Jack detect debounce */
+@@ -2363,8 +2362,10 @@ static bool wm5110_volatile_register(struct device *dev, unsigned int reg)
+ 	case ARIZONA_INTERRUPT_RAW_STATUS_7:
+ 	case ARIZONA_INTERRUPT_RAW_STATUS_8:
+ 	case ARIZONA_IRQ_PIN_STATUS:
++	case ARIZONA_AOD_WKUP_AND_TRIG:
+ 	case ARIZONA_AOD_IRQ1:
+ 	case ARIZONA_AOD_IRQ2:
++	case ARIZONA_AOD_IRQ_RAW_STATUS:
+ 	case ARIZONA_FX_CTRL2:
+ 	case ARIZONA_ASRC_STATUS:
+ 	case ARIZONA_DSP_STATUS:
 -- 
- Kirill A. Shutemov
+1.7.2.5
+
