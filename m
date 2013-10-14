@@ -1,48 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932084Ab3JNMfh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 08:35:37 -0400
-Received: from mout.gmx.net ([212.227.17.20]:50327 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755670Ab3JNMff (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 08:35:35 -0400
+	id S1756122Ab3JNMjB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 08:39:01 -0400
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:65498 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755782Ab3JNMjA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 08:39:00 -0400
+Date: Mon, 14 Oct 2013 14:38:55 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Juri Lelli <juri.lelli@gmail.com>, tglx@linutronix.de, mingo@redhat.com,
+        rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
+        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
+        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
+        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@gmail.com,
+        liming.wang@windriver.com, jkacur@redhat.com,
+        harald.gustafsson@ericsson.com, vincent.guittot@linaro.org,
+        bruce.ashfield@windriver.com--no-chain-reply-to
+Subject: Re: [PATCH 00/14] sched: SCHED_DEADLINE v8
+Message-ID: <20131014123855.GA25046@gmail.com>
+References: <1381747426-31334-1-git-send-email-juri.lelli@gmail.com>
+ <20131014122424.GK3081@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Message-ID: <trinity-4f52e27f-75d8-4137-83d6-d242e529c3c9-1381754133846@3capp-gmx-bs48>
-From: "Helge Deller" <deller@gmx.de>
-To: "Christoph Hellwig" <hch@infradead.org>
-Cc: "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Linux Kernel Development" <linux-kernel@vger.kernel.org>,
-        linux-parisc@vger.kernel.org,
-        "James Bottomley" <James.Bottomley@HansenPartnership.com>
-Subject: Aw: Re: [GIT PULL] parisc updates for v3.12-rc5
-Content-Type: text/plain; charset=UTF-8
-Date: Mon, 14 Oct 2013 14:35:33 +0200 (CEST)
-Importance: normal
-Sensitivity: Normal
-In-Reply-To: <20131014112621.GA9705@infradead.org>
-References: <20131013161130.GA19534@p100.box>,
- <20131014112621.GA9705@infradead.org>
-X-UI-Message-Type: mail
-X-Priority: 3
-X-Provags-ID: V03:K0:GJqUwy1bzfHifCoSepgB+MfMUKEBN7w4qhYVM+5lur/
- xDFeW1B/t8jG+HY1N4SKfR21BpBQ4uqRxwwnMo35Accz/oOJ3A
- BF6gJj/h/Mf58zchvJKWJMJR0yP+cVO03KDQNPEQWFCvCGc9Hf
- C44Mx1ysTG3bKqMbLKv4QdKq3mqP1aZKKTKXlCgYhfGQZ7+GUy
- tJa2hyUWFBUZSh0LA/0A0jm+Mnj0VZcBG3txDG5rCcp0KrtO3+
- rTNsElTAwQgNakootGA4po2G+WsOfQracColqha4prQ7aJo30Z BJQCus=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131014122424.GK3081@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Geert Uytterhoeven (1):
-> >       parisc: Export flush_cache_page() (needed by lustre)
-> 
-> This one shouldn't go in - Geert sent it a bit prematurely, as Lustre
-> shouldn't use it just to reimplement core VM functionality (which it
-> shouldn't use either, but that's a separate story).
 
-Ok, it's my fault then.
-I'll include a reverting patch in the next parisc pull request...
+* Peter Zijlstra <peterz@infradead.org> wrote:
+
+> On Mon, Oct 14, 2013 at 12:43:32PM +0200, Juri Lelli wrote:
+> > Hello everyone,
+> > 
+> > here we go with a new version of the SCHED_DEADLINE patchset (v8). I know that
+> > it has been a while since I released last version [1], but I thought not to
+> > spam the mailing list with simple updates. Well... this IS basically an update
+> > to 3.12-rc5, but it comes right before the next Kernel Summit and Real Time
+> > Linux Workshop and, since I'll be present at both events, it is probably time
+> > to fire-up the discussion again.
+> 
+> So I feel we should just merge this stuff already; [...]
+
+Fully agreed - this has been going on for a long time and the patch-set 
+has settled down nicely.
+
+> [...] the only 'issue' I have is the cgroup abi muck. We clearly need a 
+> bit more discussion on what/how we want things there but there are no 
+> easy answers :/ So I'd say lets try this and see where we'll find 
+> ourselves.
+
+I'd suggest we leave out the cgroup ABI muck from the first round of 
+upstream merge - do it in a second round, that will give it more 
+attention.
 
 Thanks,
-Helge
+
+	Ingo
