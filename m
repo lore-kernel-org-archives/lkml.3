@@ -1,69 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755628Ab3JNJ4u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 05:56:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26618 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753057Ab3JNJ4s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 05:56:48 -0400
-From: Jason Wang <jasowang@redhat.com>
-To: virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, rusty@rustcorp.com.au, mst@redhat.com
-Cc: Jason Wang <jasowang@redhat.com>, Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Subject: [PATCH net 1/2] virtio-net: don't respond to cpu hotplug notifier if we're not ready
-Date: Mon, 14 Oct 2013 17:56:34 +0800
-Message-Id: <1381744595-26881-1-git-send-email-jasowang@redhat.com>
+	id S1755712Ab3JNKDU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 06:03:20 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:54113 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753200Ab3JNKDT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 06:03:19 -0400
+Date: Mon, 14 Oct 2013 12:03:11 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+cc: m.chehab@samsung.com, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [media] sh_mobile_ceu_camera: remove deprecated
+ IRQF_DISABLED
+In-Reply-To: <1381644106-9086-1-git-send-email-michael.opdenacker@free-electrons.com>
+Message-ID: <Pine.LNX.4.64.1310141200530.25852@axis700.grange>
+References: <1381644106-9086-1-git-send-email-michael.opdenacker@free-electrons.com>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:PsTN3Hau3QLeUQbIoUm7JMfqS5DEe9t2RMJZTnnGBZo
+ TC8Ar7ONJuKsVzWczghI/5Y38U1xYQxEyPruevirET5qAA3Vc0
+ leZi3As+xPZaT3ngZ0UIrwIJ90KKkrT/dAGw0D4b20RpIgrWfs
+ uh51fNzT5+PJu7+uH4uXbXz4JB/NO//XYU6bW4yqvlTh9eS49s
+ SAtNnp8CMpPRj/1b2l/K0ZeLwcZ2lf3aiijUuIFEQo5qQGq7Fr
+ HZIIumIdkFmJqaOT3PYQn5/N6ery01zu+V28M5bmGP5SSBN78C
+ wxcEaLJwh8eNrgQY1BnLqCFI0csdvCy+xsXK5uQ+MEyxjviYSk
+ DRDoC2OAjdtJzfNdsWREJgPvHEst+lOxXONs3WbDmGl2kbNniy
+ 0Bfug38uq2yrg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We're trying to re-configure the affinity unconditionally in cpu hotplug
-callback. This may lead the issue during resuming from s3/s4 since
+Hi Michael,
 
-- virt queues haven't been allocated at that time.
-- it's unnecessary since thaw method will re-configure the affinity.
+Thanks for the patch. Since patches in the series are independent from 
+each other, I can take this one via my tree, which would be preferred. 
+Otherwise I can ack it and we can push it via another tree.
 
-Fix this issue by checking the config_enable and do nothing is we're not ready.
+Thanks
+Guennadi
 
-The bug were introduced by commit 8de4b2f3ae90c8fc0f17eeaab87d5a951b66ee17
-(virtio-net: reset virtqueue affinity when doing cpu hotplug).
+On Sun, 13 Oct 2013, Michael Opdenacker wrote:
 
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
+> This patch proposes to remove the use of the IRQF_DISABLED flag
+> 
+> It's a NOOP since 2.6.35 and it will be removed one day.
+> 
+> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+> ---
+>  drivers/media/platform/soc_camera/sh_mobile_ceu_camera.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/media/platform/soc_camera/sh_mobile_ceu_camera.c b/drivers/media/platform/soc_camera/sh_mobile_ceu_camera.c
+> index 8df22f7..150bd4d 100644
+> --- a/drivers/media/platform/soc_camera/sh_mobile_ceu_camera.c
+> +++ b/drivers/media/platform/soc_camera/sh_mobile_ceu_camera.c
+> @@ -1800,7 +1800,7 @@ static int sh_mobile_ceu_probe(struct platform_device *pdev)
+>  
+>  	/* request irq */
+>  	err = devm_request_irq(&pdev->dev, pcdev->irq, sh_mobile_ceu_irq,
+> -			       IRQF_DISABLED, dev_name(&pdev->dev), pcdev);
+> +			       0, dev_name(&pdev->dev), pcdev);
+>  	if (err) {
+>  		dev_err(&pdev->dev, "Unable to register CEU interrupt.\n");
+>  		goto exit_release_mem;
+> -- 
+> 1.8.1.2
+> 
+
 ---
-The patch is need for 3.8 and above.
----
- drivers/net/virtio_net.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
-
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index defec2b..c4bc1cc 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -1116,6 +1116,11 @@ static int virtnet_cpu_callback(struct notifier_block *nfb,
- {
- 	struct virtnet_info *vi = container_of(nfb, struct virtnet_info, nb);
- 
-+	mutex_lock(&vi->config_lock);
-+
-+	if (!vi->config_enable)
-+		goto done;
-+
- 	switch(action & ~CPU_TASKS_FROZEN) {
- 	case CPU_ONLINE:
- 	case CPU_DOWN_FAILED:
-@@ -1128,6 +1133,9 @@ static int virtnet_cpu_callback(struct notifier_block *nfb,
- 	default:
- 		break;
- 	}
-+
-+done:
-+	mutex_unlock(&vi->config_lock);
- 	return NOTIFY_OK;
- }
- 
--- 
-1.8.1.2
-
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
