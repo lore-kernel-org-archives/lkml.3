@@ -1,98 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756324Ab3JNMnq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 08:43:46 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:52884 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756008Ab3JNMno (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 08:43:44 -0400
-From: George Cherian <george.cherian@ti.com>
-To: <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <devicetree@vger.kernel.org>
-CC: <tony@atomide.com>, <balbi@ti.com>, <kishon@ti.com>, <rob@landley.net>,
-        <ijc+devicetree@hellion.org.uk>, <swarren@wwwdotorg.org>,
-        <mark.rutland@arm.com>, <pawel.moll@arm.com>,
-        <rob.herring@calxeda.com>, George Cherian <george.cherian@ti.com>
-Subject: [PATCH] phy: omap: Adapt phy-omap-usb2 for AM437x
-Date: Mon, 14 Oct 2013 18:13:23 +0530
-Message-ID: <1381754603-11581-1-git-send-email-george.cherian@ti.com>
-X-Mailer: git-send-email 1.8.1
+	id S1756436Ab3JNMo7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 08:44:59 -0400
+Received: from mga14.intel.com ([143.182.124.37]:51302 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756084Ab3JNMo6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 08:44:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,492,1378882800"; 
+   d="scan'208";a="410602018"
+Message-ID: <525BE745.6000305@linux.intel.com>
+Date: Mon, 14 Oct 2013 15:44:53 +0300
+From: Jarkko Nikula <jarkko.nikula@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Zhang Rui <rui.zhang@intel.com>
+CC: Mika Westerberg <mika.westerberg@linux.intel.com>, rjw@sisk.pl,
+        linux-acpi@vger.kernel.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] ACPI: add module autoloading support for ACPI enumerated
+ devices
+References: <1381741834-7334-1-git-send-email-rui.zhang@intel.com>  <20131014101423.GE3521@intel.com> <1381749388.2034.28.camel@rzhang1-mobl4>
+In-Reply-To: <1381749388.2034.28.camel@rzhang1-mobl4>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a compatible for AM437x "ti,am43xx-usb2" to
-reuse the same phy-omap-usb2 driver.
+Hi
 
-Also updated the documentation to add the new compatible.
+On 10/14/2013 02:16 PM, Zhang Rui wrote:
+> On Mon, 2013-10-14 at 13:14 +0300, Mika Westerberg wrote:
+>> For the three patches.
+>>
+>> I wonder if we should do the same for SPI bus as well?
+>>
+> yes, you are right.
+> Actually, I should check for buses that supports
+> acpi_driver_match_device() and fix them all.
+> Will add it in next version.
+>
+You could have my pre- "Tested-by: Jarkko Nikula 
+<jarkko.nikula@linux.intel.com>".
 
-Signed-off-by: George Cherian <george.cherian@ti.com>
----
- Documentation/devicetree/bindings/usb/usb-phy.txt |  2 +-
- drivers/phy/phy-omap-usb2.c                       | 13 ++++++++++---
- 2 files changed, 11 insertions(+), 4 deletions(-)
+With your set I see bunch of failing modprobe calls from udev for 
+i2c:INTABCD:xy and platform:INTDCBA:xy modaliases gone.
 
-diff --git a/Documentation/devicetree/bindings/usb/usb-phy.txt b/Documentation/devicetree/bindings/usb/usb-phy.txt
-index c0245c8..d5a7f21 100644
---- a/Documentation/devicetree/bindings/usb/usb-phy.txt
-+++ b/Documentation/devicetree/bindings/usb/usb-phy.txt
-@@ -3,7 +3,7 @@ USB PHY
- OMAP USB2 PHY
- 
- Required properties:
-- - compatible: Should be "ti,omap-usb2"
-+ - compatible: Should be "ti,omap-usb2" or "ti,am437x-usb2"
-  - reg : Address and length of the register set for the device.
-  - #phy-cells: determine the number of cells that should be given in the
-    phandle while referencing this phy.
-diff --git a/drivers/phy/phy-omap-usb2.c b/drivers/phy/phy-omap-usb2.c
-index bfc5c33..0529c83 100644
---- a/drivers/phy/phy-omap-usb2.c
-+++ b/drivers/phy/phy-omap-usb2.c
-@@ -29,6 +29,7 @@
- #include <linux/delay.h>
- #include <linux/usb/omap_control_usb.h>
- #include <linux/phy/phy.h>
-+#include <linux/of.h>
- #include <linux/of_platform.h>
- 
- /**
-@@ -172,7 +173,10 @@ static int omap_usb2_probe(struct platform_device *pdev)
- 	phy->dev		= &pdev->dev;
- 
- 	phy->phy.dev		= phy->dev;
--	phy->phy.label		= "omap-usb2";
-+	if (of_device_is_compatible(node, "ti,am437x-usb2"))
-+		phy->phy.label		= "am437x-usb2";
-+	else
-+		phy->phy.label		= "omap-usb2";
- 	phy->phy.set_suspend	= omap_usb2_suspend;
- 	phy->phy.otg		= otg;
- 	phy->phy.type		= USB_PHY_TYPE_USB2;
-@@ -201,8 +205,10 @@ static int omap_usb2_probe(struct platform_device *pdev)
- 
- 	otg->set_host		= omap_usb_set_host;
- 	otg->set_peripheral	= omap_usb_set_peripheral;
--	otg->set_vbus		= omap_usb_set_vbus;
--	otg->start_srp		= omap_usb_start_srp;
-+	if (of_device_is_compatible(node, "ti,omap-usb2")) {
-+		otg->set_vbus		= omap_usb_set_vbus;
-+		otg->start_srp		= omap_usb_start_srp;
-+	}
- 	otg->phy		= &phy->phy;
- 
- 	platform_set_drvdata(pdev, phy);
-@@ -300,6 +306,7 @@ static const struct dev_pm_ops omap_usb2_pm_ops = {
- #ifdef CONFIG_OF
- static const struct of_device_id omap_usb2_id_table[] = {
- 	{ .compatible = "ti,omap-usb2" },
-+	{ .compatible = "ti,am437x-usb2" },
- 	{}
- };
- MODULE_DEVICE_TABLE(of, omap_usb2_id_table);
 -- 
-1.8.1
-
+Jarkko
