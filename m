@@ -1,213 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757209Ab3JNTUv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 15:20:51 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:35251 "EHLO arroyo.ext.ti.com"
+	id S1756529Ab3JNTXT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 15:23:19 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:35328 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753884Ab3JNTUt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 15:20:49 -0400
-Message-ID: <525C43F8.4010001@ti.com>
-Date: Mon, 14 Oct 2013 15:20:24 -0400
+	id S1756057Ab3JNTXR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 15:23:17 -0400
+Message-ID: <525C4487.2030502@ti.com>
+Date: Mon, 14 Oct 2013 15:22:47 -0400
 From: Eduardo Valentin <eduardo.valentin@ti.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Lukasz Majewski <l.majewski@samsung.com>
-CC: Eduardo Valentin <eduardo.valentin@ti.com>,
-        Zhang Rui <rui.zhang@intel.com>, <kgene.kim@samsung.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+To: Eduardo Valentin <eduardo.valentin@ti.com>
+CC: "Zhang, Rui" <rui.zhang@intel.com>,
+        Lukasz Majewski <l.majewski@samsung.com>,
+        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
         Linux PM list <linux-pm@vger.kernel.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
         Lukasz Majewski <l.majewski@majess.pl>,
         linux-kernel <linux-kernel@vger.kernel.org>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>, <devicetree@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
         Amit Daniel Kachhap <amit.daniel@samsung.com>,
-        <linux-samsung-soc@vger.kernel.org>
-Subject: Re: [PATCH v2 3/5] thermal: exynos: Provide initial setting for TMU's
- test MUX address at Exynos4412
-References: <1380010102-25817-1-git-send-email-l.majewski@samsung.com> <1381300194-13134-1-git-send-email-l.majewski@samsung.com> <1381300194-13134-4-git-send-email-l.majewski@samsung.com> <525BFEB0.9080609@ti.com> <20131014170032.7ed18cad@amdc308.digital.local>
-In-Reply-To: <20131014170032.7ed18cad@amdc308.digital.local>
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>
+Subject: Re: [PATCH v2 0/5] thermal: exynos: Fixes for v3.12
+References: <1380010102-25817-1-git-send-email-l.majewski@samsung.com> <1381300194-13134-1-git-send-email-l.majewski@samsung.com> <20131014074635.77fd9f6e@amdc308.digital.local> <744357E9AAD1214791ACBA4B0B90926301190077@SHSMSX101.ccr.corp.intel.com> <525C4242.2050306@ti.com>
+In-Reply-To: <525C4242.2050306@ti.com>
 X-Enigmail-Version: 1.5.2
 Content-Type: multipart/signed; micalg=pgp-sha256;
 	protocol="application/pgp-signature";
-	boundary="iETLotI6p4SoqTwV6JHRLJujnBFXGVl9M"
+	boundary="Hx5JMLHSnMBrj35brmWa2QDMcRJX6lVoQ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---iETLotI6p4SoqTwV6JHRLJujnBFXGVl9M
+--Hx5JMLHSnMBrj35brmWa2QDMcRJX6lVoQ
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: quoted-printable
 
-On 14-10-2013 11:00, Lukasz Majewski wrote:
-> Hi Eduardo,
+On 14-10-2013 15:13, Eduardo Valentin wrote:
+> On 14-10-2013 01:52, Zhang, Rui wrote:
+>> Eduardo,
+>>
+>> What's your opinion on this patch set?
+>> BTW, please send me all the urgent fixes for thermal soc drivers that
+> you think should go to 3.12.
+>>
 >=20
->> On 09-10-2013 02:29, Lukasz Majewski wrote:
->>> The commit d0a0ce3e77c795258d47f9163e92d5031d0c5221 ("thermal:
->>> exynos: Add missing definations and code cleanup") has removed
->>> setting of test MUX address value at TMU configuration setting.
+> I will be sending these + one fix on ti soc thermal for 3.12 soon.
+>=20
+> The new chip support on exynos needs to be reworked and there are coupl=
+e
+> of new drivers that needs to be reworked too. But those I don't think
+> are ready to go now.
+>=20
+
+Just to be clear, on this patch set obviously I wont be sending the DT
+changes. Those should go via the correct tree.
+
+>> Thanks,
+>> rui
+>>> -----Original Message-----
+>>> From: Lukasz Majewski [mailto:l.majewski@samsung.com]
+>>> Sent: Monday, October 14, 2013 1:47 PM
+>>> To: Zhang, Rui; Eduardo Valentin; kgene.kim@samsung.com
+>>> Cc: Lukasz Majewski; Linux PM list; Lukasz Majewski; linux-kernel;
+>>> Bartlomiej Zolnierkiewicz; devicetree@vger.kernel.org; Amit Daniel
+>>> Kachhap; linux-samsung-soc@vger.kernel.org
+>>> Subject: Re: [PATCH v2 0/5] thermal: exynos: Fixes for v3.12
+>>> Importance: High
 >>>
->>> This field is not present on Exynos4210 and Exynos5 SoCs. However
->>> on Exynos4412 SoC it is required to set this field after reset
->>> because without it TMU shows maximal available temperature, which
->>> causes immediate platform shutdown.
+>>> Hi Zhang, Eduardo,
 >>>
->>> Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
->>> Reviewed-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
->>> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+>>>> This patch series is divided into two parts:
+>>>> 1. Device tree node definition and enabelement for TMU at Exynos4412=
+
+>>>> (Trats2) 2. Exynos thermal subsystem regressions for v3.12-rc4.
+>>>> Several commits were necessary to properly fix regression for TMU
+>>> test
+>>>> MUX address setting after reset.
+>>>>
+>>>> Test HW:
+>>>> - Exynos4412 - TRATS2 board (Linux v3.12-rc4)
+>>>> SHA1: 8b5ede69d24db939f52b47effff2f6fe1e83e08b
+>>>>
+>>>>
+>>>> Lukasz Majewski (5):
+>>>>   thermal: exynos: Remove check for thermal device pointer at
+>>>>     exynos_report_trigger()
+>>>>   thermal: exynos: Provide separate TMU data for Exynos4412
+>>>>   thermal: exynos: Provide initial setting for TMU's test MUX addres=
+s
+>>>>     at Exynos4412
+>>>>   ARM: dts: exynos4x12: Device tree node definition for TMU on
+>>>>     Exynos4x12
+>>>>   ARM: dts: exynos4412-trats2: Enable TMU support at Trats2
+>>>>
 >>>
->>> ---
->>> Changes for v2:
->>> - Define test_mux and test_mux_addr_shift to not use direct
->>> register access
->>> - Remove pdata->type =3D=3D SOC_ARCH_EXYNOS4412 check at
->>> exynos_tmu_control() and use only generic code
+>>> Zhang, Eduardo - any comments?
 >>>
->>>  drivers/thermal/samsung/exynos_tmu.c      |    3 +++
->>>  drivers/thermal/samsung/exynos_tmu.h      |    4 ++++
->>>  drivers/thermal/samsung/exynos_tmu_data.c |    2 ++
->>>  drivers/thermal/samsung/exynos_tmu_data.h |    4 ++++
->>>  4 files changed, 13 insertions(+)
+>>> Would it be possible to add them to v3.12 since they do fix critical
+>>> error and regression on Exynos4412.
 >>>
->>> diff --git a/drivers/thermal/samsung/exynos_tmu.c
->>> b/drivers/thermal/samsung/exynos_tmu.c index 1312b34..32f38b9 100644
->>> --- a/drivers/thermal/samsung/exynos_tmu.c
->>> +++ b/drivers/thermal/samsung/exynos_tmu.c
->>> @@ -317,6 +317,9 @@ static void exynos_tmu_control(struct
->>> platform_device *pdev, bool on)=20
->>>  	con =3D readl(data->base + reg->tmu_ctrl);
->>> =20
->>> +	if (pdata->test_mux)
->>
->>
->> test_mux field is in fact an address, correct? Can 0 be a valid
->> address?
->=20
-> No it isn't an address. It is the value which shall be written to
-> test_mux field of TMU_CONTROL register.
->=20
->>
->> Why not using the feature flags to test for capabilities,
->=20
-> It is easier to assign value to test_mux tmu_data struct, than write
-> separate set of features for Exynos4412 and Exynos5250, which share the=
-
-> code.
->=20
-
-It is harder to write, yes, but things that are easy to write are
-usually harder to read. Besides, my concern is if 0x0 is a valid value
-to be written. And if yes, then makes the patch you sent might be
-incomplete.
-
-> Also .features seems to define SoC independent features of TMU IP (like=
-
-> TMU_SUPPORT_EMULATION).
->=20
-> The TEST_MUX setting is platform dependent (only Exynos4412 uses it),
-> so this is the rationale to define it at tmu platform data.
->=20
-
-Is test mux something pinctrl should be handling?
-
->> features and
->> required configurations instead of assuming obscure domain and address=
-
->> ranges?
->=20
-> TMU_MUX only uses=20
->=20
-> (test_mux << test_mux_addr_shift) at tmu_ctrl register.
->=20
->=20
->>
->>
->>> +		con |=3D (pdata->test_mux <<
->>> reg->test_mux_addr_shift); +
->>>  	if (pdata->reference_voltage) {
->>>  		con &=3D ~(reg->buf_vref_sel_mask <<
->>> reg->buf_vref_sel_shift); con |=3D pdata->reference_voltage <<
->>> reg->buf_vref_sel_shift; diff --git
->>> a/drivers/thermal/samsung/exynos_tmu.h
->>> b/drivers/thermal/samsung/exynos_tmu.h index b42ece4..3fb6554
->>> 100644 --- a/drivers/thermal/samsung/exynos_tmu.h +++
->>> b/drivers/thermal/samsung/exynos_tmu.h @@ -85,6 +85,7 @@ enum
->>> soc_type {
->>>   * @triminfo_reload_shift: shift of triminfo reload enable bit in
->>> triminfo_ctrl reg.
->>>   * @tmu_ctrl: TMU main controller register.
->>> + * @test_mux_addr_shift: shift bits of test mux address.
->>>   * @buf_vref_sel_shift: shift bits of reference voltage in
->>> tmu_ctrl register.
->>>   * @buf_vref_sel_mask: mask bits of reference voltage in tmu_ctrl
->>> register.
->>>   * @therm_trip_mode_shift: shift bits of tripping mode in tmu_ctrl
->>> register. @@ -151,6 +152,7 @@ struct exynos_tmu_registers {
->>>  	u32	triminfo_reload_shift;
->>> =20
->>>  	u32	tmu_ctrl;
->>> +	u32     test_mux_addr_shift;
->>>  	u32	buf_vref_sel_shift;
->>>  	u32	buf_vref_sel_mask;
->>>  	u32	therm_trip_mode_shift;
->>> @@ -258,6 +260,7 @@ struct exynos_tmu_registers {
->>>   * @first_point_trim: temp value of the first point trimming
->>>   * @second_point_trim: temp value of the second point trimming
->>>   * @default_temp_offset: default temperature offset in case of no
->>> trimming
->>> + * @test_mux; information if SoC supports test MUX
->>>   * @cal_type: calibration type for temperature
->>>   * @cal_mode: calibration mode for temperature
->>>   * @freq_clip_table: Table representing frequency reduction
->>> percentage. @@ -287,6 +290,7 @@ struct exynos_tmu_platform_data {
->>>  	u8 first_point_trim;
->>>  	u8 second_point_trim;
->>>  	u8 default_temp_offset;
->>> +	u8 test_mux;
->>> =20
->>>  	enum calibration_type cal_type;
->>>  	enum calibration_mode cal_mode;
->>> diff --git a/drivers/thermal/samsung/exynos_tmu_data.c
->>> b/drivers/thermal/samsung/exynos_tmu_data.c index d8de5c1..073c292
->>> 100644 --- a/drivers/thermal/samsung/exynos_tmu_data.c
->>> +++ b/drivers/thermal/samsung/exynos_tmu_data.c
->>> @@ -98,6 +98,7 @@ static const struct exynos_tmu_registers
->>> exynos4412_tmu_registers =3D { .triminfo_ctrl =3D
->>> EXYNOS_TMU_TRIMINFO_CON, .triminfo_reload_shift =3D
->>> EXYNOS_TRIMINFO_RELOAD_SHIFT, .tmu_ctrl =3D EXYNOS_TMU_REG_CONTROL,
->>> +	.test_mux_addr_shift =3D EXYNOS4412_MUX_ADDR_SHIFT,
->>>  	.buf_vref_sel_shift =3D EXYNOS_TMU_REF_VOLTAGE_SHIFT,
->>>  	.buf_vref_sel_mask =3D EXYNOS_TMU_REF_VOLTAGE_MASK,
->>>  	.therm_trip_mode_shift =3D EXYNOS_TMU_TRIP_MODE_SHIFT,
->>> @@ -174,6 +175,7 @@ struct exynos_tmu_init_data const
->>> exynos4412_default_tmu_data =3D { {
->>>  			EXYNOS4412_TMU_DATA,
->>>  			.type =3D SOC_ARCH_EXYNOS4412,
->>> +			.test_mux =3D EXYNOS4412_MUX_ADDR_VALUE,
->>>  		},
->>>  	},
->>>  	.tmu_count =3D 1,
->>> diff --git a/drivers/thermal/samsung/exynos_tmu_data.h
->>> b/drivers/thermal/samsung/exynos_tmu_data.h index b130b1e..a1ea19d
->>> 100644 --- a/drivers/thermal/samsung/exynos_tmu_data.h
->>> +++ b/drivers/thermal/samsung/exynos_tmu_data.h
->>> @@ -95,6 +95,10 @@
->>> =20
->>>  #define EXYNOS_MAX_TRIGGER_PER_REG	4
->>> =20
->>> +/* Exynos4412 specific */
->>> +#define EXYNOS4412_MUX_ADDR_VALUE          6
->>
->>> +#define EXYNOS4412_MUX_ADDR_SHIFT          20
->>> +
->>>  /*exynos5440 specific registers*/
->>>  #define EXYNOS5440_TMU_S0_7_TRIM		0x000
->>>  #define EXYNOS5440_TMU_S0_7_CTRL		0x020
 >>>
+>>>>  arch/arm/boot/dts/exynos4412-trats2.dts         |    5 ++++
+>>>>  arch/arm/boot/dts/exynos4x12.dtsi               |   10 ++++++++
+>>>>  drivers/thermal/samsung/exynos_thermal_common.c |    2 --
+>>>>  drivers/thermal/samsung/exynos_tmu.c            |   12 ++++++---
+>>>>  drivers/thermal/samsung/exynos_tmu.h            |    7 +++++-
+>>>>  drivers/thermal/samsung/exynos_tmu_data.c       |   30
+>>>> ++++++++++++++++++-----
+>>>> drivers/thermal/samsung/exynos_tmu_data.h       |   13 +++++++++- 7
+>>>> files changed, 65 insertions(+), 14 deletions(-)
+>>>>
+>>>
+>>>
+>>>
+>>> --
+>>> Best regards,
+>>>
+>>> Lukasz Majewski
+>>>
+>>> Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-pm" in=
+
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 >>
 >>
->=20
 >=20
 >=20
 
@@ -218,7 +139,7 @@ You have got to be excited about what you are doing. (L. Lamport)
 Eduardo Valentin
 
 
---iETLotI6p4SoqTwV6JHRLJujnBFXGVl9M
+--Hx5JMLHSnMBrj35brmWa2QDMcRJX6lVoQ
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: OpenPGP digital signature
 Content-Disposition: attachment; filename="signature.asc"
@@ -227,9 +148,9 @@ Content-Disposition: attachment; filename="signature.asc"
 Version: GnuPG v1.4.12 (GNU/Linux)
 Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-iF4EAREIAAYFAlJcQ/8ACgkQCXcVR3XQvP3pnwEA8RO+LRSf6+7i9LN7g7JDMUYO
-mDZptgTgm7rLRuvjnNQA/31WnNmTw/8HSerpt1qBsTIdEbgCCzSO6ULbSfvhn3B/
-=6Dpz
+iF4EAREIAAYFAlJcRIcACgkQCXcVR3XQvP3fIQD9GQhnysF0but2Ykmw3iJ68uSO
+8NWW55hd3+sUgke7ZroBALx8fDNM0J2PM9UAK3UEpchsb8/7dun/vn+maQtvFdiC
+=DC9P
 -----END PGP SIGNATURE-----
 
---iETLotI6p4SoqTwV6JHRLJujnBFXGVl9M--
+--Hx5JMLHSnMBrj35brmWa2QDMcRJX6lVoQ--
