@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758333Ab3JNUOE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 16:14:04 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:39113 "EHLO
+	id S932281Ab3JNURG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 16:17:06 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:39073 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757772Ab3JNUDJ (ORCPT
+	with ESMTP id S1757742Ab3JNUDI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 16:03:09 -0400
+	Mon, 14 Oct 2013 16:03:08 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -16,9 +16,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 108/161] perf trace: Beautify mlock & friends 'addr' arg
-Date: Mon, 14 Oct 2013 17:01:37 -0300
-Message-Id: <1381780950-25642-109-git-send-email-acme@infradead.org>
+Subject: [PATCH 105/161] perf trace: Beautify pipe2 'flags' arg
+Date: Mon, 14 Oct 2013 17:01:34 -0300
+Message-Id: <1381780950-25642-106-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1381780950-25642-1-git-send-email-acme@infradead.org>
 References: <1381780950-25642-1-git-send-email-acme@infradead.org>
@@ -30,7 +30,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Printing it as an hex number.
+ 4.234 (0.005 ms): fetchmail/3224 pipe2(fildes: 0x7fffc72bcee0, flags: CLOEXEC) = 0
 
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
@@ -40,36 +40,55 @@ Cc: Mike Galbraith <efault@gmx.de>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-gd68zmnwbbofsv5m6w18intw@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-9e1jz78i6q6e0xr9fsitqbpe@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-trace.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ tools/perf/builtin-trace.c | 25 +++++++++++++++++++++++++
+ 1 file changed, 25 insertions(+)
 
 diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index 3ca6a856ba62..12a275d02ada 100644
+index bf74217be22c..76d9427b4b91 100644
 --- a/tools/perf/builtin-trace.c
 +++ b/tools/perf/builtin-trace.c
-@@ -635,6 +635,10 @@ static struct syscall_fmt {
- 	{ .name     = "madvise",    .errmsg = true,
- 	  .arg_scnprintf = { [0] = SCA_HEX,	 /* start */
- 			     [2] = SCA_MADV_BHV, /* behavior */ }, },
-+	{ .name	    = "mlock",	    .errmsg = true,
-+	  .arg_scnprintf = { [0] = SCA_HEX, /* addr */ }, },
-+	{ .name	    = "mlockall",   .errmsg = true,
-+	  .arg_scnprintf = { [0] = SCA_HEX, /* addr */ }, },
- 	{ .name	    = "mmap",	    .hexret = true,
- 	  .arg_scnprintf = { [0] = SCA_HEX,	  /* addr */
- 			     [2] = SCA_MMAP_PROT, /* prot */
-@@ -645,6 +649,8 @@ static struct syscall_fmt {
- 	{ .name	    = "mremap",	    .hexret = true,
- 	  .arg_scnprintf = { [0] = SCA_HEX, /* addr */
- 			     [4] = SCA_HEX, /* new_addr */ }, },
-+	{ .name	    = "munlock",    .errmsg = true,
-+	  .arg_scnprintf = { [0] = SCA_HEX, /* addr */ }, },
- 	{ .name	    = "munmap",	    .errmsg = true,
- 	  .arg_scnprintf = { [0] = SCA_HEX, /* addr */ }, },
- 	{ .name	    = "open",	    .errmsg = true,
+@@ -517,6 +517,29 @@ static size_t syscall_arg__scnprintf_eventfd_flags(char *bf, size_t size,
+ 
+ #define SCA_EFD_FLAGS syscall_arg__scnprintf_eventfd_flags
+ 
++static size_t syscall_arg__scnprintf_pipe_flags(char *bf, size_t size,
++						struct syscall_arg *arg)
++{
++	int printed = 0, flags = arg->val;
++
++#define	P_FLAG(n) \
++	if (flags & O_##n) { \
++		printed += scnprintf(bf + printed, size - printed, "%s%s", printed ? "|" : "", #n); \
++		flags &= ~O_##n; \
++	}
++
++	P_FLAG(CLOEXEC);
++	P_FLAG(NONBLOCK);
++#undef P_FLAG
++
++	if (flags)
++		printed += scnprintf(bf + printed, size - printed, "%s%#x", printed ? "|" : "", flags);
++
++	return printed;
++}
++
++#define SCA_PIPE_FLAGS syscall_arg__scnprintf_pipe_flags
++
+ static size_t syscall_arg__scnprintf_signum(char *bf, size_t size, struct syscall_arg *arg)
+ {
+ 	int sig = arg->val;
+@@ -620,6 +643,8 @@ static struct syscall_fmt {
+ 	  .arg_scnprintf = { [2] = SCA_OPEN_FLAGS, /* flags */ }, },
+ 	{ .name	    = "openat",	    .errmsg = true,
+ 	  .arg_scnprintf = { [2] = SCA_OPEN_FLAGS, /* flags */ }, },
++	{ .name	    = "pipe2",	    .errmsg = true,
++	  .arg_scnprintf = { [1] = SCA_PIPE_FLAGS, /* flags */ }, },
+ 	{ .name	    = "poll",	    .errmsg = true, .timeout = true, },
+ 	{ .name	    = "ppoll",	    .errmsg = true, .timeout = true, },
+ 	{ .name	    = "pread",	    .errmsg = true, .alias = "pread64", },
 -- 
 1.8.1.4
 
