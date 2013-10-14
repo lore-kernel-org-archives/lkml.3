@@ -1,108 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932167Ab3JNM2d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 08:28:33 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:64609 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932145Ab3JNM2b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 08:28:31 -0400
-From: Kefeng Wang <wangkefeng.wang@huawei.com>
-To: Alexander Viro <viro@zeniv.linux.org.uk>
-CC: John McCutchan <john@johnmccutchan.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Eric Paris <eparis@redhat.com>, Robert Love <rlove@rlove.org>,
-        <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
-        <linux-nfs@vger.kernel.org>
-Subject: [PATCH 1/3] fs: use path_equal() and path_put() to simplify code
-Date: Mon, 14 Oct 2013 20:26:00 +0800
-Message-ID: <1381753562-47884-2-git-send-email-wangkefeng.wang@huawei.com>
-X-Mailer: git-send-email 1.8.3.msysgit.0
-In-Reply-To: <1381753562-47884-1-git-send-email-wangkefeng.wang@huawei.com>
-References: <1381753562-47884-1-git-send-email-wangkefeng.wang@huawei.com>
+	id S1756356Ab3JNMaj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 08:30:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51139 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755999Ab3JNMah (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 08:30:37 -0400
+Date: Mon, 14 Oct 2013 14:30:34 +0200
+From: Jan Kara <jack@suse.cz>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        Hans de Goede <hdegoede@redhat.com>, Gerd Hoffmann <kraxel@redhat.com>
+Subject: Re: Warning when calling radix_tree_insert on 3.12-rc4
+Message-ID: <20131014123034.GF19604@quack.suse.cz>
+References: <20131011221315.GE7094@xanatos>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.135.68.221]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131011221315.GE7094@xanatos>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Kefeng Wang <wangkefeng.wang@huawei.com>
----
- fs/namei.c | 20 ++++++--------------
- 1 file changed, 6 insertions(+), 14 deletions(-)
+  Hello Sarah,
 
-diff --git a/fs/namei.c b/fs/namei.c
-index 645268f..1a6c139 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -918,9 +918,8 @@ int follow_up(struct path *path)
- 	mntget(&parent->mnt);
- 	mountpoint = dget(mnt->mnt_mountpoint);
- 	br_read_unlock(&vfsmount_lock);
--	dput(path->dentry);
-+	path_put(path);
- 	path->dentry = mountpoint;
--	mntput(path->mnt);
- 	path->mnt = &parent->mnt;
- 	return 1;
- }
-@@ -1077,8 +1076,7 @@ int follow_down_one(struct path *path)
- 
- 	mounted = lookup_mnt(path);
- 	if (mounted) {
--		dput(path->dentry);
--		mntput(path->mnt);
-+		path_put(path);
- 		path->mnt = mounted;
- 		path->dentry = dget(mounted->mnt_root);
- 		return 1;
-@@ -1146,10 +1144,8 @@ static int follow_dotdot_rcu(struct nameidata *nd)
- 	set_root_rcu(nd);
- 
- 	while (1) {
--		if (nd->path.dentry == nd->root.dentry &&
--		    nd->path.mnt == nd->root.mnt) {
-+		if (path_equal(&nd->path, &nd->root))
- 			break;
--		}
- 		if (nd->path.dentry != nd->path.mnt->mnt_root) {
- 			struct dentry *old = nd->path.dentry;
- 			struct dentry *parent = old->d_parent;
-@@ -1214,8 +1210,7 @@ int follow_down(struct path *path)
- 			struct vfsmount *mounted = lookup_mnt(path);
- 			if (!mounted)
- 				break;
--			dput(path->dentry);
--			mntput(path->mnt);
-+			path_put(path);
- 			path->mnt = mounted;
- 			path->dentry = dget(mounted->mnt_root);
- 			continue;
-@@ -1236,8 +1231,7 @@ static void follow_mount(struct path *path)
- 		struct vfsmount *mounted = lookup_mnt(path);
- 		if (!mounted)
- 			break;
--		dput(path->dentry);
--		mntput(path->mnt);
-+		path_put(path);
- 		path->mnt = mounted;
- 		path->dentry = dget(mounted->mnt_root);
- 	}
-@@ -1250,10 +1244,8 @@ static void follow_dotdot(struct nameidata *nd)
- 	while(1) {
- 		struct dentry *old = nd->path.dentry;
- 
--		if (nd->path.dentry == nd->root.dentry &&
--		    nd->path.mnt == nd->root.mnt) {
-+		if (path_equal(&nd->path, &nd->root))
- 			break;
--		}
- 		if (nd->path.dentry != nd->path.mnt->mnt_root) {
- 			/* rare case of legitimate dget_parent()... */
- 			nd->path.dentry = dget_parent(nd->path.dentry);
+On Fri 11-10-13 15:13:15, Sarah Sharp wrote:
+> I'm testing out some changes to the xHCI USB host controller driver
+> (which uses a radix tree when a UAS device is attached to the host), and
+> I noticed the following warning:
+> 
+> Oct 11 14:42:08 xanatos kernel: [18165.819014] usb 2-2: new SuperSpeed USB device number 2 using xhci_hcd
+> Oct 11 14:42:08 xanatos kernel: [18165.836264] usb 2-2: New USB device found, idVendor=174c, idProduct=55aa
+> Oct 11 14:42:08 xanatos kernel: [18165.836271] usb 2-2: New USB device strings: Mfr=2, Product=3, SerialNumber=1
+> Oct 11 14:42:08 xanatos kernel: [18165.836275] usb 2-2: Product: Plugable USB3-SATA-UASP1
+> Oct 11 14:42:08 xanatos kernel: [18165.836279] usb 2-2: Manufacturer: ASM1053E
+> Oct 11 14:42:08 xanatos kernel: [18165.836291] usb 2-2: SerialNumber: 123456789045
+> Oct 11 14:42:08 xanatos kernel: [18165.847661] BUG: using smp_processor_id() in preemptible [00000000] code: modprobe/8759
+> Oct 11 14:42:08 xanatos kernel: [18165.847667] caller is radix_tree_node_alloc+0x5c/0xa0
+  Well, this warning seems to come from the __get_cpu_var() function. I don't
+see how my commit could have caused what you observe. It seems you are
+calling radix_tree_insert() for a radix tree which has atomic gfp mask set
+and you don't do radix_tree_preload() / radix_tree_preload_end() around
+that? That was always problematic and could lead to the above warning.
+
+I'm not sure in which contexts xhci_update_stream_ring() can be called. But
+if you are guaranteed non-atomic context, then using radix_tree_preload()
+with a more relaxed gfp mask is good (lowers pressure on atomic allocations).
+
+If the context depends on the caller, things are more complex. Generally,
+you can use radix_tree_maybe_preload() but you have to set gfp mask
+argument according to the context. The function then figures out whether
+it's worth it to do a preload or not (but it always does preempt_disable()
+which will silence the warning).
+
+									Honza
+
+> Oct 11 14:42:08 xanatos kernel: [18165.847670] CPU: 1 PID: 8759 Comm: modprobe Not tainted 3.12.0-rc4+ #94
+> Oct 11 14:42:08 xanatos kernel: [18165.847671] Hardware name: LENOVO 2325AP7/2325AP7, BIOS G2ET82WW (2.02 ) 09/11/2012
+> Oct 11 14:42:08 xanatos kernel: [18165.847673]  ffff88010c1d3fd8 ffff88010c1d38e8 ffffffff816081b9 0000000000000007
+> Oct 11 14:42:08 xanatos kernel: [18165.847677]  0000000000000001 ffff88010c1d3918 ffffffff812e3ffc ffff88010c26c988
+> Oct 11 14:42:08 xanatos kernel: [18165.847679]  0000000000000020 00000000000240b1 0000000000000003 ffff88010c1d3938
+> Oct 11 14:42:08 xanatos kernel: [18165.847682] Call Trace:
+> Oct 11 14:42:08 xanatos kernel: [18165.847686]  [<ffffffff816081b9>] dump_stack+0x4f/0x84
+> Oct 11 14:42:08 xanatos kernel: [18165.847689]  [<ffffffff812e3ffc>] debug_smp_processor_id+0xdc/0x100
+> Oct 11 14:42:08 xanatos kernel: [18165.847692]  [<ffffffff812d47fc>] radix_tree_node_alloc+0x5c/0xa0
+> Oct 11 14:42:08 xanatos kernel: [18165.847695]  [<ffffffff812d48d5>] radix_tree_insert+0x95/0x260
+> Oct 11 14:42:08 xanatos kernel: [18165.847702]  [<ffffffffa008446f>] xhci_update_stream_ring+0x8f/0xc0 [xhci_hcd]
+> Oct 11 14:42:08 xanatos kernel: [18165.847708]  [<ffffffffa00860f0>] xhci_alloc_stream_info+0x190/0x410 [xhci_hcd]
+> Oct 11 14:42:08 xanatos kernel: [18165.847713]  [<ffffffffa00802ef>] xhci_alloc_streams+0x36f/0x750 [xhci_hcd]
+> Oct 11 14:42:08 xanatos kernel: [18165.847716]  [<ffffffff8108678f>] ? ttwu_stat+0xef/0x160
+> Oct 11 14:42:08 xanatos kernel: [18165.847720]  [<ffffffff810c8e93>] ? is_module_address+0x33/0x60
+> Oct 11 14:42:08 xanatos kernel: [18165.847729]  [<ffffffffa0036e35>] usb_alloc_streams+0x95/0xb0 [usbcore]
+> Oct 11 14:42:08 xanatos kernel: [18165.847732]  [<ffffffffa01eb874>] uas_configure_endpoints+0x154/0x210 [uas]
+> Oct 11 14:42:08 xanatos kernel: [18165.847735]  [<ffffffffa01ec367>] uas_probe+0x2d7/0x390 [uas]
+> Oct 11 14:42:08 xanatos kernel: [18165.847743]  [<ffffffffa0040053>] usb_probe_interface+0x1c3/0x2f0 [usbcore]
+> Oct 11 14:42:08 xanatos kernel: [18165.847746]  [<ffffffff813ba421>] driver_probe_device+0x91/0x3c0
+> Oct 11 14:42:08 xanatos kernel: [18165.847749]  [<ffffffff813ba7fb>] __driver_attach+0xab/0xb0
+> Oct 11 14:42:08 xanatos kernel: [18165.847751]  [<ffffffff813ba750>] ? driver_probe_device+0x3c0/0x3c0
+> Oct 11 14:42:08 xanatos kernel: [18165.847753]  [<ffffffff813b835e>] bus_for_each_dev+0x5e/0x90
+> Oct 11 14:42:08 xanatos kernel: [18165.847756]  [<ffffffff813b9e6e>] driver_attach+0x1e/0x20
+> Oct 11 14:42:08 xanatos kernel: [18165.847758]  [<ffffffff813b988f>] bus_add_driver+0x10f/0x2d0
+> Oct 11 14:42:08 xanatos kernel: [18165.847760]  [<ffffffff813baf24>] driver_register+0x64/0xf0
+> Oct 11 14:42:08 xanatos kernel: [18165.847767]  [<ffffffffa003ec34>] usb_register_driver+0xc4/0x180 [usbcore]
+> Oct 11 14:42:08 xanatos kernel: [18165.847770]  [<ffffffffa01f0000>] ? 0xffffffffa01effff
+> Oct 11 14:42:08 xanatos kernel: [18165.847773]  [<ffffffffa01f001e>] uas_driver_init+0x1e/0x20 [uas]
+> Oct 11 14:42:08 xanatos kernel: [18165.847775]  [<ffffffff8100210a>] do_one_initcall+0xda/0x180
+> Oct 11 14:42:08 xanatos kernel: [18165.847778]  [<ffffffff81080313>] ? __blocking_notifier_call_chain+0x63/0x80
+> Oct 11 14:42:08 xanatos kernel: [18165.847782]  [<ffffffff810c7e42>] load_module+0x14b2/0x1ad0
+> Oct 11 14:42:08 xanatos kernel: [18165.847784]  [<ffffffff810c4680>] ? show_initstate+0x50/0x50
+> Oct 11 14:42:08 xanatos kernel: [18165.847788]  [<ffffffff810c8532>] SyS_init_module+0xd2/0x120
+> Oct 11 14:42:08 xanatos kernel: [18165.847791]  [<ffffffff816183a9>] system_call_fastpath+0x16/0x1b
+> 
+> This looks possibly related to commit
+> 5e4c0d974139a98741b829b27cf38dc8f9284490 "lib/radix-tree.c: make
+> radix_tree_node_alloc() work correctly within interrupt".  I'll revert
+> the commit, and see if the warning disappears.  In the meantime, can you
+> look into fixing this?
+> 
+> Thanks,
+> Sarah Sharp
 -- 
-1.8.2.1
-
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
