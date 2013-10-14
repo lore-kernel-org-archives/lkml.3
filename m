@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932204Ab3JNM2k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 08:28:40 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:29267 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932162Ab3JNM2e (ORCPT
+	id S932167Ab3JNM2d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 08:28:33 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:64609 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932145Ab3JNM2b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 08:28:34 -0400
+	Mon, 14 Oct 2013 08:28:31 -0400
 From: Kefeng Wang <wangkefeng.wang@huawei.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 CC: John McCutchan <john@johnmccutchan.com>,
@@ -14,9 +14,9 @@ CC: John McCutchan <john@johnmccutchan.com>,
         Eric Paris <eparis@redhat.com>, Robert Love <rlove@rlove.org>,
         <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
         <linux-nfs@vger.kernel.org>
-Subject: [PATCH 2/3] fs: nfsd: use path_equal() to simply code
-Date: Mon, 14 Oct 2013 20:26:01 +0800
-Message-ID: <1381753562-47884-3-git-send-email-wangkefeng.wang@huawei.com>
+Subject: [PATCH 1/3] fs: use path_equal() and path_put() to simplify code
+Date: Mon, 14 Oct 2013 20:26:00 +0800
+Message-ID: <1381753562-47884-2-git-send-email-wangkefeng.wang@huawei.com>
 X-Mailer: git-send-email 1.8.3.msysgit.0
 In-Reply-To: <1381753562-47884-1-git-send-email-wangkefeng.wang@huawei.com>
 References: <1381753562-47884-1-git-send-email-wangkefeng.wang@huawei.com>
@@ -30,37 +30,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Kefeng Wang <wangkefeng.wang@huawei.com>
 ---
- fs/nfsd/export.c  | 3 +--
- fs/nfsd/nfs4xdr.c | 2 +-
- 2 files changed, 2 insertions(+), 3 deletions(-)
+ fs/namei.c | 20 ++++++--------------
+ 1 file changed, 6 insertions(+), 14 deletions(-)
 
-diff --git a/fs/nfsd/export.c b/fs/nfsd/export.c
-index 5f38ea3..ca3610d 100644
---- a/fs/nfsd/export.c
-+++ b/fs/nfsd/export.c
-@@ -649,8 +649,7 @@ static int svc_export_match(struct cache_head *a, struct cache_head *b)
- 	struct svc_export *orig = container_of(a, struct svc_export, h);
- 	struct svc_export *new = container_of(b, struct svc_export, h);
- 	return orig->ex_client == new->ex_client &&
--		orig->ex_path.dentry == new->ex_path.dentry &&
--		orig->ex_path.mnt == new->ex_path.mnt;
-+		path_equal(&orig->ex_path, &new->ex_path);
+diff --git a/fs/namei.c b/fs/namei.c
+index 645268f..1a6c139 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -918,9 +918,8 @@ int follow_up(struct path *path)
+ 	mntget(&parent->mnt);
+ 	mountpoint = dget(mnt->mnt_mountpoint);
+ 	br_read_unlock(&vfsmount_lock);
+-	dput(path->dentry);
++	path_put(path);
+ 	path->dentry = mountpoint;
+-	mntput(path->mnt);
+ 	path->mnt = &parent->mnt;
+ 	return 1;
  }
+@@ -1077,8 +1076,7 @@ int follow_down_one(struct path *path)
  
- static void svc_export_init(struct cache_head *cnew, struct cache_head *citem)
-diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
-index d9454fe..6af4ff1 100644
---- a/fs/nfsd/nfs4xdr.c
-+++ b/fs/nfsd/nfs4xdr.c
-@@ -1829,7 +1829,7 @@ static __be32 nfsd4_encode_path(const struct path *root,
- 	 * dentries/path components in an array.
- 	 */
- 	for (;;) {
--		if (cur.dentry == root->dentry && cur.mnt == root->mnt)
-+		if (path_equal(&cur, root))
+ 	mounted = lookup_mnt(path);
+ 	if (mounted) {
+-		dput(path->dentry);
+-		mntput(path->mnt);
++		path_put(path);
+ 		path->mnt = mounted;
+ 		path->dentry = dget(mounted->mnt_root);
+ 		return 1;
+@@ -1146,10 +1144,8 @@ static int follow_dotdot_rcu(struct nameidata *nd)
+ 	set_root_rcu(nd);
+ 
+ 	while (1) {
+-		if (nd->path.dentry == nd->root.dentry &&
+-		    nd->path.mnt == nd->root.mnt) {
++		if (path_equal(&nd->path, &nd->root))
  			break;
- 		if (cur.dentry == cur.mnt->mnt_root) {
- 			if (follow_up(&cur))
+-		}
+ 		if (nd->path.dentry != nd->path.mnt->mnt_root) {
+ 			struct dentry *old = nd->path.dentry;
+ 			struct dentry *parent = old->d_parent;
+@@ -1214,8 +1210,7 @@ int follow_down(struct path *path)
+ 			struct vfsmount *mounted = lookup_mnt(path);
+ 			if (!mounted)
+ 				break;
+-			dput(path->dentry);
+-			mntput(path->mnt);
++			path_put(path);
+ 			path->mnt = mounted;
+ 			path->dentry = dget(mounted->mnt_root);
+ 			continue;
+@@ -1236,8 +1231,7 @@ static void follow_mount(struct path *path)
+ 		struct vfsmount *mounted = lookup_mnt(path);
+ 		if (!mounted)
+ 			break;
+-		dput(path->dentry);
+-		mntput(path->mnt);
++		path_put(path);
+ 		path->mnt = mounted;
+ 		path->dentry = dget(mounted->mnt_root);
+ 	}
+@@ -1250,10 +1244,8 @@ static void follow_dotdot(struct nameidata *nd)
+ 	while(1) {
+ 		struct dentry *old = nd->path.dentry;
+ 
+-		if (nd->path.dentry == nd->root.dentry &&
+-		    nd->path.mnt == nd->root.mnt) {
++		if (path_equal(&nd->path, &nd->root))
+ 			break;
+-		}
+ 		if (nd->path.dentry != nd->path.mnt->mnt_root) {
+ 			/* rare case of legitimate dget_parent()... */
+ 			nd->path.dentry = dget_parent(nd->path.dentry);
 -- 
 1.8.2.1
 
