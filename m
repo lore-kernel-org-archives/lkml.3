@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756729Ab3JNOvD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 10:51:03 -0400
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:49766 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932125Ab3JNOuc (ORCPT
+	id S1756749Ab3JNOvZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 10:51:25 -0400
+Received: from mail-bk0-f49.google.com ([209.85.214.49]:36569 "EHLO
+	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754841Ab3JNOu3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 10:50:32 -0400
+	Mon, 14 Oct 2013 10:50:29 -0400
 From: Thierry Reding <thierry.reding@gmail.com>
-To: Wolfram Sang <wsa@the-dreams.de>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Lars-Peter Clausen <lars@metafoo.de>, Lv Zheng <lv.zheng@intel.com>
+To: Shawn Guo <shawn.guo@linaro.org>,
+        Fabio Estevam <fabio.estevam@freescale.com>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: manual merge of the pm tree
-Date: Mon, 14 Oct 2013 16:48:07 +0200
-Message-Id: <1381762088-18880-7-git-send-email-treding@nvidia.com>
+Subject: linux-next: manual merge of th imx-mxs tree
+Date: Mon, 14 Oct 2013 16:48:05 +0200
+Message-Id: <1381762088-18880-5-git-send-email-treding@nvidia.com>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1381762088-18880-1-git-send-email-treding@nvidia.com>
 References: <1381762088-18880-1-git-send-email-treding@nvidia.com>
@@ -21,51 +21,116 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Today's linux-next merge of the pm tree (5d5e5df) got conflicts in
+Today's linux-next merge of the imx-mxs tree got conflicts in:
 
-	drivers/i2c/i2c-core.c
+	arch/arm/mach-imx/clk-imx51-imx53.c
+	arch/arm/mach-imx/mach-imx6q.c
 
-caused by commits 0acc2b3 (i2c: Remove redundant 'driver' field from the
-i2c_client struct) and a76e9bd (i2c: attach/detach I2C client device to
-the ACPI power domain).
+caused by commits 0efe995 (ARM: mach-imx: clk-imx51-imx53: Retrieve base
+address and irq from dt) and 4d9d18a (ARM: imx: remove custom .init_time
+hook).
 
-I fixed them up (see below). Please verify that the resolution looks
+This looks like the same conflict as last week, only this time I think I
+actually fixed it up properly. Please verify that the resolution looks
 good.
 
 Thanks,
 Thierry
 ---
-diff --cc drivers/i2c/i2c-core.c
-index 111b2c6,03a8ae6..5923cfa
---- a/drivers/i2c/i2c-core.c
-+++ b/drivers/i2c/i2c-core.c
-@@@ -254,10 -254,13 +254,12 @@@ static int i2c_device_probe(struct devi
-  					client->flags & I2C_CLIENT_WAKE);
-  	dev_dbg(dev, "probe\n");
+diff --cc arch/arm/mach-imx/clk-imx51-imx53.c
+index ceaac9c,03ca2e3..ce37af2
+--- a/arch/arm/mach-imx/clk-imx51-imx53.c
++++ b/arch/arm/mach-imx/clk-imx51-imx53.c
+@@@ -11,9 -11,11 +11,12 @@@
+  #include <linux/clk.h>
+  #include <linux/io.h>
+  #include <linux/clkdev.h>
+ +#include <linux/clk-provider.h>
+  #include <linux/of.h>
+  #include <linux/err.h>
++ #include <linux/of.h>
++ #include <linux/of_address.h>
++ #include <linux/of_irq.h>
   
-+ 	acpi_dev_pm_attach(&client->dev, true);
-  	status = driver->probe(client, i2c_match_id(driver->id_table, client));
-- 	if (status)
-+ 	if (status) {
- -		client->driver = NULL;
-  		i2c_set_clientdata(client, NULL);
-- 
-+ 		acpi_dev_pm_detach(&client->dev, true);
-+ 	}
-  	return status;
+  #include "crm-regs-imx5.h"
+  #include "clk.h"
+@@@ -464,16 -468,13 +467,17 @@@ int __init mx51_clocks_init(unsigned lo
+  	return 0;
   }
   
-@@@ -278,9 -281,11 +280,9 @@@ static int i2c_device_remove(struct dev
-  		dev->driver = NULL;
-  		status = 0;
-  	}
- -	if (status == 0) {
- -		client->driver = NULL;
- +	if (status == 0)
-  		i2c_set_clientdata(client, NULL);
-- 
- -	}
-+ 	acpi_dev_pm_detach(&client->dev, true);
-  	return status;
+ -int __init mx53_clocks_init(unsigned long rate_ckil, unsigned long rate_osc,
+ -			unsigned long rate_ckih1, unsigned long rate_ckih2)
+ +static void __init mx51_clocks_init_dt(struct device_node *np)
+ +{
+ +	mx51_clocks_init(0, 0, 0, 0);
+ +}
+ +CLK_OF_DECLARE(imx51_ccm, "fsl,imx51-ccm", mx51_clocks_init_dt);
+ +
+ +static void __init mx53_clocks_init(struct device_node *np)
+  {
+- 	int i;
++ 	int i, irq;
+  	unsigned long r;
+ -	struct device_node *np;
++ 	void __iomem *base;
+  
+  	clk[pll1_sw] = imx_clk_pllv2("pll1_sw", "osc", MX53_DPLL1_BASE);
+  	clk[pll2_sw] = imx_clk_pllv2("pll2_sw", "osc", MX53_DPLL2_BASE);
+@@@ -568,5 -567,22 +569,11 @@@
+  
+  	r = clk_round_rate(clk[usboh3_per_gate], 54000000);
+  	clk_set_rate(clk[usboh3_per_gate], r);
++ 
++ 	np = of_find_compatible_node(NULL, NULL, "fsl,imx53-gpt");
++ 	base = of_iomap(np, 0);
++ 	WARN_ON(!base);
++ 	irq = irq_of_parse_and_map(np, 0);
++ 	mxc_timer_init(base, irq);
+ -
+ -	return 0;
+ -}
+ -
+ -int __init mx51_clocks_init_dt(void)
+ -{
+ -	return mx51_clocks_init(0, 0, 0, 0);
+ -}
+ -
+ -int __init mx53_clocks_init_dt(void)
+ -{
+ -	return mx53_clocks_init(0, 0, 0, 0);
   }
+ +CLK_OF_DECLARE(imx53_ccm, "fsl,imx53-ccm", mx53_clocks_init);
+diff --cc arch/arm/mach-imx/mach-imx6q.c
+index 3be0fa0,53e70f4..0f9f241
+--- a/arch/arm/mach-imx/mach-imx6q.c
++++ b/arch/arm/mach-imx/mach-imx6q.c
+@@@ -11,9 -11,10 +11,8 @@@
+   */
+  
+  #include <linux/clk.h>
+ -#include <linux/clk-provider.h>
+  #include <linux/clkdev.h>
+ -#include <linux/clocksource.h>
+  #include <linux/cpu.h>
+- #include <linux/delay.h>
+  #include <linux/export.h>
+  #include <linux/init.h>
+  #include <linux/io.h>
+@@@ -190,8 -133,13 +131,16 @@@ static void __init imx6q_1588_init(void
+  
+  static void __init imx6q_init_machine(void)
+  {
++ 	struct device *parent;
++ 
+ +	imx_print_silicon_rev(cpu_is_imx6dl() ? "i.MX6DL" : "i.MX6Q",
+- 			      imx6q_revision());
+++			      imx_get_soc_revision());
+++
++ 	mxc_arch_reset_init_dt();
++ 
++ 	parent = imx_soc_device_init();
++ 	if (parent == NULL)
++ 		pr_warn("failed to initialize soc device\n");
+  
+  	imx6q_enet_phy_init();
   
