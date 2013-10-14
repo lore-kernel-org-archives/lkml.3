@@ -1,109 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932789Ab3JNU0m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 16:26:42 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:38925 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757668Ab3JNUDE (ORCPT
+	id S932882Ab3JNU2M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 16:28:12 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:43011 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932266Ab3JNU2I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 16:03:04 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 064/161] perf trace: Add option to show full timestamp
-Date: Mon, 14 Oct 2013 17:00:53 -0300
-Message-Id: <1381780950-25642-65-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1381780950-25642-1-git-send-email-acme@infradead.org>
-References: <1381780950-25642-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 14 Oct 2013 16:28:08 -0400
+Date: Mon, 14 Oct 2013 21:27:23 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Thierry Reding <thierry.reding@gmail.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Kent Overstreet <kmo@daterainc.com>,
+        linux-bcache@vger.kernel.org
+Message-ID: <20131014202723.GQ2443@sirena.org.uk>
+References: <1381762088-18880-1-git-send-email-treding@nvidia.com>
+ <525C3EC2.20404@infradead.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="YiSnftFthKPM0z4v"
+Content-Disposition: inline
+In-Reply-To: <525C3EC2.20404@infradead.org>
+X-Cookie: Time and tide wait for no man.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: linux-next: Tree for Oct 14 (bcache)
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Ahern <dsahern@gmail.com>
 
-Current timestamp shown for output is time relative to firt sample. This
-patch adds an option to show the absolute perf_clock timestamp which is
-useful when comparing output across commands (e.g., perf-trace to
-perf-script).
+--YiSnftFthKPM0z4v
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1378319865-55695-1-git-send-email-dsahern@gmail.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/Documentation/perf-trace.txt | 4 ++++
- tools/perf/builtin-trace.c              | 7 +++++--
- 2 files changed, 9 insertions(+), 2 deletions(-)
+On Mon, Oct 14, 2013 at 11:58:10AM -0700, Randy Dunlap wrote:
+> On 10/14/13 07:48, Thierry Reding wrote:
 
-diff --git a/tools/perf/Documentation/perf-trace.txt b/tools/perf/Documentation/perf-trace.txt
-index daccd2c0a48f..a93e91aad583 100644
---- a/tools/perf/Documentation/perf-trace.txt
-+++ b/tools/perf/Documentation/perf-trace.txt
-@@ -78,6 +78,10 @@ the thread executes on the designated CPUs. Default is to monitor all CPUs.
- --input
- 	Process events from a given perf data file.
- 
-+-T
-+--time
-+	Print full timestamp rather time relative to first sample.
-+
- SEE ALSO
- --------
- linkperf:perf-record[1], linkperf:perf-script[1]
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index 7ce036ee863b..bc21140ac782 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -624,6 +624,7 @@ struct trace {
- 	struct perf_record_opts opts;
- 	struct machine		host;
- 	u64			base_time;
-+	bool			full_time;
- 	FILE			*output;
- 	unsigned long		nr_events;
- 	struct strlist		*ev_qualifier;
-@@ -1066,7 +1067,7 @@ static int trace__process_sample(struct perf_tool *tool,
- 	if (skip_sample(trace, sample))
- 		return 0;
- 
--	if (trace->base_time == 0)
-+	if (!trace->full_time && trace->base_time == 0)
- 		trace->base_time = sample->time;
- 
- 	if (handler)
-@@ -1195,7 +1196,7 @@ again:
- 				continue;
- 			}
- 
--			if (trace->base_time == 0)
-+			if (!trace->full_time && trace->base_time == 0)
- 				trace->base_time = sample.time;
- 
- 			if (type != PERF_RECORD_SAMPLE) {
-@@ -1433,6 +1434,8 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
- 		     trace__set_duration),
- 	OPT_BOOLEAN(0, "sched", &trace.sched, "show blocking scheduler events"),
- 	OPT_INCR('v', "verbose", &verbose, "be more verbose"),
-+	OPT_BOOLEAN('T', "time", &trace.full_time,
-+		    "Show full timestamp, not time relative to first start"),
- 	OPT_END()
- 	};
- 	int err;
--- 
-1.8.1.4
+> > Gained a few conflicts, but nothing too exciting. x86 and ARM default
+> > configurations build fine. There were some build failures unrelated to
 
+> Maybe you could build allmodconfig instead of a default config
+> for more better coverage?  I am seeing lots of build problems.
+
+I'd say in addition - if you look at the last tree I did it's got fixes
+for all these tihngs I think.
+
+--YiSnftFthKPM0z4v
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSXFOnAAoJELSic+t+oim9kp0QAJCCX5jjgDO9QBDpwz51Gh2A
+Zys9MLzehYYH+KIVmzUO5fRyWOpYSkT+YzTMMWxRMxwmlmSiU7e9QanVOTXS3p9G
+M2Rm3DJZxO1CXh+bxOv3vR3DUHw6meL1HNBGEM6VeagpBV8goqMtNNbiEwJ3Rx0P
+ZYK8a8SWlnqUINdw6Yf4lMpprzk7oFazUAStbwQgvRGyQ+PAY8DO2EOHIYMI45Jx
+jc3R2AW+vGFaVurRG0uKeblZQRG/NJFP/DvOml3bC/w8eKqRfHIp8vma6sF/STqe
+1vZcanr72FAQcylgJF2B3cj0OUO7yQpjG95e10AYxMKq7lP/CswoSFN+I/4DQLbt
+WMXbmL9QWgIvab2928JD2BgPCSLV2R7Z60F7HOK3G6e88BGrqNZ5aXBE4gaYvPUf
+S1RSqQuxF+irOt/UGh5ohF1fEExLVikhkAg+FidNUdJM7+pLneTyDNMleD/dbwJU
+5jJw+rfDrvEdZk4KAt30D3wfH3X1Y6ZYXqUozvBJBiDoP6jVeVCa7qxMlaLjh2MJ
+Qt2O02KdQr5XVBYhmbVUvkGYzlEL+jgVzBoBcngThmftF1E5LsIfxZfKRmuJo3dt
+O01JKrV7dX18dk49Q/hWXrMFesApB027nb3dDpJnTnt+WBkkmWZMIbmFbDbxLdbr
+Nzn93XhSJh+7rlQwyyug
+=GfpC
+-----END PGP SIGNATURE-----
+
+--YiSnftFthKPM0z4v--
