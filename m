@@ -1,64 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754660Ab3JOGx3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 02:53:29 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:42498 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750965Ab3JOGx0 (ORCPT
+	id S1756508Ab3JOGyN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 02:54:13 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:41206 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751176Ab3JOGyL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 02:53:26 -0400
-Message-ID: <525CE662.3000704@baylibre.com>
-Date: Tue, 15 Oct 2013 08:53:22 +0200
-From: Benoit Cousson <bcousson@baylibre.com>
-Organization: BayLibre
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Tue, 15 Oct 2013 02:54:11 -0400
+From: George Cherian <george.cherian@ti.com>
+To: <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-usb@vger.kernel.org>
+CC: <tony@atomide.com>, <balbi@ti.com>, <kishon@ti.com>, <rob@landley.net>,
+        <ijc+devicetree@hellion.org.uk>, <swarren@wwwdotorg.org>,
+        <mark.rutland@arm.com>, <pawel.moll@arm.com>,
+        <rob.herring@calxeda.com>, <gregkh@linuxfoundation.org>,
+        George Cherian <george.cherian@ti.com>
+Subject: [PATCH v2 0/2] Adapt phy-omap-usb2 for AM437x platform
+Date: Tue, 15 Oct 2013 12:23:43 +0530
+Message-ID: <1381820025-31376-1-git-send-email-george.cherian@ti.com>
+X-Mailer: git-send-email 1.8.1
 MIME-Version: 1.0
-To: Roger Quadros <rogerq@ti.com>
-CC: balbi@ti.com, pavel@ucw.cz, aaro.koskinen@iki.fi, marek@goldelico.com,
-        tony@atomide.com, kishon@ti.com, bigeasy@linutronix.de,
-        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] ARM: dts: omap3:  Adapt USB OTG to generic PHY framework
-References: <1381152493-28055-1-git-send-email-rogerq@ti.com> <1381152493-28055-2-git-send-email-rogerq@ti.com> <20131010153427.GI28375@radagast> <525BB74B.2040702@ti.com>
-In-Reply-To: <525BB74B.2040702@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Roger,
+This series adapts the phy-omap-usb2 generic phy driver for AM437x.
+While at that arrange the include files alphabetically (PATCH 1)
+V2 of 2nd Patch which fixes the following from v1
+	- List comaptible entries in Documentaion
+	- Add usb_phy_data instead of checking compatible each time. 
 
-On 14/10/2013 11:20, Roger Quadros wrote:
-> Hi Benoit,
->
-> On 10/10/2013 06:34 PM, Felipe Balbi wrote:
->> On Mon, Oct 07, 2013 at 04:28:13PM +0300, Roger Quadros wrote:
->>> The generic PHY framewrok expects different properties than the
->>> old USB PHY framework. Supply those properties.
->>>
->>> Fixes USB OTG port on GAT04 and N900 after the Generic PHY framework was
->>> merged in greg/usb-next. [1]
->>>
->>> [1] - https://lkml.org/lkml/2013/9/27/581
->>>
->>> Signed-off-by: Roger Quadros <rogerq@ti.com>
->>
->> Acked-by: Felipe Balbi <balbi@ti.com>
->>
->
-> Could you please pick this one for 3.13? Thanks.
->
-> I don't see it in your 3.13 take 2 pull request.
+George Cherian (2):
+  phy: omap-usb2: Arrange the include in alphabetical order
+  phy: omap-usb2: Adapt phy-omap-usb2 for AM437x
 
-It was not in it. I've just applied it.
-
-Thanks
-Benoit
+ Documentation/devicetree/bindings/usb/usb-phy.txt |  4 +-
+ drivers/phy/phy-omap-usb2.c                       | 72 +++++++++++++++--------
+ include/linux/usb/omap_usb.h                      | 10 ++++
+ 3 files changed, 62 insertions(+), 24 deletions(-)
 
 -- 
-Benoît Cousson
-BayLibre
-Embedded Linux Technology Lab
-www.baylibre.com
+1.8.1
+
