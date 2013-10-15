@@ -1,121 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933563Ab3JOT6O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 15:58:14 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:57700 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933455Ab3JOT6L (ORCPT
+	id S1759643Ab3JOUEA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 16:04:00 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:51773 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757291Ab3JOUD7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 15:58:11 -0400
-Date: Tue, 15 Oct 2013 15:58:06 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Liu, Chuansheng" <chuansheng.liu@intel.com>
-Subject: [PATCH] bug: Use xchg() to update WARN_ON_ONCE() static variable
-Message-ID: <20131015155806.04e2613f@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+	Tue, 15 Oct 2013 16:03:59 -0400
+MIME-Version: 1.0
+In-Reply-To: <8761sy1gmb.fsf@xmission.com>
+References: <1381859307-11932-1-git-send-email-geert@linux-m68k.org>
+	<1381859307-11932-2-git-send-email-geert@linux-m68k.org>
+	<8761sy1gmb.fsf@xmission.com>
+Date: Tue, 15 Oct 2013 22:03:58 +0200
+X-Google-Sender-Auth: GMjAKlYWOTc6aO2MFROfQ3BDQ9c
+Message-ID: <CAMuHMdWfk5awf3ycuY0ULyzk-8gc209p0DGDXwYEM2si6KpCuw@mail.gmail.com>
+Subject: Re: [PATCH 1/3] kexec: Add debug printing of kimage table entries
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-m68k <linux-m68k@vger.kernel.org>, kexec@lists.infradead.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The WARN_ON_ONCE() code is to trigger a waring only once when some
-condition happens. But due to the way it is written it is racy.
+On Tue, Oct 15, 2013 at 9:25 PM, Eric W. Biederman
+<ebiederm@xmission.com> wrote:
+> Geert Uytterhoeven <geert@linux-m68k.org> writes:
+>> Print a list of pages to be copied if debugging is enabled.
+>> Consecutive entries are merged to reduce screen clutter.
+>
+> Why is this desirable?
+>
+> I can understand this as debugging code to understand what is happening,
+> but why would we want to maintain this print statement long term?
 
-	if (unlikely(condition)) {
-		if (WARN(!__warned))
-			__warned = true;
-	}
+Because the next person who ports kexec to a new platform may need it,
+so he doesn't have to reimplement the wheel?
 
-The problem is that multiple CPUs could hit the same warning and
-produce multiple output dumps of the same warning, or an interrupt could
-happen and hit the same warning and do the warning in the middle of a
-previous one, especially since the WARN() does a dump of the current
-stack.
+It's disabled by default.
 
-Even more of a problem, a recent WARN_ON_ONCE() that was in the page
-fault handler triggered and the stack dump of the WARN() caused the
-same WARN_ON_ONCE() get hit again. Since the __warned = true is not
-updated until after the WARN() is completed, each WARN() triggered
-another page fault causing the stack to be filled and crashed the box.
+It also serves as documentation for the indirection page.
 
-The point of WARN_ON() is to warn the user and not to crash the box.
+Gr{oetje,eeting}s,
 
-The easy fix is to update the __warned variable with a xchg(). This way
-only one WARN_ON_ONCE() will actually happen, and prevents any issues
-of the WARN() causing the same WARN() to be hit and crash the system.
+                        Geert
 
-[ Fixed the WARN() whitespace offset of a '\' while I was at it ]
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/include/asm-generic/bug.h b/include/asm-generic/bug.h
-index 7d10f96..ab7ebdb 100644
---- a/include/asm-generic/bug.h
-+++ b/include/asm-generic/bug.h
-@@ -11,6 +11,7 @@
- 
- #ifndef __ASSEMBLY__
- #include <linux/kernel.h>
-+#include <asm/cmpxchg.h>
- 
- #ifdef CONFIG_BUG
- 
-@@ -91,7 +92,7 @@ extern void warn_slowpath_null(const char *file, const int line);
- #endif
- 
- #ifndef WARN
--#define WARN(condition, format...) ({						\
-+#define WARN(condition, format...) ({					\
- 	int __ret_warn_on = !!(condition);				\
- 	if (unlikely(__ret_warn_on))					\
- 		__WARN_printf(format);					\
-@@ -134,32 +135,29 @@ extern void warn_slowpath_null(const char *file, const int line);
- #endif
- 
- #define WARN_ON_ONCE(condition)	({				\
--	static bool __section(.data.unlikely) __warned;		\
-+	static int __section(.data.unlikely) __warned;		\
- 	int __ret_warn_once = !!(condition);			\
- 								\
- 	if (unlikely(__ret_warn_once))				\
--		if (WARN_ON(!__warned)) 			\
--			__warned = true;			\
-+		WARN_ON(!xchg(&__warned, 1));			\
- 	unlikely(__ret_warn_once);				\
- })
- 
- #define WARN_ONCE(condition, format...)	({			\
--	static bool __section(.data.unlikely) __warned;		\
-+	static int __section(.data.unlikely) __warned;		\
- 	int __ret_warn_once = !!(condition);			\
- 								\
- 	if (unlikely(__ret_warn_once))				\
--		if (WARN(!__warned, format)) 			\
--			__warned = true;			\
-+		WARN(!xchg(&__warned, 1), format);		\
- 	unlikely(__ret_warn_once);				\
- })
- 
- #define WARN_TAINT_ONCE(condition, taint, format...)	({	\
--	static bool __section(.data.unlikely) __warned;		\
-+	static int __section(.data.unlikely) __warned;		\
- 	int __ret_warn_once = !!(condition);			\
- 								\
- 	if (unlikely(__ret_warn_once))				\
--		if (WARN_TAINT(!__warned, taint, format))	\
--			__warned = true;			\
-+		WARN_TAINT(!xchg(&__warned, 1), taint, format);	\
- 	unlikely(__ret_warn_once);				\
- })
- 
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
