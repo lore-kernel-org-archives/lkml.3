@@ -1,125 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758638Ab3JOLHt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 07:07:49 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41183 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757801Ab3JOLHr (ORCPT
+	id S1758690Ab3JOLIr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 07:08:47 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:62049 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758628Ab3JOLIq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 07:07:47 -0400
-Date: Tue, 15 Oct 2013 12:07:25 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>, Olof Johansson <olof@lixom.net>,
-        Tomasz Figa <t.figa@samsung.com>, Dave Martin <Dave.Martin@arm.com>,
-        Arnd Bergmann <arnd@arndb.de>, Kevin Hilman <khilman@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v8 1/5] ARM: add basic support for Trusted Foundations
-Message-ID: <20131015110725.GZ25034@n2100.arm.linux.org.uk>
-References: <1381527938-22840-1-git-send-email-acourbot@nvidia.com> <1381527938-22840-2-git-send-email-acourbot@nvidia.com>
+	Tue, 15 Oct 2013 07:08:46 -0400
+Date: Tue, 15 Oct 2013 04:08:28 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Andrea Arcangeli <aarcange@redhat.com>,
+        David Rientjes <rientjes@google.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: mm: fix BUG in __split_huge_page_pmd
+Message-ID: <alpine.LNX.2.00.1310150358170.11905@eggly.anvils>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1381527938-22840-2-git-send-email-acourbot@nvidia.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 11, 2013 at 02:45:34PM -0700, Alexandre Courbot wrote:
-> Trusted Foundations is a TrustZone-based secure monitor for ARM that
-> can be invoked using the same SMC-based API on all supported
-> platforms. This patch adds initial basic support for Trusted
-> Foundations using the ARM firmware API. Current features are limited
-> to the ability to boot secondary processors.
-> 
-> Note: The API followed by Trusted Foundations does *not* follow the SMC
-> calling conventions. It has nothing to do with PSCI neither and is only
-> relevant to devices that use Trusted Foundations (like most Tegra-based
-> retail devices).
-> 
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
-> Reviewed-by: Stephen Warren <swarren@nvidia.com>
-> ---
->  .../arm/firmware/tl,trusted-foundations.txt        | 20 ++++++
->  .../devicetree/bindings/vendor-prefixes.txt        |  1 +
->  arch/arm/Kconfig                                   |  2 +
->  arch/arm/Makefile                                  |  1 +
->  arch/arm/firmware/Kconfig                          | 28 ++++++++
->  arch/arm/firmware/Makefile                         |  1 +
->  arch/arm/firmware/trusted_foundations.c            | 79 ++++++++++++++++++++++
->  arch/arm/include/asm/trusted_foundations.h         | 68 +++++++++++++++++++
->  8 files changed, 200 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/arm/firmware/tl,trusted-foundations.txt
->  create mode 100644 arch/arm/firmware/Kconfig
->  create mode 100644 arch/arm/firmware/Makefile
->  create mode 100644 arch/arm/firmware/trusted_foundations.c
->  create mode 100644 arch/arm/include/asm/trusted_foundations.h
+Occasionally we hit the BUG_ON(pmd_trans_huge(*pmd)) at the end of
+__split_huge_page_pmd(): seen when doing madvise(,,MADV_DONTNEED).
 
-Is having this under arch/arm appropriate?  What happens if the API
-gets re-used on ARM64 for example?  Would drivers/firmware be a better
-cross-arch location for this?
+It's invalid: we don't always have down_write of mmap_sem there:
+a racing do_huge_pmd_wp_page() might have copied-on-write to another
+huge page before our split_huge_page() got the anon_vma lock.
 
-> diff --git a/arch/arm/include/asm/trusted_foundations.h b/arch/arm/include/asm/trusted_foundations.h
-> new file mode 100644
-> index 0000000..c6f20bd
-> --- /dev/null
-> +++ b/arch/arm/include/asm/trusted_foundations.h
-> @@ -0,0 +1,68 @@
-> +/*
-> + * Copyright (c) 2013, NVIDIA Corporation.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + *
-> + * This program is distributed in the hope that it will be useful, but WITHOUT
-> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-> + * more details.
-> + */
-> +
-> +/*
-> + * Support for the Trusted Foundations secure monitor.
-> + *
-> + * Trusted Foundation comes active on some ARM consumer devices (most
-> + * Tegra-based devices sold on the market are concerned). Such devices can only
-> + * perform some basic operations, like setting the CPU reset vector, through
-> + * SMC calls to the secure monitor. The calls are completely specific to
-> + * Trusted Foundations, and do *not* follow the SMC calling convention or the
-> + * PSCI standard.
-> + */
-> +
-> +#ifndef __ASM_ARM_TRUSTED_FOUNDATIONS_H
-> +#define __ASM_ARM_TRUSTED_FOUNDATIONS_H
-> +
-> +#include <linux/kconfig.h>
-> +
-> +struct trusted_foundations_platform_data {
-> +	unsigned int version_major;
-> +	unsigned int version_minor;
-> +};
-> +
-> +#if IS_ENABLED(CONFIG_TRUSTED_FOUNDATIONS)
-> +
-> +void register_trusted_foundations(struct trusted_foundations_platform_data *pd);
-> +void of_register_trusted_foundations(void);
-> +
-> +#else /* CONFIG_TRUSTED_FOUNDATIONS */
-> +
-> +#include <linux/printk.h>
-> +#include <linux/of.h>
-> +#include <asm/bug.h>
+Forget the BUG_ON, just go back and try again if this happens.
+    
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Cc: stable@vger.kernel.org
+---
 
-Please move these up along side the other #include - having includes depend
-on config symbols is an additional unnecessary source of fragility.
+ mm/huge_memory.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
-Secondly, please use linux/*.h includes in preference to asm/*.h where the
-linux/*.h include picks up the corresponding asm/*.h include.  In this case,
-that should be linux/bug.h, not asm/bug.h.
+--- 3.12-rc5/mm/huge_memory.c	2013-09-16 17:37:56.811072270 -0700
++++ linux/mm/huge_memory.c	2013-10-15 03:40:02.044138488 -0700
+@@ -2697,6 +2697,7 @@ void __split_huge_page_pmd(struct vm_are
+ 
+ 	mmun_start = haddr;
+ 	mmun_end   = haddr + HPAGE_PMD_SIZE;
++again:
+ 	mmu_notifier_invalidate_range_start(mm, mmun_start, mmun_end);
+ 	spin_lock(&mm->page_table_lock);
+ 	if (unlikely(!pmd_trans_huge(*pmd))) {
+@@ -2719,7 +2720,14 @@ void __split_huge_page_pmd(struct vm_are
+ 	split_huge_page(page);
+ 
+ 	put_page(page);
+-	BUG_ON(pmd_trans_huge(*pmd));
++
++	/*
++	 * We don't always have down_write of mmap_sem here: a racing
++	 * do_huge_pmd_wp_page() might have copied-on-write to another
++	 * huge page before our split_huge_page() got the anon_vma lock.
++	 */
++	if (unlikely(pmd_trans_huge(*pmd)))
++		goto again;
+ }
+ 
+ void split_huge_page_pmd_mm(struct mm_struct *mm, unsigned long address,
