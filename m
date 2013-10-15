@@ -1,99 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758015Ab3JOI6L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 04:58:11 -0400
-Received: from mga09.intel.com ([134.134.136.24]:24018 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751151Ab3JOI6I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 04:58:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,497,1378882800"; 
-   d="scan'208";a="419287601"
-Message-ID: <525D03B4.8050709@intel.com>
-Date: Tue, 15 Oct 2013 16:58:28 +0800
-From: Lan Tianyu <tianyu.lan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
+	id S1754629Ab3JOJEX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 05:04:23 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:31903 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750946Ab3JOJEW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 05:04:22 -0400
+X-Spam-Score: -100.8
+Message-ID: <525D04D4.2070909@asianux.com>
+Date: Tue, 15 Oct 2013 17:03:16 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ACPI/Power: Check physical device's runtime pm status
- before requesting to resume it
-References: <1381479385-1614-1-git-send-email-tianyu.lan@intel.com> <1761658.DWcBvZSdOl@vostro.rjw.lan>
-In-Reply-To: <1761658.DWcBvZSdOl@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: paulmck@linux.vnet.ibm.com
+CC: josh@freedesktop.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Suggestion] kernel/rcutorture.c: about using scnprintf() instead
+ of sprintf().
+References: <5253C335.5050609@asianux.com> <20131013110518.GC5790@linux.vnet.ibm.com> <525B4BB0.1090609@asianux.com> <525B555C.3040102@asianux.com> <20131014112457.GN5790@linux.vnet.ibm.com> <525C9D18.6040909@asianux.com> <20131015083112.GH5790@linux.vnet.ibm.com>
+In-Reply-To: <20131015083112.GH5790@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013年10月11日 19:19, Rafael J. Wysocki wrote:
-> On Friday, October 11, 2013 04:16:25 PM tianyu.lan@intel.com wrote:
->> From: Lan Tianyu <tianyu.lan@intel.com>
->>
->> Currently, when one power resource is turned on, devices owning it
->> will be requested to resume regardless of their runtime pm status.
->> ACPI power resource maybe turn on in some devices' runtime pm
->> resume callback(E.G, usb port) while turning on the power resource
->> will trigger one new resume request of the device. It causes
->> infinite loop between resume and suspend. This has happened on
->> clearing usb port's PM Qos NO_POWER_OFF flag twice. This patch is
->> to add check of physical device's runtime pm status and request resume
->> if the device is suspended.
->>
->> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
->> ---
->>  drivers/acpi/power.c | 6 ++++--
->>  1 file changed, 4 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/acpi/power.c b/drivers/acpi/power.c
->> index 0dbe5cd..228c138 100644
->> --- a/drivers/acpi/power.c
->> +++ b/drivers/acpi/power.c
->> @@ -250,8 +250,10 @@ static void acpi_power_resume_dependent(struct work_struct *work)
->>
->>  	mutex_lock(&adev->physical_node_lock);
->>
->> -	list_for_each_entry(pn, &adev->physical_node_list, node)
->> -		pm_request_resume(pn->dev);
->> +	list_for_each_entry(pn, &adev->physical_node_list, node) {
->> +		if (pm_runtime_suspended(pn->dev))
->> +			pm_request_resume(pn->dev);
->> +	}
->
-> This is racy, because the status may change right after you check it and before
-> you call pm_request_resume().
+On 10/15/2013 04:31 PM, Paul E. McKenney wrote:
+> On Tue, Oct 15, 2013 at 09:40:40AM +0800, Chen Gang wrote:
+>> > Hmm... Can it really work on 1024 CPUs? sorry I don't know. But in fact,
+>> > that is not about this patch (it is just one of case which may cause
+>> > issues).
+>> > 
+>> > This patch is only about "use truncation instead of memory overflow, and
+>> > make sure the modification without negative effect". So in my opinion,
+>> > current test case is enough for this requirement.
+> Yes, the patch is about "use truncation instead of memory overflow",
+> but the truncation would also be a problem on large systems.  Is it
+> possible to prevent memory from overflow in the first place?
+> 
 
-Yes, the runtime status may be changed just after the check.
+Yes of cause it can, but in my opinion, for a test module, truncating
+information is acceptable, but memory overflow is not acceptable.
 
->
-> Besides, pm_request_resume() checks the status of the device and won't
-> try to resume it if it is not suspended.
->
-
-For this issue, usb port is in the RPM_SUSPENDING state when
-pm_request_resume() is called. The deferred_resume will be set to true
-during this procedure and trigger resume after finishing suspend. USB
-port runtime resume callback will turn on its power resource again and
-the work of acpi_power_resume_dependent() is scheduled. Because the usb
-port's usage count remains zero, it's to be suspended soon. When
-pm_request_resume() of acpi_power_resume_dependent() is called, the usb
-port is always in the PRM_SUSPENDING. Fall in the loop of suspend and
-resume.
-
-How about running acpi_power_dependent when turning on power resource 
-rather than scheduling a work to run it?  After this, 
-pm_request_resume() can check device's right status just after turning 
-on power resource. Furthermore, pm_request_resume() is async resume and 
-this change will not consume much time.
-
->>
->>  	list_for_each_entry(pn, &adev->power_dependent, node)
->>  		pm_request_resume(pn->dev);
->
-> Thanks!
->
+In fact, every information truncation case, can be "prevented memory
+from overflow in the first place".  It depends on whether we have enough
+interest to do that.
 
 
+>> > We have to face the efficiency: it is only a test module, if the tester
+>> > (assume he/she is a programmer, too) notices about the truncation, they
+>> > can simply extend the maximize length to avoid truncation.
+> True.  But you can make a change that is just as simple that allows you
+> to test what would happen on a 1024-CPU system even though your own
+> system has only 2 CPUs.  Can you see what that change is?
+
+In fact, from modifying code, we can virtual most of cases, if current
+test case is enough, we need not do that (leave it for guys who have
+real 1024-CPUs).
+
+
+Thanks.
 -- 
-Best regards
-Tianyu Lan
+Chen Gang
