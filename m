@@ -1,31 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933659Ab3JOFg0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 01:36:26 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33978 "EHLO
+	id S933671Ab3JOFg3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 01:36:29 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33979 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933644Ab3JOFgV (ORCPT
+	with ESMTP id S932603Ab3JOFgV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Oct 2013 01:36:21 -0400
-Date: Mon, 14 Oct 2013 22:35:32 -0700
-From: tip-bot for Adrian Hunter <tipbot@zytor.com>
-Message-ID: <tip-fc1b691d7651d9496e912de7e0fc73a5be3294af@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
-        paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, efault@gmx.de, namhyung@gmail.com,
-        jolsa@redhat.com, fweisbec@gmail.com, adrian.hunter@intel.com,
-        dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
-        a.p.zijlstra@chello.nl, efault@gmx.de, namhyung@gmail.com,
-        jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
-        adrian.hunter@intel.com, tglx@linutronix.de
-In-Reply-To: <525BF849.5030405@intel.com>
-References: <525BF849.5030405@intel.com>
+Date: Mon, 14 Oct 2013 22:35:59 -0700
+From: tip-bot for Chenggang Qin <tipbot@zytor.com>
+Message-ID: <tip-784f3390f9bd900adfb3b0373615e105a0d9749a@git.kernel.org>
+Cc: acme@redhat.com, mingo@redhat.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, efault@gmx.de, akpm@linux-foundation.org,
+        yanmin.zhang@intel.com, dsahern@gmail.com, tglx@linutronix.de,
+        fengguang.wu@intel.com, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, arjan@linux.intel.com,
+        namhyung@kernel.org, namhyung@gmail.com, chenggang.qcg@taobao.com
+Reply-To: mingo@kernel.org, mingo@redhat.com, acme@redhat.com,
+        a.p.zijlstra@chello.nl, efault@gmx.de, akpm@linux-foundation.org,
+        yanmin.zhang@intel.com, dsahern@gmail.com, tglx@linutronix.de,
+        fengguang.wu@intel.com, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, arjan@linux.intel.com,
+        namhyung@kernel.org, namhyung@gmail.com, chenggang.qcg@taobao.com
+In-Reply-To: <1381451279-4109-1-git-send-email-chenggang.qin@gmail.com>
+References: <1381451279-4109-1-git-send-email-chenggang.qin@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf buildid-cache:
-  Add ability to add kcore to the cache
-Git-Commit-ID: fc1b691d7651d9496e912de7e0fc73a5be3294af
+Subject: [tip:perf/core] perf symbols:
+  Fix a mmap and munmap mismatched bug
+Git-Commit-ID: 784f3390f9bd900adfb3b0373615e105a0d9749a
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,725 +36,81 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 14 Oct 2013 22:35:39 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 14 Oct 2013 22:36:05 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  fc1b691d7651d9496e912de7e0fc73a5be3294af
-Gitweb:     http://git.kernel.org/tip/fc1b691d7651d9496e912de7e0fc73a5be3294af
-Author:     Adrian Hunter <adrian.hunter@intel.com>
-AuthorDate: Mon, 14 Oct 2013 16:57:29 +0300
+Commit-ID:  784f3390f9bd900adfb3b0373615e105a0d9749a
+Gitweb:     http://git.kernel.org/tip/784f3390f9bd900adfb3b0373615e105a0d9749a
+Author:     Chenggang Qin <chenggang.qcg@taobao.com>
+AuthorDate: Fri, 11 Oct 2013 08:27:57 +0800
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 14 Oct 2013 12:20:38 -0300
+CommitDate: Mon, 14 Oct 2013 12:21:23 -0300
 
-perf buildid-cache: Add ability to add kcore to the cache
+perf symbols: Fix a mmap and munmap mismatched bug
 
-kcore can be used to view the running kernel object code.  However,
-kcore changes as modules are loaded and unloaded, and when the kernel
-decides to modify its own code.  Consequently it is useful to create a
-copy of kcore at a particular time.  Unlike vmlinux, kcore is not unique
-for a given build-id.  And in addition, the kallsyms and modules files
-are also needed.  The tool therefore creates a directory:
+In function filename__read_debuglink(), while the ELF file is opend and
+mmapped in elf_begin(), but if this file is considered to not be usable
+during the following code, we will goto the close(fd) directly. The
+elf_end() is skipped.  So, the mmaped ELF file cannot be munmapped. The
+mmapped areas exist during the life of perf.
 
-	~/.debug/[kernel.kcore]/<build-id>/<YYYYmmddHHMMSShh>
+This is a memory leak.  This patch fixed this bug.
 
-which contains: kcore, kallsyms and modules.
-
-Note that the copied kcore contains only code sections.  See the
-kcore_copy() function for how that is determined.
-
-The tool will not make additional copies of kcore if there is already
-one with the same modules at the same addresses.
-
-Currently, perf tools will not look for kcore in the cache.  That is
-addressed in another patch.
-
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Reviewed-by: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Chenggang Qin <chenggang.qcg@taobao.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Chenggang Qin <chenggang.qcg@taobao.com>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Ingo Molnar <mingo@redhat.com>
 Cc: Mike Galbraith <efault@gmx.de>
 Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/525BF849.5030405@intel.com
-[ renamed 'index' to 'idx' to avoid shadowing string.h symbol in f12,
-  use at least one member initializer when initializing a struct to
-  zeros, also to fix the build on f12 ]
+Cc: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Yanmin Zhang <yanmin.zhang@intel.com>
+Link: http://lkml.kernel.org/r/1381451279-4109-1-git-send-email-chenggang.qin@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/perf-buildid-cache.txt |  13 +
- tools/perf/builtin-buildid-cache.c              | 148 +++++++++-
- tools/perf/util/symbol-elf.c                    | 366 ++++++++++++++++++++++++
- tools/perf/util/symbol-minimal.c                |   6 +
- tools/perf/util/symbol.c                        |  41 +++
- tools/perf/util/symbol.h                        |   3 +
- 6 files changed, 576 insertions(+), 1 deletion(-)
+ tools/perf/util/symbol-elf.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-buildid-cache.txt b/tools/perf/Documentation/perf-buildid-cache.txt
-index e9a8349..fd77d81 100644
---- a/tools/perf/Documentation/perf-buildid-cache.txt
-+++ b/tools/perf/Documentation/perf-buildid-cache.txt
-@@ -21,6 +21,19 @@ OPTIONS
- -a::
- --add=::
-         Add specified file to the cache.
-+-k::
-+--kcore::
-+        Add specified kcore file to the cache. For the current host that is
-+        /proc/kcore which requires root permissions to read. Be aware that
-+        running 'perf buildid-cache' as root may update root's build-id cache
-+        not the user's. Use the -v option to see where the file is created.
-+        Note that the copied file contains only code sections not the whole core
-+        image. Note also that files "kallsyms" and "modules" must also be in the
-+        same directory and are also copied.  All 3 files are created with read
-+        permissions for root only. kcore will not be added if there is already a
-+        kcore in the cache (with the same build-id) that has the same modules at
-+        the same addresses. Use the -v option to see if a copy of kcore is
-+        actually made.
- -r::
- --remove=::
-         Remove specified file from the cache.
-diff --git a/tools/perf/builtin-buildid-cache.c b/tools/perf/builtin-buildid-cache.c
-index c96c8fa..8140b7b 100644
---- a/tools/perf/builtin-buildid-cache.c
-+++ b/tools/perf/builtin-buildid-cache.c
-@@ -6,6 +6,11 @@
-  * Copyright (C) 2010, Red Hat Inc.
-  * Copyright (C) 2010, Arnaldo Carvalho de Melo <acme@redhat.com>
-  */
-+#include <sys/types.h>
-+#include <sys/time.h>
-+#include <time.h>
-+#include <dirent.h>
-+#include <unistd.h>
- #include "builtin.h"
- #include "perf.h"
- #include "util/cache.h"
-@@ -17,6 +22,140 @@
- #include "util/session.h"
- #include "util/symbol.h"
- 
-+static int build_id_cache__kcore_buildid(const char *proc_dir, char *sbuildid)
-+{
-+	char root_dir[PATH_MAX];
-+	char notes[PATH_MAX];
-+	u8 build_id[BUILD_ID_SIZE];
-+	char *p;
-+
-+	strlcpy(root_dir, proc_dir, sizeof(root_dir));
-+
-+	p = strrchr(root_dir, '/');
-+	if (!p)
-+		return -1;
-+	*p = '\0';
-+
-+	scnprintf(notes, sizeof(notes), "%s/sys/kernel/notes", root_dir);
-+
-+	if (sysfs__read_build_id(notes, build_id, sizeof(build_id)))
-+		return -1;
-+
-+	build_id__sprintf(build_id, sizeof(build_id), sbuildid);
-+
-+	return 0;
-+}
-+
-+static int build_id_cache__kcore_dir(char *dir, size_t sz)
-+{
-+	struct timeval tv;
-+	struct tm tm;
-+	char dt[32];
-+
-+	if (gettimeofday(&tv, NULL) || !localtime_r(&tv.tv_sec, &tm))
-+		return -1;
-+
-+	if (!strftime(dt, sizeof(dt), "%Y%m%d%H%M%S", &tm))
-+		return -1;
-+
-+	scnprintf(dir, sz, "%s%02u", dt, (unsigned)tv.tv_usec / 10000);
-+
-+	return 0;
-+}
-+
-+static int build_id_cache__kcore_existing(const char *from_dir, char *to_dir,
-+					  size_t to_dir_sz)
-+{
-+	char from[PATH_MAX];
-+	char to[PATH_MAX];
-+	struct dirent *dent;
-+	int ret = -1;
-+	DIR *d;
-+
-+	d = opendir(to_dir);
-+	if (!d)
-+		return -1;
-+
-+	scnprintf(from, sizeof(from), "%s/modules", from_dir);
-+
-+	while (1) {
-+		dent = readdir(d);
-+		if (!dent)
-+			break;
-+		if (dent->d_type != DT_DIR)
-+			continue;
-+		scnprintf(to, sizeof(to), "%s/%s/modules", to_dir,
-+			  dent->d_name);
-+		if (!compare_proc_modules(from, to)) {
-+			scnprintf(to, sizeof(to), "%s/%s", to_dir,
-+				  dent->d_name);
-+			strlcpy(to_dir, to, to_dir_sz);
-+			ret = 0;
-+			break;
-+		}
-+	}
-+
-+	closedir(d);
-+
-+	return ret;
-+}
-+
-+static int build_id_cache__add_kcore(const char *filename, const char *debugdir)
-+{
-+	char dir[32], sbuildid[BUILD_ID_SIZE * 2 + 1];
-+	char from_dir[PATH_MAX], to_dir[PATH_MAX];
-+	char *p;
-+
-+	strlcpy(from_dir, filename, sizeof(from_dir));
-+
-+	p = strrchr(from_dir, '/');
-+	if (!p || strcmp(p + 1, "kcore"))
-+		return -1;
-+	*p = '\0';
-+
-+	if (build_id_cache__kcore_buildid(from_dir, sbuildid))
-+		return -1;
-+
-+	scnprintf(to_dir, sizeof(to_dir), "%s/[kernel.kcore]/%s",
-+		  debugdir, sbuildid);
-+
-+	if (!build_id_cache__kcore_existing(from_dir, to_dir, sizeof(to_dir))) {
-+		pr_debug("same kcore found in %s\n", to_dir);
-+		return 0;
-+	}
-+
-+	if (build_id_cache__kcore_dir(dir, sizeof(dir)))
-+		return -1;
-+
-+	scnprintf(to_dir, sizeof(to_dir), "%s/[kernel.kcore]/%s/%s",
-+		  debugdir, sbuildid, dir);
-+
-+	if (mkdir_p(to_dir, 0755))
-+		return -1;
-+
-+	if (kcore_copy(from_dir, to_dir)) {
-+		/* Remove YYYYmmddHHMMSShh directory */
-+		if (!rmdir(to_dir)) {
-+			p = strrchr(to_dir, '/');
-+			if (p)
-+				*p = '\0';
-+			/* Try to remove buildid directory */
-+			if (!rmdir(to_dir)) {
-+				p = strrchr(to_dir, '/');
-+				if (p)
-+					*p = '\0';
-+				/* Try to remove [kernel.kcore] directory */
-+				rmdir(to_dir);
-+			}
-+		}
-+		return -1;
-+	}
-+
-+	pr_debug("kcore added to build-id cache directory %s\n", to_dir);
-+
-+	return 0;
-+}
-+
- static int build_id_cache__add_file(const char *filename, const char *debugdir)
- {
- 	char sbuild_id[BUILD_ID_SIZE * 2 + 1];
-@@ -130,11 +269,14 @@ int cmd_buildid_cache(int argc, const char **argv,
- 	char const *add_name_list_str = NULL,
- 		   *remove_name_list_str = NULL,
- 		   *missing_filename = NULL,
--		   *update_name_list_str = NULL;
-+		   *update_name_list_str = NULL,
-+		   *kcore_filename;
- 
- 	const struct option buildid_cache_options[] = {
- 	OPT_STRING('a', "add", &add_name_list_str,
- 		   "file list", "file(s) to add"),
-+	OPT_STRING('k', "kcore", &kcore_filename,
-+		   "file", "kcore file to add"),
- 	OPT_STRING('r', "remove", &remove_name_list_str, "file list",
- 		    "file(s) to remove"),
- 	OPT_STRING('M', "missing", &missing_filename, "file",
-@@ -217,5 +359,9 @@ int cmd_buildid_cache(int argc, const char **argv,
- 		}
- 	}
- 
-+	if (kcore_filename &&
-+	    build_id_cache__add_kcore(kcore_filename, debugdir))
-+		pr_warning("Couldn't add %s\n", kcore_filename);
-+
- 	return ret;
- }
 diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-index 499c71d..d6b8af3 100644
+index d6b8af3..eed0b96 100644
 --- a/tools/perf/util/symbol-elf.c
 +++ b/tools/perf/util/symbol-elf.c
-@@ -1202,6 +1202,372 @@ static off_t kcore__write(struct kcore *kcore)
- 	return elf_update(kcore->elf, ELF_C_WRITE);
- }
+@@ -487,27 +487,27 @@ int filename__read_debuglink(const char *filename, char *debuglink,
  
-+struct phdr_data {
-+	off_t offset;
-+	u64 addr;
-+	u64 len;
-+};
-+
-+struct kcore_copy_info {
-+	u64 stext;
-+	u64 etext;
-+	u64 first_symbol;
-+	u64 last_symbol;
-+	u64 first_module;
-+	u64 last_module_symbol;
-+	struct phdr_data kernel_map;
-+	struct phdr_data modules_map;
-+};
-+
-+static int kcore_copy__process_kallsyms(void *arg, const char *name, char type,
-+					u64 start)
-+{
-+	struct kcore_copy_info *kci = arg;
-+
-+	if (!symbol_type__is_a(type, MAP__FUNCTION))
-+		return 0;
-+
-+	if (strchr(name, '[')) {
-+		if (start > kci->last_module_symbol)
-+			kci->last_module_symbol = start;
-+		return 0;
-+	}
-+
-+	if (!kci->first_symbol || start < kci->first_symbol)
-+		kci->first_symbol = start;
-+
-+	if (!kci->last_symbol || start > kci->last_symbol)
-+		kci->last_symbol = start;
-+
-+	if (!strcmp(name, "_stext")) {
-+		kci->stext = start;
-+		return 0;
-+	}
-+
-+	if (!strcmp(name, "_etext")) {
-+		kci->etext = start;
-+		return 0;
-+	}
-+
-+	return 0;
-+}
-+
-+static int kcore_copy__parse_kallsyms(struct kcore_copy_info *kci,
-+				      const char *dir)
-+{
-+	char kallsyms_filename[PATH_MAX];
-+
-+	scnprintf(kallsyms_filename, PATH_MAX, "%s/kallsyms", dir);
-+
-+	if (symbol__restricted_filename(kallsyms_filename, "/proc/kallsyms"))
-+		return -1;
-+
-+	if (kallsyms__parse(kallsyms_filename, kci,
-+			    kcore_copy__process_kallsyms) < 0)
-+		return -1;
-+
-+	return 0;
-+}
-+
-+static int kcore_copy__process_modules(void *arg,
-+				       const char *name __maybe_unused,
-+				       u64 start)
-+{
-+	struct kcore_copy_info *kci = arg;
-+
-+	if (!kci->first_module || start < kci->first_module)
-+		kci->first_module = start;
-+
-+	return 0;
-+}
-+
-+static int kcore_copy__parse_modules(struct kcore_copy_info *kci,
-+				     const char *dir)
-+{
-+	char modules_filename[PATH_MAX];
-+
-+	scnprintf(modules_filename, PATH_MAX, "%s/modules", dir);
-+
-+	if (symbol__restricted_filename(modules_filename, "/proc/modules"))
-+		return -1;
-+
-+	if (modules__parse(modules_filename, kci,
-+			   kcore_copy__process_modules) < 0)
-+		return -1;
-+
-+	return 0;
-+}
-+
-+static void kcore_copy__map(struct phdr_data *p, u64 start, u64 end, u64 pgoff,
-+			    u64 s, u64 e)
-+{
-+	if (p->addr || s < start || s >= end)
-+		return;
-+
-+	p->addr = s;
-+	p->offset = (s - start) + pgoff;
-+	p->len = e < end ? e - s : end - s;
-+}
-+
-+static int kcore_copy__read_map(u64 start, u64 len, u64 pgoff, void *data)
-+{
-+	struct kcore_copy_info *kci = data;
-+	u64 end = start + len;
-+
-+	kcore_copy__map(&kci->kernel_map, start, end, pgoff, kci->stext,
-+			kci->etext);
-+
-+	kcore_copy__map(&kci->modules_map, start, end, pgoff, kci->first_module,
-+			kci->last_module_symbol);
-+
-+	return 0;
-+}
-+
-+static int kcore_copy__read_maps(struct kcore_copy_info *kci, Elf *elf)
-+{
-+	if (elf_read_maps(elf, true, kcore_copy__read_map, kci) < 0)
-+		return -1;
-+
-+	return 0;
-+}
-+
-+static int kcore_copy__calc_maps(struct kcore_copy_info *kci, const char *dir,
-+				 Elf *elf)
-+{
-+	if (kcore_copy__parse_kallsyms(kci, dir))
-+		return -1;
-+
-+	if (kcore_copy__parse_modules(kci, dir))
-+		return -1;
-+
-+	if (kci->stext)
-+		kci->stext = round_down(kci->stext, page_size);
-+	else
-+		kci->stext = round_down(kci->first_symbol, page_size);
-+
-+	if (kci->etext) {
-+		kci->etext = round_up(kci->etext, page_size);
-+	} else if (kci->last_symbol) {
-+		kci->etext = round_up(kci->last_symbol, page_size);
-+		kci->etext += page_size;
-+	}
-+
-+	kci->first_module = round_down(kci->first_module, page_size);
-+
-+	if (kci->last_module_symbol) {
-+		kci->last_module_symbol = round_up(kci->last_module_symbol,
-+						   page_size);
-+		kci->last_module_symbol += page_size;
-+	}
-+
-+	if (!kci->stext || !kci->etext)
-+		return -1;
-+
-+	if (kci->first_module && !kci->last_module_symbol)
-+		return -1;
-+
-+	return kcore_copy__read_maps(kci, elf);
-+}
-+
-+static int kcore_copy__copy_file(const char *from_dir, const char *to_dir,
-+				 const char *name)
-+{
-+	char from_filename[PATH_MAX];
-+	char to_filename[PATH_MAX];
-+
-+	scnprintf(from_filename, PATH_MAX, "%s/%s", from_dir, name);
-+	scnprintf(to_filename, PATH_MAX, "%s/%s", to_dir, name);
-+
-+	return copyfile_mode(from_filename, to_filename, 0400);
-+}
-+
-+static int kcore_copy__unlink(const char *dir, const char *name)
-+{
-+	char filename[PATH_MAX];
-+
-+	scnprintf(filename, PATH_MAX, "%s/%s", dir, name);
-+
-+	return unlink(filename);
-+}
-+
-+static int kcore_copy__compare_fds(int from, int to)
-+{
-+	char *buf_from;
-+	char *buf_to;
-+	ssize_t ret;
-+	size_t len;
-+	int err = -1;
-+
-+	buf_from = malloc(page_size);
-+	buf_to = malloc(page_size);
-+	if (!buf_from || !buf_to)
-+		goto out;
-+
-+	while (1) {
-+		/* Use read because mmap won't work on proc files */
-+		ret = read(from, buf_from, page_size);
-+		if (ret < 0)
-+			goto out;
-+
-+		if (!ret)
-+			break;
-+
-+		len = ret;
-+
-+		if (readn(to, buf_to, len) != (int)len)
-+			goto out;
-+
-+		if (memcmp(buf_from, buf_to, len))
-+			goto out;
-+	}
-+
-+	err = 0;
-+out:
-+	free(buf_to);
-+	free(buf_from);
-+	return err;
-+}
-+
-+static int kcore_copy__compare_files(const char *from_filename,
-+				     const char *to_filename)
-+{
-+	int from, to, err = -1;
-+
-+	from = open(from_filename, O_RDONLY);
-+	if (from < 0)
-+		return -1;
-+
-+	to = open(to_filename, O_RDONLY);
-+	if (to < 0)
-+		goto out_close_from;
-+
-+	err = kcore_copy__compare_fds(from, to);
-+
-+	close(to);
-+out_close_from:
-+	close(from);
-+	return err;
-+}
-+
-+static int kcore_copy__compare_file(const char *from_dir, const char *to_dir,
-+				    const char *name)
-+{
-+	char from_filename[PATH_MAX];
-+	char to_filename[PATH_MAX];
-+
-+	scnprintf(from_filename, PATH_MAX, "%s/%s", from_dir, name);
-+	scnprintf(to_filename, PATH_MAX, "%s/%s", to_dir, name);
-+
-+	return kcore_copy__compare_files(from_filename, to_filename);
-+}
-+
-+/**
-+ * kcore_copy - copy kallsyms, modules and kcore from one directory to another.
-+ * @from_dir: from directory
-+ * @to_dir: to directory
-+ *
-+ * This function copies kallsyms, modules and kcore files from one directory to
-+ * another.  kallsyms and modules are copied entirely.  Only code segments are
-+ * copied from kcore.  It is assumed that two segments suffice: one for the
-+ * kernel proper and one for all the modules.  The code segments are determined
-+ * from kallsyms and modules files.  The kernel map starts at _stext or the
-+ * lowest function symbol, and ends at _etext or the highest function symbol.
-+ * The module map starts at the lowest module address and ends at the highest
-+ * module symbol.  Start addresses are rounded down to the nearest page.  End
-+ * addresses are rounded up to the nearest page.  An extra page is added to the
-+ * highest kernel symbol and highest module symbol to, hopefully, encompass that
-+ * symbol too.  Because it contains only code sections, the resulting kcore is
-+ * unusual.  One significant peculiarity is that the mapping (start -> pgoff)
-+ * is not the same for the kernel map and the modules map.  That happens because
-+ * the data is copied adjacently whereas the original kcore has gaps.  Finally,
-+ * kallsyms and modules files are compared with their copies to check that
-+ * modules have not been loaded or unloaded while the copies were taking place.
-+ *
-+ * Return: %0 on success, %-1 on failure.
-+ */
-+int kcore_copy(const char *from_dir, const char *to_dir)
-+{
-+	struct kcore kcore;
-+	struct kcore extract;
-+	size_t count = 2;
-+	int idx = 0, err = -1;
-+	off_t offset = page_size, sz, modules_offset = 0;
-+	struct kcore_copy_info kci = { .stext = 0, };
-+	char kcore_filename[PATH_MAX];
-+	char extract_filename[PATH_MAX];
-+
-+	if (kcore_copy__copy_file(from_dir, to_dir, "kallsyms"))
-+		return -1;
-+
-+	if (kcore_copy__copy_file(from_dir, to_dir, "modules"))
-+		goto out_unlink_kallsyms;
-+
-+	scnprintf(kcore_filename, PATH_MAX, "%s/kcore", from_dir);
-+	scnprintf(extract_filename, PATH_MAX, "%s/kcore", to_dir);
-+
-+	if (kcore__open(&kcore, kcore_filename))
-+		goto out_unlink_modules;
-+
-+	if (kcore_copy__calc_maps(&kci, from_dir, kcore.elf))
-+		goto out_kcore_close;
-+
-+	if (kcore__init(&extract, extract_filename, kcore.elfclass, false))
-+		goto out_kcore_close;
-+
-+	if (!kci.modules_map.addr)
-+		count -= 1;
-+
-+	if (kcore__copy_hdr(&kcore, &extract, count))
-+		goto out_extract_close;
-+
-+	if (kcore__add_phdr(&extract, idx++, offset, kci.kernel_map.addr,
-+			    kci.kernel_map.len))
-+		goto out_extract_close;
-+
-+	if (kci.modules_map.addr) {
-+		modules_offset = offset + kci.kernel_map.len;
-+		if (kcore__add_phdr(&extract, idx, modules_offset,
-+				    kci.modules_map.addr, kci.modules_map.len))
-+			goto out_extract_close;
-+	}
-+
-+	sz = kcore__write(&extract);
-+	if (sz < 0 || sz > offset)
-+		goto out_extract_close;
-+
-+	if (copy_bytes(kcore.fd, kci.kernel_map.offset, extract.fd, offset,
-+		       kci.kernel_map.len))
-+		goto out_extract_close;
-+
-+	if (modules_offset && copy_bytes(kcore.fd, kci.modules_map.offset,
-+					 extract.fd, modules_offset,
-+					 kci.modules_map.len))
-+		goto out_extract_close;
-+
-+	if (kcore_copy__compare_file(from_dir, to_dir, "modules"))
-+		goto out_extract_close;
-+
-+	if (kcore_copy__compare_file(from_dir, to_dir, "kallsyms"))
-+		goto out_extract_close;
-+
-+	err = 0;
-+
-+out_extract_close:
-+	kcore__close(&extract);
-+	if (err)
-+		unlink(extract_filename);
-+out_kcore_close:
-+	kcore__close(&kcore);
-+out_unlink_modules:
-+	if (err)
-+		kcore_copy__unlink(to_dir, "modules");
-+out_unlink_kallsyms:
-+	if (err)
-+		kcore_copy__unlink(to_dir, "kallsyms");
-+
-+	return err;
-+}
-+
- int kcore_extract__create(struct kcore_extract *kce)
- {
- 	struct kcore kcore;
-diff --git a/tools/perf/util/symbol-minimal.c b/tools/perf/util/symbol-minimal.c
-index 928556d..2d2dd05 100644
---- a/tools/perf/util/symbol-minimal.c
-+++ b/tools/perf/util/symbol-minimal.c
-@@ -317,6 +317,12 @@ void kcore_extract__delete(struct kcore_extract *kce __maybe_unused)
- {
- }
+ 	ek = elf_kind(elf);
+ 	if (ek != ELF_K_ELF)
+-		goto out_close;
++		goto out_elf_end;
  
-+int kcore_copy(const char *from_dir __maybe_unused,
-+	       const char *to_dir __maybe_unused)
-+{
-+	return -1;
-+}
-+
- void symbol__elf_init(void)
- {
- }
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 76a9e93..b66c1ee 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -893,6 +893,47 @@ static int read_proc_modules(const char *filename, struct rb_root *modules)
- 	return 0;
- }
+ 	if (gelf_getehdr(elf, &ehdr) == NULL) {
+ 		pr_err("%s: cannot get elf header.\n", __func__);
+-		goto out_close;
++		goto out_elf_end;
+ 	}
  
-+int compare_proc_modules(const char *from, const char *to)
-+{
-+	struct rb_root from_modules = RB_ROOT;
-+	struct rb_root to_modules = RB_ROOT;
-+	struct rb_node *from_node, *to_node;
-+	struct module_info *from_m, *to_m;
-+	int ret = -1;
-+
-+	if (read_proc_modules(from, &from_modules))
-+		return -1;
-+
-+	if (read_proc_modules(to, &to_modules))
-+		goto out_delete_from;
-+
-+	from_node = rb_first(&from_modules);
-+	to_node = rb_first(&to_modules);
-+	while (from_node) {
-+		if (!to_node)
-+			break;
-+
-+		from_m = rb_entry(from_node, struct module_info, rb_node);
-+		to_m = rb_entry(to_node, struct module_info, rb_node);
-+
-+		if (from_m->start != to_m->start ||
-+		    strcmp(from_m->name, to_m->name))
-+			break;
-+
-+		from_node = rb_next(from_node);
-+		to_node = rb_next(to_node);
-+	}
-+
-+	if (!from_node && !to_node)
-+		ret = 0;
-+
-+	delete_modules(&to_modules);
-+out_delete_from:
-+	delete_modules(&from_modules);
-+
-+	return ret;
-+}
-+
- static int do_validate_kcore_modules(const char *filename, struct map *map,
- 				  struct map_groups *kmaps)
- {
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index fb107e1..07de8fe 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -270,4 +270,7 @@ struct kcore_extract {
- int kcore_extract__create(struct kcore_extract *kce);
- void kcore_extract__delete(struct kcore_extract *kce);
+ 	sec = elf_section_by_name(elf, &ehdr, &shdr,
+ 				  ".gnu_debuglink", NULL);
+ 	if (sec == NULL)
+-		goto out_close;
++		goto out_elf_end;
  
-+int kcore_copy(const char *from_dir, const char *to_dir);
-+int compare_proc_modules(const char *from, const char *to);
-+
- #endif /* __PERF_SYMBOL */
+ 	data = elf_getdata(sec, NULL);
+ 	if (data == NULL)
+-		goto out_close;
++		goto out_elf_end;
+ 
+ 	/* the start of this section is a zero-terminated string */
+ 	strncpy(debuglink, data->d_buf, size);
+ 
++out_elf_end:
+ 	elf_end(elf);
+-
+ out_close:
+ 	close(fd);
+ out:
