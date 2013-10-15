@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933742Ab3JOT2f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 15:28:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55458 "EHLO mx1.redhat.com"
+	id S933764Ab3JOT3G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 15:29:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1341 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756610Ab3JOT2d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 15:28:33 -0400
-Date: Tue, 15 Oct 2013 15:28:18 -0400
-From: Dave Jones <davej@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Davide Libenzi <davidel@xmailserver.org>,
-        Eric Wong <normalperson@yhbt.net>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Peter Hurley <peter@hurleysoftware.com>
-Subject: Re: epoll oops.
-Message-ID: <20131015192818.GA32392@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Oleg Nesterov <oleg@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Al Viro <viro@zeniv.linux.org.uk>,
-	Davide Libenzi <davidel@xmailserver.org>,
-	Eric Wong <normalperson@yhbt.net>,
-	Pekka Enberg <penberg@cs.helsinki.fi>,
-	Peter Hurley <peter@hurleysoftware.com>
-References: <20131014154627.GA9525@redhat.com>
- <CA+55aFw64xTR7LXjo5OfUvRwDb9UF8EcfjguAbF0C3VsUXCecg@mail.gmail.com>
- <CA+55aFxOpT9YLf7WLM+SOsp5U2R1-Px0LiEsdqV0Adr897dOqQ@mail.gmail.com>
- <20131015154838.GA32271@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S933271Ab3JOT3E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 15:29:04 -0400
+Date: Tue, 15 Oct 2013 15:28:50 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Hugh Dickins <hughd@google.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Message-ID: <1381865330-8nb86ucy-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <20131015185510.GH3479@redhat.com>
+References: <alpine.LNX.2.00.1310150358170.11905@eggly.anvils>
+ <20131015143407.GE3479@redhat.com>
+ <20131015144827.C45DDE0090@blue.fi.intel.com>
+ <alpine.LNX.2.00.1310151029040.12481@eggly.anvils>
+ <20131015185510.GH3479@redhat.com>
+Subject: Re: mm: fix BUG in __split_huge_page_pmd
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <20131015154838.GA32271@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 15, 2013 at 05:48:38PM +0200, Oleg Nesterov wrote:
- > > Hmm? There might be other cases..
- > 
- > Yes.
- > 
- > Dave, perhaps you have vmcore?
+On Tue, Oct 15, 2013 at 08:55:10PM +0200, Andrea Arcangeli wrote:
+> On Tue, Oct 15, 2013 at 10:53:10AM -0700, Hugh Dickins wrote:
+> > I'm afraid Andrea's mail about concurrent madvises gives me far more
+> > to think about than I have time for: seems to get into problems he
+> > knows a lot about but I'm unfamiliar with.  If this patch looks good
+> > for now on its own, let's put it in; but no problem if you guys prefer
+> > to wait for a fuller solution of more problems, we can ride with this
+> > one internally for the moment.
+> 
+> I'm very happy with the patch and I think it's a correct fix for the
+> COW scenario which is deterministic so the looping makes a meaningful
+> difference for it. If we wouldn't loop, part of the copied page
+> wouldn't be zapped after the COW.
 
-afraid not. I probably should set up kdump on my test machines. I'll look into it.
+I like this patch, too.
 
-thanks,
+If we have the loop in __split_huge_page_pmd as suggested in this patch,
+can we assume that the pmd is stable after __split_huge_page_pmd returns?
+If it's true, we can remove pmd_none_or_trans_huge_or_clear_bad check
+in the callers side (zap_pmd_range and some other page table walking code.)
 
-	Dave
-
+Naoya Horiguchi
