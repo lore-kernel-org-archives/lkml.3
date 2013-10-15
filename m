@@ -1,25 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933540Ab3JOFdx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 01:33:53 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33716 "EHLO
+	id S1758418Ab3JOFeC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 01:34:02 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33765 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932851Ab3JOFdO (ORCPT
+	with ESMTP id S932829Ab3JOFd5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 01:33:14 -0400
-Date: Mon, 14 Oct 2013 22:33:02 -0700
-From: tip-bot for David Ahern <tipbot@zytor.com>
-Message-ID: <tip-h8k7h49z3cndqgjdftkmm9f8@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, namhyung@gmail.com, jolsa@redhat.com,
+	Tue, 15 Oct 2013 01:33:57 -0400
+Date: Mon, 14 Oct 2013 22:33:37 -0700
+From: tip-bot for Adrian Hunter <tipbot@zytor.com>
+Message-ID: <tip-afba19d9dc8eba66ea26901708cf99354c637786@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, efault@gmx.de, namhyung@gmail.com,
+        jolsa@redhat.com, fweisbec@gmail.com, adrian.hunter@intel.com,
         dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, namhyung@gmail.com, jolsa@redhat.com,
-        dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
+        a.p.zijlstra@chello.nl, efault@gmx.de, namhyung@gmail.com,
+        jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
+        adrian.hunter@intel.com, tglx@linutronix.de
+In-Reply-To: <1381320078-16497-3-git-send-email-adrian.hunter@intel.com>
+References: <1381320078-16497-3-git-send-email-adrian.hunter@intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Fix old GCC build error in '
- get_srcline'
-Git-Commit-ID: a949fffb84df6f9be136198a00f796a9dc696bd0
+Subject: [tip:perf/core] perf symbols:
+  Workaround objdump difficulties with kcore
+Git-Commit-ID: afba19d9dc8eba66ea26901708cf99354c637786
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,59 +34,374 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 14 Oct 2013 22:33:08 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 14 Oct 2013 22:33:43 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a949fffb84df6f9be136198a00f796a9dc696bd0
-Gitweb:     http://git.kernel.org/tip/a949fffb84df6f9be136198a00f796a9dc696bd0
-Author:     David Ahern <dsahern@gmail.com>
-AuthorDate: Wed, 9 Oct 2013 21:51:31 -0600
+Commit-ID:  afba19d9dc8eba66ea26901708cf99354c637786
+Gitweb:     http://git.kernel.org/tip/afba19d9dc8eba66ea26901708cf99354c637786
+Author:     Adrian Hunter <adrian.hunter@intel.com>
+AuthorDate: Wed, 9 Oct 2013 15:01:12 +0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 14 Oct 2013 10:28:52 -0300
+CommitDate: Mon, 14 Oct 2013 10:29:00 -0300
 
-perf tools: Fix old GCC build error in 'get_srcline'
+perf symbols: Workaround objdump difficulties with kcore
 
-trace-event-parse.c:parse_proc_kallsyms()
+The objdump tool fails to annotate module symbols when looking at kcore.
 
-    Old GCC (4.4.2) does not see through the code flow of get_srcline() and
-gets confused about the status of 'file' and 'line':
+Workaround this by extracting object code from kcore and putting it in a
+temporary file for objdump to use instead.
 
-    CC       /tmp/build/perf/util/srcline.o
-  cc1: warnings being treated as errors
-  util/srcline.c: In function ¿get_srcline¿:
-  util/srcline.c:226: error: ¿file¿ may be used uninitialized in this function
-  util/srcline.c:227: error: ¿line¿ may be used uninitialized in this function
-  make[1]: *** [/tmp/build/perf/util/srcline.o] Error 1
-  make: *** [install] Error 2
-  make: Leaving directory `/home/acme/git/linux/tools/perf'
-  [acme@fedora12 linux]$
+The temporary file is created to look like kcore but contains only the
+function being disassembled.
 
-Help out GCC by initializing 'file' and 'line'.
-
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
 Cc: Namhyung Kim <namhyung@gmail.com>
-Link: http://lkml.kernel.org/n/tip-h8k7h49z3cndqgjdftkmm9f8@git.kernel.org
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1381320078-16497-3-git-send-email-adrian.hunter@intel.com
+[ Renamed 'index' to 'idx' to avoid shadowing string.h's 'index' in Fedora 12,
+  Replace local with variable length with malloc/free to fix build in Fedora 12 ]
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/srcline.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ tools/perf/util/annotate.c       |  21 ++++
+ tools/perf/util/symbol-elf.c     | 229 +++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/symbol-minimal.c |   9 ++
+ tools/perf/util/symbol.h         |  14 +++
+ 4 files changed, 273 insertions(+)
 
-diff --git a/tools/perf/util/srcline.c b/tools/perf/util/srcline.c
-index 3735319..d11aefb 100644
---- a/tools/perf/util/srcline.c
-+++ b/tools/perf/util/srcline.c
-@@ -223,8 +223,8 @@ out:
+diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+index d73e800..882bb86 100644
+--- a/tools/perf/util/annotate.c
++++ b/tools/perf/util/annotate.c
+@@ -879,6 +879,8 @@ int symbol__annotate(struct symbol *sym, struct map *map, size_t privsize)
+ 	FILE *file;
+ 	int err = 0;
+ 	char symfs_filename[PATH_MAX];
++	struct kcore_extract kce;
++	bool delete_extract = false;
  
- char *get_srcline(struct dso *dso, unsigned long addr)
+ 	if (filename) {
+ 		snprintf(symfs_filename, sizeof(symfs_filename), "%s%s",
+@@ -940,6 +942,23 @@ fallback:
+ 	pr_debug("annotating [%p] %30s : [%p] %30s\n",
+ 		 dso, dso->long_name, sym, sym->name);
+ 
++	if (dso__is_kcore(dso)) {
++		kce.kcore_filename = symfs_filename;
++		kce.addr = map__rip_2objdump(map, sym->start);
++		kce.offs = sym->start;
++		kce.len = sym->end + 1 - sym->start;
++		if (!kcore_extract__create(&kce)) {
++			delete_extract = true;
++			strlcpy(symfs_filename, kce.extract_filename,
++				sizeof(symfs_filename));
++			if (free_filename) {
++				free(filename);
++				free_filename = false;
++			}
++			filename = symfs_filename;
++		}
++	}
++
+ 	snprintf(command, sizeof(command),
+ 		 "%s %s%s --start-address=0x%016" PRIx64
+ 		 " --stop-address=0x%016" PRIx64
+@@ -972,6 +991,8 @@ fallback:
+ 
+ 	pclose(file);
+ out_free_filename:
++	if (delete_extract)
++		kcore_extract__delete(&kce);
+ 	if (free_filename)
+ 		free(filename);
+ 	return err;
+diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
+index c376930..499c71d 100644
+--- a/tools/perf/util/symbol-elf.c
++++ b/tools/perf/util/symbol-elf.c
+@@ -1018,6 +1018,235 @@ int file__read_maps(int fd, bool exe, mapfn_t mapfn, void *data,
+ 	return err;
+ }
+ 
++static int copy_bytes(int from, off_t from_offs, int to, off_t to_offs, u64 len)
++{
++	ssize_t r;
++	size_t n;
++	int err = -1;
++	char *buf = malloc(page_size);
++
++	if (buf == NULL)
++		return -1;
++
++	if (lseek(to, to_offs, SEEK_SET) != to_offs)
++		goto out;
++
++	if (lseek(from, from_offs, SEEK_SET) != from_offs)
++		goto out;
++
++	while (len) {
++		n = page_size;
++		if (len < n)
++			n = len;
++		/* Use read because mmap won't work on proc files */
++		r = read(from, buf, n);
++		if (r < 0)
++			goto out;
++		if (!r)
++			break;
++		n = r;
++		r = write(to, buf, n);
++		if (r < 0)
++			goto out;
++		if ((size_t)r != n)
++			goto out;
++		len -= n;
++	}
++
++	err = 0;
++out:
++	free(buf);
++	return err;
++}
++
++struct kcore {
++	int fd;
++	int elfclass;
++	Elf *elf;
++	GElf_Ehdr ehdr;
++};
++
++static int kcore__open(struct kcore *kcore, const char *filename)
++{
++	GElf_Ehdr *ehdr;
++
++	kcore->fd = open(filename, O_RDONLY);
++	if (kcore->fd == -1)
++		return -1;
++
++	kcore->elf = elf_begin(kcore->fd, ELF_C_READ, NULL);
++	if (!kcore->elf)
++		goto out_close;
++
++	kcore->elfclass = gelf_getclass(kcore->elf);
++	if (kcore->elfclass == ELFCLASSNONE)
++		goto out_end;
++
++	ehdr = gelf_getehdr(kcore->elf, &kcore->ehdr);
++	if (!ehdr)
++		goto out_end;
++
++	return 0;
++
++out_end:
++	elf_end(kcore->elf);
++out_close:
++	close(kcore->fd);
++	return -1;
++}
++
++static int kcore__init(struct kcore *kcore, char *filename, int elfclass,
++		       bool temp)
++{
++	GElf_Ehdr *ehdr;
++
++	kcore->elfclass = elfclass;
++
++	if (temp)
++		kcore->fd = mkstemp(filename);
++	else
++		kcore->fd = open(filename, O_WRONLY | O_CREAT | O_EXCL, 0400);
++	if (kcore->fd == -1)
++		return -1;
++
++	kcore->elf = elf_begin(kcore->fd, ELF_C_WRITE, NULL);
++	if (!kcore->elf)
++		goto out_close;
++
++	if (!gelf_newehdr(kcore->elf, elfclass))
++		goto out_end;
++
++	ehdr = gelf_getehdr(kcore->elf, &kcore->ehdr);
++	if (!ehdr)
++		goto out_end;
++
++	return 0;
++
++out_end:
++	elf_end(kcore->elf);
++out_close:
++	close(kcore->fd);
++	unlink(filename);
++	return -1;
++}
++
++static void kcore__close(struct kcore *kcore)
++{
++	elf_end(kcore->elf);
++	close(kcore->fd);
++}
++
++static int kcore__copy_hdr(struct kcore *from, struct kcore *to, size_t count)
++{
++	GElf_Ehdr *ehdr = &to->ehdr;
++	GElf_Ehdr *kehdr = &from->ehdr;
++
++	memcpy(ehdr->e_ident, kehdr->e_ident, EI_NIDENT);
++	ehdr->e_type      = kehdr->e_type;
++	ehdr->e_machine   = kehdr->e_machine;
++	ehdr->e_version   = kehdr->e_version;
++	ehdr->e_entry     = 0;
++	ehdr->e_shoff     = 0;
++	ehdr->e_flags     = kehdr->e_flags;
++	ehdr->e_phnum     = count;
++	ehdr->e_shentsize = 0;
++	ehdr->e_shnum     = 0;
++	ehdr->e_shstrndx  = 0;
++
++	if (from->elfclass == ELFCLASS32) {
++		ehdr->e_phoff     = sizeof(Elf32_Ehdr);
++		ehdr->e_ehsize    = sizeof(Elf32_Ehdr);
++		ehdr->e_phentsize = sizeof(Elf32_Phdr);
++	} else {
++		ehdr->e_phoff     = sizeof(Elf64_Ehdr);
++		ehdr->e_ehsize    = sizeof(Elf64_Ehdr);
++		ehdr->e_phentsize = sizeof(Elf64_Phdr);
++	}
++
++	if (!gelf_update_ehdr(to->elf, ehdr))
++		return -1;
++
++	if (!gelf_newphdr(to->elf, count))
++		return -1;
++
++	return 0;
++}
++
++static int kcore__add_phdr(struct kcore *kcore, int idx, off_t offset,
++			   u64 addr, u64 len)
++{
++	GElf_Phdr gphdr;
++	GElf_Phdr *phdr;
++
++	phdr = gelf_getphdr(kcore->elf, idx, &gphdr);
++	if (!phdr)
++		return -1;
++
++	phdr->p_type	= PT_LOAD;
++	phdr->p_flags	= PF_R | PF_W | PF_X;
++	phdr->p_offset	= offset;
++	phdr->p_vaddr	= addr;
++	phdr->p_paddr	= 0;
++	phdr->p_filesz	= len;
++	phdr->p_memsz	= len;
++	phdr->p_align	= page_size;
++
++	if (!gelf_update_phdr(kcore->elf, idx, phdr))
++		return -1;
++
++	return 0;
++}
++
++static off_t kcore__write(struct kcore *kcore)
++{
++	return elf_update(kcore->elf, ELF_C_WRITE);
++}
++
++int kcore_extract__create(struct kcore_extract *kce)
++{
++	struct kcore kcore;
++	struct kcore extract;
++	size_t count = 1;
++	int idx = 0, err = -1;
++	off_t offset = page_size, sz;
++
++	if (kcore__open(&kcore, kce->kcore_filename))
++		return -1;
++
++	strcpy(kce->extract_filename, PERF_KCORE_EXTRACT);
++	if (kcore__init(&extract, kce->extract_filename, kcore.elfclass, true))
++		goto out_kcore_close;
++
++	if (kcore__copy_hdr(&kcore, &extract, count))
++		goto out_extract_close;
++
++	if (kcore__add_phdr(&extract, idx, offset, kce->addr, kce->len))
++		goto out_extract_close;
++
++	sz = kcore__write(&extract);
++	if (sz < 0 || sz > offset)
++		goto out_extract_close;
++
++	if (copy_bytes(kcore.fd, kce->offs, extract.fd, offset, kce->len))
++		goto out_extract_close;
++
++	err = 0;
++
++out_extract_close:
++	kcore__close(&extract);
++	if (err)
++		unlink(kce->extract_filename);
++out_kcore_close:
++	kcore__close(&kcore);
++
++	return err;
++}
++
++void kcore_extract__delete(struct kcore_extract *kce)
++{
++	unlink(kce->extract_filename);
++}
++
+ void symbol__elf_init(void)
  {
--	char *file;
--	unsigned line;
-+	char *file = NULL;
-+	unsigned line = 0;
- 	char *srcline;
- 	char *dso_name = dso->long_name;
- 	size_t size;
+ 	elf_version(EV_CURRENT);
+diff --git a/tools/perf/util/symbol-minimal.c b/tools/perf/util/symbol-minimal.c
+index 3a802c3..928556d 100644
+--- a/tools/perf/util/symbol-minimal.c
++++ b/tools/perf/util/symbol-minimal.c
+@@ -308,6 +308,15 @@ int file__read_maps(int fd __maybe_unused, bool exe __maybe_unused,
+ 	return -1;
+ }
+ 
++int kcore_extract__create(struct kcore_extract *kce __maybe_unused)
++{
++	return -1;
++}
++
++void kcore_extract__delete(struct kcore_extract *kce __maybe_unused)
++{
++}
++
+ void symbol__elf_init(void)
+ {
+ }
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index 2d3eb43..fb107e1 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -256,4 +256,18 @@ typedef int (*mapfn_t)(u64 start, u64 len, u64 pgoff, void *data);
+ int file__read_maps(int fd, bool exe, mapfn_t mapfn, void *data,
+ 		    bool *is_64_bit);
+ 
++#define PERF_KCORE_EXTRACT "/tmp/perf-kcore-XXXXXX"
++
++struct kcore_extract {
++	char *kcore_filename;
++	u64 addr;
++	u64 offs;
++	u64 len;
++	char extract_filename[sizeof(PERF_KCORE_EXTRACT)];
++	int fd;
++};
++
++int kcore_extract__create(struct kcore_extract *kce);
++void kcore_extract__delete(struct kcore_extract *kce);
++
+ #endif /* __PERF_SYMBOL */
