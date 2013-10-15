@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932581Ab3JOL62 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 07:58:28 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:5453 "EHLO
+	id S1759023Ab3JOL6s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 07:58:48 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:5526 "EHLO
 	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932408Ab3JOL6V (ORCPT
+	with ESMTP id S932585Ab3JOL6h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 07:58:21 -0400
+	Tue, 15 Oct 2013 07:58:37 -0400
 From: Kefeng Wang <wangkefeng.wang@huawei.com>
 To: <linux-kernel@vger.kernel.org>
 CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
@@ -30,9 +30,9 @@ CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         "Michael S. Tsirkin" <mst@redhat.com>, <netfilter@vger.kernel.org>,
         <netdev@vger.kernel.org>, <linux-wireless@vger.kernel.org>,
         <guohanjun@huawei.com>
-Subject: [PATCH 16/18] net: virtio: use wrapper functions of net_ratelimit() to simplify code
-Date: Tue, 15 Oct 2013 19:45:12 +0800
-Message-ID: <1381837514-50660-17-git-send-email-wangkefeng.wang@huawei.com>
+Subject: [PATCH 10/18] net: peak_usb: use wrapper functions of net_ratelimit() to simplify code
+Date: Tue, 15 Oct 2013 19:45:06 +0800
+Message-ID: <1381837514-50660-11-git-send-email-wangkefeng.wang@huawei.com>
 X-Mailer: git-send-email 1.8.3.msysgit.0
 In-Reply-To: <1381837514-50660-1-git-send-email-wangkefeng.wang@huawei.com>
 References: <1381837514-50660-1-git-send-email-wangkefeng.wang@huawei.com>
@@ -48,23 +48,45 @@ net_ratelimited_function() is called to simplify code.
 
 Signed-off-by: Kefeng Wang <wangkefeng.wang@huawei.com>
 ---
- drivers/net/virtio_net.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/net/can/usb/peak_usb/pcan_usb_core.c | 11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index defec2b..4f63c12 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -753,8 +753,7 @@ static netdev_tx_t start_xmit(struct sk_buff *skb, struct net_device *dev)
- 	/* This should not happen! */
- 	if (unlikely(err)) {
- 		dev->stats.tx_fifo_errors++;
+diff --git a/drivers/net/can/usb/peak_usb/pcan_usb_core.c b/drivers/net/can/usb/peak_usb/pcan_usb_core.c
+index 0b7a4c3..5166a1f 100644
+--- a/drivers/net/can/usb/peak_usb/pcan_usb_core.c
++++ b/drivers/net/can/usb/peak_usb/pcan_usb_core.c
+@@ -191,8 +191,7 @@ static void peak_usb_read_bulk_callback(struct urb *urb)
+ 		return;
+ 
+ 	default:
 -		if (net_ratelimit())
--			dev_warn(&dev->dev,
-+		net_ratelimited_function(dev_warn, &dev->dev,
- 				 "Unexpected TXQ (%d) queue failure: %d\n", qnum, err);
- 		dev->stats.tx_dropped++;
- 		kfree_skb(skb);
+-			netdev_err(netdev,
++		net_ratelimited_function(netdev_err, netdev,
+ 				   "Rx urb aborted (%d)\n", urb->status);
+ 		goto resubmit_urb;
+ 	}
+@@ -260,9 +259,8 @@ static void peak_usb_write_bulk_callback(struct urb *urb)
+ 		break;
+ 
+ 	default:
+-		if (net_ratelimit())
+-			netdev_err(netdev, "Tx urb aborted (%d)\n",
+-				   urb->status);
++		net_ratelimited_function(netdev_err, netdev,
++			"Tx urb aborted (%d)\n", urb->status);
+ 	case -EPROTO:
+ 	case -ENOENT:
+ 	case -ECONNRESET:
+@@ -314,8 +312,7 @@ static netdev_tx_t peak_usb_ndo_start_xmit(struct sk_buff *skb,
+ 
+ 	err = dev->adapter->dev_encode_msg(dev, skb, obuf, &size);
+ 	if (err) {
+-		if (net_ratelimit())
+-			netdev_err(netdev, "packet dropped\n");
++		net_ratelimited_function(netdev_err, netdev, "packet dropped\n");
+ 		dev_kfree_skb(skb);
+ 		stats->tx_dropped++;
+ 		return NETDEV_TX_OK;
 -- 
 1.8.2.1
 
