@@ -1,147 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932570Ab3JOMCu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 08:02:50 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:5421 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932284Ab3JOL6M (ORCPT
+	id S932799Ab3JOMDd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 08:03:33 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:38405 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932358Ab3JOMDb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 07:58:12 -0400
-From: Kefeng Wang <wangkefeng.wang@huawei.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        "Stephen Hemminger" <stephen@networkplumber.org>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Francois Romieu <romieu@fr.zoreil.com>,
-        "Ben Hutchings" <bhutchings@solarflare.com>,
-        Chas Williams <chas@cmf.nrl.navy.mil>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        Samuel Ortiz <samuel@sortiz.org>, Paul Mackerras <paulus@samba.org>,
-        Oliver Neukum <oneukum@suse.de>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "Boris Ostrovsky" <boris.ostrovsky@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>, <netfilter@vger.kernel.org>,
-        <netdev@vger.kernel.org>, <linux-wireless@vger.kernel.org>,
-        <guohanjun@huawei.com>
-Subject: [PATCH 00/18] cleanup: wrapper functions of net_ratelimit() called to simplify code
-Date: Tue, 15 Oct 2013 19:44:56 +0800
-Message-ID: <1381837514-50660-1-git-send-email-wangkefeng.wang@huawei.com>
-X-Mailer: git-send-email 1.8.3.msysgit.0
+	Tue, 15 Oct 2013 08:03:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.135.68.221]
-X-CFilter-Loop: Reflected
+In-Reply-To: <20131015114812.GY2443@sirena.org.uk>
+References: <1381813438-5386-1-git-send-email-yizhang@marvell.com>
+	<20131015114812.GY2443@sirena.org.uk>
+Date: Tue, 15 Oct 2013 20:03:28 +0800
+Message-ID: <CAK=oMXfMAafBcFOF=Ct2_ZfYNY6eYW7oHV4kBeQA=hUSf5VnPw@mail.gmail.com>
+Subject: Re: [PATCH] regmap: irq: clear status when disable irq
+From: Yi Zhang <yizhang.mrvl@gmail.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Yi Zhang <yizhang@marvell.com>, zhouqiao@marvell.com, zhangwm@marvell.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Macro PRINTR is called only once in nfnetlink_log.c, and it can be 
-replaced by wrappe function of net_ratelimit(), so kill it.
-
-Meanwhile, I found many files could use wrappe functions of net_ratelimit()
-to simplify, so I did.
-
-
-Kefeng Wang (18):
-  netfilter: cleanup: delete Macro PRINTR
-  net: use wrapper functions of net_ratelimit() to simplify code
-  rt18187se: use wrapper functions of net_ratelimit() to simplify code
-  rt18192e: use wrapper functions of net_ratelimit() to simplify code
-  rt18192u: use wrapper functions of net_ratelimit() to simplify code
-  net: wireless: use wrapper functions of net_ratelimit() to simplify
-    code
-  net: ethernet: use wrapper functions of net_ratelimit() to simplify
-    code
-  atm: use wrapper functions of net_ratelimit() to simplify code
-  block: aoe: use wrapper functions of net_ratelimit() to simplify code
-  net: peak_usb: use wrapper functions of net_ratelimit() to simplify
-    code
-  net: hamradio: use wrapper functions of net_ratelimit() to simplify
-    code
-  net: irda: use wrapper functions of net_ratelimit() to simplify code
-  net: ppp: use wrapper functions of net_ratelimit() to simplify code
-  net: usb: use wrapper functions of net_ratelimit() to simplify code
-  net: xen: use wrapper functions of net_ratelimit() to simplify code
-  net: virtio: use wrapper functions of net_ratelimit() to simplify code
-  net: vxlan: use wrapper functions of net_ratelimit() to simplify code
-  net: wimax: use wrapper functions of net_ratelimit() to simplify code
-
- drivers/atm/solos-pci.c                            | 20 ++++-----
- drivers/block/aoe/aoenet.c                         |  4 +-
- drivers/net/can/usb/peak_usb/pcan_usb_core.c       | 11 ++---
- drivers/net/ethernet/aeroflex/greth.c              | 16 +++----
- drivers/net/ethernet/alteon/acenic.c               |  3 +-
- drivers/net/ethernet/arc/emac_main.c               |  7 ++--
- drivers/net/ethernet/broadcom/b44.c                |  4 +-
- drivers/net/ethernet/ethoc.c                       |  4 +-
- drivers/net/ethernet/faraday/ftgmac100.c           | 49 +++++++---------------
- drivers/net/ethernet/faraday/ftmac100.c            | 45 ++++++--------------
- drivers/net/ethernet/freescale/fec_mpc52xx.c       |  3 +-
- drivers/net/ethernet/ibm/emac/mal.c                | 15 ++-----
- drivers/net/ethernet/marvell/mv643xx_eth.c         |  6 +--
- drivers/net/ethernet/marvell/pxa168_eth.c          |  8 +---
- drivers/net/ethernet/marvell/sky2.c                | 42 +++++++------------
- drivers/net/ethernet/myricom/myri10ge/myri10ge.c   |  5 +--
- drivers/net/ethernet/realtek/r8169.c               | 13 +++---
- drivers/net/ethernet/sfc/rx.c                      |  8 ++--
- drivers/net/ethernet/sfc/siena_sriov.c             | 27 ++++--------
- drivers/net/ethernet/ti/davinci_emac.c             |  4 +-
- drivers/net/ethernet/tundra/tsi108_eth.c           | 12 ++----
- drivers/net/hamradio/6pack.c                       |  3 +-
- drivers/net/hamradio/bpqether.c                    |  3 +-
- drivers/net/irda/stir4200.c                        |  3 +-
- drivers/net/ppp/ppp_generic.c                      | 11 +++--
- drivers/net/usb/usbnet.c                           |  4 +-
- drivers/net/virtio_net.c                           |  3 +-
- drivers/net/vxlan.c                                |  3 +-
- drivers/net/wimax/i2400m/netdev.c                  |  3 +-
- drivers/net/wireless/adm8211.c                     |  5 +--
- drivers/net/wireless/ath/carl9170/cmd.c            | 15 +++----
- drivers/net/wireless/ath/carl9170/phy.c            |  7 +---
- drivers/net/wireless/ath/carl9170/rx.c             | 45 ++++++--------------
- drivers/net/wireless/ath/carl9170/usb.c            | 12 ++----
- drivers/net/wireless/hostap/hostap_80211_rx.c      |  8 +---
- drivers/net/wireless/hostap/hostap_80211_tx.c      | 13 ++----
- drivers/net/wireless/hostap/hostap_ap.c            |  6 +--
- drivers/net/wireless/hostap/hostap_hw.c            | 17 +++-----
- drivers/net/wireless/iwlegacy/3945-mac.c           |  4 +-
- drivers/net/wireless/iwlegacy/4965-mac.c           |  6 +--
- drivers/net/wireless/iwlwifi/pcie/rx.c             |  7 ++--
- drivers/net/wireless/libertas_tf/cmd.c             |  6 +--
- drivers/net/wireless/mwl8k.c                       |  5 +--
- drivers/net/wireless/orinoco/hermes.c              |  6 +--
- drivers/net/wireless/orinoco/main.c                | 16 +++----
- drivers/net/wireless/orinoco/orinoco_usb.c         |  3 +-
- drivers/net/wireless/p54/p54pci.c                  |  6 +--
- drivers/net/xen-netback/netback.c                  | 21 ++++------
- drivers/net/xen-netfront.c                         | 27 ++++--------
- .../rtl8187se/ieee80211/ieee80211_crypt_ccmp.c     | 16 ++-----
- .../rtl8187se/ieee80211/ieee80211_crypt_tkip.c     | 27 ++++--------
- drivers/staging/rtl8187se/ieee80211/ieee80211_rx.c |  4 +-
- drivers/staging/rtl8187se/ieee80211/ieee80211_tx.c |  7 +---
- drivers/staging/rtl8192e/rtllib_crypt_ccmp.c       | 13 ++----
- drivers/staging/rtl8192e/rtllib_crypt_tkip.c       | 21 +++-------
- drivers/staging/rtl8192e/rtllib_rx.c               |  6 +--
- .../rtl8192u/ieee80211/ieee80211_crypt_ccmp.c      | 17 ++------
- .../rtl8192u/ieee80211/ieee80211_crypt_tkip.c      | 22 +++-------
- drivers/staging/rtl8192u/ieee80211/ieee80211_rx.c  |  7 +---
- drivers/staging/rtl8192u/ieee80211/ieee80211_tx.c  |  4 +-
- net/bridge/br_fdb.c                                |  6 +--
- net/bridge/br_multicast.c                          | 13 ++----
- net/bridge/br_stp_bpdu.c                           | 11 ++---
- net/mac80211/rx.c                                  |  6 +--
- net/netfilter/ipset/ip_set_hash_gen.h              |  3 +-
- net/netfilter/nfnetlink_log.c                      |  5 +--
- 66 files changed, 246 insertions(+), 516 deletions(-)
-
--- 
-1.8.2.1
-
-
+2013/10/15 Mark Brown <broonie@kernel.org>:
+> On Tue, Oct 15, 2013 at 01:03:58PM +0800, Yi Zhang wrote:
+>
+>> +                     bits_length = d->map->format.val_bytes * BITS_PER_BYTE;
+>> +                     for (j = 0; j < bits_length; j++) {
+>> +                             d->mask_buf[i] &= (0x1 << j);
+Yes, this line is wrong, I shouldn't change the mask_buf; I'll change it;
+my fault; sorry;
+>> +                             if (!d->mask_buf[i])
+>> +                                     ret = regmap_update_bits(d->map, reg,
+>> +                                                              (0x1 << j), 0);
+>> +                             if (ret != 0)
+>> +                                     dev_err(d->map->dev, "Failed to ack 0x%x: %d\n",
+>> +                                             reg, ret);
+>
+> I don't entirely understand this code - what's the loop doing?  It
+> looks like it's trying to acknowledge things bit by bit but it's doing
+> this by updating mask_buf so it looks like it'll corrupt the set of
+> masked interrupts.  After the zeroth iteration any bits other than bit 0
+> should get cleared by the &= (0x1 << j).  I'd have expected to just
+> write mask_buf back or something similar.
+>
+> It's possible I'm missing something here but if that is the case perhaps
+> some comments would be good.
