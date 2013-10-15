@@ -1,71 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933849Ab3JOVEz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 17:04:55 -0400
-Received: from mail-qe0-f46.google.com ([209.85.128.46]:55762 "EHLO
-	mail-qe0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933782Ab3JOVEp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 17:04:45 -0400
-From: David Long <dave.long@linaro.org>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Rabin Vincent <rabin@rab.in>, "Jon Medhurst (Tixy)" <tixy@linaro.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 09/13] ARM: Disable jprobe selftests in thumb kernels
-Date: Tue, 15 Oct 2013 17:04:24 -0400
-Message-Id: <1381871068-27660-10-git-send-email-dave.long@linaro.org>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1381871068-27660-1-git-send-email-dave.long@linaro.org>
-References: <1381871068-27660-1-git-send-email-dave.long@linaro.org>
+	id S933884Ab3JOVE6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 17:04:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35537 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933794Ab3JOVEu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 17:04:50 -0400
+Date: Tue, 15 Oct 2013 17:03:20 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, Matt Mackall <mpm@selenic.com>,
+        Cliff Wickman <cpw@sgi.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Pavel Emelyanov <xemul@parallels.com>, linux-kernel@vger.kernel.org,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Mark Brown <broonie@kernel.org>
+Message-ID: <1381871000-7fqziuur-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <20131015134317.02d819f6905f790007ba1842@linux-foundation.org>
+References: <1381772230-26878-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <20131015134317.02d819f6905f790007ba1842@linux-foundation.org>
+Subject: Re: [PATCH 0/11] update page table walker
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "David A. Long" <dave.long@linaro.org>
+On Tue, Oct 15, 2013 at 01:43:17PM -0700, Andrew Morton wrote:
+> On Mon, 14 Oct 2013 13:36:59 -0400 Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
+> 
+> > Page table walker is widely used when you want to traverse page table
+> > tree and do some work for the entries (and pages pointed to by them.)
+> > This is a common operation, and keep the code clean and maintainable
+> > is important. Moreover this patchset introduces caller-specific walk
+> > control function which is helpful for us to newly introduce page table
+> > walker to some other users. Core change comes from patch 1, so please
+> > see it for how it's supposed to work.
+> > 
+> > This patchset changes core code in mm/pagewalk.c at first in patch 1 and 2,
+> > and then updates all of current users to make the code cleaner in patch
+> > 3-9. Patch 10 changes the interface of hugetlb_entry(), I put it here to
+> > keep bisectability of the whole patchset. Patch 11 applies page table walker
+> > to a new user queue_pages_range().
+> 
+> Unfortunately this is very incompatible with pending changes in
+> fs/proc/task_mmu.c.  Especially Kirill's "mm, thp: change
+> pmd_trans_huge_lock() to return taken lock".
 
-jprobe kernel selftests are not supported for thumb kernels. Conditionally
-disable them in the kernel kprobes-test module.
+OK, I'll rebase onto mmots in the next post, maybe after waiting for
+a few days on the chance that somebody make comments and feedbacks.
 
-Signed-off-by: David A. Long <dave.long@linaro.org>
----
- arch/arm/kernel/kprobes-test.c | 4 ++++
- 1 file changed, 4 insertions(+)
+> 
+> Stephen will be away for a couple more weeks so I'll get an mmotm
+> released and hopefully Thierry and Mark will scoop it up(?). 
+> Alternatively, http://git.cmpxchg.org/?p=linux-mmots.git;a=summary is
+> up to date.
+> 
+> Please take a look, decide what you think we should do?
 
-diff --git a/arch/arm/kernel/kprobes-test.c b/arch/arm/kernel/kprobes-test.c
-index 44a8a13..2144df1 100644
---- a/arch/arm/kernel/kprobes-test.c
-+++ b/arch/arm/kernel/kprobes-test.c
-@@ -358,6 +358,7 @@ static int test_kprobe(long (*func)(long, long))
- 	return 0;
- }
- 
-+#ifndef CONFIG_THUMB2_KERNEL
- static void __kprobes jprobe_func(long r0, long r1)
- {
- 	jprobe_func_called = test_func_instance;
-@@ -401,6 +402,7 @@ static int test_jprobe(long (*func)(long, long))
- 
- 	return 0;
- }
-+#endif
- 
- static int __kprobes
- kretprobe_handler(struct kretprobe_instance *ri, struct pt_regs *regs)
-@@ -456,10 +458,12 @@ static int run_api_tests(long (*func)(long, long))
- 	if (ret < 0)
- 		return ret;
- 
-+#ifndef CONFIG_THUMB2_KERNEL
- 	pr_info("    jprobe\n");
- 	ret = test_jprobe(func);
- 	if (ret < 0)
- 		return ret;
-+#endif
- 
- 	pr_info("    kretprobe\n");
- 	ret = test_kretprobe(func);
--- 
-1.8.1.2
+This patchset is ver.1, so I think that we need reviews before thinking
+about merging. Please wait for my next post on top of this tree.
 
+Thanks,
+Naoya Horiguchi
