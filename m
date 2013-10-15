@@ -1,80 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933819Ab3JOWwq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 18:52:46 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:36476 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933560Ab3JOWwp (ORCPT
+	id S933910Ab3JOWz3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 18:55:29 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:56013 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933597Ab3JOWz1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 18:52:45 -0400
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Cc: mturquette@linaro.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
-Subject: Re: [PATCH] clk: s3c64xx: Correct spi bus clock hookups
-Date: Wed, 16 Oct 2013 00:52:42 +0200
-Message-ID: <1785136.Xbc2LARBDy@flatron>
-User-Agent: KMail/4.11.2 (Linux/3.11.5-gentoo; KDE/4.11.2; x86_64; ; )
-In-Reply-To: <1381839982-3026-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-References: <1381839982-3026-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Tue, 15 Oct 2013 18:55:27 -0400
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH v2 01/10] of/irq: Rework of_irq_count()
+To: Rob Herring <robherring2@gmail.com>,
+        Thierry Reding <thierry.reding@gmail.com>
+Cc: Rob Herring <rob.herring@calxeda.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-mips@linux-mips.org,
+        Russell King <linux@arm.linux.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ralf Baechle <ralf@linux-mips.org>, sparclinux@vger.kernel.org,
+        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+In-Reply-To: <CAL_JsqLE8aj511oF-gK7Gu5QfmHsQO3+oJ0KFkv0wmuo7i6eiw@mail.gmail.com>
+References: <1379510692-32435-1-git-send-email-treding@nvidia.com> <1379510692-32435-2-git-send-email-treding@nvidia.com> <CAL_JsqLE8aj511oF-gK7Gu5QfmHsQO3+oJ0KFkv0wmuo7i6eiw@mail.gmail.com>
+Date: Tue, 15 Oct 2013 23:55:23 +0100
+Message-Id: <20131015225523.2A9C1C40099@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Charles,
-
-On Tuesday 15 of October 2013 13:26:22 Charles Keepax wrote:
-> Correct the SPI bus clock hookups to match their state before the switch
-> to this driver. With out this patch my system (based on an s3c6410)
-> can't locate any spibus clock.
-
-That's right, a patch like this is needed indeed, however...
-
-> Note, I only have a passing familiarity with this driver and subsystem
-> so this patch could probably use a careful eye.
+On Sun, 22 Sep 2013 16:19:27 -0500, Rob Herring <robherring2@gmail.com> wrote:
+> On Wed, Sep 18, 2013 at 8:24 AM, Thierry Reding
+> <thierry.reding@gmail.com> wrote:
+> > The of_irq_to_resource() helper that is used to implement of_irq_count()
+> > tries to resolve interrupts and in fact creates a mapping for resolved
+> > interrupts. That's pretty heavy lifting for something that claims to
+> > just return the number of interrupts requested by a given device node.
+> >
+> > Instead, use the more lightweight of_irq_map_one(), which, despite the
+> > name, doesn't create an actual mapping. Perhaps a better name would be
+> > of_irq_translate_one().
+> >
+> > Signed-off-by: Thierry Reding <treding@nvidia.com>
 > 
-> Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-> ---
->  drivers/clk/samsung/clk-s3c64xx.c |    8 ++++++--
->  1 files changed, 6 insertions(+), 2 deletions(-)
+> Acked-by: Rob Herring <rob.herring@calxeda.com>
+
+Applied, thanks.
+
+g.
+
 > 
-> diff --git a/drivers/clk/samsung/clk-s3c64xx.c
-> b/drivers/clk/samsung/clk-s3c64xx.c index 7d2c842..f6ac974 100644
-> --- a/drivers/clk/samsung/clk-s3c64xx.c
-> +++ b/drivers/clk/samsung/clk-s3c64xx.c
-> @@ -356,8 +356,12 @@ static struct samsung_clock_alias
-> s3c64xx_clock_aliases[] = { ALIAS(SCLK_MMC2, "s3c-sdhci.2",
-> "mmc_busclk.2"),
->  	ALIAS(SCLK_MMC1, "s3c-sdhci.1", "mmc_busclk.2"),
->  	ALIAS(SCLK_MMC0, "s3c-sdhci.0", "mmc_busclk.2"),
-> -	ALIAS(SCLK_SPI1, "s3c6410-spi.1", "spi-bus"),
-> -	ALIAS(SCLK_SPI0, "s3c6410-spi.0", "spi-bus"),
-> +	ALIAS(PCLK_SPI1, "s3c6410-spi.1", "spi_busclk0"),
-> +	ALIAS(SCLK_SPI1, "s3c6410-spi.1", "spi_busclk1"),
-> +	ALIAS(SCLK_SPI1_48, "s3c6410-spi.1", "spi_busclk2"),
-
-...according to the documentation, the order is different. The SPI_CLKSEL 
-field of CLK_CFG register of the SPI block can have following values:
-0 - PCLK (aka PCLK_SPIx)
-1 - USBCLK (aka SCLK_SPIx_48)
-2 - Epll clock (aka SCLK_SPIx)
-
-The index after spi_busclk corresponds to the value written to SPI_CLKSEL 
-field, so your patch should be adjusted accordingly.
-
-By the way, the USBCLK case is a bit strange, because it requires USB 
-signal mask to be unmasked, which in turn needs USB PHY to be enabled, as 
-otherwise some "unwanted leakage" can occur. Having to enable USB just to 
-use SPI seems rather inconvenient (especially in terms of power 
-consumption), so the usability of this clock is rather limited and it 
-might be better not to let the driver know about it.
-
-Best regards,
-Tomasz
-
-P.S. Please keep linux-samsung-soc mailing list on Cc when sending patches 
-for Samsung hardware.
+> > ---
+> >  drivers/of/irq.c | 3 ++-
+> >  1 file changed, 2 insertions(+), 1 deletion(-)
+> >
+> > diff --git a/drivers/of/irq.c b/drivers/of/irq.c
+> > index 1752988..5f44388 100644
+> > --- a/drivers/of/irq.c
+> > +++ b/drivers/of/irq.c
+> > @@ -368,9 +368,10 @@ EXPORT_SYMBOL_GPL(of_irq_to_resource);
+> >   */
+> >  int of_irq_count(struct device_node *dev)
+> >  {
+> > +       struct of_irq irq;
+> >         int nr = 0;
+> >
+> > -       while (of_irq_to_resource(dev, nr, NULL))
+> > +       while (of_irq_map_one(dev, nr, &irq) == 0)
+> >                 nr++;
+> >
+> >         return nr;
+> > --
+> > 1.8.4
+> >
+> >
+> > _______________________________________________
+> > linux-arm-kernel mailing list
+> > linux-arm-kernel@lists.infradead.org
+> > http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 
