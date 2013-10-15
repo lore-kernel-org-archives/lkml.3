@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757348Ab3JOALT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 20:11:19 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:47567 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753884Ab3JOALR (ORCPT
+	id S1757534Ab3JOALp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 20:11:45 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:37389 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757393Ab3JOALn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 20:11:17 -0400
-Date: Mon, 14 Oct 2013 17:11:12 -0700
-From: Ning Qu <quning@gmail.com>
+	Mon, 14 Oct 2013 20:11:43 -0400
+Date: Mon, 14 Oct 2013 17:11:38 -0700
+From: Ning Qu <quning@google.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
@@ -22,8 +22,9 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
         Alexander Shishkin <alexander.shishkin@linux.intel.com>,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         Ning Qu <quning@google.com>
-Subject: [PATCH 00/12] Transparent huge page cache support on tmpfs
-Message-ID: <20131015001112.GA3432@hippobay.mtv.corp.google.com>
+Subject: [PATCH 01/12] mm, thp, tmpfs: add function to alloc huge page for
+ tmpfs
+Message-ID: <20131015001138.GB3432@hippobay.mtv.corp.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -32,61 +33,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Transparent huge page support on tmpfs.
+Add function to alloc huge page for tmpfs when needed.
 
-Please review.
+Signed-off-by: Ning Qu <quning@gmail.com>
+---
+ mm/shmem.c | 29 +++++++++++++++++++++++++++++
+ 1 file changed, 29 insertions(+)
 
-Intro
------
-The goal of the project is to enable transparent huge page support on
-tmpfs. 
-
-The whole patchset is based on Kirill's latest patchset about Transparent
-huge page cache v6. As the link below:
-
-https://lkml.org/lkml/2013/9/23/230
-
-To further proof that the proposed changes are functional we try enable
-this feature for a more complex file system tmpfs besides ramfs. tmpfs
-comes with swap support which make is more usable.
-
-Design overview
----------------
-
-We share the exact same design from Kirill's work. However, due to the 
-complexity of tmpfs, we do a lot of refactoring on the implementation.
-
-
-Known problem
----------------
-
-We do try to make it work with swapping, but currently there are still
-some problem with it. I am debbugging it.
-
-However, it would be great to have more opinions about the design in
-the current patchset and where we should be heading to.
-
-
-Ning Qu (12):
-  mm, thp, tmpfs: add function to alloc huge page for tmpfs
-  mm, thp, tmpfs: support to add huge page into page cache for tmpfs
-  mm, thp, tmpfs: handle huge page cases in shmem_getpage_gfp
-  mm, thp, tmpfs: split huge page when moving from page cache to swap
-  mm, thp, tmpfs: request huge page in shm_fault when needed
-  mm, thp, tmpfs: initial support for huge page in write_begin/write_end
-    in tmpfs
-  mm, thp, tmpfs: handle huge page in shmem_undo_range for truncate
-  mm, thp, tmpfs: huge page support in do_shmem_file_read
-  mm, thp, tmpfs: huge page support in shmem_fallocate
-  mm, thp, tmpfs: only alloc small pages in shmem_file_splice_read
-  mm, thp, tmpfs: enable thp page cache in tmpfs
-  mm, thp, tmpfs: misc fixes for thp tmpfs
-
- mm/Kconfig       |   4 +-
- mm/huge_memory.c |  27 +++
- mm/shmem.c       | 511 +++++++++++++++++++++++++++++++++++++++++++++++--------
- 3 files changed, 467 insertions(+), 75 deletions(-)
-
+diff --git a/mm/shmem.c b/mm/shmem.c
+index 8297623..a857ba8 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -949,6 +949,28 @@ static struct page *shmem_alloc_page(gfp_t gfp,
+ 
+ 	return page;
+ }
++
++static struct page *shmem_alloc_hugepage(gfp_t gfp,
++			struct shmem_inode_info *info, pgoff_t index)
++{
++	struct vm_area_struct pvma;
++	struct page *page;
++
++	/* Create a pseudo vma that just contains the policy */
++	pvma.vm_start = 0;
++	pvma.vm_pgoff = index;
++	pvma.vm_ops = NULL;
++	pvma.vm_policy = mpol_shared_policy_lookup(&info->policy, index);
++	pvma.vm_flags = VM_HUGEPAGE;
++
++	page = alloc_hugepage_vma(transparent_hugepage_defrag(&pvma), &pvma,
++					0, numa_node_id(), gfp);
++
++	/* Drop reference taken by mpol_shared_policy_lookup() */
++	mpol_cond_put(pvma.vm_policy);
++
++	return page;
++}
+ #else /* !CONFIG_NUMA */
+ #ifdef CONFIG_TMPFS
+ static inline void shmem_show_mpol(struct seq_file *seq, struct mempolicy *mpol)
+@@ -967,6 +989,13 @@ static inline struct page *shmem_alloc_page(gfp_t gfp,
+ {
+ 	return alloc_page(gfp);
+ }
++
++static inline struct page *shmem_alloc_hugepage(gfp_t gfp,
++			struct shmem_inode_info *info, pgoff_t index)
++{
++	BUG();
++	return NULL;
++}
+ #endif /* CONFIG_NUMA */
+ 
+ #if !defined(CONFIG_NUMA) || !defined(CONFIG_TMPFS)
 -- 
 1.8.4
+
 
