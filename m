@@ -1,36 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933661Ab3JOSBe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 14:01:34 -0400
-Received: from qmta02.emeryville.ca.mail.comcast.net ([76.96.30.24]:55329 "EHLO
-	qmta02.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933556Ab3JOSA4 (ORCPT
+	id S933743Ab3JOSCJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 14:02:09 -0400
+Received: from qmta03.emeryville.ca.mail.comcast.net ([76.96.30.32]:46936 "EHLO
+	qmta03.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932287Ab3JOSAz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 14:00:56 -0400
-Message-Id: <20131015180053.750416164@linux.com>
+	Tue, 15 Oct 2013 14:00:55 -0400
+Message-Id: <20131015180052.699083354@linux.com>
 User-Agent: quilt/0.60-1
-Date: Tue, 15 Oct 2013 12:59:00 -0500
+Date: Tue, 15 Oct 2013 12:58:58 -0500
 From: Christoph Lameter <cl@linux.com>
 To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linuxfoundation.org
+Cc: akpm@linuxfoundation.org, Jens Axboe <axboe@kernel.dk>
 Cc: linux-arch@vger.kernel.org
 Cc: Steven Rostedt <srostedt@redhat.com>
 Cc: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 08/10] percpu: Replace __get_cpu_var uses
+Subject: [PATCH 06/10] block: Replace __get_cpu_var uses
 References: <20131015175852.122827685@linux.com>
-Content-Disposition: inline; filename=this_percpu
+Content-Disposition: inline; filename=this_block
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__get_cpu_var() is used for multiple purposes in the kernel source. One of them is
-address calculation via the form &__get_cpu_var(x). This calculates the address for
-the instance of the percpu variable of the current processor based on an offset.
+__get_cpu_var() is used for multiple purposes in the kernel source. One of
+them is address calculation via the form &__get_cpu_var(x).  This calculates
+the address for the instance of the percpu variable of the current processor
+based on an offset.
 
-Other use cases are for storing and retrieving data from the current processors percpu area.
-__get_cpu_var() can be used as an lvalue when writing data or on the right side of an assignment.
+Other use cases are for storing and retrieving data from the current
+processors percpu area.  __get_cpu_var() can be used as an lvalue when
+writing data or on the right side of an assignment.
 
 __get_cpu_var() is defined as :
 
@@ -129,17 +131,88 @@ variable.
 
 Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Index: linux/include/linux/percpu.h
+Index: linux/block/blk-iopoll.c
 ===================================================================
---- linux.orig/include/linux/percpu.h	2013-08-26 14:29:49.000000000 -0500
-+++ linux/include/linux/percpu.h	2013-08-26 14:30:18.302570608 -0500
-@@ -28,7 +28,7 @@
-  */
- #define get_cpu_var(var) (*({				\
- 	preempt_disable();				\
--	&__get_cpu_var(var); }))
-+	this_cpu_ptr(&var); }))
+--- linux.orig/block/blk-iopoll.c	2013-08-26 14:36:07.858875667 -0500
++++ linux/block/blk-iopoll.c	2013-08-26 14:36:07.850875751 -0500
+@@ -35,7 +35,7 @@ void blk_iopoll_sched(struct blk_iopoll
+ 	unsigned long flags;
  
- /*
-  * The weird & is necessary because sparse considers (void)(var) to be
+ 	local_irq_save(flags);
+-	list_add_tail(&iop->list, &__get_cpu_var(blk_cpu_iopoll));
++	list_add_tail(&iop->list, this_cpu_ptr(&blk_cpu_iopoll));
+ 	__raise_softirq_irqoff(BLOCK_IOPOLL_SOFTIRQ);
+ 	local_irq_restore(flags);
+ }
+@@ -79,7 +79,7 @@ EXPORT_SYMBOL(blk_iopoll_complete);
+ 
+ static void blk_iopoll_softirq(struct softirq_action *h)
+ {
+-	struct list_head *list = &__get_cpu_var(blk_cpu_iopoll);
++	struct list_head *list = this_cpu_ptr(&blk_cpu_iopoll);
+ 	int rearm = 0, budget = blk_iopoll_budget;
+ 	unsigned long start_time = jiffies;
+ 
+@@ -201,7 +201,7 @@ static int blk_iopoll_cpu_notify(struct
+ 
+ 		local_irq_disable();
+ 		list_splice_init(&per_cpu(blk_cpu_iopoll, cpu),
+-				 &__get_cpu_var(blk_cpu_iopoll));
++				 this_cpu_ptr(&blk_cpu_iopoll));
+ 		__raise_softirq_irqoff(BLOCK_IOPOLL_SOFTIRQ);
+ 		local_irq_enable();
+ 	}
+Index: linux/block/blk-softirq.c
+===================================================================
+--- linux.orig/block/blk-softirq.c	2013-08-26 14:36:07.858875667 -0500
++++ linux/block/blk-softirq.c	2013-08-26 14:36:07.854875709 -0500
+@@ -23,7 +23,7 @@ static void blk_done_softirq(struct soft
+ 	struct list_head *cpu_list, local_list;
+ 
+ 	local_irq_disable();
+-	cpu_list = &__get_cpu_var(blk_cpu_done);
++	cpu_list = this_cpu_ptr(&blk_cpu_done);
+ 	list_replace_init(cpu_list, &local_list);
+ 	local_irq_enable();
+ 
+@@ -44,7 +44,7 @@ static void trigger_softirq(void *data)
+ 	struct list_head *list;
+ 
+ 	local_irq_save(flags);
+-	list = &__get_cpu_var(blk_cpu_done);
++	list = this_cpu_ptr(&blk_cpu_done);
+ 	list_add_tail(&rq->csd.list, list);
+ 
+ 	if (list->next == &rq->csd.list)
+@@ -90,7 +90,7 @@ static int blk_cpu_notify(struct notifie
+ 
+ 		local_irq_disable();
+ 		list_splice_init(&per_cpu(blk_cpu_done, cpu),
+-				 &__get_cpu_var(blk_cpu_done));
++				 this_cpu_ptr(&blk_cpu_done));
+ 		raise_softirq_irqoff(BLOCK_SOFTIRQ);
+ 		local_irq_enable();
+ 	}
+@@ -135,7 +135,7 @@ void __blk_complete_request(struct reque
+ 	if (ccpu == cpu || shared) {
+ 		struct list_head *list;
+ do_local:
+-		list = &__get_cpu_var(blk_cpu_done);
++		list = this_cpu_ptr(&blk_cpu_done);
+ 		list_add_tail(&req->csd.list, list);
+ 
+ 		/*
+Index: linux/fs/fscache/object.c
+===================================================================
+--- linux.orig/fs/fscache/object.c	2013-08-26 14:36:07.858875667 -0500
++++ linux/fs/fscache/object.c	2013-08-26 14:36:07.854875709 -0500
+@@ -796,7 +796,7 @@ void fscache_enqueue_object(struct fscac
+  */
+ bool fscache_object_sleep_till_congested(signed long *timeoutp)
+ {
+-	wait_queue_head_t *cong_wq = &__get_cpu_var(fscache_object_cong_wait);
++	wait_queue_head_t *cong_wq = this_cpu_ptr(&fscache_object_cong_wait);
+ 	DEFINE_WAIT(wait);
+ 
+ 	if (fscache_object_congested())
 
