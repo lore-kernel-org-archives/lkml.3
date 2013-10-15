@@ -1,93 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933638Ab3JORxa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 13:53:30 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:55174 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933013Ab3JORx2 (ORCPT
+	id S933650Ab3JORx6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 13:53:58 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:19701 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932524Ab3JORx4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 13:53:28 -0400
-Date: Tue, 15 Oct 2013 10:53:10 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: mm: fix BUG in __split_huge_page_pmd
-In-Reply-To: <20131015144827.C45DDE0090@blue.fi.intel.com>
-Message-ID: <alpine.LNX.2.00.1310151029040.12481@eggly.anvils>
-References: <alpine.LNX.2.00.1310150358170.11905@eggly.anvils> <20131015143407.GE3479@redhat.com> <20131015144827.C45DDE0090@blue.fi.intel.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Tue, 15 Oct 2013 13:53:56 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 15 Oct 2013 10:53:55 -0700
+From: Vishal Annapurve <vannapurve@nvidia.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: Ming Lei <tom.leiming@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-usb <linux-usb@vger.kernel.org>
+Date: Tue, 15 Oct 2013 23:23:50 +0530
+Subject: RE: [PATCH] usb-storage: scsiglue: Changing the command result
+Thread-Topic: [PATCH] usb-storage: scsiglue: Changing the command result
+Thread-Index: Ac7JyGJZFCxx1CqxQfqneoJlA2TvmwABCsEw
+Message-ID: <113ACA888B71994BB56E5CF3704953486D65F41155@BGMAIL02.nvidia.com>
+References: <113ACA888B71994BB56E5CF3704953486D65F41133@BGMAIL02.nvidia.com>
+ <Pine.LNX.4.44L0.1310151258560.1377-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1310151258560.1377-100000@iolanthe.rowland.org>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Oct 2013, Kirill A. Shutemov wrote:
-> Andrea Arcangeli wrote:
-> > Hi Hugh,
-> > 
-> > On Tue, Oct 15, 2013 at 04:08:28AM -0700, Hugh Dickins wrote:
-> > > Occasionally we hit the BUG_ON(pmd_trans_huge(*pmd)) at the end of
-> > > __split_huge_page_pmd(): seen when doing madvise(,,MADV_DONTNEED).
-> > > 
-> > > It's invalid: we don't always have down_write of mmap_sem there:
-> > > a racing do_huge_pmd_wp_page() might have copied-on-write to another
-> > > huge page before our split_huge_page() got the anon_vma lock.
-> > > 
-> > 
-> > I don't get exactly the scenario with do_huge_pmd_wp_page(), could you
-> > elaborate?
+Hi Alan,
+
+USB storage maybe just has to say that the abort occurred. By setting the
+US_FLIDX_TIMED_OUT bit USB storage is getting signaled that the reason was
+time out and the command is being aborted.
+ 
+Now, it's arguable whether to change the implication of US_FLIDX_TIMED_OUT
+bit for scsi - USB storage bridge or for entire usb storage Or maybe scsi has
+decided to abort so it should override the result.
+
+Regards,
+Vishal
+
+-----Original Message-----
+From: Alan Stern [mailto:stern@rowland.harvard.edu] 
+Sent: Tuesday, October 15, 2013 7:03 PM
+To: Vishal Annapurve
+Cc: Ming Lei; Linux Kernel Mailing List; linux-usb
+Subject: RE: [PATCH] usb-storage: scsiglue: Changing the command result
+
+On Tue, 15 Oct 2013, Vishal Annapurve wrote:
+
+> Hi Alan,
 > 
-> I think the scenario is follow:
+> This issue seems more related to the devices using SCSI protocol and 
+> the changes otherwise will be at more places giving the same end result.
 > 
-> 	CPU0:					CPU1
-> 
-> __split_huge_page_pmd()
-> 	page = pmd_page(*pmd);
-> 					do_huge_pmd_wp_page() copy the
-> 					page and changes pmd (the same as on CPU0)
-> 					to point to newly copied page.
-> 	split_huge_page(page)
-> 	where page is original page,
-> 	not allocated on COW.
-> 	pmd still points on huge page.
-> 
-> 
-> Hugh, have I got it correctly?
+> I think as the comment says over the command_abort function, 
+> intentional result change should only happen in case of timeout.
 
-Yes, that's correct, that's what I've been assuming the race is.
-With CPU0 split_huge_page_pmd() being called from zap_pmd_range()
-in the service of madvise(,,MADV_DONTNEED).
+usb-storage doesn't know _why_ a command was aborted; it knows only that the abort occurred.
 
-I don't have the stacktrace to hand: could perfectly well dig it out
-in an hour or two, but honestly, it adds nothing more to the picture.
-I have no trace of the CPU1 side of things, and have merely surmised
-that it was doing a COW.
+If you look carefully at the code, you'll see that the result is set to DID_ABORT only when the US_FLIDX_TIMED_OUT bit is set, and this bit gets set only when a SCSI abort occurs.
 
-As to whether the MADV_DONTNEED down_read optimization is important:
-I don't recall, might be able to discover justification in old mail,
-0a27a14a6292 doesn't actually say; but in general we're much better
-off using down_read than down_write where it's safe to do so.
+Alan Stern
 
-But more importantly, MADV_DONTNEED down_read across zap_page_range
-is building on the fact that file invalidation/truncation can already
-call zap_page_range without touching mmap_sem at all: not a problem
-for traditional anon-only THP, but something you'll have had to worry
-about for THPageCache.
-
-I'm afraid Andrea's mail about concurrent madvises gives me far more
-to think about than I have time for: seems to get into problems he
-knows a lot about but I'm unfamiliar with.  If this patch looks good
-for now on its own, let's put it in; but no problem if you guys prefer
-to wait for a fuller solution of more problems, we can ride with this
-one internally for the moment.
-
-And I should admit that the crash has occurred too rarely for us yet
-to be able to judge whether this patch actually fixes it in practice.
-
-Hugh
