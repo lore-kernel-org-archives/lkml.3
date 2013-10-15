@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933669Ab3JOVEi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 17:04:38 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:61735 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933181Ab3JOVEg (ORCPT
+	id S933787Ab3JOVEp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 17:04:45 -0400
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:59612 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933181Ab3JOVEk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 17:04:36 -0400
+	Tue, 15 Oct 2013 17:04:40 -0400
 From: David Long <dave.long@linaro.org>
 To: linux-arm-kernel@lists.infradead.org
 Cc: Rabin Vincent <rabin@rab.in>, "Jon Medhurst (Tixy)" <tixy@linaro.org>,
         Oleg Nesterov <oleg@redhat.com>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 03/13] uprobes: allow arch access to xol slot
-Date: Tue, 15 Oct 2013 17:04:18 -0400
-Message-Id: <1381871068-27660-4-git-send-email-dave.long@linaro.org>
+Subject: [PATCH v2 06/13] ARM: move shared uprobe/kprobe definitions into new include file
+Date: Tue, 15 Oct 2013 17:04:21 -0400
+Message-Id: <1381871068-27660-7-git-send-email-dave.long@linaro.org>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381871068-27660-1-git-send-email-dave.long@linaro.org>
 References: <1381871068-27660-1-git-send-email-dave.long@linaro.org>
@@ -25,65 +25,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "David A. Long" <dave.long@linaro.org>
 
-Allow arches to customize how the instruction is filled into the xol
-slot.  ARM will use this to insert an undefined instruction after the
-real instruction in order to simulate a single step of the instruction
-without hardware support.
+Separate the kprobe-only definitions from the definitions needed by
+both kprobes and uprobes.
 
-Signed-off-by: Rabin Vincent <rabin@rab.in>
 Signed-off-by: David A. Long <dave.long@linaro.org>
 ---
- include/linux/uprobes.h |  1 +
- kernel/events/uprobes.c | 10 +++++++++-
- 2 files changed, 10 insertions(+), 1 deletion(-)
+ arch/arm/include/asm/kprobes.h | 15 +--------------
+ arch/arm/include/asm/probes.h  | 18 ++++++++++++++++++
+ 2 files changed, 19 insertions(+), 14 deletions(-)
+ create mode 100644 arch/arm/include/asm/probes.h
 
-diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
-index 80116c9..2556ab6 100644
---- a/include/linux/uprobes.h
-+++ b/include/linux/uprobes.h
-@@ -134,6 +134,7 @@ extern int  arch_uprobe_exception_notify(struct notifier_block *self, unsigned l
- extern void arch_uprobe_abort_xol(struct arch_uprobe *aup, struct pt_regs *regs);
- extern unsigned long arch_uretprobe_hijack_return_addr(unsigned long trampoline_vaddr, struct pt_regs *regs);
- extern bool __weak arch_uprobe_ignore(struct arch_uprobe *aup, struct pt_regs *regs);
-+extern void __weak arch_uprobe_xol_copy(struct arch_uprobe *auprobe, void *vaddr);
- #else /* !CONFIG_UPROBES */
- struct uprobes_state {
- };
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 3955172..22d0121 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -1238,6 +1238,11 @@ static unsigned long xol_take_insn_slot(struct xol_area *area)
- 	return slot_addr;
- }
+diff --git a/arch/arm/include/asm/kprobes.h b/arch/arm/include/asm/kprobes.h
+index f82ec22..30fc11b 100644
+--- a/arch/arm/include/asm/kprobes.h
++++ b/arch/arm/include/asm/kprobes.h
+@@ -28,21 +28,8 @@
+ #define kretprobe_blacklist_size	0
  
-+void __weak arch_uprobe_xol_copy(struct arch_uprobe *auprobe, void *vaddr)
-+{
-+	memcpy(vaddr, auprobe->insn, MAX_UINSN_BYTES);
-+}
+ typedef u32 kprobe_opcode_t;
+-
+ struct kprobe;
+-typedef void (kprobe_insn_handler_t)(struct kprobe *, struct pt_regs *);
+-typedef unsigned long (kprobe_check_cc)(unsigned long);
+-typedef void (kprobe_insn_singlestep_t)(struct kprobe *, struct pt_regs *);
+-typedef void (kprobe_insn_fn_t)(void);
+-
+-/* Architecture specific copy of original instruction. */
+-struct arch_specific_insn {
+-	kprobe_opcode_t			*insn;
+-	kprobe_insn_handler_t		*insn_handler;
+-	kprobe_check_cc			*insn_check_cc;
+-	kprobe_insn_singlestep_t	*insn_singlestep;
+-	kprobe_insn_fn_t		*insn_fn;
+-};
++#include <asm/probes.h>
+ 
+ struct prev_kprobe {
+ 	struct kprobe *kp;
+diff --git a/arch/arm/include/asm/probes.h b/arch/arm/include/asm/probes.h
+new file mode 100644
+index 0000000..21da148
+--- /dev/null
++++ b/arch/arm/include/asm/probes.h
+@@ -0,0 +1,18 @@
++#ifndef _ASM_PROBES_H
++#define _ASM_PROBES_H
 +
- /*
-  * xol_get_insn_slot - allocate a slot for xol.
-  * Returns the allocated slot address or 0.
-@@ -1246,6 +1251,7 @@ static unsigned long xol_get_insn_slot(struct uprobe *uprobe)
- {
- 	struct xol_area *area;
- 	unsigned long xol_vaddr;
-+	void *kaddr;
- 
- 	area = get_xol_area();
- 	if (!area)
-@@ -1256,7 +1262,9 @@ static unsigned long xol_get_insn_slot(struct uprobe *uprobe)
- 		return 0;
- 
- 	/* Initialize the slot */
--	copy_to_page(area->page, xol_vaddr, uprobe->arch.insn, MAX_UINSN_BYTES);
-+	kaddr = kmap_atomic(area->page);
-+	arch_uprobe_xol_copy(&uprobe->arch, kaddr + (xol_vaddr & ~PAGE_MASK));
-+	kunmap_atomic(kaddr);
- 	/*
- 	 * We probably need flush_icache_user_range() but it needs vma.
- 	 * This should work on supported architectures too.
++typedef void (kprobe_insn_handler_t)(struct kprobe *, struct pt_regs *);
++typedef unsigned long (kprobe_check_cc)(unsigned long);
++typedef void (kprobe_insn_singlestep_t)(struct kprobe *, struct pt_regs *);
++typedef void (kprobe_insn_fn_t)(void);
++
++/* Architecture specific copy of original instruction. */
++struct arch_specific_insn {
++	kprobe_opcode_t			*insn;
++	kprobe_insn_handler_t		*insn_handler;
++	kprobe_check_cc			*insn_check_cc;
++	kprobe_insn_singlestep_t	*insn_singlestep;
++	kprobe_insn_fn_t		*insn_fn;
++};
++
++#endif
 -- 
 1.8.1.2
 
