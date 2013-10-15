@@ -1,87 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759293Ab3JONRT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 09:17:19 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:40105 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758739Ab3JONRR (ORCPT
+	id S1759298Ab3JONSH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 09:18:07 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:37316 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758664Ab3JONSF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 09:17:17 -0400
-Date: Tue, 15 Oct 2013 09:17:10 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Andi Kleen <andi@firstfloor.org>,
-        linux-kernel@vger.kernel.org, sebastien.dugue@bull.net,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
-Subject: Re: [PATCH] x86: Run checksumming in parallel accross multiple alu's
-Message-ID: <20131015131710.GB19861@hmsreliant.think-freely.org>
-References: <1381510298-20572-1-git-send-email-nhorman@tuxdriver.com>
- <87siw4xy9i.fsf@tassilo.jf.intel.com>
- <20131014074900.GA20095@gmail.com>
- <1381784868.2045.10.camel@edumazet-glaptop.roam.corp.google.com>
+	Tue, 15 Oct 2013 09:18:05 -0400
+Date: Tue, 15 Oct 2013 15:17:59 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        "Liu, Chuansheng" <chuansheng.liu@intel.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "Ingo Molnar (mingo@kernel.org)" <mingo@kernel.org>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "'linux-kernel@vger.kernel.org' (linux-kernel@vger.kernel.org)" 
+	<linux-kernel@vger.kernel.org>,
+        "Wang, Xiaoming" <xiaoming.wang@intel.com>,
+        "Li, Zhuangzhi" <zhuangzhi.li@intel.com>
+Subject: Re: Panic and page fault in loop during handling NMI backtrace
+ handler
+Message-ID: <20131015131757.GD29884@localhost.localdomain>
+References: <27240C0AC20F114CBF8149A2696CBE4A01B60835@SHSMSX101.ccr.corp.intel.com>
+ <20131015121849.GA29884@localhost.localdomain>
+ <20131015123717.GJ10651@twins.programming.kicks-ass.net>
+ <20131015124837.GC9150@linux.vnet.ibm.com>
+ <20131015125914.GC29884@localhost.localdomain>
+ <20131015130659.GD9150@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1381784868.2045.10.camel@edumazet-glaptop.roam.corp.google.com>
+In-Reply-To: <20131015130659.GD9150@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 14, 2013 at 02:07:48PM -0700, Eric Dumazet wrote:
-> On Mon, 2013-10-14 at 09:49 +0200, Ingo Molnar wrote:
-> > * Andi Kleen <andi@firstfloor.org> wrote:
-> > 
-> > > Neil Horman <nhorman@tuxdriver.com> writes:
+On Tue, Oct 15, 2013 at 06:06:59AM -0700, Paul E. McKenney wrote:
+> On Tue, Oct 15, 2013 at 02:59:15PM +0200, Frederic Weisbecker wrote:
+> > On Tue, Oct 15, 2013 at 05:48:37AM -0700, Paul E. McKenney wrote:
+> > > On Tue, Oct 15, 2013 at 02:37:17PM +0200, Peter Zijlstra wrote:
+> > > > On Tue, Oct 15, 2013 at 02:18:53PM +0200, Frederic Weisbecker wrote:
+> > > > > On Tue, Oct 15, 2013 at 02:01:04AM +0000, Liu, Chuansheng wrote:
+> > > > > > We meet one issue that during trigger all CPU backtrace, but during in the NMI handler arch_trigger_all_cpu_backtrace_handler,
+> > > > > > It hit the PAGE fault, then PAGE fault is in loop, at last the thread stack overflow, and system panic.
+> > > > > > 
+> > > > > > Anyone can give some help? Thanks.
+> > > > > 
+> > > > > Looks like we re-enter the fault several times. On x86-32, NMIs can
+> > > > > fault if they dereference vmalloc'ed area. I wonder if the module thing
+> > > > > we lookup in the NMI is stored on some vmalloc'ed area.
+> > > > 
+> > > > IIRC modules are indeed allocated using vmalloc. See module_alloc()
+> > > > using vmalloc_exec()
 > > > 
-> > > > Sébastien Dugué reported to me that devices implementing ipoib (which 
-> > > > don't have checksum offload hardware were spending a significant 
-> > > > amount of time computing
-> > > 
-> > > Must be an odd workload, most TCP/UDP workloads do copy-checksum 
-> > > anyways. I would rather investigate why that doesn't work.
+> > > This might then be a module that uses call_rcu(), but which does not have
+> > > the needed rcu_barrier() in the module-exit function.
 > > 
-> > There's a fair amount of csum_partial()-only workloads, a packet does not 
-> > need to hit user-space to be a significant portion of the system's 
-> > workload.
-> > 
-> > That said, it would indeed be nice to hear which particular code path was 
-> > hit in this case, if nothing else then for education purposes.
+> > I rather believe it's due to the lazy paging of vmalloc area in x86-32. We had issues
+> > like that in the past. For example that's the reason why we do an ad-hoc per-cpu
+> > allocation on callchain buffers in perf rather than using alloc_percpu() which might
+> > use vmalloc.
 > 
-> Many NIC do not provide a CHECKSUM_COMPLETE information for encapsulated
-> frames, meaning we have to fallback to software csum to validate
-> TCP frames, once tunnel header is pulled.
-> 
-> So to reproduce the issue, all you need is to setup a GRE tunnel between
-> two hosts, and use any tcp stream workload.
-> 
-> Then receiver profile looks like :
-> 
-> 11.45%	[kernel]	 [k] csum_partial
->  3.08%	[kernel]	 [k] _raw_spin_lock
->  3.04%	[kernel]	 [k] intel_idle
->  2.73%	[kernel]	 [k] ipt_do_table
->  2.57%	[kernel]	 [k] __netif_receive_skb_core
->  2.15%	[kernel]	 [k] copy_user_generic_string
->  2.05%	[kernel]	 [k] __hrtimer_start_range_ns
->  1.42%	[kernel]	 [k] ip_rcv
->  1.39%	[kernel]	 [k] kmem_cache_free
->  1.36%	[kernel]	 [k] _raw_spin_unlock_irqrestore
->  1.24%	[kernel]	 [k] __schedule
->  1.13%	[bnx2x] 	 [k] bnx2x_rx_int
->  1.12%	[bnx2x] 	 [k] bnx2x_start_xmit
->  1.11%	[kernel]	 [k] fib_table_lookup
->  0.99%	[ip_tunnel]  [k] ip_tunnel_lookup
->  0.91%	[ip_tunnel]  [k] ip_tunnel_rcv
->  0.90%	[kernel]	 [k] check_leaf.isra.7
->  0.89%	[kernel]	 [k] nf_iterate
-> 
-As I noted previously the workload that this got reported on was ipoib, which
-has a simmilar profile, since infiniband cards tend to not be able to do
-checksum offload for ip frames.
+> I must defer to your greater experience with this type of bug.
 
-Neil
-
+With some chances I'll be proved wrong. I hope, because that issue is not easily fixed.
