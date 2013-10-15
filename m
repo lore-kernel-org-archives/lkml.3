@@ -1,153 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933641Ab3JOTcH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 15:32:07 -0400
-Received: from sauhun.de ([89.238.76.85]:36424 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933226Ab3JOTcD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 15:32:03 -0400
-From: Wolfram Sang <wsa@the-dreams.de>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Wolfram Sang <wsa@the-dreams.de>
-Subject: [RFC RESEND 0/3] replace INIT_COMPLETION with reinit_completion
-Date: Tue, 15 Oct 2013 21:31:17 +0200
-Message-Id: <1381865480-3013-1-git-send-email-wsa@the-dreams.de>
-X-Mailer: git-send-email 1.8.4.rc3
+	id S933780Ab3JOTcR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 15:32:17 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:64827 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759306Ab3JOTcM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 15:32:12 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH] drivers: misc: add gpio wakeup driver
+Date: Tue, 15 Oct 2013 21:32:00 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Daniel Mack <zonque@gmail.com>, Greg KH <gregkh@linuxfoundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Mark Brown <broonie@kernel.org>,
+        Stephen Warren <swarren@wwwdotorg.org>
+References: <1380635719-31171-1-git-send-email-zonque@gmail.com> <CACRpkdYhQ+-d1COcvmg_hEJ==cTFpKLNDnvF8kdK4QgXzHenEA@mail.gmail.com>
+In-Reply-To: <CACRpkdYhQ+-d1COcvmg_hEJ==cTFpKLNDnvF8kdK4QgXzHenEA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201310152132.00409.arnd@arndb.de>
+X-Provags-ID: V02:K0:vDNQtigtKuHmwbAItB0aYRAekS5mYogBN6zrRmABvx4
+ ygwya9bRHAKCMe/Ok8U2Jrj0lA7+ARymtZEsxkHVKjg4BnN8V9
+ DwJdfmEwvBUez9QpztZecE329cnKgivEIRu9ikddO1tFzyO/d0
+ HSAFVgRNkr+EWd9N0hsJZoNqjRuYRSIpIkufgLOL+QTgmaccN1
+ G+KAFdV24Gf2jTIvqwQ285xyrXqLCAqZjcgMiKrJoxeNBpsCpy
+ ImTVAkQGxfFI97RYXznQq7F2nqM2Ioav7G9RRrduCIzhOz+Wkh
+ ZKJ2KkQriBNYUexazf9p3UNs0XAk1vHDp7WnAz1K6IWqZCjLa7
+ PuJcHqYGkA84errqh+NY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I had this on my mind for a bit of time now... When reviewing, I see problems
-with the current INIT_COMPLETION because of inconsistencies. Quoting patch 1
-for the motivation:
+On Friday 11 October 2013, Linus Walleij wrote:
+> On Tue, Oct 1, 2013 at 3:55 PM, Daniel Mack <zonque@gmail.com> wrote:
+> 
+> > This patch adds a very simple driver that enables GPIO lines as wakeup
+> > sources. It only operates on information passed in via DT, and depends
+> > on CONFIG_OF && CONFIG_PM_SLEEP. It can for example be used to connect
+> > wake-on-LAN (WOL) signals or other electric wakeup networks.
+> >
+> > The driver accepts a list of GPIO nodes and claims them along with their
+> > interrupt line. During suspend, the interrupts will be enabled and
+> > selected as wakeup source. The driver doesn't do anything else with the
+> > GPIO lines, and will ignore occured interrupts silently.
+> >
+> > Signed-off-by: Daniel Mack <zonque@gmail.com>
+> 
+> This makes a weird kind of sense.
+> Hm hm hm.
+> 
+> But I really need the misc mainatiners' help here...
+> possibly also irqchip maintainers.
 
-===
+This seems like a completely generic driver, rather than some oddball
+hack, so I'd prefer to not see it in drivers/misc at all. Maybe you
+can find some other maintainer who is willing to put it into his
+subsystem, candidates would be
 
-For the casual device driver writer, it is hard to remember when to use
-init_completion (to init a completion structure) or INIT_COMPLETION (to
-*reinit* a completion structure). Furthermore, while all other
-completion functions exepct a pointer as a parameter, INIT_COMPLETION
-does not. To make it easier to remember which function to use and to
-make code more readable, introduce a new inline function with the proper
-name and consistent argument type.
+ * gpio
+ * irqchip
+ * power
+ * of/dt
 
-===
+I don't see anything wrong with the basic approach though.
 
-For this RFC, Patch 2/3 converts all current users in one go. I can split that
-up easily later. I wonder what to do about the old INIT_COMPLETION, though. We
-could:
+> > +Example:
+> > +
+> > +       wake_up {
+> > +               compatible = "gpio-wakeup";
+> > +               gpios = <&gpio0 19 0>;
+> > +       };
+> 
+> This will not work if that GPIO chip is not capable of supporting
+> interrupts on that GPIO line right?
+> 
+> We have recently had a very long discussion about this: such
+> GPIO chips will also be marked "interrupt-controller" and you
+> should be able to just state interrupt-parent and
+> interrupts = <>; for this. (And it should accept an array.)
+> 
+> It *may* be that we have many GPIO drivers that do not accept
+> that you request an interrupt on them before you have done
+> request_gpio() followed by gpio_to_irq() on the pin. Then this
+> shall be treated like a bug and the GPIO driver fixed to handle
+> this. (That was the outcome of this discussion.)
 
-a) remove it right away (bad luck for out-of-tree users; still my favourite)
-b) keep it, but discourage its use (then we have cruft)
-c) convert it to an inline function and mark that deprecated and remove it later
+I haven't followed that discussion, but it's good to hear that
+you made some progress there. I find it a bit worrying that you
+say the behavior may be dependent on the gpio driver, but maybe
+I didn't fully understand what the resolution is.
 
-This series is based on v3.12-rc5  and I was able to compile test 74 out of 84
-users, for the others I didn't have configs/compilers. Buildbots didn't
-complain so far as well. The branch can be found here:
+> Since what the driver will then eventually provide is to
+> flag an IRQ line as wakeup, I wonder if this should not just
+> simply go into the interrupt core, or atleast of/irq.c.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/wsa/linux.git reinit_completion
+Right.
 
-Looking forward to opinions. If accepted, I'd think it is probably best if this
-gets in in one go via Linus directly?
-
-Thanks,
-
-   Wolfram
-
-
-Wolfram Sang (3):
-  sched: replace INIT_COMPLETION with reinit_completion
-  tree-wide: use reinit_completion instead of INIT_COMPLETION
-  sched: remove INIT_COMPLETION
-
- arch/arm/mach-tegra/apbio.c                        |  2 +-
- arch/powerpc/platforms/powermac/low_i2c.c          |  6 ++---
- arch/powerpc/platforms/pseries/suspend.c           |  2 +-
- crypto/af_alg.c                                    |  2 +-
- crypto/tcrypt.c                                    |  4 ++--
- crypto/testmgr.c                                   | 12 +++++-----
- drivers/ata/libata-eh.c                            |  4 ++--
- drivers/base/power/main.c                          |  4 ++--
- drivers/block/amiflop.c                            |  2 +-
- drivers/block/cciss.c                              |  4 ++--
- drivers/char/hw_random/timeriomem-rng.c            |  2 +-
- drivers/crypto/tegra-aes.c                         |  2 +-
- drivers/firewire/core-transaction.c                |  2 +-
- drivers/gpu/drm/gma500/oaktrail_hdmi_i2c.c         |  2 +-
- drivers/hid/hid-wiimote.h                          |  2 +-
- drivers/hwmon/jz4740-hwmon.c                       |  2 +-
- drivers/i2c/busses/i2c-at91.c                      |  2 +-
- drivers/i2c/busses/i2c-bcm2835.c                   |  2 +-
- drivers/i2c/busses/i2c-davinci.c                   |  2 +-
- drivers/i2c/busses/i2c-designware-core.c           |  2 +-
- drivers/i2c/busses/i2c-ismt.c                      |  2 +-
- drivers/i2c/busses/i2c-mxs.c                       |  2 +-
- drivers/i2c/busses/i2c-omap.c                      |  2 +-
- drivers/i2c/busses/i2c-tegra.c                     |  2 +-
- drivers/i2c/busses/i2c-wmt.c                       |  4 ++--
- drivers/iio/adc/ad_sigma_delta.c                   |  6 ++---
- drivers/iio/adc/nau7802.c                          |  2 +-
- drivers/input/touchscreen/cyttsp_core.c            |  2 +-
- drivers/md/dm-crypt.c                              |  2 +-
- drivers/media/platform/blackfin/bfin_capture.c     |  2 +-
- drivers/media/radio/radio-wl1273.c                 | 10 ++++----
- drivers/media/radio/si470x/radio-si470x-common.c   |  4 ++--
- drivers/media/rc/iguanair.c                        |  2 +-
- drivers/memstick/core/memstick.c                   |  2 +-
- drivers/memstick/host/r592.c                       |  2 +-
- drivers/misc/ti-st/st_kim.c                        | 12 +++++-----
- drivers/mtd/nand/mxc_nand.c                        |  2 +-
- drivers/mtd/nand/r852.c                            |  2 +-
- drivers/mtd/onenand/omap2.c                        | 10 ++++----
- .../net/ethernet/qlogic/qlcnic/qlcnic_83xx_hw.c    |  2 +-
- drivers/net/ieee802154/at86rf230.c                 |  2 +-
- drivers/net/ieee802154/mrf24j40.c                  |  2 +-
- drivers/net/wireless/ath/ath10k/htc.c              |  4 ++--
- drivers/net/wireless/ath/ath10k/mac.c              | 18 +++++++-------
- drivers/net/wireless/ath/carl9170/usb.c            |  2 +-
- drivers/net/wireless/ath/wil6210/main.c            |  2 +-
- drivers/net/wireless/brcm80211/brcmfmac/p2p.c      |  4 ++--
- drivers/net/wireless/zd1211rw/zd_usb.c             |  2 +-
- drivers/parport/parport_ip32.c                     |  4 ++--
- drivers/platform/x86/apple-gmux.c                  |  2 +-
- drivers/power/ab8500_fg.c                          |  4 ++--
- drivers/power/jz4740-battery.c                     |  2 +-
- drivers/rtc/rtc-hid-sensor-time.c                  |  2 +-
- drivers/spi/spi-bcm2835.c                          |  2 +-
- drivers/spi/spi-clps711x.c                         |  2 +-
- drivers/spi/spi-davinci.c                          |  2 +-
- drivers/spi/spi-fsl-espi.c                         |  2 +-
- drivers/spi/spi-fsl-spi.c                          |  2 +-
- drivers/spi/spi-mpc512x-psc.c                      |  2 +-
- drivers/spi/spi-mxs.c                              |  2 +-
- drivers/spi/spi-s3c64xx.c                          |  2 +-
- drivers/spi/spi-sh-msiof.c                         |  2 +-
- drivers/spi/spi-sirf.c                             |  4 ++--
- drivers/spi/spi-tegra114.c                         |  6 ++---
- drivers/spi/spi-tegra20-sflash.c                   |  2 +-
- drivers/spi/spi-tegra20-slink.c                    |  6 ++---
- drivers/spi/spi-xilinx.c                           |  2 +-
- drivers/staging/iio/adc/mxs-lradc.c                |  2 +-
- drivers/staging/media/solo6x10/solo6x10-p2m.c      |  2 +-
- drivers/staging/tidspbridge/core/sync.c            |  4 ++--
- .../staging/tidspbridge/include/dspbridge/sync.h   |  2 +-
- drivers/staging/tidspbridge/rmgr/drv_interface.c   |  6 ++---
- drivers/tty/metag_da.c                             |  2 +-
- drivers/usb/c67x00/c67x00-sched.c                  |  2 +-
- drivers/usb/gadget/f_fs.c                          |  2 +-
- drivers/usb/serial/mos7720.c                       |  2 +-
- drivers/video/exynos/exynos_mipi_dsi_common.c      |  4 ++--
- .../video/omap2/displays-new/encoder-tpd12s015.c   |  2 +-
- fs/ecryptfs/crypto.c                               |  2 +-
- fs/nfs/nfs4state.c                                 |  2 +-
- fs/ocfs2/dlmglue.c                                 |  4 ++--
- include/linux/completion.h                         | 28 ++++++++++++----------
- sound/soc/samsung/ac97.c                           |  6 ++---
- 83 files changed, 149 insertions(+), 147 deletions(-)
-
--- 
-1.8.4.rc3
-
+	Arnd
