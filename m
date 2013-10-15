@@ -1,81 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758925Ab3JONCi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 09:02:38 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:55533 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758527Ab3JONCh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 09:02:37 -0400
-Date: Tue, 15 Oct 2013 15:02:26 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Don Zickus <dzickus@redhat.com>
-Cc: dave.hansen@linux.intel.com, eranian@google.com, ak@linux.intel.com,
-        jmario@redhat.com, linux-kernel@vger.kernel.org, acme@infradead.org
-Subject: Re: x86, perf: throttling issues with long nmi latencies
-Message-ID: <20131015130226.GX26785@twins.programming.kicks-ass.net>
-References: <20131014203549.GY227855@redhat.com>
- <20131015101404.GD10651@twins.programming.kicks-ass.net>
+	id S1759032Ab3JONER (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 09:04:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31401 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758566Ab3JONEP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 09:04:15 -0400
+Date: Tue, 15 Oct 2013 09:03:46 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Hong Zhiguo <honkiko@gmail.com>, axboe@kernel.dk, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Hong Zhiguo <zhiguohong@tencent.com>
+Subject: Re: [PATCH v2] blk-throttle: simplify logic by token bucket algorithm
+Message-ID: <20131015130346.GB31215@redhat.com>
+References: <1381574794-7639-1-git-send-email-zhiguohong@tencent.com>
+ <1381741757-20888-1-git-send-email-zhiguohong@tencent.com>
+ <20131014133620.GF4722@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131015101404.GD10651@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20131014133620.GF4722@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 15, 2013 at 12:14:04PM +0200, Peter Zijlstra wrote:
->  arch/x86/kernel/cpu/perf_event_intel_ds.c | 43 ++++++++++++++++++++++---------
->  1 file changed, 31 insertions(+), 12 deletions(-)
+On Mon, Oct 14, 2013 at 09:36:20AM -0400, Tejun Heo wrote:
+> Hello,
 > 
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-> index 32e9ed81cd00..3978e72a1c9f 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-> @@ -722,6 +722,8 @@ void intel_pmu_pebs_disable_all(void)
->  		wrmsrl(MSR_IA32_PEBS_ENABLE, 0);
->  }
->  
-> +static DEFINE_PER_CPU(u8 [PAGE_SIZE], insn_page);
-> +
->  static int intel_pmu_pebs_fixup_ip(struct pt_regs *regs)
->  {
->  	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-> @@ -729,6 +731,8 @@ static int intel_pmu_pebs_fixup_ip(struct pt_regs *regs)
->  	unsigned long old_to, to = cpuc->lbr_entries[0].to;
->  	unsigned long ip = regs->ip;
->  	int is_64bit = 0;
-> +	int size, bytes;
-> +	void *kaddr;
->  
->  	/*
->  	 * We don't need to fixup if the PEBS assist is fault like
-> @@ -763,29 +767,44 @@ static int intel_pmu_pebs_fixup_ip(struct pt_regs *regs)
->  		return 1;
->  	}
->  
-> +refill:
-> +	if (kernel_ip(ip)) {
-> +		u8 *buf = &__get_cpu_var(insn_page[0]);
-> +		size = PAGE_SIZE - ((unsigned long)to & (PAGE_SIZE-1));
-> +		if (size < MAX_INSN_SIZE) {
-> +			/*
-> +			 * If we're going to have to touch two pages; just copy
-> +			 * as much as we can hold.
-> +			 */
-> +			size = PAGE_SIZE;
+> On Mon, Oct 14, 2013 at 05:09:17PM +0800, Hong Zhiguo wrote:
+> > From: Hong Zhiguo <zhiguohong@tencent.com>
+> > 
+> > Token bucket algorithm(http://en.wikipedia.org/wiki/Token_bucket)
+> > is very simple and widely used for rate limiting and shaping.
+> > It's well suitable for blk-throttle. And it natually works for
+> > hierarchical cgroups. So I took it to replace the original time
+> > _slicing_|_trimming_|_extending_ logic.
+> > 
+> > The advantage is simplicity, reliability and less fluctuation.
+> > 
+> > About 300 lines of code for time-slicing is replaced with 60 lines of
+> > code for token bucket in blk-throttle.c.
+> > 
+> > I've tested this patch by fio with rw=randread, rw=randrw. It
+> > behaves almost the same with original time-slicing implementation,
+> > and with more accuracy.
+> 
+> Yes, this definitely is the direction we wanna take it.  I'll wait for
+> Vivek to chime in but have you also tested hierarchical setup?
 
+Hi Tejun,
 
-Arguably we'd want that to be:
+I will have a look at it either today or tomorrow.
 
-			size = min(PAGE_SIZE, ip - to);
-
-As there's no point in copying beyond the basic block.
-
-> +		}
-> +		bytes = copy_from_user_nmi(buf, (void __user *)to, size);
-> +		if (bytes != size)
-> +			return 0;
-> +
-> +		kaddr = buf;
+Thanks
+Vivek
