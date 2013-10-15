@@ -1,48 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755986Ab3JOHsw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 03:48:52 -0400
-Received: from mail-la0-f65.google.com ([209.85.215.65]:52277 "EHLO
-	mail-la0-f65.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752224Ab3JOHsv (ORCPT
+	id S1757061Ab3JOHxs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 03:53:48 -0400
+Received: from mailout09.t-online.de ([194.25.134.84]:52182 "EHLO
+	mailout09.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751684Ab3JOHxr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 03:48:51 -0400
+	Tue, 15 Oct 2013 03:53:47 -0400
+Message-ID: <525CF483.1020908@t-online.de>
+Date: Tue, 15 Oct 2013 09:53:39 +0200
+From: Knut Petersen <Knut_Petersen@t-online.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-In-Reply-To: <CANszf4gNGGTuTJjssmO5hntcKsCcJY7OG3VNTcDpm10SAMbevg@mail.gmail.com>
-References: <CACGw4H5+5bkgy+UJPCbwG2KXZDj3zhXLR4cZCbeDvjJhfTJwmQ@mail.gmail.com>
-	<CAPweEDzf1DbRHeXr_cL8ZZk9s0Srhp0s5rrYm0pksyurO0CXpw@mail.gmail.com>
-	<CAPweEDyaEo-7NzEYfxU7Hofq08Raepc_JFevoqF+Nzrwzz2kXQ@mail.gmail.com>
-	<CANszf4iyed-tCBK7g8HEWgBpTXydSwcsRTA1UzyxZhN1uy0vQg@mail.gmail.com>
-	<20131013120201.GA23970@amd.pavel.ucw.cz>
-	<CANszf4gNGGTuTJjssmO5hntcKsCcJY7OG3VNTcDpm10SAMbevg@mail.gmail.com>
-Date: Tue, 15 Oct 2013 09:48:49 +0200
-Message-ID: <CA+xJJ19v4hD0VX3g2qwGLAZax=ssW7YPdumK25vpGs=3eebCEg@mail.gmail.com>
-Subject: Re: Transcend's "one of the most cavalier GPL violations in a long time"
-From: Mats Liljegren <liljegren.mats2@gmail.com>
-To: Rogelio Serrano <rogelio.serrano@gmail.com>
-Cc: Pavel Machek <pavel@ucw.cz>, "luke.leighton" <luke.leighton@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>
+CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Greg KH <greg@kroah.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [BUG 3.12.rc4] Oops: unable to handle kernel paging request during
+ shutdown
+References: <525BD08C.2080101@t-online.de> <CA+55aFwN++wO=rTFaH7m6YYQX+Fv3qDt6Hxs7UnPUJpFsrwSkA@mail.gmail.com> <20131014212830.GD5790@linux.vnet.ibm.com> <20131014215117.GE13538@localhost.localdomain> <20131015064025.GA22672@gmail.com>
+In-Reply-To: <20131015064025.GA22672@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-ID: bLwLB6ZXZhkl7xJunZwK+N7JqrKHguneb-jmvx4fT8WDBHLVlmJWPzj3UfJQexnQn9
+X-TOI-MSGID: 5ff5e3f6-24c0-467d-9e59-c5d6771c8af2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I was led to believe this in the busybox list. maybe we are communally
-> smoking the same stuff. Linux Kernel Developers would rather go on
-> developing better code than waste time on enforcement. Some even think
-> it is counter productive to adoption of linux.
+On 15.10.2013 08:40, Ingo Molnar wrote:
+> * Frederic Weisbecker <fweisbec@gmail.com> wrote:
 >
-> Transcend most likely knows this.
+>> I've been thinking that CONFIG_DEBUG_LIST could help. Unfortunately it's
+>> good to spot list APIs misuse but, if Linus is right, the problem may be
+>> that the list belongs to an object that has been freed, and I believe
+>> that won't detect such a thing.
+> Use-after free should be reliably detectable via CONFIG_DEBUG_PAGEALLOC=y.
+
+Enabled.
+
+Hmm ... I think i spotted a KConfig bug.  In mm/Kconfig.debug I read:
+
+config DEBUG_PAGEALLOC
+         bool "Debug page memory allocations"
+         depends on DEBUG_KERNEL
+         depends on !HIBERNATION || ARCH_SUPPORTS_DEBUG_PAGEALLOC && !PPC && !SPARC
+         depends on !KMEMCHECK
+         select PAGE_POISONING if !ARCH_SUPPORTS_DEBUG_PAGEALLOC
+         select PAGE_GUARD if ARCH_SUPPORTS_DEBUG_PAGEALLOC
+         ---help---
+           Unmap pages from the kernel linear mapping after free_pages().
+           This results in a large slowdown, but helps to find certain types
+           of memory corruption.
+
+           For architectures which don't enable ARCH_SUPPORTS_DEBUG_PAGEALLOC,
+           fill the pages with poison patterns after free_pages() and verify
+           the patterns before alloc_pages().  Additionally,
+           this option cannot be enabled in combination with hibernation as
+           that would result in incorrect warnings of memory corruption after
+           a resume because free pages are not saved to the suspend image.
+
+
+Either the description or the "depends" line that includes !HIBERNATION is wrong. Maybe
+
+         depends on DEBUG_KERNEL
+-        depends on !HIBERNATION || ARCH_SUPPORTS_DEBUG_PAGEALLOC && !PPC && !SPARC
++        depends on !HIBERNATION && ARCH_SUPPORTS_DEBUG_PAGEALLOC && !PPC && !SPARC
+         depends on !KMEMCHECK
+
+is correct, at least does not allow HIBERNATION and DEBUG_PAGEALLOC to be enabled simultaneously.
+
 >
-> You have a piece of code under the GPL and the majority of the
-> copyright holders say they will not enforce it. Thats virtually public
-> domain code. Thats why i stopped contributing to the linux kernel and
-> opted to maintain a massive patch instead.
+> A couple of years ago I wrote a list debugging beast that would catch
+> use-after-free mishaps (sent it to lkml too IIRC), but it was a bit
+> complex and I never found the time to nurse it upstream.
+>
+> Thanks,
+>
+> 	Ingo
+>
 
-I think it is sad that you take this decision purely based on the fact
-that by contributing to the Linux kernel you will not get help to
-enforce the GPL license for your code.
-
-I'm a little bit curious however: In what way do you now have better
-ways to enforce the GPL license of your code now that you maintain a
-massive patch? Is it that you never show it to the public?
