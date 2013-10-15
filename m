@@ -1,76 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759527Ab3JOQGv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 12:06:51 -0400
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:56903 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758971Ab3JOQGt (ORCPT
+	id S932930Ab3JOQH6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 12:07:58 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:59684 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932396Ab3JOQH4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 12:06:49 -0400
-Date: Tue, 15 Oct 2013 18:06:46 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Mike Galbraith <efault@gmx.de>, Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 3/3] perf record: mmap output file
-Message-ID: <20131015160646.GC16003@gmail.com>
-References: <1381289214-24885-1-git-send-email-dsahern@gmail.com>
- <1381289214-24885-4-git-send-email-dsahern@gmail.com>
- <20131009055957.GA7664@gmail.com>
- <525D4B5F.4090005@gmail.com>
- <20131015143245.GB9828@ghostprotocols.net>
- <20131015143819.GM10651@twins.programming.kicks-ass.net>
- <20131015152747.GA15979@gmail.com>
- <525D5FA1.7060404@gmail.com>
+	Tue, 15 Oct 2013 12:07:56 -0400
+Date: Tue, 15 Oct 2013 18:07:52 +0200 (CEST)
+From: Enrico Mioso <mrkiko.rs@gmail.com>
+X-X-Sender: mrkiko@eeeadesso
+To: Dan Williams <dcbw@redhat.com>
+cc: gregkh@linuxfoundation.org, davem@davemloft.net, bjorn@mork.no,
+        christian.schmiedl@gemalto.com, linux-usb@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Antonella Pellizzari <anto.pellizzari83@gmail.com>
+Subject: Re: [PATCH] net: qmi_wwan: Olivetti Olicard 200 support
+In-Reply-To: <1381848597.25397.4.camel@dcbw.foobar.com>
+Message-ID: <alpine.LNX.2.02.1310151806230.12061@eeeadesso>
+References: <1381842408-10800-1-git-send-email-mrkiko.rs@gmail.com> <1381842408-10800-2-git-send-email-mrkiko.rs@gmail.com> <1381848597.25397.4.camel@dcbw.foobar.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <525D5FA1.7060404@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+:) I'm very happy you got it working.
+The firmware of our device seems so fragile still - and several QMI calls can 
+bring it to a crashing state, especially when asking a network scan to the NAS 
+service.
 
-* David Ahern <dsahern@gmail.com> wrote:
 
-> On 10/15/13 9:27 AM, Ingo Molnar wrote:
-> >
-> >* Peter Zijlstra <peterz@infradead.org> wrote:
-> >
-> >>On Tue, Oct 15, 2013 at 11:32:45AM -0300, Arnaldo Carvalho de Melo wrote:
-> >>
-> >>>Jiri and PeterZ probaby will have comments here... ;-) :-)
-> >>
-> >>The only complication with splice is the vmalloc support; other than
-> >>that it should be fairly straight fwd.
-> >
-> >In the initial version we could skip splice support for vmalloc
-> >ring-buffer, to keep things simple.
-> >
-> > Wanna send a patch for people to try? Looks like there's real interest 
-> > in speeding up perf record as much as possible!
-> 
-> My second -- and more important -- concern about splice has been dropped 
-> from this path:
-> 
-> "splice is also a system call and it would have to be invoked for each 
-> mmap each trip through the loop -- just like write() does today -- so it 
-> does not solve the feedback loop problem. "
-> 
-> Am I missing something on how splice works?
+On Tue, 15 Oct 2013, Dan Williams wrote:
 
-splice() is very fast and should be able to process a lot of pages in one 
-go, so the feedback loop should be pretty weak. mmap() triggers kernel 
-code as well, every time we run out of the 64 MB window we got to remap 
-it, right?
-
-But that's all just theory - I think non-temporal stores have a pretty 
-good chance of being a very good solution as well.
-
-Thanks,
-
-	Ingo
+==Date: Tue, 15 Oct 2013 09:49:57 -0500
+==From: Dan Williams <dcbw@redhat.com>
+==To: Enrico Mioso <mrkiko.rs@gmail.com>
+==Cc: gregkh@linuxfoundation.org, davem@davemloft.net, bjorn@mork.no,
+==    christian.schmiedl@gemalto.com, linux-usb@vger.kernel.org,
+==    netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+==    Antonella Pellizzari <anto.pellizzari83@gmail.com>
+==Subject: Re: [PATCH] net: qmi_wwan: Olivetti Olicard 200 support
+==
+==On Tue, 2013-10-15 at 15:06 +0200, Enrico Mioso wrote:
+==> This is a QMI device, manufactured by TCT Mobile Phones.
+==> A companion patch blacklisting this device's QMI interface in the option.c
+==> driver has been sent.
+==> 
+==> Signed-off-by: Enrico Mioso <mrkiko.rs@gmail.com>
+==> Signed-off-by: Antonella Pellizzari <anto.pellizzari83@gmail.com>
+==
+==Good find.  For the record, mine has:
+==
+==PX1522E16X  1  [Oct 15 2010 02:00:00]
+==
+==	ctl (1.4)
+==	wds (1.8)
+==	dms (1.3)
+==	nas (1.2)
+==	qos (1.2)
+==	wms (1.1)
+==	pds (1.4)
+==	auth (1.0)
+==	voice (1.0)
+==	cat2 (1.1)
+==
+==Tested-by: Dan Williams <dcbw@redhat.com>
+==
+==> diff --git a/drivers/net/usb/qmi_wwan.c b/drivers/net/usb/qmi_wwan.c
+==> index 3d6aaf7..818ce90 100644
+==> --- a/drivers/net/usb/qmi_wwan.c
+==> +++ b/drivers/net/usb/qmi_wwan.c
+==> @@ -714,6 +714,7 @@ static const struct usb_device_id products[] = {
+==>  	{QMI_FIXED_INTF(0x2357, 0x0201, 4)},	/* TP-LINK HSUPA Modem MA180 */
+==>  	{QMI_FIXED_INTF(0x2357, 0x9000, 4)},	/* TP-LINK MA260 */
+==>  	{QMI_FIXED_INTF(0x1bc7, 0x1200, 5)},	/* Telit LE920 */
+==> +	{QMI_FIXED_INTF(0x0b3c, 0xc005, 6)},    /* Olivetti Olicard 200 */
+==>  	{QMI_FIXED_INTF(0x1e2d, 0x0060, 4)},	/* Cinterion PLxx */
+==>  
+==>  	/* 4. Gobi 1000 devices */
+==
+==
+==
