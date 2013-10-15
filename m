@@ -1,205 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758599Ab3JOKoQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 06:44:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52558 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754861Ab3JOKoN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 06:44:13 -0400
-Date: Tue, 15 Oct 2013 13:43:59 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: chai wen <chaiw.fnst@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, pbonzini@redhat.com, tangchen@cn.fujitsu.com,
-        guz.fnst@cn.fujitsu.com, zhangyanfei@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, chaiwen_0825@hotmail.com
-Subject: Re: [PATCH RESEND] Drop-FOLL_GET-in-GUP-when-doing-async_pf-in-kvm
-Message-ID: <20131015104359.GZ15657@redhat.com>
-References: <1381760553-11075-1-git-send-email-chaiw.fnst@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1381760553-11075-1-git-send-email-chaiw.fnst@cn.fujitsu.com>
+	id S1758075Ab3JOKtz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 06:49:55 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:51697 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757896Ab3JOKtx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 06:49:53 -0400
+From: Ramkumar Ramachandra <artagnon@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>
+Subject: [PATCH] virtio tools: use ansi versions of asm and volatile
+Date: Tue, 15 Oct 2013 16:13:10 +0530
+Message-Id: <1381833790-18687-1-git-send-email-artagnon@gmail.com>
+X-Mailer: git-send-email 1.8.4.477.g5d89aa9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 14, 2013 at 10:22:33PM +0800, chai wen wrote:
-> 
-> Hi Gleb
-> 
-> I am sorry for my mistake before.
-> This new patch is based on 'git://git.kernel.org/pub/scm/virt/kvm/kvm.git'.
-> Page pinning is not mandatory in kvm async_pf processing and probably
-> should be dropped later. And we don't mind whether the GUP is failed or
-> not. What we need to do is to wake up guests process that is waitting on
-> a page. So drop the FOLL_GET flag in GUP, and do some simplifying in
-> async_pf check/clear processing.
-> To trigger the happening of async_pf, it needs some memory stress in system
-> for doing swap pressure. I simply run some big block dd processes in system
-> before. And it works as I see some async_pf happening and the vm works well.
-> But I do not know the exact occasion of the async_pf happening.
-> Thanks.
-> 
-Applied, thanks.
+asm and volatile are provided for backward compatibility; use the ansi
+versions __asm__ and __volatile__.
 
-> Suggested-by: Gleb Natapov <gleb@redhat.com>
-> Signed-off-by: Gu zheng <guz.fnst@cn.fujitsu.com>
-> Signed-off-by: chai wen <chaiw.fnst@cn.fujitsu.com>
-> ---
->  arch/x86/kvm/x86.c         |    4 ++--
->  include/linux/kvm_host.h   |    2 +-
->  include/trace/events/kvm.h |   10 ++++------
->  virt/kvm/async_pf.c        |   17 +++++------------
->  4 files changed, 12 insertions(+), 21 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index c951c71..edf2a07 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -7298,7 +7298,7 @@ void kvm_arch_async_page_ready(struct kvm_vcpu *vcpu, struct kvm_async_pf *work)
->  	int r;
->  
->  	if ((vcpu->arch.mmu.direct_map != work->arch.direct_map) ||
-> -	      is_error_page(work->page))
-> +	      work->wakeup_all)
->  		return;
->  
->  	r = kvm_mmu_reload(vcpu);
-> @@ -7408,7 +7408,7 @@ void kvm_arch_async_page_present(struct kvm_vcpu *vcpu,
->  	struct x86_exception fault;
->  
->  	trace_kvm_async_pf_ready(work->arch.token, work->gva);
-> -	if (is_error_page(work->page))
-> +	if (work->wakeup_all)
->  		work->arch.token = ~0; /* broadcast wakeup */
->  	else
->  		kvm_del_async_pf_gfn(vcpu, work->arch.gfn);
-> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-> index 7c961e1..5841e14 100644
-> --- a/include/linux/kvm_host.h
-> +++ b/include/linux/kvm_host.h
-> @@ -189,7 +189,7 @@ struct kvm_async_pf {
->  	gva_t gva;
->  	unsigned long addr;
->  	struct kvm_arch_async_pf arch;
-> -	struct page *page;
-> +	bool   wakeup_all;
->  };
->  
->  void kvm_clear_async_pf_completion_queue(struct kvm_vcpu *vcpu);
-> diff --git a/include/trace/events/kvm.h b/include/trace/events/kvm.h
-> index 7005d11..131a0bd 100644
-> --- a/include/trace/events/kvm.h
-> +++ b/include/trace/events/kvm.h
-> @@ -296,23 +296,21 @@ DEFINE_EVENT(kvm_async_pf_nopresent_ready, kvm_async_pf_ready,
->  
->  TRACE_EVENT(
->  	kvm_async_pf_completed,
-> -	TP_PROTO(unsigned long address, struct page *page, u64 gva),
-> -	TP_ARGS(address, page, gva),
-> +	TP_PROTO(unsigned long address, u64 gva),
-> +	TP_ARGS(address, gva),
->  
->  	TP_STRUCT__entry(
->  		__field(unsigned long, address)
-> -		__field(pfn_t, pfn)
->  		__field(u64, gva)
->  		),
->  
->  	TP_fast_assign(
->  		__entry->address = address;
-> -		__entry->pfn = page ? page_to_pfn(page) : 0;
->  		__entry->gva = gva;
->  		),
->  
-> -	TP_printk("gva %#llx address %#lx pfn %#llx",  __entry->gva,
-> -		  __entry->address, __entry->pfn)
-> +	TP_printk("gva %#llx address %#lx",  __entry->gva,
-> +		  __entry->address)
->  );
->  
->  #endif
-> diff --git a/virt/kvm/async_pf.c b/virt/kvm/async_pf.c
-> index b197950..8631d9c 100644
-> --- a/virt/kvm/async_pf.c
-> +++ b/virt/kvm/async_pf.c
-> @@ -56,7 +56,6 @@ void kvm_async_pf_vcpu_init(struct kvm_vcpu *vcpu)
->  
->  static void async_pf_execute(struct work_struct *work)
->  {
-> -	struct page *page = NULL;
->  	struct kvm_async_pf *apf =
->  		container_of(work, struct kvm_async_pf, work);
->  	struct mm_struct *mm = apf->mm;
-> @@ -68,13 +67,12 @@ static void async_pf_execute(struct work_struct *work)
->  
->  	use_mm(mm);
->  	down_read(&mm->mmap_sem);
-> -	get_user_pages(current, mm, addr, 1, 1, 0, &page, NULL);
-> +	get_user_pages(current, mm, addr, 1, 1, 0, NULL, NULL);
->  	up_read(&mm->mmap_sem);
->  	unuse_mm(mm);
->  
->  	spin_lock(&vcpu->async_pf.lock);
->  	list_add_tail(&apf->link, &vcpu->async_pf.done);
-> -	apf->page = page;
->  	spin_unlock(&vcpu->async_pf.lock);
->  
->  	/*
-> @@ -82,7 +80,7 @@ static void async_pf_execute(struct work_struct *work)
->  	 * this point
->  	 */
->  
-> -	trace_kvm_async_pf_completed(addr, page, gva);
-> +	trace_kvm_async_pf_completed(addr, gva);
->  
->  	if (waitqueue_active(&vcpu->wq))
->  		wake_up_interruptible(&vcpu->wq);
-> @@ -112,8 +110,6 @@ void kvm_clear_async_pf_completion_queue(struct kvm_vcpu *vcpu)
->  			list_entry(vcpu->async_pf.done.next,
->  				   typeof(*work), link);
->  		list_del(&work->link);
-> -		if (!is_error_page(work->page))
-> -			kvm_release_page_clean(work->page);
->  		kmem_cache_free(async_pf_cache, work);
->  	}
->  	spin_unlock(&vcpu->async_pf.lock);
-> @@ -133,14 +129,11 @@ void kvm_check_async_pf_completion(struct kvm_vcpu *vcpu)
->  		list_del(&work->link);
->  		spin_unlock(&vcpu->async_pf.lock);
->  
-> -		if (work->page)
-> -			kvm_arch_async_page_ready(vcpu, work);
-> +		kvm_arch_async_page_ready(vcpu, work);
->  		kvm_arch_async_page_present(vcpu, work);
->  
->  		list_del(&work->queue);
->  		vcpu->async_pf.queued--;
-> -		if (!is_error_page(work->page))
-> -			kvm_release_page_clean(work->page);
->  		kmem_cache_free(async_pf_cache, work);
->  	}
->  }
-> @@ -163,7 +156,7 @@ int kvm_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn,
->  	if (!work)
->  		return 0;
->  
-> -	work->page = NULL;
-> +	work->wakeup_all = false;
->  	work->vcpu = vcpu;
->  	work->gva = gva;
->  	work->addr = gfn_to_hva(vcpu->kvm, gfn);
-> @@ -203,7 +196,7 @@ int kvm_async_pf_wakeup_all(struct kvm_vcpu *vcpu)
->  	if (!work)
->  		return -ENOMEM;
->  
-> -	work->page = KVM_ERR_PTR_BAD_PAGE;
-> +	work->wakeup_all = true;
->  	INIT_LIST_HEAD(&work->queue); /* for list_del to work */
->  
->  	spin_lock(&vcpu->async_pf.lock);
-> -- 
-> 1.7.1
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
+---
+ tools/virtio/asm/barrier.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---
-			Gleb.
+diff --git a/tools/virtio/asm/barrier.h b/tools/virtio/asm/barrier.h
+index aff61e1..b2fbbfc 100644
+--- a/tools/virtio/asm/barrier.h
++++ b/tools/virtio/asm/barrier.h
+@@ -1,5 +1,5 @@
+ #if defined(__i386__) || defined(__x86_64__)
+-#define barrier() asm volatile("" ::: "memory")
++#define barrier() __asm__ __volatile__("" ::: "memory")
+ #define mb() __sync_synchronize()
+ 
+ #define smp_mb()	mb()
+-- 
+1.8.4.477.g5d89aa9
+
