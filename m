@@ -1,82 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758427Ab3JOJqJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 05:46:09 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:51633 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757896Ab3JOJqG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 05:46:06 -0400
-Date: Tue, 15 Oct 2013 02:45:47 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Weijie Yang <weijie.yang.kh@gmail.com>,
-        Bob Liu <bob.liu@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Shaohua Li <shli@fusionio.com>, Minchan Kim <minchan@kernel.org>
-Subject: Re: [PATCH] swap: fix set_blocksize race during swapon/swapoff
-In-Reply-To: <1381485262-16792-1-git-send-email-k.kozlowski@samsung.com>
-Message-ID: <alpine.LNX.2.00.1310150235110.6194@eggly.anvils>
-References: <1381485262-16792-1-git-send-email-k.kozlowski@samsung.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S932107Ab3JOJze (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 05:55:34 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38373 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757872Ab3JOJzd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 05:55:33 -0400
+Date: Tue, 15 Oct 2013 10:55:27 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        hannes@cmpxchg.org, riel@redhat.com, aarcange@redhat.com,
+        srikar@linux.vnet.ibm.com, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:sched/core] sched/numa: Introduce migrate_swap()
+Message-ID: <20131015095527.GH11028@suse.de>
+References: <1381141781-10992-39-git-send-email-mgorman@suse.de>
+ <tip-ac66f5477239ebd3c4e2cbf2f591ef387aa09884@git.kernel.org>
+ <20131010181722.GO13848@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20131010181722.GO13848@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Oct 2013, Krzysztof Kozlowski wrote:
-
-> Swapoff used old_block_size from swap_info which could be overwritten by
-> concurrent swapon.
+On Thu, Oct 10, 2013 at 08:17:22PM +0200, Peter Zijlstra wrote:
+> On Wed, Oct 09, 2013 at 10:30:13AM -0700, tip-bot for Peter Zijlstra wrote:
+> > sched/numa: Introduce migrate_swap()
 > 
-> Reported-by: Weijie Yang <weijie.yang.kh@gmail.com>
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-
-Acked-by: Hugh Dickins <hughd@google.com>
-
-Yes, this is straightforward: it was relying on p->old_block_size
-after it had given up its hold on *p: a use-after-free (though
-those slots are not freed back to a lower-level allocator).
-
-What is not obvious is why swapon needs to use set_blocksize() at all:
-if I knew once upon a time, I've forgotten now: because a bdev starts
-out with blocksize 0 and someone needs to set it non-0??
-
+> Thanks to Rik for writing the Changelog!
+> 
 > ---
->  mm/swapfile.c |    4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
+> From: Peter Zijlstra <peterz@infradead.org>
+> Subject: sched: Fix race in migrate_swap_stop
 > 
-> diff --git a/mm/swapfile.c b/mm/swapfile.c
-> index 3963fc2..de7c904 100644
-> --- a/mm/swapfile.c
-> +++ b/mm/swapfile.c
-> @@ -1824,6 +1824,7 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
->  	struct filename *pathname;
->  	int i, type, prev;
->  	int err;
-> +	unsigned int old_block_size;
->  
->  	if (!capable(CAP_SYS_ADMIN))
->  		return -EPERM;
-> @@ -1914,6 +1915,7 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
->  	}
->  
->  	swap_file = p->swap_file;
-> +	old_block_size = p->old_block_size;
->  	p->swap_file = NULL;
->  	p->max = 0;
->  	swap_map = p->swap_map;
-> @@ -1938,7 +1940,7 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
->  	inode = mapping->host;
->  	if (S_ISBLK(inode->i_mode)) {
->  		struct block_device *bdev = I_BDEV(inode);
-> -		set_blocksize(bdev, p->old_block_size);
-> +		set_blocksize(bdev, old_block_size);
->  		blkdev_put(bdev, FMODE_READ | FMODE_WRITE | FMODE_EXCL);
->  	} else {
->  		mutex_lock(&inode->i_mutex);
-> -- 
-> 1.7.9.5
+> There is a subtle race in migrate_swap, when task P, on CPU A, decides to swap
+> places with task T, on CPU B.
+> 
+> Task P:
+>   - call migrate_swap
+> Task T:
+>   - go to sleep, removing itself from the runqueue
+> Task P:
+>   - double lock the runqueues on CPU A & B
+> Task T:
+>   - get woken up, place itself on the runqueue of CPU C
+> Task P:
+>   - see that task T is on a runqueue, and pretend to remove it
+>     from the runqueue on CPU B
+> 
+> Now CPUs B & C both have corrupted scheduler data structures.
+> 
+> This patch fixes it, by holding the pi_lock for both of the tasks
+> involved in the migrate swap. This prevents task T from waking up,
+> and placing itself onto another runqueue, until after migrate_swap
+> has released all locks.
+> 
+> This means that, when migrate_swap checks, task T will be either
+> on the runqueue where it was originally seen, or not on any
+> runqueue at all. Migrate_swap deals correctly with of those cases.
+> 
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> Tested-by: Joe Mario <jmario@redhat.com>
+
+Acked-by: Mel Gorman <mgorman@suse.de>
+
+-- 
+Mel Gorman
+SUSE Labs
