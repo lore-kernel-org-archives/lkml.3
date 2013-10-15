@@ -1,66 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932410Ab3JOM0Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 08:26:25 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:50283 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932270Ab3JOM0Y (ORCPT
+	id S932487Ab3JOM0h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 08:26:37 -0400
+Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:43616 "EHLO
+	mx0a-0016f401.pphosted.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932270Ab3JOM0f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 08:26:24 -0400
-Date: Tue, 15 Oct 2013 13:26:19 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "'Liam Girdwood'" <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        "'Sascha Hauer'" <s.hauer@pengutronix.de>
-Message-ID: <20131015122619.GJ2443@sirena.org.uk>
-References: <000001cec8b9$931f4c90$b95de5b0$%han@samsung.com>
- <000601cec8ba$8cef0530$a6cd0f90$%han@samsung.com>
+	Tue, 15 Oct 2013 08:26:35 -0400
+From: Yi Zhang <yizhang@marvell.com>
+To: <broonie@kernel.org>
+CC: <yizhang@marvell.com>, <zhouqiao@marvell.com>, <zhangwm@marvell.com>,
+        <yizhang.mrvl@gmail.com>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2] regmap: irq: clear status when disable irq
+Date: Tue, 15 Oct 2013 20:23:30 +0800
+Message-ID: <1381839810-28984-1-git-send-email-yizhang@marvell.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="L4E8IxuC+4M0BcOO"
-Content-Disposition: inline
-In-Reply-To: <000601cec8ba$8cef0530$a6cd0f90$%han@samsung.com>
-X-Cookie: Time and tide wait for no man.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 07/11] regulator: mc13892: Fix checkpatch issue
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: text/plain
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
+ definitions=2013-10-15_04:2013-10-15,2013-10-15,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=1
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1310150039
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+clear the status bit if the mask register doesn't prevent
+the chip level irq from being asserted
 
---L4E8IxuC+4M0BcOO
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+OR in the following sequence, there will be irq storm happens:
+1) interrupt is triggered;
+2) another thread disables it(the mask bit is set);
+3) _Then_ the interrupt thread is not ACKed(the status bit is not cleared),
+   and it's ignored;
+4) if the irq is still asserted because of the uncleared status bit,
+   the irq storm happens;
 
-On Mon, Oct 14, 2013 at 05:51:19PM +0900, Jingoo Han wrote:
-> Fix the following checkpatch warnings.
+Signed-off-by: Yi Zhang <yizhang@marvell.com>
+---
+ drivers/base/regmap/regmap-irq.c |   27 ++++++++++++++++++++++++++-
+ 1 file changed, 26 insertions(+), 1 deletion(-)
 
-Applied, thanks.
+diff --git a/drivers/base/regmap/regmap-irq.c b/drivers/base/regmap/regmap-irq.c
+index d10456f..9b0148f 100644
+--- a/drivers/base/regmap/regmap-irq.c
++++ b/drivers/base/regmap/regmap-irq.c
+@@ -61,7 +61,7 @@ static void regmap_irq_sync_unlock(struct irq_data *data)
+ {
+ 	struct regmap_irq_chip_data *d = irq_data_get_irq_chip_data(data);
+ 	struct regmap *map = d->map;
+-	int i, ret;
++	int i, j, ret, bits_length;
+ 	u32 reg;
+ 
+ 	if (d->chip->runtime_pm) {
+@@ -105,6 +105,31 @@ static void regmap_irq_sync_unlock(struct irq_data *data)
+ 					"Failed to sync wakes in %x: %d\n",
+ 					reg, ret);
+ 		}
++
++		if (!d->chip->init_ack_masked)
++			continue;
++		/*
++		 * Ack all the masked interrupts uncondictionly,
++		 * OR if there is masked interrupt which hasn't been Acked,
++		 * it'll be ignored in irq handler, then may introduce irq storm
++		 */
++		if (d->chip->ack_base) {
++			reg = d->chip->ack_base +
++				(i * map->reg_stride * d->irq_reg_stride);
++
++			bits_length = d->map->format.val_bytes * BITS_PER_BYTE;
++			for (j = 0; j < bits_length; j++) {
++				if (!(d->mask_buf[i] & (0x1 << j))) {
++					ret = regmap_update_bits(d->map, reg,
++								 (0x1 << j), 0);
++					if (ret != 0)
++						dev_err(d->map->dev,
++							"Failed to ack 0x%x: %d\n",
++							reg, ret);
++				}
++			}
++			/* no need to sync status_buf, update in irq handler */
++		}
+ 	}
+ 
+ 	if (d->chip->runtime_pm)
+-- 
+1.7.9.5
 
---L4E8IxuC+4M0BcOO
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSXTRoAAoJELSic+t+oim90UwP/3Pyx9+3SGGz+AuF0jwHGfaG
-R4+GQJl56NteXmrVc9y90md0Fwd9N4SnvYL93DODaDjUm4DNUJi61B+rlX5RhbEa
-QAm0rN7GBXQfOuOsj2ofVtPfT8+w8duGZcpju6VsubZ+1msJghbrqhobLrGTeLQ6
-itSGmV1ZwK6EvSPzH8d7EtBqF/+IV4OC3WUD6xBG0jtBXzKnF0PuHkPX4CXdGNiA
-uAjNXQeVRs9/PbbFSupZV6K7x1zQVrVIaM7ywtGPqBol7Z3zUriVm/cOwJthsSpP
-C6HMz06EidjbZcmjVAwuglZ9oAhupH26EPnd850ZguxA4VTpcbkszWgPRN62O0ti
-zFKgrt2qqFQmOQMaPNLosr3xfHZww86cnPbqbKDdRSbxy1qguNtM2kcHRVtWeu08
-IyaDiQ2NF4AvigJxFaWyuqBJT3tLd+V7Xj+pz1T+r8MdAFmVxz+4X0ROSqR6Palg
-11m2lE6KkZN4UtbpHQEbxE92jyIeiac5vvJsLbeIqNhV9Vq8Zfm+YguHWeTiM6HM
-OsEFCW+Wdseg7UWR1crrvgY3hvJVRibuEn3b1WeXO6CSJUw7bis70kI1Uv+4sSJo
-aAmP4I0eFQYoV0BOsjP30ShYgqi1bvYu4stLyQABaA6nyc1zHs6prAVaix/21fA2
-QUgvWvBYq+dTlq3B/VfU
-=dxpt
------END PGP SIGNATURE-----
-
---L4E8IxuC+4M0BcOO--
