@@ -1,247 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758891Ab3JONUe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 09:20:34 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:54610 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932514Ab3JONU2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 09:20:28 -0400
-Date: Tue, 15 Oct 2013 08:19:34 -0500
+	id S1759199Ab3JONW4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 09:22:56 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:60956 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759127Ab3JONWy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 09:22:54 -0400
+Date: Tue, 15 Oct 2013 08:22:45 -0500
 From: Felipe Balbi <balbi@ti.com>
-To: Roger Quadros <rogerq@ti.com>
-CC: <balbi@ti.com>, Kishon Vijay Abraham I <kishon@ti.com>,
-        Vivek Gautam <gautamvivek1987@gmail.com>, <bcousson@baylibre.com>,
-        <tony@atomide.com>, <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <linux@arm.linux.org.uk>,
-        <grant.likely@linaro.org>, <s.nawrocki@samsung.com>,
-        <galak@codeaurora.org>, <swarren@wwwdotorg.org>,
-        <ian.campbell@citrix.com>, <rob@landley.net>, <george.cherian@ti.com>,
-        <gregkh@linuxfoundation.org>, <linux-doc@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/7] usb: dwc3: adapt dwc3 core to use Generic PHY
- Framework
-Message-ID: <20131015131934.GG11380@radagast>
+To: George Cherian <george.cherian@ti.com>
+CC: Mark Rutland <mark.rutland@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "tony@atomide.com" <tony@atomide.com>, "balbi@ti.com" <balbi@ti.com>,
+        "kishon@ti.com" <kishon@ti.com>, "rob@landley.net" <rob@landley.net>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>
+Subject: Re: [PATCH] phy: omap: Adapt phy-omap-usb2 for AM437x
+Message-ID: <20131015132245.GH11380@radagast>
 Reply-To: <balbi@ti.com>
-References: <1378136591-7463-1-git-send-email-kishon@ti.com>
- <1378136591-7463-3-git-send-email-kishon@ti.com>
- <525814A9.7060106@ti.com>
- <525BB8C0.1070802@ti.com>
- <525BC5A9.3060904@ti.com>
- <20131015115741.GD11380@radagast>
- <525D30C2.8060208@ti.com>
+References: <1381754603-11581-1-git-send-email-george.cherian@ti.com>
+ <20131014143259.GD31708@e106331-lin.cambridge.arm.com>
+ <525CE928.4060405@ti.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="cyV/sMl4KAhiehtf"
+	protocol="application/pgp-signature"; boundary="ewQ5hdP4CtoTt3oD"
 Content-Disposition: inline
-In-Reply-To: <525D30C2.8060208@ti.com>
+In-Reply-To: <525CE928.4060405@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---cyV/sMl4KAhiehtf
+--ewQ5hdP4CtoTt3oD
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
 Hi,
 
-On Tue, Oct 15, 2013 at 03:10:42PM +0300, Roger Quadros wrote:
-> >>>>> @@ -665,6 +669,9 @@ struct dwc3 {
-> >>>>>  	struct usb_phy		*usb2_phy;
-> >>>>>  	struct usb_phy		*usb3_phy;
-> >>>>> =20
-> >>>>> +	struct phy		*usb2_generic_phy;
-> >>>>> +	struct phy		*usb3_generic_phy;
-> >>>>> +
-> >>>>>  	void __iomem		*regs;
-> >>>>>  	size_t			regs_size;
-> >>>>> =20
-> >>>>>
-> >>>
-> >>> Do you have any suggestions on how to get only individual PHYs? like =
-only
-> >>> usb2phy or usb3phy?
-> >>
-> >> My earlier understanding was that both PHYs are needed only if .speed =
-is "super-speed"
-> >> and only usb2phy is needed for "high-speed". But as per Vivek's email =
-it seems
-> >> Samsung's exynos5 SoC doesn't need usb2phy for "super-speed".
-> >>
-> >> So to keeps things flexible, I can propose the following approach
-> >> - if speed =3D=3D 'high-speed' usb2phy must be present. usb3phy will b=
-e ignored if supplied.
-> >> - if speed =3D=3D 'super-speed' usb3phy must be present and usb2phy is=
- optional but must be
-> >> initialized if supplied.
-> >> - if speed is not specified, we default to 'super-speed'.
-> >>
-> >> Felipe, does this address the issue you were facing with OMAP5?
-> >=20
-> > on OMAP5 we cannot skip USB3 PHY initialization. But then it becomes a
-> > question of supporting a test feature (in OMAP5 case it would be cool to
-> > force controller to lower speeds for testing) or coping with a broken
-> > DTS.
-> >=20
+On Tue, Oct 15, 2013 at 12:35:12PM +0530, George Cherian wrote:
+> Hi Mark,
 >=20
-> I don't think we can protect ourselves from all possible broken
-> configurations of DTS.
-> I would vote for simplicity and maximum flexibility.
+> Fixed all your comments and already sent a V2.
 >=20
-> So IMO we should just depend on DTS to provide the phys that are
-> needed by the platform.
-> In the driver we initialize whatever PHY is provided and don't
-> complain if any or even all PHYs are missing.
+>=20
+> On 10/14/2013 8:03 PM, Mark Rutland wrote:
+> >On Mon, Oct 14, 2013 at 01:43:23PM +0100, George Cherian wrote:
+> >>This patch adds a compatible for AM437x "ti,am43xx-usb2" to
+> >>reuse the same phy-omap-usb2 driver.
+> >>
+> >>Also updated the documentation to add the new compatible.
+> >>
+> >>Signed-off-by: George Cherian <george.cherian@ti.com>
+> >>---
+> >>  Documentation/devicetree/bindings/usb/usb-phy.txt |  2 +-
+> >>  drivers/phy/phy-omap-usb2.c                       | 13 ++++++++++---
+> >>  2 files changed, 11 insertions(+), 4 deletions(-)
+> >>
+> >>diff --git a/Documentation/devicetree/bindings/usb/usb-phy.txt b/Docume=
+ntation/devicetree/bindings/usb/usb-phy.txt
+> >>index c0245c8..d5a7f21 100644
+> >>--- a/Documentation/devicetree/bindings/usb/usb-phy.txt
+> >>+++ b/Documentation/devicetree/bindings/usb/usb-phy.txt
+> >>@@ -3,7 +3,7 @@ USB PHY
+> >>  OMAP USB2 PHY
+> >>  Required properties:
+> >>- - compatible: Should be "ti,omap-usb2"
+> >>+ - compatible: Should be "ti,omap-usb2" or "ti,am437x-usb2"
+> >In case this needs to be modified in future, it might be best to split
+> >this up one per line, with a brief description of when it applies:
+> >
+> >- compatible: Should contain one of:
+> >   * "ti,omap-usb2" for ____ systems
+> >   * "ti,am437x-usb2" for ____ systems
+> >
+> >>   - reg : Address and length of the register set for the device.
+> >>   - #phy-cells: determine the number of cells that should be given in =
+the
+> >>     phandle while referencing this phy.
+> >>diff --git a/drivers/phy/phy-omap-usb2.c b/drivers/phy/phy-omap-usb2.c
+> >>index bfc5c33..0529c83 100644
+> >>--- a/drivers/phy/phy-omap-usb2.c
+> >>+++ b/drivers/phy/phy-omap-usb2.c
+> >>@@ -29,6 +29,7 @@
+> >>  #include <linux/delay.h>
+> >>  #include <linux/usb/omap_control_usb.h>
+> >>  #include <linux/phy/phy.h>
+> >>+#include <linux/of.h>
+> >>  #include <linux/of_platform.h>
+> >>  /**
+> >>@@ -172,7 +173,10 @@ static int omap_usb2_probe(struct platform_device =
+*pdev)
+> >>  	phy->dev		=3D &pdev->dev;
+> >>  	phy->phy.dev		=3D phy->dev;
+> >>-	phy->phy.label		=3D "omap-usb2";
+> >>+	if (of_device_is_compatible(node, "ti,am437x-usb2"))
+> >>+		phy->phy.label		=3D "am437x-usb2";
+> >>+	else
+> >>+		phy->phy.label		=3D "omap-usb2";
+> >Instead of having this check here, you could put together a struct
+> >containing the data applying to a particular compatible string, and
+> >associate it with the compatible string using of_device_id::data.
+> >
+> >That means we don't need to duplicate the compatible strings, and it's
+> >easier to extend in future.
+> >
+> >>  	phy->phy.set_suspend	=3D omap_usb2_suspend;
+> >>  	phy->phy.otg		=3D otg;
+> >>  	phy->phy.type		=3D USB_PHY_TYPE_USB2;
+> >>@@ -201,8 +205,10 @@ static int omap_usb2_probe(struct platform_device =
+*pdev)
+> >>  	otg->set_host		=3D omap_usb_set_host;
+> >>  	otg->set_peripheral	=3D omap_usb_set_peripheral;
+> >>-	otg->set_vbus		=3D omap_usb_set_vbus;
+> >>-	otg->start_srp		=3D omap_usb_start_srp;
+> >>+	if (of_device_is_compatible(node, "ti,omap-usb2")) {
+> >>+		otg->set_vbus		=3D omap_usb_set_vbus;
+> >>+		otg->start_srp		=3D omap_usb_start_srp;
+> >>+	}
+> >Similarly here.
 
-considering that DTS is an ABI, I really think eventually we *will* have
-broken DTBs burned into ROM and we will have to find ways to work with
-those too. Same thing already happens today with ACPI tables.
-
-> If this is not good enough then could you please suggest an
-> alternative? Thanks.
-
-The alternative would be to mandate nop xceiv for the "missing" PHY, but
-that doesn't solve anything, really, as DTS authors might still forget
-about the NOP xceiv and you can argue that forcing NOP xceiv would be a
-SW configuration.
-
-So, perhaps we go with the approach that all PHYs are optional, and
-here's my original patch which makes USB3 PHY optional:
-
-commit 979b84f96e4b7559b596b2933ae198aba267f260
-Author: Felipe Balbi <balbi@ti.com>
-Date:   Sun Jun 30 18:39:23 2013 +0300
-
-    usb: dwc3: core: make USB3 PHY optional
-   =20
-    If we want a port to work at any speed lower
-    than Superspeed, it makes no sense to even
-    initialize/power up the USB3 transceiver,
-    provided it won't be used.
-   =20
-    We can use the oportunity to save some power
-    and leave the superspeed transceiver powered
-    off.
-   =20
-    There is at least one such case which is
-    Texas Instruments' AM437x which has one
-    of its USB3 ports without a matching USB3
-    PHY (that port is hardwired to work on USB2
-    only).
-   =20
-    Signed-off-by: Felipe Balbi <balbi@ti.com>
-
-diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
-index 74f9cf0..7a5ab93 100644
---- a/drivers/usb/dwc3/core.c
-+++ b/drivers/usb/dwc3/core.c
-@@ -387,16 +387,34 @@ static int dwc3_probe(struct platform_device *pdev)
- 	if (node) {
- 		dwc->maximum_speed =3D of_usb_get_maximum_speed(node);
-=20
--		dwc->usb2_phy =3D devm_usb_get_phy_by_phandle(dev, "usb-phy", 0);
--		dwc->usb3_phy =3D devm_usb_get_phy_by_phandle(dev, "usb-phy", 1);
-+		switch (dwc->maximum_speed) {
-+		case USB_SPEED_SUPER:
-+			dwc->usb2_phy =3D devm_usb_get_phy_by_phandle(dev, "usb-phy", 0);
-+			dwc->usb3_phy =3D devm_usb_get_phy_by_phandle(dev, "usb-phy", 1);
-+			break;
-+		case USB_SPEED_HIGH:
-+		case USB_SPEED_FULL:
-+		case USB_SPEED_LOW:
-+			dwc->usb2_phy =3D devm_usb_get_phy_by_phandle(dev, "usb-phy", 0);
-+			break;
-+		}
-=20
- 		dwc->needs_fifo_resize =3D of_property_read_bool(node, "tx-fifo-resize");
- 		dwc->dr_mode =3D of_usb_get_dr_mode(node);
- 	} else if (pdata) {
- 		dwc->maximum_speed =3D pdata->maximum_speed;
-=20
--		dwc->usb2_phy =3D devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
--		dwc->usb3_phy =3D devm_usb_get_phy(dev, USB_PHY_TYPE_USB3);
-+		switch (dwc->maximum_speed) {
-+		case USB_SPEED_SUPER:
-+			dwc->usb2_phy =3D devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
-+			dwc->usb3_phy =3D devm_usb_get_phy(dev, USB_PHY_TYPE_USB3);
-+			break;
-+		case USB_SPEED_HIGH:
-+		case USB_SPEED_FULL:
-+		case USB_SPEED_LOW:
-+			dwc->usb2_phy =3D devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
-+			break;
-+		}
-=20
- 		dwc->needs_fifo_resize =3D pdata->tx_fifo_resize;
- 		dwc->dr_mode =3D pdata->dr_mode;
-@@ -424,19 +442,21 @@ static int dwc3_probe(struct platform_device *pdev)
- 		return -EPROBE_DEFER;
- 	}
-=20
--	if (IS_ERR(dwc->usb3_phy)) {
--		ret =3D PTR_ERR(dwc->usb3_phy);
-+	if (dwc->maximum_speed =3D=3D USB_SPEED_SUPER) {
-+		if (IS_ERR(dwc->usb3_phy)) {
-+			ret =3D PTR_ERR(dwc->usb3_phy);
-=20
--		/*
--		 * if -ENXIO is returned, it means PHY layer wasn't
--		 * enabled, so it makes no sense to return -EPROBE_DEFER
--		 * in that case, since no PHY driver will ever probe.
--		 */
--		if (ret =3D=3D -ENXIO)
--			return ret;
-+			/*
-+			 * if -ENXIO is returned, it means PHY layer wasn't
-+			 * enabled, so it makes no sense to return -EPROBE_DEFER
-+			 * in that case, since no PHY driver will ever probe.
-+			 */
-+			if (ret =3D=3D -ENXIO)
-+				return ret;
-=20
--		dev_err(dev, "no usb3 phy configured\n");
--		return -EPROBE_DEFER;
-+			dev_err(dev, "no usb3 phy configured\n");
-+			return -EPROBE_DEFER;
-+		}
- 	}
-=20
- 	dwc->xhci_resources[0].start =3D res->start;
-
-
-what you guys are saying though, is that every PHY should be optional.
-
-Do we have any device which doesn't provide USB2 PHY, only USB3 ? Dude,
-that's so non-standard! USB *must* be backwards compatible so I'd expect
-USB2 PHY to always be available.
+so you prefer the driver data approach ? I would rather have feature
+flags as driver_data instead of passing function pointers. In fact I
+have suggested that on another thread which reached linux-usb.
 
 --=20
 balbi
 
---cyV/sMl4KAhiehtf
+--ewQ5hdP4CtoTt3oD
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJSXUDmAAoJEIaOsuA1yqREJ0AQAKC3ONkDwVbbl3kjvgwifnSx
-eHhmEt2PQyoMgUIskjaLFSJ41PxKFMt9pb7o5miQmk98MldFCAHhSatyvAXFnGr3
-wNxQrUfCQUo1F9KagcBTOGe0RU+7oFDBlUu/LBu6lmVQg4My6481IQellJz52Aen
-sUCC+h8N2u1zfqTHPJBSjySeFke6a7ZKS2QLKknmKcMJAOMbvinDYcpEHDJzsThm
-zKJE+Z4sbll0PssDirJ0s1YeYOtT8LwIgLOAw4RTO60oJK/423GSkjvA0nWLGhpY
-PJsu82pm8nTx8Rg2K/QeLVC/VTtfChnc+oSqSfVZ/T6SFIP5T9dIve2yD980wJT8
-enVvYldF7nc8vwzStacYjQLt4wadpb28o1kfsfixoC0L0wVkr3d/V/Y5jZ/yqY/z
-mh5PQOSBjcw7H35FKmIgjx3LrTX8ykzjOws0LadQ5gVCsaTGgpqYZX8pP6giORj0
-dYkR/wyGgXM1ADAV/aa0mM5GNxhFSC1BsUEHio7EArRFV+KaXdkJppdMFl9AVGca
-ia5vfcjv6nK1F0aMSZ+nVZnjOwRRM6LaUrlOAhOKVKT1wVEuD4QpwcrFa2UaNXYN
-JoLGE5NP5NNQjTw1KSXpnhXJ2UJEHDR+HVW9yF8a4ZnbUWO+ZEYGTVJ35/w+dYuG
-HozZBaMwPnSfPaNRRHLX
-=znSu
+iQIcBAEBAgAGBQJSXUGkAAoJEIaOsuA1yqRECYEP/0Rh+LqLMoGjMd9Ggv6t+thz
+N9E8TnJA64ePzVdKJQ6YUrnhT5rNgAfGi49vAUhdODBTAiyQOjoQIMDK4H/v5xCc
+SdLqjN5kugl1zP1HkEBaDPhjY3ZIibDXz3a2Ke61TPJexuJc0X8kb93BgK9FZSOi
+PzxXGD1GC3OcMS2hmPosz0eI/sPPG3Yg/1DnSWTKZCRiNKSLZrJzXZPSlc1r60oU
+8aBBSujEmsQCLISBAxlDnScAWHwY5wJ8sRC3AQRFHpMwmvUwW5KPxDmxqaN7leKf
+GFFvU2ucOA+9AU3KSOrFJr8tE4THPhbIO/o6DFaxx2filBxukK3dJYxGheL9PRNX
+2nC/DtX6Mt36X/5GoIn26qVl+iskmsXSRaftBQMPOH3qLRKOO6QwinzKQoJv2W0I
+IexXJp56X35lsJUew9c3XXI+J3fxHqY1CAbMMt5zpubEOQCvXDUq6seg1iz3EMhR
+84+fs++tkHMZ0thMvBE1fvkeK19m518Z0s17EYhZ32fEupYmc3hA3c5OS/Y22DbK
+Hp2mpPwvNA7z2yZiVtgFLJRlw9FeZZQTxKeJH91mx2UL4TB200wwnODsCda6nSOG
+jHGcmD+8KOY4PWDsugnuym3yugV5UYUAq53B5N0LADAJoqXL1oHSLtd5ynhzBM2/
+XEMiUutx2s9kjIUyf+VA
+=8d2C
 -----END PGP SIGNATURE-----
 
---cyV/sMl4KAhiehtf--
+--ewQ5hdP4CtoTt3oD--
