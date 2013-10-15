@@ -1,64 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933733Ab3JOVdM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 17:33:12 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:56213 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932555Ab3JOVdK (ORCPT
+	id S933851Ab3JOVfH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 17:35:07 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:38438 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759122Ab3JOVfF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 17:33:10 -0400
-Message-ID: <525DB456.1040006@cogentembedded.com>
-Date: Wed, 16 Oct 2013 01:32:06 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Tue, 15 Oct 2013 17:35:05 -0400
 MIME-Version: 1.0
-To: Julius Werner <jwerner@chromium.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Benson Leung <bleung@chromium.org>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Duncan Laurie <dlaurie@chromium.org>
-Subject: Re: [PATCH] usb: hub: Clear Port Reset Change during init/resume
-References: <1381872227-24757-1-git-send-email-jwerner@chromium.org>
-In-Reply-To: <1381872227-24757-1-git-send-email-jwerner@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <201310152132.00409.arnd@arndb.de>
+References: <1380635719-31171-1-git-send-email-zonque@gmail.com>
+	<CACRpkdYhQ+-d1COcvmg_hEJ==cTFpKLNDnvF8kdK4QgXzHenEA@mail.gmail.com>
+	<201310152132.00409.arnd@arndb.de>
+Date: Tue, 15 Oct 2013 23:35:03 +0200
+Message-ID: <CACRpkdbeHco4iykPeH=NF3hWzWm3UxfAaaTvM4y74NfSbJi2Jw@mail.gmail.com>
+Subject: Re: [PATCH] drivers: misc: add gpio wakeup driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Daniel Mack <zonque@gmail.com>, Greg KH <gregkh@linuxfoundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Mark Brown <broonie@kernel.org>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Tue, Oct 15, 2013 at 9:32 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Friday 11 October 2013, Linus Walleij wrote:
 
-On 10/16/2013 01:23 AM, Julius Werner wrote:
+>> It *may* be that we have many GPIO drivers that do not accept
+>> that you request an interrupt on them before you have done
+>> request_gpio() followed by gpio_to_irq() on the pin. Then this
+>> shall be treated like a bug and the GPIO driver fixed to handle
+>> this. (That was the outcome of this discussion.)
+>
+> I haven't followed that discussion, but it's good to hear that
+> you made some progress there. I find it a bit worrying that you
+> say the behavior may be dependent on the gpio driver, but maybe
+> I didn't fully understand what the resolution is.
 
-> This patch adds the Port Reset Change flag to the set of bits that are
-> preemptively cleared on init/resume of a hub. In theory this bit should
-> never be set unexpectedly... in practice it can still happen if BIOS,
-> SMM or ACPI code plays around with USB devices without cleaning up
-> correctly. This is especially dangerous for XHCI root hubs, which don't
-> generate any more Port Status Change Events until all change bits are
-> cleared, so this is a good precaution to have (similar to how it's
-> already done for the Warm Port Reset Change flag).
+It's some consensus on how to do this, but the existing drivers
+need to be augmented to implement it according to that
+consensus, especially those using device tree.
 
-> Signed-off-by: Julius Werner <jwerner@chromium.org>
-> ---
->   drivers/usb/core/hub.c | 5 +++++
->   1 file changed, 5 insertions(+)
+If noone else helps I guess it goes on top of the pile of stuff
+for the GPIO maintainer to fix...
 
-> diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-> index e6b682c..c9ef5b8 100644
-> --- a/drivers/usb/core/hub.c
-> +++ b/drivers/usb/core/hub.c
-> @@ -1130,6 +1130,11 @@ static void hub_activate(struct usb_hub *hub, enum hub_activation_type type)
->   			usb_clear_port_feature(hub->hdev, port1,
->   					USB_PORT_FEAT_C_ENABLE);
->   		}
-> +		if ((portchange & USB_PORT_STAT_C_RESET)) {
-
-    Hm, why these double parens?
-
-WBR, Sergei
-
+Yours,
+Linus Walleij
