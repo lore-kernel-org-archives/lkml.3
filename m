@@ -1,78 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758766Ab3JOLgx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 07:36:53 -0400
-Received: from mga01.intel.com ([192.55.52.88]:53392 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757912Ab3JOLgw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 07:36:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,498,1378882800"; 
-   d="scan'208";a="417060120"
-Message-ID: <1381837008.2080.61.camel@rzhang1-mobl4>
-Subject: Re: [GIT PULL] thermal-soc: urgent fixes for 3.12
-From: Zhang Rui <rui.zhang@intel.com>
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-Cc: amit.daniel@samsung.com, l.majewski@samsung.com,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Date: Tue, 15 Oct 2013 19:36:48 +0800
-In-Reply-To: <1381788001-3508-1-git-send-email-eduardo.valentin@ti.com>
-References: <1381788001-3508-1-git-send-email-eduardo.valentin@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S1758801Ab3JOLhA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 07:37:00 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:49315 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758768Ab3JOLg5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 07:36:57 -0400
+Message-ID: <525D28D5.70503@gmail.com>
+Date: Tue, 15 Oct 2013 13:36:53 +0200
+From: Juri Lelli <juri.lelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: tglx@linutronix.de, mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com,
+        fweisbec@gmail.com, darren@dvhart.com, johan.eker@ericsson.com,
+        p.faure@akatech.ch, linux-kernel@vger.kernel.org,
+        claudio@evidence.eu.com, michael@amarulasolutions.com,
+        fchecconi@gmail.com, tommaso.cucinotta@sssup.it,
+        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
+        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
+        raistlin@linux.it, insop.song@gmail.com, liming.wang@windriver.com,
+        jkacur@redhat.com, harald.gustafsson@ericsson.com,
+        vincent.guittot@linaro.org,
+        bruce.ashfield@windriver.com--no-chain-reply-to
+Subject: Re: [PATCH 04/14] sched: SCHED_DEADLINE SMP-related data structures
+ & logic.
+References: <1381747426-31334-1-git-send-email-juri.lelli@gmail.com> <1381747426-31334-5-git-send-email-juri.lelli@gmail.com> <20131014120306.GH3081@twins.programming.kicks-ass.net> <525D0C91.1090700@gmail.com> <20131015103507.GF10651@twins.programming.kicks-ass.net>
+In-Reply-To: <20131015103507.GF10651@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Eduardo,
+On 10/15/2013 12:35 PM, Peter Zijlstra wrote:
+> On Tue, Oct 15, 2013 at 11:36:17AM +0200, Juri Lelli wrote:
+>> On 10/14/2013 02:03 PM, Peter Zijlstra wrote:
+>>> On Mon, Oct 14, 2013 at 12:43:36PM +0200, Juri Lelli wrote:
+>>>> +static inline void dl_set_overload(struct rq *rq)
+>>>> +{
+>>>> +	if (!rq->online)
+>>>> +		return;
+>>>> +
+>>>> +	cpumask_set_cpu(rq->cpu, rq->rd->dlo_mask);
+>>>> +	/*
+>>>> +	 * Must be visible before the overload count is
+>>>> +	 * set (as in sched_rt.c).
+>>>> +	 */
+>>>> +	wmb();
+>>>> +	atomic_inc(&rq->rd->dlo_count);
+>>>> +}
+>>>
+>>> Please, make that smp_wmb() and modify the comment to point to the
+>>> matching barrier ; I couldn't find one! Which suggests something is
+>>> amiss.
+>>>
+>>> Ideally we'd have something like smp_wmb__after_set_bit() but alas.
+>>>
+>>
+>> The only user of this function is pull_dl_task (that tries to pull only if at
+>> least one runqueue of the root_domain is overloaded). Surely makes sense to
+>> ensure that changes in the dlo_mask have to be visible before we check if we
+>> should look at that mask. Am I right if I say that the matching barrier is
+>> constituted by the spin_lock on this_rq acquired by schedule() before calling
+>> pre_schedule()?
+>>
+>> Same thing in rt_set_overload(), do we need to modify the comment also there?
+> 
+> So I haven't looked at the dl code, but for the RT code the below is
+> required.
+> 
 
-On Mon, 2013-10-14 at 18:00 -0400, Eduardo Valentin wrote:
-> Hello Rui,
-> 
-> Please pull the following changes. It contains fixes for 3.12 on Exynos
-> thermal driver, which is currently broken, Exynos4412 is the main affected.
-> Thanks Lukasz for his persistence on getting this done for 3.12.
-> 
-> Lukasz, you need to queue the remaining changes on DT via your platform tree.
-> 
-> It contains also a fix on the extrapolation rules for TI SoCs.
-> 
-> The following changes since commit 74ae45a3d656d3e86bb8e776634ebdfd3f39f37c:
-> 
->   Merge branches 'x86_pkg_temp' and 'misc' of .git into next (2013-09-25 21:41:44 +0800)
-> 
-please rebase your tree on top of my master branch or Linus' tree.
-Or else I'll pull in some thermal changes in my next branch that are
-targeted for 3.13.
+Same thing for dl code.
 
-thanks,
-rui
-> are available in the git repository at:
-> 
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/evalenti/linux-soc-thermal.git next
-> 
-> for you to fetch changes up to 848a3b2b91a45f6b7814e2779f58cc0461d88fce:
-> 
->   drivers: thermal: allow ti-soc-thermal run without pcb zone (2013-10-14 17:48:33 -0400)
-> 
-> ----------------------------------------------------------------
-> Eduardo Valentin (1):
->       drivers: thermal: allow ti-soc-thermal run without pcb zone
-> 
-> Lukasz Majewski (3):
->       thermal: exynos: Remove check for thermal device pointer at exynos_report_trigger()
->       thermal: exynos: Provide separate TMU data for Exynos4412
->       thermal: exynos: Provide initial setting for TMU's test MUX address at Exynos4412
-> 
->  drivers/thermal/samsung/exynos_thermal_common.c    |  2 --
->  drivers/thermal/samsung/exynos_tmu.c               | 12 ++++++---
->  drivers/thermal/samsung/exynos_tmu.h               |  7 ++++-
->  drivers/thermal/samsung/exynos_tmu_data.c          | 30 +++++++++++++++++-----
->  drivers/thermal/samsung/exynos_tmu_data.h          | 13 +++++++++-
->  drivers/thermal/ti-soc-thermal/ti-thermal-common.c |  1 +
->  6 files changed, 51 insertions(+), 14 deletions(-)
+Thanks,
 
+- Juri
 
+> Without that smp_rmb() in there we could actually miss seeing the
+> rto_mask bit.
+> 
+> ---
+>  kernel/sched/rt.c | 10 +++++++++-
+>  1 file changed, 9 insertions(+), 1 deletion(-)
+> 
+> diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+> index e9304cdc26fe..a848f526b941 100644
+> --- a/kernel/sched/rt.c
+> +++ b/kernel/sched/rt.c
+> @@ -246,8 +246,10 @@ static inline void rt_set_overload(struct rq *rq)
+>  	 * if we should look at the mask. It would be a shame
+>  	 * if we looked at the mask, but the mask was not
+>  	 * updated yet.
+> +	 *
+> +	 * Matched by the barrier in pull_rt_task().
+>  	 */
+> -	wmb();
+> +	smp_wmb();
+>  	atomic_inc(&rq->rd->rto_count);
+>  }
+>  
+> @@ -1626,6 +1628,12 @@ static int pull_rt_task(struct rq *this_rq)
+>  	if (likely(!rt_overloaded(this_rq)))
+>  		return 0;
+>  
+> +	/*
+> +	 * Match the barrier from rt_set_overloaded; this guarantees that if we
+> +	 * see overloaded we must also see the rto_mask bit.
+> +	 */
+> +	smp_rmb();
+> +
+>  	for_each_cpu(cpu, this_rq->rd->rto_mask) {
+>  		if (this_cpu == cpu)
+>  			continue;
+> 
