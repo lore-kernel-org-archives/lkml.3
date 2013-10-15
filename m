@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932291Ab3JOFPb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 01:15:31 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60569 "EHLO
+	id S1757913Ab3JOFP7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 01:15:59 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60595 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932263Ab3JOFP0 (ORCPT
+	with ESMTP id S1753002Ab3JOFPz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 01:15:26 -0400
-Date: Mon, 14 Oct 2013 22:15:11 -0700
+	Tue, 15 Oct 2013 01:15:55 -0400
+Date: Mon, 14 Oct 2013 22:15:39 -0700
 From: tip-bot for Ingo Molnar <tipbot@zytor.com>
-Message-ID: <tip-d795a658eb0ab5ab0b86cda5abe28954b0a08471@git.kernel.org>
+Message-ID: <tip-c7a79e96dc166a1bdadca1367a39c84887e73de3@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, acme@redhat.com, hpa@zytor.com,
         mingo@kernel.org, a.p.zijlstra@chello.nl, namhyung@kernel.org,
         jolsa@redhat.com, dsahern@gmail.com, tglx@linutronix.de
@@ -19,8 +19,8 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com,
         tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:perf/core] tools/perf/build: Split out feature check: '
- libaudit'
-Git-Commit-ID: d795a658eb0ab5ab0b86cda5abe28954b0a08471
+ gtk2-infobar'
+Git-Commit-ID: c7a79e96dc166a1bdadca1367a39c84887e73de3
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,87 +29,93 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 14 Oct 2013 22:15:17 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 14 Oct 2013 22:15:45 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d795a658eb0ab5ab0b86cda5abe28954b0a08471
-Gitweb:     http://git.kernel.org/tip/d795a658eb0ab5ab0b86cda5abe28954b0a08471
+Commit-ID:  c7a79e96dc166a1bdadca1367a39c84887e73de3
+Gitweb:     http://git.kernel.org/tip/c7a79e96dc166a1bdadca1367a39c84887e73de3
 Author:     Ingo Molnar <mingo@kernel.org>
-AuthorDate: Mon, 30 Sep 2013 14:55:31 +0200
+AuthorDate: Mon, 30 Sep 2013 15:08:30 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 9 Oct 2013 08:48:40 +0200
+CommitDate: Wed, 9 Oct 2013 08:48:42 +0200
 
-tools/perf/build: Split out feature check: 'libaudit'
+tools/perf/build: Split out feature check: 'gtk2-infobar'
 
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/n/tip-orhejqtjao3vf4wxwBUdzhaz@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-oumjyVjonjvgH8ts4mftagel@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- tools/perf/config/Makefile                       | 4 ++--
- tools/perf/config/feature-checks/Makefile        | 4 ++++
- tools/perf/config/feature-checks/test-libaudit.c | 7 +++++++
- 3 files changed, 13 insertions(+), 2 deletions(-)
+ tools/perf/config/Makefile                                          | 3 ++-
+ tools/perf/config/feature-checks/Makefile                           | 4 ++++
+ .../perf/config/feature-checks/{test-gtk2.c => test-gtk2-infobar.c} | 6 +++---
+ 3 files changed, 9 insertions(+), 4 deletions(-)
 
 diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index d684a29..d4f18f4 100644
+index b3bf931..3d3d435 100644
 --- a/tools/perf/config/Makefile
 +++ b/tools/perf/config/Makefile
-@@ -114,6 +114,7 @@ FEATURE_TESTS =				\
- 	libelf-mmap			\
- 	libelf-getphdrnum		\
- 	libunwind			\
-+	libaudit			\
+@@ -117,6 +117,7 @@ FEATURE_TESTS =				\
+ 	libaudit			\
+ 	libslang			\
+ 	gtk2				\
++	gtk2-infobar			\
  	libnuma
  
  $(foreach test,$(FEATURE_TESTS),$(call feature_check,$(test),$(test)))
-@@ -265,8 +266,7 @@ ifndef NO_LIBUNWIND
- endif
- 
- ifndef NO_LIBAUDIT
--  FLAGS_LIBAUDIT = $(CFLAGS) $(LDFLAGS) -laudit
--  ifneq ($(call try-cc,$(SOURCE_LIBAUDIT),$(FLAGS_LIBAUDIT),libaudit),y)
-+  ifneq ($(feature-libaudit), 1)
-     msg := $(warning No libaudit.h found, disables 'trace' tool, please install audit-libs-devel or libaudit-dev);
-     NO_LIBAUDIT := 1
+@@ -299,7 +300,7 @@ ifndef NO_GTK2
+     msg := $(warning GTK2 not found, disables GTK2 support. Please install gtk2-devel or libgtk2.0-dev);
+     NO_GTK2 := 1
    else
+-    ifeq ($(call try-cc,$(SOURCE_GTK2_INFOBAR),$(FLAGS_GTK2),-DHAVE_GTK_INFO_BAR_SUPPORT),y)
++    ifeq ($(feature-gtk2-infobar), 1)
+       CFLAGS += -DHAVE_GTK_INFO_BAR_SUPPORT
+     endif
+     CFLAGS += -DHAVE_GTK2_SUPPORT
 diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
-index d6d9570..8e49fa0 100644
+index 920958c..017918f 100644
 --- a/tools/perf/config/feature-checks/Makefile
 +++ b/tools/perf/config/feature-checks/Makefile
-@@ -12,6 +12,7 @@ FILES=					\
- 	test-libelf-mmap		\
- 	test-libelf-getphdrnum		\
- 	test-libunwind			\
-+	test-libaudit			\
+@@ -15,6 +15,7 @@ FILES=					\
+ 	test-libaudit			\
+ 	test-libslang			\
+ 	test-gtk2			\
++	test-gtk2-infobar		\
  	test-libnuma
  
  CC := $(CC) -MD
-@@ -61,6 +62,9 @@ test-libnuma:
- test-libunwind:
- 	$(BUILD) -lunwind -lunwind-x86_64 -lelf
+@@ -73,6 +74,9 @@ test-libslang:
+ test-gtk2:
+ 	$(BUILD) $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null)
  
-+test-libaudit:
-+	$(BUILD) -laudit
++test-gtk2-infobar:
++	$(BUILD) $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null)
 +
  -include *.d */*.d
  
  ###############################
-diff --git a/tools/perf/config/feature-checks/test-libaudit.c b/tools/perf/config/feature-checks/test-libaudit.c
-new file mode 100644
-index 0000000..854a65d
---- /dev/null
-+++ b/tools/perf/config/feature-checks/test-libaudit.c
-@@ -0,0 +1,7 @@
-+#include <libaudit.h>
-+
+diff --git a/tools/perf/config/feature-checks/test-gtk2.c b/tools/perf/config/feature-checks/test-gtk2-infobar.c
+similarity index 61%
+copy from tools/perf/config/feature-checks/test-gtk2.c
+copy to tools/perf/config/feature-checks/test-gtk2-infobar.c
+index 1ac6d8a..eebcfbc 100644
+--- a/tools/perf/config/feature-checks/test-gtk2.c
++++ b/tools/perf/config/feature-checks/test-gtk2-infobar.c
+@@ -2,9 +2,9 @@
+ #include <gtk/gtk.h>
+ #pragma GCC diagnostic error "-Wstrict-prototypes"
+ 
+-int main(int argc, char *argv[])
 +int main(void)
-+{
-+	printf("error message: %s\n", audit_errno_to_name(0));
-+	return audit_open();
-+}
+ {
+-        gtk_init(&argc, &argv);
++	gtk_info_bar_new();
+ 
+-        return 0;
++	return 0;
+ }
