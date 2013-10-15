@@ -1,26 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758823Ab3JOF2g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 01:28:36 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33329 "EHLO
+	id S932731Ab3JOF2p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 01:28:45 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33336 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758798Ab3JOF2a (ORCPT
+	with ESMTP id S1758813Ab3JOF2f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 01:28:30 -0400
-Date: Mon, 14 Oct 2013 22:27:50 -0700
-From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
-Message-ID: <tip-9e1jz78i6q6e0xr9fsitqbpe@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        efault@gmx.de, jolsa@redhat.com, fweisbec@gmail.com,
-        adrian.hunter@intel.com, dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        peterz@infradead.org, jolsa@redhat.com, fweisbec@gmail.com,
-        dsahern@gmail.com, adrian.hunter@intel.com, tglx@linutronix.de
+	Tue, 15 Oct 2013 01:28:35 -0400
+Date: Mon, 14 Oct 2013 22:27:59 -0700
+From: tip-bot for David Ahern <tipbot@zytor.com>
+Message-ID: <tip-4f8c1b74c5fdac35ee4480685d42030446724848@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, efault@gmx.de, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, adrian.hunter@intel.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
+        efault@gmx.de, peterz@infradead.org, jolsa@redhat.com,
+        fweisbec@gmail.com, adrian.hunter@intel.com, dsahern@gmail.com,
+        tglx@linutronix.de
+In-Reply-To: <1379900700-5186-6-git-send-email-dsahern@gmail.com>
+References: <1379900700-5186-6-git-send-email-dsahern@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf trace: Beautify pipe2 'flags' arg
-Git-Commit-ID: 46cce19ba8cc8231d3c949c128e4bdaf420228a2
+Subject: [tip:perf/core] perf trace: Add beautifier for clock_gettime'
+ s clk_id argument
+Git-Commit-ID: 4f8c1b74c5fdac35ee4480685d42030446724848
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,76 +34,64 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 14 Oct 2013 22:27:56 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 14 Oct 2013 22:28:04 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  46cce19ba8cc8231d3c949c128e4bdaf420228a2
-Gitweb:     http://git.kernel.org/tip/46cce19ba8cc8231d3c949c128e4bdaf420228a2
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Mon, 23 Sep 2013 12:52:04 -0300
+Commit-ID:  4f8c1b74c5fdac35ee4480685d42030446724848
+Gitweb:     http://git.kernel.org/tip/4f8c1b74c5fdac35ee4480685d42030446724848
+Author:     David Ahern <dsahern@gmail.com>
+AuthorDate: Sun, 22 Sep 2013 19:45:00 -0600
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 9 Oct 2013 17:41:24 -0300
+CommitDate: Wed, 9 Oct 2013 17:41:42 -0300
 
-perf trace: Beautify pipe2 'flags' arg
+perf trace: Add beautifier for clock_gettime's clk_id argument
 
- 4.234 (0.005 ms): fetchmail/3224 pipe2(fildes: 0x7fffc72bcee0, flags: CLOEXEC) = 0
+Before:
+0.030 ( 0.002 ms): 2571 clock_gettime(which_clock: 1, tp: 0x7f3b45729cd0 ) = 0
 
+After:
+0.030 ( 0.002 ms): 2571 clock_gettime(which_clock: MONOTONIC, tp: 0x7f3b45729cd0 ) = 0
+
+v2: Update to use the STRARRAY option
+
+Signed-off-by: David Ahern <dsahern@gmail.com>
 Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Mike Galbraith <efault@gmx.de>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-9e1jz78i6q6e0xr9fsitqbpe@git.kernel.org
+Link: http://lkml.kernel.org/r/1379900700-5186-6-git-send-email-dsahern@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-trace.c | 25 +++++++++++++++++++++++++
- 1 file changed, 25 insertions(+)
+ tools/perf/builtin-trace.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
 diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index bf74217..76d9427 100644
+index 76d9427..39a947a 100644
 --- a/tools/perf/builtin-trace.c
 +++ b/tools/perf/builtin-trace.c
-@@ -517,6 +517,29 @@ static size_t syscall_arg__scnprintf_eventfd_flags(char *bf, size_t size,
+@@ -297,6 +297,12 @@ static DEFINE_STRARRAY(rlimit_resources);
+ static const char *sighow[] = { "BLOCK", "UNBLOCK", "SETMASK", };
+ static DEFINE_STRARRAY(sighow);
  
- #define SCA_EFD_FLAGS syscall_arg__scnprintf_eventfd_flags
- 
-+static size_t syscall_arg__scnprintf_pipe_flags(char *bf, size_t size,
-+						struct syscall_arg *arg)
-+{
-+	int printed = 0, flags = arg->val;
++static const char *clockid[] = {
++	"REALTIME", "MONOTONIC", "PROCESS_CPUTIME_ID", "THREAD_CPUTIME_ID",
++	"MONOTONIC_RAW", "REALTIME_COARSE", "MONOTONIC_COARSE",
++};
++static DEFINE_STRARRAY(clockid);
 +
-+#define	P_FLAG(n) \
-+	if (flags & O_##n) { \
-+		printed += scnprintf(bf + printed, size - printed, "%s%s", printed ? "|" : "", #n); \
-+		flags &= ~O_##n; \
-+	}
-+
-+	P_FLAG(CLOEXEC);
-+	P_FLAG(NONBLOCK);
-+#undef P_FLAG
-+
-+	if (flags)
-+		printed += scnprintf(bf + printed, size - printed, "%s%#x", printed ? "|" : "", flags);
-+
-+	return printed;
-+}
-+
-+#define SCA_PIPE_FLAGS syscall_arg__scnprintf_pipe_flags
-+
- static size_t syscall_arg__scnprintf_signum(char *bf, size_t size, struct syscall_arg *arg)
- {
- 	int sig = arg->val;
-@@ -620,6 +643,8 @@ static struct syscall_fmt {
- 	  .arg_scnprintf = { [2] = SCA_OPEN_FLAGS, /* flags */ }, },
- 	{ .name	    = "openat",	    .errmsg = true,
- 	  .arg_scnprintf = { [2] = SCA_OPEN_FLAGS, /* flags */ }, },
-+	{ .name	    = "pipe2",	    .errmsg = true,
-+	  .arg_scnprintf = { [1] = SCA_PIPE_FLAGS, /* flags */ }, },
- 	{ .name	    = "poll",	    .errmsg = true, .timeout = true, },
- 	{ .name	    = "ppoll",	    .errmsg = true, .timeout = true, },
- 	{ .name	    = "pread",	    .errmsg = true, .alias = "pread64", },
+ static const char *socket_families[] = {
+ 	"UNSPEC", "LOCAL", "INET", "AX25", "IPX", "APPLETALK", "NETROM",
+ 	"BRIDGE", "ATMPVC", "X25", "INET6", "ROSE", "DECnet", "NETBEUI",
+@@ -603,6 +609,7 @@ static struct syscall_fmt {
+ 	{ .name	    = "arch_prctl", .errmsg = true, .alias = "prctl", },
+ 	{ .name	    = "brk",	    .hexret = true,
+ 	  .arg_scnprintf = { [0] = SCA_HEX, /* brk */ }, },
++	{ .name     = "clock_gettime",  .errmsg = true, STRARRAY(0, clk_id, clockid), },
+ 	{ .name	    = "connect",    .errmsg = true, },
+ 	{ .name	    = "epoll_ctl",  .errmsg = true, STRARRAY(1, op, epoll_ctl_ops), },
+ 	{ .name	    = "eventfd2",   .errmsg = true,
