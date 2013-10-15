@@ -1,81 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759943Ab3JOUTK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 16:19:10 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:47398 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759439Ab3JOUTH (ORCPT
+	id S1759967Ab3JOUUK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 16:20:10 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:36893 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759710Ab3JOUUI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 16:19:07 -0400
-Date: Tue, 15 Oct 2013 13:19:05 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, xfs@oss.sgi.com
-Subject: Re: fs/attr.c:notify_change locking warning.
-Message-ID: <20131015201905.GA7509@infradead.org>
-References: <20131005005210.GA25773@redhat.com>
- <20131005031918.GL4446@dastard>
+	Tue, 15 Oct 2013 16:20:08 -0400
+Message-ID: <525DA373.6040805@wwwdotorg.org>
+Date: Tue, 15 Oct 2013 14:20:03 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131005031918.GL4446@dastard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-tegra@vger.kernel.org
+Subject: Re: [PATCH v2 1/7] clk: tegra: Add support for PLLSS
+References: <1381850098-12357-1-git-send-email-pdeschrijver@nvidia.com> <1381850098-12357-2-git-send-email-pdeschrijver@nvidia.com>
+In-Reply-To: <1381850098-12357-2-git-send-email-pdeschrijver@nvidia.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 05, 2013 at 01:19:18PM +1000, Dave Chinner wrote:
-> Yup, we don't hold the i_mutex *at all* through the fast path for
-> direct IO writes. Having to grab the i_mutex on every IO just for
-> the extremely unlikely case we need to remove a suid bit on the file
-> would add a significant serialisation point into the direct Io model
-> that XFS uses, and is the difference between 50,000 and 2+ million
-> direct IO IOPS to a single file.
-> 
-> I'm unwilling to sacrifice the concurrency of direct IO writes just
-> to shut up ths warning, especially as the actual modifications that
-> are made to remove SUID bits are correctly serialised within XFS
-> once notify_change() calls ->setattr(). If it really matters, I'll
-> just open code file_remove_suid() into XFS like ocfs2 does just so
-> we don't get that warning being emitted by trinity.
+On 10/15/2013 09:14 AM, Peter De Schrijver wrote:
+> Tegra124 introduces a new PLL type, PLLSS. Add support for it.
 
-But the i_lock doesn't synchronize against the VFS modifying various
-struct inode fields.  The right fix is to take i_mutex just in case
-we actually need to remove the suid bit.  The patch below should fix it,
-although I need to write a testcase that actually exercises it first.
+> diff --git a/drivers/clk/tegra/clk-pll.c b/drivers/clk/tegra/clk-pll.c
 
-Dave (J.): if you have time to try the patch below please go ahead,
-if not I'll make sure to write an isolated test ASAP to verify it and
-will then submit the change.
 
-diff --git a/fs/xfs/xfs_file.c b/fs/xfs/xfs_file.c
-index 4c749ab..e879f96 100644
---- a/fs/xfs/xfs_file.c
-+++ b/fs/xfs/xfs_file.c
-@@ -590,8 +590,22 @@ restart:
- 	 * If we're writing the file then make sure to clear the setuid and
- 	 * setgid bits if the process is not being run by root.  This keeps
- 	 * people from modifying setuid and setgid binaries.
-+	 *
-+	 * Note that file_remove_suid must be called with the i_mutex held,
-+	 * so we have to go through some hoops here to make sure we hold it.
- 	 */
--	return file_remove_suid(file);
-+	if (!IS_NOSEC(inode) && should_remove_suid(file->f_path.dentry)) {
-+		if (*iolock == XFS_IOLOCK_SHARED) {
-+			mutex_lock(&inode->i_mutex);
-+			error = file_remove_suid(file);
-+			mutex_unlock(&inode->i_mutex);
-+		} else {
-+			error = file_remove_suid(file);
-+		}
-+
-+	}
-+
-+	return error;
- }
- 
- /*
+> +static int clk_pllss_set_rate(struct clk_hw *hw, unsigned long rate,
+> +				unsigned long parent_rate)
+
+This function seems pretty generic. Is it possible to share a bit more
+code with any of the other pllXXX_set_rate() functions?
+
+> +struct clk *tegra_clk_register_pllss(const char *name, const char *parent_name,
+> +				void __iomem *clk_base, unsigned long flags,
+> +				struct tegra_clk_pll_params *pll_params,
+> +				spinlock_t *lock)
+
+> +	val = pll_readl_base(pll);
+> +	if (val & PLLSS_REF_SRC_SEL_MASK) {
+> +		WARN(1, "Unknown parent selected for %s: %d\n", name,
+> +			(val & PLLSS_REF_SRC_SEL_MASK) >>
+> +			PLLSS_REF_SRC_SEL_SHIFT);
+> +		kfree(pll);
+> +		return ERR_PTR(-EINVAL);
+> +	}
+
+If there's a field in HW that muxes the clock input between n clocks,
+why does this function assume there's a single parent for this PLL, by
+taking a "const char *parent_name" parameter?
+
+What happens if the bootloader changed this field in HW; is the kernel
+simply not able to boot?
+
+> +
+> +	_get_pll_mnp(pll, &cfg);
+> +	if (cfg.n > 1) {
+> +		WARN(1, "%s should not be initialized\n", name);
+> +		kfree(pll);
+> +		return ERR_PTR(-EINVAL);
+> +	}
+> +
+> +	parent_rate = __clk_get_rate(parent);
+> +
+> +	pll_params->vco_min = _clip_vco_min(pll_params->vco_min, parent_rate);
+> +
+> +	cfg.m = _pll_fixed_mdiv(pll_params, parent_rate);
+> +	cfg.n = cfg.m * pll_params->vco_min / parent_rate;
+> +
+> +	for (i = 0; pll_params->pdiv_tohw[i].pdiv; i++)
+> +		;
+> +	if (!i) {
+> +		kfree(pll);
+> +		return ERR_PTR(-EINVAL);
+> +	}
+> +
+> +	cfg.p = pll_params->pdiv_tohw[i-1].hw_val;
+> +
+> +	_update_pll_mnp(pll, &cfg);
+
+I *guess* that seems to be forcing a particular configuration of the
+PLL. Why not do that in the initialization table? Some comments here re:
+why this is done might be nice.
