@@ -1,56 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932895Ab3JOOc5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 10:32:57 -0400
-Received: from mail-vb0-f44.google.com ([209.85.212.44]:54077 "EHLO
-	mail-vb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932272Ab3JOOcz (ORCPT
+	id S932854Ab3JOOcw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 10:32:52 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:59833 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932272Ab3JOOct (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 10:32:55 -0400
-Date: Tue, 15 Oct 2013 11:32:45 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 3/3] perf record: mmap output file
-Message-ID: <20131015143245.GB9828@ghostprotocols.net>
-References: <1381289214-24885-1-git-send-email-dsahern@gmail.com>
- <1381289214-24885-4-git-send-email-dsahern@gmail.com>
- <20131009055957.GA7664@gmail.com>
- <525D4B5F.4090005@gmail.com>
+	Tue, 15 Oct 2013 10:32:49 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <525D4B5F.4090005@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131015133459.GA14476@gmail.com>
+References: <20131009161743.GA3022@quad>
+	<52558278.6080206@gmail.com>
+	<CABPqkBRx1CqwXOjJXWeqEBqkLkZMHWVQJNjv1jjqPakoDNB3Gg@mail.gmail.com>
+	<CABPqkBQKaMd_LuvfUreYb_9hiR-j0BkAyiP2yP-C0TTy+15_fQ@mail.gmail.com>
+	<5255900A.5050103@gmail.com>
+	<CABPqkBQZz=80he07yzagwPjhJBOK-bc_C=hfsK+LjMvcYWZvew@mail.gmail.com>
+	<52584626.4050000@gmail.com>
+	<CABPqkBRX1Qg5s7CKh++gxu4dq+GV0YZp30ixeF9-AmHoec8Gaw@mail.gmail.com>
+	<20131015131231.GD2402@gmail.com>
+	<CABPqkBQN6Qn-Ccpjg09OzOv=LeT2S-Rr=sb2VVaJh0opfnyuYg@mail.gmail.com>
+	<20131015133459.GA14476@gmail.com>
+Date: Tue, 15 Oct 2013 16:32:47 +0200
+Message-ID: <CABPqkBTHTgJPw0T9zLfiwj7b85QkHY9RBSFr=gK1bOtxbkHQ-Q@mail.gmail.com>
+Subject: Re: [PATCH] perf: disable mmap2 support
+From: Stephane Eranian <eranian@google.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        "mingo@elte.hu" <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Jiri Olsa <jolsa@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Kees Cook <keescook@chromium.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Oct 15, 2013 at 08:04:15AM -0600, David Ahern escreveu:
-> On 10/8/13 11:59 PM, Ingo Molnar wrote:
-> > 2)
-
-> > Yet another method would be to avoid the copies altogether via the splice
-> > system-call - see:
-
-> >	git grep splice kernel/trace/
-
-> > To make splice low-overhead we'd have to introduce a mode to not mmap
-> > the data part of the perf ring-buffer and splice the data straight
-> > from the perf fd into a temporary pipe and over from the pipe into
-> > the target file (or socket).
-
-> I looked into splice and it was not clear it would be a good match.
-> First, perf is setup to pull data from mmap's and there is not a 1:1
-> association between mmap's and fd's (fd_in for splice). Second and
-
-Jiri and PeterZ probaby will have comments here... ;-) :-)
-
-Jiri even have patches, IIRC.
-
-- Arnaldo
+On Tue, Oct 15, 2013 at 3:34 PM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> * Stephane Eranian <eranian@google.com> wrote:
+>
+>> On Tue, Oct 15, 2013 at 3:12 PM, Ingo Molnar <mingo@kernel.org> wrote:
+>> >
+>> > * Stephane Eranian <eranian@google.com> wrote:
+>> >
+>> >> Arnaldo,
+>> >>
+>> >> Could you revert all the mmap2 patches in your perf/urgent tree for now?
+>> >> Thanks.
+>> >
+>> > I think it would be helpful if you re-sent the final patch, with a full
+>> > changelog, etc., in a separate thread, not inside an existing discussion
+>> > and such.
+>>
+>> Are you talking about the perf tool or kernel patch?
+>
+> Both.
+>
+>> I did not send any perf-related mmap2 revert patches.
+>
+> Would be nice to have a single patch that reverts both.
+>
+I will send a single patch to remove everything (kernel + tool) then.
