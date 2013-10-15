@@ -1,64 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756865Ab3JOHPN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 03:15:13 -0400
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:41604 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751219Ab3JOHPL (ORCPT
+	id S1757503Ab3JOHR0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 03:17:26 -0400
+Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:39785 "EHLO
+	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752155Ab3JOHRY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 03:15:11 -0400
-Date: Tue, 15 Oct 2013 09:15:08 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Avi Kivity <avi@redhat.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Len Brown <len.brown@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] x86 fixes
-Message-ID: <20131015071508.GA25059@gmail.com>
-References: <20131012171553.GA17548@gmail.com>
- <CA+55aFxFu9k7xOWd8DqXx8t+PONoV5ijGJv5mshZrYeVsVp32w@mail.gmail.com>
- <52599277.3090502@zytor.com>
- <20131012184920.GA19065@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20131012184920.GA19065@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 15 Oct 2013 03:17:24 -0400
+Date: Tue, 15 Oct 2013 09:17:18 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>, linux-s390@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] s390: Remove unused variable in copy_from_realmem()
+Message-ID: <20131015091718.003f3fb7@mschwide>
+In-Reply-To: <1381819811-28811-1-git-send-email-geert@linux-m68k.org>
+References: <1381819811-28811-1-git-send-email-geert@linux-m68k.org>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13101507-0542-0000-0000-000006BF5F98
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 15 Oct 2013 08:50:11 +0200
+Geert Uytterhoeven <geert@linux-m68k.org> wrote:
 
-* Ingo Molnar <mingo@kernel.org> wrote:
-
+> arch/s390/kernel/crash_dump.c: In function 'copy_from_realmem':
+> arch/s390/kernel/crash_dump.c:48:6: warning: unused variable 'rc' [-Wunused-variable]
 > 
-> * H. Peter Anvin <hpa@zytor.com> wrote:
+> Introduced by commit 4d3b0664a0d0c0dc7501cfbd067f74226aeca510 ("s390: Allow
+> vmalloc target buffers for copy_from_oldmem()").
 > 
-> > On 10/12/2013 11:05 AM, Linus Torvalds wrote:
-> > > On Sat, Oct 12, 2013 at 10:15 AM, Ingo Molnar <mingo@kernel.org> wrote:
-> > >>
-> > >> Ville Syrjälä (1):
-> > >>       x86/reboot: Add reboot quirk for Dell Latitude E5410
-> > > 
-> > > So we have a number of these quirks, and Dell seems to be one of the
-> > > more common factors.
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> ---
+>  arch/s390/kernel/crash_dump.c |    1 -
+>  1 file changed, 1 deletion(-)
 > 
-> I raised this with hpa when the latest round of Dell quirks were added, 
-> but I agree that the quirk frequency sucks (for every quirk there's 
-> likely 5 times as many boxes still out there that we haven't applied a 
-> quirk for yet ...) and I agree that this needs to be discussed more 
-> widely.
+> diff --git a/arch/s390/kernel/crash_dump.c b/arch/s390/kernel/crash_dump.c
+> index 7dd21720e5b0..3db6af0601a5 100644
+> --- a/arch/s390/kernel/crash_dump.c
+> +++ b/arch/s390/kernel/crash_dump.c
+> @@ -45,7 +45,6 @@ static inline void *load_real_addr(void *addr)
+>  static int copy_from_realmem(void *dest, void *src, size_t count)
+>  {
+>  	unsigned long size;
+> -	int rc;
+> 
+>  	if (!count)
+>  		return 0;
 
-One problem we have is that we have sporadic end user reports only, with 
-no systematic testing done by Dell on these systems apparently. Is there 
-anyone at Dell who cares about these reboot problems that upstream kernels 
-exhibit with VT-d enabled?
+Thanks for the hint but there is already a equivalent patch from Heiko on the
+features branch on git-s390. I plan to get it pulled in the merge window for
+3.13 as I feel that the warning is not important enough to fix it now.
 
-Thanks,
+-- 
+blue skies,
+   Martin.
 
-	Ingo
+"Reality continues to ruin my life." - Calvin.
+
