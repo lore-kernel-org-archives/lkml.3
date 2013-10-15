@@ -1,67 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757503Ab3JOHR0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 03:17:26 -0400
-Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:39785 "EHLO
-	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752155Ab3JOHRY (ORCPT
+	id S1753349Ab3JOHZp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 03:25:45 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:47232 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750904Ab3JOHZo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 03:17:24 -0400
-Date: Tue, 15 Oct 2013 09:17:18 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>, linux-s390@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] s390: Remove unused variable in copy_from_realmem()
-Message-ID: <20131015091718.003f3fb7@mschwide>
-In-Reply-To: <1381819811-28811-1-git-send-email-geert@linux-m68k.org>
-References: <1381819811-28811-1-git-send-email-geert@linux-m68k.org>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13101507-0542-0000-0000-000006BF5F98
+	Tue, 15 Oct 2013 03:25:44 -0400
+Date: Tue, 15 Oct 2013 09:25:40 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>, acme@ghostprotocols.net,
+        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH] perf record: mmap output file - v2
+Message-ID: <20131015072540.GE24584@gmail.com>
+References: <1381805731-10398-1-git-send-email-dsahern@gmail.com>
+ <20131015060200.GA3866@gmail.com>
+ <8738o3au2g.fsf@sejong.aot.lge.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8738o3au2g.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Oct 2013 08:50:11 +0200
-Geert Uytterhoeven <geert@linux-m68k.org> wrote:
 
-> arch/s390/kernel/crash_dump.c: In function 'copy_from_realmem':
-> arch/s390/kernel/crash_dump.c:48:6: warning: unused variable 'rc' [-Wunused-variable]
+* Namhyung Kim <namhyung@kernel.org> wrote:
+
+> > 3)
+> >
+> > The rec->bytes_at_mmap_start field feels a bit weird. If I read the code 
+> > correctly, in every 'perf record' invocation, rec->bytes_written starts at 
+> > 0 - i.e. we don't have repeat invocations of cmd_record().
 > 
-> Introduced by commit 4d3b0664a0d0c0dc7501cfbd067f74226aeca510 ("s390: Allow
-> vmalloc target buffers for copy_from_oldmem()").
+> rec->bytes_written is updated when it writes to the output file for 
+> synthesizing COMM/MMAP events (this mmap output is not used at that 
+> time).
+
+Btw., while looking into it, I think advance_output() needlessly 
+obfuscates as well:
+
+static void advance_output(struct perf_record *rec, size_t size)
+{
+        rec->bytes_written += size;
+}
+
+that code should just be written open coded.
+
+So I think all this needs a few good rounds of cleanups, before we can 
+complicate it with a new feature. (the cleanups can be on top of the 
+feature, if they go in at the same time.)
+
+> > That means that this:
+> >
+> > 		rec->bytes_at_mmap_start = st.st_size - rec->bytes_written;
+> >
+> > is really:
+> >
+> > 		rec->bytes_at_mmap_start = st.st_size;
+> >
+> > furthermore, since we don't allow appends anymore, st.st_size ought to be 
+> > zero as well.
+> >
+> > Which means that ->bytes_at_mmap_start is always zero - and could be 
+> > eliminated altogether.
 > 
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> ---
->  arch/s390/kernel/crash_dump.c |    1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/arch/s390/kernel/crash_dump.c b/arch/s390/kernel/crash_dump.c
-> index 7dd21720e5b0..3db6af0601a5 100644
-> --- a/arch/s390/kernel/crash_dump.c
-> +++ b/arch/s390/kernel/crash_dump.c
-> @@ -45,7 +45,6 @@ static inline void *load_real_addr(void *addr)
->  static int copy_from_realmem(void *dest, void *src, size_t count)
->  {
->  	unsigned long size;
-> -	int rc;
-> 
->  	if (!count)
->  		return 0;
+> No, st_size is bigger than rec->bytes_written due to the 
+> perf_file_header which is written without updating rec->bytes_written.
 
-Thanks for the hint but there is already a equivalent patch from Heiko on the
-features branch on git-s390. I plan to get it pulled in the merge window for
-3.13 as I feel that the warning is not important enough to fix it now.
+Since all this is code that executes once during __cmd_record(), is this 
+all about the header writeout?
 
--- 
-blue skies,
-   Martin.
+That is what confused me about the stat() call and that's messy really: we 
+are the ones who write the file header, we have a very good idea about how 
+many bytes we wrote to the file! It should be entirely unnecessary to lose 
+that information and then execute a system call to recover that 
+information...
 
-"Reality continues to ruin my life." - Calvin.
+Thanks,
 
+	Ingo
