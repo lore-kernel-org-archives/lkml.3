@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751425Ab3JOEGn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 00:06:43 -0400
-Received: from mga09.intel.com ([134.134.136.24]:42240 "EHLO mga09.intel.com"
+	id S1751883Ab3JOEHB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 00:07:01 -0400
+Received: from mga09.intel.com ([134.134.136.24]:56768 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750946Ab3JOEG0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1750929Ab3JOEG0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Oct 2013 00:06:26 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,496,1378882800"; 
-   d="scan'208";a="392987156"
+   d="scan'208";a="392987155"
 From: Kuppuswamy Sathyanarayanan 
 	<sathyanarayanan.kuppuswamy@linux.intel.com>
 To: platform-driver-x86@vger.kernel.org
 Cc: matthew.garrett@nebula.com, linux-kernel@vger.kernel.org,
         sathyanarayanan.kuppuswamy@linux.intel.com
-Subject: [PATCH v2 3/3] ipc: Added support for IPC interrupt mode
-Date: Mon, 14 Oct 2013 21:06:24 -0700
-Message-Id: <5bfcddb3ea33dc71cadddc752e3c47bd9fe92e82.1381809435.git.sathyanarayanan.kuppuswamy@linux.intel.com>
+Subject: [PATCH v2 2/3] ipc: Enabled ipc support for additional intel platforms
+Date: Mon, 14 Oct 2013 21:06:23 -0700
+Message-Id: <f4285b32f4b0e8a89a65dd47ea764f6c3b6cbf47.1381809435.git.sathyanarayanan.kuppuswamy@linux.intel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <cover.1381809435.git.sathyanarayanan.kuppuswamy@linux.intel.com>
 References: <cover.1381809435.git.sathyanarayanan.kuppuswamy@linux.intel.com>
@@ -26,178 +26,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for ipc command interrupt mode.
-
-Also added following access mode config options.
-
-CONFIG_INTEL_SCU_IPC_INTR_MODE - Selecting this option
-will configure the driver to receive IOC interrupt for
-each successful ipc_command.
-
-CONFIG_INTEL_SCU_IPC_POLL_MODE - Makes driver use
-polling method to track the command completion status.
+Enabled ipc support for penwell, clovertrail & tangier platforms.
 
 Signed-off-by: Kuppuswamy Sathyanarayanan <sathyanarayanan.kuppuswamy@linux.intel.com>
 ---
- drivers/platform/x86/Kconfig         |   23 +++++++++++++++
- drivers/platform/x86/intel_scu_ipc.c |   53 ++++++++++++++++++++++++++++++++--
- 2 files changed, 73 insertions(+), 3 deletions(-)
+ drivers/platform/x86/intel_scu_ipc.c |   24 ++++++++++++++++++++++++
+ 1 file changed, 24 insertions(+)
 
-diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
-index 96d6b2e..8ba9efa 100644
---- a/drivers/platform/x86/Kconfig
-+++ b/drivers/platform/x86/Kconfig
-@@ -654,6 +654,29 @@ config INTEL_SCU_IPC
- 	  some embedded Intel x86 platforms. This is not needed for PC-type
- 	  machines.
- 
-+choice
-+	prompt "IPC access mode"
-+	depends on INTEL_SCU_IPC
-+	default INTEL_SCU_IPC_INTR_MODE
-+	---help---
-+	Select the desired access mode for IPC call.
-+
-+config INTEL_SCU_IPC_INTR_MODE
-+	bool "Intel SCU IPC interrupt mode"
-+	---help---
-+	 Selecting this option will configure the driver
-+	 to receive IOC interrupt for each successful
-+	 ipc_command.
-+
-+
-+config INTEL_SCU_IPC_POLL_MODE
-+	bool "Intel SCU IPC polling mode"
-+	---help---
-+	 Makes driver use polling method to track the
-+	 command completion status
-+
-+endchoice
-+
- config INTEL_SCU_IPC_UTIL
- 	tristate "Intel SCU IPC utility driver"
- 	depends on INTEL_SCU_IPC
 diff --git a/drivers/platform/x86/intel_scu_ipc.c b/drivers/platform/x86/intel_scu_ipc.c
-index aaaf1c1..6683ee0 100644
+index 93c1b57..aaaf1c1 100644
 --- a/drivers/platform/x86/intel_scu_ipc.c
 +++ b/drivers/platform/x86/intel_scu_ipc.c
-@@ -60,6 +60,7 @@
- 
- #define IPC_WWBUF_SIZE    20		/* IPC Write buffer Size */
- #define IPC_RWBUF_SIZE    20		/* IPC Read buffer Size */
-+#define IPC_IOC	          0x100		/* IPC command register IOC bit */
+@@ -63,6 +63,9 @@
  
  enum {
  	SCU_IPC_LINCROFT,
-@@ -110,6 +111,9 @@ struct intel_scu_ipc_dev {
- 	struct pci_dev *pdev;
- 	void __iomem *ipc_base;
- 	void __iomem *i2c_base;
-+#ifdef CONFIG_INTEL_SCU_IPC_INTR_MODE
-+	struct completion cmd_complete;
-+#endif
++	SCU_IPC_PENWELL,
++	SCU_IPC_CLOVERVIEW,
++	SCU_IPC_TANGIER,
  };
  
- static struct intel_scu_ipc_dev  ipcdev; /* Only one for now */
-@@ -136,7 +140,12 @@ static DEFINE_MUTEX(ipclock); /* lock used to prevent multiple call to SCU */
-  */
- static inline void ipc_command(u32 cmd) /* Send ipc command */
- {
-+#ifdef CONFIG_INTEL_SCU_IPC_INTR_MODE
-+	INIT_COMPLETION(ipcdev.cmd_complete);
-+	writel(cmd | IPC_IOC, ipcdev.ipc_base);
-+#else
- 	writel(cmd, ipcdev.ipc_base);
-+#endif
- }
+ /* intel scu ipc driver data*/
+@@ -80,6 +83,24 @@ static struct intel_scu_ipc_pdata_t intel_scu_ipc_pdata[] = {
+ 		.ipc_len = 0x100,
+ 		.i2c_len = 0x10,
+ 	},
++	[SCU_IPC_PENWELL] = {
++		.ipc_base = 0xff11c000,
++		.i2c_base = 0xff12b000,
++		.ipc_len = 0x100,
++		.i2c_len = 0x10,
++	},
++	[SCU_IPC_CLOVERVIEW] = {
++		.ipc_base = 0xff11c000,
++		.i2c_base = 0xff12b000,
++		.ipc_len = 0x100,
++		.i2c_len = 0x10,
++	},
++	[SCU_IPC_TANGIER] = {
++		.ipc_base = 0xff009000,
++		.i2c_base  = 0xff00d000,
++		.ipc_len  = 0x100,
++		.i2c_len = 0x10,
++	},
+ };
  
- /*
-@@ -194,6 +203,37 @@ static inline int busy_loop(void) /* Wait till scu status is busy */
- 	return 0;
- }
+ static int ipc_probe(struct pci_dev *dev, const struct pci_device_id *id);
+@@ -586,6 +607,9 @@ static void ipc_remove(struct pci_dev *pdev)
  
-+#ifdef CONFIG_INTEL_SCU_IPC_INTR_MODE
-+/* Wait till ipc ioc interrupt is received or timeout in 3 HZ */
-+static inline int ipc_wait_for_interrupt(void)
-+{
-+	int status;
-+	int ret = 0;
-+
-+	if (!wait_for_completion_timeout(&ipcdev.cmd_complete, 3 * HZ)) {
-+		ret = -ETIMEDOUT;
-+		goto end;
-+	}
-+
-+	status = ipc_read_status();
-+
-+	if ((status >> 1) & 1)
-+		ret = -EIO;
-+
-+end:
-+	return ret;
-+}
-+#endif
-+
-+int intel_scu_ipc_check_status(void)
-+{
-+#ifdef CONFIG_INTEL_SCU_IPC_INTR_MODE
-+	return ipc_wait_for_interrupt();
-+#else
-+	return busy_loop();
-+#endif
-+}
-+
- /* Read/Write power control(PMIC in Langwell, MSIC in PenWell) registers */
- static int pwr_reg_rdwr(u16 *addr, u8 *data, u32 count, u32 op, u32 id)
- {
-@@ -234,7 +274,7 @@ static int pwr_reg_rdwr(u16 *addr, u8 *data, u32 count, u32 op, u32 id)
- 		ipc_command(4 << 16 |  id << 12 | 0 << 8 | op);
- 	}
- 
--	err = busy_loop();
-+	err = intel_scu_ipc_check_status();
- 	if (id == IPC_CMD_PCNTRL_R) { /* Read rbuf */
- 		/* Workaround: values are read as 0 without memcpy_fromio */
- 		memcpy_fromio(cbuf, ipcdev.ipc_base + 0x90, 16);
-@@ -429,7 +469,7 @@ int intel_scu_ipc_simple_command(int cmd, int sub)
- 		return -ENODEV;
- 	}
- 	ipc_command(sub << 12 | cmd);
--	err = busy_loop();
-+	err = intel_scu_ipc_check_status();
- 	mutex_unlock(&ipclock);
- 	return err;
- }
-@@ -463,7 +503,7 @@ int intel_scu_ipc_command(int cmd, int sub, u32 *in, int inlen,
- 		ipc_data_writel(*in++, 4 * i);
- 
- 	ipc_command((inlen << 16) | (sub << 12) | cmd);
--	err = busy_loop();
-+	err = intel_scu_ipc_check_status();
- 
- 	for (i = 0; i < outlen; i++)
- 		*out++ = ipc_data_readl(4 * i);
-@@ -529,6 +569,9 @@ EXPORT_SYMBOL(intel_scu_ipc_i2c_cntrl);
-  */
- static irqreturn_t ioc(int irq, void *dev_id)
- {
-+#ifdef CONFIG_INTEL_SCU_IPC_INTR_MODE
-+	complete(&ipcdev.cmd_complete);
-+#endif
- 	return IRQ_HANDLED;
- }
- 
-@@ -566,6 +609,10 @@ static int ipc_probe(struct pci_dev *dev, const struct pci_device_id *id)
- 	if (!pci_resource)
- 		return -ENOMEM;
- 
-+#ifdef CONFIG_INTEL_SCU_IPC_INTR_MODE
-+	init_completion(&ipcdev.cmd_complete);
-+#endif
-+
- 	if (request_irq(dev->irq, ioc, 0, "intel_scu_ipc", &ipcdev))
- 		return -EBUSY;
- 
+ static DEFINE_PCI_DEVICE_TABLE(pci_ids) = {
+ 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x082a), SCU_IPC_LINCROFT},
++	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x080e), SCU_IPC_PENWELL},
++	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x08ea), SCU_IPC_CLOVERVIEW},
++	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x11a0), SCU_IPC_TANGIER},
+ 	{ 0,}
+ };
+ MODULE_DEVICE_TABLE(pci, pci_ids);
 -- 
 1.7.9.5
 
