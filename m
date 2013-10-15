@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934011Ab3JOUku (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 16:40:50 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:41959 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933952Ab3JOUjk (ORCPT
+	id S934036Ab3JOUlN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 16:41:13 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:62140 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933950Ab3JOUjj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 16:39:40 -0400
+	Tue, 15 Oct 2013 16:39:39 -0400
 From: Grant Likely <grant.likely@linaro.org>
 To: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Grant Likely <grant.likely@linaro.org>, Michal Simek <monstr@monstr.eu>
-Subject: [RFC 8/9] microblaze/pci: Drop PowerPC-ism from irq parsing
-Date: Tue, 15 Oct 2013 21:39:22 +0100
-Message-Id: <1381869563-16083-9-git-send-email-grant.likely@linaro.org>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: [RFC 6/9] of: Add testcases for interrupt parsing
+Date: Tue, 15 Oct 2013 21:39:20 +0100
+Message-Id: <1381869563-16083-7-git-send-email-grant.likely@linaro.org>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381869563-16083-1-git-send-email-grant.likely@linaro.org>
 References: <1381869563-16083-1-git-send-email-grant.likely@linaro.org>
@@ -20,120 +21,202 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Microblaze PCI code copied the PowerPC irq handling, but powerpc
-needs to handle broken device trees that are not present on Microblaze.
-This patch removes the powerpc special case and replaces it with a
-direct of_irq_parse_and_map_pci() call.
+This patch extends the DT selftest code with some test cases for the
+interrupt parsing functions.
 
-Signed-off-by: Grant Likely <grant.likely@linaro.org>
-Cc: Michal Simek <monstr@monstr.eu>
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
 ---
- arch/microblaze/include/asm/pci.h |  2 --
- arch/microblaze/pci/pci-common.c  | 71 +--------------------------------------
- 2 files changed, 1 insertion(+), 72 deletions(-)
+ arch/arm/boot/dts/testcases/tests-interrupts.dtsi | 41 ++++++++++
+ arch/arm/boot/dts/testcases/tests.dtsi            |  1 +
+ drivers/of/selftest.c                             | 91 +++++++++++++++++++++--
+ 3 files changed, 127 insertions(+), 6 deletions(-)
+ create mode 100644 arch/arm/boot/dts/testcases/tests-interrupts.dtsi
 
-diff --git a/arch/microblaze/include/asm/pci.h b/arch/microblaze/include/asm/pci.h
-index d52abb6..935f9be 100644
---- a/arch/microblaze/include/asm/pci.h
-+++ b/arch/microblaze/include/asm/pci.h
-@@ -127,8 +127,6 @@ extern void of_scan_pci_bridge(struct device_node *node,
- extern void of_scan_bus(struct device_node *node, struct pci_bus *bus);
- extern void of_rescan_bus(struct device_node *node, struct pci_bus *bus);
+diff --git a/arch/arm/boot/dts/testcases/tests-interrupts.dtsi b/arch/arm/boot/dts/testcases/tests-interrupts.dtsi
+new file mode 100644
+index 0000000..6ecda71
+--- /dev/null
++++ b/arch/arm/boot/dts/testcases/tests-interrupts.dtsi
+@@ -0,0 +1,41 @@
++
++/ {
++	testcase-data {
++		interrupts {
++			#address-cells = <0>;
++			test_intc0: intc0 {
++				interrupt-controller;
++				#interrupt-cells = <1>;
++			};
++
++			test_intc1: intc1 {
++				interrupt-controller;
++				#interrupt-cells = <3>;
++			};
++
++			test_intc2: intc2 {
++				interrupt-controller;
++				#interrupt-cells = <2>;
++			};
++
++			test_intmap0: intmap0 {
++				#interrupt-cells = <1>;
++				#address-cells = <0>;
++				interrupt-map = <1 &test_intc0 9>,
++						<2 &test_intc1 10 11 12>,
++						<3 &test_intc2 13 14>,
++						<4 &test_intc2 15 16>;
++			};
++
++			interrupts0 {
++				interrupt-parent = <&test_intc0>;
++				interrupts = <1>, <2>, <3>, <4>;
++			};
++
++			interrupts1 {
++				interrupt-parent = <&test_intmap0>;
++				interrupts = <1>, <2>, <3>, <4>;
++			};
++		};
++	};
++};
+diff --git a/arch/arm/boot/dts/testcases/tests.dtsi b/arch/arm/boot/dts/testcases/tests.dtsi
+index a7c5067..3f123ec 100644
+--- a/arch/arm/boot/dts/testcases/tests.dtsi
++++ b/arch/arm/boot/dts/testcases/tests.dtsi
+@@ -1 +1,2 @@
+ /include/ "tests-phandle.dtsi"
++/include/ "tests-interrupts.dtsi"
+diff --git a/drivers/of/selftest.c b/drivers/of/selftest.c
+index 0eb5c38..9c80f0b 100644
+--- a/drivers/of/selftest.c
++++ b/drivers/of/selftest.c
+@@ -9,18 +9,24 @@
+ #include <linux/errno.h>
+ #include <linux/module.h>
+ #include <linux/of.h>
++#include <linux/of_irq.h>
+ #include <linux/list.h>
+ #include <linux/mutex.h>
+ #include <linux/slab.h>
+ #include <linux/device.h>
  
--extern int pci_read_irq_line(struct pci_dev *dev);
--
- extern int pci_bus_find_capability(struct pci_bus *bus,
- 						unsigned int devfn, int cap);
- 
-diff --git a/arch/microblaze/pci/pci-common.c b/arch/microblaze/pci/pci-common.c
-index 60b386c..5060fc5 100644
---- a/arch/microblaze/pci/pci-common.c
-+++ b/arch/microblaze/pci/pci-common.c
-@@ -193,75 +193,6 @@ void pcibios_set_master(struct pci_dev *dev)
+-static bool selftest_passed = true;
++static struct selftest_results {
++	int passed;
++	int failed;
++} selftest_results;
++
+ #define selftest(result, fmt, ...) { \
+ 	if (!(result)) { \
+-		pr_err("FAIL %s:%i " fmt, __FILE__, __LINE__, ##__VA_ARGS__); \
+-		selftest_passed = false; \
++		selftest_results.failed++; \
++		pr_err("FAIL %s():%i " fmt, __func__, __LINE__, ##__VA_ARGS__); \
+ 	} else { \
+-		pr_info("pass %s:%i\n", __FILE__, __LINE__); \
++		selftest_results.passed++; \
++		pr_debug("pass %s():%i\n", __func__, __LINE__); \
+ 	} \
  }
  
- /*
-- * Reads the interrupt pin to determine if interrupt is use by card.
-- * If the interrupt is used, then gets the interrupt line from the
-- * openfirmware and sets it in the pci_dev and pci_config line.
-- */
--int pci_read_irq_line(struct pci_dev *pci_dev)
--{
--	struct of_phandle_args oirq;
--	unsigned int virq;
--
--	/* The current device-tree that iSeries generates from the HV
--	 * PCI informations doesn't contain proper interrupt routing,
--	 * and all the fallback would do is print out crap, so we
--	 * don't attempt to resolve the interrupts here at all, some
--	 * iSeries specific fixup does it.
--	 *
--	 * In the long run, we will hopefully fix the generated device-tree
--	 * instead.
--	 */
--	pr_debug("PCI: Try to map irq for %s...\n", pci_name(pci_dev));
--
--#ifdef DEBUG
--	memset(&oirq, 0xff, sizeof(oirq));
--#endif
--	/* Try to get a mapping from the device-tree */
--	if (of_irq_parse_pci(pci_dev, &oirq)) {
--		u8 line, pin;
--
--		/* If that fails, lets fallback to what is in the config
--		 * space and map that through the default controller. We
--		 * also set the type to level low since that's what PCI
--		 * interrupts are. If your platform does differently, then
--		 * either provide a proper interrupt tree or don't use this
--		 * function.
--		 */
--		if (pci_read_config_byte(pci_dev, PCI_INTERRUPT_PIN, &pin))
--			return -1;
--		if (pin == 0)
--			return -1;
--		if (pci_read_config_byte(pci_dev, PCI_INTERRUPT_LINE, &line) ||
--		    line == 0xff || line == 0) {
--			return -1;
--		}
--		pr_debug(" No map ! Using line %d (pin %d) from PCI config\n",
--			 line, pin);
--
--		virq = irq_create_mapping(NULL, line);
--		if (virq)
--			irq_set_irq_type(virq, IRQ_TYPE_LEVEL_LOW);
--	} else {
--		pr_debug(" Got one, spec %d cells (0x%08x 0x%08x...) on %s\n",
--			 oirq.args_count, oirq.args[0], oirq.args[1],
--			 of_node_full_name(oirq.np));
--
--		virq = irq_create_of_mapping(&oirq);
--	}
--	if (!virq) {
--		pr_debug(" Failed to map !\n");
--		return -1;
--	}
--
--	pr_debug(" Mapped to linux irq %d\n", virq);
--
--	pci_dev->irq = virq;
--
--	return 0;
--}
--EXPORT_SYMBOL(pci_read_irq_line);
--
--/*
-  * Platform support for /proc/bus/pci/X/Y mmap()s,
-  * modelled on the sparc64 implementation by Dave Miller.
-  *  -- paulus.
-@@ -959,7 +890,7 @@ void pcibios_setup_bus_devices(struct pci_bus *bus)
- 		dev->dev.archdata.dma_data = (void *)PCI_DRAM_OFFSET;
+@@ -131,7 +137,6 @@ static void __init of_selftest_property_match_string(void)
+ 	struct device_node *np;
+ 	int rc;
  
- 		/* Read default IRQs and fixup if necessary */
--		pci_read_irq_line(dev);
-+		dev->irq = of_irq_parse_and_map_pci(dev, 0, 0);
- 	}
+-	pr_info("start\n");
+ 	np = of_find_node_by_path("/testcase-data/phandle-tests/consumer-a");
+ 	if (!np) {
+ 		pr_err("No testcase data in device tree\n");
+@@ -154,6 +159,78 @@ static void __init of_selftest_property_match_string(void)
+ 	selftest(rc == -EILSEQ, "unterminated string; rc=%i", rc);
  }
  
++static void __init of_selftest_parse_interrupts(void)
++{
++	struct device_node *np;
++	struct of_phandle_args args;
++	int i, rc;
++
++	np = of_find_node_by_path("/testcase-data/interrupts/interrupts0");
++	if (!np) {
++		pr_err("missing testcase data\n");
++		return;
++	}
++
++	for (i = 0; i < 4; i++) {
++		bool passed = true;
++		args.args_count = 0;
++		rc = of_irq_parse_one(np, i, &args);
++
++		passed &= !rc;
++		passed &= (args.args_count == 1);
++		passed &= (args.args[0] == (i + 1));
++
++		selftest(passed, "index %i - data error on node %s rc=%i\n",
++			 i, args.np->full_name, rc);
++	}
++	of_node_put(np);
++
++	np = of_find_node_by_path("/testcase-data/interrupts/interrupts1");
++	if (!np) {
++		pr_err("missing testcase data\n");
++		return;
++	}
++
++	for (i = 0; i < 4; i++) {
++		bool passed = true;
++		args.args_count = 0;
++		rc = of_irq_parse_one(np, i, &args);
++
++		/* Test the values from tests-phandle.dtsi */
++		switch (i) {
++		case 0:
++			passed &= !rc;
++			passed &= (args.args_count == 1);
++			passed &= (args.args[0] == 9);
++			break;
++		case 1:
++			passed &= !rc;
++			passed &= (args.args_count == 3);
++			passed &= (args.args[0] == 10);
++			passed &= (args.args[1] == 11);
++			passed &= (args.args[2] == 12);
++			break;
++		case 2:
++			passed &= !rc;
++			passed &= (args.args_count == 2);
++			passed &= (args.args[0] == 13);
++			passed &= (args.args[1] == 14);
++			break;
++		case 3:
++			passed &= !rc;
++			passed &= (args.args_count == 2);
++			passed &= (args.args[0] == 15);
++			passed &= (args.args[1] == 16);
++			break;
++		default:
++			passed = false;
++		}
++		selftest(passed, "index %i - data error on node %s rc=%i\n",
++			 i, args.np->full_name, rc);
++	}
++	of_node_put(np);
++}
++
+ static int __init of_selftest(void)
+ {
+ 	struct device_node *np;
+@@ -168,7 +245,9 @@ static int __init of_selftest(void)
+ 	pr_info("start of selftest - you will see error messages\n");
+ 	of_selftest_parse_phandle_with_args();
+ 	of_selftest_property_match_string();
+-	pr_info("end of selftest - %s\n", selftest_passed ? "PASS" : "FAIL");
++	of_selftest_parse_interrupts();
++	pr_info("end of selftest - %i passed, %i failed\n",
++		selftest_results.passed, selftest_results.failed);
+ 	return 0;
+ }
+ late_initcall(of_selftest);
 -- 
 1.8.1.2
 
