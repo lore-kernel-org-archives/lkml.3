@@ -1,61 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755780Ab3JOHMl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 03:12:41 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:54009 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750769Ab3JOHMk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 03:12:40 -0400
-X-AuditID: 9c930179-b7c78ae000003065-c1-525ceae673cb
-From: Namhyung Kim <namhyung@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 1/2] perf tools: Compare dso's also when comparing symbols
-References: <1381802517-18812-1-git-send-email-namhyung@kernel.org>
-	<20131015060829.GA4529@gmail.com>
-Date: Tue, 15 Oct 2013 16:12:38 +0900
-In-Reply-To: <20131015060829.GA4529@gmail.com> (Ingo Molnar's message of "Tue,
-	15 Oct 2013 08:08:29 +0200")
-Message-ID: <87y55v9fdl.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	id S1757498Ab3JOHNh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 03:13:37 -0400
+Received: from ns.mm-sol.com ([212.124.72.66]:53840 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750965Ab3JOHNf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 03:13:35 -0400
+Message-ID: <1381821136.29983.15.camel@iivanov-dev.int.mm-sol.com>
+Subject: Re: [PATCH v3 12/13] usb: phy: msm: Properly check core interrupt
+ number
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: balbi@ti.com
+Cc: mark.rutland@arm.com, linux-doc@vger.kernel.org, dwalker@fifo99.com,
+        linux@arm.linux.org.uk, swarren@wwwdotorg.org, grant.likely@linaro.org,
+        davidb@codeaurora.org, devicetree@vger.kernel.org,
+        jackp@codeaurora.org, pawel.moll@arm.com,
+        ijc+devicetree@hellion.org.uk, linux-arm-msm@vger.kernel.org,
+        rob.herring@calxeda.com, linux-arm-kernel@lists.infradead.org,
+        dsegal@codeaurora.org, gregkh@linuxfoundation.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mgautam@codeaurora.org, bryanh@codeaurora.org, rob@landley.net
+Date: Tue, 15 Oct 2013 10:12:16 +0300
+In-Reply-To: <20131014225933.GF7446@radagast>
+References: <1381764280-28420-1-git-send-email-iivanov@mm-sol.com>
+	 <1381764280-28420-13-git-send-email-iivanov@mm-sol.com>
+	 <20131014225933.GF7446@radagast>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Oct 2013 08:08:29 +0200, Ingo Molnar wrote:
-> * Namhyung Kim <namhyung@kernel.org> wrote:
->
->> From: Namhyung Kim <namhyung.kim@lge.com>
->> 
->> Linus reported that sometimes 'perf report -s symbol' exits without any 
->> message on TUI.  David and Jiri found that it's because it failed to add 
->> a hist entry due to an invalid symbol length.
->
-> Btw., 'exit without any messages' is something that should be fixed 
-> separately as well I suspect.
+On Mon, 2013-10-14 at 17:59 -0500, Felipe Balbi wrote: 
+> On Mon, Oct 14, 2013 at 06:24:39PM +0300, Ivan T. Ivanov wrote:
+> > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+> > 
+> > IRQ with number 0 is valid case, so check for negative
+> 
+> not entirelly correct... IRQ 0 isn't supposed to be used as a linux IRQ
+> number IIRC.
 
-Sure.  I believe acme is gonna work on it. :)
+I am not really sure. NO_IRQ is -1 at least on ARM. Also when
+taking into account irqdomain's zero as interrupt number is valid??
 
->
->>  static int64_t
->>  sort__sym_cmp(struct hist_entry *left, struct hist_entry *right)
->>  {
->> +	int64_t ret;
->> +
->
-> Btw., this file should go back to u64/s64 like the kernel and most of perf 
-> does. (A few int64_t uses slipped into other places as well, I suspect 
-> they should be fixed.)
-
-Okay, will send a separate patch for the fix.
+> 
+> > numbers instead.
+> > 
+> > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+> > ---
+> >  drivers/usb/phy/phy-msm-usb.c |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/usb/phy/phy-msm-usb.c b/drivers/usb/phy/phy-msm-usb.c
+> > index ca2abe6..f34c8a9 100644
+> > --- a/drivers/usb/phy/phy-msm-usb.c
+> > +++ b/drivers/usb/phy/phy-msm-usb.c
+> > @@ -1415,7 +1415,7 @@ static int __init msm_otg_probe(struct platform_device *pdev)
+> >  	dev_info(&pdev->dev, "OTG regs = %p\n", motg->regs);
+> >  
+> >  	motg->irq = platform_get_irq(pdev, 0);
+> > -	if (!motg->irq) {
+> > +	if (motg->irq < 0) {
+> 
+> this check is correct though, since platform_get_irq() will return
+> -ENXIO if it doesn't find IRQ resource.
+> 
 
 Thanks,
-Namhyung
+Ivan
+
