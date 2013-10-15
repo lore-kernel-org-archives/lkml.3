@@ -1,58 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759610Ab3JOTcw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 15:32:52 -0400
-Received: from sauhun.de ([89.238.76.85]:36428 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933381Ab3JOTcE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 15:32:04 -0400
-From: Wolfram Sang <wsa@the-dreams.de>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Wolfram Sang <wsa@the-dreams.de>
-Subject: [RFC RESEND 3/3] sched: remove INIT_COMPLETION
-Date: Tue, 15 Oct 2013 21:31:20 +0200
-Message-Id: <1381865480-3013-4-git-send-email-wsa@the-dreams.de>
-X-Mailer: git-send-email 1.8.4.rc3
-In-Reply-To: <1381865480-3013-1-git-send-email-wsa@the-dreams.de>
-References: <1381865480-3013-1-git-send-email-wsa@the-dreams.de>
+	id S1759677Ab3JOTh3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 15:37:29 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:49980 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757002Ab3JOTh1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 15:37:27 -0400
+Message-ID: <525D9973.2070501@wwwdotorg.org>
+Date: Tue, 15 Oct 2013 13:37:23 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Hiroshi Doyu <hdoyu@nvidia.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH v3 13/19] clk: tegra: introduce common gen4 super clock
+References: <1381848794-11761-1-git-send-email-pdeschrijver@nvidia.com> <1381848794-11761-14-git-send-email-pdeschrijver@nvidia.com>
+In-Reply-To: <1381848794-11761-14-git-send-email-pdeschrijver@nvidia.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All users are converted over to reinit_completion(). Remove the old
-macro now.
+On 10/15/2013 08:52 AM, Peter De Schrijver wrote:
+> Introduce a common function which super clock initialization for Tegra114
+> and beyond.
 
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
----
+Nit: s/which/{which,that} performs/ ?
 
-This patch is mainly here for build testing (to spot missed conversions). I am
-fine with applying this some cycles later than the rest.
-
- include/linux/completion.h | 10 ----------
- 1 file changed, 10 deletions(-)
-
-diff --git a/include/linux/completion.h b/include/linux/completion.h
-index 2195e32..2d309b9 100644
---- a/include/linux/completion.h
-+++ b/include/linux/completion.h
-@@ -106,14 +106,4 @@ extern bool completion_done(struct completion *x);
- extern void complete(struct completion *);
- extern void complete_all(struct completion *);
- 
--/**
-- * INIT_COMPLETION - reinitialize a completion structure
-- * @x:  completion structure to be reinitialized
-- *
-- * This macro should be used to reinitialize a completion structure so it can
-- * be reused. This is especially important after complete_all() is used.
-- */
--#define INIT_COMPLETION(x)	((x).done = 0)
--
--
- #endif
--- 
-1.8.4.rc3
-
+For my education, why are cclk_g, cclk_lp, pll_x related to the super
+clock? I thought sclk/hclk/pclk were bus clocks, not something related
+to the CPU clock(s).
