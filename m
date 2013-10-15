@@ -1,143 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933498Ab3JOSNg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 14:13:36 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:63957 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932555Ab3JOSNf (ORCPT
+	id S933535Ab3JOSOH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 14:14:07 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:35292 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932555Ab3JOSOG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 14:13:35 -0400
-From: Chang Xiangzhong <changxiangzhong@gmail.com>
-To: vyasevich@gmail.com
-Cc: nhorman@tuxdriver.com, davem@davemloft.net, linux-sctp@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Chang Xiangzhong <changxiangzhong@gmail.com>
-Subject: [PATCH V2] For for each TSN t being newly acked (Not only cumulatively, but also SELECTIVELY) cacc_saw_newack should be set to 1.
-Date: Tue, 15 Oct 2013 20:13:04 +0200
-Message-Id: <1381860784-16481-1-git-send-email-changxiangzhong@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 15 Oct 2013 14:14:06 -0400
+Date: Tue, 15 Oct 2013 12:14:03 -0600
+From: Jens Axboe <axboe@kernel.dk>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: blk_mq_update_queue_map makes an (invalid?) assumption about cpu
+ ordering
+Message-ID: <20131015181403.GY541@kernel.dk>
+References: <x49fvs2pgjx.fsf@segfault.boston.devel.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <x49fvs2pgjx.fsf@segfault.boston.devel.redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Xiangzhong Chang <changxiangzhong@gmail.com>
----
- net/sctp/outqueue.c |   76 ++++++++++++++++++++++++---------------------------
- 1 file changed, 35 insertions(+), 41 deletions(-)
+On Tue, Oct 15 2013, Jeff Moyer wrote:
+> Hi, Jens,
+> 
+> blk_mq_update_queue_map does this:
+> 
+>         for_each_possible_cpu(i) {
+>                 if (!cpu_online(i)) {
+>                         map[i] = 0;
+>                         continue;
+>                 }
+> 
+> ...
+>                 first_sibling = get_first_sibling(i);
+>                 if (first_sibling == i) {
+>                         map[i] = cpu_to_queue_index(nr_uniq_cpus, nr_queues,
+>                                                         queue);
+>                         queue++;
+>                 } else
+>                         map[i] = map[first_sibling];
+> 
+> This assumes that the first_sibling is listed before any other siblings,
+> which I don't believe is true.  I don't think you get any guaranteed
+> ordering in that cpu_possible_mask.
+> 
+> ... or did I miss something?
 
-diff --git a/net/sctp/outqueue.c b/net/sctp/outqueue.c
-index 94df758..84ef3b8 100644
---- a/net/sctp/outqueue.c
-+++ b/net/sctp/outqueue.c
-@@ -1357,13 +1357,13 @@ static void sctp_check_transmitted(struct sctp_outq *q,
- 
- 		tsn = ntohl(tchunk->subh.data_hdr->tsn);
- 		if (sctp_acked(sack, tsn)) {
--			/* If this queue is the retransmit queue, the
--			 * retransmit timer has already reclaimed
--			 * the outstanding bytes for this chunk, so only
--			 * count bytes associated with a transport.
--			 */
--			if (transport) {
--				/* If this chunk is being used for RTT
-+			if (!tchunk->tsn_gap_acked) {
-+				/* If this queue is the retransmit queue, the
-+				 * retransmit timer has already reclaimed
-+				 * the outstanding bytes for this chunk, so only
-+				 * count bytes associated with a transport.
-+				 *
-+				 * If this chunk is being used for RTT
- 				 * measurement, calculate the RTT and update
- 				 * the RTO using this value.
- 				 *
-@@ -1374,28 +1374,44 @@ static void sctp_check_transmitted(struct sctp_outq *q,
- 				 * first instance of the packet or a later
- 				 * instance).
- 				 */
--				if (!tchunk->tsn_gap_acked &&
--				    tchunk->rtt_in_progress) {
-+				if (transport && tchunk->rtt_in_progress) {
- 					tchunk->rtt_in_progress = 0;
- 					rtt = jiffies - tchunk->sent_at;
- 					sctp_transport_update_rto(transport,
--								  rtt);
-+						rtt);
- 				}
--			}
- 
--			/* If the chunk hasn't been marked as ACKED,
--			 * mark it and account bytes_acked if the
--			 * chunk had a valid transport (it will not
--			 * have a transport if ASCONF had deleted it
--			 * while DATA was outstanding).
--			 */
--			if (!tchunk->tsn_gap_acked) {
-+				/* If the chunk hasn't been marked as ACKED,
-+				 * mark it and account bytes_acked if the
-+				 * chunk had a valid transport (it will not
-+				 * have a transport if ASCONF had deleted it
-+				 * while DATA was outstanding).
-+				 */
- 				tchunk->tsn_gap_acked = 1;
- 				*highest_new_tsn_in_sack = tsn;
- 				bytes_acked += sctp_data_size(tchunk);
- 				if (!tchunk->transport)
- 					migrate_bytes += sctp_data_size(tchunk);
- 				forward_progress = true;
-+
-+				/* SFR-CACC algorithm:
-+				 * 2) If the SACK contains gap acks
-+				 * and the flag CHANGEOVER_ACTIVE is
-+				 * set the receiver of the SACK MUST
-+				 * take the following action:
-+				 *
-+				 * B) For each TSN t being acked that
-+				 * has not been acked in any SACK so
-+				 * far, set cacc_saw_newack to 1 for
-+				 * the destination that the TSN was
-+				 * sent to.
-+				 */
-+				if (transport &&
-+					sack->num_gap_ack_blocks &&
-+					q->asoc->peer.primary_path->cacc.
-+					changeover_active
-+				   )
-+					transport->cacc.cacc_saw_newack = 1;
- 			}
- 
- 			if (TSN_lte(tsn, sack_ctsn)) {
-@@ -1411,30 +1427,8 @@ static void sctp_check_transmitted(struct sctp_outq *q,
- 				restart_timer = 1;
- 				forward_progress = true;
- 
--				if (!tchunk->tsn_gap_acked) {
--					/*
--					 * SFR-CACC algorithm:
--					 * 2) If the SACK contains gap acks
--					 * and the flag CHANGEOVER_ACTIVE is
--					 * set the receiver of the SACK MUST
--					 * take the following action:
--					 *
--					 * B) For each TSN t being acked that
--					 * has not been acked in any SACK so
--					 * far, set cacc_saw_newack to 1 for
--					 * the destination that the TSN was
--					 * sent to.
--					 */
--					if (transport &&
--					    sack->num_gap_ack_blocks &&
--					    q->asoc->peer.primary_path->cacc.
--					    changeover_active)
--						transport->cacc.cacc_saw_newack
--							= 1;
--				}
--
- 				list_add_tail(&tchunk->transmitted_list,
--					      &q->sacked);
-+					&q->sacked);
- 			} else {
- 				/* RFC2960 7.2.4, sctpimpguide-05 2.8.2
- 				 * M2) Each time a SACK arrives reporting
+That's correct, it's assuming the first sibling is the lowest numbered
+one. Are there cases where that would not be correct? I was sort of
+assuming that was what "first" meant here.
+
 -- 
-1.7.9.5
+Jens Axboe
 
