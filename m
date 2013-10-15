@@ -1,358 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933294Ab3JORje (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 13:39:34 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:60144 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932536Ab3JORja convert rfc822-to-8bit (ORCPT
+	id S933430Ab3JORjl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 13:39:41 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:38657 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933311Ab3JORjg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 13:39:30 -0400
+	Tue, 15 Oct 2013 13:39:36 -0400
+Message-ID: <525D7DD7.4070708@gmail.com>
+Date: Tue, 15 Oct 2013 19:39:35 +0200
+From: Chang <changxiangzhong@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-In-Reply-To: <1381799984-20668-1-git-send-email-maximilian.guentner@gmail.com>
-References: <2819232.mPNW6mO2uH@titan> <CAK5ve-++aGqSe5dg=MHxNKrk0V75OP0_OY5h2KVYeDY3VjZ4zg@mail.gmail.com>
- <1381799984-20668-1-git-send-email-maximilian.guentner@gmail.com>
-From: Bryan Wu <cooloney@gmail.com>
-Date: Tue, 15 Oct 2013 10:39:08 -0700
-Message-ID: <CAK5ve-+tr5GWg7JSOVF3BB17f+i2Eg57dtm4+Gp9ZzRE+L0Vuw@mail.gmail.com>
-Subject: Re: [PATCH v2] leds: Added driver for the NXP PCA9685 I2C chip
-To: =?ISO-8859-1?Q?Maximilian_G=FCntner?= 
-	<maximilian.guentner@gmail.com>
-Cc: Jingoo Han <jg1.han@samsung.com>, Richard Purdie <rpurdie@rpsys.net>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        Peter Meerwald <pmeerw@pmeerw.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Vlad Yasevich <vyasevich@gmail.com>
+CC: nhorman@tuxdriver.com, davem@davemloft.net, linux-sctp@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] For for each TSN t being newly acked (Not only cumulatively,
+ but also SELECTIVELY) cacc_saw_newack should be set to 1.
+References: <1381856348-15503-1-git-send-email-changxiangzhong@gmail.com> <525D7A72.70200@gmail.com>
+In-Reply-To: <525D7A72.70200@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 14, 2013 at 6:19 PM, Maximilian Güntner
-<maximilian.guentner@gmail.com> wrote:
-> The NXP PCA9685 supports 16 channels/leds using a 12-bit PWM (4095
-> levels of brightness)
-> This driver supports configuration using platform_data.
+
+On 10/15/2013 07:25 PM, Vlad Yasevich wrote:
+> On 10/15/2013 12:59 PM, Chang Xiangzhong wrote:
+>> Signed-off-by: Xiangzhong Chang <changxiangzhong@gmail.com>
+>> ---
+>>   net/sctp/outqueue.c |  142 
+>> ++++++++++++++++++++++++---------------------------
+>>   1 file changed, 68 insertions(+), 74 deletions(-)
+>>
+>> diff --git a/net/sctp/outqueue.c b/net/sctp/outqueue.c
+>> index 94df758..f10d848 100644
+>> --- a/net/sctp/outqueue.c
+>> +++ b/net/sctp/outqueue.c
+>> @@ -1357,84 +1357,78 @@ static void sctp_check_transmitted(struct 
+>> sctp_outq *q,
+>>
+>>           tsn = ntohl(tchunk->subh.data_hdr->tsn);
+>>           if (sctp_acked(sack, tsn)) {
+>> -            /* If this queue is the retransmit queue, the
+>> -             * retransmit timer has already reclaimed
+>> -             * the outstanding bytes for this chunk, so only
+>> -             * count bytes associated with a transport.
+>> -             */
+>> -            if (transport) {
+>> -                /* If this chunk is being used for RTT
+>> -                 * measurement, calculate the RTT and update
+>> -                 * the RTO using this value.
+>> -                 *
+>> -                 * 6.3.1 C5) Karn's algorithm: RTT measurements
+>> -                 * MUST NOT be made using packets that were
+>> -                 * retransmitted (and thus for which it is
+>> -                 * ambiguous whether the reply was for the
+>> -                 * first instance of the packet or a later
+>> -                 * instance).
+>> -                 */
+>> -                if (!tchunk->tsn_gap_acked &&
+>> -                    tchunk->rtt_in_progress) {
+>> -                    tchunk->rtt_in_progress = 0;
+>> -                    rtt = jiffies - tchunk->sent_at;
+>> -                    sctp_transport_update_rto(transport,
+>> -                                  rtt);
+>> -                }
+>> -            }
+>> -
+>> -            /* If the chunk hasn't been marked as ACKED,
+>> -             * mark it and account bytes_acked if the
+>> -             * chunk had a valid transport (it will not
+>> -             * have a transport if ASCONF had deleted it
+>> -             * while DATA was outstanding).
+>> -             */
+>>               if (!tchunk->tsn_gap_acked) {
+>> -                tchunk->tsn_gap_acked = 1;
+>> -                *highest_new_tsn_in_sack = tsn;
+>> -                bytes_acked += sctp_data_size(tchunk);
+>> -                if (!tchunk->transport)
+>> -                    migrate_bytes += sctp_data_size(tchunk);
+>> -                forward_progress = true;
+>> +                /* If this queue is the retransmit queue, the
+>> +                 * retransmit timer has already reclaimed
+>> +                 * the outstanding bytes for this chunk, so only
+>> +                 * count bytes associated with a transport.
+>> +                 *
+>> +                 * If this chunk is being used for RTT
+>> +                 * measurement, calculate the RTT and update
+>> +                 * the RTO using this value.
+>> +                 *
+>> +                 * 6.3.1 C5) Karn's algorithm: RTT measurements
+>> +                 * MUST NOT be made using packets that were
+>> +                 * retransmitted (and thus for which it is
+>> +                 * ambiguous whether the reply was for the
+>> +                 * first instance of the packet or a later
+>> +                 * instance).
+>> +                 */
+>> +                if (transport && tchunk->rtt_in_progress) {
+>> +                tchunk->rtt_in_progress = 0;
+>> +                rtt = jiffies - tchunk->sent_at;
+>> +                sctp_transport_update_rto(transport,
+>> +                    rtt);
+>> +                }
+>> +
+>> +                /* If the chunk hasn't been marked as ACKED,
+>> +                 * mark it and account bytes_acked if the
+>> +                 * chunk had a valid transport (it will not
+>> +                 * have a transport if ASCONF had deleted it
+>> +                 * while DATA was outstanding).
+>> +                 */
+>> +                tchunk->tsn_gap_acked = 1;
+>> +                *highest_new_tsn_in_sack = tsn;
+>> +                bytes_acked += sctp_data_size(tchunk);
+>> +                if (!tchunk->transport)
+>> +                migrate_bytes += sctp_data_size(tchunk);
+>> +                forward_progress = true;
+>> +
+>> +                /*
+>> +                 * SFR-CACC algorithm:
+>> +                 * 2) If the SACK contains gap acks
+>> +                 * and the flag CHANGEOVER_ACTIVE is
+>> +                 * set the receiver of the SACK MUST
+>> +                 * take the following action:
+>> +                 *
+>> +                 * B) For each TSN t being acked that
+>> +                 * has not been acked in any SACK so
+>> +                 * far, set cacc_saw_newack to 1 for
+>> +                 * the destination that the TSN was
+>> +                 * sent to.
+>> +                 */
+>> +                if (transport &&
+>> +                    sack->num_gap_ack_blocks &&
+>> +                    q->asoc->peer.primary_path->cacc.
+>> +                    changeover_active)
+>> +                transport->cacc.cacc_saw_newack = 1;
+>>               }
 >
-> Signed-off-by: Maximilian Güntner <maximilian.guentner@gmail.com>
-> ---
+> Indents should be tab based.
+> This is a bit more of a re-write that is needed for the this 
+> particualar patch.  What's wrong with just doing this?
 >
->  v2:
->    addresses Bryan Wu's comments:
->     * removed/added some empty lines
->    addresses Peter Meerwald's comments:
->     * fixed typos
->     * replaced/moved one if statement
->     * replaced (1 << PCA9685_AI) with BIT(PCA9685_AI)
->    addresses Jingoo Han's comments:
->     * added an empty line
->     * sorted the header inclusions alphabetically
+I'm pretty new of kernel dev. So I've make a new patch. What's the 
+correct way of doing this? just attach the new patch to this email?
+-Chang
+
+> @@ -1396,6 +1396,25 @@ static void sctp_check_transmitted(struct 
+> sctp_outq *q,
+>                                 if (!tchunk->transport)
+>                                         migrate_bytes += 
+> sctp_data_size(tchunk);
+>                                 forward_progress = true;
+> +
+> +                               /*
+> +                                * SFR-CACC algorithm:
+> +                                * 2) If the SACK contains gap acks
+> +                                * and the flag CHANGEOVER_ACTIVE is
+> +                                * set the receiver of the SACK MUST
+> +                                * take the following action:
+> +                                *
+> +                                * B) For each TSN t being acked that
+> +                                * has not been acked in any SACK so
+> +                                * far, set cacc_saw_newack to 1 for
+> +                                * the destination that the TSN was
+> +                                * sent to.
+> +                                */
+> +                               if (transport &&
+> +                                   sack->num_gap_ack_blocks &&
+> + q->asoc->peer.primary_path->cacc.
+> +                                   changeover_active)
+> + transport->cacc.cacc_saw_newack = 1;
+>                         }
+>
+>
+>                         if (TSN_lte(tsn, sack_ctsn)) {
+>
+> -vlad
+>
+>>
+>>               if (TSN_lte(tsn, sack_ctsn)) {
+>> -                /* RFC 2960  6.3.2 Retransmission Timer Rules
+>> -                 *
+>> -                 * R3) Whenever a SACK is received
+>> -                 * that acknowledges the DATA chunk
+>> -                 * with the earliest outstanding TSN
+>> -                 * for that address, restart T3-rtx
+>> -                 * timer for that address with its
+>> -                 * current RTO.
+>> -                 */
+>> -                restart_timer = 1;
+>> -                forward_progress = true;
+>> -
+>> -                if (!tchunk->tsn_gap_acked) {
+>> -                    /*
+>> -                     * SFR-CACC algorithm:
+>> -                     * 2) If the SACK contains gap acks
+>> -                     * and the flag CHANGEOVER_ACTIVE is
+>> -                     * set the receiver of the SACK MUST
+>> -                     * take the following action:
+>> -                     *
+>> -                     * B) For each TSN t being acked that
+>> -                     * has not been acked in any SACK so
+>> -                     * far, set cacc_saw_newack to 1 for
+>> -                     * the destination that the TSN was
+>> -                     * sent to.
+>> -                     */
+>> -                    if (transport &&
+>> -                        sack->num_gap_ack_blocks &&
+>> - q->asoc->peer.primary_path->cacc.
+>> -                        changeover_active)
+>> -                        transport->cacc.cacc_saw_newack
+>> -                            = 1;
+>> -                }
+>> -
+>> -                list_add_tail(&tchunk->transmitted_list,
+>> -                          &q->sacked);
+>> +                /* RFC 2960  6.3.2 Retransmission Timer Rules
+>> +                 *
+>> +                 * R3) Whenever a SACK is received
+>> +                 * that acknowledges the DATA chunk
+>> +                 * with the earliest outstanding TSN
+>> +                 * for that address, restart T3-rtx
+>> +                 * timer for that address with its
+>> +                 * current RTO.
+>> +                 */
+>> +                restart_timer = 1;
+>> +                forward_progress = true;
+>> +
+>> +                list_add_tail(&tchunk->transmitted_list,
+>> +                    &q->sacked);
+>>               } else {
+>>                   /* RFC2960 7.2.4, sctpimpguide-05 2.8.2
+>>                    * M2) Each time a SACK arrives reporting
+>>
 >
 
-Thanks, I merged it into my tree.
--Bryan
-
-
->  drivers/leds/Kconfig                       |  10 ++
->  drivers/leds/Makefile                      |   1 +
->  drivers/leds/leds-pca9685.c                | 213 +++++++++++++++++++++++++++++
->  include/linux/platform_data/leds-pca9685.h |  35 +++++
->  4 files changed, 259 insertions(+)
->  create mode 100644 drivers/leds/leds-pca9685.c
->  create mode 100644 include/linux/platform_data/leds-pca9685.h
->
-> diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
-> index 875bbe4..72156c1 100644
-> --- a/drivers/leds/Kconfig
-> +++ b/drivers/leds/Kconfig
-> @@ -300,6 +300,16 @@ config LEDS_PCA963X
->           LED driver chip accessed via the I2C bus. Supported
->           devices include PCA9633 and PCA9634
->
-> +config LEDS_PCA9685
-> +       tristate "LED support for PCA9685 I2C chip"
-> +       depends on LEDS_CLASS
-> +       depends on I2C
-> +       help
-> +         This option enables support for LEDs connected to the PCA9685
-> +         LED driver chip accessed via the I2C bus.
-> +         The PCA9685 offers 12-bit PWM (4095 levels of brightness) on
-> +         16 individual channels.
-> +
->  config LEDS_WM831X_STATUS
->         tristate "LED support for status LEDs on WM831x PMICs"
->         depends on LEDS_CLASS
-> diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
-> index 8979b0b..3cd76db 100644
-> --- a/drivers/leds/Makefile
-> +++ b/drivers/leds/Makefile
-> @@ -36,6 +36,7 @@ obj-$(CONFIG_LEDS_OT200)              += leds-ot200.o
->  obj-$(CONFIG_LEDS_FSG)                 += leds-fsg.o
->  obj-$(CONFIG_LEDS_PCA955X)             += leds-pca955x.o
->  obj-$(CONFIG_LEDS_PCA963X)             += leds-pca963x.o
-> +obj-$(CONFIG_LEDS_PCA9685)             += leds-pca9685.o
->  obj-$(CONFIG_LEDS_DA903X)              += leds-da903x.o
->  obj-$(CONFIG_LEDS_DA9052)              += leds-da9052.o
->  obj-$(CONFIG_LEDS_WM831X_STATUS)       += leds-wm831x-status.o
-> diff --git a/drivers/leds/leds-pca9685.c b/drivers/leds/leds-pca9685.c
-> new file mode 100644
-> index 0000000..f87719e
-> --- /dev/null
-> +++ b/drivers/leds/leds-pca9685.c
-> @@ -0,0 +1,213 @@
-> +/*
-> + * Copyright 2013 Maximilian Güntner <maximilian.guentner@gmail.com>
-> + *
-> + * This file is subject to the terms and conditions of version 2 of
-> + * the GNU General Public License.  See the file COPYING in the main
-> + * directory of this archive for more details.
-> + *
-> + * Based on leds-pca963x.c driver by
-> + * Peter Meerwald <p.meerwald@bct-electronic.com>
-> + *
-> + * Driver for the NXP PCA9685 12-Bit PWM LED driver chip.
-> + *
-> + */
-> +
-> +#include <linux/ctype.h>
-> +#include <linux/delay.h>
-> +#include <linux/err.h>
-> +#include <linux/i2c.h>
-> +#include <linux/leds.h>
-> +#include <linux/module.h>
-> +#include <linux/slab.h>
-> +#include <linux/string.h>
-> +#include <linux/workqueue.h>
-> +
-> +#include <linux/platform_data/leds-pca9685.h>
-> +
-> +/* Register Addresses */
-> +#define PCA9685_MODE1 0x00
-> +#define PCA9685_MODE2 0x01
-> +#define PCA9685_LED0_ON_L 0x06
-> +#define PCA9685_ALL_LED_ON_L 0xFA
-> +
-> +/* MODE1 Register */
-> +#define PCA9685_ALLCALL 0x00
-> +#define PCA9685_SLEEP   0x04
-> +#define PCA9685_AI      0x05
-> +
-> +/* MODE2 Register */
-> +#define PCA9685_INVRT   0x04
-> +#define PCA9685_OUTDRV  0x02
-> +
-> +static const struct i2c_device_id pca9685_id[] = {
-> +       { "pca9685", 0 },
-> +       { }
-> +};
-> +MODULE_DEVICE_TABLE(i2c, pca9685_id);
-> +
-> +struct pca9685_led {
-> +       struct i2c_client *client;
-> +       struct work_struct work;
-> +       u16 brightness;
-> +       struct led_classdev led_cdev;
-> +       int led_num; /* 0-15 */
-> +       char name[32];
-> +};
-> +
-> +static void pca9685_write_msg(struct i2c_client *client, u8 *buf, u8 len)
-> +{
-> +       struct i2c_msg msg = {
-> +               .addr = client->addr,
-> +               .flags = 0x00,
-> +               .len = len,
-> +               .buf = buf
-> +       };
-> +       i2c_transfer(client->adapter, &msg, 1);
-> +}
-> +
-> +static void pca9685_all_off(struct i2c_client *client)
-> +{
-> +       u8 i2c_buffer[5] = {PCA9685_ALL_LED_ON_L, 0x00, 0x00, 0x00, 0x10};
-> +       pca9685_write_msg(client, i2c_buffer, 5);
-> +}
-> +
-> +static void pca9685_led_work(struct work_struct *work)
-> +{
-> +       struct pca9685_led *pca9685;
-> +       u8 i2c_buffer[5];
-> +
-> +       pca9685 = container_of(work, struct pca9685_led, work);
-> +       i2c_buffer[0] = PCA9685_LED0_ON_L + 4 * pca9685->led_num;
-> +       /*
-> +        * 4095 is the maximum brightness, so we set the ON time to 0x1000
-> +        * which disables the PWM generator for that LED
-> +        */
-> +       if (pca9685->brightness == 4095)
-> +               *((u16 *)(i2c_buffer+1)) = cpu_to_le16(0x1000);
-> +       else
-> +               *((u16 *)(i2c_buffer+1)) = 0x0000;
-> +
-> +       if (pca9685->brightness == 0)
-> +               *((u16 *)(i2c_buffer+3)) = cpu_to_le16(0x1000);
-> +       else if (pca9685->brightness == 4095)
-> +               *((u16 *)(i2c_buffer+3)) = 0x0000;
-> +       else
-> +               *((u16 *)(i2c_buffer+3)) = cpu_to_le16(pca9685->brightness);
-> +
-> +       pca9685_write_msg(pca9685->client, i2c_buffer, 5);
-> +}
-> +
-> +static void pca9685_led_set(struct led_classdev *led_cdev,
-> +               enum led_brightness value)
-> +{
-> +       struct pca9685_led *pca9685;
-> +       pca9685 = container_of(led_cdev, struct pca9685_led, led_cdev);
-> +       pca9685->brightness = value;
-> +
-> +       schedule_work(&pca9685->work);
-> +}
-> +
-> +static int pca9685_probe(struct i2c_client *client,
-> +               const struct i2c_device_id *id)
-> +{
-> +       struct pca9685_led *pca9685;
-> +       struct pca9685_platform_data *pdata;
-> +       int err;
-> +       u8 i;
-> +
-> +       pdata = dev_get_platdata(&client->dev);
-> +       if (pdata) {
-> +               if (pdata->leds.num_leds < 1 || pdata->leds.num_leds > 15) {
-> +                       dev_err(&client->dev, "board info must claim 1-16 LEDs");
-> +                       return -EINVAL;
-> +               }
-> +       }
-> +
-> +       pca9685 = devm_kzalloc(&client->dev, 16 * sizeof(*pca9685), GFP_KERNEL);
-> +       if (!pca9685)
-> +               return -ENOMEM;
-> +
-> +       i2c_set_clientdata(client, pca9685);
-> +       pca9685_all_off(client);
-> +
-> +       for (i = 0; i < 16; i++) {
-> +               pca9685[i].client = client;
-> +               pca9685[i].led_num = i;
-> +               pca9685[i].name[0] = '\0';
-> +               if (pdata && i < pdata->leds.num_leds) {
-> +                       if (pdata->leds.leds[i].name)
-> +                               strncpy(pca9685[i].name,
-> +                                       pdata->leds.leds[i].name,
-> +                                       sizeof(pca9685[i].name)-1);
-> +                       if (pdata->leds.leds[i].default_trigger)
-> +                               pca9685[i].led_cdev.default_trigger =
-> +                                       pdata->leds.leds[i].default_trigger;
-> +               }
-> +               if (strlen(pca9685[i].name) == 0) {
-> +                       /*
-> +                        * Write adapter and address to the name as well.
-> +                        * Otherwise multiple chips attached to one host would
-> +                        * not work.
-> +                        */
-> +                       snprintf(pca9685[i].name, sizeof(pca9685[i].name),
-> +                                       "pca9685:%d:x%.2x:%d",
-> +                                       client->adapter->nr, client->addr, i);
-> +               }
-> +               pca9685[i].led_cdev.name = pca9685[i].name;
-> +               pca9685[i].led_cdev.max_brightness = 0xfff;
-> +               pca9685[i].led_cdev.brightness_set = pca9685_led_set;
-> +
-> +               INIT_WORK(&pca9685[i].work, pca9685_led_work);
-> +               err = led_classdev_register(&client->dev, &pca9685[i].led_cdev);
-> +               if (err < 0)
-> +                       goto exit;
-> +       }
-> +
-> +       if (pdata)
-> +               i2c_smbus_write_byte_data(client, PCA9685_MODE2,
-> +                       pdata->outdrv << PCA9685_OUTDRV |
-> +                       pdata->inverted << PCA9685_INVRT);
-> +       else
-> +               i2c_smbus_write_byte_data(client, PCA9685_MODE2,
-> +                       PCA9685_TOTEM_POLE << PCA9685_OUTDRV);
-> +       /* Enable Auto-Increment, enable oscillator, ALLCALL/SUBADDR disabled */
-> +       i2c_smbus_write_byte_data(client, PCA9685_MODE1, BIT(PCA9685_AI));
-> +
-> +       return 0;
-> +
-> +exit:
-> +       while (i--) {
-> +               led_classdev_unregister(&pca9685[i].led_cdev);
-> +               cancel_work_sync(&pca9685[i].work);
-> +       }
-> +       return err;
-> +}
-> +
-> +static int pca9685_remove(struct i2c_client *client)
-> +{
-> +       struct pca9685_led *pca9685 = i2c_get_clientdata(client);
-> +       u8 i;
-> +
-> +       for (i = 0; i < 16; i++) {
-> +               led_classdev_unregister(&pca9685[i].led_cdev);
-> +               cancel_work_sync(&pca9685[i].work);
-> +       }
-> +       pca9685_all_off(client);
-> +       return 0;
-> +}
-> +
-> +static struct i2c_driver pca9685_driver = {
-> +       .driver = {
-> +               .name = "leds-pca9685",
-> +               .owner = THIS_MODULE,
-> +       },
-> +       .probe = pca9685_probe,
-> +       .remove = pca9685_remove,
-> +       .id_table = pca9685_id,
-> +};
-> +
-> +module_i2c_driver(pca9685_driver);
-> +
-> +MODULE_AUTHOR("Maximilian Güntner <maximilian.guentner@gmail.com>");
-> +MODULE_DESCRIPTION("PCA9685 LED Driver");
-> +MODULE_LICENSE("GPL v2");
-> diff --git a/include/linux/platform_data/leds-pca9685.h b/include/linux/platform_data/leds-pca9685.h
-> new file mode 100644
-> index 0000000..778e9e4
-> --- /dev/null
-> +++ b/include/linux/platform_data/leds-pca9685.h
-> @@ -0,0 +1,35 @@
-> +/*
-> + * Copyright 2013 Maximilian Güntner <maximilian.guentner@gmail.com>
-> + *
-> + * This file is subject to the terms and conditions of version 2 of
-> + * the GNU General Public License.  See the file COPYING in the main
-> + * directory of this archive for more details.
-> + *
-> + * Based on leds-pca963x.h by Peter Meerwald <p.meerwald@bct-electronic.com>
-> + *
-> + * LED driver for the NXP PCA9685 PWM chip
-> + *
-> + */
-> +
-> +#ifndef __LINUX_PCA9685_H
-> +#define __LINUX_PCA9685_H
-> +
-> +#include <linux/leds.h>
-> +
-> +enum pca9685_outdrv {
-> +       PCA9685_OPEN_DRAIN,
-> +       PCA9685_TOTEM_POLE,
-> +};
-> +
-> +enum pca9685_inverted {
-> +       PCA9685_NOT_INVERTED,
-> +       PCA9685_INVERTED,
-> +};
-> +
-> +struct pca9685_platform_data {
-> +       struct led_platform_data leds;
-> +       enum pca9685_outdrv outdrv;
-> +       enum pca9685_inverted inverted;
-> +};
-> +
-> +#endif /* __LINUX_PCA9685_H */
-> --
-> 1.8.4
->
