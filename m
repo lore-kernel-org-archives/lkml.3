@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758489Ab3JOFjp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 01:39:45 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33538 "EHLO
+	id S1758578Ab3JOFkY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 01:40:24 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33503 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758868Ab3JOFaw (ORCPT
+	with ESMTP id S1752428Ab3JOFaX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 01:30:52 -0400
-Date: Mon, 14 Oct 2013 22:30:25 -0700
+	Tue, 15 Oct 2013 01:30:23 -0400
+Date: Mon, 14 Oct 2013 22:29:59 -0700
 From: tip-bot for David Ahern <tipbot@zytor.com>
-Message-ID: <tip-8fb598e5a3b0ac213012e8461a309843ba0f2e74@git.kernel.org>
+Message-ID: <tip-62d3b617c02785a4f1fbde8d93ca77a0b33d8454@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
         hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
         namhyung.kim@lge.com, jolsa@redhat.com, fweisbec@gmail.com,
@@ -18,12 +18,12 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
         linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
         namhyung.kim@lge.com, jolsa@redhat.com, fweisbec@gmail.com,
         dsahern@gmail.com, tglx@linutronix.de
-In-Reply-To: <1380395584-9025-4-git-send-email-dsahern@gmail.com>
-References: <1380395584-9025-4-git-send-email-dsahern@gmail.com>
+In-Reply-To: <1380400080-9211-2-git-send-email-dsahern@gmail.com>
+References: <1380400080-9211-2-git-send-email-dsahern@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf trace:
-  Fix comm resolution when reading events from file
-Git-Commit-ID: 8fb598e5a3b0ac213012e8461a309843ba0f2e74
+Subject: [tip:perf/core] perf stat:
+  Fix misleading message when specifying cpu list or system wide
+Git-Commit-ID: 62d3b617c02785a4f1fbde8d93ca77a0b33d8454
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,38 +32,54 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 14 Oct 2013 22:30:31 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 14 Oct 2013 22:30:05 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8fb598e5a3b0ac213012e8461a309843ba0f2e74
-Gitweb:     http://git.kernel.org/tip/8fb598e5a3b0ac213012e8461a309843ba0f2e74
+Commit-ID:  62d3b617c02785a4f1fbde8d93ca77a0b33d8454
+Gitweb:     http://git.kernel.org/tip/62d3b617c02785a4f1fbde8d93ca77a0b33d8454
 Author:     David Ahern <dsahern@gmail.com>
-AuthorDate: Sat, 28 Sep 2013 13:13:00 -0600
+AuthorDate: Sat, 28 Sep 2013 14:27:58 -0600
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 11 Oct 2013 12:17:48 -0300
+CommitDate: Fri, 11 Oct 2013 12:17:42 -0300
 
-perf trace: Fix comm resolution when reading events from file
+perf stat: Fix misleading message when specifying cpu list or system wide
 
-Task comm's are getting lost when processing events from a file. The
-problem is that the trace struct used by the live processing has its
-host machine and the perf-session used for file based processing has its
-host machine.  Fix by having both references point to the same machine.
+The "perf stat" tool displays the command run in its summary output
+which is misleading when using a cpu list or system wide collection.
 
 Before:
 
-     0.030 ( 0.001 ms): :27743/27743 brk( ...
-     0.057 ( 0.004 ms): :27743/27743 mmap(len: 4096, prot: READ|WRITE, flags: ...
-     0.075 ( 0.006 ms): :27743/27743 access(filename: 0x7f3809fbce00, mode: R ...
-     0.091 ( 0.005 ms): :27743/27743 open(filename: 0x7f3809fba14c, flags: CLOEXEC ...
+perf stat -a -- sleep 1
+
+ Performance counter stats for 'sleep 1':
+
+16152.670249 task-clock                #   16.132 CPUs utilized
+         417 context-switches          #    0.002 M/sec
+           7 cpu-migrations            #    0.030 K/sec
 ...
 
 After:
-     0.030 ( 0.001 ms): make/27743 brk( ...
-     0.057 ( 0.004 ms): make/27743 mmap(len: 4096, prot: READ|WRITE, flags: ...
-     0.075 ( 0.006 ms): make/27743 access(filename: 0x7f3809fbce00, mode: R ...
-     0.091 ( 0.005 ms): make/27743 open(filename: 0x7f3809fba14c, flags: CLOEXEC ...
+
+perf stat -a -- sleep 1
+
+ Performance counter stats for 'system wide':
+
+16206.931120 task-clock                #   16.144 CPUs utilized
+         395 context-switches          #    0.002 M/sec
+           5 cpu-migrations            #    0.030 K/sec
+...
+
+or
+
+perf stat -C1 -- sleep 1
+
+ Performance counter stats for 'CPU(s) 1':
+
+   1001.669257 task-clock                #    1.000 CPUs utilized
+         4,264 context-switches          #    0.004 M/sec
+             3 cpu-migrations            #    0.003 K/sec
 ...
 
 Signed-off-by: David Ahern <dsahern@gmail.com>
@@ -73,143 +89,26 @@ Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Namhyung Kim <namhyung.kim@lge.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1380395584-9025-4-git-send-email-dsahern@gmail.com
-[ Moved creation of new host machine to a separate constructor: machine__new_host() ]
+Link: http://lkml.kernel.org/r/1380400080-9211-2-git-send-email-dsahern@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-trace.c | 25 +++++++++++++------------
- tools/perf/util/machine.c  | 17 +++++++++++++++++
- tools/perf/util/machine.h  |  1 +
- 3 files changed, 31 insertions(+), 12 deletions(-)
+ tools/perf/builtin-stat.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index fcc157f..5776b5f 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -906,7 +906,7 @@ struct trace {
- 		struct syscall  *table;
- 	} syscalls;
- 	struct perf_record_opts opts;
--	struct machine		host;
-+	struct machine		*host;
- 	u64			base_time;
- 	bool			full_time;
- 	FILE			*output;
-@@ -1083,16 +1083,17 @@ static int trace__symbols_init(struct trace *trace, struct perf_evlist *evlist)
- 	if (err)
- 		return err;
- 
--	machine__init(&trace->host, "", HOST_KERNEL_ID);
--	machine__create_kernel_maps(&trace->host);
-+	trace->host = machine__new_host();
-+	if (trace->host == NULL)
-+		return -ENOMEM;
- 
- 	if (perf_target__has_task(&trace->opts.target)) {
- 		err = perf_event__synthesize_thread_map(&trace->tool, evlist->threads,
- 							trace__tool_process,
--							&trace->host);
-+							trace->host);
- 	} else {
- 		err = perf_event__synthesize_threads(&trace->tool, trace__tool_process,
--						     &trace->host);
-+						     trace->host);
- 	}
- 
- 	if (err)
-@@ -1304,8 +1305,7 @@ static int trace__sys_enter(struct trace *trace, struct perf_evsel *evsel,
- 	if (sc->filtered)
- 		return 0;
- 
--	thread = machine__findnew_thread(&trace->host, sample->pid,
--					 sample->tid);
-+	thread = machine__findnew_thread(trace->host, sample->pid, sample->tid);
- 	ttrace = thread__trace(thread, trace->output);
- 	if (ttrace == NULL)
- 		return -1;
-@@ -1357,8 +1357,7 @@ static int trace__sys_exit(struct trace *trace, struct perf_evsel *evsel,
- 	if (sc->filtered)
- 		return 0;
- 
--	thread = machine__findnew_thread(&trace->host, sample->pid,
--					 sample->tid);
-+	thread = machine__findnew_thread(trace->host, sample->pid, sample->tid);
- 	ttrace = thread__trace(thread, trace->output);
- 	if (ttrace == NULL)
- 		return -1;
-@@ -1414,7 +1413,7 @@ static int trace__sched_stat_runtime(struct trace *trace, struct perf_evsel *evs
- {
-         u64 runtime = perf_evsel__intval(evsel, sample, "runtime");
- 	double runtime_ms = (double)runtime / NSEC_PER_MSEC;
--	struct thread *thread = machine__findnew_thread(&trace->host,
-+	struct thread *thread = machine__findnew_thread(trace->host,
- 							sample->pid,
- 							sample->tid);
- 	struct thread_trace *ttrace = thread__trace(thread, trace->output);
-@@ -1597,7 +1596,7 @@ again:
- 				trace->base_time = sample.time;
- 
- 			if (type != PERF_RECORD_SAMPLE) {
--				trace__process_event(trace, &trace->host, event);
-+				trace__process_event(trace, trace->host, event);
- 				continue;
- 			}
- 
-@@ -1681,6 +1680,8 @@ static int trace__replay(struct trace *trace)
- 	if (session == NULL)
- 		return -ENOMEM;
- 
-+	trace->host = &session->machines.host;
-+
- 	err = perf_session__set_tracepoints_handlers(session, handlers);
- 	if (err)
- 		goto out;
-@@ -1728,7 +1729,7 @@ static size_t trace__fprintf_thread_summary(struct trace *trace, FILE *fp)
- 	size_t printed = trace__fprintf_threads_header(fp);
- 	struct rb_node *nd;
- 
--	for (nd = rb_first(&trace->host.threads); nd; nd = rb_next(nd)) {
-+	for (nd = rb_first(&trace->host->threads); nd; nd = rb_next(nd)) {
- 		struct thread *thread = rb_entry(nd, struct thread, rb_node);
- 		struct thread_trace *ttrace = thread->priv;
- 		const char *color;
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index ddf917b..fc14f9b 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -46,6 +46,23 @@ int machine__init(struct machine *machine, const char *root_dir, pid_t pid)
- 	return 0;
- }
- 
-+struct machine *machine__new_host(void)
-+{
-+	struct machine *machine = malloc(sizeof(*machine));
-+
-+	if (machine != NULL) {
-+		machine__init(machine, "", HOST_KERNEL_ID);
-+
-+		if (machine__create_kernel_maps(machine) < 0)
-+			goto out_delete;
-+	}
-+
-+	return machine;
-+out_delete:
-+	free(machine);
-+	return NULL;
-+}
-+
- static void dsos__delete(struct list_head *dsos)
- {
- 	struct dso *pos, *n;
-diff --git a/tools/perf/util/machine.h b/tools/perf/util/machine.h
-index 58a6be1..5150d5e 100644
---- a/tools/perf/util/machine.h
-+++ b/tools/perf/util/machine.h
-@@ -74,6 +74,7 @@ char *machine__mmap_name(struct machine *machine, char *bf, size_t size);
- void machines__set_symbol_filter(struct machines *machines,
- 				 symbol_filter_t symbol_filter);
- 
-+struct machine *machine__new_host(void);
- int machine__init(struct machine *machine, const char *root_dir, pid_t pid);
- void machine__exit(struct machine *machine);
- void machine__delete_dead_threads(struct machine *machine);
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index fb02b53..c8a2662 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -1229,7 +1229,11 @@ static void print_stat(int argc, const char **argv)
+ 	if (!csv_output) {
+ 		fprintf(output, "\n");
+ 		fprintf(output, " Performance counter stats for ");
+-		if (!perf_target__has_task(&target)) {
++		if (target.system_wide)
++			fprintf(output, "\'system wide");
++		else if (target.cpu_list)
++			fprintf(output, "\'CPU(s) %s", target.cpu_list);
++		else if (!perf_target__has_task(&target)) {
+ 			fprintf(output, "\'%s", argv[0]);
+ 			for (i = 1; i < argc; i++)
+ 				fprintf(output, " %s", argv[i]);
