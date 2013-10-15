@@ -1,127 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754208Ab3JOHgh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 03:36:37 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:48055 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752508Ab3JOHge (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 03:36:34 -0400
-Message-ID: <525CF052.4060508@ti.com>
-Date: Tue, 15 Oct 2013 13:05:46 +0530
-From: Sricharan R <r.sricharan@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	id S1757591Ab3JOHhN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 03:37:13 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:42702 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754552Ab3JOHhK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 03:37:10 -0400
+Message-ID: <525CF09A.1080808@ti.com>
+Date: Tue, 15 Oct 2013 10:36:58 +0300
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-CC: Rob Herring <robherring2@gmail.com>, <tglx@linutronix.de>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, <linus.walleij@linaro.org>,
-        <linux@arm.linux.org.uk>, <tony@atomide.com>, <rnayak@ti.com>,
-        <marc.zyngier@arm.com>, <grant.likely@linaro.org>,
-        <mark.rutland@arm.com>
-Subject: Re: [RFC PATCH 0/6] DRIVERS: IRQCHIP: Add support for crossbar IP
-References: <1380549564-31045-1-git-send-email-r.sricharan@ti.com> <52499441.1030403@gmail.com> <524AAE69.8060703@ti.com> <524AD290.207@gmail.com> <524AD4B7.7040700@ti.com> <524AE1FA.2050104@gmail.com> <524AE536.5080307@ti.com>
-In-Reply-To: <524AE536.5080307@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+To: =?UTF-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
+	<freemangordon@abv.bg>
+CC: <pali.rohar@gmail.com>, <pc+n900@asdf.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>
+Subject: Re: OMAPFB: CMA allocation failures
+References: <991366690.30380.1381819791799.JavaMail.apache@mail83.abv.bg>
+In-Reply-To: <991366690.30380.1381819791799.JavaMail.apache@mail83.abv.bg>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="2NnVkUO1Sil0BTIjhbJwuawxSTiMJGaw6"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
+--2NnVkUO1Sil0BTIjhbJwuawxSTiMJGaw6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-On Tuesday 01 October 2013 08:37 PM, Santosh Shilimkar wrote:
-> On Tuesday 01 October 2013 10:53 AM, Rob Herring wrote:
->> On 10/01/2013 08:57 AM, Santosh Shilimkar wrote:
->>> On Tuesday 01 October 2013 09:48 AM, Rob Herring wrote:
->>>> On 10/01/2013 06:13 AM, Sricharan R wrote:
->>>>> Hi,
->>>>>
->>>>> On Monday 30 September 2013 08:39 PM, Rob Herring wrote:
->>>>>> On 09/30/2013 08:59 AM, Sricharan R wrote:
->>>>>>> Some socs have a large number of interrupts requests to service
->>>>>>> the needs of its many peripherals and subsystems. All of the interrupt
->>>>>>> requests lines from the subsystems are not needed at the same
->>>>>>> time, so they have to be muxed to the controllers appropriately.
->>>>>>> In such places a interrupt controllers are preceded by an
->>>>>>> IRQ CROSSBAR that provides flexibility in muxing the device interrupt
->>>>>>> requests to the controller inputs.
->>>>>>>
->>>>>>> This series models the peripheral interrupts that can be routed through
->>>>>>> the crossbar to the GIC as 'routable-irqs'. The routable irqs are added
->>>>>>> in a separate linear domain inside the GIC. The registered routable domain's
->>>>>>> callback are invoked as a part of the GIC's callback, which in turn should
->>>>>>> allocate a free irq line and configure the IP accordingly. So every peripheral
->>>>>>> in the dts files mentions the fixed crossbar number as its interrupt. A free
->>>>>>> gic line for that gets allocated and configured when the peripheral's interrupt
->>>>>>> is mapped.
->>>>>>>
->>>>>>> The minimal crossbar driver to track and allocate free GIC lines and configure the
->>>>>>> crossbar is added here, along with the DT bindings.
->>>>>> Seems like interrupt-map property is what you need here.
->>>>>>
->>>>>> http://devicetree.org/Device_Tree_Usage#Advanced_Interrupt_Mapping
->>>>>>
->>>>>> Versatile Express also has an example.
->>>>>    OK, but the idea was not to tie up the crossbar<->interrupt numbers at the
->>>>>    DTS level, but to assign it dynamically during runtime. This was one of the
->>>>>   comments that came up with first crossbar support patches, which was assigning a
->>>>>   interrupt line to crossbar number in the DTS and setting it up in crossbar probe.
->>>> Is there an actual usecase on a single h/w design that you run out of
->>>> interrupts and it is a user decision which interrupts to use?
->>>>
->>> Yes. There are 240 peripheral interrupts connected out of which 160 can
->>> be used in this specific case. 
->> Yes, I understand the SOC connections. That does not answer my question.
->> The 240 interrupts are likely to be limited to fewer by board design,
->> pinmuxing, etc.
->>
-> yes limited by different board designs ...
->
->> How do you handle the 161st interrupt request? Will never happen? Just
->> rely on the random driver probe ordering?
->>
-> Well the board dts are expected to provide the peripheral support info to optimise it.
-> If a board actually has more than 160 peripherals available then in that
-> case the 161 interrupt will not be mapped. 
->  
->>>> You could fill in the interrupt-map at run-time. It would have to be
->>>> early (bootloader or early kernel init) and can't be at request_irq time.
->>>>
->>> Well all options are tried before coming up to the $subject solution.
->>> It was suggested by Thomas in the last review.
->>>  
->>>>>     https://lkml.org/lkml/2013/7/18/416
->>>>>
->>>>>    Since this approach of assigning in DTS was opposed, we moved to IRQCHIP and
->>>>>    that did not go as well. Finally was asked to handle this as a part of GIC driver with
->>>>>    a separate domain.
->>>>>    
->>>>>   http://www.spinics.net/lists/linux-omap/msg97085.html
->>>> This has nothing to do with the GIC, so it does not belong there.
->>>>
->>> Well the router makes connections from peripheral to GIC. Thomas can
->>> better explain it but I think since its doing irq routing for GIC on
->>> a given hardware, I don't see any issue having some generic map/unmap
->>> function in GIC. The actual implementation is still outside of GIC.
->> I read Thomas' reply as don't put this crap in his code.
->>
-> That was for the IRQCHIP based approach and as part of that review
-> Thomas suggested why not irqdomain and suggested a prototype code
-> as well.
->  
->> You can call it generic, but it is not. It is specific to the GIC and
->> looks like an abuse of irqdomains to me. Look where the function
->> declaration for register_routable_domain_ops is.
->>
-> I am not sure why you call it abuse of irqdomain since the map/unmap
-> are exactly the interfaces where the logical to physical irq
-> connections are made. Look at existing GIC code as well. I still
-> let Thomas give his expert comment whether it is abusive because it
-> it was, am sure he wouldn't have suggested that.
-  Is this inline with what you were suggesting and
-  is this approach fine ?
+On 15/10/13 09:49, =D0=98=D0=B2=D0=B0=D0=B9=D0=BB=D0=BE =D0=94=D0=B8=D0=BC=
+=D0=B8=D1=82=D1=80=D0=BE=D0=B2 wrote:
 
-Regards,
- Sricharan
+> I am using my n900 as a daily/only device since the beginning of 2010, =
+never seen such an=20
+> issue with video playback. And as a maintainer of one of the community =
+supported kernels for
+> n900 (kernel-power) I've never had such an issue reported. On stock ker=
+nel and derivatives of
+> course. It seems VRAM allocator is virtually impossible to fail, while =
+with CMA OMAPFB fails on
+> the first video after boot-up.
 
+Yes, I think with normal fb use it's quite difficult to fragment VRAM
+allocator too much.
+
+> When saying you've not seen such an issue - did you actually test video=
+ playback, on what
+> device and using which distro? Did you use DSP accelerated decoding?
+
+No, I don't have a rootfs with DSP, and quite rarely test video
+playback. But the VRAM allocator was removed a year ago, and this is the
+first time I've seen anyone have issues with the CMA.
+
+> I was able to track down the failures to:
+> http://lxr.free-electrons.com/source/mm/migrate.c#L320
+>=20
+> So it seems the problem is not that CMA gets fragmented, rather some pa=
+ges cannot be migrated.
+> Unfortunately, my knowledge stops here. Someone from the mm guys should=
+ be involved in the
+> issue as well? I am starting to think there is some serious issue with =
+CMA and/or mm I am
+> hitting on n900. As it is not the lack of free RAM that is the problem =
+-=20
+> "echo 3>/proc/sys/vm/drop_caches" results in more that 45MB of free RAM=
+ according to free.
+
+I think we should somehow find out what the pages are that cannot be
+migrated, and where they come from.
+
+So there are "anonymous pages without mapping" with page_count(page) !=3D=
+
+1. I have to say I don't know what that means =3D). I need to find some
+time to study the mm.
+
+> dma_declare_contiguous() won't help IMO, it just reserves CMA area that=
+ is private to the
+> driver, so it is used instead of the global CMA area, but I don't see h=
+ow that would help in my
+> case.
+
+If the issue is not about fragmentation, then I think you're right,
+dma_declare_contiguous won't help.
+
+> Anyway, what about reverting VRAM allocator removal and migrating it to=
+ DMA API, the same way
+> DMA coherent pool is allocated and managed? Or simply revering VRAM all=
+ocator removal :) ?
+
+Well, as I said, you're the first one to report any errors, after the
+change being in use for a year. Maybe people just haven't used recent
+enough kernels, and the issue is only now starting to emerge, but I
+wouldn't draw any conclusions yet.
+
+If the CMA would have big generic issues, I think we would've seen
+issues earlier. So I'm guessing it's some driver or app in your setup
+that's causing the issues. Maybe the driver/app is broken, or maybe that
+specific behavior is not handled well by CMA. In both case I think we
+need to identify what that driver/app is.
+
+I wonder how I could try to reproduce this with a generic omap3 board...
+
+ Tomi
+
+
+
+--2NnVkUO1Sil0BTIjhbJwuawxSTiMJGaw6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJSXPCaAAoJEPo9qoy8lh71k9QQAJMn2tGIaZ7bXMn//i+ZQDNK
+keJCykU+3mTt6QD4oqFPs1tda0sLTnXx6de2Tn1fGV7XbIqARfpkdC4W1/Y07IdE
+HVDDQ+RhGc0tSyBsWI0qlx8DwCb4N+qeHZxuvjUlpDOZyDl9ppfzkfTfyQVraDmi
++7fhJQeJD0bbaji2vAtu5yxzrqDRE1UDyDh6wWocrKN1nGXspjNs+zmk/MFwQhYL
+GEILOqgVJYKerQDUTeqQRN6blOZCjrs4yhTFMZD0W9WCcVE5qJ/ipQ3Nd3pCQStq
+hOUQnqWQGoNfjIG9enpnsVXI9au7bu2nB9fWOzbpkGx1yzM7xVz6caKoLAMtlhkU
+soFgAXxG5+jffz6H6iGLv7dMl/BDqkT9Ag5JDxlKC59MD5SM6+gcl+ONOQokljI9
+LSJbtJWd+KVtIvU10LYtABUtsjUlZWbsBYtj+BvILFvRQ3b2Q+vGmVy1m3WvROHm
+Xh7mFMPqtHthA6lpbIB7/lFS9zmOP6ajNU4j08dv0C7rCmi739cAzj8vDXF+ljW4
+GH7orEmsN1SitF0HpCCjg/WisKbIl3cDqlptA+2qNvRoTQ4IXakvstE2B58nU0lJ
+gmSA9rH4tz5tS/ONFewcPvfbNedGZ1uwt4Y1h9U1kr6Aqfvz+EsKqyqwbqI+CRrh
+7ZNdYC5WDC/jJRKmI5yK
+=4Lq8
+-----END PGP SIGNATURE-----
+
+--2NnVkUO1Sil0BTIjhbJwuawxSTiMJGaw6--
