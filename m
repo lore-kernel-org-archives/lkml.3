@@ -1,44 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933190Ab3JOQQt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 12:16:49 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:41546 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932647Ab3JOQQs (ORCPT
+	id S933232Ab3JOQRJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 12:17:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51244 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932311Ab3JOQRI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 12:16:48 -0400
-Message-ID: <525D6A6C.3090208@gmail.com>
-Date: Tue, 15 Oct 2013 10:16:44 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Tue, 15 Oct 2013 12:17:08 -0400
+Date: Tue, 15 Oct 2013 09:17:06 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: Youquan Song <youquan.song@linux.intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Youquan Song <youquan.song@intel.com>, andriy.shevchenko@intel.com,
+        mika.westerberg@intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] dma: Add interface to calculate data transferred
+Message-ID: <20131015161706.GA4037@kroah.com>
+References: <1381527738-9339-1-git-send-email-youquan.song@intel.com>
+ <1381527738-9339-2-git-send-email-youquan.song@intel.com>
+ <20131011133343.GB32689@kroah.com>
+ <20131013152633.GM2954@intel.com>
+ <20131015183142.GA12494@linux-youquan.bj.intel.com>
+ <CAPcyv4jJSgM7EmDMW-rcjVCnC6-95+qeU9yf+yxD-wMCcQ8amg@mail.gmail.com>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Mike Galbraith <efault@gmx.de>, Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 3/3] perf record: mmap output file
-References: <1381289214-24885-1-git-send-email-dsahern@gmail.com> <1381289214-24885-4-git-send-email-dsahern@gmail.com> <20131009055957.GA7664@gmail.com> <525D4B5F.4090005@gmail.com> <20131015143245.GB9828@ghostprotocols.net> <20131015143819.GM10651@twins.programming.kicks-ass.net> <20131015152747.GA15979@gmail.com> <525D5FA1.7060404@gmail.com> <20131015160646.GC16003@gmail.com>
-In-Reply-To: <20131015160646.GC16003@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPcyv4jJSgM7EmDMW-rcjVCnC6-95+qeU9yf+yxD-wMCcQ8amg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/15/13 10:06 AM, Ingo Molnar wrote:
-> splice() is very fast and should be able to process a lot of pages in one
-> go, so the feedback loop should be pretty weak. mmap() triggers kernel
-> code as well, every time we run out of the 64 MB window we got to remap
-> it, right?
+On Tue, Oct 15, 2013 at 08:55:20AM -0700, Dan Williams wrote:
+> On Tue, Oct 15, 2013 at 11:31 AM, Youquan Song
+> <youquan.song@linux.intel.com> wrote:
+> > On Sun, Oct 13, 2013 at 08:56:33PM +0530, Vinod Koul wrote:
+> >> On Fri, Oct 11, 2013 at 06:33:43AM -0700, Greg KH wrote:
+> >> > On Fri, Oct 11, 2013 at 05:42:17PM -0400, Youquan Song wrote:
+> > The issue is that when I using UART to transfer data between to COMs
+> > which using Designware DMA controller channel. But I check the specific
+> > DMA channel by "cat /sys/class/dma/dma0chan3/bytes_transferred", but it
+> > should all "0". I have transferred data by UART port, why its DMA
+> > channel report "0" bytes transferred?  So I guess that it is possible
+> > the DMA device driver issue or the data does not use the Designware DMA channel
+> > fro transferred.  After check the code, I notice only when the DMA
+> > channel used by network device driver and it will record how much data has been
+> >  tranferred, why other device driver will not calculate it. Since DMA
+> > channel is used by other device driver, why only network is specific?  since it is
+> > common interface, the current /sys/class/dma/dma0chan*/bytes_transferred has
+> > much possibility to mislead the user.
+> 
+> Yes, and for that reason I think we should delete "
+> /sys/class/dma/dma0chan*/bytes_transferred" it really serves no useful
+> purpose besides "is my dma channel working" which can be determined by
+> other means.
 
+Sounds good to me, feel free to send a patch.
 
-Yes, 1 mmap, 1 munmap for every 64MB. Compare to the write() case which 
-calls write() for each mmap each time through the mmap_read loop.
+thanks,
 
-I am conjecturing that splice would follow the write model in the sense 
-of a ring buffer has N bytes, call splice to copy the data from the ring 
-buffer to the file. So, splice saves on the memcpy, but not the syscalls.
-
-David
+greg k-h
