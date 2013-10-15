@@ -1,78 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933410Ab3JOSLx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 14:11:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26067 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932793Ab3JOSLw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 14:11:52 -0400
-Date: Tue, 15 Oct 2013 14:11:42 -0400
-From: Dave Jones <davej@redhat.com>
-To: sandeen@redhat.com, tytso@mit.edu,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Patch "ext4: fix memory leak in xattr" has been added to the
- 3.0-stable tree
-Message-ID: <20131015181142.GA23581@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>, sandeen@redhat.com,
-	tytso@mit.edu, Linux Kernel <linux-kernel@vger.kernel.org>
-References: <13817826832984@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <13817826832984@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933498Ab3JOSNg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 14:13:36 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:63957 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932555Ab3JOSNf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 14:13:35 -0400
+From: Chang Xiangzhong <changxiangzhong@gmail.com>
+To: vyasevich@gmail.com
+Cc: nhorman@tuxdriver.com, davem@davemloft.net, linux-sctp@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Chang Xiangzhong <changxiangzhong@gmail.com>
+Subject: [PATCH V2] For for each TSN t being newly acked (Not only cumulatively, but also SELECTIVELY) cacc_saw_newack should be set to 1.
+Date: Tue, 15 Oct 2013 20:13:04 +0200
+Message-Id: <1381860784-16481-1-git-send-email-changxiangzhong@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 14, 2013 at 01:31:23PM -0700, gregkh@linuxfoundation.org wrote:
+Signed-off-by: Xiangzhong Chang <changxiangzhong@gmail.com>
+---
+ net/sctp/outqueue.c |   76 ++++++++++++++++++++++++---------------------------
+ 1 file changed, 35 insertions(+), 41 deletions(-)
+
+diff --git a/net/sctp/outqueue.c b/net/sctp/outqueue.c
+index 94df758..84ef3b8 100644
+--- a/net/sctp/outqueue.c
++++ b/net/sctp/outqueue.c
+@@ -1357,13 +1357,13 @@ static void sctp_check_transmitted(struct sctp_outq *q,
  
- > If we take the 2nd retry path in ext4_expand_extra_isize_ea, we
- > potentionally return from the function without having freed these
- > allocations.  If we don't do the return, we over-write the previous
- > allocation pointers, so we leak either way.
- > 
- > Spotted with Coverity.
- > 
- > [ Fixed by tytso to set is and bs to NULL after freeing these
- >   pointers, in case in the retry loop we later end up triggering an
- >   error causing a jump to cleanup, at which point we could have a double
- >   free bug. -- Ted ]
- > 
- > ---
- >  fs/ext4/xattr.c |    2 ++
- >  1 file changed, 2 insertions(+)
- > 
- > --- a/fs/ext4/xattr.c
- > +++ b/fs/ext4/xattr.c
- > @@ -1271,6 +1271,8 @@ retry:
- >  				    s_min_extra_isize) {
- >  					tried_min_extra_isize++;
- >  					new_extra_isize = s_min_extra_isize;
- > +					kfree(is); is = NULL;
- > +					kfree(bs); bs = NULL;
- >  					goto retry;
- >  				}
-
-Because this was different in my local tree I ended up looking it over again
-when I rebased. Do we also need the patch below ?
-
-	Dave
-
-If we take the retry path here, we end up potentially overwriting bh, leaving
-it with an elevated reference count.
-
-Signed-off-by: Dave Jones <davej@fedoraproject.org>
-
-diff --git a/fs/ext4/xattr.c b/fs/ext4/xattr.c
-index 03e9beb..1423c48 100644
---- a/fs/ext4/xattr.c
-+++ b/fs/ext4/xattr.c
-@@ -1352,6 +1352,7 @@ retry:
- 					new_extra_isize = s_min_extra_isize;
- 					kfree(is); is = NULL;
- 					kfree(bs); bs = NULL;
-+					brelse(bh);
- 					goto retry;
+ 		tsn = ntohl(tchunk->subh.data_hdr->tsn);
+ 		if (sctp_acked(sack, tsn)) {
+-			/* If this queue is the retransmit queue, the
+-			 * retransmit timer has already reclaimed
+-			 * the outstanding bytes for this chunk, so only
+-			 * count bytes associated with a transport.
+-			 */
+-			if (transport) {
+-				/* If this chunk is being used for RTT
++			if (!tchunk->tsn_gap_acked) {
++				/* If this queue is the retransmit queue, the
++				 * retransmit timer has already reclaimed
++				 * the outstanding bytes for this chunk, so only
++				 * count bytes associated with a transport.
++				 *
++				 * If this chunk is being used for RTT
+ 				 * measurement, calculate the RTT and update
+ 				 * the RTO using this value.
+ 				 *
+@@ -1374,28 +1374,44 @@ static void sctp_check_transmitted(struct sctp_outq *q,
+ 				 * first instance of the packet or a later
+ 				 * instance).
+ 				 */
+-				if (!tchunk->tsn_gap_acked &&
+-				    tchunk->rtt_in_progress) {
++				if (transport && tchunk->rtt_in_progress) {
+ 					tchunk->rtt_in_progress = 0;
+ 					rtt = jiffies - tchunk->sent_at;
+ 					sctp_transport_update_rto(transport,
+-								  rtt);
++						rtt);
  				}
- 				error = -1;
+-			}
+ 
+-			/* If the chunk hasn't been marked as ACKED,
+-			 * mark it and account bytes_acked if the
+-			 * chunk had a valid transport (it will not
+-			 * have a transport if ASCONF had deleted it
+-			 * while DATA was outstanding).
+-			 */
+-			if (!tchunk->tsn_gap_acked) {
++				/* If the chunk hasn't been marked as ACKED,
++				 * mark it and account bytes_acked if the
++				 * chunk had a valid transport (it will not
++				 * have a transport if ASCONF had deleted it
++				 * while DATA was outstanding).
++				 */
+ 				tchunk->tsn_gap_acked = 1;
+ 				*highest_new_tsn_in_sack = tsn;
+ 				bytes_acked += sctp_data_size(tchunk);
+ 				if (!tchunk->transport)
+ 					migrate_bytes += sctp_data_size(tchunk);
+ 				forward_progress = true;
++
++				/* SFR-CACC algorithm:
++				 * 2) If the SACK contains gap acks
++				 * and the flag CHANGEOVER_ACTIVE is
++				 * set the receiver of the SACK MUST
++				 * take the following action:
++				 *
++				 * B) For each TSN t being acked that
++				 * has not been acked in any SACK so
++				 * far, set cacc_saw_newack to 1 for
++				 * the destination that the TSN was
++				 * sent to.
++				 */
++				if (transport &&
++					sack->num_gap_ack_blocks &&
++					q->asoc->peer.primary_path->cacc.
++					changeover_active
++				   )
++					transport->cacc.cacc_saw_newack = 1;
+ 			}
+ 
+ 			if (TSN_lte(tsn, sack_ctsn)) {
+@@ -1411,30 +1427,8 @@ static void sctp_check_transmitted(struct sctp_outq *q,
+ 				restart_timer = 1;
+ 				forward_progress = true;
+ 
+-				if (!tchunk->tsn_gap_acked) {
+-					/*
+-					 * SFR-CACC algorithm:
+-					 * 2) If the SACK contains gap acks
+-					 * and the flag CHANGEOVER_ACTIVE is
+-					 * set the receiver of the SACK MUST
+-					 * take the following action:
+-					 *
+-					 * B) For each TSN t being acked that
+-					 * has not been acked in any SACK so
+-					 * far, set cacc_saw_newack to 1 for
+-					 * the destination that the TSN was
+-					 * sent to.
+-					 */
+-					if (transport &&
+-					    sack->num_gap_ack_blocks &&
+-					    q->asoc->peer.primary_path->cacc.
+-					    changeover_active)
+-						transport->cacc.cacc_saw_newack
+-							= 1;
+-				}
+-
+ 				list_add_tail(&tchunk->transmitted_list,
+-					      &q->sacked);
++					&q->sacked);
+ 			} else {
+ 				/* RFC2960 7.2.4, sctpimpguide-05 2.8.2
+ 				 * M2) Each time a SACK arrives reporting
+-- 
+1.7.9.5
+
