@@ -1,100 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757767Ab3JOGVv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 02:21:51 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:36826 "EHLO
+	id S1758140Ab3JOGXN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 02:23:13 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:37060 "EHLO
 	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751603Ab3JOGVs (ORCPT
+	with ESMTP id S1750965Ab3JOGXK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 02:21:48 -0400
-X-AuditID: cbfee691-b7fe06d0000008c4-22-525cdefa2e14
-From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-To: linux-i2c@vger.kernel.org
-Cc: t.figa@samsung.com, sjg@chromium.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, wsa@the-dreams.de,
-        ben-linux@fluff.org, grant.likely@secretlab.ca, broonie@kernel.org,
-        dianders@chromium.org, cpgs@samsung.com
-Subject: [PATCH v2] i2c: s3c2410: dont need CPU_FREQ transitions for exynos
- series
-Date: Tue, 15 Oct 2013 11:53:52 +0530
-Message-id: <1381818232-12542-1-git-send-email-ch.naveen@samsung.com>
-X-Mailer: git-send-email 1.7.10.4
-In-reply-to: <1381490814-20890-1-git-send-email-ch.naveen@samsung.com>
-References: <1381490814-20890-1-git-send-email-ch.naveen@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprEIsWRmVeSWpSXmKPExsWyRsSkRvfXvZgggwn/DS0mrTvAZDH14RM2
-	i5eHNC3OLjvIZvHqzEY2i46/XxgtLu+aw2Yx4/w+JotvW7YxWqyf8ZrFYuWJWcwO3B6zGy6y
-	ePxd9YLZY9OqTjaPvi2rGD1+vtTxOHnqCYvH501yAexRXDYpqTmZZalF+nYJXBk9cw6wFpzk
-	rrjYM4OpgfEMZxcjJ4eEgInEhbdr2SBsMYkL99YD2VwcQgJLGSXeTVnLBFN0bvpfdojEIkaJ
-	rkmtjBBOD5PErTvtLCBVbAJmEgcXrWYHsUUEZCVaH6xhBrGZBd4zSpzq0AGxhQVCJKbdOw+2
-	jkVAVaLvUSsriM0r4Crx4/dERohtihLdzyaA1XAKuEm87zoIFOcAWuYq0X1dDWSvhMAxdok9
-	Z2cxQcwRkPg2+RALSI0E0N5NB5ghxkhKHFxxg2UCo/ACRoZVjKKpBckFxUnpRaZ6xYm5xaV5
-	6XrJ+bmbGIHxcfrfs4k7GO8fsD7EmAw0biKzlGhyPjC+8kriDY3NjCxMTUyNjcwtzUgTVhLn
-	VW+xDhQSSE8sSc1OTS1ILYovKs1JLT7EyMTBKdXAuCOpPFVC/f+Pb9fri111z76Smbd9XdAi
-	mY6lv3kbum5lvwybcjRc5ONUbu4oYf+Twp3TXrlc35XFFNewsMAwqvvP/e+XVGa/2jx/gvYB
-	KRX+HJFszmfnfq9Y/nN6wQzXlLwjUt4r+Bg0aj/LO7xulAu8+Hrzv65l5xJt5t9/92/iep8N
-	989VbFBiKc5INNRiLipOBACFthKXpQIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPIsWRmVeSWpSXmKPExsVy+t9jAd1f92KCDD7/0LCYtO4Ak8XUh0/Y
-	LF4e0rQ4u+wgm8WrMxvZLDr+fmG0uLxrDpvFjPP7mCy+bdnGaLF+xmsWi5UnZjE7cHvMbrjI
-	4vF31Qtmj02rOtk8+rasYvT4+VLH4+SpJywenzfJBbBHNTDaZKQmpqQWKaTmJeenZOal2yp5
-	B8c7x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl5gDdqKRQlphTChQKSCwuVtK3wzQhNMRN1wKm
-	MULXNyQIrsfIAA0krGHM6JlzgLXgJHfFxZ4ZTA2MZzi7GDk5JARMJM5N/8sOYYtJXLi3nq2L
-	kYtDSGARo0TXpFZGCKeHSeLWnXYWkCo2ATOJg4tWg3WICMhKtD5YwwxiMwu8Z5Q41aEDYgsL
-	hEhMu3eeDcRmEVCV6HvUygpi8wq4Svz4PZERYpuiRPezCWA1nAJuEu+7DgLFOYCWuUp0X1eb
-	wMi7gJFhFaNoakFyQXFSeq6RXnFibnFpXrpecn7uJkZw9D2T3sG4qsHiEKMAB6MSD+8P3pgg
-	IdbEsuLK3EOMEhzMSiK8OdVAId6UxMqq1KL8+KLSnNTiQ4zJQEdNZJYSTc4HJoa8knhDYxNz
-	U2NTSxMLEzNL0oSVxHkPtloHCgmkJ5akZqemFqQWwWxh4uCUamB069XW+xNy7c0HWXVFkZ3x
-	5hyaFyIOrDh8guntiZe2OxN+3Vm+7tq5SdZVoRvypEX79P+bH5bkldN95totPmny9sklRhdc
-	UoMi7s74qdNdsn7+whWX3oZqSn2OqjvH9kr09JaoZ8mJR/oPlnyT5VEtiq12PKTz8rb5vEWu
-	+8M43r0+NOPI0gMaSizFGYmGWsxFxYkATBJg6AIDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 15 Oct 2013 02:23:10 -0400
+X-AuditID: cbfee61b-b7f776d0000016c8-21-525cdf4d52cf
+Date: Tue, 15 Oct 2013 08:23:03 +0200
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: Eduardo Valentin <eduardo.valentin@ti.com>
+Cc: "Zhang, Rui" <rui.zhang@intel.com>,
+        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>
+Subject: Re: [PATCH v2 0/5] thermal: exynos: Fixes for v3.12
+Message-id: <20131015082303.3ec02e2a@amdc308.digital.local>
+In-reply-to: <525C4487.2030502@ti.com>
+References: <1380010102-25817-1-git-send-email-l.majewski@samsung.com>
+ <1381300194-13134-1-git-send-email-l.majewski@samsung.com>
+ <20131014074635.77fd9f6e@amdc308.digital.local>
+ <744357E9AAD1214791ACBA4B0B90926301190077@SHSMSX101.ccr.corp.intel.com>
+ <525C4242.2050306@ti.com> <525C4487.2030502@ti.com>
+Organization: SPRC Poland
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrGLMWRmVeSWpSXmKPExsVy+t9jQV3f+zFBBksuKlo0XA2x2DhjPavF
+	/CPnWC3W7P/JZNG74CqbxZtH3BaXd81hs/jce4TRYsb5fUwWTx72sTlweSze85LJY920t8we
+	fVtWMXocv7GdyePzJrkA1igum5TUnMyy1CJ9uwSujGOLdrEVfJauaJ5X0sB4XbSLkZNDQsBE
+	4kVjCyOELSZx4d56ti5GLg4hgemMEu//LmaGcNqZJBbePwhWxSKgKjGpYyUbiM0moCfx+e5T
+	JhBbBMi+8eIJE0gDs8B5Zoll7T2sIAlhARuJa+uugDXzClhLvJ+xkRnE5hRQk1h7bysLxIat
+	TBJ9bQdYQBL8ApIS7f9+MEPcZCdx7tMGdohmQYkfk++B1TALaEls3tbECmHLS2xe85Z5AqPg
+	LCRls5CUzUJStoCReRWjaGpBckFxUnqukV5xYm5xaV66XnJ+7iZGcGw8k97BuKrB4hCjAAej
+	Eg/vD96YICHWxLLiytxDjBIczEoivDnVQCHelMTKqtSi/Pii0pzU4kOM0hwsSuK8B1utA4UE
+	0hNLUrNTUwtSi2CyTBycUg2MwsIzF6ptYK9i/rGswfvxo5jNZz0ThFvOnVjAxtGVWZ+dJFOd
+	Y7KySdVS+/7Nh+ltbXofFzLN1EgI/nNaJPn4MvUgy6BkF4cHu5gcDtU5HbuRdoB/6j63gnXf
+	N1yZtbvmRPDlFxUcj/6eONbhMyP/h3bSRGGjqf2ClUEFbRtbZ6TNif6yLfuYEktxRqKhFnNR
+	cSIAWmi4T4kCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For Exynos4 and Exynos5 SoCs from Samsung the i2c clock is based
-on a fixed 66 MHz peripheral clock, and therefore is completely
-independent of the cpu frequency.
-Thus, registering for a CPU freq notifier is very wasteful.
+Hi Eduardo,
 
-This patch modifes the code such that, i2c bus registers to
-cpu_freq_transition only if CONFIG_CPU_FREQ_S3C24XX is enabled.
+> On 14-10-2013 15:13, Eduardo Valentin wrote:
+> > On 14-10-2013 01:52, Zhang, Rui wrote:
+> >> Eduardo,
+> >>
+> >> What's your opinion on this patch set?
+> >> BTW, please send me all the urgent fixes for thermal soc drivers
+> >> that
+> > you think should go to 3.12.
+> >>
+> > 
+> > I will be sending these + one fix on ti soc thermal for 3.12 soon.
+> > 
+> > The new chip support on exynos needs to be reworked and there are
+> > couple of new drivers that needs to be reworked too. But those I
+> > don't think are ready to go now.
+> > 
+> 
+> Just to be clear, on this patch set obviously I wont be sending the DT
+> changes. Those should go via the correct tree.
 
-This change should save a bunch of cpufreq transitions calls
-which does not apply to exynos SoCs.
+I understand. I will ask Mr. Kukjin Kim to take the DT changes.
 
-Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
----
-Changes since v1:
-Use CONFIG_CPU_FREQ_S3C24XX instead of (CONFIG_CPU_FREQ & !CONFIG_EXYNOS)
-As commented by Tomasz
+> 
+> >> Thanks,
+> >> rui
+> >>> -----Original Message-----
+> >>> From: Lukasz Majewski [mailto:l.majewski@samsung.com]
+> >>> Sent: Monday, October 14, 2013 1:47 PM
+> >>> To: Zhang, Rui; Eduardo Valentin; kgene.kim@samsung.com
+> >>> Cc: Lukasz Majewski; Linux PM list; Lukasz Majewski; linux-kernel;
+> >>> Bartlomiej Zolnierkiewicz; devicetree@vger.kernel.org; Amit Daniel
+> >>> Kachhap; linux-samsung-soc@vger.kernel.org
+> >>> Subject: Re: [PATCH v2 0/5] thermal: exynos: Fixes for v3.12
+> >>> Importance: High
+> >>>
+> >>> Hi Zhang, Eduardo,
+> >>>
+> >>>> This patch series is divided into two parts:
+> >>>> 1. Device tree node definition and enabelement for TMU at
+> >>>> Exynos4412 (Trats2) 2. Exynos thermal subsystem regressions for
+> >>>> v3.12-rc4. Several commits were necessary to properly fix
+> >>>> regression for TMU
+> >>> test
+> >>>> MUX address setting after reset.
+> >>>>
+> >>>> Test HW:
+> >>>> - Exynos4412 - TRATS2 board (Linux v3.12-rc4)
+> >>>> SHA1: 8b5ede69d24db939f52b47effff2f6fe1e83e08b
+> >>>>
+> >>>>
+> >>>> Lukasz Majewski (5):
+> >>>>   thermal: exynos: Remove check for thermal device pointer at
+> >>>>     exynos_report_trigger()
+> >>>>   thermal: exynos: Provide separate TMU data for Exynos4412
+> >>>>   thermal: exynos: Provide initial setting for TMU's test MUX
+> >>>> address at Exynos4412
+> >>>>   ARM: dts: exynos4x12: Device tree node definition for TMU on
+> >>>>     Exynos4x12
+> >>>>   ARM: dts: exynos4412-trats2: Enable TMU support at Trats2
+> >>>>
+> >>>
+> >>> Zhang, Eduardo - any comments?
+> >>>
+> >>> Would it be possible to add them to v3.12 since they do fix
+> >>> critical error and regression on Exynos4412.
+> >>>
+> >>>
+> >>>>  arch/arm/boot/dts/exynos4412-trats2.dts         |    5 ++++
+> >>>>  arch/arm/boot/dts/exynos4x12.dtsi               |   10 ++++++++
+> >>>>  drivers/thermal/samsung/exynos_thermal_common.c |    2 --
+> >>>>  drivers/thermal/samsung/exynos_tmu.c            |   12 ++++++---
+> >>>>  drivers/thermal/samsung/exynos_tmu.h            |    7 +++++-
+> >>>>  drivers/thermal/samsung/exynos_tmu_data.c       |   30
+> >>>> ++++++++++++++++++-----
+> >>>> drivers/thermal/samsung/exynos_tmu_data.h       |   13
+> >>>> +++++++++- 7 files changed, 65 insertions(+), 14 deletions(-)
+> >>>>
+> >>>
+> >>>
+> >>>
+> >>> --
+> >>> Best regards,
+> >>>
+> >>> Lukasz Majewski
+> >>>
+> >>> Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
+> >> --
+> >> To unsubscribe from this list: send the line "unsubscribe
+> >> linux-pm" in the body of a message to majordomo@vger.kernel.org
+> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >>
+> >>
+> > 
+> > 
+> 
+> 
 
- drivers/i2c/busses/i2c-s3c2410.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/i2c/busses/i2c-s3c2410.c b/drivers/i2c/busses/i2c-s3c2410.c
-index cab1c91..97f14f7 100644
---- a/drivers/i2c/busses/i2c-s3c2410.c
-+++ b/drivers/i2c/busses/i2c-s3c2410.c
-@@ -123,7 +123,7 @@ struct s3c24xx_i2c {
- 	struct s3c2410_platform_i2c	*pdata;
- 	int			gpios[2];
- 	struct pinctrl          *pctrl;
--#ifdef CONFIG_CPU_FREQ
-+#if defined(CONFIG_CPU_FREQ_S3C24XX)
- 	struct notifier_block	freq_transition;
- #endif
- };
-@@ -843,7 +843,7 @@ static int s3c24xx_i2c_clockrate(struct s3c24xx_i2c *i2c, unsigned int *got)
- 	return 0;
- }
- 
--#ifdef CONFIG_CPU_FREQ
-+#if defined(CONFIG_CPU_FREQ_S3C24XX)
- 
- #define freq_to_i2c(_n) container_of(_n, struct s3c24xx_i2c, freq_transition)
- 
+
 -- 
-1.7.10.4
+Best regards,
 
+Lukasz Majewski
+
+Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
