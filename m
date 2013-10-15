@@ -1,26 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933743Ab3JOSCJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 14:02:09 -0400
-Received: from qmta03.emeryville.ca.mail.comcast.net ([76.96.30.32]:46936 "EHLO
-	qmta03.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932287Ab3JOSAz (ORCPT
+	id S933773Ab3JOSCK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 14:02:10 -0400
+Received: from qmta07.emeryville.ca.mail.comcast.net ([76.96.30.64]:53675 "EHLO
+	qmta07.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933493Ab3JOSAz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Oct 2013 14:00:55 -0400
-Message-Id: <20131015180052.699083354@linux.com>
+Message-Id: <20131015180052.185711419@linux.com>
 User-Agent: quilt/0.60-1
-Date: Tue, 15 Oct 2013 12:58:58 -0500
+Date: Tue, 15 Oct 2013 12:58:57 -0500
 From: Christoph Lameter <cl@linux.com>
 To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linuxfoundation.org, Jens Axboe <axboe@kernel.dk>
+Cc: akpm@linuxfoundation.org, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: linux-arch@vger.kernel.org
 Cc: Steven Rostedt <srostedt@redhat.com>
 Cc: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 06/10] block: Replace __get_cpu_var uses
+Subject: [PATCH 05/10] tracing: Replace __get_cpu_var uses
 References: <20131015175852.122827685@linux.com>
-Content-Disposition: inline; filename=this_block
+Content-Disposition: inline; filename=this_trace
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -129,90 +132,56 @@ variable.
 
 	this_cpu_inc(y)
 
+
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Index: linux/block/blk-iopoll.c
+Index: linux/include/linux/kprobes.h
 ===================================================================
---- linux.orig/block/blk-iopoll.c	2013-08-26 14:36:07.858875667 -0500
-+++ linux/block/blk-iopoll.c	2013-08-26 14:36:07.850875751 -0500
-@@ -35,7 +35,7 @@ void blk_iopoll_sched(struct blk_iopoll
+--- linux.orig/include/linux/kprobes.h	2013-09-19 15:13:57.473504741 -0500
++++ linux/include/linux/kprobes.h	2013-09-19 15:13:57.437505131 -0500
+@@ -355,7 +355,7 @@ static inline void reset_current_kprobe(
+ 
+ static inline struct kprobe_ctlblk *get_kprobe_ctlblk(void)
+ {
+-	return (&__get_cpu_var(kprobe_ctlblk));
++	return this_cpu_ptr(&kprobe_ctlblk);
+ }
+ 
+ int register_kprobe(struct kprobe *p);
+Index: linux/kernel/trace/ftrace.c
+===================================================================
+--- linux.orig/kernel/trace/ftrace.c	2013-09-19 15:13:57.473504741 -0500
++++ linux/kernel/trace/ftrace.c	2013-09-19 15:13:57.469504784 -0500
+@@ -870,7 +870,7 @@ function_profile_call(unsigned long ip,
+ 
+ 	local_irq_save(flags);
+ 
+-	stat = &__get_cpu_var(ftrace_profile_stats);
++	stat = this_cpu_ptr(&ftrace_profile_stats);
+ 	if (!stat->hash || !ftrace_profile_enabled)
+ 		goto out;
+ 
+@@ -901,7 +901,7 @@ static void profile_graph_return(struct
  	unsigned long flags;
  
  	local_irq_save(flags);
--	list_add_tail(&iop->list, &__get_cpu_var(blk_cpu_iopoll));
-+	list_add_tail(&iop->list, this_cpu_ptr(&blk_cpu_iopoll));
- 	__raise_softirq_irqoff(BLOCK_IOPOLL_SOFTIRQ);
- 	local_irq_restore(flags);
- }
-@@ -79,7 +79,7 @@ EXPORT_SYMBOL(blk_iopoll_complete);
+-	stat = &__get_cpu_var(ftrace_profile_stats);
++	stat = this_cpu_ptr(&ftrace_profile_stats);
+ 	if (!stat->hash || !ftrace_profile_enabled)
+ 		goto out;
  
- static void blk_iopoll_softirq(struct softirq_action *h)
- {
--	struct list_head *list = &__get_cpu_var(blk_cpu_iopoll);
-+	struct list_head *list = this_cpu_ptr(&blk_cpu_iopoll);
- 	int rearm = 0, budget = blk_iopoll_budget;
- 	unsigned long start_time = jiffies;
- 
-@@ -201,7 +201,7 @@ static int blk_iopoll_cpu_notify(struct
- 
- 		local_irq_disable();
- 		list_splice_init(&per_cpu(blk_cpu_iopoll, cpu),
--				 &__get_cpu_var(blk_cpu_iopoll));
-+				 this_cpu_ptr(&blk_cpu_iopoll));
- 		__raise_softirq_irqoff(BLOCK_IOPOLL_SOFTIRQ);
- 		local_irq_enable();
- 	}
-Index: linux/block/blk-softirq.c
+Index: linux/kernel/trace/trace.c
 ===================================================================
---- linux.orig/block/blk-softirq.c	2013-08-26 14:36:07.858875667 -0500
-+++ linux/block/blk-softirq.c	2013-08-26 14:36:07.854875709 -0500
-@@ -23,7 +23,7 @@ static void blk_done_softirq(struct soft
- 	struct list_head *cpu_list, local_list;
+--- linux.orig/kernel/trace/trace.c	2013-09-19 15:13:57.473504741 -0500
++++ linux/kernel/trace/trace.c	2013-09-19 15:13:57.473504741 -0500
+@@ -1676,7 +1676,7 @@ static void __ftrace_trace_stack(struct
+ 	 */
+ 	barrier();
+ 	if (use_stack == 1) {
+-		trace.entries		= &__get_cpu_var(ftrace_stack).calls[0];
++		trace.entries		= this_cpu_ptr(ftrace_stack.calls);
+ 		trace.max_entries	= FTRACE_STACK_MAX_ENTRIES;
  
- 	local_irq_disable();
--	cpu_list = &__get_cpu_var(blk_cpu_done);
-+	cpu_list = this_cpu_ptr(&blk_cpu_done);
- 	list_replace_init(cpu_list, &local_list);
- 	local_irq_enable();
- 
-@@ -44,7 +44,7 @@ static void trigger_softirq(void *data)
- 	struct list_head *list;
- 
- 	local_irq_save(flags);
--	list = &__get_cpu_var(blk_cpu_done);
-+	list = this_cpu_ptr(&blk_cpu_done);
- 	list_add_tail(&rq->csd.list, list);
- 
- 	if (list->next == &rq->csd.list)
-@@ -90,7 +90,7 @@ static int blk_cpu_notify(struct notifie
- 
- 		local_irq_disable();
- 		list_splice_init(&per_cpu(blk_cpu_done, cpu),
--				 &__get_cpu_var(blk_cpu_done));
-+				 this_cpu_ptr(&blk_cpu_done));
- 		raise_softirq_irqoff(BLOCK_SOFTIRQ);
- 		local_irq_enable();
- 	}
-@@ -135,7 +135,7 @@ void __blk_complete_request(struct reque
- 	if (ccpu == cpu || shared) {
- 		struct list_head *list;
- do_local:
--		list = &__get_cpu_var(blk_cpu_done);
-+		list = this_cpu_ptr(&blk_cpu_done);
- 		list_add_tail(&req->csd.list, list);
- 
- 		/*
-Index: linux/fs/fscache/object.c
-===================================================================
---- linux.orig/fs/fscache/object.c	2013-08-26 14:36:07.858875667 -0500
-+++ linux/fs/fscache/object.c	2013-08-26 14:36:07.854875709 -0500
-@@ -796,7 +796,7 @@ void fscache_enqueue_object(struct fscac
-  */
- bool fscache_object_sleep_till_congested(signed long *timeoutp)
- {
--	wait_queue_head_t *cong_wq = &__get_cpu_var(fscache_object_cong_wait);
-+	wait_queue_head_t *cong_wq = this_cpu_ptr(&fscache_object_cong_wait);
- 	DEFINE_WAIT(wait);
- 
- 	if (fscache_object_congested())
+ 		if (regs)
 
