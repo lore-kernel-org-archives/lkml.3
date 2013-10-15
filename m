@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757614Ab3JODuD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 23:50:03 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:33608 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757554Ab3JODt7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757566Ab3JODt7 (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 14 Oct 2013 23:49:59 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:44984 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757454Ab3JODt4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 23:49:56 -0400
 From: Sachin Kamat <sachin.kamat@linaro.org>
 To: linux-kernel@vger.kernel.org
-Cc: lee.jones@linaro.org, sachin.kamat@linaro.org,
-        Graeme Gregory <gg@slimlogic.co.uk>
-Subject: [PATCH 6/6] mfd: palmas: Remove redundant of_match_ptr
-Date: Tue, 15 Oct 2013 09:18:51 +0530
-Message-Id: <1381808931-3323-6-git-send-email-sachin.kamat@linaro.org>
+Cc: lee.jones@linaro.org, sachin.kamat@linaro.org
+Subject: [PATCH 5/6] mfd: omap-usb: Remove redundant of_match_ptr
+Date: Tue, 15 Oct 2013 09:18:50 +0530
+Message-Id: <1381808931-3323-5-git-send-email-sachin.kamat@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1381808931-3323-1-git-send-email-sachin.kamat@linaro.org>
 References: <1381808931-3323-1-git-send-email-sachin.kamat@linaro.org>
@@ -21,28 +20,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-'of_palmas_match_tbl' is always compiled in. Hence of_match_ptr() is
-not needed.
+The data structure of_match_ptr() protects is always compiled in.
+Hence of_match_ptr() is not needed.
 
 Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: Graeme Gregory <gg@slimlogic.co.uk>
 ---
- drivers/mfd/palmas.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/mfd/omap-usb-host.c |    2 +-
+ drivers/mfd/omap-usb-tll.c  |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/mfd/palmas.c b/drivers/mfd/palmas.c
-index ae91478..d280d78 100644
---- a/drivers/mfd/palmas.c
-+++ b/drivers/mfd/palmas.c
-@@ -403,7 +403,7 @@ static int palmas_i2c_probe(struct i2c_client *i2c,
- 	palmas->dev = &i2c->dev;
- 	palmas->irq = i2c->irq;
- 
--	match = of_match_device(of_match_ptr(of_palmas_match_tbl), &i2c->dev);
-+	match = of_match_device(of_palmas_match_tbl, &i2c->dev);
- 
- 	if (!match)
- 		return -ENODATA;
+diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
+index 29ee54d..1b65ffe 100644
+--- a/drivers/mfd/omap-usb-host.c
++++ b/drivers/mfd/omap-usb-host.c
+@@ -893,7 +893,7 @@ static struct platform_driver usbhs_omap_driver = {
+ 		.name		= (char *)usbhs_driver_name,
+ 		.owner		= THIS_MODULE,
+ 		.pm		= &usbhsomap_dev_pm_ops,
+-		.of_match_table = of_match_ptr(usbhs_omap_dt_ids),
++		.of_match_table = usbhs_omap_dt_ids,
+ 	},
+ 	.remove		= usbhs_omap_remove,
+ };
+diff --git a/drivers/mfd/omap-usb-tll.c b/drivers/mfd/omap-usb-tll.c
+index e59ac4c..b8f6401 100644
+--- a/drivers/mfd/omap-usb-tll.c
++++ b/drivers/mfd/omap-usb-tll.c
+@@ -320,7 +320,7 @@ static struct platform_driver usbtll_omap_driver = {
+ 	.driver = {
+ 		.name		= (char *)usbtll_driver_name,
+ 		.owner		= THIS_MODULE,
+-		.of_match_table = of_match_ptr(usbtll_omap_dt_ids),
++		.of_match_table = usbtll_omap_dt_ids,
+ 	},
+ 	.probe		= usbtll_omap_probe,
+ 	.remove		= usbtll_omap_remove,
 -- 
 1.7.9.5
 
