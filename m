@@ -1,70 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759298Ab3JONSH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 09:18:07 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:37316 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758664Ab3JONSF (ORCPT
+	id S932288Ab3JONSQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 09:18:16 -0400
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:56381 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758664Ab3JONSJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 09:18:05 -0400
-Date: Tue, 15 Oct 2013 15:17:59 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        "Liu, Chuansheng" <chuansheng.liu@intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Ingo Molnar (mingo@kernel.org)" <mingo@kernel.org>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "'linux-kernel@vger.kernel.org' (linux-kernel@vger.kernel.org)" 
-	<linux-kernel@vger.kernel.org>,
-        "Wang, Xiaoming" <xiaoming.wang@intel.com>,
-        "Li, Zhuangzhi" <zhuangzhi.li@intel.com>
-Subject: Re: Panic and page fault in loop during handling NMI backtrace
- handler
-Message-ID: <20131015131757.GD29884@localhost.localdomain>
-References: <27240C0AC20F114CBF8149A2696CBE4A01B60835@SHSMSX101.ccr.corp.intel.com>
- <20131015121849.GA29884@localhost.localdomain>
- <20131015123717.GJ10651@twins.programming.kicks-ass.net>
- <20131015124837.GC9150@linux.vnet.ibm.com>
- <20131015125914.GC29884@localhost.localdomain>
- <20131015130659.GD9150@linux.vnet.ibm.com>
+	Tue, 15 Oct 2013 09:18:09 -0400
+Date: Tue, 15 Oct 2013 15:18:05 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Ramkumar Ramachandra <artagnon@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH v2] perf tools: use ansi versions of asm and volatile
+Message-ID: <20131015131805.GE2402@gmail.com>
+References: <1381835960-22900-1-git-send-email-artagnon@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131015130659.GD9150@linux.vnet.ibm.com>
+In-Reply-To: <1381835960-22900-1-git-send-email-artagnon@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 15, 2013 at 06:06:59AM -0700, Paul E. McKenney wrote:
-> On Tue, Oct 15, 2013 at 02:59:15PM +0200, Frederic Weisbecker wrote:
-> > On Tue, Oct 15, 2013 at 05:48:37AM -0700, Paul E. McKenney wrote:
-> > > On Tue, Oct 15, 2013 at 02:37:17PM +0200, Peter Zijlstra wrote:
-> > > > On Tue, Oct 15, 2013 at 02:18:53PM +0200, Frederic Weisbecker wrote:
-> > > > > On Tue, Oct 15, 2013 at 02:01:04AM +0000, Liu, Chuansheng wrote:
-> > > > > > We meet one issue that during trigger all CPU backtrace, but during in the NMI handler arch_trigger_all_cpu_backtrace_handler,
-> > > > > > It hit the PAGE fault, then PAGE fault is in loop, at last the thread stack overflow, and system panic.
-> > > > > > 
-> > > > > > Anyone can give some help? Thanks.
-> > > > > 
-> > > > > Looks like we re-enter the fault several times. On x86-32, NMIs can
-> > > > > fault if they dereference vmalloc'ed area. I wonder if the module thing
-> > > > > we lookup in the NMI is stored on some vmalloc'ed area.
-> > > > 
-> > > > IIRC modules are indeed allocated using vmalloc. See module_alloc()
-> > > > using vmalloc_exec()
-> > > 
-> > > This might then be a module that uses call_rcu(), but which does not have
-> > > the needed rcu_barrier() in the module-exit function.
-> > 
-> > I rather believe it's due to the lazy paging of vmalloc area in x86-32. We had issues
-> > like that in the past. For example that's the reason why we do an ad-hoc per-cpu
-> > allocation on callchain buffers in perf rather than using alloc_percpu() which might
-> > use vmalloc.
-> 
-> I must defer to your greater experience with this type of bug.
 
-With some chances I'll be proved wrong. I hope, because that issue is not easily fixed.
+* Ramkumar Ramachandra <artagnon@gmail.com> wrote:
+
+> asm and volatile are provided for backward compatibility; use the ansi
+> versions __asm__ and __volatile__.
+> 
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
+> ---
+>  Thanks to Peter for pointing out the instances I missed.
+> 
+>  tools/perf/arch/powerpc/util/header.c |  2 +-
+>  tools/perf/perf.h                     | 54 +++++++++++++++++------------------
+>  tools/perf/tests/perf-time-to-tsc.c   |  2 +-
+>  tools/perf/tests/rdpmc.c              |  6 ++--
+>  4 files changed, 32 insertions(+), 32 deletions(-)
+> 
+> diff --git a/tools/perf/arch/powerpc/util/header.c b/tools/perf/arch/powerpc/util/header.c
+> index 2f7073d..4b0a302 100644
+> --- a/tools/perf/arch/powerpc/util/header.c
+> +++ b/tools/perf/arch/powerpc/util/header.c
+> @@ -10,7 +10,7 @@
+>  #define __stringify(x)          __stringify_1(x)
+>  
+>  #define mfspr(rn)       ({unsigned long rval; \
+> -			 asm volatile("mfspr %0," __stringify(rn) \
+> +			 __asm__ __volatile__("mfspr %0," __stringify(rn) \
+
+The thing is, there's a few thousand more 'nonstandard' cases in the 
+kernel source:
+
+  comet:~/tip> git grep -w 'asm.*(' | wc -l
+  2617
+
+  comet:~/tip> git grep -w '__asm__.*(' | wc -l
+  2376
+
+So unless all of them are converted I'm not convinced at all about the 
+necessity of this change.
+
+It's not like GCC will (be able to) reuse 'asm' and 'volatile' for some 
+other purpose anytime soon (read: within decades, or ever), so this change 
+brings not much useful to the table AFAICS.
+
+I personally find 'asm volatile' plenty readable, the underscores don't 
+add any extra info.
+
+Thanks,
+
+	Ingo
