@@ -1,114 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758994Ab3JOMeo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 08:34:44 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44575 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758924Ab3JOMel (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 08:34:41 -0400
-Date: Tue, 15 Oct 2013 14:34:39 +0200
-From: Jan Kara <jack@suse.cz>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: Jan Kara <jack@suse.cz>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ted Tso <tytso@mit.edu>, linux-ext4@vger.kernel.org,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Ming Lei <tom.leiming@gmail.com>
-Subject: Re: [PATCH] ext4: fix checking on nr_to_write
-Message-ID: <20131015123439.GC12428@quack.suse.cz>
-References: <1381682393-5769-1-git-send-email-ming.lei@canonical.com>
- <20131014125858.GH19604@quack.suse.cz>
- <CACVXFVPpkJdw_AVwd=dRpD8ju6frjaU3QhKorr_PNNGu_D0jAQ@mail.gmail.com>
- <20131014173459.GL19604@quack.suse.cz>
- <20131015102553.22d4a018@tom-ThinkPad-T410>
- <20131015103900.GB12428@quack.suse.cz>
- <20131015191556.50c3eb03@tom-ThinkPad-T410>
+	id S1759100Ab3JOMfV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 08:35:21 -0400
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:33062 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759061Ab3JOMfS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 08:35:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131015191556.50c3eb03@tom-ThinkPad-T410>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131014135929.GH4722@htj.dyndns.org>
+References: <1381574794-7639-1-git-send-email-zhiguohong@tencent.com>
+	<1381741757-20888-1-git-send-email-zhiguohong@tencent.com>
+	<20131014133620.GF4722@htj.dyndns.org>
+	<CAA7+ByWPM2Pizm+dP1AxPM7Ut-w=AtRfD2GkCK-0OVh+C2Twkg@mail.gmail.com>
+	<20131014135929.GH4722@htj.dyndns.org>
+Date: Tue, 15 Oct 2013 20:35:17 +0800
+Message-ID: <CAA7+ByU0ZbtZF=jCaU86MEx0xVg+kouRZ3ocVCrMxyBz0T7ufA@mail.gmail.com>
+Subject: Re: [PATCH v2] blk-throttle: simplify logic by token bucket algorithm
+From: Hong zhi guo <honkiko@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>, vgoyal@redhat.com, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Hong Zhiguo <zhiguohong@tencent.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 15-10-13 19:15:56, Ming Lei wrote:
-> >   This won't quite work because if the page is fully mapped
-> > mpage_process_page_bufs() will immediately submit the page and decrease
-> > nr_to_write. So now you would end up writing less than you were asked for
-> > in some cases. 
-> 
-> Yes, your are right, so how about below?
-> 
-> diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-> index 32c04ab..3cf7abb 100644
-> --- a/fs/ext4/inode.c
-> +++ b/fs/ext4/inode.c
-> @@ -2295,6 +2295,7 @@ static int mpage_prepare_extent_to_map(struct mpage_da_data *mpd)
->  	struct address_space *mapping = mpd->inode->i_mapping;
->  	struct pagevec pvec;
->  	unsigned int nr_pages;
-> +	int left = mpd->wbc->nr_to_write;
-  'long' please. Otherwise the patch looks fine. Thanks!
+Hi, Tejun,
 
-								Honza
+I did the test for 3 levels hierarchy. It works.
 
->  	pgoff_t index = mpd->first_page;
->  	pgoff_t end = mpd->last_page;
->  	int tag;
-> @@ -2330,6 +2331,17 @@ static int mpage_prepare_extent_to_map(struct mpage_da_data *mpd)
->  			if (page->index > end)
->  				goto out;
->  
-> +			/*
-> +			 * Accumulated enough dirty pages? This doesn't apply
-> +			 * to WB_SYNC_ALL mode. For integrity sync we have to
-> +			 * keep going because someone may be concurrently
-> +			 * dirtying pages, and we might have synced a lot of
-> +			 * newly appeared dirty pages, but have not synced all
-> +			 * of the old dirty pages.
-> +			 */
-> +			if (mpd->wbc->sync_mode == WB_SYNC_NONE && left <= 0)
-> +				goto out;
-> +
->  			/* If we can't merge this page, we are done. */
->  			if (mpd->map.m_len > 0 && mpd->next_page != page->index)
->  				goto out;
-> @@ -2364,19 +2376,7 @@ static int mpage_prepare_extent_to_map(struct mpage_da_data *mpd)
->  			if (err <= 0)
->  				goto out;
->  			err = 0;
-> -
-> -			/*
-> -			 * Accumulated enough dirty pages? This doesn't apply
-> -			 * to WB_SYNC_ALL mode. For integrity sync we have to
-> -			 * keep going because someone may be concurrently
-> -			 * dirtying pages, and we might have synced a lot of
-> -			 * newly appeared dirty pages, but have not synced all
-> -			 * of the old dirty pages.
-> -			 */
-> -			if (mpd->wbc->sync_mode == WB_SYNC_NONE &&
-> -			    mpd->next_page - mpd->first_page >=
-> -							mpd->wbc->nr_to_write)
-> -				goto out;
-> +			left--;
->  		}
->  		pagevec_release(&pvec);
->  		cond_resched();
-> 
-> 
-> > Attached patch should do what's needed. Can you try whether
-> > it fixes the problem for you (it seems to work OK in my testing).
-> 
-> In fact, I had wrote and tested your attached patch before my last post,
-> and it may trigger BUG() in mpage_release_unused_pages(), that is because
-> we touch mpd->next_page without locking current page, so it is better to
-> not increase mpd->next_page if the current page won't be processed.
-> 
-> 
-> Thanks,
-> -- 
-> Ming Lei
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Preparation
+============
+1) mount subsys blkio with "__DEVEL__sane_behavior"
+2) Create 3 levels of directories under the blkio mount point:
+    mkdir 1
+    mkdir 1/2
+    mkdir 1/2/3
+3) start 3 bash sessions, write their PIDs into:
+    1/cgroup.procs
+    1/2/cgroup.procs
+    1/2/3/cgroup.procs
+4) prepare 3 10MB files on sdb(ext4 fs)
+
+Note: in below hierarchy graph:
+    "[50k]" means configured value for read_bps_device is 50kB/s
+    "(50k)" means bandwidth reported by dd is 50kB/s
+
+Test A: 1 process throttled by ancestor group
+=============================================
+Hierarchy set-up:
+    (echo "8:16 204800" > 1/blkio.throttle.read_bps_device)
+    1 [200k]
+    `-- 2 [-]
+        `-- 3 [-]
+
+dd within group 3:
+    (drop cache then: dd if=10M-file-3 of=/dev/null)
+Result:
+    206kB/s (I did same test without the token-bucket patch, The
+result is 205kB/s)
+
+dd within group 2:
+    (drop cache then: dd if=10M-file-2 of=/dev/null)
+Result:
+    205kB/s
+
+
+Test B: 3 processes in 3 levels of hierarchy
+=============================================
+Hierarchy set-up:
+    echo "8:16 204800" > 1/blkio.throttle.read_bps_device
+    echo "8:16 102400" > 1/2/blkio.throttle.read_bps_device
+    echo "8:16 51200"  > 1/2/3/blkio.throttle.read_bps_device
+    1 [200k]
+    `-- 2 [100k]
+        `-- 3 [50k]
+start 3 dd processes from 3 bash sessions
+    (dd if=10M-file-x of=/dev/null)
+Result:
+    1 (103k)
+    `-- 2 (51.9k)
+        `-- 3 (51.4k)
+
+
+best regards
+Hong Zhiguo
