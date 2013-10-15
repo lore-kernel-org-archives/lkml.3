@@ -1,107 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759567Ab3JOR0s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 13:26:48 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:58060 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759524Ab3JOR0r (ORCPT
+	id S932994Ab3JOR1i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 13:27:38 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:42105 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759533Ab3JOR1g convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 13:26:47 -0400
-Date: Tue, 15 Oct 2013 22:56:25 +0530
-From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-To: "Chen, Gong" <gong.chen@linux.intel.com>
-Cc: tony.luck@intel.com, bp@alien8.de, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 5/8] ACPI, APEI, CPER: Add UEFI 2.4 support for memory
- error
-Message-ID: <20131015172625.GB2777@naverao1-tp.ibm.com>
-References: <1381473166-29303-1-git-send-email-gong.chen@linux.intel.com>
- <1381473166-29303-6-git-send-email-gong.chen@linux.intel.com>
+	Tue, 15 Oct 2013 13:27:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1381473166-29303-6-git-send-email-gong.chen@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13101517-5564-0000-0000-00000A2C67C2
+In-Reply-To: <20131015100213.A0189E0090@blue.fi.intel.com>
+References: <20131015001201.GC3432@hippobay.mtv.corp.google.com> <20131015100213.A0189E0090@blue.fi.intel.com>
+From: Ning Qu <quning@google.com>
+Date: Tue, 15 Oct 2013 10:27:14 -0700
+Message-ID: <CACz4_2er-_Xa8oRo_JJTC+HZtDTAcjJ+cNTjrXLhN0Dm7BtXFQ@mail.gmail.com>
+Subject: Re: [PATCH 02/12] mm, thp, tmpfs: support to add huge page into page
+ cache for tmpfs
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/10/11 02:32AM, Chen Gong wrote:
-> In latest UEFI spec(by now it is 2.4) memory error definition
-> for CPER (UEFI 2.4 Appendix N Common Platform Error Record)
-> adds some new fields. These fields help people to locate
-> memory error on actual DIMM location.
-> 
-> Original-author: Tony Luck <tony.luck@intel.com>
-> Signed-off-by: Chen, Gong <gong.chen@linux.intel.com>
-> ---
->  drivers/acpi/apei/cper.c | 3 ++-
->  include/linux/cper.h     | 7 +++++++
->  2 files changed, 9 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/acpi/apei/cper.c b/drivers/acpi/apei/cper.c
-> index b2e4134..680230c 100644
-> --- a/drivers/acpi/apei/cper.c
-> +++ b/drivers/acpi/apei/cper.c
-> @@ -8,7 +8,7 @@
->   * various tables, such as ERST, BERT and HEST etc.
->   *
->   * For more information about CPER, please refer to Appendix N of UEFI
-> - * Specification version 2.3.
-> + * Specification version 2.4.
->   *
->   * This program is free software; you can redistribute it and/or
->   * modify it under the terms of the GNU General Public License version
-> @@ -191,6 +191,7 @@ static const char *cper_mem_err_type_strs[] = {
->  	"memory sparing",
->  	"scrub corrected error",
->  	"scrub uncorrected error",
-> +	"Physical Memory Map-out event",
+Yes, I can try. The code is pretty much similar with some minor difference.
 
-All small letters to match the rest of the items:
-"physical memory map-out event"
+One thing I can do is to move the spin lock part (together with the
+corresponding err handling into a common function.
 
->  };
->  
->  static void cper_print_mem(const char *pfx, const struct cper_sec_mem_err *mem)
-> diff --git a/include/linux/cper.h b/include/linux/cper.h
-> index c230494..bd01c9a 100644
-> --- a/include/linux/cper.h
-> +++ b/include/linux/cper.h
-> @@ -232,6 +232,9 @@ enum {
->  #define CPER_MEM_VALID_RESPONDER_ID		0x1000
->  #define CPER_MEM_VALID_TARGET_ID		0x2000
->  #define CPER_MEM_VALID_ERROR_TYPE		0x4000
-> +#define CPER_MEM_VALID_RANK_NUMBER		0x8000
-> +#define CPER_MEM_VALID_CARD_HANDLE		0x10000
-> +#define CPER_MEM_VALID_MODULE_HANDLE		0x20000
->  
->  #define CPER_PCIE_VALID_PORT_TYPE		0x0001
->  #define CPER_PCIE_VALID_VERSION			0x0002
-> @@ -347,6 +350,10 @@ struct cper_sec_mem_err {
->  	__u64	responder_id;
->  	__u64	target_id;
->  	__u8	error_type;
-> +	__u8	reserved;
-> +	__u16	rank;
-> +	__u16	mem_array_handle;
-> +	__u16	mem_dev_handle;
+The only problem I can see right now is we need the following
+additional line for shm:
 
-Nit: could you name those fields similar to what the spec has:
-card_handle and module_handle, with perhaps a comment to indicate
-relationship to SMBIOS type 16/17 tables?
+__mod_zone_page_state(page_zone(page), NR_SHMEM, nr);
+
+Which means we need to tell if it's coming from shm or not, is that OK
+to add additional parameter just for that? Or is there any other
+better way we can infer that information? Thanks!
+Best wishes,
+-- 
+Ning Qu (曲宁) | Software Engineer | quning@google.com | +1-408-418-6066
 
 
-Regards,
-Naveen
-
->  };
->  
->  struct cper_sec_pcie {
-> -- 
-> 1.8.4.rc3
-> 
-
+On Tue, Oct 15, 2013 at 3:02 AM, Kirill A. Shutemov
+<kirill.shutemov@linux.intel.com> wrote:
+> Ning Qu wrote:
+>> For replacing a page inside page cache, we assume the huge page
+>> has been splitted before getting here.
+>>
+>> For adding a new page to page cache, huge page support has been added.
+>>
+>> Also refactor the shm_add_to_page_cache function.
+>>
+>> Signed-off-by: Ning Qu <quning@gmail.com>
+>> ---
+>>  mm/shmem.c | 97 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++------
+>>  1 file changed, 88 insertions(+), 9 deletions(-)
+>>
+>> diff --git a/mm/shmem.c b/mm/shmem.c
+>> index a857ba8..447bd14 100644
+>> --- a/mm/shmem.c
+>> +++ b/mm/shmem.c
+>> @@ -277,27 +277,23 @@ static bool shmem_confirm_swap(struct address_space *mapping,
+>>  }
+>>
+>>  /*
+>> - * Like add_to_page_cache_locked, but error if expected item has gone.
+>> + * Replace the swap entry with page cache entry
+>>   */
+>> -static int shmem_add_to_page_cache(struct page *page,
+>> +static int shmem_replace_page_page_cache(struct page *page,
+>>                                  struct address_space *mapping,
+>>                                  pgoff_t index, gfp_t gfp, void *expected)
+>>  {
+>>       int error;
+>>
+>> -     VM_BUG_ON(!PageLocked(page));
+>> -     VM_BUG_ON(!PageSwapBacked(page));
+>> +     BUG_ON(PageTransHugeCache(page));
+>>
+>>       page_cache_get(page);
+>>       page->mapping = mapping;
+>>       page->index = index;
+>>
+>>       spin_lock_irq(&mapping->tree_lock);
+>> -     if (!expected)
+>> -             error = radix_tree_insert(&mapping->page_tree, index, page);
+>> -     else
+>> -             error = shmem_radix_tree_replace(mapping, index, expected,
+>> -                                                              page);
+>> +
+>> +     error = shmem_radix_tree_replace(mapping, index, expected, page);
+>>       if (!error) {
+>>               mapping->nrpages++;
+>>               __inc_zone_page_state(page, NR_FILE_PAGES);
+>> @@ -312,6 +308,87 @@ static int shmem_add_to_page_cache(struct page *page,
+>>  }
+>>
+>>  /*
+>> + * Insert new page into with page cache
+>> + */
+>> +static int shmem_insert_page_page_cache(struct page *page,
+>> +                                struct address_space *mapping,
+>> +                                pgoff_t index, gfp_t gfp)
+>> +{
+>
+> You copy-paste most of add_to_page_cache_locked() code here. Is there a
+> way to share the code? Move common part into __add_to_page_cache_locked()
+> or something.
+>
+> --
+>  Kirill A. Shutemov
