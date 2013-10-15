@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758363Ab3JOFVn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 01:21:43 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60964 "EHLO
+	id S1758555Ab3JOFW2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 01:22:28 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:32797 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758263Ab3JOFVf (ORCPT
+	with ESMTP id S1758519Ab3JOFWX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 01:21:35 -0400
-Date: Mon, 14 Oct 2013 22:20:50 -0700
+	Tue, 15 Oct 2013 01:22:23 -0400
+Date: Mon, 14 Oct 2013 22:21:16 -0700
 From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
-Message-ID: <tip-phhvcyi9vdnxw9l11tbquvru@git.kernel.org>
+Message-ID: <tip-8xuaupgmy82v7sha3l09oaux@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
         acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
         efault@gmx.de, jolsa@redhat.com, fweisbec@gmail.com,
@@ -19,8 +19,8 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
         peterz@infradead.org, jolsa@redhat.com, fweisbec@gmail.com,
         dsahern@gmail.com, adrian.hunter@intel.com, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf trace: Beautify fcntl 'cmd' arg
-Git-Commit-ID: 80f587d5f9424ebdf93abbe79ab87e7fb7d4699d
+Subject: [tip:perf/core] perf trace: Beautify socket 'family' arg
+Git-Commit-ID: e10bce815d5c0e7eb793231e4334839b2cd0d81f
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,23 +29,19 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 14 Oct 2013 22:20:56 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 14 Oct 2013 22:21:22 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  80f587d5f9424ebdf93abbe79ab87e7fb7d4699d
-Gitweb:     http://git.kernel.org/tip/80f587d5f9424ebdf93abbe79ab87e7fb7d4699d
+Commit-ID:  e10bce815d5c0e7eb793231e4334839b2cd0d81f
+Gitweb:     http://git.kernel.org/tip/e10bce815d5c0e7eb793231e4334839b2cd0d81f
 Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Tue, 3 Sep 2013 16:28:58 -0300
+AuthorDate: Wed, 4 Sep 2013 10:27:41 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 9 Oct 2013 11:09:58 -0300
+CommitDate: Wed, 9 Oct 2013 11:10:20 -0300
 
-perf trace: Beautify fcntl 'cmd' arg
-
-This is just for the low hanging fruit 'cmd' arg, a proper beautifier
-will as well use arg->mask to ignore the third arg for some of the
-cmds.
+perf trace: Beautify socket 'family' arg
 
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
@@ -55,38 +51,41 @@ Cc: Mike Galbraith <efault@gmx.de>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-phhvcyi9vdnxw9l11tbquvru@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-8xuaupgmy82v7sha3l09oaux@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-trace.c | 11 +++++++++++
- 1 file changed, 11 insertions(+)
+ tools/perf/builtin-trace.c | 14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
 
 diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index 7cb6052..8455a0a 100644
+index eb0bbff..6280166 100644
 --- a/tools/perf/builtin-trace.c
 +++ b/tools/perf/builtin-trace.c
-@@ -244,6 +244,14 @@ static const char *whences[] = { "SET", "CUR", "END",
- };
- static DEFINE_STRARRAY(whences);
+@@ -255,6 +255,16 @@ static DEFINE_STRARRAY(fcntl_cmds);
+ static const char *sighow[] = { "BLOCK", "UNBLOCK", "SETMASK", };
+ static DEFINE_STRARRAY(sighow);
  
-+static const char *fcntl_cmds[] = {
-+	"DUPFD", "GETFD", "SETFD", "GETFL", "SETFL", "GETLK", "SETLK",
-+	"SETLKW", "SETOWN", "GETOWN", "SETSIG", "GETSIG", "F_GETLK64",
-+	"F_SETLK64", "F_SETLKW64", "F_SETOWN_EX", "F_GETOWN_EX",
-+	"F_GETOWNER_UIDS",
++static const char *socket_families[] = {
++	"UNSPEC", "LOCAL", "INET", "AX25", "IPX", "APPLETALK", "NETROM",
++	"BRIDGE", "ATMPVC", "X25", "INET6", "ROSE", "DECnet", "NETBEUI",
++	"SECURITY", "KEY", "NETLINK", "PACKET", "ASH", "ECONET", "ATMSVC",
++	"RDS", "SNA", "IRDA", "PPPOX", "WANPIPE", "LLC", "IB", "CAN", "TIPC",
++	"BLUETOOTH", "IUCV", "RXRPC", "ISDN", "PHONET", "IEEE802154", "CAIF",
++	"ALG", "NFC", "VSOCK",
 +};
-+static DEFINE_STRARRAY(fcntl_cmds);
++static DEFINE_STRARRAY(socket_families);
 +
  static size_t syscall_arg__scnprintf_open_flags(char *bf, size_t size,
  					       struct syscall_arg *arg)
  {
-@@ -315,6 +323,9 @@ static struct syscall_fmt {
- 	  .arg_scnprintf = { [0] = SCA_HEX, /* brk */ }, },
- 	{ .name	    = "mmap",	    .hexret = true, },
- 	{ .name	    = "connect",    .errmsg = true, },
-+	{ .name	    = "fcntl",	    .errmsg = true,
-+	  .arg_scnprintf = { [1] = SCA_STRARRAY, /* cmd */ },
-+	  .arg_parm	 = { [1] = &strarray__fcntl_cmds, /* cmd */ }, },
- 	{ .name	    = "fstat",	    .errmsg = true, .alias = "newfstat", },
- 	{ .name	    = "fstatat",    .errmsg = true, .alias = "newfstatat", },
- 	{ .name	    = "futex",	    .errmsg = true,
+@@ -429,7 +439,9 @@ static struct syscall_fmt {
+ 	{ .name	    = "setitimer",  .errmsg = true,
+ 	  .arg_scnprintf = { [0] = SCA_STRARRAY, /* which */ },
+ 	  .arg_parm	 = { [0] = &strarray__itimers, /* which */ }, },
+-	{ .name	    = "socket",	    .errmsg = true, },
++	{ .name	    = "socket",	    .errmsg = true,
++	  .arg_scnprintf = { [0] = SCA_STRARRAY, /* family */ },
++	  .arg_parm	 = { [0] = &strarray__socket_families, /* family */ }, },
+ 	{ .name	    = "stat",	    .errmsg = true, .alias = "newstat", },
+ 	{ .name	    = "tgkill",	    .errmsg = true,
+ 	  .arg_scnprintf = { [2] = SCA_SIGNUM, /* sig */ }, },
