@@ -1,75 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932304Ab3JOKhw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 06:37:52 -0400
-Received: from mga14.intel.com ([143.182.124.37]:59709 "EHLO mga14.intel.com"
+	id S932425Ab3JOKiJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 06:38:09 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:38570 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932247Ab3JOKhv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 06:37:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,498,1378882800"; 
-   d="scan'208";a="374914715"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Ning Qu <quning@google.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Hugh Dickins <hughd@google.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Hugh Dickins <hughd@google.com>, Wu Fengguang <fengguang.wu@intel.com>,
-        Jan Kara <jack@suse.cz>, Mel Gorman <mgorman@suse.de>,
-        linux-mm@kvack.org, Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ning Qu <quning@google.com>
-In-Reply-To: <20131015001242.GF3432@hippobay.mtv.corp.google.com>
-References: <20131015001242.GF3432@hippobay.mtv.corp.google.com>
-Subject: RE: [PATCH 05/12] mm, thp, tmpfs: request huge page in shm_fault when
- needed
-Content-Transfer-Encoding: 7bit
-Message-Id: <20131015103744.A0BD3E0090@blue.fi.intel.com>
-Date: Tue, 15 Oct 2013 13:37:44 +0300 (EEST)
+	id S932247Ab3JOKiF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 06:38:05 -0400
+From: George Cherian <george.cherian@ti.com>
+To: <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-usb@vger.kernel.org>
+CC: <tony@atomide.com>, <balbi@ti.com>, <kishon@ti.com>, <rob@landley.net>,
+        <ijc+devicetree@hellion.org.uk>, <swarren@wwwdotorg.org>,
+        <mark.rutland@arm.com>, <pawel.moll@arm.com>,
+        <rob.herring@calxeda.com>, <gregkh@linuxfoundation.org>,
+        George Cherian <george.cherian@ti.com>
+Subject: [PATCH v3 0/2] Adapt phy-omap-usb2 for AM437x platform
+Date: Tue, 15 Oct 2013 16:07:41 +0530
+Message-ID: <1381833463-12149-1-git-send-email-george.cherian@ti.com>
+X-Mailer: git-send-email 1.8.1
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ning Qu wrote:
-> Add the function to request huge page in shm_fault when needed.
-> And it will fall back to regular page if huge page can't be
-> satisfied or allocated.
-> 
-> If small page requested but huge page is found, the huge page will
-> be splitted.
-> 
-> Signed-off-by: Ning Qu <quning@gmail.com>
-> ---
->  mm/shmem.c | 32 +++++++++++++++++++++++++++++---
->  1 file changed, 29 insertions(+), 3 deletions(-)
-> 
-> diff --git a/mm/shmem.c b/mm/shmem.c
-> index 68a0e1d..2fc450d 100644
-> --- a/mm/shmem.c
-> +++ b/mm/shmem.c
-> @@ -1472,19 +1472,45 @@ unlock:
->  static int shmem_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
->  {
->  	struct inode *inode = file_inode(vma->vm_file);
-> +	struct page *page = NULL;
->  	int error;
->  	int ret = VM_FAULT_LOCKED;
->  	gfp_t gfp = mapping_gfp_mask(inode->i_mapping);
-> -
-> -	error = shmem_getpage(inode, vmf->pgoff, &vmf->page, SGP_CACHE, gfp,
-> -				0, &ret);
-> +	bool must_use_thp = vmf->flags & FAULT_FLAG_TRANSHUGE;
-> +	int flags = 0;
-> +#ifdef CONFIG_TRANSPARENT_HUGEPAGE_PAGECACHE
-> +	flags |= AOP_FLAG_TRANSHUGE;
-> +#endif
+This series adapts the phy-omap-usb2 generic phy driver for AM437x.
+While at that sort the include files alphabetically (PATCH 1)
+Patch1 - v2->v3 Amend the commit log
 
-ifdef is not needed: shmem_getpage will ignore AOP_FLAG_TRANSHUGE if
-CONFIG_TRANSPARENT_HUGEPAGE_PAGECACHE is not defined.
+V2 of 2nd Patch which fixes the following from v1
+	- List comaptible entries in Documentaion
+	- Add usb_phy_data instead of checking compatible each time.
+
+George Cherian (2):
+  phy: omap-usb2: Sort the headers alphabetically
+  phy: omap-usb2: Adapt phy-omap-usb2 for AM437x
+
+ Documentation/devicetree/bindings/usb/usb-phy.txt |  4 +-
+ drivers/phy/phy-omap-usb2.c                       | 72 +++++++++++++++--------
+ include/linux/usb/omap_usb.h                      | 10 ++++
+ 3 files changed, 62 insertions(+), 24 deletions(-)
 
 -- 
- Kirill A. Shutemov
+1.8.1
+
