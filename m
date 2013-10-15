@@ -1,42 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933314Ab3JOTno (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 15:43:44 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:44588 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759533Ab3JOTnm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 15:43:42 -0400
-Message-ID: <525D9AEA.3080009@wwwdotorg.org>
-Date: Tue, 15 Oct 2013 13:43:38 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1759769Ab3JOToz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 15:44:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16782 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757002Ab3JOToy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 15:44:54 -0400
+Date: Tue, 15 Oct 2013 21:44:28 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Hugh Dickins <hughd@google.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: mm: fix BUG in __split_huge_page_pmd
+Message-ID: <20131015194428.GI3479@redhat.com>
+References: <alpine.LNX.2.00.1310150358170.11905@eggly.anvils>
+ <20131015143407.GE3479@redhat.com>
+ <20131015144827.C45DDE0090@blue.fi.intel.com>
+ <alpine.LNX.2.00.1310151029040.12481@eggly.anvils>
+ <20131015185510.GH3479@redhat.com>
+ <1381865330-8nb86ucy-mutt-n-horiguchi@ah.jp.nec.com>
 MIME-Version: 1.0
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Hiroshi Doyu <hdoyu@nvidia.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH v3 00/19] Introduce common infra for tegra clocks
-References: <1381848794-11761-1-git-send-email-pdeschrijver@nvidia.com>
-In-Reply-To: <1381848794-11761-1-git-send-email-pdeschrijver@nvidia.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1381865330-8nb86ucy-mutt-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/15/2013 08:52 AM, Peter De Schrijver wrote:
-> This patchset introduces common infrastructure for clocks which exist in                                                                                       
-> several Tegra SoCs. We also also move Tegra20, Tegra30 and Tegra114 to
-> this new infrastructure.
+On Tue, Oct 15, 2013 at 03:28:50PM -0400, Naoya Horiguchi wrote:
+> On Tue, Oct 15, 2013 at 08:55:10PM +0200, Andrea Arcangeli wrote:
+> > On Tue, Oct 15, 2013 at 10:53:10AM -0700, Hugh Dickins wrote:
+> > > I'm afraid Andrea's mail about concurrent madvises gives me far more
+> > > to think about than I have time for: seems to get into problems he
+> > > knows a lot about but I'm unfamiliar with.  If this patch looks good
+> > > for now on its own, let's put it in; but no problem if you guys prefer
+> > > to wait for a fuller solution of more problems, we can ride with this
+> > > one internally for the moment.
+> > 
+> > I'm very happy with the patch and I think it's a correct fix for the
+> > COW scenario which is deterministic so the looping makes a meaningful
+> > difference for it. If we wouldn't loop, part of the copied page
+> > wouldn't be zapped after the COW.
+> 
+> I like this patch, too.
+> 
+> If we have the loop in __split_huge_page_pmd as suggested in this patch,
+> can we assume that the pmd is stable after __split_huge_page_pmd returns?
+> If it's true, we can remove pmd_none_or_trans_huge_or_clear_bad check
+> in the callers side (zap_pmd_range and some other page table walking code.)
 
-Overall, this series looks reasonable aside from the few nits I pointed
-out. I'll hold my ack until the issues I found during testing are
-resolved though.
+We can assume it stable for the deterministic cases where the
+looping is useful for and split_huge_page creates non-huge pmd that points to
+a regular pte.
+
+But we cannot remove pmd_none_or_trans_huge_or_clear_bad after if for
+the other non deterministic cases that I described in previous
+email. Looping still provides no guarantee that when the function
+returns, the pmd in not huge. So for safety we still need to handle
+the non deterministic case and just discard it through
+pmd_none_or_trans_huge_or_clear_bad.
