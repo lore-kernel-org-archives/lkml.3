@@ -1,35 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758295Ab3JOLQE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 07:16:04 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:53477 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757524Ab3JOLQD (ORCPT
+	id S1758736Ab3JOLQO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 07:16:14 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54393 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758500Ab3JOLQM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 07:16:03 -0400
-Date: Tue, 15 Oct 2013 13:15:51 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ramkumar Ramachandra <artagnon@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCH] perf tools: use ansi versions of asm and volatile
-Message-ID: <20131015111551.GH10651@twins.programming.kicks-ass.net>
-References: <1381833986-19393-1-git-send-email-artagnon@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1381833986-19393-1-git-send-email-artagnon@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Tue, 15 Oct 2013 07:16:12 -0400
+Date: Tue, 15 Oct 2013 19:15:56 +0800
+From: Ming Lei <ming.lei@canonical.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ted Tso <tytso@mit.edu>, linux-ext4@vger.kernel.org,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Ming Lei <tom.leiming@gmail.com>
+Subject: Re: [PATCH] ext4: fix checking on nr_to_write
+Message-ID: <20131015191556.50c3eb03@tom-ThinkPad-T410>
+In-Reply-To: <20131015103900.GB12428@quack.suse.cz>
+References: <1381682393-5769-1-git-send-email-ming.lei@canonical.com>
+	<20131014125858.GH19604@quack.suse.cz>
+	<CACVXFVPpkJdw_AVwd=dRpD8ju6frjaU3QhKorr_PNNGu_D0jAQ@mail.gmail.com>
+	<20131014173459.GL19604@quack.suse.cz>
+	<20131015102553.22d4a018@tom-ThinkPad-T410>
+	<20131015103900.GB12428@quack.suse.cz>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 15, 2013 at 04:16:26PM +0530, Ramkumar Ramachandra wrote:
-> asm and volatile are provided for backward compatibility; use the ansi
-> versions __asm__ and __volatile__.
+On Tue, 15 Oct 2013 12:39:00 +0200
+Jan Kara <jack@suse.cz> wrote:
 
-Also, you seem to have 'forgotten' to convert the 31 other instances :-)
+> On Tue 15-10-13 10:25:53, Ming Lei wrote:
+> > Looks it makes sense, so how about below change?
+> > 
+> > --
+> > diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+> > index 32c04ab..c32b599 100644
+> > --- a/fs/ext4/inode.c
+> > +++ b/fs/ext4/inode.c
+> > @@ -2294,7 +2294,7 @@ static int mpage_prepare_extent_to_map(struct mpage_da_data *mpd)
+> >  {
+> >  	struct address_space *mapping = mpd->inode->i_mapping;
+> >  	struct pagevec pvec;
+> > -	unsigned int nr_pages;
+> > +	unsigned int nr_pages, nr_added = 0;
+> >  	pgoff_t index = mpd->first_page;
+> >  	pgoff_t end = mpd->last_page;
+> >  	int tag;
+> > @@ -2330,6 +2330,18 @@ static int mpage_prepare_extent_to_map(struct mpage_da_data *mpd)
+> >  			if (page->index > end)
+> >  				goto out;
+> >  
+> > +			/*
+> > +			 * Accumulated enough dirty pages? This doesn't apply
+> > +			 * to WB_SYNC_ALL mode. For integrity sync we have to
+> > +			 * keep going because someone may be concurrently
+> > +			 * dirtying pages, and we might have synced a lot of
+> > +			 * newly appeared dirty pages, but have not synced all
+> > +			 * of the old dirty pages.
+> > +			 */
+> > +			if (mpd->wbc->sync_mode == WB_SYNC_NONE &&
+> > +					nr_added >= mpd->wbc->nr_to_write)
+> > +				goto out;
+> > +
+>   This won't quite work because if the page is fully mapped
+> mpage_process_page_bufs() will immediately submit the page and decrease
+> nr_to_write. So now you would end up writing less than you were asked for
+> in some cases. 
 
-# git grep -E "[[:space:]]asm[([:space:]]" tools/perf/ | wc -l
-32
+Yes, your are right, so how about below?
+
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index 32c04ab..3cf7abb 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -2295,6 +2295,7 @@ static int mpage_prepare_extent_to_map(struct mpage_da_data *mpd)
+ 	struct address_space *mapping = mpd->inode->i_mapping;
+ 	struct pagevec pvec;
+ 	unsigned int nr_pages;
++	int left = mpd->wbc->nr_to_write;
+ 	pgoff_t index = mpd->first_page;
+ 	pgoff_t end = mpd->last_page;
+ 	int tag;
+@@ -2330,6 +2331,17 @@ static int mpage_prepare_extent_to_map(struct mpage_da_data *mpd)
+ 			if (page->index > end)
+ 				goto out;
+ 
++			/*
++			 * Accumulated enough dirty pages? This doesn't apply
++			 * to WB_SYNC_ALL mode. For integrity sync we have to
++			 * keep going because someone may be concurrently
++			 * dirtying pages, and we might have synced a lot of
++			 * newly appeared dirty pages, but have not synced all
++			 * of the old dirty pages.
++			 */
++			if (mpd->wbc->sync_mode == WB_SYNC_NONE && left <= 0)
++				goto out;
++
+ 			/* If we can't merge this page, we are done. */
+ 			if (mpd->map.m_len > 0 && mpd->next_page != page->index)
+ 				goto out;
+@@ -2364,19 +2376,7 @@ static int mpage_prepare_extent_to_map(struct mpage_da_data *mpd)
+ 			if (err <= 0)
+ 				goto out;
+ 			err = 0;
+-
+-			/*
+-			 * Accumulated enough dirty pages? This doesn't apply
+-			 * to WB_SYNC_ALL mode. For integrity sync we have to
+-			 * keep going because someone may be concurrently
+-			 * dirtying pages, and we might have synced a lot of
+-			 * newly appeared dirty pages, but have not synced all
+-			 * of the old dirty pages.
+-			 */
+-			if (mpd->wbc->sync_mode == WB_SYNC_NONE &&
+-			    mpd->next_page - mpd->first_page >=
+-							mpd->wbc->nr_to_write)
+-				goto out;
++			left--;
+ 		}
+ 		pagevec_release(&pvec);
+ 		cond_resched();
+
+
+> Attached patch should do what's needed. Can you try whether
+> it fixes the problem for you (it seems to work OK in my testing).
+
+In fact, I had wrote and tested your attached patch before my last post,
+and it may trigger BUG() in mpage_release_unused_pages(), that is because
+we touch mpd->next_page without locking current page, so it is better to
+not increase mpd->next_page if the current page won't be processed.
+
+
+Thanks,
+-- 
+Ming Lei
