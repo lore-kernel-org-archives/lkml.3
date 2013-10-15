@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933132Ab3JORRI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 13:17:08 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:7073 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932228Ab3JORRE (ORCPT
+	id S933253Ab3JORRU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 13:17:20 -0400
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:36205 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932996Ab3JORRH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 13:17:04 -0400
+	Tue, 15 Oct 2013 13:17:07 -0400
 From: Toshi Kani <toshi.kani@hp.com>
 To: akpm@linux-foundation.org
 Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, cl@linux-foundation.org,
         isimatu.yasuaki@jp.fujitsu.com, Toshi Kani <toshi.kani@hp.com>
-Subject: [PATCH 1/2] mm: Set N_CPU to node_states during boot
-Date: Tue, 15 Oct 2013 11:12:55 -0600
-Message-Id: <1381857176-22999-2-git-send-email-toshi.kani@hp.com>
+Subject: [PATCH 2/2] mm: Clear N_CPU from node_states at CPU offline
+Date: Tue, 15 Oct 2013 11:12:56 -0600
+Message-Id: <1381857176-22999-3-git-send-email-toshi.kani@hp.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1381857176-22999-1-git-send-email-toshi.kani@hp.com>
 References: <1381857176-22999-1-git-send-email-toshi.kani@hp.com>
@@ -21,47 +21,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After a system booted, N_CPU is not set to any node as
-has_cpu shows an empty line.
+vmstat_cpuup_callback() is a CPU notifier callback, which
+marks N_CPU to a node at CPU online event.  However, it
+does not update this N_CPU info at CPU offline event.
 
-  # cat /sys/devices/system/node/has_cpu
-  (show-empty-line)
-
-setup_vmstat() registers its CPU notifier callback,
-vmstat_cpuup_callback(), which marks N_CPU to a node when
-a CPU is put into online.  However, setup_vmstat() is
-called after all CPUs are launched in the boot sequence.
-
-Changed setup_vmstat() to mark N_CPU to the nodes with
-online CPUs at boot, which is consistent with other
-operations in vmstat_cpuup_callback(), i.e. start_cpu_timer()
-and refresh_zone_stat_thresholds().
-
-Also added get_online_cpus() to protect the
-for_each_online_cpu() loop.
+Changed vmstat_cpuup_callback() to clear N_CPU when the last
+CPU in the node is put into offline, i.e. the node no longer
+has any online CPU.
 
 Signed-off-by: Toshi Kani <toshi.kani@hp.com>
 Cc: Christoph Lameter <cl@linux-foundation.org>
 Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 ---
- mm/vmstat.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ mm/vmstat.c |   15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
 diff --git a/mm/vmstat.c b/mm/vmstat.c
-index 9bb3145..0a1f7de 100644
+index 0a1f7de..b6d17ed 100644
 --- a/mm/vmstat.c
 +++ b/mm/vmstat.c
-@@ -1276,8 +1276,12 @@ static int __init setup_vmstat(void)
+@@ -1229,6 +1229,20 @@ static void start_cpu_timer(int cpu)
+ 	schedule_delayed_work_on(cpu, work, __round_jiffies_relative(HZ, cpu));
+ }
  
- 	register_cpu_notifier(&vmstat_notifier);
- 
--	for_each_online_cpu(cpu)
++static void vmstat_cpu_dead(int node)
++{
++	int cpu;
++
 +	get_online_cpus();
-+	for_each_online_cpu(cpu) {
- 		start_cpu_timer(cpu);
-+		node_set_state(cpu_to_node(cpu), N_CPU);
-+	}
++	for_each_online_cpu(cpu)
++		if (cpu_to_node(cpu) == node)
++			goto end;
++
++	node_clear_state(node, N_CPU);
++end:
 +	put_online_cpus();
- #endif
- #ifdef CONFIG_PROC_FS
- 	proc_create("buddyinfo", S_IRUGO, NULL, &fragmentation_file_operations);
++}
++
+ /*
+  * Use the cpu notifier to insure that the thresholds are recalculated
+  * when necessary.
+@@ -1258,6 +1272,7 @@ static int vmstat_cpuup_callback(struct notifier_block *nfb,
+ 	case CPU_DEAD:
+ 	case CPU_DEAD_FROZEN:
+ 		refresh_zone_stat_thresholds();
++		vmstat_cpu_dead(cpu_to_node(cpu));
+ 		break;
+ 	default:
+ 		break;
