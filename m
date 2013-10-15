@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757566Ab3JODt7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 23:49:59 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:44984 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757454Ab3JODt4 (ORCPT
+	id S1757468Ab3JODtx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 23:49:53 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:54061 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756049Ab3JODtu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 23:49:56 -0400
+	Mon, 14 Oct 2013 23:49:50 -0400
 From: Sachin Kamat <sachin.kamat@linaro.org>
 To: linux-kernel@vger.kernel.org
 Cc: lee.jones@linaro.org, sachin.kamat@linaro.org
-Subject: [PATCH 5/6] mfd: omap-usb: Remove redundant of_match_ptr
-Date: Tue, 15 Oct 2013 09:18:50 +0530
-Message-Id: <1381808931-3323-5-git-send-email-sachin.kamat@linaro.org>
+Subject: [PATCH 2/6] mfd: tps65217: Remove redundant of_match_ptr
+Date: Tue, 15 Oct 2013 09:18:47 +0530
+Message-Id: <1381808931-3323-2-git-send-email-sachin.kamat@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1381808931-3323-1-git-send-email-sachin.kamat@linaro.org>
 References: <1381808931-3323-1-git-send-email-sachin.kamat@linaro.org>
@@ -25,36 +25,22 @@ Hence of_match_ptr() is not needed.
 
 Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
 ---
- drivers/mfd/omap-usb-host.c |    2 +-
- drivers/mfd/omap-usb-tll.c  |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/mfd/tps65217.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
-index 29ee54d..1b65ffe 100644
---- a/drivers/mfd/omap-usb-host.c
-+++ b/drivers/mfd/omap-usb-host.c
-@@ -893,7 +893,7 @@ static struct platform_driver usbhs_omap_driver = {
- 		.name		= (char *)usbhs_driver_name,
- 		.owner		= THIS_MODULE,
- 		.pm		= &usbhsomap_dev_pm_ops,
--		.of_match_table = of_match_ptr(usbhs_omap_dt_ids),
-+		.of_match_table = usbhs_omap_dt_ids,
+diff --git a/drivers/mfd/tps65217.c b/drivers/mfd/tps65217.c
+index b8f4864..b7be0b2 100644
+--- a/drivers/mfd/tps65217.c
++++ b/drivers/mfd/tps65217.c
+@@ -245,7 +245,7 @@ static struct i2c_driver tps65217_driver = {
+ 	.driver		= {
+ 		.name	= "tps65217",
+ 		.owner	= THIS_MODULE,
+-		.of_match_table = of_match_ptr(tps65217_of_match),
++		.of_match_table = tps65217_of_match,
  	},
- 	.remove		= usbhs_omap_remove,
- };
-diff --git a/drivers/mfd/omap-usb-tll.c b/drivers/mfd/omap-usb-tll.c
-index e59ac4c..b8f6401 100644
---- a/drivers/mfd/omap-usb-tll.c
-+++ b/drivers/mfd/omap-usb-tll.c
-@@ -320,7 +320,7 @@ static struct platform_driver usbtll_omap_driver = {
- 	.driver = {
- 		.name		= (char *)usbtll_driver_name,
- 		.owner		= THIS_MODULE,
--		.of_match_table = of_match_ptr(usbtll_omap_dt_ids),
-+		.of_match_table = usbtll_omap_dt_ids,
- 	},
- 	.probe		= usbtll_omap_probe,
- 	.remove		= usbtll_omap_remove,
+ 	.id_table	= tps65217_id_table,
+ 	.probe		= tps65217_probe,
 -- 
 1.7.9.5
 
