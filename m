@@ -1,146 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933693Ab3JORy6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 13:54:58 -0400
-Received: from qmta09.emeryville.ca.mail.comcast.net ([76.96.30.96]:44640 "EHLO
-	qmta09.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933360Ab3JORyy (ORCPT
+	id S933737Ab3JORzv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 13:55:51 -0400
+Received: from qmta01.emeryville.ca.mail.comcast.net ([76.96.30.16]:54124 "EHLO
+	qmta01.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933678Ab3JORy4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 13:54:54 -0400
-Message-Id: <20131015174745.728586110@linux.com>
+	Tue, 15 Oct 2013 13:54:56 -0400
+Message-Id: <20131015174746.793436648@linux.com>
 User-Agent: quilt/0.60-1
-Date: Tue, 15 Oct 2013 12:47:24 -0500
+Date: Tue, 15 Oct 2013 12:47:26 -0500
 From: Christoph Lameter <cl@linux.com>
 To: Tejun Heo <tj@kernel.org>
 Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
         linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 2/6] percpu: Add raw_cpu_ops
+        Thomas Gleixner <tglx@linutronix.de>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: [PATCH 4/6] Use raw_cpu_write for initialization of per cpu refcount.
 References: <20131015174722.615394057@linux.com>
-Content-Disposition: inline; filename=raw_cpu_ops
+Content-Disposition: inline; filename=preempt_module
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following patches will add preemption checks to __this_cpu ops so we
-need to have an alternative way to use this cpu operations without
-preemption checks.
+The initialization of a structure is not subject to synchronization.
+The use of __this_cpu would trigger a false positive with the
+additional preemption checks for __this_cpu ops.
 
-raw_cpu ops rely on the __this_cpu_xxx_1/2/4/8 operations having no
-preemption checks. We therefore do not have to duplicate these functions
-but can affort to only duplicate the higher level macros.
+So simply disable the check through the use of raw_cpu ops.
 
-Also add raw_cpu_ptr for symmetries sake.
+Trace:
 
+[    0.668066] __this_cpu_write operation in preemptible [00000000] code: modprobe/286
+[    0.668108] caller is __this_cpu_preempt_check+0x38/0x60
+[    0.668111] CPU: 3 PID: 286 Comm: modprobe Tainted: GF            3.12.0-rc4+ #187
+[    0.668112] Hardware name: FUJITSU CELSIUS W530 Power/D3227-A1, BIOS V4.6.5.4 R1.10.0 for D3227-A1x 09/16/2013
+[    0.668113]  0000000000000003 ffff8807edda1d18 ffffffff816d5a57 ffff8807edda1fd8
+[    0.668117]  ffff8807edda1d48 ffffffff8137359c ffff8807edda1ef8 ffffffffa0002178
+[    0.668121]  ffffc90000067730 ffff8807edda1e48 ffff8807edda1d88 ffffffff813735f8
+[    0.668124] Call Trace:
+[    0.668129]  [<ffffffff816d5a57>] dump_stack+0x4e/0x82
+[    0.668132]  [<ffffffff8137359c>] check_preemption_disabled+0xec/0x110
+[    0.668135]  [<ffffffff813735f8>] __this_cpu_preempt_check+0x38/0x60
+[    0.668139]  [<ffffffff810c24fd>] load_module+0xcfd/0x2650
+[    0.668143]  [<ffffffff816dd922>] ? page_fault+0x22/0x30
+[    0.668146]  [<ffffffff810c3ef6>] SyS_init_module+0xa6/0xd0
+[    0.668150]  [<ffffffff816e4fd3>] tracesys+0xe1/0xe6
+
+
+
+Cc: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Index: linux/include/linux/percpu.h
+Index: linux/kernel/module.c
 ===================================================================
---- linux.orig/include/linux/percpu.h	2013-09-23 10:20:05.050535801 -0500
-+++ linux/include/linux/percpu.h	2013-09-23 10:20:05.050535801 -0500
-@@ -139,6 +139,9 @@ extern int __init pcpu_page_first_chunk(
- 				pcpu_fc_populate_pte_fn_t populate_pte_fn);
- #endif
+--- linux.orig/kernel/module.c	2013-09-05 13:43:30.557687773 -0500
++++ linux/kernel/module.c	2013-10-07 12:33:43.732059759 -0500
+@@ -643,7 +643,7 @@ static int module_unload_init(struct mod
+ 	INIT_LIST_HEAD(&mod->target_list);
  
-+/* For symmetries sake. */
-+#define raw_cpu_ptr __this_cpu_ptr
-+
- /*
-  * Use this to get to a cpu's version of the per-cpu object
-  * dynamically allocated. Non-atomic access to the current CPU's
-@@ -520,17 +523,7 @@ do {									\
+ 	/* Hold reference count during initialization. */
+-	__this_cpu_write(mod->refptr->incs, 1);
++	raw_cpu_write(mod->refptr->incs, 1);
+ 	/* Backwards compatibility macros put refcount during init. */
+ 	mod->waiter = current;
  
- /*
-  * Generic percpu operations for context that are safe from preemption/interrupts.
-- * Either we do not care about races or the caller has the
-- * responsibility of handling preemption/interrupt issues. Arch code can still
-- * override these instructions since the arch per cpu code may be more
-- * efficient and may actually get race freeness for free (that is the
-- * case for x86 for example).
-- *
-- * If there is no other protection through preempt disable and/or
-- * disabling interupts then one of these RMW operations can show unexpected
-- * behavior because the execution thread was rescheduled on another processor
-- * or an interrupt occurred and the same percpu variable was modified from
-- * the interrupt context.
-+ * These functions verify that preemption has been disabled.
-  */
- #ifndef __this_cpu_read
- # ifndef __this_cpu_read_1
-@@ -755,4 +748,74 @@ do {									\
- 	__pcpu_double_call_return_bool(__this_cpu_cmpxchg_double_, (pcp1), (pcp2), (oval1), (oval2), (nval1), (nval2))
- #endif
- 
-+/*
-+ * Generic percpu operations for context where we do not want to do
-+ * any checks for preemptiosn.
-+ *
-+ * If there is no other protection through preempt disable and/or
-+ * disabling interupts then one of these RMW operations can show unexpected
-+ * behavior because the execution thread was rescheduled on another processor
-+ * or an interrupt occurred and the same percpu variable was modified from
-+ * the interrupt context.
-+ */
-+#ifndef raw_cpu_read
-+# define raw_cpu_read(pcp)	__pcpu_size_call_return(__this_cpu_read_, (pcp))
-+#endif
-+
-+#ifndef raw_cpu_write
-+# define raw_cpu_write(pcp, val)	__pcpu_size_call(__this_cpu_write_, (pcp), (val))
-+#endif
-+
-+#ifndef raw_cpu_add
-+# define raw_cpu_add(pcp, val)	__pcpu_size_call(__this_cpu_add_, (pcp), (val))
-+#endif
-+
-+#ifndef raw_cpu_sub
-+# define raw_cpu_sub(pcp, val)	raw_cpu_add((pcp), -(val))
-+#endif
-+
-+#ifndef raw_cpu_inc
-+# define raw_cpu_inc(pcp)		raw_cpu_add((pcp), 1)
-+#endif
-+
-+#ifndef raw_cpu_dec
-+# define raw_cpu_dec(pcp)		raw_cpu_sub((pcp), 1)
-+#endif
-+
-+#ifndef raw_cpu_and
-+# define raw_cpu_and(pcp, val)	__pcpu_size_call(__this_cpu_and_, (pcp), (val))
-+#endif
-+
-+#ifndef raw_cpu_or
-+# define raw_cpu_or(pcp, val)	__pcpu_size_call(__this_cpu_or_, (pcp), (val))
-+#endif
-+
-+#ifndef raw_cpu_xor
-+# define raw_cpu_xor(pcp, val)	__pcpu_size_call(__this_cpu_xor_, (pcp), (val))
-+#endif
-+
-+#ifndef raw_cpu_add_return
-+# define raw_cpu_add_return(pcp, val)	\
-+	__pcpu_size_call_return2(__this_cpu_add_return_, pcp, val)
-+#endif
-+
-+#define raw_cpu_sub_return(pcp, val)	raw_cpu_add_return(pcp, -(val))
-+#define raw_cpu_inc_return(pcp)	raw_cpu_add_return(pcp, 1)
-+#define raw_cpu_dec_return(pcp)	raw_cpu_add_return(pcp, -1)
-+
-+#ifndef raw_cpu_xchg
-+# define raw_cpu_xchg(pcp, nval)	\
-+	__pcpu_size_call_return2(__this_cpu_xchg_, (pcp), nval)
-+#endif
-+
-+#ifndef raw_cpu_cmpxchg
-+# define raw_cpu_cmpxchg(pcp, oval, nval)	\
-+	__pcpu_size_call_return2(__this_cpu_cmpxchg_, pcp, oval, nval)
-+#endif
-+
-+#ifndef raw_cpu_cmpxchg_double
-+# define raw_cpu_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
-+	__pcpu_double_call_return_bool(__this_cpu_cmpxchg_double_, (pcp1), (pcp2), (oval1), (oval2), (nval1), (nval2))
-+#endif
-+
- #endif /* __LINUX_PERCPU_H */
 
