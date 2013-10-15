@@ -1,27 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758097Ab3JOFjU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 01:39:20 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33615 "EHLO
+	id S1758489Ab3JOFjp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 01:39:45 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33538 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756558Ab3JOFb6 (ORCPT
+	with ESMTP id S1758868Ab3JOFaw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 01:31:58 -0400
-Date: Mon, 14 Oct 2013 22:31:17 -0700
-From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
-Message-ID: <tip-k1ce6uqyt4qar9edrj3mevod@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        efault@gmx.de, jolsa@redhat.com, fweisbec@gmail.com,
-        adrian.hunter@intel.com, dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        peterz@infradead.org, jolsa@redhat.com, fweisbec@gmail.com,
-        dsahern@gmail.com, adrian.hunter@intel.com, tglx@linutronix.de
+	Tue, 15 Oct 2013 01:30:52 -0400
+Date: Mon, 14 Oct 2013 22:30:25 -0700
+From: tip-bot for David Ahern <tipbot@zytor.com>
+Message-ID: <tip-8fb598e5a3b0ac213012e8461a309843ba0f2e74@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, jolsa@redhat.com, fweisbec@gmail.com,
+        dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, jolsa@redhat.com, fweisbec@gmail.com,
+        dsahern@gmail.com, tglx@linutronix.de
+In-Reply-To: <1380395584-9025-4-git-send-email-dsahern@gmail.com>
+References: <1380395584-9025-4-git-send-email-dsahern@gmail.com>
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:perf/core] perf trace:
-  Allow specifying index offset in strarrays
-Git-Commit-ID: 03e3adc9f4d8b57dc83475c8c4c6e462a78ff709
+  Fix comm resolution when reading events from file
+Git-Commit-ID: 8fb598e5a3b0ac213012e8461a309843ba0f2e74
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,81 +32,184 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 14 Oct 2013 22:31:23 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 14 Oct 2013 22:30:31 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  03e3adc9f4d8b57dc83475c8c4c6e462a78ff709
-Gitweb:     http://git.kernel.org/tip/03e3adc9f4d8b57dc83475c8c4c6e462a78ff709
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Tue, 8 Oct 2013 16:00:21 -0300
+Commit-ID:  8fb598e5a3b0ac213012e8461a309843ba0f2e74
+Gitweb:     http://git.kernel.org/tip/8fb598e5a3b0ac213012e8461a309843ba0f2e74
+Author:     David Ahern <dsahern@gmail.com>
+AuthorDate: Sat, 28 Sep 2013 13:13:00 -0600
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 11 Oct 2013 12:17:59 -0300
+CommitDate: Fri, 11 Oct 2013 12:17:48 -0300
 
-perf trace: Allow specifying index offset in strarrays
+perf trace: Fix comm resolution when reading events from file
 
-So that the index passed doesn't have to start at zero, being
-decremented from an offset specified when declaring the strarray before
-being used as the real array index.
+Task comm's are getting lost when processing events from a file. The
+problem is that the trace struct used by the live processing has its
+host machine and the perf-session used for file based processing has its
+host machine.  Fix by having both references point to the same machine.
 
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
+Before:
+
+     0.030 ( 0.001 ms): :27743/27743 brk( ...
+     0.057 ( 0.004 ms): :27743/27743 mmap(len: 4096, prot: READ|WRITE, flags: ...
+     0.075 ( 0.006 ms): :27743/27743 access(filename: 0x7f3809fbce00, mode: R ...
+     0.091 ( 0.005 ms): :27743/27743 open(filename: 0x7f3809fba14c, flags: CLOEXEC ...
+...
+
+After:
+     0.030 ( 0.001 ms): make/27743 brk( ...
+     0.057 ( 0.004 ms): make/27743 mmap(len: 4096, prot: READ|WRITE, flags: ...
+     0.075 ( 0.006 ms): make/27743 access(filename: 0x7f3809fbce00, mode: R ...
+     0.091 ( 0.005 ms): make/27743 open(filename: 0x7f3809fba14c, flags: CLOEXEC ...
+...
+
+Signed-off-by: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-k1ce6uqyt4qar9edrj3mevod@git.kernel.org
+Link: http://lkml.kernel.org/r/1380395584-9025-4-git-send-email-dsahern@gmail.com
+[ Moved creation of new host machine to a separate constructor: machine__new_host() ]
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-trace.c | 15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+ tools/perf/builtin-trace.c | 25 +++++++++++++------------
+ tools/perf/util/machine.c  | 17 +++++++++++++++++
+ tools/perf/util/machine.h  |  1 +
+ 3 files changed, 31 insertions(+), 12 deletions(-)
 
 diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index addc3e1..7424298 100644
+index fcc157f..5776b5f 100644
 --- a/tools/perf/builtin-trace.c
 +++ b/tools/perf/builtin-trace.c
-@@ -44,6 +44,7 @@ struct syscall_arg {
- };
+@@ -906,7 +906,7 @@ struct trace {
+ 		struct syscall  *table;
+ 	} syscalls;
+ 	struct perf_record_opts opts;
+-	struct machine		host;
++	struct machine		*host;
+ 	u64			base_time;
+ 	bool			full_time;
+ 	FILE			*output;
+@@ -1083,16 +1083,17 @@ static int trace__symbols_init(struct trace *trace, struct perf_evlist *evlist)
+ 	if (err)
+ 		return err;
  
- struct strarray {
-+	int	    offset;
- 	int	    nr_entries;
- 	const char **entries;
- };
-@@ -53,14 +54,20 @@ struct strarray {
- 	.entries = array, \
+-	machine__init(&trace->host, "", HOST_KERNEL_ID);
+-	machine__create_kernel_maps(&trace->host);
++	trace->host = machine__new_host();
++	if (trace->host == NULL)
++		return -ENOMEM;
+ 
+ 	if (perf_target__has_task(&trace->opts.target)) {
+ 		err = perf_event__synthesize_thread_map(&trace->tool, evlist->threads,
+ 							trace__tool_process,
+-							&trace->host);
++							trace->host);
+ 	} else {
+ 		err = perf_event__synthesize_threads(&trace->tool, trace__tool_process,
+-						     &trace->host);
++						     trace->host);
+ 	}
+ 
+ 	if (err)
+@@ -1304,8 +1305,7 @@ static int trace__sys_enter(struct trace *trace, struct perf_evsel *evsel,
+ 	if (sc->filtered)
+ 		return 0;
+ 
+-	thread = machine__findnew_thread(&trace->host, sample->pid,
+-					 sample->tid);
++	thread = machine__findnew_thread(trace->host, sample->pid, sample->tid);
+ 	ttrace = thread__trace(thread, trace->output);
+ 	if (ttrace == NULL)
+ 		return -1;
+@@ -1357,8 +1357,7 @@ static int trace__sys_exit(struct trace *trace, struct perf_evsel *evsel,
+ 	if (sc->filtered)
+ 		return 0;
+ 
+-	thread = machine__findnew_thread(&trace->host, sample->pid,
+-					 sample->tid);
++	thread = machine__findnew_thread(trace->host, sample->pid, sample->tid);
+ 	ttrace = thread__trace(thread, trace->output);
+ 	if (ttrace == NULL)
+ 		return -1;
+@@ -1414,7 +1413,7 @@ static int trace__sched_stat_runtime(struct trace *trace, struct perf_evsel *evs
+ {
+         u64 runtime = perf_evsel__intval(evsel, sample, "runtime");
+ 	double runtime_ms = (double)runtime / NSEC_PER_MSEC;
+-	struct thread *thread = machine__findnew_thread(&trace->host,
++	struct thread *thread = machine__findnew_thread(trace->host,
+ 							sample->pid,
+ 							sample->tid);
+ 	struct thread_trace *ttrace = thread__trace(thread, trace->output);
+@@ -1597,7 +1596,7 @@ again:
+ 				trace->base_time = sample.time;
+ 
+ 			if (type != PERF_RECORD_SAMPLE) {
+-				trace__process_event(trace, &trace->host, event);
++				trace__process_event(trace, trace->host, event);
+ 				continue;
+ 			}
+ 
+@@ -1681,6 +1680,8 @@ static int trace__replay(struct trace *trace)
+ 	if (session == NULL)
+ 		return -ENOMEM;
+ 
++	trace->host = &session->machines.host;
++
+ 	err = perf_session__set_tracepoints_handlers(session, handlers);
+ 	if (err)
+ 		goto out;
+@@ -1728,7 +1729,7 @@ static size_t trace__fprintf_thread_summary(struct trace *trace, FILE *fp)
+ 	size_t printed = trace__fprintf_threads_header(fp);
+ 	struct rb_node *nd;
+ 
+-	for (nd = rb_first(&trace->host.threads); nd; nd = rb_next(nd)) {
++	for (nd = rb_first(&trace->host->threads); nd; nd = rb_next(nd)) {
+ 		struct thread *thread = rb_entry(nd, struct thread, rb_node);
+ 		struct thread_trace *ttrace = thread->priv;
+ 		const char *color;
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index ddf917b..fc14f9b 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -46,6 +46,23 @@ int machine__init(struct machine *machine, const char *root_dir, pid_t pid)
+ 	return 0;
  }
  
-+#define DEFINE_STRARRAY_OFFSET(array, off) struct strarray strarray__##array = { \
-+	.offset	    = off, \
-+	.nr_entries = ARRAY_SIZE(array), \
-+	.entries = array, \
++struct machine *machine__new_host(void)
++{
++	struct machine *machine = malloc(sizeof(*machine));
++
++	if (machine != NULL) {
++		machine__init(machine, "", HOST_KERNEL_ID);
++
++		if (machine__create_kernel_maps(machine) < 0)
++			goto out_delete;
++	}
++
++	return machine;
++out_delete:
++	free(machine);
++	return NULL;
 +}
 +
- static size_t syscall_arg__scnprintf_strarray(char *bf, size_t size,
- 					      struct syscall_arg *arg)
+ static void dsos__delete(struct list_head *dsos)
  {
--	int idx = arg->val;
- 	struct strarray *sa = arg->parm;
-+	int idx = arg->val - sa->offset;
+ 	struct dso *pos, *n;
+diff --git a/tools/perf/util/machine.h b/tools/perf/util/machine.h
+index 58a6be1..5150d5e 100644
+--- a/tools/perf/util/machine.h
++++ b/tools/perf/util/machine.h
+@@ -74,6 +74,7 @@ char *machine__mmap_name(struct machine *machine, char *bf, size_t size);
+ void machines__set_symbol_filter(struct machines *machines,
+ 				 symbol_filter_t symbol_filter);
  
- 	if (idx < 0 || idx >= sa->nr_entries)
--		return scnprintf(bf, size, "%d", idx);
-+		return scnprintf(bf, size, "%d", arg->val);
- 
- 	return scnprintf(bf, size, "%s", sa->entries[idx]);
- }
-@@ -288,8 +295,8 @@ static size_t syscall_arg__scnprintf_futex_op(char *bf, size_t size, struct sysc
- 
- #define SCA_FUTEX_OP  syscall_arg__scnprintf_futex_op
- 
--static const char *epoll_ctl_ops[] = { [1] = "ADD", "DEL", "MOD", };
--static DEFINE_STRARRAY(epoll_ctl_ops);
-+static const char *epoll_ctl_ops[] = { "ADD", "DEL", "MOD", };
-+static DEFINE_STRARRAY_OFFSET(epoll_ctl_ops, 1);
- 
- static const char *itimers[] = { "REAL", "VIRTUAL", "PROF", };
- static DEFINE_STRARRAY(itimers);
++struct machine *machine__new_host(void);
+ int machine__init(struct machine *machine, const char *root_dir, pid_t pid);
+ void machine__exit(struct machine *machine);
+ void machine__delete_dead_threads(struct machine *machine);
