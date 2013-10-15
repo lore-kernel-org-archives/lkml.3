@@ -1,30 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932911Ab3JOFYk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 01:24:40 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:32973 "EHLO
+	id S932933Ab3JOFYy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 01:24:54 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33002 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932792Ab3JOFYU (ORCPT
+	with ESMTP id S932634Ab3JOFYu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 01:24:20 -0400
-Date: Mon, 14 Oct 2013 22:23:53 -0700
-From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-918512b435e15fefe609d236e0ecd62cb8f389c9@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
-        dsahern@gmail.com, tglx@linutronix.de, cjashfor@linux.vnet.ibm.com,
-        mingo@elte.hu
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
-        dsahern@gmail.com, tglx@linutronix.de, cjashfor@linux.vnet.ibm.com,
-        mingo@elte.hu
-In-Reply-To: <1379003976-5839-4-git-send-email-jolsa@redhat.com>
-References: <1379003976-5839-4-git-send-email-jolsa@redhat.com>
+	Tue, 15 Oct 2013 01:24:50 -0400
+Date: Mon, 14 Oct 2013 22:24:02 -0700
+From: tip-bot for Davidlohr Bueso <tipbot@zytor.com>
+Message-ID: <tip-02ad0702e54f9b82b697718e7e8662eb3f2266ee@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, peterz@infradead.org, mitake@dcl.info.waseda.ac.jp,
+        fweisbec@gmail.com, tglx@linutronix.de, davidlohr@hp.com, aswin@hp.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, peterz@infradead.org, mitake@dcl.info.waseda.ac.jp,
+        fweisbec@gmail.com, tglx@linutronix.de, davidlohr@hp.com, aswin@hp.com
+In-Reply-To: <1378693159-8747-2-git-send-email-davidlohr@hp.com>
+References: <1378693159-8747-2-git-send-email-davidlohr@hp.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Unify page_size usage
-Git-Commit-ID: 918512b435e15fefe609d236e0ecd62cb8f389c9
+Subject: [tip:perf/core] perf lock: Remove dead code
+Git-Commit-ID: 02ad0702e54f9b82b697718e7e8662eb3f2266ee
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,92 +29,76 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 14 Oct 2013 22:23:59 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 14 Oct 2013 22:24:08 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  918512b435e15fefe609d236e0ecd62cb8f389c9
-Gitweb:     http://git.kernel.org/tip/918512b435e15fefe609d236e0ecd62cb8f389c9
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Thu, 12 Sep 2013 18:39:35 +0200
+Commit-ID:  02ad0702e54f9b82b697718e7e8662eb3f2266ee
+Gitweb:     http://git.kernel.org/tip/02ad0702e54f9b82b697718e7e8662eb3f2266ee
+Author:     Davidlohr Bueso <davidlohr@hp.com>
+AuthorDate: Sun, 8 Sep 2013 19:19:13 -0700
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 9 Oct 2013 11:22:55 -0300
+CommitDate: Wed, 9 Oct 2013 11:23:21 -0300
 
-perf tools: Unify page_size usage
+perf lock: Remove dead code
 
-Making page_size global from the util object.
+No need for break statements after goto jumps.
 
-Removing the not needed one.
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Acked-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
+Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Aswin Chandramouleeswaran <aswin@hp.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1379003976-5839-4-git-send-email-jolsa@redhat.com
+Cc: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1378693159-8747-2-git-send-email-davidlohr@hp.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-record.c | 5 +----
- tools/perf/perf.c           | 1 +
- tools/perf/util/python.c    | 1 +
- 3 files changed, 3 insertions(+), 4 deletions(-)
+ tools/perf/builtin-lock.c | 6 ------
+ 1 file changed, 6 deletions(-)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index cf36ba2..0aacd62 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -70,7 +70,6 @@ struct perf_record {
- 	struct perf_session	*session;
- 	const char		*progname;
- 	int			output;
--	unsigned int		page_size;
- 	int			realtime_prio;
- 	bool			no_buildid;
- 	bool			no_buildid_cache;
-@@ -119,7 +118,7 @@ static int perf_record__mmap_read(struct perf_record *rec,
- {
- 	unsigned int head = perf_mmap__read_head(md);
- 	unsigned int old = md->prev;
--	unsigned char *data = md->base + rec->page_size;
-+	unsigned char *data = md->base + page_size;
- 	unsigned long size;
- 	void *buf;
- 	int rc = 0;
-@@ -360,8 +359,6 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
- 
- 	rec->progname = argv[0];
- 
--	rec->page_size = sysconf(_SC_PAGE_SIZE);
+diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
+index ee33ba2..148f7e2 100644
+--- a/tools/perf/builtin-lock.c
++++ b/tools/perf/builtin-lock.c
+@@ -446,7 +446,6 @@ broken:
+ 		list_del(&seq->list);
+ 		free(seq);
+ 		goto end;
+-		break;
+ 	default:
+ 		BUG_ON("Unknown state of lock sequence found!\n");
+ 		break;
+@@ -508,8 +507,6 @@ static int report_lock_acquired_event(struct perf_evsel *evsel,
+ 		list_del(&seq->list);
+ 		free(seq);
+ 		goto end;
+-		break;
 -
- 	on_exit(perf_record__sig_exit, rec);
- 	signal(SIGCHLD, sig_handler);
- 	signal(SIGINT, sig_handler);
-diff --git a/tools/perf/perf.c b/tools/perf/perf.c
-index 245020c..6265778 100644
---- a/tools/perf/perf.c
-+++ b/tools/perf/perf.c
-@@ -456,6 +456,7 @@ int main(int argc, const char **argv)
- {
- 	const char *cmd;
- 
-+	/* The page_size is placed in util object. */
- 	page_size = sysconf(_SC_PAGE_SIZE);
- 
- 	cmd = perf_extract_argv0_path(argv[0]);
-diff --git a/tools/perf/util/python.c b/tools/perf/util/python.c
-index 71b5412..a24ce0a 100644
---- a/tools/perf/util/python.c
-+++ b/tools/perf/util/python.c
-@@ -1036,6 +1036,7 @@ PyMODINIT_FUNC initperf(void)
- 	    pyrf_cpu_map__setup_types() < 0)
- 		return;
- 
-+	/* The page_size is placed in util object. */
- 	page_size = sysconf(_SC_PAGE_SIZE);
- 
- 	Py_INCREF(&pyrf_evlist__type);
+ 	default:
+ 		BUG_ON("Unknown state of lock sequence found!\n");
+ 		break;
+@@ -564,7 +561,6 @@ static int report_lock_contended_event(struct perf_evsel *evsel,
+ 		list_del(&seq->list);
+ 		free(seq);
+ 		goto end;
+-		break;
+ 	default:
+ 		BUG_ON("Unknown state of lock sequence found!\n");
+ 		break;
+@@ -606,7 +602,6 @@ static int report_lock_release_event(struct perf_evsel *evsel,
+ 	switch (seq->state) {
+ 	case SEQ_STATE_UNINITIALIZED:
+ 		goto end;
+-		break;
+ 	case SEQ_STATE_ACQUIRED:
+ 		break;
+ 	case SEQ_STATE_READ_ACQUIRED:
+@@ -624,7 +619,6 @@ static int report_lock_release_event(struct perf_evsel *evsel,
+ 		ls->discard = 1;
+ 		bad_hist[BROKEN_RELEASE]++;
+ 		goto free_seq;
+-		break;
+ 	default:
+ 		BUG_ON("Unknown state of lock sequence found!\n");
+ 		break;
