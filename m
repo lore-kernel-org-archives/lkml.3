@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756221Ab3JOFNn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 01:13:43 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60441 "EHLO
+	id S1757461Ab3JOFOJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 01:14:09 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60465 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754670Ab3JOFNj (ORCPT
+	with ESMTP id S1757294Ab3JOFOF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 01:13:39 -0400
-Date: Mon, 14 Oct 2013 22:13:24 -0700
+	Tue, 15 Oct 2013 01:14:05 -0400
+Date: Mon, 14 Oct 2013 22:13:51 -0700
 From: tip-bot for Ingo Molnar <tipbot@zytor.com>
-Message-ID: <tip-c25104452de94102810e86323eabb7d9a4cad083@git.kernel.org>
+Message-ID: <tip-50eed7a71ebaf6676be8c497192b978f07581326@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, acme@redhat.com, hpa@zytor.com,
         mingo@kernel.org, a.p.zijlstra@chello.nl, namhyung@kernel.org,
         jolsa@redhat.com, dsahern@gmail.com, tglx@linutronix.de
@@ -18,9 +18,9 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com,
         namhyung@kernel.org, jolsa@redhat.com, dsahern@gmail.com,
         tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] tools/perf/build: Split out feature check: '
- volatile-register-var'
-Git-Commit-ID: c25104452de94102810e86323eabb7d9a4cad083
+Subject: [tip:perf/core] tools/perf/build:
+  Clean up the libelf logic in config/Makefile
+Git-Commit-ID: 50eed7a71ebaf6676be8c497192b978f07581326
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,77 +29,102 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 14 Oct 2013 22:13:30 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 14 Oct 2013 22:13:57 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c25104452de94102810e86323eabb7d9a4cad083
-Gitweb:     http://git.kernel.org/tip/c25104452de94102810e86323eabb7d9a4cad083
+Commit-ID:  50eed7a71ebaf6676be8c497192b978f07581326
+Gitweb:     http://git.kernel.org/tip/50eed7a71ebaf6676be8c497192b978f07581326
 Author:     Ingo Molnar <mingo@kernel.org>
-AuthorDate: Mon, 30 Sep 2013 13:58:12 +0200
+AuthorDate: Mon, 30 Sep 2013 14:11:16 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 9 Oct 2013 08:48:32 +0200
+CommitDate: Wed, 9 Oct 2013 08:48:34 +0200
 
-tools/perf/build: Split out feature check: 'volatile-register-var'
+tools/perf/build: Clean up the libelf logic in config/Makefile
+
+Nest the rules properly. No change in functionality.
 
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/n/tip-5dOevlybbwvbk3zTbcxrrqet@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-dDgivr9xtjrof2vmoyOfwxkj@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- tools/perf/config/Makefile                                            | 3 ++-
- tools/perf/config/feature-checks/Makefile                             | 4 ++++
- .../feature-checks/{test-hello.c => test-volatile-register-var.c}     | 0
- 3 files changed, 6 insertions(+), 1 deletion(-)
+ tools/perf/config/Makefile | 58 +++++++++++++++++++++++-----------------------
+ 1 file changed, 29 insertions(+), 29 deletions(-)
 
 diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 9f94912..a3de2f8 100644
+index 09e2ecc..a2e0e1b 100644
 --- a/tools/perf/config/Makefile
 +++ b/tools/perf/config/Makefile
-@@ -105,6 +105,7 @@ FEATURE_TESTS =				\
- 	hello				\
- 	stackprotector-all		\
- 	stackprotector			\
-+	volatile-register-var		\
- 	libnuma
+@@ -164,38 +164,38 @@ ifdef NO_LIBELF
+   NO_DEMANGLE := 1
+   NO_LIBUNWIND := 1
+ else
+-FLAGS_LIBELF=$(CFLAGS) $(LDFLAGS) $(EXTLIBS)
+-ifneq ($(call try-cc,$(SOURCE_LIBELF),$(FLAGS_LIBELF),libelf),y)
+-  FLAGS_GLIBC=$(CFLAGS) $(LDFLAGS)
+-  ifeq ($(call try-cc,$(SOURCE_GLIBC),$(FLAGS_GLIBC),glibc),y)
+-    LIBC_SUPPORT := 1
+-  endif
+-  ifeq ($(BIONIC),1)
+-    LIBC_SUPPORT := 1
+-  endif
+-  ifeq ($(LIBC_SUPPORT),1)
+-    msg := $(warning No libelf found, disables 'probe' tool, please install elfutils-libelf-devel/libelf-dev);
++  FLAGS_LIBELF=$(CFLAGS) $(LDFLAGS) $(EXTLIBS)
++  ifneq ($(call try-cc,$(SOURCE_LIBELF),$(FLAGS_LIBELF),libelf),y)
++    FLAGS_GLIBC=$(CFLAGS) $(LDFLAGS)
++    ifeq ($(call try-cc,$(SOURCE_GLIBC),$(FLAGS_GLIBC),glibc),y)
++      LIBC_SUPPORT := 1
++    endif
++    ifeq ($(BIONIC),1)
++      LIBC_SUPPORT := 1
++    endif
++    ifeq ($(LIBC_SUPPORT),1)
++      msg := $(warning No libelf found, disables 'probe' tool, please install elfutils-libelf-devel/libelf-dev);
  
- $(foreach test,$(FEATURE_TESTS),$(call feature_check,$(test),$(test)))
-@@ -117,7 +118,7 @@ ifeq ($(feature-stackprotector), 1)
-   CFLAGS += -Wstack-protector
- endif
+-    NO_LIBELF := 1
+-    NO_DWARF := 1
+-    NO_DEMANGLE := 1
++      NO_LIBELF := 1
++      NO_DWARF := 1
++      NO_DEMANGLE := 1
++    else
++      msg := $(error No gnu/libc-version.h found, please install glibc-dev[el]/glibc-static);
++    endif
+   else
+-    msg := $(error No gnu/libc-version.h found, please install glibc-dev[el]/glibc-static);
+-  endif
+-else
+-  # for linking with debug library, run like:
+-  # make DEBUG=1 LIBDW_DIR=/opt/libdw/
+-  ifdef LIBDW_DIR
+-    LIBDW_CFLAGS  := -I$(LIBDW_DIR)/include
+-    LIBDW_LDFLAGS := -L$(LIBDW_DIR)/lib
+-  endif
++    # for linking with debug library, run like:
++    # make DEBUG=1 LIBDW_DIR=/opt/libdw/
++    ifdef LIBDW_DIR
++      LIBDW_CFLAGS  := -I$(LIBDW_DIR)/include
++      LIBDW_LDFLAGS := -L$(LIBDW_DIR)/lib
++    endif
  
--ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -Wvolatile-register-var,-Wvolatile-register-var),y)
-+ifeq ($(feature-volatile-register-var), 1)
-   CFLAGS += -Wvolatile-register-var
- endif
+-  FLAGS_DWARF=$(CFLAGS) $(LIBDW_CFLAGS) -ldw -lz -lelf $(LIBDW_LDFLAGS) $(LDFLAGS) $(EXTLIBS)
+-  ifneq ($(call try-cc,$(SOURCE_DWARF),$(FLAGS_DWARF),libdw),y)
+-    msg := $(warning No libdw.h found or old libdw.h found or elfutils is older than 0.138, disables dwarf support. Please install new elfutils-devel/libdw-dev);
+-    NO_DWARF := 1
+-  endif # Dwarf support
+-endif # SOURCE_LIBELF
++    FLAGS_DWARF=$(CFLAGS) $(LIBDW_CFLAGS) -ldw -lz -lelf $(LIBDW_LDFLAGS) $(LDFLAGS) $(EXTLIBS)
++    ifneq ($(call try-cc,$(SOURCE_DWARF),$(FLAGS_DWARF),libdw),y)
++      msg := $(warning No libdw.h found or old libdw.h found or elfutils is older than 0.138, disables dwarf support. Please install new elfutils-devel/libdw-dev);
++      NO_DWARF := 1
++    endif # Dwarf support
++  endif # SOURCE_LIBELF
+ endif # NO_LIBELF
  
-diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
-index 46b7650..5693299 100644
---- a/tools/perf/config/feature-checks/Makefile
-+++ b/tools/perf/config/feature-checks/Makefile
-@@ -3,6 +3,7 @@ FILES=					\
- 	test-hello			\
- 	test-stackprotector-all		\
- 	test-stackprotector		\
-+	test-volatile-register-var	\
- 	test-libnuma
- 
- CC := $(CC) -MD
-@@ -22,6 +23,9 @@ test-stackprotector-all:
- test-stackprotector:
- 	$(BUILD) -Werror -fstack-protector
- 
-+test-volatile-register-var:
-+	$(BUILD) -Werror -Wvolatile-register-var
-+
- test-libnuma:
- 	$(BUILD) -lnuma
- 
-diff --git a/tools/perf/config/feature-checks/test-hello.c b/tools/perf/config/feature-checks/test-volatile-register-var.c
-similarity index 100%
-copy from tools/perf/config/feature-checks/test-hello.c
-copy to tools/perf/config/feature-checks/test-volatile-register-var.c
+ ifndef NO_LIBELF
