@@ -1,39 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933758Ab3JOSBg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 14:01:36 -0400
-Received: from qmta14.emeryville.ca.mail.comcast.net ([76.96.27.212]:45209
-	"EHLO qmta14.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933537Ab3JOSA4 (ORCPT
+	id S933661Ab3JOSBe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 14:01:34 -0400
+Received: from qmta02.emeryville.ca.mail.comcast.net ([76.96.30.24]:55329 "EHLO
+	qmta02.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933556Ab3JOSA4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Oct 2013 14:00:56 -0400
-Message-Id: <20131015180053.213687766@linux.com>
+Message-Id: <20131015180053.750416164@linux.com>
 User-Agent: quilt/0.60-1
-Date: Tue, 15 Oct 2013 12:58:59 -0500
+Date: Tue, 15 Oct 2013 12:59:00 -0500
 From: Christoph Lameter <cl@linux.com>
 To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linuxfoundation.org, Dipankar Sarma <dipankar@in.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: akpm@linuxfoundation.org
 Cc: linux-arch@vger.kernel.org
 Cc: Steven Rostedt <srostedt@redhat.com>
 Cc: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 07/10] rcu: Replace __get_cpu_var uses
+Subject: [PATCH 08/10] percpu: Replace __get_cpu_var uses
 References: <20131015175852.122827685@linux.com>
-Content-Disposition: inline; filename=this_rcu
+Content-Disposition: inline; filename=this_percpu
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__get_cpu_var() is used for multiple purposes in the kernel source. One of
-them is address calculation via the form &__get_cpu_var(x).  This calculates
-the address for the instance of the percpu variable of the current processor
-based on an offset.
+__get_cpu_var() is used for multiple purposes in the kernel source. One of them is
+address calculation via the form &__get_cpu_var(x). This calculates the address for
+the instance of the percpu variable of the current processor based on an offset.
 
-Other use cases are for storing and retrieving data from the current
-processors percpu area.  __get_cpu_var() can be used as an lvalue when
-writing data or on the right side of an assignment.
+Other use cases are for storing and retrieving data from the current processors percpu area.
+__get_cpu_var() can be used as an lvalue when writing data or on the right side of an assignment.
 
 __get_cpu_var() is defined as :
 
@@ -132,160 +129,17 @@ variable.
 
 Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Index: linux/kernel/rcutree.c
+Index: linux/include/linux/percpu.h
 ===================================================================
---- linux.orig/kernel/rcutree.c	2013-10-14 10:55:57.747107834 -0500
-+++ linux/kernel/rcutree.c	2013-10-14 10:58:26.247229815 -0500
-@@ -407,7 +407,7 @@ static void rcu_eqs_enter(bool user)
- 	long long oldval;
- 	struct rcu_dynticks *rdtp;
- 
--	rdtp = &__get_cpu_var(rcu_dynticks);
-+	rdtp = this_cpu_ptr(&rcu_dynticks);
- 	oldval = rdtp->dynticks_nesting;
- 	WARN_ON_ONCE((oldval & DYNTICK_TASK_NEST_MASK) == 0);
- 	if ((oldval & DYNTICK_TASK_NEST_MASK) == DYNTICK_TASK_NEST_VALUE)
-@@ -435,7 +435,7 @@ void rcu_idle_enter(void)
- 
- 	local_irq_save(flags);
- 	rcu_eqs_enter(false);
--	rcu_sysidle_enter(&__get_cpu_var(rcu_dynticks), 0);
-+	rcu_sysidle_enter(this_cpu_ptr(&rcu_dynticks), 0);
- 	local_irq_restore(flags);
- }
- EXPORT_SYMBOL_GPL(rcu_idle_enter);
-@@ -478,7 +478,7 @@ void rcu_irq_exit(void)
- 	struct rcu_dynticks *rdtp;
- 
- 	local_irq_save(flags);
--	rdtp = &__get_cpu_var(rcu_dynticks);
-+	rdtp = this_cpu_ptr(&rcu_dynticks);
- 	oldval = rdtp->dynticks_nesting;
- 	rdtp->dynticks_nesting--;
- 	WARN_ON_ONCE(rdtp->dynticks_nesting < 0);
-@@ -528,7 +528,7 @@ static void rcu_eqs_exit(bool user)
- 	struct rcu_dynticks *rdtp;
- 	long long oldval;
- 
--	rdtp = &__get_cpu_var(rcu_dynticks);
-+	rdtp = this_cpu_ptr(&rcu_dynticks);
- 	oldval = rdtp->dynticks_nesting;
- 	WARN_ON_ONCE(oldval < 0);
- 	if (oldval & DYNTICK_TASK_NEST_MASK)
-@@ -555,7 +555,7 @@ void rcu_idle_exit(void)
- 
- 	local_irq_save(flags);
- 	rcu_eqs_exit(false);
--	rcu_sysidle_exit(&__get_cpu_var(rcu_dynticks), 0);
-+	rcu_sysidle_exit(this_cpu_ptr(&rcu_dynticks), 0);
- 	local_irq_restore(flags);
- }
- EXPORT_SYMBOL_GPL(rcu_idle_exit);
-@@ -599,7 +599,7 @@ void rcu_irq_enter(void)
- 	long long oldval;
- 
- 	local_irq_save(flags);
--	rdtp = &__get_cpu_var(rcu_dynticks);
-+	rdtp = this_cpu_ptr(&rcu_dynticks);
- 	oldval = rdtp->dynticks_nesting;
- 	rdtp->dynticks_nesting++;
- 	WARN_ON_ONCE(rdtp->dynticks_nesting == 0);
-@@ -620,7 +620,7 @@ void rcu_irq_enter(void)
+--- linux.orig/include/linux/percpu.h	2013-08-26 14:29:49.000000000 -0500
++++ linux/include/linux/percpu.h	2013-08-26 14:30:18.302570608 -0500
+@@ -28,7 +28,7 @@
   */
- void rcu_nmi_enter(void)
- {
--	struct rcu_dynticks *rdtp = &__get_cpu_var(rcu_dynticks);
-+	struct rcu_dynticks *rdtp = this_cpu_ptr(&rcu_dynticks);
- 
- 	if (rdtp->dynticks_nmi_nesting == 0 &&
- 	    (atomic_read(&rdtp->dynticks) & 0x1))
-@@ -642,7 +642,7 @@ void rcu_nmi_enter(void)
-  */
- void rcu_nmi_exit(void)
- {
--	struct rcu_dynticks *rdtp = &__get_cpu_var(rcu_dynticks);
-+	struct rcu_dynticks *rdtp = this_cpu_ptr(&rcu_dynticks);
- 
- 	if (rdtp->dynticks_nmi_nesting == 0 ||
- 	    --rdtp->dynticks_nmi_nesting != 0)
-@@ -665,7 +665,7 @@ int rcu_is_cpu_idle(void)
- 	int ret;
- 
- 	preempt_disable();
--	ret = (atomic_read(&__get_cpu_var(rcu_dynticks).dynticks) & 0x1) == 0;
-+	ret = (atomic_read(this_cpu_ptr(&rcu_dynticks.dynticks)) & 0x1) == 0;
- 	preempt_enable();
- 	return ret;
- }
-@@ -703,7 +703,7 @@ bool rcu_lockdep_current_cpu_online(void
- 	if (in_nmi())
- 		return 1;
- 	preempt_disable();
--	rdp = &__get_cpu_var(rcu_sched_data);
-+	rdp = this_cpu_ptr(&rcu_sched_data);
- 	rnp = rdp->mynode;
- 	ret = (rdp->grpmask & rnp->qsmaskinit) ||
- 	      !rcu_scheduler_fully_active;
-@@ -723,7 +723,7 @@ EXPORT_SYMBOL_GPL(rcu_lockdep_current_cp
-  */
- static int rcu_is_cpu_rrupt_from_idle(void)
- {
--	return __get_cpu_var(rcu_dynticks).dynticks_nesting <= 1;
-+	return __this_cpu_read(rcu_dynticks.dynticks_nesting) <= 1;
- }
+ #define get_cpu_var(var) (*({				\
+ 	preempt_disable();				\
+-	&__get_cpu_var(var); }))
++	this_cpu_ptr(&var); }))
  
  /*
-Index: linux/kernel/rcutree_plugin.h
-===================================================================
---- linux.orig/kernel/rcutree_plugin.h	2013-10-14 10:55:57.747107834 -0500
-+++ linux/kernel/rcutree_plugin.h	2013-10-14 10:55:57.747107834 -0500
-@@ -660,7 +660,7 @@ static void rcu_preempt_check_callbacks(
- 
- static void rcu_preempt_do_callbacks(void)
- {
--	rcu_do_batch(&rcu_preempt_state, &__get_cpu_var(rcu_preempt_data));
-+	rcu_do_batch(&rcu_preempt_state, this_cpu_ptr(&rcu_preempt_data));
- }
- 
- #endif /* #ifdef CONFIG_RCU_BOOST */
-@@ -1332,7 +1332,7 @@ static void invoke_rcu_callbacks_kthread
-  */
- static bool rcu_is_callbacks_kthread(void)
- {
--	return __get_cpu_var(rcu_cpu_kthread_task) == current;
-+	return __this_cpu_read(rcu_cpu_kthread_task) == current;
- }
- 
- #define RCU_BOOST_DELAY_JIFFIES DIV_ROUND_UP(CONFIG_RCU_BOOST_DELAY * HZ, 1000)
-@@ -1382,8 +1382,8 @@ static int rcu_spawn_one_boost_kthread(s
- 
- static void rcu_kthread_do_work(void)
- {
--	rcu_do_batch(&rcu_sched_state, &__get_cpu_var(rcu_sched_data));
--	rcu_do_batch(&rcu_bh_state, &__get_cpu_var(rcu_bh_data));
-+	rcu_do_batch(&rcu_sched_state, this_cpu_ptr(&rcu_sched_data));
-+	rcu_do_batch(&rcu_bh_state, this_cpu_ptr(&rcu_bh_data));
- 	rcu_preempt_do_callbacks();
- }
- 
-@@ -1402,7 +1402,7 @@ static void rcu_cpu_kthread_park(unsigne
- 
- static int rcu_cpu_kthread_should_run(unsigned int cpu)
- {
--	return __get_cpu_var(rcu_cpu_has_work);
-+	return __this_cpu_read(rcu_cpu_has_work);
- }
- 
- /*
-@@ -1412,8 +1412,8 @@ static int rcu_cpu_kthread_should_run(un
-  */
- static void rcu_cpu_kthread(unsigned int cpu)
- {
--	unsigned int *statusp = &__get_cpu_var(rcu_cpu_kthread_status);
--	char work, *workp = &__get_cpu_var(rcu_cpu_has_work);
-+	unsigned int *statusp = this_cpu_ptr(&rcu_cpu_kthread_status);
-+	char work, *workp = this_cpu_ptr(&rcu_cpu_has_work);
- 	int spincnt;
- 
- 	for (spincnt = 0; spincnt < 10; spincnt++) {
+  * The weird & is necessary because sparse considers (void)(var) to be
 
