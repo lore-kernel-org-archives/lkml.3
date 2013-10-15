@@ -1,48 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759154Ab3JONHU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 09:07:20 -0400
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:36229 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759113Ab3JONHP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 09:07:15 -0400
-From: Enrico Mioso <mrkiko.rs@gmail.com>
-To: gregkh@linuxfoundation.org, davem@davemloft.net, bjorn@mork.no,
-        dcbw@redhat.com, christian.schmiedl@gemalto.com,
-        linux-usb@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Enrico Mioso <mrkiko.rs@gmail.com>,
-        Antonella Pellizzari <anto.pellizzari83@gmail.com>
-Subject: [PATCH] usb: serial: option: blacklist Olivetti Olicard200
-Date: Tue, 15 Oct 2013 15:06:47 +0200
-Message-Id: <1381842408-10800-1-git-send-email-mrkiko.rs@gmail.com>
-X-Mailer: git-send-email 1.8.4
+	id S1759249Ab3JONI0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 09:08:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35460 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758664Ab3JONIY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 09:08:24 -0400
+Date: Tue, 15 Oct 2013 16:08:21 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: [PULL] KVM fixes for 3.12-rc6
+Message-ID: <20131015130821.GA15657@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Interface 6 of this device speaks QMI as per tests done by us.
-Credits go to Antonella for providing the hardware.
+Linus,
 
-Signed-off-by: Enrico Mioso <mrkiko.rs@gmail.com>
-Signed-off-by: Antonella Pellizzari <anto.pellizzari83@gmail.com>
+Please pull one fix for pvspinlock below.
 
-diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-index 80a7104..d7c10d6 100644
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -1257,7 +1257,9 @@ static const struct usb_device_id option_ids[] = {
- 
- 	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD100) },
- 	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD145) },
--	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD200) },
-+	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD200),
-+		.driver_info = (kernel_ulong_t)&net_intf6_blacklist
-+	},
- 	{ USB_DEVICE(CELOT_VENDOR_ID, CELOT_PRODUCT_CT680M) }, /* CT-650 CDMA 450 1xEVDO modem */
- 	{ USB_DEVICE_AND_INTERFACE_INFO(SAMSUNG_VENDOR_ID, SAMSUNG_PRODUCT_GT_B3730, USB_CLASS_CDC_DATA, 0x00, 0x00) }, /* Samsung GT-B3730 LTE USB modem.*/
- 	{ USB_DEVICE(YUGA_VENDOR_ID, YUGA_PRODUCT_CEM600) },
--- 
-1.8.4
+The following changes since commit 9d05746e7b16d8565dddbe3200faa1e669d23bbf:
 
+  vfs: allow O_PATH file descriptors for fstatfs() (2013-10-12 13:12:31 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/virt/kvm/kvm.git master
+
+for you to fetch changes up to 3dbef3e3bf13d74582fe43548f5c570a0cec9b20:
+
+  KVM: Enable pvspinlock after jump_label_init() to avoid VM hang (2013-10-15 14:15:54 +0300)
+
+----------------------------------------------------------------
+Raghavendra K T (1):
+      KVM: Enable pvspinlock after jump_label_init() to avoid VM hang
+
+ arch/x86/kernel/kvm.c | 17 ++++++++++++++---
+ 1 file changed, 14 insertions(+), 3 deletions(-)
+--
+			Gleb.
