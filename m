@@ -1,29 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933214Ab3JOF3h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 01:29:37 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33411 "EHLO
+	id S933233Ab3JOF3n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 01:29:43 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33428 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932181Ab3JOF3a (ORCPT
+	with ESMTP id S932181Ab3JOF3k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 01:29:30 -0400
-Date: Mon, 14 Oct 2013 22:29:08 -0700
-From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-820042233bd3c1b24b5ca4c75a88a4e0de39814a@git.kernel.org>
+	Tue, 15 Oct 2013 01:29:40 -0400
+Date: Mon, 14 Oct 2013 22:29:25 -0700
+From: tip-bot for Ramkumar Ramachandra <tipbot@zytor.com>
+Message-ID: <tip-3e7a081796146f97f166d77a655c0eb585065077@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
         hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
+        tglx@linutronix.de, artagnon@gmail.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
         linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-In-Reply-To: <1380299398-10839-1-git-send-email-jolsa@redhat.com>
-References: <1380299398-10839-1-git-send-email-jolsa@redhat.com>
+        tglx@linutronix.de, artagnon@gmail.com
+In-Reply-To: <1380616604-4077-1-git-send-email-artagnon@gmail.com>
+References: <1380616604-4077-1-git-send-email-artagnon@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools:
-  Move start conditions to start of the flex file
-Git-Commit-ID: 820042233bd3c1b24b5ca4c75a88a4e0de39814a
+Subject: [tip:perf/core] perf stat: Don'
+ t print bogus data on -e instructions
+Git-Commit-ID: 3e7a081796146f97f166d77a655c0eb585065077
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,127 +30,62 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 14 Oct 2013 22:29:14 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 14 Oct 2013 22:29:31 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  820042233bd3c1b24b5ca4c75a88a4e0de39814a
-Gitweb:     http://git.kernel.org/tip/820042233bd3c1b24b5ca4c75a88a4e0de39814a
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Fri, 27 Sep 2013 18:29:58 +0200
+Commit-ID:  3e7a081796146f97f166d77a655c0eb585065077
+Gitweb:     http://git.kernel.org/tip/3e7a081796146f97f166d77a655c0eb585065077
+Author:     Ramkumar Ramachandra <artagnon@gmail.com>
+AuthorDate: Tue, 1 Oct 2013 14:06:44 +0530
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 11 Oct 2013 12:17:31 -0300
+CommitDate: Fri, 11 Oct 2013 12:17:35 -0300
 
-perf tools: Move start conditions to start of the flex file
+perf stat: Don't print bogus data on -e instructions
 
-Moving start conditions to start of the flex file so it's clear what the
-INITIAL condition rules are.
+When only the instructions event is requested:
 
-Plus adding default rule for INITIAL condition. This prevents default
-space to be printed for events like:
+$ perf stat -e instructions git s
+M  builtin-stat.c
 
-$ ./perf stat -e "cycles        " kill 2>/dev/null
-        $
-^^^^^^^^
+ Performance counter stats for 'git s':
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
+       917,453,420 instructions              #    0.00  insns per cycle
+
+       0.213002926 seconds time elapsed
+
+The 0.00 insns per cycle comment in the output is totally bogus and
+misleading. It happens because update_shadow_stats() doesn't touch
+runtime_cycles_stats when only the instructions event is requested. So,
+omit printing the bogus data altogether.
+
+Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
+Acked-by: Ingo Molnar <mingo@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1380299398-10839-1-git-send-email-jolsa@redhat.com
+Link: http://lkml.kernel.org/r/1380616604-4077-1-git-send-email-artagnon@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/parse-events.l | 63 +++++++++++++++++++++---------------------
- 1 file changed, 32 insertions(+), 31 deletions(-)
+ tools/perf/builtin-stat.c | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
-index 91346b7..3432995 100644
---- a/tools/perf/util/parse-events.l
-+++ b/tools/perf/util/parse-events.l
-@@ -126,6 +126,37 @@ modifier_bp	[rwx]{1,3}
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index ce2266c..fb02b53 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -930,11 +930,10 @@ static void abs_printout(int cpu, int nr, struct perf_evsel *evsel, double avg)
  
- }
- 
-+<config>{
-+config			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_CONFIG); }
-+config1			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_CONFIG1); }
-+config2			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_CONFIG2); }
-+name			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_NAME); }
-+period			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_SAMPLE_PERIOD); }
-+branch_type		{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE); }
-+,			{ return ','; }
-+"/"			{ BEGIN(INITIAL); return '/'; }
-+{name_minus}		{ return str(yyscanner, PE_NAME); }
-+}
-+
-+<mem>{
-+{modifier_bp}		{ return str(yyscanner, PE_MODIFIER_BP); }
-+:			{ return ':'; }
-+{num_dec}		{ return value(yyscanner, 10); }
-+{num_hex}		{ return value(yyscanner, 16); }
-+	/*
-+	 * We need to separate 'mem:' scanner part, in order to get specific
-+	 * modifier bits parsed out. Otherwise we would need to handle PE_NAME
-+	 * and we'd need to parse it manually. During the escape from <mem>
-+	 * state we need to put the escaping char back, so we dont miss it.
-+	 */
-+.			{ unput(*yytext); BEGIN(INITIAL); }
-+	/*
-+	 * We destroy the scanner after reaching EOF,
-+	 * but anyway just to be sure get back to INIT state.
-+	 */
-+<<EOF>>			{ BEGIN(INITIAL); }
-+}
-+
- cpu-cycles|cycles				{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES); }
- stalled-cycles-frontend|idle-cycles-frontend	{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_STALLED_CYCLES_FRONTEND); }
- stalled-cycles-backend|idle-cycles-backend	{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_STALLED_CYCLES_BACKEND); }
-@@ -162,18 +193,6 @@ speculative-read|speculative-load	|
- refs|Reference|ops|access		|
- misses|miss				{ return str(yyscanner, PE_NAME_CACHE_OP_RESULT); }
- 
--<config>{
--config			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_CONFIG); }
--config1			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_CONFIG1); }
--config2			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_CONFIG2); }
--name			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_NAME); }
--period			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_SAMPLE_PERIOD); }
--branch_type		{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE); }
--,			{ return ','; }
--"/"			{ BEGIN(INITIAL); return '/'; }
--{name_minus}		{ return str(yyscanner, PE_NAME); }
--}
+ 	if (perf_evsel__match(evsel, HARDWARE, HW_INSTRUCTIONS)) {
+ 		total = avg_stats(&runtime_cycles_stats[cpu]);
+-		if (total)
++		if (total) {
+ 			ratio = avg / total;
 -
- mem:			{ BEGIN(mem); return PE_PREFIX_MEM; }
- r{num_raw_hex}		{ return raw(yyscanner); }
- {num_dec}		{ return value(yyscanner, 10); }
-@@ -189,25 +208,7 @@ r{num_raw_hex}		{ return raw(yyscanner); }
- "}"			{ return '}'; }
- =			{ return '='; }
- \n			{ }
+-		fprintf(output, " #   %5.2f  insns per cycle        ", ratio);
 -
--<mem>{
--{modifier_bp}		{ return str(yyscanner, PE_MODIFIER_BP); }
--:			{ return ':'; }
--{num_dec}		{ return value(yyscanner, 10); }
--{num_hex}		{ return value(yyscanner, 16); }
--	/*
--	 * We need to separate 'mem:' scanner part, in order to get specific
--	 * modifier bits parsed out. Otherwise we would need to handle PE_NAME
--	 * and we'd need to parse it manually. During the escape from <mem>
--	 * state we need to put the escaping char back, so we dont miss it.
--	 */
--.			{ unput(*yytext); BEGIN(INITIAL); }
--	/*
--	 * We destroy the scanner after reaching EOF,
--	 * but anyway just to be sure get back to INIT state.
--	 */
--<<EOF>>			{ BEGIN(INITIAL); }
--}
-+.			{ }
- 
- %%
++			fprintf(output, " #   %5.2f  insns per cycle        ", ratio);
++		}
+ 		total = avg_stats(&runtime_stalled_cycles_front_stats[cpu]);
+ 		total = max(total, avg_stats(&runtime_stalled_cycles_back_stats[cpu]));
  
