@@ -1,100 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933915Ab3JOXBr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 19:01:47 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:62329 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933584Ab3JOXBo (ORCPT
+	id S933912Ab3JOXH4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 19:07:56 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:49489 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S933756Ab3JOXHy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 19:01:44 -0400
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH v2 04/10] irqdomain: Return errors from irq_create_of_mapping()
-To: Thierry Reding <thierry.reding@gmail.com>,
-        Rob Herring <robherring2@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Rob Herring <rob.herring@calxeda.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-mips@linux-mips.org,
-        Russell King <linux@arm.linux.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ralf Baechle <ralf@linux-mips.org>, sparclinux@vger.kernel.org,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-In-Reply-To: <20130923081337.GB11881@ulmo>
-References: <1379510692-32435-1-git-send-email-treding@nvidia.com> <1379510692-32435-5-git-send-email-treding@nvidia.com> <CAL_JsqLQeAQD460f8Lk9eDE2dCzLusC1mXZ-_uaKVFLfhJNryg@mail.gmail.com> <20130923081337.GB11881@ulmo>
-Date: Wed, 16 Oct 2013 00:01:39 +0100
-Message-Id: <20131015230139.E9FBFC40099@trevor.secretlab.ca>
+	Tue, 15 Oct 2013 19:07:54 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Krzysztof Mazur <krzysiek@podlesie.net>
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org, lenb@kernel.org
+Subject: Re: [PATCH] ACPI: remove /proc/acpi/event from ACPI_BUTTON help
+Date: Wed, 16 Oct 2013 01:19:44 +0200
+Message-ID: <1437541.HIvFumZpN0@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <1381615860-1882-1-git-send-email-krzysiek@podlesie.net>
+References: <1381615860-1882-1-git-send-email-krzysiek@podlesie.net>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 Sep 2013 10:13:38 +0200, Thierry Reding <thierry.reding@gmail.com> wrote:
-> On Sun, Sep 22, 2013 at 04:14:43PM -0500, Rob Herring wrote:
-> > On Wed, Sep 18, 2013 at 8:24 AM, Thierry Reding
-> > <thierry.reding@gmail.com> wrote:
-> > > Instead of returning 0 for all errors, allow the precise error code to
-> > > be propagated. This will be used in subsequent patches to allow further
-> > > propagation of error codes.
-> > >
-> > > The interrupt number corresponding to the new mapping is returned in an
-> > > output parameter so that the return value is reserved to signal success
-> > > (== 0) or failure (< 0).
-> > >
-> > > Signed-off-by: Thierry Reding <treding@nvidia.com>
-> > 
-> > One comment below, otherwise:
-> > 
-> > Acked-by: Rob Herring <rob.herring@calxeda.com>
-> > 
-> > > diff --git a/arch/powerpc/kernel/pci-common.c b/arch/powerpc/kernel/pci-common.c
-> > > index 905a24b..ae71b14 100644
-> > > --- a/arch/powerpc/kernel/pci-common.c
-> > > +++ b/arch/powerpc/kernel/pci-common.c
-> > > @@ -230,6 +230,7 @@ static int pci_read_irq_line(struct pci_dev *pci_dev)
-> > >  {
-> > >         struct of_irq oirq;
-> > >         unsigned int virq;
-> > > +       int ret;
-> > >
-> > >         pr_debug("PCI: Try to map irq for %s...\n", pci_name(pci_dev));
-> > >
-> > > @@ -266,8 +267,10 @@ static int pci_read_irq_line(struct pci_dev *pci_dev)
-> > >                          oirq.size, oirq.specifier[0], oirq.specifier[1],
-> > >                          of_node_full_name(oirq.controller));
-> > >
-> > > -               virq = irq_create_of_mapping(oirq.controller, oirq.specifier,
-> > > -                                            oirq.size);
-> > > +               ret = irq_create_of_mapping(oirq.controller, oirq.specifier,
-> > > +                                           oirq.size, &virq);
-> > > +               if (ret)
-> > > +                       virq = NO_IRQ;
-> > >         }
-> > >         if(virq == NO_IRQ) {
-> > >                 pr_debug(" Failed to map !\n");
-> > 
-> > Can you get rid of NO_IRQ usage here instead of adding to it.
+On Sunday, October 13, 2013 12:11:00 AM Krzysztof Mazur wrote:
+> The commit 1696d9dc57e062ce5200f6a42a6aaada15b434bb
+> ("ACPI: Remove the old /proc/acpi/event interface")
+> removed the old /proc/acpi/event interface but did not remove
+> /proc/acpi/event from ACPI_BUTTON help.
 > 
-> I was trying to stay consistent with the remainder of the code. PowerPC
-> is a pretty heavy user of NO_IRQ. Of all 348 references, more than half
-> (182) are in arch/powerpc, so I'd rather like to get a go-ahead from
-> Benjamin on this.
+> Signed-off-by: Krzysztof Mazur <krzysiek@podlesie.net>
+
+I've queued this up as a fix for 3.12.
+
+Thanks!
+
+> ---
+>  drivers/acpi/Kconfig | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
 > 
-> That said, perhaps we should just go all the way and get rid of NO_IRQ
-> for good. Things could get somewhat messy, though. There are a couple of
-> these spread through the code:
+> diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
+> index 22327e6..4e9e98b 100644
+> --- a/drivers/acpi/Kconfig
+> +++ b/drivers/acpi/Kconfig
+> @@ -123,9 +123,9 @@ config ACPI_BUTTON
+>  	default y
+>  	help
+>  	  This driver handles events on the power, sleep, and lid buttons.
+> -	  A daemon reads /proc/acpi/event and perform user-defined actions
+> -	  such as shutting down the system.  This is necessary for
+> -	  software-controlled poweroff.
+> +	  A daemon reads events from input devices or via netlink and
+> +	  perform user-defined actions such as shutting down the system.
+> +	  This is necessary for software-controlled poweroff.
+>  
+>  	  To compile this driver as a module, choose M here:
+>  	  the module will be called button.
 > 
-> 	#ifndef NO_IRQ
-> 	#define NO_IRQ (-1)
-> 	#endif
-
-And all of them are wrong and need to be removed.  :-)  We're /slowly/
-getting rid of the -1 and the usage of NO_IRQ. A global search and
-replace of s/NO_IRQ/0/g can be very safely done on arch/powerpc since
-powerpc has had NO_IRQ set correctly to '0' for a very long time now.
-
-So, yes, if you're keen to do it I'd love to see a series getting rid of
-more NO_IRQ users.
-
-g.
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
