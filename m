@@ -1,116 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933697Ab3JOVVW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 17:21:22 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:36043 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933368Ab3JOVVT (ORCPT
+	id S933818Ab3JOVW2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 17:22:28 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:65015 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933522Ab3JOVW1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 17:21:19 -0400
+	Tue, 15 Oct 2013 17:22:27 -0400
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        devicetree@vger.kernel.org
+To: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
         Lee Jones <lee.jones@linaro.org>,
         Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 4/5] input: tc3589x-keypad: support probing from device tree
-Date: Tue, 15 Oct 2013 23:21:11 +0200
-Message-Id: <1381872071-23455-1-git-send-email-linus.walleij@linaro.org>
+Subject: [PATCH 5/5] ARM: ux500: adjust the TC3589x devices to the binding
+Date: Tue, 15 Oct 2013 23:22:20 +0200
+Message-Id: <1381872140-23509-1-git-send-email-linus.walleij@linaro.org>
 X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement device tree probing for the tc3589x keypad driver.
-This is modeled on the STMPE keypad driver and tested on the
-Ux500 TVK1281618 UIB.
+The TC3589x devices appearing in the ST Ericsson device trees
+are adjusted to use the new binding so this is in a good shape,
+and we add the keypad on the TVK1281618 UIB so this is working
+again.
 
 Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/input/keyboard/tc3589x-keypad.c | 63 +++++++++++++++++++++++++++++++--
- 1 file changed, 61 insertions(+), 2 deletions(-)
+ arch/arm/boot/dts/ste-href-tvk1281618.dtsi | 39 +++++++++++++++++++++++++-----
+ arch/arm/boot/dts/ste-hrefprev60.dtsi      |  8 +++---
+ 2 files changed, 37 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/input/keyboard/tc3589x-keypad.c b/drivers/input/keyboard/tc3589x-keypad.c
-index 208de7c..f6ec0d7 100644
---- a/drivers/input/keyboard/tc3589x-keypad.c
-+++ b/drivers/input/keyboard/tc3589x-keypad.c
-@@ -297,6 +297,62 @@ static void tc3589x_keypad_close(struct input_dev *input)
- 	tc3589x_keypad_disable(keypad);
- }
+diff --git a/arch/arm/boot/dts/ste-href-tvk1281618.dtsi b/arch/arm/boot/dts/ste-href-tvk1281618.dtsi
+index 76d3ef1..4c539bb 100644
+--- a/arch/arm/boot/dts/ste-href-tvk1281618.dtsi
++++ b/arch/arm/boot/dts/ste-href-tvk1281618.dtsi
+@@ -15,26 +15,53 @@
  
-+#ifdef CONFIG_OF
-+static const struct tc3589x_keypad_platform_data *
-+tc3589x_keypad_of_probe(struct device *dev)
-+{
-+	struct device_node *np = dev->of_node;
-+	struct tc3589x_keypad_platform_data *plat;
-+	u32 debounce_ms;
-+	int proplen;
-+
-+	if (!np)
-+		return ERR_PTR(-ENODEV);
-+
-+	plat = devm_kzalloc(dev, sizeof(*plat), GFP_KERNEL);
-+	if (!plat)
-+		return ERR_PTR(-ENOMEM);
-+
-+	of_property_read_u8(np, "keypad,num-columns", &plat->kcol);
-+	of_property_read_u8(np, "keypad,num-rows", &plat->krow);
-+	if (!plat->krow || !plat->kcol ||
-+	     plat->krow > TC_KPD_ROWS || plat->kcol > TC_KPD_COLUMNS) {
-+		dev_err(dev,
-+			"keypad columns/rows not properly specified (%ux%u)\n",
-+			plat->kcol, plat->krow);
-+		return ERR_PTR(-EINVAL);
-+	}
-+
-+	if (!of_get_property(np, "linux,keymap", &proplen)) {
-+		dev_err(dev, "property linux,keymap not found\n");
-+		return ERR_PTR(-ENOENT);
-+	}
-+
-+	plat->no_autorepeat = of_property_read_bool(np, "linux,no-autorepeat");
-+	plat->enable_wakeup = of_property_read_bool(np, "linux,wakeup");
-+
-+	/* The custom delay format is ms/16 */
-+	of_property_read_u32(np, "debounce-delay-ms", &debounce_ms);
-+	if (debounce_ms)
-+		plat->debounce_period = debounce_ms * 16;
-+	else
-+		plat->debounce_period = TC_KPD_DEBOUNCE_PERIOD;
-+
-+	plat->settle_time = TC_KPD_SETTLE_TIME;
-+	/* FIXME: should be property of the IRQ resource? */
-+	plat->irqtype = IRQF_TRIGGER_FALLING;
-+
-+	return plat;
-+}
-+#else
-+static inline const struct tc3589x_keypad_platform_data *
-+tc3589x_keypad_of_probe(struct device *dev)
-+{
-+	return ERR_PTR(-ENODEV);
-+}
-+#endif
-+
-+
- static int tc3589x_keypad_probe(struct platform_device *pdev)
- {
- 	struct tc3589x *tc3589x = dev_get_drvdata(pdev->dev.parent);
-@@ -307,8 +363,11 @@ static int tc3589x_keypad_probe(struct platform_device *pdev)
+ / {
+ 	soc {
+-		/* Add Synaptics touch screen, TC35892 keypad etc here */
++		/* Add Synaptics touch screen, TC35893 keypad etc here */
+ 		i2c@80004000 {
+-			tc3589x@44 {
+-				compatible = "tc3589x";
++			tc35893@44 {
++				compatible = "toshiba,tc35893";
+ 				reg = <0x44>;
+ 				interrupt-parent = <&gpio6>;
+ 				interrupts = <26 IRQ_TYPE_EDGE_RISING>;
  
- 	plat = tc3589x->pdata->keypad;
- 	if (!plat) {
--		dev_err(&pdev->dev, "invalid keypad platform data\n");
--		return -EINVAL;
-+		plat = tc3589x_keypad_of_probe(&pdev->dev);
-+		if (IS_ERR(plat)) {
-+			dev_err(&pdev->dev, "invalid keypad platform data\n");
-+			return PTR_ERR(plat);
-+		}
- 	}
+ 				interrupt-controller;
+-				#interrupt-cells = <2>;
++				#interrupt-cells = <1>;
  
- 	irq = platform_get_irq(pdev, 0);
+ 				tc3589x_gpio {
+-					compatible = "tc3589x-gpio";
+-					interrupts = <0 IRQ_TYPE_EDGE_RISING>;
++					compatible = "toshiba,tc3589x-gpio";
++					interrupts = <0>;
+ 
+ 					interrupt-controller;
+ 					#interrupt-cells = <2>;
+ 					gpio-controller;
+ 					#gpio-cells = <2>;
+ 				};
++				tc3589x_keypad {
++					compatible = "toshiba,tc3589x-keypad";
++					interrupts = <6>;
++					debounce-delay-ms = <4>;
++					keypad,num-columns = /bits/ 8 <8>;
++					keypad,num-rows = /bits/ 8 <8>;
++					linux,no-autorepeat;
++					linux,wakeup;
++					linux,keymap = <0x0301006b
++						        0x04010066
++							0x06040072
++							0x040200d7
++							0x0303006a
++							0x0205000e
++							0x0607008b
++							0x0500001c
++							0x0403000b
++							0x03040034
++							0x05020067
++							0x0305006c
++							0x040500e7
++							0x0005009e
++							0x06020073
++							0x01030039
++							0x07060069
++							0x050500d9>;
++				};
+ 			};
+ 		};
+ 	};
+diff --git a/arch/arm/boot/dts/ste-hrefprev60.dtsi b/arch/arm/boot/dts/ste-hrefprev60.dtsi
+index b2cd7bc..6b271a4 100644
+--- a/arch/arm/boot/dts/ste-hrefprev60.dtsi
++++ b/arch/arm/boot/dts/ste-hrefprev60.dtsi
+@@ -28,18 +28,18 @@
+ 				reg = <0x33>;
+ 			};
+ 
+-			tc3589x@42 {
+-				compatible = "tc3589x";
++			tc35892@42 {
++				compatible = "toshiba,tc35892";
+ 				reg = <0x42>;
+ 				interrupt-parent = <&gpio6>;
+ 				interrupts = <25 IRQ_TYPE_EDGE_RISING>;
+ 
+ 				interrupt-controller;
+-				#interrupt-cells = <2>;
++				#interrupt-cells = <1>;
+ 
+ 				tc3589x_gpio: tc3589x_gpio {
+ 					compatible = "tc3589x-gpio";
+-					interrupts = <0 IRQ_TYPE_EDGE_RISING>;
++					interrupts = <0>;
+ 
+ 					interrupt-controller;
+ 					#interrupt-cells = <2>;
 -- 
 1.8.3.1
 
