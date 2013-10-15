@@ -1,384 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932111Ab3JODUJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 23:20:09 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:23343 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756860Ab3JODUH (ORCPT
+	id S1757060Ab3JOD0J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 23:26:09 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:44121 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755820Ab3JOD0H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 23:20:07 -0400
-Date: Mon, 14 Oct 2013 23:20:04 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: fweisbec@gmail.com, mingo@redhat.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, shaojie.sun@linaro.org
-Subject: Re: [PATCH] ARM: trace: Add tracepoint for the Inter Processor
- Interrupt
-Message-ID: <20131014232004.5cbedbb8@gandalf.local.home>
-In-Reply-To: <1381758807-31139-1-git-send-email-daniel.lezcano@linaro.org>
-References: <1381758807-31139-1-git-send-email-daniel.lezcano@linaro.org>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+	Mon, 14 Oct 2013 23:26:07 -0400
+Date: Tue, 15 Oct 2013 11:26:00 +0800
+From: majianpeng <majianpeng@gmail.com>
+To: viro <viro@zeniv.linux.org.uk>
+Cc: jbacik <jbacik@fusionio.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Reply-To: majianpeng <majianpeng@gmail.com>
+Subject: [PATCH] inode: For readonly filesystem, func file_update_time should return -EROFS rather than zero.
+X-Priority: 3
+X-GUID: CDB112EE-D599-42A8-83E1-C5FF5B058F0B
+X-Has-Attach: no
+X-Mailer: Foxmail 7.0.1.93[cn]
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Message-ID: <201310151125581359520@gmail.com>
+Content-Type: text/plain;
+	charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r9F3QVou020772
 
-On Mon, 14 Oct 2013 15:53:27 +0200
-Daniel Lezcano <daniel.lezcano@linaro.org> wrote:
+For ext2 mounted with errors=remount-ro, if write a file and because the
+harddisk error, the fs became ro.But the following test can't return.
 
-> The Inter Processor Interrupt is used on ARM to tell another processor to do
-> a specific action. This is mainly used to emulate a timer interrupt on an idle
-> cpu, force a cpu to reschedule or run a function on another processor context.
-> 
-> Add a tracepoint when raising an IPI and in the entry/exit handler function.
-> 
-> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-> ---
->  arch/arm/include/asm/smp.h   |    9 ++++
->  arch/arm/kernel/smp.c        |   34 ++++++++------
->  arch/arm64/include/asm/smp.h |    7 +++
->  arch/arm64/kernel/smp.c      |   21 +++++++--
->  include/trace/events/ipi.h   |  106 ++++++++++++++++++++++++++++++++++++++++++
->  5 files changed, 158 insertions(+), 19 deletions(-)
->  create mode 100644 include/trace/events/ipi.h
-> 
-> diff --git a/arch/arm/include/asm/smp.h b/arch/arm/include/asm/smp.h
-> index a8cae71c..788706c 100644
-> --- a/arch/arm/include/asm/smp.h
-> +++ b/arch/arm/include/asm/smp.h
-> @@ -18,6 +18,15 @@
->  # error "<asm/smp.h> included in non-SMP build"
->  #endif
->  
-> +enum ipi_msg_type {
-> +	IPI_WAKEUP,
-> +	IPI_TIMER,
-> +	IPI_RESCHEDULE,
-> +	IPI_CALL_FUNC,
-> +	IPI_CALL_FUNC_SINGLE,
-> +	IPI_CPU_STOP,
-> +};
-> +
->  #define raw_smp_processor_id() (current_thread_info()->cpu)
->  
->  struct seq_file;
-> diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-> index 72024ea..9ca8ce8 100644
-> --- a/arch/arm/kernel/smp.c
-> +++ b/arch/arm/kernel/smp.c
-> @@ -46,6 +46,9 @@
->  #include <asm/mach/arch.h>
->  #include <asm/mpu.h>
->  
-> +#define CREATE_TRACE_POINTS
-> +#include <trace/events/ipi.h>
-> +
->  /*
->   * as from 2.5, kernels no longer have an init_tasks structure
->   * so we need some other way of telling a new secondary core
-> @@ -59,15 +62,6 @@ struct secondary_data secondary_data;
->   */
->  volatile int pen_release = -1;
->  
-> -enum ipi_msg_type {
-> -	IPI_WAKEUP,
-> -	IPI_TIMER,
-> -	IPI_RESCHEDULE,
-> -	IPI_CALL_FUNC,
-> -	IPI_CALL_FUNC_SINGLE,
-> -	IPI_CPU_STOP,
-> -};
-> -
->  static DECLARE_COMPLETION(cpu_running);
->  
->  static struct smp_operations smp_ops;
-> @@ -433,19 +427,25 @@ void __init set_smp_cross_call(void (*fn)(const struct cpumask *, unsigned int))
->  		smp_cross_call = fn;
->  }
->  
-> +static void ipi_raise(const struct cpumask *mask, int ipinr)
-> +{
-> +	trace_ipi_raise(mask, ipinr);
-> +	smp_cross_call(mask, ipinr);
-> +}
-> +
->  void arch_send_call_function_ipi_mask(const struct cpumask *mask)
->  {
-> -	smp_cross_call(mask, IPI_CALL_FUNC);
-> +	ipi_raise(mask, IPI_CALL_FUNC);
->  }
->  
->  void arch_send_wakeup_ipi_mask(const struct cpumask *mask)
->  {
-> -	smp_cross_call(mask, IPI_WAKEUP);
-> +	ipi_raise(mask, IPI_WAKEUP);
->  }
->  
->  void arch_send_call_function_single_ipi(int cpu)
->  {
-> -	smp_cross_call(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
-> +	ipi_raise(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
->  }
->  
->  static const char *ipi_types[NR_IPI] = {
-> @@ -487,7 +487,7 @@ u64 smp_irq_stat_cpu(unsigned int cpu)
->  #ifdef CONFIG_GENERIC_CLOCKEVENTS_BROADCAST
->  void tick_broadcast(const struct cpumask *mask)
->  {
-> -	smp_cross_call(mask, IPI_TIMER);
-> +	ipi_raise(mask, IPI_TIMER);
->  }
->  #endif
->  
-> @@ -528,6 +528,8 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
->  	unsigned int cpu = smp_processor_id();
->  	struct pt_regs *old_regs = set_irq_regs(regs);
->  
-> +	trace_ipi_handler_entry(ipinr);
-> +
->  	if (ipinr < NR_IPI)
->  		__inc_irq_stat(cpu, ipi_irqs[ipinr]);
->  
-> @@ -571,11 +573,13 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
->  		break;
->  	}
->  	set_irq_regs(old_regs);
-> +
-> +	trace_ipi_handler_exit(ipinr);
->  }
->  
->  void smp_send_reschedule(int cpu)
->  {
-> -	smp_cross_call(cpumask_of(cpu), IPI_RESCHEDULE);
-> +	ipi_raise(cpumask_of(cpu), IPI_RESCHEDULE);
->  }
->  
->  void smp_send_stop(void)
-> @@ -586,7 +590,7 @@ void smp_send_stop(void)
->  	cpumask_copy(&mask, cpu_online_mask);
->  	cpumask_clear_cpu(smp_processor_id(), &mask);
->  	if (!cpumask_empty(&mask))
-> -		smp_cross_call(&mask, IPI_CPU_STOP);
-> +		ipi_raise(&mask, IPI_CPU_STOP);
->  
->  	/* Wait up to one second for other CPUs to stop */
->  	timeout = USEC_PER_SEC;
-> diff --git a/arch/arm64/include/asm/smp.h b/arch/arm64/include/asm/smp.h
-> index 4b8023c..7ebaa3a 100644
-> --- a/arch/arm64/include/asm/smp.h
-> +++ b/arch/arm64/include/asm/smp.h
-> @@ -24,6 +24,13 @@
->  # error "<asm/smp.h> included in non-SMP build"
->  #endif
->  
-> +enum ipi_msg_type {
-> +	IPI_RESCHEDULE,
-> +	IPI_CALL_FUNC,
-> +	IPI_CALL_FUNC_SINGLE,
-> +	IPI_CPU_STOP,
-> +};
-> +
->  #define raw_smp_processor_id() (current_thread_info()->cpu)
->  
->  struct seq_file;
-> diff --git a/arch/arm64/kernel/smp.c b/arch/arm64/kernel/smp.c
-> index 78db90d..c987b9f 100644
-> --- a/arch/arm64/kernel/smp.c
-> +++ b/arch/arm64/kernel/smp.c
-> @@ -48,6 +48,9 @@
->  #include <asm/tlbflush.h>
->  #include <asm/ptrace.h>
->  
-> +#define CREATE_TRACE_POINTS
-> +#include <trace/events/ipi.h>
-> +
->  /*
->   * as from 2.5, kernels no longer have an init_tasks structure
->   * so we need some other way of telling a new secondary core
-> @@ -426,14 +429,20 @@ void __init set_smp_cross_call(void (*fn)(const struct cpumask *, unsigned int))
->  	smp_cross_call = fn;
->  }
->  
-> +static void ipi_raise(const struct cpumask *mask, int ipinr)
-> +{
-> +	trace_ipi_raise(mask, ipinr);
-> +	smp_cross_call(mask, ipinr);
-> +}
-> +
->  void arch_send_call_function_ipi_mask(const struct cpumask *mask)
->  {
-> -	smp_cross_call(mask, IPI_CALL_FUNC);
-> +	ipi_raise(mask, IPI_CALL_FUNC);
->  }
->  
->  void arch_send_call_function_single_ipi(int cpu)
->  {
-> -	smp_cross_call(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
-> +	ipi_raise(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
->  }
->  
->  static const char *ipi_types[NR_IPI] = {
-> @@ -501,6 +510,8 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
->  	unsigned int cpu = smp_processor_id();
->  	struct pt_regs *old_regs = set_irq_regs(regs);
->  
-> +	trace_ipi_handler_entry(ipinr);
-> +
->  	if (ipinr >= IPI_RESCHEDULE && ipinr < IPI_RESCHEDULE + NR_IPI)
->  		__inc_irq_stat(cpu, ipi_irqs[ipinr - IPI_RESCHEDULE]);
->  
-> @@ -532,11 +543,13 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
->  		break;
->  	}
->  	set_irq_regs(old_regs);
-> +
-> +	trace_ipi_handler_exit(ipinr);
->  }
->  
->  void smp_send_reschedule(int cpu)
->  {
-> -	smp_cross_call(cpumask_of(cpu), IPI_RESCHEDULE);
-> +	ipi_raise(cpumask_of(cpu), IPI_RESCHEDULE);
->  }
->  
->  void smp_send_stop(void)
-> @@ -549,7 +562,7 @@ void smp_send_stop(void)
->  		cpumask_copy(&mask, cpu_online_mask);
->  		cpu_clear(smp_processor_id(), mask);
->  
-> -		smp_cross_call(&mask, IPI_CPU_STOP);
-> +		ipi_raise(&mask, IPI_CPU_STOP);
->  	}
->  
->  	/* Wait up to one second for other CPUs to stop */
-> diff --git a/include/trace/events/ipi.h b/include/trace/events/ipi.h
-> new file mode 100644
-> index 0000000..4d6648a
-> --- /dev/null
-> +++ b/include/trace/events/ipi.h
-> @@ -0,0 +1,106 @@
-> +#undef TRACE_SYSTEM
-> +#define TRACE_SYSTEM ipi
-> +
-> +#if !defined(_TRACE_IPI_H) || defined(TRACE_HEADER_MULTI_READ)
-> +#define _TRACE_IPI_H
-> +
-> +#include <linux/tracepoint.h>
-> +
-> +struct cpumask;
-> +
-> +#define ipi_name(ipinr) { IPI_##ipinr, #ipinr }
-> +#define show_ipi_name(val)				\
-> +	__print_symbolic(val,				\
-> +			 ipi_name(WAKEUP),		\
-> +			 ipi_name(TIMER),		\
-> +			 ipi_name(RESCHEDULE),		\
-> +			 ipi_name(CALL_FUNC),		\
-> +			 ipi_name(CALL_FUNC_SINGLE),	\
-> +			 ipi_name(CPU_STOP))
-> +
-> +/**
-> + * ipi_handle_entry - called right before the IPI handler
-> + * @ipinr: the IPI number
-> + *
-> + * The @ipinr value must be valid and the action name associated with
-> + * the IPI value is given in the trace.
-> + */
-> +TRACE_EVENT_CONDITION(ipi_handler_entry,
-> +
-> +    TP_PROTO(int ipinr),
-> +
-> +    TP_ARGS(ipinr),
-> +
-> +    TP_CONDITION(ipinr < NR_IPI && ipinr >= 0),
-> +
-> +    TP_STRUCT__entry(
-> +        __field(unsigned int, ipinr)
-> +    ),
-> +
-> +    TP_fast_assign(
-> +        __entry->ipinr = ipinr;
-> +    ),
-> +
-> +    TP_printk("ipi=%d, name=%s", __entry->ipinr,
-> +	      show_ipi_name(__entry->ipinr))
-> +);
-> +
-> +/**
-> + * ipi_handle_exit - called right after the IPI handler
-> + * @ipinr: the IPI number
-> + *
-> + * The @ipinr value must be valid and the action name associated with
-> + * the IPI value is given in the trace.
-> + */
-> +TRACE_EVENT_CONDITION(ipi_handler_exit,
-> +
-> +    TP_PROTO(int ipinr),
-> +
-> +    TP_ARGS(ipinr),
-> +
-> +    TP_CONDITION(ipinr < NR_IPI && ipinr >= 0),
-> +
-> +    TP_STRUCT__entry(
-> +        __field(int, ipinr)
+int main()
+{
+	int ret;
+	int i = 0;
+	char buff[SIZE];
+	int fd = open("/opt/test", O_WRONLY|O_TRUNC|O_CREAT);
 
-Here you have "int" and above for the "*_entry" you have unsigned int.
-Is there a difference?
+	if (fd < 0) {
+		printf("open error %s\n", strerror(errno));
+		return errno;
+	}
 
-If not, you should combine these two into a DECLARE_EVENT_CLASS() and
-then use DEFINE_EVENT_CONDITION() for the two tracepoints.
+	ret = write(fd, buff, SIZE);
+	lseek(fd, 0, 0);
 
-> +    ),
-> +
-> +    TP_fast_assign(
-> +        __entry->ipinr = ipinr;
-> +    ),
-> +
-> +    TP_printk("ipi=%d, name=%s", __entry->ipinr,
-> +	      show_ipi_name(__entry->ipinr))
-> +);
-> +
-> +/**
-> + * ipi_raise - called when a smp cross call is made
-> + * @ipinr: the IPI number
-> + * @cpumask: the recipients for the IPI
-> + *
-> + * The @ipinr value must be valid and the action name associated with
-> + * the IPI value is given in the trace.
-> + */
-> +TRACE_EVENT_CONDITION(ipi_raise,
-> +
-> +    TP_PROTO(const struct cpumask *cpumask, int ipinr),
-> +
-> +    TP_ARGS(cpumask, ipinr),
+	while (1) {
+		ret = write(fd, buff, SIZE);
+		if (ret < 0) {
+			printf("write error %s\n", strerror(errno));
+			break;
+		}
+		lseek(fd, 0, 0);
+		i++;
+	}
+	printf("write count=%d\n", i);
+	close(fd);
 
-Why pass in the cpumask if it isn't used? Do you expect to hook
-something else to the tracepoint?
+	return 0;
+}
 
--- Steve
+For ext3/ext4, because jbd the test can return. But for ext2, because no
+jbd and not reading bitmap from harddisk, the test continue.
 
-> +
-> +    TP_CONDITION(ipinr < NR_IPI && ipinr >= 0),
-> +
-> +    TP_STRUCT__entry(
-> +        __field(int, ipinr)
-> +    ),
-> +
-> +    TP_fast_assign(
-> +        __entry->ipinr = ipinr;
-> +    ),
-> +
-> +    TP_printk("ipi=%d, name=%s", __entry->ipinr, 
-> +	      show_ipi_name(__entry->ipinr))
-> +);
-> +
-> +#endif /* _TRACE_IPI_H */
-> +
-> +/* This part must be outside protection */
-> +#include <trace/define_trace.h>
+So we should add check readonly-fs on write-path. Func file_update_time
+already check the readonly flag,but it can't return -EROFS.
+For readonly-fs, it can't update a/c/m time of file,it should return
+-EROFS rather than zero.
 
+Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
+---
+ fs/inode.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/fs/inode.c b/fs/inode.c
+index b33ba8e..65302c1 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -1644,8 +1644,9 @@ int file_update_time(struct file *file)
+ 		return 0;
+ 
+ 	/* Finally allowed to write? Takes lock. */
+-	if (__mnt_want_write_file(file))
+-		return 0;
++	ret = __mnt_want_write_file(file);
++	if (ret)
++		return ret;
+ 
+ 	ret = update_time(inode, &now, sync_it);
+ 	__mnt_drop_write_file(file);
+-- 
+1.8.4
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
