@@ -1,58 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933663Ab3JORyd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 13:54:33 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:16715 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932524Ab3JORyc (ORCPT
+	id S933676Ab3JORyr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 13:54:47 -0400
+Received: from qmta12.emeryville.ca.mail.comcast.net ([76.96.27.227]:40431
+	"EHLO qmta12.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932555Ab3JORyc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Oct 2013 13:54:32 -0400
-Message-ID: <525D8130.1070807@oracle.com>
-Date: Tue, 15 Oct 2013 12:53:52 -0500
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>, Benjamin LaHaise <bcrl@kvack.org>
-CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
-        Zach Brown <zab@zabbo.net>, linux-aio@kvack.org
-Subject: Re: [PATCH V8 00/33] loop: Issue O_DIRECT aio using bio_vec
-References: <1374774659-13121-1-git-send-email-dave.kleikamp@oracle.com> <20130821130231.GG13330@kvack.org> <20131014150701.GA21529@infradead.org> <20131014212910.GA31920@kvack.org> <20131015165520.GA13021@infradead.org> <20131015171447.GE31920@kvack.org> <20131015171850.GA26277@infradead.org>
-In-Reply-To: <20131015171850.GA26277@infradead.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Greylist: delayed 402 seconds by postgrey-1.27 at vger.kernel.org; Tue, 15 Oct 2013 13:54:32 EDT
+Message-Id: <20131015174746.244538146@linux.com>
+User-Agent: quilt/0.60-1
+Date: Tue, 15 Oct 2013 12:47:25 -0500
+From: Christoph Lameter <cl@linux.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Alex Shi <alex.shi@intel.com>
+Subject: [PATCH 3/6] mm: Use raw_cpu ops for determining current NUMA node
+References: <20131015174722.615394057@linux.com>
+Content-Disposition: inline; filename=preempt_fix_numa_node
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/15/2013 12:18 PM, Christoph Hellwig wrote:
-> On Tue, Oct 15, 2013 at 01:14:47PM -0400, Benjamin LaHaise wrote:
->>> While I agree that getting that would be useful it is something that has
->>> nothing to do with issueing aio from kernel space and holding this
->>> patchset hostage for something you'd like to see but that was
->>> complicated enough that no one even tried it for many years seems
->>> entirely unreasonable.
->>>
->>> If there are any other issues left that I have missed it would be nice
->>> to get a pointer to it, or a quick brief.
->>
->> The item I was refering to is to removing the opcodes used for in-kernel 
->> purposes from out of the range that the userland accessible opcodes can 
->> reach.  That is, put them above the 16 bit limit for userspace opcodes.  
->> There is absolutely no reason to expose kernel internal opcodes via the 
->> userspace exported includes.  It's a simple and reasonable change, and I 
->> see no reason for Dave not to make that modification.  Until that is 
->> done, I will nak the changes.
-> 
-> Oh, missed that.  I totally agree that it needs to be done.
-> 
-> Dave, will you have time to do it soon or should I look into it myself?
+With the preempt checking logic for __this_cpu_ops we will get false
+positives from locations in the code that use numa_node_id.
 
-I'll take care of it. I actually made this change and somehow misplaced it.
+Before the  __this_cpu ops where introduced there were
+no checks for preemption present either. smp_raw_processor_id()
+was used. See http://www.spinics.net/lists/linux-numa/msg00641.html
 
-Sorry about that.
+Therefore we need to use raw_cpu_read here to avoid false postives.
 
-Dave
+Note that this issue has been discussed in prior years.
+If the process changes nodes after retrieving the current numa node then
+that is acceptable since most uses of numa_node etc are for optimization
+and not for correctness.
+
+Some sample traces:
+
+__this_cpu_read operation in preemptible [00000000] code: login/1456
+caller is __this_cpu_preempt_check+0x2b/0x2d
+CPU: 0 PID: 1456 Comm: login Not tainted 3.12.0-rc4-cl-00062-g2fe80d3-dirty #185
+Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+ 000000000000013c ffff88001f31ba58 ffffffff8147cf5e ffff88001f31bfd8
+ ffff88001f31ba88 ffffffff8127eea9 0000000000000000 ffff88001f3975c0
+ 00000000f7707000 ffff88001f3975c0 ffff88001f31bac0 ffffffff8127eeef
+Call Trace:
+ [<ffffffff8147cf5e>] dump_stack+0x4e/0x82
+ [<ffffffff8127eea9>] check_preemption_disabled+0xc5/0xe0
+ [<ffffffff8127eeef>] __this_cpu_preempt_check+0x2b/0x2d
+ [<ffffffff81030ff5>] ? show_stack+0x3b/0x3d
+ [<ffffffff810ebee3>] get_task_policy+0x1d/0x49
+ [<ffffffff810ed705>] get_vma_policy+0x14/0x76
+ [<ffffffff810ed8ff>] alloc_pages_vma+0x35/0xff
+ [<ffffffff810dad97>] handle_mm_fault+0x290/0x73b
+ [<ffffffff810503da>] __do_page_fault+0x3fe/0x44d
+ [<ffffffff8109b360>] ? trace_hardirqs_on_caller+0x142/0x19e
+ [<ffffffff8109b3c9>] ? trace_hardirqs_on+0xd/0xf
+ [<ffffffff81278bed>] ? trace_hardirqs_off_thunk+0x3a/0x3c
+ [<ffffffff810be97f>] ? find_get_pages_contig+0x18e/0x18e
+ [<ffffffff810be97f>] ? find_get_pages_contig+0x18e/0x18e
+ [<ffffffff81050451>] do_page_fault+0x9/0xc
+ [<ffffffff81483602>] page_fault+0x22/0x30
+ [<ffffffff810be97f>] ? find_get_pages_contig+0x18e/0x18e
+ [<ffffffff810be97f>] ? find_get_pages_contig+0x18e/0x18e
+ [<ffffffff810be4c3>] ? file_read_actor+0x3a/0x15a
+ [<ffffffff810be97f>] ? find_get_pages_contig+0x18e/0x18e
+ [<ffffffff810bffab>] generic_file_aio_read+0x38e/0x624
+ [<ffffffff810f6d69>] do_sync_read+0x54/0x73
+ [<ffffffff810f7890>] vfs_read+0x9d/0x12a
+ [<ffffffff810f7a59>] SyS_read+0x47/0x7e
+ [<ffffffff81484f21>] cstar_dispatch+0x7/0x23
+
+
+caller is __this_cpu_preempt_check+0x2b/0x2d
+CPU: 0 PID: 1456 Comm: login Not tainted 3.12.0-rc4-cl-00062-g2fe80d3-dirty #185
+Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+ 00000000000000e8 ffff88001f31bbf8 ffffffff8147cf5e ffff88001f31bfd8
+ ffff88001f31bc28 ffffffff8127eea9 ffffffff823c5c40 00000000000213da
+ 0000000000000000 0000000000000000 ffff88001f31bc60 ffffffff8127eeef
+Call Trace:
+ [<ffffffff8147cf5e>] dump_stack+0x4e/0x82
+ [<ffffffff8127eea9>] check_preemption_disabled+0xc5/0xe0
+ [<ffffffff8127eeef>] __this_cpu_preempt_check+0x2b/0x2d
+ [<ffffffff810e006e>] ? install_special_mapping+0x11/0xe4
+ [<ffffffff810ec8a8>] alloc_pages_current+0x8f/0xbc
+ [<ffffffff810bec6b>] __page_cache_alloc+0xb/0xd
+ [<ffffffff810c7e90>] __do_page_cache_readahead+0xf4/0x219
+ [<ffffffff810c7e0e>] ? __do_page_cache_readahead+0x72/0x219
+ [<ffffffff810c827c>] ra_submit+0x1c/0x20
+ [<ffffffff810c850c>] ondemand_readahead+0x28c/0x2b4
+ [<ffffffff810c85e9>] page_cache_sync_readahead+0x38/0x3a
+ [<ffffffff810bfe7e>] generic_file_aio_read+0x261/0x624
+ [<ffffffff810f6d69>] do_sync_read+0x54/0x73
+ [<ffffffff810f7890>] vfs_read+0x9d/0x12a
+ [<ffffffff810f7a59>] SyS_read+0x47/0x7e
+ [<ffffffff81484f21>] cstar_dispatch+0x7/0x23
+
+
+CC: linux-mm@kvack.org
+Cc: Alex Shi <alex.shi@intel.com>
+Signed-off-by: Christoph Lameter <cl@linux.com>
+
+Index: linux/include/linux/topology.h
+===================================================================
+--- linux.orig/include/linux/topology.h	2013-09-24 11:29:51.000000000 -0500
++++ linux/include/linux/topology.h	2013-09-24 11:30:18.893831971 -0500
+@@ -182,7 +182,7 @@ DECLARE_PER_CPU(int, numa_node);
+ /* Returns the number of the current Node. */
+ static inline int numa_node_id(void)
+ {
+-	return __this_cpu_read(numa_node);
++	return raw_cpu_read(numa_node);
+ }
+ #endif
+ 
+@@ -239,7 +239,7 @@ static inline void set_numa_mem(int node
+ /* Returns the number of the nearest Node with memory */
+ static inline int numa_mem_id(void)
+ {
+-	return __this_cpu_read(_numa_mem_);
++	return raw_cpu_read(_numa_mem_);
+ }
+ #endif
+ 
+
