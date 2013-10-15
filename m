@@ -1,36 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756783Ab3JOBHh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 21:07:37 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:44130 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755780Ab3JOBHg (ORCPT
+	id S1756925Ab3JOBID (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 21:08:03 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:39465 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756816Ab3JOBIC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 21:07:36 -0400
-Message-Id: <20131015010500.435964635@kernel.org>
+	Mon, 14 Oct 2013 21:08:02 -0400
+Message-Id: <20131015010737.134350265@kernel.org>
 User-Agent: quilt/0.60-1
-Date: Tue, 15 Oct 2013 09:05:00 +0800
+Date: Tue, 15 Oct 2013 09:05:01 +0800
 From: Shaohua Li <shli@kernel.org>
 To: linux-kernel@vger.kernel.org, axboe@kernel.dk
 Cc: kmo@daterainc.com
-Subject: [patch 0/4 v2] blk-mq: use percpu_ida to manage tags
+Subject: [patch 1/4 v2] percpu_ida: make percpu_ida percpu size/batch configurable
+References: <20131015010500.435964635@kernel.org>
+Content-Disposition: inline; filename=0001-percpu_ida-make-percpu_ida-percpu-size-batch-configu.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-blk-mq and percpu_ida use similar algorithm to manage tags. The difference
-is when a cpu can't allocate tags, blk-mq will use ipi to purge remote cpu
-cache, while percpu-ida directly purges remote cpu cache. In practice, the
-percpu-ida approach is much faster when we can't allocate enough for percpu
-cache.
+Make percpu_ida percpu size/batch configurable. The block-mq-tag will use it.
 
-This patch makes blk-mq use percpu_ida to manage tags, this avoids some
-duplicate code and has better performance as I mentioned. To test the patches,
-rebase blk-mq tree to latest kernel first.
+After block-mq uses percpu_ida to manage tags, performance is improved. My test
+is done in a 2 sockets machine, 12 process cross the 2 sockets. So if there is
+lock contention or ipi, should be stressed heavily. Testing is done for
+null-blk.
 
-The v2 patch updated some log descriptions, fixed one issue Kent pointed out
-and added performance data.
+hw_queue_depth	nopatch iops	patch iops
+64		~800k/s		~1470k/s
+2048		~4470k/s	~4340k/s
 
-Thanks,
-Shaohua
+Signed-off-by: Shaohua Li <shli@fusionio.com>
+---
+ include/linux/percpu_ida.h |   18 +++++++++++++++++-
+ lib/percpu_ida.c           |   28 +++++++++++-----------------
+ 2 files changed, 28 insertions(+), 18 deletions(-)
+
+Index: master/include/linux/percpu_ida.h
+===================================================================
+--- master.orig/include/linux/percpu_ida.h	2013-10-11 14:34:40.367149789 +0800
++++ master/include/linux/percpu_ida.h	2013-10-15 08:24:39.000000000 +0800
+@@ -16,6 +16,8 @@ struct percpu_ida {
+ 	 * percpu_ida_init()
+ 	 */
+ 	unsigned			nr_tags;
++	unsigned			percpu_max_size;
++	unsigned			percpu_batch_size;
+ 
+ 	struct percpu_ida_cpu __percpu	*tag_cpu;
+ 
+@@ -51,10 +53,24 @@ struct percpu_ida {
+ 	} ____cacheline_aligned_in_smp;
+ };
+ 
++/*
++ * Number of tags we move between the percpu freelist and the global freelist at
++ * a time
++ */
++#define IDA_DEFAULT_PCPU_BATCH_MOVE	32U
++/* Max size of percpu freelist, */
++#define IDA_DEFAULT_PCPU_SIZE	((IDA_DEFAULT_PCPU_BATCH_MOVE * 3) / 2)
++
+ int percpu_ida_alloc(struct percpu_ida *pool, gfp_t gfp);
+ void percpu_ida_free(struct percpu_ida *pool, unsigned tag);
+ 
+ void percpu_ida_destroy(struct percpu_ida *pool);
+-int percpu_ida_init(struct percpu_ida *pool, unsigned long nr_tags);
++int __percpu_ida_init(struct percpu_ida *pool, unsigned long nr_tags,
++	unsigned long max_size, unsigned long batch_size);
++static inline int percpu_ida_init(struct percpu_ida *pool, unsigned long nr_tags)
++{
++	return __percpu_ida_init(pool, nr_tags, IDA_DEFAULT_PCPU_SIZE,
++		IDA_DEFAULT_PCPU_BATCH_MOVE);
++}
+ 
+ #endif /* __PERCPU_IDA_H__ */
+Index: master/lib/percpu_ida.c
+===================================================================
+--- master.orig/lib/percpu_ida.c	2013-10-11 14:34:40.367149789 +0800
++++ master/lib/percpu_ida.c	2013-10-15 08:24:39.000000000 +0800
+@@ -30,15 +30,6 @@
+ #include <linux/spinlock.h>
+ #include <linux/percpu_ida.h>
+ 
+-/*
+- * Number of tags we move between the percpu freelist and the global freelist at
+- * a time
+- */
+-#define IDA_PCPU_BATCH_MOVE	32U
+-
+-/* Max size of percpu freelist, */
+-#define IDA_PCPU_SIZE		((IDA_PCPU_BATCH_MOVE * 3) / 2)
+-
+ struct percpu_ida_cpu {
+ 	/*
+ 	 * Even though this is percpu, we need a lock for tag stealing by remote
+@@ -78,7 +69,7 @@ static inline void steal_tags(struct per
+ 	struct percpu_ida_cpu *remote;
+ 
+ 	for (cpus_have_tags = cpumask_weight(&pool->cpus_have_tags);
+-	     cpus_have_tags * IDA_PCPU_SIZE > pool->nr_tags / 2;
++	     cpus_have_tags * pool->percpu_max_size > pool->nr_tags / 2;
+ 	     cpus_have_tags--) {
+ 		cpu = cpumask_next(cpu, &pool->cpus_have_tags);
+ 
+@@ -123,7 +114,7 @@ static inline void alloc_global_tags(str
+ {
+ 	move_tags(tags->freelist, &tags->nr_free,
+ 		  pool->freelist, &pool->nr_free,
+-		  min(pool->nr_free, IDA_PCPU_BATCH_MOVE));
++		  min(pool->nr_free, pool->percpu_batch_size));
+ }
+ 
+ static inline unsigned alloc_local_tag(struct percpu_ida *pool,
+@@ -245,17 +236,17 @@ void percpu_ida_free(struct percpu_ida *
+ 		wake_up(&pool->wait);
+ 	}
+ 
+-	if (nr_free == IDA_PCPU_SIZE) {
++	if (nr_free == pool->percpu_max_size) {
+ 		spin_lock(&pool->lock);
+ 
+ 		/*
+ 		 * Global lock held and irqs disabled, don't need percpu
+ 		 * lock
+ 		 */
+-		if (tags->nr_free == IDA_PCPU_SIZE) {
++		if (tags->nr_free == pool->percpu_max_size) {
+ 			move_tags(pool->freelist, &pool->nr_free,
+ 				  tags->freelist, &tags->nr_free,
+-				  IDA_PCPU_BATCH_MOVE);
++				  pool->percpu_batch_size);
+ 
+ 			wake_up(&pool->wait);
+ 		}
+@@ -292,7 +283,8 @@ EXPORT_SYMBOL_GPL(percpu_ida_destroy);
+  * Allocation is percpu, but sharding is limited by nr_tags - for best
+  * performance, the workload should not span more cpus than nr_tags / 128.
+  */
+-int percpu_ida_init(struct percpu_ida *pool, unsigned long nr_tags)
++int __percpu_ida_init(struct percpu_ida *pool, unsigned long nr_tags,
++	unsigned long max_size, unsigned long batch_size)
+ {
+ 	unsigned i, cpu, order;
+ 
+@@ -301,6 +293,8 @@ int percpu_ida_init(struct percpu_ida *p
+ 	init_waitqueue_head(&pool->wait);
+ 	spin_lock_init(&pool->lock);
+ 	pool->nr_tags = nr_tags;
++	pool->percpu_max_size = max_size;
++	pool->percpu_batch_size = batch_size;
+ 
+ 	/* Guard against overflow */
+ 	if (nr_tags > (unsigned) INT_MAX + 1) {
+@@ -319,7 +313,7 @@ int percpu_ida_init(struct percpu_ida *p
+ 	pool->nr_free = nr_tags;
+ 
+ 	pool->tag_cpu = __alloc_percpu(sizeof(struct percpu_ida_cpu) +
+-				       IDA_PCPU_SIZE * sizeof(unsigned),
++				       pool->percpu_max_size * sizeof(unsigned),
+ 				       sizeof(unsigned));
+ 	if (!pool->tag_cpu)
+ 		goto err;
+@@ -332,4 +326,4 @@ err:
+ 	percpu_ida_destroy(pool);
+ 	return -ENOMEM;
+ }
+-EXPORT_SYMBOL_GPL(percpu_ida_init);
++EXPORT_SYMBOL_GPL(__percpu_ida_init);
+
