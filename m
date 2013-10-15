@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759078Ab3JONLj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 09:11:39 -0400
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:38878 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758486Ab3JONLi (ORCPT
+	id S1759257Ab3JONLr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 09:11:47 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:44273 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759151Ab3JONLo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 09:11:38 -0400
+	Tue, 15 Oct 2013 09:11:44 -0400
+X-AuditID: cbfee61a-b7f7a6d00000235f-94-525d3f0f4f8b
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: [GIT PULL] DMA-mapping fix for v3.12
 Date: Tue, 15 Oct 2013 15:11:33 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Juri Lelli <juri.lelli@gmail.com>, tglx@linutronix.de, mingo@redhat.com,
-        rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
-        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
-        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, fchecconi@gmail.com,
-        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
-        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
-        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@gmail.com,
-        liming.wang@windriver.com, jkacur@redhat.com,
-        harald.gustafsson@ericsson.com, vincent.guittot@linaro.org,
-        bruce.ashfield@windriver.com--no-chain-reply-to
-Subject: Re: [PATCH 12/14] sched: make dl_bw a sub-quota of rt_bw
-Message-ID: <20131015131133.GC2402@gmail.com>
-References: <1381747426-31334-1-git-send-email-juri.lelli@gmail.com>
- <1381747426-31334-13-git-send-email-juri.lelli@gmail.com>
- <20131014140618.GA26604@gmail.com>
- <525D1234.5060001@gmail.com>
- <20131015102621.GE10651@twins.programming.kicks-ass.net>
- <20131015122522.GB2402@gmail.com>
- <20131015123527.GI10651@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131015123527.GI10651@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-id: <1381842693-10386-1-git-send-email-m.szyprowski@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDJMWRmVeSWpSXmKPExsVy+t9jQV1++9ggg2MTxS0u75rDZrH2yF12
+	i0d9b9kdmD1OzPjN4tG3ZRWjx+dNcgHMUVw2Kak5mWWpRfp2CVwZj9unsxSc4aiY2/aOuYFx
+	PnsXIyeHhICJxM55V5ghbDGJC/fWs3UxcnEICUxnlDg2r4EVJCEk0MokMWudPIjNJmAo0fW2
+	iw3EFhEwkvj84gpYDbOAr8SdV6tYQGxhAV2J5mkQNSwCqhIHZ/aBLeAV8JDYMOkAYxcjB9Ay
+	BYk5k2wmMHIvYGRYxSiaWpBcUJyUnmuoV5yYW1yal66XnJ+7iRHs52dSOxhXNlgcYhTgYFTi
+	4f3BGxMkxJpYVlyZe4hRgoNZSYT3j1VskBBvSmJlVWpRfnxRaU5q8SFGaQ4WJXHeA63WgUIC
+	6YklqdmpqQWpRTBZJg5OqQbGqmWzSvsX33knvOeBDZvCqT0T1Q5nrD50tuq3geqDkun2l28f
+	EWa4MftsMtOatTHPTutzbrp/u3JD+tNnvrUmffus1yeFLVzxcN+rT0KCk9N0P4gsLOpSXsF0
+	6pzSpC9+aTE39/WvFHUtcJiUfPzUBMfjr8/mtInNdBV2jbwltlLjwLYH8YyMy5RYijMSDbWY
+	i4oTAeIAvabvAQAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Linus,
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+I would like to ask You for pulling a fix for dma-mapping subsystem for
+ARM architecture for v3.12.
 
-> On Tue, Oct 15, 2013 at 02:25:22PM +0200, Ingo Molnar wrote:
-> >
-> > Really, please make it _symmetric_ ...
-> > 
-> > Single core systems are becoming a historic curiosity, should we 
-> > should justify every piece of extra complexity we add for them.
-> > 
-> > So I'd rather see obvious SMP code where the UP case works fine too, 
-> > and _then_ maybe check a separate patch that adds the UP optimization, 
-> > with (object size) numbers proving that it's worth it, etc.
-> 
-> That's a slightly larger task than it appears; the core scheduler code 
-> they rely on with smp doesn't exist on up.
-> 
-> We can do this but we need to do it scheduler wide.
+The following changes since commit 15c03dd4859ab16f9212238f29dd315654aa94f6:
 
-The scheduler has over 800 #ifdefs or similar preprocessor directives:
+  Linux 3.12-rc3 (2013-09-29 15:02:38 -0700)
 
-  comet:~/tip> git grep '^#' kernel/sched/ | grep -v include | wc -l
-  855
+are available in the git repository at:
 
-I'd like to see this simplified a bit, _especially_ before we add new 
-complexity ...
+  git://git.linaro.org/people/mszyprowski/linux-dma-mapping.git fixes-for-v3.12
 
-Thanks,
+for you to fetch changes up to c9b24996d5da1bf7d2bebab5770dfcc7834c53b7:
 
-	Ingo
+  ARM: dma-mapping: Always pass proper prot flags to iommu_map() (2013-10-02 13:23:11 +0200)
+
+----------------------------------------------------------------
+Andreas Herrmann (1):
+      ARM: dma-mapping: Always pass proper prot flags to iommu_map()
+
+ arch/arm/mm/dma-mapping.c |   43 ++++++++++++++++++++++++++++---------------
+ 1 file changed, 28 insertions(+), 15 deletions(-)
+
+----------------------------------------------------------------
+
+This pull request contains a bugfix for the IOMMU-based implementation
+of dma-mapping subsystem for ARM architecture.
+
+Thanks!
+
+Best regards
+Marek Szyprowski
+Samsung R&D Institute Poland
