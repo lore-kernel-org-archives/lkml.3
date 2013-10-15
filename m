@@ -1,56 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759387Ab3JOOG2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 10:06:28 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:53335 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759316Ab3JOOG1 (ORCPT
+	id S1759392Ab3JOOJU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 10:09:20 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:57009 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759170Ab3JOOJT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 10:06:27 -0400
-Message-ID: <1381845985.2045.40.camel@edumazet-glaptop.roam.corp.google.com>
-Subject: Re: [PATCH] x86: Run checksumming in parallel accross multiple alu's
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: =?ISO-8859-1?Q?S=E9bastien_Dugu=E9?= <sebastien.dugue@bull.net>
-Cc: Andi Kleen <andi@firstfloor.org>, Neil Horman <nhorman@tuxdriver.com>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org
-Date: Tue, 15 Oct 2013 07:06:25 -0700
-In-Reply-To: <20131015155615.738f03d5@b012350-ux>
-References: <1381510298-20572-1-git-send-email-nhorman@tuxdriver.com>
-	 <87siw4xy9i.fsf@tassilo.jf.intel.com>
-	 <20131014202528.GG26880@hmsreliant.think-freely.org>
-	 <20131015091251.2345b918@b012350-ux>
-	 <20131015133336.GF2592@two.firstfloor.org>
-	 <20131015155615.738f03d5@b012350-ux>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Tue, 15 Oct 2013 10:09:19 -0400
+Message-ID: <525D4C83.706@ti.com>
+Date: Tue, 15 Oct 2013 10:09:07 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Zhang Rui <rui.zhang@intel.com>
+CC: Eduardo Valentin <eduardo.valentin@ti.com>, <amit.daniel@samsung.com>,
+        <l.majewski@samsung.com>, <linux-kernel@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>
+Subject: Re: [GIT PULL] thermal-soc: urgent fixes for 3.12
+References: <1381788001-3508-1-git-send-email-eduardo.valentin@ti.com> <1381837008.2080.61.camel@rzhang1-mobl4>
+In-Reply-To: <1381837008.2080.61.camel@rzhang1-mobl4>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature";
+	boundary="ebKEhHHIFAPP4n0G4vvmt0hFlUOeHGSww"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-10-15 at 15:56 +0200, Sébastien Dugué wrote:
-> On Tue, 15 Oct 2013 15:33:36 +0200
-> Andi Kleen <andi@firstfloor.org> wrote:
-> 
-> > >   indeed, our typical workload is connected mode IPoIB on mlx4 QDR hardware
-> > > where one cannot benefit from hardware offloads.
-> > 
-> > Is this with sendfile?
-> 
->   Tests were done with iperf at the time without any extra funky options, and
-> looking at the code it looks like it does plain write() / recv() on the socket.
-> 
+--ebKEhHHIFAPP4n0G4vvmt0hFlUOeHGSww
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-But the csum cost is both for sender and receiver ?
+On 15-10-2013 07:36, Zhang Rui wrote:
+> Hi, Eduardo,
+>=20
+> On Mon, 2013-10-14 at 18:00 -0400, Eduardo Valentin wrote:
+>> Hello Rui,
+>>
+>> Please pull the following changes. It contains fixes for 3.12 on Exyno=
+s
+>> thermal driver, which is currently broken, Exynos4412 is the main affe=
+cted.
+>> Thanks Lukasz for his persistence on getting this done for 3.12.
+>>
+>> Lukasz, you need to queue the remaining changes on DT via your platfor=
+m tree.
+>>
+>> It contains also a fix on the extrapolation rules for TI SoCs.
+>>
+>> The following changes since commit 74ae45a3d656d3e86bb8e776634ebdfd3f3=
+9f37c:
+>>
+>>   Merge branches 'x86_pkg_temp' and 'misc' of .git into next (2013-09-=
+25 21:41:44 +0800)
+>>
+> please rebase your tree on top of my master branch or Linus' tree.
+> Or else I'll pull in some thermal changes in my next branch that are
+> targeted for 3.13.
 
-Please post the following :
+In fact, my bad. I am rebasing on top of your master and resending.
 
-perf record -g "your iperf session"
+>=20
+> thanks,
+> rui
+>> are available in the git repository at:
+>>
+>>
+>>   git://git.kernel.org/pub/scm/linux/kernel/git/evalenti/linux-soc-the=
+rmal.git next
+>>
+>> for you to fetch changes up to 848a3b2b91a45f6b7814e2779f58cc0461d88fc=
+e:
+>>
+>>   drivers: thermal: allow ti-soc-thermal run without pcb zone (2013-10=
+-14 17:48:33 -0400)
+>>
+>> ----------------------------------------------------------------
+>> Eduardo Valentin (1):
+>>       drivers: thermal: allow ti-soc-thermal run without pcb zone
+>>
+>> Lukasz Majewski (3):
+>>       thermal: exynos: Remove check for thermal device pointer at exyn=
+os_report_trigger()
+>>       thermal: exynos: Provide separate TMU data for Exynos4412
+>>       thermal: exynos: Provide initial setting for TMU's test MUX addr=
+ess at Exynos4412
+>>
+>>  drivers/thermal/samsung/exynos_thermal_common.c    |  2 --
+>>  drivers/thermal/samsung/exynos_tmu.c               | 12 ++++++---
+>>  drivers/thermal/samsung/exynos_tmu.h               |  7 ++++-
+>>  drivers/thermal/samsung/exynos_tmu_data.c          | 30 +++++++++++++=
+++++-----
+>>  drivers/thermal/samsung/exynos_tmu_data.h          | 13 +++++++++-
+>>  drivers/thermal/ti-soc-thermal/ti-thermal-common.c |  1 +
+>>  6 files changed, 51 insertions(+), 14 deletions(-)
+>=20
+>=20
+>=20
+>=20
 
-perf report | head -n 200
+
+--=20
+You have got to be excited about what you are doing. (L. Lamport)
+
+Eduardo Valentin
 
 
+--ebKEhHHIFAPP4n0G4vvmt0hFlUOeHGSww
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iF4EAREIAAYFAlJdTIUACgkQCXcVR3XQvP0qxAEAuaabRtfGK1pnfarqG3hufqJk
+QkCGFtQf4M6LP3oHYU8BAOmVdgYaKh2McVCbx4WlFCARJSS33TUGV4xV6ZZ1UJiQ
+=GBzs
+-----END PGP SIGNATURE-----
+
+--ebKEhHHIFAPP4n0G4vvmt0hFlUOeHGSww--
