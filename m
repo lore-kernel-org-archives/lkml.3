@@ -1,56 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932380Ab3JON1N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 09:27:13 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:57478 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932082Ab3JON1M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 09:27:12 -0400
+	id S1759260Ab3JON1e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 09:27:34 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:55362 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759224Ab3JON1d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 09:27:33 -0400
+Date: Tue, 15 Oct 2013 06:27:18 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        "Liu, Chuansheng" <chuansheng.liu@intel.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "Ingo Molnar (mingo@kernel.org)" <mingo@kernel.org>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "'linux-kernel@vger.kernel.org' (linux-kernel@vger.kernel.org)" 
+	<linux-kernel@vger.kernel.org>,
+        "Wang, Xiaoming" <xiaoming.wang@intel.com>,
+        "Li, Zhuangzhi" <zhuangzhi.li@intel.com>
+Subject: Re: Panic and page fault in loop during handling NMI backtrace
+ handler
+Message-ID: <20131015132718.GF9150@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <27240C0AC20F114CBF8149A2696CBE4A01B60835@SHSMSX101.ccr.corp.intel.com>
+ <20131015121849.GA29884@localhost.localdomain>
+ <20131015123717.GJ10651@twins.programming.kicks-ass.net>
+ <20131015124837.GC9150@linux.vnet.ibm.com>
+ <20131015125914.GC29884@localhost.localdomain>
+ <20131015130659.GD9150@linux.vnet.ibm.com>
+ <20131015131757.GD29884@localhost.localdomain>
 MIME-Version: 1.0
-In-Reply-To: <20131015131231.GD2402@gmail.com>
-References: <20131009161743.GA3022@quad>
-	<52558278.6080206@gmail.com>
-	<CABPqkBRx1CqwXOjJXWeqEBqkLkZMHWVQJNjv1jjqPakoDNB3Gg@mail.gmail.com>
-	<CABPqkBQKaMd_LuvfUreYb_9hiR-j0BkAyiP2yP-C0TTy+15_fQ@mail.gmail.com>
-	<5255900A.5050103@gmail.com>
-	<CABPqkBQZz=80he07yzagwPjhJBOK-bc_C=hfsK+LjMvcYWZvew@mail.gmail.com>
-	<52584626.4050000@gmail.com>
-	<CABPqkBRX1Qg5s7CKh++gxu4dq+GV0YZp30ixeF9-AmHoec8Gaw@mail.gmail.com>
-	<20131015131231.GD2402@gmail.com>
-Date: Tue, 15 Oct 2013 15:27:11 +0200
-Message-ID: <CABPqkBQN6Qn-Ccpjg09OzOv=LeT2S-Rr=sb2VVaJh0opfnyuYg@mail.gmail.com>
-Subject: Re: [PATCH] perf: disable mmap2 support
-From: Stephane Eranian <eranian@google.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: David Ahern <dsahern@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        "mingo@elte.hu" <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Jiri Olsa <jolsa@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Kees Cook <keescook@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131015131757.GD29884@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13101513-0320-0000-0000-0000015C9086
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 15, 2013 at 3:12 PM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> * Stephane Eranian <eranian@google.com> wrote:
->
->> Arnaldo,
->>
->> Could you revert all the mmap2 patches in your perf/urgent tree for now?
->> Thanks.
->
-> I think it would be helpful if you re-sent the final patch, with a full
-> changelog, etc., in a separate thread, not inside an existing discussion
-> and such.
->
-Are you talking about the perf tool or kernel patch?
-I did not send any perf-related mmap2 revert patches.
+On Tue, Oct 15, 2013 at 03:17:59PM +0200, Frederic Weisbecker wrote:
+> On Tue, Oct 15, 2013 at 06:06:59AM -0700, Paul E. McKenney wrote:
+> > On Tue, Oct 15, 2013 at 02:59:15PM +0200, Frederic Weisbecker wrote:
+> > > On Tue, Oct 15, 2013 at 05:48:37AM -0700, Paul E. McKenney wrote:
+> > > > On Tue, Oct 15, 2013 at 02:37:17PM +0200, Peter Zijlstra wrote:
+> > > > > On Tue, Oct 15, 2013 at 02:18:53PM +0200, Frederic Weisbecker wrote:
+> > > > > > On Tue, Oct 15, 2013 at 02:01:04AM +0000, Liu, Chuansheng wrote:
+> > > > > > > We meet one issue that during trigger all CPU backtrace, but during in the NMI handler arch_trigger_all_cpu_backtrace_handler,
+> > > > > > > It hit the PAGE fault, then PAGE fault is in loop, at last the thread stack overflow, and system panic.
+> > > > > > > 
+> > > > > > > Anyone can give some help? Thanks.
+> > > > > > 
+> > > > > > Looks like we re-enter the fault several times. On x86-32, NMIs can
+> > > > > > fault if they dereference vmalloc'ed area. I wonder if the module thing
+> > > > > > we lookup in the NMI is stored on some vmalloc'ed area.
+> > > > > 
+> > > > > IIRC modules are indeed allocated using vmalloc. See module_alloc()
+> > > > > using vmalloc_exec()
+> > > > 
+> > > > This might then be a module that uses call_rcu(), but which does not have
+> > > > the needed rcu_barrier() in the module-exit function.
+> > > 
+> > > I rather believe it's due to the lazy paging of vmalloc area in x86-32. We had issues
+> > > like that in the past. For example that's the reason why we do an ad-hoc per-cpu
+> > > allocation on callchain buffers in perf rather than using alloc_percpu() which might
+> > > use vmalloc.
+> > 
+> > I must defer to your greater experience with this type of bug.
+> 
+> With some chances I'll be proved wrong. I hope, because that issue is not easily fixed.
 
-> Thanks,
->
->         Ingo
+Fair enough!
+
+								Thanx, Paul
+
