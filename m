@@ -1,106 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933780Ab3JOTcR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 15:32:17 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:64827 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759306Ab3JOTcM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 15:32:12 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH] drivers: misc: add gpio wakeup driver
-Date: Tue, 15 Oct 2013 21:32:00 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Daniel Mack <zonque@gmail.com>, Greg KH <gregkh@linuxfoundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Mark Brown <broonie@kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>
-References: <1380635719-31171-1-git-send-email-zonque@gmail.com> <CACRpkdYhQ+-d1COcvmg_hEJ==cTFpKLNDnvF8kdK4QgXzHenEA@mail.gmail.com>
-In-Reply-To: <CACRpkdYhQ+-d1COcvmg_hEJ==cTFpKLNDnvF8kdK4QgXzHenEA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201310152132.00409.arnd@arndb.de>
-X-Provags-ID: V02:K0:vDNQtigtKuHmwbAItB0aYRAekS5mYogBN6zrRmABvx4
- ygwya9bRHAKCMe/Ok8U2Jrj0lA7+ARymtZEsxkHVKjg4BnN8V9
- DwJdfmEwvBUez9QpztZecE329cnKgivEIRu9ikddO1tFzyO/d0
- HSAFVgRNkr+EWd9N0hsJZoNqjRuYRSIpIkufgLOL+QTgmaccN1
- G+KAFdV24Gf2jTIvqwQ285xyrXqLCAqZjcgMiKrJoxeNBpsCpy
- ImTVAkQGxfFI97RYXznQq7F2nqM2Ioav7G9RRrduCIzhOz+Wkh
- ZKJ2KkQriBNYUexazf9p3UNs0XAk1vHDp7WnAz1K6IWqZCjLa7
- PuJcHqYGkA84errqh+NY=
+	id S933548Ab3JOTcF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 15:32:05 -0400
+Received: from sauhun.de ([89.238.76.85]:36421 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932555Ab3JOTcD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 15:32:03 -0400
+From: Wolfram Sang <wsa@the-dreams.de>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Wolfram Sang <wsa@the-dreams.de>
+Subject: [RFC RESEND 1/3] sched: replace INIT_COMPLETION with reinit_completion
+Date: Tue, 15 Oct 2013 21:31:18 +0200
+Message-Id: <1381865480-3013-2-git-send-email-wsa@the-dreams.de>
+X-Mailer: git-send-email 1.8.4.rc3
+In-Reply-To: <1381865480-3013-1-git-send-email-wsa@the-dreams.de>
+References: <1381865480-3013-1-git-send-email-wsa@the-dreams.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 11 October 2013, Linus Walleij wrote:
-> On Tue, Oct 1, 2013 at 3:55 PM, Daniel Mack <zonque@gmail.com> wrote:
-> 
-> > This patch adds a very simple driver that enables GPIO lines as wakeup
-> > sources. It only operates on information passed in via DT, and depends
-> > on CONFIG_OF && CONFIG_PM_SLEEP. It can for example be used to connect
-> > wake-on-LAN (WOL) signals or other electric wakeup networks.
-> >
-> > The driver accepts a list of GPIO nodes and claims them along with their
-> > interrupt line. During suspend, the interrupts will be enabled and
-> > selected as wakeup source. The driver doesn't do anything else with the
-> > GPIO lines, and will ignore occured interrupts silently.
-> >
-> > Signed-off-by: Daniel Mack <zonque@gmail.com>
-> 
-> This makes a weird kind of sense.
-> Hm hm hm.
-> 
-> But I really need the misc mainatiners' help here...
-> possibly also irqchip maintainers.
+For the casual device driver writer, it is hard to remember when to use
+init_completion (to init a completion structure) or INIT_COMPLETION (to
+*reinit* a completion structure). Furthermore, while all other
+completion functions exepct a pointer as a parameter, INIT_COMPLETION
+does not. To make it easier to remember which function to use and to
+make code more readable, introduce a new inline function with the proper
+name and consistent argument type. Update the kernel-doc for
+init_completion while we are here.
 
-This seems like a completely generic driver, rather than some oddball
-hack, so I'd prefer to not see it in drivers/misc at all. Maybe you
-can find some other maintainer who is willing to put it into his
-subsystem, candidates would be
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Acked-by: Linus Walleij <linus.walleij@linaro.org> (personally at LCE13)
+---
+ include/linux/completion.h | 18 +++++++++++++++---
+ 1 file changed, 15 insertions(+), 3 deletions(-)
 
- * gpio
- * irqchip
- * power
- * of/dt
+diff --git a/include/linux/completion.h b/include/linux/completion.h
+index 3cd574d..2195e32 100644
+--- a/include/linux/completion.h
++++ b/include/linux/completion.h
+@@ -19,8 +19,8 @@
+  *
+  * See also:  complete(), wait_for_completion() (and friends _timeout,
+  * _interruptible, _interruptible_timeout, and _killable), init_completion(),
+- * and macros DECLARE_COMPLETION(), DECLARE_COMPLETION_ONSTACK(), and
+- * INIT_COMPLETION().
++ * reinit_completion(), and macros DECLARE_COMPLETION(),
++ * DECLARE_COMPLETION_ONSTACK().
+  */
+ struct completion {
+ 	unsigned int done;
+@@ -65,7 +65,7 @@ struct completion {
+ 
+ /**
+  * init_completion - Initialize a dynamically allocated completion
+- * @x:  completion structure that is to be initialized
++ * @x:  pointer to completion structure that is to be initialized
+  *
+  * This inline function will initialize a dynamically created completion
+  * structure.
+@@ -76,6 +76,18 @@ static inline void init_completion(struct completion *x)
+ 	init_waitqueue_head(&x->wait);
+ }
+ 
++/**
++ * reinit_completion - reinitialize a completion structure
++ * @x:  pointer to completion structure that is to be reinitialized
++ *
++ * This inline function should be used to reinitialize a completion structure so it can
++ * be reused. This is especially important after complete_all() is used.
++ */
++static inline void reinit_completion(struct completion *x)
++{
++	x->done = 0;
++}
++
+ extern void wait_for_completion(struct completion *);
+ extern void wait_for_completion_io(struct completion *);
+ extern int wait_for_completion_interruptible(struct completion *x);
+-- 
+1.8.4.rc3
 
-I don't see anything wrong with the basic approach though.
-
-> > +Example:
-> > +
-> > +       wake_up {
-> > +               compatible = "gpio-wakeup";
-> > +               gpios = <&gpio0 19 0>;
-> > +       };
-> 
-> This will not work if that GPIO chip is not capable of supporting
-> interrupts on that GPIO line right?
-> 
-> We have recently had a very long discussion about this: such
-> GPIO chips will also be marked "interrupt-controller" and you
-> should be able to just state interrupt-parent and
-> interrupts = <>; for this. (And it should accept an array.)
-> 
-> It *may* be that we have many GPIO drivers that do not accept
-> that you request an interrupt on them before you have done
-> request_gpio() followed by gpio_to_irq() on the pin. Then this
-> shall be treated like a bug and the GPIO driver fixed to handle
-> this. (That was the outcome of this discussion.)
-
-I haven't followed that discussion, but it's good to hear that
-you made some progress there. I find it a bit worrying that you
-say the behavior may be dependent on the gpio driver, but maybe
-I didn't fully understand what the resolution is.
-
-> Since what the driver will then eventually provide is to
-> flag an IRQ line as wakeup, I wonder if this should not just
-> simply go into the interrupt core, or atleast of/irq.c.
-
-Right.
-
-	Arnd
