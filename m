@@ -1,82 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758907Ab3JOMdx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 08:33:53 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:55588 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758561Ab3JOMdv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 08:33:51 -0400
-X-Spam-Score: -100.8
-Message-ID: <525D35E9.3000604@asianux.com>
-Date: Tue, 15 Oct 2013 20:32:41 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1758994Ab3JOMeo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 08:34:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44575 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758924Ab3JOMel (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 08:34:41 -0400
+Date: Tue, 15 Oct 2013 14:34:39 +0200
+From: Jan Kara <jack@suse.cz>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: Jan Kara <jack@suse.cz>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ted Tso <tytso@mit.edu>, linux-ext4@vger.kernel.org,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Ming Lei <tom.leiming@gmail.com>
+Subject: Re: [PATCH] ext4: fix checking on nr_to_write
+Message-ID: <20131015123439.GC12428@quack.suse.cz>
+References: <1381682393-5769-1-git-send-email-ming.lei@canonical.com>
+ <20131014125858.GH19604@quack.suse.cz>
+ <CACVXFVPpkJdw_AVwd=dRpD8ju6frjaU3QhKorr_PNNGu_D0jAQ@mail.gmail.com>
+ <20131014173459.GL19604@quack.suse.cz>
+ <20131015102553.22d4a018@tom-ThinkPad-T410>
+ <20131015103900.GB12428@quack.suse.cz>
+ <20131015191556.50c3eb03@tom-ThinkPad-T410>
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: josh@freedesktop.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel/rcutorture.c: use scnprintf() instead of sprintf()
-References: <5253C335.5050609@asianux.com> <20131013110518.GC5790@linux.vnet.ibm.com> <525BAD9F.6060406@asianux.com> <20131014112839.GO5790@linux.vnet.ibm.com> <525C9256.5010002@asianux.com> <525C9FAE.4090209@asianux.com> <20131015082613.GG5790@linux.vnet.ibm.com>
-In-Reply-To: <20131015082613.GG5790@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131015191556.50c3eb03@tom-ThinkPad-T410>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/15/2013 04:26 PM, Paul E. McKenney wrote:
-> On Tue, Oct 15, 2013 at 09:51:42AM +0800, Chen Gang wrote:
->>> One simple way: using snprintf() instead of scnprintf() in the related
->>> printing functions. Then call them with "buffer == NULL" to get buffer
->>> size, next allocate it and call it again ...
->>
->> Oh, this simple way assumes the printing contents will not be changed
->> during the 2 calls.
+On Tue 15-10-13 19:15:56, Ming Lei wrote:
+> >   This won't quite work because if the page is fully mapped
+> > mpage_process_page_bufs() will immediately submit the page and decrease
+> > nr_to_write. So now you would end up writing less than you were asked for
+> > in some cases. 
 > 
-> Indeed.  But can you make use of nr_cpu_ids, which is set at boot time
-> to the the maximum number of CPUs that the particular booting system
-> will ever be able to contain?  Keep in mind that you know the maximum
-> number of digits that an unsigned long will print in 32-bit and 64-bit
-> systems.
+> Yes, your are right, so how about below?
 > 
+> diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+> index 32c04ab..3cf7abb 100644
+> --- a/fs/ext4/inode.c
+> +++ b/fs/ext4/inode.c
+> @@ -2295,6 +2295,7 @@ static int mpage_prepare_extent_to_map(struct mpage_da_data *mpd)
+>  	struct address_space *mapping = mpd->inode->i_mapping;
+>  	struct pagevec pvec;
+>  	unsigned int nr_pages;
+> +	int left = mpd->wbc->nr_to_write;
+  'long' please. Otherwise the patch looks fine. Thanks!
 
-Yeah, that is a way for it. It seems you (related maintainer) like
-additional fix for it.
+								Honza
 
-Hmm... I will try within this week (although I don't think it is quite
-necessary to me).
-
-:-)
-
->>> Hmm... it is only a test module, is it worth enough to try to make it
->>> avoid truncation? If some members (quite few members) find truncation,
->>> they can simply extend maximize buffer to avoid it when testing.
->>>
->>> But if we do not fix this bug, when memory overflow, the OS may not stop
->>> immediately, then it will/may lead the testers to face various amazing
->>> things (which is not quite easy to find root cause).
+>  	pgoff_t index = mpd->first_page;
+>  	pgoff_t end = mpd->last_page;
+>  	int tag;
+> @@ -2330,6 +2331,17 @@ static int mpage_prepare_extent_to_map(struct mpage_da_data *mpd)
+>  			if (page->index > end)
+>  				goto out;
+>  
+> +			/*
+> +			 * Accumulated enough dirty pages? This doesn't apply
+> +			 * to WB_SYNC_ALL mode. For integrity sync we have to
+> +			 * keep going because someone may be concurrently
+> +			 * dirtying pages, and we might have synced a lot of
+> +			 * newly appeared dirty pages, but have not synced all
+> +			 * of the old dirty pages.
+> +			 */
+> +			if (mpd->wbc->sync_mode == WB_SYNC_NONE && left <= 0)
+> +				goto out;
+> +
+>  			/* If we can't merge this page, we are done. */
+>  			if (mpd->map.m_len > 0 && mpd->next_page != page->index)
+>  				goto out;
+> @@ -2364,19 +2376,7 @@ static int mpage_prepare_extent_to_map(struct mpage_da_data *mpd)
+>  			if (err <= 0)
+>  				goto out;
+>  			err = 0;
+> -
+> -			/*
+> -			 * Accumulated enough dirty pages? This doesn't apply
+> -			 * to WB_SYNC_ALL mode. For integrity sync we have to
+> -			 * keep going because someone may be concurrently
+> -			 * dirtying pages, and we might have synced a lot of
+> -			 * newly appeared dirty pages, but have not synced all
+> -			 * of the old dirty pages.
+> -			 */
+> -			if (mpd->wbc->sync_mode == WB_SYNC_NONE &&
+> -			    mpd->next_page - mpd->first_page >=
+> -							mpd->wbc->nr_to_write)
+> -				goto out;
+> +			left--;
+>  		}
+>  		pagevec_release(&pvec);
+>  		cond_resched();
 > 
-> It might cause strange symptoms, but it is not bad practice to try
-> it anyway, especially when the code is unfamiliar.  After all, if the
-> strange systems appear on memory overflow, but do not appear if there
-> is no memory overflow, you have a pretty good idea what the cause .
-> Besides, there might be some other mechanism to prevent the problem.
-> Of course, there is no such mechanism in this particular case, but in
-> general it is more efficient to find that out quickly then to spend time
-> designing a solution that is not needed.
-
-Excuse me, my English is not quite well, I am not quite understand your
-meaning.
-
-I guess your meaning is: "after find a simple/acceptable solution, we
-can think of more, it may be more efficient".
-
-If what I guess is correct, It is OK to me -- since at least, it is not
-an 'urgent' thing (for 'important' thing, your idea is more efficient,
-although for 'urgent' thing, it is not).
-
-
-Thanks.
+> 
+> > Attached patch should do what's needed. Can you try whether
+> > it fixes the problem for you (it seems to work OK in my testing).
+> 
+> In fact, I had wrote and tested your attached patch before my last post,
+> and it may trigger BUG() in mpage_release_unused_pages(), that is because
+> we touch mpd->next_page without locking current page, so it is better to
+> not increase mpd->next_page if the current page won't be processed.
+> 
+> 
+> Thanks,
+> -- 
+> Ming Lei
 -- 
-Chen Gang
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
