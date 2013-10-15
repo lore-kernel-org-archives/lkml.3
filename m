@@ -1,56 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758167Ab3JOH6X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 03:58:23 -0400
-Received: from mail-db9lp0252.outbound.messaging.microsoft.com ([213.199.154.252]:30429
-	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757903Ab3JOH6S (ORCPT
+	id S1758214Ab3JOH6b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 03:58:31 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:37404 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753290Ab3JOH60 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 03:58:18 -0400
-X-Forefront-Antispam-Report: CIP:62.221.5.235;KIP:(null);UIP:(null);IPV:NLI;H:xir-gw1;RD:unknown-62-221-5-235.ipspace.xilinx.com;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VPS1(z551bizbb2dI98dI9371I1454I1432I4015Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275bhz2fh95h839h947hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h190ch1946h19b4h19b5h19c3h1b0ah1be0h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh19b6n1155h192ch)
-Date: Tue, 15 Oct 2013 09:58:09 +0200
-From: Michal Simek <michal.simek@xilinx.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Tue, 15 Oct 2013 03:58:26 -0400
+Date: Tue, 15 Oct 2013 16:58:57 +0900
+From: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
+To: Gao feng <gaofeng@cn.fujitsu.com>, <viro@zeniv.linux.org.uk>,
+        <eparis@redhat.com>
+CC: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: [BUG][PATCH V3] audit: audit_log_start running on auditd should not
+ stop
+Message-ID: <20131015165857.aa1c68502180cb4b89d6226a@jp.fujitsu.com>
+In-Reply-To: <525CE9BD.4020002@jp.fujitsu.com>
+References: <20131011103645.6643fabff0eceb152e0be6c2@jp.fujitsu.com>
+	<5257C5D7.80308@cn.fujitsu.com>
+	<5257EF15.6080209@jp.fujitsu.com>
+	<20131015134345.98d72df42a39e9e1ad77a73c@jp.fujitsu.com>
+	<525CE10A.90907@cn.fujitsu.com>
+	<525CE9BD.4020002@jp.fujitsu.com>
+Organization: Fujitsu
+X-Mailer: Sylpheed 3.2.0beta9 (GTK+ 2.24.11; i686-redhat-linux-gnu)
 MIME-Version: 1.0
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-CC: Soren Brinkmann <soren.brinkmann@xilinx.com>, <netdev@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, <linux-kernel@vger.kernel.org>,
-        Michal Simek <michal.simek@xilinx.com>
-Subject: Re: [PATCH RFC 5/5] net: macb: Adjust tx_clk when link speed changes
-References: <1381795140-10792-1-git-send-email-soren.brinkmann@xilinx.com> <1381795140-10792-6-git-send-email-soren.brinkmann@xilinx.com> <525CF4AD.1070304@atmel.com>
-In-Reply-To: <525CF4AD.1070304@atmel.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
-X-RCIS-Action: ALLOW
-Message-ID: <dd225b7c-ee2a-4747-9a50-55b77a114376@DB9EHSMHS006.ehs.local>
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/15/2013 09:54 AM, Nicolas Ferre wrote:
-> On 15/10/2013 01:59, Soren Brinkmann :
->> Adjust the ethernet clock according to the negotiated link speed.
->>
->> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-> 
-> I will need more time to study this one.
-> 
-> Moreover, I will have to add the "tx_clk" to every user of this driver before switchin to the addition of this clock.
+The backlog cannot be consumed when audit_log_start is running on auditd
+even if audit_log_start calls wait_for_auditd to consume it.
+The situation is the deadlock because only auditd can consume the backlog.
+If the other process needs to send the backlog, it can be also stopped 
+by the deadlock.
 
-As I am reading this patch, Soren just protected this
-case that if this clk is not specified then it is not used.
+So, audit_log_start running on auditd should not stop.
 
-But anyway feel free to take more time to study it.
+You can see the deadlock with the following reproducer:
+ # auditctl -a exit,always -S all
+ # reboot
 
-If there is device-tree binding then it should be extend
-by this optional value.
+Signed-off-by: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
+Cc: gaofeng@cn.fujitsu.com
+---
+ kernel/audit.c |   14 ++++++++------
+ 1 files changed, 8 insertions(+), 6 deletions(-)
 
-Thanks,
-Michal
-
-
+diff --git a/kernel/audit.c b/kernel/audit.c
+index 7b0e23a..29cfc94 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -1095,7 +1095,8 @@ struct audit_buffer *audit_log_start(struct audit_context *ctx, gfp_t gfp_mask,
+ 	struct audit_buffer	*ab	= NULL;
+ 	struct timespec		t;
+ 	unsigned int		uninitialized_var(serial);
+-	int reserve;
++	int reserve = 5; /* Allow atomic callers to go up to five
++			    entries over the normal backlog limit */
+ 	unsigned long timeout_start = jiffies;
+ 
+ 	if (audit_initialized != AUDIT_INITIALIZED)
+@@ -1104,11 +1105,12 @@ struct audit_buffer *audit_log_start(struct audit_context *ctx, gfp_t gfp_mask,
+ 	if (unlikely(audit_filter_type(type)))
+ 		return NULL;
+ 
+-	if (gfp_mask & __GFP_WAIT)
+-		reserve = 0;
+-	else
+-		reserve = 5; /* Allow atomic callers to go up to five
+-				entries over the normal backlog limit */
++	if (gfp_mask & __GFP_WAIT) {
++		if (audit_pid && audit_pid == current->pid)
++			gfp_mask &= ~__GFP_WAIT;
++		else
++			reserve = 0;
++	}
+ 
+ 	while (audit_backlog_limit
+ 	       && skb_queue_len(&audit_skb_queue) > audit_backlog_limit + reserve) {
+-- 
+1.5.5.6
