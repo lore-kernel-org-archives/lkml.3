@@ -1,231 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758289Ab3JOL0K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 07:26:10 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:59772 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752506Ab3JOL0I (ORCPT
+	id S1758699Ab3JOL3E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 07:29:04 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:48940 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758028Ab3JOL3C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 07:26:08 -0400
-From: Ramkumar Ramachandra <artagnon@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [PATCH v2] perf tools: use ansi versions of asm and volatile
-Date: Tue, 15 Oct 2013 16:49:20 +0530
-Message-Id: <1381835960-22900-1-git-send-email-artagnon@gmail.com>
-X-Mailer: git-send-email 1.8.4.477.g5d89aa9
+	Tue, 15 Oct 2013 07:29:02 -0400
+Message-ID: <525D26ED.9040602@linux.vnet.ibm.com>
+Date: Tue, 15 Oct 2013 16:58:45 +0530
+From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Tony Luck <tony.luck@gmail.com>, Borislav Petkov <bp@alien8.de>
+CC: Chen Gong <gong.chen@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-acpi <linux-acpi@vger.kernel.org>,
+        Lance Ortiz <lance.ortiz@hp.com>
+Subject: Re: [PATCH 7/8] ACPI, APEI, CPER: Cleanup CPER memory error output
+ format
+References: <1381473166-29303-1-git-send-email-gong.chen@linux.intel.com> <1381473166-29303-8-git-send-email-gong.chen@linux.intel.com> <20131011160208.GL5925@pd.tnic>	<20131014045500.GC12189@gchen.bj.intel.com> <20131014103616.GE4009@pd.tnic> <CA+8MBbJ9P1GVf3SCh7LMY_LH+pxQg3GWkxKMzni1b1Wyx1o8NQ@mail.gmail.com>
+In-Reply-To: <CA+8MBbJ9P1GVf3SCh7LMY_LH+pxQg3GWkxKMzni1b1Wyx1o8NQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13101511-2000-0000-0000-00000E1D963D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-asm and volatile are provided for backward compatibility; use the ansi
-versions __asm__ and __volatile__.
+On 10/14/2013 10:42 PM, Tony Luck wrote:
+> On Mon, Oct 14, 2013 at 3:36 AM, Borislav Petkov <bp@alien8.de> wrote:
+>> On Mon, Oct 14, 2013 at 12:55:00AM -0400, Chen Gong wrote:
+>>> Because most of data in CPER are empty or unimportant.
+>>
+>> It is not about whether it is important or not - the question is whether
+>> changing existing functionality which someone might rely upon is a
+>> problem here? Someone might be expecting exactly those messages to
+>> appear in dmesg.
+>
+> Pulling in a couple more people who have been touching error reporting
+> code in the last year or so (Hi Lance, Naveen ... feel free to drag more
+> people to look at this thread).
+>
+> I prodded Chen Gong in to make this change because our console messages
+> are way to verbose (and scary) for simple corrected errors.  There are 18
+> fields in the memory error section (as of UEFI 2.4 ... more are likely to be
+> added because there are issues that some of the 16-bit wide fields are too
+> small to handle increased internal values in modern DIMMs).  Whether you
+> print that one item per line, or a few very long lines - it is way
+> more information
+> than the average user will ever want or need to see.
 
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
----
- Thanks to Peter for pointing out the instances I missed.
+I completely agree and I am all for bringing down the verbosity of GHES 
+logs. In my testing, a corrected error event reported through GHES takes 
+upwards of 10 lines, which is far too much. Perhaps a single line per 
+GHES event with only a few important fields would be better?
 
- tools/perf/arch/powerpc/util/header.c |  2 +-
- tools/perf/perf.h                     | 54 +++++++++++++++++------------------
- tools/perf/tests/perf-time-to-tsc.c   |  2 +-
- tools/perf/tests/rdpmc.c              |  6 ++--
- 4 files changed, 32 insertions(+), 32 deletions(-)
 
-diff --git a/tools/perf/arch/powerpc/util/header.c b/tools/perf/arch/powerpc/util/header.c
-index 2f7073d..4b0a302 100644
---- a/tools/perf/arch/powerpc/util/header.c
-+++ b/tools/perf/arch/powerpc/util/header.c
-@@ -10,7 +10,7 @@
- #define __stringify(x)          __stringify_1(x)
- 
- #define mfspr(rn)       ({unsigned long rval; \
--			 asm volatile("mfspr %0," __stringify(rn) \
-+			 __asm__ __volatile__("mfspr %0," __stringify(rn) \
- 				      : "=r" (rval)); rval; })
- 
- #define SPRN_PVR        0x11F	/* Processor Version Register */
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index cf20187..6c447db 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -4,8 +4,8 @@
- #include <asm/unistd.h>
- 
- #if defined(__i386__)
--#define rmb()		asm volatile("lock; addl $0,0(%%esp)" ::: "memory")
--#define cpu_relax()	asm volatile("rep; nop" ::: "memory");
-+#define rmb()		__asm__ __volatile__("lock; addl $0,0(%%esp)" ::: "memory")
-+#define cpu_relax()	__asm__ __volatile__("rep; nop" ::: "memory");
- #define CPUINFO_PROC	"model name"
- #ifndef __NR_perf_event_open
- # define __NR_perf_event_open 336
-@@ -13,8 +13,8 @@
- #endif
- 
- #if defined(__x86_64__)
--#define rmb()		asm volatile("lfence" ::: "memory")
--#define cpu_relax()	asm volatile("rep; nop" ::: "memory");
-+#define rmb()		__asm__ __volatile__("lfence" ::: "memory")
-+#define cpu_relax()	__asm__ __volatile__("rep; nop" ::: "memory");
- #define CPUINFO_PROC	"model name"
- #ifndef __NR_perf_event_open
- # define __NR_perf_event_open 298
-@@ -23,47 +23,47 @@
- 
- #ifdef __powerpc__
- #include "../../arch/powerpc/include/uapi/asm/unistd.h"
--#define rmb()		asm volatile ("sync" ::: "memory")
--#define cpu_relax()	asm volatile ("" ::: "memory");
-+#define rmb()		__asm__ __volatile__ ("sync" ::: "memory")
-+#define cpu_relax()	__asm__ __volatile__ ("" ::: "memory");
- #define CPUINFO_PROC	"cpu"
- #endif
- 
- #ifdef __s390__
--#define rmb()		asm volatile("bcr 15,0" ::: "memory")
--#define cpu_relax()	asm volatile("" ::: "memory");
-+#define rmb()		__asm__ __volatile__("bcr 15,0" ::: "memory")
-+#define cpu_relax()	__asm__ __volatile__("" ::: "memory");
- #endif
- 
- #ifdef __sh__
- #if defined(__SH4A__) || defined(__SH5__)
--# define rmb()		asm volatile("synco" ::: "memory")
-+# define rmb()		__asm__ __volatile__("synco" ::: "memory")
- #else
--# define rmb()		asm volatile("" ::: "memory")
-+# define rmb()		__asm__ __volatile__("" ::: "memory")
- #endif
--#define cpu_relax()	asm volatile("" ::: "memory")
-+#define cpu_relax()	__asm__ __volatile__("" ::: "memory")
- #define CPUINFO_PROC	"cpu type"
- #endif
- 
- #ifdef __hppa__
--#define rmb()		asm volatile("" ::: "memory")
--#define cpu_relax()	asm volatile("" ::: "memory");
-+#define rmb()		__asm__ __volatile__("" ::: "memory")
-+#define cpu_relax()	__asm__ __volatile__("" ::: "memory");
- #define CPUINFO_PROC	"cpu"
- #endif
- 
- #ifdef __sparc__
--#define rmb()		asm volatile("":::"memory")
--#define cpu_relax()	asm volatile("":::"memory")
-+#define rmb()		__asm__ __volatile__("":::"memory")
-+#define cpu_relax()	__asm__ __volatile__("":::"memory")
- #define CPUINFO_PROC	"cpu"
- #endif
- 
- #ifdef __alpha__
--#define rmb()		asm volatile("mb" ::: "memory")
--#define cpu_relax()	asm volatile("" ::: "memory")
-+#define rmb()		__asm__ __volatile__("mb" ::: "memory")
-+#define cpu_relax()	__asm__ __volatile__("" ::: "memory")
- #define CPUINFO_PROC	"cpu model"
- #endif
- 
- #ifdef __ia64__
--#define rmb()		asm volatile ("mf" ::: "memory")
--#define cpu_relax()	asm volatile ("hint @pause" ::: "memory")
-+#define rmb()		__asm__ __volatile__ ("mf" ::: "memory")
-+#define cpu_relax()	__asm__ __volatile__ ("hint @pause" ::: "memory")
- #define CPUINFO_PROC	"model name"
- #endif
- 
-@@ -73,36 +73,36 @@
-  * arch/arm/kernel/entry-armv.S in the kernel source for details.
-  */
- #define rmb()		((void(*)(void))0xffff0fa0)()
--#define cpu_relax()	asm volatile("":::"memory")
-+#define cpu_relax()	__asm__ __volatile__("":::"memory")
- #define CPUINFO_PROC	"Processor"
- #endif
- 
- #ifdef __aarch64__
--#define rmb()		asm volatile("dmb ld" ::: "memory")
--#define cpu_relax()	asm volatile("yield" ::: "memory")
-+#define rmb()		__asm__ __volatile__("dmb ld" ::: "memory")
-+#define cpu_relax()	__asm__ __volatile__("yield" ::: "memory")
- #endif
- 
- #ifdef __mips__
--#define rmb()		asm volatile(					\
-+#define rmb()		__asm__ __volatile__(					\
- 				".set	mips2\n\t"			\
- 				"sync\n\t"				\
- 				".set	mips0"				\
- 				: /* no output */			\
- 				: /* no input */			\
- 				: "memory")
--#define cpu_relax()	asm volatile("" ::: "memory")
-+#define cpu_relax()	__asm__ __volatile__("" ::: "memory")
- #define CPUINFO_PROC	"cpu model"
- #endif
- 
- #ifdef __arc__
--#define rmb()		asm volatile("" ::: "memory")
-+#define rmb()		__asm__ __volatile__("" ::: "memory")
- #define cpu_relax()	rmb()
- #define CPUINFO_PROC	"Processor"
- #endif
- 
- #ifdef __metag__
--#define rmb()		asm volatile("" ::: "memory")
--#define cpu_relax()	asm volatile("" ::: "memory")
-+#define rmb()		__asm__ __volatile__("" ::: "memory")
-+#define cpu_relax()	__asm__ __volatile__("" ::: "memory")
- #define CPUINFO_PROC	"CPU"
- #endif
- 
-diff --git a/tools/perf/tests/perf-time-to-tsc.c b/tools/perf/tests/perf-time-to-tsc.c
-index 0ab61b1..3fc1bc3 100644
---- a/tools/perf/tests/perf-time-to-tsc.c
-+++ b/tools/perf/tests/perf-time-to-tsc.c
-@@ -31,7 +31,7 @@ static u64 rdtsc(void)
- {
- 	unsigned int low, high;
- 
--	asm volatile("rdtsc" : "=a" (low), "=d" (high));
-+	__asm__ __volatile__("rdtsc" : "=a" (low), "=d" (high));
- 
- 	return low | ((u64)high) << 32;
- }
-diff --git a/tools/perf/tests/rdpmc.c b/tools/perf/tests/rdpmc.c
-index ff94886..3e906e1 100644
---- a/tools/perf/tests/rdpmc.c
-+++ b/tools/perf/tests/rdpmc.c
-@@ -9,13 +9,13 @@
- 
- #if defined(__x86_64__) || defined(__i386__)
- 
--#define barrier() asm volatile("" ::: "memory")
-+#define barrier() __asm__ __volatile__("" ::: "memory")
- 
- static u64 rdpmc(unsigned int counter)
- {
- 	unsigned int low, high;
- 
--	asm volatile("rdpmc" : "=a" (low), "=d" (high) : "c" (counter));
-+	__asm__ __volatile__("rdpmc" : "=a" (low), "=d" (high) : "c" (counter));
- 
- 	return low | ((u64)high) << 32;
- }
-@@ -24,7 +24,7 @@ static u64 rdtsc(void)
- {
- 	unsigned int low, high;
- 
--	asm volatile("rdtsc" : "=a" (low), "=d" (high));
-+	__asm__ __volatile__("rdtsc" : "=a" (low), "=d" (high));
- 
- 	return low | ((u64)high) << 32;
- }
--- 
-1.8.4.477.g5d89aa9
+Thanks,
+Naveen
 
