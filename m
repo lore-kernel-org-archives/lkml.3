@@ -1,80 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759105Ab3JOMZF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 08:25:05 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:42557 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759074Ab3JOMZD (ORCPT
+	id S932229Ab3JOMZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 08:25:29 -0400
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:55067 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759127Ab3JOMZ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 08:25:03 -0400
+	Tue, 15 Oct 2013 08:25:27 -0400
+Date: Tue, 15 Oct 2013 14:25:22 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Juri Lelli <juri.lelli@gmail.com>, tglx@linutronix.de, mingo@redhat.com,
+        rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
+        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
+        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
+        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@gmail.com,
+        liming.wang@windriver.com, jkacur@redhat.com,
+        harald.gustafsson@ericsson.com, vincent.guittot@linaro.org,
+        bruce.ashfield@windriver.com--no-chain-reply-to
+Subject: Re: [PATCH 12/14] sched: make dl_bw a sub-quota of rt_bw
+Message-ID: <20131015122522.GB2402@gmail.com>
+References: <1381747426-31334-1-git-send-email-juri.lelli@gmail.com>
+ <1381747426-31334-13-git-send-email-juri.lelli@gmail.com>
+ <20131014140618.GA26604@gmail.com>
+ <525D1234.5060001@gmail.com>
+ <20131015102621.GE10651@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-In-Reply-To: <52584626.4050000@gmail.com>
-References: <20131009161743.GA3022@quad>
-	<52558278.6080206@gmail.com>
-	<CABPqkBRx1CqwXOjJXWeqEBqkLkZMHWVQJNjv1jjqPakoDNB3Gg@mail.gmail.com>
-	<CABPqkBQKaMd_LuvfUreYb_9hiR-j0BkAyiP2yP-C0TTy+15_fQ@mail.gmail.com>
-	<5255900A.5050103@gmail.com>
-	<CABPqkBQZz=80he07yzagwPjhJBOK-bc_C=hfsK+LjMvcYWZvew@mail.gmail.com>
-	<52584626.4050000@gmail.com>
-Date: Tue, 15 Oct 2013 14:25:02 +0200
-Message-ID: <CABPqkBRX1Qg5s7CKh++gxu4dq+GV0YZp30ixeF9-AmHoec8Gaw@mail.gmail.com>
-Subject: Re: [PATCH] perf: disable mmap2 support
-From: Stephane Eranian <eranian@google.com>
-To: David Ahern <dsahern@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Jiri Olsa <jolsa@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Kees Cook <keescook@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131015102621.GE10651@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnaldo,
 
-Could you revert all the mmap2 patches in your perf/urgent tree for now?
-Thanks.
+* Peter Zijlstra <peterz@infradead.org> wrote:
 
-On Fri, Oct 11, 2013 at 8:40 PM, David Ahern <dsahern@gmail.com> wrote:
-> Hi Stephane:
->
->
-> On 10/9/13 11:40 AM, Stephane Eranian wrote:
->>
->> On Wed, Oct 9, 2013 at 7:19 PM, David Ahern <dsahern@gmail.com> wrote:
->>>
->>> On 10/9/13 10:39 AM, Stephane Eranian wrote:
->>>>
->>>>
->>>> Looks like the easiest thing to do for perf is to revert:
->>>>
->>>>      Revert "perf tools: Add default handler for mmap2 events"
->>>>      git revert 6adb0b0ae26fcc35cfec068d71f13863faac5b44
->>>>
->>>>      Revert "perf tools: Add attr->mmap2 support"
->>>>      git revert 5c5e854bc760a2e2c878df3cfcf2afa4febcd511
->>>>
->>>> Do you agree?
->>>
->>>
->>>
->>> If you want to strip all of mmap2 you also need
->>> 5654a0257a86c093c2b38ea5d3ceaa17affd735b.
->>>
->> You mean:
->> commit 384c671e33a7ddf905f2c60b433b9883f0e5a605
->> Author: David Ahern <dsahern@gmail.com>
->> Date:   Sun Sep 22 19:44:58 2013 -0600
->>
->>      perf trace: Add mmap2 handler
->>
->
-> Given that 3.12 rc5 will be out on Sunday and it takes time to go from
-> Arnaldo to Ingo to Linus the revert patches should go out today - in
-> Arnaldo's next perf/urgent request.
->
-> David
->
+> On Tue, Oct 15, 2013 at 12:00:20PM +0200, Juri Lelli wrote:
+> > On 10/14/2013 04:06 PM, Ingo Molnar wrote:
+> > > 
+> > > * Juri Lelli <juri.lelli@gmail.com> wrote:
+> > > 
+> > >> +#ifdef CONFIG_SMP
+> > >> +		struct dl_bw *dl_b = &cpu_rq(i)->rd->dl_bw;
+> > >> +#else
+> > >> +		struct dl_bw *dl_b = &cpu_rq(i)->dl.dl_bw;
+> > >> +#endif
+> > > 
+> > >> +#ifdef CONFIG_SMP
+> > >> +		struct dl_bw *dl_b = &cpu_rq(i)->rd->dl_bw;
+> > >> +#else
+> > >> +		struct dl_bw *dl_b = &cpu_rq(i)->dl.dl_bw;
+> > >> +#endif
+> > > 
+> > > Btw., this kind of SMP/UP assymetry pattern really sucks. Why not make UP 
+> > > use the SMP data structure, even if it's degenerate?
+> > > 
+> > 
+> > Yes, I don't like it either, but that comes from the fact that it seemed to me
+> > that, semantically, bandwidth for -deadline tasks has to be associated to the
+> > single runqueue in UP and to the root_domain for SMP. In UP root_domain is
+> > compiled out, so I'm not sure to understand what you suggest. I could probably
+> > let dl_bw live on runqueues with the assumption that all the runqueues from the
+> > same root_domain have the same dl_bw, that represents the dl_bw of the
+> > root_domain. But I don't like this replication either :(.
+> 
+> #ifdef CONFIG_SMP
+> 
+> static inline struct dl_bw *dl_bw_of(int i)
+> {
+> 	return &cpu_rq(i)->rd->dl_bw;
+> }
+> 
+> #else
+> 
+> static inline struct dl_bw *dl_bw_of(int i)
+> {
+> 	return &cpu_rq(i)->dl.dl_bw;
+> }
+> 
+> #endif
+> 
+> ?
+
+Really, please make it _symmetric_ ...
+
+Single core systems are becoming a historic curiosity, should we should 
+justify every piece of extra complexity we add for them.
+
+So I'd rather see obvious SMP code where the UP case works fine too, and 
+_then_ maybe check a separate patch that adds the UP optimization, with 
+(object size) numbers proving that it's worth it, etc.
+
+Thanks,
+
+	Ingo
