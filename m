@@ -1,74 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758430Ab3JOKTi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 06:19:38 -0400
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:59444 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753362Ab3JOKTh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 06:19:37 -0400
-Date: Tue, 15 Oct 2013 12:17:22 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-pwm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] drivers/pwm: don't use
- devm_pinctrl_get_select_default() in probe
-Message-ID: <20131015101722.GM7856@ulmo.nvidia.com>
-References: <1381681071-6021-1-git-send-email-wsa@the-dreams.de>
- <1381681071-6021-4-git-send-email-wsa@the-dreams.de>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="XlS4q8O07AKt4+K1"
-Content-Disposition: inline
-In-Reply-To: <1381681071-6021-4-git-send-email-wsa@the-dreams.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758546Ab3JOKVt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 06:21:49 -0400
+Received: from mga02.intel.com ([134.134.136.20]:1084 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758358Ab3JOKVs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 06:21:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,498,1378882800"; 
+   d="scan'208";a="411173705"
+Message-ID: <1381832537.9823.3.camel@karhu.fi.intel.com>
+Subject: Re: [PATCH 2/2 for 3.12-rc6] Revert "partitions/efi: account for
+ pmbr size in lba"
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Davidlohr Bueso <davidlohr@hp.com>, Matt Fleming <matt.fleming@intel.com>,
+        Karel Zak <kzak@redhat.com>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
+        Doug Anderson <dianders@chromium.org>
+Date: Tue, 15 Oct 2013 13:22:17 +0300
+In-Reply-To: <20131014112642.8efe63022ea05b07ced7fad8@linux-foundation.org>
+References: <1381750909-20082-1-git-send-email-dedekind1@gmail.com>
+	 <1381750909-20082-2-git-send-email-dedekind1@gmail.com>
+	 <20131014112642.8efe63022ea05b07ced7fad8@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2013-10-14 at 11:26 -0700, Andrew Morton wrote:
+> On Mon, 14 Oct 2013 14:41:49 +0300 Artem Bityutskiy <dedekind1@gmail.com> wrote:
+> 
+> > This reverts commit 27a7c642174eaec627f6a3a254035bf8abd02c5e.
+> > 
+> > This patch breaks existing systems, for example, Tizen IVI images do not boot
+> > the way they have always been booted because of this patch.
+> 
+> Does Doug's patch fix this?
 
---XlS4q8O07AKt4+K1
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Yes, thanks.
 
-On Sun, Oct 13, 2013 at 06:17:49PM +0200, Wolfram Sang wrote:
-> Since commit ab78029 (drivers/pinctrl: grab default handles from device c=
-ore),
-> we can rely on device core for setting the default pins. Compile tested o=
-nly.
->=20
-> Acked-by: Linus Walleij <linus.walleij@linaro.org> (personally at LCE13)
-> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
-> ---
->  drivers/pwm/pwm-tiecap.c   | 6 ------
->  drivers/pwm/pwm-tiehrpwm.c | 6 ------
->  2 files changed, 12 deletions(-)
+-- 
+Best Regards,
+Artem Bityutskiy
 
-Applied, thanks.
-
-Thierry
-
---XlS4q8O07AKt4+K1
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSXRYyAAoJEN0jrNd/PrOhoYIP/1xbqi1YmzEavue0psA1oOFl
-EZxbSLyrsPs4b+s7q60NXPyg6/NNEyXEU4zeIBTCjDWLAN9PS2cLtSES91mKeDLb
-eMoIjNPn3FaPFlbRu2ak8EhHrmFoHsueiLbDIxrGkngRJ6J83aakCJ1fkqkEwCqP
-OcXAP1UsbvBQ1xN+srE6WnfeL3Q62y+Z/PtgWJtC6T8TmpVaFsAB9p4Uv0DCW3tT
-rKLe3euM5i2Az+q9CflT/wQJ5zD9SN1IoDD0+eRWU46C3f/hoIbT/QjHXOnzYKiw
-zjC9jZasYLhdvhQbHlzQukTP+/pmTCIZQuDyC4KHYTmqIyoehi1PxUf/iuOwRfjg
-HJzNiNQvDUElzrRirObmcCzD7NOxjZzYjf3uWaBBNSyV9Uuc3fKz9KDFGiCxyfAh
-OMnuNTPU8ZmmhtGu9nXlhDuFXqfysoqEyMbpcx6Xgr9egYZVDV6uI8i5+t8JK8sh
-qyRmc0cVapR3v/c+2t0cc8P+79SBsq9xmdKGTWZwlQtj3srEAgbeQ1UFk8gsI6nG
-OgNq8YAMBes+pP/9zs34UDZJLTG2ydaX4Lr66gYARAAW1zuaYN78i+q7TyAS8qK5
-SDxOBkMnpCXrVhcjWFEMFE4AiCJN/xI9Ecv2onhKqJpUoadQS1vkhbwpfIO/DKan
-dhN1ltYcHzI+94VrvJfG
-=BB5g
------END PGP SIGNATURE-----
-
---XlS4q8O07AKt4+K1--
