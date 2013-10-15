@@ -1,99 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933513Ab3JORdS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 13:33:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30103 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932396Ab3JORdQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 13:33:16 -0400
-Date: Tue, 15 Oct 2013 13:32:52 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Hong Zhiguo <honkiko@gmail.com>
-Cc: axboe@kernel.dk, cgroups@vger.kernel.org, tj@kernel.org,
-        linux-kernel@vger.kernel.org, Hong Zhiguo <zhiguohong@tencent.com>
-Subject: Re: [PATCH v2] blk-throttle: simplify logic by token bucket algorithm
-Message-ID: <20131015173252.GM31215@redhat.com>
-References: <1381574794-7639-1-git-send-email-zhiguohong@tencent.com>
- <1381741757-20888-1-git-send-email-zhiguohong@tencent.com>
+	id S933064Ab3JORj3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 13:39:29 -0400
+Received: from a14-6.smtp-out.amazonses.com ([54.240.14.6]:57790 "EHLO
+	a14-6.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932287Ab3JORj2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 13:39:28 -0400
+X-Greylist: delayed 985 seconds by postgrey-1.27 at vger.kernel.org; Tue, 15 Oct 2013 13:39:28 EDT
+Date: Tue, 15 Oct 2013 17:23:00 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Toshi Kani <toshi.kani@hp.com>
+cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, isimatu.yasuaki@jp.fujitsu.com
+Subject: Re: [PATCH 2/2] mm: Clear N_CPU from node_states at CPU offline
+In-Reply-To: <1381857176-22999-3-git-send-email-toshi.kani@hp.com>
+Message-ID: <00000141bd246468-e388da5e-d7ba-4428-9374-9b37ca59b92c-000000@email.amazonses.com>
+References: <1381857176-22999-1-git-send-email-toshi.kani@hp.com> <1381857176-22999-3-git-send-email-toshi.kani@hp.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1381741757-20888-1-git-send-email-zhiguohong@tencent.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.10.15-54.240.14.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 14, 2013 at 05:09:17PM +0800, Hong Zhiguo wrote:
+On Tue, 15 Oct 2013, Toshi Kani wrote:
 
-[..]
+> vmstat_cpuup_callback() is a CPU notifier callback, which
+> marks N_CPU to a node at CPU online event.  However, it
+> does not update this N_CPU info at CPU offline event.
 
-Hi Hong,
-
-Thanks for the token based throttling implementation. In general it looks
-good and it simplies the logic. Couple of comments/concerns below.
-
-> @@ -133,14 +135,13 @@ struct throtl_grp {
->  	/* IOPS limits */
->  	unsigned int iops[2];
->  
-> -	/* Number of bytes disptached in current slice */
-> -	uint64_t bytes_disp[2];
-> -	/* Number of bio's dispatched in current slice */
-> -	unsigned int io_disp[2];
-> +	/* Token for throttling by bps */
-> +	uint64_t bytes_token[2];
-> +	/* Token for throttling by iops */
-> +	unsigned int io_token[2];
->  
-> -	/* When did we start a new slice */
-> -	unsigned long slice_start[2];
-> -	unsigned long slice_end[2];
-> +	/* Time check-point */
-> +	unsigned long t_c[2];
-
-Can we rename this variable to say last_dispatch[2].
-
-[..]
->  
-> @@ -852,41 +708,26 @@ static bool tg_with_in_bps_limit(struct throtl_grp *tg, struct bio *bio,
->  				 unsigned long *wait)
->  {
->  	bool rw = bio_data_dir(bio);
-> -	u64 bytes_allowed, extra_bytes, tmp;
-> -	unsigned long jiffy_elapsed, jiffy_wait, jiffy_elapsed_rnd;
-> -
-> -	jiffy_elapsed = jiffy_elapsed_rnd = jiffies - tg->slice_start[rw];
-> -
-> -	/* Slice has just started. Consider one slice interval */
-> -	if (!jiffy_elapsed)
-> -		jiffy_elapsed_rnd = throtl_slice;
-> -
-> -	jiffy_elapsed_rnd = roundup(jiffy_elapsed_rnd, throtl_slice);
-> +	u64 extra_bytes, token;
-> +	unsigned long jiffy_wait;
->  
-> -	tmp = tg->bps[rw] * jiffy_elapsed_rnd;
-> -	do_div(tmp, HZ);
-> -	bytes_allowed = tmp;
-> +	token = (u64)tg->bps[rw] * (jiffies - tg->t_c[rw]);
-
-So here we seem to be calculating how many tokens a group is eligible
-for. This is done based on since last time check. And last time check
-was updated in last dispatch from the group.
-
-What happens if no IO happens in a group for some time, say for 5 minutes,
-and then one big IO comes in. IIUC, we will allow a big burst of IO for
-the first IO (tokens worth of full 5 minutes will be given to this group).
-I think we should have a mechanism where we don't allow too big a burst
-for the first IO. (Possibly limit the burst to THROTL_BURST_IO and
-THROTL_BURST_BYTES until and unless a bigger IO is already queued and
-we are waiting for it).
-
-In previous time slice logic, I took care of it by extend time slice
-by 100ms and if no IO happens in the group for 100ms, time slice will
-expire and next IO will get at max of 100ms of worth of credit (equivalent
-of burst limits).
-
-Thanks
-Vivek
+Acked-by: Christoph Lameter <cl@linux.com>
