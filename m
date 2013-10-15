@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759536Ab3JOSwz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 14:52:55 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:50257 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932773Ab3JOSwx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 14:52:53 -0400
-Message-ID: <525D8F01.8010603@wwwdotorg.org>
-Date: Tue, 15 Oct 2013 12:52:49 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1759574Ab3JOSzr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 14:55:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43579 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759341Ab3JOSzq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 14:55:46 -0400
+Date: Tue, 15 Oct 2013 20:55:10 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: mm: fix BUG in __split_huge_page_pmd
+Message-ID: <20131015185510.GH3479@redhat.com>
+References: <alpine.LNX.2.00.1310150358170.11905@eggly.anvils>
+ <20131015143407.GE3479@redhat.com>
+ <20131015144827.C45DDE0090@blue.fi.intel.com>
+ <alpine.LNX.2.00.1310151029040.12481@eggly.anvils>
 MIME-Version: 1.0
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Hiroshi Doyu <hdoyu@nvidia.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH v3 03/19] clk: tegra: common periph_clk_enb_refcnt and
- clks
-References: <1381848794-11761-1-git-send-email-pdeschrijver@nvidia.com> <1381848794-11761-4-git-send-email-pdeschrijver@nvidia.com>
-In-Reply-To: <1381848794-11761-4-git-send-email-pdeschrijver@nvidia.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1310151029040.12481@eggly.anvils>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/15/2013 08:52 AM, Peter De Schrijver wrote:
-> This patch makes periph_clk_enb_refcnt a global array, dynamically allocated
-> at boottime. It simplifies the macros somewhat and allows clocks common to
-> several Tegra SoCs to be defined in a separate files. Also the clks array
-> becomes global and dynamically allocated which allows the DT registration to
-> be moved to a generic funcion.
+On Tue, Oct 15, 2013 at 10:53:10AM -0700, Hugh Dickins wrote:
+> I'm afraid Andrea's mail about concurrent madvises gives me far more
+> to think about than I have time for: seems to get into problems he
+> knows a lot about but I'm unfamiliar with.  If this patch looks good
+> for now on its own, let's put it in; but no problem if you guys prefer
+> to wait for a fuller solution of more problems, we can ride with this
+> one internally for the moment.
 
-> diff --git a/drivers/clk/tegra/clk.c b/drivers/clk/tegra/clk.c
+I'm very happy with the patch and I think it's a correct fix for the
+COW scenario which is deterministic so the looping makes a meaningful
+difference for it. If we wouldn't loop, part of the copied page
+wouldn't be zapped after the COW.
 
-> +struct clk ** __init tegra_clk_init(int num, int banks)
->  {
-> +	if (banks > ARRAY_SIZE(periph_regs)) {
-> +		WARN_ON(1);
+The patch also solves the false positive for the other non
+deterministic scenario of two MADV_DONTNEED (one partial, one whole)
+plus a concurrent page fault.
 
-I think that can just be:
+> And I should admit that the crash has occurred too rarely for us yet
+> to be able to judge whether this patch actually fixes it in practice.
 
-	if (WARN_ON(banks > ARRAY_SIZE(periph_regs))) {
-
+It is very rare indeed, and thanks to the BUG_ON it cannot lead to any
+user or kernel memory corruption, but it's a nuisance we need to
+fix. I only have the two stack traces in the two links I posted in the
+previous email and I also don't have the traces of the other CPU.
