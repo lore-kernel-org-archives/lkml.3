@@ -1,78 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933573Ab3JOUVx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 16:21:53 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:47330 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759600Ab3JOUVk (ORCPT
+	id S1759790Ab3JOUWH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 16:22:07 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:58688 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1759540Ab3JOUWF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 16:21:40 -0400
-Date: Tue, 15 Oct 2013 22:21:36 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Liu, Chuansheng" <chuansheng.liu@intel.com>
-Subject: Re: [PATCH] bug: Use xchg() to update WARN_ON_ONCE() static variable
-Message-ID: <20131015202134.GB3269@localhost.localdomain>
-References: <20131015155806.04e2613f@gandalf.local.home>
- <20131015131259.3051743890ce9b1b9dae9763@linux-foundation.org>
+	Tue, 15 Oct 2013 16:22:05 -0400
+Date: Tue, 15 Oct 2013 16:22:03 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Vishal Annapurve <vannapurve@nvidia.com>
+cc: Ming Lei <tom.leiming@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-usb <linux-usb@vger.kernel.org>
+Subject: RE: [PATCH] usb-storage: scsiglue: Changing the command result
+In-Reply-To: <113ACA888B71994BB56E5CF3704953486D65F41155@BGMAIL02.nvidia.com>
+Message-ID: <Pine.LNX.4.44L0.1310151615160.1377-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131015131259.3051743890ce9b1b9dae9763@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 15, 2013 at 01:12:59PM -0700, Andrew Morton wrote:
-> On Tue, 15 Oct 2013 15:58:06 -0400 Steven Rostedt <rostedt@goodmis.org> wrote:
-> 
-> > The WARN_ON_ONCE() code is to trigger a waring only once when some
-> > condition happens. But due to the way it is written it is racy.
-> > 
-> > 	if (unlikely(condition)) {
-> > 		if (WARN(!__warned))
-> > 			__warned = true;
-> > 	}
-> > 
-> > The problem is that multiple CPUs could hit the same warning and
-> > produce multiple output dumps of the same warning, or an interrupt could
-> > happen and hit the same warning and do the warning in the middle of a
-> > previous one, especially since the WARN() does a dump of the current
-> > stack.
-> > 
-> > Even more of a problem, a recent WARN_ON_ONCE() that was in the page
-> > fault handler triggered and the stack dump of the WARN() caused the
-> > same WARN_ON_ONCE() get hit again. Since the __warned = true is not
-> > updated until after the WARN() is completed, each WARN() triggered
-> > another page fault causing the stack to be filled and crashed the box.
-> > 
-> > The point of WARN_ON() is to warn the user and not to crash the box.
-> > 
-> > The easy fix is to update the __warned variable with a xchg(). This way
-> > only one WARN_ON_ONCE() will actually happen, and prevents any issues
-> > of the WARN() causing the same WARN() to be hit and crash the system.
-> 
-> printk_once() has the same issue, and probably other places.
-> 
-> Is there some sneaky way of doing this operation as a common thing,
-> rather than open-coding it everywhere?  Something like
-> 
-> #define ONCE() ({
-> 	static int state;
-> 	int ret;
-> 
-> 	ret = !xchg(&state, 1);
-> 	ret;
-> })
+On Tue, 15 Oct 2013, Vishal Annapurve wrote:
 
-Oh, I have a pending patchset that I worked on a few weeks ago which does that.
-I did not post it because it made WARN_ONCE using the unlikely text section, but
-the diffstat was nice.
+> Hi Alan,
+> 
+> USB storage maybe just has to say that the abort occurred. By setting the
+> US_FLIDX_TIMED_OUT bit USB storage is getting signaled that the reason was
+> time out and the command is being aborted.
 
-I'm going to post that as RFC just in case.
+No.  By setting the US_FLIDX_TIMED_OUT bit, usb-storage indicates that
+the command was aborted.  This doesn't indicate anything about the
+reason for the abort.  (Maybe this bit's name wasn't chosen very well.)
+
+> Now, it's arguable whether to change the implication of US_FLIDX_TIMED_OUT
+> bit for scsi - USB storage bridge or for entire usb storage
+
+I don't understand this.  What's the difference between "scsi - USB 
+storage bridge" and "entire usb storage"?  Aren't they the same thing?
+
+>  Or maybe scsi has
+> decided to abort so it should override the result.
+
+Of course the SCSI midlayer has decided to abort.  That's the only way 
+this bit can get set.  But usb-storage doesn't know why SCSI decided to 
+abort.
+
+Alan Stern
+
