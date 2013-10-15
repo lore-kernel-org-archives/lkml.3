@@ -1,229 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759478Ab3JORZN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 13:25:13 -0400
-Received: from mail-qe0-f49.google.com ([209.85.128.49]:45105 "EHLO
-	mail-qe0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758936Ab3JORZK (ORCPT
+	id S1759567Ab3JOR0s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 13:26:48 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:58060 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759524Ab3JOR0r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 13:25:10 -0400
-Message-ID: <525D7A72.70200@gmail.com>
-Date: Tue, 15 Oct 2013 13:25:06 -0400
-From: Vlad Yasevich <vyasevich@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Tue, 15 Oct 2013 13:26:47 -0400
+Date: Tue, 15 Oct 2013 22:56:25 +0530
+From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+To: "Chen, Gong" <gong.chen@linux.intel.com>
+Cc: tony.luck@intel.com, bp@alien8.de, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 5/8] ACPI, APEI, CPER: Add UEFI 2.4 support for memory
+ error
+Message-ID: <20131015172625.GB2777@naverao1-tp.ibm.com>
+References: <1381473166-29303-1-git-send-email-gong.chen@linux.intel.com>
+ <1381473166-29303-6-git-send-email-gong.chen@linux.intel.com>
 MIME-Version: 1.0
-To: Chang Xiangzhong <changxiangzhong@gmail.com>
-CC: nhorman@tuxdriver.com, davem@davemloft.net, linux-sctp@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] For for each TSN t being newly acked (Not only cumulatively,
- but also SELECTIVELY) cacc_saw_newack should be set to 1.
-References: <1381856348-15503-1-git-send-email-changxiangzhong@gmail.com>
-In-Reply-To: <1381856348-15503-1-git-send-email-changxiangzhong@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1381473166-29303-6-git-send-email-gong.chen@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13101517-5564-0000-0000-00000A2C67C2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/15/2013 12:59 PM, Chang Xiangzhong wrote:
-> Signed-off-by: Xiangzhong Chang <changxiangzhong@gmail.com>
+On 2013/10/11 02:32AM, Chen Gong wrote:
+> In latest UEFI spec(by now it is 2.4) memory error definition
+> for CPER (UEFI 2.4 Appendix N Common Platform Error Record)
+> adds some new fields. These fields help people to locate
+> memory error on actual DIMM location.
+> 
+> Original-author: Tony Luck <tony.luck@intel.com>
+> Signed-off-by: Chen, Gong <gong.chen@linux.intel.com>
 > ---
->   net/sctp/outqueue.c |  142 ++++++++++++++++++++++++---------------------------
->   1 file changed, 68 insertions(+), 74 deletions(-)
->
-> diff --git a/net/sctp/outqueue.c b/net/sctp/outqueue.c
-> index 94df758..f10d848 100644
-> --- a/net/sctp/outqueue.c
-> +++ b/net/sctp/outqueue.c
-> @@ -1357,84 +1357,78 @@ static void sctp_check_transmitted(struct sctp_outq *q,
->
->   		tsn = ntohl(tchunk->subh.data_hdr->tsn);
->   		if (sctp_acked(sack, tsn)) {
-> -			/* If this queue is the retransmit queue, the
-> -			 * retransmit timer has already reclaimed
-> -			 * the outstanding bytes for this chunk, so only
-> -			 * count bytes associated with a transport.
-> -			 */
-> -			if (transport) {
-> -				/* If this chunk is being used for RTT
-> -				 * measurement, calculate the RTT and update
-> -				 * the RTO using this value.
-> -				 *
-> -				 * 6.3.1 C5) Karn's algorithm: RTT measurements
-> -				 * MUST NOT be made using packets that were
-> -				 * retransmitted (and thus for which it is
-> -				 * ambiguous whether the reply was for the
-> -				 * first instance of the packet or a later
-> -				 * instance).
-> -				 */
-> -				if (!tchunk->tsn_gap_acked &&
-> -				    tchunk->rtt_in_progress) {
-> -					tchunk->rtt_in_progress = 0;
-> -					rtt = jiffies - tchunk->sent_at;
-> -					sctp_transport_update_rto(transport,
-> -								  rtt);
-> -				}
-> -			}
-> -
-> -			/* If the chunk hasn't been marked as ACKED,
-> -			 * mark it and account bytes_acked if the
-> -			 * chunk had a valid transport (it will not
-> -			 * have a transport if ASCONF had deleted it
-> -			 * while DATA was outstanding).
-> -			 */
->   			if (!tchunk->tsn_gap_acked) {
-> -				tchunk->tsn_gap_acked = 1;
-> -				*highest_new_tsn_in_sack = tsn;
-> -				bytes_acked += sctp_data_size(tchunk);
-> -				if (!tchunk->transport)
-> -					migrate_bytes += sctp_data_size(tchunk);
-> -				forward_progress = true;
-> +			    /* If this queue is the retransmit queue, the
-> +			     * retransmit timer has already reclaimed
-> +			     * the outstanding bytes for this chunk, so only
-> +			     * count bytes associated with a transport.
-> +			     *
-> +			     * If this chunk is being used for RTT
-> +			     * measurement, calculate the RTT and update
-> +			     * the RTO using this value.
-> +			     *
-> +			     * 6.3.1 C5) Karn's algorithm: RTT measurements
-> +			     * MUST NOT be made using packets that were
-> +			     * retransmitted (and thus for which it is
-> +			     * ambiguous whether the reply was for the
-> +			     * first instance of the packet or a later
-> +			     * instance).
-> +			     */
-> +			    if (transport && tchunk->rtt_in_progress) {
-> +				tchunk->rtt_in_progress = 0;
-> +				rtt = jiffies - tchunk->sent_at;
-> +				sctp_transport_update_rto(transport,
-> +					rtt);
-> +			    }
-> +
-> +			    /* If the chunk hasn't been marked as ACKED,
-> +			     * mark it and account bytes_acked if the
-> +			     * chunk had a valid transport (it will not
-> +			     * have a transport if ASCONF had deleted it
-> +			     * while DATA was outstanding).
-> +			     */
-> +			    tchunk->tsn_gap_acked = 1;
-> +			    *highest_new_tsn_in_sack = tsn;
-> +			    bytes_acked += sctp_data_size(tchunk);
-> +			    if (!tchunk->transport)
-> +				migrate_bytes += sctp_data_size(tchunk);
-> +			    forward_progress = true;
-> +
-> +			    /*
-> +			     * SFR-CACC algorithm:
-> +			     * 2) If the SACK contains gap acks
-> +			     * and the flag CHANGEOVER_ACTIVE is
-> +			     * set the receiver of the SACK MUST
-> +			     * take the following action:
-> +			     *
-> +			     * B) For each TSN t being acked that
-> +			     * has not been acked in any SACK so
-> +			     * far, set cacc_saw_newack to 1 for
-> +			     * the destination that the TSN was
-> +			     * sent to.
-> +			     */
-> +			    if (transport &&
-> +				    sack->num_gap_ack_blocks &&
-> +				    q->asoc->peer.primary_path->cacc.
-> +				    changeover_active)
-> +				transport->cacc.cacc_saw_newack = 1;
->   			}
+>  drivers/acpi/apei/cper.c | 3 ++-
+>  include/linux/cper.h     | 7 +++++++
+>  2 files changed, 9 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/acpi/apei/cper.c b/drivers/acpi/apei/cper.c
+> index b2e4134..680230c 100644
+> --- a/drivers/acpi/apei/cper.c
+> +++ b/drivers/acpi/apei/cper.c
+> @@ -8,7 +8,7 @@
+>   * various tables, such as ERST, BERT and HEST etc.
+>   *
+>   * For more information about CPER, please refer to Appendix N of UEFI
+> - * Specification version 2.3.
+> + * Specification version 2.4.
+>   *
+>   * This program is free software; you can redistribute it and/or
+>   * modify it under the terms of the GNU General Public License version
+> @@ -191,6 +191,7 @@ static const char *cper_mem_err_type_strs[] = {
+>  	"memory sparing",
+>  	"scrub corrected error",
+>  	"scrub uncorrected error",
+> +	"Physical Memory Map-out event",
 
-Indents should be tab based.
-This is a bit more of a re-write that is needed for the this particualar 
-patch.  What's wrong with just doing this?
+All small letters to match the rest of the items:
+"physical memory map-out event"
 
-@@ -1396,6 +1396,25 @@ static void sctp_check_transmitted(struct 
-sctp_outq *q,
-                                 if (!tchunk->transport)
-                                         migrate_bytes += 
-sctp_data_size(tchunk);
-                                 forward_progress = true;
-+
-+                               /*
-+                                * SFR-CACC algorithm:
-+                                * 2) If the SACK contains gap acks
-+                                * and the flag CHANGEOVER_ACTIVE is
-+                                * set the receiver of the SACK MUST
-+                                * take the following action:
-+                                *
-+                                * B) For each TSN t being acked that
-+                                * has not been acked in any SACK so
-+                                * far, set cacc_saw_newack to 1 for
-+                                * the destination that the TSN was
-+                                * sent to.
-+                                */
-+                               if (transport &&
-+                                   sack->num_gap_ack_blocks &&
-+                                   q->asoc->peer.primary_path->cacc.
-+                                   changeover_active)
-+                                       transport->cacc.cacc_saw_newack = 1;
-                         }
+>  };
+>  
+>  static void cper_print_mem(const char *pfx, const struct cper_sec_mem_err *mem)
+> diff --git a/include/linux/cper.h b/include/linux/cper.h
+> index c230494..bd01c9a 100644
+> --- a/include/linux/cper.h
+> +++ b/include/linux/cper.h
+> @@ -232,6 +232,9 @@ enum {
+>  #define CPER_MEM_VALID_RESPONDER_ID		0x1000
+>  #define CPER_MEM_VALID_TARGET_ID		0x2000
+>  #define CPER_MEM_VALID_ERROR_TYPE		0x4000
+> +#define CPER_MEM_VALID_RANK_NUMBER		0x8000
+> +#define CPER_MEM_VALID_CARD_HANDLE		0x10000
+> +#define CPER_MEM_VALID_MODULE_HANDLE		0x20000
+>  
+>  #define CPER_PCIE_VALID_PORT_TYPE		0x0001
+>  #define CPER_PCIE_VALID_VERSION			0x0002
+> @@ -347,6 +350,10 @@ struct cper_sec_mem_err {
+>  	__u64	responder_id;
+>  	__u64	target_id;
+>  	__u8	error_type;
+> +	__u8	reserved;
+> +	__u16	rank;
+> +	__u16	mem_array_handle;
+> +	__u16	mem_dev_handle;
+
+Nit: could you name those fields similar to what the spec has:
+card_handle and module_handle, with perhaps a comment to indicate
+relationship to SMBIOS type 16/17 tables?
 
 
-                         if (TSN_lte(tsn, sack_ctsn)) {
+Regards,
+Naveen
 
--vlad
-
->
->   			if (TSN_lte(tsn, sack_ctsn)) {
-> -				/* RFC 2960  6.3.2 Retransmission Timer Rules
-> -				 *
-> -				 * R3) Whenever a SACK is received
-> -				 * that acknowledges the DATA chunk
-> -				 * with the earliest outstanding TSN
-> -				 * for that address, restart T3-rtx
-> -				 * timer for that address with its
-> -				 * current RTO.
-> -				 */
-> -				restart_timer = 1;
-> -				forward_progress = true;
-> -
-> -				if (!tchunk->tsn_gap_acked) {
-> -					/*
-> -					 * SFR-CACC algorithm:
-> -					 * 2) If the SACK contains gap acks
-> -					 * and the flag CHANGEOVER_ACTIVE is
-> -					 * set the receiver of the SACK MUST
-> -					 * take the following action:
-> -					 *
-> -					 * B) For each TSN t being acked that
-> -					 * has not been acked in any SACK so
-> -					 * far, set cacc_saw_newack to 1 for
-> -					 * the destination that the TSN was
-> -					 * sent to.
-> -					 */
-> -					if (transport &&
-> -					    sack->num_gap_ack_blocks &&
-> -					    q->asoc->peer.primary_path->cacc.
-> -					    changeover_active)
-> -						transport->cacc.cacc_saw_newack
-> -							= 1;
-> -				}
-> -
-> -				list_add_tail(&tchunk->transmitted_list,
-> -					      &q->sacked);
-> +			    /* RFC 2960  6.3.2 Retransmission Timer Rules
-> +			     *
-> +			     * R3) Whenever a SACK is received
-> +			     * that acknowledges the DATA chunk
-> +			     * with the earliest outstanding TSN
-> +			     * for that address, restart T3-rtx
-> +			     * timer for that address with its
-> +			     * current RTO.
-> +			     */
-> +			    restart_timer = 1;
-> +			    forward_progress = true;
-> +
-> +			    list_add_tail(&tchunk->transmitted_list,
-> +				    &q->sacked);
->   			} else {
->   				/* RFC2960 7.2.4, sctpimpguide-05 2.8.2
->   				 * M2) Each time a SACK arrives reporting
->
+>  };
+>  
+>  struct cper_sec_pcie {
+> -- 
+> 1.8.4.rc3
+> 
 
