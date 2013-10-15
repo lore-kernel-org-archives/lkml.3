@@ -1,366 +1,305 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758931Ab3JOMKs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 08:10:48 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:36977 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752506Ab3JOMKq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 08:10:46 -0400
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        patches@linaro.org, linaro-kernel@lists.linaro.org,
-        shaojie.sun@linaro.org
-Subject: [PATCH V2] ARM: trace: Add tracepoint for the Inter Processor Interrupt
-Date: Tue, 15 Oct 2013 14:10:42 +0200
-Message-Id: <1381839042-3533-1-git-send-email-daniel.lezcano@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	id S1758952Ab3JOMLf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 08:11:35 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:49182 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758116Ab3JOMLd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 08:11:33 -0400
+Message-ID: <525D30C2.8060208@ti.com>
+Date: Tue, 15 Oct 2013 15:10:42 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: <balbi@ti.com>
+CC: Kishon Vijay Abraham I <kishon@ti.com>,
+        Vivek Gautam <gautamvivek1987@gmail.com>, <bcousson@baylibre.com>,
+        <tony@atomide.com>, <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <linux@arm.linux.org.uk>,
+        <grant.likely@linaro.org>, <s.nawrocki@samsung.com>,
+        <galak@codeaurora.org>, <swarren@wwwdotorg.org>,
+        <ian.campbell@citrix.com>, <rob@landley.net>, <george.cherian@ti.com>,
+        <gregkh@linuxfoundation.org>, <linux-doc@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/7] usb: dwc3: adapt dwc3 core to use Generic PHY Framework
+References: <1378136591-7463-1-git-send-email-kishon@ti.com> <1378136591-7463-3-git-send-email-kishon@ti.com> <525814A9.7060106@ti.com> <525BB8C0.1070802@ti.com> <525BC5A9.3060904@ti.com> <20131015115741.GD11380@radagast>
+In-Reply-To: <20131015115741.GD11380@radagast>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Inter Processor Interrupt is used on ARM to tell another processor to do
-a specific action. This is mainly used to emulate a timer interrupt on an idle
-cpu, force a cpu to reschedule or run a function on another processor context.
+On 10/15/2013 02:57 PM, Felipe Balbi wrote:
+> Hi,
+> 
+> On Mon, Oct 14, 2013 at 01:21:29PM +0300, Roger Quadros wrote:
+>> +Vivek
+>>
+>> On 10/14/2013 12:26 PM, Kishon Vijay Abraham I wrote:
+>>> Hi Roger,
+>>>
+>>> On Friday 11 October 2013 08:39 PM, Roger Quadros wrote:
+>>>> Hi,
+>>>>
+>>>> On 09/02/2013 06:43 PM, Kishon Vijay Abraham I wrote:
+>>>>> Adapted dwc3 core to use the Generic PHY Framework. So for init, exit,
+>>>>> power_on and power_off the following APIs are used phy_init(), phy_exit(),
+>>>>> phy_power_on() and phy_power_off().
+>>>>>
+>>>>> However using the old USB phy library wont be removed till the PHYs of all
+>>>>> other SoC's using dwc3 core is adapted to the Generic PHY Framework.
+>>>>>
+>>>>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+>>>>> ---
+>>>>>  Documentation/devicetree/bindings/usb/dwc3.txt |    6 ++-
+>>>>>  drivers/usb/dwc3/Kconfig                       |    1 +
+>>>>>  drivers/usb/dwc3/core.c                        |   49 ++++++++++++++++++++++++
+>>>>>  drivers/usb/dwc3/core.h                        |    7 ++++
+>>>>>  4 files changed, 61 insertions(+), 2 deletions(-)
+>>>>>
+>>>>> diff --git a/Documentation/devicetree/bindings/usb/dwc3.txt b/Documentation/devicetree/bindings/usb/dwc3.txt
+>>>>> index e807635..471366d 100644
+>>>>> --- a/Documentation/devicetree/bindings/usb/dwc3.txt
+>>>>> +++ b/Documentation/devicetree/bindings/usb/dwc3.txt
+>>>>> @@ -6,11 +6,13 @@ Required properties:
+>>>>>   - compatible: must be "snps,dwc3"
+>>>>>   - reg : Address and length of the register set for the device
+>>>>>   - interrupts: Interrupts used by the dwc3 controller.
+>>>>> +
+>>>>> +Optional properties:
+>>>>>   - usb-phy : array of phandle for the PHY device.  The first element
+>>>>>     in the array is expected to be a handle to the USB2/HS PHY and
+>>>>>     the second element is expected to be a handle to the USB3/SS PHY
+>>>>> -
+>>>>> -Optional properties:
+>>>>> + - phys: from the *Generic PHY* bindings
+>>>>> + - phy-names: from the *Generic PHY* bindings
+>>>>>   - tx-fifo-resize: determines if the FIFO *has* to be reallocated.
+>>>>>  
+>>>>>  This is usually a subnode to DWC3 glue to which it is connected.
+>>>>> diff --git a/drivers/usb/dwc3/Kconfig b/drivers/usb/dwc3/Kconfig
+>>>>> index cfc16dd..ad7ce83 100644
+>>>>> --- a/drivers/usb/dwc3/Kconfig
+>>>>> +++ b/drivers/usb/dwc3/Kconfig
+>>>>> @@ -3,6 +3,7 @@ config USB_DWC3
+>>>>>  	depends on (USB || USB_GADGET) && GENERIC_HARDIRQS && HAS_DMA
+>>>>>  	depends on EXTCON
+>>>>>  	select USB_PHY
+>>>>> +	select GENERIC_PHY
+>>>>>  	select USB_XHCI_PLATFORM if USB_SUPPORT && USB_XHCI_HCD
+>>>>>  	help
+>>>>>  	  Say Y or M here if your system has a Dual Role SuperSpeed
+>>>>> diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
+>>>>> index 428c29e..485d365 100644
+>>>>> --- a/drivers/usb/dwc3/core.c
+>>>>> +++ b/drivers/usb/dwc3/core.c
+>>>>> @@ -82,6 +82,12 @@ static void dwc3_core_soft_reset(struct dwc3 *dwc)
+>>>>>  
+>>>>>  	usb_phy_init(dwc->usb2_phy);
+>>>>>  	usb_phy_init(dwc->usb3_phy);
+>>>>
+>>>> How about adding
+>>>> +	if (dwc->usb2_phy)
+>>>> +		usb_phy_init(dwc->usb2_phy);
+>>>> +	if (dwc->usb3_phy)
+>>>> +		usb_phy_init(dwc->usb3_phy);
+>>>
+>>> Thankfully that usb_phy_init will check if phy is NULL.
+>>>>
+>>>> both usb phy and generic phy shouldn't be present together.
+>>>
+>>> ok.
+>>>>
+>>>>> +
+>>>>> +	if (dwc->usb2_generic_phy)
+>>>>> +		phy_init(dwc->usb2_generic_phy);
+>>>>> +	if (dwc->usb3_generic_phy)
+>>>>> +		phy_init(dwc->usb3_generic_phy);
+>>>>> +
+>>>>>  	mdelay(100);
+>>>>>  
+>>>>>  	/* Clear USB3 PHY reset */
+>>>>> @@ -343,6 +349,11 @@ static void dwc3_core_exit(struct dwc3 *dwc)
+>>>>>  {
+>>>>>  	usb_phy_shutdown(dwc->usb2_phy);
+>>>>>  	usb_phy_shutdown(dwc->usb3_phy);
+>>>>
+>>>> here as well
+>>>>
+>>>>> +
+>>>>> +	if (dwc->usb2_generic_phy)
+>>>>> +		phy_power_off(dwc->usb2_generic_phy);
+>>>>> +	if (dwc->usb3_generic_phy)
+>>>>> +		phy_power_off(dwc->usb3_generic_phy);
+>>>>>  }
+>>>>>  
+>>>>>  #define DWC3_ALIGN_MASK		(16 - 1)
+>>>>> @@ -427,6 +438,23 @@ static int dwc3_probe(struct platform_device *pdev)
+>>>>>  		dwc->usb3_phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB3);
+>>>>>  	}
+>>>>>  
+>>>>> +	if (of_property_read_bool(node, "phys") || pdata->has_phy) {
+>>>>> +		dwc->usb2_generic_phy = devm_phy_get(dev, "usb2-phy");
+>>>>> +		if (IS_ERR(dwc->usb2_generic_phy)) {
+>>>>> +			dev_err(dev, "no usb2 phy configured yet");
+>>>>> +			return PTR_ERR(dwc->usb2_generic_phy);
+>>>>> +		}
+>>>>> +
+>>>>> +		dwc->usb3_generic_phy = devm_phy_get(dev, "usb3-phy");
+>>>>> +		if (IS_ERR(dwc->usb3_generic_phy)) {
+>>>>> +			dev_err(dev, "no usb3 phy configured yet");
+>>>>> +			return PTR_ERR(dwc->usb3_generic_phy);
+>>>>> +		}
+>>>>
+>>>> better to add
+>>>> +		/* Don't use USB PHY if generic PHY was found */
+>>>> +		dwc->usb2_phy = dwc->usb3_phy = NULL;
+>>>
+>>> ok.
+>>>>
+>>>>> +	} else {
+>>>>
+>>>> not required as we've used kzalloc for dwc.
+>>>>
+>>>>> +		dwc->usb2_generic_phy = NULL;
+>>>>> +		dwc->usb3_generic_phy = NULL;
+>>>>> +	}
+>>>>> +
+>>>>>  	/* default to superspeed if no maximum_speed passed */
+>>>>>  	if (dwc->maximum_speed == USB_SPEED_UNKNOWN)
+>>>>>  		dwc->maximum_speed = USB_SPEED_SUPER;
+>>>>> @@ -450,6 +478,11 @@ static int dwc3_probe(struct platform_device *pdev)
+>>>>
+>>>> if (dwc->usb2_phy)
+>>>>
+>>>>>  	usb_phy_set_suspend(dwc->usb2_phy, 0);
+>>>>
+>>>> if (dwc->usb3_phy)
+>>>>
+>>>>>  	usb_phy_set_suspend(dwc->usb3_phy, 0);
+>>>>>  
+>>>>> +	if (dwc->usb2_generic_phy)
+>>>>> +		phy_power_on(dwc->usb2_generic_phy);
+>>>>> +	if (dwc->usb3_generic_phy)
+>>>>> +		phy_power_on(dwc->usb3_generic_phy);
+>>>>> +
+>>>>>  	spin_lock_init(&dwc->lock);
+>>>>>  	platform_set_drvdata(pdev, dwc);
+>>>>>  
+>>>>> @@ -576,6 +609,11 @@ static int dwc3_remove(struct platform_device *pdev)
+>>>>
+>>>> if (dwc->usb2_phy)
+>>>>>  	usb_phy_set_suspend(dwc->usb2_phy, 1);
+>>>>
+>>>> if (dwc->usb3_phy)
+>>>>>  	usb_phy_set_suspend(dwc->usb3_phy, 1);
+>>>>>  
+>>>>> +	if (dwc->usb2_generic_phy)
+>>>>> +		phy_power_off(dwc->usb2_generic_phy);
+>>>>> +	if (dwc->usb3_generic_phy)
+>>>>> +		phy_power_off(dwc->usb3_generic_phy);
+>>>>> +
+>>>>>  	pm_runtime_put(&pdev->dev);
+>>>>>  	pm_runtime_disable(&pdev->dev);
+>>>>>  
+>>>>> @@ -673,6 +711,11 @@ static int dwc3_suspend(struct device *dev)
+>>>>
+>>>> if (dwc->usb3_phy)
+>>>>>  	usb_phy_shutdown(dwc->usb3_phy);
+>>>>
+>>>> if (dwc->usb2_phy)
+>>>>>  	usb_phy_shutdown(dwc->usb2_phy);
+>>>>>  
+>>>>> +	if (dwc->usb2_generic_phy)
+>>>>> +		phy_exit(dwc->usb2_generic_phy);
+>>>>> +	if (dwc->usb3_generic_phy)
+>>>>> +		phy_exit(dwc->usb3_generic_phy);
+>>>>> +
+>>>>>  	return 0;
+>>>>>  }
+>>>>>  
+>>>>> @@ -683,6 +726,12 @@ static int dwc3_resume(struct device *dev)
+>>>>>  
+>>>>
+>>>> if (dwc->usb3_phy)
+>>>>>  	usb_phy_init(dwc->usb3_phy);
+>>>>
+>>>> if (dwc->usb2_phy)
+>>>>>  	usb_phy_init(dwc->usb2_phy);
+>>>>> +
+>>>>> +	if (dwc->usb2_generic_phy)
+>>>>> +		phy_init(dwc->usb2_generic_phy);
+>>>>> +	if (dwc->usb3_generic_phy)
+>>>>> +		phy_init(dwc->usb3_generic_phy);
+>>>>> +
+>>>>>  	msleep(100);
+>>>>>  
+>>>>>  	spin_lock_irqsave(&dwc->lock, flags);
+>>>>> diff --git a/drivers/usb/dwc3/core.h b/drivers/usb/dwc3/core.h
+>>>>> index f8af8d4..01ec7d7 100644
+>>>>> --- a/drivers/usb/dwc3/core.h
+>>>>> +++ b/drivers/usb/dwc3/core.h
+>>>>> @@ -31,6 +31,8 @@
+>>>>>  #include <linux/usb/gadget.h>
+>>>>>  #include <linux/usb/otg.h>
+>>>>>  
+>>>>> +#include <linux/phy/phy.h>
+>>>>> +
+>>>>>  /* Global constants */
+>>>>>  #define DWC3_EP0_BOUNCE_SIZE	512
+>>>>>  #define DWC3_ENDPOINTS_NUM	32
+>>>>> @@ -613,6 +615,8 @@ struct dwc3_scratchpad_array {
+>>>>>   * @dr_mode: requested mode of operation
+>>>>>   * @usb2_phy: pointer to USB2 PHY
+>>>>>   * @usb3_phy: pointer to USB3 PHY
+>>>>> + * @usb2_generic_phy: pointer to USB2 PHY
+>>>>> + * @usb3_generic_phy: pointer to USB3 PHY
+>>>>>   * @dcfg: saved contents of DCFG register
+>>>>>   * @gctl: saved contents of GCTL register
+>>>>>   * @is_selfpowered: true when we are selfpowered
+>>>>> @@ -665,6 +669,9 @@ struct dwc3 {
+>>>>>  	struct usb_phy		*usb2_phy;
+>>>>>  	struct usb_phy		*usb3_phy;
+>>>>>  
+>>>>> +	struct phy		*usb2_generic_phy;
+>>>>> +	struct phy		*usb3_generic_phy;
+>>>>> +
+>>>>>  	void __iomem		*regs;
+>>>>>  	size_t			regs_size;
+>>>>>  
+>>>>>
+>>>
+>>> Do you have any suggestions on how to get only individual PHYs? like only
+>>> usb2phy or usb3phy?
+>>
+>> My earlier understanding was that both PHYs are needed only if .speed is "super-speed"
+>> and only usb2phy is needed for "high-speed". But as per Vivek's email it seems
+>> Samsung's exynos5 SoC doesn't need usb2phy for "super-speed".
+>>
+>> So to keeps things flexible, I can propose the following approach
+>> - if speed == 'high-speed' usb2phy must be present. usb3phy will be ignored if supplied.
+>> - if speed == 'super-speed' usb3phy must be present and usb2phy is optional but must be
+>> initialized if supplied.
+>> - if speed is not specified, we default to 'super-speed'.
+>>
+>> Felipe, does this address the issue you were facing with OMAP5?
+> 
+> on OMAP5 we cannot skip USB3 PHY initialization. But then it becomes a
+> question of supporting a test feature (in OMAP5 case it would be cool to
+> force controller to lower speeds for testing) or coping with a broken
+> DTS.
+> 
 
-Add a tracepoint when raising an IPI and in the entry/exit handler functions.
+I don't think we can protect ourselves from all possible broken configurations of DTS.
+I would vote for simplicity and maximum flexibility.
 
-When a cpu raises an IPI, the targeted cpus is an interesting information, the
-cpumask conversion in hexa is added in the trace using the cpumask_scnprintf
-function.
+So IMO we should just depend on DTS to provide the phys that are needed by the platform.
+In the driver we initialize whatever PHY is provided and don't complain if any or even all PHYs are missing.
 
-Tested-on Vexpress TC2 (5 processors).
+If this is not good enough then could you please suggest an alternative? Thanks.
 
-Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
----
- arch/arm/include/asm/smp.h   |    9 ++++
- arch/arm/kernel/smp.c        |   34 ++++++++------
- arch/arm64/include/asm/smp.h |    7 +++
- arch/arm64/kernel/smp.c      |   21 +++++++--
- include/trace/events/ipi.h   |  104 ++++++++++++++++++++++++++++++++++++++++++
- 5 files changed, 156 insertions(+), 19 deletions(-)
- create mode 100644 include/trace/events/ipi.h
-
-diff --git a/arch/arm/include/asm/smp.h b/arch/arm/include/asm/smp.h
-index a8cae71c..788706c 100644
---- a/arch/arm/include/asm/smp.h
-+++ b/arch/arm/include/asm/smp.h
-@@ -18,6 +18,15 @@
- # error "<asm/smp.h> included in non-SMP build"
- #endif
- 
-+enum ipi_msg_type {
-+	IPI_WAKEUP,
-+	IPI_TIMER,
-+	IPI_RESCHEDULE,
-+	IPI_CALL_FUNC,
-+	IPI_CALL_FUNC_SINGLE,
-+	IPI_CPU_STOP,
-+};
-+
- #define raw_smp_processor_id() (current_thread_info()->cpu)
- 
- struct seq_file;
-diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-index 72024ea..9ca8ce8 100644
---- a/arch/arm/kernel/smp.c
-+++ b/arch/arm/kernel/smp.c
-@@ -46,6 +46,9 @@
- #include <asm/mach/arch.h>
- #include <asm/mpu.h>
- 
-+#define CREATE_TRACE_POINTS
-+#include <trace/events/ipi.h>
-+
- /*
-  * as from 2.5, kernels no longer have an init_tasks structure
-  * so we need some other way of telling a new secondary core
-@@ -59,15 +62,6 @@ struct secondary_data secondary_data;
-  */
- volatile int pen_release = -1;
- 
--enum ipi_msg_type {
--	IPI_WAKEUP,
--	IPI_TIMER,
--	IPI_RESCHEDULE,
--	IPI_CALL_FUNC,
--	IPI_CALL_FUNC_SINGLE,
--	IPI_CPU_STOP,
--};
--
- static DECLARE_COMPLETION(cpu_running);
- 
- static struct smp_operations smp_ops;
-@@ -433,19 +427,25 @@ void __init set_smp_cross_call(void (*fn)(const struct cpumask *, unsigned int))
- 		smp_cross_call = fn;
- }
- 
-+static void ipi_raise(const struct cpumask *mask, int ipinr)
-+{
-+	trace_ipi_raise(mask, ipinr);
-+	smp_cross_call(mask, ipinr);
-+}
-+
- void arch_send_call_function_ipi_mask(const struct cpumask *mask)
- {
--	smp_cross_call(mask, IPI_CALL_FUNC);
-+	ipi_raise(mask, IPI_CALL_FUNC);
- }
- 
- void arch_send_wakeup_ipi_mask(const struct cpumask *mask)
- {
--	smp_cross_call(mask, IPI_WAKEUP);
-+	ipi_raise(mask, IPI_WAKEUP);
- }
- 
- void arch_send_call_function_single_ipi(int cpu)
- {
--	smp_cross_call(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
-+	ipi_raise(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
- }
- 
- static const char *ipi_types[NR_IPI] = {
-@@ -487,7 +487,7 @@ u64 smp_irq_stat_cpu(unsigned int cpu)
- #ifdef CONFIG_GENERIC_CLOCKEVENTS_BROADCAST
- void tick_broadcast(const struct cpumask *mask)
- {
--	smp_cross_call(mask, IPI_TIMER);
-+	ipi_raise(mask, IPI_TIMER);
- }
- #endif
- 
-@@ -528,6 +528,8 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
- 	unsigned int cpu = smp_processor_id();
- 	struct pt_regs *old_regs = set_irq_regs(regs);
- 
-+	trace_ipi_handler_entry(ipinr);
-+
- 	if (ipinr < NR_IPI)
- 		__inc_irq_stat(cpu, ipi_irqs[ipinr]);
- 
-@@ -571,11 +573,13 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
- 		break;
- 	}
- 	set_irq_regs(old_regs);
-+
-+	trace_ipi_handler_exit(ipinr);
- }
- 
- void smp_send_reschedule(int cpu)
- {
--	smp_cross_call(cpumask_of(cpu), IPI_RESCHEDULE);
-+	ipi_raise(cpumask_of(cpu), IPI_RESCHEDULE);
- }
- 
- void smp_send_stop(void)
-@@ -586,7 +590,7 @@ void smp_send_stop(void)
- 	cpumask_copy(&mask, cpu_online_mask);
- 	cpumask_clear_cpu(smp_processor_id(), &mask);
- 	if (!cpumask_empty(&mask))
--		smp_cross_call(&mask, IPI_CPU_STOP);
-+		ipi_raise(&mask, IPI_CPU_STOP);
- 
- 	/* Wait up to one second for other CPUs to stop */
- 	timeout = USEC_PER_SEC;
-diff --git a/arch/arm64/include/asm/smp.h b/arch/arm64/include/asm/smp.h
-index 4b8023c..7ebaa3a 100644
---- a/arch/arm64/include/asm/smp.h
-+++ b/arch/arm64/include/asm/smp.h
-@@ -24,6 +24,13 @@
- # error "<asm/smp.h> included in non-SMP build"
- #endif
- 
-+enum ipi_msg_type {
-+	IPI_RESCHEDULE,
-+	IPI_CALL_FUNC,
-+	IPI_CALL_FUNC_SINGLE,
-+	IPI_CPU_STOP,
-+};
-+
- #define raw_smp_processor_id() (current_thread_info()->cpu)
- 
- struct seq_file;
-diff --git a/arch/arm64/kernel/smp.c b/arch/arm64/kernel/smp.c
-index 78db90d..c987b9f 100644
---- a/arch/arm64/kernel/smp.c
-+++ b/arch/arm64/kernel/smp.c
-@@ -48,6 +48,9 @@
- #include <asm/tlbflush.h>
- #include <asm/ptrace.h>
- 
-+#define CREATE_TRACE_POINTS
-+#include <trace/events/ipi.h>
-+
- /*
-  * as from 2.5, kernels no longer have an init_tasks structure
-  * so we need some other way of telling a new secondary core
-@@ -426,14 +429,20 @@ void __init set_smp_cross_call(void (*fn)(const struct cpumask *, unsigned int))
- 	smp_cross_call = fn;
- }
- 
-+static void ipi_raise(const struct cpumask *mask, int ipinr)
-+{
-+	trace_ipi_raise(mask, ipinr);
-+	smp_cross_call(mask, ipinr);
-+}
-+
- void arch_send_call_function_ipi_mask(const struct cpumask *mask)
- {
--	smp_cross_call(mask, IPI_CALL_FUNC);
-+	ipi_raise(mask, IPI_CALL_FUNC);
- }
- 
- void arch_send_call_function_single_ipi(int cpu)
- {
--	smp_cross_call(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
-+	ipi_raise(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
- }
- 
- static const char *ipi_types[NR_IPI] = {
-@@ -501,6 +510,8 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
- 	unsigned int cpu = smp_processor_id();
- 	struct pt_regs *old_regs = set_irq_regs(regs);
- 
-+	trace_ipi_handler_entry(ipinr);
-+
- 	if (ipinr >= IPI_RESCHEDULE && ipinr < IPI_RESCHEDULE + NR_IPI)
- 		__inc_irq_stat(cpu, ipi_irqs[ipinr - IPI_RESCHEDULE]);
- 
-@@ -532,11 +543,13 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
- 		break;
- 	}
- 	set_irq_regs(old_regs);
-+
-+	trace_ipi_handler_exit(ipinr);
- }
- 
- void smp_send_reschedule(int cpu)
- {
--	smp_cross_call(cpumask_of(cpu), IPI_RESCHEDULE);
-+	ipi_raise(cpumask_of(cpu), IPI_RESCHEDULE);
- }
- 
- void smp_send_stop(void)
-@@ -549,7 +562,7 @@ void smp_send_stop(void)
- 		cpumask_copy(&mask, cpu_online_mask);
- 		cpu_clear(smp_processor_id(), mask);
- 
--		smp_cross_call(&mask, IPI_CPU_STOP);
-+		ipi_raise(&mask, IPI_CPU_STOP);
- 	}
- 
- 	/* Wait up to one second for other CPUs to stop */
-diff --git a/include/trace/events/ipi.h b/include/trace/events/ipi.h
-new file mode 100644
-index 0000000..80b734b
---- /dev/null
-+++ b/include/trace/events/ipi.h
-@@ -0,0 +1,104 @@
-+#undef TRACE_SYSTEM
-+#define TRACE_SYSTEM ipi
-+
-+#if !defined(_TRACE_IPI_H) || defined(TRACE_HEADER_MULTI_READ)
-+#define _TRACE_IPI_H
-+
-+#include <linux/tracepoint.h>
-+
-+#define ipi_name(ipinr) { IPI_##ipinr, #ipinr }
-+#define show_ipi_name(val)				\
-+	__print_symbolic(val,				\
-+			 ipi_name(WAKEUP),		\
-+			 ipi_name(TIMER),		\
-+			 ipi_name(RESCHEDULE),		\
-+			 ipi_name(CALL_FUNC),		\
-+			 ipi_name(CALL_FUNC_SINGLE),	\
-+			 ipi_name(CPU_STOP))
-+
-+DECLARE_EVENT_CLASS(ipi,
-+
-+    TP_PROTO(int ipinr),
-+
-+    TP_ARGS(ipinr),
-+
-+    TP_STRUCT__entry(
-+	    __field(int, ipinr)
-+    ),
-+
-+    TP_fast_assign(
-+	    __entry->ipinr = ipinr;
-+    ),
-+
-+    TP_printk("ipi=%d, name=%s", __entry->ipinr,
-+	      show_ipi_name(__entry->ipinr))
-+);
-+
-+/**
-+ * ipi_handle_entry - called right before the IPI handler
-+ * @ipinr: the IPI number
-+ *
-+ * The @ipinr value must be valid and the action name associated with
-+ * the IPI value is given in the trace.
-+ */
-+DEFINE_EVENT_CONDITION(ipi, ipi_handler_entry,
-+
-+    TP_PROTO(int ipinr),
-+
-+    TP_ARGS(ipinr),
-+
-+    TP_CONDITION(ipinr < NR_IPI && ipinr >= 0)
-+);
-+
-+/**
-+ * ipi_handle_exit - called right after the IPI handler
-+ * @ipinr: the IPI number
-+ *
-+ * The @ipinr value must be valid and the action name associated with
-+ * the IPI value is given in the trace.
-+ */
-+DEFINE_EVENT_CONDITION(ipi, ipi_handler_exit,
-+
-+    TP_PROTO(int ipinr),
-+
-+    TP_ARGS(ipinr),
-+
-+    TP_CONDITION(ipinr < NR_IPI && ipinr >= 0)
-+);
-+
-+/**
-+ * ipi_raise - called when a smp cross call is made
-+ * @ipinr: the IPI number
-+ * @cpumask: the recipients for the IPI
-+ *
-+ * The @ipinr value must be valid and the action name associated with
-+ * the IPI value is given in the trace as well as the cpumask of the
-+ * targeted cpus.
-+ */
-+TRACE_EVENT_CONDITION(ipi_raise,
-+
-+    TP_PROTO(const struct cpumask *cpumask, int ipinr),
-+
-+    TP_ARGS(cpumask, ipinr),
-+
-+    TP_CONDITION(ipinr < NR_IPI && ipinr >= 0),
-+
-+    TP_STRUCT__entry(
-+	    __field(int, ipinr)
-+	    __array(char, cpumask, NR_CPUS)
-+    ),
-+
-+    TP_fast_assign(
-+	    __entry->ipinr = ipinr;
-+	    cpumask_scnprintf(__entry->cpumask,
-+			      ARRAY_SIZE(__entry->cpumask), cpumask);
-+    ),
-+
-+    TP_printk("ipi=%d, cpumask=0x%s, name=%s", __entry->ipinr, __entry->cpumask,
-+	      show_ipi_name(__entry->ipinr))
-+);
-+
-+#endif /* _TRACE_IPI_H */
-+
-+/* This part must be outside protection */
-+#include <trace/define_trace.h>
--- 
-1.7.9.5
-
+cheers,
+-roger
