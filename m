@@ -1,66 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758437Ab3JOKA0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 06:00:26 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:41643 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757331Ab3JOKAZ (ORCPT
+	id S1758549Ab3JOKAk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 06:00:40 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:38628 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758500Ab3JOKAi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 06:00:25 -0400
-Message-ID: <525D1234.5060001@gmail.com>
-Date: Tue, 15 Oct 2013 12:00:20 +0200
-From: Juri Lelli <juri.lelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Tue, 15 Oct 2013 06:00:38 -0400
+Message-ID: <525D1191.8090207@linux.vnet.ibm.com>
+Date: Tue, 15 Oct 2013 15:27:37 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: peterz@infradead.org, tglx@linutronix.de, mingo@redhat.com,
-        rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
-        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
-        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, fchecconi@gmail.com,
-        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
-        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
-        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@gmail.com,
-        liming.wang@windriver.com, jkacur@redhat.com,
-        harald.gustafsson@ericsson.com, vincent.guittot@linaro.org,
-        bruce.ashfield@windriver.com--no-chain-reply-to
-Subject: Re: [PATCH 12/14] sched: make dl_bw a sub-quota of rt_bw
-References: <1381747426-31334-1-git-send-email-juri.lelli@gmail.com> <1381747426-31334-13-git-send-email-juri.lelli@gmail.com> <20131014140618.GA26604@gmail.com>
-In-Reply-To: <20131014140618.GA26604@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Morten Rasmussen <morten.rasmussen@arm.com>, mingo@kernel.org,
+        pjt@google.com, arjan@linux.intel.com, rjw@sisk.pl,
+        dirk.j.brandewie@intel.com, vincent.guittot@linaro.org,
+        alex.shi@linaro.org, efault@gmx.de, corbet@lwn.net, tglx@linutronix.de,
+        catalin.marinas@arm.com, linux-kernel@vger.kernel.org,
+        linaro-kernel@lists.linaro.org
+Subject: Re: [RFC][PATCH 0/7] Power-aware scheduling v2
+References: <1381511957-29776-1-git-send-email-morten.rasmussen@arm.com> <20131014133234.GM3081@twins.programming.kicks-ass.net>
+In-Reply-To: <20131014133234.GM3081@twins.programming.kicks-ass.net>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13101510-3864-0000-0000-00000A8A7566
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/14/2013 04:06 PM, Ingo Molnar wrote:
+Hi,
+
+On 10/14/2013 07:02 PM, Peter Zijlstra wrote:
+> On Fri, Oct 11, 2013 at 06:19:10PM +0100, Morten Rasmussen wrote:
+>> Hi,
+>>
+>> I have revised the previous power scheduler proposal[1] trying to address as
+>> many of the comments as possible. The overall idea was discussed at LPC[2,3].
+>> The revised design has removed the power scheduler and replaced it with a high
+>> level power driver interface. An interface that allows the scheduler to query
+>> the power driver for information and provide hints to guide power management
+>> decisions in the power driver.
+>>
+>> The power driver is going to be a unified platform power driver that can
+>> replace cpufreq and cpuidle drivers. Generic power policies will be optional
+>> helper functions called from the power driver. Platforms may choose to
+>> implement their own policies as part of their power driver.
+>>
+>> This RFC series prototypes a part of the power driver interface (cpu capacity
+>> hints) and shows how they can be used from the scheduler. More extensive use of
+>> the power driver hints and queries is left for later. The focus for now is the
+>> power driver interface. The patch series includes a power driver/cpufreq
+>> governor that can use existing cpufreq drivers as backend. It has been tested
+>> (not thoroughly) on ARM TC2. The cpufreq governor power driver implementation
+>> is rather horrible, but it illustrates how the power driver interface can be
+>> used. Native power drivers is on the todo list.
+>>
+>> The power driver interface is still missing quite a few calls to handle: Idle,
+>> adding extra information to the sched_domain hierarchy to guide scheduling
+>> decisions (packing), and possibly scaling of tracked load to compensate for
+>> frequency changes and asymmetric systems (big.LITTLE).
+>>
+>> This set is based on 3.11. I have done ARM TC2 testing based on linux-linaro
+>> 2013.08[4] to get cpufreq support for TC2.
 > 
-> * Juri Lelli <juri.lelli@gmail.com> wrote:
+> What I'm missing is a general overview of why what and how.
+
+I agree that the "why" needs to be mentioned very clearly since the
+patchset revolves around it. As far as I understand we need a single
+controller for deciding the power efficiency of the kernel, who is
+exposed to all the user policies and the frequency+idle states stats of
+the CPU to begin with. These stats are being supplied by the power driver.
+
+Having these details and decision making in multiple places like we do
+today in cpuidle, cpu-frequency and scheduler will probably cause
+problems. For example, when the power efficiency of the kernel goes
+wrong we have trouble point out the reason behind it. Where did the
+problem arise from among the above three power policy decision makers?
+This is a maintainability concern.
+   Another reason is the power saving decisions made by say cpuidle may
+not complement the power saving decisions made by cpufreq. This can lead
+to inconsistent results across different workloads.
+
+Thus having a single policy maker for power savings we are hoping to
+solve the primary concerns of consistent behaviour from the kernel in
+terms of power efficiency and improved maintainability.
+
 > 
->> +#ifdef CONFIG_SMP
->> +		struct dl_bw *dl_b = &cpu_rq(i)->rd->dl_bw;
->> +#else
->> +		struct dl_bw *dl_b = &cpu_rq(i)->dl.dl_bw;
->> +#endif
+> In particular; how does this proposal lead to power savings. Is there a
+> mathematical model that supports this framework? Something where if you
+> give it a task set with global utilisation < 1 (ie. there's idle time),
+> it results in less power used.
+
+AFAIK, this patchset is an attempt to achieve consistency in the power
+efficiency of the kernel across workloads with the existing algorithms,
+in addition to a cleanup involving integration of the power policy
+making in one place as explained above. In an attempt to do so, *maybe*
+better power numbers can be obtained or at-least the default power
+efficiency of the kernel will show up.
+
+However adding the new patchsets like packing small tasks, heterogeneous
+scheduling, power aware scheduling etc.. *should* then yield good and
+consistent power savings since they now stand on top of an integrated
+stable power driver.
+
+Regards
+Preeti U Murthy
 > 
->> +#ifdef CONFIG_SMP
->> +		struct dl_bw *dl_b = &cpu_rq(i)->rd->dl_bw;
->> +#else
->> +		struct dl_bw *dl_b = &cpu_rq(i)->dl.dl_bw;
->> +#endif
+> Also, how does this proposal deal with cpufreq's fundamental broken
+> approach to SMP? Afaict nothing considers the effect of one cpu upon
+> another -- something which isn't true at all.
 > 
-> Btw., this kind of SMP/UP assymetry pattern really sucks. Why not make UP 
-> use the SMP data structure, even if it's degenerate?
+> In fact, I don't see anything except a random bunch of hooks without an
+> over-all picture of how to get less power used.
 > 
 
-Yes, I don't like it either, but that comes from the fact that it seemed to me
-that, semantically, bandwidth for -deadline tasks has to be associated to the
-single runqueue in UP and to the root_domain for SMP. In UP root_domain is
-compiled out, so I'm not sure to understand what you suggest. I could probably
-let dl_bw live on runqueues with the assumption that all the runqueues from the
-same root_domain have the same dl_bw, that represents the dl_bw of the
-root_domain. But I don't like this replication either :(.
-
-Thanks,
-
-- Juri
