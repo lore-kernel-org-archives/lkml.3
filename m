@@ -1,102 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756889Ab3JODBF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 23:01:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44395 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754206Ab3JODBE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 23:01:04 -0400
-Date: Tue, 15 Oct 2013 11:00:18 +0800
-From: WANG Chao <chaowang@redhat.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Pekka Enberg <penberg@kernel.org>,
-        Jacob Shin <jacob.shin@amd.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Vivek Goyal <vgoyal@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86, kdump: crashkernel=X try to reserve below 896M
- first, then try below 4G, then MAXMEM
-Message-ID: <20131015030018.GO18969@dhcp16-109.nay.redhat.com>
-References: <1381751200-27376-1-git-send-email-chaowang@redhat.com>
- <CAE9FiQUNMDuVZtqud3LBbAmE0SL8ZWLFnc+CSYZm4UfTvNUaOA@mail.gmail.com>
+	id S1757143Ab3JODJA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 23:09:00 -0400
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:35491 "EHLO
+	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755770Ab3JODI5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 23:08:57 -0400
+Date: Tue, 15 Oct 2013 11:06:50 +0800
+From: Jisheng Zhang <jszhang@marvell.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 7/8] ARM: add Armada 1500 and Sony NSZ-GS7 device tree
+ files
+Message-ID: <20131015110650.250ca5f8@xhacker>
+In-Reply-To: <525C7A91.9060101@gmail.com>
+References: <1381235073-17134-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	<1381235073-17134-8-git-send-email-sebastian.hesselbarth@gmail.com>
+	<525C7A91.9060101@gmail.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.21; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAE9FiQUNMDuVZtqud3LBbAmE0SL8ZWLFnc+CSYZm4UfTvNUaOA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
+ definitions=2013-10-15_01:2013-10-15,2013-10-15,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=2
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1310140155
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/14/13 at 11:54am, Yinghai Lu wrote:
-> On Mon, Oct 14, 2013 at 4:46 AM, WANG Chao <chaowang@redhat.com> wrote:
-> > Now crashkernel=X will fail out if there's not enough memory at
-> > low (below 896M). What makes sense for crashkernel=X would be:
+Hi Sebastian,
+
+On Mon, 14 Oct 2013 16:13:21 -0700
+Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> wrote:
+
+> On 10/08/2013 02:24 PM, Sebastian Hesselbarth wrote:
+> > This adds very basic device tree files for the Marvell Armada 1500 SoC
+> > (88DE3100) and the Sony NSZ-GS7 GoogleTV board. Currently, SoC only has
+> > nodes for cpus, some clocks, l2 cache controller, local timer, apb timers,
+> > uart, and interrupt controllers. The Sony NSZ-GS7 is a GoogleTV consumer
+> > device comprising the Armada 1500 SoC above.
 > >
-> >  - First try to reserve X below 896M (for being compatible with old
-> >    kexec-tools).
-> >  - If fails, try to reserve X below 4G (swiotlb need to stay below 4G).
-> >  - If fails, try to reserve X from MAXMEM top down.
-> >
-> > So that user can easily reserve large memory with crashkernel=X instead
-> > of crashkernel=X,high. It's more transparent and user-friendly.
-> >
-> > If crashkernel is large and the reserved is beyond 896M, old kexec-tools
-> > won't be compatible with new kernel for most of time.
-> >
-> > kexec will fail out immediately in this case. But the failure could be
-> > expected, because old kexec users should not try to reserve that large
-> > amount of memory at the first place.
-> >
-> > On the other hand, old kexec also will fail on old kernel when there's
-> > not enough low memory to reserve a large crash kernel area. So the
-> > failure of old kexec is consistent between old kernel and new kernel.
-> >
-> > Signed-off-by: WANG Chao <chaowang@redhat.com>
+> > Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> > Reviewed-by: Jason Cooper <jason@lakedaemon.net>
+> > Reviewed-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+> > Reviewed-by: Arnd Bergmann <arnd@arndb.de>
 > > ---
-> >  arch/x86/kernel/setup.c | 14 ++++++++++++++
-> >  1 file changed, 14 insertions(+)
+> > Changelog:
+> > RCFv2->v1:
+> > - switch to (soon to be) correct "marvell,pj4b" cpu compatible
+> > - reference fixed-clock for uarts instead of hard-coded clock-frequency
+> > - disable timers except two for clksrc and clkevt
+> > RFCv1->RFCv2:
+> > - add binding documentation (Reported by Jason Cooper)
+> > - change l2cc from aurora to tauros3 (Reported by Thomas Petazzoni)
+> > - add copyright reference
+> > - adapt compatibles to mach-berlin instead of mach-mvebu
 > >
-> > diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-> > index f0de629..38e6c1f 100644
-> > --- a/arch/x86/kernel/setup.c
-> > +++ b/arch/x86/kernel/setup.c
-> > @@ -593,6 +593,20 @@ static void __init reserve_crashkernel(void)
-> >                                         high ? CRASH_KERNEL_ADDR_HIGH_MAX :
-> >                                                CRASH_KERNEL_ADDR_LOW_MAX,
-> >                                         crash_size, alignment);
-> > +               /*
-> > +                * crashkernel=X reserve below 896M fails? Try below 4G
-> > +                */
-> > +               if (!high && !crash_base)
-> > +                       crash_base = memblock_find_in_range(alignment,
-> > +                                               (1ULL << 32),
-> > +                                               crash_size, alignment);
-> > +               /*
-> > +                * crashkernel=X reserve below 4G fails? Try MAXMEM
-> > +                */
-> > +               if (!high && !crash_base)
-> > +                       crash_base = memblock_find_in_range(alignment,
-> > +                                               CRASH_KERNEL_ADDR_HIGH_MAX,
-> > +                                               crash_size, alignment);
+> > Cc: Jason Cooper <jason@lakedaemon.net>
+> > Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+> > Cc: Arnd Bergmann <arnd@arndb.de>
+> > Cc: devicetree@vger.kernel.org
+> > Cc: linux-doc@vger.kernel.org
+> > Cc: linux-arm-kernel@lists.infradead.org
+> > Cc: linux-kernel@vger.kernel.org
+> > ---
+> >   .../devicetree/bindings/arm/marvell,berlin.txt     |   23 ++
+> >   arch/arm/boot/dts/Makefile                         |    2 +
+> >   arch/arm/boot/dts/mv88de3100-sony-nsz-gs7.dts      |   29 +++
+> >   arch/arm/boot/dts/mv88de3100.dtsi                  |  227
+> > ++++++++++++++++++++ 4 files changed, 281 insertions(+)
+> >   create mode 100644
+> > Documentation/devicetree/bindings/arm/marvell,berlin.txt create mode
+> > 100644 arch/arm/boot/dts/mv88de3100-sony-nsz-gs7.dts create mode 100644
+> > arch/arm/boot/dts/mv88de3100.dtsi
 > >
-> >                 if (!crash_base) {
-> >                         pr_info("crashkernel reservation failed - No suitable area found.\n");
-> > --
+> > diff --git a/Documentation/devicetree/bindings/arm/marvell,berlin.txt
+> > b/Documentation/devicetree/bindings/arm/marvell,berlin.txt new file mode
+> > 100644 index 0000000..e389cba
+> > --- /dev/null
+> > +++ b/Documentation/devicetree/bindings/arm/marvell,berlin.txt
+> > @@ -0,0 +1,23 @@
+> > +Marvell Berlin (88DE3xxx) family SoCs Device Tree Bindings
+> > +---------------------------------------------------------------
+> > +
+> > +Boards with a SoC of the Marvell Berlin (88DE3xxx) family, e.g. Armada
+> > 1500 +shall have the following properties:
+> > +
+> > +* Required root node properties:
+> > +compatible: must contain "marvell,berlin"
+> > +
+> > +In addition, the above compatible shall be extended with the specific
+> > +SoC and board used. Currently known SoC compatibles are:
+> > +    "marvell,88de3100"	for Marvell 88DE3100 (Armada 1500),
+> > +    "marvell,88de3010"	for Marvell 88DE3010 (Armada 1000),
+> > +    "marvell,88de3005"	for Marvell 88DE3005 (Armada 1500-mini)
 > 
-> User should change crashkernel=X to crashkernel=X,high.
-
-crashkernel=X is more straightforward. IMHO, It should be a more general
-crash kernel reservation parameter and it shouldn't reserve at low only.
-
+> Jisheng,
 > 
-> As user could forget to update kexec-tools to utilize ",high" feature, and get
-> kdump later fail later.
+> I am trying to follow your request to get rid of 88DExxxx numbering and
+> replace it where possible with berlin type-of names.
+Thanks for your help.
+> 
+> For the above, I have:
+> "marvell,berlin-bg2" for Marvell Armada 1500 (BG2, 88DE3100)
+We prefer "marvell,berlin2" for BG2
+> "marvell,berlin-bg2cd" for Marvell Armada 1500-mini (BG2CD, 88DE3005)
+we prefer "marvell,berlin2cd" for BG2CD, "marvell,berlin2ct" for BG2CT,
+and "marvell,berlin3" for BG3, etc.
 
-old kexec-tools should fail to load kernel high anyway, right?
 
-Thanks
-WANG Chao
+Thanks,
+Jisheng
