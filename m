@@ -1,891 +1,898 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753292Ab3JOFLg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 01:11:36 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:45807 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752206Ab3JOFLe (ORCPT
+	id S1753575Ab3JOFNB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 01:13:01 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60400 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751305Ab3JOFM6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 01:11:34 -0400
-X-AuditID: cbfee690-b7fa36d00000744b-23-525cce84dc15
-From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-To: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, hs@denx.de
-Cc: khali@linux-fr.org, ben-linux@fluff.org, grant.likely@secretlab.ca,
-        sjg@chromium.org, naveenkrishna.ch@gmail.com, d.mueller@elsoft.ch,
-        trini@ti.com, mk7.kang@samsung.com, cpgs@samsung.com
-Subject: [PATCH 3/3 v6] i2c: s3c24xx: add hsi2c controller support
-Date: Tue, 15 Oct 2013 10:43:35 +0530
-Message-id: <1381814015-16088-1-git-send-email-ch.naveen@samsung.com>
-X-Mailer: git-send-email 1.7.10.4
-In-reply-to: <1380799488-14589-1-git-send-email-ch.naveen@samsung.com>
-References: <1380799488-14589-1-git-send-email-ch.naveen@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLIsWRmVeSWpSXmKPExsWyRsSkVrflXEyQwY1JPBaT1h1gsnh5SNNi
-	weFmZotXZzayWey4c5/ZovFvpEXH3y+MFpd3zWGzmHF+H5NFx5EWRotF2/4zW3zbso3RYvLi
-	+cwOvB6zGy6yeMybdYLFo2nrI2aPv6teMHvsnHWX3eNKw0k2j74tqxg9fr7U8Th+YzuTx+dN
-	cgFcUVw2Kak5mWWpRfp2CVwZj1/OYy7o3slYsezLCqYGxqsTGbsYOTkkBEwkrn5eC2WLSVy4
-	t56ti5GLQ0hgKaPElkOz2WGKTrzdyQ6RmM4oMefbQRYIp4dJ4sWEm8wgVWwCZhIHF60G6xAR
-	yJF4dXoVK0gRs8BhRonXXc+A5nJwCAs4Sbx+lwBSwyKgKrFn4kKwel4BV4mHby8zQWxTlOh+
-	NoENxOYUcJP4+AAiLgRUc+v4B7ArJATesku829vLBjFIQOLb5EMsIPMlBGQlNh1ghpgjKXFw
-	xQ2WCYzCCxgZVjGKphYkFxQnpReZ6BUn5haX5qXrJefnbmIERtXpf88m7GC8d8D6EGMy0LiJ
-	zFKiyfnAqMwriTc0NjOyMDUxNTYytzQjTVhJnFe9xTpQSCA9sSQ1OzW1ILUovqg0J7X4ECMT
-	B6dUAyPvXjsFvVOrHMsPs5cu3Gy39ve/1J3rO8u/XNx1WK06rtf3+YVF2m4u99Jf3Yt+XfTs
-	qP+FEvOr3wKn3G599/lvbnBnuL5zaY6+tFfOGkG/G39ens1vZTr6MymxqvykTPixpjr5tuI5
-	jyI5vNWXMMoYnD+R/sT7pqp6Uvay8wW3VoebWy57EKPEUpyRaKjFXFScCAByMtMUwAIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupileLIzCtJLcpLzFFi42I5/e+xoG7zuZggg2v3rS0mrTvAZPHykKbF
-	gsPNzBavzmxks9hx5z6zRePfSIuOv18YLS7vmsNmMeP8PiaLjiMtjBaLtv1ntvi2ZRujxeTF
-	85kdeD1mN1xk8Zg36wSLR9PWR8wef1e9YPbYOesuu8eVhpNsHn1bVjF6/Hyp43H8xnYmj8+b
-	5AK4ohoYbTJSE1NSixRS85LzUzLz0m2VvIPjneNNzQwMdQ0tLcyVFPISc1NtlVx8AnTdMnOA
-	bldSKEvMKQUKBSQWFyvp22GaEBripmsB0xih6xsSBNdjZIAGEtYwZjx+OY+5oHsnY8WyLyuY
-	GhivTmTsYuTkkBAwkTjxdic7hC0mceHeerYuRi4OIYHpjBJzvh1kgXB6mCReTLjJDFLFJmAm
-	cXDRarAOEYEciVenV7GCFDELHGaUeN31DKidg0NYwEni9bsEkBoWAVWJPRMXgtXzCrhKPHx7
-	mQlim6JE97MJbCA2p4CbxMcHEHEhoJpbxz+wT2DkXcDIsIpRNLUguaA4KT3XSK84Mbe4NC9d
-	Lzk/dxMjOGafSe9gXNVgcYhRgINRiYf3B29MkBBrYllxZe4hRgkOZiUR3pxqoBBvSmJlVWpR
-	fnxRaU5q8SHGZKCrJjJLiSbnA9NJXkm8obGJuamxqaWJhYmZJWnCSuK8B1utA4UE0hNLUrNT
-	UwtSi2C2MHFwSjUwth76Nv2dqKlOyF2uqZa3lxZL8F6acYX9phLPLWFHT+9zddKHpTc3ndxe
-	G2oQeadDN3LbnHlugV+31EdUaj3XTz5wX7XLV+6Aa/aMjlflRktPG1VczlXM3hl3cWZ73seJ
-	viukQ3W+1pwxlvHtDn8da9Xw9mjtylPGBq7mBSzCNROXCPGy7jZWYinOSDTUYi4qTgQA3FPK
-	fB0DAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 15 Oct 2013 01:12:58 -0400
+Date: Mon, 14 Oct 2013 22:12:29 -0700
+From: tip-bot for Ingo Molnar <tipbot@zytor.com>
+Message-ID: <tip-89fe808ae777728da6e1d78b7d13562792310d17@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, acme@redhat.com, hpa@zytor.com,
+        mingo@kernel.org, a.p.zijlstra@chello.nl, namhyung@kernel.org,
+        jolsa@redhat.com, dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        namhyung@kernel.org, jolsa@redhat.com, dsahern@gmail.com,
+        tglx@linutronix.de
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] tools/perf:
+  Standardize feature support define names to: HAVE_{FEATURE}_SUPPORT
+Git-Commit-ID: 89fe808ae777728da6e1d78b7d13562792310d17
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 14 Oct 2013 22:12:38 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for hsi2c controller available on exynos5420.
+Commit-ID:  89fe808ae777728da6e1d78b7d13562792310d17
+Gitweb:     http://git.kernel.org/tip/89fe808ae777728da6e1d78b7d13562792310d17
+Author:     Ingo Molnar <mingo@kernel.org>
+AuthorDate: Mon, 30 Sep 2013 12:07:11 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 9 Oct 2013 08:48:28 +0200
 
-Note: driver currently supports only fast speed mode 100kbps
+tools/perf: Standardize feature support define names to: HAVE_{FEATURE}_SUPPORT
 
-Change-Id: I02555b1dc8f4ac21c50aa5158179768563c92f43
-Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-Signed-off-by: R. Chandrasekar <rc.sekar@samsung.com>
+Standardize all the feature flags based on the HAVE_{FEATURE}_SUPPORT naming convention:
+
+		HAVE_ARCH_X86_64_SUPPORT
+		HAVE_BACKTRACE_SUPPORT
+		HAVE_CPLUS_DEMANGLE_SUPPORT
+		HAVE_DWARF_SUPPORT
+		HAVE_ELF_GETPHDRNUM_SUPPORT
+		HAVE_GTK2_SUPPORT
+		HAVE_GTK_INFO_BAR_SUPPORT
+		HAVE_LIBAUDIT_SUPPORT
+		HAVE_LIBELF_MMAP_SUPPORT
+		HAVE_LIBELF_SUPPORT
+		HAVE_LIBNUMA_SUPPORT
+		HAVE_LIBUNWIND_SUPPORT
+		HAVE_ON_EXIT_SUPPORT
+		HAVE_PERF_REGS_SUPPORT
+		HAVE_SLANG_SUPPORT
+		HAVE_STRLCPY_SUPPORT
+
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Link: http://lkml.kernel.org/n/tip-u3zvqejddfZhtrbYbfhi3spa@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
-Changes since v5:
-Fix compilation errors (undeclared CONFIG_MAX_I2C_NUM) for VCMA9 boards
+ tools/perf/arch/x86/include/perf_regs.h |  6 ++--
+ tools/perf/arch/x86/util/unwind.c       |  4 +--
+ tools/perf/bench/mem-memcpy-arch.h      |  2 +-
+ tools/perf/bench/mem-memcpy.c           |  2 +-
+ tools/perf/bench/mem-memset-arch.h      |  2 +-
+ tools/perf/bench/mem-memset.c           |  2 +-
+ tools/perf/builtin-bench.c              |  4 +--
+ tools/perf/builtin-inject.c             |  2 +-
+ tools/perf/builtin-probe.c              | 14 ++++-----
+ tools/perf/builtin-record.c             | 12 ++++----
+ tools/perf/config/Makefile              | 54 ++++++++++++++++-----------------
+ tools/perf/perf.c                       |  4 +--
+ tools/perf/ui/gtk/browser.c             |  2 +-
+ tools/perf/ui/gtk/gtk.h                 |  4 +--
+ tools/perf/ui/gtk/util.c                |  4 +--
+ tools/perf/ui/ui.h                      |  4 +--
+ tools/perf/util/annotate.h              |  4 +--
+ tools/perf/util/cache.h                 |  2 +-
+ tools/perf/util/generate-cmdlist.sh     |  4 +--
+ tools/perf/util/hist.h                  |  4 +--
+ tools/perf/util/include/dwarf-regs.h    |  2 +-
+ tools/perf/util/map.c                   |  2 +-
+ tools/perf/util/path.c                  |  2 +-
+ tools/perf/util/perf_regs.h             |  4 +--
+ tools/perf/util/probe-event.c           |  4 +--
+ tools/perf/util/probe-finder.h          |  4 +--
+ tools/perf/util/symbol-elf.c            |  2 +-
+ tools/perf/util/symbol.h                |  8 ++---
+ tools/perf/util/unwind.h                |  4 +--
+ tools/perf/util/util.c                  |  4 +--
+ 30 files changed, 86 insertions(+), 86 deletions(-)
 
- drivers/i2c/s3c24x0_i2c.c |  623 +++++++++++++++++++++++++++++++++++++++++----
- drivers/i2c/s3c24x0_i2c.h |   37 +++
- 2 files changed, 610 insertions(+), 50 deletions(-)
-
-diff --git a/drivers/i2c/s3c24x0_i2c.c b/drivers/i2c/s3c24x0_i2c.c
-index 0e6f241..71f3637 100644
---- a/drivers/i2c/s3c24x0_i2c.c
-+++ b/drivers/i2c/s3c24x0_i2c.c
-@@ -34,6 +34,76 @@
- #define I2C_NOK_LA	3	/* Lost arbitration */
- #define I2C_NOK_TOUT	4	/* time out */
+diff --git a/tools/perf/arch/x86/include/perf_regs.h b/tools/perf/arch/x86/include/perf_regs.h
+index 7fcdcdb..e84ca76 100644
+--- a/tools/perf/arch/x86/include/perf_regs.h
++++ b/tools/perf/arch/x86/include/perf_regs.h
+@@ -5,7 +5,7 @@
+ #include "../../util/types.h"
+ #include <asm/perf_regs.h>
  
-+/* HSI2C specific register description */
-+
-+/* I2C_CTL Register bits */
-+#define HSI2C_FUNC_MODE_I2C		(1u << 0)
-+#define HSI2C_MASTER			(1u << 3)
-+#define HSI2C_RXCHON			(1u << 6)	/* Write/Send */
-+#define HSI2C_TXCHON			(1u << 7)	/* Read/Receive */
-+#define HSI2C_SW_RST			(1u << 31)
-+
-+/* I2C_FIFO_CTL Register bits */
-+#define HSI2C_RXFIFO_EN			(1u << 0)
-+#define HSI2C_TXFIFO_EN			(1u << 1)
-+#define HSI2C_TXFIFO_TRIGGER_LEVEL	(0x20 << 16)
-+#define HSI2C_RXFIFO_TRIGGER_LEVEL	(0x20 << 4)
-+
-+/* I2C_TRAILING_CTL Register bits */
-+#define HSI2C_TRAILING_COUNT		(0xff)
-+
-+/* I2C_INT_EN Register bits */
-+#define HSI2C_TX_UNDERRUN_EN		(1u << 2)
-+#define HSI2C_TX_OVERRUN_EN		(1u << 3)
-+#define HSI2C_RX_UNDERRUN_EN		(1u << 4)
-+#define HSI2C_RX_OVERRUN_EN		(1u << 5)
-+#define HSI2C_INT_TRAILING_EN		(1u << 6)
-+#define HSI2C_INT_I2C_EN		(1u << 9)
-+
-+#define HSI2C_INT_ERROR_MASK	(HSI2C_TX_UNDERRUN_EN |\
-+				 HSI2C_TX_OVERRUN_EN  |\
-+				 HSI2C_RX_UNDERRUN_EN |\
-+				 HSI2C_RX_OVERRUN_EN  |\
-+				 HSI2C_INT_TRAILING_EN)
-+
-+/* I2C_CONF Register bits */
-+#define HSI2C_AUTO_MODE			(1u << 31)
-+#define HSI2C_10BIT_ADDR_MODE		(1u << 30)
-+#define HSI2C_HS_MODE			(1u << 29)
-+
-+/* I2C_AUTO_CONF Register bits */
-+#define HSI2C_READ_WRITE		(1u << 16)
-+#define HSI2C_STOP_AFTER_TRANS		(1u << 17)
-+#define HSI2C_MASTER_RUN		(1u << 31)
-+
-+/* I2C_TIMEOUT Register bits */
-+#define HSI2C_TIMEOUT_EN		(1u << 31)
-+
-+/* I2C_TRANS_STATUS register bits */
-+#define HSI2C_MASTER_BUSY		(1u << 17)
-+#define HSI2C_SLAVE_BUSY		(1u << 16)
-+#define HSI2C_TIMEOUT_AUTO		(1u << 4)
-+#define HSI2C_NO_DEV			(1u << 3)
-+#define HSI2C_NO_DEV_ACK		(1u << 2)
-+#define HSI2C_TRANS_ABORT		(1u << 1)
-+#define HSI2C_TRANS_SUCCESS		(1u << 0)
-+#define HSI2C_TRANS_ERROR_MASK	(HSI2C_TIMEOUT_AUTO |\
-+				 HSI2C_NO_DEV | HSI2C_NO_DEV_ACK |\
-+				 HSI2C_TRANS_ABORT)
-+#define HSI2C_TRANS_FINISHED_MASK (HSI2C_TRANS_ERROR_MASK | HSI2C_TRANS_SUCCESS)
-+
-+
-+/* I2C_FIFO_STAT Register bits */
-+#define HSI2C_RX_FIFO_EMPTY		(1u << 24)
-+#define HSI2C_RX_FIFO_FULL		(1u << 23)
-+#define HSI2C_TX_FIFO_EMPTY		(1u << 8)
-+#define HSI2C_TX_FIFO_FULL		(1u << 7)
-+#define HSI2C_RX_FIFO_LEVEL(x)		(((x) >> 16) & 0x7f)
-+#define HSI2C_TX_FIFO_LEVEL(x)		((x) & 0x7f)
-+
-+#define HSI2C_SLV_ADDR_MAS(x)		((x & 0x3ff) << 10)
-+
-+/* S3C I2C Controller bits */
- #define I2CSTAT_BSY	0x20	/* Busy bit */
- #define I2CSTAT_NACK	0x01	/* Nack bit */
- #define I2CCON_ACKGEN	0x80	/* Acknowledge generation */
-@@ -45,16 +115,41 @@
- 
- #define I2C_TIMEOUT_MS 1000		/* 1 second */
- 
-+#define	HSI2C_TIMEOUT_US 100000 /* 100 ms, finer granularity */
-+
-+
-+/* To support VCMA9 boards and other who dont define max_i2c_num */
-+#ifndef CONFIG_MAX_I2C_NUM
-+#define CONFIG_MAX_I2C_NUM 1
-+#endif
- 
- /*
-  * For SPL boot some boards need i2c before SDRAM is initialised so force
-  * variables to live in SRAM
-  */
- static unsigned int g_current_bus __attribute__((section(".data")));
--#ifdef CONFIG_OF_CONTROL
- static struct s3c24x0_i2c_bus i2c_bus[CONFIG_MAX_I2C_NUM]
- 			__attribute__((section(".data")));
--#endif
-+
-+/**
-+ * Get a pointer to the given bus index
-+ *
-+ * @bus_idx: Bus index to look up
-+ * @return pointer to bus, or NULL if invalid or not available
-+ */
-+static struct s3c24x0_i2c_bus *get_bus(unsigned int bus_idx)
-+{
-+	if (bus_idx < ARRAY_SIZE(i2c_bus)) {
-+		struct s3c24x0_i2c_bus *bus;
-+
-+		bus = &i2c_bus[bus_idx];
-+		if (bus->active)
-+			return bus;
-+	}
-+
-+	debug("Undefined bus: %d\n", bus_idx);
-+	return NULL;
-+}
- 
- #if !(defined CONFIG_EXYNOS4 || defined CONFIG_EXYNOS5)
- static int GetI2CSDA(void)
-@@ -105,6 +200,55 @@ static int WaitForXfer(struct s3c24x0_i2c *i2c)
- 	return I2C_NOK_TOUT;
- }
- 
-+/*
-+ * Wait for transfer completion.
-+ *
-+ * This function reads the interrupt status register waiting for the INT_I2C
-+ * bit to be set, which indicates copletion of a transaction.
-+ *
-+ * @param i2c: pointer to the appropriate register bank
-+ *
-+ * @return: I2C_OK in case of successful completion, I2C_NOK_TIMEOUT in case
-+ *          the status bits do not get set in time, or an approrpiate error
-+ *          value in case of transfer errors.
-+ */
-+static int hsi2c_wait_for_trx(struct exynos5_hsi2c *i2c)
-+{
-+	int i = HSI2C_TIMEOUT_US;
-+
-+	while (i-- > 0) {
-+		u32 int_status = readl(&i2c->usi_int_stat);
-+
-+		if (int_status & HSI2C_INT_I2C_EN) {
-+			u32 trans_status = readl(&i2c->usi_trans_status);
-+
-+			/* Deassert pending interrupt. */
-+			writel(int_status, &i2c->usi_int_stat);
-+
-+			if (trans_status & HSI2C_NO_DEV_ACK) {
-+				debug("%s: no ACK from device\n", __func__);
-+				return I2C_NACK;
-+			}
-+			if (trans_status & HSI2C_NO_DEV) {
-+				debug("%s: no device\n", __func__);
-+				return I2C_NOK;
-+			}
-+			if (trans_status & HSI2C_TRANS_ABORT) {
-+				debug("%s: arbitration lost\n", __func__);
-+				return I2C_NOK_LA;
-+			}
-+			if (trans_status & HSI2C_TIMEOUT_AUTO) {
-+				debug("%s: device timed out\n", __func__);
-+				return I2C_NOK_TOUT;
-+			}
-+			return I2C_OK;
-+		}
-+		udelay(1);
-+	}
-+	debug("%s: transaction timeout!\n", __func__);
-+	return I2C_NOK_TOUT;
-+}
-+
- static void ReadWriteByte(struct s3c24x0_i2c *i2c)
- {
- 	writel(readl(&i2c->iiccon) & ~I2CCON_IRPND, &i2c->iiccon);
-@@ -154,6 +298,107 @@ static void i2c_ch_init(struct s3c24x0_i2c *i2c, int speed, int slaveadd)
- 	writel(I2C_MODE_MT | I2C_TXRX_ENA, &i2c->iicstat);
- }
- 
-+static int hsi2c_get_clk_details(struct s3c24x0_i2c_bus *i2c_bus)
-+{
-+	struct exynos5_hsi2c *hsregs = i2c_bus->hsregs;
-+	ulong clkin;
-+	unsigned int op_clk = i2c_bus->clock_frequency;
-+	unsigned int i = 0, utemp0 = 0, utemp1 = 0;
-+	unsigned int t_ftl_cycle;
-+
-+#if defined CONFIG_EXYNOS5
-+	clkin = get_i2c_clk();
-+#endif
-+	/* FPCLK / FI2C =
-+	 * (CLK_DIV + 1) * (TSCLK_L + TSCLK_H + 2) + 8 + 2 * FLT_CYCLE
-+	 * uTemp0 = (CLK_DIV + 1) * (TSCLK_L + TSCLK_H + 2)
-+	 * uTemp1 = (TSCLK_L + TSCLK_H + 2)
-+	 * uTemp2 = TSCLK_L + TSCLK_H
-+	 */
-+	t_ftl_cycle = (readl(&hsregs->usi_conf) >> 16) & 0x7;
-+	utemp0 = (clkin / op_clk) - 8 - 2 * t_ftl_cycle;
-+
-+	/* CLK_DIV max is 256 */
-+	for (i = 0; i < 256; i++) {
-+		utemp1 = utemp0 / (i + 1);
-+		if ((utemp1 < 512) && (utemp1 > 4)) {
-+			i2c_bus->clk_cycle = utemp1 - 2;
-+			i2c_bus->clk_div = i;
-+			return 0;
-+		}
-+	}
-+	return -1;
-+}
-+
-+static void hsi2c_ch_init(struct s3c24x0_i2c_bus *i2c_bus)
-+{
-+	struct exynos5_hsi2c *hsregs = i2c_bus->hsregs;
-+	unsigned int t_sr_release;
-+	unsigned int n_clkdiv;
-+	unsigned int t_start_su, t_start_hd;
-+	unsigned int t_stop_su;
-+	unsigned int t_data_su, t_data_hd;
-+	unsigned int t_scl_l, t_scl_h;
-+	u32 i2c_timing_s1;
-+	u32 i2c_timing_s2;
-+	u32 i2c_timing_s3;
-+	u32 i2c_timing_sla;
-+
-+	n_clkdiv = i2c_bus->clk_div;
-+	t_scl_l = i2c_bus->clk_cycle / 2;
-+	t_scl_h = i2c_bus->clk_cycle / 2;
-+	t_start_su = t_scl_l;
-+	t_start_hd = t_scl_l;
-+	t_stop_su = t_scl_l;
-+	t_data_su = t_scl_l / 2;
-+	t_data_hd = t_scl_l / 2;
-+	t_sr_release = i2c_bus->clk_cycle;
-+
-+	i2c_timing_s1 = t_start_su << 24 | t_start_hd << 16 | t_stop_su << 8;
-+	i2c_timing_s2 = t_data_su << 24 | t_scl_l << 8 | t_scl_h << 0;
-+	i2c_timing_s3 = n_clkdiv << 16 | t_sr_release << 0;
-+	i2c_timing_sla = t_data_hd << 0;
-+
-+	writel(HSI2C_TRAILING_COUNT, &hsregs->usi_trailing_ctl);
-+
-+	/* Clear to enable Timeout */
-+	clrsetbits_le32(&hsregs->usi_timeout, HSI2C_TIMEOUT_EN, 0);
-+
-+	/* set AUTO mode */
-+	writel(readl(&hsregs->usi_conf) | HSI2C_AUTO_MODE, &hsregs->usi_conf);
-+
-+	/* Enable completion conditions' reporting. */
-+	writel(HSI2C_INT_I2C_EN, &hsregs->usi_int_en);
-+
-+	/* Enable FIFOs */
-+	writel(HSI2C_RXFIFO_EN | HSI2C_TXFIFO_EN, &hsregs->usi_fifo_ctl);
-+
-+	/* Currently operating in Fast speed mode. */
-+	writel(i2c_timing_s1, &hsregs->usi_timing_fs1);
-+	writel(i2c_timing_s2, &hsregs->usi_timing_fs2);
-+	writel(i2c_timing_s3, &hsregs->usi_timing_fs3);
-+	writel(i2c_timing_sla, &hsregs->usi_timing_sla);
-+}
-+
-+/* SW reset for the high speed bus */
-+static void exynos5_i2c_reset(struct s3c24x0_i2c_bus *i2c_bus)
-+{
-+	struct exynos5_hsi2c *i2c = i2c_bus->hsregs;
-+	u32 i2c_ctl;
-+
-+	/* Set and clear the bit for reset */
-+	i2c_ctl = readl(&i2c->usi_ctl);
-+	i2c_ctl |= HSI2C_SW_RST;
-+	writel(i2c_ctl, &i2c->usi_ctl);
-+
-+	i2c_ctl = readl(&i2c->usi_ctl);
-+	i2c_ctl &= ~HSI2C_SW_RST;
-+	writel(i2c_ctl, &i2c->usi_ctl);
-+
-+	/* Initialize the configure registers */
-+	hsi2c_ch_init(i2c_bus);
-+}
-+
- /*
-  * MULTI BUS I2C support
-  */
-@@ -161,16 +406,21 @@ static void i2c_ch_init(struct s3c24x0_i2c *i2c, int speed, int slaveadd)
- #ifdef CONFIG_I2C_MULTI_BUS
- int i2c_set_bus_num(unsigned int bus)
- {
--	struct s3c24x0_i2c *i2c;
-+	struct s3c24x0_i2c_bus *i2c_bus;
- 
- 	i2c_bus = get_bus(bus);
- 	if (!i2c_bus)
- 		return -1;
--	}
--
- 	g_current_bus = bus;
--	i2c = get_base_i2c();
--	i2c_ch_init(i2c, CONFIG_SYS_I2C_SPEED, CONFIG_SYS_I2C_SLAVE);
-+
-+	if (i2c_bus->is_highspeed) {
-+		if (hsi2c_get_clk_details(i2c_bus))
-+			return -1;
-+		hsi2c_ch_init(i2c_bus);
-+	} else {
-+		i2c_ch_init(i2c_bus->regs, i2c_bus->clock_frequency,
-+						CONFIG_SYS_I2C_SLAVE);
-+	}
- 
- 	return 0;
- }
-@@ -255,6 +505,227 @@ void i2c_init(int speed, int slaveadd)
- }
- 
- /*
-+ * Poll the appropriate bit of the fifo status register until the interface is
-+ * ready to process the next byte or timeout expires.
-+ *
-+ * In addition to the FIFO status register this function also polls the
-+ * interrupt status register to be able to detect unexpected transaction
-+ * completion.
-+ *
-+ * When FIFO is ready to process the next byte, this function returns I2C_OK.
-+ * If in course of polling the INT_I2C assertion is detected, the function
-+ * returns I2C_NOK. If timeout happens before any of the above conditions is
-+ * met - the function returns I2C_NOK_TOUT;
-+
-+ * @param i2c: pointer to the appropriate i2c register bank.
-+ * @param rx_transfer: set to True if the receive transaction is in progress.
-+ * @return: as described above.
-+ */
-+static unsigned hsi2c_poll_fifo(struct exynos5_hsi2c *i2c, bool rx_transfer)
-+{
-+	u32 fifo_bit = rx_transfer ? HSI2C_RX_FIFO_EMPTY : HSI2C_TX_FIFO_FULL;
-+	int i = HSI2C_TIMEOUT_US;
-+
-+	while (readl(&i2c->usi_fifo_stat) & fifo_bit) {
-+		if (readl(&i2c->usi_int_stat) & HSI2C_INT_I2C_EN) {
-+			/*
-+			 * There is a chance that assertion of
-+			 * HSI2C_INT_I2C_EN and deassertion of
-+			 * HSI2C_RX_FIFO_EMPTY happen simultaneously. Let's
-+			 * give FIFO status priority and check it one more
-+			 * time before reporting interrupt. The interrupt will
-+			 * be reported next time this function is called.
-+			 */
-+			if (rx_transfer &&
-+			    !(readl(&i2c->usi_fifo_stat) & fifo_bit))
-+				break;
-+			return I2C_NOK;
-+		}
-+		if (!i--) {
-+			debug("%s: FIFO polling timeout!\n", __func__);
-+			return I2C_NOK_TOUT;
-+		}
-+		udelay(1);
-+	}
-+	return I2C_OK;
-+}
-+
-+/*
-+ * Preapre hsi2c transaction, either read or write.
-+ *
-+ * Set up transfer as described in section 27.5.1.2 'I2C Channel Auto Mode' of
-+ * the 5420 UM.
-+ *
-+ * @param i2c: pointer to the appropriate i2c register bank.
-+ * @param chip: slave address on the i2c bus (with read/write bit exlcuded)
-+ * @param len: number of bytes expected to be sent or received
-+ * @param rx_transfer: set to true for receive transactions
-+ * @param: issue_stop: set to true if i2c stop condition should be generated
-+ *         after this transaction.
-+ * @return: I2C_NOK_TOUT in case the bus remained busy for HSI2C_TIMEOUT_US,
-+ *          I2C_OK otherwise.
-+ */
-+static int hsi2c_prepare_transaction(struct exynos5_hsi2c *i2c,
-+				     u8 chip,
-+				     u16 len,
-+				     bool rx_transfer,
-+				     bool issue_stop)
-+{
-+	u32 conf;
-+
-+	conf = len | HSI2C_MASTER_RUN;
-+
-+	if (issue_stop)
-+		conf |= HSI2C_STOP_AFTER_TRANS;
-+
-+	/* Clear to enable Timeout */
-+	writel(readl(&i2c->usi_timeout) & ~HSI2C_TIMEOUT_EN, &i2c->usi_timeout);
-+
-+	/* Set slave address */
-+	writel(HSI2C_SLV_ADDR_MAS(chip), &i2c->i2c_addr);
-+
-+	if (rx_transfer) {
-+		/* i2c master, read transaction */
-+		writel((HSI2C_RXCHON | HSI2C_FUNC_MODE_I2C | HSI2C_MASTER),
-+		       &i2c->usi_ctl);
-+
-+		/* read up to len bytes, stop after transaction is finished */
-+		writel(conf | HSI2C_READ_WRITE, &i2c->usi_auto_conf);
-+	} else {
-+		/* i2c master, write transaction */
-+		writel((HSI2C_TXCHON | HSI2C_FUNC_MODE_I2C | HSI2C_MASTER),
-+		       &i2c->usi_ctl);
-+
-+		/* write up to len bytes, stop after transaction is finished */
-+		writel(conf, &i2c->usi_auto_conf);
-+	}
-+
-+	/* Reset all pending interrupt status bits we care about, if any */
-+	writel(HSI2C_INT_I2C_EN, &i2c->usi_int_stat);
-+
-+	return I2C_OK;
-+}
-+
-+/*
-+ * Wait while i2c bus is settling down (mostly stop gets completed).
-+ */
-+static int hsi2c_wait_while_busy(struct exynos5_hsi2c *i2c)
-+{
-+	int i = HSI2C_TIMEOUT_US;
-+
-+	while (readl(&i2c->usi_trans_status) & HSI2C_MASTER_BUSY) {
-+		if (!i--) {
-+			debug("%s: bus busy\n", __func__);
-+			return I2C_NOK_TOUT;
-+		}
-+		udelay(1);
-+	}
-+	return I2C_OK;
-+}
-+
-+static int hsi2c_write(struct exynos5_hsi2c *i2c,
-+		       unsigned char chip,
-+		       unsigned char addr[],
-+		       unsigned char alen,
-+		       unsigned char data[],
-+		       unsigned short len,
-+		       bool issue_stop)
-+{
-+	int i, rv = 0;
-+
-+	if (!(len + alen)) {
-+		/* Writes of zero length not supported in auto mode. */
-+		debug("%s: zero length writes not supported\n", __func__);
-+		return I2C_NOK;
-+	}
-+
-+	rv = hsi2c_prepare_transaction
-+		(i2c, chip, len + alen, false, issue_stop);
-+	if (rv != I2C_OK)
-+		return rv;
-+
-+	/* Move address, if any, and the data, if any, into the FIFO. */
-+	for (i = 0; i < alen; i++) {
-+		rv = hsi2c_poll_fifo(i2c, false);
-+		if (rv != I2C_OK) {
-+			debug("%s: address write failed\n", __func__);
-+			goto write_error;
-+		}
-+		writel(addr[i], &i2c->usi_txdata);
-+	}
-+
-+	for (i = 0; i < len; i++) {
-+		rv = hsi2c_poll_fifo(i2c, false);
-+		if (rv != I2C_OK) {
-+			debug("%s: data write failed\n", __func__);
-+			goto write_error;
-+		}
-+		writel(data[i], &i2c->usi_txdata);
-+	}
-+
-+	rv = hsi2c_wait_for_trx(i2c);
-+
-+ write_error:
-+	if (issue_stop) {
-+		int tmp_ret = hsi2c_wait_while_busy(i2c);
-+		if (rv == I2C_OK)
-+			rv = tmp_ret;
-+	}
-+
-+	writel(HSI2C_FUNC_MODE_I2C, &i2c->usi_ctl); /* done */
-+	return rv;
-+}
-+
-+static int hsi2c_read(struct exynos5_hsi2c *i2c,
-+		      unsigned char chip,
-+		      unsigned char addr[],
-+		      unsigned char alen,
-+		      unsigned char data[],
-+		      unsigned short len)
-+{
-+	int i, rv, tmp_ret;
-+	bool drop_data = false;
-+
-+	if (!len) {
-+		/* Reads of zero length not supported in auto mode. */
-+		debug("%s: zero length read adjusted\n", __func__);
-+		drop_data = true;
-+		len = 1;
-+	}
-+
-+	if (alen) {
-+		/* Internal register adress needs to be written first. */
-+		rv = hsi2c_write(i2c, chip, addr, alen, NULL, 0, false);
-+		if (rv != I2C_OK)
-+			return rv;
-+	}
-+
-+	rv = hsi2c_prepare_transaction(i2c, chip, len, true, true);
-+
-+	if (rv != I2C_OK)
-+		return rv;
-+
-+	for (i = 0; i < len; i++) {
-+		rv = hsi2c_poll_fifo(i2c, true);
-+		if (rv != I2C_OK)
-+			goto read_err;
-+		if (drop_data)
-+			continue;
-+		data[i] = readl(&i2c->usi_rxdata);
-+	}
-+
-+	rv = hsi2c_wait_for_trx(i2c);
-+
-+ read_err:
-+	tmp_ret = hsi2c_wait_while_busy(i2c);
-+	if (rv == I2C_OK)
-+		rv = tmp_ret;
-+
-+	writel(HSI2C_FUNC_MODE_I2C, &i2c->usi_ctl); /* done */
-+	return rv;
-+}
-+
-+/*
-  * cmd_type is 0 for write, 1 for read.
-  *
-  * addr_len can take any value from 0-255, it is only limited
-@@ -368,10 +839,13 @@ bailout:
- 
- int i2c_probe(uchar chip)
- {
--	struct s3c24x0_i2c *i2c;
-+	struct s3c24x0_i2c_bus *i2c_bus;
- 	uchar buf[1];
-+	int ret;
- 
--	i2c = get_base_i2c();
-+	i2c_bus = get_bus(g_current_bus);
-+	if (!i2c_bus)
-+		return -1;
- 	buf[0] = 0;
- 
- 	/*
-@@ -379,12 +853,21 @@ int i2c_probe(uchar chip)
- 	 * address was <ACK>ed (i.e. there was a chip at that address which
- 	 * drove the data line low).
- 	 */
--	return i2c_transfer(i2c, I2C_READ, chip << 1, 0, 0, buf, 1) != I2C_OK;
-+	if (i2c_bus->is_highspeed) {
-+		ret = hsi2c_read(i2c_bus->hsregs,
-+				chip, 0, 0, buf, 1);
-+	} else {
-+		ret = i2c_transfer(i2c_bus->regs,
-+				I2C_READ, chip << 1, 0, 0, buf, 1);
-+	}
-+
-+
-+	return ret != I2C_OK;
- }
- 
- int i2c_read(uchar chip, uint addr, int alen, uchar *buffer, int len)
- {
--	struct s3c24x0_i2c *i2c;
-+	struct s3c24x0_i2c_bus *i2c_bus;
- 	uchar xaddr[4];
- 	int ret;
- 
-@@ -416,11 +899,21 @@ int i2c_read(uchar chip, uint addr, int alen, uchar *buffer, int len)
- 		chip |= ((addr >> (alen * 8)) &
- 			 CONFIG_SYS_I2C_EEPROM_ADDR_OVERFLOW);
- #endif
--	i2c = get_base_i2c();
--	ret = i2c_transfer(i2c, I2C_READ, chip << 1, &xaddr[4 - alen], alen,
--			buffer, len);
--	if (ret != 0) {
--		debug("I2c read: failed %d\n", ret);
-+	i2c_bus = get_bus(g_current_bus);
-+	if (!i2c_bus)
-+		return -1;
-+
-+	if (i2c_bus->is_highspeed)
-+		ret = hsi2c_read(i2c_bus->hsregs, chip, &xaddr[4 - alen],
-+				 alen, buffer, len);
-+	else
-+		ret = i2c_transfer(i2c_bus->regs, I2C_READ, chip << 1,
-+				&xaddr[4 - alen], alen, buffer, len);
-+
-+	if (ret) {
-+		if (i2c_bus->is_highspeed)
-+			exynos5_i2c_reset(i2c_bus);
-+		debug("I2c read failed %d\n", ret);
- 		return 1;
+-#ifndef ARCH_X86_64
++#ifndef HAVE_ARCH_X86_64_SUPPORT
+ #define PERF_REGS_MASK ((1ULL << PERF_REG_X86_32_MAX) - 1)
+ #else
+ #define REG_NOSUPPORT ((1ULL << PERF_REG_X86_DS) | \
+@@ -52,7 +52,7 @@ static inline const char *perf_reg_name(int id)
+ 		return "FS";
+ 	case PERF_REG_X86_GS:
+ 		return "GS";
+-#ifdef ARCH_X86_64
++#ifdef HAVE_ARCH_X86_64_SUPPORT
+ 	case PERF_REG_X86_R8:
+ 		return "R8";
+ 	case PERF_REG_X86_R9:
+@@ -69,7 +69,7 @@ static inline const char *perf_reg_name(int id)
+ 		return "R14";
+ 	case PERF_REG_X86_R15:
+ 		return "R15";
+-#endif /* ARCH_X86_64 */
++#endif /* HAVE_ARCH_X86_64_SUPPORT */
+ 	default:
+ 		return NULL;
  	}
- 	return 0;
-@@ -428,8 +921,9 @@ int i2c_read(uchar chip, uint addr, int alen, uchar *buffer, int len)
+diff --git a/tools/perf/arch/x86/util/unwind.c b/tools/perf/arch/x86/util/unwind.c
+index 78d956e..456a88c 100644
+--- a/tools/perf/arch/x86/util/unwind.c
++++ b/tools/perf/arch/x86/util/unwind.c
+@@ -4,7 +4,7 @@
+ #include "perf_regs.h"
+ #include "../../util/unwind.h"
  
- int i2c_write(uchar chip, uint addr, int alen, uchar *buffer, int len)
+-#ifdef ARCH_X86_64
++#ifdef HAVE_ARCH_X86_64_SUPPORT
+ int unwind__arch_reg_id(int regnum)
  {
--	struct s3c24x0_i2c *i2c;
-+	struct s3c24x0_i2c_bus *i2c_bus;
- 	uchar xaddr[4];
-+	int ret;
- 
- 	if (alen > 4) {
- 		debug("I2C write: addr len %d not supported\n", alen);
-@@ -458,58 +952,80 @@ int i2c_write(uchar chip, uint addr, int alen, uchar *buffer, int len)
- 		chip |= ((addr >> (alen * 8)) &
- 			 CONFIG_SYS_I2C_EEPROM_ADDR_OVERFLOW);
- #endif
--	i2c = get_base_i2c();
--	return (i2c_transfer
--		(i2c, I2C_WRITE, chip << 1, &xaddr[4 - alen], alen, buffer,
--		 len) != 0);
-+	i2c_bus = get_bus(g_current_bus);
-+	if (!i2c_bus)
-+		return -1;
-+
-+	if (i2c_bus->is_highspeed)
-+		ret = hsi2c_write(i2c_bus->hsregs, chip, &xaddr[4 - alen],
-+				  alen, buffer, len, true);
-+	else
-+		ret = i2c_transfer(i2c_bus->regs, I2C_WRITE, chip << 1,
-+				&xaddr[4 - alen], alen, buffer, len);
-+
-+	if (ret != 0) {
-+		if (i2c_bus->is_highspeed)
-+			exynos5_i2c_reset(i2c_bus);
-+		return 1;
-+	} else {
-+		return 0;
-+	}
- }
- 
- #ifdef CONFIG_OF_CONTROL
--void board_i2c_init(const void *blob)
-+static void process_nodes(const void *blob, int node_list[], int count,
-+			 int is_highspeed)
- {
-+	struct s3c24x0_i2c_bus *bus;
- 	int i;
--	int node_list[CONFIG_MAX_I2C_NUM];
--	int count;
--
--	count = fdtdec_find_aliases_for_id(blob, "i2c",
--		COMPAT_SAMSUNG_S3C2440_I2C, node_list,
--		CONFIG_MAX_I2C_NUM);
- 
- 	for (i = 0; i < count; i++) {
--		struct s3c24x0_i2c_bus *bus;
- 		int node = node_list[i];
- 
- 		if (node <= 0)
- 			continue;
-+
- 		bus = &i2c_bus[i];
- 		bus->active = true;
--		bus->regs = (struct s3c24x0_i2c *)
--			fdtdec_get_addr(blob, node, "reg");
-+		bus->is_highspeed = is_highspeed;
-+
-+		if (is_highspeed)
-+			bus->hsregs = (struct exynos5_hsi2c *)
-+					fdtdec_get_addr(blob, node, "reg");
-+		else
-+			bus->regs = (struct s3c24x0_i2c *)
-+					fdtdec_get_addr(blob, node, "reg");
-+
- 		bus->id = pinmux_decode_periph_id(blob, node);
-+		bus->clock_frequency = fdtdec_get_int(blob, node,
-+						      "clock-frequency",
-+						      CONFIG_SYS_I2C_SPEED);
- 		bus->node = node;
- 		bus->bus_num = i;
- 		exynos_pinmux_config(bus->id, 0);
-+
-+		/* Mark position as used */
-+		node_list[i] = -1;
- 	}
- }
- 
--/**
-- * Get a pointer to the given bus index
-- *
-- * @bus_idx: Bus index to look up
-- * @return pointer to bus, or NULL if invalid or not available
-- */
--static struct s3c24x0_i2c_bus *get_bus(unsigned int bus_idx)
-+void board_i2c_init(const void *blob)
- {
--	if (bus_idx < ARRAY_SIZE(i2c_bus)) {
--		struct s3c24x0_i2c_bus *bus;
-+	int node_list[CONFIG_MAX_I2C_NUM];
-+	int count;
- 
--		bus = &i2c_bus[bus_idx];
--		if (bus->active)
--			return bus;
--	}
-+	/* First get the normal i2c ports */
-+	count = fdtdec_find_aliases_for_id(blob, "i2c",
-+		COMPAT_SAMSUNG_S3C2440_I2C, node_list,
-+		CONFIG_MAX_I2C_NUM);
-+	process_nodes(blob, node_list, count, 0);
-+
-+	/* Now look for high speed i2c ports */
-+	count = fdtdec_find_aliases_for_id(blob, "i2c",
-+		COMPAT_SAMSUNG_EXYNOS5_I2C, node_list,
-+		CONFIG_MAX_I2C_NUM);
-+	process_nodes(blob, node_list, count, 1);
- 
--	debug("Undefined bus: %d\n", bus_idx);
--	return NULL;
- }
- 
- int i2c_get_bus_num_fdt(int node)
-@@ -527,7 +1043,7 @@ int i2c_get_bus_num_fdt(int node)
- 
- int i2c_reset_port_fdt(const void *blob, int node)
- {
--	struct s3c24x0_i2c_bus *i2c;
-+	struct s3c24x0_i2c_bus *i2c_bus;
- 	int bus;
- 
- 	bus = i2c_get_bus_num_fdt(node);
-@@ -536,13 +1052,20 @@ int i2c_reset_port_fdt(const void *blob, int node)
- 		return -1;
- 	}
- 
--	i2c = get_bus(bus);
--	if (!i2c) {
-+	i2c_bus = get_bus(bus);
-+	if (!i2c_bus) {
- 		debug("get_bus() failed for node node %d\n", node);
- 		return -1;
- 	}
- 
--	i2c_ch_init(i2c->regs, CONFIG_SYS_I2C_SPEED, CONFIG_SYS_I2C_SLAVE);
-+	if (i2c_bus->is_highspeed) {
-+		if (hsi2c_get_clk_details(i2c_bus))
-+			return -1;
-+		hsi2c_ch_init(i2c_bus);
-+	} else {
-+		i2c_ch_init(i2c_bus->regs, i2c_bus->clock_frequency,
-+						CONFIG_SYS_I2C_SLAVE);
-+	}
- 
- 	return 0;
- }
-diff --git a/drivers/i2c/s3c24x0_i2c.h b/drivers/i2c/s3c24x0_i2c.h
-index 882af62..1ae73d2 100644
---- a/drivers/i2c/s3c24x0_i2c.h
-+++ b/drivers/i2c/s3c24x0_i2c.h
-@@ -15,11 +15,48 @@ struct s3c24x0_i2c {
- 	u32	iiclc;
- };
- 
-+struct exynos5_hsi2c {
-+	u32	usi_ctl;
-+	u32	usi_fifo_ctl;
-+	u32	usi_trailing_ctl;
-+	u32	usi_clk_ctl;
-+	u32	usi_clk_slot;
-+	u32	spi_ctl;
-+	u32	uart_ctl;
-+	u32	res1;
-+	u32	usi_int_en;
-+	u32	usi_int_stat;
-+	u32	usi_modem_stat;
-+	u32	usi_error_stat;
-+	u32	usi_fifo_stat;
-+	u32	usi_txdata;
-+	u32	usi_rxdata;
-+	u32	res2;
-+	u32	usi_conf;
-+	u32	usi_auto_conf;
-+	u32	usi_timeout;
-+	u32	usi_manual_cmd;
-+	u32	usi_trans_status;
-+	u32	usi_timing_hs1;
-+	u32	usi_timing_hs2;
-+	u32	usi_timing_hs3;
-+	u32	usi_timing_fs1;
-+	u32	usi_timing_fs2;
-+	u32	usi_timing_fs3;
-+	u32	usi_timing_sla;
-+	u32	i2c_addr;
-+};
-+
- struct s3c24x0_i2c_bus {
- 	bool active;	/* port is active and available */
- 	int node;	/* device tree node */
- 	int bus_num;	/* i2c bus number */
- 	struct s3c24x0_i2c *regs;
-+	struct exynos5_hsi2c *hsregs;
-+	int is_highspeed;	/* High speed type, rather than I2C */
-+	unsigned clock_frequency;
  	int id;
-+	unsigned clk_cycle;
-+	unsigned clk_div;
+@@ -108,4 +108,4 @@ int unwind__arch_reg_id(int regnum)
+ 
+ 	return id;
+ }
+-#endif /* ARCH_X86_64 */
++#endif /* HAVE_ARCH_X86_64_SUPPORT */
+diff --git a/tools/perf/bench/mem-memcpy-arch.h b/tools/perf/bench/mem-memcpy-arch.h
+index a72e36c..57b4ed8 100644
+--- a/tools/perf/bench/mem-memcpy-arch.h
++++ b/tools/perf/bench/mem-memcpy-arch.h
+@@ -1,5 +1,5 @@
+ 
+-#ifdef ARCH_X86_64
++#ifdef HAVE_ARCH_X86_64_SUPPORT
+ 
+ #define MEMCPY_FN(fn, name, desc)		\
+ 	extern void *fn(void *, const void *, size_t);
+diff --git a/tools/perf/bench/mem-memcpy.c b/tools/perf/bench/mem-memcpy.c
+index 8cdca43..5ce71d3 100644
+--- a/tools/perf/bench/mem-memcpy.c
++++ b/tools/perf/bench/mem-memcpy.c
+@@ -58,7 +58,7 @@ struct routine routines[] = {
+ 	{ "default",
+ 	  "Default memcpy() provided by glibc",
+ 	  memcpy },
+-#ifdef ARCH_X86_64
++#ifdef HAVE_ARCH_X86_64_SUPPORT
+ 
+ #define MEMCPY_FN(fn, name, desc) { name, desc, fn },
+ #include "mem-memcpy-x86-64-asm-def.h"
+diff --git a/tools/perf/bench/mem-memset-arch.h b/tools/perf/bench/mem-memset-arch.h
+index a040fa7..633800c 100644
+--- a/tools/perf/bench/mem-memset-arch.h
++++ b/tools/perf/bench/mem-memset-arch.h
+@@ -1,5 +1,5 @@
+ 
+-#ifdef ARCH_X86_64
++#ifdef HAVE_ARCH_X86_64_SUPPORT
+ 
+ #define MEMSET_FN(fn, name, desc)		\
+ 	extern void *fn(void *, int, size_t);
+diff --git a/tools/perf/bench/mem-memset.c b/tools/perf/bench/mem-memset.c
+index 4a2f120..9af79d2 100644
+--- a/tools/perf/bench/mem-memset.c
++++ b/tools/perf/bench/mem-memset.c
+@@ -58,7 +58,7 @@ static const struct routine routines[] = {
+ 	{ "default",
+ 	  "Default memset() provided by glibc",
+ 	  memset },
+-#ifdef ARCH_X86_64
++#ifdef HAVE_ARCH_X86_64_SUPPORT
+ 
+ #define MEMSET_FN(fn, name, desc) { name, desc, fn },
+ #include "mem-memset-x86-64-asm-def.h"
+diff --git a/tools/perf/builtin-bench.c b/tools/perf/builtin-bench.c
+index 77298bf..33af80f 100644
+--- a/tools/perf/builtin-bench.c
++++ b/tools/perf/builtin-bench.c
+@@ -35,7 +35,7 @@ struct bench_suite {
+ /* sentinel: easy for help */
+ #define suite_all { "all", "Test all benchmark suites", NULL }
+ 
+-#ifdef LIBNUMA_SUPPORT
++#ifdef HAVE_LIBNUMA_SUPPORT
+ static struct bench_suite numa_suites[] = {
+ 	{ "mem",
+ 	  "Benchmark for NUMA workloads",
+@@ -80,7 +80,7 @@ struct bench_subsys {
  };
- #endif /* _S3C24X0_I2C_H */
--- 
-1.7.10.4
-
+ 
+ static struct bench_subsys subsystems[] = {
+-#ifdef LIBNUMA_SUPPORT
++#ifdef HAVE_LIBNUMA_SUPPORT
+ 	{ "numa",
+ 	  "NUMA scheduling and MM behavior",
+ 	  numa_suites },
+diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
+index afe377b..f51a963 100644
+--- a/tools/perf/builtin-inject.c
++++ b/tools/perf/builtin-inject.c
+@@ -231,7 +231,7 @@ static int perf_event__inject_buildid(struct perf_tool *tool,
+ 				 * account this as unresolved.
+ 				 */
+ 			} else {
+-#ifdef LIBELF_SUPPORT
++#ifdef HAVE_LIBELF_SUPPORT
+ 				pr_warning("no symbols found in %s, maybe "
+ 					   "install a debug package?\n",
+ 					   al.map->dso->long_name);
+diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
+index e8a66f9..89acc17 100644
+--- a/tools/perf/builtin-probe.c
++++ b/tools/perf/builtin-probe.c
+@@ -173,7 +173,7 @@ static int opt_set_target(const struct option *opt, const char *str,
+ 	if  (str && !params.target) {
+ 		if (!strcmp(opt->long_name, "exec"))
+ 			params.uprobes = true;
+-#ifdef DWARF_SUPPORT
++#ifdef HAVE_DWARF_SUPPORT
+ 		else if (!strcmp(opt->long_name, "module"))
+ 			params.uprobes = false;
+ #endif
+@@ -187,7 +187,7 @@ static int opt_set_target(const struct option *opt, const char *str,
+ 	return ret;
+ }
+ 
+-#ifdef DWARF_SUPPORT
++#ifdef HAVE_DWARF_SUPPORT
+ static int opt_show_lines(const struct option *opt __maybe_unused,
+ 			  const char *str, int unset __maybe_unused)
+ {
+@@ -257,7 +257,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		"perf probe [<options>] --add 'PROBEDEF' [--add 'PROBEDEF' ...]",
+ 		"perf probe [<options>] --del '[GROUP:]EVENT' ...",
+ 		"perf probe --list",
+-#ifdef DWARF_SUPPORT
++#ifdef HAVE_DWARF_SUPPORT
+ 		"perf probe [<options>] --line 'LINEDESC'",
+ 		"perf probe [<options>] --vars 'PROBEPOINT'",
+ #endif
+@@ -271,7 +271,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_CALLBACK('d', "del", NULL, "[GROUP:]EVENT", "delete a probe event.",
+ 		opt_del_probe_event),
+ 	OPT_CALLBACK('a', "add", NULL,
+-#ifdef DWARF_SUPPORT
++#ifdef HAVE_DWARF_SUPPORT
+ 		"[EVENT=]FUNC[@SRC][+OFF|%return|:RL|;PT]|SRC:AL|SRC;PT"
+ 		" [[NAME=]ARG ...]",
+ #else
+@@ -283,7 +283,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		"\t\tFUNC:\tFunction name\n"
+ 		"\t\tOFF:\tOffset from function entry (in byte)\n"
+ 		"\t\t%return:\tPut the probe at function return\n"
+-#ifdef DWARF_SUPPORT
++#ifdef HAVE_DWARF_SUPPORT
+ 		"\t\tSRC:\tSource code path\n"
+ 		"\t\tRL:\tRelative line number from function entry.\n"
+ 		"\t\tAL:\tAbsolute line number in file.\n"
+@@ -296,7 +296,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		opt_add_probe_event),
+ 	OPT_BOOLEAN('f', "force", &params.force_add, "forcibly add events"
+ 		    " with existing name"),
+-#ifdef DWARF_SUPPORT
++#ifdef HAVE_DWARF_SUPPORT
+ 	OPT_CALLBACK('L', "line", NULL,
+ 		     "FUNC[:RLN[+NUM|-RLN2]]|SRC:ALN[+NUM|-ALN2]",
+ 		     "Show source code lines.", opt_show_lines),
+@@ -408,7 +408,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		return ret;
+ 	}
+ 
+-#ifdef DWARF_SUPPORT
++#ifdef HAVE_DWARF_SUPPORT
+ 	if (params.show_lines && !params.uprobes) {
+ 		if (params.mod_events) {
+ 			pr_err("  Error: Don't use --line with"
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index a78db3f..cf36ba2 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -29,7 +29,7 @@
+ #include <sched.h>
+ #include <sys/mman.h>
+ 
+-#ifndef HAVE_ON_EXIT
++#ifndef HAVE_ON_EXIT_SUPPORT
+ #ifndef ATEXIT_MAX
+ #define ATEXIT_MAX 32
+ #endif
+@@ -687,7 +687,7 @@ error:
+ 	return ret;
+ }
+ 
+-#ifdef LIBUNWIND_SUPPORT
++#ifdef HAVE_LIBUNWIND_SUPPORT
+ static int get_stack_size(char *str, unsigned long *_size)
+ {
+ 	char *endptr;
+@@ -713,7 +713,7 @@ static int get_stack_size(char *str, unsigned long *_size)
+ 	       max_size, str);
+ 	return -1;
+ }
+-#endif /* LIBUNWIND_SUPPORT */
++#endif /* HAVE_LIBUNWIND_SUPPORT */
+ 
+ int record_parse_callchain_opt(const struct option *opt,
+ 			       const char *arg, int unset)
+@@ -751,7 +751,7 @@ int record_parse_callchain_opt(const struct option *opt,
+ 				       "needed for -g fp\n");
+ 			break;
+ 
+-#ifdef LIBUNWIND_SUPPORT
++#ifdef HAVE_LIBUNWIND_SUPPORT
+ 		/* Dwarf style */
+ 		} else if (!strncmp(name, "dwarf", sizeof("dwarf"))) {
+ 			const unsigned long default_stack_dump_size = 8192;
+@@ -771,7 +771,7 @@ int record_parse_callchain_opt(const struct option *opt,
+ 			if (!ret)
+ 				pr_debug("callchain: stack dump size %d\n",
+ 					 opts->stack_dump_size);
+-#endif /* LIBUNWIND_SUPPORT */
++#endif /* HAVE_LIBUNWIND_SUPPORT */
+ 		} else {
+ 			pr_err("callchain: Unknown -g option "
+ 			       "value: %s\n", arg);
+@@ -818,7 +818,7 @@ static struct perf_record record = {
+ 
+ #define CALLCHAIN_HELP "do call-graph (stack chain/backtrace) recording: "
+ 
+-#ifdef LIBUNWIND_SUPPORT
++#ifdef HAVE_LIBUNWIND_SUPPORT
+ const char record_callchain_help[] = CALLCHAIN_HELP "[fp] dwarf";
+ #else
+ const char record_callchain_help[] = CALLCHAIN_HELP "[fp]";
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 5f6f9b3..34be743 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -23,7 +23,7 @@ ifeq ($(ARCH),x86_64)
+   endif
+   ifeq (${IS_X86_64}, 1)
+     RAW_ARCH := x86_64
+-    CFLAGS += -DARCH_X86_64
++    CFLAGS += -DHAVE_ARCH_X86_64_SUPPORT
+     ARCH_INCLUDE = ../../arch/x86/lib/memcpy_64.S ../../arch/x86/lib/memset_64.S
+   endif
+   NO_PERF_REGS := 0
+@@ -31,7 +31,7 @@ ifeq ($(ARCH),x86_64)
+ endif
+ 
+ ifeq ($(NO_PERF_REGS),0)
+-  CFLAGS += -DHAVE_PERF_REGS
++  CFLAGS += -DHAVE_PERF_REGS_SUPPORT
+ endif
+ 
+ ifeq ($(src-perf),)
+@@ -175,13 +175,13 @@ endif # SOURCE_LIBELF
+ endif # NO_LIBELF
+ 
+ ifndef NO_LIBELF
+-CFLAGS += -DLIBELF_SUPPORT
++CFLAGS += -DHAVE_LIBELF_SUPPORT
+ FLAGS_LIBELF=$(CFLAGS) $(LDFLAGS) $(EXTLIBS)
+-ifeq ($(call try-cc,$(SOURCE_ELF_MMAP),$(FLAGS_LIBELF),-DLIBELF_MMAP),y)
+-  CFLAGS += -DLIBELF_MMAP
++ifeq ($(call try-cc,$(SOURCE_ELF_MMAP),$(FLAGS_LIBELF),-DHAVE_LIBELF_MMAP_SUPPORT),y)
++  CFLAGS += -DHAVE_LIBELF_MMAP_SUPPORT
+ endif
+-ifeq ($(call try-cc,$(SOURCE_ELF_GETPHDRNUM),$(FLAGS_LIBELF),-DHAVE_ELF_GETPHDRNUM),y)
+-  CFLAGS += -DHAVE_ELF_GETPHDRNUM
++ifeq ($(call try-cc,$(SOURCE_ELF_GETPHDRNUM),$(FLAGS_LIBELF),-DHAVE_ELF_GETPHDRNUM_SUPPORT),y)
++  CFLAGS += -DHAVE_ELF_GETPHDRNUM_SUPPORT
+ endif
+ 
+ # include ARCH specific config
+@@ -192,7 +192,7 @@ ifeq ($(origin PERF_HAVE_DWARF_REGS), undefined)
+   msg := $(warning DWARF register mappings have not been defined for architecture $(ARCH), DWARF support disabled);
+   NO_DWARF := 1
+ else
+-  CFLAGS += -DDWARF_SUPPORT $(LIBDW_CFLAGS)
++  CFLAGS += -DHAVE_DWARF_SUPPORT $(LIBDW_CFLAGS)
+   LDFLAGS += $(LIBDW_LDFLAGS)
+   EXTLIBS += -lelf -ldw
+ endif # PERF_HAVE_DWARF_REGS
+@@ -201,10 +201,10 @@ endif # NO_DWARF
+ endif # NO_LIBELF
+ 
+ ifndef NO_LIBELF
+-CFLAGS += -DLIBELF_SUPPORT
++CFLAGS += -DHAVE_LIBELF_SUPPORT
+ FLAGS_LIBELF=$(CFLAGS) $(LDFLAGS) $(EXTLIBS)
+-ifeq ($(call try-cc,$(SOURCE_ELF_MMAP),$(FLAGS_LIBELF),-DLIBELF_MMAP),y)
+-  CFLAGS += -DLIBELF_MMAP
++ifeq ($(call try-cc,$(SOURCE_ELF_MMAP),$(FLAGS_LIBELF),-DHAVE_LIBELF_MMAP_SUPPORT),y)
++  CFLAGS += -DHAVE_LIBELF_MMAP_SUPPORT
+ endif # try-cc
+ endif # NO_LIBELF
+ 
+@@ -229,7 +229,7 @@ endif # Libunwind support
+ endif # NO_LIBUNWIND
+ 
+ ifndef NO_LIBUNWIND
+-  CFLAGS += -DLIBUNWIND_SUPPORT
++  CFLAGS += -DHAVE_LIBUNWIND_SUPPORT
+   EXTLIBS += $(LIBUNWIND_LIBS)
+   CFLAGS += $(LIBUNWIND_CFLAGS)
+   LDFLAGS += $(LIBUNWIND_LDFLAGS)
+@@ -241,7 +241,7 @@ ifndef NO_LIBAUDIT
+     msg := $(warning No libaudit.h found, disables 'trace' tool, please install audit-libs-devel or libaudit-dev);
+     NO_LIBAUDIT := 1
+   else
+-    CFLAGS += -DLIBAUDIT_SUPPORT
++    CFLAGS += -DHAVE_LIBAUDIT_SUPPORT
+     EXTLIBS += -laudit
+   endif
+ endif
+@@ -258,7 +258,7 @@ ifndef NO_SLANG
+   else
+     # Fedora has /usr/include/slang/slang.h, but ubuntu /usr/include/slang.h
+     CFLAGS += -I/usr/include/slang
+-    CFLAGS += -DSLANG_SUPPORT
++    CFLAGS += -DHAVE_SLANG_SUPPORT
+     EXTLIBS += -lslang
+   endif
+ endif
+@@ -269,10 +269,10 @@ ifndef NO_GTK2
+     msg := $(warning GTK2 not found, disables GTK2 support. Please install gtk2-devel or libgtk2.0-dev);
+     NO_GTK2 := 1
+   else
+-    ifeq ($(call try-cc,$(SOURCE_GTK2_INFOBAR),$(FLAGS_GTK2),-DHAVE_GTK_INFO_BAR),y)
+-      CFLAGS += -DHAVE_GTK_INFO_BAR
++    ifeq ($(call try-cc,$(SOURCE_GTK2_INFOBAR),$(FLAGS_GTK2),-DHAVE_GTK_INFO_BAR_SUPPORT),y)
++      CFLAGS += -DHAVE_GTK_INFO_BAR_SUPPORT
+     endif
+-    CFLAGS += -DGTK2_SUPPORT
++    CFLAGS += -DHAVE_GTK2_SUPPORT
+     CFLAGS += $(shell pkg-config --cflags gtk+-2.0 2>/dev/null)
+     EXTLIBS += $(shell pkg-config --libs gtk+-2.0 2>/dev/null)
+   endif
+@@ -365,9 +365,9 @@ endif
+ ifdef NO_DEMANGLE
+   CFLAGS += -DNO_DEMANGLE
+ else
+-  ifdef HAVE_CPLUS_DEMANGLE
++  ifdef HAVE_CPLUS_DEMANGLE_SUPPORT
+     EXTLIBS += -liberty
+-    CFLAGS += -DHAVE_CPLUS_DEMANGLE
++    CFLAGS += -DHAVE_CPLUS_DEMANGLE_SUPPORT
+   else
+     FLAGS_BFD=$(CFLAGS) $(LDFLAGS) $(EXTLIBS) -DPACKAGE='perf' -lbfd
+     has_bfd := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD),libbfd)
+@@ -388,7 +388,7 @@ else
+           has_cplus_demangle := $(call try-cc,$(SOURCE_CPLUS_DEMANGLE),$(FLAGS_CPLUS_DEMANGLE),demangle)
+           ifeq ($(has_cplus_demangle),y)
+             EXTLIBS += -liberty
+-            CFLAGS += -DHAVE_CPLUS_DEMANGLE
++            CFLAGS += -DHAVE_CPLUS_DEMANGLE_SUPPORT
+           else
+             msg := $(warning No bfd.h/libbfd found, install binutils-dev[el]/zlib-static to gain symbol demangling)
+             CFLAGS += -DNO_DEMANGLE
+@@ -400,20 +400,20 @@ else
+ endif
+ 
+ ifndef NO_STRLCPY
+-  ifeq ($(call try-cc,$(SOURCE_STRLCPY),,-DHAVE_STRLCPY),y)
+-    CFLAGS += -DHAVE_STRLCPY
++  ifeq ($(call try-cc,$(SOURCE_STRLCPY),,-DHAVE_STRLCPY_SUPPORT),y)
++    CFLAGS += -DHAVE_STRLCPY_SUPPORT
+   endif
+ endif
+ 
+ ifndef NO_ON_EXIT
+-  ifeq ($(call try-cc,$(SOURCE_ON_EXIT),,-DHAVE_ON_EXIT),y)
+-    CFLAGS += -DHAVE_ON_EXIT
++  ifeq ($(call try-cc,$(SOURCE_ON_EXIT),,-DHAVE_ON_EXIT_SUPPORT),y)
++    CFLAGS += -DHAVE_ON_EXIT_SUPPORT
+   endif
+ endif
+ 
+ ifndef NO_BACKTRACE
+-  ifeq ($(call try-cc,$(SOURCE_BACKTRACE),,-DBACKTRACE_SUPPORT),y)
+-    CFLAGS += -DBACKTRACE_SUPPORT
++  ifeq ($(call try-cc,$(SOURCE_BACKTRACE),,-DHAVE_BACKTRACE_SUPPORT),y)
++    CFLAGS += -DHAVE_BACKTRACE_SUPPORT
+   endif
+ endif
+ 
+@@ -423,7 +423,7 @@ ifndef NO_LIBNUMA
+     msg := $(warning No numa.h found, disables 'perf bench numa mem' benchmark, please install numa-libs-devel or libnuma-dev);
+     NO_LIBNUMA := 1
+   else
+-    CFLAGS += -DLIBNUMA_SUPPORT
++    CFLAGS += -DHAVE_LIBNUMA_SUPPORT
+     EXTLIBS += -lnuma
+   endif
+ endif
+diff --git a/tools/perf/perf.c b/tools/perf/perf.c
+index 85e1aed..245020c 100644
+--- a/tools/perf/perf.c
++++ b/tools/perf/perf.c
+@@ -49,14 +49,14 @@ static struct cmd_struct commands[] = {
+ 	{ "version",	cmd_version,	0 },
+ 	{ "script",	cmd_script,	0 },
+ 	{ "sched",	cmd_sched,	0 },
+-#ifdef LIBELF_SUPPORT
++#ifdef HAVE_LIBELF_SUPPORT
+ 	{ "probe",	cmd_probe,	0 },
+ #endif
+ 	{ "kmem",	cmd_kmem,	0 },
+ 	{ "lock",	cmd_lock,	0 },
+ 	{ "kvm",	cmd_kvm,	0 },
+ 	{ "test",	cmd_test,	0 },
+-#ifdef LIBAUDIT_SUPPORT
++#ifdef HAVE_LIBAUDIT_SUPPORT
+ 	{ "trace",	cmd_trace,	0 },
+ #endif
+ 	{ "inject",	cmd_inject,	0 },
+diff --git a/tools/perf/ui/gtk/browser.c b/tools/perf/ui/gtk/browser.c
+index c95012c..c24d912 100644
+--- a/tools/perf/ui/gtk/browser.c
++++ b/tools/perf/ui/gtk/browser.c
+@@ -43,7 +43,7 @@ const char *perf_gtk__get_percent_color(double percent)
+ 	return NULL;
+ }
+ 
+-#ifdef HAVE_GTK_INFO_BAR
++#ifdef HAVE_GTK_INFO_BAR_SUPPORT
+ GtkWidget *perf_gtk__setup_info_bar(void)
+ {
+ 	GtkWidget *info_bar;
+diff --git a/tools/perf/ui/gtk/gtk.h b/tools/perf/ui/gtk/gtk.h
+index 3d96785..a72acbc 100644
+--- a/tools/perf/ui/gtk/gtk.h
++++ b/tools/perf/ui/gtk/gtk.h
+@@ -12,7 +12,7 @@ struct perf_gtk_context {
+ 	GtkWidget *main_window;
+ 	GtkWidget *notebook;
+ 
+-#ifdef HAVE_GTK_INFO_BAR
++#ifdef HAVE_GTK_INFO_BAR_SUPPORT
+ 	GtkWidget *info_bar;
+ 	GtkWidget *message_label;
+ #endif
+@@ -39,7 +39,7 @@ void perf_gtk__resize_window(GtkWidget *window);
+ const char *perf_gtk__get_percent_color(double percent);
+ GtkWidget *perf_gtk__setup_statusbar(void);
+ 
+-#ifdef HAVE_GTK_INFO_BAR
++#ifdef HAVE_GTK_INFO_BAR_SUPPORT
+ GtkWidget *perf_gtk__setup_info_bar(void);
+ #else
+ static inline GtkWidget *perf_gtk__setup_info_bar(void)
+diff --git a/tools/perf/ui/gtk/util.c b/tools/perf/ui/gtk/util.c
+index c06942a..696c1fb 100644
+--- a/tools/perf/ui/gtk/util.c
++++ b/tools/perf/ui/gtk/util.c
+@@ -53,7 +53,7 @@ static int perf_gtk__error(const char *format, va_list args)
+ 	return 0;
+ }
+ 
+-#ifdef HAVE_GTK_INFO_BAR
++#ifdef HAVE_GTK_INFO_BAR_SUPPORT
+ static int perf_gtk__warning_info_bar(const char *format, va_list args)
+ {
+ 	char *msg;
+@@ -105,7 +105,7 @@ static int perf_gtk__warning_statusbar(const char *format, va_list args)
+ 
+ struct perf_error_ops perf_gtk_eops = {
+ 	.error		= perf_gtk__error,
+-#ifdef HAVE_GTK_INFO_BAR
++#ifdef HAVE_GTK_INFO_BAR_SUPPORT
+ 	.warning	= perf_gtk__warning_info_bar,
+ #else
+ 	.warning	= perf_gtk__warning_statusbar,
+diff --git a/tools/perf/ui/ui.h b/tools/perf/ui/ui.h
+index 70cb0d4..1349d14 100644
+--- a/tools/perf/ui/ui.h
++++ b/tools/perf/ui/ui.h
+@@ -12,7 +12,7 @@ extern int use_browser;
+ void setup_browser(bool fallback_to_pager);
+ void exit_browser(bool wait_for_ok);
+ 
+-#ifdef SLANG_SUPPORT
++#ifdef HAVE_SLANG_SUPPORT
+ int ui__init(void);
+ void ui__exit(bool wait_for_ok);
+ #else
+@@ -23,7 +23,7 @@ static inline int ui__init(void)
+ static inline void ui__exit(bool wait_for_ok __maybe_unused) {}
+ #endif
+ 
+-#ifdef GTK2_SUPPORT
++#ifdef HAVE_GTK2_SUPPORT
+ int perf_gtk__init(void);
+ void perf_gtk__exit(bool wait_for_ok);
+ #else
+diff --git a/tools/perf/util/annotate.h b/tools/perf/util/annotate.h
+index af75515..f0699e9 100644
+--- a/tools/perf/util/annotate.h
++++ b/tools/perf/util/annotate.h
+@@ -150,7 +150,7 @@ int symbol__tty_annotate(struct symbol *sym, struct map *map,
+ 			 struct perf_evsel *evsel, bool print_lines,
+ 			 bool full_paths, int min_pcnt, int max_lines);
+ 
+-#ifdef SLANG_SUPPORT
++#ifdef HAVE_SLANG_SUPPORT
+ int symbol__tui_annotate(struct symbol *sym, struct map *map,
+ 			 struct perf_evsel *evsel,
+ 			 struct hist_browser_timer *hbt);
+@@ -165,7 +165,7 @@ static inline int symbol__tui_annotate(struct symbol *sym __maybe_unused,
+ }
+ #endif
+ 
+-#ifdef GTK2_SUPPORT
++#ifdef HAVE_GTK2_SUPPORT
+ int symbol__gtk_annotate(struct symbol *sym, struct map *map,
+ 			 struct perf_evsel *evsel,
+ 			 struct hist_browser_timer *hbt);
+diff --git a/tools/perf/util/cache.h b/tools/perf/util/cache.h
+index 26e3672..442953c 100644
+--- a/tools/perf/util/cache.h
++++ b/tools/perf/util/cache.h
+@@ -70,7 +70,7 @@ extern char *perf_path(const char *fmt, ...) __attribute__((format (printf, 1, 2
+ extern char *perf_pathdup(const char *fmt, ...)
+ 	__attribute__((format (printf, 1, 2)));
+ 
+-#ifndef HAVE_STRLCPY
++#ifndef HAVE_STRLCPY_SUPPORT
+ extern size_t strlcpy(char *dest, const char *src, size_t size);
+ #endif
+ 
+diff --git a/tools/perf/util/generate-cmdlist.sh b/tools/perf/util/generate-cmdlist.sh
+index 3ac3803..36a885d 100755
+--- a/tools/perf/util/generate-cmdlist.sh
++++ b/tools/perf/util/generate-cmdlist.sh
+@@ -22,7 +22,7 @@ do
+      }' "Documentation/perf-$cmd.txt"
+ done
+ 
+-echo "#ifdef LIBELF_SUPPORT"
++echo "#ifdef HAVE_LIBELF_SUPPORT"
+ sed -n -e 's/^perf-\([^ 	]*\)[ 	].* full.*/\1/p' command-list.txt |
+ sort |
+ while read cmd
+@@ -35,5 +35,5 @@ do
+ 	    p
+      }' "Documentation/perf-$cmd.txt"
+ done
+-echo "#endif /* LIBELF_SUPPORT */"
++echo "#endif /* HAVE_LIBELF_SUPPORT */"
+ echo "};"
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index 6a048c0..ed4f90e 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -187,7 +187,7 @@ struct hist_browser_timer {
+ 	int refresh;
+ };
+ 
+-#ifdef SLANG_SUPPORT
++#ifdef HAVE_SLANG_SUPPORT
+ #include "../ui/keysyms.h"
+ int hist_entry__tui_annotate(struct hist_entry *he, struct perf_evsel *evsel,
+ 			     struct hist_browser_timer *hbt);
+@@ -228,7 +228,7 @@ static inline int script_browse(const char *script_opt __maybe_unused)
+ #define K_SWITCH_INPUT_DATA -3000
+ #endif
+ 
+-#ifdef GTK2_SUPPORT
++#ifdef HAVE_GTK2_SUPPORT
+ int perf_evlist__gtk_browse_hists(struct perf_evlist *evlist, const char *help,
+ 				  struct hist_browser_timer *hbt __maybe_unused,
+ 				  float min_pcnt);
+diff --git a/tools/perf/util/include/dwarf-regs.h b/tools/perf/util/include/dwarf-regs.h
+index cf6727e..8f14965 100644
+--- a/tools/perf/util/include/dwarf-regs.h
++++ b/tools/perf/util/include/dwarf-regs.h
+@@ -1,7 +1,7 @@
+ #ifndef _PERF_DWARF_REGS_H_
+ #define _PERF_DWARF_REGS_H_
+ 
+-#ifdef DWARF_SUPPORT
++#ifdef HAVE_DWARF_SUPPORT
+ const char *get_arch_regstr(unsigned int n);
+ #endif
+ 
+diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+index 4f6680d..17ee458 100644
+--- a/tools/perf/util/map.c
++++ b/tools/perf/util/map.c
+@@ -172,7 +172,7 @@ int map__load(struct map *map, symbol_filter_t filter)
+ 		pr_warning(", continuing without symbols\n");
+ 		return -1;
+ 	} else if (nr == 0) {
+-#ifdef LIBELF_SUPPORT
++#ifdef HAVE_LIBELF_SUPPORT
+ 		const size_t len = strlen(name);
+ 		const size_t real_len = len - sizeof(DSO__DELETED);
+ 
+diff --git a/tools/perf/util/path.c b/tools/perf/util/path.c
+index a8c4954..f395874 100644
+--- a/tools/perf/util/path.c
++++ b/tools/perf/util/path.c
+@@ -22,7 +22,7 @@ static const char *get_perf_dir(void)
+ 	return ".";
+ }
+ 
+-#ifndef HAVE_STRLCPY
++#ifndef HAVE_STRLCPY_SUPPORT
+ size_t strlcpy(char *dest, const char *src, size_t size)
+ {
+ 	size_t ret = strlen(src);
+diff --git a/tools/perf/util/perf_regs.h b/tools/perf/util/perf_regs.h
+index 5a4f2b6f..a3d42cd 100644
+--- a/tools/perf/util/perf_regs.h
++++ b/tools/perf/util/perf_regs.h
+@@ -1,7 +1,7 @@
+ #ifndef __PERF_REGS_H
+ #define __PERF_REGS_H
+ 
+-#ifdef HAVE_PERF_REGS
++#ifdef HAVE_PERF_REGS_SUPPORT
+ #include <perf_regs.h>
+ #else
+ #define PERF_REGS_MASK	0
+@@ -10,5 +10,5 @@ static inline const char *perf_reg_name(int id __maybe_unused)
+ {
+ 	return NULL;
+ }
+-#endif /* HAVE_PERF_REGS */
++#endif /* HAVE_PERF_REGS_SUPPORT */
+ #endif /* __PERF_REGS_H */
+diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+index aa04bf9..779b2da 100644
+--- a/tools/perf/util/probe-event.c
++++ b/tools/perf/util/probe-event.c
+@@ -201,7 +201,7 @@ static int convert_to_perf_probe_point(struct probe_trace_point *tp,
+ 	return 0;
+ }
+ 
+-#ifdef DWARF_SUPPORT
++#ifdef HAVE_DWARF_SUPPORT
+ /* Open new debuginfo of given module */
+ static struct debuginfo *open_debuginfo(const char *module)
+ {
+@@ -630,7 +630,7 @@ int show_available_vars(struct perf_probe_event *pevs, int npevs,
+ 	return ret;
+ }
+ 
+-#else	/* !DWARF_SUPPORT */
++#else	/* !HAVE_DWARF_SUPPORT */
+ 
+ static int kprobe_convert_to_perf_probe(struct probe_trace_point *tp,
+ 					struct perf_probe_point *pp)
+diff --git a/tools/perf/util/probe-finder.h b/tools/perf/util/probe-finder.h
+index 3b7d630..3f0c29d 100644
+--- a/tools/perf/util/probe-finder.h
++++ b/tools/perf/util/probe-finder.h
+@@ -14,7 +14,7 @@ static inline int is_c_varname(const char *name)
+ 	return isalpha(name[0]) || name[0] == '_';
+ }
+ 
+-#ifdef DWARF_SUPPORT
++#ifdef HAVE_DWARF_SUPPORT
+ 
+ #include "dwarf-aux.h"
+ 
+@@ -105,6 +105,6 @@ struct line_finder {
+ 	int			found;
+ };
+ 
+-#endif /* DWARF_SUPPORT */
++#endif /* HAVE_DWARF_SUPPORT */
+ 
+ #endif /*_PROBE_FINDER_H */
+diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
+index a9c829b..c376930 100644
+--- a/tools/perf/util/symbol-elf.c
++++ b/tools/perf/util/symbol-elf.c
+@@ -8,7 +8,7 @@
+ #include "symbol.h"
+ #include "debug.h"
+ 
+-#ifndef HAVE_ELF_GETPHDRNUM
++#ifndef HAVE_ELF_GETPHDRNUM_SUPPORT
+ static int elf_getphdrnum(Elf *elf, size_t *dst)
+ {
+ 	GElf_Ehdr gehdr;
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index fd5b70e..2a97bb1 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -13,7 +13,7 @@
+ #include <libgen.h>
+ #include "build-id.h"
+ 
+-#ifdef LIBELF_SUPPORT
++#ifdef HAVE_LIBELF_SUPPORT
+ #include <libelf.h>
+ #include <gelf.h>
+ #endif
+@@ -21,7 +21,7 @@
+ 
+ #include "dso.h"
+ 
+-#ifdef HAVE_CPLUS_DEMANGLE
++#ifdef HAVE_CPLUS_DEMANGLE_SUPPORT
+ extern char *cplus_demangle(const char *, int);
+ 
+ static inline char *bfd_demangle(void __maybe_unused *v, const char *c, int i)
+@@ -46,7 +46,7 @@ static inline char *bfd_demangle(void __maybe_unused *v,
+  * libelf 0.8.x and earlier do not support ELF_C_READ_MMAP;
+  * for newer versions we can use mmap to reduce memory usage:
+  */
+-#ifdef LIBELF_MMAP
++#ifdef HAVE_LIBELF_MMAP_SUPPORT
+ # define PERF_ELF_C_READ_MMAP ELF_C_READ_MMAP
+ #else
+ # define PERF_ELF_C_READ_MMAP ELF_C_READ
+@@ -178,7 +178,7 @@ struct symsrc {
+ 	int fd;
+ 	enum dso_binary_type type;
+ 
+-#ifdef LIBELF_SUPPORT
++#ifdef HAVE_LIBELF_SUPPORT
+ 	Elf *elf;
+ 	GElf_Ehdr ehdr;
+ 
+diff --git a/tools/perf/util/unwind.h b/tools/perf/util/unwind.h
+index cb6bc50..ec0c71a 100644
+--- a/tools/perf/util/unwind.h
++++ b/tools/perf/util/unwind.h
+@@ -13,7 +13,7 @@ struct unwind_entry {
+ 
+ typedef int (*unwind_entry_cb_t)(struct unwind_entry *entry, void *arg);
+ 
+-#ifdef LIBUNWIND_SUPPORT
++#ifdef HAVE_LIBUNWIND_SUPPORT
+ int unwind__get_entries(unwind_entry_cb_t cb, void *arg,
+ 			struct machine *machine,
+ 			struct thread *thread,
+@@ -31,5 +31,5 @@ unwind__get_entries(unwind_entry_cb_t cb __maybe_unused,
+ {
+ 	return 0;
+ }
+-#endif /* LIBUNWIND_SUPPORT */
++#endif /* HAVE_LIBUNWIND_SUPPORT */
+ #endif /* __UNWIND_H */
+diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
+index 6d17b18..ccfdeb6 100644
+--- a/tools/perf/util/util.c
++++ b/tools/perf/util/util.c
+@@ -1,7 +1,7 @@
+ #include "../perf.h"
+ #include "util.h"
+ #include <sys/mman.h>
+-#ifdef BACKTRACE_SUPPORT
++#ifdef HAVE_BACKTRACE_SUPPORT
+ #include <execinfo.h>
+ #endif
+ #include <stdio.h>
+@@ -204,7 +204,7 @@ int hex2u64(const char *ptr, u64 *long_val)
+ }
+ 
+ /* Obtain a backtrace and print it to stdout. */
+-#ifdef BACKTRACE_SUPPORT
++#ifdef HAVE_BACKTRACE_SUPPORT
+ void dump_stack(void)
+ {
+ 	void *array[16];
