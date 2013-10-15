@@ -1,110 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933896Ab3JOVKl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 17:10:41 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:62635 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S933842Ab3JOVKj convert rfc822-to-8bit (ORCPT
+	id S933992Ab3JOVLE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 17:11:04 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:59400 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933818Ab3JOVLB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 17:10:39 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Lan Tianyu <tianyu.lan@intel.com>
-Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ACPI/Power: Check physical device's runtime pm status before requesting to resume it
-Date: Tue, 15 Oct 2013 23:22:28 +0200
-Message-ID: <16284735.7LFgSiThhv@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <525D03B4.8050709@intel.com>
-References: <1381479385-1614-1-git-send-email-tianyu.lan@intel.com> <1761658.DWcBvZSdOl@vostro.rjw.lan> <525D03B4.8050709@intel.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+	Tue, 15 Oct 2013 17:11:01 -0400
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        devicetree@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 0/5] MFD: fixup tc3589x for device tree
+Date: Tue, 15 Oct 2013 23:10:48 +0200
+Message-Id: <1381871448-21492-1-git-send-email-linus.walleij@linaro.org>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, October 15, 2013 04:58:28 PM Lan Tianyu wrote:
-> On 2013年10月11日 19:19, Rafael J. Wysocki wrote:
-> > On Friday, October 11, 2013 04:16:25 PM tianyu.lan@intel.com wrote:
-> >> From: Lan Tianyu <tianyu.lan@intel.com>
-> >>
-> >> Currently, when one power resource is turned on, devices owning it
-> >> will be requested to resume regardless of their runtime pm status.
-> >> ACPI power resource maybe turn on in some devices' runtime pm
-> >> resume callback(E.G, usb port) while turning on the power resource
-> >> will trigger one new resume request of the device. It causes
-> >> infinite loop between resume and suspend. This has happened on
-> >> clearing usb port's PM Qos NO_POWER_OFF flag twice. This patch is
-> >> to add check of physical device's runtime pm status and request resume
-> >> if the device is suspended.
-> >>
-> >> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-> >> ---
-> >>  drivers/acpi/power.c | 6 ++++--
-> >>  1 file changed, 4 insertions(+), 2 deletions(-)
-> >>
-> >> diff --git a/drivers/acpi/power.c b/drivers/acpi/power.c
-> >> index 0dbe5cd..228c138 100644
-> >> --- a/drivers/acpi/power.c
-> >> +++ b/drivers/acpi/power.c
-> >> @@ -250,8 +250,10 @@ static void acpi_power_resume_dependent(struct work_struct *work)
-> >>
-> >>  	mutex_lock(&adev->physical_node_lock);
-> >>
-> >> -	list_for_each_entry(pn, &adev->physical_node_list, node)
-> >> -		pm_request_resume(pn->dev);
-> >> +	list_for_each_entry(pn, &adev->physical_node_list, node) {
-> >> +		if (pm_runtime_suspended(pn->dev))
-> >> +			pm_request_resume(pn->dev);
-> >> +	}
-> >
-> > This is racy, because the status may change right after you check it and before
-> > you call pm_request_resume().
-> 
-> Yes, the runtime status may be changed just after the check.
-> 
-> >
-> > Besides, pm_request_resume() checks the status of the device and won't
-> > try to resume it if it is not suspended.
-> >
-> 
-> For this issue, usb port is in the RPM_SUSPENDING state when
-> pm_request_resume() is called.
+This series of patches defines the device tree bindings for the
+Toshiba TC3589x multi-purpose expander. This has been half-useable
+with devicetree using the "device tree node named like the I2C
+device ID" approach, but this adds proper bindings and put them
+to use.
 
-Why exactly does that happen?
+It is partly documenting how it is already working, but since
+there never was a proper binding document I do not regard the
+old bindings "deployed".
 
-> The deferred_resume will be set to true
-> during this procedure and trigger resume after finishing suspend. USB
-> port runtime resume callback will turn on its power resource again and
-> the work of acpi_power_resume_dependent() is scheduled. Because the usb
-> port's usage count remains zero, it's to be suspended soon. When
-> pm_request_resume() of acpi_power_resume_dependent() is called, the usb
-> port is always in the PRM_SUSPENDING. Fall in the loop of suspend and
-> resume.
-> 
-> How about running acpi_power_dependent when turning on power resource 
-> rather than scheduling a work to run it?
+The patches are orthogonal so once these are cleared, patches
+1-3 can be applied to the MFD tree, patch 4 to the input tree,
+and I will pick patch 5 to the ux500 device tree branch.
 
-Is this actually going to help?  Even if acpi_power_resume_dependent() is
-run synchronously from within the resume callback, it will still see
-RPM_SUSPENDING as the device's status, won't it?
+Linus Walleij (5):
+  mfd: tc3589x: add device tree bindings
+  mfd: tc3589x: detect the precise version
+  mfd: tc3589x: reform device tree probing
+  input: tc3589x-keypad: support probing from device tree
+  ARM: ux500: adjust the TC3589x devices to the binding
 
-> After this, pm_request_resume() can check device's right status just after
-> turning on power resource.
-
-The status doesn't change until the .runtime_suspend() callback returns and
-running pm_request_resume() syncrhonously from that callback for the device
-being suspended just plain doesn't make sense.
-
-> Furthermore, pm_request_resume() is async resume and 
-> this change will not consume much time.
-
-acpi_power_resume_dependent() is run from a work item to avoid locking
-problems.
-
-Can you please explain to me how this is possible that the USB port's power
-resource is turned "on" while the port is RPM_SUSPENDING?
+ Documentation/devicetree/bindings/mfd/tc3589x.txt |  61 ++++++++++
+ arch/arm/boot/dts/ste-href-tvk1281618.dtsi        |  39 ++++++-
+ arch/arm/boot/dts/ste-hrefprev60.dtsi             |   8 +-
+ drivers/input/keyboard/tc3589x-keypad.c           |  63 ++++++++++-
+ drivers/mfd/tc3589x.c                             | 129 ++++++++++++++++++----
+ 5 files changed, 264 insertions(+), 36 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mfd/tc3589x.txt
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.8.3.1
+
