@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759366Ab3JOOlj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 10:41:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3408 "EHLO mx1.redhat.com"
+	id S932677Ab3JOOmH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 10:42:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57102 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759016Ab3JOOli (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 10:41:38 -0400
-Date: Tue, 15 Oct 2013 16:41:28 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: mm: fix BUG in __split_huge_page_pmd
-Message-ID: <20131015144128.GF3479@redhat.com>
-References: <alpine.LNX.2.00.1310150358170.11905@eggly.anvils>
- <20131015113254.14E88E0090@blue.fi.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131015113254.14E88E0090@blue.fi.intel.com>
+	id S932283Ab3JOOmF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 10:42:05 -0400
+Message-ID: <1381848438.25397.1.camel@dcbw.foobar.com>
+Subject: Re: [PATCH] usb: serial: option: blacklist Olivetti Olicard200
+From: Dan Williams <dcbw@redhat.com>
+To: Enrico Mioso <mrkiko.rs@gmail.com>
+Cc: gregkh@linuxfoundation.org, davem@davemloft.net, bjorn@mork.no,
+        christian.schmiedl@gemalto.com, linux-usb@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Antonella Pellizzari <anto.pellizzari83@gmail.com>
+Date: Tue, 15 Oct 2013 09:47:18 -0500
+In-Reply-To: <1381842408-10800-1-git-send-email-mrkiko.rs@gmail.com>
+References: <1381842408-10800-1-git-send-email-mrkiko.rs@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 15, 2013 at 02:32:54PM +0300, Kirill A. Shutemov wrote:
-> Hugh Dickins wrote:
-> > Occasionally we hit the BUG_ON(pmd_trans_huge(*pmd)) at the end of
-> > __split_huge_page_pmd(): seen when doing madvise(,,MADV_DONTNEED).
-> > 
-> > It's invalid: we don't always have down_write of mmap_sem there:
-> > a racing do_huge_pmd_wp_page() might have copied-on-write to another
-> > huge page before our split_huge_page() got the anon_vma lock.
-> > 
-> > Forget the BUG_ON, just go back and try again if this happens.
-> >     
-> > Signed-off-by: Hugh Dickins <hughd@google.com>
-> > Cc: stable@vger.kernel.org
+On Tue, 2013-10-15 at 15:06 +0200, Enrico Mioso wrote:
+> Interface 6 of this device speaks QMI as per tests done by us.
+> Credits go to Antonella for providing the hardware.
 > 
-> Looks reasonable to me.
-> 
-> Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> 
-> madvise(MADV_DONTNEED) was aproblematic with THP before. Is a big win having
-> mmap_sem taken on read rather than on write for it?
+> Signed-off-by: Enrico Mioso <mrkiko.rs@gmail.com>
+> Signed-off-by: Antonella Pellizzari <anto.pellizzari83@gmail.com>
 
-Yeah it caused all those pmd_trans_unstable and
-pmd_none_or_trans_huge_or_clear_bad and pmd_read_atomic in common
-code. But I didn't want to regress the scalability of
-MADV_DONTNEED... I think various apps use MADV_DONTNEED to free memory
-(including very KVM in the balloon driver and probably JVM and other JIT).
+Tested-by: Dan Williams <dcbw@redhat.com>
 
-none or huge pmds are unstable without mmap_sem for writing and
-without page_table_lock (or in general pmd_trans_huge_lock).
+> diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+> index 80a7104..d7c10d6 100644
+> --- a/drivers/usb/serial/option.c
+> +++ b/drivers/usb/serial/option.c
+> @@ -1257,7 +1257,9 @@ static const struct usb_device_id option_ids[] = {
+>  
+>  	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD100) },
+>  	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD145) },
+> -	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD200) },
+> +	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD200),
+> +		.driver_info = (kernel_ulong_t)&net_intf6_blacklist
+> +	},
+>  	{ USB_DEVICE(CELOT_VENDOR_ID, CELOT_PRODUCT_CT680M) }, /* CT-650 CDMA 450 1xEVDO modem */
+>  	{ USB_DEVICE_AND_INTERFACE_INFO(SAMSUNG_VENDOR_ID, SAMSUNG_PRODUCT_GT_B3730, USB_CLASS_CDC_DATA, 0x00, 0x00) }, /* Samsung GT-B3730 LTE USB modem.*/
+>  	{ USB_DEVICE(YUGA_VENDOR_ID, YUGA_PRODUCT_CEM600) },
 
-It's identical to the pte being unstable if mmap_sem is held for
-reading and we don't hold the PT lock, except the pte can only have
-two states and they're both unstable.
 
-hugepmds have three states, and the only stable state of the tree is
-when it points to a regular pte (the third state that 4k ptes cannot have).
