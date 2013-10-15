@@ -1,45 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757215Ab3JOC4L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 22:56:11 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:52085 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755613Ab3JOC4K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 22:56:10 -0400
-From: Felipe Pena <felipensp@gmail.com>
-To: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        =?UTF-8?q?David=20H=C3=A4rdeman?= <david@hardeman.nu>
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Felipe Pena <felipensp@gmail.com>
-Subject: [PATCH] drivers: media: usb: Fix typo on variable name
-Date: Mon, 14 Oct 2013 23:56:37 -0300
-Message-Id: <1381805797-4781-1-git-send-email-felipensp@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1756889Ab3JODBF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 23:01:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44395 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754206Ab3JODBE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 23:01:04 -0400
+Date: Tue, 15 Oct 2013 11:00:18 +0800
+From: WANG Chao <chaowang@redhat.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Pekka Enberg <penberg@kernel.org>,
+        Jacob Shin <jacob.shin@amd.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Vivek Goyal <vgoyal@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86, kdump: crashkernel=X try to reserve below 896M
+ first, then try below 4G, then MAXMEM
+Message-ID: <20131015030018.GO18969@dhcp16-109.nay.redhat.com>
+References: <1381751200-27376-1-git-send-email-chaowang@redhat.com>
+ <CAE9FiQUNMDuVZtqud3LBbAmE0SL8ZWLFnc+CSYZm4UfTvNUaOA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAE9FiQUNMDuVZtqud3LBbAmE0SL8ZWLFnc+CSYZm4UfTvNUaOA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The variable txlen was used instead of rxlen in a bound checking. (copy-paste error)
+On 10/14/13 at 11:54am, Yinghai Lu wrote:
+> On Mon, Oct 14, 2013 at 4:46 AM, WANG Chao <chaowang@redhat.com> wrote:
+> > Now crashkernel=X will fail out if there's not enough memory at
+> > low (below 896M). What makes sense for crashkernel=X would be:
+> >
+> >  - First try to reserve X below 896M (for being compatible with old
+> >    kexec-tools).
+> >  - If fails, try to reserve X below 4G (swiotlb need to stay below 4G).
+> >  - If fails, try to reserve X from MAXMEM top down.
+> >
+> > So that user can easily reserve large memory with crashkernel=X instead
+> > of crashkernel=X,high. It's more transparent and user-friendly.
+> >
+> > If crashkernel is large and the reserved is beyond 896M, old kexec-tools
+> > won't be compatible with new kernel for most of time.
+> >
+> > kexec will fail out immediately in this case. But the failure could be
+> > expected, because old kexec users should not try to reserve that large
+> > amount of memory at the first place.
+> >
+> > On the other hand, old kexec also will fail on old kernel when there's
+> > not enough low memory to reserve a large crash kernel area. So the
+> > failure of old kexec is consistent between old kernel and new kernel.
+> >
+> > Signed-off-by: WANG Chao <chaowang@redhat.com>
+> > ---
+> >  arch/x86/kernel/setup.c | 14 ++++++++++++++
+> >  1 file changed, 14 insertions(+)
+> >
+> > diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+> > index f0de629..38e6c1f 100644
+> > --- a/arch/x86/kernel/setup.c
+> > +++ b/arch/x86/kernel/setup.c
+> > @@ -593,6 +593,20 @@ static void __init reserve_crashkernel(void)
+> >                                         high ? CRASH_KERNEL_ADDR_HIGH_MAX :
+> >                                                CRASH_KERNEL_ADDR_LOW_MAX,
+> >                                         crash_size, alignment);
+> > +               /*
+> > +                * crashkernel=X reserve below 896M fails? Try below 4G
+> > +                */
+> > +               if (!high && !crash_base)
+> > +                       crash_base = memblock_find_in_range(alignment,
+> > +                                               (1ULL << 32),
+> > +                                               crash_size, alignment);
+> > +               /*
+> > +                * crashkernel=X reserve below 4G fails? Try MAXMEM
+> > +                */
+> > +               if (!high && !crash_base)
+> > +                       crash_base = memblock_find_in_range(alignment,
+> > +                                               CRASH_KERNEL_ADDR_HIGH_MAX,
+> > +                                               crash_size, alignment);
+> >
+> >                 if (!crash_base) {
+> >                         pr_info("crashkernel reservation failed - No suitable area found.\n");
+> > --
+> 
+> User should change crashkernel=X to crashkernel=X,high.
 
-Signed-off-by: Felipe Pena <felipensp@gmail.com>
----
- drivers/media/usb/dvb-usb/technisat-usb2.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+crashkernel=X is more straightforward. IMHO, It should be a more general
+crash kernel reservation parameter and it shouldn't reserve at low only.
 
-diff --git a/drivers/media/usb/dvb-usb/technisat-usb2.c b/drivers/media/usb/dvb-usb/technisat-usb2.c
-index 40832a1..98d24ae 100644
---- a/drivers/media/usb/dvb-usb/technisat-usb2.c
-+++ b/drivers/media/usb/dvb-usb/technisat-usb2.c
-@@ -102,7 +102,7 @@ static int technisat_usb2_i2c_access(struct usb_device *udev,
- 	if (rxlen > 62) {
- 		err("i2c RX buffer can't exceed 62 bytes (dev 0x%02x)",
- 				device_addr);
--		txlen = 62;
-+		rxlen = 62;
- 	}
+> 
+> As user could forget to update kexec-tools to utilize ",high" feature, and get
+> kdump later fail later.
 
- 	b[0] = I2C_SPEED_100KHZ_BIT;
---
-1.7.10.4
+old kexec-tools should fail to load kernel high anyway, right?
 
+Thanks
+WANG Chao
