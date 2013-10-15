@@ -1,88 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759100Ab3JOMfV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 08:35:21 -0400
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:33062 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759061Ab3JOMfS (ORCPT
+	id S1759157Ab3JOMfu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 08:35:50 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52641 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759132Ab3JOMft (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 08:35:18 -0400
-MIME-Version: 1.0
-In-Reply-To: <20131014135929.GH4722@htj.dyndns.org>
-References: <1381574794-7639-1-git-send-email-zhiguohong@tencent.com>
-	<1381741757-20888-1-git-send-email-zhiguohong@tencent.com>
-	<20131014133620.GF4722@htj.dyndns.org>
-	<CAA7+ByWPM2Pizm+dP1AxPM7Ut-w=AtRfD2GkCK-0OVh+C2Twkg@mail.gmail.com>
-	<20131014135929.GH4722@htj.dyndns.org>
-Date: Tue, 15 Oct 2013 20:35:17 +0800
-Message-ID: <CAA7+ByU0ZbtZF=jCaU86MEx0xVg+kouRZ3ocVCrMxyBz0T7ufA@mail.gmail.com>
-Subject: Re: [PATCH v2] blk-throttle: simplify logic by token bucket algorithm
-From: Hong zhi guo <honkiko@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Jens Axboe <axboe@kernel.dk>, vgoyal@redhat.com, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Hong Zhiguo <zhiguohong@tencent.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 15 Oct 2013 08:35:49 -0400
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: mturquette@linaro.org
+Cc: tomasz.figa@gmail.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Subject: [PATCH] clk: s3c64xx: Correct spi bus clock hookups
+Date: Tue, 15 Oct 2013 13:26:22 +0100
+Message-Id: <1381839982-3026-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Tejun,
+Correct the SPI bus clock hookups to match their state before the switch
+to this driver. With out this patch my system (based on an s3c6410)
+can't locate any spibus clock.
 
-I did the test for 3 levels hierarchy. It works.
+Note, I only have a passing familiarity with this driver and subsystem
+so this patch could probably use a careful eye.
 
-Preparation
-============
-1) mount subsys blkio with "__DEVEL__sane_behavior"
-2) Create 3 levels of directories under the blkio mount point:
-    mkdir 1
-    mkdir 1/2
-    mkdir 1/2/3
-3) start 3 bash sessions, write their PIDs into:
-    1/cgroup.procs
-    1/2/cgroup.procs
-    1/2/3/cgroup.procs
-4) prepare 3 10MB files on sdb(ext4 fs)
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+---
+ drivers/clk/samsung/clk-s3c64xx.c |    8 ++++++--
+ 1 files changed, 6 insertions(+), 2 deletions(-)
 
-Note: in below hierarchy graph:
-    "[50k]" means configured value for read_bps_device is 50kB/s
-    "(50k)" means bandwidth reported by dd is 50kB/s
+diff --git a/drivers/clk/samsung/clk-s3c64xx.c b/drivers/clk/samsung/clk-s3c64xx.c
+index 7d2c842..f6ac974 100644
+--- a/drivers/clk/samsung/clk-s3c64xx.c
++++ b/drivers/clk/samsung/clk-s3c64xx.c
+@@ -356,8 +356,12 @@ static struct samsung_clock_alias s3c64xx_clock_aliases[] = {
+ 	ALIAS(SCLK_MMC2, "s3c-sdhci.2", "mmc_busclk.2"),
+ 	ALIAS(SCLK_MMC1, "s3c-sdhci.1", "mmc_busclk.2"),
+ 	ALIAS(SCLK_MMC0, "s3c-sdhci.0", "mmc_busclk.2"),
+-	ALIAS(SCLK_SPI1, "s3c6410-spi.1", "spi-bus"),
+-	ALIAS(SCLK_SPI0, "s3c6410-spi.0", "spi-bus"),
++	ALIAS(PCLK_SPI1, "s3c6410-spi.1", "spi_busclk0"),
++	ALIAS(SCLK_SPI1, "s3c6410-spi.1", "spi_busclk1"),
++	ALIAS(SCLK_SPI1_48, "s3c6410-spi.1", "spi_busclk2"),
++	ALIAS(PCLK_SPI0, "s3c6410-spi.0", "spi_busclk0"),
++	ALIAS(SCLK_SPI0, "s3c6410-spi.0", "spi_busclk1"),
++	ALIAS(SCLK_SPI0_48, "s3c6410-spi.0", "spi_busclk2"),
+ 	ALIAS(SCLK_AUDIO1, "samsung-pcm.1", "audio-bus"),
+ 	ALIAS(SCLK_AUDIO1, "samsung-i2s.1", "audio-bus"),
+ 	ALIAS(SCLK_AUDIO0, "samsung-pcm.0", "audio-bus"),
+-- 
+1.7.2.5
 
-Test A: 1 process throttled by ancestor group
-=============================================
-Hierarchy set-up:
-    (echo "8:16 204800" > 1/blkio.throttle.read_bps_device)
-    1 [200k]
-    `-- 2 [-]
-        `-- 3 [-]
-
-dd within group 3:
-    (drop cache then: dd if=10M-file-3 of=/dev/null)
-Result:
-    206kB/s (I did same test without the token-bucket patch, The
-result is 205kB/s)
-
-dd within group 2:
-    (drop cache then: dd if=10M-file-2 of=/dev/null)
-Result:
-    205kB/s
-
-
-Test B: 3 processes in 3 levels of hierarchy
-=============================================
-Hierarchy set-up:
-    echo "8:16 204800" > 1/blkio.throttle.read_bps_device
-    echo "8:16 102400" > 1/2/blkio.throttle.read_bps_device
-    echo "8:16 51200"  > 1/2/3/blkio.throttle.read_bps_device
-    1 [200k]
-    `-- 2 [100k]
-        `-- 3 [50k]
-start 3 dd processes from 3 bash sessions
-    (dd if=10M-file-x of=/dev/null)
-Result:
-    1 (103k)
-    `-- 2 (51.9k)
-        `-- 3 (51.4k)
-
-
-best regards
-Hong Zhiguo
