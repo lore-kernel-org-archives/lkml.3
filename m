@@ -1,105 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933647Ab3JOTYy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 15:24:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52523 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933495Ab3JOTYu (ORCPT
+	id S933682Ab3JOTZL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 15:25:11 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:65384 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933271Ab3JOTZI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 15:24:50 -0400
-Date: Tue, 15 Oct 2013 12:24:29 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: kbuild test robot <fengguang.wu@intel.com>, kbuild-all@01.org,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        LKML <linux-kernel@vger.kernel.org>, Daniel Drake <dsd@laptop.org>,
-        Jens Frederich <jfrederich@gmail.com>,
-        Jon Nettleton <jon.nettleton@gmail.com>
-Subject: Re: [PATCH v2] staging/olpc_dcon: fix kconfig to fix build errors
-Message-ID: <20131015192429.GA6063@kroah.com>
-References: <524a3b76.oejnG6gfqBFdWbl/%fengguang.wu@intel.com>
- <525AF4B8.8030005@infradead.org>
- <20131014163332.GA10225@kroah.com>
- <525C6F9F.3030801@infradead.org>
+	Tue, 15 Oct 2013 15:25:08 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Subject: Re: [PATCH] hpet: remove deprecated IRQF_DISABLED
+Date: Tue, 15 Oct 2013 21:25:00 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: clemens@ladisch.de, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org
+References: <1381636427-5877-1-git-send-email-michael.opdenacker@free-electrons.com>
+In-Reply-To: <1381636427-5877-1-git-send-email-michael.opdenacker@free-electrons.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <525C6F9F.3030801@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201310152125.00611.arnd@arndb.de>
+X-Provags-ID: V02:K0:XUyOJk3OHsdHsHW1yTZh+pxTCAUT/+5zslHch17BWkK
+ u9vRDfdw5YICiAWlJhuzZ6C6JnUN61mSfq1YMbx5Szw52yrGAv
+ KNVEil+E5aEX39z5H/mNRe/lPrYK0ZtvP6nuvaXfDDXrE2xLmU
+ 8YwV3PdE10iemjrtJfbq92oVmP/Rg5vZO9rIKj8PJYM7ccgpmJ
+ BvyM4OnUBK74AeHwkG1KQ4Ksic2RfTbEJ8wSzb0KtOJqrPXbmB
+ HIfYpNbW2ZEei9KofrGrKNbs/53yYKciRMJQGJ5u4JibMkrPFc
+ 3GT6Gn11/Z1LQKqeJhZI8bPlP2v2s6FT2Ry9fsMBROpbVV7z4z
+ VoxcXf3V7fReUc50XXc8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 14, 2013 at 03:26:39PM -0700, Randy Dunlap wrote:
-> On 10/14/13 09:33, Greg Kroah-Hartman wrote:
-> > On Sun, Oct 13, 2013 at 12:30:00PM -0700, Randy Dunlap wrote:
-> >> From: Randy Dunlap <rdunlap@infradead.org>
-> >>
-> >> Fix build errors when GPIO_CS5535=m and FB_OLPC_DCON=y
-> >> by preventing that kconfig combination.
-> >>
-> >> These build errors are caused by having a kconfig bool symbol
-> >> (FB_OLPC_DCON_1) that depend on a tristate symbol (GPIO_CS5535),
-> >> but when the tristate symbol is =m, the bool symbol is =y.
-> >>
-> >>   drivers/built-in.o: In function `dcon_read_status_xo_1':
-> >>   olpc_dcon_xo_1.c:(.text+0x359531): undefined reference to `cs5535_gpio_set'
-> >>   drivers/built-in.o: In function `dcon_wiggle_xo_1':
-> >>   olpc_dcon_xo_1.c:(.text+0x35959f): undefined reference to `cs5535_gpio_set'
-> >>   olpc_dcon_xo_1.c:(.text+0x359610): undefined reference to `cs5535_gpio_clear'
-> >>   drivers/built-in.o:olpc_dcon_xo_1.c:(.text+0x3596a1): more undefined references to `cs5535_gpio_clear' follow
-> >>   drivers/built-in.o: In function `dcon_wiggle_xo_1':
-> >>   olpc_dcon_xo_1.c:(.text+0x359708): undefined reference to `cs5535_gpio_set'
-> >>   drivers/built-in.o: In function `dcon_init_xo_1':
-> >>   olpc_dcon_xo_1.c:(.text+0x35989b): undefined reference to `cs5535_gpio_clear'
-> >>   olpc_dcon_xo_1.c:(.text+0x3598b5): undefined reference to `cs5535_gpio_isset'
-> >>   olpc_dcon_xo_1.c:(.text+0x359963): undefined reference to `cs5535_gpio_setup_event'
-> >>   olpc_dcon_xo_1.c:(.text+0x359980): undefined reference to `cs5535_gpio_set_irq'
-> >>   olpc_dcon_xo_1.c:(.text+0x359a36): undefined reference to `cs5535_gpio_set'
-> >>
-> >> However, adding GPIO_CS5535 to the Kconfig dependencies also creates
-> >> a kconfig recursive dependency error on powerpc:
-> >>   drivers/i2c/Kconfig:5:error: recursive dependency detected!
-> >>   drivers/i2c/Kconfig:5:	symbol I2C is selected by FB_OLPC_DCON
-> >>   drivers/staging/olpc_dcon/Kconfig:1:	symbol FB_OLPC_DCON depends on GPIO_CS5535
-> >>   drivers/gpio/Kconfig:577:	symbol GPIO_CS5535 depends on GPIOLIB
-> >>   drivers/gpio/Kconfig:38:	symbol GPIOLIB is selected by ARCH_REQUIRE_GPIOLIB
-> >>   drivers/gpio/Kconfig:23:	symbol ARCH_REQUIRE_GPIOLIB is selected by MCU_MPC8349EMITX
-> >>   arch/powerpc/platforms/Kconfig:351:	symbol MCU_MPC8349EMITX depends on I2C
-> >>
-> >> This is due to FB_OLPC_DCON selecting I2C instead of depending on it,
-> >> so change the select to a dependency.
-> >>
-> >> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
-> >> Cc:	Daniel Drake <dsd@laptop.org>
-> >> Cc:	Jens Frederich <jfrederich@gmail.com>
-> >> Cc:	Jon Nettleton <jon.nettleton@gmail.com>
-> >> ---
-> >>  drivers/staging/olpc_dcon/Kconfig |    3 ++-
-> >>  1 file changed, 2 insertions(+), 1 deletion(-)
-> >>
-> >> --- lnx-312-rc4.orig/drivers/staging/olpc_dcon/Kconfig
-> >> +++ lnx-312-rc4/drivers/staging/olpc_dcon/Kconfig
-> >> @@ -1,7 +1,8 @@
-> >>  config FB_OLPC_DCON
-> >>  	tristate "One Laptop Per Child Display CONtroller support"
-> >>  	depends on OLPC && FB
-> >> -	select I2C
-> >> +	depends on I2C
-> >> +	depends on (GPIO_CS5535 || GPIO_CS5535=n)
-> > 
-> > 
-> > This fails to apply to my staging-next branch of staging.git due to a
-> > previous patch from you to try to fix this same issue (or maybe a
-> > different one, I don't know...)
+On Sunday 13 October 2013, Michael Opdenacker wrote:
+> This patch proposes to remove the use of the IRQF_DISABLED flag
 > 
+> It's a NOOP since 2.6.35 and it will be removed one day.
 > 
-> You had asked if the previous patch should be reverted and I replied (very
-> belatedly) Yes.  However, I'll be glad to make a new patch against
-> linux-next instead of mainline.
+> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
 
-Ah, missed that, I've now reverted it and will apply this one instead.
+for all drivers/misc and drivers/char patches:
 
-thanks,
+Acked-by: Arnd Bergmann <arnd@arndb.de>
 
-greg k-h
+Since the patches should all be trivial, you might consider doing
+one patch per subsystem rather than one patch per driver, but that
+depends a bit on the preference of the subsystem maintainer.
+
+	Arnd
