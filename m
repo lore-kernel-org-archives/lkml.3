@@ -1,102 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933243Ab3JOFvg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 01:51:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56980 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932877Ab3JOFva (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 01:51:30 -0400
-Message-ID: <525CD7E0.7050809@suse.de>
-Date: Tue, 15 Oct 2013 07:51:28 +0200
-From: Hannes Reinecke <hare@suse.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1754517Ab3JOFNe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 01:13:34 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60429 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753625Ab3JOFNa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 01:13:30 -0400
+Date: Mon, 14 Oct 2013 22:13:16 -0700
+From: tip-bot for Ingo Molnar <tipbot@zytor.com>
+Message-ID: <tip-430be5ab0a50a9116c689b2b2ea7acd7a635aabe@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, acme@redhat.com, hpa@zytor.com,
+        mingo@kernel.org, a.p.zijlstra@chello.nl, namhyung@kernel.org,
+        jolsa@redhat.com, dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        namhyung@kernel.org, jolsa@redhat.com, dsahern@gmail.com,
+        tglx@linutronix.de
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] tools/perf/build: Split out feature check: '
+ stackprotector'
+Git-Commit-ID: 430be5ab0a50a9116c689b2b2ea7acd7a635aabe
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: vaughan <vaughan.cao@oracle.com>
-Cc: JBottomley@parallels.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: PROBLEM: special sense code asc,ascq=04h,0Ch abort scsi scan
- in the middle
-References: <525AD704.6040705@oracle.com> <525BD1EA.6000701@suse.de> <525CB742.4010409@oracle.com>
-In-Reply-To: <525CB742.4010409@oracle.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 14 Oct 2013 22:13:22 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/15/2013 05:32 AM, vaughan wrote:
-> On 10/14/2013 07:13 PM, Hannes Reinecke wrote:
->> In the log, inquiry to LUN7 return a sense - asc,ascq=04h,0Ch
->> (Logical unit not accessible, target port in unavailable state).
->> And this is ignored, so scsi_probe_lun() returns -EIO and the scan
->> process is aborted.
->>
->> I have two questions:
->> 1. Is it correct for hardware to return a sense 04h,0Ch to inquiry
->> again, even after presenting this lun in responce to REPORT_LUN
->> command?
->> Yes, this is correct. 'REPORT LUNS' is supported in 'Unavailable' state.
->>
->>> 2. Since windows and solaris can continue scan, is it reasonable for
->>> linux to do the same, even for a fault-tolerance purpose?
->>>
->> Hmm. Yes, and no.
->>
->> _Actually_ this is an issue with the target, as it looks as if it
->> will return the above sense code while sending an 'INQUIRY' to the
->> device.
->> SPC explicitely states that the INQUIRY command should _not_ fail
->> for unavailable devices.
-> Hi all,
-> 
-> I found this below in spc4.
->>>>
-> 5.15.2.4.4 Target port group asymmetric access states - Standby state
-> While in the unavailable primary target port asymmetric access state,
-> the device server shall support those of
-> the following commands that it supports while in the active/optimized state:
-> a) INQUIRY (the peripheral qualifier (see 6.6.2) shall be set to 001b);
-> ....
-> For those commands that are not supported, the device server shall
-> terminate the command with CHECK
-> CONDITION status, with the sense key set to NOT READY, and the
-> additional sense code set to LOGICAL
-> UNIT NOT ACCESSIBLE, TARGET PORT IN UNAVAILABLE STATE.
-> <<<
-> From the above, I suppose the hardware may works very compliant with
-> spc. The case could be:
-> Storage is a alua supported target. Initiator sent REPORT_LUN to target,
-> target return all pqual=000b to it.
-> Then Initiator INQUIRY lun 7 which is in standby state where pqual=000b
-> not 001b. So this INQUIRY is regarded as
-> 'not supported', and get terminated with CHECK_CONDITION,  sense key=NOT
-> READY, asc,ascq=04h,0ch.
-> 
-> Could you confirm if my understanding is right or wrong?
-> 
-Wrong.
+Commit-ID:  430be5ab0a50a9116c689b2b2ea7acd7a635aabe
+Gitweb:     http://git.kernel.org/tip/430be5ab0a50a9116c689b2b2ea7acd7a635aabe
+Author:     Ingo Molnar <mingo@kernel.org>
+AuthorDate: Mon, 7 Oct 2013 09:47:00 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 9 Oct 2013 08:48:31 +0200
 
-The sentence states that the device server _shall_ support those
-commands, where the results should be identical as if the port would
-have been in active/optimized state.
+tools/perf/build: Split out feature check: 'stackprotector'
 
-So INQUIRY always has to be supported, regardless of which primary
-ALUA state the port happens to be in.
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Link: http://lkml.kernel.org/n/tip-eyLYjhskzn6qxkoyjtjic4ap@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ tools/perf/config/Makefile                                            | 3 ++-
+ tools/perf/config/feature-checks/Makefile                             | 4 ++++
+ .../config/feature-checks/{test-hello.c => test-stackprotector.c}     | 0
+ 3 files changed, 6 insertions(+), 1 deletion(-)
 
-(Otherwise we'd be hard-pressed to figure out whether the port is in
-'unavailable' ALUA state in the first place, as without the INQUIRY
-data we couldn't even _tell_ if ALUA is supported.)
-
-So yeah, it really looks like a firmware issue here.
-
-But that notwithstanding, did you get a chance to test my patch?
-
-Cheers,
-
-Hannes
--- 
-Dr. Hannes Reinecke		      zSeries & Storage
-hare@suse.de			      +49 911 74053 688
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
-GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 1a67371..9f94912 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -104,6 +104,7 @@ $(info done)
+ FEATURE_TESTS =				\
+ 	hello				\
+ 	stackprotector-all		\
++	stackprotector			\
+ 	libnuma
+ 
+ $(foreach test,$(FEATURE_TESTS),$(call feature_check,$(test),$(test)))
+@@ -112,7 +113,7 @@ ifeq ($(feature-stackprotector-all), 1)
+   CFLAGS += -fstack-protector-all
+ endif
+ 
+-ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -Wstack-protector,-Wstack-protector),y)
++ifeq ($(feature-stackprotector), 1)
+   CFLAGS += -Wstack-protector
+ endif
+ 
+diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
+index 7538c14..46b7650 100644
+--- a/tools/perf/config/feature-checks/Makefile
++++ b/tools/perf/config/feature-checks/Makefile
+@@ -2,6 +2,7 @@
+ FILES=					\
+ 	test-hello			\
+ 	test-stackprotector-all		\
++	test-stackprotector		\
+ 	test-libnuma
+ 
+ CC := $(CC) -MD
+@@ -18,6 +19,9 @@ test-hello:
+ test-stackprotector-all:
+ 	$(BUILD) -Werror -fstack-protector-all
+ 
++test-stackprotector:
++	$(BUILD) -Werror -fstack-protector
++
+ test-libnuma:
+ 	$(BUILD) -lnuma
+ 
+diff --git a/tools/perf/config/feature-checks/test-hello.c b/tools/perf/config/feature-checks/test-stackprotector.c
+similarity index 100%
+copy from tools/perf/config/feature-checks/test-hello.c
+copy to tools/perf/config/feature-checks/test-stackprotector.c
