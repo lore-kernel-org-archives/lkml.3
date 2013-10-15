@@ -1,87 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758809Ab3JOLrj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 07:47:39 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:17677 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757990Ab3JOLri (ORCPT
+	id S1758839Ab3JOLs2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 07:48:28 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:52925 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758579Ab3JOLs1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 07:47:38 -0400
-X-Spam-Score: -100.8
-Message-ID: <525D2B15.8060503@asianux.com>
-Date: Tue, 15 Oct 2013 19:46:29 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Tue, 15 Oct 2013 07:48:27 -0400
+Date: Tue, 15 Oct 2013 12:48:12 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Yi Zhang <yizhang@marvell.com>
+Cc: zhouqiao@marvell.com, zhangwm@marvell.com, yizhang.mrvl@gmail.com,
+        linux-kernel@vger.kernel.org
+Message-ID: <20131015114812.GY2443@sirena.org.uk>
+References: <1381813438-5386-1-git-send-email-yizhang@marvell.com>
 MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] mm: revert mremap pud_free anti-fix
-References: <alpine.LNX.2.00.1310150330350.9078@eggly.anvils>
-In-Reply-To: <alpine.LNX.2.00.1310150330350.9078@eggly.anvils>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="KXGme5rRM84vf8Ks"
+Content-Disposition: inline
+In-Reply-To: <1381813438-5386-1-git-send-email-yizhang@marvell.com>
+X-Cookie: Time and tide wait for no man.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regmap: irq: clear status when disable irq
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/15/2013 06:34 PM, Hugh Dickins wrote:
-> Revert 1ecfd533f4c5 ("mm/mremap.c: call pud_free() after fail calling
-> pmd_alloc()").  The original code was correct: pud_alloc(), pmd_alloc(),
-> pte_alloc_map() ensure that the pud, pmd, pt is already allocated, and
-> seldom do they need to allocate; on failure, upper levels are freed if
-> appropriate by the subsequent do_munmap().  Whereas 1ecfd533f4c5 did an
-> unconditional pud_free() of a most-likely still-in-use pud: saved only
-> by the near-impossiblity of pmd_alloc() failing.
-> 
 
-What you said above sounds reasonable to me,  but better to provide the
-information below:
+--KXGme5rRM84vf8Ks
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
- - pud_free() for pgd_alloc() in "arch/arm/mm/pgd.c".
+On Tue, Oct 15, 2013 at 01:03:58PM +0800, Yi Zhang wrote:
 
- - pud_free() for init_stub_pte() in "arch/um/kernel/skas/mmu.c".
+> +			bits_length = d->map->format.val_bytes * BITS_PER_BYTE;
+> +			for (j = 0; j < bits_length; j++) {
+> +				d->mask_buf[i] &= (0x1 << j);
+> +				if (!d->mask_buf[i])
+> +					ret = regmap_update_bits(d->map, reg,
+> +								 (0x1 << j), 0);
+> +				if (ret != 0)
+> +					dev_err(d->map->dev, "Failed to ack 0x%x: %d\n",
+> +						reg, ret);
 
- - more details about do_munmap(), (e.g. do it need mm->page_table_lock)
-   or more details about the demo "most-likely still-in-use pud ...".
+I don't entirely understand this code - what's the loop doing?  It
+looks like it's trying to acknowledge things bit by bit but it's doing
+this by updating mask_buf so it looks like it'll corrupt the set of
+masked interrupts.  After the zeroth iteration any bits other than bit 0
+should get cleared by the &= (0x1 << j).  I'd have expected to just
+write mask_buf back or something similar.
 
+It's possible I'm missing something here but if that is the case perhaps
+some comments would be good.
 
-Hmm... I am not quite sure about the 3 things, and I will/should
-continue analysing/learning about them, but better to get your reply. :-)
+--KXGme5rRM84vf8Ks
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Thanks.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-> Signed-off-by: Hugh Dickins <hughd@google.com>
-> ---
-> 
->  mm/mremap.c |    5 +----
->  1 file changed, 1 insertion(+), 4 deletions(-)
-> 
-> --- 3.12-rc5/mm/mremap.c	2013-09-16 17:37:56.841072270 -0700
-> +++ linux/mm/mremap.c	2013-10-15 03:07:09.140091599 -0700
-> @@ -25,7 +25,6 @@
->  #include <asm/uaccess.h>
->  #include <asm/cacheflush.h>
->  #include <asm/tlbflush.h>
-> -#include <asm/pgalloc.h>
->  
->  #include "internal.h"
->  
-> @@ -63,10 +62,8 @@ static pmd_t *alloc_new_pmd(struct mm_st
->  		return NULL;
->  
->  	pmd = pmd_alloc(mm, pud, addr);
-> -	if (!pmd) {
-> -		pud_free(mm, pud);
-> +	if (!pmd)
->  		return NULL;
-> -	}
->  
->  	VM_BUG_ON(pmd_trans_huge(*pmd));
->  
-> 
-> 
+iQIcBAEBAgAGBQJSXSt5AAoJELSic+t+oim90C0P/RynA7ZaAHtW576D0GCapDYC
+CzDWM6EwGOhKTFlgodPexDTlwNIHMVFZKaxS8CF+WhZaj3LB2Bb7M9/n4c0Ax6bE
+eeKKYF1lyTWprc/ZO+yXzgLHPc/aJNvR++0LulattbbibsN+aaCjlr1jOTDiyJzn
+RXPzUkYRRz0mDsPTC7gbNXhO9YkgNXUlhb3+ViL2x42at4XDw26kMICA0QVQpGRO
+styTAs7u/z4NaOfPsv1UTUwI61lbvR3pjr2OP+k0f0xEHyDqoi/Ee246LckwFoCG
+7eoTFCYTJJ0s5LZK4ikrb25cC+hA7i7BIxj/4hvrOYuQjEaMLazPKqZN2XZz6L7Q
+PpmP3PYwgD15qq6VOjmK1MSOXS0dEj8GoSsY1VBstPESvt+uzUbjktt71sMmhh/0
+pswTZHhMnpi3bWpumqbotKIDIaloct67om2CBJuvYzxIhBRKTS6MmQbymXWLmiwF
+qe9Qn3uymeriMksMjo0B1xb+eM/zfJkGvWU6bhjnk+KDgaykmzQv5euN88pmMrnm
+uS8+DPEKSQKMQPjwhX4oTWCliB9DEgR3Q25D9ix7SzqdyxyuA8rIuvSiy4Dx6B+H
+lvtvaVy5iZWsKmvBaqzdhd/I8EzFLa8xnwVwz7aC3w/a/pMSjJIqS6ynfHTviiqM
+6VofmJy8X6Tw3Ys0kMl7
+=IJ7h
+-----END PGP SIGNATURE-----
 
-
--- 
-Chen Gang
+--KXGme5rRM84vf8Ks--
