@@ -1,57 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932982Ab3JOPg1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 11:36:27 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:12691 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932792Ab3JOPg0 (ORCPT
+	id S933072Ab3JOPih (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 11:38:37 -0400
+Received: from mail-vb0-f54.google.com ([209.85.212.54]:39179 "EHLO
+	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932828Ab3JOPid (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 11:36:26 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 15 Oct 2013 08:36:25 -0700
-Date: Tue, 15 Oct 2013 18:36:20 +0300
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: <mturquette@linaro.org>
-CC: <pgaikwad@nvidia.com>, <swarren@wwwdotorg.org>, <thierry.reding@gmail.com>,
-        <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-tegra@vger.kernel.org>
-Subject: pull request for tegra clocks (resend with some CCs added this
- time)
-Message-ID: <20131015153620.GA12721@tbergstrom-lnx.Nvidia.com>
+	Tue, 15 Oct 2013 11:38:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAH9JG2Xo2UgbP+VA=s908FSusELERh8kvSVyiyMX1H1Ue8uPSg@mail.gmail.com>
+References: <1381490814-20890-1-git-send-email-ch.naveen@samsung.com>
+	<1381818232-12542-1-git-send-email-ch.naveen@samsung.com>
+	<CAH9JG2Xo2UgbP+VA=s908FSusELERh8kvSVyiyMX1H1Ue8uPSg@mail.gmail.com>
+Date: Tue, 15 Oct 2013 08:38:32 -0700
+X-Google-Sender-Auth: z8IxqpNCI-E_nJ0H0HaV9t9DwVU
+Message-ID: <CAD=FV=XsZoGUeppkxMq9DnVsp761s6ckStsmUxR4aEL3U7JZ1A@mail.gmail.com>
+Subject: Re: [PATCH v2] i2c: s3c2410: dont need CPU_FREQ transitions for
+ exynos series
+From: Doug Anderson <dianders@chromium.org>
+To: Kyungmin Park <kmpark@infradead.org>
+Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        Tomasz Figa <t.figa@samsung.com>, Simon Glass <sjg@chromium.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Wolfram Sang <wsa@the-dreams.de>, Ben Dooks <ben-linux@fluff.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "broonie@kernel.org" <broonie@kernel.org>, "cpgs ." <cpgs@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit a0cf1abc25ac197dd97b857c0f6341066a8cb1cf:
+Hi,
 
-  Add linux-next specific files for 20130927 (2013-09-27 18:48:50 +1000)
+On Mon, Oct 14, 2013 at 11:56 PM, Kyungmin Park <kmpark@infradead.org> wrote:
+> On Tue, Oct 15, 2013 at 3:23 PM, Naveen Krishna Chatradhi
+> <ch.naveen@samsung.com> wrote:
+>> For Exynos4 and Exynos5 SoCs from Samsung the i2c clock is based
+>> on a fixed 66 MHz peripheral clock, and therefore is completely
+>> independent of the cpu frequency.
+>> Thus, registering for a CPU freq notifier is very wasteful.
+>>
+>> This patch modifes the code such that, i2c bus registers to
+>> cpu_freq_transition only if CONFIG_CPU_FREQ_S3C24XX is enabled.
+>>
+>> This change should save a bunch of cpufreq transitions calls
+>> which does not apply to exynos SoCs.
+>>
+>> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+>> ---
+>> Changes since v1:
+>> Use CONFIG_CPU_FREQ_S3C24XX instead of (CONFIG_CPU_FREQ & !CONFIG_EXYNOS)
+>> As commented by Tomasz
+>>
+>>  drivers/i2c/busses/i2c-s3c2410.c |    4 ++--
+>>  1 file changed, 2 insertions(+), 2 deletions(-)
 
-are available in the git repository at:
-  git://nv-tegra.nvidia.com/user/pdeschrijver/linux.git tegra-clk-patches-0
+Looks great to me.  Thank you for the suggestions Tomasz, as always.
 
-Andrew Chew (1):
-      clk: tegra: Set the clk parent of host1x to pll_p
+Reviewed-by: Doug Anderson <dianders@chromium.org>
 
-Mark Zhang (3):
-      clk: tegra: Correct sbc mux width & parent
-      clk: tegra: Fix vde/2d/3d clock src offset
-      clk: tegra: Set the clock parent of gr2d/gr3d to pll_c2
+We need to come up with a solution for the CPU_FREQ stuff in
+s3c2410_wdt too.  We could use a similar solution but since the
+CPU_FREQ stuff in s3c2410_wdt is more than just an optimization it
+means that it's not good if S3C24XX is included in a multiplatform
+kernel.  (For the watchdog it's more than just an optimization since
+every frequency transition actually pets the watchdog, making it
+useless when you transition several times per second).
 
-Peter De Schrijver (3):
-      ARM: tegra114: add missing clocks to binding
-      clk: tegra: replace enum tegra114_clk by binding header
-      clk: tegra: PLLE spread spectrum control
-
-Thierry Reding (1):
-      clk: tegra114: Rename gr_2d/gr_3d to gr2d/gr3d
-
- drivers/clk/tegra/clk-pll.c              |   30 ++-
- drivers/clk/tegra/clk-tegra114.c         |  442 ++++++++++++++----------------
- include/dt-bindings/clock/tegra114-car.h |    8 +-
- 3 files changed, 235 insertions(+), 245 deletions(-)
+-Doug
