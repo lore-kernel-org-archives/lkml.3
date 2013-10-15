@@ -1,67 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759466Ab3JOPmU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 11:42:20 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:34356 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759372Ab3JOPmS (ORCPT
+	id S1759487Ab3JOPmw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 11:42:52 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:52075 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759272Ab3JOPmu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 11:42:18 -0400
+	Tue, 15 Oct 2013 11:42:50 -0400
+Message-ID: <525D6276.1030507@wwwdotorg.org>
+Date: Tue, 15 Oct 2013 09:42:46 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-In-Reply-To: <20131015060425.GB3866@gmail.com>
-References: <20131011013954.GA28902@www.outflux.net>
-	<tip-d751c169e9a6f0f853346f1184881422bd10b3c2@git.kernel.org>
-	<20131014083035.GA20976@gmail.com>
-	<007cdb12-9fc7-4744-8686-695891b926a3@email.android.com>
-	<525C1BC1.6090501@zytor.com>
-	<CAGXu5j+tQfUpmem85WK5-ootoJM1mCH6BPDr3pfR2sHwoFy_8A@mail.gmail.com>
-	<20131015060425.GB3866@gmail.com>
-Date: Tue, 15 Oct 2013 08:42:17 -0700
-X-Google-Sender-Auth: 82fC6Eg7E-GB-wdoA4uWX6Dln74
-Message-ID: <CAGXu5jJx1xkwZD=tC+D69H_6-cGMHD8Sk_9_=8XQxjjDtHpBNA@mail.gmail.com>
-Subject: Re: [tip:x86/kaslr] x86, relocs: Add more per-cpu gold special cases
-From: Kees Cook <keescook@chromium.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
-        Michael Davidson <md@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>, mturquette@linaro.org
+CC: pgaikwad@nvidia.com, thierry.reding@gmail.com, rob.herring@calxeda.com,
+        pawel.moll@arm.com, mark.rutland@arm.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org
+Subject: Re: pull request for tegra clocks (resend with some CCs added this
+ time)
+References: <20131015153620.GA12721@tbergstrom-lnx.Nvidia.com>
+In-Reply-To: <20131015153620.GA12721@tbergstrom-lnx.Nvidia.com>
+X-Enigmail-Version: 1.5.2
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 14, 2013 at 11:04 PM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> * Kees Cook <keescook@chromium.org> wrote:
->
->> On Mon, Oct 14, 2013 at 9:28 AM, H. Peter Anvin <hpa@zytor.com> wrote:
->> > On 10/14/2013 07:19 AM, H. Peter Anvin wrote:
->> >> My guess is that the 95 addresses are randomized and the 82 address is an address which failed to relocate.
->> >
->> >> ffffffff82a04a58 is:
->> >> ffffffff82a03000 t init_per_cpu__gdt_page
->> >
->> >
->> > Specifically, it looks like the percpu stuff isn't getting set up correctly.
->>
->> It wouldn't surprise me if there are even more percpu things to fix.
->> It's the main area we've continued to trip over while working on this
->> with various linkers. Which linker and version are you seeing this
->> with?
->
-> The failure I saw triggered with fairly modern userspace:
->
->  GNU ld version 2.23.52.0.1-9.fc19 20130226
->
->  gcc version 4.8.1 20130603 (Red Hat 4.8.1-1) (GCC)
+On 10/15/2013 09:36 AM, Peter De Schrijver wrote:
+> The following changes since commit a0cf1abc25ac197dd97b857c0f6341066a8cb1cf:
+> 
+>   Add linux-next specific files for 20130927 (2013-09-27 18:48:50 +1000)
+> 
+> are available in the git repository at:
+>   git://nv-tegra.nvidia.com/user/pdeschrijver/linux.git tegra-clk-patches-0
 
-Can you try with the gold linker? When not using Gold, I can produce a
-similar crash with GNU ld ver 2.23.2 but not 2.22.
-
--Kees
-
--- 
-Kees Cook
-Chrome OS Security
+??? That won't merge into Mike's tree correctly. The pull request should
+be based on a -rc or final release in the Linus tree, e.g. based on
+v3.12-rc1. Otherwise, if Mike merges this, it will pull in all patches
+from other subsystems that went into linux-next.
