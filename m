@@ -1,67 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932711Ab3JOPgH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 11:36:07 -0400
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:33762 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932358Ab3JOPgF (ORCPT
+	id S932982Ab3JOPg1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 11:36:27 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:12691 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932792Ab3JOPg0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 11:36:05 -0400
-Date: Tue, 15 Oct 2013 11:36:01 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, cgroups <cgroups@vger.kernel.org>
-Subject: Re: [PATCH v2 11/12] cpuset: allow writing offlined masks to
- cpuset.cpus/mems
-Message-ID: <20131015153601.GM3141@htj.dyndns.org>
-References: <5257C9A1.1030404@huawei.com>
- <5257CA3A.2040705@huawei.com>
+	Tue, 15 Oct 2013 11:36:26 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 15 Oct 2013 08:36:25 -0700
+Date: Tue, 15 Oct 2013 18:36:20 +0300
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: <mturquette@linaro.org>
+CC: <pgaikwad@nvidia.com>, <swarren@wwwdotorg.org>, <thierry.reding@gmail.com>,
+        <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-tegra@vger.kernel.org>
+Subject: pull request for tegra clocks (resend with some CCs added this
+ time)
+Message-ID: <20131015153620.GA12721@tbergstrom-lnx.Nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <5257CA3A.2040705@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 11, 2013 at 05:51:54PM +0800, Li Zefan wrote:
-> As the configured masks won't be limited by its parent, and the top
-> cpuset's masks won't change when hotplug happens, it's natural to
-> allow writing offlined masks to the configured masks.
-> 
-> Signed-off-by; Li Zefan <lizefan@huawei.com>
-> ---
->  kernel/cpuset.c | 7 ++++---
->  1 file changed, 4 insertions(+), 3 deletions(-)
-> 
-> diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-> index e71c04f..a98723d 100644
-> --- a/kernel/cpuset.c
-> +++ b/kernel/cpuset.c
-> @@ -960,7 +960,8 @@ static int update_cpumask(struct cpuset *cs, struct cpuset *trialcs,
->  		if (retval < 0)
->  			return retval;
->  
-> -		if (!cpumask_subset(trialcs->cpus_allowed, cpu_active_mask))
-> +		if (!cpumask_subset(trialcs->cpus_allowed,
-> +				    top_cpuset.cpus_allowed))
+The following changes since commit a0cf1abc25ac197dd97b857c0f6341066a8cb1cf:
 
-Shouldn't this gated by sane_behavior?
+  Add linux-next specific files for 20130927 (2013-09-27 18:48:50 +1000)
 
->  
-> @@ -1238,8 +1239,8 @@ static int update_nodemask(struct cpuset *cs, struct cpuset *trialcs,
->  			goto done;
->  
->  		if (!nodes_subset(trialcs->mems_allowed,
-> -				node_states[N_MEMORY])) {
-> -			retval =  -EINVAL;
-> +				  top_cpuset.mems_allowed)) {
-> +			retval = -EINVAL;
+are available in the git repository at:
+  git://nv-tegra.nvidia.com/user/pdeschrijver/linux.git tegra-clk-patches-0
 
-Ditto.
+Andrew Chew (1):
+      clk: tegra: Set the clk parent of host1x to pll_p
 
-Thanks.
+Mark Zhang (3):
+      clk: tegra: Correct sbc mux width & parent
+      clk: tegra: Fix vde/2d/3d clock src offset
+      clk: tegra: Set the clock parent of gr2d/gr3d to pll_c2
 
--- 
-tejun
+Peter De Schrijver (3):
+      ARM: tegra114: add missing clocks to binding
+      clk: tegra: replace enum tegra114_clk by binding header
+      clk: tegra: PLLE spread spectrum control
+
+Thierry Reding (1):
+      clk: tegra114: Rename gr_2d/gr_3d to gr2d/gr3d
+
+ drivers/clk/tegra/clk-pll.c              |   30 ++-
+ drivers/clk/tegra/clk-tegra114.c         |  442 ++++++++++++++----------------
+ include/dt-bindings/clock/tegra114-car.h |    8 +-
+ 3 files changed, 235 insertions(+), 245 deletions(-)
