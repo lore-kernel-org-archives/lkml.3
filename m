@@ -1,108 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759679Ab3JOTNO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 15:13:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1606 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756979Ab3JOTNN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 15:13:13 -0400
-Date: Tue, 15 Oct 2013 15:12:17 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Cc: hpa@linux.intel.com, ebiederm@xmission.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, bp@alien8.de, akpm@linux-foundation.org,
-        fengguang.wu@intel.com, jingbai.ma@hp.com
-Subject: Re: [PATCH v2 1/2] x86, apic: Add boot_cpu_is_bsp() to check if boot
- cpu is BSP
-Message-ID: <20131015191217.GN31215@redhat.com>
-References: <20131015054214.13666.11737.stgit@localhost6.localdomain6>
- <20131015054322.13666.31465.stgit@localhost6.localdomain6>
+	id S1759698Ab3JOTNu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 15:13:50 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:44822 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757578Ab3JOTNs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 15:13:48 -0400
+Message-ID: <525D93E8.1010903@wwwdotorg.org>
+Date: Tue, 15 Oct 2013 13:13:44 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131015054322.13666.31465.stgit@localhost6.localdomain6>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Hiroshi Doyu <hdoyu@nvidia.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH v3 10/19] clk: tegra: move audio clk to common file
+References: <1381848794-11761-1-git-send-email-pdeschrijver@nvidia.com> <1381848794-11761-11-git-send-email-pdeschrijver@nvidia.com>
+In-Reply-To: <1381848794-11761-11-git-send-email-pdeschrijver@nvidia.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 15, 2013 at 02:43:22PM +0900, HATAYAMA Daisuke wrote:
-> Kexec can enter the kdump 2nd kernel on AP if crash happens on AP. To
-> check if boot cpu is BSP, introduce a helper function
-> boot_cpu_is_bsp().
-> 
-> Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-> ---
->  arch/x86/include/asm/mpspec.h |    7 +++++++
->  arch/x86/kernel/apic/apic.c   |   16 ++++++++++++++++
->  arch/x86/kernel/setup.c       |    2 ++
->  3 files changed, 25 insertions(+)
-> 
-> diff --git a/arch/x86/include/asm/mpspec.h b/arch/x86/include/asm/mpspec.h
-> index 626cf70..54d5f98 100644
-> --- a/arch/x86/include/asm/mpspec.h
-> +++ b/arch/x86/include/asm/mpspec.h
-> @@ -47,11 +47,18 @@ extern int mp_bus_id_to_type[MAX_MP_BUSSES];
->  extern DECLARE_BITMAP(mp_bus_not_pci, MAX_MP_BUSSES);
->  
->  extern unsigned int boot_cpu_physical_apicid;
-> +extern bool boot_cpu_is_bsp;
->  extern unsigned int max_physical_apicid;
->  extern int mpc_default_type;
->  extern unsigned long mp_lapic_addr;
->  
->  #ifdef CONFIG_X86_LOCAL_APIC
-> +extern void boot_cpu_is_bsp_init(void);
-> +#else
-> +static inline void boot_cpu_is_bsp_init(void) { };
-> +#endif
-> +
-> +#ifdef CONFIG_X86_LOCAL_APIC
->  extern int smp_found_config;
->  #else
->  # define smp_found_config 0
-> diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-> index a7eb82d..62ee365 100644
-> --- a/arch/x86/kernel/apic/apic.c
-> +++ b/arch/x86/kernel/apic/apic.c
-> @@ -64,6 +64,12 @@ unsigned disabled_cpus;
->  unsigned int boot_cpu_physical_apicid = -1U;
->  
->  /*
+On 10/15/2013 08:52 AM, Peter De Schrijver wrote:
+> Move audio clocks and PLLA initialization to a common file so it can be used by
+> multiple Tegra SoCs.
 
-[..]
-> + * Indicates whether the processor that is doing the boot up, is BSP
-> + * processor or not.
-> + */
-> +bool boot_cpu_is_bsp;
+> diff --git a/drivers/clk/tegra/clk-tegra114.c b/drivers/clk/tegra/clk-tegra114.c
 
-Should we set it to true by default? I think in most of the cases boot cpu
-is going to be bsp too?
+> +static struct tegra_clk tegra114_clks[tegra_clk_max] __initdata = {
+> +	[tegra_clk_rtc] = { .dt_id = TEGRA114_CLK_RTC, .present = true },
+> +	[tegra_clk_timer] = { .dt_id = TEGRA114_CLK_TIMER, .present = true },
+> +	[tegra_clk_uarta] = { .dt_id = TEGRA114_CLK_UARTA, .present = true },
+...
+> @@ -2194,7 +2167,7 @@ static void __init tegra114_clock_init(struct device_node *np)
+...
+> +	tegra_audio_clk_init(clk_base, pmc_base, tegra114_clks, &pll_a_params);
 
-> +
-> +/*
->   * The highest APIC ID seen during enumeration.
->   */
->  unsigned int max_physical_apicid;
-> @@ -2589,3 +2595,13 @@ static int __init lapic_insert_resource(void)
->   * that is using request_resource
->   */
->  late_initcall(lapic_insert_resource);
-> +
-> +void __init boot_cpu_is_bsp_init(void)
-> +{
-> +	if (cpu_has_apic) {
-> +		u32 l, h;
-> +
-> +		rdmsr_safe(MSR_IA32_APICBASE, &l, &h);
-> +		boot_cpu_is_bsp = (l & MSR_IA32_APICBASE_BSP) ? true : false;
+I think it's worth explaining in the commit description why an array of
+not-remotely-audio-related clocks is being passed into an
+audio-clock-initialization function.
 
-I came across following thread.
-
-https://lkml.org/lkml/2012/4/18/370
-
-Can we hit above read msr on old P5 class machines? Or is it safe to
-call unconditionally.
-
-Thanks
-Vivek
+I see now that it's because not all SoCs have the same set of clocks,
+and this table is what tells the common audio code which clocks to
+actually create for this SoC, but that wasn't obvious, and hence should
+be explicitly described.
