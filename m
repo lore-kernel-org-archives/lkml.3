@@ -1,77 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933530Ab3JORsk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 13:48:40 -0400
-Received: from juliette.telenet-ops.be ([195.130.137.74]:59506 "EHLO
-	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932647Ab3JORsi (ORCPT
+	id S933570Ab3JORss (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 13:48:48 -0400
+Received: from gerard.telenet-ops.be ([195.130.132.48]:59901 "EHLO
+	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933536Ab3JORso (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 13:48:38 -0400
+	Tue, 15 Oct 2013 13:48:44 -0400
 From: Geert Uytterhoeven <geert@linux-m68k.org>
 To: linux-m68k@vger.kernel.org
-Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] kexec support for Linux/m68k (kernel part)
-Date: Tue, 15 Oct 2013 19:48:24 +0200
-Message-Id: <1381859307-11932-1-git-send-email-geert@linux-m68k.org>
+Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH 3/3] m68k: Add support to export bootinfo in procfs
+Date: Tue, 15 Oct 2013 19:48:27 +0200
+Message-Id: <1381859307-11932-4-git-send-email-geert@linux-m68k.org>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1381859307-11932-1-git-send-email-geert@linux-m68k.org>
+References: <1381859307-11932-1-git-send-email-geert@linux-m68k.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a set of patches to add kexec support for m68k to the Linux kernel.
+Add optional support to export the bootinfo used to boot the kernel in a
+"bootinfo" file in procfs.  This is useful with kexec.
 
-  - Kexec only, no kdump support yet (do you have enough RAM to keep a
-    crashdump kernel in memory at all times? ;-)
+This is based on the similar feature for ATAGS on ARM.
 
-  - Tested on ARAnyM, with emulated 68040.
-    I tested the behavior for machines where memory doesn't start at zero
-    (e.g. Amiga) by modifying the bootinfo to make ST-RAM memory start at
-    0x20000000, which also works (this does require a small patch to make
-    atari_stram_init() succeed).
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ arch/m68k/Kconfig                |    7 ++++
+ arch/m68k/include/asm/bootinfo.h |    6 +++
+ arch/m68k/kernel/Makefile        |    1 +
+ arch/m68k/kernel/bootinfo_proc.c |   78 ++++++++++++++++++++++++++++++++++++++
+ arch/m68k/kernel/setup_mm.c      |    2 +
+ 5 files changed, 94 insertions(+)
+ create mode 100644 arch/m68k/kernel/bootinfo_proc.c
 
-  - Tested on Amiga 4000/040, where it hangs :-(
-    Probably this is due to lack of memory. It also crashes on ARAnyM with only
-    12 MiB of RAM. It seems something is corrupted when copying, although I
-    couldn't detect any overlapping copies using the debug code in patch 1.
-
-  - Test results on real machines with more than 16 MiB of RAM and different
-    CPUs would be welcome!
-
-    You can download a kexec binary from
-    http://users.telenet.be/geertu/Download/kexec-m68k-2013-10-15.tar.bz2
-
-  - To have automatic "kexec -e" on reboot, copy /etc/rc6.d/S85kexec from
-    another system, and fix it up for kexec living in /usr/local/sbin instead
-    of /sbin.
-
-  - Sample invocation:
-
-        kexec -d -l vmlinux --reuse-cmdline
-        reboot
-
-Patches:
-  - [PATCH 1/3] kexec: Add debug printing of kimage table entries
-      - v2: new patch
-  - [PATCH 2/3] m68k: Add kexec support
-      - v2:
-	  - KEXEC depends on M68KCLASSIC, 
-	  - Fix handling of virtual and physical addresses, for machines where
-	    memory doesn't start at zero,
-	  - Support for other CPUs than 68040.
-  - [PATCH 3/3] m68k: Add support to export bootinfo in procfs
-       - v2: no changes
-  - "m68k: Add System RAM to /proc/iomem" was dropped in v2.
-
-Have fun!
-
-Gr{oetje,eeting}s,
-
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
+diff --git a/arch/m68k/Kconfig b/arch/m68k/Kconfig
+index 5d65c39bfc69..17044432f4f4 100644
+--- a/arch/m68k/Kconfig
++++ b/arch/m68k/Kconfig
+@@ -103,6 +103,13 @@ config KEXEC
+ 	  interface is strongly in flux, so no good recommendation can be
+ 	  made.
+ 
++config BOOTINFO_PROC
++	bool "Export bootinfo in procfs"
++	depends on KEXEC && M68KCLASSIC
++	help
++	  Say Y to export the bootinfo used to boot the kernel in a
++	  "bootinfo" file in procfs.  This is useful with kexec.
++
+ menu "Platform setup"
+ 
+ source arch/m68k/Kconfig.cpu
+diff --git a/arch/m68k/include/asm/bootinfo.h b/arch/m68k/include/asm/bootinfo.h
+index fd5c26707013..007c95759e6b 100644
+--- a/arch/m68k/include/asm/bootinfo.h
++++ b/arch/m68k/include/asm/bootinfo.h
+@@ -46,6 +46,12 @@ struct bi_record {
+     unsigned long data[0];		/* data */
+ };
+ 
++#ifdef CONFIG_BOOTINFO_PROC
++extern void save_bootinfo(const struct bi_record *bi);
++#else
++static inline void save_bootinfo(const struct bi_record *bi) {}
++#endif
++
+ #endif /* __ASSEMBLY__ */
+ 
+ 
+diff --git a/arch/m68k/kernel/Makefile b/arch/m68k/kernel/Makefile
+index 7ee5f00a9abb..2d5d9be16273 100644
+--- a/arch/m68k/kernel/Makefile
++++ b/arch/m68k/kernel/Makefile
+@@ -23,4 +23,5 @@ obj-$(CONFIG_PCI) += pcibios.o
+ obj-$(CONFIG_HAS_DMA)	+= dma.o
+ 
+ obj-$(CONFIG_KEXEC)		+= machine_kexec.o relocate_kernel.o
++obj-$(CONFIG_BOOTINFO_PROC)	+= bootinfo_proc.o
+ 
+diff --git a/arch/m68k/kernel/bootinfo_proc.c b/arch/m68k/kernel/bootinfo_proc.c
+new file mode 100644
+index 000000000000..a22eac1dfdd1
+--- /dev/null
++++ b/arch/m68k/kernel/bootinfo_proc.c
+@@ -0,0 +1,78 @@
++/*
++ * Based on arch/arm/kernel/atags_proc.c
++ */
++
++#include <linux/fs.h>
++#include <linux/init.h>
++#include <linux/printk.h>
++#include <linux/proc_fs.h>
++#include <linux/slab.h>
++#include <linux/string.h>
++
++#include <asm/bootinfo.h>
++
++
++static char bootinfo_tmp[1536] __initdata;
++
++static void *bootinfo_copy;
++static size_t bootinfo_size;
++
++static ssize_t bootinfo_read(struct file *file, char __user *buf,
++			  size_t count, loff_t *ppos)
++{
++	return simple_read_from_buffer(buf, count, ppos, bootinfo_copy,
++				       bootinfo_size);
++}
++
++static const struct file_operations bootinfo_fops = {
++	.read = bootinfo_read,
++	.llseek = default_llseek,
++};
++
++void __init save_bootinfo(const struct bi_record *bi)
++{
++	const void *start = bi;
++	size_t size = sizeof(bi->tag);
++
++	while (bi->tag != BI_LAST) {
++		size += bi->size;
++		bi = (struct bi_record *)((unsigned long)bi + bi->size);
++	}
++
++	if (size > sizeof(bootinfo_tmp)) {
++		pr_err("Cannot save %zu bytes of bootinfo\n", size);
++		return;
++	}
++
++	pr_info("Saving %zu bytes of bootinfo\n", size);
++	memcpy(bootinfo_tmp, start, size);
++	bootinfo_size = size;
++}
++
++static int __init init_bootinfo_procfs(void)
++{
++	/*
++	 * This cannot go into save_bootinfo() because kmalloc and proc don't
++	 * work yet when it is called.
++	 */
++	struct proc_dir_entry *pde;
++
++	if (!bootinfo_size)
++		return -EINVAL;
++
++	bootinfo_copy = kmalloc(bootinfo_size, GFP_KERNEL);
++	if (!bootinfo_copy)
++		return -ENOMEM;
++
++	memcpy(bootinfo_copy, bootinfo_tmp, bootinfo_size);
++
++	pde = proc_create_data("bootinfo", 0400, NULL, &bootinfo_fops, NULL);
++	if (!pde) {
++		kfree(bootinfo_copy);
++		return -ENOMEM;
++	}
++
++	return 0;
++}
++
++arch_initcall(init_bootinfo_procfs);
+diff --git a/arch/m68k/kernel/setup_mm.c b/arch/m68k/kernel/setup_mm.c
+index 1e3e2cbd455e..cb7b0c927869 100644
+--- a/arch/m68k/kernel/setup_mm.c
++++ b/arch/m68k/kernel/setup_mm.c
+@@ -143,6 +143,8 @@ extern void paging_init(void);
+ 
+ static void __init m68k_parse_bootinfo(const struct bi_record *record)
+ {
++	save_bootinfo(record);
++
+ 	while (record->tag != BI_LAST) {
+ 		int unknown = 0;
+ 		const unsigned long *data = record->data;
+-- 
+1.7.9.5
 
