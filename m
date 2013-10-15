@@ -1,67 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932457Ab3JOANu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 20:13:50 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:61245 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932376Ab3JOANq (ORCPT
+	id S932495Ab3JOAQQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 20:16:16 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:43010 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753884Ab3JOAQP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 20:13:46 -0400
-Date: Mon, 14 Oct 2013 17:13:42 -0700
-From: Ning Qu <quning@google.com>
-To: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Hugh Dickins <hughd@google.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ning Qu <quning@google.com>
-Subject: [PATCH 10/12] mm, thp, tmpfs: only alloc small pages in
- shmem_file_splice_read
-Message-ID: <20131015001342.GK3432@hippobay.mtv.corp.google.com>
+	Mon, 14 Oct 2013 20:16:15 -0400
+Date: Mon, 14 Oct 2013 18:16:11 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Varun Sethi <Varun.Sethi@freescale.com>
+Cc: joro@8bytes.org, iommu@lists.linux-foundation.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        stuart.yoder@freescale.com, scottwood@freescale.com,
+        alex.williamson@redhat.com, r65777@freescale.com
+Subject: Re: [PATCH 1/3] iommu/fsl: Factor out PCI specific code.
+Message-ID: <20131015001611.GA9203@google.com>
+References: <1381609954-15283-1-git-send-email-Varun.Sethi@freescale.com>
+ <1381609954-15283-2-git-send-email-Varun.Sethi@freescale.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1381609954-15283-2-git-send-email-Varun.Sethi@freescale.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We just hope this is not a common case path. The huge page can't be
-added without completely refactoring the code.
+On Sun, Oct 13, 2013 at 02:02:32AM +0530, Varun Sethi wrote:
+> Factor out PCI specific code in the PAMU driver.
+> 
+> Signed-off-by: Varun Sethi <Varun.Sethi@freescale.com>
+> ---
+>  drivers/iommu/fsl_pamu_domain.c |   81 +++++++++++++++++++--------------------
+>  1 file changed, 40 insertions(+), 41 deletions(-)
+> 
+> diff --git a/drivers/iommu/fsl_pamu_domain.c b/drivers/iommu/fsl_pamu_domain.c
+> index c857c30..e02e1de 100644
+> --- a/drivers/iommu/fsl_pamu_domain.c
+> +++ b/drivers/iommu/fsl_pamu_domain.c
+> @@ -677,13 +677,9 @@ static int handle_attach_device(struct fsl_dma_domain *dma_domain,
+>  	return ret;
+>  }
+>  
+> -static int fsl_pamu_attach_device(struct iommu_domain *domain,
+> -				  struct device *dev)
+> +static void check_for_pci_dma_device(struct device **dev)
 
-Signed-off-by: Ning Qu <quning@gmail.com>
----
- mm/shmem.c | 2 ++
- 1 file changed, 2 insertions(+)
+"check_for_pci_dma_device()" doesn't give a good clue about what the
+function returns.  And why return something via a reference parameter
+when you could return it directly?
 
-diff --git a/mm/shmem.c b/mm/shmem.c
-index cbf01ce..75c0ac6 100644
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -1973,6 +1973,7 @@ static ssize_t shmem_file_splice_read(struct file *in, loff_t *ppos,
- 	index += spd.nr_pages;
- 	error = 0;
- 
-+	i_split_down_read(inode);
- 	while (spd.nr_pages < nr_pages) {
- 		error = shmem_getpage(inode, index, &page, SGP_CACHE, gfp,
- 					0, NULL);
-@@ -2042,6 +2043,7 @@ static ssize_t shmem_file_splice_read(struct file *in, loff_t *ppos,
- 		*ppos += error;
- 		file_accessed(in);
- 	}
-+	i_split_up_read(inode);
- 	return error;
- }
- 
--- 
-1.8.4
+>  {
+> -	struct fsl_dma_domain *dma_domain = domain->priv;
+> -	const u32 *liodn;
+> -	u32 liodn_cnt;
+> -	int len, ret = 0;
+> +#ifdef CONFIG_PCI
+>  	struct pci_dev *pdev = NULL;
+>  	struct pci_controller *pci_ctl;
 
+This is sort of a goofy looking function.  It would read much better as
+something like this:
 
+      struct device *dma_dev = dev;
+
+  #ifdef CONFIG_PCI
+      if (...) {
+          dma_dev = ...;
+      }
+  #endif
+
+      return dma_dev;
+
+Does this need to care about reference counting when you return a pointer
+to a different device?
+
+Bjorn
+
+>  
+> @@ -691,25 +687,38 @@ static int fsl_pamu_attach_device(struct iommu_domain *domain,
+>  	 * Use LIODN of the PCI controller while attaching a
+>  	 * PCI device.
+>  	 */
+> -	if (dev->bus == &pci_bus_type) {
+> -		pdev = to_pci_dev(dev);
+> +	if ((*dev)->bus == &pci_bus_type) {
+> +		pdev = to_pci_dev(*dev);
+>  		pci_ctl = pci_bus_to_host(pdev->bus);
+>  		/*
+>  		 * make dev point to pci controller device
+>  		 * so we can get the LIODN programmed by
+>  		 * u-boot.
+>  		 */
+> -		dev = pci_ctl->parent;
+> +		*dev = pci_ctl->parent;
+>  	}
+> +#endif
+> +}
+>  
+> -	liodn = of_get_property(dev->of_node, "fsl,liodn", &len);
+> +static int fsl_pamu_attach_device(struct iommu_domain *domain,
+> +				  struct device *dev)
+> +{
+> +	struct fsl_dma_domain *dma_domain = domain->priv;
+> +	struct device *dma_dev = dev;
+> +	const u32 *liodn;
+> +	u32 liodn_cnt;
+> +	int len, ret = 0;
+> +
+> +	check_for_pci_dma_device(&dma_dev);
+> +
+> +	liodn = of_get_property(dma_dev->of_node, "fsl,liodn", &len);
+>  	if (liodn) {
+>  		liodn_cnt = len / sizeof(u32);
+>  		ret = handle_attach_device(dma_domain, dev,
+>  					 liodn, liodn_cnt);
+>  	} else {
+>  		pr_debug("missing fsl,liodn property at %s\n",
+> -		          dev->of_node->full_name);
+> +		          dma_dev->of_node->full_name);
+>  			ret = -EINVAL;
+>  	}
+>  
+> @@ -720,32 +729,18 @@ static void fsl_pamu_detach_device(struct iommu_domain *domain,
+>  				      struct device *dev)
+>  {
+>  	struct fsl_dma_domain *dma_domain = domain->priv;
+> +	struct device *dma_dev = dev;
+>  	const u32 *prop;
+>  	int len;
+> -	struct pci_dev *pdev = NULL;
+> -	struct pci_controller *pci_ctl;
+>  
+> -	/*
+> -	 * Use LIODN of the PCI controller while detaching a
+> -	 * PCI device.
+> -	 */
+> -	if (dev->bus == &pci_bus_type) {
+> -		pdev = to_pci_dev(dev);
+> -		pci_ctl = pci_bus_to_host(pdev->bus);
+> -		/*
+> -		 * make dev point to pci controller device
+> -		 * so we can get the LIODN programmed by
+> -		 * u-boot.
+> -		 */
+> -		dev = pci_ctl->parent;
+> -	}
+> +	check_for_pci_dma_device(&dma_dev);
+>  
+> -	prop = of_get_property(dev->of_node, "fsl,liodn", &len);
+> +	prop = of_get_property(dma_dev->of_node, "fsl,liodn", &len);
+>  	if (prop)
+>  		detach_device(dev, dma_domain);
+>  	else
+>  		pr_debug("missing fsl,liodn property at %s\n",
+> -		          dev->of_node->full_name);
+> +		          dma_dev->of_node->full_name);
+>  }
+>  
+>  static  int configure_domain_geometry(struct iommu_domain *domain, void *data)
+> @@ -905,6 +900,7 @@ static struct iommu_group *get_device_iommu_group(struct device *dev)
+>  	return group;
+>  }
+>  
+> +#ifdef CONFIG_PCI
+>  static  bool check_pci_ctl_endpt_part(struct pci_controller *pci_ctl)
+>  {
+>  	u32 version;
+> @@ -945,13 +941,18 @@ static struct iommu_group *get_shared_pci_device_group(struct pci_dev *pdev)
+>  	return NULL;
+>  }
+>  
+> -static struct iommu_group *get_pci_device_group(struct pci_dev *pdev)
+> +static struct iommu_group *get_pci_device_group(struct device *dev)
+>  {
+>  	struct pci_controller *pci_ctl;
+>  	bool pci_endpt_partioning;
+>  	struct iommu_group *group = NULL;
+> -	struct pci_dev *bridge, *dma_pdev = NULL;
+> +	struct pci_dev *bridge, *pdev;
+> +	struct pci_dev *dma_pdev = NULL;
+>  
+> +	pdev = to_pci_dev(dev);
+> +	/* Don't create device groups for virtual PCI bridges */
+> +	if (pdev->subordinate)
+> +		return NULL;
+>  	pci_ctl = pci_bus_to_host(pdev->bus);
+>  	pci_endpt_partioning = check_pci_ctl_endpt_part(pci_ctl);
+>  	/* We can partition PCIe devices so assign device group to the device */
+> @@ -1044,11 +1045,11 @@ root_bus:
+>  
+>  	return group;
+>  }
+> +#endif
+>  
+>  static int fsl_pamu_add_device(struct device *dev)
+>  {
+>  	struct iommu_group *group = NULL;
+> -	struct pci_dev *pdev;
+>  	const u32 *prop;
+>  	int ret, len;
+>  
+> @@ -1056,19 +1057,15 @@ static int fsl_pamu_add_device(struct device *dev)
+>  	 * For platform devices we allocate a separate group for
+>  	 * each of the devices.
+>  	 */
+> -	if (dev->bus == &pci_bus_type) {
+> -		pdev = to_pci_dev(dev);
+> -		/* Don't create device groups for virtual PCI bridges */
+> -		if (pdev->subordinate)
+> -			return 0;
+> -
+> -		group = get_pci_device_group(pdev);
+> -
+> -	} else {
+> +	if (dev->bus == &platform_bus_type) {
+>  		prop = of_get_property(dev->of_node, "fsl,liodn", &len);
+>  		if (prop)
+>  			group = get_device_iommu_group(dev);
+>  	}
+> +#ifdef CONFIG_PCI
+> +	else
+> +		group = get_pci_device_group(dev);
+> +#endif
+>  
+>  	if (!group || IS_ERR(group))
+>  		return PTR_ERR(group);
+> @@ -1166,7 +1163,9 @@ int pamu_domain_init()
+>  		return ret;
+>  
+>  	bus_set_iommu(&platform_bus_type, &fsl_pamu_ops);
+> +#ifdef CONFIG_PCI
+>  	bus_set_iommu(&pci_bus_type, &fsl_pamu_ops);
+> +#endif
+>  
+>  	return ret;
+>  }
+> -- 
+> 1.7.9.5
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
