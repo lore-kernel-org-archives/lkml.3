@@ -1,126 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754507Ab3JOJTX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 05:19:23 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:16156 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751219Ab3JOJTV (ORCPT
+	id S1757873Ab3JOJXq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 05:23:46 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:41340 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751304Ab3JOJXo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 05:19:21 -0400
-Message-ID: <525D0896.6020907@atmel.com>
-Date: Tue, 15 Oct 2013 11:19:18 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Tue, 15 Oct 2013 05:23:44 -0400
+Message-ID: <525D099D.1010005@hitachi.com>
+Date: Tue, 15 Oct 2013 18:23:41 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
-CC: Josh Wu <josh.wu@atmel.com>, Bo Shen <voice.shen@atmel.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-serial@vger.kernel.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] tty/serial: at91: add a fallback option to determine
- uart/usart property
-References: <a58fe8bc7fdd128a2f9cf60785f81ebde4c0c247.1381394411.git.nicolas.ferre@atmel.com> <64f8f1db6f888456be8ee410a7e9bb9851d070a5.1381394411.git.nicolas.ferre@atmel.com> <20131014135921.GG11420@ns203013.ovh.net>
-In-Reply-To: <20131014135921.GG11420@ns203013.ovh.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Tom Zanussi <tom.zanussi@linux.intel.com>
+Cc: rostedt@goodmis.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v10 04/12] tracing: Add 'snapshot' event trigger command
+References: <cover.1381445299.git.tom.zanussi@linux.intel.com>  <4ed13a4c303b83164992b92dc17d79717bea2116.1381445299.git.tom.zanussi@linux.intel.com>  <52580157.1040300@hitachi.com> <1381500268.19281.19.camel@empanada>
+In-Reply-To: <1381500268.19281.19.camel@empanada>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/10/2013 15:59, Jean-Christophe PLAGNIOL-VILLARD :
-> On 10:43 Thu 10 Oct     , Nicolas Ferre wrote:
->> On older SoC, the "name" field is not filled in the register map.
->> Fix the way to figure out if the serial port is an uart or an usart for these
->> older products (with corresponding properties).
+(2013/10/11 23:04), Tom Zanussi wrote:
+> On Fri, 2013-10-11 at 22:47 +0900, Masami Hiramatsu wrote:
+>> (2013/10/11 9:48), Tom Zanussi wrote:
+>>>  /**
+>>> + * tracing_alloc_snapshot - allocate snapshot buffer.
+>>> + *
+>>> + * This only allocates the snapshot buffer if it isn't already
+>>> + * allocated - it doesn't also take a snapshot.
+>>> + *
+>>> + * This is meant to be used in cases where the snapshot buffer needs
+>>> + * to be set up for events that can't sleep but need to be able to
+>>> + * trigger a snapshot.
+>>> + */
+>>> +int tracing_alloc_snapshot(void)
+>>> +{
+>>> +	struct trace_array *tr = &global_trace;
+>>> +	int ret;
+>>> +
+>>> +	ret = alloc_snapshot(tr);
+>>> +	WARN_ON(ret < 0);
+>>> +
+>>> +	return ret;
+>>> +}
+>>> +EXPORT_SYMBOL_GPL(tracing_alloc_snapshot);
 >>
->> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
->> ---
->>   drivers/tty/serial/atmel_serial.c | 19 ++++++++++++++++++-
->>   include/linux/atmel_serial.h      |  1 +
->>   2 files changed, 19 insertions(+), 1 deletion(-)
+>> Out of curiously, why this symbol is exported to modules?
+>> The functions which are called directly from trace_event macros
+>> should be exported because those macros can be used in module code,
+>> but I couldn't find this in such code, at a glance.
 >>
->> diff --git a/drivers/tty/serial/atmel_serial.c b/drivers/tty/serial/atmel_serial.c
->> index 6b0f75e..c7d99af 100644
->> --- a/drivers/tty/serial/atmel_serial.c
->> +++ b/drivers/tty/serial/atmel_serial.c
->> @@ -99,6 +99,7 @@ static void atmel_stop_rx(struct uart_port *port);
->>   #define UART_PUT_RTOR(port,v)	__raw_writel(v, (port)->membase + ATMEL_US_RTOR)
->>   #define UART_PUT_TTGR(port, v)	__raw_writel(v, (port)->membase + ATMEL_US_TTGR)
->>   #define UART_GET_IP_NAME(port)	__raw_readl((port)->membase + ATMEL_US_NAME)
->> +#define UART_GET_IP_VERSION(port) __raw_readl((port)->membase + ATMEL_US_VERSION)
->>
->>    /* PDC registers */
->>   #define UART_PUT_PTCR(port,v)	__raw_writel(v, (port)->membase + ATMEL_PDC_PTCR)
->> @@ -1503,6 +1504,7 @@ static void atmel_get_ip_name(struct uart_port *port)
->>   {
->>   	struct atmel_uart_port *atmel_port = to_atmel_uart_port(port);
->>   	int name = UART_GET_IP_NAME(port);
->> +	u32 version;
->>   	int usart, uart;
->>   	/* usart and uart ascii */
->>   	usart = 0x55534152;
->> @@ -1517,7 +1519,22 @@ static void atmel_get_ip_name(struct uart_port *port)
->>   		dev_dbg(port->dev, "This is uart\n");
->>   		atmel_port->is_usart = false;
->>   	} else {
->> -		dev_err(port->dev, "Not supported ip name, set to uart\n");
->> +		/* fallback for older SoCs: use version field */
->> +		version = UART_GET_IP_VERSION(port);
->> +		switch (version) {
->> +		case 0x302:
->> +		case 0x10213:
->> +			dev_dbg(port->dev, "This version is usart\n");
->> +			atmel_port->is_usart = true;
->> +			break;
->> +		case 0x203:
->> +		case 0x10202:
->> +			dev_dbg(port->dev, "This version is uart\n");
->> +			atmel_port->is_usart = false;
->> +			break;
->> +		default:
->> +			dev_err(port->dev, "Not supported ip name nor version, set to uart\n");
->
-> it's not really an error a dev_warn is more oppropriate
+> 
+> tracing_alloc_snapshot() goes along with tracing_snapshot() and
+> tracing_snapshot_alloc() which are already exported - you should be able
+> to take a snapshot from a module, or do a combined snapshot/alloc or
+> (now) just the alloc.
 
-As we are already in -rc5 and that these fixes are critical for at91 
-platforms, I will not re-spin another patch just for this.
+Hmm, it seems that Steven added these EXPORT_SYMBOL_GPL at commit 1b22e382.
+Steven, would you have any idea to call these functions from outside of
+the ftrace?
 
-Moreover, I have the feeling that if we end up in this case, it means 
-that we are in big troubles because the usart/uart included in the 
-product triggering this log is not known (I recall that newer products 
-do not have to hit these lines of code).
-
-With these 2 reasons, I prefer to keep my patch like it is.
-
-Greg, can you consider taking these two patches as regression fixes for 
-3.12 (with Tested-by tag from Thomas)?
-
-Thanks, bye,
-
->> +		}
->>   	}
->>   }
->>
->> diff --git a/include/linux/atmel_serial.h b/include/linux/atmel_serial.h
->> index be201ca..00beddf 100644
->> --- a/include/linux/atmel_serial.h
->> +++ b/include/linux/atmel_serial.h
->> @@ -125,5 +125,6 @@
->>   #define ATMEL_US_IF		0x4c			/* IrDA Filter Register */
->>
->>   #define ATMEL_US_NAME		0xf0			/* Ip Name */
->> +#define ATMEL_US_VERSION	0xfc			/* Ip Version */
->>
->>   #endif
->> --
->> 1.8.2.2
->>
->
->
-
+Thank you,
 
 -- 
-Nicolas Ferre
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
