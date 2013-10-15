@@ -1,348 +1,364 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759129Ab3JONiX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 09:38:23 -0400
-Received: from mail.abilis.ch ([195.70.19.74]:11419 "EHLO mail.abilis.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758664Ab3JONiS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 09:38:18 -0400
-From: Christian Ruppert <christian.ruppert@abilis.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Patrice CHOTARD <patrice.chotard@st.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Sascha Leuenberger <sascha.leuenberger@abilis.com>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Alexandre Courbot <acourbot@nvidia.com>,
+	id S1759241Ab3JONjR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 09:39:17 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46457 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758819Ab3JONjP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 09:39:15 -0400
+Date: Tue, 15 Oct 2013 14:38:49 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Hongbo Zhang <hongbo.zhang@freescale.com>
+Cc: "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
+        "vinod.koul@intel.com" <vinod.koul@intel.com>,
+        "djbw@fb.com" <djbw@fb.com>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Christian Ruppert <christian.ruppert@abilis.com>
-Subject: [PATCH V2] Make non-linear GPIO ranges accesible from gpiolib
-Date: Tue, 15 Oct 2013 15:37:54 +0200
-Message-Id: <1381844274-12486-1-git-send-email-christian.ruppert@abilis.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <20131015133621.GA7461@ab42.lan>
-References: <20131015133621.GA7461@ab42.lan>
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v11 2/3] DMA: Freescale: Add new 8-channel DMA engine
+ device tree nodes
+Message-ID: <20131015133849.GH19196@e106331-lin.cambridge.arm.com>
+References: <1380188023-3936-1-git-send-email-hongbo.zhang@freescale.com>
+ <1380188023-3936-3-git-send-email-hongbo.zhang@freescale.com>
+ <52537A5F.7090802@freescale.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52537A5F.7090802@freescale.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the infrastructure required to register non-linear gpio
-ranges through gpiolib and the standard GPIO device tree bindings.
+On Tue, Oct 08, 2013 at 04:22:07AM +0100, Hongbo Zhang wrote:
+> Hi Mark, Stephen and other DT maintainers?
+> 
+> The 1/3 had already been acked by Mark, and please have a further look
+> at this patch 2/3.
+> The DMA maintainer Vinod  needs ack for the DT related patches so that
+> he can take all this patch set.
 
-Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
----
- Documentation/devicetree/bindings/gpio/gpio.txt |   40 ++++++++++++++-
- drivers/gpio/gpiolib-of.c                       |   63 ++++++++++++++++++++---
- drivers/gpio/gpiolib.c                          |   47 +++++++++++++++++
- drivers/pinctrl/core.c                          |   14 +++++
- include/asm-generic/gpio.h                      |   10 ++++
- include/linux/gpio.h                            |    9 +++
- include/linux/pinctrl/pinctrl.h                 |    3 +
- 7 files changed, 176 insertions(+), 10 deletions(-)
+Sorry for the delay.
 
-diff --git a/Documentation/devicetree/bindings/gpio/gpio.txt b/Documentation/devicetree/bindings/gpio/gpio.txt
-index 6cec6ff..0c85bb6 100644
---- a/Documentation/devicetree/bindings/gpio/gpio.txt
-+++ b/Documentation/devicetree/bindings/gpio/gpio.txt
-@@ -87,8 +87,10 @@ controllers. The gpio-ranges property described below represents this, and
- contains information structures as follows:
- 
- 	gpio-range-list ::= <single-gpio-range> [gpio-range-list]
--	single-gpio-range ::=
-+	single-gpio-range ::= <numeric-gpio-range> | <named-gpio-range>
-+	numeric-gpio-range ::=
- 			<pinctrl-phandle> <gpio-base> <pinctrl-base> <count>
-+	named-gpio-range ::= <pinctrl-phandle> <gpio-base> '<0 0>'
- 	gpio-phandle : phandle to pin controller node.
- 	gpio-base : Base GPIO ID in the GPIO controller
- 	pinctrl-base : Base pinctrl pin ID in the pin controller
-@@ -97,6 +99,19 @@ contains information structures as follows:
- The "pin controller node" mentioned above must conform to the bindings
- described in ../pinctrl/pinctrl-bindings.txt.
- 
-+In case named gpio ranges are used (ranges with both <pinctrl-base> and
-+<count> set to 0), the property gpio-ranges-group-names contains one string
-+for every single-gpio-range in gpio-ranges:
-+	gpiorange-names-list ::= <gpiorange-name> [gpiorange-names-list]
-+	gpiorange-name : Name of the pingroup associated to the GPIO range in
-+			the respective pin controller.
-+
-+Elements of gpiorange-names-list corresponding to numeric ranges contain
-+the empty string. Elements of gpiorange-names-list corresponding to named
-+ranges contain the name of a pin group defined in the respective pin
-+controller. The number of pins/GPIOs in the range is the number of pins in
-+that pin group.
-+
- Previous versions of this binding required all pin controller nodes that
- were referenced by any gpio-ranges property to contain a property named
- #gpio-range-cells with value <3>. This requirement is now deprecated.
-@@ -104,7 +119,7 @@ However, that property may still exist in older device trees for
- compatibility reasons, and would still be required even in new device
- trees that need to be compatible with older software.
- 
--Example:
-+Example 1:
- 
- 	qe_pio_e: gpio-controller@1460 {
- 		#gpio-cells = <2>;
-@@ -117,3 +132,24 @@ Example:
- Here, a single GPIO controller has GPIOs 0..9 routed to pin controller
- pinctrl1's pins 20..29, and GPIOs 10..19 routed to pin controller pinctrl2's
- pins 50..59.
-+
-+Example 2:
-+
-+	gpio_pio_i: gpio-controller@14B0 {
-+		#gpio-cells = <2>;
-+		compatible = "fsl,qe-pario-bank-e", "fsl,qe-pario-bank";
-+		reg = <0x1480 0x18>;
-+		gpio-controller;
-+		gpio-ranges =			<&pinctrl1 0 20 10>,
-+						<&pinctrl2 10 0 0>,
-+						<&pinctrl1 15 0 10>,
-+						<&pinctrl2 25 0 0>;
-+		gpio-ranges-group-names =	"",
-+						"foo",
-+						"",
-+						"bar";
-+	};
-+
-+Here, three GPIO ranges are defined wrt. two pin controllers. pinctrl1 GPIO
-+ranges are defined using pin numbers whereas the GPIO ranges wrt. pinctrl2
-+are named "foo" and "bar".
-diff --git a/drivers/gpio/gpiolib-of.c b/drivers/gpio/gpiolib-of.c
-index 0dfaf20..e787609 100644
---- a/drivers/gpio/gpiolib-of.c
-+++ b/drivers/gpio/gpiolib-of.c
-@@ -190,10 +190,15 @@ static void of_gpiochip_add_pin_range(struct gpio_chip *chip)
- 	struct of_phandle_args pinspec;
- 	struct pinctrl_dev *pctldev;
- 	int index = 0, ret;
-+	const char *name;
-+	static const char group_names_propname[] = "gpio-ranges-group-names";
-+	struct property *group_names;
- 
- 	if (!np)
- 		return;
- 
-+	group_names = of_find_property(np, group_names_propname, NULL);
-+
- 	for (;; index++) {
- 		ret = of_parse_phandle_with_fixed_args(np, "gpio-ranges", 3,
- 				index, &pinspec);
-@@ -204,14 +209,56 @@ static void of_gpiochip_add_pin_range(struct gpio_chip *chip)
- 		if (!pctldev)
- 			break;
- 
--		ret = gpiochip_add_pin_range(chip,
--					     pinctrl_dev_get_devname(pctldev),
--					     pinspec.args[0],
--					     pinspec.args[1],
--					     pinspec.args[2]);
--
--		if (ret)
--			break;
-+		if (pinspec.args[2]) {
-+			if (group_names) {
-+				ret = of_property_read_string_index(np,
-+						group_names_propname,
-+						index, &name);
-+				if (strlen(name)) {
-+					pr_err("%s: Group name of numeric GPIO ranges must be the empty string.\n",
-+						np->full_name);
-+					break;
-+				}
-+			}
-+			/* npins != 0: linear range */
-+			ret = gpiochip_add_pin_range(chip,
-+					pinctrl_dev_get_devname(pctldev),
-+					pinspec.args[0],
-+					pinspec.args[1],
-+					pinspec.args[2]);
-+			if (ret)
-+				break;
-+		} else {
-+			/* npins == 0: special range */
-+			if (pinspec.args[1]) {
-+				pr_err("%s: Illegal gpio-range format.\n",
-+					np->full_name);
-+				break;
-+			}
-+
-+			if (!group_names) {
-+				pr_err("%s: GPIO group range requested but no %s property.\n",
-+					np->full_name, group_names_propname);
-+				break;
-+			}
-+
-+			ret = of_property_read_string_index(np,
-+						group_names_propname,
-+						index, &name);
-+			if (ret)
-+				break;
-+
-+			if (!strlen(name)) {
-+				pr_err("%s: Group name of GPIO group range cannot be the empty string.\n",
-+				np->full_name);
-+				break;
-+			}
-+
-+			ret = gpiochip_add_pingroup_range(chip, pctldev,
-+						pinspec.args[0], name);
-+			if (ret)
-+				break;
-+		}
- 	}
- }
- 
-diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-index 86ef346..b83b7e4 100644
---- a/drivers/gpio/gpiolib.c
-+++ b/drivers/gpio/gpiolib.c
-@@ -1320,6 +1320,53 @@ EXPORT_SYMBOL_GPL(gpiochip_find);
- #ifdef CONFIG_PINCTRL
- 
- /**
-+ * gpiochip_add_pingroup_range() - add a range for GPIO <-> pin mapping
-+ * @chip: the gpiochip to add the range for
-+ * @pinctrl: the dev_name() of the pin controller to map to
-+ * @gpio_offset: the start offset in the current gpio_chip number space
-+ * @pin_group: name of the pin group inside the pin controller
-+ */
-+int gpiochip_add_pingroup_range(struct gpio_chip *chip,
-+			struct pinctrl_dev *pctldev,
-+			unsigned int gpio_offset, const char *pin_group)
-+{
-+	struct gpio_pin_range *pin_range;
-+	int ret;
-+
-+	pin_range = kzalloc(sizeof(*pin_range), GFP_KERNEL);
-+	if (!pin_range) {
-+		pr_err("%s: GPIO chip: failed to allocate pin ranges\n",
-+				chip->label);
-+		return -ENOMEM;
-+	}
-+
-+	/* Use local offset as range ID */
-+	pin_range->range.id = gpio_offset;
-+	pin_range->range.gc = chip;
-+	pin_range->range.name = chip->label;
-+	pin_range->range.base = chip->base + gpio_offset;
-+	pin_range->pctldev = pctldev;
-+
-+	ret = pinctrl_get_group_pins(pctldev, pin_group,
-+					&pin_range->range.pins,
-+					&pin_range->range.npins);
-+	if (ret < 0)
-+		return ret;
-+
-+	pinctrl_add_gpio_range(pctldev, &pin_range->range);
-+
-+	pr_debug("GPIO chip %s: created GPIO range %d->%d ==> %s PINGRP %s\n",
-+		 chip->label, gpio_offset,
-+		 gpio_offset + pin_range->range.npins - 1,
-+		 pinctrl_dev_get_devname(pctldev), pin_group);
-+
-+	list_add_tail(&pin_range->node, &chip->pin_ranges);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(gpiochip_add_pingroup_range);
-+
-+/**
-  * gpiochip_add_pin_range() - add a range for GPIO <-> pin mapping
-  * @chip: the gpiochip to add the range for
-  * @pinctrl_name: the dev_name() of the pin controller to map to
-diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
-index 92f86ab..5ee61a4 100644
---- a/drivers/pinctrl/core.c
-+++ b/drivers/pinctrl/core.c
-@@ -462,6 +462,20 @@ struct pinctrl_dev *pinctrl_find_and_add_gpio_range(const char *devname,
- }
- EXPORT_SYMBOL_GPL(pinctrl_find_and_add_gpio_range);
- 
-+int pinctrl_get_group_pins(struct pinctrl_dev *pctldev, const char *pin_group,
-+				const unsigned **pins, unsigned *num_pins)
-+{
-+	const struct pinctrl_ops *pctlops = pctldev->desc->pctlops;
-+	int gs;
-+
-+	gs = pinctrl_get_group_selector(pctldev, pin_group);
-+	if (gs < 0)
-+		return gs;
-+
-+	return pctlops->get_group_pins(pctldev, gs, pins, num_pins);
-+}
-+EXPORT_SYMBOL_GPL(pinctrl_get_group_pins);
-+
- /**
-  * pinctrl_find_gpio_range_from_pin() - locate the GPIO range for a pin
-  * @pctldev: the pin controller device to look in
-diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
-index bde6469..523f405 100644
---- a/include/asm-generic/gpio.h
-+++ b/include/asm-generic/gpio.h
-@@ -228,6 +228,9 @@ struct gpio_pin_range {
- int gpiochip_add_pin_range(struct gpio_chip *chip, const char *pinctl_name,
- 			   unsigned int gpio_offset, unsigned int pin_offset,
- 			   unsigned int npins);
-+int gpiochip_add_pingroup_range(struct gpio_chip *chip,
-+			struct pinctrl_dev *pctldev,
-+			unsigned int gpio_offset, const char *pin_group);
- void gpiochip_remove_pin_ranges(struct gpio_chip *chip);
- 
- #else
-@@ -239,6 +242,13 @@ gpiochip_add_pin_range(struct gpio_chip *chip, const char *pinctl_name,
- {
- 	return 0;
- }
-+static inline int
-+gpiochip_add_pingroup_range(struct gpio_chip *chip,
-+			struct pinctrl_dev *pctldev,
-+			unsigned int gpio_offset, const char *pin_group)
-+{
-+	return 0;
-+}
- 
- static inline void
- gpiochip_remove_pin_ranges(struct gpio_chip *chip)
-diff --git a/include/linux/gpio.h b/include/linux/gpio.h
-index 552e3f4..234b32f 100644
---- a/include/linux/gpio.h
-+++ b/include/linux/gpio.h
-@@ -220,6 +220,15 @@ gpiochip_add_pin_range(struct gpio_chip *chip, const char *pinctl_name,
- 	return -EINVAL;
- }
- 
-+static inline int
-+gpiochip_add_pingroup_range(struct gpio_chip *chip,
-+			struct pinctrl_dev *pctldev,
-+			unsigned int gpio_offset, const char *pin_group)
-+{
-+	WARN_ON(1);
-+	return -EINVAL;
-+}
-+
- static inline void
- gpiochip_remove_pin_ranges(struct gpio_chip *chip)
- {
-diff --git a/include/linux/pinctrl/pinctrl.h b/include/linux/pinctrl/pinctrl.h
-index 5979147..fefb886 100644
---- a/include/linux/pinctrl/pinctrl.h
-+++ b/include/linux/pinctrl/pinctrl.h
-@@ -144,6 +144,9 @@ extern struct pinctrl_dev *pinctrl_find_and_add_gpio_range(const char *devname,
- extern struct pinctrl_gpio_range *
- pinctrl_find_gpio_range_from_pin(struct pinctrl_dev *pctldev,
- 				 unsigned int pin);
-+extern int pinctrl_get_group_pins(struct pinctrl_dev *pctldev,
-+				const char *pin_group, const unsigned **pins,
-+				unsigned *num_pins);
- 
- #ifdef CONFIG_OF
- extern struct pinctrl_dev *of_pinctrl_get(struct device_node *np);
--- 
-1.7.1
+This looks ok to me.
 
+Acked-by: Mark Rutland <mark.rutland@arm.com>
+
+> 
+> On 09/26/2013 05:33 PM, hongbo.zhang@freescale.com wrote:
+> > From: Hongbo Zhang <hongbo.zhang@freescale.com>
+> >
+> > Freescale QorIQ T4 and B4 introduce new 8-channel DMA engines, this patch adds
+> > the device tree nodes for them.
+> >
+> > Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
+> > ---
+> >   .../devicetree/bindings/powerpc/fsl/dma.txt        |   70 +++++++++++++++++
+> >   arch/powerpc/boot/dts/fsl/b4si-post.dtsi           |    4 +-
+> >   arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi          |   82 ++++++++++++++++++++
+> >   arch/powerpc/boot/dts/fsl/elo3-dma-1.dtsi          |   82 ++++++++++++++++++++
+> >   arch/powerpc/boot/dts/fsl/t4240si-post.dtsi        |    4 +-
+> >   5 files changed, 238 insertions(+), 4 deletions(-)
+> >   create mode 100644 arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi
+> >   create mode 100644 arch/powerpc/boot/dts/fsl/elo3-dma-1.dtsi
+> >
+> > diff --git a/Documentation/devicetree/bindings/powerpc/fsl/dma.txt b/Documentation/devicetree/bindings/powerpc/fsl/dma.txt
+> > index 0584168..7fc1b01 100644
+> > --- a/Documentation/devicetree/bindings/powerpc/fsl/dma.txt
+> > +++ b/Documentation/devicetree/bindings/powerpc/fsl/dma.txt
+> > @@ -128,6 +128,76 @@ Example:
+> >               };
+> >       };
+> >
+> > +** Freescale Elo3 DMA Controller
+> > +   DMA controller which has same function as EloPlus except that Elo3 has 8
+> > +   channels while EloPlus has only 4, it is used in Freescale Txxx and Bxxx
+> > +   series chips, such as t1040, t4240, b4860.
+> > +
+> > +Required properties:
+> > +
+> > +- compatible        : must include "fsl,elo3-dma"
+> > +- reg               : contains two entries for DMA General Status Registers,
+> > +                      i.e. DGSR0 which includes status for channel 1~4, and
+> > +                      DGSR1 for channel 5~8
+> > +- ranges            : describes the mapping between the address space of the
+> > +                      DMA channels and the address space of the DMA controller
+> > +
+> > +- DMA channel nodes:
+> > +        - compatible        : must include "fsl,eloplus-dma-channel"
+> > +        - reg               : DMA channel specific registers
+> > +        - interrupts        : interrupt specifier for DMA channel IRQ
+> > +        - interrupt-parent  : optional, if needed for interrupt mapping
+> > +
+> > +Example:
+> > +dma@100300 {
+> > +     #address-cells = <1>;
+> > +     #size-cells = <1>;
+> > +     compatible = "fsl,elo3-dma";
+> > +     reg = <0x100300 0x4>,
+> > +           <0x100600 0x4>;
+> > +     ranges = <0x0 0x100100 0x500>;
+> > +     dma-channel@0 {
+> > +             compatible = "fsl,eloplus-dma-channel";
+> > +             reg = <0x0 0x80>;
+> > +             interrupts = <28 2 0 0>;
+> > +     };
+> > +     dma-channel@80 {
+> > +             compatible = "fsl,eloplus-dma-channel";
+> > +             reg = <0x80 0x80>;
+> > +             interrupts = <29 2 0 0>;
+> > +     };
+> > +     dma-channel@100 {
+> > +             compatible = "fsl,eloplus-dma-channel";
+> > +             reg = <0x100 0x80>;
+> > +             interrupts = <30 2 0 0>;
+> > +     };
+> > +     dma-channel@180 {
+> > +             compatible = "fsl,eloplus-dma-channel";
+> > +             reg = <0x180 0x80>;
+> > +             interrupts = <31 2 0 0>;
+> > +     };
+> > +     dma-channel@300 {
+> > +             compatible = "fsl,eloplus-dma-channel";
+> > +             reg = <0x300 0x80>;
+> > +             interrupts = <76 2 0 0>;
+> > +     };
+> > +     dma-channel@380 {
+> > +             compatible = "fsl,eloplus-dma-channel";
+> > +             reg = <0x380 0x80>;
+> > +             interrupts = <77 2 0 0>;
+> > +     };
+> > +     dma-channel@400 {
+> > +             compatible = "fsl,eloplus-dma-channel";
+> > +             reg = <0x400 0x80>;
+> > +             interrupts = <78 2 0 0>;
+> > +     };
+> > +     dma-channel@480 {
+> > +             compatible = "fsl,eloplus-dma-channel";
+> > +             reg = <0x480 0x80>;
+> > +             interrupts = <79 2 0 0>;
+> > +     };
+> > +};
+> > +
+> >   Note on DMA channel compatible properties: The compatible property must say
+> >   "fsl,elo-dma-channel" or "fsl,eloplus-dma-channel" to be used by the Elo DMA
+> >   driver (fsldma).  Any DMA channel used by fsldma cannot be used by another
+> > diff --git a/arch/powerpc/boot/dts/fsl/b4si-post.dtsi b/arch/powerpc/boot/dts/fsl/b4si-post.dtsi
+> > index 7399154..ea53ea1 100644
+> > --- a/arch/powerpc/boot/dts/fsl/b4si-post.dtsi
+> > +++ b/arch/powerpc/boot/dts/fsl/b4si-post.dtsi
+> > @@ -223,13 +223,13 @@
+> >               reg = <0xe2000 0x1000>;
+> >       };
+> >
+> > -/include/ "qoriq-dma-0.dtsi"
+> > +/include/ "elo3-dma-0.dtsi"
+> >       dma@100300 {
+> >               fsl,iommu-parent = <&pamu0>;
+> >               fsl,liodn-reg = <&guts 0x580>; /* DMA1LIODNR */
+> >       };
+> >
+> > -/include/ "qoriq-dma-1.dtsi"
+> > +/include/ "elo3-dma-1.dtsi"
+> >       dma@101300 {
+> >               fsl,iommu-parent = <&pamu0>;
+> >               fsl,liodn-reg = <&guts 0x584>; /* DMA2LIODNR */
+> > diff --git a/arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi b/arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi
+> > new file mode 100644
+> > index 0000000..3c210e0
+> > --- /dev/null
+> > +++ b/arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi
+> > @@ -0,0 +1,82 @@
+> > +/*
+> > + * QorIQ Elo3 DMA device tree stub [ controller @ offset 0x100000 ]
+> > + *
+> > + * Copyright 2013 Freescale Semiconductor Inc.
+> > + *
+> > + * Redistribution and use in source and binary forms, with or without
+> > + * modification, are permitted provided that the following conditions are met:
+> > + *     * Redistributions of source code must retain the above copyright
+> > + *       notice, this list of conditions and the following disclaimer.
+> > + *     * Redistributions in binary form must reproduce the above copyright
+> > + *       notice, this list of conditions and the following disclaimer in the
+> > + *       documentation and/or other materials provided with the distribution.
+> > + *     * Neither the name of Freescale Semiconductor nor the
+> > + *       names of its contributors may be used to endorse or promote products
+> > + *       derived from this software without specific prior written permission.
+> > + *
+> > + *
+> > + * ALTERNATIVELY, this software may be distributed under the terms of the
+> > + * GNU General Public License ("GPL") as published by the Free Software
+> > + * Foundation, either version 2 of that License or (at your option) any
+> > + * later version.
+> > + *
+> > + * THIS SOFTWARE IS PROVIDED BY Freescale Semiconductor ``AS IS'' AND ANY
+> > + * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+> > + * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+> > + * DISCLAIMED. IN NO EVENT SHALL Freescale Semiconductor BE LIABLE FOR ANY
+> > + * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+> > + * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+> > + * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+> > + * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+> > + * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+> > + * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+> > + */
+> > +
+> > +dma0: dma@100300 {
+> > +     #address-cells = <1>;
+> > +     #size-cells = <1>;
+> > +     compatible = "fsl,elo3-dma";
+> > +     reg = <0x100300 0x4>,
+> > +           <0x100600 0x4>;
+> > +     ranges = <0x0 0x100100 0x500>;
+> > +     dma-channel@0 {
+> > +             compatible = "fsl,eloplus-dma-channel";
+> > +             reg = <0x0 0x80>;
+> > +             interrupts = <28 2 0 0>;
+> > +     };
+> > +     dma-channel@80 {
+> > +             compatible = "fsl,eloplus-dma-channel";
+> > +             reg = <0x80 0x80>;
+> > +             interrupts = <29 2 0 0>;
+> > +     };
+> > +     dma-channel@100 {
+> > +             compatible = "fsl,eloplus-dma-channel";
+> > +             reg = <0x100 0x80>;
+> > +             interrupts = <30 2 0 0>;
+> > +     };
+> > +     dma-channel@180 {
+> > +             compatible = "fsl,eloplus-dma-channel";
+> > +             reg = <0x180 0x80>;
+> > +             interrupts = <31 2 0 0>;
+> > +     };
+> > +     dma-channel@300 {
+> > +             compatible = "fsl,eloplus-dma-channel";
+> > +             reg = <0x300 0x80>;
+> > +             interrupts = <76 2 0 0>;
+> > +     };
+> > +     dma-channel@380 {
+> > +             compatible = "fsl,eloplus-dma-channel";
+> > +             reg = <0x380 0x80>;
+> > +             interrupts = <77 2 0 0>;
+> > +     };
+> > +     dma-channel@400 {
+> > +             compatible = "fsl,eloplus-dma-channel";
+> > +             reg = <0x400 0x80>;
+> > +             interrupts = <78 2 0 0>;
+> > +     };
+> > +     dma-channel@480 {
+> > +             compatible = "fsl,eloplus-dma-channel";
+> > +             reg = <0x480 0x80>;
+> > +             interrupts = <79 2 0 0>;
+> > +     };
+> > +};
+> > diff --git a/arch/powerpc/boot/dts/fsl/elo3-dma-1.dtsi b/arch/powerpc/boot/dts/fsl/elo3-dma-1.dtsi
+> > new file mode 100644
+> > index 0000000..cccf3bb
+> > --- /dev/null
+> > +++ b/arch/powerpc/boot/dts/fsl/elo3-dma-1.dtsi
+> > @@ -0,0 +1,82 @@
+> > +/*
+> > + * QorIQ Elo3 DMA device tree stub [ controller @ offset 0x101000 ]
+> > + *
+> > + * Copyright 2013 Freescale Semiconductor Inc.
+> > + *
+> > + * Redistribution and use in source and binary forms, with or without
+> > + * modification, are permitted provided that the following conditions are met:
+> > + *     * Redistributions of source code must retain the above copyright
+> > + *       notice, this list of conditions and the following disclaimer.
+> > + *     * Redistributions in binary form must reproduce the above copyright
+> > + *       notice, this list of conditions and the following disclaimer in the
+> > + *       documentation and/or other materials provided with the distribution.
+> > + *     * Neither the name of Freescale Semiconductor nor the
+> > + *       names of its contributors may be used to endorse or promote products
+> > + *       derived from this software without specific prior written permission.
+> > + *
+> > + *
+> > + * ALTERNATIVELY, this software may be distributed under the terms of the
+> > + * GNU General Public License ("GPL") as published by the Free Software
+> > + * Foundation, either version 2 of that License or (at your option) any
+> > + * later version.
+> > + *
+> > + * THIS SOFTWARE IS PROVIDED BY Freescale Semiconductor ``AS IS'' AND ANY
+> > + * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+> > + * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+> > + * DISCLAIMED. IN NO EVENT SHALL Freescale Semiconductor BE LIABLE FOR ANY
+> > + * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+> > + * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+> > + * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+> > + * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+> > + * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+> > + * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+> > + */
+> > +
+> > +dma1: dma@101300 {
+> > +     #address-cells = <1>;
+> > +     #size-cells = <1>;
+> > +     compatible = "fsl,elo3-dma";
+> > +     reg = <0x101300 0x4>,
+> > +           <0x101600 0x4>;
+> > +     ranges = <0x0 0x101100 0x500>;
+> > +     dma-channel@0 {
+> > +             compatible = "fsl,eloplus-dma-channel";
+> > +             reg = <0x0 0x80>;
+> > +             interrupts = <32 2 0 0>;
+> > +     };
+> > +     dma-channel@80 {
+> > +             compatible = "fsl,eloplus-dma-channel";
+> > +             reg = <0x80 0x80>;
+> > +             interrupts = <33 2 0 0>;
+> > +     };
+> > +     dma-channel@100 {
+> > +             compatible = "fsl,eloplus-dma-channel";
+> > +             reg = <0x100 0x80>;
+> > +             interrupts = <34 2 0 0>;
+> > +     };
+> > +     dma-channel@180 {
+> > +             compatible = "fsl,eloplus-dma-channel";
+> > +             reg = <0x180 0x80>;
+> > +             interrupts = <35 2 0 0>;
+> > +     };
+> > +     dma-channel@300 {
+> > +             compatible = "fsl,eloplus-dma-channel";
+> > +             reg = <0x300 0x80>;
+> > +             interrupts = <80 2 0 0>;
+> > +     };
+> > +     dma-channel@380 {
+> > +             compatible = "fsl,eloplus-dma-channel";
+> > +             reg = <0x380 0x80>;
+> > +             interrupts = <81 2 0 0>;
+> > +     };
+> > +     dma-channel@400 {
+> > +             compatible = "fsl,eloplus-dma-channel";
+> > +             reg = <0x400 0x80>;
+> > +             interrupts = <82 2 0 0>;
+> > +     };
+> > +     dma-channel@480 {
+> > +             compatible = "fsl,eloplus-dma-channel";
+> > +             reg = <0x480 0x80>;
+> > +             interrupts = <83 2 0 0>;
+> > +     };
+> > +};
+> > diff --git a/arch/powerpc/boot/dts/fsl/t4240si-post.dtsi b/arch/powerpc/boot/dts/fsl/t4240si-post.dtsi
+> > index bd611a9..ec95c60 100644
+> > --- a/arch/powerpc/boot/dts/fsl/t4240si-post.dtsi
+> > +++ b/arch/powerpc/boot/dts/fsl/t4240si-post.dtsi
+> > @@ -387,8 +387,8 @@
+> >               reg        = <0xea000 0x4000>;
+> >       };
+> >
+> > -/include/ "qoriq-dma-0.dtsi"
+> > -/include/ "qoriq-dma-1.dtsi"
+> > +/include/ "elo3-dma-0.dtsi"
+> > +/include/ "elo3-dma-1.dtsi"
+> >
+> >   /include/ "qoriq-espi-0.dtsi"
+> >       spi@110000 {
+> 
+> 
+> 
+> 
