@@ -1,65 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754629Ab3JOJEX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 05:04:23 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:31903 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750946Ab3JOJEW (ORCPT
+	id S1757880Ab3JOJGZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 05:06:25 -0400
+Received: from mail-ye0-f181.google.com ([209.85.213.181]:39279 "EHLO
+	mail-ye0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752589Ab3JOJGX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 05:04:22 -0400
-X-Spam-Score: -100.8
-Message-ID: <525D04D4.2070909@asianux.com>
-Date: Tue, 15 Oct 2013 17:03:16 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Tue, 15 Oct 2013 05:06:23 -0400
+Message-ID: <525D058C.1020104@gmail.com>
+Date: Tue, 15 Oct 2013 11:06:20 +0200
+From: Juri Lelli <juri.lelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: josh@freedesktop.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Suggestion] kernel/rcutorture.c: about using scnprintf() instead
- of sprintf().
-References: <5253C335.5050609@asianux.com> <20131013110518.GC5790@linux.vnet.ibm.com> <525B4BB0.1090609@asianux.com> <525B555C.3040102@asianux.com> <20131014112457.GN5790@linux.vnet.ibm.com> <525C9D18.6040909@asianux.com> <20131015083112.GH5790@linux.vnet.ibm.com>
-In-Reply-To: <20131015083112.GH5790@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+To: Peter Zijlstra <peterz@infradead.org>
+CC: tglx@linutronix.de, mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com,
+        fweisbec@gmail.com, darren@dvhart.com, johan.eker@ericsson.com,
+        p.faure@akatech.ch, linux-kernel@vger.kernel.org,
+        claudio@evidence.eu.com, michael@amarulasolutions.com,
+        fchecconi@gmail.com, tommaso.cucinotta@sssup.it,
+        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
+        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
+        raistlin@linux.it, insop.song@gmail.com, liming.wang@windriver.com,
+        jkacur@redhat.com, harald.gustafsson@ericsson.com,
+        vincent.guittot@linaro.org,
+        bruce.ashfield@windriver.com--no-chain-reply-to
+Subject: Re: [PATCH 07/14] sched: add schedstats for -deadline tasks.
+References: <1381747426-31334-1-git-send-email-juri.lelli@gmail.com> <1381747426-31334-8-git-send-email-juri.lelli@gmail.com> <20131014120831.GJ3081@twins.programming.kicks-ass.net>
+In-Reply-To: <20131014120831.GJ3081@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/15/2013 04:31 PM, Paul E. McKenney wrote:
-> On Tue, Oct 15, 2013 at 09:40:40AM +0800, Chen Gang wrote:
->> > Hmm... Can it really work on 1024 CPUs? sorry I don't know. But in fact,
->> > that is not about this patch (it is just one of case which may cause
->> > issues).
->> > 
->> > This patch is only about "use truncation instead of memory overflow, and
->> > make sure the modification without negative effect". So in my opinion,
->> > current test case is enough for this requirement.
-> Yes, the patch is about "use truncation instead of memory overflow",
-> but the truncation would also be a problem on large systems.  Is it
-> possible to prevent memory from overflow in the first place?
+On 10/14/2013 02:08 PM, Peter Zijlstra wrote:
+> On Mon, Oct 14, 2013 at 12:43:39PM +0200, Juri Lelli wrote:
+>> From: Dario Faggioli <raistlin@linux.it>
+>>
+>> Add some typical sched-debug output to dl_rq(s) and some
+>> schedstats to -deadline tasks.
+> 
+> Could you perhaps add a bit to the changelog explaining what kind of
+> problems this patch helped (or could help) to find?
 > 
 
-Yes of cause it can, but in my opinion, for a test module, truncating
-information is acceptable, but memory overflow is not acceptable.
+Expanded in this:
 
-In fact, every information truncation case, can be "prevented memory
-from overflow in the first place".  It depends on whether we have enough
-interest to do that.
+Add some typical sched-debug output to dl_rq(s) and some
+schedstats to -deadline tasks. This helps spotting problems
+with queue and dequeue operations (incorrect ordering) and
+gives hints about system status (one can have an idea if the
+system is overloaded, if tasks are missing their deadlines
+and the entity of such anomalies).
 
+Thanks,
 
->> > We have to face the efficiency: it is only a test module, if the tester
->> > (assume he/she is a programmer, too) notices about the truncation, they
->> > can simply extend the maximize length to avoid truncation.
-> True.  But you can make a change that is just as simple that allows you
-> to test what would happen on a 1024-CPU system even though your own
-> system has only 2 CPUs.  Can you see what that change is?
-
-In fact, from modifying code, we can virtual most of cases, if current
-test case is enough, we need not do that (leave it for guys who have
-real 1024-CPUs).
-
-
-Thanks.
--- 
-Chen Gang
+- Juri
