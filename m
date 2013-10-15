@@ -1,111 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932240Ab3JOKf2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 06:35:28 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:52524 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754364Ab3JOKf0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 06:35:26 -0400
-Date: Tue, 15 Oct 2013 12:35:07 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Juri Lelli <juri.lelli@gmail.com>
-Cc: tglx@linutronix.de, mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com,
-        fweisbec@gmail.com, darren@dvhart.com, johan.eker@ericsson.com,
-        p.faure@akatech.ch, linux-kernel@vger.kernel.org,
-        claudio@evidence.eu.com, michael@amarulasolutions.com,
-        fchecconi@gmail.com, tommaso.cucinotta@sssup.it,
-        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
-        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
-        raistlin@linux.it, insop.song@gmail.com, liming.wang@windriver.com,
-        jkacur@redhat.com, harald.gustafsson@ericsson.com,
-        vincent.guittot@linaro.org,
-        bruce.ashfield@windriver.com--no-chain-reply-to
-Subject: Re: [PATCH 04/14] sched: SCHED_DEADLINE SMP-related data structures
- & logic.
-Message-ID: <20131015103507.GF10651@twins.programming.kicks-ass.net>
-References: <1381747426-31334-1-git-send-email-juri.lelli@gmail.com>
- <1381747426-31334-5-git-send-email-juri.lelli@gmail.com>
- <20131014120306.GH3081@twins.programming.kicks-ass.net>
- <525D0C91.1090700@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <525D0C91.1090700@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	id S932304Ab3JOKhw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 06:37:52 -0400
+Received: from mga14.intel.com ([143.182.124.37]:59709 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932247Ab3JOKhv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 06:37:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,498,1378882800"; 
+   d="scan'208";a="374914715"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Ning Qu <quning@google.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Hugh Dickins <hughd@google.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Hugh Dickins <hughd@google.com>, Wu Fengguang <fengguang.wu@intel.com>,
+        Jan Kara <jack@suse.cz>, Mel Gorman <mgorman@suse.de>,
+        linux-mm@kvack.org, Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ning Qu <quning@google.com>
+In-Reply-To: <20131015001242.GF3432@hippobay.mtv.corp.google.com>
+References: <20131015001242.GF3432@hippobay.mtv.corp.google.com>
+Subject: RE: [PATCH 05/12] mm, thp, tmpfs: request huge page in shm_fault when
+ needed
+Content-Transfer-Encoding: 7bit
+Message-Id: <20131015103744.A0BD3E0090@blue.fi.intel.com>
+Date: Tue, 15 Oct 2013 13:37:44 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 15, 2013 at 11:36:17AM +0200, Juri Lelli wrote:
-> On 10/14/2013 02:03 PM, Peter Zijlstra wrote:
-> > On Mon, Oct 14, 2013 at 12:43:36PM +0200, Juri Lelli wrote:
-> >> +static inline void dl_set_overload(struct rq *rq)
-> >> +{
-> >> +	if (!rq->online)
-> >> +		return;
-> >> +
-> >> +	cpumask_set_cpu(rq->cpu, rq->rd->dlo_mask);
-> >> +	/*
-> >> +	 * Must be visible before the overload count is
-> >> +	 * set (as in sched_rt.c).
-> >> +	 */
-> >> +	wmb();
-> >> +	atomic_inc(&rq->rd->dlo_count);
-> >> +}
-> > 
-> > Please, make that smp_wmb() and modify the comment to point to the
-> > matching barrier ; I couldn't find one! Which suggests something is
-> > amiss.
-> > 
-> > Ideally we'd have something like smp_wmb__after_set_bit() but alas.
-> > 
+Ning Qu wrote:
+> Add the function to request huge page in shm_fault when needed.
+> And it will fall back to regular page if huge page can't be
+> satisfied or allocated.
 > 
-> The only user of this function is pull_dl_task (that tries to pull only if at
-> least one runqueue of the root_domain is overloaded). Surely makes sense to
-> ensure that changes in the dlo_mask have to be visible before we check if we
-> should look at that mask. Am I right if I say that the matching barrier is
-> constituted by the spin_lock on this_rq acquired by schedule() before calling
-> pre_schedule()?
+> If small page requested but huge page is found, the huge page will
+> be splitted.
 > 
-> Same thing in rt_set_overload(), do we need to modify the comment also there?
+> Signed-off-by: Ning Qu <quning@gmail.com>
+> ---
+>  mm/shmem.c | 32 +++++++++++++++++++++++++++++---
+>  1 file changed, 29 insertions(+), 3 deletions(-)
+> 
+> diff --git a/mm/shmem.c b/mm/shmem.c
+> index 68a0e1d..2fc450d 100644
+> --- a/mm/shmem.c
+> +++ b/mm/shmem.c
+> @@ -1472,19 +1472,45 @@ unlock:
+>  static int shmem_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+>  {
+>  	struct inode *inode = file_inode(vma->vm_file);
+> +	struct page *page = NULL;
+>  	int error;
+>  	int ret = VM_FAULT_LOCKED;
+>  	gfp_t gfp = mapping_gfp_mask(inode->i_mapping);
+> -
+> -	error = shmem_getpage(inode, vmf->pgoff, &vmf->page, SGP_CACHE, gfp,
+> -				0, &ret);
+> +	bool must_use_thp = vmf->flags & FAULT_FLAG_TRANSHUGE;
+> +	int flags = 0;
+> +#ifdef CONFIG_TRANSPARENT_HUGEPAGE_PAGECACHE
+> +	flags |= AOP_FLAG_TRANSHUGE;
+> +#endif
 
-So I haven't looked at the dl code, but for the RT code the below is
-required.
+ifdef is not needed: shmem_getpage will ignore AOP_FLAG_TRANSHUGE if
+CONFIG_TRANSPARENT_HUGEPAGE_PAGECACHE is not defined.
 
-Without that smp_rmb() in there we could actually miss seeing the
-rto_mask bit.
-
----
- kernel/sched/rt.c | 10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
-
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index e9304cdc26fe..a848f526b941 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -246,8 +246,10 @@ static inline void rt_set_overload(struct rq *rq)
- 	 * if we should look at the mask. It would be a shame
- 	 * if we looked at the mask, but the mask was not
- 	 * updated yet.
-+	 *
-+	 * Matched by the barrier in pull_rt_task().
- 	 */
--	wmb();
-+	smp_wmb();
- 	atomic_inc(&rq->rd->rto_count);
- }
- 
-@@ -1626,6 +1628,12 @@ static int pull_rt_task(struct rq *this_rq)
- 	if (likely(!rt_overloaded(this_rq)))
- 		return 0;
- 
-+	/*
-+	 * Match the barrier from rt_set_overloaded; this guarantees that if we
-+	 * see overloaded we must also see the rto_mask bit.
-+	 */
-+	smp_rmb();
-+
- 	for_each_cpu(cpu, this_rq->rd->rto_mask) {
- 		if (this_cpu == cpu)
- 			continue;
+-- 
+ Kirill A. Shutemov
