@@ -1,60 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759138Ab3JOFvA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 01:51:00 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:39034 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759116Ab3JOFu4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 01:50:56 -0400
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <bcousson@baylibre.com>
-CC: <tony@atomide.com>, <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
-        <ijc+devicetree@hellion.org.uk>, <linux@arm.linux.org.uk>,
-        <kishon@ti.com>, <linux-omap@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <rogerq@ti.com>,
-        George Cherian <george.cherian@ti.com>
-Subject: [PATCH v2 2/2] ARM: dts: omap5: Add dr_mode for dwc3
-Date: Tue, 15 Oct 2013 11:19:59 +0530
-Message-ID: <1381816199-7966-1-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <52580F34.8030809@ti.com>
-References: <52580F34.8030809@ti.com>
+	id S933243Ab3JOFvg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 01:51:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56980 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932877Ab3JOFva (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 01:51:30 -0400
+Message-ID: <525CD7E0.7050809@suse.de>
+Date: Tue, 15 Oct 2013 07:51:28 +0200
+From: Hannes Reinecke <hare@suse.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain
+To: vaughan <vaughan.cao@oracle.com>
+Cc: JBottomley@parallels.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: PROBLEM: special sense code asc,ascq=04h,0Ch abort scsi scan
+ in the middle
+References: <525AD704.6040705@oracle.com> <525BD1EA.6000701@suse.de> <525CB742.4010409@oracle.com>
+In-Reply-To: <525CB742.4010409@oracle.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: George Cherian <george.cherian@ti.com>
+On 10/15/2013 05:32 AM, vaughan wrote:
+> On 10/14/2013 07:13 PM, Hannes Reinecke wrote:
+>> In the log, inquiry to LUN7 return a sense - asc,ascq=04h,0Ch
+>> (Logical unit not accessible, target port in unavailable state).
+>> And this is ignored, so scsi_probe_lun() returns -EIO and the scan
+>> process is aborted.
+>>
+>> I have two questions:
+>> 1. Is it correct for hardware to return a sense 04h,0Ch to inquiry
+>> again, even after presenting this lun in responce to REPORT_LUN
+>> command?
+>> Yes, this is correct. 'REPORT LUNS' is supported in 'Unavailable' state.
+>>
+>>> 2. Since windows and solaris can continue scan, is it reasonable for
+>>> linux to do the same, even for a fault-tolerance purpose?
+>>>
+>> Hmm. Yes, and no.
+>>
+>> _Actually_ this is an issue with the target, as it looks as if it
+>> will return the above sense code while sending an 'INQUIRY' to the
+>> device.
+>> SPC explicitely states that the INQUIRY command should _not_ fail
+>> for unavailable devices.
+> Hi all,
+> 
+> I found this below in spc4.
+>>>>
+> 5.15.2.4.4 Target port group asymmetric access states - Standby state
+> While in the unavailable primary target port asymmetric access state,
+> the device server shall support those of
+> the following commands that it supports while in the active/optimized state:
+> a) INQUIRY (the peripheral qualifier (see 6.6.2) shall be set to 001b);
+> ....
+> For those commands that are not supported, the device server shall
+> terminate the command with CHECK
+> CONDITION status, with the sense key set to NOT READY, and the
+> additional sense code set to LOGICAL
+> UNIT NOT ACCESSIBLE, TARGET PORT IN UNAVAILABLE STATE.
+> <<<
+> From the above, I suppose the hardware may works very compliant with
+> spc. The case could be:
+> Storage is a alua supported target. Initiator sent REPORT_LUN to target,
+> target return all pqual=000b to it.
+> Then Initiator INQUIRY lun 7 which is in standby state where pqual=000b
+> not 001b. So this INQUIRY is regarded as
+> 'not supported', and get terminated with CHECK_CONDITION,  sense key=NOT
+> READY, asc,ascq=04h,0ch.
+> 
+> Could you confirm if my understanding is right or wrong?
+> 
+Wrong.
 
-Added dr_mode property in dwc3 and set its default mode to device.
-Currently dwc3 driver doesn't have support for OTG mode. So explicitly
-setting to peripheral even dwc3 is a OTG controller since OMAP5 has
-already got an EHCI host.
+The sentence states that the device server _shall_ support those
+commands, where the results should be identical as if the port would
+have been in active/optimized state.
 
-Signed-off-by: George Cherian <george.cherian@ti.com>
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
-Changes from v1:
-Changed the commit log to explain why dr_mode was not set to OTG.
- arch/arm/boot/dts/omap5.dtsi |    1 +
- 1 file changed, 1 insertion(+)
+So INQUIRY always has to be supported, regardless of which primary
+ALUA state the port happens to be in.
 
-diff --git a/arch/arm/boot/dts/omap5.dtsi b/arch/arm/boot/dts/omap5.dtsi
-index 6d0a1d5..ef598af 100644
---- a/arch/arm/boot/dts/omap5.dtsi
-+++ b/arch/arm/boot/dts/omap5.dtsi
-@@ -652,6 +652,7 @@
- 				reg = <0x4a030000 0x10000>;
- 				interrupts = <GIC_SPI 92 IRQ_TYPE_LEVEL_HIGH>;
- 				usb-phy = <&usb2_phy>, <&usb3_phy>;
-+				dr_mode = "peripheral";
- 				tx-fifo-resize;
- 			};
- 		};
+(Otherwise we'd be hard-pressed to figure out whether the port is in
+'unavailable' ALUA state in the first place, as without the INQUIRY
+data we couldn't even _tell_ if ALUA is supported.)
+
+So yeah, it really looks like a firmware issue here.
+
+But that notwithstanding, did you get a chance to test my patch?
+
+Cheers,
+
+Hannes
 -- 
-1.7.10.4
-
+Dr. Hannes Reinecke		      zSeries & Storage
+hare@suse.de			      +49 911 74053 688
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
+GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
