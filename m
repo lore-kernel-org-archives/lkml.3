@@ -1,55 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756880Ab3JOCo7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 22:44:59 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:55360 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755122Ab3JOCo5 (ORCPT
+	id S1756512Ab3JOCvT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 22:51:19 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:45431 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755122Ab3JOCvS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 22:44:57 -0400
-Date: Tue, 15 Oct 2013 03:44:52 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Andreas Noever <andreas.noever@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: Re: [3.11.4] Thunderbolt/PCI unplug oops in pci_pme_list_scan
-Message-ID: <20131015024452.GA31951@srcf.ucam.org>
-References: <CAMxnaaUim-MCDpaTiLmBqN3wfxjn9V6XE_n4SMfuO=vqeT6rVA@mail.gmail.com>
- <CAErSpo4KU9VAC=SnKuYH3EPz8NuozixAhUQBKv+=Y=76wywdTg@mail.gmail.com>
+	Mon, 14 Oct 2013 22:51:18 -0400
+Message-ID: <525CAD8B.2090809@infradead.org>
+Date: Mon, 14 Oct 2013 19:50:51 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAErSpo4KU9VAC=SnKuYH3EPz8NuozixAhUQBKv+=Y=76wywdTg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+To: Chen Gang <gang.chen@asianux.com>, linux-next@vger.kernel.org
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Consult] About linux-next branches
+References: <525CA928.8000909@asianux.com>
+In-Reply-To: <525CA928.8000909@asianux.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 14, 2013 at 05:50:38PM -0600, Bjorn Helgaas wrote:
-> [+cc Rafael, Mika, Kirill, linux-pci]
+On 10/14/13 19:32, Chen Gang wrote:
+> Hello All:
 > 
-> On Mon, Oct 14, 2013 at 4:47 PM, Andreas Noever
-> <andreas.noever@gmail.com> wrote:
-> > When I unplug the Thunderbolt ethernet adapter on my MacBookPro Linux
-> > crashes a few seconds later. Using
-> > echo 1 > /sys/bus/pci/devices/0000:08:00.0/remove
-> > to remove a bridge two levels above the device triggers the fault immediately:
+> I am developing with linux-next tree which have multiple branches.
 > 
-> There have been significant changes in acpiphp related to Thunderbolt
-> since v3.11.
+> Now I use "git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git"
+> which is not updated within 2 weeks. But it seems other linux-next
+> branches continue updating.
+> 
+> So need I choose another linux-next tree for developing?
+> 
+> 
+> Welcome any members' suggestions or completions.
+> 
+> Thanks.
+> 
 
-Apple don't expose Thunderbolt via ACPI, so it appears as native PCIe. 
-I'd be surprised if acpiphp makes a difference here.
+The git location is announced in each day's linux-next announcement email.
+E.g. (while Stephen Rothwell is taking a break):
 
-(Whine whine Intel continuing to refuse to provide documentation for a 
-widely shipped part whine whine)
+<quote>
+I've uploaded today's linux-next tree to the master branch of the
+repository below:
+
+        git://gitorious.org/thierryreding/linux-next.git
+
+A next-20131014 tag is also provided for convenience.
+</quote>
+
+
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+~Randy
