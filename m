@@ -1,71 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759580Ab3JOTWK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 15:22:10 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41352 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757102Ab3JOTWI (ORCPT
+	id S1759627Ab3JOTWP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 15:22:15 -0400
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:34940 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757481Ab3JOTWL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 15:22:08 -0400
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: broonie@kernel.org
-Cc: lgirdwood@gmail.com, lee.jones@linaro.org, sameo@linux.intel.org,
-        linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Subject: [PATCH 0/3 v2] Add regulator supply alias
-Date: Tue, 15 Oct 2013 20:12:33 +0100
-Message-Id: <1381864356-26107-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.2.5
+	Tue, 15 Oct 2013 15:22:11 -0400
+Message-ID: <525D95A4.3020706@cogentembedded.com>
+Date: Tue, 15 Oct 2013 23:21:08 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Soren Brinkmann <soren.brinkmann@xilinx.com>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Michal Simek <michal.simek@xilinx.com>
+Subject: Re: [PATCH RFC 4/5] net: macb: Use devm_request_irq()
+References: <1381795140-10792-1-git-send-email-soren.brinkmann@xilinx.com> <1381795140-10792-5-git-send-email-soren.brinkmann@xilinx.com>
+In-Reply-To: <1381795140-10792-5-git-send-email-soren.brinkmann@xilinx.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series of patchs adds feature to allow an alias to
-be created for regulator supply lookup. This aliases will
-perform the lookup on a different device from that requested
-by the end user. We also add features into the MFD core to
-easily map supplies from a child device to the main MFD
-device.
+Hello.
 
-The main use case for this is when an MFD device is
-registered as a single node through device tree. It allows
-frameworks dealing with the individual child drivers to
-locate their regulators on the main MFD device, without any
-prior knowledge of its existance. An implementation is given
-using the arizona driver which has its supplies registered
-this way through device tree.
+On 10/15/2013 03:58 AM, Soren Brinkmann wrote:
 
-This patch series is based on Mark's regulator for-next
-branch.
+> Use the device managed interface to request the IRQ, simplifying error
+> paths.
 
-One thing I would be interested on improving is
-the function names they get very long. For example
-devm_regulator_register_bulk_supply_alias, I would wonder
-if swapping the register for an add and perhaps swapping
-supply_alias for just alias would be acceptable? This would
-give us devm_regulator_get_alias() which is a bit more
-reasonable in terms of length although perhaps slightly less
-idiomatic.
+> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> ---
+>   drivers/net/ethernet/cadence/macb.c | 8 +++-----
+>   1 file changed, 3 insertions(+), 5 deletions(-)
 
-Changes from version 1:
- - Added bulk and devm versions for all the calls
- - Registration of the aliases is added to the MFD framework
-   rather than done in the driver probe
+> diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
+> index 436aecc31732..603844b1d483 100644
+> --- a/drivers/net/ethernet/cadence/macb.c
+> +++ b/drivers/net/ethernet/cadence/macb.c
+> @@ -1825,7 +1825,8 @@ static int __init macb_probe(struct platform_device *pdev)
+>   	}
+>
+>   	dev->irq = platform_get_irq(pdev, 0);
+> -	err = request_irq(dev->irq, macb_interrupt, 0, dev->name, dev);
+> +	err = devm_request_irq(&pdev->dev, dev->irq, macb_interrupt, 0,
+> +			dev->name, dev);
 
-Charles Keepax (3):
-  regulator: core: Add ability to create a lookup alias for supply
-  mfd: Allow mapping regulator supplies to MFD device from children
-  mfd: arizona: Specify supply mappings for Arizona CODECs
+    You should start the continuation line right under &.
 
- arch/arm/mach-s3c64xx/mach-crag6410.c |   12 ---
- drivers/mfd/arizona-core.c            |   32 ++++++-
- drivers/mfd/mfd-core.c                |   22 ++++-
- drivers/regulator/core.c              |  170 +++++++++++++++++++++++++++++++++
- drivers/regulator/devres.c            |  163 +++++++++++++++++++++++++++++++
- include/linux/mfd/core.h              |    6 +
- include/linux/regulator/consumer.h    |   79 +++++++++++++++
- 7 files changed, 464 insertions(+), 20 deletions(-)
-
--- 
-1.7.2.5
+WBR, Sergei
 
