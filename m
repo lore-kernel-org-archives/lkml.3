@@ -1,99 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933032Ab3JOPzc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 11:55:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8454 "EHLO mx1.redhat.com"
+	id S933141Ab3JOP60 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 11:58:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64076 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932606Ab3JOPz2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 11:55:28 -0400
-Date: Tue, 15 Oct 2013 17:48:38 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Davide Libenzi <davidel@xmailserver.org>,
-        Eric Wong <normalperson@yhbt.net>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Peter Hurley <peter@hurleysoftware.com>
-Subject: Re: epoll oops.
-Message-ID: <20131015154838.GA32271@redhat.com>
-References: <20131014154627.GA9525@redhat.com> <CA+55aFw64xTR7LXjo5OfUvRwDb9UF8EcfjguAbF0C3VsUXCecg@mail.gmail.com> <CA+55aFxOpT9YLf7WLM+SOsp5U2R1-Px0LiEsdqV0Adr897dOqQ@mail.gmail.com>
+	id S932228Ab3JOP6Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 11:58:25 -0400
+Date: Tue, 15 Oct 2013 17:58:15 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: mm: fix BUG in __split_huge_page_pmd
+Message-ID: <20131015155815.GG3479@redhat.com>
+References: <alpine.LNX.2.00.1310150358170.11905@eggly.anvils>
+ <20131015143407.GE3479@redhat.com>
+ <20131015144827.C45DDE0090@blue.fi.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFxOpT9YLf7WLM+SOsp5U2R1-Px0LiEsdqV0Adr897dOqQ@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20131015144827.C45DDE0090@blue.fi.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Hmm? There might be other cases..
+On Tue, Oct 15, 2013 at 05:48:27PM +0300, Kirill A. Shutemov wrote:
+> Andrea Arcangeli wrote:
+> > Hi Hugh,
+> > 
+> > On Tue, Oct 15, 2013 at 04:08:28AM -0700, Hugh Dickins wrote:
+> > > Occasionally we hit the BUG_ON(pmd_trans_huge(*pmd)) at the end of
+> > > __split_huge_page_pmd(): seen when doing madvise(,,MADV_DONTNEED).
+> > > 
+> > > It's invalid: we don't always have down_write of mmap_sem there:
+> > > a racing do_huge_pmd_wp_page() might have copied-on-write to another
+> > > huge page before our split_huge_page() got the anon_vma lock.
+> > > 
+> > 
+> > I don't get exactly the scenario with do_huge_pmd_wp_page(), could you
+> > elaborate?
+> 
+> I think the scenario is follow:
+> 
+> 	CPU0:					CPU1
+> 
+> __split_huge_page_pmd()
+> 	page = pmd_page(*pmd);
+> 					do_huge_pmd_wp_page() copy the
+> 					page and changes pmd (the same as on CPU0)
+> 					to point to newly copied page.
+> 	split_huge_page(page)
+> 	where page is original page,
+> 	not allocated on COW.
+> 	pmd still points on huge page.
+> 
+> 
+> Hugh, have I got it correctly?
 
-Yes.
+So MADV_DONTNEED runs with with a "end" not 2m aligned (requiring 4k
+subpage zapping) on a wrprotected trans-huge page that is hitting a
+COW. So this scenario would be deterministic (the thread may write
+beyond the "end" of the MADV_DONTNEED) and it only requires two
+specific events.
 
-Dave, perhaps you have vmcore? I have no idea if this is possible or
-not, but perhaps you can look at eventpoll_release_file's frame and
-print file->f_op ?
+With my other scenario with two concurrent MADV_DONTNEED plus a page
+fault, you could still lead to split_huge_page_pmd returning with
+pmd_trans_huge(*pmd) == true, despite of the loop introduced.
 
-On 10/14, Linus Torvalds wrote:
->
-> [ Adding Pekka to verify the SLAB_DESTROY_BY_RCU semantics
+But for the above case, the loop makes a meaningful difference. So I
+see the good reason for looping now.
 
-Just in case, we depend on SLAB_DESTROY_BY_RCU anyway, and ->sighand
-in particular. lock_task_sighand() equally depends on it.
+It wouldn't be ok to miss a partial MADV_DONTNEED zapping because of a
+concurrent COW, while it would be ok in my other scenario (and the
+loop in fact cannot do anything to prevent split_huge_page_pmd return
+with the pmd still huge).
 
-> Ok, Oleg, going back to that whole thread, I think that old bug went like this:
+My other scenario with two concurrent MADV_DONTNEED and a page fault
+is non deterministic so looping was meaningless.
 
-Yes, yes, thanks, I do remember what this patch does and why. Just
-I forgot everything about eventpoll.c, I tried to read it only once
-to fix that bug.
+In both scenario, the kernel wouldn't run into stability issues, even
+if we only removed the BUG_ON. But the COW scenario, without the loop,
+we'd silently miss a partial MADV_DONTNEED on the 4k subpages before
+the "end" (or after the "start").
 
->  (b) signalfd is special, and it does a
->
->         poll_wait(file, &current->sighand->signalfd_wqh);
->
->      which means that the wait-queue isn't associated with the file
-> lifetime at all. It cleans it up with signalfd_cleanup() if the signal
-> handlers are removed. Normal (non-epoll) handling is safe, because
-> "current->sighand" obviously cannot go away as long as the current
-> thread (doing the polling) is in its poll/select handling.
-
-Yes. and, just in case, the main problem is that sighand has no any
-connection with the file. Unlike, say, tty which uses ->private_data.
-
->  (c) as a result, epoll and exit() can race, since the normal epoll
-> cleanup() is serialized by the file being closed, and we're missing
-> that for the case of sighand going away.
-
-Yes. Before that 971316f0503a hack epoll can't even know if the task
-which did signalfd_poll() exits and frees the active signalfd_wqh.
-If for example that task forked a child before exit.
-
-And the whole RCU logic is only needed if exit/ep_remove_wait_queue
-actually race with each other.
-
-> Agreed so far? Ugly, ugly, ugly,
-
-Yes, ugly, agreed. d80e731ecab4 even tries to docunent that this all
-is the hack.
-
-> And it looks like it should work.
-
-Yes... I tried to read this all again, and so far I do not see
-anything wrong... signalfd_cleanup()->waitqueue_active() looks fine
-too, afaics. We do not need to clear ->whead unconditionally, the
-only caller of ep_ptable_queue_proc() is signalfd_poll(), and we are
-the last thread which can use this ->sighand.
-
-> Peter? Does a tty hangup end up actually possibly freeing the tty
-> struct? Looking at it, I'm starting to think that it only affects
-> f_op, and the "struct tty" stays around, in which case this is all
-> fine.
-
-Of course I can't answer, but at first glance file_tty() should not go
-away in this case... If nothing else, tty_release() expects tty != NULL,
-and it seems that priv->tty is never changed.
-
-Oleg.
-
+And we still need pmd_none_or_trans_huge_or_clear_bad in
+zap_pmd_range, to deal with the non deterministic cases that the loop
+won't help (the two MADV_DONTNEED + page fault), in addition to the
+loop to deal with the deterministic COW scenario above.
