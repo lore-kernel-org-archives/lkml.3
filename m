@@ -1,162 +1,302 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933705Ab3JOTZb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 15:25:31 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:37326 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932633Ab3JOTZ2 (ORCPT
+	id S933726Ab3JOTZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 15:25:59 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:51915 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933434Ab3JOTZ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 15:25:28 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-m68k@vger.kernel.org, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-References: <1381859307-11932-1-git-send-email-geert@linux-m68k.org>
-	<1381859307-11932-2-git-send-email-geert@linux-m68k.org>
-Date: Tue, 15 Oct 2013 12:25:16 -0700
-In-Reply-To: <1381859307-11932-2-git-send-email-geert@linux-m68k.org> (Geert
-	Uytterhoeven's message of "Tue, 15 Oct 2013 19:48:25 +0200")
-Message-ID: <8761sy1gmb.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 15 Oct 2013 15:25:57 -0400
+Date: Tue, 15 Oct 2013 12:25:38 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org,
+        Dipankar Sarma <dipankar@in.ibm.com>, linux-arch@vger.kernel.org,
+        Steven Rostedt <srostedt@redhat.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 07/10] rcu: Replace __get_cpu_var uses
+Message-ID: <20131015192537.GK9150@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20131015175852.122827685@linux.com>
+ <20131015180053.213687766@linux.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX18MM72Y5ywtkv7+gyBvXvmsKw8X76u9ByY=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
-	*      [score: 0.1156]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  1.0 XM_Sft_Co_L33T XM_Sft_Co_L33T
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: **;Geert Uytterhoeven <geert@linux-m68k.org>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH 1/3] kexec: Add debug printing of kimage table entries
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131015180053.213687766@linux.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13101519-9332-0000-0000-000001C74F4A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Geert Uytterhoeven <geert@linux-m68k.org> writes:
+On Tue, Oct 15, 2013 at 12:58:59PM -0500, Christoph Lameter wrote:
+> __get_cpu_var() is used for multiple purposes in the kernel source. One of
+> them is address calculation via the form &__get_cpu_var(x).  This calculates
+> the address for the instance of the percpu variable of the current processor
+> based on an offset.
 
-> Print a list of pages to be copied if debugging is enabled.
-> Consecutive entries are merged to reduce screen clutter.
+Commit #c9d4b0af9e06 in -rcu, to be sent to -tip soonish.
 
-Why is this desirable?
+							Thanx, Paul
 
-I can understand this as debugging code to understand what is happening,
-but why would we want to maintain this print statement long term?
-
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> Cc: Eric Biederman <ebiederm@xmission.com>
-> ---
->  kernel/kexec.c |   76 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 76 insertions(+)
->
-> diff --git a/kernel/kexec.c b/kernel/kexec.c
-> index 490afc03627e..e25022ac229e 100644
-> --- a/kernel/kexec.c
-> +++ b/kernel/kexec.c
-> @@ -1073,6 +1073,80 @@ asmlinkage long compat_sys_kexec_load(unsigned long entry,
+> Other use cases are for storing and retrieving data from the current
+> processors percpu area.  __get_cpu_var() can be used as an lvalue when
+> writing data or on the right side of an assignment.
+> 
+> __get_cpu_var() is defined as :
+> 
+> 
+> #define __get_cpu_var(var) (*this_cpu_ptr(&(var)))
+> 
+> 
+> 
+> __get_cpu_var() always only does an address determination. However, store
+> and retrieve operations could use a segment prefix (or global register on
+> other platforms) to avoid the address calculation.
+> 
+> this_cpu_write() and this_cpu_read() can directly take an offset into a
+> percpu area and use optimized assembly code to read and write per cpu
+> variables.
+> 
+> 
+> This patch converts __get_cpu_var into either an explicit address
+> calculation using this_cpu_ptr() or into a use of this_cpu operations that
+> use the offset.  Thereby address calculations are avoided and less registers
+> are used when code is generated.
+> 
+> At the end of the patch set all uses of __get_cpu_var have been removed so
+> the macro is removed too.
+> 
+> The patch set includes passes over all arches as well. Once these operations
+> are used throughout then specialized macros can be defined in non -x86
+> arches as well in order to optimize per cpu access by f.e.  using a global
+> register that may be set to the per cpu base.
+> 
+> 
+> 
+> 
+> Transformations done to __get_cpu_var()
+> 
+> 
+> 1. Determine the address of the percpu instance of the current processor.
+> 
+> 	DEFINE_PER_CPU(int, y);
+> 	int *x = &__get_cpu_var(y);
+> 
+>     Converts to
+> 
+> 	int *x = this_cpu_ptr(&y);
+> 
+> 
+> 2. Same as #1 but this time an array structure is involved.
+> 
+> 	DEFINE_PER_CPU(int, y[20]);
+> 	int *x = __get_cpu_var(y);
+> 
+>     Converts to
+> 
+> 	int *x = this_cpu_ptr(y);
+> 
+> 
+> 3. Retrieve the content of the current processors instance of a per cpu
+> variable.
+> 
+> 	DEFINE_PER_CPU(int, y);
+> 	int x = __get_cpu_var(y)
+> 
+>    Converts to
+> 
+> 	int x = __this_cpu_read(y);
+> 
+> 
+> 4. Retrieve the content of a percpu struct
+> 
+> 	DEFINE_PER_CPU(struct mystruct, y);
+> 	struct mystruct x = __get_cpu_var(y);
+> 
+>    Converts to
+> 
+> 	memcpy(&x, this_cpu_ptr(&y), sizeof(x));
+> 
+> 
+> 5. Assignment to a per cpu variable
+> 
+> 	DEFINE_PER_CPU(int, y)
+> 	__get_cpu_var(y) = x;
+> 
+>    Converts to
+> 
+> 	this_cpu_write(y, x);
+> 
+> 
+> 6. Increment/Decrement etc of a per cpu variable
+> 
+> 	DEFINE_PER_CPU(int, y);
+> 	__get_cpu_var(y)++
+> 
+>    Converts to
+> 
+> 	this_cpu_inc(y)
+> 
+> Signed-off-by: Christoph Lameter <cl@linux.com>
+> 
+> Index: linux/kernel/rcutree.c
+> ===================================================================
+> --- linux.orig/kernel/rcutree.c	2013-10-14 10:55:57.747107834 -0500
+> +++ linux/kernel/rcutree.c	2013-10-14 10:58:26.247229815 -0500
+> @@ -407,7 +407,7 @@ static void rcu_eqs_enter(bool user)
+>  	long long oldval;
+>  	struct rcu_dynticks *rdtp;
+> 
+> -	rdtp = &__get_cpu_var(rcu_dynticks);
+> +	rdtp = this_cpu_ptr(&rcu_dynticks);
+>  	oldval = rdtp->dynticks_nesting;
+>  	WARN_ON_ONCE((oldval & DYNTICK_TASK_NEST_MASK) == 0);
+>  	if ((oldval & DYNTICK_TASK_NEST_MASK) == DYNTICK_TASK_NEST_VALUE)
+> @@ -435,7 +435,7 @@ void rcu_idle_enter(void)
+> 
+>  	local_irq_save(flags);
+>  	rcu_eqs_enter(false);
+> -	rcu_sysidle_enter(&__get_cpu_var(rcu_dynticks), 0);
+> +	rcu_sysidle_enter(this_cpu_ptr(&rcu_dynticks), 0);
+>  	local_irq_restore(flags);
 >  }
->  #endif
->  
-> +#ifdef DEBUG
-> +struct kimage_block {
-> +	unsigned long dst, src, len;
-> +};
-> +
-> +static void kimage_print_block(const struct kimage_block *block)
-> +{
-> +	pr_info("Copy from 0x%lx-0x%lx to 0x%lx-0x%lx (0x%lx bytes)\n",
-> +		block->src, block->src + block->len - 1, block->dst,
-> +		block->dst + block->len - 1, block->len);
-> +}
-> +
-> +static void kimage_print(const struct kimage *image)
-> +{
-> +	void *control_code_page;
-> +	const kimage_entry_t *ptr;
-> +	kimage_entry_t entry;
-> +	struct kimage_block block;
-> +	unsigned long dnext = KIMAGE_NO_DEST, snext = KIMAGE_NO_DEST;
-> +	unsigned long total = 0;
-> +
-> +	control_code_page = page_address(image->control_code_page);
-> +	pr_info("Control code page 0x%p (phys 0x%lx)\n",
-> +		control_code_page, virt_to_phys(control_code_page));
-> +
-> +	ptr = &image->head;
-> +	block.dst = KIMAGE_NO_DEST;
-> +	block.src = KIMAGE_NO_DEST;
-> +	block.len = 0;
-> +	while ((entry = *ptr)) {
-> +		if (entry & IND_DONE)
-> +			break;
-> +
-> +		if (entry & IND_DESTINATION) {
-> +			if (block.len > 0) {
-> +				kimage_print_block(&block);
-> +				total += block.len;
-> +			}
-> +			dnext = block.dst = entry & PAGE_MASK;
-> +			block.src = KIMAGE_NO_DEST;
-> +			block.len = 0;
-> +		}
-> +
-> +		if (entry & IND_SOURCE) {
-> +			if (!block.len) {
-> +				snext = block.src = entry & PAGE_MASK;
-> +			} else if ((entry & PAGE_MASK) != snext) {
-> +				kimage_print_block(&block);
-> +				total += block.len;
-> +				block.dst = dnext;
-> +				snext = block.src = entry & PAGE_MASK;
-> +				block.len = 0;
-> +			}
-> +			dnext += PAGE_SIZE;
-> +			snext += PAGE_SIZE;
-> +			block.len += PAGE_SIZE;
-> +		}
-> +
-> +		if (entry & IND_INDIRECTION) {
-> +			pr_info("Indirection page 0x%lx\n", entry & PAGE_MASK);
-> +			ptr = phys_to_virt(entry & PAGE_MASK);
-> +		} else
-> +			ptr++;
-> +	}
-> +	if (block.len) {
-> +		kimage_print_block(&block);
-> +		total += block.len;
-> +	}
-> +	pr_info("Total: 0x%lx/%ld bytes\n", total, total);
-> +}
-> +#else
-> +static inline void kimage_print(const struct kimage *image) {}
-> +#endif
-> +
->  void crash_kexec(struct pt_regs *regs)
+>  EXPORT_SYMBOL_GPL(rcu_idle_enter);
+> @@ -478,7 +478,7 @@ void rcu_irq_exit(void)
+>  	struct rcu_dynticks *rdtp;
+> 
+>  	local_irq_save(flags);
+> -	rdtp = &__get_cpu_var(rcu_dynticks);
+> +	rdtp = this_cpu_ptr(&rcu_dynticks);
+>  	oldval = rdtp->dynticks_nesting;
+>  	rdtp->dynticks_nesting--;
+>  	WARN_ON_ONCE(rdtp->dynticks_nesting < 0);
+> @@ -528,7 +528,7 @@ static void rcu_eqs_exit(bool user)
+>  	struct rcu_dynticks *rdtp;
+>  	long long oldval;
+> 
+> -	rdtp = &__get_cpu_var(rcu_dynticks);
+> +	rdtp = this_cpu_ptr(&rcu_dynticks);
+>  	oldval = rdtp->dynticks_nesting;
+>  	WARN_ON_ONCE(oldval < 0);
+>  	if (oldval & DYNTICK_TASK_NEST_MASK)
+> @@ -555,7 +555,7 @@ void rcu_idle_exit(void)
+> 
+>  	local_irq_save(flags);
+>  	rcu_eqs_exit(false);
+> -	rcu_sysidle_exit(&__get_cpu_var(rcu_dynticks), 0);
+> +	rcu_sysidle_exit(this_cpu_ptr(&rcu_dynticks), 0);
+>  	local_irq_restore(flags);
+>  }
+>  EXPORT_SYMBOL_GPL(rcu_idle_exit);
+> @@ -599,7 +599,7 @@ void rcu_irq_enter(void)
+>  	long long oldval;
+> 
+>  	local_irq_save(flags);
+> -	rdtp = &__get_cpu_var(rcu_dynticks);
+> +	rdtp = this_cpu_ptr(&rcu_dynticks);
+>  	oldval = rdtp->dynticks_nesting;
+>  	rdtp->dynticks_nesting++;
+>  	WARN_ON_ONCE(rdtp->dynticks_nesting == 0);
+> @@ -620,7 +620,7 @@ void rcu_irq_enter(void)
+>   */
+>  void rcu_nmi_enter(void)
 >  {
->  	/* Take the kexec_mutex here to prevent sys_kexec_load
-> @@ -1090,6 +1164,7 @@ void crash_kexec(struct pt_regs *regs)
->  			crash_setup_regs(&fixed_regs, regs);
->  			crash_save_vmcoreinfo();
->  			machine_crash_shutdown(&fixed_regs);
-> +			kimage_print(kexec_crash_image);
->  			machine_kexec(kexec_crash_image);
->  		}
->  		mutex_unlock(&kexec_mutex);
-> @@ -1680,6 +1755,7 @@ int kernel_kexec(void)
->  		machine_shutdown();
->  	}
->  
-> +	kimage_print(kexec_image);
->  	machine_kexec(kexec_image);
->  
->  #ifdef CONFIG_KEXEC_JUMP
+> -	struct rcu_dynticks *rdtp = &__get_cpu_var(rcu_dynticks);
+> +	struct rcu_dynticks *rdtp = this_cpu_ptr(&rcu_dynticks);
+> 
+>  	if (rdtp->dynticks_nmi_nesting == 0 &&
+>  	    (atomic_read(&rdtp->dynticks) & 0x1))
+> @@ -642,7 +642,7 @@ void rcu_nmi_enter(void)
+>   */
+>  void rcu_nmi_exit(void)
+>  {
+> -	struct rcu_dynticks *rdtp = &__get_cpu_var(rcu_dynticks);
+> +	struct rcu_dynticks *rdtp = this_cpu_ptr(&rcu_dynticks);
+> 
+>  	if (rdtp->dynticks_nmi_nesting == 0 ||
+>  	    --rdtp->dynticks_nmi_nesting != 0)
+> @@ -665,7 +665,7 @@ int rcu_is_cpu_idle(void)
+>  	int ret;
+> 
+>  	preempt_disable();
+> -	ret = (atomic_read(&__get_cpu_var(rcu_dynticks).dynticks) & 0x1) == 0;
+> +	ret = (atomic_read(this_cpu_ptr(&rcu_dynticks.dynticks)) & 0x1) == 0;
+>  	preempt_enable();
+>  	return ret;
+>  }
+> @@ -703,7 +703,7 @@ bool rcu_lockdep_current_cpu_online(void
+>  	if (in_nmi())
+>  		return 1;
+>  	preempt_disable();
+> -	rdp = &__get_cpu_var(rcu_sched_data);
+> +	rdp = this_cpu_ptr(&rcu_sched_data);
+>  	rnp = rdp->mynode;
+>  	ret = (rdp->grpmask & rnp->qsmaskinit) ||
+>  	      !rcu_scheduler_fully_active;
+> @@ -723,7 +723,7 @@ EXPORT_SYMBOL_GPL(rcu_lockdep_current_cp
+>   */
+>  static int rcu_is_cpu_rrupt_from_idle(void)
+>  {
+> -	return __get_cpu_var(rcu_dynticks).dynticks_nesting <= 1;
+> +	return __this_cpu_read(rcu_dynticks.dynticks_nesting) <= 1;
+>  }
+> 
+>  /*
+> Index: linux/kernel/rcutree_plugin.h
+> ===================================================================
+> --- linux.orig/kernel/rcutree_plugin.h	2013-10-14 10:55:57.747107834 -0500
+> +++ linux/kernel/rcutree_plugin.h	2013-10-14 10:55:57.747107834 -0500
+> @@ -660,7 +660,7 @@ static void rcu_preempt_check_callbacks(
+> 
+>  static void rcu_preempt_do_callbacks(void)
+>  {
+> -	rcu_do_batch(&rcu_preempt_state, &__get_cpu_var(rcu_preempt_data));
+> +	rcu_do_batch(&rcu_preempt_state, this_cpu_ptr(&rcu_preempt_data));
+>  }
+> 
+>  #endif /* #ifdef CONFIG_RCU_BOOST */
+> @@ -1332,7 +1332,7 @@ static void invoke_rcu_callbacks_kthread
+>   */
+>  static bool rcu_is_callbacks_kthread(void)
+>  {
+> -	return __get_cpu_var(rcu_cpu_kthread_task) == current;
+> +	return __this_cpu_read(rcu_cpu_kthread_task) == current;
+>  }
+> 
+>  #define RCU_BOOST_DELAY_JIFFIES DIV_ROUND_UP(CONFIG_RCU_BOOST_DELAY * HZ, 1000)
+> @@ -1382,8 +1382,8 @@ static int rcu_spawn_one_boost_kthread(s
+> 
+>  static void rcu_kthread_do_work(void)
+>  {
+> -	rcu_do_batch(&rcu_sched_state, &__get_cpu_var(rcu_sched_data));
+> -	rcu_do_batch(&rcu_bh_state, &__get_cpu_var(rcu_bh_data));
+> +	rcu_do_batch(&rcu_sched_state, this_cpu_ptr(&rcu_sched_data));
+> +	rcu_do_batch(&rcu_bh_state, this_cpu_ptr(&rcu_bh_data));
+>  	rcu_preempt_do_callbacks();
+>  }
+> 
+> @@ -1402,7 +1402,7 @@ static void rcu_cpu_kthread_park(unsigne
+> 
+>  static int rcu_cpu_kthread_should_run(unsigned int cpu)
+>  {
+> -	return __get_cpu_var(rcu_cpu_has_work);
+> +	return __this_cpu_read(rcu_cpu_has_work);
+>  }
+> 
+>  /*
+> @@ -1412,8 +1412,8 @@ static int rcu_cpu_kthread_should_run(un
+>   */
+>  static void rcu_cpu_kthread(unsigned int cpu)
+>  {
+> -	unsigned int *statusp = &__get_cpu_var(rcu_cpu_kthread_status);
+> -	char work, *workp = &__get_cpu_var(rcu_cpu_has_work);
+> +	unsigned int *statusp = this_cpu_ptr(&rcu_cpu_kthread_status);
+> +	char work, *workp = this_cpu_ptr(&rcu_cpu_has_work);
+>  	int spincnt;
+> 
+>  	for (spincnt = 0; spincnt < 10; spincnt++) {
+> 
+
