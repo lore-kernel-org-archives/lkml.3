@@ -1,104 +1,302 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933304Ab3JOQVU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 12:21:20 -0400
-Received: from smtprelay0046.hostedemail.com ([216.40.44.46]:59299 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932510Ab3JOQVS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 12:21:18 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:421:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:1801:2198:2199:2393:2559:2562:2828:2900:3138:3139:3140:3141:3142:3355:3622:3743:3834:3865:3866:3867:3868:3870:3871:3872:3873:3874:4321:4560:4605:5007:6119:6691:7652:7809:7903:7904:8603:9121:10004:10394:10400:10848:11026:11232:11233:11473:11658:11914:12043:12296:12517:12519:12555:12740:13095:13161:13229,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: cub15_a8967d9d6e27
-X-Filterd-Recvd-Size: 3932
-Message-ID: <1381854064.22110.16.camel@joe-AO722>
-Subject: Re: [PATCH] x86: Run checksumming in parallel accross multiple alu's
-From: Joe Perches <joe@perches.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Neil Horman <nhorman@tuxdriver.com>,
-        linux-kernel@vger.kernel.org, sebastien.dugue@bull.net,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
-Date: Tue, 15 Oct 2013 09:21:04 -0700
-In-Reply-To: <20131015074123.GB25493@gmail.com>
-References: <1381510298-20572-1-git-send-email-nhorman@tuxdriver.com>
-	 <20131012172124.GA18241@gmail.com>
-	 <20131014202854.GH26880@hmsreliant.think-freely.org>
-	 <1381785560.2045.11.camel@edumazet-glaptop.roam.corp.google.com>
-	 <1381789127.2045.22.camel@edumazet-glaptop.roam.corp.google.com>
-	 <1381790278.16896.2.camel@joe-AO722>
-	 <1381790686.2045.24.camel@edumazet-glaptop.roam.corp.google.com>
-	 <1381790982.16896.7.camel@joe-AO722> <20131015074123.GB25493@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S933178Ab3JOQXJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 12:23:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58909 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932510Ab3JOQXI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 12:23:08 -0400
+Date: Tue, 15 Oct 2013 12:22:37 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: dave.hansen@linux.intel.com, eranian@google.com, ak@linux.intel.com,
+        jmario@redhat.com, linux-kernel@vger.kernel.org, acme@infradead.org
+Subject: Re: x86, perf: throttling issues with long nmi latencies
+Message-ID: <20131015162237.GB227855@redhat.com>
+References: <20131014203549.GY227855@redhat.com>
+ <20131015101404.GD10651@twins.programming.kicks-ass.net>
+ <20131015130226.GX26785@twins.programming.kicks-ass.net>
+ <20131015143227.GY26785@twins.programming.kicks-ass.net>
+ <20131015150736.GZ26785@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131015150736.GZ26785@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-10-15 at 09:41 +0200, Ingo Molnar wrote:
-> * Joe Perches <joe@perches.com> wrote:
-> 
-> > On Mon, 2013-10-14 at 15:44 -0700, Eric Dumazet wrote:
-> > > On Mon, 2013-10-14 at 15:37 -0700, Joe Perches wrote:
-> > > > On Mon, 2013-10-14 at 15:18 -0700, Eric Dumazet wrote:
-> > > > > attached patch brings much better results
-> > > > > 
-> > > > > lpq83:~# ./netperf -H 7.7.8.84 -l 10 -Cc
-> > > > > MIGRATED TCP STREAM TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to 7.7.8.84 () port 0 AF_INET
-> > > > > Recv   Send    Send                          Utilization       Service Demand
-> > > > > Socket Socket  Message  Elapsed              Send     Recv     Send    Recv
-> > > > > Size   Size    Size     Time     Throughput  local    remote   local   remote
-> > > > > bytes  bytes   bytes    secs.    10^6bits/s  % S      % S      us/KB   us/KB
-> > > > > 
-> > > > >  87380  16384  16384    10.00      8043.82   2.32     5.34     0.566   1.304  
-> > > > > 
-> > > > > diff --git a/arch/x86/lib/csum-partial_64.c b/arch/x86/lib/csum-partial_64.c
-> > > > []
-> > > > > @@ -68,7 +68,8 @@ static unsigned do_csum(const unsigned char *buff, unsigned len)
-> > > > >  			zero = 0;
-> > > > >  			count64 = count >> 3;
-> > > > >  			while (count64) { 
-> > > > > -				asm("addq 0*8(%[src]),%[res]\n\t"
-> > > > > +				asm("prefetch 5*64(%[src])\n\t"
-> > > > 
-> > > > Might the prefetch size be too big here?
-> > > 
-> > > To be effective, you need to prefetch well ahead of time.
+On Tue, Oct 15, 2013 at 05:07:36PM +0200, Peter Zijlstra wrote:
+> On Tue, Oct 15, 2013 at 04:32:27PM +0200, Peter Zijlstra wrote:
 > > 
-> > No doubt.
+> > This one seems to actually work and is somewhat simpler.
 > 
-> So why did you ask then?
+> And here's some hackery to avoid that atomic page inc frobbery.
+
+Hmm, for some reason, I did not see much noticable improvement (over your
+second patch) with this patch. :-(  Not to say it doesn't improve things,
+I just don't have hard numbers to see if it is a small percentage better
+or not.
+
+Cheers,
+Don
+
 > 
-> > > 5*64 seems common practice (check arch/x86/lib/copy_page_64.S)
-> > 
-> > 5 cachelines for some processors seems like a lot.
+> ---
+>  lib/usercopy.c |   12 ++++++++--
+>  mm/gup.c       |   63 ++++++++++++++++++++++++++++++++++++---------------------
+>  2 files changed, 49 insertions(+), 26 deletions(-)
 > 
-> What processors would that be?
-
-The ones where conservatism in L1 cache use is good
-because there are multiple threads running concurrently.
-
-> Most processors have hundreds of cachelines even in their L1 cache. 
-
-And sometimes that many executable processes too.
-
-> Thousands in the L2 cache, up to hundreds of thousands.
-
-Irrelevant because prefetch doesn't apply there.
-
-Ingo, Eric _showed_ that the prefetch is good here.
-How about looking at a little optimization to the minimal
-prefetch that gives that level of performance.
-
-You could argue that prefetching PAGE_SIZE or larger
-would be better still otherwise.
-
-I suspect that using a smaller multiple of
-L1_CACHE_BYTES like 2 or 3 would perform the same.
-
-The last time it was looked at for copy_page_64.S was
-quite awhile ago.  It looks like maybe 2003.
-
-
+> --- a/arch/x86/lib/usercopy.c
+> +++ b/arch/x86/lib/usercopy.c
+> @@ -10,6 +10,8 @@
+>  #include <asm/word-at-a-time.h>
+>  #include <linux/sched.h>
+>  
+> +extern int ___get_user_pages_fast(unsigned long start, int nr_pages, int flags,
+> +			  struct page **pages);
+>  /*
+>   * best effort, GUP based copy_from_user() that is NMI-safe
+>   */
+> @@ -18,6 +20,7 @@ copy_from_user_nmi(void *to, const void
+>  {
+>  	unsigned long offset, addr = (unsigned long)from;
+>  	unsigned long size, len = 0;
+> +	unsigned long flags;
+>  	struct page *page;
+>  	void *map;
+>  	int ret;
+> @@ -26,9 +29,12 @@ copy_from_user_nmi(void *to, const void
+>  		return len;
+>  
+>  	do {
+> -		ret = __get_user_pages_fast(addr, 1, 0, &page);
+> -		if (!ret)
+> +		local_irq_save(flags);
+> +		ret = ___get_user_pages_fast(addr, 1, 0, &page);
+> +		if (!ret) {
+> +			local_irq_restore(flags);
+>  			break;
+> +		}
+>  
+>  		offset = addr & (PAGE_SIZE - 1);
+>  		size = min(PAGE_SIZE - offset, n - len);
+> @@ -36,7 +42,7 @@ copy_from_user_nmi(void *to, const void
+>  		map = kmap_atomic(page);
+>  		memcpy(to, map+offset, size);
+>  		kunmap_atomic(map);
+> -		put_page(page);
+> +		local_irq_restore(flags);
+>  
+>  		len  += size;
+>  		to   += size;
+> --- a/arch/x86/mm/gup.c
+> +++ b/arch/x86/mm/gup.c
+> @@ -63,19 +63,22 @@ static inline pte_t gup_get_pte(pte_t *p
+>  #endif
+>  }
+>  
+> +#define GUPF_GET	0x01
+> +#define GUPF_WRITE	0x02
+> +
+>  /*
+>   * The performance critical leaf functions are made noinline otherwise gcc
+>   * inlines everything into a single function which results in too much
+>   * register pressure.
+>   */
+>  static noinline int gup_pte_range(pmd_t pmd, unsigned long addr,
+> -		unsigned long end, int write, struct page **pages, int *nr)
+> +		unsigned long end, int flags, struct page **pages, int *nr)
+>  {
+>  	unsigned long mask;
+>  	pte_t *ptep;
+>  
+>  	mask = _PAGE_PRESENT|_PAGE_USER;
+> -	if (write)
+> +	if (flags & GUPF_WRITE)
+>  		mask |= _PAGE_RW;
+>  
+>  	ptep = pte_offset_map(&pmd, addr);
+> @@ -89,7 +92,8 @@ static noinline int gup_pte_range(pmd_t
+>  		}
+>  		VM_BUG_ON(!pfn_valid(pte_pfn(pte)));
+>  		page = pte_page(pte);
+> -		get_page(page);
+> +		if (flags & GUPF_GET)
+> +			get_page(page);
+>  		SetPageReferenced(page);
+>  		pages[*nr] = page;
+>  		(*nr)++;
+> @@ -109,7 +113,7 @@ static inline void get_head_page_multipl
+>  }
+>  
+>  static noinline int gup_huge_pmd(pmd_t pmd, unsigned long addr,
+> -		unsigned long end, int write, struct page **pages, int *nr)
+> +		unsigned long end, int flags, struct page **pages, int *nr)
+>  {
+>  	unsigned long mask;
+>  	pte_t pte = *(pte_t *)&pmd;
+> @@ -117,7 +121,7 @@ static noinline int gup_huge_pmd(pmd_t p
+>  	int refs;
+>  
+>  	mask = _PAGE_PRESENT|_PAGE_USER;
+> -	if (write)
+> +	if (flags & GUPF_WRITE)
+>  		mask |= _PAGE_RW;
+>  	if ((pte_flags(pte) & mask) != mask)
+>  		return 0;
+> @@ -131,19 +135,20 @@ static noinline int gup_huge_pmd(pmd_t p
+>  	do {
+>  		VM_BUG_ON(compound_head(page) != head);
+>  		pages[*nr] = page;
+> -		if (PageTail(page))
+> +		if ((flags & GUPF_GET) && PageTail(page))
+>  			get_huge_page_tail(page);
+>  		(*nr)++;
+>  		page++;
+>  		refs++;
+>  	} while (addr += PAGE_SIZE, addr != end);
+> -	get_head_page_multiple(head, refs);
+> +	if (flags & GUPF_GET)
+> +		get_head_page_multiple(head, refs);
+>  
+>  	return 1;
+>  }
+>  
+>  static int gup_pmd_range(pud_t pud, unsigned long addr, unsigned long end,
+> -		int write, struct page **pages, int *nr)
+> +		int flags, struct page **pages, int *nr)
+>  {
+>  	unsigned long next;
+>  	pmd_t *pmdp;
+> @@ -167,10 +172,10 @@ static int gup_pmd_range(pud_t pud, unsi
+>  		if (pmd_none(pmd) || pmd_trans_splitting(pmd))
+>  			return 0;
+>  		if (unlikely(pmd_large(pmd))) {
+> -			if (!gup_huge_pmd(pmd, addr, next, write, pages, nr))
+> +			if (!gup_huge_pmd(pmd, addr, next, flags, pages, nr))
+>  				return 0;
+>  		} else {
+> -			if (!gup_pte_range(pmd, addr, next, write, pages, nr))
+> +			if (!gup_pte_range(pmd, addr, next, flags, pages, nr))
+>  				return 0;
+>  		}
+>  	} while (pmdp++, addr = next, addr != end);
+> @@ -179,7 +184,7 @@ static int gup_pmd_range(pud_t pud, unsi
+>  }
+>  
+>  static noinline int gup_huge_pud(pud_t pud, unsigned long addr,
+> -		unsigned long end, int write, struct page **pages, int *nr)
+> +		unsigned long end, int flags, struct page **pages, int *nr)
+>  {
+>  	unsigned long mask;
+>  	pte_t pte = *(pte_t *)&pud;
+> @@ -187,7 +192,7 @@ static noinline int gup_huge_pud(pud_t p
+>  	int refs;
+>  
+>  	mask = _PAGE_PRESENT|_PAGE_USER;
+> -	if (write)
+> +	if (flags & GUPF_WRITE)
+>  		mask |= _PAGE_RW;
+>  	if ((pte_flags(pte) & mask) != mask)
+>  		return 0;
+> @@ -201,19 +206,20 @@ static noinline int gup_huge_pud(pud_t p
+>  	do {
+>  		VM_BUG_ON(compound_head(page) != head);
+>  		pages[*nr] = page;
+> -		if (PageTail(page))
+> +		if ((flags & GUPF_GET) && PageTail(page))
+>  			get_huge_page_tail(page);
+>  		(*nr)++;
+>  		page++;
+>  		refs++;
+>  	} while (addr += PAGE_SIZE, addr != end);
+> -	get_head_page_multiple(head, refs);
+> +	if (flags & GUPF_GET)
+> +		get_head_page_multiple(head, refs);
+>  
+>  	return 1;
+>  }
+>  
+>  static int gup_pud_range(pgd_t pgd, unsigned long addr, unsigned long end,
+> -			int write, struct page **pages, int *nr)
+> +			int flags, struct page **pages, int *nr)
+>  {
+>  	unsigned long next;
+>  	pud_t *pudp;
+> @@ -226,10 +232,10 @@ static int gup_pud_range(pgd_t pgd, unsi
+>  		if (pud_none(pud))
+>  			return 0;
+>  		if (unlikely(pud_large(pud))) {
+> -			if (!gup_huge_pud(pud, addr, next, write, pages, nr))
+> +			if (!gup_huge_pud(pud, addr, next, flags, pages, nr))
+>  				return 0;
+>  		} else {
+> -			if (!gup_pmd_range(pud, addr, next, write, pages, nr))
+> +			if (!gup_pmd_range(pud, addr, next, flags, pages, nr))
+>  				return 0;
+>  		}
+>  	} while (pudp++, addr = next, addr != end);
+> @@ -241,13 +247,12 @@ static int gup_pud_range(pgd_t pgd, unsi
+>   * Like get_user_pages_fast() except its IRQ-safe in that it won't fall
+>   * back to the regular GUP.
+>   */
+> -int __get_user_pages_fast(unsigned long start, int nr_pages, int write,
+> +int ___get_user_pages_fast(unsigned long start, int nr_pages, int flags,
+>  			  struct page **pages)
+>  {
+>  	struct mm_struct *mm = current->mm;
+>  	unsigned long addr, len, end;
+>  	unsigned long next;
+> -	unsigned long flags;
+>  	pgd_t *pgdp;
+>  	int nr = 0;
+>  
+> @@ -255,7 +260,7 @@ int __get_user_pages_fast(unsigned long
+>  	addr = start;
+>  	len = (unsigned long) nr_pages << PAGE_SHIFT;
+>  	end = start + len;
+> -	if (unlikely(!access_ok(write ? VERIFY_WRITE : VERIFY_READ,
+> +	if (unlikely(!access_ok((flags & GUPF_WRITE) ? VERIFY_WRITE : VERIFY_READ,
+>  					(void __user *)start, len)))
+>  		return 0;
+>  
+> @@ -277,7 +282,6 @@ int __get_user_pages_fast(unsigned long
+>  	 * (which we do on x86, with the above PAE exception), we can follow the
+>  	 * address down to the the page and take a ref on it.
+>  	 */
+> -	local_irq_save(flags);
+>  	pgdp = pgd_offset(mm, addr);
+>  	do {
+>  		pgd_t pgd = *pgdp;
+> @@ -285,14 +289,27 @@ int __get_user_pages_fast(unsigned long
+>  		next = pgd_addr_end(addr, end);
+>  		if (pgd_none(pgd))
+>  			break;
+> -		if (!gup_pud_range(pgd, addr, next, write, pages, &nr))
+> +		if (!gup_pud_range(pgd, addr, next, flags, pages, &nr))
+>  			break;
+>  	} while (pgdp++, addr = next, addr != end);
+> -	local_irq_restore(flags);
+>  
+>  	return nr;
+>  }
+>  
+> +int __get_user_pages_fast(unsigned long start, int nr_pages, int write,
+> +			  struct page **pages)
+> +{
+> +	unsigned long flags;
+> +	int ret;
+> +
+> +	local_irq_save(flags);
+> +	ret = ___get_user_pages_fast(start, nr_pages,
+> +			GUPF_GET | (write ? GUPF_WRITE : 0), pages);
+> +	local_irq_restore(flags);
+> +
+> +	return ret;
+> +}
+> +
+>  /**
+>   * get_user_pages_fast() - pin user pages in memory
+>   * @start:	starting user address
