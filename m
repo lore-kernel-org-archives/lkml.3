@@ -1,120 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751140Ab3JOEG2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 00:06:28 -0400
+	id S1751009Ab3JOEG1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 00:06:27 -0400
 Received: from mga09.intel.com ([134.134.136.24]:56768 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750897Ab3JOEGZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1750869Ab3JOEGZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Oct 2013 00:06:25 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,496,1378882800"; 
-   d="scan'208";a="392987154"
+   d="scan'208";a="392987153"
 From: Kuppuswamy Sathyanarayanan 
 	<sathyanarayanan.kuppuswamy@linux.intel.com>
 To: platform-driver-x86@vger.kernel.org
 Cc: matthew.garrett@nebula.com, linux-kernel@vger.kernel.org,
         sathyanarayanan.kuppuswamy@linux.intel.com
-Subject: [PATCH v2 1/3] ipc: Added platform data structure
-Date: Mon, 14 Oct 2013 21:06:22 -0700
-Message-Id: <0036c5858ab72c69c1df28815eb673c3125ed1ec.1381809435.git.sathyanarayanan.kuppuswamy@linux.intel.com>
+Subject: [PATCH v2 0/3] IPC driver patches
+Date: Mon, 14 Oct 2013 21:06:21 -0700
+Message-Id: <cover.1381809435.git.sathyanarayanan.kuppuswamy@linux.intel.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <cover.1381809435.git.sathyanarayanan.kuppuswamy@linux.intel.com>
-References: <cover.1381809435.git.sathyanarayanan.kuppuswamy@linux.intel.com>
-In-Reply-To: <cover.1381809435.git.sathyanarayanan.kuppuswamy@linux.intel.com>
-References: <cover.1381809435.git.sathyanarayanan.kuppuswamy@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the same ipc driver can be used by many platforms, using
-macros for defining ipc_base and i2c_base addresses is not
-a scalable approach. So added a platform data structure to pass
-this information.
+Following patches adds IPC support for addional intel platforms and adds
+support for IPC command interrupt mode.
 
-Signed-off-by: Kuppuswamy Sathyanarayanan <sathyanarayanan.kuppuswamy@linux.intel.com>
----
- drivers/platform/x86/intel_scu_ipc.c |   37 ++++++++++++++++++++++++++--------
- 1 file changed, 29 insertions(+), 8 deletions(-)
+Please let me know your review comments.
 
-diff --git a/drivers/platform/x86/intel_scu_ipc.c b/drivers/platform/x86/intel_scu_ipc.c
-index 9215ed7..93c1b57 100644
---- a/drivers/platform/x86/intel_scu_ipc.c
-+++ b/drivers/platform/x86/intel_scu_ipc.c
-@@ -58,12 +58,29 @@
-  *    message handler is called within firmware.
-  */
- 
--#define IPC_BASE_ADDR     0xFF11C000	/* IPC1 base register address */
--#define IPC_MAX_ADDR      0x100		/* Maximum IPC regisers */
- #define IPC_WWBUF_SIZE    20		/* IPC Write buffer Size */
- #define IPC_RWBUF_SIZE    20		/* IPC Read buffer Size */
--#define IPC_I2C_BASE      0xFF12B000	/* I2C control register base address */
--#define IPC_I2C_MAX_ADDR  0x10		/* Maximum I2C regisers */
-+
-+enum {
-+	SCU_IPC_LINCROFT,
-+};
-+
-+/* intel scu ipc driver data*/
-+struct intel_scu_ipc_pdata_t {
-+	u32 ipc_base;
-+	u32 i2c_base;
-+	u32 ipc_len;
-+	u32 i2c_len;
-+};
-+
-+static struct intel_scu_ipc_pdata_t intel_scu_ipc_pdata[] = {
-+	[SCU_IPC_LINCROFT] = {
-+		.ipc_base = 0xff11c000,
-+		.i2c_base = 0xff12b000,
-+		.ipc_len = 0x100,
-+		.i2c_len = 0x10,
-+	},
-+};
- 
- static int ipc_probe(struct pci_dev *dev, const struct pci_device_id *id);
- static void ipc_remove(struct pci_dev *pdev);
-@@ -504,12 +521,16 @@ static irqreturn_t ioc(int irq, void *dev_id)
-  */
- static int ipc_probe(struct pci_dev *dev, const struct pci_device_id *id)
- {
--	int err;
-+	int err, pid;
-+	struct intel_scu_ipc_pdata_t *pdata;
- 	resource_size_t pci_resource;
- 
- 	if (ipcdev.pdev)		/* We support only one SCU */
- 		return -EBUSY;
- 
-+	pid = id->driver_data;
-+	pdata = &intel_scu_ipc_pdata[pid];
-+
- 	ipcdev.pdev = pci_dev_get(dev);
- 
- 	err = pci_enable_device(dev);
-@@ -527,11 +548,11 @@ static int ipc_probe(struct pci_dev *dev, const struct pci_device_id *id)
- 	if (request_irq(dev->irq, ioc, 0, "intel_scu_ipc", &ipcdev))
- 		return -EBUSY;
- 
--	ipcdev.ipc_base = ioremap_nocache(IPC_BASE_ADDR, IPC_MAX_ADDR);
-+	ipcdev.ipc_base = ioremap_nocache(pdata->ipc_base, pdata->ipc_len);
- 	if (!ipcdev.ipc_base)
- 		return -ENOMEM;
- 
--	ipcdev.i2c_base = ioremap_nocache(IPC_I2C_BASE, IPC_I2C_MAX_ADDR);
-+	ipcdev.i2c_base = ioremap_nocache(pdata->i2c_base, pdata->i2c_len);
- 	if (!ipcdev.i2c_base) {
- 		iounmap(ipcdev.ipc_base);
- 		return -ENOMEM;
-@@ -564,7 +585,7 @@ static void ipc_remove(struct pci_dev *pdev)
- }
- 
- static DEFINE_PCI_DEVICE_TABLE(pci_ids) = {
--	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x082a)},
-+	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x082a), SCU_IPC_LINCROFT},
- 	{ 0,}
- };
- MODULE_DEVICE_TABLE(pci, pci_ids);
+Diff between v1 - v2 is,
+
+- Updated the help content for CONFIG_INTEL_SCU_IPC_INTR_MODE and
+  CONFIG_INTEL_SCU_IPC_POLL_MODE
+- Updated the commit summary
+
+
+Kuppuswamy Sathyanarayanan (3):
+  ipc: Added platform data structure
+  ipc: Enabled ipc support for additional intel platforms
+  ipc: Added support for IPC interrupt mode
+
+ drivers/platform/x86/Kconfig         |   23 +++++++
+ drivers/platform/x86/intel_scu_ipc.c |  114 ++++++++++++++++++++++++++++++----
+ 2 files changed, 126 insertions(+), 11 deletions(-)
+
 -- 
 1.7.9.5
 
