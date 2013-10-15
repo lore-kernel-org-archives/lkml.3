@@ -1,49 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932799Ab3JOMDd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 08:03:33 -0400
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:38405 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932358Ab3JOMDb (ORCPT
+	id S932384Ab3JOL6H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 07:58:07 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:62885 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758858Ab3JOL6D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 08:03:31 -0400
+	Tue, 15 Oct 2013 07:58:03 -0400
+From: Kefeng Wang <wangkefeng.wang@huawei.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        "Stephen Hemminger" <stephen@networkplumber.org>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Francois Romieu <romieu@fr.zoreil.com>,
+        "Ben Hutchings" <bhutchings@solarflare.com>,
+        Chas Williams <chas@cmf.nrl.navy.mil>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Samuel Ortiz <samuel@sortiz.org>, Paul Mackerras <paulus@samba.org>,
+        Oliver Neukum <oneukum@suse.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "Boris Ostrovsky" <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>, <netfilter@vger.kernel.org>,
+        <netdev@vger.kernel.org>, <linux-wireless@vger.kernel.org>,
+        <guohanjun@huawei.com>
+Subject: [PATCH 14/18] net: usb: use wrapper functions of net_ratelimit() to simplify code
+Date: Tue, 15 Oct 2013 19:45:10 +0800
+Message-ID: <1381837514-50660-15-git-send-email-wangkefeng.wang@huawei.com>
+X-Mailer: git-send-email 1.8.3.msysgit.0
+In-Reply-To: <1381837514-50660-1-git-send-email-wangkefeng.wang@huawei.com>
+References: <1381837514-50660-1-git-send-email-wangkefeng.wang@huawei.com>
 MIME-Version: 1.0
-In-Reply-To: <20131015114812.GY2443@sirena.org.uk>
-References: <1381813438-5386-1-git-send-email-yizhang@marvell.com>
-	<20131015114812.GY2443@sirena.org.uk>
-Date: Tue, 15 Oct 2013 20:03:28 +0800
-Message-ID: <CAK=oMXfMAafBcFOF=Ct2_ZfYNY6eYW7oHV4kBeQA=hUSf5VnPw@mail.gmail.com>
-Subject: Re: [PATCH] regmap: irq: clear status when disable irq
-From: Yi Zhang <yizhang.mrvl@gmail.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Yi Zhang <yizhang@marvell.com>, zhouqiao@marvell.com, zhangwm@marvell.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Originating-IP: [10.135.68.221]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/10/15 Mark Brown <broonie@kernel.org>:
-> On Tue, Oct 15, 2013 at 01:03:58PM +0800, Yi Zhang wrote:
->
->> +                     bits_length = d->map->format.val_bytes * BITS_PER_BYTE;
->> +                     for (j = 0; j < bits_length; j++) {
->> +                             d->mask_buf[i] &= (0x1 << j);
-Yes, this line is wrong, I shouldn't change the mask_buf; I'll change it;
-my fault; sorry;
->> +                             if (!d->mask_buf[i])
->> +                                     ret = regmap_update_bits(d->map, reg,
->> +                                                              (0x1 << j), 0);
->> +                             if (ret != 0)
->> +                                     dev_err(d->map->dev, "Failed to ack 0x%x: %d\n",
->> +                                             reg, ret);
->
-> I don't entirely understand this code - what's the loop doing?  It
-> looks like it's trying to acknowledge things bit by bit but it's doing
-> this by updating mask_buf so it looks like it'll corrupt the set of
-> masked interrupts.  After the zeroth iteration any bits other than bit 0
-> should get cleared by the &= (0x1 << j).  I'd have expected to just
-> write mask_buf back or something similar.
->
-> It's possible I'm missing something here but if that is the case perhaps
-> some comments would be good.
+net_ratelimited_function() is called to simplify code.
+
+Signed-off-by: Kefeng Wang <wangkefeng.wang@huawei.com>
+---
+ drivers/net/usb/usbnet.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/usb/usbnet.c b/drivers/net/usb/usbnet.c
+index bf94e10..edf81de 100644
+--- a/drivers/net/usb/usbnet.c
++++ b/drivers/net/usb/usbnet.c
+@@ -450,8 +450,8 @@ void usbnet_defer_kevent (struct usbnet *dev, int work)
+ {
+ 	set_bit (work, &dev->flags);
+ 	if (!schedule_work (&dev->kevent)) {
+-		if (net_ratelimit())
+-			netdev_err(dev->net, "kevent %d may have been dropped\n", work);
++		net_ratelimited_function(netdev_err, dev->net,
++			"kevent %d may have been dropped\n", work);
+ 	} else {
+ 		netdev_dbg(dev->net, "kevent %d scheduled\n", work);
+ 	}
+-- 
+1.8.2.1
+
+
