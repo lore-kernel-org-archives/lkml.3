@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759711Ab3JOTW0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 15:22:26 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41368 "EHLO
+	id S1759665Ab3JOTWS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 15:22:18 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41362 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759630Ab3JOTWR (ORCPT
+	by vger.kernel.org with ESMTP id S1757481Ab3JOTWQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 15:22:17 -0400
+	Tue, 15 Oct 2013 15:22:16 -0400
 From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 To: broonie@kernel.org
 Cc: lgirdwood@gmail.com, lee.jones@linaro.org, sameo@linux.intel.org,
         linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
         Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Subject: [PATCH 3/3 v2] mfd: arizona: Specify supply mappings for Arizona CODECs
-Date: Tue, 15 Oct 2013 20:12:36 +0100
-Message-Id: <1381864356-26107-4-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+Subject: [PATCH 2/3 v2] mfd: Allow mapping regulator supplies to MFD device from children
+Date: Tue, 15 Oct 2013 20:12:35 +0100
+Message-Id: <1381864356-26107-3-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1381864356-26107-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 References: <1381864356-26107-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
@@ -22,109 +22,112 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The CODEC power supplies should be looked up on the Arizona device as
-they will be created here by device tree also update the only user of
-non-device tree bindings.
+Occasionally, it is useful to map supplies from a child device onto the
+MFD device. A typical usecase for this would be if the MFD device is
+represented as a single node in device tree. All supplies will be
+defined in device tree as existing on the MFD device. When a child
+depends on frameworks which might have no knowledge of MFD to lookup
+supplies on its behalf the supply will not be found.
+
+This patch adds a list of supplies that should be looked up on the
+parent rather than the child as part of the mfd_cell structure.
 
 Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 ---
- arch/arm/mach-s3c64xx/mach-crag6410.c |   12 ------------
- drivers/mfd/arizona-core.c            |   32 +++++++++++++++++++++++++++++---
- 2 files changed, 29 insertions(+), 15 deletions(-)
+ drivers/mfd/mfd-core.c   |   22 +++++++++++++++++-----
+ include/linux/mfd/core.h |    6 ++++++
+ 2 files changed, 23 insertions(+), 5 deletions(-)
 
-diff --git a/arch/arm/mach-s3c64xx/mach-crag6410.c b/arch/arm/mach-s3c64xx/mach-crag6410.c
-index eb8e5a1..f27ca3b 100644
---- a/arch/arm/mach-s3c64xx/mach-crag6410.c
-+++ b/arch/arm/mach-s3c64xx/mach-crag6410.c
-@@ -310,10 +310,6 @@ static struct regulator_consumer_supply wallvdd_consumers[] = {
+diff --git a/drivers/mfd/mfd-core.c b/drivers/mfd/mfd-core.c
+index f421586..adc8ea3 100644
+--- a/drivers/mfd/mfd-core.c
++++ b/drivers/mfd/mfd-core.c
+@@ -20,6 +20,7 @@
+ #include <linux/module.h>
+ #include <linux/irqdomain.h>
+ #include <linux/of.h>
++#include <linux/regulator/consumer.h>
  
- 	REGULATOR_SUPPLY("SPKVDDL", "spi0.1"),
- 	REGULATOR_SUPPLY("SPKVDDR", "spi0.1"),
--	REGULATOR_SUPPLY("SPKVDDL", "wm5102-codec"),
--	REGULATOR_SUPPLY("SPKVDDR", "wm5102-codec"),
--	REGULATOR_SUPPLY("SPKVDDL", "wm5110-codec"),
--	REGULATOR_SUPPLY("SPKVDDR", "wm5110-codec"),
+ static struct device_type mfd_dev_type = {
+ 	.name	= "mfd_device",
+@@ -99,6 +100,13 @@ static int mfd_add_device(struct device *parent, int id,
+ 	pdev->dev.dma_mask = parent->dma_mask;
+ 	pdev->dev.dma_parms = parent->dma_parms;
  
- 	REGULATOR_SUPPLY("DC1VDD", "0-0034"),
- 	REGULATOR_SUPPLY("DC2VDD", "0-0034"),
-@@ -653,14 +649,6 @@ static struct regulator_consumer_supply pvdd_1v8_consumers[] = {
- 	REGULATOR_SUPPLY("DBVDD3", "spi0.1"),
- 	REGULATOR_SUPPLY("LDOVDD", "spi0.1"),
- 	REGULATOR_SUPPLY("CPVDD", "spi0.1"),
--
--	REGULATOR_SUPPLY("DBVDD2", "wm5102-codec"),
--	REGULATOR_SUPPLY("DBVDD3", "wm5102-codec"),
--	REGULATOR_SUPPLY("CPVDD", "wm5102-codec"),
--
--	REGULATOR_SUPPLY("DBVDD2", "wm5110-codec"),
--	REGULATOR_SUPPLY("DBVDD3", "wm5110-codec"),
--	REGULATOR_SUPPLY("CPVDD", "wm5110-codec"),
- };
- 
- static struct regulator_init_data pvdd_1v8 = {
-diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
-index 5ac3aa4..022b186 100644
---- a/drivers/mfd/arizona-core.c
-+++ b/drivers/mfd/arizona-core.c
-@@ -569,13 +569,25 @@ static struct mfd_cell early_devs[] = {
- 	{ .name = "arizona-ldo1" },
- };
- 
-+static const char *wm5102_supplies[] = {
-+	"DBVDD2",
-+	"DBVDD3",
-+	"CPVDD",
-+	"SPKVDDL",
-+	"SPKVDDR",
-+};
++	ret = devm_regulator_bulk_register_supply_alias(
++			&pdev->dev, cell->parent_supplies,
++			parent, cell->parent_supplies,
++			cell->num_parent_supplies);
++	if (ret < 0)
++		goto fail_res;
 +
- static struct mfd_cell wm5102_devs[] = {
- 	{ .name = "arizona-micsupp" },
- 	{ .name = "arizona-extcon" },
- 	{ .name = "arizona-gpio" },
- 	{ .name = "arizona-haptics" },
- 	{ .name = "arizona-pwm" },
--	{ .name = "wm5102-codec" },
-+	{
-+		.name = "wm5102-codec",
-+		.parent_supplies = wm5102_supplies,
-+		.num_parent_supplies = ARRAY_SIZE(wm5102_supplies),
-+	},
- };
+ 	if (parent->of_node && cell->of_compatible) {
+ 		for_each_child_of_node(parent->of_node, np) {
+ 			if (of_device_is_compatible(np, cell->of_compatible)) {
+@@ -112,12 +120,12 @@ static int mfd_add_device(struct device *parent, int id,
+ 		ret = platform_device_add_data(pdev,
+ 					cell->platform_data, cell->pdata_size);
+ 		if (ret)
+-			goto fail_res;
++			goto fail_alias;
+ 	}
  
- static struct mfd_cell wm5110_devs[] = {
-@@ -584,7 +596,17 @@ static struct mfd_cell wm5110_devs[] = {
- 	{ .name = "arizona-gpio" },
- 	{ .name = "arizona-haptics" },
- 	{ .name = "arizona-pwm" },
--	{ .name = "wm5110-codec" },
-+	{
-+		.name = "wm5110-codec",
-+		.parent_supplies = wm5102_supplies,
-+		.num_parent_supplies = ARRAY_SIZE(wm5102_supplies),
-+	},
-+};
+ 	ret = mfd_platform_add_cell(pdev, cell);
+ 	if (ret)
+-		goto fail_res;
++		goto fail_alias;
+ 
+ 	for (r = 0; r < cell->num_resources; r++) {
+ 		res[r].name = cell->resources[r].name;
+@@ -152,17 +160,17 @@ static int mfd_add_device(struct device *parent, int id,
+ 		if (!cell->ignore_resource_conflicts) {
+ 			ret = acpi_check_resource_conflict(&res[r]);
+ 			if (ret)
+-				goto fail_res;
++				goto fail_alias;
+ 		}
+ 	}
+ 
+ 	ret = platform_device_add_resources(pdev, res, cell->num_resources);
+ 	if (ret)
+-		goto fail_res;
++		goto fail_alias;
+ 
+ 	ret = platform_device_add(pdev);
+ 	if (ret)
+-		goto fail_res;
++		goto fail_alias;
+ 
+ 	if (cell->pm_runtime_no_callbacks)
+ 		pm_runtime_no_callbacks(&pdev->dev);
+@@ -171,6 +179,10 @@ static int mfd_add_device(struct device *parent, int id,
+ 
+ 	return 0;
+ 
++fail_alias:
++	devm_regulator_bulk_unregister_supply_alias(&pdev->dev,
++						    cell->parent_supplies,
++						    cell->num_parent_supplies);
+ fail_res:
+ 	kfree(res);
+ fail_device:
+diff --git a/include/linux/mfd/core.h b/include/linux/mfd/core.h
+index cebe97e..7314fc4 100644
+--- a/include/linux/mfd/core.h
++++ b/include/linux/mfd/core.h
+@@ -59,6 +59,12 @@ struct mfd_cell {
+ 	 * pm_runtime_no_callbacks().
+ 	 */
+ 	bool			pm_runtime_no_callbacks;
 +
-+static const char *wm8997_supplies[] = {
-+	"DBVDD2",
-+	"CPVDD",
-+	"SPKVDD",
++	/* A list of regulator supplies that should be mapped to the MFD
++	 * device rather than the child device when requested
++	 */
++	const char		**parent_supplies;
++	int			num_parent_supplies;
  };
  
- static struct mfd_cell wm8997_devs[] = {
-@@ -593,7 +615,11 @@ static struct mfd_cell wm8997_devs[] = {
- 	{ .name = "arizona-gpio" },
- 	{ .name = "arizona-haptics" },
- 	{ .name = "arizona-pwm" },
--	{ .name = "wm8997-codec" },
-+	{
-+		.name = "wm8997-codec",
-+		.parent_supplies = wm8997_supplies,
-+		.num_parent_supplies = ARRAY_SIZE(wm8997_supplies),
-+	},
- };
- 
- int arizona_dev_init(struct arizona *arizona)
+ /*
 -- 
 1.7.2.5
 
