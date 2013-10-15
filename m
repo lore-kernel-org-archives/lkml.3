@@ -1,119 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759210Ab3JONQU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 09:16:20 -0400
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:59171 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758819Ab3JONQS (ORCPT
+	id S1759282Ab3JONQb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 09:16:31 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:34192 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759227Ab3JONQ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 09:16:18 -0400
-Date: Tue, 15 Oct 2013 09:16:13 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Zhang Yanfei <zhangyanfei.yes@gmail.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Toshi Kani <toshi.kani@hp.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH part2 v2 0/8] Arrange hotpluggable memory as ZONE_MOVABLE
-Message-ID: <20131015131613.GD3141@htj.dyndns.org>
-References: <525C02DC.4050706@gmail.com>
- <20131014145131.GJ4722@htj.dyndns.org>
- <525C0866.2010808@gmail.com>
- <20131014151902.GL4722@htj.dyndns.org>
- <525C0EFE.2010409@gmail.com>
- <CAE9FiQX0xeR61ehPy2SfWfN-fgSZVS=dtaWT-QQ+RR12tx+A0w@mail.gmail.com>
- <20131014200437.GA5720@htj.dyndns.org>
- <CAE9FiQXCG6gR-XL9fVudpNVEdS-3MHPObfWQ=Uf=q7pv33QBOA@mail.gmail.com>
- <20131014205540.GM4722@htj.dyndns.org>
- <CAE9FiQUtxKL255e7P8dgTL-WfzRik7dbu_MgGZ9SxVzdj=LfjA@mail.gmail.com>
+	Tue, 15 Oct 2013 09:16:29 -0400
+X-Auth-Info: RzXIvIN0P7/xwkS++gMBBbGW4fNJsYzAlz0dxOiHPA8=
+Date: Tue, 15 Oct 2013 15:16:06 +0200
+From: Gerhard Sittig <gsi@denx.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Kumar Gala <galak@kernel.crashing.org>,
+        Scott Wood <scottwood@freescale.com>,
+        "linuxppc-dev@lists.ozlabs.org list" <linuxppc-dev@lists.ozlabs.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Xie Xiaobo <X.Xie@freescale.com>
+Subject: Re: [PATCH] powerpc/qe_lib: Share the qe_lib for the others
+ architecture
+Message-ID: <20131015131606.GA2700@book.gsilab.sittig.org>
+Mail-Followup-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Kumar Gala <galak@kernel.crashing.org>,
+	Scott Wood <scottwood@freescale.com>,
+	"linuxppc-dev@lists.ozlabs.org list" <linuxppc-dev@lists.ozlabs.org>,
+	Linux Kernel list <linux-kernel@vger.kernel.org>,
+	Xie Xiaobo <X.Xie@freescale.com>
+References: <1381750622-1150-1-git-send-email-X.Xie@freescale.com>
+ <8559CF98-88E4-4271-A873-1409359EFE5C@kernel.crashing.org>
+ <3F4D4A39-3063-45F5-8B0E-3CD5F36B4035@kernel.crashing.org>
+ <20131014200952.GA20517@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAE9FiQUtxKL255e7P8dgTL-WfzRik7dbu_MgGZ9SxVzdj=LfjA@mail.gmail.com>
+In-Reply-To: <20131014200952.GA20517@kroah.com>
+Organization: DENX Software Engineering GmbH
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Yinghai.
-
-On Mon, Oct 14, 2013 at 07:25:55PM -0700, Yinghai Lu wrote:
-> > Wouldn't that amount be fairly static and restricted?  If you wanna
-> > chunk memory init anyway, there's no reason to init more than
-> > necessary until smp stage is reached.  The more you do early, the more
-> > serialized you're, so wouldn't the goal naturally be initing the
-> > minimum possible?
+On Mon, Oct 14, 2013 at 13:09 -0700, Greg Kroah-Hartman wrote:
 > 
-> Even we try to go minimum range instead of range that whole range on boot node,
-> without parsing srat at first, the minimum range could be crossed the boundary
-> of nodes.
-
-I guess it depends on how much is the minimum we're talking about, but
-let's say it isn't multiple orders of magnitude larger than the kernel
-image.  That shouldn't be a problem then, no?
-
-The thing is I don't really see how SRAT would help much.  I don't
-know how the existing systems are configured but it's natural to
-assume that hardware-wise per-stick removal will be supported, right?
-There's no reason for memory sticks of the first numa node can't be
-hotunplugged.  Likely we'll end up with SRAT map which splits the
-first node into two pieces - the first smaller part which can't be
-removed because firmwares and stuff depend on them and the larger
-tailing chunk which can be removed.  Allocating early non-migratable
-stuff near the kernel image, which can't be moved without an
-additional layer of indirection anyway would be fairly good choice
-regardless, right?
-
-Even if we parse SRAT early, we can't unconditionally make the kernel
-allocate early stuff from node0.  We do not know how SRAT will look
-like in future configurations.  If what the hotplug people are saying
-is true, the first non-hotpluggable node being relatively small seems
-actually quite likely.  I don't think we want to factor all those
-variables into very early bootstrap stages and it's not like we're
-talking about gigabytes of memory.  e.g. bring up the first half or
-one gig and go from there.  That part of memory is highly unlikely to
-be unpluggable anyway.
-
-> > * 4k page mappings.  It'd be nice to keep everything working for 4k
-> >   but just following SRAT isn't enough.  What if the non-hotpluggable
-> >   boot node doesn't stretch high enough and page table reaches down
-> >   too far?  This won't be an optional behavior, so it is actually
-> >   *likely* to happen on certain setups.
+> On Mon, Oct 14, 2013 at 02:40:44PM -0500, Kumar Gala wrote:
+> > 
+> > Greg,
+> > 
+> > Wondering your thoughts on drivers/qe vs something like
+> > drivers/soc/fsl/qe.  The QuiccEngine (qe) is a communication core on
+> > some of the Freescale networking SoCs that provides the ability to do
+> > various networking/communication functionality.  "Channels" on the QE
+> > can be used for various different things from ethernet, ATM, UART, or
+> > other functions.
 > 
-> no, do not assume 4k page. even we are using 1GB mapping,  we will still have
-> chance to have one node to take 512G RAM, that means we can have one 4k page
-> on local node ram.
+> What makes the code "QE" specific?  Are these devices that live on the
+> QE "bus", or are they controlling the QE controller?
 
-Sure, the kernel image can also be located such that the last page
-spills over to the next node too.  No matter what we do, without an
-extra layer of indirection, this can't be a complete solution.  Think
-about the usual node configuration and where kernel image is usually
-loaded.  As long as page table is relatively small, it is highly
-unlikely to increase the chance of such issues.
+You may think of the QUICC as a "programmable bitbang machine" if
+you like.  The very same component runs arbitrary and rather
+different protocols depending on how you setup its parameters.
 
-Again, it's all about benefit and cost.  Sure, parsing SRAT early will
-definitely decrease the chance of such issues.  However, as long as
-the size of page table is small enough, just allocating those on top
-of the kernel isn't significantly worse.  Also, following SRAT earlier
-not only increases complexity in vulnerable stages of boot but also
-carries higher risk with the existing and future configurations
-depending on how their SRAT looks like if the new behavior is applied
-unconditionally.  If we decide to make early SRAT usage conditional,
-that a *LOT* more conditional code than what's added by bottom-up
-allocation.
+There have been serial controllers capable of different protocols
+like UART or SPI or I2S, but all of them are "serial
+communication".  There have been memory controllers which could
+bitbang different protocols (NAND, NOR/SRAM, DRAM), but all of
+them are "memory".
 
-> On x86 system with intel new cpus there is memory controller built-in.,
-> could have hotplug modules (with socket and memory) and those hotplug modules
-> will be serviced as one single point. Just nowadays like we have pcie
-> card hotplugable.
-> 
-> I don't see where is the " a clear performance trade-off".
+The QUICC is just a little more versatile, and appears to cover
+cases which reside in different Linux kernel subsystems (like:
+it's neither serial nor network exclusively, but can be either
+and potentially more).
 
-Because kernel data structures have to be allocated off-node.
+IIUC the question which Kumar Gala was asking is where to put
+code for the component which is neither a strict subset of any
+subsystem.  Please correct me if I'm wrong.
 
-Thanks.
 
+virtually yours
+Gerhard Sittig
 -- 
-tejun
+DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
+HRB 165235 Munich, Office: Kirchenstr. 5, D-82194 Groebenzell, Germany
+Phone: +49-8142-66989-0 Fax: +49-8142-66989-80  Email: office@denx.de
