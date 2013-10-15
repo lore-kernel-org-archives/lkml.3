@@ -1,130 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933576Ab3JOTYA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 15:24:00 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41403 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933516Ab3JOTX6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 15:23:58 -0400
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: broonie@kernel.org
-Cc: lgirdwood@gmail.com, lee.jones@linaro.org, sameo@linux.intel.com,
-        linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Subject: [PATCH 3/3 v2] mfd: arizona: Specify supply mappings for Arizona CODECs
-Date: Tue, 15 Oct 2013 20:14:22 +0100
-Message-Id: <1381864462-26167-4-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1381864462-26167-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-References: <1381864462-26167-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+	id S933586Ab3JOTYK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 15:24:10 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:45031 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933516Ab3JOTYG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 15:24:06 -0400
+Date: Tue, 15 Oct 2013 21:23:53 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+Cc: Tony Luck <tony.luck@gmail.com>, Chen Gong <gong.chen@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-acpi <linux-acpi@vger.kernel.org>
+Subject: Re: Extended H/W error log driver
+Message-ID: <20131015192353.GI7908@pd.tnic>
+References: <1381473166-29303-1-git-send-email-gong.chen@linux.intel.com>
+ <20131011080427.GC18719@pd.tnic>
+ <20131014064940.GD12189@gchen.bj.intel.com>
+ <20131014105533.GF4009@pd.tnic>
+ <20131015040731.GA887@gchen.bj.intel.com>
+ <20131015092851.GA7908@pd.tnic>
+ <CA+8MBbJeSJBDPcomupOuVBrnZNkMTNTXsoZY9yUbXPe9YrTFXg@mail.gmail.com>
+ <20131015191040.GA4347@naverao1-tp.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20131015191040.GA4347@naverao1-tp.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The CODEC power supplies should be looked up on the Arizona device as
-they will be created here by device tree also update the only user of
-non-device tree bindings.
+On Wed, Oct 16, 2013 at 12:40:40AM +0530, Naveen N. Rao wrote:
+> +2 ;)
 
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
----
- arch/arm/mach-s3c64xx/mach-crag6410.c |   12 ------------
- drivers/mfd/arizona-core.c            |   32 +++++++++++++++++++++++++++++---
- 2 files changed, 29 insertions(+), 15 deletions(-)
+You're counting for 2 people, huh?
 
-diff --git a/arch/arm/mach-s3c64xx/mach-crag6410.c b/arch/arm/mach-s3c64xx/mach-crag6410.c
-index eb8e5a1..f27ca3b 100644
---- a/arch/arm/mach-s3c64xx/mach-crag6410.c
-+++ b/arch/arm/mach-s3c64xx/mach-crag6410.c
-@@ -310,10 +310,6 @@ static struct regulator_consumer_supply wallvdd_consumers[] = {
- 
- 	REGULATOR_SUPPLY("SPKVDDL", "spi0.1"),
- 	REGULATOR_SUPPLY("SPKVDDR", "spi0.1"),
--	REGULATOR_SUPPLY("SPKVDDL", "wm5102-codec"),
--	REGULATOR_SUPPLY("SPKVDDR", "wm5102-codec"),
--	REGULATOR_SUPPLY("SPKVDDL", "wm5110-codec"),
--	REGULATOR_SUPPLY("SPKVDDR", "wm5110-codec"),
- 
- 	REGULATOR_SUPPLY("DC1VDD", "0-0034"),
- 	REGULATOR_SUPPLY("DC2VDD", "0-0034"),
-@@ -653,14 +649,6 @@ static struct regulator_consumer_supply pvdd_1v8_consumers[] = {
- 	REGULATOR_SUPPLY("DBVDD3", "spi0.1"),
- 	REGULATOR_SUPPLY("LDOVDD", "spi0.1"),
- 	REGULATOR_SUPPLY("CPVDD", "spi0.1"),
--
--	REGULATOR_SUPPLY("DBVDD2", "wm5102-codec"),
--	REGULATOR_SUPPLY("DBVDD3", "wm5102-codec"),
--	REGULATOR_SUPPLY("CPVDD", "wm5102-codec"),
--
--	REGULATOR_SUPPLY("DBVDD2", "wm5110-codec"),
--	REGULATOR_SUPPLY("DBVDD3", "wm5110-codec"),
--	REGULATOR_SUPPLY("CPVDD", "wm5110-codec"),
- };
- 
- static struct regulator_init_data pvdd_1v8 = {
-diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
-index 5ac3aa4..022b186 100644
---- a/drivers/mfd/arizona-core.c
-+++ b/drivers/mfd/arizona-core.c
-@@ -569,13 +569,25 @@ static struct mfd_cell early_devs[] = {
- 	{ .name = "arizona-ldo1" },
- };
- 
-+static const char *wm5102_supplies[] = {
-+	"DBVDD2",
-+	"DBVDD3",
-+	"CPVDD",
-+	"SPKVDDL",
-+	"SPKVDDR",
-+};
-+
- static struct mfd_cell wm5102_devs[] = {
- 	{ .name = "arizona-micsupp" },
- 	{ .name = "arizona-extcon" },
- 	{ .name = "arizona-gpio" },
- 	{ .name = "arizona-haptics" },
- 	{ .name = "arizona-pwm" },
--	{ .name = "wm5102-codec" },
-+	{
-+		.name = "wm5102-codec",
-+		.parent_supplies = wm5102_supplies,
-+		.num_parent_supplies = ARRAY_SIZE(wm5102_supplies),
-+	},
- };
- 
- static struct mfd_cell wm5110_devs[] = {
-@@ -584,7 +596,17 @@ static struct mfd_cell wm5110_devs[] = {
- 	{ .name = "arizona-gpio" },
- 	{ .name = "arizona-haptics" },
- 	{ .name = "arizona-pwm" },
--	{ .name = "wm5110-codec" },
-+	{
-+		.name = "wm5110-codec",
-+		.parent_supplies = wm5102_supplies,
-+		.num_parent_supplies = ARRAY_SIZE(wm5102_supplies),
-+	},
-+};
-+
-+static const char *wm8997_supplies[] = {
-+	"DBVDD2",
-+	"CPVDD",
-+	"SPKVDD",
- };
- 
- static struct mfd_cell wm8997_devs[] = {
-@@ -593,7 +615,11 @@ static struct mfd_cell wm8997_devs[] = {
- 	{ .name = "arizona-gpio" },
- 	{ .name = "arizona-haptics" },
- 	{ .name = "arizona-pwm" },
--	{ .name = "wm8997-codec" },
-+	{
-+		.name = "wm8997-codec",
-+		.parent_supplies = wm8997_supplies,
-+		.num_parent_supplies = ARRAY_SIZE(wm8997_supplies),
-+	},
- };
- 
- int arizona_dev_init(struct arizona *arizona)
+:-)
+
+> While at it, I wonder if we're better off calling these "Hardware
+> events" rather than "Hardware errors".
+
+Oh, please no. That's that euphemistic lying which serves no one. And
+here's what I mean by "euphemistic lying":
+
+https://www.youtube.com/watch?v=vuEQixrBKCc
+
+Let's call it what it really is but, at the same time, make sure it is
+understandable to users what action they need to undertake (or none)
+when they encounter it.
+
+Thanks.
+
 -- 
-1.7.2.5
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
