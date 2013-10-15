@@ -1,96 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753363Ab3JOHbM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 03:31:12 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:62658 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752909Ab3JOHbK (ORCPT
+	id S1754137Ab3JOHcy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 03:32:54 -0400
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:41847 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751176Ab3JOHcw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 03:31:10 -0400
-X-AuditID: 9c93017e-b7c81ae000002d4e-b3-525cef3cdaab
-From: Namhyung Kim <namhyung@kernel.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH] perf record: mmap output file - v2
-References: <1381805731-10398-1-git-send-email-dsahern@gmail.com>
-Date: Tue, 15 Oct 2013 16:31:08 +0900
-In-Reply-To: <1381805731-10398-1-git-send-email-dsahern@gmail.com> (David
-	Ahern's message of "Mon, 14 Oct 2013 20:55:31 -0600")
-Message-ID: <87txgj9eir.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 15 Oct 2013 03:32:52 -0400
+Date: Tue, 15 Oct 2013 09:32:48 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: linux-kernel@vger.kernel.org, sebastien.dugue@bull.net,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
+Subject: Re: [PATCH] x86: Run checksumming in parallel accross multiple alu's
+Message-ID: <20131015073248.GA25493@gmail.com>
+References: <1381510298-20572-1-git-send-email-nhorman@tuxdriver.com>
+ <20131012172124.GA18241@gmail.com>
+ <20131014202854.GH26880@hmsreliant.think-freely.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131014202854.GH26880@hmsreliant.think-freely.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
 
-On Mon, 14 Oct 2013 20:55:31 -0600, David Ahern wrote:
-> When recording raw_syscalls for the entire system, e.g.,
->     perf record -e raw_syscalls:*,sched:sched_switch -a -- sleep 1
->
-> you end up with a negative feedback loop as perf itself calls
-> write() fairly often. This patch handles the problem by mmap'ing the
-> file in chunks of 64M at a time and copies events from the event buffers
-> to the file avoiding write system calls.
->
-> Before (with write syscall):
->
-> perf record -o /tmp/perf.data -e raw_syscalls:*,sched:sched_switch -a -- sleep 1
-> [ perf record: Woken up 0 times to write data ]
-> [ perf record: Captured and wrote 81.843 MB /tmp/perf.data (~3575786 samples) ]
->
-> After (using mmap):
->
-> perf record -o /tmp/perf.data -e raw_syscalls:*,sched:sched_switch -a -- sleep 1
-> [ perf record: Woken up 31 times to write data ]
-> [ perf record: Captured and wrote 8.203 MB /tmp/perf.data (~358388 samples) ]
+* Neil Horman <nhorman@tuxdriver.com> wrote:
 
-Why do they have that different size?
+> On Sat, Oct 12, 2013 at 07:21:24PM +0200, Ingo Molnar wrote:
+> > 
+> > * Neil Horman <nhorman@tuxdriver.com> wrote:
+> > 
+> > > Sébastien Dugué reported to me that devices implementing ipoib (which 
+> > > don't have checksum offload hardware were spending a significant amount 
+> > > of time computing checksums.  We found that by splitting the checksum 
+> > > computation into two separate streams, each skipping successive elements 
+> > > of the buffer being summed, we could parallelize the checksum operation 
+> > > accros multiple alus.  Since neither chain is dependent on the result of 
+> > > the other, we get a speedup in execution (on hardware that has multiple 
+> > > alu's available, which is almost ubiquitous on x86), and only a 
+> > > negligible decrease on hardware that has only a single alu (an extra 
+> > > addition is introduced).  Since addition in commutative, the result is 
+> > > the same, only faster
+> > 
+> > This patch should really come with measurement numbers: what performance 
+> > increase (and drop) did you get on what CPUs.
+> > 
+> > Thanks,
+> > 
+> > 	Ingo
+> > 
+> 
+> 
+> So, early testing results today.  I wrote a test module that, allocated 
+> a 4k buffer, initalized it with random data, and called csum_partial on 
+> it 100000 times, recording the time at the start and end of that loop.  
 
->
-[SNIP]
-> +/* mmap file big chunks at a time */
-> +#define MMAP_OUTPUT_SIZE   (64*1024*1024)
+It would be nice to stick that testcase into tools/perf/bench/, see how we 
+are able to benchmark the kernel's mempcy and memset implementation there:
 
-Why did you choose 64MB for the size?  Did you also test other sizes?
+ $ perf bench mem memcpy -r help
+ # Running 'mem/memcpy' benchmark:
+ Unknown routine:help
+ Available routines...
+        default ... Default memcpy() provided by glibc
+        x86-64-unrolled ... unrolled memcpy() in arch/x86/lib/memcpy_64.S
+        x86-64-movsq ... movsq-based memcpy() in arch/x86/lib/memcpy_64.S
+        x86-64-movsb ... movsb-based memcpy() in arch/x86/lib/memcpy_64.S
 
-
-[SNIP]
-> +
-> +		rec->mmap_addr = mmap(NULL, rec->mmap_size,
-> +				     PROT_WRITE | PROT_READ,
-> +				     MAP_SHARED,
-> +				     rec->output,
-> +				     offset);
-> +
-> +		if (rec->mmap_addr == MAP_FAILED) {
-> +			pr_err("mmap failed: %d: %s\n", errno, strerror(errno));
-> +			return -1;
-> +		}
-> +
-> +		/* expand file to include this mmap segment */
-> +		if (ftruncate(rec->output, offset + rec->mmap_size) != 0) {
-> +			pr_err("ftruncate failed\n");
-> +			return -1;
-> +		}
-
-I think this mmap + ftruncate should be reordered.  Although it looks
-work without problems the mmap man pages says it's unspecified behavior.
-
-       A file is mapped in multiples of the page size.  For a file that is not
-       a multiple of the page  size,  the  remaining  memory  is  zeroed  when
-       mapped, and writes to that region are not written out to the file.  The
-       effect of changing the size of the underlying file of a mapping on  the
-       pages  that  correspond  to  added  or  removed  regions of the file is
-       unspecified.
-
+In a similar fashion we could build the csum_partial() code as well and do 
+measurements. (We could change arch/x86/ code as well to make such 
+embedding/including easier, as long as it does not change performance.)
 
 Thanks,
-Namhyung
+
+	Ingo
