@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758759Ab3JOF2O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 01:28:14 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33302 "EHLO
+	id S1758795Ab3JOF2Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 01:28:25 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33313 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754130Ab3JOF2K (ORCPT
+	with ESMTP id S1754130Ab3JOF2T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 01:28:10 -0400
-Date: Mon, 14 Oct 2013 22:27:32 -0700
-From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
-Message-ID: <tip-6hnoqsjh99t4hxi3xu2nlwep@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        efault@gmx.de, jolsa@redhat.com, fweisbec@gmail.com,
-        adrian.hunter@intel.com, dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        peterz@infradead.org, jolsa@redhat.com, fweisbec@gmail.com,
-        dsahern@gmail.com, adrian.hunter@intel.com, tglx@linutronix.de
+	Tue, 15 Oct 2013 01:28:19 -0400
+Date: Mon, 14 Oct 2013 22:28:08 -0700
+From: tip-bot for David Ahern <tipbot@zytor.com>
+Message-ID: <tip-b6e8f8f4674be5a32f78027ec6e432f5ea33921e@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, dsahern@gmail.com, tglx@linutronix.de
+In-Reply-To: <1379900700-5186-2-git-send-email-dsahern@gmail.com>
+References: <1379900700-5186-2-git-send-email-dsahern@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf trace: Don'
- t supress zeroed args when there is an strarray entry for it
-Git-Commit-ID: 4aa5823225c70efba758750029504807cd30b925
+Subject: [tip:perf/core] perf trace: Handle MSG_WAITFORONE not defined
+Git-Commit-ID: b6e8f8f4674be5a32f78027ec6e432f5ea33921e
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,59 +27,40 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 14 Oct 2013 22:27:38 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 14 Oct 2013 22:28:13 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4aa5823225c70efba758750029504807cd30b925
-Gitweb:     http://git.kernel.org/tip/4aa5823225c70efba758750029504807cd30b925
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Fri, 20 Sep 2013 12:19:41 -0300
+Commit-ID:  b6e8f8f4674be5a32f78027ec6e432f5ea33921e
+Gitweb:     http://git.kernel.org/tip/b6e8f8f4674be5a32f78027ec6e432f5ea33921e
+Author:     David Ahern <dsahern@gmail.com>
+AuthorDate: Sun, 22 Sep 2013 19:44:56 -0600
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 9 Oct 2013 17:41:02 -0300
+CommitDate: Wed, 9 Oct 2013 17:42:37 -0300
 
-perf trace: Don't supress zeroed args when there is an strarray entry for it
+perf trace: Handle MSG_WAITFORONE not defined
 
-Case in hand:
+Needed for compiles on Fedora 12 for example.
 
-   9.682 ( 0.001 ms): Xorg/13079 setitimer(which: REAL, value: 0x7fffede42470) = 0
-
-ITIMER_REAL is zero.
-
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-6hnoqsjh99t4hxi3xu2nlwep@git.kernel.org
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Link: http://lkml.kernel.org/r/1379900700-5186-2-git-send-email-dsahern@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-trace.c | 11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+ tools/perf/builtin-trace.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
 diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index 8855207..27b0ec8 100644
+index 39a947a..3ca6a85 100644
 --- a/tools/perf/builtin-trace.c
 +++ b/tools/perf/builtin-trace.c
-@@ -940,8 +940,15 @@ static size_t syscall__scnprintf_args(struct syscall *sc, char *bf, size_t size,
- 		     field = field->next, ++arg.idx, bit <<= 1) {
- 			if (arg.mask & bit)
- 				continue;
--
--			if (args[arg.idx] == 0)
-+			/*
-+ 			 * Suppress this argument if its value is zero and
-+ 			 * and we don't have a string associated in an
-+ 			 * strarray for it.
-+ 			 */
-+			if (args[arg.idx] == 0 &&
-+			    !(sc->arg_scnprintf &&
-+			      sc->arg_scnprintf[arg.idx] == SCA_STRARRAY &&
-+			      sc->arg_parm[arg.idx]))
- 				continue;
- 
- 			printed += scnprintf(bf + printed, size - printed,
+@@ -363,6 +363,9 @@ static size_t syscall_arg__scnprintf_socket_type(char *bf, size_t size,
+ #ifndef MSG_PROBE
+ #define MSG_PROBE	     0x10
+ #endif
++#ifndef MSG_WAITFORONE
++#define MSG_WAITFORONE	0x10000
++#endif
+ #ifndef MSG_SENDPAGE_NOTLAST
+ #define MSG_SENDPAGE_NOTLAST 0x20000
+ #endif
