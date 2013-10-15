@@ -1,59 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759825Ab3JOVAL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 17:00:11 -0400
-Received: from smtprelay0117.hostedemail.com ([216.40.44.117]:41946 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757504Ab3JOVAJ (ORCPT
+	id S933669Ab3JOVEi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 17:04:38 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:61735 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933181Ab3JOVEg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 17:00:09 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2691:2828:3138:3139:3140:3141:3142:3350:3622:3865:3867:3871:3872:4321:5007:7652:10004:10400:10848:11026:11658:11914:12296:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: form83_755ecd361a331
-X-Filterd-Recvd-Size: 1707
-Message-ID: <1381870805.22110.37.camel@joe-AO722>
-Subject: Re: [PATCH 2/3] core: Convert printk_once to use DO_ONCE
-From: Joe Perches <joe@perches.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Liu Chuansheng <chuansheng.liu@intel.com>,
-        Ingo Molnar <mingo@kernel.org>
-Date: Tue, 15 Oct 2013 14:00:05 -0700
-In-Reply-To: <1381870252-5430-3-git-send-email-fweisbec@gmail.com>
-References: <1381870252-5430-1-git-send-email-fweisbec@gmail.com>
-	 <1381870252-5430-3-git-send-email-fweisbec@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 15 Oct 2013 17:04:36 -0400
+From: David Long <dave.long@linaro.org>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Rabin Vincent <rabin@rab.in>, "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 03/13] uprobes: allow arch access to xol slot
+Date: Tue, 15 Oct 2013 17:04:18 -0400
+Message-Id: <1381871068-27660-4-git-send-email-dave.long@linaro.org>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1381871068-27660-1-git-send-email-dave.long@linaro.org>
+References: <1381871068-27660-1-git-send-email-dave.long@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-10-15 at 22:50 +0200, Frederic Weisbecker wrote:
-[]
-> diff --git a/include/linux/printk.h b/include/linux/printk.h
-[]
-> @@ -252,14 +253,7 @@ extern asmlinkage void dump_stack(void) __cold;
->  
->  #ifdef CONFIG_PRINTK
->  #define printk_once(fmt, ...)			\
-> -({						\
-> -	static bool __print_once;		\
-> -						\
-> -	if (!__print_once) {			\
-> -		__print_once = true;		\
-> -		printk(fmt, ##__VA_ARGS__);	\
-> -	}					\
-> -})
-> +	DO_ONCE(printk(fmt, ##__VA_ARGS__));
+From: "David A. Long" <dave.long@linaro.org>
 
-It's hard to believe the overhead is worth it.
+Allow arches to customize how the instruction is filled into the xol
+slot.  ARM will use this to insert an undefined instruction after the
+real instruction in order to simulate a single step of the instruction
+without hardware support.
 
+Signed-off-by: Rabin Vincent <rabin@rab.in>
+Signed-off-by: David A. Long <dave.long@linaro.org>
+---
+ include/linux/uprobes.h |  1 +
+ kernel/events/uprobes.c | 10 +++++++++-
+ 2 files changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
+index 80116c9..2556ab6 100644
+--- a/include/linux/uprobes.h
++++ b/include/linux/uprobes.h
+@@ -134,6 +134,7 @@ extern int  arch_uprobe_exception_notify(struct notifier_block *self, unsigned l
+ extern void arch_uprobe_abort_xol(struct arch_uprobe *aup, struct pt_regs *regs);
+ extern unsigned long arch_uretprobe_hijack_return_addr(unsigned long trampoline_vaddr, struct pt_regs *regs);
+ extern bool __weak arch_uprobe_ignore(struct arch_uprobe *aup, struct pt_regs *regs);
++extern void __weak arch_uprobe_xol_copy(struct arch_uprobe *auprobe, void *vaddr);
+ #else /* !CONFIG_UPROBES */
+ struct uprobes_state {
+ };
+diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+index 3955172..22d0121 100644
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -1238,6 +1238,11 @@ static unsigned long xol_take_insn_slot(struct xol_area *area)
+ 	return slot_addr;
+ }
+ 
++void __weak arch_uprobe_xol_copy(struct arch_uprobe *auprobe, void *vaddr)
++{
++	memcpy(vaddr, auprobe->insn, MAX_UINSN_BYTES);
++}
++
+ /*
+  * xol_get_insn_slot - allocate a slot for xol.
+  * Returns the allocated slot address or 0.
+@@ -1246,6 +1251,7 @@ static unsigned long xol_get_insn_slot(struct uprobe *uprobe)
+ {
+ 	struct xol_area *area;
+ 	unsigned long xol_vaddr;
++	void *kaddr;
+ 
+ 	area = get_xol_area();
+ 	if (!area)
+@@ -1256,7 +1262,9 @@ static unsigned long xol_get_insn_slot(struct uprobe *uprobe)
+ 		return 0;
+ 
+ 	/* Initialize the slot */
+-	copy_to_page(area->page, xol_vaddr, uprobe->arch.insn, MAX_UINSN_BYTES);
++	kaddr = kmap_atomic(area->page);
++	arch_uprobe_xol_copy(&uprobe->arch, kaddr + (xol_vaddr & ~PAGE_MASK));
++	kunmap_atomic(kaddr);
+ 	/*
+ 	 * We probably need flush_icache_user_range() but it needs vma.
+ 	 * This should work on supported architectures too.
+-- 
+1.8.1.2
 
