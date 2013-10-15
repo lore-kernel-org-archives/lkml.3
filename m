@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932662Ab3JOFT0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 01:19:26 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60805 "EHLO
+	id S932686Ab3JOFTe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 01:19:34 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60821 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932639Ab3JOFTV (ORCPT
+	with ESMTP id S932665Ab3JOFT3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 01:19:21 -0400
-Date: Mon, 14 Oct 2013 22:19:05 -0700
+	Tue, 15 Oct 2013 01:19:29 -0400
+Date: Mon, 14 Oct 2013 22:19:14 -0700
 From: tip-bot for Ingo Molnar <tipbot@zytor.com>
-Message-ID: <tip-3ca576a481f8c12fe606fb75232d52637c666ed0@git.kernel.org>
+Message-ID: <tip-b016a0dd08999218a05a4b176bc08a9ff68ccc5e@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, acme@redhat.com, hpa@zytor.com,
         mingo@kernel.org, a.p.zijlstra@chello.nl, namhyung@kernel.org,
         jolsa@redhat.com, dsahern@gmail.com, tglx@linutronix.de
@@ -19,8 +19,8 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com,
         tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:perf/core] tools/perf/build:
-  Collapse the test-all.c testcase
-Git-Commit-ID: 3ca576a481f8c12fe606fb75232d52637c666ed0
+  Pass through all targets to Makefile.perf
+Git-Commit-ID: b016a0dd08999218a05a4b176bc08a9ff68ccc5e
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,331 +29,56 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 14 Oct 2013 22:19:12 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 14 Oct 2013 22:19:20 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3ca576a481f8c12fe606fb75232d52637c666ed0
-Gitweb:     http://git.kernel.org/tip/3ca576a481f8c12fe606fb75232d52637c666ed0
+Commit-ID:  b016a0dd08999218a05a4b176bc08a9ff68ccc5e
+Gitweb:     http://git.kernel.org/tip/b016a0dd08999218a05a4b176bc08a9ff68ccc5e
 Author:     Ingo Molnar <mingo@kernel.org>
-AuthorDate: Wed, 2 Oct 2013 16:21:37 +0200
+AuthorDate: Thu, 3 Oct 2013 14:32:10 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
 CommitDate: Wed, 9 Oct 2013 08:48:59 +0200
 
-tools/perf/build: Collapse the test-all.c testcase
+tools/perf/build: Pass through all targets to Makefile.perf
 
-Simplify test-all.c by including it all the testcases via #include.
+Jiri reported that 'make .o' stopped working:
 
+  > [jolsa@krava perf]$ make -f Makefile perf.o
+  > cc    -c -o perf.o perf.c
+  > In file included from builtin.h:4:0,
+  >                  from perf.c:9:
+  > util/util.h:74:24: fatal error: lk/debugfs.h: No such file or directory
+  > compilation terminated.
+  > make: *** [perf.o] Error 1
+
+This is due to GNU make having built-in rules for popular targets such
+as *.o. Clear them out so that all targets as passed through to Makefile.perf.
+
+Reported-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/n/tip-pcZlwqq5ou7Ebvkekvhtzfbm@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-5wkuvmlaaxtfgepKcvRij8sh@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- tools/perf/config/feature-checks/test-all.c | 290 ++++++++++------------------
- 1 file changed, 100 insertions(+), 190 deletions(-)
+ tools/perf/Makefile | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/tools/perf/config/feature-checks/test-all.c b/tools/perf/config/feature-checks/test-all.c
-index 9f7c4b1..50d4318 100644
---- a/tools/perf/config/feature-checks/test-all.c
-+++ b/tools/perf/config/feature-checks/test-all.c
-@@ -1,196 +1,106 @@
--
--#pragma GCC diagnostic ignored "-Wstrict-prototypes"
--
--#include <Python.h>
--
--#include <EXTERN.h>
--#include <perl.h>
--
--#include <stdio.h>
--#include <libelf.h>
--#include <gnu/libc-version.h>
--#include <dwarf.h>
--#include <elfutils/libdw.h>
--#include <elfutils/version.h>
--#include <libelf.h>
--#include <libunwind.h>
--#include <stdlib.h>
--#include <libaudit.h>
--#include <slang.h>
--#include <gtk/gtk.h>
--#include <bfd.h>
--#include <stdio.h>
--#include <execinfo.h>
--#include <stdio.h>
--#include <numa.h>
--#include <numaif.h>
--
--#pragma GCC diagnostic error "-Wstrict-prototypes"
--
--int main1(void)
--{
--	return puts("hi");
--}
--
--int main2(void)
--{
--	return puts("hi");
--}
--
--int main3(void)
--{
--	return puts("hi");
--}
--
--int main4(void)
--{
--	Elf *elf = elf_begin(0, ELF_C_READ, 0);
--	return (long)elf;
--}
--#
--int main5(void)
--{
--	Elf *elf = elf_begin(0, ELF_C_READ_MMAP, 0);
--	return (long)elf;
--}
--
--int main6(void)
--{
--	const char *version = gnu_get_libc_version();
--	return (long)version;
--}
--
--int main7(void)
--{
--	Dwarf *dbg = dwarf_begin(0, DWARF_C_READ);
--	return (long)dbg;
--}
--
--int main8(void)
--{
--	size_t dst;
--	return elf_getphdrnum(0, &dst);
--}
--
--extern int UNW_OBJ(dwarf_search_unwind_table) (unw_addr_space_t as,
--                                      unw_word_t ip,
--                                      unw_dyn_info_t *di,
--                                      unw_proc_info_t *pi,
--                                      int need_unwind_info, void *arg);
--
--
--#define dwarf_search_unwind_table UNW_OBJ(dwarf_search_unwind_table)
--
--int main9(void)
--{
--	unw_addr_space_t addr_space;
--	addr_space = unw_create_addr_space(NULL, 0);
--	unw_init_remote(NULL, addr_space, NULL);
--	dwarf_search_unwind_table(addr_space, 0, NULL, NULL, 0, NULL);
--	return 0;
--}
--
--int main10(void)
--{
--	printf("error message: %s\n", audit_errno_to_name(0));
--	return audit_open();
--}
--
--int main11(void)
--{
--	return SLsmg_init_smg();
--}
--
--int main12(int argc, char *argv[])
--{
--        gtk_init(&argc, &argv);
--
--        return 0;
--}
--
--int main13(void)
--{
--	gtk_info_bar_new();
--
--	return 0;
--}
--
--int main14(void)
--{
--	perl_alloc();
--
--	return 0;
--}
--
--int main15(void)
--{
--	Py_Initialize();
--	return 0;
--}
--
--#if PY_VERSION_HEX >= 0x03000000
--	#error
--#endif
--
--int main16(void)
--{
--	return 0;
--}
--
--int main17(void)
--{
--	bfd_demangle(0, 0, 0);
--	return 0;
--}
--
--void exit_function(int x, void *y)
--{
--}
--
--int main18(void)
--{
--	return on_exit(exit_function, NULL);
--}
--
--int main19(void)
--{
--	void *backtrace_fns[1];
--	size_t entries;
--
--	entries = backtrace(backtrace_fns, 1);
--	backtrace_symbols(backtrace_fns, entries);
--
--	return 0;
--}
--
--int main20(void)
--{
--	numa_available();
--	return 0;
--}
-+/*
-+ * test-all.c: Try to build all the main testcases at once.
-+ *
-+ * A well-configured system will have all the prereqs installed, so we can speed
-+ * up auto-detection on such systems.
-+ */
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 3b925ad..6f6f13a 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -1,3 +1,10 @@
 +
-+/*
-+ * Quirk: Python and Perl headers cannot be in arbitrary places, so keep
-+ * these 3 testcases at the top:
-+ */
-+#define main main_test_libpython
-+# include "test-libpython.c"
-+#undef main
++#
++# Clear out the built-in rules GNU make defines by default (such as .o targets),
++# so that we pass through all targets to Makefile.perf:
++#
++.SUFFIXES:
 +
-+#define main main_test_libpython_version
-+# include "test-libpython-version.c"
-+#undef main
-+
-+#define main main_test_libperl
-+# include "test-libperl.c"
-+#undef main
-+
-+#define main main_test_hello
-+# include "test-hello.c"
-+#undef main
-+
-+#define main main_test_libelf
-+# include "test-libelf.c"
-+#undef main
-+
-+#define main main_test_libelf_mmap
-+# include "test-libelf-mmap.c"
-+#undef main
-+
-+#define main main_test_glibc
-+# include "test-glibc.c"
-+#undef main
-+
-+#define main main_test_dwarf
-+# include "test-dwarf.c"
-+#undef main
-+
-+#define main main_test_libelf_getphdrnum
-+# include "test-libelf-getphdrnum.c"
-+#undef main
-+
-+#define main main_test_libunwind
-+# include "test-libunwind.c"
-+#undef main
-+
-+#define main main_test_libaudit
-+# include "test-libaudit.c"
-+#undef main
-+
-+#define main main_test_libslang
-+# include "test-libslang.c"
-+#undef main
-+
-+#define main main_test_gtk2
-+# include "test-gtk2.c"
-+#undef main
-+
-+#define main main_test_gtk2_infobar
-+# include "test-gtk2-infobar.c"
-+#undef main
-+
-+#define main main_test_libbfd
-+# include "test-libbfd.c"
-+#undef main
-+
-+#define main main_test_on_exit
-+# include "test-on-exit.c"
-+#undef main
-+
-+#define main main_test_backtrace
-+# include "test-backtrace.c"
-+#undef main
-+
-+#define main main_test_libnuma
-+# include "test-libnuma.c"
-+#undef main
- 
- int main(int argc, char *argv[])
- {
--	main1();
--	main2();
--	main3();
--	main4();
--	main5();
--	main6();
--	main7();
--	main8();
--	main9();
--	main10();
--	main11();
--	main12(argc, argv);
--	main13();
--	main14();
--	main15();
--	main16();
--	main17();
--	main18();
--	main19();
--	main20();
-+	main_test_libpython();
-+	main_test_libpython_version();
-+	main_test_libperl();
-+	main_test_hello();
-+	main_test_libelf();
-+	main_test_libelf_mmap();
-+	main_test_glibc();
-+	main_test_dwarf();
-+	main_test_libelf_getphdrnum();
-+	main_test_libunwind();
-+	main_test_libaudit();
-+	main_test_libslang();
-+	main_test_gtk2(argc, argv);
-+	main_test_gtk2_infobar(argc, argv);
-+	main_test_libbfd();
-+	main_test_on_exit();
-+	main_test_backtrace();
-+	main_test_libnuma();
- 
- 	return 0;
- }
+ #
+ # Do a parallel build with multiple jobs, based on the number of CPUs online
+ # in this system: 'make -j8' on a 8-CPU system, etc.
