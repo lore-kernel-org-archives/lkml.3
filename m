@@ -1,93 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756724Ab3JOBlh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 21:41:37 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:19154 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756534Ab3JOBle (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 21:41:34 -0400
-X-IronPort-AV: E=Sophos;i="4.93,495,1378828800"; 
-   d="scan'208";a="8756233"
-Message-ID: <525C9CFA.7070601@cn.fujitsu.com>
-Date: Tue, 15 Oct 2013 09:40:10 +0800
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S1756904Ab3JOBlq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 21:41:46 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:6454 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756534Ab3JOBlp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 21:41:45 -0400
+X-Spam-Score: -100.8
+Message-ID: <525C9D18.6040909@asianux.com>
+Date: Tue, 15 Oct 2013 09:40:40 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Yinghai Lu <yinghai@kernel.org>, Zhang Yanfei <zhangyanfei.yes@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Toshi Kani <toshi.kani@hp.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+To: paulmck@linux.vnet.ibm.com
+CC: josh@freedesktop.org,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH part2 v2 0/8] Arrange hotpluggable memory as ZONE_MOVABLE
-References: <525BFCF3.5010908@gmail.com> <20131014142719.GI4722@htj.dyndns.org> <525C02DC.4050706@gmail.com> <20131014145131.GJ4722@htj.dyndns.org> <525C0866.2010808@gmail.com> <20131014151902.GL4722@htj.dyndns.org> <525C0EFE.2010409@gmail.com> <CAE9FiQX0xeR61ehPy2SfWfN-fgSZVS=dtaWT-QQ+RR12tx+A0w@mail.gmail.com> <20131014200437.GA5720@htj.dyndns.org> <CAE9FiQXCG6gR-XL9fVudpNVEdS-3MHPObfWQ=Uf=q7pv33QBOA@mail.gmail.com> <20131014205540.GM4722@htj.dyndns.org>
-In-Reply-To: <20131014205540.GM4722@htj.dyndns.org>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/10/15 09:39:10,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/10/15 09:39:16,
-	Serialize complete at 2013/10/15 09:39:16
+Subject: Re: [Suggestion] kernel/rcutorture.c: about using scnprintf() instead
+ of sprintf().
+References: <5253C335.5050609@asianux.com> <20131013110518.GC5790@linux.vnet.ibm.com> <525B4BB0.1090609@asianux.com> <525B555C.3040102@asianux.com> <20131014112457.GN5790@linux.vnet.ibm.com>
+In-Reply-To: <20131014112457.GN5790@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello tejun, peter and yinghai
-
-On 10/15/2013 04:55 AM, Tejun Heo wrote:
-> Hello,
+On 10/14/2013 07:24 PM, Paul E. McKenney wrote:
+> On Mon, Oct 14, 2013 at 10:22:20AM +0800, Chen Gang wrote:
+>>>  - intend to shrink maximized buffer (PAGE_SIZE -> 64, 256 ..) for test.
 > 
-> On Mon, Oct 14, 2013 at 01:37:20PM -0700, Yinghai Lu wrote:
->> The problem is how to define "amount necessary". If we can parse srat early,
->> then we could just map RAM for all boot nodes one time, instead of try some
->> small and then after SRAT table, expand it cover non-boot nodes.
-> 
-> Wouldn't that amount be fairly static and restricted?  If you wanna
-> chunk memory init anyway, there's no reason to init more than
-> necessary until smp stage is reached.  The more you do early, the more
-> serialized you're, so wouldn't the goal naturally be initing the
-> minimum possible?
-> 
->> To keep non-boot numa node hot-removable. we need to page table (and other
->> that we allocate during boot stage) on ram of non boot nodes, or their
->> local node ram.  (share page table always should be on boot nodes).
-> 
-> The above assumes the followings,
-> 
-> * 4k page mappings.  It'd be nice to keep everything working for 4k
->   but just following SRAT isn't enough.  What if the non-hotpluggable
->   boot node doesn't stretch high enough and page table reaches down
->   too far?  This won't be an optional behavior, so it is actually
->   *likely* to happen on certain setups.
-> 
-> * Memory hotplug is at NUMA node granularity instead of device.
-> 
->>> Optimizing NUMA boot just requires moving the heavy lifting to
->>> appropriate NUMA nodes.  It doesn't require that early boot phase
->>> should strictly follow NUMA node boundaries.
->>
->> At end of day, I like to see all numa system (ram/cpu/pci) could have
->> non boot nodes to be hot-removed logically. with any boot command
->> line.
-> 
-> I suppose you mean "without any boot command line"?  Sure, but, first
-> of all, there is a clear performance trade-off, and, secondly, don't
-> we want something finer grained?  Why would we want to that per-NUMA
-> node, which is extremely coarse?
+> This is a good start!  However, you should also test the original kernel
+> to be sure that it really fails.  You should of course start by asking
+> yourself how you would expect it to fail.
 > 
 
-Both ways seem ok enough *currently*. But what tejun always emphasizes
-is the trade-off, or benefit / cost ratio. 
+When shrink size, for scnprintf() we already got truncation, that means
+if we still use sprintf(), it will cause memory overflow.
 
-Yinghai and peter insist on the long-term plan. But it seems currently
-no actual requirements and plans that *must* parse SRAT earlier comparing
-to the current approach in this patchset, right?
+For memory overflow, it does not means OS will stop quickly, one of the
+worst condition is "it may still seems going 'well' but sometimes
+may/will show some amazing things which is not easy to find root cause".
 
-Should we follow "Make it work first and optimize/beautify it later"?
-I think if we have the scene that must parse SRAT earlier, I think tejun
-will have no objection to it.
+So for this kind of memory overflow, "shrinking size and letting
+scnprintf() instead of sprintf() to see whether truncation" is well enough.
 
--- 
+
+> What other change should you make to test this in order to be sure that
+> it will really work when someone tries it on 1024 CPUs?  (I am asking
+> rather than telling because you really need to have this stuff worked
+> out on your initial submission.)
+> 
+
+Hmm... Can it really work on 1024 CPUs? sorry I don't know. But in fact,
+that is not about this patch (it is just one of case which may cause
+issues).
+
+This patch is only about "use truncation instead of memory overflow, and
+make sure the modification without negative effect". So in my opinion,
+current test case is enough for this requirement.
+
+Maybe you want to let this module get additional test to find additional
+issues? (If so, I will try when my time resource is possible).
+
+
+> Another way of thinking about this is to ask yourself the question "If
+> someone ran rcutorture with torture_type=srcu on a system with 1024 CPUs
+> (to say nothing of 4096 CPUs), what would they want to happen?"  Then:
+> "How would I test for that on a smaller system?"
+> 
+
+We have to face the efficiency: it is only a test module, if the tester
+(assume he/she is a programmer, too) notices about the truncation, they
+can simply extend the maximize length to avoid truncation.
+
+At least for me, "rcutorture.c" is really easy enough for a programmer
+to test rcu (and also, it is really a useful tool for test rcu).
+
+And for "1024 CPUs",  I think one of efficient way is: "when some
+members use it under 1024 CPUs, if they find something can be
+improvement, they can report/send related patch".
+
+
+Hmm... maybe the comment "it is ... additional test or consideration"
+need be removed: 'additional' and 'consideration' are not suitable words
+to be appeared in comments (they are not precise word).
+
+
 Thanks.
-Zhang Yanfei
+-- 
+Chen Gang
