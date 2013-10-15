@@ -1,40 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933062Ab3JOQxn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 12:53:43 -0400
-Received: from mga11.intel.com ([192.55.52.93]:46994 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932228Ab3JOQxm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 12:53:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,500,1378882800"; 
-   d="scan'208";a="417233096"
-Message-ID: <525D7315.8080005@linux.intel.com>
-Date: Tue, 15 Oct 2013 09:53:41 -0700
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S933326Ab3JOQzA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 12:55:00 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:38337 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932228Ab3JOQy7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 12:54:59 -0400
+Date: Tue, 15 Oct 2013 22:24:35 +0530
+From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+To: "Chen, Gong" <gong.chen@linux.intel.com>
+Cc: tony.luck@intel.com, bp@alien8.de, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, m.chehab@samsung.com
+Subject: Re: [PATCH 8/8] ACPI / trace: Add trace interface for eMCA driver
+Message-ID: <20131015165435.GA2777@naverao1-tp.ibm.com>
+References: <1381473166-29303-1-git-send-email-gong.chen@linux.intel.com>
+ <1381473166-29303-9-git-send-email-gong.chen@linux.intel.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Roel Kluin <roel.kluin@gmail.com>, Andrew Jones <drjones@redhat.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] jump_label: unlikely(x) > 0
-References: <alpine.DEB.2.02.1310112241220.11060@Z> <20131011135704.6fd455e2387a37f1972a4e0f@linux-foundation.org>
-In-Reply-To: <20131011135704.6fd455e2387a37f1972a4e0f@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1381473166-29303-9-git-send-email-gong.chen@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13101516-2000-0000-0000-00000E1EBCB7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/11/2013 01:57 PM, Andrew Morton wrote:
+On 2013/10/11 02:32AM, Chen Gong wrote:
+> Use trace interface to elaborate all H/W error related
+> information.
 > 
-> I'm sure this was intended instead ;) The patch doesn't seem to make
-> any difference in code generation with my gcc.
-> 
+> Signed-off-by: Chen, Gong <gong.chen@linux.intel.com>
+> ---
+<snip>
+> +TRACE_EVENT(extlog_mem_event,
+> +	TP_PROTO(u32 etype,
+> +		char *dimm_loc,
+> +		const uuid_le *fru_id,
+> +		char *fru_text,
+> +		u64 error_count,
+> +		u32 severity,
+> +		u64 phy_addr,
+> +		char *mem_loc),
 
-Which is odd, because doesn't unlikely() booleanize?
+[Adding Mauro...]
 
-	-hpa
+This looks very similar to the trace event I wrote a while back,
+which was similar to the one provided by ghes_edac:
+http://thread.gmane.org/gmane.linux.kernel.pci/24616
+
+Seems to me this has the same issues we previously discussed w.r.t
+EDAC conflicts...
+
+
+Regards,
+Naveen
 
