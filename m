@@ -1,134 +1,370 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933588Ab3JORtH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 13:49:07 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:32937 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933470Ab3JORtD (ORCPT
+	id S933602Ab3JORte (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 13:49:34 -0400
+Received: from gerard.telenet-ops.be ([195.130.132.48]:59905 "EHLO
+	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933534Ab3JORso (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 13:49:03 -0400
-Message-ID: <525D8009.5040907@wwwdotorg.org>
-Date: Tue, 15 Oct 2013 11:48:57 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Hiroshi Doyu <hdoyu@nvidia.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH v3 00/19] Introduce common infra for tegra clocks
-References: <1381848794-11761-1-git-send-email-pdeschrijver@nvidia.com>
-In-Reply-To: <1381848794-11761-1-git-send-email-pdeschrijver@nvidia.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 15 Oct 2013 13:48:44 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: linux-m68k@vger.kernel.org
+Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH 2/3] m68k: Add kexec support
+Date: Tue, 15 Oct 2013 19:48:26 +0200
+Message-Id: <1381859307-11932-3-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1381859307-11932-1-git-send-email-geert@linux-m68k.org>
+References: <1381859307-11932-1-git-send-email-geert@linux-m68k.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/15/2013 08:52 AM, Peter De Schrijver wrote:
-> This patchset introduces common infrastructure for clocks which exist in                                                                                       
-> several Tegra SoCs. We also also move Tegra20, Tegra30 and Tegra114 to
-> this new infrastructure.
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+v2:
+  - KEXEC depends on M68KCLASSIC,
+  - Fix handling of virtual and physical addresses, for machines where
+    memory doesn't start at zero,
+  - Support for other CPUs than 68040.
 
-I took my local branch based on next-20131014, and applied the following:
+ arch/m68k/Kconfig                  |   17 ++++
+ arch/m68k/include/asm/kexec.h      |   29 +++++++
+ arch/m68k/kernel/Makefile          |    2 +
+ arch/m68k/kernel/asm-offsets.c     |    3 +
+ arch/m68k/kernel/machine_kexec.c   |   58 ++++++++++++++
+ arch/m68k/kernel/relocate_kernel.S |  155 ++++++++++++++++++++++++++++++++++++
+ include/uapi/linux/kexec.h         |    1 +
+ 7 files changed, 265 insertions(+)
+ create mode 100644 arch/m68k/include/asm/kexec.h
+ create mode 100644 arch/m68k/kernel/machine_kexec.c
+ create mode 100644 arch/m68k/kernel/relocate_kernel.S
 
-* Joseph's "ARM: tegra: add clock properties for devices of Tegra124".
-
-* The patches from your "pull request for tegra clocks" of today (I just
-cherry-picked the commits rather than merging the pull request).
-
-* Your patch series "Introduce common infra for tegra clocks" of today.
-
-* Your patch series "Tegra124 clock support" of today.
-
-The resultant branch is at:
-git://github.com:swarren/linux-tegra.git linux-next_common
-
-When building, I see a number of section mismatches:
-
-> WARNING: drivers/clk/tegra/built-in.o(.text+0x534): Section mismatch in reference from the function _tegra_clk_register_periph() to the function .init.text:get_reg_bank()
-> The function _tegra_clk_register_periph() references
-> the function __init get_reg_bank().
-> This is often because _tegra_clk_register_periph lacks a __init 
-> annotation or the annotation of get_reg_bank is wrong.
-> 
-> WARNING: drivers/clk/tegra/built-in.o(.text+0x9ec): Section mismatch in reference from the function tegra_clk_register_periph_gate() to the function .init.text:get_reg_bank()
-> The function tegra_clk_register_periph_gate() references
-> the function __init get_reg_bank().
-> This is often because tegra_clk_register_periph_gate lacks a __init 
-> annotation or the annotation of get_reg_bank is wrong.
-
-There are more, but they refer to references from the same two
-functions. You may need to add CONFIG_DEBUG_SECTION_MISMATCH=y to
-.config to see these; I can't remember if that's included in
-tegra_defconfig.
-
-Testing on Venice2 (Tegra124): I see the following WARN during boot,
-which I think is new relative to the internal branch you gave me yesterday:
-
-> [    0.295386] ------------[ cut here ]------------
-> [    0.300450] WARNING: CPU: 0 PID: 1 at drivers/clk/tegra/clk.c:187 tegra_init_from_table+0x78/0x158()
-> [    0.310362] Modules linked in:
-> [    0.313740] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.12.0-rc5-next-20131014-05418-g30b9d55 #48
-> [    0.323397] [<c0016644>] (unwind_backtrace+0x0/0x138) from [<c001225c>] (show_stack+0x10/0x14)
-> [    0.332753] [<c001225c>] (show_stack+0x10/0x14) from [<c0572274>] (dump_stack+0x80/0xc0)
-> [    0.341559] [<c0572274>] (dump_stack+0x80/0xc0) from [<c0025d54>] (warn_slowpath_common+0x64/0x88)
-> [    0.351283] [<c0025d54>] (warn_slowpath_common+0x64/0x88) from [<c0025d94>] (warn_slowpath_null+0x1c/0x24)
-> [    0.361768] [<c0025d94>] (warn_slowpath_null+0x1c/0x24) from [<c07b4c1c>] (tegra_init_from_table+0x78/0x158)
-> [    0.372440] [<c07b4c1c>] (tegra_init_from_table+0x78/0x158) from [<c07b4e10>] (tegra_clocks_apply_init_table+0x18/0x20)
-> [    0.384138] [<c07b4e10>] (tegra_clocks_apply_init_table+0x18/0x20) from [<c079f9cc>] (tegra_dt_init+0xc/0xd8)
-> [    0.394903] [<c079f9cc>] (tegra_dt_init+0xc/0xd8) from [<c079a580>] (customize_machine+0x1c/0x40)
-> [    0.404535] [<c079a580>] (customize_machine+0x1c/0x40) from [<c00089e0>] (do_one_initcall+0xec/0x19c)
-> [    0.414551] [<c00089e0>] (do_one_initcall+0xec/0x19c) from [<c0798ba8>] (kernel_init_freeable+0xfc/0x1c8)
-> [    0.424944] [<c0798ba8>] (kernel_init_freeable+0xfc/0x1c8) from [<c056d5a8>] (kernel_init+0x8/0xe4)
-> [    0.434764] [<c056d5a8>] (kernel_init+0x8/0xe4) from [<c000f0f8>] (ret_from_fork+0x14/0x3c)
-> [    0.443850] ---[ end trace 98c2207379d4cf99 ]---
-
-Testing on Cardhu (Tegra30): I see the following new WARNs during boot:
-
-> [    0.495006] tegra_init_from_table: Failed to set rate 600000000 of disp1
-> [    0.501960] ------------[ cut here ]------------
-> [    0.506792] WARNING: CPU: 0 PID: 1 at drivers/clk/tegra/clk.c:196 tegra_init_from_table+0xc0/0x158()
-> [    0.516233] Modules linked in:
-> [    0.519446] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.12.0-rc5-next-20131014-05418-g30b9d55 #48
-> [    0.528653] [<c0016644>] (unwind_backtrace+0x0/0x138) from [<c001225c>] (show_stack+0x10/0x14)
-> [    0.537575] [<c001225c>] (show_stack+0x10/0x14) from [<c0572274>] (dump_stack+0x80/0xc0)
-> [    0.545963] [<c0572274>] (dump_stack+0x80/0xc0) from [<c0025d54>] (warn_slowpath_common+0x64/0x88)
-> [    0.555231] [<c0025d54>] (warn_slowpath_common+0x64/0x88) from [<c0025d94>] (warn_slowpath_null+0x1c/0x24)
-> [    0.565213] [<c0025d94>] (warn_slowpath_null+0x1c/0x24) from [<c07b4c64>] (tegra_init_from_table+0xc0/0x158)
-> [    0.575373] [<c07b4c64>] (tegra_init_from_table+0xc0/0x158) from [<c07b4e10>] (tegra_clocks_apply_init_table+0x18/0x20)
-> [    0.586514] [<c07b4e10>] (tegra_clocks_apply_init_table+0x18/0x20) from [<c079f9cc>] (tegra_dt_init+0xc/0xd8)
-> [    0.596770] [<c079f9cc>] (tegra_dt_init+0xc/0xd8) from [<c079a580>] (customize_machine+0x1c/0x40)
-> [    0.605951] [<c079a580>] (customize_machine+0x1c/0x40) from [<c00089e0>] (do_one_initcall+0xec/0x19c)
-> [    0.615486] [<c00089e0>] (do_one_initcall+0xec/0x19c) from [<c0798ba8>] (kernel_init_freeable+0xfc/0x1c8)
-> [    0.625389] [<c0798ba8>] (kernel_init_freeable+0xfc/0x1c8) from [<c056d5a8>] (kernel_init+0x8/0xe4)
-> [    0.634748] [<c056d5a8>] (kernel_init+0x8/0xe4) from [<c000f0f8>] (ret_from_fork+0x14/0x3c)
-> [    0.643406] ---[ end trace 3b692d0aca5bdcbf ]---
-> [    0.648221] tegra_init_from_table: Failed to set rate 600000000 of disp2
-> [    0.655170] ------------[ cut here ]------------
-> [    0.659985] WARNING: CPU: 0 PID: 1 at drivers/clk/tegra/clk.c:196 tegra_init_from_table+0xc0/0x158()
-> [    0.669424] Modules linked in:
-> [    0.672641] CPU: 0 PID: 1 Comm: swapper/0 Tainted: G        W    3.12.0-rc5-next-20131014-05418-g30b9d55 #48
-> [    0.682801] [<c0016644>] (unwind_backtrace+0x0/0x138) from [<c001225c>] (show_stack+0x10/0x14)
-> [    0.691716] [<c001225c>] (show_stack+0x10/0x14) from [<c0572274>] (dump_stack+0x80/0xc0)
-> [    0.700089] [<c0572274>] (dump_stack+0x80/0xc0) from [<c0025d54>] (warn_slowpath_common+0x64/0x88)
-> [    0.709356] [<c0025d54>] (warn_slowpath_common+0x64/0x88) from [<c0025d94>] (warn_slowpath_null+0x1c/0x24)
-> [    0.719337] [<c0025d94>] (warn_slowpath_null+0x1c/0x24) from [<c07b4c64>] (tegra_init_from_table+0xc0/0x158)
-> [    0.729496] [<c07b4c64>] (tegra_init_from_table+0xc0/0x158) from [<c07b4e10>] (tegra_clocks_apply_init_table+0x18/0x20)
-> [    0.740633] [<c07b4e10>] (tegra_clocks_apply_init_table+0x18/0x20) from [<c079f9cc>] (tegra_dt_init+0xc/0xd8)
-> [    0.750880] [<c079f9cc>] (tegra_dt_init+0xc/0xd8) from [<c079a580>] (customize_machine+0x1c/0x40)
-> [    0.760058] [<c079a580>] (customize_machine+0x1c/0x40) from [<c00089e0>] (do_one_initcall+0xec/0x19c)
-> [    0.769593] [<c00089e0>] (do_one_initcall+0xec/0x19c) from [<c0798ba8>] (kernel_init_freeable+0xfc/0x1c8)
-> [    0.779485] [<c0798ba8>] (kernel_init_freeable+0xfc/0x1c8) from [<c056d5a8>] (kernel_init+0x8/0xe4)
-> [    0.788843] [<c056d5a8>] (kernel_init+0x8/0xe4) from [<c000f0f8>] (ret_from_fork+0x14/0x3c)
-> [    0.797483] ---[ end trace 3b692d0aca5bdcc0 ]---
-
-Testing on Dalmore (Tegra114) and Harmony (Tegra20) seemed OK.
+diff --git a/arch/m68k/Kconfig b/arch/m68k/Kconfig
+index 311a300d48cc..5d65c39bfc69 100644
+--- a/arch/m68k/Kconfig
++++ b/arch/m68k/Kconfig
+@@ -86,6 +86,23 @@ config MMU_SUN3
+ 	bool
+ 	depends on MMU && !MMU_MOTOROLA && !MMU_COLDFIRE
+ 
++config KEXEC
++	bool "kexec system call"
++	depends on M68KCLASSIC
++	help
++	  kexec is a system call that implements the ability to shutdown your
++	  current kernel, and to start another kernel.  It is like a reboot
++	  but it is independent of the system firmware.   And like a reboot
++	  you can start any kernel with it, not just Linux.
++
++	  The name comes from the similarity to the exec system call.
++
++	  It is an ongoing process to be certain the hardware in a machine
++	  is properly shutdown, so do not be surprised if this code does not
++	  initially work for you.  As of this writing the exact hardware
++	  interface is strongly in flux, so no good recommendation can be
++	  made.
++
+ menu "Platform setup"
+ 
+ source arch/m68k/Kconfig.cpu
+diff --git a/arch/m68k/include/asm/kexec.h b/arch/m68k/include/asm/kexec.h
+new file mode 100644
+index 000000000000..3df97abac147
+--- /dev/null
++++ b/arch/m68k/include/asm/kexec.h
+@@ -0,0 +1,29 @@
++#ifndef _ASM_M68K_KEXEC_H
++#define _ASM_M68K_KEXEC_H
++
++#ifdef CONFIG_KEXEC
++
++/* Maximum physical address we can use pages from */
++#define KEXEC_SOURCE_MEMORY_LIMIT (-1UL)
++/* Maximum address we can reach in physical address mode */
++#define KEXEC_DESTINATION_MEMORY_LIMIT (-1UL)
++/* Maximum address we can use for the control code buffer */
++#define KEXEC_CONTROL_MEMORY_LIMIT (-1UL)
++
++#define KEXEC_CONTROL_PAGE_SIZE	4096
++
++#define KEXEC_ARCH KEXEC_ARCH_68K
++
++#ifndef __ASSEMBLY__
++
++static inline void crash_setup_regs(struct pt_regs *newregs,
++				    struct pt_regs *oldregs)
++{
++	/* Dummy implementation for now */
++}
++
++#endif /* __ASSEMBLY__ */
++
++#endif /* CONFIG_KEXEC */
++
++#endif /* _ASM_M68K_KEXEC_H */
+diff --git a/arch/m68k/kernel/Makefile b/arch/m68k/kernel/Makefile
+index 655347d80780..7ee5f00a9abb 100644
+--- a/arch/m68k/kernel/Makefile
++++ b/arch/m68k/kernel/Makefile
+@@ -22,3 +22,5 @@ obj-$(CONFIG_PCI) += pcibios.o
+ 
+ obj-$(CONFIG_HAS_DMA)	+= dma.o
+ 
++obj-$(CONFIG_KEXEC)		+= machine_kexec.o relocate_kernel.o
++
+diff --git a/arch/m68k/kernel/asm-offsets.c b/arch/m68k/kernel/asm-offsets.c
+index 8b7b22846366..3a386341aa6e 100644
+--- a/arch/m68k/kernel/asm-offsets.c
++++ b/arch/m68k/kernel/asm-offsets.c
+@@ -98,6 +98,9 @@ int main(void)
+ 	DEFINE(CIABBASE, &ciab);
+ 	DEFINE(C_PRA, offsetof(struct CIA, pra));
+ 	DEFINE(ZTWOBASE, zTwoBase);
++
++	/* enum m68k_fixup_type */
++	DEFINE(M68K_FIXUP_MEMOFFSET, m68k_fixup_memoffset);
+ #endif
+ 
+ 	return 0;
+diff --git a/arch/m68k/kernel/machine_kexec.c b/arch/m68k/kernel/machine_kexec.c
+new file mode 100644
+index 000000000000..d4affc917d9d
+--- /dev/null
++++ b/arch/m68k/kernel/machine_kexec.c
+@@ -0,0 +1,58 @@
++/*
++ * machine_kexec.c - handle transition of Linux booting another kernel
++ */
++#include <linux/compiler.h>
++#include <linux/kexec.h>
++#include <linux/mm.h>
++#include <linux/delay.h>
++
++#include <asm/cacheflush.h>
++#include <asm/page.h>
++#include <asm/setup.h>
++
++extern const unsigned char relocate_new_kernel[];
++extern const size_t relocate_new_kernel_size;
++
++int machine_kexec_prepare(struct kimage *kimage)
++{
++	return 0;
++}
++
++void machine_kexec_cleanup(struct kimage *kimage)
++{
++}
++
++void machine_shutdown(void)
++{
++}
++
++void machine_crash_shutdown(struct pt_regs *regs)
++{
++}
++
++typedef void (*relocate_kernel_t)(unsigned long ptr,
++				  unsigned long start,
++				  unsigned long cpu_mmu_flags) __noreturn;
++
++void machine_kexec(struct kimage *image)
++{
++	void *reboot_code_buffer;
++	unsigned long cpu_mmu_flags;
++
++	reboot_code_buffer = page_address(image->control_code_page);
++
++	memcpy(reboot_code_buffer, relocate_new_kernel,
++	       relocate_new_kernel_size);
++
++	/*
++	 * we do not want to be bothered.
++	 */
++	local_irq_disable();
++
++	pr_info("Will call new kernel at 0x%08lx. Bye...\n", image->start);
++	__flush_cache_all();
++	cpu_mmu_flags = m68k_cputype | m68k_mmutype << 8;
++	((relocate_kernel_t) reboot_code_buffer)(image->head & PAGE_MASK,
++						 image->start,
++						 cpu_mmu_flags);
++}
+diff --git a/arch/m68k/kernel/relocate_kernel.S b/arch/m68k/kernel/relocate_kernel.S
+new file mode 100644
+index 000000000000..3ab533b0b6bc
+--- /dev/null
++++ b/arch/m68k/kernel/relocate_kernel.S
+@@ -0,0 +1,155 @@
++#include <linux/linkage.h>
++
++#include <asm/asm-offsets.h>
++#include <asm/page.h>
++#include <asm/setup.h>
++
++
++#define MMU_BASE	8		/* MMU flags base in cpu_mmu_flags */
++
++.text
++
++ENTRY(relocate_new_kernel)
++	movel %sp@(4),%a0		/* a0 = ptr */
++	movel %sp@(8),%a1		/* a1 = start */
++	movel %sp@(12),%d1		/* d1 = cpu_mmu_flags */
++	movew #PAGE_MASK,%d2		/* d2 = PAGE_MASK */
++
++	/* Disable MMU */
++
++	btst #MMU_BASE + MMUB_68851,%d1
++	jeq 3f
++
++1:	/* 68851 or 68030 */
++
++	lea %pc@(.Lcopy),%a4
++2:	addl #0x00000000,%a4		/* virt_to_phys() */
++
++	.section ".m68k_fixup","aw"
++	.long M68K_FIXUP_MEMOFFSET, 2b+2
++	.previous
++
++	.chip 68030
++	pmove %tc,%d0			/* Disable MMU */
++	bclr #7,%d0
++	pmove %d0,%tc
++	jmp %a4@			/* Jump to physical .Lcopy */
++	.chip 68k
++
++3:
++	btst #MMU_BASE + MMUB_68030,%d1
++	jne 1b
++
++	btst #MMU_BASE + MMUB_68040,%d1
++	jeq 6f
++
++4:	/* 68040 or 68060 */
++
++	lea %pc@(.Lcont040),%a4
++5:	addl #0x00000000,%a4		/* virt_to_phys() */
++
++	.section ".m68k_fixup","aw"
++	.long M68K_FIXUP_MEMOFFSET, 5b+2
++	.previous
++
++	movel %a4,%d0
++	andl #0xff000000,%d0
++	orw #0xe020,%d0			/* Map 16 MiB, enable, cacheable */
++	.chip 68040
++	movec %d0,%itt0
++	movec %d0,%dtt0
++	.chip 68k
++	jmp %a4@			/* Jump to physical .Lcont040 */
++
++.Lcont040:
++	moveq #0,%d0
++	.chip 68040
++	movec %d0,%tc			/* Disable MMU */
++	.chip 68k
++	jra .Lcopy
++
++6:
++	btst #MMU_BASE + MMUB_68060,%d1
++	jne 4b
++
++.Lcopy:
++	movel %a0@+,%d0			/* d0 = entry = *ptr */
++	jeq .Lflush
++
++	btst #2,%d0			/* entry & IND_DONE? */
++	jne .Lflush
++
++	btst #1,%d0			/* entry & IND_INDIRECTION? */
++	jeq 1f
++	andw %d2,%d0
++	movel %d0,%a0			/* ptr = entry & PAGE_MASK */
++	jra .Lcopy
++
++1:
++	btst #0,%d0			/* entry & IND_DESTINATION? */
++	jeq 2f
++	andw %d2,%d0
++	movel %d0,%a2			/* a2 = dst = entry & PAGE_MASK */
++	jra .Lcopy
++
++2:
++	btst #3,%d0			/* entry & IND_SOURCE? */
++	jeq .Lcopy
++
++	andw %d2,%d0
++	movel %d0,%a3			/* a3 = src = entry & PAGE_MASK */
++	movew #PAGE_SIZE/32 - 1,%d0	/* d0 = PAGE_SIZE/32 - 1 */
++3:
++	movel %a3@+,%a2@+		/* *dst++ = *src++ */
++	movel %a3@+,%a2@+		/* *dst++ = *src++ */
++	movel %a3@+,%a2@+		/* *dst++ = *src++ */
++	movel %a3@+,%a2@+		/* *dst++ = *src++ */
++	movel %a3@+,%a2@+		/* *dst++ = *src++ */
++	movel %a3@+,%a2@+		/* *dst++ = *src++ */
++	movel %a3@+,%a2@+		/* *dst++ = *src++ */
++	movel %a3@+,%a2@+		/* *dst++ = *src++ */
++	dbf %d0, 3b
++	jra .Lcopy
++
++.Lflush:
++	/* Flush all caches */
++
++	btst #CPUB_68020,%d1
++	jeq 2f
++
++1:	/* 68020 or 68030 */
++	.chip 68030
++	movec %cacr,%d0
++	orw #0x808,%d0
++	movec %d0,%cacr
++	.chip 68k
++	jra .Lreincarnate
++
++2:
++	btst #CPUB_68030,%d1
++	jne 1b
++
++	btst #CPUB_68040,%d1
++	jeq 4f
++
++3:	/* 68040 or 68060 */
++	.chip 68040
++	nop
++	cpusha %bc
++	nop
++	cinva %bc
++	nop
++	.chip 68k
++	jra .Lreincarnate
++
++4:
++	btst #CPUB_68060,%d1
++	jne 3b
++
++.Lreincarnate:
++	jmp %a1@
++
++relocate_new_kernel_end:
++
++ENTRY(relocate_new_kernel_size)
++	.long relocate_new_kernel_end - relocate_new_kernel
+diff --git a/include/uapi/linux/kexec.h b/include/uapi/linux/kexec.h
+index 104838f65bc1..d6629d49a243 100644
+--- a/include/uapi/linux/kexec.h
++++ b/include/uapi/linux/kexec.h
+@@ -18,6 +18,7 @@
+  */
+ #define KEXEC_ARCH_DEFAULT ( 0 << 16)
+ #define KEXEC_ARCH_386     ( 3 << 16)
++#define KEXEC_ARCH_68K     ( 4 << 16)
+ #define KEXEC_ARCH_X86_64  (62 << 16)
+ #define KEXEC_ARCH_PPC     (20 << 16)
+ #define KEXEC_ARCH_PPC64   (21 << 16)
+-- 
+1.7.9.5
 
