@@ -1,80 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933426Ab3JORWN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 13:22:13 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:44348 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932396Ab3JORWM (ORCPT
+	id S933446Ab3JORWs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 13:22:48 -0400
+Received: from a9-62.smtp-out.amazonses.com ([54.240.9.62]:60647 "EHLO
+	a9-62.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932396Ab3JORWr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 13:22:12 -0400
+	Tue, 15 Oct 2013 13:22:47 -0400
+Date: Tue, 15 Oct 2013 17:22:45 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Toshi Kani <toshi.kani@hp.com>
+cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, isimatu.yasuaki@jp.fujitsu.com
+Subject: Re: [PATCH 1/2] mm: Set N_CPU to node_states during boot
+In-Reply-To: <1381857176-22999-2-git-send-email-toshi.kani@hp.com>
+Message-ID: <00000141bd24292a-c0ebad11-c3bb-441e-a58e-e17b3bc2e21c-000000@email.amazonses.com>
+References: <1381857176-22999-1-git-send-email-toshi.kani@hp.com> <1381857176-22999-2-git-send-email-toshi.kani@hp.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20131015160329.GA16003@gmail.com>
-References: <20131011013954.GA28902@www.outflux.net>
-	<tip-d751c169e9a6f0f853346f1184881422bd10b3c2@git.kernel.org>
-	<20131014083035.GA20976@gmail.com>
-	<007cdb12-9fc7-4744-8686-695891b926a3@email.android.com>
-	<525C1BC1.6090501@zytor.com>
-	<CAGXu5j+tQfUpmem85WK5-ootoJM1mCH6BPDr3pfR2sHwoFy_8A@mail.gmail.com>
-	<20131015060425.GB3866@gmail.com>
-	<CAGXu5jJx1xkwZD=tC+D69H_6-cGMHD8Sk_9_=8XQxjjDtHpBNA@mail.gmail.com>
-	<20131015160329.GA16003@gmail.com>
-Date: Tue, 15 Oct 2013 10:22:10 -0700
-X-Google-Sender-Auth: dor7rp4uMtev0PKClj514gjL8hc
-Message-ID: <CAGXu5jL2sK86PeEiumJ-4bWQeCYg9BzEBAVOhQeNnHAC2ZPSYA@mail.gmail.com>
-Subject: Re: [tip:x86/kaslr] x86, relocs: Add more per-cpu gold special cases
-From: Kees Cook <keescook@chromium.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
-        Michael Davidson <md@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.10.15-54.240.9.62
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 15, 2013 at 9:03 AM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> * Kees Cook <keescook@chromium.org> wrote:
->
->> On Mon, Oct 14, 2013 at 11:04 PM, Ingo Molnar <mingo@kernel.org> wrote:
->> >
->> > * Kees Cook <keescook@chromium.org> wrote:
->> >
->> >> On Mon, Oct 14, 2013 at 9:28 AM, H. Peter Anvin <hpa@zytor.com> wrote:
->> >> > On 10/14/2013 07:19 AM, H. Peter Anvin wrote:
->> >> >> My guess is that the 95 addresses are randomized and the 82 address is an address which failed to relocate.
->> >> >
->> >> >> ffffffff82a04a58 is:
->> >> >> ffffffff82a03000 t init_per_cpu__gdt_page
->> >> >
->> >> >
->> >> > Specifically, it looks like the percpu stuff isn't getting set up correctly.
->> >>
->> >> It wouldn't surprise me if there are even more percpu things to fix.
->> >> It's the main area we've continued to trip over while working on this
->> >> with various linkers. Which linker and version are you seeing this
->> >> with?
->> >
->> > The failure I saw triggered with fairly modern userspace:
->> >
->> >  GNU ld version 2.23.52.0.1-9.fc19 20130226
->> >
->> >  gcc version 4.8.1 20130603 (Red Hat 4.8.1-1) (GCC)
->>
->> Can you try with the gold linker?  When not using Gold, I can produce a
->> similar crash with GNU ld ver 2.23.2 but not 2.22.
->
-> I'm not set up for Gold - but maybe others can try your experiment.
->
-> If you can see/reproduce the 2.23 crash then maybe that fix will work for
-> my testcase as well.
+On Tue, 15 Oct 2013, Toshi Kani wrote:
 
-I haven't isolated the problem with 2.23 yet, but I'll start digging.
+> Changed setup_vmstat() to mark N_CPU to the nodes with
+> online CPUs at boot, which is consistent with other
+> operations in vmstat_cpuup_callback(), i.e. start_cpu_timer()
+> and refresh_zone_stat_thresholds().
 
--Kees
+Acked-by: Christoph Lameter <cl@linux.com>
 
--- 
-Kees Cook
-Chrome OS Security
