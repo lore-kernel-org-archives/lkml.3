@@ -1,72 +1,384 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757485Ab3JODT1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 23:19:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34423 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756720Ab3JODTZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 23:19:25 -0400
-From: Jason Wang <jasowang@redhat.com>
-To: mst@redhat.com, rusty@rustcorp.com.au,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Jason Wang <jasowang@redhat.com>, Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Subject: [PATCH net V2 1/2] virtio-net: don't respond to cpu hotplug notifier if we're not ready
-Date: Tue, 15 Oct 2013 11:18:58 +0800
-Message-Id: <1381807139-3450-1-git-send-email-jasowang@redhat.com>
+	id S932111Ab3JODUJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 23:20:09 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:23343 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756860Ab3JODUH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Oct 2013 23:20:07 -0400
+Date: Mon, 14 Oct 2013 23:20:04 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: fweisbec@gmail.com, mingo@redhat.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, shaojie.sun@linaro.org
+Subject: Re: [PATCH] ARM: trace: Add tracepoint for the Inter Processor
+ Interrupt
+Message-ID: <20131014232004.5cbedbb8@gandalf.local.home>
+In-Reply-To: <1381758807-31139-1-git-send-email-daniel.lezcano@linaro.org>
+References: <1381758807-31139-1-git-send-email-daniel.lezcano@linaro.org>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We're trying to re-configure the affinity unconditionally in cpu hotplug
-callback. This may lead the issue during resuming from s3/s4 since
+On Mon, 14 Oct 2013 15:53:27 +0200
+Daniel Lezcano <daniel.lezcano@linaro.org> wrote:
 
-- virt queues haven't been allocated at that time.
-- it's unnecessary since thaw method will re-configure the affinity.
+> The Inter Processor Interrupt is used on ARM to tell another processor to do
+> a specific action. This is mainly used to emulate a timer interrupt on an idle
+> cpu, force a cpu to reschedule or run a function on another processor context.
+> 
+> Add a tracepoint when raising an IPI and in the entry/exit handler function.
+> 
+> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+> ---
+>  arch/arm/include/asm/smp.h   |    9 ++++
+>  arch/arm/kernel/smp.c        |   34 ++++++++------
+>  arch/arm64/include/asm/smp.h |    7 +++
+>  arch/arm64/kernel/smp.c      |   21 +++++++--
+>  include/trace/events/ipi.h   |  106 ++++++++++++++++++++++++++++++++++++++++++
+>  5 files changed, 158 insertions(+), 19 deletions(-)
+>  create mode 100644 include/trace/events/ipi.h
+> 
+> diff --git a/arch/arm/include/asm/smp.h b/arch/arm/include/asm/smp.h
+> index a8cae71c..788706c 100644
+> --- a/arch/arm/include/asm/smp.h
+> +++ b/arch/arm/include/asm/smp.h
+> @@ -18,6 +18,15 @@
+>  # error "<asm/smp.h> included in non-SMP build"
+>  #endif
+>  
+> +enum ipi_msg_type {
+> +	IPI_WAKEUP,
+> +	IPI_TIMER,
+> +	IPI_RESCHEDULE,
+> +	IPI_CALL_FUNC,
+> +	IPI_CALL_FUNC_SINGLE,
+> +	IPI_CPU_STOP,
+> +};
+> +
+>  #define raw_smp_processor_id() (current_thread_info()->cpu)
+>  
+>  struct seq_file;
+> diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
+> index 72024ea..9ca8ce8 100644
+> --- a/arch/arm/kernel/smp.c
+> +++ b/arch/arm/kernel/smp.c
+> @@ -46,6 +46,9 @@
+>  #include <asm/mach/arch.h>
+>  #include <asm/mpu.h>
+>  
+> +#define CREATE_TRACE_POINTS
+> +#include <trace/events/ipi.h>
+> +
+>  /*
+>   * as from 2.5, kernels no longer have an init_tasks structure
+>   * so we need some other way of telling a new secondary core
+> @@ -59,15 +62,6 @@ struct secondary_data secondary_data;
+>   */
+>  volatile int pen_release = -1;
+>  
+> -enum ipi_msg_type {
+> -	IPI_WAKEUP,
+> -	IPI_TIMER,
+> -	IPI_RESCHEDULE,
+> -	IPI_CALL_FUNC,
+> -	IPI_CALL_FUNC_SINGLE,
+> -	IPI_CPU_STOP,
+> -};
+> -
+>  static DECLARE_COMPLETION(cpu_running);
+>  
+>  static struct smp_operations smp_ops;
+> @@ -433,19 +427,25 @@ void __init set_smp_cross_call(void (*fn)(const struct cpumask *, unsigned int))
+>  		smp_cross_call = fn;
+>  }
+>  
+> +static void ipi_raise(const struct cpumask *mask, int ipinr)
+> +{
+> +	trace_ipi_raise(mask, ipinr);
+> +	smp_cross_call(mask, ipinr);
+> +}
+> +
+>  void arch_send_call_function_ipi_mask(const struct cpumask *mask)
+>  {
+> -	smp_cross_call(mask, IPI_CALL_FUNC);
+> +	ipi_raise(mask, IPI_CALL_FUNC);
+>  }
+>  
+>  void arch_send_wakeup_ipi_mask(const struct cpumask *mask)
+>  {
+> -	smp_cross_call(mask, IPI_WAKEUP);
+> +	ipi_raise(mask, IPI_WAKEUP);
+>  }
+>  
+>  void arch_send_call_function_single_ipi(int cpu)
+>  {
+> -	smp_cross_call(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
+> +	ipi_raise(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
+>  }
+>  
+>  static const char *ipi_types[NR_IPI] = {
+> @@ -487,7 +487,7 @@ u64 smp_irq_stat_cpu(unsigned int cpu)
+>  #ifdef CONFIG_GENERIC_CLOCKEVENTS_BROADCAST
+>  void tick_broadcast(const struct cpumask *mask)
+>  {
+> -	smp_cross_call(mask, IPI_TIMER);
+> +	ipi_raise(mask, IPI_TIMER);
+>  }
+>  #endif
+>  
+> @@ -528,6 +528,8 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
+>  	unsigned int cpu = smp_processor_id();
+>  	struct pt_regs *old_regs = set_irq_regs(regs);
+>  
+> +	trace_ipi_handler_entry(ipinr);
+> +
+>  	if (ipinr < NR_IPI)
+>  		__inc_irq_stat(cpu, ipi_irqs[ipinr]);
+>  
+> @@ -571,11 +573,13 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
+>  		break;
+>  	}
+>  	set_irq_regs(old_regs);
+> +
+> +	trace_ipi_handler_exit(ipinr);
+>  }
+>  
+>  void smp_send_reschedule(int cpu)
+>  {
+> -	smp_cross_call(cpumask_of(cpu), IPI_RESCHEDULE);
+> +	ipi_raise(cpumask_of(cpu), IPI_RESCHEDULE);
+>  }
+>  
+>  void smp_send_stop(void)
+> @@ -586,7 +590,7 @@ void smp_send_stop(void)
+>  	cpumask_copy(&mask, cpu_online_mask);
+>  	cpumask_clear_cpu(smp_processor_id(), &mask);
+>  	if (!cpumask_empty(&mask))
+> -		smp_cross_call(&mask, IPI_CPU_STOP);
+> +		ipi_raise(&mask, IPI_CPU_STOP);
+>  
+>  	/* Wait up to one second for other CPUs to stop */
+>  	timeout = USEC_PER_SEC;
+> diff --git a/arch/arm64/include/asm/smp.h b/arch/arm64/include/asm/smp.h
+> index 4b8023c..7ebaa3a 100644
+> --- a/arch/arm64/include/asm/smp.h
+> +++ b/arch/arm64/include/asm/smp.h
+> @@ -24,6 +24,13 @@
+>  # error "<asm/smp.h> included in non-SMP build"
+>  #endif
+>  
+> +enum ipi_msg_type {
+> +	IPI_RESCHEDULE,
+> +	IPI_CALL_FUNC,
+> +	IPI_CALL_FUNC_SINGLE,
+> +	IPI_CPU_STOP,
+> +};
+> +
+>  #define raw_smp_processor_id() (current_thread_info()->cpu)
+>  
+>  struct seq_file;
+> diff --git a/arch/arm64/kernel/smp.c b/arch/arm64/kernel/smp.c
+> index 78db90d..c987b9f 100644
+> --- a/arch/arm64/kernel/smp.c
+> +++ b/arch/arm64/kernel/smp.c
+> @@ -48,6 +48,9 @@
+>  #include <asm/tlbflush.h>
+>  #include <asm/ptrace.h>
+>  
+> +#define CREATE_TRACE_POINTS
+> +#include <trace/events/ipi.h>
+> +
+>  /*
+>   * as from 2.5, kernels no longer have an init_tasks structure
+>   * so we need some other way of telling a new secondary core
+> @@ -426,14 +429,20 @@ void __init set_smp_cross_call(void (*fn)(const struct cpumask *, unsigned int))
+>  	smp_cross_call = fn;
+>  }
+>  
+> +static void ipi_raise(const struct cpumask *mask, int ipinr)
+> +{
+> +	trace_ipi_raise(mask, ipinr);
+> +	smp_cross_call(mask, ipinr);
+> +}
+> +
+>  void arch_send_call_function_ipi_mask(const struct cpumask *mask)
+>  {
+> -	smp_cross_call(mask, IPI_CALL_FUNC);
+> +	ipi_raise(mask, IPI_CALL_FUNC);
+>  }
+>  
+>  void arch_send_call_function_single_ipi(int cpu)
+>  {
+> -	smp_cross_call(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
+> +	ipi_raise(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
+>  }
+>  
+>  static const char *ipi_types[NR_IPI] = {
+> @@ -501,6 +510,8 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
+>  	unsigned int cpu = smp_processor_id();
+>  	struct pt_regs *old_regs = set_irq_regs(regs);
+>  
+> +	trace_ipi_handler_entry(ipinr);
+> +
+>  	if (ipinr >= IPI_RESCHEDULE && ipinr < IPI_RESCHEDULE + NR_IPI)
+>  		__inc_irq_stat(cpu, ipi_irqs[ipinr - IPI_RESCHEDULE]);
+>  
+> @@ -532,11 +543,13 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
+>  		break;
+>  	}
+>  	set_irq_regs(old_regs);
+> +
+> +	trace_ipi_handler_exit(ipinr);
+>  }
+>  
+>  void smp_send_reschedule(int cpu)
+>  {
+> -	smp_cross_call(cpumask_of(cpu), IPI_RESCHEDULE);
+> +	ipi_raise(cpumask_of(cpu), IPI_RESCHEDULE);
+>  }
+>  
+>  void smp_send_stop(void)
+> @@ -549,7 +562,7 @@ void smp_send_stop(void)
+>  		cpumask_copy(&mask, cpu_online_mask);
+>  		cpu_clear(smp_processor_id(), mask);
+>  
+> -		smp_cross_call(&mask, IPI_CPU_STOP);
+> +		ipi_raise(&mask, IPI_CPU_STOP);
+>  	}
+>  
+>  	/* Wait up to one second for other CPUs to stop */
+> diff --git a/include/trace/events/ipi.h b/include/trace/events/ipi.h
+> new file mode 100644
+> index 0000000..4d6648a
+> --- /dev/null
+> +++ b/include/trace/events/ipi.h
+> @@ -0,0 +1,106 @@
+> +#undef TRACE_SYSTEM
+> +#define TRACE_SYSTEM ipi
+> +
+> +#if !defined(_TRACE_IPI_H) || defined(TRACE_HEADER_MULTI_READ)
+> +#define _TRACE_IPI_H
+> +
+> +#include <linux/tracepoint.h>
+> +
+> +struct cpumask;
+> +
+> +#define ipi_name(ipinr) { IPI_##ipinr, #ipinr }
+> +#define show_ipi_name(val)				\
+> +	__print_symbolic(val,				\
+> +			 ipi_name(WAKEUP),		\
+> +			 ipi_name(TIMER),		\
+> +			 ipi_name(RESCHEDULE),		\
+> +			 ipi_name(CALL_FUNC),		\
+> +			 ipi_name(CALL_FUNC_SINGLE),	\
+> +			 ipi_name(CPU_STOP))
+> +
+> +/**
+> + * ipi_handle_entry - called right before the IPI handler
+> + * @ipinr: the IPI number
+> + *
+> + * The @ipinr value must be valid and the action name associated with
+> + * the IPI value is given in the trace.
+> + */
+> +TRACE_EVENT_CONDITION(ipi_handler_entry,
+> +
+> +    TP_PROTO(int ipinr),
+> +
+> +    TP_ARGS(ipinr),
+> +
+> +    TP_CONDITION(ipinr < NR_IPI && ipinr >= 0),
+> +
+> +    TP_STRUCT__entry(
+> +        __field(unsigned int, ipinr)
+> +    ),
+> +
+> +    TP_fast_assign(
+> +        __entry->ipinr = ipinr;
+> +    ),
+> +
+> +    TP_printk("ipi=%d, name=%s", __entry->ipinr,
+> +	      show_ipi_name(__entry->ipinr))
+> +);
+> +
+> +/**
+> + * ipi_handle_exit - called right after the IPI handler
+> + * @ipinr: the IPI number
+> + *
+> + * The @ipinr value must be valid and the action name associated with
+> + * the IPI value is given in the trace.
+> + */
+> +TRACE_EVENT_CONDITION(ipi_handler_exit,
+> +
+> +    TP_PROTO(int ipinr),
+> +
+> +    TP_ARGS(ipinr),
+> +
+> +    TP_CONDITION(ipinr < NR_IPI && ipinr >= 0),
+> +
+> +    TP_STRUCT__entry(
+> +        __field(int, ipinr)
 
-Fix this issue by checking the config_enable and do nothing is we're not ready.
+Here you have "int" and above for the "*_entry" you have unsigned int.
+Is there a difference?
 
-The bug were introduced by commit 8de4b2f3ae90c8fc0f17eeaab87d5a951b66ee17
-(virtio-net: reset virtqueue affinity when doing cpu hotplug).
+If not, you should combine these two into a DECLARE_EVENT_CLASS() and
+then use DEFINE_EVENT_CONDITION() for the two tracepoints.
 
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-Reviewed-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
-The patch is need for 3.8 and above.
----
- drivers/net/virtio_net.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+> +    ),
+> +
+> +    TP_fast_assign(
+> +        __entry->ipinr = ipinr;
+> +    ),
+> +
+> +    TP_printk("ipi=%d, name=%s", __entry->ipinr,
+> +	      show_ipi_name(__entry->ipinr))
+> +);
+> +
+> +/**
+> + * ipi_raise - called when a smp cross call is made
+> + * @ipinr: the IPI number
+> + * @cpumask: the recipients for the IPI
+> + *
+> + * The @ipinr value must be valid and the action name associated with
+> + * the IPI value is given in the trace.
+> + */
+> +TRACE_EVENT_CONDITION(ipi_raise,
+> +
+> +    TP_PROTO(const struct cpumask *cpumask, int ipinr),
+> +
+> +    TP_ARGS(cpumask, ipinr),
 
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index defec2b..c4bc1cc 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -1116,6 +1116,11 @@ static int virtnet_cpu_callback(struct notifier_block *nfb,
- {
- 	struct virtnet_info *vi = container_of(nfb, struct virtnet_info, nb);
- 
-+	mutex_lock(&vi->config_lock);
-+
-+	if (!vi->config_enable)
-+		goto done;
-+
- 	switch(action & ~CPU_TASKS_FROZEN) {
- 	case CPU_ONLINE:
- 	case CPU_DOWN_FAILED:
-@@ -1128,6 +1133,9 @@ static int virtnet_cpu_callback(struct notifier_block *nfb,
- 	default:
- 		break;
- 	}
-+
-+done:
-+	mutex_unlock(&vi->config_lock);
- 	return NOTIFY_OK;
- }
- 
--- 
-1.8.1.2
+Why pass in the cpumask if it isn't used? Do you expect to hook
+something else to the tracepoint?
+
+-- Steve
+
+> +
+> +    TP_CONDITION(ipinr < NR_IPI && ipinr >= 0),
+> +
+> +    TP_STRUCT__entry(
+> +        __field(int, ipinr)
+> +    ),
+> +
+> +    TP_fast_assign(
+> +        __entry->ipinr = ipinr;
+> +    ),
+> +
+> +    TP_printk("ipi=%d, name=%s", __entry->ipinr, 
+> +	      show_ipi_name(__entry->ipinr))
+> +);
+> +
+> +#endif /* _TRACE_IPI_H */
+> +
+> +/* This part must be outside protection */
+> +#include <trace/define_trace.h>
 
