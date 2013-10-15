@@ -1,57 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932657Ab3JOO3i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 10:29:38 -0400
-Received: from mailrelay-out2.netcologne.de ([81.173.193.132]:57719 "EHLO
-	mailrelay-out2.netcologne.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932181Ab3JOO3S convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 10:29:18 -0400
-From: =?iso-8859-15?Q?Kelleter=2C_G=FCnther?= <GKelleter@datus.com>
-To: "andrew.hendry@gmail.com" <andrew.hendry@gmail.com>
-CC: "davem@davemloft.net" <davem@davemloft.net>,
-        "linux-x25@vger.kernel.org" <linux-x25@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] X.25: Fix address field length calculation
-Thread-Topic: [PATCH] X.25: Fix address field length calculation
-Thread-Index: AQHOybLnty+s/FnB5kKUVGTJOhUv6w==
-Date: Tue, 15 Oct 2013 14:29:06 +0000
-Message-ID: <525D5131.9070007@datus.com>
-Accept-Language: de-DE, en-US
-Content-Language: de-DE
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.52.21.9]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <01736E88829C1B4A9589D66039BC9A5E@datus.local>
-Content-Transfer-Encoding: 7BIT
+	id S932765Ab3JOOcn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 10:32:43 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:57642 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932283Ab3JOOcm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 10:32:42 -0400
+Date: Tue, 15 Oct 2013 16:32:27 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Don Zickus <dzickus@redhat.com>
+Cc: dave.hansen@linux.intel.com, eranian@google.com, ak@linux.intel.com,
+        jmario@redhat.com, linux-kernel@vger.kernel.org, acme@infradead.org
+Subject: Re: x86, perf: throttling issues with long nmi latencies
+Message-ID: <20131015143227.GY26785@twins.programming.kicks-ass.net>
+References: <20131014203549.GY227855@redhat.com>
+ <20131015101404.GD10651@twins.programming.kicks-ass.net>
+ <20131015130226.GX26785@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-X-purgate-ID: 153929::1381847355-00000593-E31637E5/0-0/0-0
-X-purgate: clean
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131015130226.GX26785@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Addresses are BCD encoded, not ASCII. x25_addr_ntoa got it right.
 
-Signed-off-by: Guenther Kelleter <gkelleter@datus.com>
+This one seems to actually work and is somewhat simpler.
+
 ---
-Wrong length calculation leads to rejection of CALL ACCEPT packets.
+ arch/x86/kernel/cpu/perf_event_intel_ds.c | 31 +++++++++++++++++++------------
+ 1 file changed, 19 insertions(+), 12 deletions(-)
 
- net/x25/af_x25.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/net/x25/af_x25.c b/net/x25/af_x25.c
-index 45a3ab5..2daf224 100644
---- a/net/x25/af_x25.c
-+++ b/net/x25/af_x25.c
-@@ -98,7 +98,7 @@ int x25_parse_address_block(struct sk_buff *skb,
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index 32e9ed81cd00..9c7e043f8514 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -722,6 +722,8 @@ void intel_pmu_pebs_disable_all(void)
+ 		wrmsrl(MSR_IA32_PEBS_ENABLE, 0);
+ }
+ 
++static DEFINE_PER_CPU(u8 [PAGE_SIZE], insn_page);
++
+ static int intel_pmu_pebs_fixup_ip(struct pt_regs *regs)
+ {
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+@@ -729,6 +731,7 @@ static int intel_pmu_pebs_fixup_ip(struct pt_regs *regs)
+ 	unsigned long old_to, to = cpuc->lbr_entries[0].to;
+ 	unsigned long ip = regs->ip;
+ 	int is_64bit = 0;
++	void *kaddr;
+ 
+ 	/*
+ 	 * We don't need to fixup if the PEBS assist is fault like
+@@ -763,29 +766,33 @@ static int intel_pmu_pebs_fixup_ip(struct pt_regs *regs)
+ 		return 1;
  	}
-  	len = *skb->data;
--	needed = 1 + (len >> 4) + (len & 0x0f);
-+	needed = 1 + ((len >> 4) + (len & 0x0f) + 1) / 2;
-  	if (!pskb_may_pull(skb, needed)) {
- 		/* packet is too short to hold the addresses it claims
--- 
-1.8.3.4.71.g0878476
+ 
++	if (!kernel_ip(ip)) {
++		int size, bytes;
++		u8 *buf = &__get_cpu_var(insn_page[0]);
++
++		size = ip - to; /* Must be le than PAGE_SIZE, see above */
++		bytes = copy_from_user_nmi(buf, (void __user *)to, size);
++		if (bytes != size)
++			return 0;
++
++		kaddr = buf;
++	} else {
++		kaddr = (void *)to;
++	}
++
+ 	do {
+ 		struct insn insn;
+-		u8 buf[MAX_INSN_SIZE];
+-		void *kaddr;
+ 
+ 		old_to = to;
+-		if (!kernel_ip(ip)) {
+-			int bytes, size = MAX_INSN_SIZE;
+-
+-			bytes = copy_from_user_nmi(buf, (void __user *)to, size);
+-			if (bytes != size)
+-				return 0;
+-
+-			kaddr = buf;
+-		} else
+-			kaddr = (void *)to;
+ 
+ #ifdef CONFIG_X86_64
+ 		is_64bit = kernel_ip(to) || !test_thread_flag(TIF_IA32);
+ #endif
+ 		insn_init(&insn, kaddr, is_64bit);
+ 		insn_get_length(&insn);
++
+ 		to += insn.length;
++		kaddr += insn.length;
+ 	} while (to < ip);
+ 
+ 	if (to == ip) {
