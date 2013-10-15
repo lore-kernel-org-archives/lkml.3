@@ -1,69 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933737Ab3JORzv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 13:55:51 -0400
-Received: from qmta01.emeryville.ca.mail.comcast.net ([76.96.30.16]:54124 "EHLO
+	id S933724Ab3JORzu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 13:55:50 -0400
+Received: from qmta01.emeryville.ca.mail.comcast.net ([76.96.30.16]:54123 "EHLO
 	qmta01.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933678Ab3JORy4 (ORCPT
+	by vger.kernel.org with ESMTP id S933679Ab3JORy4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Oct 2013 13:54:56 -0400
-Message-Id: <20131015174746.793436648@linux.com>
+Message-Id: <20131015174747.307585124@linux.com>
 User-Agent: quilt/0.60-1
-Date: Tue, 15 Oct 2013 12:47:26 -0500
+Date: Tue, 15 Oct 2013 12:47:27 -0500
 From: Christoph Lameter <cl@linux.com>
 To: Tejun Heo <tj@kernel.org>
 Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
         linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: [PATCH 4/6] Use raw_cpu_write for initialization of per cpu refcount.
+        Eric Dumazet <edumazet@google.com>
+Subject: [PATCH 5/6] net: __this_cpu_inc in route.c
 References: <20131015174722.615394057@linux.com>
-Content-Disposition: inline; filename=preempt_module
+Content-Disposition: inline; filename=preempt_rt_cache_stat
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The initialization of a structure is not subject to synchronization.
-The use of __this_cpu would trigger a false positive with the
-additional preemption checks for __this_cpu ops.
+The RT_CACHE_STAT_INC macro triggers the new preemption checks
+for __this_cpu ops
 
-So simply disable the check through the use of raw_cpu ops.
+I do not see any other synchronization that would allow the use
+of a __this_cpu operation here however in commit
+dbd2915ce87e811165da0717f8e159276ebb803e Andrew justifies
+the use of raw_smp_processor_id() here because "we do not care"
+about races.
+
+So lets use raw_cpu ops here and hope for the best. The use of
+__this_cpu op improves the situation already from what commit
+dbd2915ce87e811165da0717f8e159276ebb803e did since the single instruction
+emitted on x86 does not allow the race to occur anymore. However,
+non x86 platforms could still experience a race here.
 
 Trace:
 
-[    0.668066] __this_cpu_write operation in preemptible [00000000] code: modprobe/286
-[    0.668108] caller is __this_cpu_preempt_check+0x38/0x60
-[    0.668111] CPU: 3 PID: 286 Comm: modprobe Tainted: GF            3.12.0-rc4+ #187
-[    0.668112] Hardware name: FUJITSU CELSIUS W530 Power/D3227-A1, BIOS V4.6.5.4 R1.10.0 for D3227-A1x 09/16/2013
-[    0.668113]  0000000000000003 ffff8807edda1d18 ffffffff816d5a57 ffff8807edda1fd8
-[    0.668117]  ffff8807edda1d48 ffffffff8137359c ffff8807edda1ef8 ffffffffa0002178
-[    0.668121]  ffffc90000067730 ffff8807edda1e48 ffff8807edda1d88 ffffffff813735f8
-[    0.668124] Call Trace:
-[    0.668129]  [<ffffffff816d5a57>] dump_stack+0x4e/0x82
-[    0.668132]  [<ffffffff8137359c>] check_preemption_disabled+0xec/0x110
-[    0.668135]  [<ffffffff813735f8>] __this_cpu_preempt_check+0x38/0x60
-[    0.668139]  [<ffffffff810c24fd>] load_module+0xcfd/0x2650
-[    0.668143]  [<ffffffff816dd922>] ? page_fault+0x22/0x30
-[    0.668146]  [<ffffffff810c3ef6>] SyS_init_module+0xa6/0xd0
-[    0.668150]  [<ffffffff816e4fd3>] tracesys+0xe1/0xe6
+[ 1277.189084] __this_cpu_add operation in preemptible [00000000] code: avahi-daemon/1193
+[ 1277.189085] caller is __this_cpu_preempt_check+0x38/0x60
+[ 1277.189086] CPU: 1 PID: 1193 Comm: avahi-daemon Tainted: GF            3.12.0-rc4+ #187
+[ 1277.189087] Hardware name: FUJITSU CELSIUS W530 Power/D3227-A1, BIOS V4.6.5.4 R1.10.0 for D3227-A1x 09/16/2013
+[ 1277.189088]  0000000000000001 ffff8807ef78fa00 ffffffff816d5a57 ffff8807ef78ffd8
+[ 1277.189089]  ffff8807ef78fa30 ffffffff8137359c ffff8807ef78fba0 ffff88079f822b40
+[ 1277.189091]  0000000020000000 ffff8807ee32c800 ffff8807ef78fa70 ffffffff813735f8
+[ 1277.189093] Call Trace:
+[ 1277.189094]  [<ffffffff816d5a57>] dump_stack+0x4e/0x82
+[ 1277.189096]  [<ffffffff8137359c>] check_preemption_disabled+0xec/0x110
+[ 1277.189097]  [<ffffffff813735f8>] __this_cpu_preempt_check+0x38/0x60
+[ 1277.189098]  [<ffffffff81610d65>] __ip_route_output_key+0x575/0x8c0
+[ 1277.189100]  [<ffffffff816110d7>] ip_route_output_flow+0x27/0x70
+[ 1277.189101]  [<ffffffff81616c80>] ? ip_copy_metadata+0x1a0/0x1a0
+[ 1277.189102]  [<ffffffff81640b15>] udp_sendmsg+0x825/0xa20
+[ 1277.189104]  [<ffffffff811b4aa9>] ? do_sys_poll+0x449/0x5d0
+[ 1277.189105]  [<ffffffff8164c695>] inet_sendmsg+0x85/0xc0
+[ 1277.189106]  [<ffffffff815c6e3c>] sock_sendmsg+0x9c/0xd0
+[ 1277.189108]  [<ffffffff813735f8>] ? __this_cpu_preempt_check+0x38/0x60
+[ 1277.189109]  [<ffffffff815c7550>] ? move_addr_to_kernel+0x40/0xa0
+[ 1277.189111]  [<ffffffff815c71ec>] ___sys_sendmsg+0x37c/0x390
+[ 1277.189112]  [<ffffffff8136613a>] ? string.isra.3+0x3a/0xd0
+[ 1277.189113]  [<ffffffff8136613a>] ? string.isra.3+0x3a/0xd0
+[ 1277.189115]  [<ffffffff81367b54>] ? vsnprintf+0x364/0x650
+[ 1277.189116]  [<ffffffff81367ee9>] ? snprintf+0x39/0x40
+[ 1277.189118]  [<ffffffff813735f8>] ? __this_cpu_preempt_check+0x38/0x60
+[ 1277.189119]  [<ffffffff815c7ff9>] __sys_sendmsg+0x49/0x90
+[ 1277.189121]  [<ffffffff815c8052>] SyS_sendmsg+0x12/0x20
+[ 1277.189122]  [<ffffffff816e4fd3>] tracesys+0xe1/0xe6
 
-
-
-Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Eric Dumazet <edumazet@google.com>
 Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Index: linux/kernel/module.c
+Index: linux/net/ipv4/route.c
 ===================================================================
---- linux.orig/kernel/module.c	2013-09-05 13:43:30.557687773 -0500
-+++ linux/kernel/module.c	2013-10-07 12:33:43.732059759 -0500
-@@ -643,7 +643,7 @@ static int module_unload_init(struct mod
- 	INIT_LIST_HEAD(&mod->target_list);
+--- linux.orig/net/ipv4/route.c	2013-10-07 10:27:25.000000000 -0500
++++ linux/net/ipv4/route.c	2013-10-07 12:41:23.993823743 -0500
+@@ -197,7 +197,7 @@ const __u8 ip_tos2prio[16] = {
+ EXPORT_SYMBOL(ip_tos2prio);
  
- 	/* Hold reference count during initialization. */
--	__this_cpu_write(mod->refptr->incs, 1);
-+	raw_cpu_write(mod->refptr->incs, 1);
- 	/* Backwards compatibility macros put refcount during init. */
- 	mod->waiter = current;
+ static DEFINE_PER_CPU(struct rt_cache_stat, rt_cache_stat);
+-#define RT_CACHE_STAT_INC(field) __this_cpu_inc(rt_cache_stat.field)
++#define RT_CACHE_STAT_INC(field) raw_cpu_inc(rt_cache_stat.field)
  
+ #ifdef CONFIG_PROC_FS
+ static void *rt_cache_seq_start(struct seq_file *seq, loff_t *pos)
 
