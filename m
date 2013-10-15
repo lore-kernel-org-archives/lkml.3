@@ -1,75 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933863Ab3JOUhX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 16:37:23 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:42899 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932576Ab3JOUhU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 16:37:20 -0400
-Date: Tue, 15 Oct 2013 22:37:16 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Liu, Chuansheng" <chuansheng.liu@intel.com>,
-        Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH] bug: Use xchg() to update WARN_ON_ONCE() static variable
-Message-ID: <20131015203715.GC3269@localhost.localdomain>
-References: <20131015155806.04e2613f@gandalf.local.home>
- <20131015201816.GA3269@localhost.localdomain>
- <20131015162540.5275728a@gandalf.local.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131015162540.5275728a@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933876Ab3JOUhp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 16:37:45 -0400
+Received: from mga03.intel.com ([143.182.124.21]:9130 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932499Ab3JOUf4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 16:35:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,502,1378882800"; 
+   d="scan'208";a="375185020"
+Subject: [RFC][PATCH 5/8] mm: pcp: make percpu_pagelist_fraction sysctl undoable
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Andi Kleen <ak@linux.intel.com>, cl@gentwo.org,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Dave Hansen <dave@sr71.net>
+From: Dave Hansen <dave@sr71.net>
+Date: Tue, 15 Oct 2013 13:35:45 -0700
+References: <20131015203536.1475C2BE@viggo.jf.intel.com>
+In-Reply-To: <20131015203536.1475C2BE@viggo.jf.intel.com>
+Message-Id: <20131015203545.9DAADC18@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 15, 2013 at 04:25:40PM -0400, Steven Rostedt wrote:
-> On Tue, 15 Oct 2013 22:18:48 +0200
-> Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> 
-> 
-> > How about just updating __warned without a cmpxchg. It's not that critical
-> > if the update is not seen immediately to other CPUs. OTOH it's critical
-> > that's it is visible immediately to the current CPU
-> 
-> Well, I didn't use cmpxchg() I used xchg() which is actually quite
-> faster.
 
-Still, I doubt it's that cheap.
+From: Dave Hansen <dave.hansen@linux.intel.com>
 
-> 
-> > 
-> > I mean some warrning can be hard to reproduce and happen to some users
-> > while staying for several kernel releases. If it's repetitive, the xchg
-> > might impact the performance.
-> 
-> But do we care about that? A WARN_ON() means the kernel (or hardware)
-> is buggy. It should be fixed.
+The kernel has two methods of setting the sizes of the percpu
+pagesets:
 
-Sure it should, doesn't mean it is. I've seen warnings that stayed on my
-boot for several releases with non responsive maintainers (fortunately now
-it seems that is got fixed).
+ 1. The default, according to a page_alloc.c comment is "set to
+    around 1000th of the size of the zone.  But no more than 1/2
+    of a meg."
+ 2. After boot, vm.percpu_pagelist_fraction can be set to
+    override the default.
 
-> 
-> But Andrew's ONCE() request is something we would want to avoid the
-> xchg() every time.
+However, the trip from 1->2 is a one-way street.  There's no way
+to get back.  You can get either the 'high' or 'batch' values to
+match the boot-time value, but since the relationship between the
+two is different in the two different modes, you can never get
+back _exactly_ to where you were.  This kinda sucks if you are
+trying to do performance testing to find optimal values.
 
-We we use it yeah.
+Note that we remove the .extra1 argument to the sysctl structure.
+The bounding behavior is now open-coded in the handler.
 
-> 
-> > 
-> > I may be overly paranoid, but I think barrier() (so that at least
-> > we don't recurse locally) alone would be better.
-> 
-> Heh, Boris is giving me the same argument on IRC ;-)
-> 
-> -- Steve
+Since we are now able to go back to the boot-time values, we
+need the boot-time function zone_batchsize() to be available
+at runtime, so remove its __meminit.
+
+Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+---
+
+ linux.git-davehans/Documentation/sysctl/vm.txt |    6 +++---
+ linux.git-davehans/kernel/sysctl.c             |   25 +++++++++++++++++++++----
+ linux.git-davehans/mm/page_alloc.c             |    2 +-
+ 3 files changed, 25 insertions(+), 8 deletions(-)
+
+diff -puN Documentation/sysctl/vm.txt~make-percpu_pagelist_fraction-sysctl-undoable Documentation/sysctl/vm.txt
+--- linux.git/Documentation/sysctl/vm.txt~make-percpu_pagelist_fraction-sysctl-undoable	2013-10-15 09:57:07.004662395 -0700
++++ linux.git-davehans/Documentation/sysctl/vm.txt	2013-10-15 09:57:07.011662705 -0700
+@@ -653,6 +653,9 @@ why oom happens. You can get snapshot.
+ 
+ percpu_pagelist_fraction
+ 
++Set (at boot) to 0.  The kernel will size each percpu pagelist to around
++1/1000th of the size of the zone but limited to be around 0.75MB.
++
+ This is the fraction of pages at most (high mark pcp->high) in each zone that
+ are allocated for each per cpu page list.  The min value for this is 8.  It
+ means that we don't allow more than 1/8th of pages in each zone to be
+@@ -663,9 +666,6 @@ of hot per cpu pagelists.  User can spec
+ The batch value of each per cpu pagelist is also updated as a result.  It is
+ set to pcp->high/4.  The upper limit of batch is (PAGE_SHIFT * 8)
+ 
+-The initial value is zero.  Kernel does not use this value at boot time to set
+-the high water marks for each per cpu page list.
+-
+ ==============================================================
+ 
+ stat_interval
+diff -puN kernel/sysctl.c~make-percpu_pagelist_fraction-sysctl-undoable kernel/sysctl.c
+--- linux.git/kernel/sysctl.c~make-percpu_pagelist_fraction-sysctl-undoable	2013-10-15 09:57:07.005662439 -0700
++++ linux.git-davehans/kernel/sysctl.c	2013-10-15 09:57:07.012662750 -0700
+@@ -138,7 +138,6 @@ static unsigned long dirty_bytes_min = 2
+ /* this is needed for the proc_dointvec_minmax for [fs_]overflow UID and GID */
+ static int maxolduid = 65535;
+ static int minolduid;
+-static int min_percpu_pagelist_fract = 8;
+ 
+ static int ngroups_max = NGROUPS_MAX;
+ static const int cap_last_cap = CAP_LAST_CAP;
+@@ -1289,7 +1288,6 @@ static struct ctl_table vm_table[] = {
+ 		.maxlen		= sizeof(percpu_pagelist_fraction),
+ 		.mode		= 0644,
+ 		.proc_handler	= percpu_pagelist_fraction_sysctl_handler,
+-		.extra1		= &min_percpu_pagelist_fract,
+ 	},
+ #ifdef CONFIG_MMU
+ 	{
+@@ -1910,7 +1908,7 @@ static int do_proc_dointvec_conv(bool *n
+ 
+ static const char proc_wspace_sep[] = { ' ', '\t', '\n' };
+ 
+-static int __do_proc_dointvec(void *tbl_data, struct ctl_table *table,
++int __do_proc_dointvec(void *tbl_data, struct ctl_table *table,
+ 		  int write, void __user *buffer,
+ 		  size_t *lenp, loff_t *ppos,
+ 		  int (*conv)(bool *negp, unsigned long *lvalp, int *valp,
+@@ -2466,7 +2464,26 @@ static int proc_do_cad_pid(struct ctl_ta
+ static int percpu_pagelist_fraction_sysctl_handler(ctl_table *table, int write,
+ 	void __user *buffer, size_t *length, loff_t *ppos)
+ {
+-	int ret = proc_dointvec_minmax(table, write, buffer, length, ppos);
++ 	int ret;
++	int tmp = percpu_pagelist_fraction;
++	int min_percpu_pagelist_fract = 8;
++
++	ret = __do_proc_dointvec(&tmp, table, write, buffer, length, ppos,
++		       NULL, NULL);
++	/*
++	 * We want values >= min_percpu_pagelist_fract, but we
++	 * also accept 0 to mean "stop using the fractions and
++	 * go back to the default behavior".
++	 */
++	if (write) {
++		if (tmp < 0)
++			return -EINVAL;
++		if ((tmp < min_percpu_pagelist_fract) &&
++		    (tmp != 0))
++			return -EINVAL;
++		percpu_pagelist_fraction = tmp;
++	}
++
+ 	if (!write || (ret < 0))
+ 		return ret;
+ 
+diff -puN mm/page_alloc.c~make-percpu_pagelist_fraction-sysctl-undoable mm/page_alloc.c
+--- linux.git/mm/page_alloc.c~make-percpu_pagelist_fraction-sysctl-undoable	2013-10-15 09:57:07.008662572 -0700
++++ linux.git-davehans/mm/page_alloc.c	2013-10-15 09:57:07.015662883 -0700
+@@ -4059,7 +4059,7 @@ static void __meminit zone_init_free_lis
+ 	memmap_init_zone((size), (nid), (zone), (start_pfn), MEMMAP_EARLY)
+ #endif
+ 
+-static int __meminit zone_batchsize(struct zone *zone)
++static int zone_batchsize(struct zone *zone)
+ {
+ #ifdef CONFIG_MMU
+ 	int batch;
+_
