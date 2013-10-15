@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933791Ab3JOWje (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 18:39:34 -0400
-Received: from mail-pb0-f73.google.com ([209.85.160.73]:49326 "EHLO
-	mail-pb0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933522Ab3JOWjc (ORCPT
+	id S933873Ab3JOWjv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 18:39:51 -0400
+Received: from mail-pb0-f74.google.com ([209.85.160.74]:39485 "EHLO
+	mail-pb0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933634Ab3JOWjd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 18:39:32 -0400
+	Tue, 15 Oct 2013 18:39:33 -0400
 From: Doug Anderson <dianders@chromium.org>
 To: Chris Ball <cjb@laptop.org>
 Cc: Jaehoon Chung <jh80.chung@samsung.com>,
@@ -19,9 +19,9 @@ Cc: Jaehoon Chung <jh80.chung@samsung.com>,
         Sonny Rao <sonnyrao@chromium.org>, Bing Zhao <bzhao@marvell.com>,
         Doug Anderson <dianders@chromium.org>, linux-mmc@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] mmc: dw_mmc: Cleanup disable of low power mode w/ SDIO interrupts
-Date: Tue, 15 Oct 2013 15:39:21 -0700
-Message-Id: <1381876762-10892-2-git-send-email-dianders@chromium.org>
+Subject: [PATCH 2/2] mmc: dw_mmc: Protect read-modify-write of INTMASK with a lock
+Date: Tue, 15 Oct 2013 15:39:22 -0700
+Message-Id: <1381876762-10892-3-git-send-email-dianders@chromium.org>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1381876762-10892-1-git-send-email-dianders@chromium.org>
 References: <1381876762-10892-1-git-send-email-dianders@chromium.org>
@@ -29,150 +29,137 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the patch (9623b5b mmc: dw_mmc: Disable low power mode if SDIO
-interrupts are used) I added code that disabled the low power mode of
-dw_mmc when SDIO interrupts are used.  That code worked but always
-felt a little hacky because we ended up disabling low power as a side
-effect of the first enable_sdio_irq() call.  That wouldn't be so bad
-except that disabling low power involves a complicated process of
-writing to the CMD/CMDARG registers and that extra process makes it
-difficult to cleanly the read-modify-write race in
-dw_mci_enable_sdio_irq() (see future patch in the series).
+We're running into cases where our enabling of the SDIO interrupt in
+dw_mmc doesn't actually take effect.  Specifically, adding patch like
+this:
 
-Change the code to take advantage of the init_card() callback of the
-mmc core to know when an SDIO card has been inserted.  If we've got a
-SDIO card and we're configured to use SDIO Interrupts then turn off
-"low power mode" right away.
+ +++ b/drivers/mmc/host/dw_mmc.c
+ @@ -1076,6 +1076,9 @@ static void dw_mci_enable_sdio_irq(struct mmc_host *mmc, int enb)
 
+      mci_writel(host, INTMASK,
+           (int_mask | SDMMC_INT_SDIO(slot->id)));
+ +    int_mask = mci_readl(host, INTMASK);
+ +    if (!(int_mask & SDMMC_INT_SDIO(slot->id)))
+ +      dev_err(&mmc->class_dev, "failed to enable sdio irq\n");
+    } else {
+
+...actually triggers the error message.  That's because the
+dw_mci_enable_sdio_irq() unsafely does a read-modify-write of the
+INTMASK register.
+
+We can't just use the standard host->lock since that lock is not irq
+safe and mmc_signal_sdio_irq() (called from interrupt context) calls
+dw_mci_enable_sdio_irq().  Add a new irq-safe lock to protect INTMASK.
+
+An alternate solution to this is to punt mmc_signal_sdio_irq() to the
+tasklet and then protect INTMASK modifications by the standard host
+lock.  This seemed like a bit more of a high-latency change.
+
+Reported-by: Bing Zhao <bzhao@marvell.com>
 Signed-off-by: Doug Anderson <dianders@chromium.org>
 ---
- drivers/mmc/host/dw_mmc.c | 68 ++++++++++++++++++++++++-----------------------
- drivers/mmc/host/dw_mmc.h |  1 +
- 2 files changed, 36 insertions(+), 33 deletions(-)
+ drivers/mmc/host/dw_mmc.c  | 13 +++++++++++++
+ include/linux/mmc/dw_mmc.h |  6 ++++++
+ 2 files changed, 19 insertions(+)
 
 diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-index 0a6a512..1b75816 100644
+index 1b75816..b810654 100644
 --- a/drivers/mmc/host/dw_mmc.c
 +++ b/drivers/mmc/host/dw_mmc.c
-@@ -27,6 +27,7 @@
- #include <linux/stat.h>
- #include <linux/delay.h>
- #include <linux/irq.h>
-+#include <linux/mmc/card.h>
- #include <linux/mmc/host.h>
- #include <linux/mmc/mmc.h>
- #include <linux/mmc/sdio.h>
-@@ -822,7 +823,7 @@ static void dw_mci_setup_bus(struct dw_mci_slot *slot, bool force_clkinit)
+@@ -657,6 +657,7 @@ disable:
  
- 		/* enable clock; only low power if no SDIO */
- 		clk_en_a = SDMMC_CLKEN_ENABLE << slot->id;
--		if (!(mci_readl(host, INTMASK) & SDMMC_INT_SDIO(slot->id)))
-+		if (!test_bit(DW_MMC_CARD_NO_LOW_PWR, &slot->flags))
- 			clk_en_a |= SDMMC_CLKEN_LOW_PWR << slot->id;
- 		mci_writel(host, CLKENA, clk_en_a);
- 
-@@ -1050,27 +1051,37 @@ static int dw_mci_get_cd(struct mmc_host *mmc)
- 	return present;
- }
- 
--/*
-- * Disable lower power mode.
-- *
-- * Low power mode will stop the card clock when idle.  According to the
-- * description of the CLKENA register we should disable low power mode
-- * for SDIO cards if we need SDIO interrupts to work.
-- *
-- * This function is fast if low power mode is already disabled.
-- */
--static void dw_mci_disable_low_power(struct dw_mci_slot *slot)
-+static void dw_mci_init_card(struct mmc_host *mmc, struct mmc_card *card)
+ static int dw_mci_submit_data_dma(struct dw_mci *host, struct mmc_data *data)
  {
-+	struct dw_mci_slot *slot = mmc_priv(mmc);
++	unsigned long irqflags;
+ 	int sg_len;
+ 	u32 temp;
+ 
+@@ -693,9 +694,11 @@ static int dw_mci_submit_data_dma(struct dw_mci *host, struct mmc_data *data)
+ 	mci_writel(host, CTRL, temp);
+ 
+ 	/* Disable RX/TX IRQs, let DMA handle it */
++	spin_lock_irqsave(&host->intmask_lock, irqflags);
+ 	temp = mci_readl(host, INTMASK);
+ 	temp  &= ~(SDMMC_INT_RXDR | SDMMC_INT_TXDR);
+ 	mci_writel(host, INTMASK, temp);
++	spin_unlock_irqrestore(&host->intmask_lock, irqflags);
+ 
+ 	host->dma_ops->start(host, sg_len);
+ 
+@@ -704,6 +707,7 @@ static int dw_mci_submit_data_dma(struct dw_mci *host, struct mmc_data *data)
+ 
+ static void dw_mci_submit_data(struct dw_mci *host, struct mmc_data *data)
+ {
++	unsigned long irqflags;
+ 	u32 temp;
+ 
+ 	data->error = -EINPROGRESS;
+@@ -732,9 +736,12 @@ static void dw_mci_submit_data(struct dw_mci *host, struct mmc_data *data)
+ 		host->part_buf_count = 0;
+ 
+ 		mci_writel(host, RINTSTS, SDMMC_INT_TXDR | SDMMC_INT_RXDR);
++
++		spin_lock_irqsave(&host->intmask_lock, irqflags);
+ 		temp = mci_readl(host, INTMASK);
+ 		temp |= SDMMC_INT_TXDR | SDMMC_INT_RXDR;
+ 		mci_writel(host, INTMASK, temp);
++		spin_unlock_irqrestore(&host->intmask_lock, irqflags);
+ 
+ 		temp = mci_readl(host, CTRL);
+ 		temp &= ~SDMMC_CTRL_DMA_ENABLE;
+@@ -1089,8 +1096,11 @@ static void dw_mci_enable_sdio_irq(struct mmc_host *mmc, int enb)
+ {
+ 	struct dw_mci_slot *slot = mmc_priv(mmc);
  	struct dw_mci *host = slot->host;
--	u32 clk_en_a;
--	const u32 clken_low_pwr = SDMMC_CLKEN_LOW_PWR << slot->id;
++	unsigned long irqflags;
+ 	u32 int_mask;
  
--	clk_en_a = mci_readl(host, CLKENA);
-+	/*
-+	 * Low power mode will stop the card clock when idle.  According to the
-+	 * description of the CLKENA register we should disable low power mode
-+	 * for SDIO cards if we need SDIO interrupts to work.
-+	 */
-+	if (mmc->caps | MMC_CAP_SDIO_IRQ) {
-+		const u32 clken_low_pwr = SDMMC_CLKEN_LOW_PWR << slot->id;
-+		u32 clk_en_a_old;
-+		u32 clk_en_a;
- 
--	if (clk_en_a & clken_low_pwr) {
--		mci_writel(host, CLKENA, clk_en_a & ~clken_low_pwr);
--		mci_send_cmd(slot, SDMMC_CMD_UPD_CLK |
--			     SDMMC_CMD_PRV_DAT_WAIT, 0);
-+		clk_en_a_old = mci_readl(host, CLKENA);
++	spin_lock_irqsave(&host->intmask_lock, irqflags);
 +
-+		if (card->type == MMC_TYPE_SDIO ||
-+		    card->type == MMC_TYPE_SD_COMBO) {
-+			set_bit(DW_MMC_CARD_NO_LOW_PWR, &slot->flags);
-+			clk_en_a = clk_en_a_old & ~clken_low_pwr;
-+		} else {
-+			clear_bit(DW_MMC_CARD_NO_LOW_PWR, &slot->flags);
-+			clk_en_a = clk_en_a_old | clken_low_pwr;
-+		}
-+
-+		if (clk_en_a != clk_en_a_old) {
-+			mci_writel(host, CLKENA, clk_en_a);
-+			mci_send_cmd(slot, SDMMC_CMD_UPD_CLK |
-+				     SDMMC_CMD_PRV_DAT_WAIT, 0);
-+		}
- 	}
- }
- 
-@@ -1082,21 +1093,11 @@ static void dw_mci_enable_sdio_irq(struct mmc_host *mmc, int enb)
- 
  	/* Enable/disable Slot Specific SDIO interrupt */
  	int_mask = mci_readl(host, INTMASK);
--	if (enb) {
--		/*
--		 * Turn off low power mode if it was enabled.  This is a bit of
--		 * a heavy operation and we disable / enable IRQs a lot, so
--		 * we'll leave low power mode disabled and it will get
--		 * re-enabled again in dw_mci_setup_bus().
--		 */
--		dw_mci_disable_low_power(slot);
--
--		mci_writel(host, INTMASK,
--			   (int_mask | SDMMC_INT_SDIO(slot->id)));
--	} else {
--		mci_writel(host, INTMASK,
--			   (int_mask & ~SDMMC_INT_SDIO(slot->id)));
--	}
-+	if (enb)
-+		int_mask |= SDMMC_INT_SDIO(slot->id);
-+	else
-+		int_mask &= ~SDMMC_INT_SDIO(slot->id);
-+	mci_writel(host, INTMASK, int_mask);
+ 	if (enb)
+@@ -1098,6 +1108,8 @@ static void dw_mci_enable_sdio_irq(struct mmc_host *mmc, int enb)
+ 	else
+ 		int_mask &= ~SDMMC_INT_SDIO(slot->id);
+ 	mci_writel(host, INTMASK, int_mask);
++
++	spin_unlock_irqrestore(&host->intmask_lock, irqflags);
  }
  
  static int dw_mci_execute_tuning(struct mmc_host *mmc, u32 opcode)
-@@ -1140,6 +1141,7 @@ static const struct mmc_host_ops dw_mci_ops = {
- 	.get_cd			= dw_mci_get_cd,
- 	.enable_sdio_irq	= dw_mci_enable_sdio_irq,
- 	.execute_tuning		= dw_mci_execute_tuning,
-+	.init_card		= dw_mci_init_card,
- };
+@@ -2500,6 +2512,7 @@ int dw_mci_probe(struct dw_mci *host)
+ 	host->quirks = host->pdata->quirks;
  
- static void dw_mci_request_end(struct dw_mci *host, struct mmc_request *mrq)
-diff --git a/drivers/mmc/host/dw_mmc.h b/drivers/mmc/host/dw_mmc.h
-index 6bf24ab..26d4657 100644
---- a/drivers/mmc/host/dw_mmc.h
-+++ b/drivers/mmc/host/dw_mmc.h
-@@ -227,6 +227,7 @@ struct dw_mci_slot {
- 	unsigned long		flags;
- #define DW_MMC_CARD_PRESENT	0
- #define DW_MMC_CARD_NEED_INIT	1
-+#define DW_MMC_CARD_NO_LOW_PWR	2
- 	int			id;
- 	int			last_detect_state;
- };
+ 	spin_lock_init(&host->lock);
++	spin_lock_init(&host->intmask_lock);
+ 	INIT_LIST_HEAD(&host->queue);
+ 
+ 	/*
+diff --git a/include/linux/mmc/dw_mmc.h b/include/linux/mmc/dw_mmc.h
+index 6ce7d2c..002ab56 100644
+--- a/include/linux/mmc/dw_mmc.h
++++ b/include/linux/mmc/dw_mmc.h
+@@ -102,6 +102,11 @@ struct mmc_data;
+  * @cur_slot, @mrq and @state. These must always be updated
+  * at the same time while holding @lock.
+  *
++ * @intmask_lock is an irq-safe spinlock protecting the INTMASK register
++ * to allow the interrupt handler to modify it directly.  Held for only long
++ * enough to read-modify-write INTMASK and no other locks are grabbed when
++ * holding this one.
++ *
+  * The @mrq field of struct dw_mci_slot is also protected by @lock,
+  * and must always be written at the same time as the slot is added to
+  * @queue.
+@@ -121,6 +126,7 @@ struct mmc_data;
+  */
+ struct dw_mci {
+ 	spinlock_t		lock;
++	spinlock_t		intmask_lock;
+ 	void __iomem		*regs;
+ 
+ 	struct scatterlist	*sg;
 -- 
 1.8.4
 
