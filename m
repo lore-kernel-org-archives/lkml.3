@@ -1,78 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758782Ab3JOLJN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 07:09:13 -0400
-Received: from mga14.intel.com ([143.182.124.37]:2392 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757990Ab3JOLJL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 07:09:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,498,1378882800"; 
-   d="scan'208";a="374924854"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Ning Qu <quning@gmail.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Hugh Dickins <hughd@google.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Hugh Dickins <hughd@google.com>, Wu Fengguang <fengguang.wu@intel.com>,
-        Jan Kara <jack@suse.cz>, Mel Gorman <mgorman@suse.de>,
-        linux-mm@kvack.org, Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ning Qu <quning@google.com>
-In-Reply-To: <20131015001826.GL3432@hippobay.mtv.corp.google.com>
-References: <20131015001826.GL3432@hippobay.mtv.corp.google.com>
-Subject: RE: [PATCH 11/12] mm, thp, tmpfs: enable thp page cache in tmpfs
-Content-Transfer-Encoding: 7bit
-Message-Id: <20131015110905.085B1E0090@blue.fi.intel.com>
-Date: Tue, 15 Oct 2013 14:09:04 +0300 (EEST)
+	id S1758814Ab3JOLKF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 07:10:05 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:52278 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757990Ab3JOLKD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 07:10:03 -0400
+Date: Tue, 15 Oct 2013 13:10:01 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Rogelio Serrano <rogelio.serrano@gmail.com>
+Cc: "luke.leighton" <luke.leighton@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Transcend's "one of the most cavalier GPL violations in a long
+ time"
+Message-ID: <20131015111001.GA20560@amd.pavel.ucw.cz>
+References: <CACGw4H5+5bkgy+UJPCbwG2KXZDj3zhXLR4cZCbeDvjJhfTJwmQ@mail.gmail.com>
+ <CAPweEDzf1DbRHeXr_cL8ZZk9s0Srhp0s5rrYm0pksyurO0CXpw@mail.gmail.com>
+ <CAPweEDyaEo-7NzEYfxU7Hofq08Raepc_JFevoqF+Nzrwzz2kXQ@mail.gmail.com>
+ <CANszf4iyed-tCBK7g8HEWgBpTXydSwcsRTA1UzyxZhN1uy0vQg@mail.gmail.com>
+ <20131013120201.GA23970@amd.pavel.ucw.cz>
+ <CANszf4gNGGTuTJjssmO5hntcKsCcJY7OG3VNTcDpm10SAMbevg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANszf4gNGGTuTJjssmO5hntcKsCcJY7OG3VNTcDpm10SAMbevg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ning Qu wrote:
-> Signed-off-by: Ning Qu <quning@gmail.com>
-> ---
->  mm/Kconfig | 4 ++--
->  mm/shmem.c | 5 +++++
->  2 files changed, 7 insertions(+), 2 deletions(-)
+On Tue 2013-10-15 07:42:56, Rogelio Serrano wrote:
+> On Sun, Oct 13, 2013 at 1:02 PM, Pavel Machek <pavel@ucw.cz> wrote:
 > 
-> diff --git a/mm/Kconfig b/mm/Kconfig
-> index 562f12f..4d2f90f 100644
-> --- a/mm/Kconfig
-> +++ b/mm/Kconfig
-> @@ -428,8 +428,8 @@ config TRANSPARENT_HUGEPAGE_PAGECACHE
->  	help
->  	  Enabling the option adds support hugepages for file-backed
->  	  mappings. It requires transparent hugepage support from
-> -	  filesystem side. For now, the only filesystem which supports
-> -	  hugepages is ramfs.
-> +	  filesystem side. For now, the filesystems which support
-> +	  hugepages are: ramfs and tmpfs.
->  
->  config CROSS_MEMORY_ATTACH
->  	bool "Cross Memory Support"
-> diff --git a/mm/shmem.c b/mm/shmem.c
-> index 75c0ac6..50a3335 100644
-> --- a/mm/shmem.c
-> +++ b/mm/shmem.c
-> @@ -1672,6 +1672,11 @@ static struct inode *shmem_get_inode(struct super_block *sb, const struct inode
->  			break;
->  		case S_IFREG:
->  			inode->i_mapping->a_ops = &shmem_aops;
-> +			/*
-> +			 * TODO: make tmpfs pages movable
-> +			 */
-> +			mapping_set_gfp_mask(inode->i_mapping,
-> +					     GFP_TRANSHUGE & ~__GFP_MOVABLE);
+> >>
+> >> I dont think the majority of linux kernel developers care about
+> >> enforcement at all. Its virtually public domain as far as i can see,
+> >> Linus himself will not run after violators.
+> >>
+> >> Any company out there is free to do what they want.
+> >
+> > Not sure what you are smoking but it must be pretty strong stuff.
+> 
+> I was led to believe this in the busybox list. maybe we are communally
+> smoking the same stuff. Linux Kernel Developers would rather go on
+> developing better code than waste time on enforcement. Some even think
+> it is counter productive to adoption of linux.
 
-Unlike ramfs, tmpfs pages are movable before transparent page cache
-patchset.
-Making tmpfs pages non-movable looks like a big regression to me. It need
-to be fixed before proposing it upstream.
+Well... yes, busybox people are more agressive with enforcement, but
+this does not mean linux kernel is public domain. It only takes one
+contributor to enforce GPL...
 
+Harald Welte does that job for Germany, and if someone includes nbd
+(network block device) in their GPL-violation, they may get some fun
+with me.
+
+> Transcend most likely knows this.
+
+Do they import in Germany?
+
+								Pavel
 -- 
- Kirill A. Shutemov
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
