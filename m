@@ -1,66 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932839Ab3JOOok (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 10:44:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35430 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758875Ab3JOOoi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 10:44:38 -0400
-Message-ID: <1381848597.25397.4.camel@dcbw.foobar.com>
-Subject: Re: [PATCH] net: qmi_wwan: Olivetti Olicard 200 support
-From: Dan Williams <dcbw@redhat.com>
-To: Enrico Mioso <mrkiko.rs@gmail.com>
-Cc: gregkh@linuxfoundation.org, davem@davemloft.net, bjorn@mork.no,
-        christian.schmiedl@gemalto.com, linux-usb@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Antonella Pellizzari <anto.pellizzari83@gmail.com>
-Date: Tue, 15 Oct 2013 09:49:57 -0500
-In-Reply-To: <1381842408-10800-2-git-send-email-mrkiko.rs@gmail.com>
-References: <1381842408-10800-1-git-send-email-mrkiko.rs@gmail.com>
-	 <1381842408-10800-2-git-send-email-mrkiko.rs@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1759410Ab3JOOqk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 10:46:40 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:58526 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1759171Ab3JOOqi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 10:46:38 -0400
+Date: Tue, 15 Oct 2013 10:46:37 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Hartley Sweeten <HartleyS@visionengravers.com>
+cc: Ryan Mallon <rmallon@gmail.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        ARM Kernel <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+Subject: RE: [PATCH] usb: ohci: remove ep93xx bus glue platform driver
+In-Reply-To: <DC148C5AA1CEBA4E87973D432B1C2D8817DAC0CC@P3PWEX4MB008.ex4.secureserver.net>
+Message-ID: <Pine.LNX.4.44L0.1310151040330.1377-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-10-15 at 15:06 +0200, Enrico Mioso wrote:
-> This is a QMI device, manufactured by TCT Mobile Phones.
-> A companion patch blacklisting this device's QMI interface in the option.c
-> driver has been sent.
+On Mon, 14 Oct 2013, Hartley Sweeten wrote:
+
+> >>  config USB_OHCI_HCD_PLATFORM
+> >>  	tristate "Generic OHCI driver for a platform device"
+> >> -	default n
+> >> +	default y if ARCH_EP93XX
+> >
+> > Shouldn't we select USB_OHCI_HCD_PLATFORM, e.g. something like:
+> >
+> > 	config ARCH_EP93XX_USB
+> >		tristate "USB OHCI support"
+> >		default y
+> >		select USB_OHCI_HCD_PLATFORM
+> >
+> > In arch/arm/mach-ep93xx/Kconfig rather than polluting
+> > drivers/usb/host/Kconfig with arch specific stuff?
 > 
-> Signed-off-by: Enrico Mioso <mrkiko.rs@gmail.com>
-> Signed-off-by: Antonella Pellizzari <anto.pellizzari83@gmail.com>
+> I wasn't sure where the best place to enable 
+> USB_OHCI_HCD_PLATFORM would be.
+> 
+> Currently USB support on the EP93xx only needs USB_OHCI_HCD
+> enabled, which is already enabled in the ep93xx_defconfig. I'm not
+> sure if adding the config option above would create a problem where
+> the user would need to enable USB_OHCI_HCD in drivers/usb then 
+> have to go back to the arch stuff to enable ARCH_EP93XX_USB.
+> 
+> With the default y above they just have to enable USB_OHCI_HCD
+> like they currently do.
+> 
+> I'm hoping Alan can provide some feedback.
 
-Good find.  For the record, mine has:
+In the past this sort of thing has been done in two different ways, 
+depending on whether or not OHCI support was previously configurable.
 
-PX1522E16X  1  [Oct 15 2010 02:00:00]
+In cases where it was, we kept the old Kconfig entry and made it select
+USB_OHCI_HCD_PLATFORM, but added a notice that the entry was now
+deprecated.  For example, in drivers/usb/host/Kconfig see the entry for
+USB_OHCI_ATH79.
 
-	ctl (1.4)
-	wds (1.8)
-	dms (1.3)
-	nas (1.2)
-	qos (1.2)
-	wms (1.1)
-	pds (1.4)
-	auth (1.0)
-	voice (1.0)
-	cat2 (1.1)
+In cases where support was always present (i.e., not configurable), we
+added an entry for USB_OHCI_HCD_PLATFORM to the platform's defconfig
+file.  For example, see arch/arm/configs/marzen_defconfig.  This is
+probably what you want to do.
 
-Tested-by: Dan Williams <dcbw@redhat.com>
-
-> diff --git a/drivers/net/usb/qmi_wwan.c b/drivers/net/usb/qmi_wwan.c
-> index 3d6aaf7..818ce90 100644
-> --- a/drivers/net/usb/qmi_wwan.c
-> +++ b/drivers/net/usb/qmi_wwan.c
-> @@ -714,6 +714,7 @@ static const struct usb_device_id products[] = {
->  	{QMI_FIXED_INTF(0x2357, 0x0201, 4)},	/* TP-LINK HSUPA Modem MA180 */
->  	{QMI_FIXED_INTF(0x2357, 0x9000, 4)},	/* TP-LINK MA260 */
->  	{QMI_FIXED_INTF(0x1bc7, 0x1200, 5)},	/* Telit LE920 */
-> +	{QMI_FIXED_INTF(0x0b3c, 0xc005, 6)},    /* Olivetti Olicard 200 */
->  	{QMI_FIXED_INTF(0x1e2d, 0x0060, 4)},	/* Cinterion PLxx */
->  
->  	/* 4. Gobi 1000 devices */
-
+Alan Stern
 
