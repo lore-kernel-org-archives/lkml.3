@@ -1,112 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933871Ab3JOVKX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 17:10:23 -0400
-Received: from mms3.broadcom.com ([216.31.210.19]:3794 "EHLO mms3.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933713Ab3JOVKV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 17:10:21 -0400
-X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
-Message-ID: <525DAF2F.7080009@broadcom.com>
-Date: Tue, 15 Oct 2013 14:10:07 -0700
-From: "Wendy Ng" <wendy.ng@broadcom.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101
- Thunderbird/24.0.1
+	id S933896Ab3JOVKl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 17:10:41 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:62635 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S933842Ab3JOVKj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 17:10:39 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Lan Tianyu <tianyu.lan@intel.com>
+Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ACPI/Power: Check physical device's runtime pm status before requesting to resume it
+Date: Tue, 15 Oct 2013 23:22:28 +0200
+Message-ID: <16284735.7LFgSiThhv@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <525D03B4.8050709@intel.com>
+References: <1381479385-1614-1-git-send-email-tianyu.lan@intel.com> <1761658.DWcBvZSdOl@vostro.rjw.lan> <525D03B4.8050709@intel.com>
 MIME-Version: 1.0
-To: "Eduardo Valentin" <eduardo.valentin@ti.com>
-cc: "Rob Herring" <rob.herring@calxeda.com>,
-        "Stephen Warren" <swarren@wwwdotorg.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        "Christian Daudt" <bcm@fixthebug.org>,
-        "Markus Mayer" <mmayer@broadcom.com>
-Subject: Re: [PATCH v2 3/3] ARM: bcm281xx: Add thermal driver to device
- tree.
-References: <1380321454-16216-1-git-send-email-wendy.ng@broadcom.com>
- <1380321454-16216-4-git-send-email-wendy.ng@broadcom.com>
- <525B1C77.1070809@ti.com>
-In-Reply-To: <525B1C77.1070809@ti.com>
-X-WSS-ID: 7E4370A02E41905342-01-01
-Content-Type: text/plain;
- charset=iso-8859-1;
- format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/13/2013 3:19 PM, Eduardo Valentin wrote:
-> On 27-09-2013 18:37, Wendy Ng wrote:
->> This patch adds the device tree node for Broadcom bcm281xx SoCs thermal
->> driver.
->>
->> Signed-off-by: Wendy Ng <wendy.ng@broadcom.com>
->> Reviewed-by: Markus Mayer <mmayer@broadcom.com>
->> Reviewed-by: Christian Daudt <csd@broadcom.com>
->> ---
->>   arch/arm/boot/dts/bcm11351-brt.dts |    4 +++-
->>   arch/arm/boot/dts/bcm11351.dtsi    |    6 ++++++
->>   arch/arm/boot/dts/bcm28155-ap.dts  |    4 ++++
->>   3 files changed, 13 insertions(+), 1 deletion(-)
->>
->> diff --git a/arch/arm/boot/dts/bcm11351-brt.dts b/arch/arm/boot/dts/bcm11351-brt.dts
->> index 9d36eb4..0771b6b 100644
->> --- a/arch/arm/boot/dts/bcm11351-brt.dts
->> +++ b/arch/arm/boot/dts/bcm11351-brt.dts
->> @@ -43,5 +43,7 @@
->>   		status = "okay";
->>   	};
->>
->> -
->> +	thermal@34008000 {
->> +		status = "okay";
->> +	};
->>   };
->> diff --git a/arch/arm/boot/dts/bcm11351.dtsi b/arch/arm/boot/dts/bcm11351.dtsi
->> index 05a5aab..aa13353 100644
->> --- a/arch/arm/boot/dts/bcm11351.dtsi
->> +++ b/arch/arm/boot/dts/bcm11351.dtsi
->> @@ -96,4 +96,10 @@
->>   		status = "disabled";
->>   	};
->>
->> +	thermal@34008000 {
->> +		compatible = "brcm,bcm11351-thermal", "brcm,kona-thermal";
->> +		reg = <0x34008000 0x0024>;
->> +		thermal-name = "bcm_kona_therm";
->
-> As I mentioned previously, my only concern is this thermal binding,
-> which is specific to your driver (BTW, you would need to do
-> bcm,thermal-name)
->
+On Tuesday, October 15, 2013 04:58:28 PM Lan Tianyu wrote:
+> On 2013年10月11日 19:19, Rafael J. Wysocki wrote:
+> > On Friday, October 11, 2013 04:16:25 PM tianyu.lan@intel.com wrote:
+> >> From: Lan Tianyu <tianyu.lan@intel.com>
+> >>
+> >> Currently, when one power resource is turned on, devices owning it
+> >> will be requested to resume regardless of their runtime pm status.
+> >> ACPI power resource maybe turn on in some devices' runtime pm
+> >> resume callback(E.G, usb port) while turning on the power resource
+> >> will trigger one new resume request of the device. It causes
+> >> infinite loop between resume and suspend. This has happened on
+> >> clearing usb port's PM Qos NO_POWER_OFF flag twice. This patch is
+> >> to add check of physical device's runtime pm status and request resume
+> >> if the device is suspended.
+> >>
+> >> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+> >> ---
+> >>  drivers/acpi/power.c | 6 ++++--
+> >>  1 file changed, 4 insertions(+), 2 deletions(-)
+> >>
+> >> diff --git a/drivers/acpi/power.c b/drivers/acpi/power.c
+> >> index 0dbe5cd..228c138 100644
+> >> --- a/drivers/acpi/power.c
+> >> +++ b/drivers/acpi/power.c
+> >> @@ -250,8 +250,10 @@ static void acpi_power_resume_dependent(struct work_struct *work)
+> >>
+> >>  	mutex_lock(&adev->physical_node_lock);
+> >>
+> >> -	list_for_each_entry(pn, &adev->physical_node_list, node)
+> >> -		pm_request_resume(pn->dev);
+> >> +	list_for_each_entry(pn, &adev->physical_node_list, node) {
+> >> +		if (pm_runtime_suspended(pn->dev))
+> >> +			pm_request_resume(pn->dev);
+> >> +	}
+> >
+> > This is racy, because the status may change right after you check it and before
+> > you call pm_request_resume().
+> 
+> Yes, the runtime status may be changed just after the check.
+> 
+> >
+> > Besides, pm_request_resume() checks the status of the device and won't
+> > try to resume it if it is not suspended.
+> >
+> 
+> For this issue, usb port is in the RPM_SUSPENDING state when
+> pm_request_resume() is called.
 
-Hi Eduardo,
+Why exactly does that happen?
 
-I have a local working copy of the thermal driver that does not use the 
-'thermal-name' from this DTS file.  It has been re-based to your working 
-version of the new thermal DT binding.
+> The deferred_resume will be set to true
+> during this procedure and trigger resume after finishing suspend. USB
+> port runtime resume callback will turn on its power resource again and
+> the work of acpi_power_resume_dependent() is scheduled. Because the usb
+> port's usage count remains zero, it's to be suspended soon. When
+> pm_request_resume() of acpi_power_resume_dependent() is called, the usb
+> port is always in the PRM_SUSPENDING. Fall in the loop of suspend and
+> resume.
+> 
+> How about running acpi_power_dependent when turning on power resource 
+> rather than scheduling a work to run it?
 
->> +		status = "disabled";
->> +	};
->>   };
->> diff --git a/arch/arm/boot/dts/bcm28155-ap.dts b/arch/arm/boot/dts/bcm28155-ap.dts
->> index 96ae67a..a39aa47 100644
->> --- a/arch/arm/boot/dts/bcm28155-ap.dts
->> +++ b/arch/arm/boot/dts/bcm28155-ap.dts
->> @@ -42,4 +42,8 @@
->>   		max-frequency = <48000000>;
->>   		status = "okay";
->>   	};
->> +
->> +	thermal@34008000 {
->> +		status = "okay";
->> +	};
->>   };
->>
->
->
+Is this actually going to help?  Even if acpi_power_resume_dependent() is
+run synchronously from within the resume callback, it will still see
+RPM_SUSPENDING as the device's status, won't it?
 
+> After this, pm_request_resume() can check device's right status just after
+> turning on power resource.
+
+The status doesn't change until the .runtime_suspend() callback returns and
+running pm_request_resume() syncrhonously from that callback for the device
+being suspended just plain doesn't make sense.
+
+> Furthermore, pm_request_resume() is async resume and 
+> this change will not consume much time.
+
+acpi_power_resume_dependent() is run from a work item to avoid locking
+problems.
+
+Can you please explain to me how this is possible that the USB port's power
+resource is turned "on" while the port is RPM_SUSPENDING?
 
 -- 
-Best regards,
--Wendy
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
