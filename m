@@ -1,101 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756947Ab3JOCZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 22:25:58 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:33652 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756158Ab3JOCZ4 (ORCPT
+	id S1757269Ab3JOC0I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 22:26:08 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52005 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756975Ab3JOC0G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 22:25:56 -0400
-MIME-Version: 1.0
-In-Reply-To: <20131014205540.GM4722@htj.dyndns.org>
-References: <525BFCF3.5010908@gmail.com>
-	<20131014142719.GI4722@htj.dyndns.org>
-	<525C02DC.4050706@gmail.com>
-	<20131014145131.GJ4722@htj.dyndns.org>
-	<525C0866.2010808@gmail.com>
-	<20131014151902.GL4722@htj.dyndns.org>
-	<525C0EFE.2010409@gmail.com>
-	<CAE9FiQX0xeR61ehPy2SfWfN-fgSZVS=dtaWT-QQ+RR12tx+A0w@mail.gmail.com>
-	<20131014200437.GA5720@htj.dyndns.org>
-	<CAE9FiQXCG6gR-XL9fVudpNVEdS-3MHPObfWQ=Uf=q7pv33QBOA@mail.gmail.com>
-	<20131014205540.GM4722@htj.dyndns.org>
-Date: Mon, 14 Oct 2013 19:25:55 -0700
-X-Google-Sender-Auth: sw8iPoQ41QdXUo_30ookYJCNopk
-Message-ID: <CAE9FiQUtxKL255e7P8dgTL-WfzRik7dbu_MgGZ9SxVzdj=LfjA@mail.gmail.com>
-Subject: Re: [PATCH part2 v2 0/8] Arrange hotpluggable memory as ZONE_MOVABLE
-From: Yinghai Lu <yinghai@kernel.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Zhang Yanfei <zhangyanfei.yes@gmail.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Toshi Kani <toshi.kani@hp.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 14 Oct 2013 22:26:06 -0400
+Date: Tue, 15 Oct 2013 10:25:53 +0800
+From: Ming Lei <ming.lei@canonical.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ted Tso <tytso@mit.edu>, linux-ext4@vger.kernel.org,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Ming Lei <tom.leiming@gmail.com>
+Subject: Re: [PATCH] ext4: fix checking on nr_to_write
+Message-ID: <20131015102553.22d4a018@tom-ThinkPad-T410>
+In-Reply-To: <20131014173459.GL19604@quack.suse.cz>
+References: <1381682393-5769-1-git-send-email-ming.lei@canonical.com>
+	<20131014125858.GH19604@quack.suse.cz>
+	<CACVXFVPpkJdw_AVwd=dRpD8ju6frjaU3QhKorr_PNNGu_D0jAQ@mail.gmail.com>
+	<20131014173459.GL19604@quack.suse.cz>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 14, 2013 at 1:55 PM, Tejun Heo <tj@kernel.org> wrote:
-> Hello,
->
-> On Mon, Oct 14, 2013 at 01:37:20PM -0700, Yinghai Lu wrote:
->> The problem is how to define "amount necessary". If we can parse srat early,
->> then we could just map RAM for all boot nodes one time, instead of try some
->> small and then after SRAT table, expand it cover non-boot nodes.
->
-> Wouldn't that amount be fairly static and restricted?  If you wanna
-> chunk memory init anyway, there's no reason to init more than
-> necessary until smp stage is reached.  The more you do early, the more
-> serialized you're, so wouldn't the goal naturally be initing the
-> minimum possible?
+On Mon, 14 Oct 2013 19:34:59 +0200
+Jan Kara <jack@suse.cz> wrote:
 
-Even we try to go minimum range instead of range that whole range on boot node,
-without parsing srat at first, the minimum range could be crossed the boundary
-of nodes.
+> On Mon 14-10-13 21:50:54, Ming Lei wrote:
+> > On Mon, Oct 14, 2013 at 8:58 PM, Jan Kara <jack@suse.cz> wrote:
+> > >   Umm, I guess I see what are you pointing at. Thanks for catching that.
+> > > mpage_process_page_bufs() always adds a buffer to mpd even if nr_to_write
+> > > is already <= 0. But I would somewhat prefer not to call
+> > > mpage_prepare_extent_to_map() at all when nr_to_write <= 0. So a patch
+> > > like:
+> > >                 ret = mpage_prepare_extent_to_map(&mpd);
+> > >                 if (!ret) {
+> > > -                       if (mpd.map.m_len)
+> > > +                       if (mpd.map.m_len) {
+> > >                                 ret = mpage_map_and_submit_extent(handle, &mpd,
+> > >                                         &give_up_on_write);
+> > > -                       else {
+> > > +                               done = (wbc->nr_to_write <= 0);
+> > > +                       } else {
+> > >
+> > > Should also fix your problem, am I right?
+> > 
+> > I am afraid it can't, because we need to stop scanning page cache
+> > if end of file is reached.
+>   That should be OK. mpage_process_page_bufs() won't add a buffer beyond
+> EOF so we end the extent at EOF and next time we don't add anything to the
+> extent. My change wouldn't change anything in this.
 
->
->> To keep non-boot numa node hot-removable. we need to page table (and other
->> that we allocate during boot stage) on ram of non boot nodes, or their
->> local node ram.  (share page table always should be on boot nodes).
->
-> The above assumes the followings,
->
-> * 4k page mappings.  It'd be nice to keep everything working for 4k
->   but just following SRAT isn't enough.  What if the non-hotpluggable
->   boot node doesn't stretch high enough and page table reaches down
->   too far?  This won't be an optional behavior, so it is actually
->   *likely* to happen on certain setups.
+I mean wbc->nr_to_write may still be positive when mpage_prepare_extent_to_map()
+returns zero, so your change will cause ext4_writepages not to break from the
+loop, then write hangs, too crazy?
 
-no, do not assume 4k page. even we are using 1GB mapping,  we will still have
-chance to have one node to take 512G RAM, that means we can have one 4k page
-on local node ram.
+> 
+> > nr_to_write will become negative inside mpage_map_and_submit_extent(),
+> > that is why I fix it inside mpage_prepare_extent_to_map().
+>   Yes, mpage_map_and_submit_extent() creates negative nr_to_write but only
+> because mpage_prepare_extent_to_map() asked for mapping too big extent. But
+> if I'm reading the code correctly we first ask for writing the extent of
+> just the right size (nr_to_write becomes 0) but then ext4_writepages() asks
+> mpage_prepare_extent_to_map() for another extent and it will create a single
+> page extent for mapping before it finds out nr_to_write <= 0 and
+> terminates. Am I understanding the problem correctly?
 
->
-> * Memory hotplug is at NUMA node granularity instead of device.
+Your understanding is right, and I think it is a correct fix, because
+we shouldn't add more pages to extent than nr_to_write.
 
-Yes.
+> 
+> After thinking about it again, moving the condition in
+> mpage_prepare_extent_to_map() as you did is probably better that what I
+> suggested. Just move it more up in the loop - like after page->index > end
+> condition. So that we don't unnecessarily lock the page etc.
 
->
->> > Optimizing NUMA boot just requires moving the heavy lifting to
->> > appropriate NUMA nodes.  It doesn't require that early boot phase
->> > should strictly follow NUMA node boundaries.
->>
->> At end of day, I like to see all numa system (ram/cpu/pci) could have
->> non boot nodes to be hot-removed logically. with any boot command
->> line.
->
-> I suppose you mean "without any boot command line"?  Sure, but, first
-> of all, there is a clear performance trade-off, and, secondly, don't
-> we want something finer grained?  Why would we want to that per-NUMA
-> node, which is extremely coarse?
+Looks it makes sense, so how about below change?
 
-On x86 system with intel new cpus there is memory controller built-in.,
-could have hotplug modules (with socket and memory) and those hotplug modules
-will be serviced as one single point. Just nowadays like we have pcie
-card hotplugable.
+--
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index 32c04ab..c32b599 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -2294,7 +2294,7 @@ static int mpage_prepare_extent_to_map(struct mpage_da_data *mpd)
+ {
+ 	struct address_space *mapping = mpd->inode->i_mapping;
+ 	struct pagevec pvec;
+-	unsigned int nr_pages;
++	unsigned int nr_pages, nr_added = 0;
+ 	pgoff_t index = mpd->first_page;
+ 	pgoff_t end = mpd->last_page;
+ 	int tag;
+@@ -2330,6 +2330,18 @@ static int mpage_prepare_extent_to_map(struct mpage_da_data *mpd)
+ 			if (page->index > end)
+ 				goto out;
+ 
++			/*
++			 * Accumulated enough dirty pages? This doesn't apply
++			 * to WB_SYNC_ALL mode. For integrity sync we have to
++			 * keep going because someone may be concurrently
++			 * dirtying pages, and we might have synced a lot of
++			 * newly appeared dirty pages, but have not synced all
++			 * of the old dirty pages.
++			 */
++			if (mpd->wbc->sync_mode == WB_SYNC_NONE &&
++					nr_added >= mpd->wbc->nr_to_write)
++				goto out;
++
+ 			/* If we can't merge this page, we are done. */
+ 			if (mpd->map.m_len > 0 && mpd->next_page != page->index)
+ 				goto out;
+@@ -2364,19 +2376,7 @@ static int mpage_prepare_extent_to_map(struct mpage_da_data *mpd)
+ 			if (err <= 0)
+ 				goto out;
+ 			err = 0;
+-
+-			/*
+-			 * Accumulated enough dirty pages? This doesn't apply
+-			 * to WB_SYNC_ALL mode. For integrity sync we have to
+-			 * keep going because someone may be concurrently
+-			 * dirtying pages, and we might have synced a lot of
+-			 * newly appeared dirty pages, but have not synced all
+-			 * of the old dirty pages.
+-			 */
+-			if (mpd->wbc->sync_mode == WB_SYNC_NONE &&
+-			    mpd->next_page - mpd->first_page >=
+-							mpd->wbc->nr_to_write)
+-				goto out;
++			nr_added++;
+ 		}
+ 		pagevec_release(&pvec);
+ 		cond_resched();
 
-I don't see where is the " a clear performance trade-off".
 
-Yinghai
+
+Thanks,
+-- 
+Ming Lei
