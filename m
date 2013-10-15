@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758296Ab3JOFVh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 01:21:37 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60963 "EHLO
+	id S1758170Ab3JOFTA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 01:19:00 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60758 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758262Ab3JOFVf (ORCPT
+	with ESMTP id S1751603Ab3JOFSy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 01:21:35 -0400
-Date: Mon, 14 Oct 2013 22:20:58 -0700
-From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
-Message-ID: <tip-e2epkc38e3x0uqmi1xie4tgc@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        efault@gmx.de, jolsa@redhat.com, fweisbec@gmail.com,
-        adrian.hunter@intel.com, dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        peterz@infradead.org, jolsa@redhat.com, fweisbec@gmail.com,
-        dsahern@gmail.com, adrian.hunter@intel.com, tglx@linutronix.de
+	Tue, 15 Oct 2013 01:18:54 -0400
+Date: Mon, 14 Oct 2013 22:18:39 -0700
+From: tip-bot for Ingo Molnar <tipbot@zytor.com>
+Message-ID: <tip-1c47661a93fe6f729c80ed18a1f9ab1c7fb0cac2@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, acme@redhat.com, hpa@zytor.com,
+        mingo@kernel.org, a.p.zijlstra@chello.nl, namhyung@kernel.org,
+        jolsa@redhat.com, dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        namhyung@kernel.org, jolsa@redhat.com, dsahern@gmail.com,
+        tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf trace: Beautify rt_sigprocmask 'how' arg
-Git-Commit-ID: eb5b1b1475d5ce6ebe84fd4c641545a41839d5f9
+Subject: [tip:perf/core] tools/perf/build: Split out feature checks: '
+ liberty', 'liberty-z', 'cplus-demangle'
+Git-Commit-ID: 1c47661a93fe6f729c80ed18a1f9ab1c7fb0cac2
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,55 +29,113 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 14 Oct 2013 22:21:04 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 14 Oct 2013 22:18:45 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  eb5b1b1475d5ce6ebe84fd4c641545a41839d5f9
-Gitweb:     http://git.kernel.org/tip/eb5b1b1475d5ce6ebe84fd4c641545a41839d5f9
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Tue, 3 Sep 2013 16:37:46 -0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 9 Oct 2013 11:10:06 -0300
+Commit-ID:  1c47661a93fe6f729c80ed18a1f9ab1c7fb0cac2
+Gitweb:     http://git.kernel.org/tip/1c47661a93fe6f729c80ed18a1f9ab1c7fb0cac2
+Author:     Ingo Molnar <mingo@kernel.org>
+AuthorDate: Wed, 2 Oct 2013 15:15:09 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 9 Oct 2013 08:48:56 +0200
 
-perf trace: Beautify rt_sigprocmask 'how' arg
+tools/perf/build: Split out feature checks: 'liberty', 'liberty-z', 'cplus-demangle'
 
-Cc: Adrian Hunter <adrian.hunter@intel.com>
+Note that these are rarely executed tests, so we call feature_check() explicitly
+and don't have them in CORE_FEATURE_CHECKS.
+
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-e2epkc38e3x0uqmi1xie4tgc@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Link: http://lkml.kernel.org/n/tip-pvumlx6mbtfxffgrlwO2mRcx@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- tools/perf/builtin-trace.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ tools/perf/config/Makefile                             | 16 ++++++----------
+ tools/perf/config/feature-checks/Makefile              | 12 ++++++++++++
+ tools/perf/config/feature-checks/test-cplus-demangle.c | 10 ++++++++++
+ 3 files changed, 28 insertions(+), 10 deletions(-)
 
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index 8455a0a..ecc83ce 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -252,6 +252,9 @@ static const char *fcntl_cmds[] = {
- };
- static DEFINE_STRARRAY(fcntl_cmds);
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 62d02cd..89b2d47 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -472,23 +472,19 @@ else
+     EXTLIBS += -liberty
+     CFLAGS += -DHAVE_CPLUS_DEMANGLE_SUPPORT
+   else
+-    FLAGS_BFD=$(CFLAGS) $(LDFLAGS) $(EXTLIBS) -DPACKAGE='perf' -lbfd
+     ifeq ($(feature-libbfd), 1)
+       EXTLIBS += -lbfd
+     else
+-      FLAGS_BFD_IBERTY=$(FLAGS_BFD) -liberty
+-      has_bfd_iberty := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY),liberty)
+-      ifeq ($(has_bfd_iberty),y)
++      $(feature_check,liberty)
++      ifeq ($(feature-liberty), 1)
+         EXTLIBS += -lbfd -liberty
+       else
+-        FLAGS_BFD_IBERTY_Z=$(FLAGS_BFD_IBERTY) -lz
+-        has_bfd_iberty_z := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY_Z),libz)
+-        ifeq ($(has_bfd_iberty_z),y)
++        $(feature_check,liberty-z)
++        ifeq ($(feature-liberty-z), 1)
+           EXTLIBS += -lbfd -liberty -lz
+         else
+-          FLAGS_CPLUS_DEMANGLE=$(CFLAGS) $(LDFLAGS) $(EXTLIBS) -liberty
+-          has_cplus_demangle := $(call try-cc,$(SOURCE_CPLUS_DEMANGLE),$(FLAGS_CPLUS_DEMANGLE),demangle)
+-          ifeq ($(has_cplus_demangle),y)
++          $(feature_check,cplus-demangle)
++          ifeq ($(feature-cplus-demangle), 1)
+             EXTLIBS += -liberty
+             CFLAGS += -DHAVE_CPLUS_DEMANGLE_SUPPORT
+           else
+diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
+index d4c55ac..e21bceb 100644
+--- a/tools/perf/config/feature-checks/Makefile
++++ b/tools/perf/config/feature-checks/Makefile
+@@ -11,6 +11,9 @@ FILES=					\
+ 	test-hello			\
+ 	test-libaudit			\
+ 	test-libbfd			\
++	test-liberty			\
++	test-liberty-z			\
++	test-cplus-demangle		\
+ 	test-libelf			\
+ 	test-libelf-getphdrnum		\
+ 	test-libelf-mmap		\
+@@ -122,6 +125,15 @@ test-libpython-version:
+ test-libbfd:
+ 	$(BUILD) -DPACKAGE='perf' -DPACKAGE=perf -lbfd -ldl
  
-+static const char *sighow[] = { "BLOCK", "UNBLOCK", "SETMASK", };
-+static DEFINE_STRARRAY(sighow);
++test-liberty:
++	$(CC) -o $(OUTPUT)$@ test-libbfd.c -DPACKAGE='perf' -DPACKAGE=perf -lbfd -ldl -liberty
 +
- static size_t syscall_arg__scnprintf_open_flags(char *bf, size_t size,
- 					       struct syscall_arg *arg)
- {
-@@ -366,6 +369,9 @@ static struct syscall_fmt {
- 	{ .name	    = "pwrite",	    .errmsg = true, .alias = "pwrite64", },
- 	{ .name	    = "read",	    .errmsg = true, },
- 	{ .name	    = "recvfrom",   .errmsg = true, },
-+	{ .name	    = "rt_sigprocmask", .errmsg = true,
-+	  .arg_scnprintf = { [0] = SCA_STRARRAY, /* how */ },
-+	  .arg_parm	 = { [0] = &strarray__sighow, /* how */ }, },
- 	{ .name	    = "select",	    .errmsg = true, .timeout = true, },
- 	{ .name	    = "setitimer",  .errmsg = true,
- 	  .arg_scnprintf = { [0] = SCA_STRARRAY, /* which */ },
++test-liberty-z:
++	$(CC) -o $(OUTPUT)$@ test-libbfd.c -DPACKAGE='perf' -DPACKAGE=perf -lbfd -ldl -liberty -lz
++
++test-cplus-demangle:
++	$(BUILD) -liberty
++
+ test-on-exit:
+ 	$(BUILD)
+ 
+diff --git a/tools/perf/config/feature-checks/test-cplus-demangle.c b/tools/perf/config/feature-checks/test-cplus-demangle.c
+new file mode 100644
+index 0000000..5202f50
+--- /dev/null
++++ b/tools/perf/config/feature-checks/test-cplus-demangle.c
+@@ -0,0 +1,10 @@
++
++extern char *cplus_demangle(const char *, int);
++
++int main(void)
++{
++	cplus_demangle(0, 0);
++
++	return 0;
++}
++
