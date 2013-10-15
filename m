@@ -1,370 +1,426 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933602Ab3JORte (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 13:49:34 -0400
-Received: from gerard.telenet-ops.be ([195.130.132.48]:59905 "EHLO
-	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933534Ab3JORso (ORCPT
+	id S933607Ab3JORw2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 13:52:28 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:44703 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932793Ab3JORwZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 13:48:44 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: linux-m68k@vger.kernel.org
-Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH 2/3] m68k: Add kexec support
-Date: Tue, 15 Oct 2013 19:48:26 +0200
-Message-Id: <1381859307-11932-3-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1381859307-11932-1-git-send-email-geert@linux-m68k.org>
-References: <1381859307-11932-1-git-send-email-geert@linux-m68k.org>
+	Tue, 15 Oct 2013 13:52:25 -0400
+Date: Tue, 15 Oct 2013 13:46:44 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: dave@davemloft.net
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: pull request: wireless 2013-10-15
+Message-ID: <20131015174644.GC7615@tuxdriver.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="qMm9M+Fa2AknHoGS"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+
+--qMm9M+Fa2AknHoGS
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Dave,
+
+Please pull this batch of fixes intended for the 3.12 stream!
+
+For the mac80211 bits, Johannes says:
+
+"Jouni fixes a remain-on-channel vs. scan bug, and Felix fixes client TX
+probing on VLANs."
+
+And also:
+
+"This time I have two fixes from Emmanuel for RF-kill issues, and fixed
+two issues reported by Evan Huus and Thomas Lindroth respectively."
+
+On top of those...
+
+Avinash Patil adds a couple of mwifiex fixes to properly inform cfg80211
+about some different types of disconnects, avoiding WARNINGs.
+
+Mark Cave-Ayland corrects a pointer arithmetic problem in rtlwifi,
+avoiding incorrect automatic gain calculations.
+
+Solomon Peachy sends a cw1200 fix for locking around calls to
+cw1200_irq_handler, addressing "lost interrupt" problems.
+
+Please let me know if there are problems!
+
+Thanks,
+
+John
+
 ---
-v2:
-  - KEXEC depends on M68KCLASSIC,
-  - Fix handling of virtual and physical addresses, for machines where
-    memory doesn't start at zero,
-  - Support for other CPUs than 68040.
 
- arch/m68k/Kconfig                  |   17 ++++
- arch/m68k/include/asm/kexec.h      |   29 +++++++
- arch/m68k/kernel/Makefile          |    2 +
- arch/m68k/kernel/asm-offsets.c     |    3 +
- arch/m68k/kernel/machine_kexec.c   |   58 ++++++++++++++
- arch/m68k/kernel/relocate_kernel.S |  155 ++++++++++++++++++++++++++++++++++++
- include/uapi/linux/kexec.h         |    1 +
- 7 files changed, 265 insertions(+)
- create mode 100644 arch/m68k/include/asm/kexec.h
- create mode 100644 arch/m68k/kernel/machine_kexec.c
- create mode 100644 arch/m68k/kernel/relocate_kernel.S
+The following changes since commit e9e4ea74f06635f2ffc1dffe5ef40c854faa0a90:
 
-diff --git a/arch/m68k/Kconfig b/arch/m68k/Kconfig
-index 311a300d48cc..5d65c39bfc69 100644
---- a/arch/m68k/Kconfig
-+++ b/arch/m68k/Kconfig
-@@ -86,6 +86,23 @@ config MMU_SUN3
- 	bool
- 	depends on MMU && !MMU_MOTOROLA && !MMU_COLDFIRE
- 
-+config KEXEC
-+	bool "kexec system call"
-+	depends on M68KCLASSIC
-+	help
-+	  kexec is a system call that implements the ability to shutdown your
-+	  current kernel, and to start another kernel.  It is like a reboot
-+	  but it is independent of the system firmware.   And like a reboot
-+	  you can start any kernel with it, not just Linux.
-+
-+	  The name comes from the similarity to the exec system call.
-+
-+	  It is an ongoing process to be certain the hardware in a machine
-+	  is properly shutdown, so do not be surprised if this code does not
-+	  initially work for you.  As of this writing the exact hardware
-+	  interface is strongly in flux, so no good recommendation can be
-+	  made.
-+
- menu "Platform setup"
- 
- source arch/m68k/Kconfig.cpu
-diff --git a/arch/m68k/include/asm/kexec.h b/arch/m68k/include/asm/kexec.h
-new file mode 100644
-index 000000000000..3df97abac147
---- /dev/null
-+++ b/arch/m68k/include/asm/kexec.h
-@@ -0,0 +1,29 @@
-+#ifndef _ASM_M68K_KEXEC_H
-+#define _ASM_M68K_KEXEC_H
-+
-+#ifdef CONFIG_KEXEC
-+
-+/* Maximum physical address we can use pages from */
-+#define KEXEC_SOURCE_MEMORY_LIMIT (-1UL)
-+/* Maximum address we can reach in physical address mode */
-+#define KEXEC_DESTINATION_MEMORY_LIMIT (-1UL)
-+/* Maximum address we can use for the control code buffer */
-+#define KEXEC_CONTROL_MEMORY_LIMIT (-1UL)
-+
-+#define KEXEC_CONTROL_PAGE_SIZE	4096
-+
-+#define KEXEC_ARCH KEXEC_ARCH_68K
-+
-+#ifndef __ASSEMBLY__
-+
-+static inline void crash_setup_regs(struct pt_regs *newregs,
-+				    struct pt_regs *oldregs)
-+{
-+	/* Dummy implementation for now */
-+}
-+
-+#endif /* __ASSEMBLY__ */
-+
-+#endif /* CONFIG_KEXEC */
-+
-+#endif /* _ASM_M68K_KEXEC_H */
-diff --git a/arch/m68k/kernel/Makefile b/arch/m68k/kernel/Makefile
-index 655347d80780..7ee5f00a9abb 100644
---- a/arch/m68k/kernel/Makefile
-+++ b/arch/m68k/kernel/Makefile
-@@ -22,3 +22,5 @@ obj-$(CONFIG_PCI) += pcibios.o
- 
- obj-$(CONFIG_HAS_DMA)	+= dma.o
- 
-+obj-$(CONFIG_KEXEC)		+= machine_kexec.o relocate_kernel.o
-+
-diff --git a/arch/m68k/kernel/asm-offsets.c b/arch/m68k/kernel/asm-offsets.c
-index 8b7b22846366..3a386341aa6e 100644
---- a/arch/m68k/kernel/asm-offsets.c
-+++ b/arch/m68k/kernel/asm-offsets.c
-@@ -98,6 +98,9 @@ int main(void)
- 	DEFINE(CIABBASE, &ciab);
- 	DEFINE(C_PRA, offsetof(struct CIA, pra));
- 	DEFINE(ZTWOBASE, zTwoBase);
-+
-+	/* enum m68k_fixup_type */
-+	DEFINE(M68K_FIXUP_MEMOFFSET, m68k_fixup_memoffset);
- #endif
- 
- 	return 0;
-diff --git a/arch/m68k/kernel/machine_kexec.c b/arch/m68k/kernel/machine_kexec.c
-new file mode 100644
-index 000000000000..d4affc917d9d
---- /dev/null
-+++ b/arch/m68k/kernel/machine_kexec.c
-@@ -0,0 +1,58 @@
-+/*
-+ * machine_kexec.c - handle transition of Linux booting another kernel
-+ */
-+#include <linux/compiler.h>
-+#include <linux/kexec.h>
-+#include <linux/mm.h>
-+#include <linux/delay.h>
-+
-+#include <asm/cacheflush.h>
-+#include <asm/page.h>
-+#include <asm/setup.h>
-+
-+extern const unsigned char relocate_new_kernel[];
-+extern const size_t relocate_new_kernel_size;
-+
-+int machine_kexec_prepare(struct kimage *kimage)
-+{
-+	return 0;
-+}
-+
-+void machine_kexec_cleanup(struct kimage *kimage)
-+{
-+}
-+
-+void machine_shutdown(void)
-+{
-+}
-+
-+void machine_crash_shutdown(struct pt_regs *regs)
-+{
-+}
-+
-+typedef void (*relocate_kernel_t)(unsigned long ptr,
-+				  unsigned long start,
-+				  unsigned long cpu_mmu_flags) __noreturn;
-+
-+void machine_kexec(struct kimage *image)
-+{
-+	void *reboot_code_buffer;
-+	unsigned long cpu_mmu_flags;
-+
-+	reboot_code_buffer = page_address(image->control_code_page);
-+
-+	memcpy(reboot_code_buffer, relocate_new_kernel,
-+	       relocate_new_kernel_size);
-+
-+	/*
-+	 * we do not want to be bothered.
-+	 */
-+	local_irq_disable();
-+
-+	pr_info("Will call new kernel at 0x%08lx. Bye...\n", image->start);
-+	__flush_cache_all();
-+	cpu_mmu_flags = m68k_cputype | m68k_mmutype << 8;
-+	((relocate_kernel_t) reboot_code_buffer)(image->head & PAGE_MASK,
-+						 image->start,
-+						 cpu_mmu_flags);
-+}
-diff --git a/arch/m68k/kernel/relocate_kernel.S b/arch/m68k/kernel/relocate_kernel.S
-new file mode 100644
-index 000000000000..3ab533b0b6bc
---- /dev/null
-+++ b/arch/m68k/kernel/relocate_kernel.S
-@@ -0,0 +1,155 @@
-+#include <linux/linkage.h>
-+
-+#include <asm/asm-offsets.h>
-+#include <asm/page.h>
-+#include <asm/setup.h>
-+
-+
-+#define MMU_BASE	8		/* MMU flags base in cpu_mmu_flags */
-+
-+.text
-+
-+ENTRY(relocate_new_kernel)
-+	movel %sp@(4),%a0		/* a0 = ptr */
-+	movel %sp@(8),%a1		/* a1 = start */
-+	movel %sp@(12),%d1		/* d1 = cpu_mmu_flags */
-+	movew #PAGE_MASK,%d2		/* d2 = PAGE_MASK */
-+
-+	/* Disable MMU */
-+
-+	btst #MMU_BASE + MMUB_68851,%d1
-+	jeq 3f
-+
-+1:	/* 68851 or 68030 */
-+
-+	lea %pc@(.Lcopy),%a4
-+2:	addl #0x00000000,%a4		/* virt_to_phys() */
-+
-+	.section ".m68k_fixup","aw"
-+	.long M68K_FIXUP_MEMOFFSET, 2b+2
-+	.previous
-+
-+	.chip 68030
-+	pmove %tc,%d0			/* Disable MMU */
-+	bclr #7,%d0
-+	pmove %d0,%tc
-+	jmp %a4@			/* Jump to physical .Lcopy */
-+	.chip 68k
-+
-+3:
-+	btst #MMU_BASE + MMUB_68030,%d1
-+	jne 1b
-+
-+	btst #MMU_BASE + MMUB_68040,%d1
-+	jeq 6f
-+
-+4:	/* 68040 or 68060 */
-+
-+	lea %pc@(.Lcont040),%a4
-+5:	addl #0x00000000,%a4		/* virt_to_phys() */
-+
-+	.section ".m68k_fixup","aw"
-+	.long M68K_FIXUP_MEMOFFSET, 5b+2
-+	.previous
-+
-+	movel %a4,%d0
-+	andl #0xff000000,%d0
-+	orw #0xe020,%d0			/* Map 16 MiB, enable, cacheable */
-+	.chip 68040
-+	movec %d0,%itt0
-+	movec %d0,%dtt0
-+	.chip 68k
-+	jmp %a4@			/* Jump to physical .Lcont040 */
-+
-+.Lcont040:
-+	moveq #0,%d0
-+	.chip 68040
-+	movec %d0,%tc			/* Disable MMU */
-+	.chip 68k
-+	jra .Lcopy
-+
-+6:
-+	btst #MMU_BASE + MMUB_68060,%d1
-+	jne 4b
-+
-+.Lcopy:
-+	movel %a0@+,%d0			/* d0 = entry = *ptr */
-+	jeq .Lflush
-+
-+	btst #2,%d0			/* entry & IND_DONE? */
-+	jne .Lflush
-+
-+	btst #1,%d0			/* entry & IND_INDIRECTION? */
-+	jeq 1f
-+	andw %d2,%d0
-+	movel %d0,%a0			/* ptr = entry & PAGE_MASK */
-+	jra .Lcopy
-+
-+1:
-+	btst #0,%d0			/* entry & IND_DESTINATION? */
-+	jeq 2f
-+	andw %d2,%d0
-+	movel %d0,%a2			/* a2 = dst = entry & PAGE_MASK */
-+	jra .Lcopy
-+
-+2:
-+	btst #3,%d0			/* entry & IND_SOURCE? */
-+	jeq .Lcopy
-+
-+	andw %d2,%d0
-+	movel %d0,%a3			/* a3 = src = entry & PAGE_MASK */
-+	movew #PAGE_SIZE/32 - 1,%d0	/* d0 = PAGE_SIZE/32 - 1 */
-+3:
-+	movel %a3@+,%a2@+		/* *dst++ = *src++ */
-+	movel %a3@+,%a2@+		/* *dst++ = *src++ */
-+	movel %a3@+,%a2@+		/* *dst++ = *src++ */
-+	movel %a3@+,%a2@+		/* *dst++ = *src++ */
-+	movel %a3@+,%a2@+		/* *dst++ = *src++ */
-+	movel %a3@+,%a2@+		/* *dst++ = *src++ */
-+	movel %a3@+,%a2@+		/* *dst++ = *src++ */
-+	movel %a3@+,%a2@+		/* *dst++ = *src++ */
-+	dbf %d0, 3b
-+	jra .Lcopy
-+
-+.Lflush:
-+	/* Flush all caches */
-+
-+	btst #CPUB_68020,%d1
-+	jeq 2f
-+
-+1:	/* 68020 or 68030 */
-+	.chip 68030
-+	movec %cacr,%d0
-+	orw #0x808,%d0
-+	movec %d0,%cacr
-+	.chip 68k
-+	jra .Lreincarnate
-+
-+2:
-+	btst #CPUB_68030,%d1
-+	jne 1b
-+
-+	btst #CPUB_68040,%d1
-+	jeq 4f
-+
-+3:	/* 68040 or 68060 */
-+	.chip 68040
-+	nop
-+	cpusha %bc
-+	nop
-+	cinva %bc
-+	nop
-+	.chip 68k
-+	jra .Lreincarnate
-+
-+4:
-+	btst #CPUB_68060,%d1
-+	jne 3b
-+
-+.Lreincarnate:
-+	jmp %a1@
-+
-+relocate_new_kernel_end:
-+
-+ENTRY(relocate_new_kernel_size)
-+	.long relocate_new_kernel_end - relocate_new_kernel
-diff --git a/include/uapi/linux/kexec.h b/include/uapi/linux/kexec.h
-index 104838f65bc1..d6629d49a243 100644
---- a/include/uapi/linux/kexec.h
-+++ b/include/uapi/linux/kexec.h
-@@ -18,6 +18,7 @@
+  net: smc91x: dont't use SMC_outw for fixing up halfword-aligned data (201=
+3-10-11 17:50:59 -0400)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless.git for-d=
+avem
+
+for you to fetch changes up to 39c253ed7817bf477189a132b114303c9aa2c2d2:
+
+  Merge branch 'master' of git://git.kernel.org/pub/scm/linux/kernel/git/li=
+nville/wireless into for-davem (2013-10-15 13:05:21 -0400)
+
+----------------------------------------------------------------
+
+Avinash Patil (2):
+      mwifiex: inform cfg80211 about disconnect if device is removed
+      mwifiex: inform cfg80211 about disconnect for P2P client interface
+
+Emmanuel Grumbach (2):
+      mac80211: correctly close cancelled scans
+      cfg80211: don't add p2p device while in RFKILL
+
+Felix Fietkau (2):
+      mac80211: use sta_info_get_bss() for nl80211 tx and client probing
+      mac80211: update sta->last_rx on acked tx frames
+
+Johannes Berg (2):
+      wireless: radiotap: fix parsing buffer overrun
+      mac80211: fix crash if bitrate calculation goes wrong
+
+John W. Linville (3):
+      Merge branch 'for-john' of git://git.kernel.org/.../jberg/mac80211
+      Merge branch 'for-john' of git://git.kernel.org/.../jberg/mac80211
+      Merge branch 'master' of git://git.kernel.org/.../linville/wireless i=
+nto for-davem
+
+Jouni Malinen (1):
+      mac80211: Run deferred scan if last roc_list item is not started
+
+Mark Cave-Ayland (1):
+      rtlwifi: rtl8192cu: Fix error in pointer arithmetic
+
+Solomon Peachy (1):
+      wireless: cw1200: acquire hwbus lock around cw1200_irq_handler() call.
+
+ drivers/net/wireless/cw1200/cw1200_spi.c     |  2 ++
+ drivers/net/wireless/mwifiex/join.c          | 10 ++++++++--
+ drivers/net/wireless/mwifiex/sta_event.c     |  3 ++-
+ drivers/net/wireless/rtlwifi/rtl8192cu/trx.c |  3 ++-
+ net/mac80211/cfg.c                           |  2 +-
+ net/mac80211/ieee80211_i.h                   |  3 +++
+ net/mac80211/offchannel.c                    |  2 ++
+ net/mac80211/scan.c                          | 19 +++++++++++++++++++
+ net/mac80211/status.c                        |  3 +++
+ net/mac80211/tx.c                            |  3 ++-
+ net/mac80211/util.c                          |  4 ++++
+ net/wireless/core.c                          |  2 --
+ net/wireless/core.h                          |  3 +++
+ net/wireless/radiotap.c                      |  7 ++++++-
+ 14 files changed, 57 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/net/wireless/cw1200/cw1200_spi.c b/drivers/net/wireles=
+s/cw1200/cw1200_spi.c
+index 899cad3..755a0c8 100644
+--- a/drivers/net/wireless/cw1200/cw1200_spi.c
++++ b/drivers/net/wireless/cw1200/cw1200_spi.c
+@@ -237,7 +237,9 @@ static irqreturn_t cw1200_spi_irq_handler(int irq, void=
+ *dev_id)
+ 	struct hwbus_priv *self =3D dev_id;
+=20
+ 	if (self->core) {
++		cw1200_spi_lock(self);
+ 		cw1200_irq_handler(self->core);
++		cw1200_spi_unlock(self);
+ 		return IRQ_HANDLED;
+ 	} else {
+ 		return IRQ_NONE;
+diff --git a/drivers/net/wireless/mwifiex/join.c b/drivers/net/wireless/mwi=
+fiex/join.c
+index 9d7c0e6..37f873b 100644
+--- a/drivers/net/wireless/mwifiex/join.c
++++ b/drivers/net/wireless/mwifiex/join.c
+@@ -1422,13 +1422,19 @@ static int mwifiex_deauthenticate_infra(struct mwif=
+iex_private *priv, u8 *mac)
   */
- #define KEXEC_ARCH_DEFAULT ( 0 << 16)
- #define KEXEC_ARCH_386     ( 3 << 16)
-+#define KEXEC_ARCH_68K     ( 4 << 16)
- #define KEXEC_ARCH_X86_64  (62 << 16)
- #define KEXEC_ARCH_PPC     (20 << 16)
- #define KEXEC_ARCH_PPC64   (21 << 16)
--- 
-1.7.9.5
+ int mwifiex_deauthenticate(struct mwifiex_private *priv, u8 *mac)
+ {
++	int ret =3D 0;
++
+ 	if (!priv->media_connected)
+ 		return 0;
+=20
+ 	switch (priv->bss_mode) {
+ 	case NL80211_IFTYPE_STATION:
+ 	case NL80211_IFTYPE_P2P_CLIENT:
+-		return mwifiex_deauthenticate_infra(priv, mac);
++		ret =3D mwifiex_deauthenticate_infra(priv, mac);
++		if (ret)
++			cfg80211_disconnected(priv->netdev, 0, NULL, 0,
++					      GFP_KERNEL);
++		break;
+ 	case NL80211_IFTYPE_ADHOC:
+ 		return mwifiex_send_cmd_sync(priv,
+ 					     HostCmd_CMD_802_11_AD_HOC_STOP,
+@@ -1440,7 +1446,7 @@ int mwifiex_deauthenticate(struct mwifiex_private *pr=
+iv, u8 *mac)
+ 		break;
+ 	}
+=20
+-	return 0;
++	return ret;
+ }
+ EXPORT_SYMBOL_GPL(mwifiex_deauthenticate);
+=20
+diff --git a/drivers/net/wireless/mwifiex/sta_event.c b/drivers/net/wireles=
+s/mwifiex/sta_event.c
+index 8b05752..8c351f7 100644
+--- a/drivers/net/wireless/mwifiex/sta_event.c
++++ b/drivers/net/wireless/mwifiex/sta_event.c
+@@ -118,7 +118,8 @@ mwifiex_reset_connect_state(struct mwifiex_private *pri=
+v, u16 reason_code)
+ 	dev_dbg(adapter->dev,
+ 		"info: successfully disconnected from %pM: reason code %d\n",
+ 		priv->cfg_bssid, reason_code);
+-	if (priv->bss_mode =3D=3D NL80211_IFTYPE_STATION) {
++	if (priv->bss_mode =3D=3D NL80211_IFTYPE_STATION ||
++	    priv->bss_mode =3D=3D NL80211_IFTYPE_P2P_CLIENT) {
+ 		cfg80211_disconnected(priv->netdev, reason_code, NULL, 0,
+ 				      GFP_KERNEL);
+ 	}
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192cu/trx.c b/drivers/net/wir=
+eless/rtlwifi/rtl8192cu/trx.c
+index 763cf1d..5a060e5 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192cu/trx.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192cu/trx.c
+@@ -343,7 +343,8 @@ bool rtl92cu_rx_query_desc(struct ieee80211_hw *hw,
+ 					(bool)GET_RX_DESC_PAGGR(pdesc));
+ 	rx_status->mactime =3D GET_RX_DESC_TSFL(pdesc);
+ 	if (phystatus) {
+-		p_drvinfo =3D (struct rx_fwinfo_92c *)(pdesc + RTL_RX_DESC_SIZE);
++		p_drvinfo =3D (struct rx_fwinfo_92c *)(skb->data +
++						     stats->rx_bufshift);
+ 		rtl92c_translate_rx_signal_stuff(hw, skb, stats, pdesc,
+ 						 p_drvinfo);
+ 	}
+diff --git a/net/mac80211/cfg.c b/net/mac80211/cfg.c
+index 2e7855a..629dee7 100644
+--- a/net/mac80211/cfg.c
++++ b/net/mac80211/cfg.c
+@@ -3518,7 +3518,7 @@ static int ieee80211_probe_client(struct wiphy *wiphy=
+, struct net_device *dev,
+ 		return -EINVAL;
+ 	}
+ 	band =3D chanctx_conf->def.chan->band;
+-	sta =3D sta_info_get(sdata, peer);
++	sta =3D sta_info_get_bss(sdata, peer);
+ 	if (sta) {
+ 		qos =3D test_sta_flag(sta, WLAN_STA_WME);
+ 	} else {
+diff --git a/net/mac80211/ieee80211_i.h b/net/mac80211/ieee80211_i.h
+index b618651..611abfc 100644
+--- a/net/mac80211/ieee80211_i.h
++++ b/net/mac80211/ieee80211_i.h
+@@ -893,6 +893,8 @@ struct tpt_led_trigger {
+  *	that the scan completed.
+  * @SCAN_ABORTED: Set for our scan work function when the driver reported
+  *	a scan complete for an aborted scan.
++ * @SCAN_HW_CANCELLED: Set for our scan work function when the scan is bei=
+ng
++ *	cancelled.
+  */
+ enum {
+ 	SCAN_SW_SCANNING,
+@@ -900,6 +902,7 @@ enum {
+ 	SCAN_ONCHANNEL_SCANNING,
+ 	SCAN_COMPLETED,
+ 	SCAN_ABORTED,
++	SCAN_HW_CANCELLED,
+ };
+=20
+ /**
+diff --git a/net/mac80211/offchannel.c b/net/mac80211/offchannel.c
+index acd1f71..0c2a294 100644
+--- a/net/mac80211/offchannel.c
++++ b/net/mac80211/offchannel.c
+@@ -394,6 +394,8 @@ void ieee80211_sw_roc_work(struct work_struct *work)
+=20
+ 		if (started)
+ 			ieee80211_start_next_roc(local);
++		else if (list_empty(&local->roc_list))
++			ieee80211_run_deferred_scan(local);
+ 	}
+=20
+  out_unlock:
+diff --git a/net/mac80211/scan.c b/net/mac80211/scan.c
+index 08afe74..d2d17a4 100644
+--- a/net/mac80211/scan.c
++++ b/net/mac80211/scan.c
+@@ -238,6 +238,9 @@ static bool ieee80211_prep_hw_scan(struct ieee80211_loc=
+al *local)
+ 	enum ieee80211_band band;
+ 	int i, ielen, n_chans;
+=20
++	if (test_bit(SCAN_HW_CANCELLED, &local->scanning))
++		return false;
++
+ 	do {
+ 		if (local->hw_scan_band =3D=3D IEEE80211_NUM_BANDS)
+ 			return false;
+@@ -940,7 +943,23 @@ void ieee80211_scan_cancel(struct ieee80211_local *loc=
+al)
+ 	if (!local->scan_req)
+ 		goto out;
+=20
++	/*
++	 * We have a scan running and the driver already reported completion,
++	 * but the worker hasn't run yet or is stuck on the mutex - mark it as
++	 * cancelled.
++	 */
++	if (test_bit(SCAN_HW_SCANNING, &local->scanning) &&
++	    test_bit(SCAN_COMPLETED, &local->scanning)) {
++		set_bit(SCAN_HW_CANCELLED, &local->scanning);
++		goto out;
++	}
++
+ 	if (test_bit(SCAN_HW_SCANNING, &local->scanning)) {
++		/*
++		 * Make sure that __ieee80211_scan_completed doesn't trigger a
++		 * scan on another band.
++		 */
++		set_bit(SCAN_HW_CANCELLED, &local->scanning);
+ 		if (local->ops->cancel_hw_scan)
+ 			drv_cancel_hw_scan(local,
+ 				rcu_dereference_protected(local->scan_sdata,
+diff --git a/net/mac80211/status.c b/net/mac80211/status.c
+index 368837f..78dc2e9 100644
+--- a/net/mac80211/status.c
++++ b/net/mac80211/status.c
+@@ -180,6 +180,9 @@ static void ieee80211_frame_acked(struct sta_info *sta,=
+ struct sk_buff *skb)
+ 	struct ieee80211_local *local =3D sta->local;
+ 	struct ieee80211_sub_if_data *sdata =3D sta->sdata;
+=20
++	if (local->hw.flags & IEEE80211_HW_REPORTS_TX_ACK_STATUS)
++		sta->last_rx =3D jiffies;
++
+ 	if (ieee80211_is_data_qos(mgmt->frame_control)) {
+ 		struct ieee80211_hdr *hdr =3D (void *) skb->data;
+ 		u8 *qc =3D ieee80211_get_qos_ctl(hdr);
+diff --git a/net/mac80211/tx.c b/net/mac80211/tx.c
+index 3456c04..70b5a05 100644
+--- a/net/mac80211/tx.c
++++ b/net/mac80211/tx.c
+@@ -1120,7 +1120,8 @@ ieee80211_tx_prepare(struct ieee80211_sub_if_data *sd=
+ata,
+ 		tx->sta =3D rcu_dereference(sdata->u.vlan.sta);
+ 		if (!tx->sta && sdata->dev->ieee80211_ptr->use_4addr)
+ 			return TX_DROP;
+-	} else if (info->flags & IEEE80211_TX_CTL_INJECTED ||
++	} else if (info->flags & (IEEE80211_TX_CTL_INJECTED |
++				  IEEE80211_TX_INTFL_NL80211_FRAME_TX) ||
+ 		   tx->sdata->control_port_protocol =3D=3D tx->skb->protocol) {
+ 		tx->sta =3D sta_info_get_bss(sdata, hdr->addr1);
+ 	}
+diff --git a/net/mac80211/util.c b/net/mac80211/util.c
+index 9c3200b..69e4ef5 100644
+--- a/net/mac80211/util.c
++++ b/net/mac80211/util.c
+@@ -2238,6 +2238,10 @@ u64 ieee80211_calculate_rx_timestamp(struct ieee8021=
+1_local *local,
+ 	}
+=20
+ 	rate =3D cfg80211_calculate_bitrate(&ri);
++	if (WARN_ONCE(!rate,
++		      "Invalid bitrate: flags=3D0x%x, idx=3D%d, vht_nss=3D%d\n",
++		      status->flag, status->rate_idx, status->vht_nss))
++		return 0;
+=20
+ 	/* rewind from end of MPDU */
+ 	if (status->flag & RX_FLAG_MACTIME_END)
+diff --git a/net/wireless/core.c b/net/wireless/core.c
+index fe8d4f2..aff959e 100644
+--- a/net/wireless/core.c
++++ b/net/wireless/core.c
+@@ -958,8 +958,6 @@ static int cfg80211_netdev_notifier_call(struct notifie=
+r_block *nb,
+ 	case NETDEV_PRE_UP:
+ 		if (!(wdev->wiphy->interface_modes & BIT(wdev->iftype)))
+ 			return notifier_from_errno(-EOPNOTSUPP);
+-		if (rfkill_blocked(rdev->rfkill))
+-			return notifier_from_errno(-ERFKILL);
+ 		ret =3D cfg80211_can_add_interface(rdev, wdev->iftype);
+ 		if (ret)
+ 			return notifier_from_errno(ret);
+diff --git a/net/wireless/core.h b/net/wireless/core.h
+index 9ad43c6..3159e9c 100644
+--- a/net/wireless/core.h
++++ b/net/wireless/core.h
+@@ -411,6 +411,9 @@ static inline int
+ cfg80211_can_add_interface(struct cfg80211_registered_device *rdev,
+ 			   enum nl80211_iftype iftype)
+ {
++	if (rfkill_blocked(rdev->rfkill))
++		return -ERFKILL;
++
+ 	return cfg80211_can_change_interface(rdev, NULL, iftype);
+ }
+=20
+diff --git a/net/wireless/radiotap.c b/net/wireless/radiotap.c
+index 7d604c0..a271c27 100644
+--- a/net/wireless/radiotap.c
++++ b/net/wireless/radiotap.c
+@@ -97,6 +97,10 @@ int ieee80211_radiotap_iterator_init(
+ 	struct ieee80211_radiotap_header *radiotap_header,
+ 	int max_length, const struct ieee80211_radiotap_vendor_namespaces *vns)
+ {
++	/* check the radiotap header can actually be present */
++	if (max_length < sizeof(struct ieee80211_radiotap_header))
++		return -EINVAL;
++
+ 	/* Linux only supports version 0 radiotap format */
+ 	if (radiotap_header->it_version)
+ 		return -EINVAL;
+@@ -131,7 +135,8 @@ int ieee80211_radiotap_iterator_init(
+ 			 */
+=20
+ 			if ((unsigned long)iterator->_arg -
+-			    (unsigned long)iterator->_rtheader >
++			    (unsigned long)iterator->_rtheader +
++			    sizeof(uint32_t) >
+ 			    (unsigned long)iterator->_max_length)
+ 				return -EINVAL;
+ 		}
+--=20
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
 
+--qMm9M+Fa2AknHoGS
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSXX+EAAoJEJctW/TcYTgGTcMP/2u7camHKkSufkyKsT/I/GWc
+55Jwm9ithrBBYVcjwIvFibyHP1w1HhzY+PkWXSo+HF4GprP60nRL9Q1D9HZE67WR
+zF/AJ5DDnvySKP+0iDEX3dDamiDNzewCr+Ukyc/M1lSfL1tSkaCCgtQGGo6w8r4U
+7yJIihMOuRDIlSmSmyVUQ5wuRaYed7nNg4SLfZxmhKxPSP2EwI9SpZYHF12Hao9P
+h1SER663m3Sct4sdikkHHrn0xyJoYiawyRhzC0ayM7zm60soTmXk6Pr/slQvzrWn
+Avwxe1nPSsJVe9gAasa2xkQgpIVt/3gYfukH8+XXBo5lUn9IkaoCpskTav0/kDua
+pgwEHWXcJlJ96N7m3gVc1/CyTiqQHlz3Yd7CRhjvqyWtNNUi5PLgZ6xvJmnRoFmP
+ZN1/s6q7uPzwE7YgmeAmPS85TG9cOErKQqK21o933UqJQOHsTcZciTwNsWtAx957
+cb6/Vj+xRfyhCMO1wcu1s+8vREGH7clxVGu3/RXxmka9a6tmDNHMcIvavTdPqwcb
+mZmPstikiW22B+uSoVnWCv6AQ1OqIlX+zvmq2ZucV1f7utPurjMOw+q8pKYOWhl6
+PZ7qP8yscqlttcSNgt7aPYk8HpKeCrEolgsemm817YE81RzNwuXVz+XybhHvtes5
+oOJHsbIB7VDkv7WbKJtM
+=vkzh
+-----END PGP SIGNATURE-----
+
+--qMm9M+Fa2AknHoGS--
