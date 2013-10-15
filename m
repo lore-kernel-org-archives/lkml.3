@@ -1,62 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758924Ab3JOM7T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 08:59:19 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:51774 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758664Ab3JOM7S (ORCPT
+	id S1758925Ab3JONCi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 09:02:38 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:55533 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758527Ab3JONCh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 08:59:18 -0400
-Date: Tue, 15 Oct 2013 14:59:15 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        "Liu, Chuansheng" <chuansheng.liu@intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Ingo Molnar (mingo@kernel.org)" <mingo@kernel.org>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "'linux-kernel@vger.kernel.org' (linux-kernel@vger.kernel.org)" 
-	<linux-kernel@vger.kernel.org>,
-        "Wang, Xiaoming" <xiaoming.wang@intel.com>,
-        "Li, Zhuangzhi" <zhuangzhi.li@intel.com>
-Subject: Re: Panic and page fault in loop during handling NMI backtrace
- handler
-Message-ID: <20131015125914.GC29884@localhost.localdomain>
-References: <27240C0AC20F114CBF8149A2696CBE4A01B60835@SHSMSX101.ccr.corp.intel.com>
- <20131015121849.GA29884@localhost.localdomain>
- <20131015123717.GJ10651@twins.programming.kicks-ass.net>
- <20131015124837.GC9150@linux.vnet.ibm.com>
+	Tue, 15 Oct 2013 09:02:37 -0400
+Date: Tue, 15 Oct 2013 15:02:26 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Don Zickus <dzickus@redhat.com>
+Cc: dave.hansen@linux.intel.com, eranian@google.com, ak@linux.intel.com,
+        jmario@redhat.com, linux-kernel@vger.kernel.org, acme@infradead.org
+Subject: Re: x86, perf: throttling issues with long nmi latencies
+Message-ID: <20131015130226.GX26785@twins.programming.kicks-ass.net>
+References: <20131014203549.GY227855@redhat.com>
+ <20131015101404.GD10651@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131015124837.GC9150@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131015101404.GD10651@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 15, 2013 at 05:48:37AM -0700, Paul E. McKenney wrote:
-> On Tue, Oct 15, 2013 at 02:37:17PM +0200, Peter Zijlstra wrote:
-> > On Tue, Oct 15, 2013 at 02:18:53PM +0200, Frederic Weisbecker wrote:
-> > > On Tue, Oct 15, 2013 at 02:01:04AM +0000, Liu, Chuansheng wrote:
-> > > > We meet one issue that during trigger all CPU backtrace, but during in the NMI handler arch_trigger_all_cpu_backtrace_handler,
-> > > > It hit the PAGE fault, then PAGE fault is in loop, at last the thread stack overflow, and system panic.
-> > > > 
-> > > > Anyone can give some help? Thanks.
-> > > 
-> > > Looks like we re-enter the fault several times. On x86-32, NMIs can
-> > > fault if they dereference vmalloc'ed area. I wonder if the module thing
-> > > we lookup in the NMI is stored on some vmalloc'ed area.
-> > 
-> > IIRC modules are indeed allocated using vmalloc. See module_alloc()
-> > using vmalloc_exec()
+On Tue, Oct 15, 2013 at 12:14:04PM +0200, Peter Zijlstra wrote:
+>  arch/x86/kernel/cpu/perf_event_intel_ds.c | 43 ++++++++++++++++++++++---------
+>  1 file changed, 31 insertions(+), 12 deletions(-)
 > 
-> This might then be a module that uses call_rcu(), but which does not have
-> the needed rcu_barrier() in the module-exit function.
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+> index 32e9ed81cd00..3978e72a1c9f 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+> @@ -722,6 +722,8 @@ void intel_pmu_pebs_disable_all(void)
+>  		wrmsrl(MSR_IA32_PEBS_ENABLE, 0);
+>  }
+>  
+> +static DEFINE_PER_CPU(u8 [PAGE_SIZE], insn_page);
+> +
+>  static int intel_pmu_pebs_fixup_ip(struct pt_regs *regs)
+>  {
+>  	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+> @@ -729,6 +731,8 @@ static int intel_pmu_pebs_fixup_ip(struct pt_regs *regs)
+>  	unsigned long old_to, to = cpuc->lbr_entries[0].to;
+>  	unsigned long ip = regs->ip;
+>  	int is_64bit = 0;
+> +	int size, bytes;
+> +	void *kaddr;
+>  
+>  	/*
+>  	 * We don't need to fixup if the PEBS assist is fault like
+> @@ -763,29 +767,44 @@ static int intel_pmu_pebs_fixup_ip(struct pt_regs *regs)
+>  		return 1;
+>  	}
+>  
+> +refill:
+> +	if (kernel_ip(ip)) {
+> +		u8 *buf = &__get_cpu_var(insn_page[0]);
+> +		size = PAGE_SIZE - ((unsigned long)to & (PAGE_SIZE-1));
+> +		if (size < MAX_INSN_SIZE) {
+> +			/*
+> +			 * If we're going to have to touch two pages; just copy
+> +			 * as much as we can hold.
+> +			 */
+> +			size = PAGE_SIZE;
 
-I rather believe it's due to the lazy paging of vmalloc area in x86-32. We had issues
-like that in the past. For example that's the reason why we do an ad-hoc per-cpu
-allocation on callchain buffers in perf rather than using alloc_percpu() which might
-use vmalloc.
+
+Arguably we'd want that to be:
+
+			size = min(PAGE_SIZE, ip - to);
+
+As there's no point in copying beyond the basic block.
+
+> +		}
+> +		bytes = copy_from_user_nmi(buf, (void __user *)to, size);
+> +		if (bytes != size)
+> +			return 0;
+> +
+> +		kaddr = buf;
