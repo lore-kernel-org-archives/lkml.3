@@ -1,188 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757648Ab3JOHyZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 03:54:25 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:55659 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750965Ab3JOHyY (ORCPT
+	id S1757832Ab3JOH5o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 03:57:44 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35103 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750904Ab3JOH5m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 03:54:24 -0400
-Message-ID: <525CF4AD.1070304@atmel.com>
-Date: Tue, 15 Oct 2013 09:54:21 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Tue, 15 Oct 2013 03:57:42 -0400
+Date: Tue, 15 Oct 2013 00:57:28 -0700
+From: tip-bot for Russ Anderson <tipbot@zytor.com>
+Message-ID: <tip-dd3c9c4b603c664fedc12facf180db0f1794aafe@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, rja@sgi.com, hpa@zytor.com, mingo@kernel.org,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, rja@sgi.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de
+In-Reply-To: <20131014161733.GA6274@sgi.com>
+References: <20131014161733.GA6274@sgi.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86: Update UV3 hub revision ID
+Git-Commit-ID: dd3c9c4b603c664fedc12facf180db0f1794aafe
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Soren Brinkmann <soren.brinkmann@xilinx.com>, <netdev@vger.kernel.org>,
-        David Miller <davem@davemloft.net>
-CC: <linux-kernel@vger.kernel.org>, Michal Simek <michal.simek@xilinx.com>
-Subject: Re: [PATCH RFC 5/5] net: macb: Adjust tx_clk when link speed changes
-References: <1381795140-10792-1-git-send-email-soren.brinkmann@xilinx.com> <1381795140-10792-6-git-send-email-soren.brinkmann@xilinx.com>
-In-Reply-To: <1381795140-10792-6-git-send-email-soren.brinkmann@xilinx.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 15 Oct 2013 00:57:34 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15/10/2013 01:59, Soren Brinkmann :
-> Adjust the ethernet clock according to the negotiated link speed.
->
-> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+Commit-ID:  dd3c9c4b603c664fedc12facf180db0f1794aafe
+Gitweb:     http://git.kernel.org/tip/dd3c9c4b603c664fedc12facf180db0f1794aafe
+Author:     Russ Anderson <rja@sgi.com>
+AuthorDate: Mon, 14 Oct 2013 11:17:34 -0500
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Tue, 15 Oct 2013 08:44:46 +0200
 
-I will need more time to study this one.
+x86: Update UV3 hub revision ID
 
-Moreover, I will have to add the "tx_clk" to every user of this driver 
-before switchin to the addition of this clock.
+The UV3 hub revision ID is different than expected.  The first
+revision was supposed to start at 1 but instead will start at 0.
 
-Best regards,
+Signed-off-by: Russ Anderson <rja@sgi.com>
+Cc: <stable@kernel.org> # v3.9, v3.10, v3.11
+Link: http://lkml.kernel.org/r/20131014161733.GA6274@sgi.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/kernel/apic/x2apic_uv_x.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> ---
->   drivers/net/ethernet/cadence/macb.c | 66 +++++++++++++++++++++++++++++++++++++
->   drivers/net/ethernet/cadence/macb.h |  1 +
->   2 files changed, 67 insertions(+)
->
-> diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
-> index 603844b1d483..beb9fa863811 100644
-> --- a/drivers/net/ethernet/cadence/macb.c
-> +++ b/drivers/net/ethernet/cadence/macb.c
-> @@ -204,6 +204,49 @@ static int macb_mdio_reset(struct mii_bus *bus)
->   	return 0;
->   }
->
-> +/**
-> + * macb_set_tx_clk() - Set a clock to a new frequency
-> + * @clk		Pointer to the clock to change
-> + * @rate	New frequency in Hz
-> + * @dev		Pointer to the struct net_device
-> + */
-> +static void macb_set_tx_clk(struct clk *clk, int speed, struct net_device *dev)
-> +{
-> +	long ferr;
-> +	long rate;
-> +	long rate_rounded;
-> +
-> +	switch (speed) {
-> +	case SPEED_10:
-> +		rate = 2500000;
-> +		break;
-> +	case SPEED_100:
-> +		rate = 25000000;
-> +		break;
-> +	case SPEED_1000:
-> +		rate = 125000000;
-> +		break;
-> +	default:
-> +		break;
-> +	}
-> +
-> +	rate_rounded = clk_round_rate(clk, rate);
-> +	if (rate_rounded < 0)
-> +		return;
-> +
-> +	/* RGMII allows 50 ppm frequency error. Test and warn if this limit
-> +	 * are not satisfied.
-> +	 */
-> +	ferr = abs(rate_rounded - rate);
-> +	ferr = DIV_ROUND_UP(ferr, rate / 100000);
-> +	if (ferr > 5)
-> +		netdev_warn(dev, "unable to generate target frequency: %ld Hz\n",
-> +				rate);
-> +
-> +	if (clk_set_rate(clk, rate_rounded))
-> +		netdev_err(dev, "adjusting tx_clk failed.\n");
-> +}
-> +
->   static void macb_handle_link_change(struct net_device *dev)
->   {
->   	struct macb *bp = netdev_priv(dev);
-> @@ -251,6 +294,9 @@ static void macb_handle_link_change(struct net_device *dev)
->
->   	spin_unlock_irqrestore(&bp->lock, flags);
->
-> +	if (!IS_ERR(bp->tx_clk))
-> +		macb_set_tx_clk(bp->tx_clk, phydev->speed, dev);
-> +
->   	if (status_change) {
->   		if (phydev->link) {
->   			netif_carrier_on(dev);
-> @@ -1805,6 +1851,8 @@ static int __init macb_probe(struct platform_device *pdev)
->   		goto err_out_free_dev;
->   	}
->
-> +	bp->tx_clk = devm_clk_get(&pdev->dev, "tx_clk");
-> +
->   	err = clk_prepare_enable(bp->pclk);
->   	if (err) {
->   		dev_err(&pdev->dev, "failed to enable pclk (%u)\n", err);
-> @@ -1817,6 +1865,15 @@ static int __init macb_probe(struct platform_device *pdev)
->   		goto err_out_disable_pclk;
->   	}
->
-> +	if (!IS_ERR(bp->tx_clk)) {
-> +		err = clk_prepare_enable(bp->tx_clk);
-> +		if (err) {
-> +			dev_err(&pdev->dev, "failed to enable tx_clk (%u)\n",
-> +					err);
-> +			goto err_out_disable_hclk;
-> +		}
-> +	}
-> +
->   	bp->regs = devm_ioremap(&pdev->dev, regs->start, resource_size(regs));
->   	if (!bp->regs) {
->   		dev_err(&pdev->dev, "failed to map registers, aborting.\n");
-> @@ -1917,6 +1974,9 @@ static int __init macb_probe(struct platform_device *pdev)
->   err_out_unregister_netdev:
->   	unregister_netdev(dev);
->   err_out_disable_clocks:
-> +	if (!IS_ERR(bp->tx_clk))
-> +		clk_disable_unprepare(bp->tx_clk);
-> +err_out_disable_hclk:
->   	clk_disable_unprepare(bp->hclk);
->   err_out_disable_pclk:
->   	clk_disable_unprepare(bp->pclk);
-> @@ -1941,6 +2001,8 @@ static int __exit macb_remove(struct platform_device *pdev)
->   		kfree(bp->mii_bus->irq);
->   		mdiobus_free(bp->mii_bus);
->   		unregister_netdev(dev);
-> +		if (!IS_ERR(bp->tx_clk))
-> +			clk_disable_unprepare(bp->tx_clk);
->   		clk_disable_unprepare(bp->hclk);
->   		clk_disable_unprepare(bp->pclk);
->   		free_netdev(dev);
-> @@ -1959,6 +2021,8 @@ static int macb_suspend(struct device *dev)
->   	netif_carrier_off(netdev);
->   	netif_device_detach(netdev);
->
-> +	if (!IS_ERR(bp->tx_clk))
-> +		clk_disable_unprepare(bp->tx_clk);
->   	clk_disable_unprepare(bp->hclk);
->   	clk_disable_unprepare(bp->pclk);
->
-> @@ -1973,6 +2037,8 @@ static int macb_resume(struct device *dev)
->
->   	clk_prepare_enable(bp->pclk);
->   	clk_prepare_enable(bp->hclk);
-> +	if (!IS_ERR(bp->tx_clk))
-> +		clk_prepare_enable(bp->tx_clk);
->
->   	netif_device_attach(netdev);
->
-> diff --git a/drivers/net/ethernet/cadence/macb.h b/drivers/net/ethernet/cadence/macb.h
-> index f4076155bed7..51c02442160a 100644
-> --- a/drivers/net/ethernet/cadence/macb.h
-> +++ b/drivers/net/ethernet/cadence/macb.h
-> @@ -572,6 +572,7 @@ struct macb {
->   	struct platform_device	*pdev;
->   	struct clk		*pclk;
->   	struct clk		*hclk;
-> +	struct clk		*tx_clk;
->   	struct net_device	*dev;
->   	struct napi_struct	napi;
->   	struct work_struct	tx_error_task;
->
-
-
--- 
-Nicolas Ferre
+diff --git a/arch/x86/kernel/apic/x2apic_uv_x.c b/arch/x86/kernel/apic/x2apic_uv_x.c
+index 1191ac1..a419814 100644
+--- a/arch/x86/kernel/apic/x2apic_uv_x.c
++++ b/arch/x86/kernel/apic/x2apic_uv_x.c
+@@ -113,7 +113,7 @@ static int __init early_get_pnodeid(void)
+ 		break;
+ 	case UV3_HUB_PART_NUMBER:
+ 	case UV3_HUB_PART_NUMBER_X:
+-		uv_min_hub_revision_id += UV3_HUB_REVISION_BASE - 1;
++		uv_min_hub_revision_id += UV3_HUB_REVISION_BASE;
+ 		break;
+ 	}
+ 
