@@ -1,135 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759921Ab3JOUzh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 16:55:37 -0400
-Received: from p3plex2out01.prod.phx3.secureserver.net ([184.168.131.12]:33325
-	"EHLO p3plex2out01.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759788Ab3JOUze convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 16:55:34 -0400
-From: Hartley Sweeten <HartleyS@visionengravers.com>
-To: Olof Johansson <olof@lixom.net>
-CC: Ryan Mallon <rmallon@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        ARM Kernel <linux-arm-kernel@lists.infradead.org>
-Subject: RE: [PATCH] usb: ohci: remove ep93xx bus glue platform driver
-Thread-Topic: [PATCH] usb: ohci: remove ep93xx bus glue platform driver
-Thread-Index: AQHOyb44UXk4taU1KkyO9IKo4BrMiJn2PJZQ
-Date: Tue, 15 Oct 2013 20:55:32 +0000
-Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8817DADDF6@P3PWEX4MB008.ex4.secureserver.net>
-References: <201310141435.31147.hartleys@visionengravers.com>
- <CAOesGMgDW6scSq7s__Cyu-V=o2xFAbR2zKgO4FF8Jd29CyWy_w@mail.gmail.com>
-In-Reply-To: <CAOesGMgDW6scSq7s__Cyu-V=o2xFAbR2zKgO4FF8Jd29CyWy_w@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [184.183.19.121]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1759825Ab3JOVAL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 17:00:11 -0400
+Received: from smtprelay0117.hostedemail.com ([216.40.44.117]:41946 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757504Ab3JOVAJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 17:00:09 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2691:2828:3138:3139:3140:3141:3142:3350:3622:3865:3867:3871:3872:4321:5007:7652:10004:10400:10848:11026:11658:11914:12296:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: form83_755ecd361a331
+X-Filterd-Recvd-Size: 1707
+Message-ID: <1381870805.22110.37.camel@joe-AO722>
+Subject: Re: [PATCH 2/3] core: Convert printk_once to use DO_ONCE
+From: Joe Perches <joe@perches.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Liu Chuansheng <chuansheng.liu@intel.com>,
+        Ingo Molnar <mingo@kernel.org>
+Date: Tue, 15 Oct 2013 14:00:05 -0700
+In-Reply-To: <1381870252-5430-3-git-send-email-fweisbec@gmail.com>
+References: <1381870252-5430-1-git-send-email-fweisbec@gmail.com>
+	 <1381870252-5430-3-git-send-email-fweisbec@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, October 15, 2013 8:50 AM, Olof Johansson wrote:
-> On Mon, Oct 14, 2013 at 2:35 PM, H Hartley Sweeten <hartleys@visionengravers.com> wrote:
->> Convert ep93xx to use the OHCI platform driver and remove the
->> ohci-ep93xx bus glue driver.
->>
->> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
->> Cc: Alan Stern <stern@rowland.harvard.edu>
->> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> Cc: Ryan Mallon <rmallon@gmail.com>
->> ---
->>  arch/arm/mach-ep93xx/clock.c   |   2 +-
->>  arch/arm/mach-ep93xx/core.c    |  45 +++++++++-
->>  drivers/usb/host/Kconfig       |   2 +-
->>  drivers/usb/host/ohci-ep93xx.c | 184 -----------------------------------------
->>  drivers/usb/host/ohci-hcd.c    |  18 ----
->>  5 files changed, 43 insertions(+), 208 deletions(-)
->>  delete mode 100644 drivers/usb/host/ohci-ep93xx.c
->>
->> diff --git a/arch/arm/mach-ep93xx/clock.c b/arch/arm/mach-ep93xx/clock.c
->> index c95dbce..39ef3b6 100644
->> --- a/arch/arm/mach-ep93xx/clock.c
->> +++ b/arch/arm/mach-ep93xx/clock.c
->> @@ -212,7 +212,7 @@ static struct clk_lookup clocks[] = {
->>         INIT_CK(NULL,                   "hclk",         &clk_h),
->>         INIT_CK(NULL,                   "apb_pclk",     &clk_p),
->>         INIT_CK(NULL,                   "pll2",         &clk_pll2),
->> -       INIT_CK("ep93xx-ohci",          NULL,           &clk_usb_host),
->> +       INIT_CK("ohci-platform",        NULL,           &clk_usb_host),
->>         INIT_CK("ep93xx-keypad",        NULL,           &clk_keypad),
->>         INIT_CK("ep93xx-fb",            NULL,           &clk_video),
->>         INIT_CK("ep93xx-spi.0",         NULL,           &clk_spi),
->> diff --git a/arch/arm/mach-ep93xx/core.c b/arch/arm/mach-ep93xx/core.c
->> index 3f12b88..5489824 100644
->> --- a/arch/arm/mach-ep93xx/core.c
->> +++ b/arch/arm/mach-ep93xx/core.c
->> @@ -36,6 +36,7 @@
->>  #include <linux/export.h>
->>  #include <linux/irqchip/arm-vic.h>
->>  #include <linux/reboot.h>
->> +#include <linux/usb/ohci_pdriver.h>
->>
->>  #include <mach/hardware.h>
->>  #include <linux/platform_data/video-ep93xx.h>
->> @@ -297,22 +298,58 @@ static struct platform_device ep93xx_rtc_device = {
->>         .resource       = ep93xx_rtc_resource,
->>  };
->>
->> +/*************************************************************************
->> + * EP93xx OHCI USB Host
->> + *************************************************************************/
->> +
->> +static struct clk *ep93xx_ohci_host_clock;
->> +
->> +static int ep93xx_ohci_power_on(struct platform_device *pdev)
->> +{
->> +       if (!ep93xx_ohci_host_clock) {
->> +               ep93xx_ohci_host_clock = devm_clk_get(&pdev->dev, NULL);
->> +               if (IS_ERR(ep93xx_ohci_host_clock))
->> +                       return PTR_ERR(ep93xx_ohci_host_clock);
->> +       }
->> +
->> +       clk_enable(ep93xx_ohci_host_clock);
->> +
->> +       return 0;
->> +}
->> +
->> +static void ep93xx_ohci_power_off(struct platform_device *pdev)
->> +{
->> +       clk_disable(ep93xx_ohci_host_clock);
->> +}
->> +
->> +static void ep93xx_ohci_power_suspend(struct platform_device *pdev)
->> +{
->> +       ep93xx_ohci_power_off(pdev);
->> +}
->> +
->> +static struct usb_ohci_pdata ep93xx_ohci_pdata = {
->> +       .power_on       = ep93xx_ohci_power_on,
->> +       .power_off      = ep93xx_ohci_power_off,
->> +       .power_suspend  = ep93xx_ohci_power_suspend,
->> +};
->
-> This is definitely not a show-stopper in any way, but since this is
-> just standard clock management, could you even move these clock ops
-> into the driver? Are any other platforms already doing similar things
-> so you could remove code from their platform that way as well, per
-> chance?
+On Tue, 2013-10-15 at 22:50 +0200, Frederic Weisbecker wrote:
+[]
+> diff --git a/include/linux/printk.h b/include/linux/printk.h
+[]
+> @@ -252,14 +253,7 @@ extern asmlinkage void dump_stack(void) __cold;
+>  
+>  #ifdef CONFIG_PRINTK
+>  #define printk_once(fmt, ...)			\
+> -({						\
+> -	static bool __print_once;		\
+> -						\
+> -	if (!__print_once) {			\
+> -		__print_once = true;		\
+> -		printk(fmt, ##__VA_ARGS__);	\
+> -	}					\
+> -})
+> +	DO_ONCE(printk(fmt, ##__VA_ARGS__));
 
-It does not appear any of the other users of the ohci-platform driver do
-anything similar.
+It's hard to believe the overhead is worth it.
 
-The clock ops could be moved into the driver but I will need to add a
-flag or something to the usb_ohci_pdata so that the platform can
-indicated that a clock is required and  the clock ops should be done.
-
-Regards,
-Hartley
 
