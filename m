@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933968Ab3JOUjl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 16:39:41 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:58579 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933940Ab3JOUjh (ORCPT
+	id S934011Ab3JOUku (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 16:40:50 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:41959 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933952Ab3JOUjk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 16:39:37 -0400
+	Tue, 15 Oct 2013 16:39:40 -0400
 From: Grant Likely <grant.likely@linaro.org>
 To: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [RFC 4/9] of/irq: Refactor interrupt-map parsing
-Date: Tue, 15 Oct 2013 21:39:18 +0100
-Message-Id: <1381869563-16083-5-git-send-email-grant.likely@linaro.org>
+Cc: Grant Likely <grant.likely@linaro.org>, Michal Simek <monstr@monstr.eu>
+Subject: [RFC 8/9] microblaze/pci: Drop PowerPC-ism from irq parsing
+Date: Tue, 15 Oct 2013 21:39:22 +0100
+Message-Id: <1381869563-16083-9-git-send-email-grant.likely@linaro.org>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1381869563-16083-1-git-send-email-grant.likely@linaro.org>
 References: <1381869563-16083-1-git-send-email-grant.likely@linaro.org>
@@ -21,295 +20,120 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All the users of of_irq_parse_raw pass in a raw interrupt specifier from
-the device tree and expect it to be returned (possibly modified) in an
-of_phandle_args structure. However, the primary function of
-of_irq_parse_raw() is to check for translations due to the presence of
-one or more interrupt-map properties. The actual placing of the data
-into an of_phandle_args structure is trivial. If it is refactored to
-accept an of_phandle_args structure directly, then it becomes possible
-to consume of_phandle_args from other sources. This is important for an
-upcoming patch that allows a device to be connected to more than one
-interrupt parent. It also simplifies the code a bit.
-
-The biggest complication with this patch is that the old version works
-on the interrupt specifiers in __be32 form, but the of_phandle_args
-structure is intended to carry it in the cpu-native version. A bit of
-churn was required to make this work. In the end it results in tighter
-code, so the churn is worth it.
+The Microblaze PCI code copied the PowerPC irq handling, but powerpc
+needs to handle broken device trees that are not present on Microblaze.
+This patch removes the powerpc special case and replaces it with a
+direct of_irq_parse_and_map_pci() call.
 
 Signed-off-by: Grant Likely <grant.likely@linaro.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Michal Simek <monstr@monstr.eu>
 ---
- arch/powerpc/platforms/fsl_uli1575.c |   6 +-
- drivers/of/irq.c                     | 108 ++++++++++++++++++-----------------
- drivers/of/of_pci_irq.c              |   7 ++-
- include/linux/of_irq.h               |   5 +-
- 4 files changed, 67 insertions(+), 59 deletions(-)
+ arch/microblaze/include/asm/pci.h |  2 --
+ arch/microblaze/pci/pci-common.c  | 71 +--------------------------------------
+ 2 files changed, 1 insertion(+), 72 deletions(-)
 
-diff --git a/arch/powerpc/platforms/fsl_uli1575.c b/arch/powerpc/platforms/fsl_uli1575.c
-index 8904046..b97f6f3 100644
---- a/arch/powerpc/platforms/fsl_uli1575.c
-+++ b/arch/powerpc/platforms/fsl_uli1575.c
-@@ -322,7 +322,6 @@ static void hpcd_final_uli5288(struct pci_dev *dev)
- 	struct pci_controller *hose = pci_bus_to_host(dev->bus);
- 	struct device_node *hosenode = hose ? hose->dn : NULL;
- 	struct of_phandle_args oirq;
--	int pin = 2;
- 	u32 laddr[3];
+diff --git a/arch/microblaze/include/asm/pci.h b/arch/microblaze/include/asm/pci.h
+index d52abb6..935f9be 100644
+--- a/arch/microblaze/include/asm/pci.h
++++ b/arch/microblaze/include/asm/pci.h
+@@ -127,8 +127,6 @@ extern void of_scan_pci_bridge(struct device_node *node,
+ extern void of_scan_bus(struct device_node *node, struct pci_bus *bus);
+ extern void of_rescan_bus(struct device_node *node, struct pci_bus *bus);
  
- 	if (!machine_is(mpc86xx_hpcd))
-@@ -331,9 +330,12 @@ static void hpcd_final_uli5288(struct pci_dev *dev)
- 	if (!hosenode)
- 		return;
+-extern int pci_read_irq_line(struct pci_dev *dev);
+-
+ extern int pci_bus_find_capability(struct pci_bus *bus,
+ 						unsigned int devfn, int cap);
  
-+	oirq.np = hosenode;
-+	oirq.args[0] = 2;
-+	oirq.args_count = 1;
- 	laddr[0] = (hose->first_busno << 16) | (PCI_DEVFN(31, 0) << 8);
- 	laddr[1] = laddr[2] = 0;
--	of_irq_parse_raw(hosenode, &pin, 1, laddr, &oirq);
-+	of_irq_parse_raw(laddr, &oirq);
- 	dev->irq = irq_create_of_mapping(&oirq);
+diff --git a/arch/microblaze/pci/pci-common.c b/arch/microblaze/pci/pci-common.c
+index 60b386c..5060fc5 100644
+--- a/arch/microblaze/pci/pci-common.c
++++ b/arch/microblaze/pci/pci-common.c
+@@ -193,75 +193,6 @@ void pcibios_set_master(struct pci_dev *dev)
  }
  
-diff --git a/drivers/of/irq.c b/drivers/of/irq.c
-index 84184c4..0ed5ed4 100644
---- a/drivers/of/irq.c
-+++ b/drivers/of/irq.c
-@@ -80,31 +80,32 @@ struct device_node *of_irq_find_parent(struct device_node *child)
- /**
-  * of_irq_parse_raw - Low level interrupt tree parsing
-  * @parent:	the device interrupt parent
-- * @intspec:	interrupt specifier ("interrupts" property of the device)
-- * @ointsize:   size of the passed in interrupt specifier
-- * @addr:	address specifier (start of "reg" property of the device)
-- * @out_irq:	structure of_irq filled by this function
-+ * @addr:	address specifier (start of "reg" property of the device) in be32 format
-+ * @out_irq:	structure of_irq updated by this function
-  *
-  * Returns 0 on success and a negative number on error
-  *
-  * This function is a low-level interrupt tree walking function. It
-  * can be used to do a partial walk with synthetized reg and interrupts
-  * properties, for example when resolving PCI interrupts when no device
-- * node exist for the parent.
-+ * node exist for the parent. It takes an interrupt specifier structure as
-+ * input, walks the tree looking for any interrupt-map properties, translates
-+ * the specifier for each map, and then returns the translated map.
-  */
--int of_irq_parse_raw(struct device_node *parent, const __be32 *intspec,
--		   u32 ointsize, const __be32 *addr, struct of_phandle_args *out_irq)
-+int of_irq_parse_raw(const __be32 *addr, struct of_phandle_args *out_irq)
- {
- 	struct device_node *ipar, *tnode, *old = NULL, *newpar = NULL;
--	const __be32 *tmp, *imap, *imask;
-+	__be32 initial_match_array[8];
-+	const __be32 *match_array = initial_match_array;
-+	const __be32 *tmp, *imap, *imask, dummy_imask[] = { ~0, ~0, ~0, ~0, ~0 };
- 	u32 intsize = 1, addrsize, newintsize = 0, newaddrsize = 0;
- 	int imaplen, match, i;
- 
- 	pr_debug("of_irq_parse_raw: par=%s,intspec=[0x%08x 0x%08x...],ointsize=%d\n",
--		 of_node_full_name(parent), be32_to_cpup(intspec),
--		 be32_to_cpup(intspec + 1), ointsize);
-+		 of_node_full_name(out_irq->np), out_irq->args[0], out_irq->args[1],
-+		 out_irq->args_count);
- 
--	ipar = of_node_get(parent);
-+	ipar = of_node_get(out_irq->np);
- 
- 	/* First get the #interrupt-cells property of the current cursor
- 	 * that tells us how to interpret the passed-in intspec. If there
-@@ -127,7 +128,7 @@ int of_irq_parse_raw(struct device_node *parent, const __be32 *intspec,
- 
- 	pr_debug("of_irq_parse_raw: ipar=%s, size=%d\n", of_node_full_name(ipar), intsize);
- 
--	if (ointsize != intsize)
-+	if (out_irq->args_count != intsize)
- 		return -EINVAL;
- 
- 	/* Look for this #address-cells. We have to implement the old linux
-@@ -146,6 +147,21 @@ int of_irq_parse_raw(struct device_node *parent, const __be32 *intspec,
- 
- 	pr_debug(" -> addrsize=%d\n", addrsize);
- 
-+	/* If we were passed no "reg" property and we attempt to parse
-+	 * an interrupt-map, then #address-cells must be 0.
-+	 * Fail if it's not.
-+	 */
-+	if (addr == NULL && addrsize != 0) {
-+		pr_debug(" -> no reg passed in when needed !\n");
-+		return -EINVAL;
-+	}
-+
-+	/* Precalculate the match array - this simplifies match loop */
-+	for (i = 0; i < addrsize; i++)
-+		initial_match_array[i] = addr[i];
-+	for (i = 0; i < intsize; i++)
-+		initial_match_array[addrsize + i] = cpu_to_be32(out_irq->args[i]);
-+
- 	/* Now start the actual "proper" walk of the interrupt tree */
- 	while (ipar != NULL) {
- 		/* Now check if cursor is an interrupt-controller and if it is
-@@ -154,11 +170,6 @@ int of_irq_parse_raw(struct device_node *parent, const __be32 *intspec,
- 		if (of_get_property(ipar, "interrupt-controller", NULL) !=
- 				NULL) {
- 			pr_debug(" -> got it !\n");
--			for (i = 0; i < intsize; i++)
--				out_irq->args[i] =
--						of_read_number(intspec +i, 1);
--			out_irq->args_count = intsize;
--			out_irq->np = ipar;
- 			of_node_put(old);
- 			return 0;
- 		}
-@@ -175,34 +186,16 @@ int of_irq_parse_raw(struct device_node *parent, const __be32 *intspec,
- 
- 		/* Look for a mask */
- 		imask = of_get_property(ipar, "interrupt-map-mask", NULL);
+ /*
+- * Reads the interrupt pin to determine if interrupt is use by card.
+- * If the interrupt is used, then gets the interrupt line from the
+- * openfirmware and sets it in the pci_dev and pci_config line.
+- */
+-int pci_read_irq_line(struct pci_dev *pci_dev)
+-{
+-	struct of_phandle_args oirq;
+-	unsigned int virq;
 -
--		/* If we were passed no "reg" property and we attempt to parse
--		 * an interrupt-map, then #address-cells must be 0.
--		 * Fail if it's not.
+-	/* The current device-tree that iSeries generates from the HV
+-	 * PCI informations doesn't contain proper interrupt routing,
+-	 * and all the fallback would do is print out crap, so we
+-	 * don't attempt to resolve the interrupts here at all, some
+-	 * iSeries specific fixup does it.
+-	 *
+-	 * In the long run, we will hopefully fix the generated device-tree
+-	 * instead.
+-	 */
+-	pr_debug("PCI: Try to map irq for %s...\n", pci_name(pci_dev));
+-
+-#ifdef DEBUG
+-	memset(&oirq, 0xff, sizeof(oirq));
+-#endif
+-	/* Try to get a mapping from the device-tree */
+-	if (of_irq_parse_pci(pci_dev, &oirq)) {
+-		u8 line, pin;
+-
+-		/* If that fails, lets fallback to what is in the config
+-		 * space and map that through the default controller. We
+-		 * also set the type to level low since that's what PCI
+-		 * interrupts are. If your platform does differently, then
+-		 * either provide a proper interrupt tree or don't use this
+-		 * function.
 -		 */
--		if (addr == NULL && addrsize != 0) {
--			pr_debug(" -> no reg passed in when needed !\n");
--			goto fail;
+-		if (pci_read_config_byte(pci_dev, PCI_INTERRUPT_PIN, &pin))
+-			return -1;
+-		if (pin == 0)
+-			return -1;
+-		if (pci_read_config_byte(pci_dev, PCI_INTERRUPT_LINE, &line) ||
+-		    line == 0xff || line == 0) {
+-			return -1;
 -		}
-+		if (!imask)
-+			imask = dummy_imask;
- 
- 		/* Parse interrupt-map */
- 		match = 0;
- 		while (imaplen > (addrsize + intsize + 1) && !match) {
- 			/* Compare specifiers */
- 			match = 1;
--			for (i = 0; i < addrsize && match; ++i) {
--				__be32 mask = imask ? imask[i]
--						    : cpu_to_be32(0xffffffffu);
--				match = ((addr[i] ^ imap[i]) & mask) == 0;
--			}
--			for (; i < (addrsize + intsize) && match; ++i) {
--				__be32 mask = imask ? imask[i]
--						    : cpu_to_be32(0xffffffffu);
--				match =
--				   ((intspec[i-addrsize] ^ imap[i]) & mask) == 0;
--			}
--			imap += addrsize + intsize;
--			imaplen -= addrsize + intsize;
-+			for (i = 0; i < (addrsize + intsize); i++, imaplen--)
-+				match = !((match_array[i] ^ *imap++) & imask[i]);
- 
- 			pr_debug(" -> match=%d (imaplen=%d)\n", match, imaplen);
- 
-@@ -247,12 +240,18 @@ int of_irq_parse_raw(struct device_node *parent, const __be32 *intspec,
- 		if (!match)
- 			goto fail;
- 
--		of_node_put(old);
--		old = of_node_get(newpar);
-+		/*
-+		 * Successfully parsed an interrrupt-map translation; copy new
-+		 * interrupt specifier into the out_irq structure
-+		 */
-+		of_node_put(out_irq->np);
-+		out_irq->np = of_node_get(newpar);
-+
-+		match_array = imap - newaddrsize - newintsize;
-+		for (i = 0; i < newintsize; i++)
-+			out_irq->args[i] = be32_to_cpup(imap - newintsize + i);
-+		out_irq->args_count = intsize = newintsize;
- 		addrsize = newaddrsize;
--		intsize = newintsize;
--		intspec = imap - intsize;
--		addr = intspec - addrsize;
- 
- 	skiplevel:
- 		/* Iterate again with new parent */
-@@ -263,7 +262,7 @@ int of_irq_parse_raw(struct device_node *parent, const __be32 *intspec,
- 	}
-  fail:
- 	of_node_put(ipar);
--	of_node_put(old);
-+	of_node_put(out_irq->np);
- 	of_node_put(newpar);
- 
- 	return -EINVAL;
-@@ -276,15 +275,16 @@ EXPORT_SYMBOL_GPL(of_irq_parse_raw);
-  * @index: index of the interrupt to resolve
-  * @out_irq: structure of_irq filled by this function
-  *
-- * This function resolves an interrupt, walking the tree, for a given
-- * device-tree node. It's the high level pendant to of_irq_parse_raw().
-+ * This function resolves an interrupt for a node by walking the interrupt tree,
-+ * finding which interrupt controller node it is attached to, and returning the
-+ * interrupt specifier that can be used to retrieve a Linux IRQ number.
-  */
- int of_irq_parse_one(struct device_node *device, int index, struct of_phandle_args *out_irq)
- {
- 	struct device_node *p;
- 	const __be32 *intspec, *tmp, *addr;
- 	u32 intsize, intlen;
--	int res = -EINVAL;
-+	int i, res = -EINVAL;
- 
- 	pr_debug("of_irq_parse_one: dev=%s, index=%d\n", of_node_full_name(device), index);
- 
-@@ -320,9 +320,15 @@ int of_irq_parse_one(struct device_node *device, int index, struct of_phandle_ar
- 	if ((index + 1) * intsize > intlen)
- 		goto out;
- 
--	/* Get new specifier and map it */
--	res = of_irq_parse_raw(p, intspec + index * intsize, intsize,
--			     addr, out_irq);
-+	/* Copy intspec into irq structure */
-+	intspec += index * intsize;
-+	out_irq->np = p;
-+	out_irq->args_count = intsize;
-+	for (i = 0; i < intsize; i++)
-+		out_irq->args[i] = be32_to_cpup(intspec++);
-+
-+	/* Check if there are any interrupt-map translations to process */
-+	res = of_irq_parse_raw(addr, out_irq);
-  out:
- 	of_node_put(p);
- 	return res;
-diff --git a/drivers/of/of_pci_irq.c b/drivers/of/of_pci_irq.c
-index ee3293d..303afeb 100644
---- a/drivers/of/of_pci_irq.c
-+++ b/drivers/of/of_pci_irq.c
-@@ -85,9 +85,12 @@ int of_irq_parse_pci(const struct pci_dev *pdev, struct of_phandle_args *out_irq
- 		pdev = ppdev;
- 	}
- 
-+	out_irq->np = ppnode;
-+	out_irq->args_count = 1;
-+	out_irq->args[0] = lspec;
- 	lspec_be = cpu_to_be32(lspec);
- 	laddr[0] = cpu_to_be32((pdev->bus->number << 16) | (pdev->devfn << 8));
--	laddr[1]  = laddr[2] = cpu_to_be32(0);
--	return of_irq_parse_raw(ppnode, &lspec_be, 1, laddr, out_irq);
-+	laddr[1] = laddr[2] = cpu_to_be32(0);
-+	return of_irq_parse_raw(laddr, out_irq);
- }
- EXPORT_SYMBOL_GPL(of_irq_parse_pci);
-diff --git a/include/linux/of_irq.h b/include/linux/of_irq.h
-index 3bbba8d..c0d6dfe 100644
---- a/include/linux/of_irq.h
-+++ b/include/linux/of_irq.h
-@@ -31,10 +31,7 @@ static inline int of_irq_parse_oldworld(struct device_node *device, int index,
- }
- #endif /* CONFIG_PPC32 && CONFIG_PPC_PMAC */
- 
+-		pr_debug(" No map ! Using line %d (pin %d) from PCI config\n",
+-			 line, pin);
 -
--extern int of_irq_parse_raw(struct device_node *parent, const __be32 *intspec,
--			  u32 ointsize, const __be32 *addr,
--			  struct of_phandle_args *out_irq);
-+extern int of_irq_parse_raw(const __be32 *addr, struct of_phandle_args *out_irq);
- extern int of_irq_parse_one(struct device_node *device, int index,
- 			  struct of_phandle_args *out_irq);
- extern unsigned int irq_create_of_mapping(struct of_phandle_args *irq_data);
+-		virq = irq_create_mapping(NULL, line);
+-		if (virq)
+-			irq_set_irq_type(virq, IRQ_TYPE_LEVEL_LOW);
+-	} else {
+-		pr_debug(" Got one, spec %d cells (0x%08x 0x%08x...) on %s\n",
+-			 oirq.args_count, oirq.args[0], oirq.args[1],
+-			 of_node_full_name(oirq.np));
+-
+-		virq = irq_create_of_mapping(&oirq);
+-	}
+-	if (!virq) {
+-		pr_debug(" Failed to map !\n");
+-		return -1;
+-	}
+-
+-	pr_debug(" Mapped to linux irq %d\n", virq);
+-
+-	pci_dev->irq = virq;
+-
+-	return 0;
+-}
+-EXPORT_SYMBOL(pci_read_irq_line);
+-
+-/*
+  * Platform support for /proc/bus/pci/X/Y mmap()s,
+  * modelled on the sparc64 implementation by Dave Miller.
+  *  -- paulus.
+@@ -959,7 +890,7 @@ void pcibios_setup_bus_devices(struct pci_bus *bus)
+ 		dev->dev.archdata.dma_data = (void *)PCI_DRAM_OFFSET;
+ 
+ 		/* Read default IRQs and fixup if necessary */
+-		pci_read_irq_line(dev);
++		dev->irq = of_irq_parse_and_map_pci(dev, 0, 0);
+ 	}
+ }
+ 
 -- 
 1.8.1.2
 
