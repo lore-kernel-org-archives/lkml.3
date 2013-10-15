@@ -1,159 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751482Ab3JOFEJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 01:04:09 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:61813 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750824Ab3JOFEH (ORCPT
+	id S1751801Ab3JOFER (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 01:04:17 -0400
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:40018 "EHLO
+	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751605Ab3JOFEL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 01:04:07 -0400
+	Tue, 15 Oct 2013 01:04:11 -0400
+From: Yi Zhang <yizhang@marvell.com>
+To: <broonie@kernel.org>
+CC: <yizhang@marvell.com>, <zhouqiao@marvell.com>, <zhangwm@marvell.com>,
+        <yizhang.mrvl@gmail.com>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] regmap: irq: clear status when disable irq
+Date: Tue, 15 Oct 2013 13:03:58 +0800
+Message-ID: <1381813438-5386-1-git-send-email-yizhang@marvell.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-In-Reply-To: <20131011160004.GA26416@redhat.com>
-References: <CALPf4Tz+Gf_Q7wKKBufCc1mtV1qVPVrOW0S1qhHxfOv6pJa2Kg@mail.gmail.com>
-	<20131004130207.GA9338@redhat.com>
-	<20131007184507.GD27396@htj.dyndns.org>
-	<20131008145833.GA15600@redhat.com>
-	<5254EB2A.7090803@huawei.com>
-	<20131009133047.GA12414@redhat.com>
-	<20131009140551.GA15849@redhat.com>
-	<20131009165448.GA22437@redhat.com>
-	<5257F9E3.5030708@huawei.com>
-	<20131011160004.GA26416@redhat.com>
-Date: Tue, 15 Oct 2013 10:34:04 +0530
-Message-ID: <CALPf4Ty_xmred_Mf=tyzKDLu+rqStYUxTazZpYDOCKN_nm-5vQ@mail.gmail.com>
-Subject: Re: cgroup_attach_task && while_each_thread (Was: cgroup attach task
- - slogging cpu)
-From: anjana vk <anjanvk12@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        eunki_kim@samsung.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
+ definitions=2013-10-15_02:2013-10-15,2013-10-15,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=1
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1310140172
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+clear the status bit if the mask register doesn't prevent
+the chip level irq from being asserted
 
-Thankyou for your suggestions.
-I have made the modifications as suggested.
+OR in the following sequence, there will be irq storm happens:
+1) interrupt is triggered;
+2) another thread disables it(the mask bit is set);
+3) _Then_ the interrupt thread is not ACKed(the status bit is not cleared),
+   and it's ignored;
+4) if the irq is still asserted because of the uncleared status bit,
+   the irq storm happens;
 
-Please find the patch below.
-
->From fd85f093f912a160c0896ea2784dfbdd64f142ca Mon Sep 17 00:00:00 2001
-From: Anjana V Kumar <anjanavk12@gmail.com>
-Date: Wed, 9 Oct 2013 16:49:22 +0530
-Subject: [PATCH] Single thread break missing in cgroup_attach_task
-
-Problem:
-Issue when attaching a single thread to a cgroup if the thread was alredy in the
-cgroup. The check if the thread is already in cgroup in the above case,
-continues to the next thread instead of exciting.
-
-Solution:
-Add a check if it is a single thread or a threadgroup and
-take decision accordingly. If it is a single thread break out of the do-while
-loop, and if it is a threadgroup goto the next thread.
-
-Change-Id: If6bbdef12ca5992823ac2a7bc15eaeb3dddb461a
-Signed-off-by: Anjana V Kumar <anjanavk12@gmail.com>
+Signed-off-by: Yi Zhang <yizhang@marvell.com>
 ---
- kernel/cgroup.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/base/regmap/regmap-irq.c |   26 +++++++++++++++++++++++++-
+ 1 file changed, 25 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 2418b6e..13eafdc 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -2039,7 +2039,7 @@ static int cgroup_attach_task(struct cgroup
-*cgrp, struct task_struct *tsk,
-
- 		/* @tsk either already exited or can't exit until the end */
- 		if (tsk->flags & PF_EXITING)
--			continue;
-+			goto next_thread;
-
- 		/* as per above, nr_threads may decrease, but not increase. */
- 		BUG_ON(i >= group_size);
-@@ -2047,7 +2047,7 @@ static int cgroup_attach_task(struct cgroup
-*cgrp, struct task_struct *tsk,
- 		ent.cgrp = task_cgroup_from_root(tsk, root);
- 		/* nothing to do if this task is already in the cgroup */
- 		if (ent.cgrp == cgrp)
--			continue;
-+			goto next_thread;
- 		/*
- 		 * saying GFP_ATOMIC has no effect here because we did prealloc
- 		 * earlier, but it's good form to communicate our expectations.
-@@ -2055,7 +2055,7 @@ static int cgroup_attach_task(struct cgroup
-*cgrp, struct task_struct *tsk,
- 		retval = flex_array_put(group, i, &ent, GFP_ATOMIC);
- 		BUG_ON(retval != 0);
- 		i++;
--
-+next_thread:
- 		if (!threadgroup)
- 			break;
- 	} while_each_thread(leader, tsk);
+diff --git a/drivers/base/regmap/regmap-irq.c b/drivers/base/regmap/regmap-irq.c
+index d10456f..0784cf4 100644
+--- a/drivers/base/regmap/regmap-irq.c
++++ b/drivers/base/regmap/regmap-irq.c
+@@ -61,7 +61,7 @@ static void regmap_irq_sync_unlock(struct irq_data *data)
+ {
+ 	struct regmap_irq_chip_data *d = irq_data_get_irq_chip_data(data);
+ 	struct regmap *map = d->map;
+-	int i, ret;
++	int i, j, ret, bits_length;
+ 	u32 reg;
+ 
+ 	if (d->chip->runtime_pm) {
+@@ -105,6 +105,30 @@ static void regmap_irq_sync_unlock(struct irq_data *data)
+ 					"Failed to sync wakes in %x: %d\n",
+ 					reg, ret);
+ 		}
++
++		if (!d->chip->init_ack_masked)
++			continue;
++		/*
++		 * Ack all the masked interrupts uncondictionly,
++		 * OR if there is masked interrupt which hasn't been Acked,
++		 * it'll be ignored in irq handler, then may introduce irq storm
++		 */
++		if (d->chip->ack_base) {
++			reg = d->chip->ack_base +
++				(i * map->reg_stride * d->irq_reg_stride);
++
++			bits_length = d->map->format.val_bytes * BITS_PER_BYTE;
++			for (j = 0; j < bits_length; j++) {
++				d->mask_buf[i] &= (0x1 << j);
++				if (!d->mask_buf[i])
++					ret = regmap_update_bits(d->map, reg,
++								 (0x1 << j), 0);
++				if (ret != 0)
++					dev_err(d->map->dev, "Failed to ack 0x%x: %d\n",
++						reg, ret);
++			}
++			/* no need to sync status_buf, update in irq handler */
++		}
+ 	}
+ 
+ 	if (d->chip->runtime_pm)
 -- 
-1.7.6
+1.7.9.5
 
-
-
-On 10/11/13, Oleg Nesterov <oleg@redhat.com> wrote:
-> On 10/11, Li Zefan wrote:
->>
->> On 2013/10/10 0:54, Oleg Nesterov wrote:
->>
->> > And I am starting to think that this change should also fix the
->> > while_each_thread() problems in this particular case.
->
-> Please see below,
->
->> > In generak the code like
->> >
->> > 	rcu_read_lock();
->> > 	task = find_get_task(...);
->> > 	rcu_read_unlock();
->> >
->> > 	rcu_read_lock();
->> > 	t = task;
->> > 	do {
->> > 		...
->> > 	} while_each_thread (task, t);
->> > 	rcu_read_unlock();
->> >
->> > is wrong even if while_each_thread() was correct (and we have a lot
->> > of examples of this pattern). A GP can pass before the 2nd rcu-lock,
->> > and we simply can't trust ->thread_group.next.
->> >
->> > But I didn't notice that cgroup_attach_task(tsk, threadgroup) can only
->> > be called with threadgroup == T when a) tsk is ->group_leader and b)
->> > we hold threadgroup_lock() which blocks de_thread(). IOW, in this case
->> > "tsk" can't be removed from ->thread_group list before other threads.
->> >
->> > If next_thread() sees thread_group.next != leader, we know that the
->> > that .next thread didn't do __unhash_process() yet, and since we
->> > know that in this case "leader" didn't do this too we are safe.
->> >
->> > In short: __unhash_process(leader) (in this) case can never change
->> > ->thread_group.next of another thread, because leader->thread_group
->> > should be already list_empty().
->> >
->>
->> If threadgroup == false, and if the tsk is existing or is already in
->> the targeted cgroup, we won't break the loop due to the bug but do
->> this:
->>
->>   while_each_thread(task, t)
->>
->> If @task isn't the leader, we might got stuck in the loop?
->
-> Yes, yes, sure. We need to fix the wrong "continue" logic, hopefully
->
-> I tried to say (see above) that after we do this while_each_thread()
-> should be fine in this particular case.
->
-> Oleg.
->
->
