@@ -1,74 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933835Ab3JOUvo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 16:51:44 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:45772 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932576Ab3JOUvB (ORCPT
+	id S1759847Ab3JOUxR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 16:53:17 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:59969 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1759654Ab3JOUxP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 16:51:01 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Liu Chuansheng <chuansheng.liu@intel.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 2/3] core: Convert printk_once to use DO_ONCE
-Date: Tue, 15 Oct 2013 22:50:51 +0200
-Message-Id: <1381870252-5430-3-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1381870252-5430-1-git-send-email-fweisbec@gmail.com>
-References: <1381870252-5430-1-git-send-email-fweisbec@gmail.com>
+	Tue, 15 Oct 2013 16:53:15 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Lan Tianyu <tianyu.lan@intel.com>
+Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/3] ACPI/Power: Fix infinite loop of runtime resume and suspend caused by turning on power resource
+Date: Tue, 15 Oct 2013 23:05:04 +0200
+Message-ID: <1957403.qYMK7iKccF@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <1381849493-7977-1-git-send-email-tianyu.lan@intel.com>
+References: <1381849493-7977-1-git-send-email-tianyu.lan@intel.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Liu Chuansheng <chuansheng.liu@intel.com>
-Cc: Ingo Molnar <mingo@kernel.org>
----
- include/linux/printk.h | 10 ++--------
- 1 file changed, 2 insertions(+), 8 deletions(-)
+On Tuesday, October 15, 2013 11:04:50 PM Lan Tianyu wrote:
+> Currently, clearing usb port(empty port) PM Qos NO_POWER_OFF flag twice will lead
+> the usb port to fall into the infinite loop of runtime pm resume and
+> suspend. This is caused by pm_request_resume() in the acpi_power_resume_dependent().
+> Detail is in the following link.
+> http://marc.info/?l=linux-acpi&m=138182749202885&w=2
 
-diff --git a/include/linux/printk.h b/include/linux/printk.h
-index e6131a78..3c5069b 100644
---- a/include/linux/printk.h
-+++ b/include/linux/printk.h
-@@ -5,6 +5,7 @@
- #include <linux/init.h>
- #include <linux/kern_levels.h>
- #include <linux/linkage.h>
-+#include <linux/once.h>
- 
- extern const char linux_banner[];
- extern const char linux_proc_banner[];
-@@ -252,14 +253,7 @@ extern asmlinkage void dump_stack(void) __cold;
- 
- #ifdef CONFIG_PRINTK
- #define printk_once(fmt, ...)			\
--({						\
--	static bool __print_once;		\
--						\
--	if (!__print_once) {			\
--		__print_once = true;		\
--		printk(fmt, ##__VA_ARGS__);	\
--	}					\
--})
-+	DO_ONCE(printk(fmt, ##__VA_ARGS__));
- #else
- #define printk_once(fmt, ...)			\
- 	no_printk(fmt, ##__VA_ARGS__)
--- 
-1.8.3.1
+As far as I can say, the bug is in USB, so I'm not quite sure why you want
+to address it in the ACPI core?
+
+Rafael
 
