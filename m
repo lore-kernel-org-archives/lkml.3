@@ -1,65 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759222Ab3JOMgh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 08:36:37 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:58193 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759205Ab3JOMgg (ORCPT
+	id S1759074Ab3JOMhj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 08:37:39 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:55098 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753832Ab3JOMhi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 08:36:36 -0400
-Date: Tue, 15 Oct 2013 13:36:32 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "'Liam Girdwood'" <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Message-ID: <20131015123632.GK2443@sirena.org.uk>
-References: <000001cec8b9$931f4c90$b95de5b0$%han@samsung.com>
- <000801cec8ba$c08d21b0$41a76510$%han@samsung.com>
+	Tue, 15 Oct 2013 08:37:38 -0400
+Date: Tue, 15 Oct 2013 14:37:17 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: "Liu, Chuansheng" <chuansheng.liu@intel.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "Ingo Molnar (mingo@kernel.org)" <mingo@kernel.org>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "'linux-kernel@vger.kernel.org' (linux-kernel@vger.kernel.org)" 
+	<linux-kernel@vger.kernel.org>,
+        "Wang, Xiaoming" <xiaoming.wang@intel.com>,
+        "Li, Zhuangzhi" <zhuangzhi.li@intel.com>
+Subject: Re: Panic and page fault in loop during handling NMI backtrace
+ handler
+Message-ID: <20131015123717.GJ10651@twins.programming.kicks-ass.net>
+References: <27240C0AC20F114CBF8149A2696CBE4A01B60835@SHSMSX101.ccr.corp.intel.com>
+ <20131015121849.GA29884@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="zYJ3WcMSylizfIku"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <000801cec8ba$c08d21b0$41a76510$%han@samsung.com>
-X-Cookie: Time and tide wait for no man.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 09/11] regulator: tps65023: Fix checkpatch issue
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+In-Reply-To: <20131015121849.GA29884@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Oct 15, 2013 at 02:18:53PM +0200, Frederic Weisbecker wrote:
+> On Tue, Oct 15, 2013 at 02:01:04AM +0000, Liu, Chuansheng wrote:
+> > We meet one issue that during trigger all CPU backtrace, but during in the NMI handler arch_trigger_all_cpu_backtrace_handler,
+> > It hit the PAGE fault, then PAGE fault is in loop, at last the thread stack overflow, and system panic.
+> > 
+> > Anyone can give some help? Thanks.
+> 
+> Looks like we re-enter the fault several times. On x86-32, NMIs can
+> fault if they dereference vmalloc'ed area. I wonder if the module thing
+> we lookup in the NMI is stored on some vmalloc'ed area.
 
---zYJ3WcMSylizfIku
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Mon, Oct 14, 2013 at 05:52:45PM +0900, Jingoo Han wrote:
-> Fix the following checkpatch warning.
-
-Applied, thanks.
-
---zYJ3WcMSylizfIku
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSXTbMAAoJELSic+t+oim9JpIP/27hIEfA/+YM52yHVtEGOlL/
-tXh9ejFMEFhhakO8MNWLX2FkZCcxFHPRTDyBu+GDHqzYF82dTr9tMXFn8QHA3+wB
-EGcst0WebF/fqsV6zOvYJIJswnikFYib/03KNY62fJAbI/SMuq2UrF1ANbBr4nBx
-5AnTKhg2Ydnu13KnzO72XHi/Mnd9Mc3KIm48jfrLJVmqe2Jggtz1qS4DdVMdRwEc
-3rQkYLZ8rVbnbnvqBqYsohfVWf7RUX5tTzvuyagFw24KMbgbdAsvvYRppGeJrjPT
-7l+Y7A9fhpyaUvKFakaFjH4KxDk7U+mQj4pVbNLtbmUCpXFENcEXgCVifhqbSzxa
-YV/noGrlmYk/MWGVBZPfXxB2vG1KDMnU0J0CoS2UENYeJloYQQRWxDPGZsqgcChs
-AtxaTZFT7JhJfd5Ytpf0GaYjOqRe1AwvQTrjlhvcP00ygrq1ReU2XmuzEP/Z3loC
-XNtFMsiPFVxnc3xrAPFQ1hfFv+A9yj9FDnvX1/q3DB1iwI1Nwh5kerljg0qHszY+
-eRUK41MzmaPwKBoswlE5RzJzEcz1P91pKLSzZFaNps1PC+j3yIXvNzS7fvGVwX2e
-YRLcMX3evS4rlk99uQpd121a2sEwOX/V7/X1uIsg8CyvmE51xs0DRPcxE41h59eD
-9c8K6tI3F4MfzDeitaUk
-=HbFH
------END PGP SIGNATURE-----
-
---zYJ3WcMSylizfIku--
+IIRC modules are indeed allocated using vmalloc. See module_alloc()
+using vmalloc_exec()
