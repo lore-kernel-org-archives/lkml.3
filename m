@@ -1,71 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933437Ab3JORA4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 13:00:56 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:33446 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933198Ab3JORAw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 13:00:52 -0400
-Date: Tue, 15 Oct 2013 19:00:39 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-Cc: "Chen, Gong" <gong.chen@linux.intel.com>, tony.luck@intel.com,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        m.chehab@samsung.com
-Subject: Re: [PATCH 8/8] ACPI / trace: Add trace interface for eMCA driver
-Message-ID: <20131015170039.GF7908@pd.tnic>
-References: <1381473166-29303-1-git-send-email-gong.chen@linux.intel.com>
- <1381473166-29303-9-git-send-email-gong.chen@linux.intel.com>
- <20131015165435.GA2777@naverao1-tp.ibm.com>
+	id S1759396Ab3JORCq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 13:02:46 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:58644 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1758955Ab3JORCo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 13:02:44 -0400
+Date: Tue, 15 Oct 2013 13:02:43 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Vishal Annapurve <vannapurve@nvidia.com>
+cc: Ming Lei <tom.leiming@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-usb <linux-usb@vger.kernel.org>
+Subject: RE: [PATCH] usb-storage: scsiglue: Changing the command result
+In-Reply-To: <113ACA888B71994BB56E5CF3704953486D65F41133@BGMAIL02.nvidia.com>
+Message-ID: <Pine.LNX.4.44L0.1310151258560.1377-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20131015165435.GA2777@naverao1-tp.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 15, 2013 at 10:24:35PM +0530, Naveen N. Rao wrote:
-> On 2013/10/11 02:32AM, Chen Gong wrote:
-> > Use trace interface to elaborate all H/W error related
-> > information.
-> > 
-> > Signed-off-by: Chen, Gong <gong.chen@linux.intel.com>
-> > ---
-> <snip>
-> > +TRACE_EVENT(extlog_mem_event,
-> > +	TP_PROTO(u32 etype,
-> > +		char *dimm_loc,
-> > +		const uuid_le *fru_id,
-> > +		char *fru_text,
-> > +		u64 error_count,
-> > +		u32 severity,
-> > +		u64 phy_addr,
-> > +		char *mem_loc),
+On Tue, 15 Oct 2013, Vishal Annapurve wrote:
+
+> Hi Alan,
 > 
-> [Adding Mauro...]
+> This issue seems more related to the devices using SCSI protocol and the
+> changes otherwise will be at more places giving the same end result.
 > 
-> This looks very similar to the trace event I wrote a while back,
-> which was similar to the one provided by ghes_edac:
-> http://thread.gmane.org/gmane.linux.kernel.pci/24616
-> 
-> Seems to me this has the same issues we previously discussed w.r.t
-> EDAC conflicts...
+> I think as the comment says over the command_abort function,
+> intentional result change should only happen in case of timeout.
 
-Right, I'm inclined to leave this trace_mc_event in ras_event.h to edac
-use alone because of all those layers which don't mean whit for GHES and
-eMCA error sources.
+usb-storage doesn't know _why_ a command was aborted; it knows only 
+that the abort occurred.
 
-And maybe define a trace_mem_event which is shared by GHES and eMCA and
-not use the edac tracepoint there not load ghes_edac on such systems
-which have sufficient decoding capability in firmware.
+If you look carefully at the code, you'll see that the result is set to 
+DID_ABORT only when the US_FLIDX_TIMED_OUT bit is set, and this bit 
+gets set only when a SCSI abort occurs.
 
-Thoughts?
+Alan Stern
 
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
