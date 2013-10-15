@@ -1,98 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758019Ab3JOJK5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 05:10:57 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:28095 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752276Ab3JOJKy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 05:10:54 -0400
-Message-ID: <525D069B.6000908@atmel.com>
-Date: Tue, 15 Oct 2013 11:10:51 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1758070Ab3JOJOU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 05:14:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36703 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751993Ab3JOJOS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 05:14:18 -0400
+Date: Tue, 15 Oct 2013 11:14:01 +0200
+From: Borislav Petkov <bp@suse.de>
+To: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Cc: Zhang Rui <rui.zhang@intel.com>, Linux PM <linux-pm@vger.kernel.org>,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        LKML <linux-kernel@vger.kernel.org>, acme@redhat.com,
+        dhowells@redhat.com, bp@suse.de, gthelen@google.com,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>
+Subject: Re: [PATCH v1] tools/thermal: Introduce tmon, a tool for thermal
+ subsystem
+Message-ID: <20131015091401.GA8013@pd.tnic>
+References: <1381791747-7458-1-git-send-email-jacob.jun.pan@linux.intel.com>
+ <1381791747-7458-2-git-send-email-jacob.jun.pan@linux.intel.com>
 MIME-Version: 1.0
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Josh Wu <josh.wu@atmel.com>, Bo Shen <voice.shen@atmel.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-serial@vger.kernel.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] tty/serial: at91: fix uart/usart selection for older
- products
-References: <a58fe8bc7fdd128a2f9cf60785f81ebde4c0c247.1381394411.git.nicolas.ferre@atmel.com> <20131014135809.GF11420@ns203013.ovh.net>
-In-Reply-To: <20131014135809.GF11420@ns203013.ovh.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1381791747-7458-2-git-send-email-jacob.jun.pan@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/10/2013 15:58, Jean-Christophe PLAGNIOL-VILLARD :
-> On 10:43 Thu 10 Oct     , Nicolas Ferre wrote:
->> Since commit 055560b04a8cd063aea916fd083b7aec02c2adb8 (serial: at91:
->> distinguish usart and uart) the older products which do not have a
->> name field in their register map are unable to use their serial output.
->> As the main console output is usually the serial interface (aka DBGU) it
->> is pretty unfortunate.
->> So, instead of failing during probe() we just silently configure the serial
->> peripheral as an uart. It allows us to use these serial outputs.
->> The proper solution is proposed in another patch.
->>
->> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
->> ---
->>   drivers/tty/serial/atmel_serial.c | 9 ++-------
->>   1 file changed, 2 insertions(+), 7 deletions(-)
->>
->> diff --git a/drivers/tty/serial/atmel_serial.c b/drivers/tty/serial/atmel_serial.c
->> index d067285..6b0f75e 100644
->> --- a/drivers/tty/serial/atmel_serial.c
->> +++ b/drivers/tty/serial/atmel_serial.c
->> @@ -1499,7 +1499,7 @@ static void atmel_set_ops(struct uart_port *port)
->>   /*
->>    * Get ip name usart or uart
->>    */
->> -static int atmel_get_ip_name(struct uart_port *port)
->> +static void atmel_get_ip_name(struct uart_port *port)
->>   {
->>   	struct atmel_uart_port *atmel_port = to_atmel_uart_port(port);
->>   	int name = UART_GET_IP_NAME(port);
->> @@ -1518,10 +1518,7 @@ static int atmel_get_ip_name(struct uart_port *port)
->>   		atmel_port->is_usart = false;
->>   	} else {
-> 		a dev_warn here maybe
->
-> usefull to known when we will have a new ip name and not yet wupported
+On Mon, Oct 14, 2013 at 04:02:27PM -0700, Jacob Pan wrote:
+> Increasingly, Linux is running on thermally constrained devices. The simple
+> thermal relationship between processor and fan has become past for modern
+> computers.
+> 
+> As hardware vendors cope with the thermal constraints on their products,
+> more sensors are added, new cooling capabilities are introduced. The
+> complexity of the thermal relationship can grow exponentially among cooling
+> devices, zones, sensors, and trip points. They can also change dynamically.
+> 
+> To expose such relationship to the userspace, Linux generic thermal layer
+> introduced sysfs entry at /sys/class/thermal with a matrix of symbolic
+> links, trip point bindings, and device instances. To traverse such
+> matrix by hand is not a trivial task. Testing is also difficult in that
+> thermal conditions are often exception cases that hard to reach in
+> normal operations.
+> 
+> TMON is conceived as a tool to help visualize, tune, and test the
+> complex thermal subsystem.
+> 
+> Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+> ---
+>  tools/Makefile              |   15 +-
+>  tools/thermal/tmon/Makefile |   47 ++++
+>  tools/thermal/tmon/README   |   50 ++++
+>  tools/thermal/tmon/pid.c    |  131 +++++++++
+>  tools/thermal/tmon/sysfs.c  |  596 ++++++++++++++++++++++++++++++++++++++++
+>  tools/thermal/tmon/tmon.8   |  142 ++++++++++
+>  tools/thermal/tmon/tmon.c   |  352 ++++++++++++++++++++++++
+>  tools/thermal/tmon/tmon.h   |  204 ++++++++++++++
+>  tools/thermal/tmon/tui.c    |  638 +++++++++++++++++++++++++++++++++++++++++++
+>  9 files changed, 2173 insertions(+), 2 deletions(-)
+>  create mode 100644 tools/thermal/tmon/Makefile
+>  create mode 100644 tools/thermal/tmon/README
+>  create mode 100644 tools/thermal/tmon/pid.c
+>  create mode 100644 tools/thermal/tmon/sysfs.c
+>  create mode 100644 tools/thermal/tmon/tmon.8
+>  create mode 100644 tools/thermal/tmon/tmon.c
+>  create mode 100644 tools/thermal/tmon/tmon.h
+>  create mode 100644 tools/thermal/tmon/tui.c
 
-No, not here: next patch is oveloading this if/else directive.
+Just a couple of notes/questions:
 
->>   		dev_err(port->dev, "Not supported ip name, set to uart\n");
->> -		return -EINVAL;
->>   	}
->> -
->> -	return 0;
->>   }
->>
->>   /*
->> @@ -2405,9 +2402,7 @@ static int atmel_serial_probe(struct platform_device *pdev)
->>   	/*
->>   	 * Get port name of usart or uart
->>   	 */
->> -	ret = atmel_get_ip_name(&port->uart);
->> -	if (ret < 0)
->> -		goto err_add_port;
->> +	atmel_get_ip_name(&port->uart);
->>
->>   	return 0;
->>
->> --
->> 1.8.2.2
->>
->
->
+* Why does this have to be in the kernel src repo? I mean, it only
+needs stable sysfs interface but other than that, it can very well be a
+separate project on github or so. Or am I missing something?
 
+* So I tried it and I can control the brightness and the target CPU
+temperature, cool! :) The question is: can I cook my box with it or
+there are protections like filtering values which might be detrimental
+to the system? After all, I'm running it as root.
+
+* Also, please run this through checkpatch first:
+
+  total: 1 errors, 0 warnings, 91 checks, 2202 lines checked
+
+  Also, the manpage should be checked for typos and excessive spaces.
+
+Thanks.
 
 -- 
-Nicolas Ferre
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
