@@ -1,108 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759584Ab3JOSq2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 14:46:28 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:56748 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757338Ab3JOSq0 (ORCPT
+	id S933373Ab3JOStD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 14:49:03 -0400
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:56379 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758936Ab3JOStB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 14:46:26 -0400
-Message-ID: <525D8D7D.10301@wwwdotorg.org>
-Date: Tue, 15 Oct 2013 12:46:21 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Tue, 15 Oct 2013 14:49:01 -0400
 MIME-Version: 1.0
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Hiroshi Doyu <hdoyu@nvidia.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH v3 02/19] clk: tegra: simplify periph clock data
-References: <1381848794-11761-1-git-send-email-pdeschrijver@nvidia.com> <1381848794-11761-3-git-send-email-pdeschrijver@nvidia.com>
-In-Reply-To: <1381848794-11761-3-git-send-email-pdeschrijver@nvidia.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20131015110146.7E8BEE0090@blue.fi.intel.com>
+References: <20131015001304.GH3432@hippobay.mtv.corp.google.com> <20131015110146.7E8BEE0090@blue.fi.intel.com>
+From: Ning Qu <quning@google.com>
+Date: Tue, 15 Oct 2013 11:48:40 -0700
+Message-ID: <CACz4_2fiF+vaAbFixgGF+Uxn0av4H8y-aMQdyi3yYs5pdS2WBA@mail.gmail.com>
+Subject: Re: [PATCH 07/12] mm, thp, tmpfs: handle huge page in
+ shmem_undo_range for truncate
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/15/2013 08:52 AM, Peter De Schrijver wrote:
-> This patch determines the register bank for clock enable/disable and reset
-> based on the clock ID instead of hardcoding it in the tables describing the
-> clocks. This results in less data to be maintained in the tables, making the
-> code easier to understand. The full benefit of the change will be realized once
-> also other clocktypes will be table based.
+Best wishes,
+-- 
+Ning Qu (曲宁) | Software Engineer | quning@google.com | +1-408-418-6066
 
-> diff --git a/drivers/clk/tegra/clk-tegra114.c b/drivers/clk/tegra/clk-tegra114.c
 
->  #define TEGRA_INIT_DATA_MUX(_name, _con_id, _dev_id, _parents, _offset,	\
-> -			    _clk_num, _regs, _gate_flags, _clk_id)	\
-> +			    _clk_num, _gate_flags, _clk_id)	\
->  	TEGRA_INIT_DATA_TABLE(_name, _con_id, _dev_id, _parents, _offset,\
-> -			30, MASK(2), 0, 0, 8, 1, 0, _regs, _clk_num,	\
-> -			periph_clk_enb_refcnt, _gate_flags, _clk_id,	\
-> -			_parents##_idx, 0)
-> +			30, MASK(2), 0, 0, 8, 1, 0, \
-> +			_clk_num, periph_clk_enb_refcnt, _gate_flags,\
-> +			 _clk_id, _parents##_idx, 0)
+On Tue, Oct 15, 2013 at 4:01 AM, Kirill A. Shutemov
+<kirill.shutemov@linux.intel.com> wrote:
+> Ning Qu wrote:
+>> When comes to truncate file, add support to handle huge page in the
+>> truncate range.
+>>
+>> Signed-off-by: Ning Qu <quning@gmail.com>
+>> ---
+>>  mm/shmem.c | 97 +++++++++++++++++++++++++++++++++++++++++++++++++++++++-------
+>>  1 file changed, 86 insertions(+), 11 deletions(-)
+>>
+>> diff --git a/mm/shmem.c b/mm/shmem.c
+>> index 0a423a9..90f2e0e 100644
+>> --- a/mm/shmem.c
+>> +++ b/mm/shmem.c
+>> @@ -559,6 +559,7 @@ static void shmem_undo_range(struct inode *inode, loff_t lstart, loff_t lend,
+>>       struct shmem_inode_info *info = SHMEM_I(inode);
+>>       pgoff_t start = (lstart + PAGE_CACHE_SIZE - 1) >> PAGE_CACHE_SHIFT;
+>>       pgoff_t end = (lend + 1) >> PAGE_CACHE_SHIFT;
+>> +     /* Whether we have to do partial truncate */
+>>       unsigned int partial_start = lstart & (PAGE_CACHE_SIZE - 1);
+>>       unsigned int partial_end = (lend + 1) & (PAGE_CACHE_SIZE - 1);
+>>       struct pagevec pvec;
+>> @@ -570,12 +571,16 @@ static void shmem_undo_range(struct inode *inode, loff_t lstart, loff_t lend,
+>>       if (lend == -1)
+>>               end = -1;       /* unsigned, so actually very big */
+>>
+>> +     i_split_down_read(inode);
+>>       pagevec_init(&pvec, 0);
+>>       index = start;
+>>       while (index < end) {
+>> +             bool thp = false;
+>> +
+>>               pvec.nr = shmem_find_get_pages_and_swap(mapping, index,
+>>                               min(end - index, (pgoff_t)PAGEVEC_SIZE),
+>>                                                       pvec.pages, indices);
+>> +
+>>               if (!pvec.nr)
+>>                       break;
+>>               mem_cgroup_uncharge_start();
+>> @@ -586,6 +591,25 @@ static void shmem_undo_range(struct inode *inode, loff_t lstart, loff_t lend,
+>>                       if (index >= end)
+>>                               break;
+>>
+>> +                     thp = PageTransHugeCache(page);
+>> +#ifdef CONFIG_TRANSPARENT_HUGEPAGE_PAGECACHE
+>
+> Again. Here and below ifdef is redundant: PageTransHugeCache() is zero
+> compile-time and  thp case will be optimize out.
 
-Nit (since there are bugs since I know V4 is needed): If you kept
-_clk_num on the same line in that macro, the diff would be much more
-obvious. I think I said this last time.
+The problem is actually from HPAGE_CACHE_INDEX_MASK, it is marked as
+build bug when CONFIG_TRANSPARENT_HUGEPAGE_PAGECACHE is false. So we
+either wrap some logic inside a inline function, or we have to be like
+this .. Or we don't treat the HPAGE_CACHE_INDEX_MASK as a build bug?
 
->  	for (i = 0; i < ARRAY_SIZE(tegra_periph_clk_list); i++) {
->  		data = &tegra_periph_clk_list[i];
-> -		clk = tegra_clk_register_periph(data->name, data->parent_names,
-> -				data->num_parents, &data->periph,
-> -				clk_base, data->offset, data->flags);
-> +
-> +		clk = tegra_clk_register_periph(data->name,
-> +			data->parent_names, data->num_parents, &data->periph,
-> +			clk_base, data->offset, data->flags);
->  		clks[data->clk_id] = clk;
->  	}
->  
->  	for (i = 0; i < ARRAY_SIZE(tegra_periph_nodiv_clk_list); i++) {
->  		data = &tegra_periph_nodiv_clk_list[i];
-> +
->  		clk = tegra_clk_register_periph_nodiv(data->name,
+>
+> And do we really need a copy of truncate logic here? Is there a way to
+> share code?
+>
+The truncate between tmpfs and general one is similar but not exactly
+the same (no readahead), so share the whole function might not be a
+good choice from the perspective of tmpfs? Anyway, there are other
+similar functions in tmpfs, e.g. the one you mentioned for
+shmem_add_to_page_cache. It is possible to share the code, I am just
+worried it will make the logic more complicated?
 
-Nit: Seems like an unrelated change, and inconsistent with the other
-loop above.
+Maybe Hugh is in better position to judge on this? Thanks!
 
-> diff --git a/drivers/clk/tegra/clk.c b/drivers/clk/tegra/clk.c
-
-> +struct tegra_clk_periph_regs * __init get_reg_bank(int clkid)
-> +{
-> +	int reg_bank = clkid / 32;
-> +
-> +	if (reg_bank < periph_banks)
-> +		return &periph_regs[reg_bank];
-> +	else {
-> +		WARN_ON(1);
-> +		return NULL;
-> +	}
-> +}
-> +
-> +int __init tegra_clk_periph_banks(int num)
-> +{
-> +	if (num > ARRAY_SIZE(periph_regs))
-> +		return -EINVAL;
-> +
-> +	periph_banks = num;
-> +
-> +	return 0;
-> +}
-
-Shouldn't the condition in tegra_clk_periph_banks() check against
-periph_banks rather than ARRAY_SIZE(periph_regs)? I assume the calls to
-tegra_clk_periph_banks() from tegra*_clock_init() are intended to ensure
-that periph_regs is set up correctly in this file? I wonder if
-s/tegra_clk_periph_banks/tegra_clk_validate_periph_bank_count/ isn't
-called for?
+> --
+>  Kirill A. Shutemov
