@@ -1,45 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933490Ab3JORbl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 13:31:41 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40240 "EHLO mail.zytor.com"
+	id S933513Ab3JORdS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 13:33:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30103 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932950Ab3JORbk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 13:31:40 -0400
-Message-ID: <525D7BDE.4070400@zytor.com>
-Date: Tue, 15 Oct 2013 10:31:10 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S932396Ab3JORdQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 13:33:16 -0400
+Date: Tue, 15 Oct 2013 13:32:52 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Hong Zhiguo <honkiko@gmail.com>
+Cc: axboe@kernel.dk, cgroups@vger.kernel.org, tj@kernel.org,
+        linux-kernel@vger.kernel.org, Hong Zhiguo <zhiguohong@tencent.com>
+Subject: Re: [PATCH v2] blk-throttle: simplify logic by token bucket algorithm
+Message-ID: <20131015173252.GM31215@redhat.com>
+References: <1381574794-7639-1-git-send-email-zhiguohong@tencent.com>
+ <1381741757-20888-1-git-send-email-zhiguohong@tencent.com>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Yinghai Lu <yinghai@kernel.org>, Tejun Heo <tj@kernel.org>,
-        Zhang Yanfei <zhangyanfei.yes@gmail.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Toshi Kani <toshi.kani@hp.com>, Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH part2 v2 0/8] Arrange hotpluggable memory as ZONE_MOVABLE
-References: <20131014142719.GI4722@htj.dyndns.org> <525C02DC.4050706@gmail.com> <20131014145131.GJ4722@htj.dyndns.org> <525C0866.2010808@gmail.com> <20131014151902.GL4722@htj.dyndns.org> <525C0EFE.2010409@gmail.com> <CAE9FiQX0xeR61ehPy2SfWfN-fgSZVS=dtaWT-QQ+RR12tx+A0w@mail.gmail.com> <20131014200437.GA5720@htj.dyndns.org> <CAE9FiQXCG6gR-XL9fVudpNVEdS-3MHPObfWQ=Uf=q7pv33QBOA@mail.gmail.com> <525C5727.7000603@zytor.com> <20131015065040.GB24584@gmail.com>
-In-Reply-To: <20131015065040.GB24584@gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1381741757-20888-1-git-send-email-zhiguohong@tencent.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/14/2013 11:50 PM, Ingo Molnar wrote:
-> 
-> So if anyone can implement it using huge pages, with a really fast __va() 
-> and __pa() implementation, then it might be possible. But that's a pretty 
-> major surgery on x86.
-> 
+On Mon, Oct 14, 2013 at 05:09:17PM +0800, Hong Zhiguo wrote:
 
-Well, we already *have* a way to deal with that for Xen (by inserting an
-otherwise nonexistent logical level.)  I'm wondering if those interfaces
-could be (ab)used for this as well, or if that is functionally
-equivalent to saying that this should be done in a hypervisor.
+[..]
 
-	-hpa
+Hi Hong,
 
+Thanks for the token based throttling implementation. In general it looks
+good and it simplies the logic. Couple of comments/concerns below.
 
+> @@ -133,14 +135,13 @@ struct throtl_grp {
+>  	/* IOPS limits */
+>  	unsigned int iops[2];
+>  
+> -	/* Number of bytes disptached in current slice */
+> -	uint64_t bytes_disp[2];
+> -	/* Number of bio's dispatched in current slice */
+> -	unsigned int io_disp[2];
+> +	/* Token for throttling by bps */
+> +	uint64_t bytes_token[2];
+> +	/* Token for throttling by iops */
+> +	unsigned int io_token[2];
+>  
+> -	/* When did we start a new slice */
+> -	unsigned long slice_start[2];
+> -	unsigned long slice_end[2];
+> +	/* Time check-point */
+> +	unsigned long t_c[2];
+
+Can we rename this variable to say last_dispatch[2].
+
+[..]
+>  
+> @@ -852,41 +708,26 @@ static bool tg_with_in_bps_limit(struct throtl_grp *tg, struct bio *bio,
+>  				 unsigned long *wait)
+>  {
+>  	bool rw = bio_data_dir(bio);
+> -	u64 bytes_allowed, extra_bytes, tmp;
+> -	unsigned long jiffy_elapsed, jiffy_wait, jiffy_elapsed_rnd;
+> -
+> -	jiffy_elapsed = jiffy_elapsed_rnd = jiffies - tg->slice_start[rw];
+> -
+> -	/* Slice has just started. Consider one slice interval */
+> -	if (!jiffy_elapsed)
+> -		jiffy_elapsed_rnd = throtl_slice;
+> -
+> -	jiffy_elapsed_rnd = roundup(jiffy_elapsed_rnd, throtl_slice);
+> +	u64 extra_bytes, token;
+> +	unsigned long jiffy_wait;
+>  
+> -	tmp = tg->bps[rw] * jiffy_elapsed_rnd;
+> -	do_div(tmp, HZ);
+> -	bytes_allowed = tmp;
+> +	token = (u64)tg->bps[rw] * (jiffies - tg->t_c[rw]);
+
+So here we seem to be calculating how many tokens a group is eligible
+for. This is done based on since last time check. And last time check
+was updated in last dispatch from the group.
+
+What happens if no IO happens in a group for some time, say for 5 minutes,
+and then one big IO comes in. IIUC, we will allow a big burst of IO for
+the first IO (tokens worth of full 5 minutes will be given to this group).
+I think we should have a mechanism where we don't allow too big a burst
+for the first IO. (Possibly limit the burst to THROTL_BURST_IO and
+THROTL_BURST_BYTES until and unless a bigger IO is already queued and
+we are waiting for it).
+
+In previous time slice logic, I took care of it by extend time slice
+by 100ms and if no IO happens in the group for 100ms, time slice will
+expire and next IO will get at max of 100ms of worth of credit (equivalent
+of burst limits).
+
+Thanks
+Vivek
