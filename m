@@ -1,50 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933486Ab3JOR3z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 13:29:55 -0400
-Received: from smtprelay0072.hostedemail.com ([216.40.44.72]:44631 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933262Ab3JOR3y (ORCPT
+	id S1759571Ab3JORbO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 13:31:14 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:56780 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758955Ab3JORbM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 13:29:54 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3351:3622:3866:3867:3872:4250:4321:5007:6119:7652:8660:10004:10400:10848:11026:11232:11658:11914:12043:12296:12438:12517:12519:12740:13069:13148:13230:13311:13357:13894,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: eyes11_1be354db6492c
-X-Filterd-Recvd-Size: 1517
-Message-ID: <1381858190.22110.25.camel@joe-AO722>
-Subject: Re: [PATCH] X.25: Fix address field length calculation
-From: Joe Perches <joe@perches.com>
-To: "Kelleter," =?ISO-8859-1?Q?G=FCnther?= <GKelleter@datus.com>
-Cc: "andrew.hendry@gmail.com" <andrew.hendry@gmail.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "linux-x25@vger.kernel.org" <linux-x25@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 15 Oct 2013 10:29:50 -0700
-In-Reply-To: <525D5131.9070007@datus.com>
-References: <525D5131.9070007@datus.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	Tue, 15 Oct 2013 13:31:12 -0400
+Message-ID: <525D7BCD.7080303@linux.vnet.ibm.com>
+Date: Tue, 15 Oct 2013 23:00:53 +0530
+From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Borislav Petkov <bp@alien8.de>
+CC: "Chen, Gong" <gong.chen@linux.intel.com>, tony.luck@intel.com,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        m.chehab@samsung.com
+Subject: Re: [PATCH 8/8] ACPI / trace: Add trace interface for eMCA driver
+References: <1381473166-29303-1-git-send-email-gong.chen@linux.intel.com> <1381473166-29303-9-git-send-email-gong.chen@linux.intel.com> <20131015165435.GA2777@naverao1-tp.ibm.com> <20131015170039.GF7908@pd.tnic>
+In-Reply-To: <20131015170039.GF7908@pd.tnic>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13101517-4790-0000-0000-00000AD0C1F5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-10-15 at 14:29 +0000, Kelleter, Günther wrote:
-> Addresses are BCD encoded, not ASCII. x25_addr_ntoa got it right.
-[]
-> Wrong length calculation leads to rejection of CALL ACCEPT packets.
-[]
-> diff --git a/net/x25/af_x25.c b/net/x25/af_x25.c
-[]
-> @@ -98,7 +98,7 @@ int x25_parse_address_block(struct sk_buff *skb,
->  	}
->   	len = *skb->data;
-> -	needed = 1 + (len >> 4) + (len & 0x0f);
-> +	needed = 1 + ((len >> 4) + (len & 0x0f) + 1) / 2;
+On 10/15/2013 10:30 PM, Borislav Petkov wrote:
+> On Tue, Oct 15, 2013 at 10:24:35PM +0530, Naveen N. Rao wrote:
+>> On 2013/10/11 02:32AM, Chen Gong wrote:
+>>> Use trace interface to elaborate all H/W error related
+>>> information.
+>>>
+>>> Signed-off-by: Chen, Gong <gong.chen@linux.intel.com>
+>>> ---
+>> <snip>
+>>> +TRACE_EVENT(extlog_mem_event,
+>>> +	TP_PROTO(u32 etype,
+>>> +		char *dimm_loc,
+>>> +		const uuid_le *fru_id,
+>>> +		char *fru_text,
+>>> +		u64 error_count,
+>>> +		u32 severity,
+>>> +		u64 phy_addr,
+>>> +		char *mem_loc),
+>>
+>> [Adding Mauro...]
+>>
+>> This looks very similar to the trace event I wrote a while back,
+>> which was similar to the one provided by ghes_edac:
+>> http://thread.gmane.org/gmane.linux.kernel.pci/24616
+>>
+>> Seems to me this has the same issues we previously discussed w.r.t
+>> EDAC conflicts...
+>
+> Right, I'm inclined to leave this trace_mc_event in ras_event.h to edac
+> use alone because of all those layers which don't mean whit for GHES and
+> eMCA error sources.
+>
+> And maybe define a trace_mem_event which is shared by GHES and eMCA and
+> not use the edac tracepoint there not load ghes_edac on such systems
+> which have sufficient decoding capability in firmware.
+>
+> Thoughts?
 
-This calculation looks odd.
-Perhaps use bcd.h instead?
+I thought the primary problem was the conflict with edac core itself. 
+So, if I'm not mistaken, we would have to prevent all edac drivers from 
+loading.
 
+Thanks,
+Naveen
 
