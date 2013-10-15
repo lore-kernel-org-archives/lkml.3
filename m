@@ -1,57 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759032Ab3JONER (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 09:04:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31401 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758566Ab3JONEP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 09:04:15 -0400
-Date: Tue, 15 Oct 2013 09:03:46 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Hong Zhiguo <honkiko@gmail.com>, axboe@kernel.dk, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Hong Zhiguo <zhiguohong@tencent.com>
-Subject: Re: [PATCH v2] blk-throttle: simplify logic by token bucket algorithm
-Message-ID: <20131015130346.GB31215@redhat.com>
-References: <1381574794-7639-1-git-send-email-zhiguohong@tencent.com>
- <1381741757-20888-1-git-send-email-zhiguohong@tencent.com>
- <20131014133620.GF4722@htj.dyndns.org>
+	id S1759095Ab3JONHG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 09:07:06 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:47615 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758274Ab3JONHE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 09:07:04 -0400
+Date: Tue, 15 Oct 2013 06:06:59 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        "Liu, Chuansheng" <chuansheng.liu@intel.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "Ingo Molnar (mingo@kernel.org)" <mingo@kernel.org>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "'linux-kernel@vger.kernel.org' (linux-kernel@vger.kernel.org)" 
+	<linux-kernel@vger.kernel.org>,
+        "Wang, Xiaoming" <xiaoming.wang@intel.com>,
+        "Li, Zhuangzhi" <zhuangzhi.li@intel.com>
+Subject: Re: Panic and page fault in loop during handling NMI backtrace
+ handler
+Message-ID: <20131015130659.GD9150@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <27240C0AC20F114CBF8149A2696CBE4A01B60835@SHSMSX101.ccr.corp.intel.com>
+ <20131015121849.GA29884@localhost.localdomain>
+ <20131015123717.GJ10651@twins.programming.kicks-ass.net>
+ <20131015124837.GC9150@linux.vnet.ibm.com>
+ <20131015125914.GC29884@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131014133620.GF4722@htj.dyndns.org>
+In-Reply-To: <20131015125914.GC29884@localhost.localdomain>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13101513-0928-0000-0000-00000274F9F0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 14, 2013 at 09:36:20AM -0400, Tejun Heo wrote:
-> Hello,
+On Tue, Oct 15, 2013 at 02:59:15PM +0200, Frederic Weisbecker wrote:
+> On Tue, Oct 15, 2013 at 05:48:37AM -0700, Paul E. McKenney wrote:
+> > On Tue, Oct 15, 2013 at 02:37:17PM +0200, Peter Zijlstra wrote:
+> > > On Tue, Oct 15, 2013 at 02:18:53PM +0200, Frederic Weisbecker wrote:
+> > > > On Tue, Oct 15, 2013 at 02:01:04AM +0000, Liu, Chuansheng wrote:
+> > > > > We meet one issue that during trigger all CPU backtrace, but during in the NMI handler arch_trigger_all_cpu_backtrace_handler,
+> > > > > It hit the PAGE fault, then PAGE fault is in loop, at last the thread stack overflow, and system panic.
+> > > > > 
+> > > > > Anyone can give some help? Thanks.
+> > > > 
+> > > > Looks like we re-enter the fault several times. On x86-32, NMIs can
+> > > > fault if they dereference vmalloc'ed area. I wonder if the module thing
+> > > > we lookup in the NMI is stored on some vmalloc'ed area.
+> > > 
+> > > IIRC modules are indeed allocated using vmalloc. See module_alloc()
+> > > using vmalloc_exec()
+> > 
+> > This might then be a module that uses call_rcu(), but which does not have
+> > the needed rcu_barrier() in the module-exit function.
 > 
-> On Mon, Oct 14, 2013 at 05:09:17PM +0800, Hong Zhiguo wrote:
-> > From: Hong Zhiguo <zhiguohong@tencent.com>
-> > 
-> > Token bucket algorithm(http://en.wikipedia.org/wiki/Token_bucket)
-> > is very simple and widely used for rate limiting and shaping.
-> > It's well suitable for blk-throttle. And it natually works for
-> > hierarchical cgroups. So I took it to replace the original time
-> > _slicing_|_trimming_|_extending_ logic.
-> > 
-> > The advantage is simplicity, reliability and less fluctuation.
-> > 
-> > About 300 lines of code for time-slicing is replaced with 60 lines of
-> > code for token bucket in blk-throttle.c.
-> > 
-> > I've tested this patch by fio with rw=randread, rw=randrw. It
-> > behaves almost the same with original time-slicing implementation,
-> > and with more accuracy.
-> 
-> Yes, this definitely is the direction we wanna take it.  I'll wait for
-> Vivek to chime in but have you also tested hierarchical setup?
+> I rather believe it's due to the lazy paging of vmalloc area in x86-32. We had issues
+> like that in the past. For example that's the reason why we do an ad-hoc per-cpu
+> allocation on callchain buffers in perf rather than using alloc_percpu() which might
+> use vmalloc.
 
-Hi Tejun,
+I must defer to your greater experience with this type of bug.
 
-I will have a look at it either today or tomorrow.
+							Thanx, Paul
 
-Thanks
-Vivek
