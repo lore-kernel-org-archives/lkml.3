@@ -1,73 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933072Ab3JOPih (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 11:38:37 -0400
-Received: from mail-vb0-f54.google.com ([209.85.212.54]:39179 "EHLO
-	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932828Ab3JOPid (ORCPT
+	id S1759334Ab3JOPku (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 11:40:50 -0400
+Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:34369 "EHLO
+	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758901Ab3JOPkt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 11:38:33 -0400
+	Tue, 15 Oct 2013 11:40:49 -0400
+Date: Tue, 15 Oct 2013 17:36:26 +0200
+From: Hendrik Brueckner <brueckner@linux.vnet.ibm.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Hendrik Brueckner <brueckner@linux.vnet.ibm.com>, jslaby@suse.cz,
+        gregkh@linuxfoundation.org, brueckner@linux.vnet.com,
+        heiko.carstens@de.ibm.com, schwidefsky@de.ibm.com,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org
+Subject: Re: [PATCH 1/2] tty/hvc_console: Add DTR/RTS callback to handle
+ HUPCL control
+Message-ID: <20131015153626.GA6129@linux.vnet.ibm.com>
+Mail-Followup-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+	jslaby@suse.cz, gregkh@linuxfoundation.org,
+	brueckner@linux.vnet.com, heiko.carstens@de.ibm.com,
+	schwidefsky@de.ibm.com, linuxppc-dev@lists.ozlabs.org,
+	linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
+References: <1372777635-10423-1-git-send-email-brueckner@linux.vnet.ibm.com>
+ <1372777635-10423-2-git-send-email-brueckner@linux.vnet.ibm.com>
+ <1381475711.5630.67.camel@pasglop>
+ <20131011124707.GA6082@linux.vnet.ibm.com>
+ <1381524204.5630.91.camel@pasglop>
 MIME-Version: 1.0
-In-Reply-To: <CAH9JG2Xo2UgbP+VA=s908FSusELERh8kvSVyiyMX1H1Ue8uPSg@mail.gmail.com>
-References: <1381490814-20890-1-git-send-email-ch.naveen@samsung.com>
-	<1381818232-12542-1-git-send-email-ch.naveen@samsung.com>
-	<CAH9JG2Xo2UgbP+VA=s908FSusELERh8kvSVyiyMX1H1Ue8uPSg@mail.gmail.com>
-Date: Tue, 15 Oct 2013 08:38:32 -0700
-X-Google-Sender-Auth: z8IxqpNCI-E_nJ0H0HaV9t9DwVU
-Message-ID: <CAD=FV=XsZoGUeppkxMq9DnVsp761s6ckStsmUxR4aEL3U7JZ1A@mail.gmail.com>
-Subject: Re: [PATCH v2] i2c: s3c2410: dont need CPU_FREQ transitions for
- exynos series
-From: Doug Anderson <dianders@chromium.org>
-To: Kyungmin Park <kmpark@infradead.org>
-Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        Tomasz Figa <t.figa@samsung.com>, Simon Glass <sjg@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Wolfram Sang <wsa@the-dreams.de>, Ben Dooks <ben-linux@fluff.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "broonie@kernel.org" <broonie@kernel.org>, "cpgs ." <cpgs@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1381524204.5630.91.camel@pasglop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13101515-2966-0000-0000-0000090E4167
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Benjamin,
 
-On Mon, Oct 14, 2013 at 11:56 PM, Kyungmin Park <kmpark@infradead.org> wrote:
-> On Tue, Oct 15, 2013 at 3:23 PM, Naveen Krishna Chatradhi
-> <ch.naveen@samsung.com> wrote:
->> For Exynos4 and Exynos5 SoCs from Samsung the i2c clock is based
->> on a fixed 66 MHz peripheral clock, and therefore is completely
->> independent of the cpu frequency.
->> Thus, registering for a CPU freq notifier is very wasteful.
->>
->> This patch modifes the code such that, i2c bus registers to
->> cpu_freq_transition only if CONFIG_CPU_FREQ_S3C24XX is enabled.
->>
->> This change should save a bunch of cpufreq transitions calls
->> which does not apply to exynos SoCs.
->>
->> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
->> ---
->> Changes since v1:
->> Use CONFIG_CPU_FREQ_S3C24XX instead of (CONFIG_CPU_FREQ & !CONFIG_EXYNOS)
->> As commented by Tomasz
->>
->>  drivers/i2c/busses/i2c-s3c2410.c |    4 ++--
->>  1 file changed, 2 insertions(+), 2 deletions(-)
+On Sat, Oct 12, 2013 at 07:43:24AM +1100, Benjamin Herrenschmidt wrote:
+> On Fri, 2013-10-11 at 14:47 +0200, Hendrik Brueckner wrote:
+> > The tiocmget/tiocmset callbacks are used to set and get modem status and
+> > triggered through an tty ioctl.
+> > 
+> > The dtr_rts() callback is different and it is used for DTS/RTS handshaking
+> > between the hvc_console (or any other tty_port) and the tty layer.  The tty
+> > port layer uses this callback to signal the hvc_console whether to raise or
+> > lower the DTR/RTS lines.  This is different than the ioctl interface to
+> > controls the modem status.
+> 
+> Well, DTR at least is the same via both callbacks... Also normal handshaking
+> is normally RTS/CTS, only some HW setups "hijacks" DTR for RTS (old Macs come
+> to mind).
 
-Looks great to me.  Thank you for the suggestions Tomasz, as always.
+Yep. DTR is changed in both callbacks but from different layers.  The
+tiocmget/tiocmset are triggered through the ioctl.  The dtr_rts() callback is
+called in hvc_close() to properly handle HUPCL to lower modem control lines
+after last process closes the device (hang up).
 
-Reviewed-by: Doug Anderson <dianders@chromium.org>
+This is also done in the hvsilib_close() in hvsi_lib.c:
 
-We need to come up with a solution for the CPU_FREQ stuff in
-s3c2410_wdt too.  We could use a similar solution but since the
-CPU_FREQ stuff in s3c2410_wdt is more than just an optimization it
-means that it's not good if S3C24XX is included in a multiplatform
-kernel.  (For the watchdog it's more than just an optimization since
-every frequency transition actually pets the watchdog, making it
-useless when you transition several times per second).
+	/* Clear our own DTR */
+	if (!pv->tty || (pv->tty->termios.c_cflag & HUPCL))
+		hvsilib_write_mctrl(pv, 0); 
 
--Doug
+This is actually what the dtr_rts() callback should trigger and I wonder
+whether it would be worth to introduce the dtr_rts() callback to encapsulate
+the "hvsilib_write_mctrl(pv, 0);" call from above.
+
+On the other hand, the dtr_rts() callback is a good encapsulation to not
+directly access the hp->tty to potentially prevent a layering violation. At
+least for the hvc_iucv() I do not want to deal with the "underlying" tty layer
+and introduce additional reference accounting.
+
+I hope this helps you to understand my rational for introducing the dtr_rts()
+callback.
+
+Thanks and kind regards,
+  Hendrik
+
