@@ -1,65 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933623Ab3JOUZo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 16:25:44 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:49148 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759739Ab3JOUZn (ORCPT
+	id S1759741Ab3JOUaB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 16:30:01 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:59883 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759432Ab3JOU37 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 16:25:43 -0400
-Date: Tue, 15 Oct 2013 16:25:40 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Liu, Chuansheng" <chuansheng.liu@intel.com>,
-        Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH] bug: Use xchg() to update WARN_ON_ONCE() static
- variable
-Message-ID: <20131015162540.5275728a@gandalf.local.home>
-In-Reply-To: <20131015201816.GA3269@localhost.localdomain>
-References: <20131015155806.04e2613f@gandalf.local.home>
-	<20131015201816.GA3269@localhost.localdomain>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 15 Oct 2013 16:29:59 -0400
+Message-ID: <525DA5C3.5070903@wwwdotorg.org>
+Date: Tue, 15 Oct 2013 14:29:55 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-tegra@vger.kernel.org
+Subject: Re: [PATCH v2 5/7] clk: tegra124: Add support for Tegra124 clocks
+References: <1381850098-12357-1-git-send-email-pdeschrijver@nvidia.com> <1381850098-12357-6-git-send-email-pdeschrijver@nvidia.com>
+In-Reply-To: <1381850098-12357-6-git-send-email-pdeschrijver@nvidia.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Oct 2013 22:18:48 +0200
-Frederic Weisbecker <fweisbec@gmail.com> wrote:
+On 10/15/2013 09:14 AM, Peter De Schrijver wrote:
+> Implement clock support for Tegra124.
 
+> diff --git a/drivers/clk/tegra/clk-tegra124.c b/drivers/clk/tegra/clk-tegra124.c
 
-> How about just updating __warned without a cmpxchg. It's not that critical
-> if the update is not seen immediately to other CPUs. OTOH it's critical
-> that's it is visible immediately to the current CPU
+> +static struct pdiv_map pll12g_ssd_esd_p[] = {
+> +	{ .pdiv = 1, .hw_val = 0 },
+> +	{ .pdiv = 2, .hw_val = 1 },
+...
+> +	{ .pdiv = 24, .hw_val = 13 },
+> +	{ .pdiv = 32, .hw_val = 14 },
+> +	{ .pdiv = 0, .hw_val = 15 },
+> +};
 
-Well, I didn't use cmpxchg() I used xchg() which is actually quite
-faster.
+I'm curious why that last entry doesn't have .hw_val = 0, since I think
+it's a sentinel value. For example, the last entry in pllxc_p[] does
+have .hw_val = 0.
 
-> 
-> I mean some warrning can be hard to reproduce and happen to some users
-> while staying for several kernel releases. If it's repetitive, the xchg
-> might impact the performance.
+> diff --git a/include/dt-bindings/clock/tegra124-car.h b/include/dt-bindings/clock/tegra124-car.h
 
-But do we care about that? A WARN_ON() means the kernel (or hardware)
-is buggy. It should be fixed.
+I think you also need to create
+Documentation/devicetree/bindings/clock/nvidia,tegra124-car.txt in this
+patch. All the other SoCs have their own binding file. That said, given
+all the clock IDs have moved into <dt-bindings/clock/tegraNNN-car.h>,
+perhaps we should just have a separate patch that removes the separate
+bindings for Tegra30 and Tegra114, and simply add their compatible
+values into the existing nvidia,tegra20-car.txt (and also make the
+header file reference in that file more generic so it applies to any
+Tegra SoC)?
 
-But Andrew's ONCE() request is something we would want to avoid the
-xchg() every time.
+> @@ -0,0 +1,341 @@
+> +/*
+> + * This header provides constants for binding nvidia,tegra124-car.
+> + *
+> + * The first 185 clocks are numbered to match the bits in the CAR's CLK_OUT_ENB
+> + * registers.
 
-> 
-> I may be overly paranoid, but I think barrier() (so that at least
-> we don't recurse locally) alone would be better.
-
-Heh, Boris is giving me the same argument on IRC ;-)
-
--- Steve
+Shouldn't that be 192 (== 185 * 32)? Perhaps some bits aren't allocated,
+but in previous SoCs, I rounded the ID space for peripheral clocks up to
+whole registers. I see that as far as the clock IDs, this is already
+fine; it's just this description that says 185 not 192.
