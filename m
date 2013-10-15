@@ -1,96 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757060Ab3JOD0J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 23:26:09 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:44121 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755820Ab3JOD0H (ORCPT
+	id S1757315Ab3JOD3U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 23:29:20 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:19296 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754206Ab3JOD3T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 23:26:07 -0400
-Date: Tue, 15 Oct 2013 11:26:00 +0800
-From: majianpeng <majianpeng@gmail.com>
-To: viro <viro@zeniv.linux.org.uk>
-Cc: jbacik <jbacik@fusionio.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Reply-To: majianpeng <majianpeng@gmail.com>
-Subject: [PATCH] inode: For readonly filesystem, func file_update_time should return -EROFS rather than zero.
-X-Priority: 3
-X-GUID: CDB112EE-D599-42A8-83E1-C5FF5B058F0B
-X-Has-Attach: no
-X-Mailer: Foxmail 7.0.1.93[cn]
-Mime-Version: 1.0
-Message-ID: <201310151125581359520@gmail.com>
-Content-Type: text/plain;
-	charset="utf-8"
+	Mon, 14 Oct 2013 23:29:19 -0400
+Message-ID: <525CB742.4010409@oracle.com>
+Date: Tue, 15 Oct 2013 11:32:18 +0800
+From: vaughan <vaughan.cao@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130923 Thunderbird/17.0.9
+MIME-Version: 1.0
+To: Hannes Reinecke <hare@suse.de>
+CC: JBottomley@parallels.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: PROBLEM: special sense code asc,ascq=04h,0Ch abort scsi scan
+ in the middle
+References: <525AD704.6040705@oracle.com> <525BD1EA.6000701@suse.de>
+In-Reply-To: <525BD1EA.6000701@suse.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r9F3QVou020772
 
-For ext2 mounted with errors=remount-ro, if write a file and because the
-harddisk error, the fs became ro.But the following test can't return.
+On 10/14/2013 07:13 PM, Hannes Reinecke wrote:
+> In the log, inquiry to LUN7 return a sense - asc,ascq=04h,0Ch
+> (Logical unit not accessible, target port in unavailable state).
+> And this is ignored, so scsi_probe_lun() returns -EIO and the scan
+> process is aborted.
+>
+> I have two questions:
+> 1. Is it correct for hardware to return a sense 04h,0Ch to inquiry
+> again, even after presenting this lun in responce to REPORT_LUN
+> command?
+> Yes, this is correct. 'REPORT LUNS' is supported in 'Unavailable' state.
+>
+>> 2. Since windows and solaris can continue scan, is it reasonable for
+>> linux to do the same, even for a fault-tolerance purpose?
+>>
+> Hmm. Yes, and no.
+>
+> _Actually_ this is an issue with the target, as it looks as if it
+> will return the above sense code while sending an 'INQUIRY' to the
+> device.
+> SPC explicitely states that the INQUIRY command should _not_ fail
+> for unavailable devices.
+Hi all,
 
-int main()
-{
-	int ret;
-	int i = 0;
-	char buff[SIZE];
-	int fd = open("/opt/test", O_WRONLY|O_TRUNC|O_CREAT);
+I found this below in spc4.
+>>>
+5.15.2.4.4 Target port group asymmetric access states - Standby state
+While in the unavailable primary target port asymmetric access state,
+the device server shall support those of
+the following commands that it supports while in the active/optimized state:
+a) INQUIRY (the peripheral qualifier (see 6.6.2) shall be set to 001b);
+....
+For those commands that are not supported, the device server shall
+terminate the command with CHECK
+CONDITION status, with the sense key set to NOT READY, and the
+additional sense code set to LOGICAL
+UNIT NOT ACCESSIBLE, TARGET PORT IN UNAVAILABLE STATE.
+<<<
+>From the above, I suppose the hardware may works very compliant with
+spc. The case could be:
+Storage is a alua supported target. Initiator sent REPORT_LUN to target,
+target return all pqual=000b to it.
+Then Initiator INQUIRY lun 7 which is in standby state where pqual=000b
+not 001b. So this INQUIRY is regarded as
+'not supported', and get terminated with CHECK_CONDITION,  sense key=NOT
+READY, asc,ascq=04h,0ch.
 
-	if (fd < 0) {
-		printf("open error %s\n", strerror(errno));
-		return errno;
-	}
+Could you confirm if my understanding is right or wrong?
 
-	ret = write(fd, buff, SIZE);
-	lseek(fd, 0, 0);
+Thanks,
+Vaughan
+> But yeah, we probably should work around this issues.
+> Nevertheless, please raise this issue with your array vendor.
+>
+> Please try the attached patch.
+>
+> Cheers,
+>
+> Hannes
 
-	while (1) {
-		ret = write(fd, buff, SIZE);
-		if (ret < 0) {
-			printf("write error %s\n", strerror(errno));
-			break;
-		}
-		lseek(fd, 0, 0);
-		i++;
-	}
-	printf("write count=%d\n", i);
-	close(fd);
-
-	return 0;
-}
-
-For ext3/ext4, because jbd the test can return. But for ext2, because no
-jbd and not reading bitmap from harddisk, the test continue.
-
-So we should add check readonly-fs on write-path. Func file_update_time
-already check the readonly flag,but it can't return -EROFS.
-For readonly-fs, it can't update a/c/m time of file,it should return
--EROFS rather than zero.
-
-Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
----
- fs/inode.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/fs/inode.c b/fs/inode.c
-index b33ba8e..65302c1 100644
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -1644,8 +1644,9 @@ int file_update_time(struct file *file)
- 		return 0;
- 
- 	/* Finally allowed to write? Takes lock. */
--	if (__mnt_want_write_file(file))
--		return 0;
-+	ret = __mnt_want_write_file(file);
-+	if (ret)
-+		return ret;
- 
- 	ret = update_time(inode, &now, sync_it);
- 	__mnt_drop_write_file(file);
--- 
-1.8.4
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
