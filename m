@@ -1,75 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759571Ab3JORbO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 13:31:14 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:56780 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758955Ab3JORbM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 13:31:12 -0400
-Message-ID: <525D7BCD.7080303@linux.vnet.ibm.com>
-Date: Tue, 15 Oct 2013 23:00:53 +0530
-From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S933490Ab3JORbl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 13:31:41 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40240 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932950Ab3JORbk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 13:31:40 -0400
+Message-ID: <525D7BDE.4070400@zytor.com>
+Date: Tue, 15 Oct 2013 10:31:10 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: "Chen, Gong" <gong.chen@linux.intel.com>, tony.luck@intel.com,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        m.chehab@samsung.com
-Subject: Re: [PATCH 8/8] ACPI / trace: Add trace interface for eMCA driver
-References: <1381473166-29303-1-git-send-email-gong.chen@linux.intel.com> <1381473166-29303-9-git-send-email-gong.chen@linux.intel.com> <20131015165435.GA2777@naverao1-tp.ibm.com> <20131015170039.GF7908@pd.tnic>
-In-Reply-To: <20131015170039.GF7908@pd.tnic>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Ingo Molnar <mingo@kernel.org>
+CC: Yinghai Lu <yinghai@kernel.org>, Tejun Heo <tj@kernel.org>,
+        Zhang Yanfei <zhangyanfei.yes@gmail.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Toshi Kani <toshi.kani@hp.com>, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH part2 v2 0/8] Arrange hotpluggable memory as ZONE_MOVABLE
+References: <20131014142719.GI4722@htj.dyndns.org> <525C02DC.4050706@gmail.com> <20131014145131.GJ4722@htj.dyndns.org> <525C0866.2010808@gmail.com> <20131014151902.GL4722@htj.dyndns.org> <525C0EFE.2010409@gmail.com> <CAE9FiQX0xeR61ehPy2SfWfN-fgSZVS=dtaWT-QQ+RR12tx+A0w@mail.gmail.com> <20131014200437.GA5720@htj.dyndns.org> <CAE9FiQXCG6gR-XL9fVudpNVEdS-3MHPObfWQ=Uf=q7pv33QBOA@mail.gmail.com> <525C5727.7000603@zytor.com> <20131015065040.GB24584@gmail.com>
+In-Reply-To: <20131015065040.GB24584@gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13101517-4790-0000-0000-00000AD0C1F5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/15/2013 10:30 PM, Borislav Petkov wrote:
-> On Tue, Oct 15, 2013 at 10:24:35PM +0530, Naveen N. Rao wrote:
->> On 2013/10/11 02:32AM, Chen Gong wrote:
->>> Use trace interface to elaborate all H/W error related
->>> information.
->>>
->>> Signed-off-by: Chen, Gong <gong.chen@linux.intel.com>
->>> ---
->> <snip>
->>> +TRACE_EVENT(extlog_mem_event,
->>> +	TP_PROTO(u32 etype,
->>> +		char *dimm_loc,
->>> +		const uuid_le *fru_id,
->>> +		char *fru_text,
->>> +		u64 error_count,
->>> +		u32 severity,
->>> +		u64 phy_addr,
->>> +		char *mem_loc),
->>
->> [Adding Mauro...]
->>
->> This looks very similar to the trace event I wrote a while back,
->> which was similar to the one provided by ghes_edac:
->> http://thread.gmane.org/gmane.linux.kernel.pci/24616
->>
->> Seems to me this has the same issues we previously discussed w.r.t
->> EDAC conflicts...
->
-> Right, I'm inclined to leave this trace_mc_event in ras_event.h to edac
-> use alone because of all those layers which don't mean whit for GHES and
-> eMCA error sources.
->
-> And maybe define a trace_mem_event which is shared by GHES and eMCA and
-> not use the edac tracepoint there not load ghes_edac on such systems
-> which have sufficient decoding capability in firmware.
->
-> Thoughts?
+On 10/14/2013 11:50 PM, Ingo Molnar wrote:
+> 
+> So if anyone can implement it using huge pages, with a really fast __va() 
+> and __pa() implementation, then it might be possible. But that's a pretty 
+> major surgery on x86.
+> 
 
-I thought the primary problem was the conflict with edac core itself. 
-So, if I'm not mistaken, we would have to prevent all edac drivers from 
-loading.
+Well, we already *have* a way to deal with that for Xen (by inserting an
+otherwise nonexistent logical level.)  I'm wondering if those interfaces
+could be (ab)used for this as well, or if that is functionally
+equivalent to saying that this should be done in a hypervisor.
 
-Thanks,
-Naveen
+	-hpa
+
 
