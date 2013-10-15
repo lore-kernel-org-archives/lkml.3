@@ -1,116 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933337Ab3JOQ3r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 12:29:47 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:2289 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932881Ab3JOQ3p convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 12:29:45 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 15 Oct 2013 09:25:21 -0700
-From: Vishal Annapurve <vannapurve@nvidia.com>
-To: Alan Stern <stern@rowland.harvard.edu>, Ming Lei <tom.leiming@gmail.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-usb <linux-usb@vger.kernel.org>
-Date: Tue, 15 Oct 2013 21:59:39 +0530
-Subject: RE: [PATCH] usb-storage: scsiglue: Changing the command result
-Thread-Topic: [PATCH] usb-storage: scsiglue: Changing the command result
-Thread-Index: Ac7Jvus8aKrvvBBwTqGG5HrPc+oCRgABCPlw
-Message-ID: <113ACA888B71994BB56E5CF3704953486D65F41133@BGMAIL02.nvidia.com>
-References: <CACVXFVPd9UQqMZFFsogMESzpDP=JVCpDJGWTAMrNHNazocJD4w@mail.gmail.com>
- <Pine.LNX.4.44L0.1310151151340.1377-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1310151151340.1377-100000@iolanthe.rowland.org>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
+	id S1759416Ab3JOQfA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 12:35:00 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:33776 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758902Ab3JOQe5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 12:34:57 -0400
+Message-ID: <525D6E86.1040208@ti.com>
+Date: Tue, 15 Oct 2013 22:04:14 +0530
+From: Balaji T K <balajitk@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+To: Andreas Fenkart <afenkart@gmail.com>
+CC: Chris Ball <cjb@laptop.org>, Tony Lindgren <tony@atomide.com>,
+        Grant Likely <grant.likely@secretlab.ca>, Felipe Balbi <balbi@ti.com>,
+        <zonque@gmail.com>, <devicetree-discuss@lists.ozlabs.org>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-mmc@vger.kernel.org>, <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH v3 3/4] mmc: omap_hsmmc: Remux pins to support SDIO interrupt
+ on AM335x
+References: <1380971830-21492-1-git-send-email-afenkart@gmail.com> <1380971830-21492-4-git-send-email-afenkart@gmail.com>
+In-Reply-To: <1380971830-21492-4-git-send-email-afenkart@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
+Thanks Andreas for the patch,
 
-This issue seems more related to the devices using SCSI protocol and the
-changes otherwise will be at more places giving the same end result.
+On Saturday 05 October 2013 04:47 PM, Andreas Fenkart wrote:
+> The am335x can't detect pending cirq in PM runtime suspend.
+> This patch reconfigures dat1 as a GPIO before going to suspend.
+> SDIO interrupts are detected with the GPIO, while in runtime
+> suspend, standard detection of the module block otherwise.
+>
+> Signed-off-by: Andreas Fenkart <afenkart@gmail.com>
+>
+> @@ -2293,23 +2440,66 @@ static int omap_hsmmc_resume(struct device *dev)
+>   static int omap_hsmmc_runtime_suspend(struct device *dev)
+>   {
+>   	struct omap_hsmmc_host *host;
+> +	unsigned long flags;
+> +	int ret = 0;
+>
+>   	host = platform_get_drvdata(to_platform_device(dev));
+>   	omap_hsmmc_context_save(host);
+>   	dev_dbg(dev, "disabled\n");
+>
+> -	return 0;
+> +	if (host->flags & HSMMC_SWAKEUP_QUIRK) {
+> +		spin_lock_irqsave(&host->irq_lock, flags);
+> +		OMAP_HSMMC_WRITE(host->base, ISE, 0);
+> +		OMAP_HSMMC_WRITE(host->base, IE, 0);
+> +		OMAP_HSMMC_WRITE(host->base, STAT, STAT_CLEAR);
+> +		spin_unlock_irqrestore(&host->irq_lock, flags);
+> +
+> +		ret = pinctrl_select_state(host->pinctrl, host->idle);
+> +		if (ret < 0)
+> +			dev_warn(mmc_dev(host->mmc), "Unable to select idle pinmux\n");
+> +
+> +		enable_irq(mmc_slot(host).sdio_irq);
+> +	}
+> +
+> +	spin_lock_irqsave(&host->irq_lock, flags);
+> +	/* infinite loop, if irq not cleared in omap_hsmmc_enable_sdio_irq */
+> +	host->flags |= HSMMC_RUNTIME_SUSPENDED;
 
-I think as the comment says over the command_abort function,
-intentional result change should only happen in case of timeout.
+Can you provide more details about the infinite loop and how it will get recovered.
 
-Regards,
-Vishal
-
------Original Message-----
-From: Alan Stern [mailto:stern@rowland.harvard.edu] 
-Sent: Tuesday, October 15, 2013 5:55 PM
-To: Ming Lei
-Cc: Vishal Annapurve; Linux Kernel Mailing List; linux-usb
-Subject: Re: [PATCH] usb-storage: scsiglue: Changing the command result
-
-On Tue, 15 Oct 2013, Ming Lei wrote:
-
-> On Thu, Sep 26, 2013 at 7:35 PM, Vishal Annapurve <vannapurve@nvidia.com> wrote:
-> > Hi,
-> >
-> > There was a recent commit in mainline for the scsi devices which do 
-> > not respond properly to medium access command:
-> >
-> > commit    18a4d0a22ed6c54b67af7718c305cd010f09ddf8
-> >
-> > [SCSI] Handle disk devices which can not process medium access 
-> > commands We have experienced several devices which fail in a fashion 
-> > we do not currently handle gracefully in SCSI. After a failure these 
-> > devices will respond to the SCSI primary command set (INQUIRY, TEST 
-> > UNIT READY, etc.) but any command accessing the storage medium will time out.
-> >
-> > I came across a USB drive which showed similar problem and what I 
-> > see is usb storage is still not able to cope with such devices properly.
-> >
-> > The control flow downwards is like:
-> > scsi_times_out --> Setting cmd->result as DID_TIME_OUT 
-> > scsi_error_handler scsi_unjam_host scsi_eh_abort_cmds
-> > command_abort    (sets US_FLIDX_TIMED_OUT for us->dflags
-> >                                   calls stop_transport,
-> >                                   and waits for)    usb_stor_control_thread
-> > (which is waiting for
-> >                                                                    
-> > transport call to return inside
-> >
-> > usb_stor_invoke_transport)
-> >                                                                    
-> > both usb_stor_control_thread and
-> >
-> > usb_stor_invoke_transport
-> >                                                     check for 
-> > us->dflags timed_out bit and
-> >                                                      set the result 
-> > as DID_ABORT
-> >                                                      and signal 
-> > completion for command_abort
-> >                                                      to complete 
-> > ......
-> > sd_eh_action
-> > checks for cmd->result and finds out that it's DID_ABORT rather than 
-> > DID_TIME_OUT.
-> >
-> > This patch updates the command result to be TIME_OUT explicitly 
-> > before returning from command_abort in scsiglue.c.
-> >
-> > I would like to know if this patch can work out for such USB Storage 
-> > devices? What would be the better way to do the same?
-> 
-> Looks your diagnose is correct, and patch should be doable, the only 
-> side effect is that previous returned DID_ABORT in srb->result is 
-> replaced with DID_TIME_OUT now.
-> 
-> Another way is to implement .eh_timed_out callback to return different 
-> error for the two failure, but looks not a big deal.
-
-Instead of overriding the result code, a better way to do this would simply be to change the places where srb->result is currently set to DID_ABORT << 16.  Just make it DID_TIME_OUT << 16 instead.
-
-Alan Stern
+> +	spin_unlock_irqrestore(&host->irq_lock, flags);
+> +
+> +	return ret;
+>   }
+>
+>   static int omap_hsmmc_runtime_resume(struct device *dev)
+>   {
+>   	struct omap_hsmmc_host *host;
+> +	unsigned long flags;
+> +	int ret = 0;
+>
+>   	host = platform_get_drvdata(to_platform_device(dev));
+>   	omap_hsmmc_context_restore(host);
+>   	dev_dbg(dev, "enabled\n");
+>
+> -	return 0;
+> +	spin_lock_irqsave(&host->irq_lock, flags);
+> +	/* infinite loop, if irq not cleared in omap_hsmmc_enable_sdio_irq */
+> +	host->flags &= ~HSMMC_RUNTIME_SUSPENDED;
+> +	spin_unlock_irqrestore(&host->irq_lock, flags);
+> +
+> +	if (host->flags & HSMMC_SWAKEUP_QUIRK) {
+> +		disable_irq(mmc_slot(host).sdio_irq);
+> +
+> +		ret = pinctrl_select_state(host->pinctrl, host->active);
+> +		if (ret < 0)
+> +			dev_warn(mmc_dev(host->mmc), "Unable to select active pinmux\n");
+> +
+> +		spin_lock_irqsave(&host->irq_lock, flags);
+> +		if (host->flags & HSMMC_SDIO_IRQ_ENABLED) {
+> +			OMAP_HSMMC_WRITE(host->base, STAT, STAT_CLEAR);
+> +			OMAP_HSMMC_WRITE(host->base, ISE, CIRQ_EN);
+> +			OMAP_HSMMC_WRITE(host->base, IE, CIRQ_EN);
+> +		}
+> +		spin_unlock_irqrestore(&host->irq_lock, flags);
+> +	}
+> +	return ret;
+>   }
+>
+>   static struct dev_pm_ops omap_hsmmc_dev_pm_ops = {
+> diff --git a/include/linux/platform_data/mmc-omap.h b/include/linux/platform_data/mmc-omap.h
+> index 2bf1b30..fd5fff5 100644
+> --- a/include/linux/platform_data/mmc-omap.h
+> +++ b/include/linux/platform_data/mmc-omap.h
+> @@ -115,6 +115,7 @@ struct omap_mmc_platform_data {
+>
+>   		int switch_pin;			/* gpio (card detect) */
+>   		int gpio_wp;			/* gpio (write protect) */
+> +		int gpio_cirq;			/* gpio (card irq) */
+>
+>   		int (*set_bus_mode)(struct device *dev, int slot, int bus_mode);
+>   		int (*set_power)(struct device *dev, int slot,
+> @@ -145,6 +146,9 @@ struct omap_mmc_platform_data {
+>   		int card_detect_irq;
+>   		int (*card_detect)(struct device *dev, int slot);
+>
+> +		/* SDIO IRQs */
+> +		int sdio_irq;
+> +
+>   		unsigned int ban_openended:1;
+>
+>   	} slots[OMAP_MMC_MAX_SLOTS];
+>
 
