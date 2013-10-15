@@ -1,142 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754262Ab3JOHEF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 03:04:05 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:59577 "EHLO arroyo.ext.ti.com"
+	id S1756778Ab3JOHF2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 03:05:28 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:46826 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751384Ab3JOHED (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 03:04:03 -0400
-Message-ID: <525CE8D3.70108@ti.com>
-Date: Tue, 15 Oct 2013 12:33:47 +0530
+	id S1754591Ab3JOHF0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 03:05:26 -0400
+Message-ID: <525CE928.4060405@ti.com>
+Date: Tue, 15 Oct 2013 12:35:12 +0530
 From: George Cherian <george.cherian@ti.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Roger Quadros <rogerq@ti.com>
-CC: <linux-omap@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <tony@atomide.com>, <kishon@ti.com>,
-        <gregkh@linuxfoundation.org>, <balbi@ti.com>, <rob@landley.net>,
-        <ijc+devicetree@hellion.org.uk>, <swarren@wwwdotorg.org>,
-        <mark.rutland@arm.com>, <pawel.moll@arm.com>,
-        <rob.herring@calxeda.com>
-Subject: Re: [PATCH] usb: phy: omap: Add omap-control Support for AM437x
-References: <1381755071-11931-1-git-send-email-george.cherian@ti.com> <525BEF4D.3000103@ti.com>
-In-Reply-To: <525BEF4D.3000103@ti.com>
+To: Mark Rutland <mark.rutland@arm.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "tony@atomide.com" <tony@atomide.com>, "balbi@ti.com" <balbi@ti.com>,
+        "kishon@ti.com" <kishon@ti.com>, "rob@landley.net" <rob@landley.net>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>
+Subject: Re: [PATCH] phy: omap: Adapt phy-omap-usb2 for AM437x
+References: <1381754603-11581-1-git-send-email-george.cherian@ti.com> <20131014143259.GD31708@e106331-lin.cambridge.arm.com>
+In-Reply-To: <20131014143259.GD31708@e106331-lin.cambridge.arm.com>
 Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/14/2013 6:49 PM, Roger Quadros wrote:
-> Hi George,
->
-> On 10/14/2013 03:51 PM, George Cherian wrote:
->> This adds omap control module support for USBSS in AM437x SoC.
->> Update DT binding information to reflect these changes.
+Hi Mark,
+
+Fixed all your comments and already sent a V2.
+
+
+On 10/14/2013 8:03 PM, Mark Rutland wrote:
+> On Mon, Oct 14, 2013 at 01:43:23PM +0100, George Cherian wrote:
+>> This patch adds a compatible for AM437x "ti,am43xx-usb2" to
+>> reuse the same phy-omap-usb2 driver.
+>>
+>> Also updated the documentation to add the new compatible.
 >>
 >> Signed-off-by: George Cherian <george.cherian@ti.com>
 >> ---
->>   Documentation/devicetree/bindings/usb/omap-usb.txt |  2 ++
->>   drivers/usb/phy/phy-omap-control.c                 | 17 +++++++++++++++++
->>   include/linux/usb/omap_control_usb.h               |  6 ++++++
->>   3 files changed, 25 insertions(+)
+>>   Documentation/devicetree/bindings/usb/usb-phy.txt |  2 +-
+>>   drivers/phy/phy-omap-usb2.c                       | 13 ++++++++++---
+>>   2 files changed, 11 insertions(+), 4 deletions(-)
 >>
->> diff --git a/Documentation/devicetree/bindings/usb/omap-usb.txt b/Documentation/devicetree/bindings/usb/omap-usb.txt
->> index 090e5e2..c495135 100644
->> --- a/Documentation/devicetree/bindings/usb/omap-usb.txt
->> +++ b/Documentation/devicetree/bindings/usb/omap-usb.txt
->> @@ -87,6 +87,8 @@ Required properties:
->>   			e.g. USB3 PHY and SATA PHY on OMAP5.
->>    "ti,control-phy-dra7usb2" - if it has power down register like USB2 PHY on
->>   			DRA7 platform.
->> + "ti,control-phy-am437usb2" - if it has power down register like USB2 PHY on
->> +			AM437 platform.
->>    - reg : Address and length of the register set for the device. It contains
->>      the address of "otghs_control" for control-phy-otghs or "power" register
->>      for other types.
->> diff --git a/drivers/usb/phy/phy-omap-control.c b/drivers/usb/phy/phy-omap-control.c
->> index 09c5ace..c453b81 100644
->> --- a/drivers/usb/phy/phy-omap-control.c
->> +++ b/drivers/usb/phy/phy-omap-control.c
->> @@ -84,6 +84,18 @@ void omap_control_usb_phy_power(struct device *dev, int on)
->>   		else
->>   			val |= OMAP_CTRL_USB2_PHY_PD;
->>   		break;
->> +
->> +	case OMAP_CTRL_TYPE_AM437USB2:
->> +		if (on) {
->> +			val &= ~(AM437X_CTRL_USB2_PHY_PD |
->> +					AM437X_CTRL_USB2_OTG_PD);
->> +			val |= (AM437X_CTRL_USB2_OTGVDET_EN |
->> +					AM437X_CTRL_USB2_OTGSESSEND_EN);
-> The ON and OFF operations are not symmetric because of this. Shouldn't the
-> OTG specific stuff go in otg specific ops?
-
-AM437X_CTRL_USB2_OTGVDET_EN - this is basically the VBUS detect comparator.
-AM437X_CTRL_USB2_OTGSESSEND_EN - this is Session End Comparator.
-
-The TRM names these bits with OTG. Without these enabled the peripheral mode does not
-work properly with HW UTMI mode (UTMI mode in DWC).
-These bits have no effect when AM437X_CTRL_USB2_OTG_PD and AM437X_CTRL_USB2_PHY_PD are enabled
-(powered down).
-
-Anyways I will make it symmetric during OFF also .
-
->> +		} else {
->> +			val |= (AM437X_CTRL_USB2_PHY_PD |
->> +					 AM437X_CTRL_USB2_OTG_PD);
->> +		}
->> +		break;
->>   	default:
->>   		dev_err(dev, "%s: type %d not recognized\n",
->>   					__func__, control_usb->type);
->> @@ -197,6 +209,7 @@ static const enum omap_control_usb_type otghs_data = OMAP_CTRL_TYPE_OTGHS;
->>   static const enum omap_control_usb_type usb2_data = OMAP_CTRL_TYPE_USB2;
->>   static const enum omap_control_usb_type pipe3_data = OMAP_CTRL_TYPE_PIPE3;
->>   static const enum omap_control_usb_type dra7usb2_data = OMAP_CTRL_TYPE_DRA7USB2;
->> +static const enum omap_control_usb_type am437usb2_data = OMAP_CTRL_TYPE_AM437USB2;
+>> diff --git a/Documentation/devicetree/bindings/usb/usb-phy.txt b/Documentation/devicetree/bindings/usb/usb-phy.txt
+>> index c0245c8..d5a7f21 100644
+>> --- a/Documentation/devicetree/bindings/usb/usb-phy.txt
+>> +++ b/Documentation/devicetree/bindings/usb/usb-phy.txt
+>> @@ -3,7 +3,7 @@ USB PHY
+>>   OMAP USB2 PHY
 >>   
->>   static const struct of_device_id omap_control_usb_id_table[] = {
->>   	{
->> @@ -215,6 +228,10 @@ static const struct of_device_id omap_control_usb_id_table[] = {
->>   		.compatible = "ti,control-phy-dra7usb2",
->>   		.data = &dra7usb2_data,
->>   	},
->> +	{
->> +		.compatible = "ti,control-phy-am437usb2",
->> +		.data = &am437usb2_data,
->> +	},
->>   	{},
->>   };
->>   MODULE_DEVICE_TABLE(of, omap_control_usb_id_table);
->> diff --git a/include/linux/usb/omap_control_usb.h b/include/linux/usb/omap_control_usb.h
->> index 596b019..69ae383 100644
->> --- a/include/linux/usb/omap_control_usb.h
->> +++ b/include/linux/usb/omap_control_usb.h
->> @@ -24,6 +24,7 @@ enum omap_control_usb_type {
->>   	OMAP_CTRL_TYPE_USB2,	/* USB2_PHY, power down in CONTROL_DEV_CONF */
->>   	OMAP_CTRL_TYPE_PIPE3,	/* PIPE3 PHY, DPLL & seperate Rx/Tx power */
->>   	OMAP_CTRL_TYPE_DRA7USB2, /* USB2 PHY, power and power_aux e.g. DRA7 */
->> +	OMAP_CTRL_TYPE_AM437USB2, /* USB2 PHY, power e.g. AM437x */
->>   };
+>>   Required properties:
+>> - - compatible: Should be "ti,omap-usb2"
+>> + - compatible: Should be "ti,omap-usb2" or "ti,am437x-usb2"
+> In case this needs to be modified in future, it might be best to split
+> this up one per line, with a brief description of when it applies:
+>
+> - compatible: Should contain one of:
+>    * "ti,omap-usb2" for ____ systems
+>    * "ti,am437x-usb2" for ____ systems
+>
+>>    - reg : Address and length of the register set for the device.
+>>    - #phy-cells: determine the number of cells that should be given in the
+>>      phandle while referencing this phy.
+>> diff --git a/drivers/phy/phy-omap-usb2.c b/drivers/phy/phy-omap-usb2.c
+>> index bfc5c33..0529c83 100644
+>> --- a/drivers/phy/phy-omap-usb2.c
+>> +++ b/drivers/phy/phy-omap-usb2.c
+>> @@ -29,6 +29,7 @@
+>>   #include <linux/delay.h>
+>>   #include <linux/usb/omap_control_usb.h>
+>>   #include <linux/phy/phy.h>
+>> +#include <linux/of.h>
+>>   #include <linux/of_platform.h>
 >>   
->>   struct omap_control_usb {
->> @@ -64,6 +65,11 @@ enum omap_control_usb_mode {
+>>   /**
+>> @@ -172,7 +173,10 @@ static int omap_usb2_probe(struct platform_device *pdev)
+>>   	phy->dev		= &pdev->dev;
 >>   
->>   #define OMAP_CTRL_USB2_PHY_PD		BIT(28)
+>>   	phy->phy.dev		= phy->dev;
+>> -	phy->phy.label		= "omap-usb2";
+>> +	if (of_device_is_compatible(node, "ti,am437x-usb2"))
+>> +		phy->phy.label		= "am437x-usb2";
+>> +	else
+>> +		phy->phy.label		= "omap-usb2";
+> Instead of having this check here, you could put together a struct
+> containing the data applying to a particular compatible string, and
+> associate it with the compatible string using of_device_id::data.
+>
+> That means we don't need to duplicate the compatible strings, and it's
+> easier to extend in future.
+>
+>>   	phy->phy.set_suspend	= omap_usb2_suspend;
+>>   	phy->phy.otg		= otg;
+>>   	phy->phy.type		= USB_PHY_TYPE_USB2;
+>> @@ -201,8 +205,10 @@ static int omap_usb2_probe(struct platform_device *pdev)
 >>   
->> +#define AM437X_CTRL_USB2_PHY_PD		BIT(0)
->> +#define AM437X_CTRL_USB2_OTG_PD		BIT(1)
->> +#define AM437X_CTRL_USB2_OTGVDET_EN	BIT(19)
->> +#define AM437X_CTRL_USB2_OTGSESSEND_EN	BIT(20)
->> +
->>   #if IS_ENABLED(CONFIG_OMAP_CONTROL_USB)
->>   extern void omap_control_usb_phy_power(struct device *dev, int on);
->>   extern void omap_control_usb_set_mode(struct device *dev,
->>
-> cheers,
-> -roger
+>>   	otg->set_host		= omap_usb_set_host;
+>>   	otg->set_peripheral	= omap_usb_set_peripheral;
+>> -	otg->set_vbus		= omap_usb_set_vbus;
+>> -	otg->start_srp		= omap_usb_start_srp;
+>> +	if (of_device_is_compatible(node, "ti,omap-usb2")) {
+>> +		otg->set_vbus		= omap_usb_set_vbus;
+>> +		otg->start_srp		= omap_usb_start_srp;
+>> +	}
+> Similarly here.
+>
+> Cheers,
+> Mark.
 
 
 -- 
