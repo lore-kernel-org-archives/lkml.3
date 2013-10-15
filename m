@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758380Ab3JOFcv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 01:32:51 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33687 "EHLO
+	id S933484Ab3JOFdG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 01:33:06 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33701 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932813Ab3JOFcr (ORCPT
+	with ESMTP id S932716Ab3JOFdB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 01:32:47 -0400
-Date: Mon, 14 Oct 2013 22:32:35 -0700
-From: tip-bot for Ramkumar Ramachandra <tipbot@zytor.com>
-Message-ID: <tip-87f918685a452be514d060a09eeb4e0c91422e86@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, dsahern@gmail.com, artagnon@gmail.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, dsahern@gmail.com, tglx@linutronix.de,
-        artagnon@gmail.com
-In-Reply-To: <1380863851-14460-1-git-send-email-artagnon@gmail.com>
-References: <1380863851-14460-1-git-send-email-artagnon@gmail.com>
+	Tue, 15 Oct 2013 01:33:01 -0400
+Date: Mon, 14 Oct 2013 22:32:44 -0700
+From: tip-bot for David Ahern <tipbot@zytor.com>
+Message-ID: <tip-813335b8b27d9ceeb67a073f501ada8b8dde37a7@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, jolsa@redhat.com, fweisbec@gmail.com,
+        dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, jolsa@redhat.com, fweisbec@gmail.com,
+        dsahern@gmail.com, tglx@linutronix.de
+In-Reply-To: <1381289214-24885-2-git-send-email-dsahern@gmail.com>
+References: <1381289214-24885-2-git-send-email-dsahern@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf trace: Improve the error messages
-Git-Commit-ID: 87f918685a452be514d060a09eeb4e0c91422e86
+Subject: [tip:perf/core] perf util: Add findnew method to intlist
+Git-Commit-ID: 813335b8b27d9ceeb67a073f501ada8b8dde37a7
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,108 +31,154 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 14 Oct 2013 22:32:41 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 14 Oct 2013 22:32:50 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  87f918685a452be514d060a09eeb4e0c91422e86
-Gitweb:     http://git.kernel.org/tip/87f918685a452be514d060a09eeb4e0c91422e86
-Author:     Ramkumar Ramachandra <artagnon@gmail.com>
-AuthorDate: Fri, 4 Oct 2013 10:47:31 +0530
+Commit-ID:  813335b8b27d9ceeb67a073f501ada8b8dde37a7
+Gitweb:     http://git.kernel.org/tip/813335b8b27d9ceeb67a073f501ada8b8dde37a7
+Author:     David Ahern <dsahern@gmail.com>
+AuthorDate: Tue, 8 Oct 2013 21:26:52 -0600
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 14 Oct 2013 10:24:04 -0300
+CommitDate: Mon, 14 Oct 2013 10:28:48 -0300
 
-perf trace: Improve the error messages
+perf util: Add findnew method to intlist
 
-Currently, execution of 'perf trace' reports the following cryptic
-message to the user:
+Similar to other findnew based methods if the requested object is not
+found, add it to the list.
 
-$ perf trace
-Couldn't read the raw_syscalls tracepoints information!
+v2: followed format of other findnew methods per acme's request
 
-Typically this happens because the user does not have permissions to
-read the debugfs filesystem. Also handle the case when the kernel was
-not compiled with debugfs support or when it isn't mounted.
-
-Now, the tool prints detailed error messages:
-
-$ perf trace
-Error:	Unable to find debugfs
-Hint:	Was your kernel was compiled with debugfs support?
-Hint:	Is the debugfs filesystem mounted?
-Hint:	Try 'sudo mount -t debugfs nodev /sys/kernel/debug'
-
-$ perf trace
-Error:	No permissions to read /sys/kernel/debug//tracing/events/raw_syscalls
-Hint:	Try 'sudo mount -o remount,mode=755 /sys/kernel/debug/'
-
-Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
-Cc: David Ahern <dsahern@gmail.com>
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
-Link: http://lkml.kernel.org/r/1380863851-14460-1-git-send-email-artagnon@gmail.com
-[ Added ready to use commands to fix the issues as extra hints, use the
-  current debugfs mount point when reporting permission error, use
-  strerror_r instead of the deprecated sys_errlist, as reported by David Ahern ]
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1381289214-24885-2-git-send-email-dsahern@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-trace.c | 37 ++++++++++++++++++++++++++++---------
- 1 file changed, 28 insertions(+), 9 deletions(-)
+ tools/perf/util/intlist.c | 22 ++++++++++++++++++----
+ tools/perf/util/intlist.h |  1 +
+ tools/perf/util/rblist.c  | 27 ++++++++++++++++++++++++---
+ tools/perf/util/rblist.h  |  1 +
+ 4 files changed, 44 insertions(+), 7 deletions(-)
 
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index 19ddcab..5496546 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -1590,17 +1590,13 @@ static int trace__run(struct trace *trace, int argc, const char **argv)
- 	}
- 
- 	if (perf_evlist__add_newtp(evlist, "raw_syscalls", "sys_enter", trace__sys_enter) ||
--	    perf_evlist__add_newtp(evlist, "raw_syscalls", "sys_exit", trace__sys_exit)) {
--		fprintf(trace->output, "Couldn't read the raw_syscalls tracepoints information!\n");
--		goto out_delete_evlist;
--	}
-+		perf_evlist__add_newtp(evlist, "raw_syscalls", "sys_exit", trace__sys_exit))
-+		goto out_error_tp;
- 
- 	if (trace->sched &&
--	    perf_evlist__add_newtp(evlist, "sched", "sched_stat_runtime",
--				   trace__sched_stat_runtime)) {
--		fprintf(trace->output, "Couldn't read the sched_stat_runtime tracepoint information!\n");
--		goto out_delete_evlist;
--	}
-+		perf_evlist__add_newtp(evlist, "sched", "sched_stat_runtime",
-+				trace__sched_stat_runtime))
-+		goto out_error_tp;
- 
- 	err = perf_evlist__create_maps(evlist, &trace->opts.target);
- 	if (err < 0) {
-@@ -1717,6 +1713,29 @@ out_delete_evlist:
- out:
- 	trace->live = false;
- 	return err;
-+out_error_tp:
-+	switch(errno) {
-+	case ENOENT:
-+		fputs("Error:\tUnable to find debugfs\n"
-+		      "Hint:\tWas your kernel was compiled with debugfs support?\n"
-+		      "Hint:\tIs the debugfs filesystem mounted?\n"
-+		      "Hint:\tTry 'sudo mount -t debugfs nodev /sys/kernel/debug'\n",
-+		      trace->output);
-+		break;
-+	case EACCES:
-+		fprintf(trace->output,
-+			"Error:\tNo permissions to read %s/tracing/events/raw_syscalls\n"
-+			"Hint:\tTry 'sudo mount -o remount,mode=755 %s'\n",
-+			debugfs_mountpoint, debugfs_mountpoint);
-+		break;
-+	default: {
-+		char bf[256];
-+		fprintf(trace->output, "Can't trace: %s\n",
-+			strerror_r(errno, bf, sizeof(bf)));
-+	}
-+		break;
-+	}
-+	goto out_delete_evlist;
+diff --git a/tools/perf/util/intlist.c b/tools/perf/util/intlist.c
+index 826d7b3..89715b6 100644
+--- a/tools/perf/util/intlist.c
++++ b/tools/perf/util/intlist.c
+@@ -58,22 +58,36 @@ void intlist__remove(struct intlist *ilist, struct int_node *node)
+ 	rblist__remove_node(&ilist->rblist, &node->rb_node);
  }
  
- static int trace__replay(struct trace *trace)
+-struct int_node *intlist__find(struct intlist *ilist, int i)
++static struct int_node *__intlist__findnew(struct intlist *ilist,
++					   int i, bool create)
+ {
+-	struct int_node *node;
++	struct int_node *node = NULL;
+ 	struct rb_node *rb_node;
+ 
+ 	if (ilist == NULL)
+ 		return NULL;
+ 
+-	node = NULL;
+-	rb_node = rblist__find(&ilist->rblist, (void *)((long)i));
++	if (create)
++		rb_node = rblist__findnew(&ilist->rblist, (void *)((long)i));
++	else
++		rb_node = rblist__find(&ilist->rblist, (void *)((long)i));
++
+ 	if (rb_node)
+ 		node = container_of(rb_node, struct int_node, rb_node);
+ 
+ 	return node;
+ }
+ 
++struct int_node *intlist__find(struct intlist *ilist, int i)
++{
++	return __intlist__findnew(ilist, i, false);
++}
++
++struct int_node *intlist__findnew(struct intlist *ilist, int i)
++{
++	return __intlist__findnew(ilist, i, true);
++}
++
+ static int intlist__parse_list(struct intlist *ilist, const char *s)
+ {
+ 	char *sep;
+diff --git a/tools/perf/util/intlist.h b/tools/perf/util/intlist.h
+index 0eb00ac..aa6877d 100644
+--- a/tools/perf/util/intlist.h
++++ b/tools/perf/util/intlist.h
+@@ -24,6 +24,7 @@ int intlist__add(struct intlist *ilist, int i);
+ 
+ struct int_node *intlist__entry(const struct intlist *ilist, unsigned int idx);
+ struct int_node *intlist__find(struct intlist *ilist, int i);
++struct int_node *intlist__findnew(struct intlist *ilist, int i);
+ 
+ static inline bool intlist__has_entry(struct intlist *ilist, int i)
+ {
+diff --git a/tools/perf/util/rblist.c b/tools/perf/util/rblist.c
+index a16cdd2..0dfe27d 100644
+--- a/tools/perf/util/rblist.c
++++ b/tools/perf/util/rblist.c
+@@ -48,10 +48,12 @@ void rblist__remove_node(struct rblist *rblist, struct rb_node *rb_node)
+ 	rblist->node_delete(rblist, rb_node);
+ }
+ 
+-struct rb_node *rblist__find(struct rblist *rblist, const void *entry)
++static struct rb_node *__rblist__findnew(struct rblist *rblist,
++					 const void *entry,
++					 bool create)
+ {
+ 	struct rb_node **p = &rblist->entries.rb_node;
+-	struct rb_node *parent = NULL;
++	struct rb_node *parent = NULL, *new_node = NULL;
+ 
+ 	while (*p != NULL) {
+ 		int rc;
+@@ -67,7 +69,26 @@ struct rb_node *rblist__find(struct rblist *rblist, const void *entry)
+ 			return parent;
+ 	}
+ 
+-	return NULL;
++	if (create) {
++		new_node = rblist->node_new(rblist, entry);
++		if (new_node) {
++			rb_link_node(new_node, parent, p);
++			rb_insert_color(new_node, &rblist->entries);
++			++rblist->nr_entries;
++		}
++	}
++
++	return new_node;
++}
++
++struct rb_node *rblist__find(struct rblist *rblist, const void *entry)
++{
++	return __rblist__findnew(rblist, entry, false);
++}
++
++struct rb_node *rblist__findnew(struct rblist *rblist, const void *entry)
++{
++	return __rblist__findnew(rblist, entry, true);
+ }
+ 
+ void rblist__init(struct rblist *rblist)
+diff --git a/tools/perf/util/rblist.h b/tools/perf/util/rblist.h
+index 6d0cae5..ff9913b 100644
+--- a/tools/perf/util/rblist.h
++++ b/tools/perf/util/rblist.h
+@@ -32,6 +32,7 @@ void rblist__delete(struct rblist *rblist);
+ int rblist__add_node(struct rblist *rblist, const void *new_entry);
+ void rblist__remove_node(struct rblist *rblist, struct rb_node *rb_node);
+ struct rb_node *rblist__find(struct rblist *rblist, const void *entry);
++struct rb_node *rblist__findnew(struct rblist *rblist, const void *entry);
+ struct rb_node *rblist__entry(const struct rblist *rblist, unsigned int idx);
+ 
+ static inline bool rblist__empty(const struct rblist *rblist)
