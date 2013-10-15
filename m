@@ -1,96 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758070Ab3JOJOU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 05:14:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36703 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751993Ab3JOJOS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 05:14:18 -0400
-Date: Tue, 15 Oct 2013 11:14:01 +0200
-From: Borislav Petkov <bp@suse.de>
-To: Jacob Pan <jacob.jun.pan@linux.intel.com>
-Cc: Zhang Rui <rui.zhang@intel.com>, Linux PM <linux-pm@vger.kernel.org>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        LKML <linux-kernel@vger.kernel.org>, acme@redhat.com,
-        dhowells@redhat.com, bp@suse.de, gthelen@google.com,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>
-Subject: Re: [PATCH v1] tools/thermal: Introduce tmon, a tool for thermal
- subsystem
-Message-ID: <20131015091401.GA8013@pd.tnic>
-References: <1381791747-7458-1-git-send-email-jacob.jun.pan@linux.intel.com>
- <1381791747-7458-2-git-send-email-jacob.jun.pan@linux.intel.com>
+	id S1754507Ab3JOJTX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 05:19:23 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:16156 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751219Ab3JOJTV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 05:19:21 -0400
+Message-ID: <525D0896.6020907@atmel.com>
+Date: Tue, 15 Oct 2013 11:19:18 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1381791747-7458-2-git-send-email-jacob.jun.pan@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+CC: Josh Wu <josh.wu@atmel.com>, Bo Shen <voice.shen@atmel.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-serial@vger.kernel.org>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] tty/serial: at91: add a fallback option to determine
+ uart/usart property
+References: <a58fe8bc7fdd128a2f9cf60785f81ebde4c0c247.1381394411.git.nicolas.ferre@atmel.com> <64f8f1db6f888456be8ee410a7e9bb9851d070a5.1381394411.git.nicolas.ferre@atmel.com> <20131014135921.GG11420@ns203013.ovh.net>
+In-Reply-To: <20131014135921.GG11420@ns203013.ovh.net>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 14, 2013 at 04:02:27PM -0700, Jacob Pan wrote:
-> Increasingly, Linux is running on thermally constrained devices. The simple
-> thermal relationship between processor and fan has become past for modern
-> computers.
-> 
-> As hardware vendors cope with the thermal constraints on their products,
-> more sensors are added, new cooling capabilities are introduced. The
-> complexity of the thermal relationship can grow exponentially among cooling
-> devices, zones, sensors, and trip points. They can also change dynamically.
-> 
-> To expose such relationship to the userspace, Linux generic thermal layer
-> introduced sysfs entry at /sys/class/thermal with a matrix of symbolic
-> links, trip point bindings, and device instances. To traverse such
-> matrix by hand is not a trivial task. Testing is also difficult in that
-> thermal conditions are often exception cases that hard to reach in
-> normal operations.
-> 
-> TMON is conceived as a tool to help visualize, tune, and test the
-> complex thermal subsystem.
-> 
-> Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
-> ---
->  tools/Makefile              |   15 +-
->  tools/thermal/tmon/Makefile |   47 ++++
->  tools/thermal/tmon/README   |   50 ++++
->  tools/thermal/tmon/pid.c    |  131 +++++++++
->  tools/thermal/tmon/sysfs.c  |  596 ++++++++++++++++++++++++++++++++++++++++
->  tools/thermal/tmon/tmon.8   |  142 ++++++++++
->  tools/thermal/tmon/tmon.c   |  352 ++++++++++++++++++++++++
->  tools/thermal/tmon/tmon.h   |  204 ++++++++++++++
->  tools/thermal/tmon/tui.c    |  638 +++++++++++++++++++++++++++++++++++++++++++
->  9 files changed, 2173 insertions(+), 2 deletions(-)
->  create mode 100644 tools/thermal/tmon/Makefile
->  create mode 100644 tools/thermal/tmon/README
->  create mode 100644 tools/thermal/tmon/pid.c
->  create mode 100644 tools/thermal/tmon/sysfs.c
->  create mode 100644 tools/thermal/tmon/tmon.8
->  create mode 100644 tools/thermal/tmon/tmon.c
->  create mode 100644 tools/thermal/tmon/tmon.h
->  create mode 100644 tools/thermal/tmon/tui.c
+On 14/10/2013 15:59, Jean-Christophe PLAGNIOL-VILLARD :
+> On 10:43 Thu 10 Oct     , Nicolas Ferre wrote:
+>> On older SoC, the "name" field is not filled in the register map.
+>> Fix the way to figure out if the serial port is an uart or an usart for these
+>> older products (with corresponding properties).
+>>
+>> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+>> ---
+>>   drivers/tty/serial/atmel_serial.c | 19 ++++++++++++++++++-
+>>   include/linux/atmel_serial.h      |  1 +
+>>   2 files changed, 19 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/tty/serial/atmel_serial.c b/drivers/tty/serial/atmel_serial.c
+>> index 6b0f75e..c7d99af 100644
+>> --- a/drivers/tty/serial/atmel_serial.c
+>> +++ b/drivers/tty/serial/atmel_serial.c
+>> @@ -99,6 +99,7 @@ static void atmel_stop_rx(struct uart_port *port);
+>>   #define UART_PUT_RTOR(port,v)	__raw_writel(v, (port)->membase + ATMEL_US_RTOR)
+>>   #define UART_PUT_TTGR(port, v)	__raw_writel(v, (port)->membase + ATMEL_US_TTGR)
+>>   #define UART_GET_IP_NAME(port)	__raw_readl((port)->membase + ATMEL_US_NAME)
+>> +#define UART_GET_IP_VERSION(port) __raw_readl((port)->membase + ATMEL_US_VERSION)
+>>
+>>    /* PDC registers */
+>>   #define UART_PUT_PTCR(port,v)	__raw_writel(v, (port)->membase + ATMEL_PDC_PTCR)
+>> @@ -1503,6 +1504,7 @@ static void atmel_get_ip_name(struct uart_port *port)
+>>   {
+>>   	struct atmel_uart_port *atmel_port = to_atmel_uart_port(port);
+>>   	int name = UART_GET_IP_NAME(port);
+>> +	u32 version;
+>>   	int usart, uart;
+>>   	/* usart and uart ascii */
+>>   	usart = 0x55534152;
+>> @@ -1517,7 +1519,22 @@ static void atmel_get_ip_name(struct uart_port *port)
+>>   		dev_dbg(port->dev, "This is uart\n");
+>>   		atmel_port->is_usart = false;
+>>   	} else {
+>> -		dev_err(port->dev, "Not supported ip name, set to uart\n");
+>> +		/* fallback for older SoCs: use version field */
+>> +		version = UART_GET_IP_VERSION(port);
+>> +		switch (version) {
+>> +		case 0x302:
+>> +		case 0x10213:
+>> +			dev_dbg(port->dev, "This version is usart\n");
+>> +			atmel_port->is_usart = true;
+>> +			break;
+>> +		case 0x203:
+>> +		case 0x10202:
+>> +			dev_dbg(port->dev, "This version is uart\n");
+>> +			atmel_port->is_usart = false;
+>> +			break;
+>> +		default:
+>> +			dev_err(port->dev, "Not supported ip name nor version, set to uart\n");
+>
+> it's not really an error a dev_warn is more oppropriate
 
-Just a couple of notes/questions:
+As we are already in -rc5 and that these fixes are critical for at91 
+platforms, I will not re-spin another patch just for this.
 
-* Why does this have to be in the kernel src repo? I mean, it only
-needs stable sysfs interface but other than that, it can very well be a
-separate project on github or so. Or am I missing something?
+Moreover, I have the feeling that if we end up in this case, it means 
+that we are in big troubles because the usart/uart included in the 
+product triggering this log is not known (I recall that newer products 
+do not have to hit these lines of code).
 
-* So I tried it and I can control the brightness and the target CPU
-temperature, cool! :) The question is: can I cook my box with it or
-there are protections like filtering values which might be detrimental
-to the system? After all, I'm running it as root.
+With these 2 reasons, I prefer to keep my patch like it is.
 
-* Also, please run this through checkpatch first:
+Greg, can you consider taking these two patches as regression fixes for 
+3.12 (with Tested-by tag from Thomas)?
 
-  total: 1 errors, 0 warnings, 91 checks, 2202 lines checked
+Thanks, bye,
 
-  Also, the manpage should be checked for typos and excessive spaces.
+>> +		}
+>>   	}
+>>   }
+>>
+>> diff --git a/include/linux/atmel_serial.h b/include/linux/atmel_serial.h
+>> index be201ca..00beddf 100644
+>> --- a/include/linux/atmel_serial.h
+>> +++ b/include/linux/atmel_serial.h
+>> @@ -125,5 +125,6 @@
+>>   #define ATMEL_US_IF		0x4c			/* IrDA Filter Register */
+>>
+>>   #define ATMEL_US_NAME		0xf0			/* Ip Name */
+>> +#define ATMEL_US_VERSION	0xfc			/* Ip Version */
+>>
+>>   #endif
+>> --
+>> 1.8.2.2
+>>
+>
+>
 
-Thanks.
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Nicolas Ferre
