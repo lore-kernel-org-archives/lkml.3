@@ -1,89 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933556Ab3JOSOp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 14:14:45 -0400
-Received: from mail-qe0-f42.google.com ([209.85.128.42]:55692 "EHLO
-	mail-qe0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932555Ab3JOSOn (ORCPT
+	id S933493Ab3JOSRz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 14:17:55 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:34880 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932555Ab3JOSRx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 14:14:43 -0400
+	Tue, 15 Oct 2013 14:17:53 -0400
+Date: Tue, 15 Oct 2013 23:47:23 +0530
+From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+To: "Chen, Gong" <gong.chen@linux.intel.com>
+Cc: tony.luck@intel.com, bp@alien8.de, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 2/8] ACPI, CPER: Update cper info
+Message-ID: <20131015181723.GC2777@naverao1-tp.ibm.com>
+References: <1381473166-29303-1-git-send-email-gong.chen@linux.intel.com>
+ <1381473166-29303-3-git-send-email-gong.chen@linux.intel.com>
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
-In-Reply-To: <1381850098-12357-1-git-send-email-pdeschrijver@nvidia.com>
-References: <1381850098-12357-1-git-send-email-pdeschrijver@nvidia.com>
-Date: Tue, 15 Oct 2013 11:14:42 -0700
-Message-ID: <CAOesGMiXDqO9tKaj1s_hN32q_bPdLVojWPe2LweURDq-b2784w@mail.gmail.com>
-Subject: Re: [PATCH v2 0/7] Tegra124 clock support
-From: Olof Johansson <olof@lixom.net>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-Cc: Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1381473166-29303-3-git-send-email-gong.chen@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13101518-7014-0000-0000-000003C403D8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[devicetree to bcc]
+On 2013/10/11 02:32AM, Chen Gong wrote:
+> To satisfy the necessary of following patches and make related definition
+> more clear, update some definitions about CPER. No functional changes.
+> 
+> Signed-off-by: Chen, Gong <gong.chen@linux.intel.com>
+> ---
+>  drivers/acpi/apei/apei-internal.h | 12 ++++-----
+>  drivers/acpi/apei/cper.c          | 46 ++++++++++++++++-----------------
+>  drivers/acpi/apei/ghes.c          | 54 +++++++++++++++++++--------------------
+>  include/acpi/actbl1.h             | 14 +++++-----
+>  include/acpi/ghes.h               |  2 +-
+>  5 files changed, 64 insertions(+), 64 deletions(-)
+> 
+> diff --git a/drivers/acpi/apei/apei-internal.h b/drivers/acpi/apei/apei-internal.h
+> index f220d64..21ba34a 100644
+> --- a/drivers/acpi/apei/apei-internal.h
+> +++ b/drivers/acpi/apei/apei-internal.h
+> @@ -122,11 +122,11 @@ struct dentry;
+>  struct dentry *apei_get_debugfs_dir(void);
+>  
+>  #define apei_estatus_for_each_section(estatus, section)			\
+> -	for (section = (struct acpi_hest_generic_data *)(estatus + 1);	\
+> +	for (section = (struct acpi_generic_data *)(estatus + 1);	\
 
-Peter,
+This is a good one to rename, though I wonder if acpi_generic_error_data
+is more appropriate?
 
-Please don't post driver/platform patches to the devicetree list. Only
-bindings updates should be posted here.
+>  	     (void *)section - (void *)estatus < estatus->data_length;	\
+>  	     section = (void *)(section+1) + section->error_data_length)
+>  
+> -static inline u32 apei_estatus_len(struct acpi_hest_generic_status *estatus)
+> +static inline u32 cper_estatus_len(struct acpi_generic_status *estatus)
 
-Otherwise the volume of patches make the people who need to see the
-and review the bindings run for the hills. :-)
+Not sure I understand the rationale for these changes - we are still
+dealing with ACPI/APEI generic error status/data structures. So, why
+the cper_ prefix?
+
+>  {
+>  	if (estatus->raw_data_length)
+>  		return estatus->raw_data_offset + \
+> @@ -135,10 +135,10 @@ static inline u32 apei_estatus_len(struct acpi_hest_generic_status *estatus)
+>  		return sizeof(*estatus) + estatus->data_length;
+>  }
+>  
+> -void apei_estatus_print(const char *pfx,
+> -			const struct acpi_hest_generic_status *estatus);
+> -int apei_estatus_check_header(const struct acpi_hest_generic_status *estatus);
+> -int apei_estatus_check(const struct acpi_hest_generic_status *estatus);
+> +void cper_estatus_print(const char *pfx,
+> +			const struct acpi_generic_status *estatus);
+> +int cper_estatus_check_header(const struct acpi_generic_status *estatus);
+> +int cper_estatus_check(const struct acpi_generic_status *estatus);
+
+Same here. All the above functions work on ACPI structures...
+
+>  /* Values for block_status flags above */
+>  
+> -#define ACPI_HEST_UNCORRECTABLE             (1)
+> -#define ACPI_HEST_CORRECTABLE               (1<<1)
+> -#define ACPI_HEST_MULTIPLE_UNCORRECTABLE    (1<<2)
+> -#define ACPI_HEST_MULTIPLE_CORRECTABLE      (1<<3)
+> -#define ACPI_HEST_ERROR_ENTRY_COUNT         (0xFF<<4)	/* 8 bits, error count */
+> +#define ACPI_GEN_ERR_UC			(1)
+> +#define ACPI_GEN_ERR_CE			(1<<1)
+> +#define ACPI_GEN_ERR_MULTI_UC		(1<<2)
+> +#define ACPI_GEN_ERR_MULTI_CE		(1<<3)
+> +#define ACPI_GEN_ERR_COUNT_SHIFT	(0xFF<<4) /* 8 bits, error count */
+
+I'd prefer ACPI_GENERIC_ERR_ since ACPI_GEN_ERR sounds far too much like
+ACPI "Generated" :)
 
 
--Olof
+Thanks,
+Naveen
 
-On Tue, Oct 15, 2013 at 8:14 AM, Peter De Schrijver
-<pdeschrijver@nvidia.com> wrote:
-> This series introduces support for the Tegra124 CAR clocks.
-> Based on '[PATCH v3 00/12] Introduce common infra for tegra clocks'
->
-> changes since v1:
->
-> + suspend/resume for LP1 (Joseph Lo)
-> + fixed some comments
-> + account for changes to the common infra code
->
-> Joseph Lo (2):
->   clk: tegra124: add wait_for_reset and disable_clock for
->     tegra_cpu_car_ops
->   clk: tegra124: add suspend/resume function for tegra_cpu_car_ops
->
-> Peter De Schrijver (5):
->   clk: tegra: Add support for PLLSS
->   clk: tegra: Add periph regs bank X
->   clk: tegra124: Add common clk IDs to clk-id.h
->   clk: tegra124: Add new peripheral clocks
->   clk: tegra124: Add support for Tegra124 clocks
->
->  drivers/clk/tegra/Makefile               |    1 +
->  drivers/clk/tegra/clk-id.h               |   20 +
->  drivers/clk/tegra/clk-pll.c              |  172 ++++
->  drivers/clk/tegra/clk-tegra-periph.c     |   55 ++
->  drivers/clk/tegra/clk-tegra124.c         | 1430 ++++++++++++++++++++++++++++++
->  drivers/clk/tegra/clk.c                  |   10 +
->  drivers/clk/tegra/clk.h                  |    5 +
->  include/dt-bindings/clock/tegra124-car.h |  341 +++++++
->  8 files changed, 2034 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/clk/tegra/clk-tegra124.c
->  create mode 100644 include/dt-bindings/clock/tegra124-car.h
->
-> --
-> 1.7.7.rc0.72.g4b5ea.dirty
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe devicetree" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
