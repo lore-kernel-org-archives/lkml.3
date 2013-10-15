@@ -1,55 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759627Ab3JOTWP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 15:22:15 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:34940 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757481Ab3JOTWL (ORCPT
+	id S1759711Ab3JOTW0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 15:22:26 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41368 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759630Ab3JOTWR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 15:22:11 -0400
-Message-ID: <525D95A4.3020706@cogentembedded.com>
-Date: Tue, 15 Oct 2013 23:21:08 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Soren Brinkmann <soren.brinkmann@xilinx.com>
-CC: Nicolas Ferre <nicolas.ferre@atmel.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Michal Simek <michal.simek@xilinx.com>
-Subject: Re: [PATCH RFC 4/5] net: macb: Use devm_request_irq()
-References: <1381795140-10792-1-git-send-email-soren.brinkmann@xilinx.com> <1381795140-10792-5-git-send-email-soren.brinkmann@xilinx.com>
-In-Reply-To: <1381795140-10792-5-git-send-email-soren.brinkmann@xilinx.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 15 Oct 2013 15:22:17 -0400
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: broonie@kernel.org
+Cc: lgirdwood@gmail.com, lee.jones@linaro.org, sameo@linux.intel.org,
+        linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Subject: [PATCH 3/3 v2] mfd: arizona: Specify supply mappings for Arizona CODECs
+Date: Tue, 15 Oct 2013 20:12:36 +0100
+Message-Id: <1381864356-26107-4-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1381864356-26107-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+References: <1381864356-26107-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+The CODEC power supplies should be looked up on the Arizona device as
+they will be created here by device tree also update the only user of
+non-device tree bindings.
 
-On 10/15/2013 03:58 AM, Soren Brinkmann wrote:
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+---
+ arch/arm/mach-s3c64xx/mach-crag6410.c |   12 ------------
+ drivers/mfd/arizona-core.c            |   32 +++++++++++++++++++++++++++++---
+ 2 files changed, 29 insertions(+), 15 deletions(-)
 
-> Use the device managed interface to request the IRQ, simplifying error
-> paths.
-
-> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-> ---
->   drivers/net/ethernet/cadence/macb.c | 8 +++-----
->   1 file changed, 3 insertions(+), 5 deletions(-)
-
-> diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
-> index 436aecc31732..603844b1d483 100644
-> --- a/drivers/net/ethernet/cadence/macb.c
-> +++ b/drivers/net/ethernet/cadence/macb.c
-> @@ -1825,7 +1825,8 @@ static int __init macb_probe(struct platform_device *pdev)
->   	}
->
->   	dev->irq = platform_get_irq(pdev, 0);
-> -	err = request_irq(dev->irq, macb_interrupt, 0, dev->name, dev);
-> +	err = devm_request_irq(&pdev->dev, dev->irq, macb_interrupt, 0,
-> +			dev->name, dev);
-
-    You should start the continuation line right under &.
-
-WBR, Sergei
+diff --git a/arch/arm/mach-s3c64xx/mach-crag6410.c b/arch/arm/mach-s3c64xx/mach-crag6410.c
+index eb8e5a1..f27ca3b 100644
+--- a/arch/arm/mach-s3c64xx/mach-crag6410.c
++++ b/arch/arm/mach-s3c64xx/mach-crag6410.c
+@@ -310,10 +310,6 @@ static struct regulator_consumer_supply wallvdd_consumers[] = {
+ 
+ 	REGULATOR_SUPPLY("SPKVDDL", "spi0.1"),
+ 	REGULATOR_SUPPLY("SPKVDDR", "spi0.1"),
+-	REGULATOR_SUPPLY("SPKVDDL", "wm5102-codec"),
+-	REGULATOR_SUPPLY("SPKVDDR", "wm5102-codec"),
+-	REGULATOR_SUPPLY("SPKVDDL", "wm5110-codec"),
+-	REGULATOR_SUPPLY("SPKVDDR", "wm5110-codec"),
+ 
+ 	REGULATOR_SUPPLY("DC1VDD", "0-0034"),
+ 	REGULATOR_SUPPLY("DC2VDD", "0-0034"),
+@@ -653,14 +649,6 @@ static struct regulator_consumer_supply pvdd_1v8_consumers[] = {
+ 	REGULATOR_SUPPLY("DBVDD3", "spi0.1"),
+ 	REGULATOR_SUPPLY("LDOVDD", "spi0.1"),
+ 	REGULATOR_SUPPLY("CPVDD", "spi0.1"),
+-
+-	REGULATOR_SUPPLY("DBVDD2", "wm5102-codec"),
+-	REGULATOR_SUPPLY("DBVDD3", "wm5102-codec"),
+-	REGULATOR_SUPPLY("CPVDD", "wm5102-codec"),
+-
+-	REGULATOR_SUPPLY("DBVDD2", "wm5110-codec"),
+-	REGULATOR_SUPPLY("DBVDD3", "wm5110-codec"),
+-	REGULATOR_SUPPLY("CPVDD", "wm5110-codec"),
+ };
+ 
+ static struct regulator_init_data pvdd_1v8 = {
+diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
+index 5ac3aa4..022b186 100644
+--- a/drivers/mfd/arizona-core.c
++++ b/drivers/mfd/arizona-core.c
+@@ -569,13 +569,25 @@ static struct mfd_cell early_devs[] = {
+ 	{ .name = "arizona-ldo1" },
+ };
+ 
++static const char *wm5102_supplies[] = {
++	"DBVDD2",
++	"DBVDD3",
++	"CPVDD",
++	"SPKVDDL",
++	"SPKVDDR",
++};
++
+ static struct mfd_cell wm5102_devs[] = {
+ 	{ .name = "arizona-micsupp" },
+ 	{ .name = "arizona-extcon" },
+ 	{ .name = "arizona-gpio" },
+ 	{ .name = "arizona-haptics" },
+ 	{ .name = "arizona-pwm" },
+-	{ .name = "wm5102-codec" },
++	{
++		.name = "wm5102-codec",
++		.parent_supplies = wm5102_supplies,
++		.num_parent_supplies = ARRAY_SIZE(wm5102_supplies),
++	},
+ };
+ 
+ static struct mfd_cell wm5110_devs[] = {
+@@ -584,7 +596,17 @@ static struct mfd_cell wm5110_devs[] = {
+ 	{ .name = "arizona-gpio" },
+ 	{ .name = "arizona-haptics" },
+ 	{ .name = "arizona-pwm" },
+-	{ .name = "wm5110-codec" },
++	{
++		.name = "wm5110-codec",
++		.parent_supplies = wm5102_supplies,
++		.num_parent_supplies = ARRAY_SIZE(wm5102_supplies),
++	},
++};
++
++static const char *wm8997_supplies[] = {
++	"DBVDD2",
++	"CPVDD",
++	"SPKVDD",
+ };
+ 
+ static struct mfd_cell wm8997_devs[] = {
+@@ -593,7 +615,11 @@ static struct mfd_cell wm8997_devs[] = {
+ 	{ .name = "arizona-gpio" },
+ 	{ .name = "arizona-haptics" },
+ 	{ .name = "arizona-pwm" },
+-	{ .name = "wm8997-codec" },
++	{
++		.name = "wm8997-codec",
++		.parent_supplies = wm8997_supplies,
++		.num_parent_supplies = ARRAY_SIZE(wm8997_supplies),
++	},
+ };
+ 
+ int arizona_dev_init(struct arizona *arizona)
+-- 
+1.7.2.5
 
