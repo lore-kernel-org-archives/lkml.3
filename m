@@ -1,58 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754651Ab3JOIHF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 04:07:05 -0400
-Received: from mailout03.t-online.de ([194.25.134.81]:40737 "EHLO
-	mailout03.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752276Ab3JOIG7 (ORCPT
+	id S1753731Ab3JOIO1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 04:14:27 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:23398 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750987Ab3JOIOZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 04:06:59 -0400
-Message-ID: <525CF790.2090805@t-online.de>
-Date: Tue, 15 Oct 2013 10:06:40 +0200
-From: Knut Petersen <Knut_Petersen@t-online.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Tue, 15 Oct 2013 04:14:25 -0400
+Message-ID: <525CF95E.9040609@atmel.com>
+Date: Tue, 15 Oct 2013 10:14:22 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVj?= =?UTF-8?B?a2Vy?= 
-	<fweisbec@gmail.com>,
-        Greg KH <greg@kroah.com>, linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG 3.12.rc4] Oops: unable to handle kernel paging request during
- shutdown
-References: <525BD08C.2080101@t-online.de> <CA+55aFwN++wO=rTFaH7m6YYQX+Fv3qDt6Hxs7UnPUJpFsrwSkA@mail.gmail.com> <20131014212830.GD5790@linux.vnet.ibm.com> <525C67B0.8020303@t-online.de> <20131014231603.GF5790@linux.vnet.ibm.com> <20131015005938.GA13655@linux.vnet.ibm.com>
-In-Reply-To: <20131015005938.GA13655@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-ID: ECp0TTZZghHk6IBxYZEYWNdbSmOtpoj2JrZF6qjImhLT2bQxRuMvKTncuCX18tHQzn
-X-TOI-MSGID: 477c0bb0-3f64-4a78-b41e-0d474d718a03
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <ebenard@eukrea.com>,
+        <herbert@gondor.hengli.com.au>, <linux-kernel@vger.kernel.org>,
+        <linux-crypto@vger.kernel.org>
+Subject: Re: [PATCH 2/3] ARM: at91/dt/trivial: before sama5d3, Atmel MPU were
+ using at91 prefix
+References: <ba9872c3bb29c9a06f06caa8e0b4528329f07675.1381769174.git.nicolas.ferre@atmel.com> <a7f43a96aaf83c3348dc631c71c54729f9d0e9e0.1381769174.git.nicolas.ferre@atmel.com> <20131014170951.GJ11420@ns203013.ovh.net>
+In-Reply-To: <20131014170951.GJ11420@ns203013.ovh.net>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15.10.2013 02:59, Paul E. McKenney wrote:
-> On Mon, Oct 14, 2013 at 04:16:03PM -0700, Paul E. McKenney wrote:
->> On Mon, Oct 14, 2013 at 11:52:48PM +0200, Knut Petersen wrote:
->>> On 14.10.2013 23:28, Paul E. McKenney wrote:
->>>> On Mon, Oct 14, 2013 at 10:53:03AM -0700, Linus Torvalds wrote:
+On 14/10/2013 19:09, Jean-Christophe PLAGNIOL-VILLARD :
+> On 18:46 Mon 14 Oct     , Nicolas Ferre wrote:
+>> Change the sha/aes/tdes compatibility string to match common
+>> case for the at91sam9g45 family which is to keep the at91 prefix.
+>>
+>> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+>> ---
+>>   arch/arm/boot/dts/sama5d3.dtsi | 6 +++---
+>>   1 file changed, 3 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/arch/arm/boot/dts/sama5d3.dtsi b/arch/arm/boot/dts/sama5d3.dtsi
+>> index b2aabff..99bd4a6 100644
+>> --- a/arch/arm/boot/dts/sama5d3.dtsi
+>> +++ b/arch/arm/boot/dts/sama5d3.dtsi
+>> @@ -342,19 +342,19 @@
+>>   			};
+>>
+>>   			sha@f8034000 {
+>> -				compatible = "atmel,sam9g46-sha";
+>> +				compatible = "atmel,at91sam9g46-sha";
+>>   				reg = <0xf8034000 0x100>;
+>>   				interrupts = <42 IRQ_TYPE_LEVEL_HIGH 0>;
+>>   			};
+>>
+>>   			aes@f8038000 {
+>> -				compatible = "atmel,sam9g46-aes";
+>> +				compatible = "atmel,at91sam9g46-aes";
+>>   				reg = <0xf8038000 0x100>;
+>>   				interrupts = <43 IRQ_TYPE_LEVEL_HIGH 0>;
+>>   			};
+>>
+>>   			tdes@f803c000 {
+>> -				compatible = "atmel,sam9g46-tdes";
+>> +				compatible = "atmel,at91sam9g46-tdes";
+>>   				reg = <0xf803c000 0x100>;
+>>   				interrupts = <44 IRQ_TYPE_LEVEL_HIGH 0>;
+> you keep the previous compatible in the driver too for backword compatiblity
 
->>>> I´ll run some tests with those debug parameters tomorrow. 
->>>> Any chance of a look at the .config file?
->>> Attached.
->> Thank you!  Looks like a pretty standard RCU setup.  Just to make sure
->> I saw it correctly -- you are running NR_CPUS=1?  Getting races to happen
->> in that mode is truly impressive!
+No, as the consumer of the old compatibility string has never been sent 
+to mainline (or even mailing-list) and as the "dma" property is not 
+compatible with the one existing on our 3.6.9-based kernel.
 
-Yes. The AOpen i915GMm-hfs  is a desktop board with mobile chipset for one Pentium-M.
-As a musician I need an absolutely silent system, and the low power consumption of that
-technology is a nice add-on.
-> Ah, thing...  When running with only one CPU, both of synchronize_rcu_bh()
-> and synchronize_sched() become essentially no-ops.  Anything that expected
-> them to actually sleep would then break.
->
-> However, because you are running with CONFIG_PREEMPT=y, synchronize_rcu()
-> will still block.
->
-> 							Thanx, Paul
+So, anyway the DT has to be changed for a move from 3.6.9 => 3.10. As I 
+do not want to bloat the DT forever, let's stick with this new 
+compatibility string.
+
+Bye,
+
+
+>>   			};
+>> --
+>> 1.8.2.2
+>>
+>>
+>> _______________________________________________
+>> linux-arm-kernel mailing list
+>> linux-arm-kernel@lists.infradead.org
+>> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 >
 
+
+-- 
+Nicolas Ferre
