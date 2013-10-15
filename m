@@ -1,29 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933501Ab3JOFdQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 01:33:16 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33712 "EHLO
+	id S933517Ab3JOFd3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 01:33:29 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33726 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932716Ab3JOFdK (ORCPT
+	with ESMTP id S932716Ab3JOFd0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 01:33:10 -0400
-Date: Mon, 14 Oct 2013 22:32:53 -0700
-From: tip-bot for David Ahern <tipbot@zytor.com>
-Message-ID: <tip-bf2575c121ca11247ef07fd02b43f7430834f7b1@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, jolsa@redhat.com, fweisbec@gmail.com,
-        dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
+	Tue, 15 Oct 2013 01:33:26 -0400
+Date: Mon, 14 Oct 2013 22:33:11 -0700
+From: tip-bot for Felipe Pena <tipbot@zytor.com>
+Message-ID: <tip-1df9297c8535a5bb2b776381e63d8334f87d4abe@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, jolsa@redhat.com, felipensp@gmail.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
         linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, jolsa@redhat.com, fweisbec@gmail.com,
-        dsahern@gmail.com, tglx@linutronix.de
-In-Reply-To: <1381289214-24885-3-git-send-email-dsahern@gmail.com>
-References: <1381289214-24885-3-git-send-email-dsahern@gmail.com>
+        jolsa@redhat.com, felipensp@gmail.com, tglx@linutronix.de
+In-Reply-To: <1381370438-4209-1-git-send-email-felipensp@gmail.com>
+References: <1381370438-4209-1-git-send-email-felipensp@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf trace:
-  Add summary option to dump syscall statistics
-Git-Commit-ID: bf2575c121ca11247ef07fd02b43f7430834f7b1
+Subject: [tip:perf/core] perf tests: Fix memory leak in dso-data.c
+Git-Commit-ID: 1df9297c8535a5bb2b776381e63d8334f87d4abe
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,304 +30,43 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 14 Oct 2013 22:32:59 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 14 Oct 2013 22:33:17 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  bf2575c121ca11247ef07fd02b43f7430834f7b1
-Gitweb:     http://git.kernel.org/tip/bf2575c121ca11247ef07fd02b43f7430834f7b1
-Author:     David Ahern <dsahern@gmail.com>
-AuthorDate: Tue, 8 Oct 2013 21:26:53 -0600
+Commit-ID:  1df9297c8535a5bb2b776381e63d8334f87d4abe
+Gitweb:     http://git.kernel.org/tip/1df9297c8535a5bb2b776381e63d8334f87d4abe
+Author:     Felipe Pena <felipensp@gmail.com>
+AuthorDate: Wed, 9 Oct 2013 23:00:38 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 14 Oct 2013 10:28:50 -0300
+CommitDate: Mon, 14 Oct 2013 10:28:54 -0300
 
-perf trace: Add summary option to dump syscall statistics
+perf tests: Fix memory leak in dso-data.c
 
-When enabled dumps a summary of all syscalls by task with the usual
-statistics -- min, max, average and relative stddev. For example,
+Fix for a memory leak on test_file() function in dso-data.c.
 
-make - 26341 :       3344   [ 17.4% ]      0.000 ms
-
-                read :   52    0.000     4.802     0.644   30.08
-               write :   20    0.004     0.036     0.010   21.72
-                open :   24    0.003     0.046     0.014   23.68
-               close :   64    0.002     0.055     0.008   22.53
-                stat : 2714    0.002     0.222     0.004    4.47
-               fstat :   18    0.001     0.041     0.006   46.26
-                mmap :   30    0.003     0.009     0.006    5.71
-            mprotect :    8    0.006     0.039     0.016   32.16
-              munmap :   12    0.007     0.077     0.020   38.25
-                 brk :   48    0.002     0.014     0.004   10.18
-        rt_sigaction :   18    0.002     0.002     0.002    2.11
-      rt_sigprocmask :   60    0.002     0.128     0.010   32.88
-              access :    2    0.006     0.006     0.006    0.00
-                pipe :   12    0.004     0.048     0.013   35.98
-               vfork :   34    0.448     0.980     0.692    3.04
-              execve :   20    0.000     0.387     0.046   56.66
-               wait4 :   34    0.017  9923.287   593.221   68.45
-               fcntl :    8    0.001     0.041     0.013   48.79
-            getdents :   48    0.002     0.079     0.013   19.62
-              getcwd :    2    0.005     0.005     0.005    0.00
-               chdir :    2    0.070     0.070     0.070    0.00
-           getrlimit :    2    0.045     0.045     0.045    0.00
-          arch_prctl :    2    0.002     0.002     0.002    0.00
-           setrlimit :    2    0.002     0.002     0.002    0.00
-              openat :   94    0.003     0.005     0.003    2.11
-
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Felipe Pena <felipensp@gmail.com>
+Acked-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Ingo Molnar <mingo@redhat.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1381289214-24885-3-git-send-email-dsahern@gmail.com
+Link: http://lkml.kernel.org/r/1381370438-4209-1-git-send-email-felipensp@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/perf-trace.txt |   4 ++
- tools/perf/builtin-trace.c              | 110 ++++++++++++++++++++++++++++----
- 2 files changed, 102 insertions(+), 12 deletions(-)
+ tools/perf/tests/dso-data.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/tools/perf/Documentation/perf-trace.txt b/tools/perf/Documentation/perf-trace.txt
-index 1a22486..54139c6 100644
---- a/tools/perf/Documentation/perf-trace.txt
-+++ b/tools/perf/Documentation/perf-trace.txt
-@@ -93,6 +93,10 @@ the thread executes on the designated CPUs. Default is to monitor all CPUs.
- --comm::
-         Show process COMM right beside its ID, on by default, disable with --no-comm.
+diff --git a/tools/perf/tests/dso-data.c b/tools/perf/tests/dso-data.c
+index dffe055..9cc81a3 100644
+--- a/tools/perf/tests/dso-data.c
++++ b/tools/perf/tests/dso-data.c
+@@ -35,6 +35,7 @@ static char *test_file(int size)
+ 	if (size != write(fd, buf, size))
+ 		templ = NULL;
  
-+--summary::
-+	Show a summary of syscalls by thread with min, max, and average times (in
-+    msec) and relative stddev.
-+
- SEE ALSO
- --------
- linkperf:perf-record[1], linkperf:perf-script[1]
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index 5496546..d0f91fe 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -10,6 +10,7 @@
- #include "util/strlist.h"
- #include "util/intlist.h"
- #include "util/thread_map.h"
-+#include "util/stat.h"
- 
- #include <libaudit.h>
- #include <stdlib.h>
-@@ -909,6 +910,8 @@ struct thread_trace {
- 		int	  max;
- 		char	  **table;
- 	} paths;
-+
-+	struct intlist *syscall_stats;
- };
- 
- static struct thread_trace *thread_trace__new(void)
-@@ -918,6 +921,8 @@ static struct thread_trace *thread_trace__new(void)
- 	if (ttrace)
- 		ttrace->paths.max = -1;
- 
-+	ttrace->syscall_stats = intlist__new(NULL);
-+
- 	return ttrace;
++	free(buf);
+ 	close(fd);
+ 	return templ;
  }
- 
-@@ -964,6 +969,7 @@ struct trace {
- 	struct intlist		*pid_list;
- 	bool			sched;
- 	bool			multiple_threads;
-+	bool			summary;
- 	bool			show_comm;
- 	double			duration_filter;
- 	double			runtime_ms;
-@@ -1291,10 +1297,8 @@ typedef int (*tracepoint_handler)(struct trace *trace, struct perf_evsel *evsel,
- 				  struct perf_sample *sample);
- 
- static struct syscall *trace__syscall_info(struct trace *trace,
--					   struct perf_evsel *evsel,
--					   struct perf_sample *sample)
-+					   struct perf_evsel *evsel, int id)
- {
--	int id = perf_evsel__intval(evsel, sample, "id");
- 
- 	if (id < 0) {
- 
-@@ -1335,6 +1339,32 @@ out_cant_read:
- 	return NULL;
- }
- 
-+static void thread__update_stats(struct thread_trace *ttrace,
-+				 int id, struct perf_sample *sample)
-+{
-+	struct int_node *inode;
-+	struct stats *stats;
-+	u64 duration = 0;
-+
-+	inode = intlist__findnew(ttrace->syscall_stats, id);
-+	if (inode == NULL)
-+		return;
-+
-+	stats = inode->priv;
-+	if (stats == NULL) {
-+		stats = malloc(sizeof(struct stats));
-+		if (stats == NULL)
-+			return;
-+		init_stats(stats);
-+		inode->priv = stats;
-+	}
-+
-+	if (ttrace->entry_time && sample->time > ttrace->entry_time)
-+		duration = sample->time - ttrace->entry_time;
-+
-+	update_stats(stats, duration);
-+}
-+
- static int trace__sys_enter(struct trace *trace, struct perf_evsel *evsel,
- 			    struct perf_sample *sample)
- {
-@@ -1342,7 +1372,8 @@ static int trace__sys_enter(struct trace *trace, struct perf_evsel *evsel,
- 	void *args;
- 	size_t printed = 0;
- 	struct thread *thread;
--	struct syscall *sc = trace__syscall_info(trace, evsel, sample);
-+	int id = perf_evsel__intval(evsel, sample, "id");
-+	struct syscall *sc = trace__syscall_info(trace, evsel, id);
- 	struct thread_trace *ttrace;
- 
- 	if (sc == NULL)
-@@ -1394,7 +1425,8 @@ static int trace__sys_exit(struct trace *trace, struct perf_evsel *evsel,
- 	int ret;
- 	u64 duration = 0;
- 	struct thread *thread;
--	struct syscall *sc = trace__syscall_info(trace, evsel, sample);
-+	int id = perf_evsel__intval(evsel, sample, "id");
-+	struct syscall *sc = trace__syscall_info(trace, evsel, id);
- 	struct thread_trace *ttrace;
- 
- 	if (sc == NULL)
-@@ -1408,6 +1440,9 @@ static int trace__sys_exit(struct trace *trace, struct perf_evsel *evsel,
- 	if (ttrace == NULL)
- 		return -1;
- 
-+	if (trace->summary)
-+		thread__update_stats(ttrace, id, sample);
-+
- 	ret = perf_evsel__intval(evsel, sample, "ret");
- 
- 	ttrace = thread->priv;
-@@ -1574,6 +1609,8 @@ static int trace__record(int argc, const char **argv)
- 	return cmd_record(i, rec_argv, NULL);
- }
- 
-+static size_t trace__fprintf_thread_summary(struct trace *trace, FILE *fp);
-+
- static int trace__run(struct trace *trace, int argc, const char **argv)
- {
- 	struct perf_evlist *evlist = perf_evlist__new();
-@@ -1703,6 +1740,9 @@ again:
- 	goto again;
- 
- out_unmap_evlist:
-+	if (!err && trace->summary)
-+		trace__fprintf_thread_summary(trace, trace->output);
-+
- 	perf_evlist__munmap(evlist);
- out_close_evlist:
- 	perf_evlist__close(evlist);
-@@ -1798,6 +1838,9 @@ static int trace__replay(struct trace *trace)
- 	if (err)
- 		pr_err("Failed to process events, error %d", err);
- 
-+	else if (trace->summary)
-+		trace__fprintf_thread_summary(trace, trace->output);
-+
- out:
- 	perf_session__delete(session);
- 
-@@ -1808,10 +1851,53 @@ static size_t trace__fprintf_threads_header(FILE *fp)
- {
- 	size_t printed;
- 
--	printed  = fprintf(fp, "\n _____________________________________________________________________\n");
--	printed += fprintf(fp," __)    Summary of events    (__\n\n");
--	printed += fprintf(fp,"              [ task - pid ]     [ events ] [ ratio ]  [ runtime ]\n");
--	printed += fprintf(fp," _____________________________________________________________________\n\n");
-+	printed  = fprintf(fp, "\n _____________________________________________________________________________\n");
-+	printed += fprintf(fp, " __)    Summary of events    (__\n\n");
-+	printed += fprintf(fp, "              [ task - pid ]     [ events ] [ ratio ]  [ runtime ]\n");
-+	printed += fprintf(fp, "                                  syscall  count    min     max    avg  stddev\n");
-+	printed += fprintf(fp, "                                                   msec    msec   msec     %%\n");
-+	printed += fprintf(fp, " _____________________________________________________________________________\n\n");
-+
-+	return printed;
-+}
-+
-+static size_t thread__dump_stats(struct thread_trace *ttrace,
-+				 struct trace *trace, FILE *fp)
-+{
-+	struct stats *stats;
-+	size_t printed = 0;
-+	struct syscall *sc;
-+	struct int_node *inode = intlist__first(ttrace->syscall_stats);
-+
-+	if (inode == NULL)
-+		return 0;
-+
-+	printed += fprintf(fp, "\n");
-+
-+	/* each int_node is a syscall */
-+	while (inode) {
-+		stats = inode->priv;
-+		if (stats) {
-+			double min = (double)(stats->min) / NSEC_PER_MSEC;
-+			double max = (double)(stats->max) / NSEC_PER_MSEC;
-+			double avg = avg_stats(stats);
-+			double pct;
-+			u64 n = (u64) stats->n;
-+
-+			pct = avg ? 100.0 * stddev_stats(stats)/avg : 0.0;
-+			avg /= NSEC_PER_MSEC;
-+
-+			sc = &trace->syscalls.table[inode->i];
-+			printed += fprintf(fp, "%24s  %14s : ", "", sc->name);
-+			printed += fprintf(fp, "%5" PRIu64 "  %8.3f  %8.3f",
-+					   n, min, max);
-+			printed += fprintf(fp, "  %8.3f  %6.2f\n", avg, pct);
-+		}
-+
-+		inode = intlist__next(inode);
-+	}
-+
-+	printed += fprintf(fp, "\n\n");
- 
- 	return printed;
- }
-@@ -1850,6 +1936,7 @@ static int trace__fprintf_one_thread(struct thread *thread, void *priv)
- 	printed += fprintf(fp, " - %-5d :%11lu   [", thread->tid, ttrace->nr_events);
- 	printed += color_fprintf(fp, color, "%5.1f%%", ratio);
- 	printed += fprintf(fp, " ] %10.3f ms\n", ttrace->runtime_ms);
-+	printed += thread__dump_stats(ttrace, trace, fp);
- 
- 	data->printed += printed;
- 
-@@ -1953,6 +2040,8 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_INCR('v', "verbose", &verbose, "be more verbose"),
- 	OPT_BOOLEAN('T', "time", &trace.full_time,
- 		    "Show full timestamp, not time relative to first start"),
-+	OPT_BOOLEAN(0, "summary", &trace.summary,
-+		    "Show syscall summary with statistics"),
- 	OPT_END()
- 	};
- 	int err;
-@@ -2008,9 +2097,6 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
- 	else
- 		err = trace__run(&trace, argc, argv);
- 
--	if (trace.sched && !err)
--		trace__fprintf_thread_summary(&trace, trace.output);
--
- out_close:
- 	if (output_name != NULL)
- 		fclose(trace.output);
