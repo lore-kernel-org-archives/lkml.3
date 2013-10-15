@@ -1,75 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757873Ab3JOJXq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 05:23:46 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:41340 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751304Ab3JOJXo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 05:23:44 -0400
-Message-ID: <525D099D.1010005@hitachi.com>
-Date: Tue, 15 Oct 2013 18:23:41 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1757903Ab3JOJ3I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 05:29:08 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:47036 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752589Ab3JOJ3F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 05:29:05 -0400
+Date: Tue, 15 Oct 2013 11:28:51 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Chen Gong <gong.chen@linux.intel.com>
+Cc: tony.luck@intel.com, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: Extended H/W error log driver
+Message-ID: <20131015092851.GA7908@pd.tnic>
+References: <1381473166-29303-1-git-send-email-gong.chen@linux.intel.com>
+ <20131011080427.GC18719@pd.tnic>
+ <20131014064940.GD12189@gchen.bj.intel.com>
+ <20131014105533.GF4009@pd.tnic>
+ <20131015040731.GA887@gchen.bj.intel.com>
 MIME-Version: 1.0
-To: Tom Zanussi <tom.zanussi@linux.intel.com>
-Cc: rostedt@goodmis.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v10 04/12] tracing: Add 'snapshot' event trigger command
-References: <cover.1381445299.git.tom.zanussi@linux.intel.com>  <4ed13a4c303b83164992b92dc17d79717bea2116.1381445299.git.tom.zanussi@linux.intel.com>  <52580157.1040300@hitachi.com> <1381500268.19281.19.camel@empanada>
-In-Reply-To: <1381500268.19281.19.camel@empanada>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20131015040731.GA887@gchen.bj.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/10/11 23:04), Tom Zanussi wrote:
-> On Fri, 2013-10-11 at 22:47 +0900, Masami Hiramatsu wrote:
->> (2013/10/11 9:48), Tom Zanussi wrote:
->>>  /**
->>> + * tracing_alloc_snapshot - allocate snapshot buffer.
->>> + *
->>> + * This only allocates the snapshot buffer if it isn't already
->>> + * allocated - it doesn't also take a snapshot.
->>> + *
->>> + * This is meant to be used in cases where the snapshot buffer needs
->>> + * to be set up for events that can't sleep but need to be able to
->>> + * trigger a snapshot.
->>> + */
->>> +int tracing_alloc_snapshot(void)
->>> +{
->>> +	struct trace_array *tr = &global_trace;
->>> +	int ret;
->>> +
->>> +	ret = alloc_snapshot(tr);
->>> +	WARN_ON(ret < 0);
->>> +
->>> +	return ret;
->>> +}
->>> +EXPORT_SYMBOL_GPL(tracing_alloc_snapshot);
->>
->> Out of curiously, why this symbol is exported to modules?
->> The functions which are called directly from trace_event macros
->> should be exported because those macros can be used in module code,
->> but I couldn't find this in such code, at a glance.
->>
+On Tue, Oct 15, 2013 at 12:07:31AM -0400, Chen Gong wrote:
+> Some errors have multiple sub sections like below:
 > 
-> tracing_alloc_snapshot() goes along with tracing_snapshot() and
-> tracing_snapshot_alloc() which are already exported - you should be able
-> to take a snapshot from a module, or do a combined snapshot/alloc or
-> (now) just the alloc.
+> [ 1442.070522] {2}[Hardware Error]: Hardware error from APEI Generic Hardware Error Source: 0
+> [ 1442.070528] {2}[Hardware Error]: event severity: corrected
+> [ 1442.070531] {2}[Hardware Error]: sub_event[0], severity: corrected
+> [ 1442.070534] {2}[Hardware Error]: section_type: memory error
+> [ 1442.070537] {2}[Hardware Error]: error_status: 0x0000000000000000
+> [ 1442.070539] {2}[Hardware Error]: sub_event[1], severity: corrected
+> [ 1442.070541] {2}[Hardware Error]: section_type: memory error
+> [ 1442.070543] {2}[Hardware Error]: error_status: 0x0000000000000000
 
-Hmm, it seems that Steven added these EXPORT_SYMBOL_GPL at commit 1b22e382.
-Steven, would you have any idea to call these functions from outside of
-the ftrace?
+Right, and what do those sub sections mean to the user? Did we have
+multiple errors?
 
-Thank you,
+It looks like this because we have memory errors section type but it is
+not very telling. How about:
+
+
+[ 1442.070522] {2}[Hardware Error]: APEI GHES id 0: Hardware errors logged
+[ 1442.070528] {2}[Hardware Error]: event severity: corrected
+[ 1442.070534] {2}[Hardware Error]:  Error 0, type: corrected memory error.
+[ 1442.070537] {2}[Hardware Error]:   error_status: 0x0000000000000000
+[ 1442.070539] {2}[Hardware Error]:  Error 1, type: corrected memory error.
+[ 1442.070543] {2}[Hardware Error]:   error_status: 0x0000000000000000
+
+I think this is much more human readable and understandable :-)
+
+We can even add a hint for the user like:
+
+	"Above errors have been corrected by the hardware and require no further action."
+
+Btw, this is valid for both dmesg and trace event output.
+
+Because from my experience so far people just scream: "Look, I just had
+an MCE" withot even reading what it says. And this just upsets support
+people for no valid reason at all.
+
+Thanks.
 
 -- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+Regards/Gruss,
+    Boris.
 
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
