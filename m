@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933704Ab3JOSCm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 14:02:42 -0400
-Received: from qmta12.emeryville.ca.mail.comcast.net ([76.96.27.227]:44236
-	"EHLO qmta12.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933368Ab3JOSAy (ORCPT
+	id S933741Ab3JOSD2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 14:03:28 -0400
+Received: from qmta14.emeryville.ca.mail.comcast.net ([76.96.27.212]:45209
+	"EHLO qmta14.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933314Ab3JOSAx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 14:00:54 -0400
-Message-Id: <20131015180051.663916586@linux.com>
+	Tue, 15 Oct 2013 14:00:53 -0400
+Message-Id: <20131015180050.617699312@linux.com>
 User-Agent: quilt/0.60-1
-Date: Tue, 15 Oct 2013 12:58:56 -0500
+Date: Tue, 15 Oct 2013 12:58:54 -0500
 From: Christoph Lameter <cl@linux.com>
 To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linuxfoundation.org
+Cc: akpm@linuxfoundation.org, Thomas Gleixner <tglx@linutronix.de>
 Cc: linux-arch@vger.kernel.org
 Cc: Steven Rostedt <srostedt@redhat.com>
 Cc: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 04/10] mm: Replace __get_cpu_var uses
+Subject: [PATCH 02/10] time: Replace __get_cpu_var uses
 References: <20131015175852.122827685@linux.com>
-Content-Disposition: inline; filename=this_mm
+Content-Disposition: inline; filename=this_time
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -131,108 +131,350 @@ variable.
 
 Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Index: linux/lib/radix-tree.c
+Index: linux/kernel/hrtimer.c
 ===================================================================
---- linux.orig/lib/radix-tree.c	2013-10-07 13:39:13.764376923 -0500
-+++ linux/lib/radix-tree.c	2013-10-07 13:39:13.760376952 -0500
-@@ -221,7 +221,7 @@ radix_tree_node_alloc(struct radix_tree_
- 		 * succeed in getting a node here (and never reach
- 		 * kmem_cache_alloc)
- 		 */
--		rtp = &__get_cpu_var(radix_tree_preloads);
-+		rtp = this_cpu_ptr(&radix_tree_preloads);
- 		if (rtp->nr) {
- 			ret = rtp->nodes[rtp->nr - 1];
- 			rtp->nodes[rtp->nr - 1] = NULL;
-@@ -277,14 +277,14 @@ static int __radix_tree_preload(gfp_t gf
- 	int ret = -ENOMEM;
- 
- 	preempt_disable();
--	rtp = &__get_cpu_var(radix_tree_preloads);
-+	rtp = this_cpu_ptr(&radix_tree_preloads);
- 	while (rtp->nr < ARRAY_SIZE(rtp->nodes)) {
- 		preempt_enable();
- 		node = kmem_cache_alloc(radix_tree_node_cachep, gfp_mask);
- 		if (node == NULL)
- 			goto out;
- 		preempt_disable();
--		rtp = &__get_cpu_var(radix_tree_preloads);
-+		rtp = this_cpu_ptr(&radix_tree_preloads);
- 		if (rtp->nr < ARRAY_SIZE(rtp->nodes))
- 			rtp->nodes[rtp->nr++] = node;
- 		else
-Index: linux/mm/memcontrol.c
-===================================================================
---- linux.orig/mm/memcontrol.c	2013-10-07 13:39:13.764376923 -0500
-+++ linux/mm/memcontrol.c	2013-10-07 13:39:13.760376952 -0500
-@@ -2442,7 +2442,7 @@ static void drain_stock(struct memcg_sto
-  */
- static void drain_local_stock(struct work_struct *dummy)
+--- linux.orig/kernel/hrtimer.c	2013-10-10 11:24:14.410120840 -0500
++++ linux/kernel/hrtimer.c	2013-10-10 11:24:14.402120900 -0500
+@@ -597,7 +597,7 @@ hrtimer_force_reprogram(struct hrtimer_c
+ static int hrtimer_reprogram(struct hrtimer *timer,
+ 			     struct hrtimer_clock_base *base)
  {
--	struct memcg_stock_pcp *stock = &__get_cpu_var(memcg_stock);
-+	struct memcg_stock_pcp *stock = this_cpu_ptr(&memcg_stock);
- 	drain_stock(stock);
- 	clear_bit(FLUSHING_CACHED_CHARGE, &stock->flags);
- }
-Index: linux/mm/memory-failure.c
-===================================================================
---- linux.orig/mm/memory-failure.c	2013-10-07 13:39:13.764376923 -0500
-+++ linux/mm/memory-failure.c	2013-10-07 13:39:13.760376952 -0500
-@@ -1286,7 +1286,7 @@ static void memory_failure_work_func(str
- 	unsigned long proc_flags;
- 	int gotten;
+-	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
++	struct hrtimer_cpu_base *cpu_base = this_cpu_ptr(&hrtimer_bases);
+ 	ktime_t expires = ktime_sub(hrtimer_get_expires(timer), base->offset);
+ 	int res;
  
--	mf_cpu = &__get_cpu_var(memory_failure_cpu);
-+	mf_cpu = this_cpu_ptr(&memory_failure_cpu);
- 	for (;;) {
- 		spin_lock_irqsave(&mf_cpu->lock, proc_flags);
- 		gotten = kfifo_get(&mf_cpu->fifo, &entry);
-Index: linux/mm/page-writeback.c
-===================================================================
---- linux.orig/mm/page-writeback.c	2013-10-07 13:39:13.764376923 -0500
-+++ linux/mm/page-writeback.c	2013-10-07 13:39:13.764376923 -0500
-@@ -1628,7 +1628,7 @@ void balance_dirty_pages_ratelimited(str
- 	 * 1000+ tasks, all of them start dirtying pages at exactly the same
- 	 * time, hence all honoured too large initial task->nr_dirtied_pause.
- 	 */
--	p =  &__get_cpu_var(bdp_ratelimits);
-+	p =  this_cpu_ptr(&bdp_ratelimits);
- 	if (unlikely(current->nr_dirtied >= ratelimit))
- 		*p = 0;
- 	else if (unlikely(*p >= ratelimit_pages)) {
-@@ -1640,7 +1640,7 @@ void balance_dirty_pages_ratelimited(str
- 	 * short-lived tasks (eg. gcc invocations in a kernel build) escaping
- 	 * the dirty throttling and livelock other long-run dirtiers.
- 	 */
--	p = &__get_cpu_var(dirty_throttle_leaks);
-+	p = this_cpu_ptr(&dirty_throttle_leaks);
- 	if (*p > 0 && current->nr_dirtied < ratelimit) {
- 		unsigned long nr_pages_dirtied;
- 		nr_pages_dirtied = min(*p, ratelimit - current->nr_dirtied);
-Index: linux/mm/swap.c
-===================================================================
---- linux.orig/mm/swap.c	2013-10-07 13:39:13.764376923 -0500
-+++ linux/mm/swap.c	2013-10-07 13:39:13.764376923 -0500
-@@ -386,7 +386,7 @@ void rotate_reclaimable_page(struct page
+@@ -680,7 +680,7 @@ static inline ktime_t hrtimer_update_bas
+  */
+ static void retrigger_next_event(void *arg)
+ {
+-	struct hrtimer_cpu_base *base = &__get_cpu_var(hrtimer_bases);
++	struct hrtimer_cpu_base *base = this_cpu_ptr(&hrtimer_bases);
  
- 		page_cache_get(page);
- 		local_irq_save(flags);
--		pvec = &__get_cpu_var(lru_rotate_pvecs);
-+		pvec = this_cpu_ptr(&lru_rotate_pvecs);
- 		if (!pagevec_add(pvec, page))
- 			pagevec_move_tail(pvec);
- 		local_irq_restore(flags);
-Index: linux/mm/vmalloc.c
-===================================================================
---- linux.orig/mm/vmalloc.c	2013-10-07 13:39:13.764376923 -0500
-+++ linux/mm/vmalloc.c	2013-10-07 13:39:13.764376923 -0500
-@@ -1482,7 +1482,7 @@ void vfree(const void *addr)
- 	if (!addr)
+ 	if (!hrtimer_hres_active())
  		return;
- 	if (unlikely(in_interrupt())) {
--		struct vfree_deferred *p = &__get_cpu_var(vfree_deferred);
-+		struct vfree_deferred *p = this_cpu_ptr(&vfree_deferred);
- 		if (llist_add((struct llist_node *)addr, &p->list))
- 			schedule_work(&p->wq);
- 	} else
+@@ -954,7 +954,7 @@ remove_hrtimer(struct hrtimer *timer, st
+ 		 */
+ 		debug_deactivate(timer);
+ 		timer_stats_hrtimer_clear_start_info(timer);
+-		reprogram = base->cpu_base == &__get_cpu_var(hrtimer_bases);
++		reprogram = base->cpu_base == this_cpu_ptr(&hrtimer_bases);
+ 		/*
+ 		 * We must preserve the CALLBACK state flag here,
+ 		 * otherwise we could move the timer base in
+@@ -1009,7 +1009,7 @@ int __hrtimer_start_range_ns(struct hrti
+ 	 *
+ 	 * XXX send_remote_softirq() ?
+ 	 */
+-	if (leftmost && new_base->cpu_base == &__get_cpu_var(hrtimer_bases)
++	if (leftmost && new_base->cpu_base == this_cpu_ptr(&hrtimer_bases)
+ 		&& hrtimer_enqueue_reprogram(timer, new_base)) {
+ 		if (wakeup) {
+ 			/*
+@@ -1142,7 +1142,7 @@ EXPORT_SYMBOL_GPL(hrtimer_get_remaining)
+  */
+ ktime_t hrtimer_get_next_event(void)
+ {
+-	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
++	struct hrtimer_cpu_base *cpu_base = this_cpu_ptr(&hrtimer_bases);
+ 	struct hrtimer_clock_base *base = cpu_base->clock_base;
+ 	ktime_t delta, mindelta = { .tv64 = KTIME_MAX };
+ 	unsigned long flags;
+@@ -1183,7 +1183,7 @@ static void __hrtimer_init(struct hrtime
+ 
+ 	memset(timer, 0, sizeof(struct hrtimer));
+ 
+-	cpu_base = &__raw_get_cpu_var(hrtimer_bases);
++	cpu_base = raw_cpu_ptr(&hrtimer_bases);
+ 
+ 	if (clock_id == CLOCK_REALTIME && mode != HRTIMER_MODE_ABS)
+ 		clock_id = CLOCK_MONOTONIC;
+@@ -1226,7 +1226,7 @@ int hrtimer_get_res(const clockid_t whic
+ 	struct hrtimer_cpu_base *cpu_base;
+ 	int base = hrtimer_clockid_to_base(which_clock);
+ 
+-	cpu_base = &__raw_get_cpu_var(hrtimer_bases);
++	cpu_base = raw_cpu_ptr(&hrtimer_bases);
+ 	*tp = ktime_to_timespec(cpu_base->clock_base[base].resolution);
+ 
+ 	return 0;
+@@ -1281,7 +1281,7 @@ static void __run_hrtimer(struct hrtimer
+  */
+ void hrtimer_interrupt(struct clock_event_device *dev)
+ {
+-	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
++	struct hrtimer_cpu_base *cpu_base = this_cpu_ptr(&hrtimer_bases);
+ 	ktime_t expires_next, now, entry_time, delta;
+ 	int i, retries = 0;
+ 
+@@ -1415,7 +1415,7 @@ static void __hrtimer_peek_ahead_timers(
+ 	if (!hrtimer_hres_active())
+ 		return;
+ 
+-	td = &__get_cpu_var(tick_cpu_device);
++	td = this_cpu_ptr(&tick_cpu_device);
+ 	if (td && td->evtdev)
+ 		hrtimer_interrupt(td->evtdev);
+ }
+@@ -1479,7 +1479,7 @@ void hrtimer_run_pending(void)
+ void hrtimer_run_queues(void)
+ {
+ 	struct timerqueue_node *node;
+-	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
++	struct hrtimer_cpu_base *cpu_base = this_cpu_ptr(&hrtimer_bases);
+ 	struct hrtimer_clock_base *base;
+ 	int index, gettime = 1;
+ 
+@@ -1717,7 +1717,7 @@ static void migrate_hrtimers(int scpu)
+ 
+ 	local_irq_disable();
+ 	old_base = &per_cpu(hrtimer_bases, scpu);
+-	new_base = &__get_cpu_var(hrtimer_bases);
++	new_base = this_cpu_ptr(&hrtimer_bases);
+ 	/*
+ 	 * The caller is globally serialized and nobody else
+ 	 * takes two locks at once, deadlock is not possible.
+Index: linux/kernel/irq_work.c
+===================================================================
+--- linux.orig/kernel/irq_work.c	2013-10-10 11:24:14.410120840 -0500
++++ linux/kernel/irq_work.c	2013-10-10 11:24:14.402120900 -0500
+@@ -70,7 +70,7 @@ void irq_work_queue(struct irq_work *wor
+ 	/* Queue the entry and raise the IPI if needed. */
+ 	preempt_disable();
+ 
+-	llist_add(&work->llnode, &__get_cpu_var(irq_work_list));
++	llist_add(&work->llnode, this_cpu_ptr(&irq_work_list));
+ 
+ 	/*
+ 	 * If the work is not "lazy" or the tick is stopped, raise the irq
+@@ -90,7 +90,7 @@ bool irq_work_needs_cpu(void)
+ {
+ 	struct llist_head *this_list;
+ 
+-	this_list = &__get_cpu_var(irq_work_list);
++	this_list = this_cpu_ptr(&irq_work_list);
+ 	if (llist_empty(this_list))
+ 		return false;
+ 
+@@ -115,7 +115,7 @@ static void __irq_work_run(void)
+ 	__this_cpu_write(irq_work_raised, 0);
+ 	barrier();
+ 
+-	this_list = &__get_cpu_var(irq_work_list);
++	this_list = this_cpu_ptr(&irq_work_list);
+ 	if (llist_empty(this_list))
+ 		return;
+ 
+Index: linux/kernel/sched/clock.c
+===================================================================
+--- linux.orig/kernel/sched/clock.c	2013-10-10 11:24:14.410120840 -0500
++++ linux/kernel/sched/clock.c	2013-10-10 11:24:14.402120900 -0500
+@@ -94,7 +94,7 @@ static DEFINE_PER_CPU_SHARED_ALIGNED(str
+ 
+ static inline struct sched_clock_data *this_scd(void)
+ {
+-	return &__get_cpu_var(sched_clock_data);
++	return this_cpu_ptr(&sched_clock_data);
+ }
+ 
+ static inline struct sched_clock_data *cpu_sdc(int cpu)
+Index: linux/kernel/softirq.c
+===================================================================
+--- linux.orig/kernel/softirq.c	2013-10-10 11:24:14.410120840 -0500
++++ linux/kernel/softirq.c	2013-10-10 11:24:14.402120900 -0500
+@@ -475,7 +475,7 @@ static void tasklet_action(struct softir
+ 	local_irq_disable();
+ 	list = __this_cpu_read(tasklet_vec.head);
+ 	__this_cpu_write(tasklet_vec.head, NULL);
+-	__this_cpu_write(tasklet_vec.tail, &__get_cpu_var(tasklet_vec).head);
++	__this_cpu_write(tasklet_vec.tail, this_cpu_ptr(&tasklet_vec.head));
+ 	local_irq_enable();
+ 
+ 	while (list) {
+@@ -510,7 +510,7 @@ static void tasklet_hi_action(struct sof
+ 	local_irq_disable();
+ 	list = __this_cpu_read(tasklet_hi_vec.head);
+ 	__this_cpu_write(tasklet_hi_vec.head, NULL);
+-	__this_cpu_write(tasklet_hi_vec.tail, &__get_cpu_var(tasklet_hi_vec).head);
++	__this_cpu_write(tasklet_hi_vec.tail, this_cpu_ptr(&tasklet_hi_vec.head));
+ 	local_irq_enable();
+ 
+ 	while (list) {
+@@ -627,7 +627,7 @@ EXPORT_PER_CPU_SYMBOL(softirq_work_list)
+ 
+ static void __local_trigger(struct call_single_data *cp, int softirq)
+ {
+-	struct list_head *head = &__get_cpu_var(softirq_work_list[softirq]);
++	struct list_head *head = this_cpu_ptr(&softirq_work_list[softirq]);
+ 
+ 	list_add_tail(&cp->list, head);
+ 
+@@ -727,7 +727,7 @@ static int remote_softirq_cpu_notify(str
+ 			if (list_empty(head))
+ 				continue;
+ 
+-			local_head = &__get_cpu_var(softirq_work_list[i]);
++			local_head = this_cpu_ptr(&softirq_work_list[i]);
+ 			list_splice_init(head, local_head);
+ 			raise_softirq_irqoff(i);
+ 		}
+Index: linux/kernel/time/tick-common.c
+===================================================================
+--- linux.orig/kernel/time/tick-common.c	2013-10-10 11:24:14.410120840 -0500
++++ linux/kernel/time/tick-common.c	2013-10-10 11:24:14.406120871 -0500
+@@ -226,7 +226,7 @@ int tick_get_housekeeping_cpu(void)
+ 
+ void tick_install_replacement(struct clock_event_device *newdev)
+ {
+-	struct tick_device *td = &__get_cpu_var(tick_cpu_device);
++	struct tick_device *td = this_cpu_ptr(&tick_cpu_device);
+ 	int cpu = smp_processor_id();
+ 
+ 	clockevents_exchange_device(td->evtdev, newdev);
+@@ -376,14 +376,14 @@ void tick_shutdown(unsigned int *cpup)
+ 
+ void tick_suspend(void)
+ {
+-	struct tick_device *td = &__get_cpu_var(tick_cpu_device);
++	struct tick_device *td = this_cpu_ptr(&tick_cpu_device);
+ 
+ 	clockevents_shutdown(td->evtdev);
+ }
+ 
+ void tick_resume(void)
+ {
+-	struct tick_device *td = &__get_cpu_var(tick_cpu_device);
++	struct tick_device *td = this_cpu_ptr(&tick_cpu_device);
+ 	int broadcast = tick_resume_broadcast();
+ 
+ 	clockevents_set_mode(td->evtdev, CLOCK_EVT_MODE_RESUME);
+Index: linux/kernel/time/tick-oneshot.c
+===================================================================
+--- linux.orig/kernel/time/tick-oneshot.c	2013-10-10 11:24:14.410120840 -0500
++++ linux/kernel/time/tick-oneshot.c	2013-10-10 11:24:14.406120871 -0500
+@@ -59,7 +59,7 @@ void tick_setup_oneshot(struct clock_eve
+  */
+ int tick_switch_to_oneshot(void (*handler)(struct clock_event_device *))
+ {
+-	struct tick_device *td = &__get_cpu_var(tick_cpu_device);
++	struct tick_device *td = this_cpu_ptr(&tick_cpu_device);
+ 	struct clock_event_device *dev = td->evtdev;
+ 
+ 	if (!dev || !(dev->features & CLOCK_EVT_FEAT_ONESHOT) ||
+Index: linux/kernel/time/tick-sched.c
+===================================================================
+--- linux.orig/kernel/time/tick-sched.c	2013-10-10 11:24:14.410120840 -0500
++++ linux/kernel/time/tick-sched.c	2013-10-10 11:24:14.406120871 -0500
+@@ -200,7 +200,7 @@ static void tick_nohz_restart_sched_tick
+  */
+ void __tick_nohz_full_check(void)
+ {
+-	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
++	struct tick_sched *ts = this_cpu_ptr(&tick_cpu_sched);
+ 
+ 	if (tick_nohz_full_cpu(smp_processor_id())) {
+ 		if (ts->tick_stopped && !is_idle_task(current)) {
+@@ -226,7 +226,7 @@ static DEFINE_PER_CPU(struct irq_work, n
+ void tick_nohz_full_kick(void)
+ {
+ 	if (tick_nohz_full_cpu(smp_processor_id()))
+-		irq_work_queue(&__get_cpu_var(nohz_full_kick_work));
++		irq_work_queue(this_cpu_ptr(&nohz_full_kick_work));
+ }
+ 
+ static void nohz_full_kick_ipi(void *info)
+@@ -533,7 +533,7 @@ static ktime_t tick_nohz_stop_sched_tick
+ 	unsigned long seq, last_jiffies, next_jiffies, delta_jiffies;
+ 	ktime_t last_update, expires, ret = { .tv64 = 0 };
+ 	unsigned long rcu_delta_jiffies;
+-	struct clock_event_device *dev = __get_cpu_var(tick_cpu_device).evtdev;
++	struct clock_event_device *dev = __this_cpu_read(tick_cpu_device.evtdev);
+ 	u64 time_delta;
+ 
+ 	/* Read jiffies and the time when jiffies were updated last */
+@@ -798,7 +798,7 @@ void tick_nohz_idle_enter(void)
+ 
+ 	local_irq_disable();
+ 
+-	ts = &__get_cpu_var(tick_cpu_sched);
++	ts = this_cpu_ptr(&tick_cpu_sched);
+ 	/*
+ 	 * set ts->inidle unconditionally. even if the system did not
+ 	 * switch to nohz mode the cpu frequency governers rely on the
+@@ -821,7 +821,7 @@ EXPORT_SYMBOL_GPL(tick_nohz_idle_enter);
+  */
+ void tick_nohz_irq_exit(void)
+ {
+-	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
++	struct tick_sched *ts = this_cpu_ptr(&tick_cpu_sched);
+ 
+ 	if (ts->inidle)
+ 		__tick_nohz_idle_enter(ts);
+@@ -836,7 +836,7 @@ void tick_nohz_irq_exit(void)
+  */
+ ktime_t tick_nohz_get_sleep_length(void)
+ {
+-	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
++	struct tick_sched *ts = this_cpu_ptr(&tick_cpu_sched);
+ 
+ 	return ts->sleep_length;
+ }
+@@ -950,7 +950,7 @@ static int tick_nohz_reprogram(struct ti
+  */
+ static void tick_nohz_handler(struct clock_event_device *dev)
+ {
+-	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
++	struct tick_sched *ts = this_cpu_ptr(&tick_cpu_sched);
+ 	struct pt_regs *regs = get_irq_regs();
+ 	ktime_t now = ktime_get();
+ 
+@@ -970,7 +970,7 @@ static void tick_nohz_handler(struct clo
+  */
+ static void tick_nohz_switch_to_nohz(void)
+ {
+-	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
++	struct tick_sched *ts = this_cpu_ptr(&tick_cpu_sched);
+ 	ktime_t next;
+ 
+ 	if (!tick_nohz_enabled)
+@@ -1108,7 +1108,7 @@ early_param("skew_tick", skew_tick);
+  */
+ void tick_setup_sched_timer(void)
+ {
+-	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
++	struct tick_sched *ts = this_cpu_ptr(&tick_cpu_sched);
+ 	ktime_t now = ktime_get();
+ 
+ 	/*
+@@ -1175,7 +1175,7 @@ void tick_clock_notify(void)
+  */
+ void tick_oneshot_notify(void)
+ {
+-	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
++	struct tick_sched *ts = this_cpu_ptr(&tick_cpu_sched);
+ 
+ 	set_bit(0, &ts->check_clocks);
+ }
+@@ -1190,7 +1190,7 @@ void tick_oneshot_notify(void)
+  */
+ int tick_check_oneshot_change(int allow_nohz)
+ {
+-	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
++	struct tick_sched *ts = this_cpu_ptr(&tick_cpu_sched);
+ 
+ 	if (!test_and_clear_bit(0, &ts->check_clocks))
+ 		return 0;
+Index: linux/kernel/timer.c
+===================================================================
+--- linux.orig/kernel/timer.c	2013-10-10 11:24:14.410120840 -0500
++++ linux/kernel/timer.c	2013-10-10 13:30:06.728138654 -0500
+@@ -621,7 +621,7 @@ static inline void debug_assert_init(str
+ static void do_init_timer(struct timer_list *timer, unsigned int flags,
+ 			  const char *name, struct lock_class_key *key)
+ {
+-	struct tvec_base *base = __raw_get_cpu_var(tvec_bases);
++	struct tvec_base *base = raw_cpu_read(tvec_bases);
+ 
+ 	timer->entry.next = NULL;
+ 	timer->base = (void *)((unsigned long)base | flags);
 
