@@ -1,119 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933049Ab3JOPMq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 11:12:46 -0400
-Received: from mga14.intel.com ([143.182.124.37]:38478 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932283Ab3JOPMp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 11:12:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,499,1378882800"; 
-   d="scan'208";a="375031023"
-Message-ID: <525D5B64.3090206@intel.com>
-Date: Tue, 15 Oct 2013 23:12:36 +0800
-From: Lan Tianyu <tianyu.lan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
+	id S933086Ab3JOPNh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 11:13:37 -0400
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:50902 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932283Ab3JOPNg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 11:13:36 -0400
+Message-ID: <525D5B9C.3030302@gmail.com>
+Date: Tue, 15 Oct 2013 17:13:32 +0200
+From: Chang <changxiangzhong@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: lenb@kernel.org, rjw@rjwysocki.net
-CC: Lan Tianyu <tianyu.lan@intel.com>, linux-acpi@vger.kernel.org,
+To: Vlad Yasevich <vyasevich@gmail.com>, nhorman@tuxdriver.com
+CC: davem@davemloft.net, linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 3/3] ACPI/POWER: Call acpi_power_resume_dependent()
- directly in the acpi_power_on_unlocked()
-References: <1381849493-7977-1-git-send-email-tianyu.lan@intel.com> <1381849493-7977-4-git-send-email-tianyu.lan@intel.com>
-In-Reply-To: <1381849493-7977-4-git-send-email-tianyu.lan@intel.com>
+Subject: Re: [PATCH] net: sctp: fix a cacc_saw_newack missetting issue
+References: <1381757623-12803-1-git-send-email-changxiangzhong@gmail.com> <525D4D2D.8000506@gmail.com> <525D50BD.5030301@gmail.com> <525D525E.8010508@gmail.com>
+In-Reply-To: <525D525E.8010508@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/15/2013 11:04 PM, Lan Tianyu wrote:
-> acpi_power_resume_dependent() purposes to resume power resource's dependent
-> physical devices after turning on the related power resource. But current
-> it runs in the workqueue, pm_request_resume() can't check the right
-> runtime pm state just after turning on power resource. This will cause
-> infinite loop between resume and suspend in some cases that turn on power
-> resource in the pm runtime resume callback(e,g usb port). This patch is to
-> fix the issue via calling acpi_power_resume_dependent() directly instead
-> of running it in a workqueue.
+Thanks, I've got it and will submit a new patch later.
+On 10/15/2013 04:34 PM, Vlad Yasevich wrote:
+> On 10/15/2013 10:27 AM, Chang wrote:
+>>
+>> On 10/15/2013 04:11 PM, Vlad Yasevich wrote:
+>>> On 10/14/2013 09:33 AM, Chang Xiangzhong wrote:
+>>>> For for each TSN t being newly acked (Not only cumulatively,
+>>>> but also SELECTIVELY) cacc_saw_newack should be set to 1.
+>>>>
+>>>> Signed-off-by: Xiangzhong Chang <changxiangzhong@gmail.com>
+>>>> ---
+>>>>   net/sctp/outqueue.c |   42 
+>>>> +++++++++++++++++++++---------------------
+>>>>   1 file changed, 21 insertions(+), 21 deletions(-)
+>>>>
+>>>> diff --git a/net/sctp/outqueue.c b/net/sctp/outqueue.c
+>>>> index 94df758..d86032b 100644
+>>>> --- a/net/sctp/outqueue.c
+>>>> +++ b/net/sctp/outqueue.c
+>>>> @@ -1398,6 +1398,27 @@ static void sctp_check_transmitted(struct
+>>>> sctp_outq *q,
+>>>>                   forward_progress = true;
+>>>>               }
+>>>>
+>>>> +            if (!tchunk->tsn_gap_acked) {
+>>>
+>>> You can remove this test since the block just above already performs
+>>> it.  Just fold this code into the block above.
+>>>
+>>> -vlad
+>>>
+>> Sorry, I'm not sure if I fully understand you. There are code blocks
+>> which checking the tchunk->tsn_gap_acked. In addition, they check other
+>> states as well.
 >
-> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-> ---
->   drivers/acpi/power.c | 15 ++-------------
->   1 file changed, 2 insertions(+), 13 deletions(-)
+> The flow is:
 >
-> diff --git a/drivers/acpi/power.c b/drivers/acpi/power.c
-> index 3fc2873..5e4991b 100644
-> --- a/drivers/acpi/power.c
-> +++ b/drivers/acpi/power.c
-> @@ -62,7 +62,6 @@ ACPI_MODULE_NAME("power");
->   struct acpi_power_dependent_device {
->   	struct list_head node;
->   	struct acpi_device *adev;
-> -	struct work_struct work;
->   };
+>      if (sctp_acked(sack, tsn)) {
+>         ...
+>         if (transport) {
+>             ....
+>         }
 >
->   struct acpi_power_resource {
-> @@ -235,14 +234,12 @@ static int acpi_power_get_list_state(struct list_head *list, int *state)
->   	return 0;
->   }
+>         if (!tchunk->tsn_gap_acked) {
+>             ....
+>         }
 >
-> -static void acpi_power_resume_dependent(struct work_struct *work)
-> +static void acpi_power_resume_dependent(struct acpi_power_dependent_device *dep)
->   {
-> -	struct acpi_power_dependent_device *dep;
->   	struct acpi_device_physical_node *pn;
->   	struct acpi_device *adev;
->   	int state;
+>         if (TSN_lte(tsn, sack_ctsn)) {
+>             ....
+>             /* SFR-CACC ...
+>         }
 >
-> -	dep = container_of(work, struct acpi_power_dependent_device, work);
->   	adev = dep->adev;
->   	if (acpi_power_get_inferred_state(adev, &state))
->   		return;
-> @@ -294,7 +291,7 @@ static int acpi_power_on_unlocked(struct acpi_power_resource *resource)
->   			struct acpi_power_dependent_device *dep;
+> Since you are moving this up, you can simply re-use
+> the if (!tchunk->tsn_gap_acked) immediately above.
 >
->   			list_for_each_entry(dep, &resource->dependent, node)
-> -				schedule_work(&dep->work);
-> +				acpi_power_resume_dependent(dep);
->   		}
->   	}
->   	return result;
-> @@ -414,7 +411,6 @@ static void acpi_power_add_dependent(struct acpi_power_resource *resource,
->   		goto out;
+>>>> +                /*
+>>>> +                 * SFR-CACC algorithm:
+>>>> +                 * 2) If the SACK contains gap acks
+>>>> +                 * and the flag CHANGEOVER_ACTIVE is
+>>>> +                 * set the receiver of the SACK MUST
+>>>> +                 * take the following action:
+>>>> +                 *
+>>>> +                 * B) For each TSN t being acked that
+>>>> +                 * has not been acked in any SACK so
+>>>> +                 * far, set cacc_saw_newack to 1 for
+>>>> +                 * the destination that the TSN was
+>>>> +                 * sent to.
+>>>> +                 */
+>>>> +                if (transport &&
+>>>> +                    sack->num_gap_ack_blocks &&
+>>>> + q->asoc->peer.primary_path->cacc.
+>>>> +                    changeover_active)
+>>>> +                    transport->cacc.cacc_saw_newack    = 1;
+>                             ^^^^
 >
->   	dep->adev = adev;
-> -	INIT_WORK(&dep->work, acpi_power_resume_dependent);
->   	list_add_tail(&dep->node, &resource->dependent);
+> Don't need that many spaces...
 >
->    out:
-> @@ -425,23 +421,16 @@ static void acpi_power_remove_dependent(struct acpi_power_resource *resource,
->   					struct acpi_device *adev)
->   {
->   	struct acpi_power_dependent_device *dep;
-> -	struct work_struct *work = NULL;
->
->   	mutex_lock(&resource->resource_lock);
->
->   	list_for_each_entry(dep, &resource->dependent, node)
->   		if (dep->adev == adev) {
->   			list_del(&dep->node);
-> -			work = &dep->work;
-
-Sorry, Just find forget to free dep Here. Will update if this patchset 
-is acceptable.
-
->   			break;
->   		}
->
->   	mutex_unlock(&resource->resource_lock);
-> -
-> -	if (work) {
-> -		cancel_work_sync(work);
-> -		kfree(dep);
-> -	}
->   }
->
->   static struct attribute *attrs[] = {
+> -vlad
+>>>> +            }
+>>>> +
+>>>>               if (TSN_lte(tsn, sack_ctsn)) {
+>>>>                   /* RFC 2960  6.3.2 Retransmission Timer Rules
+>>>>                    *
+>>>> @@ -1411,27 +1432,6 @@ static void sctp_check_transmitted(struct
+>>>> sctp_outq *q,
+>>>>                   restart_timer = 1;
+>>>>                   forward_progress = true;
+>>>>
+>>>> -                if (!tchunk->tsn_gap_acked) {
+>>>> -                    /*
+>>>> -                     * SFR-CACC algorithm:
+>>>> -                     * 2) If the SACK contains gap acks
+>>>> -                     * and the flag CHANGEOVER_ACTIVE is
+>>>> -                     * set the receiver of the SACK MUST
+>>>> -                     * take the following action:
+>>>> -                     *
+>>>> -                     * B) For each TSN t being acked that
+>>>> -                     * has not been acked in any SACK so
+>>>> -                     * far, set cacc_saw_newack to 1 for
+>>>> -                     * the destination that the TSN was
+>>>> -                     * sent to.
+>>>> -                     */
+>>>> -                    if (transport &&
+>>>> -                        sack->num_gap_ack_blocks &&
+>>>> - q->asoc->peer.primary_path->cacc.
+>>>> -                        changeover_active)
+>>>> -                        transport->cacc.cacc_saw_newack
+>>>> -                            = 1;
+>>>> -                }
+>>>>
+>>>> list_add_tail(&tchunk->transmitted_list,
+>>>>                             &q->sacked);
+>>>>
+>>>
+>>
 >
 
