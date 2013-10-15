@@ -1,173 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758058Ab3JNX7o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Oct 2013 19:59:44 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:54467 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757784Ab3JNX7d (ORCPT
+	id S1757885Ab3JOAEj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Oct 2013 20:04:39 -0400
+Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:13070 "EHLO
+	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757234Ab3JOAEh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Oct 2013 19:59:33 -0400
-From: Soren Brinkmann <soren.brinkmann@xilinx.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michal Simek <michal.simek@xilinx.com>,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>
-Subject: [PATCH RFC 5/5] net: macb: Adjust tx_clk when link speed changes
-Date: Mon, 14 Oct 2013 16:59:00 -0700
-Message-Id: <1381795140-10792-6-git-send-email-soren.brinkmann@xilinx.com>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1381795140-10792-1-git-send-email-soren.brinkmann@xilinx.com>
-References: <1381795140-10792-1-git-send-email-soren.brinkmann@xilinx.com>
+	Mon, 14 Oct 2013 20:04:37 -0400
+Message-ID: <1381795255.26234.97.camel@misato.fc.hp.com>
+Subject: Re: [PATCH] mm: Set N_CPU to node_states during boot
+From: Toshi Kani <toshi.kani@hp.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Date: Mon, 14 Oct 2013 18:00:55 -0600
+In-Reply-To: <20131014161047.4a6a54e985d68a9f1ce7234b@linux-foundation.org>
+References: <1381781096-13168-1-git-send-email-toshi.kani@hp.com>
+	 <20131014161047.4a6a54e985d68a9f1ce7234b@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adjust the ethernet clock according to the negotiated link speed.
+On Mon, 2013-10-14 at 16:10 -0700, Andrew Morton wrote:
+> On Mon, 14 Oct 2013 14:04:56 -0600 Toshi Kani <toshi.kani@hp.com> wrote:
+> 
+> > After a system booted, N_CPU is not set to any node as has_cpu
+> > shows an empty line.
+> > 
+> >   # cat /sys/devices/system/node/has_cpu
+> >   (show-empty-line)
+> > 
+> > setup_vmstat() registers its CPU notifier callback,
+> > vmstat_cpuup_callback(), which marks N_CPU to a node when
+> > a CPU is put into online.  However, setup_vmstat() is called
+> > after all CPUs are launched in the boot sequence.
+> > 
+> > Change setup_vmstat() to mark N_CPU to the nodes with online
+> > CPUs at boot.
+> > 
+> > ...
+> >
+> > --- a/mm/vmstat.c
+> > +++ b/mm/vmstat.c
+> > @@ -1276,8 +1276,10 @@ static int __init setup_vmstat(void)
+> >  
+> >  	register_cpu_notifier(&vmstat_notifier);
+> >  
+> > -	for_each_online_cpu(cpu)
+> > +	for_each_online_cpu(cpu) {
+> >  		start_cpu_timer(cpu);
+> > +		node_set_state(cpu_to_node(cpu), N_CPU);
+> > +	}
+> >  #endif
+> >  #ifdef CONFIG_PROC_FS
+> >  	proc_create("buddyinfo", S_IRUGO, NULL, &fragmentation_file_operations);
+> 
+> This seems a bit hacky.  Would it not be better to register
+> vmstat_notifier() before bringing up CPUs?
 
-Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
----
- drivers/net/ethernet/cadence/macb.c | 66 +++++++++++++++++++++++++++++++++++++
- drivers/net/ethernet/cadence/macb.h |  1 +
- 2 files changed, 67 insertions(+)
+Good question.  I evaluated two approaches and chose this way with the
+reasons below.
 
-diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
-index 603844b1d483..beb9fa863811 100644
---- a/drivers/net/ethernet/cadence/macb.c
-+++ b/drivers/net/ethernet/cadence/macb.c
-@@ -204,6 +204,49 @@ static int macb_mdio_reset(struct mii_bus *bus)
- 	return 0;
- }
- 
-+/**
-+ * macb_set_tx_clk() - Set a clock to a new frequency
-+ * @clk		Pointer to the clock to change
-+ * @rate	New frequency in Hz
-+ * @dev		Pointer to the struct net_device
-+ */
-+static void macb_set_tx_clk(struct clk *clk, int speed, struct net_device *dev)
-+{
-+	long ferr;
-+	long rate;
-+	long rate_rounded;
-+
-+	switch (speed) {
-+	case SPEED_10:
-+		rate = 2500000;
-+		break;
-+	case SPEED_100:
-+		rate = 25000000;
-+		break;
-+	case SPEED_1000:
-+		rate = 125000000;
-+		break;
-+	default:
-+		break;
-+	}
-+
-+	rate_rounded = clk_round_rate(clk, rate);
-+	if (rate_rounded < 0)
-+		return;
-+
-+	/* RGMII allows 50 ppm frequency error. Test and warn if this limit
-+	 * are not satisfied.
-+	 */
-+	ferr = abs(rate_rounded - rate);
-+	ferr = DIV_ROUND_UP(ferr, rate / 100000);
-+	if (ferr > 5)
-+		netdev_warn(dev, "unable to generate target frequency: %ld Hz\n",
-+				rate);
-+
-+	if (clk_set_rate(clk, rate_rounded))
-+		netdev_err(dev, "adjusting tx_clk failed.\n");
-+}
-+
- static void macb_handle_link_change(struct net_device *dev)
- {
- 	struct macb *bp = netdev_priv(dev);
-@@ -251,6 +294,9 @@ static void macb_handle_link_change(struct net_device *dev)
- 
- 	spin_unlock_irqrestore(&bp->lock, flags);
- 
-+	if (!IS_ERR(bp->tx_clk))
-+		macb_set_tx_clk(bp->tx_clk, phydev->speed, dev);
-+
- 	if (status_change) {
- 		if (phydev->link) {
- 			netif_carrier_on(dev);
-@@ -1805,6 +1851,8 @@ static int __init macb_probe(struct platform_device *pdev)
- 		goto err_out_free_dev;
- 	}
- 
-+	bp->tx_clk = devm_clk_get(&pdev->dev, "tx_clk");
-+
- 	err = clk_prepare_enable(bp->pclk);
- 	if (err) {
- 		dev_err(&pdev->dev, "failed to enable pclk (%u)\n", err);
-@@ -1817,6 +1865,15 @@ static int __init macb_probe(struct platform_device *pdev)
- 		goto err_out_disable_pclk;
- 	}
- 
-+	if (!IS_ERR(bp->tx_clk)) {
-+		err = clk_prepare_enable(bp->tx_clk);
-+		if (err) {
-+			dev_err(&pdev->dev, "failed to enable tx_clk (%u)\n",
-+					err);
-+			goto err_out_disable_hclk;
-+		}
-+	}
-+
- 	bp->regs = devm_ioremap(&pdev->dev, regs->start, resource_size(regs));
- 	if (!bp->regs) {
- 		dev_err(&pdev->dev, "failed to map registers, aborting.\n");
-@@ -1917,6 +1974,9 @@ static int __init macb_probe(struct platform_device *pdev)
- err_out_unregister_netdev:
- 	unregister_netdev(dev);
- err_out_disable_clocks:
-+	if (!IS_ERR(bp->tx_clk))
-+		clk_disable_unprepare(bp->tx_clk);
-+err_out_disable_hclk:
- 	clk_disable_unprepare(bp->hclk);
- err_out_disable_pclk:
- 	clk_disable_unprepare(bp->pclk);
-@@ -1941,6 +2001,8 @@ static int __exit macb_remove(struct platform_device *pdev)
- 		kfree(bp->mii_bus->irq);
- 		mdiobus_free(bp->mii_bus);
- 		unregister_netdev(dev);
-+		if (!IS_ERR(bp->tx_clk))
-+			clk_disable_unprepare(bp->tx_clk);
- 		clk_disable_unprepare(bp->hclk);
- 		clk_disable_unprepare(bp->pclk);
- 		free_netdev(dev);
-@@ -1959,6 +2021,8 @@ static int macb_suspend(struct device *dev)
- 	netif_carrier_off(netdev);
- 	netif_device_detach(netdev);
- 
-+	if (!IS_ERR(bp->tx_clk))
-+		clk_disable_unprepare(bp->tx_clk);
- 	clk_disable_unprepare(bp->hclk);
- 	clk_disable_unprepare(bp->pclk);
- 
-@@ -1973,6 +2037,8 @@ static int macb_resume(struct device *dev)
- 
- 	clk_prepare_enable(bp->pclk);
- 	clk_prepare_enable(bp->hclk);
-+	if (!IS_ERR(bp->tx_clk))
-+		clk_prepare_enable(bp->tx_clk);
- 
- 	netif_device_attach(netdev);
- 
-diff --git a/drivers/net/ethernet/cadence/macb.h b/drivers/net/ethernet/cadence/macb.h
-index f4076155bed7..51c02442160a 100644
---- a/drivers/net/ethernet/cadence/macb.h
-+++ b/drivers/net/ethernet/cadence/macb.h
-@@ -572,6 +572,7 @@ struct macb {
- 	struct platform_device	*pdev;
- 	struct clk		*pclk;
- 	struct clk		*hclk;
-+	struct clk		*tx_clk;
- 	struct net_device	*dev;
- 	struct napi_struct	napi;
- 	struct work_struct	tx_error_task;
--- 
-1.8.4
+First, this way is consistent with other operations.
+vmstat_cpuup_callback() calls the following three functions at
+CPU_ONLINE.
+
+  - refresh_zone_stat_thresholds()
+  - start_cpu_timer(cpu)
+  - node_set_state(cpu_to_node(cpu), N_CPU)
+
+init_per_zone_wmark_min() calls refresh_zone_stat_thresholds() from its
+module_init entry point.  setup_vmstat() already calls start_cpu_timer()
+for all online CPUs.  So, the existing code already assumes that
+vmstat_cpuup_callback() does not get called during boot.
+
+Second, it is not optimal to call refresh_zone_stat_thresholds() for all
+CPUs since this is a system-wide operation.  There can be many CPUs on
+large systems.
+
+Lastly, the kernel panic'd at boot when I tested to move it up.  I did
+not root cause it (since that was a quick experiment), but I can look
+into the issue if necessary.
+
+> And this patch might be racy as well - what happens if a CPU comes up
+> and goes down again before setup_vmstat() is called?
+
+I am not sure if a CPU comes and goes during module_init(), but I will
+protect the for-loop with get_online_cpus() for safe.
+
+  + get_online_cpus();
+    for_each_online_cpu(cpu) {
+ 	:
+    }
+  + put_online_cpus();
+
+> (Where does N_CPU get cleared?  It doesn't, afaict.  Should we clear it
+> if a node's final CPU goes offline?)
+
+Right, I noticed it as well.  Let me try to fix it with a separate
+patch.
+
+Thanks,
+-Toshi
 
