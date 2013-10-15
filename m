@@ -1,48 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759419Ab3JOQCj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 12:02:39 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:44484 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759170Ab3JOQCi (ORCPT
+	id S1759474Ab3JOQDf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 12:03:35 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:38214 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759303Ab3JOQDd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 12:02:38 -0400
-Date: Tue, 15 Oct 2013 18:02:36 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: =?iso-8859-1?Q?S=E9bastien_Dugu=E9?= <sebastien.dugue@bull.net>,
-        Andi Kleen <andi@firstfloor.org>, Neil Horman <nhorman@tuxdriver.com>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org
-Subject: Re: [PATCH] x86: Run checksumming in parallel accross multiple
- alu's
-Message-ID: <20131015160236.GG2592@two.firstfloor.org>
-References: <1381510298-20572-1-git-send-email-nhorman@tuxdriver.com>
- <87siw4xy9i.fsf@tassilo.jf.intel.com>
- <20131014202528.GG26880@hmsreliant.think-freely.org>
- <20131015091251.2345b918@b012350-ux>
- <20131015133336.GF2592@two.firstfloor.org>
- <20131015155615.738f03d5@b012350-ux>
- <1381845985.2045.40.camel@edumazet-glaptop.roam.corp.google.com>
- <20131015161528.08c19e92@b012350-ux>
- <1381847168.2045.45.camel@edumazet-glaptop.roam.corp.google.com>
- <1381848748.2045.50.camel@edumazet-glaptop.roam.corp.google.com>
+	Tue, 15 Oct 2013 12:03:33 -0400
+Date: Tue, 15 Oct 2013 18:03:30 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
+        Michael Davidson <md@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Subject: Re: [tip:x86/kaslr] x86, relocs: Add more per-cpu gold special cases
+Message-ID: <20131015160329.GA16003@gmail.com>
+References: <20131011013954.GA28902@www.outflux.net>
+ <tip-d751c169e9a6f0f853346f1184881422bd10b3c2@git.kernel.org>
+ <20131014083035.GA20976@gmail.com>
+ <007cdb12-9fc7-4744-8686-695891b926a3@email.android.com>
+ <525C1BC1.6090501@zytor.com>
+ <CAGXu5j+tQfUpmem85WK5-ootoJM1mCH6BPDr3pfR2sHwoFy_8A@mail.gmail.com>
+ <20131015060425.GB3866@gmail.com>
+ <CAGXu5jJx1xkwZD=tC+D69H_6-cGMHD8Sk_9_=8XQxjjDtHpBNA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1381848748.2045.50.camel@edumazet-glaptop.roam.corp.google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAGXu5jJx1xkwZD=tC+D69H_6-cGMHD8Sk_9_=8XQxjjDtHpBNA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I get the csum_partial() if disabling prequeue.
 
-At least in the ipoib case i would consider that a misconfiguration.
+* Kees Cook <keescook@chromium.org> wrote:
 
-"don't do this if it hurts"
+> On Mon, Oct 14, 2013 at 11:04 PM, Ingo Molnar <mingo@kernel.org> wrote:
+> >
+> > * Kees Cook <keescook@chromium.org> wrote:
+> >
+> >> On Mon, Oct 14, 2013 at 9:28 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+> >> > On 10/14/2013 07:19 AM, H. Peter Anvin wrote:
+> >> >> My guess is that the 95 addresses are randomized and the 82 address is an address which failed to relocate.
+> >> >
+> >> >> ffffffff82a04a58 is:
+> >> >> ffffffff82a03000 t init_per_cpu__gdt_page
+> >> >
+> >> >
+> >> > Specifically, it looks like the percpu stuff isn't getting set up correctly.
+> >>
+> >> It wouldn't surprise me if there are even more percpu things to fix.
+> >> It's the main area we've continued to trip over while working on this
+> >> with various linkers. Which linker and version are you seeing this
+> >> with?
+> >
+> > The failure I saw triggered with fairly modern userspace:
+> >
+> >  GNU ld version 2.23.52.0.1-9.fc19 20130226
+> >
+> >  gcc version 4.8.1 20130603 (Red Hat 4.8.1-1) (GCC)
+> 
+> Can you try with the gold linker?  When not using Gold, I can produce a 
+> similar crash with GNU ld ver 2.23.2 but not 2.22.
 
-There may be more such problems.
+I'm not set up for Gold - but maybe others can try your experiment.
 
--Andi
+If you can see/reproduce the 2.23 crash then maybe that fix will work for 
+my testcase as well.
+
+Thanks,
+
+	Ingo
