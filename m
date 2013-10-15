@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932852Ab3JOMEN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 08:04:13 -0400
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:64846 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758143Ab3JOMEK (ORCPT
+	id S932899Ab3JOME6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 08:04:58 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:24292 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932182Ab3JOL6B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 08:04:10 -0400
-Date: Tue, 15 Oct 2013 14:04:04 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Joe Perches <joe@perches.com>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Neil Horman <nhorman@tuxdriver.com>, linux-kernel@vger.kernel.org,
-        sebastien.dugue@bull.net, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org
-Subject: Re: [PATCH] x86: Run checksumming in parallel accross multiple alu's
-Message-ID: <20131015120404.GA2402@gmail.com>
-References: <1381510298-20572-1-git-send-email-nhorman@tuxdriver.com>
- <20131012172124.GA18241@gmail.com>
- <20131014202854.GH26880@hmsreliant.think-freely.org>
- <1381785560.2045.11.camel@edumazet-glaptop.roam.corp.google.com>
- <1381789127.2045.22.camel@edumazet-glaptop.roam.corp.google.com>
- <1381790278.16896.2.camel@joe-AO722>
- <1381790686.2045.24.camel@edumazet-glaptop.roam.corp.google.com>
- <1381790982.16896.7.camel@joe-AO722>
- <20131015074123.GB25493@gmail.com>
- <20131015105159.GA8682@pd.tnic>
+	Tue, 15 Oct 2013 07:58:01 -0400
+From: Kefeng Wang <wangkefeng.wang@huawei.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        "Stephen Hemminger" <stephen@networkplumber.org>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Francois Romieu <romieu@fr.zoreil.com>,
+        "Ben Hutchings" <bhutchings@solarflare.com>,
+        Chas Williams <chas@cmf.nrl.navy.mil>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Samuel Ortiz <samuel@sortiz.org>, Paul Mackerras <paulus@samba.org>,
+        Oliver Neukum <oneukum@suse.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "Boris Ostrovsky" <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>, <netfilter@vger.kernel.org>,
+        <netdev@vger.kernel.org>, <linux-wireless@vger.kernel.org>,
+        <guohanjun@huawei.com>
+Subject: [PATCH 12/18] net: irda: use wrapper functions of net_ratelimit() to simplify code
+Date: Tue, 15 Oct 2013 19:45:08 +0800
+Message-ID: <1381837514-50660-13-git-send-email-wangkefeng.wang@huawei.com>
+X-Mailer: git-send-email 1.8.3.msysgit.0
+In-Reply-To: <1381837514-50660-1-git-send-email-wangkefeng.wang@huawei.com>
+References: <1381837514-50660-1-git-send-email-wangkefeng.wang@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131015105159.GA8682@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Originating-IP: [10.135.68.221]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+net_ratelimited_function() is called to simplify code.
 
-* Borislav Petkov <bp@alien8.de> wrote:
+Signed-off-by: Kefeng Wang <wangkefeng.wang@huawei.com>
+---
+ drivers/net/irda/stir4200.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-> On Tue, Oct 15, 2013 at 09:41:23AM +0200, Ingo Molnar wrote:
-> > Most processors have hundreds of cachelines even in their L1 cache.
-> > Thousands in the L2 cache, up to hundreds of thousands.
-> 
-> Also, I have this hazy memory of prefetch hints being harmful in some
-> situations: https://lwn.net/Articles/444344/
+diff --git a/drivers/net/irda/stir4200.c b/drivers/net/irda/stir4200.c
+index 876e709..d499b2b 100644
+--- a/drivers/net/irda/stir4200.c
++++ b/drivers/net/irda/stir4200.c
+@@ -783,8 +783,7 @@ static int stir_transmit_thread(void *arg)
+ 				break;
+ 
+ 			if (unlikely(receive_start(stir))) {
+-				if (net_ratelimit())
+-					dev_info(&dev->dev,
++				net_ratelimited_function(dev_info, &dev->dev,
+ 						 "%s: receive usb submit failed\n",
+ 						 stir->netdev->name);
+ 				stir->receiving = 0;
+-- 
+1.8.2.1
 
-Yes, for things like random list walks they tend to be harmful - the 
-hardware is smarter.
 
-For something like a controlled packet stream they might be helpful.
-
-Thanks,
-
-	Ingo
