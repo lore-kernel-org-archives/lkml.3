@@ -1,92 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932487Ab3JOM0h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 08:26:37 -0400
-Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:43616 "EHLO
-	mx0a-0016f401.pphosted.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932270Ab3JOM0f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 08:26:35 -0400
-From: Yi Zhang <yizhang@marvell.com>
-To: <broonie@kernel.org>
-CC: <yizhang@marvell.com>, <zhouqiao@marvell.com>, <zhangwm@marvell.com>,
-        <yizhang.mrvl@gmail.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2] regmap: irq: clear status when disable irq
-Date: Tue, 15 Oct 2013 20:23:30 +0800
-Message-ID: <1381839810-28984-1-git-send-email-yizhang@marvell.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S932551Ab3JOMaN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 08:30:13 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:43728 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932270Ab3JOMaL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Oct 2013 08:30:11 -0400
+Date: Tue, 15 Oct 2013 14:29:58 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+Cc: Tony Luck <tony.luck@gmail.com>, Chen Gong <gong.chen@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-acpi <linux-acpi@vger.kernel.org>,
+        Lance Ortiz <lance.ortiz@hp.com>
+Subject: Re: [PATCH 7/8] ACPI, APEI, CPER: Cleanup CPER memory error output
+ format
+Message-ID: <20131015122958.GD7908@pd.tnic>
+References: <1381473166-29303-1-git-send-email-gong.chen@linux.intel.com>
+ <1381473166-29303-8-git-send-email-gong.chen@linux.intel.com>
+ <20131011160208.GL5925@pd.tnic>
+ <20131014045500.GC12189@gchen.bj.intel.com>
+ <20131014103616.GE4009@pd.tnic>
+ <CA+8MBbJ9P1GVf3SCh7LMY_LH+pxQg3GWkxKMzni1b1Wyx1o8NQ@mail.gmail.com>
+ <525D2A07.6080201@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
- definitions=2013-10-15_04:2013-10-15,2013-10-15,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=1
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1310150039
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <525D2A07.6080201@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-clear the status bit if the mask register doesn't prevent
-the chip level irq from being asserted
+On Tue, Oct 15, 2013 at 05:11:59PM +0530, Naveen N. Rao wrote:
+> If so, how will disabling dmesg output and switching to a trace event
+> help? The user-space program will still break unless they add support
+> for that trace event, right?
 
-OR in the following sequence, there will be irq storm happens:
-1) interrupt is triggered;
-2) another thread disables it(the mask bit is set);
-3) _Then_ the interrupt thread is not ACKed(the status bit is not cleared),
-   and it's ignored;
-4) if the irq is still asserted because of the uncleared status bit,
-   the irq storm happens;
+Well, as yourself this: what happens to a userspace program which relies
+on this *exact* error message format and greps dmesg?
 
-Signed-off-by: Yi Zhang <yizhang@marvell.com>
----
- drivers/base/regmap/regmap-irq.c |   27 ++++++++++++++++++++++++++-
- 1 file changed, 26 insertions(+), 1 deletion(-)
+> I'm not sure if we actually provide guarantees w.r.t kernel log
+> messages. The issue in this specific scenario is the sheer verbosity
+> of the log messages.
 
-diff --git a/drivers/base/regmap/regmap-irq.c b/drivers/base/regmap/regmap-irq.c
-index d10456f..9b0148f 100644
---- a/drivers/base/regmap/regmap-irq.c
-+++ b/drivers/base/regmap/regmap-irq.c
-@@ -61,7 +61,7 @@ static void regmap_irq_sync_unlock(struct irq_data *data)
- {
- 	struct regmap_irq_chip_data *d = irq_data_get_irq_chip_data(data);
- 	struct regmap *map = d->map;
--	int i, ret;
-+	int i, j, ret, bits_length;
- 	u32 reg;
- 
- 	if (d->chip->runtime_pm) {
-@@ -105,6 +105,31 @@ static void regmap_irq_sync_unlock(struct irq_data *data)
- 					"Failed to sync wakes in %x: %d\n",
- 					reg, ret);
- 		}
-+
-+		if (!d->chip->init_ack_masked)
-+			continue;
-+		/*
-+		 * Ack all the masked interrupts uncondictionly,
-+		 * OR if there is masked interrupt which hasn't been Acked,
-+		 * it'll be ignored in irq handler, then may introduce irq storm
-+		 */
-+		if (d->chip->ack_base) {
-+			reg = d->chip->ack_base +
-+				(i * map->reg_stride * d->irq_reg_stride);
-+
-+			bits_length = d->map->format.val_bytes * BITS_PER_BYTE;
-+			for (j = 0; j < bits_length; j++) {
-+				if (!(d->mask_buf[i] & (0x1 << j))) {
-+					ret = regmap_update_bits(d->map, reg,
-+								 (0x1 << j), 0);
-+					if (ret != 0)
-+						dev_err(d->map->dev,
-+							"Failed to ack 0x%x: %d\n",
-+							reg, ret);
-+				}
-+			}
-+			/* no need to sync status_buf, update in irq handler */
-+		}
- 	}
- 
- 	if (d->chip->runtime_pm)
+No, the issue is what I said above: userspace programs expecting exactly
+this output. Once we exposed it to userspace, we cannot simply assume
+that nothing is using it.
+
 -- 
-1.7.9.5
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
