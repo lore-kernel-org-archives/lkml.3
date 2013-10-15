@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758811Ab3JOMsq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 08:48:46 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:48712 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758529Ab3JOMsp (ORCPT
+	id S1758897Ab3JOMuh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 08:50:37 -0400
+Received: from mail-qe0-f50.google.com ([209.85.128.50]:45960 "EHLO
+	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758116Ab3JOMuf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 08:48:45 -0400
-Date: Tue, 15 Oct 2013 05:48:37 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        "Liu, Chuansheng" <chuansheng.liu@intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Ingo Molnar (mingo@kernel.org)" <mingo@kernel.org>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "'linux-kernel@vger.kernel.org' (linux-kernel@vger.kernel.org)" 
-	<linux-kernel@vger.kernel.org>,
-        "Wang, Xiaoming" <xiaoming.wang@intel.com>,
-        "Li, Zhuangzhi" <zhuangzhi.li@intel.com>
-Subject: Re: Panic and page fault in loop during handling NMI backtrace
- handler
-Message-ID: <20131015124837.GC9150@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <27240C0AC20F114CBF8149A2696CBE4A01B60835@SHSMSX101.ccr.corp.intel.com>
- <20131015121849.GA29884@localhost.localdomain>
- <20131015123717.GJ10651@twins.programming.kicks-ass.net>
+	Tue, 15 Oct 2013 08:50:35 -0400
+Date: Tue, 15 Oct 2013 08:50:31 -0400
+From: Tejun Heo <tj@kernel.org>
+To: xiangliang yu <yxlraid@gmail.com>
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] AHCI: disabled FBS prior to issuing software reset
+Message-ID: <20131015125031.GC3141@htj.dyndns.org>
+References: <1380366816-16221-1-git-send-email-yxlraid@gmail.com>
+ <20130928114950.GA2620@htj.dyndns.org>
+ <CAP0P+NUvaLfXkOUGm8NX19AHvTHmU=Ya0NdFvyJc2gFjN-Cy0A@mail.gmail.com>
+ <20130928131059.GA3945@htj.dyndns.org>
+ <CAP0P+NXD7pdXQwBUZJdUwyCc=o_5iTzmKJ6FdN6LrqcgX3yK2A@mail.gmail.com>
+ <20131013195735.GD18075@htj.dyndns.org>
+ <CAP0P+NWw2goofPtk5v8qKqAkhGwVJ7Bwn+Pj6meNhyK3KE2CAQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131015123717.GJ10651@twins.programming.kicks-ass.net>
+In-Reply-To: <CAP0P+NWw2goofPtk5v8qKqAkhGwVJ7Bwn+Pj6meNhyK3KE2CAQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13101512-1344-0000-0000-000002742A02
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 15, 2013 at 02:37:17PM +0200, Peter Zijlstra wrote:
-> On Tue, Oct 15, 2013 at 02:18:53PM +0200, Frederic Weisbecker wrote:
-> > On Tue, Oct 15, 2013 at 02:01:04AM +0000, Liu, Chuansheng wrote:
-> > > We meet one issue that during trigger all CPU backtrace, but during in the NMI handler arch_trigger_all_cpu_backtrace_handler,
-> > > It hit the PAGE fault, then PAGE fault is in loop, at last the thread stack overflow, and system panic.
-> > > 
-> > > Anyone can give some help? Thanks.
-> > 
-> > Looks like we re-enter the fault several times. On x86-32, NMIs can
-> > fault if they dereference vmalloc'ed area. I wonder if the module thing
-> > we lookup in the NMI is stored on some vmalloc'ed area.
+Hello,
+
+On Tue, Oct 15, 2013 at 11:40:27AM +0800, xiangliang yu wrote:
+> @@ -1278,6 +1280,11 @@ int ahci_do_softreset(struct ata_link *link,
+> unsigned int *class,
+>   if (rc && rc != -EOPNOTSUPP)
+>   ata_link_warn(link, "failed to reset engine (errno=%d)\n", rc);
 > 
-> IIRC modules are indeed allocated using vmalloc. See module_alloc()
-> using vmalloc_exec()
 
-This might then be a module that uses call_rcu(), but which does not have
-the needed rcu_barrier() in the module-exit function.
+Please add a comment here.
 
-							Thanx, Paul
+> + if (!ata_is_host_link(link) && pp->fbs_enabled) {
+> + ahci_disable_fbs(ap);
+> + fbs_flag = true;
+> + }
 
+White space damaged?
+
+> +
+>   ata_tf_init(link->device, &tf);
+> 
+>   /* issue the first D2H Register FIS */
+> @@ -1318,6 +1325,9 @@ int ahci_do_softreset(struct ata_link *link,
+> unsigned int *class,
+>   } else
+>   *class = ahci_dev_classify(ap);
+> 
+> + if (fbs_flag)
+> + ahci_enable_fbs(ap);
+> +
+
+Thanks.
+
+-- 
+tejun
