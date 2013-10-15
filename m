@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753575Ab3JOFNB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Oct 2013 01:13:01 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60400 "EHLO
+	id S1753864Ab3JOFNS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Oct 2013 01:13:18 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60413 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751305Ab3JOFM6 (ORCPT
+	with ESMTP id S1753625Ab3JOFNO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Oct 2013 01:12:58 -0400
-Date: Mon, 14 Oct 2013 22:12:29 -0700
+	Tue, 15 Oct 2013 01:13:14 -0400
+Date: Mon, 14 Oct 2013 22:12:59 -0700
 From: tip-bot for Ingo Molnar <tipbot@zytor.com>
-Message-ID: <tip-89fe808ae777728da6e1d78b7d13562792310d17@git.kernel.org>
+Message-ID: <tip-3ae069cfda88349fa61de9631f878d39ab60764f@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, acme@redhat.com, hpa@zytor.com,
         mingo@kernel.org, a.p.zijlstra@chello.nl, namhyung@kernel.org,
         jolsa@redhat.com, dsahern@gmail.com, tglx@linutronix.de
@@ -18,9 +18,9 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com,
         namhyung@kernel.org, jolsa@redhat.com, dsahern@gmail.com,
         tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] tools/perf:
-  Standardize feature support define names to: HAVE_{FEATURE}_SUPPORT
-Git-Commit-ID: 89fe808ae777728da6e1d78b7d13562792310d17
+Subject: [tip:perf/core] tools/perf/build: Split out feature check: '
+ libnuma'
+Git-Commit-ID: 3ae069cfda88349fa61de9631f878d39ab60764f
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,870 +29,92 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 14 Oct 2013 22:12:38 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 14 Oct 2013 22:13:05 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  89fe808ae777728da6e1d78b7d13562792310d17
-Gitweb:     http://git.kernel.org/tip/89fe808ae777728da6e1d78b7d13562792310d17
+Commit-ID:  3ae069cfda88349fa61de9631f878d39ab60764f
+Gitweb:     http://git.kernel.org/tip/3ae069cfda88349fa61de9631f878d39ab60764f
 Author:     Ingo Molnar <mingo@kernel.org>
-AuthorDate: Mon, 30 Sep 2013 12:07:11 +0200
+AuthorDate: Mon, 30 Sep 2013 13:37:10 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 9 Oct 2013 08:48:28 +0200
+CommitDate: Wed, 9 Oct 2013 08:48:30 +0200
 
-tools/perf: Standardize feature support define names to: HAVE_{FEATURE}_SUPPORT
-
-Standardize all the feature flags based on the HAVE_{FEATURE}_SUPPORT naming convention:
-
-		HAVE_ARCH_X86_64_SUPPORT
-		HAVE_BACKTRACE_SUPPORT
-		HAVE_CPLUS_DEMANGLE_SUPPORT
-		HAVE_DWARF_SUPPORT
-		HAVE_ELF_GETPHDRNUM_SUPPORT
-		HAVE_GTK2_SUPPORT
-		HAVE_GTK_INFO_BAR_SUPPORT
-		HAVE_LIBAUDIT_SUPPORT
-		HAVE_LIBELF_MMAP_SUPPORT
-		HAVE_LIBELF_SUPPORT
-		HAVE_LIBNUMA_SUPPORT
-		HAVE_LIBUNWIND_SUPPORT
-		HAVE_ON_EXIT_SUPPORT
-		HAVE_PERF_REGS_SUPPORT
-		HAVE_SLANG_SUPPORT
-		HAVE_STRLCPY_SUPPORT
+tools/perf/build: Split out feature check: 'libnuma'
 
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/n/tip-u3zvqejddfZhtrbYbfhi3spa@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-vixsrpggxFjhz7kppqgrGr6s@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- tools/perf/arch/x86/include/perf_regs.h |  6 ++--
- tools/perf/arch/x86/util/unwind.c       |  4 +--
- tools/perf/bench/mem-memcpy-arch.h      |  2 +-
- tools/perf/bench/mem-memcpy.c           |  2 +-
- tools/perf/bench/mem-memset-arch.h      |  2 +-
- tools/perf/bench/mem-memset.c           |  2 +-
- tools/perf/builtin-bench.c              |  4 +--
- tools/perf/builtin-inject.c             |  2 +-
- tools/perf/builtin-probe.c              | 14 ++++-----
- tools/perf/builtin-record.c             | 12 ++++----
- tools/perf/config/Makefile              | 54 ++++++++++++++++-----------------
- tools/perf/perf.c                       |  4 +--
- tools/perf/ui/gtk/browser.c             |  2 +-
- tools/perf/ui/gtk/gtk.h                 |  4 +--
- tools/perf/ui/gtk/util.c                |  4 +--
- tools/perf/ui/ui.h                      |  4 +--
- tools/perf/util/annotate.h              |  4 +--
- tools/perf/util/cache.h                 |  2 +-
- tools/perf/util/generate-cmdlist.sh     |  4 +--
- tools/perf/util/hist.h                  |  4 +--
- tools/perf/util/include/dwarf-regs.h    |  2 +-
- tools/perf/util/map.c                   |  2 +-
- tools/perf/util/path.c                  |  2 +-
- tools/perf/util/perf_regs.h             |  4 +--
- tools/perf/util/probe-event.c           |  4 +--
- tools/perf/util/probe-finder.h          |  4 +--
- tools/perf/util/symbol-elf.c            |  2 +-
- tools/perf/util/symbol.h                |  8 ++---
- tools/perf/util/unwind.h                |  4 +--
- tools/perf/util/util.c                  |  4 +--
- 30 files changed, 86 insertions(+), 86 deletions(-)
+ tools/perf/config/Makefile                      | 7 ++++---
+ tools/perf/config/feature-checks/Makefile       | 7 ++++++-
+ tools/perf/config/feature-checks/test-libnuma.c | 8 ++++++++
+ 3 files changed, 18 insertions(+), 4 deletions(-)
 
-diff --git a/tools/perf/arch/x86/include/perf_regs.h b/tools/perf/arch/x86/include/perf_regs.h
-index 7fcdcdb..e84ca76 100644
---- a/tools/perf/arch/x86/include/perf_regs.h
-+++ b/tools/perf/arch/x86/include/perf_regs.h
-@@ -5,7 +5,7 @@
- #include "../../util/types.h"
- #include <asm/perf_regs.h>
- 
--#ifndef ARCH_X86_64
-+#ifndef HAVE_ARCH_X86_64_SUPPORT
- #define PERF_REGS_MASK ((1ULL << PERF_REG_X86_32_MAX) - 1)
- #else
- #define REG_NOSUPPORT ((1ULL << PERF_REG_X86_DS) | \
-@@ -52,7 +52,7 @@ static inline const char *perf_reg_name(int id)
- 		return "FS";
- 	case PERF_REG_X86_GS:
- 		return "GS";
--#ifdef ARCH_X86_64
-+#ifdef HAVE_ARCH_X86_64_SUPPORT
- 	case PERF_REG_X86_R8:
- 		return "R8";
- 	case PERF_REG_X86_R9:
-@@ -69,7 +69,7 @@ static inline const char *perf_reg_name(int id)
- 		return "R14";
- 	case PERF_REG_X86_R15:
- 		return "R15";
--#endif /* ARCH_X86_64 */
-+#endif /* HAVE_ARCH_X86_64_SUPPORT */
- 	default:
- 		return NULL;
- 	}
-diff --git a/tools/perf/arch/x86/util/unwind.c b/tools/perf/arch/x86/util/unwind.c
-index 78d956e..456a88c 100644
---- a/tools/perf/arch/x86/util/unwind.c
-+++ b/tools/perf/arch/x86/util/unwind.c
-@@ -4,7 +4,7 @@
- #include "perf_regs.h"
- #include "../../util/unwind.h"
- 
--#ifdef ARCH_X86_64
-+#ifdef HAVE_ARCH_X86_64_SUPPORT
- int unwind__arch_reg_id(int regnum)
- {
- 	int id;
-@@ -108,4 +108,4 @@ int unwind__arch_reg_id(int regnum)
- 
- 	return id;
- }
--#endif /* ARCH_X86_64 */
-+#endif /* HAVE_ARCH_X86_64_SUPPORT */
-diff --git a/tools/perf/bench/mem-memcpy-arch.h b/tools/perf/bench/mem-memcpy-arch.h
-index a72e36c..57b4ed8 100644
---- a/tools/perf/bench/mem-memcpy-arch.h
-+++ b/tools/perf/bench/mem-memcpy-arch.h
-@@ -1,5 +1,5 @@
- 
--#ifdef ARCH_X86_64
-+#ifdef HAVE_ARCH_X86_64_SUPPORT
- 
- #define MEMCPY_FN(fn, name, desc)		\
- 	extern void *fn(void *, const void *, size_t);
-diff --git a/tools/perf/bench/mem-memcpy.c b/tools/perf/bench/mem-memcpy.c
-index 8cdca43..5ce71d3 100644
---- a/tools/perf/bench/mem-memcpy.c
-+++ b/tools/perf/bench/mem-memcpy.c
-@@ -58,7 +58,7 @@ struct routine routines[] = {
- 	{ "default",
- 	  "Default memcpy() provided by glibc",
- 	  memcpy },
--#ifdef ARCH_X86_64
-+#ifdef HAVE_ARCH_X86_64_SUPPORT
- 
- #define MEMCPY_FN(fn, name, desc) { name, desc, fn },
- #include "mem-memcpy-x86-64-asm-def.h"
-diff --git a/tools/perf/bench/mem-memset-arch.h b/tools/perf/bench/mem-memset-arch.h
-index a040fa7..633800c 100644
---- a/tools/perf/bench/mem-memset-arch.h
-+++ b/tools/perf/bench/mem-memset-arch.h
-@@ -1,5 +1,5 @@
- 
--#ifdef ARCH_X86_64
-+#ifdef HAVE_ARCH_X86_64_SUPPORT
- 
- #define MEMSET_FN(fn, name, desc)		\
- 	extern void *fn(void *, int, size_t);
-diff --git a/tools/perf/bench/mem-memset.c b/tools/perf/bench/mem-memset.c
-index 4a2f120..9af79d2 100644
---- a/tools/perf/bench/mem-memset.c
-+++ b/tools/perf/bench/mem-memset.c
-@@ -58,7 +58,7 @@ static const struct routine routines[] = {
- 	{ "default",
- 	  "Default memset() provided by glibc",
- 	  memset },
--#ifdef ARCH_X86_64
-+#ifdef HAVE_ARCH_X86_64_SUPPORT
- 
- #define MEMSET_FN(fn, name, desc) { name, desc, fn },
- #include "mem-memset-x86-64-asm-def.h"
-diff --git a/tools/perf/builtin-bench.c b/tools/perf/builtin-bench.c
-index 77298bf..33af80f 100644
---- a/tools/perf/builtin-bench.c
-+++ b/tools/perf/builtin-bench.c
-@@ -35,7 +35,7 @@ struct bench_suite {
- /* sentinel: easy for help */
- #define suite_all { "all", "Test all benchmark suites", NULL }
- 
--#ifdef LIBNUMA_SUPPORT
-+#ifdef HAVE_LIBNUMA_SUPPORT
- static struct bench_suite numa_suites[] = {
- 	{ "mem",
- 	  "Benchmark for NUMA workloads",
-@@ -80,7 +80,7 @@ struct bench_subsys {
- };
- 
- static struct bench_subsys subsystems[] = {
--#ifdef LIBNUMA_SUPPORT
-+#ifdef HAVE_LIBNUMA_SUPPORT
- 	{ "numa",
- 	  "NUMA scheduling and MM behavior",
- 	  numa_suites },
-diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
-index afe377b..f51a963 100644
---- a/tools/perf/builtin-inject.c
-+++ b/tools/perf/builtin-inject.c
-@@ -231,7 +231,7 @@ static int perf_event__inject_buildid(struct perf_tool *tool,
- 				 * account this as unresolved.
- 				 */
- 			} else {
--#ifdef LIBELF_SUPPORT
-+#ifdef HAVE_LIBELF_SUPPORT
- 				pr_warning("no symbols found in %s, maybe "
- 					   "install a debug package?\n",
- 					   al.map->dso->long_name);
-diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
-index e8a66f9..89acc17 100644
---- a/tools/perf/builtin-probe.c
-+++ b/tools/perf/builtin-probe.c
-@@ -173,7 +173,7 @@ static int opt_set_target(const struct option *opt, const char *str,
- 	if  (str && !params.target) {
- 		if (!strcmp(opt->long_name, "exec"))
- 			params.uprobes = true;
--#ifdef DWARF_SUPPORT
-+#ifdef HAVE_DWARF_SUPPORT
- 		else if (!strcmp(opt->long_name, "module"))
- 			params.uprobes = false;
- #endif
-@@ -187,7 +187,7 @@ static int opt_set_target(const struct option *opt, const char *str,
- 	return ret;
- }
- 
--#ifdef DWARF_SUPPORT
-+#ifdef HAVE_DWARF_SUPPORT
- static int opt_show_lines(const struct option *opt __maybe_unused,
- 			  const char *str, int unset __maybe_unused)
- {
-@@ -257,7 +257,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
- 		"perf probe [<options>] --add 'PROBEDEF' [--add 'PROBEDEF' ...]",
- 		"perf probe [<options>] --del '[GROUP:]EVENT' ...",
- 		"perf probe --list",
--#ifdef DWARF_SUPPORT
-+#ifdef HAVE_DWARF_SUPPORT
- 		"perf probe [<options>] --line 'LINEDESC'",
- 		"perf probe [<options>] --vars 'PROBEPOINT'",
- #endif
-@@ -271,7 +271,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_CALLBACK('d', "del", NULL, "[GROUP:]EVENT", "delete a probe event.",
- 		opt_del_probe_event),
- 	OPT_CALLBACK('a', "add", NULL,
--#ifdef DWARF_SUPPORT
-+#ifdef HAVE_DWARF_SUPPORT
- 		"[EVENT=]FUNC[@SRC][+OFF|%return|:RL|;PT]|SRC:AL|SRC;PT"
- 		" [[NAME=]ARG ...]",
- #else
-@@ -283,7 +283,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
- 		"\t\tFUNC:\tFunction name\n"
- 		"\t\tOFF:\tOffset from function entry (in byte)\n"
- 		"\t\t%return:\tPut the probe at function return\n"
--#ifdef DWARF_SUPPORT
-+#ifdef HAVE_DWARF_SUPPORT
- 		"\t\tSRC:\tSource code path\n"
- 		"\t\tRL:\tRelative line number from function entry.\n"
- 		"\t\tAL:\tAbsolute line number in file.\n"
-@@ -296,7 +296,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
- 		opt_add_probe_event),
- 	OPT_BOOLEAN('f', "force", &params.force_add, "forcibly add events"
- 		    " with existing name"),
--#ifdef DWARF_SUPPORT
-+#ifdef HAVE_DWARF_SUPPORT
- 	OPT_CALLBACK('L', "line", NULL,
- 		     "FUNC[:RLN[+NUM|-RLN2]]|SRC:ALN[+NUM|-ALN2]",
- 		     "Show source code lines.", opt_show_lines),
-@@ -408,7 +408,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
- 		return ret;
- 	}
- 
--#ifdef DWARF_SUPPORT
-+#ifdef HAVE_DWARF_SUPPORT
- 	if (params.show_lines && !params.uprobes) {
- 		if (params.mod_events) {
- 			pr_err("  Error: Don't use --line with"
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index a78db3f..cf36ba2 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -29,7 +29,7 @@
- #include <sched.h>
- #include <sys/mman.h>
- 
--#ifndef HAVE_ON_EXIT
-+#ifndef HAVE_ON_EXIT_SUPPORT
- #ifndef ATEXIT_MAX
- #define ATEXIT_MAX 32
- #endif
-@@ -687,7 +687,7 @@ error:
- 	return ret;
- }
- 
--#ifdef LIBUNWIND_SUPPORT
-+#ifdef HAVE_LIBUNWIND_SUPPORT
- static int get_stack_size(char *str, unsigned long *_size)
- {
- 	char *endptr;
-@@ -713,7 +713,7 @@ static int get_stack_size(char *str, unsigned long *_size)
- 	       max_size, str);
- 	return -1;
- }
--#endif /* LIBUNWIND_SUPPORT */
-+#endif /* HAVE_LIBUNWIND_SUPPORT */
- 
- int record_parse_callchain_opt(const struct option *opt,
- 			       const char *arg, int unset)
-@@ -751,7 +751,7 @@ int record_parse_callchain_opt(const struct option *opt,
- 				       "needed for -g fp\n");
- 			break;
- 
--#ifdef LIBUNWIND_SUPPORT
-+#ifdef HAVE_LIBUNWIND_SUPPORT
- 		/* Dwarf style */
- 		} else if (!strncmp(name, "dwarf", sizeof("dwarf"))) {
- 			const unsigned long default_stack_dump_size = 8192;
-@@ -771,7 +771,7 @@ int record_parse_callchain_opt(const struct option *opt,
- 			if (!ret)
- 				pr_debug("callchain: stack dump size %d\n",
- 					 opts->stack_dump_size);
--#endif /* LIBUNWIND_SUPPORT */
-+#endif /* HAVE_LIBUNWIND_SUPPORT */
- 		} else {
- 			pr_err("callchain: Unknown -g option "
- 			       "value: %s\n", arg);
-@@ -818,7 +818,7 @@ static struct perf_record record = {
- 
- #define CALLCHAIN_HELP "do call-graph (stack chain/backtrace) recording: "
- 
--#ifdef LIBUNWIND_SUPPORT
-+#ifdef HAVE_LIBUNWIND_SUPPORT
- const char record_callchain_help[] = CALLCHAIN_HELP "[fp] dwarf";
- #else
- const char record_callchain_help[] = CALLCHAIN_HELP "[fp]";
 diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 5f6f9b3..34be743 100644
+index daefe2d..f39fc22 100644
 --- a/tools/perf/config/Makefile
 +++ b/tools/perf/config/Makefile
-@@ -23,7 +23,7 @@ ifeq ($(ARCH),x86_64)
-   endif
-   ifeq (${IS_X86_64}, 1)
-     RAW_ARCH := x86_64
--    CFLAGS += -DARCH_X86_64
-+    CFLAGS += -DHAVE_ARCH_X86_64_SUPPORT
-     ARCH_INCLUDE = ../../arch/x86/lib/memcpy_64.S ../../arch/x86/lib/memset_64.S
-   endif
-   NO_PERF_REGS := 0
-@@ -31,7 +31,7 @@ ifeq ($(ARCH),x86_64)
+@@ -101,7 +101,9 @@ $(info Testing features:)
+ $(shell make -i -j -C config/feature-checks >/dev/null 2>&1)
+ $(info done)
+ 
+-FEATURE_TESTS = hello
++FEATURE_TESTS =				\
++	hello				\
++	libnuma
+ 
+ $(foreach test,$(FEATURE_TESTS),$(call feature_check,$(test),$(test)))
+ 
+@@ -434,8 +436,7 @@ ifndef NO_BACKTRACE
  endif
  
- ifeq ($(NO_PERF_REGS),0)
--  CFLAGS += -DHAVE_PERF_REGS
-+  CFLAGS += -DHAVE_PERF_REGS_SUPPORT
- endif
- 
- ifeq ($(src-perf),)
-@@ -175,13 +175,13 @@ endif # SOURCE_LIBELF
- endif # NO_LIBELF
- 
- ifndef NO_LIBELF
--CFLAGS += -DLIBELF_SUPPORT
-+CFLAGS += -DHAVE_LIBELF_SUPPORT
- FLAGS_LIBELF=$(CFLAGS) $(LDFLAGS) $(EXTLIBS)
--ifeq ($(call try-cc,$(SOURCE_ELF_MMAP),$(FLAGS_LIBELF),-DLIBELF_MMAP),y)
--  CFLAGS += -DLIBELF_MMAP
-+ifeq ($(call try-cc,$(SOURCE_ELF_MMAP),$(FLAGS_LIBELF),-DHAVE_LIBELF_MMAP_SUPPORT),y)
-+  CFLAGS += -DHAVE_LIBELF_MMAP_SUPPORT
- endif
--ifeq ($(call try-cc,$(SOURCE_ELF_GETPHDRNUM),$(FLAGS_LIBELF),-DHAVE_ELF_GETPHDRNUM),y)
--  CFLAGS += -DHAVE_ELF_GETPHDRNUM
-+ifeq ($(call try-cc,$(SOURCE_ELF_GETPHDRNUM),$(FLAGS_LIBELF),-DHAVE_ELF_GETPHDRNUM_SUPPORT),y)
-+  CFLAGS += -DHAVE_ELF_GETPHDRNUM_SUPPORT
- endif
- 
- # include ARCH specific config
-@@ -192,7 +192,7 @@ ifeq ($(origin PERF_HAVE_DWARF_REGS), undefined)
-   msg := $(warning DWARF register mappings have not been defined for architecture $(ARCH), DWARF support disabled);
-   NO_DWARF := 1
- else
--  CFLAGS += -DDWARF_SUPPORT $(LIBDW_CFLAGS)
-+  CFLAGS += -DHAVE_DWARF_SUPPORT $(LIBDW_CFLAGS)
-   LDFLAGS += $(LIBDW_LDFLAGS)
-   EXTLIBS += -lelf -ldw
- endif # PERF_HAVE_DWARF_REGS
-@@ -201,10 +201,10 @@ endif # NO_DWARF
- endif # NO_LIBELF
- 
- ifndef NO_LIBELF
--CFLAGS += -DLIBELF_SUPPORT
-+CFLAGS += -DHAVE_LIBELF_SUPPORT
- FLAGS_LIBELF=$(CFLAGS) $(LDFLAGS) $(EXTLIBS)
--ifeq ($(call try-cc,$(SOURCE_ELF_MMAP),$(FLAGS_LIBELF),-DLIBELF_MMAP),y)
--  CFLAGS += -DLIBELF_MMAP
-+ifeq ($(call try-cc,$(SOURCE_ELF_MMAP),$(FLAGS_LIBELF),-DHAVE_LIBELF_MMAP_SUPPORT),y)
-+  CFLAGS += -DHAVE_LIBELF_MMAP_SUPPORT
- endif # try-cc
- endif # NO_LIBELF
- 
-@@ -229,7 +229,7 @@ endif # Libunwind support
- endif # NO_LIBUNWIND
- 
- ifndef NO_LIBUNWIND
--  CFLAGS += -DLIBUNWIND_SUPPORT
-+  CFLAGS += -DHAVE_LIBUNWIND_SUPPORT
-   EXTLIBS += $(LIBUNWIND_LIBS)
-   CFLAGS += $(LIBUNWIND_CFLAGS)
-   LDFLAGS += $(LIBUNWIND_LDFLAGS)
-@@ -241,7 +241,7 @@ ifndef NO_LIBAUDIT
-     msg := $(warning No libaudit.h found, disables 'trace' tool, please install audit-libs-devel or libaudit-dev);
-     NO_LIBAUDIT := 1
-   else
--    CFLAGS += -DLIBAUDIT_SUPPORT
-+    CFLAGS += -DHAVE_LIBAUDIT_SUPPORT
-     EXTLIBS += -laudit
-   endif
- endif
-@@ -258,7 +258,7 @@ ifndef NO_SLANG
-   else
-     # Fedora has /usr/include/slang/slang.h, but ubuntu /usr/include/slang.h
-     CFLAGS += -I/usr/include/slang
--    CFLAGS += -DSLANG_SUPPORT
-+    CFLAGS += -DHAVE_SLANG_SUPPORT
-     EXTLIBS += -lslang
-   endif
- endif
-@@ -269,10 +269,10 @@ ifndef NO_GTK2
-     msg := $(warning GTK2 not found, disables GTK2 support. Please install gtk2-devel or libgtk2.0-dev);
-     NO_GTK2 := 1
-   else
--    ifeq ($(call try-cc,$(SOURCE_GTK2_INFOBAR),$(FLAGS_GTK2),-DHAVE_GTK_INFO_BAR),y)
--      CFLAGS += -DHAVE_GTK_INFO_BAR
-+    ifeq ($(call try-cc,$(SOURCE_GTK2_INFOBAR),$(FLAGS_GTK2),-DHAVE_GTK_INFO_BAR_SUPPORT),y)
-+      CFLAGS += -DHAVE_GTK_INFO_BAR_SUPPORT
-     endif
--    CFLAGS += -DGTK2_SUPPORT
-+    CFLAGS += -DHAVE_GTK2_SUPPORT
-     CFLAGS += $(shell pkg-config --cflags gtk+-2.0 2>/dev/null)
-     EXTLIBS += $(shell pkg-config --libs gtk+-2.0 2>/dev/null)
-   endif
-@@ -365,9 +365,9 @@ endif
- ifdef NO_DEMANGLE
-   CFLAGS += -DNO_DEMANGLE
- else
--  ifdef HAVE_CPLUS_DEMANGLE
-+  ifdef HAVE_CPLUS_DEMANGLE_SUPPORT
-     EXTLIBS += -liberty
--    CFLAGS += -DHAVE_CPLUS_DEMANGLE
-+    CFLAGS += -DHAVE_CPLUS_DEMANGLE_SUPPORT
-   else
-     FLAGS_BFD=$(CFLAGS) $(LDFLAGS) $(EXTLIBS) -DPACKAGE='perf' -lbfd
-     has_bfd := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD),libbfd)
-@@ -388,7 +388,7 @@ else
-           has_cplus_demangle := $(call try-cc,$(SOURCE_CPLUS_DEMANGLE),$(FLAGS_CPLUS_DEMANGLE),demangle)
-           ifeq ($(has_cplus_demangle),y)
-             EXTLIBS += -liberty
--            CFLAGS += -DHAVE_CPLUS_DEMANGLE
-+            CFLAGS += -DHAVE_CPLUS_DEMANGLE_SUPPORT
-           else
-             msg := $(warning No bfd.h/libbfd found, install binutils-dev[el]/zlib-static to gain symbol demangling)
-             CFLAGS += -DNO_DEMANGLE
-@@ -400,20 +400,20 @@ else
- endif
- 
- ifndef NO_STRLCPY
--  ifeq ($(call try-cc,$(SOURCE_STRLCPY),,-DHAVE_STRLCPY),y)
--    CFLAGS += -DHAVE_STRLCPY
-+  ifeq ($(call try-cc,$(SOURCE_STRLCPY),,-DHAVE_STRLCPY_SUPPORT),y)
-+    CFLAGS += -DHAVE_STRLCPY_SUPPORT
-   endif
- endif
- 
- ifndef NO_ON_EXIT
--  ifeq ($(call try-cc,$(SOURCE_ON_EXIT),,-DHAVE_ON_EXIT),y)
--    CFLAGS += -DHAVE_ON_EXIT
-+  ifeq ($(call try-cc,$(SOURCE_ON_EXIT),,-DHAVE_ON_EXIT_SUPPORT),y)
-+    CFLAGS += -DHAVE_ON_EXIT_SUPPORT
-   endif
- endif
- 
- ifndef NO_BACKTRACE
--  ifeq ($(call try-cc,$(SOURCE_BACKTRACE),,-DBACKTRACE_SUPPORT),y)
--    CFLAGS += -DBACKTRACE_SUPPORT
-+  ifeq ($(call try-cc,$(SOURCE_BACKTRACE),,-DHAVE_BACKTRACE_SUPPORT),y)
-+    CFLAGS += -DHAVE_BACKTRACE_SUPPORT
-   endif
- endif
- 
-@@ -423,7 +423,7 @@ ifndef NO_LIBNUMA
+ ifndef NO_LIBNUMA
+-  FLAGS_LIBNUMA = $(CFLAGS) $(LDFLAGS) -lnuma
+-  ifneq ($(call try-cc,$(SOURCE_LIBNUMA),$(FLAGS_LIBNUMA),libnuma),y)
++  ifeq ($(feature-libnuma), 0)
      msg := $(warning No numa.h found, disables 'perf bench numa mem' benchmark, please install numa-libs-devel or libnuma-dev);
      NO_LIBNUMA := 1
    else
--    CFLAGS += -DLIBNUMA_SUPPORT
-+    CFLAGS += -DHAVE_LIBNUMA_SUPPORT
-     EXTLIBS += -lnuma
-   endif
- endif
-diff --git a/tools/perf/perf.c b/tools/perf/perf.c
-index 85e1aed..245020c 100644
---- a/tools/perf/perf.c
-+++ b/tools/perf/perf.c
-@@ -49,14 +49,14 @@ static struct cmd_struct commands[] = {
- 	{ "version",	cmd_version,	0 },
- 	{ "script",	cmd_script,	0 },
- 	{ "sched",	cmd_sched,	0 },
--#ifdef LIBELF_SUPPORT
-+#ifdef HAVE_LIBELF_SUPPORT
- 	{ "probe",	cmd_probe,	0 },
- #endif
- 	{ "kmem",	cmd_kmem,	0 },
- 	{ "lock",	cmd_lock,	0 },
- 	{ "kvm",	cmd_kvm,	0 },
- 	{ "test",	cmd_test,	0 },
--#ifdef LIBAUDIT_SUPPORT
-+#ifdef HAVE_LIBAUDIT_SUPPORT
- 	{ "trace",	cmd_trace,	0 },
- #endif
- 	{ "inject",	cmd_inject,	0 },
-diff --git a/tools/perf/ui/gtk/browser.c b/tools/perf/ui/gtk/browser.c
-index c95012c..c24d912 100644
---- a/tools/perf/ui/gtk/browser.c
-+++ b/tools/perf/ui/gtk/browser.c
-@@ -43,7 +43,7 @@ const char *perf_gtk__get_percent_color(double percent)
- 	return NULL;
- }
+diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
+index 4708cca..6a42ad2 100644
+--- a/tools/perf/config/feature-checks/Makefile
++++ b/tools/perf/config/feature-checks/Makefile
+@@ -1,5 +1,7 @@
  
--#ifdef HAVE_GTK_INFO_BAR
-+#ifdef HAVE_GTK_INFO_BAR_SUPPORT
- GtkWidget *perf_gtk__setup_info_bar(void)
- {
- 	GtkWidget *info_bar;
-diff --git a/tools/perf/ui/gtk/gtk.h b/tools/perf/ui/gtk/gtk.h
-index 3d96785..a72acbc 100644
---- a/tools/perf/ui/gtk/gtk.h
-+++ b/tools/perf/ui/gtk/gtk.h
-@@ -12,7 +12,7 @@ struct perf_gtk_context {
- 	GtkWidget *main_window;
- 	GtkWidget *notebook;
+-FILES=test-hello
++FILES=					\
++	test-hello			\
++	test-libnuma
  
--#ifdef HAVE_GTK_INFO_BAR
-+#ifdef HAVE_GTK_INFO_BAR_SUPPORT
- 	GtkWidget *info_bar;
- 	GtkWidget *message_label;
- #endif
-@@ -39,7 +39,7 @@ void perf_gtk__resize_window(GtkWidget *window);
- const char *perf_gtk__get_percent_color(double percent);
- GtkWidget *perf_gtk__setup_statusbar(void);
+ CC := $(CC) -MD
  
--#ifdef HAVE_GTK_INFO_BAR
-+#ifdef HAVE_GTK_INFO_BAR_SUPPORT
- GtkWidget *perf_gtk__setup_info_bar(void);
- #else
- static inline GtkWidget *perf_gtk__setup_info_bar(void)
-diff --git a/tools/perf/ui/gtk/util.c b/tools/perf/ui/gtk/util.c
-index c06942a..696c1fb 100644
---- a/tools/perf/ui/gtk/util.c
-+++ b/tools/perf/ui/gtk/util.c
-@@ -53,7 +53,7 @@ static int perf_gtk__error(const char *format, va_list args)
- 	return 0;
- }
+@@ -12,6 +14,9 @@ BUILD = $(CC) -o $(OUTPUT)$@ $@.c
+ test-hello:
+ 	$(BUILD)
  
--#ifdef HAVE_GTK_INFO_BAR
-+#ifdef HAVE_GTK_INFO_BAR_SUPPORT
- static int perf_gtk__warning_info_bar(const char *format, va_list args)
- {
- 	char *msg;
-@@ -105,7 +105,7 @@ static int perf_gtk__warning_statusbar(const char *format, va_list args)
++test-libnuma:
++	$(BUILD) -lnuma
++
+ -include *.d */*.d
  
- struct perf_error_ops perf_gtk_eops = {
- 	.error		= perf_gtk__error,
--#ifdef HAVE_GTK_INFO_BAR
-+#ifdef HAVE_GTK_INFO_BAR_SUPPORT
- 	.warning	= perf_gtk__warning_info_bar,
- #else
- 	.warning	= perf_gtk__warning_statusbar,
-diff --git a/tools/perf/ui/ui.h b/tools/perf/ui/ui.h
-index 70cb0d4..1349d14 100644
---- a/tools/perf/ui/ui.h
-+++ b/tools/perf/ui/ui.h
-@@ -12,7 +12,7 @@ extern int use_browser;
- void setup_browser(bool fallback_to_pager);
- void exit_browser(bool wait_for_ok);
- 
--#ifdef SLANG_SUPPORT
-+#ifdef HAVE_SLANG_SUPPORT
- int ui__init(void);
- void ui__exit(bool wait_for_ok);
- #else
-@@ -23,7 +23,7 @@ static inline int ui__init(void)
- static inline void ui__exit(bool wait_for_ok __maybe_unused) {}
- #endif
- 
--#ifdef GTK2_SUPPORT
-+#ifdef HAVE_GTK2_SUPPORT
- int perf_gtk__init(void);
- void perf_gtk__exit(bool wait_for_ok);
- #else
-diff --git a/tools/perf/util/annotate.h b/tools/perf/util/annotate.h
-index af75515..f0699e9 100644
---- a/tools/perf/util/annotate.h
-+++ b/tools/perf/util/annotate.h
-@@ -150,7 +150,7 @@ int symbol__tty_annotate(struct symbol *sym, struct map *map,
- 			 struct perf_evsel *evsel, bool print_lines,
- 			 bool full_paths, int min_pcnt, int max_lines);
- 
--#ifdef SLANG_SUPPORT
-+#ifdef HAVE_SLANG_SUPPORT
- int symbol__tui_annotate(struct symbol *sym, struct map *map,
- 			 struct perf_evsel *evsel,
- 			 struct hist_browser_timer *hbt);
-@@ -165,7 +165,7 @@ static inline int symbol__tui_annotate(struct symbol *sym __maybe_unused,
- }
- #endif
- 
--#ifdef GTK2_SUPPORT
-+#ifdef HAVE_GTK2_SUPPORT
- int symbol__gtk_annotate(struct symbol *sym, struct map *map,
- 			 struct perf_evsel *evsel,
- 			 struct hist_browser_timer *hbt);
-diff --git a/tools/perf/util/cache.h b/tools/perf/util/cache.h
-index 26e3672..442953c 100644
---- a/tools/perf/util/cache.h
-+++ b/tools/perf/util/cache.h
-@@ -70,7 +70,7 @@ extern char *perf_path(const char *fmt, ...) __attribute__((format (printf, 1, 2
- extern char *perf_pathdup(const char *fmt, ...)
- 	__attribute__((format (printf, 1, 2)));
- 
--#ifndef HAVE_STRLCPY
-+#ifndef HAVE_STRLCPY_SUPPORT
- extern size_t strlcpy(char *dest, const char *src, size_t size);
- #endif
- 
-diff --git a/tools/perf/util/generate-cmdlist.sh b/tools/perf/util/generate-cmdlist.sh
-index 3ac3803..36a885d 100755
---- a/tools/perf/util/generate-cmdlist.sh
-+++ b/tools/perf/util/generate-cmdlist.sh
-@@ -22,7 +22,7 @@ do
-      }' "Documentation/perf-$cmd.txt"
- done
- 
--echo "#ifdef LIBELF_SUPPORT"
-+echo "#ifdef HAVE_LIBELF_SUPPORT"
- sed -n -e 's/^perf-\([^ 	]*\)[ 	].* full.*/\1/p' command-list.txt |
- sort |
- while read cmd
-@@ -35,5 +35,5 @@ do
- 	    p
-      }' "Documentation/perf-$cmd.txt"
- done
--echo "#endif /* LIBELF_SUPPORT */"
-+echo "#endif /* HAVE_LIBELF_SUPPORT */"
- echo "};"
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 6a048c0..ed4f90e 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -187,7 +187,7 @@ struct hist_browser_timer {
- 	int refresh;
- };
- 
--#ifdef SLANG_SUPPORT
-+#ifdef HAVE_SLANG_SUPPORT
- #include "../ui/keysyms.h"
- int hist_entry__tui_annotate(struct hist_entry *he, struct perf_evsel *evsel,
- 			     struct hist_browser_timer *hbt);
-@@ -228,7 +228,7 @@ static inline int script_browse(const char *script_opt __maybe_unused)
- #define K_SWITCH_INPUT_DATA -3000
- #endif
- 
--#ifdef GTK2_SUPPORT
-+#ifdef HAVE_GTK2_SUPPORT
- int perf_evlist__gtk_browse_hists(struct perf_evlist *evlist, const char *help,
- 				  struct hist_browser_timer *hbt __maybe_unused,
- 				  float min_pcnt);
-diff --git a/tools/perf/util/include/dwarf-regs.h b/tools/perf/util/include/dwarf-regs.h
-index cf6727e..8f14965 100644
---- a/tools/perf/util/include/dwarf-regs.h
-+++ b/tools/perf/util/include/dwarf-regs.h
-@@ -1,7 +1,7 @@
- #ifndef _PERF_DWARF_REGS_H_
- #define _PERF_DWARF_REGS_H_
- 
--#ifdef DWARF_SUPPORT
-+#ifdef HAVE_DWARF_SUPPORT
- const char *get_arch_regstr(unsigned int n);
- #endif
- 
-diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-index 4f6680d..17ee458 100644
---- a/tools/perf/util/map.c
-+++ b/tools/perf/util/map.c
-@@ -172,7 +172,7 @@ int map__load(struct map *map, symbol_filter_t filter)
- 		pr_warning(", continuing without symbols\n");
- 		return -1;
- 	} else if (nr == 0) {
--#ifdef LIBELF_SUPPORT
-+#ifdef HAVE_LIBELF_SUPPORT
- 		const size_t len = strlen(name);
- 		const size_t real_len = len - sizeof(DSO__DELETED);
- 
-diff --git a/tools/perf/util/path.c b/tools/perf/util/path.c
-index a8c4954..f395874 100644
---- a/tools/perf/util/path.c
-+++ b/tools/perf/util/path.c
-@@ -22,7 +22,7 @@ static const char *get_perf_dir(void)
- 	return ".";
- }
- 
--#ifndef HAVE_STRLCPY
-+#ifndef HAVE_STRLCPY_SUPPORT
- size_t strlcpy(char *dest, const char *src, size_t size)
- {
- 	size_t ret = strlen(src);
-diff --git a/tools/perf/util/perf_regs.h b/tools/perf/util/perf_regs.h
-index 5a4f2b6f..a3d42cd 100644
---- a/tools/perf/util/perf_regs.h
-+++ b/tools/perf/util/perf_regs.h
-@@ -1,7 +1,7 @@
- #ifndef __PERF_REGS_H
- #define __PERF_REGS_H
- 
--#ifdef HAVE_PERF_REGS
-+#ifdef HAVE_PERF_REGS_SUPPORT
- #include <perf_regs.h>
- #else
- #define PERF_REGS_MASK	0
-@@ -10,5 +10,5 @@ static inline const char *perf_reg_name(int id __maybe_unused)
- {
- 	return NULL;
- }
--#endif /* HAVE_PERF_REGS */
-+#endif /* HAVE_PERF_REGS_SUPPORT */
- #endif /* __PERF_REGS_H */
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index aa04bf9..779b2da 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -201,7 +201,7 @@ static int convert_to_perf_probe_point(struct probe_trace_point *tp,
- 	return 0;
- }
- 
--#ifdef DWARF_SUPPORT
-+#ifdef HAVE_DWARF_SUPPORT
- /* Open new debuginfo of given module */
- static struct debuginfo *open_debuginfo(const char *module)
- {
-@@ -630,7 +630,7 @@ int show_available_vars(struct perf_probe_event *pevs, int npevs,
- 	return ret;
- }
- 
--#else	/* !DWARF_SUPPORT */
-+#else	/* !HAVE_DWARF_SUPPORT */
- 
- static int kprobe_convert_to_perf_probe(struct probe_trace_point *tp,
- 					struct perf_probe_point *pp)
-diff --git a/tools/perf/util/probe-finder.h b/tools/perf/util/probe-finder.h
-index 3b7d630..3f0c29d 100644
---- a/tools/perf/util/probe-finder.h
-+++ b/tools/perf/util/probe-finder.h
-@@ -14,7 +14,7 @@ static inline int is_c_varname(const char *name)
- 	return isalpha(name[0]) || name[0] == '_';
- }
- 
--#ifdef DWARF_SUPPORT
-+#ifdef HAVE_DWARF_SUPPORT
- 
- #include "dwarf-aux.h"
- 
-@@ -105,6 +105,6 @@ struct line_finder {
- 	int			found;
- };
- 
--#endif /* DWARF_SUPPORT */
-+#endif /* HAVE_DWARF_SUPPORT */
- 
- #endif /*_PROBE_FINDER_H */
-diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-index a9c829b..c376930 100644
---- a/tools/perf/util/symbol-elf.c
-+++ b/tools/perf/util/symbol-elf.c
-@@ -8,7 +8,7 @@
- #include "symbol.h"
- #include "debug.h"
- 
--#ifndef HAVE_ELF_GETPHDRNUM
-+#ifndef HAVE_ELF_GETPHDRNUM_SUPPORT
- static int elf_getphdrnum(Elf *elf, size_t *dst)
- {
- 	GElf_Ehdr gehdr;
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index fd5b70e..2a97bb1 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -13,7 +13,7 @@
- #include <libgen.h>
- #include "build-id.h"
- 
--#ifdef LIBELF_SUPPORT
-+#ifdef HAVE_LIBELF_SUPPORT
- #include <libelf.h>
- #include <gelf.h>
- #endif
-@@ -21,7 +21,7 @@
- 
- #include "dso.h"
- 
--#ifdef HAVE_CPLUS_DEMANGLE
-+#ifdef HAVE_CPLUS_DEMANGLE_SUPPORT
- extern char *cplus_demangle(const char *, int);
- 
- static inline char *bfd_demangle(void __maybe_unused *v, const char *c, int i)
-@@ -46,7 +46,7 @@ static inline char *bfd_demangle(void __maybe_unused *v,
-  * libelf 0.8.x and earlier do not support ELF_C_READ_MMAP;
-  * for newer versions we can use mmap to reduce memory usage:
-  */
--#ifdef LIBELF_MMAP
-+#ifdef HAVE_LIBELF_MMAP_SUPPORT
- # define PERF_ELF_C_READ_MMAP ELF_C_READ_MMAP
- #else
- # define PERF_ELF_C_READ_MMAP ELF_C_READ
-@@ -178,7 +178,7 @@ struct symsrc {
- 	int fd;
- 	enum dso_binary_type type;
- 
--#ifdef LIBELF_SUPPORT
-+#ifdef HAVE_LIBELF_SUPPORT
- 	Elf *elf;
- 	GElf_Ehdr ehdr;
- 
-diff --git a/tools/perf/util/unwind.h b/tools/perf/util/unwind.h
-index cb6bc50..ec0c71a 100644
---- a/tools/perf/util/unwind.h
-+++ b/tools/perf/util/unwind.h
-@@ -13,7 +13,7 @@ struct unwind_entry {
- 
- typedef int (*unwind_entry_cb_t)(struct unwind_entry *entry, void *arg);
- 
--#ifdef LIBUNWIND_SUPPORT
-+#ifdef HAVE_LIBUNWIND_SUPPORT
- int unwind__get_entries(unwind_entry_cb_t cb, void *arg,
- 			struct machine *machine,
- 			struct thread *thread,
-@@ -31,5 +31,5 @@ unwind__get_entries(unwind_entry_cb_t cb __maybe_unused,
- {
- 	return 0;
- }
--#endif /* LIBUNWIND_SUPPORT */
-+#endif /* HAVE_LIBUNWIND_SUPPORT */
- #endif /* __UNWIND_H */
-diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
-index 6d17b18..ccfdeb6 100644
---- a/tools/perf/util/util.c
-+++ b/tools/perf/util/util.c
-@@ -1,7 +1,7 @@
- #include "../perf.h"
- #include "util.h"
- #include <sys/mman.h>
--#ifdef BACKTRACE_SUPPORT
-+#ifdef HAVE_BACKTRACE_SUPPORT
- #include <execinfo.h>
- #endif
- #include <stdio.h>
-@@ -204,7 +204,7 @@ int hex2u64(const char *ptr, u64 *long_val)
- }
- 
- /* Obtain a backtrace and print it to stdout. */
--#ifdef BACKTRACE_SUPPORT
-+#ifdef HAVE_BACKTRACE_SUPPORT
- void dump_stack(void)
- {
- 	void *array[16];
+ ###############################
+diff --git a/tools/perf/config/feature-checks/test-libnuma.c b/tools/perf/config/feature-checks/test-libnuma.c
+new file mode 100644
+index 0000000..70510a9
+--- /dev/null
++++ b/tools/perf/config/feature-checks/test-libnuma.c
+@@ -0,0 +1,8 @@
++#include <numa.h>
++#include <numaif.h>
++
++int main(void)
++{
++	numa_available();
++	return 0;
++}
